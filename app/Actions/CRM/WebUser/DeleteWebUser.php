@@ -81,6 +81,11 @@ class DeleteWebUser extends OrgAction
      */
     public function asController(WebUser $webUser, ActionRequest $request): WebUser
     {
+        if ($webUser->shop->type !== ShopTypeEnum::FULFILMENT
+            && !$request->user()->authTo("supervisor-crm.{$webUser->shop_id}")) {
+            abort(403);
+        }
+
         $this->webUser = $webUser;
         $this->initialisationFromShop($webUser->shop, $request);
         return $this->handle($webUser, true);

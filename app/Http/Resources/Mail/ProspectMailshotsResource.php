@@ -41,6 +41,7 @@ class ProspectMailshotsResource extends JsonResource
         return [
             'id'                        => $mailshot->id,
             'slug'                      => $mailshot->slug,
+            'type'                      => $mailshot->type,
             'name'                      => $mailshot->name,
             'date'                      => Carbon::parse($mailshot->date)->format('d F Y, H:i'),
             'subject'                   => $mailshot->subject,
@@ -57,6 +58,7 @@ class ProspectMailshotsResource extends JsonResource
             'clicked'                   => percentage($mailshot->clicked, $mailshot->delivered),
             'spam'                      => percentage($mailshot->spam, $mailshot->delivered),
             'unsubscribed'              => percentage($this->unsubscribed, $this->number_delivered_open_success),
+            'has_source_reference'      => filled($mailshot->source_id) || filled($mailshot->source_alt_id) || filled($mailshot->source_alt2_id),
         ];
     }
 }

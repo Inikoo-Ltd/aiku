@@ -8,7 +8,7 @@
 
 namespace App\Actions\SysAdmin\Group\Seeders;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Actions\SysAdmin\AikuScopedSection\StoreAikuScopedSection;
 use App\Actions\SysAdmin\AikuScopedSection\UpdateAikuScopedSection;
 use App\Actions\Traits\WithAttachMediaToModel;
@@ -28,7 +28,7 @@ use App\Models\SysAdmin\Organisation;
 use Illuminate\Console\Command;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class SeedAikuScopedSections extends GrpAction
+class SeedAikuScopedSections extends OrgAction
 {
     use AsAction;
     use WithAttachMediaToModel;

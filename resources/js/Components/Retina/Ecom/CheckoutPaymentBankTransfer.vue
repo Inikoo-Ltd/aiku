@@ -16,6 +16,9 @@ defineProps<{
             bank_code: string
             iban: string
             account_number: string
+            swift?: string
+            recipient?: string
+            note?: string
         }
     }
 }>()
@@ -48,6 +51,12 @@ const onSubmitPlaceOrder = () => {
                     </div>
                 </div>
                 <p class="text-gray-400 italic text-sm">{{ data?.data?.account_number }}</p>
+                <p v-if="data?.data?.recipient" class="text-sm">{{ trans("Recipient") }}: {{ data.data.recipient }}</p>
+                <p v-if="data?.data?.swift" class="text-sm">SWIFT/BIC: {{ data.data.swift }} <CopyButton :text="data.data.swift" class="ml-0.5 inline" /></p>
+            </div>
+
+            <div v-if="data?.data?.note" class="mt-4 rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-800">
+                {{ data.data.note }}
             </div>
 
             <Button

@@ -19,7 +19,7 @@ class ProcessResetIntervalsGroups
 
     public string $commandSignature = 'aiku:process-reset-intervals-groups';
 
-    public function handle(array $intervals = [], array $doPreviousPeriods = []): void
+    public function handle(array $intervals = []): void
     {
         foreach (Group::all() as $group) {
             if (array_intersect($this->getIntervalValues($intervals), [

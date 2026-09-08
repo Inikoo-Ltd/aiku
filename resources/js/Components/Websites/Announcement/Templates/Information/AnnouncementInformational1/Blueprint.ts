@@ -66,7 +66,7 @@ export const blueprint = [
                             key: ["text"],
                             type: "editorhtml",
                             props_data: {
-                                toogle: [
+                                toggle: [
                                     "heading", "fontSize", "bold", "italic", "underline", "fontFamily",
                                     "alignLeft", "alignRight", "link",
                                     "alignCenter", "undo", "redo", "highlight", "color", "clear"

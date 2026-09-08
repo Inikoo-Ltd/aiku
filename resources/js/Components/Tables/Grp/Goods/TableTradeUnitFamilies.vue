@@ -59,7 +59,7 @@ const getIntervalStateColor = (isPositive: boolean) => {
         </template>
 
         <template #cell(sales_grp_currency_external)="{ item }">
-            <span class="tabular-nums">{{ locale.currencyFormat('GBP', item.sales_grp_currency_external) }}</span>
+            <span class="tabular-nums">{{ locale.currencyFormat(item.grp_currency, item.sales_grp_currency_external) }}</span>
         </template>
 
         <template #cell(sales_grp_currency_external_delta)="{ item }">

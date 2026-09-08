@@ -13,6 +13,7 @@ use App\Enums\Inventory\OrgStock\OrgStockQuantityStatusEnum;
 use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Dispatching\BatchCode;
+use App\Models\Dispatching\DeliveryNoteItem;
 use App\Models\Goods\Stock;
 use App\Models\Goods\TradeUnit;
 use App\Models\Procurement\OrgSupplierProduct;
@@ -81,10 +82,16 @@ use Spatie\Sluggable\SlugOptions;
  * @property numeric|null $current_supplier_sku_cost
  * @property int $current_batch_codes
  * @property int|null $main_batch_code_id
+ * @property string|null $note_to_pickers
+ * @property string|null $note_to_packers
+ * @property array<array-key, mixed>|null $consumables [{"code": "IAL01", "quantity": 1}] the packer adds per product ordered
+ * @property string|null $barcode the outer/SKO CODE 128 barcode printed on the external packing
+ * @property string|null $unit_barcode the EAN13 of the individual unit
+ * @property bool $independent_barcode
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read \Illuminate\Database\Eloquent\Collection<int, BatchCode> $batchCodes
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, DeliveryNoteItem> $deliveryNoteItems
  * @property-read \App\Models\SysAdmin\Group|null $group
- * @property-read \App\Models\Inventory\OrgStockIntervals|null $intervals
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Inventory\LocationOrgStock> $locationOrgStocks
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Inventory\Location> $locations
  * @property-read BatchCode|null $mainBatchCode
@@ -117,6 +124,7 @@ class OrgStock extends Model implements Auditable
 
     protected $casts = [
         'data'                             => 'array',
+        'consumables'                      => 'array',
         'activated_in_organisation_at'     => 'datetime',
         'discontinuing_in_organisation_at' => 'datetime',
         'discontinued_in_organisation_at'  => 'datetime',
@@ -177,6 +185,7 @@ class OrgStock extends Model implements Auditable
         'state',
         'is_on_demand',
         'packed_in',
+        'barcode',
     ];
 
     public function getSlugOptions(): SlugOptions
@@ -212,11 +221,6 @@ class OrgStock extends Model implements Auditable
     public function stats(): HasOne
     {
         return $this->hasOne(OrgStockStats::class);
-    }
-
-    public function intervals(): HasOne
-    {
-        return $this->hasOne(OrgStockIntervals::class);
     }
 
     public function orgSupplierProducts(): BelongsToMany
@@ -258,6 +262,11 @@ class OrgStock extends Model implements Auditable
     public function mainBatchCode(): BelongsTo
     {
         return $this->belongsTo(BatchCode::class, 'main_batch_code_id');
+    }
+
+    public function deliveryNoteItems(): HasMany
+    {
+        return $this->hasMany(DeliveryNoteItem::class);
     }
 
 }

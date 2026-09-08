@@ -10,6 +10,9 @@
 
 namespace App\Actions\Accounting\Invoice;
 
+use App\Models\Accounting\Payment;
+use App\Enums\Accounting\Payment\PaymentStatusEnum;
+use App\Enums\Accounting\Payment\PaymentTypeEnum;
 use App\Enums\Accounting\PaymentAccount\PaymentAccountTypeEnum;
 use App\Http\Resources\Accounting\RefundResource;
 use App\Models\Accounting\Invoice;
@@ -124,6 +127,16 @@ trait WithInvoicePayBox
                         ],
                     ],
                     // 'list_refunds'                           => RefundResource::collection($invoice->refunds->where('in_process', false)),
+                    'payments'             => $invoice->payments
+                        ->filter(fn (Payment $payment) => $payment->status == PaymentStatusEnum::SUCCESS && $payment->type == PaymentTypeEnum::PAYMENT)
+                        ->map(fn (Payment $payment) => [
+                            'id'                   => $payment->id,
+                            'amount'               => $payment->amount,
+                            'method'               => $payment->method,
+                            'method_label'         => Payment::methodLabel($payment->method, $payment->sub_method),
+                            'payment_account_type' => $payment->paymentAccount->type->value,
+                            'payment_account_name' => $payment->paymentAccount->name,
+                        ])->values()->all(),
                     'currency_code'        => $invoice->currency->code,
                     'total_invoice'        => $invoice->total_amount,
                     'total_refunds'        => $totalRefund,
@@ -178,6 +191,16 @@ trait WithInvoicePayBox
                             ]
                         ],
                     ],
+                    'payments'             => $invoice->payments
+                        ->filter(fn (Payment $payment) => $payment->status == PaymentStatusEnum::SUCCESS && $payment->type == PaymentTypeEnum::PAYMENT)
+                        ->map(fn (Payment $payment) => [
+                            'id'                   => $payment->id,
+                            'amount'               => $payment->amount,
+                            'method'               => $payment->method,
+                            'method_label'         => Payment::methodLabel($payment->method, $payment->sub_method),
+                            'payment_account_type' => $payment->paymentAccount->type->value,
+                            'payment_account_name' => $payment->paymentAccount->name,
+                        ])->values()->all(),
                     'currency_code'        => $invoice->currency->code,
                     'total_invoice'        => $invoice->total_amount,
                     'total_paid_in'        => $totalPaidIn,

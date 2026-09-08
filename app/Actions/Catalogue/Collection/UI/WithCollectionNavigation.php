@@ -9,6 +9,7 @@
 namespace App\Actions\Catalogue\Collection\UI;
 
 use App\Actions\Traits\Actions\WithNavigation;
+use App\Enums\Catalogue\Collection\CollectionStateEnum;
 use App\Models\Catalogue\Collection;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -42,6 +43,30 @@ trait WithCollectionNavigation
             $query->where('model_has_collections.model_type', 'ProductCategory');
             $query->where('model_has_collections.model_id', $this->parent->id);
         }
+    }
+
+    protected function applyNavigationBucket(Builder $query, string $bucket, Model $model, ActionRequest $request): void
+    {
+        if ($bucket == 'active') {
+            $query->where('collections.state', CollectionStateEnum::ACTIVE);
+        } elseif ($bucket == 'inactive') {
+            $query->where('collections.state', CollectionStateEnum::INACTIVE);
+        } elseif ($bucket == 'in_process') {
+            $query->where('collections.state', CollectionStateEnum::IN_PROCESS);
+        }
+    }
+
+    protected function getNavigationDefaultSort(Model $model): array
+    {
+        return ['collections.code', false];
+    }
+
+    protected function getNavigationSortColumns(Model $model): array
+    {
+        return [
+            'code' => 'collections.code',
+            'name' => 'collections.name',
+        ];
     }
 
     protected function getNavigationLabel(Model $model): string

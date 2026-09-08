@@ -65,6 +65,14 @@ class EditProfile
                                 "rows"        => 5,
                                 "placeholder" => __('Enter up to 50 characters')
                             ],
+                            "nickname" => [
+                                "type"        => "input",
+                                "label"       => __("Chat nickname"),
+                                "value"       => $user->nickname,
+                                "maxLength"   => 24,
+                                "counter"     => true,
+                                "placeholder" => __("Short name shown in staff chat, e.g. Raul")
+                            ],
                             "image"    => [
                                 "type"  => "image_crop_square",
                                 "label" => __("Logo"),
@@ -86,6 +94,21 @@ class EditProfile
                                     'secretKey'         => $user->google2fa_secret,
                                     'one_time_password' => null,
                                 ],
+                            ],
+                        ]
+                    ],
+                    [
+                        "label"   => __("Passkeys"),
+                        "icon"    => "fal fa-fingerprint",
+                        "current" => true,
+                        "fields"  => [
+                            "passkeys" => [
+                                "type"         => "passkeys",
+                                "label"        => __("Passkeys"),
+                                "noSaveButton" => true,
+                                "value"        => $user->passkeys()
+                                    ->get(['id', 'name', 'last_used_at', 'created_at'])
+                                    ->toArray(),
                             ],
                         ]
                     ]

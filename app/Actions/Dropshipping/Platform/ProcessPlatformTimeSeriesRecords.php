@@ -9,13 +9,16 @@ namespace App\Actions\Dropshipping\Platform;
 
 use App\Actions\Dropshipping\Platform\Hydrators\PlatformTimeSeriesHydrateNumberRecords;
 use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
+use App\Enums\Ordering\Platform\PlatformTypeEnum;
+use App\Enums\Ordering\SalesChannel\SalesChannelTypeEnum;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Helpers\TimeSeriesPeriodCalculator;
 use App\Models\Catalogue\Shop;
 use App\Models\Dropshipping\Platform;
 use App\Models\Dropshipping\PlatformTimeSeries;
+use App\Models\Ordering\SalesChannel;
 use App\Traits\BuildsInvoiceTimeSeriesQuery;
-use Carbon\Carbon;
+use App\Traits\UpsertsTimeSeriesRecords;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -24,6 +27,7 @@ class ProcessPlatformTimeSeriesRecords implements ShouldBeUnique
 {
     use AsAction;
     use BuildsInvoiceTimeSeriesQuery;
+    use UpsertsTimeSeriesRecords;
 
     public string $jobQueue = 'sales_slave';
 
@@ -34,8 +38,7 @@ class ProcessPlatformTimeSeriesRecords implements ShouldBeUnique
 
     public function handle(int $platformId, int $shopId, TimeSeriesFrequencyEnum $frequency, string $from, string $to): void
     {
-        $from .= ' 00:00:00';
-        $to   .= ' 23:59:59';
+        [$from, $to] = TimeSeriesPeriodCalculator::expandWindowToFullPeriods($frequency, $from, $to);
 
         $platform = Platform::find($platformId);
         $shop     = Shop::find($shopId);
@@ -52,12 +55,19 @@ class ProcessPlatformTimeSeriesRecords implements ShouldBeUnique
 
         $this->processTimeSeries($timeSeries, $shop, $from, $to);
 
+        if ($platform->type === PlatformTypeEnum::MANUAL) {
+            $this->processSalesChannelTimeSeries($timeSeries, $shop, $from, $to);
+        }
+
         PlatformTimeSeriesHydrateNumberRecords::run($timeSeries->id);
     }
 
     protected function processTimeSeries(PlatformTimeSeries $timeSeries, Shop $shop, string $from, string $to): void
     {
         $processedPeriods = [];
+        $rows             = [];
+
+        $metricsByPeriod = $this->getPlatformMetricsByPeriod($timeSeries, $shop, $timeSeries->frequency, $from, $to);
 
         $query = DB::connection('aiku_no_sticky')->table('invoices')
             ->where('invoices.platform_id', $timeSeries->platform_id)
@@ -72,16 +82,14 @@ class ProcessPlatformTimeSeriesRecords implements ShouldBeUnique
         foreach ($results as $result) {
             ['period' => $period, 'periodFrom' => $periodFrom, 'periodTo' => $periodTo] = TimeSeriesPeriodCalculator::resolvePeriod($result, $timeSeries->frequency);
 
-            $metrics = $this->getPlatformPeriodMetrics($timeSeries, $shop, $periodFrom, $periodTo);
+            $metrics = [...$this->zeroMetrics(), ...($metricsByPeriod[$period]['metrics'] ?? [])];
 
-            $timeSeries->records()->updateOrCreate(
-                [
-                    'platform_time_series_id' => $timeSeries->id,
-                    'shop_id'                 => $shop->id,
-                    'period'                  => $period,
-                    'frequency'               => $timeSeries->frequency->singleLetter(),
-                ],
-                [
+            $rows[] = [
+                'platform_time_series_id' => $timeSeries->id,
+                'shop_id'                 => $shop->id,
+                'period'                  => $period,
+                'frequency'               => $timeSeries->frequency->singleLetter(),
+                ...[
                     'organisation_id'             => $shop->organisation_id,
                     'from'                        => $periodFrom,
                     'to'                          => $periodTo,
@@ -91,20 +99,92 @@ class ProcessPlatformTimeSeriesRecords implements ShouldBeUnique
                     'invoices'                    => $result->invoices,
                     ...$metrics,
                 ]
-            );
+            ];
 
             $processedPeriods[] = $period;
         }
 
-        $this->processPeriodsWithoutInvoices($timeSeries, $shop, $from, $to, $processedPeriods);
+        $rows = [...$rows, ...$this->periodsWithoutInvoicesRows($timeSeries, $shop, $metricsByPeriod, $processedPeriods)];
+
+        $this->syncTimeSeriesRecords($timeSeries, $rows, ['platform_time_series_id', 'shop_id', 'period', 'frequency'], $from, $to, ['shop_id' => $shop->id]);
     }
 
-    protected function processPeriodsWithoutInvoices(PlatformTimeSeries $timeSeries, Shop $shop, string $from, string $to, array $processedPeriods): void
+    /**
+     * Only the manual platform splits by sales channel (Web vs API): marketplace platforms have a
+     * single channel by construction. Every invoice that is not explicitly on the API channel
+     * counts as Web - historic invoices have no sales_channel_id at all - so Web + API always
+     * adds up to the Manual total. Rows only exist for periods with invoices, so the sync is a
+     * plain delete-window-then-upsert instead of the sparse bookkeeping the main records need.
+     */
+    protected function processSalesChannelTimeSeries(PlatformTimeSeries $timeSeries, Shop $shop, string $from, string $to): void
     {
-        $nonInvoicePeriods = TimeSeriesPeriodCalculator::getNonInvoicePeriods($timeSeries->frequency, $from, $to, $processedPeriods);
+        $apiChannelId = SalesChannel::where('group_id', $shop->group_id)->where('type', SalesChannelTypeEnum::API)->value('id');
+        $webChannelId = SalesChannel::where('group_id', $shop->group_id)->where('type', SalesChannelTypeEnum::WEBSITE)->value('id');
 
-        foreach ($nonInvoicePeriods as $periodData) {
-            $metrics = $this->getPlatformPeriodMetrics($timeSeries, $shop, $periodData['from'], $periodData['to']);
+        if (!$apiChannelId || !$webChannelId) {
+            return;
+        }
+
+        $channelBucket = "CASE WHEN invoices.sales_channel_id = $apiChannelId THEN $apiChannelId ELSE $webChannelId END";
+
+        $query = DB::connection('aiku_no_sticky')->table('invoices')
+            ->where('invoices.platform_id', $timeSeries->platform_id)
+            ->where('invoices.shop_id', $shop->id)
+            ->where('invoices.in_process', false)
+            ->where('invoices.date', '>=', $from)
+            ->where('invoices.date', '<=', $to)
+            ->whereNull('invoices.deleted_at');
+
+        $results = $this->applyFrequencyGrouping($query, $timeSeries->frequency, customSelects: $this->platformInvoiceSelects())
+            ->addSelect(DB::raw("$channelBucket as sales_channel_id"))
+            ->groupBy(DB::raw($channelBucket))
+            ->get();
+
+        $rows = [];
+        foreach ($results as $result) {
+            ['period' => $period, 'periodFrom' => $periodFrom, 'periodTo' => $periodTo] = TimeSeriesPeriodCalculator::resolvePeriod($result, $timeSeries->frequency);
+
+            $rows[] = [
+                'platform_time_series_id'     => $timeSeries->id,
+                'shop_id'                     => $shop->id,
+                'sales_channel_id'            => $result->sales_channel_id,
+                'period'                      => $period,
+                'frequency'                   => $timeSeries->frequency->singleLetter(),
+                'organisation_id'             => $shop->organisation_id,
+                'from'                        => $periodFrom,
+                'to'                          => $periodTo,
+                'sales_external'              => $result->sales_external,
+                'sales_org_currency_external' => $result->sales_org_currency_external,
+                'sales_grp_currency_external' => $result->sales_grp_currency_external,
+                'invoices'                    => $result->invoices,
+            ];
+        }
+
+        $timeSeries->salesChannelRecords()
+            ->where('frequency', $timeSeries->frequency->singleLetter())
+            ->where('shop_id', $shop->id)
+            ->where('from', '>=', $from)
+            ->where('from', '<=', $to)
+            ->delete();
+
+        $this->upsertTimeSeriesRecords(
+            $timeSeries,
+            $rows,
+            ['platform_time_series_id', 'shop_id', 'sales_channel_id', 'period', 'frequency'],
+            'salesChannelRecords'
+        );
+    }
+
+    protected function periodsWithoutInvoicesRows(PlatformTimeSeries $timeSeries, Shop $shop, array $metricsByPeriod, array $processedPeriods): array
+    {
+        $rows = [];
+
+        foreach ($metricsByPeriod as $period => $periodData) {
+            if (in_array($period, $processedPeriods)) {
+                continue;
+            }
+
+            $metrics = [...$this->zeroMetrics(), ...$periodData['metrics']];
 
             $hasActivity = collect($metrics)->some(fn ($value) => $value > 0);
 
@@ -112,14 +192,12 @@ class ProcessPlatformTimeSeriesRecords implements ShouldBeUnique
                 continue;
             }
 
-            $timeSeries->records()->updateOrCreate(
-                [
-                    'platform_time_series_id' => $timeSeries->id,
-                    'shop_id'                 => $shop->id,
-                    'period'                  => $periodData['period'],
-                    'frequency'               => $timeSeries->frequency->singleLetter(),
-                ],
-                [
+            $rows[] = [
+                'platform_time_series_id' => $timeSeries->id,
+                'shop_id'                 => $shop->id,
+                'period'                  => $period,
+                'frequency'               => $timeSeries->frequency->singleLetter(),
+                ...[
                     'organisation_id'             => $shop->organisation_id,
                     'from'                        => $periodData['from'],
                     'to'                          => $periodData['to'],
@@ -129,56 +207,71 @@ class ProcessPlatformTimeSeriesRecords implements ShouldBeUnique
                     'invoices'                    => 0,
                     ...$metrics,
                 ]
-            );
+            ];
         }
+
+        return $rows;
     }
 
-    protected function getPlatformPeriodMetrics(PlatformTimeSeries $timeSeries, Shop $shop, Carbon $periodFrom, Carbon $periodTo): array
+    protected function getPlatformMetricsByPeriod(PlatformTimeSeries $timeSeries, Shop $shop, TimeSeriesFrequencyEnum $frequency, string $from, string $to): array
     {
         $channels = DB::connection('aiku_no_sticky')->table('customer_sales_channels')
             ->where('platform_id', $timeSeries->platform_id)
             ->where('shop_id', $shop->id)
             ->where('status', CustomerSalesChannelStatusEnum::OPEN)
-            ->where('created_at', '>=', $periodFrom)
-            ->where('created_at', '<=', $periodTo)
-            ->whereNull('deleted_at')
-            ->count();
+            ->where('created_at', '>=', $from)
+            ->where('created_at', '<=', $to)
+            ->whereNull('deleted_at');
+
+        $byPeriod = $this->mergeMetricsByPeriod([], $channels, $frequency, 'created_at', [
+            DB::raw('count(*) as channels'),
+        ]);
 
         $customers = DB::connection('aiku_no_sticky')->table('customer_sales_channels')
             ->leftJoin('customers', 'customer_sales_channels.customer_id', '=', 'customers.id')
             ->where('customer_sales_channels.platform_id', $timeSeries->platform_id)
             ->where('customer_sales_channels.shop_id', $shop->id)
-            ->where('customers.registered_at', '>=', $periodFrom)
-            ->where('customers.registered_at', '<=', $periodTo)
-            ->whereNull('customers.deleted_at')
-            ->distinct('customer_sales_channels.customer_id')
-            ->count('customer_sales_channels.customer_id');
+            ->where('customers.registered_at', '>=', $from)
+            ->where('customers.registered_at', '<=', $to)
+            ->whereNull('customers.deleted_at');
+
+        $byPeriod = $this->mergeMetricsByPeriod($byPeriod, $customers, $frequency, 'customers.registered_at', [
+            DB::raw('count(distinct customer_sales_channels.customer_id) as customers'),
+        ]);
 
         $portfolios = DB::connection('aiku_no_sticky')->table('portfolios')
             ->where('portfolios.item_type', 'Product')
             ->leftJoin('products', 'portfolios.item_id', '=', 'products.id')
             ->where('portfolios.platform_id', $timeSeries->platform_id)
             ->where('portfolios.shop_id', $shop->id)
-            ->where('portfolios.created_at', '>=', $periodFrom)
-            ->where('portfolios.created_at', '<=', $periodTo)
+            ->where('portfolios.created_at', '>=', $from)
+            ->where('portfolios.created_at', '<=', $to)
             ->where('portfolios.status', true)
-            ->whereNull('portfolios.last_removed_at')
-            ->distinct('portfolios.item_id')
-            ->count('portfolios.item_id');
+            ->whereNull('portfolios.last_removed_at');
+
+        $byPeriod = $this->mergeMetricsByPeriod($byPeriod, $portfolios, $frequency, 'portfolios.created_at', [
+            DB::raw('count(distinct portfolios.item_id) as portfolios'),
+        ]);
 
         $customerClients = DB::connection('aiku_no_sticky')->table('customer_clients')
             ->where('platform_id', $timeSeries->platform_id)
             ->where('shop_id', $shop->id)
-            ->where('created_at', '>=', $periodFrom)
-            ->where('created_at', '<=', $periodTo)
-            ->whereNull('deleted_at')
-            ->count();
+            ->where('created_at', '>=', $from)
+            ->where('created_at', '<=', $to)
+            ->whereNull('deleted_at');
 
+        return $this->mergeMetricsByPeriod($byPeriod, $customerClients, $frequency, 'created_at', [
+            DB::raw('count(*) as customer_clients'),
+        ]);
+    }
+
+    protected function zeroMetrics(): array
+    {
         return [
-            'channels'         => $channels,
-            'customers'        => $customers,
-            'portfolios'       => $portfolios,
-            'customer_clients' => $customerClients,
+            'channels'         => 0,
+            'customers'        => 0,
+            'portfolios'       => 0,
+            'customer_clients' => 0,
         ];
     }
 }

@@ -10,7 +10,6 @@
 
 namespace App\Actions\Comms\OrgPostRoom;
 
-use App\Actions\Comms\OrgPostRoom\Hydrators\OrgPostRoomHydrateRuns;
 use App\Actions\Comms\OrgPostRoom\Hydrators\OrgPostRoomHydrateOutboxes;
 use App\Actions\HydrateModel;
 use App\Models\Comms\OrgPostRoom;
@@ -24,7 +23,6 @@ class HydrateOrgPostRooms extends HydrateModel
     public function handle(OrgPostRoom $orgPostRoom): void
     {
         OrgPostRoomHydrateOutboxes::run($orgPostRoom);
-        OrgPostRoomHydrateRuns::run($orgPostRoom);
     }
 
     public function asCommand(Command $command): int

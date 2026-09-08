@@ -9,14 +9,14 @@
 
 namespace App\Actions\Helpers\Redirects;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Enums\Fulfilment\PalletReturn\PalletReturnTypeEnum;
 use App\Models\Fulfilment\PalletReturn;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Redirect;
 use Lorisleiva\Actions\ActionRequest;
 
-class RedirectPalletReturn extends GrpAction
+class RedirectPalletReturn extends OrgAction
 {
     public function handle(PalletReturn $palletReturn): ?RedirectResponse
     {
@@ -41,7 +41,7 @@ class RedirectPalletReturn extends GrpAction
 
     public function asController(PalletReturn $palletReturn, ActionRequest $request): RedirectResponse
     {
-        $this->initialisation(group(), $request);
+        $this->initialisationFromGroup(group(), $request);
 
         return $this->handle($palletReturn);
     }

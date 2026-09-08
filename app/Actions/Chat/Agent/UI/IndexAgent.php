@@ -73,6 +73,8 @@ class IndexAgent extends OrgAction
                 'chat_agents.current_chat_count',
                 'chat_agents.is_online',
                 'chat_agents.is_available',
+                'chat_agents.presence_status',
+                'chat_agents.last_heartbeat_at',
                 'chat_agents.auto_accept',
                 'chat_agents.specialization',
                 'chat_agents.created_at',

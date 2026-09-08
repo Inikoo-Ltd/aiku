@@ -8,6 +8,7 @@
 
 namespace App\Actions\Masters\MasterAsset;
 
+use App\Actions\Catalogue\Concerns\CanCloneImages;
 use App\Models\Masters\MasterAsset;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -15,6 +16,7 @@ use Lorisleiva\Actions\Concerns\AsAction;
 class CloneMasterAssetImagesFromTradeUnits implements ShouldBeUnique
 {
     use AsAction;
+    use CanCloneImages;
 
     public string $jobQueue = 'urgent';
 
@@ -37,7 +39,7 @@ class CloneMasterAssetImagesFromTradeUnits implements ShouldBeUnique
         foreach ($tradeUnit->images as $image) {
             $images[$image->id] = [
                 'is_public'  => true,
-                'scope'      => 'photo',
+                'scope'      => $image->pivot->scope === 'audio' ? 'audio' : 'photo',
                 'sub_scope'  => $image->pivot->sub_scope,
                 'caption'    => $image->pivot->caption,
                 'group_id'   => $masterAsset->group_id,
@@ -50,9 +52,10 @@ class CloneMasterAssetImagesFromTradeUnits implements ShouldBeUnique
         }
 
 
+        $this->dedupeAttachedImages($masterAsset);
         $masterAsset->images()->sync($images);
         $masterAsset->update([
-            'bucket_images'            => count($images) > 0 || !empty($product->video_url),
+            'bucket_images'            => count($images) > 0 || !empty($tradeUnit->video_url),
             'image_id'                 => $tradeUnit->image_id,
             'front_image_id'           => $tradeUnit->front_image_id,
             '34_image_id'              => $tradeUnit->{'34_image_id'},
@@ -68,6 +71,7 @@ class CloneMasterAssetImagesFromTradeUnits implements ShouldBeUnique
             'art3_image_id'            => $tradeUnit->art3_image_id,
             'art4_image_id'            => $tradeUnit->art4_image_id,
             'art5_image_id'            => $tradeUnit->art5_image_id,
+            'audio_id'                 => $tradeUnit->audio_id,
             'video_url'                => $tradeUnit->video_url,
         ]);
     }

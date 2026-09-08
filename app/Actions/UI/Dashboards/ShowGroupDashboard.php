@@ -4,9 +4,11 @@ namespace App\Actions\UI\Dashboards;
 
 use App\Actions\Helpers\Dashboard\DashboardIntervalFilters;
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithGroupDashboardSalesAuthorisation;
 use App\Actions\Traits\Dashboards\Settings\WithDashboardCurrencyTypeSettings;
 use App\Actions\Traits\Dashboards\WithDashboardIntervalOption;
 use App\Actions\Traits\Dashboards\WithDashboardSettings;
+use App\Actions\Traits\Dashboards\WithDashboardTableTabResolution;
 use App\Actions\Traits\Dashboards\WithLatestStockHistory;
 use App\Actions\Traits\Dashboards\WithPerformanceDateResolution;
 use App\Actions\Traits\WithDashboard;
@@ -25,20 +27,34 @@ class ShowGroupDashboard extends OrgAction
     use WithDashboardSettings;
     use WithDashboardIntervalOption;
     use WithDashboardCurrencyTypeSettings;
+    use WithDashboardTableTabResolution;
     use WithLatestStockHistory;
     use WithTabsBox;
     use WithPerformanceDateResolution;
+    use WithGroupDashboardSalesAuthorisation;
 
     public function handle(Group $group, ActionRequest $request): Response
     {
-        $userSettings = $request->user()->settings;
+        $user = $request->user();
 
-        $tabValues = GroupDashboardSalesTableTabsEnum::values();
-        $defaultTab = Arr::first($tabValues);
-        $currentTab = Arr::get($userSettings, 'group_dashboard_tab', $defaultTab);
+        if (!$this->canViewGroupDashboardSales($user)) {
+            return Inertia::render(
+                'Dashboard/GrpDashboard',
+                [
+                    'title'       => __('Dashboard Group'),
+                    'breadcrumbs' => $this->getBreadcrumbs(__('Dashboard')),
+                    'dashboard'   => [
+                        'super_blocks' => []
+                    ],
+                ]
+            );
+        }
 
-        $currentTabEnum = GroupDashboardSalesTableTabsEnum::tryFrom($currentTab) ?? GroupDashboardSalesTableTabsEnum::from($defaultTab);
-        $currentTab = $currentTabEnum->value;
+        $userSettings = $user->settings;
+
+        $tabValues      = GroupDashboardSalesTableTabsEnum::values();
+        $currentTab     = $this->resolveDashboardTableTab($tabValues, $userSettings, 'group_dashboard_tab');
+        $currentTabEnum = GroupDashboardSalesTableTabsEnum::from($currentTab);
 
         $saved_interval = DateIntervalEnum::tryFrom(Arr::get($userSettings, 'selected_interval', 'all')) ?? DateIntervalEnum::ALL;
         $performanceDates = $this->resolvePerformanceDates($saved_interval, $userSettings);

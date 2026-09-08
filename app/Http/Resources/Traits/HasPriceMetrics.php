@@ -14,7 +14,7 @@ trait HasPriceMetrics
      * Compute common pricing metrics used in resources.
      *
      *
-     * @return array{0:mixed,1:mixed,2:mixed,3:int} [$margin, $rrpPerUnit, $profit, $unitsInt]
+     * @return array{0:mixed,1:float,2:float,3:float,4:int,5:float} [$margin, $rrpPerUnit, $profit, $profitPerUnit, $unitsInt, $pricePerUnit]
      */
     protected function getPriceMetrics(float|int|null $rrp, float|int $price, float|int $units): array
     {

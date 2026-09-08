@@ -122,6 +122,17 @@ trait WithAccountingSubNavigation
                 ],
             ],
             [
+                "label"    => __("Payment Methods"),
+                "route"    => [
+                    "name"       => "grp.org.shops.show.dashboard.payments.accounting.payments.methods.index",
+                    "parameters" => [$parent->organisation->slug, $parent->slug],
+                ],
+                "leftIcon" => [
+                    "icon"    => ["fal", "fa-credit-card"],
+                    "tooltip" => __("Payment Methods"),
+                ],
+            ],
+            [
                 "label"    => __("Credit Transactions"),
                 'number'   => $shop->accountingStats->number_credit_transactions ?? 0,
                 "route"    => [

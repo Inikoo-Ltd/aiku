@@ -6,12 +6,17 @@
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
+use App\Models\Catalogue\Shop;
 use App\Models\Chat\ChatAgent;
 use App\Models\Chat\ChatAssignment;
 use App\Models\Chat\ChatSession;
 use App\Models\CRM\WebUser;
 use App\Models\Dropshipping\ShopifyUser;
+use App\Models\Masters\MasterAsset;
+use App\Models\Masters\MasterProductCategory;
+use App\Models\Masters\MasterShop;
 use App\Models\SysAdmin\User;
+use App\Models\Web\Website;
 use Illuminate\Support\Facades\Broadcast;
 
 Broadcast::channel('retina.pc-clone.{parentId}', function (int|string $shopifyUserId) {
@@ -56,6 +61,22 @@ Broadcast::channel('magento.{amazonUserId}.upload-product.{portfolioId}', functi
 
 Broadcast::channel('grp.personal.{userID}', function (User $user, int $userID) {
     return $userID === $user->id;
+});
+
+Broadcast::channel('grp.employee.{employeeID}.clocking', function (User $user, int $employeeID) {
+    return $user->employees()->where('id', $employeeID)->exists();
+});
+
+Broadcast::channel('grp.master-shop.{masterShopId}', function (User $user, int $masterShopId) {
+    return MasterShop::where('id', $masterShopId)->value('group_id') === $user->group_id;
+});
+
+Broadcast::channel('grp.master-asset.{masterAssetId}', function (User $user, int $masterAssetId) {
+    return MasterAsset::where('id', $masterAssetId)->value('group_id') === $user->group_id;
+});
+
+Broadcast::channel('grp.master-product-category.{masterProductCategoryId}', function (User $user, int $masterProductCategoryId) {
+    return MasterProductCategory::where('id', $masterProductCategoryId)->value('group_id') === $user->group_id;
 });
 
 Broadcast::channel('grp.download-progress.{userID}', function (User $user, int $userID) {
@@ -129,6 +150,14 @@ Broadcast::channel("grp.{organisation}.stock_movement", function () {
     return true;
 });
 
+Broadcast::channel("grp.{organisation}.warehouse.{warehouse}.low_stock_audit", function () {
+    return true;
+});
+
+Broadcast::channel("grp.{order}.transaction_update", function (User $user) {
+    return true;
+});
+
 Broadcast::channel('chat-session.{ulid}', function (WebUser|User $user, string $ulid) {
     $session = ChatSession::where('ulid', $ulid)->first();
     if ($session) {
@@ -154,8 +183,30 @@ Broadcast::channel('chat-session.{ulid}', function (WebUser|User $user, string $
     return false;
 });
 
-Broadcast::channel('chat-list', function ($user) {
-    return $user->chatAgent
+Broadcast::channel('chat-list.{shopId}', function ($user, string $shopId) {
+    $agent = $user->chatAgent;
+
+    if (!$agent) {
+        return false;
+    }
+
+    $organisationId = Shop::where('id', $shopId)->value('organisation_id');
+
+    $handlesShop = $agent->shopAssignments()
+        ->where(function ($query) use ($shopId, $organisationId) {
+            $query->where('shop_id', $shopId)
+                ->orWhere(function ($orgWide) use ($organisationId) {
+                    $orgWide->whereNull('shop_id')
+                        ->where('organisation_id', $organisationId);
+                });
+        })
+        ->exists();
+
+    return $handlesShop
         ? ['id' => $user->id, 'name' => $user->contact_name]
         : false;
+});
+
+Broadcast::channel('website.{websiteId}.analytics', function (User $user, int|string $websiteId) {
+    return Website::where('id', $websiteId)->value('group_id') === $user->group_id;
 });

@@ -8,6 +8,7 @@
 
 namespace App\Actions\Comms\EmailBulkRun\Hydrators;
 
+use App\Actions\Traits\WithArchivedDispatchedEmails;
 use App\Actions\Traits\WithEnumStats;
 use App\Enums\Comms\DispatchedEmail\DispatchedEmailStateEnum;
 use App\Models\Comms\DispatchedEmail;
@@ -19,6 +20,7 @@ class EmailBulkRunHydrateDispatchedEmails implements ShouldBeUnique
 {
     use AsAction;
     use WithEnumStats;
+    use WithArchivedDispatchedEmails;
 
 
     public string $jobQueue = 'analytics';
@@ -56,6 +58,8 @@ class EmailBulkRunHydrateDispatchedEmails implements ShouldBeUnique
                 }
             )
         );
+
+        $stats = $this->addArchivedDispatchedEmails($emailBulkRun->stats, $stats);
 
         $emailBulkRun->stats()->update($stats);
     }

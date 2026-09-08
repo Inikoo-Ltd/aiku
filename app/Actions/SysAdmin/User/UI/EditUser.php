@@ -9,6 +9,7 @@
 namespace App\Actions\SysAdmin\User\UI;
 
 use App\Actions\OrgAction;
+use App\Actions\SysAdmin\User\GetUserCurrentEmployee;
 use App\Actions\SysAdmin\User\UI\Traits\HasPermissionsForm;
 use App\Models\HumanResources\Employee;
 use App\Models\SysAdmin\Organisation;
@@ -20,6 +21,9 @@ use Lorisleiva\Actions\ActionRequest;
 class EditUser extends OrgAction
 {
     use HasPermissionsForm;
+
+    private ?Employee $employee = null;
+
     public function handle(User $user): User
     {
         return $user;
@@ -37,10 +41,10 @@ class EditUser extends OrgAction
         return $this->handle($user);
     }
 
-    /** @noinspection PhpUnusedParameterInspection */
     public function inEmployee(Organisation $organisation, Employee $employee, User $user, ActionRequest $request): User
     {
         $this->initialisation($organisation, $request);
+        $this->employee = $employee;
 
         return $this->handle($user);
     }
@@ -49,8 +53,7 @@ class EditUser extends OrgAction
     {
         $permissionsData = $this->getPermissionsFormData($user);
 
-        /** @var Employee $employee */
-        $employee = $user->employees()->first();
+        $employee = $this->employee ?? GetUserCurrentEmployee::run($user);
 
         return Inertia::render("EditModel", [
             "title"       => __("Editing user").' '.$user->username,
@@ -85,9 +88,29 @@ class EditUser extends OrgAction
                         "fields"  => [
                             "status" => [
                                 "type"        => "toggle",
-                                "label"       => __("can login"),
+                                "label"       => __("Can login"),
                                 "value"       => $user->status,
                             ],
+                            "can_use_mcp" => [
+                                "type"        => "toggle",
+                                "icon"        => "fal fa-robot",
+                                "label"       => __("Can connect AI assistant"),
+                                "value"       => $user->can_use_mcp,
+                            ],
+                            ...($user->can_use_mcp ? [
+                                "can_use_mcp_sql" => [
+                                    "type"             => "toggle",
+                                    "label"            => __("Super intelligence")." 🧠",
+                                    "value"            => $user->can_use_mcp_sql,
+                                    "noSaveButton"     => true,
+                                    "submitOnConfirm"  => true,
+                                    "warnOnEnableOnly" => true,
+                                    "warnTitle"        => __("Give their personal AI super intelligence?"),
+                                    "confirmLabel"     => __("Proceed at your own risk"),
+                                    "warningTextHtml"  => __("Their own AI assistant will know <strong>everything in Aiku</strong> — sales, products, stock, customers, suppliers, staff and payments — across <strong>every shop and organisation</strong>, and can ask <strong>any question</strong> of the data. It can <strong>only read</strong>: it can never change or delete anything."),
+                                    "warningBox"       => __("This bypasses permissions: their AI will see data this person cannot see in Aiku. Only for people you trust with all company data."),
+                                ],
+                            ] : []),
                         ],
                     ],
                     [
@@ -98,19 +121,19 @@ class EditUser extends OrgAction
                         "fields"  => [
                             "username" => [
                                 "type"        => "input",
-                                "label"       => __("username"),
+                                "label"       => __("Username"),
                                 "placeholder" => "username",
                                 "value"       => $user->username ?? '',
                             ],
                             "email"    => [
                                 "type"        => "input",
-                                "label"       => __("email"),
+                                "label"       => __("Email"),
                                 "placeholder" => __("example@mail.com"),
                                 "value"       => $user->email ?? '',
                             ],
                             "password" => [
                                 "type"        => "password",
-                                "label"       => __("password"),
+                                "label"       => __("Password"),
                                 "placeholder" => "********",
                                 "value"       => '',
                             ],

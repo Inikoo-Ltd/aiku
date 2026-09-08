@@ -92,6 +92,16 @@ trait WithRetinaOrderPlacedRedirection
                         'key' => 'ecom_order_placed'.$arr['order']->id,
                     ]);
             }
+        } elseif (Arr::get($arr, 'status') == 'pending') {
+            $pendingOrder = Arr::get($arr, 'order');
+
+            if ($pendingOrder && $pendingOrder->shop->type == ShopTypeEnum::DROPSHIPPING) {
+                return Redirect::route('retina.dropshipping.checkout.show', [$pendingOrder->slug])
+                    ->with('pending_cko_payment_id', Arr::get($arr, 'cko_payment_id'));
+            }
+
+            return Redirect::route('retina.ecom.checkout.show')
+                ->with('pending_cko_payment_id', Arr::get($arr, 'cko_payment_id'));
         } elseif (Arr::get($arr, 'reason') == 'Insufficient balance') {
             return Redirect::back()->with('notification', [
                 'status'      => 'error',

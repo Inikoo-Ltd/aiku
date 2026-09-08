@@ -19,6 +19,7 @@ import ConfirmDialog from "primevue/confirmdialog"
 import { trans } from "laravel-vue-i18n"
 import RenderProduct from "@/Iris/Components/IrisBlocks/Products/Ecom/RenderProduct.vue"
 import Image from "@common/Components/Image.vue"
+import LinkIris from "@/Iris/Components/LinkIris.vue"
 
 
 const props = defineProps<{
@@ -68,7 +69,11 @@ const products = ref<any[]>(
 );
 
 const q = ref("")
-const orderBy = ref(layout.params?.order_by || props.fieldValue?.sub_type == 'family' ? 'recommended' : '-created_at')
+const orderByFromUrl = typeof window !== "undefined"
+    ? new URLSearchParams(window.location.search).get("order_by")
+    : null
+const defaultOrderBy = props.fieldValue?.sub_type == 'family' ? 'recommended' : '-created_at'
+const orderBy = ref(orderByFromUrl || defaultOrderBy)
 const page = ref(toRaw(props.fieldValue.products.meta.current_page))
 const lastPage = ref(toRaw(props.fieldValue.products.meta.last_page))
 const filter = ref({ data: {} })
@@ -83,6 +88,7 @@ const isFetchingOutOfStock = ref(false)
 const isNewArrivals = ref(false)
 const isLoadingInitial = ref(false)
 const isLoadingMore = ref(false)
+const renderKey = ref(0)
 
 
 const getRoutes = () => {
@@ -219,6 +225,7 @@ const fetchProducts = async (isLoadMore = false, ignoreOutOfStockFallback = fals
         isLoadingInitial.value = false;
         isLoadingMore.value = false;
         firstLoad.value++;
+        renderKey.value++;
     }
 };
 
@@ -271,8 +278,8 @@ const sortOptions = computed(() => {
     return baseOptions
 })
 
-const sortKey = ref(props.fieldValue.sub_type == 'family' ? 'recommended' : 'created_at')
-const isAscending = ref(true)
+const sortKey = ref(orderBy.value.replace(/^-/, ""))
+const isAscending = ref(!orderBy.value.startsWith("-"))
 
 
 const getArrow = (key: typeof sortKey.value) => {
@@ -286,9 +293,6 @@ const getArrow = (key: typeof sortKey.value) => {
 const isMobile = computed(() => props.screenType === "mobile")
 
 onMounted(() => {
-    const urlParams = new URLSearchParams(window.location.search)
-    const sortParam = urlParams.get("order_by")
-
     layout.buttonBasket = {
         buttonStyle: getStyles(props.fieldValue?.button?.properties, props.screenType, false),
         buttonStyleLogin: getStyles(props.fieldValue?.buttonLogin?.properties, props.screenType),
@@ -296,18 +300,25 @@ onMounted(() => {
         button: props.fieldValue?.button
     }
 
-    if (sortParam) {
-        orderBy.value = sortParam
-        const key = sortParam.replace("-", "")
-        sortKey.value = key as typeof sortKey.value
-        isAscending.value = !sortParam.startsWith("-")
-    }
+    const urlParams = new URLSearchParams(window.location.search)
+	const sortParam = urlParams.get("order_by")
+
+	if (sortParam) {
+		orderBy.value = sortParam
+		sortKey.value = sortParam.replace("-", "")
+		isAscending.value = !sortParam.startsWith("-")
+	}
 
     if (layout?.iris?.is_logged_in) {
         firstLoad.value = 1
         fetchProducts(); // break chace from product dont deleted
         /* fetchHasInBasket(); */
     } else {
+        if (orderByFromUrl) {
+            firstLoad.value = 1
+            fetchProducts()
+        }
+
         setTimeout(() => {   // Needed, to handle, after login phase
             if (layout?.iris?.is_logged_in) {
                 firstLoad.value = 1
@@ -455,7 +466,7 @@ watch(
             <!-- Main Content -->
             <div class="flex-1">
                 <!-- Search & Sort -->
-                <div class="pt-3 pb-2 flex gap-4 px-0 2xl:px-[50px]" :class="layout.rightbasket?.show
+                <div class="flex gap-4 px-0 2xl:px-[50px]" :class="layout.rightbasket?.show
                     ? 'flex-col items-start'
                     : 'flex-col md:flex-row items-center justify-between'">
                     <div class="flex items-center w-full md:w-1/3 gap-2">
@@ -464,7 +475,7 @@ watch(
                                 aria-label="Open Filters"
                                 :injectStyle="getStyles(fieldValue?.filter?.button?.properties, screenType)" />
                             <!-- Sidebar Toggle for Desktop -->
-                            <div v-else class="py-3">
+                            <div v-else class="">
                                 <Button :icon="faFilter" @click="isShowAside = !isShowAside" class="!p-2 !w-auto"
                                     aria-label="Open Filters"
                                     :injectStyle="getStyles(fieldValue?.filter?.button?.properties, screenType)" />
@@ -488,7 +499,7 @@ watch(
 
                     <!-- Sort Tabs -->
                     <div class="flex space-x-6 w-fit max-w-full overflow-x-auto mt-2 md:mt-0">
-                        <button v-for="option in sortOptions" :key="option.value" @click="toggleSort(option.value)"
+                        <button v-for="(option,index) in sortOptions" :key="`${renderKey}-${option.value}-${index}`"  @click="toggleSort(option.value)"
                             class="pb-1 px-4 text-xs font-medium whitespace-nowrap flex items-center  border-b-2 gap-1 sort-button"
                             :class="[
                                 sortKey === option.value
@@ -517,12 +528,11 @@ watch(
 
                     <template v-else-if="products.length">
                         <!-- <pre>{{ get(layout, ['family_page'], []) }}</pre> -->
-                        <!-- <pre>{{ get(layout, ['family_quantity_ordered'], []) }}</pre> -->
-                        <div v-for="(product, index) in products"
+                        <div v-for="(product, index) in products" :key="`${renderKey}-${index}`"
                             :style="getStyles(fieldValue?.card_product?.properties, screenType)"
                             class=" relative rounded flex md:flex-1 justify-center"
                             :class="{ 'max-lg:hidden': isMobileCollapsed && index >= MOBILE_INITIAL_PRODUCTS }">
-                            <RenderProduct :code="code" :product="product" :key="index"
+                            <RenderProduct :code="code" :product="product" :key="`${renderKey}-${index}`"
                                 :buttonStyle="getStyles(fieldValue?.button?.properties, screenType, false)"
                                 :buttonStyleLogin="getStyles(fieldValue?.buttonLogin?.properties, screenType)"
                                 :buttonStyleHover="getStyles(fieldValue?.buttonHover?.properties, screenType, false)"
@@ -531,19 +541,30 @@ watch(
                                 :bestSeller="fieldValue.bestseller" :screenType />
                         </div>
 
-                        <div v-if="fieldValue?.cards" v-for="card in fieldValue?.cards.filter((item) => item.visible)"
-                            class="relative rounded-2xl overflow-hidden min-h-80">
-                            <Image :src="card.image.source" class="absolute inset-0 w-full h-full object-cover" />
-                            <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent">
-                            </div>
-                            <!-- Center Content -->
-                            <div
-                                class="absolute inset-0 flex flex-col items-center justify-center text-white text-center p-5">
-                                <div v-html="card.text"></div>
-                                <Button class="mt-4"
-                                    :injectStyle="getStyles(card?.button?.container?.properties, screenType)"
-                                    :label="card?.button?.text" />
-                            </div>
+                        <div v-for="(card, cardIndex) in (fieldValue?.cards ?? []).filter((item: any) => item?.visible)"
+                            :key="card.ulid ?? cardIndex" class="relative rounded-2xl overflow-hidden min-h-80">
+                            <LinkIris :href="card?.image?.link?.href" :canonical_url="card?.link?.link?.canonical_url"
+                                :target="card?.image?.link?.target">
+                                <Image v-if="card?.image?.source" :src="card?.image?.source" :imageCover="true"
+                                    :alt="card?.image?.alt ?? 'card image'" class="absolute inset-0 w-full h-full" />
+                                <div
+                                    class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent">
+                                </div>
+                                <!-- Center Content -->
+                                <div
+                                    class="absolute inset-0 flex flex-col items-center justify-center text-white text-center p-5">
+                                    <div v-html="card.text"></div>
+                                    <LinkIris :href="card?.button?.link?.href"
+                                        :canonical_url="card?.button?.link?.canonical_url"
+                                        :target="card?.button?.link?.target">
+                                        <Button class="mt-4"
+                                            :injectStyle="getStyles(card?.button?.container?.properties, screenType)"
+                                            :label="card?.button?.text" />
+                                    </LinkIris>
+
+                                </div>
+                            </LinkIris>
+
                         </div>
                     </template>
 
@@ -560,7 +581,8 @@ watch(
 
                 <!-- Load More -->
                 <!--  {{ page   }}{{ lastPage }} -->
-                <div v-if="page < lastPage && !isLoadingInitial" class="flex justify-center my-4  mb-12" :class="{ 'max-lg:hidden': isMobileCollapsed }">
+                <div v-if="page < lastPage && !isLoadingInitial" class="flex justify-center my-4  mb-12"
+                    :class="{ 'max-lg:hidden': isMobileCollapsed }">
                     <Button @click="loadMore" type="tertiary" :disabled="isLoadingMore"
                         :injectStyle="{ padding: '14px 65px', fontSize: '1.2rem' }">
                         <template v-if="isLoadingMore">

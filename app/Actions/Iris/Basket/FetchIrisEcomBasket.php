@@ -20,6 +20,7 @@ use Illuminate\Support\Number;
 
 class FetchIrisEcomBasket extends IrisAction
 {
+    use \App\Actions\Traits\WithLineTaxCategories;
     use HasBasketDetails;
 
     public function handle(ActionRequest $request): Order|null
@@ -131,11 +132,7 @@ class FetchIrisEcomBasket extends IrisAction
                     'information' => '',
                     'price_total' => $order->net_amount
                 ],
-                [
-                    'label'       => __('Tax').' ('.$taxCategory->getLocalizedName().')',
-                    'information' => '',
-                    'price_total' => $order->tax_amount
-                ]
+                ...$this->getOrderTaxRows($order),
             ];
 
         $orderSummary[] = [

@@ -20,6 +20,8 @@ enum FetchStackStateEnum: string
     case SUCCESS = 'success';
     case ERROR = 'error';
     case DUPLICATED = 'duplicated';
+    /** Organisation has left Aurora and does not accept this fetcher: deliberately not run. */
+    case IGNORED = 'ignored';
 
 
 }

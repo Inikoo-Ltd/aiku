@@ -14,7 +14,6 @@ use App\Actions\Traits\Authorisations\WithWebAuthorisation;
 use App\Actions\Traits\WithImageColumns;
 use App\Models\Catalogue\Product;
 use App\Models\Helpers\Media;
-use App\Models\SysAdmin\Organisation;
 use Lorisleiva\Actions\ActionRequest;
 
 class DeleteImagesFromProduct extends OrgAction
@@ -52,9 +51,9 @@ class DeleteImagesFromProduct extends OrgAction
         return GetProductShowcase::run($product);
     }
 
-    public function asController(Organisation $organisation, Product $product, Media $media, ActionRequest $request): void
+    public function asController(Product $product, Media $media, ActionRequest $request): void
     {
-        $this->initialisation($organisation, $request);
+        $this->initialisation($product->organisation, $request);
         $this->handle($product, $media);
     }
 }

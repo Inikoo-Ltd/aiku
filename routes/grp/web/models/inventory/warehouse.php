@@ -27,11 +27,13 @@ use App\Actions\Fulfilment\PickingSession\StartPickFulfilmentPickingSession;
 use App\Actions\Fulfilment\PickingSession\AddPalletReturnsToPickingSession;
 use App\Actions\Fulfilment\PickingSession\RemovePalletReturnsFromPickingSession;
 use App\Actions\Fulfilment\Pallet\UpdatePalletLocation;
+use App\Actions\GoodsIn\UnidentifiedReturn\StoreUnidentifiedReturn;
 use App\Actions\Inventory\Location\ImportLocation;
 use App\Actions\Inventory\Location\StoreLocation;
 use App\Actions\Inventory\Warehouse\DeleteWarehouse;
 use App\Actions\Inventory\Warehouse\StoreWarehouse;
 use App\Actions\Inventory\Warehouse\UpdateWarehouse;
+use App\Actions\Inventory\Warehouse\UpdateWarehouseLowStockThreshold;
 use App\Actions\Inventory\WarehouseArea\ImportWarehouseArea;
 use App\Actions\Inventory\WarehouseArea\StoreWarehouseArea;
 use Illuminate\Support\Facades\Route;
@@ -39,6 +41,7 @@ use Illuminate\Support\Facades\Route;
 Route::post('organisation/{organisation:id}/warehouse', StoreWarehouse::class)->name('warehouse.store');
 Route::name('warehouse.')->prefix('warehouse/{warehouse:id}')->group(function () {
     Route::patch('', UpdateWarehouse::class)->name('update');
+    Route::patch('low-stock-threshold', UpdateWarehouseLowStockThreshold::class)->name('low_stock_threshold.update');
     Route::post('area', StoreWarehouseArea::class)->name('warehouse_area.store');
     Route::post('area/upload', [ImportWarehouseArea::class, 'inWarehouse'])->name('warehouse-areas.upload');
     Route::post('location/upload', [ImportLocation::class, 'inWarehouse'])->name('location.upload');
@@ -51,6 +54,8 @@ Route::name('warehouse.')->prefix('warehouse/{warehouse:id}')->group(function ()
     Route::patch('fulfilment-picking-session/{pickingSession:id}/start-picking', StartPickFulfilmentPickingSession::class)->name('fulfilment_picking_session.start_picking')->withoutScopedBindings();
 
     Route::post('trolleys', StoreTrolley::class)->name('trolleys.store');
+
+    Route::post('unidentified-return', StoreUnidentifiedReturn::class)->name('unidentified_return.store');
 
     Route::post('picked-bays', [StorePickedBay::class, 'inWarehouse'])->name('picked_bays.store');
     Route::patch('picked-bays/{pickedBay:id}', UpdatePickedBay::class)->name('picked_bays.update')->withoutScopedBindings();

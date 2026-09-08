@@ -195,6 +195,7 @@ const onAddToBasket = async (product: ProductResource, basket: any) => {
                 department_id: response.data?.department_id,
                 sub_department_id: response.data?.sub_department_id,
                 family_id: response.data?.family_id,
+                is_golden_product: response.data?.is_golden_product,
             }
         }
 
@@ -243,6 +244,10 @@ const onUpdateQuantity = (product: ProductResource, basket: any) => {
     const productTransactionId = product.transaction_id
     const previousQuantity = Number(get(basket, ['quantity_ordered'], 0)) || 0
     const nextQuantity = Number(get(basket, ['quantity_ordered_new'], basket.quantity_ordered)) || 0
+
+    let onUpdateFinished: () => void = () => {}
+    const updateFinished = new Promise<void>(resolve => onUpdateFinished = resolve)
+
     router[props.updateBasketQuantityRoute.method || 'post'](
         route(props.updateBasketQuantityRoute.name, {
             transaction: product.transaction_id,
@@ -305,6 +310,7 @@ const onUpdateQuantity = (product: ProductResource, basket: any) => {
                         department_id: existingEntry.department_id ?? null,
                         sub_department_id: existingEntry.sub_department_id ?? null,
                         family_id: existingEntry.family_id ?? null,
+                        is_golden_product: existingEntry.is_golden_product ?? false,
                     }
                 }
 
@@ -321,9 +327,12 @@ const onUpdateQuantity = (product: ProductResource, basket: any) => {
             },
             onFinish: () => {
                 isLoadingSubmitQuantityProduct.value = false
+                onUpdateFinished()
             },
         }
     )
+
+    return updateFinished
 }
 
 // Main function to add/update product - dari ButtonAddToBasketInFamily
@@ -376,6 +385,22 @@ const decrement = () => {
     updateQuantity(currentQuantity.value - 1)
 }
 
+
+const orderQuantity = async (quantity: number) => {
+    const clampedQuantity = Math.max(0, Math.min(quantity, props.product.stock))
+
+    set(localBasket.value, ['quantity_ordered_new'], clampedQuantity)
+
+    if (!localBasket.value.quantity_ordered) {
+        await onAddToBasket(props.product, localBasket.value)
+
+        return
+    }
+
+    await onUpdateQuantity(props.product, localBasket.value)
+}
+
+defineExpose({ orderQuantity })
 
 const instantAddToBasket = () => {
     set(localBasket.value, ['quantity_ordered_new'], 1)

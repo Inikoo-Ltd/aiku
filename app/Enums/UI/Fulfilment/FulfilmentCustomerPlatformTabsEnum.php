@@ -18,6 +18,7 @@ enum FulfilmentCustomerPlatformTabsEnum: string
     use HasTabs;
 
     case SHOWCASE      = 'showcase';
+    case HISTORY       = 'history';
 
     public function blueprint(): array
     {
@@ -25,6 +26,12 @@ enum FulfilmentCustomerPlatformTabsEnum: string
             FulfilmentCustomerPlatformTabsEnum::SHOWCASE => [
                 'title' => __('Showcase'),
                 'icon'  => 'fal fa-tachometer-alt',
+            ],
+            FulfilmentCustomerPlatformTabsEnum::HISTORY => [
+                'title' => __('History'),
+                'icon'  => 'fal fa-clock',
+                'type'  => 'icon',
+                'align' => 'right',
             ],
         };
     }

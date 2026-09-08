@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import Image from "@common/Components/Image.vue";
-import { inject, ref, computed } from 'vue'
+import { defineAsyncComponent, inject, ref, computed } from 'vue'
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import { trans } from 'laravel-vue-i18n'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 import { faEnvelope, faHeart } from '@far'
-import { faCircle, faHeart as fasHeart } from '@fas'
+import { faHeart as fasHeart } from '@fas'
 import { urlLoginWithRedirect } from '@/Composables/urlLoginWithRedirect'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 
@@ -18,9 +18,12 @@ import NewAddToCartButton from '@/Components/CMS/Webpage/Products/NewAddToCartBu
 import { faEnvelopeCircleCheck } from '@fortawesome/free-solid-svg-icons'
 import LinkIris from '@/Iris/Components/LinkIris.vue'
 import BestsellerBadge from '@/Components/CMS/Webpage/Products/BestsellerBadge.vue'
-import { routeType } from '@/types/route'
+import GoldenProductBadge from '@/Components/CMS/Webpage/Products/GoldenProductBadge.vue'
 import LabelComingSoon from '@/Components/Iris/Products/LabelComingSoon.vue'
 import Prices4 from '@/Iris/Components/BlocksUtils/Prices4.vue'
+import { routeType } from '@/types/route'
+
+const ProductSoundButton = defineAsyncComponent(() => import("@/Iris/Components/ProductSoundButton.vue"))
 
 library.add(faStarHalfAlt, faQuestionCircle)
 
@@ -40,6 +43,7 @@ const props = withDefaults(defineProps<{
     isLoadingRemindBackInStock?: boolean
     screenType?: string
     hideLogin?:boolean
+    routeGettransactionProductData? : routeType
 }>(), {
     basketButton: true,
     addToBasketRoute: {
@@ -47,6 +51,9 @@ const props = withDefaults(defineProps<{
     },
     updateBasketQuantityRoute: {
         name: 'iris.models.transaction.update',
+    },
+    routeGettransactionProductData: {
+        name: 'iris.json.basket_transaction_product_data'
     },
 })
 
@@ -59,7 +66,12 @@ const emits = defineEmits<{
 }>()
 
 const _button_variant = ref(null)
+const _button_add_to_cart = ref(null)
 const currency = layout?.iris?.currency
+
+const onOrderStepQuantity = async (quantity: number) => {
+    await _button_add_to_cart.value?.orderQuantity(quantity)
+}
 
 
 const onAddFavourite = (product: ProductResource) => {
@@ -110,43 +122,6 @@ const images = computed(() => {
 const currentIndex = ref(0)
 const mobileSlider = ref<HTMLElement | null>(null)
 
-let startX = 0
-let isDragging = false
-
-const onTouchStart = (e: TouchEvent) => {
-    startX = e.touches[0].clientX
-    isDragging = true
-}
-
-const onTouchEnd = (e: TouchEvent) => {
-    if (!mobileSlider.value || !isDragging) return
-
-    const endX = e.changedTouches[0].clientX
-    const diff = startX - endX
-    const threshold = 50 // minimal swipe distance
-
-    if (Math.abs(diff) > threshold) {
-        if (diff > 0 && currentIndex.value < images.value.length - 1) {
-            currentIndex.value++
-        } else if (diff < 0 && currentIndex.value > 0) {
-            currentIndex.value--
-        }
-    }
-
-    scrollToIndex(currentIndex.value)
-    isDragging = false
-}
-
-const scrollToIndex = (index: number) => {
-    if (!mobileSlider.value) return
-    const el = mobileSlider.value
-    const slideWidth = el.clientWidth
-
-    el.scrollTo({
-        left: slideWidth * index,
-        behavior: 'smooth'
-    })
-}
 
 const onScroll = () => {
     if (!mobileSlider.value) return
@@ -164,7 +139,7 @@ defineExpose({
 </script>
 
 <template>
-    <div class="relative text-gray-800 isolate h-full min-h-0 min-w-0 flex flex-col flex-grow" comp="product-render-ecom">
+    <div id="product-card-ecom-1" class="relative text-gray-800 isolate h-full min-h-0 min-w-0 flex flex-col flex-grow" comp="product-render-ecom">
 
         <!-- Top Section: Stock, Images, Title, Code, Price -->
         <div class="text-gray-800 isolate h-full">
@@ -251,29 +226,38 @@ defineExpose({
                     </slot>
                 </div>
 
-                <!-- Section: Favourite -->
-                <template v-if="layout?.iris?.is_logged_in && basketButton && !product.is_variant">
-                    <div v-if="isLoadingFavourite" class="absolute right-2 top-2 text-pink-400 text-xl z-10">
-                        <LoadingIcon />
-                    </div>
-                    <div v-else
-                        @click.prevent="() => product.is_favourite ? onUnselectFavourite(product) : onAddFavourite(product)"
-                        class="cursor-pointer absolute right-2 top-2 group text-xl z-10">
+                <ProductSoundButton v-if="product.audio" :src="product.audio" :topSeller="product.top_seller" />
 
-                        <FontAwesomeIcon v-if="product.is_favourite" :icon="fasHeart" fixed-width
-                            class="text-pink-500" />
-                        <div v-else class="relative">
-                            <FontAwesomeIcon :icon="fasHeart" class="hidden group-hover:inline text-pink-400"
-                                fixed-width />
-                            <FontAwesomeIcon :icon="faHeart" class="inline group-hover:hidden text-pink-300"
-                                fixed-width />
+                <!-- Section: Golden product, Favourite -->
+                <div v-if="product.is_golden_product || (layout?.iris?.is_logged_in && basketButton && !product.is_variant)"
+                    class="absolute right-2 top-2 z-10 flex items-center gap-1.5">
+
+                    <GoldenProductBadge v-if="product.is_golden_product" />
+
+                    <template v-if="layout?.iris?.is_logged_in && basketButton && !product.is_variant">
+                        <div v-if="isLoadingFavourite" class="text-pink-400 text-xl">
+                            <LoadingIcon />
                         </div>
-                    </div>
-                </template>
+                        <div v-else
+                            @click.prevent="() => product.is_favourite ? onUnselectFavourite(product) : onAddFavourite(product)"
+                            class="cursor-pointer group text-xl">
+
+                            <FontAwesomeIcon v-if="product.is_favourite" :icon="fasHeart" fixed-width
+                                class="text-pink-500" />
+                            <div v-else class="relative">
+                                <FontAwesomeIcon :icon="fasHeart" class="hidden group-hover:inline text-pink-400"
+                                    fixed-width />
+                                <FontAwesomeIcon :icon="faHeart" class="inline group-hover:hidden text-pink-300"
+                                    fixed-width />
+                            </div>
+                        </div>
+                    </template>
+                </div>
 
                 <div v-if="layout?.iris?.is_logged_in && !product.variant" class="absolute right-2 bottom-2">
                     <NewAddToCartButton v-if="product.stock && basketButton && !product.is_coming_soon" :hasInBasket
-                        :product="product" :key="product" :addToBasketRoute="addToBasketRoute"
+                        ref="_button_add_to_cart"
+                        :product="product" :key="product" :addToBasketRoute="addToBasketRoute" :routeGettransactionProductData
                         :buttonStyleHover="buttonStyleHover" :updateBasketQuantityRoute="addToBasketRoute"
                         :buttonStyle="buttonStyle" />
                     <button
@@ -314,12 +298,12 @@ defineExpose({
                 </div>
 
                 <!-- Product Code -->
-                <div class="flex items-center text-xs mt-1">
+               <!--  <div class="flex items-center text-xs mt-1">
                     {{ product?.code }}
-                </div>
+                </div> -->
 
-                <!-- Section: 'Coming Soon', Stock -->
-                <div v-if="layout?.iris?.is_logged_in"
+
+                <!-- <div v-if="layout?.iris?.is_logged_in"
                     class="text-xs text-gray-600 xmb-1 w-full flex justify-between gap-x-2 items-center">
                     <div class="flex items-center w-full">
                         <LabelComingSoon v-if="product.is_coming_soon" :product class="w-full text-center " />
@@ -339,13 +323,14 @@ defineExpose({
                             </span>
                         </div>
                     </div>
-                </div>
+                </div> -->
             </div>
         </div>
 
 
         <div class="mt-auto">
-            <Prices4 v-if="layout?.iris?.is_logged_in" :product="product" :currency="currency" :basketButton :hasInBasket />
+            <Prices4 v-if="layout?.iris?.is_logged_in" :product="product" :currency="currency" :basketButton :hasInBasket
+                :orderQuantity="onOrderStepQuantity" />
             <div v-else-if="!hideLogin"  class="mt-2">
                 <a :href="urlLoginWithRedirect()" class="w-full">
                     <Button :label="trans('Login or Register for Wholesale Prices')" class="rounded-none" full

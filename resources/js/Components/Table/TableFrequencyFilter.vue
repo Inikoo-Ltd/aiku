@@ -19,7 +19,7 @@ const frequencyOptions = [
 ]
 
 const isLoadingReload = ref(false)
-const selectedFrequency = ref('daily') // Default to daily
+const selectedFrequency = ref('monthly') // Default to monthly
 
 // Watch frequency changes and reload
 watch(selectedFrequency, (newValue) => {

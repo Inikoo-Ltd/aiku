@@ -13,6 +13,7 @@ use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Support\Facades\Cache;
 use Spatie\Permission\Models\Role as SpatieRole;
 
 /**
@@ -41,5 +42,17 @@ class Role extends SpatieRole
     public function jobPositions(): BelongsToMany
     {
         return $this->belongsToMany(JobPosition::class);
+    }
+
+    /**
+     * Changing what a role grants changes it for every holder, so their authTo() caches go too.
+     */
+    public function forgetCachedPermissions(): void
+    {
+        parent::forgetCachedPermissions();
+
+        foreach ($this->users()->pluck('users.id') as $userId) {
+            Cache::tags('auth-user:'.$userId)->flush();
+        }
     }
 }

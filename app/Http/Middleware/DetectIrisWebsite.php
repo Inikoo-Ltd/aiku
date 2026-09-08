@@ -39,7 +39,7 @@ class DetectIrisWebsite
                 }
             );
         }
-        $request->merge($websiteData);
+        $this->applyWebsiteData($request, $websiteData);
 
         $response = $next($request);
 
@@ -73,8 +73,8 @@ class DetectIrisWebsite
                 'favicons'      => [
                     '16'  => $website->faviconSources(16, 16)['original'] ?? url('favicons/iris-favicon-16x16.png'),
                     '32'  => $website->faviconSources(32, 32)['original'] ?? url('favicons/iris-favicon-32x32.png'),
-                    '48'  => $website->faviconSources(48, 48)['original'] ?? url('favicons/iris-favicon.ico'),
-                    '180' => $website->faviconSources(180, 180)['original'] ?? url('favicons/iris-apple-favicon-180x180.png')
+                    '48'  => $website->faviconSources(48, 48)['original'] ?? url('favicons/iris-favicon-48x48.png'),
+                    '180' => $website->faviconSources(180, 180)['original'] ?? url('favicons/iris-favicon-180x180.png')
                 ]
             ]
         );

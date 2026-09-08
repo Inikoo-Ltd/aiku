@@ -2,13 +2,13 @@
 
 namespace App\Actions\Masters\MasterAsset;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Models\Catalogue\Product;
 use App\Models\Masters\MasterAsset;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class UpdateMasterProductTranslationsFromUpdate extends GrpAction
+class UpdateMasterProductTranslationsFromUpdate extends OrgAction
 {
     use asAction;
 
@@ -125,7 +125,7 @@ class UpdateMasterProductTranslationsFromUpdate extends GrpAction
 
     public function action(MasterAsset $masterAsset, array $modelData): void
     {
-        $this->initialisation($masterAsset->group, $modelData);
+        $this->initialisationFromGroup($masterAsset->group, $modelData);
         $this->handle($masterAsset, $this->validatedData);
     }
 

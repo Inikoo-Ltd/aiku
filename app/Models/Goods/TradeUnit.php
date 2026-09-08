@@ -13,6 +13,7 @@ use App\Enums\Goods\TradeUnit\TradeUnitStatusEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Helpers\Barcode;
 use App\Models\Helpers\Brand;
+use App\Models\Helpers\Country;
 use App\Models\Helpers\Media;
 use App\Models\Helpers\Tag;
 use App\Models\Inventory\OrgStock;
@@ -138,6 +139,7 @@ use Spatie\Translatable\HasTranslations;
  * @property-read Collection<int, Barcode> $barcodes
  * @property-read Media|null $bottomImage
  * @property-read Collection<int, Brand> $brands
+ * @property-read Country|null $countryOrigin
  * @property-read Media|null $frontImage
  * @property-read array $translatable_columns_from
  * @property-read Group|null $group
@@ -426,6 +428,11 @@ class TradeUnit extends Model implements HasMedia, Auditable
     public function timeSeries(): HasMany
     {
         return $this->hasMany(TradeUnitTimeSeries::class);
+    }
+
+    public function countryOrigin(): BelongsTo
+    {
+        return $this->belongsTo(Country::class, 'origin_country_id');
     }
 
 }

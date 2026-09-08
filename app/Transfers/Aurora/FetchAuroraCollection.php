@@ -19,6 +19,10 @@ class FetchAuroraCollection extends FetchAurora
 
     protected function parseModel(): void
     {
+        if (!$this->auroraModelData->{'Product Category Store Key'}) {
+            return;
+        }
+
         $shop = $this->parseShop($this->organisation->id.':'.$this->auroraModelData->{'Product Category Store Key'});
 
         if ($shop->type == ShopTypeEnum::DROPSHIPPING) {

@@ -14,6 +14,8 @@ use App\Actions\Dropshipping\CustomerClient\StoreCustomerClient;
 use App\Actions\Dropshipping\CustomerClient\UpdateCustomerClient;
 use App\Actions\Dropshipping\CustomerSalesChannel\StoreCustomerSalesChannel;
 use App\Actions\Dropshipping\Portfolio\StorePortfolio;
+use App\Actions\Dropshipping\Shopify\Product\CreateNewBulkPortfoliosToShopify;
+use App\Actions\Dropshipping\Shopify\Product\StoreNewProductToCurrentShopify;
 use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
@@ -22,6 +24,7 @@ use App\Models\Dropshipping\CustomerClient;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Portfolio;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\Queue;
 
 use function Pest\Laravel\actingAs;
 
@@ -85,6 +88,14 @@ test('create shopify channel', function () {
     return $customerSalesChannel;
 });
 
+test('channel platform user survives eager loading', function (CustomerSalesChannel $customerSalesChannel) {
+    $customerSalesChannel->user()->associate($customerSalesChannel->customer)->save();
+
+    $eager = CustomerSalesChannel::with('user')->find($customerSalesChannel->id);
+
+    expect($eager->user?->id)->toBe($customerSalesChannel->customer->id);
+})->depends('create shopify channel');
+
 test('create customer client', function (CustomerSalesChannel $customerSalesChannel) {
     $customerClient = StoreCustomerClient::make()->action($customerSalesChannel, CustomerClient::factory()->definition());
     expect($customerClient)->toBeInstanceOf(CustomerClient::class);
@@ -109,3 +120,15 @@ test('add product to customer portfolio', function (CustomerClient $customerClie
 
     return $dropshippingCustomerPortfolio;
 })->depends('update customer client');
+
+test('bulk portfolio upload dispatches one job per portfolio', function (Portfolio $portfolio) {
+    Queue::fake();
+    $portfolio->update(['status' => true, 'platform_status' => false]);
+
+    CreateNewBulkPortfoliosToShopify::make()->handle(
+        $portfolio->customerSalesChannel,
+        ['portfolios' => [$portfolio->id]]
+    );
+
+    StoreNewProductToCurrentShopify::assertPushed();
+})->depends('add product to customer portfolio');

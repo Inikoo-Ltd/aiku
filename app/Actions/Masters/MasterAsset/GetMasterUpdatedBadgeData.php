@@ -1,0 +1,112 @@
+<?php
+
+/*
+ * Author: Eka Yudinata <dev@aw-advantage.com>
+ * Copyright (c) 2026, Raul A Perusquia Flores
+ */
+
+namespace App\Actions\Masters\MasterAsset;
+
+use App\Models\Catalogue\Product;
+use App\Models\Catalogue\Shop;
+use App\Models\SysAdmin\User;
+use App\Services\QueryBuilder;
+use Illuminate\Database\Eloquent\Builder;
+use Lorisleiva\Actions\Concerns\AsObject;
+
+class GetMasterUpdatedBadgeData
+{
+    use AsObject;
+
+    public function handle(User $user): array
+    {
+        $organisationsMap = [];
+
+        foreach ($user->authorisedShops()->with('organisation')->get() as $shop) {
+            if (!$user->authTo("products.{$shop->id}.view")) {
+                continue;
+            }
+
+            $org = $shop->organisation;
+
+            if (!isset($organisationsMap[$org->slug])) {
+                $organisationsMap[$org->slug] = [
+                    'organisation' => [
+                        'slug' => $org->slug,
+                        'name' => $org->name,
+                        'code' => $org->code,
+                    ],
+                    'shops' => [],
+                ];
+            }
+
+            $organisationsMap[$org->slug]['shops'][] = [
+                'slug'                 => $shop->slug,
+                'name'                 => $shop->name,
+                'code'                 => $shop->code,
+                'master_updated_items' => [
+                    'count' => $this->query($shop)->count(),
+                    'route' => [
+                        'name'       => 'grp.org.shops.show.catalogue.products.all_products.index',
+                        'parameters' => [
+                            'organisation'   => $org->slug,
+                            'shop'           => $shop->slug,
+                            'index_elements' => ['state' => 'price_not_match_master'],
+                        ],
+                    ],
+                ],
+            ];
+        }
+
+        return array_values($organisationsMap);
+    }
+
+    public function totalCount(User $user): int
+    {
+        $total = 0;
+
+        foreach ($user->authorisedShops()->get() as $shop) {
+            if (!$user->authTo("products.{$shop->id}.view")) {
+                continue;
+            }
+
+            $total += $this->query($shop)->count();
+        }
+
+        return $total;
+    }
+
+    /**
+     * Products that opted out of master pricing and whose price or RRP no longer
+     * matches the master value for the product's own currency code. A drift in
+     * either one is enough; a master with no entry for that currency is skipped.
+     *
+     * Shared by the badge count and by the products index element filter, so the two
+     * can never report a different set.
+     */
+    public function applyDriftConstraints(Builder|QueryBuilder $query): void
+    {
+        $query
+            ->where('products.not_follow_master_prices', true)
+            ->where('products.is_for_sale', true)
+            ->whereNotNull('products.master_product_id')
+            ->join('master_assets', 'master_assets.id', '=', 'products.master_product_id')
+            ->join('currencies', 'currencies.id', '=', 'products.currency_id')
+            ->where(function ($query) {
+                $query
+                    ->whereRaw("jsonb_exists(master_assets.master_prices, currencies.code)
+                        AND products.price <> (master_assets.master_prices #>> ARRAY[currencies.code, 'value'])::numeric")
+                    ->orWhereRaw("jsonb_exists(master_assets.master_rrps, currencies.code)
+                        AND products.rrp <> (master_assets.master_rrps #>> ARRAY[currencies.code, 'value'])::numeric");
+            });
+    }
+
+    private function query(Shop $shop): Builder
+    {
+        $query = Product::where('products.shop_id', $shop->id);
+
+        $this->applyDriftConstraints($query);
+
+        return $query;
+    }
+}

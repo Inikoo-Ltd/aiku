@@ -8,10 +8,11 @@
 
 namespace App\Actions\SysAdmin\User;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateUsers;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Enums\SysAdmin\User\UserAuthTypeEnum;
+use App\Models\Helpers\Timezone;
 use App\Models\HumanResources\Employee;
 use App\Models\SysAdmin\Guest;
 use App\Models\SysAdmin\User;
@@ -24,7 +25,7 @@ use Illuminate\Validation\Rules\Password;
 use Illuminate\Validation\Validator;
 use Lorisleiva\Actions\ActionRequest;
 
-class StoreUser extends GrpAction
+class StoreUser extends OrgAction
 {
     private Employee|Guest $parent;
 
@@ -35,6 +36,7 @@ class StoreUser extends GrpAction
     {
         data_set($modelData, 'group_id', $parent->group_id);
         data_set($modelData, 'contact_name', $parent->contact_name);
+        data_set($modelData, 'timezone_id', $this->defaultTimezoneId($parent), overwrite: false);
 
 
         $userModelStatus = $this->get('user_model_status', Arr::get($modelData, 'status', false));
@@ -96,6 +98,18 @@ class StoreUser extends GrpAction
         return $request->user()->authTo("sysadmin.edit");
     }
 
+    /**
+     * Employees start in the timezone of the organisation they work for, guests in the
+     * application's own. Either way a user is never left without one.
+     */
+    private function defaultTimezoneId(Guest|Employee $parent): ?int
+    {
+        if ($parent instanceof Employee && $parent->organisation?->timezone_id) {
+            return $parent->organisation->timezone_id;
+        }
+
+        return Timezone::where('name', config('app.timezone'))->value('id');
+    }
 
     public function rules(): array
     {
@@ -163,7 +177,7 @@ class StoreUser extends GrpAction
         $this->hydratorsDelay = $hydratorsDelay;
         $this->parent         = $parent;
 
-        $this->initialisation($parent->group, $modelData);
+        $this->initialisationFromGroup($parent->group, $modelData);
 
         return $this->handle($parent, $this->validatedData);
     }

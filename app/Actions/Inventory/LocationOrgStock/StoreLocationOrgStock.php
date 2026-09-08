@@ -12,10 +12,10 @@ use App\Actions\Inventory\Location\Hydrators\LocationHydrateOrgStocks;
 use App\Actions\Inventory\Location\Hydrators\LocationHydrateStockValue;
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateLocations;
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateQuantityInLocations;
+use App\Actions\Inventory\OrgStock\SetOrgStockPickingLocation;
 use App\Actions\Inventory\OrgStock\Stock\CalculateOrgStockCurrentStockHistories;
 use App\Actions\Inventory\OrgStock\Stock\Concerns\CalculatesOrgStockHistories;
 use App\Actions\Inventory\OrgStockMovement\StoreOrgStockMovement;
-use App\Actions\Maintenance\Dispatching\RepairOrgStockMissingLocationIds;
 use App\Actions\OrgAction;
 use App\Enums\Inventory\LocationStock\LocationStockTypeEnum;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementTypeEnum;
@@ -28,8 +28,8 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
-use Lorisleiva\Actions\ActionRequest;
 use Illuminate\Validation\Validator;
+use Lorisleiva\Actions\ActionRequest;
 
 class StoreLocationOrgStock extends OrgAction
 {
@@ -51,13 +51,18 @@ class StoreLocationOrgStock extends OrgAction
         data_set($modelData, 'warehouse_id', $location->warehouse_id);
         data_set($modelData, 'warehouse_area_id', $location->warehouse_area_id);
         data_set($modelData, 'org_stock_id', $orgStock->id);
-        $costPerSku = $this->getCostPerSku($orgStock, Carbon::now());
+        $costPerSku = $this->getLppPerSku($orgStock, Carbon::now());
 
         if (!Arr::has($modelData, 'quantity')) {
             data_set($modelData, 'quantity', 0);
         }
 
-        $locationStock = DB::transaction(function () use ($location, $orgStock, $modelData, $costPerSku) {
+        $date = now()->format('Y-m-d H:i:s.u');
+        if (Arr::has($modelData, 'date')) {
+            $date = Arr::pull($modelData, 'date');
+        }
+
+        $locationStock = DB::transaction(function () use ($location, $orgStock, $modelData, $costPerSku, $date) {
             StoreOrgStockMovement::make()->action(
                 $orgStock,
                 $location,
@@ -66,7 +71,7 @@ class StoreLocationOrgStock extends OrgAction
                     'audited_quantity' => 0,
                     'org_amount'       => 0,
                     'grp_amount'       => 0,
-                    'date'             => now()->format('Y-m-d H:i:s.u'),
+                    'date'             => $date,
                     'type'             => OrgStockMovementTypeEnum::ASSOCIATE,
                     'cost_per_sku'     => $costPerSku,
                     'user_id'          => $this->user?->id,
@@ -79,7 +84,7 @@ class StoreLocationOrgStock extends OrgAction
             return $locationStock;
         });
 
-        RepairOrgStockMissingLocationIds::dispatch($orgStock->id)->delay(2);
+        SetOrgStockPickingLocation::dispatch($orgStock->id)->delay(2);
         OrgStockHydrateQuantityInLocations::dispatch($orgStock->id)->delay(2);
 
         LocationHydrateOrgStocks::dispatch($location)->delay($this->hydratorsDelay);
@@ -96,8 +101,9 @@ class StoreLocationOrgStock extends OrgAction
             'data'             => ['sometimes', 'array'],
             'settings'         => ['sometimes', 'array'],
             'notes'            => ['sometimes', 'nullable', 'string', 'max:255'],
-            'picking_priority' => ['sometimes', 'integer'],
+            'picking_priority' => ['sometimes', 'nullable', 'integer'],
             'type'             => ['sometimes', Rule::enum(LocationStockTypeEnum::class)],
+            'date'             => ['sometimes', 'date_format:Y-m-d H:i:s.u']
         ];
 
         if (!$this->strict) {
@@ -140,7 +146,7 @@ class StoreLocationOrgStock extends OrgAction
     {
         $this->location = $location;
         $this->orgStock = $orgStock;
-        $this->user = request()->user();
+        $this->user     = request()->user();
         $this->initialisation($orgStock->organisation, $request);
 
         $this->handle($orgStock, $location, $this->validatedData);

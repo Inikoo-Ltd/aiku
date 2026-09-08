@@ -6,6 +6,7 @@
 
 <script setup lang="ts">
 import { Link, router, useForm } from "@inertiajs/vue3"
+import { bucketQuery } from "@/Composables/bucketQuery"
 import { notify } from "@kyvg/vue3-notification"
 import Table from "@/Components/Table/Table.vue"
 import { Stock } from "@/types/stock"
@@ -26,6 +27,7 @@ import { faForklift, faCheck, faHandPaper, faUnlink } from "@fal"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import PureMultiselectInfiniteScroll from '@/Components/Pure/PureMultiselectInfiniteScroll.vue'
 import PureCheckbox from '@/Components/Pure/PureCheckbox.vue'
+import Multiselect from '@vueform/multiselect'
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import { ctrans } from "@/Composables/useTrans"
@@ -38,14 +40,21 @@ const props = defineProps<{
     tab?: string
     canMoveAllSku?:boolean,
     location_id: number,
+    transfer_reason?: {}
 }>()
 
 const layout = inject('layout', layoutStructure)
 const locale = inject("locale", aikuLocaleStructure)
 const isOpenMoveAllSku = ref(false)
-const form = useForm({
+const transferReasonOptions = computed(() => props.transfer_reason ?? {})
+const defaultReason = computed(() => Object.keys(transferReasonOptions.value)[0] ?? null)
+const key = ref(1)
+
+const form = useForm<{ location_id: number | null; remove_after_move: boolean; reason: string | null; note: string | null }>({
     location_id: null,
-    remove_after_move : false
+    remove_after_move : false,
+    reason: null,
+    note: null,
 })
 
 interface PartialMoveRow {
@@ -75,9 +84,11 @@ function onSelectRow(value: Record<string, boolean>) {
     selectedRows.value = { ...value }
 }
 
-const partialForm = useForm<{ location_id: number | null; org_stocks: PartialMoveRow[] }>({
+const partialForm = useForm<{ location_id: number | null; org_stocks: PartialMoveRow[]; reason: string | null; note: string | null }>({
     location_id: null,
     org_stocks: [],
+    reason: null,
+    note: null,
 })
 
 const isPartialMoveValid = computed(() => {
@@ -88,9 +99,16 @@ const isPartialMoveValid = computed(() => {
     return partialForm.org_stocks.every((row) => Number(row.quantity_to_move) > 0 && Number(row.quantity_to_move) <= row.available)
 })
 
+function openMoveAllSku() {
+    form.reset()
+    form.reason = defaultReason.value
+    isOpenMoveAllSku.value = true
+}
+
 function openPartialMoveSku() {
     partialForm.reset()
     partialForm.location_id = null
+    partialForm.reason = defaultReason.value
     partialForm.org_stocks = selectedStocks.value.map((stock) => ({
         org_stock_id: stock.id,
         code: stock.code,
@@ -114,6 +132,8 @@ function onSavePartialMoveSku() {
     partialForm
         .transform((data) => ({
             location_id: data.location_id,
+            reason: data.reason,
+            note: data.note,
             org_stocks: data.org_stocks.map((row) => ({
                 org_stock_id: row.org_stock_id,
                 quantity: row.quantity_to_move,
@@ -132,15 +152,16 @@ function onSavePartialMoveSku() {
                     selectedRows.value = {}
                     notify({
                         title: ctrans("Success"),
-                        text: ctrans("SKU moved successfully"),
+                        text: ctrans("SKO moved successfully"),
                         type: "success",
                     })
                     router.reload()
+                    key.value ++
                 },
                 onError: () => {
                     notify({
                         title: ctrans("Something went wrong"),
-                        text: ctrans("Failed to move SKU"),
+                        text: ctrans("Failed to move SKO"),
                         type: "error",
                     })
                 },
@@ -161,14 +182,14 @@ function onSaveMoveAllSku() {
                 form.reset()
                 notify({
                     title: ctrans("Success"),
-                    text: ctrans("All SKU moved successfully"),
+                    text: ctrans("All SKO moved successfully"),
                     type: "success",
                 })
             },
             onError: () => {
                 notify({
                     title: ctrans("Something went wrong"),
-                    text: ctrans("Failed to move all SKU"),
+                    text: ctrans("Failed to move all SKO"),
                     type: "error",
                 })
             },
@@ -182,6 +203,12 @@ function onCancelMoveAllSku() {
 
 const routeCurrent = route().current()
 const routeParams = route().params as RouteParams
+
+function orgStockHref(orgStock: OrgStock) {
+    const bucket = routeCurrent?.match(/\.org_stocks\.(\w+)_org_stocks\.index$/)?.[1]
+
+    return orgStockRoute(orgStock) + bucketQuery(bucket)
+}
 
 function orgStockRoute(orgStock: OrgStock) {
     const current = routeCurrent
@@ -321,10 +348,10 @@ const orgStockRouteProductIndex = (orgStock: OrgStock) => {
 </script>
 
 <template>
-    <Table :resource="data" :name="tab" class="mt-5" :isCheckBox="canMoveAllSku" @onSelectRow="onSelectRow">
+    <Table :resource="data" :name="tab" class="mt-5" :isCheckBox="canMoveAllSku" @onSelectRow="onSelectRow" :key="key">
           <template #add-on-button v-if="canMoveAllSku">
-                <Button :label="ctrans('Move All SKU')" type="white" :icon="faForklift" size="xs" @click="isOpenMoveAllSku = true"></Button>
-                <Button v-if="hasSelection" :label="ctrans('Partialy Move SKU')" type="white" :icon="faForklift" size="xs" @click="openPartialMoveSku"></Button>
+                <Button :label="ctrans('Move All SKO')" type="white" :icon="faForklift" size="xs" @click="openMoveAllSku"></Button>
+                <Button v-if="hasSelection" :label="ctrans('Partialy Move SKO')" type="white" :icon="faForklift" size="xs" @click="openPartialMoveSku"></Button>
           </template>
         <template #cell(state)="{ item: stock }">
             <Icon :data="stock.state"></Icon>
@@ -333,13 +360,13 @@ const orgStockRouteProductIndex = (orgStock: OrgStock) => {
             <FontAwesomeIcon v-if="stock.type" :icon="stock.type == 'picking' ? faCheck : faHandPaper  " :data="stock.type"></FontAwesomeIcon>
         </template>
         <template #cell(org_sku)="{ item: stock }">
-            <Link :href="orgStockRoute(stock) as string" class="primaryLink">
+            <Link :href="orgStockHref(stock) as string" class="primaryLink">
                 {{ stock["organisation_code"] }}
             </Link>
         </template>
 
         <template #cell(code)="{ item: stock }">
-            <Link :href="orgStockRoute(stock) as string" class="primaryLink">
+            <Link :href="orgStockHref(stock) as string" class="primaryLink">
                 {{ stock["code"] }}
             </Link>
         </template>
@@ -406,19 +433,36 @@ const orgStockRouteProductIndex = (orgStock: OrgStock) => {
             <span class="tabular-nums">{{ locale.currencyFormat(item.currency_code, item.stock_value) }}</span>
         </template>
 
-        <template #cell(sales_grp_currency_external)="{ item }">
-            <span class="tabular-nums">{{ locale.currencyFormat(item.currency_code, item.sales_grp_currency_external) }}</span>
+        <template #cell(potential_sales)="{ item }">
+            <span class="tabular-nums">{{ locale.currencyFormat(item.currency_code, item.potential_sales) }}</span>
         </template>
 
-        <template #cell(sales_grp_currency_external_delta)="{ item }">
-            <div v-if="item.sales_grp_currency_external_delta">
-                <span>{{ item.sales_grp_currency_external_delta.formatted }}</span>
+        <template #cell(stock_cover)="{ item }">
+            <span v-if="item.stock_cover !== null" class="tabular-nums whitespace-nowrap">{{ item.stock_cover.toFixed(1) }} mo</span>
+            <span v-else class="text-gray-400">-</span>
+        </template>
+
+        <template #cell(sales_org_currency_external)="{ item }">
+            <span class="tabular-nums">{{ locale.currencyFormat(item.currency_code, item.sales_org_currency_external) }}</span>
+        </template>
+
+        <template #cell(gross_profit)="{ item }">
+            <span
+                v-tooltip="item.gross_profit_percentage !== null ? `${item.gross_profit_percentage}%` : undefined"
+                class="tabular-nums"
+                :class="item.gross_profit_percentage !== null ? 'cursor-help' : ''"
+            >{{ locale.currencyFormat(item.currency_code, item.gross_profit) }}</span>
+        </template>
+
+        <template #cell(sales_org_currency_external_delta)="{ item }">
+            <div v-if="item.sales_org_currency_external_delta">
+                <span>{{ item.sales_org_currency_external_delta.formatted }}</span>
                 <FontAwesomeIcon
-                    :icon="getIntervalChangesIcon(item.sales_grp_currency_external_delta.is_positive)?.icon"
+                    :icon="getIntervalChangesIcon(item.sales_org_currency_external_delta.is_positive)?.icon"
                     class="text-xxs md:text-sm"
                     :class="[
-                        getIntervalChangesIcon(item.sales_grp_currency_external_delta.is_positive).class,
-                        getIntervalStateColor(item.sales_grp_currency_external_delta.is_positive),
+                        getIntervalChangesIcon(item.sales_org_currency_external_delta.is_positive).class,
+                        getIntervalStateColor(item.sales_org_currency_external_delta.is_positive),
                     ]"
                     fixed-width
                     aria-hidden="true"
@@ -466,8 +510,16 @@ const orgStockRouteProductIndex = (orgStock: OrgStock) => {
             <span class="tabular-nums">{{ locale.number(item.quantity_in_locations) }}</span>
         </template>
 
-        <template #cell(org_stock_value)="{ item }">
-            <span v-if="item.org_stock_value">{{ locale.currencyFormat(item.currency_code, item.org_stock_value) }}</span>
+        <template #cell(org_stock_lpp_value)="{ item }">
+            <span v-if="item.org_stock_lpp_value">{{ locale.currencyFormat(item.currency_code, item.org_stock_lpp_value) }}</span>
+        </template>
+
+        <template #cell(org_stock_wac_value)="{ item }">
+            <span v-if="item.org_stock_wac_value != null">{{ locale.currencyFormat(item.currency_code, item.org_stock_wac_value) }}</span>
+        </template>
+
+        <template #cell(org_stock_fifo_value)="{ item }">
+            <span v-if="item.org_stock_fifo_value != null">{{ locale.currencyFormat(item.currency_code, item.org_stock_fifo_value) }}</span>
         </template>
 
         <template #cell(sold_within_1y)="{ item }">
@@ -487,10 +539,10 @@ const orgStockRouteProductIndex = (orgStock: OrgStock) => {
                             locationOrgStock: stock.location_org_stock_id
                         },
                     }"
-                    :title="ctrans('Are you sure you want to unlink this SKU from the location?')"
+                    :title="ctrans('Are you sure you want to unlink this SKO from the location?')"
                     :description="ctrans(':qty stock will be removed and marked as lost!', { qty: locale.number(Number(stock.quantity)) })"
                     isFullLoading
-                    :noLabel="ctrans('Yes, unlink SKU :code', { code: stock.code })"
+                    :noLabel="ctrans('Yes, unlink SKO :code', { code: stock.code })"
                     noIcon="fal fa-unlink"
                 >
                     <template #default="{ changeModel, isLoadingdelete }">
@@ -512,7 +564,7 @@ const orgStockRouteProductIndex = (orgStock: OrgStock) => {
     </Table>
 
     <Dialog
-        :header="ctrans('Move All SKU')"
+        :header="ctrans('Move All SKO')"
         v-model:visible="isOpenMoveAllSku"
         modal
         closable
@@ -538,6 +590,30 @@ const orgStockRouteProductIndex = (orgStock: OrgStock) => {
                 <PureCheckbox v-model="form.remove_after_move" />
                 <span>{{ ctrans('Remove after move') }}</span>
             </label>
+
+            <div class="mt-4">
+                <label class="block mb-1 text-sm text-gray-600">{{ ctrans('Transfer Reason') }}</label>
+                <Multiselect
+                    v-model="form.reason"
+                    :options="transferReasonOptions"
+                    :placeholder="ctrans('Select your reason')"
+                    :canClear="false"
+                    mode="single"
+                    :closeOnSelect="true"
+                    :canDeselect="false"
+                    :searchable="true"
+                />
+            </div>
+
+            <div class="mt-4">
+                <label class="block mb-1 text-sm text-gray-600">{{ ctrans('Note') }}</label>
+                <textarea
+                    v-model.trim="form.note"
+                    :rows="2"
+                    :placeholder="ctrans('Add a note (Optional)')"
+                    class="block w-full rounded-md border-gray-300 placeholder:text-gray-400 shadow-sm focus:ring-indigo-500 sm:text-sm"
+                />
+            </div>
         </div>
 
         <template #footer>
@@ -549,7 +625,7 @@ const orgStockRouteProductIndex = (orgStock: OrgStock) => {
     </Dialog>
 
     <Dialog
-        :header="ctrans('Partialy Move SKU')"
+        :header="ctrans('Partialy Move SKO')"
         v-model:visible="isOpenPartialMove"
         modal
         closable
@@ -572,6 +648,31 @@ const orgStockRouteProductIndex = (orgStock: OrgStock) => {
                     labelProp="code"
                     :placeholder="ctrans('Select a location')"
                 />
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block mb-1 text-sm text-gray-600">{{ ctrans('Transfer Reason') }}</label>
+                    <Multiselect
+                        v-model="partialForm.reason"
+                        :options="transferReasonOptions"
+                        :placeholder="ctrans('Select your reason')"
+                        :canClear="false"
+                        mode="single"
+                        :closeOnSelect="true"
+                        :canDeselect="false"
+                        :searchable="true"
+                    />
+                </div>
+                <div>
+                    <label class="block mb-1 text-sm text-gray-600">{{ ctrans('Note') }}</label>
+                    <textarea
+                        v-model.trim="partialForm.note"
+                        :rows="2"
+                        :placeholder="ctrans('Add a note (Optional)')"
+                        class="block w-full rounded-md border-gray-300 placeholder:text-gray-400 shadow-sm focus:ring-indigo-500 sm:text-sm"
+                    />
+                </div>
             </div>
 
             <DataTable :value="partialForm.org_stocks" class="border border-gray-200 rounded-md" scrollable scrollHeight="360px">

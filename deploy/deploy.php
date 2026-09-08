@@ -8,6 +8,21 @@
 
 namespace Deployer;
 
+// Default is 300s; the octane-anchor rsync of a full release is disk-bound and
+// can exceed that on the HDD staging box (esp. during RAID resync). Harmless on
+// fast prod hosts — only allows a slow command to finish instead of being killed.
+set('default_timeout', 2400);
+
+// Added on top of the -A and ControlMaster options deployer builds from
+// forward_agent/ssh_multiplexing. A task that runs silent for minutes (composer's
+// autoload dump, the anchor rsync) leaves the channel idle long enough to be
+// dropped, which surfaces as "exit code -1 (Unknown error)". 30s probes, giving up
+// after 10 minutes unanswered.
+set('ssh_arguments', [
+    '-o ServerAliveInterval=30',
+    '-o ServerAliveCountMax=20',
+]);
+
 set('update_code_strategy', 'clone');
 
 set('bin/php', function () {
@@ -60,6 +75,11 @@ task('deploy:migrate', function () {
     artisan('migrate --force', ['skipIfNoEnv', 'showOutput'])();
 });
 
+desc('Stop active cache warming crawls early in deployment');
+task('deploy:stop-crawls', function () {
+    artisan('crawl:stop', ['skipIfNoEnv', 'showOutput'])();
+})->select('env=prod')->once();
+
 
 desc('Modified npm:install');
 task('npm:my_install', function () {
@@ -69,8 +89,26 @@ task('npm:my_install', function () {
 desc('🏗️ Build vue app');
 task('deploy:build', function () {
     $frontEndChanged = get('front_end_changed');
+    if (!$frontEndChanged) {
+        $requiredArtifacts = [
+            '{{previous_release}}/public/retina',
+            '{{previous_release}}/public/iris/assets',
+            '{{previous_release}}/public/grp',
+            '{{previous_release}}/public/pupil',
+            '{{previous_release}}/public/aiku-public',
+            '{{previous_release}}/bootstrap/ssr',
+        ];
+        foreach ($requiredArtifacts as $artifact) {
+            if (!test("[ -d $artifact ]")) {
+                writeln("Previous release is missing $artifact (failed/cancelled/first deploy). Forcing build.");
+                $frontEndChanged = true;
+                set('front_end_changed', true);
+                break;
+            }
+        }
+    }
     if ($frontEndChanged) {
-        run("cd {{release_path}} && {{bin/npm}} run build");
+        run("cd {{release_path}} && NODE_OPTIONS=--max-old-space-size=8192 {{bin/npm}} run build");
         run(
             'for dir in retina iris grp pupil aiku-public; do '
             .'if [ -d {{previous_release}}/public/$dir/assets ]; then '
@@ -92,13 +130,63 @@ task('deploy:build', function () {
 
 desc('Set release');
 task('deploy:set-release', function () {
+    // sed -i replaces the shared .env symlink with a per-release regular file (the
+    // symlink is left behind as .env~). Deliberate, do not "fix" with
+    // --follow-symlinks: it is what lets a live release be tuned in place
+    // (horizon workers and the like) while shared/.env stays the baseline the next
+    // deploy resets to. The cost is that shared/.env edits land one deploy later.
     run("cd {{release_path}} && sed -i~ '/^RELEASE=/s/=.*/=\"{{release_semver}}\"/' .env   ");
 });
 
 
 desc('Sync octane anchor');
 task('deploy:sync-octane-anchor', function () {
+    // Runs silent for 16+ minutes on the staging HDD (158k files, ~670kB/s). The ssh
+    // keepalives set at the top of this file are what keeps the channel from being
+    // dropped underneath it — don't add progress output for that, it costs ~100k lines
+    // of CI log per deploy.
     run("rsync -ahHq --delete {{release_path}}/ {{deploy_path}}/anchor/octane");
+});
+
+desc('Restart the NightOwl agent so it picks up the synced anchor');
+task('deploy:restart-owl', function () {
+    // The agent is a daemon: sync-octane-anchor replaces the code on disk but the
+    // running process keeps serving the previous release from memory. Nothing else
+    // in the deploy signals it, so without this it runs stale until it happens to
+    // die. Non-fatal like the other supervisorctl calls — a box where the program
+    // is not installed must not fail the deploy.
+    //
+    // Gated on the agent's own code and config, because the restart is not free:
+    // it closes the listener on 127.0.0.1:2407, and every process shipping
+    // telemetry in that window logs a MultiIngest connection-refused and drops its
+    // batch. Nothing crashes (MultiIngest swallows transport failures on every path
+    // but ping()), but the telemetry is gone. Nothing else in the deploy reaches
+    // the daemon: it boots Laravel once at startup and its runtime is its own
+    // classes over raw PDO, so an unchanged package plus an unchanged config means
+    // an unchanged process. Its own VersionDriftWatcher warns if this ever misses.
+    $checksum = function (string $path): string {
+        $cmd = 'find '.$path.'/vendor/nightowl/agent '.$path.'/config/nightowl.php'
+            .' -type f -exec sha1sum {} + 2>/dev/null | cut -d" " -f1 | sort | sha1sum';
+
+        try {
+            return trim(run("bash -c '".$cmd."'"));
+        } catch (\Throwable $e) {
+            writeln('Error computing NightOwl agent checksum: '.$e->getMessage());
+
+            return '';
+        }
+    };
+
+    $current  = $checksum('{{release_path}}');
+    $previous = has('previous_release') ? $checksum('{{previous_release}}') : '';
+
+    if ($current !== '' && $current === $previous) {
+        writeln('NightOwl agent unchanged. Skipping restart.');
+
+        return;
+    }
+
+    run("bash -c 'sudo /usr/bin/supervisorctl restart aiku-owl || true'");
 });
 
 desc('Stops inertia SSR server');
@@ -113,7 +201,11 @@ desc('Refresh vue after deployment');
 task('deploy:refresh-vue', function () {
     $frontEndChanged = get('front_end_changed');
     if ($frontEndChanged) {
-        invoke('artisan:refresh_vue');
+        try {
+            invoke('artisan:refresh_vue');
+        } catch (\Throwable $e) {
+            writeln('<comment>refresh_vue broadcast skipped (soketi unreachable): '.$e->getMessage().'</comment>');
+        }
     } else {
         writeln('Skipping refresh vue: no changes detected');
     }
@@ -121,16 +213,24 @@ task('deploy:refresh-vue', function () {
 
 desc('Reload octane after deployment');
 task('artisan:octane:reload', function () {
-    artisan('octane:reload', ['skipIfNoEnv', 'showOutput'])();
-})->select('env=prod');
+    // Non-fatal: if octane isn't running (fresh box / supervisor will start it),
+    // reload has nothing to signal — don't fail the whole deploy over it.
+    try {
+        artisan('octane:reload', ['skipIfNoEnv', 'showOutput'])();
+    } catch (\Throwable $e) {
+        writeln('<comment>octane:reload skipped: '.$e->getMessage().'</comment>');
+    }
+});
 
 desc('Save ssr checksums');
 task('deploy:save-ssr-checksums', function () {
-    $manifestPath = '{{release_path}}/bootstrap/ssr/ssr-manifest.json';
-    $irisPath     = '{{release_path}}/bootstrap/ssr/ssr-iris.mjs';
+    $manifestPath       = '{{release_path}}/bootstrap/ssr/ssr-manifest.json';
+    $irisPath           = '{{release_path}}/bootstrap/ssr/ssr-iris.mjs';
+    $clientManifestPath = '{{release_path}}/public/iris/manifest.json';
 
-    $manifestChecksum = '';
-    $irisChecksum     = '';
+    $manifestChecksum       = '';
+    $irisChecksum           = '';
+    $clientManifestChecksum = '';
 
     try {
         if (test('[ -f '.$manifestPath.' ]')) {
@@ -152,10 +252,26 @@ task('deploy:save-ssr-checksums', function () {
         writeln('Error computing iris checksum: '.$e->getMessage());
     }
 
-    // Combine both checksums and write a single checksum file
-    $combined = hash('sha256', $manifestChecksum.'|'.$irisChecksum);
+    try {
+        if (test('[ -f '.$clientManifestPath.' ]')) {
+            $clientManifestChecksum = trim(run("sha256sum $clientManifestPath | awk '{print $1}'"));
+        } else {
+            writeln("Warning: $clientManifestPath not found");
+        }
+    } catch (\Throwable $e) {
+        writeln('Error computing client manifest checksum: '.$e->getMessage());
+    }
 
     $checksumFile = '{{release_path}}/SSR_CHECKSUM';
+
+    if ($manifestChecksum === '' || $irisChecksum === '' || $clientManifestChecksum === '') {
+        writeln('One or more SSR checksum components missing; not writing SSR_CHECKSUM so downstream tasks err on flushing/restarting.');
+        run('rm -f '.$checksumFile);
+
+        return;
+    }
+
+    $combined = hash('sha256', $manifestChecksum.'|'.$irisChecksum.'|'.$clientManifestChecksum);
     run('printf %s '.escapeshellarg($combined).' > '.$checksumFile);
     writeln('SSR checksum saved to '.$checksumFile);
 });
@@ -195,10 +311,8 @@ task(
 
         $shouldFlush = false;
 
-        $frontEndChanged = get('front_end_changed');
-
-        if ($previous === '' || $current === '' || $previous !== $current || $frontEndChanged) {
-            $shouldFlush = true; // missing values, err on flushing
+        if ($previous === '' || $current === '' || $previous !== $current) {
+            $shouldFlush = true;
         }
 
         if ($shouldFlush) {
@@ -208,15 +322,13 @@ task(
             run('cd {{release_path}} && pwd && ./restart_varnish.sh');
             if (currentHost()->get('environment') === 'production' && currentHost()->getAlias() !== 'aiku') {
                 run('sleep 2');
-                artisan('crawl -d 2 --deployment --seeder', ['skipIfNoEnv', 'showOutput'])();
-                run('sleep 10');
-                artisan('crawl -d 3 --deployment', ['skipIfNoEnv', 'showOutput'])();
+                artisan('crawl --deployment', ['skipIfNoEnv', 'showOutput'])();
             }
         } else {
             writeln('SSR checksum unchanged. Skipping Varnish cache flush.');
         }
     }
-)->select('env=prod');
+);
 
 desc('Restart Inertia SSR by supervisorctl');
 task('deploy:restart-ssr-by-supervisorctl', function () {
@@ -250,9 +362,7 @@ task('deploy:restart-ssr-by-supervisorctl', function () {
 
     $shouldRestartSSR = false;
 
-    $frontEndChanged = get('front_end_changed');
-
-    if ($previous === '' || $current === '' || $previous !== $current || $frontEndChanged) {
+    if ($previous === '' || $current === '' || $previous !== $current) {
         $shouldRestartSSR = true;
     }
 
@@ -282,6 +392,19 @@ task('deploy:restart-ssr-by-supervisorctl', function () {
     }
 
     /*
+     * The port is baked into the bundle at build time from VITE_INERTIA_SSR_PORT
+     * (resources/js/ssr-iris.js), and staging does not use production's port, so
+     * read it from the release .env rather than assuming 13714.
+     */
+    $ssrPort = trim(run(
+        "cd {{release_path}} && (grep -E '^VITE_INERTIA_SSR_PORT=' .env || true)"
+        ." | head -1 | cut -d= -f2 | tr -d '\"'"
+    ));
+    if ($ssrPort === '') {
+        $ssrPort = '13714';
+    }
+
+    /*
      * Always verify the SSR server answers, even when no restart was needed:
      * supervisor can report RUNNING while the port is dead, and a daemon that
      * died between deploys would otherwise stay dead through every
@@ -289,24 +412,28 @@ task('deploy:restart-ssr-by-supervisorctl', function () {
      */
     $health = run(
         "bash -c 'for i in \$(seq 1 15); do "
-        ."curl -fsS -m 2 http://127.0.0.1:13714/health >/dev/null 2>&1 && { echo OK; exit 0; }; "
+        ."curl -fsS -m 2 http://127.0.0.1:$ssrPort/health >/dev/null 2>&1 && { echo OK; exit 0; }; "
         ."sleep 2; done; echo DEAD; exit 0'"
     );
     if (!str_contains($health, 'OK')) {
         run("bash -c 'sudo /usr/bin/supervisorctl restart inertia-ssr-production || true'");
         $health = run(
             "bash -c 'for i in \$(seq 1 15); do "
-            ."curl -fsS -m 2 http://127.0.0.1:13714/health >/dev/null 2>&1 && { echo OK; exit 0; }; "
+            ."curl -fsS -m 2 http://127.0.0.1:$ssrPort/health >/dev/null 2>&1 && { echo OK; exit 0; }; "
             ."sleep 2; done; echo DEAD; exit 0'"
         );
     }
     writeln('SSR health on '.currentHost()->getAlias().': '.$health);
     if (!str_contains($health, 'OK')) {
-        throw new \RuntimeException('Inertia SSR server is not answering on 127.0.0.1:13714 on host '.currentHost()->getAlias());
+        throw new \RuntimeException('Inertia SSR server is not answering on 127.0.0.1:'.$ssrPort.' on host '.currentHost()->getAlias());
     }
-})->select('env=prod');
+})->select('env=prod|staging');
 
-set('keep_releases', 25);
+set('keep_releases', function () {
+    // helio's horizon workers run with --max-time=0 and stay pinned to the release
+    // they started in, so 2 was deleting a release that was still live.
+    return currentHost()->getAlias() === 'aiku_helio' ? 4 : 20;
+});
 
 set('shared_dirs', ['storage', 'private', 'local_storage']);
 set('shared_files', [
@@ -371,12 +498,37 @@ task('deploy:translations:setup-guess-language', function () {
 });
 
 
+desc('Index engineering notes into Typesense');
+task('deploy:aiku-public:index-notes', function () {
+    try {
+        artisan('aiku-public:index-notes', ['skipIfNoEnv', 'showOutput'])();
+    } catch (\Throwable $e) {
+        writeln('<comment>aiku-public:index-notes skipped: '.$e->getMessage().'</comment>');
+    }
+});
+
+desc('Submit public URLs to IndexNow');
+task('deploy:aiku-public:indexnow', function () {
+    try {
+        artisan('aiku-public:indexnow', ['skipIfNoEnv', 'showOutput'])();
+    } catch (\Throwable $e) {
+        writeln('<comment>aiku-public:indexnow skipped: '.$e->getMessage().'</comment>');
+    }
+});
+
+
+desc('Strip node_modules from all but the 5 newest releases');
+task('deploy:prune-node-modules', function () {
+    run("ls -1t {{deploy_path}}/releases | tail -n +6 | while read r; do rm -rf \"{{deploy_path}}/releases/\$r/node_modules\"; done");
+});
+
 desc('Deploys your project');
 task('deploy', [
     'deploy:unlock',
     'debug:writable',
     'deploy:prepare',
     'deploy:vendors',
+    'deploy:stop-crawls',
     'deploy:set-release',
     'artisan:storage:link',
     'artisan:config:cache',
@@ -388,12 +540,43 @@ task('deploy', [
     'deploy:build',
     'deploy:save-ssr-checksums',
     'deploy:publish',
+    'deploy:prune-node-modules',
     'artisan:horizon:terminate',
     'deploy:sync-octane-anchor',
+    'deploy:restart-owl',
     'artisan:octane:reload',
     'deploy:restart-ssr-by-supervisorctl',
+    'deploy:log-app-deployment',
     'deploy:refresh-vue',
     'deploy:flush-varnish',
-    'deploy:log-app-deployment',
     'deploy:translations:setup-guess-language',
+    'deploy:aiku-public:index-notes',
+    'deploy:aiku-public:indexnow',
 ]);
+
+// ponytail: same as the stock cleanup, plus two things it lacks. A release is
+// skipped while any process still has its cwd inside it -- horizon workers and
+// crons keep running from the release they started in, and rm there deletes the
+// shared-storage symlink, which the live app instantly recreates as a real
+// directory (ENOTEMPTY, and feeds written into a dead release). And a release
+// that cannot be removed warns instead of failing the whole deploy at its last
+// task.
+task('deploy:cleanup', function () {
+    run('cd {{deploy_path}} && if [ -e release ]; then rm release; fi');
+
+    $keep = (int) get('keep_releases');
+    if ($keep <= 0) {
+        return;
+    }
+
+    foreach (array_slice(get('releases_list'), $keep) as $release) {
+        $path = '{{deploy_path}}/releases/'.$release;
+        $busy = trim(run("bash -c 'ls -l /proc/*/cwd 2>/dev/null | grep -c \"$(readlink -f $path)\"' || true"));
+        if ($busy !== '0' && $busy !== '') {
+            writeln("<comment>Keeping release $release: $busy process(es) still running from it.</comment>");
+            continue;
+        }
+
+        run("rm -rf $path || echo 'could not remove release $release'");
+    }
+});

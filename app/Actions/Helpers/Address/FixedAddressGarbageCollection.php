@@ -27,8 +27,13 @@ class FixedAddressGarbageCollection
             return null;
         }
 
-        $inUse = DB::table('model_has_fixed_addresses')
-            ->where('address_id', $address->id)->exists();
+        /**
+         * Both pivots have to be clear. An address can be pinned to an order and, at the same
+         * time, held by the customer it belongs to; deleting it from under the customer is what
+         * the foreign key was catching.
+         */
+        $inUse = DB::table('model_has_fixed_addresses')->where('address_id', $address->id)->exists()
+            || DB::table('model_has_addresses')->where('address_id', $address->id)->exists();
 
         if (!$inUse) {
             try {

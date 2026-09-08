@@ -56,8 +56,10 @@ class FetchAuroraSupplierProduct extends FetchAurora
         $tradeUnit = $this->parseTradeUnit($tradeUnitSlug, $auroraPartData->{'Part SKU'});
 
         if (!$tradeUnit) {
-            print "NO TRADE UNIT WTF";
-            dd($this->auroraModelData);
+            print "Skipped supplier part ".$this->auroraModelData->{'Supplier Part Reference'}." (".$this->auroraModelData->{'Supplier Part Key'}."): no trade unit for part SKU ".$this->auroraModelData->{'Supplier Part Part SKU'}."\n";
+            $this->parsedData = null;
+
+            return;
         }
 
         $this->parsedData['trade_unit'] = $tradeUnit;
@@ -123,7 +125,7 @@ class FetchAuroraSupplierProduct extends FetchAurora
             [
                 'code'                  => $supplierProductCode,
                 'name'                  => $name,
-                'cost'                  => round($this->auroraModelData->{'Supplier Part Unit Cost'} ?? 0, 2),
+                'cost'                  => $this->auroraModelData->{'Supplier Part Unit Cost'} ?? 0,
                 'units_per_pack'        => $auroraPartData->{'Part Units Per Package'},
                 'units_per_carton'      => $this->auroraModelData->{'Supplier Part Packages Per Carton'} * $auroraPartData->{'Part Units Per Package'},
                 'is_available'          => $isAvailable,
@@ -136,7 +138,10 @@ class FetchAuroraSupplierProduct extends FetchAurora
                 'source_id'             => $this->organisation->id.':'.$this->auroraModelData->{'Supplier Part Key'},
                 'fetched_at'            => now(),
                 'last_fetched_at'       => now(),
-                'extra_costs'           => $this->auroraModelData->{'Supplier Part Unit Extra Cost Percentage'} ?? 0
+                'extra_costs'           => $this->auroraModelData->{'Supplier Part Unit Extra Cost Percentage'} ?? 0,
+                'minimum_carton_order'  => $this->auroraModelData->{'Supplier Part Minimum Carton Order'} ?? null,
+                'delivery_time'         => $this->auroraModelData->{'Supplier Part Average Delivery Days'} ?? null,
+                'unit_expense'          => $this->auroraModelData->{'Supplier Part Unit Expense'} ?? null,
             ];
 
 

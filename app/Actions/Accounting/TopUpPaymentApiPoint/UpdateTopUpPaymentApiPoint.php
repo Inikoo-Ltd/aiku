@@ -10,6 +10,7 @@ namespace App\Actions\Accounting\TopUpPaymentApiPoint;
 
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
+use Illuminate\Support\Arr;
 use App\Models\Accounting\TopUpPaymentApiPoint;
 
 class UpdateTopUpPaymentApiPoint extends RetinaAction
@@ -19,7 +20,14 @@ class UpdateTopUpPaymentApiPoint extends RetinaAction
 
     public function handle(TopUpPaymentApiPoint $topUpPaymentApiPoint, array $modelData): TopUpPaymentApiPoint
     {
+        if ($dataPayload = Arr::pull($modelData, 'data')) {
+            $topUpPaymentApiPoint->update([
+                'data' => array_merge($topUpPaymentApiPoint->data ?? [], $dataPayload)
+            ]);
+        }
+
         $this->update($topUpPaymentApiPoint, $modelData);
+
         return $topUpPaymentApiPoint;
     }
 

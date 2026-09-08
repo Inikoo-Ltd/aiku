@@ -44,7 +44,6 @@ class StoreMasterVariant extends OrgAction
             // Initialize aggregates/relations
             $masterVariant->stats()->create();
             $masterVariant->orderingStats()->create();
-            $masterVariant->orderingIntervals()->create();
             foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
                 $masterVariant->timeSeries()->create(['frequency' => $frequency]);
             }
@@ -70,7 +69,7 @@ class StoreMasterVariant extends OrgAction
                 }
 
                 $shop = $productCategory->shop;
-                $productsCode = $productCategory->getProducts()->whereIn('code', $masterProductsCode)->pluck('code');
+                $productsCode = $productCategory->getProducts()->whereIn('code', $masterProductsCode)->unique('code')->pluck('code');
                 $missingProducts = array_diff($masterProductsCode, $productsCode->toArray());
 
                 foreach ($missingProducts as $productCode) {

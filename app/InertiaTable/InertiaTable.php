@@ -19,13 +19,22 @@ class InertiaTable
     private Collection $columns;
     private Collection $searchInputs;
     private Collection $elementGroups;
+    private Collection $additionalElementGroups;
     private Collection $radioFilter;
     private array $periodFilters;
     private Collection $filters;
     private string $defaultSort = '';
 
     private array $title = [];
+    private ?string $footerNote = null;
+
+    /**
+     * Optional link rendered next to the footer note, as ['label' => ..., 'href' => ...].
+     */
+    private ?array $footerNoteAction = null;
+    private ?string $headerNote = null;
     private array $betweenDates = [];
+    private ?array $offerFilter = null;
     private ?DateIntervalEnum $dateInterval;
     private bool $withFrequency = false;
 
@@ -41,19 +50,20 @@ class InertiaTable
 
     public function __construct(Request $request)
     {
-        $this->request         = $request;
-        $this->periodFilters   = [];
-        $this->columns         = new Collection();
-        $this->searchInputs    = new Collection();
-        $this->elementGroups   = new Collection();
-        $this->radioFilter     = new Collection();
-        $this->filters         = new Collection();
-        $this->modelOperations = new Collection();
-        $this->exportLinks     = new Collection();
-        $this->emptyState      = new Collection();
-        $this->labelRecord     = [];
-        $this->footerRows      = null;
-        $this->dateInterval    = null;
+        $this->request                  = $request;
+        $this->periodFilters            = [];
+        $this->columns                  = new Collection();
+        $this->searchInputs             = new Collection();
+        $this->elementGroups            = new Collection();
+        $this->additionalElementGroups  = new Collection();
+        $this->radioFilter              = new Collection();
+        $this->filters                  = new Collection();
+        $this->modelOperations          = new Collection();
+        $this->exportLinks              = new Collection();
+        $this->emptyState               = new Collection();
+        $this->labelRecord              = [];
+        $this->footerRows               = null;
+        $this->dateInterval             = null;
 
         if (static::$defaultGlobalSearch !== false) {
             $this->withGlobalSearch(static::$defaultGlobalSearch);
@@ -123,6 +133,15 @@ class InertiaTable
     public function betweenDates(array $betweenDates): self
     {
         $this->betweenDates = $betweenDates;
+
+        return $this;
+    }
+
+    public function offerFilter(?string $label = null): self
+    {
+        $this->offerFilter = [
+            'label' => $label ?: __('Filter by offers'),
+        ];
 
         return $this;
     }
@@ -210,6 +229,7 @@ class InertiaTable
             'pageName'                        => $this->pageName,
             'perPageOptions'                  => $this->perPageOptions,
             'elementGroups'                   => $this->transformElementGroups(),
+            'additionalElementGroups'         => $this->transformAdditionalElementGroups(),
             'radioFilter'                     => $this->transformRadioFilter(),
             'period_filter'                   => $this->transformPeriodFilters(),
             'modelOperations'                 => $this->modelOperations,
@@ -218,7 +238,12 @@ class InertiaTable
             'labelRecord'                     => $this->labelRecord,
             'title'                           => $this->title,
             'footerRows'                      => $this->footerRows,
+            'footerNote'                      => $this->footerNote,
+            'footerNoteAction'                => $this->footerNoteAction,
+            'headerNote'                      => $this->headerNote,
             'betweenDates'                    => $this->betweenDates,
+            'betweenDatesValue'               => null,
+            'offerFilter'                     => $this->offerFilter,
             'dateInterval'                    => $this->dateInterval,
             'withFrequency'                   => $this->withFrequency,
         ];
@@ -274,6 +299,20 @@ class InertiaTable
     protected function transformElementGroups(): Collection
     {
         $elementGroups = $this->elementGroups;
+        $queryElements = $this->query('elements', []);
+
+        return $elementGroups->map(function (ElementGroup $elementGroup) use ($queryElements) {
+            if (array_key_exists($elementGroup->key, $queryElements)) {
+                $elementGroup->values = explode(',', $queryElements[$elementGroup->key]);
+            }
+
+            return $elementGroup;
+        });
+    }
+
+    protected function transformAdditionalElementGroups(): Collection
+    {
+        $elementGroups = $this->additionalElementGroups;
         $queryElements = $this->query('elements', []);
 
         return $elementGroups->map(function (ElementGroup $elementGroup) use ($queryElements) {
@@ -360,6 +399,30 @@ class InertiaTable
         return $this;
     }
 
+    public function additionalElementGroup(string $key, array|string $label, array $elements, ?string $default = null): self
+    {
+        if (is_string($label)) {
+            $label = $label ?: Str::headline($key);
+            $key   = $key ?: Str::kebab($label);
+        } else {
+            $key = $key ?: Str::kebab($label['tooltip']);
+        }
+
+
+        $this->additionalElementGroups->put(
+            $key,
+            new ElementGroup(
+                key: $key,
+                label: $label,
+                elements: $elements,
+                default: $default,
+            )
+        );
+
+
+        return $this;
+    }
+
     public function periodFilters(array $elements): self
     {
         $result = [];
@@ -408,7 +471,8 @@ class InertiaTable
         ?string $type = null,
         ?string $align = null,
         ?string $className = null,
-        bool $isInterval = false
+        bool $isInterval = false,
+        bool $tooltipIcon = false
     ): self {
         $this->columns = $this->columns->reject(function (Column $column) use ($key) {
             return $column->key === $key;
@@ -426,7 +490,8 @@ class InertiaTable
                 type: $type,
                 align: $align,
                 className: $className,
-                isInterval: $isInterval
+                isInterval: $isInterval,
+                tooltipIcon: $tooltipIcon
             )
         )->values();
 
@@ -483,6 +548,28 @@ class InertiaTable
     public function withLabelRecord(?array $labelRecord = null): self
     {
         $this->labelRecord = $labelRecord;
+
+        return $this;
+    }
+
+    /**
+     * Small grey note under the table, for caveats that would otherwise clutter every
+     * column header (currency of the figures, cut-off dates, valuation method, ...).
+     */
+    public function withFooterNote(?string $footerNote, ?array $footerNoteAction = null): self
+    {
+        $this->footerNote       = $footerNote;
+        $this->footerNoteAction = $footerNoteAction;
+
+        return $this;
+    }
+
+    /**
+     * Same idea as withFooterNote, rendered above the table where it is read before the figures.
+     */
+    public function withHeaderNote(?string $headerNote): self
+    {
+        $this->headerNote = $headerNote;
 
         return $this;
     }

@@ -8,7 +8,9 @@ use App\Actions\Dispatching\DeliveryNoteItem\UI\IndexDeliveryNoteItemsInPickingS
 use App\Actions\Inventory\Warehouse\UI\ShowWarehouse;
 use App\Actions\OrgAction;
 use App\Actions\UI\WithInertia;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Dispatching\PickingSession\PickingSessionStateEnum;
+use App\Enums\Dispatching\PickingSession\PickingSessionTypeEnum;
 use App\Enums\UI\Dispatch\PickingSessionTabsEnum;
 use App\Http\Resources\Dispatching\PickingSessionDeliveryNoteItemsGroupedResource;
 use App\Http\Resources\Dispatching\PickingSessionDeliveryNoteItemsStateHandlingResource;
@@ -91,19 +93,6 @@ class ShowPickingSession extends OrgAction
         $allowWaiting = (bool)data_get($this->organisation->settings, 'orders.allow_waiting', false);
 
 
-        if (!request()->input('tab')) {
-            if ($pickingSession->state == PickingSessionStateEnum::IN_PROCESS) {
-                $this->tab = PickingSessionTabsEnum::ITEMS->value;
-            } elseif ($pickingSession->state == PickingSessionStateEnum::HANDLING) {
-                $this->tab = PickingSessionTabsEnum::ITEMIZED->value;
-            } else {
-                $this->tab = PickingSessionTabsEnum::GROUPED->value;
-            }
-        }
-
-
-
-
         if ($pickingSession->state == PickingSessionStateEnum::IN_PROCESS) {
             $actions[] = [
                 'type'    => 'button',
@@ -127,6 +116,46 @@ class ShowPickingSession extends OrgAction
             unset($navigation[PickingSessionTabsEnum::ITEMS->value]);
         }
 
+        /*
+         * A tab the session no longer offers still arrives in the url, kept by the link the picker
+         * followed or by the tab they were reading before the session moved on, and it would leave
+         * them on a table this state never sends any rows for.
+         */
+        if (!request()->input('tab') || !array_key_exists($this->tab, $navigation)) {
+            if ($pickingSession->state == PickingSessionStateEnum::IN_PROCESS) {
+                $this->tab = PickingSessionTabsEnum::ITEMS->value;
+            } elseif ($pickingSession->state == PickingSessionStateEnum::HANDLING) {
+                $this->tab = PickingSessionTabsEnum::ITEMIZED->value;
+            } else {
+                $this->tab = PickingSessionTabsEnum::GROUPED->value;
+            }
+        }
+
+        /*
+         * Scanning packs delivery note items, so it has nothing to offer a fulfilment session, and
+         * it only makes sense once the picking is over and the packer is filling the boxes. A
+         * session holding nothing but dropshipping notes has nothing scannable in it either.
+         */
+        $scanToPack = null;
+        if (
+            (bool)data_get($this->organisation->settings, 'orders.allow_scan_to_pack', false)
+            && $pickingSession->state == PickingSessionStateEnum::PICKING_FINISHED
+            && $pickingSession->type != PickingSessionTypeEnum::FULFILMENT
+            && $pickingSession->deliveryNotes()
+                ->whereRelation('shop', 'type', '!=', ShopTypeEnum::DROPSHIPPING)
+                ->exists()
+        ) {
+            $scanToPack = [
+                'scan_route' => [
+                    'name'       => 'grp.json.picking_session.pack_by_scan',
+                    'parameters' => [
+                        'pickingSession' => $pickingSession->id,
+                    ],
+                    'method'     => 'post',
+                ],
+            ];
+        }
+
         $props = [
             'title'       => $title . ' (' . $pickingSession->reference . ')',
             'breadcrumbs' => $this->getBreadcrumbs(
@@ -135,6 +164,11 @@ class ShowPickingSession extends OrgAction
                 $request->route()->originalParameters()
             ),
             'navigation'  => null,
+            'staff_chat'  => [
+                'context_type' => 'PickingSession',
+                'context_id'   => $pickingSession->id,
+                'audiences'    => [['key' => 'crm', 'label' => __('Ask CRM')]],
+            ],
             'pageHead'    => [
                 'title'      => $pickingSession->reference,
                 'model'      => $title,
@@ -154,8 +188,33 @@ class ShowPickingSession extends OrgAction
             ],
             'data' => PickingSessionResource::make($pickingSession),
 
+            'scan_to_pack'                => $scanToPack,
             'allow_waiting'               => $allowWaiting,
             'allow_picker_set_not_picked' => !$allowWaiting || (bool)data_get($this->organisation->settings, 'orders.allow_picker_set_not_picked', false),
+
+            /*
+             * The picker of every note in the session is decided here, so this is the one safe
+             * place to hand the work to somebody else: doing it note by note would leave two
+             * people picking the same one.
+             */
+            'picker'                      => $pickingSession->user ? [
+                'id'           => $pickingSession->user->id,
+                'contact_name' => $pickingSession->user->contact_name,
+            ] : null,
+            'routes'                      => [
+                'update'       => [
+                    'name'       => 'grp.models.picking_session.update',
+                    'parameters' => [
+                        'pickingSession' => $pickingSession->id,
+                    ],
+                ],
+                'pickers_list' => [
+                    'name'       => 'grp.json.employees.picker_users',
+                    'parameters' => [
+                        'organisation' => $pickingSession->organisation->slug,
+                    ],
+                ],
+            ],
         ];
 
 
@@ -186,19 +245,20 @@ class ShowPickingSession extends OrgAction
                     : Inertia::optional(fn () => PickingSessionDeliveryNoteItemsStateUnassignedResource::collection(IndexDeliveryNoteItemsInPickingSession::run($pickingSession))),
 
             ];
-        } else {
-            return [
-                PickingSessionTabsEnum::GROUPED->value => $this->tab == PickingSessionTabsEnum::GROUPED->value ?
-                    fn () => PickingSessionDeliveryNoteItemsGroupedResource::collection(IndexDeliveryNoteItemsInPickingSessionGrouped::run($pickingSession))
-                    : Inertia::optional(fn () => PickingSessionDeliveryNoteItemsGroupedResource::collection(IndexDeliveryNoteItemsInPickingSessionGrouped::run($pickingSession))),
-                PickingSessionTabsEnum::ITEMIZED->value => $this->tab == PickingSessionTabsEnum::ITEMIZED->value ?
-                    fn () => PickingSessionDeliveryNoteItemsStateHandlingResource::collection(IndexDeliveryNoteItemsInPickingSessionStateActive::run($pickingSession))
-                    : Inertia::optional(fn () => PickingSessionDeliveryNoteItemsStateHandlingResource::collection(IndexDeliveryNoteItemsInPickingSessionStateActive::run($pickingSession))),
-
-            ];
         }
 
+        $grouped = fn () => PickingSessionDeliveryNoteItemsGroupedResource::collection(
+            IndexDeliveryNoteItemsInPickingSessionGrouped::run($pickingSession)
+        );
 
+        $itemized = fn () => PickingSessionDeliveryNoteItemsStateHandlingResource::collection(
+            IndexDeliveryNoteItemsInPickingSessionStateActive::run($pickingSession)
+        );
+
+        return [
+            PickingSessionTabsEnum::GROUPED->value  => $this->tab == PickingSessionTabsEnum::GROUPED->value ? $grouped : Inertia::optional($grouped),
+            PickingSessionTabsEnum::ITEMIZED->value => $this->tab == PickingSessionTabsEnum::ITEMIZED->value ? $itemized : Inertia::optional($itemized),
+        ];
     }
 
     public function getBreadcrumbs(PickingSession $pickingSession, string $routeName, array $routeParameters, string $suffix = ''): array

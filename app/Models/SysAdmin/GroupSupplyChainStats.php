@@ -40,6 +40,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_supplier_products_state_discontinued
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property int $number_independent_supplier_products supplier products with no agent
+ * @property int $number_supplier_products_in_agents supplier products belonging to agent suppliers
  * @property-read \App\Models\SysAdmin\Group|null $group
  * @method static Builder<static>|GroupSupplyChainStats newModelQuery()
  * @method static Builder<static>|GroupSupplyChainStats newQuery()

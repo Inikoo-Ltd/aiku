@@ -59,4 +59,9 @@ class PlatformTimeSeries extends Model
     {
         return $this->hasMany(PlatformTimeSeriesRecord::class);
     }
+
+    public function salesChannelRecords(): HasMany
+    {
+        return $this->hasMany(PlatformSalesChannelTimeSeriesRecord::class);
+    }
 }

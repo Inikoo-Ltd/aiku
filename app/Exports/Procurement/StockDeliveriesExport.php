@@ -39,7 +39,7 @@ class StockDeliveriesExport implements FromQuery, WithMapping, ShouldAutoSize, W
             $row->settled_at,
             $row->cancelled_at,
 
-            $row->number_of_items,
+            $row->number_stock_delivery_items,
             $row->gross_weight,
             $row->net_weight,
             $row->cost_items,

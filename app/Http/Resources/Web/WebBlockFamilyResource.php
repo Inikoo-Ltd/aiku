@@ -10,6 +10,8 @@ namespace App\Http\Resources\Web;
 
 use App\Actions\Helpers\Images\GetImgProxyUrl;
 use App\Actions\Web\WebBlock\Concerns\WithIrisImageVariants;
+use App\Enums\Catalogue\ProductCategory\FamilyCustomizeEnum;
+use App\Enums\Catalogue\ProductCategory\FamilyStorageConditionEnum;
 use App\Http\Resources\HasSelfCall;
 use App\Models\Catalogue\ProductCategory;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -21,6 +23,8 @@ class WebBlockFamilyResource extends JsonResource
     use HasCardWebImages;
     use HasSelfCall;
     use WithIrisImageVariants;
+
+    public const array SRCSET_WIDTHS = [360, 720, 1440];
 
     public function toArray($request): array
     {
@@ -38,10 +42,42 @@ class WebBlockFamilyResource extends JsonResource
             'description_image'         => collect(Arr::get($family->web_images, 'description', []))->map(fn ($slot) => $this->getResizedSlot($slot))->filter()->all(),
             'description_video'         => $family->desc_video_url,
             'extra_description_image'   => collect(Arr::get($family->web_images, 'extraDescription', []))->map(fn ($slot) => $this->getResizedSlot($slot))->filter()->all(),
-            'url'                       => $family->webpage->url,
+            'url'                       => $family->webpage?->url,
             'offers_data'               => $family->offers_data,
             'tags'                      => $family->tradeUnitFamily?->tags()->limit(3)->get()->map(fn ($tag) => ['name' => $tag->name, 'web_image' => $this->getPictureFormats($tag->web_image)])->all(),
-            'faq'                       => $family->faq,
+            ...$this->getTabsData($family)
+        ];
+    }
+
+    public static function getTabsData(ProductCategory $family): array
+    {
+        $labelingGuide = null;
+
+        $tradeUnitFamily = $family->tradeUnitFamily;
+
+        if ($family->follow_tuf_labeling_guide && $family->tradeUnitFamily) {
+            $labelingGuide = $tradeUnitFamily->labelingGuide();
+        } else {
+            $labelingGuide = $family->labelingGuide();
+        }
+
+        return [
+            'customize_option'          => FamilyCustomizeEnum::rows($family->customize_option),
+            'labeling_guide'            => $labelingGuide ? [
+                'label' => $labelingGuide->name,
+                'route' => [
+                    'name'          => 'iris.attach.download',
+                    'parameters'    => [
+                        'media'    => $labelingGuide->ulid
+                    ],
+                ]
+            ] : null,
+            'storage_option'            => [
+                'storage_conditions'    => FamilyStorageConditionEnum::rows(data_get($family->storage_option, 'storage_conditions', [])),
+                'storage_temperature'   => data_get($family->storage_option, 'storage_temperature', ''),
+                'storage_guidelines'    => data_get($family->storage_option, 'storage_guidelines', []),
+            ],
+            'is_aroma_organisation'     => $family->organisation?->slug === 'aroma',
             'marketing_material_route'  => [
                 'name'          => 'iris.catalogue.feeds.product_category.download_img',
                 'parameters'    => [
@@ -49,12 +85,13 @@ class WebBlockFamilyResource extends JsonResource
                     'type'              => 'products_images'
                 ]
             ],
+            'faq'                       => $family->faq,
         ];
     }
 
     /**
      * Description image slots store whatever urls existed when the family was saved,
-     * including unresized originals; rebuild them capped at 1200px.
+     * including unresized originals; rebuild them capped at 1440px.
      *
      * @return array<string, string>|null
      */
@@ -75,18 +112,18 @@ class WebBlockFamilyResource extends JsonResource
         }
 
         $formats = [
-            'original' => GetImgProxyUrl::run($media->getImage()->resize(1200, 1200)),
+            'original' => GetImgProxyUrl::run($media->getImage()->resize(1440, 1440)),
         ];
         if (in_array('avif', config('img-proxy.formats')) && !$media->is_animated) {
-            $formats['avif'] = GetImgProxyUrl::run($media->getImage()->resize(1200, 1200)->extension('avif'));
+            $formats['avif'] = GetImgProxyUrl::run($media->getImage()->resize(1440, 1440)->extension('avif'));
         }
         if (in_array('webp', config('img-proxy.formats'))) {
-            $formats['webp'] = GetImgProxyUrl::run($media->getImage()->resize(1200, 1200)->extension('webp'));
+            $formats['webp'] = GetImgProxyUrl::run($media->getImage()->resize(1440, 1440)->extension('webp'));
         }
 
         $resized = [
             'original' => $formats,
-            'srcset'   => $this->getWidthSrcSets($media, [360, 720, 1200]),
+            'srcset'   => $this->getWidthSrcSets($media, self::SRCSET_WIDTHS),
         ];
         if (Arr::has($slot, 'alt')) {
             $resized['alt'] = Arr::get($slot, 'alt');

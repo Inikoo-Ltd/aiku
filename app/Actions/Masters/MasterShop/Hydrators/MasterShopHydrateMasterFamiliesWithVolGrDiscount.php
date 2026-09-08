@@ -10,11 +10,11 @@ namespace App\Actions\Masters\MasterShop\Hydrators;
 
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
 use App\Models\Masters\MasterShop;
-use Illuminate\Contracts\Queue\ShouldBeUnique;
+use Illuminate\Contracts\Queue\ShouldBeUniqueUntilProcessing;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class MasterShopHydrateMasterFamiliesWithVolGrDiscount implements ShouldBeUnique
+class MasterShopHydrateMasterFamiliesWithVolGrDiscount implements ShouldBeUniqueUntilProcessing
 {
     use AsAction;
 

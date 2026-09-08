@@ -8,7 +8,7 @@
 
 namespace App\Actions\Chat\Agent\UI;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Actions\UI\Dashboards\ShowGroupDashboard;
 use App\Actions\UI\WithInertia;
 use App\Models\SysAdmin\Group;
@@ -17,7 +17,7 @@ use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class ShowGroupAgents extends GrpAction
+class ShowGroupAgents extends OrgAction
 {
     use AsAction;
     use WithInertia;
@@ -29,7 +29,7 @@ class ShowGroupAgents extends GrpAction
 
     public function asController(ActionRequest $request): Group
     {
-        $this->initialisation(app('group'), $request);
+        $this->initialisationFromGroup(app('group'), $request);
 
         return $this->handle($this->group);
     }

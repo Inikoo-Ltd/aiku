@@ -16,10 +16,10 @@ trait WithSupplierSubNavigation
 {
     protected function getSupplierNavigation(Supplier $parent): array
     {
-        return [
+        $navigation = [
             [
                 "isAnchor" => true,
-                "label"    => __($parent->slug),
+                "label"    => __($parent->code),
 
                 "route"     => [
                     "name"       => "grp.supply-chain.suppliers.show",
@@ -42,32 +42,49 @@ trait WithSupplierSubNavigation
                     "tooltip" => __("Products"),
                 ],
             ],
-            // wait purchase order:
-            // [
-            //     "number"   => $parent->stats->number_purchase_orders,
-            //     "label"    => __("Purchase Orders"),
-            //     "route"     => [
-            //         "name"       => "grp.org.procurement.org_suppliers.show.purchase_orders.index",
-            //         "parameters" => [$parent->organisation->slug, $parent->slug],
-            //     ],
-            //     "leftIcon" => [
-            //         "icon"    => ["fal", "fa-clipboard"],
-            //         "tooltip" => __("Purchase Orders"),
-            //     ],
-            // ],
-            // [
-            //     "number"   => $parent->stats->number_stock_deliveries,
-            //     "label"    => __("Stock Deliveries"),
-            //     "route"     => [
-            //         "name"       => "grp.org.procurement.org_suppliers.show.stock_deliveries.index",
-            //         "parameters" => [$parent->organisation->slug, $parent->slug],
-            //     ],
-            //     "leftIcon" => [
-            //         "icon"    => ["fal", "fa-truck-container"],
-            //         "tooltip" => __("Stock Deliveries"),
-            //     ],
-            // ],
-
         ];
+
+        if ($parent->agent_id) {
+            $navigation[] = [
+                "label"    => __("Purchase Orders"),
+                "route"     => [
+                    "name"       => "grp.supply-chain.suppliers.agent_supplier_purchase_orders.index",
+                    "parameters" => [$parent->slug],
+                ],
+                "leftIcon" => [
+                    "icon"    => ["fal", "fa-clipboard-list"],
+                    "tooltip" => __("Purchase Orders"),
+                ],
+            ];
+
+            return $navigation;
+        }
+
+        $navigation[] = [
+            "number"   => $parent->stats->number_purchase_orders,
+            "label"    => __("Purchase Orders"),
+            "route"     => [
+                "name"       => "grp.supply-chain.suppliers.purchase_orders.index",
+                "parameters" => [$parent->slug],
+            ],
+            "leftIcon" => [
+                "icon"    => ["fal", "fa-clipboard"],
+                "tooltip" => __("Purchase Orders"),
+            ],
+        ];
+        $navigation[] = [
+            "number"   => $parent->stats->number_stock_deliveries,
+            "label"    => __("Stock Deliveries"),
+            "route"     => [
+                "name"       => "grp.supply-chain.suppliers.stock_deliveries.index",
+                "parameters" => [$parent->slug],
+            ],
+            "leftIcon" => [
+                "icon"    => ["fal", "fa-truck-container"],
+                "tooltip" => __("Stock Deliveries"),
+            ],
+        ];
+
+        return $navigation;
     }
 }

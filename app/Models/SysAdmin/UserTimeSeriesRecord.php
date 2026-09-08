@@ -11,6 +11,17 @@ namespace App\Models\SysAdmin;
 use Illuminate\Database\Eloquent\Model;
 
 /**
+ * @property int $id
+ * @property int $user_time_series_id
+ * @property string $frequency
+ * @property string $period
+ * @property \Illuminate\Support\Carbon|null $from
+ * @property \Illuminate\Support\Carbon|null $to
+ * @property int $number_requests
+ * @property int $number_logins
+ * @property int $number_active_days
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
  * @method static \Illuminate\Database\Eloquent\Builder<static>|UserTimeSeriesRecord newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|UserTimeSeriesRecord newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|UserTimeSeriesRecord query()
@@ -22,6 +33,11 @@ class UserTimeSeriesRecord extends Model
 
     protected $guarded = [];
 
-
-
+    protected function casts(): array
+    {
+        return [
+            'from' => 'datetime',
+            'to'   => 'datetime',
+        ];
+    }
 }

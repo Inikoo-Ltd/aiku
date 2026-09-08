@@ -33,7 +33,9 @@ class FetchAuroraInvoice extends FetchAurora
             $forceFetch = true;
         }
 
-        if ($shop->is_aiku && !$forceFetch) {
+        // -s named this record on the command line, which is the same intent as setting
+        // force_fetch in Aurora and saves editing the invoice and everything it drags in.
+        if ($shop->is_aiku && !$forceFetch && !$this->organisationSource->isForcedFetch()) {
             return;
         }
 

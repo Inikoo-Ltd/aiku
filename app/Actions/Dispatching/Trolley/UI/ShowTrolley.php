@@ -8,11 +8,13 @@
 
 namespace App\Actions\Dispatching\Trolley\UI;
 
+use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Actions\WithActionButtons;
 use App\Actions\Traits\Authorisations\Inventory\WithWarehouseAuthorisation;
 use App\Enums\UI\Dispatch\TrolleyTabsEnum;
 use App\Http\Resources\Dispatching\TrolleyResource;
+use App\Http\Resources\History\HistoryResource;
 use App\Models\Dispatching\Trolley;
 use App\Models\Inventory\Warehouse;
 use App\Models\SysAdmin\Organisation;
@@ -96,8 +98,12 @@ class ShowTrolley extends OrgAction
                     fn () => GetTrolleyShowcase::run($trolley)
                     : Inertia::optional(fn () => GetTrolleyShowcase::run($trolley)),
 
+                TrolleyTabsEnum::HISTORY->value => $this->tab == TrolleyTabsEnum::HISTORY->value ?
+                    fn () => HistoryResource::collection(IndexHistory::run($trolley, TrolleyTabsEnum::HISTORY->value))
+                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($trolley, TrolleyTabsEnum::HISTORY->value))),
+
             ]
-        );
+        )->table(IndexHistory::make()->tableStructure(TrolleyTabsEnum::HISTORY->value));
     }
 
 

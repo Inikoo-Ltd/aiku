@@ -72,13 +72,7 @@ class SyncEmployeeJobPositions
         }
 
         foreach ($employee->users as $user) {
-            CleanUserCaches::run(
-                $user,
-                [
-                    'auth-user:'.$user->id.';*',
-                    'grp-first-load-props:'.$user->id.':*'
-                ]
-            );
+            CleanUserCaches::run($user);
             BreakUserUiProps::dispatch($user);
         }
     }

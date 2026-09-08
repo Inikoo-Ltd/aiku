@@ -76,6 +76,7 @@ class CreateRetinaDropshippingCustomerSalesChannel extends RetinaAction
                     'url'                    => AuthenticateTiktokAccount::make()->redirectToTikTok($customer)
                 ],
                 'allegroAuth'         => [
+                    'isActive'               => $this->website->domain !== 'aw-dropship.com',
                     'url'                    => AuthenticateAllegroAccount::make()->redirectToAllegro($customer)
                 ],
                 'type_shopify'       => [

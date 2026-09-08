@@ -32,7 +32,6 @@ use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Helpers\SerialReference\SerialReferenceModelEnum;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Models\Catalogue\Shop;
-use App\Models\Dropshipping\Platform;
 use App\Models\Helpers\Address;
 use App\Models\Helpers\Country;
 use App\Models\Helpers\Currency;
@@ -130,15 +129,9 @@ class StoreShop extends OrgAction
             $shop->crmStats()->create();
             $shop->orderingStats()->create();
             $shop->orderHandlingStats()->create();
-            $shop->mailshotsIntervals()->create();
             $shop->discountsStats()->create();
 
-            $shop->outboxNewsletterIntervals()->create();
-            $shop->outboxMarketingIntervals()->create();
-            $shop->outboxMarketingNotificationIntervals()->create();
-            $shop->outboxCustomerNotificationIntervals()->create();
-            $shop->outboxColdEmailsIntervals()->create();
-            $shop->outboxPushIntervals()->create();
+
 
             StoreShopPlatformStats::run($shop);
             foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
@@ -149,11 +142,6 @@ class StoreShop extends OrgAction
                 $shop->dropshippingStats()->create();
             }
 
-            if ($shop->type === ShopTypeEnum::DROPSHIPPING) {
-                foreach (Platform::all() as $platform) {
-                    $shop->platformSalesIntervals()->create(['platform_id' => $platform->id]);
-                }
-            }
             $shop->serialReferences()->create(
                 [
                     'model'           => SerialReferenceModelEnum::CUSTOMER,

@@ -26,6 +26,10 @@ class CheckEbayChannel
 
     public function handle(EbayUser $ebayUser): CustomerSalesChannel
     {
+        if (!app()->isProduction()) {
+            return $ebayUser->customerSalesChannel;
+        }
+
         $platformStatus = $canConnectToPlatform = $existInPlatform = false;
 
         if (!$ebayUser->fulfillment_policy_id || !$ebayUser->return_policy_id || !$ebayUser->payment_policy_id || !$ebayUser->location_key) {
@@ -34,9 +38,25 @@ class CheckEbayChannel
             $ebayUser->refresh();
         }
 
+        if ($ebayUser->fulfillment_policy_id) {
+            $usableFulfilmentPolicyId = $ebayUser->getUsableFulfilmentPolicyId($ebayUser->fulfillment_policy_id);
+
+            if ($usableFulfilmentPolicyId && $usableFulfilmentPolicyId !== $ebayUser->fulfillment_policy_id) {
+                $this->update($ebayUser, ['fulfillment_policy_id' => $usableFulfilmentPolicyId]);
+
+                $ebayUser->refresh();
+            }
+        }
+
         $step = EbayUserStepEnum::MARKETPLACE;
 
-        if (! blank($ebayUser->getUser())) {
+        $ebayApiUser = $ebayUser->getUser();
+
+        if (blank($ebayApiUser) && !$ebayUser->ebayAuthRevoked) {
+            return $ebayUser->customerSalesChannel;
+        }
+
+        if (! blank($ebayApiUser)) {
             $canConnectToPlatform = true;
             $existInPlatform = true;
             $step = EbayUserStepEnum::AUTH;

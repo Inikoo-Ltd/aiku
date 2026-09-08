@@ -8,9 +8,10 @@
 
 namespace App\Actions\Search\UI;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Actions\Search\GetSearchAnalytics;
-use App\Actions\UI\Dashboards\ShowGroupDashboard;
+use App\Actions\SysAdmin\UI\ShowSysAdminAnalyticsDashboard;
+use App\Actions\SysAdmin\UI\WithAnalyticsSubNavigations;
 use App\Http\Resources\SysAdmin\SearchLogsResource;
 use App\Http\Resources\SysAdmin\SearchLogUsersResource;
 use App\InertiaTable\InertiaTable;
@@ -25,8 +26,10 @@ use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
 
-class IndexSearchLogs extends GrpAction
+class IndexSearchLogs extends OrgAction
 {
+    use WithAnalyticsSubNavigations;
+
     protected function getElementGroups(Group $group): array
     {
         $base = SearchLog::where('group_id', $group->id);
@@ -214,7 +217,8 @@ class IndexSearchLogs extends GrpAction
                         'icon'  => ['fal', 'fa-search'],
                         'title' => __('Search analytics'),
                     ],
-                    'title' => __('Search analytics'),
+                    'title'         => __('Search analytics'),
+                    'subNavigation' => $this->getAnalyticsNavigation($this->group, $request),
                 ],
                 'insights' => GetSearchAnalytics::run($this->group),
                 'data'     => SearchLogsResource::collection($searchLogs),
@@ -227,13 +231,13 @@ class IndexSearchLogs extends GrpAction
     public function getBreadcrumbs(): array
     {
         return array_merge(
-            ShowGroupDashboard::make()->getBreadcrumbs(),
+            ShowSysAdminAnalyticsDashboard::make()->getBreadcrumbs(),
             [
                 [
                     'type'   => 'simple',
                     'simple' => [
                         'route' => [
-                            'name' => 'grp.sysadmin.search_logs.index',
+                            'name' => 'grp.sysadmin.analytics.search_logs.index',
                         ],
                         'label' => __('Search analytics'),
                     ]
@@ -244,7 +248,7 @@ class IndexSearchLogs extends GrpAction
 
     public function asController(ActionRequest $request): LengthAwarePaginator
     {
-        $this->initialisation(group(), $request);
+        $this->initialisationFromGroup(group(), $request);
 
         return $this->handle($this->group);
     }

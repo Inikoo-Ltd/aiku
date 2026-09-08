@@ -103,8 +103,8 @@ const label = {
 </script>
 
 <template>
-    <Disclosure as="nav" class="fixed top-0 z-[21] w-full bg-gray-50 text-gray-700" v-slot="{ open }">
-        <ScreenWarning v-if="layoutStore.app.environment === 'staging'" class="relative top-0" />
+    <Disclosure id="topbar_grp" as="nav" class="fixed top-0 z-[21] w-full bg-gray-50 text-gray-700 transition-all duration-300 ease-in-out" :class="layoutStore.messagingSidebar?.show ? 'md:pr-56' : (layoutStore.messagingSidebar?.micro ? 'md:pr-4' : 'md:pr-12')" v-slot="{ open }">
+        <ScreenWarning v-if="layoutStore.hasTopBanner" class="relative top-0" />
 
         <div class="px-0">
             <div class="flex h-11 lg:h-10 flex-shrink-0 w-full">
@@ -200,7 +200,7 @@ const label = {
                                     icon="fal fa-user-tie"
                                 />
 
-                                <!-- Dropdown: Organisation -->
+                                <!-- Dropdown: Organisation (E-Commerce) -->
                                 <TopBarDropdownScope
                                     v-if="layoutStore.organisations.data?.length"
                                     :menuItems="layoutStore.organisations.data"

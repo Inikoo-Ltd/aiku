@@ -86,6 +86,7 @@ class StoreStoredItem extends OrgAction
                 )
             ],
             'name'                     => ['sometimes', 'max:250', 'string'],
+            'barcode'                  => ['sometimes', 'nullable', 'max:64', 'string', 'regex:/^[\x20-\x7E]+$/'],
             'total_quantity'                     => ['sometimes', 'numeric', 'min:1'],
         ];
     }

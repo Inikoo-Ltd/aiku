@@ -7,6 +7,7 @@
 
 namespace App\Actions\Comms\Outbox;
 
+use App\Helpers\TimeSeriesPeriodCalculator;
 use App\Actions\Traits\Hydrators\WithHydrateCommand;
 use App\Actions\Traits\WithTimeSeriesRedo;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
@@ -44,6 +45,17 @@ class RedoOutboxTimeSeries implements ShouldBeUnique
         }
     }
 
+    protected function dateRangeSources(): array
+    {
+        return [
+            [
+                'query' => fn () => DB::connection('aiku_no_sticky')->table('dispatched_emails'),
+                'key'   => 'outbox_id',
+                'date'  => 'created_at',
+            ],
+        ];
+    }
+
     public function handle(?int $outboxId, ?string $from = null, ?string $to = null, bool $async = false): void
     {
         if (!$outboxId) {
@@ -57,24 +69,23 @@ class RedoOutboxTimeSeries implements ShouldBeUnique
         }
 
         if (!$from || !$to) {
-            $dateRange = DB::connection('aiku_no_sticky')->table('dispatched_emails')
-                ->where('outbox_id', $outbox->id)
-                ->selectRaw('MIN(created_at) as first_date, MAX(created_at) as last_date')
-                ->first();
+            $dateRange = $this->getDateRange($outbox->id);
 
-            if (!$dateRange?->first_date) {
+            if (!$dateRange['from']) {
                 return;
             }
 
-            $from = $from ?? Carbon::parse($dateRange->first_date)->toDateString();
-            $to   = $to ?? Carbon::parse($dateRange->last_date ?? now())->toDateString();
+            $from = $from ?? Carbon::parse($dateRange['from'])->toDateString();
+            $to   = $to ?? Carbon::parse($dateRange['to'] ?? now())->toDateString();
         }
 
         foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
+            [$periodFrom, $periodTo] = TimeSeriesPeriodCalculator::expandWindowToFullPeriods($frequency, $from, $to);
+
             if ($async) {
-                ProcessOutboxTimeSeriesRecords::dispatch($outbox->id, $frequency, $from, $to)->onQueue('sales_slave_historic');
+                ProcessOutboxTimeSeriesRecords::dispatch($outbox->id, $frequency, $periodFrom, $periodTo)->onQueue('sales_slave_historic');
             } else {
-                ProcessOutboxTimeSeriesRecords::run($outbox->id, $frequency, $from, $to);
+                ProcessOutboxTimeSeriesRecords::run($outbox->id, $frequency, $periodFrom, $periodTo);
             }
         }
     }

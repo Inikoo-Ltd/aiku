@@ -27,14 +27,14 @@ class GetApiToken extends RetinaAction
         if ($existingToken) {
             $existingToken->delete();
 
-            $newToken = $customerSalesChannel->createToken('api-token', ['retina']);
+            $newToken = $customerSalesChannel->createToken('api-token', ['retina', 'retina:read', 'retina:write']);
 
             return [
                 'token' => $newToken->plainTextToken,
             ];
         }
 
-        $token = $customerSalesChannel->createToken('api-token', ['retina']);
+        $token = $customerSalesChannel->createToken('api-token', ['retina', 'retina:read', 'retina:write']);
 
         return [
             'token' => $token->plainTextToken,

@@ -19,7 +19,7 @@ import {
 } from "@fal"
 
 import PageHeading from "@/Components/Headings/PageHeading.vue"
-import { computed, ref, provide} from "vue"
+import { computed, ref } from "vue"
 import { useTabChange } from "@/Composables/tab-change"
 import ModelDetails from "@/Components/ModelDetails.vue"
 import Tabs from "@/Components/Navigation/Tabs.vue"
@@ -78,7 +78,6 @@ const props = defineProps<{
     analytics?: object
     route_welcome :routeType
     route_storefront: routeType
-    route_landing_page?: routeType
     route_redirects: {
         fetch_live_webpages: routeType
         submit: routeType
@@ -90,10 +89,9 @@ const props = defineProps<{
     }
 }>()
 
-/* provide('layout', {})
-const layout = {} */
+
 let currentTab = ref(props.tabs.current)
-const handleTabUpdate = (tabSlug) => useTabChange(tabSlug, currentTab)
+const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 
 const component = computed(() => {
 
@@ -152,10 +150,9 @@ const submitForm = () => {
     <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
     <component
         :is="component"
-        :data="props[currentTab]"
+        :data="(props as Record<string, any>)[currentTab]"
         :tab="currentTab"
         :route_storefront
-        :route_landing_page
         :luigi_data
         :route_welcome
     />
@@ -201,7 +198,7 @@ const submitForm = () => {
                                 </div>
                             </template>
 
-                            <template #option="{ option, isSelected, isPointed }">
+                            <template #option="{ option, isSelected }">
                                 <!-- <pre>{{ option }}</pre> -->
                                 <div class="">{{ option.slug }} <span v-if="option.code" class="text-sm"
                                     :class="isSelected(option) ? 'text-indigo-200' : 'text-gray-400'">(/{{ option.href }})</span>

@@ -38,10 +38,13 @@ const emit = defineEmits<{
 }>()
 
 const generateLocationRoute = (location: any): string => {
-    if (!location.location_slug) return "#"
+    const warehouse = (route().params as RouteParams).warehouse || location.warehouse_slug
+
+    if (!location.location_slug || !warehouse) return "#"
+
     return route("grp.org.warehouses.show.infrastructure.locations.show", [
         (route().params as RouteParams).organisation,
-        (route().params as RouteParams).warehouse,
+        warehouse,
         location.location_slug,
     ])
 }

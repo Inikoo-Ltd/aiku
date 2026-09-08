@@ -15,12 +15,13 @@ class MasterCollectionTimeSeriesResource extends JsonResource
 {
     public function toArray($request): array
     {
-        $frequency = request()->input('frequency', TimeSeriesFrequencyEnum::DAILY->value);
-        $frequencyEnum = TimeSeriesFrequencyEnum::tryFrom($frequency) ?? TimeSeriesFrequencyEnum::DAILY;
+        $frequency = request()->input('frequency', TimeSeriesFrequencyEnum::MONTHLY->value);
+        $frequencyEnum = TimeSeriesFrequencyEnum::tryFrom($frequency) ?? TimeSeriesFrequencyEnum::MONTHLY;
 
         return [
             'id' => $this->id,
             'period' => $this->formatPeriod($this->from, $this->to, $frequencyEnum),
+            'currency_code' => $this->currency_code,
             'from' => $this->from,
             'to' => $this->to,
             'sales_external' => (float) $this->sales_external,

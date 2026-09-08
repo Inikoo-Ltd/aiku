@@ -9,10 +9,12 @@
 namespace App\Models\Dropshipping;
 
 use App\Models\CRM\Customer;
+use App\Models\Traits\HasHistory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
+use OwenIt\Auditing\Contracts\Auditable;
 
 /**
  * @property int $id
@@ -39,8 +41,10 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Bundle query()
  * @mixin \Eloquent
  */
-class Bundle extends Model
+class Bundle extends Model implements Auditable
 {
+    use HasHistory;
+
     protected $guarded = [];
 
     protected $casts = [
@@ -72,4 +76,13 @@ class Bundle extends Model
     {
         return $this->hasMany(BundleItem::class);
     }
+
+    public function generateTags(): array
+    {
+        return ['crm', 'websites'];
+    }
+
+    protected array $auditInclude = [
+        'status'
+    ];
 }

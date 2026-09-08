@@ -2,14 +2,14 @@
 
 namespace App\Actions\Masters\MasterAsset;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
 use App\Models\Masters\MasterAsset;
 use App\Models\Masters\MasterProductCategory;
 use App\Models\Masters\MasterShop;
 use Lorisleiva\Actions\ActionRequest;
 
-class UpdateMasterAssetIndex extends GrpAction
+class UpdateMasterAssetIndex extends OrgAction
 {
     private MasterShop $masterShop;
 
@@ -43,7 +43,7 @@ class UpdateMasterAssetIndex extends GrpAction
     public function asController(MasterProductCategory $masterProductCategory, ActionRequest $request): void
     {
         $this->masterShop   = $masterProductCategory->masterShop;
-        $this->initialisation($masterProductCategory->group, $request);
+        $this->initialisationFromGroup($masterProductCategory->group, $request);
 
         $this->handle($masterProductCategory, $this->validatedData);
     }

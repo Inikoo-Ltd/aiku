@@ -23,14 +23,17 @@ class ClockingResource extends JsonResource
         $clocking = $this;
 
         return [
-            'id'                    => $clocking->id,
-            'type'                  => $clocking->type,
-            'notes'                 => $clocking->notes,
-            'workplace_slug'        => $clocking->workplace->slug,
-            'clocked_at'            => $clocking->clocked_at,
-            'clocking_machine_slug' => $clocking->clockingMachine->slug,
-            'employee'              => EmployeeResource::make($clocking->subject),
-            'photo'                 => $clocking->imageSources()
+            'id'                          => $clocking->id,
+            'type'                        => $clocking->type,
+            'notes'                       => $clocking->notes,
+            'workplace_slug'              => $clocking->workplace?->slug,
+            'clocked_at'                  => $clocking->clocked_at,
+            'clocking_machine_slug'       => $clocking->clockingMachine?->slug,
+            'employee'                    => EmployeeResource::make($clocking->subject),
+            'employee_name'               => $clocking->subject?->contact_name,
+            'clocking_machine_name'       => $clocking->clockingMachine?->name,
+            'clocking_machine_qr_code'    => $clocking->clockingMachineQrCode?->label,
+            'photo'                       => $clocking->imageSources()
         ];
     }
 }

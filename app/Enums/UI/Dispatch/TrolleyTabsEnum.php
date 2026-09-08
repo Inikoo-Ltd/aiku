@@ -17,6 +17,7 @@ enum TrolleyTabsEnum: string
     use HasTabs;
 
     case SHOWCASE                       = 'showcase';
+    case HISTORY                        = 'history';
 
     public function blueprint(): array
     {
@@ -24,6 +25,12 @@ enum TrolleyTabsEnum: string
             TrolleyTabsEnum::SHOWCASE => [
                 'title' => __('Showcase'),
                 'icon'  => 'fal fa-tachometer-alt-fast',
+            ],
+            TrolleyTabsEnum::HISTORY => [
+                'title' => __('History'),
+                'icon'  => 'fal fa-clock',
+                'type'  => 'icon',
+                'align' => 'right',
             ],
         };
     }

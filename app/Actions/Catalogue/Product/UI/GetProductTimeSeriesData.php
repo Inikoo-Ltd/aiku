@@ -16,6 +16,11 @@ class GetProductTimeSeriesData
     use AsObject;
     use WithTimeSeriesData;
 
+    protected function timeSeriesSalesColumn(): string
+    {
+        return 'sales_external';
+    }
+
     public function handle(Product $product): array
     {
         // Product uses Asset for time series

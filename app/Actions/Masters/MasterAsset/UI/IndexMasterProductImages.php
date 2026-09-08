@@ -29,6 +29,7 @@ class IndexMasterProductImages extends OrgAction
         $queryBuilder->leftJoin('model_has_media', 'media.id', 'model_has_media.media_id');
         $queryBuilder->where('model_has_media.model_id', $masterAsset->id);
         $queryBuilder->where('model_has_media.model_type', 'MasterAsset');
+        $queryBuilder->whereRaw("model_has_media.scope IS DISTINCT FROM 'audio'");
 
 
         $queryBuilder

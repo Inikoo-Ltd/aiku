@@ -13,17 +13,12 @@ use App\Actions\OrgAction;
 use App\Models\Catalogue\Product;
 use Lorisleiva\Actions\ActionRequest;
 use Illuminate\Http\Resources\Json\JsonResource;
-use Illuminate\Support\Facades\DB;
 
 class GetExternalProductTradeUnits extends OrgAction
 {
     public function handle(Product $product): array
     {
-        $packedIn = DB::table('model_has_trade_units')
-            ->where('model_type', 'Stock')
-            ->whereIn('trade_unit_id', $product->tradeUnits->pluck('id'))
-            ->pluck('quantity', 'trade_unit_id')
-            ->toArray();
+        $packedIn = $product->getEffectiveStockPackedInByTradeUnit();
 
         return $product->tradeUnits->map(function ($t) use ($packedIn) {
             return array_merge(

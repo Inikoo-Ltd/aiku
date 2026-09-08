@@ -19,9 +19,9 @@ use Lorisleiva\Actions\Concerns\AsController;
 use PragmaRX\Google2FALaravel\Support\Authenticator;
 use PragmaRX\Google2FAQRCode\Google2FA;
 use Inertia\Inertia;
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 
-class ValidateAndSave2FA extends GrpAction
+class ValidateAndSave2FA extends OrgAction
 {
     use AsController;
 
@@ -68,7 +68,7 @@ class ValidateAndSave2FA extends GrpAction
      */
     public function asController(ActionRequest $request): RedirectResponse|Response
     {
-        $this->initialisation(app('group'), $request);
+        $this->initialisationFromGroup(app('group'), $request);
 
         return $this->handle($request, $this->validatedData);
     }

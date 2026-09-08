@@ -25,7 +25,7 @@ const props = defineProps<{
     </template>
     <template v-else-if="column.type === 'date'">
         <span v-tooltip="useFormatTime(item[column.key], { formatTime: 'hms' })" class="whitespace-nowrap">
-            {{ useFormatTime(item[column.key]) }}
+            {{ useFormatTime(item[column.key], { formatTime: 'mdy' }) }}
         </span>
     </template>
     <template v-else-if="column.type === 'date_hm'">
@@ -36,6 +36,13 @@ const props = defineProps<{
     <template v-else-if="column.type === 'date_hms'">
         <span class="whitespace-nowrap">
             {{ useFormatTime(item[column.key], { formatTime: 'hms' }) }}
+        </span>
+    </template>
+    <template v-else-if="column.type === 'badge'">
+        <span v-if="item[column.key]"
+            :class="item[column.key].class"
+            class="inline-flex items-center whitespace-nowrap rounded-md px-2 py-1 text-xs font-medium ring-1 ring-inset">
+            {{ item[column.key].label }}
         </span>
     </template>
     <template v-else-if="column.type === 'icon'">

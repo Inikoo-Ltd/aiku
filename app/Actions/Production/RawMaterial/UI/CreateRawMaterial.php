@@ -9,8 +9,6 @@
 namespace App\Actions\Production\RawMaterial\UI;
 
 use App\Actions\OrgAction;
-use App\Enums\Production\RawMaterial\RawMaterialStateEnum;
-use App\Enums\Production\RawMaterial\RawMaterialStockStatusEnum;
 use App\Enums\Production\RawMaterial\RawMaterialTypeEnum;
 use App\Enums\Production\RawMaterial\RawMaterialUnitEnum;
 use App\Models\Production\Production;
@@ -63,13 +61,6 @@ class CreateRawMaterial extends OrgAction
                                     'value'    => '',
                                     'required' => true
                                 ],
-                                'state' => [
-                                    'type'     => 'select',
-                                    'options'  => RawMaterialStateEnum::values(),
-                                    'label'    => __('state'),
-                                    'value'    => '',
-                                    'required' => true
-                                ],
                                 'code' => [
                                     'type'     => 'input',
                                     'label'    => __('Code'),
@@ -85,30 +76,38 @@ class CreateRawMaterial extends OrgAction
                                 'unit' => [
                                     'type'      => 'select',
                                     'options'   => RawMaterialUnitEnum::values(),
-                                    'label'     => __('unit'),
+                                    'label'     => __('Unit'),
                                     'value'     => '',
                                     'required'  => true
                                 ],
-                                'unit_cost' => [
-                                    'type'     => 'input',
-                                    'label'    => __('unit cost'),
-                                    'value'    => '',
-                                    'required' => true
+                                'trade_unit_id' => [
+                                    'type'       => 'select_infinite',
+                                    'label'      => __('Trade unit'),
+                                    'options'    => [],
+                                    'fetchRoute' => [
+                                        'name'       => 'grp.goods.trade-units.index',
+                                        'parameters' => []
+                                    ],
+                                    'valueProp' => 'id',
+                                    'labelProp' => 'code',
+                                    'required'  => false,
+                                    'value'     => null,
                                 ],
-                                'quantity_on_location' => [
-                                    'type'     => 'input',
-                                    'label'    => __('quantity on location'),
-                                    'value'    => '',
-                                    'required' => true
+                                'org_stock_id' => [
+                                    'type'       => 'select_infinite',
+                                    'label'      => __('Stock (SKU)'),
+                                    'options'    => [],
+                                    'fetchRoute' => [
+                                        'name'       => 'grp.json.org_stocks.index',
+                                        'parameters' => [
+                                            'organisation' => $this->organisation->slug,
+                                        ]
+                                    ],
+                                    'valueProp' => 'id',
+                                    'labelProp' => 'code',
+                                    'required'  => false,
+                                    'value'     => null,
                                 ],
-                                'stock_status' => [
-                                    'type'      => 'select',
-                                    'options'   => RawMaterialStockStatusEnum::values(),
-                                    'label'     => __('stock status'),
-                                    'value'     => '',
-                                    'required'  => true
-                                ],
-
                             ]
                         ]
                     ],

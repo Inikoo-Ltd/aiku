@@ -5,7 +5,7 @@ import { faChevronDown } from "@far"
 import { faChartLine, faPlay, faTimesCircle } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { Head } from "@inertiajs/vue3"
-import { faCog, faFolderOpen, faSeedling, faTriangle, faSitemap, faGiftCard, faBox, faInventory, faSkullCow, faBan, faDollarSign, faBoxesAlt, faCheckCircle, faCircle, faHandsHelping, faMapSigns, faWarehouse } from "@fal"
+import { faCog, faFolderOpen, faSeedling, faTriangle, faSitemap, faGiftCard, faBox, faInventory, faSkullCow, faBan, faDollarSign, faBoxesAlt, faCheckCircle, faCircle, faHandsHelping, faMapSigns, faWarehouse, faChartLine as falChartLine } from "@fal"
 import "tippy.js/dist/tippy.css"
 import { ref, provide } from "vue"
 import { Link } from "@inertiajs/vue3"
@@ -23,7 +23,7 @@ import ShopIntervalStats from "@/Components/DataDisplay/Dashboard/ShopIntervalSt
 import TabsBoxDisplay from "@/Components/Dashboards/TabsBoxDisplay.vue"
 import { Dashboard as DashboardTS } from "@/types/Components/Dashboard"
 
-library.add(faTriangle, faSitemap, faChevronDown, faSeedling, faTimesCircle, faFolderOpen, faPlay, faCog, faChartLine, faGiftCard, faBox, faInventory, faSkullCow, faBan, faDollarSign, faBoxesAlt, faCheckCircle, faCircle, faHandsHelping, faMapSigns, faWarehouse)
+library.add(faTriangle, faSitemap, faChevronDown, faSeedling, faTimesCircle, faFolderOpen, faPlay, faCog, faChartLine, faGiftCard, faBox, faInventory, faSkullCow, faBan, faDollarSign, faBoxesAlt, faCheckCircle, faCircle, faHandsHelping, faMapSigns, faWarehouse, falChartLine)
 
 const locale = useLocaleStore()
 
@@ -36,7 +36,7 @@ const props = defineProps<{
 		number_out_of_stock_org_stocks: number
 		percentage_out_of_stock: number
 		number_locations: number
-		grp_stock_value: number
+		grp_stock_lpp_value: number
 		currency_code: string
 		grp_value_dormant_stock_1y: number
 		percentage_dormant_1y: number
@@ -50,7 +50,7 @@ const props = defineProps<{
 			number_out_of_stock_org_stocks: number
 			percentage_out_of_stock: number
 			number_locations: number
-			org_stock_value: number
+			org_stock_lpp_value: number
 			value_dormant_stock_1y: number
 			percentage_dormant_1y: number
 			number_org_stocks_not_sold_1y: number
@@ -127,15 +127,16 @@ const onChangeDashboardTab = async (tabSlug: string): Promise<void> => {
 					<dt class="flex items-center gap-x-1.5 text-xs font-medium text-gray-500">
 						<FontAwesomeIcon icon="fal fa-dollar-sign" fixed-width aria-hidden="true" />
 						{{ trans('Stock Value') }}
+						<FontAwesomeIcon icon="fal fa-question-circle" class="cursor-help text-gray-300 hover:text-gray-500" fixed-width aria-hidden="true" v-tooltip="stockHistoryGroup.valuation_legend" />
 					</dt>
 					<dd class="mt-1 text-xl sm:text-3xl font-semibold tabular-nums text-gray-800">
-						{{ locale.CurrencyShort(stockHistoryGroup.currency_code, Number(stockHistoryGroup.grp_stock_value)) }}
+						{{ locale.CurrencyShort(stockHistoryGroup.currency_code, Number(stockHistoryGroup.grp_stock_lpp_value)) }}
 					</dd>
 				</div>
 				<div class="px-5 py-4">
 					<dt class="flex items-center gap-x-1.5 text-xs font-medium text-gray-500">
 						<FontAwesomeIcon icon="fal fa-box" fixed-width aria-hidden="true" />
-						{{ trans('Stored SKUs') }}
+						{{ trans('Stored SKOs') }}
 					</dt>
 					<dd class="mt-1 text-xl sm:text-2xl font-semibold tabular-nums text-gray-800">
 						{{ locale.numberShort(stockHistoryGroup.number_org_stocks) }}
@@ -159,7 +160,7 @@ const onChangeDashboardTab = async (tabSlug: string): Promise<void> => {
 						<span class="text-2xl font-semibold tabular-nums text-red-500">
 							{{ locale.numberShort(stockHistoryGroup.number_out_of_stock_org_stocks) }}
 						</span>
-						<span class="text-sm font-medium tabular-nums text-red-500" v-tooltip="trans('Percentage of total SKUs')">
+						<span class="text-sm font-medium tabular-nums text-red-500" v-tooltip="trans('Percentage of total SKOs')">
 							{{ stockHistoryGroup.percentage_out_of_stock }}%
 						</span>
 					</dd>
@@ -168,6 +169,7 @@ const onChangeDashboardTab = async (tabSlug: string): Promise<void> => {
 					<dt class="flex items-center gap-x-1.5 text-xs font-medium text-gray-500">
 						<FontAwesomeIcon icon="fal fa-skull-cow" class="text-red-500" fixed-width aria-hidden="true" />
 						{{ trans('Dormant 1Y') }}
+						<FontAwesomeIcon icon="fal fa-question-circle" class="cursor-help text-gray-300 hover:text-gray-500" fixed-width aria-hidden="true" v-tooltip="stockHistoryGroup.valuation_legend" />
 					</dt>
 					<dd class="mt-1 flex items-baseline gap-x-2">
 						<span class="text-2xl font-semibold tabular-nums text-red-500">
@@ -187,7 +189,7 @@ const onChangeDashboardTab = async (tabSlug: string): Promise<void> => {
 						<span class="text-2xl font-semibold tabular-nums text-red-500">
 							{{ locale.numberShort(stockHistoryGroup.number_org_stocks_not_sold_1y) }}
 						</span>
-						<span class="text-sm font-medium tabular-nums text-red-500" v-tooltip="trans('Percentage of total SKUs')">
+						<span class="text-sm font-medium tabular-nums text-red-500" v-tooltip="trans('Percentage of total SKOs')">
 							{{ stockHistoryGroup.percentage_not_sold_1y }}%
 						</span>
 					</dd>
@@ -215,7 +217,7 @@ const onChangeDashboardTab = async (tabSlug: string): Promise<void> => {
 						<tr class="bg-gray-50 border-b border-gray-200">
 							<th class="px-4 py-2 text-left text-xs font-semibold text-gray-500">{{ trans('Organisation') }}</th>
 							<th class="px-4 py-2 text-right text-xs font-semibold text-gray-500">{{ trans('Stock Value') }}</th>
-							<th class="px-4 py-2 text-right text-xs font-semibold text-gray-500">{{ trans('SKUs') }}</th>
+							<th class="px-4 py-2 text-right text-xs font-semibold text-gray-500">{{ trans('SKOs') }}</th>
 							<th class="px-4 py-2 text-right text-xs font-semibold text-gray-500">{{ trans('Locations') }}</th>
 							<th class="px-4 py-2 text-right text-xs font-semibold text-gray-500">{{ trans('Out of Stock') }}</th>
 							<th class="px-4 py-2 text-right text-xs font-semibold text-gray-500">{{ trans('Dormant 1Y') }}</th>
@@ -232,9 +234,9 @@ const onChangeDashboardTab = async (tabSlug: string): Promise<void> => {
 							</td>
 							<td class="px-4 py-2.5 text-right tabular-nums whitespace-nowrap">
 								<Link v-if="org.routes" :href="route(org.routes.history.name, { ...org.routes.history.parameters, tab: 'org_stocks' })" class="text-gray-700 hover:text-blue-600 hover:underline">
-									{{ locale.CurrencyShort(org.currency_code, Number(org.org_stock_value)) }}
+									{{ locale.CurrencyShort(org.currency_code, Number(org.org_stock_lpp_value)) }}
 								</Link>
-								<span v-else class="text-gray-700">{{ locale.CurrencyShort(org.currency_code, Number(org.org_stock_value)) }}</span>
+								<span v-else class="text-gray-700">{{ locale.CurrencyShort(org.currency_code, Number(org.org_stock_lpp_value)) }}</span>
 							</td>
 							<td class="px-4 py-2.5 text-right tabular-nums whitespace-nowrap">
 								<Link v-if="org.routes" :href="route(org.routes.history.name, { ...org.routes.history.parameters, tab: 'org_stocks' })" class="text-gray-700 hover:text-blue-600 hover:underline">
@@ -278,8 +280,9 @@ const onChangeDashboardTab = async (tabSlug: string): Promise<void> => {
 		<ShopIntervalStats v-if="props.dashboard?.super_blocks?.[0]?.shop_blocks" :shop-blocks="props.dashboard?.super_blocks?.[0]?.shop_blocks" />
 
 		<DashboardSettings
+			v-if="props.dashboard?.super_blocks?.[0]?.blocks"
 			:intervals="props.dashboard?.super_blocks?.[0]?.intervals"
-			:settings="props.dashboard?.super_blocks?.[0].settings"
+			:settings="props.dashboard?.super_blocks?.[0]?.settings"
 			:currentTab="props.dashboard?.super_blocks?.[0]?.blocks?.[0]?.current_tab"
 		/>
 
@@ -289,7 +292,7 @@ const onChangeDashboardTab = async (tabSlug: string): Promise<void> => {
 			:idTable="props.dashboard?.super_blocks?.[0]?.id"
 			:tableData="props.dashboard?.super_blocks?.[0]?.blocks[0]"
 			:intervals="props.dashboard?.super_blocks?.[0]?.intervals"
-			:settings="props.dashboard?.super_blocks?.[0].settings"
+			:settings="props.dashboard?.super_blocks?.[0]?.settings"
 			:currentTab="props.dashboard?.super_blocks?.[0]?.blocks[0].current_tab"
 			@onChangeTab="onChangeDashboardTab"
 		/>
@@ -303,7 +306,7 @@ const onChangeDashboardTab = async (tabSlug: string): Promise<void> => {
 				current_tab: props.dashboard?.super_blocks?.[0]?.blocks[0].current_tab
 			}"
 			:intervals="props.dashboard?.super_blocks?.[0]?.intervals"
-			:settings="props.dashboard?.super_blocks?.[0].settings"
+			:settings="props.dashboard?.super_blocks?.[0]?.settings"
 			:currentTab="props.dashboard?.super_blocks?.[0]?.blocks[0].current_tab"
 			:showTabs="false"
 			@onChangeTab="onChangeDashboardTab"
@@ -321,5 +324,15 @@ const onChangeDashboardTab = async (tabSlug: string): Promise<void> => {
 			:interval="props.dashboard?.super_blocks?.[0]?.intervals?.value"
 			:data="props.dashboard?.super_blocks?.[0]?.shop_blocks"
 		/>
+
+		<div v-if="!props.dashboard?.super_blocks?.length" class="flex flex-col items-center justify-center px-4 py-24" role="status">
+			<FontAwesomeIcon icon="fal fa-chart-line" class="mb-4 text-6xl text-gray-300" aria-hidden="true" />
+			<h3 class="mb-2 text-center text-lg font-medium text-gray-500">
+				{{ trans('No sales data to show') }}
+			</h3>
+			<p class="max-w-md text-center text-sm text-gray-400">
+				{{ trans('Your account does not have access to the group sales figures.') }}
+			</p>
+		</div>
 	</div>
 </template>

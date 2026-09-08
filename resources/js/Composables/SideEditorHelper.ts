@@ -14,7 +14,6 @@ import Payments from '@/Components/CMS/Fields/Payment.vue'
 import socialMedia from '@/Components/CMS/Fields/SocialMedia.vue'
 import Script from '@/Components/CMS/Fields/Script.vue'
 import SelectLayout from '@/Components/CMS/Fields/SelectLayout.vue'
-import InputText from 'primevue/inputtext'
 import OverviewForm from '@/Components/CMS/Fields/OverviewForm.vue'
 import ArrayPhone from '@/Components/CMS/Fields/ArrayPhone.vue'
 import NotFoundComponents from '@/Components/CMS/Webpage/NotFoundComponent.vue'
@@ -47,7 +46,7 @@ import Countdown from '@/Components/CMS/Fields/Countdown.vue'
 import UploadImageCropped from '@/Components/Workshop/Properties/UploadImageCropped.vue'
 import ShowBlockInResponsive from '@/Components/CMS/Fields/ShowBlockInResponsive.vue'
 import ResponsiveText from '@/Components/CMS/Fields/ResponsiveText.vue'
-import { SelectButton } from 'primevue'
+import { SelectButton, InputText } from 'primevue'
 import SelectBanner from '@/Components/CMS/Fields/SelectBanner.vue'
 import SelectProductCategory from '@/Components/Workshop/Properties/SelectProductCategory.vue'
 import TabsInput from '@/Components/CMS/Fields/TabsInput.vue'
@@ -118,4 +117,12 @@ export const getFormValue = (data: {}, fieldKeys: string | string[]) => {
 export const setFormValue = (mValue = {} , fieldKeys: string | string[], newVal: any) => {
     const keys = Array.isArray(fieldKeys) ? fieldKeys : [fieldKeys];
     return set(mValue, keys, newVal);
+};
+
+export const getFieldKey = (fieldKeys: string | string[] | undefined, fallback: string | number) => {
+    if (Array.isArray(fieldKeys)) {
+        return fieldKeys.join('-');
+    }
+
+    return fieldKeys ?? fallback;
 };

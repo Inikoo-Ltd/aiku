@@ -13,6 +13,7 @@ use App\Helpers\TimeSeriesPeriodCalculator;
 use App\Models\Web\Website;
 use App\Models\Web\WebsiteTimeSeries;
 use App\Traits\BuildsAggregatedTimeSeriesQuery;
+use App\Traits\UpsertsTimeSeriesRecords;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -22,6 +23,7 @@ class ProcessWebsiteTimeSeriesRecords implements ShouldBeUnique
 {
     use AsAction;
     use BuildsAggregatedTimeSeriesQuery;
+    use UpsertsTimeSeriesRecords;
 
     public string $jobQueue = 'sales_slave';
 
@@ -32,8 +34,7 @@ class ProcessWebsiteTimeSeriesRecords implements ShouldBeUnique
 
     public function handle(int $websiteId, TimeSeriesFrequencyEnum $frequency, string $from, string $to): void
     {
-        $from .= ' 00:00:00';
-        $to   .= ' 23:59:59';
+        [$from, $to] = TimeSeriesPeriodCalculator::expandWindowToFullPeriods($frequency, $from, $to);
 
         $website = Website::find($websiteId);
 
@@ -54,7 +55,7 @@ class ProcessWebsiteTimeSeriesRecords implements ShouldBeUnique
 
     protected function processTimeSeries(WebsiteTimeSeries $timeSeries, string $from, string $to): void
     {
-        $processedPeriods = [];
+        $rows = [];
 
         $results = $timeSeries->frequency === TimeSeriesFrequencyEnum::DAILY
             ? $this->fetchDailyResults($timeSeries, $from, $to)
@@ -75,13 +76,11 @@ class ProcessWebsiteTimeSeriesRecords implements ShouldBeUnique
                 $returningVisitors  = $result->returning_visitors;
             }
 
-            $timeSeries->records()->updateOrCreate(
-                [
-                    'website_time_series_id' => $timeSeries->id,
-                    'period'                 => $period,
-                    'frequency'              => $timeSeries->frequency->singleLetter(),
-                ],
-                [
+            $rows[] = [
+                'website_time_series_id' => $timeSeries->id,
+                'period'                 => $period,
+                'frequency'              => $timeSeries->frequency->singleLetter(),
+                ...[
                     'from'                 => $periodFrom,
                     'to'                   => $periodTo,
                     'visitors'             => $result->visitors,
@@ -96,8 +95,10 @@ class ProcessWebsiteTimeSeriesRecords implements ShouldBeUnique
                     'visitors_mobile'      => $result->visitors_mobile,
                     'visitors_tablet'      => $result->visitors_tablet,
                 ]
-            );
+            ];
         }
+
+        $this->upsertTimeSeriesRecords($timeSeries, $rows, ['website_time_series_id', 'period', 'frequency']);
     }
 
     protected function fetchDailyResults(WebsiteTimeSeries $timeSeries, string $from, string $to): Collection

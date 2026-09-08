@@ -13,13 +13,7 @@ class ServeLlmsTxt
 
     public function handle(Website $website): Response
     {
-        $content = GetLlmsTxt::run($website);
-
-        if ($content === null) {
-            abort(404, 'LLMs.txt not found');
-        }
-
-        return response($content, 200)
+        return response(GetLlmsTxt::run($website), 200)
             ->header('Content-Type', 'text/plain; charset=UTF-8')
             ->header('Cache-Control', 'public, max-age=3600')
             ->header('X-Robots-Tag', 'noindex');

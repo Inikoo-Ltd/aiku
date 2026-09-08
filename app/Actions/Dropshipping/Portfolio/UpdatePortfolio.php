@@ -66,7 +66,7 @@ class UpdatePortfolio extends OrgAction
             data_set($modelData, 'margin', CalculationsProfitMargin::run(Arr::get($modelData, 'selling_price'), $price));
         }
 
-        $portfolio = $this->update($portfolio, $modelData, ['data']);
+        $portfolio = $this->update($portfolio, $modelData, ['data', 'settings']);
 
         if ($portfolio->wasChanged(['status'])) {
 
@@ -125,7 +125,7 @@ class UpdatePortfolio extends OrgAction
             'customer_description'  => ['sometimes', 'string', 'nullable'],
             'platform_product_id'   => 'sometimes|string',
             'platform_handle'       => 'sometimes|string',
-            'errors_response'       => 'sometimes|array',
+            'errors_response'       => 'sometimes|nullable|array',
             'options'               => 'sometimes|string',
             'data'                  => 'sometimes|array',
             'sku'                   => 'sometimes',

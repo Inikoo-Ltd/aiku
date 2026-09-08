@@ -10,6 +10,7 @@ namespace App\Actions\Helpers\Language\UI;
 
 use App\Models\Helpers\Language;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Lorisleiva\Actions\Concerns\AsObject;
 
 class GetLanguagesOptions
@@ -62,11 +63,29 @@ class GetLanguagesOptions
         return $this->handle(Language::where('status', true)->get());
     }
 
-    public function getLanguageJson(): JsonResponse
+    public function translatedWithGroupExtras(?array $extraLanguages): array
     {
-        $languages = Language::where('status', true)->get();
+        $options = $this->translated();
 
-        $options = $this->handle($languages);
+        foreach ($options as $id => $option) {
+            $options[$id]['status'] = true;
+        }
+
+        foreach ($this->getExtraGroupLanguages($extraLanguages) as $id => $option) {
+            if (isset($options[$id])) {
+                continue;
+            }
+
+            $options[$id] = $option + ['status' => false];
+        }
+
+        return $options;
+    }
+
+
+    public function getLanguageJson(Request $request): JsonResponse
+    {
+        $options = $this->translatedWithGroupExtras($request->user()?->group?->extra_languages);
 
         $data = array_values(array_map(function ($option) {
             if (!empty($option['flag'])) {

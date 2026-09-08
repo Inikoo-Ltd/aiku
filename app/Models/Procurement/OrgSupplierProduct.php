@@ -98,5 +98,15 @@ class OrgSupplierProduct extends Model
         return $this->belongsTo(OrgStock::class);
     }
 
+    protected static function booted(): void
+    {
+        static::saved(function (OrgSupplierProduct $orgSupplierProduct) {
+            $orgSupplierProduct->supplierProduct?->searchable();
+        });
+
+        static::deleted(function (OrgSupplierProduct $orgSupplierProduct) {
+            $orgSupplierProduct->supplierProduct?->searchable();
+        });
+    }
 
 }

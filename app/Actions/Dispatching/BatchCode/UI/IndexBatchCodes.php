@@ -99,7 +99,7 @@ class IndexBatchCodes extends OrgAction
                 ->column(key: 'expiry_date', label: __('Expiry Date'), canBeHidden: false, sortable: true, type: 'date');
 
             if ($showOrgStockColumn) {
-                $table->column(key: 'org_stock_code', label: __('SKU'), canBeHidden: false, sortable: true);
+                $table->column(key: 'org_stock_code', label: __('SKO'), canBeHidden: false, sortable: true);
             }
 
             $table->column(key: 'number_delivery_notes', label: __('Delivery Notes'), canBeHidden: false, sortable: true);
@@ -126,7 +126,7 @@ class IndexBatchCodes extends OrgAction
                 'pageHead'    => [
                     'title'     => __('Batch Codes'),
                     'icon'      => ['icon' => ['fal', 'fa-barcode'], 'title' => __('Batch Codes')],
-                    'model'     => $orgStock ? __('SKU') : __('Warehouse'),
+                    'model'     => $orgStock ? __('SKO') : __('Warehouse'),
                     'actions'   => $orgStock ? [
                         [
                             'type'  => 'button',
@@ -177,7 +177,7 @@ class IndexBatchCodes extends OrgAction
                             [
                                 'code'        => 'BC-001',
                                 'expiry_date' => '2027-12-31',
-                                'sku'         => 'SKU-001',
+                                'sku'         => 'SKO-001',
                             ],
                         ],
                     ],

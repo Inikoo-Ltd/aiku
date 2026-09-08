@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
 import { trans } from 'laravel-vue-i18n'
-import { inject, onMounted, nextTick, computed } from 'vue'
+import { inject, onMounted, onBeforeUnmount, nextTick, computed, watch } from 'vue'
 import formatDistanceStrict from 'date-fns/formatDistanceStrict'
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -25,9 +25,11 @@ import axios from 'axios'
 import { notify } from '@kyvg/vue3-notification'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 import AddLocations from './AddLocations.vue'
-import EditLocationsModal from './EditLocationsModal.vue'
+import EditLocations from './EditLocations.vue'
 import { WINDOW } from '@sentry/vue'
 import FractionDisplay from '@/Components/DataDisplay/FractionDisplay.vue'
+import { useLowStockAuditBroadcast, LowStockAuditedEvent } from '@/Composables/useLowStockAuditBroadcast'
+import { debounce } from 'lodash-es'
 library.add(faForklift, faInventory, faClipboardCheck, faQuestionSquare, faDotCircle, faDollyFlatbedEmptyFal, faShoppingBasket, faStickyNote, faShoppingCart, faDollyFlatbedEmptyFas)
 
 const props = defineProps<{
@@ -39,11 +41,78 @@ const props = defineProps<{
     }
     actions?: ('stock_check' | 'move_stock' | 'edit_location' | 'add_location')[]
     header_title?: string
+    reasons?: {
+        increase: [],
+        decrease: [],
+        transfer: [],
+    }
+    org_stock_id: number
 }>()
 
 const layout = inject('layout', layoutStructure)
-const locale = inject('locale', aikuLocaleStructure)
 
+const reloadStocksManagement = debounce(() => router.reload({ only: ['showcase'] }), 600)
+
+const { lockedLocationIds, announceLock } = useLowStockAuditBroadcast({
+    // Someone started counting this SKO elsewhere: whatever is half typed in the modal is about
+    // to be written over, so it is closed rather than left to overwrite the count coming in
+    onAuditStart: (event: LowStockAuditedEvent) => {
+        if (event.org_stock_id !== props.org_stock_id) {
+            return
+        }
+
+        if (isStockCheckModalOpen.value) {
+            isStockCheckModalOpen.value = false
+
+            notify({
+                title: trans('Audit in progress'),
+                text: trans('Location :location is being audited somewhere else', {
+                    location: event.location_code ?? '',
+                }),
+                type: 'warning',
+            })
+        }
+    },
+    onAudited: (event: LowStockAuditedEvent) => {
+        if (event.org_stock_id !== props.org_stock_id) {
+            return
+        }
+
+        const location = props.stocks_management.locations?.find(
+            (location: StockLocation) => location.id === event.location_org_stock_id
+        )
+
+        if (location) {
+            location.quantity = event.quantity ?? location.quantity
+            location.audited_at = event.audited_at ?? location.audited_at
+        }
+
+        reloadStocksManagement()
+    },
+})
+
+// Any location of this SKO being counted elsewhere holds the whole audit shut
+const isAuditLocked = computed(() =>
+    (props.stocks_management.locations ?? []).some((location: StockLocation) =>
+        lockedLocationIds.value.includes(location.id)
+    )
+)
+
+// Having the modal open is the intent to count the whole SKO, so the list is held while it is
+const announceAuditModalLock = (isLocking: boolean) =>
+    announceLock({
+        org_stock_id: props.org_stock_id,
+        is_locked: isLocking,
+        source: 'detail',
+    })
+
+onBeforeUnmount(() => {
+    if (isStockCheckModalOpen.value) {
+        announceAuditModalLock(false)
+    }
+})
+const locale = inject('locale', aikuLocaleStructure)
+const screenType = inject('screenType', ref('desktop'))
 // Active picking location state
 const activePickingLocationWholesale = ref<number | null>(null)
 const isLoadingActiveLocationWholesale = ref<number | null>(null)
@@ -341,22 +410,43 @@ const locationCount = computed(() => props.stocks_management.locations.length)
 const actionGridClass = computed(() => {
     const count = Object.values(MODALS).filter(action => showAction(action)).length
     return {
-        1: 'lg:grid-cols-1',
-        2: 'lg:grid-cols-2',
-        3: 'lg:grid-cols-3',
-        4: 'lg:grid-cols-4',
-    }[count] ?? 'lg:grid-cols-4'
+        1: 'xl:grid-cols-1',
+        2: 'xl:grid-cols-2',
+        3: 'xl:grid-cols-3',
+        4: 'xl:grid-cols-4',
+    }[count] ?? 'xl:grid-cols-4'
 })
 
 const isStockCheckModalOpen = ref(false)
+
+watch(isStockCheckModalOpen, (isOpen) => {
+    if (!isOpen) {
+        announceAuditModalLock(false)
+    }
+})
 const isMoveStockModalOpen = ref(false)
 const isEditLocationModalOpen = ref(false)
 const isAddLocationModalOpen = ref(false)
 const selectedLocationId = ref<number | null>(null)
-const openModal = (type: string, payload: number | null = null) => {
+const openModal = async (type: string, payload: number | null = null) => {
+    if (type === MODALS.STOCK_CHECK) {
+        if (isAuditLocked.value) {
+            return
+        }
+
+        if (!(await announceAuditModalLock(true))) {
+            notify({
+                title: trans('Being audited somewhere else'),
+                text: trans('This stock is already being counted'),
+                type: 'warning',
+            })
+
+            return
+        }
+    }
+
     activeModal.value = type
 
-    // For stock check modal we want to re-trigger focus even when the same location is selected again.
     if (type === MODALS.STOCK_CHECK) {
         selectedLocationId.value = null
         nextTick(() => {
@@ -441,15 +531,17 @@ const onAddLocationShow = () => {
                     <span>
                         <Icon :data="{...item.icon_state, tooltip : null}" />
                     </span>
-                    <span class="ml-2 text-lg font-bold">
-                        {{ locale.number(item.value ?? 0) }}
+                    <span class="ml-2 text-lg font-bold inline-flex align-middle">
+                        <FractionDisplay v-if="item.value_fractional" :fractionData="item.value_fractional" />
+                        <template v-else>{{ locale.number(item.value ?? 0) }}</template>
                     </span>
                 </div>
             </div>
 
             <div class="grid align-item-middle border-l">
-                <span class="my-auto text-lg text-center font-semibold mx-1 px-4 py-2 border border-green-200 bg-green-100 rounded tabular-nums" v-tooltip="trans('Stock in Location')">
-                    {{ locale.number(stocks_management.qty_in_location ?? 0) }}
+                <span class="my-auto text-lg text-center font-semibold mx-1 px-4 py-2 border border-green-200 bg-green-100 rounded tabular-nums flex items-center justify-center" v-tooltip="trans('Stock in Location')">
+                    <FractionDisplay v-if="stocks_management.qty_in_location_fractional" :fractionData="stocks_management.qty_in_location_fractional" />
+                    <template v-else>{{ locale.number(stocks_management.qty_in_location ?? 0) }}</template>
                 </span>
             </div>
         </div>
@@ -457,73 +549,92 @@ const onAddLocationShow = () => {
         <!-- Section: Location Grid -->
         <div class="border-t pt-2 gap-2 items-center text-gray-700">
 
-                <Dialog
-                    v-model:visible="isStockCheckModalOpen"
-                    :header="`${trans('Audit Stock')} - ${props.trade_units[0]?.code}`"
-                    modal
-                    :dismissableMask="true"
-                    :closeOnEscape="true"
-                    :focusOnShow="false"
-                    :style="{ width: '50vw' }"
-                    :breakpoints="{
-                        '1200px': '75vw',
-                        '992px': '80vw',
-                        '768px': '90vw',
-                        '576px': '95vw'
-                    }"
-                    :contentStyle="{ maxHeight: '70vh', overflow: 'auto' }"
+            <Dialog
+                v-model:visible="isStockCheckModalOpen"
+                :header="`${ctrans('Audit Stock')} - ${props.trade_units[0]?.code}`"
+                modal
+                :dismissableMask="screenType === 'desktop'"
+                :closeOnEscape="true"
+                :focusOnShow="false"
+                :style="{ width: '60vw' }"
+                :breakpoints="{
+                    '1200px': '80vw',
+                    '992px': '80vw',
+                    '768px': '90vw',
+                    '576px': '95vw'
+                }"
+                :contentStyle="{ overflow: 'visible' }"
+            >
+                <StockCheck
+                    :selectedLocationId="selectedLocationId"
+                    :locations="props.stocks_management.locations"
+                    @close="isStockCheckModalOpen = false"
+                    :auditRoute="props.stocks_management?.routes?.audit_route"
+                    :bulkAuditRoute="props.stocks_management?.routes?.bulk_audit_route"
+                    :lockedLocationIds
+                    :reasons
+                    :org_stock_id
+                />
+            </Dialog>
+
+            <Dialog v-model:visible="isMoveStockModalOpen" modal :header="ctrans('Move Stock')"
+                :style="{ width: '50vw' }"
+                :dismissableMask="screenType === 'desktop'"
+                :closeOnEscape="true"
+                :breakpoints="{
+                    '1200px': '75vw',
+                    '992px': '80vw',
+                    '768px': '90vw',
+                    '576px': '95vw'
+                }"
+                :contentStyle="{ overflow: 'visible' }">
+                <MoveStock
+                    :part_locations="props.stocks_management.locations"
+                    :replenishment_data="tempMinMaxStock"
+                    @close="isMoveStockModalOpen = false"
+                    :reasons
+                />
+            </Dialog>
+
+            <Dialog v-model:visible="isEditLocationModalOpen" modal :header="ctrans('Remove Locations')"
+                :dismissableMask="screenType === 'desktop'"
+                :style="{ width: '50vw' }"
+                :closeOnEscape="true"
+                :breakpoints="{
+                    '1200px': '76vw',
+                    '992px': '80vw',
+                    '768px': '90vw',
+                    '576px': '95vw'
+                }"
                 >
-                    <StockCheck
-                        :selectedLocationId="selectedLocationId"
-                        :locations="props.stocks_management.locations"
-                        @close="isStockCheckModalOpen = false"
-                        :auditRoute="props.stocks_management?.routes?.audit_route"
-                    />
-                </Dialog>
-
-                 <Dialog v-model:visible="isMoveStockModalOpen" modal :header="trans('Move Stock')"
-                    :style="{ width: '50vw' }"
-                    :dismissableMask="true"
-                    :closeOnEscape="true"
-                    :breakpoints="{
-                        '1200px': '75vw',
-                        '992px': '80vw',
-                        '768px': '90vw',
-                        '576px': '95vw'
-                    }">
-                    <MoveStock
-                        :part_locations="props.stocks_management.locations"
-                        :replenishment_data="tempMinMaxStock"
-                        @close="isMoveStockModalOpen = false"
-                    />
-                 </Dialog>
-
-                <EditLocationsModal
-                    v-model="isEditLocationModalOpen"
+                <EditLocations
                     :locations="props.stocks_management.locations"
                     :routes="props.stocks_management.routes"
+                    @close="isEditLocationModalOpen = false"
                 />
+            </Dialog>
 
-                <Dialog v-model:visible="isAddLocationModalOpen" modal :header="trans('Add Location')"
-                    @show="onAddLocationShow"
-                    :style="{ width: '50vw' }"
-                    :dismissableMask="true"
-                    :closeOnEscape="true"
-                    :breakpoints="{
-                        '1200px': '75vw',
-                        '992px': '80vw',
-                        '768px': '90vw',
-                        '576px': '95vw'
-                    }"
-                    :contentStyle="{ overflow: 'visible' }">
-                     <AddLocations
-                        ref="addLocationRef"
-                        :locations="props.stocks_management.locations"
-                        @close="isAddLocationModalOpen = false"
-                        :routes="props.stocks_management?.routes"
-                    />
-                </Dialog>
+            <Dialog v-model:visible="isAddLocationModalOpen" modal :header="ctrans('Add Location')"
+                @show="onAddLocationShow"
+                :style="{ width: '50vw' }"
+                :dismissableMask="screenType === 'desktop'"
+                :closeOnEscape="true"
+                :breakpoints="{
+                    '1200px': '75vw',
+                    '992px': '80vw',
+                    '768px': '90vw',
+                    '576px': '95vw'
+                }"
+                :contentStyle="{ overflow: 'visible' }">
+                    <AddLocations
+                    ref="addLocationRef"
+                    :locations="props.stocks_management.locations"
+                    @close="isAddLocationModalOpen = false"
+                    :routes="props.stocks_management?.routes"
+                />
+            </Dialog>
 
+            <div class="max-h-[40vh] overflow-y-auto overflow-x-hidden">
                 <template v-if="props.stocks_management.locations?.length">
                     <div v-for="(loc, idx) in props.stocks_management.locations" :key="loc.id"
                             class="grid grid-cols-7 gap-x-3 items-center gap-2 p-2 rounded transition-colors duration-200 mb-1"
@@ -664,7 +775,7 @@ const onAddLocationShow = () => {
                                 <span
                                     v-tooltip="trans('Stock quantity')"
                                     class="cursor-pointer hover:text-blue-500 transition tabular-nums"
-                                    @dblclick="openModal(MODALS.STOCK_CHECK, loc.id)"
+                                    @dblclick="!isAuditLocked && openModal(MODALS.STOCK_CHECK, loc.id)"
                                 >
                                     <FractionDisplay v-if="loc.quantity_fractional" :fractionData="loc.quantity_fractional"/>
                                     <span v-else>
@@ -677,13 +788,14 @@ const onAddLocationShow = () => {
                 <div v-else class="text-gray-500 text-center italic">
                     {{ ctrans("No locations") }}
                 </div>
+            </div>
         </div>
 
         <!-- Action Buttons -->
         <div class="grid grid-cols-2 border-t pt-3 gap-2" :class="actionGridClass">
-            <Button v-if="showAction(MODALS.STOCK_CHECK)" @click="openModal(MODALS.STOCK_CHECK)" :disabled="locationCount === 0" :tooltip="locationCount === 0 ? ctrans('No location to audit') : undefined" iconRight="fal fa-clipboard-check" :label="ctrans('Audit Stock')" size="sm" type="tertiary" full class="whitespace-nowrap" />
+            <Button v-if="showAction(MODALS.STOCK_CHECK)" @click="openModal(MODALS.STOCK_CHECK)" :disabled="locationCount === 0 || isAuditLocked" :tooltip="locationCount === 0 ? ctrans('No location to audit') : (isAuditLocked ? ctrans('This stock is being audited somewhere else') : undefined)" iconRight="fal fa-clipboard-check" :label="ctrans('Audit Stock')" size="sm" type="tertiary" full class="whitespace-nowrap" />
             <Button v-if="showAction(MODALS.MOVE_STOCK)" @click="openModal(MODALS.MOVE_STOCK)" :disabled="locationCount < 2" :tooltip="locationCount < 2 ? ctrans('Requires at least 2 locations') : undefined" iconRight="fal fa-forklift" :label="ctrans('Move Stock')" size="sm" type="tertiary" full class="whitespace-nowrap" />
-            <Button v-if="showAction(MODALS.EDIT_LOCATION)" @click="openModal(MODALS.EDIT_LOCATION)" :disabled="locationCount === 0" :tooltip="locationCount === 0 ? ctrans('No location to edit') : undefined" iconRight="fal fa-edit" :label="ctrans('Edit Locations')" size="sm" type="tertiary" full class="whitespace-nowrap" />
+            <Button v-if="showAction(MODALS.EDIT_LOCATION)" @click="openModal(MODALS.EDIT_LOCATION)" :disabled="locationCount === 0" :tooltip="locationCount === 0 ? ctrans('No location to edit') : undefined" iconRight="fal fa-edit" :label="ctrans('Remove Locations')" size="sm" type="tertiary" full class="whitespace-nowrap" />
             <Button v-if="showAction(MODALS.ADD_LOCATION)" @click="openModal(MODALS.ADD_LOCATION)" iconRight="fal fa-plus" :label="ctrans('Add Location')" size="sm" type="tertiary" full class="whitespace-nowrap" />
         </div>
 

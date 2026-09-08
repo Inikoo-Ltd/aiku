@@ -8,6 +8,7 @@
 
 namespace App\Actions\Accounting\Reports\IntrastatImportTimeSeries;
 
+use App\Helpers\TimeSeriesPeriodCalculator;
 use App\Actions\Traits\Hydrators\WithHydrateCommand;
 use App\Actions\Traits\WithTimeSeriesRedo;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
@@ -43,6 +44,17 @@ class RedoIntrastatImportTimeSeries implements ShouldBeUnique
         return $query->where('type', OrganisationTypeEnum::SHOP->value);
     }
 
+    protected function dateRangeSources(): array
+    {
+        return [
+            [
+                'query' => fn () => DB::connection('aiku_no_sticky')->table('stock_deliveries')->whereNotNull('checked_at'),
+                'key'   => 'organisation_id',
+                'date'  => 'checked_at',
+            ],
+        ];
+    }
+
     public function handle(?int $organisationId, ?string $from = null, ?string $to = null, bool $async = false): void
     {
         if (!$organisationId) {
@@ -56,21 +68,23 @@ class RedoIntrastatImportTimeSeries implements ShouldBeUnique
         }
 
         if (!$from || !$to) {
-            $dates = DB::connection('aiku_no_sticky')->table('stock_deliveries')->where('organisation_id', $organisation->id)->whereNotNull('checked_at')->selectRaw('MIN(checked_at) as min_date, MAX(checked_at) as max_date')->first();
+            $dateRange = $this->getDateRange($organisation->id);
 
-            if (!$dates || !$dates->min_date || !$dates->max_date) {
+            if (!$dateRange['from'] || !$dateRange['to']) {
                 return;
             }
 
-            $from = $from ?? Carbon::parse($dates->min_date)->toDateString();
-            $to   = $to ?? Carbon::parse($dates->max_date)->toDateString();
+            $from = $from ?? Carbon::parse($dateRange['from'])->toDateString();
+            $to   = $to ?? Carbon::parse($dateRange['to'])->toDateString();
         }
 
         foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
+            [$periodFrom, $periodTo] = TimeSeriesPeriodCalculator::expandWindowToFullPeriods($frequency, $from, $to);
+
             if ($async) {
-                ProcessIntrastatImportTimeSeriesRecords::dispatch($organisation->id, $frequency, $from, $to)->onQueue('sales_slave_historic');
+                ProcessIntrastatImportTimeSeriesRecords::dispatch($organisation->id, $frequency, $periodFrom, $periodTo)->onQueue('sales_slave_historic');
             } else {
-                ProcessIntrastatImportTimeSeriesRecords::run($organisation->id, $frequency, $from, $to);
+                ProcessIntrastatImportTimeSeriesRecords::run($organisation->id, $frequency, $periodFrom, $periodTo);
             }
         }
     }

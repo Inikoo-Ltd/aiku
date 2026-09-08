@@ -9,7 +9,7 @@
 namespace App\Actions\Catalogue\Product;
 
 use App\Actions\Catalogue\Variant\StoreVariantFromMaster;
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Actions\Helpers\Translations\TranslateModel;
 use App\Actions\Web\Webpage\PublishWebpage;
 use App\Enums\Catalogue\Product\ProductStateEnum;
@@ -18,7 +18,7 @@ use App\Models\Catalogue\Product;
 use App\Models\Masters\MasterAsset;
 use Illuminate\Support\Arr;
 
-class StoreProductFromMasterProduct extends GrpAction
+class StoreProductFromMasterProduct extends OrgAction
 {
     public string $jobQueue = 'urgent';
 
@@ -45,8 +45,8 @@ class StoreProductFromMasterProduct extends GrpAction
                 $createInShop = Arr::get($shopProductData, 'create_in_shop');
 
                 if ($createInShop == 'Yes') {
-                    $price = $shopProductData['price'] ?? $masterAsset->price;
-                    $rrp   = $shopProductData['rrp'];
+                    $price = $masterAsset->getPriceFromCurrency($shop->currency) ;
+                    $rrp   = $masterAsset->getRrpFromCurrency($shop->currency);
 
                     $tradeUnits = [];
                     foreach ($masterAsset->tradeUnits as $tradeUnit) {
@@ -56,29 +56,26 @@ class StoreProductFromMasterProduct extends GrpAction
                         ];
                     }
 
-
                     $isMain = $masterAsset->is_main;
 
-                    // TODO MasterLevel Price RRP (Raul)
-                    // TODO HydrateChildPriceRRP according MasterProduct using the Exchange Ratio
-
                     $data   = [
-                        'code'              => $masterAsset->code,
-                        'name'              => $masterAsset->name,
-                        'description'       => $masterAsset->description,
-                        'description_title' => $masterAsset->description_title,
-                        'description_extra' => $masterAsset->description_extra,
-                        'price'             => $price,
-                        'rrp'               => $rrp,
-                        'unit'              => $masterAsset->unit,
-                        'units'             => $masterAsset->units,
-                        'trade_units'       => $tradeUnits,
-                        'master_product_id' => $masterAsset->id,
-                        'state'             => ProductStateEnum::ACTIVE,
-                        'status'            => ProductStatusEnum::FOR_SALE,
-                        'is_main'           => $isMain,
-                        'is_for_sale'       => data_get($modelData, 'is_for_sale', $masterAsset->status),
-                        'is_minion_variant' => !$isMain,
+                        'code'                      => $masterAsset->code,
+                        'name'                      => $masterAsset->name,
+                        'description'               => $masterAsset->description,
+                        'description_title'         => $masterAsset->description_title,
+                        'description_extra'         => $masterAsset->description_extra,
+                        'price'                     => $price,
+                        'rrp'                       => $rrp,
+                        'unit'                      => $masterAsset->unit,
+                        'units'                     => $masterAsset->units,
+                        'trade_units'               => $tradeUnits,
+                        'master_product_id'         => $masterAsset->id,
+                        'state'                     => ProductStateEnum::ACTIVE,
+                        'status'                    => ProductStatusEnum::FOR_SALE,
+                        'is_main'                   => $isMain,
+                        'is_for_sale'               => data_get($modelData, 'is_for_sale', $masterAsset->is_for_sale),
+                        'is_golden_product'         => $masterAsset->is_golden_product,
+                        'is_minion_variant'         => !$isMain,
                     ];
 
                     if (count($tradeUnits) > 1) {
@@ -93,7 +90,7 @@ class StoreProductFromMasterProduct extends GrpAction
                         data_set($data, 'family_id', $productCategory->id);
                         data_set($data, 'trade_units', $tradeUnits);
 
-                        $this->updateFoundProduct($product, $data, ($isMain && !$ignoreCreateWebpage));
+                        $this->updateFoundProduct($product, $data, ($isMain && !$ignoreCreateWebpage), $generateVariant);
 
                         continue;
                     }
@@ -168,12 +165,12 @@ class StoreProductFromMasterProduct extends GrpAction
     /**
      * @throws \Throwable
      */
-    public function updateFoundProduct(Product $product, array $modelData, bool $createWebpage): void
+    public function updateFoundProduct(Product $product, array $modelData, bool $createWebpage, bool $generateVariant = true): void
     {
         $product = UpdateProduct::run($product, $modelData);
         CloneProductImagesFromTradeUnits::run($product);
         $product->refresh();
-        if ($product->masterProduct) {
+        if ($product->masterProduct && $generateVariant) {
             $this->setVariantData($product, $product->masterProduct);
         }
         if ($createWebpage && $product->webpage === null) {
@@ -212,7 +209,7 @@ class StoreProductFromMasterProduct extends GrpAction
 
         $group = $masterAsset->group;
 
-        $this->initialisation($group, $modelData);
+        $this->initialisationFromGroup($group, $modelData);
 
         $this->handle($masterAsset, $this->validatedData, $generateVariant, $ignoreCreateWebpage);
     }

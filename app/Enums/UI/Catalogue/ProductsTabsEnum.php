@@ -20,6 +20,8 @@ enum ProductsTabsEnum: string
     case INDEX            = 'index';
     case INDEX_ORDERING   = 'index_ordering';
     case SALES            = 'sales';
+    case EDIT             = 'edit';
+    case BULK_UNIT        = 'bulk_unit';
 
     public function blueprint(): array
     {
@@ -31,10 +33,20 @@ enum ProductsTabsEnum: string
             ProductsTabsEnum::INDEX_ORDERING => [
                 'title' => __('Index Ordering'),
                 'icon'  => 'fal fa-sort-shapes-up-alt',
+                'type'  => 'icon',
+                'align' => 'right'
             ],
             ProductsTabsEnum::SALES => [
                 'title' => __('Sales'),
                 'icon'  => 'fal fa-money-bill-wave',
+            ],
+            ProductsTabsEnum::EDIT => [
+                'title' => __('Edit'),
+                'icon'  => 'fal fa-pencil',
+            ],
+            ProductsTabsEnum::BULK_UNIT => [
+                'title' => __('Bulk unit'),
+                'icon'  => 'fal fa-check-square',
             ],
         };
     }

@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { Head, Link } from "@inertiajs/vue3"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faBullhorn, faCameraRetro, faCube, faFolder, faMedal, faMoneyBillWave, faProjectDiagram, faStarfighter, faTag, faUser, faBrowser, faFolderDownload, faQuoteLeft} from "@fal"
+import { faBullhorn, faCameraRetro, faCube, faFolder, faMedal, faMoneyBillWave, faProjectDiagram, faStarfighter, faTag, faUser, faBrowser, faFolderDownload, faQuoteLeft, faAtomAlt} from "@fal"
 import { faExclamationTriangle, faThumbtack } from "@fas"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
-import { computed, inject, ref } from "vue"
+import { computed, ref } from "vue"
 import { useTabChange } from "@/Composables/tab-change"
 import ModelDetails from "@/Components/ModelDetails.vue"
 import TableCustomers from "@/Components/Tables/Grp/Org/CRM/TableCustomers.vue"
@@ -49,7 +49,8 @@ library.add(
     faQuoteLeft,
     faThumbtack,
     faMedal,
-    faStarfighter
+    faStarfighter,
+    faAtomAlt
 )
 
 
@@ -70,6 +71,7 @@ const props = defineProps<{
     is_orphan?: boolean
     currency?: Object
     url_master?: routeType
+    url_master_tuf?: routeType
     shopsData?: any
     masterProductCategoryId?: number
     images?: object
@@ -92,8 +94,6 @@ const props = defineProps<{
     related_product_category?: object,
 
 }>()
-
-const layout = inject("layout", {})
 
 const currentTab = ref(props.tabs.current)
 
@@ -144,7 +144,6 @@ const reviewRatingLabels = computed(() => {
 
 const showDialog = ref(false)
 
-
 </script>
 
 <template>
@@ -169,10 +168,18 @@ const showDialog = ref(false)
                     :color="pageHead.iconRight.color"
                     :rotation="pageHead?.iconRight?.icon_rotation" />
 
-                <Link v-if="url_master" :href="route(url_master.name,url_master.parameters)" v-tooltip="'Go to Master family'" :class="'opacity-70 hover:opacity-100'">
+                <Link v-if="url_master" :href="route(url_master.name, url_master.parameters)" v-tooltip="'Go to Master family'" :class="'opacity-70 hover:opacity-100'">
                     <FontAwesomeIcon
                         :icon="faOctopusDeploy"
                         color="#4B0082"
+                        fixed-width
+                    />
+
+                </Link>
+
+                <Link v-if="url_master_tuf" :href="route(url_master_tuf.name, url_master_tuf.parameters)" v-tooltip="'Go to Trade Unit Family'" :class="'opacity-70 hover:opacity-100'">
+                    <FontAwesomeIcon
+                        :icon="faAtomAlt"
                         fixed-width
                     />
 
@@ -188,15 +195,12 @@ const showDialog = ref(false)
                     :product_category_id="props.product_category_id"
                     v-tooltip="'Create New Offer'"
                 />
-                <div v-if="layout?.app?.environment == 'local'" class="relative inline-flex">
+                <div class="relative inline-flex">
                     <ModalCreateMixAndMatchOffer
                         :shop_data="props.shop_data"
                         :product_category_id="props.product_category_id"
                         v-tooltip="'Create Mix & Match Offer'"
                     />
-                    <span class="pointer-events-none absolute -top-2 -right-1.5 z-10 rounded bg-red-500 px-1 py-px text-[10px] font-bold leading-none text-white shadow">
-                        {{ trans('Local') }}
-                    </span>
                 </div>
             </template>
           <!--   <ModalCreateCategoryReviews
@@ -216,7 +220,7 @@ const showDialog = ref(false)
 
     <Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" />
 
-    <div v-if="mini_breadcrumbs.length != 0" class="bg-white  px-4 py-2  w-full  border-gray-200 border-b overflow-x-auto">
+    <div v-if="mini_breadcrumbs?.length" class="bg-white  px-4 py-2  w-full  border-gray-200 border-b overflow-x-auto">
         <Breadcrumb :model="mini_breadcrumbs">
             <template #item="{ item, index }">
                 <div class="flex items-center gap-1 whitespace-nowrap">

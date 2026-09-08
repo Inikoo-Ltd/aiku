@@ -11,9 +11,11 @@ namespace App\Models\Accounting;
 use App\Enums\Accounting\CreditTransaction\CreditTransactionReasonEnum;
 use App\Enums\Accounting\CreditTransaction\CreditTransactionTypeEnum;
 use App\Models\Helpers\Currency;
+use App\Models\Traits\HasHistory;
 use App\Models\Traits\InCustomer;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use OwenIt\Auditing\Contracts\Auditable;
 
 /**
  * @property int $id
@@ -52,9 +54,10 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|CreditTransaction query()
  * @mixin \Eloquent
  */
-class CreditTransaction extends Model
+class CreditTransaction extends Model implements Auditable
 {
     use InCustomer;
+    use HasHistory;
 
     protected $casts = [
         'data'            => 'array',
@@ -92,5 +95,17 @@ class CreditTransaction extends Model
         return $this->belongsTo(Payment::class);
     }
 
+    public function generateTags(): array
+    {
+        return ['accounting'];
+    }
+
+    protected array $auditInclude = [
+        'type',
+        'date',
+        'amount',
+        'notes',
+        'reason'
+    ];
 
 }

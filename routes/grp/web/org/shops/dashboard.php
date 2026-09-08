@@ -9,11 +9,13 @@
 
 use App\Actions\Catalogue\Shop\UI\GetShopDashboardTabData;
 use App\Actions\Catalogue\Shop\UI\ShowShop;
+use App\Actions\Catalogue\Shop\UI\ShowShopBrandsDashboard;
 use App\Actions\Catalogue\Shop\UI\IndexHistoryInShop;
 use Illuminate\Support\Facades\Route;
 
 Route::get('', ShowShop::class)->name('show');
 Route::get('/tab-data', GetShopDashboardTabData::class)->name('tab-data');
+Route::get('/brands', ShowShopBrandsDashboard::class)->name('brands');
 
 Route::name("comms.")->prefix('comms')
     ->group(__DIR__ . "/comms.php");

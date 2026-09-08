@@ -54,6 +54,28 @@ test('smoke: guest pages have no javascript errors', function () {
     $pages->assertNoJavaScriptErrors();
 });
 
+test('smoke: logged-out product page has no javascript errors', function () {
+    $this->product->update(['rrp' => 250]);
+
+    $webpage = \App\Actions\Catalogue\Product\StoreProductWebpage::make()->action($this->product);
+
+    $productBlockType = $this->website->group->webBlockTypes()->where('code', 'product-1')->firstOrFail();
+    \App\Actions\Web\ModelHasWebBlocks\StoreModelHasWebBlock::make()->action($webpage, [
+        'web_block_type_id' => $productBlockType->id,
+        'position'          => 0,
+    ]);
+
+    $webpage = \App\Actions\Web\Webpage\PublishWebpage::make()->action($webpage, ['comment' => 'logged-out smoke test']);
+    $webpage->update(['canonical_url' => null]);
+
+    // ponytail: the bare fixture publishes the product-1 block but its product data is not
+    // hydrated, so price/RRP elements never render — this catches logged-out boot crashes
+    // only. Hydrate the block (see IrisWebBlocksTest) to also cover the price display path.
+    visit('/'.$webpage->url)
+        ->assertNoJavaScriptErrors()
+        ->assertSee($this->product->code);
+});
+
 test('guest can see registration form', function () {
     visit('/app/registration-form')
         ->assertNoJavaScriptErrors()

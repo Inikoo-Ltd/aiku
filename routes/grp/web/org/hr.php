@@ -16,12 +16,14 @@ use App\Actions\HumanResources\Clocking\UI\ShowClocking;
 use App\Actions\HumanResources\ClockingMachine\ExportWorkplaces;
 use App\Actions\HumanResources\ClockingMachine\UI\CreateClockingMachine;
 use App\Actions\HumanResources\ClockingMachine\UI\EditClockingMachine;
+use App\Actions\HumanResources\ClockingMachine\UI\EditClockingMachineQRCode;
 use App\Actions\HumanResources\ClockingMachine\UI\IndexClockingMachines;
 use App\Actions\HumanResources\ClockingMachine\UI\ShowClockingMachine;
 use App\Actions\HumanResources\Employee\DownloadEmployeesTemplate;
 use App\Actions\HumanResources\Employee\ExportEmployees;
 use App\Actions\HumanResources\Employee\ExportEmployeeTimesheets;
 use App\Actions\HumanResources\Employee\GeneratePinEmployee;
+use App\Actions\HumanResources\Employee\RegenerateEmployeePin;
 use App\Actions\HumanResources\Employee\GetEmployeesByBirthMonth;
 use App\Actions\HumanResources\Employee\AdjustEmployeeLeaveBalance;
 use App\Actions\HumanResources\Employee\GetEmployeeContract;
@@ -34,8 +36,11 @@ use App\Actions\HumanResources\Employee\UI\IndexEmployees;
 use App\Actions\HumanResources\Employee\UI\ShowEmployee;
 use App\Actions\HumanResources\JobPosition\UI\IndexJobPositions;
 use App\Actions\HumanResources\JobPosition\UI\ShowJobPosition;
+use App\Actions\HumanResources\Timesheet\ExportTimesheetsByDate;
+use App\Actions\HumanResources\Timesheet\ExportTimesheetsByEmployee;
 use App\Actions\HumanResources\Timesheet\Pdf\PdfTimesheet;
 use App\Actions\HumanResources\Timesheet\Pdf\PdfTimesheets;
+use App\Actions\HumanResources\Timesheet\StoreManualTimesheet;
 use App\Actions\HumanResources\Timesheet\UI\IndexTimesheets;
 use App\Actions\HumanResources\Timesheet\UI\ShowTimesheet;
 use App\Actions\HumanResources\Overtime\UI\IndexOvertime;
@@ -50,7 +55,10 @@ use App\Actions\HumanResources\Workplace\UI\IndexWorkplaces;
 use App\Actions\HumanResources\Workplace\UI\ShowWorkplace;
 use App\Actions\SysAdmin\User\UI\EditUser;
 use App\Actions\SysAdmin\User\UI\ShowUser;
+use App\Actions\HumanResources\StaffChat\UI\ShowStaffChatConversation;
+use App\Actions\SysAdmin\UI\IndexStaffChatAnalytics;
 use App\Actions\UI\HumanResources\ShowHumanResourcesDashboard;
+use App\Actions\UI\HumanResources\ShowOrgChart;
 use App\Actions\HumanResources\Leave\ApproveLeave;
 use App\Actions\HumanResources\Leave\ExportCalendar;
 use App\Actions\HumanResources\Leave\ExportLeaveReport;
@@ -80,6 +88,9 @@ use App\Actions\HumanResources\HolidayYear\UpdateHolidayYear;
 use App\Actions\HumanResources\HolidayYear\ActivateHolidayYear;
 
 Route::get('/', ShowHumanResourcesDashboard::class)->name('dashboard');
+Route::get('/org-chart', ShowOrgChart::class)->name('org_chart');
+Route::get('/staff-chat', [IndexStaffChatAnalytics::class, 'inOrganisation'])->name('staff_chat.index');
+Route::get('/staff-chat/{staffConversation}', ShowStaffChatConversation::class)->name('staff_chat.show');
 
 Route::prefix('employees')->as('employees.')->group(function () {
     Route::get('', IndexEmployees::class)->name('index');
@@ -93,6 +104,7 @@ Route::prefix('employees')->as('employees.')->group(function () {
         Route::get('edit', EditEmployee::class)->name('edit');
 
         Route::get('pin', GeneratePinEmployee::class)->name('generate-pin');
+        Route::post('pin/regenerate', RegenerateEmployeePin::class)->name('regenerate-pin');
 
         Route::as('show.')->group(function () {
             Route::get('/positions', [IndexJobPositions::class,'inEmployee'])->name('positions.index');
@@ -131,7 +143,10 @@ Route::patch('/holiday-years/{holidayYear}', UpdateHolidayYear::class)->name('ho
 Route::patch('/holiday-years/{holidayYear}/activate', ActivateHolidayYear::class)->name('holiday_years.activate');
 
 Route::get('/timesheets', IndexTimesheets::class)->name('timesheets.index');
+Route::post('/timesheets', StoreManualTimesheet::class)->name('timesheets.store');
 Route::get('/timesheets-export', PdfTimesheets::class)->name('timesheets.export');
+Route::get('/timesheets/export/by-date', ExportTimesheetsByDate::class)->name('timesheets.export_by_date');
+Route::get('/timesheets/export/by-employee', ExportTimesheetsByEmployee::class)->name('timesheets.export_by_employee');
 Route::get('/timesheets/{timesheet}', ShowTimesheet::class)->name('timesheets.show');
 
 Route::get('/workplaces', IndexWorkplaces::class)->name('workplaces.index');
@@ -167,6 +182,7 @@ Route::prefix('clocking-machines')->as('clocking_machines.')->group(function () 
     Route::get('create', [CreateClockingMachine::class, 'inOrganisation'])->name('create');
     Route::get('{clockingMachine}', [ShowClockingMachine::class,'inOrganisation'])->name('show');
     Route::get('{clockingMachine}/edit', EditClockingMachine::class)->name('edit');
+    Route::get('{clockingMachine}/qr-codes/{clockingMachineQRCode:id}/edit', EditClockingMachineQRCode::class)->name('show.qr_codes.edit');
 });
 
 Route::get('/clocking', IndexClockings::class)->name('clockings.index');
@@ -198,6 +214,7 @@ Route::prefix('leaves')->as('leaves.')->group(function () {
     Route::get('export', [ExportLeaveReport::class, 'asController'])->name('export');
     Route::get('export/calendar', [ExportCalendar::class, 'asController'])->name('export.calendar');
     Route::get('print', [PrintCalendar::class, 'asController'])->name('print');
+    Route::post('employees/{employee}', \App\Actions\HumanResources\Leave\StoreEmployeeLeave::class)->name('store');
     Route::post('{leave}/approve', ApproveLeave::class)->name('approve');
     Route::post('{leave}/reject', RejectLeave::class)->name('reject');
     Route::patch('{leave}/admin', UpdateLeave::class)->name('admin.update');

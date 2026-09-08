@@ -3,18 +3,19 @@
 namespace App\Actions\HumanResources\ClockingMachine;
 
 use App\Actions\HumanResources\Clocking\StoreClocking;
-use App\Enums\HumanResources\Employee\EmploymentTypeEnum;
-use App\Enums\HumanResources\Clocking\ClockingActionEnum;
+use App\Actions\HumanResources\Clocking\Traits\DeterminesClockingResult;
+use App\Actions\SysAdmin\User\GetUserCurrentEmployee;
 use App\Enums\HumanResources\ClockingMachine\ClockingPolicyModeEnum;
 use App\Models\HumanResources\Clocking;
 use App\Models\HumanResources\ClockingMachine;
 use App\Models\HumanResources\ClockingMachineCoordinatePolicy;
+use App\Models\HumanResources\ClockingMachineQRCode;
 use App\Models\HumanResources\ClockingMachineCoordinatePolicyRule;
-use App\Models\HumanResources\TimeTracker;
+use App\Models\HumanResources\Employee;
 use App\Models\HumanResources\WorkSchedule;
 use App\Notifications\LateClockInNotification;
+use Closure;
 use Exception;
-use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -24,39 +25,39 @@ use Lorisleiva\Actions\Concerns\AsAction;
 class ValidateClockingMachineQrCode
 {
     use AsAction;
+    use DeterminesClockingResult;
 
     public function handle(string $qrCodeToken, ?float $userLat = null, ?float $userLng = null, ?int $workScheduleId = null): array
     {
         $clockingMachine = null;
+        $employee        = null;
 
         try {
-            try {
-                $payload = json_decode(decrypt($qrCodeToken), true);
-            } catch (DecryptException $e) {
+            $clockingMachineQRCode = ClockingMachineQRCode::where('hash', static::extractHash($qrCodeToken))->first();
+
+            if (!$clockingMachineQRCode) {
                 throw new Exception(__('Invalid QR Code.'));
             }
 
-            if (!$payload || !isset($payload['mid'], $payload['ts'])) {
-                throw new Exception(__('Invalid QR Code format.'));
-            }
-
-            $clockingMachine = ClockingMachine::find($payload['mid']);
+            $clockingMachine = $clockingMachineQRCode->clockingMachine;
 
             if (!$clockingMachine) {
                 throw new Exception(__('Clocking machine not found.'));
             }
 
-            $config = $clockingMachine->config['qr'] ?? [];
-
-            $expiryDuration = (int) ($config['expiry_duration'] ?? 60);
-            $generatedAt = Carbon::createFromTimestamp($payload['ts']);
-
-            if ($generatedAt->addSeconds($expiryDuration)->isPast()) {
-                throw new Exception(__('QR Code has expired. Please scan a new one.'));
+            if (!$clockingMachineQRCode->active) {
+                throw new Exception(__('This QR Code is no longer active. Please scan a new one.'));
             }
 
-            $employeeId = Auth::user()?->employees->first()?->id;
-            $effectiveMode = $this->resolveEffectivePolicyMode($clockingMachine, $employeeId, now());
+            $config = $clockingMachine->config['qr'] ?? [];
+
+            $employee = $this->resolveEmployee($clockingMachine);
+
+            if (!$employee) {
+                throw new Exception(__('User is not associated with an employee record.'));
+            }
+
+            $effectiveMode = $this->resolveEffectivePolicyMode($clockingMachine, $employee, now());
 
             if (($config['allow_coordinates'] ?? false) === true && $effectiveMode !== ClockingPolicyModeEnum::REMOTE->value) {
                 if ($userLat === null || $userLng === null) {
@@ -72,13 +73,14 @@ class ValidateClockingMachineQrCode
                 null,
                 $qrCodeToken,
                 $userLat,
-                $userLng
+                $userLng,
+                $employee
             );
 
             $workingHours = $this->getWorkingHours($clockingMachine);
 
-            $clockingResult = DB::transaction(function () use ($clockingMachine, $userLat, $userLng, $workScheduleId) {
-                return $this->processClocking($clockingMachine, $userLat, $userLng, $workScheduleId);
+            $clockingResult = DB::transaction(function () use ($clockingMachine, $clockingMachineQRCode, $employee, $workScheduleId) {
+                return $this->processClocking($clockingMachine, $clockingMachineQRCode, $employee, $workScheduleId);
             });
 
             return [
@@ -96,35 +98,37 @@ class ValidateClockingMachineQrCode
                 $e->getMessage(),
                 $qrCodeToken,
                 $userLat,
-                $userLng
+                $userLng,
+                $employee
             );
 
             throw $e;
         }
     }
 
-    private function processClocking(ClockingMachine $machine, ?float $lat, ?float $lng, ?int $workScheduleId = null): array
+    /**
+     * The QR code is scanned by a signed in user, so the employee comes from the user rather than
+     * from the machine. Reaching across organisations is left to GetUserCurrentEmployee, which
+     * ranks an active employment elsewhere above a closed one on the machine's own site.
+     */
+    private function resolveEmployee(ClockingMachine $clockingMachine): ?Employee
     {
         $user = Auth::user();
-        $employee = $user?->employees->first();
 
-        if (!$employee) {
-            throw new Exception(__('User is not associated with an employee record.'));
+        if (!$user) {
+            return null;
         }
 
-        $lastClocking = Clocking::where('subject_type', $employee->getMorphClass())
-            ->where('subject_id', $employee->id)
-            ->latest('clocked_at')
-            ->first();
+        return GetUserCurrentEmployee::run($user, $clockingMachine->organisation_id);
+    }
 
-        if ($lastClocking && $lastClocking->clocked_at->diffInSeconds(now()) < 5) {
-            throw new Exception(__('Scan too frequent. Please wait a moment.'));
-        }
-
+    private function processClocking(ClockingMachine $machine, ClockingMachineQRCode $clockingMachineQRCode, Employee $employee, ?int $workScheduleId = null): array
+    {
         $clockedInAt = now();
 
         $modelData = [
-            'clocked_at' => $clockedInAt,
+            'clocked_at'                  => $clockedInAt,
+            'clocking_machine_qr_code_id' => $clockingMachineQRCode->id,
         ];
 
         if ($workScheduleId) {
@@ -138,7 +142,7 @@ class ValidateClockingMachineQrCode
             modelData: $modelData
         );
 
-        $isLate = $this->calculateLate($employee, $clockedInAt, $clocking->workSchedule);
+        $isLate = $this->calculateLateClocking($employee, $clockedInAt, $clocking->workSchedule);
         $clocking->is_late = $isLate;
         $clocking->saveQuietly();
 
@@ -146,51 +150,41 @@ class ValidateClockingMachineQrCode
             $employee->user->notify(new LateClockInNotification($clocking));
         }
 
-        $timeTracker = null;
-        if ($clocking->time_tracker_id) {
-            $timeTracker = TimeTracker::find($clocking->time_tracker_id);
-        }
-
-        $actionType = null;
-        if ($timeTracker) {
-            if ($timeTracker->start_clocking_id == $clocking->id) {
-                $actionType = ClockingActionEnum::CLOCK_IN;
-            } elseif ($timeTracker->end_clocking_id == $clocking->id) {
-                $actionType = ClockingActionEnum::CLOCK_OUT;
-            }
-        }
+        $this->updateQrCodeUsage($clockingMachineQRCode, $clockedInAt);
 
         return [
             'clocking' => $clocking,
-            'action_type' => $actionType
+            'action_type' => $this->resolveClockingActionType($clocking)
         ];
     }
 
-    private function calculateLate($employee, Carbon $clockedInAt, ?WorkSchedule $selectedSchedule = null): bool
+    /**
+     * Pull the hash out of whatever the scanner reports.
+     */
+    protected static function extractHash(string $qrCodeToken): string
     {
-        if ($employee->employment_type === EmploymentTypeEnum::PART_TIME) {
-            return false;
-        }
+        $token = trim($qrCodeToken);
+        $token = strtok($token, '?#') ?: $token;
 
-        $gracePeriod = $employee->organisation->late_grace_period_minutes ?? 15;
-        $schedule = $selectedSchedule ?? $employee->organisation->getDefaultWorkSchedule();
+        $segments = array_values(array_filter(
+            preg_split('#[:/]+#', $token) ?: [],
+            static fn (string $segment): bool => trim($segment) !== ''
+        ));
 
-        if (!$schedule) {
-            return false;
-        }
+        return $segments === [] ? '' : trim((string) end($segments));
+    }
 
-        $timezone = $schedule->timezone?->name ?? $employee->organisation->timezone?->name ?? config('app.timezone');
-        $todayIso = $clockedInAt->dayOfWeekIso;
-        $todaySchedule = $schedule->days()->where('day_of_week', $todayIso)->first();
+    private function updateQrCodeUsage(ClockingMachineQRCode $clockingMachineQRCode, Carbon $clockedInAt): void
+    {
+        $counts = Clocking::where('clocking_machine_qr_code_id', $clockingMachineQRCode->id)
+            ->selectRaw('count(*) as number_clockings, count(distinct concat(subject_type, subject_id)) as number_different_staff')
+            ->first();
 
-        if (!$todaySchedule || !$todaySchedule->is_working_day) {
-            return false;
-        }
-
-        $scheduledStart = Carbon::today($timezone)->setTimeFromTimeString($todaySchedule->start_time);
-        $allowedTime = $scheduledStart->copy()->addMinutes($gracePeriod);
-
-        return $clockedInAt->gt($allowedTime);
+        $clockingMachineQRCode->update([
+            'number_clockings'       => $counts->number_clockings,
+            'number_different_staff' => $counts->number_different_staff,
+            'last_used_at'           => $clockedInAt,
+        ]);
     }
 
     private function getWorkingHours(ClockingMachine $machine): ?array
@@ -242,10 +236,9 @@ class ValidateClockingMachineQrCode
         }
     }
 
-    private function resolveEffectivePolicyMode(ClockingMachine $clockingMachine, ?int $employeeId, Carbon $now): string
+    private function findPolicy(ClockingMachine $clockingMachine, Carbon $now, Closure $scope): ?ClockingMachineCoordinatePolicy
     {
-        $baseQuery = ClockingMachineCoordinatePolicy::query()
-            ->where('organisation_id', $clockingMachine->organisation_id)
+        return ClockingMachineCoordinatePolicy::query()
             ->where('is_active', true)
             ->where(function ($query) use ($clockingMachine) {
                 $query->whereNull('clocking_machine_id')
@@ -257,26 +250,30 @@ class ValidateClockingMachineQrCode
             ->where(function ($query) use ($now) {
                 $query->whereNull('end_at')->orWhere('end_at', '>=', $now);
             })
-            ->with('rules');
+            ->where($scope)
+            ->with('rules')
+            ->orderByDesc('start_at')
+            ->orderByDesc('id')
+            ->first();
+    }
 
-        $policy = null;
-
-        if ($employeeId) {
-            $policy = (clone $baseQuery)
-                ->where('scope_type', 'employee')
-                ->where('scope_id', $employeeId)
-                ->orderByDesc('start_at')
-                ->orderByDesc('id')
-                ->first();
-        }
+    /**
+     * An employee scoped policy travels with the employee, so it is looked up by employee alone and
+     * still applies on a machine belonging to another organisation. Only when the employee has no
+     * policy of their own does the site take over, through the organisation policy of the machine.
+     */
+    private function resolveEffectivePolicyMode(ClockingMachine $clockingMachine, Employee $employee, Carbon $now): string
+    {
+        $policy = $this->findPolicy($clockingMachine, $now, function ($query) use ($employee) {
+            $query->where('scope_type', 'employee')->where('scope_id', $employee->id);
+        });
 
         if (!$policy) {
-            $policy = (clone $baseQuery)
-                ->where('scope_type', 'organisation')
-                ->where('scope_id', $clockingMachine->organisation_id)
-                ->orderByDesc('start_at')
-                ->orderByDesc('id')
-                ->first();
+            $policy = $this->findPolicy($clockingMachine, $now, function ($query) use ($clockingMachine) {
+                $query->where('organisation_id', $clockingMachine->organisation_id)
+                    ->where('scope_type', 'organisation')
+                    ->where('scope_id', $clockingMachine->organisation_id);
+            });
         }
 
         if (!$policy) {
@@ -375,6 +372,7 @@ class ValidateClockingMachineQrCode
                     'name' => $machine->name,
                     'workplace_id' => $machine->workplace_id
                 ],
+                'is_visiting' => $clocking->subject->organisation_id !== $machine->organisation_id,
                 'working_hours' => $workingHours,
                 'clocking' => [
                     'clocked_at' => $clocking->clocked_at,

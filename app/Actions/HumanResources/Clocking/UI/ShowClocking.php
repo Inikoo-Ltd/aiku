@@ -146,8 +146,8 @@ class ShowClocking extends OrgAction
                     : Inertia::optional(fn () => GetClockingShowcase::run($clocking)),
 
                 ClockingTabsEnum::HISTORY->value => $this->tab == ClockingTabsEnum::HISTORY->value ?
-                    fn () => HistoryResource::collection(IndexHistory::run($clocking))
-                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($clocking)))
+                    fn () => HistoryResource::collection(IndexHistory::run($clocking, ClockingTabsEnum::HISTORY->value))
+                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($clocking, ClockingTabsEnum::HISTORY->value)))
             ]
         )->table(IndexHistory::make()->tableStructure(prefix: ClockingTabsEnum::HISTORY->value));
     }

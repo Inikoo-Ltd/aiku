@@ -10,11 +10,15 @@
 
 namespace App\Actions\Helpers\AI;
 
+use App\Actions\Helpers\AI\Traits\WithAICreditErrorHandler;
 use App\Actions\OrgAction;
 use OpenAI;
+use Throwable;
 
 class GetGeneratedProductTitle extends OrgAction
 {
+    use WithAICreditErrorHandler;
+
     public function handle(string $prompt, array $metadata = []): string
     {
         $client   = OpenAI::client(config('services.openai.api_key'));
@@ -39,14 +43,20 @@ class GetGeneratedProductTitle extends OrgAction
             'text' => $prompt ?: 'Generate a product title based on the provided images.',
         ];
 
-        $response = $client->chat()->create([
-            'model'      => 'gpt-4o',
-            'messages'   => [
-                ['role' => 'system', 'content' => $systemPrompt],
-                ['role' => 'user',   'content' => $userContent],
-            ],
-            'max_tokens' => 100,
-        ]);
+        try {
+            $response = $client->chat()->create([
+                'model'      => 'gpt-4o',
+                'messages'   => [
+                    ['role' => 'system', 'content' => $systemPrompt],
+                    ['role' => 'user',   'content' => $userContent],
+                ],
+                'max_tokens' => 100,
+            ]);
+        } catch (Throwable $e) {
+            $this->rethrowAICreditThrowable($e);
+
+            throw $e;
+        }
 
         return trim($response->choices[0]->message->content);
     }

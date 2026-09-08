@@ -10,6 +10,11 @@ use App\Actions\Production\Artefact\UI\CreateArtefact;
 use App\Actions\Production\Artefact\UI\EditArtefact;
 use App\Actions\Production\Artefact\UI\IndexArtefacts;
 use App\Actions\Production\Artefact\UI\ShowArtefact;
+use App\Actions\Production\JobOrder\UI\IndexJobOrders;
+use App\Actions\Production\JobOrder\UI\ShowJobOrder;
+use App\Actions\Production\JobOrderItemTask\UI\ShowManufactureFloor;
+use App\Actions\Production\ManufactureTaskSession\ExportManufacturePayroll;
+use App\Actions\Production\ManufactureTaskSession\UI\IndexArtisans;
 use App\Actions\Production\ManufactureTask\UI\CreateManufactureTask;
 use App\Actions\Production\ManufactureTask\UI\EditManufactureTask;
 use App\Actions\Production\ManufactureTask\UI\IndexManufactureTasks;
@@ -24,8 +29,6 @@ use App\Actions\Production\RawMaterial\UI\CreateRawMaterial;
 use App\Actions\Production\RawMaterial\UI\EditRawMaterial;
 use App\Actions\Production\RawMaterial\UI\IndexRawMaterials;
 use App\Actions\Production\RawMaterial\UI\ShowRawMaterial;
-use App\Stubs\UIDummies\IndexDummies;
-use App\Stubs\UIDummies\ShowDummy;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', IndexProductions::class)->name('index');
@@ -38,13 +41,16 @@ Route::prefix('{production}')
 
         Route::name('show')
             ->group(function () {
+                Route::get('floor', ShowManufactureFloor::class)->name('.floor');
+
                 Route::name('.operations.')->prefix('operations')
                     ->group(function () {
                         Route::get('', ShowOperationsDashboard::class)->name('dashboard');
-                        Route::get('artisans', ShowDummy::class)->name('artisans.index');
+                        Route::get('artisans', IndexArtisans::class)->name('artisans.index');
 
-                        Route::get('job-orders', IndexDummies::class)->name('job-orders.index');
-                        Route::get('job-orders/{jobOrder}', ShowDummy::class)->name('job-orders.show');
+                        Route::get('payroll/export', ExportManufacturePayroll::class)->name('payroll.export');
+                        Route::get('job-orders', IndexJobOrders::class)->name('job-orders.index');
+                        Route::get('job-orders/{jobOrder}', ShowJobOrder::class)->name('job-orders.show');
                     });
 
                 Route::name('.crafts.')->prefix('crafts')

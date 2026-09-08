@@ -35,7 +35,8 @@ class EditRedirect extends OrgAction
     {
         $title = __('Edit Redirect');
 
-        $webpage = Webpage::find($redirect->to_webpage_id);
+        $webpage     = Webpage::find($redirect->to_webpage_id);
+        $fromWebpage = Webpage::find($redirect->from_webpage_id);
 
         $exitRedirect = [];
         $routeGetName = $request->route()->getName();
@@ -83,6 +84,13 @@ class EditRedirect extends OrgAction
                             [
                                 'title'  => $title,
                                 'fields' => [
+                                    'from_webpage' => [
+                                        'type'     => 'input',
+                                        'label'    => __('Source URL'),
+                                        'value'    => $fromWebpage ? $fromWebpage->canonical_url : $redirect->from_url,
+                                        'readonly' => true,
+                                        'disabled' => true,
+                                    ],
                                     'type' => [
                                         'type'     => 'select',
                                         'label'    => __('Type'),

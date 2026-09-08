@@ -2,16 +2,16 @@
 
 namespace App\Actions\Helpers\Brand\UI;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 
-class CreateBrand extends GrpAction
+class CreateBrand extends OrgAction
 {
     public function asController(ActionRequest $request): Response
     {
-        $this->initialisation(group(), $request);
+        $this->initialisationFromGroup(group(), $request);
 
         return $this->handle($request);
     }

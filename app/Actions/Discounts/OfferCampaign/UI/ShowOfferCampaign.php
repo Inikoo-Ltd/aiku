@@ -28,6 +28,7 @@ class ShowOfferCampaign extends OrgAction
     use OfferCampaignShopOffersTrait;
     use OfferCampaignCategoryOffersTrait;
     use OfferCampaignProductOffersTrait;
+    use OfferCampaignStepOffersTrait;
     use OfferCampaignDiscretionaryTrait;
     use OfferCampaignDiscountShippingTrait;
     use OfferCampaignGiftTrait;
@@ -71,6 +72,7 @@ class ShowOfferCampaign extends OrgAction
             OfferCampaignTypeEnum::SHOP_OFFERS      => $this->getShopOffersHtmlResponse($offerCampaign, $request),
             OfferCampaignTypeEnum::CATEGORY_OFFERS  => $this->getCategoryOffersHtmlResponse($offerCampaign, $request),
             OfferCampaignTypeEnum::PRODUCT_OFFERS   => $this->getProductOffersHtmlResponse($offerCampaign, $request),
+            OfferCampaignTypeEnum::STEP_OFFERS      => $this->getStepOffersHtmlResponse($offerCampaign, $request),
             OfferCampaignTypeEnum::DISCRETIONARY    => $this->getDiscretionaryHtmlResponse($offerCampaign, $request),
             OfferCampaignTypeEnum::SHIPPING         => $this->getDiscountShippingHtmlResponse($offerCampaign, $request),
             OfferCampaignTypeEnum::GIFT             => $this->getGiftHtmlResponse($offerCampaign, $request),

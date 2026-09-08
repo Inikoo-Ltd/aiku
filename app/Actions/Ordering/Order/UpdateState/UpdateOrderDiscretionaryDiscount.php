@@ -35,7 +35,7 @@ class UpdateOrderDiscretionaryDiscount extends OrgAction
             abort(403);
         }
 
-        if (Arr::get($modelData, 'discretionary_offer') == 0) {
+        if (Arr::get($modelData, 'discretionary_offer') == 0 && !$this->asAction) {
             $modelData['discretionary_offer'] = null;
         }
 
@@ -76,8 +76,20 @@ class UpdateOrderDiscretionaryDiscount extends OrgAction
         return $this->handle($order, $this->validatedData);
     }
 
+    public function action(Order $order, array $modelData): Order
+    {
+        $this->asAction = true;
+        $this->initialisationFromShop($order->shop, $modelData);
+
+        return $this->handle($order, $this->validatedData);
+    }
+
     public function htmlResponse(Order $order): void
     {
+        if ($this->asAction) {
+            return;
+        }
+
         request()->session()->flash('notification', [
             'status'      => 'success',
             'title'       => __('Success!'),

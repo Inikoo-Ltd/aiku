@@ -19,6 +19,7 @@ enum PollsTabsEnum: string
     use HasTabs;
 
     case POLL_OPTIONS = 'poll_options';
+    case HISTORY = 'history';
 
     public function blueprint(): array
     {
@@ -26,6 +27,12 @@ enum PollsTabsEnum: string
             PollsTabsEnum::POLL_OPTIONS => [
                 'title' => __('Poll Options'),
                 'icon'  => 'fal fa-list-ul',
+            ],
+            PollsTabsEnum::HISTORY => [
+                'title' => __('History'),
+                'icon'  => 'fal fa-clock',
+                'type'  => 'icon',
+                'align' => 'right',
             ],
         };
     }

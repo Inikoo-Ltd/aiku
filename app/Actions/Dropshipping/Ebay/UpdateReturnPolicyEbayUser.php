@@ -34,9 +34,11 @@ class UpdateReturnPolicyEbayUser extends OrgAction
         $returnPolicyId = Arr::get($modelData, 'return_policy_id', $ebayUser->return_policy_id);
         $returnPolicy = $ebayUser->updateReturnPolicy($returnPolicyId, $modelData);
 
-        if (! Arr::has($returnPolicy, 'errors')) {
+        $updatedReturnPolicyId = Arr::get($returnPolicy, 'returnPolicyId');
+
+        if ($updatedReturnPolicyId) {
             data_set($modelData, 'data.return_policy', $returnPolicy);
-            data_set($modelData, 'return_policy_id', Arr::get($returnPolicy, 'returnPolicyId'));
+            data_set($modelData, 'return_policy_id', $updatedReturnPolicyId);
         }
 
         UpdateEbayUser::run($ebayUser, $modelData);

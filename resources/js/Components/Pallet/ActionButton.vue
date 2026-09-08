@@ -11,7 +11,7 @@ import { faTrashAlt } from "@far"
 import { faSignOutAlt, faSpellCheck, faCheck, faTimes, faCheckDouble, faCross, faFragile, faGhost, faBoxUp, faStickyNote, faSquare } from "@fal"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { inject, ref } from "vue"
-import Popover from "@/Components/Popover.vue"
+import Popover from "primevue/popover"
 import { trans } from "laravel-vue-i18n"
 import PureTextarea from "@/Components/Pure/PureTextarea.vue"
 import { routeType } from "@/types/route"
@@ -31,6 +31,7 @@ const props = defineProps<{
 
 const layout = inject("layout", layoutStructure)
 
+const statusPopover = ref()
 const loading = ref(false)
 const palletStatus = ref("damaged")
 const form = useForm({ message: "" })
@@ -38,7 +39,7 @@ const errorMessage = ref("")
 
 
 // Method: set pallet status as 'damaged' or 'lost'
-const setPalletStatus = (routes: routeType, close: Function) => {
+const setPalletStatus = (routes: routeType) => {
     const routeToVisit = palletStatus.value === "damaged" ? route("grp.org.warehouses.show.inventory.pallets.damaged.index", layout.currentParams) : route("grp.org.warehouses.show.inventory.pallets.lost.index", layout.currentParams)
     form.patch(route(
         routes.name,
@@ -49,7 +50,7 @@ const setPalletStatus = (routes: routeType, close: Function) => {
             loading.value = true
         },
         onSuccess: () => {
-            close()
+            statusPopover.value?.hide()
             notify({
                 title: `Successfully set the pallet as ${palletStatus.value}.`,
                 text: "",
@@ -79,12 +80,10 @@ const typePallet = [
 </script>
 
 <template>
-    <Popover v-if="item.status === 'storing'" class="relative" position="bottom-[125%] right-1/2">
-        <template #button>
-            <Button :key="item.index" iconRight="fal fa-fragile" v-tooltip="trans('Set pallet as damaged')" :size="'xs'" type="negative" />
-        </template>
+    <div v-if="item.status === 'storing'">
+        <Button :key="item.index" iconRight="fal fa-fragile" v-tooltip="trans('Set pallet as damaged')" :size="'xs'" type="negative" @click="statusPopover.toggle($event)" />
 
-        <template #content="{ close }">
+        <Popover ref="statusPopover">
             <div class="w-[250px]">
                 <span class="text-xs mt-2">{{ trans("Status") }}: </span>
                 <div class="flex items-center mb-3 gap-x-4">
@@ -108,10 +107,10 @@ const typePallet = [
             </div>
 
             <div class="flex justify-end mt-3">
-                <Button :style="'save'" full :loading="loading" @click="setPalletStatus( palletStatus == 'damaged' ? item.setAsDamaged : item.setAsLost, close)" />
+                <Button :style="'save'" full :loading="loading" @click="setPalletStatus(palletStatus == 'damaged' ? item.setAsDamaged : item.setAsLost)" />
             </div>
-        </template>
-    </Popover>
+        </Popover>
+    </div>
 </template>
 
 

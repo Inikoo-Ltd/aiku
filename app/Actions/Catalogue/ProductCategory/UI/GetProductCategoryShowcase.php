@@ -82,7 +82,8 @@ class GetProductCategoryShowcase
             ];
         } else {
             $data = [
-                'family' => FamilyResource::make($productCategory),
+                'family'      => FamilyResource::make($productCategory),
+                'bestSellers' => GetFamilyBestSellers::run($productCategory),
             ];
             if ($routeName == 'grp.org.shops.show.catalogue.families.show') {
                 $data['routeList'] = [

@@ -8,6 +8,8 @@
 
 namespace App\Actions\Helpers\Translations;
 
+use App\Actions\Helpers\AI\Traits\WithAICreditErrorHandler;
+use App\Exceptions\AICreditException;
 use Exception;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Arr;
@@ -17,6 +19,8 @@ use VildanBina\LaravelAutoTranslation\Contracts\TranslationDriver;
 
 class ChatGPT5Driver implements TranslationDriver
 {
+    use WithAICreditErrorHandler;
+
     private const BUFFER_FACTOR = 2;
 
     private array $config;
@@ -126,6 +130,10 @@ EOL
             ]);
 
         if (! $response->successful()) {
+            if ($this->isAICreditResponse($response)) {
+                throw new AICreditException($this->aiCreditErrorMessage());
+            }
+
             $json = $response->json();
             $errorMessage = is_array($json) ? Arr::get($json, 'error.message') : null;
 

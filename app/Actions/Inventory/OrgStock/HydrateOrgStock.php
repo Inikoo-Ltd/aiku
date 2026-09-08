@@ -16,8 +16,11 @@ use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateProductsAvailableQua
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateProducts;
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydratePurchaseOrders;
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateQuantityInLocations;
+use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateSkuCommercialValue;
+use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateSkuValue;
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateStockValue;
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateValueInLocations;
+use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateOutOfStockForecast;
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateWeekOfCover;
 use App\Actions\Traits\Hydrators\WithHydrateCommand;
 use App\Actions\Traits\ModelHydrateSingleTradeUnits;
@@ -44,9 +47,12 @@ class HydrateOrgStock
         OrgStockHydrateMovements::run($orgStock);
         OrgStockHydrateProductsAvailableQuantity::run($orgStock);
         OrgStockHydratePackedIn::run($orgStock);
+        OrgStockHydrateSkuValue::run($orgStock);
+        OrgStockHydrateSkuCommercialValue::run($orgStock);
         OrgStockHydrateStockValue::run($orgStock);
         OrgStockHydratePurchaseOrders::run($orgStock);
         OrgStockHydrateWeekOfCover::run($orgStock);
+        OrgStockHydrateOutOfStockForecast::run($orgStock);
         OrgStockHydrateProducts::run($orgStock);
         ModelHydrateSingleTradeUnits::run($orgStock);
     }

@@ -17,6 +17,9 @@ enum BlogWebpageTabsEnum: string
     use HasTabs;
 
     case SHOWCASE             = 'showcase';
+    case ANALYTICS            = 'analytics';
+    case CHANGELOG            = 'changelog';
+    case SNAPSHOTS            = 'snapshots';
 
 
 
@@ -26,6 +29,20 @@ enum BlogWebpageTabsEnum: string
             BlogWebpageTabsEnum::SHOWCASE => [
                 'title' => __('Showcase'),
                 'icon'  => 'fas fa-info-circle',
+            ],
+            BlogWebpageTabsEnum::ANALYTICS => [
+                'title' => __('Analytics'),
+                'icon'  => 'fal fa-analytics',
+            ],
+            BlogWebpageTabsEnum::CHANGELOG => [
+                'title' => __('Changelog'),
+                'icon'  => 'fal fa-clock',
+                'type'  => 'icon',
+                'align' => 'right',
+            ],
+            BlogWebpageTabsEnum::SNAPSHOTS => [
+                'title' => __('Snapshots'),
+                'icon'  => 'fal fa-layer-group',
             ],
         };
     }

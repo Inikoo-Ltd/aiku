@@ -8,6 +8,7 @@
 
 namespace App\Actions\Masters\MasterShop;
 
+use App\Actions\Masters\UI\GetMastersDashboardTimeSeriesData;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateMasterShops;
 use App\Actions\Traits\Authorisations\WithMastersEditAuthorisation;
@@ -19,7 +20,9 @@ use App\Rules\AlphaDashDot;
 use App\Rules\IUnique;
 use Exception;
 use Illuminate\Console\Command;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Redirect;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 use Throwable;
@@ -48,6 +51,8 @@ class StoreMasterShop extends OrgAction
             return $masterShop;
         });
         GroupHydrateMasterShops::dispatch($group)->delay($this->hydratorsDelay);
+        GetMastersDashboardTimeSeriesData::clearCache($group);
+
         return $masterShop;
     }
 
@@ -89,11 +94,19 @@ class StoreMasterShop extends OrgAction
     /**
      * @throws \Throwable
      */
-    public function asController(Group $group, ActionRequest $request): MasterShop
+    public function asController(ActionRequest $request): MasterShop
     {
+        $group = group();
         $this->initialisationFromGroup($group, $request);
 
         return $this->handle($group, $this->validatedData);
+    }
+
+    public function htmlResponse(MasterShop $masterShop): RedirectResponse
+    {
+        return Redirect::route('grp.masters.master_shops.show', [
+            'masterShop' => $masterShop->slug,
+        ]);
     }
 
     public function getCommandSignature(): string

@@ -10,7 +10,7 @@ namespace App\Actions\SysAdmin\Group\Seeders;
 
 use App\Actions\Comms\PostRoom\StorePostRoom;
 use App\Actions\Comms\PostRoom\UpdatePostRoom;
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Enums\Comms\PostRoom\PostRoomCodeEnum;
 use App\Models\SysAdmin\Group;
 use Exception;
@@ -18,7 +18,7 @@ use Illuminate\Console\Command;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Throwable;
 
-class SeedPostRooms extends GrpAction
+class SeedPostRooms extends OrgAction
 {
     use AsAction;
 

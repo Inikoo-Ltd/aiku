@@ -29,7 +29,7 @@ class UnpackDeliveryNote extends OrgAction
     use HasDeliveryNoteHydrators;
 
     private DeliveryNote $deliveryNote;
-    protected User $user;
+    protected ?User $user;
 
     /**
      * @throws \Illuminate\Validation\ValidationException
@@ -95,7 +95,7 @@ class UnpackDeliveryNote extends OrgAction
     /**
      * @throws \Illuminate\Validation\ValidationException
      */
-    public function action(DeliveryNote $deliveryNote, User $user): DeliveryNote
+    public function action(DeliveryNote $deliveryNote, ?User $user): DeliveryNote
     {
         $this->user         = $user;
         $this->deliveryNote = $deliveryNote;

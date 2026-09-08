@@ -25,6 +25,7 @@ use App\Models\SysAdmin\Organisation;
 use App\Models\Traits\HasAddress;
 use App\Models\Traits\HasAddresses;
 use App\Models\Traits\HasAttachments;
+use App\Models\Traits\HasHistory;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
@@ -35,6 +36,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
@@ -140,13 +142,14 @@ use App\Models\SysAdmin\User;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|PalletReturn withoutTrashed()
  * @mixin \Eloquent
  */
-class PalletReturn extends Model implements HasMedia
+class PalletReturn extends Model implements HasMedia, Auditable
 {
     use HasSlug;
     use SoftDeletes;
     use HasAddress;
     use HasAddresses;
     use HasAttachments;
+    use HasHistory;
 
     protected $guarded = [];
     protected $casts = [
@@ -317,5 +320,23 @@ class PalletReturn extends Model implements HasMedia
     {
         return $this->belongsTo(User::class, 'packer_user_id');
     }
+
+    public function generateTags(): array
+    {
+        return ['fulfilment'];
+    }
+
+    protected array $auditInclude = [
+        'reference',
+        'customer_reference',
+        'type',
+        'state',
+        'date',
+        'estimated_delivery_date',
+        'customer_notes',
+        'public_notes',
+        'internal_notes',
+        'collection_notes'
+    ];
 
 }

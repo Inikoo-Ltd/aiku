@@ -395,9 +395,9 @@ watch(
 
 <template>
     <div class="px-4 sm:px-6 lg:px-8 py-6">
-        <div class="flex justify-between items-center mb-6">
+        <div class="flex flex-col gap-3 mb-6 xl:flex-row xl:items-center xl:justify-between">
             <!-- left side -->
-            <div class="flex items-center gap-3">
+            <div class="flex flex-wrap items-center gap-2 min-w-0">
                 <Menu :model="availableFilters" popup ref="filterMenu">
                 </Menu>
 
@@ -410,7 +410,7 @@ watch(
 
                 <MultiSelect v-if="stateOptions?.length" v-model="selectedStates" :options="stateOptions"
                     optionLabel="label" optionValue="value" :placeholder="trans('State')" :maxSelectedLabels="2"
-                    :showToggleAll="false" class="h-10 items-center w-max" appendTo="body" @change="onStateChange"
+                    :showToggleAll="false" class="h-10 items-center w-max max-w-[14rem]" appendTo="body" @change="onStateChange"
                     :pt="{ label: { class: 'whitespace-nowrap' } }">
                     <template #option="{ option }">
                         <div class="flex justify-between items-center gap-4 w-full">
@@ -422,7 +422,7 @@ watch(
 
                 <MultiSelect v-if="statusOptions?.length" v-model="selectedStatuses" :options="statusOptions"
                     optionLabel="label" optionValue="value" :placeholder="trans('Status')" :maxSelectedLabels="2"
-                    :showToggleAll="false" class="h-10 items-center w-max" appendTo="body" @change="onStatusChange"
+                    :showToggleAll="false" class="h-10 items-center w-max max-w-[14rem]" appendTo="body" @change="onStatusChange"
                     :pt="{ label: { class: 'whitespace-nowrap' } }">
                     <template #option="{ option }">
                         <div class="flex justify-between items-center gap-4 w-full">
@@ -456,13 +456,13 @@ watch(
                     @click="clearAllFilters" />
             </div>
             <!-- center side -->
-            <div class="flex items-center">
-                <span v-if="isAllCustomers" class="text-blue-600 font-medium">
+            <div v-if="isAllCustomers" class="flex items-center">
+                <span class="text-blue-600 font-medium">
                     {{ trans("Audience: All Customers") }}
                 </span>
             </div>
             <!-- right side -->
-            <div class="flex items-center gap-3">
+            <div class="flex flex-wrap items-center gap-3 shrink-0 xl:justify-end">
 
                 <template v-if="exportRoutes">
                     <div v-if="exportFields?.length">
@@ -505,13 +505,13 @@ watch(
                     </div>
                 </template>
 
-                <Button v-if="showSave" :label="trans('Save')" type="positive" icon="save" @click="saveFilters"
+                <Button v-if="showSave" :label="trans('Save recipients')" type="positive" icon="save" @click="saveFilters"
                     class="h-10 px-4" :disabled="isByOrderValueInvalid" />
             </div>
         </div>
         <div v-if="Object.keys(activeFilters).length" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
             <div v-for="(filter, key) in readyFilters" :key="key"
-                class="border rounded p-4 bg-gray-50 relative min-w-0">
+                class="filter-card border rounded p-4 bg-gray-50 relative min-w-0">
 
                 <div v-if="filter.config" class="flex justify-between mb-2">
                     <span class="font-medium flex items-center">{{ filter.config.label ?? '-' }}</span>
@@ -762,14 +762,14 @@ watch(
 }
 
 
-:deep(.p-multiselect),
-:deep(.p-calendar) {
+.filter-card :deep(.p-multiselect),
+.filter-card :deep(.p-calendar) {
     width: 100% !important;
     max-width: 100% !important;
 }
 
-:deep(.p-calendar-input),
-:deep(.p-inputtext) {
+.filter-card :deep(.p-calendar-input),
+.filter-card :deep(.p-inputtext) {
     width: 100% !important;
 }
 </style>

@@ -10,6 +10,7 @@
 namespace App\Http\Resources\Masters;
 
 use App\Http\Resources\HasSelfCall;
+use App\Models\Helpers\Currency;
 use App\Models\Masters\MasterShop;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -38,18 +39,6 @@ class MasterShopResource extends JsonResource
                 "color" => "#df1c1cff",
                 'value' => $masterShop->stats->number_master_families_with_pending_master_assets,
             ],
-            [
-                'label'           => __('Orphan Master Products'),
-                'is_negative'     => true,
-                'route'           => [
-                    'name'       => 'grp.masters.master_shops.show.master_products_orphan',
-                    'parameters' => [$masterShop->slug]
-                ],
-                'icon'            => 'fal fa-cube',
-                'backgroundColor' => '#ff000011',
-                'color'           => '#df1c1cff',
-                'value'           => $masterShop->stats->number_master_products_no_master_family,
-            ],
         ];
 
         if ($masterShop->stats->number_mismatched_master_families) {
@@ -71,6 +60,42 @@ class MasterShopResource extends JsonResource
                 'value'           => $masterShop->stats->number_mismatched_master_families_active,
             ];
         }
+
+        if ($masterShop->stats->number_missing_images_master_families || true) {
+            $additionalStats[] = [
+                'label'           => __('Master Families with No Image'),
+                'is_negative'     => true,
+                'route'           => [
+                    'name'       => 'grp.masters.master_shops.show.master_family.missing_image.index',
+                    'parameters' => [
+                        'masterShop' => $masterShop->slug,
+                        '_query'     => [
+                            'index_elements[status]' => 'active'
+                        ]
+                    ]
+                ],
+                'icon'            => 'fal fa-folder',
+                'backgroundColor' => "#e879f91d",
+                "color"           => "#df1c1cff",
+                'value'           => $masterShop->stats->number_missing_images_master_families,
+            ];
+        }
+
+        array_push(
+            $additionalStats,
+            [
+                'label'           => __('Orphan Master Products'),
+                'is_negative'     => true,
+                'route'           => [
+                    'name'       => 'grp.masters.master_shops.show.master_products_orphan',
+                    'parameters' => [$masterShop->slug]
+                ],
+                'icon'            => 'fal fa-cube',
+                'backgroundColor' => '#ff000011',
+                'color'           => '#df1c1cff',
+                'value'           => $masterShop->stats->number_master_products_no_master_family,
+            ]
+        );
 
         if ($masterShop->stats->number_mismatched_master_products) {
             $additionalStats[] = [
@@ -128,10 +153,67 @@ class MasterShopResource extends JsonResource
             ];
         }
 
+
+        if ($masterShop->stats->number_missing_images_master_asset || true) {
+            $additionalStats[] = [
+                'label' => __('Master Products with No Image'),
+                'is_negative'     => true,
+                'route'           => [
+                    'name'       => 'grp.masters.master_shops.show.master_products_no_image',
+                    'parameters' => [
+                        'masterShop' => $masterShop->slug,
+                        '_query'     => [
+                            'index_elements[status]' => 'active'
+                        ]
+                    ]
+                ],
+                'icon'            => 'fal fa-cube',
+                'backgroundColor' => "#fa582761",
+                "color"           => "#df1c1cff",
+                'value'           => $masterShop->stats->number_missing_images_master_asset,
+            ];
+        }
+
+        $additionalStats[] = [
+            'label' => __('Products with Mismatch Family'),
+            'is_negative'     => true,
+            'route'           => [
+                'name'       => 'grp.masters.master_shops.show.products.mismatched_families',
+                'parameters' => [
+                    'masterShop' => $masterShop->slug,
+                ]
+            ],
+            'icon'            => 'fal fa-cube',
+            'backgroundColor' => "#fa582761",
+            "color"           => "#df1c1cff",
+            'value'           => $masterShop->stats->products_mismatch_family,
+        ];
+
+        $currencies = Currency::whereIn('code', array_keys($masterShop->price_exchanges ?? []))
+            ->get()->keyBy('code');
+
+        $priceExchanges = collect($masterShop->price_exchanges ?? [])
+            ->map(function (array $exchangeData, string $currencyCode) use ($currencies) {
+                $currency = $currencies->get($currencyCode);
+
+                return [
+                    'code'     => $currencyCode,
+                    'name'     => $currency?->name,
+                    'symbol'   => $currency?->symbol,
+                    'is_major' => (bool)($exchangeData['is_major'] ?? false),
+                    'major'    => $exchangeData['major'] ?? null,
+                    'exchange' => $exchangeData['exchange'] ?? null,
+                ];
+            })
+            ->sortBy([['is_major', 'desc'], ['code', 'asc']])
+            ->values()
+            ->all();
+
         return [
-            'slug'     => $this->slug,
-            'code'     => $this->code,
-            'name'     => $this->name,
+            'slug'            => $this->slug,
+            'code'            => $this->code,
+            'name'            => $this->name,
+            'price_exchanges' => $priceExchanges,
             'statsBox' => array_filter([
                 [
                     'label' => __('Master Departments'),

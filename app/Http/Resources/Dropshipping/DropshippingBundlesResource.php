@@ -10,6 +10,7 @@ namespace App\Http\Resources\Dropshipping;
 
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Helpers\NaturalLanguage;
+use App\Helpers\PlatformResponseFormatter;
 use App\Models\Catalogue\Product;
 use App\Models\Fulfilment\StoredItem;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -165,7 +166,7 @@ class DropshippingBundlesResource extends JsonResource
             'updated_at'            => $this->updated_at,
             'platform_product_id'   => $this->platform_product_id,
             'upload_warning'        => $this->upload_warning,
-            'message'               => $this->platform_status ? 'OK' : Arr::get($this->errors_response, 'message', ''),
+            'message'               => $this->platform_status ? 'OK' : PlatformResponseFormatter::make()->message($this->errors_response),
             'shopify_product_data'  => Arr::get($this->data, 'shopify_product', []),
             'platform_product_data' => match ($this->platform->type) {
                 PlatformTypeEnum::WOOCOMMERCE => Arr::get($this->data, 'woo_product', []),

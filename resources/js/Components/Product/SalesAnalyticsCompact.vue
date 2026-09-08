@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import { computed, inject } from 'vue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { faUsers, faEquals } from '@fal'
+import { faUsers, faEquals, faFileInvoice } from '@fal'
 import { faTriangle } from '@fas'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { useFormatTime } from "@/Composables/useFormatTime";
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure';
 
-library.add(faUsers, faTriangle, faEquals)
+library.add(faUsers, faTriangle, faEquals, faFileInvoice)
 
 interface YearlySales {
     year: number
@@ -168,62 +168,54 @@ const getDeltaIndicator = (delta: number) => {
 
 <template>
     <div class="bg-white border border-gray-200 rounded-lg shadow-sm w-full h-fit">
-        <!-- Header -->
-        <div class="p-4 border-b border-gray-200">
-            <h3 class="text-sm font-semibold text-gray-900">Sales Analytics</h3>
-            <div class="text-xs text-gray-500 mt-1">Since {{ formattedSalesSince }}</div>
-        </div>
-
         <!-- Summary Stats as 3-column grid, align center, with tooltip for each column -->
         <div class="p-4 border-b border-gray-200">
-            <div class="grid grid-cols-3 gap-0 text-center">
+            <div class="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
                 <!-- Total Sales -->
-                <div class="flex flex-col items-center justify-center cursor-pointer" v-tooltip="'Total Sales'">
-                    <span class="text-sm font-bold text-gray-900 w-full">{{ formattedTotalSales }}</span>
+                <div class="cursor-pointer whitespace-nowrap" v-tooltip="'Total Sales'">
+                    <span class="text-sm font-semibold tabular-nums text-gray-900">{{ formattedTotalSales }}</span>
                 </div>
                 <!-- Total Invoices -->
-                <div class="flex flex-col items-center justify-center cursor-pointer" v-tooltip="'Total Invoices'">
-                    <span class="text-sm font-bold text-gray-900 w-full">{{ formattedTotalInvoices }}</span>
+                <div class="cursor-pointer whitespace-nowrap" v-tooltip="'Total Invoices'">
+                    <FontAwesomeIcon :icon="faFileInvoice" class="text-gray-500 mr-1" />
+                    <span class="text-sm font-medium tabular-nums text-gray-700">{{ formattedTotalInvoices }}</span>
                 </div>
                 <!-- Customers with icon -->
-                <div class="flex flex-col items-center justify-center cursor-pointer" v-tooltip="'Customers'">
-                    <span>
-                        <FontAwesomeIcon :icon="faUsers" class="text-gray-500 mr-1" />
-                        <span class="text-sm font-bold text-gray-900">{{ formattedTotalCustomers }}</span>
-                    </span>
+                <div class="cursor-pointer whitespace-nowrap" v-tooltip="'Customers'">
+                    <FontAwesomeIcon :icon="faUsers" class="text-gray-500 mr-1" />
+                    <span class="text-sm font-medium tabular-nums text-gray-700">{{ formattedTotalCustomers }}</span>
                 </div>
             </div>
         </div>
 
         <!-- Yearly Performance -->
         <div class="p-4 border-b border-gray-200">
-            <div class="text-xs font-semibold text-gray-700 mb-3">Yearly Performance</div>
             <div class="overflow-x-auto">
                 <!-- Headers -->
-                <div class="grid grid-cols-5 min-w-max divide-x divide-gray-200 border border-gray-200 rounded-t">
+                <div class="grid grid-cols-[repeat(5,minmax(4.25rem,1fr))] min-w-max divide-x divide-gray-200 border border-gray-200 rounded-t">
                     <div
                         v-for="year in yearlySalesGrid"
                         :key="year.year"
-                        class="text-right text-xs font-semibold text-gray-900 p-1 bg-gray-50"
+                        class="text-right text-xs font-medium text-gray-600 p-1 bg-gray-50"
                     >
                         {{ year.year }}
                     </div>
                 </div>
 
                 <!-- Sales Row -->
-                <div class="grid grid-cols-5 min-w-max divide-x divide-gray-200 border-l border-r border-gray-200">
+                <div class="grid grid-cols-[repeat(5,minmax(4.25rem,1fr))] min-w-max divide-x divide-gray-200 border-l border-r border-gray-200">
                     <div
                         v-for="year in yearlySalesGrid"
                         :key="`sales-${year.year}`"
                         v-tooltip="getSalesTooltip(year)"
                         class="flex justify-end items-center gap-1 text-right p-1 cursor-pointer bg-white"
                     >
-                        <div class="text-xs font-semibold text-gray-900">
+                        <div class="text-xs font-medium tabular-nums text-gray-700">
                             {{ locale.CurrencyShort(props.salesData.currency, year.total_sales) }}
                         </div>
                         <div
                             :class="getDeltaIndicator(year.sales_delta).color"
-                            class="text-sm font-bold"
+                            class="text-xs"
                         >
                             <FontAwesomeIcon size="sm" :icon="getDeltaIndicator(year.sales_delta).icon" :class="getDeltaIndicator(year.sales_delta).class" />
                         </div>
@@ -231,19 +223,19 @@ const getDeltaIndicator = (delta: number) => {
                 </div>
 
                 <!-- Invoices Row -->
-                <div class="grid grid-cols-5 min-w-max divide-x divide-gray-200 border border-gray-200 rounded-b">
+                <div class="grid grid-cols-[repeat(5,minmax(4.25rem,1fr))] min-w-max divide-x divide-gray-200 border border-gray-200 rounded-b">
                     <div
                         v-for="year in yearlySalesGrid"
                         :key="`inv-${year.year}`"
                         v-tooltip="getInvoicesTooltip(year)"
                         class="flex justify-end items-center gap-1 text-right p-1 cursor-pointer bg-white"
                     >
-                        <div class="text-xs font-semibold text-gray-700">
+                        <div class="text-xs tabular-nums text-gray-500">
                             {{ locale.numberShort(year.total_invoices) }}
                         </div>
                         <div
                             :class="getDeltaIndicator(year.invoices_delta).color"
-                            class="text-sm font-bold"
+                            class="text-xs"
                         >
                             <FontAwesomeIcon size="sm" :icon="getDeltaIndicator(year.invoices_delta).icon" :class="getDeltaIndicator(year.invoices_delta).class" />
                         </div>
@@ -254,33 +246,32 @@ const getDeltaIndicator = (delta: number) => {
 
         <!-- Quarterly Performance -->
         <div class="p-4">
-            <div class="text-xs font-semibold text-gray-700 mb-3">Quarterly Performance</div>
             <div class="overflow-x-auto">
                 <!-- Headers -->
-                <div class="grid grid-cols-5 min-w-max divide-x divide-gray-200 border border-gray-200 rounded-t">
+                <div class="grid grid-cols-[repeat(5,minmax(4.25rem,1fr))] min-w-max divide-x divide-gray-200 border border-gray-200 rounded-t">
                     <div
                         v-for="quarter in quarterlySalesGrid"
                         :key="quarter.quarter"
-                        class="text-right text-xs font-semibold text-gray-900 p-1 bg-gray-50"
+                        class="text-right text-xs font-medium text-gray-600 p-1 bg-gray-50"
                     >
                         {{ quarter.quarter }}
                     </div>
                 </div>
 
                 <!-- Sales Row -->
-                <div class="grid grid-cols-5 min-w-max divide-x divide-gray-200 border-l border-r border-gray-200">
+                <div class="grid grid-cols-[repeat(5,minmax(4.25rem,1fr))] min-w-max divide-x divide-gray-200 border-l border-r border-gray-200">
                     <div
                         v-for="quarter in quarterlySalesGrid"
                         :key="`sales-${quarter.quarter}`"
                         v-tooltip="getSalesTooltip(quarter)"
                         class="flex justify-end items-center gap-1 text-right p-1 cursor-pointer bg-white"
                     >
-                        <div class="text-xs font-semibold text-gray-900">
+                        <div class="text-xs font-medium tabular-nums text-gray-700">
                             {{ locale.CurrencyShort(props.salesData.currency, quarter.total_sales) }}
                         </div>
                         <div
                             :class="getDeltaIndicator(quarter.sales_delta).color"
-                            class="text-sm font-bold"
+                            class="text-xs"
                         >
                             <FontAwesomeIcon size="sm" :icon="getDeltaIndicator(quarter.sales_delta).icon" :class="getDeltaIndicator(quarter.sales_delta).class" />
                         </div>
@@ -288,19 +279,19 @@ const getDeltaIndicator = (delta: number) => {
                 </div>
 
                 <!-- Invoices Row -->
-                <div class="grid grid-cols-5 min-w-max divide-x divide-gray-200 border border-gray-200 rounded-b">
+                <div class="grid grid-cols-[repeat(5,minmax(4.25rem,1fr))] min-w-max divide-x divide-gray-200 border border-gray-200 rounded-b">
                     <div
                         v-for="quarter in quarterlySalesGrid"
                         :key="`inv-${quarter.quarter}`"
                         v-tooltip="getInvoicesTooltip(quarter)"
                         class="flex justify-end items-center gap-1 text-right p-1 cursor-pointer bg-white"
                     >
-                        <div class="text-xs font-semibold text-gray-700">
+                        <div class="text-xs tabular-nums text-gray-500">
                             {{ locale.numberShort(quarter.total_invoices) }}
                         </div>
                         <div
                             :class="getDeltaIndicator(quarter.invoices_delta).color"
-                            class="text-sm font-bold"
+                            class="text-xs"
                         >
                             <FontAwesomeIcon size="sm" :icon="getDeltaIndicator(quarter.invoices_delta).icon" :class="getDeltaIndicator(quarter.invoices_delta).class" />
                         </div>

@@ -2,7 +2,7 @@
 import { ref, computed, onMounted, inject } from 'vue'
 import { trans } from 'laravel-vue-i18n'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { faUser, faBuilding, faEnvelope, faPhone, faTags, faMedal as fasMedal, faGlobeEurope, faIslandTropical } from "@fas"
+import { faUser, faBuilding, faEnvelope, faPhone, faTags, faMedal as fasMedal, faGlobeEurope, faIslandTropical, faIdCard } from "@fas"
 import { faMedal } from "@fal"
 import { faMedal as fadMedal } from "@fad"
 import { library } from "@fortawesome/fontawesome-svg-core"
@@ -12,7 +12,7 @@ import GoldReward from '@/Components/Utils/GoldReward.vue'
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import { textReplaceVariables } from "@/Composables/Workshop"
 
-library.add(faUser, faMedal, fasMedal, fadMedal,faBuilding, faEnvelope, faPhone, faXmark, faTags, faGlobeEurope, faIslandTropical)
+library.add(faUser, faMedal, fasMedal, fadMedal,faBuilding, faEnvelope, faPhone, faXmark, faTags, faGlobeEurope, faIslandTropical, faIdCard)
 
 const props = defineProps<{
     data: {}
@@ -94,23 +94,23 @@ const hasTags = computed(() => userCustomerTags.value.length > 0)
                             </span>
                         </div>
                     </div>
-                    <div v-if="data.customer.eori" class="flex items-center">
+                    <div v-if="data.customer.identity_document_number" class="flex items-center">
                         <FontAwesomeIcon
-                            icon="fas fa-globe-europe"
+                            icon="fas fa-id-card"
                             class="text-gray-600 mr-2 w-4 h-4"
-                            v-tooltip="trans('Economic Operators Registration and Identification (EORI) number')"
+                            v-tooltip="data.customer.identity_document_number?.label"
                         />
-                        <span class="text-gray-900">{{ data.customer.eori }}</span>
-                        <span class="text-xs text-gray-400 ml-2">EORI</span>
+                        <span class="text-gray-900">{{ data.customer.identity_document_number?.number }}</span>
+                        <span class="text-xs text-gray-400 ml-2">{{ data.customer.identity_document_number?.label }}</span>
                     </div>
-                    <div v-if="data.customer.ukims" class="flex items-center">
+                    <div v-if="data.customer.identity_document_number_alt" class="flex items-center">
                         <FontAwesomeIcon
-                            icon="fas fa-island-tropical"
+                            icon="fas fa-id-card"
                             class="text-gray-600 mr-2 w-4 h-4"
-                            v-tooltip="trans('UK Internal Market Scheme (UKIMS) number')"
+                            v-tooltip="data.customer.identity_document_number_alt?.label"
                         />
-                        <span class="text-gray-900">{{ data.customer.ukims }}</span>
-                        <span class="text-xs text-gray-400 ml-2">UKIMS</span>
+                        <span class="text-gray-900">{{ data.customer.identity_document_number_alt?.number }}</span>
+                        <span class="text-xs text-gray-400 ml-2">{{ data.customer.identity_document_number_alt?.label }}</span>
                     </div>
                 </div>
 
@@ -123,9 +123,66 @@ const hasTags = computed(() => userCustomerTags.value.length > 0)
                     />
                 </div> -->
 
-                <div v-if="layout.offer_data?.type === 'gr'" class="absolute top-5 right-7 text-4xl">
-                    <GoldReward />
+                
+
+               <div v-if="layout.offer_data?.type === 'gr'" class="absolute top-5 right-7 text-4xl hidden lg:block">
+                    <GoldReward>
+                        <template #default>
+                            <div class="flex items-center">
+                                <FontAwesomeIcon icon="fas fa-medal" class="text-yellow-500" fixed-width
+                                    aria-hidden="true" />
+
+                                <div
+                                    class="relative inline-block w-20 h-3 ml-1 mt-1.5 mb-2 overflow-hidden align-middle rounded-sm bg-gray-200">
+                                    <div class="absolute top-0 left-0 h-full transition-all duration-1000 ease-in-out bg-green-500"
+                                        :class="{ xshimmer: true }" :style="{
+                                            width: `${(layout?.offer_data?.meter?.[0] / layout?.offer_data?.meter?.[1]) * 100}%`
+                                        }" />
+
+                                    <div
+                                        class="absolute inset-0 flex items-center justify-center font-medium text-black text-xxs">
+                                        {{ Number(layout?.offer_data?.meter?.[0]).toFixed(0) }}
+                                        /
+                                        {{ Number(layout?.offer_data?.meter?.[1]).toFixed(0) }}
+                                        days
+                                    </div>
+                                </div>
+                            </div>
+                        </template>
+                    </GoldReward>
                 </div>
+            </div>
+        </div>
+
+         <div v-if="layout.offer_data?.type === 'gr'" class="lg:hidden mb-8">
+            <div class="flex items-center justify-between gap-3 p-3 rounded-lg border border-yellow-300 bg-yellow-50/30">
+                <span class="text-sm font-medium text-yellow-700">
+                    {{ layout?.offer_data?.label }}
+                </span>
+                <GoldReward>
+                        <template #default>
+                            <div class="flex items-center">
+                                <FontAwesomeIcon icon="fas fa-medal" class="text-yellow-500" fixed-width
+                                    aria-hidden="true" />
+
+                                <div
+                                    class="relative inline-block w-20 h-3 ml-1 mt-1.5 mb-2 overflow-hidden align-middle rounded-sm bg-gray-200">
+                                    <div class="absolute top-0 left-0 h-full transition-all duration-1000 ease-in-out bg-green-500"
+                                        :class="{ xshimmer: true }" :style="{
+                                            width: `${(layout?.offer_data?.meter?.[0] / layout?.offer_data?.meter?.[1]) * 100}%`
+                                        }" />
+
+                                    <div
+                                        class="absolute inset-0 flex items-center justify-center font-medium text-black text-xxs">
+                                        {{ Number(layout?.offer_data?.meter?.[0]).toFixed(0) }}
+                                        /
+                                        {{ Number(layout?.offer_data?.meter?.[1]).toFixed(0) }}
+                                        days
+                                    </div>
+                                </div>
+                            </div>
+                        </template>
+                    </GoldReward>
             </div>
         </div>
 

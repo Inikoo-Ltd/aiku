@@ -92,12 +92,15 @@ class CallApiApcGbShipping extends OrgAction
 
         $items = [];
         foreach ($parcels as $parcel) {
+            // apc measures its limits against the longest dimension, so send the box that way round
+            [$length, $width, $height] = $this->sortedDimensions($parcel);
+
             $items[] = [
                 'Type'   => 'ALL',
                 'Weight' => $parcel['weight'], // apc weight in kg
-                'Length' => $parcels[0]['dimensions'][0] ?? 0, // cm
-                'Width'  => $parcels[0]['dimensions'][1] ?? 0, // cm
-                'Height' => $parcels[0]['dimensions'][2] ?? 0 // cm
+                'Length' => $length, // cm
+                'Width'  => $width, // cm
+                'Height' => $height // cm
             ];
         }
 
@@ -107,9 +110,9 @@ class CallApiApcGbShipping extends OrgAction
         $closedAt = Carbon::createFromFormat('H:i', '16:30');
 
 
-        if ($pickupDate->gt($closedAt)) {
-            $pickupDate = $pickupDate->addDay();
-        }
+        // if ($pickupDate->gt($closedAt)) {
+        //     $pickupDate = $pickupDate->addDay();
+        // }
 
         $contactName = Str::limit(Arr::get($parentResource, 'to_contact_name'), 60);
         $companyName = Str::limit(Arr::get($parentResource, 'to_company_name'), 30);
@@ -137,7 +140,7 @@ class CallApiApcGbShipping extends OrgAction
                     'PhoneNumber' => Str::limit(Arr::get($parentResource, 'to_phone'), 15, ''),
                     'Email'       => Arr::get($parentResource, 'to_email'),
                 ],
-                'Instructions' => Str::limit(preg_replace("/[^A-Za-z0-9 \-]/", '', strip_tags($parent->shipping_notes), 60)),
+                'Instructions' => Str::limit(preg_replace("/[^A-Za-z0-9 \-]/", '', strip_tags($parent->shipping_notes)), 60),
 
             ],
             'ShipmentDetails' => [
@@ -146,33 +149,33 @@ class CallApiApcGbShipping extends OrgAction
             ]
         ];
 
+        $isDangerousGoods = $parent instanceof DeliveryNote && $parent->hasDangerousGoods();
 
-        $productCode = '';
-        if (count($parcels) == 1) {
-            $dimensions = [
-                $parcels[0]['dimensions'][1] ?? 0, // Width
-                $parcels[0]['dimensions'][2] ?? 0,  // Height
-                $parcels[0]['dimensions'][0] ?? 0, // Length
-            ];
-            rsort($dimensions);
-            $weight = $parcels[0]['weight'] ?? 0;
-            if ($weight <= 5 && $dimensions[0] <= 45 && $dimensions[1] <= 35 && $dimensions[2] <= 20) {
-                $productCode = 'LW16';
+        if ($isDangerousGoods) {
+            if (!$this->fitsStandardNextDayParcel($parcels)) {
+                return $this->sizeFailure();
             }
-        }
-
-        if (
-            !preg_match('/^(BT51|IV(\d\s|20|25|30|31|32|33|34|35|36|37|63)|AB(41|51|52)|PA79)/', $postalCode)
-            && preg_match(
-                '/^((JE|GG|IM|KW|HS|ZE|IV)\d+)|AB(30|33|34|35|36|37|38)|AB[4-5]\d|DD[89]|FK(16)|PA(20|36|4\d|6\d|7\d)|PH((15|16|17|18|19)|[2-5]\d)|KA(27|28)/',
-                $postalCode
-            )
-        ) {
-            $productCode = 'TDAY';
-        }
-
-        if ($productCode == '') {
+            $productCode = 'LQ16';
+        } elseif ($this->fitsLightweightParcel($parcels)) {
+            $productCode = 'LW16';
+        } elseif ($this->fitsStandardNextDayParcel($parcels)) {
             $productCode = 'ND16';
+        } elseif ($this->fitsNonConveyableParcel($parcels)) {
+            $productCode = 'NC16';
+        } elseif ($this->fitsExcessParcel($parcels)) {
+            $productCode = 'XS16';
+        } else {
+            return $this->sizeFailure();
+        }
+
+        // ponytail: LQ16 and XS16 keep their code on 2-5 day routes; APC lists no TD limited-quantity or excess service
+        if ($this->isTwoToFiveDayPostcode($postalCode)) {
+            $productCode = match ($productCode) {
+                'LW16' => 'TDLW',
+                'ND16' => 'TDAY',
+                'NC16' => 'TDNC',
+                default => $productCode,
+            };
         }
 
 
@@ -278,6 +281,14 @@ class CallApiApcGbShipping extends OrgAction
                     $errorData[$key] = strtolower(rtrim(implode(' ', $value), ','));
                 }
             }
+            if (empty($errorData)) {
+                $failMessage = Arr::get($apiResponse, 'Orders.Order.Messages.Description')
+                    ?: Arr::get($apiResponse, 'Orders.Messages.Description')
+                    ?: 'Shipping request failed';
+
+                $errorData['message'] = strtolower($failMessage);
+                $errorData['others']  = strtolower($failMessage);
+            }
         }
 
         return [
@@ -285,6 +296,114 @@ class CallApiApcGbShipping extends OrgAction
             'modelData' => $modelData,
             'errorData' => $errorData,
         ];
+    }
+
+    public function isTwoToFiveDayPostcode(string $postalCode): bool
+    {
+        if (!preg_match('/^([A-Z]{1,2})(\d{1,2})/', strtoupper(trim($postalCode)), $matches)) {
+            return false;
+        }
+        $area     = $matches[1];
+        $district = (int)$matches[2];
+
+        return match ($area) {
+            'JE', 'GG', 'IM', 'KW', 'HS', 'ZE' => true,
+            'AB' => in_array($district, [37, 38, 43, 44, 45, 55, 56]),
+            'IV' => in_array($district, [21, 22, 26, 27, 28]) || ($district >= 40 && $district <= 49) || ($district >= 51 && $district <= 56),
+            'PA' => $district == 20 || ($district >= 41 && $district <= 49) || ($district >= 60 && $district <= 78),
+            'PH' => $district >= 42 && $district <= 44,
+            'KA' => $district == 27 || $district == 28,
+            default => false,
+        };
+    }
+
+    public function sizeFailure(): array
+    {
+        return [
+            'status'    => 'fail',
+            'modelData' => [],
+            'errorData' => [
+                'message' => 'parcel exceeds apc maximum size or weight',
+                'others'  => 'parcel exceeds apc maximum size or weight',
+            ],
+        ];
+    }
+
+    /**
+     * @return array{0: float, 1: float, 2: float} longest to shortest, in cm
+     */
+    public function sortedDimensions(array $parcel): array
+    {
+        $dimensions = array_pad(array_slice(Arr::get($parcel, 'dimensions', []), 0, 3), 3, 0);
+        rsort($dimensions);
+
+        return $dimensions;
+    }
+
+    public function fitsLightweightParcel(array $parcels): bool
+    {
+        if (count($parcels) != 1) {
+            return false;
+        }
+
+        [$longest, $middle, $shortest] = $this->sortedDimensions($parcels[0]);
+
+        return Arr::get($parcels[0], 'weight', 0) <= 5 && $longest <= 45 && $middle <= 35 && $shortest <= 20;
+    }
+
+    public function fitsStandardNextDayParcel(array $parcels): bool
+    {
+        if (count($parcels) > 20) {
+            return false;
+        }
+
+        foreach ($parcels as $parcel) {
+            [$longest, $middle, $shortest] = $this->sortedDimensions($parcel);
+
+            if (Arr::get($parcel, 'weight', 0) > 30) {
+                return false;
+            }
+
+            if ($longest > 60 && !($longest <= 120 && $middle <= 55 && $shortest <= 50)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    public function fitsNonConveyableParcel(array $parcels): bool
+    {
+        if (count($parcels) > 2) {
+            return false;
+        }
+
+        foreach ($parcels as $parcel) {
+            [$longest, $middle, $shortest] = $this->sortedDimensions($parcel);
+
+            if (Arr::get($parcel, 'weight', 0) > 30 || $longest > 160 || $middle > 60 || $shortest > 60) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    public function fitsExcessParcel(array $parcels): bool
+    {
+        if (count($parcels) > 2) {
+            return false;
+        }
+
+        foreach ($parcels as $parcel) {
+            [$longest, $middle, $shortest] = $this->sortedDimensions($parcel);
+
+            if (Arr::get($parcel, 'weight', 0) > 30 || $longest > 205 || $middle > 30 || $shortest > 30) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     public function getLabel(string $labelID, Shipper $shipper): string

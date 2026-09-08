@@ -8,7 +8,6 @@
 
 namespace App\Actions\SysAdmin\UI;
 
-use App\Actions\UI\Dashboards\ShowGroupDashboard;
 use App\Http\Resources\SysAdmin\ScheduledTaskResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Helpers\ScheduledTaskLog;
@@ -24,6 +23,7 @@ use Spatie\QueryBuilder\AllowedFilter;
 class IndexSysAdminScheduledTasks
 {
     use AsAction;
+    use WithAnalyticsSubNavigations;
 
     public function handle($prefix = null): LengthAwarePaginator
     {
@@ -59,7 +59,8 @@ class IndexSysAdminScheduledTasks
                         'icon'  => ['fal', 'fa-clock'],
                         'title' => __('Scheduled Tasks'),
                     ],
-                    'title' => __('Scheduled Tasks'),
+                    'title'         => __('Scheduled Tasks'),
+                    'subNavigation' => $this->getAnalyticsNavigation(group(), $request),
                 ],
                 'scheduledTasks' => ScheduledTaskResource::collection($scheduledTasks),
             ]
@@ -69,13 +70,13 @@ class IndexSysAdminScheduledTasks
     public function getBreadcrumbs(): array
     {
         return array_merge(
-            ShowGroupDashboard::make()->getBreadcrumbs(),
+            ShowSysAdminAnalyticsDashboard::make()->getBreadcrumbs(),
             [
                 [
                     'type'   => 'simple',
                     'simple' => [
                         'route' => [
-                            'name' => 'grp.sysadmin.scheduled-tasks.index',
+                            'name' => 'grp.sysadmin.analytics.scheduled_tasks.index',
                         ],
                         'label' => __('Scheduled Tasks'),
                     ]

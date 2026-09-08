@@ -146,37 +146,7 @@ class RepairMissingFixedWebBlocksInDepartmentsWebpages
             $liveWebBlockSnapshot = $webpage->website->{"live{$scope->value}Snapshot"};
             $usedWebBlockTemplateCodes = data_get($liveWebBlockSnapshot?->layout, 'code', array_first($scope->templateCodes())); // Get published WebBlock layout code
 
-            $countTopFamilies = $this->getWebpageBlocksByType($webpage, WebBlockTemplateEnum::LIST_PRODUCTS->templateCodes());
-
-            $this->deleteWebBlocksByType($webpage, WebBlockTemplateEnum::FAMILIES);
-
-            $countTopFamilies = $this->getWebpageBlocksByType($webpage, 'top-families');
-            if (count($countTopFamilies) == 0) {
-                $this->createWebBlock($webpage, 'top-families');
-            }
-
-            $countLuigiTrends = $this->getWebpageBlocksByType($webpage, 'luigi-trends-1');
-            if (count($countLuigiTrends) == 0) {
-                $this->createWebBlock($webpage, 'luigi-trends-1');
-            }
-
-            $this->normalizeWebBlockByType($webpage, WebBlockTemplateEnum::SUB_DEPARTMENTS->templateCodes(), WebBlockTemplateEnum::SUB_DEPARTMENTS);
-
-            if ($usedWebBlockTemplateCodes == 'department-description-1') {
-                $this->normalizeWebBlockByType($webpage, WebBlockTemplateEnum::LIST_PRODUCTS->templateCodes(), WebBlockTemplateEnum::LIST_PRODUCTS);
-            } else {
-                $this->deleteWebBlocksByType($webpage, WebBlockTemplateEnum::LIST_PRODUCTS);
-            }
-
-            $countRelatedProductCategoryBlock = $this->getWebpageBlocksByType($webpage, 'recommendation-product-category-from-master');
-            if (count($countRelatedProductCategoryBlock) == 0) {
-                $this->createWebBlock($webpage, 'recommendation-product-category-from-master');
-            }
-
-            $countFaqDepartment = $this->getWebpageBlocksByType($webpage, 'faq-department');
-            if (count($countFaqDepartment) == 0) {
-                $this->createWebBlock($webpage, 'faq-department');
-            }
+            $this->ensureDepartmentPageHasRequiredBlocks($webpage, $usedWebBlockTemplateCodes);
         } else {
             $this->deleteWebBlocksByCode($webpage, 'families-2');
             // Layout for Overview Page

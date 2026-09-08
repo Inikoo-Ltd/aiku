@@ -2,12 +2,12 @@
 
 namespace App\Actions\Goods\TradeUnit;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Models\Goods\TradeUnit;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class UpdateTradeUnitTranslationsFromUpdate extends GrpAction
+class UpdateTradeUnitTranslationsFromUpdate extends OrgAction
 {
     use asAction;
 
@@ -60,7 +60,7 @@ class UpdateTradeUnitTranslationsFromUpdate extends GrpAction
 
     public function action(TradeUnit $tradeUnit, array $modelData): void
     {
-        $this->initialisation($tradeUnit->group, $modelData);
+        $this->initialisationFromGroup($tradeUnit->group, $modelData);
         $this->handle($tradeUnit, $this->validatedData);
     }
 

@@ -10,7 +10,7 @@
 
 namespace App\Actions\Masters\MasterCollection;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\Masters\MasterCollection;
@@ -22,7 +22,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 
-class AttachMultipleParentsToAMasterCollection extends GrpAction
+class AttachMultipleParentsToAMasterCollection extends OrgAction
 {
     private MasterShop $masterShop;
 
@@ -73,7 +73,7 @@ class AttachMultipleParentsToAMasterCollection extends GrpAction
     public function action(MasterCollection $masterCollection, $modelData): MasterCollection
     {
         $this->asAction = true;
-        $this->initialisation($masterCollection->group, $modelData);
+        $this->initialisationFromGroup($masterCollection->group, $modelData);
 
         return $this->handle($masterCollection, $modelData);
     }
@@ -81,7 +81,7 @@ class AttachMultipleParentsToAMasterCollection extends GrpAction
     public function asController(MasterCollection $masterCollection, ActionRequest $request): MasterCollection
     {
         $this->masterShop = $masterCollection->masterShop;
-        $this->initialisation($masterCollection->group, $request);
+        $this->initialisationFromGroup($masterCollection->group, $request);
 
         return $this->handle($masterCollection, $this->validatedData);
     }

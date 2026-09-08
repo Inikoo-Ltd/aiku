@@ -1,5 +1,7 @@
 import { Images } from "@/types/Images"
 
+export type BannerScreenView = "desktop" | "tablet" | "mobile"
+
 export interface CornerData {
     data: {
         button_color?: string

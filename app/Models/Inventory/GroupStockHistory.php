@@ -15,7 +15,7 @@ use Illuminate\Database\Eloquent\Model;
  * @property int $id
  * @property int $group_id
  * @property \Illuminate\Support\Carbon $date
- * @property numeric $grp_stock_value
+ * @property numeric $grp_stock_lpp_value
  * @property numeric $grp_stock_commercial_value
  * @property numeric $grp_value_dormant_stock_1y
  * @property float $percentage_value_dormant_stock_1y
@@ -47,7 +47,7 @@ class GroupStockHistory extends Model
     {
         return [
             'date'                       => 'date',
-            'grp_stock_value'            => 'decimal:2',
+            'grp_stock_lpp_value'            => 'decimal:2',
             'grp_stock_commercial_value' => 'decimal:2',
         ];
     }

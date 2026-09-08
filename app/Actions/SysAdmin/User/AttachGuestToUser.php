@@ -8,12 +8,12 @@
 
 namespace App\Actions\SysAdmin\User;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Actions\SysAdmin\User\Hydrators\UserHydrateModels;
 use App\Models\SysAdmin\Guest;
 use App\Models\SysAdmin\User;
 
-class AttachGuestToUser extends GrpAction
+class AttachGuestToUser extends OrgAction
 {
     public function handle(User $user, Guest $guest, array $modelData): User
     {
@@ -39,7 +39,7 @@ class AttachGuestToUser extends GrpAction
 
     public function action(User $user, Guest $guest, array $modelData): User
     {
-        $this->initialisation($guest->group, $modelData);
+        $this->initialisationFromGroup($guest->group, $modelData);
         return $this->handle($user, $guest, $modelData);
     }
 

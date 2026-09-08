@@ -39,14 +39,18 @@ class IndexNewsletterMailshots extends OrgAction
     {
         $actions = [];
         if ($this->parent instanceof Shop) {
+            $outbox  = $this->parent->outboxes()->where('outboxes.code', OutboxCodeEnum::NEWSLETTER)->first();
             $actions = [
                 [
                     'type'  => 'button',
                     'style' => 'create',
                     'label' => __('New Newsletter'),
                     'route' => [
-                        'name'       => 'grp.org.shops.show.marketing.newsletters.create',
-                        'parameters' => array_values($request->route()->originalParameters())
+                        'method'     => 'post',
+                        'name'       => 'grp.models.outbox.mailshot.store',
+                        'parameters' => [
+                            'outbox' => $outbox->id
+                        ]
                     ]
                 ]
             ];

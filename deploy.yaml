@@ -8,7 +8,7 @@ import:
 config:
   application: 'aiku'
   default_selector: 'env=prod'
-  repository: 'https://github.com/inikoo/aiku.git'
+  repository: 'https://github.com/Inikoo-Ltd/aiku.git'
 
 hosts:
   aiku:
@@ -29,6 +29,13 @@ hosts:
     branch: staging
     labels:
       env: staging
+  neon:
+    environment: 'staging'
+    hostname: neon_staging
+    deploy_path: '~/aiku'
+    branch: staging
+    labels:
+      env: staging
 tasks:
   build:
     - run: uptime
@@ -36,4 +43,4 @@ before:
   deploy: install:env
 after:
   deploy:failed: [ deploy:unlock ]
-  deploy:update_code: [ npm:my_install, deploy:vendors ]
+  deploy:update_code: [ npm:my_install ]

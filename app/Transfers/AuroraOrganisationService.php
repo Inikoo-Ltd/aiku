@@ -15,9 +15,12 @@ use App\Models\Ordering\Order;
 use App\Models\Procurement\PurchaseOrder;
 use App\Models\SysAdmin\Organisation;
 use App\Models\Transfers\Fetch;
+use App\Actions\Transfers\Aurora\FetchAuroraAction;
 use App\Transfers\Aurora\FetchAuroraAdjustment;
 use App\Transfers\Aurora\FetchAuroraAgent;
 use App\Transfers\Aurora\FetchAuroraArtefact;
+use App\Transfers\Aurora\FetchAuroraJobOrder;
+use App\Transfers\Aurora\FetchAuroraRawMaterial;
 use App\Transfers\Aurora\FetchAuroraBackInStockReminder;
 use App\Transfers\Aurora\FetchAuroraBarcode;
 use App\Transfers\Aurora\FetchAuroraCharge;
@@ -76,6 +79,7 @@ use App\Transfers\Aurora\FetchAuroraPortfolio;
 use App\Transfers\Aurora\FetchAuroraProduct;
 use App\Transfers\Aurora\FetchAuroraProductHasOrgStock;
 use App\Transfers\Aurora\FetchAuroraProspect;
+use App\Transfers\Aurora\FetchAuroraAgentSupplierPurchaseOrder;
 use App\Transfers\Aurora\FetchAuroraPurchaseOrder;
 use App\Transfers\Aurora\FetchAuroraPurchaseOrderTransaction;
 use App\Transfers\Aurora\FetchAuroraPurge;
@@ -285,6 +289,42 @@ class AuroraOrganisationService implements SourceOrganisationService
         return (new FetchAuroraService($this))->fetch($id);
     }
 
+    protected bool $forcedFetch = false;
+
+    /**
+     * The command-level allowlist (FetchAuroraAction::auroraStillFeeds) is bypassed when a
+     * parse* helper fetches a missing record mid-run, so the same rule is enforced here at
+     * the one place every transitive Fetch*::run() passes through.
+     */
+    public function allowsFetchOnMiss(string $fetchActionClass): bool
+    {
+        if (FetchAuroraAction::fetcherForbidden($fetchActionClass)) {
+            return false;
+        }
+
+        if ($this->forcedFetch) {
+            return true;
+        }
+
+        if (in_array($this->organisation->slug, config('aurora.following_organisations', []))) {
+            return true;
+        }
+
+        $fetcher = str_replace('FetchAurora', '', class_basename($fetchActionClass));
+
+        return in_array($fetcher, config('aurora.allowed_fetchers', []));
+    }
+
+    public function isForcedFetch(): bool
+    {
+        return $this->forcedFetch;
+    }
+
+    public function setForcedFetch(bool $forcedFetch): void
+    {
+        $this->forcedFetch = $forcedFetch;
+    }
+
     public function fetchStock($id): ?array
     {
         return (new FetchAuroraStock($this))->fetch($id);
@@ -381,6 +421,11 @@ class AuroraOrganisationService implements SourceOrganisationService
         return (new FetchAuroraPurchaseOrder($this))->fetch($id);
     }
 
+    public function fetchAgentSupplierPurchaseOrder($id): ?array
+    {
+        return (new FetchAuroraAgentSupplierPurchaseOrder($this))->fetch($id);
+    }
+
     public function fetchStockDelivery($id): ?array
     {
         return (new FetchAuroraStockDelivery($this))->fetch($id);
@@ -399,6 +444,16 @@ class AuroraOrganisationService implements SourceOrganisationService
     public function fetchArtefact($id): array
     {
         return (new FetchAuroraArtefact($this))->fetch($id);
+    }
+
+    public function fetchRawMaterial($id): ?array
+    {
+        return (new FetchAuroraRawMaterial($this))->fetch($id);
+    }
+
+    public function fetchJobOrder($id): ?array
+    {
+        return (new FetchAuroraJobOrder($this))->fetch($id);
     }
 
     public function fetchBarcode($id): ?array

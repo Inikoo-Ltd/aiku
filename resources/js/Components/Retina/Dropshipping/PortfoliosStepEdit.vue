@@ -260,7 +260,7 @@ const debounceUpdateName = debounce((description: string) => {
                 <Editor
                     v-model="selectedDataToEditDescription.description"
                     @update:modelValue="() => debounceUpdateDescription(selectedDataToEditDescription.description)"
-                    :toogle="[
+                    :toggle="[
                         'heading1', 'heading2', 'heading3', 'fontSize', 'bold', 'italic', 'underline', 'bulletList', 'fontFamily',
                         'orderedList', 'blockquote', 'divider', 'alignLeft', 'alignRight', 
                         'alignCenter', 'undo', 'redo', 'highlight', 'color', 'clear'

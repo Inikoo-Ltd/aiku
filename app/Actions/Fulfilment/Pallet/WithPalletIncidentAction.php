@@ -23,6 +23,7 @@ trait WithPalletIncidentAction
         data_set($modelData, 'state', $incidentState);
         data_set($modelData, 'status', PalletStatusEnum::INCIDENT);
         data_set($modelData, 'set_as_incident_at', now());
+        data_set($modelData, 'location_id', null);
 
         data_set($modelData, 'incident_report', [
             'type'        => $incidentState->value,

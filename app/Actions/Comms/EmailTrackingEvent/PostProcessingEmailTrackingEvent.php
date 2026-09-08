@@ -9,6 +9,7 @@
 namespace App\Actions\Comms\EmailTrackingEvent;
 
 use App\Actions\Web\WebsiteVisitor\UI\GetBrowserInfo;
+use App\Enums\Comms\EmailTrackingEvent\EmailTrackingEventTypeEnum;
 use App\Models\Comms\EmailTrackingEvent;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -45,7 +46,10 @@ class PostProcessingEmailTrackingEvent
             ]
         );
 
-
-
+        /* Two minutes gives a scanner burst - over in under thirty seconds - time to finish, so
+           the counter can deliver a verdict on this click and the stats it fed. */
+        if ($emailTrackingEvent->type == EmailTrackingEventTypeEnum::CLICKED && $ip) {
+            ReclassifyScannerEmailClicks::dispatch($emailTrackingEvent->id)->delay(now()->addMinutes(2));
+        }
     }
 }

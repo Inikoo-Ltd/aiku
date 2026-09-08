@@ -67,10 +67,10 @@ class IndexDeliveryNotesInOrgStock extends OrgAction
                 'delivery_note_items.quantity_packed',
                 'delivery_note_items.quantity_dispatched',
             ])
-            ->selectRaw($orgStock->packed_in.' as packed_in')
+            ->selectRaw($orgStock->packed_in ?? 0 .' as packed_in') // handle sql fix if packed_in is not present
             ->allowedSorts(['reference', 'date', 'state', 'quantity_required', 'quantity_picked', 'quantity_packed'])
             ->allowedFilters([$globalSearch])
-            ->withBetweenDates(['-date'])
+            ->withBetweenDates(['delivery_notes.date'])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
     }
@@ -92,6 +92,7 @@ class IndexDeliveryNotesInOrgStock extends OrgAction
 
             $table
                 ->withGlobalSearch()
+                ->betweenDates(['date'])
                 ->withEmptyState(
                     [
                         'title' => $noResults,

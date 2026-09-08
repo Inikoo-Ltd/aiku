@@ -2,9 +2,11 @@
 
 namespace App\Models\Accounting;
 
+use App\Models\Traits\HasHistory;
 use App\Models\Traits\InCustomer;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use OwenIt\Auditing\Contracts\Auditable;
 
 /**
  * @property int $id
@@ -37,9 +39,10 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MitSavedCard query()
  * @mixin \Eloquent
  */
-class MitSavedCard extends Model
+class MitSavedCard extends Model implements Auditable
 {
     use InCustomer;
+    use HasHistory;
 
     protected $casts = [
         'data' => 'json',
@@ -57,5 +60,19 @@ class MitSavedCard extends Model
     {
         return $this->belongsTo(PaymentAccountShop::class);
     }
+
+    public function generateTags(): array
+    {
+        return ['accounting'];
+    }
+
+    protected array $auditInclude = [
+        'card_type',
+        'last_four_digits',
+        'expires_at',
+        'label',
+        'state',
+        'priority'
+    ];
 
 }

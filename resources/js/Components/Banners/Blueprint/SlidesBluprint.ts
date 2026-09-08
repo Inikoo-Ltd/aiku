@@ -182,7 +182,7 @@ export default {
 				},
 				{
 					name: ["layout", "centralStage", "style", "textShadow"],
-					type: "toogle",
+					type: "toggle",
 					label: trans("Text Shadow"),
 					value: ["layout", "centralStage", "style", "TextShadow"],
 				},

@@ -53,7 +53,9 @@ const value = ref(setFormValue(props.form, props.fieldName));
 watch(value, (newValue) => {
     // Update the form field value when the value ref changes
     updateFormValue(newValue);
-    props.form.errors[props.fieldName] = ''
+    if (props.form.errors) {
+        props.form.errors[props.fieldName] = ''
+    }
 });
 
 const updateFormValue = (newValue) => {

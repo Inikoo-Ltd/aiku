@@ -10,7 +10,7 @@
 namespace App\Actions\Masters\MasterProductCategory;
 
 use App\Actions\Catalogue\ProductCategory\CloneProductCategoryParentsFromMaster;
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Actions\Masters\MasterProductCategory\Hydrators\MasterDepartmentHydrateMasterAssets;
 use App\Actions\Masters\MasterProductCategory\Hydrators\MasterDepartmentHydrateMasterSubDepartments;
 use App\Actions\Masters\MasterProductCategory\Hydrators\MasterProductCategoryHydrateMasterFamilies;
@@ -25,7 +25,7 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 
-class UpdateMasterSubDepartmentMasterDepartment extends GrpAction
+class UpdateMasterSubDepartmentMasterDepartment extends OrgAction
 {
     use WithActionUpdate;
     private MasterShop $masterShop;
@@ -93,7 +93,7 @@ class UpdateMasterSubDepartmentMasterDepartment extends GrpAction
     {
         $this->asAction = true;
         $this->masterShop = $subDepartment->masterShop;
-        $this->initialisation($subDepartment->group, $modelData);
+        $this->initialisationFromGroup($subDepartment->group, $modelData);
 
         return $this->handle($subDepartment, $this->validatedData);
     }

@@ -25,6 +25,8 @@ trait WithBase64FileConverter
         $tmpFilePath = sys_get_temp_dir() . '/' . Str::uuid()->toString();
         file_put_contents($tmpFilePath, $fileData);
 
+        app()->terminating(fn () => is_file($tmpFilePath) && @unlink($tmpFilePath));
+
         $tmpFile = new File($tmpFilePath);
 
         return new UploadedFile(

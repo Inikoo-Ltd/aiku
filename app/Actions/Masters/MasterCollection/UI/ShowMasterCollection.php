@@ -11,7 +11,7 @@
 namespace App\Actions\Masters\MasterCollection\UI;
 
 use App\Actions\Catalogue\Collection\UI\IndexCollectionsInMasterCollection;
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\Masters\MasterAsset\UI\IndexMasterProductsInMasterCollection;
 use App\Actions\Masters\MasterCollection\GetMasterCollectionsImages;
@@ -36,7 +36,7 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 
-class ShowMasterCollection extends GrpAction
+class ShowMasterCollection extends OrgAction
 {
     use WithMastersAuthorisation;
     use WithMasterCollectionNavigation;
@@ -54,7 +54,7 @@ class ShowMasterCollection extends GrpAction
         $this->parent = $masterShop;
         $group = group();
 
-        $this->initialisation($group, $request)->withTab(MasterCollectionTabsEnum::values());
+        $this->initialisationFromGroup($group, $request)->withTab(MasterCollectionTabsEnum::values());
 
         return $this->handle($masterCollection);
     }
@@ -65,7 +65,7 @@ class ShowMasterCollection extends GrpAction
         $this->parent = $masterDepartment;
         $group = group();
 
-        $this->initialisation($group, $request)->withTab(MasterCollectionTabsEnum::values());
+        $this->initialisationFromGroup($group, $request)->withTab(MasterCollectionTabsEnum::values());
 
         return $this->handle($masterCollection);
     }
@@ -76,7 +76,7 @@ class ShowMasterCollection extends GrpAction
         $this->parent = $masterSubDepartment;
         $group = group();
 
-        $this->initialisation($group, $request)->withTab(MasterCollectionTabsEnum::values());
+        $this->initialisationFromGroup($group, $request)->withTab(MasterCollectionTabsEnum::values());
 
         return $this->handle($masterCollection);
     }
@@ -86,7 +86,7 @@ class ShowMasterCollection extends GrpAction
     {
         $group        = group();
         $this->parent = $group;
-        $this->initialisation($group, $request)->withTab(MasterCollectionTabsEnum::values());
+        $this->initialisationFromGroup($group, $request)->withTab(MasterCollectionTabsEnum::values());
 
         return $this->handle($masterCollection);
     }
@@ -124,7 +124,7 @@ class ShowMasterCollection extends GrpAction
                         'icon'    => 'fas fa-times-circle',
                         'class'   => 'text-red-400'
                     ],
-                    'actions' => [
+                    'actions' => $this->canEdit ? [
                         [
                             'type'    => 'button',
                             'style'   => 'edit',
@@ -137,7 +137,7 @@ class ShowMasterCollection extends GrpAction
                                 ]
                             ]
                         ]
-                    ],
+                    ] : [],
                     'subNavigation' => $subNavigation,
                 ],
                 'tabs'        => [

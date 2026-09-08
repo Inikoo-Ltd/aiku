@@ -2,6 +2,29 @@
 import { ref, onMounted, watch, computed } from "vue"
 import axios from "axios"
 import { capitalize } from "@/Composables/capitalize"
+import { trans } from "laravel-vue-i18n"
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import {
+	faArrowUpRightFromSquare,
+	faTag,
+	faAnglesUp,
+	faAngleUp,
+	faEquals,
+	faAngleDown,
+	faAnglesDown,
+} from "@fortawesome/free-solid-svg-icons"
+import { faJira } from "@fortawesome/free-brands-svg-icons"
+
+const JIRA_PRIORITY_ICONS: Record<string, { icon: any; color: string }> = {
+	highest: { icon: faAnglesUp, color: "text-red-500" },
+	high: { icon: faAngleUp, color: "text-red-400" },
+	medium: { icon: faEquals, color: "text-orange-400" },
+	low: { icon: faAngleDown, color: "text-blue-400" },
+	lowest: { icon: faAnglesDown, color: "text-blue-500" },
+}
+
+const jiraPriorityVisual = (name: string | undefined) =>
+	JIRA_PRIORITY_ICONS[String(name ?? "").toLowerCase()] ?? { icon: faEquals, color: "text-gray-400" }
 
 const props = defineProps<{
 	sessionUlid: string
@@ -135,7 +158,12 @@ watch(
 
 					<div class="flex-1">
 						<div class="text-sm text-gray-800">
-							{{ activity.details?.description || activity.event_label }}
+							<template v-if="activity?.event_type === 'jira_ticket'">
+								{{ trans("Created a Jira ticket") }}
+							</template>
+							<template v-else>
+								{{ activity.details?.description || activity.event_label }}
+							</template>
 						</div>
 
 						<div class="flex flex-col items-start gap-1 text-[12px]">
@@ -212,6 +240,56 @@ watch(
 									)
 								">
 								{{ activity.details.priority_current || activity.details.priority }}
+							</div>
+						</div>
+
+						<div
+							v-if="activity?.event_type === 'jira_ticket' && activity?.details?.ticket_key"
+							class="mt-2 rounded-lg border border-blue-100 bg-blue-50/60 px-3 py-2">
+							<div class="flex items-center gap-2">
+								<FontAwesomeIcon :icon="faJira" class="text-blue-600 text-xs" />
+								<component
+									:is="activity?.details?.ticket_url ? 'a' : 'span'"
+									:href="activity?.details?.ticket_url || undefined"
+									:target="activity?.details?.ticket_url ? '_blank' : undefined"
+									rel="noopener"
+									class="text-sm font-semibold text-blue-700"
+									:class="activity?.details?.ticket_url ? 'hover:text-blue-800 hover:underline' : ''">
+									{{ activity.details.ticket_key }}
+									<FontAwesomeIcon
+										v-if="activity?.details?.ticket_url"
+										:icon="faArrowUpRightFromSquare"
+										class="ml-0.5 text-[10px]" />
+								</component>
+								<span
+									v-if="activity?.details?.issue_type"
+									class="px-1.5 py-0.5 text-[10px] font-medium rounded bg-white text-blue-600 border border-blue-100">
+									{{ activity.details.issue_type }}
+								</span>
+							</div>
+							<div
+								v-if="activity?.details?.summary"
+								class="mt-1 text-xs text-gray-600 line-clamp-2">
+								{{ activity.details.summary }}
+							</div>
+							<div
+								v-if="activity?.details?.priority_name || activity?.details?.labels?.length"
+								class="mt-1.5 flex flex-wrap items-center gap-1">
+								<span
+									v-if="activity?.details?.priority_name"
+									class="inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-medium rounded bg-white text-gray-600 border border-blue-100">
+									<FontAwesomeIcon
+										:icon="jiraPriorityVisual(activity.details.priority_name).icon"
+										:class="jiraPriorityVisual(activity.details.priority_name).color" />
+									{{ activity.details.priority_name }}
+								</span>
+								<span
+									v-for="label in activity.details.labels"
+									:key="label"
+									class="inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-medium rounded bg-white text-gray-600 border border-blue-100">
+									<FontAwesomeIcon :icon="faTag" class="text-gray-400" />
+									{{ label }}
+								</span>
 							</div>
 						</div>
 					</div>

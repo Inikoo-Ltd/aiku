@@ -400,7 +400,7 @@ watch(() => props.name, () => {
                             :key="`table-${name}-row-${key}-column-${column.key}`"
                             class="text-sm py-2 text-gray-600 whitespace-normal h-full" :class="[
                                 typeof item[column.key] == 'number' || column.type === 'number' || column.align === 'right'
-                                    ? 'text-right pl-3 pr-9 tabular-nums'
+                                    ? '!text-right pl-3 pr-9 tabular-nums'
                                     : column.align === 'center'
                                         ? 'text-center px-3'
                                         : 'px-6'

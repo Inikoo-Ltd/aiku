@@ -10,27 +10,122 @@ import { ref } from "vue"
 import Image from "@common/Components/Image.vue"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import Button from "@/Components/Elements/Buttons/Button.vue"
-import { faEye, faEyeSlash } from "@fal"
+import { faPen, faSyncAlt, faDownload } from "@fal"
 import PermissionsPictogram from "@/Components/DataDisplay/PermissionsPictogram.vue"
 import { trans } from "laravel-vue-i18n"
-import { Link } from "@inertiajs/vue3"
+import { Link, router } from "@inertiajs/vue3"
 import Tag from "@/Components/Tag.vue"
+import { QrcodeCanvas } from "qrcode.vue"
+import axios from "axios"
+import { notify } from "@kyvg/vue3-notification"
 
 const props = defineProps<{
 	data: {
 		employee: any
 		pin: any
+		regenerate_pin_route?: string
+		work_schedule?: {
+			source: "employee" | "organisation" | null
+			days: {
+				day_of_week: number
+				start_time: string | null
+				end_time: string | null
+				breaks: { name: string | null; start_time: string | null; end_time: string | null }[]
+			}[]
+		}
 	}
 }>()
-console.log(props)
-
-const showPins = ref(false)
-
-function toggleShowPins() {
-	showPins.value = !showPins.value
-}
 
 const isVisitClockingMachine = ref(false)
+const isVisitWorkingHours = ref(false)
+const isRegeneratingPin = ref(false)
+const qrCanvasRef = ref<any | null>(null)
+
+const regeneratePin = async () => {
+	if (!props.data?.regenerate_pin_route) {
+		return
+	}
+
+	isRegeneratingPin.value = true
+
+	try {
+		await axios.post(props.data.regenerate_pin_route)
+
+		notify({
+			title: trans("Success"),
+			text: trans("A new clocking PIN and QR code have been generated."),
+			type: "success",
+		})
+
+		router.reload({ only: ["showcase"] })
+	} catch (e: any) {
+		notify({
+			title: trans("Failed"),
+			text: e?.response?.data?.message ?? trans("Failed to generate a new PIN."),
+			type: "error",
+		})
+	} finally {
+		isRegeneratingPin.value = false
+	}
+}
+
+const downloadQr = () => {
+	const container = qrCanvasRef.value as HTMLElement | undefined
+	const canvas = container?.querySelector?.("canvas") as HTMLCanvasElement | null
+
+	if (!canvas) {
+		notify({
+			title: trans("Failed"),
+			text: trans("QR code is not ready yet, please try again."),
+			type: "error",
+		})
+		return
+	}
+
+	const name = props.data?.employee?.data?.contact_name ?? ""
+	const dpr = window.devicePixelRatio || 1
+	const padding = 24 * dpr
+	const fontSize = 20 * dpr
+	const labelTopGap = 16 * dpr
+	const labelBottomGap = 20 * dpr
+	const labelHeight = name ? labelTopGap + fontSize + labelBottomGap : 0
+
+	const composite = document.createElement("canvas")
+	composite.width = canvas.width + padding * 2
+	composite.height = canvas.height + padding * 2 + labelHeight
+
+	const ctx = composite.getContext("2d")
+	if (!ctx) {
+		return
+	}
+
+	ctx.fillStyle = "#ffffff"
+	ctx.fillRect(0, 0, composite.width, composite.height)
+	ctx.drawImage(canvas, padding, padding)
+
+	if (name) {
+		ctx.fillStyle = "#1f2937"
+		ctx.textAlign = "center"
+		ctx.textBaseline = "alphabetic"
+
+		let currentFontSize = fontSize
+		const maxTextWidth = composite.width - padding
+		ctx.font = `600 ${currentFontSize}px sans-serif`
+		while (ctx.measureText(name).width > maxTextWidth && currentFontSize > 10 * dpr) {
+			currentFontSize -= 1 * dpr
+			ctx.font = `600 ${currentFontSize}px sans-serif`
+		}
+
+		ctx.fillText(name, composite.width / 2, canvas.height + padding + labelTopGap + fontSize)
+	}
+
+	const link = document.createElement("a")
+	link.download = `${props.data?.employee?.data?.slug ?? "employee"}-clocking-qr.png`
+	link.href = composite.toDataURL("image/png")
+	document.body.appendChild(link)
+	link.click()
+	document.body.removeChild(link)
+}
 
 const formatEmergencyContact = (value: any): string => {
 	if (!value) {
@@ -42,6 +137,12 @@ const formatEmergencyContact = (value: any): string => {
 	const parts = [value.contact, value.phone_number, value.address, value.status].filter(Boolean)
 	return parts.length ? parts.join(" | ") : "-"
 }
+
+const dayOfWeekLabels: Record<number, string> = {
+	1: "Monday", 2: "Tuesday", 3: "Wednesday", 4: "Thursday", 5: "Friday", 6: "Saturday", 7: "Sunday",
+}
+
+const formatHM = (value: string | null): string => value ? value.slice(0, 5) : "-"
 </script>
 
 <template>
@@ -165,30 +266,41 @@ const formatEmergencyContact = (value: any): string => {
 			</div>
 		</div>
 
+		<div class="mt-4 lg:mt-0 w-full lg:max-w-lg lg:col-span-3 flex flex-col gap-y-4">
 		<div
-			class="mt-4 lg:mt-0 w-full h-fit lg:max-w-lg grid lg:col-span-3 ring-1 ring-gray-300 shadow rounded-2xl py-6 px-4 gap-y-6">
+			class="w-full h-fit grid ring-1 ring-gray-300 shadow rounded-2xl py-6 px-4 gap-y-6">
 			<template v-if="data?.pin">
-				<div class="flex flex-nowrap justify-center gap-2">
-					<div
-						v-for="(value, index) in Array.from(data?.pin)"
-						:key="index"
-						class="h-6 xl:h-8 aspect-square flex items-center justify-center text-sm xl:text-lg font-semibold border border-gray-300 rounded xl:rounded-md shadow-sm bg-gray-50">
-						<Transition name="spin-to-right">
-							<span :key="showPins ? value : 'X'">{{ showPins ? value : "X" }}</span>
-						</Transition>
+				<div class="flex justify-center">
+					<div ref="qrCanvasRef" class="rounded-lg bg-white p-3 ring-1 ring-gray-200">
+						<QrcodeCanvas :value="data.pin" :size="150" level="H" />
 					</div>
 				</div>
 
-				<div class="flex flex-col items-center gap-y-4">
+				<div class="text-center text-sm font-medium text-gray-700">
+					{{ data?.employee?.data?.contact_name }}
+				</div>
+
+				<div class="flex flex-nowrap justify-center gap-2">
+					<div
+						v-for="(value, index) in Array.from(data.pin)"
+						:key="index"
+						class="h-6 xl:h-8 aspect-square flex items-center justify-center text-sm xl:text-lg font-semibold border border-gray-300 rounded xl:rounded-md shadow-sm bg-gray-50">
+						{{ value }}
+					</div>
+				</div>
+
+				<div class="flex items-center justify-center gap-x-3">
 					<Button
-						@click="toggleShowPins"
+						@click="regeneratePin"
 						type="tertiary"
-						:label="
-							showPins
-								? trans('hide Clocking machine PIN')
-								: trans('Show Clocking machine PIN')
-						"
-						:icon="showPins ? faEyeSlash : faEye" />
+						:loading="isRegeneratingPin"
+						:label="trans('Generate QR')"
+						:icon="faSyncAlt" />
+					<Button
+						@click="downloadQr"
+						type="secondary"
+						:label="trans('Download')"
+						:icon="faDownload" />
 				</div>
 			</template>
 
@@ -210,6 +322,58 @@ const formatEmergencyContact = (value: any): string => {
 						icon="fal fa-plus" />
 				</Link>
 			</template>
+		</div>
+
+		<div
+			class="w-full h-fit grid ring-1 ring-gray-300 shadow rounded-2xl py-6 px-4 gap-y-4">
+			<div class="flex items-center justify-between">
+				<div class="font-semibold">{{ trans("Working hours") }}</div>
+				<div v-if="data?.work_schedule?.source === 'organisation'" class="text-xs text-gray-400 italic">
+					{{ trans("From organisation default") }}
+				</div>
+			</div>
+
+			<template v-if="data?.work_schedule?.days?.length">
+				<div class="divide-y divide-gray-100">
+					<div v-for="day in data.work_schedule.days" :key="day.day_of_week" class="py-2 text-sm">
+						<div class="flex items-center justify-between">
+							<span class="text-gray-500">{{ trans(dayOfWeekLabels[day.day_of_week]) }}</span>
+							<span class="font-medium text-gray-800">
+								{{ formatHM(day.start_time) }} – {{ formatHM(day.end_time) }}
+							</span>
+						</div>
+						<div v-if="day.breaks?.length" class="mt-1 flex flex-wrap gap-x-3 gap-y-0.5">
+							<span
+								v-for="(brk, index) in day.breaks"
+								:key="index"
+								class="text-xs text-gray-400">
+								{{ brk.name || trans("Break") }} {{ formatHM(brk.start_time) }}–{{ formatHM(brk.end_time) }}
+							</span>
+						</div>
+					</div>
+				</div>
+			</template>
+
+			<template v-else>
+				<div class="text-center text-gray-400 italic text-sm">
+					{{ trans("No working hours set") }}
+				</div>
+			</template>
+
+			<Link
+				:href="
+					route('grp.org.hr.employees.edit', { ...route().params, section: 'working_hours' })
+				"
+				@start="() => (isVisitWorkingHours = true)"
+				@finish="() => (isVisitWorkingHours = false)"
+				class="mx-auto">
+				<Button
+					type="secondary"
+					:loading="isVisitWorkingHours"
+					:label="trans('Edit working hours')"
+					:icon="faPen" />
+			</Link>
+		</div>
 		</div>
 	</div>
 	<div class="flex py-4 px-8 gap-x-8">

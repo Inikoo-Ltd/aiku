@@ -50,6 +50,16 @@ class OrganisationTimeSeriesRecord extends Model
     protected function casts(): array
     {
         return [
+            'sales_org_currency_external' => 'decimal:2',
+            'sales_grp_currency_external' => 'decimal:2',
+            'lost_revenue_org_currency' => 'decimal:2',
+            'lost_revenue_grp_currency' => 'decimal:2',
+            'baskets_created_org_currency' => 'decimal:2',
+            'baskets_created_grp_currency' => 'decimal:2',
+            'baskets_updated_org_currency' => 'decimal:2',
+            'baskets_updated_grp_currency' => 'decimal:2',
+            'sales_org_currency_internal' => 'decimal:2',
+            'sales_grp_currency_internal' => 'decimal:2',
             'from' => 'datetime',
             'to'   => 'datetime',
         ];

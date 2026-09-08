@@ -24,6 +24,11 @@ class AttachEmployeeToUser extends OrgAction
             $employee->id =>
                 $modelData
         ]);
+
+        if ($employee->user_id !== $user->id) {
+            $employee->updateQuietly(['user_id' => $user->id]);
+        }
+
         SetUserAuthorisedModels::run($user);
         UserHydrateModels::dispatch($user);
 

@@ -35,7 +35,7 @@ class Translate extends OrgAction
             $cacheKey          = 'translate:'.sha1($languageFrom->code.'|'.$languageTo->code.'|'.$text);
             $cachedTranslation = Cache::get($cacheKey);
             if ($cachedTranslation !== null) {
-                return $cachedTranslation;
+                return $this->unescapeJsonEchoes($text, $cachedTranslation);
             }
 
             if (app()->environment('local') && !config('app.sandbox.translate')) {
@@ -52,7 +52,7 @@ class Translate extends OrgAction
 
             $translatedTexts = $translationWorkflowService->translate($languageFrom->code, $languageTo->code, $translationDriver ?? config('auto-translations.default_driver'));
 
-            $text = Arr::get($translatedTexts, 'text_to_translate', $text);
+            $text = $this->unescapeJsonEchoes($text, Arr::get($translatedTexts, 'text_to_translate', $text));
 
             $cacheTtlHours = mb_strlen($text) < 32 ? 1440 : (mb_strlen($text) < 256 ? 480 : 72);
             Cache::put($cacheKey, $text, now()->addHours($cacheTtlHours));
@@ -63,6 +63,72 @@ class Translate extends OrgAction
 
             return $text;
         }
+    }
+
+    /**
+     * LLM translation drivers round-trip through a JSON payload and frequently echo the
+     * JSON escaping back as literal characters, storing style=\\" and <\\/strong> in the text.
+     */
+    public function unescapeJsonEchoes(string $original, string $translated): string
+    {
+        if (str_contains($original, '\\') || json_validate($original)) {
+            return $translated;
+        }
+
+        return self::stripJsonEscapes($translated);
+    }
+
+    /**
+     * True only when every backslash in the text is part of a JSON escape a translation driver
+     * could have echoed. Text carrying any other backslash is ambiguous - a literal one cannot be
+     * told apart from a double-escaped one - so callers without a clean source must leave it alone.
+     *
+     * Deliberately narrower than what stripJsonEscapes can undo: \n is excluded because in stored
+     * text it may always have been a literal, while stripJsonEscapes only ever sees it behind a
+     * source known to carry no backslash at all, where it can only be an echo.
+     */
+    public static function hasOnlyJsonEchoEscapes(string $text): bool
+    {
+        return substr_count($text, '\\') === preg_match_all('/\\\\(?:["\\/\']|u[0-9a-fA-F]{4})/', $text);
+    }
+
+    public static function stripJsonEscapes(string $text): string
+    {
+        for ($pass = 0; $pass < 5; $pass++) {
+            $stripped = preg_replace_callback(
+                '/\\\\u([dD][89abAB][0-9a-fA-F]{2})\\\\u([dD][c-fC-F][0-9a-fA-F]{2})|\\\\u([0-9a-fA-F]{4})/',
+                function (array $m) {
+                    /* A complete high/low pair can only ever have meant one emoji, so it decodes.
+                       A surrogate on its own cannot, and neither can a null: both stay as they are
+                       rather than becoming half a character. */
+                    if (($m[3] ?? '') === '') {
+                        $codepoint = 0x10000 + ((hexdec($m[1]) - 0xD800) << 10) + (hexdec($m[2]) - 0xDC00);
+
+                        return mb_chr($codepoint, 'UTF-8') ?: $m[0];
+                    }
+
+                    $codepoint = hexdec($m[3]);
+                    if ($codepoint === 0 || ($codepoint >= 0xD800 && $codepoint <= 0xDFFF)) {
+                        return $m[0];
+                    }
+
+                    return mb_chr($codepoint, 'UTF-8') ?: $m[0];
+                },
+                str_replace(
+                    ['\\"', '\\/', "\\'", '\\n', '\\r', '\\t'],
+                    ['"', '/', "'", "\n", "\r", "\t"],
+                    $text
+                )
+            );
+
+            if ($stripped === $text) {
+                return $text;
+            }
+
+            $text = $stripped;
+        }
+
+        return $text;
     }
 
     public function getCommandSignature(): string

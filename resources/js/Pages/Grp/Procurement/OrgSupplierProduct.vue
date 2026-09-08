@@ -20,7 +20,7 @@ import {
   faTerminal,
   faCameraRetro, faPaperclip, faPoop, faMoneyBill, faClipboard
 } from '@fal';
-import AgentShowcase from "@/Components/Showcases/Grp/AgentShowcase.vue";
+import SupplierProductShowcase from "@/Components/Showcases/Grp/SupplierProductShowcase.vue";
 import TableSupplierProducts from "@/Components/Tables/Grp/SupplyChain/TableSupplierProducts.vue";
 import TablePurchaseOrders from "@/Components/Tables/Grp/Org/Procurement/TablePurchaseOrders.vue";
 import { capitalize } from "@/Composables/capitalize"
@@ -68,7 +68,7 @@ const handleTabUpdate = (tabSlug) => useTabChange(tabSlug, currentTab);
 const component = computed(() => {
 
     const components = {
-        showcase: AgentShowcase,
+        showcase: SupplierProductShowcase,
         supplier_products: TableSupplierProducts,
         purchase_orders: TablePurchaseOrders,
         details: ModelDetails,

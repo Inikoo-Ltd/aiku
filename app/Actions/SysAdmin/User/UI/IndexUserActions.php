@@ -9,7 +9,7 @@
 
 namespace App\Actions\SysAdmin\User\UI;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Actions\SysAdmin\User\WithUserSubNavigation;
 use App\Actions\SysAdmin\WithSysAdminAuthorization;
 use App\Http\Resources\History\HistoryResource;
@@ -25,7 +25,7 @@ use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
 
-class IndexUserActions extends GrpAction
+class IndexUserActions extends OrgAction
 {
     use WithSysAdminAuthorization;
     use WithUserSubNavigation;
@@ -116,7 +116,7 @@ class IndexUserActions extends GrpAction
     public function asController(User $user, ActionRequest $request)
     {
         $this->user = $user;
-        $this->initialisation(group(), $request);
+        $this->initialisationFromGroup(group(), $request);
         return $this->handle($user);
     }
 

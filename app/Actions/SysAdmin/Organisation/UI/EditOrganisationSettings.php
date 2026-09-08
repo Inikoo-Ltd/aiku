@@ -12,10 +12,15 @@ use App\Actions\Helpers\Country\UI\GetAddressData;
 use App\Actions\Helpers\Country\UI\GetCountriesOptions;
 use App\Actions\Helpers\GoogleDrive\Traits\WithTokenPath;
 use App\Actions\Helpers\TimeZone\UI\GetTimeZonesOptions;
+use App\Actions\Catalogue\PreferredShipping\WithPreferredShipperResolver;
 use App\Actions\OrgAction;
 use App\Actions\UI\Dashboards\ShowGroupDashboard;
+use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Http\Resources\Helpers\AddressFormFieldsResource;
+use App\Models\Dispatching\Shipper;
 use App\Models\SysAdmin\Organisation;
+use App\Models\SysAdmin\User;
+use App\Support\Forms\SesConfigurationBlueprint;
 use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -25,6 +30,7 @@ use Carbon\Carbon;
 class EditOrganisationSettings extends OrgAction
 {
     use WithTokenPath;
+    use WithPreferredShipperResolver;
 
     public function authorize(ActionRequest $request): bool
     {
@@ -65,12 +71,17 @@ class EditOrganisationSettings extends OrgAction
                 'group_weekend' => $hasWeekend,
             ];
 
-            foreach ($workSchedule->days as $day) {
+            foreach ($workSchedule->days()->with('breaks')->get() as $day) {
                 $key = (string)$day->day_of_week;
                 $s = $day->start_time ? Carbon::today()->setTimeFromTimeString($day->start_time)->toIso8601String() : null;
                 $e = $day->end_time ? Carbon::today()->setTimeFromTimeString($day->end_time)->toIso8601String() : null;
 
-                $breaks = (object)[];
+                $breaks = $day->breaks->map(fn ($break) => [
+                    's' => $break->start_time?->format('H:i'),
+                    'e' => $break->end_time?->format('H:i'),
+                    'n' => $break->break_name,
+                    'p' => $break->is_paid,
+                ])->values();
 
                 $scheduleData[$key] = [
                     's' => $s,
@@ -82,10 +93,52 @@ class EditOrganisationSettings extends OrgAction
 
         $allowWaiting = Arr::get($organisation->settings, 'orders.allow_waiting', false);
 
+        $pickingFields = [
+            'allow_waiting' => [
+                'type'  => 'toggle',
+                'label' => __('Waiting delivery notes'),
+                'value' => $allowWaiting,
+            ],
+        ];
+
+        if ($allowWaiting) {
+            $pickingFields['allow_picker_set_not_picked'] = [
+                'type'  => 'toggle',
+                'label' => __('Allow picker set out of stocks'),
+                'value' => Arr::get($organisation->settings, 'orders.allow_picker_set_not_picked', false),
+            ];
+            $pickingFields['allow_stock_controller_set_not_picked'] = [
+                'type'  => 'toggle',
+                'label' => __('Allow stock controller to set out of stocks'),
+                'value' => Arr::get($organisation->settings, 'orders.allow_stock_controller_set_not_picked', false),
+            ];
+        }
+
+        $pickingFields['allow_scan_to_pick'] = [
+            'type'        => 'toggle',
+            'label'       => __('Allow pickers to scan items to pick them'),
+            'information' => __('Scan the items using scanner'),
+            'warning'     => __('Delivery Notes only, the picker need to activate it on each Delivery Note to able to scan. Picking Sessions is not available yet.'),
+            'icon'        => 'fal fa-scanner',
+            'value'       => Arr::get($organisation->settings, 'orders.allow_scan_to_pick', false),
+        ];
+
+        $pickingFields['allow_scan_to_pack'] = [
+            'type'  => 'toggle',
+            'label' => __('Allow packers to scan items to pack them'),
+            'information'   => __('Scan the items using scanner'),
+            'icon'  => 'fal fa-scanner',
+            'value' => Arr::get($organisation->settings, 'orders.allow_scan_to_pack', false),
+        ];
+        $preferredShippingRows = $organisation->preferredShippings()->with(['shipper', 'country'])->get();
+        $usedShipperIds        = $preferredShippingRows->pluck('shipper_id')->filter()->all();
+
+        $routeParameters = request()->route()->originalParameters();
+
         return Inertia::render(
             'EditModel',
             [
-                'breadcrumbs' => $this->getBreadcrumbs(),
+                'breadcrumbs' => $this->getBreadcrumbs($routeParameters),
                 'title' => $title,
                 'pageHead' => [
                     'title' => $title,
@@ -164,6 +217,14 @@ class EditOrganisationSettings extends OrgAction
                             ],
                         ],
                         [
+                            'label'  => __('AWS-SES configuration'),
+                            'icon'   => 'fa-light fa-key',
+                            'fields' => SesConfigurationBlueprint::make(
+                                $organisation->settings ?? [],
+                                ['failover', 'customer_notification']
+                            ),
+                        ],
+                        [
                             "label" => __("google drive"),
                             "icon" => "fab fa-google",
                             "button" => [
@@ -206,36 +267,80 @@ class EditOrganisationSettings extends OrgAction
                         [
                             'label' => __('Picking'),
                             'icon' => 'fa-light fa-dolly-flatbed-alt',
-                            'fields' => $allowWaiting ? [
-                                'allow_waiting' => [
-                                    'type' => 'toggle',
-                                    'label' => __('Waiting delivery notes'),
-                                    'value' => $allowWaiting,
+                            'fields' => $pickingFields,
+                        ],
+                        [
+                            'label' => __('Staff chat'),
+                            'icon' => 'fal fa-comments',
+                            'fields' => [
+                                'staff_chat_warehouse_user_ids' => [
+                                    'type' => 'multiselect-tags',
+                                    'label' => __('Ask warehouse goes to'),
+                                    'information' => __('Default recipients of "Ask warehouse" messages, used when the shop has no list of its own. If empty, all warehouse role holders are used.'),
+                                    'options' => User::where('group_id', $organisation->group_id)->where('status', true)->orderBy('contact_name')->get(['id', 'contact_name', 'username'])->map(fn ($user) => ['id' => $user->id, 'name' => $user->chatName()]),
+                                    'labelProp' => 'name',
+                                    'valueProp' => 'id',
+                                    'value' => Arr::get($organisation->settings, 'staff_chat.warehouse_user_ids', []),
                                 ],
-                                'allow_picker_set_not_picked' => [
-                                    'type' => 'toggle',
-                                    'label' => __('Allow picker set out of stocks'),
-                                    'value' => Arr::get($organisation->settings, 'orders.allow_picker_set_not_picked', false),
+                                'staff_chat_warehouse_backup_user_ids' => [
+                                    'type' => 'multiselect-tags',
+                                    'label' => __('Ask warehouse backup'),
+                                    'information' => __('Used when nobody in "Ask warehouse goes to" is currently active.'),
+                                    'options' => User::where('group_id', $organisation->group_id)->where('status', true)->orderBy('contact_name')->get(['id', 'contact_name', 'username'])->map(fn ($user) => ['id' => $user->id, 'name' => $user->chatName()]),
+                                    'labelProp' => 'name',
+                                    'valueProp' => 'id',
+                                    'value' => Arr::get($organisation->settings, 'staff_chat.warehouse_backup_user_ids', []),
                                 ],
-                                'allow_stock_controller_set_not_picked' => [
-                                    'type' => 'toggle',
-                                    'label' => __('Allow stock controller to set out of stocks'),
-                                    'value' => Arr::get($organisation->settings, 'orders.allow_stock_controller_set_not_picked', false),
-                                ]
-                            ] : [
-                                'allow_waiting' => [
-                                    'type' => 'toggle',
-                                    'label' => __('Waiting delivery notes'),
-                                    'value' => $allowWaiting,
-                                ]
                             ],
                         ],
-                        // [
-                        //     'label' => __('Shipping'),
-                        //     'icon' => 'fa-light fa-truck',
-                        //     'fields' => [
-                        //     ],
-                        // ],
+                        [
+                            'label' => __('Margins'),
+                            'icon' => 'fa-light fa-percent',
+                            'fields' => [
+                                'margin_break_even_pct' => [
+                                    'type'        => 'input',
+                                    'label'       => __('Break-even margin (%)'),
+                                    'information' => __('Orders with a margin below this are flagged as unprofitable once staff, rent and other running costs are counted. Industry guideline for this kind of shop is around 30%.'),
+                                    'value'       => Arr::get($organisation->settings, 'margins.break_even_pct', 30),
+                                ],
+                            ],
+                        ],
+                        [
+                            'label' => __('Preferred Shipping'),
+                            'icon' => 'fa-light fa-truck',
+                            'fields' => [
+                                'preferred_shipping' => [
+                                    'full'    => true,
+                                    'type'    => 'preferred_shipping',
+                                    'label'   => __('Preferred Shipping'),
+                                    'value'   => $preferredShippingRows->map(fn ($preferredShipping) => [
+                                        'id'           => $preferredShipping->id,
+                                        'shipper_id'   => $preferredShipping->shipper_id,
+                                        'shipper_name' => $preferredShipping->shipper?->name,
+                                        'country_id'   => $preferredShipping->country_id,
+                                        'country_name' => $preferredShipping->country?->name,
+                                        'postcode'     => $preferredShipping->postcode,
+                                        'important'    => $preferredShipping->important,
+                                        'trade_scope'  => $preferredShipping->trade_scope,
+                                    ])->all(),
+                                    'options' => [
+                                        'scope_shops' => $organisation->shops()
+                                            ->whereNot('state', ShopStateEnum::CLOSED)
+                                            ->orderBy('code')
+                                            ->get(['code', 'name', 'type'])
+                                            ->groupBy(fn ($shop) => $this->tradeScopeForShopType($shop->type))
+                                            ->map(fn ($shops) => $shops->map(fn ($shop) => ['code' => $shop->code, 'name' => $shop->name])->values()),
+                                        'shippers'  => Shipper::where('organisation_id', $organisation->id)
+                                            ->where(function ($query) use ($usedShipperIds) {
+                                                $query->where('status', true)->orWhereIn('id', $usedShipperIds);
+                                            })
+                                            ->orderBy('name')
+                                            ->get(['id', 'name', 'code', 'api_shipper']),
+                                        'countries' => GetCountriesOptions::run(),
+                                    ],
+                                ],
+                            ],
+                        ],
                         [
                             'label' => __('Banned Countries') . ' (' . __('territories') . ')',
                             'icon' => 'fa-light fa-ban',
@@ -282,7 +387,7 @@ class EditOrganisationSettings extends OrgAction
                         ],
                         [
                             'label' => __('Leave Quota'),
-                            'icon' => 'fa-light fa-calendar-clock',
+                            'icon' => 'fa-light fa-calendar-check',
                             'fields' => [
                                 'hr_annual_leave_days' => [
                                     'type' => 'input',
@@ -311,8 +416,10 @@ class EditOrganisationSettings extends OrgAction
     }
 
 
-    public function getBreadcrumbs(): array
+    public function getBreadcrumbs(array $routeParameters): array
     {
+        $organisationRouteParameters = Arr::only($routeParameters, 'organisation');
+
         return
             array_merge(
                 ShowGroupDashboard::make()->getBreadcrumbs(),
@@ -322,7 +429,7 @@ class EditOrganisationSettings extends OrgAction
                         'simple' => [
                             'route' => [
                                 'name' => 'grp.org.settings.edit',
-                                'parameters' => [$this->organisation->slug]
+                                'parameters' => $organisationRouteParameters
                             ],
                             'label' => __('Organisation settings'),
                         ]

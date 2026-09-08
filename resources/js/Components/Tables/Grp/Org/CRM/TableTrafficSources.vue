@@ -45,5 +45,18 @@ function trafficRoute(trafficSource: { slug: string }) {
       <template #cell(total_customer_revenue)="{ item }">
             <div class="text-gray-500">{{ useLocaleStore().currencyFormat(item.currency_code, item.total_customer_revenue) }}</div>
         </template>
+      <template #cell(cost)="{ item }">
+            <div class="text-gray-500">{{ useLocaleStore().currencyFormat(item.currency_code, item.cost) }}</div>
+        </template>
+      <template #cell(roas)="{ item }">
+            <div v-if="item.roas === null" class="text-gray-400">—</div>
+            <div v-else :class="Number(item.roas) >= 1 ? 'text-green-600' : 'text-red-600'">
+                {{ Number(item.roas).toFixed(2) }}×
+            </div>
+        </template>
+      <template #cell(cac)="{ item }">
+            <div v-if="item.cac === null" class="text-gray-400">—</div>
+            <div v-else class="text-gray-500">{{ useLocaleStore().currencyFormat(item.currency_code, item.cac) }}</div>
+        </template>
     </Table>
 </template>

@@ -22,9 +22,15 @@ class CalculateDeliveryNoteItemTotalPicked extends OrgAction
     use WithNoStrictRules;
     use WithDeliveryNoteItemNoStrictRules;
 
+    /**
+     * Quantities are held to six decimals and a cut of a pack lands on a repeating decimal, so the
+     * comparisons below carry a tolerance rather than asking two floats to be equal.
+     */
+    private const QUANTITY_TOLERANCE = 0.000001;
+
     public function handle(DeliveryNoteItem $deliveryNoteItem): DeliveryNoteItem
     {
-        $pickings = $deliveryNoteItem->pickings;
+        $pickings = $deliveryNoteItem->pickings()->get();
 
 
         $totalPicked = $pickings->whereIn('type', [
@@ -35,8 +41,15 @@ class CalculateDeliveryNoteItemTotalPicked extends OrgAction
         $totalWaiting   = $deliveryNoteItem->quantity_waiting_warehouse + $deliveryNoteItem->quantity_waiting_crm;
         $totalNotPicked = $pickings->where('type', PickingTypeEnum::NOT_PICK)->sum('quantity');
 
-        $isFullyPicked        = $totalPicked == $deliveryNoteItem->quantity_required;
-        $isMarkedAsUnpickable = ($totalNotPicked + $totalWaiting) == $deliveryNoteItem->quantity_required - $totalPicked;
+        $outstanding = (float)$deliveryNoteItem->quantity_required - (float)$totalPicked;
+
+        /*
+         * Both read as "at least". An item marked as not picked more than once, or holding more in
+         * the waiting buckets than is left to do, is still finished: asking for exact equality left
+         * it unhandled forever, and the picking screen kept offering the button that overshot it.
+         */
+        $isFullyPicked        = $outstanding <= self::QUANTITY_TOLERANCE;
+        $isMarkedAsUnpickable = (float)$totalNotPicked + (float)$totalWaiting >= $outstanding - self::QUANTITY_TOLERANCE;
 
         $isCompleted = $isFullyPicked || $isMarkedAsUnpickable;
 
@@ -59,6 +72,20 @@ class CalculateDeliveryNoteItemTotalPicked extends OrgAction
             'is_handled'              => $isCompleted,
             'estimated_picked_weight' => $pickedWeight
         ];
+
+        /*
+         * A line goes dirty when its quantity changes under the picker, and a dirty line blocks the
+         * whole note. The flag is set on any change, including one that asks for nothing: Faire
+         * lowered mxdpk8yece from 8 to 7 with 7 already in the tote, and because a lowering never
+         * walks the note back to picking, it sat blocked with no work left to do and re-blocked on
+         * every attempt to finish. Clearing it belongs here rather than in StorePicking because
+         * this is the one place every path ends up - a pick added, edited or deleted, the rest
+         * marked as not picked, or the quantity synced from the marketplace. An over-picked line
+         * stays dirty: the trim at the end of picking is what settles that one.
+         */
+        if ($deliveryNoteItem->is_dirty && $isCompleted && $outstanding >= -self::QUANTITY_TOLERANCE) {
+            $dataToUpdate['is_dirty'] = false;
+        }
 
         /** Handle waiting routes only clear the quantities but don't update the state. This will help. */
         if ($deliveryNoteItem->state == DeliveryNoteItemStateEnum::HANDLING_BLOCKED && $totalWaiting == 0) {

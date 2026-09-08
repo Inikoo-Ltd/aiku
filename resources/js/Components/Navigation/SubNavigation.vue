@@ -96,7 +96,7 @@ const isSubNavActive = (subNav: SubNav) => {
 </div> -->
 
         <!-- Tabs: Left -->
-        <div class="w-full flex customOverflowX">
+        <div class="flex-1 min-w-0 flex customOverflowX">
             <TransitionGroup>
                 <template v-for="subNav, itemIdx in dataNavigation" :key="'subNav' + itemIdx">
                     <component v-if="subNav && subNav.align !== 'right'" :is="subNav.route?.name ? Link : 'div'"
@@ -128,7 +128,7 @@ const isSubNavActive = (subNav: SubNav) => {
         </div>
 
         <!-- Tabs: Right -->
-        <div class="flex">
+        <div class="flex shrink-0">
             <TransitionGroup>
                 <template v-for="subNav, itemIdx in dataNavigation" :key="'subNav' + itemIdx">
                     <component v-if="subNav && subNav.align === 'right'" :is="subNav.route?.name ? Link : 'div'"

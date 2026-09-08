@@ -8,6 +8,7 @@
 
 namespace App\Actions\Procurement\OrgPartner\UI;
 
+use App\Actions\Traits\Authorisations\WithProcurementAuthorisation;
 use App\Actions\OrgAction;
 use App\Actions\Procurement\UI\ShowProcurementDashboard;
 use App\Http\Resources\Procurement\OrgPartnersResource;
@@ -25,6 +26,7 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexOrgPartners extends OrgAction
 {
+    use WithProcurementAuthorisation;
     private Organisation $parent;
 
     public function handle(Organisation $parent, $prefix = null): LengthAwarePaginator
@@ -88,13 +90,6 @@ class IndexOrgPartners extends OrgAction
         };
     }
 
-    public function authorize(ActionRequest $request): bool
-    {
-        $this->canEdit = $request->user()->authTo("procurement.{$this->organisation->id}.edit");
-
-        return $request->user()->authTo("procurement.{$this->organisation->id}.view");
-    }
-
     public function asController(Organisation $organisation, ActionRequest $request): LengthAwarePaginator
     {
         $this->parent = $organisation;
@@ -123,6 +118,18 @@ class IndexOrgPartners extends OrgAction
                     'model'       => __('Procurement'),
                     'icon'        => ['fal', 'fa-users-class'],
                     'title'       => __('Partners'),
+                    'actions'     => [
+                        [
+                            'type'  => 'button',
+                            'style' => 'secondary',
+                            'label' => __('Shipping list'),
+                            'icon'  => ['fal', 'fa-truck-loading'],
+                            'route' => [
+                                'name'       => 'grp.org.procurement.org_partners.shipping_list.index',
+                                'parameters' => $request->route()->originalParameters(),
+                            ],
+                        ],
+                    ],
                 ],
                 'data'        => OrgPartnersResource::collection($partners),
 

@@ -29,7 +29,8 @@ class IndexInvoiceTransactionsInGroup extends OrgAction
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
-                $query->whereStartWith('invoice_transactions.number', $value);
+                $query->whereStartWith('historic_assets.code', $value)
+                    ->orWhereStartWith('historic_assets.name', $value);
             });
         });
 

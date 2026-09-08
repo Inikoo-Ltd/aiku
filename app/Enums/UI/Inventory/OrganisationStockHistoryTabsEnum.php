@@ -26,7 +26,7 @@ enum OrganisationStockHistoryTabsEnum: string
     {
         return match ($this) {
             OrganisationStockHistoryTabsEnum::ORG_STOCKS => [
-                'title' => 'SKUs',
+                'title' => 'SKOs',
                 'icon'  => 'fal fa-box',
             ],
             OrganisationStockHistoryTabsEnum::LOCATION_ORG_STOCKS => [

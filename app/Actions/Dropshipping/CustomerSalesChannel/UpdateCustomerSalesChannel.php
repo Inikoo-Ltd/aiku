@@ -8,12 +8,13 @@
 
 namespace App\Actions\Dropshipping\CustomerSalesChannel;
 
-use App\Actions\Dropshipping\Platform\Shop\Hydrators\ShopHydratePlatformSalesIntervalsNewChannels;
-use App\Actions\Dropshipping\Platform\Shop\Hydrators\ShopHydratePlatformSalesIntervalsNewCustomers;
+use App\Actions\Dropshipping\Tiktok\Product\UpdateInventoryTiktokProducts;
+use App\Actions\Dropshipping\WooCommerce\Product\UpdateInventoryInWooPortfolio;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Dropshipping\CustomerSalesChannelStateEnum;
 use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
+use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Rules\IUnique;
 use Illuminate\Support\Arr;
@@ -29,6 +30,12 @@ class UpdateCustomerSalesChannel extends OrgAction
 
     public function handle(CustomerSalesChannel $customerSalesChannel, array $modelData): CustomerSalesChannel
     {
+        foreach (['stock_threshold', 'max_quantity_advertise'] as $stockQuantityField) {
+            if (Arr::has($modelData, $stockQuantityField) && Arr::get($modelData, $stockQuantityField) === null) {
+                data_set($modelData, $stockQuantityField, 0);
+            }
+        }
+
         if (Arr::has($modelData, 'is_vat_adjustment')) {
             data_set($modelData, 'settings.tax_category.checked', Arr::pull($modelData, 'is_vat_adjustment'));
         }
@@ -45,16 +52,32 @@ class UpdateCustomerSalesChannel extends OrgAction
             data_set($modelData, 'settings.pricing.value', Arr::pull($modelData, 'pricing_value'));
         }
 
+        $stockSettingsBefore = self::stockSettings($customerSalesChannel);
+
         $customerSalesChannel = $this->update($customerSalesChannel, $modelData, 'settings');
-        $changes = Arr::except($customerSalesChannel->getChanges(), ['updated_at', 'last_fetched_at']);
 
-        if (Arr::has($changes, 'status')) {
-            ShopHydratePlatformSalesIntervalsNewChannels::dispatch($customerSalesChannel->shop, $customerSalesChannel->platform->id)->delay(30);
-            ShopHydratePlatformSalesIntervalsNewCustomers::dispatch($customerSalesChannel->shop, $customerSalesChannel->platform->id)->delay(30);
-
+        if ($customerSalesChannel->stock_update && $stockSettingsBefore !== self::stockSettings($customerSalesChannel)) {
+            match ($customerSalesChannel->platform->type) {
+                PlatformTypeEnum::WOOCOMMERCE => UpdateInventoryInWooPortfolio::dispatch($customerSalesChannel, true),
+                PlatformTypeEnum::TIKTOK => UpdateInventoryTiktokProducts::dispatch($customerSalesChannel, true),
+                default => null
+            };
         }
 
         return $customerSalesChannel;
+
+    }
+
+    /**
+     * @return array{0: bool, 1: int, 2: int}
+     */
+    public static function stockSettings(CustomerSalesChannel $customerSalesChannel): array
+    {
+        return [
+            (bool) $customerSalesChannel->stock_update,
+            (int) $customerSalesChannel->stock_threshold,
+            (int) $customerSalesChannel->max_quantity_advertise
+        ];
     }
 
     public function rules(): array
@@ -96,8 +119,8 @@ class UpdateCustomerSalesChannel extends OrgAction
             'return_description' => ['sometimes', 'string'],
 
             'stock_update' => ['sometimes', 'boolean'],
-            'stock_threshold' => ['sometimes', 'numeric'],
-            'max_quantity_advertise' => ['sometimes', 'numeric'],
+            'stock_threshold' => ['sometimes', 'nullable', 'numeric'],
+            'max_quantity_advertise' => ['sometimes', 'nullable', 'numeric'],
 
             'closed_at'         => ['sometimes', 'date']
         ];

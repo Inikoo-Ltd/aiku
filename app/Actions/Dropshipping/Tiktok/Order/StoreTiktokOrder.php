@@ -23,6 +23,7 @@ use App\Models\Dropshipping\CustomerClient;
 use App\Models\Dropshipping\TiktokUser;
 use App\Models\Helpers\Address;
 use App\Models\Helpers\Country;
+use App\Models\Ordering\Order;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -39,6 +40,14 @@ class StoreTiktokOrder extends RetinaAction
 
     public function handle(TiktokUser $tiktokUser, array $tiktokOrders): void
     {
+        $existingOrder = Order::where('customer_id', $tiktokUser->customer_id)
+            ->where('platform_order_id', Arr::get($tiktokOrders, 'id'))
+            ->exists();
+
+        if ($existingOrder) {
+            return;
+        }
+
         $customerClient = $this->digestTiktokCustomerClient($tiktokUser, $tiktokOrders);
         $orderedProducts = $this->digestTiktokProducts($tiktokUser, $tiktokOrders);
 

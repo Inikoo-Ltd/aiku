@@ -50,7 +50,7 @@ class UpdateWebUser extends OrgAction
                 $customerDataToUpdate['contact_name'] = Arr::pull($modelData, 'contact_name');
             }
             if (Arr::has($modelData, 'email')) {
-                $customerDataToUpdate['email'] = Arr::pull($modelData, 'email');
+                $customerDataToUpdate['email'] = Arr::get($modelData, 'email');
             }
             if (Arr::has($modelData, 'phone')) {
                 $customerDataToUpdate['phone'] = Arr::pull($modelData, 'phone');

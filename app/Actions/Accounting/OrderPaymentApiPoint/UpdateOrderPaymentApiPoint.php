@@ -9,6 +9,7 @@
 namespace App\Actions\Accounting\OrderPaymentApiPoint;
 
 use App\Actions\RetinaAction;
+use Illuminate\Support\Arr;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Accounting\OrderPaymentApiPoint;
 
@@ -19,6 +20,12 @@ class UpdateOrderPaymentApiPoint extends RetinaAction
 
     public function handle(OrderPaymentApiPoint $orderPaymentApiPoint, array $modelData): OrderPaymentApiPoint
     {
+        if ($dataPayload = Arr::pull($modelData, 'data')) {
+            $orderPaymentApiPoint->update([
+                'data' => array_merge($orderPaymentApiPoint->data ?? [], $dataPayload)
+            ]);
+        }
+
         return $this->update($orderPaymentApiPoint, $modelData);
     }
 

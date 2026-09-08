@@ -6,13 +6,13 @@
   -->
 <script setup lang="ts">
 import { ref, computed, onMounted } from "vue"
-import { Link, router } from "@inertiajs/vue3"
+import { Link, router, usePage } from "@inertiajs/vue3"
 import { Menu, MenuButton, MenuItems, MenuItem } from "@headlessui/vue"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faChevronRight } from '@far'
-import { faBars,faBallot, faBookmark, faTrashAlt } from '@fal'
-import { faSparkles, faArrowFromLeft, faArrowLeft, faArrowRight, faBookmark as fasBookmark } from '@fas'
+import { faBars,faBallot, faBookmark, faTrashAlt, faQuestionCircle } from '@fal'
+import { faSparkles, faArrowFromLeft, faArrowLeft, faArrowRight, faBookmark as fasBookmark, faArrowUp } from '@fas'
 import { routeType } from '@/types/route'
 import { Bookmark } from '@/types/Bookmark'
 import { trans } from 'laravel-vue-i18n'
@@ -21,7 +21,9 @@ import axios from 'axios'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 import Popover from '@/Components/Popover.vue'
 
-library.add(faSparkles, faArrowFromLeft, faArrowLeft, faArrowRight, faChevronRight, faBars,faBallot, faBookmark, faTrashAlt, fasBookmark)
+library.add(faSparkles, faArrowFromLeft, faArrowLeft, faArrowRight, faChevronRight, faBars,faBallot, faBookmark, faTrashAlt, faQuestionCircle, fasBookmark, faArrowUp)
+
+const help = computed(() => usePage().props.help as { title: string, url: string } | null)
 
 const props = defineProps<{
     breadcrumbs: {
@@ -169,7 +171,7 @@ const removeBookmark = (bookmarkToRemove: Bookmark) => {
 </script>
 
 <template>
-    <nav class="isolate relative xxxoverflow-y-hidden flex text-gray-600 h-8 xl:h-8 border-b border-gray-200 text-xs md:text-sm" aria-label="Breadcrumb">
+    <nav class="isolate relative xxxoverflow-y-hidden flex text-gray-600 h-11 xl:h-8 border-b border-gray-200 text-xs md:text-sm" aria-label="Breadcrumb">
         <!-- Breadcrumb -->
         <TransitionGroup name="list-to-down" tag="ol" class="w-full mx-auto md:px-4 flex">
             <li v-for="(breadcrumb, breadcrumbIdx) in breadcrumbs" :key="breadcrumbIdx"
@@ -193,9 +195,9 @@ const removeBookmark = (bookmarkToRemove: Bookmark) => {
                             <Transition name="spin-to-down">
                                 <FontAwesomeIcon v-if="breadcrumb.simple?.icon" :class="breadcrumb.simple.label ? 'mr-1' : ''" fixed-width class="flex-shrink-0 h-3.5 w-3.5" :icon="breadcrumb.simple.icon" aria-hidden="true" />
                             </Transition>
-        
+                            
                             <Transition name="spin-to-down">
-                                <div v-if="breadcrumb.simple.label" :key="breadcrumb.simple.label" class="inline-block truncate py-1 md:py-0 w-[19rem] sm:w-auto">{{ breadcrumb.simple.label }}</div>
+                                <div v-if="breadcrumb.simple.label" :key="breadcrumb.simple.label" class="inline-block truncate py-1 md:py-0 max-w-[50vw] sm:w-auto">{{ breadcrumb.simple.label }}</div>
                             </Transition>
                         </component>
                     </template>
@@ -298,7 +300,16 @@ const removeBookmark = (bookmarkToRemove: Bookmark) => {
             </transition>
         </Menu>
 
-        <div class="h-full flex justify-end items-center pr-2 space-x-2 text-xs md:text-sm text-gray-700 font-semibold">
+        <div class="h-full flex justify-end items-center pr-2 space-x-2 text-sm md:text-lg text-gray-700 font-semibold">
+            <!-- Button: Help article -->
+            <a v-if="help" :href="help.url" target="_blank" rel="noopener"
+                class="rounded flex items-center justify-center w-12 xl:w-8 h-full opacity-70 hover:opacity-100 cursor-pointer hover:text-indigo-500"
+                v-tooltip="trans('Guide') + ': ' + help.title"
+                :aria-label="trans('Guide') + ': ' + help.title"
+            >
+                <FontAwesomeIcon icon="fal fa-question-circle" aria-hidden="true" />
+            </a>
+
             <!-- Button: Bookmark -->
             <div v-if="isBookmarkAvailable" class="relative flex justify-center items-center w-12 xl:w-8 h-full">
                 <Popover class="w-full h-full" position="right-0" width="w-64">
@@ -347,12 +358,12 @@ const removeBookmark = (bookmarkToRemove: Bookmark) => {
             </div>
 
             <!-- Button: Previous -->
-            <div class="flex justify-center items-center w-12 xl:w-8 h-full">
+            <div class="flex justify-center items-center w-11 xl:w-9 h-full">
                 <Link v-if="props.navigation.previous"
                     @start="() => isLoading = 'bcBack'"
                     @finish="() => isLoading = false"
                     :href="isLoading === 'bcBack' ? '' : props.navigation?.previous?.url ? props.navigation?.previous?.url : props.navigation?.previous?.route?.name ? route(props.navigation.previous?.route.name, props.navigation.previous?.route.parameters) + urlParameter : '#'"
-                    class="rounded w-full h-full flex items-center justify-center opacity-70 hover:opacity-100 cursor-pointer hover:text-indigo-500"
+                    class="rounded w-full h-full flex items-center justify-center opacity-70 hover:opacity-100 hover:bg-gray-100 cursor-pointer hover:text-indigo-500"
                     :title="props.navigation.previous?.label"
                     :aria-label="ctrans('Previous')"
                 >
@@ -361,13 +372,28 @@ const removeBookmark = (bookmarkToRemove: Bookmark) => {
                 </Link>
                 <FontAwesomeIcon v-else icon="fas fa-arrow-left" class="opacity-20" aria-hidden="true" />
             </div>
+            
+            <!-- Button: Parent -->
+            <div v-if="props.navigation.up" class="flex justify-center items-center w-11 xl:w-9 h-full">
+                <Link
+                    @start="() => isLoading = 'bcUp'"
+                    @finish="() => isLoading = false"
+                    :href="isLoading === 'bcUp' ? '' : props.navigation?.up?.url ? props.navigation?.up?.url : props.navigation?.up?.route?.name ? route(props.navigation.up?.route.name, props.navigation.up?.route.parameters) + urlParameter : '#'"
+                    class="rounded w-full h-full flex items-center justify-center opacity-70 hover:opacity-100 hover:bg-gray-100 cursor-pointer hover:text-indigo-500"
+                    :title="props.navigation.up?.label"
+                    :aria-label="ctrans('Up')"
+                >
+                    <LoadingIcon v-if="isLoading === 'bcUp'" />
+                    <FontAwesomeIcon v-else icon="fas fa-arrow-up" class="" aria-hidden="true" />
+                </Link>
+            </div>
 
             <!-- Button: Next -->
-            <div class="flex justify-center items-center w-12 xl:w-8 h-full">
+            <div class="flex justify-center items-center w-11 xl:w-9 h-full">
                 <Link v-if="props.navigation.next"
                     @start="() => isLoading = 'bcNext'"
                     @finish="() => isLoading = false"
-                    class="rounded w-full h-full flex items-center justify-center opacity-70 hover:opacity-100 cursor-pointer hover:text-indigo-500"
+                    class="rounded w-full h-full flex items-center justify-center opacity-70 hover:opacity-100 hover:bg-gray-100 cursor-pointer hover:text-indigo-500"
                     :title="props.navigation.next?.label"
                     :aria-label="ctrans('Next')"
                     :href="isLoading === 'bcNext' ? '' : props.navigation?.next?.url ? props.navigation?.next?.url : props.navigation?.next?.route?.name ? route(props.navigation.next?.route.name, props.navigation.next?.route.parameters) + urlParameter : '#'"

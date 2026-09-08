@@ -93,6 +93,15 @@ onMounted(() => {
 				:filter-results="false"
 				:valueProp="fieldData.valueProp || 'value'"
 				>
+				<template #option="{ option }: { option: Record<string, any> }">
+					<div class="flex flex-col">
+						<span>{{ option[fieldData.labelProp || 'label'] }}</span>
+						<span v-if="option.description" class="text-xs opacity-70">
+							{{ option.description }}
+						</span>
+					</div>
+				</template>
+
 				<template
 					#tag="{ option, handleTagRemove, disabled }: { option: tag, handleTagRemove: Function, disabled: boolean }">
 					<div class="px-0.5 py-[3px]">

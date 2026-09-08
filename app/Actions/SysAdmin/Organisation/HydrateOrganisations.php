@@ -10,6 +10,20 @@ namespace App\Actions\SysAdmin\Organisation;
 
 use App\Actions\HydrateModel;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateAdjustments;
+use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateArtefacts;
+use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateAssets;
+use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateClockingMachines;
+use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateCustomerClients;
+use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateFulfilmentCustomers;
+use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateHasShops;
+use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateJobPositionsShare;
+use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateManufactureTasks;
+use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOfferCampaigns;
+use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOffers;
+use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOrgStockFamilies;
+use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydratePortfolios;
+use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateReturnDeliveryNotes;
+use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateWorkplaces;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateAudits;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateCollections;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateCreditTransactions;
@@ -38,6 +52,7 @@ use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOrderStateSub
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOrgAgents;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOrgPostRooms;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOrgSupplierProducts;
+use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateStockDeliveries;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOrgSuppliers;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOutboxes;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydratePalletDeliveries;
@@ -102,6 +117,20 @@ class HydrateOrganisations extends HydrateModel
     public function handle(Organisation $organisation): void
     {
         OrganisationHydrateAudits::run($organisation);
+        OrganisationHydrateArtefacts::run($organisation);
+        OrganisationHydrateAssets::run($organisation);
+        OrganisationHydrateClockingMachines::run($organisation);
+        OrganisationHydrateCustomerClients::run($organisation);
+        OrganisationHydrateFulfilmentCustomers::run($organisation);
+        OrganisationHydrateHasShops::run($organisation);
+        OrganisationHydrateJobPositionsShare::run($organisation);
+        OrganisationHydrateManufactureTasks::run($organisation);
+        OrganisationHydrateOfferCampaigns::run($organisation);
+        OrganisationHydrateOffers::run($organisation);
+        OrganisationHydrateOrgStockFamilies::run($organisation);
+        OrganisationHydratePortfolios::run($organisation);
+        OrganisationHydrateReturnDeliveryNotes::run($organisation);
+        OrganisationHydrateWorkplaces::run($organisation);
         OrganisationHydrateEmployees::run($organisation);
         OrganisationHydrateShops::run($organisation);
         OrganisationHydratePayments::run($organisation->id);
@@ -152,6 +181,7 @@ class HydrateOrganisations extends HydrateModel
             OrganisationHydrateOrgAgents::run($organisation);
             OrganisationHydrateOrgSuppliers::run($organisation);
             OrganisationHydrateOrgSupplierProducts::run($organisation);
+            OrganisationHydrateStockDeliveries::run($organisation);
 
             //fulfilment
             OrganisationHydratePallets::run($organisation);

@@ -237,6 +237,9 @@ class AddMissingMasterAssetsFromSeederShops
      */
     public function asCommand(Command $command): int
     {
+        ini_set('memory_limit', '2G');
+        DB::connection()->disableQueryLog();
+
         if ($command->argument('master')) {
             $masterShop = MasterShop::where('slug', $command->argument('master'))->firstOrFail();
             $seederShop = $this->getSeederShop($masterShop);

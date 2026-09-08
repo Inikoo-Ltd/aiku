@@ -2,16 +2,16 @@
 
 namespace App\Actions\Goods\TradeUnitFamily\UI;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 
-class CreateTradeUnitFamily extends GrpAction
+class CreateTradeUnitFamily extends OrgAction
 {
     public function asController(ActionRequest $request): Response
     {
-        $this->initialisation(group(), $request);
+        $this->initialisationFromGroup(group(), $request);
 
         return $this->handle($request);
     }

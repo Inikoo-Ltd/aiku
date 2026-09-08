@@ -11,7 +11,7 @@
 namespace App\Actions\Masters\MasterProductCategory\UI;
 
 use App\Actions\Catalogue\ProductCategory\UI\IndexDepartments;
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\Masters\MasterProductCategory\RelatedChild\RelatedMasterProductCategories\GetRelatedMasterProductCategories;
 use App\Actions\Masters\MasterProductCategory\WithMasterDepartmentSubNavigation;
@@ -30,7 +30,7 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 
-class ShowMasterDepartment extends GrpAction
+class ShowMasterDepartment extends OrgAction
 {
     use WithMasterDepartmentSubNavigation;
     use WithMastersAuthorisation;
@@ -50,7 +50,7 @@ class ShowMasterDepartment extends GrpAction
     {
         $group        = group();
         $this->parent = $group;
-        $this->initialisation($group, $request)->withTab(MasterDepartmentTabsEnum::values());
+        $this->initialisationFromGroup($group, $request)->withTab(MasterDepartmentTabsEnum::values());
 
         return $this->handle($masterDepartment);
     }
@@ -59,7 +59,7 @@ class ShowMasterDepartment extends GrpAction
     {
         $this->parent = $masterShop;
         $group        = group();
-        $this->initialisation($group, $request)->withTab(MasterDepartmentTabsEnum::values());
+        $this->initialisationFromGroup($group, $request)->withTab(MasterDepartmentTabsEnum::values());
 
         return $this->handle($masterDepartment);
     }
@@ -173,8 +173,8 @@ class ShowMasterDepartment extends GrpAction
                     : Inertia::optional(fn () => GetMasterProductCategoryImages::run($masterDepartment)),
 
                 MasterDepartmentTabsEnum::HISTORY->value => $this->tab == MasterDepartmentTabsEnum::HISTORY->value ?
-                    fn () => HistoryResource::collection(IndexHistory::run($masterDepartment))
-                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($masterDepartment))),
+                    fn () => HistoryResource::collection(IndexHistory::run($masterDepartment, MasterDepartmentTabsEnum::HISTORY->value))
+                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($masterDepartment, MasterDepartmentTabsEnum::HISTORY->value))),
 
 
             ]
@@ -260,15 +260,18 @@ class ShowMasterDepartment extends GrpAction
             'grp.masters.master_shops.show.master_departments.show.master_sub_departments.index',
             'grp.masters.master_shops.show.master_departments.show.master_sub_departments.show',
             'grp.masters.master_shops.show.master_departments.show.master_families.show.master_products.index',
+            'grp.masters.master_shops.show.master_departments.show.master_families.show.master_products.sales',
             'grp.masters.master_shops.show.master_departments.show.master_families.index',
             'grp.masters.master_shops.show.master_departments.show.master_families.show',
             'grp.masters.master_shops.show.master_departments.show.master_products.index',
+            'grp.masters.master_shops.show.master_departments.show.master_products.sales',
             'grp.masters.master_shops.show.master_departments.show.master_products.show',
             'grp.masters.master_shops.show.master_departments.show.master_collections.index',
             'grp.masters.master_shops.show.master_departments.show.master_collections.show',
             'grp.masters.master_shops.show.master_departments.show.master_sub_departments.master_families.index',
             'grp.masters.master_shops.show.master_departments.show.master_sub_departments.master_families.show',
             'grp.masters.master_shops.show.master_departments.show.master_sub_departments.master_families.master_products.index',
+            'grp.masters.master_shops.show.master_departments.show.master_sub_departments.master_families.master_products.sales',
             'grp.masters.master_shops.show.master_departments.show.master_sub_departments.edit' =>
             array_merge(
                 ShowMasterShop::make()->getBreadcrumbs($parent),

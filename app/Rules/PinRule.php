@@ -24,10 +24,9 @@ class PinRule implements ValidationRule
 
     public function validate(string $attribute, mixed $value, Closure $fail): void
     {
-        list($letters, $emojis, $numbers) = SetEmployeePin::make()->pinCharacterSet();
+        list($letters, $numbers) = SetEmployeePin::make()->pinCharacterSet();
 
         $letterCount = 0;
-        $emojiCount  = 0;
         $numberCount = 0;
 
         $characters = preg_split('//u', $value, -1, PREG_SPLIT_NO_EMPTY);
@@ -36,16 +35,13 @@ class PinRule implements ValidationRule
             if (in_array($char, $letters)) {
                 $letterCount++;
             }
-            if (in_array($char, $emojis)) {
-                $emojiCount++;
-            }
             if (in_array($char, $numbers)) {
                 $numberCount++;
             }
         }
 
-        if ($letterCount < 2 || $emojiCount < 2 || $numberCount < 2) {
-            $fail(__('The pin must contain 2 letters, 2 numbers, and 2 emojis from the set.'));
+        if ($letterCount < 3 || $numberCount < 3) {
+            $fail(__('The pin must contain 3 letters and 3 numbers from the set.'));
         }
 
         $exists = DB::table('employees')

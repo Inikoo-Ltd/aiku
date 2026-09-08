@@ -84,7 +84,7 @@ const displayUnits = computed(() => {
         @click="openModal"
     >
         <div v-if="trade_units.length == 1" class="text-teal-600 whitespace-nowrap w-full">
-            <span class=""> &#8623; SKU </span>
+            <span class=""> &#8623; SKO </span>
             <span class="font-bold">
                 <FractionDisplay v-if="trade_units[0][key]" :fractionData="trade_units[0][key]" />
             </span>
@@ -108,7 +108,7 @@ const displayUnits = computed(() => {
             <slot name="modalBody">
                 <div class="  font-bold mb-4">
                     <div class="text-center text-lg">
-                    {{ trans('SKUs/Trade Units to be picked per product outer') }}
+                    {{ trans('SKOs/Trade Units to be picked per product outer') }}
                     </div>
                 </div>
     
@@ -117,7 +117,7 @@ const displayUnits = computed(() => {
                         {{ trans('Reference') }}
                     </div>
                     <div class="text-left col-span-3">
-                        {{ trans('SKU description') }}
+                        {{ trans('SKO description') }}
                     </div>
                     <div class="text-right ">
                         {{ trans('Units to pick') }}
@@ -125,7 +125,7 @@ const displayUnits = computed(() => {
 
 
                     <div class="text-right">
-                        {{ trans('SKUs to pick') }}
+                        {{ trans('SKOs to pick') }}
                     </div>
                 </div>
     
@@ -143,7 +143,7 @@ const displayUnits = computed(() => {
     
                     <div class="text-left col-span-3 flex items-center">
                         <slot name="col_name" :data="tUnit">
-                            <p>{{ tUnit.tradeUnit?.name }} <span class="text-orange-500">{{ trans('Units/SKU')}}:{{ tUnit.units_per_sku }}</span></p>
+                            <p>{{ tUnit.tradeUnit?.name }} <span class="text-orange-500">{{ trans('Units/SKO')}}:{{ tUnit.units_per_sku }}</span></p>
                         </slot>
                     </div>
 

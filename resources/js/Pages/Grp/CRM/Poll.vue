@@ -12,6 +12,7 @@ import { faAsterisk, faTrashAlt } from "@fal";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { useFormatTime } from "@/Composables/useFormatTime";
 import TablePollOptions from "@/Components/Tables/Grp/Org/CRM/TablePollOptions.vue";
+import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue";
 import type { Component } from "vue";
 import { computed, ref } from "vue";
 import { useTabChange } from "@/Composables/tab-change";
@@ -42,6 +43,7 @@ const props = defineProps<{
     }
     showcase: {}
     poll_options?: {}
+    history?: {}
 
 
 }>();
@@ -57,7 +59,8 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab);
 
 const component = computed(() => {
     const components: Record<string, Component> = {
-        poll_options: TablePollOptions
+        poll_options: TablePollOptions,
+        history: TableHistories
     };
 
     if (currentTab.value === 'poll_options' && !props.poll_options) {

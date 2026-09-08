@@ -22,11 +22,11 @@ class UpdateInventoryInWooPortfolio
     public string $commandSignature = 'woo:update-inventory {customerSalesChannel?}';
 
 
-    public function handle(?CustomerSalesChannel $customerSalesChannel = null): void
+    public function handle(?CustomerSalesChannel $customerSalesChannel = null, bool $force = false): void
     {
         if ($customerSalesChannel !== null) {
             if ($customerSalesChannel->status == CustomerSalesChannelStatusEnum::OPEN) {
-                UpdateWooCustomerSalesChannelPortfolio::dispatch($customerSalesChannel);
+                UpdateWooCustomerSalesChannelPortfolio::dispatch($customerSalesChannel, $force);
             }
 
             return;

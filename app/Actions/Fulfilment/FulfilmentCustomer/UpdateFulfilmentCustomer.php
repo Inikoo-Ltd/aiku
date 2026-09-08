@@ -19,7 +19,6 @@ use App\Enums\Fulfilment\FulfilmentCustomer\FulfilmentCustomerStatusEnum;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\Fulfilment\FulfilmentCustomer;
 use App\Models\Catalogue\Shop;
-use App\Models\SysAdmin\Organisation;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Validation\Rule;
@@ -153,7 +152,6 @@ class UpdateFulfilmentCustomer extends OrgAction
 
 
     public function asController(
-        Organisation $organisation,
         Shop $shop,
         Fulfilment $fulfilment,
         FulfilmentCustomer $fulfilmentCustomer,

@@ -10,7 +10,6 @@ namespace App\Actions\Comms\Mailshot;
 
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateMailshots;
 use App\Actions\Comms\Mailshot\UI\HasUIMailshots;
-use App\Actions\Comms\Outbox\Hydrators\OutboxHydrateMailshots;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateMailshots;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateMailshots;
@@ -55,7 +54,6 @@ class StoreMailshot extends OrgAction
 
         GroupHydrateMailshots::dispatch($outbox->group)->delay($this->hydratorsDelay);
         OrganisationHydrateMailshots::dispatch($outbox->organisation)->delay($this->hydratorsDelay);
-        OutboxHydrateMailshots::dispatch($outbox)->delay($this->hydratorsDelay);
         ShopHydrateMailshots::dispatch($outbox->shop)->delay($this->hydratorsDelay);
 
         $outboxCode = match ($mailshot->type) {
@@ -133,6 +131,19 @@ class StoreMailshot extends OrgAction
             };
             $this->set('type', $type);
         }
+
+        if (!$this->has('subject') || blank($this->get('subject'))) {
+            $label = $this->get('type') === MailshotTypeEnum::NEWSLETTER->value ? __('Newsletter') : __('Mailshot');
+            $this->set('subject', $label.' '.now()->format('j M Y'));
+        }
+
+        if ($this->get('type') === MailshotTypeEnum::MARKETING->value && !$this->has('recipients_recipe')) {
+            $this->set('recipients_recipe', [
+                'all_customers' => [
+                    'value' => true
+                ]
+            ]);
+        }
     }
 
 
@@ -151,7 +162,7 @@ class StoreMailshot extends OrgAction
     {
 
         $routeName = match ($mailshot->type) {
-            MailshotTypeEnum::NEWSLETTER => 'grp.org.shops.show.marketing.newsletters.show',
+            MailshotTypeEnum::NEWSLETTER => 'grp.org.shops.show.marketing.newsletters.workshop',
             MailshotTypeEnum::MARKETING => 'grp.org.shops.show.marketing.mailshots.recipients',
             MailshotTypeEnum::INVITE => 'grp.org.shops.show.marketing.mailshots.show',
             MailshotTypeEnum::ABANDONED_CART => 'grp.org.shops.show.marketing.mailshots.show',

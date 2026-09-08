@@ -16,7 +16,6 @@ use App\Enums\Fulfilment\PalletDelivery\PalletDeliveryStateEnum;
 use App\Models\CRM\Customer;
 use App\Models\Fulfilment\FulfilmentCustomer;
 use App\Models\Fulfilment\PalletDelivery;
-use App\Models\SysAdmin\Organisation;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Event;
 use Lorisleiva\Actions\ActionRequest;
@@ -98,7 +97,7 @@ class DeletePalletDelivery extends OrgAction
         return $request->user()->authTo("fulfilment-shop.{$this->fulfilment->id}.edit");
     }
 
-    public function asController(Organisation $organisation, PalletDelivery $palletDelivery, ActionRequest $request): void
+    public function asController(PalletDelivery $palletDelivery, ActionRequest $request): void
     {
         $this->fulfilmentCustomer = $palletDelivery->fulfilmentCustomer;
         $this->initialisationFromFulfilment($palletDelivery->fulfilment, $request);

@@ -110,11 +110,22 @@ class ShowStoredItem extends OrgAction
                             'title' => __('Stored item')
                         ],
                     'subNavigation' => $subNavigation,
-                    'model'  => __("Customer's SKU"),
+                    'model'  => __("Customer's SKO"),
                     'title'  => $storedItem->slug,
-                    'actions' => [
-
-
+                    'actions' => array_values(array_filter([
+                        $this->parent instanceof FulfilmentCustomer ? [
+                            'type'    => 'button',
+                            'style'   => 'tertiary',
+                            'label'   => 'PDF Label',
+                            'target'  => '_blank',
+                            'icon'    => 'fal fa-file-pdf',
+                            'key'     => 'action',
+                            'tooltip' => __('Print the barcode label scan-to-pick reads'),
+                            'route'   => [
+                                'name'       => 'grp.org.fulfilments.show.crm.customers.show.stored-items.export_label',
+                                'parameters' => array_values($request->route()->originalParameters()),
+                            ]
+                        ] : null,
                         [
                             'type'    => 'button',
                             'style'   => 'edit',
@@ -126,7 +137,7 @@ class ShowStoredItem extends OrgAction
                                 'parameters' => array_values($request->route()->originalParameters())
                             ]
                         ],
-                    ],
+                    ])),
                 ],
                 'tabs'        => [
                     'current'    => $this->tab,
@@ -218,7 +229,7 @@ class ShowStoredItem extends OrgAction
                                 'name'       => 'grp.org.fulfilments.show.crm.customers.show.stored-items.index',
                                 'parameters' => array_values(request()->route()->originalParameters())
                             ],
-                            'label' => __("Customer's SKUs")
+                            'label' => __("Customer's SKOs")
                         ],
                         'model' => [
                             'route' => [

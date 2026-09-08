@@ -10,6 +10,7 @@ import Icon from "@/Components/Icon.vue"
 import Tag from "@/Components/Tag.vue"
 import { Link } from "@inertiajs/vue3";
 import Image from "@common/Components/Image.vue";
+import { GridProducts } from "@/Components/Product"
 
 const props = defineProps<{
   data: object
@@ -28,7 +29,7 @@ function subDepartmentRoute(SubDepartment): string {
 </script>
 
 <template>
-  <Table :resource="data" :name="tab" class="mt-5">
+  <Table :resource="data" :name="tab" class="mt-5 hidden md:block">
      <template #cell(image)="{ item: item }">
             <div class="flex justify-center">
                 <Image :src="item['image_thumbnail']" class="w-6 aspect-square rounded-full overflow-hidden shadow" />
@@ -48,14 +49,32 @@ function subDepartmentRoute(SubDepartment): string {
       </Link>
     </template>
     <template #cell(shop_code)="{ item: family }">
-      <!--     <Link :href="shopRoute(family)" class="secondaryLink"> -->
       {{ family["shop_code"] }}
-      <!--  </Link> -->
     </template>
     <template #cell(department_code)="{ item: family }">
-      <!--   <Link v-if="family.department_slug" :href="departmentRoute(family)" class="secondaryLink"> -->
       {{ family["department_code"] }}
-      <!--    </Link> -->
     </template>
   </Table>
+
+   <GridProducts :resource="data" :preserve-scroll="true" class="mt-5 md:hidden" :name="tab"
+        :gridClass="'grid grid-cols-1'">
+        <template #card="{ item }">
+            <div
+                class="group flex items-center gap-4 rounded-xl border border-gray-200 bg-white p-4 transition-all hover:border-primary-300 hover:shadow-sm">
+                <Image
+                    :src="item.image_thumbnail ?? item.web_images?.main?.thumbnail ?? item.web_images?.main?.original"
+                    class="h-12 w-12 rounded-full object-cover shadow-sm flex-shrink-0" />
+
+                <div class="min-w-0 flex-1">
+                    <Link :href="subDepartmentRoute(item)" class="primaryLink">
+                        {{ item.code }}
+                    </Link>
+
+                    <p class="mt-2 p-1 truncate text-sm text-gray-500">
+                        {{ item.name }}
+                    </p>
+                </div>
+            </div>
+        </template>
+    </GridProducts>
 </template>

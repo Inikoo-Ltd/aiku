@@ -15,6 +15,7 @@ use App\Http\Resources\HasSelfCall;
 use App\Http\Resources\Traits\HasPriceMetrics;
 use App\Models\Catalogue\Product;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Arr;
 use App\Http\Resources\Helpers\ImageResource;
 
 /**
@@ -34,8 +35,14 @@ class WebpageProductWorkshopResource extends JsonResource
         /** @var Product $product */
         $product = $this->resource;
 
+        $countriesOrigin = [];
+        $countries      = array_filter(array_map('trim', explode(',', $product->country_of_origin ?? '')));
+        foreach ($countries as $country) {
+            $countriesOrigin[] = NaturalLanguage::make()->country($country);
+        }
+
         $specifications = [
-            'country_of_origin' => NaturalLanguage::make()->country($product->country_of_origin),
+            'countries_of_origin' => $countriesOrigin,
             'ingredients'       => $product->marketing_ingredients,
             'gross_weight'      => $product->gross_weight,
             'barcode'           => $product->barcode,
@@ -47,6 +54,17 @@ class WebpageProductWorkshopResource extends JsonResource
 
 
         [$margin, $rrpPerUnit, $profit, $profitPerUnit, $units, $pricePerUnit] = $this->getPriceMetrics($product->rrp, $product->price, $product->units);
+
+        if (is_array($product->offers_data)) {
+            $productOffersData = $product->offers_data;
+        } else {
+            $productOffersData = json_decode($product->offers_data, true);
+        }
+
+        $bestPercentageOff            = Arr::get($productOffersData, 'best_percentage_off.percentage_off', 0);
+        $bestPercentageOffOfferFactor = 1 - (float)$bestPercentageOff;
+
+        [$marginDiscounted, , $profitDiscounted, $profitPerUnitDiscounted, , $pricePerUnitDiscounted] = $this->getPriceMetrics($product->rrp, $bestPercentageOffOfferFactor * $product->price, $product->units);
 
 
         return [
@@ -81,9 +99,12 @@ class WebpageProductWorkshopResource extends JsonResource
             'images'            => $product->bucket_images ? $this->getImagesData($product, true) : ImageResource::collection($product->images)->toArray($request),
             'tags'              => TagResource::collection($product->tags)->toArray($request),
 
-
-
-
+            'discounted_price'           => round($product->price * $bestPercentageOffOfferFactor, 2),
+            'discounted_price_per_unit'  => $pricePerUnitDiscounted,
+            'discounted_profit'          => $profitDiscounted,
+            'discounted_profit_per_unit' => $profitPerUnitDiscounted,
+            'discounted_margin'          => $marginDiscounted,
+            'discounted_percentage'      => percentage($bestPercentageOff, 1),
 
         ];
     }

@@ -14,6 +14,8 @@ use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\Comms\Traits\WithAccountingSubNavigation;
 use App\Actions\Fulfilment\Fulfilment\UI\ShowFulfilment;
 use App\Actions\OrgAction;
+use App\Enums\Accounting\PaymentAccount\PaymentAccountTypeEnum;
+use App\Enums\Accounting\PaymentAccountShop\PaymentAccountShopStateEnum;
 use App\Models\Accounting\PaymentAccount;
 use App\Models\Accounting\PaymentAccountShop;
 use App\Models\Catalogue\Shop;
@@ -67,26 +69,54 @@ class ShowPaymentAccountShop extends OrgAction
                         ],
                     ],
                 ],
-                'payment_account_shop' => [
-                    'id'                       => $paymentAccountShop->id,
-                    'shop_id'                  => $paymentAccountShop->shop_id,
-                    'shop_code'                => $paymentAccountShop->shop->code,
-                    'shop_name'                => $paymentAccountShop->shop->name,
-                    'shop_slug'                => $paymentAccountShop->shop->slug,
-                    'payment_account_code'     => $paymentAccountShop->paymentAccount->code,
-                    'payment_account_name'     => $paymentAccountShop->paymentAccount->name,
-                    'payment_account_slug'     => $paymentAccountShop->paymentAccount->slug,
-                    'activated_at'             => $paymentAccountShop->activated_at,
-                    'state'                    => $paymentAccountShop->state,
-                    'state_icon'               => $paymentAccountShop->state->stateIcon(),
-                    'show_in_checkout'         => $paymentAccountShop->show_in_checkout,
-                    'number_payments'          => $paymentAccountShop->stats->number_payments,
-                    'amount_successfully_paid' => $paymentAccountShop->stats->amount_successfully_paid,
-                    'shop_currency_code'       => $paymentAccountShop->shop->currency->code,
-                    'pastpay_credit_terms'     => Arr::get($paymentAccountShop->data, 'charges', []),
-                ]
+                'payment_account_shop' => $this->getPaymentAccountShopData($paymentAccountShop)
             ]
         );
+    }
+
+    public function getPaymentAccountShopData(PaymentAccountShop $paymentAccountShop): array
+    {
+        $data = [
+            'id'                        => $paymentAccountShop->id,
+            'shop_id'                   => $paymentAccountShop->shop_id,
+            'shop_code'                 => $paymentAccountShop->shop->code,
+            'shop_name'                 => $paymentAccountShop->shop->name,
+            'shop_slug'                 => $paymentAccountShop->shop->slug,
+            'type'                      => $paymentAccountShop->type->value,
+            'payment_account_code'      => $paymentAccountShop->paymentAccount->code,
+            'payment_account_name'      => $paymentAccountShop->paymentAccount->name,
+            'payment_account_slug'      => $paymentAccountShop->paymentAccount->slug,
+            'activated_at'              => $paymentAccountShop->activated_at,
+            'state'                     => $paymentAccountShop->state,
+            'state_label'               => $paymentAccountShop->state->label(),
+            'state_icon'                => $paymentAccountShop->state->stateIcon(),
+            'show_in_checkout'          => $paymentAccountShop->show_in_checkout,
+            'checkout_display_position' => $paymentAccountShop->checkout_display_position,
+            'number_payments'           => $paymentAccountShop->stats->number_payments,
+            'amount_successfully_paid'  => $paymentAccountShop->stats->amount_successfully_paid,
+            'shop_currency_code'        => $paymentAccountShop->shop->currency->code,
+        ];
+
+        if ($paymentAccountShop->type == PaymentAccountTypeEnum::PASTPAY) {
+            $creditTerms = Arr::get($paymentAccountShop->data, 'charges.options', []);
+            $taxNumber   = Arr::get($paymentAccountShop->paymentAccount->data, 'tax_number');
+            $footer      = $paymentAccountShop->invoice_footer;
+            $hasFooter   = !blank(trim(strip_tags((string) $footer)));
+
+            $data['pastpay'] = [
+                'tax_number'      => $taxNumber,
+                'credit_terms'    => $creditTerms,
+                'invoice_footer'  => $footer,
+                'setup_checklist' => [
+                    ['label' => __('Creditor tax number'), 'done' => !blank($taxNumber)],
+                    ['label' => __('Credit terms'), 'done' => !empty($creditTerms)],
+                    ['label' => __('Invoice footer'), 'done' => $hasFooter],
+                    ['label' => __('Activated'), 'done' => $paymentAccountShop->state == PaymentAccountShopStateEnum::ACTIVE],
+                ],
+            ];
+        }
+
+        return $data;
     }
 
     /** @noinspection PhpUnusedParameterInspection */

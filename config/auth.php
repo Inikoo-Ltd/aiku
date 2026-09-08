@@ -55,6 +55,14 @@ return [
         'broadcasting' => [
             'driver' => 'websockets-auth',
         ],
+        'mcp' => [
+            'driver'   => 'sanctum',
+            'provider' => 'users',
+        ],
+        'mcp-oauth' => [
+            'driver'   => 'passport',
+            'provider' => 'users',
+        ],
 
     ],
 

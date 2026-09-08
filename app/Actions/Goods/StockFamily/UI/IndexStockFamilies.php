@@ -151,8 +151,7 @@ class IndexStockFamilies extends OrgAction
                     'invoices'                    => 'invoices',
                 ],
                 frequency: TimeSeriesFrequencyEnum::DAILY->value,
-                prefix: $prefix,
-                includeLY: true
+                prefix: $prefix
             );
 
             $selects[] = $timeSeriesData['selectRaw']['sales_grp_currency_external'];
@@ -161,9 +160,19 @@ class IndexStockFamilies extends OrgAction
             $selects[] = $timeSeriesData['selectRaw']['invoices_ly'];
             $allowedSorts = array_merge($allowedSorts, ['sales_grp_currency_external', 'invoices']);
         } else {
-            $queryBuilder->leftJoin('stock_family_sales_intervals', 'stock_family_sales_intervals.stock_family_id', 'stock_families.id');
-            $selects[] = 'stock_family_sales_intervals.*';
-            $selects[] = 'stock_family_sales_intervals.revenue_grp_currency_'.$this->dateInterval->value.' as revenue_grp_currency';
+            $timeSeriesData = $queryBuilder->withTimeSeriesAggregation(
+                timeSeriesTable: 'stock_family_time_series',
+                timeSeriesRecordsTable: 'stock_family_time_series_records',
+                foreignKey: 'stock_family_id',
+                aggregateColumns: [
+                    'sales_grp_currency_external' => 'revenue_grp_currency',
+                ],
+                frequency: TimeSeriesFrequencyEnum::DAILY->value,
+                prefix: $prefix,
+                includeLY: false
+            );
+
+            $selects[]      = $timeSeriesData['selectRaw']['revenue_grp_currency'];
             $allowedSorts[] = 'revenue_grp_currency';
         }
 
@@ -220,15 +229,15 @@ class IndexStockFamilies extends OrgAction
 
             if ($sales) {
                 $table->betweenDates(['date'])
-                    ->column(key: 'number_current_stocks', label: 'SKUs', tooltip: __('Current SKUs'), canBeHidden: false, sortable: true)
+                    ->column(key: 'number_current_stocks', label: 'SKOs', tooltip: __('Current SKOs'), canBeHidden: false, sortable: true)
                     ->column(key: 'invoices', label: __('Invoices'), canBeHidden: false, sortable: true, align: 'right')
                     ->column(key: 'invoices_delta', label: __('Δ 1Y'), canBeHidden: false, sortable: false, align: 'right')
                     ->column(key: 'sales_grp_currency_external', label: __('Sales'), canBeHidden: false, sortable: true, align: 'right')
                     ->column(key: 'sales_grp_currency_external_delta', label: __('Δ 1Y'), canBeHidden: false, sortable: false, align: 'right');
             } else {
                 $table->dateInterval($this->dateInterval)
-                    ->column(key: 'number_current_stocks', label: 'SKUs', tooltip: __('Current SKUs'), canBeHidden: false, sortable: true)
-                    ->column(key: 'revenue_grp_currency', label: __('Revenue'), tooltip: __('Revenue'), sortable: true, align: 'right', isInterval: true)
+                    ->column(key: 'number_current_stocks', label: 'SKOs', tooltip: __('Current SKOs'), canBeHidden: false, sortable: true)
+                    ->column(key: 'revenue_grp_currency', label: __('Revenue'), tooltip: __('Revenue'), sortable: true, align: 'right')
                     ->defaultSort('code');
             }
         };
@@ -301,11 +310,11 @@ class IndexStockFamilies extends OrgAction
         $subNavigation = $this->getStockFamiliesSubNavigation();
 
         $title = match ($this->bucket) {
-            'active' => __('Active Master SKU Families'),
-            'in_process' => __('In process Master SKU Families'),
-            'discontinuing' => __('Discontinuing Master SKU Families'),
-            'discontinued' => __('Discontinued Master SKU Families'),
-            default => __('Master SKU Families')
+            'active' => __('Active Master SKO Families'),
+            'in_process' => __('In process Master SKO Families'),
+            'discontinuing' => __('Discontinuing Master SKO Families'),
+            'discontinued' => __('Discontinued Master SKO Families'),
+            default => __('Master SKO Families')
         };
 
         return Inertia::render(
@@ -316,15 +325,15 @@ class IndexStockFamilies extends OrgAction
                 'pageHead'    => [
                     'title'         => $title,
                     'icon'          => [
-                        'title' => __("Master SKUs families"),
+                        'title' => __("Master SKOs families"),
                         'icon'  => 'fal fa-boxes-alt'
                     ],
                     'actions'       => [
                         $this->canEdit && $request->route()->getName() == 'grp.goods.stock-families.index' ? [
                             'type'    => 'button',
                             'style'   => 'create',
-                            'tooltip' => __('New master SKU family'),
-                            'label'   => __('Master SKU family'),
+                            'tooltip' => __('New master SKO family'),
+                            'label'   => __('Master SKO family'),
                             'route'   => [
                                 'name'       => 'grp.goods.stock-families.create',
                                 'parameters' => array_values($request->route()->originalParameters())
@@ -361,7 +370,7 @@ class IndexStockFamilies extends OrgAction
                         'route' => [
                             'name' => 'grp.goods.stock-families.index'
                         ],
-                        'label' => __("Master SKUs families"),
+                        'label' => __("Master SKOs families"),
                         'icon'  => 'fal fa-bars',
                     ],
                     'suffix' => $suffix

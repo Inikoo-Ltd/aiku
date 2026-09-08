@@ -46,7 +46,6 @@ class StoreAbnormalOrgStock extends OrgAction
             /** @var OrgStock $orgStock */
             $orgStock = $organisation->orgStocks()->create($modelData);
             $orgStock->stats()->create();
-            $orgStock->intervals()->create();
 
             if ($parent instanceof OrgStockFamily) {
                 $orgStock->orgStockFamily()->associate($parent);
@@ -94,7 +93,7 @@ class StoreAbnormalOrgStock extends OrgAction
     public function action(Organisation|OrgStockFamily $parent, $modelData = [], int $hydratorsDelay = 0, bool $strict = true, $audit = true): OrgStock
     {
         if (!$audit) {
-            OrgStock::disableAuditing();
+            return OrgStock::withoutAuditing(fn () => $this->action($parent, $modelData, $hydratorsDelay, $strict));
         }
 
         if ($parent instanceof Organisation) {

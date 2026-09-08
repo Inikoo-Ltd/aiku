@@ -16,7 +16,7 @@ import { trans } from "laravel-vue-i18n"
 import { routeType } from "@/types/route"
 import { ref, onMounted, reactive, inject, onUnmounted, watch } from "vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faArrowDown, faDebug, faClipboardListCheck, faUndoAlt, faHandHoldingBox, faListOl, faHandPaper, faChair, faBoxCheck, faCheckDouble, faTimes, faHourglassHalf, faBox } from "@fal"
+import { faArrowDown, faDebug, faClipboardListCheck, faUndoAlt, faHandHoldingBox, faListOl, faHandPaper, faChair, faBoxCheck, faCheckDouble, faTimes, faHourglassHalf, faBox, faBarcodeRead } from "@fal"
 import { faSkull, faStickyNote, faPeopleArrows} from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import axios from "axios"
@@ -44,9 +44,12 @@ import { notify } from "@kyvg/vue3-notification"
 import { ctrans } from "@/Composables/useTrans"
 import HelpArticles from "@/Components/Utils/HelpArticles.vue"
 import ChangePackagingSelect from "@/Components/Warehouse/PickingSessions/ChangePackagingSelect.vue"
+import OrgStockHandlingNotes from "@/Components/Warehouse/DeliveryNotes/OrgStockHandlingNotes.vue"
 import { faPrint, faFileAlt, faBoxOpen, faExclamationCircle } from "@fal"
 
-library.add(faSkull, faStickyNote, faArrowDown, faDebug, faClipboardListCheck, faUndoAlt, faHandHoldingBox, faListOl, faHandPaper, faChair, faBoxCheck, faCheckDouble, faTimes, faPeopleArrows, faHourglassHalf, faBox, faPrint, faFileAlt, faBoxOpen, faExclamationCircle)
+const screenType = inject('screenType', ref('desktop'))
+
+library.add(faSkull, faStickyNote, faArrowDown, faDebug, faClipboardListCheck, faUndoAlt, faHandHoldingBox, faListOl, faHandPaper, faChair, faBoxCheck, faCheckDouble, faTimes, faPeopleArrows, faHourglassHalf, faBox, faPrint, faFileAlt, faBoxOpen, faExclamationCircle, faBarcodeRead)
 
 // Section: Packaging & leaflet inserts (warehouse)
 const changingPackagingId = ref<number | null>(null)
@@ -463,10 +466,18 @@ onUnmounted(() => {
             <Link :href="showOrgStockRoute(item)" class="secondaryLink">
             {{ item.org_stock_code }}
             </Link>
+            <FontAwesomeIcon
+                v-if="item.barcode"
+                v-tooltip="item.barcode"
+                :icon="faBarcodeRead"
+                class="ml-1 text-gray-500"
+                fixed-width
+                aria-hidden="true" />            
         </template>
 
         <template #cell(org_stock_name)="{ item: deliveryNoteItem }">
             <div>{{ deliveryNoteItem.org_stock_name }} <span class="italic opacity-80">{{deliveryNoteItem.packed_in_message}}</span></div>
+            <OrgStockHandlingNotes :noteToPickers="deliveryNoteItem.note_to_pickers" :noteToPackers="deliveryNoteItem.note_to_packers" />
             <div class="mb-2">
                 <!-- Helper to make the row's height consistent -->
             </div>
@@ -597,10 +608,22 @@ onUnmounted(() => {
                 :key="deliveryItem.id || index" class="space-y-2">
 
                 <div class="flex justify-between items-center">
-                    <div>
+                    <div class="space-x-1">
                         <Link :href="showOrgStockRoute(deliveryItem)" class="secondaryLink">
                         {{ deliveryItem.org_stock_code }}
-                        </Link> <span class="opacity-70">{{ deliveryItem.org_stock_name}} <span class="italic">{{ deliveryItem.packed_in_message}}</span></span>
+                        </Link>
+                        <span class="opacity-70">
+                            {{ deliveryItem.org_stock_name}}
+                            <span class="italic">{{ deliveryItem.packed_in_message}}</span>
+                            <FontAwesomeIcon
+                                v-if="deliveryItem.barcode"
+                                v-tooltip="deliveryItem.barcode"
+                                :icon="faBarcodeRead"
+                                class="ml-2 text-gray-500"
+                                fixed-width
+                                aria-hidden="true" />
+                        </span>
+                        
                     </div>
 
                     <template v-if="deliveryItem.quantity_to_pick > 0 && deliveryItem.state == 'handling'">
@@ -1066,7 +1089,7 @@ onUnmounted(() => {
         v-model:visible="isModalLocation"
         modal
         :draggable="false"
-        dismissableMask
+        :dismissableMask="screenType === 'desktop'"
         :style="{ width: '42rem' }"
         :breakpoints="{ '1280px': '65vw', '992px': '80vw', '768px': '90vw', '576px': '95vw' }"
         :contentStyle="{ maxHeight: '80vh', overflow: 'auto' }"

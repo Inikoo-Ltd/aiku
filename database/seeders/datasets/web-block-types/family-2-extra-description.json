@@ -10,6 +10,98 @@
 	"fixed": true,
 	"data": {
 		"fieldValue": {
+			"customisation": {
+				"title": "Customisations",
+				"description": "<p>Make this range your own. We can adapt packaging, labelling and formulation to suit your brand and your market.</p>",
+				"link": {
+					"text": "More about bespoke made products",
+					"url": {
+						"id": null,
+						"url": "",
+						"href": "",
+						"type": "external"
+					}
+				},
+				"table": {
+					"option": "Option",
+					"available": "Available",
+					"moq": "MOQ",
+					"notes": "Notes"
+				},
+				"contact": {
+					"title": "Need something bespoke?",
+					"description": "<p>Tell us what you need and our team will come back to you with options, lead times and minimum order quantities.</p>",
+					"button": {
+						"text": "Contact us",
+						"url": {
+							"id": null,
+							"url": "",
+							"href": "",
+							"type": "external"
+						},
+						"container": {
+							"properties": null
+						}
+					}
+				},
+				"container": {
+					"properties": null
+				}
+			},
+			"labeling_guide": {
+				"title": "Labeling Guide",
+				"description": "<p>Ensure your product is labeled correctly and complies with all applicable regulations.</p>",
+				"card": {
+					"title": "Labeling & Compliance Guide",
+					"description": "<p>Download the full guide with mandatory warnings, precautions, labeling requirements and reseller responsibilities.</p>",
+					"button": {
+						"text": "Download PDF",
+						"url": {
+							"id": null,
+							"url": "",
+							"href": "",
+							"type": "external"
+						},
+						"container": {
+							"properties": null
+						}
+					}
+				},
+				"includes": {
+					"title": "The Guide Includes:",
+					"items": [
+						{
+							"text": "Mandatory warnings and hazard statements"
+						},
+						{
+							"text": "Precautions for safe use"
+						},
+						{
+							"text": "Labeling requirements and examples"
+						},
+						{
+							"text": "Reseller responsibilities and compliance obligations"
+						}
+					]
+				},
+				"note": "<p>Staying compliant protects your brand and builds trust.</p>",
+				"container": {
+					"properties": null
+				}
+			},
+			"storage": {
+				"title": "Storage & Shelf Life",
+				"description": "<p>Follow the recommended storage guidelines to maintain product quality and ensure optimal performance.</p>",
+				"temperature": {
+					"label": "Storage Temperature"
+				},
+				"guidelines": {
+					"title": "Storage Guidelines"
+				},
+				"container": {
+					"properties": null
+				}
+			},
 			"button": {
 				"link": {
 					"id": null,

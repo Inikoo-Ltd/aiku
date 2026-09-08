@@ -67,7 +67,6 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Collection<int, \App\Models\Comms\Email> $emails
  * @property-read Fulfilment|null $fulfilment
  * @property-read \App\Models\SysAdmin\Group|null $group
- * @property-read \App\Models\Comms\OutboxIntervals|null $intervals
  * @property-read Collection<int, \App\Models\Comms\Mailshot> $mailshots
  * @property-read \App\Models\Comms\OrgPostRoom|null $orgPostRoom
  * @property-read \App\Models\SysAdmin\Organisation $organisation
@@ -148,11 +147,6 @@ class Outbox extends Model
     public function stats(): HasOne
     {
         return $this->hasOne(OutboxStats::class);
-    }
-
-    public function intervals(): HasOne
-    {
-        return $this->hasOne(OutboxIntervals::class);
     }
 
     public function emails(): HasMany

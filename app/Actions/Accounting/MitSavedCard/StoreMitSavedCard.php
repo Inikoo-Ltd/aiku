@@ -27,7 +27,7 @@ class StoreMitSavedCard extends OrgAction
         data_set($modelData, 'group_id', $customer->group_id);
         data_set($modelData, 'organisation_id', $customer->organisation_id);
         data_set($modelData, 'shop_id', $customer->shop_id);
-        data_set($modelData, 'ulid', Str::ulid());
+        data_set($modelData, 'ulid', (string) Str::ulid());
 
         $maxPriority = $customer->mitSavedCard()->where('state', MitSavedCardStateEnum::SUCCESS)->max('priority');
         data_set($modelData, 'priority', $maxPriority + 1);

@@ -340,14 +340,14 @@ const syncOrderCancellationShopify = async (order) => {
             <!-- Input text: notes from staff -->
             <div class="">
                 <div class="mb-2 text-sm text-gray-500">
-                    <FontAwesomeIcon style="color: rgb(148, 219, 132)" icon="fal fa-sticky-note" class="xopacity-70"
+                    <FontAwesomeIcon style="color: #AAAAAA" icon="fal fa-sticky-note" class="xopacity-70"
                                      fixed-width aria-hidden="true"/>
-                    {{ trans("Notes from staff") }}
+                    {{ trans("Notes from Staff") }}
                     :
                 </div>
                 <PureTextarea
                     :modelValue="props.order?.data?.public_notes || ''"
-                    :placeholder="trans('No notes from staff')"
+                    :placeholder="ctrans('No notes from staff')"
                     rows="4"
                     disabled
                     xloading="isLoadingNote.includes('shipping_notes')"
@@ -359,16 +359,14 @@ const syncOrderCancellationShopify = async (order) => {
             <!-- Input text: Delivery instructions -->
             <div class="">
                 <div class="mb-2 text-sm text-gray-500">
-                    <FontAwesomeIcon icon="fal fa-truck" class="text-[#38bdf8]" fixed-width aria-hidden="true"/>
-                    {{ trans("Delivery instructions") }}
-                    <FontAwesomeIcon v-tooltip="trans('To be printed in shipping label')" icon="fal fa-info-circle"
-                                     class="text-gray-400 hover:text-gray-600" fixed-width aria-hidden="true"/>
+                    <FontAwesomeIcon style="color: #93C5FD" icon="fal fa-truck" fixed-width aria-hidden="true"/>
+                    {{ trans("Delivery Instructions") }}
                     :
                 </div>
                 <PureTextarea
                     v-model="deliveryInstructions"
                     @update:modelValue="() => debounceDeliveryInstructions()"
-                    :placeholder="is_notes_editable ? trans('Add if needed') : 'No delivery instructions'"
+                    :placeholder="(is_notes_editable ? ctrans('Add if needed') : '-') + ' (' + ctrans('This message will be printed in shipping label') + ')'"
                     rows="4"
                     :disabled="!is_notes_editable"
                     :loading="isLoadingNote.includes('shipping_notes')"
@@ -380,14 +378,13 @@ const syncOrderCancellationShopify = async (order) => {
             <!-- Input text: Other instructions -->
             <div class="">
                 <div class="mb-2 text-sm text-gray-500">
-                    <FontAwesomeIcon icon="fal fa-sticky-note" style="color: rgb(255, 125, 189)" fixed-width
-                                     aria-hidden="true"/>
-                    {{ trans("Other instructions") }}:
+                    <FontAwesomeIcon style="color: #599FF0" icon="fal fa-sticky-note" fixed-width aria-hidden="true"/>
+                    {{ trans("Other Instructions") }}:
                 </div>
                 <PureTextarea
                     v-model="noteToSubmit"
                     @update:modelValue="() => debounceSubmitNote()"
-                    :placeholder="is_notes_editable ? trans('Add if needed') : 'No instructions'"
+                    :placeholder="is_notes_editable ? ctrans('Add if needed') : ctrans('-')"
                     rows="4"
                     :disabled="!is_notes_editable"
                     :loading="isLoadingNote.includes('customer_notes')"

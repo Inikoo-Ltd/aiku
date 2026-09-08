@@ -1,0 +1,69 @@
+<?php
+
+/*
+ * Author Louis Perez
+ * Created on 26-08-2026-09h-54m
+ * GitHub: https://github.com/louis-perez
+ * Copyright 2026
+*/
+
+namespace App\Http\Resources\Web;
+
+use App\Actions\Web\WebBlock\Concerns\WithIrisImageVariants;
+use App\Http\Resources\HasSelfCall;
+use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Arr;
+
+/**
+ * @property mixed $id
+ * @property mixed $slug
+ * @property mixed $code
+ * @property mixed $name
+ * @property mixed $category_comparison
+ * @property mixed $web_images
+ * @property mixed $canonical_url
+ * @property mixed $is_current
+ */
+class FamiliesForCategoryComparison extends JsonResource
+{
+    use HasSelfCall;
+    use WithIrisImageVariants;
+
+    public const array SRCSET_WIDTHS = [360, 720, 1440];
+
+    public function toArray($request): array
+    {
+        $originalUrl = Arr::get($this->web_images, 'main.original');
+        if (is_array($originalUrl)) {
+            $originalUrl = Arr::get($originalUrl, 'original');
+        }
+
+        $srcset = null;
+        $media  = $this->findMediaFromImgProxyUrl($originalUrl);
+        if ($media) {
+            $srcset = $this->getWidthSrcSets($media, self::SRCSET_WIDTHS);
+        }
+
+        $categoryComparison = $this->category_comparison;
+
+        data_set($categoryComparison, 'items.product_count.value', $this->product_count ?? 0);
+        data_set($categoryComparison, 'items.packaging.value', json_decode($this->packaging));
+        data_set($categoryComparison, 'items.dimensions.value', [
+            'average_weight'    => trimDecimalZeros(round(floatval($this->average_marketing_weights), 2)),
+            'dimensions'        => $this->dimensions
+        ]);
+        data_set($categoryComparison, 'items.customization.value', count($this->customize_option ?? []) > 0);
+
+        return [
+            'id'                  => $this->id,
+            'slug'                => $this->slug,
+            'code'                => $this->code,
+            'name'                => $this->name,
+            'url'                 => $this->canonical_url,
+            'image'               => Arr::get($this->web_images, 'main.gallery', Arr::get($this->web_images, 'main.original')),
+            'srcset'              => $srcset,
+            'is_current'          => (bool)$this->is_current,
+            'category_comparison' => $categoryComparison,
+        ];
+    }
+}

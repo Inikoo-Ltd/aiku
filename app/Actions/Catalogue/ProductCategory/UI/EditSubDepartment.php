@@ -81,6 +81,23 @@ class EditSubDepartment extends OrgAction
             ];
         }
 
+        $iconLinks = [];
+
+        if ($subDepartment->masterProductCategory) {
+            $iconLinks[] = [
+                'icon'    => 'fab fa-octopus-deploy',
+                'tooltip' => __('Go to Edit Master Sub Department'),
+                'route'   => [
+                    'name'       => 'grp.masters.master_shops.show.master_sub_departments.edit',
+                    'parameters' => [
+                        'masterShop'    => $subDepartment->shop->masterShop->slug,
+                        'masterSubDepartment' => $subDepartment->masterProductCategory->slug,
+                    ]
+                ],
+                'color'   => 'rgb(75, 0, 130)'
+            ];
+        }
+
         return Inertia::render(
             'EditModel',
             [
@@ -98,12 +115,6 @@ class EditSubDepartment extends OrgAction
                 'pageHead'    => [
                     'title'     => $subDepartment->code,
                     'model'     => __('Sub-department'),
-                    'iconRight' => $urlMaster ? [
-                        'icon'  => "fab fa-octopus-deploy",
-                        'color' => "#4B0082",
-                        'class' => 'opacity-70 hover:opacity-100',
-                        'url'   => $urlMaster
-                    ] : [],
                     'actions'   => [
                         [
                             'type'  => 'button',
@@ -113,22 +124,23 @@ class EditSubDepartment extends OrgAction
                                 'parameters' => array_values($request->route()->originalParameters())
                             ]
                         ]
-                    ]
+                    ],
+                    'iconLinks' => $iconLinks
                 ],
                 'formData' => [
                     'blueprint' => array_filter(
                         [
-                            [
-                                'label'  => __('Id'),
-                                'icon'   => 'fa-light fa-fingerprint',
-                                'fields' => [
-                                    'code' => [
-                                        'type'  => 'input',
-                                        'label' => __('Code'),
-                                        'value' => $subDepartment->code
-                                    ],
-                                ]
-                            ],
+                            // [
+                            //     'label'  => __('Id'),
+                            //     'icon'   => 'fa-light fa-fingerprint',
+                            //     'fields' => [
+                            //         'code' => [
+                            //             'type'  => 'input',
+                            //             'label' => __('Code'),
+                            //             'value' => $subDepartment->code
+                            //         ],
+                            //     ]
+                            // ],
                             [
                                 'label'  => __('Name/Description'),
                                 'icon'   => 'fa-light fa-tag',
@@ -186,7 +198,7 @@ class EditSubDepartment extends OrgAction
                                                         'website' => $subDepartment->shop->website?->slug
                                                     ]
                                             ],
-                                            'toogle'  => [
+                                            'toggle'  => [
                                                 'heading2', 'heading3', 'fontSize', 'bold', 'italic', 'underline', 'bulletList', "fontFamily",
                                                 'orderedList', 'blockquote', 'divider', 'alignLeft', 'alignRight', "customLink",
                                                 'alignCenter', 'undo', 'redo', 'highlight', 'color', 'clear'
@@ -207,7 +219,7 @@ class EditSubDepartment extends OrgAction
                                                         'website' => $subDepartment->shop->website?->slug
                                                     ]
                                             ],
-                                            'toogle'  => [
+                                            'toggle'  => [
                                                     'heading2', 'heading3', 'fontSize', 'bold', 'italic', 'underline', 'bulletList', "fontFamily",
                                                     'orderedList', 'blockquote', 'divider', 'alignLeft', 'alignRight', "customLink",
                                                     'alignCenter', 'undo', 'redo', 'highlight', 'color', 'clear'
@@ -232,7 +244,7 @@ class EditSubDepartment extends OrgAction
                                                         'website' => $subDepartment->shop->website?->slug
                                                     ]
                                             ],
-                                            'toogle'  => [
+                                            'toggle'  => [
                                                 'heading2', 'heading3', 'fontSize', 'bold', 'italic', 'underline', 'bulletList', "fontFamily",
                                                 'orderedList', 'blockquote', 'divider', 'alignLeft', 'alignRight', "customLink",
                                                 'alignCenter', 'undo', 'redo', 'highlight', 'color', 'clear'
@@ -253,7 +265,7 @@ class EditSubDepartment extends OrgAction
                                                         'website' => $subDepartment->shop->website?->slug
                                                     ]
                                             ],
-                                            'toogle'  => [
+                                            'toggle'  => [
                                                     'heading2', 'heading3', 'fontSize', 'bold', 'italic', 'underline', 'bulletList', "fontFamily",
                                                     'orderedList', 'blockquote', 'divider', 'alignLeft', 'alignRight', "customLink",
                                                     'alignCenter', 'undo', 'redo', 'highlight', 'color', 'clear'
@@ -273,23 +285,6 @@ class EditSubDepartment extends OrgAction
                                         "required"     => false,
                                         'noSaveButton' => true,
                                         "full"         => true
-                                    ],
-                                ]
-                            ],
-                            [
-                                'label'  => __('Pricing'),
-                                'icon'   => 'fa-light fa-money-bill',
-                                'fields' => [
-                                    'cost_price_ratio' => [
-                                        'type'        => 'input_number',
-                                        'bind'        => [
-                                            'maxFractionDigits' => 3
-                                        ],
-                                        'label'       => __('Pricing ratio'),
-                                        'placeholder' => __('Cost price ratio'),
-                                        'required'    => true,
-                                        'value'       => $subDepartment->cost_price_ratio,
-                                        'min'         => 0
                                     ],
                                 ]
                             ],

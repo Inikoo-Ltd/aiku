@@ -3,7 +3,7 @@
 /*
  * author Arya Permana - Kirin
  * created on 10-02-2025-13h-08m
- * github: https://github.com/KirinZero0
+ * GitHub: https://github.com/KirinZero0
  * copyright 2025
 */
 
@@ -14,7 +14,7 @@ use App\Actions\Fulfilment\PickingSession\CalculateFulfilmentPickingSessionPicks
 use App\Actions\Fulfilment\PalletReturn\SetStoredItemReturnAutoServices;
 use App\Actions\Fulfilment\PalletStoredItem\RunPalletStoredItemQuantity;
 use App\Actions\OrgAction;
-use App\Actions\Traits\Authorisations\WithFulfilmentShopAuthorisation;
+use App\Actions\Traits\Authorisations\Inventory\WithFulfilmentWarehouseEditAuthorisation;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Fulfilment\PalletReturn\PalletReturnItemStateEnum;
 use App\Models\Fulfilment\PalletReturnItem;
@@ -24,15 +24,15 @@ use App\Http\Resources\Fulfilment\PalletReturnItemResource;
 
 class UndoStoredItemPick extends OrgAction
 {
-    use WithFulfilmentShopAuthorisation;
+    use WithFulfilmentWarehouseEditAuthorisation;
     use WithActionUpdate;
 
 
     public function handle(PalletReturnItem $palletReturnItem): PalletReturnItem
     {
         $this->update($palletReturnItem, [
-            'state'           => PalletReturnItemStateEnum::PICKING,
-            'quantity_picked' => 0,
+            'state'               => PalletReturnItemStateEnum::PICKING,
+            'quantity_picked'     => 0,
             'quantity_not_picked' => 0
         ]);
 
@@ -42,8 +42,8 @@ class UndoStoredItemPick extends OrgAction
         RunPalletStoredItemQuantity::run($palletReturnItem->palletStoredItem);
 
         if ($palletReturnItem->picking_session_id && $palletReturnItem->pickingSession) {
-            (new CalculateFulfilmentPickingSessionPicks())->action($palletReturnItem->pickingSession);
-            (new AutoFinishPickingFulfilmentPickingSession())->action($palletReturnItem->pickingSession);
+            new CalculateFulfilmentPickingSessionPicks()->action($palletReturnItem->pickingSession);
+            new AutoFinishPickingFulfilmentPickingSession()->action($palletReturnItem->pickingSession);
         }
 
         return $palletReturnItem;
@@ -51,7 +51,7 @@ class UndoStoredItemPick extends OrgAction
 
     public function asController(PalletReturnItem $palletReturnItem, ActionRequest $request): PalletReturnItem
     {
-        $this->initialisationFromFulfilment($palletReturnItem->palletReturn->fulfilment, $request);
+        $this->initialisationFromWarehouse($palletReturnItem->palletReturn->warehouse, $request);
 
         return $this->handle($palletReturnItem);
     }
@@ -61,6 +61,7 @@ class UndoStoredItemPick extends OrgAction
         if ($request->hasHeader('Maya-Version')) {
             return PalletReturnItemResource::make($palletReturnItem);
         }
+
         return $palletReturnItem;
     }
 }

@@ -18,6 +18,7 @@ use App\Enums\Accounting\Payment\PaymentStatusEnum;
 use App\Models\Accounting\Invoice;
 use App\Models\Accounting\Payment;
 use App\Models\Accounting\PaymentAccount;
+use App\Actions\Comms\Outbox\ProcessInvoicePaidNotification;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
@@ -45,6 +46,8 @@ class PayInvoice extends OrgAction
         if ($invoice->order) {
             AttachPaymentToOrder::make()->action($invoice->order, $payment, []);
         }
+
+        ProcessInvoicePaidNotification::dispatch($invoice->id);
 
 
         return $payment;

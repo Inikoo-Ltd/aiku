@@ -10,6 +10,7 @@
 
 namespace App\Actions\Api\Retina\Fulfilment\Resource;
 
+use App\Models\Fulfilment\PalletStoredItem;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
@@ -35,6 +36,7 @@ class SKUApiResource extends JsonResource
         /** @var PalletStoredItem $palletStoredItem */
         $palletStoredItem = $this->resource;
         $storedItem = $palletStoredItem->storedItem;
+
         return [
             'id'                    => $palletStoredItem->id,
             'stored_item_id'        => $palletStoredItem->stored_item_id,

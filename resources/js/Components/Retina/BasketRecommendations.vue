@@ -6,6 +6,8 @@ import { trans } from 'laravel-vue-i18n'
 import { inject, onBeforeUnmount, onMounted, ref } from 'vue'
 import { Swiper, SwiperSlide } from 'swiper/vue'
 import { Autoplay } from 'swiper/modules'
+import 'swiper/css'
+import 'swiper/css/pagination'
 import { faCircle } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import Button from '@/Components/Elements/Buttons/Button.vue'

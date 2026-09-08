@@ -8,7 +8,7 @@
 
 namespace App\Actions\SysAdmin\Guest\UI;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\SysAdmin\Guest\WithGuestSubNavigations;
 use App\Actions\SysAdmin\UI\ShowSysAdminDashboard;
@@ -20,13 +20,13 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 
-class ShowGuest extends GrpAction
+class ShowGuest extends OrgAction
 {
     use WithGuestSubNavigations;
 
     public function asController(Guest $guest, ActionRequest $request): Guest
     {
-        $this->initialisation(app('group'), $request)->withTab(GuestTabsEnum::values());
+        $this->initialisationFromGroup(app('group'), $request)->withTab(GuestTabsEnum::values());
 
         return $guest;
     }
@@ -85,8 +85,8 @@ class ShowGuest extends GrpAction
                     fn () => GetGuestShowcase::run($guest)
                     : Inertia::optional(fn () => GetGuestShowcase::run($guest)),
                 GuestTabsEnum::HISTORY->value  => $this->tab == GuestTabsEnum::HISTORY->value ?
-                    fn () => HistoryResource::collection(IndexHistory::run($guest))
-                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($guest)))
+                    fn () => HistoryResource::collection(IndexHistory::run($guest, GuestTabsEnum::HISTORY->value))
+                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($guest, GuestTabsEnum::HISTORY->value)))
             ]
         )->table(IndexHistory::make()->tableStructure(prefix: GuestTabsEnum::HISTORY->value));
     }

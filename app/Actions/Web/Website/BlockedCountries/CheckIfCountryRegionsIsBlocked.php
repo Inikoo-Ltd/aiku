@@ -22,14 +22,14 @@ class CheckIfCountryRegionsIsBlocked
     public function handle($request): bool
     {
         $isBlocked = false;
-        if ($request->input('has_blocked_country_regions')) {
+        if ($request->attributes->get('has_blocked_country_regions')) {
             $countryFromCloudFlare = $request->header('CF-IPCountry');
-            if ($countryFromCloudFlare && in_array($countryFromCloudFlare, $request->input('blocked_countries'))) {
+            if ($countryFromCloudFlare && in_array($countryFromCloudFlare, $request->attributes->get('blocked_countries', []))) {
                 $ip  = $request->ip();
                 $key = "website-geo-blocked-ips:{$request->input('website')?->id}:$countryFromCloudFlare:$ip";
 
                 $blockedData = Cache::remember($key, 28800, fn () => $this->isBlocked(
-                    Arr::get($request->input('blocked_country_regions'), $countryFromCloudFlare),
+                    Arr::get($request->attributes->get('blocked_country_regions'), $countryFromCloudFlare),
                     $countryFromCloudFlare,
                     $ip
                 ));

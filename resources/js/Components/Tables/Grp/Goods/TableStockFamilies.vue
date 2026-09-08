@@ -6,6 +6,7 @@
 
 <script setup lang="ts">
 import { Link, usePage } from "@inertiajs/vue3";
+import { bucketQuery } from "@/Composables/bucketQuery"
 import Table from "@/Components/Table/Table.vue";
 import { StockFamily } from "@/types/stock-family";
 import { computed, inject } from "vue";
@@ -41,6 +42,12 @@ const getIntervalStateColor = (isPositive: boolean) => {
     return isPositive ? "text-green-500" : "text-red-500";
 };
 
+function stockFamilyHref(stockFamily: StockFamily) {
+	const bucket = route().current()?.match(/\.stock-families\.(active|discontinuing|discontinued|in-process)\.index$/)?.[1]
+
+	return stockFamilyRoute(stockFamily) + bucketQuery(bucket?.replace('in-process', 'in_process'))
+}
+
 function stockFamilyRoute(stockFamily: StockFamily) {
     return route("grp.goods.stock-families.show", [stockFamily.slug]);
 }
@@ -49,7 +56,7 @@ function stockFamilyRoute(stockFamily: StockFamily) {
 <template>
     <Table :resource="data" :name="tab" class="mt-5">
         <template #cell(code)="{ item: stockFamily }">
-            <Link :href="stockFamilyRoute(stockFamily)" class="primaryLink">
+            <Link :href="stockFamilyHref(stockFamily)" class="primaryLink">
                 {{ stockFamily["code"] }}
             </Link>
         </template>

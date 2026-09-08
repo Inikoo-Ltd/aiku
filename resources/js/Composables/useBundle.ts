@@ -118,6 +118,7 @@ export function useBundle(routes?: any) {
 
             products.value.push({
                 ...product,
+                image: product?.image ?? product?.web_images?.main?.gallery ?? product?.web_images?.main?.original ?? null,
                 quantity: product?.quantity ?? product?.quantity_selected ?? 1,
                 quantity_selected: product?.quantity_selected ?? product?.quantity ?? 1
             })
@@ -241,14 +242,15 @@ export function useBundle(routes?: any) {
                 text: trans('Success generate AI'),
                 type: 'success'
             })
-        } catch (e) {
+        } catch (e: any) {
             aiTitleError.value =
-            'The OpenAI service is currently unreachable, please try again later.'
+                e?.response?.data?.message
+                || trans('The OpenAI service is currently unreachable, please try again later.')
 
             console.error('[useBundle] generateAITitle failed', e)
             notify({
                 title: trans('Error'),
-                text: trans('Failed to generate AI'),
+                text: aiTitleError.value,
                 type: 'error'
             })
         } finally {
@@ -281,12 +283,14 @@ export function useBundle(routes?: any) {
                 text: trans('Success generate AI'),
                 type: 'success'
             })
-        } catch (e) {
+        } catch (e: any) {
             console.error('[useBundle] generateAIDescription failed', e)
-            aiDescError.value = 'The OpenAI service is currently unreachable, please try again later.'
+            aiDescError.value =
+                e?.response?.data?.message
+                || trans('The OpenAI service is currently unreachable, please try again later.')
             notify({
                 title: trans('Error'),
-                text: trans('Failed to generate AI'),
+                text: aiDescError.value,
                 type: 'error'
             })
         } finally {
@@ -334,7 +338,7 @@ export function useBundle(routes?: any) {
             id: it.item?.id,
             name: it.item?.name,
             code: it.item?.code,
-            image: it.item?.image_thumbnail?.original || it.item?.images?.[0]?.thumbnail?.original,
+            image: it.item?.image_thumbnail || it.item?.images?.[0]?.thumbnail || null,
             price_per_unit: Number(it.item?.price_per_unit || it.item?.price || 0),
             quantity: it.quantity || 1,
             quantity_selected: it.quantity || 1

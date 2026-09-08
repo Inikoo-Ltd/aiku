@@ -9,7 +9,7 @@
 namespace App\Actions\Masters\MasterCollection;
 
 use App\Actions\Catalogue\Collection\DetachCollectionFromModel;
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Actions\Masters\MasterCollection\Hydrators\MasterCollectionHydrateParents;
 use App\Actions\Masters\MasterProductCategory\Hydrators\MasterProductCategoryHydrateMasterCollections;
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateMasterCollections;
@@ -17,7 +17,7 @@ use App\Models\Masters\MasterCollection;
 use App\Models\Masters\MasterProductCategory;
 use App\Models\Masters\MasterShop;
 
-class DetachMasterCollectionFromModel extends GrpAction
+class DetachMasterCollectionFromModel extends OrgAction
 {
     public function handle(MasterShop|MasterProductCategory $parent, MasterCollection $masterCollection, bool $detachChildren = true): MasterShop|MasterProductCategory
     {
@@ -60,7 +60,7 @@ class DetachMasterCollectionFromModel extends GrpAction
     public function action(MasterShop|MasterProductCategory $parent, MasterCollection $masterCollection): MasterShop|MasterProductCategory
     {
         $this->asAction = true;
-        $this->initialisation($parent->group, []);
+        $this->initialisationFromGroup($parent->group, []);
 
         return $this->handle($parent, $masterCollection);
     }
@@ -68,7 +68,7 @@ class DetachMasterCollectionFromModel extends GrpAction
 
     public function asController(MasterProductCategory $masterProductCategory, MasterCollection $masterCollection): MasterProductCategory
     {
-        $this->initialisation($masterProductCategory->group, []);
+        $this->initialisationFromGroup($masterProductCategory->group, []);
 
         return $this->handle($masterProductCategory, $masterCollection);
     }

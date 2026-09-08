@@ -12,6 +12,7 @@ use App\Actions\Fulfilment\Pallet\UpdatePallet;
 use App\Actions\Fulfilment\PickingSession\AutoFinishPickingFulfilmentPickingSession;
 use App\Actions\Fulfilment\PickingSession\CalculateFulfilmentPickingSessionPicks;
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\Inventory\WithFulfilmentWarehouseEditAuthorisation;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Fulfilment\Pallet\PalletStateEnum;
 use App\Enums\Fulfilment\Pallet\PalletStatusEnum;
@@ -26,6 +27,7 @@ use App\Http\Resources\Fulfilment\MayaPalletReturnItemUIResource;
 class NotPickedPalletFromReturn extends OrgAction
 {
     use WithActionUpdate;
+    use WithFulfilmentWarehouseEditAuthorisation;
 
 
     private PalletReturnItem $palletReturnItem;
@@ -47,6 +49,7 @@ class NotPickedPalletFromReturn extends OrgAction
                 'state'              => Arr::get($modelData, 'state'),
                 'status'             => PalletStatusEnum::INCIDENT,
                 'set_as_incident_at' => now(),
+                'location_id'        => null,
                 'incident_report'    => [
                     'notes' => Arr::get($modelData, 'notes')
                 ]
@@ -77,14 +80,6 @@ class NotPickedPalletFromReturn extends OrgAction
         }
 
         return $palletReturnItem;
-    }
-
-    public function authorize(ActionRequest $request): bool
-    {
-        if ($this->asAction) {
-            return true;
-        }
-        return $request->user()->authTo("fulfilment.{$this->warehouse->id}.edit");
     }
 
     public function rules(): array

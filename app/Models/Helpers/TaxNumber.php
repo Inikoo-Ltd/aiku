@@ -8,6 +8,7 @@
 
 namespace App\Models\Helpers;
 
+use App\Actions\Ordering\Order\ResetCustomerOrdersTaxCategory;
 use App\Enums\Helpers\TaxNumber\TaxNumberStatusEnum;
 use App\Enums\Helpers\TaxNumber\TaxNumberTypeEnum;
 use App\Enums\Helpers\TaxNumber\TaxNumberValidationTypeEnum;
@@ -66,6 +67,7 @@ class TaxNumber extends Model implements Auditable
         'audited_at'         => 'datetime',
         'checked_at'         => 'datetime',
         'invalid_checked_at' => 'datetime',
+        'rechecks_scheduled_at' => 'datetime',
         'validation_type'    => TaxNumberValidationTypeEnum::class,
         'status'             => TaxNumberStatusEnum::class,
         'type'               => TaxNumberTypeEnum::class,
@@ -82,6 +84,32 @@ class TaxNumber extends Model implements Auditable
 
     protected $guarded = [];
 
+    protected array $auditInclude = [
+        'country_code',
+        'number',
+        'type',
+        'status',
+        'valid',
+        'validation_type',
+        'manual_validation_notes',
+    ];
+
+    /**
+     * Every validity flip, whatever wrote it (online check, manual validation, number edit,
+     * deletion), re-rates the owner's open orders. Invoiced orders are left alone: an issued
+     * invoice is immutable and only a person may correct it (HELP-2967).
+     */
+    protected static function booted(): void
+    {
+        static::saved(function (TaxNumber $taxNumber) {
+            if ($taxNumber->wasChanged('valid')) {
+                ResetCustomerOrdersTaxCategory::run($taxNumber);
+            }
+        });
+        static::deleted(function (TaxNumber $taxNumber) {
+            ResetCustomerOrdersTaxCategory::run($taxNumber);
+        });
+    }
 
     public function country(): BelongsTo
     {

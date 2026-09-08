@@ -30,23 +30,28 @@ class GetOrgPartnerShowcase
                 // 'address'  => AddressResource::make($agent->organisation->address)->getArray(),
                 'photo'    => $partner->imageSources()
             ],
+            'miniCart'    => GetPartnerMiniCart::run($orgPartner),
             'stats'       => [
                 [
+                    'label' => __('Shopping list'),
+                    'icon'  => 'fal fa-shopping-basket',
+                    'count' => $orgPartner->stats->number_open_shopping_list_items,
+                ],
+                [
                     'label' => __('Purchase Orders'),
+                    'icon'  => 'fal fa-clipboard-list',
                     'count' => $partner->procurementStats->number_purchase_orders,
-                    'full'  => true
                 ],
                 [
                     'label' => __('Stocks'),
+                    'icon'  => 'fal fa-box',
                     'count' => $partner->inventoryStats->number_org_stocks,
-                    'full'  => true
                 ],
                 [
                     'label' => __('Deliveries'),
+                    'icon'  => 'fal fa-truck-container',
                     'count' => $partner->inventoryStats->number_deliveries,
-                    'full'  => true
                 ],
-
             ]
         ];
     }

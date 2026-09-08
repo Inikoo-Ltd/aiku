@@ -71,20 +71,21 @@ class EditOffer extends OrgAction
 
         $triggerEdit = [];
 
+        $offerStarted = $offer->start_at !== null && now()->gt($offer->start_at);
         data_set($triggerEdit, 'start_at', [
             'type'              => 'date',
             'information'       => __('The date from which the offer is valid. From this date, the offer will be applicable.'),
             'label'             => __('Start Date'),
             'placeholder'       => __('date'),
             'required'          => true,
-            'readonly'          => now()->gt($offer->start_at),
-            'extraInformation'  => now()->gt($offer->start_at) ? __('Offer is started already. Unable to modify start date') : null,
-            'minDate'           => now()->gt($offer->start_at) ? $offer->start_at : now(),
+            'readonly'          => $offerStarted,
+            'extraInformation'  => $offerStarted ? __('Offer is started already. Unable to modify start date') : null,
+            'minDate'           => $offerStarted ? $offer->start_at : now(),
             'value'             => $offer->start_at,
         ]);
 
         if ($offer->duration === OfferDurationEnum::INTERVAL) {
-            $minEnd = $offer->start_at->addDay();
+            $minEnd = $offer->start_at?->addDay() ?? now();
             data_set($triggerEdit, 'end_at', [
                 'type'              => 'date',
                 'information'       => __('The date until which the offer is valid. After this date, the offer will no longer be applicable.'),

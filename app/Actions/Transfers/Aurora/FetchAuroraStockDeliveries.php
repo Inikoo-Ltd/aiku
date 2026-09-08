@@ -11,6 +11,7 @@ namespace App\Actions\Transfers\Aurora;
 use App\Actions\GoodsIn\StockDelivery\StoreStockDelivery;
 use App\Actions\GoodsIn\StockDelivery\UpdateStockDelivery;
 use App\Models\GoodsIn\StockDelivery;
+use App\Models\Procurement\PurchaseOrder;
 use App\Transfers\Aurora\WithAuroraAttachments;
 use App\Transfers\SourceOrganisationService;
 use Exception;
@@ -81,6 +82,8 @@ class FetchAuroraStockDeliveries extends FetchAuroraAction
 
             $this->processFetchAttachments($stockDelivery, 'Supplier Delivery', $stockDeliveryData['stockDelivery']['source_id']);
 
+            $this->syncPurchaseOrder($stockDelivery, Arr::get($stockDeliveryData, 'purchase_order_source_id'));
+
             if (in_array('transactions', $this->with) or in_array('full', $this->with)) {
                 $this->fetchTransactions($organisationSource, $stockDelivery);
             }
@@ -92,6 +95,18 @@ class FetchAuroraStockDeliveries extends FetchAuroraAction
         return null;
     }
 
+
+    private function syncPurchaseOrder(StockDelivery $stockDelivery, ?string $purchaseOrderSourceId): void
+    {
+        $purchaseOrder = $purchaseOrderSourceId
+            ? PurchaseOrder::where('source_id', $purchaseOrderSourceId)->first()
+            : null;
+
+        $stockDelivery->purchaseOrders()->sync($purchaseOrder ? [$purchaseOrder->id] : []);
+        $stockDelivery->update([
+            'number_purchase_orders' => $stockDelivery->purchaseOrders()->count(),
+        ]);
+    }
 
     private function fetchTransactions($organisationSource, StockDelivery $stockDelivery): void
     {

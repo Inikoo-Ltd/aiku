@@ -14,14 +14,16 @@ use App\Actions\Catalogue\ProductCategory\UI\IndexFamilies;
 use App\Actions\Catalogue\Shop\UI\IndexOpenShopsInMasterShop;
 use App\Actions\Catalogue\WithFamilySubNavigation;
 use App\Actions\Comms\Mailshot\UI\IndexMailshots;
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\Masters\MasterProductCategory\RelatedChild\RelatedMasterProductCategories\GetRelatedMasterProductCategories;
 use App\Actions\Masters\MasterProductCategory\RelatedChild\RelatedMasterProducts\GetRelatedMasterProducts;
 use App\Actions\Masters\MasterProductCategory\WithMasterFamilySubNavigation;
+use App\Actions\Masters\MasterShop\GetMasterShopCurrenciesRate;
 use App\Actions\Masters\MasterShop\UI\ShowMasterShop;
 use App\Actions\Masters\MasterVariant\IndexMasterVariant;
 use App\Actions\Traits\Authorisations\WithMastersAuthorisation;
+use App\Enums\UI\Catalogue\MasterProductsTabsEnum;
 use App\Enums\UI\SupplyChain\MasterFamilyTabsEnum;
 use App\Http\Resources\Api\Dropshipping\OpenShopsInMasterShopResource;
 use App\Http\Resources\Catalogue\DepartmentsResource;
@@ -35,7 +37,7 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 
-class ShowMasterFamily extends GrpAction
+class ShowMasterFamily extends OrgAction
 {
     use WithFamilySubNavigation;
     use WithMastersAuthorisation;
@@ -55,7 +57,7 @@ class ShowMasterFamily extends GrpAction
         $this->parent = $masterShop;
         $group        = group();
 
-        $this->initialisation($group, $request)->withTab(MasterFamilyTabsEnum::values());
+        $this->initialisationFromGroup($group, $request)->withTab(MasterFamilyTabsEnum::values());
 
         return $this->handle($masterFamily);
     }
@@ -64,7 +66,7 @@ class ShowMasterFamily extends GrpAction
     {
         $group        = group();
         $this->parent = $group;
-        $this->initialisation($group, $request)->withTab(MasterFamilyTabsEnum::values());
+        $this->initialisationFromGroup($group, $request)->withTab(MasterFamilyTabsEnum::values());
 
         return $this->handle($masterFamily);
     }
@@ -73,7 +75,7 @@ class ShowMasterFamily extends GrpAction
     {
         $group        = group();
         $this->parent = $masterDepartment;
-        $this->initialisation($group, $request)->withTab(MasterFamilyTabsEnum::values());
+        $this->initialisationFromGroup($group, $request)->withTab(MasterFamilyTabsEnum::values());
 
         return $this->handle($masterFamily);
     }
@@ -83,7 +85,7 @@ class ShowMasterFamily extends GrpAction
     {
         $group        = group();
         $this->parent = $masterDepartment;
-        $this->initialisation($group, $request)->withTab(MasterFamilyTabsEnum::values());
+        $this->initialisationFromGroup($group, $request)->withTab(MasterFamilyTabsEnum::values());
 
         return $this->handle($masterFamily);
     }
@@ -93,7 +95,7 @@ class ShowMasterFamily extends GrpAction
     {
         $group        = group();
         $this->parent = $masterSubDepartment;
-        $this->initialisation($group, $request)->withTab(MasterFamilyTabsEnum::values());
+        $this->initialisationFromGroup($group, $request)->withTab(MasterFamilyTabsEnum::values());
 
         return $this->handle($masterFamily);
     }
@@ -103,7 +105,7 @@ class ShowMasterFamily extends GrpAction
     {
         $group        = group();
         $this->parent = $masterSubDepartment;
-        $this->initialisation($group, $request)->withTab(MasterFamilyTabsEnum::values());
+        $this->initialisationFromGroup($group, $request)->withTab(MasterFamilyTabsEnum::values());
 
         return $this->handle($masterFamily);
     }
@@ -167,6 +169,8 @@ class ShowMasterFamily extends GrpAction
             ];
         }
 
+        $currenciesRate = GetMasterShopCurrenciesRate::run($masterFamily->masterShop);
+
 
         return Inertia::render(
             'Masters/MasterFamily',
@@ -196,13 +200,13 @@ class ShowMasterFamily extends GrpAction
                             'tooltip' => 'Master Department',
                             'icon'    => ['fal', 'folder-tree']
                         ] : [],
-                        $masterFamily->master_sub_department_id ? [
+                        $masterFamily->masterSubDepartment?->masterDepartment ? [
                             'label'   => $masterFamily->masterSubDepartment->code,
                             'to'      => [
                                 'name'       => 'grp.masters.master_shops.show.master_departments.show.master_sub_departments.show',
                                 'parameters' => [
                                     'masterShop'          => $masterFamily->masterShop->slug,
-                                    'masterDepartment'    => $masterFamily->masterDepartment->slug,
+                                    'masterDepartment'    => $masterFamily->masterSubDepartment->masterDepartment->slug,
                                     'masterSubDepartment' => $masterFamily->masterSubDepartment->slug
                                 ]
                             ],
@@ -239,6 +243,19 @@ class ShowMasterFamily extends GrpAction
                             'route' => [
                                 'name'       => preg_replace('/show$/', 'edit', $request->route()->getName()),
                                 'parameters' => $request->route()->originalParameters()
+                            ]
+                        ] : false,
+                         $this->canEdit ? [
+                            'type'  => 'button',
+                            'style' => 'edit',
+                            'label' => __('Edit Price'),
+                            'icon'  => ['fal', 'fa-money-bill'],
+                            'route' => [
+                                'name'       => 'grp.masters.master_shops.show.master_families.master_products.index',
+                                'parameters' => array_merge(
+                                    $request->route()->originalParameters(),
+                                    ['tab' => MasterProductsTabsEnum::PRICING->value]
+                                )
                             ]
                         ] : false,
                         $this->canDelete ? [
@@ -279,12 +296,11 @@ class ShowMasterFamily extends GrpAction
                 ],
                 'isPerfectFamily'         => true,
                 'masterProductCategoryId' => $masterFamily->id,
-                'price_rrp_warning_ratio' => $masterFamily->masterShop->price_rrp_warning_ratio,
                 'shopsData'               => OpenShopsInMasterShopResource::collection(IndexOpenShopsInMasterShop::run($masterFamily->masterShop, 'shops')),
                 'vol_gr_reward'           => [
                     'show_gr_vol'                   => $masterFamily->masterShop->gold_reward_eligible && $masterFamily->has_gr_vol_discount,
                     'gr_vol_discount_quantity'      => $masterFamily->gr_vol_discount_quantity,
-                    'gr_vol_discount_percentage'    => $masterFamily->gr_vol_discount_percentage,
+                    'gr_vol_discount_percentage'    => trimDecimalZeros($masterFamily->gr_vol_discount_percentage),
                     'missing_gr_children_count'     => $masterFamily->has_gr_vol_discount
                         ? $masterFamily->productCategories()->where('has_gr_vol_discount', false)->count()
                         : 0,
@@ -311,7 +327,7 @@ class ShowMasterFamily extends GrpAction
 
     public function getBreadcrumbs(MasterProductCategory $masterFamily, string $routeName, array $routeParameters, $suffix = null): array
     {
-        $headCrumb = function (MasterProductCategory $masterFamily, array $routeParameters, $suffix) {
+        $headCrumb = function (MasterProductCategory $masterFamily, array $routeParameters, $suffix, $suffixIndex = '') {
             return [
 
                 [
@@ -319,7 +335,7 @@ class ShowMasterFamily extends GrpAction
                     'modelWithIndex' => [
                         'index' => [
                             'route' => $routeParameters['index'],
-                            'label' => __('Master families')
+                            'label' => __('Master families').$suffixIndex,
                         ],
                         'model' => [
                             'route' => $routeParameters['model'],
@@ -338,6 +354,7 @@ class ShowMasterFamily extends GrpAction
             'grp.masters.master_shops.show.master_families.edit',
             'grp.masters.master_shops.show.master_families.create',
             'grp.masters.master_shops.show.master_families.master_products.index',
+            'grp.masters.master_shops.show.master_families.master_products.sales',
             'grp.masters.master_shops.show.master_families.master_products.show' =>
             array_merge(
                 ShowMasterShop::make()->getBreadcrumbs($masterFamily->masterShop),
@@ -376,8 +393,29 @@ class ShowMasterFamily extends GrpAction
                     $suffix
                 )
             ),
+            'grp.masters.master_shops.show.master_family.missing_image.show',
+            'grp.masters.master_shops.show.master_family.missing_image.master_products.index' =>
+            array_merge(
+                ShowMasterShop::make()->getBreadcrumbs($masterFamily->masterShop),
+                $headCrumb(
+                    $masterFamily,
+                    [
+                        'index' => [
+                            'name'       => 'grp.masters.master_shops.show.master_family.missing_image.index',
+                            'parameters' => $routeParameters
+                        ],
+                        'model' => [
+                            'name'       => 'grp.masters.master_shops.show.master_family.missing_image.show',
+                            'parameters' => $routeParameters
+                        ]
+                    ],
+                    $suffix,
+                    ' ('.__('Missing Image').')'
+                )
+            ),
             'grp.masters.master_shops.show.master_family.mismatch_detected.show',
-            'grp.masters.master_shops.show.master_family.mismatch_detected.master_products.index' =>
+            'grp.masters.master_shops.show.master_family.mismatch_detected.master_products.index',
+            'grp.masters.master_shops.show.master_family.mismatch_detected.master_products.sales' =>
             array_merge(
                 ShowMasterShop::make()->getBreadcrumbs($masterFamily->masterShop),
                 $headCrumb(
@@ -392,11 +430,13 @@ class ShowMasterFamily extends GrpAction
                             'parameters' => $routeParameters
                         ]
                     ],
-                    $suffix
+                    $suffix,
+                    ' ('.__('Has mismatch').')'
                 )
             ),
             'grp.masters.master_shops.show.master_departments.show.master_sub_departments.master_families.show',
-            'grp.masters.master_shops.show.master_departments.show.master_sub_departments.master_families.master_products.index' =>
+            'grp.masters.master_shops.show.master_departments.show.master_sub_departments.master_families.master_products.index',
+            'grp.masters.master_shops.show.master_departments.show.master_sub_departments.master_families.master_products.sales' =>
             array_merge(
                 (new ShowMasterSubDepartment())->getBreadcrumbs($masterFamily->parent, $routeName, $routeParameters),
                 $headCrumb(
@@ -417,7 +457,8 @@ class ShowMasterFamily extends GrpAction
                 )
             ),
             'grp.masters.master_shops.show.master_departments.show.master_families.show',
-            'grp.masters.master_shops.show.master_departments.show.master_families.show.master_products.index' =>
+            'grp.masters.master_shops.show.master_departments.show.master_families.show.master_products.index',
+            'grp.masters.master_shops.show.master_departments.show.master_families.show.master_products.sales' =>
             array_merge(
                 ShowMasterDepartment::make()->getBreadcrumbs($masterFamily->masterShop, $masterFamily->masterDepartment, $routeName, $routeParameters, $suffix),
                 $headCrumb(
@@ -436,7 +477,8 @@ class ShowMasterFamily extends GrpAction
                 )
             ),
             'grp.masters.master_shops.show.master_sub_departments.master_families.show',
-            'grp.masters.master_shops.show.master_sub_departments.master_families.master_products.index' =>
+            'grp.masters.master_shops.show.master_sub_departments.master_families.master_products.index',
+            'grp.masters.master_shops.show.master_sub_departments.master_families.master_products.sales' =>
             array_merge(
                 ShowMasterSubDepartment::make()->getBreadcrumbs($masterFamily->masterSubDepartment, $routeName, $routeParameters, $suffix),
                 $headCrumb(

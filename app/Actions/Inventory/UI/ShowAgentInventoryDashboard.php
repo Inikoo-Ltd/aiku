@@ -59,7 +59,7 @@ class ShowAgentInventoryDashboard extends OrgAction
                     [
 
                         [
-                            'name'        => 'SKUs',
+                            'name'        => 'SKOs',
                             'icon'        => ['fal', 'fa-box'],
                             'description' => __('current'),
                             'route'       => [
@@ -84,7 +84,7 @@ class ShowAgentInventoryDashboard extends OrgAction
         $stats = [];
 
         $stats['supplier_products'] = [
-            'label' => __('SKUs'),
+            'label' => __('SKOs'),
             'count' => $this->organisation->inventoryStats->number_current_org_stocks
         ];
 

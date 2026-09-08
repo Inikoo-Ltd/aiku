@@ -32,6 +32,7 @@ class ReturnPallet extends OrgAction
             modelData: [
                 'state'         => PalletStateEnum::DISPATCHED,
                 'status'        => PalletStatusEnum::RETURNED,
+                'location_id'   => null,
                 'dispatched_at' => now(),
             ],
             hydrateParents: false
@@ -63,7 +64,14 @@ class ReturnPallet extends OrgAction
             return true;
         }
 
-        return $request->user()->authTo("fulfilment.{$this->fulfilment->id}.edit");
+        $warehouseId = $this->pallet->warehouse_id;
+
+        return $request->user()->authTo([
+            "fulfilment.{$this->fulfilment->id}.edit",
+            "fulfilment.$warehouseId.edit",
+            "supervisor-incoming.$warehouseId",
+            "supervisor-fulfilment.$warehouseId",
+        ]);
     }
 
     public function asController(Pallet $pallet, ActionRequest $request): Pallet

@@ -15,13 +15,19 @@ export interface PaymentAccountShop {
     payment_account_slug: string
     activated_at: string | null
     state: PaymentAccountShopState
+    state_label?: string
     state_icon: StateIcon
     show_in_checkout: boolean
+    checkout_display_position?: number | null
     number_payments: number
     amount_successfully_paid: number
     shop_currency_code: string
-    pastpay_credit_terms: {
-        options: PaymentAccountShopChargeOption[]
+    type?: string
+    pastpay?: {
+        tax_number: string | null
+        credit_terms: PaymentAccountShopChargeOption[]
+        invoice_footer: string | null
+        setup_checklist: { label: string; done: boolean }[]
     }
 }
 

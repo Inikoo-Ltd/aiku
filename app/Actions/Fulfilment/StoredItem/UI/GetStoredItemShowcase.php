@@ -23,6 +23,14 @@ class GetStoredItemShowcase
         $lastAudit = $storedItem->fulfilmentCustomer->storedItemAudits->last();
         return [
             'stored_item'         => StoredItemResource::make($storedItem)->getArray(),
+            'barcode'             => $storedItem->barcode,
+            'barcode_update_route' => [
+                'name'       => 'grp.models.stored-items.update',
+                'parameters' => [
+                    'storedItem' => $storedItem->id
+                ],
+                'method'     => 'patch'
+            ],
             'pallets'             => $storedItem->pallets->map(function (Pallet $pallet) {
                 return [
                     'id'          => $pallet->id,

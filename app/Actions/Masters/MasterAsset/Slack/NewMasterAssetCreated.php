@@ -8,14 +8,14 @@
 
 namespace App\Actions\Masters\MasterAsset\Slack;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Models\Masters\MasterAsset;
 use Illuminate\Notifications\Slack\BlockKit\Blocks\ActionsBlock;
 use Illuminate\Notifications\Slack\BlockKit\Blocks\ContextBlock;
 use Illuminate\Notifications\Slack\BlockKit\Blocks\SectionBlock;
 use Illuminate\Notifications\Slack\SlackMessage;
 
-class NewMasterAssetCreated extends GrpAction
+class NewMasterAssetCreated extends OrgAction
 {
     public function handle(MasterAsset $masterAsset): SlackMessage
     {

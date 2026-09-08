@@ -1,0 +1,9 @@
+{
+    "version": "0.0.1",
+    "configurations": [
+        {
+            "name": "aiku",
+            "url": "https://app.aiku.test"
+        }
+    ]
+}

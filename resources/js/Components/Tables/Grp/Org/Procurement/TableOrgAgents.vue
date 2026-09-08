@@ -12,112 +12,49 @@ import AddressLocation from "@/Components/Elements/Info/AddressLocation.vue"
 
 defineProps<{
     data: {}
-    tab?: string
 }>()
 
-console.log(route().current())
-function agentRoute(agent: Agent) {
-    switch (route().current()) {
-        case "grp.org.procurement.org_agents.index":
-            return route(
-                "grp.org.procurement.org_agents.show",
-                [route().params["organisation"], agent.slug])
-        
-        default:
-            return ''
-    }
+function orgAgentRoute(routeName: string, agent: Agent) {
+    return route(routeName, [route().params["organisation"], agent.slug])
 }
-
-function suppliersRoute(agent: Agent) {
-    switch (route().current()) {
-        case "grp.org.procurement.org_agents.index":
-            return route(
-                "grp.org.procurement.org_agents.show.suppliers.index",
-                [route().params["organisation"], agent.slug])
-        
-        default:
-            return ''
-    }
-}
-
-function productsRoute(agent: Agent) {
-    switch (route().current()) {
-        case "grp.org.procurement.org_agents.index":
-            return route(
-                "grp.org.procurement.org_agents.show.supplier_products.index",
-                [route().params["organisation"], agent.slug])
-        
-        default:
-            return ''
-    }
-}
-
-function purchaseOrdersRoute(agent: Agent) {
-    switch (route().current()) {
-        case "grp.org.procurement.org_agents.index":
-            return route(
-                "grp.org.procurement.org_agents.show.purchase-orders.index",
-                [route().params["organisation"], agent.slug])
-        
-        default:
-            return ''
-    }
-}
-
-function stockDeliveriesRoute(agent: Agent) {
-    switch (route().current()) {
-        case "grp.org.procurement.org_agents.index":
-            return route(
-                "grp.org.procurement.org_agents.show.stock-deliveries.index",
-                [route().params["organisation"], agent.slug])
-        
-        default:
-            return ''
-    }
-}
-
 </script>
 
 <template>
-    <Table :resource="data" :name="tab" class="mt-5">
-        <!-- Column: Code -->
+    <Table :resource="data" class="mt-5">
         <template #cell(code)="{ item: agent }">
-            <Link :href="agentRoute(agent)" class="primaryLink">
+            <Link
+                :href="orgAgentRoute('grp.org.procurement.org_agents.show', agent)"
+                class="primaryLink">
                 {{ agent["code"] }}
             </Link>
         </template>
 
-        <!-- Column: Location -->
         <template #cell(location)="{ item: agent }">
             <AddressLocation :data="agent['location']" />
         </template>
 
-        <!-- Column: PO -->
+        <template #cell(number_org_suppliers)="{ item: agent }">
+            <Link
+                :href="orgAgentRoute('grp.org.procurement.org_agents.show.suppliers.index', agent)"
+                class="secondaryLink">
+                {{ agent.number_org_suppliers }}
+            </Link>
+        </template>
+
         <template #cell(number_purchase_orders)="{ item: agent }">
-            <Link :href=purchaseOrdersRoute(agent) class="secondaryLink">
+            <Link
+                :href="orgAgentRoute('grp.org.procurement.org_agents.show.purchase-orders.index', agent)"
+                class="secondaryLink">
                 {{ agent.number_purchase_orders }}
             </Link>
         </template>
 
-        <!-- Column: Supplier -->
-        <template #cell(number_org_supplier_products)="{ item: agent }">
-            <Link :href=productsRoute(agent) class="secondaryLink">
-                {{ agent.number_org_supplier_products }}
-            </Link>
-        </template>
-
-        <!-- Column: SP -->
-        <template #cell(number_org_suppliers)="{ item: agent }">
-            <Link :href=suppliersRoute(agent) class="secondaryLink">
-                {{ agent.number_org_suppliers }}
-            </Link>
-        </template>
-        <!-- Column: SD -->
         <template #cell(number_stock_deliveries)="{ item: agent }">
-            <Link :href=stockDeliveriesRoute(agent) class="secondaryLink">
+            <Link
+                :href="orgAgentRoute('grp.org.procurement.org_agents.show.stock-deliveries.index', agent)"
+                class="secondaryLink">
                 {{ agent.number_stock_deliveries }}
             </Link>
         </template>
-        
     </Table>
 </template>

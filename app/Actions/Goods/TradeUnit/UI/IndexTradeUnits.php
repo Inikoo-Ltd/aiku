@@ -8,7 +8,7 @@
 
 namespace App\Actions\Goods\TradeUnit\UI;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithGoodsAuthorisation;
 use App\Actions\Goods\TradeUnit\UI\Traits\WithTradeUnitIndex;
 use App\Actions\Goods\TradeUnit\UI\Traits\WithTradeUnitStandardIndex;
@@ -20,7 +20,7 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 
-class IndexTradeUnits extends GrpAction
+class IndexTradeUnits extends OrgAction
 {
     use WithGoodsAuthorisation;
     use WithTradeUnitIndex;
@@ -34,7 +34,7 @@ class IndexTradeUnits extends GrpAction
     {
         $this->bucket = 'all';
         $this->parent = group();
-        $this->initialisation($this->parent, $request)->withTab(TradeUnitsTabsEnum::values());
+        $this->initialisationFromGroup($this->parent, $request)->withTab(TradeUnitsTabsEnum::values());
 
         return $this->handle(prefix: TradeUnitsTabsEnum::INDEX->value);
     }
@@ -43,7 +43,7 @@ class IndexTradeUnits extends GrpAction
     {
         $this->bucket = 'in_process';
         $this->parent = group();
-        $this->initialisation($this->parent, $request)->withTab(TradeUnitsTabsEnum::values());
+        $this->initialisationFromGroup($this->parent, $request)->withTab(TradeUnitsTabsEnum::values());
 
         return $this->handle(prefix: TradeUnitsTabsEnum::INDEX->value, bucket: 'in_process');
     }
@@ -52,7 +52,7 @@ class IndexTradeUnits extends GrpAction
     {
         $this->bucket = 'active';
         $this->parent = group();
-        $this->initialisation($this->parent, $request)->withTab(TradeUnitsTabsEnum::values());
+        $this->initialisationFromGroup($this->parent, $request)->withTab(TradeUnitsTabsEnum::values());
 
         return $this->handle(prefix: TradeUnitsTabsEnum::INDEX->value, bucket: 'active');
     }
@@ -61,7 +61,7 @@ class IndexTradeUnits extends GrpAction
     {
         $this->bucket = 'discontinuing';
         $this->parent = group();
-        $this->initialisation($this->parent, $request)->withTab(TradeUnitsTabsEnum::values());
+        $this->initialisationFromGroup($this->parent, $request)->withTab(TradeUnitsTabsEnum::values());
 
         return $this->handle(prefix: TradeUnitsTabsEnum::INDEX->value, bucket: 'discontinuing');
     }
@@ -70,7 +70,7 @@ class IndexTradeUnits extends GrpAction
     {
         $this->bucket = 'discontinued';
         $this->parent = group();
-        $this->initialisation($this->parent, $request)->withTab(TradeUnitsTabsEnum::values());
+        $this->initialisationFromGroup($this->parent, $request)->withTab(TradeUnitsTabsEnum::values());
 
         return $this->handle(prefix: TradeUnitsTabsEnum::INDEX->value, bucket: 'discontinued');
     }
@@ -79,7 +79,7 @@ class IndexTradeUnits extends GrpAction
     {
         $this->bucket = 'anomality';
         $this->parent = group();
-        $this->initialisation($this->parent, $request)->withTab(TradeUnitsTabsEnum::values());
+        $this->initialisationFromGroup($this->parent, $request)->withTab(TradeUnitsTabsEnum::values());
 
         return $this->handle(prefix: TradeUnitsTabsEnum::INDEX->value, bucket: 'anomality');
     }

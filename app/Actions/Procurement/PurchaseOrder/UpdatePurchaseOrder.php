@@ -8,37 +8,58 @@
 
 namespace App\Actions\Procurement\PurchaseOrder;
 
+use App\Actions\Traits\Authorisations\WithProcurementEditAuthorisation;
 use App\Actions\OrgAction;
+use App\Actions\Procurement\PurchaseOrder\Traits\HasPurchaseOrderHydrators;
 use App\Actions\Procurement\WithNoStrictProcurementOrderRules;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
+use App\Enums\Procurement\PurchaseOrder\PurchaseOrderDeliveryStateEnum;
+use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Http\Resources\Procurement\PurchaseOrderResource;
 use App\Models\Procurement\PurchaseOrder;
 use App\Rules\IUnique;
+use Illuminate\Support\Arr;
+use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 
 class UpdatePurchaseOrder extends OrgAction
 {
+    use WithProcurementEditAuthorisation;
     use WithActionUpdate;
     use WithNoStrictRules;
     use WithNoStrictProcurementOrderRules;
-
-
+    use HasPurchaseOrderHydrators;
 
     private PurchaseOrder $purchaseOrder;
 
+    private const DATA_FIELDS = [
+        'delivery_type',
+        'incoterm',
+        'port_of_export',
+        'port_of_import',
+        'delivery_address',
+        'payment_terms',
+        'terms_and_conditions',
+        'estimated_production_date',
+        'estimated_receiving_date',
+    ];
+
     public function handle(PurchaseOrder $purchaseOrder, array $modelData): PurchaseOrder
     {
-        return $this->update($purchaseOrder, $modelData, ['data']);
-    }
-
-    public function authorize(ActionRequest $request): bool
-    {
-        if ($this->asAction) {
-            return true;
+        foreach (self::DATA_FIELDS as $field) {
+            if (array_key_exists($field, $modelData)) {
+                $modelData['data'][$field] = Arr::pull($modelData, $field);
+            }
         }
 
-        return $request->user()->authTo("procurement.{$this->organisation->id}.edit");
+        $purchaseOrder = $this->update($purchaseOrder, $modelData, ['data']);
+
+        if ($purchaseOrder->wasChanged(['state', 'delivery_state'])) {
+            $this->purchaseOrderHydrate($purchaseOrder);
+        }
+
+        return $purchaseOrder;
     }
 
     public function rules(): array
@@ -49,7 +70,20 @@ class UpdatePurchaseOrder extends OrgAction
                 'required',
                 $this->strict ? 'alpha_dash' : 'string',
             ],
-            'notes' => ['sometimes', 'string']
+            'notes' => ['sometimes', 'string'],
+            'delivery_type'        => ['sometimes', 'nullable', 'string', 'in:parcel,container'],
+            'incoterm'             => ['sometimes', 'nullable', 'string'],
+            'port_of_export'       => ['sometimes', 'nullable', 'string'],
+            'port_of_import'       => ['sometimes', 'nullable', 'string'],
+            'delivery_address'     => ['sometimes', 'nullable', 'string'],
+            'payment_terms'        => ['sometimes', 'nullable', 'string'],
+            'terms_and_conditions' => ['sometimes', 'nullable', 'string'],
+            'estimated_production_date' => ['sometimes', 'nullable', 'date'],
+            'estimated_receiving_date'  => ['sometimes', 'nullable', 'date'],
+            'estimated_delivery_days'   => ['sometimes', 'nullable', 'integer', 'min:0'],
+            'deposit_amount'            => ['sometimes', 'nullable', 'numeric', 'min:0'],
+            'deposit_paid_at'           => ['sometimes', 'nullable', 'date'],
+            'balance_paid_at'           => ['sometimes', 'nullable', 'date'],
         ];
 
         if ($this->strict) {
@@ -72,6 +106,15 @@ class UpdatePurchaseOrder extends OrgAction
 
 
         if (!$this->strict) {
+            $rules['state']          = ['sometimes', Rule::enum(PurchaseOrderStateEnum::class)];
+            $rules['delivery_state'] = ['sometimes', Rule::enum(PurchaseOrderDeliveryStateEnum::class)];
+            $rules['cost_items']     = ['sometimes', 'numeric'];
+            $rules['cost_extra']     = ['sometimes', 'numeric'];
+            $rules['cost_shipping']  = ['sometimes', 'numeric'];
+            $rules['cost_duties']    = ['sometimes', 'numeric'];
+            $rules['cost_tax']       = ['sometimes', 'numeric'];
+            $rules['cost_total']     = ['sometimes', 'numeric'];
+
             $rules = $this->noStrictUpdateRules($rules);
             $rules = $this->noStrictProcurementOrderRules($rules);
             $rules = $this->noStrictPurchaseOrderDatesRules($rules);

@@ -8,12 +8,14 @@
 
 namespace App\Actions\Web\Banner\UI;
 
+use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\Helpers\Snapshot\UI\IndexSnapshots;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Actions\WithActionButtons;
 use App\Actions\Traits\Authorisations\WithWebAuthorisation;
 use App\Enums\Web\Banner\BannerTabsEnum;
 use App\Http\Resources\Helpers\BannerSnapshotResource;
+use App\Http\Resources\History\HistoryResource;
 use App\Http\Resources\Web\BannerResource;
 use App\Models\Catalogue\Shop;
 use App\Models\Fulfilment\Fulfilment;
@@ -121,13 +123,17 @@ class ShowBanner extends OrgAction
                             prefix: BannerTabsEnum::SNAPSHOTS->value
                         )
                     )),
+
+                BannerTabsEnum::HISTORY->value => $this->tab == BannerTabsEnum::HISTORY->value ?
+                    fn () => HistoryResource::collection(IndexHistory::run($banner, BannerTabsEnum::HISTORY->value))
+                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($banner, BannerTabsEnum::HISTORY->value))),
             ]
         )->table(
             IndexSnapshots::make()->tableStructure(
                 parent: $banner,
                 prefix: BannerTabsEnum::SNAPSHOTS->value
             )
-        );
+        )->table(IndexHistory::make()->tableStructure(BannerTabsEnum::HISTORY->value));
     }
 
     public function getBreadcrumbs(string $routeName, array $routeParameters, ?string $suffix = null): array

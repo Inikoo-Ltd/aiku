@@ -24,13 +24,16 @@ use App\Models\Billables\Packaging;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\Shop;
 use App\Models\Comms\DispatchedEmail;
+use App\Models\CRM\TrafficSource;
 use App\Models\Dispatching\DeliveryNote;
+use App\Models\Dispatching\Shipper;
 use App\Models\Dropshipping\CustomerClient;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Platform;
 use App\Models\GoodsIn\ReturnDeliveryNote;
 use App\Models\Helpers\Address;
 use App\Models\Helpers\Currency;
+use App\Actions\Traits\WithLineTaxCategories;
 use App\Models\Helpers\TaxCategory;
 use App\Models\Reviews\OrderReviewStat;
 use App\Models\SysAdmin\Group;
@@ -93,7 +96,6 @@ use App\Audits\Transformer\RelationTransformer;
  * @property Carbon|null $dispatched_at
  * @property Carbon|null $cancelled_at
  * @property Carbon|null $settled_at dispatched_at|cancelled_at
- * @property bool $is_invoiced
  * @property bool|null $is_handling_on_hold
  * @property bool|null $can_dispatch
  * @property string|null $customer_notes
@@ -171,6 +173,7 @@ use App\Audits\Transformer\RelationTransformer;
  * @property int|null $discounted_shipping_offer_id
  * @property bool $is_pastpay
  * @property bool $is_bypass_platform_update
+ * @property string|null $private_warehouse_note
  * @property-read Collection<int, Address> $addresses
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $attachments
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
@@ -199,6 +202,7 @@ use App\Audits\Transformer\RelationTransformer;
  * @property-read Shop|null $shop
  * @property-read \App\Models\Ordering\OrderStats|null $stats
  * @property-read TaxCategory $taxCategory
+ * @property-read Collection<int, TrafficSource> $trafficSources
  * @property-read Collection<int, \App\Models\Ordering\Transaction> $transactions
  * @method static \Database\Factories\Ordering\OrderFactory factory($count = null, $state = [])
  * @method static Builder<static>|Order newModelQuery()
@@ -211,6 +215,7 @@ use App\Audits\Transformer\RelationTransformer;
  */
 class Order extends Model implements HasMedia, Auditable
 {
+    use WithLineTaxCategories;
     use HasSlug;
     use SoftDeletes;
     use HasFactory;
@@ -233,6 +238,7 @@ class Order extends Model implements HasMedia, Auditable
         'updated_by_customer_at'        => 'datetime',
         'submitted_at'                  => 'datetime',
         'in_warehouse_at'               => 'datetime',
+        'at_gate_at'                    => 'datetime',
         'handling_at'                   => 'datetime',
         'picked_at'                     => 'datetime',
         'packed_at'                     => 'datetime',
@@ -249,6 +255,7 @@ class Order extends Model implements HasMedia, Auditable
         'services_amount'               => 'decimal:2',
         'charges_amount'                => 'decimal:2',
         'shipping_amount'               => 'decimal:2',
+        'is_shipper_locked'             => 'boolean',
         'insurance_amount'              => 'decimal:2',
         'packaging_amount'              => 'decimal:2',
         'leaflet_amount'                => 'decimal:2',
@@ -342,6 +349,7 @@ class Order extends Model implements HasMedia, Auditable
         // Timestamps
         'submitted_at',
         'in_warehouse_at',
+        'at_gate_at',
         'handling_at',
         'picked_at',
         'packed_at',
@@ -371,6 +379,7 @@ class Order extends Model implements HasMedia, Auditable
         'public_notes',
         'internal_notes',
         'shipping_notes',
+        'private_warehouse_note',
 
         // Totals & Quantities
         'number_item_transactions',
@@ -486,6 +495,14 @@ class Order extends Model implements HasMedia, Auditable
         return $this->belongsTo(TaxCategory::class);
     }
 
+    /**
+     * @return array<int, array{tax_category_id: int, name: string, rate: float, net_amount: float, tax_amount: float}>
+     */
+    public function taxBreakdown(): array
+    {
+        return $this->getOrderTaxBreakdown($this);
+    }
+
     public function dispatchedEmails(): MorphToMany
     {
         return $this->morphToMany(DispatchedEmail::class, 'model', 'model_has_dispatched_emails')->withTimestamps();
@@ -521,6 +538,11 @@ class Order extends Model implements HasMedia, Auditable
         return $this->belongsTo(Packaging::class);
     }
 
+    public function shipper(): BelongsTo
+    {
+        return $this->belongsTo(Shipper::class);
+    }
+
     public function returnedDeliveryNote(): HasMany
     {
         return $this->hasMany(ReturnDeliveryNote::class);
@@ -529,6 +551,13 @@ class Order extends Model implements HasMedia, Auditable
     public function reviewStats(): HasOne
     {
         return $this->hasOne(OrderReviewStat::class);
+    }
+
+    public function trafficSources(): MorphToMany
+    {
+        return $this->morphToMany(TrafficSource::class, 'model', 'model_has_traffic_sources')
+            ->withPivot(['share', 'traffic_source_campaign_id', 'attribution_model', 'first_touch_at', 'last_touch_at'])
+            ->withTimestamps();
     }
 
 }

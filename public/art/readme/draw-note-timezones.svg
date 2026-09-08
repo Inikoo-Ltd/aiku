@@ -1,0 +1,93 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 750" width="1200" height="750" font-family="'Caveat','Segoe Print','Bradley Hand','Comic Sans MS',cursive">
+<defs>
+    <filter id="pen" x="-10%" y="-10%" width="120%" height="120%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.02" numOctaves="3" seed="5" result="n"/>
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="3.5" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+    <filter id="bleed" x="-30%" y="-30%" width="160%" height="160%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.008 0.014" numOctaves="3" seed="9" result="n"/>
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="20" xChannelSelector="R" yChannelSelector="G" result="d"/>
+      <feGaussianBlur in="d" stdDeviation="1.6" result="b"/>
+      <feTurbulence type="fractalNoise" baseFrequency="0.05" numOctaves="3" seed="4" result="g"/>
+      <feColorMatrix in="g" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.9 -0.2" result="ga"/>
+      <feComposite in="b" in2="ga" operator="in" result="mottled"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="mottled"/></feMerge>
+    </filter>
+    <filter id="marker" x="-10%" y="-10%" width="120%" height="120%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.03" numOctaves="2" seed="21" result="n"/>
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="6" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+    <filter id="paper" x="0" y="0" width="100%" height="100%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.7" numOctaves="3" seed="2" result="n"/>
+      <feColorMatrix in="n" type="matrix" values="0 0 0 0 0.90  0 0 0 0 0.87  0 0 0 0 0.80  0 0 0 0.28 0" result="c"/>
+      <feComposite in="c" in2="SourceGraphic" operator="over"/>
+    </filter>
+    <style>
+      .pen { fill: none; stroke: #23222e; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; filter: url(#pen); }
+      .soft { stroke-width: 1.4; opacity: .6; }
+      .w { mix-blend-mode: multiply; filter: url(#bleed); stroke: none; opacity: .8; }
+      .m { fill: none; stroke-linecap: round; stroke-width: 26; opacity: .55; mix-blend-mode: multiply; filter: url(#marker); }
+      .h { fill: #23222e; filter: url(#pen); }
+      .hl { fill: #8a4b9e; filter: url(#pen); }
+    </style>
+  </defs>
+  <rect width="1200" height="750" fill="#fbf7ee"/>
+  <rect width="1200" height="750" fill="#fbf7ee" filter="url(#paper)"/>
+
+  <g class="w">
+    <path d="M80 90 C260 60 420 80 440 150 C450 220 380 280 260 290 C140 300 60 240 60 170 C60 130 60 110 80 90 Z" fill="#f3c04a" opacity=".34"/>
+    <path d="M760 80 C940 50 1140 70 1150 150 C1160 230 1080 290 940 292 C820 294 740 240 740 170 C740 130 740 110 760 80 Z" fill="#6d63d6" opacity=".30"/>
+    <path d="M430 380 C600 360 860 370 900 400 C920 440 890 480 840 490 C700 500 480 500 430 470 C400 440 400 400 430 380 Z" fill="#9dcab0" opacity=".30"/>
+    <path d="M730 560 C880 540 1080 550 1110 580 C1130 620 1100 660 1050 670 C900 680 760 680 730 650 C700 620 700 580 730 560 Z" fill="#e88a73" opacity=".40"/>
+  </g>
+  <g class="m">
+    <path d="M450 470 L870 466" stroke="#9dcab0"/>
+    <path d="M740 660 L1080 656" stroke="#e88a73"/>
+  </g>
+  <g class="pen">
+    <!-- left: sun over palm and laptop -->
+    <circle cx="150" cy="150" r="40"/>
+    <path d="M150 90 v-22 M150 210 v22 M90 150 h-22 M210 150 h22 M108 108 l-14 -14 M192 192 l14 14 M192 108 l14 -14 M108 192 l-14 14" class="soft"/>
+    <path d="M300 250 C300 200 310 150 320 120 M320 120 C280 110 250 120 240 140 M320 120 C300 90 270 80 250 86 M320 120 C340 90 370 86 390 96 M320 120 C360 110 390 124 400 144"/>
+    <path d="M200 262 L330 258 L336 296 L194 300 Z M180 300 L350 296 L356 310 L176 314 Z"/>
+    <path d="M210 270 h100 M210 282 h60" class="soft"/>
+    <!-- right: moon over warehouse with forklift -->
+    <path d="M1040 120 C1000 120 980 160 1000 196 C1020 230 1070 226 1090 200 C1060 210 1024 190 1026 152 C1028 136 1034 126 1040 120 Z"/>
+    <path d="M880 230 L1140 224 L1142 300 L882 306 Z M880 230 L1010 196 L1140 224"/>
+    <path d="M900 250 l40 0 l0 56 l-40 0 z M950 250 l40 0 l0 56 l-40 0 z M1010 262 l110 0 l0 44 l-110 0 z" class="soft"/>
+    <path d="M1050 330 l40 0 l0 24 l-40 0 z M1090 326 l0 -40 M1090 300 l36 0 M1058 356 a6 6 0 1 0 0.1 0 M1082 356 a6 6 0 1 0 0.1 0 M1090 346 l36 0 l0 8" class="soft"/>
+    <!-- middle: two day bands, offset -->
+    <path d="M100 420 C400 414 800 418 1100 414 C1102 450 1100 480 1100 500 C800 506 400 504 100 506 C98 480 100 450 100 420 Z"/>
+    <path d="M100 600 C400 594 800 598 1100 594 C1102 630 1100 660 1100 680 C800 686 400 684 100 686 C98 660 100 630 100 600 Z"/>
+    <!-- hour ticks: top band ours, bottom band theirs shifted by 7h (1000px/24h ≈ 41.7/h → 292px) -->
+    <path d="M100 420 v-10 M392 420 v-10 M683 420 v-10 M975 420 v-10" class="soft"/>
+    <path d="M100 600 v-10 M392 600 v-10 M683 600 v-10 M975 600 v-10" class="soft"/>
+    <!-- shaded sleep on each band -->
+    <path d="M100 430 L420 428 M100 440 L420 438 M100 450 L420 448 M100 460 L420 458 M100 470 L420 468 M100 480 L420 478 M100 490 L420 488 " class="soft" opacity=".35"/>
+    <path d="M100 610 L720 608 M100 620 L720 618 M100 630 L720 628 M100 640 L720 638 M100 650 L720 648 M100 660 L720 658 M100 670 L720 668" class="soft" opacity=".35"/>
+    <!-- arrow between bands: 7h -->
+    <path d="M430 512 L700 588 M686 574 l16 14 l-20 4"/>
+    <!-- arrow from morning quiet to the warehouse (deploy lands there before they wake) -->
+    <path d="M470 400 C600 340 760 320 870 300 M856 292 l18 6 l-12 14" class="soft"/>
+    <!-- phone ringing at right of top band -->
+    <path d="M1110 330 l26 -4 l6 54 l-26 4 z M1120 336 l12 -2" class="soft"/>
+    <path d="M1148 322 c10 6 14 16 12 28 M1154 310 c16 10 20 28 16 44" class="soft"/>
+  </g>
+  <g class="h" font-size="22">
+    <text x="70" y="60">our morning</text>
+    <text x="870" y="60">their night</text>
+    <text x="110" y="540">asleep</text>
+    <text x="440" y="540">quiet morning: deploy, migrate, repair</text>
+    <text x="930" y="540">evening</text>
+    <text x="110" y="720">Europe asleep</text>
+    <text x="760" y="720">Europe at work</text>
+    <text x="520" y="575">7 h later</text>
+    <text x="460" y="740" opacity=".7" font-size="19">— one day, two halves</text>
+  </g>
+  <g class="hl" font-size="21">
+    <text x="70" y="340">"release went live at 8am —</text>
+    <text x="70" y="368">nobody was using it"</text>
+    <text x="960" y="405" font-size="19">9pm: the urgent thing</text>
+    <text x="740" y="585">the ticket carries the conversation</text>
+  </g>
+</svg>

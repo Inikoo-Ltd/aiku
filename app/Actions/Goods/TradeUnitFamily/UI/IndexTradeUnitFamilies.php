@@ -9,7 +9,7 @@
 namespace App\Actions\Goods\TradeUnitFamily\UI;
 
 use App\Actions\Goods\TradeUnit\UI\ShowTradeUnitsDashboard;
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithGoodsAuthorisation;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Enums\UI\Goods\TradeUnitFamiliesTabsEnum;
@@ -20,13 +20,14 @@ use App\Models\SysAdmin\Group;
 use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
 
-class IndexTradeUnitFamilies extends GrpAction
+class IndexTradeUnitFamilies extends OrgAction
 {
     use WithGoodsAuthorisation;
 
@@ -35,7 +36,7 @@ class IndexTradeUnitFamilies extends GrpAction
     public function asController(ActionRequest $request): LengthAwarePaginator
     {
         $this->parent = group();
-        $this->initialisation($this->parent, $request)->withTab(TradeUnitFamiliesTabsEnum::values());
+        $this->initialisationFromGroup($this->parent, $request)->withTab(TradeUnitFamiliesTabsEnum::values());
 
         return $this->handle(prefix: TradeUnitFamiliesTabsEnum::INDEX->value);
     }
@@ -89,6 +90,7 @@ class IndexTradeUnitFamilies extends GrpAction
             $selects[] = $timeSeriesData['selectRaw']['sales_grp_currency_external_ly'];
             $selects[] = $timeSeriesData['selectRaw']['invoices'];
             $selects[] = $timeSeriesData['selectRaw']['invoices_ly'];
+            $selects[] = DB::raw("'".group()->currency->code."' as grp_currency_code");
         }
 
         $allowedSorts = [

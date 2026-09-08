@@ -14,11 +14,11 @@ library.add(faCube, faLink)
 const props = defineProps<{
   modelValue: any
   webpageData?: any
-  web_block: Object
-  id: Number,
-  type: String
+  web_block?: Object
+  id?: Number,
+  type?: String
   indexBlock:number
-  properties: {}
+  properties?: {}
 }>()
 
 const emits = defineEmits<{

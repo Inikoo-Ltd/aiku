@@ -14,6 +14,7 @@ use App\Actions\Billables\Packaging\DeletePackaging;
 use App\Actions\Billables\Packaging\StorePackaging;
 use App\Actions\Billables\Packaging\StorePackagingFamily;
 use App\Actions\Billables\Packaging\UpdatePackaging;
+use App\Actions\Billables\Service\StoreService;
 use App\Actions\Billables\ShippingZoneSchema\StoreShippingZoneSchema;
 use Illuminate\Support\Facades\Route;
 
@@ -27,6 +28,9 @@ Route::name('billables.')->prefix('shop/{shop:id}/billables')->group(function ()
     });
     Route::name('leaflets.')->prefix('leaflets')->group(function () {
         Route::post('store', StoreLeaflet::class)->name('store');
+    });
+    Route::name('services.')->prefix('services')->group(function () {
+        Route::post('store', StoreService::class)->name('store');
     });
     Route::name('shipping-zone-schemas.')->prefix('shipping-one-schemas')->group(function () {
         Route::post('store', StoreShippingZoneSchema::class)->name('store');

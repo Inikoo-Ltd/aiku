@@ -9,6 +9,7 @@
 namespace App\Actions\Inventory\OrgStock\Stock;
 
 use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
+use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateStockValue;
 use App\Actions\Inventory\OrgStock\Stock\Concerns\CalculatesOrgStockHistories;
 use App\Models\Inventory\LocationOrgStock;
 use App\Models\Inventory\OrgStock;
@@ -52,7 +53,10 @@ class CalculateOrgStockCurrentStockHistories implements ShouldBeUnique
 
         $orgStockLocationData  = [];
         $locationsOrgStocksIds = $this->getLocationsOrgStocksIds($orgStock);
-        $costPerSku            = $this->getCostPerSku($orgStock, $date);
+        $costPerSku            = $this->getLppPerSku($orgStock, $date);
+        $valuation             = $this->getValuationPerSku($orgStock, $date);
+        $wacPerSku             = $valuation['wac'];
+        $fifoPerSku            = $valuation['fifo'];
         $lastSoldDate          = $this->lastSoldDate($orgStock, $date);
 
 
@@ -61,15 +65,26 @@ class CalculateOrgStockCurrentStockHistories implements ShouldBeUnique
             if ($locationOrgStock) {
                 $quantity               = $locationOrgStock->quantity;
                 $orgStockLocationData[] = [
-                    'location_id'     => $locationOrgStock->location_id,
-                    'quantity'        => $quantity,
-                    'org_stock_value' => $quantity * $costPerSku,
-                    'grp_stock_value' => $quantity * $costPerSku * $exchangeRate,
+                    'location_id'         => $locationOrgStock->location_id,
+                    'quantity'            => $quantity,
+                    'org_stock_lpp_value'     => $quantity * $costPerSku,
+                    'grp_stock_lpp_value'     => $quantity * $costPerSku * $exchangeRate,
+                    'org_stock_wac_value' => $wacPerSku === null ? null : $quantity * $wacPerSku,
+                    'grp_stock_wac_value' => $wacPerSku === null ? null : $quantity * $wacPerSku * $exchangeRate,
+                    'org_stock_fifo_value' => $fifoPerSku === null ? null : $quantity * $fifoPerSku,
+                    'grp_stock_fifo_value' => $fifoPerSku === null ? null : $quantity * $fifoPerSku * $exchangeRate,
                 ];
             }
         }
 
-        $this->persistOrgStockHistories($orgStock, $date, $orgStockLocationData, $costPerSku, $lastSoldDate, $this->hydrateDelay);
+        $this->persistOrgStockHistories($orgStock, $date, $orgStockLocationData, $costPerSku, $lastSoldDate, $this->hydrateDelay, $wacPerSku, $fifoPerSku);
+
+        $officialPerSku = $fifoPerSku > 0 ? $fifoPerSku : $costPerSku;
+        if ($officialPerSku > 0) {
+            $orgStock->update(['sku_value' => $officialPerSku]);
+        }
+
+        OrgStockHydrateStockValue::run($orgStock);
 
         return $orgStockLocationData;
     }

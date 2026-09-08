@@ -15,6 +15,7 @@ const props = defineProps<{
             st: string  // "a" => Gold Reward Amnesty, "i" => Gold Reward Member
         }
     }
+    is_discretionary_offer?: boolean
 }>()
 
 const componentsMap = {
@@ -36,5 +37,6 @@ const resolvedComponent = computed(() => {
         :is="resolvedComponent"
         :key="template"
         :offers_data="offers_data"
+        :is_discretionary_offer="is_discretionary_offer"
     />
 </template>

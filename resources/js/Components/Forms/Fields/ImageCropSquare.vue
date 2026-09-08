@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch } from "vue";
+import { computed, ref, watch } from "vue";
 import { trans } from "laravel-vue-i18n";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { faExclamationCircle, faCheckCircle, faTimes } from "@fas";
@@ -9,6 +9,7 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 
 import Dialog from "primevue/dialog";
 import Button from "@/Components/Elements/Buttons/Button.vue";
+import PureInput from "@/Components/Pure/PureInput.vue";
 import { Cropper } from "vue-advanced-cropper";
 import "vue-advanced-cropper/dist/style.css";
 
@@ -18,6 +19,13 @@ const props = defineProps<{
     form: Record<string, any>,
     fieldName: string,
     fieldData: {
+        required?: boolean,
+        hasOther?: {
+            name: string,
+            label?: string,
+            placeholder?: string,
+            information?: string
+        },
         options: {
             aspectRatio?: { width: number, height: number },
             minAspectRatio?: { width: number, height: number },
@@ -31,6 +39,23 @@ const tempImgToCrop = ref<string | null>(null);
 const imgAfterCrop = ref<{ original: string } | null>(
     props.form[props.fieldName] ? props.form[props.fieldName] : null
 );
+
+const altFieldName = props.fieldData?.hasOther?.name;
+
+const altText = computed({
+    get: () => (altFieldName ? props.form[altFieldName] : null),
+    set: (value: string | number | null) => {
+        if (altFieldName) {
+            props.form[altFieldName] = value;
+            props.form.errors[altFieldName] = null;
+        }
+    }
+});
+
+if (imgAfterCrop.value && !(props.form[props.fieldName] instanceof File) && typeof props.form.defaults === "function") {
+    props.form.defaults({ [props.fieldName]: null });
+    props.form[props.fieldName] = null;
+}
 
 const isOpenModalCrop = ref(false);
 const _cropper = ref<InstanceType<typeof Cropper> | null>(null);
@@ -96,7 +121,7 @@ watch(isOpenModalCrop, (val) => {
 </script>
 
 <template>
-    <div class="w-fit min-w-32 relative">
+    <div class="min-w-32 relative" :class="altFieldName ? 'w-full' : 'w-fit'">
         <!-- PrimeVue Dialog -->
         <Dialog v-model:visible="isOpenModalCrop" modal header="Crop Image" :style="{ width: '600px' }">
             <div class="w-full h-[300px] relative bg-gray-700">
@@ -119,29 +144,57 @@ watch(isOpenModalCrop, (val) => {
             </div>
         </Dialog>
 
-        <!-- Image Preview -->
-        <div class="relative overflow-hidden h-40 min-w-32 aspect-square rounded-lg ring-1 ring-gray-500 shadow bg-gray-100"
-            :class="form.errors[fieldName] ? 'errorShake' : ''">
-            <img v-if="imgAfterCrop?.original" :src="imgAfterCrop.original" alt="Preview"
-                class="h-full w-full object-cover rounded" />
-            <div v-else class="h-full w-full flex items-center justify-center text-gray-400 text-sm">
-                {{ trans("No Image") }}
+        <div class="flex flex-wrap items-start gap-4">
+            <!-- Image Preview -->
+            <div class="relative overflow-hidden h-40 min-w-32 aspect-square rounded-lg ring-1 ring-gray-500 shadow bg-gray-100"
+                :class="form.errors[fieldName] ? 'errorShake' : ''">
+                <img v-if="imgAfterCrop?.original" :src="imgAfterCrop.original" :alt="altText || 'Preview'"
+                    class="h-full w-full object-cover rounded" />
+                <div v-else class="h-full w-full flex items-center justify-center text-gray-400 text-sm">
+                    {{ trans("No Image") }}
+                </div>
+
+                <!-- Hover Actions -->
+                <label xv-if="!imgAfterCrop?.original" for="input-avatar-large"
+                    class="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 text-sm font-medium text-white opacity-0 hover:opacity-100 transition-opacity duration-200 cursor-pointer">
+                    <span>{{ trans("Upload") }}</span>
+                    <input id="input-avatar-large" type="file" accept="image/*"
+                        class="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                        @change="onPickFile($event.target.files[0])" />
+                </label>
+
+                <!-- Delete Button -->
+                <button v-if="imgAfterCrop?.original && fieldData.required == false" @click="deleteImage" type="button"
+                    class="absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white p-1 rounded-full shadow transition">
+                    <FontAwesomeIcon :icon="['fas', 'times']" class="text-sm" />
+                </button>
             </div>
 
-            <!-- Hover Actions -->
-            <label xv-if="!imgAfterCrop?.original" for="input-avatar-large"
-                class="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 text-sm font-medium text-white opacity-0 hover:opacity-100 transition-opacity duration-200 cursor-pointer">
-                <span>{{ trans("Upload") }}</span>
-                <input id="input-avatar-large" type="file" accept="image/*"
-                    class="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                    @change="onPickFile($event.target.files[0])" />
-            </label>
+            <!-- Alt Text -->
+            <div v-if="altFieldName" class="flex-1 min-w-64 max-w-md">
+                <label :for="`input-alt-${altFieldName}`" class="flex items-center gap-x-1 text-sm font-medium text-gray-400">
+                    {{ fieldData.hasOther?.label ?? trans("Alt text") }}
+                    <span v-if="fieldData.hasOther?.information" v-tooltip="fieldData.hasOther.information"
+                        class="opacity-50 hover:opacity-100 cursor-pointer">
+                        <FontAwesomeIcon :icon="['fal', 'info-circle']" class="text-gray-500" fixed-width aria-hidden="true" />
+                    </span>
+                </label>
 
-            <!-- Delete Button -->
-            <button v-if="imgAfterCrop?.original && fieldData.required == false" @click="deleteImage" type="button"
-                class="absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white p-1 rounded-full shadow transition">
-                <FontAwesomeIcon :icon="['fas', 'times']" class="text-sm" />
-            </button>
+                <div class="mt-1">
+                    <PureInput
+                        v-model="altText"
+                        :inputName="`input-alt-${altFieldName}`"
+                        :placeholder="fieldData.hasOther?.placeholder ?? trans('Describe the image')"
+                        :maxLength="255"
+                        :isError="!!form.errors[altFieldName]"
+                        :class="form.errors[altFieldName] ? 'errorShake' : ''"
+                    />
+                </div>
+
+                <p v-if="form.errors[altFieldName]" class="mt-1 text-sm text-red-600">
+                    {{ form.errors[altFieldName] }}
+                </p>
+            </div>
         </div>
 
         <!-- Status Icon -->

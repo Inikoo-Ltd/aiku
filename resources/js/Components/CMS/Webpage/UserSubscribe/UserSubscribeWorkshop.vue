@@ -61,7 +61,7 @@ const onSubmitSubscribe = async () => {
 							emits('autoSave')
 						}"
 						class="hover-text-input"
-						:toogle="[
+						:toggle="[
 							'heading1', 'heading2', 'heading3', 'fontSize', 'bold', 'italic', 'underline', 'query', 'fontFamily',
 							'blockquote', 'divider', 'alignLeft', 'alignRight', 'customLink',
 							'alignCenter', 'undo', 'redo', 'highlight', 'color', 'clear'
@@ -77,7 +77,7 @@ const onSubmitSubscribe = async () => {
 							emits('autoSave')
 						}"
 						class="hover-text-input"
-						:toogle="[
+						:toggle="[
 							'heading1', 'heading2', 'heading3', 'fontSize', 'bold', 'italic', 'underline', 'query', 'fontFamily',
 							'blockquote', 'divider', 'alignLeft', 'alignRight', 'customLink',
 							'alignCenter', 'undo', 'redo', 'highlight', 'color', 'clear'

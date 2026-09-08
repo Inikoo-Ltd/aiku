@@ -8,6 +8,7 @@
 
 use App\Actions\Api\Retina\GetProfile;
 use Illuminate\Support\Facades\Route;
+use App\Http\Middleware\EnsureRetinaTokenCanWrite;
 use Laravel\Nightwatch\Http\Middleware\Sample;
 
 Route::get('/ping', function () {
@@ -18,6 +19,8 @@ Route::middleware(
     [
         'auth:sanctum',
         'ability:retina',
+        'throttle:retina-api',
+        EnsureRetinaTokenCanWrite::class,
         Sample::always()
     ]
 )->group(function () {

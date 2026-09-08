@@ -41,7 +41,7 @@ class ShowOrgStockStockHistory extends OrgAction
         return Inertia::render(
             'Org/Inventory/OrgStock',
             [
-                'title'       => __('SKU').' '.$orgStock->code.' ('.__('Stock History').')',
+                'title'       => __('SKO').' '.$orgStock->code.' ('.__('Stock History').')',
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $orgStock,
                     $request->route()->getName(),
@@ -53,10 +53,10 @@ class ShowOrgStockStockHistory extends OrgAction
                 ],
                 'pageHead'    => [
                     'icon'          => [
-                        'title' => __('SKU').' ('.__('Stock History').')',
+                        'title' => __('SKO').' ('.__('Stock History').')',
                         'icon'  => 'fal fa-box'
                     ],
-                    'model'         => __('SKU'),
+                    'model'         => __('SKO'),
                     'title'         => $orgStock->code,
                     'subNavigation' => $subNavigation
                 ],

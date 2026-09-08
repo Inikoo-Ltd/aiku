@@ -10,6 +10,13 @@
 import { Address } from '@/types/PureComponent/Address'
 import { Image } from '@/types/Image'
 
+interface Currency {
+    id: number
+    code: string
+    name: string
+    symbol: string
+}
+
 export interface Agent {
     code: string
     name: string
@@ -19,6 +26,9 @@ export interface Agent {
     phone: string
     company?: string
     contact?: string
+    website?: string
+    currency?: Currency
+    created_at?: string
     address?: Address
     photo?: Image
 }

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import Image from "@common/Components/Image.vue"
-import { inject, ref, computed } from 'vue'
+import { defineAsyncComponent, inject, ref, computed } from 'vue'
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import { trans } from 'laravel-vue-i18n'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
@@ -19,13 +19,17 @@ import NewAddToCartButton from '@/Components/CMS/Webpage/Products/NewAddToCartBu
 import { faEnvelopeCircleCheck } from '@fortawesome/free-solid-svg-icons'
 import LinkIris from '@/Iris/Components/LinkIris.vue'
 import BestsellerBadge from '@/Components/CMS/Webpage/Products/BestsellerBadge.vue'
+import GoldenProductBadge from '@/Components/CMS/Webpage/Products/GoldenProductBadge.vue'
 import { routeType } from '@/types/route'
 /* import LabelComingSoon from '@/Components/Iris/Products/LabelComingSoon.vue' */
 import Prices4 from '@/Iris/Components/BlocksUtils/Prices4.vue'
 
+const ProductSoundButton = defineAsyncComponent(() => import("@/Iris/Components/ProductSoundButton.vue"))
+
 library.add(faStarHalfAlt, faQuestionCircle)
 const locale = useLocaleStore()
 const layout = inject('layout', retinaLayoutStructure)
+const isPriceVisible = computed(() => Boolean(layout?.iris?.is_logged_in || layout?.iris?.show_price))
 
 const props = withDefaults(defineProps<{
     product: ProductResource  // IrisAuthenticatedProductsInWebpageResource
@@ -37,17 +41,23 @@ const props = withDefaults(defineProps<{
     buttonStyleLogin?: object | undefined
     addToBasketRoute?: routeType
     updateBasketQuantityRoute?: routeType
-    isLoadingFavourite: boolean
-    isLoadingRemindBackInStock: boolean
+    isLoadingFavourite?: boolean
+    isLoadingRemindBackInStock?: boolean
     screenType: string
     hideLogin?:boolean
+    routeGettransactionProductData?:routeType
 }>(), {
+    isLoadingFavourite: false,
+    isLoadingRemindBackInStock: false,
     basketButton: true,
     addToBasketRoute: {
         name: 'iris.models.transaction.store',
     },
     updateBasketQuantityRoute: {
         name: 'iris.models.transaction.update',
+    },
+     routeGettransactionProductData: {
+        name: 'iris.json.basket_transaction_product_data'
     },
 })
 
@@ -60,7 +70,12 @@ const emits = defineEmits<{
 }>()
 
 const _button_variant = ref(null)
+const _button_add_to_cart = ref(null)
 const currency = layout?.iris?.currency
+
+const onOrderStepQuantity = async (quantity: number) => {
+    await _button_add_to_cart.value?.orderQuantity(quantity)
+}
 
 
 const onAddFavourite = (product: ProductResource) => {
@@ -83,6 +98,10 @@ const onUnselectBackInStock = (product: ProductResource) => {
 const onClickVariant = (product: ProductResource, event: Event) => {
     emits('onVariantClick', product.variant, event)
 
+}
+
+const goToLogin = () => {
+    window.location.href = urlLoginWithRedirect()
 }
 
 
@@ -169,12 +188,13 @@ defineExpose({
 </script>
 
 <template>
-    <div class="text-gray-800 isolate h-full flex flex-col flex-grow" comp="product-render-ecom">
+    <div id="product-card-ecom-3" class="text-gray-800 isolate h-full flex flex-col flex-grow" comp="product-render-ecom">
 
         <!-- Top Section: Stock, Images, Title, Code, Price -->
-        <div class="text-gray-800 isolate h-full">
+        <div class="text-gray-800 isolate">
             <BestsellerBadge v-if="product?.top_seller" :topSeller="product?.top_seller" :data="bestSeller"
                 :screenType="screenType" />
+            
 
             <!-- Section: Product Image, Add to Cart button, Email out of stock, Favourite -->
             <component :is="product.url ? LinkIris : 'div'" :href="product.url" :id="product?.url?.id"
@@ -192,18 +212,19 @@ defineExpose({
                                 class="mobile-slider flex w-full h-full overflow-x-auto scroll-smooth snap-x snap-mandatory"
                                 @scroll="onScroll">
 
-                                <div v-for="(img, i) in images" :key="i" class="w-full h-full flex-shrink-0 snap-start">
+                                <div v-for="(img, i) in images" :key="i"
+                                    class="relative w-full h-full flex-shrink-0 snap-start">
 
                                     <Image :src="img" :alt="product.name"
-                                        class="w-full h-full select-none pointer-events-none"
-                                        :style="{ objectFit: 'contain', objectPosition: 'center' }" />
+                                        class="absolute inset-0 w-full h-full select-none pointer-events-none"
+                                        :style="{ width: '100%', height: '100%', objectFit: 'contain', objectPosition: 'center' }" />
                                 </div>
                             </div>
 
                             <!-- SINGLE IMAGE -->
-                            <div v-else class="w-full h-full">
-                                <Image :src="images[0]" :alt="product.name" class="w-full h-full"
-                                    :style="{ objectFit: 'contain', objectPosition: 'center' }" />
+                            <div v-else class="relative w-full h-full">
+                                <Image :src="images[0]" :alt="product.name" class="absolute inset-0 w-full h-full"
+                                    :style="{ width: '100%', height: '100%', objectFit: 'contain', objectPosition: 'center' }" />
                             </div>
 
                             <!-- DOTS -->
@@ -226,6 +247,8 @@ defineExpose({
                                 <div class="w-full h-full flex-shrink-0 relative">
                                     <Image :src="images[0]" :alt="product.name" class="absolute inset-0 w-full h-full"
                                         :style="{
+                                            width: '100%',
+                                            height: '100%',
                                             objectFit: 'contain',
                                             objectPosition: 'center'
                                         }" />
@@ -235,6 +258,8 @@ defineExpose({
                                 <div v-if="images.length > 1" class="w-full h-full flex-shrink-0 relative">
                                     <Image :src="images[1]" :alt="product.name" class="absolute inset-0 w-full h-full"
                                         :style="{
+                                            width: '100%',
+                                            height: '100%',
                                             objectFit: 'contain',
                                             objectPosition: 'center'
                                         }" />
@@ -248,32 +273,41 @@ defineExpose({
                     </slot>
                 </div>
 
-                <!-- Section: Favourite -->
-                <template v-if="layout?.iris?.is_logged_in && basketButton && !product.is_variant">
-                    <div v-if="isLoadingFavourite" class="absolute right-2 top-2 text-pink-400 text-xl z-10">
-                        <LoadingIcon />
-                    </div>
-                    <div v-else
-                        @click.prevent="() => product.is_favourite ? onUnselectFavourite(product) : onAddFavourite(product)"
-                        class="cursor-pointer absolute right-2 top-2 group text-xl z-10">
+                <ProductSoundButton v-if="product.audio" :src="product.audio" :topSeller="product.top_seller" />
 
-                        <FontAwesomeIcon v-if="product.is_favourite" :icon="fasHeart" fixed-width
-                            class="text-pink-500" />
-                        <div v-else class="relative">
-                            <FontAwesomeIcon :icon="fasHeart" class="hidden group-hover:inline text-pink-400"
-                                fixed-width />
-                            <FontAwesomeIcon :icon="faHeart" class="inline group-hover:hidden text-pink-300"
-                                fixed-width />
+                <!-- Section: Golden product, Favourite -->
+                <div v-if="product.is_golden_product || (layout?.iris?.is_logged_in && basketButton && !product.is_variant)"
+                    class="absolute right-2 top-2 z-10 flex items-center gap-1.5">
+
+                    <GoldenProductBadge v-if="product.is_golden_product" />
+
+                    <template v-if="layout?.iris?.is_logged_in && basketButton && !product.is_variant">
+                        <div v-if="isLoadingFavourite" class="text-pink-400 text-xl">
+                            <LoadingIcon />
                         </div>
-                    </div>
-                </template>
+                        <div v-else
+                            @click.prevent="() => product.is_favourite ? onUnselectFavourite(product) : onAddFavourite(product)"
+                            class="cursor-pointer group text-xl">
+
+                            <FontAwesomeIcon v-if="product.is_favourite" :icon="fasHeart" fixed-width
+                                class="text-pink-500" />
+                            <div v-else class="relative">
+                                <FontAwesomeIcon :icon="fasHeart" class="hidden group-hover:inline text-pink-400"
+                                    fixed-width />
+                                <FontAwesomeIcon :icon="faHeart" class="inline group-hover:hidden text-pink-300"
+                                    fixed-width />
+                            </div>
+                        </div>
+                    </template>
+                </div>
           
 
                 <div v-if="layout?.iris?.is_logged_in && !product.variant" class="absolute right-2 bottom-2">
                     <NewAddToCartButton v-if="product.stock && basketButton && !product.is_coming_soon" :hasInBasket
+                        ref="_button_add_to_cart"
                         :product="product" :key="product" :addToBasketRoute="addToBasketRoute"
                         :buttonStyleHover="buttonStyleHover" :updateBasketQuantityRoute="addToBasketRoute"
-                        :buttonStyle="buttonStyle" />
+                        :buttonStyle="buttonStyle"  :routeGettransactionProductData/>
                     <button
                         v-else-if="!product.stock && layout?.outboxes?.oos_notification?.state == 'active' && basketButton && !product.variant"
                         @click.prevent="() => product.is_back_in_stock ? onUnselectBackInStock(product) : onAddBackInStock(product)"
@@ -288,31 +322,27 @@ defineExpose({
                 <div v-if="layout?.iris?.is_logged_in && product.variant"
                     class="absolute inset-x-0 bottom-2 z-10 text-gray-500 text-xl">
                     <div class="flex justify-center">
-                        <Button :label="trans('Choose variants')" size="xs"
-                            @click.prevent.stop="(e) => onClickVariant(product, e)" :ref="(e) => _button_variant = e" />
+                        <Button  size="xs"
+                            @click.prevent.stop="(e) => onClickVariant(product, e)" :ref="(e) => _button_variant = e" >
+                        <template #label>
+                            <span>
+                                {{ ctrans('Choose variants') }}
+                            </span>
+                        </template>
+                        </Button>
                     </div>
+                </div>
+
+                <!-- Section: Login (overlay at the bottom of the image) -->
+                <div v-if="!layout?.iris?.is_logged_in && !hideLogin" class="absolute inset-x-0 bottom-2 z-10 px-3">
+                    <Button :label="trans('Login or Register for Wholesale Prices')"
+                        class="w-full rounded-none text-[9px] md:text-[10px] py-1 leading-tight" full
+                        :injectStyle="buttonStyleLogin" @click.prevent.stop="goToLogin" />
                 </div>
 
             </component>
 
             <div class="mt-2">
-                <!-- <div class="flex w-full items-center gap-2">
-                     Product Code 
-                    <div  class="text-xs">
-                        {{ product?.code }}
-                    </div>
-                    Stock / Coming Soon 
-                    <div v-if="layout?.iris?.is_logged_in" class="flex items-center text-xs text-gray-600">
-                        <LabelComingSoon v-if="product.is_coming_soon" :product="product" class="text-center" />
-                        <div v-else v-tooltip="trans('Available product stocks')"
-                            class="flex items-center gap-1 py-1 font-medium leading-snug"
-                            :class="product.stock > 0 ? 'xbg-green-50 xtext-green-700' : 'bg-red-50 text-red-600'">
-                            <FontAwesomeIcon :icon="faCircle" fixed-width class="shrink-0 xtext-[6px]"
-                                :class="product.stock > 0 ? 'text-green-600' : 'text-red-600'" />
-                        </div>
-                    </div>
-                </div> -->
-
                 <!-- Title -->
                 <LinkIris v-if="product.url" :href="product.url" class="hover:text-gray-500 font-bold text-sm mb-1"
                     :type="typeOfLink" :id="product?.url?.id" @start="() => idxSlideLoading = true"
@@ -329,23 +359,22 @@ defineExpose({
 
 
         <div class="mt-auto">
-            <Prices4 v-if="layout?.iris?.is_logged_in" :product="product" :currency="currency" :basketButton :hasInBasket/>
-            <div v-else class="text-xs leading-tight space-y-1">
+            <section v-if="isPriceVisible">
+                  <Prices4  :product="product" :currency="currency" :basketButton :hasInBasket
+                      :orderQuantity="onOrderStepQuantity"/>
+            </section>
+            <section v-else class="text-xs leading-tight space-y-1">
 
                 <!-- CODE + RRP + V2-->
                 <div class="flex items-center text-gray-600 text-[10px] 2xl:text-xs py-1 min-w-0">
                     <!-- RRP + UNIT  -->
                     <span class="truncate min-w-0 overflow-hidden text-primary">
-                     {{ trans(screenType === 'mobile' ? 'RRP' : 'Recommended retail price') }} : {{ locale.currencyFormat(currency?.code, product.rrp_per_unit) }}/{{ product.unit }}
+                     {{ trans(screenType === 'mobile' ? 'RRP' : 'Recommended retail price') }} : {{ locale.currencyFormatRrp(currency?.code, product.rrp_per_unit) }}/{{ product.unit }}
                     </span>
 
-                </div> 
-                <a  v-if="!hideLogin" :href="urlLoginWithRedirect()" class="block w-full">
-                    <Button :label="trans('Login or Register for Wholesale Prices')"
-                        class="w-full rounded-none text-xs py-2" full :injectStyle="buttonStyleLogin" />
-                </a>
+                </div>
 
-            </div>
+            </section>
         </div>
 
         <div v-if="idxSlideLoading"

@@ -98,7 +98,7 @@ const imageBoxStyle = computed(() => {
 					<div class="max-w-xl w-full">
 						<div v-html="fieldValue.text" class="mb-6"></div>
 						<div class="flex justify-center">
-							<LinkIris :href="fieldValue?.button?.link?.href" :target="fieldValue?.button?.link?.taget"
+							<LinkIris :href="fieldValue?.button?.link?.href" :target="fieldValue?.button?.link?.target"
 								typeof="button" :type="fieldValue?.button?.link?.type"
 								:canonical_url="fieldValue?.button?.link?.canonical_url">
 								<template #default="{ isLoading } = { isLoading: false }">

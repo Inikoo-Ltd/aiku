@@ -8,12 +8,15 @@
 
 namespace App\Services;
 
+use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Models\CRM\Customer;
 use App\Models\Fulfilment\FulfilmentCustomer;
+use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 /**
  * @method self whereAnyWordStartWith(string $column, string|array $value)
@@ -37,6 +40,40 @@ class QueryBuilder extends \Spatie\QueryBuilder\QueryBuilder
         $elementsData = null;
 
         $argumentName = ($prefix ? $prefix . '_' : '') . 'elements';
+
+        if (request()->has("$argumentName.$key")) {
+            $elements               = explode(',', request()->input("$argumentName.$key"));
+            $validatedElements      = array_intersect($allowedElements, $elements);
+            $countValidatedElements = count($validatedElements);
+            if ($countValidatedElements > 0 && $countValidatedElements < count($allowedElements)) {
+                $elementsData = $validatedElements;
+            }
+        } elseif ($default !== null) {
+            $defaultElements        = explode(',', $default);
+            $validatedElements      = array_intersect($allowedElements, $defaultElements);
+            $countValidatedElements = count($validatedElements);
+            if ($countValidatedElements > 0 && $countValidatedElements < count($allowedElements)) {
+                $elementsData = $validatedElements;
+            }
+        }
+
+        if ($elementsData) {
+            $engine($this, $elementsData);
+        }
+
+        return $this;
+    }
+
+    public function whereAdditionalElementGroup(
+        string $key,
+        array $allowedElements,
+        callable $engine,
+        ?string $prefix = null,
+        ?string $default = null
+    ): self {
+        $elementsData = null;
+
+        $argumentName = ($prefix ? $prefix . '_' : '') . 'additionalElements';
 
         if (request()->has("$argumentName.$key")) {
             $elements               = explode(',', request()->input("$argumentName.$key"));
@@ -125,8 +162,10 @@ class QueryBuilder extends \Spatie\QueryBuilder\QueryBuilder
         $timezone = resolveTimezoneHeader();
 
         foreach ($allowedColumns as $column) {
-            if (array_key_exists($column, $filters)) {
-                $range = $filters[$column];
+            $filterKey = Str::afterLast($column, '.');
+
+            if (array_key_exists($filterKey, $filters)) {
+                $range = $filters[$filterKey];
                 $parts = explode('-', $range);
 
                 if (count($parts) === 2) {
@@ -146,15 +185,55 @@ class QueryBuilder extends \Spatie\QueryBuilder\QueryBuilder
                         ->toDateTimeString();
 
                     if ($this->getModel() instanceof FulfilmentCustomer) {
-                        $this->whereBetween('customers.' . $column, [$start, $end]);
-                    } elseif ($this->getModel() instanceof Customer && $column == 'last_invoiced_at') {
-                        $this->whereBetween('customer_stats.' . $column, [$start, $end]);
+                        $this->whereBetween('customers.' . $filterKey, [$start, $end]);
+                    } elseif ($this->getModel() instanceof Customer && $filterKey == 'last_invoiced_at') {
+                        $this->whereBetween('customer_stats.' . $filterKey, [$start, $end]);
                     } else {
-                        $this->whereBetween("$table.$column", [$start, $end]);
+                        $this->whereBetween(str_contains($column, '.') ? $column : "$table.$column", [$start, $end]);
                     }
                 }
             }
         }
+
+        return $this;
+    }
+
+    public function whereOfferFilter(callable $engine, ?string $prefix = null): static
+    {
+        $argumentName = ($prefix ? $prefix . '_' : '') . 'offer';
+        $filters      = request()->input($argumentName, []);
+
+        if (empty($filters) && $prefix) {
+            $filters = request()->input('offer', []);
+        }
+
+        $presence = Arr::get($filters, 'has');
+
+        if (!in_array($presence, ['with', 'without'], true)) {
+            return $this;
+        }
+
+        $range = Arr::get($filters, 'between');
+        $start = null;
+        $end   = null;
+
+        if (is_string($range) && preg_match('/^\d{8}-\d{8}$/', trim($range))) {
+            [$from, $to] = explode('-', trim($range));
+
+            $timezone = resolveTimezoneHeader();
+
+            $start = Carbon::createFromFormat('Ymd', $from, $timezone)
+                ->setTimezone('UTC')
+                ->startOfDay()
+                ->toDateTimeString();
+
+            $end = Carbon::createFromFormat('Ymd', $to, $timezone)
+                ->setTimezone('UTC')
+                ->endOfDay()
+                ->toDateTimeString();
+        }
+
+        $engine($this, $presence, $start, $end);
 
         return $this;
     }
@@ -298,6 +377,26 @@ class QueryBuilder extends \Spatie\QueryBuilder\QueryBuilder
             ->groupBy("$timeSeriesTable.$foreignKey")
             ->select("$timeSeriesTable.$foreignKey");
 
+        $recordsFrequency = TimeSeriesFrequencyEnum::tryFrom($frequency);
+
+        if ($recordsFrequency) {
+            $subQuery->where("$timeSeriesRecordsTable.frequency", $recordsFrequency->singleLetter());
+        }
+
+        if ($hasDateFilter) {
+            $subQuery->where(function ($query) use ($timeSeriesRecordsTable, $recordsFrequency, $startDate, $endDate, $startDateLY, $endDateLY, $includeLY) {
+                $query->where(function ($query) use ($timeSeriesRecordsTable, $recordsFrequency, $startDate, $endDate) {
+                    $this->whereRecordsWithin($query, $timeSeriesRecordsTable, $recordsFrequency, $startDate, $endDate);
+                });
+
+                if ($includeLY) {
+                    $query->orWhere(function ($query) use ($timeSeriesRecordsTable, $recordsFrequency, $startDateLY, $endDateLY) {
+                        $this->whereRecordsWithin($query, $timeSeriesRecordsTable, $recordsFrequency, $startDateLY, $endDateLY);
+                    });
+                }
+            });
+        }
+
         foreach ($timeSeriesFilters as $column => $value) {
             $subQuery->where("{$timeSeriesTable}.{$column}", $value);
         }
@@ -349,6 +448,23 @@ class QueryBuilder extends \Spatie\QueryBuilder\QueryBuilder
         return [
             'hasDateFilter' => $hasDateFilter,
             'selectRaw' => $selectRaw,
+            'alias' => $alias,
+            'days' => $hasDateFilter ? (int) $startDate->diffInDays($endDate) + 1 : null,
         ];
+    }
+
+    private function whereRecordsWithin(
+        Builder $query,
+        string $timeSeriesRecordsTable,
+        ?TimeSeriesFrequencyEnum $frequency,
+        Carbon $startDate,
+        Carbon $endDate
+    ): void {
+        $query->where("$timeSeriesRecordsTable.from", '<=', $endDate->toDateTimeString())
+            ->where("$timeSeriesRecordsTable.to", '>=', $startDate->toDateTimeString());
+
+        if ($frequency) {
+            $query->where("$timeSeriesRecordsTable.from", '>=', $frequency->earliestPeriodStart($startDate)->toDateTimeString());
+        }
     }
 }

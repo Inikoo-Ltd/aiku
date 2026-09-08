@@ -18,8 +18,9 @@ class RegisterRetinaFromGoogle extends IrisAction
 {
     use WithRetinaRegistration;
 
-    public function prepareForValidation(): void
+    public function prepareForValidation(ActionRequest $request): void
     {
+        $this->prepareRetinaRegistrationInputs($request);
         $this->set('password', Str::random(24));
     }
 

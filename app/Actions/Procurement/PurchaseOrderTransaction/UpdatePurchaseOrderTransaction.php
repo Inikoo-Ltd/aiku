@@ -8,23 +8,46 @@
 
 namespace App\Actions\Procurement\PurchaseOrderTransaction;
 
+use App\Actions\Traits\Authorisations\WithProcurementAuthorisation;
 use App\Actions\OrgAction;
 use App\Actions\Procurement\PurchaseOrder\CalculatePurchaseOrderTotalAmounts;
 use App\Actions\Procurement\PurchaseOrder\Hydrators\PurchaseOrderHydrateTransactions;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
+use App\Enums\Procurement\PurchaseOrderTransaction\PurchaseOrderTransactionDeliveryStateEnum;
+use App\Enums\Procurement\PurchaseOrderTransaction\PurchaseOrderTransactionStateEnum;
 use App\Http\Resources\Procurement\PurchaseOrderResource;
 use App\Models\Procurement\PurchaseOrder;
 use App\Models\Procurement\PurchaseOrderTransaction;
+use Illuminate\Support\Arr;
+use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 
 class UpdatePurchaseOrderTransaction extends OrgAction
 {
+    use WithProcurementAuthorisation;
     use WithActionUpdate;
     use WithNoStrictRules;
 
     public function handle(PurchaseOrderTransaction $purchaseOrderTransaction, array $modelData): PurchaseOrderTransaction
     {
+        if (Arr::has($modelData, 'net_amount')) {
+            data_set($modelData, 'grp_net_amount', Arr::get($modelData, 'net_amount') * ($purchaseOrderTransaction->grp_exchange ?? 1), overwrite: false);
+            data_set($modelData, 'org_net_amount', Arr::get($modelData, 'net_amount') * ($purchaseOrderTransaction->org_exchange ?? 1), overwrite: false);
+        }
+
+        if (Arr::has($modelData, 'quantity_ordered') && !Arr::has($modelData, 'net_amount')) {
+            $unitCost = $purchaseOrderTransaction->supplierProduct?->cost;
+
+            if ($unitCost !== null) {
+                $netAmount = $unitCost * Arr::get($modelData, 'quantity_ordered');
+
+                data_set($modelData, 'net_amount', $netAmount);
+                data_set($modelData, 'grp_net_amount', $netAmount * ($purchaseOrderTransaction->grp_exchange ?? 1));
+                data_set($modelData, 'org_net_amount', $netAmount * ($purchaseOrderTransaction->org_exchange ?? 1));
+            }
+        }
+
         $purchaseOrderTransaction = $this->update($purchaseOrderTransaction, $modelData, ['data']);
         CalculatePurchaseOrderTotalAmounts::run($purchaseOrderTransaction->purchaseOrder);
         PurchaseOrderHydrateTransactions::dispatch($purchaseOrderTransaction->purchaseOrder)->delay($this->hydratorsDelay);
@@ -32,24 +55,16 @@ class UpdatePurchaseOrderTransaction extends OrgAction
         return $purchaseOrderTransaction;
     }
 
-    public function authorize(ActionRequest $request): bool
-    {
-        if ($this->asAction) {
-            return true;
-        }
-        $this->canEdit = $request->user()->authTo("procurement.{$this->organisation->id}.edit");
-
-        return $request->user()->authTo("procurement.{$this->organisation->id}.view");
-    }
-
     public function rules(): array
     {
         $rules = [
             'quantity_ordered' => ['sometimes', 'numeric', 'min:0'],
-            'unit_quantity' => ['sometimes', 'nullable', 'numeric', 'gt:0'],
-            'unit_price' => ['sometimes', 'nullable', 'numeric'],
         ];
         if (! $this->strict) {
+            $rules['agent_supplier_purchase_order_id'] = ['sometimes', 'nullable', 'integer', 'exists:agent_supplier_purchase_orders,id'];
+            $rules['net_amount'] = ['sometimes', 'numeric'];
+            $rules['state'] = ['sometimes', Rule::enum(PurchaseOrderTransactionStateEnum::class)];
+            $rules['delivery_state'] = ['sometimes', 'nullable', Rule::enum(PurchaseOrderTransactionDeliveryStateEnum::class)];
             $rules = $this->noStrictUpdateRules($rules);
         }
 

@@ -57,8 +57,8 @@ class CreateBatchCode extends OrgAction
             $fields = [
                 'org_stock_id' => [
                     'type'        => 'select_infinite',
-                    'label'       => __('SKU'),
-                    'placeholder' => __('Select SKU'),
+                    'label'       => __('SKO'),
+                    'placeholder' => __('Select SKO'),
                     'mode'        => 'single',
                     'searchable'  => true,
                     'labelProp'   => 'name',

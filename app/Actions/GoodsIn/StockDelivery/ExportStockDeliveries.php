@@ -31,6 +31,13 @@ class ExportStockDeliveries
         return $this->export(new StockDeliveriesExport(), 'stock-deliveries', $type);
     }
 
+    public function authorize(ActionRequest $request): bool
+    {
+        $organisation = $request->route()->parameter('organisation');
+
+        return $request->user()->authTo("procurement.{$organisation->id}.view");
+    }
+
     /**
      * @throws \Throwable
      */

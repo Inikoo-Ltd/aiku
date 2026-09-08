@@ -10,7 +10,7 @@ namespace App\Actions\Goods\Barcode;
 
 use App\Actions\Goods\Barcode\Hydrators\GroupHydrateBarcodes;
 use App\Actions\Goods\TradeUnit\UpdateTradeUnit;
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Helpers\Barcode\BarcodeStatusEnum;
 use App\Http\Resources\Helpers\BarcodeResource;
@@ -21,7 +21,7 @@ use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 
-class UpdateBarcode extends GrpAction
+class UpdateBarcode extends OrgAction
 {
     use WithActionUpdate;
 
@@ -114,7 +114,7 @@ class UpdateBarcode extends GrpAction
 
     public function asController(Barcode $barcode, ActionRequest $request): Barcode
     {
-        $this->initialisation(group(), $request);
+        $this->initialisationFromGroup(group(), $request);
 
         return $this->handle($barcode, $this->validatedData);
     }
@@ -128,7 +128,7 @@ class UpdateBarcode extends GrpAction
         $this->asAction       = true;
         $this->barcode        = $barcode;
         $this->hydratorsDelay = $hydratorsDelay;
-        $this->initialisation($barcode->group, $modelData);
+        $this->initialisationFromGroup($barcode->group, $modelData);
 
         return $this->handle($barcode, $this->validatedData);
     }

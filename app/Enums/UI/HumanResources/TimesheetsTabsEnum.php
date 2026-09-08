@@ -23,11 +23,11 @@ enum TimesheetsTabsEnum: string
     {
         return match ($this) {
             TimesheetsTabsEnum::ALL_EMPLOYEES => [
-                'title' => __('All employees'),
-                'icon'  => 'fal fa-users',
+                'title' => __('By date'),
+                'icon'  => 'fal fa-calendar-day',
             ],
             TimesheetsTabsEnum::PER_EMPLOYEE => [
-                'title' => __('Per employee'),
+                'title' => __('By employee'),
                 'icon'  => 'fal fa-user',
             ]
         };

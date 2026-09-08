@@ -33,6 +33,7 @@ class MasterCollectionHydrateCollections implements ShouldBeUnique
                 ->where('master_collection_id', $masterCollection->id)
                 ->count(),
             'number_current_collections' => DB::table('collections')
+                ->where('master_collection_id', $masterCollection->id)
                 ->whereIn('state', [
                     CollectionStateEnum::ACTIVE
                 ])

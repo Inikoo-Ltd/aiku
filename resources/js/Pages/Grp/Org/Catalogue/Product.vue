@@ -17,7 +17,7 @@ import { capitalize } from "@/Composables/capitalize"
 import PageHeading from '@/Components/Headings/PageHeading.vue'
 import Tabs from '@/Components/Navigation/Tabs.vue'
 import Breadcrumb from 'primevue/breadcrumb'
-import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
+import { FontAwesomeIcon, FontAwesomeLayers } from '@fortawesome/vue-fontawesome'
 import type { PageHeadingTypes } from '@/types/PageHeading'
 import ModelDetails from "@/Components/ModelDetails.vue"
 import TableOrders from "@/Components/Tables/Grp/Org/Ordering/TableOrders.vue"
@@ -43,7 +43,7 @@ import Action from '@/Components/Forms/Fields/Action.vue'
 import { faMagnifyingGlass } from '@fortawesome/free-solid-svg-icons'
 import { faShapes, faStar } from '@fas'
 import { faHatCowboy } from "@far"
-import ButtonReindexWebpage from '@/Components/Webpages/ButtonReindexWebpage.vue'
+// import ButtonReindexWebpage from '@/Components/Webpages/ButtonReindexWebpage.vue'
 import TableOffers from '@/Components/Shop/Offers/TableOffers.vue'
 import TableReviews from "@/Components/Shop/Reviews/TableReviews.vue"
 import Dialog from "primevue/dialog"
@@ -136,9 +136,11 @@ const props = defineProps<{
         }
     }
     product_id: number
+    product_units?: number
+    product_unit?: string
+    not_follow_master_media?: boolean
 }>()
 
-const layout = inject('layout')
 const currentTab = ref(props.tabs.current)
 const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 const isOpenDialog = ref(false)
@@ -278,7 +280,22 @@ const saveProductReview = async () => {
                 :icon="faHatCowboy"
                 class="text-red-500 cursor-pointer"
             />
-            <!-- TODO PLEASE CHANGE TO HAVE LINK TO VARIANT -->
+
+            <FontAwesomeLayers
+                v-if="not_follow_master_media"
+                v-tooltip="ctrans('Product has independent media settings')"
+                class="flex items-center justify-center w-[2rem]"
+            >
+                <FontAwesomeIcon 
+                    :icon="faHatCowboy"
+                    :class="'text-red-500 text-[17px] !top-[-93%] !right-[-50%] !rotate-[17deg]'"
+                />
+                <FontAwesomeIcon 
+                    :icon="faCameraRetro"
+                    :class="'text-red-500'"
+                />
+            </FontAwesomeLayers>
+
             <Link  v-if="variant"  :href="routeVariant()" v-tooltip="trans('Go to Variant')">
                 <FontAwesomeIcon :icon="is_variant_leader ? faStar : faShapes" class="text-yellow-500 cursor-pointer" />
             </Link>
@@ -312,6 +329,7 @@ const saveProductReview = async () => {
                 }"
             />
 
+            <!-- Luigi Search is discontinued, reindex button disabled
             <div class="w-fit" v-if="currentTab === 'showcase'">
                 <ButtonReindexWebpage
                     :webpage="{
@@ -341,31 +359,31 @@ const saveProductReview = async () => {
                     </template>
                 </ButtonReindexWebpage>
             </div>
+            -->
 
-            <ModalCreateGiftOffers
-                v-if="currentTab === 'offers'"
-                v-tooltip="'Create New Offer'"
-                :shop_data="props.shop_data"
-                :product_id="props.product_id"
-                 />
-
-            <div
-                v-if="currentTab === 'offers' && layout?.app?.environment == 'local'"
-                class="relative inline-flex"
-            >
-                <ModalCreateStepDiscountProduct
+            <template v-if="currentTab === 'offers'">
+                <ModalCreateGiftOffers
                     v-tooltip="'Create New Offer'"
                     :shop_data="props.shop_data"
                     :product_id="props.product_id"
-                />
-                <span class="pointer-events-none absolute -top-2 -right-1.5 z-10 rounded bg-red-500 px-1 py-px text-[10px] font-bold leading-none text-white shadow">
-                    {{ trans('Local') }}
-                </span>
-            </div>
+                    />
+
+                <div                    
+                    class="relative inline-flex"
+                >
+                    <ModalCreateStepDiscountProduct
+                        v-tooltip="'Create New Offer'"
+                        :shop_data="props.shop_data"
+                        :product_id="props.product_id"
+                        :product_units="props.product_units"
+                        :product_unit="props.product_unit"
+                    />
+                </div>
+            </template>
         </template>
     </PageHeading>
     <Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" />
-    <div v-if="mini_breadcrumbs.length != 0" class="bg-white  px-4 py-2  w-full  border-gray-200 border-b overflow-x-auto">
+    <div v-if="mini_breadcrumbs?.length" class="bg-white  px-4 py-2  w-full  border-gray-200 border-b overflow-x-auto">
         <Breadcrumb :model="mini_breadcrumbs">
             <template #item="{ item, index }">
                 <div class="flex items-center gap-1 whitespace-nowrap">

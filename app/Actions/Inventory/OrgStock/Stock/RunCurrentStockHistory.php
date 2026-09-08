@@ -9,6 +9,8 @@
 
 namespace App\Actions\Inventory\OrgStock\Stock;
 
+use App\Actions\Inventory\OrgStockFamily\Hydrators\OrgStockFamilyHydrateStockValue;
+use App\Models\Inventory\OrgStockFamily;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -28,6 +30,12 @@ class RunCurrentStockHistory
                     CalculateOrgStockCurrentStockHistories::run($locationOrgStock->org_stock_id);
                 }
             }, 'org_stock_id');
+
+        OrgStockFamily::orderBy('id')->chunk(100, function ($orgStockFamilies) {
+            foreach ($orgStockFamilies as $orgStockFamily) {
+                OrgStockFamilyHydrateStockValue::run($orgStockFamily);
+            }
+        });
     }
 
     public function getCommandSignature(): string

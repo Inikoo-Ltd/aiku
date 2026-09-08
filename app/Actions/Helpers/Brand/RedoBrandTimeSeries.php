@@ -2,6 +2,7 @@
 
 namespace App\Actions\Helpers\Brand;
 
+use App\Helpers\TimeSeriesPeriodCalculator;
 use App\Actions\Traits\Hydrators\WithHydrateCommand;
 use App\Actions\Traits\WithTimeSeriesRedo;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
@@ -39,6 +40,17 @@ class RedoBrandTimeSeries implements ShouldBeUnique
         }
     }
 
+    protected function dateRangeSources(): array
+    {
+        return [
+            [
+                'query' => fn () => DB::connection('aiku_no_sticky')->table('invoice_transactions')->whereNull('deleted_at'),
+                'key'   => 'brand_id',
+                'date'  => 'date',
+            ],
+        ];
+    }
+
     public function handle(?int $brandId, ?string $from = null, ?string $to = null, bool $async = false): void
     {
         if (!$brandId) {
@@ -64,26 +76,24 @@ class RedoBrandTimeSeries implements ShouldBeUnique
         }
 
         if (!$from || !$to) {
-            $dateRange = DB::connection('aiku_no_sticky')->table('invoice_transactions')
-                ->where('brand_id', $brand->id)
-                ->whereNull('deleted_at')
-                ->selectRaw('MIN(date) as first_date, MAX(date) as last_date')
-                ->first();
+            $dateRange = $this->getDateRange($brand->id);
 
-            if (!$dateRange?->first_date) {
+            if (!$dateRange['from']) {
                 return;
             }
 
-            $from = $from ?? Carbon::parse($dateRange->first_date)->toDateString();
-            $to   = $to ?? Carbon::parse($dateRange->last_date ?? now())->toDateString();
+            $from = $from ?? Carbon::parse($dateRange['from'])->toDateString();
+            $to   = $to ?? Carbon::parse($dateRange['to'] ?? now())->toDateString();
         }
 
         foreach ($shopIds as $shopId) {
             foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
+                [$periodFrom, $periodTo] = TimeSeriesPeriodCalculator::expandWindowToFullPeriods($frequency, $from, $to);
+
                 if ($async) {
-                    ProcessBrandTimeSeriesRecords::dispatch($brand->id, $shopId, $frequency, $from, $to)->onQueue('sales_slave_historic');
+                    ProcessBrandTimeSeriesRecords::dispatch($brand->id, $shopId, $frequency, $periodFrom, $periodTo)->onQueue('sales_slave_historic');
                 } else {
-                    ProcessBrandTimeSeriesRecords::run($brand->id, $shopId, $frequency, $from, $to);
+                    ProcessBrandTimeSeriesRecords::run($brand->id, $shopId, $frequency, $periodFrom, $periodTo);
                 }
             }
         }

@@ -3,7 +3,7 @@
 namespace App\Actions\Helpers\Brand\UI;
 
 use App\Actions\Goods\TradeUnit\UI\ShowTradeUnitsDashboard;
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Actions\Helpers\Brand\WithBrandSubNavigation;
 use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\Traits\Authorisations\WithGoodsAuthorisation;
@@ -14,7 +14,7 @@ use App\Models\Helpers\Brand;
 use Inertia\Inertia;
 use Lorisleiva\Actions\ActionRequest;
 
-class ShowBrand extends GrpAction
+class ShowBrand extends OrgAction
 {
     use WithGoodsAuthorisation;
     use WithBrandSubNavigation;
@@ -63,8 +63,8 @@ class ShowBrand extends GrpAction
                     : Inertia::optional(fn () => BrandResource::make($brand)),
 
                 BrandTabsEnum::HISTORY->value => $this->tab == BrandTabsEnum::HISTORY->value ?
-                    fn () => HistoryResource::collection(IndexHistory::run($brand))
-                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($brand))),
+                    fn () => HistoryResource::collection(IndexHistory::run($brand, BrandTabsEnum::HISTORY->value))
+                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($brand, BrandTabsEnum::HISTORY->value))),
             ]
         )
         ->table(IndexHistory::make()->tableStructure(BrandTabsEnum::HISTORY->value));
@@ -72,7 +72,7 @@ class ShowBrand extends GrpAction
 
     public function asController(Brand $brand, ActionRequest $request)
     {
-        $this->initialisation($brand->group, $request)->withTab(BrandTabsEnum::values());
+        $this->initialisationFromGroup($brand->group, $request)->withTab(BrandTabsEnum::values());
 
         return $brand;
     }

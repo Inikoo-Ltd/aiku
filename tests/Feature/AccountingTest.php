@@ -20,11 +20,17 @@ use App\Actions\Accounting\Invoice\UI\ForceDeleteRefund;
 use App\Actions\Accounting\InvoiceCategory\HydrateInvoiceCategories;
 use App\Actions\Accounting\InvoiceCategory\StoreInvoiceCategory;
 use App\Actions\Accounting\InvoiceCategory\UpdateInvoiceCategory;
+use App\Actions\Accounting\Invoice\CalculateInvoiceTotals;
+use App\Actions\Accounting\InvoiceTransaction\RefundTaxTransactions;
+use App\Actions\Accounting\Invoice\PdfInvoice;
 use App\Actions\Accounting\InvoiceTransaction\StoreInvoiceTransaction;
+use App\Actions\Accounting\InvoiceTransaction\StoreInvoiceTransactionFromCharge;
+use App\Actions\Accounting\InvoiceTransaction\StoreInvoiceTransactionFromShipping;
 use App\Actions\Accounting\InvoiceTransaction\StoreRefundInvoiceTransaction;
 use App\Actions\Accounting\OrgPaymentServiceProvider\StoreOrgPaymentServiceProvider;
 use App\Actions\Accounting\OrgPaymentServiceProvider\StoreOrgPaymentServiceProviderAccount;
 use App\Actions\Accounting\OrgPaymentServiceProvider\UpdateOrgPaymentServiceProvider;
+use App\Actions\Accounting\Invoice\AttachPaymentToInvoice;
 use App\Actions\Accounting\Payment\StorePayment;
 use App\Actions\Accounting\Payment\UpdatePayment;
 use App\Actions\Accounting\PaymentAccount\StorePaymentAccount;
@@ -38,25 +44,43 @@ use App\Actions\Accounting\TopUp\StoreTopUp;
 use App\Actions\Accounting\TopUp\UpdateTopUp;
 use App\Actions\Catalogue\Product\StoreProduct;
 use App\Actions\Catalogue\Shop\StoreShop;
+use App\Actions\CRM\Customer\ProcessCustomerTimeSeriesRecords;
+use App\Actions\Accounting\CreditTransaction\StoreCreditTransaction;
+use App\Actions\Maintenance\Accounting\SplitExcessPaymentOverCreditNote;
+use App\Actions\Ordering\Order\AddBalanceFromExcessPaymentOrder;
+use App\Actions\Ordering\Order\AttachPaymentToOrder;
+use App\Actions\Ordering\Order\UpdateOrderPaymentsStatus;
+use App\Enums\Ordering\Order\OrderPayStatusEnum;
+use Illuminate\Support\Str;
+use App\Enums\Accounting\Payment\PaymentStatusEnum;
+use App\Enums\Accounting\Payment\PaymentStateEnum;
+use App\Actions\Ordering\Order\StoreOrder;
+use App\Actions\SysAdmin\Organisation\RedoOrganisationTimeSeries;
+use Illuminate\Support\Facades\DB;
+use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Actions\CRM\Customer\StoreCustomer;
 use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
 use App\Actions\SysAdmin\GetSectionRoute;
 use App\Enums\Accounting\CreditTransaction\CreditTransactionTypeEnum;
 use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
+use App\Models\Helpers\TaxCategory;
 use App\Enums\Accounting\InvoiceCategory\InvoiceCategoryStateEnum;
 use App\Enums\Accounting\InvoiceCategory\InvoiceCategoryTypeEnum;
+use App\Enums\Accounting\Payment\PaymentTypeEnum;
 use App\Enums\Accounting\PaymentAccount\PaymentAccountTypeEnum;
 use App\Enums\Accounting\PaymentAccountShop\PaymentAccountShopStateEnum;
 use App\Enums\Accounting\PaymentServiceProvider\PaymentServiceProviderTypeEnum;
 use App\Enums\Analytics\AikuSection\AikuSectionEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Models\Accounting\CreditTransaction;
+use App\Enums\Accounting\Invoice\InvoicePayStatusEnum;
 use App\Models\Accounting\Invoice;
 use App\Models\Accounting\InvoiceCategory;
 use App\Models\Accounting\InvoiceTransaction;
 use App\Models\Accounting\OrgPaymentServiceProvider;
 use App\Models\Accounting\Payment;
 use App\Models\Accounting\PaymentAccount;
+use App\Transfers\Aurora\FetchAuroraPayment;
 use App\Models\Accounting\PaymentAccountShop;
 use App\Models\Accounting\PaymentServiceProvider;
 use App\Models\Accounting\TopUp;
@@ -71,6 +95,7 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\get;
+use function Pest\Laravel\patch;
 
 uses()->group('base');
 
@@ -250,6 +275,26 @@ test('update payment account shop', function (PaymentAccount $paymentAccount) {
     return $paymentAccount;
 })->depends('create payment account');
 
+test('retina bank transfer checkout data shows note only when set', function (PaymentAccount $paymentAccount) {
+    $paymentAccount->update(['data' => ['bank' => ['name' => 'Wise', 'iban' => 'BE89 9670 6463 3385', 'swift' => 'TRWIBEB1XXX', 'recipient' => 'Ancient Wisdom s.r.o.', 'account' => '']]]);
+    $paymentAccountShop = $paymentAccount->paymentAccountShops()->first();
+    $paymentAccountShop->update(['state' => PaymentAccountShopStateEnum::ACTIVE]);
+
+    $order        = new \App\Models\Ordering\Order();
+    $apiPoint     = new \App\Models\Accounting\OrderPaymentApiPoint();
+    $checkoutData = \App\Actions\Accounting\PaymentAccountShop\UI\GetRetinaPaymentAccountShopData::run($order, $paymentAccountShop->fresh(), $apiPoint);
+
+    expect($checkoutData['key'])->toBe('bank_transfer')
+        ->and($checkoutData['data'])->not->toHaveKeys(['note', 'swift', 'recipient']);
+
+    $paymentAccountShop->update(['data' => ['note' => 'Оплата здійснюється в євро (EUR).']]);
+    $checkoutData = \App\Actions\Accounting\PaymentAccountShop\UI\GetRetinaPaymentAccountShopData::run($order, $paymentAccountShop->fresh(), $apiPoint);
+
+    expect($checkoutData['data']['note'])->toBe('Оплата здійснюється в євро (EUR).')
+        ->and($checkoutData['data']['swift'])->toBe('TRWIBEB1XXX')
+        ->and($checkoutData['data']['recipient'])->toBe('Ancient Wisdom s.r.o.');
+})->depends('update payment account shop');
+
 test('update payment account', function ($paymentAccount) {
     $paymentAccount = UpdatePaymentAccount::make()->action(
         $paymentAccount,
@@ -338,6 +383,8 @@ test('UI show payment', function (Payment $payment) {
                 'pageHead',
                 fn (AssertableInertia $page) => $page
                     ->where('title', $payment->reference)
+                    ->has('actions', 1)
+                    ->where('actions.0.style', 'edit')
                     ->etc()
             )
             ->has('tabs');
@@ -382,6 +429,57 @@ test(
         return $updatedPayment;
     }
 )->depends('create payment');
+
+test('update manually settled payment via route', function (Payment $payment) {
+    expect($payment->paymentAccount->type->isManuallySettled())->toBeTrue();
+
+    $response = patch(
+        route('grp.models.payment.update', $payment->id),
+        [
+            'amount' => 123.45,
+            'date'   => '2026-08-07',
+        ]
+    );
+
+    $response->assertRedirect();
+    $response->assertSessionHasNoErrors();
+    expect((float)$payment->refresh()->amount)->toBe(123.45);
+})->depends('create payment');
+
+test('payment on non manually settled account cannot be edited', function () {
+    GetCurrencyExchange::shouldRun()->andReturn(2);
+
+    $paymentAccount = $this->shop->paymentAccountShops()
+        ->where('type', PaymentAccountTypeEnum::ACCOUNT)
+        ->first()->paymentAccount;
+
+    $customer = StoreCustomer::make()->action(
+        $this->shop,
+        Customer::factory()->definition()
+    );
+
+    $payment = StorePayment::make()->action(
+        customer: $customer,
+        paymentAccount: $paymentAccount,
+        modelData: Payment::factory()->definition()
+    );
+
+    expect($payment->paymentAccount->type->isManuallySettled())->toBeFalse();
+
+    get(
+        route(
+            'grp.org.accounting.payments.edit',
+            [$this->organisation->slug, $payment->id]
+        )
+    )->assertForbidden();
+
+    patch(
+        route('grp.models.payment.update', $payment->id),
+        ['amount' => 999.99]
+    )->assertForbidden();
+
+    expect((float)$payment->refresh()->amount)->not->toBe(999.99);
+});
 
 test('create and set success 1st top up', function ($payment) {
     $topUp = StoreTopUp::make()->action($payment, [
@@ -726,7 +824,8 @@ test('UI show accounting dashboard', function () {
                     ->where('title', 'Accounting')
                     ->etc()
             )
-            ->has('flatTreeMaps');
+            ->has('flatTreeMaps')
+            ->has('payment_methods.summary.methods');
     });
 });
 
@@ -1018,6 +1117,18 @@ test('UI edit payment account', function () {
     });
 });
 
+test('UI show shop payment methods', function () {
+    $response = get(route('grp.org.shops.show.dashboard.payments.accounting.payments.methods.index', [$this->organisation->slug, $this->shop->slug]));
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('Org/Accounting/PaymentMethods')
+            ->has('title')
+            ->has('pageHead.subNavigation')
+            ->has('data.currency_code')
+            ->has('data.rows');
+    });
+});
+
 test('UI show list payments', function () {
     $response = get(route('grp.org.accounting.payments.index', $this->organisation->slug));
 
@@ -1302,6 +1413,48 @@ test('UI show invoice in Shop', function () {
     });
 });
 
+test('UI show invoice navigation follows the bucket it was opened from', function () {
+    $this->withoutExceptionHandling();
+
+    $customer = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+
+    $makeInvoice = function (string $date, InvoicePayStatusEnum $payStatus) use ($customer) {
+        $invoice = StoreInvoice::make()->action($customer, Invoice::factory()->definition());
+        $invoice->update(['date' => $date, 'pay_status' => $payStatus, 'in_process' => false]);
+
+        return $invoice->refresh();
+    };
+
+    // Anchored to this month, not fixed dates. These only ever need to be ordered relative
+    // to each other, and a hardcoded date drifts into a neighbouring month as the calendar
+    // moves: 2026-07-18/19/20 sat harmlessly in July and on the first of August landed in
+    // now()->subMonth(), inflating the period totals another test in this file asserts on.
+    $anchor = now()->startOfMonth();
+
+    $newest = $makeInvoice($anchor->copy()->addHours(4)->toDateTimeString(), InvoicePayStatusEnum::UNPAID);
+    $paid   = $makeInvoice($anchor->copy()->addHours(3)->toDateTimeString(), InvoicePayStatusEnum::PAID);
+    $middle = $makeInvoice($anchor->copy()->addHours(2)->toDateTimeString(), InvoicePayStatusEnum::UNPAID);
+    $oldest = $makeInvoice($anchor->copy()->addHours(1)->toDateTimeString(), InvoicePayStatusEnum::UNPAID);
+
+    $showRoute = fn ($invoice) => route('grp.org.shops.show.dashboard.invoices.show', [$this->organisation->slug, $this->shop->slug, $invoice->slug]);
+
+    get($showRoute($middle).'?bucket=unpaid')->assertInertia(
+        fn (AssertableInertia $page) => $page
+            ->where('navigation.previous.label', $newest->reference)
+            ->where('navigation.next.label', $oldest->reference)
+            ->etc()
+    );
+
+    get($showRoute($middle).'?bucket=unpaid&bucket_sort=date')->assertInertia(
+        fn (AssertableInertia $page) => $page
+            ->where('navigation.previous.label', $oldest->reference)
+            ->where('navigation.next.label', $newest->reference)
+            ->etc()
+    );
+
+    expect($paid->pay_status)->toBe(InvoicePayStatusEnum::PAID);
+});
+
 test('Delete invoice', function () {
     $this->withoutExceptionHandling();
     $shop     = $this->shop;
@@ -1427,19 +1580,49 @@ test('Store invoice refund transaction', function (Invoice $refund) {
     ]);
 
     $refund->refresh();
-    expect($refundTransaction)->toBeInstanceOf(InvoiceTransaction::class);
+    expect($refundTransaction)->toBeInstanceOf(InvoiceTransaction::class)
+        ->and((float) $refundTransaction->net_amount)->toBe(-1000.0)
+        ->and((float) $refundTransaction->gross_amount)->toBe((float) $refundTransaction->net_amount);
 
     return $refund;
 })->depends('Store invoice refund');
 
+test('refund pdf lines include shipping and charge refunds', function () {
+    $this->withoutExceptionHandling();
+    $customer = createCustomer($this->shop);
+    $invoice  = StoreInvoice::make()->action($customer, Invoice::factory()->definition());
+
+    $noProductData = [
+        'tax_category_id' => $invoice->tax_category_id,
+        'quantity'        => 1,
+        'gross_amount'    => 10,
+        'net_amount'      => 10,
+    ];
+    $shippingTransaction = StoreInvoiceTransactionFromShipping::make()->action($invoice, null, $noProductData);
+    $chargeTransaction   = StoreInvoiceTransactionFromCharge::make()->action($invoice, null, $noProductData);
+
+    $refund = StoreRefund::make()->action($invoice, []);
+    StoreRefundInvoiceTransaction::make()->action($refund, $shippingTransaction, ['net_amount' => 10]);
+    StoreRefundInvoiceTransaction::make()->action($refund, $chargeTransaction, ['net_amount' => 10]);
+
+    $invoiceLineTypes = PdfInvoice::make()->getInvoicePdfTransactions($invoice->refresh())->pluck('model_type')->all();
+    $refundLineTypes  = PdfInvoice::make()->getInvoicePdfTransactions($refund->refresh())->pluck('model_type')->all();
+
+    expect($invoiceLineTypes)->not->toContain('ShippingZone')
+        ->and($invoiceLineTypes)->not->toContain('Charge')
+        ->and($refundLineTypes)->toContain('ShippingZone')
+        ->and($refundLineTypes)->toContain('Charge');
+});
+
 test('Delete Refund', function (Invoice $refund) {
     $this->withoutExceptionHandling();
     $customer = $refund->customer;
-    expect($customer->stats->number_invoices_type_refund)->toBe(1);
+    $refundsBefore = $customer->stats->number_invoices_type_refund;
+    expect($refundsBefore)->toBeGreaterThanOrEqual(1);
 
     ForceDeleteRefund::make()->handle($refund);
     $customer->refresh();
-    expect($customer->stats->number_invoices_type_refund)->toBe(0);
+    expect($customer->stats->number_invoices_type_refund)->toBe($refundsBefore - 1);
 })->depends('Store invoice refund');
 
 test('UI index customer balances', function () {
@@ -1760,6 +1943,23 @@ test('invoice lifecycle: totals, categorise, updates', function () {
     ]);
     expect($invoice->fiscal_name)->toBe('Fiscal Co');
 
+    $invoice = \App\Actions\Accounting\Invoice\UpdateInvoice::make()->action($invoice, [
+        'is_re' => true,
+    ]);
+    expect($invoice->is_re)->toBeTrue()
+        ->and($invoice->tax_category_id)->not->toBeNull();
+
+    $netBefore = (float) $invoice->net_amount;
+    $esReTaxCategory = \App\Models\Helpers\TaxCategory::where('type', 'special')
+        ->where('data->is_re', true)->where('status', true)->first();
+    $invoice->update(['tax_category_id' => $esReTaxCategory->id]);
+    \App\Actions\Accounting\Invoice\UpdateInvoice::make()->applyInvoiceLineTaxCategories($invoice);
+    $invoice = \App\Actions\Accounting\Invoice\CalculateInvoiceTotals::make()->action($invoice);
+
+    expect((float) $invoice->net_amount)->toBe($netBefore)
+        ->and($invoice->invoiceTransactions()->first()->tax_category_id)->toBe($esReTaxCategory->id)
+        ->and((float) $invoice->tax_amount)->toBe(round($netBefore * $esReTaxCategory->rate, 2));
+
     $newDate = now()->subDays(2);
     $invoice = \App\Actions\Accounting\Invoice\UpdateInvoiceDate::make()->handle($invoice, [
         'date' => $newDate,
@@ -1986,6 +2186,42 @@ test('UI invoice edit and refund pages render', function () {
     get(route('grp.org.accounting.invoices.show.refunds.index', [$this->organisation->slug, $invoice->slug]))->assertOk();
 });
 
+test('UI show refund navigation walks refunds only', function () {
+    $this->withoutExceptionHandling();
+
+    $customer = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+
+    $makeRefund = function (string $date) use ($customer) {
+        $invoice = StoreInvoice::make()->action($customer, Invoice::factory()->definition());
+        $refund  = StoreRefund::make()->action($invoice, []);
+        $refund->update(['date' => $date]);
+
+        return $refund->refresh();
+    };
+
+    // Anchored to this month for the same reason as the invoice navigation test above:
+    // only the ordering matters, and a fixed date eventually drifts into a month some
+    // other test asserts totals on.
+    $anchor = now()->startOfMonth();
+
+    $newest = $makeRefund($anchor->copy()->addHours(3)->toDateTimeString());
+    $middle = $makeRefund($anchor->copy()->addHours(2)->toDateTimeString());
+    $oldest = $makeRefund($anchor->copy()->addHours(1)->toDateTimeString());
+
+    get(route('grp.org.accounting.refunds.show', [$this->organisation->slug, $middle->slug]))->assertInertia(
+        fn (AssertableInertia $page) => $page
+            ->where('navigation.previous.label', $newest->reference)
+            ->where('navigation.next.label', $oldest->reference)
+            ->etc()
+    );
+
+    expect(Invoice::whereIn('reference', [
+        $newest->reference,
+        $middle->reference,
+        $oldest->reference
+    ])->where('type', InvoiceTypeEnum::REFUND)->count())->toBe(3);
+});
+
 /*
 |--------------------------------------------------------------------------
 | UI: payment account customers/shops sub-pages
@@ -2202,4 +2438,588 @@ test('UI refund action endpoints create tax finalise and delete', function () {
         'deleted_note' => 'test delete',
     ])->assertRedirect();
     expect($taxRefund->refresh()->trashed())->toBeTrue();
+});
+
+test('a single day customer redo keeps the whole period totals in the organisation time series', function () {
+    $customer   = createCustomer($this->shop);
+    $monthStart = now()->subMonth()->startOfMonth();
+
+    foreach ([[3, 100], [21, 250]] as [$dayOffset, $amount]) {
+        DB::table('invoices')->insert([
+            'group_id'        => $this->shop->group_id,
+            'organisation_id' => $this->shop->organisation_id,
+            'shop_id'         => $this->shop->id,
+            'customer_id'     => $customer->id,
+            'currency_id'     => $this->shop->currency_id,
+            'tax_category_id' => DB::table('tax_categories')->value('id'),
+            'slug'            => 'ts-inv-'.uniqid(),
+            'reference'       => 'TS-INV-'.uniqid(),
+            'type'            => 'invoice',
+            'in_process'      => false,
+            'date'            => $monthStart->copy()->addDays($dayOffset),
+            'net_amount'      => $amount,
+            'grp_net_amount'  => $amount,
+            'payment_data'    => '{}',
+            'data'            => '{}',
+            'created_at'      => now(),
+            'updated_at'      => now(),
+        ]);
+    }
+
+    $registrationDay = $monthStart->copy()->addDays(3)->toDateString();
+
+    RedoOrganisationTimeSeries::make()->handle($this->organisation->id, $registrationDay, $registrationDay);
+
+    $record = DB::table('organisation_time_series as ts')
+        ->join('organisation_time_series_records as r', 'r.organisation_time_series_id', '=', 'ts.id')
+        ->where('ts.organisation_id', $this->organisation->id)
+        ->where('ts.frequency', TimeSeriesFrequencyEnum::MONTHLY->value)
+        ->where('r.period', $monthStart->format('Y-m'))
+        ->first();
+
+    // Compared against what the month actually holds, not a constant: other tests in this
+    // file leave invoices in it — some of them dated by hand — and which month that is
+    // moves with the calendar, so a hardcoded 350.0 only held while those dates happened
+    // to sit outside the asserted month.
+    $periodInvoices = DB::table('invoices')
+        ->where('organisation_id', $this->organisation->id)
+        ->whereBetween('date', [$monthStart, $monthStart->copy()->endOfMonth()]);
+
+    // sales_grp_currency_external sums every row, the invoices counter only counts
+    // type=invoice — refunds are counted separately — so the two read differently.
+    expect((float) $record->sales_grp_currency_external)->toBe((float) (clone $periodInvoices)->sum('grp_net_amount'))
+        ->and((int) $record->invoices)->toBe((int) (clone $periodInvoices)->where('type', 'invoice')->count())
+        ->and((float) $record->sales_grp_currency_external)->toBeGreaterThanOrEqual(350.0)
+        ->and((int) $record->invoices)->toBeGreaterThanOrEqual(2);
+});
+
+test('customer time series merges grouped metrics with invoice periods and metric-only periods', function () {
+    $customer       = StoreCustomer::make()->action($this->shop, \App\Models\CRM\Customer::factory()->definition());
+    $invoiceMonth   = now()->startOfMonth()->subMonths(2);
+    $basketMonth    = now()->startOfMonth()->subMonth();
+    $insertInvoice  = function ($date, $amount) use ($customer) {
+        DB::table('invoices')->insert([
+            'group_id'        => $this->shop->group_id,
+            'organisation_id' => $this->shop->organisation_id,
+            'shop_id'         => $this->shop->id,
+            'customer_id'     => $customer->id,
+            'currency_id'     => $this->shop->currency_id,
+            'tax_category_id' => DB::table('tax_categories')->value('id'),
+            'slug'            => 'cts-inv-'.uniqid(),
+            'reference'       => 'CTS-INV-'.uniqid(),
+            'type'            => 'invoice',
+            'in_process'      => false,
+            'date'            => $date,
+            'net_amount'      => $amount,
+            'grp_net_amount'  => $amount,
+            'payment_data'    => '{}',
+            'data'            => '{}',
+            'created_at'      => now(),
+            'updated_at'      => now(),
+        ]);
+    };
+
+    $insertInvoice($invoiceMonth->copy()->addDays(5), 120);
+
+    $order = StoreOrder::make()->action($customer, []);
+    DB::table('orders')->where('id', $order->id)->update([
+        'date'       => $basketMonth->copy()->addDays(10),
+        'created_at' => $basketMonth->copy()->addDays(10),
+        'updated_at' => $basketMonth->copy()->addDays(10),
+        'net_amount' => 55,
+    ]);
+
+    ProcessCustomerTimeSeriesRecords::run(
+        $customer->id,
+        TimeSeriesFrequencyEnum::MONTHLY,
+        $invoiceMonth->toDateString(),
+        $basketMonth->copy()->endOfMonth()->toDateString()
+    );
+
+    $records = DB::table('customer_time_series as ts')
+        ->join('customer_time_series_records as r', 'r.customer_time_series_id', '=', 'ts.id')
+        ->where('ts.customer_id', $customer->id)
+        ->where('ts.frequency', TimeSeriesFrequencyEnum::MONTHLY->value)
+        ->get()
+        ->keyBy('period');
+
+    $invoiceRecord = $records[$invoiceMonth->format('Y-m')];
+    $basketRecord  = $records[$basketMonth->format('Y-m')];
+
+    expect((float) $invoiceRecord->sales)->toBe(120.0)
+        ->and((int) $invoiceRecord->invoices)->toBe(1)
+        ->and((int) $invoiceRecord->orders)->toBe(0)
+        ->and((float) $basketRecord->sales)->toBe(0.0)
+        ->and((float) $basketRecord->baskets_created)->toBe(55.0)
+        ->and((float) $basketRecord->baskets_updated)->toBe(55.0)
+        ->and((int) $basketRecord->orders)->toBe(1);
+});
+
+test('invoice categories index uses time series aggregation', function () {
+    request()->setRouteResolver(fn () => new \Illuminate\Routing\Route('GET', 'test', []));
+    $invoiceCategory = StoreInvoiceCategory::make()->action($this->organisation, [
+        'name'        => 'Time Series IC',
+        'state'       => InvoiceCategoryStateEnum::ACTIVE,
+        'type'        => InvoiceCategoryTypeEnum::SHOP_FALLBACK,
+        'currency_id' => $this->organisation->currency_id,
+        'priority'    => 1
+    ]);
+
+    $result = \App\Actions\Accounting\InvoiceCategory\UI\IndexInvoiceCategories::make()->handle($this->organisation);
+
+    expect($result->total())->toBeGreaterThanOrEqual(1)
+        ->and(collect($result->items())->firstWhere('id', $invoiceCategory->id)->amount)->not->toBeNull();
+});
+
+test('a tax only refund gives back exactly the tax the invoice charged', function () {
+    GetCurrencyExchange::shouldRun()->andReturn(1);
+
+    $customer = createCustomer($this->shop);
+    [, $product] = createProduct($this->shop);
+
+    $invoice = StoreInvoice::make()->action($customer, Invoice::factory()->definition());
+    $invoice->update(['tax_category_id' => TaxCategory::where('rate', 0.2)->firstOrFail()->id]);
+
+    // Three of these lines shed a rounding fraction and one gains it, so the tax of each
+    // line added up is a penny short of the tax charged on the total of 1901.04.
+    foreach ([260.00, 260.00, 260.00, 59.28, 353.92, 353.92, 353.92] as $netAmount) {
+        StoreInvoiceTransaction::make()->action($invoice, $product->historicAsset, [
+            'date'            => now(),
+            'tax_category_id' => $invoice->tax_category_id,
+            'quantity'        => 1,
+            'gross_amount'    => $netAmount,
+            'net_amount'      => $netAmount,
+        ]);
+    }
+
+    $invoice = CalculateInvoiceTotals::make()->action($invoice->refresh());
+
+    expect((float) $invoice->net_amount)->toBe(1901.04)
+        ->and((float) $invoice->tax_amount)->toBe(380.21);
+
+    $refund = RefundTaxTransactions::make()->handle($invoice)->refresh();
+
+    expect((float) $refund->tax_amount)->toBe(-380.21)
+        ->and((float) $refund->total_amount)->toBe(-380.21)
+        ->and(round($refund->invoiceTransactions->sum('tax_amount'), 2))->toBe(380.21);
+});
+
+test('returning excess payment as balance pays off the order refund', function () {
+    GetCurrencyExchange::shouldRun()->andReturn(1);
+
+    $customer = createCustomer($this->shop);
+    $order    = StoreOrder::make()->action($customer, []);
+
+    $invoice = StoreInvoice::make()->action($customer, Invoice::factory()->definition());
+    $invoice->update(['order_id' => $order->id, 'total_amount' => 774.23]);
+
+    $refund = StoreRefund::make()->action($invoice, []);
+    $refund->update(['order_id' => $order->id, 'total_amount' => -39.04, 'in_process' => false]);
+
+    DB::table('orders')->where('id', $order->id)->update([
+        'total_amount'   => 774.23,
+        'payment_amount' => 756.23,
+    ]);
+
+    request()->setLaravelSession(app('session.store'));
+    AddBalanceFromExcessPaymentOrder::make()->handle($order->refresh());
+
+    expect((float) $refund->refresh()->payment_amount)->toBe(-21.04);
+});
+
+test('excess bigger than the refund pays it in full and keeps the rest as balance', function () {
+    GetCurrencyExchange::shouldRun()->andReturn(1);
+
+    $customer = createCustomer($this->shop);
+    $order    = StoreOrder::make()->action($customer, []);
+
+    $invoice = StoreInvoice::make()->action($customer, Invoice::factory()->definition());
+    $invoice->update(['order_id' => $order->id, 'total_amount' => 500]);
+
+    $refund = StoreRefund::make()->action($invoice, []);
+    $refund->update(['order_id' => $order->id, 'total_amount' => -176.97, 'in_process' => false]);
+
+    DB::table('orders')->where('id', $order->id)->update([
+        'total_amount'   => 500,
+        'payment_amount' => 660.32,
+    ]);
+
+    request()->setLaravelSession(app('session.store'));
+    AddBalanceFromExcessPaymentOrder::make()->handle($order->refresh());
+
+    expect((float) $refund->refresh()->payment_amount)->toBe(-176.97)
+        ->and(round($order->refresh()->payments()->where('payments.type', PaymentTypeEnum::REFUND)->sum('payments.amount'), 2))->toBe(-337.29);
+});
+
+test('repair command attaches order only excess refunds to their credit note', function () {
+    GetCurrencyExchange::shouldRun()->andReturn(1);
+
+    $customer = createCustomer($this->shop);
+    $order    = StoreOrder::make()->action($customer, []);
+
+    $invoice = StoreInvoice::make()->action($customer, Invoice::factory()->definition());
+    $invoice->update(['order_id' => $order->id, 'total_amount' => 774.23]);
+
+    $refund = StoreRefund::make()->action($invoice, []);
+    $refund->update(['order_id' => $order->id, 'total_amount' => -39.04, 'in_process' => false]);
+
+    $payment = StorePayment::make()->action(
+        $customer,
+        $this->shop->paymentAccountShops()->where('type', PaymentAccountTypeEnum::ACCOUNT)->first()->paymentAccount,
+        [
+            'amount'    => -21.04,
+            'reference' => 'ref-bal-'.Str::ulid(),
+            'status'    => PaymentStatusEnum::SUCCESS->value,
+            'state'     => PaymentStateEnum::COMPLETED->value,
+            'type'      => PaymentTypeEnum::REFUND,
+        ]
+    );
+    AttachPaymentToOrder::make()->action($order, $payment, []);
+
+    $this->artisan('repair:excess_payment_refunds_not_attached_to_invoice --apply')->assertOk();
+
+    expect((float) $refund->refresh()->payment_amount)->toBe(-21.04);
+});
+
+test('a credit note leaves the order paid, not a fraction of a penny short', function () {
+    GetCurrencyExchange::shouldRun()->andReturn(1);
+
+    $customer = createCustomer($this->shop);
+    $order    = StoreOrder::make()->action($customer, []);
+    $order->update(['total_amount' => 181.02]);
+
+    $invoice = StoreInvoice::make()->action($customer, Invoice::factory()->definition());
+    $invoice->update(['order_id' => $order->id, 'total_amount' => 181.02]);
+
+    $refund = StoreRefund::make()->action($invoice, []);
+    $refund->update(['order_id' => $order->id, 'total_amount' => -4.98, 'in_process' => false]);
+
+    $payment = StorePayment::make()->action(
+        $customer,
+        $this->shop->paymentAccountShops()->where('type', PaymentAccountTypeEnum::ACCOUNT)->first()->paymentAccount,
+        [
+            'amount'    => 176.04,
+            'reference' => 'ref-paid-'.Str::ulid(),
+            'status'    => PaymentStatusEnum::SUCCESS->value,
+            'state'     => PaymentStateEnum::COMPLETED->value,
+            'type'      => PaymentTypeEnum::PAYMENT,
+        ]
+    );
+    AttachPaymentToOrder::make()->action($order, $payment, []);
+
+    UpdateOrderPaymentsStatus::run($order->refresh());
+
+    expect($order->refresh()->pay_status)->toBe(OrderPayStatusEnum::PAID);
+});
+
+test('splitting an oversized excess payment settles the credit note and keeps the balance', function () {
+    GetCurrencyExchange::shouldRun()->andReturn(1);
+
+    $customer = createCustomer($this->shop);
+    $order    = StoreOrder::make()->action($customer, []);
+
+    $invoice = StoreInvoice::make()->action($customer, Invoice::factory()->definition());
+    $invoice->update(['order_id' => $order->id, 'total_amount' => 9378.22]);
+
+    $refund = StoreRefund::make()->action($invoice, []);
+    $refund->update(['order_id' => $order->id, 'total_amount' => -176.97, 'in_process' => false]);
+
+    $payment = StorePayment::make()->action(
+        $customer,
+        $this->shop->paymentAccountShops()->where('type', PaymentAccountTypeEnum::ACCOUNT)->first()->paymentAccount,
+        [
+            'amount'    => -337.29,
+            'reference' => 'ref-bal-'.Str::ulid(),
+            'status'    => PaymentStatusEnum::SUCCESS->value,
+            'state'     => PaymentStateEnum::COMPLETED->value,
+            'type'      => PaymentTypeEnum::REFUND,
+        ]
+    );
+    AttachPaymentToOrder::make()->action($order, $payment, []);
+    StoreCreditTransaction::make()->action($customer, [
+        'payment_id' => $payment->id,
+        'amount'     => 337.29,
+        'date'       => now(),
+        'type'       => CreditTransactionTypeEnum::FROM_EXCESS,
+    ]);
+
+    $balanceBefore = round($customer->creditTransactions()->sum('amount'), 2);
+
+    SplitExcessPaymentOverCreditNote::make()->asCommand(
+        new class ($payment->id) extends \Illuminate\Console\Command {
+            public function __construct(private int $paymentId)
+            {
+                parent::__construct();
+                $this->setLaravel(app());
+            }
+
+            public function argument($key = null)
+            {
+                return $this->paymentId;
+            }
+
+            public function option($key = null)
+            {
+                return true;
+            }
+
+            public function line($string, $style = null, $verbosity = null): void
+            {
+            }
+
+            public function info($string, $verbosity = null): void
+            {
+            }
+        }
+    );
+
+    expect((float) $refund->refresh()->payment_amount)->toBe(-176.97)
+        ->and((float) $payment->refresh()->amount)->toBe(-160.32)
+        ->and(round($customer->refresh()->creditTransactions()->sum('amount'), 2))->toBe($balanceBefore);
+});
+
+test('repair command attaches order only payments to their invoice, and only when they add up', function () {
+    GetCurrencyExchange::shouldRun()->andReturn(1);
+
+    $customer = createCustomer($this->shop);
+    $account  = $this->shop->paymentAccountShops()->where('type', PaymentAccountTypeEnum::ACCOUNT)->first()->paymentAccount;
+
+    $storePayment = fn (float $amount, PaymentTypeEnum $type) => StorePayment::make()->action(
+        $customer,
+        $account,
+        [
+            'amount'    => $amount,
+            'reference' => 'ref-afr-'.Str::ulid(),
+            'status'    => PaymentStatusEnum::SUCCESS->value,
+            'state'     => PaymentStateEnum::COMPLETED->value,
+            'type'      => $type,
+        ]
+    );
+
+    $this->shop->update(['migrated_to_aiku_on' => now()->addYear()]);
+
+    $settles = StoreOrder::make()->action($customer, []);
+    $invoice = StoreInvoice::make()->action($customer, Invoice::factory()->definition());
+    $invoice->update(['order_id' => $settles->id, 'total_amount' => 3433.49, 'in_process' => false, 'pay_status' => InvoicePayStatusEnum::UNPAID]);
+    AttachPaymentToOrder::make()->action($settles, $storePayment(3560.12, PaymentTypeEnum::PAYMENT), []);
+    AttachPaymentToOrder::make()->action($settles, $storePayment(-126.63, PaymentTypeEnum::REFUND), []);
+
+    $short        = StoreOrder::make()->action($customer, []);
+    $shortInvoice = StoreInvoice::make()->action($customer, Invoice::factory()->definition());
+    $shortInvoice->update(['order_id' => $short->id, 'total_amount' => 500.00, 'in_process' => false, 'pay_status' => InvoicePayStatusEnum::UNPAID]);
+    AttachPaymentToOrder::make()->action($short, $storePayment(499.99, PaymentTypeEnum::PAYMENT), []);
+
+    $native        = StoreOrder::make()->action($customer, []);
+    $nativeInvoice = StoreInvoice::make()->action($customer, Invoice::factory()->definition());
+    $nativeInvoice->update(['order_id' => $native->id, 'total_amount' => 210.00, 'in_process' => false, 'pay_status' => InvoicePayStatusEnum::UNPAID]);
+    AttachPaymentToOrder::make()->action($native, $storePayment(210.00, PaymentTypeEnum::PAYMENT), []);
+
+    $this->artisan('repair:invoice_payments_not_attached --slug='.$invoice->slug.' --slug='.$shortInvoice->slug.' --apply')->assertOk();
+
+    expect($invoice->refresh()->pay_status)->toBe(InvoicePayStatusEnum::PAID)
+        ->and((float) $invoice->payment_amount)->toBe(3433.49)
+        ->and($shortInvoice->refresh()->pay_status)->toBe(InvoicePayStatusEnum::UNPAID)
+        ->and($shortInvoice->payments()->count())->toBe(0);
+
+    // dated after the shop moved to aiku, and paid by a payment raised in aiku rather
+    // than imported from aurora, so the command must not decide this one on its own
+    $this->shop->update(['migrated_to_aiku_on' => now()->subYear()]);
+    $this->artisan('repair:invoice_payments_not_attached --slug='.$nativeInvoice->slug.' --apply')->assertOk();
+
+    expect($nativeInvoice->refresh()->pay_status)->toBe(InvoicePayStatusEnum::UNPAID)
+        ->and($nativeInvoice->payments()->count())->toBe(0);
+});
+
+test('an invoice settled by two payments still records the date it was paid', function () {
+    GetCurrencyExchange::shouldRun()->andReturn(1);
+
+    $customer = createCustomer($this->shop);
+    $account  = $this->shop->paymentAccountShops()->where('type', PaymentAccountTypeEnum::ACCOUNT)->first()->paymentAccount;
+    $order    = StoreOrder::make()->action($customer, []);
+
+    $invoice = StoreInvoice::make()->action($customer, Invoice::factory()->definition());
+    $invoice->update(['order_id' => $order->id, 'total_amount' => 372.72, 'in_process' => false, 'pay_status' => InvoicePayStatusEnum::UNPAID]);
+
+    // taken from ACAi02240: 351.84 + 20.88 sums to 372.71999999999997 as a float,
+    // a hair under the total, so the >= test inside the loop never fires
+    foreach ([351.84, 20.88] as $amount) {
+        $payment = StorePayment::make()->action($customer, $account, [
+            'amount'    => $amount,
+            'reference' => 'ref-two-'.Str::ulid(),
+            'status'    => PaymentStatusEnum::SUCCESS->value,
+            'state'     => PaymentStateEnum::COMPLETED->value,
+            'type'      => PaymentTypeEnum::PAYMENT,
+        ]);
+        AttachPaymentToInvoice::make()->action($invoice, $payment, []);
+    }
+
+    expect($invoice->refresh()->pay_status)->toBe(InvoicePayStatusEnum::PAID)
+        ->and($invoice->paid_at)->not->toBeNull();
+});
+
+test('a payment already spoken for by one invoice is not offered to another on the same order', function () {
+    GetCurrencyExchange::shouldRun()->andReturn(1);
+
+    $customer = createCustomer($this->shop);
+    $account  = $this->shop->paymentAccountShops()->where('type', PaymentAccountTypeEnum::ACCOUNT)->first()->paymentAccount;
+    $this->shop->update(['migrated_to_aiku_on' => now()->addYear()]);
+
+    $pay = fn (float $amount) => StorePayment::make()->action($customer, $account, [
+        'amount'    => $amount,
+        'reference' => 'ref-multi-'.Str::ulid(),
+        'status'    => PaymentStatusEnum::SUCCESS->value,
+        'state'     => PaymentStateEnum::COMPLETED->value,
+        'type'      => PaymentTypeEnum::PAYMENT,
+    ]);
+
+    $order = StoreOrder::make()->action($customer, []);
+
+    $settled = StoreInvoice::make()->action($customer, Invoice::factory()->definition());
+    $settled->update(['order_id' => $order->id, 'total_amount' => 300.00, 'in_process' => false]);
+    $spokenFor = $pay(300.00);
+    AttachPaymentToOrder::make()->action($order, $spokenFor, []);
+    AttachPaymentToInvoice::make()->action($settled, $spokenFor, []);
+
+    $open = StoreInvoice::make()->action($customer, Invoice::factory()->definition());
+    $open->update(['order_id' => $order->id, 'total_amount' => 120.00, 'in_process' => false, 'pay_status' => InvoicePayStatusEnum::UNPAID]);
+    AttachPaymentToOrder::make()->action($order, $pay(120.00), []);
+
+    $this->artisan('repair:invoice_payments_not_attached --slug='.$open->slug.' --apply')->assertOk();
+
+    // the 120.00 is the only payment left over, so it settles the open invoice and the
+    // 300.00 already sitting on the settled one is never double counted
+    expect($open->refresh()->pay_status)->toBe(InvoicePayStatusEnum::PAID)
+        ->and((float) $open->payment_amount)->toBe(120.00)
+        ->and($open->payments()->count())->toBe(1)
+        ->and((float) $settled->refresh()->payment_amount)->toBe(300.00);
+});
+
+describe('payment method from checkout.com source', function () {
+    test('method is the instrument family and the card scheme is the sub method', function () {
+        $checkout = new PaymentAccount(['type' => PaymentAccountTypeEnum::CHECKOUT]);
+
+        expect(StorePayment::methodFromSource(['type' => 'klarna'], $checkout))->toBe(['method' => 'klarna', 'sub_method' => null])
+            ->and(StorePayment::methodFromSource(['type' => 'paypal'], $checkout))->toBe(['method' => 'paypal', 'sub_method' => null])
+            ->and(StorePayment::methodFromSource(['type' => 'card', 'scheme' => 'VISA'], $checkout))->toBe(['method' => 'card', 'sub_method' => 'visa'])
+            ->and(StorePayment::methodFromSource(['type' => 'card', 'scheme' => 'American Express'], $checkout))->toBe(['method' => 'card', 'sub_method' => 'american express'])
+            ->and(StorePayment::methodFromSource(['type' => 'card', 'scheme' => 'AMEX'], $checkout))->toBe(['method' => 'card', 'sub_method' => 'american express'])
+            ->and(StorePayment::methodFromSource(['type' => 'card', 'scheme' => 'VISA', 'card_wallet_type' => 'applepay'], $checkout))->toBe(['method' => 'applepay', 'sub_method' => 'visa'])
+            ->and(StorePayment::methodFromSource(['type' => 'card', 'scheme' => ''], $checkout))->toBe(['method' => 'card', 'sub_method' => null])
+            ->and(StorePayment::methodFromSource([], $checkout))->toBe(['method' => 'checkout', 'sub_method' => null])
+            ->and(StorePayment::methodFromSource(null, $checkout))->toBe(['method' => 'checkout', 'sub_method' => null]);
+    });
+
+    test('aurora payment metadata yields the checkout.com source', function () {
+        $metadata = json_encode(['id' => 'pay_x', 'source' => ['type' => 'card', 'scheme' => 'Mastercard', 'last4' => '4069']]);
+
+        expect(FetchAuroraPayment::sourceFromMetadata($metadata))->toMatchArray(['type' => 'card', 'scheme' => 'Mastercard'])
+            ->and(FetchAuroraPayment::sourceFromMetadata(json_encode(['source' => ['id' => 'src_only']])))->toBeNull()
+            ->and(FetchAuroraPayment::sourceFromMetadata('not json'))->toBeNull()
+            ->and(FetchAuroraPayment::sourceFromMetadata(null))->toBeNull();
+    });
+
+    test('stored payment keeps method and sub method and drops the raw source', function () {
+        GetCurrencyExchange::shouldRun()->andReturn(1);
+
+        $paymentAccount = $this->shop->paymentAccountShops()
+            ->where('type', PaymentAccountTypeEnum::ACCOUNT)
+            ->first()->paymentAccount;
+        $customer       = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+
+        $klarna = StorePayment::make()->action($customer, $paymentAccount, array_merge(Payment::factory()->definition(), [
+            'source' => ['type' => 'klarna', 'id' => 'src_x'],
+        ]));
+        $visa   = StorePayment::make()->action($customer, $paymentAccount, array_merge(Payment::factory()->definition(), [
+            'source' => ['type' => 'card', 'scheme' => 'VISA'],
+        ]));
+        $plain  = StorePayment::make()->action($customer, $paymentAccount, Payment::factory()->definition());
+
+        expect($klarna->method)->toBe('klarna')
+            ->and($klarna->sub_method)->toBeNull()
+            ->and($klarna->data)->not->toHaveKey('source')
+            ->and($visa->method)->toBe('card')
+            ->and($visa->sub_method)->toBe('visa')
+            ->and($plain->method)->toBe('account')
+            ->and($plain->sub_method)->toBeNull();
+    });
+
+    test('method labels read well for staff', function () {
+        expect(Payment::methodLabel('klarna'))->toBe('Klarna')
+            ->and(Payment::methodLabel('paypal'))->toBe('PayPal')
+            ->and(Payment::methodLabel('card', 'american express'))->toBe('Card · American Express')
+            ->and(Payment::methodLabel('applepay', 'visa'))->toBe('Apple Pay · Visa')
+            ->and(Payment::methodLabel('checkout'))->toBe('Checkout.com')
+            ->and(Payment::methodLabel('cash_on_delivery'))->toBe('Cash on delivery')
+            ->and(Payment::methodLabel('blik'))->toBe('BLIK')
+            ->and(Payment::methodLabel('swish'))->toBe('Swish')
+            ->and(Payment::methodLabel(null))->toBe('');
+    });
+});
+
+describe('invoice pdf tax number display', function () {
+    $renderInvoiceTemplate = function ($invoice) {
+        return view('invoices.templates.pdf.invoice', [
+            'shop'                 => $invoice->shop,
+            'invoice'              => $invoice,
+            'deliveryNote'         => null,
+            'deliveryAddress'      => null,
+            'recipientName'        => null,
+            'invoiceNumberLabel'   => 'Invoice number',
+            'dateLabel'            => 'Invoice date',
+            'typeLabel'            => 'Invoice',
+            'transactions'         => collect(),
+            'totalNet'             => '0.00',
+            'refunds'              => [],
+            'pro_mode'             => false,
+            'country_of_origin'    => false,
+            'rrp'                  => false,
+            'parts'                => false,
+            'commodity_codes'      => false,
+            'weight'               => false,
+            'barcode'              => false,
+            'cpnp'                 => false,
+            'hide_payment_status'  => true,
+            'group_by_tariff_code' => false,
+            'show_dispatch_totals' => false,
+            'show_batch_code'      => false,
+            'dispatch_total_skos'  => null,
+            'dispatch_total_units' => null,
+        ])->render();
+    };
+
+    test('spanish customer tax number shows even when VIES-invalid', function () use ($renderInvoiceTemplate) {
+        $customer = createCustomer($this->shop);
+        $invoice  = StoreInvoice::make()->action($customer, Invoice::factory()->definition());
+
+        $spain   = \App\Models\Helpers\Country::where('code', 'ES')->firstOrFail();
+        $address = \App\Models\Helpers\Address::create(
+            array_merge(\App\Models\Helpers\Address::factory()->definition(), ['country_id' => $spain->id, 'country_code' => 'ES', 'group_id' => $invoice->group_id])
+        );
+        $invoice->update([
+            'address_id'       => $address->id,
+            'tax_number'       => 'ES42232363Q',
+            'tax_number_valid' => false,
+        ]);
+        $invoice->refresh();
+
+        expect($renderInvoiceTemplate($invoice))->toContain('ES42232363Q');
+    });
+
+    test('non-spanish invalid tax number stays hidden', function () use ($renderInvoiceTemplate) {
+        $customer = createCustomer($this->shop);
+        $invoice  = StoreInvoice::make()->action($customer, Invoice::factory()->definition());
+
+        $france  = \App\Models\Helpers\Country::where('code', 'FR')->firstOrFail();
+        $address = \App\Models\Helpers\Address::create(
+            array_merge(\App\Models\Helpers\Address::factory()->definition(), ['country_id' => $france->id, 'country_code' => 'FR', 'group_id' => $invoice->group_id])
+        );
+        $invoice->update([
+            'address_id'       => $address->id,
+            'tax_number'       => 'FR123INVALID',
+            'tax_number_valid' => false,
+        ]);
+        $invoice->refresh();
+
+        expect($renderInvoiceTemplate($invoice))->not->toContain('FR123INVALID');
+    });
 });

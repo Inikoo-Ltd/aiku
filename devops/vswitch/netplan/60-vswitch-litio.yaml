@@ -1,0 +1,8 @@
+network:
+  version: 2
+  vlans:
+    vlan4000:
+      id: 4000
+      link: {{UPLINK_NIC}}
+      mtu: 1400
+      addresses: [10.0.1.1/24]

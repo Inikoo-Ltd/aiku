@@ -15,8 +15,12 @@ use App\Actions\Traits\Authorisations\Inventory\WithInventoryAuthorisation;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementClassEnum;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementFlowEnum;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementTypeEnum;
+use App\Enums\Inventory\OrgStock\OrgStockValuationMethodEnum;
 use App\Http\Resources\Inventory\OrgStockMovementsResource;
 use App\InertiaTable\InertiaTable;
+use App\Models\Dispatching\DeliveryNote;
+use App\Models\GoodsIn\ReturnDeliveryNote;
+use App\Models\GoodsIn\StockDelivery;
 use App\Models\Inventory\Location;
 use App\Models\Inventory\OrgStock;
 use App\Models\Inventory\OrgStockMovement;
@@ -26,6 +30,7 @@ use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
 
@@ -121,8 +126,18 @@ class IndexOrgStockMovements extends OrgAction
         }
 
         $queryBuilder
-            ->leftJoin('pickings', 'pickings.org_stock_movement_id', 'org_stock_movements.id')
-            ->leftJoin('delivery_notes', 'pickings.delivery_note_id', 'delivery_notes.id');
+            ->leftJoin('return_delivery_notes as rdn', function ($join) {
+                $join->on('rdn.id', 'org_stock_movements.parent_id')
+                    ->where('org_stock_movements.parent_type', class_basename(ReturnDeliveryNote::class));
+            })
+            ->leftJoin('delivery_notes as dn', function ($join) {
+                $join->on('dn.id', 'org_stock_movements.parent_id')
+                    ->where('org_stock_movements.parent_type', class_basename(DeliveryNote::class));
+            })
+            ->leftJoin('stock_deliveries as sd', function ($join) {
+                $join->on('sd.id', 'org_stock_movements.parent_id')
+                    ->where('org_stock_movements.parent_type', class_basename(StockDelivery::class));
+            });
 
 
         return $queryBuilder
@@ -141,6 +156,7 @@ class IndexOrgStockMovements extends OrgAction
                 'org_stock_movements.operation_id',
                 'org_stock_movements.running_quantity',
                 'org_stock_movements.running_quantity_org_stock',
+                DB::raw('org_stock_movements.'.OrgStockValuationMethodEnum::official()->runningValueColumn().' as running_value'),
                 'organisations.name as organisation_name',
                 'organisations.slug as organisation_slug',
                 'warehouses.slug as warehouse_slug',
@@ -151,9 +167,11 @@ class IndexOrgStockMovements extends OrgAction
                 'org_stocks.name as org_stock_name',
                 'org_stocks.packed_in',
                 'org_stock_movements.user_id',
-                'delivery_notes.id as delivery_note_id',
-                'delivery_notes.reference as delivery_note_reference',
                 'org_stock_movements.is_migration_point',
+                'org_stock_movements.reason',
+                'org_stock_movements.note',
+                'org_stock_movements.parent_type',
+                DB::raw('COALESCE(dn.reference, rdn.reference, sd.reference) as parent_reference'),
             ])
             ->selectRaw("'{$organisation->currency->code}'  as currency_code")
             ->leftJoin('organisations', 'org_stock_movements.organisation_id', 'organisations.id')
@@ -161,7 +179,7 @@ class IndexOrgStockMovements extends OrgAction
             ->leftJoin('locations', 'locations.id', 'org_stock_movements.location_id')
             ->leftJoin('org_stocks', 'org_stocks.id', 'org_stock_movements.org_stock_id')
             ->with('user')
-            ->allowedSorts(['date', 'flow', 'type', 'class', 'quantity', 'org_amount', 'grp_amount', 'org_stock_name', 'organisation_name', 'user'])
+            ->allowedSorts(['date', 'flow', 'type', 'class', 'quantity', 'org_amount', 'grp_amount', 'org_stock_name', 'organisation_name', 'user', 'reason'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -201,6 +219,10 @@ class IndexOrgStockMovements extends OrgAction
 
             $table
                 ->column(key: 'type', label: __('Type'), sortable: true);
+
+            $table
+                ->column(key: 'reason', label: 'Reason', align: 'left', searchable: true, sortable: true);
+
             if (!($parent instanceof Location)) {
                 $table->column(key: 'location_code', label: __('Location'));
             }
@@ -209,9 +231,11 @@ class IndexOrgStockMovements extends OrgAction
 
             if (!($parent instanceof Location)) {
                 $table->column(key: 'running_quantity_org_stock', label: __('Running Quantity'), align: 'right');
+                $table->column(key: 'running_value', label: __('Running Value').' ('.OrgStockValuationMethodEnum::official()->label().')', tooltip: __('Total stock value right after this movement.').' '.OrgStockValuationMethodEnum::official()->legend(), tooltipIcon: true, align: 'right', type: 'currency');
             } else {
                 $table->column(key: 'running_quantity_location', label: __('Running Quantity'), align: 'right');
             }
+
         };
     }
 

@@ -9,6 +9,7 @@
 namespace App\Actions\Comms\BeeFreeSDK;
 
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use App\Actions\OrgAction;
@@ -33,12 +34,24 @@ class AuthenticateBeefreeAccount extends OrgAction
             throw new \Exception('BeeFree credentials not configured');
         }
 
+        $uid = Arr::get($modelData, 'uid', 'CmsUserName');
+
+        // ponytail: 4 min cache, BeeFree access tokens last 5 min and the SDK refreshes them itself
+        return Cache::remember(
+            "beefree-token:{$this->group->id}:{$builderType}:{$uid}",
+            240,
+            fn () => $this->fetchToken($clientId, $clientSecret, $uid)
+        );
+    }
+
+    protected function fetchToken(string $clientId, string $clientSecret, string $uid): array
+    {
         $response = Http::withHeaders([
             'Content-Type' => 'application/json',
         ])->post('https://auth.getbee.io/loginV2', [
-            'client_id' => $clientId ?? null,
-            'client_secret' => $clientSecret ?? null,
-            'uid' => Arr::get($modelData, 'uid', 'CmsUserName')
+            'client_id' => $clientId,
+            'client_secret' => $clientSecret,
+            'uid' => $uid
         ]);
 
         if ($response->successful()) {

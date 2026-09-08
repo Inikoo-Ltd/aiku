@@ -63,8 +63,12 @@ class GetShippingDeliveryNoteData
 
         $toEmail       = $deliveryNote->email ?? '';
         $toCompanyName = $deliveryNote->company_name ?? '';
-        $contactName   = $deliveryNote->contact_name ?? '';
 
+        if ($deliveryNote->customerClient?->contact_name) {
+            $contactName = $deliveryNote->customerClient->contact_name;
+        } else {
+            $contactName   = $deliveryNote->contact_name ?? '';
+        }
 
         $toFirstName = '';
         $toLastName  = '';
@@ -81,11 +85,14 @@ class GetShippingDeliveryNoteData
 
         $cashOnDelivery = null;
         if ($deliveryNote->is_cash_on_delivery) {
-            $order = $deliveryNote->orders->first();
-            $cashOnDelivery = [
-                'amount'   => $order->total_amount,
-                'currency' => $order->currency->code
-            ];
+            $order           = $deliveryNote->orders->first();
+            $amountToCollect = round(max(0, $order->total_amount - $order->payment_amount), 2);
+            if ($amountToCollect > 0) {
+                $cashOnDelivery = [
+                    'amount'   => $amountToCollect,
+                    'currency' => $order->currency->code
+                ];
+            }
         }
 
 

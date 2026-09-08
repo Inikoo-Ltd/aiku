@@ -12,8 +12,11 @@ use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\CRM\Customer\UI\ShowCustomer;
 use App\Actions\CRM\Customer\UI\WithCustomerSubNavigation;
 use App\Actions\OrgAction;
+use App\Actions\Ordering\CheckoutAbandonment\RunCheckoutAbandonmentScan;
 use App\Actions\Overview\ShowGroupOverviewHub;
 use App\Actions\Overview\ShowOrganisationOverviewHub;
+use App\Enums\Comms\Outbox\OutboxCodeEnum;
+use App\Enums\Comms\Outbox\OutboxStateEnum;
 use App\Enums\Ordering\CheckoutAbandonment\CheckoutAbandonmentStateEnum;
 use App\Http\Resources\Ordering\CheckoutAbandonmentsResource;
 use App\InertiaTable\InertiaTable;
@@ -52,6 +55,9 @@ class IndexCheckoutAbandonments extends OrgAction
             ->groupBy('state')
             ->pluck('total', 'state');
 
+        $remindedCount    = (clone $query)->whereNotNull('email_sent_at')->count();
+        $notRemindedCount = (clone $query)->whereNull('email_sent_at')->count();
+
         return [
             'state' => [
                 'label'    => __('State'),
@@ -66,6 +72,73 @@ class IndexCheckoutAbandonments extends OrgAction
                     $query->whereIn('checkout_abandonments.state', $elements);
                 }
             ],
+            'reminder' => [
+                'label'    => __('Reminder'),
+                'elements' => [
+                    'reminded'     => [__('Reminded'), $remindedCount],
+                    'not_reminded' => [__('Not reminded'), $notRemindedCount],
+                ],
+                'engine' => function ($query, $elements) {
+                    $query->where(function ($query) use ($elements) {
+                        if (in_array('reminded', $elements)) {
+                            $query->orWhereNotNull('checkout_abandonments.email_sent_at');
+                        }
+                        if (in_array('not_reminded', $elements)) {
+                            $query->orWhereNull('checkout_abandonments.email_sent_at');
+                        }
+                    });
+                }
+            ],
+        ];
+    }
+
+    private function getStats(Group|Organisation|Shop|Customer $parent): array
+    {
+        $query = CheckoutAbandonment::where('checkout_abandonments.group_id', $parent instanceof Group ? $parent->id : $parent->group_id);
+        if ($parent instanceof Organisation) {
+            $query->where('checkout_abandonments.organisation_id', $parent->id);
+        } elseif ($parent instanceof Shop) {
+            $query->where('checkout_abandonments.shop_id', $parent->id);
+        } elseif ($parent instanceof Customer) {
+            $query->where('checkout_abandonments.customer_id', $parent->id);
+        }
+
+        $agg = $query->selectRaw('state, count(*) as cnt, coalesce(sum(total_amount), 0) as revenue')
+            ->groupBy('state')
+            ->get()
+            ->keyBy('state');
+
+        $abandonedCount = (int) ($agg[CheckoutAbandonmentStateEnum::ABANDONED->value]->cnt ?? 0);
+        $recoveredCount = (int) ($agg[CheckoutAbandonmentStateEnum::RECOVERED->value]->cnt ?? 0);
+        $total          = $abandonedCount + $recoveredCount;
+        $recoveryRate   = $total > 0 ? round($recoveredCount / $total * 100, 1) : 0;
+
+        $currency = match (true) {
+            $parent instanceof Shop     => $parent->currency,
+            $parent instanceof Customer => $parent->shop->currency,
+            default                     => null,
+        };
+
+        $abandonedInformation        = __('Checkouts reached but not completed within :hours hours, the basket is still open.', ['hours' => RunCheckoutAbandonmentScan::THRESHOLD_HOURS]);
+        $recoveredInformation        = __('Abandoned checkouts where the customer came back and submitted the order.');
+        $recoveryRateInformation     = __('Recovered checkouts divided by all tracked checkouts (abandoned + recovered).');
+        $lostRevenueInformation      = __('Basket value still sitting in the abandoned checkouts.');
+        $recoveredRevenueInformation = __('Basket value of the checkouts that ended up being ordered.');
+
+        if ($currency) {
+            return [
+                ['label' => __('Abandoned'), 'value' => $abandonedCount, 'information' => $abandonedInformation],
+                ['label' => __('Lost revenue'), 'value' => $currency->symbol.number_format((float) ($agg[CheckoutAbandonmentStateEnum::ABANDONED->value]->revenue ?? 0), 2), 'information' => $lostRevenueInformation],
+                ['label' => __('Recovery rate'), 'value' => $recoveryRate.'%', 'information' => $recoveryRateInformation],
+                ['label' => __('Recovered'), 'value' => $recoveredCount, 'information' => $recoveredInformation],
+                ['label' => __('Recovered revenue'), 'value' => $currency->symbol.number_format((float) ($agg[CheckoutAbandonmentStateEnum::RECOVERED->value]->revenue ?? 0), 2), 'information' => $recoveredRevenueInformation],
+            ];
+        }
+
+        return [
+            ['label' => __('Abandoned'), 'value' => $abandonedCount, 'information' => $abandonedInformation],
+            ['label' => __('Recovered'), 'value' => $recoveredCount, 'information' => $recoveredInformation],
+            ['label' => __('Recovery rate'), 'value' => $recoveryRate.'%', 'information' => $recoveryRateInformation],
         ];
     }
 
@@ -97,12 +170,19 @@ class IndexCheckoutAbandonments extends OrgAction
         $query->leftJoin('customers', 'checkout_abandonments.customer_id', '=', 'customers.id');
         $query->leftJoin('shops', 'checkout_abandonments.shop_id', '=', 'shops.id');
         $query->leftJoin('organisations', 'checkout_abandonments.organisation_id', '=', 'organisations.id');
+        $query->leftJoin('outboxes', function ($join) {
+            $join->on('shops.id', '=', 'outboxes.shop_id')
+                ->where('outboxes.code', OutboxCodeEnum::ABANDONED_CHECKOUT->value)
+                ->where('outboxes.state', OutboxStateEnum::ACTIVE->value)
+                ->where('outboxes.is_applicable', true)
+                ->whereNull('outboxes.deleted_at');
+        });
         $query->leftJoin('currencies', 'orders.currency_id', '=', 'currencies.id');
         $query->leftJoin('transactions', function ($join) {
             $join->on('orders.id', '=', 'transactions.order_id')
+                ->where('transactions.model_type', 'Product')
                 ->whereNull('transactions.deleted_at');
         });
-        $query->selectRaw('count(transactions.id) as number_items');
         $query->groupBy([
             'checkout_abandonments.id',
             'orders.reference',
@@ -117,6 +197,7 @@ class IndexCheckoutAbandonments extends OrgAction
             'organisations.code',
             'organisations.slug',
             'currencies.code',
+            'outboxes.id',
         ]);
 
         foreach ($this->getElementGroups($parent) as $key => $elementGroup) {
@@ -136,6 +217,7 @@ class IndexCheckoutAbandonments extends OrgAction
                 'checkout_abandonments.checkout_visited_at',
                 'checkout_abandonments.total_amount',
                 'checkout_abandonments.recovered_at',
+                'checkout_abandonments.email_sent_at',
                 'orders.reference',
                 'orders.slug as order_slug',
                 'customers.name as customer_name',
@@ -147,8 +229,10 @@ class IndexCheckoutAbandonments extends OrgAction
                 'organisations.code as organisation_code',
                 'organisations.slug as organisation_slug',
                 'currencies.code as currency_code',
+                'outboxes.id as outbox_id',
             ])
-            ->allowedSorts(['checkout_visited_at', 'total_amount', 'customer_name', 'shop_code', 'organisation_code'])
+            ->selectRaw('count(transactions.id) as number_items')
+            ->allowedSorts(['checkout_visited_at', 'total_amount', 'customer_name', 'shop_code', 'organisation_code', 'email_sent_at'])
             ->withBetweenDates(['checkout_visited_at'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
@@ -193,21 +277,23 @@ class IndexCheckoutAbandonments extends OrgAction
             $table->column(key: 'checkout_visited_at', label: __('Visited checkout'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'number_items', label: __('Items'), canBeHidden: false);
             $table->column(key: 'total_amount', label: __('Value'), canBeHidden: false, sortable: true, type: 'currency');
+            $table->column(key: 'email_sent_at', label: __('Reminded'), canBeHidden: false, sortable: true);
+            $table->column(key: 'send_reminder', label: __('Action'), canBeHidden: false);
         };
     }
 
-    public function authorize(ActionRequest $request): bool
-    {
-        if ($this->asAction) {
-            return true;
-        }
+    // public function authorize(ActionRequest $request): bool
+    // {
+    //     if ($this->asAction) {
+    //         return true;
+    //     }
 
-        return match (true) {
-            $this->parent instanceof Group,
-            $this->parent instanceof Organisation => $request->user()->authTo('group-overview'),
-            default => $request->user()->authTo("orders.{$this->shop->id}.view"),
-        };
-    }
+    //     return match (true) {
+    //         $this->parent instanceof Group,
+    //         $this->parent instanceof Organisation => $request->user()->authTo('group-overview'),
+    //         default => $request->user()->authTo("orders.{$this->shop->id}.view"),
+    //     };
+    // }
 
     public function jsonResponse(LengthAwarePaginator $abandonments): AnonymousResourceCollection
     {
@@ -237,7 +323,8 @@ class IndexCheckoutAbandonments extends OrgAction
                     'title'         => $title,
                     'subNavigation' => $subNavigation,
                 ],
-                'data'        => CheckoutAbandonmentsResource::collection($abandonments),
+                'stats' => $this->getStats($this->parent),
+                'data'  => CheckoutAbandonmentsResource::collection($abandonments),
             ]
         )->table($this->tableStructure($this->parent));
     }

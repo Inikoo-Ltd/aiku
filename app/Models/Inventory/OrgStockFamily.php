@@ -45,7 +45,6 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $source_id
  * @property HealthRankEnum|null $health_rank
  * @property-read Group|null $group
- * @property-read \App\Models\Inventory\OrgStockFamilyIntervals|null $intervals
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Inventory\OrgStock> $orgStocks
  * @property-read Organisation $organisation
  * @property-read \App\Models\Inventory\OrgStockFamilyStats|null $stats
@@ -127,11 +126,6 @@ class OrgStockFamily extends Model
     public function stats(): HasOne
     {
         return $this->hasOne(OrgStockFamilyStats::class);
-    }
-
-    public function intervals(): HasOne
-    {
-        return $this->hasOne(OrgStockFamilyIntervals::class);
     }
 
     public function stockFamily(): BelongsTo

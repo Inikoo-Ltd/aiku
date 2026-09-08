@@ -327,8 +327,8 @@ class ShowCollection extends OrgAction
                     : Inertia::optional(fn () => CollectionsResource::collection(IndexCollectionsInCollection::run($collection, prefix: CollectionTabsEnum::COLLECTIONS->value))),
 
                 CollectionTabsEnum::HISTORY->value => $this->tab == CollectionTabsEnum::HISTORY->value ?
-                    fn () => HistoryResource::collection(IndexHistory::run($collection))
-                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($collection))),
+                    fn () => HistoryResource::collection(IndexHistory::run($collection, CollectionTabsEnum::HISTORY->value))
+                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($collection, CollectionTabsEnum::HISTORY->value))),
 
             ]
         )

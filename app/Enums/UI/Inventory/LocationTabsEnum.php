@@ -47,7 +47,7 @@ enum LocationTabsEnum: string
     {
         return match ($this) {
             LocationTabsEnum::ORG_STOCKS => [
-                'title' => 'SKUs',
+                'title' => 'SKOs',
                 'icon'  => 'fal fa-box',
             ],
             LocationTabsEnum::PALLETS => [

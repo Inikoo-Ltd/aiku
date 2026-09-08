@@ -8,7 +8,7 @@
 
 namespace App\Actions\Goods\TradeUnit\UI;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithGoodsAuthorisation;
 use App\Actions\Goods\TradeUnit\UI\Traits\WithTradeUnitIndex;
 use App\Enums\Goods\TradeUnit\TradeUnitStatusEnum;
@@ -20,11 +20,12 @@ use App\Models\SysAdmin\Group;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 
-class IndexMissingWeightTradeUnits extends GrpAction
+class IndexMissingWeightTradeUnits extends OrgAction
 {
     use WithGoodsAuthorisation;
     use WithTradeUnitIndex;
@@ -34,7 +35,7 @@ class IndexMissingWeightTradeUnits extends GrpAction
     public function asController(ActionRequest $request): LengthAwarePaginator
     {
         $this->parent = group();
-        $this->initialisation($this->parent, $request)->withTab(TradeUnitsTabsEnum::values());
+        $this->initialisationFromGroup($this->parent, $request)->withTab(TradeUnitsTabsEnum::values());
 
         return $this->handle(prefix: TradeUnitsTabsEnum::INDEX->value);
     }
@@ -85,6 +86,7 @@ class IndexMissingWeightTradeUnits extends GrpAction
             $selects[] = $timeSeriesData['selectRaw']['sales_grp_currency_external_ly'];
             $selects[] = $timeSeriesData['selectRaw']['invoices'];
             $selects[] = $timeSeriesData['selectRaw']['invoices_ly'];
+            $selects[] = DB::raw("'".group()->currency->code."' as grp_currency_code");
         }
 
         $allowedSorts = ['code', 'type', 'name'];

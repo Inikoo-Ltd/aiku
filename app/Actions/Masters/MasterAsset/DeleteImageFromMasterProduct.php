@@ -8,13 +8,13 @@
 
 namespace App\Actions\Masters\MasterAsset;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Actions\Traits\WithImageColumns;
 use App\Models\Helpers\Media;
 use App\Models\Masters\MasterAsset;
 use Lorisleiva\Actions\ActionRequest;
 
-class DeleteImageFromMasterProduct extends GrpAction
+class DeleteImageFromMasterProduct extends OrgAction
 {
     use WithImageColumns;
 
@@ -47,7 +47,7 @@ class DeleteImageFromMasterProduct extends GrpAction
 
     public function asController(MasterAsset $masterAsset, Media $media, ActionRequest $request): void
     {
-        $this->initialisation($masterAsset->group, $request);
+        $this->initialisationFromGroup($masterAsset->group, $request);
 
         $this->handle($masterAsset, $media, true);
     }

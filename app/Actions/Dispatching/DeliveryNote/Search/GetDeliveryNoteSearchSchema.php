@@ -63,6 +63,31 @@ class GetDeliveryNoteSearchSchema
                         'type' => 'string',
                     ],
                     [
+                        'name'     => 'tracking',
+                        'type'     => 'string',
+                        'optional' => true,
+                    ],
+                    [
+                        'name'     => 'customer_name',
+                        'type'     => 'string',
+                        'optional' => true,
+                    ],
+                    [
+                        'name'     => 'customer_reference',
+                        'type'     => 'string',
+                        'optional' => true,
+                    ],
+                    [
+                        'name'     => 'order_references',
+                        'type'     => 'string[]',
+                        'optional' => true,
+                    ],
+                    [
+                        'name'     => 'address',
+                        'type'     => 'string',
+                        'optional' => true,
+                    ],
+                    [
                         'name' => 'date',
                         'type' => 'int64',
                     ],
@@ -75,7 +100,7 @@ class GetDeliveryNoteSearchSchema
                 'default_sorting_field' => 'date',
             ],
             'search-parameters' => [
-                'query_by' => 'reference'
+                'query_by' => 'reference,tracking,order_references,customer_reference,company_name,contact_name,customer_name,address'
             ],
         ];
     }

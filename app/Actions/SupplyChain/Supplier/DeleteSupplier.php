@@ -8,7 +8,8 @@
 
 namespace App\Actions\SupplyChain\Supplier;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithSupplyChainEditAuthorisation;
 use App\Models\SupplyChain\Supplier;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Redirect;
@@ -16,8 +17,9 @@ use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsController;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 
-class DeleteSupplier extends GrpAction
+class DeleteSupplier extends OrgAction
 {
+    use WithSupplyChainEditAuthorisation;
     use AsController;
     use WithAttributes;
 
@@ -26,11 +28,6 @@ class DeleteSupplier extends GrpAction
         $supplier->delete();
 
         return $supplier;
-    }
-
-    public function authorize(ActionRequest $request): bool
-    {
-        return $request->user()->authTo("supply-chain.edit");
     }
 
     public function action(Supplier $supplier): Supplier

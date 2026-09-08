@@ -10,6 +10,7 @@ namespace App\Actions\Billables\Charge\UI;
 
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
+use App\Enums\Catalogue\Charge\ChargeStateEnum;
 use App\Enums\Catalogue\Charge\ChargeTypeEnum;
 use App\Models\Billables\Charge;
 use App\Models\Catalogue\Shop;
@@ -18,6 +19,7 @@ use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
+use Spatie\LaravelOptions\Options;
 
 class EditCharge extends OrgAction
 {
@@ -52,31 +54,26 @@ class EditCharge extends OrgAction
             if ($rules && preg_match('/\d+/', $rules, $matches)) {
                 $minOrder = (int)$matches[0];
             }
-            $hasRules = !empty(trim($rules ?? ''));
-            $pricing  = [
+
+            $fields = [];
+            if (in_array($charge->type, [ChargeTypeEnum::HANGING, ChargeTypeEnum::HANGING->value])) {
+                $fields['min_order'] = [
+                    'type'        => 'input_number',
+                    'information' => __('The charge is applied to orders below this amount'),
+                    'label'       => __('Min order'),
+                    'value'       => $minOrder
+                ];
+            }
+            $fields['amount'] = [
+                'type'  => 'input_number',
+                'label' => __('Amount'),
+                'value' => Arr::get($charge->settings, 'amount')
+            ];
+
+            $pricing = [
                 'label'  => __('Pricing'),
                 'title'  => __('Edit charge'),
-                'fields' => $hasRules
-                    ? [
-                        'min_order' => [
-                            'type'  => 'input_number',
-                            'label' => __('Min order'),
-                            'value' => $minOrder
-                        ],
-                        'amount'    => [
-                            'type'  => 'input_number',
-                            'label' => __('Amount'),
-                            'value' => Arr::get($charge->settings, 'amount')
-                        ],
-
-                    ]
-                    : [
-                        'amount' => [
-                            'type'  => 'input_number',
-                            'label' => __('Amount'),
-                            'value' => Arr::get($charge->settings, 'amount')
-                        ],
-                    ]
+                'fields' => $fields
             ];
         }
 
@@ -103,6 +100,13 @@ class EditCharge extends OrgAction
                         'information' => __("This will show in customer's order as a tooltip"),
                         'label'       => __('Description'),
                         'value'       => $charge->description
+                    ],
+                    'state'       => [
+                        'type'        => 'select',
+                        'information' => __('The charge is only applied to orders while it is active'),
+                        'label'       => __('State'),
+                        'value'       => $charge->state->value,
+                        'options'     => Options::forEnum(ChargeStateEnum::class),
                     ],
                 ],
             ]

@@ -16,6 +16,8 @@ enum MasterProductsTabsEnum: string
     use HasTabs;
 
     case INDEX              = 'index';
+    case PRICING            = 'pricing';
+    case BULK_EDIT          = 'bulk_edit';
     case INDEX_ORDERING     = 'index_ordering';
     case SALES              = 'sales';
 
@@ -29,10 +31,24 @@ enum MasterProductsTabsEnum: string
             MasterProductsTabsEnum::INDEX_ORDERING => [
                 'title' => __('Index Ordering'),
                 'icon'  => 'fal fa-sort-shapes-up-alt',
+                'type'  => 'icon',
+                'align' => 'right'
             ],
             MasterProductsTabsEnum::SALES => [
                 'title' => __('Sales'),
                 'icon'  => 'fal fa-money-bill-wave',
+            ],
+            MasterProductsTabsEnum::PRICING => [
+                'title' => __('Pricing'),
+                'icon'  => 'fal fa-money-bill',
+                'type'  => 'icon',
+                'align' => 'right'
+            ],
+            MasterProductsTabsEnum::BULK_EDIT => [
+                'title' => __('Bulk edit'),
+                'icon'  => 'fal fa-edit',
+                'type'  => 'icon',
+                'align' => 'right'
             ]
         };
     }

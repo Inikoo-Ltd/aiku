@@ -8,7 +8,7 @@
 
 namespace App\Actions\SysAdmin\Group\Json;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Enums\Goods\TradeUnit\TradeUnitStatusEnum;
 use App\Http\Resources\Goods\TradeUnitsForMasterResource;
 use App\Models\Goods\TradeUnit;
@@ -21,18 +21,18 @@ use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
 
-class GetAllTradeUnitsInGroup extends GrpAction
+class GetAllTradeUnitsInGroup extends OrgAction
 {
     public function inBrand(Brand $brand, ActionRequest $request): LengthAwarePaginator
     {
-        $this->initialisation(group(), $request);
+        $this->initialisationFromGroup(group(), $request);
 
         return $this->handle($this->group, except: $brand->tradeUnits->pluck('id'));
     }
 
     public function asController(ActionRequest $request): LengthAwarePaginator
     {
-        $this->initialisation(group(), $request);
+        $this->initialisationFromGroup(group(), $request);
 
         return $this->handle($this->group);
     }

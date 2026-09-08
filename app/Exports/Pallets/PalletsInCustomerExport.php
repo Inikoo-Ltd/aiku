@@ -74,8 +74,8 @@ class PalletsInCustomerExport implements FromQuery, WithHeadings, ShouldAutoSize
             __('Reference'),
             __("Customer Reference"),
             __('Location Code'),
-            __("Customer's SKUs"),
-            __("Customer's SKUs Quantity"),
+            __("Customer's SKOs"),
+            __("Customer's SKOs Quantity"),
         ];
     }
 }

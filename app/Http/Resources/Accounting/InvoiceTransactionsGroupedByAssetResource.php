@@ -30,16 +30,23 @@ class InvoiceTransactionsGroupedByAssetResource extends JsonResource
     public function toArray($request): array
     {
 
+        $packedInMessage = '';
+        $units = soldPackUnits($this->historicAsset?->units, $this->model?->units);
+        if ($this->model_type === 'Product' && $units > 1) {
+            $packedInMessage = '('.__('Pack of').": " . trimDecimalZeros($units) . ")";
+        }
+
         return [
             'asset_id'      => $this->asset_id,
             'code'          => $this->code,
             'description'   => $this->description,
+            'name'          => $this->name,
             'quantity'      => $this->quantity,
             'net_amount'    => $this->net_amount,
             'currency_code' => $this->currency_code,
             'in_process'    => $this->in_process,
             'number_grouped_transactions' => $this->number_grouped_transactions,
-
+            'packed_in_message' => $packedInMessage,
         ];
     }
 }

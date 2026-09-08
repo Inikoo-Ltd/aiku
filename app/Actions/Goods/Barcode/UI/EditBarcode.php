@@ -11,18 +11,18 @@ namespace App\Actions\Goods\Barcode\UI;
 
 use App\Actions\Goods\TradeUnit\GetTradeUnitOptionsForBarcode;
 use App\Actions\Goods\TradeUnit\UI\ShowTradeUnitsDashboard;
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Models\Helpers\Barcode;
 use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 
-class EditBarcode extends GrpAction
+class EditBarcode extends OrgAction
 {
     public function asController(Barcode $barcode, ActionRequest $request): Barcode
     {
-        $this->initialisation(group(), $request);
+        $this->initialisationFromGroup(group(), $request);
 
         return $this->handle($barcode);
     }

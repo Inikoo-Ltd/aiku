@@ -54,7 +54,7 @@ const closePopover = (): void => {
 				<span class="text-sm font-medium text-gray-600 mb-1">{{ trans('Retail Price') }} </span>
 				<div class="flex flex-wrap items-baseline gap-1">
 					<span class="text-base font-semibold">
-						{{ locale.currencyFormat(currency_code, product?.rrp_per_unit || 0) }}
+						{{ locale.currencyFormatRrp(currency_code, product?.rrp_per_unit || 0) }}
 					</span>
 					<span class="text-sm text-gray-500">/ {{ product.unit }}</span>
 
@@ -95,7 +95,7 @@ const closePopover = (): void => {
 					</span>
 					<span v-if="product.units != 1"
 						class="text-xs text-gray-500 border-gray-300 pl-3 min-w-[90px] text-start leading-none">
-						{{ locale.currencyFormat(currency_code, product.rrp_per_unit.toFixed(2)) }} / {{
+						{{ locale.currencyFormatRrp(currency_code, product.rrp_per_unit.toFixed(2)) }} / {{
 							product.unit }}
 					</span>
 				</div>

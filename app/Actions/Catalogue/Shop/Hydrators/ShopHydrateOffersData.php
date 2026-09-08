@@ -65,6 +65,7 @@ class ShopHydrateOffersData implements ShouldBeUnique
     {
         data_set($offersData, 'discounted_shipping.active', false);
         data_set($offersData, 'discounted_shipping.min_amount', null);
+        data_set($offersData, 'discounted_shipping_scoped', []);
 
         $discountedShippingDiscountCampaign = OfferCampaign::where('shop_id', $shop->id)
             ->where('status', true)
@@ -78,11 +79,30 @@ class ShopHydrateOffersData implements ShouldBeUnique
             ->where('status', true)->get();
 
 
-        $minAmount = null;
+        $minAmount  = null;
+        $scopedData = [];
 
         /** @var Offer $offer */
         foreach ($offers as $offer) {
             $amount = Arr::get($offer->trigger_data, 'min_order_amount');
+
+            if ($targetType = Arr::get($offer->trigger_data, 'target_type')) {
+                $offerAllowance = OfferAllowance::where('offer_id', $offer->id)->first();
+
+                $scopedData[$offer->id] = [
+                    'id'                   => $offer->id,
+                    'name'                 => $offer->name,
+                    'offer_campaign_id'    => $offer->offer_campaign_id,
+                    'offer_allowance_id'   => $offerAllowance?->id,
+                    'end_at'               => $offer->end_at->toDateTimeString(),
+                    'formated_end_at'      => $offer->end_at->toFormattedDateString(),
+                    'min_amount'           => $amount,
+                    'target_type'          => $targetType,
+                    'target_id'            => Arr::get($offer->trigger_data, 'target_id'),
+                    'missined_offer_label' => $offer->name.': '.__('Spend :amount more to qualify for discounted shipping'),
+                ];
+                continue;
+            }
 
             if ($minAmount == null || $amount < $minAmount) {
                 $minAmount = $amount;
@@ -99,6 +119,8 @@ class ShopHydrateOffersData implements ShouldBeUnique
                 data_set($offersData, 'discounted_shipping.missined_offer_label', $offer->name.': '.__('Spend :amount more to qualify for discounted shipping'));
             }
         }
+
+        data_set($offersData, 'discounted_shipping_scoped', $scopedData);
 
         return $offersData;
     }

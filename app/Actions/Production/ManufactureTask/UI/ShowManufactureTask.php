@@ -108,8 +108,8 @@ class ShowManufactureTask extends OrgAction
                     : Inertia::optional(fn () => ArtefactsResource::collection(GetManufactureTaskArtefacts::run($manufactureTask, $request))),
 
                 ManufactureTaskTabsEnum::HISTORY->value => $this->tab == ManufactureTaskTabsEnum::HISTORY->value ?
-                    fn () => HistoryResource::collection(IndexHistory::run($manufactureTask))
-                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($manufactureTask)))
+                    fn () => HistoryResource::collection(IndexHistory::run($manufactureTask, ManufactureTaskTabsEnum::HISTORY->value))
+                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($manufactureTask, ManufactureTaskTabsEnum::HISTORY->value)))
 
             ]
         )->table(IndexHistory::make()->tableStructure(prefix: ManufactureTaskTabsEnum::HISTORY->value));

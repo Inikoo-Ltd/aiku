@@ -40,6 +40,7 @@ use App\Models\Dropshipping\CustomerSalesChannel;
 
 class ShowRetinaDropshippingBasket extends RetinaAction
 {
+    use \App\Actions\Traits\WithLineTaxCategories;
     use HasBasketDetails;
     use GetPlatformLogo;
     use WithOrderForbiddenCountryCheck;
@@ -167,7 +168,7 @@ class ShowRetinaDropshippingBasket extends RetinaAction
                     ],
                     'upload_spreadsheet'  => [
                         'event'           => 'action-progress',
-                        'channel'         => 'grp.personal.'.$this->organisation->id,
+                        'channel'         => 'retina.personal.'.request()->user()->id,
                         'required_fields' => ['code', 'quantity'],
                         'template'        => [
                             'label' => 'Download template (.xlsx)'
@@ -180,7 +181,7 @@ class ShowRetinaDropshippingBasket extends RetinaAction
                                 ]
                             ],
                             'history'  => [
-                                'name'       => 'retina.dropshipping.orders.recent_uploads',
+                                'name'       => 'retina.json.recent_uploads',
                                 'parameters' => [
                                     'order' => $order->slug
                                 ]
@@ -302,11 +303,7 @@ class ShowRetinaDropshippingBasket extends RetinaAction
                         'information' => '',
                         'price_total' => $order->net_amount
                     ],
-                    [
-                        'label'       => $taxCategory->getLocalizedName(),
-                        'information' => '',
-                        'price_total' => $order->tax_amount
-                    ]
+                    ...$this->getOrderTaxRows($order),
                 ],
                 [
                     [

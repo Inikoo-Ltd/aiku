@@ -13,6 +13,7 @@ import ProductCategoryStats from '@/Components/Product/ProductCategoryStats.vue'
 import { trans } from 'laravel-vue-i18n';
 import { faExternalLink } from '@far';
 import FamilyOfferLabelDiscount from '@/Components/Utils/Label/DiscountTemplate/CategoryQuantityOrderedOrderInterval/FamilyOfferLabelDiscount.vue'
+import FamilyBestSellers from '@/Components/Catalogue/FamilyBestSellers.vue'
 
 library.add(faAlbumCollection, faStarfighter);
 
@@ -30,6 +31,11 @@ const props = defineProps<{
         },
         routes: {
             detach_family: routeType
+        }
+        bestSellers?: {
+            products: any[]
+            currency: string
+            route: routeType
         }
         is_shop_gr_active?: boolean
         gr_offer_data?: any
@@ -147,6 +153,8 @@ function offerRoute(offer: {}) {
                         />
                     </div>
                 </template>
+
+                <FamilyBestSellers v-if="data.bestSellers" :data="data.bestSellers" class="mt-4" />
             </div>
 
             <div class="col-span-1 md:col-span-3 lg:col-span-2 space-y-4">

@@ -64,12 +64,14 @@ class FetchSingleDeliveryNoteItem extends OrgAction
             'quantity_not_picked'            => $deliveryNoteItem->quantity_not_picked,
             'org_stock_code'                 => $deliveryNoteItem->orgStock->code,
             'org_stock_name'                 => $deliveryNoteItem->orgStock->name,
+            'barcode'                        => $deliveryNoteItem->orgStock->barcode,
             'org_stock_slug'                 => $deliveryNoteItem->orgStock->slug,
             'org_stock_id'                   => $deliveryNoteItem->orgStock->id,
             'batch_code'                     => $deliveryNoteItem->batch_code,
             'expiry_date'                    => $deliveryNoteItem->expiry_date,
             'packed_in_message'              => $packedInMessage,
-            'is_done_packing'                => $deliveryNoteItem->packings()->exists(),
+            'is_done_packing'                => $deliveryNoteItem->packings()->exists()
+                && UpdateDeliveryNoteItemPacking::isFullyPacked($deliveryNoteItem),
         ];
     }
 

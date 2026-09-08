@@ -10,6 +10,7 @@ namespace App\Actions\Iris\Json;
 
 use Throwable;
 use App\Actions\Web\RefreshGrpAssetUrls;
+use App\Models\DevOps\AppDeployment;
 use App\Models\Web\Website;
 use Illuminate\Support\Arr;
 use Illuminate\Http\JsonResponse;
@@ -52,6 +53,9 @@ class GetIrisFooterData
         } catch (Throwable) {
             $data = $compute();
         }
+
+        $data['version']   = AppDeployment::latest()->first()?->semantic_version;
+        $data['shop_name'] = $website->shop?->name;
 
         return response()->json($data);
     }

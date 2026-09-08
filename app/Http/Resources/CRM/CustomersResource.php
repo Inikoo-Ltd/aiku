@@ -29,6 +29,8 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $sales_org_currency_all
  * @property mixed $sales_grp_currency_all
  * @property mixed $number_invoices_type_invoice
+ * @property mixed $attribution_share
+ * @property mixed $attributed_revenue
  * @property mixed $number_current_portfolios
  * @property mixed $currency_code
  * @property bool $is_dropshipping
@@ -38,6 +40,8 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $status
  * @property mixed $address
  * @property mixed $shop_name
+ * @property mixed $shop_slug
+ * @property mixed $organisation_slug
  * @property mixed $balance
  * @property mixed $tags
  * @property mixed $number_customer_sales_channels
@@ -65,11 +69,18 @@ class CustomersResource extends JsonResource
             'company_name'                    => $this->company_name,
             'location'                        => is_string($this->location) ? json_decode($this->location, true) : $this->location,
             'created_at'                      => $this->created_at,
+            /* Only selected by the exclusive products customers index. */
+            'number_exclusive_products'       => $this->number_exclusive_products ?? null,
             'number_current_customer_clients' => $this->number_current_customer_clients,
             'number_current_portfolios'       => $this->number_current_portfolios,
             'number_customer_sales_channels'  => $this->number_customer_sales_channels,
             'last_invoiced_at'                => $this->last_invoiced_at,
             'number_invoices_type_invoice'    => $this->number_invoices_type_invoice,
+            /* Only present when the listing is scoped to a traffic source, which joins it in. */
+            'attribution_share'               => $this->attribution_share ?? null,
+            'attributed_revenue'              => $this->attributed_revenue ?? null,
+            /* Above shop level the row has to say which shop it belongs to for a link to be built. */
+            'shop_slug'                       => $this->shop_slug ?? null,
             'sales_all'                       => $this->sales_all,
             'sales_org_currency_all'          => $this->sales_org_currency_all,
             'sales_grp_currency_all'          => $this->sales_grp_currency_all,

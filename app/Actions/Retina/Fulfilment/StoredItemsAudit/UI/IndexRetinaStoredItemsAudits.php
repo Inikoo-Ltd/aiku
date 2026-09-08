@@ -131,7 +131,7 @@ class IndexRetinaStoredItemsAudits extends RetinaAction
                         'route' => [
                             'name' => 'retina.fulfilment.storage.stored-items-audits.index'
                         ],
-                        'label' => __("SKUs Audits"),
+                        'label' => __("SKOs Audits"),
                         'icon'  => 'fal fa-bars',
                     ],
 

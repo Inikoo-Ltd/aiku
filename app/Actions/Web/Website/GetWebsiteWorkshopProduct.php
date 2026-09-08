@@ -2,7 +2,9 @@
 
 namespace App\Actions\Web\Website;
 
+use App\Actions\Web\WebBlock\Concerns\HasWebBlockLayoutData;
 use App\Enums\Web\WebBlockType\WebBlockCategoryScopeEnum;
+use App\Http\Resources\Web\WebBlockFamilyResource;
 use App\Http\Resources\Web\WebBlockTypesResource;
 use App\Http\Resources\Web\WebpageProductWorkshopResource;
 use App\Models\Catalogue\Product;
@@ -14,6 +16,7 @@ use Lorisleiva\Actions\Concerns\AsObject;
 class GetWebsiteWorkshopProduct
 {
     use AsObject;
+    use HasWebBlockLayoutData;
 
     public function handle(Website $website, Product $product): array
     {
@@ -23,6 +26,11 @@ class GetWebsiteWorkshopProduct
 
         if ($layout) {
             data_set($layout, 'data.fieldValue.product', WebpageProductWorkshopResource::make($product)->toArray(request()));
+            data_set($layout, 'data.fieldValue.tabs', [
+                'description' => $product->description,
+                ...($product->family ? WebBlockFamilyResource::getTabsData($product->family) : [])
+            ]);
+            data_set($layout, 'data.fieldValue.tabs_style', $this->getFamilyExtraDescriptionLayoutData($website->published_layout));
         }
 
         $propsValue = [

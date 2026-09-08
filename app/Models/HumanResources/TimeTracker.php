@@ -64,4 +64,30 @@ class TimeTracker extends Model
         return $this->belongsTo(Timesheet::class);
     }
 
+    /**
+     * Clockings do not always reach us in the order they happened - an offline machine syncs a
+     * batch out of sequence, and a manually entered start can land after the recorded end. The
+     * earlier of the two is the start whichever way round they arrived, so the pair is ordered
+     * before the duration is measured: Carbon's diff is signed, and a negative duration is added
+     * straight into the day's worked time by TimesheetHydrateTimeTrackers.
+     *
+     * Every path that closes a tracker goes through here, so a negative can never be stored.
+     */
+    public function normaliseInterval(): void
+    {
+        if ($this->starts_at && $this->ends_at && $this->ends_at->lt($this->starts_at)) {
+            $this->forceFill([
+                'starts_at'         => $this->ends_at,
+                'ends_at'           => $this->starts_at,
+                'start_clocking_id' => $this->end_clocking_id,
+                'end_clocking_id'   => $this->start_clocking_id,
+            ]);
+        }
+
+        if ($this->starts_at && $this->ends_at) {
+            $this->duration = max(0, (int) $this->starts_at->diffInSeconds($this->ends_at));
+        }
+
+        $this->save();
+    }
 }

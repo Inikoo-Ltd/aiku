@@ -8,7 +8,7 @@
 
 namespace App\Actions\Goods\TradeUnit\UI;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithGoodsAuthorisation;
 use App\Http\Resources\Goods\TradeUnitsResource;
 use App\InertiaTable\InertiaTable;
@@ -21,7 +21,7 @@ use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
 
-class GetTradeUnitsForTradeUnitFamily extends GrpAction
+class GetTradeUnitsForTradeUnitFamily extends OrgAction
 {
     use WithGoodsAuthorisation;
 
@@ -31,7 +31,7 @@ class GetTradeUnitsForTradeUnitFamily extends GrpAction
     public function asController(TradeUnitFamily $tradeUnitFamily, ActionRequest $request): LengthAwarePaginator
     {
         $this->parent = group();
-        $this->initialisation($this->parent, $request);
+        $this->initialisationFromGroup($this->parent, $request);
 
         return $this->handle($tradeUnitFamily);
     }

@@ -196,7 +196,7 @@ class StoreEmployee extends OrgAction
             'positions.*.scopes.shops.slug.*'         => ['sometimes', Rule::exists('shops', 'slug')->where('organisation_id', $this->organisation->id)],
             'email'                                   => ['sometimes', 'nullable', 'email'],
             'username'                                => [
-                'nullable',
+                $this->asAction ? 'nullable' : 'required',
                 new AlphaDashDot(),
                 new IUnique(
                     table: 'users',

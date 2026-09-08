@@ -24,6 +24,7 @@ trait WithRetinaProductsList
         $basket = $customer->orderInBasket;
 
         $query  = QueryBuilder::for(Product::class);
+        $query->where('products.price', '>', 0);
         $select = [];
 
         if ($basket) {
@@ -53,6 +54,7 @@ trait WithRetinaProductsList
             'products.available_quantity',
             'products.price',
             'products.rrp',
+            'products.family_id',
             'products.state',
             'products.status',
             'products.created_at',

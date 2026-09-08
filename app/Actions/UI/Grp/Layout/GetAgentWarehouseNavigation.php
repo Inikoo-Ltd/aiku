@@ -51,7 +51,7 @@ class GetAgentWarehouseNavigation
                             "stocks.$warehouse->id.view",
                         ])
                             ? [
-                            "label" => __("SKUs"),
+                            "label" => __("SKOs"),
                             "icon"  => ["fal", "fa-box"],
                             'root'  => 'grp.org.warehouses.show.agent_inventory.supplier_products.',
                             "route" => [

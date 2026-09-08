@@ -24,13 +24,14 @@ import { SearchBookmarkKey } from '@/types/SearchBookmark'
 library.add(faTimes, faSearch, faSpinnerThird, faHistory, fasBookmark)
 
 const SearchResultGeneric = defineAsyncComponent(() => import('@/Components/Search/SearchResultGeneric.vue'))
+const SearchResultProcurement = defineAsyncComponent(() => import('@/Components/Search/SearchResultProcurement.vue'))
 
 const scopeComponents: Record<string, ReturnType<typeof defineAsyncComponent>> = {
     sysadmin: defineAsyncComponent(() => import('@/Components/Search/SearchResultSysAdmin.vue')),
     catalogue: defineAsyncComponent(() => import('@/Components/Search/SearchResultCatalogue.vue')),
-    customers: defineAsyncComponent(() => import('@/Components/Search/SearchResultCustomers.vue')),
     inventory: defineAsyncComponent(() => import('@/Components/Search/SearchResultOrgStocks.vue')),
     locations: defineAsyncComponent(() => import('@/Components/Search/SearchResultLocations.vue')),
+    customers: SearchResultGeneric,
     prospects: SearchResultGeneric,
     orders: SearchResultGeneric,
     reviews: SearchResultGeneric,
@@ -46,11 +47,13 @@ const scopeComponents: Record<string, ReturnType<typeof defineAsyncComponent>> =
     trade_units: SearchResultGeneric,
     hr: SearchResultGeneric,
     chat: SearchResultGeneric,
+    procurement: SearchResultProcurement,
 }
 
 const isOpen = defineModel<boolean>()
 
 const layout = inject('layout', layoutStructure)
+const screenType = inject('screenType', ref('desktop'))
 const isLoadingSearch = ref(false)
 const searchValue = ref('')
 const scope = ref<string | null>(null)
@@ -314,7 +317,7 @@ const closeModal = () => {
 
 <template>
     <TransitionRoot :show="isOpen" as="template" @after-leave="() => { searchValue = ''; resultsSearch = null }" appear>
-        <Dialog as="div" class="relative z-50" @close="closeModal">
+        <Dialog as="div" class="relative z-50" @close="screenType === 'desktop' && closeModal()">
 
             <TransitionChild enter="ease-out duration-200" enter-from="opacity-0" enter-to="opacity-100"
                 leave="ease-in duration-150" leave-from="opacity-100" leave-to="opacity-0">

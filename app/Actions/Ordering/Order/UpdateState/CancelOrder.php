@@ -11,6 +11,7 @@ namespace App\Actions\Ordering\Order\UpdateState;
 use App\Actions\Accounting\CreditTransaction\StoreCreditTransaction;
 use App\Actions\Accounting\Payment\StorePayment;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateBasket;
+use App\Actions\CRM\TrafficSource\Hydrator\TrafficSourceHydrateCustomers;
 use App\Actions\Dispatching\DeliveryNote\UpdateState\CancelDeliveryNote;
 use App\Actions\Dropshipping\Allegro\Order\CancelFulfillOrderAllegro;
 use App\Actions\Dropshipping\Shopify\Fulfilment\CloseFulfillOrderToShopify;
@@ -138,7 +139,32 @@ class CancelOrder extends OrgAction
         $this->orderHandlingHydrators($order, $oldState);
         $this->orderHandlingHydrators($order, OrderStateEnum::CANCELLED);
 
+        $this->refreshTrafficSourceStats($order);
+
         return $order;
+    }
+
+    /**
+     * TrafficSourceHydrateCustomers re-sums the orders and invoices of every customer a traffic source
+     * is credited with, and cancelling this order changes this customer's totals, so every source
+     * crediting either the order or the customer holds a stale figure until it is rehydrated.
+     *
+     * The pivot attribution rows themselves are preserved as an audit trail of what originally
+     * acquired the order.
+     *
+     * ponytail: the extra delay keeps this from reading the customer's rollups before the order
+     * hydrators above have written them. Chain it after CustomerHydrateOrderStats if queue depth ever
+     * makes a fixed offset unreliable.
+     */
+    private function refreshTrafficSourceStats(Order $order): void
+    {
+        $trafficSources = $order->trafficSources
+            ->merge($order->customer?->trafficSources ?? [])
+            ->unique('id');
+
+        foreach ($trafficSources as $trafficSource) {
+            TrafficSourceHydrateCustomers::dispatch($trafficSource)->delay($this->hydratorsDelay + 120);
+        }
     }
 
     public function afterValidator(Validator $validator): void

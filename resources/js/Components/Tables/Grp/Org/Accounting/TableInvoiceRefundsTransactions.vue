@@ -82,6 +82,13 @@ const locale = inject('locale', aikuLocaleStructure)
                     {{ locale.currencyFormat(item.currency_code, item.net_amount) }}
                 </div>
             </template>
+            
+            <template #cell(name)="{ item }">
+                <div class="whitespace-normal">
+                    <span>{{item.name ?? item.description}}</span>
+                    <span v-if="item.packed_in_message" class="italic opacity-80 pl-1">{{item.packed_in_message}}</span>
+                </div>
+            </template>
 
             <template #cell(action)="{ item }">
                 <div v-if="item.delete_route" class="mt-2">

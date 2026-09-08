@@ -8,7 +8,7 @@
 
 namespace App\Actions\SysAdmin\Guest;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Actions\HumanResources\JobPosition\SyncUserJobPositions;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateGuests;
 use App\Actions\SysAdmin\User\StoreUser;
@@ -33,7 +33,7 @@ use Illuminate\Validation\Validator;
 use Lorisleiva\Actions\ActionRequest;
 use Throwable;
 
-class StoreGuest extends GrpAction
+class StoreGuest extends OrgAction
 {
     use WithPreparePositionsForValidation;
     use WithReorganisePositions;
@@ -214,7 +214,7 @@ class StoreGuest extends GrpAction
     public function asController(ActionRequest $request): Guest
     {
 
-        $this->initialisation(app('group'), $request);
+        $this->initialisationFromGroup(app('group'), $request);
 
         return $this->handle($this->group, $this->validatedData);
     }
@@ -231,7 +231,7 @@ class StoreGuest extends GrpAction
         $this->strict         = $strict;
         $this->hydratorsDelay = $hydratorsDelay;
         $this->asAction       = true;
-        $this->initialisation($group, $modelData);
+        $this->initialisationFromGroup($group, $modelData);
 
 
         return $this->handle($group, $this->validatedData);

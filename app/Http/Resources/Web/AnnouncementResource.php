@@ -40,6 +40,8 @@ class AnnouncementResource extends JsonResource
             'icon'                 => $announcement->icon,
             'schedule_at'          => $announcement->schedule_at,
             'schedule_finish_at'   => $announcement->schedule_finish_at,
+            'live_at'              => $announcement->live_at,
+            'closed_at'            => $announcement->closed_at,
             'settings'             => $announcement->settings,
             'state'                => $announcement->state,
             'template_code'        => $announcement->template_code,

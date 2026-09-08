@@ -5,6 +5,7 @@
  */
 
 export interface Supplier {
+    id: number,
     type: string,
     agent_slug: string,
     slug: string,

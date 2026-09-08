@@ -23,6 +23,14 @@ trait WithMasterFamilyNavigation
         return 'code';
     }
 
+    protected function getNavigationSortColumns(Model $model): array
+    {
+        return [
+            'code' => $model->getTable().'.code',
+            'name' => $model->getTable().'.name',
+        ];
+    }
+
     protected function applyNavigationFilters(Builder $query, Model $model, ActionRequest $request): void
     {
         /** @var MasterProductCategory $model */

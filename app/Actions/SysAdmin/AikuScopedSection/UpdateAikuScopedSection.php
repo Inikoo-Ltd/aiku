@@ -9,13 +9,13 @@
 
 namespace App\Actions\SysAdmin\AikuScopedSection;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Analytics\AikuScopedSection;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 
-class UpdateAikuScopedSection extends GrpAction
+class UpdateAikuScopedSection extends OrgAction
 {
     use AsAction;
     use WithAttributes;
@@ -36,7 +36,7 @@ class UpdateAikuScopedSection extends GrpAction
 
     public function action(AikuScopedSection $aikuScopedSection, array $modelData)
     {
-        $this->initialisation($aikuScopedSection->group, $modelData);
+        $this->initialisationFromGroup($aikuScopedSection->group, $modelData);
 
         return $this->handle($aikuScopedSection, $modelData);
     }

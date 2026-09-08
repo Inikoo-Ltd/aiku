@@ -43,14 +43,25 @@ class ReceiveCheckoutComPaymentWebhook
         }
 
         $validKeys = [];
-        if ($sandboxKey = Arr::get($group->settings, 'checkout_com.webhook_auth.sandbox.authorization')) {
+        if (app()->environment('local')) {
+            if ($localKey = config('app.sandbox.checkout_com.webhook_key')) {
+                $validKeys[] = $localKey;
+            }
+        } elseif ($sandboxKey = Arr::get($group->settings, 'checkout_com.webhook_auth.sandbox.authorization')) {
             $validKeys[] = $sandboxKey;
         }
         if ($productionKey = Arr::get($group->settings, 'checkout_com.webhook_auth.production.authorization')) {
             $validKeys[] = $productionKey;
         }
 
-        if (!in_array($authorization, $validKeys)) {
+        $authorized = false;
+        foreach ($validKeys as $validKey) {
+            if (hash_equals((string)$validKey, (string)$authorization)) {
+                $authorized = true;
+            }
+        }
+
+        if (!$authorized) {
             return response()->json([
                 'error' => 'Unauthorized'
             ], 400);

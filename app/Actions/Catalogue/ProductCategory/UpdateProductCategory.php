@@ -8,6 +8,8 @@
 
 namespace App\Actions\Catalogue\ProductCategory;
 
+use App\Actions\Catalogue\Product\Hydrators\ProductHydratePricesFromMaster;
+use App\Actions\Catalogue\ProductCategory\LabelingGuide\StoreLabelingGuide;
 use App\Actions\Discounts\Offer\FinishOffer;
 use App\Actions\Discounts\Offer\UpdateOfferAllowanceSignature;
 use App\Actions\Discounts\Offer\UpdateProductCategoryOffersData;
@@ -31,14 +33,18 @@ use App\Http\Resources\Catalogue\FamilyResource;
 use App\Http\Resources\Catalogue\SubDepartmentResource;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Discounts\Offer;
+use App\Models\SysAdmin\User;
 use App\Models\Web\Webpage;
 use App\Rules\AlphaDashDot;
 use App\Rules\IUnique;
+use App\Rules\MaxPlainTextLength;
 use App\Traits\SanitizeInputs;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\File;
 use Lorisleiva\Actions\ActionRequest;
+use OwenIt\Auditing\Events\AuditCustom;
 
 class UpdateProductCategory extends OrgAction
 {
@@ -49,9 +55,28 @@ class UpdateProductCategory extends OrgAction
     use SanitizeInputs;
 
     private ProductCategory $productCategory;
+    private ?User $user = null;
 
     public function handle(ProductCategory $productCategory, array $modelData): ProductCategory
     {
+        if (Arr::hasAny($modelData, ['storage_conditions', 'storage_temperature', 'storage_guidelines'])) {
+            $storageOption = $productCategory->storage_option;
+
+            if (Arr::has($modelData, 'storage_conditions')) {
+                data_set($storageOption, 'storage_conditions', Arr::pull($modelData, 'storage_conditions'));
+            }
+
+            if (Arr::has($modelData, 'storage_temperature')) {
+                data_set($storageOption, 'storage_temperature', Arr::pull($modelData, 'storage_temperature'));
+            }
+
+            if (Arr::has($modelData, 'storage_guidelines')) {
+                data_set($storageOption, 'storage_guidelines', Arr::pull($modelData, 'storage_guidelines'));
+            }
+
+            data_set($modelData, 'storage_option', $storageOption);
+        }
+
         $originalImageId = $productCategory->image_id;
         $oldState        = $productCategory->state;
 
@@ -110,6 +135,12 @@ class UpdateProductCategory extends OrgAction
             }
         }
 
+        // Handle labeling_guide pdf file upload
+        if (Arr::has($modelData, 'labeling_guide_file') && data_get($modelData, 'labeling_guide_file', null) instanceof \Illuminate\Http\UploadedFile) {
+            StoreLabelingGuide::make()->action($productCategory, Arr::only($modelData, 'labeling_guide_file'));
+            Arr::forget($modelData, 'labeling_guide_file');
+        }
+
         $productCategory = $this->update($productCategory, $modelData, ['data']);
         $productCategory->refresh();
 
@@ -138,9 +169,11 @@ class UpdateProductCategory extends OrgAction
         if (Arr::has($changes, 'name')) {
             UpdateProductCategoryAndMasterTranslations::make()->action($productCategory, [
                 'translations' => [
-                    'name' => [$productCategory->shop->language->code => Arr::pull($modelData, 'name')]
+                    'name' => [$productCategory->shop->language->code => Arr::pull($modelData, 'name')],
                 ]
             ]);
+
+            data_set($modelData, 'is_name_reviewed', true, false);
         }
 
         if (Arr::has($changes, 'description_title')) {
@@ -149,6 +182,7 @@ class UpdateProductCategory extends OrgAction
                     'description_title' => [$productCategory->shop->language->code => Arr::pull($modelData, 'description_title')]
                 ]
             ]);
+            data_set($modelData, 'is_description_title_reviewed', true, false);
         }
 
         if (Arr::has($changes, 'description')) {
@@ -157,6 +191,7 @@ class UpdateProductCategory extends OrgAction
                     'description' => [$productCategory->shop->language->code => Arr::pull($modelData, 'description')]
                 ]
             ]);
+            data_set($modelData, 'is_description_reviewed', true, false);
         }
 
         if (Arr::has($changes, 'description_extra')) {
@@ -165,6 +200,15 @@ class UpdateProductCategory extends OrgAction
                     'description_extra' => [$productCategory->shop->language->code => Arr::pull($modelData, 'description_extra')]
                 ]
             ]);
+            data_set($modelData, 'is_description_extra_reviewed', true, false);
+        }
+
+        if (Arr::has($changes, 'not_follow_master_prices') && !$productCategory->not_follow_master_prices) {
+            ProductHydratePricesFromMaster::dispatch($productCategory);
+        }
+
+        if (Arr::hasAny($changes, ['faq']) && $productCategory->webpage) {
+            BreakWebpageCache::run($productCategory->webpage);
         }
 
         if (Arr::hasAny($changes, [
@@ -172,9 +216,23 @@ class UpdateProductCategory extends OrgAction
             'name',
             'type',
             'state',
-            'name_i8n'
+            'name_i8n',
+            'faq',
+            'description_title',
+            'description_title_i8n',
+            'description',
+            'description_i8n',
+            'description_extra',
+            'customize_option',
+            'storage_option',
+            'follow_tuf_labeling_guide',
+            'labeling_guide_file',
         ])) {
             $this->productCategoryHydrators($productCategory);
+
+            if ($productCategory->webpage) {
+                BreakWebpageCache::run($productCategory->webpage, true);
+            }
 
             if ($productCategory->webpage_id) {
                 ReindexWebpageLuigiData::dispatch($productCategory->webpage->id)->delay(60);
@@ -212,6 +270,8 @@ class UpdateProductCategory extends OrgAction
 
     public function prepareForValidation(): void
     {
+        $this->discardBlankStorageGuidelines();
+
         if ($this->has('department_or_sub_department_id')) {
             $parent = ProductCategory::find($this->get('department_or_sub_department_id'));
             if ($parent->type == ProductCategoryTypeEnum::DEPARTMENT) {
@@ -224,6 +284,22 @@ class UpdateProductCategory extends OrgAction
         }
     }
 
+
+    /**
+     * Rows added but left blank arrive as null once empty strings are converted, drop them
+     * instead of failing validation on guidelines the user never wrote.
+     */
+    private function discardBlankStorageGuidelines(): void
+    {
+        if (!$this->has('storage_guidelines') || !is_array($this->get('storage_guidelines'))) {
+            return;
+        }
+
+        $this->set('storage_guidelines', array_values(array_filter(
+            $this->get('storage_guidelines'),
+            fn ($guideline) => !is_array($guideline) || !Arr::exists($guideline, 'text') || filled($guideline['text'])
+        )));
+    }
 
     public function rules(): array
     {
@@ -277,7 +353,6 @@ class UpdateProductCategory extends OrgAction
             'url'                           => ['sometimes', 'nullable', 'string', 'max:250'],
             'images'                        => ['sometimes', 'array'],
             'master_product_category_id'    => ['sometimes', 'integer', 'nullable', Rule::exists('master_product_categories', 'id')->where('master_shop_id', $this->shop->master_shop_id)],
-            'cost_price_ratio'              => ['sometimes', 'numeric', 'min:0'],
             'name_i8n'                      => ['sometimes', 'array'],
             'description_title_i8n'         => ['sometimes', 'array'],
             'description_i8n'               => ['sometimes', 'array'],
@@ -293,6 +368,34 @@ class UpdateProductCategory extends OrgAction
             'faq.*.answer'                  => ['sometimes', 'nullable', 'string'],
             'faq.*.source_question'         => ['sometimes', 'nullable', 'string'],
             'faq.*.source_answer'           => ['sometimes', 'nullable', 'string'],
+            'not_follow_master_prices'      => ['sometimes', 'boolean'],
+            // customize_option
+            'customize_option'              => ['sometimes', 'array'],
+            'customize_option.*'            => ['sometimes', 'array'],
+            'customize_option.*.key'        => ['sometimes', 'nullable', 'string'],
+            'customize_option.*.label'      => ['sometimes', 'nullable', 'string'],
+            'customize_option.*.icon'       => ['sometimes', 'nullable', 'string'],
+            'customize_option.*.available'  => ['sometimes', 'boolean'],
+            'customize_option.*.moq'        => ['sometimes', 'nullable', 'string'],
+            'customize_option.*.notes'      => ['sometimes', 'nullable', 'string', new MaxPlainTextLength(255)],
+            // storage_option
+            'storage_conditions'            => ['sometimes', 'array'],
+            'storage_conditions.*.key'      => ['sometimes', 'nullable', 'string'],
+            'storage_conditions.*.label'    => ['sometimes', 'nullable', 'string'],
+            'storage_conditions.*.value'    => ['sometimes', 'nullable', 'string'],
+            'storage_temperature'           => ['sometimes', 'nullable', 'string'],
+            'storage_guidelines'            => ['sometimes', 'array'],
+            'storage_guidelines.*.text'     => ['sometimes', 'string', 'max:250'],
+            // labeling_guide_file
+            'follow_tuf_labeling_guide'     => ['sometimes', 'boolean'],
+            'labeling_guide_file'           => ['sometimes', 'nullable', File::types(['pdf'])->max(64000)], // 64mb max, following server max (prod on php.ini max file size upload)
+            // category_comparison
+            'category_comparison'                   => ['sometimes', 'array'],
+            'category_comparison.template'          => ['sometimes', 'string'],
+            'category_comparison.items'             => ['sometimes', 'array'],
+            'category_comparison.items.*.show'      => ['sometimes', 'boolean', 'nullable'],
+            'category_comparison.items.*.label'     => ['sometimes', 'string', 'nullable'],
+            'category_comparison.items.*.value'     => ['sometimes', 'string'],
         ];
 
         if (!$this->strict) {
@@ -331,7 +434,7 @@ class UpdateProductCategory extends OrgAction
     /**
      * @throws \Throwable
      */
-    private function updateFamilyGrOffer(ProductCategory $productCategory, ?array $volGrData): void
+    public function updateFamilyGrOffer(ProductCategory $productCategory, ?array $volGrData): void
     {
         if (!$volGrData || empty($volGrData['item_quantity']) || empty($volGrData['percentage_off'])) {
             $productCategory->updateQuietly(['has_gr_vol_discount' => false]);
@@ -340,7 +443,7 @@ class UpdateProductCategory extends OrgAction
         }
 
         $itemQuantity  = (int)$volGrData['item_quantity'];
-        $percentageOff = (float)$volGrData['percentage_off'];
+        $percentageOff = (float)$volGrData['percentage_off'] / 100;
 
         $offer = Offer::where('trigger_id', $productCategory->id)
             ->where('trigger_type', class_basename(ProductCategory::class))
@@ -348,10 +451,12 @@ class UpdateProductCategory extends OrgAction
             ->with('offerAllowances')
             ->first();
 
+        $oldOfferData = $offer ? clone $offer : null;
+
         if (!$offer) {
             $offer = StoreVolumeGRDiscount::make()->action($productCategory, [
                 'trigger_data_item_quantity' => $itemQuantity,
-                'percentage_off'             => $percentageOff / 100,
+                'percentage_off'             => $percentageOff,
                 'interval'                   => 30,
             ]);
         } else {
@@ -366,7 +471,7 @@ class UpdateProductCategory extends OrgAction
 
             foreach ($offer->offerAllowances as $offerAllowance) {
                 $allowanceData = $offerAllowance->data;
-                data_set($allowanceData, 'percentage_off', $percentageOff / 100);
+                data_set($allowanceData, 'percentage_off', $percentageOff);
 
                 $offerAllowance->update([
                     'state'  => $offer->state->value,
@@ -381,6 +486,15 @@ class UpdateProductCategory extends OrgAction
 
         $productCategory->updateQuietly(['has_gr_vol_discount' => true]);
 
+        $productCategory->auditEvent = 'updated_gold_reward';
+        $productCategory->isCustomEvent = true;
+
+        $productCategory->auditCustomOld = $this->getAuditedOffers($oldOfferData);
+
+        $productCategory->auditCustomNew = $this->getAuditedOffers($offer);
+
+        Event::dispatch(new AuditCustom($productCategory));
+
         if ($offer) {
             $offer->refresh();
             UpdateProductCategoryOffersData::run($offer);
@@ -389,6 +503,19 @@ class UpdateProductCategory extends OrgAction
             }
         }
 
+    }
+
+    private function getAuditedOffers(?Offer $offer = null): array
+    {
+        preg_match('/percentage_off:([^:]+)/', $offer?->allowance_signature, $matches);
+
+        return [
+            'gold_reward_state'             => ucfirst($offer?->state->value),
+            'gold_reward_code'              => $offer?->code,
+            'gold_reward_type'              => $offer?->type,
+            'gold_reward_min_quantity'      => data_get($offer?->trigger_data, 'item_quantity', null),
+            'gold_reward_percentage_off'    => isset($matches[1]) ? (float) $matches[1] : null,
+        ];
     }
 
     private function finishFamilyGrOffer(ProductCategory $productCategory): void
@@ -426,6 +553,7 @@ class UpdateProductCategory extends OrgAction
     public function asController(ProductCategory $productCategory, ActionRequest $request): ProductCategory
     {
         $this->productCategory = $productCategory;
+        $this->user = $request->user();
 
         $this->initialisationFromShop($productCategory->shop, $request);
 

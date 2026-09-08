@@ -15,6 +15,7 @@ use App\Models\SysAdmin\Group;
 use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\DB;
 
 trait WithTradeUnitStandardIndex
 {
@@ -59,6 +60,7 @@ trait WithTradeUnitStandardIndex
             $selects[] = $timeSeriesData['selectRaw']['sales_grp_currency_external_ly'];
             $selects[] = $timeSeriesData['selectRaw']['invoices'];
             $selects[] = $timeSeriesData['selectRaw']['invoices_ly'];
+            $selects[] = DB::raw("'".group()->currency->code."' as grp_currency_code");
 
             $allowedSorts[] = 'sales_grp_currency_external';
             $allowedSorts[] = 'invoices';

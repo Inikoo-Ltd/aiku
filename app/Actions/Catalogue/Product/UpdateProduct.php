@@ -13,9 +13,11 @@ use App\Actions\Catalogue\Asset\UpdateAssetFromModel;
 use App\Actions\Catalogue\HistoricAsset\StoreHistoricAsset;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateAvailableQuantity;
 use App\Actions\Catalogue\Product\Traits\WithProductOrgStocks;
+use App\Actions\Catalogue\Shop\BreakShopPricesCache;
 use App\Actions\Catalogue\Shop\External\Faire\UpdateFaireProductInventoryQuantity;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateExclusiveProducts;
 use App\Actions\Masters\MasterAsset\Hydrators\MasterAssetHydrateAssets;
+use App\Actions\Masters\MasterAsset\Hydrators\MasterAssetHydrateMasterPricesRRPtoChild;
 use App\Actions\Masters\MasterAsset\Hydrators\MasterAssetHydrateMissingChildDescription;
 use App\Actions\Web\Webpage\CloseDiscontinuedWebpage;
 use App\Actions\Web\Webpage\ReopenDiscontinuedWebpage;
@@ -23,6 +25,7 @@ use App\Models\Masters\MasterAsset;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
+use App\Actions\Traits\WithMasterAssetTradeUnits;
 use App\Actions\Web\Webpage\CloseWebpage;
 use App\Actions\Web\Webpage\Luigi\ReindexWebpageLuigiData;
 use App\Actions\Web\Webpage\ReopenWebpage;
@@ -43,6 +46,7 @@ use App\Stubs\Migrations\HasProductInformation;
 use Carbon\Carbon;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 use OwenIt\Auditing\Events\AuditCustom;
@@ -55,8 +59,13 @@ class UpdateProduct extends OrgAction
     use WithProductOrgStocks;
     use HasDangerousGoodsFields;
     use HasProductInformation;
+    use WithMasterAssetTradeUnits;
 
     private Product $product;
+
+    public bool $bulkPriceUpdate = false;
+
+    public bool $skipWebpageCacheBreak = false;
 
     public function handle(Product $product, array $modelData): Product
     {
@@ -70,7 +79,11 @@ class UpdateProduct extends OrgAction
         if (Arr::has($modelData, 'rrp_per_unit')) {
             $rrpPerUnit = Arr::pull($modelData, 'rrp_per_unit');
             $rrp        = $rrpPerUnit * trimDecimalZeros($product->units);
-            data_set($modelData, 'rrp', $rrp);
+            if ($rrp >= 1e9) {
+                Log::warning("Skip rrp update for product $product->code: computed rrp $rrp overflows, source data looks corrupt");
+            } else {
+                data_set($modelData, 'rrp', $rrp);
+            }
         }
 
         if (Arr::has($modelData, 'webpage_title')) {
@@ -121,7 +134,19 @@ class UpdateProduct extends OrgAction
                 $this->syncOrgStocksToBeDeleted($product, $orgStocks);
             }
         } elseif (Arr::has($modelData, 'trade_units')) {
-            $product = SyncProductTradeUnits::run($product, Arr::pull($modelData, 'trade_units'));
+            $tradeUnits = Arr::pull($modelData, 'trade_units');
+            $product    = SyncProductTradeUnits::run($product, $tradeUnits);
+
+            $hasIndependentUnits = Arr::get($modelData, 'has_independent_units', $product->has_independent_units);
+            if (!empty($tradeUnits) && !$hasIndependentUnits && !Arr::has($modelData, 'units')) {
+                $unitsFromTradeUnits = $this->getUnitsFromTradeUnits($tradeUnits);
+                if ($unitsFromTradeUnits['units'] !== null) {
+                    data_set($modelData, 'units', $unitsFromTradeUnits['units']);
+                }
+                if (!Arr::has($modelData, 'unit') && $unitsFromTradeUnits['unit']) {
+                    data_set($modelData, 'unit', $unitsFromTradeUnits['unit']);
+                }
+            }
         }
 
 
@@ -248,7 +273,7 @@ class UpdateProduct extends OrgAction
             ]);
         }
 
-        if (Arr::hasAny($changed, ['name', 'code', 'price', 'units', 'unit'])) {
+        if (Arr::hasAny($changed, ['name', 'code', 'price', 'units', 'unit', 'is_golden_product'])) {
             $historicAsset = StoreHistoricAsset::run($product, [], $this->hydratorsDelay);
 
             $product->updateQuietly(
@@ -257,7 +282,9 @@ class UpdateProduct extends OrgAction
                 ]
             );
 
-            UpdateOrdersInBasketsAfterProductUpdated::dispatch($product->id);
+            if (!$this->bulkPriceUpdate) {
+                UpdateOrdersInBasketsAfterProductUpdated::dispatch($product->id);
+            }
         }
 
 
@@ -265,8 +292,8 @@ class UpdateProduct extends OrgAction
             UpdateAssetFromModel::run($product->asset, $assetData, $this->hydratorsDelay);
         }
 
-        if (Arr::hasAny($changed, ['state', 'status', 'exclusive_for_customer_id'])) {
-            $this->productHydrators($product);
+        if (Arr::hasAny($changed, ['state', 'status', 'is_for_sale', 'exclusive_for_customer_id'])) {
+            $this->productHydrators($product, hydrateForSale: !Arr::has($modelData, 'is_for_sale'));
         }
 
         if (Arr::has($changed, 'exclusive_for_customer_id')) {
@@ -285,7 +312,8 @@ class UpdateProduct extends OrgAction
             'price',
         ];
 
-        if ($product->webpage
+        if (!$this->bulkPriceUpdate
+            && $product->webpage
             && (Arr::hasAny(
                 $changed,
                 $fieldsUsedInLuigi
@@ -297,11 +325,23 @@ class UpdateProduct extends OrgAction
 
         $fieldsUsedInWebpages = array_merge(
             $fieldsUsedInLuigi,
+            ['rrp', 'units', 'unit'],
             $this->getDangerousGoodsFieldNames(),
             $this->getProductInformationFieldNames()
         );
 
-        if ($product->webpage
+        if (Arr::has($changed, 'not_follow_master_media')) {
+
+            if (!$product->not_follow_master_media) {
+                CloneProductImagesFromTradeUnits::run($product);
+            }
+
+            BreakProductInWebpagesCache::dispatch($product)->delay(15);
+        }
+
+        if (!$this->bulkPriceUpdate
+            && !$this->skipWebpageCacheBreak
+            && $product->webpage
             && (Arr::hasAny(
                 $changed,
                 $fieldsUsedInWebpages
@@ -335,10 +375,16 @@ class UpdateProduct extends OrgAction
             $product->updateQuietly([
                 'price_updated_at' => now()
             ]);
+
+            BreakShopPricesCache::run($product->shop_id);
         }
 
-        if ($oldHistoricProduct != $product->current_historic_asset_id) {
+        if (!$this->bulkPriceUpdate && $oldHistoricProduct != $product->current_historic_asset_id) {
             UpdateHistoricProductInBasketTransactions::dispatch($product);
+        }
+
+        if (Arr::has($changed, 'not_follow_master_prices') && !$product->not_follow_master_prices) {
+            MasterAssetHydrateMasterPricesRRPtoChild::run($product->masterProduct, $product->shop);
         }
 
         if (Arr::get($oldData, 'is_for_sale') != $product->is_for_sale || $oldState != $product->state) {
@@ -384,7 +430,13 @@ class UpdateProduct extends OrgAction
         $rules = [
             'code'                      => $codeRule,
             'name'                      => ['sometimes', 'required', 'max:250', 'string'],
-            'price'                     => ['sometimes', 'required', 'numeric', 'min:0.01'],
+            /**
+             * Free of charge is a real price: the gold reward gifts, the bottle caps and the
+             * tea samples are all zero, 254 active products in all. StoreProduct, StoreProductVariant
+             * and UpdateMasterAsset all allow it, so a product could be created at zero and a
+             * master held at zero, but the product itself could never be edited back down to it.
+             */
+            'price'                     => ['sometimes', 'required', 'numeric', 'min:0'],
             'unit_price'                => ['sometimes', 'required', 'numeric', 'min:0.01'],
             'description'               => ['sometimes', 'required', 'max:1500'],
             'description_title'         => ['sometimes', 'nullable', 'max:255'],
@@ -397,7 +449,6 @@ class UpdateProduct extends OrgAction
             'state'                     => ['sometimes', 'required', Rule::enum(ProductStateEnum::class)],
             'trade_config'              => ['sometimes', 'required', Rule::enum(ProductTradeConfigEnum::class)],
             'follow_master'             => ['sometimes', 'boolean'],
-            'cost_price_ratio'          => ['sometimes', 'numeric', 'min:0'],
             'family_id'                 => ['sometimes', 'nullable', Rule::exists('product_categories', 'id')->where('shop_id', $this->shop->id)],
             'master_product_id'         => ['sometimes', 'nullable', 'integer', Rule::exists('master_assets', 'id')->where('master_shop_id', $this->shop->master_shop_id)],
             'barcode'                   => [
@@ -411,6 +462,8 @@ class UpdateProduct extends OrgAction
             'webpage_id'                => ['sometimes', 'integer', 'nullable', Rule::exists('webpages', 'id')->where('shop_id', $this->shop->id)],
             'url'                       => ['sometimes', 'nullable', 'string', 'max:250'],
             'units'                     => ['sometimes', 'numeric'],
+
+            'has_independent_units'     => ['sometimes', 'boolean'],
             'unit'                      => ['sometimes', 'string'],
             'exclusive_for_customer_id' => [
                 'sometimes',
@@ -472,7 +525,10 @@ class UpdateProduct extends OrgAction
             'not_for_sale_from_trade_unit'  => ['sometimes', 'boolean'],
             'has_live_webpage'              => ['sometimes', 'boolean'],
             'marketplace_id'                => ['sometimes'],
-            'not_follow_master_trade_units' => ['sometimes', 'boolean']
+            'not_follow_master_trade_units' => ['sometimes', 'boolean'],
+            'not_follow_master_prices'      => ['sometimes', 'boolean'],
+            'not_follow_master_media'       => ['sometimes', 'boolean'],
+            'is_golden_product'             => ['sometimes', 'boolean'],
         ];
 
 

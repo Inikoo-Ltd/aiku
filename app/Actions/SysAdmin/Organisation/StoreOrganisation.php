@@ -9,12 +9,14 @@
 namespace App\Actions\SysAdmin\Organisation;
 
 use App\Actions\Accounting\OrgPaymentServiceProvider\StoreOrgPaymentServiceProvider;
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Actions\Helpers\Colour\GetRandomColour;
 use App\Actions\Helpers\Currency\SetCurrencyHistoricFields;
 use App\Actions\Procurement\OrgPartner\StoreOrgPartner;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateOrganisations;
+use App\Actions\SysAdmin\Group\Seeders\SeedAikuSections;
 use App\Actions\SysAdmin\Group\Seeders\SeedAikuScopedSections;
+use App\Actions\SysAdmin\Group\Seeders\SeedPostRooms;
 use App\Actions\SysAdmin\Organisation\Seeders\SeedJobPositions;
 use App\Actions\SysAdmin\Organisation\Seeders\SeedOrganisationOutboxes;
 use App\Actions\SysAdmin\Organisation\Seeders\SeedOrganisationPermissions;
@@ -50,7 +52,7 @@ use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 use Throwable;
 
-class StoreOrganisation extends GrpAction
+class StoreOrganisation extends OrgAction
 {
     use WithModelAddressActions;
 
@@ -78,6 +80,7 @@ class StoreOrganisation extends GrpAction
             SeedOrganisationPermissions::run($organisation);
             SeedJobPositions::run($organisation);
             if ($organisation->type == OrganisationTypeEnum::SHOP || $organisation->type == OrganisationTypeEnum::DIGITAL_AGENCY) {
+                SeedPostRooms::run($group);
                 SeedOrgPostRooms::run($organisation);
                 SeedOrganisationOutboxes::run($organisation);
             }
@@ -123,24 +126,11 @@ class StoreOrganisation extends GrpAction
                 $organisation->timeSeries()->create(['frequency' => $frequency]);
             }
 
-            if ($organisation->type == OrganisationTypeEnum::SHOP || $organisation->type == OrganisationTypeEnum::DIGITAL_AGENCY) {
-                $organisation->outboxNewsletterIntervals()->create();
-                $organisation->outboxMarketingIntervals()->create();
-                $organisation->outboxMarketingNotificationIntervals()->create();
-                $organisation->outboxCustomerNotificationIntervals()->create();
-                $organisation->outboxColdEmailsIntervals()->create();
-                $organisation->outboxPushIntervals()->create();
-            }
-
-            $organisation->outboxUserNotificationIntervals()->create();
-            $organisation->outboxTestIntervals()->create();
-
 
             if ($organisation->type == OrganisationTypeEnum::SHOP || $organisation->type == OrganisationTypeEnum::DIGITAL_AGENCY) {
                 $organisation->crmStats()->create();
                 $organisation->catalogueStats()->create();
                 $organisation->discountsStats()->create();
-                $organisation->mailshotsIntervals()->create();
                 $organisation->orderingStats()->create();
 
                 $paymentServiceProvider = PaymentServiceProvider::where('type', PaymentServiceProviderTypeEnum::ACCOUNT)->first();
@@ -186,12 +176,20 @@ class StoreOrganisation extends GrpAction
             );
             $organisation->serialReferences()->create(
                 [
+                    'model'           => SerialReferenceModelEnum::JOB_ORDER,
+                    'organisation_id' => $organisation->id,
+                    'format'          => 'JO'.$organisation->slug.'-%04d'
+                ]
+            );
+            $organisation->serialReferences()->create(
+                [
                     'model'           => SerialReferenceModelEnum::STOCK_DELIVERY,
                     'organisation_id' => $organisation->id,
                     'format'          => 'SD'.$organisation->slug.'-%04d'
                 ]
             );
 
+            SeedAikuSections::run($group);
             SeedAikuScopedSections::make()->seedOrganisationAikuScopedSection($organisation);
             GroupHydrateOrganisations::dispatch($group);
             BreakUserUiProps::make()->redoAllUsers();
@@ -246,7 +244,7 @@ class StoreOrganisation extends GrpAction
      */
     public function action(Group $group, $modelData): Organisation
     {
-        $this->initialisation($group, $modelData);
+        $this->initialisationFromGroup($group, $modelData);
 
         return $this->handle($group, $this->validatedData);
     }
@@ -256,7 +254,7 @@ class StoreOrganisation extends GrpAction
      */
     public function asController(Group $group, ActionRequest $request): Organisation
     {
-        $this->initialisation($group, $request);
+        $this->initialisationFromGroup($group, $request);
 
         return $this->handle($group, $this->validatedData);
     }

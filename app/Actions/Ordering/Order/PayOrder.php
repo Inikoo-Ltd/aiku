@@ -52,7 +52,7 @@ class PayOrder extends OrgAction
         if ($invoice) {
             AttachPaymentToInvoice::make()->action($invoice, $payment, []);
 
-            ProcessInvoicePaidNotification::dispatch($invoice->id, $payment->id);
+            ProcessInvoicePaidNotification::dispatch($invoice->id);
         }
 
         return $payment;

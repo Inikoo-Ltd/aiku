@@ -10,6 +10,7 @@ namespace App\Models\Procurement;
 
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderDeliveryStateEnum;
+use App\Models\GoodsIn\StockDelivery;
 use App\Models\Helpers\Address;
 use App\Models\Helpers\Currency;
 use App\Models\SysAdmin\Organisation;
@@ -18,12 +19,15 @@ use App\Models\Traits\HasAddresses;
 use App\Models\Traits\HasAttachments;
 use App\Models\Traits\HasHistory;
 use App\Models\Traits\InOrganisation;
+use App\Models\Traits\HasSearch;
 use Eloquent;
+use Illuminate\Support\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -112,6 +116,8 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $source_id
  * @property int $number_stock_deliveries_state_booking_in
  * @property int $number_stock_deliveries_state_booked_in
+ * @property int|null $estimated_delivery_days
+ * @property \Illuminate\Support\Carbon|null $estimated_received_at
  * @property-read Address|null $address
  * @property-read Collection<int, Address> $addresses
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $attachments
@@ -122,6 +128,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Organisation $organisation
  * @property-read Model|\Eloquent $parent
  * @property-read Collection<int, \App\Models\Procurement\PurchaseOrderTransaction> $purchaseOrderTransactions
+ * @property-read Collection<int, StockDelivery> $stockDeliveries
  * @method static \Database\Factories\Procurement\PurchaseOrderFactory factory($count = null, $state = [])
  * @method static Builder<static>|PurchaseOrder newModelQuery()
  * @method static Builder<static>|PurchaseOrder newQuery()
@@ -141,6 +148,7 @@ class PurchaseOrder extends Model implements Auditable, HasMedia
     use HasHistory;
     use InOrganisation;
     use HasAttachments;
+    use HasSearch;
 
     protected $casts = [
         'data'            => 'array',
@@ -148,6 +156,8 @@ class PurchaseOrder extends Model implements Auditable, HasMedia
         'state'           => PurchaseOrderStateEnum::class,
         'delivery_state' => PurchaseOrderDeliveryStateEnum::class,
         'date'            => 'datetime',
+        'deposit_paid_at' => 'datetime',
+        'balance_paid_at' => 'datetime',
         'submitted_at'    => 'datetime',
         'confirmed_at'    => 'datetime',
         'manufactured_at' => 'datetime',
@@ -158,6 +168,7 @@ class PurchaseOrder extends Model implements Auditable, HasMedia
         'cancelled_at'    => 'datetime',
         'fetched_at'      => 'datetime',
         'last_fetched_at' => 'datetime',
+        'estimated_received_at' => 'datetime',
     ];
 
 
@@ -191,7 +202,38 @@ class PurchaseOrder extends Model implements Auditable, HasMedia
 
     protected array $auditInclude = [
         'reference',
+        'state',
+        'notes',
+        'cost_total',
+        'cost_items',
+        'cost_shipping',
+        'cost_duties',
     ];
+
+    public function searchIndexShouldBeUpdated(): bool
+    {
+        return $this->wasRecentlyCreated || $this->wasChanged([
+                'organisation_id',
+                'state',
+                'reference',
+                'parent_code',
+                'parent_name',
+            ]);
+    }
+
+    public function toSearchableArray(): array
+    {
+        return [
+            'id'               => (string)$this->id,
+            'organisation_id'  => $this->organisation_id,
+            'state'            => $this->state?->value,
+            'reference'        => (string)$this->reference,
+            'slug'             => $this->slug,
+            'parent_code'      => (string)$this->parent_code,
+            'parent_name'      => (string)$this->parent_name,
+            'created_at'       => is_string($this->created_at) ? Carbon::parse($this->created_at)->timestamp : $this->created_at->timestamp,
+        ];
+    }
 
     public function parent(): MorphTo
     {
@@ -206,5 +248,10 @@ class PurchaseOrder extends Model implements Auditable, HasMedia
     public function currency(): BelongsTo
     {
         return $this->belongsTo(Currency::class);
+    }
+
+    public function stockDeliveries(): BelongsToMany
+    {
+        return $this->belongsToMany(StockDelivery::class);
     }
 }

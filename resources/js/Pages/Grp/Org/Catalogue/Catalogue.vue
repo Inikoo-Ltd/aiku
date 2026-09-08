@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { type Component, computed, ref } from 'vue'
-import { Head } from '@inertiajs/vue3'
+import { Head, Link } from '@inertiajs/vue3'
+import { trans } from 'laravel-vue-i18n'
 
 import CatalogueShowcase from '@/Components/Catalogue/CatalogueShowcase.vue'
 import PageHeading from '@/Components/Headings/PageHeading.vue'
@@ -10,7 +11,10 @@ import TableTopSoldProducts from '@/Components/Tables/Grp/Org/CRM/TableTopSoldPr
 import { capitalize } from '@/Composables/capitalize'
 import { useTabChange } from '@/Composables/tab-change'
 import { PageHeadingTypes } from '@/types/PageHeading'
+import { routeType } from '@/types/route'
 import { library } from '@fortawesome/fontawesome-svg-core'
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
+import { faOctopusDeploy } from '@fortawesome/free-brands-svg-icons'
 import { faTrophy, faAlignLeft } from '@fal'
 
 library.add(faTrophy, faAlignLeft);
@@ -24,6 +28,7 @@ const props = defineProps<{
         current: string
         navigation: {}
     }
+    url_master?: routeType
     showcase?: any
     top_listed_families?: any
     top_listed_products?: any
@@ -48,7 +53,20 @@ const component = computed<Component>(() => {
 
 <template>
     <Head :title="capitalize(title)" />
-    <PageHeading :data="pageHead" />
+    <PageHeading :data="pageHead">
+        <template #afterTitle>
+            <div class="whitespace-nowrap">
+                <Link
+                    v-if="url_master"
+                    :href="route(url_master.name, url_master.parameters)"
+                    v-tooltip="trans('Go to Master')"
+                    class="mr-1 opacity-70 hover:opacity-100"
+                >
+                    <FontAwesomeIcon :icon="faOctopusDeploy" color="#4B0082" />
+                </Link>
+            </div>
+        </template>
+    </PageHeading>
     <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
     <component :is="component" :data="currentTabData" :tab="currentTab" />
 </template>

@@ -92,6 +92,7 @@ use Illuminate\Database\Eloquent\Model;
  * @property int $number_collections_products_status_discontinuing
  * @property int $number_collections_products_status_discontinued
  * @property int $number_products_status_coming_soon
+ * @property int $total_products_rebel_prices
  * @method static Builder<static>|ProductCategoryStats newModelQuery()
  * @method static Builder<static>|ProductCategoryStats newQuery()
  * @method static Builder<static>|ProductCategoryStats query()

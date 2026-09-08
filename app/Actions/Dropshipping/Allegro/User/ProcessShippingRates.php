@@ -14,6 +14,7 @@ use App\Models\Dropshipping\AllegroUser;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
+use Sentry;
 
 class ProcessShippingRates extends RetinaAction
 {
@@ -80,6 +81,7 @@ class ProcessShippingRates extends RetinaAction
 
             $shipping = $allegroUser->createShippingRates($shippingRatesData);
         } catch (\Exception $e) {
+            Sentry::captureException($e);
             $shipping = [];
         }
 

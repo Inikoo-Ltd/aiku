@@ -108,9 +108,9 @@ class CreateAgent extends OrgAction
                                     'label'       => __('Language'),
                                     'placeholder' => __('Select language'),
                                     'required'    => true,
-                                    'options'     => GetLanguagesOptions::make()->translated(),
-                                    'labelProp' => 'label',
-                                    'valueProp' => 'value',
+                                    'options'     => array_values(GetLanguagesOptions::make()->translated()),
+                                    'labelProp' => 'name',
+                                    'valueProp' => 'id',
                                 ],
 
                                 'max_concurrent_chats' => [

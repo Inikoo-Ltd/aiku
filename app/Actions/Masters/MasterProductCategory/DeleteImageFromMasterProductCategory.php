@@ -9,12 +9,12 @@
 namespace App\Actions\Masters\MasterProductCategory;
 
 use App\Actions\Catalogue\ProductCategory\DeleteImageFromProductCategory;
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Models\Helpers\Media;
 use App\Models\Masters\MasterProductCategory;
 use Lorisleiva\Actions\ActionRequest;
 
-class DeleteImageFromMasterProductCategory extends GrpAction
+class DeleteImageFromMasterProductCategory extends OrgAction
 {
     public function handle(MasterProductCategory $masterProductCategory, Media $media, bool $updateDependants = false): MasterProductCategory
     {
@@ -52,7 +52,7 @@ class DeleteImageFromMasterProductCategory extends GrpAction
 
     public function asController(MasterProductCategory $masterProductCategory, Media $media, ActionRequest $request): void
     {
-        $this->initialisation($masterProductCategory->group, $request);
+        $this->initialisationFromGroup($masterProductCategory->group, $request);
 
         $this->handle($masterProductCategory, $media, true);
     }

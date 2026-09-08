@@ -40,8 +40,41 @@ class GetEmployeeShowcase
 
         return [
             'employee'              => EmployeeResource::make($employee),
-            'pin'                   => $employee->pin,
-            'permissions_pictogram' => $pictogram
+            'pin'                   => $employee->pin ? preg_replace('/^\d+:/', '', $employee->pin) : null,
+            'regenerate_pin_route'  => route('grp.org.hr.employees.regenerate-pin', [$employee->organisation->slug, $employee->slug]),
+            'permissions_pictogram' => $pictogram,
+            'work_schedule'         => $this->getWorkScheduleData($employee),
+        ];
+    }
+
+    private function getWorkScheduleData(Employee $employee): array
+    {
+        $ownSchedule  = $employee->getDefaultWorkSchedule();
+        $workSchedule = $ownSchedule ?? $employee->organisation->getDefaultWorkSchedule();
+
+        if (!$workSchedule) {
+            return [
+                'source' => null,
+                'days'   => [],
+            ];
+        }
+
+        $workSchedule->load('days.breaks');
+
+        $days = $workSchedule->days->sortBy('day_of_week')->map(fn ($day) => [
+            'day_of_week' => $day->day_of_week,
+            'start_time'  => $day->start_time,
+            'end_time'    => $day->end_time,
+            'breaks'      => $day->breaks->map(fn ($break) => [
+                'name'       => $break->break_name,
+                'start_time' => $break->start_time?->format('H:i'),
+                'end_time'   => $break->end_time?->format('H:i'),
+            ])->values(),
+        ])->values();
+
+        return [
+            'source' => $ownSchedule ? 'employee' : 'organisation',
+            'days'   => $days,
         ];
     }
 }

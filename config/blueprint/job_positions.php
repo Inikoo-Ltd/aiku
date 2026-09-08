@@ -85,13 +85,23 @@ return [
             ],
             'organisation_types' => []
         ],
-        'gp-pr'       => [
-            'code'               => 'gp-pr',
-            'name'               => 'Masters Properties',
+        'gp-clk'      => [
+            'code'               => 'gp-clk',
+            'name'               => 'Masters Clerk',
             'scope'              => JobPositionScopeEnum::GROUP,
             'department'         => 'masters',
             'roles'              => [
-                RolesEnum::MASTERS_PROPERTIES
+                RolesEnum::MASTERS_CLERK
+            ],
+            'organisation_types' => []
+        ],
+        'gp-vw'       => [
+            'code'               => 'gp-vw',
+            'name'               => 'Masters Viewer',
+            'scope'              => JobPositionScopeEnum::GROUP,
+            'department'         => 'masters',
+            'roles'              => [
+                RolesEnum::MASTERS_VIEWER
             ],
             'organisation_types' => []
         ],

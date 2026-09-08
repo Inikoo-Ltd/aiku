@@ -8,12 +8,12 @@
 
 namespace App\Actions\SupplyChain\HistoricSupplierProduct;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\SupplyChain\HistoricSupplierProduct;
 
-class UpdateHistoricSupplierProduct extends GrpAction
+class UpdateHistoricSupplierProduct extends OrgAction
 {
     use WithActionUpdate;
     use WithNoStrictRules;
@@ -45,7 +45,7 @@ class UpdateHistoricSupplierProduct extends GrpAction
         $this->asAction       = true;
         $this->hydratorsDelay = $hydratorsDelay;
 
-        $this->initialisation($historicSupplierProduct->group, $modelData);
+        $this->initialisationFromGroup($historicSupplierProduct->group, $modelData);
 
         return $this->handle($historicSupplierProduct, $this->validatedData);
     }

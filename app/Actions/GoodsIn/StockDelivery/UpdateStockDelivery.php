@@ -8,6 +8,8 @@
 
 namespace App\Actions\GoodsIn\StockDelivery;
 
+use App\Actions\Traits\Authorisations\WithProcurementEditAuthorisation;
+use App\Actions\GoodsIn\StockDelivery\Traits\HasStockDeliveryHydrators;
 use App\Actions\OrgAction;
 use App\Actions\Procurement\WithNoStrictProcurementOrderRules;
 use App\Actions\Traits\Rules\WithNoStrictRules;
@@ -15,42 +17,67 @@ use App\Actions\Traits\WithActionUpdate;
 use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
 use App\Models\GoodsIn\StockDelivery;
 use App\Rules\IUnique;
+use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 
 class UpdateStockDelivery extends OrgAction
 {
+    use WithProcurementEditAuthorisation;
     use WithActionUpdate;
-    use WithNoStrictRules;
     use WithNoStrictProcurementOrderRules;
-
+    use WithNoStrictRules;
+    use HasStockDeliveryHydrators;
 
     private StockDelivery $stockDelivery;
 
+    private const DATA_FIELDS = [
+        'delivery_type',
+        'invoice_number',
+        'invoice_date',
+        'estimated_dispatched_date',
+        'estimated_receiving_date',
+        'incoterm',
+        'port_of_export',
+        'port_of_import',
+        'delivery_address',
+    ];
+
     public function handle(StockDelivery $stockDelivery, array $modelData): StockDelivery
     {
-        return $this->update($stockDelivery, $modelData, ['data']);
-    }
-
-    public function authorize(ActionRequest $request): bool
-    {
-        if ($this->asAction) {
-            return true;
+        foreach (self::DATA_FIELDS as $field) {
+            if (array_key_exists($field, $modelData)) {
+                $modelData['data'][$field] = Arr::pull($modelData, $field);
+            }
         }
 
-        return $request->user()->authTo("procurement.{$this->organisation->id}.edit");
+        $stockDelivery = $this->update($stockDelivery, $modelData, ['data']);
+
+        if ($stockDelivery->wasChanged('state')) {
+            $this->runStockDeliveryHydrators($stockDelivery);
+        }
+
+        return $stockDelivery;
     }
 
     public function rules(): array
     {
         $rules = [
-            'reference' => [
+            'reference'                 => [
                 'sometimes',
                 'required',
                 $this->strict ? 'alpha_dash' : 'string',
             ],
+            'delivery_type'             => ['sometimes', 'nullable', 'string', 'in:parcel,container'],
+            'invoice_number'            => ['sometimes', 'nullable', 'string'],
+            'invoice_date'              => ['sometimes', 'nullable', 'date'],
+            'estimated_dispatched_date' => ['sometimes', 'nullable', 'date'],
+            'estimated_receiving_date'  => ['sometimes', 'nullable', 'date'],
+            'incoterm'                  => ['sometimes', 'nullable', 'string'],
+            'port_of_export'            => ['sometimes', 'nullable', 'string'],
+            'port_of_import'            => ['sometimes', 'nullable', 'string'],
+            'delivery_address'          => ['sometimes', 'nullable', 'string'],
         ];
-
 
         if ($this->strict) {
             $rules['reference'][] = new IUnique(
@@ -69,7 +96,6 @@ class UpdateStockDelivery extends OrgAction
             );
         }
 
-
         if (!$this->strict) {
             $rules['state'] = ['sometimes', Rule::enum(StockDeliveryStateEnum::class)];
 
@@ -79,6 +105,14 @@ class UpdateStockDelivery extends OrgAction
         }
 
         return $rules;
+    }
+
+    public function asController(StockDelivery $stockDelivery, ActionRequest $request): StockDelivery
+    {
+        $this->stockDelivery = $stockDelivery;
+        $this->initialisation($stockDelivery->organisation, $request);
+
+        return $this->handle($stockDelivery, $this->validatedData);
     }
 
     public function action(StockDelivery $stockDelivery, array $modelData, int $hydratorsDelay = 0, bool $strict = true, bool $audit = true): StockDelivery
@@ -94,13 +128,4 @@ class UpdateStockDelivery extends OrgAction
 
         return $this->handle($stockDelivery, $this->validatedData);
     }
-
-    public function asController(StockDelivery $stockDelivery, ActionRequest $request): StockDelivery
-    {
-        $this->initialisation($stockDelivery->organisation, $request);
-
-        return $this->handle($stockDelivery, $this->validatedData);
-    }
-
-
 }

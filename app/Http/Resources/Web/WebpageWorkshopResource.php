@@ -56,6 +56,10 @@ class WebpageWorkshopResource extends JsonResource
                 'id'   => $webpage->shop->id,
                 'slug' => $webpage->shop->slug,
             ] : null,
+            'organisation'                           => $webpage->organisation ? [
+                'id'   => $webpage->organisation->id,
+                'slug' => $webpage->organisation->slug,
+            ] : null,
             'family'                                 => $productFamily,
             'allow_fetch'                            => $webpage->allow_fetch,
             'route_webpage_edit'                     => [

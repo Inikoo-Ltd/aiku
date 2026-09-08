@@ -10,6 +10,7 @@ namespace App\Models\GoodsIn;
 
 use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
 use App\Models\Helpers\Address;
+use App\Models\Helpers\Currency;
 use App\Models\Procurement\PurchaseOrder;
 use App\Models\SysAdmin\Organisation;
 use App\Models\Traits\HasAddress;
@@ -17,11 +18,14 @@ use App\Models\Traits\HasAddresses;
 use App\Models\Traits\HasAttachments;
 use App\Models\Traits\HasHistory;
 use App\Models\Traits\InOrganisation;
+use App\Models\Traits\HasSearch;
 use Eloquent;
+use Illuminate\Support\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
@@ -84,10 +88,18 @@ use Spatie\Sluggable\SlugOptions;
  * @property \Illuminate\Support\Carbon|null $last_fetched_at
  * @property \Illuminate\Support\Carbon|null $deleted_at
  * @property string|null $source_id
+ * @property int $number_stock_delivery_items_under_delivered unit_quantity_checked < unit_quantity
+ * @property int $number_stock_delivery_items_over_delivered unit_quantity_checked > unit_quantity
+ * @property \Illuminate\Support\Carbon|null $confirmed_at
+ * @property \Illuminate\Support\Carbon|null $ready_to_ship_at
+ * @property \Illuminate\Support\Carbon|null $booking_in_at
+ * @property \Illuminate\Support\Carbon|null $booked_in_at
+ * @property numeric|null $cbm carton cubic meters
  * @property-read Address|null $address
  * @property-read Collection<int, Address> $addresses
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $attachments
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
+ * @property-read Currency $currency
  * @property-read \App\Models\SysAdmin\Group|null $group
  * @property-read Collection<int, \App\Models\GoodsIn\StockDeliveryItem> $items
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $media
@@ -113,21 +125,26 @@ class StockDelivery extends Model implements HasMedia, Auditable
     use InOrganisation;
     use HasAttachments;
     use HasHistory;
+    use HasSearch;
 
 
     protected $casts = [
-        'data'            => 'array',
-        'cost_data'       => 'array',
-        'state'           => StockDeliveryStateEnum::class,
-        'date'            => 'datetime',
-        'dispatched_at'   => 'datetime',
-        'received_at'     => 'datetime',
-        'checked_at'      => 'datetime',
-        'placed_at'       => 'datetime',
-        'cancelled_at'    => 'datetime',
-        'not_received_at' => 'datetime',
-        'fetched_at'      => 'datetime',
-        'last_fetched_at' => 'datetime',
+        'data'             => 'array',
+        'cost_data'        => 'array',
+        'state'            => StockDeliveryStateEnum::class,
+        'date'             => 'datetime',
+        'confirmed_at'     => 'datetime',
+        'ready_to_ship_at' => 'datetime',
+        'dispatched_at'    => 'datetime',
+        'received_at'      => 'datetime',
+        'checked_at'       => 'datetime',
+        'booking_in_at'    => 'datetime',
+        'booked_in_at'     => 'datetime',
+        'placed_at'        => 'datetime',
+        'cancelled_at'     => 'datetime',
+        'not_received_at'  => 'datetime',
+        'fetched_at'       => 'datetime',
+        'last_fetched_at'  => 'datetime',
     ];
 
     protected $attributes = [
@@ -159,8 +176,38 @@ class StockDelivery extends Model implements HasMedia, Auditable
 
     protected array $auditInclude = [
         'reference',
+        'state',
+        'cost_total',
+        'cost_items',
+        'cost_shipping',
+        'cost_duties',
     ];
 
+    public function searchIndexShouldBeUpdated(): bool
+    {
+        return $this->wasRecentlyCreated
+            || $this->wasChanged([
+                'organisation_id',
+                'state',
+                'reference',
+                'parent_code',
+                'parent_name',
+            ]);
+    }
+
+    public function toSearchableArray(): array
+    {
+        return [
+            'id'              => (string)$this->id,
+            'organisation_id' => $this->organisation_id,
+            'state'           => $this->state?->value,
+            'reference'       => $this->reference,
+            'slug'            => $this->slug,
+            'parent_code'     => $this->parent_code,
+            'parent_name'     => $this->parent_name,
+            'created_at'      => is_string($this->created_at) ? Carbon::parse($this->created_at)->timestamp : $this->created_at->timestamp,
+        ];
+    }
 
     public function purchaseOrders(): BelongsToMany
     {
@@ -172,8 +219,23 @@ class StockDelivery extends Model implements HasMedia, Auditable
         return $this->hasMany(StockDeliveryItem::class);
     }
 
+    public function costs(): HasMany
+    {
+        return $this->hasMany(StockDeliveryCost::class);
+    }
+
+    public function depositApplications(): HasMany
+    {
+        return $this->hasMany(StockDeliveryDepositApplication::class);
+    }
+
     public function parent(): MorphTo
     {
         return $this->morphTo();
+    }
+
+    public function currency(): BelongsTo
+    {
+        return $this->belongsTo(Currency::class);
     }
 }

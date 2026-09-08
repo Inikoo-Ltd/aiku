@@ -85,6 +85,7 @@ class ShippingZone extends Model implements Auditable
     protected $casts = [
         'territories'     => 'array',
         'price'           => 'array',
+        'shippers_price'  => 'array',
         'status'          => 'boolean',
         'fetched_at'      => 'datetime',
         'last_fetched_at' => 'datetime',

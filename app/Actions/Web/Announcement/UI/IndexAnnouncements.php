@@ -57,6 +57,8 @@ class IndexAnnouncements extends OrgAction
             'announcements.created_at',
             'announcements.closed_at',
             'announcements.live_at',
+            'announcements.paused_by_announcement_id',
+            'announcements.paused_until',
             'websites.name as website_name',
             'websites.slug as website_slug',
             'organisations.name as organisation_name',
@@ -106,9 +108,11 @@ class IndexAnnouncements extends OrgAction
                 ->withExportLinks($exportLinks)
                 ->column(key: 'status', label: ['fal', 'fa-yin-yang'], type: 'icon')
                 ->column(key: 'name', label: __('Name'), sortable: true)
+                ->column(key: 'position', label: __('Position'))
                 ->column(key: 'publisher_name', label: __('Publisher name'), sortable: true)
                 ->column(key: 'live_at', label: __('From'), sortable: true, type: 'date_hm')
                 ->column(key: 'closed_at', label: __('Until'), sortable: true, type: 'date_hm')
+                ->column(key: 'paused_note', label: __('Paused'))
                 ->column(key: 'show_pages', label: __('Show pages'), sortable: true)
                 ->column(key: 'hide_pages', label: __('Hide pages'), sortable: true)
                 ->defaultSort('-id');

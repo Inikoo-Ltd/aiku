@@ -68,6 +68,12 @@ trait WithLuigis
             $website = $parent->website;
         }
 
+        if (!$website->usesLuigiSearch()) {
+            Log::info('Luigi request skipped, website '.$website->slug.' uses internal search');
+
+            return [];
+        }
+
         if (!$website->migrated) {
             abort(404, 'Website not migrated');
         }
@@ -466,6 +472,9 @@ trait WithLuigis
         $pricePerUnit = $productUnits > 0 ? $price / $productUnits : 0;
         $rrpPerUnit   = $productUnits > 0 ? $rrp / $productUnits : 0;
 
+
+        $availability = intval(($product->state == ProductStateEnum::ACTIVE || $product->state == ProductStateEnum::DISCONTINUING) && $product->has_live_webpage && $product->is_main && $product->is_for_sale);
+
         return [
             "identity" => $webpage->luigiIdentity(),
             "type"     => "item",
@@ -474,7 +483,7 @@ trait WithLuigis
                 "title"               => $webpage->title,
                 "web_url"             => $webpage->getCanonicalUrl(),
                 // Discontinuing display also (Tomas Request) | HELP-1677
-                "availability"        => intval(($product->state == ProductStateEnum::ACTIVE || $product->state == ProductStateEnum::DISCONTINUING) && $product->has_live_webpage && $product->is_main && $product->is_for_sale),
+                "availability"        => $availability,
                 "stock_qty"           => $product->available_quantity ?? 0,
                 "unit"                => $product->unit,   // 'bomb'
                 "units"               => $productUnits,   // '6.000'
@@ -521,11 +530,11 @@ trait WithLuigis
             $modelWebpage = $model?->webpage;
             $type         = null;
             if (!$modelWebpage) {
-                if ($webpage->type == WebpageTypeEnum::BLOG) {
-                    $type = 'news';
-                } else {
+                if ($webpage->type != WebpageTypeEnum::BLOG) {
                     return [];
                 }
+                $type         = 'news';
+                $modelWebpage = $webpage;
             }
 
             return [
@@ -536,7 +545,7 @@ trait WithLuigis
                     "title"       => $modelWebpage->title,
                     "web_url"     => $modelWebpage->getCanonicalUrl(),
                     "description" => $modelWebpage->description,
-                    "image_link"  => Arr::get($model->imageSources(200, 200), 'original'),
+                    "image_link"  => Arr::get($model?->imageSources(200, 200), 'original'),
                 ]),
             ];
         }

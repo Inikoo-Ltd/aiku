@@ -8,7 +8,6 @@
 
 namespace App\Actions\Comms\EmailBulkRun;
 
-use App\Actions\Comms\Outbox\Hydrators\OutboxHydrateEmailBulkRuns;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateEmailsBulkRuns;
 use App\Actions\Traits\Rules\WithNoStrictRules;
@@ -48,14 +47,12 @@ class StoreEmailBulkRun extends OrgAction
             /** @var EmailBulkRun $emailRun */
             $emailRun = $emailOngoingRun->emailBulkRuns()->create($modelData);
             $emailRun->stats()->create();
-            $emailRun->intervals()->create();
 
             return $emailRun;
         });
 
         $outbox = $emailOngoingRun->outbox;
 
-        OutboxHydrateEmailBulkRuns::dispatch($outbox)->delay($this->hydratorsDelay);
         GroupHydrateEmailsBulkRuns::dispatch($emailOngoingRun->group_id)->delay($this->hydratorsDelay);
 
         return $emailBulkRun;

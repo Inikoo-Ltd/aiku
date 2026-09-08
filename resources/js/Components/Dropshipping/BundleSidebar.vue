@@ -5,7 +5,6 @@ import { notify } from '@kyvg/vue3-notification'
 import { trans } from 'laravel-vue-i18n'
 import axios from 'axios'
 import { routeType } from '@/types/route'
-import { route } from 'ziggy-js'
 import { debounce } from 'lodash-es'
 import Button from '../Elements/Buttons/Button.vue';
 import { InputText, Select, Dialog, Textarea, Checkbox, Skeleton } from "primevue"
@@ -169,6 +168,8 @@ const uploadFilesLocal = async (files: FileList) => {
             text: trans('Reload Pages'),
             type: 'error'
         })
+
+        return
     }
 
     try {
@@ -607,8 +608,6 @@ watch(isNavigationLocked, (isLocked) => {
 onBeforeUnmount(() => {
     detachNavigationGuard()
 })
-
-console.log("layout bundlesibdear", layout)
 </script>
 
 <template>
@@ -674,7 +673,7 @@ console.log("layout bundlesibdear", layout)
                     </div>
 
                     <div v-for="item in bundle.products.value" :key="item.id" class="flex gap-3 py-3 border-b border-t">
-                        <img :src="item.web_images?.main?.gallery?.png || item.image"
+                        <Image :src="item.image ?? item.web_images?.main?.gallery"
                             class="w-14 h-14 object-contain bg-gray-50 rounded" />
                         <div class="flex-1">
                             <div class="text-sm font-semibold">{{ item.name }}</div>

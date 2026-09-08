@@ -7,6 +7,7 @@
 
 namespace App\Actions\Catalogue\Product;
 
+use App\Helpers\TimeSeriesPeriodCalculator;
 use App\Actions\Catalogue\AssetTimeSeries\ProcessAssetTimeSeriesRecords;
 use App\Actions\Traits\Hydrators\WithHydrateCommand;
 use App\Actions\Traits\WithTimeSeriesRedo;
@@ -31,6 +32,17 @@ class RedoProductTimeSeries
         $this->model = Product::class;
     }
 
+    protected function dateRangeSources(): array
+    {
+        return [
+            [
+                'query' => fn () => DB::connection('aiku_no_sticky')->table('invoice_transactions')->whereNull('deleted_at'),
+                'key'   => 'asset_id',
+                'date'  => 'date',
+            ],
+        ];
+    }
+
     public function handle(?int $productId, ?string $from = null, ?string $to = null, bool $async = false): void
     {
         if (!$productId) {
@@ -49,22 +61,23 @@ class RedoProductTimeSeries
         }
 
         if (!$from || !$to) {
-            $firstInvoicedDate = DB::connection('aiku_no_sticky')->table('invoice_transactions')->where('asset_id', $product->asset_id)->whereNull('deleted_at')->min('date');
-            $lastInvoicedDate  = DB::connection('aiku_no_sticky')->table('invoice_transactions')->where('asset_id', $product->asset_id)->whereNull('deleted_at')->max('date');
+            $dateRange = $this->getDateRange($product->asset_id);
 
-            if (!$firstInvoicedDate) {
+            if (!$dateRange['from']) {
                 return;
             }
 
-            $from = $from ?? Carbon::parse($firstInvoicedDate)->toDateString();
-            $to   = $to ?? Carbon::parse($lastInvoicedDate ?? now())->toDateString();
+            $from = $from ?? Carbon::parse($dateRange['from'])->toDateString();
+            $to   = $to ?? Carbon::parse($dateRange['to'] ?? now())->toDateString();
         }
 
         foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
+            [$periodFrom, $periodTo] = TimeSeriesPeriodCalculator::expandWindowToFullPeriods($frequency, $from, $to);
+
             if ($async) {
-                ProcessAssetTimeSeriesRecords::dispatch($product->asset_id, $frequency, $from, $to)->onQueue('sales_slave_historic');
+                ProcessAssetTimeSeriesRecords::dispatch($product->asset_id, $frequency, $periodFrom, $periodTo)->onQueue('sales_slave_historic');
             } else {
-                ProcessAssetTimeSeriesRecords::run($product->asset_id, $frequency, $from, $to);
+                ProcessAssetTimeSeriesRecords::run($product->asset_id, $frequency, $periodFrom, $periodTo);
             }
         }
     }

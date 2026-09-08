@@ -17,11 +17,27 @@ trait EnumHelperTrait
         return array_column(self::cases(), 'value');
     }
 
+    public static function valuesWithLabels(): array
+    {
+        return array_map(fn ($item) => [
+            'value' => $item->value,
+            'label' => $item->label()
+        ], self::cases());
+    }
+
     public static function valuesExcept(array $exclude): array
     {
         return array_values(
             array_filter(self::values(), fn ($value) => !in_array($value, array_column($exclude, 'value')))
         );
+    }
+
+    public static function valuesWithLabelsExcept(array $exclude): array
+    {
+        return array_values(array_filter(array_map(fn ($item) => [
+            'value' => $item->value,
+            'label' => $item->label()
+        ], self::cases()), fn ($value) => !in_array($value['value'], array_column($exclude, 'value'))));
     }
 
     public function snake(): string

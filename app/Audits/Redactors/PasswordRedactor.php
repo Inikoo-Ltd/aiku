@@ -10,6 +10,8 @@ namespace App\Audits\Redactors;
 
 class PasswordRedactor implements \OwenIt\Auditing\Contracts\AttributeRedactor
 {
+    public const SECRET_KEY_PATTERN = '/password|secret|token|pin|access_id|expires_at|\w*key$/i';
+
     /**
      * {@inheritdoc}
      */

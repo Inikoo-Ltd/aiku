@@ -11,6 +11,7 @@ namespace App\Actions\Dropshipping\WooCommerce\Product;
 use App\Actions\Dropshipping\Portfolio\Logs\StorePlatformPortfolioLog;
 use App\Actions\Dropshipping\Portfolio\Logs\UpdatePlatformPortfolioLog;
 use App\Actions\Dropshipping\Portfolio\UpdatePortfolio;
+use App\Actions\Dropshipping\WithPortfolioErrorResponse;
 use App\Actions\Helpers\Images\GetImgProxyUrl;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\HasBucketAttachment;
@@ -30,6 +31,7 @@ class StoreWooCommerceProduct extends RetinaAction
     use AsAction;
     use WithAttributes;
     use HasBucketAttachment;
+    use WithPortfolioErrorResponse;
 
     /**
      * @throws \Exception
@@ -179,7 +181,7 @@ class StoreWooCommerceProduct extends RetinaAction
             $result = $wooCommerceUser->createWooCommerceProduct($wooCommerceProduct);
 
             if (is_string(Arr::get($result, '0'))) {
-                if (json_decode(Arr::get($result, '0', ''), true)['code'] === 'product_invalid_sku') {
+                if (Arr::get(json_decode(Arr::get($result, '0', ''), true), 'code') === 'product_invalid_sku') {
 
                     $duplicatedProducts = $wooCommerceUser->getWooCommerceProducts([
                         'sku' => $portfolio->sku
@@ -199,10 +201,18 @@ class StoreWooCommerceProduct extends RetinaAction
             $portfolio->refresh();
 
             if ($portfolio->platform_status) {
+                UpdatePortfolio::run($portfolio, [
+                    'errors_response' => null
+                ]);
+
                 UpdatePlatformPortfolioLog::dispatch($logs, [
                     'status' => PlatformPortfolioLogsStatusEnum::OK
                 ]);
             } else {
+                UpdatePortfolio::run($portfolio, [
+                    'errors_response' => $this->portfolioErrorResponse($result)
+                ]);
+
                 UpdatePlatformPortfolioLog::dispatch($logs, [
                     'status' => PlatformPortfolioLogsStatusEnum::FAIL,
                     'response' => $result
@@ -214,9 +224,7 @@ class StoreWooCommerceProduct extends RetinaAction
             // Sentry::captureMessage("Failed to upload product due to: " . $e->getMessage());
 
             UpdatePortfolio::run($portfolio, [
-                'errors_response' => [
-                    'message' => $e->getMessage()
-                ]
+                'errors_response' => $this->portfolioErrorResponse($e->getMessage())
             ]);
 
             if ($logs) {

@@ -120,8 +120,8 @@ class ShowPallet extends OrgAction
 
     public function htmlResponse(Pallet $pallet, ActionRequest $request): Response
     {
-        $continuePalletAuditLabel = __("Continue pallet's SKUs audit");
-        $startPalletAuditLabel    = __("Start pallet's SKUs audit");
+        $continuePalletAuditLabel = __("Continue pallet's SKOs audit");
+        $startPalletAuditLabel    = __("Start pallet's SKOs audit");
 
         $icon       = [
             'icon'    => ['fal', 'fa-pallet'],
@@ -390,8 +390,8 @@ class ShowPallet extends OrgAction
                     : Inertia::optional(fn () => StoredItemMovementsResource::collection(IndexStoredItemMovements::run($pallet, PalletTabsEnum::MOVEMENTS->value))),
 
                 PalletTabsEnum::HISTORY->value => $this->tab == PalletTabsEnum::HISTORY->value ?
-                    fn () => HistoryResource::collection(IndexHistory::run($this->pallet))
-                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($this->pallet)))
+                    fn () => HistoryResource::collection(IndexHistory::run($this->pallet, PalletTabsEnum::HISTORY->value))
+                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($this->pallet, PalletTabsEnum::HISTORY->value)))
 
             ]
         )->table(IndexHistory::make()->tableStructure(prefix: PalletTabsEnum::HISTORY->value))

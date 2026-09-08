@@ -8,7 +8,7 @@
 
 namespace App\Actions\Masters\MasterCollection\UI;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Actions\Traits\WithMasterProductCategoryListing;
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
 use App\Http\Resources\Masters\MasterDepartmentsResource;
@@ -18,13 +18,13 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Lorisleiva\Actions\ActionRequest;
 
-class GetMasterDepartments extends GrpAction
+class GetMasterDepartments extends OrgAction
 {
     use WithMasterProductCategoryListing;
 
     public function asController(MasterShop $masterShop, MasterCollection $scope, ActionRequest $request): LengthAwarePaginator
     {
-        $this->initialisation($masterShop->group, $request);
+        $this->initialisationFromGroup($masterShop->group, $request);
 
         return $this->handle(masterShop: $masterShop, masterCollection: $scope);
     }

@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { ref, computed, inject } from "vue"
+import { ref, computed, inject, onMounted } from "vue"
 import { getStyles } from "@/Composables/styles"
 import ProductRender from '@/Iris/Components/IrisBlocks/Products/ds/ProductCardDs/ProductCardDs1.vue'
 
 import { faChevronCircleLeft, faChevronCircleRight } from '@far'
 import ProductRenderEcom from "@/Iris/Components/IrisBlocks/Products/Ecom/ProductCard/ProductCardEcom3.vue"
+import TrendingNowProducts from "@/Iris/Components/IrisBlocks/SeeAlso/TrendingNowProducts.vue"
 import { get } from 'lodash-es'
 
 // Swiper
@@ -43,6 +44,11 @@ const emits = defineEmits<{
 
 
 const layout: any = inject("layout", {})
+const key = ref(1)
+
+onMounted(() => {
+  key.value++
+})
 
 const slidesPerView = computed(() => {
   const perRow = props.fieldValue?.settings?.per_row ?? {}
@@ -69,7 +75,7 @@ const compSwiperOptions = computed(() => {
   }
 })
 
-console.log('see also', layout)
+const isTrendingNow = computed(() => props.fieldValue?.settings?.products_data?.type === 'trending-now')
 </script>
 
 <template>
@@ -79,7 +85,7 @@ console.log('see also', layout)
     width: '100%'
   }" :dropdown-type="props.fieldValue?.settings?.products_data?.type">
     <!-- Title -->
-    <div class="px-3 py-6 pb-2">
+    <div class="px-3 py-6 pb-2" :class="isTrendingNow ? 'text-center' : ''">
       <div class="text-3xl font-semibold text-gray-800">
         <div v-html="fieldValue.title"></div>
       </div>
@@ -90,6 +96,13 @@ console.log('see also', layout)
       <!-- Render nothing due to deprecated -->
       <!-- <RecommendersLuigi1Iris :slidesPerView recommendation_type="trends" /> -->
     </div>
+
+    <TrendingNowProducts
+      v-else-if="isTrendingNow && compSwiperOptions?.length"
+      :products="compSwiperOptions"
+      :perRow="fieldValue?.settings?.per_row"
+      :screenType="screenType"
+    />
 
     <!-- Carousel with custom navigation -->
     <div v-else-if="compSwiperOptions?.length" class="relative px-4 py-6" >
@@ -113,8 +126,8 @@ console.log('see also', layout)
         <SwiperSlide v-for="(product, index) in compSwiperOptions" :key="product.slug" class="!h-auto">
           <div class="h-full flex flex-col">          <!-- this now fills the Swiper height -->
             <div v-if="product" class="h-full flex flex-col px-3 2xl:px-8 lg:px-8">
-              <ProductRenderEcom v-if="layout.retina.type === 'b2b'" :buttonStyleHover="layout?.buttonBasket?.buttonStyleHover" :buttonStyle="layout?.buttonBasket?.buttonStyle":product="product" :hideLogin="true"  :hasInBasket="get(layout, ['family_page', 'productInBasket', 'list', product.id], [])" :screen-type="props.screenType"/>
-              <ProductRender v-else :product="product" :productHasPortfolio="[]" />
+              <ProductRenderEcom v-if="layout.retina.type === 'b2b'" :key="`ecom-${key}`" :buttonStyleHover="layout?.buttonBasket?.buttonStyleHover" :buttonStyle="layout?.buttonBasket?.buttonStyle":product="product" :hideLogin="true"  :hasInBasket="get(layout, ['family_page', 'productInBasket', 'list', product.id], [])" :screen-type="props.screenType"/>
+              <ProductRender v-else :key="`ds-${key}`" :product="product" :productHasPortfolio="[]" :screen-type="props.screenType" />
             </div>
           </div>
         </SwiperSlide>

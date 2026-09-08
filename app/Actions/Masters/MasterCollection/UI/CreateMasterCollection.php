@@ -9,6 +9,7 @@
 namespace App\Actions\Masters\MasterCollection\UI;
 
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithMastersEditAuthorisation;
 use App\Models\Masters\MasterProductCategory;
 use App\Models\Masters\MasterShop;
 use Inertia\Inertia;
@@ -17,6 +18,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class CreateMasterCollection extends OrgAction
 {
+    use WithMastersEditAuthorisation;
     public function asController(MasterShop $masterShop, ActionRequest $request): Response
     {
         $this->initialisationFromGroup(group(), $request);

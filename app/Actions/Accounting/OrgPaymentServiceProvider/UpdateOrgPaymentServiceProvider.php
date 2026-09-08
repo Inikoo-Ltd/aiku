@@ -8,14 +8,14 @@
 
 namespace App\Actions\Accounting\OrgPaymentServiceProvider;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Http\Resources\Accounting\OrgPaymentServiceProviderResource;
 use App\Models\Accounting\OrgPaymentServiceProvider;
 use App\Rules\IUnique;
 use Lorisleiva\Actions\ActionRequest;
 
-class UpdateOrgPaymentServiceProvider extends GrpAction
+class UpdateOrgPaymentServiceProvider extends OrgAction
 {
     use WithActionUpdate;
 
@@ -72,7 +72,7 @@ class UpdateOrgPaymentServiceProvider extends GrpAction
     public function asController(OrgPaymentServiceProvider $orgPaymentServiceProvider, ActionRequest $request): OrgPaymentServiceProvider
     {
         $this->orgPaymentServiceProvider = $orgPaymentServiceProvider;
-        $this->initialisation($orgPaymentServiceProvider->group, $request);
+        $this->initialisationFromGroup($orgPaymentServiceProvider->group, $request);
 
         return $this->handle($orgPaymentServiceProvider, $this->validatedData);
     }
@@ -87,7 +87,7 @@ class UpdateOrgPaymentServiceProvider extends GrpAction
         $this->hydratorsDelay = $hydratorsDelay;
 
         $this->orgPaymentServiceProvider = $orgPaymentServiceProvider;
-        $this->initialisation($orgPaymentServiceProvider->group, $modelData);
+        $this->initialisationFromGroup($orgPaymentServiceProvider->group, $modelData);
 
         return $this->handle($orgPaymentServiceProvider, $this->validatedData);
     }

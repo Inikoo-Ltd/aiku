@@ -10,7 +10,7 @@ import { trans } from 'laravel-vue-i18n'
 import PermissionsPictogram from '@/Components/DataDisplay/PermissionsPictogram.vue'
 import Toggle from '@/Components/Pure/Toggle.vue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { faCheck, faSkull, faTimes } from '@fal'
+import { faCheck, faRobot, faSkull, faTimes, } from '@fal'
 import axios from 'axios'
 import { notify } from '@kyvg/vue3-notification'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
@@ -50,6 +50,13 @@ const props = defineProps<{
             last_login: {
                 ip?: string
                 geolocation: string[]
+            }
+            mcp?: {
+                enabled: boolean
+                full_data_access: boolean
+                number_queries: number
+                last_used_at?: string
+                tools_used: number
             }
             optionsEachOrganisations: {}
         }
@@ -148,6 +155,29 @@ const force2FA = async () => {
                 <dt class="text-sm font-medium">{{ trans("Last Active") }}:</dt>
                 <dd class="mt-1 text-sm sm:mt-2">
                     {{ activeUsers[data?.data?.id]?.last_active ? useFormatTime(activeUsers[data?.data?.id].last_active) : '-' }}
+                </dd>
+            </div>
+
+            <div class="border-t border-gray-100 px-4 py-6 sm:col-span-1 sm:px-0">
+                <dt class="text-sm font-medium">
+                    <FontAwesomeIcon :icon="faRobot" class="mr-1 text-gray-400" fixed-width aria-hidden="true" />{{ trans("AI assistant") }}:
+                </dt>
+                <dd class="mt-1 text-sm sm:mt-2">
+                    <template v-if="!data?.data?.mcp?.enabled">
+                        <span class="text-gray-400">{{ trans("Not allowed") }}</span>
+                    </template>
+                    <template v-else-if="!data?.data?.mcp?.number_queries">
+                        <span class="text-gray-500">{{ trans("Allowed, never used") }}</span>
+                    </template>
+                    <template v-else>
+                        <span class="text-green-600 font-medium">{{ trans("In use") }}</span> —
+                        {{ data.data.mcp.number_queries }} {{ trans("queries") }},
+                        {{ data.data.mcp.tools_used }} {{ trans("different questions types") }},
+                        {{ trans("last used") }} {{ data.data.mcp.last_used_at ? useFormatTime(data.data.mcp.last_used_at) : '-' }}
+                    </template>
+                    <div v-if="data?.data?.mcp?.full_data_access" class="mt-1 text-orange-600">
+                        <span class="mr-1" aria-hidden="true">🧠</span>{{ trans("Super intelligence: knows all Aiku data and can ask any question of it") }}
+                    </div>
                 </dd>
             </div>
 

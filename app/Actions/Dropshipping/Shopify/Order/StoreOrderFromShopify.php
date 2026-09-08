@@ -10,6 +10,7 @@ namespace App\Actions\Dropshipping\Shopify\Order;
 
 use App\Actions\Dropshipping\CustomerClient\StoreCustomerClient;
 use App\Actions\Dropshipping\CustomerClient\UpdateCustomerClient;
+use App\Actions\Dropshipping\WithSanitizedPhone;
 use App\Actions\Ordering\Order\StoreOrder;
 use App\Actions\Ordering\Order\Traits\WithPayAndSubmitOrder;
 use App\Actions\Ordering\Transaction\StoreTransaction;
@@ -35,6 +36,7 @@ class StoreOrderFromShopify extends OrgAction
     use WithActionUpdate;
     use WithGeneratedShopifyAddress;
     use WithPayAndSubmitOrder;
+    use WithSanitizedPhone;
 
     /**
      * @throws \Throwable
@@ -126,8 +128,7 @@ class StoreOrderFromShopify extends OrgAction
     {
         $receiverDetail = Arr::get($shopifyOrderData, 'shipping_address');
 
-        $reference = trim(Arr::get($receiverDetail, 'firstName') . ' ' . Arr::get($receiverDetail, 'lastName') . ' ' . $shopifyUser->customer_sales_channel_id);
-
+        $reference = preg_replace('/\s+/', '', trim(Arr::get($receiverDetail, 'firstName') . Arr::get($receiverDetail, 'lastName') . $shopifyUser->customer_sales_channel_id));
         $customerClientID = DB::table('customer_clients')
             ->select('id')
             ->where('customer_sales_channel_id', $shopifyUser->customer_sales_channel_id)
@@ -145,7 +146,7 @@ class StoreOrderFromShopify extends OrgAction
                 'phone'        => $this->sanitizePhone(Arr::get($receiverDetail, 'phone')),
                 'address'      => $deliveryAddress,
                 'platform_customer_id' => Arr::get($shopifyOrderData, 'customer.id')
-            ]);
+            ], strict: false);
         } else {
             $customerClient = CustomerClient::find($customerClientID->id);
             $customerClient = UpdateCustomerClient::make()->action($customerClient, [
@@ -154,18 +155,10 @@ class StoreOrderFromShopify extends OrgAction
                 'phone'        => $this->sanitizePhone(Arr::get($receiverDetail, 'phone')),
                 'address'      => $deliveryAddress,
                 'platform_customer_id' => Arr::get($shopifyOrderData, 'customer.id')
-            ]);
+            ], strict: false);
         }
 
         return $customerClient;
     }
 
-    private function sanitizePhone($phone): array|string|null
-    {
-        // Extract only digits
-        $digits = preg_replace('/[^0-9]/', '', $phone);
-
-        // Ensure minimum 10 digits
-        return strlen($digits) >= 10 ? $digits : str_pad($digits, 10, '0', STR_PAD_RIGHT);
-    }
 }

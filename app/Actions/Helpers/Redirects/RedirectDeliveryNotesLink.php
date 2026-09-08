@@ -16,14 +16,15 @@ use Lorisleiva\Actions\ActionRequest;
 
 class RedirectDeliveryNotesLink extends OrgAction
 {
-    public function handle(DeliveryNote $deliveryNote): ?RedirectResponse
+    public function handle(DeliveryNote $deliveryNote, ?string $queryString = null): ?RedirectResponse
     {
         $url = route('grp.org.warehouses.show.dispatching.delivery_notes.show', [
             $deliveryNote->organisation->slug,
             $deliveryNote->warehouse->slug,
             $deliveryNote->slug
         ]);
-        return Redirect::to($url);
+
+        return Redirect::to($url.($queryString ? '?'.$queryString : ''));
     }
 
 
@@ -32,7 +33,7 @@ class RedirectDeliveryNotesLink extends OrgAction
     {
         $this->initialisationFromShop($deliveryNote->shop, $request);
 
-        return $this->handle($deliveryNote);
+        return $this->handle($deliveryNote, $request->getQueryString());
     }
 
 }

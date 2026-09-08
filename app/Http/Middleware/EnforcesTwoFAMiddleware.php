@@ -29,6 +29,10 @@ class EnforcesTwoFAMiddleware
             return $next($request);
         }
 
+        if (request()->user()->hasPasskeysEnabled()) {
+            return $next($request);
+        }
+
         if ($authenticator->isActivated()) {
             return $next($request);
         }

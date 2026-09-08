@@ -31,6 +31,15 @@ enum PalletStatusEnum: string
     case RETURNED     = 'returned';
     case INCIDENT     = 'incident';
 
+    public static function occupyingLocation(): array
+    {
+        return [
+            self::RECEIVING->value,
+            self::STORING->value,
+            self::RETURNING->value,
+        ];
+    }
+
     public static function labels(Group|FulfilmentCustomer|Fulfilment|Warehouse|Location|PalletDelivery|PalletReturn|null $parent = null): array
     {
         $labels = [

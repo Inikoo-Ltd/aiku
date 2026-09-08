@@ -8,7 +8,7 @@
 
 namespace App\Actions\Goods\TradeUnitFamily;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateTradeUnitFamilies;
 use App\Models\Goods\TradeUnitFamily;
 use App\Models\SysAdmin\Group;
@@ -18,7 +18,7 @@ use Illuminate\Support\Facades\Redirect;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 
-class StoreTradeUnitFamily extends GrpAction
+class StoreTradeUnitFamily extends OrgAction
 {
     public function handle(Group $group, array $modelData): TradeUnitFamily
     {
@@ -62,14 +62,14 @@ class StoreTradeUnitFamily extends GrpAction
     public function asController(ActionRequest $request): TradeUnitFamily
     {
         $group = group();
-        $this->initialisation($group, $request);
+        $this->initialisationFromGroup($group, $request);
 
         return $this->handle($group, $this->validatedData);
     }
 
     public function action(Group $group, array $modelData): TradeUnitFamily
     {
-        $this->initialisation($group, $modelData);
+        $this->initialisationFromGroup($group, $modelData);
 
         return $this->handle($group, $this->validatedData);
     }

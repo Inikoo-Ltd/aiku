@@ -52,11 +52,12 @@ class UpdateService extends OrgAction
 
 
         if (Arr::exists($modelData, 'state')) {
-            $status = false;
-            if (Arr::get($modelData, 'state') == ServiceStateEnum::ACTIVE) {
-                $status = true;
+            $state = Arr::get($modelData, 'state');
+            if (!$state instanceof ServiceStateEnum) {
+                $state = ServiceStateEnum::from($state);
             }
-            data_set($modelData, 'status', $status);
+            data_set($modelData, 'state', $state);
+            data_set($modelData, 'status', $state == ServiceStateEnum::ACTIVE);
         }
 
         $service = $this->update($service, $modelData);

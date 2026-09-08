@@ -457,6 +457,37 @@ class EditEmployee extends OrgAction
             ]
         ];
 
+        $employeeWorkSchedule = $employee->getDefaultWorkSchedule()?->load('days.breaks');
+
+        $workingHoursData = [];
+        if ($employeeWorkSchedule) {
+            foreach ($employeeWorkSchedule->days as $day) {
+                $workingHoursData[(string) $day->day_of_week] = [
+                    's' => $day->start_time,
+                    'e' => $day->end_time,
+                    'b' => $day->breaks->map(fn ($break) => [
+                        's' => $break->start_time?->format('H:i'),
+                        'e' => $break->end_time?->format('H:i'),
+                        'n' => $break->break_name,
+                        'p' => $break->is_paid,
+                    ])->values(),
+                ];
+            }
+        }
+
+        $sections['working_hours'] = [
+            'label' => __('Working hours'),
+            'icon' => 'fal fa-business-time',
+            'fields' => [
+                'working_hours' => [
+                    'type' => 'employee-working-hours',
+                    'label' => __('Working hours'),
+                    'noTitle' => true,
+                    'value' => ['data' => $workingHoursData],
+                ],
+            ]
+        ];
+
         $currentSection = 'properties';
         if ($request->has('section') && Arr::has($sections, $request->input('section'))) {
             $currentSection = $request->input('section');

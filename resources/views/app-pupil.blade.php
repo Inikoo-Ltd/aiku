@@ -13,10 +13,8 @@
         <link href="https://fonts.bunny.net/css?family=fira-sans:100,200,300,400,500,600,700,800,900|inter:100,200,300,400,500,600,700,800,900&display=swap" rel="stylesheet" />
 
         <!-- Favicon -->
-        <link rel="icon" type="image/png" sizes="16x16" href="{{ url('favicons/favicon-16x16.png') }}">
-        <link rel="icon" type="image/png" sizes="32x32" href="{{ url('favicons/favicon-32x32.png') }}">
-        <link rel="icon" type="image/png" sizes="48x48" href="{{ url('favicons/favicon-48x48.png') }}">
-        <link rel="apple-touch-icon" sizes="180x180" href="{{ url('favicons/favicon-180x180.png') }}">
+        <link rel="icon" type="image/png" href="{{ url('favicon.png?v=3') }}">
+        <link rel="icon" href="{{ url('favicon.svg?v=3') }}" type="image/svg+xml">
 
         @if (config('app.env', 'production') === 'staging')
         <!-- == -->

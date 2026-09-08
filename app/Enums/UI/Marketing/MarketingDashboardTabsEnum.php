@@ -17,6 +17,9 @@ enum MarketingDashboardTabsEnum: string
     use HasTabs;
 
     case DASHBOARD = 'dashboard';
+    case OFFERS = 'offers';
+    case DATA_QUALITY = 'data_quality';
+    case FRAUD = 'fraud';
 
     public function blueprint(): array
     {
@@ -24,6 +27,18 @@ enum MarketingDashboardTabsEnum: string
             MarketingDashboardTabsEnum::DASHBOARD => [
                 'title' => __('Dashboard'),
                 'icon'  => 'fal fa-tachometer-alt-fast',
+            ],
+            MarketingDashboardTabsEnum::OFFERS => [
+                'title' => __('Offer performance'),
+                'icon'  => 'fal fa-badge-percent',
+            ],
+            MarketingDashboardTabsEnum::DATA_QUALITY => [
+                'title' => __('Data quality'),
+                'icon'  => 'fal fa-heartbeat',
+            ],
+            MarketingDashboardTabsEnum::FRAUD => [
+                'title' => __('Click fraud'),
+                'icon'  => 'fal fa-user-secret',
             ],
         };
     }

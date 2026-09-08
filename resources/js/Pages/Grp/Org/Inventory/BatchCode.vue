@@ -78,7 +78,7 @@ const component = computed(() => {
                 <dd class="text-sm text-gray-900">{{ batch_code.expiry_date ?? '—' }}</dd>
             </div>
             <div v-if="batch_code.org_stock_code" class="py-3 flex gap-x-4">
-                <dt class="w-40 text-sm font-medium text-gray-500">{{ $t('SKU') }}</dt>
+                <dt class="w-40 text-sm font-medium text-gray-500">{{ $t('SKO') }}</dt>
                 <dd class="text-sm text-gray-900">
                     {{ batch_code.org_stock_code }}
                     <span v-if="batch_code.org_stock_name" class="text-gray-500 ml-1">— {{ batch_code.org_stock_name }}</span>

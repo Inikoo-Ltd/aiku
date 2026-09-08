@@ -285,6 +285,7 @@ return [
     'email_address_in_non_production_env' => env('EMAIL_ADDRESS_IN_NON_PRODUCTION_ENV', 'dev@aiku.io'),
     'test_email_to_address'               => env('TEST_EMAIL_TO_ADDRESS'),
     'unpaid_invoices_unknown_before'      => env('UNPAID_INVOICES_UNKNOWN_BEFORE'),
+    'payment_settlement_tolerance'        => env('PAYMENT_SETTLEMENT_TOLERANCE', 0.05),
 
     'help_portal_url' => env('JIRA_HELP_PORTAL'),
 
@@ -301,14 +302,17 @@ return [
         'shipper_ctt_token' => json_decode(env('CTT_TOKEN', '{}'), true),
 
         'local_share_url' => env('SANDBOX_SHARE_URL'),
+        'local_webhooks_url' => env('SANDBOX_LOCAL_WEBHOOKS_URL'),
         'checkout_com'    => [
             'public_key'      => env('CHECKOUT_COM_PUBLIC_KEY'),
             'secret_key'      => env('CHECKOUT_COM_SECRET_KEY'),
             'payment_channel' => env('CHECKOUT_COM_PAYMENT_CHANNEL'),
+            'webhook_key'     => env('LOCAL_CHECKOUT_COM_WEBHOOK_KEY'),
         ],
         'luigisbox'       => [
-            'tracker_id'  => env('LS_TRACKER_ID'),
-            'private_key' => env('LS_PRIVATE_KEY'),
+            'tracker_id'   => env('LS_TRACKER_ID'),
+            'private_key'  => env('LS_PRIVATE_KEY'),
+            'run_on_local' => env('LS_RUN_ON_LOCAL', false),
         ],
     ],
     'master'  => env('MASTER_SERVER', true),

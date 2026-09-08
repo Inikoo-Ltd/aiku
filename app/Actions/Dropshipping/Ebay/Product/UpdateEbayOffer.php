@@ -15,6 +15,7 @@ use App\Enums\Ordering\PlatformLogs\PlatformPortfolioLogsStatusEnum;
 use App\Models\Dropshipping\EbayUser;
 use App\Models\Dropshipping\Portfolio;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
+use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Throwable;
 
@@ -41,14 +42,22 @@ class UpdateEbayOffer implements ShouldBeUnique
 
         $platformPortfolioLog = StorePlatformPortfolioLog::run($portfolio, []);
 
+        $offerData = [
+            'title' => $portfolio->customer_product_name,
+            'description' => $portfolio->customer_description,
+        ];
+
+        if (
+            !Arr::get($customerSalesChannel->settings, 'do_not_update_prices')
+            && Arr::get($portfolio->settings, 'pricing.type') !== 'not_follow'
+        ) {
+            $offerData['price'] = (string) $portfolio->customer_price;
+        }
+
         try {
             $ebayUser->updateOffer(
                 $portfolio->platform_product_id,
-                [
-                    'title' => $portfolio->customer_product_name,
-                    'description' => $portfolio->customer_description,
-                    'price' => (string) $portfolio->customer_price
-                ]
+                $offerData
             );
 
             UpdatePlatformPortfolioLog::dispatch($platformPortfolioLog, [

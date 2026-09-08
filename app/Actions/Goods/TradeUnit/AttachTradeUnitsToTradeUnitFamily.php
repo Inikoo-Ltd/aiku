@@ -9,14 +9,14 @@
 namespace App\Actions\Goods\TradeUnit;
 
 use App\Actions\Goods\TradeUnitFamily\Hydrators\TradeUnitFamilyHydrateTradeUnits;
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithGoodsEditAuthorisation;
 use App\Models\Goods\TradeUnit;
 use App\Models\Goods\TradeUnitFamily;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
 
-class AttachTradeUnitsToTradeUnitFamily extends GrpAction
+class AttachTradeUnitsToTradeUnitFamily extends OrgAction
 {
     use WithGoodsEditAuthorisation;
 
@@ -41,7 +41,7 @@ class AttachTradeUnitsToTradeUnitFamily extends GrpAction
 
     public function asController(TradeUnitFamily $tradeUnitFamily, ActionRequest $request): void
     {
-        $this->initialisation($tradeUnitFamily->group, $request);
+        $this->initialisationFromGroup($tradeUnitFamily->group, $request);
 
         $this->handle($tradeUnitFamily, $this->validatedData);
     }

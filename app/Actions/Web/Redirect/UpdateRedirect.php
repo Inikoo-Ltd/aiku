@@ -11,12 +11,16 @@ namespace App\Actions\Web\Redirect;
 
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
+use App\Actions\Web\Webpage\BreakWebpageCache;
+use App\Actions\Web\Webpage\PurgeVarnishPath;
 use App\Actions\Web\Website\HydrateRedirect;
 use App\Enums\Web\Redirect\RedirectTypeEnum;
+use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Models\Web\Redirect;
 use App\Models\Web\Webpage;
 use App\Rules\NoDomainString;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -43,7 +47,20 @@ class UpdateRedirect extends OrgAction
 
         HydrateRedirect::run($toWebpage);
 
+        $this->breakCache($redirect, $toWebpage);
+
         return $redirect;
+    }
+
+    private function breakCache(Redirect $redirect, ?Webpage $toWebpage): void
+    {
+        $key = config('iris.cache.webpage_path.prefix').'_'.$redirect->website_id.'_'.$redirect->from_path;
+        Cache::forget($key);
+
+        PurgeVarnishPath::run($redirect->website, $redirect->from_path);
+
+        BreakWebpageCache::run($redirect->webpage);
+        BreakWebpageCache::run($toWebpage);
     }
 
     public function rules(): array
@@ -51,7 +68,10 @@ class UpdateRedirect extends OrgAction
         return [
             'type'                     => ['sometimes', Rule::enum(RedirectTypeEnum::class)],
             'path'                     => ['sometimes', 'string', new NoDomainString()],
-            'to_webpage_id'            => ['sometimes', 'nullable', 'exists:webpages,id'],
+            'to_webpage_id' => [
+                'required',
+                Rule::exists(Webpage::class, 'id')->where('website_id', $this->shop->website->id)->where('state', WebpageStateEnum::LIVE),
+            ],
         ];
     }
 

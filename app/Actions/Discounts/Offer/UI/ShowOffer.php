@@ -142,8 +142,8 @@ class ShowOffer extends OrgAction
                 : Inertia::optional(fn () => OrderResource::collection(IndexOrders::run(parent: $offer, prefix: OfferTabsEnum::ORDERS->value, bucket: 'offer'))),
 
             OfferTabsEnum::HISTORY->value => $this->tab == OfferTabsEnum::HISTORY->value
-                ? fn () => HistoryResource::collection(IndexHistory::run($offer))
-                : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($offer))),
+                ? fn () => HistoryResource::collection(IndexHistory::run($offer, OfferTabsEnum::HISTORY->value))
+                : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($offer, OfferTabsEnum::HISTORY->value))),
         ];
 
         return Inertia::render(

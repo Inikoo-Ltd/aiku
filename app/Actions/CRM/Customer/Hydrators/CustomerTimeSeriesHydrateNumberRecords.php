@@ -15,6 +15,9 @@ class CustomerTimeSeriesHydrateNumberRecords implements ShouldBeUnique
 {
     use AsAction;
 
+    public string $jobQueue = 'sales_slave';
+
+
     public function getJobUniqueId(int $timeSeriesId): string
     {
         return $timeSeriesId;
@@ -22,7 +25,7 @@ class CustomerTimeSeriesHydrateNumberRecords implements ShouldBeUnique
 
     public function handle(int $timeSeriesId): void
     {
-        $timeSeries = CustomerTimeSeries::find($timeSeriesId);
+        $timeSeries = CustomerTimeSeries::on('aiku_no_sticky')->find($timeSeriesId);
 
         if (!$timeSeries) {
             return;

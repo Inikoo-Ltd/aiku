@@ -51,7 +51,7 @@ class CreateManufactureTask extends OrgAction
                 'formData' => [
                     'blueprint' => [
                         [
-                            'title'  => __('Create raw material'),
+                            'title'  => __('Create manufacture task'),
                             'fields' => [
                                 'code' => [
                                     'type'     => 'input',

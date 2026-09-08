@@ -10,6 +10,7 @@
 namespace App\Actions\Catalogue\Product\UI;
 
 use App\Actions\OrgAction;
+use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Product;
 use App\Models\Goods\TradeUnit;
@@ -38,18 +39,30 @@ class IndexProductsInTradeUnit extends OrgAction
             $join->on('products.id', '=', 'model_has_trade_units.model_id')
                 ->where('model_has_trade_units.model_type', class_basename(Product::class));
         });
-        $queryBuilder->leftJoin('asset_sales_intervals', 'products.asset_id', 'asset_sales_intervals.asset_id');
         $queryBuilder->leftJoin('shops', 'products.shop_id', '=', 'shops.id')
             ->leftJoin('organisations', 'products.organisation_id', '=', 'organisations.id');
         $queryBuilder->leftJoin('currencies', 'shops.currency_id', '=', 'currencies.id');
         $queryBuilder->where('model_has_trade_units.trade_unit_id', $tradeUnit->id);
         $queryBuilder->whereNull('products.exclusive_for_customer_id');
 
+        $timeSeriesData = $queryBuilder->withTimeSeriesAggregation(
+            timeSeriesTable: 'asset_time_series',
+            timeSeriesRecordsTable: 'asset_time_series_records',
+            foreignKey: 'asset_id',
+            aggregateColumns: [
+                'sales_external' => 'sales_all',
+            ],
+            frequency: TimeSeriesFrequencyEnum::DAILY->value,
+            prefix: $prefix,
+            includeLY: false,
+            localKey: 'asset_id',
+        );
+
         $queryBuilder
             ->defaultSort('products.code')
             ->select([
                 'currencies.code as  currency_code',
-                'sales_all',
+                $timeSeriesData['selectRaw']['sales_all'],
                 'products.id',
                 'products.code',
                 'products.name',

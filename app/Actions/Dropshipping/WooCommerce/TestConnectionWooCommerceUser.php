@@ -32,6 +32,10 @@ class TestConnectionWooCommerceUser extends RetinaAction
         /** @var WooCommerceUser $wooCommerceUser */
         $wooCommerceUser = $customerSalesChannel->user;
 
+        if (! $wooCommerceUser) {
+            throw ValidationException::withMessages(['message' => __('We could not find the Woo Commerce account in our side.')]);
+        }
+
         $connection = $wooCommerceUser->checkConnection();
 
         if (! $connection) {

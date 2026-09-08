@@ -183,7 +183,9 @@ class SendChatMessage
             $chatLink = $chatSession->shop->website->getUrl().'/?chat_session='.$chatSession->ulid;
         }
         if ($chatSession->web_user_id && $chatSession->webUser && $chatSession->webUser->customer) {
-            SendChatNotificationToCustomer::dispatch($chatSession->webUser->customer, ['chat_link' => $chatLink]);
+            SendChatNotificationToCustomer::dispatch($chatSession->webUser->customer, ['chat_link' => $chatLink,
+            'chat_message' => $chatSession->messages()?->latest()?->first()?->message_text ?? null,
+            ]);
 
             return;
         }
@@ -216,7 +218,8 @@ class SendChatMessage
             ]);
         }
 
-        SendChatNotificationToExternal::dispatch($chatEmailRecipient, $chatSession->shop, ['chat_link' => $chatLink]);
+        SendChatNotificationToExternal::dispatch($chatEmailRecipient, $chatSession->shop, ['chat_link' => $chatLink,
+         'chat_message' => $chatSession->messages()?->latest()?->first()?->message_text ?? null]);
     }
 
     public function rules(): array

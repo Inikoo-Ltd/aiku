@@ -7,6 +7,7 @@
 
 namespace App\Actions\Goods\StockFamily;
 
+use App\Helpers\TimeSeriesPeriodCalculator;
 use App\Actions\Traits\Hydrators\WithHydrateCommand;
 use App\Actions\Traits\WithTimeSeriesRedo;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
@@ -35,6 +36,19 @@ class RedoStockFamilyTimeSeries implements ShouldBeUnique
         return "{$from}_$to";
     }
 
+    protected function dateRangeSources(): array
+    {
+        return [
+            [
+                'query' => fn () => DB::connection('aiku_no_sticky')->table('invoice_transactions')
+                    ->join('invoice_transaction_has_stocks', 'invoice_transaction_has_stocks.invoice_transaction_id', '=', 'invoice_transactions.id')
+                    ->whereNull('invoice_transactions.deleted_at'),
+                'key'   => 'invoice_transaction_has_stocks.stock_family_id',
+                'date'  => 'invoice_transactions.date',
+            ],
+        ];
+    }
+
     public function handle(?int $stockFamilyId, ?string $from = null, ?string $to = null, bool $async = false): void
     {
         if (!$stockFamilyId) {
@@ -48,26 +62,23 @@ class RedoStockFamilyTimeSeries implements ShouldBeUnique
         }
 
         if (!$from || !$to) {
-            $dateRange = DB::connection('aiku_no_sticky')->table('invoice_transactions')
-                ->join('invoice_transaction_has_stocks', 'invoice_transaction_has_stocks.invoice_transaction_id', '=', 'invoice_transactions.id')
-                ->where('invoice_transaction_has_stocks.stock_family_id', $stockFamily->id)
-                ->whereNull('invoice_transactions.deleted_at')
-                ->selectRaw('MIN(invoice_transactions.date) as first_date, MAX(invoice_transactions.date) as last_date')
-                ->first();
+            $dateRange = $this->getDateRange($stockFamily->id);
 
-            if (!$dateRange?->first_date) {
+            if (!$dateRange['from']) {
                 return;
             }
 
-            $from = $from ?? Carbon::parse($dateRange->first_date)->toDateString();
-            $to   = $to ?? Carbon::parse($dateRange->last_date ?? now())->toDateString();
+            $from = $from ?? Carbon::parse($dateRange['from'])->toDateString();
+            $to   = $to ?? Carbon::parse($dateRange['to'] ?? now())->toDateString();
         }
 
         foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
+            [$periodFrom, $periodTo] = TimeSeriesPeriodCalculator::expandWindowToFullPeriods($frequency, $from, $to);
+
             if ($async) {
-                ProcessStockFamilyTimeSeriesRecords::dispatch($stockFamily->id, $frequency, $from, $to)->delay(300)->onQueue('sales_slave_historic');
+                ProcessStockFamilyTimeSeriesRecords::dispatch($stockFamily->id, $frequency, $periodFrom, $periodTo)->delay(300)->onQueue('sales_slave_historic');
             } else {
-                ProcessStockFamilyTimeSeriesRecords::run($stockFamily->id, $frequency, $from, $to);
+                ProcessStockFamilyTimeSeriesRecords::run($stockFamily->id, $frequency, $periodFrom, $periodTo);
             }
         }
     }

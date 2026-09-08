@@ -51,7 +51,7 @@ class WebUserRequestsResource extends JsonResource
             ]),
             'server'       => $location == ['localhost'],
             'location'      => $location,
-            'url'      => '/' . ltrim(route($this->route_name, json_decode($this->route_params, true), false), '/'),
+            'url'      => rescue(fn () => '/' . ltrim(route($this->route_name, json_decode($this->route_params, true), false), '/'), null, false),
             'date'     => $this->date,
             ];
     }

@@ -82,7 +82,7 @@ const componentProps = computed(() => {
     <Head :title="capitalize(title)" />
 
     <div class="max-w-7xl mx-auto my-8">
-        <div class="bg-white rounded-xl border border-gray-200 shadow-sm">
+        <div class="bg-white rounded-xl lg:border border-gray-200 shadow-sm">
             <CatalogueTabs />
 
             <PageHeading :data="pageHead" />

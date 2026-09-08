@@ -23,7 +23,16 @@ class GetBrowserInfo
 
     public function handle(string $userAgent): array
     {
-        $cacheKey = 'browser_info_v1:'.md5($userAgent.serialize(request()->server()));
+        // Only the user agent and the client hints affect detection. Keying on the whole $_SERVER
+        // put REQUEST_URI in the key, so every page a visitor opened missed the cache.
+        $clientHintHeaders = array_filter(
+            request()->server(),
+            fn ($key) => str_starts_with(strtolower((string) $key), 'http_sec_ch_ua'),
+            ARRAY_FILTER_USE_KEY
+        );
+        ksort($clientHintHeaders);
+
+        $cacheKey = 'browser_info_v2:'.md5($userAgent.serialize($clientHintHeaders));
 
         if (Cache::has($cacheKey)) {
             return Cache::get($cacheKey);

@@ -16,13 +16,14 @@ class AssetTimeSeriesResource extends JsonResource
 {
     public function toArray($request): array
     {
-        $frequency = request()->input('frequency', TimeSeriesFrequencyEnum::DAILY->value);
-        $frequencyEnum = TimeSeriesFrequencyEnum::tryFrom($frequency) ?? TimeSeriesFrequencyEnum::DAILY;
+        $frequency = request()->input('frequency', TimeSeriesFrequencyEnum::MONTHLY->value);
+        $frequencyEnum = TimeSeriesFrequencyEnum::tryFrom($frequency) ?? TimeSeriesFrequencyEnum::MONTHLY;
 
         return [
             'id' => $this->id,
             'period' => $this->formatPeriod($this->from, $this->to, $frequencyEnum),
             'filter_date' => $this->formatFilterDate($this->from, $this->to),
+            'currency_code' => $this->currency_code,
             'sales_external' => (float) $this->sales_external,
             'invoices' => (int) $this->invoices,
             'refunds' => (int) $this->refunds,

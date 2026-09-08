@@ -3,6 +3,7 @@
 namespace App\Actions\HumanResources\Employee\UI;
 
 use App\Actions\OrgAction;
+use App\Actions\SysAdmin\User\GetUserCurrentEmployee;
 use App\Enums\HumanResources\Clocking\ClockingEmployeesTabsEnum;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -18,7 +19,10 @@ use App\Http\Resources\HumanResources\LeaveBalanceResource;
 use App\Http\Resources\HumanResources\AttendanceAdjustmentResource;
 use App\Models\HumanResources\WorkSchedule;
 use App\Models\HumanResources\QrScanLog;
+use App\Models\HumanResources\TimeTracker;
+use App\Models\HumanResources\Clocking;
 use App\Models\HumanResources\Employee;
+use App\Models\SysAdmin\Organisation;
 use App\Models\HumanResources\EmployeeLeaveBalance;
 use App\Models\HumanResources\Leave;
 use App\Models\HumanResources\AttendanceAdjustment;
@@ -32,6 +36,8 @@ use App\Enums\HumanResources\Leave\LeaveStatusEnum;
 use Spatie\QueryBuilder\AllowedFilter;
 use App\Models\HumanResources\OvertimeType;
 use App\Models\HumanResources\Holiday;
+use App\Models\HumanResources\ClockingMachine;
+use App\Enums\HumanResources\ClockingMachine\ClockingMachineTypeEnum;
 use App\Services\HumanResources\LeaveTypeResolver;
 use Illuminate\Support\Collection;
 
@@ -46,9 +52,9 @@ class IndexClockingEmployees extends OrgAction
     {
         $this->tab = $request->input('tab');
         if (!$this->tab) {
-            $this->tab = ClockingEmployeesTabsEnum::SCAN_QR_CODE->value;
+            $this->tab = ClockingEmployeesTabsEnum::CLOCK_IN_OUT->value;
         }
-        $tab = $request->input('tab') ?? ClockingEmployeesTabsEnum::SCAN_QR_CODE->value;
+        $tab = $request->input('tab') ?? ClockingEmployeesTabsEnum::CLOCK_IN_OUT->value;
 
         $user = Auth::user();
         $this->employee = null;
@@ -58,19 +64,18 @@ class IndexClockingEmployees extends OrgAction
             $organisationScope = (string)$organisationScope;
             $isNumericOrganisationId = ctype_digit($organisationScope);
 
-            $this->employee = $user->employees()
-                ->whereHas('organisation', function ($query) use ($organisationScope, $isNumericOrganisationId) {
-                    $query->where('slug', $organisationScope);
+            $resolvedOrganisationId = Organisation::query()
+                ->where('slug', $organisationScope)
+                ->when($isNumericOrganisationId, fn ($query) => $query->orWhere('id', (int)$organisationScope))
+                ->value('id');
 
-                    if ($isNumericOrganisationId) {
-                        $query->orWhere('id', (int)$organisationScope);
-                    }
-                })
-                ->first();
+            if ($resolvedOrganisationId) {
+                $this->employee = GetUserCurrentEmployee::run($user, $resolvedOrganisationId);
+            }
         }
 
         if (!$this->employee) {
-            $this->employee = $user?->employees->first();
+            $this->employee = $user ? GetUserCurrentEmployee::run($user) : null;
         }
 
         $timesheetsData = collect();
@@ -90,10 +95,13 @@ class IndexClockingEmployees extends OrgAction
         $activeTimeTracker = null;
         $lastClockIn = null;
         $lastClockOut = null;
+        $clockingSessions = [];
         $timezone = null;
+        $availableClockingMethods = [];
 
-        if ($this->employee && $tab == ClockingEmployeesTabsEnum::SCAN_QR_CODE->value) {
+        if ($this->employee && $tab == ClockingEmployeesTabsEnum::CLOCK_IN_OUT->value) {
             $timezone = $this->employee->organisation->timezone?->name ?? config('app.timezone');
+            $availableClockingMethods = $this->getAvailableClockingMethods($this->employee->organisation_id);
 
             $todayTimesheet = \App\Models\HumanResources\Timesheet::where('subject_type', 'Employee')
                 ->where('subject_id', $this->employee->id)
@@ -131,6 +139,8 @@ class IndexClockingEmployees extends OrgAction
                         $lastClockOut->clocked_at = $lastClockOut->clocked_at->timezone($timezone)->toIso8601String();
                     }
                 }
+
+                $clockingSessions = $this->getClockingSessions($todayTimesheet, $timezone);
             }
         }
 
@@ -143,11 +153,7 @@ class IndexClockingEmployees extends OrgAction
                 ->where('subject_id', $this->employee->id)
                 ->with(['subject.jobPositions', 'organisation']);
 
-            if ($this->employee->organisation->code === "SK") {
-                $timezone = 'UTC';
-            } else {
-                $timezone = $this->employee->organisation->timezone->name ?? 'UTC';
-            }
+            $timezone = $this->employee->organisation->timezone->name ?? 'UTC';
 
             [$from, $to] = $this->resolvePeriodRange() ?? [null, null];
 
@@ -371,7 +377,120 @@ class IndexClockingEmployees extends OrgAction
             'today_timesheet' => $todayTimesheet,
             'last_clock_in' => $lastClockIn,
             'last_clock_out' => $lastClockOut,
+            'clocking_sessions' => $clockingSessions,
             'timezone' => $timezone,
+            'available_clocking_methods' => $availableClockingMethods,
+            'employee_pin' => $this->employee?->pin,
+        ];
+    }
+
+    /**
+     * @return array<int, array{
+     *     id: int,
+     *     sequence: int,
+     *     status: string|null,
+     *     is_open: bool,
+     *     duration: int|null,
+     *     clock_in: array{id: int, clocked_at: string|null, type: string|null, is_late: bool, notes: string|null}|null,
+     *     clock_out: array{id: int, clocked_at: string|null, type: string|null, is_late: bool, notes: string|null}|null
+     * }>
+     */
+    /**
+     * @return array<int, string>
+     */
+    protected function getAvailableClockingMethods(?int $organisationId): array
+    {
+        if (!$organisationId) {
+            return [];
+        }
+
+        $clockingMachines = ClockingMachine::where('organisation_id', $organisationId)
+            ->get(['type', 'config']);
+
+        $methods = [];
+
+        if ($clockingMachines->contains(
+            fn (ClockingMachine $machine) => $machine->type === ClockingMachineTypeEnum::QR_CODE->value
+                && data_get($machine->config, 'qr.enable', false)
+        )) {
+            $methods[] = 'qr_code';
+        }
+
+        if ($clockingMachines->contains(
+            fn (ClockingMachine $machine) => $machine->type === ClockingMachineTypeEnum::PIN->value
+                && data_get($machine->config, 'pin.enable', false)
+        )) {
+            $methods[] = 'pin';
+        }
+
+        if ($clockingMachines->contains(
+            fn (ClockingMachine $machine) => $machine->type === ClockingMachineTypeEnum::BARCODE_SCANNER->value
+                && data_get($machine->config, 'barcode.enable', false)
+        )) {
+            $methods[] = 'barcode';
+        }
+
+        if ($clockingMachines->contains(
+            fn (ClockingMachine $machine) => $machine->type === ClockingMachineTypeEnum::CAMERA_QR->value
+                && data_get($machine->config, 'camera_qr.enable', false)
+        )) {
+            $methods[] = 'camera_qr';
+        }
+
+        return $methods;
+    }
+
+    protected function getClockingSessions(Timesheet $timesheet, string $timezone): array
+    {
+        $timeTrackers = TimeTracker::where('timesheet_id', $timesheet->id)
+            ->orderBy('starts_at')
+            ->get();
+
+        if ($timeTrackers->isEmpty()) {
+            return [];
+        }
+
+        $clockingIds = $timeTrackers
+            ->flatMap(fn (TimeTracker $timeTracker) => [$timeTracker->start_clocking_id, $timeTracker->end_clocking_id])
+            ->filter()
+            ->unique()
+            ->all();
+
+        $clockings = Clocking::whereIn('id', $clockingIds)->get()->keyBy('id');
+
+        return $timeTrackers->values()->map(function (TimeTracker $timeTracker, int $index) use ($clockings, $timezone) {
+            $clockIn = $timeTracker->start_clocking_id ? $clockings->get($timeTracker->start_clocking_id) : null;
+            $clockOut = $timeTracker->end_clocking_id ? $clockings->get($timeTracker->end_clocking_id) : null;
+
+            $startsAt = $timeTracker->starts_at;
+            $endsAt = $timeTracker->ends_at;
+
+            return [
+                'id'         => $timeTracker->id,
+                'sequence'   => $index + 1,
+                'status'     => $timeTracker->status?->value,
+                'is_open'    => $endsAt === null,
+                'starts_at'  => $startsAt?->timezone($timezone)->toIso8601String(),
+                'ends_at'    => $endsAt?->timezone($timezone)->toIso8601String(),
+                'duration'   => $timeTracker->duration ?? ($startsAt && $endsAt ? $startsAt->diffInSeconds($endsAt) : null),
+                'clock_in'   => $this->transformClocking($clockIn, $timezone),
+                'clock_out'  => $this->transformClocking($clockOut, $timezone),
+            ];
+        })->all();
+    }
+
+    protected function transformClocking(?Clocking $clocking, string $timezone): ?array
+    {
+        if (!$clocking) {
+            return null;
+        }
+
+        return [
+            'id'         => $clocking->id,
+            'clocked_at' => $clocking->clocked_at?->timezone($timezone)->toIso8601String(),
+            'type'       => $clocking->type?->value,
+            'is_late'    => (bool) $clocking->is_late,
+            'notes'      => $clocking->notes,
         ];
     }
 
@@ -567,21 +686,22 @@ class IndexClockingEmployees extends OrgAction
             'Org/HumanResources/ClockingEmployees',
             [
                 'title'       => __('Employee Clocking'),
+                'employeeId'  => $this->employee?->id,
                 'breadcrumbs' => $this->getBreadcrumbs($request),
                 'pageHead'    => [
                     'icon'  => [
                         'icon'  => ['fal', 'fa-user-clock'],
                         'title' => __('Employee Clocking')
                     ],
-                    'title' => __('Clock In/Out'),
+                    'title' => __('In/Out'),
                     'model' => __('Clocking'),
                 ],
                 'tabs' => [
                     'current'       => $data['tab'],
                     'navigation'    => ClockingEmployeesTabsEnum::navigation(),
                 ],
-                ClockingEmployeesTabsEnum::SCAN_QR_CODE->value =>
-                $data['tab'] == ClockingEmployeesTabsEnum::SCAN_QR_CODE->value
+                ClockingEmployeesTabsEnum::CLOCK_IN_OUT->value =>
+                $data['tab'] == ClockingEmployeesTabsEnum::CLOCK_IN_OUT->value
                     ? fn () => [
                         'status' => 'ready_to_scan',
                         'active_time_tracker' => $data['active_time_tracker'],
@@ -589,7 +709,10 @@ class IndexClockingEmployees extends OrgAction
                         'today_timesheet' => $data['today_timesheet'],
                         'last_clock_in' => $data['last_clock_in'],
                         'last_clock_out' => $data['last_clock_out'],
+                        'clocking_sessions' => $data['clocking_sessions'],
                         'timezone' => $data['timezone'],
+                        'available_methods' => $data['available_clocking_methods'],
+                        'pin' => $data['employee_pin'],
                     ]
                     : Inertia::optional(fn () => ['status' => 'loaded_lazy']),
 

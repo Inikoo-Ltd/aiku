@@ -10,9 +10,11 @@ namespace App\Actions\Dropshipping\CustomerSalesChannel\UI;
 
 use App\Actions\Fulfilment\FulfilmentCustomer\ShowFulfilmentCustomer;
 use App\Actions\Fulfilment\WithFulfilmentCustomerPlatformSubNavigation;
+use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\OrgAction;
 use App\Enums\UI\Fulfilment\FulfilmentCustomerPlatformTabsEnum;
 use App\Enums\UI\Fulfilment\FulfilmentCustomerTabsEnum;
+use App\Http\Resources\History\HistoryResource;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\Fulfilment\FulfilmentCustomer;
@@ -79,9 +81,13 @@ class ShowCustomerSalesChannelInFulfilment extends OrgAction
                         'number_customer_clients' => $customerSalesChannel->number_customer_clients,
                         'number_portfolios' => $customerSalesChannel->number_portfolios
                     ]
-                ]
+                ],
+
+                FulfilmentCustomerPlatformTabsEnum::HISTORY->value => $this->tab == FulfilmentCustomerPlatformTabsEnum::HISTORY->value ?
+                    fn () => HistoryResource::collection(IndexHistory::run($customerSalesChannel, FulfilmentCustomerPlatformTabsEnum::HISTORY->value))
+                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($customerSalesChannel, FulfilmentCustomerPlatformTabsEnum::HISTORY->value))),
             ]
-        );
+        )->table(IndexHistory::make()->tableStructure(FulfilmentCustomerPlatformTabsEnum::HISTORY->value));
     }
 
     public function getBreadcrumbs(CustomerSalesChannel $customerSalesChannel, array $routeParameters): array

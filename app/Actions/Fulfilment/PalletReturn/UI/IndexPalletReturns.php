@@ -291,7 +291,7 @@ class IndexPalletReturns extends OrgAction
                 ->column(key: 'reference', label: __('Reference'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'customer_reference', label: __('Customer reference'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'number_pallets', label: __('Pallets'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'unique_stored_item_count', label: __('SKU'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'unique_stored_item_count', label: __('SKO'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'date', label: __('Date'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
         };
     }
@@ -350,8 +350,8 @@ class IndexPalletReturns extends OrgAction
             $actions[] = [
                 'type'        => 'button',
                 'style'       => 'create',
-                'tooltip'     => __('Create new return (Customer SKUs)'),
-                'label'       => __('Return (Customer SKUs)'),
+                'tooltip'     => __('Create new return (Customer SKOs)'),
+                'label'       => __('Return (Customer SKOs)'),
                 'fullLoading' => true,
                 'route'       => [
                     'method'     => 'post',

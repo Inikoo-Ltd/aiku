@@ -38,6 +38,7 @@ use Illuminate\Support\Arr;
 
 class ShowRetinaEcomOrderReview extends RetinaAction
 {
+    use \App\Actions\Traits\WithLineTaxCategories;
     use GetPlatformLogo;
 
     public function handle(Order $order): Order
@@ -442,11 +443,7 @@ class ShowRetinaEcomOrderReview extends RetinaAction
                         'information' => '',
                         'price_total' => $order->net_amount
                     ],
-                    [
-                        'label'       => __('Tax').' '.$order->taxCategory->name,
-                        'information' => '',
-                        'price_total' => $order->tax_amount
-                    ]
+                    ...$this->getOrderTaxRows($order),
                 ],
                 [
                     [

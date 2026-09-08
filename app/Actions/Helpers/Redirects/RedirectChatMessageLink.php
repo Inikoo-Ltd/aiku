@@ -8,13 +8,13 @@
 
 namespace App\Actions\Helpers\Redirects;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Models\Chat\ChatMessage;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Redirect;
 use Lorisleiva\Actions\ActionRequest;
 
-class RedirectChatMessageLink extends GrpAction
+class RedirectChatMessageLink extends OrgAction
 {
     public function handle(ChatMessage $chatMessage): RedirectResponse
     {
@@ -33,7 +33,7 @@ class RedirectChatMessageLink extends GrpAction
 
     public function asController(ChatMessage $chatMessage, ActionRequest $request): RedirectResponse
     {
-        $this->initialisation(group(), $request);
+        $this->initialisationFromGroup(group(), $request);
 
         return $this->handle($chatMessage);
     }

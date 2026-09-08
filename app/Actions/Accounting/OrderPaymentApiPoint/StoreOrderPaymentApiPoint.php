@@ -22,7 +22,7 @@ class StoreOrderPaymentApiPoint
     {
         data_set($modelData, 'group_id', $order->group_id);
         data_set($modelData, 'organisation_id', $order->organisation_id);
-        data_set($modelData, 'ulid', Str::ulid());
+        data_set($modelData, 'ulid', (string) Str::ulid());
         data_set($modelData, 'state', OrderPaymentApiPointStateEnum::IN_PROCESS->value);
 
         return $order->orderPaymentApiPoint()->create($modelData);

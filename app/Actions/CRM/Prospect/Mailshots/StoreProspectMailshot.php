@@ -52,6 +52,21 @@ class StoreProspectMailshot extends OrgAction
         );
     }
 
+    public function prepareForValidation(ActionRequest $request): void
+    {
+        if (!$this->has('subject') || blank($this->get('subject'))) {
+            $this->set('subject', __('Mailshot').' '.now()->format('j M Y'));
+        }
+
+        if (!$this->has('recipients_recipe')) {
+            $this->set('recipients_recipe', [
+                'all_prospects' => [
+                    'value' => true
+                ]
+            ]);
+        }
+    }
+
     public function rules(): array
     {
         return [

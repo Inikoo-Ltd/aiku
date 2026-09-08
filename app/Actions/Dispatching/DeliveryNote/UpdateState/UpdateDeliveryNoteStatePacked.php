@@ -10,6 +10,7 @@ namespace App\Actions\Dispatching\DeliveryNote\UpdateState;
 
 use App\Actions\Catalogue\Shop\Hydrators\HasDeliveryNoteHydrators;
 use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydrateTrolleys;
+use App\Actions\Dispatching\DeliveryNoteItem\UpdateDeliveryNoteItemPacking;
 use App\Actions\Dispatching\Packing\StorePacking;
 use App\Actions\Dispatching\PickingSession\AutoFinishPackingPickingSession;
 use App\Actions\Dispatching\Shipment\StoreShipmentFromFaire;
@@ -44,6 +45,10 @@ class UpdateDeliveryNoteStatePacked extends OrgAction
             return $deliveryNote;
         }
 
+        if ($deliveryNote->hasBlockingItems()) {
+            abort(422, __('Cannot pack: some items are waiting for a replacement decision or warehouse release'));
+        }
+
         $oldState = $deliveryNote->state;
 
         data_set($modelData, 'packed_at', now());
@@ -52,8 +57,20 @@ class UpdateDeliveryNoteStatePacked extends OrgAction
 
 
         $deliveryNote = DB::transaction(function () use ($deliveryNote, $modelData) {
-            foreach ($deliveryNote->deliveryNoteItems->filter(fn ($item) => $item->packings->isEmpty()) as $item) {
-                StorePacking::make()->action($item, $this->user, []);
+            $notFullyPacked = $deliveryNote->deliveryNoteItems->reject(
+                fn ($item) => UpdateDeliveryNoteItemPacking::isFullyPacked($item)
+            );
+
+            /*
+             * These lines are swept up by one click on the note rather than confirmed one by one at
+             * the bench, so they all carry the same done_at. They are flagged so that per line
+             * packing rates can exclude them instead of reading a whole note as packed in an instant.
+             */
+            foreach ($notFullyPacked as $item) {
+                StorePacking::make()->action($item, $this->user, [
+                    'quantity' => UpdateDeliveryNoteItemPacking::quantityLeftToPack($item),
+                    'data'     => ['auto_packed' => true],
+                ]);
             }
 
             // Lock only the 'parcels' (handle concurrency)

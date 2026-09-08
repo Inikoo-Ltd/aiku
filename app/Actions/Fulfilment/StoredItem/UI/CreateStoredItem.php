@@ -29,12 +29,12 @@ class CreateStoredItem extends OrgAction
                     $request->route()->getName(),
                     $request->route()->originalParameters(),
                 ),
-                'title'       => __('New SKU'),
+                'title'       => __('New SKO'),
                 'pageHead'    => [
-                    'title'   => __('New SKU'),
+                    'title'   => __('New SKO'),
                     'icon'    => [
                         'icon'  => ['fal', 'fa-narwhal'],
-                        'title' => __('SKU')
+                        'title' => __('SKO')
                     ],
                     'actions' => [
                         [
@@ -102,7 +102,7 @@ class CreateStoredItem extends OrgAction
                 [
                     'type'          => 'creatingModel',
                     'creatingModel' => [
-                        'label' => __('Creating SKU'),
+                        'label' => __('Creating SKO'),
                     ]
                 ]
             ]

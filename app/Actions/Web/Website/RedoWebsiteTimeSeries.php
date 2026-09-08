@@ -7,6 +7,7 @@
 
 namespace App\Actions\Web\Website;
 
+use App\Helpers\TimeSeriesPeriodCalculator;
 use App\Actions\Traits\Hydrators\WithHydrateCommand;
 use App\Actions\Traits\WithTimeSeriesRedo;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
@@ -35,6 +36,17 @@ class RedoWebsiteTimeSeries implements ShouldBeUnique
         return "{$from}_$to";
     }
 
+    protected function dateRangeSources(): array
+    {
+        return [
+            [
+                'query' => fn () => DB::connection('aiku_no_sticky')->table('website_visitors'),
+                'key'   => 'website_id',
+                'date'  => 'first_seen_at',
+            ],
+        ];
+    }
+
     public function handle(?int $websiteId, ?string $from = null, ?string $to = null, bool $async = false): void
     {
         if (!$websiteId) {
@@ -48,22 +60,23 @@ class RedoWebsiteTimeSeries implements ShouldBeUnique
         }
 
         if (!$from || !$to) {
-            $firstVisitDate = DB::connection('aiku_no_sticky')->table('website_visitors')->where('website_id', $website->id)->min('first_seen_at');
-            $lastVisitDate  = DB::connection('aiku_no_sticky')->table('website_visitors')->where('website_id', $website->id)->max('first_seen_at');
+            $dateRange = $this->getDateRange($website->id);
 
-            if (!$firstVisitDate) {
+            if (!$dateRange['from']) {
                 return;
             }
 
-            $from = $from ?? Carbon::parse($firstVisitDate)->toDateString();
-            $to   = $to ?? Carbon::parse($lastVisitDate ?? now())->toDateString();
+            $from = $from ?? Carbon::parse($dateRange['from'])->toDateString();
+            $to   = $to ?? Carbon::parse($dateRange['to'] ?? now())->toDateString();
         }
 
         foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
+            [$periodFrom, $periodTo] = TimeSeriesPeriodCalculator::expandWindowToFullPeriods($frequency, $from, $to);
+
             if ($async) {
-                ProcessWebsiteTimeSeriesRecords::dispatch($website->id, $frequency, $from, $to)->onQueue('sales_slave_historic');
+                ProcessWebsiteTimeSeriesRecords::dispatch($website->id, $frequency, $periodFrom, $periodTo)->onQueue('sales_slave_historic');
             } else {
-                ProcessWebsiteTimeSeriesRecords::run($website->id, $frequency, $from, $to);
+                ProcessWebsiteTimeSeriesRecords::run($website->id, $frequency, $periodFrom, $periodTo);
             }
         }
     }

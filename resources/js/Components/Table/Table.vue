@@ -23,15 +23,18 @@ import { set as setLodash, debounce, kebabCase } from 'lodash-es'
 import CountUp from 'vue-countup-v3'
 import { useFormatTime } from '@/Composables/useFormatTime'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { faCheckSquare, faCheck, faSquare, faMinusSquare, faYinYang} from '@fal'
+import { faCheckSquare, faCheck, faSquare, faMinusSquare, faYinYang, faExclamationTriangle} from '@fal'
 import { faCheckSquare as fasCheckSquare, faWatchCalculator} from '@fas'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import TableBetweenFilter from '@/Components/Table/TableBetweenFilter.vue'
+import TableOfferFilter from '@/Components/Table/TableOfferFilter.vue'
 import TableFrequencyFilter from '@/Components/Table/TableFrequencyFilter.vue'
 import TableRadioFilter from './TableRadioFilter.vue'
 import TableDateInterval from './TableDateInterval.vue'
 import TableRows from './TableRows.vue'
-library.add(faCheckSquare, faCheck, faSquare, faMinusSquare, fasCheckSquare, faWatchCalculator,faYinYang)
+import { faOctopusDeploy } from '@fortawesome/free-brands-svg-icons'
+import { Message } from 'primevue'
+library.add(faCheckSquare, faCheck, faSquare, faMinusSquare, fasCheckSquare, faWatchCalculator, faYinYang, faOctopusDeploy, faExclamationTriangle)
 
 const locale = inject('locale', aikuLocaleStructure)
 
@@ -236,8 +239,31 @@ const props = defineProps(
             type: Boolean,
             default: false,
             required: false,
+        },
+        warning: {
+            type: Object,
+            default: () => {
+                return {};
+            },
+            required: false
+        },
+        showWarningMessage: {
+            type: Boolean,
+            default: false,
+            required: false,
         }
     });
+
+const isWarningVisible = ref(props.showWarningMessage)
+
+watch(
+    () => props.showWarningMessage,
+    (showWarningMessage) => {
+        if (showWarningMessage) {
+            isWarningVisible.value = true
+        }
+    }
+)
 
 // Flatten a row into a stable list of primitives for v-memo. Nested objects/arrays are stringified
 // so a change inside them is detected; the row re-renders only when one of these values changes.
@@ -330,6 +356,9 @@ const compResourceData = computed(() => {
 // }, {
 //     deep: true
 // })
+
+// requestAnimationFrame is frozen in hidden tabs, leaving CountUp stuck on its first frame
+const mountedWhileHidden = document.hidden
 
 // Meta Page (Previous/next link, current page, data per page)
 const compResourceMeta = computed(() => {
@@ -500,6 +529,7 @@ function dataForNewQueryString() {
     const sort = queryBuilderData.value.sort
     const perPage = queryBuilderData.value.perPage;
     const elementFilter = queryBuilderData.value.elementFilter
+    const additionalElementFilter = queryBuilderData.value.additionalElementFilter
     const period = queryBuilderData.value.periodFilter
     const radioFilter = queryBuilderData.value.radioFilter
     const dateInterval = queryBuilderData.value.dateInterval
@@ -523,6 +553,9 @@ function dataForNewQueryString() {
     if (elementFilter) {
         queryData.elements = elementFilter // elements[state] = working
     }
+    if (additionalElementFilter) {
+        queryData.additionalElements = additionalElementFilter
+    }
     if (period) {
         queryData.period = period // period[type]=year&period[date]=2024
     }
@@ -538,21 +571,39 @@ function generateNewQueryString() {
     const queryStringData = qs.parse(location.search.substring(1))
     const prefix = props.name === 'default' ? '' : props.name + '_'
 
+    const externalFilters = queryStringData[prefix + 'filter'] || {}
+    const managedKeys = [
+        ...map(queryBuilderProps.value.searchInputs, 'key'),
+        ...map(queryBuilderProps.value.filters, 'key'),
+    ]
+
+    forEach(managedKeys, (k : any) => { delete externalFilters[k] })
     // To exclude 'filter', 'columns', 'cursor', and 'sort' that received from the URL
-    forEach(['filter', 'columns', 'cursor', 'sort'], (key) => {
+    forEach(['columns', 'cursor', 'sort'], (key) => {
         delete queryStringData[prefix + key];
     });
 
     // To exclude page number from pagination
     delete queryStringData[pageName.value];
 
-    forEach(dataForNewQueryString(), (value, key) => {
+    const newData = dataForNewQueryString()
+    forEach(newData, (value, key) => {
         if (key === 'page') {
             queryStringData[pageName.value] = value;
+        } else if (key === 'filter') {
+            queryStringData[prefix + 'filter'] = {
+                ...externalFilters,
+                ...value,
+            };
         } else {
             queryStringData[prefix + key] = value;
         }
     });
+
+    if(!newData.filter && Object.keys(externalFilters).length) {
+        queryStringData[prefix + 'filter'] = externalFilters
+    }
+
     let query = qs.stringify(queryStringData, {
 
         encodeValuesOnly: true,
@@ -596,8 +647,15 @@ const visit = (url?: string) => {
             },
             onSuccess() {
                 if ('queryBuilderProps' in usePage().props) {
-                    queryBuilderData.value.cursor = queryBuilderProps.value.cursor;
-                    queryBuilderData.value.page = queryBuilderProps.value.page;
+                    const newCursor = queryBuilderProps.value.cursor;
+                    const newPage   = queryBuilderProps.value.page;
+
+                    if (queryBuilderData.value.cursor !== newCursor || queryBuilderData.value.page !== newPage) {
+                        skipNextDebouncedVisit = true;
+                    }
+
+                    queryBuilderData.value.cursor = newCursor;
+                    queryBuilderData.value.page   = newPage;
                 }
 
                 if (props.preserveScroll === 'table-top') {
@@ -606,7 +664,6 @@ const visit = (url?: string) => {
                         tableFieldset.value.getBoundingClientRect().top +
                         window.pageYOffset +
                         offset;
-
                     window.scrollTo({top});
                 }
 
@@ -634,13 +691,14 @@ let isMounted = false;
 let skipNextDebouncedVisit = false;
 
 watch(queryBuilderData, async () => {
-        if (!isMounted) return;
-        if (skipNextDebouncedVisit) {
-            skipNextDebouncedVisit = false;
-            return;
-        }
-        debouncedFilter();
-    },
+    const skipThisVisit = skipNextDebouncedVisit;
+    skipNextDebouncedVisit = false;
+
+    if (!isMounted) return;
+    if (skipThisVisit) return;
+
+    debouncedFilter();
+},
     {deep: true},
 );
 
@@ -649,6 +707,17 @@ const immediateVisit = () => {
     skipNextDebouncedVisit = true;
     debouncedFilter.cancel();
     visit(location.pathname + '?' + generateNewQueryString());
+};
+
+// TableElements reports the selection it read from the URL right after mount. The server already
+// rendered that selection, so the state is stored without letting the watcher fire off a visit for
+// a query string identical to the current one.
+const onElementFilterChanged = (key: 'elementFilter' | 'additionalElementFilter', data: object, isInitial = false) => {
+    if (isInitial) {
+        skipNextDebouncedVisit = true;
+    }
+
+    queryBuilderData.value[key] = data;
 };
 
 const inertiaListener = () => {
@@ -724,7 +793,6 @@ const onClickSelectAll = (state: boolean) => {
      emits('onCheckedAll', {data : props.resource.data, allChecked : compIsAllChecked.value})
 }
 
-
 // Check props.isCheckbox to improve performance
 const compIsAllChecked = props.isCheckBox
   ? computed(() => {
@@ -735,7 +803,6 @@ const compIsAllChecked = props.isCheckBox
         })
     })
   : false
-
 
 watch(selectRow, () => {
     emits('onSelectRow', selectRow)
@@ -902,6 +969,16 @@ const virtualBottomSpacerHeight = computed(() => {
 
 const virtualColSpan = computed(() => (queryBuilderProps.value.columns?.length ?? 0) + (props.isCheckBox ? 1 : 0))
 
+const severityMap: Record<string, string> = {
+  warning: "warn",
+  success: "success",
+  info: "info",
+  error: "error"
+}
+
+const getSeverity = (type?: string) => {
+  return type ? severityMap[type.toLowerCase()] || "info" : "info"
+}
 </script>
 
 <template>
@@ -931,28 +1008,69 @@ const virtualColSpan = computed(() => (queryBuilderProps.value.columns?.length ?
         </slot>
 
         <!--suppress HtmlUnknownAttribute -->
-        <fieldset v-else ref="tableFieldset" :key="`table-${name}`" :dusk="`table-${name}`" class="min-w-0"
-            :class="{ 'opacity-75': isVisiting || isParentLoading }">
+        <fieldset v-else ref="tableFieldset" :key="`table-${name}`" :dusk="`table-${name}`" class="min-w-0" :class="{ 'opacity-75': isVisiting || isParentLoading }">
+            <Message
+                v-if="warning && showWarningMessage && isWarningVisible"
+                :severity="getSeverity(warning.type)"
+                @close="isWarningVisible = false"
+            >
+                <div class="flex items-start gap-3">
+                    <!-- Icon -->
+                    <FontAwesomeIcon v-if="warning.icon" :icon="warning.icon" class="w-4 h-4 flex-shrink-0 my-auto" :class="[
+                        getSeverity(warning.type) === 'warn' ? 'text-yellow-800' :
+                            getSeverity(warning.type) === 'success' ? 'text-green-800' :
+                                getSeverity(warning.type) === 'error' ? 'text-red-800' :
+                                    'text-blue-500'
+                    ]" />
+
+                    <!-- Content -->
+                    <div class="flex flex-col">
+                        <div class="text-md font-semibold">
+                            {{ warning?.title }}
+                        </div>
+                        <div v-if="warning?.text" :class="[
+                            getSeverity(warning.type) === 'warn' ? 'text-yellow-600/80' :
+                                getSeverity(warning.type) === 'success' ? 'text-green-500' :
+                                    getSeverity(warning.type) === 'error' ? 'text-red-500' :
+                                        'text-blue-500'
+                        ]" class="text-sm">
+                            {{ warning?.text }}
+                        </div>
+                    </div>
+                </div>
+            </Message>
             <div class="py-2 sm:py-0 my-0">
                 <!-- Wrapper -->
 
                 <!-- Filter: Checkbox element -->
-                <div v-if="Object.keys(queryBuilderProps?.elementGroups || [])?.length" class="w-full border-b border-gray-300">
+                <div v-if="Object.keys(queryBuilderProps?.elementGroups || [])?.length" class="w-full border-gray-300" :class="{
+                    'border-b': !Object.keys(queryBuilderProps?.additionalElementGroups || [])?.length
+                }">
                     <TableElements :elements="queryBuilderProps.elementGroups"
-                        @checkboxChanged="(data) => queryBuilderData.elementFilter = data"
-                        :tableName="props.name" />
+                        @checkboxChanged="(data, isInitial) => onElementFilterChanged('elementFilter', data, isInitial)"
+                        :tableName="props.name"
+                    />
+                </div>
+
+                <div v-if="Object.keys(queryBuilderProps?.additionalElementGroups || [])?.length" class="w-full border-b border-gray-300">
+                    <TableElements :elements="queryBuilderProps.additionalElementGroups"
+                        @checkboxChanged="(data, isInitial) => onElementFilterChanged('additionalElementFilter', data, isInitial)"
+                        :tableName="props.name"
+                        :isAdditional="true"
+                    />
                 </div>
 
                 <div class="grid grid-flow-col justify-between items-center flex-nowrap px-3 sm:px-4 table-query-builder">
 
                     <!-- Left Section: Records, Model Operations, MO Bulk, Search -->
-                    <div class="h-fit flex flex-wrap gap-y-0.5 gap-x-1 items-center my-0.5">
+                    <div v-if="!useTopPagination" class="h-fit flex flex-wrap gap-y-0.5 gap-x-1 items-center my-0.5">
                         <!-- Result Number -->
-                        <div v-if="!useTopPagination" class="bg-gray-100 h-fit flex items-center border border-gray-300 overflow-hidden rounded">
+                        <div class="bg-gray-100 h-fit flex items-center border border-gray-300 overflow-hidden rounded">
                             <div class="grid justify-end items-center text-base font-normal text-gray-700">
                                 <div class="px-2 py-[1px] whitespace-nowrap flex gap-x-1.5 flex-nowrap">
                                     <span class="font-semibold tabular-nums">
-                                        <CountUp :endVal="compResourceMeta?.total || 0" :duration="1.2"
+                                        <template v-if="mountedWhileHidden">{{ locale.number(compResourceMeta?.total || 0) }}</template>
+                                        <CountUp v-else :endVal="compResourceMeta?.total || 0" :duration="1.2"
                                             :scrollSpyOnce="true" :options="{
                                             formattingFn: (number) => locale.number(number)
                                         }" />
@@ -965,6 +1083,7 @@ const virtualColSpan = computed(() => (queryBuilderProps.value.columns?.length ?
                                         trans('records')
                                         : queryBuilderProps.labelRecord?.[0] || trans('record')
                                         }}
+                                        <slot name="afterRecordCount" />
                                     </span>
                                 </div>
                             </div>
@@ -1042,10 +1161,18 @@ const virtualColSpan = computed(() => (queryBuilderProps.value.columns?.length ?
                             </div>
                         </template>
 
+                        <slot name="tableExtraAction" />
+                        
                         <!-- Filter: date between -->
                         <div v-if="queryBuilderProps?.betweenDates?.length" class="w-fit flex gap-x-2">
                             <TableBetweenFilter :optionsList="queryBuilderProps?.betweenDates"
+                                :appliedValue="queryBuilderProps?.betweenDatesValue"
                                 :tableName="props.name" />
+                        </div>
+
+                        <!-- Filter: offers -->
+                        <div v-if="queryBuilderProps?.offerFilter" class="w-fit flex gap-x-2">
+                            <TableOfferFilter :label="queryBuilderProps.offerFilter.label" />
                         </div>
 
                         <!-- Filter: frequency -->
@@ -1086,7 +1213,16 @@ const virtualColSpan = computed(() => (queryBuilderProps.value.columns?.length ?
 
             </div>
 
+            <slot name="before-table" />
+
             <!-- <pre>{{ compResourceData }}</pre> -->
+
+            <!-- Header note: small grey caveat above the table (currency, cut-offs, ...) -->
+            <slot name="headerNote">
+                <div v-if="queryBuilderProps.headerNote" class="pb-1 text-right text-xs text-gray-400">
+                    {{ queryBuilderProps.headerNote }}
+                </div>
+            </slot>
 
             <!-- The Main Table -->
             <slot name="tableWrapper" :meta="compResourceMeta">
@@ -1095,18 +1231,96 @@ const virtualColSpan = computed(() => (queryBuilderProps.value.columns?.length ?
                         <Pagination :on-click="visit" :has-data="hasData" :meta="compResourceMeta"
                             :exportLinks="queryBuilderProps.exportLinks"
                             :per-page-options="queryBuilderProps.perPageOptions"
-                            :on-per-page-change="onPerPageChange" 
-                            :custom-wrapper-class="'sticky top-[39px] z-[50] border-b !border-gray-300'"
-                        />
+                            :on-per-page-change="onPerPageChange"
+                            :custom-wrapper-class="'sticky top-[33px] z-[10] border-b !border-gray-300'"
+                        >
+                            <template #topRow="{ data }">
+                                <div class="h-fit flex flex-wrap gap-y-0.5 gap-x-1 items-center mt-0.5 px-2" :class="data.paginated ? 'mb-2' : ''">
+                                    <!-- Result Number -->
+                                    <div class="bg-gray-100 h-fit flex items-center border border-gray-300 overflow-hidden rounded">
+                                        <div class="grid justify-end items-center text-base font-normal text-gray-700">
+                                            <div class="px-2 py-[1px] whitespace-nowrap flex gap-x-1.5 flex-nowrap">
+                                                <span class="font-semibold tabular-nums">
+                                                    <template v-if="mountedWhileHidden">{{ locale.number(compResourceMeta?.total || 0) }}</template>
+                                                    <CountUp v-else :endVal="compResourceMeta?.total || 0" :duration="1.2"
+                                                        :scrollSpyOnce="true" :options="{
+                                                        formattingFn: (number) => locale.number(number)
+                                                    }" />
+                                                </span>
+
+                                                <span class="font-light">
+                                                    {{
+                                                    compResourceMeta.total > 1
+                                                    ? queryBuilderProps.labelRecord?.[1] || queryBuilderProps.labelRecord?.[0] ||
+                                                    trans('records')
+                                                    : queryBuilderProps.labelRecord?.[0] || trans('record')
+                                                    }}
+                                                    <slot name="afterRecordCount" />
+                                                </span>
+                                            </div>
+                                        </div>
+
+                                        <!-- Button: Model Operations Bulk -->
+                                        <div v-if="queryBuilderProps.modelOperations?.bulk" class="flex">
+                                            <slot v-for="(linkButton, btnIndex) in queryBuilderProps.modelOperations?.bulk"
+                                                :name="`button${linkButton.label}`" :linkButton="linkButton">
+                                                <Link v-if="linkButton?.route?.name" as="div"
+                                                    :href="route(linkButton?.route?.name, linkButton?.route?.parameters)"
+                                                    :method="linkButton.route?.method || 'get'" v-tooltip="linkButton.tooltip"
+                                                    :data="selectRow"
+                                                    :class="[queryBuilderProps.modelOperations?.bulk.length > 1 ? 'first:rounded-l last:rounded-r' : '']">
+                                                <Button
+                                                    :style="Object.values(selectRow).some(value => value) ? linkButton.style : 'disabled'"
+                                                    :icon="linkButton.icon" :label="linkButton.label" size="l"
+                                                    class="h-full border-none rounded-none"
+                                                    :class="{'rounded-l-md': btnIndex === 0, 'rounded-r-md ': btnIndex === queryBuilderProps.modelOperations?.bulk.length - 1}" />
+                                                </Link>
+                                            </slot>
+                                        </div>
+                                    </div>
+
+                                    <!-- Button: Model Operations -->
+                                    <div v-if="queryBuilderProps.modelOperations?.createLink" class="flex">
+                                        <slot v-for="(linkButton, btnIndex) in queryBuilderProps.modelOperations?.createLink"
+                                            :name="`button-${kebabCase(linkButton.label)}`"
+                                            :linkButton="{...linkButton, btnIndex: btnIndex }">
+                                            <!-- {{ linkButton?.route?.name }} -->
+                                            <component v-if="linkButton?.route?.name" :is="linkButton.target ? 'a' : Link" as="div"
+                                                :target="linkButton.target || undefined"
+                                                :href="route(linkButton?.route?.name, linkButton?.route?.parameters)"
+                                                :method="linkButton.route?.method || 'get'" v-tooltip="linkButton.tooltip"
+                                                :class="[queryBuilderProps.modelOperations?.createLink.length > 1 ? 'first:rounded-l last:rounded-r' : '']">
+                                                <Button :style="linkButton.style" :type="linkButton.type" :icon="linkButton.icon"
+                                                    :label="linkButton.label" size="xs" key="1" class="h-full" />
+                                            </component>
+                                        </slot>
+                                    </div>
+
+                                    <!-- Search Input Button -->
+                                    <div v-if="queryBuilderProps.globalSearch" class="flex flex-row">
+                                        <slot name="tableFilterSearch" :has-global-search="queryBuilderProps.globalSearch"
+                                            :label="queryBuilderProps.globalSearch ? queryBuilderProps.globalSearch.label : null"
+                                            :value="queryBuilderProps.globalSearch ? queryBuilderProps.globalSearch.value : null"
+                                            :on-change="changeGlobalSearchValue">
+                                            <TableFilterSearch v-if="queryBuilderProps.globalSearch" class=""
+                                                @resetSearch="() => resetQuery()" :label="queryBuilderProps.globalSearch.label"
+                                                :value="queryBuilderProps.globalSearch.value" :on-change="changeGlobalSearchValue"
+                                                :on-enter="immediateSearch" :on-start-typing="cancelVisitIfInProgress" :isVisiting />
+                                        </slot>
+                                    </div>
+                                </div>
+                            </template>
+                        </Pagination>
                     </slot>
 
                     <slot name="table">
                         <div ref="virtualContainerRef"
+                            class="overflow-x-auto"
                             @scroll="virtualScroll ? onVirtualScroll() : undefined"
                             :style="virtualScroll ? { overflowY: 'auto', maxHeight: virtualScrollHeight } : undefined">
-                        <table class="divide-y divide-gray-200 bg-white w-full">
+                        <table class="divide-y divide-gray-200 bg-white min-w-full">
                             <thead class="bg-gray-50" :class="{ 'sticky top-0 z-10': virtualScroll }">
-                                <tr 
+                                <tr
                                     class="border-t border-gray-200 divide-x divide-gray-200"
                                     :class="{
                                         'border-t': !useTopPagination
@@ -1128,7 +1342,13 @@ const virtualColSpan = computed(() => (queryBuilderProps.value.columns?.length ?
                                         :header="column">
                                         <HeaderCell :key="`table-${name}-header-${column.key}`"
                                             :cell="header(column.key)" :type="columnsType[column.key]" :column="column"
-                                            :resource="compResourceData">
+                                            :resource="compResourceData"
+                                            :highlight="queryBuilderProps?.betweenDatesValue?.column === column.key"
+                                        >
+                                            <template #cellLabel>
+                                                <slot :name="`table-header-${column.key}`">
+                                                </slot>
+                                            </template>
                                         </HeaderCell>
                                     </slot>
                                 </tr>
@@ -1153,18 +1373,22 @@ const virtualColSpan = computed(() => (queryBuilderProps.value.columns?.length ?
                                         <tr v-for="{ data: item, index: key } in virtualList"
                                             :key="`table-${name}-row-${key}-${item[checkboxKey]}-${item.id}-${item.slug}`"
                                             v-memo="virtualRowMemo ? virtualRowMemo(item, key) : [{}]"
-                                            class="" :class="[
-                                                    {
-                                                        'bg-gray-50': striped && key % 2,
-                                                    },
-                                                    selectRow[item[checkboxKey]] || item.is_checked || props.isChecked(item)
-                                                        ? 'bg-green-100/70'
-                                                        : striped
-                                                            ? 'bg-gray-200 hover:bg-gray-300'
-                                                            : rowColorFunction(item)
-                                                                ? rowColorFunction(item)
-                                                                : 'hover:bg-gray-50'
-                                                ]">
+                                            class="" 
+                                            :class="[
+                                                {
+                                                    'bg-gray-50': striped && key % 2,
+                                                },
+                                                selectRow[item[checkboxKey]] || item.is_checked || props.isChecked(item)
+                                                    ? 'bg-green-100/70'
+                                                    : striped
+                                                        ? 'bg-gray-200 hover:bg-gray-300'
+                                                        : rowColorFunction(item)
+                                                            ? rowColorFunction(item)
+                                                            : 'hover:bg-gray-50',
+                                                
+                                                ]"
+                                        >
+
                                                 <td v-if="isCheckBox" key="checkbox" class="">
                                                     <slot v-if="disabledCheckbox(item)" :name="`disable-checkbox`">
                                                         <FontAwesomeIcon v-if="disabledCheckbox(item)"
@@ -1194,13 +1418,14 @@ const virtualColSpan = computed(() => (queryBuilderProps.value.columns?.length ?
                                                 <td v-for="(column, index) in queryBuilderProps.columns"
                                                     v-show="show(column.key)"
                                                     :key="`table-${name}-row-${key}-column-${column.key}`"
-                                                    class="text-sm py-2 text-gray-600 whitespace-normal h-full" :class="[
+                                                    class="text-xs lg:text-[13px] py-1 lg:py-2 text-gray-600 whitespace-normal h-full" :class="[
                                                         column.type === 'avatar' || column.type === 'icon'
-                                                            ? 'text-center min-w-fit px-3'
+                                                            ? 'text-center min-w-fit px-1.5 lg:px-3'
                                                             : typeof item[column.key] == 'number' || column.type === 'number' || column.type === 'currency' || column.type === 'date' || column.type === 'date_hm' || column.type === 'date_hms' || column.align === 'right'
-                                                                ? 'text-right pl-3 pr-9 tabular-nums'
-                                                                : 'px-6',
+                                                                ? 'text-right pl-1.5 pr-2 lg:pl-3 lg:pr-9 tabular-nums'
+                                                                : 'px-2 lg:px-3',
                                                         props.rowAlignTop ? 'align-top' : '',
+                                                        queryBuilderProps?.betweenDatesValue?.column === column.key ? 'bg-amber-50/60' : '',
                                                         { 'first:border-l-4 first:border-gray-700 bg-gray-200/75': selectedRow?.[name]?.includes(item[checkboxKey]) },
                                                         column.className
                                                     ]">
@@ -1269,13 +1494,14 @@ const virtualColSpan = computed(() => (queryBuilderProps.value.columns?.length ?
                                             <td v-for="(column, index) in queryBuilderProps.columns"
                                                 v-show="show(column.key)"
                                                 :key="`table-${name}-row-${key}-column-${column.key}`"
-                                                class="text-sm py-2 text-gray-600 whitespace-normal h-full" :class="[
+                                                class="text-xs lg:text-[13px] py-1 lg:py-2 text-gray-600 whitespace-normal h-full" :class="[
                                                     column.type === 'avatar' || column.type === 'icon'
-                                                        ? 'text-center min-w-fit px-3'
+                                                        ? 'text-center min-w-fit px-1.5 lg:px-3'
                                                         : typeof item[column.key] == 'number' || column.type === 'number' || column.type === 'currency' || column.type === 'date' || column.type === 'date_hm' || column.type === 'date_hms' || column.align === 'right'
-                                                            ? 'text-right pl-3 pr-9 tabular-nums'
-                                                            : 'px-6',
+                                                            ? 'text-right pl-1.5 pr-2 lg:pl-3 lg:pr-9 tabular-nums'
+                                                            : 'px-2 lg:px-6',
                                                     props.rowAlignTop ? 'align-top' : '',
+                                                    queryBuilderProps?.betweenDatesValue?.column === column.key ? 'bg-amber-50/60' : '',
                                                     { 'first:border-l-4 first:border-gray-700 bg-gray-200/75': selectedRow?.[name]?.includes(item[checkboxKey]) },
                                                     column.className
                                                 ]">
@@ -1339,13 +1565,14 @@ const virtualColSpan = computed(() => (queryBuilderProps.value.columns?.length ?
                                             <td v-for="(column, index) in queryBuilderProps.columns"
                                                 v-show="show(column.key)"
                                                 :key="`table-${name}-row-${key}-column-${column.key}`"
-                                                class="text-sm py-2 text-gray-600 whitespace-normal h-full" :class="[
+                                                class="text-xs lg:text-[13px] py-1 lg:py-2 text-gray-600 whitespace-normal h-full" :class="[
                                                     column.type === 'avatar' || column.type === 'icon'
-                                                        ? 'text-center min-w-fit px-3'  // if type = icon
+                                                        ? 'text-center min-w-fit px-1.5 lg:px-3'  // if type = icon
                                                         : typeof item[column.key] == 'number' || column.type === 'number' || column.type === 'currency' || column.type === 'date' || column.type === 'date_hm' || column.type === 'date_hms' || column.align === 'right'
-                                                            ? 'text-right pl-3 pr-9 tabular-nums'  // if the value is number
-                                                            : 'px-6',
+                                                            ? 'text-right pl-1.5 pr-2 lg:pl-3 lg:pr-9 tabular-nums'  // if the value is number
+                                                            : 'px-2 lg:px-6',
                                                     props.rowAlignTop ? 'align-top' : '',
+                                                    queryBuilderProps?.betweenDatesValue?.column === column.key ? 'bg-amber-50/60' : '',
                                                     { 'first:border-l-4 first:border-gray-700 bg-gray-200/75': selectedRow?.[name]?.includes(item[checkboxKey]) },
                                                     column.className
                                                 ]">
@@ -1386,12 +1613,12 @@ const virtualColSpan = computed(() => (queryBuilderProps.value.columns?.length ?
                                             <td v-for="(column, index) in queryBuilderProps.columns"
                                                 v-show="show(column.key)"
                                                 :key="`footerRows-rows-${key}-column-${column.key}`"
-                                                class="text-sm py-2 text-gray-500 whitespace-normal h-full" :class="[
+                                                class="text-xs lg:text-[13px] py-1 lg:py-2 text-gray-500 whitespace-normal h-full" :class="[
                                                     column.type === 'avatar' || column.type === 'icon'
-                                                        ? 'text-center min-w-fit px-3'  // if type = icon
+                                                        ? 'text-center min-w-fit px-1.5 lg:px-3'  // if type = icon
                                                         : typeof item[column.key] == 'number' || column.type === 'number' || column.type === 'currency' || column.align === 'right'
-                                                            ? 'text-right pl-3 pr-9 tabular-nums'  // if the value is number
-                                                            : 'px-6',
+                                                            ? 'text-right pl-1.5 pr-2 lg:pl-3 lg:pr-9 tabular-nums'  // if the value is number
+                                                            : 'px-2 lg:px-6',
                                                     { 'first:border-l-4 first:border-gray-700 bg-gray-200/75': selectedRow?.[name]?.includes(item[checkboxKey]) },
                                                     column.className
                                                 ]">
@@ -1417,6 +1644,19 @@ const virtualColSpan = computed(() => (queryBuilderProps.value.columns?.length ?
                                 </slot>
                             </tbody>
                         </table>
+                        </div>
+                    </slot>
+
+                    <!-- Footer note: small grey caveat under the table (currency, cut-offs, ...) -->
+                    <slot name="footerNote">
+                        <div v-if="queryBuilderProps.footerNote" class="px-4 pt-2 text-right text-xs text-gray-400">
+                            {{ queryBuilderProps.footerNote }}
+                            <Link v-if="queryBuilderProps.footerNoteAction"
+                                :href="queryBuilderProps.footerNoteAction.href"
+                                preserve-scroll
+                                class="ml-1 underline hover:text-gray-600">
+                                {{ queryBuilderProps.footerNoteAction.label }}
+                            </Link>
                         </div>
                     </slot>
 

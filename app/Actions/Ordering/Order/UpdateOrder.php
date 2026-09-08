@@ -25,7 +25,11 @@ use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Events\UpdateOrderNotesEvent;
 use App\Models\Ordering\Order;
 use App\Rules\IUnique;
+use App\Models\Dispatching\Shipper;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Event;
+use Illuminate\Validation\ValidationException;
+use OwenIt\Auditing\Events\AuditCustom;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -41,6 +45,8 @@ class UpdateOrder extends OrgAction
 
     public function handle(Order $order, array $modelData): Order
     {
+        $this->guardCustomerShipperLock($order, $modelData);
+
         $oldPlatform             = $order->platform;
         $oldShippingZoneSchemaId = $order->shipping_zone_schema_id;
         $oldShippingZoneId       = $order->shipping_zone_id;
@@ -66,6 +72,15 @@ class UpdateOrder extends OrgAction
 
         if (Arr::has($changes, 'tax_category_id')) {
             CalculateOrderTotalAmounts::run($order, true, true, true);
+        }
+
+        if (Arr::has($changes, 'shipper_id')) {
+            CalculateOrderShipping::run($order);
+            CalculateOrderTotalAmounts::run(order: $order, calculateShipping: false, calculateDiscounts: false);
+        }
+
+        if (Arr::has($modelData, 'is_re') && Arr::has($changes, 'is_re')) {
+            ResetOrderTaxCategory::run($order);
         }
 
 
@@ -97,33 +112,9 @@ class UpdateOrder extends OrgAction
                 }
 
 
-                if (Arr::has($changes, 'customer_notes')) {
-                    $deliveryNote->update(
-                        [
-                            'customer_notes' => $order->customer_notes,
-                        ]
-                    );
-                    UpdateOrderNotesEvent::dispatch($deliveryNote);
-                } elseif (Arr::has($changes, 'public_notes')) {
-                    $deliveryNote->update(
-                        [
-                            'public_notes' => $order->public_notes,
-                        ]
-                    );
-                    UpdateOrderNotesEvent::dispatch($deliveryNote);
-                } elseif (Arr::has($changes, 'internal_notes')) {
-                    $deliveryNote->update(
-                        [
-                            'internal_notes' => $order->internal_notes,
-                        ]
-                    );
-                    UpdateOrderNotesEvent::dispatch($deliveryNote);
-                } elseif (Arr::has($changes, 'shipping_notes')) {
-                    $deliveryNote->update(
-                        [
-                            'shipping_notes' => $order->shipping_notes,
-                        ]
-                    );
+                $changedNotes = Arr::only($changes, ['customer_notes', 'public_notes', 'private_warehouse_note', 'shipping_notes']);
+                if ($changedNotes) {
+                    $deliveryNote->update($changedNotes);
                     UpdateOrderNotesEvent::dispatch($deliveryNote);
                 }
             }
@@ -153,14 +144,59 @@ class UpdateOrder extends OrgAction
                 UpdateDeliveryNote::run($deliveryNote, ['is_shipping_by_external' => $order->is_shipping_by_external]);
             }
 
-            if (Arr::has($changedFields, 'internal_notes')) {
+            if (Arr::has($changedFields, 'private_warehouse_note')) {
                 foreach ($order->deliveryNotes()->whereNotIn('delivery_notes.state', [DeliveryNoteStateEnum::DISPATCHED, DeliveryNoteStateEnum::CANCELLED])->get() as $deliveryNote) {
-                    UpdateDeliveryNote::run($deliveryNote, ['internal_notes' => $order->internal_notes]);
+                    UpdateDeliveryNote::run($deliveryNote, ['private_warehouse_note' => $order->private_warehouse_note]);
                 }
             }
         }
 
         return $order;
+    }
+
+    /**
+     * The customer picked and paid for this shipper in the basket, so only customer
+     * services may change it, and never silently.
+     *
+     * @throws \Illuminate\Validation\ValidationException
+     */
+    private function guardCustomerShipperLock(Order $order, array $modelData): void
+    {
+        if (!$order->is_shipper_locked || !$order->shipper_id) {
+            return;
+        }
+
+        $newShipperId = Arr::get($modelData, 'shipper_id');
+
+        if (!Arr::has($modelData, 'shipper_id') || $newShipperId == $order->shipper_id) {
+            return;
+        }
+
+        $user = request()->user();
+
+        // No user means a system flow (console, queue, external sync), which the lock does not police
+        if ($user && !$user->authTo([
+            "crm.$order->shop_id.edit",
+            "org-admin.$order->organisation_id",
+        ])) {
+            throw ValidationException::withMessages([
+                'shipper_id' => __('This shipper was chosen by the customer. Only customer services can change it.')
+            ]);
+        }
+
+        $order->auditEvent     = 'shipper_lock_override';
+        $order->isCustomEvent  = true;
+        $order->auditCustomOld = [
+            'shipper'    => Shipper::find($order->shipper_id)?->name,
+            'shipper_id' => $order->shipper_id,
+            'locked_by'  => 'customer',
+        ];
+        $order->auditCustomNew = [
+            'shipper'    => Shipper::find($newShipperId)?->name,
+            'shipper_id' => $newShipperId,
+        ];
+
+        Event::dispatch(new AuditCustom($order));
     }
 
     public function rules(): array
@@ -187,6 +223,7 @@ class UpdateOrder extends OrgAction
             'customer_notes'          => ['sometimes', 'nullable', 'string', 'max:4000'],
             'public_notes'            => ['sometimes', 'nullable', 'string', 'max:4000'],
             'internal_notes'          => ['sometimes', 'nullable', 'string', 'max:4000'],
+            'private_warehouse_note'  => ['sometimes', 'nullable', 'string', 'max:4000'],
             'state'                   => ['sometimes', Rule::enum(OrderStateEnum::class)],
             'shipping_engine'         => ['sometimes', Rule::enum(OrderShippingEngineEnum::class)],
             'sales_channel_id'        => [
@@ -199,7 +236,18 @@ class UpdateOrder extends OrgAction
             'tax_category_id'         => ['sometimes', Rule::exists('tax_categories', 'id')],
             'shipping_zone_schema_id' => ['sometimes', 'nullable'],
             'shipping_zone_id'        => ['sometimes', 'nullable'],
+            'shipper_id'              => ['sometimes', 'nullable', 'integer', Rule::exists('shippers', 'id')->where('organisation_id', $this->organisation->id)],
+            'is_shipper_locked'       => ['sometimes', 'boolean'],
             'is_shipping_by_external' => ['sometimes', 'boolean'],
+            'is_re'                   => [
+                'sometimes',
+                'boolean',
+                function (string $attribute, mixed $value, \Closure $fail) {
+                    if ($this->order->invoices()->exists()) {
+                        $fail(__('Recargo de equivalencia cannot be changed once the order has been invoiced'));
+                    }
+                }
+            ],
         ];
 
 

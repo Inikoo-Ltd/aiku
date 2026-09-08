@@ -19,7 +19,7 @@ class StockDeliveryFactory extends Factory
         $currency = Currency::where('code', 'USD')->firstOrFail();
 
         return [
-            'reference'   => fake()->numberBetween(0, 9999),
+            'reference'   => fake()->unique()->numberBetween(0, 999999),
             'date'        => fake()->date,
             'currency_id' => $currency->id,
             'exchange'    => 12350

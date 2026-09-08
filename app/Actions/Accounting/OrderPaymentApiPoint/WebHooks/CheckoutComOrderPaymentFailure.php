@@ -9,6 +9,7 @@
 namespace App\Actions\Accounting\OrderPaymentApiPoint\WebHooks;
 
 use App\Actions\Accounting\OrderPaymentApiPoint\UpdateOrderPaymentApiPoint;
+use App\Actions\Accounting\Payment\CheckoutCom\StoreFailedCheckoutComPayment;
 use App\Actions\Accounting\WithCheckoutCom;
 use App\Actions\RetinaWebhookAction;
 use App\Enums\Accounting\OrderPaymentApiPoint\OrderPaymentApiPointStateEnum;
@@ -16,8 +17,10 @@ use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Models\Accounting\OrderPaymentApiPoint;
 use App\Models\Accounting\PaymentAccountShop;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redirect;
 use Lorisleiva\Actions\ActionRequest;
+use Sentry;
 
 class CheckoutComOrderPaymentFailure extends RetinaWebhookAction
 {
@@ -25,36 +28,83 @@ class CheckoutComOrderPaymentFailure extends RetinaWebhookAction
 
     public function handle(OrderPaymentApiPoint $orderPaymentApiPoint, array $modelData)
     {
+        if ($orderPaymentApiPoint->state == OrderPaymentApiPointStateEnum::SUCCESS) {
+            return $orderPaymentApiPoint;
+        }
+
         $paymentAccountShopID = Arr::get($orderPaymentApiPoint->data, 'payment_methods.checkout');
         $paymentAccountShop   = PaymentAccountShop::find($paymentAccountShopID);
 
+        if (!$paymentAccountShop) {
+            return $this->processError($orderPaymentApiPoint, ['error' => true, 'message' => 'Payment account not found']);
+        }
+
         $checkoutComPayment = $this->getCheckOutPayment(
             $paymentAccountShop,
-            $modelData['cko-payment-id']
+            Arr::get($modelData, 'cko-payment-id', '')
         );
 
         if (Arr::get($checkoutComPayment, 'error')) {
             return $this->processError($orderPaymentApiPoint, $checkoutComPayment);
         }
 
+        if (in_array(Arr::get($checkoutComPayment, 'status'), self::CHECKOUT_COM_CAPTURED_STATUSES)
+            && Arr::get($checkoutComPayment, 'metadata.api_point_id') == $orderPaymentApiPoint->id
+        ) {
+            CheckoutComOrderPaymentSuccess::make()->processSuccessfulPayment($orderPaymentApiPoint, $paymentAccountShop, $checkoutComPayment);
+
+            return $orderPaymentApiPoint->refresh();
+        }
+
         return $this->processFailure($orderPaymentApiPoint, $checkoutComPayment);
     }
 
-    public function processFailure(OrderPaymentApiPoint $orderPaymentApiPoint, array $checkoutComPayment)
+    public function processFailure(OrderPaymentApiPoint $orderPaymentApiPoint, array $checkoutComPayment, ?string $eventType = null)
     {
-        return UpdateOrderPaymentApiPoint::run(
-            $orderPaymentApiPoint,
-            [
-                'state'        => OrderPaymentApiPointStateEnum::FAILURE,
-                'processed_at' => now(),
-                'data'         => [
-                    'payment' => Arr::except($checkoutComPayment, ['http_metadata', '_links'])
-                ]
+        $this->recordFailedAttempt($orderPaymentApiPoint, $checkoutComPayment, $eventType);
 
-            ]
-        );
+        return DB::transaction(function () use ($orderPaymentApiPoint, $checkoutComPayment) {
+            /** @var OrderPaymentApiPoint $orderPaymentApiPoint locked so a racing capture webhook committing SUCCESS is never overwritten */
+            $orderPaymentApiPoint = OrderPaymentApiPoint::lockForUpdate()->find($orderPaymentApiPoint->id);
+
+            if ($orderPaymentApiPoint->state == OrderPaymentApiPointStateEnum::SUCCESS) {
+                return $orderPaymentApiPoint;
+            }
+
+            return UpdateOrderPaymentApiPoint::run(
+                $orderPaymentApiPoint,
+                [
+                    'state'        => OrderPaymentApiPointStateEnum::FAILURE,
+                    'processed_at' => now(),
+                    'data'         => [
+                        'payment' => Arr::except($checkoutComPayment, ['http_metadata', '_links'])
+                    ]
+
+                ]
+            );
+        });
     }
 
+
+    /**
+     * Best effort: the failed attempt is for the report, it must never get in the way of
+     * telling the customer their payment did not go through.
+     */
+    private function recordFailedAttempt(OrderPaymentApiPoint $orderPaymentApiPoint, array $checkoutComPayment, ?string $eventType): void
+    {
+        try {
+            $paymentAccountShop = PaymentAccountShop::find(Arr::get($orderPaymentApiPoint->data, 'payment_methods.checkout'));
+            $customer           = $orderPaymentApiPoint->order?->customer;
+            if ($paymentAccountShop && $customer) {
+                StoreFailedCheckoutComPayment::run($customer, $paymentAccountShop, $checkoutComPayment, $eventType, [
+                    'type' => class_basename($orderPaymentApiPoint),
+                    'id'   => $orderPaymentApiPoint->id,
+                ]);
+            }
+        } catch (\Throwable $e) {
+            Sentry::captureException($e);
+        }
+    }
 
     public function rules(): array
     {
@@ -70,7 +120,13 @@ class CheckoutComOrderPaymentFailure extends RetinaWebhookAction
         $this->initialisation($request);
         $orderPaymentApiPoint = $this->handle($orderPaymentApiPoint, $this->validatedData);
 
-        if ($orderPaymentApiPoint->state == OrderPaymentApiPointStateEnum::ERROR) {
+        if ($orderPaymentApiPoint->state == OrderPaymentApiPointStateEnum::SUCCESS) {
+            $notification = [
+                'status'  => 'success',
+                'title'   => __('Payment received'),
+                'message' => __('Your payment was received and your order has been submitted.'),
+            ];
+        } elseif ($orderPaymentApiPoint->state == OrderPaymentApiPointStateEnum::ERROR) {
             $notification = [
                 'status' => 'error',
                 'title'  => __('Network Error, please try again'),

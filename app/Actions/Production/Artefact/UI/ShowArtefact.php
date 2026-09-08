@@ -15,7 +15,6 @@ use App\Actions\Traits\Actions\WithActionButtons;
 use App\Enums\UI\Production\ArtefactTabsEnum;
 use App\Http\Resources\History\HistoryResource;
 use App\Http\Resources\Production\ArtefactResource;
-use App\Http\Resources\Production\ManufactureTasksResource;
 use App\Models\Production\Artefact;
 use App\Models\Production\Production;
 use App\Models\SysAdmin\Organisation;
@@ -128,8 +127,12 @@ class ShowArtefact extends OrgAction
                     : Inertia::optional(fn () => GetArtefactShowcase::run($artefact)),
 
                 ArtefactTabsEnum::MANUFACTURE_TASKS->value => $this->tab == ArtefactTabsEnum::MANUFACTURE_TASKS->value
-                    ? fn () => ManufactureTasksResource::collection(GetArtefactManufactureTasks::run($artefact, $request))
-                    : Inertia::optional(fn () => ManufactureTasksResource::collection(GetArtefactManufactureTasks::run($artefact, $request))),
+                    ? fn () => GetArtefactManufactureTasks::run($artefact)
+                    : Inertia::optional(fn () => GetArtefactManufactureTasks::run($artefact)),
+
+                ArtefactTabsEnum::COMPLIANCE->value => $this->tab == ArtefactTabsEnum::COMPLIANCE->value
+                    ? fn () => GetArtefactCompliance::run($artefact)
+                    : Inertia::optional(fn () => GetArtefactCompliance::run($artefact)),
 
                 // ArtefactTabsEnum::LOCATIONS->value => $this->tab == ArtefactTabsEnum::LOCATIONS->value
                 //     ?
@@ -147,8 +150,8 @@ class ShowArtefact extends OrgAction
                 //     )),
 
                 ArtefactTabsEnum::HISTORY->value => $this->tab == ArtefactTabsEnum::HISTORY->value ?
-                    fn () => HistoryResource::collection(IndexHistory::run($artefact))
-                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($artefact)))
+                    fn () => HistoryResource::collection(IndexHistory::run($artefact, ArtefactTabsEnum::HISTORY->value))
+                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($artefact, ArtefactTabsEnum::HISTORY->value)))
 
             ]
             // )->table(

@@ -37,6 +37,7 @@ use App\Actions\Web\Website\UI\IndexWebsites;
 use App\Actions\Web\Website\UI\ShowRestrictedCountry;
 use App\Actions\Web\Website\UI\ShowWebsite;
 use App\Actions\Web\Website\UI\ShowWebsiteAnalyticsDashboard;
+use App\Actions\Web\Website\UI\ShowLiveUsers;
 use App\Actions\Web\Website\UI\ShowWebsiteWorkshop;
 use App\Actions\Web\Website\UI\ShowWebsiteWorkshopPreview;
 use Illuminate\Support\Facades\Route;
@@ -121,4 +122,5 @@ Route::prefix('{website}/analytics')->name('analytics.')->group(function () {
     Route::get('', [ShowWebsiteAnalyticsDashboard::class,'inFulfilment'])->name('dashboard');
     Route::get('web-user-requests', [IndexWebUserRequests::class,'inFulfilment'])->name('web_user_requests.index');
     Route::get('visitors', [\App\Actions\Web\WebsiteVisitor\UI\IndexWebsiteVisitors::class, 'inFulfilment'])->name('visitors.index');
+    Route::get('live-users', [ShowLiveUsers::class, 'inFulfilment'])->name('live_users');
 });

@@ -4,7 +4,29 @@
  * Copyright (c) 2025, Raul A Perusquia Flores
  */
 
+export interface OfferFreshness {
+    value: string
+    label: string
+    tooltip: string
+    class: string
+    text_class: string
+}
+
+export interface MasterFamilyLastOffer {
+    shop_code: string
+    shop_name: string
+    shop_slug: string
+    organisation_slug: string
+    offer_slug: string
+    offer_name: string
+    offer_state: string
+    start_at: string | null
+    end_at: string | null
+    freshness: OfferFreshness
+}
+
 export interface MasterFamily {
+    id: number
     slug: string
     code: string,
     name: string,
@@ -19,4 +41,6 @@ export interface MasterFamily {
     master_sub_department_slug : string
     master_sub_department_code: string
     master_sub_department_name: string
+    last_offers?: MasterFamilyLastOffer[]
+    offers_freshness?: OfferFreshness
 }

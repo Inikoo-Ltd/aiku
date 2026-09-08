@@ -9,9 +9,14 @@
 namespace App\Http\Resources\Catalogue;
 
 use App\Actions\Discounts\Offer\UpdateProductCategoryOffersData;
+use App\Enums\Discounts\Offer\OfferTypeEnum;
+use App\Enums\Discounts\OfferAllowance\OfferAllowanceType;
+use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Discounts\Offer;
+use App\Models\Discounts\OfferAllowance;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Arr;
 
 /**
  * @property int $shop_id
@@ -80,7 +85,52 @@ class OfferResource extends JsonResource
             ],
         ];
 
+        $trigger = $offer->trigger;
+        if ($trigger instanceof Product) {
+            $customOfferData['trigger_product'] = $this->getOfferProductData($trigger);
+        }
+
+        if ($offer->type == OfferTypeEnum::GIFT->value) {
+            $customOfferData['gift_data'] = $this->getGiftData($offer);
+        }
 
         return array_merge($customOfferData, $basicOfferData ?? []);
+    }
+
+    /**
+     * @return array{min_order_amount: float|null, item_quantity: int|null, quantity: int, product: array|null}
+     */
+    protected function getGiftData(Offer $offer): array
+    {
+        /** @var OfferAllowance $giftAllowance */
+        $giftAllowance = $offer->offerAllowances()->where('type', OfferAllowanceType::GIFT)->first();
+
+        $giftProduct = $giftAllowance ? Product::find(Arr::get($giftAllowance->data, 'product_id')) : null;
+
+        return [
+            'min_order_amount' => Arr::get($offer->trigger_data, 'min_order_amount'),
+            'item_quantity'    => Arr::get($offer->trigger_data, 'item_quantity'),
+            'quantity'         => (int)Arr::get($giftAllowance?->data, 'quantity', 1),
+            'product'          => $this->getOfferProductData($giftProduct),
+        ];
+    }
+
+    /**
+     * @return array{id: int, slug: string, code: string, name: string|null, price: float|null, image: array|null}|null
+     */
+    protected function getOfferProductData(?Product $product): ?array
+    {
+        if (!$product) {
+            return null;
+        }
+
+        return [
+            'id'    => $product->id,
+            'slug'  => $product->slug,
+            'code'  => $product->code,
+            'name'  => $product->name,
+            'price' => $product->price !== null ? (float)$product->price : null,
+            'image' => Arr::get($product->web_images, 'main.gallery'),
+        ];
     }
 }

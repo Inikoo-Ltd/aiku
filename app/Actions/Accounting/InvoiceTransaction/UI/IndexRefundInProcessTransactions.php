@@ -25,7 +25,8 @@ class IndexRefundInProcessTransactions extends OrgAction
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
-                $query->whereStartWith('invoice_transactions.number', $value);
+                $query->whereStartWith('historic_assets.code', $value)
+                    ->orWhereStartWith('historic_assets.name', $value);
             });
         });
 
@@ -53,6 +54,8 @@ class IndexRefundInProcessTransactions extends OrgAction
                 'invoice_transactions.id',
                 'invoice_transactions.updated_at',
                 'invoice_transactions.in_process',
+                'invoice_transactions.model_type',
+                'invoice_transactions.model_id',
                 'quantity',
                 'net_amount',
             ], $commonSelect))
@@ -67,6 +70,8 @@ class IndexRefundInProcessTransactions extends OrgAction
                 'original_invoice_transaction.id',
                 'original_invoice_transaction.updated_at',
                 'original_invoice_transaction.in_process',
+                'original_invoice_transaction.model_type',
+                'original_invoice_transaction.model_id',
                 'original_invoice_transaction.quantity',
                 'original_invoice_transaction.net_amount',
             ], $commonSelect))
@@ -85,10 +90,12 @@ class IndexRefundInProcessTransactions extends OrgAction
                 ]);
         }
 
+        $queryBuilder->with('model');
 
         $queryBuilder->defaultSort('code');
 
-        return $queryBuilder->allowedSorts(['code', 'name', 'quantity', 'net_amount', 'updated_at'])
+        return $queryBuilder
+            ->allowedSorts(['code', 'name', 'quantity', 'net_amount', 'updated_at'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();

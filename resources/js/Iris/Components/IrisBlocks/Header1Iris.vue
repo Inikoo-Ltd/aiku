@@ -27,13 +27,14 @@ import {
 	faMedal
 } from "@fas"
 import LuigiSearch from "@/Components/CMS/LuigiSearch.vue"
+import IrisSearch from "@/Iris/Components/IrisSearch.vue"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
 import LinkIris from "@/Iris/Components/LinkIris.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { ctrans } from "@/Composables/useTrans";
 import { router } from "@inertiajs/vue3";
 import { notify } from "@kyvg/vue3-notification"
-import { set } from "lodash-es"
+import { clearIrisSession } from "@/Composables/clearIrisSession"
 import { urlLoginWithRedirect } from "@/Composables/urlLoginWithRedirect"
 import { faUserPlus } from "@far";
 import GoldReward from "@/Components/Utils/GoldReward.vue"
@@ -78,7 +79,7 @@ const props = defineProps<{
 			}
 		}
 	}
-	screenType: 'mobile' | 'tablet' | 'desktop'
+	screenType?: 'mobile' | 'tablet' | 'desktop'
 }>()
 
 const layout = inject('layout', layoutStructure)
@@ -97,14 +98,7 @@ const onClickLogout = () => {
 				isLoadingLogout.value = true
 			},
 			onSuccess: () => {
-				set(layout, ['iris', 'is_logged_in'], false)
-				if (typeof window !== "undefined") {
-					const storageIris = JSON.parse(localStorage.getItem('iris') || '{}')
-					localStorage.setItem('iris', JSON.stringify({
-						...storageIris,
-						is_logged_in: false
-					}))
-				}
+				clearIrisSession(layout)
 			},
 			onError: () => {
 				notify({
@@ -153,7 +147,9 @@ const onClickLogout = () => {
 			<!-- Search -->
 			<div class="flex-1 flex justify-center">
 				<div class="w-full max-w-[760px]">
-					<LuigiSearch v-if="layout.iris?.luigisbox_tracker_id" :fieldValueSearch="fieldValue?.search"
+					<IrisSearch v-if="layout.iris?.iris_search_model === 'internal'" :fieldValueSearch="fieldValue?.search"
+						id="iris_search_header_1" />
+					<LuigiSearch v-else-if="layout.iris?.luigisbox_tracker_id" :fieldValueSearch="fieldValue?.search"
 						id="luigi_header_2" />
 				</div>
 			</div>

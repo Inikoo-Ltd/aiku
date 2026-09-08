@@ -55,50 +55,56 @@ class ApproveLeave extends OrgAction
                 'approved_at' => now(),
             ]);
 
-            $startDate = $leave->start_date ?? now();
-
-            $balance = EmployeeLeaveBalance::where('employee_id', $leave->employee_id)
-                ->where(function ($q) use ($startDate) {
-                    $q->where('period_start', '<=', $startDate->toDateString())
-                      ->where(function ($q2) use ($startDate) {
-                          $q2->whereNull('period_end')
-                             ->orWhere('period_end', '>=', $startDate->toDateString());
-                      });
-                })
-                ->whereNotNull('employee_contract_id')
-                ->first();
-
-            if (!$balance) {
-                $balance = EmployeeLeaveBalance::firstOrCreate(
-                    ['employee_id' => $leave->employee_id, 'employee_contract_id' => null],
-                    [
-                        'annual_used'  => 0,
-                        'medical_used' => 0,
-                        'unpaid_used'  => 0,
-                    ]
-                );
-            }
-
-            $field = match (LeaveTypeResolver::bucketFromLeaveType($leave->leaveType, $leave->type)) {
-                'annual' => 'annual_used',
-                'medical' => 'medical_used',
-                'unpaid' => 'unpaid_used',
-                default => null,
-            };
-
-            if ($field) {
-                $value = $leave->leaveType?->deductionValue() ?? 1.0;
-                $deduction = (float) $leave->duration_days * $value;
-
-                if ($leave->is_half_day && $value === 1.0) {
-                    $deduction = 0.5;
-                }
-
-                $balance->increment($field, $deduction);
-            }
+            $this->applyBalanceDeduction($leave);
         }
 
         return $leave;
+    }
+
+    public function applyBalanceDeduction(Leave $leave): void
+    {
+        $leave->loadMissing('leaveType');
+        $startDate = $leave->start_date ?? now();
+
+        $balance = EmployeeLeaveBalance::where('employee_id', $leave->employee_id)
+            ->where(function ($q) use ($startDate) {
+                $q->where('period_start', '<=', $startDate->toDateString())
+                  ->where(function ($q2) use ($startDate) {
+                      $q2->whereNull('period_end')
+                         ->orWhere('period_end', '>=', $startDate->toDateString());
+                  });
+            })
+            ->whereNotNull('employee_contract_id')
+            ->first();
+
+        if (!$balance) {
+            $balance = EmployeeLeaveBalance::firstOrCreate(
+                ['employee_id' => $leave->employee_id, 'employee_contract_id' => null],
+                [
+                    'annual_used'  => 0,
+                    'medical_used' => 0,
+                    'unpaid_used'  => 0,
+                ]
+            );
+        }
+
+        $field = match (LeaveTypeResolver::bucketFromLeaveType($leave->leaveType, $leave->type)) {
+            'annual' => 'annual_used',
+            'medical' => 'medical_used',
+            'unpaid' => 'unpaid_used',
+            default => null,
+        };
+
+        if ($field) {
+            $value = $leave->leaveType?->deductionValue() ?? 1.0;
+            $deduction = (float) $leave->duration_days * $value;
+
+            if ($leave->is_half_day && $value === 1.0) {
+                $deduction = 0.5;
+            }
+
+            $balance->increment($field, $deduction);
+        }
     }
 
     public function asController(Organisation $organisation, Leave $leave, ActionRequest $request): Leave

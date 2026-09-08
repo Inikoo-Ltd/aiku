@@ -10,6 +10,7 @@ return [
     'analytics' => [
         'web_visits' => env('ANALYTICS_WEB_VISITS', true),
         'web_users' => env('ANALYTICS_WEB_USERS', true),
+        'live_visitors' => env('ANALYTICS_LIVE_VISITORS', true),
     ],
     'cache' => [
         'varnish'               => env('IRIS_VARNISH_ENABLED', false),
@@ -26,6 +27,9 @@ return [
         'webpage'               => [
             'ttl'    => env('IRIS_WEBPAGE_CACHE_TTL', 21600), // 6 hours in seconds
             'prefix' => env('IRIS_WEBPAGE_CACHE_PREFIX', 'iris_webpage_cache'),
+        ],
+        'product_trends'        => [
+            'ttl' => env('IRIS_PRODUCT_TRENDS_CACHE_TTL', 86400), // 24 hours in seconds
         ]
     ],
 ];

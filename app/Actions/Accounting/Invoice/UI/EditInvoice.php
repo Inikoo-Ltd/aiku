@@ -53,20 +53,26 @@ class EditInvoice extends OrgAction
 
     public function htmlResponse(Invoice $invoice, ActionRequest $request): Response
     {
+
+        $title = _('Edit invoice');
+        if ($invoice->type == InvoiceTypeEnum::REFUND) {
+            $title = _('Edit refund');
+        }
+
         return Inertia::render(
             'EditModel',
             [
-                'title'       => __('Edit invoice'),
+                'title'       => $title,
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $invoice,
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
                 'pageHead'    => [
-                    'title'     => __('Edit invoice'),
+                    'title'     => $title,
                     'container' => [
                         'icon'    => ['fal', 'fa-user'],
-                        'tooltip' => __('Edit Invoice'),
+                        'tooltip' => $title,
                         'label'   => Str::possessive($invoice->reference)
                     ],
                     'actions'   => [
@@ -124,6 +130,18 @@ class EditInvoice extends OrgAction
                             ],
                         ],
                         [
+                            'title'   => __('Date'),
+                            'label'   => __('Date'),
+                            'icon'    => 'fa-light fa-calendar',
+                            'fields'  => [
+                                'date' => [
+                                    'type'  => 'date',
+                                    'label' => __('Date'),
+                                    'value' => $invoice->date
+                                ],
+                            ],
+                        ],
+                        [
                             'title'   => __('Tax number'),
                             'label'   => __('Tax number'),
                             'icon'    => 'fa-light fa-user',
@@ -134,6 +152,13 @@ class EditInvoice extends OrgAction
                                     'information'               => __("Modifying this value would only affect the Invoice Tax Number and not the Customer's"),
                                     'additional_instructions'   => __("You are required to add the Country Code as prefix"),
                                     'value'                     => $invoice->tax_number
+                                ],
+                                'is_re'                         => [
+                                    'type'                      => 'toggle',
+                                    'hidden'                    => $invoice->address->country_code != 'ES',
+                                    'label'                     => 'Recargo de equivalencia',
+                                    'information'               => __("Modifying this value would only affect this invoice and not the Customer's"),
+                                    'value'                     => $invoice->is_re
                                 ],
 
                             ],

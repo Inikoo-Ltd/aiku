@@ -20,7 +20,7 @@ class GetDataFeedsCsv extends RetinaApiAction
 {
     public function handle(CustomerSalesChannel $customerSalesChannel): string
     {
-        return DownloadPortfoliosCSV::run($customerSalesChannel, 'csv_content');
+        return DownloadPortfoliosCSV::run($customerSalesChannel, 'csv_content', includeBundles: true);
     }
 
     public function asController(ActionRequest $request): Response

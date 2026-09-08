@@ -8,11 +8,15 @@
 
 namespace App\Actions\SupplyChain\Agent;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithSupplyChainEditAuthorisation;
+use App\Actions\Helpers\Media\SaveModelImage;
 use App\Actions\Procurement\OrgAgent\UpdateOrgAgent;
+use App\Actions\SupplyChain\Supplier\WithSupplierJsonColumns;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateAgents;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOrgAgents;
 use App\Actions\SysAdmin\Organisation\UpdateOrganisation;
+use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
 use App\Http\Resources\SupplyChain\AgentsResource;
 use App\Models\SupplyChain\Agent;
@@ -20,11 +24,15 @@ use App\Rules\IUnique;
 use App\Rules\Phone;
 use App\Rules\ValidAddress;
 use Illuminate\Support\Arr;
+use Illuminate\Validation\Rules\File;
 use Lorisleiva\Actions\ActionRequest;
 
-class UpdateAgent extends GrpAction
+class UpdateAgent extends OrgAction
 {
+    use WithSupplyChainEditAuthorisation;
     use WithActionUpdate;
+    use WithNoStrictRules;
+    use WithSupplierJsonColumns;
 
 
     private Agent $agent;
@@ -32,19 +40,52 @@ class UpdateAgent extends GrpAction
 
     public function handle(Agent $agent, array $modelData): Agent
     {
+        $leavingContainer = Arr::exists($modelData, 'delivery_type')
+            && Arr::get($modelData, 'delivery_type') !== 'container';
+
+        if ($leavingContainer) {
+            Arr::forget($modelData, self::CONTAINER_ONLY_FIELDS);
+        }
+
+        $modelData = $this->pullSupplierJsonColumns($modelData);
+
+        if (Arr::has($modelData, 'image')) {
+            $image = Arr::pull($modelData, 'image');
+            if ($image) {
+                $agent = SaveModelImage::run(
+                    model: $agent,
+                    imageData: [
+                        'path'         => $image->getPathName(),
+                        'originalName' => $image->getClientOriginalName(),
+                        'extension'    => $image->getClientOriginalExtension(),
+                    ],
+                    scope: 'photo'
+                );
+            }
+        }
+
         UpdateOrganisation::run($agent->organisation, Arr::except($modelData, [
             'source_id',
             'source_slug',
             'status',
-            'last_fetched_at'
+            'last_fetched_at',
+            'data',
+            'settings',
         ]));
 
         $agent = $this->update($agent, Arr::only($modelData, [
             'status',
             'code',
             'name',
-            'last_fetched_at'
-        ]));
+            'last_fetched_at',
+            'data',
+            'settings',
+        ]), ['data', 'settings']);
+
+        if ($leavingContainer) {
+            $agent->update(['data' => Arr::except($agent->data, self::CONTAINER_ONLY_FIELDS)]);
+        }
+
         if ($agent->wasChanged('status')) {
             foreach ($agent->orgAgents as $orgAgent) {
                 if (!$agent->status) {
@@ -56,15 +97,6 @@ class UpdateAgent extends GrpAction
         }
 
         return $agent;
-    }
-
-    public function authorize(ActionRequest $request): bool
-    {
-        if ($this->action = true) {
-            return true;
-        }
-
-        return $request->user()->authTo("supply-chain.".$this->group->id.".edit");
     }
 
     public function rules(): array
@@ -97,10 +129,16 @@ class UpdateAgent extends GrpAction
             'timezone_id'  => ['sometimes', 'required', 'exists:timezones,id'],
             'language_id'  => ['sometimes', 'required', 'exists:languages,id'],
             'status'       => ['sometimes', 'required', 'boolean'],
+            'image'        => ['sometimes', 'nullable', File::image()->max(12 * 1024)],
         ];
+
+        $rules = array_merge($rules, $this->supplierJsonFieldRules());
 
         if (!$this->strict) {
             $rules['last_fetched_at'] = ['sometimes', 'date'];
+            $rules['data']            = ['sometimes', 'array'];
+            $rules['settings']        = ['sometimes', 'array'];
+            $rules                    = $this->noStrictUpdateRules($rules);
         }
 
         return $rules;
@@ -114,8 +152,8 @@ class UpdateAgent extends GrpAction
         $this->hydratorsDelay = $hydratorsDelay;
         $this->strict         = $strict;
         $this->agent          = $agent;
-        $this->action         = true;
-        $this->initialisation($agent->group, $modelData);
+        $this->asAction       = true;
+        $this->initialisationFromGroup($agent->group, $modelData);
 
         return $this->handle($agent, $this->validatedData);
     }
@@ -123,7 +161,7 @@ class UpdateAgent extends GrpAction
     public function asController(Agent $agent, ActionRequest $request): Agent
     {
         $this->agent = $agent;
-        $this->initialisation($agent->group, $request);
+        $this->initialisationFromGroup($agent->group, $request);
 
         return $this->handle($agent, $this->validatedData);
     }

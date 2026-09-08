@@ -1,13 +1,13 @@
 <?php
 
 /*
- * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Tue, 30 Jun 2026 21:08:17 Malaysia Time, Kuala Lumpur, Malaysia
- * Copyright (c) 2026, Raul A Perusquia Flores
+ * Author: Andi Ferdiawan <dev@aw-advantage.com>
+ * Copyright (c) 2026, Andi Ferdiawan
  */
 
 namespace App\Actions\Chat\ChatSession;
 
+use App\Actions\Chat\Agent\Hydrators\ChatAgentHydrateChats;
 use App\Enums\CRM\Livechat\ChatActorTypeEnum;
 use App\Enums\CRM\Livechat\ChatAssignmentAssignedByEnum;
 use App\Enums\CRM\Livechat\ChatAssignmentStatusEnum;
@@ -73,7 +73,7 @@ class ReopenChatSession
                 ]
             );
 
-            BroadcastChatListEvent::dispatch();
+            BroadcastChatListEvent::dispatch(null, $chatSession);
 
             return $chatSession->fresh();
         });
@@ -88,7 +88,7 @@ class ReopenChatSession
 
         if ($activeAssignment) {
             if ($activeAssignment->chat_agent_id !== $agent->id) {
-                $activeAssignment->chatAgent?->decrementChatCount();
+                $previousAgent = $activeAssignment->chatAgent;
 
                 $activeAssignment->update([
                     'chat_agent_id' => $agent->id,
@@ -97,8 +97,12 @@ class ReopenChatSession
                     'assigned_at'   => now(),
                 ]);
 
-                $agent->incrementChatCount();
+                if ($previousAgent) {
+                    ChatAgentHydrateChats::run($previousAgent);
+                }
             }
+
+            ChatAgentHydrateChats::run($agent);
 
             return $activeAssignment;
         }
@@ -112,7 +116,7 @@ class ReopenChatSession
             'assigned_at'   => now(),
         ]);
 
-        $agent->incrementChatCount();
+        ChatAgentHydrateChats::run($agent);
 
         return $assignment;
     }

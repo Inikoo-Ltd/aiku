@@ -15,7 +15,10 @@ trait WithStoreNoProductInvoiceTransaction
 {
     private function processNoProductInvoiceTransaction(Invoice $invoice, array $modelData): InvoiceTransaction
     {
-        data_set($modelData, 'date', now(), overwrite: false);
+        // was: data_set($modelData, 'date', now(), overwrite: false);
+        // defaulting to now() stamped historical transactions with the fetch time instead of the
+        // invoice date, which piled years of sales into the fetch window, HELP-2959
+        data_set($modelData, 'date', $invoice->date ?? now(), overwrite: false);
 
         $modelData['shop_id']         = $invoice->shop_id;
         $modelData['customer_id']     = $invoice->customer_id;

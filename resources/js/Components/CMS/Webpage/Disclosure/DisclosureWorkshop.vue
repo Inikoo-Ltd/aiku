@@ -56,7 +56,7 @@ const openDisclosure = async (index: number) => {
           :class="index !== 0 ? 'border-t border-gray-200' : ''" v-slot="{ open }">
           <dt class="flex items-start justify-between gap-2 px-4 py-3">
             <div class="flex-1">
-              <DisclosureButton class="flex w-full" :ref="el => disclosureBtns[index] = el">
+              <DisclosureButton class="flex w-full !text-left" :ref="el => disclosureBtns[index] = el">
                 <EditorV2 v-model="faq.label" @focus="openDisclosure(index)"
                   @update:modelValue="() => emits('autoSave')" :uploadImageRoute="{
                     name: webpageData?.images_upload_route?.name ?? '',
@@ -70,7 +70,7 @@ const openDisclosure = async (index: number) => {
             </DisclosureButton>
           </dt>
 
-          <DisclosurePanel class="px-4 pb-4 text-base text-gray-600">
+          <DisclosurePanel class="px-4 pb-4 text-base text-gray-600 !text-left">
             <EditorV2 v-model="faq.description" @focus="openDisclosure(index)"
               @update:modelValue="() => emits('autoSave')" :uploadImageRoute="{
                 name: webpageData?.images_upload_route?.name ?? '',

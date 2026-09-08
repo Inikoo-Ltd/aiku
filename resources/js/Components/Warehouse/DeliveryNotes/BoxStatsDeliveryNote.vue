@@ -62,6 +62,9 @@ const props = withDefaults(defineProps<{
             estimated_weight: number
             number_items?: number
             number_skos?: number
+            number_units?: number
+            estimated_picking_minutes?: number | null
+            estimated_packing_minutes?: number | null
         }
         packer: {
             id: number
@@ -574,8 +577,8 @@ function returnNoteRoute(returnDeliveryNote) {
                 </div>
 
                 <div class="space-y-0.5 pl-2" v-if="!boxStats?.is_create_replacement">
+                    <!-- Section: Picker name -->
                     <div class="flex gap-x-4 items-center">
-                        <!-- Section: Picker name -->
                         <div v-if="boxStats?.picker?.contact_name">
                             <dl class=" border-l-4 border-indigo-300 bg-indigo-100 pl-1 flex items-center w-fit pr-3 flex-none gap-x-1.5">
                                 <dt class="flex-none">
@@ -586,8 +589,27 @@ function returnNoteRoute(returnDeliveryNote) {
                                 </dd>
                             </dl>
                         </div>
-                        
-                        <!-- Section: Packer name -->
+
+                        <template v-if="isEditable && ['handling'].includes(deliveryNote?.state) && showChangePickerPacker">
+                            <div v-if="showLockButton()" @click="assignSelfTemporarily()">
+                                <LoadingIcon v-if="isLoadingSelfTemporarily" />
+                                <FontAwesomeIcon
+                                    v-else
+                                    v-tooltip="allowActions
+                                        ? ctrans('You can work on this delivery note. Click again if your access runs out')
+                                        : ctrans('Assigned to somebody else. Click to take it over so you can pick and pack it')"
+                                    class="cursor-pointer focus:outline-none"
+                                    :icon="allowActions ? faLockOpen : faLock"
+                                    :class="allowActions ? 'text-green-500' : 'text-red-500'"
+                                    fixed-width aria-hidden="true"
+                                />
+                            </div>
+                            <Button @click="isModalToQueue = true" :label="trans('Change Picker')"  :icon="faExchangeAlt" type="tertiary" size="xs" />
+                        </template>
+                    </div>
+
+                    <!-- Section: Packer name -->
+                    <div class="flex gap-x-4 items-center">
                         <div v-if="boxStats?.packer?.contact_name">
                             <dl v-tooltip="trans('Packer name')"
                                 class=" border-l-4 border-indigo-300 bg-indigo-100 pl-1 flex items-center w-fit pr-3 flex-none gap-x-1.5">
@@ -600,28 +622,22 @@ function returnNoteRoute(returnDeliveryNote) {
                             </dl>
                         </div>
 
-                        <div v-if="showLockButton()" @click="assignSelfTemporarily()">
-                            <LoadingIcon v-if="isLoadingSelfTemporarily" />
-                            <FontAwesomeIcon
-                                v-else
-                                v-tooltip="allowActions ? ctrans('Unlock picking for 5 minutes, everybody can pick') : ctrans('Locked, only assigned picker/packer can process this delivery note. Click to allow everybody free pick for 5 minutes.')"
-                                class="cursor-pointer focus:outline-none"
-                                :icon="allowActions ? faLockOpen : faLock"
-                                fixed-width aria-hidden="true"
-                            />
-                        </div>
-
-                        <Button
-                            v-if="isEditable && ['handling'].includes(deliveryNote?.state) && showChangePickerPacker"
-                            @click="isModalToQueue = true" :label="trans('Change Picker')"  :icon="faExchangeAlt" type="tertiary" size="xs" />
-
-
-                        <Button
-                            v-if="isEditable && ['packing', 'packed'].includes(deliveryNote?.state) && showChangePickerPacker"
-                            @click="isModalToQueue = true" :label="trans('Change Packer')" :icon="faExchangeAlt" type="tertiary" size="xs" />
-
-
-                     
+                        <template v-if="isEditable && ['packing', 'packed'].includes(deliveryNote?.state) && showChangePickerPacker">
+                            <div v-if="showLockButton()" @click="assignSelfTemporarily()">
+                                <LoadingIcon v-if="isLoadingSelfTemporarily" />
+                                <FontAwesomeIcon
+                                    v-else
+                                    v-tooltip="allowActions
+                                        ? ctrans('You can work on this delivery note. Click again if your access runs out')
+                                        : ctrans('Assigned to somebody else. Click to take it over so you can pick and pack it')"
+                                    class="cursor-pointer focus:outline-none"
+                                    :icon="allowActions ? faLockOpen : faLock"
+                                    :class="allowActions ? 'text-green-500' : 'text-red-500'"
+                                    fixed-width aria-hidden="true"
+                                />
+                            </div>
+                            <Button @click="isModalToQueue = true" :label="trans('Change Packer')" :icon="faExchangeAlt" type="tertiary" size="xs" />
+                        </template>
                     </div>
 
                     <!-- Section: Trolleys -->
@@ -672,7 +688,19 @@ function returnNoteRoute(returnDeliveryNote) {
                                 aria-hidden="true" class="text-gray-500" />
                         </dt>
                         <dd class="text-gray-500">
-                            {{ locale.number(boxStats.products?.number_items || 0) }} items <span v-if="Number(boxStats.products?.number_skos ?? 0) > 0">({{ locale.number(boxStats.products?.number_skos || 0) }} SKOs)</span>
+                            {{ locale.number(boxStats.products?.number_items || 0) }} items <span v-if="Number(boxStats.products?.number_skos ?? 0) > 0">({{ locale.number(boxStats.products?.number_skos || 0) }} SKOs<span v-if="Number(boxStats.products?.number_units ?? 0) > 0">, {{ locale.number(boxStats.products?.number_units || 0) }} units</span>)</span>
+                        </dd>
+                    </dl>
+
+                    <!-- Estimated handling time -->
+                    <dl v-if="boxStats.products?.estimated_picking_minutes || boxStats.products?.estimated_packing_minutes"
+                        class="flex items-center w-fit pr-3 flex-none gap-x-1.5">
+                        <dt class="flex-none">
+                            <FontAwesomeIcon v-tooltip="trans('Typical time for an order this size in this warehouse, from its own recent history')"
+                                icon="fal fa-stopwatch" fixed-width aria-hidden="true" class="text-gray-500" />
+                        </dt>
+                        <dd class="text-gray-500">
+                            <span v-if="boxStats.products?.estimated_picking_minutes">~{{ boxStats.products.estimated_picking_minutes }} min {{ trans('picking') }}</span><span v-if="boxStats.products?.estimated_picking_minutes && boxStats.products?.estimated_packing_minutes">, </span><span v-if="boxStats.products?.estimated_packing_minutes">~{{ boxStats.products.estimated_packing_minutes }} min {{ trans('packing') }}</span>
                         </dd>
                     </dl>
 
@@ -754,6 +782,7 @@ function returnNoteRoute(returnDeliveryNote) {
                                 :shipping_fields_update_route="boxStats.shipping_fields_update_route"
                                 :shipments="boxStats.shipments"
                                 :shipments_routes="boxStats.shipments_routes"
+                                :shipper_directive="boxStats.shipper_directive"
                                 :address="boxStats.address"
                                 :customer="boxStats?.shop_type === 'dropshipping' ? boxStats.customer : undefined"
                                 :currencyCode="boxStats?.currency_code"

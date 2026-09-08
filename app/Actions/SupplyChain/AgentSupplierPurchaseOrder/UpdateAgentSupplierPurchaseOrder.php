@@ -9,15 +9,18 @@
 
 namespace App\Actions\SupplyChain\AgentSupplierPurchaseOrder;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Actions\Procurement\WithNoStrictProcurementOrderRules;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
+use App\Enums\SupplyChain\AgentSupplierPurchaseOrders\AgentSupplierPurchaseOrderDeliveryStateEnum;
+use App\Enums\SupplyChain\AgentSupplierPurchaseOrders\AgentSupplierPurchaseOrderStateEnum;
 use App\Models\SupplyChain\AgentSupplierPurchaseOrder;
 use App\Rules\IUnique;
+use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 
-class UpdateAgentSupplierPurchaseOrder extends GrpAction
+class UpdateAgentSupplierPurchaseOrder extends OrgAction
 {
     use WithActionUpdate;
     use WithNoStrictRules;
@@ -39,7 +42,11 @@ class UpdateAgentSupplierPurchaseOrder extends GrpAction
             return true;
         }
 
-        return $request->user()->authTo("procurement.{$this->organisation->id}.edit");
+        if (str_starts_with($request->route()->getName(), 'grp.org.')) {
+            return $request->user()->authTo("procurement.{$this->organisation->id}.edit");
+        }
+
+        return $request->user()->authTo('supply-chain.edit');
     }
 
     public function rules(): array
@@ -50,7 +57,18 @@ class UpdateAgentSupplierPurchaseOrder extends GrpAction
                 'required',
                 $this->strict ? 'alpha_dash' : 'string'
             ],
-            'notes'     => ['sometimes', 'string']
+            'notes'          => ['sometimes', 'string'],
+            'state'          => ['sometimes', 'required', Rule::enum(AgentSupplierPurchaseOrderStateEnum::class)],
+            'delivery_state' => ['sometimes', 'required', Rule::enum(AgentSupplierPurchaseOrderDeliveryStateEnum::class)],
+            'cost_items'     => ['sometimes', 'required', 'numeric', 'min:0'],
+            'cost_shipping'  => ['sometimes', 'required', 'numeric', 'min:0'],
+            'cost_total'     => ['sometimes', 'required', 'numeric', 'min:0'],
+            'date'           => ['sometimes', 'required'],
+            'deposit_amount'           => ['sometimes', 'numeric', 'min:0'],
+            'deposit_paid_at'          => ['sometimes', 'nullable', 'date'],
+            'balance_paid_at'          => ['sometimes', 'nullable', 'date'],
+            'estimated_delivery_days'  => ['sometimes', 'nullable', 'integer', 'min:0'],
+            'estimated_received_at'   => ['sometimes', 'nullable', 'date'],
         ];
 
         if ($this->strict) {
@@ -80,6 +98,14 @@ class UpdateAgentSupplierPurchaseOrder extends GrpAction
         return $rules;
     }
 
+    public function asController(AgentSupplierPurchaseOrder $agentSupplierPurchaseOrder, ActionRequest $request): AgentSupplierPurchaseOrder
+    {
+        $this->agentSupplierPurchaseOrder = $agentSupplierPurchaseOrder;
+        $this->initialisationFromGroup($agentSupplierPurchaseOrder->group, $request);
+
+        return $this->handle($agentSupplierPurchaseOrder, $this->validatedData);
+    }
+
     public function action(AgentSupplierPurchaseOrder $agentSupplierPurchaseOrder, array $modelData, int $hydratorsDelay = 0, bool $strict = true, $audit = true): AgentSupplierPurchaseOrder
     {
         if (!$audit) {
@@ -89,7 +115,7 @@ class UpdateAgentSupplierPurchaseOrder extends GrpAction
         $this->strict                     = $strict;
         $this->agentSupplierPurchaseOrder = $agentSupplierPurchaseOrder;
         $this->hydratorsDelay             = $hydratorsDelay;
-        $this->initialisation($agentSupplierPurchaseOrder->group, $modelData);
+        $this->initialisationFromGroup($agentSupplierPurchaseOrder->group, $modelData);
 
 
         return $this->handle($agentSupplierPurchaseOrder, $this->validatedData);

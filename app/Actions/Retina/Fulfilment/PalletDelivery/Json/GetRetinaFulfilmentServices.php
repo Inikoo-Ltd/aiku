@@ -37,6 +37,7 @@ class GetRetinaFulfilmentServices extends RetinaAction
 
         $queryBuilder = QueryBuilder::for(Service::class);
         $queryBuilder->where('services.shop_id', $parent->shop_id);
+        $queryBuilder->where('services.is_public', true);
         $queryBuilder->where('services.is_auto_assign', false);
         $queryBuilder->join('assets', 'services.asset_id', '=', 'assets.id');
         $queryBuilder->join('currencies', 'assets.currency_id', '=', 'currencies.id');

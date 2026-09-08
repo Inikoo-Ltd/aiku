@@ -11,12 +11,20 @@ namespace Tests\Unit\Actions\Search;
 use App\Actions\Search\GetSearchAnalytics;
 use App\Actions\Search\RecordSearchClick;
 use App\Actions\Search\Search;
+use App\Actions\Search\SearchAccounting;
+use App\Actions\Search\SearchCustomers;
+use App\Actions\Search\SearchOrders;
 use App\Actions\Search\SearchSysAdmin;
 use App\Actions\Search\StoreSearchLog;
 use App\Models\Helpers\SearchLog;
-use App\Models\SysAdmin\Group;
+use App\Models\Procurement\PurchaseOrder;
+use App\Models\SupplyChain\Agent;
+use App\Enums\CRM\Customer\CustomerStateEnum;
+use App\Enums\CRM\Customer\CustomerStatusEnum;
+use App\Models\CRM\Customer;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
+use ReflectionMethod;
 
 it('returns null route scope for unknown route prefix', function () {
     $action = app(Search::class);
@@ -57,6 +65,23 @@ it('maps known route prefixes to expected scopes', function (string $route, stri
     ['grp.org.chat.dashboard', 'chat'],
 ]);
 
+it('includes orders and invoices in the crm customers scope', function () {
+    SearchCustomers::mock()->shouldReceive('handle')->once()
+        ->andReturn(['scope' => 'customers', 'results' => ['customers' => [['id' => 1]]]]);
+    SearchOrders::mock()->shouldReceive('handle')->once()
+        ->andReturn(['scope' => 'orders', 'results' => ['orders' => [['id' => 2]]]]);
+    SearchAccounting::mock()->shouldReceive('handle')->once()
+        ->andReturn(['scope' => 'accounting', 'results' => ['invoices' => [['id' => 3]], 'payments' => [['id' => 4]]]]);
+
+    $results = app(Search::class)->handle('customers', 'john', ['shop_id' => 1]);
+
+    expect($results['results'])->toBe([
+        'customers' => [['id' => 1]],
+        'orders'    => [['id' => 2]],
+        'invoices'  => [['id' => 3]],
+    ]);
+});
+
 it('returns empty array for unknown search scope', function () {
     $action = app(Search::class);
 
@@ -76,7 +101,7 @@ it('caches results for queries of two characters or fewer', function () {
 it('logs searches, records clicks and aggregates analytics', function () {
     Http::fake(['*/analytics/events' => Http::response(['ok' => true])]);
     SearchLog::query()->delete();
-    $group = Group::first();
+    $group = createGroup();
 
     $user = \App\Models\SysAdmin\User::first();
 
@@ -119,7 +144,7 @@ it('logs searches, records clicks and aggregates analytics', function () {
 
 it('collapses type-ahead query refinements into a single search log', function () {
     SearchLog::query()->delete();
-    $group = Group::first();
+    $group = createGroup();
 
     $base = [
         'group_id'   => $group->id,
@@ -148,6 +173,24 @@ it('collapses type-ahead query refinements into a single search log', function (
     SearchLog::query()->delete();
 });
 
+it('includes organisation_id in PurchaseOrder toSearchableArray', function () {
+    $purchaseOrder = PurchaseOrder::factory()->make([
+        'organisation_id' => 42,
+        'created_at'      => now(),
+    ]);
+
+    expect($purchaseOrder->toSearchableArray()['organisation_id'])->toBe(42);
+});
+
+it('includes organisation_ids in Agent toSearchableArray', function () {
+    $agent = Agent::factory()->make([
+        'created_at' => now(),
+    ]);
+    $agent->id = 99;
+
+    expect($agent->toSearchableArray())->toHaveKey('organisation_ids');
+});
+
 it('does not cache results for queries longer than two characters', function () {
     $expected = ['scope' => 'sysadmin', 'results' => ['users' => [], 'guests' => []]];
     SearchSysAdmin::mock()->shouldReceive('handle')->twice()->andReturn($expected);
@@ -156,4 +199,45 @@ it('does not cache results for queries longer than two characters', function () 
 
     $action->handle('sysadmin', 'abc');
     $action->handle('sysadmin', 'abc');
+});
+
+it('indexes the identity document number and no longer the retired eori and ukims columns', function () {
+    $customer = Customer::factory()->make([
+        'status'                   => CustomerStatusEnum::APPROVED,
+        'state'                    => CustomerStateEnum::ACTIVE,
+        'identity_document_number' => 'ID-123',
+        'created_at'               => now(),
+    ]);
+
+    $searchable = $customer->toSearchableArray();
+
+    expect($searchable['identity_document_number'])->toBe('ID-123')
+        ->and($searchable)->not->toHaveKey('eori')
+        ->and($searchable)->not->toHaveKey('ukims');
+});
+
+it('emits every required typesense schema field in toSearchableArray', function () {
+    // ponytail: source-text match, not a real instance — catches fields dropped from the
+    // model but left in the schema (the AIKU-1939 shape), not fields emitted behind an if.
+    $drift = [];
+
+    foreach (config('scout.typesense.model-settings') as $model => $settings) {
+        $method = new ReflectionMethod($model, 'toSearchableArray');
+        $body   = implode('', array_slice(
+            file($method->getFileName()),
+            $method->getStartLine() - 1,
+            $method->getEndLine() - $method->getStartLine() + 1
+        ));
+
+        $missing = collect($settings['collection-schema']['fields'] ?? [])
+            ->reject(fn (array $field) => ($field['optional'] ?? false) || str_starts_with($field['name'], '__'))
+            ->pluck('name')
+            ->reject(fn (string $name) => str_contains($body, "'$name'") || str_contains($body, "\"$name\""));
+
+        if ($missing->isNotEmpty()) {
+            $drift[class_basename($model)] = $missing->values()->all();
+        }
+    }
+
+    expect($drift)->toBe([]);
 });

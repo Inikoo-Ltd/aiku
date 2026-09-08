@@ -28,15 +28,13 @@ class StoreShipper extends OrgAction
     {
         data_set($modelData, 'group_id', $organisation->group_id);
 
-        $shipper = DB::transaction(function () use ($organisation, $modelData) {
+        return DB::transaction(function () use ($organisation, $modelData) {
             /** @var Shipper $shipper */
             $shipper = $organisation->shippers()->create($modelData);
             $shipper->stats()->create();
 
             return $shipper;
         });
-
-        return $shipper;
     }
 
 

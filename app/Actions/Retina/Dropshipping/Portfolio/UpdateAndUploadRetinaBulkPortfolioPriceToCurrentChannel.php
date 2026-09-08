@@ -11,6 +11,8 @@ namespace App\Actions\Retina\Dropshipping\Portfolio;
 use App\Actions\RetinaAction;
 use App\Models\Dropshipping\Portfolio;
 use Illuminate\Support\Arr;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -20,26 +22,20 @@ class UpdateAndUploadRetinaBulkPortfolioPriceToCurrentChannel extends RetinaActi
 
     public function handle(array $modelData, $isDraft = false): void
     {
-        foreach (Arr::pull($modelData, 'items') as $itemId) {
+        $items = Arr::pull($modelData, 'items');
+
+        foreach ($items as $itemId) {
             $portfolio = Portfolio::find($itemId);
 
             if (! $portfolio) {
                 continue;
             }
 
-            if (Arr::get($modelData, 'type') === 'fixed') {
-                $newPrice = Arr::get($modelData, 'amount') + $portfolio->customer_price;
-            } elseif (Arr::get($modelData, 'type') === 'percent') {
-                $newPrice = $portfolio->customer_price * (1 + Arr::get($modelData, 'amount') / 100);
-            } else {
-                $newPrice = $portfolio->item->rrp;
+            try {
+                UpdateAndUploadRetinaPortfolioToCurrentChannel::run($portfolio, $modelData, $isDraft);
+            } catch (ValidationException) {
+                continue;
             }
-
-            data_set($modelData, 'customer_price', $newPrice);
-            data_forget($modelData, 'amount');
-            data_forget($modelData, 'type');
-
-            UpdateAndUploadRetinaPortfolioToCurrentChannel::run($portfolio, $modelData, $isDraft);
         }
     }
 
@@ -47,8 +43,8 @@ class UpdateAndUploadRetinaBulkPortfolioPriceToCurrentChannel extends RetinaActi
     {
         return [
             'items' => ['array'],
-            'amount' => ['sometimes', 'numeric'],
-            'type' => ['sometimes', 'string'],
+            'pricing_type' => ['required', Rule::in(['percent', 'fixed', 'not_follow'])],
+            'pricing_value' => ['exclude_if:pricing_type,not_follow', 'required', 'numeric', 'gte:-100'],
         ];
     }
 

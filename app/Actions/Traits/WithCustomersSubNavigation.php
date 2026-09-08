@@ -54,7 +54,7 @@ trait WithCustomersSubNavigation
 
             $meta[] = [
                 'route'     => [
-                    'name'       => 'grp.org.shops.show.crm.traffic_sources.index',
+                    'name'       => 'grp.org.shops.show.marketing.traffic_sources.index',
                     'parameters' => $request->route()->originalParameters()
                 ],
                 'number'   => $this->parent->crmStats?->number_traffic_sources ?? 0,

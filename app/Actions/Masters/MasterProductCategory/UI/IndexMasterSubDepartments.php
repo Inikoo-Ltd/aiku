@@ -9,7 +9,8 @@
 namespace App\Actions\Masters\MasterProductCategory\UI;
 
 use App\Actions\Goods\UI\WithMasterCatalogueSubNavigation;
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithMastersAuthorisation;
 use App\Actions\Masters\MasterProductCategory\WithMasterDepartmentSubNavigation;
 use App\Actions\Masters\MasterShop\UI\ShowMasterShop;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
@@ -28,8 +29,9 @@ use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
 
-class IndexMasterSubDepartments extends GrpAction
+class IndexMasterSubDepartments extends OrgAction
 {
+    use WithMastersAuthorisation;
     use WithMasterCatalogueSubNavigation;
     use WithMasterDepartmentSubNavigation;
 
@@ -39,7 +41,7 @@ class IndexMasterSubDepartments extends GrpAction
     {
         $this->parent = $masterShop;
         $group        = group();
-        $this->initialisation($group, $request)->withTab(MasterProductCategoryTabsEnum::values());
+        $this->initialisationFromGroup($group, $request)->withTab(MasterProductCategoryTabsEnum::values());
 
         return $this->handle(parent: $masterShop, prefix: MasterProductCategoryTabsEnum::INDEX->value);
     }
@@ -49,7 +51,7 @@ class IndexMasterSubDepartments extends GrpAction
     {
         $this->parent = $masterDepartment;
         $group        = group();
-        $this->initialisation($group, $request)->withTab(MasterProductCategoryTabsEnum::values());
+        $this->initialisationFromGroup($group, $request)->withTab(MasterProductCategoryTabsEnum::values());
 
         return $this->handle(parent: $masterDepartment, prefix: MasterProductCategoryTabsEnum::INDEX->value);
     }
@@ -105,8 +107,6 @@ class IndexMasterSubDepartments extends GrpAction
                 aggregateColumns: [
                     'sales_grp_currency_external' => 'sales_grp_currency_external',
                     'invoices'                    => 'invoices',
-                    'dropshippers'                => 'dropshippers',
-                    'listings'                    => 'listings',
                     'sold'                        => 'sold',
                 ],
                 frequency: TimeSeriesFrequencyEnum::DAILY->value,
@@ -118,8 +118,6 @@ class IndexMasterSubDepartments extends GrpAction
             $selects[] = $timeSeriesData['selectRaw']['sales_grp_currency_external_ly'];
             $selects[] = $timeSeriesData['selectRaw']['invoices'];
             $selects[] = $timeSeriesData['selectRaw']['invoices_ly'];
-            $selects[] = $timeSeriesData['selectRaw']['dropshippers'];
-            $selects[] = $timeSeriesData['selectRaw']['listings'];
             $selects[] = $timeSeriesData['selectRaw']['sold'];
         }
 
@@ -136,8 +134,6 @@ class IndexMasterSubDepartments extends GrpAction
                 'number_products',
                 'sales_grp_currency_external',
                 'invoices',
-                'dropshippers',
-                'listings',
                 'sold',
                 'health_rank',
             ])
@@ -170,8 +166,6 @@ class IndexMasterSubDepartments extends GrpAction
 
             if ($sales) {
                 $table->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
-                    ->column(key: 'dropshippers', label: __('Customer Listings'), canBeHidden: true, sortable: true, align: 'right')
-                    ->column(key: 'listings', label: __('Total Listings'), canBeHidden: true, sortable: true, align: 'right')
                     ->column(key: 'invoices', label: __('Invoices'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
                     ->column(key: 'sold', label: __('Sold'), canBeHidden: false, sortable: true, align: 'right')
                     ->column(key: 'sales_grp_currency_external', label: __('Sales'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
@@ -244,7 +238,7 @@ class IndexMasterSubDepartments extends GrpAction
                     'model'         => $model,
                     'afterTitle'    => $afterTitle,
                     'iconRight'     => $iconRight,
-                    'actions'       => [
+                    'actions'       => $this->canEdit ? [
                         [
                             'type'    => 'button',
                             'style'   => 'create',
@@ -261,7 +255,7 @@ class IndexMasterSubDepartments extends GrpAction
                                 ]
                             }
                         ],
-                    ],
+                    ] : [],
                     'subNavigation' => $subNavigation,
                 ],
                 'tabs'                                => [

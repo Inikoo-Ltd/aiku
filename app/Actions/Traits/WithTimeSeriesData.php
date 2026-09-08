@@ -14,6 +14,11 @@ use Illuminate\Support\Facades\DB;
 
 trait WithTimeSeriesData
 {
+    protected function timeSeriesSalesColumn(): string
+    {
+        return 'sales_grp_currency_external';
+    }
+
     protected function getYearlySalesData(Model $model, string $timeSeriesRecordsTable): array
     {
         $yearlyTimeSeries = $model->timeSeries()
@@ -24,11 +29,13 @@ trait WithTimeSeriesData
             return [];
         }
 
+        $salesColumn = $this->timeSeriesSalesColumn();
+
         return $yearlyTimeSeries->records()
             ->orderBy('from', 'desc')
             ->limit(5)
             ->get()
-            ->map(function ($record) use ($timeSeriesRecordsTable) {
+            ->map(function ($record) use ($timeSeriesRecordsTable, $salesColumn) {
                 $from = Carbon::parse($record->from);
                 $year = $from->year;
 
@@ -38,10 +45,10 @@ trait WithTimeSeriesData
                     ->whereYear('from', $year - 1)
                     ->first();
 
-                $previousYearSales = $previousYearRecord->sales_grp_currency_external ?? 0;
+                $previousYearSales = $previousYearRecord->{$salesColumn} ?? 0;
                 $previousYearInvoices = $previousYearRecord->invoices ?? 0;
 
-                $salesDelta = $record->sales_grp_currency_external - $previousYearSales;
+                $salesDelta = $record->{$salesColumn} - $previousYearSales;
                 $salesDeltaPercentage = $previousYearSales > 0
                     ? (($salesDelta / $previousYearSales) * 100)
                     : 0;
@@ -53,7 +60,7 @@ trait WithTimeSeriesData
 
                 return [
                     'year' => $year,
-                    'total_sales' => (float) $record->sales_grp_currency_external,
+                    'total_sales' => (float) $record->{$salesColumn},
                     'total_invoices' => (int) $record->invoices,
                     'sales_delta' => (float) $salesDelta,
                     'sales_delta_percentage' => (float) $salesDeltaPercentage,
@@ -78,11 +85,13 @@ trait WithTimeSeriesData
             return [];
         }
 
+        $salesColumn = $this->timeSeriesSalesColumn();
+
         return $quarterlyTimeSeries->records()
             ->orderBy('from', 'desc')
             ->limit(5)
             ->get()
-            ->map(function ($record) use ($timeSeriesRecordsTable) {
+            ->map(function ($record) use ($timeSeriesRecordsTable, $salesColumn) {
                 $from = Carbon::parse($record->from);
                 $year = $from->year;
                 $quarter = $from->quarter;
@@ -94,10 +103,10 @@ trait WithTimeSeriesData
                     ->whereRaw('EXTRACT(QUARTER FROM "from") = ?', [$quarter])
                     ->first();
 
-                $previousYearSales = $previousYearRecord->sales_grp_currency_external ?? 0;
+                $previousYearSales = $previousYearRecord->{$salesColumn} ?? 0;
                 $previousYearInvoices = $previousYearRecord->invoices ?? 0;
 
-                $salesDelta = $record->sales_grp_currency_external - $previousYearSales;
+                $salesDelta = $record->{$salesColumn} - $previousYearSales;
                 $salesDeltaPercentage = $previousYearSales > 0
                     ? (($salesDelta / $previousYearSales) * 100)
                     : 0;
@@ -111,7 +120,7 @@ trait WithTimeSeriesData
                     'quarter' => "Q{$quarter} " . substr((string)$year, -2),
                     'quarter_number' => $quarter,
                     'year' => $year,
-                    'total_sales' => (float) $record->sales_grp_currency_external,
+                    'total_sales' => (float) $record->{$salesColumn},
                     'total_invoices' => (int) $record->invoices,
                     'sales_delta' => (float) $salesDelta,
                     'sales_delta_percentage' => (float) $salesDeltaPercentage,
@@ -152,7 +161,7 @@ trait WithTimeSeriesData
 
         return [
             'all_sales_since' => Carbon::parse($allRecords->first()->from)->toDateString(),
-            'total_sales' => (float) $allRecords->sum('sales_grp_currency_external'),
+            'total_sales' => (float) $allRecords->sum($this->timeSeriesSalesColumn()),
             'total_invoices' => (int) $allRecords->sum('invoices'),
         ];
     }

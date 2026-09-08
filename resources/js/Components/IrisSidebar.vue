@@ -5,13 +5,14 @@ import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 import { faBars } from '@fal';
 import { getStyles } from '@/Composables/styles';
 import { isNull } from 'lodash-es';
-import IrisSidebarDesktop from './Iris/Layout/IrisSidebarDesktop.vue';
-import IrisSidebarMobile from './Iris/Layout/IrisSidebarMobile.vue';
+import IrisSidebarDesktop from '@iris/Components/Layout/IrisSidebarDesktop.vue';
+const IrisSidebarMobile = defineAsyncComponent(() => import('@iris/Components/Layout/IrisSidebarMobile.vue'));
 import { Image as ImageTS } from '@/types/Image';
 import { trans } from 'laravel-vue-i18n';
 import { faSearch, faTimes } from "@fal";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
+import { useIrisSearchMobile } from '@/Iris/Composables/useIrisSearchMobile'
 import axios from 'axios'
 library.add(faSearch, faTimes)
 
@@ -49,6 +50,7 @@ const irisLayout = inject("layout", {})
 const sidebarMenu = inject<Ref<any> | null>('sidebarMenu', null)
 
 const isOpenMenuMobile = inject("isOpenMenuMobile", ref(false))
+const { openIrisSearchMobile } = useIrisSearchMobile()
 
 const isMobile = ref(false)
 const activeIndex = ref<number | null>(null) // active category
@@ -289,9 +291,15 @@ const internalHref = (item) => {
 	return path
 }
 
-const onClickLuigi = () => {
-	const input = document.getElementById('luigi_mobile') as HTMLInputElement | null;
-	if (input) input.focus();
+const onClickSearch = () => {
+	if ((irisLayout as any)?.iris?.iris_search_model === 'internal') {
+		isOpenMenuMobile.value = false
+		openIrisSearchMobile('mobile_sidebar')
+		return
+	}
+
+	const input = document.getElementById('luigi_mobile') as HTMLInputElement | null
+	if (input) input.focus()
 }
 
 
@@ -462,8 +470,8 @@ const fetchSidebarOnce = async () => {
 			@show="() => fetchSidebarOnce()"
 		>
 			<template #header>
-				<div>
-					<div class="md:max-w-[270px] w-full h-20 overflow-hidden">
+				<div class="w-full">
+					<div class="w-full md:max-w-[270px] h-20 overflow-hidden">
 						<img
 							xv-else
 							:src="sidebarLogo?.original || header?.logo?.image?.source?.original"
@@ -473,10 +481,10 @@ const fetchSidebarOnce = async () => {
 					</div>
 
 					<!-- Section: input search -->
-					<div class="md:hidden mt-6 flex gap-x-4 items-center">
+					<div class="w-full md:hidden mt-6 flex gap-x-4 items-center">
 						<div
-							@click="() => onClickLuigi()"
-							class="flex-grow border border-gray-300/40 rounded-md px-2 py-1">
+							@click="() => onClickSearch()"
+							class="flex-grow border border-gray-300/70 rounded-md px-2 py-2 cursor-pointer">
 							<FontAwesomeIcon
 								icon="fal fa-search"
 								class=""

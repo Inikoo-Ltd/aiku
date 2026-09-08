@@ -8,7 +8,8 @@
 
 namespace App\Actions\SupplyChain\Agent;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithSupplyChainEditAuthorisation;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateAgents;
 use App\Actions\SysAdmin\Organisation\StoreOrganisation;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
@@ -24,17 +25,9 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redirect;
 use Lorisleiva\Actions\ActionRequest;
 
-class StoreAgent extends GrpAction
+class StoreAgent extends OrgAction
 {
-    public function authorize(ActionRequest $request): bool
-    {
-        if ($this->asAction) {
-            return true;
-        }
-
-        return $request->user()->authTo("procurement.".$this->group->id.".edit");
-    }
-
+    use WithSupplyChainEditAuthorisation;
     /**
      * @throws \Throwable
      */
@@ -114,6 +107,8 @@ class StoreAgent extends GrpAction
             $rules['fetched_at']  = ['sometimes', 'date'];
             $rules['created_at']  = ['sometimes', 'date'];
             $rules['deleted_at']  = ['sometimes', 'date'];
+            $rules['data']        = ['sometimes', 'array'];
+            $rules['settings']    = ['sometimes', 'array'];
         }
 
         return $rules;
@@ -130,7 +125,7 @@ class StoreAgent extends GrpAction
         $this->hydratorsDelay = $hydratorsDelay;
         $this->strict         = $strict;
         $this->asAction       = true;
-        $this->initialisation($group, $modelData);
+        $this->initialisationFromGroup($group, $modelData);
 
 
         return $this->handle(
@@ -145,7 +140,7 @@ class StoreAgent extends GrpAction
      */
     public function asController(ActionRequest $request): Agent
     {
-        $this->initialisation(group(), $request);
+        $this->initialisationFromGroup(group(), $request);
 
 
         return $this->handle(

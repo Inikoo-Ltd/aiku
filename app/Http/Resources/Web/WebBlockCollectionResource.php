@@ -47,7 +47,7 @@ class WebBlockCollectionResource extends JsonResource
             'title'      => $this->title ?? $this->name ?? $this->code,
             'url'        => $this->canonical_url,
             'web_images' => $webImages,
-            'image'      =>  $imageSources
+            'image'      => $imageSources
         ];
     }
 }

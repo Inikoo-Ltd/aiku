@@ -9,7 +9,7 @@
 namespace App\Actions\Masters\MasterShop\UI;
 
 use App\Actions\Goods\UI\WithMasterCatalogueSubNavigation;
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Actions\Masters\UI\ShowMastersDashboard;
 use App\Actions\Traits\Authorisations\WithMastersAuthorisation;
 use App\Http\Resources\Masters\MasterShopsResource;
@@ -25,7 +25,7 @@ use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
 
-class IndexMasterShops extends GrpAction
+class IndexMasterShops extends OrgAction
 {
     use WithMasterCatalogueSubNavigation;
     use WithMastersAuthorisation;
@@ -154,7 +154,7 @@ class IndexMasterShops extends GrpAction
     public function asController(ActionRequest $request): LengthAwarePaginator
     {
         $group = group();
-        $this->initialisation($group, $request);
+        $this->initialisationFromGroup($group, $request);
 
         return $this->handle($group, $request);
     }

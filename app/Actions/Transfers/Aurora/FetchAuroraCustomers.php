@@ -29,7 +29,7 @@ class FetchAuroraCustomers extends FetchAuroraAction
     use WithAuroraAttachments;
     use WithAuroraParsers;
 
-    public string $commandSignature = 'fetch:customers {organisations?*} {--s|source_id=} {--S|shop= : Shop slug} {--w|with=* : Accepted values: products orders web_users favourites polls full} {--N|only_new : Fetch only new} {--d|db_suffix=} {--r|reset}';
+    public string $commandSignature = 'fetch:customers {organisations?*} {--s|source_id=} {--S|shop= : Shop slug} {--w|with=* : Accepted values: products orders web_users favourites polls full} {--N|only_new : Fetch only new} {--d|db_suffix=} {--r|reset} {--F|force : Overwrite the aiku record even though the organisation already runs on aiku}';
 
 
     public function handle(SourceOrganisationService $organisationSource, int $organisationSourceId): ?Customer

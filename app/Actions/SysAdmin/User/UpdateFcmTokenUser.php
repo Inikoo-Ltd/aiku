@@ -8,7 +8,7 @@
 
 namespace App\Actions\SysAdmin\User;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Http\Resources\SysAdmin\User\UsersResource;
 use App\Models\Notifications\FcmToken;
@@ -16,7 +16,7 @@ use App\Models\SysAdmin\User;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
 
-class UpdateFcmTokenUser extends GrpAction
+class UpdateFcmTokenUser extends OrgAction
 {
     use WithActionUpdate;
 
@@ -48,7 +48,7 @@ class UpdateFcmTokenUser extends GrpAction
     public function asController(ActionRequest $request): User
     {
         $this->user = $request->user();
-        $this->initialisation($this->user->group, $request);
+        $this->initialisationFromGroup($this->user->group, $request);
 
         return $this->handle($this->user, $this->validatedData);
     }
@@ -57,7 +57,7 @@ class UpdateFcmTokenUser extends GrpAction
     {
         $this->user     = $user;
         $this->asAction = true;
-        $this->initialisation($user->group, $modelData);
+        $this->initialisationFromGroup($user->group, $modelData);
 
         return $this->handle($user, $this->validatedData);
 

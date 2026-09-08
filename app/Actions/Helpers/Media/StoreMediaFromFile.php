@@ -32,7 +32,8 @@ class StoreMediaFromFile
                         'checksum' => $imageData['checksum'],
                         'group_id' => group()->id,
                         'type'     => $type,
-                        'ulid'     => Str::ulid()
+                        'ulid'     => Str::ulid(),
+                        'media_scope'    => data_get($imageData, 'scope', null)
                     ],
                 )
             )
@@ -40,8 +41,10 @@ class StoreMediaFromFile
             ->usingFileName(hash('crc32b', $imageData['checksum']).'.'.$extension)
             ->toMediaCollection($collection);
 
-        UpdateIsAnimatedMedia::run($media, $imageData['path']);
-        MediaHydrateDimensions::run($media);
+        if ($type === 'image') {
+            UpdateIsAnimatedMedia::run($media, $imageData['path']);
+            MediaHydrateDimensions::run($media);
+        }
         return $media;
     }
 }

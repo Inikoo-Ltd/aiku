@@ -10,7 +10,6 @@ namespace App\Actions\Web\WebBlock\Iris;
 
 use App\Actions\Helpers\Images\GetPictureSources;
 use App\Actions\Web\WebBlock\Concerns\WithIrisImageVariants;
-use App\Models\Web\Webpage;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsObject;
 

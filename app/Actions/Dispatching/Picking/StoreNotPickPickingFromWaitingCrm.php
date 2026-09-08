@@ -10,6 +10,7 @@ namespace App\Actions\Dispatching\Picking;
 
 use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydrateWaitingItems;
 use App\Actions\Dispatching\DeliveryNote\UpdateState\AutoFinishWaitingDeliveryNote;
+use App\Actions\Dispatching\Picking\Traits\AutoIgnoreZeroQuantityItems;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Dispatching\Picking\PickingNotPickedReasonEnum;
@@ -23,6 +24,7 @@ use Lorisleiva\Actions\ActionRequest;
 class StoreNotPickPickingFromWaitingCrm extends OrgAction
 {
     use WithActionUpdate;
+    use AutoIgnoreZeroQuantityItems;
 
     private DeliveryNoteItem $deliveryNoteItem;
 
@@ -30,18 +32,26 @@ class StoreNotPickPickingFromWaitingCrm extends OrgAction
     {
         data_set($modelData, 'picker_user_id', $user->id);
 
-        $quantity = max(Arr::get($modelData, 'quantity', 0), $deliveryNoteItem->quantity_waiting_crm);
+        $quantityStillWaitingForCrm = (float)$deliveryNoteItem->quantity_waiting_crm;
+        $quantityToNotPick          = min((float)Arr::get($modelData, 'quantity', 0), $quantityStillWaitingForCrm);
 
-        $newQuantityWaitingCrm = $deliveryNoteItem->quantity_waiting_crm - $quantity;
+        if ($quantityToNotPick <= 0) {
+            return null;
+        }
+
+        $newQuantityWaitingCrm = round($quantityStillWaitingForCrm - $quantityToNotPick, 6);
 
         $deliveryNoteItem->update([
             'quantity_waiting_crm' => $newQuantityWaitingCrm,
-            'has_waiting_crm'      => $newQuantityWaitingCrm > 0,
         ]);
         DeliveryNoteHydrateWaitingItems::run($deliveryNoteItem->delivery_note_id);
 
+        data_set($modelData, 'quantity', $quantityToNotPick);
 
         $picking = StoreNotPickPicking::make()->action($deliveryNoteItem, $user, $modelData);
+
+        $this->ignoreZeroQuantityItems($deliveryNoteItem->deliveryNote, $user);
+
         AutoFinishWaitingDeliveryNote::run($deliveryNoteItem->deliveryNote);
         return $picking;
     }
@@ -59,7 +69,7 @@ class StoreNotPickPickingFromWaitingCrm extends OrgAction
     public function prepareForValidation(ActionRequest $request): void
     {
         if (!$request->has('quantity')) {
-            $this->set('quantity', $this->deliveryNoteItem->quantity_required - $this->deliveryNoteItem->quantity_picked);
+            $this->set('quantity', $this->deliveryNoteItem->quantity_waiting_crm);
         }
     }
 

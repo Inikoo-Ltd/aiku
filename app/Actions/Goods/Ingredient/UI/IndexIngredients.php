@@ -10,7 +10,7 @@
 namespace App\Actions\Goods\Ingredient\UI;
 
 use App\Actions\Goods\UI\ShowGoodsDashboard;
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithGoodsAuthorisation;
 use App\Http\Resources\Goods\IngredientsResource;
 use App\InertiaTable\InertiaTable;
@@ -19,19 +19,20 @@ use App\Models\SysAdmin\Group;
 use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
 
-class IndexIngredients extends GrpAction
+class IndexIngredients extends OrgAction
 {
     use WithGoodsAuthorisation;
 
     public function asController(ActionRequest $request): LengthAwarePaginator
     {
 
-        $this->initialisation(group(), $request);
+        $this->initialisationFromGroup(group(), $request);
 
         return $this->handle($this->group);
     }
@@ -87,6 +88,11 @@ class IndexIngredients extends GrpAction
                 ->column(key: 'number_trade_units', label: __('Master Products'), canBeHidden: false, sortable: true, searchable: true)
                 ->defaultSort('code');
         };
+    }
+
+    public function jsonResponse(LengthAwarePaginator $ingredients): AnonymousResourceCollection
+    {
+        return IngredientsResource::collection($ingredients);
     }
 
     public function htmlResponse(LengthAwarePaginator $ingredients, ActionRequest $request): Response

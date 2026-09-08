@@ -11,14 +11,17 @@ namespace App\Models\Procurement;
 use App\Enums\Procurement\PurchaseOrderTransaction\PurchaseOrderTransactionDeliveryStateEnum;
 use App\Enums\Procurement\PurchaseOrderTransaction\PurchaseOrderTransactionStateEnum;
 use App\Models\Inventory\OrgStock;
+use App\Models\SupplyChain\AgentSupplierPurchaseOrder;
 use App\Models\SupplyChain\HistoricSupplierProduct;
 use App\Models\SupplyChain\SupplierProduct;
+use App\Models\Traits\HasHistory;
 use App\Models\Traits\InOrganisation;
 use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use OwenIt\Auditing\Contracts\Auditable;
 
 /**
  * App\Models\Procurement\PurchaseOrderTransaction
@@ -50,9 +53,12 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string|null $last_fetched_at
  * @property string|null $deleted_at
  * @property string|null $source_id
+ * @property int|null $agent_supplier_purchase_order_id
+ * @property-read AgentSupplierPurchaseOrder|null $agentSupplierPurchaseOrder
  * @property-read \App\Models\SysAdmin\Group|null $group
  * @property-read HistoricSupplierProduct|null $historicSupplierProduct
  * @property-read OrgStock|null $orgStock
+ * @property-read \App\Models\Procurement\OrgSupplierProduct|null $orgSupplierProduct
  * @property-read \App\Models\SysAdmin\Organisation $organisation
  * @property-read \App\Models\Procurement\PurchaseOrder|null $purchaseOrder
  * @property-read SupplierProduct|null $supplierProduct
@@ -62,10 +68,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @method static Builder<static>|PurchaseOrderTransaction query()
  * @mixin Eloquent
  */
-class PurchaseOrderTransaction extends Model
+class PurchaseOrderTransaction extends Model implements Auditable
 {
     use HasFactory;
     use InOrganisation;
+    use HasHistory;
 
     protected $casts = [
         'data'            => 'array',
@@ -84,9 +91,19 @@ class PurchaseOrderTransaction extends Model
         return $this->belongsTo(PurchaseOrder::class);
     }
 
+    public function agentSupplierPurchaseOrder(): BelongsTo
+    {
+        return $this->belongsTo(AgentSupplierPurchaseOrder::class);
+    }
+
     public function supplierProduct(): BelongsTo
     {
         return $this->belongsTo(SupplierProduct::class);
+    }
+
+    public function orgSupplierProduct(): BelongsTo
+    {
+        return $this->belongsTo(OrgSupplierProduct::class);
     }
 
     public function historicSupplierProduct(): BelongsTo
@@ -98,4 +115,19 @@ class PurchaseOrderTransaction extends Model
     {
         return $this->belongsTo(OrgStock::class);
     }
+
+    public function generateTags(): array
+    {
+        return ['procurement'];
+    }
+
+    protected array $auditInclude = [
+        'state',
+        'delivery_state',
+        'quantity_ordered',
+        'quantity_dispatched',
+        'quantity_fail',
+        'quantity_cancelled',
+        'net_amount'
+    ];
 }

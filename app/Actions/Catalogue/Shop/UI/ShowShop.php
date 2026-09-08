@@ -15,6 +15,7 @@ use App\Actions\Retina\UI\Layout\GetPlatformLogo;
 use App\Actions\Traits\Dashboards\Settings\WithDashboardCurrencyTypeSettings;
 use App\Actions\Traits\Dashboards\WithDashboardIntervalOption;
 use App\Actions\Traits\Dashboards\WithDashboardSettings;
+use App\Actions\Traits\Dashboards\WithDashboardTableTabResolution;
 use App\Actions\Traits\Dashboards\WithPerformanceDateResolution;
 use App\Actions\Traits\WithDashboard;
 use App\Actions\Traits\WithTabsBox;
@@ -36,6 +37,7 @@ class ShowShop extends OrgAction
     use WithDashboardCurrencyTypeSettings;
     use WithDashboardIntervalOption;
     use WithDashboardSettings;
+    use WithDashboardTableTabResolution;
     use WithPerformanceDateResolution;
     use WithTabsBox;
     use GetPlatformLogo;
@@ -50,12 +52,8 @@ class ShowShop extends OrgAction
         $userSettings = $request->user()->settings;
 
         $tabsNavigation = ShopDashboardSalesTableTabsEnum::navigation($shop);
-        $validTabs  = array_keys($tabsNavigation);
-        $currentTab = Arr::get($userSettings, 'shop_dashboard_tab', Arr::first($validTabs));
-
-        if (! in_array($currentTab, $validTabs, true)) {
-            $currentTab = Arr::first($validTabs);
-        }
+        $validTabs  = array_keys(array_filter($tabsNavigation, fn ($tab) => !isset($tab['route'])));
+        $currentTab = $this->resolveDashboardTableTab($validTabs, $userSettings, 'shop_dashboard_tab');
 
         $savedInterval = DateIntervalEnum::tryFrom(Arr::get($userSettings, 'selected_interval', 'all')) ?? DateIntervalEnum::ALL;
         [$fromDate, $toDate] = $this->resolvePerformanceDates($savedInterval, $userSettings);
@@ -96,6 +94,7 @@ class ShowShop extends OrgAction
 
         if ($shop->type->value === 'dropshipping') {
             $dashboard['super_blocks'][0]['channel_health'] = $this->getChannelHealthStats($shop);
+            $dashboard['super_blocks'][0]['brands_link']    = ShopDashboardSalesTableTabsEnum::brandsLink($shop);
         }
 
         $currentTabEnum = ShopDashboardSalesTableTabsEnum::from($currentTab);

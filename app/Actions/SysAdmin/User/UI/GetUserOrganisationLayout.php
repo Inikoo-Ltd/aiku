@@ -15,6 +15,7 @@ use App\Models\Inventory\Warehouse;
 use App\Models\Production\Production;
 use App\Models\SysAdmin\Organisation;
 use App\Models\SysAdmin\User;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsObject;
 
@@ -141,7 +142,9 @@ class GetUserOrganisationLayout
                 'org_slug'             => $organisation->slug,
                 'website_slug'         => $shop->website?->slug ?? null,
                 'type'                 => $shop->type,
-                'website_domain'       => $shop->website?->domain ?? null,
+                'website_domain'       => $shop->website?->domain
+                    ?? Arr::get($shop->data, 'external_domain')
+                    ?? ($shop->type == ShopTypeEnum::EXTERNAL ? __(':engine external shop', ['engine' => $shop->engine->label()]) : null),
                 'route'                => [
                     'name'       => 'grp.org.shops.show.dashboard.show',
                     'parameters' => [

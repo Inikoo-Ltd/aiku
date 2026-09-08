@@ -108,6 +108,49 @@ class IndexInvoicesInOrgStockFamily extends OrgAction
         };
     }
 
+    private function getSubNavigation(ActionRequest $request): array
+    {
+        $routeParameters = $request->route()->originalParameters();
+
+        return [
+            [
+                'label'    => __('SKO Family'),
+                'route'    => [
+                    'name'       => 'grp.org.warehouses.show.inventory.org_stock_families.show',
+                    'parameters' => $routeParameters,
+                ],
+                'leftIcon' => [
+                    'icon'    => ['fal', 'fa-boxes-alt'],
+                    'tooltip' => __('SKO Family'),
+                ],
+            ],
+            [
+                'label'    => __('SKOs'),
+                'number'   => $this->orgStockFamily->stats->number_org_stocks ?? 0,
+                'route'    => [
+                    'name'       => 'grp.org.warehouses.show.inventory.org_stock_families.show.org_stocks.index',
+                    'parameters' => $routeParameters,
+                ],
+                'leftIcon' => [
+                    'icon'    => ['fal', 'fa-box'],
+                    'tooltip' => __('SKOs'),
+                ],
+            ],
+            [
+                'isAnchor' => true,
+                'label'    => __('Invoices'),
+                'route'    => [
+                    'name'       => 'grp.org.warehouses.show.inventory.org_stock_families.invoices',
+                    'parameters' => $routeParameters,
+                ],
+                'leftIcon' => [
+                    'icon'    => ['fal', 'fa-file-invoice-dollar'],
+                    'tooltip' => __('Invoices'),
+                ],
+            ],
+        ];
+    }
+
     public function htmlResponse(LengthAwarePaginator $invoices, ActionRequest $request): Response
     {
         return Inertia::render(
@@ -121,9 +164,10 @@ class IndexInvoicesInOrgStockFamily extends OrgAction
                         'icon'  => ['fal', 'fa-file-invoice-dollar'],
                         'title' => __('Invoices'),
                     ],
-                    'afterTitle' => [
+                    'afterTitle'    => [
                         'label' => $this->orgStockFamily->code,
                     ],
+                    'subNavigation' => $this->getSubNavigation($request),
                 ],
                 'data' => InvoicesResource::collection($invoices),
             ]
@@ -145,7 +189,7 @@ class IndexInvoicesInOrgStockFamily extends OrgAction
                                 'warehouse'    => $routeParameters['warehouse'],
                             ],
                         ],
-                        'label' => __('SKU Families'),
+                        'label' => __('SKO Families'),
                         'icon'  => 'fal fa-boxes-alt',
                     ],
                 ],
@@ -163,7 +207,7 @@ class IndexInvoicesInOrgStockFamily extends OrgAction
                     'type'   => 'simple',
                     'simple' => [
                         'route' => [
-                            'name'       => 'grp.org.warehouses.show.inventory.org_stock_families.show.invoices.index',
+                            'name'       => 'grp.org.warehouses.show.inventory.org_stock_families.invoices',
                             'parameters' => $routeParameters,
                         ],
                         'label' => __('Invoices'),

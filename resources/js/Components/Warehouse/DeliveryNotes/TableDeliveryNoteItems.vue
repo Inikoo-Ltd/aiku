@@ -17,8 +17,8 @@ import { trans } from "laravel-vue-i18n";
 import { routeType } from "@/types/route";
 import { ref, onMounted, reactive, inject, computed, watch, onUnmounted } from "vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { faArrowDown, faDebug, faClipboardListCheck, faUndoAlt, faHandHoldingBox, faListOl, faHourglassHalf, faUndo, faBox, faBarcode } from "@fal";
-import { faSkull, faWandMagic } from "@fas";
+import { faArrowDown, faDebug, faClipboardListCheck, faUndoAlt, faHandHoldingBox, faListOl, faHourglassHalf, faUndo, faBox, faBarcode, faStopCircle } from "@fal";
+import { faSkull, faWandMagic, faExclamationTriangle } from "@fas";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue";
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure";
@@ -26,6 +26,8 @@ import Modal from "@/Components/Utils/Modal.vue"
 import { RadioButton, Dialog } from "primevue"
 import PureMultiselectInfiniteScroll from "@/Components/Pure/PureMultiselectInfiniteScroll.vue"
 import FractionDisplay from "@/Components/DataDisplay/FractionDisplay.vue"
+import FractionDisplayFE from "@/Components/DataDisplay/FractionDisplayFE.vue"
+import { useUnitsOverPack } from "@/Composables/useFractionUnits"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import PureInput from "@/Components/Pure/PureInput.vue"
 import ExpiryDateLabel from "@/Components/Utils/Label/ExpiryDateLabel.vue"
@@ -42,9 +44,12 @@ import PickingLocationModal from "./PickingLocationModal.vue"
 import SelectPickingLocation from "./SelectPickingLocation.vue"
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue';
 import ChangePackagingSelect from "@/Components/Warehouse/PickingSessions/ChangePackagingSelect.vue"
+import OrgStockHandlingNotes from "./OrgStockHandlingNotes.vue"
+import BarcodeDisplay from "@/Components/DataDisplay/BarcodeDisplay.vue"
+import ButtonSelectBays from "@/Components/DeliveryNote/ButtonSelectBays.vue"
 import { faBoxOpen, faPrint, faFileAlt, faExclamationCircle } from "@fal"
 
-library.add(faSkull, faArrowDown, faDebug, faClipboardListCheck, faUndoAlt, faHandHoldingBox, faListOl, faHourglassHalf, faWandMagic, faBox, faBarcode, faBoxOpen, faPrint, faFileAlt, faExclamationCircle);
+library.add(faSkull, faArrowDown, faDebug, faClipboardListCheck, faUndoAlt, faHandHoldingBox, faListOl, faHourglassHalf, faWandMagic, faBox, faBarcode, faBoxOpen, faPrint, faFileAlt, faExclamationCircle, faExclamationTriangle);
 
 
 const props = defineProps<{
@@ -90,11 +95,15 @@ const props = defineProps<{
         }
         print_all_route: routeType
     }
+    total_unit_counts: number
+    warehouse?: { slug: string }
+    deliveryNote?: { id: number, slug: string }
 }>();
 
 const emit = defineEmits<{
     'update:quantity-to-resend': [itemId: string | number, value: number]
     'validation-error': [itemId: string | number, hasError: boolean]
+    'open-tab': [tabSlug: string]
 }>();
 
 const isChangingPackaging = ref(false)
@@ -201,7 +210,7 @@ const initSocketListener = () => {
             return;
         }
 
-        let locationOrgStock = itemToSet.locations.find(
+        let locationOrgStock = itemToSet.locations?.find(
             item => item.location_id === affectedData.location_id
         )
 
@@ -210,7 +219,7 @@ const initSocketListener = () => {
             (parseFloat(itemToSet.quantity_not_picked ?? 0) +
             parseFloat(itemToSet.quantity_picked ?? 0));
 
-        const shouldRefetch = (remainingItem > 0) && (locationOrgStock.quantity != affectedData.new_quantity)
+        const shouldRefetch = (remainingItem > 0) && (locationOrgStock?.quantity != affectedData.new_quantity)
 
         if (shouldRefetch) {
             const response = await axios.get(
@@ -471,18 +480,87 @@ const GetQuantityToPickFractional = (item) => {
     }else return item.quantity_to_pick_fractional
 }
 
+/*
+ * A part of an outer can be left waiting by any shop now that ecom replaces a product in part, not
+ * only by dropshipping, so what decides the fraction is the pack the item comes in. An item packed
+ * individually has nothing to cut and reads as a plain count.
+ */
 const GetWaitingWarehouseFractional = (item) => {
-    if (props.shop_type == 'dropshipping') {
+    if (Number(item?.packed_in) > 1) {
         return item?.quantity_waiting_warehouse_fractional_ds
     }
     return null
 }
 
 const GetWaitingCrmFractional = (item) => {
-    if (props.shop_type == 'dropshipping') {
+    if (Number(item?.packed_in) > 1) {
         return item?.quantity_waiting_crm_fractional_ds
     }
     return null
+}
+
+const GetQuantityToPackFractional = (item) => {
+    if (Number(item?.packed_in) > 1) {
+        return item?.quantity_to_pack_fractional
+    }
+    return null
+}
+
+/*
+ * A quantity as the two halves of a fraction: single items over the pack they come in, which is how
+ * the warehouse reads a cut. A whole pack then falls back to the plain count it is instead of 4/4,
+ * and an item packed individually has nothing to cut so it keeps a denominator of 1.
+ */
+const quantityInUnitsOverPack = (quantity: any, item: Record<string, any>): { numerator: number; denominator: number } => {
+    const denominator = Number(item?.packed_in) > 1 ? Number(item.packed_in) : 1
+
+    return {
+        numerator: Math.round((Number(quantity) || 0) * denominator),
+        denominator,
+    }
+}
+
+/* Only a real cut is printed as a fraction, and only that needs room under the line. */
+const hasCutToShow = (quantity: any, item: Record<string, any>): boolean => {
+    const { numerator, denominator } = quantityInUnitsOverPack(quantity, item)
+
+    return denominator > 1 && numerator % denominator !== 0
+}
+
+/*
+ * The count sits inside the sentence, so the translated sentence is split around its placeholder and
+ * the fraction rendered into the gap. Translating the words on either side as their own keys would
+ * fix the English word order onto every other language.
+ */
+const packLabelAroundCount = computed(() => {
+    return ctrans('Pack :countToPack items')
+        .split(':countToPack')
+        .map(part => part.trim())
+})
+
+/*
+ * The chip has room for the two quantities and the word joining them, not for the whole sentence its
+ * tooltip spells out, so that same translation is split and only its middle joint kept. It also has
+ * to be a word rather than the slash it used to be, which no longer reads as a separator once each
+ * side is set as a fraction.
+ */
+const packedOfPickedJoint = computed(() => {
+    return ctrans('Packed :packed of :picked picked').split(/:packed|:picked/)[1]?.trim() || 'of'
+})
+
+/* The same cut written as text, for a tooltip, which takes no markup. */
+const fractionAsText = (fractionData: any, fallback: any): string => {
+    if (!Array.isArray(fractionData)) {
+        return String(Number(fallback) || 0)
+    }
+
+    const [wholePack, [loose, packedIn]] = fractionData
+
+    if (!loose) {
+        return String(wholePack)
+    }
+
+    return wholePack ? `${wholePack} ${loose}/${packedIn}` : `${loose}/${packedIn}`
 }
 
 // Dropshipping items are picked in fractions (e.g. 1/3), so the picking input must
@@ -605,6 +683,7 @@ const urlItemsWaitingWarehouse = computed(() => {
         organisation: currentRouteParams.organisation,
         warehouse: currentRouteParams.warehouse,
         shopType: props.shop_type,
+        ...(currentRouteParams.deliveryNote ? { highlight_delivery_note: currentRouteParams.deliveryNote } : {}),
     })
 })
 
@@ -725,6 +804,7 @@ const onSubmitSplitPicking = () => {
 // Section: Undo Quantity Waiting Warehouse
 const isOpenModalUndoWaitingWarehouse = ref(false)
 const selectedItemToUndoWaitingWarehouse = ref(null)
+const undoWaitingWarehouseInUnitsOverPack = computed(() => useUnitsOverPack(GetWaitingWarehouseFractional(selectedItemToUndoWaitingWarehouse.value)))
 const isLoadingUndoWaitingWarehouse = ref(false)
 const onSetItemToUndoWaitingWarehouse = () => {
     router.post(route('grp.models.delivery_note_item.undo_set_as_waiting_warehouse', {
@@ -789,10 +869,86 @@ const fetchImage = async (deliveryNoteItemId: number)   => {
 
     return response.data ?? null;
 }
+
+const hasDirtyDeliveryNoteItem = computed(() => {
+    return Object.values(props.data?.data ?? {}).some((item: any) => item.is_dirty);
+});
+
+const hasPickedMoreThanRequired = computed(() => {
+    return Object.values(props.data?.data ?? {}).some((item: any) => item.quantity_picked > item.quantity_required)
+})
+
+const warningMsg = computed(() => {
+    let text = '';
+    let title = '';
+
+    if (hasDirtyDeliveryNoteItem.value) {
+        text = ctrans('Order has been modified by the CRM, some items quantity might differ, please check it');
+        title = ctrans('Order has been modified');
+    }
+
+    if (hasPickedMoreThanRequired.value) {
+
+        if (hasDirtyDeliveryNoteItem.value) {
+            text += '. ';
+            title += ' | '
+        }
+
+        text += ctrans('Some items might be picked more than the required quantity, please give it a check (row might be marked in red)');
+        title += ctrans('Item Picked more than the Required Quantity')
+
+    }
+    
+
+    return {
+        text: text,
+        title: title,
+        icon: 'fal fa-exclamation-triangle',
+        type: 'warning'
+    }
+})
+
 </script>
 
 <template>
-    <Table :resource="data" :name="tab" class="mt-5" rowAlignTop xisUseVMemo :useTopPagination="true">
+    <Table 
+        :resource="data" 
+        :name="tab" 
+        class="mt-5"
+        rowAlignTop
+        xisUseVMemo 
+        :useTopPagination="true"
+        :rowColorFunction="(item) => {
+            if (item.is_dirty) {
+                return '!bg-[#fff6db]'
+            }
+            if (item.quantity_picked > item.quantity_required) {
+                return '!bg-[#f5463d66]'
+            }
+            return ''
+        }"
+        :showWarningMessage="hasDirtyDeliveryNoteItem || hasPickedMoreThanRequired"
+        :warning="warningMsg"
+    >
+
+    <template #afterRecordCount>
+            | <span class="font-semibold tabular-nums">{{ Math.round(total_unit_counts * 100) / 100 }}</span> {{ ctrans("SKO's") }}
+        </template>
+        <!-- Whichever picking tab runs out of rows offers the step that follows it, rigt where the picker is already looking. -->
+        <template #button-empty-state="{ action }">
+            <div v-if="action?.key === 'finish-picking' && warehouse && deliveryNote" class="mt-4 flex justify-center">
+                <ButtonSelectBays :warehouse="warehouse" :deliveryNote="deliveryNote" />
+            </div>
+
+            <div v-else-if="action?.key === 'open-todo-items'" class="mt-4 flex justify-center">
+                <Button
+                    :label="trans('Open todo items')"
+                    icon="fal fa-clipboard-list-check"
+                    iconRight="fal fa-arrow-right"
+                    @click="emit('open-tab', 'picking_todo_items')"
+                />
+            </div>
+        </template>
 
         <template #cell(quantity_packed_readonly)="{ item }">
             <span v-tooltip="item.quantity_packed">
@@ -803,9 +959,23 @@ const fetchImage = async (deliveryNoteItemId: number)   => {
 
         <template #cell(quantity_required_readonly)="{ item }">
             <span v-tooltip="item.quantity_required">
-                <FractionDisplay v-if="item.quantity_required_fractional"
-                    :fractionData="item.quantity_required_fractional" />
-                <span v-else>{{ item.quantity_required }}</span>
+                <FractionDisplay 
+                    v-if="item.quantity_required_fractional"
+                    :fractionData="item.quantity_required_fractional" 
+                />
+                <span v-else>
+                    {{ item.quantity_required }}
+                </span>
+            </span>
+            <span v-if="item.original_quantity_required && item.original_quantity_required != item.quantity_required" v-tooltip="ctrans('Original Qty Required: :__originalRequired', {__originalRequired: item.original_quantity_required})" class="ml-1">
+                <FractionDisplay 
+                    v-if="item.original_quantity_required_fractional"
+                    :strikethrough="true"
+                    :fractionData="item.original_quantity_required_fractional" 
+                />
+                <span v-else class="line-through">
+                    {{ item.original_quantity_required }}
+                </span>
             </span>
         </template>
 
@@ -847,14 +1017,63 @@ const fetchImage = async (deliveryNoteItemId: number)   => {
 
         <!-- Column: Name -->
         <template #cell(org_stock_name)="{ item: deliveryNoteItem }">
-            <div>{{ deliveryNoteItem.org_stock_name }} <span class="italic opacity-80">{{deliveryNoteItem.packed_in_message}}</span></div>
+            <div class="flex flex-1 flex-wrap gap-2">
+                <div class="lg:min-w-[20rem] mr-auto">
+                    {{ deliveryNoteItem.org_stock_name }} 
+                    <span class="italic opacity-80">{{deliveryNoteItem.packed_in_message}}</span>
+                    <span
+                        v-if="deliveryNoteItem.barcode"
+                        v-tooltip="ctrans('Org stock barcode') + ' ' + deliveryNoteItem.barcode"
+                    >
+                        <FontAwesomeIcon
+                            icon="fal fa-barcode"
+                            class="ml-2 xopacity-70 cursor-pointer"
+                            fixed-width
+                            aria-hidden="true"
+                        />
+                    </span>
+                </div>
+                <OrgStockHandlingNotes v-if="deliveryNoteItem.note_to_pickers" :noteToPickers="deliveryNoteItem.note_to_pickers" :noteToPackers="deliveryNoteItem.note_to_packers" />
+                <div class="lg:min-w-[10rem] text-right">
+                    <span 
+                        v-tooltip="ctrans('Units / SKU')"
+                        class="mr-3"
+                    >
+                        <FontAwesomeIcon
+                            :icon="faStopCircle"
+                        />
+                        x
+                        <FractionDisplay 
+                            v-if="deliveryNoteItem.total_units_count_fractional"
+                            :fractionData="deliveryNoteItem.total_units_count_fractional" 
+                        />
+                        <span v-else>
+                            {{ deliveryNoteItem.total_units_count }}
+                        </span>
+                    </span>
+                    <span 
+                        v-tooltip="ctrans('SKO')"
+                        class="mr-3"
+                    >
+                        <FontAwesomeIcon
+                            :icon="faBox"
+                        />
+                        x
+                        <FractionDisplay 
+                            v-if="deliveryNoteItem.quantity_required_fractional"
+                            :fractionData="deliveryNoteItem.quantity_required_fractional" 
+                        />
+                        <span v-else>
+                            {{ deliveryNoteItem.quantity_required }}
+                        </span>
+                    </span>
+                </div>
+            </div>
 
             <!-- Section: DNI Expired date -->
-            <div v-if="false" class="flex items-center flex-wrap">
-                <!-- Label: expired date -->
+            <!-- <div v-if="false" class="flex items-center flex-wrap">
                 <ExpiryDateLabel v-if="(deliveryNoteItem.expiry_date || deliveryNoteItem.batch_code)" :expiry_date="deliveryNoteItem.expiry_date" :batch_code="deliveryNoteItem.batch_code" />
 
-                <!-- Button: add/edit expiry date and batch code -->
                 <div v-if="(deliveryNoteItem.is_picked || Number(deliveryNoteItem.quantity_picked) > 0) && state !== 'cancelled'">
                     <Button
                         v-if="deliveryNoteItem.expiry_date || deliveryNoteItem.batch_code"
@@ -877,7 +1096,12 @@ const fetchImage = async (deliveryNoteItemId: number)   => {
                         </template>
                     </Button>
                 </div>
-            </div>
+            </div> -->
+        </template>
+
+        <!-- Column: Barcode -->
+        <template #cell(barcode)="{ item: deliveryNoteItem }">
+            <BarcodeDisplay :value="deliveryNoteItem.barcode" />
         </template>
 
         <!-- Section: Pickings -->
@@ -921,25 +1145,71 @@ const fetchImage = async (deliveryNoteItemId: number)   => {
             <div v-else class="text-gray-400 italic text-sm">No items picked yet</div>
         </template>
 
+        <!-- Column: Batch Codes -->
+        <template #cell(batch_codes)="{ item }">
+            <div v-if="item.batch_codes?.length" class="flex flex-wrap gap-1">
+                <span
+                    v-for="code in item.batch_codes"
+                    :key="code"
+                    class="text-xs px-1.5 py-0.5 rounded border border-blue-300 bg-blue-50 text-blue-700"
+                >
+                    <FontAwesomeIcon icon="fal fa-barcode" class="mr-1" fixed-width aria-hidden="true" />
+                    {{ code }}
+                </span>
+            </div>
+            <span v-else class="text-gray-400 italic text-xs">
+                {{ trans("No batch code set") }}
+            </span>
+        </template>
+
         <!-- Column: Quantity Required -->
         <template #cell(quantity_required)="{ item }">
-
             <span v-tooltip="item.quantity_required">
-                <FractionDisplay v-if="item.quantity_required_fractional"
-                    :fractionData="item.quantity_required_fractional" />
-                <span v-else>{{ item.quantity_required }}</span>
-
+                <FractionDisplay 
+                    v-if="item.quantity_required_fractional"
+                    :fractionData="item.quantity_required_fractional" 
+                />
+                <span v-else>
+                    {{ item.quantity_required }}
+                </span>
+            </span>
+            <span v-if="item.original_quantity_required && item.original_quantity_required != item.quantity_required" v-tooltip="ctrans('Original Qty Required: :__originalRequired', {__originalRequired: item.original_quantity_required})" class="ml-1">
+                <FractionDisplay 
+                    v-if="item.original_quantity_required_fractional"
+                    :strikethrough="true"
+                    :fractionData="item.original_quantity_required_fractional" 
+                />
+                <span v-else class="line-through">
+                    {{ item.original_quantity_required }}
+                </span>
             </span>
 
+
+            <!-- The SKU composition changed after this was picked/packed: human decides -->
+            <template v-if="item.composition_dirty_at">
+                <span
+                    v-tooltip="ctrans('The SKU packing changed after this item was worked: it may hold the wrong quantity. Roll back the picking, then apply the new composition (required would become :qty).', { qty: item.composition_dirty_quantity_required })"
+                    class="ml-1 text-amber-500 cursor-help">
+                    <FontAwesomeIcon icon="fas fa-exclamation-triangle" fixed-width aria-hidden="true" />
+                </span>
+                <ButtonWithLink
+                    v-if="item.applyNewCompositionRoute && ['unassigned', 'queued', 'handling'].includes(item.state)"
+                    type="secondary" size="xs"
+                    :label="ctrans('Apply new composition (:qty)', { qty: item.composition_dirty_quantity_required })"
+                    icon="fal fa-atom"
+                    :routeTarget="item.applyNewCompositionRoute"
+                    :bindToLink="{ preserveScroll: true }" />
+            </template>
+
             <template v-if="state === 'handling'">
-                <div v-if="item.quantity_to_pick > 0" class="whitespace-nowrap space-x-2 mt-1.5">
+                <!-- <div v-if="item.quantity_to_pick > 0" class="whitespace-nowrap space-x-2 mt-1.5">
 
                     <ButtonWithLink v-if="!item.is_handled" type="negative"
                         :label="locale.number(item.quantity_to_pick)"  v-tooltip="ctrans('Set as not picked')" icon="fal fa-debug"
                         size="xs" :routeTarget="item.not_picking_route" :bindToLink="{
                             preserveScroll: true,
                         }" />
-                </div>
+                </div> -->
 
                 <!-- <div v-else-if="Number(item.quantity_not_picked > 0)" v-tooltip="trans('Quantity not gonna be picked')" class="text-red-500 w-fit ml-auto">
                     <FontAwesomeIcon icon="fas fa-skull" class="" fixed-width aria-hidden="true" />
@@ -957,21 +1227,24 @@ const fetchImage = async (deliveryNoteItemId: number)   => {
         </template>
 
         <template #cell(quantity_picked)="{ item: item, proxyItem }">
-            <FractionDisplay v-if="item.quantity_picked_fractional" :fractionData="item.quantity_picked_fractional" />
-            <span v-else>{{ item.quantity_picked }}</span>
-            
+            <FractionDisplayFE v-bind="quantityInUnitsOverPack(item.quantity_picked, item)" />
+
             <!-- <span v-if="Number(item.quantity_not_picked) > 0" v-tooltip="ctrans('Not picked')"  class="text-red-500 rounded-sm border-red-400 bg-red-100  border px-1.5 ml-2">
                 {{ Number(item.quantity_not_picked) }}
             </span> -->
 
             <!-- Number: waiting warehouse -->
-            <Link v-if="isEditable && Number(item.quantity_waiting_warehouse) > 0" v-tooltip="ctrans('Waiting for warehouse')" :href="urlItemsWaitingWarehouse" class="relative text-amber-500 rounded-sm border-amber-400 bg-amber-100  border px-1.5 ml-2">
-                {{ Number(item.quantity_waiting_warehouse) }}
+            <Link v-if="isEditable && Number(item.quantity_waiting_warehouse) > 0" v-tooltip="ctrans('Waiting for warehouse')" :href="urlItemsWaitingWarehouse" class="relative text-amber-500 rounded-sm border-amber-400 bg-amber-100  border px-1.5 ml-2"
+                :class="hasCutToShow(item.quantity_waiting_warehouse, item) ? 'pb-1.5' : ''"
+            >
+                <FractionDisplayFE v-bind="quantityInUnitsOverPack(item.quantity_waiting_warehouse, item)" />
                 <FontAwesomeIcon icon="fas fa-circle" class="absolute -top-0.5 xright-0.5 text-amber-500 text-[5px] animate-ping" fixed-width aria-hidden="true" />
                 <FontAwesomeIcon icon="fas fa-circle" class="absolute -top-0.5 xright-0.5 text-amber-500 text-[5px]" fixed-width aria-hidden="true" />
             </Link>
-            <span v-else-if="Number(item.quantity_waiting_warehouse) > 0" v-tooltip="ctrans('Waiting for warehouse')"  class="relative text-amber-500 rounded-sm border-amber-400 bg-amber-100  border px-1.5 ml-2">
-                {{ Number(item.quantity_waiting_warehouse) }}
+            <span v-else-if="Number(item.quantity_waiting_warehouse) > 0" v-tooltip="ctrans('Waiting for warehouse')"  class="relative text-amber-500 rounded-sm border-amber-400 bg-amber-100  border px-1.5 ml-2"
+                :class="hasCutToShow(item.quantity_waiting_warehouse, item) ? 'pb-1.5' : ''"
+            >
+                <FractionDisplayFE v-bind="quantityInUnitsOverPack(item.quantity_waiting_warehouse, item)" />
                 <FontAwesomeIcon icon="fas fa-circle" class="absolute -top-0.5 xright-0.5 text-amber-500 text-[5px] animate-ping" fixed-width aria-hidden="true" />
                 <FontAwesomeIcon icon="fas fa-circle" class="absolute -top-0.5 xright-0.5 text-amber-500 text-[5px]" fixed-width aria-hidden="true" />
             </span>
@@ -981,18 +1254,18 @@ const fetchImage = async (deliveryNoteItemId: number)   => {
             <Link
                 v-if="Number(item.quantity_waiting_crm) > 0"
                 :href="urlItemsWaitingCrm"
+                v-tooltip="ctrans('Waiting for customer services')"
+                class="text-purple-500 rounded-sm border-purple-400 bg-purple-100  border px-1.5 ml-2"
+                :class="hasCutToShow(item.quantity_waiting_crm, item) ? 'pb-1.5' : ''"
             >
-                <span v-tooltip="ctrans('Waiting for customer services')"  class="text-purple-500 rounded-sm border-purple-400 bg-purple-100  border px-1.5 ml-2">
-                    {{ Number(item.quantity_waiting_crm) }}
-                </span>
+                <FractionDisplayFE v-bind="quantityInUnitsOverPack(item.quantity_waiting_crm, item)" />
             </Link>
 
 
         </template>
 
         <template #cell(quantity_packed)="{ item: item, proxyItem }">
-            <FractionDisplay v-if="item.quantity_packed_fractional" :fractionData="item.quantity_packed_fractional" />
-            <span v-else>{{ item.quantity_packed }}</span>
+            <FractionDisplayFE v-bind="quantityInUnitsOverPack(item.quantity_packed, item)" />
 
         </template>
 
@@ -1384,7 +1657,7 @@ const fetchImage = async (deliveryNoteItemId: number)   => {
                 </div>
             </div>
 
-            <div v-else-if="Number(itemValue.quantity_waiting_warehouse) < 1 && Number(itemValue.quantity_waiting_crm) < 1" class="flex justify-between gap-x-2 gap-y-1">
+            <div v-else-if="Number(itemValue.quantity_waiting_warehouse) <= 0 && Number(itemValue.quantity_waiting_crm) <= 0" class="flex justify-between gap-x-2 gap-y-1">
                 <div v-if="!itemValue.is_handled" class="text-gray-400 italic text-sm">
                     {{ ctrans("No quantity to pick") }}
                 </div>
@@ -1430,10 +1703,25 @@ const fetchImage = async (deliveryNoteItemId: number)   => {
         <template #cell(action)="{ item: item }">
                 <template v-if="(state === 'packing' || state === 'packed') && props.shop_type !== 'dropshipping' && item.quantity_picked > 0" >
                     
-                    <div class="flex justify-start items-center">
+                    <div class="flex justify-start items-center gap-x-2">
+                    <!-- Label: partially packed, the rest is still waiting -->
+                    <span
+                        v-if="item.is_partially_packed"
+                        v-tooltip="ctrans('Packed :packed of :picked picked', {
+                            packed: fractionAsText(item.quantity_packed_fractional, item.quantity_packed),
+                            picked: fractionAsText(item.quantity_picked_fractional, item.quantity_picked),
+                        })"
+                        class="inline-flex items-center gap-x-1 whitespace-nowrap rounded border border-amber-400 bg-amber-100 px-1.5 text-sm text-amber-700">
+                        <FractionDisplay v-if="item.quantity_packed_fractional" :fractionData="item.quantity_packed_fractional" />
+                        <template v-else>{{ Number(item.quantity_packed) }}</template>
+                        {{ packedOfPickedJoint }}
+                        <FractionDisplay v-if="item.quantity_picked_fractional" :fractionData="item.quantity_picked_fractional" />
+                        <template v-else>{{ Number(item.quantity_picked) }}</template>
+                    </span>
+
                     <ButtonWithLink
                         v-if="!item.is_done_packing"
-                        :label="ctrans('Pack :countToPack items', { countToPack: Number(item.quantity_picked) })"
+                        :label="GetQuantityToPackFractional(item) ? undefined : ctrans('Pack :countToPack items', { countToPack: Number(item.quantity_to_pack ?? item.quantity_picked) })"
                         type="secondary"
                         xlabel="ctrans('Packing')"
                         :size="screenType == 'desktop' ? 'xs' : 'lg'"
@@ -1446,10 +1734,18 @@ const fetchImage = async (deliveryNoteItemId: number)   => {
                                 deliveryNoteItem: item.id
                             }
                         }"
-                    />
+                    >
+                        <template v-if="GetQuantityToPackFractional(item)" #label>
+                            <span class="inline-flex items-center gap-x-1">
+                                {{ packLabelAroundCount[0] }}
+                                <FractionDisplay :fractionData="GetQuantityToPackFractional(item)" />
+                                {{ packLabelAroundCount[1] }}
+                            </span>
+                        </template>
+                    </ButtonWithLink>
                     <ButtonWithLink
-                        v-else
-                        v-tooltip="ctrans('Undo packing')"
+                        v-if="item.is_done_packing || item.is_partially_packed"
+                        v-tooltip="item.is_partially_packed ? ctrans('Undo all packing on this item') : ctrans('Undo packing')"
                         type="negative"
                         :size="screenType == 'desktop' ? 'xs' : 'lg'"
                         :bindToLink="{preserveScroll: true}"
@@ -1530,7 +1826,7 @@ const fetchImage = async (deliveryNoteItemId: number)   => {
         v-model:visible="isModalLocation"
         modal
         :draggable="false"
-        dismissableMask
+        :dismissableMask="screenType === 'desktop'"
         :style="{ width: '48rem' }"
         :breakpoints="{ '1280px': '70vw', '992px': '80vw', '768px': '90vw', '576px': '95vw' }"
         :contentStyle="{ maxHeight: '80vh', overflow: 'auto' }"
@@ -1785,8 +2081,14 @@ const fetchImage = async (deliveryNoteItemId: number)   => {
                             <div class="text- opacity-75">
                                 {{ selectedItemToUndoWaitingWarehouse?.org_stock_name ?? '-' }}
                             </div>
-                            <div class="text-sm text-red-500 opacity-75 italic">
-                                {{ ctrans("Quantity waiting for warehouse") }}: {{ Number(selectedItemToUndoWaitingWarehouse?.quantity_waiting_warehouse) }}
+                            <div class="text-sm text-red-500 opacity-75 italic inline-flex items-center gap-x-1">
+                                {{ ctrans("Quantity waiting for warehouse") }}:
+                                <FractionDisplayFE
+                                    v-if="undoWaitingWarehouseInUnitsOverPack"
+                                    :numerator="undoWaitingWarehouseInUnitsOverPack.numerator"
+                                    :denominator="undoWaitingWarehouseInUnitsOverPack.denominator"
+                                />
+                                <template v-else>{{ Number(selectedItemToUndoWaitingWarehouse?.quantity_waiting_warehouse) }}</template>
                             </div>
                         </div>
                     </div>

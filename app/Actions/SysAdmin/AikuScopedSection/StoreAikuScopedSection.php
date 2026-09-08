@@ -9,7 +9,7 @@
 
 namespace App\Actions\SysAdmin\AikuScopedSection;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Models\Analytics\AikuScopedSection;
 use App\Models\Analytics\AikuSection;
 use App\Models\Catalogue\Shop;
@@ -23,7 +23,7 @@ use App\Models\SysAdmin\Organisation;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 
-class StoreAikuScopedSection extends GrpAction
+class StoreAikuScopedSection extends OrgAction
 {
     use AsAction;
     use WithAttributes;
@@ -62,7 +62,7 @@ class StoreAikuScopedSection extends GrpAction
         } else {
             $group = $scope->group;
         }
-        $this->initialisation($group, $modelData);
+        $this->initialisationFromGroup($group, $modelData);
 
         return $this->handle($scope, $aikuSection, $modelData);
     }

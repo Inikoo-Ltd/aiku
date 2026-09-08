@@ -25,7 +25,8 @@ class IndexInvoiceTransactionsGroupedByAsset extends OrgAction
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
-                $query->whereStartWith('invoice_transactions.number', $value);
+                $query->whereStartWith('historic_assets.code', $value)
+                    ->orWhereStartWith('historic_assets.name', $value);
             });
         });
 
@@ -48,6 +49,7 @@ class IndexInvoiceTransactionsGroupedByAsset extends OrgAction
             [
                 'invoice_transactions.invoice_id',
                 'invoice_transactions.model_type',
+                'invoice_transactions.model_id',
                 'invoice_transactions.in_process',
                 'invoice_transactions.is_tax_only',
                 'invoice_transactions.tax_amount',
@@ -81,7 +83,8 @@ class IndexInvoiceTransactionsGroupedByAsset extends OrgAction
                 'invoice_transactions.historic_asset_id',
                 'assets.shop_id',
                 'invoice_transactions.model_type',
-            );
+                'invoice_transactions.model_id'
+            )->with('model');
 
 
         $queryBuilder->defaultSort('code');

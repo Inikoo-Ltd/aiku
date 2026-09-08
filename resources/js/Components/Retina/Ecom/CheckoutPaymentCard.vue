@@ -2,7 +2,7 @@
 import { onMounted, ref, inject } from "vue"
 import { loadCheckoutWebComponents } from '@checkout.com/checkout-web-components';
 import { useCopyText } from "@/Composables/useCopyText"
-import { router } from "@inertiajs/vue3"
+import { router, usePage } from "@inertiajs/vue3"
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faCopy, faSpinner } from "@fal"
@@ -49,8 +49,9 @@ const currencyCode = props.currency_code || layout.iris?.currency?.code
 
 const isLoading = ref(true)
 const isLoadingAfterSuccess = ref(false)
-const MAX_RETRIES = 5;
+const MAX_RETRIES = 12;
 const retryCount = ref(0);
+const fromPendingRedirect = ref(false)
 
 
 const hitWebhookAfterSuccess = async (paymentResponseId: string) => {
@@ -85,6 +86,9 @@ const hitWebhookAfterSuccess = async (paymentResponseId: string) => {
               type: 'error',
           });
 
+      if (fromPendingRedirect.value) {
+          setTimeout(() => window.location.reload(), 2500)
+      }
 
     } else {
       console.log("Payment still processing:", status);
@@ -95,12 +99,12 @@ const hitWebhookAfterSuccess = async (paymentResponseId: string) => {
         setTimeout(() => hitWebhookAfterSuccess(paymentResponseId), 5000);
       } else {
         retryCount.value = 0
-        // ⛔ Final error after max retries
-          notify({
-              title: trans('Something went wrong'),
-              text: response.data.msg ? response.data.msg : trans('Failed to communicate with the payment service.'),
-              type: 'error',
-          });
+        notify({
+            title: trans('Payment still processing'),
+            text: trans('Your order will be submitted automatically once the payment is confirmed.'),
+            type: 'warn',
+            duration: 10000,
+        });
       }
   }
   } catch (error) {
@@ -118,6 +122,15 @@ const hitWebhookAfterSuccess = async (paymentResponseId: string) => {
 
 const paymentResponseId = ref<string | null>(null)
 onMounted(async () => {
+    const pendingPaymentId = usePage().props?.flash?.pending_cko_payment_id
+    if (pendingPaymentId) {
+        fromPendingRedirect.value = true
+        paymentResponseId.value = pendingPaymentId
+        isLoading.value = false
+        hitWebhookAfterSuccess(pendingPaymentId)
+        return
+    }
+
     console.log('fff', layout?.iris?.website_i18n?.current_language?.code)
     // isLoading.value = true
     const checkout = await loadCheckoutWebComponents({

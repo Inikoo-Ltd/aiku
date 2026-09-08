@@ -21,6 +21,8 @@ class ProcessRetinaWebUserRequest
 
     public string $jobQueue = 'analytics';
 
+    public bool $jobDeleteWhenMissingModels = true;
+
     /**
      * @throws \Throwable
      */

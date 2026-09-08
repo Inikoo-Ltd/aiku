@@ -26,6 +26,7 @@ class Column implements Arrayable
         public ?string $align,
         public ?string $className,
         public bool $isInterval,
+        public bool $tooltipIcon = false,
     ) {
     }
 
@@ -45,6 +46,7 @@ class Column implements Arrayable
             'align'         => $this->align,
             'className'     => $this->className,
             'is_interval'   => $this->isInterval,
+            'tooltip_icon'  => $this->tooltipIcon,
         ];
     }
 }

@@ -30,6 +30,7 @@ use App\Http\Resources\Accounting\RefundResource;
 use App\Http\Resources\Accounting\RefundTransactionsResource;
 use App\Http\Resources\History\HistoryResource;
 use App\Http\Resources\Sales\OrderResource;
+use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
 use App\Models\Accounting\Invoice;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
@@ -361,8 +362,8 @@ class ShowRefund extends OrgAction
                         : Inertia::optional(fn () => $this->getTransactionsInProcessCollection(IndexRefundInProcessTransactions::run($refund, $refund->originalInvoice, RefundInProcessTabsEnum::ITEMS_IN_PROCESS->value), $refund->is_tax_only)),
 
                     RefundInProcessTabsEnum::HISTORY->value => $this->tab == RefundInProcessTabsEnum::HISTORY->value ?
-                        fn () => HistoryResource::collection(IndexHistory::run($refund))
-                        : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($refund))),
+                        fn () => HistoryResource::collection(IndexHistory::run($refund, RefundInProcessTabsEnum::HISTORY->value))
+                        : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($refund, RefundInProcessTabsEnum::HISTORY->value))),
 
 
                 ]
@@ -383,8 +384,8 @@ class ShowRefund extends OrgAction
                         : Inertia::optional(fn () => PaymentsResource::collection(IndexPayments::run($refund))),
 
                     RefundTabsEnum::HISTORY->value => $this->tab == RefundTabsEnum::HISTORY->value ?
-                        fn () => HistoryResource::collection(IndexHistory::run($refund))
-                        : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($refund))),
+                        fn () => HistoryResource::collection(IndexHistory::run($refund, RefundTabsEnum::HISTORY->value))
+                        : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($refund, RefundTabsEnum::HISTORY->value))),
 
                     'invoiceExportOptions'          => $exportInvoiceOptions
                 ]
@@ -749,20 +750,28 @@ class ShowRefund extends OrgAction
 
     public function getPrevious(Invoice $invoice, ActionRequest $request): ?array
     {
-        $previous = Invoice::where('reference', '<', $invoice->reference)
-            ->where('invoices.shop_id', $invoice->shop_id)
-            ->orderBy('reference', 'desc')->first();
-
-        return $this->getNavigation($previous, $request->route()->getName());
+        return $this->getNavigation($this->getRefundNeighbour($invoice, $request, forward: false), $request->route()->getName());
     }
 
     public function getNext(Invoice $invoice, ActionRequest $request): ?array
     {
-        $next = Invoice::where('reference', '>', $invoice->reference)
-            ->where('invoices.shop_id', $invoice->shop_id)
-            ->orderBy('reference')->first();
+        return $this->getNavigation($this->getRefundNeighbour($invoice, $request, forward: true), $request->route()->getName());
+    }
 
-        return $this->getNavigation($next, $request->route()->getName());
+    private function getRefundNeighbour(Invoice $invoice, ActionRequest $request, bool $forward): ?Invoice
+    {
+        $query = Invoice::query()
+            ->where('invoices.shop_id', $invoice->shop_id)
+            ->where('invoices.type', InvoiceTypeEnum::REFUND);
+
+        return $this->getBucketNeighbour(
+            query: $query,
+            model: $invoice,
+            sort: $request->input('bucket_sort'),
+            sortColumns: $this->getNavigationSortColumns($invoice),
+            defaultSort: ['invoices.date', true],
+            forward: $forward
+        );
     }
 
     private function getNavigation(?Invoice $refund, string $routeName): ?array

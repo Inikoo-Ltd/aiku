@@ -40,7 +40,7 @@ class UpdateWebpageCanonicalUrl implements ShouldBeUnique
         $canonicalPath = match ($webpage->type) {
             WebpageTypeEnum::CATALOGUE => $this->getWebpageTypeCatalogue($webpage),
             WebpageTypeEnum::STOREFRONT => '',
-            WebpageTypeEnum::BLOG => 'blog/'.$webpage->url,
+            WebpageTypeEnum::BLOG => $this->getWebpageTypeBlog($webpage),
             default => $webpage->url
         };
 
@@ -127,6 +127,13 @@ class UpdateWebpageCanonicalUrl implements ShouldBeUnique
                 }
             }
         }
+    }
+
+    protected function getWebpageTypeBlog(Webpage $webpage): string
+    {
+        $blogCategory = $webpage->getBlogCategory();
+
+        return ($blogCategory ? str_replace('_', '-', $blogCategory->value).'/' : 'blog/').$webpage->url;
     }
 
     protected function getWebpageTypeCatalogue(Webpage $webpage): string

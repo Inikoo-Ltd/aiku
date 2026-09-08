@@ -67,10 +67,18 @@ class ChatSessionListResource extends JsonResource
         return [
             'ulid' => $this->ulid,
             'status' => $this->status,
+            'is_spam' => (bool) $this->is_spam,
+            'is_highlighted' => (bool) $this->is_highlighted,
             'guest_identifier' => $this->guest_identifier,
             'created_at' => $this->created_at,
             'priority' => $this->priority,
-            'contact_name' => $webUser?->customer?->contact_name,
+            'contact_name' => $webUser?->customer?->contact_name
+                ?? $webUser?->contact_name
+                ?? $webUser?->username
+                ?? Arr::get($this->metadata ?? [], 'name')
+                ?? Arr::get($guestProfile ?? [], 'name')
+                ?? $this->guest_identifier
+                ?? 'Guest',
             'last_message' => $lastMessage ? [
                 'message' => $this->truncateMessage($lastMessage->message_text),
                 'sender_type' => $lastMessage->sender_type,

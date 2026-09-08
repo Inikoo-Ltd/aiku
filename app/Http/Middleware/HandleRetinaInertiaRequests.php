@@ -98,10 +98,11 @@ class HandleRetinaInertiaRequests extends Middleware
                     'name'   => $website->shop->currency->name,
                 ],
                 'flash'    => [
-                    'notification'  => fn () => $request->session()->get('notification'),
-                    'modal'         => fn () => $request->session()->get('modal'),
-                    'gtm'           => fn () => $request->session()->get('gtm'),
-                    'confetti'      => fn () => $request->session()->get('confetti')
+                    'notification'           => fn () => $request->session()->get('notification'),
+                    'modal'                  => fn () => $request->session()->get('modal'),
+                    'gtm'                    => fn () => $request->session()->get('gtm'),
+                    'confetti'               => fn () => $request->session()->get('confetti'),
+                    'pending_cko_payment_id' => fn () => $request->session()->get('pending_cko_payment_id')
                 ],
                 'ziggy'    => [
                     'location' => $request->url(),

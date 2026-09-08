@@ -13,7 +13,6 @@ use App\Enums\Goods\Stock\StockTradeUnitCompositionEnum;
 use App\Models\Helpers\Barcode;
 use App\Models\Helpers\Media;
 use App\Models\Inventory\OrgStock;
-use App\Models\Inventory\StockIntervals;
 use App\Models\SupplyChain\SupplierProduct;
 use App\Models\SysAdmin\Group;
 use App\Models\Traits\HasHistory;
@@ -53,6 +52,8 @@ use Spatie\Sluggable\SlugOptions;
  * @property bool $raw_material
  * @property int|null $units_per_pack units per pack
  * @property int|null $units_per_carton units per carton
+ * @property string|null $barcode the outer/SKO CODE 128 barcode printed on the external packing
+ * @property string|null $unit_barcode the EAN13 of the individual unit
  * @property numeric|null $value_in_warehouses
  * @property int|null $image_id
  * @property int|null $gross_weight package weight grams
@@ -77,7 +78,6 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Group|null $group
  * @property-read Media|null $image
  * @property-read MediaCollection<int, Media> $images
- * @property-read StockIntervals|null $intervals
  * @property-read MediaCollection<int, Media> $media
  * @property-read Collection<int, OrgStock> $orgStocks
  * @property-read Media|null $seoImage
@@ -214,11 +214,6 @@ class Stock extends Model implements HasMedia, Auditable
     public function stats(): HasOne
     {
         return $this->hasOne(StockStats::class);
-    }
-
-    public function intervals(): HasOne
-    {
-        return $this->hasOne(StockIntervals::class);
     }
 
     public function stockFamily(): BelongsTo

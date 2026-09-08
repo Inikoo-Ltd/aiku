@@ -65,7 +65,9 @@ class PickingSessionDeliveryNoteItemsGroupedResource extends JsonResource
             'leaflets'          => $this->getLeaflets($deliveryNote),
             'print_status'      => $this->getPrintStatus($deliveryNote),
 
-            'items' => DeliveryNoteItemsStateHandlingResource::collection(IndexDeliveryNoteItemsStateHandling::run($deliveryNote, ignoreParentPagination: true))->resolve()
+            'items' => DeliveryNoteItemsStateHandlingResource::collection(
+                IndexDeliveryNoteItemsStateHandling::run($deliveryNote, ignoreParentPagination: true)
+            )->resolve()
         ];
     }
 

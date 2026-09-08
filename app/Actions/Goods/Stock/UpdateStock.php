@@ -33,6 +33,11 @@ class UpdateStock extends OrgAction
 
     public function handle(Stock $stock, array $modelData): Stock
     {
+        $hasTradeUnits = Arr::has($modelData, 'trade_units');
+        $tradeUnitData = collect(Arr::pull($modelData, 'trade_units'))
+            ->mapWithKeys(fn ($tradeUnit) => [$tradeUnit['id'] => ['quantity' => $tradeUnit['quantity']]])
+            ->toArray();
+
         $stock   = $this->update($stock, $modelData, ['data', 'settings']);
         $changes = Arr::except($stock->getChanges(), ['updated_at', 'last_fetched_at']);
 
@@ -64,6 +69,10 @@ class UpdateStock extends OrgAction
             }
         }
 
+        if ($hasTradeUnits) {
+            SyncStockTradeUnits::run($stock, $tradeUnitData);
+        }
+
         $stock->refresh();
 
         return $stock;
@@ -93,6 +102,9 @@ class UpdateStock extends OrgAction
             ],
             'name'            => ['sometimes', 'required', 'string', 'max:255'],
             'stock_family_id' => ['sometimes', 'nullable', 'exists:stock_families,id'],
+            'trade_units'              => ['sometimes', 'array'],
+            'trade_units.*.id'         => ['required', 'exists:trade_units,id'],
+            'trade_units.*.quantity'   => ['required', 'numeric', 'gt:0'],
         ];
 
         if (!$this->strict) {

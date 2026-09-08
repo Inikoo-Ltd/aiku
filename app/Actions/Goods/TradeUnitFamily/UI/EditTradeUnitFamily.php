@@ -2,17 +2,17 @@
 
 namespace App\Actions\Goods\TradeUnitFamily\UI;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Models\Goods\TradeUnitFamily;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 
-class EditTradeUnitFamily extends GrpAction
+class EditTradeUnitFamily extends OrgAction
 {
     public function asController(TradeUnitFamily $tradeUnitFamily, ActionRequest $request): Response
     {
-        $this->initialisation(group(), $request);
+        $this->initialisationFromGroup(group(), $request);
 
         return $this->handle($tradeUnitFamily, $request);
     }
@@ -46,14 +46,14 @@ class EditTradeUnitFamily extends GrpAction
                     'blueprint' =>
                         [
                             [
-                                'label'  => __('Detail'),
-                                'title'  => __('trade unit family'),
+                                'label'  => __('Properties'),
+                                'icon'   => 'fa-light fa-fingerprint',
                                 'fields' => [
-                                    'code' => [
-                                        'type'     => 'input',
-                                        'label'    => __('Code'),
-                                        'value'    => $tradeUnitFamily->code
-                                    ],
+                                    // 'code' => [
+                                    //     'type'     => 'input',
+                                    //     'label'    => __('Code'),
+                                    //     'value'    => $tradeUnitFamily->code
+                                    // ],
                                     'name' => [
                                         'type'     => 'input',
                                         'label'    => __('Name'),
@@ -65,7 +65,23 @@ class EditTradeUnitFamily extends GrpAction
                                         'value'    => $tradeUnitFamily->description
                                     ],
                                 ]
-                            ]
+                            ],
+                            [
+                                'label'  => __('Labeling Guide'),
+                                'icon'   => 'fa-light fa-file-pdf',
+                                'fields' => [
+                                    'labeling_guide_file' => [
+                                        'type'              => 'file_upload',
+                                        'label'             => __('Labeling guide'),
+                                        'placeholder'       => __('Upload a PDF file'),
+                                        'required'          => false,
+                                        'value'             => $tradeUnitFamily->labelingGuide()?->name,
+                                        'accept'            => '.pdf,application/pdf',
+                                        'information'       => __('Downloadable labeling & compliance guide shown on the family page.'),
+                                        'media_ulid'        => $tradeUnitFamily->labelingGuide()?->ulid
+                                    ],
+                                ],
+                            ],
                         ],
                         'args'      => [
                                 'updateRoute' => [

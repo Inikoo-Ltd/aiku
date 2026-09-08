@@ -40,7 +40,6 @@ use Illuminate\Database\Eloquent\Relations\MorphOne;
  * @property-read \App\Models\Comms\Email|null $email
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Comms\EmailBulkRun> $emailBulkRuns
  * @property-read \App\Models\SysAdmin\Group|null $group
- * @property-read \App\Models\Comms\EmailOngoingRunIntervals|null $intervals
  * @property-read \App\Models\SysAdmin\Organisation $organisation
  * @property-read \App\Models\Comms\Outbox|null $outbox
  * @property-read Shop|null $shop
@@ -97,11 +96,6 @@ class EmailOngoingRun extends Model
     public function stats(): HasOne
     {
         return $this->hasOne(EmailOngoingRunStats::class);
-    }
-
-    public function intervals(): HasOne
-    {
-        return $this->hasOne(EmailOngoingRunIntervals::class);
     }
 
     public function dispatchedEmails(): BelongsToMany

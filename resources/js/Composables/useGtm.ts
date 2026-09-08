@@ -77,6 +77,78 @@ export const pushGtmEventAndWaitForTags = (
     })
 }
 
+const GTM_SENT_ECOMMERCE_EVENTS_STORAGE_KEY = "gtmSentEcommerceEvents"
+const GTM_SENT_ECOMMERCE_EVENTS_LIMIT = 50
+
+const readSentEcommerceEventKeys = (): string[] => {
+    if (typeof window === "undefined") {
+        return []
+    }
+
+    try {
+        const stored = window.localStorage.getItem(GTM_SENT_ECOMMERCE_EVENTS_STORAGE_KEY)
+
+        return Array.isArray(JSON.parse(stored ?? "[]")) ? JSON.parse(stored ?? "[]") : []
+    } catch {
+        return []
+    }
+}
+
+const rememberSentEcommerceEventKey = (eventKey: string): void => {
+    if (typeof window === "undefined") {
+        return
+    }
+
+    const eventKeys = readSentEcommerceEventKeys().filter((existingKey) => existingKey !== eventKey)
+    eventKeys.push(eventKey)
+
+    try {
+        window.localStorage.setItem(
+            GTM_SENT_ECOMMERCE_EVENTS_STORAGE_KEY,
+            JSON.stringify(eventKeys.slice(-GTM_SENT_ECOMMERCE_EVENTS_LIMIT)),
+        )
+    } catch {
+        //
+    }
+}
+
+const buildEcommerceEventKey = (event: string, ecommerce: Record<string, any> | undefined): string | null => {
+    const transactionId = ecommerce?.transaction_id
+
+    if (!transactionId) {
+        return null
+    }
+
+    const itemIds = (ecommerce?.items ?? [])
+        .map((item: any) => item?.item_id ?? "")
+        .join(",")
+
+    return `${event}:${transactionId}:${itemIds}`
+}
+
+export const pushServerGtmEventOnce = (event: string, data: Record<string, any> = {}): boolean => {
+    if (typeof window === "undefined" || !event) {
+        return false
+    }
+
+    if (!ALLOWED_GTM_EVENTS.includes(event)) {
+        return false
+    }
+
+    const eventKey = buildEcommerceEventKey(event, data?.ecommerce)
+
+    if (eventKey) {
+        if (readSentEcommerceEventKeys().includes(eventKey)) {
+            return false
+        }
+
+        rememberSentEcommerceEventKey(eventKey)
+    }
+
+    pushEventWithEcommerceReset(event, data)
+
+    return true
+}
 
 export const pushServerGtmEvent = (event: string, data: Record<string, any> = {}): void => {
     if (typeof window === "undefined" || !event) {

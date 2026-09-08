@@ -188,7 +188,7 @@ class IndexRetinaFulfilmentPortfolios extends RetinaAction
             $table->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
             // $table->column(key: 'quantity_left', label: __('Stock'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
             if ($this->customerSalesChannel->platform->type === PlatformTypeEnum::TIKTOK) {
-                $table->column(key: 'platform_sku', label: __('Platform SKU'), canBeHidden: false);
+                $table->column(key: 'platform_sku', label: __('Platform SKO'), canBeHidden: false);
             }
             $table->column(key: 'actions', label: __('Actions'), canBeHidden: false);
         };

@@ -8,7 +8,10 @@
 
 namespace App\Actions\GoodsIn\StockDeliveryItem;
 
+use App\Actions\GoodsIn\StockDelivery\Hydrators\StockDeliveriesHydrateItems;
 use App\Actions\GoodsIn\StockDelivery\Traits\HasStockDeliveryHydrators;
+use App\Actions\GoodsIn\StockDelivery\UpdateStockDeliveryStateFromGoodsIn;
+use App\Actions\Procurement\PurchaseOrderTransaction\UpdatePurchaseOrderTransactionDeliveryStateFromStockDeliveryItem;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\GoodsIn\StockDeliveryItem\StockDeliveryItemStateEnum;
 use App\Models\GoodsIn\StockDeliveryItem;
@@ -31,6 +34,10 @@ class UpdateStateToCheckedStockDeliveryItem
 
         $stockDeliveryItem = $this->update($stockDeliveryItem, $data);
 
+        StockDeliveriesHydrateItems::run($stockDeliveryItem->stockDelivery);
+        UpdatePurchaseOrderTransactionDeliveryStateFromStockDeliveryItem::run($stockDeliveryItem);
+        UpdateStockDeliveryStateFromGoodsIn::run($stockDeliveryItem->stockDelivery);
+
         $this->runStockDeliveryHydrators($stockDeliveryItem->stockDelivery);
 
         return $stockDeliveryItem;
@@ -43,18 +50,18 @@ class UpdateStateToCheckedStockDeliveryItem
         ];
     }
 
+    public function asController(StockDeliveryItem $stockDeliveryItem, ActionRequest $request): StockDeliveryItem
+    {
+        $request->validate();
+
+        return $this->handle($stockDeliveryItem, $request->all());
+    }
+
     public function action(StockDeliveryItem $stockDeliveryItem, $modelData): StockDeliveryItem
     {
         $this->setRawAttributes($modelData);
         $validatedData = $this->validateAttributes();
 
         return $this->handle($stockDeliveryItem, $validatedData);
-    }
-
-    public function asController(StockDeliveryItem $stockDeliveryItem, ActionRequest $request): StockDeliveryItem
-    {
-        $request->validate();
-
-        return $this->handle($stockDeliveryItem, $request->all());
     }
 }

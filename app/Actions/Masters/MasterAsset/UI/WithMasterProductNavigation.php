@@ -45,6 +45,20 @@ trait WithMasterProductNavigation
         }
     }
 
+    protected function getNavigationDefaultSort(Model $model): array
+    {
+        return ['master_assets.code', false];
+    }
+
+    protected function getNavigationSortColumns(Model $model): array
+    {
+        return [
+            'code'       => 'master_assets.code',
+            'name'       => 'master_assets.name',
+            'created_at' => 'master_assets.created_at',
+        ];
+    }
+
     protected function getNavigationLabel(Model $model): string
     {
         /** @var MasterAsset $model */

@@ -9,7 +9,9 @@
 namespace App\Models\Inventory;
 
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementClassEnum;
+use App\Enums\Inventory\OrgStockMovement\OrgStockMovementCostStatusEnum;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementFlowEnum;
+use App\Enums\Inventory\OrgStockMovement\OrgStockMovementReasonEnum;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementTypeEnum;
 use App\Models\SysAdmin\User;
 use App\Models\Traits\InWarehouse;
@@ -17,6 +19,7 @@ use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 /**
  * @property int $id
@@ -56,10 +59,14 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string|null $note
  * @property bool $is_migration_point
  * @property string|null $migration_source_id
+ * @property OrgStockMovementReasonEnum|null $reason
+ * @property string|null $parent_type
+ * @property int|null $parent_id
  * @property-read \App\Models\SysAdmin\Group|null $group
  * @property-read \App\Models\Inventory\Location|null $location
  * @property-read \App\Models\Inventory\OrgStock|null $orgStock
  * @property-read \App\Models\SysAdmin\Organisation $organisation
+ * @property-read Model|\Eloquent|null $parent
  * @property-read User|null $user
  * @property-read \App\Models\Inventory\Warehouse|null $warehouse
  * @method static Builder<static>|OrgStockMovement newModelQuery()
@@ -81,7 +88,7 @@ class OrgStockMovement extends Model
             'flow'                  => OrgStockMovementFlowEnum::class,
             'class'                 => OrgStockMovementClassEnum::class,
             'date'                  => 'datetime',
-            'quantity'              => 'decimal:3',
+            'quantity'              => 'decimal:6',
             'audited_quantity'      => 'decimal:6',
             'amount'                => 'decimal:3',
             'grp_amount'            => 'decimal:3',
@@ -89,6 +96,8 @@ class OrgStockMovement extends Model
             'cost_per_sku'          => 'decimal:6',
             'fixed_internal_helper' => 'boolean',
             'is_migration_point'    => 'boolean',
+            'reason'                => OrgStockMovementReasonEnum::class,
+            'cost_status'           => OrgStockMovementCostStatusEnum::class,
         ];
     }
 
@@ -112,5 +121,10 @@ class OrgStockMovement extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class, 'user_id');
+    }
+
+    public function parent(): MorphTo
+    {
+        return $this->morphTo();
     }
 }

@@ -8,10 +8,12 @@ import { Head, useForm } from "@inertiajs/vue3"
 import { computed, ref, watch } from "vue"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import TableMasterProducts from "@/Components/Tables/Grp/Goods/TableMasterProducts.vue"
+import TableMasterProductsPricing from "@/Components/Tables/Grp/Goods/TableMasterProductsPricing.vue"
+import TableMasterProductsBulkEditV2 from "@/Components/Tables/Grp/Goods/TableMasterProductsBulkEditV2.vue"
 import { capitalize } from "@/Composables/capitalize"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import Modal from '@/Components/Utils/Modal.vue'
-import { faShapes, faSortAmountDownAlt, faBrowser, faSortAmountDown, faHome, faPlus, faPencil, faMinus } from "@fal"
+import { faShapes, faSortAmountDownAlt, faBrowser, faSortAmountDown, faHome, faPlus, faPencil, faMinus, faMoneyBill } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { PageHeadingTypes } from "@/types/PageHeading"
 import { routeType } from "@/types/route"
@@ -29,7 +31,7 @@ import ListSelector from "@/Components/DepartmentAndFamily/ListSelector.vue"
 import SetOrderingPositionOfProduct from "@/Components/Master/SetOrderingPositionOfProduct.vue";
 
 
-library.add(faShapes, faSortAmountDownAlt, faBrowser, faSortAmountDown, faHome, faPlus)
+library.add(faShapes, faSortAmountDownAlt, faBrowser, faSortAmountDown, faHome, faPlus, faMoneyBill)
 
 const props = defineProps<{
     pageHead: PageHeadingTypes
@@ -41,6 +43,9 @@ const props = defineProps<{
     index?: {}
     index_ordering?: {}
     sales?: {}
+    pricing?: {}
+    bulk_edit?: {}
+    taxPresetOptions?: { value: string; title: string; description?: string }[]
     data: {}
     routes?: {
         master_families_route: routeType
@@ -53,16 +58,39 @@ const props = defineProps<{
     currency?: any
     variantSlugs?: Record<string, string>
     hide_bulk_edit?: boolean
+    pricingMajorCurrencies?: string[]
+    pricingCurrencies?: Record<string, any>
+    pricingCostRates?: Record<string, number | null>
 }>()
 
 const currentTab = ref<string>(props.tabs.current)
 const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
+
+// pricingCurrencies/pricingCostRates are optional props (skipped unless the page
+// loads directly on the pricing tab) — fetch them once when the tab is first opened
+watch(currentTab, (tab) => {
+    if (tab === 'pricing' && !props.pricingCurrencies) {
+        router.reload({ only: ['pricingCurrencies', 'pricingCostRates'] })
+    }
+})
+
+const pricingBulkField = ref<'master_prices' | 'master_rrps' | null>(null)
+
+// Bumping this tells the bulk edit tab's table to open the tax modal for the selection
+const taxBulkSignal = ref(0)
+
+// Same channel for the in-cell edits: the table holds the pending changes, the page head
+// holds the button that submits them
+const bulkEditSaveSignal = ref(0)
+const bulkEditState = ref<{ dirty: number, saving: boolean }>({ dirty: 0, saving: false })
 
 const component = computed(() => {
     const components: any = {
         index: TableMasterProducts,
         index_ordering: SetOrderingPositionOfProduct,
         sales: TableMasterProducts,
+        pricing: TableMasterProductsPricing,
+        bulk_edit: TableMasterProductsBulkEditV2,
     }
 
     return components[currentTab.value]
@@ -87,21 +115,6 @@ const compSelectedProductsId = computed(() =>
     Object.keys(selectedProductsId.value).filter(key => selectedProductsId.value[key])
 )
 
-const isLoadingVisit = ref(false)
-const onVisit = () => {
-    router.visit(route('grp.masters.master_shops.show.bulk-edit', {
-        masterShop: route().params['masterShop'],
-        id: compSelectedProductsId.value,
-        from: window.location.href
-    }), {
-        onStart: () => {
-            isLoadingVisit.value = true
-        },
-        onFinish: () => {
-            isLoadingVisit.value = false
-        },
-    })
-}
 
 const onSubmitAttach = async ({
     closeModal,
@@ -204,6 +217,9 @@ const SaveOrder = () => {
 }
 
 watch(() => currentTab.value, (tab) => {
+    selectedProductsId.value = {}
+    bulkEditState.value = { dirty: 0, saving: false }
+
     if (tab === 'index' || tab === 'index_ordering' || tab === 'sales') {
         localData.value = (props as any)[tab] || props.data
     } else {
@@ -233,7 +249,7 @@ watch(() => currentTab.value, (tab) => {
             <Button
                 v-if="currentTab === 'index_ordering'"
                 :icon="action.icon"
-                :label="action.label" 
+                :label="action.label"
                 :style="action.style"
                 :onClick="SaveOrder"
                 :loading="loadingOrder"
@@ -242,15 +258,42 @@ watch(() => currentTab.value, (tab) => {
         </template>
 
         <template #other>
-            <Button
-                v-if="!hide_bulk_edit"
-                @click="() => onVisit()"
-                :label="trans('Bulk edit products') + ` (${compSelectedProductsId?.length})`"
-                :disabled="!compSelectedProductsId.length"
-                type="secondary"
-                icon="fal fa-pencil"
-                :loading="isLoadingVisit"
-            />
+            <template v-if="currentTab === 'pricing'">
+                <Button
+                    @click="() => pricingBulkField = 'master_prices'"
+                    :label="trans('Bulk edit prices') + ` (${compSelectedProductsId?.length})`"
+                    :disabled="!compSelectedProductsId.length"
+                    type="primary"
+                    icon="fal fa-pencil"
+                    :key="currentTab"
+                />
+                <Button
+                    @click="() => pricingBulkField = 'master_rrps'"
+                    :label="trans('Bulk edit RRPs') + ` (${compSelectedProductsId?.length})`"
+                    :disabled="!compSelectedProductsId.length"
+                    type="primary"
+                    icon="fal fa-pencil"
+                    :key="currentTab"
+                />
+            </template>
+            <template v-if="currentTab === 'bulk_edit'">
+                <Button
+                    @click="() => bulkEditSaveSignal++"
+                    :label="trans('Save changes') + ` (${bulkEditState.dirty})`"
+                    :disabled="!bulkEditState.dirty || bulkEditState.saving"
+                    :loading="bulkEditState.saving"
+                    type="save"
+                    :key="currentTab"
+                />
+                <Button
+                    @click="() => taxBulkSignal++"
+                    :label="trans('Set tax for selected') + ` (${compSelectedProductsId?.length})`"
+                    :disabled="!compSelectedProductsId.length"
+                    type="primary"
+                    icon="fal fa-pencil"
+                    :key="currentTab"
+                />
+            </template>
             <div v-if="routes?.dataList">
                 <Button
                     type="secondary"
@@ -292,8 +335,18 @@ watch(() => currentTab.value, (tab) => {
         :key="currentTab"
         :tab="currentTab"
         :data="currentTab == 'index_ordering' ?  localData : props[currentTab]"
+        :taxPresetOptions="taxPresetOptions"
+        :taxBulkSignal="taxBulkSignal"
+        :bulkEditSaveSignal="bulkEditSaveSignal"
+        @bulkEditState="(state: { dirty: number, saving: boolean }) => bulkEditState = state"
+        :majorCurrencies="pricingMajorCurrencies"
+        :pricingCurrencies="pricingCurrencies"
+        :bulkEditField="pricingBulkField"
+        :pricingCostRates="pricingCostRates"
+        @bulkEditHandled="pricingBulkField = null"
+        :masterProductCategoryId="masterProductCategoryId"
         :variant-slugs="variantSlugs"
-        :isCheckBox="!hide_bulk_edit"
+        :isCheckBox="currentTab === 'pricing' && !hide_bulk_edit"
         :routes="routes"
         @selectedRow="(productsId: Record<string, boolean>) => selectedProductsId = productsId"
         @update:data="(updatedData) => localData = updatedData"

@@ -30,6 +30,7 @@ use Illuminate\Support\Arr;
  * @property mixed $created_at
  * @property mixed $updated_at
  * @property mixed $product_state
+ * @property mixed $product_status
  * @property mixed $is_for_sale
  */
 class DropshippingApiPortfoliosResource extends JsonResource
@@ -51,8 +52,9 @@ class DropshippingApiPortfoliosResource extends JsonResource
             'ean_barcode'   => $this->barcode,
             'created_at'    => $this->created_at,
             'updated_at'    => $this->updated_at,
-            'product_state' => $this->product_state,
-            'is_for_sale'   => $this->is_for_sale,
+            'product_state'  => $this->product_state,
+            'product_status' => $this->product_status,
+            'is_for_sale'    => $this->is_for_sale,
         ];
     }
 }

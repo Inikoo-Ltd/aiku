@@ -12,15 +12,19 @@ use App\Actions\Comms\Email\SendNewOrderEmailToCustomer;
 use App\Actions\Comms\Email\SendNewOrderEmailToSubscribers;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateBasket;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateTrafficSource;
+use App\Actions\CRM\Customer\UpdateCustomer;
 use App\Actions\Dropshipping\CustomerClient\Hydrators\CustomerClientHydrateBasket;
 use App\Actions\Dropshipping\CustomerSalesChannel\Hydrators\CustomerSalesChannelsHydrateOrders;
 use App\Actions\Ordering\Order\HasOrderHydrators;
+use App\Actions\Ordering\Order\ProcessOrderTrafficSource;
 use App\Actions\Ordering\Transaction\StoreTransaction;
 use App\Actions\Ordering\UpcomingTransaction\UpdateUpcomingTransaction;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\Ordering\WithOrderingEditAuthorisation;
 use App\Actions\Traits\WithActionUpdate;
+use App\Actions\Traits\WithGiftOptOut;
 use App\Enums\Catalogue\Product\ProductStatusEnum;
+use App\Events\RetinaOrderSubmittedEvent;
 use App\Enums\Discounts\Offer\OfferTypeEnum;
 use App\Enums\Ordering\Order\OrderPayStatusEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
@@ -51,6 +55,7 @@ class SubmitOrder extends OrgAction
     use WithActionUpdate;
     use HasOrderHydrators;
     use WithOrderingEditAuthorisation;
+    use WithGiftOptOut;
 
 
     private Order $order;
@@ -65,7 +70,10 @@ class SubmitOrder extends OrgAction
         $modelData = [
             'state'          => OrderStateEnum::SUBMITTED,
             'status'         => OrderStatusEnum::PROCESSING,
-            'internal_notes' => $order->customer->warehouse_internal_notes,
+            'private_warehouse_note' => collect([$order->private_warehouse_note, $order->customer->warehouse_internal_notes, $order->customer->warehouse_temporary_notes])
+                ->filter()
+                ->unique()
+                ->implode(' — ') ?: null,
         ];
 
         $date = now();
@@ -106,6 +114,12 @@ class SubmitOrder extends OrgAction
         }
 
         $this->update($order, $modelData);
+        
+        if ($order->customer->warehouse_temporary_notes) {
+            UpdateCustomer::make()->action($order->customer, [
+                'warehouse_temporary_notes' => null
+            ]);
+        }
 
         if ($order->shop->masterShop) {
             $order->shop->masterShop->orderingStats->update(
@@ -146,6 +160,11 @@ class SubmitOrder extends OrgAction
         }
 
         CustomerHydrateTrafficSource::dispatch($order->customer_id);
+        ProcessOrderTrafficSource::dispatch($order)->delay($this->hydratorsDelay);
+
+        /** Tells any other browser tab still showing this order's checkout to redirect away,
+         * so a stale card widget cannot take a second payment */
+        RetinaOrderSubmittedEvent::dispatch($order->customer_id, $order->id);
 
         return $order;
     }
@@ -168,7 +187,7 @@ class SubmitOrder extends OrgAction
                     continue;
                 }
 
-                $isGift = $upComingTransaction->type === UpcomingTransactionTypeEnum::GIFT;
+                $isFollowOn = $upComingTransaction->type === UpcomingTransactionTypeEnum::FOLLOW_ON;
 
                 $transaction = StoreTransaction::make()->action(
                     order: $order,
@@ -176,8 +195,8 @@ class SubmitOrder extends OrgAction
                     modelData: [
                         'quantity_ordered' => 0,
                         'quantity_bonus'   => $upComingTransaction->quantity,
-                        'is_gift'          => $isGift,
-                        'is_follow_on'     => true
+                        'is_gift'          => true,
+                        'is_follow_on'     => $isFollowOn
                     ],
                     strict: false,
                     forceHydrators: true
@@ -196,6 +215,10 @@ class SubmitOrder extends OrgAction
 
     public function processGiftOffers(Order $order): Order
     {
+        if ($this->isGiftOptedOut($order)) {
+            return $order;
+        }
+
         foreach (
             DB::table('offers')
                 ->select(['id', 'type', 'trigger_data', 'allowance_signature', 'name', 'trigger_type', 'trigger_id', 'offer_campaign_id'])
@@ -205,7 +228,20 @@ class SubmitOrder extends OrgAction
         ) {
             $triggerData = json_decode($giftOfferData->trigger_data, true);
 
-            if ($order->gross_amount >= Arr::get($triggerData, 'min_order_amount', 0)) {
+            if ($giftOfferData->trigger_type == 'Product') {
+                $itemQuantity    = (int)Arr::get($triggerData, 'item_quantity', 0);
+                $orderedQuantity = DB::table('transactions')
+                    ->where('order_id', $order->id)
+                    ->where('model_type', 'Product')
+                    ->where('model_id', $giftOfferData->trigger_id)
+                    ->whereNull('deleted_at')
+                    ->sum('quantity_ordered');
+                $eligible        = $itemQuantity > 0 && $orderedQuantity >= $itemQuantity;
+            } else {
+                $eligible = $order->gross_amount >= Arr::get($triggerData, 'min_order_amount', 0);
+            }
+
+            if ($eligible) {
                 $allowanceData = DB::table('offer_allowances')->select('data', 'id')->where('status', true)->where('offer_id', $giftOfferData->id)->first();
                 if ($allowanceData) {
                     $allowanceGiftData = json_decode($allowanceData->data, true);
@@ -266,7 +302,7 @@ class SubmitOrder extends OrgAction
 
     public function processVoucherGiftOffers(Order $order): Order
     {
-        if (!$order->offer_voucher_id) {
+        if (!$order->offer_voucher_id || $this->isGiftOptedOut($order)) {
             return $order;
         }
 
@@ -312,7 +348,7 @@ class SubmitOrder extends OrgAction
                             'model_type'            => $giftTransaction->model_type,
                             'model_id'              => $giftTransaction->model_id,
                             'offer_campaign_id'     => Arr::get($voucherOfferData, 'offer_campaign_id'),
-                            'offer_id'              => Arr::get($voucherOfferData, 'offer_campaign_id'),
+                            'offer_id'              => Arr::get($voucherOfferData, 'id'),
                             'offer_allowance_id'    => Arr::get($voucherOfferData, 'offer_allowance_id'),
                             'discounted_amount'     => 0,
                             'discounted_percentage' => 0,
@@ -356,10 +392,10 @@ class SubmitOrder extends OrgAction
             $daysSinceLastInvoiced = $lastInvoiced ? (int)-now()->diffInDays($lastInvoiced) : null;
 
 
-            if ($order->gross_amount >= $minAmount && ($daysSinceLastInvoiced != null && $daysSinceLastInvoiced <= Arr::get($offersData, 'gr.interval', 30))) {
+            if ($order->gross_amount >= $minAmount && (($daysSinceLastInvoiced != null && $daysSinceLastInvoiced <= Arr::get($offersData, 'gr.interval', 30)) || $order->customer->hasActiveGrExtension())) {
                 $eligible = true;
             }
-            $isGiftOptedOut = (bool)Arr::get($order->customer->settings, 'is_gift_opted_out', false);
+            $isGiftOptedOut = $this->isGiftOptedOut($order);
         }
 
 

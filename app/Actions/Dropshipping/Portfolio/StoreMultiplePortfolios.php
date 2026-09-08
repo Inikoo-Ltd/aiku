@@ -32,12 +32,14 @@ class StoreMultiplePortfolios extends OrgAction
             if ($customerSalesChannel->customer->is_fulfilment) {
                 /** @var StoredItem $item */
                 $item = StoredItem::find($itemID);
+                $checkPortfolio = $item->portfolio();
             } else {
                 /** @var Product $item */
                 $item = Product::find($itemID);
+                $checkPortfolio = $item->portfolios();
             }
 
-            if ($item->portfolios()->where('customer_sales_channel_id', $customerSalesChannel->id)->exists()) {
+            if ($checkPortfolio->where('customer_sales_channel_id', $customerSalesChannel->id)->exists()) {
                 if ($portfolio = $item->portfolios()->where('customer_sales_channel_id', $customerSalesChannel->id)->where('status', false)->first()) {
                     UpdatePortfolio::make()->action($portfolio, [
                         'status' => true

@@ -8,11 +8,7 @@
 
 namespace App\Actions\CRM\Prospect\Mailshots;
 
-use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateMailshots;
-use App\Actions\Comms\Outbox\Hydrators\OutboxHydrateMailshots;
 use App\Actions\OrgAction;
-use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateMailshots;
-use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateMailshots;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Comms\Mailshot\MailshotStateEnum;
@@ -39,14 +35,6 @@ class UpdateProspectMailshot extends OrgAction
         if ($mailshot->wasChanged('preview_text') && $mailshot->secondWave) {
             $mailshot->secondWave->update(['preview_text' => $mailshot->preview_text]);
         }
-
-        // TODO: check and make sure later
-        // if ($mailshot->wasChanged('state')) {
-        //     GroupHydrateMailshots::dispatch($mailshot->group)->delay($this->hydratorsDelay);
-        //     OrganisationHydrateMailshots::dispatch($mailshot->organisation)->delay($this->hydratorsDelay);
-        //     OutboxHydrateMailshots::dispatch($mailshot->outbox)->delay($this->hydratorsDelay);
-        //     ShopHydrateMailshots::dispatch($mailshot->shop)->delay($this->hydratorsDelay);
-        // }
 
         return $mailshot;
     }

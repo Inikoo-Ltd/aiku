@@ -9,6 +9,7 @@
 
 namespace App\Actions\Web\WebBlock;
 
+use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Http\Resources\Web\WebBlockCollectionResource;
 use App\Models\Web\Webpage;
 use Illuminate\Support\Facades\DB;
@@ -41,6 +42,7 @@ class GetWebBlockCollections
                 $join->on('webpages.model_id', '=', 'collections.id');
             })
             ->where('webpages.model_type', 'Collection')
+            ->where('webpages.state', WebpageStateEnum::LIVE->value)
             ->where('model_has_collections.model_id', $webpage->model_id)
             ->where('model_has_collections.model_type', $webpage->model_type)
             ->select(['collections.slug', 'collections.code', 'collections.name', 'collections.image_id', 'collections.web_images','webpages.title as title', 'webpages.canonical_url as canonical_url', 'webpages.url as url'])

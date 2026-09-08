@@ -6,6 +6,7 @@
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
+use App\Actions\Accounting\Payment\PastPay\PayOrderWithPastpay;
 use App\Actions\Accounting\TopUpPaymentApiPoint\StoreTopUpPaymentApiPoint;
 use App\Actions\Dropshipping\Aiku\CloneMultipleManualPortfolios;
 use App\Actions\Dropshipping\Aiku\StoreRetinaManualPlatform;
@@ -71,10 +72,10 @@ use App\Actions\Retina\Dropshipping\CustomerSalesChannel\ImportBulkCustomerSales
 use App\Actions\Retina\Dropshipping\CustomerSalesChannel\SyncRetinaCustomerSalesChannelPortfolioManually;
 use App\Actions\Retina\Dropshipping\CustomerSalesChannel\UnSuspendRetinaCustomerSalesChannel;
 use App\Actions\Retina\Dropshipping\CustomerSalesChannel\UpdateRetinaCustomerSalesChannel;
+use App\Actions\Retina\Dropshipping\CustomerSalesChannel\DismissRetinaCustomerSalesChannelNotice;
 use App\Actions\Retina\Dropshipping\CustomerSalesChannel\UpdateRetinaEbayCustomerSalesChannel;
 use App\Actions\Retina\Dropshipping\Orders\DeleteOrderAddressCollection;
 use App\Actions\Retina\Dropshipping\Orders\ImportRetinaOrderTransaction;
-use App\Actions\Retina\Dropshipping\Orders\PayOrderWithPastpay;
 use App\Actions\Retina\Dropshipping\Orders\PayRetinaOrderWithBalance;
 use App\Actions\Retina\Dropshipping\Orders\PayRetinaOrderWithBalanceAfterSubmitted;
 use App\Actions\Retina\Dropshipping\Orders\RemoveRetinaOrderVoucher;
@@ -83,23 +84,23 @@ use App\Actions\Retina\Dropshipping\Orders\StoreRetinaOrder;
 use App\Actions\Retina\Dropshipping\Orders\StoreRetinaOrderVoucher;
 use App\Actions\Retina\Dropshipping\Orders\StoreRetinaPlatformOrder;
 use App\Actions\Retina\Dropshipping\Orders\SubmitRetinaOrder;
-use App\Actions\Retina\Dropshipping\Orders\SuccessOrderWithPastpay;
 use App\Actions\Retina\Dropshipping\Orders\Transaction\DeleteRetinaTransaction;
 use App\Actions\Retina\Dropshipping\Orders\Transaction\StoreRetinaEcomBasketTransaction;
 use App\Actions\Retina\Dropshipping\Orders\UpdateOrderGrGift;
 use App\Actions\Retina\Dropshipping\Orders\UpdateRetinaOrder;
+use App\Actions\Retina\Ecom\Basket\SelectRetinaOrderShipper;
 use App\Actions\Retina\Dropshipping\Orders\UpdateRetinaOrderExtraPacking;
 use App\Actions\Retina\Dropshipping\Orders\UpdateRetinaOrderPackaging;
 use App\Actions\Retina\Dropshipping\Orders\UpdateRetinaOrderInsurance;
 use App\Actions\Retina\Dropshipping\Orders\UpdateRetinaOrderPremiumDispatch;
 use App\Actions\Retina\Dropshipping\Portfolio\BatchDeleteRetinaPortfolio;
+use App\Actions\Retina\Dropshipping\Portfolio\BulkUnlinkRetinaPortfolio;
 use App\Actions\Retina\Dropshipping\Portfolio\DeleteRetinaPortfolio;
 use App\Actions\Retina\Dropshipping\Portfolio\StoreRetinaPortfoliosFromProductCategory;
 use App\Actions\Retina\Dropshipping\Portfolio\StoreRetinaPortfoliosFromProductCategoryToAllChannels;
 use App\Actions\Retina\Dropshipping\Portfolio\StoreRetinaPortfolioToAllChannels;
 use App\Actions\Retina\Dropshipping\Portfolio\StoreRetinaPortfolioToMultiChannels;
 use App\Actions\Retina\Dropshipping\Portfolio\UnlinkAndDeleteBulkRetinaPortfolio;
-use App\Actions\Retina\Dropshipping\Portfolio\BulkUnlinkRetinaPortfolio;
 use App\Actions\Retina\Dropshipping\Portfolio\UnlinkRetinaPortfolio;
 use App\Actions\Retina\Dropshipping\Portfolio\UpdateAndUploadRetinaBulkPortfolioPriceToCurrentChannel;
 use App\Actions\Retina\Dropshipping\Portfolio\UpdateAndUploadRetinaPortfolioToCurrentChannel;
@@ -107,11 +108,17 @@ use App\Actions\Retina\Dropshipping\Portfolio\UpdateRetinaPortfolio;
 use App\Actions\Retina\Dropshipping\Product\StoreRetinaProductManual;
 use App\Actions\Retina\Ebay\CreateRetinaNewAllPortfoliosToEbay;
 use App\Actions\Retina\Ebay\CreateRetinaNewBulkPortfoliosToEbay;
+use App\Actions\Retina\Dropshipping\Portfolio\MatchRetinaBulkPortfoliosToPlatform;
 use App\Actions\Retina\Ebay\MatchRetinaBulkNewProductToCurrentEbay;
 use App\Actions\Retina\Ebay\MatchRetinaPortfolioToCurrentEbayProduct;
+use App\Actions\Retina\Ebay\PublishAllRetinaEbayDraftPortfolios;
+use App\Actions\Retina\Ebay\PublishRetinaEbayPortfolio;
 use App\Actions\Retina\Ebay\StoreRetinaNewProductToCurrentEbay;
 use App\Actions\Retina\Ecom\Basket\RetinaDeleteBasketTransaction;
 use App\Actions\Retina\Ecom\Basket\RetinaEcomUpdateTransaction;
+use App\Actions\Retina\Ecom\Review\ReactRetinaReview;
+use App\Actions\Retina\Ecom\Review\StoreRetinaReview;
+use App\Actions\Retina\Ecom\Review\UpdateRetinaReview;
 use App\Actions\Retina\Fulfilment\Dropshipping\Channel\Manual\StoreRetinaFulfilmentManualPlatform;
 use App\Actions\Retina\Fulfilment\Dropshipping\Client\StoreRetinaFulfilmentCustomerClient;
 use App\Actions\Retina\Fulfilment\Dropshipping\Client\StoreRetinaFulfilmentCustomerClientWithOrder;
@@ -182,14 +189,10 @@ use App\Actions\Retina\Woo\MatchRetinaBulkNewProductToCurrentWooCommerce;
 use App\Actions\Retina\Woo\MatchRetinaPortfolioToCurrentWooProduct;
 use App\Actions\Retina\Woo\StoreRetinaNewProductToCurrentWoo;
 use Illuminate\Support\Facades\Route;
-use App\Actions\Retina\Ecom\Review\ReactRetinaReview;
-use App\Actions\Retina\Ecom\Review\StoreRetinaReview;
-use App\Actions\Retina\Ecom\Review\UpdateRetinaReview;
 
 Route::post('place-order-pay-by-bank', PlaceOrderPayByBank::class)->name('place_order_pay_by_bank');
 Route::post('place-order-pay-by-cash-on-delivery', PlaceOrderPayByCashOnDelivery::class)->name('place_order_pay_by_cash_on_delivery');
 Route::post('orders/{order}/pay-by-pastpay', PayOrderWithPastpay::class)->name('place_order_pay_by_pastpay');
-Route::post('orders/{order}/success-pay-by-pastpay', SuccessOrderWithPastpay::class)->name('success_order_pay_by_pastpay');
 
 Route::post('top-up-payment-api-point', StoreTopUpPaymentApiPoint::class)->name('top_up_payment_api_point.store');
 
@@ -288,6 +291,7 @@ Route::name('order.')->prefix('order/{order:id}')->whereNumber('order')->group(f
     Route::patch('/', UpdateRetinaOrder::class)->name('update');
     Route::patch('update-gr-gift', UpdateOrderGrGift::class)->name('update_gr_gift');
     Route::patch('update-premium-dispatch', UpdateRetinaOrderPremiumDispatch::class)->name('update_premium_dispatch');
+    Route::patch('select-shipper', SelectRetinaOrderShipper::class)->name('select_shipper');
     Route::patch('update-extra-packing', UpdateRetinaOrderExtraPacking::class)->name('update_extra_packing');
     Route::patch('update-insurance', UpdateRetinaOrderInsurance::class)->name('update_insurance');
     Route::patch('update-packaging', UpdateRetinaOrderPackaging::class)->name('update_packaging');
@@ -341,6 +345,7 @@ Route::name('customer_sales_channel.')->prefix('customer-sales-channel/{customer
 
     Route::patch('update', UpdateRetinaCustomerSalesChannel::class)->name('update');
     Route::patch('update-ebay', UpdateRetinaEbayCustomerSalesChannel::class)->name('ebay_update');
+    Route::patch('dismiss-notice', DismissRetinaCustomerSalesChannelNotice::class)->name('dismiss_notice');
     Route::post('client', StoreRetinaCustomerClient::class)->name('customer-client.store');
     Route::post('fulfilment', StoreRetinaFulfilmentCustomerClient::class)->name('fulfilment.customer-client.store');
     Route::post('fulfilment-client-with-order', StoreRetinaFulfilmentCustomerClientWithOrder::class)->name('fulfilment.customer-client-with-order.store');
@@ -395,6 +400,7 @@ Route::name('dropshipping.')->prefix('dropshipping')->group(function () {
     Route::post('{customerSalesChannel:id}/ebay-batch-upload', CreateRetinaNewBulkPortfoliosToEbay::class)->name('ebay.batch_upload')->withoutScopedBindings()->whereNumber('customerSalesChannel');
     Route::post('{customerSalesChannel:id}/ebay-batch-match', MatchRetinaBulkNewProductToCurrentEbay::class)->name('ebay.batch_match')->withoutScopedBindings()->whereNumber('customerSalesChannel');
     Route::post('{customerSalesChannel:id}/ebay-batch-all', CreateRetinaNewAllPortfoliosToEbay::class)->name('ebay.batch_all')->withoutScopedBindings()->whereNumber('customerSalesChannel');
+    Route::post('{customerSalesChannel:id}/ebay-publish-drafts', PublishAllRetinaEbayDraftPortfolios::class)->name('ebay.publish_drafts')->withoutScopedBindings()->whereNumber('customerSalesChannel');
 
     Route::post('{wooCommerceUser:id}/woo-batch-upload', CreateNewBulkPortfolioToWooCommerce::class)->name('woo.batch_upload_legacy')->withoutScopedBindings()->whereNumber('wooCommerceUser');
     Route::post('{wooCommerceUser:id}/woo-batch-sync', [CreateNewBulkPortfolioToWooCommerce::class, 'asBatchSync'])->name('woo.batch_sync')->withoutScopedBindings()->whereNumber('wooCommerceUser');
@@ -403,6 +409,8 @@ Route::name('dropshipping.')->prefix('dropshipping')->group(function () {
 
     Route::post('{customerSalesChannel:id}/tiktok-batch-upload', CreateRetinaNewBulkPortfoliosToTiktok::class)->name('tiktok.batch_upload')->withoutScopedBindings()->whereNumber('customerSalesChannel');
     Route::post('{customerSalesChannel:id}/tiktok-batch-all', CreateRetinaNewAllPortfoliosToTiktok::class)->name('tiktok.batch_all')->withoutScopedBindings()->whereNumber('customerSalesChannel');
+
+    Route::post('{customerSalesChannel:id}/batch-match', MatchRetinaBulkPortfoliosToPlatform::class)->name('platform.batch_match')->withoutScopedBindings()->whereNumber('customerSalesChannel');
 
     Route::post('{customerSalesChannel:id}/allegro-batch-upload', CreateRetinaNewBulkPortfoliosToAllegro::class)->name('allegro.batch_upload')->withoutScopedBindings()->whereNumber('customerSalesChannel');
     Route::post('{customerSalesChannel:id}/allegro-batch-all', CreateRetinaNewAllPortfoliosToAllegro::class)->name('allegro.batch_all')->withoutScopedBindings()->whereNumber('customerSalesChannel');
@@ -458,6 +466,7 @@ Route::post('portfolio/{portfolio:id}/store-new-woo-product', StoreRetinaNewProd
 
 Route::post('portfolio/{portfolio:id}/match-to-existing-ebay-product', MatchRetinaPortfolioToCurrentEbayProduct::class)->name('portfolio.match_to_existing_ebay_product')->whereNumber('portfolio');
 Route::post('portfolio/{portfolio:id}/store-new-ebay-product', StoreRetinaNewProductToCurrentEbay::class)->name('portfolio.store_new_ebay_product')->whereNumber('portfolio');
+Route::post('portfolio/{portfolio:id}/publish-ebay-product', PublishRetinaEbayPortfolio::class)->name('portfolio.publish_ebay_product')->whereNumber('portfolio');
 Route::post('portfolio/{portfolio:id}/update-new-product', UpdateAndUploadRetinaPortfolioToCurrentChannel::class)->name('portfolio.update_new_product.publish')->whereNumber('portfolio');
 Route::post('portfolio/{portfolio:id}/update-new-product/draft', [UpdateAndUploadRetinaPortfolioToCurrentChannel::class, 'asDraft'])->name('portfolio.update_new_product.draft')->whereNumber('portfolio');
 

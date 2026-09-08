@@ -76,7 +76,8 @@ class GuestImport implements ToCollection, WithHeadingRow, SkipsOnFailure, WithV
             'type'            => ['required', Rule::enum(GuestTypeEnum::class)],
             'username'        => ['required',  'alpha_dash:ascii',
                                   new IUnique(
-                                      table: 'users'
+                                      table: 'users',
+                                      column: 'username'
                                   ),
                 ],
             'password'        => ['sometimes', 'string', 'min:8', 'max:64'],
@@ -87,14 +88,6 @@ class GuestImport implements ToCollection, WithHeadingRow, SkipsOnFailure, WithV
             'email'           => ['nullable', 'email'],
             'positions'       => ['required', 'array'],
             'positions.*'     => ['exists:job_positions,slug'],
-            'alias'           => ['required', 'string', 'max:16',
-                                  new IUnique(
-                                      table: 'guests',
-                                      extraConditions: [
-                                          ['column' => 'group_id', 'value' => app('group')->id],
-                                      ]
-                                  ),
-                ],
         ];
     }
 }

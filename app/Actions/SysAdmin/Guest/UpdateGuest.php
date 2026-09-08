@@ -8,7 +8,7 @@
 
 namespace App\Actions\SysAdmin\Guest;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Actions\SysAdmin\User\UpdateUser;
 use App\Actions\Traits\WithActionUpdate;
 use App\Http\Resources\SysAdmin\Guest\GuestResource;
@@ -21,7 +21,7 @@ use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
 use Lorisleiva\Actions\ActionRequest;
 
-class UpdateGuest extends GrpAction
+class UpdateGuest extends OrgAction
 {
     use WithActionUpdate;
 
@@ -137,7 +137,7 @@ class UpdateGuest extends GrpAction
     {
         $this->guest = $guest;
 
-        $this->initialisation(group(), $request);
+        $this->initialisationFromGroup(group(), $request);
 
         return $this->handle($guest, $this->validatedData);
     }

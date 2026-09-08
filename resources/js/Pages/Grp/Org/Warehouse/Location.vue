@@ -38,6 +38,7 @@ const props = defineProps<{
     pallets?: {}
     showcase?: {}
     location_id: number
+    transfer_reason?: {}
 }>()
 
 let currentTab = ref(props.tabs.current)
@@ -61,5 +62,5 @@ const component = computed(() => {
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead"></PageHeading>
     <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
-    <component :is="component" :data="props[currentTab]" :tab="currentTab" :canMoveAllSku="true" :location_id="location_id" ></component>
+    <component :is="component" :data="props[currentTab]" :tab="currentTab" :canMoveAllSku="true" :location_id="location_id" :transfer_reason></component>
 </template>

@@ -9,7 +9,7 @@
 // ============================================================================
 // IMPORTS
 // ============================================================================
-import { ref, computed, watch } from "vue"
+import { ref, computed, watch, onMounted } from "vue"
 import { router, usePage } from "@inertiajs/vue3"
 import { debounce, forEach, findKey } from "lodash-es"
 import qs from "qs"
@@ -100,10 +100,20 @@ const props = defineProps({
 		required: false,
 	},
 	label: {
-		type: String,
-		default: true,
+		type: [String, Number, Object, Boolean],
+		default: '',
 		required: false,
 	},
+	hideDefault: {
+		type: Boolean,
+		default: false,
+		required: false,
+	},
+	selectedColumn: {
+		type: [String, null],
+		default: null,
+		required: false
+	}
 })
 
 // console.log(props);
@@ -115,6 +125,11 @@ const updates = ref(0)
 const isVisiting = ref(false)
 const visitCancelToken = ref<{ cancel: Function } | null>(null)
 const isLoading = ref(false)
+const key = ref(1)
+
+onMounted(() => {
+	key.value++
+})
 
 // ============================================================================
 // QUERY BUILDER SETUP
@@ -212,7 +227,6 @@ const hasData = computed(() => {
     }
     return props.basketTransactions[product.id] || null
 } */
-console.log("basketTransactions", props.basketTransactions)
 
 // ============================================================================
 // SEARCH & FILTER FUNCTIONS
@@ -375,6 +389,19 @@ function generateNewQueryString(): string {
 	return !query || query === pageName.value + "=1" ? "" : query
 }
 
+// TableElements reports the selection it read from the URL right after mount. The server already
+// rendered that selection, so the state is stored without letting the watcher fire off a visit for
+// a query string identical to the current one.
+let skipNextVisit = false
+
+function onElementFilterChanged(data: Record<string, string[]>, isInitial = false): void {
+	if (isInitial) {
+		skipNextVisit = true
+	}
+
+	queryBuilderData.value.elementFilter = data
+}
+
 function onSortChange(value: string): void {
 	queryBuilderData.value.sort = value || null
 	queryBuilderData.value.cursor = null
@@ -429,6 +456,11 @@ const visit = (url?: string): void => {
 watch(
 	queryBuilderData,
 	async () => {
+		const skipThisVisit = skipNextVisit
+		skipNextVisit = false
+
+		if (skipThisVisit) return
+
 		try {
 			visit(location.pathname + "?" + generateNewQueryString())
 		} catch (error) {
@@ -483,20 +515,18 @@ watch(
 						>
 						<select
 							:id="`grid-${name}-sort`"
-							:value="queryBuilderData.sort || ''"
+							:value="queryBuilderData.sort || selectedColumn || ''"
 							@change="onSortChange(($event.target as HTMLSelectElement).value)"
 							class="min-w-0 max-w-[45vw] sm:max-w-none rounded-md border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500">
-							<option value="">{{ trans("Default") }}</option>
+							<option v-if="!hideDefault" value="">{{ trans("Default") }}</option>
 							<template
 								v-for="column in queryBuilderProps.columns.filter(
 									(item: any) => item.sortable
 								)"
-								:key="`sort-option-${column.key}`">
-								<option :value="column.key">
-									{{ column.label }} ({{ trans("ascending") }})
-								</option>
-								<option :value="`-${column.key}`">
-									{{ column.label }} ({{ trans("descending") }})
+								:key="`sort-option-${column.key}`"
+							>
+								<option v-for="type in ['ascending', 'descending']" :value="(type == 'descending' ? '-' : '') + column.key">
+									{{ column.label }} ({{ type }})
 								</option>
 							</template>
 						</select>
@@ -528,7 +558,7 @@ watch(
 								<TableElements
 									:elements="queryBuilderProps.elementGroups"
 									@checkboxChanged="
-										(data) => (queryBuilderData.elementFilter = data)
+										(data, isInitial) => onElementFilterChanged(data, isInitial)
 									"
 									:inPopover="true"
 									:tableName="props.name" />
@@ -553,7 +583,7 @@ watch(
 					<slot name="card" :item="item">
 						<ProductRenderEcom
 							:product="item"
-							:key="index"
+							:key="`${index}-${key}`"
 							:hasInBasket="item"
 							:detach-to-favourite-route="{
 								name: 'retina.models.product.unfavourite',
@@ -598,6 +628,7 @@ watch(
 				:per-page-options="queryBuilderProps?.perPageOptions"
 				:on-per-page-change="onPerPageChange" 
 				:max-pages="3"
+				:customWrapperClass="'!bg-transparent px-4 py-3 border-t-0 border-gray-200 sm:px-4'"
 			/>
 		</TableWrapper>
 	</fieldset>

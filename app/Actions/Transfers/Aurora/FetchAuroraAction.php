@@ -13,6 +13,9 @@ use App\Enums\Transfers\Fetch\FetchTypeEnum;
 use App\Enums\Transfers\FetchStack\FetchStackStateEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Organisation;
+use App\Transfers\AuroraCatalogueGuard;
+use App\Transfers\AuroraOrganisationService;
+use App\Transfers\WowsbarOrganisationService;
 use App\Models\Transfers\FetchStack;
 use Illuminate\Console\Command;
 use Illuminate\Database\Eloquent\Model;
@@ -23,6 +26,96 @@ class FetchAuroraAction extends FetchAction
 
     public string $jobQueue = 'aurora';
     public int $jobTimeout = 60 * 60 * 12;
+
+    protected bool $forcedSourceFetch = false;
+
+    public function getOrganisationSource(Organisation $organisation): AuroraOrganisationService|WowsbarOrganisationService|null
+    {
+        $organisationSource = parent::getOrganisationSource($organisation);
+        $organisationSource?->setForcedFetch($this->forcedSourceFetch);
+
+        return $organisationSource;
+    }
+
+    /**
+     * An organisation that has left Aurora only accepts the handful of fetchers it still
+     * has no aiku replacement for. Anything else arriving for it is stale by definition:
+     * its staff maintain that data in aiku now, and fetching would quietly revert them.
+     */
+    /**
+     * HR and sysadmin data is owned by aiku for every organisation, so these fetchers are
+     * dead for everyone — following organisations and --force included.
+     */
+    public static function fetcherForbidden(string $fetchActionClass): bool
+    {
+        $fetcher = str_replace('FetchAurora', '', class_basename($fetchActionClass));
+
+        return in_array($fetcher, config('aurora.forbidden_fetchers', []));
+    }
+
+    protected function auroraStillFeeds(Organisation $organisation): bool
+    {
+        if (static::fetcherForbidden(static::class)) {
+            return false;
+        }
+
+        if (in_array($organisation->slug, config('aurora.following_organisations', []))) {
+            return true;
+        }
+
+        $fetcher = str_replace('FetchAurora', '', class_basename(static::class));
+
+        return in_array($fetcher, config('aurora.allowed_fetchers', []));
+    }
+
+    /**
+     * Every fetch-on-miss inside parsers and sibling fetchers goes through ::run(), while
+     * command sweeps call handle() directly — so gating here closes the transitive bypass
+     * of auroraStillFeeds without touching the command path. Refusal returns null, the
+     * same as a lookup miss.
+     */
+    public static function run(mixed ...$arguments): mixed
+    {
+        $organisationSource = $arguments[0] ?? null;
+        if ($organisationSource instanceof AuroraOrganisationService && !$organisationSource->allowsFetchOnMiss(static::class)) {
+            return null;
+        }
+
+        return AuroraCatalogueGuard::during(fn () => static::make()->handle(...$arguments));
+    }
+
+    public function processOrganisation(Command $command, Organisation $organisation): int
+    {
+        // An override is BOTH flags together: -s names the one record and --force says
+        // overwrite it. Either alone is not an override. -s by itself would still reach
+        // fetchers that have no is_aiku gate of their own (stock locations, deleted
+        // stocks) and update them; --force by itself would run the whole fetchAll sweep
+        // with every gate down, which is a mass overwrite switch, not an override.
+        $forcedSourceId = $command->hasOption('source_id') ? $command->option('source_id') : null;
+        $forcedOverride = $forcedSourceId && $command->hasOption('force') && (bool)$command->option('force');
+
+        $this->forcedSourceFetch = (bool)$forcedOverride;
+
+        if ((!$forcedOverride || static::fetcherForbidden(static::class)) && !$this->auroraStillFeeds($organisation)) {
+            $command->line('skipped '.$command->getName().' for '.$organisation->slug.': aiku owns this data now');
+
+            return 0;
+        }
+
+        return AuroraCatalogueGuard::during(fn () => parent::processOrganisation($command, $organisation));
+    }
+
+    protected function markFetchStackIgnored(?int $fetchStackId): void
+    {
+        if (!$fetchStackId) {
+            return;
+        }
+
+        FetchStack::where('id', $fetchStackId)->update([
+            'finish_fetch_at' => now(),
+            'state'           => FetchStackStateEnum::IGNORED
+        ]);
+    }
 
     protected function preProcessCommand(Command $command): void
     {
@@ -100,13 +193,13 @@ class FetchAuroraAction extends FetchAction
             'fetch:invoices',
             'fetch:customers',
             'fetch:delivery_notes',
-            'fetch:purchase-orders',
+            'fetch:purchase_orders',
             'fetch:suppliers',
             'fetch:web_users',
             'fetch:prospects',
             'fetch:deleted_customers',
             'fetch:webpages',
-            'fetch:supplier-products',
+            'fetch:supplier_products',
             'fetch:payments',
             'fetch:pallets',
             'fetch:families',
@@ -118,7 +211,7 @@ class FetchAuroraAction extends FetchAction
             'fetch:histories',
             'fetch:uploads',
             'fetch:favourites',
-            'fetch:stock-deliveries',
+            'fetch:stock_deliveries',
             'fetch:mailshots',
             'fetch:dispatched_emails',
             'fetch:email_tracking_events',
@@ -158,6 +251,25 @@ class FetchAuroraAction extends FetchAction
                 'Location' => ['Location'],
                 'Product' => ['Product'],
                 'WarehouseArea' => ['Warehouse Area'],
+                'Order' => ['Order'],
+                'DeliveryNote' => ['Delivery Note'],
+                'Invoice' => ['Invoice'],
+                'PurchaseOrder' => ['Purchase Order', 'Agent Supplier Purchase Order'],
+                'SupplierDelivery' => ['Supplier Delivery'],
+                'Part' => ['Part'],
+                'SupplierPart' => ['Supplier Part'],
+                'Barcode' => ['Barcode'],
+                'Category' => ['Category', 'Family', 'Department'],
+                'Staff' => ['Staff'],
+                'User' => ['User'],
+                'WebsiteUser' => ['Website User'],
+                'Marketing' => ['Email Campaign', 'Deal Campaign'],
+                'Deal' => ['Deal', 'Deal Component'],
+                'ShippingZone' => ['Shipping Zone', 'Shipping Zone Schema'],
+                'Supplier' => ['Supplier'],
+                'Agent' => ['Agent'],
+                'Charge' => ['Charge'],
+                'CustomerClient' => ['Customer Client'],
                 default => null
             };
 
@@ -183,7 +295,7 @@ class FetchAuroraAction extends FetchAction
                 'fetch:customers',
                 'fetch:web_users',
                 'fetch:delivery_notes',
-                'fetch:purchase-orders',
+                'fetch:purchase_orders',
                 'fetch:web_users',
                 'fetch:prospects',
                 'fetch:deleted_customers',
@@ -215,10 +327,17 @@ class FetchAuroraAction extends FetchAction
         }
 
         $this->with               = $with;
+
+        if (!$this->auroraStillFeeds($organisation)) {
+            $this->markFetchStackIgnored($fetchStackId);
+
+            return;
+        }
+
         $this->organisationSource = $this->getOrganisationSource($organisation);
         $this->organisationSource->initialisation($organisation);
 
-        $this->handle($this->organisationSource, $organisationSourceId);
+        AuroraCatalogueGuard::during(fn () => $this->handle($this->organisationSource, $organisationSourceId));
 
         if ($fetchStackId) {
             $fetchStack = FetchStack::find($fetchStackId);
@@ -244,10 +363,15 @@ class FetchAuroraAction extends FetchAction
         }
 
         $this->with               = $with;
+
+        if (!$this->auroraStillFeeds($organisation)) {
+            return null;
+        }
+
         $this->organisationSource = $this->getOrganisationSource($organisation);
         $this->organisationSource->initialisation($organisation);
 
-        return $this->handle($this->organisationSource, $organisationSourceId);
+        return AuroraCatalogueGuard::during(fn () => $this->handle($this->organisationSource, $organisationSourceId));
     }
 
 
@@ -275,7 +399,7 @@ class FetchAuroraAction extends FetchAction
             'fetch:stocks' => FetchTypeEnum::STOCKS,
             'fetch:customers' => FetchTypeEnum::CUSTOMERS,
             'fetch:employees' => FetchTypeEnum::EMPLOYEES,
-            'fetch:supplier-products' => FetchTypeEnum::SUPPLIER_PRODUCTS,
+            'fetch:supplier_products' => FetchTypeEnum::SUPPLIER_PRODUCTS,
             default => FetchTypeEnum::BASE,
         };
     }

@@ -195,7 +195,7 @@ const onClickDelete = () => {
 														This will permanently delete the <strong>{{ data?.reference || invoice?.reference }}</strong>
 													</li>
 													<li>
-														All these items (pallets and customer SKUs) <strong>stored in the warehouse</strong> will be
+														All these items (pallets and customer SKOs) <strong>stored in the warehouse</strong> will be
 														<strong>permanently deleted</strong>.
 													</li>
 												</ul>

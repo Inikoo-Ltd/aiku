@@ -8,6 +8,7 @@
 
 namespace App\Actions\Dispatching\Picking;
 
+use App\Actions\Dispatching\DeliveryNote\UpdateState\AutoFinishWaitingDeliveryNote;
 use App\Actions\Dispatching\DeliveryNoteItem\CalculateDeliveryNoteItemTotalPicked;
 use App\Actions\Inventory\OrgStockMovement\StoreOrgStockMovement;
 use App\Actions\OrgAction;
@@ -19,12 +20,16 @@ use App\Models\Dispatching\DeliveryNoteItem;
 use App\Models\Dispatching\Picking;
 use App\Models\Inventory\LocationOrgStock;
 use App\Models\SysAdmin\User;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 use App\Actions\Audits\DispatchSimpleAudit;
+use App\Actions\Dispatching\Picking\Traits\AutoIgnoreZeroQuantityItems;
 
 class StorePicking extends OrgAction
 {
+    use AutoIgnoreZeroQuantityItems;
+
     protected DeliveryNoteItem $deliveryNoteItem;
     private User|null $user = null;
 
@@ -43,8 +48,54 @@ class StorePicking extends OrgAction
         data_set($modelData, 'engine', PickingEngineEnum::AIKU, false);
         data_set($modelData, 'type', PickingTypeEnum::PICK, false);
 
-        /** @var Picking $picking */
-        $picking = $deliveryNoteItem->pickings()->create($modelData);
+        $type = $modelData['type'] instanceof PickingTypeEnum ? $modelData['type'] : PickingTypeEnum::from($modelData['type']);
+
+        /*
+         * The clamp below is read-then-write, so two simultaneous requests (a double tap on
+         * the pick button) would each see the full outstanding quantity and both create a
+         * pick (HELP-2949). The row lock on the delivery note item serialises them, and the
+         * picked total is recalculated before the lock is released so the loser of the race
+         * sees the winner's pick.
+         */
+        $picking = DB::transaction(function () use (&$deliveryNoteItem, $locationOrgStock, $modelData, $type) {
+            $deliveryNoteItem = DeliveryNoteItem::lockForUpdate()->find($deliveryNoteItem->id);
+
+            if (in_array($type, [PickingTypeEnum::PICK, PickingTypeEnum::MAGIC_PICK], true)) {
+                /*
+                 * Same clamp as SetAsWaitingWarehouse: a pick can never take the total picked
+                 * past what the delivery note item still needs, box splits go through
+                 * SplitPicking which keeps the total constant.
+                 */
+                $outstanding = (float)$deliveryNoteItem->quantity_required
+                    - (float)$deliveryNoteItem->quantity_picked
+                    - (float)$deliveryNoteItem->quantity_waiting_warehouse
+                    - (float)$deliveryNoteItem->quantity_waiting_crm;
+
+                if ($outstanding <= 0) {
+                    abort(422, 'Nothing left to pick: the required quantity is already picked or waiting');
+                }
+
+                /*
+                 * A pick can never take more than the location holds, otherwise the
+                 * location stock would go negative. If the system quantity is wrong
+                 * the location must be stock-audited first.
+                 */
+                $availableInLocation = (float)$locationOrgStock->quantity;
+                if ($availableInLocation <= 0) {
+                    abort(422, 'Nothing to pick: the location has no stock, audit the location first');
+                }
+
+                $modelData['quantity'] = min((float)$modelData['quantity'], $outstanding, $availableInLocation);
+                data_set($modelData, 'last_picked_at', now());
+            }
+
+            /** @var Picking $picking */
+            $picking = $deliveryNoteItem->pickings()->create($modelData);
+
+            CalculateDeliveryNoteItemTotalPicked::make()->action($deliveryNoteItem);
+
+            return $picking;
+        });
         $picking->refresh();
 
         if (app()->environment('production')) {
@@ -52,7 +103,7 @@ class StorePicking extends OrgAction
         }
 
 
-        StoreOrgStockMovement::run(
+        StoreOrgStockMovement::dispatch(
             $locationOrgStock->orgStock,
             $locationOrgStock->location,
             [
@@ -64,7 +115,6 @@ class StorePicking extends OrgAction
         );
 
 
-        CalculateDeliveryNoteItemTotalPicked::make()->action($deliveryNoteItem);
         $deliveryNoteItem->refresh();
         $newPickingQuantity = (int)$deliveryNoteItem->quantity_picked;
 
@@ -80,6 +130,11 @@ class StorePicking extends OrgAction
             newValue: $newAuditString,
             eventName: 'item_picked'
         );
+
+        $this->ignoreZeroQuantityItems($deliveryNoteItem->deliveryNote, $this->user);
+
+        /** This pick may have settled the last thing keeping the note blocked. */
+        AutoFinishWaitingDeliveryNote::run($deliveryNoteItem->deliveryNote->refresh());
 
         return $picking;
     }

@@ -28,11 +28,16 @@ class ValidatePinEmployee extends OrgAction
 
     private ClockingMachine $clockingMachine;
 
+    /**
+     * Clocking machines are shared across the group, so a pin is matched against every
+     * organisation's staff - someone visiting another site clocks in on the machine that is there.
+     */
     public function handle(Organisation $organisation, array $modalData)
     {
-        return $organisation->employees()
-        ->where('state', '!=', EmployeeStateEnum::LEFT->value)
-        ->where('pin', Arr::get($modalData, 'pin'))->firstOrFail();
+        return Employee::where('group_id', $organisation->group_id)
+            ->whereIn('state', [EmployeeStateEnum::WORKING->value, EmployeeStateEnum::LEAVING->value])
+            ->where('pin', Arr::get($modalData, 'pin'))
+            ->firstOrFail();
     }
 
 

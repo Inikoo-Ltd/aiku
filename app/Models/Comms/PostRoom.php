@@ -32,7 +32,6 @@ use Spatie\Sluggable\SlugOptions;
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read Group|null $group
- * @property-read \App\Models\Comms\PostRoomIntervals|null $intervals
  * @property-read Collection<int, \App\Models\Comms\OrgPostRoom> $orgPostRooms
  * @property-read Collection<int, \App\Models\Comms\Outbox> $outboxes
  * @property-read \App\Models\Comms\PostRoomStats|null $stats
@@ -74,11 +73,6 @@ class PostRoom extends Model
     public function stats(): HasOne
     {
         return $this->hasOne(PostRoomStats::class);
-    }
-
-    public function intervals(): HasOne
-    {
-        return $this->hasOne(PostRoomIntervals::class);
     }
 
     public function outboxes(): HasMany

@@ -5,22 +5,21 @@
   -->
 
 <script setup lang="ts">
-import {Head} from '@inertiajs/vue3';
-import PageHeading from '@/Components/Headings/PageHeading.vue';
-import TableOrgAgents from "@/Components/Tables/Grp/Org/Procurement/TableOrgAgents.vue";
+import { Head } from "@inertiajs/vue3"
+import PageHeading from "@/Components/Headings/PageHeading.vue"
+import TableOrgAgents from "@/Components/Tables/Grp/Org/Procurement/TableOrgAgents.vue"
 import { capitalize } from "@/Composables/capitalize"
-import { PageHeadingTypes } from "@/types/PageHeading";
+import { PageHeadingTypes } from "@/types/PageHeading"
 
-defineProps <{
+defineProps<{
     pageHead: PageHeadingTypes
     title: string
-    data:object
+    data: object
 }>()
 </script>
 
 <template>
-    <Head :title="capitalize(title)"/>
-    <PageHeading :data="pageHead"></PageHeading>
+    <Head :title="capitalize(title)" />
+    <PageHeading :data="pageHead" />
     <TableOrgAgents :data="data" />
 </template>
-

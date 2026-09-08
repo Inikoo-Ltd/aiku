@@ -9,6 +9,7 @@
 namespace App\Actions\UI\Accounting\Traits;
 
 use App\Enums\Accounting\PaymentAccount\PaymentAccountTypeEnum;
+use App\Enums\Accounting\PaymentAccountShop\PaymentAccountShopStateEnum;
 use App\Models\Accounting\PaymentAccountShop;
 use Illuminate\Support\Arr;
 
@@ -16,16 +17,29 @@ trait HasPaymentAccountShopFields
 {
     public function blueprint(PaymentAccountShop $paymentAccountShop): array
     {
+        $isActiveField = [
+            'is_active' => [
+                'type'  => 'toggle',
+                'label' => __('Active'),
+                'value' => $paymentAccountShop->state == PaymentAccountShopStateEnum::ACTIVE,
+            ],
+        ];
 
         return match ($paymentAccountShop->type) {
             PaymentAccountTypeEnum::PASTPAY => [
                 [
-                    'label'  => __('Credit terms'),
-                    'icon'   => 'fa-light fa-stopwatch',
-                    'fields' => [
+                    'label'  => __('Settings'),
+                    'icon'   => 'fa-light fa-sliders-h',
+                    'fields' => array_merge($isActiveField, [
+                        'pastpay_tax_number' => [
+                            'type'  => 'input',
+                            'required' => true,
+                            'label' => __('Creditor tax number (as registered with PastPay)'),
+                            'value' => Arr::get($paymentAccountShop->paymentAccount->data, 'tax_number'),
+                        ],
                         'pastpay_charges' => [
                             'type'     => 'dynamic_list',
-                            'label'    => __('Terms'),
+                            'label'    => __('Credit terms'),
                             'required' => true,
                             'value'    => Arr::get($paymentAccountShop->data, 'charges.options', []),
                             'fields'   => [
@@ -33,23 +47,25 @@ trait HasPaymentAccountShopFields
                                 ['key' => 'charge', 'label' => __('Charge (%)'), 'placeholder' => __('Input Charge')],
                             ],
                             'addLabel' => __('Add charge'),
-                        ]
-                    ]
-                ],
-                [
-                    'label'  => __('Invoices footer'),
-                    'icon'   => 'fa-light fa-shoe-prints',
-                    'fields' => [
+                        ],
+
                         'invoice_footer' => [
                             'type'  => 'textEditor',
+                            'required' => true,
                             'label' => __('Invoice footer'),
                             'full'  => true,
                             'value' => $paymentAccountShop->invoice_footer
                         ],
-                    ],
+                    ]),
                 ],
             ],
-            default => []
+            default => [
+                [
+                    'label'  => __('Settings'),
+                    'icon'   => 'fa-light fa-sliders-h',
+                    'fields' => $isActiveField,
+                ],
+            ]
         };
     }
 }

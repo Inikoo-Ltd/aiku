@@ -6,7 +6,6 @@ import TextAlign from "@/Components/Banners/SlidesWorkshop/Fields/TextAlign.vue"
 import SelectFont from "@/Components/Banners/SlidesWorkshop/Fields/SelectFont.vue"
 import GradientColor from "@/Components/Banners/SlidesWorkshop/Fields/GradientColor.vue"
 import BannerNavigation from "@/Components/Banners/SlidesWorkshop/Fields/BannerNavigation.vue"
-/* import Toogle from './Fields/PrimitiveToggle.vue' */
 /* import PrimitiveInput from "@/Components/Banners/SlidesWorkshop/Fields/PrimitiveInput.vue"
 import Select from "@/Components/Banners/SlidesWorkshop/Fields/PrimitiveSelect.vue" */
 import Radio from "@/Components/Banners/SlidesWorkshop/Fields/PrimitiveRadio.vue"
@@ -32,7 +31,7 @@ const componentsMap: Record<string, any> = {
 	radio: Radio,
 	textAlign: TextAlign,
 	selectFont: SelectFont,
-	toogle: Toggle,
+	toggle: Toggle,
 	gradientColor: GradientColor,
 	bannerNavigation: BannerNavigation,
 	slideBackground: SlideBackground,

@@ -8,14 +8,14 @@
 
 namespace App\Actions\Accounting\PaymentServiceProvider;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Models\Accounting\PaymentServiceProvider;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Redirect;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 
-class DeletePaymentServiceProvider extends GrpAction
+class DeletePaymentServiceProvider extends OrgAction
 {
     use WithAttributes;
 
@@ -39,7 +39,7 @@ class DeletePaymentServiceProvider extends GrpAction
 
     public function asController(PaymentServiceProvider $paymentServiceProvider, ActionRequest $request): PaymentServiceProvider
     {
-        $this->initialisation($paymentServiceProvider->group, $request);
+        $this->initialisationFromGroup($paymentServiceProvider->group, $request);
 
         return $this->handle($paymentServiceProvider);
     }
@@ -47,7 +47,7 @@ class DeletePaymentServiceProvider extends GrpAction
     public function action(PaymentServiceProvider $paymentServiceProvider): PaymentServiceProvider
     {
         $this->asAction = true;
-        $this->initialisation($paymentServiceProvider->group, []);
+        $this->initialisationFromGroup($paymentServiceProvider->group, []);
 
         return $this->handle($paymentServiceProvider);
     }

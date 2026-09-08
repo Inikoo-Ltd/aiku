@@ -17,7 +17,7 @@ function scheduledEventsById(Schedule $schedule): array
 {
     $events = [];
     foreach ($schedule->events() as $event) {
-        $id = $event->description ?: trim(preg_replace("/^.*artisan'\s*/", '', $event->command), " '");
+        $id          = $event->description ?: trim(preg_replace("/^.*artisan'\s*/", '', $event->command), " '");
         $events[$id] = $event->expression;
     }
 
@@ -26,8 +26,8 @@ function scheduledEventsById(Schedule $schedule): array
 
 function rebuildSchedule(): Schedule
 {
-    $schedule = new Schedule();
-    $kernel = app(Kernel::class);
+    $schedule   = new Schedule();
+    $kernel     = app(Kernel::class);
     $reflection = new ReflectionMethod(Kernel::class, 'schedule');
     $reflection->setAccessible(true);
     $reflection->invoke($kernel, $schedule);
@@ -36,7 +36,7 @@ function rebuildSchedule(): Schedule
 }
 
 test('kernel commands() loads console routes without error', function () {
-    $kernel = app(Kernel::class);
+    $kernel     = app(Kernel::class);
     $reflection = new ReflectionMethod($kernel, 'commands');
     $reflection->setAccessible(true);
 
@@ -80,5 +80,20 @@ test('slave-only schedules register when app.slave is enabled', function () {
 test('neither master nor slave schedules register when both flags are disabled', function () {
     config(['app.master' => false, 'app.slave' => false]);
 
-    expect(rebuildSchedule()->events())->toHaveCount(2);
+    expect(scheduledEventIds(rebuildSchedule()))
+        ->toEqualCanonicalizing(
+            [
+                'cloudflare:reload',
+                'comms:archive_dispatched_emails',
+                'horizon:snapshot',
+                'inventory:archive_stock_histories --dates=5',
+                'nightowl:prune',
+                'prune-fetch-stacks',
+                'prune-product-image-zips',
+                'prune-traffic-source-clicks',
+                'search:propose-synonyms',
+                'traffic-source:collect-visits',
+                'traffic-source:fetch-meta-costs --days=2'
+            ]
+        );
 });

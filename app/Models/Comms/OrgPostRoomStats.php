@@ -80,6 +80,25 @@ use Illuminate\Database\Eloquent\Model;
  * @property int $number_outboxes_type_pallet_deleted
  * @property int $number_outboxes_type_reorder_reminder_2nd
  * @property int $number_outboxes_type_reorder_reminder_3rd
+ * @property int $number_outboxes_type_new_offer
+ * @property int $number_outboxes_type_finish_offer
+ * @property int $number_outboxes_type_gold_reward_reminder_1
+ * @property int $number_outboxes_type_gold_reward_reminder_2
+ * @property int $number_outboxes_type_gold_reward_reminder_3
+ * @property int $number_outboxes_type_oos_in_order_notification
+ * @property int $number_outboxes_type_credit_balance_notification_for_customer
+ * @property int $number_outboxes_type_credit_balance_notification_for_user
+ * @property int $number_outboxes_type_chat_notification_to_customer
+ * @property int $number_outboxes_type_price_change_notification
+ * @property int $number_outboxes_type_price_change
+ * @property int $number_outboxes_type_invoice_date_changed
+ * @property int $number_outboxes_type_invoice_paid
+ * @property int $number_outboxes_type_web_user_registration
+ * @property int $number_outboxes_type_new_review
+ * @property int $number_outboxes_type_review_reminder
+ * @property int $number_outboxes_type_prospect_convertion_1
+ * @property int $number_outboxes_type_prospect_convertion_2
+ * @property int $number_outboxes_type_prospect_convertion_3
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrgPostRoomStats newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrgPostRoomStats newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrgPostRoomStats query()

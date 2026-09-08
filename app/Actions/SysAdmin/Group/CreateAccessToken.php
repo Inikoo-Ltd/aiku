@@ -8,7 +8,7 @@
 
 namespace App\Actions\SysAdmin\Group;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateApiTokens;
 use App\Models\SysAdmin\Group;
 use Exception;
@@ -16,7 +16,7 @@ use Illuminate\Console\Command;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 
-class CreateAccessToken extends GrpAction
+class CreateAccessToken extends OrgAction
 {
     use AsAction;
     use WithAttributes;
@@ -43,7 +43,7 @@ class CreateAccessToken extends GrpAction
 
     public function action(Group $group, array $data): string
     {
-        $this->initialisation($group, $data);
+        $this->initialisationFromGroup($group, $data);
         return $this->handle($group, $this->validatedData);
     }
 
@@ -63,7 +63,7 @@ class CreateAccessToken extends GrpAction
             'abilities' => $command->argument('abilities'),
         ];
 
-        $this->initialisation($group, $fields);
+        $this->initialisationFromGroup($group, $fields);
 
 
         $token = $this->handle($group, $this->validatedData);

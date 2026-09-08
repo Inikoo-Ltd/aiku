@@ -8,6 +8,7 @@
 
 namespace App\Actions\Procurement\OrgAgent;
 
+use App\Actions\Traits\Authorisations\WithProcurementEditAuthorisation;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOrgAgents;
 use App\Actions\Traits\WithActionUpdate;
@@ -16,6 +17,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class UpdateOrgAgent extends OrgAction
 {
+    use WithProcurementEditAuthorisation;
     use WithActionUpdate;
 
 
@@ -27,15 +29,6 @@ class UpdateOrgAgent extends OrgAction
         OrganisationHydrateOrgAgents::dispatch($orgAgent->organisation);
 
         return $orgAgent;
-    }
-
-    public function authorize(ActionRequest $request): bool
-    {
-        if ($this->asAction = true) {
-            return true;
-        }
-
-        return $request->user()->authTo("procurement.".$this->organisation->id.".edit");
     }
 
     public function rules(ActionRequest $request): array

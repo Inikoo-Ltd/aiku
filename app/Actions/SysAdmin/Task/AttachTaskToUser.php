@@ -8,7 +8,7 @@
 
 namespace App\Actions\SysAdmin\Task;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Enums\Task\TaskStatusEnum;
 use App\Models\SysAdmin\Task;
 use App\Models\SysAdmin\User;
@@ -16,7 +16,7 @@ use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class AttachTaskToUser extends GrpAction
+class AttachTaskToUser extends OrgAction
 {
     use AsAction;
 
@@ -37,7 +37,7 @@ class AttachTaskToUser extends GrpAction
 
     public function asController(User $user, Task $task, ActionRequest $request): void
     {
-        $this->initialisation($user->group, $request);
+        $this->initialisationFromGroup($user->group, $request);
         $this->handle($user, $task, $this->validatedData);
     }
 }

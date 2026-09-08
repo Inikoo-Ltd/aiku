@@ -13,6 +13,7 @@ use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateClockingMachines;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateClockingMachines;
 use App\Actions\Traits\Authorisations\WithHumanResourcesEditAuthorisation;
+use App\Enums\HumanResources\ClockingMachine\ClockingMachineStatusEnum;
 use App\Enums\HumanResources\ClockingMachine\ClockingMachineTypeEnum;
 use App\Http\Resources\HumanResources\ClockingMachineResource;
 use App\Models\HumanResources\ClockingMachine;
@@ -49,6 +50,10 @@ class StoreClockingMachine extends OrgAction
 
         data_set($modelData, 'group_id', $workplace->group_id);
         data_set($modelData, 'organisation_id', $workplace->organisation_id);
+
+        if (!Arr::has($modelData, 'status')) {
+            data_set($modelData, 'status', ClockingMachineStatusEnum::CONNECTED->value);
+        }
 
         if (Arr::get($modelData, 'type') == ClockingMachineTypeEnum::STATIC_NFC->value) {
             data_set($modelData, 'data.nfc_tag', $this->get('nfc_tag'));
@@ -91,6 +96,10 @@ class StoreClockingMachine extends OrgAction
                 ),
             ],
             'type'    => ['required', Rule::enum(ClockingMachineTypeEnum::class)],
+            'status'  => ['sometimes', Rule::in([
+                ClockingMachineStatusEnum::CONNECTED->value,
+                ClockingMachineStatusEnum::DISCONNECTED->value,
+            ])],
             'nfc_tag' => ['sometimes', 'string'],
         ];
 

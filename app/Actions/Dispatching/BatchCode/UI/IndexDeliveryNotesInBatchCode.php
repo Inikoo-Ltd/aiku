@@ -96,7 +96,7 @@ class IndexDeliveryNotesInBatchCode
                 'delivery_notes.has_extra_packing',
                 'delivery_notes.shipping_data',
                 'delivery_notes.customer_notes',
-                'delivery_notes.internal_notes',
+                'delivery_notes.private_warehouse_note as internal_notes',
                 'delivery_notes.public_notes',
                 'delivery_notes.shipping_notes',
                 'customers.slug as customer_slug',
@@ -141,7 +141,7 @@ class IndexDeliveryNotesInBatchCode
                 ->column(key: 'state', label: '', type: 'icon')
                 ->column(key: 'reference', label: __('Reference'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'batch_code', label: __('Batch Code'), canBeHidden: false, sortable: false)
-                ->column(key: 'batch_code_sku', label: __('SKU'), canBeHidden: false, sortable: false)
+                ->column(key: 'batch_code_sku', label: __('SKO'), canBeHidden: false, sortable: false)
                 ->column(key: 'batch_code_expiry_date', label: __('Expiration Date'), canBeHidden: false, sortable: false)
                 ->column(key: 'date', label: __('Date'), canBeHidden: false, sortable: true, align: 'right')
                 ->column(key: 'customer_name', label: __('Customer'), canBeHidden: false, sortable: true)

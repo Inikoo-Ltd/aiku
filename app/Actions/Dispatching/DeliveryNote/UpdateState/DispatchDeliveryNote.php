@@ -13,10 +13,12 @@ use App\Actions\Comms\Email\SendDispatchedReplacementOrderEmailToCustomer;
 use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydrateDispatchTotals;
 use App\Actions\Ordering\Order\UpdateState\DispatchOrderFromDeliveryNote;
 use App\Actions\OrgAction;
+use App\Actions\Procurement\PartnerShoppingListItem\SyncPartnerStockDeliveryOnDispatch;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteTypeEnum;
 use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemStateEnum;
+use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Models\Dispatching\DeliveryNote;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
@@ -29,17 +31,19 @@ class DispatchDeliveryNote extends OrgAction
     /**
      * @throws \Throwable
      */
-    public function handle(DeliveryNote $deliveryNote): DeliveryNote
+    public function handle(DeliveryNote $deliveryNote, ?string $dispatchedAt = null, bool $repair = false): DeliveryNote
     {
-        $oldState = $deliveryNote->state;
-        $deliveryNote = DB::transaction(function () use ($deliveryNote) {
-            data_set($modelData, 'dispatched_at', now());
+        $oldState     = $deliveryNote->state;
+        $dispatchedAt = $dispatchedAt ?? now();
+
+        $deliveryNote = DB::transaction(function () use ($deliveryNote, $dispatchedAt, $repair) {
+            data_set($modelData, 'dispatched_at', $dispatchedAt);
             data_set($modelData, 'state', DeliveryNoteStateEnum::DISPATCHED->value);
 
             foreach ($deliveryNote->deliveryNoteItems as $item) {
                 $this->update($item, [
                     'state'               => DeliveryNoteItemStateEnum::DISPATCHED,
-                    'dispatched_at'       => now(),
+                    'dispatched_at'       => $dispatchedAt,
                     'quantity_dispatched' => $item->quantity_packed
                 ]);
             }
@@ -49,9 +53,12 @@ class DispatchDeliveryNote extends OrgAction
             $deliveryNote->refresh();
             if ($deliveryNote->type != DeliveryNoteTypeEnum::REPLACEMENT) {
                 foreach ($deliveryNote->orders as $order) {
-                    DispatchOrderFromDeliveryNote::make()->action($order, $deliveryNote);
+                    if ($repair && $order->state == OrderStateEnum::DISPATCHED) {
+                        continue;
+                    }
+                    DispatchOrderFromDeliveryNote::make()->action($order, $deliveryNote, $repair ? $dispatchedAt : null, $repair);
                 }
-            } else {
+            } elseif (!$repair) {
                 SendDispatchedReplacementOrderEmailToCustomer::dispatch($deliveryNote);
             }
 
@@ -62,6 +69,8 @@ class DispatchDeliveryNote extends OrgAction
         $this->deliveryNoteHandlingHydrators($deliveryNote, DeliveryNoteStateEnum::DISPATCHED);
 
         DeliveryNoteHydrateDispatchTotals::dispatch($deliveryNote);
+
+        SyncPartnerStockDeliveryOnDispatch::run($deliveryNote);
 
         return $deliveryNote;
     }
@@ -79,10 +88,10 @@ class DispatchDeliveryNote extends OrgAction
     /**
      * @throws \Throwable
      */
-    public function action(DeliveryNote $deliveryNote): DeliveryNote
+    public function action(DeliveryNote $deliveryNote, ?string $dispatchedAt = null, bool $repair = false): DeliveryNote
     {
         $this->initialisationFromShop($deliveryNote->shop, []);
 
-        return $this->handle($deliveryNote);
+        return $this->handle($deliveryNote, $dispatchedAt, $repair);
     }
 }

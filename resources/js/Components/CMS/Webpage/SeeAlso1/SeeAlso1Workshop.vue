@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, inject } from "vue"
+import { ref, computed, inject, onMounted } from "vue"
 import { getStyles } from "@/Composables/styles"
 import ProductRender from '@/Iris/Components/IrisBlocks/Products/ds/ProductCardDs/ProductCardDs1.vue'
 import { sendMessageToParent } from "@/Composables/Workshop"
@@ -19,6 +19,7 @@ import { faChevronLeft, faChevronRight } from '@fortawesome/free-solid-svg-icons
 import { library } from '@fortawesome/fontawesome-svg-core'
 import EditorV2 from "@/Components/Forms/Fields/BubleTextEditor/EditorV2.vue"
 import ProductRenderEcom from "@/Iris/Components/IrisBlocks/Products/Ecom/ProductCard/ProductCardEcom1.vue"
+import TrendingNowProducts from "@/Iris/Components/IrisBlocks/SeeAlso/TrendingNowProducts.vue"
 import { trans } from "laravel-vue-i18n"
 import { faChevronCircleLeft, faChevronCircleRight } from "@far"
 library.add(faChevronLeft, faChevronRight)
@@ -39,6 +40,11 @@ const emits = defineEmits<{
 
 const layout: any = inject("layout", {})
 const bKeys = Blueprint(props.webpageData)?.blueprint?.map(b => b?.key?.join("-")) || []
+const key = ref(1)
+
+onMounted(() => {
+  key.value++
+})
 
 const slidesPerView = computed(() => {
   const perRow = props.modelValue?.settings?.per_row ?? {}
@@ -64,6 +70,8 @@ const compSwiperOptions = computed(() => {
         return props.modelValue?.settings?.products_data?.top_sellers || []
     }
 })
+
+const isTrendingNow = computed(() => props.modelValue?.settings?.products_data?.type === 'trending-now')
 </script>
 
 <template>
@@ -73,7 +81,7 @@ const compSwiperOptions = computed(() => {
     width: '100%'
   }" :dropdown-type="props.modelValue?.settings?.products_data?.type">
     <!-- Title -->
-    <div class="px-4 py-6 pb-2">
+    <div class="px-4 py-6 pb-2" :class="isTrendingNow ? 'text-center' : ''">
       <div class="text-3xl font-semibold text-gray-800">
         <EditorV2 v-model="modelValue.title" @focus="() => {
           sendMessageToParent('activeBlock', indexBlock)
@@ -95,6 +103,13 @@ const compSwiperOptions = computed(() => {
         </div>
         <!-- <RecommendersLuigi1Workshop recommendation_type="trends" :slidesPerView /> -->
     </div>
+
+    <TrendingNowProducts
+      v-else-if="isTrendingNow && compSwiperOptions?.length"
+      :products="compSwiperOptions"
+      :perRow="modelValue?.settings?.per_row"
+      :screenType="screenType"
+    />
 
     <!-- Carousel with custom navigation -->
     <div v-else-if="compSwiperOptions?.length" class="relative px-4 py-6" @click="() => {
@@ -123,8 +138,8 @@ const compSwiperOptions = computed(() => {
         <SwiperSlide v-for="(product, index) in compSwiperOptions" :key="product.slug" class="!h-auto">
           <div class="h-full flex flex-col">          <!-- this now fills the Swiper height -->
             <div v-if="product" class="flex-1 flex flex-col">
-              <ProductRenderEcom v-if="layout.retina.type === 'b2b'" :product="product" :buttonStyleHover="layout?.buttonBasket?.buttonStyleHover" :buttonStyle="layout?.buttonBasket?.buttonStyle" :hideLogin="true"  :hasInBasket="get(layout, ['family_page', 'productInBasket', 'list', product.id], [])"  />
-              <ProductRender v-else :product="product" :productHasPortfolio="[]" />
+              <ProductRenderEcom v-if="layout.retina.type === 'b2b'" :key="`ecom-${key}`" :product="product" :buttonStyleHover="layout?.buttonBasket?.buttonStyleHover" :buttonStyle="layout?.buttonBasket?.buttonStyle" :hideLogin="true"  :hasInBasket="get(layout, ['family_page', 'productInBasket', 'list', product.id], [])"  />
+              <ProductRender v-else :key="`ds-${key}`" :product="product" :productHasPortfolio="[]" />
             </div>
 
             <div v-else class="flex-1 flex items-center justify-center text-gray-400">

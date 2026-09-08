@@ -30,7 +30,6 @@ use Spatie\Sluggable\SlugOptions;
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Comms\EmailBulkRun> $emailBulkRuns
  * @property-read \App\Models\SysAdmin\Group|null $group
- * @property-read \App\Models\Comms\OrgPostRoomIntervals|null $intervals
  * @property-read \App\Models\SysAdmin\Organisation $organisation
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Comms\Outbox> $outboxes
  * @property-read \App\Models\Comms\PostRoom $postRoom
@@ -76,10 +75,6 @@ class OrgPostRoom extends Model
         return $this->hasOne(OrgPostRoomStats::class);
     }
 
-    public function intervals(): HasOne
-    {
-        return $this->hasOne(OrgPostRoomIntervals::class);
-    }
 
     public function outboxes(): HasMany
     {

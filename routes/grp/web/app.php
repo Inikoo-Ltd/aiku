@@ -6,7 +6,10 @@
  * Copyright (c) 2023, Raul A Perusquia Flores
  */
 
+use App\Actions\DevOps\UI\IndexAppDeployments;
+use App\Actions\HumanResources\ClockingMachine\UI\RedirectClockingMachineQrScan;
 use App\Actions\SysAdmin\Group\Seeders\SeedWebBlockTypes;
+use App\Actions\SysAdmin\UI\ShowGrpLlmsTxt;
 use App\Actions\UI\Notification\IndexNotification;
 use App\Actions\Web\Webpage\BanVarnishWebpage;
 use App\Actions\Web\Website\BreakAllWebsitesVarnishCache;
@@ -28,6 +31,8 @@ Route::middleware(
     Route::get('/', function () {
         return redirect('/dashboard');
     });
+
+    Route::get('llms.txt', ShowGrpLlmsTxt::class)->name('llms_txt');
 
     if (!app()->isProduction()) {
         Route::get('routes', function () {
@@ -108,6 +113,7 @@ Route::middleware(
     Route::get('ban/varnish/website/{website}', BreakWebsiteVarnishCache::class)->name('varnish.website');
 
     Route::get('/notifications', IndexNotification::class)->name('notifications');
+    Route::get('/deploys', IndexAppDeployments::class)->name('deploys');
     Route::prefix("overview")
         ->name("overview.")
         ->group(__DIR__."/overview.php");
@@ -135,6 +141,12 @@ Route::middleware(
     Route::prefix("sysadmin")
         ->name("sysadmin.")
         ->group(__DIR__."/sysadmin.php");
+    Route::prefix("marketing")
+        ->name("marketing.")
+        ->group(function () {
+            Route::get('/', [App\Actions\UI\Marketing\ShowAggregatedMarketingDashboard::class, 'inGroup'])->name('dashboard');
+            Route::get('/channels/{channelType}', [App\Actions\UI\Marketing\ShowAggregatedMarketingChannel::class, 'inGroup'])->name('channels.show');
+        });
     Route::prefix("org/{organisation}")
         ->name("org.")
         ->group(__DIR__."/org/org.php");
@@ -181,6 +193,8 @@ Route::middleware(
     Route::prefix("clocking-employees")
         ->name("clocking_employees.")
         ->group(__DIR__."/clocking_employees.php");
+
+    Route::get('clocking-scan/{hash}', RedirectClockingMachineQrScan::class)->name('clocking_scan');
 
     Route::prefix("platforms")
         ->name("platforms.")

@@ -7,18 +7,19 @@ import Tag from "@/Components/Tag.vue"
 import { routeType } from "@/types/route"
 import { Table as TableTS } from "@/types/Table"
 import { faPencil, faTimes, faTrashAlt, faMoneyCheckEditAlt, faPlus, faMinus } from "@far"
-import { faBarcode, faGift, faRepeat } from "@fal"
+import { faBarcode, faGift, faRepeat, faTrash, faUndo } from "@fal"
 import { Link, router } from "@inertiajs/vue3"
 import { notify } from "@kyvg/vue3-notification"
 import { trans } from "laravel-vue-i18n"
-import { debounce, get, set } from "lodash-es"
+import { debounce, get, set, toInteger } from "lodash-es"
 import Modal from "@/Components/Utils/Modal.vue"
 import ProductsSelectorAutoSelect from "@/Components/Dropshipping/ProductsSelectorAutoSelect.vue"
 import { ulid } from "ulid"
 import Image from "@common/Components/Image.vue"
 
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faBadgePercent, faFragile } from "@fas"
+import { FontAwesomeIcon, FontAwesomeLayers } from "@fortawesome/vue-fontawesome"
+import { faBadgePercent, faFragile, faExclamationTriangle } from "@fas"
+import { faBan, faPercentage } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import Discount from "@/Components/Utils/Label/Discount.vue"
 import { InputNumber, InputText } from "primevue"
@@ -27,13 +28,17 @@ import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import FractionDisplay from "@/Components/DataDisplay/FractionDisplay.vue"
 import BasicDiscount from "@/Components/Utils/Label/DiscountTemplate/BasicDiscount.vue"
 import error from "@iris/Pages/Errors/Error.vue"
+import { ctrans } from "@/Composables/useTrans"
+import MarginCell from "@/Components/Margin/MarginCell.vue"
 
-library.add(faBadgePercent, faFragile, faMoneyCheckEditAlt, faBarcode, faGift, faRepeat)
+library.add(faBadgePercent, faFragile, faMoneyCheckEditAlt, faBarcode, faGift, faRepeat, faExclamationTriangle)
 
 type ProductRow = {
     id: number
+    model_type?: string
     asset_code: string
     asset_name: string
+    is_discretionary_offer?: boolean
     quantity_ordered: number
     available_quantity?: number
     product_slug?: string
@@ -51,6 +56,7 @@ const props = defineProps<{
     fetchRoute?: routeType
     routesProductsListModification?: routeType
     is_shop_external: boolean
+    allow_order_modification: boolean
 }>()
 
 const layout = inject("layout", {})
@@ -116,6 +122,9 @@ const onUpdateQuantity = (
     value: number,
     is_cut_view: boolean
 ) => {
+    if (isLoading.value === "quantity" + idTransaction) {
+        return
+    }
     let sendData = is_cut_view ? {
         units_ordered: Number(value)
     } : {
@@ -127,14 +136,14 @@ const onUpdateQuantity = (
         {
             onError: (e: any) => {
                 notify({
-                    title: trans("Something went wrong"),
+                    title: ctrans("Something went wrong"),
                     text: e.message,
                     type: "error"
                 })
             },
             onStart: () => (isLoading.value = "quantity" + idTransaction),
             onFinish: () => (isLoading.value = null),
-            only: ["transactions", "box_stats", "total_to_pay", "balance"],
+            only: ["transactions", "box_stats", "total_to_pay", "balance", "pageHead"],
             preserveScroll: true
         }
     )
@@ -202,14 +211,14 @@ async function onSave() {
                 Object.keys(createNewQty).forEach((k) => delete createNewQty[k])
                 editingIds.value.clear()
                 notify({
-                    title: trans("Success"),
-                    text: trans("Changes saved successfully"),
+                    title: ctrans("Success"),
+                    text: ctrans("Changes saved successfully"),
                     type: "success"
                 })
             },
             onError: (e: any) => {
                 notify({
-                    title: trans("Something went wrong"),
+                    title: ctrans("Something went wrong"),
                     text: e.message,
                     type: "error"
                 })
@@ -259,7 +268,6 @@ const onDeleteNewRow = (index) => {
     props.data.data.splice(index, 1)
 }
 
-
 defineExpose({
     openModal,
     onSave,
@@ -268,6 +276,51 @@ defineExpose({
     loadingsaveModify
 
 })
+
+const updateQuantityOrdered = (item: ProductRow, is_cut_view: boolean) => {
+    let valueToCompare = is_cut_view ? (
+            (item.quantity_ordered_fractional[0] * item.quantity_ordered_fractional[1][1]) + item.quantity_ordered_fractional[1][0]
+        ) : item.quantity_ordered;
+
+    let sentData = {
+        quantity_ordered: item.amount_modified
+    }
+    
+    if (is_cut_view) {
+        sentData = {
+            units_ordered: item.amount_modified
+        }
+    }
+
+    if (valueToCompare == item.amount_modified) {
+        editingIds.value.delete(item.id)
+        return
+    }
+
+    router.patch(route('grp.models.transaction.update_quantity_ordered', {
+        transaction: item.id
+    }), sentData, {
+        preserveScroll: true,
+        onStart: () => (loadingsaveModify.value = true),
+        onFinish: () => (loadingsaveModify.value = false),
+        onSuccess: () => {
+            editingIds.value.delete(item.id)
+            notify({
+                title: trans("Success"),
+                text: trans("Quantity updated, warehouse has been notified"),
+                type: "success"
+            })
+        },
+        onError: (errors) => {
+            notify({
+                title: trans("Something went wrong"),
+                text: Object.values(errors).join(", ") || trans("Failed to update quantity"),
+                type: "error"
+            })
+        }
+    })
+}
+
 
 // Section: Discretionary discount
 const selectedItemToEditNetAmount = ref(null)
@@ -280,6 +333,75 @@ const onCloseModalNetAmount = () => {
 }
 const isLoadingSubmitNetAmount = ref(false)
 const isOpenModalEditNetAmount = ref(false)
+
+const removeDiscount = (item) => {
+    router.patch(
+        route("grp.models.transaction.remove_discount", {
+            transaction: item.id
+        }),
+        {},
+        {
+            preserveScroll: true,
+            preserveState: true,
+            onStart: () => {
+            },
+            onSuccess: () => {
+                notify({
+                    title: ctrans("Success"),
+                    text: ctrans("Successfully removed discount from the product"),
+                    type: "success"
+                })
+            },
+            onError: errors => {
+                notify({
+                    title: ctrans("Something went wrong"),
+                    text: errors?.discretionary_offer || ctrans("Failed to remove discount for the product. Try again"),
+                    type: "error"
+                })
+            },
+            onFinish: () => {
+            }
+        }
+    )
+}
+
+const restoreDiscount = (item) => {
+    router.patch(
+        route("grp.models.transaction.update_discretionary_discount", {
+            transaction: item.id
+        }),
+        {
+            discretionary_offer: 0,
+            discretionary_offer_label: ''
+        },
+        {
+            preserveScroll: true,
+            preserveState: true,
+            onStart: () => {
+                isLoadingSubmitNetAmount.value = true
+            },
+            onSuccess: () => {
+                notify({
+                    title: ctrans("Success"),
+                    text: ctrans("Successfully restored submitted discount data"),
+                    type: "success"
+                })
+                onCloseModalNetAmount()
+            },
+            onError: errors => {
+                notify({
+                    title: ctrans("Something went wrong"),
+                    text: errors?.discretionary_offer || ctrans("Failed to set restore submitted discount data. Try again"),
+                    type: "error"
+                })
+            },
+            onFinish: () => {
+                isLoadingSubmitNetAmount.value = false
+            }
+        }
+    )
+}
+
 const onSubmitEditNetAmount = () => {
 
     console.log("ccc", selectedItemToEditNetAmount.value)
@@ -304,16 +426,16 @@ const onSubmitEditNetAmount = () => {
             },
             onSuccess: () => {
                 notify({
-                    title: trans("Success"),
-                    text: trans("Successfully set discretionary discount percentage"),
+                    title: ctrans("Success"),
+                    text: ctrans("Successfully set discretionary discount percentage"),
                     type: "success"
                 })
                 onCloseModalNetAmount()
             },
             onError: errors => {
                 notify({
-                    title: trans("Something went wrong"),
-                    text: errors?.discretionary_offer || trans("Failed to set discretionary discount percentage. Try again"),
+                    title: ctrans("Something went wrong"),
+                    text: errors?.discretionary_offer || ctrans("Failed to set discretionary discount percentage. Try again"),
                     type: "error"
                 })
             },
@@ -335,6 +457,7 @@ const onSetCutView = async (proxyItem: {}, routeUpdate: routeType, newVal: boole
             is_cut_view: newVal
         },
         {
+            preserveScroll: true,
             onStart: () => {
                 set(proxyItem, 'is_transaction_loading', true)
 
@@ -342,8 +465,8 @@ const onSetCutView = async (proxyItem: {}, routeUpdate: routeType, newVal: boole
             onError: () => {
                 console.log('eeerr', error)
                 notify({
-                    title: trans("Something went wrong"),
-                    text: error.message || trans("Please try again or contact administrator"),
+                    title: ctrans("Something went wrong"),
+                    text: error.message || ctrans("Please try again or contact administrator"),
                     type: 'error'
                 })
             },
@@ -357,19 +480,21 @@ const onSetCutView = async (proxyItem: {}, routeUpdate: routeType, newVal: boole
 const isOffersData = (offersData: any): boolean => {
     if (!offersData) return false
     const parsed = typeof offersData === 'string' ? JSON.parse(offersData) : offersData
-    return Object.keys(parsed || {}).length > 0
+    return Object.keys(parsed || {}).length > 0 && parseFloat(offersData.o.p ?? 0)
 }
 </script>
 
 <template>
     <div>
-        <Table :resource="data" :name="tab" :rowColorFunction="(item) => {
-            if (typeof item.id === 'string' && item.id.startsWith('new')) {
-                return 'bg-yellow-50'
-            }
-            return ''
-        }" :useTopPagination="true">
-
+        <Table 
+            :resource="data" :name="tab" :rowColorFunction="(item) => {
+                if (typeof item.id === 'string' && item.id.startsWith('new')) {
+                    return 'bg-yellow-50'
+                }
+                return ''
+            }" 
+            :useTopPagination="true"
+        >
 
             <template #cell(image)="{ item }">
                 <!-- <pre>{{ item }}</pre> -->
@@ -390,11 +515,21 @@ const isOffersData = (offersData: any): boolean => {
             <!-- Column: Name / Stock -->
             <template #cell(asset_name)="{ item }">
                 <div>
-                    <div xclass="item.offers_data ? 'text-pink-600' : ''">{{ item.asset_name }}</div>
-                    <div v-if="item.available_quantity !== undefined && item.available_quantity < 1">
+                    <div xclass="item.offers_data ? 'text-pink-600' : ''">
+                        <span v-if="Number(item.units) !== 1">[{{ item.units }}x]</span>
+                        {{ item.asset_name }}
+                    </div>
+                    <div v-if="item.model_type === 'Product' && item.units_changed_to"
+                        v-tooltip="ctrans('This line was ordered and priced at :ordered per pack, the product is now sold as :now per pack. Check what the warehouse should ship.', { ordered: item.product_units, now: item.units_changed_to })"
+                        class="text-xs text-amber-600"
+                    >
+                        <FontAwesomeIcon icon="fas fa-exclamation-triangle" class="text-amber-500 mr-1" fixed-width aria-hidden="true" />
+                        {{ ctrans('Repacked since ordered') }}: {{ item.product_units }} → {{ item.units_changed_to }}
+                    </div>
+                    <div v-if="item.model_type === 'Product' && item.available_quantity !== undefined && item.available_quantity < 1">
                         <Tag label="Out of stock" no-hover-color :theme="7" size="xxs" />
                     </div>
-                    <div v-else class="text-gray-500 italic text-xs">
+                    <div v-else-if="item.model_type === 'Product'" class="text-gray-500 italic text-xs">
                         Stock: {{ locale.number(item.available_quantity || 0) }} available
                         <span v-if="item.is_follow_on" v-tooltip="ctrans('Follow on from a previous order')">
                             <FontAwesomeIcon icon="fal fa-repeat" class="text-sky-500 not-italic ml-1" aria-hidden="true" />
@@ -404,18 +539,19 @@ const isOffersData = (offersData: any): boolean => {
                         </span>
                         <div v-if="item.upcoming_transaction_public_notes">{{ item.upcoming_transaction_public_notes }}</div>
                         <div v-if="item.upcoming_transaction_private_notes">{{ item.upcoming_transaction_private_notes }}</div>
-                    </div>
 
-                    <Discount v-if="isOffersData(item.offers_data)" :offers_data="item.offers_data" />
+                        <div>Units/SKO: {{ toInteger(item.product_units) }}</div>
+                    </div>
+                    <Discount 
+                        v-if="isOffersData(item.offers_data)" 
+                        :offers_data="item.offers_data" 
+                        :is_discretionary_offer="item.discretionary_offer"
+                    />
                 </div>
             </template>
 
             <!-- Column: Quantity Ordered -->
             <template #cell(quantity_ordered)="{ item, proxyItem }">
-                <!-- <pre>{{ item.quantity_ordered_fractional }}</pre> -->
-                <div v-if="layout.app.environment == 'local'" class="bg-yellow-400 w-fit">
-                    {{ item.quantity_ordered_fractional }}
-                </div> 
                 <div class="flex items-center justify-end gap-2">
                     <div v-if="item.is_gift">
                         {{ locale.number(item.quantity_bonus) }}
@@ -442,14 +578,17 @@ const isOffersData = (offersData: any): boolean => {
                             :denominator="proxyItem.is_cut_view ? (Number(item.product_units) > 1 ? Number(item.product_units) : undefined) : undefined"
                         /> -->
                         <InputNumber 
-                            :model-value="item.quantity_ordered_fractional[0]" 
+                            :model-value="proxyItem.is_cut_view ? (
+                                (item.quantity_ordered_fractional[0] * item.quantity_ordered_fractional[1][1]) + item.quantity_ordered_fractional[1][0]
+                            ) : item.quantity_ordered" 
                             @update:modelValue="(e: number) => debounceUpdateQuantity(item.updateRoute, item.id, e, proxyItem.is_cut_view)"
+                            :disabled="loadingsaveModify"
                             inputId="horizontal-buttons" 
                             showButtons 
                             buttonLayout="horizontal"
                             :step="1" 
-                            min='0',
-                            :max="proxyItem.is_cut_view ? (item.available_quantity * Number(item.quantity_ordered_fractional[1][1])) : item.available_quantity"
+                            min='0'
+                            :max="item.model_type !== 'Product' ? undefined : (proxyItem.is_cut_view ? (item.available_quantity * Number(item.quantity_ordered_fractional[1][1])) : item.available_quantity)"
                             v-bind="bindToTarget" 
                             :suffix="proxyItem.is_cut_view && Number(item.quantity_ordered_fractional[1][1]) > 1
                                 ? `/${Number(item.quantity_ordered_fractional[1][1])}`
@@ -458,7 +597,7 @@ const isOffersData = (offersData: any): boolean => {
                             :inputStyle="{
                                     width: bindToTarget?.fluid
                                         ? undefined
-                                        : (proxyItem.is_cut_view && Number(item.quantity_ordered_fractional[1][1]) > 1 ? '75px' : '50px'),
+                                        : (proxyItem.is_cut_view && Number(item.quantity_ordered_fractional[1][1]) > 1 ? '90px' : '50px'),
                                     textAlign: 'center',
                                 }" 
                             fluid
@@ -478,7 +617,7 @@ const isOffersData = (offersData: any): boolean => {
                             xv-if="layout.app.environment == 'local'"
                             v-if="Number(item.product_units) !== 1"
                             @click="() => proxyItem.is_transaction_loading ? '' : onSetCutView(proxyItem, item.updateRoute, !proxyItem.is_cut_view)"
-                            v-tooltip="trans('Cut view')"
+                            v-tooltip="ctrans('Cut view')"
                             class="text-lg align-middle opacity-60 cursor-pointer hover:opacity-100 flex items-center"
                             :class="proxyItem.is_cut_view ? 'text-orange-500' : ''"
                         >
@@ -497,6 +636,7 @@ const isOffersData = (offersData: any): boolean => {
                                 :fractionData="item.quantity_ordered_fractional"
                                 :strikethrough="(state === 'dispatched' && item.quantity_dispatched != item.quantity_ordered)
                                     || ((state === 'packing' || state === 'packed') && item.quantity_picked != item.quantity_ordered)
+                                    || ((state == 'handling_blocked' || state === 'picked') && item.quantity_picked != item.quantity_ordered)
                                     || item.quantity_not_picked > 0"
                             />
                         </span>
@@ -517,6 +657,14 @@ const isOffersData = (offersData: any): boolean => {
                             </span>
                         </template>
 
+                        <template v-else-if="(state == 'handling_blocked' || state === 'picked') && item.quantity_picked != item.quantity_ordered">
+                            <FractionDisplay
+                                :fractionData="item.quantity_picked_fractional"
+                                class="pl-3"
+                                v-tooltip="ctrans('Quantity Picked')"
+                            />
+                        </template>
+
                         <span class="pl-3" v-if="state === 'dispatched' && item.quantity_dispatched != item.quantity_ordered">
                             <!-- {{ formatQuantity(item.quantity_dispatched) }} -->
                             <FractionDisplay :fractionData="item.quantity_dispatched_fractional" v-tooltip="ctrans('Quantity dispatched')" />
@@ -529,17 +677,75 @@ const isOffersData = (offersData: any): boolean => {
                         <span class="text-gray-500 italic text-sm">
                             original: {{ formatQuantity(item.quantity_ordered) }}
                         </span>
-                        <NumberWithButtonSave v-model="createNewQty[item.id].quantity_ordered"
-                                              :bindToTarget="{ min: 0 }" noUndoButton noSaveButton class="w-24" />
+                        <div class="w-fit flex gap-x-2">
+                            <InputNumber 
+                                :model-value="proxyItem.is_cut_view ? (
+                                    (createNewQty[item.id].quantity_ordered_fractional[0] * createNewQty[item.id].quantity_ordered_fractional[1][1]) + createNewQty[item.id].quantity_ordered_fractional[1][0]
+                                ) : createNewQty[item.id].quantity_ordered"
+                                @update:modelValue="(e: number) => {
+                                    createNewQty[item.id].amount_modified = e; console.log(createNewQty[item.id])
+                                }"
+                                inputId="horizontal-buttons" 
+                                showButtons 
+                                buttonLayout="horizontal"
+                                :step="1" 
+                                min='0'
+                                :max="item.model_type !== 'Product' ? undefined : (proxyItem.is_cut_view ? (item.available_quantity * Number(item.quantity_ordered_fractional[1][1])) : item.available_quantity)"
+                                v-bind="bindToTarget" 
+                                :suffix="proxyItem.is_cut_view && Number(item.quantity_ordered_fractional[1][1]) > 1
+                                    ? `/${Number(item.quantity_ordered_fractional[1][1])}`
+                                    : undefined
+                                    " 
+                                :inputStyle="{
+                                        width: bindToTarget?.fluid
+                                            ? undefined
+                                            : (proxyItem.is_cut_view && Number(item.quantity_ordered_fractional[1][1]) > 1 ? '90px' : '50px'),
+                                        textAlign: 'center',
+                                    }" 
+                                fluid
+                                :key="proxyItem.is_cut_view + item.id"
+                            >
+                                <template #incrementbuttonicon>
+                                    <FontAwesomeIcon :icon="faPlus" />
+                                </template>
+    
+                                <template #decrementbuttonicon>
+                                      <FontAwesomeIcon :icon="faMinus" />
+                                </template>
+                            </InputNumber>
+    
+                            <!-- Toggle: is_cut_view -->
+                            <span
+                                xv-if="layout.app.environment == 'local'"
+                                v-if="Number(item.product_units) !== 1"
+                                @click="() => {
+                                    if (loadingsaveModify) return; 
+                                    onSetCutView(proxyItem, item.updateRoute, !proxyItem.is_cut_view)
+                                    createNewQty[item.id].amount_modified = !proxyItem.is_cut_view ? (
+                                        (item.quantity_ordered_fractional[0] * item.quantity_ordered_fractional[1][1]) + item.quantity_ordered_fractional[1][0]
+                                    ) : item.quantity_ordered
+                                }"
+                                v-tooltip="ctrans('Cut view')"
+                                class="text-lg align-middle opacity-60 cursor-pointer hover:opacity-100 flex items-center"
+                                :class="proxyItem.is_cut_view ? 'text-orange-500' : ''"
+                            >
+                                <LoadingIcon v-if="proxyItem.is_transaction_loading" class="text-gray-700" />
+                                <FontAwesomeIcon v-else icon="fas fa-fragile" class="" fixed-width aria-hidden="true" />
+                            </span>
+                        </div>
                     </div>
                 </div>
             </template>
 
             <!-- Column: Batch Codes -->
+            <template #cell(margin)="{ item }">
+                <MarginCell :margin="item.margin" :currencyCode="item.currency_code" />
+            </template>
+
             <template #cell(batch_codes)="{ item }">
-                <div class="flex flex-wrap gap-1">
+                <div v-if="item.batch_codes" class="flex flex-wrap gap-1">
                     <span
-                        v-for="code in (item.batch_codes ? item.batch_codes.split(', ') : [])"
+                        v-for="code in item.batch_codes.split(', ')"
                         :key="code"
                         class="text-xs px-1.5 py-0.5 rounded border border-blue-300 bg-blue-50 text-blue-700"
                     >
@@ -547,6 +753,9 @@ const isOffersData = (offersData: any): boolean => {
                         {{ code }}
                     </span>
                 </div>
+                <span v-else class="text-gray-400 italic text-xs">
+                    {{ ctrans("No batch code set") }}
+                </span>
             </template>
 
             <!-- Section: Price -->
@@ -584,11 +793,39 @@ const isOffersData = (offersData: any): boolean => {
                                   class="text-gray-500 line-through mr-1 opacity-70">{{
                                     locale.currencyFormat(item.currency_code, item.gross_amount) }}</span>
                             <span>{{ locale.currencyFormat(item.currency_code || "", item.net_amount) }}</span>
-                            <Button
-                                v-if="!(['finalised', 'dispatched', 'cancelled'].includes(state)) && !is_shop_external && !item.is_gift"
-                                @click="() => (selectedItemToEditNetAmount = item, isOpenModalEditNetAmount = true)"
-                                v-tooltip="trans('Edit discretionary discount')" type="transparent" size="xs" key="1"
-                                :icon="faMoneyCheckEditAlt" class="ml-1 !px-1 text-purple-400" />
+                            <span v-if="!(['finalised', 'dispatched', 'cancelled'].includes(state)) && !is_shop_external && !item.is_gift">
+                                <Button
+                                    @click="() => (selectedItemToEditNetAmount = item, isOpenModalEditNetAmount = true)"
+                                    v-tooltip="ctrans('Edit discretionary discount')" type="transparent" size="xs" key="1"
+                                    :icon="faMoneyCheckEditAlt" class="ml-1 !px-1 text-purple-400 hover:text-purple-600" />
+                                <Button
+                                    @click="() => {
+                                        removeDiscount(item)
+                                    }"
+                                    v-tooltip="ctrans('Remove discount from this product')" type="transparent" key="1"
+                                    class="ml-1 !px-0 text-pink-400 hover:text-pink-600 w-max"
+                                >
+                                    <template #icon>
+                                        <FontAwesomeLayers class="flex items-center justify-center w-[2rem]">
+                                            <FontAwesomeIcon
+                                                :icon="faTrash"
+                                                class="!text-lg !w-fit"
+                                            />
+                                            <FontAwesomeIcon
+                                                :icon="faPercentage"
+                                                class="text-xs !top-[25%]"
+                                            />
+                                        </FontAwesomeLayers>
+                                    </template>
+                                </Button>
+                                <Button
+                                    @click="() => {
+                                        restoreDiscount(item)
+                                    }"
+                                    v-tooltip="ctrans('Restore original discount data')" type="transparent" size="md" key="1"
+                                    :icon="faUndo" class="ml-1 !px-1 text-red-500 hover:text-red-700" 
+                                />
+                            </span>
                         </p>
                     </div>
                 </div>
@@ -600,24 +837,41 @@ const isOffersData = (offersData: any): boolean => {
                     <!-- Delete / Unselect -->
                     <Link v-if="state === 'creating'" :href="route(item.deleteRoute.name, item.deleteRoute.parameters)"
                           as="button" :method="item.deleteRoute.method" @start="() => (isLoading = 'unselect' + item.id)"
-                          @finish="() => (isLoading = null)" v-tooltip="trans('Unselect this product')"
+                          @finish="() => (isLoading = null)" v-tooltip="ctrans('Unselect this product')"
                           :preserveScroll="true">
                         <Button v-if="!readonly" icon="fal fa-times" type="negative" size="xs"
                                 :loading="isLoading === 'unselect' + item.id" />
                     </Link>
 
                     <!-- Edit / Cancel -->
-                    <div v-if="state !== 'creating'" class="flex gap-2 items-center">
-                        <button v-if="!editingIds.has(item.id) && layout?.app?.environment === 'local'"
-                                class="h-9 align-bottom text-center" @click="startEdit(item)"
-                                aria-label="Edit Product Order" v-tooltip="'Edit Product Order'">
-                            <FontAwesomeIcon :icon="faPencil" class="h-5 text-gray-500 hover:text-gray-700"
-                                             aria-hidden="true" />
+                    <div v-if="state !== 'creating' && allow_order_modification" class="flex gap-2 items-center">
+                        <button v-if="!editingIds.has(item.id)"
+                            class="h-9 align-bottom text-center" 
+                            aria-label="Edit Product Order" 
+                            v-tooltip="'Edit Product Order'"
+                            @click="startEdit(item)"
+                        >
+                            <FontAwesomeIcon :icon="faPencil" class="h-5 text-gray-500 hover:text-gray-700" aria-hidden="true" />
                         </button>
-
-                        <Button v-else-if="editingIds.has(item.id)" type="negative" v-tooltip="'Cancel edit'"
-                                :icon="faTimes" @click="onCancel(item)" size="sm" aria-label="Cancel edit" />
-
+                        <Button 
+                            v-if="editingIds.has(item.id)" 
+                            type="negative" 
+                            v-tooltip="'Cancel edit'"
+                            :icon="faTimes" 
+                            @click="onCancel(item)" 
+                            size="sm" 
+                            aria-label="Cancel edit" 
+                        />
+                        <Button 
+                            v-if="editingIds.has(item.id)" 
+                            :style="'save'"
+                            :hide_label="true"
+                            v-tooltip="'Save changes'"
+                            size="sm"
+                            aria-label="Save changes"
+                            :loading="loadingsaveModify"
+                            @click="updateQuantityOrdered(createNewQty[item.id], item.is_cut_view)"
+                        />
                         <Button v-if="typeof item.id === 'string' && item.id.startsWith('new')" type="negative"
                                 v-tooltip="'delete'" :icon="faTrashAlt" @click="() => onDeleteNewRow(item.rowIndex)"
                                 size="sm" />
@@ -640,7 +894,7 @@ const isOffersData = (offersData: any): boolean => {
                 <!-- Input: Percentage -->
                 <div class="w-full ">
                     <label class="block text-sm font-medium mb-2">
-                        {{ trans("Discretionary discount percentage") }}:
+                        {{ ctrans("Discretionary discount percentage") }}:
                     </label>
                     <InputNumber
                         :modelValue="get(selectedItemToEditNetAmount, 'discretionary_offer', 0)"
@@ -654,7 +908,7 @@ const isOffersData = (offersData: any): boolean => {
                 <!-- Input: Label -->
                 <div class="w-full ">
                     <label class="block text-sm font-medium mb-2">
-                        {{ trans("Discretionary discount Label") }}:
+                        {{ ctrans("Discretionary discount Label") }}:
                     </label>
                     <InputText
                         :modelValue="get(selectedItemToEditNetAmount, 'discretionary_offer_label', '')"
@@ -685,7 +939,7 @@ const isOffersData = (offersData: any): boolean => {
 
                 <div class="w-full flex gap-4 mt-4">
                     <Button type="negative" size="md" :disabled="isLoadingSubmitNetAmount" icon="far fa-arrow-left"
-                            @click="onCloseModalNetAmount" :label="trans('Cancel')">
+                            @click="onCloseModalNetAmount" :label="ctrans('Cancel')">
                     </Button>
 
                     <Button type="primary" size="md" :loading="isLoadingSubmitNetAmount" icon="fad fa-save"
@@ -697,7 +951,7 @@ const isOffersData = (offersData: any): boolean => {
 
         <Modal :isOpen="isModalProductListOpen" @onClose="isModalProductListOpen = false" width="w-full max-w-6xl">
             <ProductsSelectorAutoSelect
-                :headLabel="trans('Add products to Order') + ' #' + (Array.isArray(props.data) ? '' : props.data?.reference)"
+                :headLabel="ctrans('Add products to Order') + ' #' + (Array.isArray(props.data) ? '' : props.data?.reference)"
                 :routeFetch="props.routesProductsListModification" :isLoadingSubmit="false" :listLoadingProducts="false"
                 withQuantity @submit="addNewProduct" />
         </Modal>

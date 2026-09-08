@@ -8,6 +8,7 @@
 
 namespace App\Actions\Accounting\Invoice\UI;
 
+use App\Actions\Accounting\Invoice\GetInvoicePdfColumns;
 use App\Actions\Accounting\Invoice\WithInvoicePayBox;
 use App\Actions\Accounting\InvoiceTransaction\UI\IndexInvoiceTransactions;
 use App\Actions\Accounting\Payment\UI\IndexPayments;
@@ -17,6 +18,7 @@ use App\Actions\Helpers\Country\UI\GetAddressData;
 use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\Helpers\Media\UI\IndexAttachments;
 use App\Actions\OrgAction;
+use App\Actions\Traits\WithMarginData;
 use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Comms\Outbox\OutboxCodeEnum;
@@ -49,6 +51,7 @@ use Lorisleiva\Actions\ActionRequest;
 class ShowInvoice extends OrgAction
 {
     use IsInvoiceUI;
+    use WithMarginData;
     use WithInvoicePayBox;
     use WithFulfilmentCustomerSubNavigation;
 
@@ -137,6 +140,8 @@ class ShowInvoice extends OrgAction
      */
     public function getInvoiceSummary(Invoice $invoice): array
     {
+        $adjustmentsNet = $invoice->invoiceTransactions()->where('model_type', 'Adjustment')->sum('net_amount');
+
         return [
             array_values(
                 array_filter(
@@ -179,21 +184,21 @@ class ShowInvoice extends OrgAction
                     'label'       => __('Insurance'),
                     'price_total' => $invoice->insurance_amount
                 ],
+                ...($adjustmentsNet != 0 ? [
+                    [
+                        'label'       => __('Adjustments'),
+                        'information' => __('Small differences settled by the shop, not charged to the customer'),
+                        'price_total' => $adjustmentsNet
+                    ],
+                ] : []),
             ])),
             [
                 [
                     'label'       => __('Net'),
                     'information' => '',
-                    // 'styleField'    => [
-                    //     'background' => '#000000CC',
-                    //     'color' => '#fff',
-                    // ],
                     'price_total' => $invoice->net_amount
                 ],
-                [
-                    'label'       => __('Tax'),
-                    'price_total' => $invoice->tax_amount
-                ]
+                ...$this->getInvoiceTaxRows($invoice),
             ],
             [
                 [
@@ -210,8 +215,7 @@ class ShowInvoice extends OrgAction
 
     public function getDownloadPdfColumns(Invoice $invoice): array
     {
-        $shopSettings = $invoice->shop->settings ?? [];
-        $savedColumns = Arr::get($shopSettings, 'invoicing.download_pdf_columns', []);
+        $savedColumns = GetInvoicePdfColumns::run($invoice);
 
         $columns = [
             [
@@ -262,10 +266,18 @@ class ShowInvoice extends OrgAction
                 'label' => __('Batch Code'),
                 'value' => 'show_batch_code',
             ],
+            [
+                'label' => __('Out of stock items in a separate block'),
+                'value' => 'separate_out_of_stock',
+            ],
+            [
+                'label' => __('Discounts'),
+                'value' => 'show_discounts',
+            ],
         ];
 
         return array_map(function (array $column) use ($savedColumns) {
-            $column['is_checked'] = (bool)Arr::get($savedColumns, $column['value'], false);
+            $column['is_checked'] = $savedColumns[$column['value']] ?? false;
 
             return $column;
         }, $columns);
@@ -284,10 +296,6 @@ class ShowInvoice extends OrgAction
                 'parameters' => [
                     'organisation'         => $invoice->organisation->slug,
                     'invoice'              => $invoice->slug,
-                    'country_of_origin'    => true,
-                    'weight'               => true,
-                    'commodity_codes'      => true,
-                    'show_dispatch_totals' => true,
                 ]
             ],
             [
@@ -345,7 +353,9 @@ class ShowInvoice extends OrgAction
         }
 
         if ($invoice->shop->type == ShopTypeEnum::FULFILMENT) {
-            return ShowFulfilmentInvoice::make()->htmlResponse($invoice, $request, $this->tab, $this->parent);
+            $fulfilmentParent = $this->parent instanceof Shop ? $this->parent->fulfilment : $this->parent;
+
+            return ShowFulfilmentInvoice::make()->htmlResponse($invoice, $request, $this->tab, $fulfilmentParent);
         }
 
         $subNavigation = [];
@@ -384,7 +394,7 @@ class ShowInvoice extends OrgAction
         return Inertia::render(
             'Org/Accounting/Invoice',
             [
-                'title'       => __('Invoice'),
+                'title'       => __('Invoice') . ' ' . $invoice->reference,
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $invoice,
                     $request->route()->getName(),
@@ -436,6 +446,7 @@ class ShowInvoice extends OrgAction
                     ],
                 ] : [],
                 'box_stats'                     => $this->getBoxStats($invoice),
+                'margin_summary'                => $this->getMarginSummary($invoice),
                 'list_refunds'                  => RefundResource::collection($invoice->refunds),
                 'invoice'                       => InvoiceResource::make($invoice),
                 'outbox'                        => [
@@ -464,8 +475,8 @@ class ShowInvoice extends OrgAction
                     : Inertia::optional(fn () => RefundsResource::collection(IndexRefunds::run($invoice, InvoiceTabsEnum::REFUNDS->value))),
 
                 InvoiceTabsEnum::INVOICE_TRANSACTIONS->value => $this->tab == InvoiceTabsEnum::INVOICE_TRANSACTIONS->value ?
-                    fn () => InvoiceTransactionsResource::collection(IndexInvoiceTransactions::run($invoice, InvoiceTabsEnum::INVOICE_TRANSACTIONS->value))
-                    : Inertia::optional(fn () => InvoiceTransactionsResource::collection(IndexInvoiceTransactions::run($invoice, InvoiceTabsEnum::INVOICE_TRANSACTIONS->value))),
+                    fn () => InvoiceTransactionsResource::collection(IndexInvoiceTransactions::run($invoice, InvoiceTabsEnum::INVOICE_TRANSACTIONS->value, $this->canSeeMargins($invoice->shop)))
+                    : Inertia::optional(fn () => InvoiceTransactionsResource::collection(IndexInvoiceTransactions::run($invoice, InvoiceTabsEnum::INVOICE_TRANSACTIONS->value, $this->canSeeMargins($invoice->shop)))),
 
 
                 InvoiceTabsEnum::EMAIL->value => $this->tab == InvoiceTabsEnum::EMAIL->value ?
@@ -478,8 +489,8 @@ class ShowInvoice extends OrgAction
                     : Inertia::optional(fn () => PaymentsResource::collection(IndexPayments::run($invoice))),
 
                 InvoiceTabsEnum::HISTORY->value => $this->tab == InvoiceTabsEnum::HISTORY->value ?
-                    fn () => HistoryResource::collection(IndexHistory::run($invoice))
-                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($invoice))),
+                    fn () => HistoryResource::collection(IndexHistory::run($invoice, InvoiceTabsEnum::HISTORY->value))
+                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($invoice, InvoiceTabsEnum::HISTORY->value))),
 
                 InvoiceTabsEnum::ATTACHMENTS->value => $this->tab == InvoiceTabsEnum::ATTACHMENTS->value ?
                     fn () => AttachmentsResource::collection(IndexAttachments::run(parent: $invoice, prefix: InvoiceTabsEnum::ATTACHMENTS->value))
@@ -491,9 +502,42 @@ class ShowInvoice extends OrgAction
             ->table(IndexDispatchedEmails::make()->tableStructure($invoice->customer, prefix: InvoiceTabsEnum::EMAIL->value))
             ->table(IndexHistory::make()->tableStructure(prefix: InvoiceTabsEnum::HISTORY->value))
             ->table(IndexAttachments::make()->tableStructure(prefix: InvoiceTabsEnum::ATTACHMENTS->value))
-            ->table(IndexInvoiceTransactions::make()->tableStructure(InvoiceTabsEnum::INVOICE_TRANSACTIONS->value));
+            ->table(IndexInvoiceTransactions::make()->tableStructure(InvoiceTabsEnum::INVOICE_TRANSACTIONS->value, $this->canSeeMargins($invoice->shop)));
     }
 
+
+    /**
+     * One tax row per rate on the invoice, with the net it applies to beside it, matching the
+     * order summary and the pdf. External shop and tax-only invoices keep the single stored
+     * figure, theirs is not derived from the lines.
+     *
+     * @return array<int, array{label: string, information?: string, price_total: mixed}>
+     */
+    public function getInvoiceTaxRows(Invoice $invoice): array
+    {
+        $taxRows = [];
+        if ($invoice->shop->type != ShopTypeEnum::EXTERNAL && !$invoice->is_tax_only) {
+            $taxBreakdown = $invoice->taxBreakdown();
+            foreach ($taxBreakdown as $taxRow) {
+                $taxRows[] = [
+                    'label'       => __('Tax').' ('.$taxRow['name'].')',
+                    'information' => count($taxBreakdown) > 1
+                        ? __('on').' '.$invoice->currency->symbol.number_format($taxRow['net_amount'], 2)
+                        : '',
+                    'price_total' => $taxRow['tax_amount'],
+                ];
+            }
+        }
+
+        if (empty($taxRows)) {
+            $taxRows[] = [
+                'label'       => __('Tax'),
+                'price_total' => $invoice->tax_amount,
+            ];
+        }
+
+        return $taxRows;
+    }
 
     public function jsonResponse(Invoice $invoice): InvoiceResource
     {

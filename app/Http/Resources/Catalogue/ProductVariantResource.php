@@ -16,7 +16,6 @@ use Illuminate\Http\Resources\Json\JsonResource;
 use App\Helpers\NaturalLanguage;
 use App\Actions\Traits\HasBucketAttachment;
 use App\Actions\Goods\TradeUnit\UI\GetTradeUnitShowcase;
-use Illuminate\Support\Facades\DB;
 use App\Models\Goods\TradeUnit;
 
 class ProductVariantResource extends JsonResource
@@ -31,7 +30,7 @@ class ProductVariantResource extends JsonResource
 
         $dataTradeUnits = [];
         if ($product->tradeUnits) {
-            $dataTradeUnits = $this->getDataTradeUnit($product->tradeUnits);
+            $dataTradeUnits = $this->getDataTradeUnit($product);
         }
 
         $gpsr = [
@@ -103,15 +102,11 @@ class ProductVariantResource extends JsonResource
     }
 
 
-    private function getDataTradeUnit($tradeUnits): array
+    private function getDataTradeUnit($product): array
     {
-        $packedIn = DB::table('model_has_trade_units')
-            ->where('model_type', 'Stock')
-            ->whereIn('trade_unit_id', $tradeUnits->pluck('id'))
-            ->pluck('quantity', 'trade_unit_id')
-            ->toArray();
+        $packedIn = $product->getEffectiveStockPackedInByTradeUnit();
 
-        return $tradeUnits->map(function (TradeUnit $tradeUnit) use ($packedIn) {
+        return $product->tradeUnits->map(function (TradeUnit $tradeUnit) use ($packedIn) {
             return array_merge(
                 ['pick_fractional' => riseDivisor(divideWithRemainder(findSmallestFactors($tradeUnit->pivot->quantity / $packedIn[$tradeUnit->id])), $packedIn[$tradeUnit->id])],
                 GetTradeUnitShowcase::run($tradeUnit)

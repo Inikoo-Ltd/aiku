@@ -36,7 +36,7 @@ class FetchCurrencyExchangeFrankfurter
         }
 
 
-        $response = Http::get($url, [
+        $response = Http::timeout(3)->get($url, [
             'from' => $baseCurrency->code,
             'to'   => $targetCurrency->code
         ]);

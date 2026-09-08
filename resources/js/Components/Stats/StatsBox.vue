@@ -1,21 +1,25 @@
 <script setup lang="ts">
 import { routeType } from '@/types/route'
-import { Link } from '@inertiajs/vue3'
+import { Link, router } from '@inertiajs/vue3'
 import LoadingIcon from '../Utils/LoadingIcon.vue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { inject, ref } from 'vue'
+import { trans } from 'laravel-vue-i18n'
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
 import Icon from '../Icon.vue'
 import BackgroundBox from '../BackgroundBox.vue'
 import CountUp from 'vue-countup-v3'
+import Modal from '../Utils/Modal.vue'
+import PureInputNumber from '../Pure/PureInputNumber.vue'
+import Button from '../Elements/Buttons/Button.vue'
 
-import { faCubes, faSeedling, faRulerCombined, faWindowFrame } from "@fal"
+import { faCubes, faSeedling, faRulerCombined, faWindowFrame, faPencil, faLessThanEqual } from "@fal"
 import { faFireAlt } from "@fad"
 import { faCheckCircle, faTimesCircle } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { StatsBoxTS } from '@/types/Components/StatsBox'
 
-library.add(faCheckCircle, faTimesCircle, faCubes, faSeedling, faRulerCombined, faFireAlt, faWindowFrame)
+library.add(faCheckCircle, faTimesCircle, faCubes, faSeedling, faRulerCombined, faFireAlt, faWindowFrame, faPencil, faLessThanEqual)
 
 const props = defineProps<{
     stat: StatsBoxTS
@@ -26,6 +30,36 @@ const isLoadingMeta = ref<null | number>(null)
 const locale = inject('locale', aikuLocaleStructure)
 
 const isLoadingMetaRight = ref(false)
+
+const isEditableOpen = ref(false)
+const isEditableSaving = ref(false)
+const editableValue = ref<number | string | null>(props.stat.editable?.value ?? null)
+
+const openEditable = () => {
+    if (props.stat.editable?.readonly) {
+        return
+    }
+
+    editableValue.value = props.stat.editable?.value ?? null
+    isEditableOpen.value = true
+}
+
+const saveEditable = () => {
+    if (!props.stat.editable) {
+        return
+    }
+
+    isEditableSaving.value = true
+    router.patch(
+        route(props.stat.editable.route.name, props.stat.editable.route.parameters),
+        { [props.stat.editable.field]: Number(editableValue.value) },
+        {
+            preserveScroll: true,
+            onSuccess: () => isEditableOpen.value = false,
+            onFinish: () => isEditableSaving.value = false,
+        }
+    )
+}
 </script>
 
 <template>
@@ -85,6 +119,44 @@ const isLoadingMetaRight = ref(false)
                 {{ locale.number(stat.metaRight?.count ?? 0) }}
             </div>
         </component>
+
+        <!-- Editable -->
+        <div
+            v-if="stat.editable"
+            class="text-base rounded absolute top-6 right-5 px-2 flex gap-x-1.5 items-center font-normal"
+            :class="stat.editable.readonly ? 'cursor-default' : 'cursor-pointer hover:brightness-95'"
+            :style="{
+                background: `color-mix(in srgb, white 90%, ${stat.color})`,
+                border: `1px solid ${stat.color}`,
+                color: `color-mix(in srgb, black 20%, ${stat.color})`
+            }"
+            v-tooltip="stat.editable.tooltip"
+            @click.prevent.stop="openEditable()"
+        >
+            <FontAwesomeIcon v-if="stat.editable.icon" :icon="stat.editable.icon" class="text-sm" fixed-width aria-hidden="true" />
+            <div>{{ stat.editable.icon ? '' : stat.editable.label + ': ' }}{{ locale.number(Number(stat.editable.value)) }}</div>
+            <FontAwesomeIcon v-if="!stat.editable.readonly" icon="fal fa-pencil" class="text-xs" fixed-width aria-hidden="true" />
+        </div>
+
+        <Modal v-if="stat.editable" :isOpen="isEditableOpen" @onClose="isEditableOpen = false" width="w-full max-w-md">
+            <div class="text-lg font-semibold text-gray-700">
+                {{ stat.editable.title ?? stat.editable.label }}
+            </div>
+            <div v-if="stat.editable.tooltip" class="mt-1 text-sm text-gray-500">
+                {{ stat.editable.tooltip }}
+            </div>
+            <PureInputNumber
+                v-model="editableValue"
+                class="mt-4"
+                :minValue="0"
+                autofocus
+                @onEnter="saveEditable()"
+            />
+            <div class="mt-4 flex justify-end gap-x-2">
+                <Button type="tertiary" :label="trans('Cancel')" @click="isEditableOpen = false" />
+                <Button type="save" :label="trans('Save')" :loading="isEditableSaving" @click="saveEditable()" />
+            </div>
+        </Modal>
 
         <!-- Meta -->
         <div v-if="stat.metas?.length"

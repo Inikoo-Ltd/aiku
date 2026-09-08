@@ -24,6 +24,7 @@ use App\Models\Ordering\Order;
 use App\Models\Ordering\SalesChannel;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
+use App\Actions\Traits\WithLineTaxCategories;
 use App\Models\Traits\HasAttachments;
 use App\Models\Traits\HasHistory;
 use App\Models\Traits\InCustomer;
@@ -172,6 +173,7 @@ use Spatie\Sluggable\SlugOptions;
  */
 class Invoice extends Model implements Auditable, HasMedia
 {
+    use WithLineTaxCategories;
     use SoftDeletes;
     use HasSlug;
     use HasFactory;
@@ -256,6 +258,14 @@ class Invoice extends Model implements Auditable, HasMedia
         'phone',
         'commission_amount',
         'date',
+        'total_amount',
+        'net_amount',
+        'tax_amount',
+        'gross_amount',
+        'pay_status',
+        'address_id',
+        'billing_country_id',
+        'original_invoice_id',
     ];
 
     public function getRouteKeyName(): string
@@ -366,6 +376,14 @@ class Invoice extends Model implements Auditable, HasMedia
     public function taxCategory(): BelongsTo
     {
         return $this->belongsTo(TaxCategory::class);
+    }
+
+    /**
+     * @return array<int, array{tax_category_id: int, name: string, rate: float, net_amount: float, tax_amount: float}>
+     */
+    public function taxBreakdown(): array
+    {
+        return $this->getInvoiceTaxBreakdown($this);
     }
 
     public function customerClient(): BelongsTo

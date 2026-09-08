@@ -20,6 +20,9 @@ export const useLayoutStore = defineStore("layout", {
         isFulfilmentPage: (state) => {
             return (state.currentRoute).includes('grp.org.fulfilments.')
         },
+        hasTopBanner: (state) => {
+            return state.app.environment === 'staging' || state.app.newVersionAvailable
+        },
         // liveUsersWithoutMe: (state) => state.liveUsers.filter((liveUser, keyUser) => keyUser != layout.user.id )
     },
 });

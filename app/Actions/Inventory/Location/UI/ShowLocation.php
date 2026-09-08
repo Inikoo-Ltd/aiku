@@ -17,6 +17,7 @@ use App\Actions\Inventory\WarehouseArea\UI\ShowWarehouseArea;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Actions\WithActionButtons;
 use App\Actions\Traits\Authorisations\Inventory\WithWarehouseAuthorisation;
+use App\Enums\Inventory\OrgStockMovement\OrgStockMovementReasonEnum;
 use App\Enums\UI\Inventory\LocationTabsEnum;
 use App\Http\Resources\Fulfilment\PalletsResource;
 use App\Http\Resources\History\HistoryResource;
@@ -109,6 +110,7 @@ class ShowLocation extends OrgAction
 
                 ],
                 'location_id' => $location->id,
+                'transfer_reason'   => OrgStockMovementReasonEnum::withLabels(OrgStockMovementReasonEnum::transferReason()),
 
                 LocationTabsEnum::SHOWCASE->value => $this->tab == LocationTabsEnum::SHOWCASE->value ?
                     fn () => GetLocationShowcase::run($location)
@@ -127,8 +129,8 @@ class ShowLocation extends OrgAction
                     : Inertia::optional(fn () => OrgStockMovementsResource::collection(IndexOrgStockMovements::run($location, LocationTabsEnum::STOCK_MOVEMENTS->value))),
 
                 LocationTabsEnum::HISTORY->value => $this->tab == LocationTabsEnum::HISTORY->value ?
-                    fn () => HistoryResource::collection(IndexHistory::run($location))
-                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($location)))
+                    fn () => HistoryResource::collection(IndexHistory::run($location, LocationTabsEnum::HISTORY->value))
+                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($location, LocationTabsEnum::HISTORY->value)))
             ]
         )
         ->table(IndexHistory::make()->tableStructure(prefix: LocationTabsEnum::HISTORY->value))

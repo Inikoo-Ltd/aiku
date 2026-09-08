@@ -21,6 +21,11 @@ class ChargeResource extends JsonResource
 
         $amount = Arr::get($charge->settings, 'amount', 0);
 
+        $minOrder = null;
+        if (preg_match('/\d+/', (string) Arr::get($charge->settings, 'rules'), $matches)) {
+            $minOrder = (int) $matches[0];
+        }
+
         return [
             'id'            => $charge->id,
             'slug'          => $charge->slug,
@@ -32,6 +37,7 @@ class ChargeResource extends JsonResource
             'created_at'    => $charge->created_at,
             'updated_at'    => $charge->updated_at,
             'amount'        => $amount,
+            'min_order'     => $minOrder,
             'currency_code' => $charge->shop->currency->code,
             'settings'      => $charge->settings
         ];

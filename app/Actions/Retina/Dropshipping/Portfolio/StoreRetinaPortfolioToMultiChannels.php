@@ -24,7 +24,7 @@ class StoreRetinaPortfolioToMultiChannels extends RetinaAction
 {
     use WithActionUpdate;
 
-    public $jobQueue = 'ds';
+    public $jobQueue = 'dropshipping-long';
 
     /**
      * @var ProductCategory|null

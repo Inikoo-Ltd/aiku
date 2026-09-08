@@ -5,7 +5,7 @@
  * created on 12-11-2024-14h-35m
  * github: https://github.com/KirinZero0
  * copyright 2024
-*/
+ */
 
 namespace App\Actions\Procurement\OrgSupplier;
 
@@ -13,59 +13,99 @@ use App\Models\Procurement\OrgSupplier;
 
 trait WithOrgSupplierSubNavigation
 {
-    protected function getOrgSupplierNavigation(OrgSupplier $parent): array
+    protected function getOrgSupplierPurchaseOrderAction(OrgSupplier $orgSupplier): array
     {
         return [
-            [
-                "isAnchor" => true,
-                "label"    => __($parent->slug),
+            'label' => __('Purchase Order'),
+            'type'  => 'button',
+            'style' => 'create',
+            'route' => [
+                'method'     => 'post',
+                'name'       => 'grp.models.org-supplier.purchase-order.store',
+                'parameters' => [
+                    'orgSupplier' => $orgSupplier->id,
+                ],
+            ],
+        ];
+    }
 
-                "route"     => [
-                    "name"       => "grp.org.procurement.org_suppliers.show",
-                    "parameters" => [$parent->organisation->slug, $parent->slug],
-                ],
-                "leftIcon" => [
-                    "icon"    => ["fal", "fa-person-dolly"],
-                    "tooltip" => __("Org Supplier"),
-                ],
-            ],
-            [
-                "number"   => $parent->stats->number_org_supplier_products,
-                "label"    => __("Products"),
-                "route"     => [
-                    "name"       => "grp.org.procurement.org_suppliers.show.supplier_products.index",
-                    "parameters" => [$parent->organisation->slug, $parent->slug],
-                ],
-                "leftIcon" => [
-                    "icon"    => ["fal", "fa-box-usd"],
-                    "tooltip" => __("Products"),
-                ],
-            ],
-            [
-                "number"   => $parent->stats->number_purchase_orders,
-                "label"    => __("Purchase Orders"),
-                "route"     => [
-                    "name"       => "grp.org.procurement.org_suppliers.show.purchase_orders.index",
-                    "parameters" => [$parent->organisation->slug, $parent->slug],
-                ],
-                "leftIcon" => [
-                    "icon"    => ["fal", "fa-clipboard"],
-                    "tooltip" => __("Purchase Orders"),
-                ],
-            ],
-            [
-                "number"   => $parent->stats->number_stock_deliveries,
-                "label"    => __("Stock Deliveries"),
-                "route"     => [
-                    "name"       => "grp.org.procurement.org_suppliers.show.stock_deliveries.index",
-                    "parameters" => [$parent->organisation->slug, $parent->slug],
-                ],
-                "leftIcon" => [
-                    "icon"    => ["fal", "fa-truck-container"],
-                    "tooltip" => __("Stock Deliveries"),
-                ],
-            ],
+    protected function getOrgSupplierNavigation(OrgSupplier $parent): array
+    {
+        $routeParameters = [$parent->organisation->slug, $parent->slug];
 
+        return [
+            [
+                'label'    => $parent->supplier->code,
+                'route'    => [
+                    'name'       => 'grp.org.procurement.org_suppliers.show',
+                    'parameters' => $routeParameters,
+                ],
+                'leftIcon' => [
+                    'icon'    => ['fal', 'fa-person-dolly'],
+                    'tooltip' => __('Org Supplier'),
+                ],
+                'isAnchor' => true,
+            ],
+            [
+                'label'    => __('Products'),
+                'route'    => [
+                    'name'       => 'grp.org.procurement.org_suppliers.show.supplier_products.index',
+                    'parameters' => $routeParameters,
+                ],
+                'leftIcon' => [
+                    'icon'    => ['fal', 'fa-box-usd'],
+                    'tooltip' => __('Products'),
+                ],
+                'number'   => $parent->stats->number_current_org_supplier_products,
+            ],
+            ...($parent->org_agent_id ? [] : [
+                [
+                    'label'    => __('Shopping'),
+                    'route'    => [
+                        'name'       => 'grp.org.procurement.org_suppliers.show.shopping.dashboard',
+                        'parameters' => $routeParameters,
+                    ],
+                    'leftIcon' => [
+                        'icon'    => ['fal', 'fa-shopping-basket'],
+                        'tooltip' => __('Shopping'),
+                    ],
+                ],
+                [
+                    'label'    => __('Shopping List'),
+                    'route'    => [
+                        'name'       => 'grp.org.procurement.org_suppliers.show.shopping_list.index',
+                        'parameters' => $routeParameters,
+                    ],
+                    'leftIcon' => [
+                        'icon'    => ['fal', 'fa-list'],
+                        'tooltip' => __('Shopping List'),
+                    ],
+                ],
+            ]),
+            [
+                'label'    => __('Purchase Orders'),
+                'route'    => [
+                    'name'       => 'grp.org.procurement.org_suppliers.show.purchase_orders.index',
+                    'parameters' => $routeParameters,
+                ],
+                'leftIcon' => [
+                    'icon'    => ['fal', 'fa-clipboard'],
+                    'tooltip' => __('Purchase Orders'),
+                ],
+                'number'   => $parent->stats->number_purchase_orders,
+            ],
+            [
+                'label'    => __('Stock Deliveries'),
+                'route'    => [
+                    'name'       => 'grp.org.procurement.org_suppliers.show.stock_deliveries.index',
+                    'parameters' => $routeParameters,
+                ],
+                'leftIcon' => [
+                    'icon'    => ['fal', 'fa-truck-container'],
+                    'tooltip' => __('Stock Deliveries'),
+                ],
+                'number'   => $parent->stats->number_stock_deliveries,
+            ],
         ];
     }
 }

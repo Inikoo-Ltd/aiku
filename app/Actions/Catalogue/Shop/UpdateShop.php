@@ -8,6 +8,9 @@
 
 namespace App\Actions\Catalogue\Shop;
 
+use App\Actions\Catalogue\Product\DiscontinueProductsInClosedShop;
+use App\Actions\Ordering\Order\CancelOrdersInClosedShop;
+use App\Actions\Catalogue\Product\Hydrators\ProductHydratePricesFromMaster;
 use App\Actions\Helpers\Address\UpdateAddress;
 use App\Actions\Helpers\Media\SaveModelImage;
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateShops;
@@ -25,6 +28,7 @@ use App\Enums\Catalogue\Review\ReviewRatingDimensionEnum;
 use App\Enums\Catalogue\Review\ReviewValidationScopeEnum;
 use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
+use App\Enums\Comms\Ses\SesRegionEnum;
 use App\Enums\Helpers\SerialReference\SerialReferenceModelEnum;
 use App\Http\Resources\Catalogue\ShopResource;
 use App\Models\Catalogue\Shop;
@@ -65,6 +69,10 @@ class UpdateShop extends OrgAction
     {
         $originalReviewSettings   = Arr::get($shop->settings ?? [], 'reviews');
         $reviewRatingLabelsTouched = Arr::exists($modelData, 'review_rating_labels');
+
+        $originalViewContactOptionsPanel = Arr::get($shop->settings ?? [], 'chat.view_contact_options_panel');
+        $originalDataContactOptionsPanel = Arr::get($shop->settings ?? [], 'chat.data_contact_options_panel');
+        $originalEnableChat              = Arr::get($shop->settings ?? [], 'chat.enable_chat');
 
         if ($reviewRatingLabelsTouched) {
             $this->syncReviewRatingLabels($shop, Arr::get($modelData, 'review_rating_labels'));
@@ -154,8 +162,28 @@ class UpdateShop extends OrgAction
             }
         }
 
+        if (Arr::has($modelData, 'staff_chat_crm_user_ids')) {
+            data_set($modelData, 'settings.staff_chat.crm_user_ids', array_values(array_map('intval', Arr::pull($modelData, 'staff_chat_crm_user_ids'))));
+        }
+
+        if (Arr::has($modelData, 'staff_chat_warehouse_user_ids')) {
+            data_set($modelData, 'settings.staff_chat.warehouse_user_ids', array_values(array_map('intval', Arr::pull($modelData, 'staff_chat_warehouse_user_ids'))));
+        }
+
+        if (Arr::has($modelData, 'staff_chat_warehouse_backup_user_ids')) {
+            data_set($modelData, 'settings.staff_chat.warehouse_backup_user_ids', array_values(array_map('intval', Arr::pull($modelData, 'staff_chat_warehouse_backup_user_ids'))));
+        }
+
+        if (Arr::has($modelData, 'staff_chat_crm_backup_user_ids')) {
+            data_set($modelData, 'settings.staff_chat.crm_backup_user_ids', array_values(array_map('intval', Arr::pull($modelData, 'staff_chat_crm_backup_user_ids'))));
+        }
+
         if (Arr::has($modelData, 'dispatch_require_shipping')) {
             data_set($modelData, 'settings.dispatch.require_shipping', Arr::pull($modelData, 'dispatch_require_shipping'));
+        }
+
+        if (Arr::has($modelData, 'payment_settlement_tolerance')) {
+            data_set($modelData, 'settings.accounting.payment_settlement_tolerance', Arr::pull($modelData, 'payment_settlement_tolerance'));
         }
 
         if (Arr::has($modelData, 'identity_document_number_label')) {
@@ -197,8 +225,12 @@ class UpdateShop extends OrgAction
         }
 
         if (Arr::has($modelData, 'follow_master_pricing')) {
-            $reHydrateChildPrices = true;
-            data_set($modelData, 'settings.catalog.follow_master_pricing', Arr::pull($modelData, 'follow_master_pricing'));
+            $followMasterPricing = Arr::pull($modelData, 'follow_master_pricing');
+            data_set($modelData, 'settings.catalog.follow_master_pricing', $followMasterPricing);
+
+            if ($followMasterPricing) {
+                $reHydrateChildPrices = true;
+            }
         }
 
         // Catalogue Indexing etc.
@@ -237,10 +269,19 @@ class UpdateShop extends OrgAction
                     'gads_customer_id' => 'settings.google_ads.customer_id',
                     'gads_login_customer_id' => 'settings.google_ads.login_customer_id',
                     'gads_user_list_id' => 'settings.google_ads.user_list_id',
+                    'meta_ads_ad_account_id' => 'settings.meta_ads.ad_account_id',
+                    'meta_ads_access_token' => 'settings.meta_ads.access_token',
+                    'meta_ads_campaign_name_prefix' => 'settings.meta_ads.campaign_name_prefix',
                     'enable_chat' => 'settings.chat.enable_chat',
                     'portal_link' => 'settings.portal.link',
                     'review_rating_labels' => 'settings.reviews.rating_labels',
                     'bank_transfer_instructions_for_email' => 'settings.bank_transfer_instructions_for_email',
+                    'access_id' => 'settings.email.provider.failover.access_id',
+                    'access_key' => 'settings.email.provider.failover.access_key',
+                    'region' => 'settings.email.provider.failover.region',
+                    'customer_notification_access_id' => 'settings.email.provider.customer_notification.access_id',
+                    'customer_notification_access_key' => 'settings.email.provider.customer_notification.access_key',
+                    'customer_notification_region' => 'settings.email.provider.customer_notification.region',
                     default => $key
                 },
                 $value
@@ -267,9 +308,18 @@ class UpdateShop extends OrgAction
         data_forget($modelData, 'gads_customer_id');
         data_forget($modelData, 'gads_login_customer_id');
         data_forget($modelData, 'gads_user_list_id');
+        data_forget($modelData, 'meta_ads_ad_account_id');
+        data_forget($modelData, 'meta_ads_access_token');
+        data_forget($modelData, 'meta_ads_campaign_name_prefix');
         data_forget($modelData, 'portal_link');
         data_forget($modelData, 'bank_transfer_instructions_for_email');
         data_forget($modelData, 'review_rating_labels');
+        data_forget($modelData, 'access_id');
+        data_forget($modelData, 'access_key');
+        data_forget($modelData, 'region');
+        data_forget($modelData, 'customer_notification_access_id');
+        data_forget($modelData, 'customer_notification_access_key');
+        data_forget($modelData, 'customer_notification_region');
 
         if (Arr::exists($modelData, 'chat_slack_token') || Arr::exists($modelData, 'chat_slack_channels')) {
             $settings = $shop->settings ?? [];
@@ -290,11 +340,39 @@ class UpdateShop extends OrgAction
             $shop->saveQuietly();
         }
 
-        if (Arr::exists($modelData, 'enable_chat')) {
-            $enableChat = Arr::pull($modelData, 'enable_chat');
+        $viewContactOptionsPanel = null;
+        if (Arr::exists($modelData, 'view_contact_options_panel')) {
+            $viewContactOptionsPanel = (bool) Arr::pull($modelData, 'view_contact_options_panel');
+            data_set($modelData, 'settings.chat.view_contact_options_panel', $viewContactOptionsPanel);
+        }
+
+        $dataContactOptionsPanel = null;
+        if (Arr::exists($modelData, 'data_contact_options_panel')) {
+            $dataContactOptionsPanel = Arr::pull($modelData, 'data_contact_options_panel');
+            $settings = $shop->settings ?? [];
+            data_set($settings, 'chat.data_contact_options_panel', $dataContactOptionsPanel);
+            $shop->settings = $settings;
+            $shop->saveQuietly();
+        }
+
+        if (Arr::exists($modelData, 'enable_chat') || !is_null($viewContactOptionsPanel) || !is_null($dataContactOptionsPanel)) {
+            $websiteData = [];
+
+            if (Arr::exists($modelData, 'enable_chat')) {
+                $websiteData['enable_chat'] = Arr::pull($modelData, 'enable_chat');
+            }
+
+            if (!is_null($viewContactOptionsPanel)) {
+                $websiteData['view_contact_options_panel'] = $viewContactOptionsPanel;
+            }
+
+            if (!is_null($dataContactOptionsPanel)) {
+                $websiteData['data_contact_options_panel'] = $dataContactOptionsPanel;
+            }
+
             UpdateWebsite::make()->action(
                 website: $shop->website,
-                modelData: ['enable_chat' => $enableChat],
+                modelData: $websiteData,
                 strict: false
             );
         }
@@ -456,7 +534,12 @@ class UpdateShop extends OrgAction
         $changes = $shop->getChanges();
         $shop->refresh();
 
-        if ($shop->website && ($reviewRatingLabelsTouched || Arr::get($shop->settings ?? [], 'reviews') != $originalReviewSettings)) {
+        $chatSettingsChanged =
+            Arr::get($shop->settings ?? [], 'chat.view_contact_options_panel') != $originalViewContactOptionsPanel
+            || Arr::get($shop->settings ?? [], 'chat.data_contact_options_panel') != $originalDataContactOptionsPanel
+            || Arr::get($shop->settings ?? [], 'chat.enable_chat') != $originalEnableChat;
+
+        if ($shop->website && ($reviewRatingLabelsTouched || Arr::get($shop->settings ?? [], 'reviews') != $originalReviewSettings || $chatSettingsChanged)) {
             BreakWebsiteCache::run($shop->website, CrawlTriggerEnum::WEBSITE_UPDATE);
         }
 
@@ -466,6 +549,11 @@ class UpdateShop extends OrgAction
             if ($shop->master_shop_id) {
                 MasterShopHydrateShops::dispatch($shop->masterShop)->delay($this->hydratorsDelay);
             }
+        }
+
+        if (Arr::has($changes, 'state') && $shop->state == ShopStateEnum::CLOSED) {
+            DiscontinueProductsInClosedShop::dispatch($shop)->delay($this->hydratorsDelay);
+            CancelOrdersInClosedShop::dispatch($shop)->delay($this->hydratorsDelay);
         }
 
         if (Arr::hasAny($changes, ['master_shop_id'])) {
@@ -478,8 +566,7 @@ class UpdateShop extends OrgAction
         }
 
         if ($reHydrateChildPrices) {
-            // TODO MasterLevel Price RRP (Raul)
-            // TODO Rehydrate Child Prices according to their master counterpart prices & rrp here
+            ProductHydratePricesFromMaster::dispatch($shop);
         }
 
         if ($bannedCountriesUpdated) {
@@ -612,6 +699,14 @@ class UpdateShop extends OrgAction
     public function rules(): array
     {
         $rules = [
+            'staff_chat_crm_user_ids'        => ['sometimes', 'array'],
+            'staff_chat_crm_user_ids.*'      => ['integer', 'exists:users,id'],
+            'staff_chat_crm_backup_user_ids'   => ['sometimes', 'array'],
+            'staff_chat_crm_backup_user_ids.*' => ['integer', 'exists:users,id'],
+            'staff_chat_warehouse_user_ids'          => ['sometimes', 'array'],
+            'staff_chat_warehouse_user_ids.*'        => ['integer', 'exists:users,id'],
+            'staff_chat_warehouse_backup_user_ids'   => ['sometimes', 'array'],
+            'staff_chat_warehouse_backup_user_ids.*' => ['integer', 'exists:users,id'],
             'invoice_serial_references'   => ['sometimes', 'array'],
             'registration_needs_approval' => ['sometimes', 'boolean'],
             'stand_alone_invoice_numbers' => ['sometimes', 'boolean'],
@@ -658,7 +753,9 @@ class UpdateShop extends OrgAction
             'timezone_id'                                             => ['sometimes', 'required', 'exists:timezones,id'],
             'address'                                                 => ['sometimes', 'required', new ValidAddress()],
             'collection_address'                                      => ['sometimes', 'required', new ValidAddress()],
-            'state'                                                   => ['sometimes', Rule::enum(ShopStateEnum::class)],
+            'state'                                                   => $this->asAction
+                ? ['sometimes', Rule::enum(ShopStateEnum::class)]
+                : ['prohibited'],
             'shopify_shop_name'                                       => ['sometimes', 'string'],
             'shopify_api_key'                                         => ['sometimes', 'string'],
             'shopify_api_secret'                                      => ['sometimes', 'string'],
@@ -678,10 +775,18 @@ class UpdateShop extends OrgAction
             'gads_customer_id'                                        => ['sometimes', 'nullable', 'string'],
             'gads_login_customer_id'                                  => ['sometimes', 'nullable', 'string'],
             'gads_user_list_id'                                       => ['sometimes', 'nullable', 'string'],
+            'meta_ads_ad_account_id'                                  => ['sometimes', 'nullable', 'string'],
+            'meta_ads_access_token'                                   => ['sometimes', 'nullable', 'string'],
+            'meta_ads_campaign_name_prefix'                           => ['sometimes', 'nullable', 'string'],
             'enable_chat'                                             => ['sometimes', 'boolean'],
             'chat_slack_token'                                        => ['sometimes', 'nullable', 'string'],
             'chat_slack_channels'                                     => ['sometimes', 'nullable', 'array'],
             'chat_slack_channels.*'                                   => ['string'],
+            'view_contact_options_panel'                              => ['sometimes', 'boolean'],
+            'data_contact_options_panel'                              => ['sometimes', 'nullable', 'array'],
+            'data_contact_options_panel.*.icon'                       => ['sometimes', 'nullable'],
+            'data_contact_options_panel.*.label'                      => ['sometimes', 'nullable', 'string', 'max:255'],
+            'data_contact_options_panel.*.url'                        => ['sometimes', 'nullable', 'string', 'max:2000'],
             'is_shipping_by_external'                                 => ['sometimes', 'boolean'],
             'portal_link'                                             => ['sometimes', 'nullable', 'string'],
             'widget_key'                                              => ['sometimes', 'nullable', 'string'],
@@ -691,8 +796,6 @@ class UpdateShop extends OrgAction
             'marketing_opt_in_label'                                  => ['sometimes', 'string'],
             'invoice_footer'                                          => ['sometimes', 'string', 'max:10000'],
             'download_pdf_columns'                                    => ['sometimes', 'array'],
-            'cost_price_ratio'                                        => ['sometimes', 'numeric', 'min:0'],
-            'price_rrp_ratio'                                         => ['sometimes', 'numeric', 'min:0'],
             'extra_languages'                                         => ['sometimes', 'array', 'nullable'],
             'image'                                                   => [
                 'sometimes',
@@ -737,7 +840,14 @@ class UpdateShop extends OrgAction
             'review_allow_reactions'                                  => ['sometimes', 'boolean'],
             'review_allow_reply_reactions'                            => ['sometimes', 'boolean'],
             'dispatch_require_shipping'                               => ['sometimes', 'boolean'],
+            'payment_settlement_tolerance'                            => ['sometimes', 'numeric', 'min:0', 'max:1'],
             'bank_transfer_instructions_for_email'                    => ['sometimes', 'nullable', 'string', 'max:10000'],
+            'access_id'                                               => ['sometimes', 'nullable', 'string'],
+            'access_key'                                              => ['sometimes', 'nullable', 'string'],
+            'region'                                                  => ['sometimes', 'nullable', Rule::enum(SesRegionEnum::class)],
+            'customer_notification_access_id'                         => ['sometimes', 'nullable', 'string'],
+            'customer_notification_access_key'                        => ['sometimes', 'nullable', 'string'],
+            'customer_notification_region'                            => ['sometimes', 'nullable', Rule::enum(SesRegionEnum::class)],
             'follow_master_pricing'                                   => ['sometimes', 'boolean'],
             'banned_countries'                                        => ['sometimes', 'nullable', 'array'],
             'banned_countries.is_follow_organisation_banned_list'     => ['sometimes', 'boolean'],

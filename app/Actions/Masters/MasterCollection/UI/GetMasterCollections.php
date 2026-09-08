@@ -8,7 +8,7 @@
 
 namespace App\Actions\Masters\MasterCollection\UI;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Http\Resources\Masters\MasterCollectionsResource;
 use App\Models\Masters\MasterCollection;
 use App\Models\Masters\MasterProductCategory;
@@ -18,7 +18,7 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Lorisleiva\Actions\ActionRequest;
 
-class GetMasterCollections extends GrpAction
+class GetMasterCollections extends OrgAction
 {
     public function handle(MasterShop $parent, MasterCollection|MasterShop|MasterProductCategory $scope, $prefix = null): LengthAwarePaginator
     {
@@ -67,13 +67,13 @@ class GetMasterCollections extends GrpAction
 
     public function inMasterCollection(MasterShop $masterShop, MasterCollection $scope, ActionRequest $request): LengthAwarePaginator
     {
-        $this->initialisation($masterShop->group, $request);
+        $this->initialisationFromGroup($masterShop->group, $request);
         return $this->handle(parent: $masterShop, scope: $scope);
     }
 
     public function asController(MasterShop $masterShop, MasterShop $scope, ActionRequest $request): LengthAwarePaginator
     {
-        $this->initialisation($masterShop->group, $request);
+        $this->initialisationFromGroup($masterShop->group, $request);
         return $this->handle(parent: $masterShop, scope: $scope);
     }
 

@@ -28,7 +28,7 @@ class TimeSeriesPeriodCalculator
             TimeSeriesFrequencyEnum::WEEKLY => [
                 'periodFrom' => $date->copy()->startOfWeek(),
                 'periodTo'   => $date->copy()->endOfWeek(),
-                'period'     => $date->year . ' W' . str_pad($date->isoWeek(), 2, '0', STR_PAD_LEFT),
+                'period'     => $date->isoWeekYear . ' W' . str_pad($date->isoWeek(), 2, '0', STR_PAD_LEFT),
             ],
             TimeSeriesFrequencyEnum::DAILY => [
                 'periodFrom' => $date->copy()->startOfDay(),
@@ -57,8 +57,8 @@ class TimeSeriesPeriodCalculator
                 'period'     => $result->year . '-' . str_pad($result->month, 2, '0', STR_PAD_LEFT),
             ],
             TimeSeriesFrequencyEnum::WEEKLY => [
-                'periodFrom' => Carbon::create((int) $result->year)->week((int) $result->week)->startOfWeek(),
-                'periodTo'   => Carbon::create((int) $result->year)->week((int) $result->week)->endOfWeek(),
+                'periodFrom' => Carbon::now()->setISODate((int) $result->year, (int) $result->week)->startOfWeek(),
+                'periodTo'   => Carbon::now()->setISODate((int) $result->year, (int) $result->week)->endOfWeek(),
                 'period'     => $result->year . ' W' . str_pad($result->week, 2, '0', STR_PAD_LEFT),
             ],
             TimeSeriesFrequencyEnum::DAILY => [
@@ -72,6 +72,21 @@ class TimeSeriesPeriodCalculator
                 'period'     => (string) $result->year,
             ],
         };
+    }
+
+    /**
+     * A period record always stores the aggregate of its whole period, so a processing window
+     * that starts or ends mid period must be widened to the period boundaries, otherwise
+     * reprocessing an old date overwrites the record with a partial sum.
+     *
+     * @return array{0: string, 1: string}
+     */
+    public static function expandWindowToFullPeriods(TimeSeriesFrequencyEnum $frequency, string $from, string $to): array
+    {
+        return [
+            self::resolvePeriodFromDate(Carbon::parse($from), $frequency)['periodFrom']->toDateTimeString(),
+            self::resolvePeriodFromDate(Carbon::parse($to), $frequency)['periodTo']->toDateTimeString(),
+        ];
     }
 
     public static function getNonInvoicePeriods(

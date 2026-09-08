@@ -37,8 +37,14 @@ class ProductOfVariantResource extends JsonResource
         /** @var Product $product */
         $product = $this->resource;
 
+        $countriesOrigin = [];
+        $countries      = array_filter(array_map('trim', explode(',', $product->country_of_origin ?? '')));
+        foreach ($countries as $country) {
+            $countriesOrigin[] = NaturalLanguage::make()->country($country);
+        }
+
         $specifications = [
-            'country_of_origin' => NaturalLanguage::make()->country($product->country_of_origin),
+            'countries_of_origin' => $countriesOrigin,
             'ingredients'       => $product->marketing_ingredients,
             'gross_weight'      => $product->gross_weight,
             'barcode'           => $product->barcode,
@@ -136,7 +142,8 @@ class ProductOfVariantResource extends JsonResource
         return $product->images->map(fn ($media) => [
             'id'        => $media->id,
             'source'    => GetPictureSources::run($media->getImage()->resize($maxWidth, $maxWidth)),
-            'thumbnail' => GetPictureSources::run($media->getImage()->resize(0, 48)),
+            'thumbnail' => GetPictureSources::run($media->getImage()->resize(0, 192)),
+            'zoom'      => GetPictureSources::run($media->getImage()->resize(1600, 1600)),
             'alt'       => $media->pivot?->caption,
         ])->all();
     }

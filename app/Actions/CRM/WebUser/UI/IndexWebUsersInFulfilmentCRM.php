@@ -63,6 +63,7 @@ class IndexWebUsersInFulfilmentCRM extends OrgAction
             ->select([
                 'web_users.username',
                 'web_users.id',
+                'web_users.shop_id',
                 'web_users.email',
                 'web_users.slug',
                 'web_users.created_at',

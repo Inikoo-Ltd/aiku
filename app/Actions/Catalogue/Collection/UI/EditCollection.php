@@ -118,7 +118,7 @@ class EditCollection extends OrgAction
                     'value'         => $collection->description,
                     'reviewed'      => $collection->is_description_reviewed,
                     'information'   => __('This show in product webpage'),
-                    'toogle'        => [
+                    'toggle'        => [
                         'heading2',
                         'heading3',
                         'fontSize',
@@ -148,7 +148,7 @@ class EditCollection extends OrgAction
                     'options'     => [
                         'counter' => true,
                     ],
-                    'toogle'      => [
+                    'toggle'      => [
                         'heading2',
                         'heading3',
                         'fontSize',
@@ -184,7 +184,7 @@ class EditCollection extends OrgAction
                     'value'         => $collection->description_extra,
                     'reviewed'      => $collection->is_description_extra_reviewed,
                     'information'   => __('This above product specification in product webpage'),
-                    'toogle'        => [
+                    'toggle'        => [
                         'heading2',
                         'heading3',
                         'fontSize',
@@ -215,7 +215,7 @@ class EditCollection extends OrgAction
                         'counter' => true,
                     ],
                     'value'       => $collection->description_extra,
-                    'toogle'      => [
+                    'toggle'      => [
                         'heading2',
                         'heading3',
                         'fontSize',

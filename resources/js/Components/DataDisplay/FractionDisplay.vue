@@ -12,7 +12,7 @@
       + 
     </span>
     <template v-if="quotient !== 0 && remainingDividend !== 0">
-      <span class="quotient">{{ quotient }}</span>
+      <span class="quotient">{{ formattedQuotient }}</span>
       <span class="fraction">
         <span class="numerator">{{ Number(remainingDividend) % 1 === 0 ? Number(remainingDividend) : Number(remainingDividend).toFixed(3).replace(/\.?0+$/, '') }}</span>
         <svg class="fraction-slash" viewBox="0 0 12 12" width="0.6em" height="0.8em" preserveAspectRatio="none">
@@ -24,7 +24,7 @@
 
     <!-- If there's only a quotient (no remainder) -->
     <template v-else-if="quotient !== 0 && remainingDividend === 0">
-      <span class="quotient">{{ quotient }}</span>
+      <span class="quotient">{{ formattedQuotient }}</span>
     </template>
 
     <!-- If there's only a fraction (quotient is 0) -->
@@ -46,8 +46,17 @@
 </template>
 
 <script>
+import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
+
 export default {
   name: 'FractionDisplay',
+
+  inject: {
+    locale: {
+      from: 'locale',
+      default: () => aikuLocaleStructure
+    }
+  },
 
   props: {
     /**
@@ -65,7 +74,7 @@ export default {
           Array.isArray(value[1]) && 
           value[1].length === 2 && 
           typeof value[1][0] === 'number' && 
-          typeof value[1][1] === 'number'
+          !isNaN(Number(value[1][1]))
         );
       }
     },
@@ -100,6 +109,13 @@ export default {
     },
 
     /**
+     * Get the quotient formatted with the active locale number format
+     */
+    formattedQuotient() {
+      return this.locale.number(this.quotient);
+    },
+
+    /**
      * Get the remaining dividend (numerator) of the fraction
      */
     remainingDividend() {
@@ -114,11 +130,12 @@ export default {
      * Get the remaining divisor (denominator) of the fraction
      */
     remainingDivisor() {
+      const divisor = Number(this.fractionData[1][1]);
       if (this.simplify) {
-        const gcd = this.findGCD(Math.abs(this.fractionData[1][0]), Math.abs(this.fractionData[1][1]));
-        return this.fractionData[1][1] / gcd;
+        const gcd = this.findGCD(Math.abs(this.fractionData[1][0]), Math.abs(divisor));
+        return divisor / gcd;
       }
-      return this.fractionData[1][1];
+      return divisor;
     }
   },
 
@@ -191,11 +208,11 @@ export default {
   left: -2px;
   right: -2px;
   top: 50%;
-  opacity: 0.5;
+  opacity: 0.8;
   transform: translateY(-50%);
   rotate: 35deg;
   height: 1px;
-  background: currentColor;
+  background: #ff0000;
   pointer-events: none;
 }
 </style>

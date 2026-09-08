@@ -12,11 +12,13 @@ namespace App\Actions\Dropshipping\CustomerSalesChannel\UI;
 use App\Actions\CRM\Customer\UI\ShowCustomer;
 use App\Actions\Dropshipping\Portfolio\Logs\IndexPlatformPortfolioLogs;
 use App\Actions\Dropshipping\UI\ShowPlatform;
+use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCRMAuthorisation;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Enums\UI\CRM\CustomerPlatformTabsEnum;
 use App\Http\Resources\Dropshipping\PlatformPortfolioLogsResource;
+use App\Http\Resources\History\HistoryResource;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
 use App\Models\Dropshipping\CustomerSalesChannel;
@@ -111,9 +113,14 @@ class ShowCustomerSalesChannel extends OrgAction
                     'platform_user'          => $customerSalesChannel->user,
                     'fulfilment_policies'    => $fulfilmentPolicies
                 ],
-                'logs' => PlatformPortfolioLogsResource::collection(IndexPlatformPortfolioLogs::run($customerSalesChannel))
+                'logs' => PlatformPortfolioLogsResource::collection(IndexPlatformPortfolioLogs::run($customerSalesChannel)),
+
+                CustomerPlatformTabsEnum::HISTORY->value => $this->tab == CustomerPlatformTabsEnum::HISTORY->value ?
+                    fn () => HistoryResource::collection(IndexHistory::run($customerSalesChannel, CustomerPlatformTabsEnum::HISTORY->value))
+                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($customerSalesChannel, CustomerPlatformTabsEnum::HISTORY->value))),
             ]
-        )->table(IndexPlatformPortfolioLogs::make()->tableStructure(null, 'logs'));
+        )->table(IndexPlatformPortfolioLogs::make()->tableStructure(null, 'logs'))
+            ->table(IndexHistory::make()->tableStructure(CustomerPlatformTabsEnum::HISTORY->value));
     }
 
     public function getBreadcrumbs(CustomerSalesChannel $customerSalesChannel, string $routeName, array $routeParameters): array

@@ -5,79 +5,81 @@
  * created on 12-11-2024-10h-37m
  * github: https://github.com/KirinZero0
  * copyright 2024
-*/
+ */
 
 namespace App\Actions\Procurement\PurchaseOrder;
 
+use App\Actions\Traits\Authorisations\WithProcurementEditAuthorisation;
 use App\Actions\OrgAction;
+use App\Actions\Procurement\PurchaseOrder\Hydrators\PurchaseOrderHydrateTransactions;
 use App\Actions\Procurement\PurchaseOrder\Traits\HasPurchaseOrderHydrators;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
+use App\Enums\Procurement\PurchaseOrderTransaction\PurchaseOrderTransactionStateEnum;
 use App\Http\Resources\Procurement\PurchaseOrderResource;
 use App\Models\Procurement\PurchaseOrder;
-use Illuminate\Validation\Validator;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class UpdatePurchaseOrderStateToConfirmed extends OrgAction
 {
-    use WithActionUpdate;
+    use WithProcurementEditAuthorisation;
     use AsAction;
     use HasPurchaseOrderHydrators;
+    use WithActionUpdate;
 
-
-    /**
-     * @var \App\Models\Procurement\PurchaseOrder
-     */
-    private PurchaseOrder $purchaseOrder;
-
-    public function handle(PurchaseOrder $purchaseOrder): PurchaseOrder
+    public function handle(PurchaseOrder $purchaseOrder, array $modelData = []): PurchaseOrder
     {
-        $data = [
-            'state' => PurchaseOrderStateEnum::CONFIRMED
+        if ($purchaseOrder->state !== PurchaseOrderStateEnum::SUBMITTED) {
+            abort(422, __('Purchase order can only be confirmed if it is submitted'));
+        }
+
+        $purchaseOrder->purchaseOrderTransactions()
+            ->where('state', PurchaseOrderTransactionStateEnum::SUBMITTED)
+            ->update([
+                'state' => PurchaseOrderTransactionStateEnum::CONFIRMED,
+            ]);
+
+        $updateData = [
+            'state'        => PurchaseOrderStateEnum::CONFIRMED,
+            'confirmed_at' => now(),
         ];
 
-        $purchaseOrder->purchaseOrderTransactions()->update($data);
+        if (array_key_exists('estimated_receiving_date', $modelData)) {
+            $updateData['data'] = [
+                'estimated_receiving_date' => $modelData['estimated_receiving_date'],
+            ];
+        }
 
-        $data['confirmed_at'] = now();
+        $purchaseOrder = $this->update($purchaseOrder, $updateData, ['data']);
 
-        $purchaseOrder = $this->update($purchaseOrder, $data);
+        PurchaseOrderHydrateTransactions::dispatch($purchaseOrder);
 
         $this->purchaseOrderHydrate($purchaseOrder);
 
         return $purchaseOrder;
     }
 
-    public function authorize(ActionRequest $request): bool
+    public function asController(PurchaseOrder $purchaseOrder, ActionRequest $request): PurchaseOrder
     {
-        if ($this->asAction) {
-            return true;
-        }
+        $this->initialisation($purchaseOrder->organisation, $request);
 
-        return $request->user()->authTo("procurement.{$this->organisation->id}.edit");
+        return $this->handle($purchaseOrder, $this->validatedData);
     }
 
-    public function afterValidator(Validator $validator): void
+    public function rules(): array
     {
-        if (!in_array($this->purchaseOrder->state, [PurchaseOrderStateEnum::SUBMITTED])) {
-            $validator->errors()->add('state', __('Purchase order can only be confirmed if it is submitted'));
-        }
+        return [
+            'estimated_receiving_date' => ['sometimes', 'nullable', 'date'],
+        ];
     }
 
-
-    public function action(PurchaseOrder $purchaseOrder): PurchaseOrder
+    public function action(PurchaseOrder $purchaseOrder, array $modelData = []): PurchaseOrder
     {
-        $this->asAction      = true;
-        $this->purchaseOrder = $purchaseOrder;
-        $this->initialisation($purchaseOrder->organisation, []);
+        $this->asAction = true;
+        $this->initialisation($purchaseOrder->organisation, $modelData);
 
-        return $this->handle($purchaseOrder);
-    }
-
-
-    public function asController(PurchaseOrder $purchaseOrder): PurchaseOrder
-    {
-        return $this->handle($purchaseOrder);
+        return $this->handle($purchaseOrder, $this->validatedData);
     }
 
     public function jsonResponse(PurchaseOrder $purchaseOrder): PurchaseOrderResource

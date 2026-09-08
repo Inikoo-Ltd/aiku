@@ -78,6 +78,16 @@ class ShowEmployee extends OrgAction
                         ],
                     ],
                     'actions' => [
+                        $this->canEdit ? (
+                            !$employee->user ? [
+                                'key'     => 'create-user',
+                                'type'    => 'button',
+                                'tooltip' => __('Create a User for this employee'),
+                                'icon'    => 'fal fa-plus',
+                                'label'   => __('Create User'),
+                                'style'   => 'create',
+                            ] : null
+                        ) : null,
                         $this->canEdit ? $this->getEditActionIcon($request) : null,
                     ],
                 ],
@@ -101,13 +111,13 @@ class ShowEmployee extends OrgAction
                     'current' => $this->tab,
                     'navigation' => EmployeeTabsEnum::navigation()
                 ],
-
+                'employee_id'   => $employee->id,
                 EmployeeTabsEnum::SHOWCASE->value => $this->tab == EmployeeTabsEnum::SHOWCASE->value ?
                     fn () => GetEmployeeShowcase::run($employee)
                     : Inertia::optional(fn () => GetEmployeeShowcase::run($employee)),
                 EmployeeTabsEnum::HISTORY->value => $this->tab == EmployeeTabsEnum::HISTORY->value ?
-                    fn () => HistoryResource::collection(IndexHistory::run($employee))
-                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($employee))),
+                    fn () => HistoryResource::collection(IndexHistory::run($employee, EmployeeTabsEnum::HISTORY->value))
+                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($employee, EmployeeTabsEnum::HISTORY->value))),
                 EmployeeTabsEnum::ATTACHMENTS->value => $this->tab == EmployeeTabsEnum::ATTACHMENTS->value ?
                     fn () => AttachmentsResource::collection(IndexAttachments::run($employee))
                     : Inertia::optional(fn () => AttachmentsResource::collection(IndexAttachments::run($employee))),

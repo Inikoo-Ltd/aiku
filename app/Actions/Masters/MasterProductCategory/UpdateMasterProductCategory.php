@@ -26,6 +26,7 @@ use App\Models\Helpers\Language;
 use App\Models\Masters\MasterProductCategory;
 use App\Rules\AlphaDashDot;
 use App\Rules\IUnique;
+use App\Rules\MaxPlainTextLength;
 use App\Traits\SanitizeInputs;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
@@ -40,6 +41,24 @@ class UpdateMasterProductCategory extends OrgAction
 
     public function handle(MasterProductCategory $masterProductCategory, array $modelData): MasterProductCategory
     {
+        if (Arr::hasAny($modelData, ['storage_conditions', 'storage_temperature', 'storage_guidelines'])) {
+            $storageOption = $masterProductCategory->storage_option;
+
+            if (Arr::has($modelData, 'storage_conditions')) {
+                data_set($storageOption, 'storage_conditions', Arr::pull($modelData, 'storage_conditions'));
+            }
+
+            if (Arr::has($modelData, 'storage_temperature')) {
+                data_set($storageOption, 'storage_temperature', Arr::pull($modelData, 'storage_temperature'));
+            }
+
+            if (Arr::has($modelData, 'storage_guidelines')) {
+                data_set($storageOption, 'storage_guidelines', Arr::pull($modelData, 'storage_guidelines'));
+            }
+
+            data_set($modelData, 'storage_option', $storageOption);
+        }
+
         if ($masterProductCategory->type !== MasterProductCategoryTypeEnum::FAMILY) {
             Arr::pull($modelData, 'trade_unit_family_id'); // Safeguard so only family would have relationship with TradeUnitFamilyId
         }
@@ -111,7 +130,7 @@ class UpdateMasterProductCategory extends OrgAction
         $grUpdating = false;
         $grDeleting = false;
         if (Arr::has($modelData, 'vol_gr_offer')) {
-            $volGR = Arr::pull($modelData, 'vol_gr_offer');
+            $volGR      = Arr::pull($modelData, 'vol_gr_offer');
             if ($volGR) {
                 data_set($modelData, 'has_gr_vol_discount', true);
                 data_set($modelData, 'gr_vol_discount_percentage', $volGR['percentage_off']);
@@ -156,54 +175,72 @@ class UpdateMasterProductCategory extends OrgAction
             }
         }
 
-        if (Arr::hasAny($changed, ['name', 'description', 'description_title', 'description_extra', 'code', 'faq'])) {
+        if (Arr::has($changed, 'faq')) {
+            CascadeMasterProductCategoryFaqToChildren::dispatch($masterProductCategory);
+        }
+
+        if (Arr::has($changed, 'customize_option')) {
+            CascadeMasterProductCategoryCustomizeOptionToChildren::run($masterProductCategory); // TODO: change to dispatch later
+        }
+
+        if (Arr::has($changed, 'storage_option')) {
+            CascadeMasterProductCategoryStorageOptionToChildren::run($masterProductCategory); // TODO: change to dispatch later
+        }
+
+        if (Arr::hasAny($changed, ['name', 'description', 'description_title', 'description_extra', 'code', 'category_comparison'])) {
 
             $english      = Language::where('code', 'en')->first();
 
             foreach ($masterProductCategory->productCategories as $productCategory) {
                 $shop = $productCategory->shop;
-                if (!data_get($shop->settings, "catalog.{$productCategory->type->value}_follow_master")) {
-                    continue;
-                }
+
+                $followMaster = data_get($shop->settings, "catalog.{$productCategory->type->value}_follow_master");
 
                 $shopLanguage = $shop->language;
                 $dataToBeUpdated = [];
 
                 // Updates the affected field name using translation if follow_master_{field} is true
+                // Regardless, update is_x_reviewed to false when master is updated, to make it easier to track changes
                 if (Arr::has($changed, 'name')) {
-                    $dataToBeUpdated['name'] = Translate::run($masterProductCategory->name, $english, $shopLanguage, 'gpt-5-nano');
+                    if ($followMaster) {
+                        $dataToBeUpdated['name'] = Translate::run($masterProductCategory->name, $english, $shopLanguage, 'gpt-5-nano');
+                    }
                     $dataToBeUpdated['is_name_reviewed'] = false;
                 }
 
                 if (Arr::has($changed, 'description_title')) {
-                    $dataToBeUpdated['description_title'] = Translate::run($masterProductCategory->description_title, $english, $shopLanguage, 'gpt-5-nano');
+                    if ($followMaster) {
+                        $dataToBeUpdated['description_title'] = Translate::run($masterProductCategory->description_title, $english, $shopLanguage, 'gpt-5-nano');
+                    }
                     $dataToBeUpdated['is_description_title_reviewed'] = false;
                 }
 
                 if (Arr::has($changed, 'description')) {
-                    $dataToBeUpdated['description'] = Translate::run($masterProductCategory->description, $english, $shopLanguage, 'gpt-5-nano');
+                    if ($followMaster) {
+                        $dataToBeUpdated['description'] = Translate::run($masterProductCategory->description, $english, $shopLanguage, 'gpt-5-nano');
+                    }
                     $dataToBeUpdated['is_description_reviewed'] = false;
                 }
 
                 if (Arr::has($changed, 'description_extra')) {
-                    $dataToBeUpdated['description_extra'] = Translate::run($masterProductCategory->description_extra, $english, $shopLanguage, 'gpt-5-nano');
+                    if ($followMaster) {
+                        $dataToBeUpdated['description_extra'] = Translate::run($masterProductCategory->description_extra, $english, $shopLanguage, 'gpt-5-nano');
+                    }
                     $dataToBeUpdated['is_description_extra_reviewed'] = false;
+                }
+
+                if (Arr::has($changed, 'category_comparison')) {
+                    if ($followMaster) {
+                        $translatedCategoryComparison = Translate::run(json_encode($masterProductCategory->category_comparison), $english, $shopLanguage, 'gpt-5-nano');
+                        if (is_string($translatedCategoryComparison)) {
+                            $translatedCategoryComparison = json_decode($translatedCategoryComparison, true);
+                        }
+                        $dataToBeUpdated['category_comparison'] = $translatedCategoryComparison;
+                    }
                 }
 
                 if (Arr::has($changed, 'code')) {
                     $dataToBeUpdated['code'] = $masterProductCategory->code;
-                }
-
-                // Temporary setup, auto translate FAQ
-                if (Arr::has($changed, 'faq')) {
-                    if ($shop->language->code != 'en') {
-                        $translatedFaq = Translate::run(json_encode($masterProductCategory->faq), $english, $shopLanguage, 'gpt-5-nano');
-                        if (is_string($translatedFaq)) {
-                            $dataToBeUpdated['faq'] = json_decode($translatedFaq, true);
-                        }
-                    } else {
-                        $dataToBeUpdated['faq'] = $masterProductCategory->faq;
-                    }
                 }
 
                 if ($dataToBeUpdated) {
@@ -241,6 +278,27 @@ class UpdateMasterProductCategory extends OrgAction
         }
 
         return $masterProductCategory;
+    }
+
+    public function prepareForValidation(): void
+    {
+        $this->discardBlankStorageGuidelines();
+    }
+
+    /**
+     * Rows added but left blank arrive as null once empty strings are converted, drop them
+     * instead of failing validation on guidelines the user never wrote.
+     */
+    private function discardBlankStorageGuidelines(): void
+    {
+        if (!$this->has('storage_guidelines') || !is_array($this->get('storage_guidelines'))) {
+            return;
+        }
+
+        $this->set('storage_guidelines', array_values(array_filter(
+            $this->get('storage_guidelines'),
+            fn ($guideline) => !is_array($guideline) || !Arr::exists($guideline, 'text') || filled($guideline['text'])
+        )));
     }
 
     public function afterValidator(Validator $validator): void
@@ -306,11 +364,34 @@ class UpdateMasterProductCategory extends OrgAction
                 'min:1',
                 'max:100'
             ],
-            'cost_price_ratio'              => ['sometimes', 'numeric', 'min:0'],
             'trade_unit_family_id'          => ['sometimes', 'integer', 'exists:trade_unit_families,id'],
             'faq'                           => ['sometimes', 'array'],
             'faq.*.question'                => ['sometimes', 'nullable', 'string'],
             'faq.*.answer'                  => ['sometimes', 'nullable', 'string'],
+            // customize_option
+            'customize_option'              => ['sometimes', 'array'],
+            'customize_option.*'            => ['sometimes', 'array'],
+            'customize_option.*.key'        => ['sometimes', 'nullable', 'string'],
+            'customize_option.*.label'      => ['sometimes', 'nullable', 'string'],
+            'customize_option.*.icon'       => ['sometimes', 'nullable', 'string'],
+            'customize_option.*.available'  => ['sometimes', 'boolean'],
+            'customize_option.*.moq'        => ['sometimes', 'nullable', 'string'],
+            'customize_option.*.notes'      => ['sometimes', 'nullable', 'string', new MaxPlainTextLength(255)],
+            // storage_option
+            'storage_conditions'            => ['sometimes', 'array'],
+            'storage_conditions.*.key'      => ['sometimes', 'nullable', 'string'],
+            'storage_conditions.*.label'    => ['sometimes', 'nullable', 'string'],
+            'storage_conditions.*.value'    => ['sometimes', 'nullable', 'string'],
+            'storage_temperature'           => ['sometimes', 'nullable', 'string'],
+            'storage_guidelines'            => ['sometimes', 'array'],
+            'storage_guidelines.*.text'     => ['sometimes', 'string', 'max:250'],
+            // category_comparison
+            'category_comparison'                   => ['sometimes', 'array'],
+            'category_comparison.template'          => ['sometimes', 'string'],
+            'category_comparison.items'             => ['sometimes', 'array'],
+            'category_comparison.items.*.show'      => ['sometimes', 'boolean', 'nullable'],
+            'category_comparison.items.*.label'     => ['sometimes', 'string', 'nullable'],
+            'category_comparison.items.*.value'     => ['sometimes', 'string'],
         ];
 
         if (!$this->strict) {

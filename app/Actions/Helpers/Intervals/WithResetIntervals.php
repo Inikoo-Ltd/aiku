@@ -15,11 +15,10 @@ trait WithResetIntervals
     use AsAction;
 
     protected array $intervals = [];
-    protected array $doPreviousPeriods = [];
 
     protected function resetGroups(): void
     {
-        ProcessResetIntervalsGroups::dispatch($this->intervals, $this->doPreviousPeriods);
+        ProcessResetIntervalsGroups::dispatch($this->intervals);
     }
 
     protected function resetOrganisations(): void
@@ -30,9 +29,8 @@ trait WithResetIntervals
 
     protected function resetShops(): void
     {
-        ProcessResetIntervalsShops::dispatch($this->intervals, $this->doPreviousPeriods);
+        ProcessResetIntervalsShops::dispatch($this->intervals);
     }
-
 
 
     public function handle(): void

@@ -42,6 +42,8 @@ use Spatie\Sluggable\SlugOptions;
  * @property ManufactureTaskOperativeRewardTermsEnum $operative_reward_terms
  * @property ManufactureTaskOperativeRewardAllowanceTypeEnum $operative_reward_allowance_type
  * @property float $operative_reward_amount
+ * @property numeric|null $standard_rate
+ * @property string|null $target_override_reason
  * @property array<array-key, mixed> $data
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
@@ -79,6 +81,19 @@ class ManufactureTask extends Model implements Auditable
 
     protected $attributes = [
         'data'     => '{}',
+    ];
+
+    protected array $auditInclude = [
+        'code',
+        'name',
+        'status',
+        'task_lower_target',
+        'task_upper_target',
+        'operative_reward_terms',
+        'operative_reward_allowance_type',
+        'operative_reward_amount',
+        'standard_rate',
+        'target_override_reason',
     ];
 
     public function getSlugOptions(): SlugOptions

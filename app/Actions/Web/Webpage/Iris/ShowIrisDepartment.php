@@ -39,11 +39,15 @@ class ShowIrisDepartment extends IrisAction
                 'pageHead'        => [
                     'title'     => $department->name,
                     'model'     => __('Department'),
+                    'afterTitle'    => [
+                        'label' => $department->code,
+                        'tooltip' => __('Department Code'),
+                    ],
                     'icon'      => [
                         'icon'  => ['fal', 'fa-folder-tree'],
                         'title' => __('Department'),
                     ],
-                    'iconRight' => $department->state->stateIcon()[$department->state->value],
+                    /* 'iconRight' => $department->state->stateIcon()[$department->state->value], */
                 ],
                 'tabs' => [
                     'current'    => $this->tab,

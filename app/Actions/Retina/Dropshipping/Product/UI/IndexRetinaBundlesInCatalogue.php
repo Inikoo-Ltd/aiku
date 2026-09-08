@@ -12,6 +12,7 @@ use App\Actions\Retina\Dropshipping\Catalogue\ShowRetinaCatalogue;
 use App\Actions\RetinaAction;
 use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
+use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Http\Resources\Catalogue\ProductsResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Product;
@@ -148,6 +149,89 @@ class IndexRetinaBundlesInCatalogue extends RetinaAction
         $iconRight  = null;
         $model      = null;
 
+        $manualChannel = $this->customer->customerSalesChannels()
+            ->whereHas('platform', function ($query) {
+                $query->where('type', PlatformTypeEnum::MANUAL);
+            })->first();
+
+        $createBundleData = [];
+        if ($manualChannel) {
+            $createBundleData = [
+                'customer_id' => $this->customer->id,
+                'shop_data'   => [
+                    'currency_symbol' => $this->shop->currency->symbol,
+                    'currency_code'   => $this->shop->currency->code,
+                ],
+                'routes'      => [
+                    'itemRoute' => [
+                        'name'       => 'retina.dropshipping.customer_sales_channels.filtered_products.index',
+                        'parameters' => [
+                            'customerSalesChannel' => $manualChannel->slug
+                        ]
+                    ],
+                ],
+                'bundle_routes' => [
+                    'store'     => [
+                        'name'       => 'retina.models.dropshipping.bundles.store_or_update',
+                        'parameters' => [
+                            'customerSalesChannel' => $manualChannel->id
+                        ]
+                    ],
+                    'update'    => [
+                        'name'       => 'retina.models.dropshipping.bundles.update',
+                        'parameters' => [
+                            'customerSalesChannel' => $manualChannel->id
+                        ]
+                    ],
+                    'delete'    => [
+                        'name'       => 'retina.models.dropshipping.bundles.delete',
+                        'parameters' => [
+                            'customerSalesChannel' => $manualChannel->id
+                        ]
+                    ],
+                    'images'    => [
+                        'get'   => [
+                            'name'       => 'retina.dropshipping.products.images.index',
+                            'parameters' => []
+                        ],
+                        'store' => [
+                            'name'       => 'retina.models.dropshipping.bundles.products.images.store',
+                            'parameters' => [
+                                'customerSalesChannel' => $manualChannel->id
+                            ]
+                        ],
+                        'edit'  => [
+                            'name'       => 'retina.dropshipping.customer_sales_channels.bundles.show',
+                            'parameters' => [
+                                'customerSalesChannel' => $manualChannel->slug
+                            ]
+                        ],
+                    ],
+                    'calculate' => [
+                        'name'       => 'retina.models.dropshipping.bundles.products.calculate',
+                        'parameters' => [
+                            'customerSalesChannel' => $manualChannel->id
+                        ]
+                    ],
+                    'ai'        => [
+                        'generate_images'      => [
+                            'name'       => 'retina.models.dropshipping.bundles.products.images.generate',
+                            'parameters' => [
+                                'customerSalesChannel' => $manualChannel->id
+                            ]
+                        ],
+                        'generate_title'       => [
+                            'name'       => 'retina.models.dropshipping.bundles.title.generate',
+                            'parameters' => []
+                        ],
+                        'generate_description' => [
+                            'name'       => 'retina.models.dropshipping.bundles.description.generate',
+                            'parameters' => []
+                        ]
+                    ],
+                ],
+            ];
+        }
 
         return Inertia::render(
             'Catalogue/RetinaProducts',
@@ -164,6 +248,7 @@ class IndexRetinaBundlesInCatalogue extends RetinaAction
                     'afterTitle'    => $afterTitle,
                     'iconRight'     => $iconRight,
                 ],
+                'create_bundle'                => $createBundleData,
                 'data'                         => ProductsResource::collection($products),
             ]
         )->table($this->tableStructure());

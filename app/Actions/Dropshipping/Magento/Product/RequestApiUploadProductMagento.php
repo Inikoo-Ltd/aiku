@@ -9,6 +9,7 @@
 namespace App\Actions\Dropshipping\Magento\Product;
 
 use App\Actions\Dropshipping\Portfolio\UpdatePortfolio;
+use App\Actions\Dropshipping\WithPortfolioErrorResponse;
 use App\Actions\Helpers\Images\GetImgProxyUrl;
 use App\Actions\RetinaAction;
 use App\Events\UploadProductToMagentoProgressEvent;
@@ -24,6 +25,7 @@ class RequestApiUploadProductMagento extends RetinaAction
 {
     use AsAction;
     use WithAttributes;
+    use WithPortfolioErrorResponse;
 
     /**
      * @throws \Exception
@@ -79,11 +81,16 @@ class RequestApiUploadProductMagento extends RetinaAction
             ]);
 
             $portfolio = UpdatePortfolio::run($portfolio, [
-                'platform_product_id' => Arr::get($result, 'id')
+                'platform_product_id' => Arr::get($result, 'id'),
+                'errors_response'     => $this->portfolioErrorResponse($result)
             ]);
 
             UploadProductToMagentoProgressEvent::dispatch($magentoUser, $portfolio);
         } catch (\Exception $e) {
+            UpdatePortfolio::run($portfolio, [
+                'errors_response' => $this->portfolioErrorResponse($e->getMessage())
+            ]);
+
             Sentry::captureMessage("Failed to upload product due to: " . $e->getMessage());
         }
     }

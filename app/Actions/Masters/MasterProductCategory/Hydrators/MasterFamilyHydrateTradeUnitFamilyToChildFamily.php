@@ -10,13 +10,13 @@
 namespace App\Actions\Masters\MasterProductCategory\Hydrators;
 
 use App\Actions\Catalogue\ProductCategory\UpdateProductCategory;
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
 use App\Models\Goods\TradeUnitFamily;
 use App\Models\Masters\MasterProductCategory;
 use Illuminate\Console\Command;
 
-class MasterFamilyHydrateTradeUnitFamilyToChildFamily extends GrpAction
+class MasterFamilyHydrateTradeUnitFamilyToChildFamily extends OrgAction
 {
     public function handle(MasterProductCategory $masterFamily): void
     {
@@ -29,7 +29,7 @@ class MasterFamilyHydrateTradeUnitFamilyToChildFamily extends GrpAction
 
     public function action(MasterProductCategory $masterFamily): void
     {
-        $this->initialisation($masterFamily->group, []);
+        $this->initialisationFromGroup($masterFamily->group, []);
         $this->handle($masterFamily);
     }
 

@@ -15,6 +15,7 @@ import Tabs from "@/Components/Navigation/Tabs.vue"
 
 // import TableProducts from "@/Components/Tables/Grp/Org/Catalogue/TableProducts.vue"
 import CustomerClientShowcase from "@/Components/Showcases/Grp/CustomerClientShowcase.vue"
+import TableHistories from '@/Components/Tables/Grp/Helpers/TableHistories.vue'
 // import TableWebUsers from "@/Components/Tables/Grp/Org/CRM/TableWebUsers.vue"
 import { PageHeadingTypes } from '@/types/PageHeading'
 // import ModelDetails from "@/Components/ModelDetails.vue"
@@ -46,6 +47,7 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 const component = computed(() => {
     const components: Component = {
         showcase: CustomerClientShowcase,
+        history: TableHistories,
     }
 
     return components[currentTab.value]

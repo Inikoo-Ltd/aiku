@@ -46,10 +46,12 @@ class FetchAuroraStockLocations extends FetchAuroraAction
             ]);
 
 
-            $locationsData = $this->getStockLocationData($organisationSource, $organisationSource->getOrganisation()->id.':'.$organisationSourceId);
-            SyncOrgStockLocations::make()->action($orgStock, [
-                'locationsData' => $locationsData
-            ], 2, false);
+            if (!$orgStock->organisation->is_aiku_stock_control) {
+                $locationsData = $this->getStockLocationData($organisationSource, $organisationSource->getOrganisation()->id.':'.$organisationSourceId);
+                SyncOrgStockLocations::make()->action($orgStock, [
+                    'locationsData' => $locationsData
+                ], 2, false);
+            }
 
 
             OrgStockHydrateQuantityInLocations::run($orgStock->id);

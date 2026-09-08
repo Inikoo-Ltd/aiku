@@ -29,7 +29,7 @@ class SetOrgStockPreferredSupplierProduct extends OrgAction
 
         if (!$isLinked) {
             throw ValidationException::withMessages([
-                'org_supplier_product_id' => __('This supplier product is not linked to this SKU.'),
+                'org_supplier_product_id' => __('This supplier product is not linked to this SKO.'),
             ]);
         }
 

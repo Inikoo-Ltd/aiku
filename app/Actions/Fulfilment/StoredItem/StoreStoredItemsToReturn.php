@@ -63,7 +63,7 @@ class StoreStoredItemsToReturn extends OrgAction
                     continue;
                 }
 
-                throw ValidationException::withMessages(['stored_items' => __('The SKU ":reference" is :state and cannot be added to a return.', ['reference' => $storedItem->reference, 'state' => $storedItem->state->labelGenerated()])]);
+                throw ValidationException::withMessages(['stored_items' => __('The SKO ":reference" is :state and cannot be added to a return.', ['reference' => $storedItem->reference, 'state' => $storedItem->state->labelGenerated()])]);
             }
 
             if ($existingPalletReturnItems) {

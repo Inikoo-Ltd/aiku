@@ -2,13 +2,14 @@
 
 namespace App\Actions\HumanResources\WorkSchedule;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
+use App\Actions\SysAdmin\User\GetUserCurrentEmployee;
 use App\Models\HumanResources\WorkSchedule;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
 use Lorisleiva\Actions\ActionRequest;
 
-class IndexShiftSchedules extends GrpAction
+class IndexShiftSchedules extends OrgAction
 {
     public function handle(ActionRequest $request): JsonResponse
     {
@@ -18,7 +19,7 @@ class IndexShiftSchedules extends GrpAction
             return response()->json(['data' => []]);
         }
 
-        $employee = $user->employees->first();
+        $employee = GetUserCurrentEmployee::run($user);
 
         if (!$employee || !$employee->organisation_id) {
             return response()->json(['data' => []]);

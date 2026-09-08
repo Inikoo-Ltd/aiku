@@ -10,6 +10,22 @@ export interface LastMessage {
 }
 
 // --------------------------
+// Shop / Organisation (inbox scope)
+// --------------------------
+export interface ChatInboxShop {
+	id: number
+	name: string
+	slug: string
+	domain?: string
+}
+
+export interface ChatInboxOrganisation {
+	id: number
+	name: string
+	slug: string
+}
+
+// --------------------------
 // Session data from API
 // --------------------------
 export interface SessionAPI {
@@ -20,7 +36,13 @@ export interface SessionAPI {
 	contact_name: string | null
 	created_at: string
 	priority: string
+	is_spam?: boolean
+	is_trashed?: boolean
+	is_highlighted?: boolean
 	customer: boolean
+	image?: string
+	shop?: ChatInboxShop | null
+	organisation?: ChatInboxOrganisation | null
 	last_message?: LastMessage
 	assigned_agent?: {
 		id: string
@@ -88,6 +110,8 @@ export interface Contact {
 	lastMessageTime?: string
 	unread: number
 	status: "waiting" | "active" | "closed" | string
+	is_spam?: boolean
+	is_highlighted?: boolean
 	messages?: ChatMessage[]
 	webUser?: {
 		id: string
@@ -105,10 +129,40 @@ export interface Contact {
 		email: string
 		phone: string
 	} | null
+	metadata?: {
+		name?: string
+		email?: string
+		phone?: string
+		[key: string]: any
+	} | null
 	agent?: {
 		id: string
 		name: string
 	}
+	shop?: ChatInboxShop | null
+	organisation?: ChatInboxOrganisation | null
+	ai_summary?: {
+		summary: string
+		key_points: string[]
+		sentiment: string
+	} | null
+}
+
+// --------------------------
+// Inbox grouping (one shop = one inbox)
+// --------------------------
+export interface ChatInboxGroup {
+	key: number | string
+	shopName: string
+	organisationName: string
+	unread: number
+	contacts: Contact[]
+}
+
+export interface ChatMessageReactionGroup {
+	emoji: string
+	count: number
+	reactors: { type: string; id: number | null }[]
 }
 
 export interface ChatMessage {
@@ -119,4 +173,5 @@ export interface ChatMessage {
 	sender_type: "guest" | "user" | "agent" | "system"
 	created_at: string
 	is_read?: boolean
+	reactions?: ChatMessageReactionGroup[]
 }

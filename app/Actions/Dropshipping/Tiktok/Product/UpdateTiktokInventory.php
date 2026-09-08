@@ -15,11 +15,12 @@ use App\Models\Catalogue\Product;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Portfolio;
 use App\Models\Dropshipping\TiktokUser;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 
-class UpdateTiktokInventory
+class UpdateTiktokInventory implements ShouldBeUnique
 {
     use AsAction;
     use WithAttributes;
@@ -31,25 +32,39 @@ class UpdateTiktokInventory
         return $portfolio->id;
     }
 
-    public function handle(Portfolio $portfolio, CustomerSalesChannel $customerSalesChannel): void
+    public static function quantityToSend(Product $product, CustomerSalesChannel $customerSalesChannel): int
     {
-        /** @var Product $product */
-        $product = $portfolio->item;
-
-        /** @var TiktokUser $tiktokUser */
-        $tiktokUser = $customerSalesChannel->user;
-
-        $platformPortfolioLog = StorePlatformPortfolioLog::run($portfolio, []);
-
         $availableQuantity = $product->available_quantity ?? 0;
 
         if (!$product->is_for_sale) {
             $availableQuantity = 0;
         }
 
+        if ($customerSalesChannel->stock_threshold > 0 && $availableQuantity <= $customerSalesChannel->stock_threshold) {
+            return 0;
+        }
+
         if ($customerSalesChannel->max_quantity_advertise > 0) {
             $availableQuantity = min($availableQuantity, $customerSalesChannel->max_quantity_advertise);
         }
+
+        return (int) $availableQuantity;
+    }
+
+    public function handle(Portfolio $portfolio, CustomerSalesChannel $customerSalesChannel): void
+    {
+        $product = $portfolio->item;
+
+        /** @var TiktokUser $tiktokUser */
+        $tiktokUser = $customerSalesChannel->user;
+
+        if (!$product instanceof Product || !$tiktokUser instanceof TiktokUser) {
+            return;
+        }
+
+        $platformPortfolioLog = StorePlatformPortfolioLog::run($portfolio, []);
+
+        $availableQuantity = self::quantityToSend($product, $customerSalesChannel);
 
         $tiktokInventory = $tiktokUser->updateProductInventory($portfolio->platform_product_id, [
             'skus' => [

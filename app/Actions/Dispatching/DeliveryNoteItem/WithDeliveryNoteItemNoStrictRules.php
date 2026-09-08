@@ -21,7 +21,9 @@ trait WithDeliveryNoteItemNoStrictRules
             Rule::Exists('transactions', 'id')->where('shop_id', $this->shop->id)
         ];
         $rules['state']               = ['sometimes', 'nullable', Rule::enum(DeliveryNoteItemStateEnum::class)];
-        $rules['quantity_required']   = ['sometimes', 'numeric'];
+        $rules['quantity_required']          = ['sometimes', 'numeric'];
+        $rules['original_quantity_required'] = ['sometimes', 'numeric'];
+        $rules['estimated_required_weight']  = ['sometimes', 'numeric'];
         $rules['quantity_picked']     = ['sometimes', 'numeric'];
         $rules['quantity_packed']     = ['sometimes', 'numeric'];
         $rules['quantity_dispatched'] = ['sometimes', 'numeric'];

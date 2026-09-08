@@ -9,6 +9,7 @@
 namespace App\Actions\Ordering\Order;
 
 use App\Actions\OrgAction;
+use App\Actions\Traits\WithLineTaxCategories;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Models\Ordering\Order;
 use Illuminate\Console\Command;
@@ -17,28 +18,45 @@ use Illuminate\Support\Arr;
 
 class CalculateOrderTotalAmounts extends OrgAction implements ShouldBeUnique
 {
-    public string $jobQueue = 'urgent';
+    use WithLineTaxCategories;
 
-    public function getJobUniqueId(Order $order, $calculateShipping = true, $calculateDiscounts = true, bool $collectionChanged = false, $forceRecalculate = false): string
+    public string $jobQueue = 'urgent';
+    public int $jobUniqueFor = 120;
+
+    public function getJobUniqueId(Order $order, $calculateShipping = true, $calculateDiscounts = true, bool $collectionChanged = false, $forceRecalculate = false, bool $onlyIfInBasket = false): string
     {
         return $order->id.'_'.
             ($calculateShipping ? '1' : '0').
             ($calculateDiscounts ? '1' : '0').
             ($collectionChanged ? '1' : '0').
-            ($forceRecalculate ? '1' : '0');
+            ($forceRecalculate ? '1' : '0').
+            ($onlyIfInBasket ? '1' : '0');
     }
 
-    public function handle(Order $order, $calculateShipping = true, $calculateDiscounts = true, bool $collectionChanged = false, $forceRecalculate = false): void
+    public function handle(Order $order, $calculateShipping = true, $calculateDiscounts = true, bool $collectionChanged = false, $forceRecalculate = false, bool $onlyIfInBasket = false): void
     {
+        /**
+         * Bulk callers list the baskets of a shop and then queue one job each, with a delay of up
+         * to two hours to spread the load. An order the customer submits inside that window would
+         * otherwise be recalculated after the fact - and with forceRecalculate it also reruns the
+         * discounts. They pass true so the order is rechecked at execution time; every other caller
+         * keeps the previous behaviour, including the legitimate ones that act on submitted orders.
+         */
+        if ($onlyIfInBasket && $order->refresh()->state !== OrderStateEnum::CREATING) {
+            return;
+        }
+
+        $this->applyLineTaxCategories($order);
+
         $itemsNet   = $order->transactions()->where('model_type', 'Product')->sum('net_amount');
         $itemsGross = $order->transactions()->where('model_type', 'Product')->sum('gross_amount');
-        $tax        = $order->taxCategory->rate;
 
         $numberItemTransactions = $order->transactions()->where('model_type', 'Product')->count();
 
         $chargesAmount   = $order->transactions()->where('model_type', 'Charge')->sum('net_amount');
         $packagingAmount = $order->transactions()->where('model_type', 'Packaging')->sum('net_amount');
         $leafletAmount   = $order->transactions()->where('model_type', 'Leaflet')->sum('net_amount');
+        $servicesAmount  = $order->transactions()->where('model_type', 'Service')->sum('net_amount');
         $estimatedWeight = $order->transactions()->where('model_type', 'Product')->sum('estimated_weight');
 
         if ($order->collection_address_id) {
@@ -47,9 +65,10 @@ class CalculateOrderTotalAmounts extends OrgAction implements ShouldBeUnique
             $shippingAmount = $order->transactions()->where('model_type', 'ShippingZone')->sum('net_amount');
         }
 
-        $netAmount = $itemsNet + $shippingAmount + $chargesAmount + $packagingAmount + $leafletAmount - $order->amount_off;
+        $taxBreakdown = $this->getOrderTaxBreakdown($order);
 
-        $taxAmount   = $netAmount * $tax;
+        $netAmount   = round(array_sum(array_column($taxBreakdown, 'net_amount')), 2);
+        $taxAmount   = round(array_sum(array_column($taxBreakdown, 'tax_amount')), 2);
         $totalAmount = $netAmount + $taxAmount;
         $grpNet      = $netAmount * $order->grp_exchange;
         $orgNet      = $netAmount * $order->org_exchange;
@@ -65,6 +84,7 @@ class CalculateOrderTotalAmounts extends OrgAction implements ShouldBeUnique
         data_set($modelData, 'charges_amount', $chargesAmount);
         data_set($modelData, 'packaging_amount', $packagingAmount);
         data_set($modelData, 'leaflet_amount', $leafletAmount);
+        data_set($modelData, 'services_amount', $servicesAmount);
         data_set($modelData, 'estimated_weight', $estimatedWeight);
         data_set($modelData, 'number_item_transactions', $numberItemTransactions);
 
@@ -138,14 +158,17 @@ class CalculateOrderTotalAmounts extends OrgAction implements ShouldBeUnique
         }
     }
 
-    public string $commandSignature = 'order:totals {order}';
+    public string $commandSignature = 'order:totals {order} {--ignoreCalculateDiscounts}';
 
     public function asCommand(Command $command): int
     {
         $exitCode = 0;
         $order    = Order::where('slug', $command->argument('order'))->firstOrFail();
+
+        $ignoreCalculateDiscounts = !(bool)$command->option('ignoreCalculateDiscounts');
+
         if ($order) {
-            $this->handle($order);
+            $this->handle($order, calculateDiscounts: $ignoreCalculateDiscounts);
             $command->line("Order $order->reference totals calculated. 🧮");
         } else {
             $command->error("Model not found");

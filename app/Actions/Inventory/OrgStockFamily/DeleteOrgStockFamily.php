@@ -12,6 +12,7 @@ use App\Actions\Inventory\OrgStock\UpdateOrgStock;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateOrgStockFamilies;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOrgStockFamilies;
+use App\Enums\SysAdmin\Authorisation\WarehousePermissionsEnum;
 use App\Models\Inventory\OrgStockFamily;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Support\Facades\DB;
@@ -31,7 +32,6 @@ class DeleteOrgStockFamily extends OrgAction
     {
         DB::transaction(function () use ($orgStockFamily) {
             $orgStockFamily->stats()->forceDelete();
-            $orgStockFamily->intervals()->forceDelete();
             $orgStockFamily->timeSeries()->forceDelete();
 
 
@@ -58,7 +58,9 @@ class DeleteOrgStockFamily extends OrgAction
             return true;
         }
 
-        return $request->user()->authTo("inventory.{$this->organisation->id}.edit");
+        return $request->user()->authTo(
+            WarehousePermissionsEnum::getStockEditPermissionNames($this->organisation)
+        );
     }
 
     /**

@@ -232,7 +232,7 @@ class CreateReplacementDeliveryNote extends OrgAction
             'warning'       => $warning,
             'tabs'          => [
                 'current'    => $this->tab,
-                'navigation' => DeliveryNoteTabsEnum::navigationExcept($deliveryNote, [DeliveryNoteTabsEnum::TARIFF_CODES])
+                'navigation' => DeliveryNoteTabsEnum::navigationExcept($deliveryNote, [DeliveryNoteTabsEnum::PICKING_TODO_ITEMS, DeliveryNoteTabsEnum::PICKING_DONE_ITEMS, DeliveryNoteTabsEnum::TARIFF_CODES])
             ],
             'delivery_note' => DeliveryNoteResource::make($deliveryNote)->toArray(request()),
 
@@ -304,11 +304,14 @@ class CreateReplacementDeliveryNote extends OrgAction
 
     public function getItems(DeliveryNote $deliveryNote): array
     {
-        return [
-            DeliveryNoteTabsEnum::ITEMS->value => $this->tab == DeliveryNoteTabsEnum::ITEMS->value ?
-                fn () => DeliveryNoteItemsResource::collection(IndexDeliveryNoteItems::run($deliveryNote))
-                : Inertia::optional(fn () => DeliveryNoteItemsResource::collection(IndexDeliveryNoteItems::run($deliveryNote))),
+        $items = fn () => DeliveryNoteItemsResource::collection(
+            IndexDeliveryNoteItems::run($deliveryNote, DeliveryNoteTabsEnum::ITEMS->value)
+        );
 
+        return [
+            DeliveryNoteTabsEnum::ITEMS->value => $this->tab == DeliveryNoteTabsEnum::ITEMS->value
+                ? $items
+                : Inertia::optional($items),
         ];
     }
 

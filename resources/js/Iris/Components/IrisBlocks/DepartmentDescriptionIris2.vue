@@ -32,6 +32,7 @@ library.add(
 const props = defineProps<{
 	screenType: "mobile" | "tablet" | "desktop"
 	indexBlock: number
+	code?: string
 	fieldValue: {  // GetIrisWebBlockDepartmentDescription
 		department: {
 			name: string

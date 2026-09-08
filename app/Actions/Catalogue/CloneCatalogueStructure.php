@@ -30,7 +30,6 @@ use App\Actions\Masters\MasterProductCategory\StoreMasterSubDepartment;
 use App\Actions\Masters\MasterProductCategory\UpdateMasterProductCategory;
 use App\Actions\Web\Webpage\PublishWebpage;
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
-use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Masters\MasterAsset\MasterAssetTypeEnum;
 use App\Models\Catalogue\ProductCategory;
@@ -214,12 +213,10 @@ class CloneCatalogueStructure
             }
         } else {
             foreach ($fromShop->productCategories()->where('type', ProductCategoryTypeEnum::FAMILY)->get() as $family) {
-                if ($family->state == ProductCategoryStateEnum::ACTIVE) {
-                    if ($shop instanceof Shop) {
-                        dd('todo clone from Shop to Shop');
-                    } else {
-                        AddMissingFamiliesToMaster::make()->upsertMasterFamily($shop, $family);
-                    }
+                if ($shop instanceof Shop) {
+                    dd('todo clone from Shop to Shop');
+                } else {
+                    AddMissingFamiliesToMaster::make()->upsertMasterFamily($shop, $family);
                 }
             }
         }

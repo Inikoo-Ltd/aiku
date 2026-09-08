@@ -70,7 +70,7 @@ class PalletImportWithStoredItems implements ToCollection, WithHeadingRow, Skips
 
             if ($existingStoredItem && !$existingStoredItemInPallet) {
                 if (!$existingStoredItem->state->canBeStored()) {
-                    $this->setRecordAsFailed($uploadRecord, [__('The SKU ":reference" is :state and cannot be stored.', ['reference' => $existingStoredItem->reference, 'state' => $existingStoredItem->state->labelGenerated()])]);
+                    $this->setRecordAsFailed($uploadRecord, [__('The SKO ":reference" is :state and cannot be stored.', ['reference' => $existingStoredItem->reference, 'state' => $existingStoredItem->state->labelGenerated()])]);
 
                     return;
                 }
@@ -113,7 +113,7 @@ class PalletImportWithStoredItems implements ToCollection, WithHeadingRow, Skips
 
                 if ($existingStoredItem && !$existingStoredItemInPallet) {
                     if (!$existingStoredItem->state->canBeStored()) {
-                        $this->setRecordAsFailed($uploadRecord, [__('The SKU ":reference" is :state and cannot be stored.', ['reference' => $existingStoredItem->reference, 'state' => $existingStoredItem->state->labelGenerated()])]);
+                        $this->setRecordAsFailed($uploadRecord, [__('The SKO ":reference" is :state and cannot be stored.', ['reference' => $existingStoredItem->reference, 'state' => $existingStoredItem->state->labelGenerated()])]);
 
                         return;
                     }

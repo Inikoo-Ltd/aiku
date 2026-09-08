@@ -74,9 +74,13 @@ class UpdateCharge extends OrgAction
         }
 
         if ($this->has('min_order')) {
-            $minOrder = (string) $this->get('min_order');
+            $minOrder = $this->get('min_order');
 
-            $settings['rules'] = '<;' . $minOrder;
+            if (blank($minOrder)) {
+                unset($settings['rules']);
+            } else {
+                $settings['rules'] = '<;' . (string) $minOrder;
+            }
         }
         $this->set('settings', $settings);
     }

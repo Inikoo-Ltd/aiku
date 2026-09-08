@@ -50,7 +50,7 @@ const triggersLabel = computed<string>(() => props.offer?.triggers_labels?.join(
             </div>
 
             <div v-if="triggersLabel" class="vd-triggers">
-                {{ triggersLabel }}
+                {{ offer?.triggers_labels[0] }}
             </div>
         </div>
 
@@ -86,7 +86,7 @@ const triggersLabel = computed<string>(() => props.offer?.triggers_labels?.join(
 }
 
 .vd-title {
-    @apply z-10 flex flex-col justify-center min-w-[6rem] px-3 text-[12px] font-bold uppercase leading-tight rounded-lg shadow-md;
+    @apply z-10 flex flex-col  justify-center min-w-[6rem] px-3 text-[12px] font-bold uppercase leading-tight rounded-lg shadow-md;
     background-color: var(--theme-color-4);
 }
 
@@ -95,7 +95,7 @@ const triggersLabel = computed<string>(() => props.offer?.triggers_labels?.join(
 }
 
 .vd-percentage {
-    @apply text-sm font-bold leading-tight whitespace-nowrap;
+    @apply text-sm font-bold leading-tight whitespace-nowrap pr-3;
 }
 
 .vd-triggers {

@@ -1,5 +1,7 @@
 <script setup lang='ts'>
-import { onMounted } from 'vue'
+import { onMounted, nextTick } from 'vue'
+import Modal from '@/Components/Utils/Modal.vue'
+import Button from '@/Components/Elements/Buttons/Button.vue'
 import { trans } from 'laravel-vue-i18n'
 /* import CountUp from 'vue-countup-v3' */
 import { Pie } from 'vue-chartjs'
@@ -20,9 +22,9 @@ import { printBarcode } from '@/Composables/printBarcode'
 
 import { faEmptySet } from '@fas'
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faShare, faSeedling, faInventory, faSignOutAlt, faGhost, faCheck, faTimes, faCheckDouble, faWarehouseAlt, faFragile, faSpellCheck } from "@fal"
+import { faShare, faSeedling, faInventory, faSignOutAlt, faGhost, faCheck, faTimes, faCheckDouble, faWarehouseAlt, faFragile, faSpellCheck, faPencil, faPlus } from "@fal"
 
-library.add(faShare, faSeedling, faInventory, faSignOutAlt, faGhost, faCheck, faTimes, faCheckDouble, faWarehouseAlt, faFragile, faSpellCheck)
+library.add(faShare, faSeedling, faInventory, faSignOutAlt, faGhost, faCheck, faTimes, faCheckDouble, faWarehouseAlt, faFragile, faSpellCheck, faPencil, faPlus)
 
 ChartJS.register(ArcElement, Tooltip, Legend, Colors)
 
@@ -41,6 +43,8 @@ const props = defineProps<{
         route_pallets: routeType,
         pallets: Array<{ label: string, location: string, value: number }>
         route_update_stored_item: routeType
+        barcode?: string | null
+        barcode_update_route?: routeType
     }
 }>()
 
@@ -137,6 +141,19 @@ const printBarcodePallet = (id: string, code: string) => {
 };
 
 
+const renderItemBarcode = () => {
+    if (props.data.barcode) {
+        JsBarcode('#storedItemBarcode', props.data.barcode, {
+            format: /^\d{13}$/.test(props.data.barcode) ? "EAN13" : "CODE128",
+            lineColor: "rgb(41 37 36)",
+            width: 2,
+            height: 70,
+            background: "#F9FAFB",
+            displayValue: true
+        })
+    }
+}
+
 onMounted(() => {
     if (props.data.stored_item.slug) {
         JsBarcode('#palletBarcode', props.data.stored_item.slug, {
@@ -147,7 +164,46 @@ onMounted(() => {
             displayValue: true
         })
     }
+    renderItemBarcode()
 })
+
+// Section: edit or add the item's own barcode (usually the manufacturer's EAN13 on the goods),
+// typed by hand or fed by a scanner into the input
+const isBarcodeModalOpen = ref(false)
+const barcodeInput = ref("")
+const isSavingBarcode = ref(false)
+const barcodeInputElement = ref<HTMLInputElement | null>(null)
+
+const openBarcodeModal = () => {
+    barcodeInput.value = props.data.barcode || ""
+    isBarcodeModalOpen.value = true
+    nextTick(() => barcodeInputElement.value?.focus())
+}
+
+const saveBarcode = (value: string | null) => {
+    if (!props.data.barcode_update_route || isSavingBarcode.value) return
+
+    router.patch(
+        route(props.data.barcode_update_route.name, props.data.barcode_update_route.parameters),
+        { barcode: value },
+        {
+            preserveScroll: true,
+            onStart: () => isSavingBarcode.value = true,
+            onFinish: () => isSavingBarcode.value = false,
+            onSuccess: () => {
+                isBarcodeModalOpen.value = false
+                nextTick(renderItemBarcode)
+            },
+            onError: (errors) => {
+                notify({
+                    title: trans("Something went wrong"),
+                    text: errors.barcode || trans("Could not save the barcode"),
+                    type: "error",
+                })
+            },
+        }
+    )
+}
 
 
 </script>
@@ -156,9 +212,9 @@ onMounted(() => {
     <div class="px-4 md:px-8 py-6 grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-6">
 
         <div class="max-w-xl mt-1 grid grid-cols-1 gap-x-6 gap-y-8 xl:gap-x-8 h-fit ">
-            <div class="flex flex-col items-start">
+            <div class="flex flex-wrap items-start gap-4">
                 <div class="relative  border rounded-lg p-4 shadow-sm bg-gray-50 group">
-                    <div class="text-sm font-medium text-center mb-2">Barcode</div>
+                    <div class="text-sm font-medium text-center mb-2">{{ trans("Reference") }}</div>
                     <div class="relative">
                         <div v-if="props.data.stored_item.slug" class="relative hover:bg-black/30 rounded-lg p-2">
                             <svg id="palletBarcode" class="mx-auto group-hover:fill-black"></svg>
@@ -171,6 +227,30 @@ onMounted(() => {
                             </div>
                         </div>
                     </div>
+                </div>
+
+                <div class="relative border rounded-lg p-4 shadow-sm bg-gray-50">
+                    <div class="text-sm font-medium text-center mb-2">{{ trans("Barcode") }}</div>
+                    <div v-if="props.data.barcode" class="relative rounded-lg p-2">
+                        <svg id="storedItemBarcode" class="mx-auto"></svg>
+                        <button
+                            v-if="props.data.barcode_update_route"
+                            type="button"
+                            v-tooltip="trans('Edit barcode')"
+                            class="absolute -right-2 -top-2 rounded-full border bg-white p-1.5 text-gray-400 hover:text-gray-700"
+                            @click="openBarcodeModal">
+                            <FontAwesomeIcon icon="fal fa-pencil" fixed-width aria-hidden="true" />
+                        </button>
+                    </div>
+                    <button
+                        v-else-if="props.data.barcode_update_route"
+                        type="button"
+                        class="flex h-[70px] w-full min-w-56 items-center justify-center gap-x-2 rounded-lg border-2 border-dashed border-gray-300 px-4 text-gray-400 hover:border-gray-400 hover:text-gray-600"
+                        @click="openBarcodeModal">
+                        <FontAwesomeIcon icon="fal fa-plus" fixed-width aria-hidden="true" />
+                        {{ trans("Add barcode (type or scan it)") }}
+                    </button>
+                    <div v-else class="text-sm italic text-gray-400">{{ trans("No barcode") }}</div>
                 </div>
             </div>
             <div class="w-full overflow-hidden rounded-xl border border-gray-300">
@@ -318,5 +398,35 @@ onMounted(() => {
         </div> -->
     </div>
 
-
+    <!-- Modal: add or edit the item's own barcode by typing or scanning into the input -->
+    <Modal :isOpen="isBarcodeModalOpen" @onClose="isBarcodeModalOpen = false" width="w-full max-w-md">
+        <div class="space-y-4">
+            <div class="text-lg font-semibold">{{ trans("Item barcode") }}</div>
+            <div class="text-sm text-gray-500">
+                {{ trans("The barcode printed on the goods themselves, usually the manufacturer's EAN13. Type it, or click the field and scan the item with a barcode scanner.") }}
+            </div>
+            <input
+                ref="barcodeInputElement"
+                v-model="barcodeInput"
+                type="text"
+                autocomplete="off"
+                spellcheck="false"
+                class="w-full rounded-md border-gray-300 py-2 px-3 font-mono text-lg tracking-wide focus:border-indigo-500 focus:ring-indigo-500"
+                @keydown.enter.prevent="saveBarcode(barcodeInput.trim() || null)"
+            />
+            <div class="flex justify-between">
+                <Button
+                    v-if="props.data.barcode"
+                    :label="trans('Remove barcode')"
+                    type="negative"
+                    :loading="isSavingBarcode"
+                    @click="saveBarcode(null)" />
+                <div v-else />
+                <div class="flex gap-x-2">
+                    <Button :label="trans('Cancel')" type="tertiary" @click="isBarcodeModalOpen = false" />
+                    <Button :label="trans('Save')" :loading="isSavingBarcode" @click="saveBarcode(barcodeInput.trim() || null)" />
+                </div>
+            </div>
+        </div>
+    </Modal>
 </template>

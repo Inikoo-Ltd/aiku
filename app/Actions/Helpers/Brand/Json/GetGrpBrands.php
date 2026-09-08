@@ -9,7 +9,7 @@
 
 namespace App\Actions\Helpers\Brand\Json;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Http\Resources\Catalogue\BrandResource;
 use App\Models\Helpers\Brand;
 use App\Services\QueryBuilder;
@@ -17,7 +17,7 @@ use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
 
-class GetGrpBrands extends GrpAction
+class GetGrpBrands extends OrgAction
 {
     public function handle()
     {
@@ -52,7 +52,7 @@ class GetGrpBrands extends GrpAction
 
     public function asController(ActionRequest $request)
     {
-        $this->initialisation(group(), $request);
+        $this->initialisationFromGroup(group(), $request);
 
         return $this->handle();
     }

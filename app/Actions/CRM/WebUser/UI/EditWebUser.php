@@ -123,7 +123,10 @@ class EditWebUser extends OrgAction
                                 'email'        => [
                                     'type'  => 'input',
                                     'label' => __('Email'),
-                                    'value' => $webUser->email
+                                    'value' => $webUser->email,
+                                    'information_warning' => $webUser->is_root ? [
+                                        ['description' => __('Changing this email will also update the customer contact email.')]
+                                    ] : [],
                                 ],
                                 'username'     => [
                                     'type'  => 'input',

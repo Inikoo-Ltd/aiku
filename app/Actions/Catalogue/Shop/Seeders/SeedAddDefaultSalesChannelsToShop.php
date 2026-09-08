@@ -2,14 +2,14 @@
 
 namespace App\Actions\Catalogue\Shop\Seeders;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Enums\Ordering\SalesChannel\SalesChannelTypeEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\Ordering\SalesChannel;
 use Illuminate\Console\Command;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class SeedAddDefaultSalesChannelsToShop extends GrpAction
+class SeedAddDefaultSalesChannelsToShop extends OrgAction
 {
     use AsAction;
 

@@ -3,7 +3,7 @@
 namespace App\Actions\Helpers\Brand\UI;
 
 use App\Actions\Goods\TradeUnit\UI\ShowTradeUnitsDashboard;
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithGoodsAuthorisation;
 use App\Http\Resources\Helpers\BrandResource;
 use App\InertiaTable\InertiaTable;
@@ -18,7 +18,7 @@ use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
 
-class IndexBrands extends GrpAction
+class IndexBrands extends OrgAction
 {
     use WithGoodsAuthorisation;
 
@@ -27,7 +27,7 @@ class IndexBrands extends GrpAction
     public function asController(ActionRequest $request): LengthAwarePaginator
     {
         $this->parent = group();
-        $this->initialisation($this->parent, $request);
+        $this->initialisationFromGroup($this->parent, $request);
 
         return $this->handle();
     }

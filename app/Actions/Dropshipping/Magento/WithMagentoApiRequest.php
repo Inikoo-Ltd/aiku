@@ -2,6 +2,7 @@
 
 namespace App\Actions\Dropshipping\Magento;
 
+use App\Actions\Dropshipping\PlatformOutboundGuard;
 use Exception;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Http;
@@ -25,6 +26,10 @@ trait WithMagentoApiRequest
      */
     public function getMagentoToken(): string
     {
+        if (PlatformOutboundGuard::blocks('Magento', 'admin token')) {
+            throw new Exception('Magento calls are only allowed in production');
+        }
+
         $config = $this->getMagentoConfig();
 
         try {
@@ -57,6 +62,10 @@ trait WithMagentoApiRequest
 
     public function validateMagentoAccount(string $username, string $password, string $baseUrl): bool
     {
+        if (PlatformOutboundGuard::blocks('Magento', 'validate account')) {
+            return false;
+        }
+
         $response = Http::post($baseUrl . '/rest/V1/integration/admin/token', [
             'username' => $username,
             'password' => $password
@@ -76,6 +85,10 @@ trait WithMagentoApiRequest
      */
     protected function magentoApiRequest(string $method, string $endpoint, array $data = [], $queryParams = []): array
     {
+        if (PlatformOutboundGuard::blocks('Magento', "$method $endpoint")) {
+            return [];
+        }
+
         $config = $this->getMagentoConfig();
         $token = $this->getMagentoConfig()['token'];
 

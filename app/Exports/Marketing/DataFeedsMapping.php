@@ -38,7 +38,7 @@ trait DataFeedsMapping
         $statusString = (string)$status;
         $status       = Str::studly($statusString);
 
-        $availableQuantity = (bool)$row->is_for_sale ? $row->available_quantity : 0;
+        $availableQuantity = ($row->is_for_sale || $row->is_bundle) ? $row->available_quantity : 0;
         if ($availableQuantity < 0) {
             $availableQuantity = 0;
         }
@@ -92,9 +92,8 @@ trait DataFeedsMapping
             $row->available_quantity_updated_at ?? '',
             $row->price_updated_at ?? '',
             $row->images_updated_at ?? '',
-            $availableQuantity
-
-
+            $availableQuantity,
+            ($row->is_for_sale || $row->is_bundle) ? 'Yes' : 'No'
         ];
     }
 
@@ -134,7 +133,8 @@ trait DataFeedsMapping
             'Stock updated',
             'Price updated',
             'Images updated',
-            'Available Quantity'
+            'Available Quantity',
+            'For sale'
         ];
     }
 

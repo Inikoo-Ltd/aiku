@@ -18,18 +18,18 @@ class DispatchOrderFromDeliveryNote extends OrgAction
     /**
      * @throws \Throwable
      */
-    public function handle(Order $order, DeliveryNote $deliveryNote): Order
+    public function handle(Order $order, DeliveryNote $deliveryNote, ?string $dispatchedAt = null, bool $repair = false): Order
     {
-        return DispatchOrder::make()->action($order, $deliveryNote);
+        return DispatchOrder::make()->action($order, $deliveryNote, $dispatchedAt, $repair);
     }
 
 
     /**
      * @throws \Throwable
      */
-    public function action(Order $order, DeliveryNote $deliveryNote): Order
+    public function action(Order $order, DeliveryNote $deliveryNote, ?string $dispatchedAt = null, bool $repair = false): Order
     {
-        return $this->handle($order, $deliveryNote);
+        return $this->handle($order, $deliveryNote, $dispatchedAt, $repair);
     }
 
 

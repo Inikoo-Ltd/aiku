@@ -12,6 +12,7 @@ use App\Models\Chat\ChatSession;
 use Illuminate\Http\JsonResponse;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
+use App\Models\CRM\Customer;
 
 class GetChatCustomerProfile
 {
@@ -19,10 +20,12 @@ class GetChatCustomerProfile
 
     public function handle(ChatSession $chatSession): array
     {
-        $webUser = $chatSession->webUser()->with(['customer.tags', 'customer.stats', 'customer.shop.currency'])->first();
+        $webUser = $chatSession->webUser()
+            ->with(['customer.tags', 'customer.stats', 'customer.shop.currency', 'customer.organisation'])
+            ->first();
 
         if (!$webUser || !$webUser->customer) {
-            return ['tags' => [], 'stats' => null];
+            return ['tags' => [], 'stats' => null, 'email' => null, 'profile_url' => null];
         }
 
         $customer = $webUser->customer;
@@ -30,6 +33,9 @@ class GetChatCustomerProfile
         $currency = $customer->shop?->currency;
 
         return [
+            'email'       => $customer->email ?: $webUser->email,
+            'profile_url' => $this->customerProfileUrl($customer),
+
             'tags'  => $customer->tags->map(fn ($tag) => [
                 'id'   => $tag->id,
                 'name' => $tag->label['en'] ?? $tag->name,
@@ -48,6 +54,22 @@ class GetChatCustomerProfile
                 'number_orders_state_creating' => $stats->number_orders_state_creating,
             ] : null,
         ];
+    }
+
+    private function customerProfileUrl(Customer $customer): ?string
+    {
+        $organisation = $customer->organisation;
+        $shop         = $customer->shop;
+
+        if (!$organisation || !$shop) {
+            return null;
+        }
+
+        return route('grp.org.shops.show.crm.customers.show', [
+            $organisation->slug,
+            $shop->slug,
+            $customer->slug,
+        ]);
     }
 
     public function asController(ChatSession $chatSession, ActionRequest $request): JsonResponse

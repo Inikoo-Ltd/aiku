@@ -11,6 +11,7 @@ namespace App\Actions\Accounting\InvoiceCategory\UI;
 
 use App\Actions\Accounting\UI\ShowAccountingDashboard;
 use App\Actions\OrgAction;
+use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Http\Resources\Accounting\InvoiceCategoriesResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Accounting\InvoiceCategory;
@@ -40,7 +41,18 @@ class IndexInvoiceCategories extends OrgAction
         $queryBuilder->where('invoice_categories.organisation_id', $parent->id);
         $queryBuilder->leftjoin('currencies', 'invoice_categories.currency_id', 'currencies.id');
         $queryBuilder->leftjoin('invoice_category_stats', 'invoice_categories.id', 'invoice_category_stats.invoice_category_id');
-        $queryBuilder->leftjoin('invoice_category_sales_intervals', 'invoice_categories.id', 'invoice_category_sales_intervals.invoice_category_id');
+        $timeSeriesData = $queryBuilder->withTimeSeriesAggregation(
+            timeSeriesTable: 'invoice_category_time_series',
+            timeSeriesRecordsTable: 'invoice_category_time_series_records',
+            foreignKey: 'invoice_category_id',
+            aggregateColumns: [
+                'sales_external' => 'amount',
+            ],
+            frequency: TimeSeriesFrequencyEnum::DAILY->value,
+            prefix: $prefix,
+            includeLY: false,
+        );
+
         return $queryBuilder
             ->defaultSort('invoice_categories.id')
             ->select([
@@ -49,7 +61,7 @@ class IndexInvoiceCategories extends OrgAction
                 'invoice_categories.name',
                 'invoice_categories.state',
                 'currencies.code as currency_code',
-                'invoice_category_sales_intervals.sales_all as amount',
+                $timeSeriesData['selectRaw']['amount'],
                 'invoice_category_stats.number_invoices_type_invoice as number_type_invoices',
                 'invoice_category_stats.number_invoices_type_refund as number_type_refunds',
             ])

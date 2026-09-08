@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import { Head, Link, useForm, router } from "@inertiajs/vue3"
+import { Head, Link, router } from "@inertiajs/vue3"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import {
     faCube, faFileInvoice, faFolder, faFolderOpen, faAtom, faFolderTree,
     faChartLine, faShoppingCart, faStickyNote, faMoneyBillWave,
     faTools
 } from "@fal"
-import { faCheckCircle, faSave, faShapes, faStar } from "@fas"
+import { faCheckCircle, faShapes, faStar } from "@fas"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import { capitalize } from "@/Composables/capitalize"
@@ -23,14 +23,16 @@ import Breadcrumb from "primevue/breadcrumb"
 import AttachmentManagement from "@/Components/Goods/AttachmentManagement.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import Dialog from "primevue/dialog"
-import TableSetPriceProduct from "@/Components/TableSetPriceProduct.vue";
+import EditProductPriceAllShop from "@/Components/EditProductPriceAllShop.vue";
 import { cloneDeep } from "lodash-es";
 import { trans } from "laravel-vue-i18n"
-import axios from "axios";
 import ProductCategoryTimeSeriesTable from "@/Components/Product/ProductCategoryTimeSeriesTable.vue"
+import MasterAnomalyBlocks from "@/Components/Masters/MasterAnomalyBlocks.vue"
+import { routeType } from "@/types/route"
 import { notify } from "@kyvg/vue3-notification"
 import { faWarning } from "@fortawesome/free-solid-svg-icons"
-import { Message } from "primevue"
+
+const screenType = inject('screenType', ref('desktop'))
 
 library.add(
     faChartLine, faCheckCircle, faFolderTree, faFolder, faCube,
@@ -62,6 +64,18 @@ const props = defineProps<{
     masterVariant?: {}
     is_variant_leader?: boolean
     mismatch_detected?: boolean
+    anomalies?: {
+        items: {
+            product_id: number
+            shop_code: string
+            shop_slug: string
+            url: string
+            issues: string[]
+            ignored_issues: string[]
+        }[]
+        fixRoute: routeType
+        killRebelRoute: routeType
+    } | null
 }>()
 
 const layout = inject('layout', {});
@@ -69,15 +83,7 @@ let currentTab = ref(props.tabs.current)
 const handleTabUpdate = (tabSlug) => useTabChange(tabSlug, currentTab)
 const showDialog = ref(false)
 const tableData = ref(cloneDeep(props.shopsData))
-const key = ref(crypto.randomUUID())
-const disableClone = ref(true)
-const loading = ref(false)
 const currency = props.masterCurrency ?? layout.group.currency;
-
-const form = useForm({
-    shop_products: null,
-    trade_units: props.tradeUnits
-});
 
 const component = computed(() => {
     const components: Record<string, any> ={
@@ -97,60 +103,6 @@ function openModal() {
     showDialog.value = true;
 }
 
-const submitForm = async () => {
-    loading.value = true
-    form.clearErrors()
-
-    const finalDataTable: Record<number, any> = {}
-
-    for (const item of tableData.value.data) {
-        const create = item.product.create_in_shop
-
-        finalDataTable[item.id] = {
-            price: create ? item.product.price : 1,
-            rrp: create ? item.product.rrp : 1,
-            create_in_shop: create ? 'Yes' : 'No'
-        }
-    }
-
-    const params = {
-        ...route().params,
-        masterFamily: String(props.masterAsset.master_family.id)
-    }
-
-    const response = await axios.post(
-        route('grp.models.master_family.clone_to_other_store', params),
-        {
-            ...form.data(),
-            shop_products: finalDataTable
-        },
-        { headers: { "Content-Type": "multipart/form-data" } }
-    ).then(() => {
-        notify({
-            title: trans('Created Successfully'),
-            text: trans('Added products to Selected Stores'),
-            type: 'success'
-        })
-        router.reload({ only : 'products'})
-        showDialog.value = false
-        key.value = crypto.randomUUID()
-        refreshModalData()
-        router.reload({ only: ['products'] })
-    }).catch((error: any) => {
-        notify({
-            title: trans('Something went wrong'),
-            data: {
-                html: Object.values(error.response.data.errors).flat().join('<br>')
-            },
-            type: 'error',
-            duration: 5000,
-        })
-    }).finally(() => {
-        loading.value = false
-    })
-}
-
-
 function refreshModalData() {
     const productCodes = new Set(
         props.products?.data?.map(p => p.shop_code)
@@ -162,8 +114,6 @@ function refreshModalData() {
             item => !productCodes.has(item.code)
         )
     }
-
-    disableClone.value = tableData.value.data.length === 0
 }
 
 const routeVariant = () => {
@@ -273,31 +223,32 @@ onMounted(() => {
                 </div>
             </template>
         </Breadcrumb>
-        <Message v-if="mismatch_detected" :severity="'error'">
-            <FontAwesomeIcon 
-                :icon="faWarning" 
-                class="text-red-500 mr-1" 
-                v-tooltip="trans('One or more product under this master has mismatched trade units data. Please fix it by modifying the master products trade units')"
-            />
-            {{ trans("One or more products linked to this master contain mismatched trade unit data. Please correct this by updating the master product's trade units.") }}
-        </Message>
     </div>
 
-    <component :is="component" :tab="currentTab" :master="true" :data="props[currentTab]" :salesData="props.salesData" :handleTabUpdate :currency="currency" />
+    <div v-if="anomalies?.items?.length" class="px-4 py-4 sm:px-6 lg:px-8">
+        <MasterAnomalyBlocks :anomalies="anomalies" />
+    </div>
+
+    <component :is="component" :tab="currentTab" :master="true" :data="props[currentTab]" :salesData="props.salesData" :anomalies="anomalies" :handleTabUpdate :currency="currency" />
 
     <!-- ✅ PrimeVue Dialog -->
-    <Dialog v-model:visible="showDialog" modal header="Add Item to Other Shop" :style="{ width: '60vw' }">
-        <TableSetPriceProduct :key="key" v-model="tableData" :currency="currency.code" :form="form"
-            :disable-exist="true" />
-        <small v-if="form.errors.shop_products" class="text-red-500 flex items-center gap-1">
-            {{ form.errors.shop_products.join(", ") }}
-        </small>
-        <div class="pt-5 flex items-end w-full">
-            <Button :class="'ms-auto'" :disabled="disableClone" v-on:click="submitForm(true)" :loading="loading">
-                <FontAwesomeIcon :icon="faSave" />
-                {{ trans("Save") }}
-            </Button>
-        </div>
+    <Dialog 
+        v-model:visible="showDialog" 
+        modal 
+        :header="ctrans('Add to Other Shops')"
+        :closable="true" 
+        :dismissableMask="screenType === 'desktop'" 
+        :style="{ width: '60vw'  }" 
+        :contentClass="'!pb-0 mb-2'"
+    >
+        <EditProductPriceAllShop
+            :shops-data="props.shopsData"
+            :trade-units="props.tradeUnits"
+            :master-asset="props.masterAsset"
+            :products="props.products"
+            :currency="currency"
+            @saved="showDialog = false"
+        />
     </Dialog>
 </template>
 

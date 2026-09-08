@@ -10,7 +10,6 @@ namespace App\Actions\Transfers\Aurora;
 
 use App\Actions\Inventory\OrgStock\StoreAbnormalOrgStock;
 use App\Actions\Inventory\OrgStock\StoreOrgStock;
-use App\Actions\Inventory\OrgStock\UpdateOrgStock;
 use App\Models\Goods\Stock;
 use App\Models\Inventory\OrgStock;
 use App\Transfers\SourceOrganisationService;
@@ -38,62 +37,41 @@ trait WithFetchStock
 
         /** @var OrgStock $orgStock */
         if ($orgStock) {
-            $orgStockDataToUpdate = Arr::only($stockData['org_stock'], [
-                'state',
-                'discontinued_in_organisation_at',
-                'quantity_status',
-                'packed_in',
-                'code',
-                'name',
-                'source_id',
-                'source_slug',
-                'fetched_at',
-                'last_fetched_at'
-            ]);
-            try {
-                return UpdateOrgStock::make()->action(
-                    orgStock: $orgStock,
-                    modelData: $orgStockDataToUpdate,
-                    hydratorsDelay: $this->hydratorsDelay,
-                    strict: false,
-                    audit: false
-                );
-            } catch (Exception $e) {
-                $this->recordError($organisationSource, $e, $orgStockDataToUpdate, 'OrgStock', 'update');
+            // Stock, org stock and trade units are maintained in aiku now, for every
+            // organisation. Aurora may still send one aiku has never seen, but an update
+            // reverts whatever staff last changed, so an existing row is left alone.
+            return $orgStock;
+        }
 
-                return null;
-            }
-        } else {
-            $orgParent = null;
+        $orgParent = null;
 
-            if ($effectiveStock->stockFamily) {
-                $orgParent = $effectiveStock->stockFamily->orgStockFamilies()->where('organisation_id', $organisation->id)->first();
-            }
+        if ($effectiveStock->stockFamily) {
+            $orgParent = $effectiveStock->stockFamily->orgStockFamilies()->where('organisation_id', $organisation->id)->first();
+        }
 
-            if (!$orgParent) {
-                $orgParent = $organisationSource->getOrganisation();
-            }
-            try {
-                $orgStock = StoreOrgStock::make()->action(
-                    parent: $orgParent,
-                    stock: $effectiveStock,
-                    modelData: $stockData['org_stock'],
-                    hydratorsDelay: $this->hydratorsDelay,
-                    strict: false,
-                    audit: false
-                );
-                OrgStock::enableAuditing();
-                $this->saveMigrationHistory(
-                    $orgStock,
-                    Arr::except($stockData['org_stock'], ['fetched_at', 'last_fetched_at', 'source_id'])
-                );
+        if (!$orgParent) {
+            $orgParent = $organisationSource->getOrganisation();
+        }
+        try {
+            $orgStock = StoreOrgStock::make()->action(
+                parent: $orgParent,
+                stock: $effectiveStock,
+                modelData: $stockData['org_stock'],
+                hydratorsDelay: $this->hydratorsDelay,
+                strict: false,
+                audit: false
+            );
+            OrgStock::enableAuditing();
+            $this->saveMigrationHistory(
+                $orgStock,
+                Arr::except($stockData['org_stock'], ['fetched_at', 'last_fetched_at', 'source_id'])
+            );
 
-                return $orgStock;
-            } catch (Exception|Throwable $e) {
-                $this->recordError($organisationSource, $e, $stockData['org_stock'], 'OrgStock', 'store');
+            return $orgStock;
+        } catch (Exception|Throwable $e) {
+            $this->recordError($organisationSource, $e, $stockData['org_stock'], 'OrgStock', 'store');
 
-                return null;
-            }
+            return null;
         }
     }
 
@@ -107,65 +85,40 @@ trait WithFetchStock
         $organisation = $organisationSource->getOrganisation();
         /** @var OrgStock $orgStock */
         if ($orgStock = $organisation->orgStocks()->where('source_id', $stockData['stock']['source_id'])->first()) {
-            $orgStockDataToUpdate2 = Arr::only($orgStockData, [
-                'state',
-                'discontinued_in_organisation_at',
-                'quantity_status',
-                'source_id',
-                'packed_in',
-                'code',
-                'name',
-                'source_slug',
-                'unit_cost',
-                'fetched_at',
-                'last_fetched_at'
-            ]);
-            try {
-                $orgStock = UpdateOrgStock::make()->action(
-                    orgStock: $orgStock,
-                    modelData: $orgStockDataToUpdate2,
-                    hydratorsDelay: $this->hydratorsDelay,
-                    strict: false,
-                    audit: false
-                );
+            // Existing org stock is aiku's now. Hand Aurora back the mapping so it stops
+            // re-sending this one, and leave the row as staff have it.
+            $sourceData = explode(':', $stockData['stock']['source_id']);
+            DB::connection('aurora')->table('Part Dimension')
+                ->where('Part SKU', $sourceData[1])
+                ->update(['aiku_unit_id' => $orgStock->id]);
 
-                $sourceData = explode(':', $stockData['stock']['source_id']);
-                DB::connection('aurora')->table('Part Dimension')
-                    ->where('Part SKU', $sourceData[1])
-                    ->update(['aiku_unit_id' => $orgStock->id]);
+            return $orgStock;
+        }
 
-                return $orgStock;
-            } catch (Exception $e) {
-                $this->recordError($organisationSource, $e, $orgStockDataToUpdate2, 'OrgStock', 'update');
+        try {
+            $orgStock = StoreAbnormalOrgStock::make()->action(
+                parent: $organisation,
+                modelData: $orgStockData,
+                hydratorsDelay: $this->hydratorsDelay,
+                strict: false,
+                audit: false
+            );
+            OrgStock::enableAuditing();
+            $this->saveMigrationHistory(
+                $orgStock,
+                Arr::except($orgStockData, ['fetched_at', 'last_fetched_at', 'source_id'])
+            );
 
-                return null;
-            }
-        } else {
-            try {
-                $orgStock = StoreAbnormalOrgStock::make()->action(
-                    parent: $organisation,
-                    modelData: $orgStockData,
-                    hydratorsDelay: $this->hydratorsDelay,
-                    strict: false,
-                    audit: false
-                );
-                OrgStock::enableAuditing();
-                $this->saveMigrationHistory(
-                    $orgStock,
-                    Arr::except($orgStockData, ['fetched_at', 'last_fetched_at', 'source_id'])
-                );
+            $sourceData = explode(':', $stockData['stock']['source_id']);
+            DB::connection('aurora')->table('Part Dimension')
+                ->where('Part SKU', $sourceData[1])
+                ->update(['aiku_unit_id' => $orgStock->id]);
 
-                $sourceData = explode(':', $stockData['stock']['source_id']);
-                DB::connection('aurora')->table('Part Dimension')
-                    ->where('Part SKU', $sourceData[1])
-                    ->update(['aiku_unit_id' => $orgStock->id]);
+            return $orgStock;
+        } catch (Exception|Throwable $e) {
+            $this->recordError($organisationSource, $e, $orgStockData, 'OrgStock', 'store');
 
-                return $orgStock;
-            } catch (Exception|Throwable $e) {
-                $this->recordError($organisationSource, $e, $orgStockData, 'OrgStock', 'store');
-
-                return null;
-            }
+            return null;
         }
     }
 

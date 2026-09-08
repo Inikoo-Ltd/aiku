@@ -7,13 +7,13 @@
 
 namespace App\Actions\Helpers\Jira\Webhook;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Actions\Helpers\Jira\Traits\WithJiraApiRequest;
 use App\Models\SysAdmin\Group;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsCommand;
 
-class GetJiraWebhooks extends GrpAction
+class GetJiraWebhooks extends OrgAction
 {
     use WithJiraApiRequest;
     use AsCommand;
@@ -36,7 +36,7 @@ class GetJiraWebhooks extends GrpAction
     public function action(Group $group): ?array
     {
         $this->asAction = true;
-        $this->initialisation($group, []);
+        $this->initialisationFromGroup($group, []);
 
         return $this->handle($group);
     }

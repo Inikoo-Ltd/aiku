@@ -1,0 +1,81 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 750" width="1200" height="750" font-family="'Caveat','Segoe Print','Bradley Hand','Comic Sans MS',cursive">
+  <defs>
+    <filter id="pen" x="-10%" y="-10%" width="120%" height="120%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.02" numOctaves="3" seed="5" result="n"/>
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="3.5" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+    <filter id="bleed" x="-30%" y="-30%" width="160%" height="160%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.008 0.014" numOctaves="3" seed="9" result="n"/>
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="22" xChannelSelector="R" yChannelSelector="G" result="d"/>
+      <feGaussianBlur in="d" stdDeviation="1.6" result="b"/>
+      <feTurbulence type="fractalNoise" baseFrequency="0.05" numOctaves="3" seed="4" result="g"/>
+      <feColorMatrix in="g" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.9 -0.2" result="ga"/>
+      <feComposite in="b" in2="ga" operator="in" result="mottled"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="mottled"/></feMerge>
+    </filter>
+    <filter id="marker" x="-10%" y="-10%" width="120%" height="120%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.03" numOctaves="2" seed="21" result="n"/>
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="6" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+    <filter id="paper" x="0" y="0" width="100%" height="100%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.7" numOctaves="3" seed="2" result="n"/>
+      <feColorMatrix in="n" type="matrix" values="0 0 0 0 0.90  0 0 0 0 0.87  0 0 0 0 0.80  0 0 0 0.28 0" result="c"/>
+      <feComposite in="c" in2="SourceGraphic" operator="over"/>
+    </filter>
+    <style>
+      .pen { fill: none; stroke: #23222e; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; filter: url(#pen); }
+      .soft { stroke-width: 1.4; opacity: .6; }
+      .w { mix-blend-mode: multiply; filter: url(#bleed); stroke: none; opacity: .8; }
+      .m { fill: none; stroke-linecap: round; stroke-width: 26; opacity: .55; mix-blend-mode: multiply; filter: url(#marker); }
+      .h { fill: #23222e; filter: url(#pen); }
+      .hl { fill: #8a4b9e; filter: url(#pen); }
+    </style>
+  </defs>
+  <rect width="1200" height="750" fill="#fbf7ee"/>
+  <rect width="1200" height="750" fill="#fbf7ee" filter="url(#paper)"/>
+  <g class="w">
+    <path d="M50 150 C200 120 340 140 340 210 C340 280 200 300 100 280 C50 260 20 190 50 150 Z" fill="#76b7c2" opacity=".4"/>
+    <path d="M480 260 C620 230 780 260 780 340 C780 420 620 450 500 420 C440 400 420 300 480 260 Z" fill="#f3c04a" opacity=".4"/>
+    <path d="M880 140 C1000 110 1150 140 1150 220 C1150 300 1020 320 920 300 C860 280 840 180 880 140 Z" fill="#9dcab0" opacity=".4"/>
+    <path d="M700 540 C880 510 1080 540 1120 590 C1140 660 1040 690 920 680 C800 670 680 630 680 590 C680 560 690 550 700 540 Z" fill="#6d63d6" opacity=".28"/>
+  </g>
+  <g class="pen">
+    <path d="M80 180 l90 -6 l4 70 l-92 6 z M80 190 l46 40 l46 -46" class="soft"/>
+    <path d="M180 210 l90 -6 l4 70 l-92 6 z M180 220 l46 40 l46 -46" class="soft"/>
+    <path d="M80 280 l90 -6 l4 70 l-92 6 z M80 290 l46 40 l46 -46" class="soft"/>
+  </g>
+  <g class="h" font-size="22"><text x="70" y="150">envelopes</text></g>
+  <g class="pen">
+    <path d="M320 200 C420 180 480 220 480 280 C480 340 420 380 320 360 C280 340 280 220 320 200 Z" stroke-width="3"/>
+    <path d="M340 240 L460 300 M340 320 L460 260" class="soft"/>
+  </g>
+  <g class="h" font-size="24"><text x="330" y="188">SES</text></g>
+  <g class="pen">
+    <path d="M500 280 C560 280 600 280 620 280" stroke-width="3"/>
+    <path d="M600 268 l24 12 l-24 14 z"/>
+  </g>
+  <g class="pen">
+    <path d="M700 150 c46 -10 90 -10 130 0 c6 20 6 40 0 60 c-44 10 -86 10 -130 0 c-6 -20 -6 -40 0 -60 z"/>
+    <path d="M700 250 c46 -10 90 -10 130 0 c6 20 6 40 0 60 c-44 10 -86 10 -130 0 c-6 -20 -6 -40 0 -60 z"/>
+    <path d="M700 350 c46 -10 90 -10 130 0 c6 20 6 40 0 60 c-44 10 -86 10 -130 0 c-6 -20 -6 -40 0 -60 z"/>
+    <path d="M700 450 c46 -10 90 -10 130 0 c6 20 6 40 0 60 c-44 10 -86 10 -130 0 c-6 -20 -6 -40 0 -60 z"/>
+  </g>
+  <g class="h" font-size="20">
+    <text x="716" y="188">delivered</text>
+    <text x="726" y="288">opened</text>
+    <text x="726" y="388">clicked</text>
+    <text x="736" y="488">bounced</text>
+  </g>
+  <g class="pen">
+    <path d="M900 300 C980 290 1080 300 1140 310 C1146 400 1146 480 1140 540 C1080 550 980 548 900 546 C894 460 894 380 900 300 Z"/>
+    <path d="M916 340 L1120 336 M916 380 L1120 376 M916 420 L1120 416 M916 460 L1120 456 M916 500 L1120 496" class="soft"/>
+  </g>
+  <g class="h" font-size="22"><text x="920" y="320">ledger</text></g>
+  <g class="pen">
+    <circle cx="600" cy="620" r="46"/>
+    <path d="M600 594 l0 30 l24 14" stroke-width="2.6"/>
+  </g>
+  <g class="h" font-size="22"><text x="530" y="620">60 days</text></g>
+  <g class="hl" font-size="22"><text x="150" y="580">every event comes back, nothing is fire-and-forget</text></g>
+  <g class="h" font-size="19" opacity=".7"><text x="70" y="732">— email: queued out, events come back in</text></g>
+</svg>

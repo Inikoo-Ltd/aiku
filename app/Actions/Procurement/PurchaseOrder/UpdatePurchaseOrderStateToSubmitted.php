@@ -8,10 +8,14 @@
 
 namespace App\Actions\Procurement\PurchaseOrder;
 
+use App\Actions\SupplyChain\AgentSupplierPurchaseOrder\StoreAgentSupplierPurchaseOrdersFromPurchaseOrder;
+use App\Actions\Traits\Authorisations\WithProcurementEditAuthorisation;
 use App\Actions\OrgAction;
+use App\Actions\Procurement\PurchaseOrder\Hydrators\PurchaseOrderHydrateTransactions;
 use App\Actions\Procurement\PurchaseOrder\Traits\HasPurchaseOrderHydrators;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
+use App\Enums\Procurement\PurchaseOrderTransaction\PurchaseOrderTransactionStateEnum;
 use App\Http\Resources\Procurement\PurchaseOrderResource;
 use App\Models\Procurement\PurchaseOrder;
 use Illuminate\Validation\Validator;
@@ -20,49 +24,74 @@ use Lorisleiva\Actions\Concerns\AsAction;
 
 class UpdatePurchaseOrderStateToSubmitted extends OrgAction
 {
+    use WithProcurementEditAuthorisation;
     use WithActionUpdate;
     use AsAction;
     use HasPurchaseOrderHydrators;
 
-
-    /**
-     * @var \App\Models\Procurement\PurchaseOrder
-     */
     private PurchaseOrder $purchaseOrder;
+
+    public function afterValidator(Validator $validator): void
+    {
+        if ($this->purchaseOrder->state !== PurchaseOrderStateEnum::IN_PROCESS) {
+            $validator->errors()->add('state', __('Purchase order can only be submitted if it is in process'));
+        }
+
+        if ($this->purchaseOrder->purchaseOrderTransactions()
+            ->where('state', PurchaseOrderTransactionStateEnum::IN_PROCESS)
+            ->doesntExist()) {
+            $validator->errors()->add('transactions', __('Purchase order must have at least one item to be submitted'));
+        }
+    }
 
     public function handle(PurchaseOrder $purchaseOrder): PurchaseOrder
     {
-        $data = [
-            'state' => PurchaseOrderStateEnum::SUBMITTED
+        $purchaseOrder->purchaseOrderTransactions()
+            ->where('state', PurchaseOrderTransactionStateEnum::IN_PROCESS)
+            ->update([
+                'state' => PurchaseOrderTransactionStateEnum::SUBMITTED,
+            ]);
+
+        $updateData = [
+            'state'        => PurchaseOrderStateEnum::SUBMITTED,
+            'submitted_at' => now(),
         ];
 
-        $purchaseOrder->purchaseOrderTransactions()->update($data);
+        if ($purchaseOrder->estimated_delivery_days === null) {
+            $deliveryDays = $purchaseOrder->purchaseOrderTransactions()
+                ->where('purchase_order_transactions.state', PurchaseOrderTransactionStateEnum::SUBMITTED)
+                ->join('supplier_products', 'supplier_products.id', 'purchase_order_transactions.supplier_product_id')
+                ->selectRaw("max(coalesce(supplier_products.measured_lead_time_days, supplier_products.estimated_lead_time_days, case when supplier_products.data->>'delivery_time' ~ '^[0-9]+$' then (supplier_products.data->>'delivery_time')::int end)) as delivery_days")
+                ->value('delivery_days');
 
-        $data['submitted_at'] = now();
+            if ($deliveryDays !== null) {
+                $updateData['estimated_delivery_days'] = $deliveryDays;
+                $updateData['estimated_received_at']   = $updateData['submitted_at']->clone()->addDays($deliveryDays);
+            }
+        }
 
-        $purchaseOrder = $this->update($purchaseOrder, $data);
+        $purchaseOrder = $this->update($purchaseOrder, $updateData);
+
+        PurchaseOrderHydrateTransactions::dispatch($purchaseOrder);
 
         $this->purchaseOrderHydrate($purchaseOrder);
+
+        StoreAgentSupplierPurchaseOrdersFromPurchaseOrder::make()->action($purchaseOrder);
+
+        // TODO: Decide whether submitting should transmit the order to the supplier/agent
+        // (system-sent email + PDF) or whether that is done manually by the web user outside aiku.
+        // No supplier notification is sent here yet.
 
         return $purchaseOrder;
     }
 
-    public function authorize(ActionRequest $request): bool
+    public function asController(PurchaseOrder $purchaseOrder, ActionRequest $request): PurchaseOrder
     {
-        if ($this->asAction) {
-            return true;
-        }
+        $this->purchaseOrder = $purchaseOrder;
+        $this->initialisation($purchaseOrder->organisation, $request);
 
-        return $request->user()->authTo("procurement.{$this->organisation->id}.edit");
+        return $this->handle($purchaseOrder);
     }
-
-    public function afterValidator(Validator $validator): void
-    {
-        if (!in_array($this->purchaseOrder->state, [PurchaseOrderStateEnum::IN_PROCESS, PurchaseOrderStateEnum::CONFIRMED])) {
-            $validator->errors()->add('state', __('Purchase order can only be submitted if it is in process'));
-        }
-    }
-
 
     public function action(PurchaseOrder $purchaseOrder): PurchaseOrder
     {
@@ -70,12 +99,6 @@ class UpdatePurchaseOrderStateToSubmitted extends OrgAction
         $this->purchaseOrder = $purchaseOrder;
         $this->initialisation($purchaseOrder->organisation, []);
 
-        return $this->handle($purchaseOrder);
-    }
-
-
-    public function asController(PurchaseOrder $purchaseOrder): PurchaseOrder
-    {
         return $this->handle($purchaseOrder);
     }
 

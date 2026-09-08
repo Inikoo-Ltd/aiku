@@ -75,6 +75,7 @@ class IndexRetinaCustomerBackInStockReminders extends OrgAction
                 'products.group_id',
                 'products.organisation_id',
                 'products.shop_id',
+                'products.family_id',
                 'products.available_quantity',
                 'products.rrp',
                 'products.state',

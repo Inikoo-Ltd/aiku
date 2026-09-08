@@ -8,7 +8,6 @@ import { inject, onMounted, ref } from 'vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import Modal from '@/Components/Utils/Modal.vue'
 import Layout from '@/Layouts/Grp2FA.vue'
-import { useLayoutStore } from '@/Stores/layout'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 import { faCopy, faDoorClosed, faSignOutAlt } from '@fal'
 import axios from 'axios'
@@ -33,9 +32,6 @@ const submit = () => {
         onError: () => (
             isLoading.value = false
         ),
-        onFinish: () => {
-            console.log('Org length', useLayoutStore().organisations.data.length)
-        },
         onSuccess: () => {
             form.reset('password')
         }

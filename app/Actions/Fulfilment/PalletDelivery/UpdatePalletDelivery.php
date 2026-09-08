@@ -15,7 +15,6 @@ use App\Models\CRM\Customer;
 use App\Models\CRM\WebUser;
 use App\Models\Fulfilment\FulfilmentCustomer;
 use App\Models\Fulfilment\PalletDelivery;
-use App\Models\SysAdmin\Organisation;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Lorisleiva\Actions\ActionRequest;
@@ -109,7 +108,7 @@ class UpdatePalletDelivery extends OrgAction
     }
 
 
-    public function asController(Organisation $organisation, PalletDelivery $palletDelivery, ActionRequest $request): PalletDelivery
+    public function asController(PalletDelivery $palletDelivery, ActionRequest $request): PalletDelivery
     {
         $this->palletDelivery = $palletDelivery;
         $this->initialisationFromFulfilment($palletDelivery->fulfilment, $request);

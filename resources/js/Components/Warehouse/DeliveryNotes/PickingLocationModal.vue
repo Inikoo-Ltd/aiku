@@ -8,6 +8,7 @@
 <!-- Similar to SelectPickingLocation.vue -->
 
 <script setup lang="ts">
+import { inject, ref } from 'vue'
 import { Link } from "@inertiajs/vue3"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faInventory } from "@fal"
@@ -17,6 +18,8 @@ import { twBreakPoint } from "@/Composables/useWindowSize"
 import { RouteParams } from "@/types/route-params"
 import { ctrans } from "@/Composables/useTrans"
 import MoveStockControl from "@/Components/Warehouse/Inventory/StocksManagement/MoveStockControl.vue"
+
+const screenType = inject('screenType', ref('desktop'))
 
 library.add(faInventory)
 
@@ -48,7 +51,7 @@ const generateLocationRoute = (location: any): string => {
         modal
         :header="`${trans('Location list for')} ${item?.org_stock_code ?? ''}`"
         :draggable="false"
-        dismissableMask
+        :dismissableMask="screenType === 'desktop'"
         :style="{ width: '48rem' }"
         :breakpoints="{ '1280px': '70vw', '992px': '80vw', '768px': '90vw', '576px': '95vw' }"
         :contentStyle="{ maxHeight: '80vh', overflow: 'auto' }"

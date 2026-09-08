@@ -9,7 +9,8 @@
 
 namespace App\Actions\SupplyChain\SupplierProduct;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithSupplyChainEditAuthorisation;
 use App\Actions\Helpers\Upload\ImportUpload;
 use App\Actions\Helpers\Upload\StoreUpload;
 use App\Actions\Traits\WithImportModel;
@@ -19,8 +20,9 @@ use App\Models\SupplyChain\Supplier;
 use Illuminate\Support\Facades\Storage;
 use Lorisleiva\Actions\ActionRequest;
 
-class ImportSupplierProducts extends GrpAction
+class ImportSupplierProducts extends OrgAction
 {
+    use WithSupplyChainEditAuthorisation;
     use WithImportModel;
 
     public function handle(Supplier $supplier, $file, array $modelData): Upload
@@ -61,7 +63,7 @@ class ImportSupplierProducts extends GrpAction
 
     public function asController(Supplier $supplier, ActionRequest $request): Upload
     {
-        $this->initialisation($supplier->group, $request);
+        $this->initialisationFromGroup($supplier->group, $request);
 
         $file = $request->file('file');
         Storage::disk('local')->put($this->tmpPath, $file);

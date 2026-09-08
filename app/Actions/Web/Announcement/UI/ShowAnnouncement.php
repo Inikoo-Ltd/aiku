@@ -27,6 +27,7 @@ class ShowAnnouncement extends OrgAction
 {
     use WithActionButtons;
     use WithWebAuthorisation;
+    use WithAnnouncementNavigation;
 
     private Website $parent;
 
@@ -45,10 +46,26 @@ class ShowAnnouncement extends OrgAction
 
     public function htmlResponse(Announcement $announcement, ActionRequest $request): Response
     {
+        $workshopRoute = [
+            'name'       => preg_replace('/show$/', 'workshop', $request->route()->getName()),
+            'parameters' => array_values($request->route()->originalParameters())
+        ];
+
+        $showcase = fn () => array_merge(
+            AnnouncementResource::make($announcement)->getArray(),
+            [
+                'workshop_route' => $this->canEdit ? $workshopRoute : null
+            ]
+        );
+
         return Inertia::render(
             'Websites/Announcement',
             [
                 'title'       => $announcement->name,
+                'navigation'  => [
+                    'previous' => $this->getPreviousModel($announcement, $request),
+                    'next'     => $this->getNextModel($announcement, $request),
+                ],
                 'pageHead'    => [
                     'breadcrumbs' => $this->getBreadcrumbs(
                         $request->route()->getName(),
@@ -75,10 +92,7 @@ class ShowAnnouncement extends OrgAction
                             'style' => 'primary',
                             'label' => __('Workshop'),
                             'icon'  => ["fal", "fa-drafting-compass"],
-                            'route' => [
-                                'name'       => preg_replace('/show$/', 'workshop', $request->route()->getName()),
-                                'parameters' => array_values($request->route()->originalParameters())
-                            ]
+                            'route' => $workshopRoute
                         ] : false,
                     ],
                 ],
@@ -89,9 +103,9 @@ class ShowAnnouncement extends OrgAction
 
                 AnnouncementTabsEnum::SHOWCASE->value => $this->tab == AnnouncementTabsEnum::SHOWCASE->value
                     ?
-                    fn () => AnnouncementResource::make($announcement)->getArray()
+                    fn () => $showcase()
                     : Inertia::optional(
-                        fn () => AnnouncementResource::make($announcement)->getArray()
+                        fn () => $showcase()
                     ),
 
                 AnnouncementTabsEnum::SNAPSHOTS->value => $this->tab == AnnouncementTabsEnum::SNAPSHOTS->value

@@ -16,7 +16,11 @@ enum DispatchedEmailStateEnum: string
 
     case READY = 'ready';
 
-    //case SENT_TO_PROVIDER = 'sent_to_provider'; // <-- no used
+    /*
+     * Not written by current code, but historic rows carry it, and leaving the case out made every
+     * listing containing one fail to cast. The stats columns for it already exist.
+     */
+    case SENT_TO_PROVIDER = 'sent_to_provider';
 
     case ERROR = 'error'; // Sent to the provider results in error
     case SENT = 'sent'; // Sent to provider ok
@@ -44,6 +48,7 @@ enum DispatchedEmailStateEnum: string
     {
         return [
             'ready'                => __('Ready to send'),
+            'sent_to_provider'     => __('Sent to provider'),
             'error'                => __('Error, count not send'),
             'rejected_by_provider' => __('Rejected'),
             'sent'                 => __('Sent'),
@@ -67,6 +72,13 @@ enum DispatchedEmailStateEnum: string
                 'icon'    => 'fal fa-spell-check',
                 'class'   => 'text-indigo-500'
 
+
+            ],
+
+            'sent_to_provider'     => [
+
+                'tooltip' => __('Sent to provider'),
+                'icon'    => 'fal fa-paper-plane',
 
             ],
 

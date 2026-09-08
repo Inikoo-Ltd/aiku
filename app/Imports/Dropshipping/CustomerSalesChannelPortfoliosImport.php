@@ -62,6 +62,10 @@ class CustomerSalesChannelPortfoliosImport implements ToCollection, WithHeadingR
         try {
             $product = Product::where('shop_id', $this->customerSalesChannel->shop_id)->where('code', $modelData['sku'])->first();
 
+            if (! $product) {
+                throw ValidationException::withMessages(['sku' => 'SKU not found in this shop.']);
+            }
+
             if (! $product->is_for_sale) {
                 throw ValidationException::withMessages(['sku' => 'Product is not for sale.']);
             }
@@ -71,7 +75,7 @@ class CustomerSalesChannelPortfoliosImport implements ToCollection, WithHeadingR
                 ->where('item_type', $product->getMorphClass())
                 ->first();
             if (! $portfolio) {
-                StorePortfolio::make()->action($this->customerSalesChannel, $product, []);
+                StorePortfolio::make()->action($this->customerSalesChannel, $product, Arr::except($rowData, ['sku', 'title']));
             } else {
                 UpdatePortfolio::make()->action($portfolio, [
                     'customer_product_name' => $product->name,
@@ -94,9 +98,13 @@ class CustomerSalesChannelPortfoliosImport implements ToCollection, WithHeadingR
                 'max:64',
                 'string',
                 Rule::notIn(['export', 'create', 'upload']),
-                Rule::exists('products', 'code')
             ],
-            'title'                    => ['nullable']
+            'title'                    => ['nullable'],
+            'platform_status'          => ['nullable'],
+            'platform_product_id'      => ['nullable'],
+            'platform_product_variant_id' => ['nullable'],
+            'has_valid_platform_product_id' => ['nullable'],
+            'exist_in_platform' => ['nullable']
         ];
     }
 }

@@ -14,6 +14,7 @@ use App\Actions\Dropshipping\CustomerSalesChannel\UI\WithCustomerSalesChannelSub
 use App\Actions\Dropshipping\WithDropshippingAuthorisation;
 use App\Actions\Fulfilment\WithFulfilmentCustomerPlatformSubNavigation;
 use App\Actions\Fulfilment\WithFulfilmentCustomerSubNavigation;
+use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Actions\WithActionButtons;
 use App\Actions\Traits\WithWebUserMeta;
@@ -22,6 +23,7 @@ use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\UI\CRM\CustomerClientTabsEnum;
 use App\Enums\UI\CRM\CustomerTabsEnum;
 use App\Http\Resources\CRM\CustomerClientResource;
+use App\Http\Resources\History\HistoryResource;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
 use App\Models\Dropshipping\CustomerClient;
@@ -156,9 +158,12 @@ class ShowCustomerClient extends OrgAction
                     fn () => GetCustomerClientShowcase::run($customerClient)
                     : Inertia::optional(fn () => GetCustomerClientShowcase::run($customerClient)),
 
+                CustomerClientTabsEnum::HISTORY->value => $this->tab == CustomerClientTabsEnum::HISTORY->value ?
+                    fn () => HistoryResource::collection(IndexHistory::run($customerClient, CustomerClientTabsEnum::HISTORY->value))
+                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($customerClient, CustomerClientTabsEnum::HISTORY->value))),
 
             ]
-        );
+        )->table(IndexHistory::make()->tableStructure(CustomerClientTabsEnum::HISTORY->value));
     }
 
 

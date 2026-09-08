@@ -14,11 +14,13 @@ use App\Actions\Inventory\LocationOrgStock\MoveOrgStockToOtherLocation;
 use App\Actions\Inventory\LocationOrgStock\StoreLocationOrgStock;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\Inventory\WithWarehouseEditAuthorisation;
+use App\Enums\Inventory\OrgStockMovement\OrgStockMovementReasonEnum;
 use App\Http\Resources\Inventory\LocationResource;
 use App\Models\Inventory\Location;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\Enum;
 use Lorisleiva\Actions\ActionRequest;
 
 class PartialMoveLocationOrgStocks extends OrgAction
@@ -56,7 +58,9 @@ class PartialMoveLocationOrgStocks extends OrgAction
                 }
 
                 MoveOrgStockToOtherLocation::make()->action($locationOrgStock, $targetLocationOrgStock, [
-                    'quantity' => data_get($orgStock, 'quantity')
+                    'quantity' => data_get($orgStock, 'quantity'),
+                    'reason'   => data_get($modelData, 'reason'),
+                    'note'     => data_get($modelData, 'note'),
                 ]);
 
                 if (data_get($orgStock, 'remove_after_move', false)) {
@@ -95,6 +99,8 @@ class PartialMoveLocationOrgStocks extends OrgAction
             ],
             'org_stocks.*.quantity'             => ['required', 'numeric'],
             'org_stocks.*.remove_after_move'    => ['sometimes', 'nullable', 'boolean'],
+            'reason'                            => [ 'required', new Enum(OrgStockMovementReasonEnum::class)],
+            'note'                              => ['sometimes', 'nullable', 'string'],
         ];
     }
 

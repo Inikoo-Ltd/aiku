@@ -36,10 +36,18 @@ enum EmailOngoingRunCodeEnum: string
     case BASKET_LOW_STOCK = 'basket_low_stock';
     case BASKET_PUSH = 'basket_push';
     case NEW_CUSTOMER_PUSH = 'new_customer_push';
-    case ABANDONED_CART = 'abandoned_cart';
+    case ABANDONED_CART = 'abandoned_cart'; // old implemeration, delete later
+    case ABANDONED_CART_REMINDER_1 = 'abandoned_cart_reminder_1';
+    case ABANDONED_CART_REMINDER_2 = 'abandoned_cart_reminder_2';
+    case ABANDONED_CART_REMINDER_3 = 'abandoned_cart_reminder_3';
+    case ABANDONED_CHECKOUT = 'abandoned_checkout';
+    // Retired Jul 2026, replaced by Gold reward reminder; cases kept because historic outboxes/dispatched_emails rows still hold these codes
     case REORDER_REMINDER = 'reorder_reminder';
     case REORDER_REMINDER_2ND = 'reorder_reminder_2nd';
     case REORDER_REMINDER_3RD = 'reorder_reminder_3rd';
+    case GOLD_REWARD_REMINDER_1 = 'gold_reward_reminder_1';
+    case GOLD_REWARD_REMINDER_2 = 'gold_reward_reminder_2';
+    case GOLD_REWARD_REMINDER_3 = 'gold_reward_reminder_3';
     case OOS_NOTIFICATION = 'oos_notification';
     case REVIEW_REMINDER = 'review_reminder';
 
@@ -59,9 +67,14 @@ enum EmailOngoingRunCodeEnum: string
     case CHAT_NOTIFICATION_TO_CUSTOMER = 'chat_notification_to_customer';
 
     case PRICE_CHANGE_NOTIFICATION = 'price_change_notification';
+    case PRICE_CHANGE = 'price_change';
 
     case INVOICE_DATE_CHANGED = 'invoice_date_changed';
     case INVOICE_PAID = 'invoice_paid';
     case WEB_USER_REGISTRATION = 'web_user_registration';
     case NEW_REVIEW = 'new_review';
+
+    case PROSPECT_CONVERTION_1 = 'prospect_convertion_1';
+    case PROSPECT_CONVERTION_2 = 'prospect_convertion_2';
+    case PROSPECT_CONVERTION_3 = 'prospect_convertion_3';
 }

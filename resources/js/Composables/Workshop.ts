@@ -6,18 +6,21 @@
 */
 
 import { usePage } from "@inertiajs/vue3"
+import { useIrisLayoutStore } from "@/Stores/irisLayout"
+import { useLocaleStore } from "@/Stores/locale"
 
 
 // Method: format currency
+// Delegates to the locale store so all currency formatting lives in one place.
 const formatCurrency = (amount: number) => {
-    if (!usePage()?.props?.iris) {
+    const layout = useIrisLayoutStore()
+    const currencyCode = layout.iris?.currency?.code || usePage()?.props?.iris?.currency?.code
+
+    if (!currencyCode) {
         return amount
     }
 
-    return new Intl.NumberFormat(usePage()?.props?.iris?.website_i18n?.current_language?.code || 'en-US', {
-        style: "currency",
-        currency: usePage()?.props?.iris?.currency?.code || '',
-    }).format(amount || 0)
+    return useLocaleStore().currencyFormat(currencyCode, amount)
 }
 
 // Check if the user is logged in
@@ -41,9 +44,16 @@ export const viewVisible = (mode = true , visibilty = 'all') =>{
     else return true
 }
 
+// Reveal-on-click setting of a webpage block, null when the block is shown normally
+export const getRevealSetting = (block: any) => {
+    const reveal = block?.web_block?.layout?.reveal
+
+    return reveal?.enabled && reveal?.key ? reveal : null
+}
+
 export const setIframeView = (view: String) => {
     if (view == 'mobile') {
-        return 'w-sm h-full mx-auto';
+        return 'w-[390px] h-full mx-auto';
     } else if (view == 'tablet') {
         return 'max-w-4xl w-full h-full mx-auto';
     } else {

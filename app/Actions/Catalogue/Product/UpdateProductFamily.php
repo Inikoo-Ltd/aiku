@@ -62,6 +62,9 @@ class UpdateProductFamily extends OrgAction
 
         $product->refresh();
 
+        if (Arr::hasAny($changes, ['family_id', 'department_id', 'sub_department_id'])) {
+            BreakProductInWebpagesCache::make()->breakCache($product->webpage);
+        }
 
         if (Arr::has($changes, 'family_id')) {
             FamilyHydrateProducts::dispatch($product->family);

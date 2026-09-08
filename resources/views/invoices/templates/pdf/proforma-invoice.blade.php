@@ -161,10 +161,18 @@
                         <b>{{ $order->pay_status->labels()[$order->pay_status->value] }}</b>
                     </div>
                 @endif
+                
                 <div>
                     {{ __('Customer') }}: <b>{{ $order->customer['name'] }}</b>
                     ({{ $order->customer['reference'] }})
                 </div>
+
+                @if($order->customer['contact_name'] && $order->customer['contact_name'] !== $order->customer['name'])
+                    <div>
+                        <span class="address_label">{{ __('Contact Name') }}:</span> <span
+                                class="address_value">{{ $order->customer['contact_name'] }}</span>
+                    </div>
+                @endif
 
                 <div>
                     <span class="address_label">{{ __('Email') }}:</span> <span
@@ -175,7 +183,7 @@
                     <span class="address_label">{{ __('Phone') }}:</span> <span
                             class="address_value">{{ $order->customer['phone'] }}</span>
                 </div>
-                @if($order->tax_number  && $order->tax_number_valid)
+                @if($order->tax_number && ($order->tax_number_valid || $order->billingAddress?->country?->code === 'ES'))
                     <div>
                         <span class="address_label">{{ __('Tax Number') }}:</span> <span
                                 class="address_value">{{ $order->tax_number }}</span>
@@ -190,26 +198,26 @@
 </table>
 <table width="100%" style="font-family: sans-serif;" cellpadding="10">
     <tr>
-        @if($order->address)
+        @if($order->billingAddress)
             <td width="45%" style="border: 0.1mm solid #888888;"><span
                         style="font-size: 7pt; color: #555555; font-family: sans-serif;">{{ __('Billing address') }}:</span>
                 <div>
-                    {{ $order->address->address_line_1 }}
+                    {{ $order->billingAddress->address_line_1 }}
                 </div>
                 <div>
-                    {{ $order->address->address_line_2 }}
+                    {{ $order->billingAddress->address_line_2 }}
                 </div>
                 <div>
-                    {{ $order->address->administrative_area }}
+                    {{ $order->billingAddress->administrative_area }}
                 </div>
                 <div>
-                    {{ $order->address->locality }}
+                    {{ $order->billingAddress->locality }}
                 </div>
                 <div>
-                    {{ $order->address->postal_code }}
+                    {{ $order->billingAddress->postal_code }}
                 </div>
                 <div>
-                    {{ $order->address->country->name }}
+                    {{ $order->billingAddress->country->name }}
                 </div>
             </td>
             <td width="10%">&nbsp;</td>
@@ -230,8 +238,8 @@
             <td style="text-align:right;width:20% ">{{ __('Unit Price') }}</td>
             <td style="text-align:right;width:20% ">{{ __('Units') }}</td>
         @else
-            <td></td>
-            <td style="text-align:left">{{ __('Qty')  }}.</td>
+            <td style="text-align:right">{{ __('Discount') }}</td>
+            <td style="text-align:left">{{ __('Qty') }}.</td>
         @endif
 
         <td style="width:14%;text-align:right">{{ __('Amount') }}</td>
@@ -254,6 +262,8 @@
         @endif
 
         @foreach($transactions as $transaction)
+            @php($netAmount = (float) $transaction->net_amount)
+            @php($discountFactor = max(0, 1 - (float) ($transaction->current_discount_factor ?? 1)))   
             <tr class="@if($loop->last) last @endif">
                 <td style="text-align:left">{{ $transaction->historicAsset?->code }}</td>
 
@@ -264,7 +274,11 @@
                         @if($transaction->historicAsset?->units > 1)
                             {{ trimDecimalZeros($transaction->historicAsset?->units) . 'x' }}
                         @endif
-                        {{ $transaction->historicAsset?->name . ' (' . $order->currency->symbol . $transaction->net_amount . ')' }}
+                        {{ $transaction->historicAsset?->name }}
+
+                        @if($transaction->historicAsset)
+                            ({{ $order->currency->symbol }}{{ number_format((float) $transaction->historicAsset->price, 2) }})
+                        @endif
                         <br>
                         @if($rrp)
                             RRP: {{ $transaction->model->rrp }} <br>
@@ -292,19 +306,19 @@
 
                 @if($pro_mode)
                     <td style="text-align:right">
-                        @if($transaction->quantity==0 || $transaction->quantity==null)
-                            {{ $order->currency->symbol . ' ' . optional($transaction->historicAsset)->price }}
+                        @if(!$transaction->quantity_ordered || $transaction->quantity_ordered == 0)
+                            {{ $order->currency->symbol }} {{ number_format((float) optional($transaction->historicAsset)->price, 2) }}
                         @elseif($transaction->historicAsset)
-                            {{ $order->currency->symbol . ' ' . $transaction->net_amount / $transaction->quantity }}
+                            {{ $order->currency->symbol . ' ' . number_format((float) $transaction->net_amount / $transaction->quantity_ordered, 2) }}
                         @endif
                     </td>
-                    <td style="text-align:right">{{  (int) $transaction->quantity_ordered }}</td>
+                    <td style="text-align:right">{{  trimDecimalZeros($transaction->quantity_ordered) }}</td>
                 @else
-                    <td></td>
-                    <td style="text-align:right">{{  (int) $transaction->quantity_ordered }}</td>
+                    <td style="text-align:right">{{ $discountFactor > 0 ? percentage($discountFactor, 1) : '-' }}</td>
+                    <td style="text-align:right">{{ trimDecimalZeros($transaction->quantity_ordered)  }}</td>
                 @endif
 
-                <td style="text-align:right">{{ $order->currency->symbol . $transaction->net_amount }}</td>
+                <td style="text-align:right">{{ $order->currency->symbol }}{{ number_format($netAmount, 2) }}</td>
             </tr>
         @endforeach
     @endforeach
@@ -322,23 +336,20 @@
         <td>{{ $order->currency->symbol . $order->shipping_amount }}</td>
     </tr>
 
+    @if(($adjustmentsNet = $order->transactions->where('model_type', 'Adjustment')->sum('net_amount')) != 0)
+        <tr>
+            <td style="border:none" colspan="4"></td>
+            <td>{{ __('Adjustments') }}</td>
+            <td>{{ $order->currency->symbol . number_format($adjustmentsNet, 2) }}</td>
+        </tr>
+    @endif
     <tr class="total_net">
         <td style="border:none" colspan="4"></td>
         <td>{{__('Total Net')}}</td>
         <td>{{ $order->currency->symbol . $order->net_amount }}</td>
     </tr>
 
-    <tr>
-        <td style="border:none" colspan="4"></td>
-        <td class="totals">
-            {{ __('Tax') }}
-
-            <br><small>{{$order->taxCategory->name}}
-                ({{__('rate')}}:{{percentage($order->taxCategory->rate,1)}})
-            </small>
-        </td>
-        <td class="totals">{{ $order->currency->symbol . $order->tax_amount }}</td>
-    </tr>
+    @include('invoices.templates.pdf.tax-rows', ['document' => $order, 'taxBreakdownOverride' => null])
 
     <tr class="total">
         <td style="border:none" colspan="4"></td>
@@ -399,7 +410,7 @@
 <br>
 
 @if($order->payments->count() >0)
-    <table class="items" width="100%" style="font-size: 9pt; border-collapse: collapse;" cellpadding="8">
+    <table class="items" width="100%" style="font-size: 7pt; border-collapse: collapse;" cellpadding="4">
         <tr class="title">
             <td colspan="5">{{ __('Payments') }}</td>
         </tr>
@@ -416,10 +427,14 @@
         @foreach($order->payments as $payment)
             <tr class="@if($loop->last) last @endif">
                 <td style="text-align:left">
-                    {{ $payment->paymentAccount['name'] }}
+                    @if($payment->paymentAccount->type == \App\Enums\Accounting\PaymentAccount\PaymentAccountTypeEnum::ACCOUNT)
+                        {{ __('Credit Balance') }}
+                    @else
+                        {{ \App\Models\Accounting\Payment::methodLabel($payment->sub_method ?: $payment->method) ?: $payment->paymentAccount['name'] }}
+                    @endif
                 </td>
                 <td style="text-align:right">
-                    {{ $payment->updated_at?->copy()->setTimezone($shop->timezone->name)->format('F j, Y H:i a') }}
+                    {{ $payment->updated_at?->copy()->setTimezone($shop->timezone->name)->format('M j, Y H:i') }}
                 </td>
                 <td style="text-align:left">{{ $payment->state->labels()[$payment->state->value] }}</td>
                 <td style="text-align:left">{{ $payment->reference }}</td>
@@ -427,6 +442,11 @@
             </tr>
         @endforeach
         </tbody>
+        @if($order->payments->contains(fn ($payment) => $payment->paymentAccount->type == \App\Enums\Accounting\PaymentAccount\PaymentAccountTypeEnum::ACCOUNT && $payment->amount < 0))
+            <tr>
+                <td colspan="5" style="text-align:left; font-size: 7pt;">{{ __('Any outstanding balance has been applied to your customer account balance unless otherwise requested. Please contact Customer Service if you require any assistance.') }}</td>
+            </tr>
+        @endif
 
     </table>
 @endif

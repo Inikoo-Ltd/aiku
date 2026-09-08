@@ -26,9 +26,13 @@ class GetFamiliesUnderDepartmentPage extends IrisAction
 {
     public function handle(ProductCategory $parent): LengthAwarePaginator
     {
-        if ($parent->type !== ProductCategoryTypeEnum::DEPARTMENT) {
+        if (!in_array($parent->type, [ProductCategoryTypeEnum::DEPARTMENT, ProductCategoryTypeEnum::SUB_DEPARTMENT])) {
             abort(404);
         }
+
+        $parentColumn = $parent->type === ProductCategoryTypeEnum::SUB_DEPARTMENT
+            ? 'product_categories.sub_department_id'
+            : 'product_categories.department_id';
 
         $categorySearch = AllowedFilter::callback('category', function ($query, $value) {
             $query->where("sub_department.code", $value);
@@ -45,14 +49,14 @@ class GetFamiliesUnderDepartmentPage extends IrisAction
             });
         });
 
-        $familiesFromCollections = function ($departmentId) {
+        $familiesFromCollections = function ($parentId) {
             return DB::table('collection_has_models as chm')
                 ->select('chm.model_id')
                 ->where('chm.model_type', class_basename(ProductCategory::class))
-                ->whereIn('chm.collection_id', function ($q) use ($departmentId) {
+                ->whereIn('chm.collection_id', function ($q) use ($parentId) {
                     $q->select('mhc.collection_id')
                         ->from('model_has_collections as mhc')
-                        ->where('mhc.model_id', $departmentId);
+                        ->where('mhc.model_id', $parentId);
                 });
         };
 
@@ -82,8 +86,8 @@ class GetFamiliesUnderDepartmentPage extends IrisAction
             ])
             ->where('product_categories.show_in_website', true)
             ->where('product_categories.shop_id', $parent->shop_id)
-            ->where(function ($q) use ($parent, $familiesFromCollections) {
-                $q->where('product_categories.department_id', $parent->id)
+            ->where(function ($q) use ($parent, $parentColumn, $familiesFromCollections) {
+                $q->where($parentColumn, $parent->id)
                     ->orWhereIn('product_categories.id', $familiesFromCollections($parent->id));
 
             })

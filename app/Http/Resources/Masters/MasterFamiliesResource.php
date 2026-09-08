@@ -9,6 +9,7 @@
 
 namespace App\Http\Resources\Masters;
 
+use App\Enums\Discounts\Offer\OfferFreshnessEnum;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Arr;
 
@@ -34,6 +35,7 @@ use Illuminate\Support\Arr;
  * @property mixed $master_sub_department_name
  * @property mixed $currency_code
  * @property mixed $health_rank
+ * @property mixed $last_offers
  * @property mixed $gr_vol_discount_percentage
  * @property mixed $gr_vol_discount_quantity
  * @property mixed $number_following_master_gr
@@ -43,6 +45,14 @@ class MasterFamiliesResource extends JsonResource
 {
     public function toArray($request): array
     {
+        $lastOffers = $this->last_offers ? json_decode($this->last_offers, true) : [];
+        $lastOffers = array_map(function (array $offer) {
+            $offer['state']     = $offer['offer_state'] ?? null;
+            $offer['freshness'] = OfferFreshnessEnum::badge($offer);
+
+            return $offer;
+        }, $lastOffers);
+
         return [
             'id'                         => $this->id,
             'slug'                       => $this->slug,
@@ -83,12 +93,15 @@ class MasterFamiliesResource extends JsonResource
             'sales_grp_currency_external'       => $this->sales_grp_currency_external ?? 0,
             'sales_grp_currency_external_ly'    => $this->sales_grp_currency_external_ly ?? 0,
             'sales_grp_currency_external_delta' => $this->calculateDelta($this->sales_grp_currency_external ?? 0, $this->sales_grp_currency_external_ly ?? 0),
+            'customers_invoiced'         => $this->customers_invoiced ?? 0,
             'invoices'                   => $this->invoices ?? 0,
             'invoices_ly'                => $this->invoices_ly ?? 0,
             'invoices_delta'             => $this->calculateDelta($this->invoices ?? 0, $this->invoices_ly ?? 0),
             'dropshippers'               => $this->dropshippers ?? 0,
             'listings'                   => $this->listings ?? 0,
             'sold'                       => $this->sold ?? 0,
+            'last_offers'                => $lastOffers,
+            'offers_freshness'           => OfferFreshnessEnum::worstBadge($lastOffers),
             'mismatch_detected'          => $this->mismatch_detected,
             'health_rank'           => $this->health_rank ? $this->health_rank->stateIcon()[$this->health_rank->value] : null,
         ];

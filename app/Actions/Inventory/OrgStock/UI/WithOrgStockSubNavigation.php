@@ -29,7 +29,7 @@ trait WithOrgStockSubNavigation
                 ],
                 'leftIcon' => [
                     'icon'    => ['fal', 'fa-box'],
-                    'tooltip' => __('SKU')
+                    'tooltip' => __('SKO')
                 ]
             ],
             [

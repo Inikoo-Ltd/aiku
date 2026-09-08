@@ -30,6 +30,7 @@ class ChargesResource extends JsonResource
     public function toArray($request): array
     {
         return [
+            'id'                                => $this->id,
             'slug'                              => $this->slug,
             'shop_slug'                         => $this->shop_slug,
             'shop_code'                         => $this->shop_code,
@@ -47,6 +48,7 @@ class ChargesResource extends JsonResource
             'sales_grp_currency_external_ly'    => $this->sales_grp_currency_external_ly ?? 0,
             'organisation_name'                 => $this->organisation_name,
             'organisation_slug'                 => $this->organisation_slug,
+            'is_used'                           => (bool) $this->is_used,
         ];
     }
 }

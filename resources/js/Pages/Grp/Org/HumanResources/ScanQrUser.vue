@@ -1,19 +1,38 @@
 <script setup lang="ts">
-import { ref, computed, nextTick, onMounted } from "vue"
+import { ref, computed, nextTick, onMounted, onBeforeUnmount } from "vue"
 import { QrcodeStream } from "vue-qrcode-reader"
 import { LMap, LTileLayer, LMarker, LTooltip } from "@vue-leaflet/vue-leaflet"
-import { addMinutes, formatDuration, intervalToDuration, parseISO, set } from "date-fns"
 import axios from "axios"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { trans } from "laravel-vue-i18n"
 import { notify } from "@kyvg/vue3-notification"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faTimes, faCheck, faExclamationTriangle } from "@fal"
+import { faTimes, faCheck, faMapMarkerAlt, faSyncAlt, faCamera } from "@fal"
 import { Dialog } from "primevue"
 import InputText from "primevue/inputtext"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import WorkHourSelectionModal from "@/Components/Utils/WorkHourSelectionModal.vue"
+
+interface ClockingRecord {
+	id: number
+	clocked_at: string | null
+	type: string | null
+	is_late: boolean
+	notes: string | null
+}
+
+interface ClockingSession {
+	id: number
+	sequence: number
+	status: string | null
+	is_open: boolean
+	starts_at: string | null
+	ends_at: string | null
+	duration: number | null
+	clock_in: ClockingRecord | null
+	clock_out: ClockingRecord | null
+}
 
 const pageProps = defineProps<{
 	activeTimeTracker?: any
@@ -21,10 +40,11 @@ const pageProps = defineProps<{
 	todayTimesheet?: any
 	lastClockIn?: any
 	lastClockOut?: any
+	clockingSessions?: ClockingSession[]
 	timezone?: string
 }>()
 
-library.add(faTimes, faCheck, faExclamationTriangle)
+library.add(faTimes, faCheck, faMapMarkerAlt, faSyncAlt, faCamera)
 
 interface DetectedCode {
 	rawValue: string
@@ -37,17 +57,12 @@ interface WorkSchedule {
 	is_active: boolean
 }
 
-interface LateClockInResult {
-	isLate: boolean
-	lateByMinutes: number
-	lateMessage: string
-	threshold: Date | null
-	scanTime: Date | null
-}
-
 const lat = ref<number | null>(null)
 const lng = ref<number | null>(null)
 const mapZoom = ref(15)
+const isDetectingLocation = ref(false)
+let geolocationPermission: PermissionStatus | null = null
+let isPanelMounted = true
 
 const cameraOn = ref(false)
 const loading = ref(false)
@@ -57,9 +72,21 @@ const lastResult = ref<string | null>(null)
 const hasLocation = computed(() => lat.value !== null && lng.value !== null)
 const canOpenCamera = computed(() => hasLocation.value)
 
+const locationTitle = computed(() => {
+	if (hasLocation.value) return trans("Location detected")
+	if (isDetectingLocation.value) return trans("Detecting your location…")
+	return trans("Location not detected")
+})
+
+const locationSubtitle = computed(() => {
+	if (hasLocation.value) return `${lat.value?.toFixed(6)}, ${lng.value?.toFixed(6)}`
+	if (isDetectingLocation.value) return trans("Please wait a moment")
+	return trans("Required before you can scan")
+})
+
 const showWorkHourModal = ref(false)
 const showSuccessModal = ref(false)
-const showLateAlertModal = ref(false)
+const isVisitingOffice = ref(false)
 const notes = ref<string>("")
 const scanTime = ref<string | null>(null)
 const scanTimeRaw = ref<string | null>(null)
@@ -70,22 +97,6 @@ const workingHours = ref<{ start: string; end: string } | null>(null)
 const isProcessing = ref(false)
 const shiftSchedules = ref<WorkSchedule[]>([])
 const selectedWorkScheduleId = ref<number | null>(null)
-
-// Status Computed Properties
-const isClockedIn = computed(() => pageProps.clockingStatus === "clocked_in")
-
-const statusClasses = computed(() => ({
-	container: isClockedIn.value
-		? "bg-green-50 border border-green-200"
-		: "bg-gray-50 border border-gray-200",
-	iconWrapper: isClockedIn.value ? "bg-green-100" : "bg-gray-200",
-	icon: isClockedIn.value ? "text-green-600" : "text-gray-500",
-	text: isClockedIn.value ? "text-green-800" : "text-gray-700",
-}))
-
-const statusText = computed(() =>
-	isClockedIn.value ? trans("You're currently clocked in") : trans("You're currently clocked out")
-)
 
 const isIOS = () => {
 	return /iPhone|iPad|iPod/i.test(navigator.userAgent)
@@ -106,93 +117,6 @@ const getGeolocationErrorMessage = (err?: GeolocationPositionError) => {
 	}
 }
 
-const parseScanTime = (value?: string | null) => {
-	if (!value) return null
-
-	const parsed = parseISO(value)
-
-	return Number.isNaN(parsed.getTime()) ? null : parsed
-}
-
-const parseWorkingOfficeHourStart = (value?: string | null, scanDate?: Date | null) => {
-	if (!value || !scanDate) return null
-
-	const match = value.match(/(\d{2}):(\d{2})(?::(\d{2}))?/)
-	if (!match) return null
-
-	const [, hours, minutes, seconds = "00"] = match
-
-	return set(scanDate, {
-		hours: Number(hours),
-		minutes: Number(minutes),
-		seconds: Number(seconds),
-		milliseconds: 0,
-	})
-}
-
-const formatLateDuration = (lateByMinutes: number) => {
-	if (lateByMinutes <= 0) return ""
-
-	const duration = intervalToDuration({
-		start: 0,
-		end: lateByMinutes * 60 * 1000,
-	})
-
-	const formatted = formatDuration(duration, {
-		format: ["hours", "minutes"],
-		delimiter: " and ",
-	})
-
-	return formatted || "less than 1 minute"
-}
-
-const getLateClockInState = ({
-	scanTimeRaw,
-	workingOfficeHourStart,
-	gracePeriodMinutes = 15,
-}: {
-	scanTimeRaw?: string | null
-	workingOfficeHourStart?: string | null
-	gracePeriodMinutes?: number
-}): LateClockInResult => {
-	const scanTime = parseScanTime(scanTimeRaw)
-	const workingStart = parseWorkingOfficeHourStart(workingOfficeHourStart, scanTime)
-
-	if (!scanTime || !workingStart) {
-		return {
-			isLate: false,
-			lateByMinutes: 0,
-			lateMessage: "",
-			threshold: null,
-			scanTime,
-		}
-	}
-
-	const threshold = addMinutes(workingStart, gracePeriodMinutes)
-	const lateByMilliseconds = scanTime.getTime() - threshold.getTime()
-
-	if (lateByMilliseconds <= 0) {
-		return {
-			isLate: false,
-			lateByMinutes: 0,
-			lateMessage: "",
-			threshold,
-			scanTime,
-		}
-	}
-
-	const lateByMinutes = Math.floor(lateByMilliseconds / (60 * 1000))
-	const formattedDuration = formatLateDuration(lateByMinutes)
-
-	return {
-		isLate: true,
-		lateByMinutes,
-		lateMessage: formattedDuration ? `You are ${formattedDuration} late` : "",
-		threshold,
-		scanTime,
-	}
-}
-
 const fetchShiftSchedules = async () => {
 	try {
 		const { data } = await axios.get(route("grp.models.work-schedule.index"))
@@ -204,6 +128,17 @@ const fetchShiftSchedules = async () => {
 
 onMounted(() => {
 	fetchShiftSchedules()
+	detectLocationIfAlreadyAllowed()
+})
+
+onBeforeUnmount(() => {
+	stopCamera()
+	isPanelMounted = false
+
+	if (geolocationPermission) {
+		geolocationPermission.onchange = null
+		geolocationPermission = null
+	}
 })
 
 const detectMyLocation = () => {
@@ -214,20 +149,65 @@ const detectMyLocation = () => {
 		return
 	}
 
-	navigator.geolocation.getCurrentPosition(
-		(pos) => {
-			lat.value = pos.coords.latitude
-			lng.value = pos.coords.longitude
-		},
-		(err) => {
-			errorMsg.value = getGeolocationErrorMessage(err)
-		},
-		{
-			enableHighAccuracy: true,
-			timeout: 10000,
-			maximumAge: 0,
+	isDetectingLocation.value = true
+
+	const onSuccess = (pos) => {
+		lat.value = pos.coords.latitude
+		lng.value = pos.coords.longitude
+		isDetectingLocation.value = false
+	}
+
+	const onError = (err) => {
+		errorMsg.value = getGeolocationErrorMessage(err)
+		isDetectingLocation.value = false
+	}
+
+	const onHighAccuracyError = (err) => {
+		if (err.code === err.TIMEOUT || err.code === err.POSITION_UNAVAILABLE) {
+			navigator.geolocation.getCurrentPosition(onSuccess, onError, {
+				enableHighAccuracy: false,
+				timeout: 15000,
+				maximumAge: 60000,
+			})
+			return
 		}
-	)
+		onError(err)
+	}
+
+	navigator.geolocation.getCurrentPosition(onSuccess, onHighAccuracyError, {
+		enableHighAccuracy: true,
+		timeout: 15000,
+		maximumAge: 30000,
+	})
+}
+
+const detectLocationIfAlreadyAllowed = async () => {
+	if (!navigator.geolocation || !navigator.permissions?.query) return
+
+	let permission: PermissionStatus
+
+	try {
+		permission = await navigator.permissions.query({ name: "geolocation" as PermissionName })
+	} catch {
+		return
+	}
+
+	if (!isPanelMounted) return
+
+	geolocationPermission = permission
+
+	const detectWhenGranted = () => {
+		if (
+			geolocationPermission?.state === "granted" &&
+			!hasLocation.value &&
+			!isDetectingLocation.value
+		) {
+			detectMyLocation()
+		}
+	}
+
+	detectWhenGranted()
+	geolocationPermission.onchange = detectWhenGranted
 }
 
 const startCamera = async () => {
@@ -311,6 +291,7 @@ const onDetect = async (detectedCodes: DetectedCode[]) => {
 		const { data } = await axios.post(route("grp.models.clocking-machine.qr.validate"), payload)
 
 		clockType.value = data.clocking?.type
+		isVisitingOffice.value = data.is_visiting ?? false
 		scanTimeRaw.value = data.clocking?.clocked_at ?? null
 		scanTime.value = useFormatTime(data.clocking?.clocked_at, { formatTime: "hms" })
 		clockingId.value = data.clocking?.id
@@ -326,16 +307,7 @@ const onDetect = async (detectedCodes: DetectedCode[]) => {
 			workingHours.value = null
 		}
 
-		const lateState = getLateClockInState({
-			scanTimeRaw: scanTimeRaw.value,
-			workingOfficeHourStart: workingHours.value?.start,
-		})
-
-		if (clockType.value === "clock_in" && lateState.isLate) {
-			showLateAlertModal.value = true
-		} else {
-			showSuccessModal.value = true
-		}
+		showSuccessModal.value = true
 	} catch (e: any) {
 		notify({
 			title: trans("Failed Scan QR"),
@@ -367,22 +339,10 @@ const onStreamError = (err: Error) => {
 }
 
 const modalTitle = computed(() => {
-	if (isLateClockIn.value) return trans("Late Clock-in Recorded")
 	if (clockType.value === "clock_in") return trans("Clock-in successful")
 	if (clockType.value === "clock_out") return trans("Clock-out successful")
 	return trans("Scan successful")
 })
-
-const lateClockInState = computed(() =>
-	getLateClockInState({
-		scanTimeRaw: scanTimeRaw.value,
-		workingOfficeHourStart: workingHours.value?.start,
-	})
-)
-
-const isLateClockIn = computed(
-	() => clockType.value === "clock_in" && lateClockInState.value.isLate
-)
 
 const workingHoursFormatted = computed(() => {
 	if (!workingHours.value) return "-"
@@ -393,29 +353,18 @@ const workingHoursFormatted = computed(() => {
 	return `${start} - ${end}`
 })
 
-const isSubmitDisabled = computed(() => isLateClockIn.value && !notes.value.trim())
+const notesLabel = computed(() => trans("Notes (optional)"))
 
-const notesLabel = computed(() =>
-	isLateClockIn.value ? trans("Notes") : trans("Notes (optional)")
-)
-
-const notesPlaceholder = computed(() =>
-	isLateClockIn.value ? trans("Please provide a reason for being late...") : trans("Input Notes")
-)
-
-const closeLateAlertModal = () => {
-	showLateAlertModal.value = false
-	showSuccessModal.value = true
-}
+const notesPlaceholder = computed(() => trans("Input Notes"))
 
 const submitNotes = async () => {
-	if (!clockingId.value || isSubmitDisabled.value) return
+	if (!clockingId.value) return
 
 	try {
 		await axios.patch(
 			route("grp.models.clocking-machine.clocking.notes.update", clockingId.value),
 			{
-				notes: notes.value,
+				notes: notes.value.trim() || null,
 			}
 		)
 
@@ -441,38 +390,6 @@ const submitNotes = async () => {
 	}
 }
 
-// Formatting Helpers
-const formatDurationLocal = (seconds: number) => {
-	const hours = Math.floor(seconds / 3600)
-	const minutes = Math.floor((seconds % 3600) / 60)
-	if (hours === 0 && minutes === 0) return trans("0m")
-	return hours === 0 ? `${minutes}m` : `${hours}h ${minutes}m`
-}
-
-const formatInTimezone = (dateString: string | undefined, options: Intl.DateTimeFormatOptions) => {
-	if (!dateString) return "-"
-	return new Date(dateString).toLocaleString("en-US", {
-		...options,
-		timeZone: pageProps.timezone || "UTC",
-	})
-}
-
-const displayDate = computed(() =>
-	formatInTimezone(pageProps.todayTimesheet?.date, {
-		year: "numeric",
-		month: "2-digit",
-		day: "2-digit",
-	})
-)
-
-const displayTime = (date?: string) =>
-	formatInTimezone(date, {
-		hour: "numeric",
-		minute: "2-digit",
-		second: "2-digit",
-		hour12: true,
-	})
-
 const trackFunction = () => ({
 	facingMode: "environment",
 	width: { ideal: 1080 },
@@ -481,94 +398,36 @@ const trackFunction = () => ({
 </script>
 
 <template>
-	<div class="relative z-0">
-		<div v-if="!cameraOn" class="max-w-lg mx-auto p-6">
-			<h2 class="text-2xl font-bold mb-6">{{ trans("Employee Clocking") }}</h2>
-
+	<div class="relative z-0 space-y-4">
+		<div v-if="!cameraOn" class="space-y-4">
 			<div
-				v-if="pageProps?.clockingStatus"
-				class="mb-6 p-4 rounded-lg"
-				:class="statusClasses.container">
-				<div class="flex items-center justify-between mb-3">
-					<div class="flex items-center gap-3">
-						<div
-							class="w-10 h-10 rounded-full flex items-center justify-center"
-							:class="statusClasses.iconWrapper">
-							<FontAwesomeIcon
-								:icon="isClockedIn ? faCheck : faTimes"
-								class="text-lg"
-								:class="statusClasses.icon" />
-						</div>
-						<div>
-							<p class="text-sm font-medium" :class="statusClasses.text">
-								{{ statusText }}
-							</p>
-							<p
-								v-if="isClockedIn && pageProps.activeTimeTracker?.starts_at"
-								class="text-xs text-gray-500">
-								{{ trans("Since") }}:
-								{{
-									useFormatTime(pageProps.activeTimeTracker.starts_at, {
-										formatTime: "hms",
-									})
-								}}
-							</p>
-						</div>
+				class="rounded-xl border p-3 sm:p-4 space-y-3 sm:space-y-4"
+				:class="
+					hasLocation
+						? 'border-green-200 bg-green-50/60'
+						: 'border-dashed border-gray-300 bg-gray-50'
+				">
+				<div class="flex items-center gap-2 sm:gap-3">
+					<div
+						class="w-10 h-10 sm:w-11 sm:h-11 shrink-0 rounded-full flex items-center justify-center"
+						:class="hasLocation ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-400'">
+						<FontAwesomeIcon :icon="faMapMarkerAlt" class="text-base sm:text-lg" />
 					</div>
-					<div class="text-right">
-						<p class="text-xs text-gray-400">{{ trans("Date") }}</p>
-						<p class="text-sm font-semibold text-gray-700">
-							{{ displayDate }}
+					<div class="min-w-0 flex-1">
+						<p
+							class="text-xs sm:text-sm font-semibold"
+							:class="hasLocation ? 'text-green-800' : 'text-gray-700'">
+							{{ locationTitle }}
+						</p>
+						<p class="text-[11px] sm:text-xs text-gray-500 truncate">
+							{{ locationSubtitle }}
 						</p>
 					</div>
 				</div>
 
 				<div
-					v-if="pageProps.todayTimesheet?.start_at || pageProps.todayTimesheet?.end_at"
-					class="grid grid-cols-2 gap-3 pt-3 border-t border-gray-200">
-					<div
-						v-if="pageProps.todayTimesheet?.start_at"
-						class="text-center p-2 rounded bg-white/50">
-						<p class="text-xs text-gray-400">{{ trans("First Clock In") }}</p>
-						<p class="text-sm font-semibold text-gray-800">
-							{{ displayTime(pageProps.todayTimesheet.start_at) }}
-						</p>
-					</div>
-					<div
-						v-if="pageProps.todayTimesheet?.end_at"
-						class="text-center p-2 rounded bg-white/50">
-						<p class="text-xs text-gray-400">{{ trans("Last Clock Out") }}</p>
-						<p class="text-sm font-semibold text-gray-800">
-							{{ displayTime(pageProps.todayTimesheet.end_at) }}
-						</p>
-					</div>
-				</div>
-
-				<div
-					v-if="pageProps.todayTimesheet"
-					class="flex gap-4 mt-3 pt-3 border-t border-gray-200">
-					<span class="text-xs text-gray-500">
-						{{ trans("Working") }}:
-						{{ formatDurationLocal(pageProps.todayTimesheet.working_duration || 0) }}
-					</span>
-					<span class="text-xs text-gray-500">
-						{{ trans("Breaks") }}:
-						{{ formatDurationLocal(pageProps.todayTimesheet.breaks_duration || 0) }}
-					</span>
-				</div>
-			</div>
-
-			<div class="mb-6">
-				<p class="text-sm font-semibold text-gray-500 mb-2">
-					{{ trans("Detect Location") }}
-				</p>
-				<Button
-					label="Detect My Location"
-					type="secondary"
-					@click="detectMyLocation"
-					full />
-
-				<div v-if="hasLocation" class="mt-3 h-48 rounded-xl overflow-hidden border shadow">
+					v-if="hasLocation"
+					class="h-44 sm:h-52 md:h-64 rounded-lg overflow-hidden border border-green-200">
 					<LMap :zoom="mapZoom" :center="[lat, lng]" style="height: 100%">
 						<LTileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
 						<LMarker :lat-lng="[lat, lng]">
@@ -578,20 +437,38 @@ const trackFunction = () => ({
 						</LMarker>
 					</LMap>
 				</div>
+
+				<Button
+					:label="hasLocation ? trans('Update location') : trans('Detect my location')"
+					:icon="hasLocation ? faSyncAlt : faMapMarkerAlt"
+					:loading="isDetectingLocation"
+					:disabled="isDetectingLocation"
+					type="secondary"
+					size="l"
+					class="lg:min-h-[44px] md:min-h-[32px]  sm:min-h-[50px]"
+					@click="detectMyLocation"
+					full />
 			</div>
 
-			<!-- OPEN CAMERA -->
-			<Button
-				label="Open Camera"
-				type="primary"
-				@click="startCamera"
-				:disabled="!canOpenCamera"
-				full />
+			<div class="space-y-2">
+				<p v-if="!canOpenCamera" class="text-center text-[11px] sm:text-xs text-gray-500">
+					{{ trans("Detect your location first to enable scanning") }}
+				</p>
+				<Button
+					:label="trans('Open camera')"
+					:icon="faCamera"
+					type="primary"
+					size="l"
+					class="min-h-[44px] sm:min-h-[50px]"
+					@click="startCamera"
+					:disabled="!canOpenCamera"
+					full />
+			</div>
 		</div>
 		<Teleport to="body">
-			<div v-if="cameraOn" class="fixed inset-0 bg-black z-[9999] flex flex-col">
-				<div class="flex justify-between items-center text-white p-4">
-					<h3 class="font-semibold">{{ trans("Scan QR Code") }}</h3>
+			<div v-if="cameraOn" class="fixed inset-0 bg-black z-[9999] flex flex-col overflow-hidden">
+				<div class="flex justify-between items-center text-white p-3 sm:p-4">
+					<h3 class="text-sm sm:text-base font-semibold">{{ trans("Scan QR Code") }}</h3>
 					<Button
 						@click="stopCamera"
 						class="!text-white text-2xl"
@@ -599,8 +476,8 @@ const trackFunction = () => ({
 						:icon="faTimes" />
 				</div>
 
-				<div class="flex-1 flex items-center justify-center relative">
-					<div class="w-full max-w-xl relative" style="aspect-ratio: 3/4">
+				<div class="flex-1 min-h-0 flex items-center justify-center relative overflow-hidden">
+					<div class="relative h-full max-h-full w-full max-w-xl sm:aspect-[3/4] sm:h-auto">
 						<QrcodeStream
 							@detect="onDetect"
 							@error="onStreamError"
@@ -611,7 +488,8 @@ const trackFunction = () => ({
 						<!-- TARGET OVERLAY -->
 						<div
 							class="absolute inset-0 flex items-center justify-center pointer-events-none">
-							<div class="scanner-frame">
+							<div
+								class="relative aspect-[3/4] h-[45vh] max-h-[280px] w-auto max-w-[70vw]">
 								<!-- 4 CORNERS -->
 								<span class="corner tl"></span>
 								<span class="corner tr"></span>
@@ -624,7 +502,7 @@ const trackFunction = () => ({
 						</div>
 					</div>
 				</div>
-				<div class="text-center text-white pb-6 text-sm opacity-70">
+				<div class="px-4 pb-4 sm:pb-6 text-center text-xs sm:text-sm text-white opacity-70">
 					{{ trans("Align QR code inside the frame") }}
 				</div>
 			</div>
@@ -637,97 +515,44 @@ const trackFunction = () => ({
 			@confirm="handleWorkHourConfirm" />
 
 		<Dialog
-			v-model:visible="showLateAlertModal"
-			modal
-			:closable="false"
-			:style="{ width: '420px' }"
-			appendTo="body">
-			<div class="text-center space-y-4 py-4">
-				<div class="flex justify-center">
-					<div class="w-20 h-20 rounded-full flex items-center justify-center bg-red-100">
-						<FontAwesomeIcon
-							:icon="faExclamationTriangle"
-							class="text-4xl text-red-600" />
-					</div>
-				</div>
-
-				<h3 class="text-xl font-semibold text-red-700">
-					{{ trans("Late Clock-in Alert") }}
-				</h3>
-
-				<p
-					class="text-sm font-medium text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-3">
-					{{ trans("You are late today.") }}
-				</p>
-
-				<p v-if="lateClockInState.lateMessage" class="text-sm text-gray-600">
-					{{ lateClockInState.lateMessage }}
-				</p>
-
-				<div class="pt-2">
-					<Button label="Continue" type="warning" @click="closeLateAlertModal" full />
-				</div>
-			</div>
-		</Dialog>
-
-		<Dialog
 			v-model:visible="showSuccessModal"
 			modal
 			:closable="false"
-			:style="{ width: '420px' }"
+			class="w-[95vw] max-w-[95vw] sm:w-[480px] sm:max-w-[480px]"
 			appendTo="body">
-			<div class="text-center space-y-4 py-4">
+			<div class="text-center space-y-4 py-2 sm:py-4">
 				<!-- ICON -->
 				<div class="flex justify-center">
 					<div
-						class="w-20 h-20 rounded-full flex items-center justify-center"
-						:class="isLateClockIn ? 'bg-amber-100' : 'bg-green-100'">
-						<FontAwesomeIcon
-							:icon="isLateClockIn ? faExclamationTriangle : faCheck"
-							class="text-4xl"
-							:class="isLateClockIn ? 'text-amber-600' : 'text-green-600'" />
+						class="w-16 h-16 sm:w-20 sm:h-20 rounded-full flex items-center justify-center bg-green-100">
+						<FontAwesomeIcon :icon="faCheck" class="text-3xl sm:text-4xl text-green-600" />
 					</div>
 				</div>
 
 				<!-- TITLE -->
-				<h3
-					class="text-xl font-semibold"
-					:class="isLateClockIn ? 'text-amber-700' : 'text-gray-800'">
+				<h3 class="text-lg sm:text-xl font-semibold text-gray-800">
 					{{ modalTitle }}
 				</h3>
 
-				<p
-					v-if="isLateClockIn && lateClockInState.lateMessage"
-					class="text-sm font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
-					{{ lateClockInState.lateMessage }}
-				</p>
+				<div v-if="isVisitingOffice" class="text-sm text-amber-600">
+					{{ trans("Hey, you're in the wrong office \u2014 but we don't mind!") }}
+				</div>
 
 				<!-- INFO -->
-				<div class="text-sm text-gray-600 space-y-2 bg-gray-50 p-3 rounded-lg">
-					<div
-						v-if="isLateClockIn"
-						class="flex justify-between items-center bg-amber-50 p-2 rounded border border-amber-200">
-						<div class="flex items-center gap-2">
-							<FontAwesomeIcon :icon="faExclamationTriangle" class="text-amber-500" />
-							<span class="font-semibold text-amber-700">{{
-								trans("Late Arrival")
-							}}</span>
-						</div>
-					</div>
-
-					<div class="flex justify-between">
+				<div class="text-xs sm:text-sm text-gray-600 space-y-2 bg-gray-50 p-3 rounded-lg">
+					<div class="flex justify-between gap-3 text-left">
 						<span class="text-gray-500">{{ trans("Schedule ") }}</span>
-						<span class="font-semibold text-gray-800">
+						<span class="text-right font-semibold text-gray-800">
 							{{ useFormatTime(now) ?? "-" }}
 						</span>
 					</div>
-					<div class="flex justify-between">
+					<div class="flex justify-between gap-3 text-left">
 						<span class="text-gray-500">{{ trans("Working Office Hour ") }}</span>
-						<span class="font-semibold text-gray-800">{{ workingHoursFormatted }}</span>
+						<span class="text-right font-semibold text-gray-800">{{ workingHoursFormatted }}</span>
 					</div>
-					<div class="flex justify-between">
+					<div class="flex justify-between gap-3 text-left">
 						<span class="text-gray-500">{{ trans("Scan Time") }}</span>
-						<span class="font-semibold text-gray-800">{{ scanTime ?? "-" }}</span>
+						<span class="text-right font-semibold text-gray-800">{{ scanTime ?? "-" }}</span>
 					</div>
 				</div>
 
@@ -736,11 +561,7 @@ const trackFunction = () => ({
 					<label class="text-sm text-gray-600 block mb-1 text-left">
 						{{ notesLabel }}
 					</label>
-					<InputText
-						v-model="notes"
-						class="w-full"
-						:required="isLateClockIn"
-						:placeholder="notesPlaceholder" />
+					<InputText v-model="notes" class="w-full" :placeholder="notesPlaceholder" />
 				</div>
 
 				<!-- ACTIONS -->
@@ -755,17 +576,16 @@ const trackFunction = () => ({
 							}
 						"
 						full />
-					<Button
-						label="Submit"
-						type="save"
-						@click="submitNotes"
-						:disabled="isSubmitDisabled"
-						full />
+					<Button label="Submit" type="save" @click="submitNotes" full />
 				</div>
 			</div>
 		</Dialog>
 
-		<div v-if="errorMsg" class="text-red-500 text-sm mt-2 text-center">{{ errorMsg }}</div>
+		<div
+			v-if="errorMsg"
+			class="rounded-lg bg-red-50 px-3 py-2 text-center text-xs sm:text-sm text-red-700">
+			{{ errorMsg }}
+		</div>
 	</div>
 </template>
 <style scoped>
@@ -780,12 +600,6 @@ const trackFunction = () => ({
 
 .p-dialog {
 	z-index: 9999 !important;
-}
-
-.scanner-frame {
-	position: relative;
-	width: 280px;
-	height: 373px;
 }
 
 /* ===== CORNERS ===== */

@@ -3,7 +3,7 @@
 /*
  * author Arya Permana - Kirin
  * created on 02-12-2024-08h-58m
- * github: https://github.com/KirinZero0
+ * GitHub: https://github.com/KirinZero0
  * copyright 2024
 */
 
@@ -33,9 +33,7 @@ class IndexOrgPostRooms extends OrgAction
 {
     use WithCommsSubNavigation;
 
-    /**
-     * @var \App\Models\Fulfilment\Fulfilment
-     */
+
     private Fulfilment|Shop $parent;
 
     public function handle(Organisation $organisation, $prefix = null): LengthAwarePaginator
@@ -55,22 +53,17 @@ class IndexOrgPostRooms extends OrgAction
         $queryBuilder
             ->defaultSort('org_post_rooms.name')
             ->select([
-            'org_post_rooms.id',
-            'org_post_rooms.slug',
-            'org_post_rooms.type',
-            'org_post_rooms.name',
-            'org_post_room_stats.number_outboxes',
-            'org_post_room_stats.number_mailshots',
-            'org_post_room_intervals.dispatched_emails_lw',
-            'org_post_room_intervals.opened_emails_lw',
-            'org_post_room_intervals.unsubscribed_lw'
+                'org_post_rooms.id',
+                'org_post_rooms.slug',
+                'org_post_rooms.type',
+                'org_post_rooms.name',
+                'org_post_room_stats.number_outboxes',
+                'org_post_room_stats.number_mailshots',
             ])
-            ->selectRaw('org_post_room_intervals.runs_all as runs')
-            ->leftJoin('org_post_room_stats', 'org_post_room_stats.org_post_room_id', '=', 'org_post_rooms.id')
-            ->leftJoin('org_post_room_intervals', 'org_post_room_intervals.org_post_room_id', '=', 'org_post_rooms.id');
+            ->leftJoin('org_post_room_stats', 'org_post_room_stats.org_post_room_id', '=', 'org_post_rooms.id');
 
         return $queryBuilder
-            ->allowedSorts(['name', 'runs', 'number_outboxes', 'number_mailshots', 'dispatched_emails_lw', 'opened_emails_lw', 'unsubscribed_lw'])
+            ->allowedSorts(['name', 'number_outboxes', 'number_mailshots'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -84,16 +77,9 @@ class IndexOrgPostRooms extends OrgAction
     ): Closure {
         return function (InertiaTable $table) use ($parent, $modelOperations, $prefix, $canEdit) {
             if ($prefix) {
-                $table->name($prefix)->pageName($prefix . 'Page');
+                $table->name($prefix)->pageName($prefix.'Page');
             }
 
-            // foreach ($this->getElementGroups($parent) as $key => $elementGroup) {
-            //     $table->elementGroup(
-            //         key: $key,
-            //         label: $elementGroup['label'],
-            //         elements: $elementGroup['elements']
-            //     );
-            // }
 
             $table
                 ->withGlobalSearch()
@@ -101,8 +87,8 @@ class IndexOrgPostRooms extends OrgAction
                 ->withEmptyState(
                     match (class_basename($parent)) {
                         'Organisation' => [
-                            'title'       => __("No post room found"),
-                            'count'       => $parent->commsStats->number_org_post_rooms,
+                            'title' => __("No post room found"),
+                            'count' => $parent->commsStats->number_org_post_rooms,
                         ],
                         default => null
                     }
@@ -122,33 +108,18 @@ class IndexOrgPostRooms extends OrgAction
         return OrgPostRoomsResource::collection($orgPostRooms);
     }
 
-    public function authorize(ActionRequest $request): bool
-    {
-        if ($this->parent instanceof Fulfilment) {
-            return $this->canEdit = $request->user()->authTo("fulfilment-shop.{$this->fulfilment->id}.edit");
-        }
-
-        return $request->user()->authTo([
-            'shop-admin.'.$this->shop->id,
-            'marketing.'.$this->shop->id.'.view',
-            'web.'.$this->shop->id.'.view',
-            'orders.'.$this->shop->id.'.view',
-            'crm.'.$this->shop->id.'.view',
-        ]);
-    }
-
 
     public function htmlResponse(LengthAwarePaginator $orgPostRooms, ActionRequest $request): Response
     {
         $subNavigation = $this->getCommsNavigation($this->parent);
 
-        $title = __('Post Room');
-        $icon  = [
+        $title      = __('Post Room');
+        $icon       = [
             'icon'  => ['fal', 'fa-cube'],
             'title' => __('Post rooms')
         ];
         $afterTitle = null;
-        $iconRight = null;
+        $iconRight  = null;
 
         return Inertia::render(
             'Comms/OrgPostRooms',
@@ -157,37 +128,15 @@ class IndexOrgPostRooms extends OrgAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'    => __('Post Rooms'),
-                'pageHead' => [
+                'title'       => __('Post Rooms'),
+                'pageHead'    => [
                     'title'         => $title,
                     'icon'          => $icon,
                     'afterTitle'    => $afterTitle,
                     'iconRight'     => $iconRight,
-                    // 'container'     => $container,
-                    // 'actions'       => [
-                    //     $this->canEdit && $request->route()->getName() == 'grp.org.shops.show.catalogue.collections.index' ? [
-                    //         'type'    => 'button',
-                    //         'style'   => 'create',
-                    //         'tooltip' => __('New collection'),
-                    //         'label'   => __('collection'),
-                    //         'route'   => [
-                    //             'name'       => 'grp.org.shops.show.catalogue.collections.create',
-                    //             'parameters' => $request->route()->originalParameters()
-                    //         ]
-                    //     ] : false,
-                    //     class_basename($this->parent) == 'Collection' ? [
-                    //         'type'     => 'button',
-                    //         'style'    => 'secondary',
-                    //         'key'      => 'attach-collection',
-                    //         'icon'     => 'fal fa-plus',
-                    //         'tooltip'  => __('Attach collection to this collection'),
-                    //         'label'    => __('Attach collection'),
-                    //     ] : false
-                    // ],
                     'subNavigation' => $subNavigation,
                 ],
-                // 'routes'        => $routes,
-                'data'          => OrgPostRoomsResource::collection($orgPostRooms),
+                'data'        => OrgPostRoomsResource::collection($orgPostRooms),
             ]
         )->table($this->tableStructure($this->organisation));
     }
@@ -197,6 +146,7 @@ class IndexOrgPostRooms extends OrgAction
         $this->parent = $shop;
 
         $this->initialisationFromShop($shop, $request);
+
         return $this->handle($organisation);
     }
 

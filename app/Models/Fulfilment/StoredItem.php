@@ -33,6 +33,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property int $organisation_id
  * @property string $slug
  * @property string $reference
+ * @property string|null $barcode the barcode on the goods themselves, usually the manufacturer EAN13
  * @property StoredItemStateEnum $state
  * @property int $fulfilment_id
  * @property int $fulfilment_customer_id
@@ -89,6 +90,14 @@ class StoredItem extends Model implements Auditable
 
     protected $guarded = [];
 
+    protected array $auditInclude = [
+        'reference',
+        'name',
+        'state',
+        'notes',
+        'return_requested',
+    ];
+
     public function getSlugOptions(): SlugOptions
     {
         return SlugOptions::create()
@@ -125,12 +134,6 @@ class StoredItem extends Model implements Auditable
     public function palletStoredItems(): HasMany
     {
         return $this->hasMany(PalletStoredItem::class);
-    }
-
-
-    public function tiktokPortfolio(): MorphOne
-    {
-        return $this->morphOne(TiktokUserHasProduct::class, 'productable');
     }
 
     public function portfolio(): MorphOne

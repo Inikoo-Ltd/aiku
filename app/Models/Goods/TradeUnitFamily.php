@@ -10,6 +10,7 @@ namespace App\Models\Goods;
 
 use App\Enums\Catalogue\HealthRankEnum;
 use App\Models\Helpers\Brand;
+use App\Models\Helpers\Media;
 use App\Models\Helpers\Tag;
 use App\Models\Traits\HasAttachments;
 use App\Models\Traits\HasHistory;
@@ -164,5 +165,10 @@ class TradeUnitFamily extends Model implements Auditable, HasMedia
             'model',
             'model_has_tags'
         )->withTimestamps();
+    }
+
+    public function labelingGuide(): ?Media
+    {
+        return $this->attachments()->where('scope', 'labeling_guide')->first();
     }
 }

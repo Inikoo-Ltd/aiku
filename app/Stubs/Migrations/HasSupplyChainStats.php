@@ -48,6 +48,10 @@ trait HasSupplyChainStats
     public function supplierProductsStats(Blueprint $table): Blueprint
     {
         $table->unsignedInteger('number_supplier_products')->default(0);
+        if ($table->getTable() == 'group_supply_chain_stats') {
+            $table->unsignedInteger('number_independent_supplier_products')->default(0)->comment('supplier products with no agent');
+            $table->unsignedInteger('number_supplier_products_in_agents')->default(0)->comment('supplier products belonging to agent suppliers');
+        }
         $table->unsignedInteger('number_current_supplier_products')->default(0)->comment('state=active|discontinuing');
         $table->unsignedInteger('number_available_supplier_products')->default(0);
         $table->unsignedInteger('number_no_available_supplier_products')->default(0)->comment('only for state=active|discontinuing');

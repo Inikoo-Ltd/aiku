@@ -33,12 +33,28 @@ const locale = inject("locale", aikuLocaleStructure)
             <span class="tabular-nums">{{ locale.number(item.number_locations) }}</span>
         </template>
 
-        <template #cell(org_stock_value)="{ item }">
-            <span class="tabular-nums">{{ locale.number(item.org_stock_value) }}</span>
+        <template #cell(org_stock_lpp_value)="{ item }">
+            <span class="tabular-nums">{{ locale.number(item.org_stock_lpp_value) }}</span>
         </template>
 
-        <template #cell(value_per_sku)="{ item }">
-            <span class="tabular-nums">{{ item.value_per_sku != null ? locale.number(item.value_per_sku) : '-' }}</span>
+        <template #cell(org_stock_wac_value)="{ item }">
+            <span class="tabular-nums">{{ item.org_stock_wac_value != null ? locale.number(item.org_stock_wac_value) : '-' }}</span>
+        </template>
+
+        <template #cell(org_stock_fifo_value)="{ item }">
+            <span class="tabular-nums">{{ item.org_stock_fifo_value != null ? locale.number(item.org_stock_fifo_value) : '-' }}</span>
+        </template>
+
+        <template #cell(wac_per_sku)="{ item }">
+            <span class="tabular-nums">{{ item.wac_per_sku != null ? locale.number(item.wac_per_sku) : '-' }}</span>
+        </template>
+
+        <template #cell(fifo_per_sku)="{ item }">
+            <span class="tabular-nums">{{ item.fifo_per_sku != null ? locale.number(item.fifo_per_sku) : '-' }}</span>
+        </template>
+
+        <template #cell(lpp_per_sku)="{ item }">
+            <span class="tabular-nums">{{ item.lpp_per_sku != null ? locale.number(item.lpp_per_sku) : '-' }}</span>
         </template>
     </Table>
 </template>

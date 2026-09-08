@@ -402,7 +402,7 @@ const isModalUploadStoredItemOpen = ref(false)
                         </div>
                         <div @click="() => (isModalUploadStoredItemOpen = true, close())" class="whitespace-nowrap px-3 py-1 rounded hover:bg-gray-200 cursor-pointer">
                             <FontAwesomeIcon icon='fal fa-upload' class='' fixed-width aria-hidden='true' />
-                            {{ trans("Upload Customer's SKU") }}
+                            {{ trans("Upload Customer's SKO") }}
                         </div>
                     </MenuItems>
                 </transition>

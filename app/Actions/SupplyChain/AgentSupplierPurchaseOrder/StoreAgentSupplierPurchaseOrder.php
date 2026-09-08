@@ -9,11 +9,14 @@
 
 namespace App\Actions\SupplyChain\AgentSupplierPurchaseOrder;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
+use App\Actions\Procurement\OrgAgent\Hydrators\OrgAgentHydrateAgentSupplierPurchaseOrders;
 use App\Actions\Procurement\WithNoStrictProcurementOrderRules;
+use App\Actions\SupplyChain\Agent\Hydrators\AgentHydrateAgentSupplierPurchaseOrders;
 use App\Actions\Traits\Rules\WithNoStrictRules;
-use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
-use App\Enums\Procurement\PurchaseOrder\PurchaseOrderDeliveryStateEnum;
+use App\Enums\SupplyChain\AgentSupplierPurchaseOrders\AgentSupplierPurchaseOrderDeliveryStateEnum;
+use App\Enums\SupplyChain\AgentSupplierPurchaseOrders\AgentSupplierPurchaseOrderStateEnum;
+use App\Models\Procurement\OrgAgent;
 use App\Models\Procurement\PurchaseOrder;
 use App\Models\SupplyChain\AgentSupplierPurchaseOrder;
 use App\Models\SupplyChain\Supplier;
@@ -22,7 +25,7 @@ use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 
-class StoreAgentSupplierPurchaseOrder extends GrpAction
+class StoreAgentSupplierPurchaseOrder extends OrgAction
 {
     use WithNoStrictRules;
     use WithNoStrictProcurementOrderRules;
@@ -45,9 +48,19 @@ class StoreAgentSupplierPurchaseOrder extends GrpAction
         if (!Arr::get($modelData, 'currency_id')) {
             data_set($modelData, 'currency_id', $supplier->currency_id);
         }
-        // dd($parent);
+        data_set($modelData, 'group_id', $supplier->group_id);
+        data_set($modelData, 'purchase_order_id', $purchaseOrder->id);
+
         /** @var AgentSupplierPurchaseOrder $agentSupplierPurchaseOrder */
         $agentSupplierPurchaseOrder = $supplier->agentSupplierPurchaseOrder()->create($modelData);
+        $agentSupplierPurchaseOrder->refresh();
+
+        if ($supplier->agent_id) {
+            AgentHydrateAgentSupplierPurchaseOrders::dispatch($supplier->agent)->delay($this->hydratorsDelay);
+        }
+        if ($purchaseOrder->parent instanceof OrgAgent) {
+            OrgAgentHydrateAgentSupplierPurchaseOrders::dispatch($purchaseOrder->parent)->delay($this->hydratorsDelay);
+        }
 
         return $agentSupplierPurchaseOrder;
     }
@@ -69,8 +82,8 @@ class StoreAgentSupplierPurchaseOrder extends GrpAction
                 'required',
                 $this->strict ? 'alpha_dash' : 'string'
             ],
-            'state'          => ['sometimes', 'required', Rule::enum(PurchaseOrderStateEnum::class)],
-            'delivery_state' => ['sometimes', 'required', Rule::enum(PurchaseOrderDeliveryStateEnum::class)],
+            'state'          => ['sometimes', 'required', Rule::enum(AgentSupplierPurchaseOrderStateEnum::class)],
+            'delivery_state' => ['sometimes', 'required', Rule::enum(AgentSupplierPurchaseOrderDeliveryStateEnum::class)],
             'cost_items'     => ['sometimes', 'required', 'numeric', 'min:0'],
             'cost_shipping'  => ['sometimes', 'required', 'numeric', 'min:0'],
             'cost_total'     => ['sometimes', 'required', 'numeric', 'min:0'],
@@ -106,7 +119,7 @@ class StoreAgentSupplierPurchaseOrder extends GrpAction
         $this->strict         = $strict;
         $this->hydratorsDelay = $hydratorsDelay;
         $this->supplier       = $supplier;
-        $this->initialisation($supplier->group, $modelData);
+        $this->initialisationFromGroup($supplier->group, $modelData);
 
 
         return $this->handle($purchaseOrder, $supplier, $this->validatedData);

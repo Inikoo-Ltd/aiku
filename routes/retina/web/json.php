@@ -27,13 +27,14 @@ use App\Actions\Retina\Fulfilment\PalletDelivery\Json\GetRetinaFulfilmentService
 use App\Actions\Retina\GetCheckoutComTokenToPayOrder;
 use Illuminate\Support\Facades\Route;
 use App\Actions\Retina\Ecom\Basket\GetRetinaBasketTransactionProductData;
+use App\Actions\Retina\Ecom\Basket\GetRetinaProductBasketRecommendations;
 
 Route::get('fulfilment/{fulfilment}/delivery/{scope}/services', [GetRetinaFulfilmentServices::class, 'inPalletDelivery'])->name('fulfilment.delivery.services.index');
 Route::get('fulfilment/{fulfilment}/return/{scope}/services', [GetRetinaFulfilmentServices::class, 'inPalletReturn'])->name('fulfilment.return.services.index');
 Route::get('fulfilment/{fulfilment}/delivery/{scope}/physical-goods', [GetRetinaFulfilmentPhysicalGoods::class, 'inPalletDelivery'])->name('fulfilment.delivery.physical-goods.index');
 Route::get('fulfilment/{fulfilment}/return/{scope}/physical-goods', [GetRetinaFulfilmentPhysicalGoods::class, 'inPalletReturn'])->name('fulfilment.return.physical-goods.index');
 Route::get('pallet-return/{palletReturn}/pallets', GetPalletsInReturnPalletWholePallets::class)->name('pallet-return.pallets.index');
-Route::get('/{order}/recent-uploads', \App\Actions\Ordering\Order\UI\IndexRecentOrderTransactionUploads::class)->name('recent_uploads');
+Route::get('/{order}/recent-uploads', \App\Actions\Retina\Ordering\IndexRetinaRecentOrderTransactionUploads::class)->name('recent_uploads');
 
 Route::get('/{order:id}/get-checkout-com-token-to_pay-order', GetCheckoutComTokenToPayOrder::class)->name('get_checkout_com_token_to_pay_order')->whereNumber('order');
 
@@ -59,3 +60,4 @@ Route::get('ecom-customer-data', GetRetinaEcomCustomerData::class)->name('ecom_c
 
 Route::get('customer/{customer:id}/tags', [IndexTags::class, 'inRetina'])->name('customer.tags.index')->whereNumber('customer');
 Route::get('basket-transaction-product-data/{transaction:id}', GetRetinaBasketTransactionProductData::class)->name('basket_transaction_product_data')->whereNumber('transaction');
+Route::get('basket-recommendations', GetRetinaProductBasketRecommendations::class)->name('basket_recommendations.index');

@@ -162,7 +162,7 @@ const _popoverProfit = ref(null)
                     class="flex flex-col text-right break-safe">
                     <div class="text-xs">{{ trans("RRP") }}:</div>
                     <div class="font-bold text-xs break-safe">
-                        {{ locale.currencyFormat(currency?.code, product?.rrp_per_unit || 0) }}
+                        {{ locale.currencyFormatRrp(currency?.code, product?.rrp_per_unit || 0) }}
                         <span class="font-normal">{{ product.unit}}</span>
                     </div>
                 </div> -->
@@ -211,7 +211,7 @@ const _popoverProfit = ref(null)
                         class="flex flex-col break-safe mb-2">
                         <div class="text-xs">{{ trans("RRP") }}:</div>
                         <div class="font-bold text-xs break-safe">
-                            {{ locale.currencyFormat(currency?.code, product?.rrp_per_unit || 0) }}
+                            {{ locale.currencyFormatRrp(currency?.code, product?.rrp_per_unit || 0) }}
                         </div>
                     </div>
 

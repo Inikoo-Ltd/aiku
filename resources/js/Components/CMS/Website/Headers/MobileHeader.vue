@@ -1,10 +1,9 @@
 <script setup lang="ts">
 import IrisSidebar from '@/Components/IrisSidebar.vue'
 import { getStyles } from "@/Composables/styles";
-import { Link } from '@inertiajs/vue3'
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import Image from "@common/Components/Image.vue"
-import { inject, ref, onMounted } from 'vue';
+import { inject, ref, onMounted, defineAsyncComponent } from 'vue';
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faGalaxy, faTimesCircle, faUserCircle } from "@fas";
 import { faBaby, faShoppingCart as falShoppingCart, faCactus, faObjectGroup, faUser, faHouse, faTruck, faTag, faPhone, faUserCircle as falUserCircle, faBars } from "@fal";
@@ -31,13 +30,12 @@ import {
     faClock
 } from "@far";
 import { faLambda } from "@fad";
-import LuigiSearch from "@/Components/CMS/LuigiSearch.vue"
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import { computed } from 'vue'
 import LinkIris from '@/Iris/Components/LinkIris.vue'
-import LuigiSearchMobile from '../../LuigiSearchMobile.vue'
+const LuigiSearchMobile = defineAsyncComponent(() => import('@/Components/CMS/LuigiSearchMobile.vue'))
+const IrisSearchMobile = defineAsyncComponent(() => import('@/Iris/Components/IrisSearchMobile.vue'))
 import { urlLoginWithRedirect } from '@/Composables/urlLoginWithRedirect'
-import { trans } from 'laravel-vue-i18n'
 
 // Add icons to the library
 library.add(
@@ -110,7 +108,14 @@ const getStylesRemoveFontSize = (properties, screenType) => {
                 </IrisSidebar>
 
                 <!-- Search Bar -->
-                <LuigiSearchMobile v-if="layout.iris?.luigisbox_tracker_id && screenType === 'mobile'"
+                <IrisSearchMobile v-if="layout.iris?.iris_search_model === 'internal' && screenType === 'mobile'"
+                    id="iris_search_mobile"
+                    :style="{
+                        ...getStyles(headerData?.mobile?.profile?.container?.properties, screenType),
+                    }"
+                    class="text-3xl"
+                />
+                <LuigiSearchMobile v-else-if="layout.iris?.luigisbox_tracker_id && screenType === 'mobile'"
                     id="luigi_mobile"
                     :style="{
                         ...getStyles(headerData?.mobile?.profile?.container?.properties, screenType),
@@ -120,7 +125,7 @@ const getStylesRemoveFontSize = (properties, screenType) => {
             </div>
 
             <!-- Section: Logo -->
-            <div class="xcol-span-2 flex justify-end items-center w-full" :class="!isLoggedIn ?  layout.retina?.type == 'b2b' ? 'justify-end' :'justify-center' : 'justify-end'">
+            <div class="xcol-span-2 flex items-center w-full" :class="layout.retina?.type == 'b2b' ? 'justify-start' : 'justify-center'">
                 <component :is="LinkIris" :href="'/'" class="block h-fit max-h-[50px] w-full max-w-32">
                     <Image v-if="headerData.logo?.image?.source" :src="headerData.logo?.image?.source" alt="logo"
                         class="w-full h-auto object-contain" />

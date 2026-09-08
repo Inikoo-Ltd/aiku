@@ -1,5 +1,7 @@
 <?php
 
+/** @noinspection PhpUnused */
+
 /*
  * Author: Ganes <gustiganes@gmail.com>
  * Created on: 11-06-2025, Bali, Indonesia
@@ -17,7 +19,6 @@ use App\Actions\Catalogue\Collection\Hydrators\CollectionHydrateState;
 use App\Actions\Traits\Hydrators\WithHydrateCommand;
 use App\Actions\Catalogue\Collection\Hydrators\CollectionHydrateProducts;
 use App\Actions\Catalogue\Collection\Hydrators\CollectionHydrateImages;
-use App\Actions\Catalogue\Collection\Hydrators\CollectionHydrateOrderingIntervals;
 use App\Models\Catalogue\Collection;
 
 class HydrateCollection
@@ -40,6 +41,5 @@ class HydrateCollection
         SyncIndirectProductsToCollection::run($collection);
         CollectionHydrateState::run($collection);
         CollectionHydrateProductsStatus::run($collection);
-        CollectionHydrateOrderingIntervals::run($collection->id);
     }
 }

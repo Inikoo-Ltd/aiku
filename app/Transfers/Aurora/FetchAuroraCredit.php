@@ -19,17 +19,27 @@ class FetchAuroraCredit extends FetchAurora
 
     protected function parseModel(): void
     {
+
+
+
         $customer = $this->parseCustomer($this->organisation->id.':'.$this->auroraModelData->{'Credit Transaction Customer Key'});
 
         $shop = $customer->shop;
+
 
         if (!$shop) {
             return;
         }
 
+        if ($shop->is_aiku) {
+            return;
+        }
+
+
         if ($shop->type == ShopTypeEnum::DROPSHIPPING || $shop->type == ShopTypeEnum::FULFILMENT) {
             return;
         }
+
 
         if ($shop->slug == 'acar') {
             return;

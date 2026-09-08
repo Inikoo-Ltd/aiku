@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch, onMounted, onUnmounted, inject, computed, nextTick } from "vue"
+import { ref, watch, onMounted, onUnmounted, inject, computed, nextTick, defineAsyncComponent } from "vue"
 import axios from "axios"
 import { trans } from "laravel-vue-i18n"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -10,9 +10,12 @@ import {
     faEllipsisVertical,
     faTimesCircle,
     faMessage,
-    faPaperclip, faXmark, faFilePdf, faEnvelope, faRotateRight
+    faPaperclip, faXmark, faFilePdf, faEnvelope, faRotateRight, faBan, faRotateLeft, faFaceSmile
 } from "@fortawesome/free-solid-svg-icons"
+import { faJira, faSlack } from "@fortawesome/free-brands-svg-icons"
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
+import JiraTicketModal from "@/Components/Chat/Agent/JiraTicketModal.vue"
+import SlackShareModal from "@/Components/Chat/Agent/SlackShareModal.vue"
 import type { ChatMessage, SessionAPI } from "@/types/Chat/chat"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import Image from "@common/Components/Image.vue"
@@ -20,6 +23,9 @@ import { faUser, faSpinner } from "@far"
 import BubbleChat from "@/Components/Chat/BubbleChat.vue"
 import { useChatLanguages } from "@/Composables/useLanguages"
 import { notify } from "@kyvg/vue3-notification"
+import { Select } from "primevue"
+
+const EmojiPicker = defineAsyncComponent(() => import("@/Components/Messaging/EmojiPicker.vue"))
 
 type LocalMessageStatus = "sending" | "sent" | "failed"
 
@@ -49,6 +55,12 @@ const emit = defineEmits([
     "view-user-profile",
     "view-message-details",
     "transfer-agent-success",
+    "assign-self-success",
+    "messages-read",
+    "open-jira-settings",
+    "open-slack-settings",
+    "spam-success",
+    "restore-success",
 ])
 
 const layout: any = inject("layout", {})
@@ -70,15 +82,106 @@ const takeoverChat = async () => {
             {},
             { withCredentials: true }
         )
+        props.session.status = "active"
         if (props.session.assigned_agent) {
             props.session.assigned_agent.user_id = layout?.user?.id
             props.session.assigned_agent.name = layout?.user?.contact_name ?? ""
         }
-        emit("transfer-agent-success")
+        emit("assign-self-success")
     } catch {
         notify({ title: trans("Error"), text: trans("Failed to take over chat"), type: "error" })
     } finally {
         isTakingOver.value = false
+    }
+}
+
+const currentOrganisation = computed(
+    () => String((route().params as Record<string, any>)?.organisation ?? "aw")
+)
+
+const isJiraModalOpen = ref(false)
+const openJiraModal = () => {
+    isMenuOpen.value = false
+    isJiraModalOpen.value = true
+}
+const onOpenJiraSettings = () => {
+    isJiraModalOpen.value = false
+    emit("open-jira-settings")
+}
+
+const isSlackModalOpen = ref(false)
+const openSlackModal = () => {
+    isMenuOpen.value = false
+    isSlackModalOpen.value = true
+}
+const onOpenSlackSettings = () => {
+    isSlackModalOpen.value = false
+    emit("open-slack-settings")
+}
+
+const isSpamMarking = ref(false)
+const markSpam = async (spam: boolean) => {
+    if (!props.session?.ulid || isSpamMarking.value) return
+    isMenuOpen.value = false
+    isSpamMarking.value = true
+    try {
+        const organisation = (route().params as Record<string, any>)?.organisation ?? "aw"
+        const routeName = spam
+            ? "grp.org.chat.agents.sessions.spam"
+            : "grp.org.chat.agents.sessions.not_spam"
+        await axios.patch(route(routeName, [organisation, props.session.ulid]), {}, { withCredentials: true })
+        emit("spam-success")
+    } catch (e: any) {
+        notify({
+            title: trans("Error"),
+            text: e?.response?.data?.message ?? trans("Failed to update spam status"),
+            type: "error",
+        })
+    } finally {
+        isSpamMarking.value = false
+    }
+}
+
+const isAssigningSelf = ref(false)
+const assignSelf = async () => {
+    if (!props.session?.ulid || isAssigningSelf.value) return
+    isAssigningSelf.value = true
+    try {
+        const organisation = (route().params as Record<string, any>)?.organisation ?? "aw"
+        await axios.post(
+            route("grp.org.chat.agents.assign.self", [organisation, props.session.ulid]),
+            {},
+            { withCredentials: true }
+        )
+        props.session.status = "active"
+        if (props.session.assigned_agent) {
+            props.session.assigned_agent.user_id = layout?.user?.id
+            props.session.assigned_agent.name = layout?.user?.contact_name ?? ""
+        }
+        emit("assign-self-success")
+    } catch {
+        notify({ title: trans("Error"), text: trans("Failed to assign chat"), type: "error" })
+    } finally {
+        isAssigningSelf.value = false
+    }
+}
+
+const isRestoring = ref(false)
+const restoreChat = async () => {
+    if (!props.session?.ulid || isRestoring.value) return
+    isRestoring.value = true
+    try {
+        const organisation = (route().params as Record<string, any>)?.organisation ?? "aw"
+        await axios.patch(
+            route("grp.org.chat.agents.sessions.restore", [organisation, props.session.ulid]),
+            {},
+            { withCredentials: true }
+        )
+        emit("restore-success")
+    } catch {
+        notify({ title: trans("Error"), text: trans("Failed to restore chat"), type: "error" })
+    } finally {
+        isRestoring.value = false
     }
 }
 
@@ -98,6 +201,7 @@ const reopenChat = async () => {
             props.session.assigned_agent.user_id = layout?.user?.id
             props.session.assigned_agent.name = layout?.user?.contact_name ?? ""
         }
+        emit("assign-self-success")
     } catch {
         notify({ title: trans("Error"), text: trans("Failed to reopen chat"), type: "error" })
     } finally {
@@ -108,8 +212,64 @@ const reopenChat = async () => {
 const messagesLocal = ref<LocalChatMessage[]>([])
 const newMessage = ref("")
 
+const handleEditMessage = async ({ id, text }: { id: number; text: string }) => {
+    if (!props.session?.ulid) return
+    try {
+        const organisation = (route().params as Record<string, any>)?.organisation ?? "aw"
+        const { data } = await axios.patch(
+            route("grp.org.chat.agents.messages.update", [organisation, props.session.ulid, id]),
+            { message_text: text },
+            { withCredentials: true }
+        )
+
+        const updated = data?.data
+        const msg: any = messagesLocal.value.find((m) => String(m.id) === String(id))
+        if (msg) {
+            msg.message_text = updated?.message_text ?? text
+            msg.edited_at = updated?.edited_at ?? new Date().toISOString()
+            if (msg.original?.text) {
+                msg.original.text = msg.message_text
+            }
+        }
+    } catch (e: any) {
+        notify({
+            title: trans("Error"),
+            text: e?.response?.data?.message ?? trans("Failed to edit message"),
+            type: "error",
+        })
+    }
+}
+
 const messageInput = ref<HTMLTextAreaElement>()
 const messagesContainer = ref<HTMLDivElement>()
+
+const showEmojiPicker = ref(false)
+const emojiPickerContainer = ref<HTMLElement | null>(null)
+
+const pickEmoji = (emoji: string) => {
+    const el = messageInput.value
+    if (!el) {
+        newMessage.value += emoji
+        return
+    }
+
+    const start = el.selectionStart ?? newMessage.value.length
+    const end = el.selectionEnd ?? newMessage.value.length
+    newMessage.value = newMessage.value.slice(0, start) + emoji + newMessage.value.slice(end)
+
+    nextTick(() => {
+        el.focus()
+        const pos = start + emoji.length
+        el.setSelectionRange(pos, pos)
+        autoResize()
+    })
+}
+
+const handleClickOutsideEmoji = (event: MouseEvent) => {
+    if (showEmojiPicker.value && emojiPickerContainer.value && !emojiPickerContainer.value.contains(event.target as Node)) {
+        showEmojiPicker.value = false
+    }
+}
 
 // file upload
 const imageInput = ref<HTMLInputElement>()
@@ -141,7 +301,9 @@ const canLoadMore = ref(false)
 const nextCursor = ref<string | null>(null)
 
 const chatSession = computed(() => props.session)
+const isTrashed = computed(() => !!(chatSession.value as any)?.is_trashed)
 const isClosed = computed(() => chatSession.value?.status === "closed")
+const isWaiting = computed(() => chatSession.value?.status === "waiting")
 const menuRef = ref<HTMLElement | null>(null)
 
 const isTyping = ref(false)
@@ -459,6 +621,16 @@ const initSocket = () => {
 
         scrollBottom()
     })
+    chatChannel.listen(".reaction", ({ message }: any) => {
+        if (!message?.id) return
+        const index = messagesLocal.value.findIndex((m) => m.id === message.id)
+        if (index !== -1) {
+            messagesLocal.value[index] = {
+                ...messagesLocal.value[index],
+                reactions: message.reactions ?? [],
+            }
+        }
+    })
     chatChannel.listen(".messages.read", (event: any) => {
         if (event.reader_type !== "agent") {
             messagesLocal.value.forEach((msg) => {
@@ -506,6 +678,7 @@ const markAsRead = async () => {
             session_ulid: chatSession.value.ulid,
             request_from: requestFrom,
         })
+        emit("messages-read")
     } catch (e) {
         console.error("Failed to mark read", e)
     }
@@ -515,6 +688,22 @@ const onViewMessageDetails = () => {
     isMenuOpen.value = false
     emit("view-message-details")
 }
+
+const onViewUserProfile = () => {
+    isMenuOpen.value = false
+    emit("view-user-profile")
+}
+
+const statusBadgeClass = computed(() => {
+    const map: Record<string, string> = {
+        active:      "bg-green-100 text-green-700",
+        waiting:     "bg-yellow-100 text-yellow-700",
+        resolved:    "bg-blue-100 text-blue-700",
+        transferred: "bg-purple-100 text-purple-700",
+        closed:      "bg-gray-100 text-gray-600",
+    }
+    return map[chatSession.value?.status ?? ""] ?? "bg-gray-100 text-gray-600"
+})
 
 watch(
     () => chatSession.value?.ulid,
@@ -595,11 +784,13 @@ onMounted(async () => {
     await getMediaUrl(chatSession.value!.ulid)
     initSocket()
     document.addEventListener("click", handleClickOutside)
+    document.addEventListener("click", handleClickOutsideEmoji)
 })
 
 onUnmounted(() => {
     stopSocket()
     document.removeEventListener("click", handleClickOutside)
+    document.removeEventListener("click", handleClickOutsideEmoji)
 })
 
 watch(selectedLanguage, (code) => {
@@ -618,62 +809,90 @@ const handleClickOutside = (e: MouseEvent) => {
 <template>
     <div class="flex flex-col h-full bg-white overflow-hidden">
         <!-- Header -->
-        <header class="flex items-center gap-3 px-3 py-2 border-b bg-gray-50">
-            <button @click="$emit('back')">
+        <header class="flex items-center gap-3 px-3 py-2 border-b">
+            <button @click="$emit('back')" :aria-label="trans('Back')">
                 <FontAwesomeIcon :icon="faArrowLeft" class="text-gray-400" />
             </button>
 
-            <div class="w-8 h-8 rounded-full flex items-center justify-center shrink-0 bg-gray-100 text-gray-500">
+            <button type="button" v-tooltip="trans('View profile')"
+                class="w-8 h-8 rounded-full flex items-center justify-center shrink-0 bg-gray-100 text-gray-500 hover:ring-2 hover:ring-gray-200 transition"
+                @click="onViewUserProfile">
                 <Image v-if="session?.image" :src="session?.image" class="w-full h-full rounded-full object-cover" />
 
                 <FontAwesomeIcon v-else :icon="faUser" class="text-sm" />
+            </button>
+
+            <div class="flex-1 min-w-0 cursor-pointer" @click="onViewMessageDetails">
+                <div class="text-sm font-semibold truncate primary-text hover:primary-text-hover transition-colors">
+                    {{ session?.guest_identifier || session?.contact_name }}
+                </div>
+                <div class="flex items-center gap-1.5 mt-0.5">
+                    <span v-if="session?.status"
+                        class="text-[10px] font-medium capitalize rounded-full px-1.5 py-0.5"
+                        :class="statusBadgeClass">
+                        {{ session.status }}
+                    </span>
+                    <span v-if="session?.shop?.name" class="text-[11px] text-gray-400 truncate">
+                        {{ session.shop.name }}
+                    </span>
+                </div>
             </div>
 
-            <span
-                class="flex-1 text-sm font-semibold truncate cursor-pointer primary-text hover:primary-text-hover transition-colors"
-                @click="onViewMessageDetails">
-                {{ session?.guest_identifier || session?.contact_name }}
-            </span>
+            <ModalConfirmationDelete v-if="!isClosed && !isTrashed && isMyChat" :routeDelete="{
+                name: 'grp.org.chat.agents.sessions.close',
+                parameters: [session?.organisation.id, session?.ulid],
+                method: 'patch',
+            }" :title="trans('Are you sure you want to end this chat?')"
+                :noLabel="trans('End chat')"
+                :noIcon="faTimesCircle"
+                :description="trans('This will close the chat session. The conversation history will be preserved.')"
+                @success="$emit('close-session')">
+                <template #default="{ changeModel }">
+                    <button @click="changeModel"
+                        class="inline-flex items-center justify-center gap-1.5 shrink-0 h-7 px-2.5 text-[11px] font-medium rounded-md transition hover:opacity-90"
+                        :style="{ backgroundColor: 'var(--theme-color-4)', color: 'var(--theme-color-5)' }">
+                        <FontAwesomeIcon :icon="faTimesCircle" class="text-[11px]" />
+                        {{ trans("End chat") }}
+                    </button>
+                </template>
+            </ModalConfirmationDelete>
 
-            <select v-if="languages.length" v-model="selectedLanguage" :disabled="isTranslating"
-                class="h-[20px] text-[10px] px-1.5 py-0 rounded border border-gray-300 bg-white text-gray-600 leading-none focus:outline-none focus:ring-0 disabled:opacity-50">
-                <option value="" disabled>
-                    Translate To..
-                </option>
-
-                <option v-for="lang in languages" :key="lang.id" :value="lang.code">
-                    {{ lang.native_name }}
-                </option>
-            </select>
+            <Select v-if="languages.length" v-model="selectedLanguage" :options="languages"
+                optionLabel="native_name" optionValue="code" :placeholder="trans('Translate To..')"
+                :disabled="isTranslating" size="small"
+                :pt="{ option: { style: 'font-size: 0.6875rem; padding-top: 0.35rem; padding-bottom: 0.35rem;' } }"
+                class="translate-select h-7 w-36 text-[11px]" />
 
             <FontAwesomeIcon v-if="isTranslating" :icon="faSpinner" class="text-gray-400 text-xs animate-spin" />
 
             <div class="relative" ref="menuRef">
-                <button @click.stop="isMenuOpen = !isMenuOpen">
+                <button @click.stop="isMenuOpen = !isMenuOpen" :aria-label="trans('Toggle menu')">
                     <FontAwesomeIcon :icon="faEllipsisVertical" class="text-gray-400" />
                 </button>
 
-                <div v-if="isMenuOpen && !isClosed"
+                <div v-if="isMenuOpen && !isClosed && !isTrashed"
                     class="absolute right-0 mt-2 w-56 bg-white border rounded-md shadow z-50">
-                    <ModalConfirmationDelete :routeDelete="{
-                        name: 'grp.org.chat.agents.sessions.close',
-                        parameters: [session?.organisation.id, session?.ulid],
-                        method: 'patch',
-                    }" :title="trans('Are you sure you want to close this session?')"
-                        :noLabel="trans('Close Session')"
-                        :noIcon="faTimesCircle"
-                        :description="trans('This will close the chat session. The conversation history will be preserved.')"
-                        @success="$emit('close-session')">
-                        <template #default="{ changeModel }">
-                            <button @click="changeModel" class="menu-item text-red-600">
-                                <FontAwesomeIcon :icon="faTimesCircle" />
-                                {{ trans("Close Chat Session") }}
-                            </button>
-                        </template>
-                    </ModalConfirmationDelete>
+                    <button class="menu-item" @click="onViewUserProfile">
+                        <FontAwesomeIcon :icon="faUser" /> {{ trans("View Profile") }}
+                    </button>
 
                     <button class="menu-item" @click="onViewMessageDetails">
                         <FontAwesomeIcon :icon="faMessage" /> {{ trans("Message Details") }}
+                    </button>
+
+                    <button class="menu-item" @click="openJiraModal">
+                        <FontAwesomeIcon :icon="faJira" class="text-blue-600" /> {{ trans("Create Jira Ticket") }}
+                    </button>
+
+                    <button class="menu-item" @click="openSlackModal">
+                        <FontAwesomeIcon :icon="faSlack" class="text-purple-600" /> {{ trans("Share to Slack") }}
+                    </button>
+
+                    <button v-if="!(session as any)?.is_spam" class="menu-item text-red-600" @click="markSpam(true)">
+                        <FontAwesomeIcon :icon="faBan" /> {{ trans("Report spam") }}
+                    </button>
+                    <button v-else class="menu-item" @click="markSpam(false)">
+                        <FontAwesomeIcon :icon="faRotateLeft" /> {{ trans("Not spam") }}
                     </button>
                 </div>
             </div>
@@ -694,7 +913,7 @@ const handleClickOutside = (e: MouseEvent) => {
         </div>
 
         <!-- Messages -->
-        <div ref="messagesContainer" class="flex-1 overflow-y-auto px-3 py-2 space-y-3 bg-[#f6f6f7]">
+        <div ref="messagesContainer" class="flex-1 overflow-y-auto px-3 py-2 space-y-3 bg-[#F0F4F8]">
             <div class="flex justify-center" v-if="canLoadMore && nextCursor">
                 <button @click="getMessages(true)" :disabled="isLoadingMore" class="flex items-center gap-2 text-xs text-gray-600 px-4 py-1.5
                border rounded-full hover:bg-gray-100 disabled:opacity-50">
@@ -709,7 +928,14 @@ const handleClickOutside = (e: MouseEvent) => {
                 <div class="text-center text-xs text-gray-400">{{ date }}</div>
                 <div v-for="msg in msgs" :key="msg.id" class="flex"
                     :class="msg.sender_type === 'agent' ? 'justify-end' : 'justify-start'">
-                    <BubbleChat :message="msg" viewerType="agent" />
+                    <BubbleChat :message="msg" viewerType="agent"
+                        :contactName="session?.contact_name || session?.guest_identifier"
+                        :agentName="session?.assigned_agent?.name"
+                        :canEdit="isMyChat && !isClosed && !isWaiting"
+                        :sessionUlid="session?.ulid"
+                        :viewerReactorId="layout?.user?.id"
+                        @edit-message="handleEditMessage"
+                        @open-slack-settings="onOpenSlackSettings" />
                 </div>
             </template>
         </div>
@@ -720,7 +946,7 @@ const handleClickOutside = (e: MouseEvent) => {
         <div v-if="previewType === 'image' && previewUrl" class="px-3 pb-2">
             <div class="relative inline-block">
                 <img :src="previewUrl" class="h-24 rounded-lg border object-cover" />
-                <button @click="removeFile" class="absolute -top-2 -right-2 bg-white rounded-full shadow p-1">
+                <button @click="removeFile" class="absolute -top-2 -right-2 bg-white rounded-full shadow p-1" :aria-label="trans('Remove image')">
                     <FontAwesomeIcon :icon="faXmark" />
                 </button>
             </div>
@@ -739,14 +965,31 @@ const handleClickOutside = (e: MouseEvent) => {
                         {{ (selectedFile.size / 1024).toFixed(1) }} KB
                     </div>
                 </div>
-                <button @click="removeFile" class="text-gray-400 hover:text-red-500 shrink-0 ml-2">
+                <button @click="removeFile" class="text-gray-400 hover:text-red-500 shrink-0 ml-2" :aria-label="trans('Remove file')">
                     <FontAwesomeIcon :icon="faXmark" />
                 </button>
             </div>
         </div>
 
+        <!-- Footer: Restore banner for trashed chats -->
+        <footer v-if="isTrashed" class="px-3 py-3 bg-white border-t">
+            <div class="flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg bg-gray-50 border border-gray-200">
+                <div class="text-xs text-gray-600">
+                    {{ trans('This chat is in trash') }}
+                </div>
+                <Button
+                    @click="restoreChat"
+                    :loading="isRestoring"
+                    style="primary"
+                    size="xs"
+                    :label="trans('Restore')"
+                    :icon="faRotateRight"
+                />
+            </div>
+        </footer>
+
         <!-- Footer: Reopen banner for closed chats -->
-        <footer v-if="isClosed" class="px-3 py-3 bg-white border-t">
+        <footer v-else-if="isClosed" class="px-3 py-3 bg-white border-t">
             <div class="flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg bg-gray-50 border border-gray-200">
                 <div class="text-xs text-gray-600">
                     {{ trans('This chat has been closed') }}
@@ -758,6 +1001,23 @@ const handleClickOutside = (e: MouseEvent) => {
                     size="xs"
                     :label="trans('Reopen')"
                     :icon="faRotateRight"
+                />
+            </div>
+        </footer>
+
+        <!-- Footer: Assign-to-me banner for waiting (unassigned) chats -->
+        <footer v-else-if="isWaiting" class="px-3 py-3 bg-white border-t">
+            <div class="flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg bg-gray-50 border border-gray-200">
+                <div class="text-xs text-gray-600">
+                    {{ trans('Assign this chat to yourself to start the conversation') }}
+                </div>
+                <Button
+                    @click="assignSelf"
+                    :loading="isAssigningSelf"
+                    style="primary"
+                    size="xs"
+                    :label="trans('Assign to me')"
+                    :icon="['far', 'fa-user']"
                 />
             </div>
         </footer>
@@ -803,13 +1063,25 @@ const handleClickOutside = (e: MouseEvent) => {
                 <div class="flex items-center justify-between px-2 pb-2 pt-1">
                     <div class="flex items-center gap-1">
                         <button @click="imageInput?.click()"
-                            class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-500 transition-colors" title="Upload image">
+                            class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-500 transition-colors" title="Upload image" :aria-label="trans('Upload image')">
                             <FontAwesomeIcon :icon="faImage" class="text-sm" />
                         </button>
                         <button @click="fileInput?.click()"
-                            class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-500 transition-colors" title="Upload file">
+                            class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-500 transition-colors" title="Upload file" :aria-label="trans('Upload file')">
                             <FontAwesomeIcon :icon="faPaperclip" class="text-sm" />
                         </button>
+                        <div ref="emojiPickerContainer" class="relative">
+                            <button type="button" @click.stop="showEmojiPicker = !showEmojiPicker"
+                                class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 transition-colors"
+                                :class="showEmojiPicker ? 'text-indigo-600 bg-gray-100' : 'text-gray-500'"
+                                :title="trans('Emoji')" :aria-label="trans('Emoji')">
+                                <FontAwesomeIcon :icon="faFaceSmile" class="text-sm" />
+                            </button>
+
+                            <div v-if="showEmojiPicker" class="absolute bottom-full left-0 mb-1 z-30">
+                                <EmojiPicker @pick="pickEmoji" />
+                            </div>
+                        </div>
                         <Button
                             @click="isEmailNotif = !isEmailNotif"
                             type="transparent"
@@ -825,11 +1097,32 @@ const handleClickOutside = (e: MouseEvent) => {
                                 <FontAwesomeIcon :icon="faEnvelope" />
                             </template>
                         </Button>
+                        <button @click="openJiraModal"
+                            class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-blue-50 text-gray-500 hover:text-blue-600 transition-colors" :title="trans('Create Jira ticket')" :aria-label="trans('Create Jira ticket')">
+                            <FontAwesomeIcon :icon="faJira" class="text-sm" />
+                        </button>
                     </div>
-                    <Button @click="sendMessage" :icon="faPaperPlane"></Button>
+                    <Button @click="sendMessage" :icon="faPaperPlane" :tooltip="trans('Send message')"></Button>
                 </div>
             </div>
         </footer>
+
+        <JiraTicketModal
+            :is-open="isJiraModalOpen"
+            :session="session"
+            :organisation="currentOrganisation"
+            @close="isJiraModalOpen = false"
+            @open-settings="onOpenJiraSettings"
+        />
+
+        <SlackShareModal
+            :is-open="isSlackModalOpen"
+            mode="session"
+            :organisation="currentOrganisation"
+            :session-ulid="session?.ulid"
+            @close="isSlackModalOpen = false"
+            @open-settings="onOpenSlackSettings"
+        />
     </div>
 </template>
 <style scoped>
@@ -844,6 +1137,21 @@ const handleClickOutside = (e: MouseEvent) => {
 
 .menu-item:hover {
     background: #f3f4f6;
+}
+
+.translate-select.p-select {
+    height: 1.75rem;
+    align-items: center;
+    border-radius: 0.375rem;
+}
+
+.translate-select :deep(.p-select-label) {
+    display: flex;
+    align-items: center;
+    padding-top: 0;
+    padding-bottom: 0;
+    font-size: 0.6875rem;
+    line-height: 1;
 }
 
 ::-webkit-scrollbar {

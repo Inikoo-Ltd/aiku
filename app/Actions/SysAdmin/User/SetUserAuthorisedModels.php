@@ -33,7 +33,7 @@ class SetUserAuthorisedModels
         $authorisedProductions   = [];
 
 
-        if ($user->authTo(['group-webmaster.view', 'group-webmaster.edit', 'group-webmaster.view'])) {
+        if ($user->hasAnyPermission(['group-webmaster.view', 'group-webmaster.edit'])) {
             foreach ($user->group->websites as $website) {
                 $authorisedOrganisations[$website->organisation_id] = ['org_id' => $website->organisation_id];
                 $shop                                               = $website->shop;

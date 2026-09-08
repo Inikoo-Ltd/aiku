@@ -9,23 +9,58 @@
 
 namespace App\Actions\Procurement\PurchaseOrder;
 
+use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
+use App\Actions\Helpers\CurrencyExchange\GetHistoricCurrencyExchange;
 use App\Actions\OrgAction;
+use App\Actions\SupplyChain\AgentSupplierPurchaseOrder\StoreAgentSupplierPurchaseOrdersFromPurchaseOrder;
+use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
+use App\Models\Procurement\OrgAgent;
 use App\Models\Procurement\PurchaseOrder;
+use App\Models\Procurement\PurchaseOrderTransaction;
+use RuntimeException;
 
 class CalculatePurchaseOrderTotalAmounts extends OrgAction
 {
     public function handle(PurchaseOrder $purchaseOrder): void
     {
-        $items       = $purchaseOrder->purchaseOrderTransactions()->get();
-        $itemsNet    = $items->sum('net_amount');
+        $itemsNet = $purchaseOrder->purchaseOrderTransactions()
+            ->with('supplierProduct.currency')
+            ->get()
+            ->sum(fn (PurchaseOrderTransaction $transaction) => $this->netAmountInOrderCurrency($purchaseOrder, $transaction));
 
-        data_set($modelData, 'cost_total', $itemsNet);
-        data_set($modelData, 'cost_items', $itemsNet);
-        data_set($modelData, 'cost_extra', 0);
-        data_set($modelData, 'cost_shipping', 0);
-        data_set($modelData, 'cost_duties', 0);
-        data_set($modelData, 'cost_tax', 0);
+        $extras = (float) $purchaseOrder->cost_extra
+            + (float) $purchaseOrder->cost_shipping
+            + (float) $purchaseOrder->cost_duties
+            + (float) $purchaseOrder->cost_tax;
 
-        $purchaseOrder->update($modelData);
+        $purchaseOrder->update([
+            'cost_items' => $itemsNet,
+            'cost_total' => $itemsNet + $extras,
+        ]);
+
+        if ($purchaseOrder->parent instanceof OrgAgent && $purchaseOrder->state != PurchaseOrderStateEnum::IN_PROCESS) {
+            StoreAgentSupplierPurchaseOrdersFromPurchaseOrder::make()->action($purchaseOrder);
+        }
+    }
+
+    private function netAmountInOrderCurrency(PurchaseOrder $purchaseOrder, PurchaseOrderTransaction $transaction): float
+    {
+        $netAmount       = (float) $transaction->net_amount;
+        $supplierProduct = $transaction->supplierProduct;
+
+        if (!$supplierProduct || $supplierProduct->currency_id === $purchaseOrder->currency_id) {
+            return $netAmount;
+        }
+
+        $rate = GetHistoricCurrencyExchange::run($supplierProduct->currency, $purchaseOrder->currency, $purchaseOrder->date)
+            ?? GetCurrencyExchange::run($supplierProduct->currency, $purchaseOrder->currency);
+
+        if ($rate === null) {
+            throw new RuntimeException(
+                "No exchange rate found from {$supplierProduct->currency->code} to {$purchaseOrder->currency->code} for purchase order {$purchaseOrder->reference}"
+            );
+        }
+
+        return $netAmount * $rate;
     }
 }

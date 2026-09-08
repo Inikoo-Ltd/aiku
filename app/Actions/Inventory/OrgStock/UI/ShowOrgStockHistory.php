@@ -9,7 +9,9 @@
 namespace App\Actions\Inventory\OrgStock\UI;
 
 use App\Actions\OrgAction;
+use App\Enums\Inventory\OrgStock\OrgStockValuationMethodEnum;
 use App\Actions\Traits\Authorisations\Inventory\WithInventoryAuthorisation;
+use App\Actions\Traits\WithStockHistoryArchiveRead;
 use App\Http\Resources\Inventory\OrgStockHistoryResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Inventory\OrgStock;
@@ -19,6 +21,7 @@ use App\Models\SysAdmin\Organisation;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Query\Builder;
+use Illuminate\Pagination\LengthAwarePaginator as Paginator;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
@@ -29,6 +32,7 @@ class ShowOrgStockHistory extends OrgAction
 {
     use WithInventoryAuthorisation;
     use WithOrgStockSubNavigation;
+    use WithStockHistoryArchiveRead;
 
     private Organisation|OrgStockFamily $parent;
     private OrgStock $orgStock;
@@ -54,22 +58,71 @@ class ShowOrgStockHistory extends OrgAction
         $this->orgStock = $orgStock;
         $perPage        = config('ui.table.records_per_page', 25);
 
-        $query = DB::table('org_stock_histories')
+        $queryFactory = fn (?string $connection): Builder => $this->historyQuery($orgStock, $connection);
+
+        if (!$this->stockHistoryRangeNeedsArchive($this->requestedFromDate())) {
+            return $queryFactory(null)->paginate(perPage: $perPage)->appends(request()->query());
+        }
+
+        $records = collect($queryFactory(null)->get())
+            ->concat($this->stockHistoryArchiveRows($queryFactory))
+            ->sortByDesc('date')
+            ->values();
+
+        $page = Paginator::resolveCurrentPage();
+
+        return new Paginator(
+            $records->forPage($page, $perPage)->values(),
+            $records->count(),
+            $perPage,
+            $page,
+            ['path' => Paginator::resolveCurrentPath()]
+        )->appends(request()->query());
+    }
+
+    private function historyQuery(OrgStock $orgStock, ?string $connection): Builder
+    {
+        $query = DB::connection($connection)->table('org_stock_histories')
             ->where('org_stock_id', $orgStock->id)
             ->select([
                 'id',
                 'date',
                 'quantity_in_locations',
-                'org_stock_value',
-                'grp_stock_value',
+                'org_stock_lpp_value',
+                'grp_stock_lpp_value',
+                'org_stock_wac_value',
+                'org_stock_fifo_value',
                 'number_locations',
-                'value_per_sku',
+                'lpp_per_sku',
+                'wac_per_sku',
+                'fifo_per_sku',
             ])
             ->orderBy('date', 'desc');
 
         $this->applyDateFilter($query);
 
-        return $query->paginate(perPage: $perPage)->appends(request()->query());
+        return $query;
+    }
+
+    /**
+     * A history with no date filter starts at the SKU's first ever day, so it always reaches the
+     * archive; a filtered one only does when its range opens before the retention cutoff.
+     */
+    private function requestedFromDate(): ?string
+    {
+        $filters = request()->input('between', []);
+
+        if (!isset($filters['date'])) {
+            return null;
+        }
+
+        $parts = explode('-', $filters['date']);
+
+        if (count($parts) !== 2) {
+            return null;
+        }
+
+        return Carbon::createFromFormat('Ymd', trim($parts[0]), resolveTimezoneHeader())->toDateString();
     }
 
     private function applyDateFilter(Builder $query): void
@@ -103,9 +156,14 @@ class ShowOrgStockHistory extends OrgAction
                 ->betweenDates(['date'])
                 ->column(key: 'date', label: __('Date'), canBeHidden: false, sortable: false, type: 'date')
                 ->column(key: 'quantity_in_locations', label: __('Quantity'), canBeHidden: false, align: 'right')
-                ->column(key: 'number_locations', label: __('Number of Locations'), canBeHidden: false, align: 'right')
-                ->column(key: 'org_stock_value', label: __('Stock Value'), canBeHidden: false, align: 'right')
-                ->column(key: 'value_per_sku', label: __('Value per SKU'), canBeHidden: false, align: 'right');
+                ->column(key: 'number_locations', label: __('Number of Locations'), canBeHidden: false, align: 'right');
+
+            foreach (OrgStockValuationMethodEnum::ordered() as $index => $method) {
+                $table->column(key: $method->stockValueColumn(), label: __('Value').' ('.$method->label().')', tooltip: $method->legend(), tooltipIcon: $index === 0, canBeHidden: $index !== 0, align: 'right');
+            }
+            foreach (OrgStockValuationMethodEnum::ordered() as $index => $method) {
+                $table->column(key: $method->perSkuColumn(), label: __('Per SKO').' ('.$method->label().')', tooltip: $method->legend(), tooltipIcon: $index === 0, canBeHidden: $index !== 0, align: 'right');
+            }
         };
     }
 
@@ -121,13 +179,13 @@ class ShowOrgStockHistory extends OrgAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'    => __('SKU').' '.$this->orgStock->code.' ('.__('Stock History').')',
+                'title'    => __('SKO').' '.$this->orgStock->code.' ('.__('Stock History').')',
                 'pageHead' => [
                     'icon'          => [
-                        'title' => __('SKU').' ('.__('Stock History').')',
+                        'title' => __('SKO').' ('.__('Stock History').')',
                         'icon'  => 'fal fa-history',
                     ],
-                    'model'         => __('SKU'),
+                    'model'         => __('SKO'),
                     'title'         => $this->orgStock->code,
                     'subNavigation' => $subNavigation,
                 ],

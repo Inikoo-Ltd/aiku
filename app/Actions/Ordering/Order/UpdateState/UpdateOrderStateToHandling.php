@@ -39,6 +39,8 @@ class UpdateOrderStateToHandling extends OrgAction
             OrderStateEnum::SUBMITTED,
             OrderStateEnum::IN_WAREHOUSE,
             OrderStateEnum::HANDLING,
+            // Resuming a blocked delivery note brings its order back here, see StartHandlingDeliveryNote
+            OrderStateEnum::HANDLING_BLOCKED,
             OrderStateEnum::PACKED,
             OrderStateEnum::PICKED,
             OrderStateEnum::FINALISED,

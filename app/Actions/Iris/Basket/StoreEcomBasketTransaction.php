@@ -9,6 +9,7 @@
 namespace App\Actions\Iris\Basket;
 
 use App\Actions\Traits\InteractsWithOrderInBasket;
+use App\Actions\Traits\WithCustomerPurchasableProduct;
 use App\Actions\IrisAction;
 use App\Actions\Ordering\Transaction\StoreTransaction;
 use App\Models\Catalogue\Product;
@@ -21,6 +22,7 @@ use Lorisleiva\Actions\ActionRequest;
 class StoreEcomBasketTransaction extends IrisAction
 {
     use InteractsWithOrderInBasket;
+    use WithCustomerPurchasableProduct;
 
     /**
      * @throws \Illuminate\Validation\ValidationException
@@ -28,6 +30,8 @@ class StoreEcomBasketTransaction extends IrisAction
      */
     public function handle(Customer $customer, Product $product, array $modelData): Transaction
     {
+        $this->ensureProductIsPurchasableByCustomer($product);
+
         $order = $this->getOrderInBasket($customer);
 
         if (!$order) {
@@ -95,6 +99,7 @@ class StoreEcomBasketTransaction extends IrisAction
             'department_id'     => $product?->department_id,
             'sub_department_id' => $product?->sub_department_id,
             'family_id'         => $product?->family_id,
+            'is_golden_product' => (bool)$product?->is_golden_product,
         ];
     }
 }

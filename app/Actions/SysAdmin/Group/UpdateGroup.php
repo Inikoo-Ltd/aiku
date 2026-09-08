@@ -8,12 +8,12 @@
 
 namespace App\Actions\SysAdmin\Group;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Http\Resources\SysAdmin\Group\GroupResource;
 use App\Models\SysAdmin\Group;
 
-class UpdateGroup extends GrpAction
+class UpdateGroup extends OrgAction
 {
     use WithActionUpdate;
 
@@ -35,7 +35,7 @@ class UpdateGroup extends GrpAction
     public function action(Group $group, array $modelData): Group
     {
         $this->asAction = true;
-        $this->initialisation($group, $modelData);
+        $this->initialisationFromGroup($group, $modelData);
 
         return $this->handle($group, $this->validatedData);
     }

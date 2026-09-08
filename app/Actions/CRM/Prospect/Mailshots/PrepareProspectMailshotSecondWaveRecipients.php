@@ -9,7 +9,6 @@
 namespace App\Actions\CRM\Prospect\Mailshots;
 
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateMailshots;
-use App\Actions\Comms\Outbox\Hydrators\OutboxHydrateMailshots;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateMailshots;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateMailshots;
 use App\Actions\Comms\Mailshot\UpdateMailshot;
@@ -98,7 +97,6 @@ class PrepareProspectMailshotSecondWaveRecipients
 
         GroupHydrateMailshots::dispatch($mailshot->group);
         OrganisationHydrateMailshots::dispatch($mailshot->organisation);
-        OutboxHydrateMailshots::dispatch($mailshot->outbox);
         ShopHydrateMailshots::dispatch($mailshot->shop);
     }
 

@@ -28,20 +28,25 @@ type BuildProductStructuredDataOptions = {
     webpageData?: ProductStructuredDataWebpageData
     currencyCode?: string | null
     websiteName?: string | null
+    showPrice?: boolean
 }
 
+// Offers are omitted when the visitor may not see prices (guest on a shop with
+// hidden prices): JSON-LD is public and must follow the same rule as the UI.
 const buildOfferNode = ({
     product,
     currencyCode,
     websiteName,
     pageUrl,
+    showPrice = true,
 }: {
     product: Record<string, any>
     currencyCode?: string | null
     websiteName?: string | null
     pageUrl?: string | null
+    showPrice?: boolean
 }): StructuredDataNode | null => {
-    if (!isFilledValue(product?.price)) return null
+    if (!showPrice || !isFilledValue(product?.price)) return null
 
     const offerNode: StructuredDataNode = {
         "@type": "Offer",
@@ -80,7 +85,11 @@ const buildAdditionalProperties = (
         .map(([name, value]) => ({
             "@type": "PropertyValue",
             name,
-            value: name === "country_of_origin" ? String(value?.name ?? ctrans("No country")) : String(value),
+            value: name === "countries_of_origin"
+                ? (Array.isArray(value) && value.length
+                    ? value.map((country: { name?: string }) => country?.name).filter(Boolean).join(", ")
+                    : ctrans("No country"))
+                : String(value),
         }))
 
     return properties.length ? properties : undefined
@@ -92,6 +101,7 @@ export const buildProductNode = ({
     webpageData,
     currencyCode,
     websiteName,
+    showPrice = true,
 }: BuildProductStructuredDataOptions): StructuredDataNode | null => {
     if (!isPlainObject(product)) return null
 
@@ -151,6 +161,7 @@ export const buildProductNode = ({
         currencyCode,
         websiteName,
         pageUrl,
+        showPrice,
     })
     if (offerNode) {
         productNode.offers = offerNode

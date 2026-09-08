@@ -66,6 +66,8 @@ class DownloadPackagingReport extends OrgAction
             $zip->close();
         }
 
+        app()->terminating(fn () => is_file($zipPath) && @unlink($zipPath));
+
         $response = response()->download($zipPath, "packaging-reports-{$startDate}-to-{$endDate}.zip")->deleteFileAfterSend(true);
 
         Storage::deleteDirectory($outputDir);

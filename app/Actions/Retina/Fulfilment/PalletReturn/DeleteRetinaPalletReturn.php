@@ -11,7 +11,6 @@ namespace App\Actions\Retina\Fulfilment\PalletReturn;
 use App\Actions\Fulfilment\PalletReturn\DeletePalletReturn;
 use App\Actions\RetinaAction;
 use App\Models\Fulfilment\PalletReturn;
-use App\Models\SysAdmin\Organisation;
 use Lorisleiva\Actions\ActionRequest;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Http\RedirectResponse;
@@ -46,7 +45,7 @@ class DeleteRetinaPalletReturn extends RetinaAction
         return false;
     }
 
-    public function asController(Organisation $organisation, PalletReturn $palletReturn, ActionRequest $request): void
+    public function asController(PalletReturn $palletReturn, ActionRequest $request): void
     {
         $this->initialisation($request);
         $this->handle($palletReturn, $this->validatedData);

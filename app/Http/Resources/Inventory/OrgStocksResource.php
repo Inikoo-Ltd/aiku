@@ -36,13 +36,16 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $stock_value
  * @property mixed $revenue
  * @property mixed $dispatched
- * @property mixed $sales_grp_currency_external
- * @property mixed $sales_grp_currency_external_ly
+ * @property mixed $sales_org_currency_external
+ * @property mixed $sales_org_currency_external_ly
  * @property mixed $invoices
  * @property mixed $invoices_ly
+ * @property mixed $gross_profit
  * @property mixed $on_the_way_po_value
  * @property mixed $on_the_way_po_count
  * @property mixed $woc
+ * @property mixed $stock_cover
+ * @property mixed $potential_sales
  * @property mixed $health_rank
  * @property mixed $is_on_demand
  * @property mixed $product_count
@@ -77,15 +80,19 @@ class OrgStocksResource extends JsonResource
             'revenue'                           => $this->revenue,
             'dispatched'                        => $this->dispatched,
             'is_on_demand'                      => $this->is_on_demand,
-            'sales_grp_currency_external'       => $this->sales_grp_currency_external ?? 0,
-            'sales_grp_currency_external_ly'    => $this->sales_grp_currency_external_ly ?? 0,
-            'sales_grp_currency_external_delta' => $this->calculateDelta($this->sales_grp_currency_external ?? 0, $this->sales_grp_currency_external_ly ?? 0),
+            'sales_org_currency_external'       => $this->sales_org_currency_external ?? 0,
+            'sales_org_currency_external_ly'    => $this->sales_org_currency_external_ly ?? 0,
+            'sales_org_currency_external_delta' => $this->calculateDelta($this->sales_org_currency_external ?? 0, $this->sales_org_currency_external_ly ?? 0),
             'invoices'                          => $this->invoices ?? 0,
             'invoices_ly'                       => $this->invoices_ly ?? 0,
             'invoices_delta'                    => $this->calculateDelta($this->invoices ?? 0, $this->invoices_ly ?? 0),
+            'gross_profit'                      => $this->gross_profit ?? 0,
+            'gross_profit_percentage'           => $this->gross_profit_percentage !== null ? (float) $this->gross_profit_percentage : null,
+            'potential_sales'                   => $this->potential_sales ?? 0,
             'on_the_way_po_value'               => $this->on_the_way_po_value ?? 0,
             'on_the_way_po_count'               => $this->on_the_way_po_count ?? 0,
             'woc'                               => $this->woc !== null ? round((float)$this->woc, 1) : null,
+            'stock_cover'                       => $this->stock_cover !== null ? round((float)$this->stock_cover, 1) : null,
             'product_count'                     => $this->product_count,
             'health_rank'                       => $this->health_rank ? $this->health_rank->stateIcon()[$this->health_rank->value] : null,
             'current_supplier_sku_cost'         => $this->current_supplier_sku_cost ?? 0,

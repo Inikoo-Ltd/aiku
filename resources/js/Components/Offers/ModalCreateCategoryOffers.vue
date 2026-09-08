@@ -50,8 +50,10 @@ const typeOffer = ref('quantity')
 const offerQtyItems = ref<number | null>(1)
 const offerAmount = ref<number | null>(0)
 const discountPercentage = ref<number | null>(null)
-const offerCategoryId = ref<number | null>(null)
+const offerCategories = ref<{ id: number, name: string }[]>([])
 const categoryType = ref<'department' | 'subdepartment' | 'family'>('department')
+const discountTarget = ref<'same' | 'other'>('same')
+const targetCategoryId = ref<number | null>(null)
 const isLoadingSubmit = ref(false)
 const dateType = ref<'permanent' | 'interval'>('permanent')
 const startDate = ref<Date | null>(null)
@@ -88,33 +90,41 @@ const submitCategoryOffer = () => {
         {
             name: offerLabel.value,
             type: typeOffer.value,
-            product_category_id: offerCategoryId.value || props.product_category_id,
+            product_category_ids: props.product_category_id
+                ? [props.product_category_id]
+                : offerCategories.value.map((category) => category.id),
             trigger_data_item_quantity: offerQtyItems.value != null ? Math.floor(offerQtyItems.value) : null,
             trigger_data_item_amount: offerAmount.value,
             percentage_off: discountPercentage.value != null ? discountPercentage.value / 100 : null,
+            target_product_category_id: discountTarget.value === 'other' ? targetCategoryId.value : null,
             duration: dateType.value,
             start_at: formatDate(startDate.value),
             end_at: dateType.value === 'interval' ? formatDate(endDate.value) : null
         }
     )
     .then((response) => {
+        const { url, created, skipped } = response.data
+
+        if (!created) {
+            notify({
+                title: trans("Something went wrong"),
+                text: trans("No offer was created, the selected categories already have an active offer"),
+                type: "error"
+            })
+            return
+        }
+
         notify({
             title: trans("Success"),
-            text: trans("Successfully submit the data"),
-            type: "success"
+            text: skipped
+                ? trans("Created :created offers, skipped :skipped (already have an active offer)", { created: String(created), skipped: String(skipped) })
+                : trans("Successfully submit the data"),
+            type: skipped ? "warning" : "success"
         })
         resetForm();
         isOpenModal.value = false
 
-        if (!props.product_category_id) {
-            router.visit(route('grp.org.shops.show.discounts.campaigns.offer.show', {
-                organisation: props.shop_data.organisation,
-                shop: props.shop_data.slug,
-                offerCampaign: props.shop_data.offercampaign,
-                offer: response.data.slug
-            }))
-        }
-        router.reload()
+        router.visit(url)
     })
     .catch((error) => {
         const errors = error.response?.data?.errors || {}
@@ -167,7 +177,9 @@ const resetForm = () => {
     offerQtyItems.value = 1
     offerAmount.value = 0
     categoryType.value = 'department'
-    offerCategoryId.value = props.product_category_id ?? null
+    offerCategories.value = []
+    discountTarget.value = 'same'
+    targetCategoryId.value = null
     dateType.value = 'permanent'
     startDate.value = null
     endDate.value = null
@@ -175,11 +187,13 @@ const resetForm = () => {
 }
 
 const isFormInvalid = computed(() => {
-    if (!offerCategoryId.value && !props.product_category_id) return true
+    if (!props.product_category_id && !offerCategories.value.length) return true
 
     if (!offerLabel.value) return true
 
     if (!discountPercentage.value) return true
+
+    if (discountTarget.value === 'other' && !targetCategoryId.value) return true
 
     if (typeOffer.value === 'quantity' && !offerQtyItems.value) {
         return true
@@ -219,7 +233,7 @@ watch([startDate, endDate], () => {
 
 watch(categoryType, () => {
     if (!props.product_category_id) {
-        offerCategoryId.value = null
+        offerCategories.value = []
     }
 })
 
@@ -251,7 +265,8 @@ resetForm();
                     <label for="amount" class="font-medium mb-2 flex items-center gap-x-1">
                         <FontAwesomeIcon icon="fas fa-asterisk" class="font-light text-xs text-red-400 align-middle" />
 
-                        {{ trans('Select category') }}:
+                        {{ trans('Select categories') }}:
+                        <InformationIcon :information="trans('You can select more than one, an offer will be created for each of them')" />
                     </label>
 
                     <div class="flex gap-4">
@@ -279,10 +294,11 @@ resetForm();
 
                     <PureMultiselectInfiniteScroll
                         :key="categoryType"
-                        v-model="offerCategoryId"
+                        v-model="offerCategories"
                         :fetchRoute="activeCategoryRoute"
-                        required
-                        :placeholder="trans('Select category from the list')"
+                        mode="tags"
+                        :object="true"
+                        :placeholder="trans('Select one or more categories from the list')"
                         valueProp="id"
                         labelProp="name" />
 
@@ -339,6 +355,43 @@ resetForm();
                     <InputNumber v-model="discountPercentage" inputId="offer_discount"
                         :placeholder="trans('Enter percentage')" suffix="%" :min="0" :max="100" class="w-full" />
 
+                </div>
+
+                <!-- Section: Discount target -->
+                <div class="space-y-2">
+                    <div class="font-medium mb-2 flex items-center gap-x-1">
+                        <FontAwesomeIcon icon="fas fa-asterisk" class="font-light text-xs text-red-400 align-middle" />
+                        {{ trans('Apply discount to') }}:
+                        <InformationIcon :information="trans('The discount can apply to this category, or to another family (e.g. spend on this category to get a discount on another family)')" />
+                    </div>
+
+                    <div class="flex flex-wrap items-center gap-3">
+                        <label for="discount-target-same"
+                            class="flex items-center gap-2 px-3 py-2 rounded-lg border cursor-pointer transition-colors"
+                            :class="discountTarget === 'same'
+                                ? 'border-green-500 bg-green-50 text-green-700 font-semibold'
+                                : 'border-gray-200 hover:border-gray-300'">
+                            <RadioButton v-model="discountTarget" inputId="discount-target-same" value="same" />
+                            <span>{{ trans('This category') }}</span>
+                        </label>
+
+                        <label for="discount-target-other"
+                            class="flex items-center gap-2 px-3 py-2 rounded-lg border cursor-pointer transition-colors"
+                            :class="discountTarget === 'other'
+                                ? 'border-green-500 bg-green-50 text-green-700 font-semibold'
+                                : 'border-gray-200 hover:border-gray-300'">
+                            <RadioButton v-model="discountTarget" inputId="discount-target-other" value="other" />
+                            <span>{{ trans('Another family') }}</span>
+                        </label>
+                    </div>
+
+                    <PureMultiselectInfiniteScroll v-if="discountTarget === 'other'"
+                        v-model="targetCategoryId"
+                        :fetchRoute="categoryRoutes.family"
+                        required
+                        :placeholder="trans('Select the family that gets the discount')"
+                        valueProp="id"
+                        labelProp="name" />
                 </div>
 
                 <!-- Section: Offer Duration -->

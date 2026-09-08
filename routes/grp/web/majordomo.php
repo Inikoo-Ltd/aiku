@@ -6,6 +6,8 @@
  * Copyright (c) 2023, Inikoo LTD
  */
 
+use App\Actions\Helpers\Redirects\RedirectAgentLink;
+use App\Actions\Helpers\Redirects\RedirectAgentSupplierPurchaseOrderLink;
 use App\Actions\Helpers\Redirects\RedirectAssetLink;
 use App\Actions\Helpers\Redirects\RedirectCollectionLink;
 use App\Actions\Helpers\Redirects\RedirectCollectionsInProductCategoryLink;
@@ -33,8 +35,10 @@ use App\Actions\Helpers\Redirects\RedirectPortfolioItemLink;
 use App\Actions\Helpers\Redirects\RedirectProductCategoryLink;
 use App\Actions\Helpers\Redirects\RedirectProductLink;
 use App\Actions\Helpers\Redirects\RedirectProspectLink;
+use App\Actions\Helpers\Redirects\RedirectPurchaseOrderLink;
 use App\Actions\Helpers\Redirects\RedirectReturnDeliveryNotesLink;
 use App\Actions\Helpers\Redirects\RedirectShopInShopFromDashboard;
+use App\Actions\Helpers\Redirects\RedirectStockDeliveryLink;
 use App\Actions\Helpers\Redirects\RedirectStockFamilyLink;
 use App\Actions\Helpers\Redirects\RedirectStockLink;
 use App\Actions\Helpers\Redirects\RedirectStoredItemAudit;
@@ -46,9 +50,11 @@ use App\Actions\Helpers\Redirects\RedirectCustomerLink;
 use App\Actions\Helpers\Redirects\RedirectMailshotLink;
 use App\Actions\Helpers\Redirects\RedirectOfferCampaignLink;
 use App\Actions\Helpers\Redirects\RedirectOfferLink;
+use App\Actions\Helpers\Redirects\RedirectOrgStockMovementParentLink;
 use App\Actions\Helpers\Redirects\RedirectServiceLink;
 use App\Actions\Helpers\Redirects\RedirectShippingZoneSchemaLink;
 use App\Actions\Helpers\Redirects\RedirectSupplierLink;
+use App\Actions\Helpers\Redirects\RedirectSupplierProductLink;
 use App\Actions\Helpers\Redirects\RedirectTradeUnitFamilyLink;
 use App\Actions\Helpers\Redirects\RedirectTradeUnitLink;
 use App\Actions\Helpers\Redirects\RedirectWebpageLink;
@@ -62,6 +68,8 @@ Route::get('redirect-invoice-in-customer/{invoice:id}', RedirectInvoicesInCustom
 Route::get('redirect-delivery-note/{deliveryNote:id}', RedirectDeliveryNotesLink::class)->name('redirect_delivery_notes');
 Route::get('redirect-return-note/{returnDeliveryNote:id}', RedirectReturnDeliveryNotesLink::class)->name('redirect_return_notes');
 
+Route::get('redirect-org-stock-movement-parent/{orgStockMovement:id}', RedirectOrgStockMovementParentLink::class)->name('redirect_org_stock_movement_parent');
+
 Route::get('redirect-invoice-in-accounting/{invoice:id}', RedirectInvoiceInAccounting::class)->name('redirect_invoice_in_accounting');
 
 
@@ -72,6 +80,11 @@ Route::get('redirect-stock-family/{stockFamily:id}', RedirectStockFamilyLink::cl
 Route::get('redirect-trade-unit/{tradeUnit:id}', RedirectTradeUnitLink::class)->name('redirect_trade_unit');
 Route::get('redirect-trade-unit-family/{tradeUnitFamily:id}', RedirectTradeUnitFamilyLink::class)->name('redirect_trade_unit_family');
 Route::get('redirect-supplier/{supplier:id}', RedirectSupplierLink::class)->name('redirect_supplier');
+Route::get('redirect-supplier-product/{supplierProduct:id}', RedirectSupplierProductLink::class)->name('redirect_supplier_product');
+Route::get('redirect-purchase-order/{purchaseOrder:id}', RedirectPurchaseOrderLink::class)->name('redirect_purchase_order');
+Route::get('redirect-stock-delivery/{stockDelivery:id}', RedirectStockDeliveryLink::class)->name('redirect_stock_delivery');
+Route::get('redirect-agent/{agent:id}', RedirectAgentLink::class)->name('redirect_agent');
+Route::get('redirect-agent-supplier-purchase-order/{agentSupplierPurchaseOrder:id}', RedirectAgentSupplierPurchaseOrderLink::class)->name('redirect_agent_supplier_purchase_order');
 Route::get('redirect-prospect/{prospect:id}', RedirectProspectLink::class)->name('redirect_prospect');
 Route::get('redirect-charge/{charge:id}', RedirectChargeLink::class)->name('redirect_charge');
 Route::get('redirect-service/{service:id}', RedirectServiceLink::class)->name('redirect_service');

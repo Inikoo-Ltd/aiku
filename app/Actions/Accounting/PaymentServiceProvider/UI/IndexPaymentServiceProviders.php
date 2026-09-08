@@ -8,7 +8,7 @@
 
 namespace App\Actions\Accounting\PaymentServiceProvider\UI;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Actions\Overview\ShowGroupOverviewHub;
 use App\Http\Resources\Accounting\PaymentServiceProvidersResource;
 use App\InertiaTable\InertiaTable;
@@ -23,7 +23,7 @@ use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
 
-class IndexPaymentServiceProviders extends GrpAction
+class IndexPaymentServiceProviders extends OrgAction
 {
     public function handle(Group $group, $prefix = null): LengthAwarePaginator
     {
@@ -114,7 +114,7 @@ class IndexPaymentServiceProviders extends GrpAction
 
     public function asController(ActionRequest $request): LengthAwarePaginator
     {
-        $this->initialisation(app('group'), $request);
+        $this->initialisationFromGroup(app('group'), $request);
         return $this->handle($this->group);
     }
 

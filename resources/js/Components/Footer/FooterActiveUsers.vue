@@ -48,9 +48,7 @@ const layout = useLayoutStore()
                                 >
                                     <div class="h-5 w-5 rounded-full border border-gray-300/20 shadow text-xxs flex items-center justify-center overflow-hidden">
                                         <Image v-if="dataUser.avatar_thumbnail" :src="dataUser.avatar_thumbnail" :alt="dataUser.username" />
-                                        <span v-else>
-                                            <FontAwesomeIcon icon='fal fa-image' class='text-xxs opacity-70' fixed-width aria-hidden='true' />
-                                        </span>
+                                        <FontAwesomeIcon v-else icon='fas fa-user' class='text-xxs opacity-70' fixed-width aria-hidden='true' />
                                     </div>
 
                                     <div class="flex flex-col items-start">

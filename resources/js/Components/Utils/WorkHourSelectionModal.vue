@@ -73,7 +73,7 @@ watch(
 		v-model:visible="localVisible"
 		modal
 		:closable="false"
-		:style="{ width: '420px' }"
+		class="w-[95vw] max-w-[95vw] sm:w-[560px] sm:max-w-[560px]"
 		appendTo="body">
 		<div class="space-y-6 py-4">
 			<div>

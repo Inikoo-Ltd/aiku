@@ -8,11 +8,14 @@
 
 use App\Actions\Discounts\Offer\DeleteOffer;
 use App\Actions\Discounts\Offer\FinishOffer;
-use App\Actions\Discounts\Offer\StoreBogoOffer;
+use App\Actions\Discounts\Offer\StoreBuyXGetCheapestFree;
+use App\Actions\Discounts\Offer\StoreProductDiscount;
+use App\Actions\Discounts\Offer\StoreProductStepDiscount;
 use App\Actions\Discounts\Offer\StoreCustomerOffers;
 use App\Actions\Discounts\Offer\StoreGiftsOffers;
 use App\Actions\Discounts\Offer\StoreProductCategoryDiscount;
 use App\Actions\Discounts\Offer\StoreDiscountShipping;
+use App\Actions\Discounts\Offer\StoreFirstOrderBonus;
 use App\Actions\Discounts\Offer\StoreShopOffer;
 use App\Actions\Discounts\Offer\StoreVoucherOffers;
 use App\Actions\Discounts\Offer\VolGr\UpdateVolGrGift;
@@ -27,7 +30,10 @@ Route::name('offer.')->prefix('offer/{offer:id}')->group(function () {
 Route::post('offers/shop/{shop:id}/category-offer', StoreProductCategoryDiscount::class)->name('category_offer.store');
 Route::post('offers/shop/{shop:id}/gift-offer', StoreGiftsOffers::class)->name('gift_offer.store');
 Route::post('offers/shop/{shop:id}/shop-offer', StoreShopOffer::class)->name('shop_offer.store');
+Route::post('offers/shop/{shop:id}/first-order-bonus', StoreFirstOrderBonus::class)->name('first_order_bonus.store');
 Route::post('offers/shop/{shop:id}/voucher', StoreVoucherOffers::class)->name('store_voucher');
 Route::post('offers/shop/{shop:id}/customer-offer', StoreCustomerOffers::class)->name('store_customer_offer');
 Route::post('offers/shop/{shop:id}/shipping-offer', StoreDiscountShipping::class)->name('shipping_offer.store');
-Route::post('offers/shop/{shop:id}/bogo-offer', StoreBogoOffer::class)->name('bogo_offer.store');
+Route::post('offers/shop/{shop:id}/bogo-offer', StoreBuyXGetCheapestFree::class)->name('bogo_offer.store');
+Route::post('offers/shop/{shop:id}/product-offer', StoreProductDiscount::class)->name('product_offer.store');
+Route::post('offers/shop/{shop:id}/step-discount', StoreProductStepDiscount::class)->name('step_discount.store');

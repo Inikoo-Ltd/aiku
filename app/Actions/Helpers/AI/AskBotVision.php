@@ -10,6 +10,7 @@
 
 namespace App\Actions\Helpers\AI;
 
+use App\Actions\Helpers\AI\Traits\WithAICreditErrorHandler;
 use App\Actions\Helpers\AI\Traits\WithPromptAI;
 use LLPhant\Chat\OpenAIChat;
 use LLPhant\Chat\Vision\ImageSource;
@@ -19,6 +20,7 @@ use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\AsController;
 use Lorisleiva\Actions\Concerns\WithAttributes;
+use Throwable;
 
 class AskBotVision
 {
@@ -26,6 +28,7 @@ class AskBotVision
     use WithAttributes;
     use AsController;
     use WithPromptAI;
+    use WithAICreditErrorHandler;
 
     public function handle(string $urlOrBase64Image, string $prompt)
     {
@@ -45,7 +48,13 @@ class AskBotVision
             }
 
 
-            $response = $chat->generateChat($messages);
+            try {
+                $response = $chat->generateChat($messages);
+            } catch (Throwable $e) {
+                $this->rethrowAICreditThrowable($e);
+
+                throw $e;
+            }
 
             return response()->json([
                 'content' => $response,

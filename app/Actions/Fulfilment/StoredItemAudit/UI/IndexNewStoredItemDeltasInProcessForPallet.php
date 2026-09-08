@@ -88,7 +88,7 @@ class IndexNewStoredItemDeltasInProcessForPallet extends OrgAction
                 'icons'       => ['fal fa-pallet'],
                 'title'       => __('No stored items found'),
                 'count'       => $pallet->number_stored_items,
-                'description' => __("This pallet don't have any SKUs")
+                'description' => __("This pallet don't have any SKOs")
             ];
 
 

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, inject } from "vue"
+import { ref, computed, inject, onMounted } from "vue"
 import { getStyles } from "@/Composables/styles"
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import { faChevronLeft, faChevronRight } from '@fortawesome/free-solid-svg-icons'
@@ -31,6 +31,11 @@ const emits = defineEmits<{
 }>()
 
 const layout = inject('layout', retinaLayoutStructure)
+const key = ref(1)
+
+onMounted(() => {
+  key.value++
+})
 
 const prevEl = ref()
 const nextEl = ref()
@@ -100,9 +105,9 @@ const sendMessageToParent = (type: string, value: any) => {
         <SwiperSlide v-for="(product, index) in compSwiperOptions" :key="product?.id || index" class="!h-auto">
           <div class="h-full flex flex-col">
             <div v-if="product" class="flex-1 flex flex-col">
-              <ProductRenderEcom v-if="layout.retina.type === 'b2b'" :product="product" />
+              <ProductRenderEcom v-if="layout.retina.type === 'b2b'" :key="`ecom-${key}`" :product="product" />
 
-              <ProductRender v-else :product="product" :productHasPortfolio="[]" />
+              <ProductRender v-else :key="`ds-${key}`" :product="product" :productHasPortfolio="[]" />
             </div>
 
             <div v-else class="flex-1 flex items-center justify-center text-gray-400">

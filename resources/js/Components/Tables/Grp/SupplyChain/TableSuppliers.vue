@@ -5,58 +5,61 @@
   -->
 
 <script setup lang="ts">
-import { Link } from "@inertiajs/vue3";
-import Table from "@/Components/Table/Table.vue";
-import { Supplier } from "@/types/supplier";
-import AddressLocation from "@/Components/Elements/Info/AddressLocation.vue";
-import { useLocaleStore } from "@/Stores/locale";
+import { Link } from "@inertiajs/vue3"
+import Table from "@/Components/Table/Table.vue"
+import AddressLocation from "@/Components/Elements/Info/AddressLocation.vue"
+import Icon from "@/Components/Icon.vue"
+import { useLocaleStore } from "@/Stores/locale"
+import { library } from "@fortawesome/fontawesome-svg-core"
+import { faPersonDolly, faPeopleArrows, faArchive } from "@fal"
 
-defineProps<{
-  data: object,
-  tab?: string
-}>();
+library.add(faPersonDolly, faPeopleArrows, faArchive)
 
-const locale = useLocaleStore();
-
-function supplierRoute(supplier: Supplier) {
-    console.log(supplier.agent_slug, supplier.slug);
-    switch (route().current()) {
-        case 'grp.supply-chain.suppliers.index':
-            return route(
-                'grp.supply-chain.suppliers.show',
-                [supplier.slug]);
-        case 'grp.overview.procurement.suppliers.index':
-            return route(
-                'grp.supply-chain.suppliers.show',
-                [supplier.slug]);
-        default:
-            return route(
-                'grp.supply-chain.agents.show.suppliers.show',
-                [
-                    route().params['agent'],
-                    supplier.slug
-                ]);
-    }
+interface Supplier {
+    id: number
+    slug: string
+    code: string
+    name: string
+    location: object
+    status_icon: object
+    number_supplier_products: number
+    number_purchase_orders: number
+    number_stock_deliveries: number
 }
 
+defineProps<{
+    data: {}
+    tab?: string
+}>()
+
+const locale = useLocaleStore()
+
+function supplierRoute(supplier: Supplier) {
+    return route("grp.majordomo.redirect_supplier", [supplier.id])
+}
 </script>
 
 <template>
-  <Table :resource="data" :name="tab" class="mt-5">
-
-
-    <template #cell(code)="{ item: supplier }">
-      <Link :href="supplierRoute(supplier)" class="primaryLink">
-        {{ supplier["code"] }}
-      </Link>
-    </template>
-    <template #cell(number_supplier_products)="{ item: supplier }">
-      {{ locale.number(supplier.number_supplier_products) }}
-    </template>
-    <template #cell(location)="{ item: supplier }">
-      <AddressLocation :data="supplier['location']" />
-    </template>
-  </Table>
+    <Table :resource="data" :name="tab" class="mt-5">
+        <template #cell(status)="{ item: supplier }">
+            <Icon :data="supplier.status_icon" />
+        </template>
+        <template #cell(code)="{ item: supplier }">
+            <Link :href="supplierRoute(supplier)" class="primaryLink">
+                {{ supplier["code"] }}
+            </Link>
+        </template>
+        <template #cell(location)="{ item: supplier }">
+            <AddressLocation :data="supplier['location']" />
+        </template>
+        <template #cell(number_supplier_products)="{ item: supplier }">
+            {{ locale.number(supplier.number_supplier_products) }}
+        </template>
+        <template #cell(number_purchase_orders)="{ item: supplier }">
+            {{ locale.number(supplier.number_purchase_orders) }}
+        </template>
+        <template #cell(number_stock_deliveries)="{ item: supplier }">
+            {{ locale.number(supplier.number_stock_deliveries) }}
+        </template>
+    </Table>
 </template>
-
-

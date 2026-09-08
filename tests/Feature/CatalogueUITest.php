@@ -9,6 +9,7 @@
 /** @noinspection PhpUnhandledExceptionInspection */
 
 use App\Actions\Billables\Charge\StoreCharge;
+use App\Actions\Billables\Service\StoreService;
 use App\Actions\Catalogue\Collection\StoreCollection;
 use App\Actions\Catalogue\ProductCategory\StoreProductCategory;
 use App\Actions\Catalogue\Shop\StoreShop;
@@ -18,13 +19,16 @@ use App\Actions\Masters\MasterProductCategory\StoreMasterFamily;
 use App\Actions\Masters\MasterShop\StoreMasterShop;
 use App\Actions\SysAdmin\GetSectionRoute;
 use App\Enums\Analytics\AikuSection\AikuSectionEnum;
+use App\Enums\Billables\Service\ServiceStateEnum;
 use App\Enums\Catalogue\Charge\ChargeTriggerEnum;
 use App\Enums\Catalogue\Charge\ChargeTypeEnum;
+use App\Enums\Catalogue\Collection\CollectionStateEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Models\Analytics\AikuScopedSection;
 use App\Models\Billables\Charge;
+use App\Models\Billables\Service;
 use App\Models\Catalogue\Collection;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
@@ -111,6 +115,22 @@ beforeEach(function () {
         $this->shop->refresh();
     }
     $this->charge = $charge;
+
+    $service = Service::first();
+    if (!$service) {
+        $service = StoreService::make()->action(
+            $this->shop,
+            [
+                'code'  => 'MySvc',
+                'name'  => 'My first service',
+                'price' => fake()->numberBetween(100, 2000),
+                'unit'  => 'service',
+                'state' => ServiceStateEnum::ACTIVE,
+            ]
+        );
+        $this->shop->refresh();
+    }
+    $this->service = $service;
     $this->artisan('group:seed_aiku_scoped_sections')->assertExitCode(0);
 
     Config::set(
@@ -317,6 +337,43 @@ test('UI Index catalogue product in current', function () {
     });
 });
 
+test('UI show product navigation follows the list sort', function () {
+    $this->withoutExceptionHandling();
+
+    $makeProduct = function (string $code) {
+        $productData = \App\Models\Catalogue\Product::factory()->definition();
+        data_set($productData, 'code', $code);
+        data_set($productData, 'trade_units', [['id' => $this->product->tradeUnits()->first()->id, 'quantity' => 1]]);
+        data_set($productData, 'price', 100);
+
+        return \App\Actions\Catalogue\Product\StoreProduct::make()->action($this->family, $productData);
+    };
+
+    $first  = $makeProduct('NAVA01');
+    $middle = $makeProduct('NAVB02');
+    $last   = $makeProduct('NAVC03');
+
+    $showRoute = fn ($product) => route('grp.org.shops.show.catalogue.products.all_products.show', [
+        $this->organisation->slug,
+        $this->shop->slug,
+        $product->slug
+    ]);
+
+    get($showRoute($middle).'?bucket_sort=code')->assertInertia(
+        fn (AssertableInertia $page) => $page
+            ->where('navigation.previous.label', $first->name)
+            ->where('navigation.next.label', $last->name)
+            ->etc()
+    );
+
+    get($showRoute($middle).'?bucket_sort=-code')->assertInertia(
+        fn (AssertableInertia $page) => $page
+            ->where('navigation.previous.label', $last->name)
+            ->where('navigation.next.label', $first->name)
+            ->etc()
+    );
+});
+
 test('UI Index catalogue product all', function () {
     $response = get(route('grp.org.shops.show.catalogue.products.all_products.index', [
         $this->organisation->slug,
@@ -506,6 +563,41 @@ test('UI show collection', function () {
     });
 });
 
+test('UI show collection navigation follows the bucket it was opened from', function () {
+    $this->withoutExceptionHandling();
+
+    $makeCollection = function (string $code, CollectionStateEnum $state) {
+        $collection = StoreCollection::make()->action($this->shop, [
+            'code'        => $code,
+            'name'        => $code.' name',
+            'description' => $code.' description',
+        ]);
+        $collection->update(['state' => $state]);
+
+        return $collection->refresh();
+    };
+
+    $first    = $makeCollection('NAVCOLA', CollectionStateEnum::ACTIVE);
+    $inactive = $makeCollection('NAVCOLB', CollectionStateEnum::INACTIVE);
+    $middle   = $makeCollection('NAVCOLC', CollectionStateEnum::ACTIVE);
+    $last     = $makeCollection('NAVCOLD', CollectionStateEnum::ACTIVE);
+
+    $showRoute = fn ($collection) => route('grp.org.shops.show.catalogue.collections.show', [
+        $this->organisation->slug,
+        $this->shop->slug,
+        $collection->slug
+    ]);
+
+    get($showRoute($middle).'?bucket=active')->assertInertia(
+        fn (AssertableInertia $page) => $page
+            ->where('navigation.previous.label', $first->code.' - '.$first->name)
+            ->where('navigation.next.label', $last->code.' - '.$last->name)
+            ->etc()
+    );
+
+    expect($inactive->state)->toBe(CollectionStateEnum::INACTIVE);
+});
+
 test('UI edit collection', function () {
     $response = get(route('grp.org.shops.show.catalogue.collections.edit', [$this->organisation->slug, $this->shop->slug, $this->collectionModel->slug]));
     $response->assertInertia(function (AssertableInertia $page) {
@@ -528,6 +620,19 @@ test('UI edit product', function () {
             ->has('pageHead')
             ->has('formData')
             ->has('breadcrumbs', 4);
+    });
+});
+
+test('UI edit product composition', function () {
+    $this->withoutExceptionHandling();
+    $response = get(route('grp.org.shops.show.catalogue.products.all_products.composition', [$this->organisation->slug, $this->shop->slug, $this->product->slug]));
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('Goods/ProductComposition')
+            ->has('title')
+            ->has('pageHead')
+            ->has('formData.blueprint.0.fields.trade_units')
+            ->has('breadcrumbs');
     });
 });
 
@@ -611,6 +716,50 @@ test('UI edit Charges', function () {
     });
 });
 
+test('UI create Services', function () {
+    $response = get(route('grp.org.shops.show.billables.services.create', [$this->organisation->slug, $this->shop->slug]));
+
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('CreateModel')
+            ->has('title')
+            ->has('breadcrumbs', 4)
+            ->has('pageHead')
+            ->has('formData');
+    });
+});
+
+test('UI show Services', function () {
+    $response = get(route('grp.org.shops.show.billables.services.show', [$this->organisation->slug, $this->shop->slug, $this->service->slug]));
+
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('Org/Billables/Service')
+            ->has('title')
+            ->has('breadcrumbs', 3)
+            ->has('navigation')
+            ->has(
+                'pageHead',
+                fn (AssertableInertia $page) => $page
+                    ->where('title', $this->service->name)
+                    ->etc()
+            );
+    });
+});
+
+test('UI edit Services', function () {
+    $response = get(route('grp.org.shops.show.billables.services.edit', [$this->organisation->slug, $this->shop->slug, $this->service->slug]));
+
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('EditModel')
+            ->has('title')
+            ->has('breadcrumbs', 3)
+            ->has('pageHead')
+            ->has('formData');
+    });
+});
+
 test('UI edit shop with related products description link', function () {
     $masterShop = StoreMasterShop::make()->action($this->group, [
         'code' => 'MS-'.uniqid(),
@@ -638,7 +787,7 @@ test('UI edit shop with related products description link', function () {
         $page
             ->component('EditModel')
             ->has(
-                'formData.blueprint.2.fields.related_product_follow_master',
+                'formData.blueprint.3.fields.related_product_follow_master',
                 fn (AssertableInertia $field) => $field
                     ->where('type', 'toggle')
                     ->where('descriptionLinks.manage_related_products.label', 'related products tab')
@@ -698,4 +847,17 @@ test('UI get section route shop dashboard', function () {
         ->and($sectionScope)->not->toBeNull()
         ->and($sectionScope->code)->toBe(AikuSectionEnum::SHOP_DASHBOARD->value)
         ->and($sectionScope->model_slug)->toBe($this->shop->slug);
+});
+
+test('product index queries use time series aggregation', function () {
+    request()->setRouteResolver(fn () => new \Illuminate\Routing\Route('GET', 'test', []));
+    expect(\App\Actions\Catalogue\Product\UI\IndexProductsInGroup::make()->handle($this->group)->total())->toBeGreaterThanOrEqual(1)
+        ->and(\App\Actions\Catalogue\Product\UI\IndexProductsInOrganisation::make()->handle($this->organisation)->total())->toBeGreaterThanOrEqual(1)
+        ->and(\App\Actions\Catalogue\Product\UI\IndexProductsInTradeUnit::make()->handle(\App\Models\Goods\TradeUnit::first())->total())->toBeGreaterThanOrEqual(0)
+        ->and(\App\Actions\Catalogue\Product\UI\IndexOutOfStockProducts::make()->handle($this->shop)->total())->toBeGreaterThanOrEqual(0)
+        ->and(\App\Actions\Catalogue\Product\UI\IndexProductsWithNoFamily::make()->handle($this->shop)->total())->toBeGreaterThanOrEqual(0)
+        ->and(\App\Actions\Catalogue\Product\UI\IndexRRPViolationProducts::make()->handle($this->shop)->total())->toBeGreaterThanOrEqual(0)
+        ->and(\App\Actions\Catalogue\Product\UI\IndexProductsInCollection::make()->handle($this->collectionModel)->total())->toBeGreaterThanOrEqual(0)
+        ->and(\App\Actions\Catalogue\Product\Json\GetProductsInCollection::make()->handle($this->collectionModel)->total())->toBeGreaterThanOrEqual(0)
+        ->and(\App\Actions\Catalogue\Product\Json\GetProductsWithNoWebpage::make()->handle($this->shop)->total())->toBeGreaterThanOrEqual(0);
 });

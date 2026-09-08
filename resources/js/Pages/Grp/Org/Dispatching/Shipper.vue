@@ -26,6 +26,7 @@
   import { library } from "@fortawesome/fontawesome-svg-core"
   import { faCodeCommit, faGlobe, faGraduationCap, faMoneyBill, faPaperclip, faPaperPlane, faStickyNote, faTags, faCube, faCodeBranch, faShoppingCart } from '@fal'
 import ShipperShowcase from '@/Components/Showcases/Grp/ShipperShowcase.vue'
+import TableHistories from '@/Components/Tables/Grp/Helpers/TableHistories.vue'
   library.add( faStickyNote, faGlobe, faMoneyBill, faGraduationCap, faTags, faCodeCommit, faPaperclip, faPaperPlane, faCube, faCodeBranch, faShoppingCart )
 
 
@@ -45,6 +46,7 @@ import ShipperShowcase from '@/Components/Showcases/Grp/ShipperShowcase.vue'
   const component = computed(() => {
       const components: Component = {
           showcase: ShipperShowcase,
+          history: TableHistories,
       }
 
       return components[currentTab.value]

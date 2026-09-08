@@ -234,7 +234,7 @@
                     {{ __('Pallet Location') }}
                 </td>
                 <td style="text-align:center; vertical-align: middle;">
-                    {{ __('SKUs') }}
+                    {{ __('SKOs') }}
                 </td>
             </tr>
         </thead>
@@ -288,7 +288,7 @@
         <thead>
             <tr>
                 <td rowspan="2" style="width:15%; text-align:left; vertical-align: middle;">
-                    {{ __('SKU Reference') }}
+                    {{ __('SKO Reference') }}
                 </td>
                 <td colspan="7" style="text-align:center; vertical-align: middle;">
                     {{ __('Pallet Details') }}

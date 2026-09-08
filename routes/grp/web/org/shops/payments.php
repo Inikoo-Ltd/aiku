@@ -9,6 +9,7 @@
 */
 
 use App\Actions\Accounting\CreditTransaction\UI\IndexCreditTransactionsAll;
+use App\Actions\Accounting\Payment\UI\IndexPaymentMethods;
 use App\Actions\Accounting\Payment\UI\IndexPayments;
 use App\Actions\Accounting\PaymentAccountShop\UI\EditPaymentAccountShop;
 use App\Actions\Accounting\PaymentAccountShop\UI\IndexPaymentAccountShops;
@@ -26,6 +27,7 @@ Route::get('accounting-dashboard/shop-accounts/{paymentAccountShop}', [ShowPayme
 Route::get('accounting-dashboard/shop-accounts/{paymentAccountShop}/edit', [EditPaymentAccountShop::class, 'inShop'])->name('accounting.accounts.edit');
 
 Route::get('accounting-dashboard/payments', [IndexPayments::class, 'inShop'])->name('accounting.payments.index');
+Route::get('accounting-dashboard/payments/methods', [IndexPaymentMethods::class, 'inShop'])->name('accounting.payments.methods.index');
 Route::get('accounting-dashboard/customer-balances', [IndexCustomerBalances::class, 'inShop'])->name('accounting.customer_balances.index');
 Route::get('accounting-dashboard/top-ups', IndexTopUps::class)->name('accounting.top_ups.index');
 Route::get('accounting-dashboard/credit-transactions', IndexCreditTransactionsAll::class)->name('accounting.credit_transactions.index');

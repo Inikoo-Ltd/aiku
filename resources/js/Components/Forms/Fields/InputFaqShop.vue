@@ -42,7 +42,7 @@ const props = defineProps<{
         language_from?: string
         language_to?: string
         languages?: Record<string, Language>
-        toogle?: string[]
+        toggle?: string[]
         routeGetInternalLink?: routeType
     }
     updateRoute?: {
@@ -88,7 +88,7 @@ const masterFaq = computed<FaqItem[]>(() =>
 const hasMaster = computed(() => masterFaq.value.length > 0)
 
 const answerToggle = computed<string[]>(() =>
-    props.fieldData.toogle || [
+    props.fieldData.toggle || [
         "heading2", "heading3", "bold", "italic", "underline", "bulletList",
         "orderedList", "blockquote", "alignLeft", "alignCenter", "alignRight",
         "undo", "redo", "clear",
@@ -475,7 +475,7 @@ const changeValue = async () => {
                                 <EditorV2
                                     v-model="faq.source_answer"
                                     :key="`${answerKeyMap[index]}-source`"
-                                    :toogle="answerToggle"
+                                    :toggle="answerToggle"
                                     :routeGetInternalLink="fieldData.routeGetInternalLink"
                                 >
                                     <template #editor-content="{ editor }">
@@ -504,7 +504,7 @@ const changeValue = async () => {
                             <EditorV2
                                 v-model="faq.answer"
                                 :key="answerKeyMap[index]"
-                                :toogle="answerToggle"
+                                :toggle="answerToggle"
                                 :routeGetInternalLink="fieldData.routeGetInternalLink"
                             >
                                 <template #editor-content="{ editor }">

@@ -9,7 +9,7 @@
 
 namespace App\Actions\Dropshipping\CustomerSalesChannel\Json;
 
-use App\Actions\Dropshipping\Shopify\Product\FindShopifyProductVariant;
+use App\Actions\Dropshipping\Shopify\Product\GetShopifyListedProducts;
 use App\Actions\OrgAction;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use Illuminate\Support\Arr;
@@ -19,26 +19,31 @@ class GetShopifyProducts extends OrgAction
 {
     public function handle(CustomerSalesChannel $customerSalesChannel, array $modelData): array|null
     {
-        $query = Arr::get($modelData, 'query', '');
-
-        if ($query === null) {
-            $query = '';
-        }
-
-        return FindShopifyProductVariant::run($customerSalesChannel, $query);
+        return [
+            'products' => GetShopifyListedProducts::run(
+                $customerSalesChannel->user,
+                (string) Arr::get($modelData, 'query', ''),
+                (int) Arr::get($modelData, 'offset', 0),
+                (int) Arr::get($modelData, 'limit', 50)
+            )
+        ];
     }
 
     public function rules(): array
     {
         return [
-            'query' => ['nullable', 'string'],
+            'query'  => ['nullable', 'string'],
+            'offset' => ['nullable', 'numeric'],
+            'limit'  => ['nullable', 'numeric', 'min:1', 'max:100']
         ];
     }
 
     public function prepareForValidation(ActionRequest $request): void
     {
         $request->merge([
-            'query' => $request->input('query')
+            'query'  => $request->input('query'),
+            'offset' => $request->input('offset'),
+            'limit'  => $request->input('limit'),
         ]);
     }
 

@@ -83,6 +83,12 @@ export default {
 			editGlobalStyle: "button",
 			replaceForm: [
 				{
+					key: ["use_button"],
+					label: "Use Button",
+					type: "switch",
+					defaultValue : true
+				},
+				{
 					key: ["link"],
 					label: "Link",
 					type: "link",

@@ -80,10 +80,14 @@ class IndexProspectMailshots extends InertiaAction
             ->select([
                 'mailshots.state',
                 'mailshots.date',
+                'mailshots.type',
                 'mailshots.slug',
                 'mailshots.id',
                 'mailshots.subject',
                 'mailshots.name',
+                'mailshots.source_id',
+                'mailshots.source_alt_id',
+                'mailshots.source_alt2_id',
                 'mailshot_stats.number_deliveries_success',
                 'mailshot_stats.number_try_send_success',
                 'mailshot_stats.number_delivered_open_success',
@@ -133,15 +137,17 @@ class IndexProspectMailshots extends InertiaAction
                             'tooltip' => __('New mailshot'),
                             'label'   => __('Mailshot'),
                             'route'   => [
-                                'name'       => 'grp.org.shops.show.crm.prospects.mailshots.create',
-                                'parameters' => array_values($this->originalParameters)
+                                'method'     => 'post',
+                                'name'       => 'grp.models.shop.prospect.mailshot.store',
+                                'parameters' => [
+                                    'shop' => $this->shop->id
+                                ]
                             ]
                         ] : null
                     ]
                 )
                 ->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon')
-                ->column(key: 'subject', label: __('subject'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
+                ->column(key: 'subject', label: __('Subject'), canBeHidden: false, sortable: true, searchable: true);
 
             $table->column(key: 'date', label: __('Date'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
                 ->column(key: 'number_try_send_success', label: '', icon: 'fal fa-paper-plane', tooltip: __('Sent emails'), canBeHidden: false, sortable: true, searchable: true)
@@ -175,9 +181,9 @@ class IndexProspectMailshots extends InertiaAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'       => __('prospects mailshots'),
+                'title'       => __('Prospects mailshots'),
                 'pageHead'    => [
-                    'title'            => __('prospects mailshots'),
+                    'title'            => __('Prospects mailshots'),
                     'subNavigation'    => $subNavigation,
                     'actions'          =>
                     [
@@ -191,8 +197,11 @@ class IndexProspectMailshots extends InertiaAction
                             'tooltip' => __('maximum 3 mailshots per day') . ($mailshotCount >= 3 ? ' (' . __('already created') . ')' : ''),
                             'disabled' => $mailshotCount >= 3, // remove this later
                             'route' => [
-                                'name'       => 'grp.org.shops.show.crm.prospects.mailshots.create',
-                                'parameters' => array_values($this->originalParameters)
+                                'method'     => 'post',
+                                'name'       => 'grp.models.shop.prospect.mailshot.store',
+                                'parameters' => [
+                                    'shop' => $shop->id
+                                ]
                             ]
                         ]
                         // : null

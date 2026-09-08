@@ -7,6 +7,7 @@
 
 namespace App\Actions\CRM\Customer;
 
+use App\Helpers\TimeSeriesPeriodCalculator;
 use App\Actions\Traits\Hydrators\WithHydrateCommand;
 use App\Actions\Traits\WithTimeSeriesRedo;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
@@ -39,6 +40,17 @@ class RedoCustomerTimeSeries implements ShouldBeUnique
         return $customerId.":{$from}_$to";
     }
 
+    protected function dateRangeSources(): array
+    {
+        return [
+            [
+                'query' => fn () => DB::connection('aiku_no_sticky')->table('invoices')->whereNull('deleted_at'),
+                'key'   => 'customer_id',
+                'date'  => 'date',
+            ],
+        ];
+    }
+
     public function handle(?int $customerId, ?string $from = null, ?string $to = null, bool $async = false): void
     {
         if (!$customerId) {
@@ -52,22 +64,23 @@ class RedoCustomerTimeSeries implements ShouldBeUnique
         }
 
         if (!$from || !$to) {
-            $firstInvoicedDate = DB::connection('aiku_no_sticky')->table('invoices')->where('customer_id', $customer->id)->whereNull('deleted_at')->min('date');
-            $lastInvoicedDate  = DB::connection('aiku_no_sticky')->table('invoices')->where('customer_id', $customer->id)->whereNull('deleted_at')->max('date');
+            $dateRange = $this->getDateRange($customer->id);
 
-            if (!$firstInvoicedDate) {
+            if (!$dateRange['from']) {
                 return;
             }
 
-            $from = $from ?? Carbon::parse($firstInvoicedDate)->toDateString();
-            $to   = $to ?? Carbon::parse($lastInvoicedDate ?? now())->toDateString();
+            $from = $from ?? Carbon::parse($dateRange['from'])->toDateString();
+            $to   = $to ?? Carbon::parse($dateRange['to'] ?? now())->toDateString();
         }
 
         foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
+            [$periodFrom, $periodTo] = TimeSeriesPeriodCalculator::expandWindowToFullPeriods($frequency, $from, $to);
+
             if ($async) {
-                ProcessCustomerTimeSeriesRecords::dispatch($customer->id, $frequency, $from, $to)->onQueue('sales_slave_historic');
+                ProcessCustomerTimeSeriesRecords::dispatch($customer->id, $frequency, $periodFrom, $periodTo)->onQueue('sales_slave_historic');
             } else {
-                ProcessCustomerTimeSeriesRecords::run($customer->id, $frequency, $from, $to);
+                ProcessCustomerTimeSeriesRecords::run($customer->id, $frequency, $periodFrom, $periodTo);
             }
         }
     }

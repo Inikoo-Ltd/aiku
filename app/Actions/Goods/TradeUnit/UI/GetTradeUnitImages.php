@@ -41,6 +41,20 @@ class GetTradeUnitImages
                     'tradeUnit' => $tradeUnit->id,
                 ],
             ],
+            'attach_images_route' => [
+                'method'     => 'post',
+                'name'       => 'grp.models.trade-unit.attach_images',
+                'parameters' => [
+                    'tradeUnit' => $tradeUnit->id,
+                ],
+            ],
+            'upload_audio_route' => [
+                'method'     => 'post',
+                'name'       => 'grp.models.trade-unit.upload_audio',
+                'parameters' => [
+                    'tradeUnit' => $tradeUnit->id,
+                ],
+            ],
             'delete_images_route' => [
                 'method'     => 'post',
                 'name'       => 'grp.models.trade-unit.detach_image',

@@ -9,6 +9,7 @@
 namespace App\Actions\Helpers\Translations;
 
 use Throwable;
+use App\Actions\Helpers\AI\Traits\WithAICreditErrorHandler;
 use App\Actions\OrgAction;
 use App\Models\Helpers\Language;
 use Illuminate\Support\Arr;
@@ -18,10 +19,12 @@ use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Sentry\Laravel\Facade as Sentry;
 use Illuminate\Support\Facades\Log;
+use App\Exceptions\AICreditException;
 
 class DetectLanguageWithAI extends OrgAction
 {
     use AsAction;
+    use WithAICreditErrorHandler;
 
 
     /**
@@ -80,6 +83,7 @@ class DetectLanguageWithAI extends OrgAction
 
             if (!$response->successful()) {
                 Log::error("DetectLanguageWithAI API Error: ".$response->body());
+                $this->guardAICreditResponse($response);
 
                 return null;
             }
@@ -95,6 +99,8 @@ class DetectLanguageWithAI extends OrgAction
             }
 
             return Language::where('code', $code)->first();
+        } catch (AICreditException $e) {
+            throw $e;
         } catch (Throwable $e) {
             Sentry::captureMessage("DetectLanguageWithAI Error: ".$e->getMessage());
 

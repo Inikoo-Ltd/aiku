@@ -10,6 +10,7 @@
 namespace App\Actions\Masters\MasterAsset\UI;
 
 use App\Actions\OrgAction;
+use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\InertiaTable\InertiaTable;
 use App\Models\Masters\MasterAsset;
 use App\Models\Goods\TradeUnit;
@@ -38,14 +39,25 @@ class IndexMasterProductsInTradeUnit extends OrgAction
             $join->on('master_assets.id', '=', 'model_has_trade_units.model_id')
                 ->where('model_has_trade_units.model_type', class_basename(MasterAsset::class));
         });
-        $queryBuilder->leftJoin('master_asset_sales_intervals', 'master_assets.id', 'master_asset_sales_intervals.master_asset_id');
         $queryBuilder->leftJoin('master_shops', 'master_assets.master_shop_id', '=', 'master_shops.id');
         $queryBuilder->where('model_has_trade_units.trade_unit_id', $tradeUnit->id);
+
+        $timeSeriesData = $queryBuilder->withTimeSeriesAggregation(
+            timeSeriesTable: 'master_asset_time_series',
+            timeSeriesRecordsTable: 'master_asset_time_series_records',
+            foreignKey: 'master_asset_id',
+            aggregateColumns: [
+                'sales_grp_currency_external' => 'sales_all',
+            ],
+            frequency: TimeSeriesFrequencyEnum::DAILY->value,
+            prefix: $prefix,
+            includeLY: false,
+        );
 
         $queryBuilder
             ->defaultSort('master_assets.code')
             ->select([
-                'sales_grp_currency_all as sales_all',
+                $timeSeriesData['selectRaw']['sales_all'],
                 'master_assets.id',
                 'master_assets.code',
                 'master_shops.slug as master_shop_slug',

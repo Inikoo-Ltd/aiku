@@ -8,7 +8,7 @@
 
 namespace App\Actions\Masters\MasterProductCategory\Slack;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
 use App\Models\Masters\MasterProductCategory;
 use Illuminate\Notifications\Slack\BlockKit\Blocks\ActionsBlock;
@@ -16,7 +16,7 @@ use Illuminate\Notifications\Slack\BlockKit\Blocks\ContextBlock;
 use Illuminate\Notifications\Slack\BlockKit\Blocks\SectionBlock;
 use Illuminate\Notifications\Slack\SlackMessage;
 
-class NewMasterProductCategoryCreated extends GrpAction
+class NewMasterProductCategoryCreated extends OrgAction
 {
     public function handle(MasterProductCategory $masterProductCategory): SlackMessage
     {

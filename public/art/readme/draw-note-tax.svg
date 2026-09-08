@@ -1,0 +1,69 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 750" width="1200" height="750" font-family="'Caveat','Segoe Print','Bradley Hand','Comic Sans MS',cursive">
+  <defs>
+    <filter id="pen" x="-10%" y="-10%" width="120%" height="120%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.02" numOctaves="3" seed="5" result="n"/>
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="3.5" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+    <filter id="bleed" x="-30%" y="-30%" width="160%" height="160%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.008 0.014" numOctaves="3" seed="9" result="n"/>
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="22" xChannelSelector="R" yChannelSelector="G" result="d"/>
+      <feGaussianBlur in="d" stdDeviation="1.6" result="b"/>
+      <feTurbulence type="fractalNoise" baseFrequency="0.05" numOctaves="3" seed="4" result="g"/>
+      <feColorMatrix in="g" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.9 -0.2" result="ga"/>
+      <feComposite in="b" in2="ga" operator="in" result="mottled"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="mottled"/></feMerge>
+    </filter>
+    <filter id="marker" x="-10%" y="-10%" width="120%" height="120%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.03" numOctaves="2" seed="21" result="n"/>
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="6" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+    <filter id="paper" x="0" y="0" width="100%" height="100%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.7" numOctaves="3" seed="2" result="n"/>
+      <feColorMatrix in="n" type="matrix" values="0 0 0 0 0.90  0 0 0 0 0.87  0 0 0 0 0.80  0 0 0 0.28 0" result="c"/>
+      <feComposite in="c" in2="SourceGraphic" operator="over"/>
+    </filter>
+    <style>
+      .pen { fill: none; stroke: #23222e; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; filter: url(#pen); }
+      .soft { stroke-width: 1.4; opacity: .6; }
+      .w { mix-blend-mode: multiply; filter: url(#bleed); stroke: none; opacity: .8; }
+      .m { fill: none; stroke-linecap: round; stroke-width: 26; opacity: .55; mix-blend-mode: multiply; filter: url(#marker); }
+      .h { fill: #23222e; filter: url(#pen); }
+      .hl { fill: #8a4b9e; filter: url(#pen); }
+    </style>
+  </defs>
+  <rect width="1200" height="750" fill="#fbf7ee"/>
+  <rect width="1200" height="750" fill="#fbf7ee" filter="url(#paper)"/>
+  <g class="w">
+    <path d="M300 80 C500 40 700 60 780 110 C900 160 950 260 900 340 C850 420 720 420 640 460 C560 500 520 580 420 590 C300 600 220 520 220 420 C220 340 260 280 240 200 C220 140 240 110 300 80 Z" fill="#9dcab0" opacity=".28"/>
+    <path d="M150 560 C200 540 260 560 260 600 C260 640 210 660 170 650 C140 640 130 580 150 560 Z" fill="#f3c04a" opacity=".5"/>
+    <path d="M280 600 C320 584 360 600 360 630 C360 660 320 674 290 664 C266 656 260 616 280 600 Z" fill="#e88a73" opacity=".45"/>
+  </g>
+  <g class="pen">
+    <path d="M300 80 C500 40 700 60 780 110 C900 160 950 260 900 340 C850 420 720 420 640 460 C560 500 520 580 420 590 C300 600 220 520 220 420 C220 340 260 280 240 200 C220 140 240 110 300 80 Z"/>
+    <path d="M420 200 C480 190 520 210 500 250 C480 280 430 270 420 240 C414 220 410 210 420 200 Z" class="soft"/>
+    <path d="M540 260 C620 240 700 260 690 320 C680 370 590 380 540 350 C510 330 510 280 540 260 Z" class="soft"/>
+    <path d="M120 340 C150 320 190 330 190 360 C190 390 150 400 130 386 C114 374 110 352 120 340 Z"/>
+    <path d="M170 460 C200 450 230 460 226 486 C222 508 190 512 172 498 C160 486 160 468 170 460 Z"/>
+  </g>
+  <g class="pen">
+    <path d="M470 220 C520 214 560 218 590 220 C592 244 592 262 590 270 C550 274 510 272 470 272 C468 254 468 234 470 220 Z"/>
+    <path d="M660 296 C710 290 760 294 794 296 C796 322 796 340 794 350 C750 354 700 352 660 352 C658 334 658 312 660 296 Z"/>
+    <path d="M110 350 C150 344 180 348 190 350 C192 366 192 378 190 384 C160 388 130 386 110 386 C108 374 108 362 110 350 Z"/>
+    <path d="M155 470 C195 464 220 468 232 470 C234 486 234 496 232 502 C200 506 175 504 155 504 C153 492 153 480 155 470 Z"/>
+  </g>
+  <g class="h" font-size="20">
+    <text x="482" y="252">0% tea</text>
+    <text x="676" y="330">20% candle</text>
+    <text x="120" y="374">Canaries: outside</text>
+    <text x="164" y="494">Madeira: reduced</text>
+  </g>
+  <g class="pen">
+    <ellipse cx="1000" cy="180" rx="90" ry="56" transform="rotate(-8 1000 180)"/>
+    <path d="M940 170 C980 150 1020 150 1060 170 M940 190 C980 210 1020 210 1060 190" class="soft"/>
+  </g>
+  <g class="h" font-size="22"><text x="944" y="186">VIES ✓</text></g>
+  <g class="hl" font-size="22">
+    <text x="150" y="640">valid VAT no. → 0%</text>
+  </g>
+  <g class="h" font-size="19" opacity=".7"><text x="70" y="732">— tax in Europe: same product, different rate everywhere</text></g>
+</svg>

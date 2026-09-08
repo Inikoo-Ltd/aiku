@@ -8,19 +8,21 @@
 
 namespace App\Actions\Accounting\Invoice;
 
+use App\Actions\Accounting\Payment\PastPay\FinalizeOrderWithPastpay;
 use App\Actions\CRM\Customer\MatchCustomerProspects;
 use App\Actions\CRM\Customer\UpdateCustomerLastInvoicedDate;
+use App\Actions\CRM\TrafficSource\Hydrator\RefreshCustomerTrafficSourceStats;
 use App\Actions\Helpers\SerialReference\GetSerialReference;
 use App\Actions\Helpers\TaxCategory\GetTaxCategory;
 use App\Actions\Ordering\Order\UpdateOrder;
 use App\Actions\OrgAction;
-use App\Actions\Retina\Dropshipping\Orders\FinalizeOrderWithPastpay;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithFixedAddressActions;
 use App\Actions\Traits\WithOrderExchanges;
 use App\Enums\Accounting\Invoice\InvoicePayDetailedStatusEnum;
 use App\Enums\Accounting\Invoice\InvoicePayStatusEnum;
 use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
+use App\Enums\Accounting\PaymentAccount\PaymentAccountTypeEnum;
 use App\Enums\Helpers\SerialReference\SerialReferenceModelEnum;
 use App\Enums\Ordering\Order\OrderToBePaidByEnum;
 use App\Models\Accounting\Invoice;
@@ -53,7 +55,7 @@ class StoreInvoice extends OrgAction
         }
 
         data_set($modelData, 'uuid', Str::uuid());
-        data_set($modelData, 'ulid', Str::ulid());
+        data_set($modelData, 'ulid', (string) Str::ulid());
 
         data_set($modelData, 'pay_status', InvoicePayStatusEnum::UNPAID);
         data_set($modelData, 'pay_detailed_status', InvoicePayDetailedStatusEnum::UNPAID);
@@ -131,6 +133,16 @@ class StoreInvoice extends OrgAction
 
         if ($parent instanceof Order) {
             data_set($modelData, 'is_pastpay', $parent->is_pastpay);
+
+            if ($parent->is_pastpay) {
+                $pastpayFooter = $this->shop->paymentAccountShops()
+                    ->where('type', PaymentAccountTypeEnum::PASTPAY)
+                    ->first()?->invoice_footer;
+
+                if ($pastpayFooter) {
+                    data_set($modelData, 'footer', $pastpayFooter);
+                }
+            }
         }
 
 
@@ -214,17 +226,27 @@ class StoreInvoice extends OrgAction
         $invoice = CategoriseInvoice::run($invoice);
 
         if ($invoice->type == InvoiceTypeEnum::INVOICE) {
-            UpdateCustomerLastInvoicedDate::run($invoice->customer, $this->strict ? null : now());
+            UpdateCustomerLastInvoicedDate::run($invoice->customer);
         }
 
         RunInvoiceHydrators::run($invoice, $this->hydratorsDelay);
+
+        /* Revenue only becomes real when it is invoiced, and nothing else refreshes the channel
+           rollups at that moment: a touch attaching refreshes them, an order submit refreshes them, a
+           cancellation refreshes them - raising the invoice did not, so a channel's revenue on the
+           traffic sources listing stayed at whatever it was when its last touch landed. */
+        RefreshCustomerTrafficSourceStats::dispatch($invoice->customer)->delay($this->hydratorsDelay + 120);
 
         if ($invoice->customer && $invoice->shop->is_aiku) {
             MatchCustomerProspects::dispatch($invoice->customer);
         }
 
         if ($invoice->is_pastpay) {
-            FinalizeOrderWithPastpay::run($invoice);
+            try {
+                FinalizeOrderWithPastpay::run($invoice);
+            } catch (\Throwable $e) {
+                \Sentry::captureException($e);
+            }
         }
 
         return $invoice;
@@ -282,6 +304,7 @@ class StoreInvoice extends OrgAction
             'total_amount'              => ['required', 'numeric'],
             'gross_amount'              => ['required', 'numeric'],
             'rental_amount'             => ['sometimes', 'required', 'numeric'],
+            'amount_off'                => ['sometimes', 'numeric', 'min:0'],
             'goods_amount'              => ['sometimes', 'required', 'numeric'],
             'insurance_amount'          => ['sometimes', 'required', 'numeric'],
             'packaging_amount'          => ['sometimes', 'required', 'numeric'],

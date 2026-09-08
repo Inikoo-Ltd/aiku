@@ -9,6 +9,7 @@
 namespace App\Actions\Dropshipping\Shopify\Product;
 
 use App\Actions\Dropshipping\Portfolio\UpdatePortfolio;
+use App\Actions\Dropshipping\WithPortfolioErrorResponse;
 use App\Actions\Helpers\Images\GetImgProxyUrl;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\HasBucketAttachment;
@@ -27,6 +28,7 @@ use Sentry;
 class StoreShopifyProduct extends RetinaAction
 {
     use WithActionUpdate;
+    use WithPortfolioErrorResponse;
     use HasBucketAttachment;
 
     public function handle(Portfolio $portfolio, array $productData = []): array
@@ -42,6 +44,10 @@ class StoreShopifyProduct extends RetinaAction
 
             return [false, 'Failed to initialize Shopify GraphQL client'];
         }
+
+        UpdatePortfolio::run($portfolio, [
+            'errors_response' => null
+        ]);
 
         /** @var Product $product */
         $product = $portfolio->item;
@@ -151,7 +157,7 @@ class StoreShopifyProduct extends RetinaAction
             if (!empty($response['errors']) || !isset($response['body'])) {
                 $errorMessage = 'Error in API response: '.json_encode($response['errors']);
                 UpdatePortfolio::run($portfolio, [
-                    'errors_response' => [$errorMessage]
+                    'errors_response' => $this->portfolioErrorResponse($errorMessage)
                 ]);
                 Log::error("Product creation failed: ".$errorMessage);
 
@@ -165,7 +171,7 @@ class StoreShopifyProduct extends RetinaAction
                 $errors       = $body['data']['productCreate']['userErrors'];
                 $errorMessage = 'User errors: '.json_encode($errors);
                 UpdatePortfolio::run($portfolio, [
-                    'errors_response' => [$errorMessage]
+                    'errors_response' => $this->portfolioErrorResponse($errorMessage)
                 ]);
                 Log::error("Product creation failed: ".$errorMessage);
 
@@ -177,7 +183,7 @@ class StoreShopifyProduct extends RetinaAction
 
             if (!$createdProduct) {
                 UpdatePortfolio::run($portfolio, [
-                    'errors_response' => ['No product data in response']
+                    'errors_response' => $this->portfolioErrorResponse('No product data in response')
                 ]);
                 Log::error("Product creation failed: No product data in response");
 
@@ -209,7 +215,7 @@ class StoreShopifyProduct extends RetinaAction
         } catch (Exception $e) {
             Sentry::captureException($e);
             UpdatePortfolio::run($portfolio, [
-                'errors_response' => [$e->getMessage()]
+                'errors_response' => $this->portfolioErrorResponse($e->getMessage())
             ]);
 
             return [false, $e->getMessage()];
@@ -310,12 +316,12 @@ class StoreShopifyProduct extends RetinaAction
                     'Index'     => $index + 1,
                     'ID'        => $variant['id'] ?? 'N/A',
                     'Price'     => $variant['price'] ?? 'N/A',
-                    'SKU'       => $variant['sku'] ?? 'N/A',
+                    'SKO'       => $variant['sku'] ?? 'N/A',
                     'Barcode'   => $variant['barcode'] ?? 'N/A',
                     'Inventory' => $variant['inventoryQuantity'] ?? 'N/A'
                 ];
             }
-            $command->table(['Index', 'ID', 'Price', 'SKU', 'Barcode', 'Inventory'], $variantData);
+            $command->table(['Index', 'ID', 'Price', 'SKO', 'Barcode', 'Inventory'], $variantData);
         }
     }
 }

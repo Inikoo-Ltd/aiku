@@ -125,23 +125,6 @@ const props = defineProps<{
             </div>
         </div>
 
-        <div class="h-fit grid col-span-3 ring-1 ring-gray-300 shadow rounded-2xl p-6 gap-y-6">
-            <AppLogin :route="{ name: 'grp.models.profile.app-login-qrcode' }" />
-
-            <div class="mt-8 flex flex-col items-center gap-y-1">
-                <div class="text-gray-400 italic">Don't have the app?</div>
-                <a href="https://github.com/inikoo/maya/releases" target="_blank"
-                    class="text-blue-700 hover:underline flex items-center gap-x-2">
-                    <FontAwesomeIcon icon='fab fa-android' class='' size="xl" fixed-width aria-hidden='true' />
-
-                    <div class="text-lg font-semibold leading-5">
-                        Download Android App
-                    </div>
-                </a>
-            </div>
-        </div>
-
-
     </div>
 
 

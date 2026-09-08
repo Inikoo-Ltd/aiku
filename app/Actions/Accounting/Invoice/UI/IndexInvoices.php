@@ -22,6 +22,7 @@ use App\Actions\Ordering\UI\ShowOrderingDashboard;
 use App\Actions\OrgAction;
 use App\Enums\Accounting\Invoice\InvoicePayStatusEnum;
 use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
+use App\Enums\Catalogue\Shop\ShopEngineEnum;
 use App\Enums\UI\Accounting\InvoicesInFulfilmentCustomerTabsEnum;
 use App\Enums\UI\Accounting\InvoicesTabsEnum;
 use App\Http\Resources\Accounting\InvoicesResource;
@@ -58,8 +59,12 @@ class IndexInvoices extends OrgAction
     private string $bucket = '';
 
 
-    public function handle(Organisation|Fulfilment|Customer|FulfilmentCustomer|InvoiceCategory|Shop|Order|OrgPaymentServiceProvider $parent, $prefix = null): LengthAwarePaginator
+    public function handle(Organisation|Fulfilment|Customer|FulfilmentCustomer|InvoiceCategory|Shop|Order|OrgPaymentServiceProvider $parent, ?string $prefix = null, ?string $bucket = null): LengthAwarePaginator
     {
+        if ($bucket !== null) {
+            $this->bucket = $bucket;
+        }
+
         $additionalSelects = [];
 
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
@@ -206,7 +211,17 @@ class IndexInvoices extends OrgAction
             }
 
             $table->column(key: 'date', label: __('Date'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
-            $table->column(key: 'pay_status', label: __('Payment'), canBeHidden: false, sortable: true, searchable: true, type: 'icon');
+
+            $show = true;
+
+            if ($parent instanceof Shop && $parent->engine === ShopEngineEnum::FAIRE) {
+                $show = false;
+            }
+
+            if ($show) {
+                $table->column(key: 'pay_status', label: __('Payment'), canBeHidden: false, sortable: true, searchable: true, type: 'icon');
+            }
+
             $table->column(key: 'net_amount', label: __('Net'), canBeHidden: false, sortable: true, searchable: true, type: 'number');
             $table->column(key: 'total_amount', label: __('Total'), canBeHidden: false, sortable: true, searchable: true, type: 'number')
                 ->defaultSort('-date');

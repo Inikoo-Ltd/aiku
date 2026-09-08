@@ -12,68 +12,113 @@ use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
 use App\Enums\GoodsIn\StockDeliveryItem\StockDeliveryItemStateEnum;
 use App\Models\GoodsIn\StockDelivery;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
+use Illuminate\Database\Query\Builder;
+use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class StockDeliveriesHydrateItems implements ShouldBeUnique
 {
     use AsAction;
 
-
     public function handle(StockDelivery $stockDelivery): void
     {
+        $weights = $this->getWeights($stockDelivery);
+
+        $stateCounts = $stockDelivery->items()
+            ->groupBy('state')
+            ->selectRaw('state, count(*) as aggregate')
+            ->pluck('aggregate', 'state');
+
+        $items = (int) $stateCounts->sum();
+
+        $itemsNet = $stockDelivery->items()->sum('net_amount');
+        $extras   = (float) $stockDelivery->cost_extra
+            + (float) $stockDelivery->cost_shipping
+            + (float) $stockDelivery->cost_duties
+            + (float) $stockDelivery->cost_tax;
+
+        $discrepancy = $this->getDeliveryDiscrepancy($stockDelivery);
+
         $stats = [
-            'number_of_items' => $stockDelivery->items()->count(),
-            'cost_items'      => $this->getTotalCostItem($stockDelivery),
-            'gross_weight'    => $this->getGrossWeight($stockDelivery),
-            'net_weight'      => $this->getNetWeight($stockDelivery)
+            'number_stock_delivery_items'                  => $items,
+            'number_stock_delivery_items_except_cancelled' => $items - (int) Arr::get($stateCounts, StockDeliveryItemStateEnum::CANCELLED->value, 0),
+            'number_stock_delivery_items_under_delivered'  => $discrepancy['under_delivered'],
+            'number_stock_delivery_items_over_delivered'   => $discrepancy['over_delivered'],
+            'gross_weight'                                 => $weights['gross_weight'],
+            'net_weight'                                   => $weights['net_weight'],
         ];
 
-        $checkedItemsCount = $stockDelivery->items()->where('state', StockDeliveryItemStateEnum::CHECKED)->count();
-        $items             = $stockDelivery->items()->count();
+        if ($stockDelivery->state !== StockDeliveryStateEnum::PLACED) {
+            $stats['cost_items'] = $itemsNet;
+            $stats['cost_total'] = $itemsNet + $extras;
+        }
+
+        foreach (StockDeliveryItemStateEnum::cases() as $case) {
+            $stats['number_stock_delivery_items_state_'.$case->snake()] = (int) Arr::get($stateCounts, $case->value, 0);
+        }
+
+        $checkedItemsCount = (int) Arr::get($stateCounts, StockDeliveryItemStateEnum::CHECKED->value, 0);
 
         if (($checkedItemsCount === $items) && ($items > 0)) {
-            $stats['state']                                 = StockDeliveryStateEnum::CHECKED;
-            $stats['checked_at']                            = now();
-            $stats[$stockDelivery->state->value . '_at']    = null;
+            $stats['state']      = StockDeliveryStateEnum::CHECKED;
+            $stats['checked_at'] = now();
         }
 
         $stockDelivery->update($stats);
     }
 
-    public function getGrossWeight(StockDelivery $stockDelivery): float
+    private function getDeliveryDiscrepancy(StockDelivery $stockDelivery): array
     {
-        $grossWeight = 0;
+        $counts = $stockDelivery->items()
+            ->whereNotNull('checked_at')
+            ->where('state', '!=', StockDeliveryItemStateEnum::CANCELLED)
+            ->selectRaw('count(*) filter (where unit_quantity_checked < unit_quantity) as under_delivered')
+            ->selectRaw('count(*) filter (where unit_quantity_checked > unit_quantity) as over_delivered')
+            ->first();
 
-        foreach ($stockDelivery->items as $item) {
-            foreach ($item->supplierProduct['tradeUnits'] as $tradeUnit) {
-                $grossWeight += $item->supplierProduct['grossWeight'] * $tradeUnit->pivot->package_quantity;
-            }
-        }
-
-        return $grossWeight;
+        return [
+            'under_delivered' => (int) $counts->under_delivered,
+            'over_delivered'  => (int) $counts->over_delivered,
+        ];
     }
 
-    public function getNetWeight(StockDelivery $stockDelivery): float
+    private function getWeights(StockDelivery $stockDelivery): array
     {
-        $netWeight = 0;
+        $lines = DB::table('stock_delivery_items as sdi')
+            ->where('sdi.stock_delivery_id', $stockDelivery->id)
+            ->whereNull('sdi.deleted_at')
+            ->selectSub($this->tradeUnitWeightSubQuery('gross_weight'), 'gross_weight')
+            ->selectSub($this->tradeUnitWeightSubQuery('net_weight'), 'net_weight');
 
-        foreach ($stockDelivery->items as $item) {
-            foreach ($item->supplierProduct['tradeUnits'] as $tradeUnit) {
-                $netWeight += $item->supplierProduct['netWeight'] * $tradeUnit->pivot->package_quantity;
-            }
-        }
+        $totals = DB::query()
+            ->fromSub($lines, 'line')
+            ->selectRaw('sum(line.gross_weight) as gross_weight')
+            ->selectRaw('sum(line.net_weight) as net_weight')
+            ->first();
 
-        return $netWeight;
+        return [
+            'gross_weight' => $this->gramsToKilograms($totals->gross_weight),
+            'net_weight'   => $this->gramsToKilograms($totals->net_weight),
+        ];
     }
 
-    public function getTotalCostItem(StockDelivery $stockDelivery): float
+    private function tradeUnitWeightSubQuery(string $column): Builder
     {
-        $costItems = 0;
+        return DB::table('model_has_trade_units as mhtu')
+            ->join('trade_units as tu', 'tu.id', '=', 'mhtu.trade_unit_id')
+            ->whereColumn('mhtu.model_id', 'sdi.org_stock_id')
+            ->where('mhtu.model_type', 'OrgStock')
+            ->selectRaw("
+                case
+                    when count(*) = 0 or count(*) filter (where tu.$column is null) > 0 then null
+                    else sum(tu.$column * mhtu.quantity) * sdi.unit_quantity
+                end
+            ");
+    }
 
-        foreach ($stockDelivery->items as $item) {
-            $costItems += $item->unit_price * $item->supplierProduct['cost'];
-        }
-
-        return $costItems;
+    private function gramsToKilograms(int|float|string|null $grams): ?float
+    {
+        return $grams === null ? null : round($grams / 1000, 1);
     }
 }

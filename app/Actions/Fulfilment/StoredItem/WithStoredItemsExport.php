@@ -41,7 +41,7 @@ trait WithStoredItemsExport
             'auto_page_break_margin' => 10,
             'orientation'            => 'L'
         ];
-        $filename = "{$title}-SKUS-{$currTime}";
+        $filename = "{$title}-SKOS-{$currTime}";
         $pdf      = PDF::loadView('pickings.templates.pdf.stored-item', [
             'shop'          => $parent->fulfilment->shop,
             'customer'      => $customer,

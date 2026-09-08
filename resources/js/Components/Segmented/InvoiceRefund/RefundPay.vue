@@ -21,6 +21,8 @@ import { layoutStructure } from "@/Composables/useLayoutStructure"
 import { get, set } from "lodash"
 import { InvoiceResource } from "@/types/invoice"
 
+const screenType = inject('screenType', ref('desktop'))
+
 library.add(fasDigging, fasRobot, fasPiggyBank, faExclamationTriangle, faCheck, faSave, faPlus, faMinus, faArrowRight, faDigging, faRobot, faPiggyBank)
 
 
@@ -319,7 +321,7 @@ const compToolTip = computed(() => {
 
         <!-- Modal: Pay refund -->
         <Dialog v-model:visible="isOpenModalRefund" :style="{ width: '100%', maxWidth: '1000px', position: 'relative' }"
-            maximizable modal :draggable="false" :dismissableMask="true">
+            maximizable modal :draggable="false" :dismissableMask="screenType === 'desktop'">
             <template #header>
                 <div class="mx-auto max-w-2xl text-center">
                     <h2 class="text-lg font-bold tracking-tight sm:text-2xl">{{ trans("Refund Payment") }}</h2>

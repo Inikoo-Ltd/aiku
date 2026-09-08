@@ -8,6 +8,7 @@
 
 namespace App\Actions\GoodsIn\StockDeliveryItem;
 
+use App\Actions\GoodsIn\StockDelivery\Hydrators\StockDeliveriesHydrateItems;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithStoreProcurementOrderItem;
@@ -28,15 +29,15 @@ class StoreStockDeliveryItem extends OrgAction
     {
         $modelData = $this->prepareProcurementOrderItem($stockDelivery, $historicSupplierProduct, $orgStock, $modelData);
 
-
         if (Arr::has($modelData, 'gross_amount')) {
             data_set($modelData, 'grp_gross_amount', Arr::get($modelData, 'gross_amount', 0) * Arr::get($modelData, 'grp_exchange', 1));
             data_set($modelData, 'org_gross_amount', Arr::get($modelData, 'gross_amount', 0) * Arr::get($modelData, 'org_exchange', 1));
         }
 
-
         /** @var StockDeliveryItem $stockDeliveryItem */
         $stockDeliveryItem = $stockDelivery->items()->create($modelData);
+
+        StockDeliveriesHydrateItems::dispatch($stockDelivery)->delay($this->hydratorsDelay);
 
         return $stockDeliveryItem;
     }
@@ -45,16 +46,15 @@ class StoreStockDeliveryItem extends OrgAction
     {
         $rules = [
             'unit_quantity' => ['required', 'numeric', 'gte:0'],
-
         ];
 
         if (!$this->strict) {
             $rules['state']                 = ['sometimes', 'required', Rule::enum(StockDeliveryItemStateEnum::class)];
             $rules['unit_quantity_checked'] = ['sometimes', 'numeric', 'gte:0'];
             $rules['unit_quantity_placed']  = ['sometimes', 'numeric', 'gte:0'];
+            $rules['net_amount']            = ['sometimes', 'numeric'];
             $rules                          = $this->noStrictStoreRules($rules);
         }
-
 
         return $rules;
     }
@@ -69,5 +69,4 @@ class StoreStockDeliveryItem extends OrgAction
 
         return $this->handle($stockDelivery, $historicSupplierProduct, $orgStock, $this->validatedData);
     }
-
 }

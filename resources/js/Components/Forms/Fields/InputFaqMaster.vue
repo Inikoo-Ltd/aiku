@@ -1,14 +1,19 @@
 <script setup lang="ts">
-import { ref, watch } from "vue"
+import { computed, onMounted, onUnmounted, ref, watch } from "vue"
 import { ulid } from "ulid"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { EditorContent } from "@tiptap/vue-3"
 import EditorV2 from "./BubleTextEditor/EditorV2.vue"
 import { faTrashAlt } from "@far"
+import { library } from "@fortawesome/fontawesome-svg-core"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { get, set } from "lodash-es"
 import { trans } from "laravel-vue-i18n"
 import { routeType } from "@/types/route"
+import { useEchoMasterProductCategory } from "@/Stores/echo-master-product-category"
+import CascadeProgressIndicator from "./CascadeProgressIndicator.vue"
+
+library.add(faTrashAlt)
 
 interface FaqItem {
     question: string
@@ -19,10 +24,25 @@ const props = defineProps<{
     form: Record<string, any>
     fieldName: string
     fieldData: {
-        toogle?: string[]
+        toggle?: string[]
         routeGetInternalLink?: routeType
+        master_product_category_id?: number
     }
 }>()
+
+const echoMasterProductCategory = useEchoMasterProductCategory()
+
+// Cascade progress broadcast by CascadeMasterProductCategoryFaqToChildren after a save:
+// "n/total shops updated" while the FAQ is translated and copied down, then "Shops updated".
+const cascadeProgress = computed(() => echoMasterProductCategory.cascadeProgress.faq)
+
+onMounted(() => {
+    echoMasterProductCategory.subscribe(props.fieldData.master_product_category_id)
+})
+
+onUnmounted(() => {
+    echoMasterProductCategory.unsubscribe(props.fieldData.master_product_category_id)
+})
 
 const normaliseFaqItems = (value: unknown): FaqItem[] => {
     if (!Array.isArray(value)) {
@@ -61,7 +81,7 @@ watch(
     { deep: true }
 )
 
-const answerToggle = props.fieldData.toogle || [
+const answerToggle = props.fieldData.toggle || [
     "heading2", "heading3", "bold", "italic", "underline", "bulletList",
     "orderedList", "blockquote", "alignLeft", "alignCenter", "alignRight",
     "undo", "redo", "clear",
@@ -92,6 +112,8 @@ const removeFaq = (index: number) => {
 
 <template>
     <div class="space-y-4">
+        <CascadeProgressIndicator :progress="cascadeProgress" />
+
         <div
             v-for="(faq, index) in items"
             :key="index"
@@ -113,7 +135,7 @@ const removeFaq = (index: number) => {
                     <EditorV2
                         v-model="faq.answer"
                         :key="answerKeyMap[index]"
-                        :toogle="answerToggle"
+                        :toggle="answerToggle"
                         :routeGetInternalLink="fieldData.routeGetInternalLink"
                     >
                         <template #editor-content="{ editor }">

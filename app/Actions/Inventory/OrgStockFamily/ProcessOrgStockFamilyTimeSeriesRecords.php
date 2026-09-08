@@ -14,6 +14,8 @@ use App\Helpers\TimeSeriesPeriodCalculator;
 use App\Models\Inventory\OrgStockFamily;
 use App\Models\Inventory\OrgStockFamilyTimeSeries;
 use App\Traits\BuildsInvoiceTransactionTimeSeriesQuery;
+use App\Traits\BuildsOrgStockCogsQuery;
+use App\Traits\UpsertsTimeSeriesRecords;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -22,6 +24,8 @@ class ProcessOrgStockFamilyTimeSeriesRecords implements ShouldBeUnique
 {
     use AsAction;
     use BuildsInvoiceTransactionTimeSeriesQuery;
+    use BuildsOrgStockCogsQuery;
+    use UpsertsTimeSeriesRecords;
 
     public string $jobQueue = 'sales_slave';
 
@@ -32,8 +36,7 @@ class ProcessOrgStockFamilyTimeSeriesRecords implements ShouldBeUnique
 
     public function handle(int $orgStockFamilyId, TimeSeriesFrequencyEnum $frequency, string $from, string $to): void
     {
-        $from .= ' 00:00:00';
-        $to   .= ' 23:59:59';
+        [$from, $to] = TimeSeriesPeriodCalculator::expandWindowToFullPeriods($frequency, $from, $to);
 
         $orgStockFamily = OrgStockFamily::find($orgStockFamilyId);
 
@@ -55,6 +58,7 @@ class ProcessOrgStockFamilyTimeSeriesRecords implements ShouldBeUnique
     protected function processTimeSeries(OrgStockFamilyTimeSeries $timeSeries, string $from, string $to): void
     {
         $processedPeriods = [];
+        $rows             = [];
 
         $query = DB::connection('aiku_no_sticky')->table('invoice_transaction_has_org_stocks as pivot')
             ->join('invoice_transactions', 'invoice_transactions.id', '=', 'pivot.invoice_transaction_id')
@@ -63,18 +67,20 @@ class ProcessOrgStockFamilyTimeSeriesRecords implements ShouldBeUnique
             ->where('invoice_transactions.date', '<=', $to)
             ->whereNull('invoice_transactions.deleted_at');
 
-        $results = $this->applyFrequencyGrouping($query, $timeSeries->frequency, $this->pivotBasedSelects())->get();
+        $this->joinDispatchedQuantity($query);
+
+        $selects = [...$this->pivotBasedSelects(), ...$this->cogsSelects()];
+
+        $results = $this->applyFrequencyGrouping($query, $timeSeries->frequency, $selects)->get();
 
         foreach ($results as $result) {
             ['period' => $period, 'periodFrom' => $periodFrom, 'periodTo' => $periodTo] = TimeSeriesPeriodCalculator::resolvePeriod($result, $timeSeries->frequency);
 
-            $timeSeries->records()->updateOrCreate(
-                [
-                    'org_stock_family_time_series_id' => $timeSeries->id,
-                    'period'                          => $period,
-                    'frequency'                       => $timeSeries->frequency->singleLetter(),
-                ],
-                [
+            $rows[] = [
+                'org_stock_family_time_series_id' => $timeSeries->id,
+                'period'                          => $period,
+                'frequency'                       => $timeSeries->frequency->singleLetter(),
+                ...[
                     'from'                        => $periodFrom,
                     'to'                          => $periodTo,
                     'sales_external'              => $result->sales_external,
@@ -90,27 +96,31 @@ class ProcessOrgStockFamilyTimeSeriesRecords implements ShouldBeUnique
                     'invoices'                    => $result->invoices,
                     'refunds'                     => $result->refunds,
                     'orders'                      => $result->orders,
+                    'cogs_org_currency'           => $result->cogs_org_currency,
+                    'cogs_grp_currency'           => $result->cogs_grp_currency,
                 ]
-            );
+            ];
 
             $processedPeriods[] = $period;
         }
 
-        $this->processPeriodsWithoutInvoices($timeSeries, $from, $to, $processedPeriods);
+        $rows = [...$rows, ...$this->periodsWithoutInvoicesRows($timeSeries, $from, $to, $processedPeriods)];
+
+        $this->syncTimeSeriesRecords($timeSeries, $rows, ['org_stock_family_time_series_id', 'period', 'frequency'], $from, $to);
     }
 
-    protected function processPeriodsWithoutInvoices(OrgStockFamilyTimeSeries $timeSeries, string $from, string $to, array $processedPeriods): void
+    protected function periodsWithoutInvoicesRows(OrgStockFamilyTimeSeries $timeSeries, string $from, string $to, array $processedPeriods): array
     {
+        $rows = [];
+
         $nonInvoicePeriods = TimeSeriesPeriodCalculator::getNonInvoicePeriods($timeSeries->frequency, $from, $to, $processedPeriods);
 
         foreach ($nonInvoicePeriods as $periodData) {
-            $timeSeries->records()->updateOrCreate(
-                [
-                    'org_stock_family_time_series_id' => $timeSeries->id,
-                    'period'                          => $periodData['period'],
-                    'frequency'                       => $timeSeries->frequency->singleLetter(),
-                ],
-                [
+            $rows[] = [
+                'org_stock_family_time_series_id' => $timeSeries->id,
+                'period'                          => $periodData['period'],
+                'frequency'                       => $timeSeries->frequency->singleLetter(),
+                ...[
                     'from'                        => $periodData['from'],
                     'to'                          => $periodData['to'],
                     'sales_external'              => 0,
@@ -126,8 +136,12 @@ class ProcessOrgStockFamilyTimeSeriesRecords implements ShouldBeUnique
                     'invoices'                    => 0,
                     'refunds'                     => 0,
                     'orders'                      => 0,
+                    'cogs_org_currency'           => 0,
+                    'cogs_grp_currency'           => 0,
                 ]
-            );
+            ];
         }
+
+        return $rows;
     }
 }

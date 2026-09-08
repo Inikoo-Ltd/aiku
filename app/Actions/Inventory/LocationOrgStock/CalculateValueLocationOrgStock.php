@@ -39,7 +39,7 @@ class CalculateValueLocationOrgStock implements ShouldBeUnique
             return;
         }
 
-        $costPerSku = $this->getCostPerSku($locationOrgStock->orgStock, Carbon::now());
+        $costPerSku = $this->getLppPerSku($locationOrgStock->orgStock, Carbon::now());
 
         $locationOrgStock->update([
             'value' => $locationOrgStock->quantity * $costPerSku

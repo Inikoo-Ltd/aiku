@@ -77,6 +77,23 @@ class EditDepartment extends OrgAction
                 'id'    => $item->id
             ]
         ]);
+        
+        $iconLinks = [];
+
+        if ($department->masterProductCategory) {
+            $iconLinks[] = [
+                'icon'    => 'fab fa-octopus-deploy',
+                'tooltip' => __('Go to Edit Master Department'),
+                'route'   => [
+                    'name'       => 'grp.masters.master_shops.show.master_departments.edit',
+                    'parameters' => [
+                        'masterShop'    => $department->shop->masterShop->slug,
+                        'masterDepartment' => $department->masterProductCategory->slug,
+                    ]
+                ],
+                'color'   => 'rgb(75, 0, 130)'
+            ];
+        }
 
         return Inertia::render(
             'EditModel',
@@ -93,12 +110,6 @@ class EditDepartment extends OrgAction
                 ],
                 'pageHead'    => [
                     'title'     => $department->name,
-                    'iconRight' => $urlMaster ? [
-                        'icon'  => "fab fa-octopus-deploy",
-                        'color' => "#4B0082",
-                        'class' => 'opacity-70 hover:opacity-100',
-                        'url'   => $urlMaster
-                    ] : [],
                     'icon'      =>
                         [
                             'icon'  => ['fal', 'fa-folder-tree'],
@@ -113,23 +124,24 @@ class EditDepartment extends OrgAction
                                 'parameters' => array_values($request->route()->originalParameters())
                             ]
                         ]
-                    ]
+                    ],
+                    'iconLinks' => $iconLinks
                 ],
                 'formData'    => [
                     'blueprint' =>
                         array_filter(
                             [
-                                [
-                                    'label'  => __('Id'),
-                                    'icon'   => 'fa-light fa-fingerprint',
-                                    'fields' => [
-                                        'code' => [
-                                            'type'  => 'input',
-                                            'label' => __('Code'),
-                                            'value' => $department->code
-                                        ],
-                                    ]
-                                ],
+                                // [
+                                //     'label'  => __('Id'),
+                                //     'icon'   => 'fa-light fa-fingerprint',
+                                //     'fields' => [
+                                //         'code' => [
+                                //             'type'  => 'input',
+                                //             'label' => __('Code'),
+                                //             'value' => $department->code
+                                //         ],
+                                //     ]
+                                // ],
                                [
                                 'label'  => __('FAQ'),
                                 'icon'   => 'fa-light fa-question-circle',
@@ -153,7 +165,7 @@ class EditDepartment extends OrgAction
                                                     'website' => $department->shop->website?->slug
                                                 ]
                                             ],
-                                            'toogle'        => [
+                                            'toggle'        => [
                                                'bold', 'italic', 'underline', 'bulletList','customLink', 'undo', 'redo', 'highlight', 'color', 'clear'
                                             ],
                                         ]
@@ -222,7 +234,7 @@ class EditDepartment extends OrgAction
                                                         'website' => $department->shop->website?->slug
                                                     ]
                                                 ],
-                                                'toogle'        => [
+                                                'toggle'        => [
                                                     'heading2',
                                                     'heading3',
                                                     'fontSize',
@@ -260,7 +272,7 @@ class EditDepartment extends OrgAction
                                                         'website' => $department->shop->website?->slug
                                                     ]
                                                 ],
-                                                'toogle'  => [
+                                                'toggle'  => [
                                                     'heading2',
                                                     'heading3',
                                                     'fontSize',
@@ -302,7 +314,7 @@ class EditDepartment extends OrgAction
                                                         'website' => $department->shop->website->slug
                                                     ]
                                                 ],
-                                                'toogle'        => [
+                                                'toggle'        => [
                                                     'heading2',
                                                     'heading3',
                                                     'fontSize',
@@ -340,7 +352,7 @@ class EditDepartment extends OrgAction
                                                         'website' => $department->shop->website?->slug
                                                     ]
                                                 ],
-                                                'toogle'  => [
+                                                'toggle'  => [
                                                     'heading2',
                                                     'heading3',
                                                     'fontSize',
@@ -364,23 +376,6 @@ class EditDepartment extends OrgAction
                                                 ],
                                             ],
                                         ...$this->seoFields($department),
-                                    ]
-                                ],
-                                [
-                                    'label'  => __('Pricing'),
-                                    'icon'   => 'fa-light fa-money-bill',
-                                    'fields' => [
-                                        'cost_price_ratio' => [
-                                            'type'        => 'input_number',
-                                            'bind'        => [
-                                                'maxFractionDigits' => 3
-                                            ],
-                                            'label'       => __('Pricing ratio'),
-                                            'placeholder' => __('Cost price ratio'),
-                                            'required'    => true,
-                                            'value'       => $department->cost_price_ratio,
-                                            'min'         => 0
-                                        ],
                                     ]
                                 ],
                                 [

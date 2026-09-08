@@ -60,6 +60,7 @@ use App\Actions\Fulfilment\Space\UI\EditSpace;
 use App\Actions\Fulfilment\Space\UI\IndexSpaces;
 use App\Actions\Fulfilment\Space\UI\ShowSpace;
 use App\Actions\Fulfilment\StoredItem\ExportStoredItem;
+use App\Actions\Fulfilment\StoredItem\PdfStoredItem;
 use App\Actions\Fulfilment\StoredItem\UI\CreateStoredItem;
 use App\Actions\Fulfilment\StoredItem\UI\EditStoredItem;
 use App\Actions\Fulfilment\StoredItem\UI\IndexStoredItems;
@@ -106,6 +107,7 @@ Route::prefix('{fulfilmentCustomer}')->as('show')->group(function () {
     Route::get('stored-items/create', CreateStoredItem::class)->name('.stored-items.create');
     Route::get('stored-items/{storedItem}', [ShowStoredItem::class, 'inFulfilmentCustomer'])->name('.stored-items.show');
     Route::get('stored-items/{storedItem}/edit', [EditStoredItem::class, 'inFulfilmentCustomer'])->name('.stored-items.edit');
+    Route::get('stored-items/{storedItem}/export', [PdfStoredItem::class, 'inFulfilmentCustomer'])->name('.stored-items.export_label');
 
     Route::prefix('pallets')->as('.pallets.')->group(function () {
         Route::get('', IndexPalletsInCustomer::class)->name('index');

@@ -1,4 +1,5 @@
 #!/bin/bash
+set -e
 PURPLE='\033[01;35m'
 ITALIC='\e[3m'
 NONE='\033[00m'

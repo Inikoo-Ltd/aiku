@@ -38,11 +38,15 @@ class ShowIrisSubDepartment extends IrisAction
                 'pageHead'        => [
                     'title'     => $subDepartment->name,
                     'model'     => __('Sub Department'),
+                    'afterTitle'    => [
+                        'label' => $subDepartment->code,
+                        'tooltip' => __('Sub Department Code'),
+                    ],
                     'icon'      => [
                         'icon'  => ['fal', 'fa-dot-circle'],
                         'title' => __('Sub Department'),
                     ],
-                    'iconRight' => $subDepartment->state->stateIcon()[$subDepartment->state->value],
+                    /* 'iconRight' => $subDepartment->state->stateIcon()[$subDepartment->state->value], */
                 ],
                 'tabs' => [
                     'current'    => $this->tab,

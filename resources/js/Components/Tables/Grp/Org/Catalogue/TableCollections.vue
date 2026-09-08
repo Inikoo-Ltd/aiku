@@ -6,6 +6,7 @@
 
 <script setup lang="ts">
 import { Link, router } from "@inertiajs/vue3"
+import { bucketQuery } from "@/Composables/bucketQuery"
 import Table from "@/Components/Table/Table.vue"
 import { routeType } from "@/types/route"
 import { remove as loRemove } from "lodash-es"
@@ -117,6 +118,12 @@ function openOnlineModal(event: MouseEvent, item: any) {
 }
 
 
+function collectionHref(collection: Collection) {
+    const bucket = route().current()?.match(/\.collections\.(active|inactive|in_process)\.index$/)?.[1]
+
+    return collectionRoute(collection) + bucketQuery(bucket)
+}
+
 function collectionRoute(collection: Collection) {
     const currentRoute = route().current()
 
@@ -124,7 +131,8 @@ function collectionRoute(collection: Collection) {
     if (currentRoute === "grp.org.shops.show.catalogue.collections.show" ||
         currentRoute === "grp.org.shops.show.catalogue.collections.index" ||
         currentRoute === "grp.org.shops.show.catalogue.dashboard" ||
-        currentRoute === "grp.org.shops.show.catalogue.collections.active.index"
+        currentRoute === "grp.org.shops.show.catalogue.collections.active.index" ||
+        currentRoute === "grp.org.shops.show.catalogue.collections.sales"
     ) {
         return route(
             "grp.org.shops.show.catalogue.collections.show",
@@ -368,7 +376,7 @@ const getIntervalStateColor = (isPositive: boolean) => {
                     <FontAwesomeIcon icon="fab fa-octopus-deploy" color="#4B0082" fixed-width />
                 </Link>
 
-                <Link :href="collectionRoute(collection) as string" class="primaryLink">
+                <Link :href="collectionHref(collection) as string" class="primaryLink">
                     {{ collection["code"] }}
                 </Link>
 
@@ -397,7 +405,7 @@ const getIntervalStateColor = (isPositive: boolean) => {
         </template>
 
         <template #cell(sales_grp_currency_external)="{ item: collection }">
-            <span class="tabular-nums">{{ locale.currencyFormat(collection.currency_code, collection.sales_grp_currency_external) }}</span>
+            <span class="tabular-nums">{{ locale.currencyFormat(collection.grp_currency_code ?? collection.currency_code, collection.sales_grp_currency_external) }}</span>
         </template>
 
         <template #cell(sales_grp_currency_external_delta)="{ item }">

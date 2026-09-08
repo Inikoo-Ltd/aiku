@@ -44,6 +44,9 @@ import Image from "@common/Components/Image.vue";
 import { faPencil, faImage } from "@fal";
 import { faBoxUp } from "@fas";
 import Toggle from "./Pure/Toggle.vue";
+import MasterPriceCurrencyTable from "./Pure/MasterPriceCurrencyTable.vue";
+import MasterRrpCurrencyTable from "./Pure/MasterRrpCurrencyTable.vue";
+
 
 library.add(
     faShapes, faBoxUp,
@@ -69,23 +72,26 @@ const props = defineProps<{
     shopsData?: any
     masterProductCategoryId: number
     is_dropship: boolean
-    price_rrp_warning_ratio : number
 }>();
 
 const emits = defineEmits(["update:showDialog"]);
 const tableData = ref(cloneDeep(props.shopsData));
 const detailsVisible = ref(true);
 const tableVisible = ref(true);
-const isFull = ref(true); // <-- state untuk toggle full screen
+const isFull = ref(true);
 let abortController: AbortController | null = null
 let debounceTimer: any = null
 const key = ref(ulid())
 const layout = inject('layout', {});
 const currency = props.masterCurrency ? props.masterCurrency : layout.group.currency;
 const loading = ref(null)
+const errorSummary = ref<string[]>([])
 const modalTradeUnit = ref(false)
 const dataTradeUnitEdit = ref(null)
 const listSelectorRef = ref<InstanceType<typeof ListSelector> | null>(null)
+const currencies_data = ref({})
+const org_data = ref(null)
+const avg_org_cost = ref(0)
 
 // Inertia form
 const form = useForm({
@@ -93,9 +99,7 @@ const form = useForm({
     name: "",
     unit: '',
    /*  units: null, */
-    trade_units: [
-
-    ],
+    trade_units: [],
     is_for_sale : true,
     is_minion_variant: false,
     image: null,
@@ -105,6 +109,8 @@ const form = useForm({
     description_extra: "",
     gross_weight: 0,
     net_weight: 0,
+    master_prices : null,
+    master_rrps : null,
     marketing_dimensions: {
         h: 0,
         l: 0,
@@ -159,6 +165,7 @@ const getTableData = (data) => {
                 item.quantity = item.ds_quantity;
             }
         }
+
         try {
             const response = await axios.post(
                 route("grp.models.master_product_category.product_creation_data", {
@@ -182,12 +189,18 @@ const getTableData = (data) => {
             }
 
             // Section: Modify pick_fractional from response to form.trade_units
-            for (const trade_unit of response.data.trade_units) {
+           /*  for (const trade_unit of response.data.trade_units) {
                 const target = form.trade_units.find((item) => item.id === trade_unit.id)
                 if (target) {
                     target.pick_fractional = trade_unit.pick_fractional
                 }
-            }
+            } */
+
+            currencies_data.value = response.data.currencies
+            form.master_prices = response.data.master_prices
+            form.master_rrps = response.data.master_rrps
+            org_data.value = response.data.org_data
+            avg_org_cost.value = response.data.avg_org_cost
             
         } catch (error: any) {
             if (!(axios.isCancel(error) || error.name === "CanceledError")) {
@@ -198,7 +211,6 @@ const getTableData = (data) => {
 }
 
 const ListSelectorChange = (value) => {
-    console.log('selector:', value)
     if (value.length >= 1) {
         form.name = value[0].name
         form.code = value[0].code
@@ -208,7 +220,6 @@ const ListSelectorChange = (value) => {
         form.net_weight = value[0].net_weight
         form.description = value[0].description
         form.description_extra = value[0].description_extra
-       /*  form.units = value.length > 1 ? 1 : (value[0]?.quantity * value[0]?.units) || 1 */
         form.gross_weight = value[0]?.gross_weight || 0
         form.marketing_dimensions = value[0]?.dimensions || null     
     }
@@ -219,9 +230,26 @@ function roundDown2(num: number) {
     return Math.floor(num * 100) / 100;
 }
 
+const unitsPerOuter = computed(() => {
+    const tradeUnits = form.trade_units as any[]
+
+    return tradeUnits.length == 1 ? parseInt(tradeUnits[0].quantity) : 1
+})
+
+const priceByCurrency = computed(() => {
+    const prices = (form.master_prices ?? {}) as Record<string, { value: number | null }>
+
+    return Object.entries(prices).reduce((costs, [code, price]) => {
+        costs[code] = price?.value ?? null
+
+        return costs
+    }, {} as Record<string, number | null>)
+})
+
 const submitForm = async (redirect = true) => {
     form.processing = true
     form.errors = {}
+    errorSummary.value = []
 
     if (redirect) loading.value = 'save'
     else loading.value = 'create'
@@ -248,8 +276,16 @@ const submitForm = async (redirect = true) => {
     }
 
     // Build payload manual
+    // Only send the trade unit keys the backend reads: full objects push the
+    // request over PHP's max_input_vars and fields get silently truncated
     const payload: any = {
         ...form.data(),
+        trade_units: form.trade_units.map((tu: any) => ({
+            id: tu.id,
+            quantity: tu.quantity,
+            type: tu.type,
+            ds_quantity: tu.ds_quantity,
+        })),
         shop_products: finalDataTable,
         masterShop: route().params['masterShop']
     }
@@ -294,10 +330,11 @@ const submitForm = async (redirect = true) => {
             if (form.errors.code || form.errors.unit || form.errors.name) {
                 detailsVisible.value = true
             }
-            notify({
-                title: trans("Something went wrong"),
-                text: error.response.data.message || trans("Please try again"),
-                type: 'error'
+            errorSummary.value = Object.entries(form.errors as Record<string, string[]>).map(([field, messages]) => {
+                if (field === 'code' && messages.some(m => m.includes('already been taken'))) {
+                    return trans("Code") + ` "${form.code}" ` + trans("is already used by another master product in this master shop")
+                }
+                return messages.join(", ")
             })
         } else {
             notify({
@@ -518,13 +555,22 @@ const successEditTradeUnit = (data) => {
 
                     <!-- Form Fields -->
                     <div class="grid grid-cols-2 gap-5">
-                        <div :class="'col-span-2'">
+                        <div :class="'col-span-1'">
                             <label class="block text-xs font-medium text-gray-600 mb-1">{{trans('Code')}}</label>
                             <PureInput type="text" v-model="form.code" @update:model-value="form.errors.code = null"
                                 class="w-full" />
                             <small v-if="form.errors.code" class="text-red-500 text-xs flex items-center gap-1 mt-1">
                                 <FontAwesomeIcon :icon="faCircleExclamation" />
                                 {{ form.errors.code.join(", ") }}
+                            </small>
+                        </div>
+                         <div>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">{{trans('Name')}}</label>
+                            <PureInput type="text" v-model="form.name" @update:model-value="form.errors.name = null"
+                                class="w-full" />
+                            <small v-if="form.errors.name" class="text-red-500 text-xs flex items-center gap-1 mt-1">
+                                <FontAwesomeIcon :icon="faCircleExclamation" />
+                                {{ form.errors.name.join(", ") }}
                             </small>
                         </div>
                         <div class="flex gap-16">
@@ -547,7 +593,6 @@ const successEditTradeUnit = (data) => {
                                 </small>
                             </div>
                             <div>
-
                                 <label class="block text-xs font-medium text-gray-600 mb-1">
                                     {{trans('Is For Sale')}} 
                                     <FontAwesomeIcon
@@ -564,20 +609,7 @@ const successEditTradeUnit = (data) => {
                                     {{ form.errors.is_for_sale.join(", ") }}
                                 </small>
                             </div>
-
-
                         </div>
-
-                        <div>
-                            <label class="block text-xs font-medium text-gray-600 mb-1">{{trans('Name')}}</label>
-                            <PureInput type="text" v-model="form.name" @update:model-value="form.errors.name = null"
-                                class="w-full" />
-                            <small v-if="form.errors.name" class="text-red-500 text-xs flex items-center gap-1 mt-1">
-                                <FontAwesomeIcon :icon="faCircleExclamation" />
-                                {{ form.errors.name.join(", ") }}
-                            </small>
-                        </div>
-
                         <div>
                             <label class="block text-xs font-medium text-gray-600 mb-1">{{trans('Unit label')}}</label>
                             <PureInput v-model="form.unit" @update:model-value="form.errors.unit = null"
@@ -644,6 +676,8 @@ const successEditTradeUnit = (data) => {
                             </small>
                         </div>
 
+                       
+
                         <div>
                             <label class="block text-xs font-medium text-gray-600 mb-1">{{trans('Description')}}</label>
                             <SideEditorInputHTML :rows="4" v-model="form.description"
@@ -665,6 +699,37 @@ const successEditTradeUnit = (data) => {
                                 {{ form.errors.description_extra.join(", ") }}
                             </small>
                         </div>
+                        <div>
+                          <!--   <label class="block text-xs font-medium text-gray-600 mb-1">{{trans('Price')}}</label> -->
+                            <MasterPriceCurrencyTable
+                                v-model="form.master_prices"
+                                :currencies="currencies_data"
+                                :unitsPerOuter="unitsPerOuter"
+                                :org_data="org_data"
+                                :avg_org_cost="avg_org_cost"
+                            />
+                            <small v-if="form.errors.master_prices"
+                                class="text-red-500 text-xs flex items-center gap-1 mt-1">
+                                <FontAwesomeIcon :icon="faCircleExclamation" />
+                                {{ form.errors.master_prices.join(", ") }}
+                            </small>
+                        </div>
+
+                        <div>
+                          <!--   <label class="block text-xs font-medium text-gray-600 mb-1">{{trans('RRP')}}</label> -->
+                            <MasterRrpCurrencyTable
+                                v-model="form.master_rrps"
+                                :currencies="currencies_data"
+                                :unitsPerOuter="unitsPerOuter"
+                                :costs="priceByCurrency"
+                            />
+                            <small v-if="form.errors.master_rrps"
+                                class="text-red-500 text-xs flex items-center gap-1 mt-1">
+                                <FontAwesomeIcon :icon="faCircleExclamation" />
+                                {{ form.errors.master_rrps.join(", ") }}
+                            </small>
+                        </div>
+                        
                     </div>
                 </div>
             </div>
@@ -679,7 +744,7 @@ const successEditTradeUnit = (data) => {
                 </button>
 
                 <div v-if="tableVisible" class="mt-4">
-                    <TableSetPriceProduct v-model="tableData" :key="key" :currency="currency.code" :form="form" :price_rrp_warning_ratio="price_rrp_warning_ratio"/>
+                    <TableSetPriceProduct v-model="tableData" :key="key" :currency="currency.code" :form="form" />
                     <small v-if="form.errors.shop_products" class="text-red-500 flex items-center gap-1">
                         {{ form.errors.shop_products.join(", ") }}
                     </small>
@@ -689,9 +754,20 @@ const successEditTradeUnit = (data) => {
 
         <!-- Footer -->
         <template #footer>
+            <div v-if="errorSummary.length" class="border border-red-300 bg-red-50 text-red-700 rounded-md px-4 py-3 mb-3 text-sm">
+                <div class="flex justify-between items-start gap-3">
+                    <div>
+                        <div class="font-medium mb-1">{{ trans("The product could not be saved") }}</div>
+                        <ul class="list-disc pl-5 space-y-0.5">
+                            <li v-for="(message, index) in errorSummary" :key="index">{{ message }}</li>
+                        </ul>
+                    </div>
+                    <button type="button" class="shrink-0 font-medium hover:text-red-900" @click="errorSummary = []">✕</button>
+                </div>
+            </div>
             <div class="flex justify-end gap-3 border-t pt-3">
                 <Button label="Cancel" type="negative" class="!px-5" @click="emits('update:showDialog', false)" />
-                <Button type="create" :label="'save & create another one'" :loading="loading == 'create'"
+                <Button type="create" :label="'Save & Create Another One'" :loading="loading == 'create'"
                     :disabled="form.trade_units.length < 1" class="!px-6" @click="submitForm(false)" />
                 <Button type="save" :loading="loading == 'save'" :disabled="form.trade_units.length < 1" class="!px-6"
                     @click="submitForm" />

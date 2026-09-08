@@ -19,6 +19,7 @@ enum OrderPayDetailedStatusEnum: string
     case PARTIALLY_PAID = 'partially_paid';
     case PAID = 'paid';
     case OVERPAID = 'overpaid';
+    case REFUNDED = 'refunded';
     case UNKNOWN = 'unknown';
 
     public static function labels(): array
@@ -29,6 +30,7 @@ enum OrderPayDetailedStatusEnum: string
             'unknown' => __('Unknown payment status'),
             'partially_paid' => __('Partially Paid'),
             'overpaid' => __('Overpaid'),
+            'refunded' => __('Refunded'),
         ];
     }
 
@@ -72,6 +74,16 @@ enum OrderPayDetailedStatusEnum: string
                 'color'   => 'blue',  // Color for box (Retina)
                 'app'     => [
                     'name' => 'plus-circle',
+                    'type' => 'font-awesome-5'
+                ]
+            ],
+            'refunded' => [
+                'tooltip' => __('Refunded'),
+                'icon'    => 'fal fa-undo-alt',
+                'class'   => 'text-purple-500',  // Color for normal icon (Aiku)
+                'color'   => 'purple',  // Color for box (Retina)
+                'app'     => [
+                    'name' => 'undo-alt',
                     'type' => 'font-awesome-5'
                 ]
             ],

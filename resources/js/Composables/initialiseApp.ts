@@ -6,6 +6,9 @@ import { watchEffect } from "vue"
 import { useEchoGrpPersonal } from '@/Stores/echo-grp-personal.js'
 import { useEchoGrpGeneral } from '@/Stores/echo-grp-general.js'
 import { useLiveUsers } from '@/Stores/active-users'
+import { useChatAgentPresence } from '@/Composables/useChatAgentPresence'
+import { resetStuckOverlays } from '@/Composables/resetStuckOverlays'
+import { applyChatTheme } from '@/Composables/useChatThemes'
 
 export const initialiseApp = () => {
     const layout = useLayoutStore()
@@ -31,7 +34,15 @@ export const initialiseApp = () => {
     if (usePage().props?.auth?.user) {
         echoPersonal.subscribe(usePage().props.auth.user.id)
 
+        if (usePage().props.auth.user.agent_id) {
+            useChatAgentPresence().start()  // Chat agent liveness: heartbeat + idle detection
+        }
+
         router.on('navigate', (event) => {
+
+            // Close overlays left open by the previous page so they don't block clicks
+            layout.stackedComponents = []
+            resetStuckOverlays()
 
             // To see Vue filename in console (component.vue)
             if (import.meta.env.VITE_APP_ENV === 'local' && usePage().component) {
@@ -166,9 +177,25 @@ export const initialiseApp = () => {
             layout.app.theme = usePage().props.layout?.app_theme
         }
 
+        // Set Chat theme
+        if (usePage().props.layout?.chat_theme) {
+            applyChatTheme(usePage().props.layout.chat_theme as string)
+        }
+
         // Set App Environment
         if (usePage().props?.environment) {
             layout.app.environment = usePage().props?.environment
+        }
+
+        // Set latest app deployment time
+        if (usePage().props?.last_deployment_at) {
+            layout.app.last_deployment_at = usePage().props?.last_deployment_at
+        }
+        if (usePage().props?.last_deployment_hash) {
+            layout.app.last_deployment_hash = usePage().props?.last_deployment_hash
+        }
+        if (usePage().props?.last_deployment_version) {
+            layout.app.last_deployment_version = usePage().props?.last_deployment_version
         }
 
 
@@ -229,7 +256,14 @@ export const initialiseApp = () => {
 
         if (usePage().props.crm_return_count !== undefined) {
             layout.crm_return_count = usePage().props.crm_return_count as number
-            console.log(layout);
+        }
+
+        if (usePage().props.master_updated_count !== undefined) {
+            layout.master_updated_count = usePage().props.master_updated_count as number
+        }
+
+        if (usePage().props.faire_skipped_count !== undefined) {
+            layout.faire_skipped_count = usePage().props.faire_skipped_count as number
         }
 
         layout.app.name = "Aiku"

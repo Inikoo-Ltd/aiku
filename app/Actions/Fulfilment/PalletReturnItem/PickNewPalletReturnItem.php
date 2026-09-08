@@ -10,7 +10,7 @@
 namespace App\Actions\Fulfilment\PalletReturnItem;
 
 use App\Actions\OrgAction;
-use App\Actions\Traits\Authorisations\WithFulfilmentShopAuthorisation;
+use App\Actions\Traits\Authorisations\Inventory\WithFulfilmentWarehouseEditAuthorisation;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Fulfilment\PalletReturn;
 use App\Models\Fulfilment\PalletReturnItem;
@@ -21,7 +21,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class PickNewPalletReturnItem extends OrgAction
 {
-    use WithFulfilmentShopAuthorisation;
+    use WithFulfilmentWarehouseEditAuthorisation;
     use WithActionUpdate;
 
     /**
@@ -64,7 +64,7 @@ class PickNewPalletReturnItem extends OrgAction
      */
     public function asController(PalletReturn $palletReturn, PalletStoredItem $palletStoredItem, ActionRequest $request): void
     {
-        $this->initialisationFromFulfilment($palletStoredItem->pallet->fulfilment, $request);
+        $this->initialisationFromWarehouse($palletReturn->warehouse, $request);
 
         $this->handle($palletReturn, $palletStoredItem, $this->validatedData);
     }

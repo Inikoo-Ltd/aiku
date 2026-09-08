@@ -14,12 +14,14 @@ use App\Actions\Inventory\LocationOrgStock\MoveOrgStockToOtherLocation;
 use App\Actions\Inventory\LocationOrgStock\StoreLocationOrgStock;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\Inventory\WithWarehouseEditAuthorisation;
+use App\Enums\Inventory\OrgStockMovement\OrgStockMovementReasonEnum;
 use App\Http\Resources\Inventory\LocationResource;
 use App\Models\Inventory\Location;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\Enum;
 use Lorisleiva\Actions\ActionRequest;
 
 class MassMoveLocationOrgStocks extends OrgAction
@@ -53,7 +55,9 @@ class MassMoveLocationOrgStocks extends OrgAction
 
                 if ($locationOrgStock->quantity > 0) {
                     MoveOrgStockToOtherLocation::make()->action($locationOrgStock, $targetLocationOrgStock, [
-                        'quantity' => $locationOrgStock->quantity
+                        'quantity' => $locationOrgStock->quantity,
+                        'reason'   => Arr::get($modelData, 'reason'),
+                        'note'     => Arr::get($modelData, 'note'),
                     ]);
                 }
 
@@ -86,7 +90,9 @@ class MassMoveLocationOrgStocks extends OrgAction
                 Rule::exists('locations', 'id')->where('organisation_id', $this->organisation->id),
                 'not_in:'.$this->location->id
             ],
-            'remove_after_move' => ['sometimes', 'nullable', 'boolean']
+            'remove_after_move' => ['sometimes', 'nullable', 'boolean'],
+            'reason'            => [ 'required', new Enum(OrgStockMovementReasonEnum::class)],
+            'note'              => ['sometimes', 'nullable', 'string'],
         ];
     }
 

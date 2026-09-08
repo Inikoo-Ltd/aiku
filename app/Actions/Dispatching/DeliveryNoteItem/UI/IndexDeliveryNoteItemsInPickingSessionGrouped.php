@@ -41,6 +41,10 @@ class IndexDeliveryNoteItemsInPickingSessionGrouped extends OrgAction
             $query->where('delivery_notes.id', $deliveryNoteId);
         }
 
+        $query->whereHas('deliveryNoteItems', function ($query) {
+            $query->where('quantity_required', '>', 0);
+        });
+
         return $query
             ->select([
                 'delivery_notes.slug as delivery_note_slug',
@@ -49,7 +53,7 @@ class IndexDeliveryNoteItemsInPickingSessionGrouped extends OrgAction
                 'delivery_notes.state as delivery_note_state',
                 'delivery_notes.customer_notes as delivery_note_customer_notes',
                 'delivery_notes.public_notes as delivery_note_public_notes',
-                'delivery_notes.internal_notes as delivery_note_internal_notes',
+                'delivery_notes.private_warehouse_note as delivery_note_internal_notes',
                 'delivery_notes.shipping_notes as delivery_note_shipping_notes',
                 'delivery_notes.is_premium_dispatch as delivery_note_is_premium_dispatch',
                 'delivery_notes.has_extra_packing as delivery_note_has_extra_packing',

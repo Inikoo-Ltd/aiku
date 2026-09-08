@@ -103,6 +103,10 @@ provide("currentView", screenType)
 onMounted(() => {
     checkScreenType()
     window.addEventListener("resize", checkScreenType)
+
+    if (!announcementData.value?.template_code) {
+        isModalOpen.value = true
+    }
 })
 onBeforeUnmount(() => {
     window.removeEventListener("resize", checkScreenType)
@@ -422,7 +426,7 @@ const onSectionSetting = () => {
                     </div>
 
                     <div v-else class="text-center pb-14">
-                        <EmptyState :data="{ title: trans('No Announcement selected')}" />
+                        <EmptyState :data="{ title: ctrans('No Announcement selected'), description: ctrans('Select template to start')}" />
 
                         <div class="mx-auto mt-4">
                             <Button @click="() => isModalOpen = true" :style="'tertiary'"

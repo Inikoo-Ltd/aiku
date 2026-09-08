@@ -10,6 +10,7 @@ namespace App\Actions\Fulfilment\UI\Catalogue\Rentals;
 
 use App\Actions\Fulfilment\UI\Catalogue\ShowFulfilmentCatalogueDashboard;
 use App\Actions\OrgAction;
+use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Actions\Overview\ShowGroupOverviewHub;
 use App\Enums\Billables\Rental\RentalStateEnum;
 use App\Enums\UI\Fulfilment\RentalsTabsEnum;
@@ -73,7 +74,6 @@ class IndexFulfilmentRentals extends OrgAction
         }
 
         $queryBuilder->join('assets', 'rentals.asset_id', '=', 'assets.id');
-        $queryBuilder->leftJoin('asset_sales_intervals', 'assets.id', '=', 'asset_sales_intervals.asset_id');
         $queryBuilder->join('currencies', 'assets.currency_id', '=', 'currencies.id');
 
         if ($parent instanceof Fulfilment) {
@@ -86,6 +86,19 @@ class IndexFulfilmentRentals extends OrgAction
                 );
             }
         }
+
+        $timeSeriesData = $queryBuilder->withTimeSeriesAggregation(
+            timeSeriesTable: 'asset_time_series',
+            timeSeriesRecordsTable: 'asset_time_series_records',
+            foreignKey: 'asset_id',
+            aggregateColumns: [
+                'sales_external' => 'sales',
+            ],
+            frequency: TimeSeriesFrequencyEnum::DAILY->value,
+            prefix: $prefix,
+            includeLY: false,
+            localKey: 'asset_id',
+        );
 
         $queryBuilder
             ->defaultSort('rentals.id')
@@ -101,7 +114,7 @@ class IndexFulfilmentRentals extends OrgAction
                 'assets.name',
                 'assets.code',
                 'assets.price',
-                'asset_sales_intervals.sales_all as sales',
+                $timeSeriesData['selectRaw']['sales'],
                 'rentals.description',
                 'currencies.code as currency_code',
                 'currencies.id as currency_id',

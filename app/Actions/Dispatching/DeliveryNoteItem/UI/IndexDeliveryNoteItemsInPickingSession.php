@@ -65,7 +65,10 @@ class IndexDeliveryNoteItemsInPickingSession extends OrgAction
             'org_stocks.slug as org_stock_slug',
             'org_stocks.name as org_stock_name',
             'org_stocks.packed_in',
+            'org_stocks.barcode',
         ]);
+
+        $query->where('delivery_note_items.quantity_required', '>', 0);
 
         return $query
             ->allowedSorts(['id', 'org_stock_name', 'org_stock_code', 'quantity_required', 'quantity_picked', 'quantity_packed', 'state'])
@@ -94,8 +97,8 @@ class IndexDeliveryNoteItemsInPickingSession extends OrgAction
             $table->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon');
             $table->column(key: 'delivery_note_reference', label: __('Delivery note'), canBeHidden: false, sortable: true, searchable: true);
 
-            $table->column(key: 'org_stock_code', label: __('SKU'), canBeHidden: false, sortable: true, searchable: true);
-            $table->column(key: 'org_stock_name', label: __('SKU name'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'org_stock_code', label: __('SKO'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'org_stock_name', label: __('SKO name'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'quantity_required', label: __('Quantity required'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
             if ($parent->state != PickingSessionStateEnum::IN_PROCESS) {
                 $table->column(key: 'quantity_picked', label: __('Quantity picked'), canBeHidden: false, sortable: true, searchable: true, align: 'right');

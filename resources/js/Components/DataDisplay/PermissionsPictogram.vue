@@ -117,7 +117,22 @@ const groupPositionList = {
                 grade: "manager",
                 label: trans("Manager")
                 // number_employees: props.options.positions?.data?.find(position => position.slug == 'gp-g')?.number_employees || 0,
-            }
+            },
+            {
+                slug: "gp-clk", // Note, this is not slug is job position code
+                grade: "clerk-1",
+                label: trans("Clerk")
+            },
+            {
+                slug: "gp-md", // Note, this is not slug is job position code
+                grade: "clerk-2",
+                label: trans("Media")
+            },
+            {
+                slug: "gp-vw", // Note, this is not slug is job position code
+                grade: "clerk-3",
+                label: trans("Viewer")
+            },
         ]
         // value: null
     }

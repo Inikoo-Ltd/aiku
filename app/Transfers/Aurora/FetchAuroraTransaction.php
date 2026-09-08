@@ -39,8 +39,8 @@ class FetchAuroraTransaction extends FetchAurora
 
 
             $state = match ($this->auroraModelData->{'Current Dispatching State'}) {
-                'In Process by Customer' => TransactionStateEnum::CREATING,
-                'In Process', 'Submitted by Customer' => TransactionStateEnum::SUBMITTED,
+                'In Process by Customer', 'In Process' => TransactionStateEnum::CREATING,
+                'Submitted by Customer' => TransactionStateEnum::SUBMITTED,
                 'Ready to Pick', 'Picking', 'Ready to Pack', 'Packing', 'Packed', 'Packed Done' => TransactionStateEnum::HANDLING,
                 'Ready to Ship' => TransactionStateEnum::FINALISED,
                 'Dispatched'    => TransactionStateEnum::DISPATCHED,

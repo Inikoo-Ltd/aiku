@@ -8,6 +8,7 @@
 
 namespace App\Actions\UI\Profile;
 
+use App\Actions\Helpers\TimeZone\Json\IndexTimeZones;
 use App\Actions\Dispatching\Printer\Json\GetPrintNodePrinters;
 use App\Actions\Helpers\Language\UI\GetLanguagesOptions;
 use App\Actions\SysAdmin\User\UI\GetLoggedUser;
@@ -74,14 +75,19 @@ class EditProfileSettings
                         "fields" => [
                             "language_id" => [
                                 "type"    => "select",
-                                "label"   => __("language"),
+                                "label"   => __("Language"),
                                 "value"   => $user->language_id,
                                 'options' => GetLanguagesOptions::make()->translated(),
                             ],
                             "app_theme" => [
                                 "type"  => "app_theme",
-                                "label" => __("theme color"),
+                                "label" => __("Theme color"),
                                 "value" => Arr::get($user->settings, 'app_theme'),
+                            ],
+                            "chat_theme" => [
+                                "type"  => "chat_theme",
+                                "label" => __("Chat panel color"),
+                                "value" => Arr::get($user->settings, 'chat_theme'),
                             ],
                             "hide_logo" => [
                                 "type"    => "toggle",
@@ -92,7 +98,7 @@ class EditProfileSettings
                             ],
                             'preferred_printer' => [
                                 'type'     => 'select_printer',
-                                'label'    => __('preferred printer'),
+                                'label'    => __('Preferred printer'),
                                 'required' => false,
                                 'options'  => $printers,
                                 'value'    => Arr::get($user->settings, 'preferred_printer_id'),
@@ -103,23 +109,19 @@ class EditProfileSettings
                         "label"  => __("Timezone"),
                         "icon"   => "fal fa-clock",
                         "fields" => [
-                            "timezones"  =>  [
-                                "type"    => "select_infinite",
-                                "label"   => __("Timezone"),
-                                "information"   => __("Select your timezone to show in the footer"),
-                                "options"   => collect(Arr::get($user->settings, 'timezones', []))
-                                    ->map(fn ($tz) => ['label' => $tz, 'value' => $tz])
-                                    ->values()
-                                    ->toArray(),
-                                "mode"      => "multiple",
-                                "fetchRoute"    => [
-                                    "name"       => "grp.json.timezones",
+                            "timezone"  =>  [
+                                "type"        => "select_infinite",
+                                "label"       => __("Your timezone"),
+                                "information" => __("Times across Aiku are shown in this timezone. Defaults to the timezone of the organisation you work for"),
+                                "options"     => IndexTimeZones::make()->optionsFor([$user->timezone_name]),
+                                "fetchRoute"  => [
+                                    "name" => "grp.json.timezones",
                                 ],
-                                "valueProp" => "value",
-                                "labelProp" => "label",
-                                "required" => false,
-                                "value"   => Arr::get($user->settings, 'timezones')
-                            ]
+                                "valueProp"   => "value",
+                                "labelProp"   => "label",
+                                "required"    => false,
+                                "value"       => $user->timezone_name,
+                            ],
                         ],
                     ],
                 ],

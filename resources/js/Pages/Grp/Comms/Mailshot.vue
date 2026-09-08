@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { Head, router } from "@inertiajs/vue3";
 import PageHeading from "@/Components/Headings/PageHeading.vue";
+import MailshotJourney from "@/Components/Navigation/MailshotJourney.vue";
+import MailshotSubjectEdit from "@/Components/Workshop/Mailshot/MailshotSubjectEdit.vue";
 import Tabs from "@/Components/Navigation/Tabs.vue";
 import { useTabChange } from "@/Composables/tab-change";
 import { capitalize } from "@/Composables/capitalize";
@@ -25,8 +27,7 @@ import VueDatePicker from '@vuepic/vue-datepicker';
 import ModalConfirmation from '@/Components/Utils/ModalConfirmation.vue'
 import { trans } from "laravel-vue-i18n"
 import PureMultiselect from "@/Components/Pure/PureMultiselect.vue"
-import { toZonedTime} from 'date-fns-tz';
-import { format } from 'date-fns'
+import { toZonedTime, formatInTimeZone } from 'date-fns-tz';
 
 
 
@@ -36,6 +37,10 @@ library.add(faEnvelope, faDraftingCompass, faStop, faUsers, faPaperPlane, faBull
 const props = defineProps<{
     title: string,
     pageHead: PageHeadingTypes
+    journey?: any
+    mailshot_copy?: { subject: string, name: string | null, preview_text: string | null }
+    updateMailshotRoute?: routeType
+    suggestCopyRoute?: routeType
     tabs: TSTabs
     showcase?: string
     email_preview?: Object
@@ -67,6 +72,9 @@ const props = defineProps<{
     timeZoneOptions?: any[]
     defaultShopTimezone?: string
 }>();
+
+const savedSubject = ref<string | null>(null)
+const pageHeadData = computed(() => savedSubject.value ? { ...props.pageHead, title: savedSubject.value } : props.pageHead)
 const currentTab = ref(props.tabs.current);
 const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab);
 const TAB_HIDE_RULES: Record<string, string[]> = {
@@ -105,7 +113,7 @@ const shouldShowCancelScheduleButton = computed(() => {
 
 // Schedule datetime picker state
 const showSchedulePicker = ref(false);
-const scheduleDateTime = ref<string>(new Date().toISOString());
+const scheduleDateTime = ref<string | null>(null);
 const minDateTime = ref<string>(new Date().toISOString());
 
 const schedulePicker = ref();
@@ -115,27 +123,50 @@ const selectedTimezone = ref(props.defaultShopTimezone || 'UTC');
 const inProgress = ref(false);
 const scheduleInProgress = ref(false);
 
-const minTime = computed(() => {
+const scheduledInstant = computed(() => {
+    if (!scheduleDateTime.value) {
+        return null;
+    }
+    const instant = new Date(scheduleDateTime.value);
+
+    return isNaN(instant.getTime()) ? null : instant;
+});
+
+const schedulePreview = computed(() => {
+    const instant = scheduledInstant.value;
+    if (!instant) {
+        return null;
+    }
     const tz = selectedTimezone.value;
-    const selectedZoned = toZonedTime(new Date(scheduleDateTime.value), tz);
-    const nowZoned = toZonedTime(nowUtc.value, tz);
 
-    const sameUTCDate =
-        selectedZoned.getUTCFullYear() === nowZoned.getUTCFullYear() &&
-        selectedZoned.getUTCMonth() === nowZoned.getUTCMonth() &&
-        selectedZoned.getUTCDate() === nowZoned.getUTCDate();
+    return {
+        inSelectedTimezone: formatInTimeZone(instant, tz, "EEEE d MMMM yyyy',' HH:mm"),
+        inUtc: formatInTimeZone(instant, 'UTC', "d MMM yyyy',' HH:mm"),
+        isInThePast: instant.getTime() <= Date.now(),
+    };
+});
 
-    if (sameUTCDate) {
-        // Today (UTC) → block past minutes/seconds
-        return {
-            hours: nowZoned.getHours(),
-            minutes: nowZoned.getMinutes(),
-            seconds: nowZoned.getSeconds(),
-        };
+const canConfirmSchedule = computed(() => !!schedulePreview.value && !schedulePreview.value.isInThePast);
+
+const minTime = computed(() => {
+    const noRestriction = { hours: 0, minutes: 0, seconds: 0 };
+    const instant = scheduledInstant.value;
+    if (!instant) {
+        return noRestriction;
+    }
+    const tz = selectedTimezone.value;
+
+    if (formatInTimeZone(instant, tz, 'yyyy-MM-dd') !== formatInTimeZone(nowUtc.value, tz, 'yyyy-MM-dd')) {
+        return noRestriction;
     }
 
-    // Future date → no time restriction
-    return { hours: 0, minutes: 0, seconds: 0 };
+    const nowZoned = toZonedTime(nowUtc.value, tz);
+
+    return {
+        hours: nowZoned.getHours(),
+        minutes: nowZoned.getMinutes(),
+        seconds: nowZoned.getSeconds(),
+    };
 });
 
 const handleSendNow = async () => {
@@ -198,7 +229,8 @@ const handleSchedule = async (event: Event) => {
         return;
     }
     nowUtc.value = new Date();
-    minDateTime.value = toZonedTime(new Date(nowUtc.value), selectedTimezone.value).toISOString();
+    minDateTime.value = nowUtc.value.toISOString();
+    scheduleDateTime.value = null;
 
     if (schedulePicker.value) {
         schedulePicker.value.show(event);
@@ -210,11 +242,18 @@ const handleSchedule = async (event: Event) => {
 const confirmSchedule = async () => {
     if (!props.scheduleMailshotRoute) return;
 
+    const preview = schedulePreview.value;
+    if (!preview || preview.isInThePast) {
+        notify({
+            type: 'error',
+            title: 'Error',
+            text: trans('Pick a date and time in the future before scheduling'),
+        })
+        return;
+    }
+
     scheduleInProgress.value = true;
-    // const formattedDateTime = scheduleDateTime.value.slice(0, 19).replace('T', ' ')
-     const formattedDateTime = scheduleDateTime.value
-     const convertToTimezone = toZonedTime(formattedDateTime, selectedTimezone.value)
-     const displayFormated = format(convertToTimezone, 'yyyy-MM-dd HH:mm:ss')
+    const formattedDateTime = scheduledInstant.value!.toISOString()
 
     showSchedulePicker.value = false;
     schedulePicker.value?.hide();
@@ -227,7 +266,7 @@ const confirmSchedule = async () => {
                 notify({
                     type: 'success',
                     title: 'Success',
-                    text: `Mailshot scheduled for ${displayFormated} ${selectedTimezone.value}`,
+                    text: `Mailshot scheduled for ${preview.inSelectedTimezone} (${selectedTimezone.value})`,
                 })
                 showSchedulePicker.value = false;
                 schedulePicker.value?.hide();
@@ -245,7 +284,7 @@ const confirmSchedule = async () => {
             notify({
                 type: 'error',
                 title: 'Error',
-                text: 'Failed to schedule mailshot',
+                text: exception.response?.data?.message ?? 'Failed to schedule mailshot',
             })
         })
         .finally(() => {
@@ -263,7 +302,7 @@ const cancelSchedule = () => {
         schedulePicker.value.hide();
     }
     showSchedulePicker.value = false;
-    scheduleDateTime.value = new Date().toISOString();
+    scheduleDateTime.value = null;
 };
 
 const formatNumber = (num: number | null | undefined) => {
@@ -608,12 +647,12 @@ watch(
 
     <Head :title="capitalize(pageHead.title)" />
 
-    <PageHeading :data="pageHead">
-        <template #afterTitle v-if="
-            props.mailshotType === 'marketing' &&
-            ['in_process', 'ready', 'scheduled'].includes(props.status ?? '') && !props.isSecondWave
-        ">
-            <span>| Estimated Recipients : {{ formatNumber(props.estimatedRecipients) ?? 0 }}</span>
+    <PageHeading :data="pageHeadData">
+        <template #afterTitle2>
+            <MailshotSubjectEdit v-if="mailshot_copy && updateMailshotRoute && suggestCopyRoute"
+                :mailshot="mailshot_copy" :updateMailshotRoute="updateMailshotRoute" :suggestCopyRoute="suggestCopyRoute"
+                @saved="subject => savedSubject = subject" />
+            <MailshotJourney :steps="journey" class="ml-4" />
         </template>
         <template #otherBefore>
             <div class="flex" v-if="shouldShowButtons">
@@ -688,10 +727,29 @@ watch(
                     :seconds-increment="1" model-type="iso" :auto-apply="true" :open-on-focus="true"
                     :time-picker-inline="true" class="w-full" placeholder="" :teleport="true" :timezone="selectedTimezone" />
             </div>
+            <div class="w-full mb-4 rounded-md border px-3 py-2"
+                :class="schedulePreview ? 'border-gray-300 bg-gray-50' : 'border-dashed border-gray-300'">
+                <template v-if="schedulePreview">
+                    <div class="text-gray-500">{{ trans('This email will be sent on') }}</div>
+                    <div class="text-gray-900">
+                        {{ schedulePreview.inSelectedTimezone }}
+                        <span class="text-gray-500">({{ selectedTimezone }})</span>
+                    </div>
+                    <div class="text-gray-500">{{ schedulePreview.inUtc }} {{ trans('UTC') }}</div>
+                    <div v-if="schedulePreview.isInThePast" class="text-red-600">
+                        {{ trans('That time has already passed, pick a later one') }}
+                    </div>
+                </template>
+                <div v-else class="text-gray-500">
+                    {{ trans('Pick a date and time above to see when this email will be sent') }}
+                </div>
+            </div>
+
             <div class="flex gap-2 justify-end w-full">
                 <Button :label="trans('Cancel')" @click="cancelSchedule"
                     class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded-md" type="secondary" />
                 <Button :label="trans('Confirm Schedule')" @click="confirmSchedule" class="px-4 py-2 rounded-md"
+                    :disabled="!canConfirmSchedule || scheduleInProgress" :loading="scheduleInProgress"
                     type="negative" />
             </div>
         </div>

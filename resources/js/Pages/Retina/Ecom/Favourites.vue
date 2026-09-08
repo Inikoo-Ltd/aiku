@@ -15,7 +15,7 @@ import { get, set  } from "lodash-es"
 import axios from "axios"
 
 import { GridProducts } from "@/Components/Product"
-import ProductRenderEcom from "@/Iris/Components/IrisBlocks/Products/Ecom/ProductCard/ProductCardEcom1.vue"
+import ProductRenderEcom from "@/Iris/Components/IrisBlocks/Products/Ecom/ProductCard/ProductCardEcom3.vue"
 
 library.add(faHeart, faBoxOpen, faImage)
 
@@ -55,7 +55,7 @@ const emits = defineEmits([
 const isLoadingFavourite = ref<number[]>([])
 const isLoadingRemindBackInStock = ref<number[]>([])
 const key = ref(ulid())
-const layout = inject("layout", retinaLayoutStructure)
+const layout = inject("layout")
 
 const hasInBasket = (product: ProductResource) =>
     !!props.basketTransactions?.[product.id]
@@ -251,7 +251,7 @@ onMounted(() => {
                     :addToBasketRoute="addToBasketRoute"
                     :update-basket-quantity-route="updateBasketQuantityRoute"
                     :hasInBasketList="get(layout, ['family_page', 'productInBasket', 'list',item.id], null)" 
-                    :routeGettransactionProductData="{name : 'retina.json.basket_transaction_product_data' }"
+                    :routeGettransactionProductData="{ name: 'retina.json.basket_transaction_product_data' }"
                 />
             </div>
         </template>

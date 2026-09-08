@@ -20,13 +20,15 @@ use Lorisleiva\Actions\ActionRequest;
 class Search extends OrgAction
 {
     protected const array GROUP_SCOPES = ['sysadmin', 'goods', 'supply_chain', 'trade_units', 'master_shop', 'chat'];
-    protected const array ORGANISATION_SCOPES = ['accounting', 'hr'];
+    protected const array ORGANISATION_SCOPES = ['accounting', 'hr', 'procurement'];
     protected const array SHOP_SCOPES = ['catalogue', 'prospects', 'customers', 'orders', 'reviews', 'billables', 'offers', 'marketing', 'website', 'shop_accounting'];
     protected const array WAREHOUSE_SCOPES = ['inventory', 'dispatching', 'locations'];
 
 
     public function handle(string $scope, string $query, array $options = []): array
     {
+        $ordersCustomerId = Arr::pull($options, 'orders_customer_id');
+
         $actions = [
             'sysadmin'     => static fn () => SearchSysAdmin::run($query),
             'goods'        => static fn () => SearchGoods::run($query),
@@ -41,9 +43,17 @@ class Search extends OrgAction
             'accounting'      => static fn () => SearchAccounting::run($query, $options),
             'shop_accounting' => static fn () => SearchAccounting::run($query, $options),
             'hr'              => static fn () => SearchHr::run($query, $options),
+            'procurement'     => static fn () => SearchProcurement::run($query, $options),
             'catalogue'    => static fn () => SearchCatalogue::run($query, $options),
             'prospects'    => static fn () => SearchProspects::run($query, $options),
-            'customers'    => static fn () => SearchCustomers::run($query, $options),
+            'customers'    => static fn () => [
+                'scope'   => 'customers',
+                'results' => [
+                    ...Arr::get(SearchCustomers::run($query, $options), 'results', []),
+                    'orders'   => Arr::get(SearchOrders::run($query, $options), 'results.orders', []),
+                    'invoices' => Arr::get(SearchAccounting::run($query, $options), 'results.invoices', []),
+                ],
+            ],
             'orders'       => static fn () => SearchOrders::run($query, $options),
             'reviews'      => static fn () => SearchReviews::run($query, $options),
             'inventory'    => static fn () => SearchInventory::run($query, $options),
@@ -56,12 +66,26 @@ class Search extends OrgAction
         }
 
         if (mb_strlen($query) <= 2) {
-            $cacheKey = 'search:'.$scope.':'.implode(':', $options).':'.mb_strtolower($query);
+            $cacheKey = 'search:'.$scope.':'.md5(json_encode($options)).':'.mb_strtolower($query);
 
-            return cache()->remember($cacheKey, 30, $actions[$scope]);
+            $results = cache()->remember($cacheKey, 30, $actions[$scope]);
+        } else {
+            $results = $actions[$scope]();
         }
 
-        return $actions[$scope]();
+        // The signed in customer's own orders and invoices are searched after and outside
+        // the shared catalogue search: customer-specific data must never enter the cache
+        // above, where another visitor could be served it.
+        if ($ordersCustomerId && $scope === 'catalogue') {
+            $customerOptions = [
+                'customer_id' => $ordersCustomerId,
+                'shop_id'     => Arr::get($options, 'shop_id'),
+            ];
+            data_set($results, 'results.orders', SearchIrisOrders::run($query, $customerOptions));
+            data_set($results, 'results.invoices', SearchIrisInvoices::run($query, $customerOptions));
+        }
+
+        return $results;
     }
 
     public function rules(): array
@@ -101,7 +125,7 @@ class Search extends OrgAction
         } elseif (in_array($scope, self::SHOP_SCOPES, true)) {
             $shop = Shop::where('slug', $request->query('shop'))->firstOrFail();
             $this->initialisationFromShop($shop, $request);
-            $options = ['shop_id' => $shop->id];
+            $options = ['shop_id' => $shop->id, 'language' => $shop->language->code];
         } else {
             return [];
         }
@@ -140,6 +164,7 @@ class Search extends OrgAction
             'grp.org.chat.'                           => 'chat',
             'grp.org.accounting.'                     => 'accounting',
             'grp.org.hr.'                             => 'hr',
+            'grp.org.procurement.'                    => 'procurement',
             'grp.org.shops.show.dashboard'            => 'shop_accounting',
             'grp.org.shops.show.catalogue'            => 'catalogue',
             'grp.org.shops.show.crm.prospects'        => 'prospects',

@@ -17,6 +17,7 @@ use Illuminate\Support\Facades\DB;
 /**
  * @property mixed $id
  * @property mixed $state
+ * @property mixed $delivery_note_id
  * @property mixed $delivery_note_slug
  * @property mixed $delivery_note_reference
  * @property mixed $delivery_note_state
@@ -49,6 +50,7 @@ use Illuminate\Support\Facades\DB;
  * @property mixed $shop_code
  * @property mixed $notes
  * @property mixed $trolley_names
+ * @property mixed $trolleys_data
  * @property mixed $picked_bay_codes
  * @property mixed $opposite_waiting_count
  */
@@ -106,6 +108,16 @@ class WaitingDNItemsTabsItemizedResource extends JsonResource
 
         $quantityToPickFractional = riseDivisor(divideWithRemainder(findSmallestFactors($quantityToPick)), $packedIn);
 
+        $waitingWarehouseFractionalDS = riseDivisor(divideWithRemainder(findSmallestFactors($this->quantity_waiting_warehouse ?? 0)), $packedIn);
+        if (floor($this->quantity_waiting_warehouse ?? 0) == ($this->quantity_waiting_warehouse ?? 0) && $packedIn > 1) {
+            $waitingWarehouseFractionalDS = [0, [($this->quantity_waiting_warehouse ?? 0) * $packedIn, $packedIn]];
+        }
+
+        $waitingCrmFractionalDS = riseDivisor(divideWithRemainder(findSmallestFactors($this->quantity_waiting_crm ?? 0)), $packedIn);
+        if (floor($this->quantity_waiting_crm ?? 0) == ($this->quantity_waiting_crm ?? 0) && $packedIn > 1) {
+            $waitingCrmFractionalDS = [0, [($this->quantity_waiting_crm ?? 0) * $packedIn, $packedIn]];
+        }
+
 
         $deliveryNoteItem = DeliveryNoteItem::find($this->id);
 
@@ -120,11 +132,13 @@ class WaitingDNItemsTabsItemizedResource extends JsonResource
             'id'                         => $this->id,
             'state'                      => $this->state,
             'state_icon'                 => $this->state->stateIcon()[$this->state->value],
+            'delivery_note_id'           => $this->delivery_note_id,
             'delivery_note_slug'         => $this->delivery_note_slug,
             'delivery_note_reference'    => $this->delivery_note_reference,
             'delivery_note_state'        => $this->delivery_note_state,
             'opposite_waiting_count'     => (int) $this->opposite_waiting_count,
             'trolley_names'   => $this->trolley_names,
+            'trolleys'        => json_decode($this->trolleys_data ?? '[]', true) ?? [],
             'picked_bay_codes' => $this->picked_bay_codes,
 
             'delivery_note_customer_notes' => $this->delivery_note_customer_notes,
@@ -156,7 +170,9 @@ class WaitingDNItemsTabsItemizedResource extends JsonResource
             'quantity_picked'             => $this->quantity_picked,
             'quantity_not_picked'         => $this->quantity_not_picked,
             'quantity_waiting_warehouse'  => $this->quantity_waiting_warehouse,
+            'quantity_waiting_warehouse_fractional_ds' => $waitingWarehouseFractionalDS,
             'quantity_waiting_crm'        => $this->quantity_waiting_crm,
+            'quantity_waiting_crm_fractional_ds' => $waitingCrmFractionalDS,
 
             'is_handled'       => $this->is_handled,
             'picking_position' => $this->picking_position,

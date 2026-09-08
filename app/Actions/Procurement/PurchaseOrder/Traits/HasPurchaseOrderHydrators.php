@@ -9,6 +9,7 @@
 namespace App\Actions\Procurement\PurchaseOrder\Traits;
 
 use App\Actions\Procurement\OrgAgent\Hydrators\OrgAgentHydratePurchaseOrders;
+use App\Actions\Procurement\OrgPartner\Hydrators\OrgPartnerHydratePurchaseOrders;
 use App\Actions\Procurement\OrgSupplier\Hydrators\OrgSupplierHydratePurchaseOrders;
 use App\Actions\SupplyChain\Agent\Hydrators\AgentHydratePurchaseOrders;
 use App\Actions\SupplyChain\Supplier\Hydrators\SupplierHydratePurchaseOrders;
@@ -32,6 +33,8 @@ trait HasPurchaseOrderHydrators
         } elseif (class_basename($parent) == 'OrgAgent') {
             OrgAgentHydratePurchaseOrders::dispatch($parent);
             AgentHydratePurchaseOrders::dispatch($parent->agent);
+        } elseif (class_basename($parent) == 'OrgPartner') {
+            OrgPartnerHydratePurchaseOrders::dispatch($parent);
         }
         GroupHydratePurchaseOrders::dispatch($purchaseOrder->group);
         OrganisationHydratePurchaseOrders::dispatch($purchaseOrder->organisation);

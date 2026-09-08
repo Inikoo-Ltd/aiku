@@ -9,7 +9,7 @@
 
 namespace App\Actions\Helpers\Tag\Json;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Enums\Helpers\Tag\TagScopeEnum;
 use App\Http\Resources\Catalogue\TagsResource;
 use App\Models\Helpers\Tag;
@@ -18,7 +18,7 @@ use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
 
-class GetGrpTags extends GrpAction
+class GetGrpTags extends OrgAction
 {
     public function handle()
     {
@@ -56,7 +56,7 @@ class GetGrpTags extends GrpAction
 
     public function asController(ActionRequest $request)
     {
-        $this->initialisation(group(), $request);
+        $this->initialisationFromGroup(group(), $request);
 
         return $this->handle();
     }

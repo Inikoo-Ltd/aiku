@@ -3,6 +3,7 @@ import { TransitionRoot, TransitionChild, Dialog, DialogPanel } from '@headlessu
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faTimes } from '@fal'
 import { library } from '@fortawesome/fontawesome-svg-core'
+import { computed, inject, ref } from 'vue'
 library.add(faTimes)
 
 const props = withDefaults(defineProps<{
@@ -21,6 +22,9 @@ const props = withDefaults(defineProps<{
 
 const emits = defineEmits()
 
+const screenType = inject('screenType', ref('desktop'))
+const isClosableOnOutsideClick = computed(() => props.isClosableInBackground && screenType.value === 'desktop')
+
 const closeModal = () => {
     emits('onClose')
 }
@@ -30,7 +34,7 @@ const closeModal = () => {
 
 <template>
     <TransitionRoot appear :show="props.isOpen" as="template">
-        <Dialog as="div" @close="isClosableInBackground ? closeModal() : false" class="relative" :style="{ zIndex: props.zIndex || 22}">
+        <Dialog as="div" @close="isClosableOnOutsideClick ? closeModal() : false" class="relative" :style="{ zIndex: props.zIndex || 22}">
             <TransitionChild as="template" enter="duration-300 ease-out" enter-from="opacity-0" enter-to="opacity-100"
                 leave="duration-200 ease-in" leave-from="opacity-100" leave-to="opacity-0">
                 <div class="fixed inset-0 bg-black/40" />

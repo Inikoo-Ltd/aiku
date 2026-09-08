@@ -37,8 +37,6 @@ class DeleteMasterProductCategory extends OrgAction
             DB::table('master_product_category_stats')->where('master_product_category_id', $masterProductCategory->id)->delete();
             DB::table('master_product_category_time_series')->where('master_product_category_id', $masterProductCategory->id)->delete();
             DB::table('master_product_category_ordering_stats')->where('master_product_category_id', $masterProductCategory->id)->delete();
-            DB::table('master_product_category_sales_intervals')->where('master_product_category_id', $masterProductCategory->id)->delete();
-            DB::table('master_product_category_ordering_intervals')->where('master_product_category_id', $masterProductCategory->id)->delete();
 
 
             $masterProductCategory->forceDelete();

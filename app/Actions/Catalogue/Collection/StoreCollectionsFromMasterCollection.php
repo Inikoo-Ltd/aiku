@@ -8,14 +8,14 @@
 
 namespace App\Actions\Catalogue\Collection;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Actions\Masters\MasterCollection\Hydrators\MasterCollectionHydrateCollections;
 use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Models\Masters\MasterCollection;
 use App\Models\Masters\MasterProductCategory;
 use App\Models\Masters\MasterShop;
 
-class StoreCollectionsFromMasterCollection extends GrpAction
+class StoreCollectionsFromMasterCollection extends OrgAction
 {
     public function handle(MasterShop|MasterProductCategory $parent, MasterCollection $masterCollection)
     {
@@ -46,7 +46,7 @@ class StoreCollectionsFromMasterCollection extends GrpAction
 
     public function action(MasterShop|MasterProductCategory $parent, MasterCollection $masterCollection)
     {
-        $this->initialisation($parent->group, []);
+        $this->initialisationFromGroup($parent->group, []);
 
         return $this->handle($parent, $masterCollection);
     }

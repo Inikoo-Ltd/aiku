@@ -8,6 +8,7 @@
 
 namespace App\Actions\Chat\ChatSession;
 
+use App\Actions\Chat\Agent\Hydrators\ChatAgentHydrateChats;
 use App\Enums\CRM\Livechat\ChatActorTypeEnum;
 use App\Enums\CRM\Livechat\ChatAssignmentAssignedByEnum;
 use App\Enums\CRM\Livechat\ChatAssignmentStatusEnum;
@@ -48,9 +49,11 @@ class AssignChatToAgent
 
         $this->updateChatSessionStatus($chatSession);
 
-        $this->handleAgentChatCount($agent, $previousAssignment);
+        $previousAgent = $previousAssignment?->chatAgent;
 
         $chatAssignment = $this->updateOrCreateAssignment($chatSession->id, $agentId);
+
+        $this->handleAgentChatCount($agent, $previousAgent);
 
         $this->logAssignmentEvent($chatSession, $assignedByAgentId, $agentId, $previousAssignment, false, $transferReason);
 
@@ -95,11 +98,12 @@ class AssignChatToAgent
             ?? throw new Exception('Failed to create assignment');
     }
 
-    private function handleAgentChatCount(ChatAgent $agent, ?ChatAssignment $previousAssignment): void
+    private function handleAgentChatCount(ChatAgent $agent, ?ChatAgent $previousAgent): void
     {
-        $agent->incrementChatCount();
-        if ($previousAssignment?->chat_agent_id !== $agent->id) {
-            $previousAssignment?->chatAgent?->decrementChatCount();
+        ChatAgentHydrateChats::run($agent);
+
+        if ($previousAgent && $previousAgent->id !== $agent->id) {
+            ChatAgentHydrateChats::run($previousAgent);
         }
     }
 
@@ -173,7 +177,7 @@ class AssignChatToAgent
                 $validated['note'] ?? null
             );
             $actionType     = $this->getActionType($assignedByAgent->id, $validated['agent_id'], $chatSession);
-            BroadcastChatListEvent::dispatch();
+            BroadcastChatListEvent::dispatch(null, $chatSession);
 
             return response()->json([
                 'success' => true,
@@ -296,11 +300,9 @@ class AssignChatToAgent
                     'status' => ChatSessionStatusEnum::ACTIVE->value
                 ]);
 
-                if ($agent->isAvailable()) {
-                    $agent->incrementChatCount();
-                }
+                ChatAgentHydrateChats::run($agent);
 
-                BroadcastChatListEvent::dispatch();
+                BroadcastChatListEvent::dispatch(null, $chatSession);
             }
 
             return response()->json([
@@ -358,11 +360,14 @@ class AssignChatToAgent
                     'assigned_at'   => now(),
                 ]);
 
-                $previousAgent?->decrementChatCount();
-                $agent->incrementChatCount();
             }
 
             $chatSession->update(['status' => ChatSessionStatusEnum::ACTIVE->value]);
+
+            if ($previousAgent && $previousAgent->id !== $agent->id) {
+                ChatAgentHydrateChats::run($previousAgent);
+            }
+            ChatAgentHydrateChats::run($agent);
 
             app(StoreChatEvent::class)->handle(
                 chatSession: $chatSession,
@@ -379,7 +384,7 @@ class AssignChatToAgent
                 ]
             );
 
-            BroadcastChatListEvent::dispatch();
+            BroadcastChatListEvent::dispatch(null, $chatSession);
 
             return response()->json([
                 'success' => true,

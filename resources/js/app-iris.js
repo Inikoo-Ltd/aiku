@@ -76,7 +76,7 @@ createInertiaApp(
                         app,
                         dsn             : import.meta.env.VITE_SENTRY_IRIS_DSN,
                         environment     : import.meta.env.VITE_APP_ENV,
-                        release         : import.meta.env.VITE_RELEASE,
+                        release         : document.querySelector('meta[name="app-release"]')?.content || undefined,
                         tracesSampleRate: 0.05,
                         integrations    : [Sentry.browserTracingIntegration()]
                       });

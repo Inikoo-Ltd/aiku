@@ -65,7 +65,14 @@ class SyncPalletReturnItem extends OrgAction
             return true;
         }
 
-        return $request->user()->authTo("fulfilment.{$this->fulfilment->id}.edit");
+        $warehouseId = $this->pallet->warehouse_id;
+
+        return $request->user()->authTo([
+            "fulfilment-shop.{$this->fulfilment->id}.edit",
+            "fulfilment.$warehouseId.edit",
+            "supervisor-incoming.$warehouseId",
+            "supervisor-fulfilment.$warehouseId",
+        ]);
     }
 
     public function rules(): array

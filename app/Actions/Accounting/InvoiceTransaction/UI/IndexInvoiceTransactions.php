@@ -10,6 +10,7 @@
 namespace App\Actions\Accounting\InvoiceTransaction\UI;
 
 use App\Actions\OrgAction;
+use App\Actions\Traits\WithMarginData;
 use App\InertiaTable\InertiaTable;
 use App\Services\QueryBuilder;
 use Closure;
@@ -17,11 +18,21 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use App\Models\Accounting\Invoice;
 use App\Models\Accounting\InvoiceTransaction;
 use Illuminate\Support\Facades\DB;
+use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexInvoiceTransactions extends OrgAction
 {
-    public function handle(Invoice $invoice, $prefix = null): LengthAwarePaginator
+    use WithMarginData;
+
+    public function handle(Invoice $invoice, $prefix = null, bool $withMargins = false): LengthAwarePaginator
     {
+        $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
+            $query->where(function ($query) use ($value) {
+                $query->whereStartWith('historic_assets.code', $value)
+                    ->orWhereStartWith('historic_assets.name', $value);
+            });
+        });
+
         if ($prefix) {
             InertiaTable::updateQueryBuilderParameters($prefix);
         }
@@ -40,6 +51,12 @@ class IndexInvoiceTransactions extends OrgAction
             $join->on('invoice_transactions.model_id', '=', 'leaflets.id')
                 ->where('invoice_transactions.model_type', '=', 'Leaflet');
         });
+        $queryBuilder->leftJoin('adjustments', function ($join) {
+            $join->on('invoice_transactions.model_id', 'adjustments.id')->where('invoice_transactions.model_type', 'Adjustment');
+        });
+        $queryBuilder->orderByRaw("case invoice_transactions.model_type when 'Product' then 0 when 'Service' then 1 else 2 end");
+
+
         $queryBuilder
             ->defaultSort('invoice_transactions.id')
             ->select([
@@ -48,8 +65,10 @@ class IndexInvoiceTransactions extends OrgAction
                 'invoice_transactions.is_gift',
                 'invoice_transactions.in_process',
                 'invoice_transactions.data',
-                DB::raw('COALESCE(historic_assets.code, packagings.code) as code'),
-                DB::raw('COALESCE(historic_assets.name, packagings.name, leaflets.name) as description'),
+                /* Adjustments name themselves; everything else falls back through the
+                   joined packaging and leaflet tables. */
+                DB::raw("CASE WHEN invoice_transactions.model_type = 'Adjustment' THEN 'Adjustment' ELSE COALESCE(historic_assets.code, packagings.code) END as code"),
+                DB::raw("CASE WHEN invoice_transactions.model_type = 'Adjustment' THEN concat('Adjustment (', adjustments.type, ')') ELSE COALESCE(historic_assets.name, packagings.name, leaflets.name) END as description"),
                 'invoice_transactions.historic_asset_id',
                 'assets.id as asset_id',
                 'assets.shop_id as asset_shop_id',
@@ -61,16 +80,30 @@ class IndexInvoiceTransactions extends OrgAction
                 'currencies.id as currency_id'
             ]);
 
+        if ($withMargins) {
+            $queryBuilder->leftJoin('products', function ($join) {
+                $join->on('assets.model_id', '=', 'products.id')->where('assets.model_type', 'Product');
+            });
+            $queryBuilder->leftJoin('transactions as margin_transactions', 'margin_transactions.id', '=', 'invoice_transactions.transaction_id');
+            $queryBuilder->addSelect([
+                'invoice_transactions.org_net_amount',
+                DB::raw('('.$this->actualCostSql('invoice_transactions.transaction_id').') * invoice_transactions.quantity / NULLIF(margin_transactions.quantity_ordered, 0) as margin_actual_cost'),
+                DB::raw($this->estimatedCostSql('invoice_transactions.quantity').' as margin_estimated_cost'),
+            ]);
+        }
+
+        $queryBuilder->with('model');
 
         return $queryBuilder
+            ->allowedFilters([$globalSearch])
             ->allowedSorts(['code', 'description', 'quantity', 'net_amount'])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
     }
 
-    public function tableStructure($prefix = null): Closure
+    public function tableStructure($prefix = null, bool $withMargins = false): Closure
     {
-        return function (InertiaTable $table) use ($prefix) {
+        return function (InertiaTable $table) use ($prefix, $withMargins) {
             if ($prefix) {
                 $table
                     ->name($prefix)
@@ -84,6 +117,9 @@ class IndexInvoiceTransactions extends OrgAction
             $table->column(key: 'description', label: __('Description'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'quantity', label: __('Quantity'), canBeHidden: false, sortable: true, searchable: true, type: 'number');
             $table->column(key: 'net_amount', label: __('Net'), canBeHidden: false, sortable: true, searchable: true, type: 'number');
+            if ($withMargins) {
+                $table->column(key: 'margin', label: __('Margin'), canBeHidden: false, align: 'right');
+            }
             $table->defaultSort('code');
         };
     }

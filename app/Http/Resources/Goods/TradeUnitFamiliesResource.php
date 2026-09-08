@@ -20,6 +20,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $number_trade_units_status_active
  * @property mixed $number_trade_units_status_discontinued
  * @property mixed $number_trade_units_status_anomality
+ * @property mixed $grp_currency_code
  * @property mixed $sales_grp_currency_external
  * @property mixed $sales_grp_currency_external_ly
  * @property mixed $invoices
@@ -40,6 +41,7 @@ class TradeUnitFamiliesResource extends JsonResource
             'number_trade_units_status_active'       => $this->number_trade_units_status_active,
             'number_trade_units_status_discontinued' => $this->number_trade_units_status_discontinued,
             'number_trade_units_status_anomality'    => $this->number_trade_units_status_anomality,
+            'grp_currency'                           => $this->grp_currency_code,
             'sales_grp_currency_external'            => $this->sales_grp_currency_external ?? 0,
             'sales_grp_currency_external_ly'         => $this->sales_grp_currency_external_ly ?? 0,
             'sales_grp_currency_external_delta'      => $this->calculateDelta($this->sales_grp_currency_external ?? 0, $this->sales_grp_currency_external_ly ?? 0),

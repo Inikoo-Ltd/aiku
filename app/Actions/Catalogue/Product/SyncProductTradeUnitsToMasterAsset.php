@@ -9,13 +9,13 @@
 
 namespace App\Actions\Catalogue\Product;
 
-use App\Actions\GrpAction;
+use App\Actions\OrgAction;
 use App\Actions\Masters\MasterAsset\Hydrators\MasterAssetHydrateMismatch;
 use App\Actions\Masters\MasterAsset\UpdateMasterAsset;
 use App\Models\Catalogue\Product;
 use Lorisleiva\Actions\ActionRequest;
 
-class SyncProductTradeUnitsToMasterAsset extends GrpAction
+class SyncProductTradeUnitsToMasterAsset extends OrgAction
 {
     /**
      * @throws \Throwable
@@ -38,7 +38,7 @@ class SyncProductTradeUnitsToMasterAsset extends GrpAction
 
     public function asController(Product $product, ActionRequest $request): void
     {
-        $this->initialisation(group(), $request);
+        $this->initialisationFromGroup(group(), $request);
 
         $this->handle($product);
     }

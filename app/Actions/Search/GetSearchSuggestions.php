@@ -8,22 +8,21 @@
 
 namespace App\Actions\Search;
 
-use Illuminate\Support\Facades\Http;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Throwable;
 
 class GetSearchSuggestions
 {
     use AsAction;
+    use WithTypesenseApi;
 
     public function handle(): array
     {
         return cache()->remember('search-suggestions', 300, function () {
             try {
-                $node = config('scout.typesense.client-settings.nodes.0');
-                $hits = Http::withHeaders(['X-TYPESENSE-API-KEY' => config('scout.typesense.client-settings.api_key')])
+                $hits = $this->typesenseClient()
                     ->timeout(2)
-                    ->get($node['protocol'].'://'.$node['host'].':'.$node['port'].'/collections/'.SetupTypesenseSearchAnalytics::POPULAR_QUERIES_COLLECTION.'/documents/search', [
+                    ->get($this->typesenseUrl().'/collections/'.SetupTypesenseSearchAnalytics::POPULAR_QUERIES_COLLECTION.'/documents/search', [
                         'q'        => '*',
                         'sort_by'  => 'count:desc',
                         'per_page' => 8,

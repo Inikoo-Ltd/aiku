@@ -10,6 +10,7 @@
 namespace App\Actions\Web\WebBlock\Workshop;
 
 use App\Actions\Catalogue\Product\Json\GetTopProductsInProductCategory;
+use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Enums\Web\Webpage\WebpageSubTypeEnum;
 use App\Http\Resources\Catalogue\ProductsWebpageResource;
@@ -93,23 +94,28 @@ class GetWebBlockSeeAlso
         });
 
 
-        $family                  = null;
+        $parent                  = null;
         $productsInCurrentFamily = null;
+        $model                   = $webpage->model;
 
-        if ($webpage->sub_type == WebpageSubTypeEnum::FAMILY) {
-            $family = $webpage->model;
+        if ($model instanceof ProductCategory && $model->type == ProductCategoryTypeEnum::DEPARTMENT) {
+            data_set($webBlock, "$settingsPath.type", "trending-now");
+        }
+
+        if (in_array($webpage->sub_type, [WebpageSubTypeEnum::FAMILY, WebpageSubTypeEnum::DEPARTMENT])) {
+            $parent = $model;
         } elseif ($webpage->sub_type == WebpageSubTypeEnum::PRODUCT) {
             /** @var Product $product */
             $product = $webpage->model;
 
-            $family = $product->family;
-            if ($family) {
+            $parent = $product->family;
+            if ($parent) {
                 $productsInCurrentFamily = [
-                    'id'     => $family->id,
-                    'slug'   => $family->slug,
-                    'name'   => $family->name,
+                    'id'     => $parent->id,
+                    'slug'   => $parent->slug,
+                    'name'   => $parent->name,
                     'option' => ProductsWebpageResource::collection(
-                        $family->getProductsDistinctVariant()->sortByDesc('id')->take(6)
+                        $parent->getProductsDistinctVariant()->sortByDesc('id')->take(6)
                     )->resolve(),
                 ];
             }
@@ -117,10 +123,10 @@ class GetWebBlockSeeAlso
 
         $topProducts = null;
 
-        if ($family) {
+        if ($parent) {
             // Section: Top Products in the family
             $topProducts = ProductsWebpageResource::collection(
-                GetTopProductsInProductCategory::run($family)
+                GetTopProductsInProductCategory::run($parent)
             )->resolve();
         }
 

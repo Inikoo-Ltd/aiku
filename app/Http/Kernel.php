@@ -69,6 +69,7 @@ use Laravel\Sanctum\Http\Middleware\CheckAbilities;
 use Laravel\Sanctum\Http\Middleware\CheckForAnyAbility;
 use Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful;
 use Osiset\ShopifyApp\Http\Middleware\VerifyShopify;
+use App\Http\Middleware\ElevateWebsiteChatStateful;
 
 class Kernel extends HttpKernel
 {
@@ -88,6 +89,18 @@ class Kernel extends HttpKernel
 
     protected $middlewareGroups = [
 
+        /** Standard Laravel session stack. Vendor packages hardcode this group name:
+         *  Passport's OAuth authorize routes (MCP/AI connections) require it. Do not rename. */
+        'web' => [
+            EncryptCookies::class,
+            AddQueuedCookiesToResponse::class,
+            StartSession::class,
+            ShareErrorsFromSession::class,
+            VerifyCsrfToken::class,
+            SubstituteBindings::class,
+            AddFrameOptionsHeader::class
+        ],
+
         'webhooks' => [
             ForceJsonResponse::class,
             EnsureFrontendRequestsAreStateful::class,
@@ -103,13 +116,6 @@ class Kernel extends HttpKernel
             DevOpsAuthenticationMiddleware::class
         ],
 
-        'bk-api' => [
-            ForceJsonResponse::class,
-            EnsureFrontendRequestsAreStateful::class,
-            SubstituteBindings::class,
-            AddFrameOptionsHeader::class
-        ],
-
         'retina-api' => [
             ForceJsonResponse::class,
             EnsureFrontendRequestsAreStateful::class,
@@ -118,6 +124,7 @@ class Kernel extends HttpKernel
         ],
 
         'grp-api' => [
+            ElevateWebsiteChatStateful::class,
             ForceJsonResponse::class,
             EnsureFrontendRequestsAreStateful::class,
             SubstituteBindings::class,

@@ -600,7 +600,7 @@ const locationRoute = (item: any) => {
                     class="border-b last:border-b-0 py-2"
                 >
                     <div class="flex flex-wrap items-center gap-x-4 gap-y-1">
-                        <div class="min-w-[140px]">
+                        <div class="lg:min-w-[140px]">
                             <Link v-if="palletRoute(pallet)" :href="palletRoute(pallet)" class="primaryLink">
                                 {{ pallet.reference }}
                             </Link>
@@ -609,7 +609,7 @@ const locationRoute = (item: any) => {
                             </div>
                         </div>
 
-                        <div class="min-w-[160px]">
+                        <div class="lg:min-w-[160px]">
                             <div>
                                 <span class="text-gray-400">{{ pallet.customer_reference || "-" }}</span>
                                 <div v-if="pallet.notes" class="text-gray-400">
@@ -636,7 +636,7 @@ const locationRoute = (item: any) => {
                                 </Tag>
                             </div>
                             <div v-else class="text-gray-400 text-xs italic">
-                                {{ trans("No SKUs items") }}
+                                {{ trans("No SKOs items") }}
                             </div>
                         </div>
 
@@ -1109,7 +1109,7 @@ const locationRoute = (item: any) => {
 
     <Modal :isOpen="isModalPickingUsers" @onClose="onCloseModalPickingUsers" width="w-full max-w-xl" :isClosableInBackground="false" closeButton>
         <div class="flex flex-col gap-4">
-            <div class="text-center text-lg font-semibold">{{ trans("Return Customer's SKUs") }}</div>
+            <div class="text-center text-lg font-semibold">{{ trans("Return Customer's SKOs") }}</div>
             <div v-if="canChangePicker" class="flex flex-col gap-2">
                 <div class="text-sm font-medium">{{ trans("Picker") }}</div>
                 <PureMultiselectInfiniteScroll

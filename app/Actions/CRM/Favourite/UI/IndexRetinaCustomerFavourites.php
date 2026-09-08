@@ -68,6 +68,7 @@ class IndexRetinaCustomerFavourites extends OrgAction
                 'products.group_id',
                 'products.organisation_id',
                 'products.shop_id',
+                'products.family_id',
                 'products.name',
                 'products.available_quantity',
                 'products.price',

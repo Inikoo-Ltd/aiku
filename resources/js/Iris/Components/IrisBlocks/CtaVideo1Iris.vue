@@ -40,7 +40,7 @@ const props = defineProps<{
       container?: any
       link?: {
         href?: string
-        taget?: string
+        target?: string
       }
       show?: boolean
     }
@@ -156,7 +156,7 @@ const layout: any = inject("layout", {})
           <div v-html="fieldValue.text" class="mb-6"></div>
 
           <div v-if="fieldValue?.button?.show !== false" class="flex justify-center">
-            <a :href="fieldValue?.button?.link?.href" :target="fieldValue?.button?.link?.taget" typeof="button">
+            <a :href="fieldValue?.button?.link?.href" :target="fieldValue?.button?.link?.target" typeof="button">
               <Button :injectStyle="getStyles(fieldValue?.button?.container?.properties, screenType)"s
                 :label="fieldValue?.button?.text" />
             </a>

@@ -41,18 +41,18 @@ class UpdateEbayUserData extends OrgAction
         $shop = $ebayUser->customer?->shop;
 
         $ebayUser->createOptInProgram();
-        $ebayUser->createFulfilmentPolicy([]);
-        $ebayUser->createPaymentPolicy();
-        $ebayUser->createReturnPolicy();
+        $createdFulfilmentPolicy = $ebayUser->createFulfilmentPolicy([]);
+        $createdPaymentPolicy = $ebayUser->createPaymentPolicy();
+        $createdReturnPolicy = $ebayUser->createReturnPolicy();
 
-        $fulfilmentPolicies = $ebayUser->getFulfilmentPolicies();
-        $fulfilmentPolicyId = Arr::get($fulfilmentPolicies, 'fulfillmentPolicies.0.fulfillmentPolicyId');
+        $fulfilmentPolicyId = Arr::get($createdFulfilmentPolicy, 'fulfillmentPolicyId')
+            ?? $ebayUser->getUsableFulfilmentPolicyId();
 
-        $paymentPolicies = $ebayUser->getPaymentPolicies();
-        $paymentPolicyId = Arr::get($paymentPolicies, 'paymentPolicies.0.paymentPolicyId');
+        $paymentPolicyId = Arr::get($createdPaymentPolicy, 'paymentPolicyId')
+            ?? Arr::get($ebayUser->getPaymentPolicies(), 'paymentPolicies.0.paymentPolicyId');
 
-        $returnPolicies = $ebayUser->getReturnPolicies();
-        $returnPolicyId = Arr::get($returnPolicies, 'returnPolicies.0.returnPolicyId');
+        $returnPolicyId = Arr::get($createdReturnPolicy, 'returnPolicyId')
+            ?? Arr::get($ebayUser->getReturnPolicies(), 'returnPolicies.0.returnPolicyId');
 
         $country = Country::find(Arr::get($shop?->settings, 'ebay.warehouse_country'));
 

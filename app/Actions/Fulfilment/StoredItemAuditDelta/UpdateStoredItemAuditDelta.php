@@ -52,8 +52,8 @@ class UpdateStoredItemAuditDelta extends OrgAction
             if (in_array($type, [StoredItemAuditDeltaTypeEnum::SET_UP, StoredItemAuditDeltaTypeEnum::ADDITION], true) && !$storedItem->state->canBeStored()) {
                 $messageReplacements = ['reference' => $storedItem->reference, 'state' => $storedItem->state->labelGenerated()];
                 $message = match ($type) {
-                    StoredItemAuditDeltaTypeEnum::SET_UP   => __('The SKU ":reference" is :state and cannot be added to a pallet.', $messageReplacements),
-                    StoredItemAuditDeltaTypeEnum::ADDITION => __('The SKU ":reference" is :state, its quantity cannot be increased.', $messageReplacements),
+                    StoredItemAuditDeltaTypeEnum::SET_UP   => __('The SKO ":reference" is :state and cannot be added to a pallet.', $messageReplacements),
+                    StoredItemAuditDeltaTypeEnum::ADDITION => __('The SKO ":reference" is :state, its quantity cannot be increased.', $messageReplacements),
                 };
                 throw ValidationException::withMessages(['audited_quantity' => $message]);
             }

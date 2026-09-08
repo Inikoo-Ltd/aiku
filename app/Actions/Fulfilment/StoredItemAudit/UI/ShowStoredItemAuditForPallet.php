@@ -73,7 +73,7 @@ class ShowStoredItemAuditForPallet extends OrgAction
                     'type'  => 'button',
                     'style' => 'secondary',
                     'key'   => 'add-sku',
-                    'label' => __('Add SKU'),
+                    'label' => __('Add SKO'),
                 ],
                 [
                     'type'     => 'button',
@@ -265,7 +265,7 @@ class ShowStoredItemAuditForPallet extends OrgAction
                     'modelWithIndex' => [
                         'index' => [
                             'route' => $routeParameters['index'],
-                            'label' => __('pallet SKUs audits')
+                            'label' => __('pallet SKOs audits')
                         ],
                         'model' => [
                             'route' => $routeParameters['model'],

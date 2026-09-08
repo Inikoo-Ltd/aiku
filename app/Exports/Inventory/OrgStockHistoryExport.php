@@ -8,36 +8,66 @@
 
 namespace App\Exports\Inventory;
 
+use App\Enums\Inventory\OrgStock\OrgStockValuationMethodEnum;
+use App\Actions\Traits\WithStockHistoryArchiveRead;
 use App\Models\Inventory\OrgStock;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
-use Maatwebsite\Excel\Concerns\FromQuery;
+use Generator;
+use Maatwebsite\Excel\Concerns\FromGenerator;
 use Maatwebsite\Excel\Concerns\ShouldAutoSize;
 use Maatwebsite\Excel\Concerns\WithColumnFormatting;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
 use PhpOffice\PhpSpreadsheet\Style\NumberFormat;
 
-class OrgStockHistoryExport implements FromQuery, WithMapping, WithHeadings, ShouldAutoSize, WithColumnFormatting
+class OrgStockHistoryExport implements FromGenerator, WithMapping, WithHeadings, ShouldAutoSize, WithColumnFormatting
 {
+    use WithStockHistoryArchiveRead;
+
     public function __construct(
         protected OrgStock $orgStock,
         protected array $filters = []
     ) {
     }
 
-    public function query(): Builder
+    public function generator(): Generator
     {
-        $query = DB::table('org_stock_histories')
+        return $this->stockHistoryRowsNewestFirst(
+            fn (?string $connection): Builder => $this->query($connection),
+            $this->fromDate()
+        );
+    }
+
+    private function fromDate(): ?string
+    {
+        $between = $this->filters['between'] ?? [];
+
+        if (!isset($between['date'])) {
+            return null;
+        }
+
+        $parts = explode('-', $between['date']);
+
+        return count($parts) === 2 ? Carbon::createFromFormat('Ymd', trim($parts[0]))->toDateString() : null;
+    }
+
+    public function query(?string $connection = null): Builder
+    {
+        $query = DB::connection($connection)->table('org_stock_histories')
             ->where('org_stock_id', $this->orgStock->id)
             ->select([
                 'date',
                 'quantity_in_locations',
                 'number_locations',
-                'org_stock_value',
-                'grp_stock_value',
-                'value_per_sku',
+                'org_stock_fifo_value',
+                'org_stock_wac_value',
+                'org_stock_lpp_value',
+                'grp_stock_lpp_value',
+                'fifo_per_sku',
+                'wac_per_sku',
+                'lpp_per_sku',
             ])
             ->orderBy('date', 'desc');
 
@@ -70,14 +100,20 @@ class OrgStockHistoryExport implements FromQuery, WithMapping, WithHeadings, Sho
 
     public function headings(): array
     {
-        return [
+        $headings = [
             __('Date'),
             __('Quantity'),
             __('Locations'),
-            __('Stock Value (Org)'),
-            __('Stock Value (Grp)'),
-            __('Unit Value'),
         ];
+        foreach (OrgStockValuationMethodEnum::ordered() as $method) {
+            $headings[] = __('Stock Value').' '.$method->label().$method->headingSuffix();
+        }
+        $headings[] = __('Stock Value LPP (Grp currency)');
+        foreach (OrgStockValuationMethodEnum::ordered() as $method) {
+            $headings[] = __('Unit Value').' '.$method->label().$method->headingSuffix();
+        }
+
+        return $headings;
     }
 
     public function columnFormats(): array
@@ -89,18 +125,30 @@ class OrgStockHistoryExport implements FromQuery, WithMapping, WithHeadings, Sho
             'D' => NumberFormat::FORMAT_TEXT,
             'E' => NumberFormat::FORMAT_TEXT,
             'F' => NumberFormat::FORMAT_TEXT,
+            'G' => NumberFormat::FORMAT_TEXT,
+            'H' => NumberFormat::FORMAT_TEXT,
+            'I' => NumberFormat::FORMAT_TEXT,
+            'J' => NumberFormat::FORMAT_TEXT,
         ];
     }
 
     public function map($row): array
     {
-        return [
+        $data = [
             (string) Carbon::parse($row->date)->format('Y-m-d'),
             number_format((float) ($row->quantity_in_locations ?? 0), 2, '.', ''),
             (string) ($row->number_locations ?? '0'),
-            number_format((float) ($row->org_stock_value ?? 0), 2, '.', ''),
-            number_format((float) ($row->grp_stock_value ?? 0), 2, '.', ''),
-            $row->value_per_sku !== null ? number_format((float) $row->value_per_sku, 2, '.', '') : '',
         ];
+        foreach (OrgStockValuationMethodEnum::ordered() as $method) {
+            $value  = $row->{$method->stockValueColumn()};
+            $data[] = $value !== null ? number_format((float) $value, 2, '.', '') : '';
+        }
+        $data[] = number_format((float) ($row->grp_stock_lpp_value ?? 0), 2, '.', '');
+        foreach (OrgStockValuationMethodEnum::ordered() as $method) {
+            $value  = $row->{$method->perSkuColumn()};
+            $data[] = $value !== null ? number_format((float) $value, 2, '.', '') : '';
+        }
+
+        return $data;
     }
 }

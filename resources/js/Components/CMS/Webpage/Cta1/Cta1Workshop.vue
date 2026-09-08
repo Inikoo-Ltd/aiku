@@ -95,7 +95,7 @@ const isImageLeft = computed(() => valueForField.value === 'Image-left')
 								},
 							}" />
 
-						<div class="flex justify-center">
+						<div v-if="modelValue.button?.use_button ?? true" class="flex justify-center">
 							<Button :injectStyle="getStyles(modelValue?.button?.container?.properties, screenType)"
 								:label="modelValue?.button?.text" @click.stop="() => {
 									sendMessageToParent('activeBlock', indexBlock)

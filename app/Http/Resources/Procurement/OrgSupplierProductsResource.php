@@ -14,24 +14,21 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property string $code
  * @property string $name
  * @property string $slug
- * @property string $created_at
- * @property string $updated_at
- * @property string $description
+ * @property string|null $organisation_name
+ * @property int $cost
+ * @property string $currency_code
  */
 class OrgSupplierProductsResource extends JsonResource
 {
     public function toArray($request): array
     {
         return [
-            'id'            => $this->id ?? null,
-            'historic_id'   => $this->historic_id ?? null,
-            'code'          => $this->code,
-            'name'          => $this->name,
-            'slug'          => $this->slug,
-            'description'   => $this->description,
-            'created_at'    => $this->created_at,
-            'updated_at'    => $this->updated_at,
-
+            'code'              => $this->code,
+            'name'              => $this->name,
+            'slug'              => $this->slug,
+            'organisation_name' => $this->organisation_name,
+            'cost'              => $this->cost,
+            'currency_code'     => $this->currency_code,
         ];
     }
 }

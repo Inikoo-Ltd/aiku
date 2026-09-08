@@ -76,7 +76,8 @@ class GetRetinaPaymentAccountShopCheckoutComData
             'origin'       => 'aiku',
             'operation'    => 'order',
             'api_point_id' => $orderPaymentApiPoint->id,
-            'environment'  => app()->environment()
+            'environment'  => app()->environment(),
+            'server'       => config('app.server_name') ?? ''
         ];
 
         $paymentSessionRequest->disabled_payment_methods = [

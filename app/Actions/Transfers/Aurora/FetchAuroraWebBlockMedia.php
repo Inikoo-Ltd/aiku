@@ -106,6 +106,7 @@ class FetchAuroraWebBlockMedia extends OrgAction
         try {
             $content  = file_get_contents($urlToFile);
             $tempPath = tempnam(sys_get_temp_dir(), "img_");
+            @unlink($tempPath);
 
             $headers  = get_headers($urlToFile, 1);
             $mimeType = $headers["Content-Type"];
@@ -123,13 +124,17 @@ class FetchAuroraWebBlockMedia extends OrgAction
             file_put_contents($tempFile, $content);
             $fetchNotFoundImage->update(['status' => 'found']);
 
-            return SaveModelImages::run(
-                model: $webBlock,
-                mediaData: [
-                    "path"         => $tempFile,
-                    "originalName" => "aurora_image",
-                ]
-            );
+            try {
+                return SaveModelImages::run(
+                    model: $webBlock,
+                    mediaData: [
+                        "path"         => $tempFile,
+                        "originalName" => "aurora_image",
+                    ]
+                );
+            } finally {
+                @unlink($tempFile);
+            }
         } catch (Exception) {
             $fetchNotFoundImage->update(['status' => 'failed']);
 
