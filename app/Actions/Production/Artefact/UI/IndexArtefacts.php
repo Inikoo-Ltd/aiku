@@ -82,6 +82,8 @@ class IndexArtefacts extends OrgAction
 
     protected function getElementGroups(Group|Production|Organisation|ArtefactDepartment|ArtefactFamily $parent): array
     {
+        $assignmentCounts = $this->getAssignmentCounts($parent);
+
         return [
             'state' => [
                 'label'    => __('State'),
@@ -91,7 +93,66 @@ class IndexArtefacts extends OrgAction
                     $query->whereIn('artefacts.state', $elements);
                 },
             ],
+            'department' => [
+                'label'    => __('Department'),
+                'elements' => [
+                    'assigned'   => [__('With department'), $assignmentCounts['department_assigned']],
+                    'unassigned' => [__('Without department'), $assignmentCounts['department_unassigned']],
+                ],
+                'engine'   => function ($query, $elements) {
+                    $this->applyAssignmentFilter($query, 'artefacts.artefact_department_id', $elements);
+                },
+            ],
+            'family' => [
+                'label'    => __('Family'),
+                'elements' => [
+                    'assigned'   => [__('With family'), $assignmentCounts['family_assigned']],
+                    'unassigned' => [__('Without family'), $assignmentCounts['family_unassigned']],
+                ],
+                'engine'   => function ($query, $elements) {
+                    $this->applyAssignmentFilter($query, 'artefacts.artefact_family_id', $elements);
+                },
+            ],
         ];
+    }
+
+    /**
+     * @return array{department_assigned: int, department_unassigned: int, family_assigned: int, family_unassigned: int}
+     */
+    private function getAssignmentCounts(Group|Production|Organisation|ArtefactDepartment|ArtefactFamily $parent): array
+    {
+        $column = match (true) {
+            $parent instanceof Group              => 'group_id',
+            $parent instanceof Organisation       => 'organisation_id',
+            $parent instanceof ArtefactDepartment => 'artefact_department_id',
+            $parent instanceof ArtefactFamily     => 'artefact_family_id',
+            default                               => 'production_id',
+        };
+
+        $counts = Artefact::where($column, $parent->id)
+            ->selectRaw('count(artefact_department_id) as department_assigned')
+            ->selectRaw('count(*) - count(artefact_department_id) as department_unassigned')
+            ->selectRaw('count(artefact_family_id) as family_assigned')
+            ->selectRaw('count(*) - count(artefact_family_id) as family_unassigned')
+            ->first();
+
+        return [
+            'department_assigned'   => (int) $counts->department_assigned,
+            'department_unassigned' => (int) $counts->department_unassigned,
+            'family_assigned'       => (int) $counts->family_assigned,
+            'family_unassigned'     => (int) $counts->family_unassigned,
+        ];
+    }
+
+    private function applyAssignmentFilter($query, string $column, array $elements): void
+    {
+        if (in_array('unassigned', $elements)) {
+            $query->whereNull($column);
+
+            return;
+        }
+
+        $query->whereNotNull($column);
     }
 
     public function handle(Group|Production|Organisation|ArtefactDepartment|ArtefactFamily $parent, $prefix = null): LengthAwarePaginator

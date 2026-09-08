@@ -143,6 +143,13 @@ class ShowCraftsDashboard extends OrgAction
     {
         $artefactCounts = ArtefactStateEnum::count($production);
 
+        $artefactsRoute = fn (array $elements = []) => [
+            'name'       => 'grp.org.productions.show.crafts.artefacts.index',
+            'parameters' => array_merge($routeParameters, $elements)
+        ];
+
+        $byState = fn (ArtefactStateEnum $state) => $artefactsRoute(['artefacts_elements[state]' => $state->value]);
+
         return [
             [
                 'label' => __('Departments'),
@@ -158,6 +165,7 @@ class ShowCraftsDashboard extends OrgAction
                         'tooltip' => __('Artefacts without a department'),
                         'icon'    => ['icon' => 'fal fa-unlink', 'class' => 'text-amber-500'],
                         'count'   => $production->artefacts()->whereNull('artefact_department_id')->count(),
+                        'route'   => $artefactsRoute(['artefacts_elements[department]' => 'unassigned']),
                     ],
                 ],
             ],
@@ -175,6 +183,7 @@ class ShowCraftsDashboard extends OrgAction
                         'tooltip' => __('Artefacts without a family'),
                         'icon'    => ['icon' => 'fal fa-unlink', 'class' => 'text-amber-500'],
                         'count'   => $production->artefacts()->whereNull('artefact_family_id')->count(),
+                        'route'   => $artefactsRoute(['artefacts_elements[family]' => 'unassigned']),
                     ],
                 ],
             ],
@@ -192,21 +201,25 @@ class ShowCraftsDashboard extends OrgAction
                         'tooltip' => __('Active artefacts'),
                         'icon'    => ['icon' => 'fas fa-check-circle', 'class' => 'text-green-500'],
                         'count'   => $artefactCounts[ArtefactStateEnum::ACTIVE->value],
+                        'route'   => $byState(ArtefactStateEnum::ACTIVE),
                     ],
                     [
                         'tooltip' => __('In process'),
                         'icon'    => ['icon' => 'fal fa-seedling', 'class' => 'text-green-500 animate-pulse'],
                         'count'   => $artefactCounts[ArtefactStateEnum::IN_PROCESS->value],
+                        'route'   => $byState(ArtefactStateEnum::IN_PROCESS),
                     ],
                     [
                         'tooltip' => __('Dormant'),
                         'icon'    => ['icon' => 'fas fa-times-circle', 'class' => 'text-amber-500'],
                         'count'   => $artefactCounts[ArtefactStateEnum::DORMANT->value],
+                        'route'   => $byState(ArtefactStateEnum::DORMANT),
                     ],
                     [
                         'tooltip' => __('Discontinued'),
                         'icon'    => ['icon' => 'fas fa-times-circle', 'class' => 'text-red-500'],
                         'count'   => $artefactCounts[ArtefactStateEnum::DISCONTINUED->value],
+                        'route'   => $byState(ArtefactStateEnum::DISCONTINUED),
                     ],
                 ],
             ],
