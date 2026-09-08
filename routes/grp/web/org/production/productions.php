@@ -18,6 +18,10 @@ use App\Actions\Production\Artefact\UI\CreateArtefact;
 use App\Actions\Production\ArtefactDepartment\UI\CreateArtefactDepartment;
 use App\Actions\Production\ArtefactDepartment\UI\EditArtefactDepartment;
 use App\Actions\Production\ArtefactDepartment\UI\IndexArtefactDepartments;
+use App\Actions\Production\ArtefactFamily\UI\CreateArtefactFamily;
+use App\Actions\Production\ArtefactFamily\UI\EditArtefactFamily;
+use App\Actions\Production\ArtefactFamily\UI\IndexArtefactFamilies;
+use App\Actions\Production\ArtefactFamily\UI\ShowArtefactFamily;
 use App\Actions\Production\ArtefactDepartment\UI\ShowArtefactDepartment;
 use App\Actions\Production\Artefact\SetArtefactAsMix;
 use App\Actions\Production\Artefact\UI\EditArtefact;
@@ -114,6 +118,11 @@ Route::prefix('{production}')
                         Route::get('artefact-departments/create', CreateArtefactDepartment::class)->name('artefact_departments.create');
                         Route::get('artefact-departments/{artefactDepartment}', ShowArtefactDepartment::class)->name('artefact_departments.show');
                         Route::get('artefact-departments/{artefactDepartment}/edit', EditArtefactDepartment::class)->name('artefact_departments.edit');
+
+                        Route::get('artefact-families', IndexArtefactFamilies::class)->name('artefact_families.index');
+                        Route::get('artefact-families/create', CreateArtefactFamily::class)->name('artefact_families.create');
+                        Route::get('artefact-families/{artefactFamily}', ShowArtefactFamily::class)->name('artefact_families.show');
+                        Route::get('artefact-families/{artefactFamily}/edit', EditArtefactFamily::class)->name('artefact_families.edit');
 
 
 

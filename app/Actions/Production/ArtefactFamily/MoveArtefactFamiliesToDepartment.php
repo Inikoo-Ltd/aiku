@@ -2,15 +2,14 @@
 
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Wed, 02 Sep 2026 Malaga, Spain
+ * Created: Tue, 08 Sep 2026 Malaga, Spain
  * Copyright (c) 2026, Raul A Perusquia Flores
  */
 
-namespace App\Actions\Production\Artefact;
+namespace App\Actions\Production\ArtefactFamily;
 
 use App\Actions\OrgAction;
 use App\Actions\Production\ArtefactDepartment\Hydrators\ArtefactDepartmentHydrateArtefacts;
-use App\Actions\Production\ArtefactFamily\Hydrators\ArtefactFamilyHydrateArtefacts;
 use App\Models\Production\Artefact;
 use App\Models\Production\ArtefactDepartment;
 use App\Models\Production\ArtefactFamily;
@@ -19,29 +18,29 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 
-class MoveArtefactsToDepartment extends OrgAction
+class MoveArtefactFamiliesToDepartment extends OrgAction
 {
     public function handle(Production $production, array $modelData): int
     {
-        $artefacts = Artefact::where('production_id', $production->id)
-            ->whereIn('id', $modelData['artefacts'])
+        $families = ArtefactFamily::where('production_id', $production->id)
+            ->whereIn('id', $modelData['families'])
             ->get();
 
-        $touchedDepartments = $artefacts->pluck('artefact_department_id')->push($modelData['artefact_department_id'])->filter()->unique();
-        $touchedFamilies    = $artefacts->pluck('artefact_family_id')->filter()->unique();
+        $departmentId       = $modelData['artefact_department_id'];
+        $touchedDepartments = $families->pluck('artefact_department_id')->push($departmentId)->filter()->unique();
 
-        Artefact::whereIn('id', $artefacts->pluck('id'))->update(['artefact_department_id' => $modelData['artefact_department_id']]);
+        /* Codes are unique inside a department, so a colliding family stays where it is. */
+        $moved = $families->reject(function (ArtefactFamily $family) use ($departmentId) {
+            return $family->artefact_department_id == $departmentId
+                || ArtefactFamily::where('artefact_department_id', $departmentId)->where('code', $family->code)->exists();
+        });
 
-        /* A family belongs to one department, so it cannot follow an artefact into another one. */
-        Artefact::whereIn('id', $artefacts->pluck('id'))
-            ->whereNotNull('artefact_family_id')
-            ->whereNotIn('artefact_family_id', ArtefactFamily::where('artefact_department_id', $modelData['artefact_department_id'])->select('id'))
-            ->update(['artefact_family_id' => null]);
+        ArtefactFamily::whereIn('id', $moved->pluck('id'))->update(['artefact_department_id' => $departmentId]);
+        Artefact::whereIn('artefact_family_id', $moved->pluck('id'))->update(['artefact_department_id' => $departmentId]);
 
         ArtefactDepartment::whereIn('id', $touchedDepartments)->each(fn (ArtefactDepartment $department) => ArtefactDepartmentHydrateArtefacts::run($department));
-        ArtefactFamily::whereIn('id', $touchedFamilies)->each(fn (ArtefactFamily $family) => ArtefactFamilyHydrateArtefacts::run($family));
 
-        return $artefacts->count();
+        return $moved->count();
     }
 
     public function authorize(ActionRequest $request): bool
@@ -56,9 +55,9 @@ class MoveArtefactsToDepartment extends OrgAction
     public function rules(): array
     {
         return [
-            'artefacts'          => ['required', 'array', 'min:1'],
-            'artefacts.*'        => ['integer'],
-            'artefact_department_id' => ['present', 'nullable', Rule::exists('artefact_departments', 'id')->where('production_id', $this->production->id)],
+            'families'               => ['required', 'array', 'min:1'],
+            'families.*'             => ['integer'],
+            'artefact_department_id' => ['required', Rule::exists('artefact_departments', 'id')->where('production_id', $this->production->id)],
         ];
     }
 

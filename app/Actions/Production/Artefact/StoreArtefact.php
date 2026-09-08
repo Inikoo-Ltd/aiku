@@ -82,6 +82,7 @@ class StoreArtefact extends OrgAction
             ],
             'recommended_batch_size' => ['sometimes', 'nullable', 'integer', 'min:1'],
             'artefact_department_id'     => ['sometimes', 'nullable', Rule::exists('artefact_departments', 'id')->where('organisation_id', $this->organisation->id)],
+            'artefact_family_id'         => ['sometimes', 'nullable', Rule::exists('artefact_families', 'id')->where('organisation_id', $this->organisation->id)],
             'source_id'   => ['sometimes', 'nullable', 'string'],
             'created_at'  => ['sometimes', 'nullable', 'date'],
 

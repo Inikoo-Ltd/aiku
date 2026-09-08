@@ -19,6 +19,7 @@ use App\Actions\UI\Dashboards\ShowGroupDashboard;
 use App\Enums\DateIntervals\DateIntervalEnum;
 use App\Enums\Dispatching\PickingSession\PickingSessionStateEnum;
 use App\Enums\UI\Dispatch\DispatchHubTabsEnum;
+use App\Actions\Dispatching\PartnerStaging\GetPartnerStagingTasks;
 use App\Http\Resources\Dispatching\DashboardDispatchHubDashboardResource;
 use App\Http\Resources\Dispatching\DispatchPersonnelCurrentWorkResource;
 use App\InertiaTable\InertiaTable;
@@ -86,6 +87,11 @@ class ShowDispatchHub extends OrgAction
                 'picking_session' => $this->getPickingSessionStats($warehouse),
                 'pickers_current' => DispatchPersonnelCurrentWorkResource::collection($this->currentWork($warehouse, 'picker_user_id', ['handling', 'handling_blocked'], 'pickers_current')),
                 'packers_current' => DispatchPersonnelCurrentWorkResource::collection($this->currentWork($warehouse, 'packer_user_id', ['packing'], 'packers_current')),
+                'partner_staging' => GetPartnerStagingTasks::run($warehouse),
+                'stage_route'     => [
+                    'name'       => 'grp.org.warehouses.show.dispatching.partner_staging.stage',
+                    'parameters' => $request->route()->originalParameters(),
+                ],
                 'gate_route'      => $this->organisation->hasFulfilmentGate() ? [
                     'name'       => 'grp.org.warehouses.show.dispatching.gate',
                     'parameters' => $request->route()->originalParameters(),

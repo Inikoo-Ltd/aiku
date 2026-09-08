@@ -14,7 +14,10 @@ use App\Actions\Production\Artefact\StoreArtefact;
 use App\Actions\Production\Artefact\MoveArtefactsToDepartment;
 use App\Actions\Production\Artefact\UpdateArtefact;
 use App\Actions\Production\ArtefactDepartment\StoreArtefactDepartment;
+use App\Actions\Production\Artefact\MoveArtefactsToFamily;
 use App\Actions\Production\ArtefactFamily\AssignArtefactsToFamiliesFromOrgStockFamilies;
+use App\Actions\Production\ArtefactFamily\MoveArtefactFamiliesToDepartment;
+use App\Actions\Production\ArtefactFamily\StoreArtefactFamily;
 use App\Models\Production\ArtefactFamily;
 use App\Actions\Production\ArtefactDepartment\UpdateArtefactDepartment;
 use App\Actions\Production\Artisan\AttachArtisan;
@@ -603,7 +606,7 @@ test('UI edit artefact', function () {
         $page
             ->component('EditModel')
             ->has('title')
-            ->has('formData.blueprint.0.fields', 7)
+            ->has('formData.blueprint.0.fields', 8)
             ->has('pageHead')
             ->has('breadcrumbs', 4);
     });
@@ -2221,6 +2224,10 @@ test('to produce queue only shows lines with an artefact in this factory', funct
     $stocks    = createStocks($this->group);
     $orgStocks = createOrgStocks($this->organisation, [$stocks[0], $stocks[1]]);
 
+    \App\Models\Production\Artefact::where('production_id', $this->production->id)
+        ->whereIn('org_stock_id', [$orgStocks[0]->id, $orgStocks[1]->id])
+        ->update(['org_stock_id' => null]);
+
     $made = StoreArtefact::make()->action($this->production, ['code' => 'GATE-01', 'name' => 'Made here']);
     $made->update(['org_stock_id' => $orgStocks[0]->id]);
     $orgStocks[0]->update(['quantity_in_locations' => 0]);
@@ -2332,4 +2339,77 @@ test('repair assigns artefacts to families mirroring their org stock family', fu
     $rerun = AssignArtefactsToFamiliesFromOrgStockFamilies::make()->handle(true);
     expect($rerun['families_created'])->toBe(0)
         ->and($rerun['artefacts_assigned'])->toBe(0);
+});
+
+test('artefact family UI pages render', function () {
+    $department = StoreArtefactDepartment::make()->action($this->production, ['code' => 'UIDEP', 'name' => 'UI department']);
+    $family     = StoreArtefactFamily::make()->action($department, ['code' => 'UIFAM', 'name' => 'UI family']);
+    StoreArtefact::make()->action($this->production, [
+        'code'                   => 'UIFAMART',
+        'name'                   => 'UI family artefact',
+        'artefact_department_id' => $department->id,
+        'artefact_family_id'     => $family->id,
+    ]);
+
+    $routeParameters = [$this->organisation->slug, $this->production->slug];
+
+    get(route('grp.org.productions.show.crafts.artefact_families.index', $routeParameters))->assertOk();
+    get(route('grp.org.productions.show.crafts.artefact_families.create', $routeParameters))->assertOk();
+    get(route('grp.org.productions.show.crafts.artefact_families.show', array_merge($routeParameters, [$family->slug])))->assertOk();
+    get(route('grp.org.productions.show.crafts.artefact_families.edit', array_merge($routeParameters, [$family->slug])))->assertOk();
+    get(route('grp.org.productions.show.crafts.artefact_departments.show', array_merge($routeParameters, [$department->slug])).'?tab=families')->assertOk();
+});
+
+test('moving a family to another department takes its artefacts along', function () {
+    $from = StoreArtefactDepartment::make()->action($this->production, ['code' => 'MVFROM', 'name' => 'From department']);
+    $to   = StoreArtefactDepartment::make()->action($this->production, ['code' => 'MVTO', 'name' => 'To department']);
+
+    $family   = StoreArtefactFamily::make()->action($from, ['code' => 'MVFAM', 'name' => 'Moving family']);
+    $artefact = StoreArtefact::make()->action($this->production, [
+        'code'                   => 'MVART',
+        'name'                   => 'Moving artefact',
+        'artefact_department_id' => $from->id,
+        'artefact_family_id'     => $family->id,
+    ]);
+
+    $moved = MoveArtefactFamiliesToDepartment::make()->action($this->production, [
+        'families'               => [$family->id],
+        'artefact_department_id' => $to->id,
+    ]);
+
+    expect($moved)->toBe(1)
+        ->and($family->refresh()->artefact_department_id)->toBe($to->id)
+        ->and($artefact->refresh()->artefact_department_id)->toBe($to->id)
+        ->and($artefact->artefact_family_id)->toBe($family->id);
+
+    /* Moving the artefact to a third department drops a family that does not live there. */
+    $other = StoreArtefactDepartment::make()->action($this->production, ['code' => 'MVOTHER', 'name' => 'Other department']);
+    MoveArtefactsToDepartment::make()->action($this->production, [
+        'artefacts'              => [$artefact->id],
+        'artefact_department_id' => $other->id,
+    ]);
+
+    expect($artefact->refresh()->artefact_family_id)->toBeNull()
+        ->and($family->refresh()->number_artefacts)->toBe(0);
+});
+
+test('moving artefacts to a family moves them into the family department', function () {
+    $home    = StoreArtefactDepartment::make()->action($this->production, ['code' => 'HOMEDEP', 'name' => 'Home department']);
+    $elsewhere = StoreArtefactDepartment::make()->action($this->production, ['code' => 'AWAYDEP', 'name' => 'Away department']);
+
+    $family   = StoreArtefactFamily::make()->action($home, ['code' => 'HOMEFAM', 'name' => 'Home family']);
+    $artefact = StoreArtefact::make()->action($this->production, [
+        'code'                   => 'STRAYART',
+        'name'                   => 'Stray artefact',
+        'artefact_department_id' => $elsewhere->id,
+    ]);
+
+    MoveArtefactsToFamily::make()->action($this->production, [
+        'artefacts'          => [$artefact->id],
+        'artefact_family_id' => $family->id,
+    ]);
+
+    expect($artefact->refresh()->artefact_family_id)->toBe($family->id)
+        ->and($artefact->artefact_department_id)->toBe($home->id)
+        ->and($family->refresh()->number_artefacts)->toBe(1);
 });

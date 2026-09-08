@@ -21,6 +21,7 @@ use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -53,6 +54,13 @@ class IndexPartnerShoppingListItems extends OrgAction
                 $join->on('partner_org_stocks.stock_id', 'partner_shopping_list_items.stock_id')
                     ->on('partner_org_stocks.organisation_id', 'partner_shopping_list_items.partner_organisation_id');
             })
+            ->leftJoin('org_partners as seller_partner', function ($join) {
+                $join->on('seller_partner.organisation_id', 'partner_shopping_list_items.partner_organisation_id')
+                    ->on('seller_partner.partner_id', 'partner_shopping_list_items.organisation_id');
+            })
+            ->leftJoin('job_orders', 'job_orders.id', 'partner_shopping_list_items.job_order_id')
+            ->leftJoin('transactions', 'transactions.id', 'partner_shopping_list_items.transaction_id')
+            ->leftJoin('orders', 'orders.id', 'transactions.order_id')
             ->where('partner_shopping_list_items.org_partner_id', $orgPartner->id)
             ->select([
                 'partner_shopping_list_items.id',
@@ -69,6 +77,21 @@ class IndexPartnerShoppingListItems extends OrgAction
                 'users.contact_name as added_by_name',
                 'org_stock_stats.days_of_cover',
                 'partner_org_stocks.quantity_available as their_available',
+                'job_orders.reference as job_order_reference',
+                'job_orders.state as job_order_state',
+                'orders.reference as order_reference',
+                'orders.state as order_state',
+                DB::raw("(select coalesce(sum(location_org_stocks.quantity), 0) from location_org_stocks
+                    where location_org_stocks.location_id = seller_partner.goods_out_location_id
+                        and location_org_stocks.org_stock_id = partner_org_stocks.id) as quantity_staged"),
+                DB::raw("(select delivery_notes.reference from delivery_notes
+                    join delivery_note_order on delivery_note_order.delivery_note_id = delivery_notes.id
+                    where delivery_note_order.order_id = orders.id and delivery_notes.deleted_at is null
+                    order by delivery_notes.id desc limit 1) as delivery_note_reference"),
+                DB::raw("(select delivery_notes.state from delivery_notes
+                    join delivery_note_order on delivery_note_order.delivery_note_id = delivery_notes.id
+                    where delivery_note_order.order_id = orders.id and delivery_notes.deleted_at is null
+                    order by delivery_notes.id desc limit 1) as delivery_note_state"),
             ])
             ->selectRaw(PartnerShoppingListItem::pricePerSkoSql().' as price_per_sko')
             ->defaultSort('-created_at')
@@ -100,9 +123,40 @@ class IndexPartnerShoppingListItems extends OrgAction
             $tradeUnit = $orgStocks->get($row->org_stock_id)?->tradeUnits->first(fn ($tradeUnit) => $tradeUnit->image_id !== null);
             $row->image_sources = $tradeUnit?->imageSources(48, 48);
             $row->price_per_sko = $row->price_per_sko === null ? null : round((float) $row->price_per_sko * $exchange, 4);
+            $row->progress      = $this->progressOf($row);
 
             return $row;
         });
+    }
+
+    /**
+     * Where the line actually is, told from what exists rather than from a status column:
+     * a job order means it is being made, a goods out location holding it means it is
+     * staged, a delivery note means it has left.
+     *
+     * @return array{label: string, tone: string, reference: string|null}
+     */
+    private function progressOf(object $row): array
+    {
+        if ($row->delivery_note_reference) {
+            return $row->delivery_note_state === 'dispatched'
+                ? ['label' => __('On its way'), 'tone' => 'emerald', 'reference' => $row->delivery_note_reference]
+                : ['label' => __('Being picked'), 'tone' => 'indigo', 'reference' => $row->delivery_note_reference];
+        }
+
+        if ((float) $row->quantity_staged > 0) {
+            return ['label' => __('Staged for you'), 'tone' => 'emerald', 'reference' => $row->order_reference];
+        }
+
+        if ($row->order_reference) {
+            return ['label' => __('Pre-picked'), 'tone' => 'indigo', 'reference' => $row->order_reference];
+        }
+
+        if ($row->job_order_reference) {
+            return ['label' => __('Being made'), 'tone' => 'amber', 'reference' => $row->job_order_reference];
+        }
+
+        return ['label' => __('Requested'), 'tone' => 'gray', 'reference' => null];
     }
 
     public function tableStructure(OrgPartner $orgPartner): Closure
@@ -124,6 +178,7 @@ class IndexPartnerShoppingListItems extends OrgAction
                 ->column(key: 'quantity', label: __('Quantity (SKO)'), canBeHidden: false, align: 'right')
                 ->column(key: 'amount', label: __('Amount'), canBeHidden: false, align: 'right')
                 ->column(key: 'priority', label: __('Priority'), canBeHidden: false, sortable: true)
+                ->column(key: 'progress', label: __('Progress'), canBeHidden: false)
                 ->column(key: 'state', label: __('State'), canBeHidden: false, sortable: true)
                 ->column(key: 'created_at', label: __('Added'), canBeHidden: false, sortable: true)
                 ->column(key: 'actions', label: '', canBeHidden: false, align: 'right')
