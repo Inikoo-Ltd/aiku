@@ -3220,3 +3220,43 @@ describe('seed purchase cost from sku value', function () {
             ->and($unpriced->refresh()->cost_per_sku)->toBeNull();
     });
 });
+
+test('the post costfix rollup window reaches back to the oldest provisional purchase', function () {
+    [$orgStock, $location] = costFixStockInLocation($this->group, $this->organisation, 'CFROLL');
+
+    $provisional = StoreOrgStockMovement::make()->action($orgStock, $location, [
+        'type'     => OrgStockMovementTypeEnum::PURCHASE->value,
+        'quantity' => 10,
+    ]);
+    $provisional->update([
+        'cost_per_sku' => 3,
+        'org_amount'   => 30,
+        'cost_status'  => \App\Enums\Inventory\OrgStockMovement\OrgStockMovementCostStatusEnum::PROVISIONAL,
+        'date'         => '2024-01-10 10:00:00',
+    ]);
+
+    $delivery = StoreOrgStockMovement::make()->action($orgStock->refresh(), $location, [
+        'type'     => OrgStockMovementTypeEnum::PURCHASE->value,
+        'quantity' => 10,
+    ]);
+    $delivery->update([
+        'cost_per_sku' => 4,
+        'org_amount'   => 40,
+        'cost_status'  => \App\Enums\Inventory\OrgStockMovement\OrgStockMovementCostStatusEnum::DELIVERY,
+        'date'         => '2026-01-10 10:00:00',
+    ]);
+
+    foreach (['2024-02-01', '2026-02-01'] as $date) {
+        \App\Actions\Inventory\OrgStock\Stock\CalculateOrgStockHistoricStockHistories::run($orgStock, \Illuminate\Support\Carbon::parse($date));
+    }
+
+    $rolledUp = \App\Actions\Maintenance\Inventory\OrgStockMovement\RollUpOrgStockHistoriesPostCostFix::run($this->organisation);
+
+    $earlyDay = DB::table('organisation_stock_histories')
+        ->where('organisation_id', $this->organisation->id)
+        ->where('date', '2024-02-01')
+        ->exists();
+
+    expect($earlyDay)->toBeTrue()
+        ->and($rolledUp)->toBeGreaterThanOrEqual(2);
+});
