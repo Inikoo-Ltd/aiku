@@ -63,12 +63,15 @@ jobs:
             reason="no feature commit since $latest"
           fi
 
+          # next names the git tag; release is what Sentry sees, carrying the sha so a
+          # release stays unique to its commit even if the tag step fails
           echo "Next version $next ($reason)"
           echo "next=$next" >> "$GITHUB_OUTPUT"
+          echo "release=$next+${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
       - name: Set .env
         run: |
           touch .env.aiku.production.deploy
-          echo RELEASE=${{ steps.semver.outputs.next }}+${GITHUB_SHA::7} >> .env.aiku.production.deploy
+          echo RELEASE=${{ steps.semver.outputs.release }} >> .env.aiku.production.deploy
       - name: Authenticate server git fetches with the job token
         run: |
           auth=$(printf 'x-access-token:%s' "${{ github.token }}" | base64 -w0)
@@ -111,4 +114,4 @@ jobs:
           environment: production
           set_commits: 'skip'
           projects: 'aiku'
-          release: ${{ steps.semver.outputs.next }}
+          release: ${{ steps.semver.outputs.release }}
