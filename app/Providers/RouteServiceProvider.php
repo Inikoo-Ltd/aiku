@@ -108,7 +108,7 @@ class RouteServiceProvider extends ServiceProvider
         RateLimiter::for('retina-api', function (Request $request) {
             $token = $request->user()?->currentAccessToken();
 
-            return Limit::perMinute(60)->by($token ? 'token:'.$token->id : 'ip:'.$request->ip());
+            return Limit::perMinute(120)->by($token ? 'token:'.$token->id : 'ip:'.$request->ip());
         });
 
         RateLimiter::for('kiosk', function (Request $request) {
