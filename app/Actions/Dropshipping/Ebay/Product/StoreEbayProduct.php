@@ -32,7 +32,7 @@ class StoreEbayProduct extends RetinaAction
 
     private const string FALLBACK_CATEGORY_ID = '29511';
 
-    private const int MAX_MISSING_ASPECT_ATTEMPTS = 3;
+    private const int MAX_MISSING_ASPECT_ATTEMPTS = 6;
 
     /**
      * @throws \Exception
@@ -332,6 +332,7 @@ class StoreEbayProduct extends RetinaAction
                 $product,
                 $inventoryItem,
                 $categoryAspects,
+                $categoryId,
                 Arr::get($offer, 'offerId')
             );
 
@@ -385,7 +386,7 @@ class StoreEbayProduct extends RetinaAction
      * @param  array<string, mixed>  $categoryAspects
      * @return array{0: mixed, 1: array<string, mixed>}
      */
-    private function publishFillingMissingAspects(EbayUser $ebayUser, Product $product, array $inventoryItem, $categoryAspects, $offerId): array
+    private function publishFillingMissingAspects(EbayUser $ebayUser, Product $product, array $inventoryItem, $categoryAspects, $categoryId, $offerId): array
     {
         $publishedOffer = $ebayUser->publishListing($offerId);
 
@@ -394,6 +395,10 @@ class StoreEbayProduct extends RetinaAction
 
             if (blank($missingAspects)) {
                 break;
+            }
+
+            if ($ebayUser->unknownAspects($categoryAspects, $missingAspects)) {
+                $categoryAspects = $ebayUser->getItemAspectsForCategory($categoryId);
             }
 
             $aspects = Arr::get($inventoryItem, 'product.aspects', []);

@@ -472,19 +472,58 @@ trait WithEbayApiRequest
         };
     }
 
-    public function getItemAspectsForCategory($categoryId)
+    /**
+     * The item specifics a category defines, required or not, as returned by the Taxonomy API.
+     *
+     * Read on every upload, so the answer is held like the condition policies. Only an answer that
+     * carries aspects is kept: a throttled or failed read would otherwise leave every later listing in
+     * that category without its item specifics until the cache expired.
+     *
+     * @return array<string, mixed>
+     */
+    public function getItemAspectsForCategory($categoryId): array
     {
+        $marketplaceId = Arr::get($this->getEbayConfig(), 'marketplace_id');
+        $cacheKey      = 'ebay_item_aspects_'.$marketplaceId.'_'.$categoryId;
+
+        $cachedAspects = Cache::get($cacheKey);
+        if (is_array($cachedAspects)) {
+            return $cachedAspects;
+        }
+
         $categoryTree = $this->getCategoryTreeId();
 
         try {
             $endpoint = "/commerce/taxonomy/v1/category_tree/$categoryTree/get_item_aspects_for_category";
 
-            return $this->makeEbayRequest('get', $endpoint, [
+            $response = $this->makeEbayRequest('get', $endpoint, [
                 'category_id' => $categoryId
             ]);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
+            Log::error('Get Item Aspects For Category Error: '.$e->getMessage());
+
             return ['aspects' => []];
         }
+
+        if (blank(Arr::get($response, 'aspects'))) {
+            return ['aspects' => []];
+        }
+
+        Cache::put($cacheKey, $response, now()->addWeek());
+
+        return $response;
+    }
+
+    /**
+     * Names eBay asked for that this category's item specifics say nothing about
+     *
+     * @param  array<string, mixed>  $categoryAspects
+     * @param  array<int, string>  $aspectNames
+     * @return array<int, string>
+     */
+    public function unknownAspects($categoryAspects, array $aspectNames): array
+    {
+        return array_values(array_diff($aspectNames, array_keys($this->aspectsByName($categoryAspects))));
     }
 
     public function getRequiredItemAspectsForCategory($categoryId)
