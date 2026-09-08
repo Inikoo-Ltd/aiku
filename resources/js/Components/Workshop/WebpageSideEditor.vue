@@ -675,7 +675,9 @@ const showBlockVisibilityOptions = computed(
 													v-if="
 														getEditPermissions(
 															element.web_block.layout.data
-														) && !blockNotEditableVisible.includes(element.type)
+														) &&
+														!blockNotEditableVisible.includes(element.type) &&
+														!blockWithoutVisibilityOptions.includes(element.type)
 													"
 													v-tooltip="trans('Duplicate this block')"
 													@click.stop.prevent="duplicateBlock(element)"
@@ -925,11 +927,14 @@ const showBlockVisibilityOptions = computed(
 				<!-- Copy -->
 				<li
 					@click="
-						getEditPermissions(contextMenu.block.web_block.layout.data) && copyBlock()
+						getEditPermissions(contextMenu.block.web_block.layout.data) &&
+							!blockWithoutVisibilityOptions.includes(contextMenu.block.type) &&
+							copyBlock()
 					"
 					:class="[
 						'flex items-center gap-2 px-2.5 py-1',
-						getEditPermissions(contextMenu.block.web_block.layout.data)
+						getEditPermissions(contextMenu.block.web_block.layout.data) &&
+						!blockWithoutVisibilityOptions.includes(contextMenu.block.type)
 							? 'hover:bg-slate-100 text-slate-800 cursor-pointer'
 							: 'text-gray-400 cursor-not-allowed pointer-events-none',
 					]">

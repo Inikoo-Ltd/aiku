@@ -17,7 +17,7 @@ class GetWebBlockBlogCategories
 
     public function handle(Webpage $webpage, array $webBlock): array
     {
-        data_set($webBlock, 'web_block.layout.data.permissions', []);
+        data_set($webBlock, 'web_block.layout.data.permissions', ['edit']);
         data_set(
             $webBlock,
             'web_block.layout.data.fieldValue.categories',
