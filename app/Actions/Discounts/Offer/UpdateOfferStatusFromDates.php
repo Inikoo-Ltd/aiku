@@ -103,7 +103,15 @@ class UpdateOfferStatusFromDates extends OrgAction
             $query->where('shop_id', Shop::where('slug', $command->option('shop'))->firstOrFail()->id);
         }
 
-        $bar = $command->getOutput()->createProgressBar($query->count());
+        $count = $query->count();
+
+        $command->info("$count offers out of sync with their dates");
+
+        if ($count == 0) {
+            return 0;
+        }
+
+        $bar = $command->getOutput()->createProgressBar($count);
         $bar->start();
 
         $query->chunkById(500, function ($offers) use ($command, $bar) {
