@@ -1364,3 +1364,34 @@ test('iris collection lists the product that owns a member product webpage', fun
 
     expect($listed()->all())->toBe([$sample->code]);
 });
+
+test('shop products json carries the outer size from the stock, not the product units', function () {
+    $shop = Shop::first() ?? StoreShop::make()->action($this->organisation, array_merge(Shop::factory()->definition(), ['type' => ShopTypeEnum::B2B->value]));
+    createProduct($shop);
+    $product = $shop->products()->where('state', ProductStateEnum::ACTIVE)->orderBy('id')->first();
+
+    $orgStock = $this->orgStock1;
+    $orgStock->update(['packed_in' => 6]);
+
+    $product->update(['units' => 1, 'is_for_sale' => true]);
+    $product->orgStocks()->sync([$orgStock->id => ['quantity' => 1]]);
+
+    $products = \App\Actions\Catalogue\Product\Json\GetProductsInShop::make()->handle($shop);
+    $row      = collect($products->items())->firstWhere('id', $product->id);
+
+    expect($row)->not->toBeNull()
+        ->and((int) $row->packed_in)->toBe(6)
+        ->and((float) $row->units)->toBe(1.0);
+
+    $secondStock = \App\Actions\Inventory\OrgStock\StoreOrgStock::make()->action(
+        $this->organisation,
+        $orgStock->stock,
+        array_merge(\App\Models\Inventory\OrgStock::factory()->definition(), ['code' => 'PACKED-IN-2ND']),
+    );
+    $product->orgStocks()->sync([$orgStock->id => ['quantity' => 1], $secondStock->id => ['quantity' => 1]]);
+
+    $multi = collect(\App\Actions\Catalogue\Product\Json\GetProductsInShop::make()->handle($shop)->items())
+        ->firstWhere('id', $product->id);
+
+    expect($multi->packed_in)->toBeNull();
+});

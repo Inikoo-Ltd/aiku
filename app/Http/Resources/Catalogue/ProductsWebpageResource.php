@@ -75,6 +75,12 @@ class ProductsWebpageResource extends JsonResource
             'url'                           => $this->url,
             'unit'                          => $this->unit,
             'units'                         => $units,
+            /*
+             * How many single items the outer holds, for the screens that count in SKO. It rides
+             * on the query rather than the product: only the callers that need it select it, and
+             * a product built from more than one SKU has no single answer so it stays null.
+             */
+            'packed_in'                     => $this->packed_in ? (int) $this->packed_in : null,
             'offers_data'                   => $this->offers_data,
             'discounted_price'              => $bestPercentageOff ? round($this->price * $bestPercentageOffOfferFactor, 2) : null,
             'discounted_price_per_unit'     => $pricePerUnitDiscounted,
