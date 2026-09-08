@@ -130,6 +130,7 @@ class GetWhatsappRecipientsQuery
      * selection saved against the audience is judged by the same rule that put the
      * audience together. A number failing this is one WhatsApp has no way to deliver to.
      */
+    // TODO:Meta - check and make sure validation later
     public static function isSendablePhone(?string $phone): bool
     {
         $raw = trim((string) $phone);

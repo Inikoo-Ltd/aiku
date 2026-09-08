@@ -24,7 +24,7 @@ class StoreMetaChatSession
         return [
             'shop_id'      => ['required', 'exists:shops,id'],
             'customer_id'  => ['nullable', 'exists:customers,id'],
-            'phone_number' => ['required_without:customer_id', 'nullable', 'string', 'max:50', 'regex:/^\+[1-9][\d\s\-().]{6,20}$/'],
+            'phone_number' => ['required_without:customer_id', 'nullable', 'string', 'max:50', 'regex:/^\+[1-9][\d\s\-().]{6,20}$/'], // TODO:Meta - check and make sure validation later
             'name'         => ['nullable', 'string'],
         ];
     }
@@ -36,7 +36,7 @@ class StoreMetaChatSession
     {
         $metaChatSession = $this->handle($request->validated());
 
-        // TODO: Udpate this to assign the chat to an agent based on the shop's routing rules, not just the agent who started the chat.
+        // TODO:Meta - Udpate this to assign the chat to an agent based on the shop's routing rules, not just the agent who started the chat.
         if ($agent = $request->user()?->chatAgent) {
             AssignMetaChatToAgent::run($metaChatSession, $agent, 'Assigned to agent who started the chat');
         }
