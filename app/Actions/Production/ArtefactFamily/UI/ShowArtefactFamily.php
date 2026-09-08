@@ -48,7 +48,7 @@ class ShowArtefactFamily extends OrgAction
                 'title'       => $artefactFamily->name,
                 'breadcrumbs' => $this->getBreadcrumbs($routeParameters),
                 'pageHead'    => [
-                    'icon'       => ['icon' => ['fal', 'fa-folder-tree'], 'title' => __('Artefact family')],
+                    'icon'       => ['icon' => ['fal', 'fa-folder'], 'title' => __('Artefact family')],
                     'model'      => __('Artefact family'),
                     'title'      => $artefactFamily->name,
                     'afterTitle' => ['label' => $artefactFamily->code],
@@ -117,7 +117,7 @@ class ShowArtefactFamily extends OrgAction
                             'parameters' => $routeParameters
                         ],
                         'label' => $artefactFamily?->code,
-                        'icon'  => 'fal fa-folder-tree',
+                        'icon'  => 'fal fa-folder',
                     ],
                     'suffix' => $suffix
                 ],

@@ -201,14 +201,14 @@ class IndexArtefacts extends OrgAction
         return [
             [
                 'label'    => __('Departments'),
-                'leftIcon' => ['icon' => 'fal fa-folder', 'tooltip' => __('Artefact departments')],
+                'leftIcon' => ['icon' => 'fal fa-folder-tree', 'tooltip' => __('Artefact departments')],
                 'root'     => 'grp.org.productions.show.crafts.artefact_departments.',
                 'route'    => ['name' => 'grp.org.productions.show.crafts.artefact_departments.index', 'parameters' => $parameters],
                 'number'   => $production->artefactDepartments()->count(),
             ],
             [
                 'label'    => __('Families'),
-                'leftIcon' => ['icon' => 'fal fa-folder-tree', 'tooltip' => __('Artefact families')],
+                'leftIcon' => ['icon' => 'fal fa-folder', 'tooltip' => __('Artefact families')],
                 'root'     => 'grp.org.productions.show.crafts.artefact_families.',
                 'route'    => ['name' => 'grp.org.productions.show.crafts.artefact_families.index', 'parameters' => $parameters],
                 'number'   => $production->artefactFamilies()->count(),

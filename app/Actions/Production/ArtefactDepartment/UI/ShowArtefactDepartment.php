@@ -49,7 +49,7 @@ class ShowArtefactDepartment extends OrgAction
                 'title'       => $artefactDepartment->name,
                 'breadcrumbs' => $this->getBreadcrumbs($request->route()->originalParameters()),
                 'pageHead'    => [
-                    'icon'    => ['icon' => ['fal', 'fa-folder'], 'title' => __('Artefact department')],
+                    'icon'    => ['icon' => ['fal', 'fa-folder-tree'], 'title' => __('Artefact department')],
                     'model'   => __('Artefact department'),
                     'title'   => $artefactDepartment->name,
                     'afterTitle' => ['label' => $artefactDepartment->code],
@@ -107,7 +107,7 @@ class ShowArtefactDepartment extends OrgAction
                             'parameters' => $routeParameters
                         ],
                         'label' => $artefactDepartment?->code,
-                        'icon'  => 'fal fa-folder',
+                        'icon'  => 'fal fa-folder-tree',
                     ],
                     'suffix' => $suffix
                 ],

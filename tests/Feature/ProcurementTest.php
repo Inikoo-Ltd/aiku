@@ -3287,6 +3287,29 @@ describe('partner shopping list', function () {
             ->toThrow(\Illuminate\Validation\ValidationException::class);
     });
 
+    test('the pre-pick tab only shows once the organisation has a partner goods out location', function () {
+        $seller    = $this->orgPartner->partner;
+        $warehouse = \App\Actions\Inventory\Warehouse\StoreWarehouse::make()->action($seller, \App\Models\Inventory\Warehouse::factory()->definition());
+
+        /* Every shop organisation is partnered with every other one, so the tab must key off
+           the goods out location, not off having partners. */
+        \App\Models\Procurement\OrgPartner::where('organisation_id', $seller->id)->update(['goods_out_location_id' => null]);
+
+        actingAs($this->adminGuest->getUser());
+        $tabsOf = fn () => get(route('grp.org.warehouses.show.dispatching.backlog', [$seller->slug, $warehouse->slug]))
+            ->assertOk()->viewData('page')['props']['tabs']['navigation'];
+
+        expect($tabsOf())->not->toHaveKey('partner_staging');
+
+        $goodsOut = \App\Actions\Inventory\Location\StoreLocation::make()->action($warehouse, \App\Models\Inventory\Location::factory()->definition());
+        $goodsOut->update(['is_goods_out' => true]);
+        \App\Models\Procurement\OrgPartner::where('organisation_id', $seller->id)
+            ->where('partner_id', $this->orgPartner->organisation_id)
+            ->update(['goods_out_location_id' => $goodsOut->id]);
+
+        expect($tabsOf())->toHaveKey('partner_staging');
+    });
+
     test('the buyer sees how far its line has got', function () {
         $seller = $this->orgPartner->partner;
 

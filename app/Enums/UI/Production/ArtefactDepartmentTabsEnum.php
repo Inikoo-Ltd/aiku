@@ -29,7 +29,7 @@ enum ArtefactDepartmentTabsEnum: string
             ],
             ArtefactDepartmentTabsEnum::FAMILIES => [
                 'title' => __('Families'),
-                'icon'  => 'fal fa-folder-tree',
+                'icon'  => 'fal fa-folder',
             ],
             ArtefactDepartmentTabsEnum::HISTORY => [
                 'align' => 'right',

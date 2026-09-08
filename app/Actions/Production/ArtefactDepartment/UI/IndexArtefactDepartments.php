@@ -115,7 +115,7 @@ class IndexArtefactDepartments extends OrgAction
                 'title'         => __('Artefact departments'),
                 'pageHead'      => [
                     'title'         => __('Artefact departments'),
-                    'icon'          => ['icon' => ['fal', 'fa-folder'], 'title' => __('Artefact departments')],
+                    'icon'          => ['icon' => ['fal', 'fa-folder-tree'], 'title' => __('Artefact departments')],
                     'subNavigation' => IndexArtefacts::make()->getArtefactsSubNavigation($this->production),
                     'actions'       => [
                         $this->canEdit ? [

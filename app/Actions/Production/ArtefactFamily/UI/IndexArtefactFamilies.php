@@ -167,7 +167,7 @@ class IndexArtefactFamilies extends OrgAction
                 'title'              => __('Artefact families'),
                 'pageHead'           => [
                     'title'         => __('Artefact families'),
-                    'icon'          => ['icon' => ['fal', 'fa-folder-tree'], 'title' => __('Artefact families')],
+                    'icon'          => ['icon' => ['fal', 'fa-folder'], 'title' => __('Artefact families')],
                     'subNavigation' => IndexArtefacts::make()->getArtefactsSubNavigation($this->production),
                     'actions'       => [
                         $this->canEdit ? [
@@ -200,7 +200,7 @@ class IndexArtefactFamilies extends OrgAction
                             'parameters' => $routeParameters
                         ],
                         'label' => __('Artefact families'),
-                        'icon'  => 'fal fa-folder-tree',
+                        'icon'  => 'fal fa-folder',
                     ],
                     'suffix' => $suffix
                 ]
