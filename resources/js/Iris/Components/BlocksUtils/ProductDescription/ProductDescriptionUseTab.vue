@@ -175,7 +175,7 @@ const faqJsonLd = computed(() =>
 					:faqs="tabsData?.faq" />
 				</div>
 
-				<component v-if="faqJsonLd" :is="'script'" type="application/ld+json" v-html="faqJsonLd" />
+				<component v-if="faqJsonLd" :is="'script'" type="application/ld+json" :innerHTML="faqJsonLd" />
 			 </div>
 			
 		</div>

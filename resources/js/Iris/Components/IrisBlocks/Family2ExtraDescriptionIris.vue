@@ -132,7 +132,7 @@ const faqJsonLd = computed(() =>
         <component :is="component(tab.key)" :field-value="fieldValue" :screen-type="screenType" :faqs="fieldValue?.family?.faq"/>
       </div>
 
-      <component v-if="faqJsonLd" :is="'script'" type="application/ld+json" v-html="faqJsonLd" />
+      <component v-if="faqJsonLd" :is="'script'" type="application/ld+json" :innerHTML="faqJsonLd" />
     </div>
   </section>
 </template>
