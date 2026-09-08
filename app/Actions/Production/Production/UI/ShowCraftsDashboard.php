@@ -145,13 +145,37 @@ class ShowCraftsDashboard extends OrgAction
 
         return [
             [
-                'label' => __('Raw materials'),
-                'icon'  => 'fal fa-network-wired',
-                'color' => '#2dd4bf',
-                'value' => $production->stats->number_raw_materials,
+                'label' => __('Departments'),
+                'icon'  => 'fal fa-folder-tree',
+                'color' => '#a3e635',
+                'value' => $production->artefactDepartments()->count(),
                 'route' => [
-                    'name'       => 'grp.org.productions.show.crafts.raw_materials.index',
+                    'name'       => 'grp.org.productions.show.crafts.artefact_departments.index',
                     'parameters' => $routeParameters
+                ],
+                'metas' => [
+                    [
+                        'tooltip' => __('Artefacts without a department'),
+                        'icon'    => ['icon' => 'fal fa-unlink', 'class' => 'text-amber-500'],
+                        'count'   => $production->artefacts()->whereNull('artefact_department_id')->count(),
+                    ],
+                ],
+            ],
+            [
+                'label' => __('Families'),
+                'icon'  => 'fal fa-folder',
+                'color' => '#c084fc',
+                'value' => $production->artefactFamilies()->count(),
+                'route' => [
+                    'name'       => 'grp.org.productions.show.crafts.artefact_families.index',
+                    'parameters' => $routeParameters
+                ],
+                'metas' => [
+                    [
+                        'tooltip' => __('Artefacts without a family'),
+                        'icon'    => ['icon' => 'fal fa-unlink', 'class' => 'text-amber-500'],
+                        'count'   => $production->artefacts()->whereNull('artefact_family_id')->count(),
+                    ],
                 ],
             ],
             [
@@ -187,37 +211,13 @@ class ShowCraftsDashboard extends OrgAction
                 ],
             ],
             [
-                'label' => __('Departments'),
-                'icon'  => 'fal fa-folder-tree',
-                'color' => '#a3e635',
-                'value' => $production->artefactDepartments()->count(),
+                'label' => __('Raw materials'),
+                'icon'  => 'fal fa-network-wired',
+                'color' => '#2dd4bf',
+                'value' => $production->stats->number_raw_materials,
                 'route' => [
-                    'name'       => 'grp.org.productions.show.crafts.artefact_departments.index',
+                    'name'       => 'grp.org.productions.show.crafts.raw_materials.index',
                     'parameters' => $routeParameters
-                ],
-                'metas' => [
-                    [
-                        'tooltip' => __('Artefacts without a department'),
-                        'icon'    => ['icon' => 'fal fa-unlink', 'class' => 'text-amber-500'],
-                        'count'   => $production->artefacts()->whereNull('artefact_department_id')->count(),
-                    ],
-                ],
-            ],
-            [
-                'label' => __('Families'),
-                'icon'  => 'fal fa-folder',
-                'color' => '#c084fc',
-                'value' => $production->artefactFamilies()->count(),
-                'route' => [
-                    'name'       => 'grp.org.productions.show.crafts.artefact_families.index',
-                    'parameters' => $routeParameters
-                ],
-                'metas' => [
-                    [
-                        'tooltip' => __('Artefacts without a family'),
-                        'icon'    => ['icon' => 'fal fa-unlink', 'class' => 'text-amber-500'],
-                        'count'   => $production->artefacts()->whereNull('artefact_family_id')->count(),
-                    ],
                 ],
             ],
         ];
