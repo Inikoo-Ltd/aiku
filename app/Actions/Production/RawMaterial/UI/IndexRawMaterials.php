@@ -21,6 +21,7 @@ use App\Http\Resources\Production\RawMaterialsResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Production\Production;
 use App\Models\Production\RawMaterial;
+use App\Models\Production\RecipeStepRawMaterial;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
@@ -87,7 +88,8 @@ class IndexRawMaterials extends OrgAction
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
-                $query->whereStartWith('raw_materials.code', $value);
+                $query->whereStartWith('raw_materials.code', $value)
+                    ->orWhereAnyWordStartWith('raw_materials.description', $value);
             });
         });
 
@@ -115,13 +117,29 @@ class IndexRawMaterials extends OrgAction
                     'raw_materials.id',
                     'productions.slug as production_slug',
                     'raw_materials.slug',
+                    'raw_materials.description',
+                    'raw_materials.type',
+                    'raw_materials.state',
+                    'raw_materials.unit',
+                    'raw_materials.unit_cost',
+                    'raw_materials.quantity_on_location',
+                    'raw_materials.stock_status',
+                    'currencies.code as currency_code',
                     'organisations.name as organisation_name',
                     'organisations.slug as organisation_slug',
                 ]
             )
+            ->selectSub(
+                RecipeStepRawMaterial::query()
+                    ->join('artefacts_manufacture_tasks', 'artefacts_manufacture_tasks.id', 'recipe_step_raw_materials.artefact_manufacture_task_id')
+                    ->whereColumn('recipe_step_raw_materials.raw_material_id', 'raw_materials.id')
+                    ->selectRaw('count(distinct artefacts_manufacture_tasks.artefact_id)'),
+                'number_artefacts'
+            )
             ->leftJoin('raw_material_stats', 'raw_material_stats.raw_material_id', 'raw_materials.id')
             ->leftJoin('productions', 'raw_materials.production_id', 'productions.id')
-            ->allowedSorts(['code'])
+            ->leftJoin('currencies', 'organisations.currency_id', 'currencies.id')
+            ->allowedSorts(['code', 'description', 'type', 'state', 'unit', 'unit_cost', 'quantity_on_location', 'stock_status'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -167,7 +185,15 @@ class IndexRawMaterials extends OrgAction
                         default => null
                     }
                 )
-                ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true);
+                ->column(key: 'state', label: '', canBeHidden: false, type: 'icon')
+                ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'description', label: __('Description'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'type', label: __('Type'), sortable: true)
+                ->column(key: 'unit', label: __('Unit'), sortable: true)
+                ->column(key: 'unit_cost', label: __('Unit cost'), sortable: true, type: 'currency', align: 'right')
+                ->column(key: 'quantity_on_location', label: __('On location'), sortable: true, type: 'number', align: 'right')
+                ->column(key: 'stock_status', label: __('Stock'), type: 'icon', align: 'center')
+                ->column(key: 'number_artefacts', label: __('Artefacts'), tooltip: __('Number of artefacts using this raw material'), type: 'number', align: 'right');
             if ($parent instanceof Group) {
                 $table->column(key: 'organisation_name', label: __('organisation'), canBeHidden: false, sortable: true, searchable: true)
                         ->column(key: 'shop_name', label: __('Shop'), canBeHidden: false, sortable: true, searchable: true);
@@ -192,6 +218,7 @@ class IndexRawMaterials extends OrgAction
                 ),
                 'title'       => __('Raw Materials'),
                 'pageHead'    => [
+                    'model'     => $this->parent instanceof Production ? __('Crafts') : '',
                     'title'     => __('Raw Materials'),
                     'icon'      => [
                         'icon'  => ['fal', 'fa-drone'],
