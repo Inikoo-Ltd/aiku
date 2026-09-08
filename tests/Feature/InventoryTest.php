@@ -2457,6 +2457,7 @@ function costFixStoreDelivery($group, $organisation, int $auroraDeliveryId, arra
             'state'             => 'placed',
             'data'              => '{}',
             'unit_quantity'     => $item['unit_quantity'],
+            'unit_quantity_placed' => $item['unit_quantity_placed'] ?? $item['unit_quantity'],
             'net_amount'        => $item['net_amount'],
             'org_net_amount'    => $item['org_net_amount'] ?? $item['net_amount'],
             'created_at'        => now(),
@@ -3089,12 +3090,33 @@ test('repair org stock movement cost prices per sko in organisation currency', f
         'org_net_amount' => 20,
     ]]);
 
+    [$partialStock, $partialLoc] = costFixStockInLocation($this->group, $this->organisation, 'CFPUT');
+
+    $partialMovement = StoreOrgStockMovement::make()->action($partialStock, $partialLoc, [
+        'type'     => OrgStockMovementTypeEnum::PURCHASE->value,
+        'quantity' => 40,
+    ]);
+    $partialMovement->update([
+        'org_amount'   => 320,
+        'cost_per_sku' => 8,
+        'note'         => 'received from <span onClick="change_view(\'delivery/15604\')">CF15604</span>',
+        'date'         => now()->subDays(20),
+    ]);
+    costFixStoreDelivery($this->group, $this->organisation, 15604, [[
+        'org_stock_id'         => $partialStock->id,
+        'unit_quantity'        => 100,
+        'unit_quantity_placed' => 40,
+        'net_amount'           => 800,
+        'org_net_amount'       => 80,
+    ]]);
+
     $this->artisan('org_stock_movement:repair_cost_from_stock_delivery_items', ['organisation' => $this->organisation->slug])
         ->assertExitCode(0);
 
     $movement->refresh();
     $noOrgAmountMovement->refresh();
     $nearParityMovement->refresh();
+    $partialMovement->refresh();
 
     expect((float) $movement->cost_per_sku)->toBe(0.8)
         ->and((float) $movement->org_amount)->toBe(48.0)
@@ -3103,5 +3125,7 @@ test('repair org stock movement cost prices per sko in organisation currency', f
         ->and($noOrgAmountMovement->cost_per_sku)->toBeNull()
         ->and((float) $noOrgAmountMovement->org_amount)->toBe(5000.0)
         ->and((float) $nearParityMovement->cost_per_sku)->toBe(1.0)
-        ->and((float) $nearParityMovement->org_amount)->toBe(20.0);
+        ->and((float) $nearParityMovement->org_amount)->toBe(20.0)
+        ->and((float) $partialMovement->cost_per_sku)->toBe(0.8)
+        ->and((float) $partialMovement->org_amount)->toBe(32.0);
 });

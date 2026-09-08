@@ -43,8 +43,10 @@ class RepairOrgStockMovementCostFromStockDeliveryItems
     /**
      * Deliveries arrive over several movements, so the delivery's SKOs are compared against all
      * of them together; comparing one movement against the whole delivery skipped every partial
-     * receipt. A total that still does not match means the two sides count different things and
-     * the delivery cannot price them.
+     * receipt. What is still being put away is compared on the quantity placed so far, since the
+     * rest has not been posted yet, while the cost still comes from the whole line. A total that
+     * does not match even then means the two sides count different things, which in practice is
+     * a stale packed_in on the org stock, and the delivery cannot price it.
      */
     public const float QUANTITY_RATIO_MIN = 0.5;
     public const float QUANTITY_RATIO_MAX = 2;
@@ -94,6 +96,7 @@ class RepairOrgStockMovementCostFromStockDeliveryItems
                     sdi.org_net_amount as delivery_amount,
                     sdi.net_amount     as delivery_supplier_amount,
                     sdi.unit_quantity / coalesce(nullif(os.packed_in, 0), 1) as delivery_quantity,
+                    nullif(sdi.unit_quantity_placed, 0) / coalesce(nullif(os.packed_in, 0), 1) as delivery_placed_quantity,
                     sd.reference      as delivery_reference,
                     sd.source_id      as delivery_source,
                     o.slug            as organisation_slug
@@ -141,7 +144,7 @@ class RepairOrgStockMovementCostFromStockDeliveryItems
         $fixable = [];
         $skipped = [];
         foreach ($flaggedRows as $row) {
-            $quantityRatio = $row->delivery_quantity / $row->delivery_movement_quantity;
+            $quantityRatio = ($row->delivery_placed_quantity ?? $row->delivery_quantity) / $row->delivery_movement_quantity;
             if ($quantityRatio >= self::QUANTITY_RATIO_MIN && $quantityRatio <= self::QUANTITY_RATIO_MAX) {
                 $fixable[] = $row;
             } else {
