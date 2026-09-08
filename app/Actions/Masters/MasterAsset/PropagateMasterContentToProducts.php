@@ -8,6 +8,7 @@
 namespace App\Actions\Masters\MasterAsset;
 
 use App\Actions\Catalogue\Product\UpdateProduct;
+use App\Models\Catalogue\Product;
 use App\Models\Helpers\Language;
 use App\Models\Masters\MasterAsset;
 use Lorisleiva\Actions\Concerns\AsObject;
@@ -42,25 +43,70 @@ class PropagateMasterContentToProducts
 
         $english = Language::where('code', 'en')->first();
 
-        foreach ($masterAsset->products()->with('shop')->get() as $product) {
-            $speaksMasterLanguage = $product->shop->language_id == $english->id;
+        foreach ($masterAsset->products()->with('shop.language')->get() as $product) {
+            if ($product->shop->language_id == $english->id) {
+                $this->writeMasterText($masterAsset, $product, $changedFields);
 
-            $dataToBeUpdated = [];
-            foreach ($changedFields as $field) {
-                if ($speaksMasterLanguage) {
-                    $dataToBeUpdated[$field] = $this->englishValue($masterAsset, $field);
-                    continue;
-                }
-
-                $dataToBeUpdated[self::REVIEW_FLAGS[$field]] = false;
+                continue;
             }
 
-            $dataToBeUpdated = array_filter($dataToBeUpdated, fn ($value) => $value !== null);
+            $this->flagForReview($masterAsset, $product, $changedFields);
+        }
+    }
 
-            if ($dataToBeUpdated) {
-                UpdateProduct::make()->action($product, $dataToBeUpdated);
+    /**
+     * @param array<int, string> $changedFields
+     */
+    private function writeMasterText(MasterAsset $masterAsset, Product $product, array $changedFields): void
+    {
+        $dataToBeUpdated = [];
+
+        foreach ($changedFields as $field) {
+            $dataToBeUpdated[$field] = $this->englishValue($masterAsset, $field);
+        }
+
+        $dataToBeUpdated = array_filter($dataToBeUpdated, fn ($value) => $value !== null);
+
+        if ($dataToBeUpdated) {
+            UpdateProduct::make()->action($product, $dataToBeUpdated);
+        }
+    }
+
+    /**
+     * The shop's visible text is left alone, but the translation map is still kept in step with
+     * the master for every OTHER language: those entries are the master's to fill, nobody edits
+     * them from the shop, and leaving them stale was how the previous propagation earned its
+     * keep. The shop's own locale is the one entry that is skipped, because that is the copy the
+     * shopkeeper wrote.
+     *
+     * Written straight to the row rather than through UpdateProduct: a review flag is not
+     * business data, and the full update pipeline would fire an audit event and re-run the asset
+     * sync on every child of every master text edit.
+     *
+     * @param array<int, string> $changedFields
+     */
+    private function flagForReview(MasterAsset $masterAsset, Product $product, array $changedFields): void
+    {
+        $shopLocale = $product->shop->language->code;
+        $attributes = [];
+
+        foreach ($changedFields as $field) {
+            $attributes[self::REVIEW_FLAGS[$field]] = false;
+
+            $masterTranslations = $masterAsset->getTranslations($field.'_i8n');
+            unset($masterTranslations[$shopLocale]);
+
+            if ($masterTranslations) {
+                $productTranslations = array_merge(
+                    $product->getTranslations($field.'_i8n'),
+                    $masterTranslations
+                );
+
+                $attributes[$field.'_i8n'] = json_encode($productTranslations);
             }
         }
+
+        $product->newQuery()->whereKey($product->id)->update($attributes);
     }
 
     /**

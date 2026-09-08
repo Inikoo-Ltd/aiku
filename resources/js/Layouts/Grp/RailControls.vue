@@ -12,6 +12,7 @@ import { layoutStructure } from "@/Composables/useLayoutStructure"
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faCircle } from '@fas'
 import { library } from '@fortawesome/fontawesome-svg-core'
+import ReturnCrmList from './ReturnCrmList.vue';
 import MasterUpdatedList from './MasterUpdatedList.vue';
 import ProductsNeedReviewList from './ProductsNeedReviewList.vue';
 import FaireSkippedList from './FaireSkippedList.vue';
@@ -62,6 +63,22 @@ const layout = inject('layout', layoutStructure)
                 </template>
                 <template #content="{ open, close }">
                     <WaitingCrmList :open="open" :close="close" />
+                </template>
+            </Popover>
+        </div>
+
+        <!-- Badge: CRM Return Items -->
+        <div v-if="layout?.crm_return_count > 0" class="relative flex items-center justify-center shrink-0" :class="layout.messagingSidebar.show ? '' : 'h-9 w-9'">
+            <Popover width="w-80" position="right-full mr-2 top-0">
+                <template #button="{ open }">
+                    <div :title="trans('Orders with returns')" class="relative bg-blue-300 text-blue-700 rounded-md w-8 h-8 flex items-center justify-center opacity-70 hover:opacity-100 cursor-pointer font-medium tabular-nums">
+                        <Transition name="spin-to-right"><span :key="layout?.crm_return_count"><span :class="layout?.crm_return_count > 99 ? 'text-xxs' : 'text-xs'">{{ layout?.crm_return_count > 99 ? '99+' : layout?.crm_return_count }}</span></span></Transition>
+                        <FontAwesomeIcon icon="fas fa-circle" class="absolute top-0 -right-0.5 text-blue-500 text-[5px] animate-ping" fixed-width aria-hidden="true" />
+                        <FontAwesomeIcon icon="fas fa-circle" class="absolute top-0 -right-0.5 text-blue-500 text-[5px]" fixed-width aria-hidden="true" />
+                    </div>
+                </template>
+                <template #content="{ open, close }">
+                    <ReturnCrmList :open="open" :close="close" />
                 </template>
             </Popover>
         </div>

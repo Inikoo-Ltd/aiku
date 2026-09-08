@@ -20,9 +20,9 @@ return new class () extends Migration {
         ];
 
         /**
-         * Touching only the rows that are not already true keeps this off the hot path of a
-         * deploy: the whole table is a couple of minutes of rewriting, the rows that actually
-         * carry a stale flag are a fraction of it.
+         * The flags were never written before this, so in practice every row is null and this
+         * rewrites the whole table - a couple of minutes on a dev copy. The predicate is kept
+         * so a re-run after the first deploy is cheap, not because the first one will be.
          */
         DB::table('products')->where(function ($query) use ($flags) {
             foreach ($flags as $flag) {

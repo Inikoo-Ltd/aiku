@@ -189,3 +189,23 @@ test('writing the shop text clears the review flag', function () {
     expect($this->product->refresh()->name)->toBe('levanduľové mydlo')
         ->and($this->product->is_name_reviewed)->toBeTrue();
 });
+
+test('a master translation reaches the shop map in every language but the shop own', function () {
+    $this->shop->updateQuietly(['language_id' => Language::where('code', 'sk')->first()->id]);
+
+    $this->product->setTranslation('name_i8n', 'sk', 'levanduľové mydlo')->save();
+
+    $this->masterAsset->setTranslation('name_i8n', 'en', 'lavender soap')
+        ->setTranslation('name_i8n', 'sk', 'strojové mydlo')
+        ->setTranslation('name_i8n', 'es', 'jabón de lavanda')
+        ->save();
+
+    UpdateMasterAsset::make()->action($this->masterAsset, ['name' => 'lavender soap']);
+
+    $product = $this->product->refresh();
+
+    expect($product->getTranslation('name_i8n', 'es'))->toBe('jabón de lavanda')
+        ->and($product->getTranslation('name_i8n', 'sk'))->toBe('levanduľové mydlo')
+        ->and($product->name)->not->toBe('lavender soap')
+        ->and($product->is_name_reviewed)->toBeFalse();
+});
