@@ -20,7 +20,7 @@ class MonitorWebpageUptime
 
     protected function handle(string $url): array
     {
-        $timeouts = [2, 5, 10];
+        $timeouts = [5, 10, 20];
         $isUp = false;
         $statusCode = null;
         $errorMessage = null;
@@ -45,6 +45,12 @@ class MonitorWebpageUptime
         if (!$isUp) {
             $latestDeployment = AppDeployment::latest()->first();
 
+            // ponytail: one failed sample is noise; alert only once the next check confirms it
+            $isConfirmedDown = WebsiteHealthLog::where('url', $url)
+                ->where('is_up', false)
+                ->where('created_at', '>', now()->subMinutes(6))
+                ->exists();
+
             WebsiteHealthLog::create([
                 'url'                  => $url,
                 'is_up'                => $isUp,
@@ -53,7 +59,9 @@ class MonitorWebpageUptime
                 'last_deployment_date' => $latestDeployment?->created_at,
             ]);
 
-            $this->notifyDiscord($url, $statusCode, $errorMessage);
+            if ($isConfirmedDown) {
+                $this->notifyDiscord($url, $statusCode, $errorMessage);
+            }
         }
 
         return [

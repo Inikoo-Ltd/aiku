@@ -16,6 +16,7 @@ use Illuminate\Support\Arr;
 trait WithGoogleAdsOAuth
 {
     use WithActionUpdate;
+    use WithGoogleAdsAccessToken;
 
     private const string GOOGLE_ADS_SCOPE = 'https://www.googleapis.com/auth/adwords';
 

@@ -228,6 +228,7 @@ class SubmitOrder extends OrgAction
                 ->select(['id', 'type', 'trigger_data', 'allowance_signature', 'name', 'trigger_type', 'trigger_id', 'offer_campaign_id'])
                 ->where('shop_id', $order->shop_id)
                 ->where('type', OfferTypeEnum::GIFT->value)
+                ->whereNull('deleted_at')
                 ->where('status', true)->get() as $giftOfferData
         ) {
             $triggerData = json_decode($giftOfferData->trigger_data, true);

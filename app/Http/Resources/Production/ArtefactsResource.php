@@ -8,6 +8,7 @@
 
 namespace App\Http\Resources\Production;
 
+use App\Enums\Production\Artefact\ArtefactStateEnum;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
@@ -24,6 +25,7 @@ class ArtefactsResource extends JsonResource
             'slug'    => $this->slug,
             'code'    => $this->code,
             'name'    => $this->name,
+            'state'   => $this->state ? ArtefactStateEnum::stateIcon()[$this->state instanceof ArtefactStateEnum ? $this->state->value : $this->state] : null,
             'artefact_family_name' => $this->artefact_family_name,
             'artefact_family_slug' => $this->artefact_family_slug,
             'tags'    => $this->whenLoaded('tags', fn () => $this->tags->pluck('name')),

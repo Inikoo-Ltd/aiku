@@ -57,6 +57,16 @@ class Audit extends \OwenIt\Auditing\Models\Audit
         return $this->connection ?? parent::getConnectionName();
     }
 
+    /**
+     * An archived audit is read from the archive database, which holds nothing but the audits
+     * table. Eloquent hands a relation's related model the parent's connection, so user and
+     * auditable would be looked for in the archive and blow up; related models keep their own.
+     */
+    protected function newRelatedInstance($class)
+    {
+        return new $class();
+    }
+
     protected function casts(): array
     {
         return [

@@ -10,6 +10,7 @@ import LinkIris from '@/Iris/Components/LinkIris.vue'
 import { router } from '@inertiajs/vue3'
 import { ProductCategoryMenu, ProductCategoryMenuSub } from '@/Composables/Iris/useMenu'
 import { getStyles } from '@/Composables/styles'
+import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import SidebarDesktopNavigation from './SidebarDesktopNavigation.vue'
 library.add(faChevronRight, faExternalLink)
 
@@ -83,6 +84,7 @@ const layout = inject('layout', retinaLayoutStructure)
 // Loading states for View all buttons
 const isLoadingProductCategory = ref(false)
 const isLoadingSubDepartment = ref(false)
+const loadingItemIndex = ref<number | null>(null)
 
 // Handle navigation with loading state
 const handleViewAllProductCategory = (url: string) => {
@@ -215,19 +217,24 @@ const borderWidth = computed(() => {
             <!-- Section: List additional links -->
             <div class="mb-8 ">
                 <div v-if="layout.iris.isSidebarLoading" class="flex flex-col gap-y-3 mb-3 pb-3">
-                    <div v-for="i in 2" class="w-full h-[1.9rem] skeleton" />
+                    <div v-for="i in 2" :key="`sk-link-${i}`" class="w-full h-[1.9rem] skeleton" />
                 </div>
 
                 <div v-else-if="props?.fieldValue?.additional_items?.items_list?.length" class="flex flex-col gap-y-3 pb-3 mb-3">
-                    <LinkIris v-for="item in props?.fieldValue?.additional_items?.items_list"
+                    <LinkIris v-for="(item, itemIndex) in props?.fieldValue?.additional_items?.items_list"
+                        :key="itemIndex"
                         :href="item?.url?.href ?? ''"
-                        class="flex gap-x-2 items-center py-1 hover:underline"
+                        class="flex items-center justify-between gap-x-2 py-1 hover:underline"
                         :type="item.url?.type"
                         :target="item.url?.target"
+                        @start="() => loadingItemIndex = itemIndex"
+                        @finish="() => loadingItemIndex = null"
                     >
-                        <FontAwesomeIcon :icon="item.icon" class="text-xl" fixed-width aria-hidden="true" />
-                        <div class="text-sm" v-html="item.text">
+                        <div class="flex items-center gap-x-2 min-w-0">
+                            <FontAwesomeIcon :icon="item.icon" class="text-xl" fixed-width aria-hidden="true" />
+                            <div class="text-sm" v-html="item.text" />
                         </div>
+                        <LoadingIcon v-if="loadingItemIndex === itemIndex" class="text-sm" />
                     </LinkIris>
                 </div>
             </div>

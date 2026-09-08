@@ -12,6 +12,7 @@ use App\Actions\OrgAction;
 use App\Actions\Overview\ShowGroupOverviewHub;
 use App\Actions\Production\Production\UI\ShowCraftsDashboard;
 use App\Enums\UI\Production\ArtefactsTabsEnum;
+use App\Enums\Production\Artefact\ArtefactStateEnum;
 use App\Http\Resources\Production\ArtefactsResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Production\Artefact;
@@ -78,12 +79,26 @@ class IndexArtefacts extends OrgAction
         return $this->handle(parent: $production, prefix: ArtefactsTabsEnum::ARTEFACTS->value);
     }
 
+    protected function getElementGroups(Group|Production|Organisation|ArtefactFamily $parent): array
+    {
+        return [
+            'state' => [
+                'label'    => __('State'),
+                'default'  => ArtefactStateEnum::IN_PROCESS->value.','.ArtefactStateEnum::ACTIVE->value,
+                'elements' => array_merge_recursive(ArtefactStateEnum::labels(), ArtefactStateEnum::count($parent)),
+                'engine'   => function ($query, $elements) {
+                    $query->whereIn('artefacts.state', $elements);
+                },
+            ],
+        ];
+    }
+
     public function handle(Group|Production|Organisation|ArtefactFamily $parent, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
-                $query->whereStartWith('artefacts.code', $value)
-                    ->whereWith('artefacts.name', $value);
+                $query->whereWith('artefacts.code', $value)
+                    ->orWhereWith('artefacts.name', $value);
             });
         });
 
@@ -108,7 +123,15 @@ class IndexArtefacts extends OrgAction
             $queryBuilder->where('artefacts.production_id', $parent->id);
         }
 
-
+        foreach ($this->getElementGroups($parent) as $key => $elementGroup) {
+            $queryBuilder->whereElementGroup(
+                key: $key,
+                allowedElements: array_keys($elementGroup['elements']),
+                engine: $elementGroup['engine'],
+                prefix: $prefix,
+                default: $elementGroup['default'] ?? null,
+            );
+        }
 
         return $queryBuilder
             ->defaultSort('artefacts.code')
@@ -117,6 +140,7 @@ class IndexArtefacts extends OrgAction
                     'artefacts.code',
                     'artefacts.id',
                     'artefacts.name',
+                    'artefacts.state',
                     'artefact_families.name as artefact_family_name',
                     'artefact_families.slug as artefact_family_slug',
                     'productions.slug as production_slug',
@@ -143,7 +167,7 @@ class IndexArtefacts extends OrgAction
         $parameters = [$production->organisation->slug, $production->slug];
 
         return [
-            'families'    => $production->artefactFamilies()->orderBy('name')->get(['id', 'name'])->map(fn ($family) => ['value' => $family->id, 'label' => $family->name])->all(),
+            'families_route' => ['name' => 'grp.json.production.artefact_families.index', 'parameters' => ['production' => $production->id]],
             'move_route'  => ['name' => 'grp.models.production.artefacts.move_to_family', 'parameters' => [$production->id]],
             'create_route' => ['name' => 'grp.org.productions.show.crafts.artefact_families.create', 'parameters' => $parameters],
         ];
@@ -180,6 +204,14 @@ class IndexArtefacts extends OrgAction
                     ->name($prefix)
                     ->pageName($prefix.'Page');
             }
+            foreach ($this->getElementGroups($parent) as $key => $elementGroup) {
+                $table->elementGroup(
+                    key: $key,
+                    label: $elementGroup['label'],
+                    elements: $elementGroup['elements'],
+                    default: $elementGroup['default'] ?? null,
+                );
+            }
             $table
                 ->withGlobalSearch()
                 ->withModelOperations($modelOperations)
@@ -212,6 +244,7 @@ class IndexArtefacts extends OrgAction
                         default => null
                     }
                 )
+                ->column(key: 'state', label: '', canBeHidden: false, type: 'icon')
                 ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'artefact_family_name', label: __('Family'), canBeHidden: false, sortable: true)
@@ -237,9 +270,10 @@ class IndexArtefacts extends OrgAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'       => __('artefacts'),
+                'title'       => __('Artefacts'),
                 'pageHead'    => [
-                    'title'     => __('artefacts'),
+                    'model'     => $this->parent instanceof Production ? __('Crafts') : null,
+                    'title'     => __('Artefacts'),
                     'icon'      => [
                         'icon'  => ['fal', 'fa-hamsa'],
                         'title' => __('Artefacts'),
@@ -254,7 +288,7 @@ class IndexArtefacts extends OrgAction
                                     'type'  => 'button',
                                     'style' => 'primary',
                                     'icon'  => ['fal', 'fa-upload'],
-                                    'label' => 'upload',
+                                    'label' => __('Upload'),
                                     // 'route' => [
                                     //     'name'       => 'grp.models.production.artefacts.upload',
                                     //     'parameters' => [
@@ -266,7 +300,7 @@ class IndexArtefacts extends OrgAction
 
                                     'type'  => 'button',
                                     'style' => 'create',
-                                    'label' => __('artefact'),
+                                    'label' => __('Artefact'),
                                     'route' => [
                                         'name'       => 'grp.org.productions.show.crafts.artefacts.create',
                                         'parameters' => $request->route()->originalParameters()

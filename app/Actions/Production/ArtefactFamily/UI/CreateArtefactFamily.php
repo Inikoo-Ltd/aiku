@@ -32,6 +32,7 @@ class CreateArtefactFamily extends OrgAction
                 'breadcrumbs' => $this->getBreadcrumbs($request->route()->originalParameters()),
                 'title'       => __('New artefact family'),
                 'pageHead'    => [
+                    'model'   => __('Create'),
                     'title'   => __('New artefact family'),
                     'actions' => [
                         [

@@ -28,6 +28,7 @@ library.add(faEnvelope, faUser, faAsterisk, faExclamationTriangle, faInfoCircle,
 const props = defineProps<{
   	requiresPhoneNumber: boolean,
 	countriesAddressData: {},
+	defaultCountryId?: number | null,
 	polls: [],
 	registerRoute: {
 		name: string,
@@ -278,6 +279,7 @@ const isUserInputPassed = (dataToCheck: {}) => {
 
 							<FieldStandaloneRegistration
 								:countriesAddressData
+								:defaultCountryId
 								:polls
 								:form
 								:requiresPhoneNumber="props.requiresPhoneNumber"

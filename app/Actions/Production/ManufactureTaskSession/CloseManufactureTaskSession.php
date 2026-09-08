@@ -8,6 +8,7 @@
 
 namespace App\Actions\Production\ManufactureTaskSession;
 
+use App\Actions\Production\JobOrderItemTask\UI\ShowManufactureFloor;
 use App\Actions\OrgAction;
 use App\Actions\Production\JobOrderItemTask\CalculateJobOrderItemTaskQuantities;
 use App\Enums\Production\ManufactureTaskSession\ManufactureTaskSessionActivityTypeEnum;
@@ -102,7 +103,12 @@ class CloseManufactureTaskSession extends OrgAction
         $this->manufactureTaskSession = $manufactureTaskSession;
         $this->initialisationFromProduction($manufactureTaskSession->production, $request);
 
-        return $this->handle($manufactureTaskSession, $this->validatedData);
+        $modelData = $this->validatedData;
+        if (!ShowManufactureFloor::canPickOpenJobs($request->user(), $manufactureTaskSession->production)) {
+            unset($modelData['quantity_rejected']);
+        }
+
+        return $this->handle($manufactureTaskSession, $modelData);
     }
 
     public function htmlResponse(): RedirectResponse

@@ -18,7 +18,6 @@ use App\Models\CRM\Customer;
 use App\Rules\IUnique;
 use App\Rules\Phone;
 use App\Rules\ValidAddress;
-use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
 use App\Traits\SanitizeInputs;
 
@@ -33,10 +32,6 @@ class UpdateRetinaCustomer extends RetinaAction
 
     public function handle(Customer $customer, array $modelData): Customer
     {
-        if ($taxValue = Arr::get($modelData, 'tax_number.value')) {
-            data_set($modelData, 'tax_number.number', $taxValue);
-        }
-
         return UpdateCustomer::run($customer, $modelData);
     }
 
@@ -60,6 +55,7 @@ class UpdateRetinaCustomer extends RetinaAction
             'tax_number',
         ]);
         $this->sanitizeInputs();
+        $this->prepareTaxNumberInput($request);
     }
 
     public function rules(): array

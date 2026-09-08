@@ -64,6 +64,7 @@ use App\Enums\Production\RawMaterial\RawMaterialStockStatusEnum;
 use App\Enums\Production\RawMaterial\RawMaterialTypeEnum;
 use App\Enums\Production\RawMaterial\RawMaterialUnitEnum;
 use App\Models\Analytics\AikuScopedSection;
+use App\Enums\Production\Artefact\ArtefactStateEnum;
 use App\Models\Production\Artefact;
 use App\Models\Production\JobOrder;
 use App\Models\Production\JobOrderItem;
@@ -607,7 +608,7 @@ test('UI edit artefact', function () {
 });
 
 test('UI Index production task', function () {
-    $response = $this->get(route('grp.org.productions.show.crafts.manufacture_tasks.index', [$this->organisation->slug, $this->production->slug]));
+    $response = $this->get(route('grp.org.productions.show.operations.manufacture_tasks.index', [$this->organisation->slug, $this->production->slug]));
 
     $response->assertInertia(function (AssertableInertia $page) {
         $page
@@ -619,7 +620,7 @@ test('UI Index production task', function () {
 });
 
 test('UI create production task', function () {
-    $response = get(route('grp.org.productions.show.crafts.manufacture_tasks.create', [$this->organisation->slug, $this->production->slug]));
+    $response = get(route('grp.org.productions.show.operations.manufacture_tasks.create', [$this->organisation->slug, $this->production->slug]));
     $response->assertInertia(function (AssertableInertia $page) {
         $page
             ->component('CreateModel')
@@ -628,7 +629,7 @@ test('UI create production task', function () {
 });
 
 test('UI show production task', function () {
-    $response = get(route('grp.org.productions.show.crafts.manufacture_tasks.show', [$this->organisation->slug, $this->production->slug, $this->manufactureTask->slug]));
+    $response = get(route('grp.org.productions.show.operations.manufacture_tasks.show', [$this->organisation->slug, $this->production->slug, $this->manufactureTask->slug]));
     $response->assertInertia(function (AssertableInertia $page) {
         $page
             ->component('Org/Production/ManufactureTask')
@@ -646,7 +647,7 @@ test('UI show production task', function () {
 });
 
 test('UI show production task (Artefacts tab)', function () {
-    $response = get(route('grp.org.productions.show.crafts.manufacture_tasks.show', [
+    $response = get(route('grp.org.productions.show.operations.manufacture_tasks.show', [
         $this->organisation->slug,
         $this->production->slug,
         $this->manufactureTask->slug,
@@ -669,7 +670,7 @@ test('UI show production task (Artefacts tab)', function () {
 });
 
 test('UI edit manufacture task', function () {
-    $response = get(route('grp.org.productions.show.crafts.manufacture_tasks.edit', [$this->organisation->slug, $this->production->slug, $this->manufactureTask->slug]));
+    $response = get(route('grp.org.productions.show.operations.manufacture_tasks.edit', [$this->organisation->slug, $this->production->slug, $this->manufactureTask->slug]));
     $response->assertInertia(function (AssertableInertia $page) {
         $page
             ->component('EditModel')
@@ -681,13 +682,13 @@ test('UI edit manufacture task', function () {
 });
 
 test('UI get section route craft index', function () {
-    $sectionScope = GetSectionRoute::make()->handle('grp.org.productions.show.crafts.manufacture_tasks.index', [
+    $sectionScope = GetSectionRoute::make()->handle('grp.org.productions.show.operations.manufacture_tasks.index', [
         'organisation' => $this->organisation->slug,
         'production'      => $this->production->slug
     ]);
     expect($sectionScope)->toBeInstanceOf(AikuScopedSection::class)
         ->and($sectionScope->organisation_id)->toBe($this->organisation->id)
-        ->and($sectionScope->code)->toBe(AikuSectionEnum::PRODUCTION_CRAFT->value)
+        ->and($sectionScope->code)->toBe(AikuSectionEnum::PRODUCTION_OPERATION->value)
         ->and($sectionScope->model_slug)->toBe($this->production->slug);
 });
 
@@ -894,12 +895,51 @@ test('floor shows job orders addressed to the worker first and the dashboard lis
         ->and($tasks->where('is_mine', true)->pluck('job_order_reference')->all())->toBe([$addressed->reference])
         ->and($tasks->where('is_mine', false)->pluck('job_order_reference'))->toContain($pool->reference);
 
-    $artisans = collect(get(route('grp.org.productions.show.operations.dashboard', [$this->organisation->slug, $this->production->slug]))
-        ->viewData('page')['props']['command_control']['artisans']);
+    $draft = StoreJobOrder::make()->action($this->production, ['employee_id' => $idle->id]);
+    StoreJobOrderItem::make()->action($draft, ['artefact_id' => $this->artefact->id, 'quantity' => 1]);
+
+    $artisans = collect(get(route('grp.org.productions.show.artisans.dashboard', [$this->organisation->slug, $this->production->slug]))
+        ->viewData('page')['props']['artisans']);
+
+    $filtered = get(route('grp.org.productions.show.operations.job-orders.index', [
+        $this->organisation->slug,
+        $this->production->slug,
+        'filter[employee_id]' => $idle->id,
+        'filter[state]'       => 'in_process',
+    ]))->viewData('page')['props']['data']['data'];
+    expect(collect($filtered)->pluck('reference')->all())->toBe([$draft->reference]);
 
     expect($artisans->firstWhere('id', $worker->id)['queued'])->toBe(1)
+        ->and($artisans->firstWhere('id', $worker->id)['assigned'])->toBe(0)
         ->and($artisans->firstWhere('id', $idle->id)['queued'])->toBe(0)
-        ->and($artisans->first()['queued'])->toBe(0);
+        ->and($artisans->firstWhere('id', $idle->id)['assigned'])->toBe(1);
+});
+
+test('UI show artisans dashboard', function () {
+    $response = get(route('grp.org.productions.show.artisans.dashboard', [
+        $this->organisation->slug,
+        $this->production->slug,
+    ]));
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('Org/Production/ArtisansDashboard')
+            ->has('artisans')
+            ->missing('payroll_export_route')
+            ->has('breadcrumbs', 3);
+    });
+});
+
+test('UI show manufacture payroll', function () {
+    $response = get(route('grp.org.productions.show.artisans.payroll', [
+        $this->organisation->slug,
+        $this->production->slug,
+    ]));
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('Org/Production/ManufacturePayroll')
+            ->has('payroll_export_route')
+            ->has('breadcrumbs', 4);
+    });
 });
 
 test('UI index job orders', function () {
@@ -933,7 +973,7 @@ test('UI show job order', function () {
 });
 
 test('payroll csv export aggregates closed sessions with snapshotted rates', function () {
-    $response = get(route('grp.org.productions.show.operations.payroll.export', [
+    $response = get(route('grp.org.productions.show.artisans.payroll.export', [
         $this->organisation->slug,
         $this->production->slug,
         'from' => now()->toDateString(),
@@ -981,7 +1021,7 @@ test('UI index artisans aggregates worker sessions', function () {
     $session = StartManufactureTaskSession::make()->action($this->guest->getUser(), $jobOrderItem->tasks()->first());
     CloseManufactureTaskSession::make()->action($session, ['quantity_made' => 5]);
 
-    $response = get(route('grp.org.productions.show.operations.artisans.index', [
+    $response = get(route('grp.org.productions.show.artisans.index', [
         $this->organisation->slug,
         $this->production->slug,
         'from' => now()->toDateString(),
@@ -2075,4 +2115,102 @@ test('aurora recipe quantities are divided by batch size exactly once', function
     $this->artisan('manufacture:normalise-aurora-recipes', ['production' => $this->production->slug, '--write' => true])->assertExitCode(0);
     expect((float)$step->rawMaterials()->first()->quantity_per_unit)->toBe(1.0)
         ->and($artefact->refresh()->data['recipe_quantities_normalised_at'])->not->toBeNull();
+});
+
+test('an operative only sees the factory jobs page and nothing group or commercial', function () {
+    SeedJobPositions::make()->handle($this->organisation);
+    $operativePosition = JobPosition::where('organisation_id', $this->organisation->id)->where('code', 'prod-c')->first();
+
+    $modelData                    = Employee::factory()->make(['organisation_id' => $this->organisation->id])->toArray();
+    $modelData['worker_number']   = 'W'.rand(1000, 9999);
+    $modelData['alias']           = 'Alias '.rand(1000, 9999);
+    $modelData['type']            = \App\Enums\HumanResources\Employee\EmployeeTypeEnum::EMPLOYEE;
+    $modelData['employment_type'] = \App\Enums\HumanResources\Employee\EmploymentTypeEnum::FULL_TIME;
+    $modelData['state']           = \App\Enums\HumanResources\Employee\EmployeeStateEnum::WORKING;
+    $modelData['username']        = 'operative'.rand(1000, 9999);
+    $modelData['password']        = 'secret-password';
+    $employee = StoreEmployee::make()->action($this->organisation, $modelData);
+    SyncEmployeeJobPositions::make()->handle($employee, [
+        $operativePosition->id => ['Production' => [$this->production->id]],
+    ]);
+    $user = $employee->users()->first()->refresh();
+
+    expect($user->hasGroupAccess())->toBeFalse()
+        ->and(array_keys(\App\Actions\UI\Grp\Layout\GetProductionNavigation::run($this->production, $user)))->toBe(['jobs'])
+        ->and(array_keys(\App\Actions\UI\Grp\Layout\GetOrganisationNavigation::run($user, $this->organisation)))
+        ->not->toContain('overview', 'chat', 'calendar_offers')
+        ->and(array_keys(\App\Actions\UI\Grp\Layout\GetProductionNavigation::run($this->production, $this->guest->getUser())))
+        ->toBe(['jobs', 'crafts', 'operations', 'partners', 'artisans']);
+
+    actingAs($user);
+    get(route('grp.dashboard.show'))->assertRedirect(route('grp.org.dashboard.show', $this->organisation->slug));
+    get(route('grp.org.dashboard.show', $this->organisation->slug))
+        ->assertRedirect(route('grp.org.productions.show.floor', [$this->organisation->slug, $this->production->slug]));
+    $this->artefact->manufactureTasks()->syncWithoutDetaching([
+        $this->manufactureTask->id => ['position' => 1, 'units_per_artefact' => 1],
+    ]);
+    $assigned = StoreJobOrder::make()->action($this->production, ['employee_id' => $employee->id]);
+    StoreJobOrderItem::make()->action($assigned, ['artefact_id' => $this->artefact->id, 'quantity' => 2]);
+    $pool = StoreJobOrder::make()->action($this->production, []);
+    StoreJobOrderItem::make()->action($pool, ['artefact_id' => $this->artefact->id, 'quantity' => 2]);
+    ConfirmJobOrder::make()->action($pool);
+
+    $props = get(route('grp.org.productions.show.floor', [$this->organisation->slug, $this->production->slug]))
+        ->assertOk()->viewData('page')['props'];
+    expect($props['can_pick_open_jobs'])->toBeFalse()
+        ->and(collect($props['tasks'])->pluck('job_order_reference')->all())->toBe([$assigned->reference]);
+
+    expect(fn () => StartManufactureTaskSession::make()->action($user, $pool->jobOrderItems()->first()->tasks()->first()))
+        ->toThrow(\Illuminate\Validation\ValidationException::class);
+    $session = StartManufactureTaskSession::make()->action($user, $assigned->jobOrderItems()->first()->tasks()->first());
+    expect($assigned->refresh()->state)->toBe(JobOrderStateEnum::CONFIRMED)
+        ->and(get(route('grp.org.productions.show.floor', [$this->organisation->slug, $this->production->slug]))
+            ->viewData('page')['props']['open_session']['can_reject'])->toBeFalse();
+    \Pest\Laravel\patch(route('grp.models.manufacture-task-session.close', $session->id), ['quantity_made' => 2, 'quantity_rejected' => 5])
+        ->assertRedirect();
+    expect((float) $session->refresh()->quantity_rejected)->toBe(0.0)
+        ->and((float) $session->quantity_made)->toBe(2.0);
+
+    get(route('grp.org.chat.dashboard', $this->organisation->slug))->assertForbidden();
+    get(route('grp.org.offer.calendar', $this->organisation->slug))->assertForbidden();
+    get(route('grp.org.overview.hub', $this->organisation->slug))->assertForbidden();
+    actingAs($this->guest->getUser());
+});
+
+test('artefacts with nothing sold in three years go dormant and wake up when they sell again', function () {
+    $repair = \App\Actions\Maintenance\Production\RepairDormantArtefacts::make();
+    $since  = now()->subMonths(36)->toDateTimeString();
+
+    $artefact = StoreArtefact::make()->action($this->production, ['code' => 'DORM-01', 'name' => 'Dormant candidate']);
+    $artefact->update(['state' => ArtefactStateEnum::ACTIVE]);
+    expect($repair->toPark($this->production, $since)->pluck('id')->all())->toContain($artefact->id);
+
+    $repair->handle($artefact, ArtefactStateEnum::DORMANT);
+    expect($artefact->refresh()->state)->toBe(ArtefactStateEnum::DORMANT)
+        ->and($repair->toWake($this->production, $since)->count())->toBe(0);
+
+    $made = StoreArtefact::make()->action($this->production, ['code' => 'DORM-02', 'name' => 'Made but never sold']);
+    $made->update(['state' => ArtefactStateEnum::ACTIVE]);
+    StoreJobOrderItem::make()->action(StoreJobOrder::make()->action($this->production, []), ['artefact_id' => $made->id, 'quantity' => 1]);
+    expect($repair->toPark($this->production, $since)->pluck('id')->all())->not->toContain($made->id);
+
+    list($organisation, $user, $shop) = createShop();
+    [, $product] = createProduct($shop);
+    $orgStock = $product->orgStocks()->first();
+    $artefact->update(['org_stock_id' => $orgStock->id]);
+
+    $invoice = \App\Actions\Accounting\Invoice\StoreInvoice::make()->action(createCustomer($shop), \App\Models\Accounting\Invoice::factory()->definition());
+    \App\Actions\Accounting\InvoiceTransaction\StoreInvoiceTransaction::make()->action($invoice, $product->historicAsset, [
+        'date'            => now(),
+        'tax_category_id' => $invoice->tax_category_id,
+        'quantity'        => 1,
+        'gross_amount'    => 10,
+        'net_amount'      => 10,
+    ]);
+
+    expect($repair->toWake($this->production, $since)->pluck('id')->all())->toBe([$artefact->id])
+        ->and($repair->toPark($this->production, $since)->pluck('id')->all())->not->toContain($artefact->id);
+
+    $this->artisan('repair:dormant_artefacts', ['production' => $this->production->slug, '--fix' => true])->assertExitCode(0);
+    expect($artefact->refresh()->state)->toBe(ArtefactStateEnum::ACTIVE);
 });

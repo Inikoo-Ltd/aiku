@@ -496,7 +496,7 @@ class Order extends Model implements HasMedia, Auditable
      */
     public function taxBreakdown(): array
     {
-        return $this->getOrderTaxBreakdown($this);
+        return $this->breakdownMatchingHeader($this->getOrderTaxBreakdown($this), $this);
     }
 
     public function dispatchedEmails(): MorphToMany

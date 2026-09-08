@@ -16,9 +16,9 @@ const props = defineProps<{
 
 function productionRoute(manufactureTask: {}) {
     switch (route().current()) {
-        case 'grp.org.productions.show.crafts.manufacture_tasks.index':
+        case 'grp.org.productions.show.operations.manufacture_tasks.index':
             return route(
-                'grp.org.productions.show.crafts.manufacture_tasks.show',
+                'grp.org.productions.show.operations.manufacture_tasks.show',
                 [route().params['organisation'], route().params['production'], manufactureTask.slug]);
     }
 }

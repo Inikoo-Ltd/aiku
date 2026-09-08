@@ -131,10 +131,7 @@ class FetchAuroraInvoices extends FetchAuroraAction
             $payment = $this->parsePayment($organisation->id.':'.$auroraData->{'Payment Key'});
 
             if ($payment) {
-                $modelHasPayments[$payment->id] = [
-                    'amount' => $payment->amount,
-                    'share'  => 1
-                ];
+                $modelHasPayments[$payment->id] = [];
             }
         }
 

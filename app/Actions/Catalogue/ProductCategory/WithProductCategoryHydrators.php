@@ -13,6 +13,8 @@ use App\Actions\Catalogue\ProductCategory\Hydrators\ProductCategoryHydrateFamili
 use App\Actions\Catalogue\ProductCategory\Hydrators\SubDepartmentHydrateSubDepartments;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateDepartments;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateFamilies;
+use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateFamiliesWithNoImage;
+use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateProductsWithMismatchFamily;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateSubDepartments;
 use App\Actions\Masters\MasterProductCategory\Hydrators\MasterDepartmentHydrateDepartments;
 use App\Actions\Masters\MasterProductCategory\Hydrators\MasterFamilyHydrateFamilies;
@@ -40,6 +42,8 @@ trait WithProductCategoryHydrators
             GroupHydrateFamilies::dispatch($productCategory->group)->delay($this->hydratorsDelay);
             OrganisationHydrateFamilies::dispatch($productCategory->organisation)->delay($this->hydratorsDelay);
             ShopHydrateFamilies::dispatch($productCategory->shop)->delay($this->hydratorsDelay);
+            ShopHydrateFamiliesWithNoImage::dispatch($productCategory->shop)->delay($this->hydratorsDelay);
+            ShopHydrateProductsWithMismatchFamily::dispatch($productCategory->shop)->delay($this->hydratorsDelay);
 
             if ($productCategory->parent) {
                 ProductCategoryHydrateFamilies::dispatch($productCategory->parent)->delay($this->hydratorsDelay);

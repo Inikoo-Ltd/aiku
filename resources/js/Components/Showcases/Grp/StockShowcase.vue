@@ -352,10 +352,9 @@ const saveBarcode = (value: string | null) => {
 
             <!-- Barcodes -->
             <div v-if="data.barcodes?.length"
-                class="mt-6 grid gap-y-3 gap-x-4 items-center"
-                style="grid-template-columns: auto auto auto auto 1fr;">
+                class="mt-6 grid grid-cols-1 gap-3 xl:grid-cols-[auto_auto_auto_auto_1fr] xl:items-center xl:gap-x-4 xl:gap-y-3">
                 <template v-for="barcode in data.barcodes" :key="barcode.level">
-                    <div class="contents">
+                    <div class="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-lg border border-gray-100 p-3 xl:contents">
                         <div class="w-12 shrink-0 text-sm font-medium uppercase tracking-wide text-gray-500"
                             v-tooltip="trans(barcode.label)">
                             {{ barcode.level === 'sko' ? ctrans('SKO') : ctrans('Unit') }}
@@ -365,15 +364,15 @@ const saveBarcode = (value: string | null) => {
                             :href="route(data.label_route.name, { ...data.label_route.parameters, level: barcode.level })"
                             target="_blank"
                             v-tooltip="ctrans('Open PDF label')"
-                            class="justify-self-start transition hover:opacity-60">
-                            <svg :id="'barcode-' + barcode.level" class="h-14"></svg>
+                            class="min-w-0 max-w-full justify-self-start transition hover:opacity-60">
+                            <svg :id="'barcode-' + barcode.level" class="h-14 max-w-full"></svg>
                         </a>
-                        <svg v-else-if="barcode.number" :id="'barcode-' + barcode.level" class="h-14 justify-self-start"></svg>
+                        <svg v-else-if="barcode.number" :id="'barcode-' + barcode.level" class="h-14 max-w-full justify-self-start"></svg>
 
                         <button
                             v-else-if="canEditBarcode(barcode)"
                             type="button"
-                            class="flex h-14 px-2 items-center justify-center gap-2 rounded-lg border-2 border-dashed border-gray-300 text-gray-400 transition hover:border-indigo-400 hover:text-indigo-500"
+                            class="flex h-14 max-w-full px-2 items-center justify-center gap-2 rounded-lg border-2 border-dashed border-gray-300 text-left text-sm text-gray-400 transition hover:border-indigo-400 hover:text-indigo-500"
                             @click="openBarcodeModal(barcode)">
                             <Icon :data="{ icon: 'fal fa-plus' }" />
                             {{ ctrans("Add barcode (type or scan it)") }}
@@ -393,28 +392,28 @@ const saveBarcode = (value: string | null) => {
 
                         <span v-if="formatWeight(barcode.weight)"
                             v-tooltip="barcode.level === 'sko' ? ctrans('Outer packing weight') : ctrans('Marketing weight (shown on website)')"
-                            class="inline-flex items-center gap-2 text-sm text-gray-700">
+                            class="inline-flex items-center gap-2 whitespace-nowrap text-sm text-gray-700">
                             <Icon :data="{ icon: 'fal fa-weight-hanging' }" class="w-4 shrink-0 text-gray-400" />
                             <span class="font-medium tabular-nums">{{ formatWeight(barcode.weight) }}</span>
                         </span>
-                        <span v-else class="text-sm text-gray-300">—</span>
+                        <span v-else class="hidden text-sm text-gray-300 xl:inline">—</span>
 
                         <span v-if="formatDimensions(barcode.dimensions)"
                             v-tooltip="ctrans('Dimensions (L × W × H)')"
-                            class="inline-flex items-center gap-2 text-sm text-gray-700 whitespace-nowrap">
+                            class="inline-flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-sm text-gray-700">
                             <Icon :data="{ icon: 'fal fa-ruler-combined' }" class="w-4 shrink-0 text-gray-400" />
-                            <span class="font-medium tabular-nums">{{ formatDimensions(barcode.dimensions) }}</span>
+                            <span class="whitespace-nowrap font-medium tabular-nums">{{ formatDimensions(barcode.dimensions) }}</span>
                             <span v-if="barcode.dimensions?.type"
                                 class="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium capitalize text-gray-500">
                                 {{ barcode.dimensions.type }}
                             </span>
                         </span>
                         <span v-else-if="barcode.warning"
-                            class="inline-flex items-start gap-2 text-xs leading-snug text-amber-700">
+                            class="inline-flex min-w-0 items-start gap-2 text-xs leading-snug text-amber-700">
                             <Icon :data="{ icon: 'fal fa-exclamation-triangle' }" class="w-4 shrink-0 mt-0.5 text-amber-500" />
                             <span>{{ barcode.warning }}</span>
                         </span>
-                        <span v-else class="text-sm text-gray-300">—</span>
+                        <span v-else class="hidden text-sm text-gray-300 xl:inline">—</span>
 
                     </div>
                 </template>

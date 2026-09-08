@@ -16,6 +16,7 @@ use App\Actions\Traits\WithTabsBox;
 use App\Enums\Dashboards\GroupDashboardSalesTableTabsEnum;
 use App\Enums\DateIntervals\DateIntervalEnum;
 use App\Models\SysAdmin\Group;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -120,9 +121,16 @@ class ShowGroupDashboard extends OrgAction
         );
     }
 
-    public function asController(ActionRequest $request): Response
+    public function asController(ActionRequest $request): Response|RedirectResponse
     {
         $group = group();
+
+        if (!$request->user()->hasGroupAccess()) {
+            $organisation = $request->user()->authorisedOrganisations()->first();
+            abort_unless($organisation, 403);
+
+            return redirect()->route('grp.org.dashboard.show', $organisation->slug);
+        }
 
         $this->initialisationFromGroup($group, $request);
 

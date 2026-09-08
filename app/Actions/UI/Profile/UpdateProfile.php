@@ -59,7 +59,10 @@ class UpdateProfile extends OrgAction
             }
         }
 
-        $user = $this->processProfileAvatar($modelData, $user);
+        $avatarBeforeUpdate = $user->image_id;
+        $user               = $this->processProfileAvatar($modelData, $user);
+        $avatarWasChanged   = $user->image_id !== $avatarBeforeUpdate;
+
         if (Arr::exists($modelData, 'app_theme')) {
             $appTheme                           = Arr::pull($modelData, 'app_theme');
             $modelData['settings']['app_theme'] = $appTheme;
@@ -84,8 +87,19 @@ class UpdateProfile extends OrgAction
         $user = $this->update($user, $modelData, ['settings']);
 
         $changes = $user->getChanges();
-        if (Arr::hasAny($changes, ['timezone_id', 'settings'])) {
+
+        /*
+         * The avatar is saved by SaveModelImage before the update above, so image_id never appears
+         * in getChanges() and has to be tracked on its own. Without the recache the cached first
+         * load props keep the old avatar_thumbnail for the rest of their TTL, and without
+         * reloadLayout the next Inertia request would not ship those props until a full page load.
+         */
+        if ($avatarWasChanged || Arr::hasAny($changes, ['timezone_id', 'settings'])) {
             BreakUserUiProps::run($user);
+        }
+
+        if ($avatarWasChanged) {
+            Session::put('reloadLayout', '1');
         }
 
         /*

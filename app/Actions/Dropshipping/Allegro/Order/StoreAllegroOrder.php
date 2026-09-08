@@ -48,7 +48,7 @@ class StoreAllegroOrder extends RetinaAction
 
         $orderData = [
             'customer_client_id'        => $customerClient->id,
-            'is_shipping_by_external'   => true,
+            'is_shipping_by_external'   => false,
             'platform_id'               => $customerSalesChannel->platform_id,
             'customer_sales_channel_id' => $allegroUser->customer_sales_channel_id,
             'platform_order_id'         => Arr::get($allegroOrders, 'id'),
