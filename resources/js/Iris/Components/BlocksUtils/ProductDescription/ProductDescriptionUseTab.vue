@@ -13,6 +13,7 @@ import {
 	type FamilyExtraDescriptionTabKey,
 } from "@/Iris/Components/BlocksUtils/FamilyExtraDescription2/tabVisibility"
 import { productMarketingMaterialRoute } from "@/Iris/Components/BlocksUtils/ProductDescription/marketingMaterialRoute"
+import { buildFaqPageJsonLd } from "@/Iris/Composables/useFaqStructuredData"
 
 const props = defineProps<{
 	fieldValue: any
@@ -21,6 +22,7 @@ const props = defineProps<{
 }>()
 
 const layout = inject("layout", {}) as any
+const webpageData = inject<any>("webpage_data", null)
 
 const tabsData = computed(() => props.fieldValue?.tabs ?? {})
 
@@ -112,6 +114,14 @@ const sectionStyle = computed(() => {
 })
 
 const isMobile = computed(() => props.screenType === "mobile")
+
+const faqJsonLd = computed(() =>
+	buildFaqPageJsonLd({
+		faqs: tabsData.value?.faq,
+		webpageData,
+		listId: props.fieldValue?.id ?? props.indexBlock,
+	})
+)
 </script>
 
 <template>
@@ -157,12 +167,15 @@ const isMobile = computed(() => props.screenType === "mobile")
 
 			<!-- CONTENT -->
 			 <div class="px-4 md:px-6  lg:px-8  2xl:px-10 ">
-				<component
-				:is="component(activeTab)"
-				:field-value="childFieldValue"
-				:screen-type="screenType"
-				:faqs="tabsData?.faq" />
+				<div v-for="tab in tabs" :key="tab.key" v-show="activeTab === tab.key">
+					<component
+					:is="component(tab.key)"
+					:field-value="childFieldValue"
+					:screen-type="screenType"
+					:faqs="tabsData?.faq" />
+				</div>
 
+				<component v-if="faqJsonLd" :is="'script'" type="application/ld+json" v-html="faqJsonLd" />
 			 </div>
 			
 		</div>
