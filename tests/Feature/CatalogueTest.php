@@ -1045,6 +1045,40 @@ test('repair command resyncs product ingredients and origin from trade units', f
         ->and($product->country_of_origin)->toBe('IDN');
 });
 
+test('a bundle combines its trade unit ingredients and shows no component dimensions', function () {
+    $shop = Shop::first() ?? StoreShop::make()->action($this->organisation, array_merge(Shop::factory()->definition(), ['type' => ShopTypeEnum::B2B->value]));
+    createProduct($shop);
+    $product = $shop->products()->orderBy('id')->first();
+
+    $bulb = $this->tradeUnit1;
+    $bulb->update(['marketing_ingredients' => 'Cotton, Spare Bulbs', 'marketing_dimensions' => ['width' => 5]]);
+
+    $lamp = $this->tradeUnit2;
+    $lamp->update(['marketing_ingredients' => 'Himalayan Salt, Cotton', 'marketing_dimensions' => ['width' => 20]]);
+
+    \App\Actions\Catalogue\Product\SyncProductTradeUnits::run($product, [
+        ['id' => $bulb->id, 'quantity' => 1],
+        ['id' => $lamp->id, 'quantity' => 1],
+    ]);
+    \App\Actions\Catalogue\Product\Hydrators\ProductHydrateMarketingIngredientsFromTradeUnits::run(Product::find($product->id));
+    \App\Actions\Catalogue\Product\Hydrators\ProductHydrateMarketingDimensionFromTradeUnits::run(Product::find($product->id));
+
+    $product = Product::find($product->id);
+    expect(explode(', ', $product->marketing_ingredients))
+        ->toHaveCount(3)
+        ->toContain('Cotton', 'Spare Bulbs', 'Himalayan Salt')
+        ->and($product->marketing_dimensions)->toBeEmpty();
+
+    Product::where('id', $product->id)->update(['marketing_dimensions' => json_encode(['width' => 5])]);
+    $product = Product::find($product->id);
+
+    expect(\App\Actions\Catalogue\Product\Hydrators\ProductHydrateMarketingDimensionFromTradeUnits::make()->cameFromOneOfSeveralTradeUnits($product))->toBeTrue();
+
+    \App\Actions\Catalogue\Product\RepairProductIngredientsAndOriginFromTradeUnits::make()->handle($shop->id);
+
+    expect(Product::find($product->id)->marketing_dimensions)->toBeNull();
+});
+
 test('bulk update product unit is scoped to shop', function () {
     $shop = Shop::first() ?? StoreShop::make()->action($this->organisation, array_merge(Shop::factory()->definition(), ['type' => ShopTypeEnum::B2B->value]));
     createProduct($shop);
