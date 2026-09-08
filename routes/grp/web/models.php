@@ -420,6 +420,11 @@ use App\Actions\Production\Artefact\DetachManufactureTaskFromArtefact;
 use App\Actions\Production\Artefact\DetachRawMaterialFromRecipeStep;
 use App\Actions\Production\Artefact\ImportArtefact;
 use App\Actions\Production\Artefact\MoveArtefactsToDepartment;
+use App\Actions\Production\Artefact\MoveArtefactsToFamily;
+use App\Actions\Production\ArtefactFamily\DeleteArtefactFamily;
+use App\Actions\Production\ArtefactFamily\MoveArtefactFamiliesToDepartment;
+use App\Actions\Production\ArtefactFamily\StoreArtefactFamily;
+use App\Actions\Production\ArtefactFamily\UpdateArtefactFamily;
 use App\Actions\Production\Artefact\StoreArtefact;
 use App\Actions\Production\Artefact\StoreArtefactComplianceItem;
 use App\Actions\Production\Artefact\UpdateArtefact;
@@ -1280,6 +1285,9 @@ Route::name('production.')->prefix('production/{production:id}')->group(function
     Route::patch('artefacts/{artefact:id}', UpdateArtefact::class)->name('artefacts.update');
     Route::post('artefact-departments', StoreArtefactDepartment::class)->name('artefact_departments.store');
     Route::post('artefacts/move-to-department', MoveArtefactsToDepartment::class)->name('artefacts.move_to_department');
+    Route::post('artefact-families', StoreArtefactFamily::class)->name('artefact_families.store');
+    Route::post('artefacts/move-to-family', MoveArtefactsToFamily::class)->name('artefacts.move_to_family');
+    Route::post('artefact-families/move-to-department', MoveArtefactFamiliesToDepartment::class)->name('artefact_families.move_to_department');
     Route::post('artefact-upload', ImportArtefact::class)->name('artefact.import');
 });
 
@@ -1439,6 +1447,8 @@ Route::name('model_has_content.')->prefix('model-has-content/{modelHasContent:id
 });
 
 Route::patch('artefact-department/{artefactDepartment:id}', UpdateArtefactDepartment::class)->name('artefact_department.update');
+Route::patch('artefact-family/{artefactFamily:id}', UpdateArtefactFamily::class)->name('artefact_family.update');
+Route::delete('artefact-family/{artefactFamily:id}', DeleteArtefactFamily::class)->name('artefact_family.delete');
 
 Route::name('artefact.')->prefix('artefact/{artefact:id}')->group(function () {
     Route::post('tags/store', [StoreTag::class, 'inArtefact'])->name('tags.store');

@@ -96,6 +96,7 @@ class Location extends Model implements Auditable
         'max_weight'      => 'decimal:3',
         'max_volume'      => 'decimal:4',
         'is_partially_empty' => 'boolean',
+        'is_goods_out'    => 'boolean',
         'fetched_at'      => 'datetime',
         'last_fetched_at' => 'datetime',
     ];

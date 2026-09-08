@@ -11,10 +11,12 @@ namespace App\Actions\Production\ArtefactDepartment\UI;
 use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\OrgAction;
 use App\Actions\Production\Artefact\UI\IndexArtefacts;
+use App\Actions\Production\ArtefactFamily\UI\IndexArtefactFamilies;
 use App\Actions\Production\Artisan\GetArtisanAssignmentProps;
 use App\Enums\UI\Production\ArtefactDepartmentTabsEnum;
 use App\Http\Resources\History\HistoryResource;
 use App\Http\Resources\Production\ArtefactDepartmentsResource;
+use App\Http\Resources\Production\ArtefactFamiliesResource;
 use App\Http\Resources\Production\ArtefactsResource;
 use App\Models\Production\ArtefactDepartment;
 use App\Models\Production\Production;
@@ -47,7 +49,7 @@ class ShowArtefactDepartment extends OrgAction
                 'title'       => $artefactDepartment->name,
                 'breadcrumbs' => $this->getBreadcrumbs($request->route()->originalParameters()),
                 'pageHead'    => [
-                    'icon'    => ['icon' => ['fal', 'fa-folder'], 'title' => __('Artefact department')],
+                    'icon'    => ['icon' => ['fal', 'fa-folder-tree'], 'title' => __('Artefact department')],
                     'model'   => __('Artefact department'),
                     'title'   => $artefactDepartment->name,
                     'afterTitle' => ['label' => $artefactDepartment->code],
@@ -63,6 +65,8 @@ class ShowArtefactDepartment extends OrgAction
                     ],
                 ],
                 'move_to_department' => IndexArtefacts::make()->getMoveToDepartmentProps($this->production, $this->canEdit),
+                'move_to_family'     => IndexArtefacts::make()->getMoveToFamilyProps($this->production, $this->canEdit),
+                'move_families_to_department' => IndexArtefactFamilies::make()->getMoveToDepartmentProps($this->production, $this->canEdit),
                 'artisans'       => GetArtisanAssignmentProps::run($artefactDepartment, $this->canEdit),
                 'tabs'        => [
                     'current'    => $this->tab,
@@ -71,11 +75,15 @@ class ShowArtefactDepartment extends OrgAction
                 ArtefactDepartmentTabsEnum::ARTEFACTS->value => $this->tab == ArtefactDepartmentTabsEnum::ARTEFACTS->value ?
                     fn () => ArtefactsResource::collection(IndexArtefacts::run($artefactDepartment, ArtefactDepartmentTabsEnum::ARTEFACTS->value))
                     : Inertia::optional(fn () => ArtefactsResource::collection(IndexArtefacts::run($artefactDepartment, ArtefactDepartmentTabsEnum::ARTEFACTS->value))),
+                ArtefactDepartmentTabsEnum::FAMILIES->value => $this->tab == ArtefactDepartmentTabsEnum::FAMILIES->value ?
+                    fn () => ArtefactFamiliesResource::collection(IndexArtefactFamilies::make()->inArtefactDepartment($this->production, $artefactDepartment, ArtefactDepartmentTabsEnum::FAMILIES->value))
+                    : Inertia::optional(fn () => ArtefactFamiliesResource::collection(IndexArtefactFamilies::make()->inArtefactDepartment($this->production, $artefactDepartment, ArtefactDepartmentTabsEnum::FAMILIES->value))),
                 ArtefactDepartmentTabsEnum::HISTORY->value => $this->tab == ArtefactDepartmentTabsEnum::HISTORY->value ?
                     fn () => HistoryResource::collection(IndexHistory::run($artefactDepartment, ArtefactDepartmentTabsEnum::HISTORY->value))
                     : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($artefactDepartment, ArtefactDepartmentTabsEnum::HISTORY->value))),
             ]
         )->table(IndexArtefacts::make()->tableStructure(parent: $artefactDepartment, prefix: ArtefactDepartmentTabsEnum::ARTEFACTS->value))
+            ->table(IndexArtefactFamilies::make()->tableStructure(parent: $artefactDepartment, prefix: ArtefactDepartmentTabsEnum::FAMILIES->value))
             ->table(IndexHistory::make()->tableStructure(prefix: ArtefactDepartmentTabsEnum::HISTORY->value));
     }
 
@@ -99,7 +107,7 @@ class ShowArtefactDepartment extends OrgAction
                             'parameters' => $routeParameters
                         ],
                         'label' => $artefactDepartment?->code,
-                        'icon'  => 'fal fa-folder',
+                        'icon'  => 'fal fa-folder-tree',
                     ],
                     'suffix' => $suffix
                 ],

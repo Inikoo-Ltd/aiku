@@ -9,6 +9,7 @@ import { Head } from "@inertiajs/vue3"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import Tabs from "@/Components/Navigation/Tabs.vue"
 import TableArtefacts from "@/Components/Tables/Grp/Org/Production/TableArtefacts.vue"
+import TableArtefactFamilies from "@/Components/Tables/Grp/Org/Production/TableArtefactFamilies.vue"
 import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue"
 import ArtisanAssignments from "@/Components/Production/ArtisanAssignments.vue"
 import { useTabChange } from "@/Composables/tab-change"
@@ -22,8 +23,11 @@ const props = defineProps<{
     pageHead: PageHeadingTypes
     tabs: TSTabs
     artefacts?: object
+    families?: object
     history?: object
     move_to_department?: object
+    move_to_family?: object
+    move_families_to_department?: object
     artisans: object
 }>()
 
@@ -32,8 +36,15 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 
 const component = computed(() => ({
     artefacts: TableArtefacts,
+    families: TableArtefactFamilies,
     history: TableHistories,
 }[currentTab.value]))
+
+const componentProps = computed(() => ({
+    artefacts: { moveToDepartment: props.move_to_department, moveToFamily: props.move_to_family },
+    families: { moveToDepartment: props.move_families_to_department },
+    history: {},
+}[currentTab.value] ?? {}))
 </script>
 
 <template>
@@ -41,5 +52,5 @@ const component = computed(() => ({
     <PageHeading :data="pageHead" />
     <ArtisanAssignments :data="artisans" />
     <Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" />
-    <component :is="component" :data="props[currentTab]" :tab="currentTab" :moveToDepartment="move_to_department" />
+    <component :is="component" :data="props[currentTab]" :tab="currentTab" v-bind="componentProps" />
 </template>

@@ -17,6 +17,7 @@ enum ArtefactDepartmentTabsEnum: string
     use HasTabs;
 
     case ARTEFACTS = 'artefacts';
+    case FAMILIES  = 'families';
     case HISTORY   = 'history';
 
     public function blueprint(): array
@@ -25,6 +26,10 @@ enum ArtefactDepartmentTabsEnum: string
             ArtefactDepartmentTabsEnum::ARTEFACTS => [
                 'title' => __('Artefacts'),
                 'icon'  => 'fal fa-hamsa',
+            ],
+            ArtefactDepartmentTabsEnum::FAMILIES => [
+                'title' => __('Families'),
+                'icon'  => 'fal fa-folder',
             ],
             ArtefactDepartmentTabsEnum::HISTORY => [
                 'align' => 'right',

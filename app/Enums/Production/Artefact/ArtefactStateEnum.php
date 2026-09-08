@@ -11,6 +11,7 @@ namespace App\Enums\Production\Artefact;
 use App\Enums\EnumHelperTrait;
 use App\Models\Production\Artefact;
 use App\Models\Production\ArtefactDepartment;
+use App\Models\Production\ArtefactFamily;
 use App\Models\Production\Production;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
@@ -60,12 +61,13 @@ enum ArtefactStateEnum: string
         ];
     }
 
-    public static function count(Group|Organisation|Production|ArtefactDepartment $parent): array
+    public static function count(Group|Organisation|Production|ArtefactDepartment|ArtefactFamily $parent): array
     {
         $column = match (true) {
             $parent instanceof Group          => 'group_id',
             $parent instanceof Organisation   => 'organisation_id',
             $parent instanceof ArtefactDepartment => 'artefact_department_id',
+            $parent instanceof ArtefactFamily => 'artefact_family_id',
             default                           => 'production_id',
         };
         $counts = Artefact::where($column, $parent->id)->groupBy('state')->selectRaw('state, count(*) as n')->pluck('n', 'state');

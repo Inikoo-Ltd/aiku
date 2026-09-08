@@ -91,6 +91,7 @@ trait WithDeliveryNoteItemUI
             DB::table('location_org_stocks')
                 ->join('locations', 'locations.id', '=', 'location_org_stocks.location_id')
                 ->whereColumn('location_org_stocks.org_stock_id', 'org_stocks.id')
+                ->where('locations.is_goods_out', false)
                 ->select([
                     'locations.id',
                     'locations.code',

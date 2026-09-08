@@ -85,6 +85,7 @@ test('neither master nor slave schedules register when both flags are disabled',
             [
                 'cloudflare:reload',
                 'comms:archive_dispatched_emails',
+                'google-ads:fetch-campaigns',
                 'horizon:snapshot',
                 'inventory:archive_stock_histories --dates=5',
                 'nightowl:prune',
@@ -92,6 +93,7 @@ test('neither master nor slave schedules register when both flags are disabled',
                 'prune-product-image-zips',
                 'prune-traffic-source-clicks',
                 'search:propose-synonyms',
+                'sync:customers-to-google-ads --all',
                 'traffic-source:collect-visits',
                 'traffic-source:fetch-meta-costs --days=2'
             ]

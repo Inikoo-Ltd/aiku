@@ -3210,6 +3210,134 @@ describe('partner shopping list', function () {
             ->and(PartnerShoppingListItem::find($taken->id))->not->toBeNull();
     });
 
+    test('pre-picked stock is walked to the partner goods out location and stops being available', function () {
+        $seller = $this->orgPartner->partner;
+
+        /* Its own shop and stock: the block's shared fixtures already carry pre-picked lines
+           for the shared product, which would fold into the same staging row. */
+        [, $product]    = createProduct(StoreShop::run($seller, Shop::factory()->definition()));
+        $sellerOrgStock = $product->orgStocks()->first();
+        $buyerOrgStock  = createOrgStocks($this->orgPartner->organisation, [$sellerOrgStock->stock])[0];
+
+        $item = StorePartnerShoppingListItem::make()->action($this->orgPartner, $buyerOrgStock, ['quantity' => 5]);
+        CherryPickPartnerShoppingListItems::make()->action($seller, [['id' => $item->id]]);
+
+        $warehouse = \App\Actions\Inventory\Warehouse\StoreWarehouse::make()->action($seller, \App\Models\Inventory\Warehouse::factory()->definition());
+        $source    = \App\Actions\Inventory\Location\StoreLocation::make()->action($warehouse, \App\Models\Inventory\Location::factory()->definition());
+        $goodsOut  = \App\Actions\Inventory\Location\StoreLocation::make()->action($warehouse, \App\Models\Inventory\Location::factory()->definition());
+        $goodsOut->update(['is_goods_out' => true]);
+
+        $sellerPartner = \App\Models\Procurement\OrgPartner::where('organisation_id', $seller->id)
+            ->where('partner_id', $this->orgPartner->organisation_id)
+            ->first()
+            ?? StoreOrgPartner::make()->action($seller, $this->orgPartner->organisation);
+        $sellerPartner->update(['goods_out_location_id' => $goodsOut->id]);
+
+        $sourceSlot = \App\Actions\Inventory\LocationOrgStock\StoreLocationOrgStock::make()->action($sellerOrgStock, $source, [
+            'type' => \App\Enums\Inventory\LocationStock\LocationStockTypeEnum::PICKING,
+        ]);
+        \App\Actions\Inventory\LocationOrgStock\UpdateLocationOrgStock::make()->action($sourceSlot, ['quantity' => 500]);
+        $sourceSlot->refresh();
+
+        $task = collect(\App\Actions\Dispatching\PartnerStaging\GetPartnerStagingTasks::run($warehouse))
+            ->firstWhere('org_stock_id', $sellerOrgStock->id);
+        expect($task)->not->toBeNull()
+            ->and((float) $task['quantity_staged'])->toBe(0.0)
+            ->and((float) $task['quantity_to_move'])->toBeGreaterThanOrEqual(5.0)
+            ->and($task['from_locations'])->not->toBeEmpty();
+
+        $toMove          = (float) $task['quantity_to_move'];
+        $availableBefore = (float) $sellerOrgStock->fresh()->quantity_available;
+        $inLocations     = (float) $sellerOrgStock->fresh()->quantity_in_locations;
+
+        \App\Actions\Dispatching\PartnerStaging\StagePartnerStock::make()->action($warehouse, $sourceSlot, $sellerPartner, $toMove);
+
+        $sellerOrgStock->refresh();
+        expect((float) $sellerOrgStock->quantity_in_locations)->toBe($inLocations)
+            ->and((float) $sellerOrgStock->quantity_available)->toBe($availableBefore - $toMove)
+            ->and(collect(\App\Actions\Dispatching\PartnerStaging\GetPartnerStagingTasks::run($warehouse))->firstWhere('org_stock_id', $sellerOrgStock->id))->toBeNull();
+    });
+
+    test('staging refuses a partner with no goods out location and more stock than the shelf holds', function () {
+        $seller         = $this->orgPartner->partner;
+        $sellerOrgStock = $this->sellerProduct->orgStocks()->first();
+
+        $warehouse = \App\Actions\Inventory\Warehouse\StoreWarehouse::make()->action($seller, \App\Models\Inventory\Warehouse::factory()->definition());
+        $source    = \App\Actions\Inventory\Location\StoreLocation::make()->action($warehouse, \App\Models\Inventory\Location::factory()->definition());
+        $slot      = \App\Actions\Inventory\LocationOrgStock\StoreLocationOrgStock::make()->action($sellerOrgStock, $source, [
+            'type' => \App\Enums\Inventory\LocationStock\LocationStockTypeEnum::PICKING,
+        ]);
+        \App\Actions\Inventory\LocationOrgStock\UpdateLocationOrgStock::make()->action($slot, ['quantity' => 3]);
+        $slot->refresh();
+
+        $sellerPartner = \App\Models\Procurement\OrgPartner::where('organisation_id', $seller->id)
+            ->where('partner_id', $this->orgPartner->organisation_id)
+            ->first()
+            ?? StoreOrgPartner::make()->action($seller, $this->orgPartner->organisation);
+        $sellerPartner->update(['goods_out_location_id' => null]);
+
+        expect(fn () => \App\Actions\Dispatching\PartnerStaging\StagePartnerStock::make()->action($warehouse, $slot, $sellerPartner, 1))
+            ->toThrow(\Illuminate\Validation\ValidationException::class);
+
+        $goodsOut = \App\Actions\Inventory\Location\StoreLocation::make()->action($warehouse, \App\Models\Inventory\Location::factory()->definition());
+        $goodsOut->update(['is_goods_out' => true]);
+        $sellerPartner->update(['goods_out_location_id' => $goodsOut->id]);
+
+        expect(fn () => \App\Actions\Dispatching\PartnerStaging\StagePartnerStock::make()->action($warehouse, $slot, $sellerPartner, 99))
+            ->toThrow(\Illuminate\Validation\ValidationException::class);
+    });
+
+    test('the pre-pick tab only shows once the organisation has a partner goods out location', function () {
+        $seller    = $this->orgPartner->partner;
+        $warehouse = \App\Actions\Inventory\Warehouse\StoreWarehouse::make()->action($seller, \App\Models\Inventory\Warehouse::factory()->definition());
+
+        /* Every shop organisation is partnered with every other one, so the tab must key off
+           the goods out location, not off having partners. */
+        \App\Models\Procurement\OrgPartner::where('organisation_id', $seller->id)->update(['goods_out_location_id' => null]);
+
+        actingAs($this->adminGuest->getUser());
+        $tabsOf = fn () => get(route('grp.org.warehouses.show.dispatching.backlog', [$seller->slug, $warehouse->slug]))
+            ->assertOk()->viewData('page')['props']['tabs']['navigation'];
+
+        expect($tabsOf())->not->toHaveKey('partner_staging');
+
+        $goodsOut = \App\Actions\Inventory\Location\StoreLocation::make()->action($warehouse, \App\Models\Inventory\Location::factory()->definition());
+        $goodsOut->update(['is_goods_out' => true]);
+        \App\Models\Procurement\OrgPartner::where('organisation_id', $seller->id)
+            ->where('partner_id', $this->orgPartner->organisation_id)
+            ->update(['goods_out_location_id' => $goodsOut->id]);
+
+        expect($tabsOf())->toHaveKey('partner_staging');
+    });
+
+    test('the buyer sees how far its line has got', function () {
+        $seller = $this->orgPartner->partner;
+
+        [, $product]   = createProduct(StoreShop::run($seller, Shop::factory()->definition()));
+        $buyerOrgStock = createOrgStocks($this->orgPartner->organisation, [$product->orgStocks()->first()->stock])[0];
+        $item          = StorePartnerShoppingListItem::make()->action($this->orgPartner, $buyerOrgStock, ['quantity' => 4]);
+
+        actingAs($this->adminGuest->getUser());
+        $progressOf = function () use ($item) {
+            $rows = get(route('grp.org.procurement.org_partners.show.shopping_list.index', [$this->organisation->slug, $this->orgPartner->id]))
+                ->assertOk()->viewData('page')['props']['data']['data'];
+
+            return collect($rows)->firstWhere('id', $item->id)['progress']['label'] ?? null;
+        };
+
+        expect($progressOf())->toBe('Requested');
+
+        CherryPickPartnerShoppingListItems::make()->action($seller, [['id' => $item->id]]);
+
+        /* The block's shared intercompany basket may already carry a delivery note from an
+           earlier test, which is a later stage than the one under test here. */
+        \Illuminate\Support\Facades\DB::table('delivery_note_order')
+            ->where('order_id', $item->fresh()->transaction->order_id)
+            ->delete();
+
+        expect($progressOf())->toBe('Pre-picked');
+    });
+
 });
 
 describe('partner browse', function () {

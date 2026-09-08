@@ -10,8 +10,10 @@ namespace App\Actions\Production\Artefact;
 
 use App\Actions\OrgAction;
 use App\Actions\Production\ArtefactDepartment\Hydrators\ArtefactDepartmentHydrateArtefacts;
+use App\Actions\Production\ArtefactFamily\Hydrators\ArtefactFamilyHydrateArtefacts;
 use App\Models\Production\Artefact;
 use App\Models\Production\ArtefactDepartment;
+use App\Models\Production\ArtefactFamily;
 use App\Models\Production\Production;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Validation\Rule;
@@ -25,11 +27,19 @@ class MoveArtefactsToDepartment extends OrgAction
             ->whereIn('id', $modelData['artefacts'])
             ->get();
 
-        $touchedFamilyIds = $artefacts->pluck('artefact_department_id')->push($modelData['artefact_department_id'])->filter()->unique();
+        $touchedDepartments = $artefacts->pluck('artefact_department_id')->push($modelData['artefact_department_id'])->filter()->unique();
+        $touchedFamilies    = $artefacts->pluck('artefact_family_id')->filter()->unique();
 
         Artefact::whereIn('id', $artefacts->pluck('id'))->update(['artefact_department_id' => $modelData['artefact_department_id']]);
 
-        ArtefactDepartment::whereIn('id', $touchedFamilyIds)->each(fn (ArtefactDepartment $family) => ArtefactDepartmentHydrateArtefacts::run($family));
+        /* A family belongs to one department, so it cannot follow an artefact into another one. */
+        Artefact::whereIn('id', $artefacts->pluck('id'))
+            ->whereNotNull('artefact_family_id')
+            ->whereNotIn('artefact_family_id', ArtefactFamily::where('artefact_department_id', $modelData['artefact_department_id'])->select('id'))
+            ->update(['artefact_family_id' => null]);
+
+        ArtefactDepartment::whereIn('id', $touchedDepartments)->each(fn (ArtefactDepartment $department) => ArtefactDepartmentHydrateArtefacts::run($department));
+        ArtefactFamily::whereIn('id', $touchedFamilies)->each(fn (ArtefactFamily $family) => ArtefactFamilyHydrateArtefacts::run($family));
 
         return $artefacts->count();
     }

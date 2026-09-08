@@ -17,6 +17,7 @@ use App\Http\Resources\Production\ArtefactsResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Production\Artefact;
 use App\Models\Production\ArtefactDepartment;
+use App\Models\Production\ArtefactFamily;
 use App\Models\Production\Production;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
@@ -32,7 +33,7 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexArtefacts extends OrgAction
 {
-    protected Group|Production|Organisation|ArtefactDepartment $parent;
+    protected Group|Production|Organisation|ArtefactDepartment|ArtefactFamily $parent;
 
     public function authorize(ActionRequest $request): bool
     {
@@ -79,7 +80,7 @@ class IndexArtefacts extends OrgAction
         return $this->handle(parent: $production, prefix: ArtefactsTabsEnum::ARTEFACTS->value);
     }
 
-    protected function getElementGroups(Group|Production|Organisation|ArtefactDepartment $parent): array
+    protected function getElementGroups(Group|Production|Organisation|ArtefactDepartment|ArtefactFamily $parent): array
     {
         return [
             'state' => [
@@ -93,7 +94,7 @@ class IndexArtefacts extends OrgAction
         ];
     }
 
-    public function handle(Group|Production|Organisation|ArtefactDepartment $parent, $prefix = null): LengthAwarePaginator
+    public function handle(Group|Production|Organisation|ArtefactDepartment|ArtefactFamily $parent, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -119,6 +120,8 @@ class IndexArtefacts extends OrgAction
             $queryBuilder->where('artefacts.organisation_id', $parent->id);
         } elseif ($parent instanceof ArtefactDepartment) {
             $queryBuilder->where('artefacts.artefact_department_id', $parent->id);
+        } elseif ($parent instanceof ArtefactFamily) {
+            $queryBuilder->where('artefacts.artefact_family_id', $parent->id);
         } else {
             $queryBuilder->where('artefacts.production_id', $parent->id);
         }
@@ -143,6 +146,8 @@ class IndexArtefacts extends OrgAction
                     'artefacts.state',
                     'artefact_departments.name as artefact_department_name',
                     'artefact_departments.slug as artefact_department_slug',
+                    'artefact_families.name as artefact_family_name',
+                    'artefact_families.slug as artefact_family_slug',
                     'productions.slug as production_slug',
                     'artefacts.slug',
                     'organisations.name as organisation_name',
@@ -151,8 +156,9 @@ class IndexArtefacts extends OrgAction
             )
             ->leftJoin('artefact_stats', 'artefact_stats.artefact_id', 'artefacts.id')
             ->leftJoin('artefact_departments', 'artefacts.artefact_department_id', 'artefact_departments.id')
+            ->leftJoin('artefact_families', 'artefacts.artefact_family_id', 'artefact_families.id')
             ->leftJoin('productions', 'artefacts.production_id', 'productions.id')
-            ->allowedSorts(['code', 'name', 'artefact_department_name'])
+            ->allowedSorts(['code', 'name', 'artefact_department_name', 'artefact_family_name'])
             ->allowedFilters([$globalSearch, $tagFilter])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -173,17 +179,39 @@ class IndexArtefacts extends OrgAction
         ];
     }
 
+    public function getMoveToFamilyProps(Production $production, bool $canEdit): ?array
+    {
+        if (!$canEdit) {
+            return null;
+        }
+
+        $parameters = [$production->organisation->slug, $production->slug];
+
+        return [
+            'families_route' => ['name' => 'grp.json.production.artefact_families.index', 'parameters' => ['production' => $production->id]],
+            'move_route'     => ['name' => 'grp.models.production.artefacts.move_to_family', 'parameters' => [$production->id]],
+            'create_route'   => ['name' => 'grp.org.productions.show.crafts.artefact_families.create', 'parameters' => $parameters],
+        ];
+    }
+
     public function getArtefactsSubNavigation(Production $production): array
     {
         $parameters = [$production->organisation->slug, $production->slug];
 
         return [
             [
-                'label'    => __('Families'),
-                'leftIcon' => ['icon' => 'fal fa-folder', 'tooltip' => __('Artefact departments')],
+                'label'    => __('Departments'),
+                'leftIcon' => ['icon' => 'fal fa-folder-tree', 'tooltip' => __('Artefact departments')],
                 'root'     => 'grp.org.productions.show.crafts.artefact_departments.',
                 'route'    => ['name' => 'grp.org.productions.show.crafts.artefact_departments.index', 'parameters' => $parameters],
                 'number'   => $production->artefactDepartments()->count(),
+            ],
+            [
+                'label'    => __('Families'),
+                'leftIcon' => ['icon' => 'fal fa-folder', 'tooltip' => __('Artefact families')],
+                'root'     => 'grp.org.productions.show.crafts.artefact_families.',
+                'route'    => ['name' => 'grp.org.productions.show.crafts.artefact_families.index', 'parameters' => $parameters],
+                'number'   => $production->artefactFamilies()->count(),
             ],
             [
                 'label'    => __('All artefacts'),
@@ -196,7 +224,7 @@ class IndexArtefacts extends OrgAction
         ];
     }
 
-    public function tableStructure(Group|Production|Organisation|ArtefactDepartment $parent, ?array $modelOperations = null, $prefix = null, bool $canEdit = false): Closure
+    public function tableStructure(Group|Production|Organisation|ArtefactDepartment|ArtefactFamily $parent, ?array $modelOperations = null, $prefix = null, bool $canEdit = false): Closure
     {
         return function (InertiaTable $table) use ($parent, $modelOperations, $prefix, $canEdit) {
             if ($prefix) {
@@ -247,7 +275,8 @@ class IndexArtefacts extends OrgAction
                 ->column(key: 'state', label: '', canBeHidden: false, type: 'icon')
                 ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'artefact_department_name', label: __('Family'), canBeHidden: false, sortable: true)
+                ->column(key: 'artefact_department_name', label: __('Department'), canBeHidden: false, sortable: true)
+                ->column(key: 'artefact_family_name', label: __('Family'), canBeHidden: false, sortable: true)
                 ->column(key: 'tags', label: __('Tags'), canBeHidden: false);
             if ($parent instanceof Group) {
                 $table->column(key: 'organisation_name', label: __('organisation'), canBeHidden: false, sortable: true, searchable: true);
@@ -312,6 +341,7 @@ class IndexArtefacts extends OrgAction
                     ]
                 ],
                 'move_to_department' => $this->parent instanceof Production ? $this->getMoveToDepartmentProps($this->parent, $this->canEdit) : null,
+                'move_to_family'     => $this->parent instanceof Production ? $this->getMoveToFamilyProps($this->parent, $this->canEdit) : null,
                 'tabs'        => [
                     'current'    => $this->tab,
                     'navigation' => $this->parent instanceof Group ? Arr::except(ArtefactsTabsEnum::navigation(), [ArtefactsTabsEnum::ARTEFACTS_HISTORIES->value]) : ArtefactsTabsEnum::navigation(),

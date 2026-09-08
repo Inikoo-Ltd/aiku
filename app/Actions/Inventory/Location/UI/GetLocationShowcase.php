@@ -32,6 +32,7 @@ class GetLocationShowcase
                 'allow_stocks'       => $location->allow_stocks,
                 'allow_fulfilment'   => $location->allow_fulfilment,
                 'allow_dropshipping' => $location->allow_dropshipping,
+                'is_goods_out'       => $location->is_goods_out,
             ],
             'location' => [
                 'id'   => $location->id,
