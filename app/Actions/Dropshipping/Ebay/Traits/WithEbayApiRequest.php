@@ -10,6 +10,7 @@ namespace App\Actions\Dropshipping\Ebay\Traits;
 
 use App\Actions\Dropshipping\Ebay\UpdateEbayUser;
 use App\Exceptions\Dropshipping\Ebay\EbayApiException;
+use App\Helpers\NaturalLanguage;
 use App\Models\Catalogue\Product;
 use Exception;
 use Illuminate\Support\Arr;
@@ -28,6 +29,22 @@ trait WithEbayApiRequest
     public const int NEW_CONDITION_ID = 1000;
 
     public const int OFFER_LOOKUP_CHUNK = 25;
+
+    public const int ASPECT_VALUE_MAX_LENGTH = 65;
+
+    /**
+     * eBay reads its own placeholder as no answer at all, so it can never satisfy a required item specific
+     */
+    public const string UNSPECIFIED_ASPECT_VALUE = 'Not Specified';
+
+    public const string DEFAULT_BRAND = 'Ancient Wisdom';
+
+    public const float FALLBACK_DIMENSION_IN_METRES = 0.5;
+
+    /**
+     * Item specifics answered from the product itself, sent whether or not the category asks for them
+     */
+    public const array PRODUCT_ASPECTS = ['Brand', 'Country/Region of Manufacture', 'Material', 'EAN'];
 
     public function setTimeout(int $timeOut): void
     {
@@ -195,78 +212,226 @@ trait WithEbayApiRequest
         return !empty($displayErrors) ? $displayErrors : null;
     }
 
-    public function extractProductAttributes(Product $product, $categoryAspects)
+    /**
+     * The item specifics sent with the inventory item: every aspect the category requires, plus the ones
+     * the product itself can answer.
+     *
+     * @param  array<string, mixed>  $categoryAspects
+     * @return array<string, array<int, string>>
+     */
+    public function extractProductAttributes(Product $product, $categoryAspects): array
     {
-        $attributes = [];
-        $brand = $product->getBrand();
+        $aspectsByName = $this->aspectsByName($categoryAspects);
+        $attributes    = [];
 
-        // Get required aspects from a category
-        $requiredAspects = collect($categoryAspects['aspects'] ?? [])
-            ->filter(fn ($aspect) => $aspect['aspectConstraint']['aspectRequired'] ?? false);
+        foreach ($aspectsByName as $aspectName => $aspect) {
+            if (!Arr::get($aspect, 'aspectConstraint.aspectRequired', false)) {
+                continue;
+            }
 
-        foreach ($requiredAspects as $aspect) {
-            $aspectName = $aspect['localizedAspectName'];
+            $value = $this->pickAspectValue($aspect, $this->aspectCandidates($product, $aspectName, true));
 
-            // Map your product data to eBay aspects
-            switch ($aspectName) {
-                case 'Style':
-                    // Try to get from product attributes or use default
-                    $attributes['Style'] = $product->style ??
-                        $product->attributes['style'] ??
-                        ['Not Specified'];
-                    break;
-                case 'Department':
-                    $attributes['Department'] = ['Unisex Adults'];
-                    break;
-                case 'Item Height':
-                    $height = Arr::get($product->marketing_dimensions, 'h');
-                    $h = in_array($height, [null, 0]) ? 0.5 : $height;
-                    $attributes['Item Height'] = [$h * 100 . 'cm'];
-                    break;
-                case 'Item Width':
-                    $width = Arr::get($product->marketing_dimensions, 'w');
-                    $w = in_array($width, [null, 0]) ? 0.5 : $width;
-                    $attributes['Item Width'] = [$w * 100 . 'cm'];
-                    break;
-                case 'Item Length':
-                    $length = Arr::get($product->marketing_dimensions, 'l');
-                    $l = in_array($length, [null, 0]) ? 0.5 : $length;
-                    $attributes['Item Length'] = [$l * 100 . 'cm'];
-                    break;
-                default:
-                    // Use generic mapping or default value
-                    $attributes[$aspectName] = [$this->getDefaultValueForAspect($aspect)];
+            if ($value !== null) {
+                $attributes[$aspectName] = [$value];
             }
         }
 
-        $attributes['Brand'] = [$brand?->name ?? 'Ancient Wisdom'];
+        foreach (self::PRODUCT_ASPECTS as $aspectName) {
+            if (isset($attributes[$aspectName])) {
+                continue;
+            }
 
-        if ($product->country_of_origin) {
-            $attributes['Country/Region of Manufacture'] = [$product->country_of_origin];
-        }
+            $candidates = array_filter($this->aspectCandidates($product, $aspectName, false));
 
-        if ($product->marketing_ingredients) {
-            $attributes['Material'] = [Str::substr($product->marketing_ingredients, 0, 60)];
-        }
+            if (blank($candidates)) {
+                continue;
+            }
 
-        if ($product->barcode) {
-            $attributes['EAN'] = [$product->barcode];
+            $value = $this->pickAspectValue($aspectsByName[$aspectName] ?? [], $candidates);
+
+            if ($value !== null) {
+                $attributes[$aspectName] = [$value];
+            }
         }
 
         return $attributes;
     }
 
-    public function getDefaultValueForAspect($aspect)
+    /**
+     * A SELECTION_ONLY aspect only holds a value eBay itself lists: anything else is dropped, and the
+     * listing is then refused for an item specific that is missing.
+     *
+     * @param  array<string, mixed>  $aspect
+     * @param  array<int, mixed>  $candidates
+     */
+    public function pickAspectValue(array $aspect, array $candidates): ?string
     {
-        return Arr::get($aspect, 'aspectValues.0.localizedValue') ?? 'Not Specified';
+        $allowedValues = collect(Arr::get($aspect, 'aspectValues', []))
+            ->pluck('localizedValue')
+            ->filter(fn ($value) => is_string($value) && $value !== '')
+            ->values();
+
+        $selectionOnly = Arr::get($aspect, 'aspectConstraint.aspectMode') === 'SELECTION_ONLY' && $allowedValues->isNotEmpty();
+
+        foreach ($candidates as $candidate) {
+            $candidate = $this->sanitizeAspectValue($candidate);
+
+            if ($candidate === null) {
+                continue;
+            }
+
+            if (!$selectionOnly) {
+                return $candidate;
+            }
+
+            $allowedValue = $allowedValues->first(fn (string $value) => strcasecmp($value, $candidate) === 0);
+
+            if ($allowedValue !== null) {
+                return $allowedValue;
+            }
+        }
+
+        return $allowedValues->first();
     }
 
-    public function parseMissingAspects($errorMessage)
+    /**
+     * The values worth trying for an aspect, best first. Only a required aspect falls back to naming the
+     * product, since eBay will not publish without a value while an extra item specific can be left out.
+     *
+     * @return array<int, mixed>
+     */
+    private function aspectCandidates(Product $product, string $aspectName, bool $isRequired): array
     {
-        // Extract the aspect name from an error message
-        preg_match('/item specific (\w+)/', $errorMessage, $matches);
+        $candidates = match ($aspectName) {
+            'Brand'                                 => [$product->getBrand()?->name, self::DEFAULT_BRAND],
+            'Department'                            => ['Unisex Adults', 'Unisex Adult', 'Unisex'],
+            'EAN'                                   => [$product->barcode],
+            'MPN'                                   => [$product->code],
+            'Material', 'Exterior Material'         => [$product->marketing_ingredients],
+            'Country/Region of Manufacture'         => [$this->countryOfOriginName($product)],
+            'Item Height'                           => [$this->dimensionAspectValue($product, 'h')],
+            'Item Width'                            => [$this->dimensionAspectValue($product, 'w')],
+            'Item Length', 'Item Depth'             => [$this->dimensionAspectValue($product, 'l')],
+            default                                 => [],
+        };
 
-        return $matches[1] ?? null;
+        if ($isRequired) {
+            $candidates[] = $product->family?->name;
+            $candidates[] = $product->name;
+        }
+
+        return $candidates;
+    }
+
+    /**
+     * Marketing dimensions are held in metres, item specifics read in centimetres.
+     */
+    private function dimensionAspectValue(Product $product, string $dimension): string
+    {
+        $value = Arr::get($product->marketing_dimensions, $dimension);
+
+        if (!is_numeric($value) || (float) $value <= 0) {
+            $value = self::FALLBACK_DIMENSION_IN_METRES;
+        }
+
+        return round((float) $value * 100, 1).'cm';
+    }
+
+    /**
+     * eBay names the country in full, the product holds its three letter code
+     */
+    private function countryOfOriginName(Product $product): ?string
+    {
+        return Arr::get(NaturalLanguage::make()->country($product->country_of_origin), 'name');
+    }
+
+    private function sanitizeAspectValue(mixed $value): ?string
+    {
+        if (is_array($value)) {
+            $value = Arr::first(Arr::flatten($value));
+        }
+
+        if ($value === null) {
+            return null;
+        }
+
+        $value = trim((string) $value);
+
+        if ($value === '' || strcasecmp($value, self::UNSPECIFIED_ASPECT_VALUE) === 0) {
+            return null;
+        }
+
+        return Str::limit($value, self::ASPECT_VALUE_MAX_LENGTH, '');
+    }
+
+    /**
+     * @param  array<string, mixed>  $categoryAspects
+     * @return array<string, array<string, mixed>>
+     */
+    private function aspectsByName($categoryAspects): array
+    {
+        return collect(Arr::get($categoryAspects, 'aspects', []))
+            ->filter(fn ($aspect) => is_array($aspect) && filled(Arr::get($aspect, 'localizedAspectName')))
+            ->keyBy('localizedAspectName')
+            ->all();
+    }
+
+    /**
+     * The item specifics eBay refused to publish the listing without. eBay reports them one at a time and
+     * separates the name from the rest of the sentence with a non-breaking space.
+     *
+     * @return array<int, string>
+     */
+    public function parseMissingAspects(mixed $errorResponse): array
+    {
+        $errors = is_string($errorResponse) ? json_decode($errorResponse, true) : $errorResponse;
+
+        if (!is_array($errors)) {
+            return [];
+        }
+
+        $messages = collect(Arr::get($errors, 'errors', $errors))
+            ->map(fn ($error) => is_array($error) ? Arr::get($error, 'message') : $error)
+            ->push(Arr::get($errors, 'error'))
+            ->filter(fn ($message) => is_string($message));
+
+        $missingAspects = [];
+
+        foreach ($messages as $message) {
+            $message = str_replace(['\\u00a0', "\u{a0}"], ' ', $message);
+
+            if (preg_match('/item specific\s+(.+?)\s+is missing/ui', $message, $matches)) {
+                $missingAspects[] = trim($matches[1]);
+            }
+        }
+
+        return array_values(array_unique($missingAspects));
+    }
+
+    /**
+     * @param  array<string, mixed>  $categoryAspects
+     * @param  array<int, string>  $missingAspects
+     * @param  array<string, array<int, string>>  $aspects
+     * @return array<string, array<int, string>>
+     */
+    public function fillMissingAspects(Product $product, $categoryAspects, array $missingAspects, array $aspects): array
+    {
+        $aspectsByName = $this->aspectsByName($categoryAspects);
+
+        foreach ($missingAspects as $aspectName) {
+            $value = $this->pickAspectValue(
+                $aspectsByName[$aspectName] ?? [],
+                $this->aspectCandidates($product, $aspectName, true)
+            );
+
+            if ($value === null || ($aspects[$aspectName] ?? null) === [$value]) {
+                continue;
+            }
+
+            $aspects[$aspectName] = [$value];
+        }
+
+        return $aspects;
     }
 
     public function getFormattedDescriptions(string $description): string

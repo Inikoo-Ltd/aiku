@@ -12,10 +12,12 @@ namespace App\Actions\Dropshipping\Portfolio;
 use App\Actions\Dropshipping\CustomerSalesChannel\Hydrators\CustomerSalesChannelsHydratePortfolios;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
+use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Fulfilment\StoredItem;
 use Illuminate\Support\Arr;
+use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 
 class StoreMultiplePortfolios extends OrgAction
@@ -27,6 +29,12 @@ class StoreMultiplePortfolios extends OrgAction
      */
     public function handle(CustomerSalesChannel $customerSalesChannel, array $modelData): void
     {
+        if ($customerSalesChannel->status != CustomerSalesChannelStatusEnum::OPEN) {
+            throw ValidationException::withMessages([
+                'customer_sales_channel' => __('This channel has already been deleted, products can not be added to it.')
+            ]);
+        }
+
         foreach (Arr::get($modelData, 'items') as $itemID) {
             $itemID = (int)$itemID;
             if ($customerSalesChannel->customer->is_fulfilment) {

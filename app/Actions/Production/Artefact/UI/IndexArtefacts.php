@@ -103,6 +103,16 @@ class IndexArtefacts extends OrgAction
                     $this->applyAssignmentFilter($query, 'artefacts.artefact_department_id', $elements);
                 },
             ],
+            'batch_size' => [
+                'label'    => __('Batch size'),
+                'elements' => [
+                    'assigned'   => [__('With batch size'), $assignmentCounts['batch_size_assigned']],
+                    'unassigned' => [__('Without batch size'), $assignmentCounts['batch_size_unassigned']],
+                ],
+                'engine'   => function ($query, $elements) {
+                    $this->applyAssignmentFilter($query, 'artefacts.recommended_batch_size', $elements);
+                },
+            ],
             'family' => [
                 'label'    => __('Family'),
                 'elements' => [
@@ -117,7 +127,7 @@ class IndexArtefacts extends OrgAction
     }
 
     /**
-     * @return array{department_assigned: int, department_unassigned: int, family_assigned: int, family_unassigned: int}
+     * @return array{department_assigned: int, department_unassigned: int, family_assigned: int, family_unassigned: int, batch_size_assigned: int, batch_size_unassigned: int}
      */
     private function getAssignmentCounts(Group|Production|Organisation|ArtefactDepartment|ArtefactFamily $parent): array
     {
@@ -134,6 +144,8 @@ class IndexArtefacts extends OrgAction
             ->selectRaw('count(*) - count(artefact_department_id) as department_unassigned')
             ->selectRaw('count(artefact_family_id) as family_assigned')
             ->selectRaw('count(*) - count(artefact_family_id) as family_unassigned')
+            ->selectRaw('count(recommended_batch_size) as batch_size_assigned')
+            ->selectRaw('count(*) - count(recommended_batch_size) as batch_size_unassigned')
             ->first();
 
         return [
@@ -141,6 +153,8 @@ class IndexArtefacts extends OrgAction
             'department_unassigned' => (int) $counts->department_unassigned,
             'family_assigned'       => (int) $counts->family_assigned,
             'family_unassigned'     => (int) $counts->family_unassigned,
+            'batch_size_assigned'   => (int) $counts->batch_size_assigned,
+            'batch_size_unassigned' => (int) $counts->batch_size_unassigned,
         ];
     }
 
@@ -205,6 +219,7 @@ class IndexArtefacts extends OrgAction
                     'artefacts.id',
                     'artefacts.name',
                     'artefacts.state',
+                    'artefacts.recommended_batch_size',
                     'artefact_departments.name as artefact_department_name',
                     'artefact_departments.slug as artefact_department_slug',
                     'artefact_families.name as artefact_family_name',
@@ -219,7 +234,7 @@ class IndexArtefacts extends OrgAction
             ->leftJoin('artefact_departments', 'artefacts.artefact_department_id', 'artefact_departments.id')
             ->leftJoin('artefact_families', 'artefacts.artefact_family_id', 'artefact_families.id')
             ->leftJoin('productions', 'artefacts.production_id', 'productions.id')
-            ->allowedSorts(['code', 'name', 'artefact_department_name', 'artefact_family_name'])
+            ->allowedSorts(['code', 'name', 'artefact_department_name', 'artefact_family_name', 'recommended_batch_size'])
             ->allowedFilters([$globalSearch, $tagFilter])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -338,6 +353,7 @@ class IndexArtefacts extends OrgAction
                 ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'artefact_department_name', label: __('Department'), canBeHidden: false, sortable: true)
                 ->column(key: 'artefact_family_name', label: __('Family'), canBeHidden: false, sortable: true)
+                ->column(key: 'recommended_batch_size', label: __('Batch'), canBeHidden: false, sortable: true, align: 'right')
                 ->column(key: 'tags', label: __('Tags'), canBeHidden: false);
             if ($parent instanceof Group) {
                 $table->column(key: 'organisation_name', label: __('organisation'), canBeHidden: false, sortable: true, searchable: true);

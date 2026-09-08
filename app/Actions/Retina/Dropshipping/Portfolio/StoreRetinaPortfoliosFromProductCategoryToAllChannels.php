@@ -12,6 +12,7 @@ namespace App\Actions\Retina\Dropshipping\Portfolio;
 use App\Actions\Dropshipping\Portfolio\StoreMultiplePortfolios;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
+use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\CRM\Customer;
 use Illuminate\Support\Facades\DB;
@@ -26,7 +27,11 @@ class StoreRetinaPortfoliosFromProductCategoryToAllChannels extends RetinaAction
      */
     public function handle(Customer $customer, ProductCategory $productCategory): void
     {
-        foreach ($customer->customerSalesChannels as $customerSalesChannel) {
+        $customerSalesChannels = $customer->customerSalesChannels()
+            ->where('status', CustomerSalesChannelStatusEnum::OPEN)
+            ->get();
+
+        foreach ($customerSalesChannels as $customerSalesChannel) {
             $portfolios = $customerSalesChannel->portfolios->where('item_type', 'Product');
             $portfolioItemIds = $portfolios->pluck('item_id')->all();
 

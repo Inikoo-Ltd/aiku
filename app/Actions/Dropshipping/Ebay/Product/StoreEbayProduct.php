@@ -32,6 +32,8 @@ class StoreEbayProduct extends RetinaAction
 
     private const string FALLBACK_CATEGORY_ID = '29511';
 
+    private const int MAX_MISSING_ASPECT_ATTEMPTS = 3;
+
     /**
      * @throws \Exception
      */
@@ -271,7 +273,9 @@ class StoreEbayProduct extends RetinaAction
                 'sku' => Arr::get($inventoryItem, 'sku')
             ]);
 
-            $ebayUser->storeProduct($inventoryItem);
+            if ($handleError($ebayUser->storeProduct($inventoryItem))) {
+                return $portfolio;
+            }
 
             if (Arr::get($offerExist, 'offers.0')) {
                 $offer = Arr::get($offerExist, 'offers.0');
@@ -323,7 +327,13 @@ class StoreEbayProduct extends RetinaAction
                 return $portfolio;
             }
 
-            $publishedOffer = $ebayUser->publishListing(Arr::get($offer, 'offerId'));
+            [$publishedOffer, $inventoryItem] = $this->publishFillingMissingAspects(
+                $ebayUser,
+                $product,
+                $inventoryItem,
+                $categoryAspects,
+                Arr::get($offer, 'offerId')
+            );
 
             if ($handleError($publishedOffer)) {
                 return $portfolio;
@@ -334,7 +344,10 @@ class StoreEbayProduct extends RetinaAction
                 'platform_product_variant_id' => Arr::get($publishedOffer, 'listingId'),
                 'upload_warning' => null,
                 'errors_response' => null,
-                'data' => ['is_platform_draft' => false]
+                'data' => [
+                    'is_platform_draft' => false,
+                    'product' => ['aspects' => Arr::get($inventoryItem, 'product.aspects', [])]
+                ]
             ]);
 
             CheckEbayPortfolio::run($portfolio);
@@ -361,5 +374,42 @@ class StoreEbayProduct extends RetinaAction
             return $portfolio;
 
         }
+    }
+
+    /**
+     * eBay names one item specific per refused publish, and the taxonomy does not always flag every one of
+     * them as required, so the listing is retried with what eBay asked for until it publishes or asks for
+     * something the product cannot answer.
+     *
+     * @param  array<string, mixed>  $inventoryItem
+     * @param  array<string, mixed>  $categoryAspects
+     * @return array{0: mixed, 1: array<string, mixed>}
+     */
+    private function publishFillingMissingAspects(EbayUser $ebayUser, Product $product, array $inventoryItem, $categoryAspects, $offerId): array
+    {
+        $publishedOffer = $ebayUser->publishListing($offerId);
+
+        for ($attempt = 0; $attempt < self::MAX_MISSING_ASPECT_ATTEMPTS; $attempt++) {
+            $missingAspects = $ebayUser->parseMissingAspects($publishedOffer);
+
+            if (blank($missingAspects)) {
+                break;
+            }
+
+            $aspects = Arr::get($inventoryItem, 'product.aspects', []);
+            $filledAspects = $ebayUser->fillMissingAspects($product, $categoryAspects, $missingAspects, $aspects);
+
+            if ($filledAspects === $aspects) {
+                break;
+            }
+
+            data_set($inventoryItem, 'product.aspects', $filledAspects);
+
+            $ebayUser->storeProduct($inventoryItem);
+
+            $publishedOffer = $ebayUser->publishListing($offerId);
+        }
+
+        return [$publishedOffer, $inventoryItem];
     }
 }

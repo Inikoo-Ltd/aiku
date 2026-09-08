@@ -8,6 +8,7 @@
 
 namespace App\Http\Resources\Catalogue;
 
+use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
 use App\Http\Resources\HasSelfCall;
 use App\Http\Resources\Helpers\ImageResource;
 use App\Models\Catalogue\Product;
@@ -81,15 +82,20 @@ class IrisDropshippingLoggedInProductsInWebpageResource extends JsonResource
 
     public function checkExistInAllChannels(Customer $customer): bool
     {
-        // Get all available channels
-        $totalChannels = $customer->customerSalesChannels->count();
+        $openChannelIds = $customer->customerSalesChannels()
+            ->where('status', CustomerSalesChannelStatusEnum::OPEN)
+            ->pluck('id');
 
-        // Count how many portfolios this product has across all channels
+        if ($openChannelIds->isEmpty()) {
+            return false;
+        }
+
         $portfolioChannels = $customer->portfolios()->where('item_id', $this->id)
             ->where('item_type', class_basename(Product::class))
+            ->whereIn('customer_sales_channel_id', $openChannelIds)
             ->distinct('customer_sales_channel_id')
             ->count();
 
-        return $portfolioChannels === $totalChannels;
+        return $portfolioChannels === $openChannelIds->count();
     }
 }
