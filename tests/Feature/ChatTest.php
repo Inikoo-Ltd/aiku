@@ -90,6 +90,7 @@ use Illuminate\Validation\Rule;
 use Inertia\Testing\AssertableInertia;
 
 use function Pest\Laravel\actingAs;
+use function Pest\Laravel\getJson;
 use function Pest\Laravel\get;
 
 beforeAll(function () {
@@ -2640,4 +2641,18 @@ test('a claimed chat web user is recorded but honoured while enforcement is off'
     expect($chatSession->web_user_id)->toBe($victim->id);
     \Illuminate\Support\Facades\Log::shouldHaveReceived('warning')
         ->withArgs(fn ($message) => $message === 'Chat web user claimed without a matching login');
+});
+
+test('an agent queue can only be read by the agent it belongs to', function () {
+    actingAs($this->user);
+
+    $someoneElse = \App\Models\SysAdmin\User::where('id', '!=', $this->user->id)->firstOr(function () {
+        return \App\Models\SysAdmin\User::factory()->create(['group_id' => $this->user->group_id]);
+    });
+
+    getJson('/app/api/chats/users/'.$someoneElse->id.'/unread-messages')->assertForbidden();
+    getJson('/app/api/chats/users/'.$someoneElse->id.'/agent-notifications')->assertForbidden();
+
+    getJson('/app/api/chats/users/'.$this->user->id.'/unread-messages')->assertOk();
+    getJson('/app/api/chats/users/'.$this->user->id.'/agent-notifications')->assertOk();
 });
