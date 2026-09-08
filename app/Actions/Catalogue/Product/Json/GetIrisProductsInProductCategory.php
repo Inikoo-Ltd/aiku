@@ -43,6 +43,7 @@ class GetIrisProductsInProductCategory extends IrisAction
             $perPage = 250;
         } elseif ($productCategory->type == ProductCategoryTypeEnum::SUB_DEPARTMENT) {
             $queryBuilder->where('products.sub_department_id', $productCategory->id);
+            $perPage = 250;
         }
 
         // Section: Sort
