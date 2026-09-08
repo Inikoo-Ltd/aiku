@@ -26,6 +26,12 @@ use App\Actions\Helpers\Tag\Search\ReindexTagsSearch;
 use App\Actions\Masters\MasterAsset\Search\ReindexMasterAssetsSearch;
 use App\Actions\Masters\MasterCollection\Search\ReindexMasterCollectionsSearch;
 use App\Actions\Masters\MasterProductCategory\Search\ReindexMasterProductCategoriesSearch;
+use App\Actions\Production\Artefact\Search\ReindexArtefactsSearch;
+use App\Actions\Production\ArtefactDepartment\Search\ReindexArtefactDepartmentsSearch;
+use App\Actions\Production\ArtefactFamily\Search\ReindexArtefactFamiliesSearch;
+use App\Actions\Production\JobOrder\Search\ReindexJobOrdersSearch;
+use App\Actions\Production\ManufactureTask\Search\ReindexManufactureTasksSearch;
+use App\Actions\Production\RawMaterial\Search\ReindexRawMaterialsSearch;
 use App\Actions\Web\Webpage\Search\ReindexWebpagesSearch;
 use App\Actions\Catalogue\Collection\Search\ReindexCollectionSearch;
 use App\Actions\Catalogue\Product\Search\ReindexProductSearch;
@@ -325,6 +331,15 @@ class ReindexSearch extends HydrateModel
     protected function reindexProduction(Command $command): void
     {
         $command->info('Production section 🏭');
+        if ($command->option('reset')) {
+            $command->warn('Resetting search indexes');
+        }
+        ReindexArtefactDepartmentsSearch::run(reset: $command->option('reset'));
+        ReindexArtefactFamiliesSearch::run(reset: $command->option('reset'));
+        ReindexArtefactsSearch::run(reset: $command->option('reset'));
+        ReindexRawMaterialsSearch::run(reset: $command->option('reset'));
+        ReindexManufactureTasksSearch::run(reset: $command->option('reset'));
+        ReindexJobOrdersSearch::run(reset: $command->option('reset'));
     }
 
     protected function reindexWarehouse(Command $command): void
