@@ -533,6 +533,47 @@ test('retina api logs query string arguments', function () {
         ->and($logged->message)->toBe('Product not found');
 });
 
+test('retina api records but allows foreign records while enforcement is off', function () {
+    config()->set('app.enforce_api_ownership', false);
+
+    $otherOrder = StoreOrder::make()->action(
+        $this->fulfilmentCustomer,
+        ['reference' => 'shadow-mode-order']
+    );
+
+    Sanctum::actingAs($this->dropshippingChannel, ['retina', 'retina:read', 'retina:write']);
+
+    getJson(route('retina.api.dropshipping.order.show', $otherOrder->id))->assertOk();
+
+    $logged = \App\Models\CRM\RetinaApiRequest::where('customer_id', $this->dropshippingCustomer->id)
+        ->orderByDesc('id')->first();
+
+    expect($logged->message)->not->toBeNull()
+        ->and(str_contains($logged->message, 'is not owned by customer'))->toBeTrue();
+});
+
+test('retina api refuses a media file that belongs to nothing of the customers', function () {
+    config()->set('app.enforce_api_ownership', true);
+
+    $foreignMedia = \App\Models\Helpers\Media::create([
+        'group_id'   => $this->group->id,
+        'ulid'       => \Illuminate\Support\Str::ulid(),
+        'name'       => 'foreign',
+        'file_name'  => 'foreign.png',
+        'disk'       => 'public',
+        'collection_name' => 'default',
+        'size'       => 1,
+        'manipulations'   => [],
+        'custom_properties' => [],
+        'generated_conversions' => [],
+        'responsive_images'     => [],
+    ]);
+
+    Sanctum::actingAs($this->dropshippingChannel, ['retina', 'retina:read', 'retina:write']);
+
+    getJson(route('retina.api.dropshipping.images.show', $foreignMedia->id))->assertNotFound();
+});
+
 test('retina api images are scoped to the calling customer', function () {
     $otherPortfolio = \App\Actions\Dropshipping\Portfolio\StorePortfolio::make()->action(
         $this->fulfilmentChannel,
@@ -663,6 +704,8 @@ test('a paid order that fails to submit raises an alert', function () {
 });
 
 test('retina api refuses route bound records belonging to another customer', function () {
+    config()->set('app.enforce_api_ownership', true);
+
     $otherOrder = StoreOrder::make()->action(
         $this->fulfilmentCustomer,
         ['reference' => 'other-customer-order']

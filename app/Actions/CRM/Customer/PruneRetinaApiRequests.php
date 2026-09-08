@@ -35,28 +35,29 @@ class PruneRetinaApiRequests
      */
     protected function capPerCustomer(): void
     {
-        DB::table('retina_api_requests')
+        // The ids are read in full first: deleting rows changes which customers are over the cap,
+        // so paging through the grouped query would step over every second batch.
+        $customerIds = DB::table('retina_api_requests')
             ->select('customer_id')
             ->groupBy('customer_id')
             ->havingRaw('COUNT(*) > ?', [self::CAP_PER_CUSTOMER])
-            ->orderBy('customer_id')
-            ->chunk(200, function ($customers) {
-                foreach ($customers as $customer) {
-                    $cutoffId = DB::table('retina_api_requests')
-                        ->where('customer_id', $customer->customer_id)
-                        ->orderByDesc('id')
-                        ->skip(self::CAP_PER_CUSTOMER)
-                        ->take(1)
-                        ->value('id');
+            ->pluck('customer_id');
 
-                    if ($cutoffId) {
-                        DB::table('retina_api_requests')
-                            ->where('customer_id', $customer->customer_id)
-                            ->where('id', '<=', $cutoffId)
-                            ->delete();
-                    }
-                }
-            });
+        foreach ($customerIds as $customerId) {
+            $cutoffId = DB::table('retina_api_requests')
+                ->where('customer_id', $customerId)
+                ->orderByDesc('id')
+                ->skip(self::CAP_PER_CUSTOMER)
+                ->take(1)
+                ->value('id');
+
+            if ($cutoffId) {
+                DB::table('retina_api_requests')
+                    ->where('customer_id', $customerId)
+                    ->where('id', '<=', $cutoffId)
+                    ->delete();
+            }
+        }
     }
 
     public function getCommandSignature(): string

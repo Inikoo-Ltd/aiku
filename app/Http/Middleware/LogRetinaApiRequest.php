@@ -96,10 +96,10 @@ class LogRetinaApiRequest
             'route_name'               => $request->route()?->getName(),
             'method'                   => $request->method(),
             'path'                     => mb_substr($request->path(), 0, 255),
-            'route_parameters'         => $this->redact(array_merge($request->route()?->originalParameters() ?? [], $request->query())),
+            'route_parameters'         => $this->truncate($this->redact(array_merge($request->route()?->originalParameters() ?? [], $request->query()))),
             'payload'                  => $this->payload($request),
             'status'                   => $status,
-            'message'                  => $status >= 400 ? $this->message($decoded) : null,
+            'message'                  => $this->violations($request, $status >= 400 ? $this->message($decoded) : null),
             'response_id'              => $status < 400 && is_array($decoded) ? $this->responseId($decoded) : null,
             'duration_ms'              => (int) ((microtime(true) - $request->attributes->get('retina_api_request_start', microtime(true))) * 1000),
             'ip'                       => $request->ip(),
@@ -124,11 +124,7 @@ class LogRetinaApiRequest
 
         $payload = $this->redact($payload);
 
-        if (mb_strlen((string) json_encode($payload)) > self::MAX_PAYLOAD_CHARS) {
-            return ['_truncated' => mb_substr((string) json_encode($payload), 0, self::MAX_PAYLOAD_CHARS)];
-        }
-
-        return $payload;
+        return $this->truncate($payload);
     }
 
     /**
@@ -143,12 +139,51 @@ class LogRetinaApiRequest
                 continue;
             }
 
-            if (in_array(mb_strtolower((string) $key), self::REDACTED_KEYS, true)) {
+            if (in_array(mb_strtolower((string) $key), self::REDACTED_KEYS, true) || $this->looksLikeToken($value)) {
                 $payload[$key] = '***';
             }
         }
 
         return $payload;
+    }
+
+    /**
+     * A key blocklist cannot catch a token sent under a name nobody thought of, so anything
+     * shaped like a Sanctum token is masked whatever it is called.
+     */
+    protected function looksLikeToken(mixed $value): bool
+    {
+        return is_string($value) && preg_match('/^\d+\|[A-Za-z0-9]{40}$/', $value) === 1;
+    }
+
+    /**
+     * @param  array<array-key, mixed>  $values
+     * @return array<array-key, mixed>
+     */
+    protected function truncate(array $values): array
+    {
+        $encoded = (string) json_encode($values);
+
+        if (mb_strlen($encoded) <= self::MAX_PAYLOAD_CHARS) {
+            return $values;
+        }
+
+        return ['_truncated' => mb_substr($encoded, 0, self::MAX_PAYLOAD_CHARS)];
+    }
+
+    /**
+     * Ownership violations recorded while enforcement is off travel alongside the response
+     * message rather than replacing it, so a call that also failed for its own reason keeps it.
+     */
+    protected function violations(Request $request, ?string $message): ?string
+    {
+        $violations = $request->attributes->get('retina_api_ownership_violations', []);
+
+        if (!$violations) {
+            return $message;
+        }
+
+        return mb_substr(trim(implode('; ', $violations).($message ? ' | '.$message : '')), 0, 2000);
     }
 
     protected function message(mixed $decoded): ?string
