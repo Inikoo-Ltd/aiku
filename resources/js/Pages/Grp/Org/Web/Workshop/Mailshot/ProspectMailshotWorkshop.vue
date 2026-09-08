@@ -18,10 +18,11 @@ import "@vueform/multiselect/themes/default.css"
 import Tag from '@/Components/Tag.vue'
 import { PageHeadingTypes } from "@/types/PageHeading";
 import { library } from '@fortawesome/fontawesome-svg-core'
-import { faArrowAltToTop, faArrowAltToBottom, faTh, faBrowser, faCube, faPalette, faCheeseburger, faDraftingCompass, faWindow, faPaperPlane, faPlus, faExclamationTriangle, faSyncAlt } from '@fal'
+import { faArrowAltToTop, faArrowAltToBottom, faTh, faBrowser, faCube, faPalette, faCheeseburger, faDraftingCompass, faWindow, faPaperPlane, faPlus, faExclamationTriangle, faSyncAlt, faLink } from '@fal'
 import { faUserCog } from '@fas'
 import MailshotJourney from '@/Components/Navigation/MailshotJourney.vue'
 import MailshotSubjectEdit from '@/Components/Workshop/Mailshot/MailshotSubjectEdit.vue'
+import MailshotUtmLinks from '@/Components/Workshop/Mailshot/MailshotUtmLinks.vue'
 import Tabs from "@/Components/Navigation/Tabs.vue";
 import Modal from '@/Components/Utils/Modal.vue'
 import { routeType } from '@/types/route'
@@ -58,7 +59,11 @@ const props = defineProps<{
     mailshot: { subject: string, name: string | null, preview_text: string | null }
     updateMailshotRoute: routeType
     suggestCopyRoute: routeType
+    utmLinksRoute: routeType
+    updateUtmLinkRoute: routeType
 }>()
+
+const isUtmLinksModalOpen = ref(false)
 
 const mailshotSavedSubject = ref(props.mailshot.subject)
 const pageHeadData = computed(() => ({ ...props.pageHead, title: mailshotSavedSubject.value }))
@@ -383,11 +388,17 @@ onMounted(() => {
                 class="flex flex-wrap border border-gray-300 rounded-md overflow-hidden h-fit" type="secondary"
                 :icon="faSyncAlt" :disabled="!isBeefreeReady" />
         </template>
-        <template #button-index-0="{ action }">
+        <template #button-utm="{ action }">
+            <Button :label="action.label" type="tertiary" :icon="faLink" @click="isUtmLinksModalOpen = true" />
+        </template>
+        <template #button-review="{ action }">
             <Button :label="action.label" type="primary" iconRight="fal fa-arrow-right"
                 @click="() => onReviewClick(action)" />
         </template>
     </PageHeading>
+
+    <MailshotUtmLinks :isOpen="isUtmLinksModalOpen" :utmLinksRoute="utmLinksRoute"
+        :updateUtmLinkRoute="updateUtmLinkRoute" @onClose="isUtmLinksModalOpen = false" />
 
     <Modal :isOpen="showUnpublishedWarning" @onClose="showUnpublishedWarning = false" width="w-full max-w-md">
         <div class="p-2 text-center">
