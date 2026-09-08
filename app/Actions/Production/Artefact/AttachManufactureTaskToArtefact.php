@@ -10,6 +10,8 @@ namespace App\Actions\Production\Artefact;
 
 use App\Actions\OrgAction;
 use App\Models\Production\Artefact;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\Redirect;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -70,5 +72,10 @@ class AttachManufactureTaskToArtefact extends OrgAction
         $this->initialisationFromProduction($artefact->production, $request);
 
         return $this->handle($artefact, $this->validatedData);
+    }
+
+    public function htmlResponse(): RedirectResponse
+    {
+        return Redirect::back();
     }
 }

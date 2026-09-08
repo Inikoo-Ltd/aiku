@@ -139,9 +139,7 @@ class SendWhatsappDeliveryChannel
         $language = (string) $template->language;
 
         $tags   = Arr::get($template->data ?? [], 'merge_tags.body', []);
-        $merged = $tags
-            ? ResolveWhatsappTemplateTags::run($session, $tags)
-            : ['values' => [], 'missing' => []];
+        $merged = $this->mergeTagValues($recipient, $session, $tags);
 
         /* Rendered before the send is attempted so a failure keeps the text it was going to
            send; an unresolved tag stays as its {{n}} placeholder, which is what shows the
@@ -211,6 +209,35 @@ class SendWhatsappDeliveryChannel
         $recipient->update(['meta_chat_message_id' => $metaChatMessage->id]);
 
         $session->update(['last_agent_message_at' => now()]);
+    }
+
+    /**
+     * The values the template's slots are filled with, taken from the snapshot
+     * FillWhatsappRecipientData wrote when the audience was picked.
+     *
+     * The stored tag list is what says the snapshot still answers the right questions: a
+     * template swapped after the picker ran, or a row stored before snapshots existed, leaves
+     * values that belong to different slots, and filling {{1}} with the wrong one sends a
+     * plausible looking message saying something untrue. Falling back to resolving is the
+     * slower path, not the wrong one, so a mismatch takes it rather than refusing to send.
+     *
+     * @param  array<int, string>  $tags
+     * @return array{values: array<int, string|null>, missing: array<int, string>}
+     */
+    private function mergeTagValues(WhatsappRecipient $recipient, MetaChatSession $session, array $tags): array
+    {
+        $snapshot = $recipient->data ?? [];
+
+        if (Arr::get($snapshot, 'merge_tags') == $tags) {
+            return [
+                'values'  => Arr::get($snapshot, 'template_parameters', []),
+                'missing' => Arr::get($snapshot, 'missing_tags', []),
+            ];
+        }
+
+        return $tags
+            ? ResolveWhatsappTemplateTags::run($session, $tags)
+            : ['values' => [], 'missing' => []];
     }
 
     /**

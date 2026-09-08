@@ -93,7 +93,7 @@ class UpdateAgentSupplierPurchaseOrder extends OrgAction
             'chs_exclusion_reason'     => ['sometimes', 'nullable', 'string'],
         ];
 
-        if (!$this->asAction && !request()->user()->hasGroupAccess()) {
+        if (!$this->asAction && request()->user()->authorisedShopOrganisations()->doesntExist()) {
             $rules = Arr::except($rules, self::MANAGEMENT_ONLY_FIELDS);
         }
 

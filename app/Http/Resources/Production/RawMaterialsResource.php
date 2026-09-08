@@ -20,8 +20,11 @@ class RawMaterialsResource extends JsonResource
     {
 
         return [
-            'slug'    => $this->slug,
-            'code'    => $this->code,
+            'id'          => $this->id,
+            'slug'        => $this->slug,
+            'code'        => $this->code,
+            'description' => $this->description,
+            'unit'        => $this->unit,
             'organisation_name' => $this->organisation_name,
             'organisation_slug' => $this->organisation_slug
         ];

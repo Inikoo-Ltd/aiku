@@ -3,7 +3,9 @@
 namespace App\Actions\Catalogue\ProductCategory;
 
 use App\Actions\Masters\MasterProductCategory\DeleteImageFromMasterProductCategory;
+use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateFamiliesWithNoImage;
 use App\Actions\OrgAction;
+use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Helpers\Media;
 use Lorisleiva\Actions\ActionRequest;
@@ -28,6 +30,10 @@ class DeleteImageFromProductCategory extends OrgAction
 
         if (!empty($updateData)) {
             $productCategory->update($updateData);
+
+            if ($productCategory->type == ProductCategoryTypeEnum::FAMILY) {
+                ShopHydrateFamiliesWithNoImage::dispatch($productCategory->shop)->delay($this->hydratorsDelay);
+            }
         }
 
         if ($updateDependants && $productCategory->masterProductCategory) {

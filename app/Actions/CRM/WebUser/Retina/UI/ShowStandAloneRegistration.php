@@ -38,6 +38,7 @@ class ShowStandAloneRegistration extends IrisAction
             'Auth/StandAloneRegistration',
             [
                 'countriesAddressData' => $countriesAddressData,
+                'defaultCountryId'     => GetRetinaRegistrationDefaultCountry::run($shop, $countriesAddressData, $request),
                 'requiresPhoneNumber' => Arr::get($this->shop->settings, 'registration.require_phone_number', false),
                 'polls' => $pollsResource,
                 'client' => $webUser,

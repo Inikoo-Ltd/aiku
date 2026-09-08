@@ -35,6 +35,7 @@ use App\Actions\CRM\Customer\PruneCustomerWebActivities;
 use App\Actions\CRM\Prospect\Mailshots\RunProspectMailshotScheduled;
 use App\Actions\CRM\Prospect\Mailshots\RunProspectMailshotSecondWave;
 use App\Actions\CRM\WebUserPasswordReset\PurgeWebUserPasswordReset;
+use App\Actions\DevOps\MonitorNightowlIngest;
 use App\Actions\DevOps\MonitorQueueBacklogs;
 use App\Actions\DevOps\WebsiteHealthLog\MonitorWebsitesUptime;
 use App\Actions\Discounts\Offer\ActivateScheduledOffers;
@@ -85,6 +86,8 @@ class Kernel extends ConsoleKernel
            and re-sending a day replaces its figure instead of adding to it, so the later, better
            number wins and a missed night repairs itself. */
         $schedule->command('traffic-source:fetch-meta-costs --days=2')->dailyAt('06:00')->timezone('UTC')->onOneServer()->withoutOverlapping();
+        $schedule->command('sync:customers-to-google-ads --all')->dailyAt('04:45')->timezone('UTC')->onOneServer()->withoutOverlapping(120);
+        $schedule->command('google-ads:fetch-campaigns')->dailyAt('05:00')->timezone('UTC')->onOneServer()->withoutOverlapping();
         /* Click rows carry IPs, kept only as long as fraud prevention justifies - the attribution
            window, 90 days. */
         $schedule->call(fn () => \Illuminate\Support\Facades\DB::table('traffic_source_clicks')->where('created_at', '<', now()->subDays(90))->delete())
@@ -183,6 +186,15 @@ class Kernel extends ConsoleKernel
                     monitorSlug: 'MonitorQueueBacklogs',
                 ),
                 name: 'MonitorQueueBacklogs',
+                type: 'job',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
+                $schedule->job(MonitorNightowlIngest::makeJob())->everyFifteenMinutes()->withoutOverlapping()->onOneServer()->sentryMonitor(
+                    monitorSlug: 'MonitorNightowlIngest',
+                ),
+                name: 'MonitorNightowlIngest',
                 type: 'job',
                 scheduledAt: now()->format('H:i')
             );

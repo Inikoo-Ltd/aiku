@@ -383,7 +383,7 @@ class Invoice extends Model implements Auditable, HasMedia
      */
     public function taxBreakdown(): array
     {
-        return $this->getInvoiceTaxBreakdown($this);
+        return $this->breakdownMatchingHeader($this->getInvoiceTaxBreakdown($this), $this);
     }
 
     public function customerClient(): BelongsTo

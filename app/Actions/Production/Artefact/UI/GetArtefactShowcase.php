@@ -24,6 +24,7 @@ class GetArtefactShowcase
             'code'              => $artefact->code,
             'name'              => $artefact->name,
             'state'             => $artefact->state,
+            'state_label'       => $artefact->state->labels()[$artefact->state->value],
             'artefact_family'   => $artefact->artefactFamily ? ['slug' => $artefact->artefactFamily->slug, 'name' => $artefact->artefactFamily->name] : null,
             'tags'              => $artefact->tags->pluck('name'),
             'compliance_status' => $compliance['status'],
@@ -36,7 +37,7 @@ class GetArtefactShowcase
             'org_stock' => $artefact->orgStock ? [
                 'id'                     => $artefact->orgStock->id,
                 'code'                   => $artefact->orgStock->code,
-                'quantity_in_locations'  => $artefact->orgStock->quantity_in_locations,
+                'quantity_in_locations'  => (float) $artefact->orgStock->quantity_in_locations,
             ] : null,
             'manufacture_tasks' => $artefact->manufactureTasks->map(fn ($task) => [
                 'id'                 => $task->id,

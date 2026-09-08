@@ -80,6 +80,8 @@ class StoreWhatsappCampaignRecipients extends OrgAction
 
         $campaign->refresh();
 
+        FillWhatsappRecipientData::run($campaign);
+
         $this->syncReadyState($campaign);
 
         return $campaign->refresh();
@@ -118,6 +120,8 @@ class StoreWhatsappCampaignRecipients extends OrgAction
         });
 
         $campaign->refresh();
+
+        FillWhatsappRecipientData::run($campaign);
 
         $this->syncReadyState($campaign);
 

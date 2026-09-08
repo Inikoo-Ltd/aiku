@@ -450,16 +450,16 @@ onMounted(async () => {
                     <!-- Section: RRP -->
                     <div class="text-right">
                         <p class="text-xs text-black leading-tight">{{ trans("Retail Price") }}:</p>
-                        <p class="text-xs text-black leading-tight line-through">
+                        <p class="text-xs text-black leading-tight font-semibold">
                             {{ locale.currencyFormatRrp(currency?.code, product.rrp_per_unit || 0) }}/{{ product.unit }}
                         </p>
 
                         <p class="mt-2 text-xs text-black leading-tight">{{ trans("Profit") }}:</p>
                         <div class="flex items-baseline justify-end gap-1 text-black">
-                            <span class="text-base font-bold">
+                            <span class="text-xs font-semibold">
                                 {{ locale.currencyFormat(currency?.code, displayedProfit || 0) }}
                             </span>
-                            <span class="text-sm">({{ displayedMargin }})</span>
+                            <span class="text-xs">({{ displayedMargin }})</span>
 
                             <span v-if="layout?.iris?.is_logged_in" class="cursor-pointer opacity-60 hover:opacity-100"
                                 @click="_popoverProfit?.toggle" @mouseenter="_popoverProfit?.show"
@@ -763,16 +763,16 @@ onMounted(async () => {
 
                 <div class="text-right">
                     <p class="text-xs text-black leading-tight">{{ trans("Retail Price") }}:</p>
-                    <p class="text-xs text-black leading-tight line-through">
+                    <p class="text-xs text-black leading-tight font-semibold">
                         {{ locale.currencyFormatRrp(currency?.code, product.rrp_per_unit || 0) }}/{{ product.unit }}
                     </p>
 
                     <p class="mt-2 text-xs text-black leading-tight">{{ trans("Profit") }}:</p>
                     <div class="flex items-baseline justify-end gap-1 text-black">
-                        <span class="text-base font-bold">
+                        <span class="text-xs font-semibold">
                             {{ locale.currencyFormat(currency?.code, displayedProfit || 0) }}
                         </span>
-                        <span class="text-sm">({{ displayedMargin }})</span>
+                        <span class="text-xs">({{ displayedMargin }})</span>
 
                         <span v-if="layout?.iris?.is_logged_in" class="cursor-pointer opacity-60 hover:opacity-100"
                             @click="_popoverProfitMobile?.toggle">

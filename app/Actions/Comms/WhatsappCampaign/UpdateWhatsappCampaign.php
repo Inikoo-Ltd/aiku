@@ -37,7 +37,17 @@ class UpdateWhatsappCampaign extends OrgAction
     {
         $this->assertEditable($campaign);
 
+        /* The recipients carry the merge tag values resolved from the template they were picked
+           against, so swapping it leaves every one of them holding answers to the old template's
+           questions. Read before the update, which is what moves the column. */
+        $templateChanged = array_key_exists('meta_message_template_id', $modelData)
+            && $modelData['meta_message_template_id'] != $campaign->meta_message_template_id;
+
         $campaign = $this->update($campaign, $modelData, ['data']);
+
+        if ($templateChanged) {
+            FillWhatsappRecipientData::run($campaign);
+        }
 
         $this->syncReadyState($campaign);
 

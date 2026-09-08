@@ -44,6 +44,7 @@ use App\Models\SysAdmin\Organisation;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Redirect;
+use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -338,7 +339,9 @@ class ShowInvoice extends OrgAction
 
                 $routeName = preg_replace('/invoices.show/', 'refunds.show', $request->route()->getName());
 
-                return Redirect::route($routeName, $parameters);
+                if (Route::has($routeName)) {
+                    return Redirect::route($routeName, $parameters);
+                }
             }
 
 

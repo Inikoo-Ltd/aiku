@@ -110,17 +110,17 @@ const categoryRatings = computed(() => {
 
 <template>
     <div class="w-full">
-        <div class="grid w-full grid-cols-5 gap-3">
+        <div class="grid w-full grid-cols-1 gap-2 sm:grid-cols-2 sm:gap-3 lg:grid-cols-3 xl:grid-cols-5">
 
             <div v-for="card in cards" :key="card.field"
-                class="flex flex-col gap-2 rounded-xl border border-gray-100 bg-white px-4 py-3 shadow-sm">
-                <div class="flex items-center gap-3">
-                    <div class="flex h-10 w-10 items-center justify-center rounded-lg" :class="card.iconBg">
+                class="flex flex-col gap-2 rounded-xl border border-gray-100 bg-white px-3 py-2.5 shadow-sm sm:px-4 sm:py-3">
+                <div class="flex items-center gap-2.5 sm:gap-3">
+                    <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg sm:h-10 sm:w-10" :class="card.iconBg">
                         <FontAwesomeIcon :icon="card.icon" :class="card.iconColor" />
                     </div>
                     <div class="min-w-0">
-                        <div class="text-xs text-gray-500">{{ card.label }}</div>
-                        <div class="text-lg font-semibold text-gray-900 tabular-nums">
+                        <div class="truncate text-xs text-gray-500">{{ card.label }}</div>
+                        <div class="text-base font-semibold text-gray-900 tabular-nums sm:text-lg">
                             {{ card.value }}
                         </div>
                     </div>

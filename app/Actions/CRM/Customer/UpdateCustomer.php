@@ -152,7 +152,7 @@ class UpdateCustomer extends OrgAction
                 if ($this->strict) {
                     $taxNumberData = [];
                     data_set($taxNumberData, 'number', Arr::get($modelData, 'tax_number.number'));
-                    data_set($taxNumberData, 'country_id', $customer->address->country_id);
+                    data_set($taxNumberData, 'country_id', Arr::get($modelData, 'tax_number.country_id') ?? $customer->address->country_id);
                     Arr::forget($modelData, 'tax_number');
                 } else {
                     $taxNumberData = Arr::pull($modelData, 'tax_number');

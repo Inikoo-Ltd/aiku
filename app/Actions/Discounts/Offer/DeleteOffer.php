@@ -31,7 +31,8 @@ class DeleteOffer extends OrgAction
      */
     public function handle(Offer $offer, bool $force = false): Offer
     {
-        $oldState = $offer->state;
+        $oldState  = $offer->state;
+        $oldStatus = $offer->status;
         DB::transaction(function () use ($offer, $force) {
             /** @var \Illuminate\Database\Eloquent\Builder $offerAllowances */
             $offerAllowances = $offer->offerAllowances();
@@ -40,6 +41,7 @@ class DeleteOffer extends OrgAction
                     $allowance->stats()->delete();
                     $allowance->forceDelete();
                 } else {
+                    $allowance->update(['status' => false]);
                     $allowance->delete();
                 }
             }
@@ -48,6 +50,7 @@ class DeleteOffer extends OrgAction
                 $offer->stats()->delete();
                 $offer->forceDelete();
             } else {
+                $offer->update(['status' => false]);
                 $offer->delete();
             }
         });
@@ -59,7 +62,7 @@ class DeleteOffer extends OrgAction
         OrganisationHydrateOffers::dispatch($offer->organisation)->delay($this->hydratorsDelay);
         ShopHydrateOffers::dispatch($offer->shop)->delay($this->hydratorsDelay);
         OfferCampaignHydrateOffers::dispatch($offer->offerCampaign)->delay($this->hydratorsDelay);
-        if ($oldState !== OfferStateEnum::IN_PROCESS) {
+        if ($oldState !== OfferStateEnum::IN_PROCESS || $oldStatus) {
             $this->handleOfferSideEffects($offer);
         }
 

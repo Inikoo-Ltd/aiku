@@ -308,6 +308,7 @@ class CalculateOrderDiscounts implements ShouldBeUnique
                 ->select(['id', 'trigger_data', 'allowance_signature', 'name'])
                 ->where('shop_id', $order->shop_id)
                 ->where('type', OfferTypeEnum::GIFT->value)
+                ->whereNull('deleted_at')
                 ->where('status', true)->get() as $giftOfferData
         ) {
             $triggerData = json_decode($giftOfferData->trigger_data, true);
@@ -334,6 +335,7 @@ class CalculateOrderDiscounts implements ShouldBeUnique
         $voucherData = DB::table('offers')
             ->select(['id', 'trigger_data', 'allowance_signature', 'name', 'allowance_type'])
             ->where('shop_id', $order->shop_id)
+            ->whereNull('deleted_at')
             ->where('status', true)
             ->whereIn('allowance_type', ['gift', 'discounted_shipping'])
             ->where('id', $order->offer_voucher_id)
@@ -639,12 +641,13 @@ class CalculateOrderDiscounts implements ShouldBeUnique
      */
     private function scopeOffersValidity(\Illuminate\Database\Query\Builder $query): \Illuminate\Database\Query\Builder
     {
+        $query->whereNull('deleted_at');
+
         if (!$this->honorOffersAt) {
             return $query->where('status', true);
         }
 
         return $query
-            ->whereNull('deleted_at')
             ->where(function ($subQuery) {
                 $subQuery->where('status', true)->orWhere('state', OfferStateEnum::FINISHED->value);
             })

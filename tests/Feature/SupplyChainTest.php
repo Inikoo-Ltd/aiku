@@ -129,8 +129,7 @@ test('agent org admin can log in with aurora legacy password', function (Agent $
         ->and($user->hasGroupAccess())->toBeFalse()
         ->and(array_keys(GetGroupNavigation::run($user)))->toBe(['tickets']);
 
-    $this->get(route('grp.dashboard.show'))->assertOk()
-        ->assertInertia(fn ($page) => $page->where('dashboard.super_blocks', []));
+    $this->get(route('grp.dashboard.show'))->assertRedirect(route('grp.org.dashboard.show', $organisation->slug));
     $this->get(route('grp.devops.dashboard'))->assertForbidden();
     $this->get(route('grp.chat.dashboard'))->assertForbidden();
     $this->get(route('grp.org.dashboard.show', $organisation->slug))->assertOk()

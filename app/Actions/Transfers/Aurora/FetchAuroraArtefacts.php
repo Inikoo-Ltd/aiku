@@ -13,6 +13,8 @@ use App\Actions\Production\Artefact\UpdateArtefact;
 use App\Actions\Production\ManufactureTask\StoreManufactureTask;
 use App\Enums\Production\ManufactureTask\ManufactureTaskOperativeRewardAllowanceTypeEnum;
 use App\Enums\Production\ManufactureTask\ManufactureTaskOperativeRewardTermsEnum;
+use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
+use App\Models\Inventory\OrgStock;
 use App\Models\Production\Artefact;
 use App\Models\Production\RawMaterial;
 use App\Models\Production\RecipeStepRawMaterial;
@@ -150,6 +152,32 @@ class FetchAuroraArtefacts extends FetchAuroraAction
         }
     }
 
+    /**
+     * Aurora retires a part as "Not In Use" while the factory keeps making it; a part with a job order in the
+     * last two years is a live artefact whatever the part status says, as long as its org stock in aiku is not
+     * discontinued.
+     */
+    protected function producedRecently(): \Closure
+    {
+        $organisation = $this->organisationSource?->organisation;
+        $liveSkus     = $organisation
+            ? OrgStock::where('organisation_id', $organisation->id)
+                ->whereNot('state', OrgStockStateEnum::DISCONTINUED)
+                ->where('source_id', 'like', $organisation->id.':%')
+                ->pluck('source_id')
+                ->map(fn ($sourceId) => (int) explode(':', $sourceId)[1])
+                ->all()
+            : [];
+
+        return fn ($query) => $query->from('Purchase Order Transaction Fact as t')
+            ->join('Purchase Order Dimension as po', 'po.Purchase Order Key', 't.Purchase Order Key')
+            ->whereColumn('t.Supplier Part Key', 'spp.Supplier Part Key')
+            ->where('po.Purchase Order Type', 'Production')
+            ->where('po.Purchase Order State', '!=', 'Cancelled')
+            ->where('po.Purchase Order Date', '>', now()->subYears(2))
+            ->whereIn('spp.Supplier Part Part SKU', $liveSkus);
+    }
+
     public function getModelsQuery(): Builder
     {
         $query = DB::connection('aurora')
@@ -162,7 +190,7 @@ class FetchAuroraArtefacts extends FetchAuroraAction
         }
 
         return $query->whereIn('Supplier Part Status', ['Available', 'NoAvailable'])
-            ->where('Part Status', '!=', 'Not In Use')
+            ->where(fn ($query) => $query->where('Part Status', '!=', 'Not In Use')->orWhereExists($this->producedRecently()))
             ->where('spp.aiku_ignore', 'No')
             ->where('sd.Supplier Production', 'Yes')
             ->where('sd.Supplier Type', 'Free')
@@ -181,7 +209,7 @@ class FetchAuroraArtefacts extends FetchAuroraAction
         }
 
         return $query->whereIn('Supplier Part Status', ['Available', 'NoAvailable'])
-            ->where('Part Status', '!=', 'Not In Use')
+            ->where(fn ($query) => $query->where('Part Status', '!=', 'Not In Use')->orWhereExists($this->producedRecently()))
             ->where('spp.aiku_ignore', 'No')
             ->where('sd.Supplier Production', 'Yes')
             ->where('sd.Supplier Type', 'Free')

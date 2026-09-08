@@ -21,6 +21,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property string|null $channel_type
+ * @property array|null $data
  * @property-read \App\Models\CRM\TrafficSourceCampaignStat|null $stats
  * @property-read \App\Models\CRM\TrafficSource $trafficSource
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TrafficSourceCampaign newModelQuery()
@@ -34,6 +35,13 @@ class TrafficSourceCampaign extends Model
     use HasSlug;
 
     protected $guarded = [];
+
+    protected function casts(): array
+    {
+        return [
+            'data' => 'array',
+        ];
+    }
 
     public function getSlugOptions(): SlugOptions
     {

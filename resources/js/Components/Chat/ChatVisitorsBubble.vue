@@ -8,11 +8,12 @@
 import { ref, computed, onMounted, onUnmounted } from "vue"
 import axios from "axios"
 import MultiSelect from "primevue/multiselect"
+import Skeleton from "primevue/skeleton"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faSpinner, faGlobe, faHeadset, faHourglassHalf, faCommentAlt, faCheckCircle, faEye, faMoon } from "@fal"
+import { faGlobe, faHeadset, faHourglassHalf, faCommentAlt, faCheckCircle, faEye, faMoon } from "@fal"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 
-library.add(faSpinner, faGlobe, faHeadset, faHourglassHalf, faCommentAlt, faCheckCircle, faEye, faMoon)
+library.add(faGlobe, faHeadset, faHourglassHalf, faCommentAlt, faCheckCircle, faEye, faMoon)
 
 type VisitorStatus = "browsing" | "idle" | "new_session" | "waiting_chat" | "active_chat" | "closed_chat"
 
@@ -148,7 +149,7 @@ onUnmounted(() => {
             <div class="flex items-center gap-2">
                 <FontAwesomeIcon :icon="['fal', 'fa-globe']" class="text-gray-400" />
                 <h3 class="text-sm font-semibold text-gray-700">Live Visitors</h3>
-                <span class="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-semibold text-gray-600">
+                <span class="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-semibold tabular-nums text-gray-600">
                     {{ grandTotal.toLocaleString() }}
                 </span>
                 <span v-if="date" class="rounded-full bg-amber-100 border border-amber-300 px-2 py-0.5 text-xs font-semibold text-amber-700">
@@ -166,55 +167,57 @@ onUnmounted(() => {
                     <FontAwesomeIcon v-else :icon="['fal', STATUS[s].icon]" class="text-xs" :class="STATUS[s].iconColor" />
                     <span class="text-xs text-gray-500">
                         {{ STATUS[s].label }}
-                        <b class="font-semibold" :class="STATUS[s].textColor">{{ totals[s].toLocaleString() }}</b>
+                        <b class="font-semibold tabular-nums" :class="STATUS[s].textColor">{{ totals[s].toLocaleString() }}</b>
                     </span>
                 </div>
             </div>
         </div>
 
-        <!-- Loading -->
-        <div v-if="loading" class="flex items-center justify-center h-56 text-gray-400">
-            <FontAwesomeIcon :icon="['fal', 'fa-spinner']" class="animate-spin text-2xl" />
-        </div>
+        <div class="relative h-96 overflow-y-auto">
 
-        <template v-else-if="websites.length">
+            <!-- Loading -->
+            <div v-if="loading" class="absolute inset-0 p-4">
+                <Skeleton width="100%" height="100%" borderRadius="0.5rem" />
+            </div>
 
-            <!-- Website filter -->
-            <div class="flex items-center gap-3 px-4 py-2.5 border-b border-gray-100 bg-gray-50">
-                <span class="text-xs text-gray-400 shrink-0">Website:</span>
-                <MultiSelect
-                    v-model="selectedIds"
-                    :options="websiteOptions"
-                    option-label="label"
-                    option-value="website_id"
-                    :placeholder="'All websites'"
-                    :max-selected-labels="3"
-                    :selected-items-label="'{0} websites selected'"
-                    filter
-                    class="w-72 text-xs"
-                >
-                    <template #option="{ option }">
-                        <div class="flex items-center justify-between gap-3 w-full">
-                            <div class="flex flex-col">
-                                <span class="text-xs font-medium">{{ option.label }}</span>
-                                <span class="text-xs text-gray-400">{{ option.sublabel }}</span>
+            <template v-else-if="websites.length">
+
+                <!-- Website filter -->
+                <div class="sticky top-0 z-10 flex flex-wrap items-center gap-3 px-4 py-2.5 border-b border-gray-100 bg-gray-50">
+                    <span class="text-xs text-gray-400 shrink-0">Website:</span>
+                    <MultiSelect
+                        v-model="selectedIds"
+                        :options="websiteOptions"
+                        option-label="label"
+                        option-value="website_id"
+                        :placeholder="'All websites'"
+                        :max-selected-labels="3"
+                        :selected-items-label="'{0} websites selected'"
+                        filter
+                        class="w-full sm:w-72 text-xs"
+                    >
+                        <template #option="{ option }">
+                            <div class="flex items-center justify-between gap-3 w-full">
+                                <div class="flex flex-col">
+                                    <span class="text-xs font-medium">{{ option.label }}</span>
+                                    <span class="text-xs text-gray-400">{{ option.sublabel }}</span>
+                                </div>
+                                <span class="text-xs text-gray-400 tabular-nums shrink-0">{{ option.total.toLocaleString() }}</span>
                             </div>
-                            <span class="text-xs text-gray-400 tabular-nums shrink-0">{{ option.total.toLocaleString() }}</span>
-                        </div>
-                    </template>
-                </MultiSelect>
-                <span class="text-xs text-gray-400">
-                    showing {{ visibleWebsites.length }} of {{ websites.length }} websites
-                </span>
-            </div>
+                        </template>
+                    </MultiSelect>
+                    <span class="text-xs text-gray-400">
+                        showing {{ visibleWebsites.length }} of {{ websites.length }} websites
+                    </span>
+                </div>
 
-            <!-- Empty filter result -->
-            <div v-if="!visibleWebsites.length" class="flex flex-col items-center justify-center h-32 text-gray-400">
-                <p class="text-xs">No websites selected</p>
-            </div>
+                <!-- Empty filter result -->
+                <div v-if="!visibleWebsites.length" class="flex flex-col items-center justify-center h-32 text-gray-400">
+                    <p class="text-xs">No websites selected</p>
+                </div>
 
-            <!-- Per-website sections -->
-            <div v-for="site in visibleWebsites" :key="site.website_id">
+                <!-- Per-website sections -->
+                <div v-for="site in visibleWebsites" :key="site.website_id">
 
                 <!-- Website header row -->
                 <div class="flex items-center gap-2 px-5 py-2 bg-gray-50 border-b border-gray-100">
@@ -225,63 +228,65 @@ onUnmounted(() => {
                     </span>
                 </div>
 
-                <!-- Country grid -->
-                <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-px bg-gray-100/80">
-                    <div
-                        v-for="row in site.countries"
-                        :key="row.country_code"
-                        class="bg-white px-3 py-2.5 flex flex-col gap-1.5"
-                    >
-                        <!-- Country header -->
-                        <div class="flex items-center gap-1.5">
-                            <img
-                                :src="flagUrl(row.country_code)"
-                                :alt="row.country_code"
-                                class="h-3 w-auto rounded-[2px] shrink-0"
-                                loading="lazy"
-                                @error="($event.target as HTMLImageElement).style.display = 'none'"
-                            />
-                            <span class="text-[11px] font-semibold text-gray-600 truncate leading-none">{{ countryLabel(row.country_code) }}</span>
-                            <span class="ml-auto text-[11px] font-bold text-gray-400 shrink-0 tabular-nums">{{ row.total.toLocaleString() }}</span>
-                        </div>
-
-                        <!-- Status chips — icon + count -->
-                        <div class="flex items-center gap-1 flex-wrap">
-                            <div
-                                v-for="chip in statusChips(row)"
-                                :key="chip.status"
-                                class="flex items-center gap-1 px-2 py-1.5 rounded"
-                                :class="STATUS[chip.status].chipBg"
-                                :title="`${STATUS[chip.status].label}: ${chip.count.toLocaleString()}`"
-                            >
-                                <span v-if="chip.status === 'browsing'" class="relative flex items-center justify-center w-[10px] h-[10px] shrink-0">
-                                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-300 opacity-60" />
-                                    <FontAwesomeIcon :icon="['fal', 'fa-eye']" class="relative text-[9px] text-blue-400" />
-                                </span>
-                                <FontAwesomeIcon
-                                    v-else
-                                    :icon="['fal', STATUS[chip.status].icon]"
-                                    class="text-[12px]"
-                                    :class="STATUS[chip.status].iconColor"
+                    <!-- Country grid -->
+                    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-px bg-gray-100/80">
+                        <div
+                            v-for="row in site.countries"
+                            :key="row.country_code"
+                            class="bg-white px-3 py-2.5 flex flex-col gap-1.5"
+                        >
+                            <!-- Country header -->
+                            <div class="flex items-center gap-1.5">
+                                <img
+                                    :src="flagUrl(row.country_code)"
+                                    :alt="row.country_code"
+                                    width="16"
+                                    height="12"
+                                    class="h-3 w-4 shrink-0 rounded-[2px] object-contain"
+                                    loading="lazy"
+                                    @error="($event.target as HTMLImageElement).style.visibility = 'hidden'"
                                 />
-                                <span class="text-[12px] font-semibold tabular-nums leading-none" :class="STATUS[chip.status].textColor">
-                                    {{ formatCount(chip.count) }}
-                                </span>
+                                <span class="text-[11px] font-semibold text-gray-600 truncate leading-none">{{ countryLabel(row.country_code) }}</span>
+                                <span class="ml-auto text-[11px] font-bold text-gray-400 shrink-0 tabular-nums">{{ row.total.toLocaleString() }}</span>
+                            </div>
+
+                            <!-- Status chips — icon + count -->
+                            <div class="flex items-center gap-1 flex-wrap">
+                                <div
+                                    v-for="chip in statusChips(row)"
+                                    :key="chip.status"
+                                    class="flex items-center gap-1 px-2 py-1.5 rounded"
+                                    :class="STATUS[chip.status].chipBg"
+                                    :title="`${STATUS[chip.status].label}: ${chip.count.toLocaleString()}`"
+                                >
+                                    <span v-if="chip.status === 'browsing'" class="relative flex items-center justify-center w-[10px] h-[10px] shrink-0">
+                                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-300 opacity-60" />
+                                        <FontAwesomeIcon :icon="['fal', 'fa-eye']" class="relative text-[9px] text-blue-400" />
+                                    </span>
+                                    <FontAwesomeIcon
+                                        v-else
+                                        :icon="['fal', STATUS[chip.status].icon]"
+                                        class="text-[12px]"
+                                        :class="STATUS[chip.status].iconColor"
+                                    />
+                                    <span class="text-[12px] font-semibold tabular-nums leading-none" :class="STATUS[chip.status].textColor">
+                                        {{ formatCount(chip.count) }}
+                                    </span>
+                                </div>
                             </div>
                         </div>
                     </div>
+
                 </div>
 
+            </template>
+
+            <!-- Empty data -->
+            <div v-else class="flex flex-col items-center justify-center h-full text-gray-400">
+                <FontAwesomeIcon :icon="['fal', 'fa-globe']" class="text-4xl mb-2 opacity-30" />
+                <p class="text-xs">No visitor data available</p>
             </div>
-
-        </template>
-
-        <!-- Empty data -->
-        <div v-else class="flex flex-col items-center justify-center h-56 text-gray-400">
-            <FontAwesomeIcon :icon="['fal', 'fa-globe']" class="text-4xl mb-2 opacity-30" />
-            <p class="text-xs">No visitor data available</p>
-        </div>
-
+        </div>        
         <!-- Footer -->
         <div v-if="!loading && websites.length" class="px-5 py-2 border-t border-gray-100 text-xs text-gray-400 text-right">
             <template v-if="date">Historical data for {{ date }}</template>

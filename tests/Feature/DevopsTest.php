@@ -8,7 +8,9 @@ use App\Models\DevOps\AppDeployment;
 use App\Models\DevOps\WebsiteHealthLog;
 use App\Models\Web\Webpage;
 use App\Models\Web\Website;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Http;
@@ -45,6 +47,12 @@ it('logs failure and sends alert notification when website returns 500', functio
         'commit_hash' => 'dummy123',
     ]);
 
+    WebsiteHealthLog::create([
+        'url'           => 'https://example.test',
+        'is_up'         => false,
+        'error_message' => 'Earlier failed check',
+    ]);
+
     Http::fake([
         'https://example.test'                 => Http::response('Error', 500),
         'https://discord.com/api/webhooks/1/A' => Http::response('OK'),
@@ -74,6 +82,12 @@ it('handles timeout and connection exceptions correctly', function () {
         'commit_hash' => 'dummy123',
     ]);
 
+    WebsiteHealthLog::create([
+        'url'           => 'https://example.test',
+        'is_up'         => false,
+        'error_message' => 'Earlier failed check',
+    ]);
+
     Http::fake([
         'https://example.test'                 => function () {
             throw new \Illuminate\Http\Client\ConnectionException('Connection timed out');
@@ -97,6 +111,59 @@ it('handles timeout and connection exceptions correctly', function () {
             && str_contains($request['content'], 'Website Down Alert')
             && str_contains($request['content'], 'https://example.test')
             && str_contains($request['content'], 'Connection timed out');
+    });
+});
+
+it('alerts once when nightowl telemetry has stopped arriving', function () {
+    Config::set('database.connections.nightowl.host', '127.0.0.1');
+    Config::set('database.connections.nightowl.port', 1);
+    Config::set('database.connections.nightowl.database', 'unreachable');
+    DB::purge('nightowl');
+    Cache::forget('monitor:nightowl_ingest:alerted');
+
+    Http::fake([
+        'https://discord.com/api/webhooks/1/A' => Http::response('OK'),
+    ]);
+
+    $this->artisan('monitor:nightowl_ingest')->assertFailed();
+
+    Http::assertSent(function ($request) {
+        return str_contains($request->url(), 'discord.com')
+            && str_contains($request['content'], 'NightOwl Ingest Alert');
+    });
+
+    // A stalled agent stays stalled — the throttle keeps it to one alert per window.
+    $this->artisan('monitor:nightowl_ingest')->assertFailed();
+
+    Http::assertSentCount(1);
+
+    Cache::forget('monitor:nightowl_ingest:alerted');
+});
+
+it('resolves the nightowl agent buffer to an absolute path inside storage', function () {
+    // A path outside storage/ sits in the deploy-rewritten anchor tree, where a
+    // release unlinks the buffer under the running agent and telemetry silently stops.
+    $path = config('nightowl.agent.sqlite_path');
+
+    expect($path)->toStartWith(storage_path().DIRECTORY_SEPARATOR);
+});
+
+it('does NOT send notification for a single unconfirmed failure', function () {
+    Http::fake([
+        'https://isolated.test'                => Http::response('Error', 500),
+        'https://discord.com/api/webhooks/1/A' => Http::response('OK'),
+    ]);
+
+    $this->artisan('monitor:webpage-uptime', ['url' => 'https://isolated.test'])
+        ->assertSuccessful();
+
+    $this->assertDatabaseHas('website_health_logs', [
+        'url'   => 'https://isolated.test',
+        'is_up' => false,
+    ]);
+
+    Http::assertNotSent(function ($request) {
+        return str_contains($request->url(), 'discord.com');
     });
 });
 

@@ -23,6 +23,7 @@ library.add(faEnvelope, faAsterisk, faUser, faPhone, faBuilding, faGlobe)
 // defineOptions({ layout: RetinaShowIris })
 const props = defineProps<{
 	countriesAddressData: {},
+	defaultCountryId?: number | null,
     requiresPhoneNumber: boolean,
 	polls: [],
 	registerRoute: {
@@ -169,6 +170,7 @@ provide('registrationWarning', registrationWarning)
 
 							<FieldStandaloneRegistration
 								:countriesAddressData
+								:defaultCountryId
 								:polls
 								:form
 								:requiresPhoneNumber="props.requiresPhoneNumber"

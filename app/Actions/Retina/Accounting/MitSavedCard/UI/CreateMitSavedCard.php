@@ -35,9 +35,21 @@ class CreateMitSavedCard extends RetinaAction
             ->where('type', PaymentAccountTypeEnum::CHECKOUT)
             ->where('state', PaymentAccountShopStateEnum::ACTIVE)->first();
 
-        list($publicKey, $secretKey) = $paymentAccountShop->getCredentials();
-        $checkoutApi = $this->getCheckoutApi($publicKey, $secretKey);
-
+        $checkoutApi = null;
+        if ($paymentAccountShop) {
+            list($publicKey, $secretKey) = $paymentAccountShop->getCredentials();
+            $checkoutApi = $this->getCheckoutApi($publicKey, $secretKey);
+        }
+        if (!$checkoutApi) {
+            return [
+                'label'       => __('Online payments'),
+                'key'         => 'credit_card',
+                'environment' => app()->environment('production') ? 'production' : 'sandbox',
+                'locale'      => 'en',
+                'icon'        => 'fal fa-credit-card-front',
+                'data'        => ['error' => __('Online payments are temporarily unavailable')],
+            ];
+        }
 
         $mitSavedCard = StoreMitSavedCard::run(
             $this->customer,

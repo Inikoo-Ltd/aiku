@@ -11,6 +11,7 @@ import { loadLanguageAsync } from "laravel-vue-i18n"
 import { watchEffect } from "vue"
 import { useLocaleStore } from "@/Stores/locale"
 import { initialiseIrisVarnishCustomerData, recordWebsiteHit } from '@/Composables/initialiseIrisVarnish'
+import { setComponentDebugInfo } from '@/Composables/useComponentDebugInfo'
 
 
 export const initialiseIrisApp = () => {
@@ -19,13 +20,10 @@ export const initialiseIrisApp = () => {
 
     // console.log('Init Iris: ', usePage().props)
 
+    setComponentDebugInfo()
+
     router.on('navigate', (event) => {
-        // To see Vue filename in the console (component.vue)
-        if (import.meta.env.VITE_APP_ENV === 'local' && usePage().component) {
-            window.component = {
-                vue: usePage().component
-            }
-        }
+        setComponentDebugInfo()  // To see PHP action and Vue filename in console (window.component)
 
         layout.currentParams = route().routeParams  // current params
         layout.currentQuery = route().queryParams  // current query

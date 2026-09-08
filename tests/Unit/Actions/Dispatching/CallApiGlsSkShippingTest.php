@@ -89,3 +89,15 @@ it('strips tags and non alphanumerics from the label content', function () {
     expect($params->Content)->toContain('ring bell 2 please')
         ->and($params->Content)->not->toContain('#');
 });
+
+it('prints the delivery note reference on the label even without a shipping note', function () {
+    $params = prepareGlsSkParcelParams(['shipping_notes' => '']);
+
+    expect($params->Content)->toEndWith('DN-1234');
+});
+
+it('prints the reference before the shipping note on the label', function () {
+    $params = prepareGlsSkParcelParams(['shipping_notes' => 'ring bell']);
+
+    expect($params->Content)->toEndWith('DN-1234 ring bell');
+});
