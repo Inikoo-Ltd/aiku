@@ -76,7 +76,6 @@ use App\Models\Catalogue\Product;
 use App\Models\CRM\Customer;
 use App\Models\CRM\WebUser;
 use App\Models\Helpers\Media;
-use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use App\Models\SysAdmin\Permission;
 use App\Models\SysAdmin\User;
@@ -218,7 +217,7 @@ test('creates chat event for authenticated user session', function () {
     $organisation = Organisation::first() ?? Organisation::factory()->create();
     $website      = Website::first() ?? Website::factory()->create();
     $customer     = Customer::first() ?? Customer::factory()->create();
-    $group        = Group::first() ?? Group::factory()->create();
+    $group        = createGroup();
 
     /** @var \App\Models\CRM\WebUser $webUser */
     $webUser = WebUser::factory()->create([
@@ -404,7 +403,7 @@ test('can send text message from web user', function () {
     $organisation = Organisation::first() ?? Organisation::factory()->create();
     $website      = Website::first() ?? Website::factory()->create();
     $customer     = Customer::first() ?? Customer::factory()->create();
-    $group        = Group::first() ?? Group::factory()->create();
+    $group        = createGroup();
 
     /** @var \App\Models\CRM\WebUser $webUser */
     $webUser = WebUser::factory()->create([

@@ -720,8 +720,12 @@ test('import pallets in return (xlsx) invalid reference', function (PalletReturn
 })->depends('Create Retina Pallet Return');
 
 test('Attach Pallet to Retina Pallet Return', function (PalletReturn $palletReturn) {
-    $pallet1      = Pallet::Find(3);
-    $pallet2      = Pallet::Find(4);
+    [$pallet1, $pallet2] = $palletReturn->fulfilmentCustomer->pallets()
+        ->whereNotIn('pallets.id', $palletReturn->pallets()->pluck('pallets.id'))
+        ->orderBy('pallets.id')
+        ->take(2)
+        ->get()
+        ->all();
     $palletReturn = AttachRetinaPalletToReturn::make()->action(
         $palletReturn,
         $pallet1

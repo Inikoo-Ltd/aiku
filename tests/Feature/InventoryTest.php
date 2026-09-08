@@ -2744,6 +2744,9 @@ test('merging a duplicate stock moves its links to the stocked twin and retires 
     [$emptyOrgStock] = createOrgStocks($this->organisation, [$empty]);
     createOrgStocks($this->organisation, [$held]);
 
+    // The merge only retires org stocks holding nothing, and the fixture stock is shared with earlier tests
+    DB::table('location_org_stocks')->where('org_stock_id', $emptyOrgStock->id)->update(['quantity' => 0]);
+
     $tradeUnit = StoreTradeUnit::make()->action($group, TradeUnit::factory()->definition());
     DB::table('model_has_trade_units')->insert([
         'model_type' => 'Stock', 'model_id' => $empty->id, 'trade_unit_id' => $tradeUnit->id,
