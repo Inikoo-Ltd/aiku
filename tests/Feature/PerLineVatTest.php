@@ -25,6 +25,16 @@ use App\Actions\Ordering\Order\StoreOrder;
 use App\Actions\Ordering\Order\UpdateState\SendOrderToWarehouse;
 use App\Actions\Ordering\Order\UpdateState\SubmitOrder;
 use App\Actions\Ordering\Transaction\StoreTransaction;
+use App\Actions\Ordering\Transaction\StoreTransactionFromShipping;
+use App\Actions\Accounting\Invoice\UI\ShowInvoice;
+use App\Actions\Billables\ShippingZone\StoreShippingZone;
+use App\Actions\Billables\ShippingZoneSchema\StoreShippingZoneSchema;
+use App\Actions\Maintenance\Accounting\RepairInvoiceTaxHeader;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Storage;
+use App\Actions\Helpers\TaxCategory\GetTaxCategory;
+use App\Models\Helpers\Address;
+use App\Models\Helpers\Country;
 use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Masters\MasterAsset\MasterAssetTypeEnum;
@@ -448,3 +458,108 @@ test('a tax number validity change re-rates open orders and skips invoiced ones'
     expect($resetOrderIds)->toContain($openOrder->id)
         ->not->toContain($invoicedOrder->id);
 });
+
+/**
+ * HELP-3081: the order's shipping_amount column lagged the shipping line at dispatch; the header
+ * was computed from the column, the invoice line stored from the transaction, and the VAT figure
+ * on the invoice no longer added up to its own rows. Header and lines must come from the same rows.
+ */
+test('the invoice header is derived from the same lines it stores, not from the order columns', function () {
+    $order = StoreOrder::make()->action($this->customer, []);
+    $order->updateQuietly(['tax_category_id' => $this->vat20->id]);
+    StoreTransaction::make()->action($order->refresh(), $this->standardProduct->historicAsset, ['quantity_ordered' => 1]);
+
+    createWarehouse();
+    SubmitOrder::make()->action($order->refresh());
+    SendOrderToWarehouse::make()->action($order, []);
+
+    $schema       = StoreShippingZoneSchema::make()->action($order->shop, ['name' => 'flat']);
+    $shippingZone = StoreShippingZone::make()->action($schema, [
+        'code'        => 'FLAT',
+        'name'        => 'flat',
+        'status'      => true,
+        'price'       => ['type' => 'Step Order Items Net Amount', 'steps' => [['from' => 0, 'to' => 'INF', 'price' => 20]]],
+        'territories' => [['country_code' => 'GB']],
+        'position'    => 1,
+        'is_failover' => false,
+    ]);
+    StoreTransactionFromShipping::make()->action($order->refresh(), $shippingZone, [
+        'date'             => Carbon::now(),
+        'quantity_ordered' => 1,
+        'gross_amount'     => 20,
+        'net_amount'       => 20,
+    ], strict: false);
+
+    $order->refresh()->updateQuietly(['shipping_amount' => 35]);
+
+    $invoice = GenerateInvoiceFromOrder::make()->handle($order->refresh());
+
+    $fromLines = RepairInvoiceTaxHeader::make()->expectedTotals($invoice);
+
+    expect((float)$invoice->net_amount)->toBe(120.0)
+        ->and((float)$invoice->tax_amount)->toBe(24.0)
+        ->and((float)$invoice->total_amount)->toBe(144.0)
+        ->and($fromLines)->toBe(['net' => 120.0, 'tax' => 24.0, 'total' => 144.0])
+        ->and((float)$order->refresh()->tax_amount)->toBe(24.0)
+        ->and((float)$order->total_amount)->toBe(144.0);
+
+    return $invoice;
+});
+
+/** An issued invoice with a wrong header shows the header, not rows that do not add up to it. */
+test('tax rows that do not add up to the stored header give way to the header', function ($invoice) {
+    $invoice->updateQuietly(['tax_amount' => 27, 'total_amount' => 147]);
+    $invoice->refresh();
+
+    expect($invoice->taxBreakdown())->toBe([]);
+
+    $rows = ShowInvoice::make()->getInvoiceTaxRows($invoice);
+    expect($rows)->toHaveCount(1)
+        ->and((float)$rows[0]['price_total'])->toBe(27.0);
+
+    return $invoice;
+})->depends('the invoice header is derived from the same lines it stores, not from the order columns');
+
+test('the repair rewrites the header from the lines and mirrors it onto the order', function ($invoice) {
+    $invoice->order->updateQuietly(['tax_amount' => 27, 'total_amount' => 147]);
+
+    $this->artisan('repair:invoice_tax_header', ['--shop' => $invoice->shop->slug])
+        ->expectsOutputToContain('1 invoices with a header that does not add up to its lines.')
+        ->assertSuccessful();
+    expect((float)$invoice->refresh()->tax_amount)->toBe(27.0);
+
+    Storage::fake('local');
+    $this->artisan('repair:invoice_tax_header', ['--shop' => $invoice->shop->slug, '--from' => '2020-01-01', '--fix' => true])
+        ->expectsOutputToContain('1 invoices repaired.')
+        ->assertSuccessful();
+
+    $recordFile = collect(Storage::disk('local')->files('repairs'))->sole();
+    expect(Storage::disk('local')->get($recordFile))
+        ->toContain($invoice->reference.','.$invoice->order->reference.',120.00,27.00,147.00,120.00,27.00,147.00,120.00,24.00,144.00,120.00,24.00,144.00');
+
+    expect((float)$invoice->refresh()->tax_amount)->toBe(24.0)
+        ->and((float)$invoice->total_amount)->toBe(144.0)
+        ->and((float)$invoice->order->refresh()->tax_amount)->toBe(24.0)
+        ->and((float)$invoice->order->total_amount)->toBe(144.0)
+        ->and($invoice->taxBreakdown())->toHaveCount(1);
+})->depends('tax rows that do not add up to the stored header give way to the header');
+
+/**
+ * HELP-2768: Aurora charged UK VAT when either address was in the UK; the port required both, so
+ * a customer billed abroad and delivered in the UK was invoiced without VAT.
+ */
+test('a uk delivery is standard rated whatever the billing country, and a uk billing whatever the delivery', function (string $billing, string $delivery, float $rate) {
+    $address = fn (string $code) => new Address(array_merge(Address::factory()->definition(), [
+        'country_id'   => Country::where('code', $code)->firstOrFail()->id,
+        'country_code' => $code,
+    ]));
+
+    $taxCategory = GetTaxCategory::run(Country::where('code', 'GB')->firstOrFail(), null, $address($billing), $address($delivery));
+
+    expect((float)$taxCategory->rate)->toBe($rate);
+})->with([
+    'billed in Ukraine, delivered in the UK' => ['UA', 'GB', 0.2],
+    'billed in the UK, delivered in France'  => ['GB', 'FR', 0.2],
+    'both in the UK'                          => ['GB', 'GB', 0.2],
+    'billed in Ukraine, delivered in France'  => ['UA', 'FR', 0.0],
+]);

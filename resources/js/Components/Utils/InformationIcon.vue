@@ -10,5 +10,7 @@ const props = defineProps<{
 </script>
 
 <template>
-    <FontAwesomeIcon v-tooltip="information" icon='fal fa-info-circle' class="opacity-60 hover:opacity-100 cursor-pointer" fixed-width aria-hidden='true' />
+    <span v-tooltip="information" class="opacity-60 hover:opacity-100 cursor-pointer">
+        <FontAwesomeIcon icon='fal fa-info-circle' fixed-width aria-hidden='true' />
+    </span>
 </template>

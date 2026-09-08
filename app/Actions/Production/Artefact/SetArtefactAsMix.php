@@ -103,7 +103,9 @@ class SetArtefactAsMix extends OrgAction
     {
         return Redirect::back()->with('notification', [
             'status' => 'success',
-            'title'  => $rawMaterial ? __('Artefact is now a mix, it will show on the Mixes board when needed') : __('Artefact is no longer a mix'),
+            'title'  => $rawMaterial
+                ? __('This artefact is now an in-house ingredient, it will be listed under To produce → Mixes when needed')
+                : __('This artefact is no longer an in-house ingredient'),
         ]);
     }
 }

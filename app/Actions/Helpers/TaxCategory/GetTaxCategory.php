@@ -42,7 +42,7 @@ class GetTaxCategory
             $deliveryAddress = $billingAddress;
         }
 
-        if (in_array($billingAddress->country_code, $taxableCountries) && in_array($deliveryAddress->country_code, $taxableCountries)) {
+        if (in_array($billingAddress->country_code, $taxableCountries) || in_array($deliveryAddress->country_code, $taxableCountries)) {
             return TaxCategory::where('type', TaxCategoryTypeEnum::STANDARD)->where('country_id', $gbCountryId)->where('status', true)->first();
         }
 

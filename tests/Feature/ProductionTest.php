@@ -64,6 +64,7 @@ use App\Enums\Production\RawMaterial\RawMaterialStockStatusEnum;
 use App\Enums\Production\RawMaterial\RawMaterialTypeEnum;
 use App\Enums\Production\RawMaterial\RawMaterialUnitEnum;
 use App\Models\Analytics\AikuScopedSection;
+use App\Enums\Production\Artefact\ArtefactStateEnum;
 use App\Models\Production\Artefact;
 use App\Models\Production\JobOrder;
 use App\Models\Production\JobOrderItem;
@@ -2161,11 +2162,55 @@ test('an operative only sees the factory jobs page and nothing group or commerci
 
     expect(fn () => StartManufactureTaskSession::make()->action($user, $pool->jobOrderItems()->first()->tasks()->first()))
         ->toThrow(\Illuminate\Validation\ValidationException::class);
-    StartManufactureTaskSession::make()->action($user, $assigned->jobOrderItems()->first()->tasks()->first());
-    expect($assigned->refresh()->state)->toBe(JobOrderStateEnum::CONFIRMED);
+    $session = StartManufactureTaskSession::make()->action($user, $assigned->jobOrderItems()->first()->tasks()->first());
+    expect($assigned->refresh()->state)->toBe(JobOrderStateEnum::CONFIRMED)
+        ->and(get(route('grp.org.productions.show.floor', [$this->organisation->slug, $this->production->slug]))
+            ->viewData('page')['props']['open_session']['can_reject'])->toBeFalse();
+    \Pest\Laravel\patch(route('grp.models.manufacture-task-session.close', $session->id), ['quantity_made' => 2, 'quantity_rejected' => 5])
+        ->assertRedirect();
+    expect((float) $session->refresh()->quantity_rejected)->toBe(0.0)
+        ->and((float) $session->quantity_made)->toBe(2.0);
 
     get(route('grp.org.chat.dashboard', $this->organisation->slug))->assertForbidden();
     get(route('grp.org.offer.calendar', $this->organisation->slug))->assertForbidden();
     get(route('grp.org.overview.hub', $this->organisation->slug))->assertForbidden();
     actingAs($this->guest->getUser());
+});
+
+test('artefacts with nothing sold in three years go dormant and wake up when they sell again', function () {
+    $repair = \App\Actions\Maintenance\Production\RepairDormantArtefacts::make();
+    $since  = now()->subMonths(36)->toDateTimeString();
+
+    $artefact = StoreArtefact::make()->action($this->production, ['code' => 'DORM-01', 'name' => 'Dormant candidate']);
+    $artefact->update(['state' => ArtefactStateEnum::ACTIVE]);
+    expect($repair->toPark($this->production, $since)->pluck('id')->all())->toContain($artefact->id);
+
+    $repair->handle($artefact, ArtefactStateEnum::DORMANT);
+    expect($artefact->refresh()->state)->toBe(ArtefactStateEnum::DORMANT)
+        ->and($repair->toWake($this->production, $since)->count())->toBe(0);
+
+    $made = StoreArtefact::make()->action($this->production, ['code' => 'DORM-02', 'name' => 'Made but never sold']);
+    $made->update(['state' => ArtefactStateEnum::ACTIVE]);
+    StoreJobOrderItem::make()->action(StoreJobOrder::make()->action($this->production, []), ['artefact_id' => $made->id, 'quantity' => 1]);
+    expect($repair->toPark($this->production, $since)->pluck('id')->all())->not->toContain($made->id);
+
+    list($organisation, $user, $shop) = createShop();
+    [, $product] = createProduct($shop);
+    $orgStock = $product->orgStocks()->first();
+    $artefact->update(['org_stock_id' => $orgStock->id]);
+
+    $invoice = \App\Actions\Accounting\Invoice\StoreInvoice::make()->action(createCustomer($shop), \App\Models\Accounting\Invoice::factory()->definition());
+    \App\Actions\Accounting\InvoiceTransaction\StoreInvoiceTransaction::make()->action($invoice, $product->historicAsset, [
+        'date'            => now(),
+        'tax_category_id' => $invoice->tax_category_id,
+        'quantity'        => 1,
+        'gross_amount'    => 10,
+        'net_amount'      => 10,
+    ]);
+
+    expect($repair->toWake($this->production, $since)->pluck('id')->all())->toBe([$artefact->id])
+        ->and($repair->toPark($this->production, $since)->pluck('id')->all())->not->toContain($artefact->id);
+
+    $this->artisan('repair:dormant_artefacts', ['production' => $this->production->slug, '--fix' => true])->assertExitCode(0);
+    expect($artefact->refresh()->state)->toBe(ArtefactStateEnum::ACTIVE);
 });

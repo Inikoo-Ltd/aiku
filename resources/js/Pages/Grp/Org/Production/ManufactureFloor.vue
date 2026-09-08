@@ -48,6 +48,17 @@ const props = defineProps<{
     artisan: string | null
     can_pick_open_jobs: boolean
     tasks: FloorTask[]
+    finished_today: {
+        id: number
+        ended_at: string
+        seconds: number
+        task_name: string
+        artefact_code: string
+        artefact_name: string
+        job_order_reference: string
+        quantity_made: number
+        quantity_rejected: number
+    }[]
     today: {
         sessions: number
         quantity_made: number
@@ -72,6 +83,12 @@ const sections = computed(() => {
     return list
 })
 
+function formatDuration(seconds: number) {
+    const m = Math.floor(seconds / 60)
+    const s = seconds % 60
+    return `${m}:${String(s).padStart(2, '0')}`
+}
+
 function startTask(task: FloorTask) {
     processing.value = true
     router.post(
@@ -86,8 +103,9 @@ function startTask(task: FloorTask) {
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead" />
 
-    <div class="px-4 py-4 max-w-3xl mx-auto">
-        <div class="mb-6 grid grid-cols-3 gap-3 text-center">
+    <div class="px-4 py-4 max-w-6xl mx-auto grid gap-8 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
+    <div>
+        <div class="mb-6 grid grid-cols-2 gap-3 text-center">
             <div class="rounded-lg bg-gray-50 border border-gray-200 py-3">
                 <div class="text-2xl font-semibold tabular-nums">{{ today.quantity_made }}</div>
                 <div class="text-xs text-gray-500">{{ trans('Units today') }}</div>
@@ -96,13 +114,11 @@ function startTask(task: FloorTask) {
                 <div class="text-2xl font-semibold tabular-nums">{{ today.sessions }}</div>
                 <div class="text-xs text-gray-500">{{ trans('Tasks finished') }}</div>
             </div>
-            <div class="rounded-lg bg-gray-50 border border-gray-200 py-3">
-                <div class="text-2xl font-semibold tabular-nums">{{ today.earned.toFixed(2) }}</div>
-                <div class="text-xs text-gray-500">{{ trans('Earned today') }}</div>
-            </div>
         </div>
 
-        <ManufactureWorkingCard v-if="open_session" :session="open_session" />
+        <div v-if="open_session" class="fixed inset-0 z-50 bg-white flex items-center justify-center p-6">
+            <ManufactureWorkingCard :session="open_session" class="w-full max-w-5xl" />
+        </div>
 
         <div v-else>
             <div v-if="startError" class="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-red-700">
@@ -153,5 +169,27 @@ function startTask(task: FloorTask) {
                 </div>
             </template>
         </div>
+    </div>
+
+    <div>
+        <h2 class="text-sm font-semibold text-gray-500 mb-2">{{ trans('Finished today') }}</h2>
+        <div v-if="!finished_today.length"
+            class="rounded-xl border border-dashed border-gray-300 px-4 py-5 text-center text-gray-500">
+            {{ trans('Nothing finished yet today') }}
+        </div>
+        <div v-for="session in finished_today" :key="session.id"
+            class="mb-3 rounded-xl border border-green-200 bg-green-50/40 p-4 flex items-center justify-between gap-4">
+            <div class="min-w-0">
+                <div class="font-semibold truncate">{{ session.task_name }}</div>
+                <div class="text-gray-600 truncate">{{ session.artefact_code }} — {{ session.artefact_name }}</div>
+                <div class="text-sm text-gray-500 mt-0.5">
+                    {{ trans('Job order') }} {{ session.job_order_reference }}
+                    · {{ formatDuration(session.seconds) }}
+                    <span v-if="session.quantity_rejected" class="ml-2 text-red-600">{{ session.quantity_rejected }} {{ trans('rejected') }}</span>
+                </div>
+            </div>
+            <div class="text-3xl font-semibold tabular-nums text-green-700 shrink-0">{{ session.quantity_made }}</div>
+        </div>
+    </div>
     </div>
 </template>

@@ -10,6 +10,7 @@
 namespace App\Actions\Ordering\Order;
 
 use App\Actions\Accounting\CreditTransaction\StoreCreditTransaction;
+use App\Actions\Accounting\Invoice\CalculateInvoiceTotals;
 use App\Actions\Accounting\Invoice\StoreInvoice;
 use App\Actions\Accounting\Invoice\UpdateInvoicePaymentState;
 use App\Actions\Accounting\InvoiceTransaction\StoreInvoiceTransaction;
@@ -140,6 +141,19 @@ class GenerateInvoiceFromOrder extends OrgAction
                 }
             }
 
+            /**
+             * The header is a function of the lines that were actually stored, never of a parallel
+             * calculation: whatever recalculateTotals estimated above, the figures the customer and
+             * the tax return see are re-derived here from the invoice's own rows (HELP-3081).
+             */
+            CalculateInvoiceTotals::make()->action($invoice);
+            $invoice->refresh();
+            $order->update([
+                'net_amount'   => $invoice->net_amount,
+                'tax_amount'   => $invoice->tax_amount,
+                'total_amount' => $invoice->total_amount,
+            ]);
+
             $totalPaid = $order->payments()->where('payments.status', PaymentStatusEnum::SUCCESS)->whereNot('payments.state', PaymentStateEnum::CANCELLED)->sum('payments.amount');
 
             $amountToCredit = round($totalPaid - $invoice->total_amount, 2);
@@ -208,22 +222,22 @@ class GenerateInvoiceFromOrder extends OrgAction
 
         $itemsNet = $lines->sum('net_amount');
 
-        foreach ($order->transactions()->where('model_type', 'Service')->get(['tax_category_id', 'net_amount']) as $serviceLine) {
-            $lines->push((object)[
-                'tax_category_id' => $serviceLine->tax_category_id,
-                'net_amount'      => $serviceLine->net_amount,
-            ]);
+        /**
+         * Shipping and charges are read from the same transactions that become invoice lines,
+         * never from the order's shipping_amount / charges_amount columns: those columns lag the
+         * lines at dispatch, and a header computed from them while the lines were stored from the
+         * transactions is how invoices ended up with a VAT figure their own rows did not add up
+         * to (HELP-3081).
+         */
+        $modelTypes = ['Service', 'Charge', 'Adjustment'];
+        if (!$order->collection_address_id) {
+            $modelTypes[] = 'ShippingZone';
         }
 
-        $lines->push((object)[
-            'tax_category_id' => $order->tax_category_id,
-            'net_amount'      => $order->shipping_amount + $order->charges_amount,
-        ]);
-
-        foreach ($order->transactions()->where('model_type', 'Adjustment')->get(['tax_category_id', 'net_amount']) as $adjustmentLine) {
+        foreach ($order->transactions()->whereIn('model_type', $modelTypes)->get(['tax_category_id', 'net_amount']) as $line) {
             $lines->push((object)[
-                'tax_category_id' => $adjustmentLine->tax_category_id,
-                'net_amount'      => $adjustmentLine->net_amount,
+                'tax_category_id' => $line->tax_category_id,
+                'net_amount'      => $line->net_amount,
             ]);
         }
 

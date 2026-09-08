@@ -101,6 +101,15 @@ class EditShop extends OrgAction
 
         $isGoogleAdsConnected = filled(Arr::get($shop->settings, 'google_ads.refresh_token'));
 
+        $googleAdsLastSyncInformation = '';
+        if ($lastSync = Arr::get($shop->settings, 'google_ads.last_sync')) {
+            $googleAdsLastSyncInformation = ' ' . __('Last sync: :at, uploaded :uploaded, removed :removed.', [
+                'at'       => Arr::get($lastSync, 'at'),
+                'uploaded' => Arr::get($lastSync, 'uploaded', 0),
+                'removed'  => Arr::get($lastSync, 'removed', 0),
+            ]);
+        }
+
         $viewContactOptionsPanel = (bool) Arr::get($shop->settings, 'chat.view_contact_options_panel', false);
 
         $allowedBlueprintLabels = [
@@ -724,9 +733,9 @@ class EditShop extends OrgAction
                 [
                     'label'       => __('Google Ads'),
                     'icon'        => 'fa-brands fa-google',
-                    'information' => $isGoogleAdsConnected
+                    'information' => ($isGoogleAdsConnected
                         ? __('This shop is connected to Google Ads. Set the Customer ID and User List ID below to sync customers to your Google Ads user list.')
-                        : __('Connect your Google account to authorize syncing customers, then set the Customer ID and User List ID below.'),
+                        : __('Connect your Google account to authorize syncing customers, then set the Customer ID and User List ID below.')) . $googleAdsLastSyncInformation,
                     'fields'      => [
                         'gads__connect'          => [
                             'type'        => 'action',
@@ -760,6 +769,16 @@ class EditShop extends OrgAction
                             'type'  => 'input',
                             'label' => __('User List ID'),
                             'value' => Arr::get($shop->settings, 'google_ads.user_list_id', ''),
+                        ],
+                        'gads_audience_scope'    => [
+                            'type'        => 'select',
+                            'label'       => __('Who to sync'),
+                            'value'       => Arr::get($shop->settings, 'google_ads.audience_scope', 'subscribed'),
+                            'options'     => [
+                                ['value' => 'subscribed', 'label' => __('Customers subscribed to marketing (recommended)')],
+                                ['value' => 'all', 'label' => __('All customers')],
+                            ],
+                            'information' => __('All customers uploads people who did not agree to marketing. Only use this if you have another lawful basis.'),
                         ],
                     ],
                 ],
