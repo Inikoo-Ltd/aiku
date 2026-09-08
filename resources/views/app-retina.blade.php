@@ -53,12 +53,6 @@
                     })(window, document, "script", "gtmDataLayer", '{{ Arr::get(request()->input("website")->settings, "google_tag_id", "") }}');
                     @endif
 
-                    @if(request()->input('website') && Arr::get(request()->input('website')->settings, 'luigisbox.lbx_code', ''))
-                    var lbx = document.createElement("script");
-                    lbx.async = true;
-                    lbx.src = "https://scripts.luigisbox.tech/{{ Arr::get(request()->input('website')->settings, 'luigisbox.lbx_code', '') }}.js";
-                    document.head.appendChild(lbx);
-                    @endif
                 };
 
                 events.forEach(function (e) { window.addEventListener(e, loadThirdParties, { once: true, passive: true }); });
