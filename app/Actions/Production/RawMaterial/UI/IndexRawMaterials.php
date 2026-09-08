@@ -12,6 +12,9 @@ use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\OrgAction;
 use App\Actions\Overview\ShowGroupOverviewHub;
 use App\Actions\Production\Production\UI\ShowCraftsDashboard;
+use App\Enums\Production\RawMaterial\RawMaterialStateEnum;
+use App\Enums\Production\RawMaterial\RawMaterialTypeEnum;
+use App\Enums\Production\RawMaterial\RawMaterialUnitEnum;
 use App\Enums\UI\Production\RawMaterialsTabsEnum;
 use App\Http\Resources\History\HistoryResource;
 use App\Http\Resources\Production\RawMaterialsResource;
@@ -226,10 +229,40 @@ class IndexRawMaterials extends OrgAction
                         ] : null,
                     ]
                 ],
-                'upload' => $this->parent instanceof Group ? null : [
-                    'event'   => 'action-progress',
-                    'channel' => 'grp.personal.' . $this->organisation->id
-                ],
+                'upload_raw_materials' => $this->parent instanceof Production ? [
+                    'title' => [
+                        'label'       => __('Upload Raw Materials'),
+                        'information' => __('The list of column file: type, state, code, description, unit, unit_cost'),
+                    ],
+                    'progressDescription' => __('Importing raw materials'),
+                    'preview_template'    => [
+                        'header' => ['type', 'state', 'code', 'description', 'unit', 'unit_cost'],
+                        'rows'   => [
+                            [
+                                'type'        => RawMaterialTypeEnum::STOCK->value,
+                                'state'       => RawMaterialStateEnum::IN_USE->value,
+                                'code'        => 'RM-001',
+                                'description' => 'Lavender essential oil',
+                                'unit'        => RawMaterialUnitEnum::LITER->value,
+                                'unit_cost'   => '12.50',
+                            ],
+                        ],
+                    ],
+                    'upload_spreadsheet' => [
+                        'event'           => 'action-progress',
+                        'channel'         => 'grp.personal.'.$request->user()->id,
+                        'required_fields' => ['type', 'state', 'code', 'description', 'unit', 'unit_cost'],
+                        'template'        => [
+                            'label' => __('Download template (.xlsx)'),
+                        ],
+                        'route' => [
+                            'upload' => [
+                                'name'       => 'grp.models.production.raw_materials.upload',
+                                'parameters' => [$this->parent->id],
+                            ],
+                        ],
+                    ],
+                ] : null,
                 'tabs'        => [
                     'current'    => $this->tab,
                     'navigation' => RawMaterialsTabsEnum::navigation(),
