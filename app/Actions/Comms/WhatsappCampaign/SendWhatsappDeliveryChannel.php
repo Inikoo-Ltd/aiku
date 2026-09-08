@@ -131,7 +131,7 @@ class SendWhatsappDeliveryChannel
         /* Rendered before the send is attempted so a failure keeps the text it was going to
            send; an unresolved tag stays as its {{n}} placeholder, which is what shows the
            agent the slot that had no value. */
-        $messageText = $this->renderTemplateBody($campaign->shop_id, $template->name, $language, $merged['values']);
+        $messageText = $this->renderTemplateBody($template->id, $campaign->shop_id, $template->name, $language, $merged['values']);
 
         // WhatsApp rejects a blank parameter, so a template whose tags cannot all be
         // filled for this contact is not sent to them rather than sent broken.
@@ -144,6 +144,7 @@ class SendWhatsappDeliveryChannel
         }
 
         $built = $this->templatePayload(
+            $template->id,
             $campaign->shop_id,
             $recipient->phone,
             $template->name,
@@ -186,7 +187,8 @@ class SendWhatsappDeliveryChannel
             'message_text'    => $messageText ?: null,
             'media_id'        => $headerMedia?->id,
             'metadata'        => [
-                'template'             => $template->name,
+                'template'                 => $template->name,
+                'meta_message_template_id' => $template->id,
                 'template_parameters'  => $merged['values'],
                 'whatsapp_campaign_id' => $campaign->id,
                 'wa_status'            => 'sent',

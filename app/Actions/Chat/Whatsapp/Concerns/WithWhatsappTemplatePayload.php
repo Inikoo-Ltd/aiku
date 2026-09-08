@@ -35,6 +35,7 @@ trait WithWhatsappTemplatePayload
      * @return array{ok: bool, payload?: array<string, mixed>, header_media?: Media|null, message?: string, code?: int}
      */
     protected function templatePayload(
+        ?int $templateId,
         ?int $shopId,
         string $to,
         string $name,
@@ -43,7 +44,7 @@ trait WithWhatsappTemplatePayload
         string $phoneNumberId,
         string $accessToken
     ): array {
-        $record = $this->findTemplate($shopId, $name, $language);
+        $record = $this->findTemplate($templateId, $shopId, $name, $language);
 
         // Meta pauses or rejects templates on its own, and only an approved one can be
         // sent. Catching it here explains why instead of leaving Meta's error code to.
@@ -102,8 +103,18 @@ trait WithWhatsappTemplatePayload
         ];
     }
 
-    protected function findTemplate(?int $shopId, string $name, string $language): ?MetaMessageTemplate
+    /**
+     * The id is what identifies a template: `name` is not unique, so a shop holding more than
+     * one template under the same name and language has no single row the name resolves to.
+     * The name lookup stays for requests sent before the id was passed, and keeps its
+     * approved-first ordering to pick the likeliest of the candidates.
+     */
+    protected function findTemplate(?int $templateId, ?int $shopId, ?string $name, ?string $language): ?MetaMessageTemplate
     {
+        if ($templateId) {
+            return MetaMessageTemplate::find($templateId);
+        }
+
         return MetaMessageTemplate::where('name', $name)
             ->where('language', $language)
             ->whereNotNull('template_id')
@@ -175,9 +186,9 @@ trait WithWhatsappTemplatePayload
         ];
     }
 
-    protected function renderTemplateBody(?int $shopId, string $name, string $language, array $parameters): string
+    protected function renderTemplateBody(?int $templateId, ?int $shopId, string $name, string $language, array $parameters): string
     {
-        $template = $this->findTemplate($shopId, $name, $language);
+        $template = $this->findTemplate($templateId, $shopId, $name, $language);
 
         $body = Arr::get(
             collect(Arr::get($template?->data, 'components', []))->firstWhere('type', 'BODY') ?? [],

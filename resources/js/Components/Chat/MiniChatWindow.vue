@@ -712,6 +712,7 @@ const sendTemplateMessage = async () => {
     scrollBottom()
 
     const formData = new FormData()
+    formData.append("template_id", String(selectedTemplate.value.id))
     formData.append("template_name", selectedTemplate.value.name)
     formData.append("template_language", selectedTemplate.value.language)
     templateParameters.value.forEach((parameter, index) => {

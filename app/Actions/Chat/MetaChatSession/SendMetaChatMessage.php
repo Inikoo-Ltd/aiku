@@ -22,6 +22,7 @@ use App\Events\BroadcastRealtimeMetaChat;
 use App\Models\Chat\ChatAgent;
 use App\Models\Chat\MetaChatMessage;
 use App\Models\Chat\MetaChatSession;
+use App\Models\Chat\MetaMessageTemplate;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Arr;
@@ -58,6 +59,12 @@ class SendMetaChatMessage
                 File::types(WhatsappMediaTypeEnum::DOCUMENT->extensions())
                     ->max(WhatsappMediaTypeEnum::DOCUMENT->maxKilobytes())
             ],
+            'template_id'           => [
+                'sometimes',
+                'nullable',
+                'integer',
+                Rule::exists('meta_message_templates', 'id')
+            ],
             'template_name'         => [
                 'sometimes',
                 'nullable',
@@ -91,10 +98,30 @@ class SendMetaChatMessage
             ];
         }
 
-        $to           = preg_replace('/\D/', '', (string) $metaChatSession->phone_number);
-        $messageText  = trim(strip_tags($modelData['message_text'] ?? ''));
-        $templateName = $modelData['template_name'] ?? null;
-        $upload       = $modelData['image'] ?? $modelData['file'] ?? null;
+        $to          = preg_replace('/\D/', '', (string) $metaChatSession->phone_number);
+        $messageText = trim(strip_tags($modelData['message_text'] ?? ''));
+        $upload      = $modelData['image'] ?? $modelData['file'] ?? null;
+
+        /* Resolved once here so the name and language used for the rest of the send come from
+           the record itself: a request carrying only an id does not send them, and a request
+           carrying only a name may be naming one of several templates that share it. */
+        $template = $this->findTemplate(
+            $modelData['template_id'] ?? null,
+            $metaChatSession->shop_id,
+            $modelData['template_name'] ?? null,
+            $modelData['template_language'] ?? null
+        );
+
+        $templateName     = $template?->name ?? ($modelData['template_name'] ?? null);
+        $templateLanguage = $template?->language ?? ($modelData['template_language'] ?? null);
+
+        if ($templateName && !$templateLanguage) {
+            return [
+                'ok'      => false,
+                'message' => __('This template has no language set and cannot be sent.'),
+                'code'    => 422,
+            ];
+        }
 
         if (!$templateName && !$metaChatSession->can_send_non_template_message) {
             return [
@@ -111,8 +138,7 @@ class SendMetaChatMessage
             $resolved = $this->resolveTemplateParameters(
                 $metaChatSession,
                 $agent,
-                $templateName,
-                $modelData['template_language'],
+                $template,
                 array_values($modelData['template_parameters'] ?? [])
             );
 
@@ -123,10 +149,11 @@ class SendMetaChatMessage
             $parameters = $resolved['parameters'];
 
             $built = $this->templatePayload(
+                $template?->id,
                 $metaChatSession->shop_id,
                 $to,
                 $templateName,
-                $modelData['template_language'],
+                $templateLanguage,
                 $parameters,
                 $phoneNumberId,
                 $accessToken
@@ -138,8 +165,9 @@ class SendMetaChatMessage
 
             $payload            = $built['payload'];
             $templateHeaderMedia = $built['header_media'] ?? null;
-            $messageText  = $this->renderTemplateBody($metaChatSession->shop_id, $templateName, $modelData['template_language'], $parameters);
+            $messageText  = $this->renderTemplateBody($template?->id, $metaChatSession->shop_id, $templateName, $templateLanguage, $parameters);
             $metadata['template'] = $templateName;
+            $metadata['meta_message_template_id'] = $template?->id;
             $metadata['template_parameters'] = $parameters;
         } elseif ($upload instanceof UploadedFile) {
             $mediaResult = $this->uploadMedia($phoneNumberId, $accessToken, $upload);
@@ -300,12 +328,9 @@ class SendMetaChatMessage
     protected function resolveTemplateParameters(
         MetaChatSession $metaChatSession,
         ChatAgent $agent,
-        string $templateName,
-        string $language,
+        ?MetaMessageTemplate $template,
         array $manualParameters
     ): array {
-        $template = $this->findTemplate($metaChatSession->shop_id, $templateName, $language);
-
         $tags = Arr::get($template?->data ?? [], 'merge_tags.body', []);
 
         if (!$tags) {
