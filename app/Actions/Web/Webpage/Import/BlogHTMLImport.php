@@ -16,6 +16,7 @@ use App\Actions\Web\Webpage\UpdateWebpage;
 use App\Enums\Web\Webpage\WebpageSubTypeEnum;
 use App\Enums\Web\Webpage\WebpageTypeEnum;
 use App\Models\Catalogue\Shop;
+use App\Models\Web\Website;
 use App\Models\Web\Webpage;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
@@ -92,8 +93,11 @@ class BlogHTMLImport implements ToCollection
                 return Carbon::parse($item);
             };
 
-            $url      = Carbon::parse($row[$createdColumnPos])->format('m-d-Y');
-            $sourceId = $row[$entryIdColumnPos];
+            $createdAt = $dateParser($row[$createdColumnPos]);
+            $sourceId  = $row[$entryIdColumnPos];
+
+            $existingWebpage = $this->findExistingWebpage($website, $sourceId, $createdAt->format('m-d-Y'));
+            $url             = $existingWebpage ? $existingWebpage->url : $this->getAvailableUrl($website, $createdAt);
 
             $content = $row[$contentColumnPos];
 
@@ -124,18 +128,11 @@ class BlogHTMLImport implements ToCollection
                 ],
                 // Required w/o strict
                 'source_id'     => $sourceId,
-                'created_at'    => $dateParser($row[$createdColumnPos]),
+                'created_at'    => $createdAt,
                 'published_at'  => $dateParser($row[$publishedColumnPos]),
                 'fetched_at'    => now(),
                 'fromCSV'       => true,
             ];
-
-            $existingWebpage = Webpage::where('website_id', $website->id)
-                ->where(function ($query) use ($sourceId, $url) {
-                    $query->where('source_id', $sourceId)
-                        ->orWhere('url', $url);
-                })
-                ->first();
 
             $webpage = $existingWebpage
                 ? $this->replaceWebpage($existingWebpage, $modelData)
@@ -147,6 +144,51 @@ class BlogHTMLImport implements ToCollection
                 ]);
             }
         }
+    }
+
+    private function findExistingWebpage(Website $website, string $sourceId, string $url): ?Webpage
+    {
+        $webpageFromSource = Webpage::where('website_id', $website->id)
+            ->where('source_id', $sourceId)
+            ->first();
+
+        if ($webpageFromSource) {
+            return $webpageFromSource;
+        }
+
+        return Webpage::where('website_id', $website->id)
+            ->where('url', $url)
+            ->whereNull('source_id')
+            ->first();
+    }
+
+    private function getAvailableUrl(Website $website, Carbon $createdAt): string
+    {
+        $url = $createdAt->format('m-d-Y');
+
+        if (!$this->urlIsTaken($website, $url)) {
+            return $url;
+        }
+
+        $urlWithTime = $createdAt->format('m-d-Y-His');
+        $url         = $urlWithTime;
+        $attempt     = 1;
+
+        while ($this->urlIsTaken($website, $url)) {
+            $url = $urlWithTime.'-'.++$attempt;
+        }
+
+        return $url;
+    }
+
+    private function urlIsTaken(Website $website, string $url): bool
+    {
+        return Webpage::where('website_id', $website->id)
+            ->where(function ($query) use ($url) {
+                $query->where('url', $url)
+                    ->orWhere('code', $url);
+            })
+            ->exists();
     }
 
     /**
