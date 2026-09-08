@@ -17,7 +17,6 @@ import Tabs from "@/Components/Navigation/Tabs.vue";
 import { PageHeadingTypes } from "@/types/PageHeading";
 import type { Navigation } from "@/types/Tabs";
 import UploadExcel from '@/Components/Upload/UploadExcel.vue'
-import { get } from 'lodash-es'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue"
 
@@ -34,11 +33,23 @@ const props = defineProps<{
   title: string
   raw_materials?: object
   raw_materials_histories?: {}
+  upload_raw_materials?: {
+    title: {
+      label: string
+      information: string
+    }
+    progressDescription: string
+    upload_spreadsheet: object
+    preview_template: {
+      header: string[]
+      rows: {}[]
+    }
+  }
 }>();
 
 let currentTab = ref(props.tabs.current);
 const handleTabUpdate = (tabSlug) => useTabChange(tabSlug, currentTab);
-const dataModal = ref({ isModalOpen: false })
+const isModalUploadOpen = ref(false)
 const component = computed(() => {
 
   const components = {
@@ -49,29 +60,27 @@ const component = computed(() => {
 
 });
 
-const onUploadOpen = (action) => {
-    dataModal.value.isModalOpen = true
-    dataModal.value.uploadRoutes = action.route
-}
-
-console.log(props)
-
 </script>
 
 <template>
   <Head :title="capitalize(title)" />
   <PageHeading :data="pageHead">
     <template #button-group-upload="{ action }">
-            <Button @click="() => onUploadOpen(action)" :style="action.style" :icon="action.icon"
-                v-tooltip="action.tooltip" class="rounded-l rounded-r-none border-none" />
-        </template>
+      <Button @click="() => (isModalUploadOpen = true)" :style="action.style" :icon="action.icon"
+        v-tooltip="action.tooltip" class="rounded-l rounded-r-none border-none" />
+    </template>
   </PageHeading>
   <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
   <component :is="component" :tab="currentTab" :data="props[currentTab]"></component>
 
-  <UploadExcel information="The list of column file: customer_reference, notes, stored_items"
-        :propName="'pallet deliveries'" description="Adding Pallet Deliveries" :routes="{
-        upload: get(dataModal, 'uploadRoutes', {}),
-    }" :dataModal="dataModal" />
+  <UploadExcel
+    v-if="upload_raw_materials"
+    v-model="isModalUploadOpen"
+    :title="upload_raw_materials.title"
+    :progressDescription="upload_raw_materials.progressDescription"
+    :upload_spreadsheet="upload_raw_materials.upload_spreadsheet"
+    :preview_template="upload_raw_materials.preview_template"
+    :propsRefreshAfterFinish="['raw_materials']"
+  />
 </template>
 

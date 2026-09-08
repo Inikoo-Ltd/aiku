@@ -10,6 +10,7 @@ namespace App\Actions\Iris\Portfolio;
 
 use App\Actions\IrisAction;
 use App\Actions\Traits\WithActionUpdate;
+use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\CRM\Customer;
 use Illuminate\Support\Arr;
@@ -28,6 +29,7 @@ class StoreIrisPortfolioToMultiChannels extends IrisAction
     {
         $channels = $customer->customerSalesChannels()
             ->whereIn('id', Arr::get($modelData, 'customer_sales_channel_ids'))
+            ->where('status', CustomerSalesChannelStatusEnum::OPEN)
             ->get();
 
         StoreIrisPortfolioItemsToChannels::run($channels, Arr::get($modelData, 'item_id'));

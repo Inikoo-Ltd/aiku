@@ -48,6 +48,7 @@ const scopeComponents: Record<string, ReturnType<typeof defineAsyncComponent>> =
     hr: SearchResultGeneric,
     chat: SearchResultGeneric,
     procurement: SearchResultProcurement,
+    production: SearchResultGeneric,
 }
 
 const isOpen = defineModel<boolean>()

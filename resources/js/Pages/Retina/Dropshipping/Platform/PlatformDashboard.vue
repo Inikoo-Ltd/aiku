@@ -20,6 +20,7 @@ import { Message } from "primevue"
 import { routeType } from "@/types/route"
 import { CustomerSalesChannel } from "@/types/customer-sales-channel"
 import PlatformWarningNotConnectedShopify from "@/Components/Retina/Platform/PlatformWarningNotConnectedShopify.vue"
+import PlatformWarningChannelDeleted from "@/Components/Retina/Platform/PlatformWarningChannelDeleted.vue"
 import { layoutStructure } from "@/Composables/useLayoutStructure";
 import axios from "axios"
 import { notify } from "@kyvg/vue3-notification"
@@ -55,6 +56,9 @@ const props = defineProps<{
     ebay_registration_notice?: boolean
     exist_in_platform: boolean
     can_connect_to_platform: boolean
+    deleted_notice?: {
+        create_route: routeType
+    } | null
     platform_logo: string,
     platform: {
         name: string
@@ -218,7 +222,7 @@ const layout = inject('layout', layoutStructure)
                 </div>
 
                 <!-- Button: reset channel -->
-                <div v-else-if="!platform_status && portfolios_count" class="flex flex-nowrap items-center gap-4">
+                <div v-else-if="!platform_status && portfolios_count && !deleted_notice" class="flex flex-nowrap items-center gap-4">
                     <ModalConfirmationDelete
                         v-if="platform.type === 'shopify'"
                         :routeDelete="{
@@ -247,7 +251,7 @@ const layout = inject('layout', layoutStructure)
                 </div>
 
 				<div class="flex flex-nowrap items-center gap-2">
-					<div v-if="['ebay', 'allegro'].includes(customer_sales_channel?.type) && !platform_status">
+					<div v-if="['ebay', 'allegro'].includes(customer_sales_channel?.type) && !platform_status && !deleted_notice">
 						<ButtonWithLink @click="onSubmitReconnect" type="tertiary"
 										:label="trans('Reconnect')"
 										:icon="['fas', 'fa-spinner']">
@@ -264,8 +268,14 @@ const layout = inject('layout', layoutStructure)
 
             </div>
 
+            <!-- Section: Alert if the channel was deleted -->
+            <PlatformWarningChannelDeleted
+                v-if="deleted_notice"
+                :create_route="deleted_notice.create_route"
+            />
+
             <!-- Section: Alert if platform not connected yet -->
-            <template v-if="!can_connect_to_platform || !platform_status">
+            <template v-else-if="!can_connect_to_platform || !platform_status">
                 <PlatformWarningNotConnectedShopify
                     v-if="platform.type === 'shopify'"
                     :customer_sales_channel="customer_sales_channel"

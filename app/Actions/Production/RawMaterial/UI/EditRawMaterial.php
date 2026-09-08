@@ -64,26 +64,28 @@ class EditRawMaterial extends OrgAction
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $request->route()->originalParameters()
                 ),
-                'title'       => __('Edit raw material'),
+                'title'       => __('Edit raw material') . ' ' . $rawMaterial->code,
                 'pageHead'    => [
-                    'title'     => __('Edit raw material'),
-                    // 'actions'   => [
-                    //     [
-                    //         'type'  => 'button',
-                    //         'style' => 'exitEdit',
-                    //         'route' => [
-                    //             'name'       => preg_replace('/edit$/', 'show', $request->route()->getName()),
-                    //             'parameters' => array_values($request->route()->originalParameters())
-                    //         ]
-                    //     ]
-                    // ]
+                    'icon'    => ['fal', 'fa-drone'],
+                    'model'     => __('Raw Material'),
+                    'title'     => __('Edit'),
+                    'actions'   => [
+                        [
+                            'type'  => 'button',
+                            'style' => 'exitEdit',
+                            'route' => [
+                                'name'       => preg_replace('/edit$/', 'show', $request->route()->getName()),
+                                'parameters' => array_values($request->route()->originalParameters())
+                            ]
+                        ]
+                    ],
                 ],
                 'formData' => [
                     'blueprint' => [
                         [
                             'title'  => __('Edit Raw Material'),
-                            'label'  => 'edit',
-                            'icon'   => ['fal', 'fa-narwhal'],
+                            'label'  => __('Edit'),
+                            // 'icon'   => ['fal', 'fa-narwhal'],
                             'fields' => [
                                 'type' => [
                                     'type'     => 'select',
@@ -154,7 +156,7 @@ class EditRawMaterial extends OrgAction
                                     'fetchRoute' => [
                                         'name'       => 'grp.json.org_stocks.index',
                                         'parameters' => [
-                                            'organisation' => $rawMaterial->organisation->slug,
+                                            'organisation' => $rawMaterial->organisation->id,
                                         ]
                                     ],
                                     'valueProp' => 'id',

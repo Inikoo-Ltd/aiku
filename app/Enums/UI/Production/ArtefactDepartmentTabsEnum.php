@@ -1,0 +1,42 @@
+<?php
+
+/*
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Wed, 02 Sep 2026 Malaga, Spain
+ * Copyright (c) 2026, Raul A Perusquia Flores
+ */
+
+namespace App\Enums\UI\Production;
+
+use App\Enums\EnumHelperTrait;
+use App\Enums\HasTabs;
+
+enum ArtefactDepartmentTabsEnum: string
+{
+    use EnumHelperTrait;
+    use HasTabs;
+
+    case ARTEFACTS = 'artefacts';
+    case FAMILIES  = 'families';
+    case HISTORY   = 'history';
+
+    public function blueprint(): array
+    {
+        return match ($this) {
+            ArtefactDepartmentTabsEnum::ARTEFACTS => [
+                'title' => __('Artefacts'),
+                'icon'  => 'fal fa-hamsa',
+            ],
+            ArtefactDepartmentTabsEnum::FAMILIES => [
+                'title' => __('Families'),
+                'icon'  => 'fal fa-folder',
+            ],
+            ArtefactDepartmentTabsEnum::HISTORY => [
+                'align' => 'right',
+                'type'  => 'icon',
+                'title' => __('History'),
+                'icon'  => 'fal fa-clock',
+            ],
+        };
+    }
+}

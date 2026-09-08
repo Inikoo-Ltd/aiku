@@ -2,7 +2,7 @@
 
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Wed, 02 Sep 2026 Malaga, Spain
+ * Created: Tue, 08 Sep 2026 Malaga, Spain
  * Copyright (c) 2026, Raul A Perusquia Flores
  */
 
@@ -50,9 +50,16 @@ class CreateArtefactFamily extends OrgAction
                         [
                             'title'  => __('Artefact family'),
                             'fields' => [
-                                'code'        => ['type' => 'input', 'label' => __('Code'), 'required' => true],
-                                'name'        => ['type' => 'input', 'label' => __('Name'), 'required' => true],
-                                'description' => ['type' => 'textarea', 'label' => __('Description'), 'required' => false],
+                                'artefact_department_id' => [
+                                    'type'        => 'select',
+                                    'label'       => __('Department'),
+                                    'required'    => true,
+                                    'placeholder' => __('Select a department'),
+                                    'options'     => $this->getDepartmentOptions($production),
+                                ],
+                                'code'                   => ['type' => 'input', 'label' => __('Code'), 'required' => true],
+                                'name'                   => ['type' => 'input', 'label' => __('Name'), 'required' => true],
+                                'description'            => ['type' => 'textarea', 'label' => __('Description'), 'required' => false],
                             ]
                         ]
                     ],
@@ -63,6 +70,15 @@ class CreateArtefactFamily extends OrgAction
                 ],
             ]
         );
+    }
+
+    public function getDepartmentOptions(Production $production): array
+    {
+        return $production->artefactDepartments()
+            ->orderBy('code')
+            ->get()
+            ->map(fn ($department) => ['label' => $department->code.' - '.$department->name, 'value' => $department->id])
+            ->all();
     }
 
     public function getBreadcrumbs(array $routeParameters): array

@@ -2,7 +2,7 @@
 
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Wed, 02 Sep 2026 Malaga, Spain
+ * Created: Tue, 08 Sep 2026 Malaga, Spain
  * Copyright (c) 2026, Raul A Perusquia Flores
  */
 
@@ -50,9 +50,16 @@ class EditArtefactFamily extends OrgAction
                         [
                             'title'  => __('Artefact family'),
                             'fields' => [
-                                'code'        => ['type' => 'input', 'label' => __('Code'), 'value' => $artefactFamily->code, 'required' => true],
-                                'name'        => ['type' => 'input', 'label' => __('Name'), 'value' => $artefactFamily->name, 'required' => true],
-                                'description' => ['type' => 'textarea', 'label' => __('Description'), 'value' => $artefactFamily->description, 'required' => false],
+                                'artefact_department_id' => [
+                                    'type'     => 'select',
+                                    'label'    => __('Department'),
+                                    'required' => true,
+                                    'value'    => $artefactFamily->artefact_department_id,
+                                    'options'  => CreateArtefactFamily::make()->getDepartmentOptions($production),
+                                ],
+                                'code'                   => ['type' => 'input', 'label' => __('Code'), 'value' => $artefactFamily->code, 'required' => true],
+                                'name'                   => ['type' => 'input', 'label' => __('Name'), 'value' => $artefactFamily->name, 'required' => true],
+                                'description'            => ['type' => 'textarea', 'label' => __('Description'), 'value' => $artefactFamily->description, 'required' => false],
                             ]
                         ]
                     ],

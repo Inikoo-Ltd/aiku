@@ -15,6 +15,7 @@ use App\Models\Helpers\Tag;
 use App\Models\HumanResources\Employee;
 use App\Models\Inventory\OrgStock;
 use App\Models\Traits\HasHistory;
+use App\Models\Traits\HasSearch;
 use App\Models\Traits\InProduction;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -47,8 +48,8 @@ use Spatie\Sluggable\SlugOptions;
  * @property int|null $trade_unit_id
  * @property int|null $org_stock_id
  * @property int|null $recommended_batch_size
- * @property int|null $artefact_family_id
- * @property-read ArtefactFamily|null $artefactFamily
+ * @property int|null $artefact_department_id
+ * @property-read ArtefactDepartment|null $artefactDepartment
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Tag> $tags
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Production\ArtefactComplianceItem> $complianceItems
@@ -72,6 +73,7 @@ class Artefact extends Model implements Auditable
 {
     use SoftDeletes;
     use HasSlug;
+    use HasSearch;
     use InProduction;
     use HasHistory;
 
@@ -93,12 +95,26 @@ class Artefact extends Model implements Auditable
         'name',
         'description',
         'state',
-        'artefact_family_id',
+        'artefact_department_id',
     ];
 
     public function getRouteKeyName(): string
     {
         return 'slug';
+    }
+
+    public function toSearchableArray(): array
+    {
+        return [
+            'id'              => (string)$this->id,
+            'code'            => (string)$this->code,
+            'name'            => (string)$this->name,
+            'state'           => $this->state->value,
+            'slug'            => (string)$this->slug,
+            'production_id'   => $this->production_id,
+            'organisation_id' => $this->organisation_id,
+            'created_at'      => $this->created_at?->timestamp ?? 0,
+        ];
     }
 
     public function getSlugOptions(): SlugOptions
@@ -107,6 +123,11 @@ class Artefact extends Model implements Auditable
             ->generateSlugsFrom('code')
             ->doNotGenerateSlugsOnUpdate()
             ->saveSlugsTo('slug');
+    }
+
+    public function artefactDepartment(): BelongsTo
+    {
+        return $this->belongsTo(ArtefactDepartment::class);
     }
 
     public function artefactFamily(): BelongsTo

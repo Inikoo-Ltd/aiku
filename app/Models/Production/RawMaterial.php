@@ -16,6 +16,7 @@ use App\Models\Goods\TradeUnit;
 use App\Models\Inventory\OrgStock;
 use App\Models\SysAdmin\Organisation;
 use App\Models\Traits\HasHistory;
+use App\Models\Traits\HasSearch;
 use App\Models\Traits\InProduction;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -67,6 +68,7 @@ class RawMaterial extends Model implements Auditable
     use InProduction;
     use SoftDeletes;
     use HasSlug;
+    use HasSearch;
     use HasHistory;
 
     protected $guarded = [];
@@ -92,6 +94,20 @@ class RawMaterial extends Model implements Auditable
         'unit_cost',
         'stock_status',
     ];
+
+    public function toSearchableArray(): array
+    {
+        return [
+            'id'              => (string)$this->id,
+            'code'            => (string)$this->code,
+            'name'            => (string)$this->description,
+            'state'           => $this->state->value,
+            'slug'            => (string)$this->slug,
+            'production_id'   => $this->production_id,
+            'organisation_id' => $this->organisation_id,
+            'created_at'      => $this->created_at?->timestamp ?? 0,
+        ];
+    }
 
     public function getSlugOptions(): SlugOptions
     {

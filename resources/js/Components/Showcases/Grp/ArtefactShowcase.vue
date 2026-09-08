@@ -7,7 +7,7 @@ interface ArtefactShowcaseData {
     state_label: string
     compliance_status: string
     compliance_label: string
-    artefact_family: { slug: string, name: string } | null
+    artefact_department: { slug: string, name: string } | null
     tags: string[]
     trade_unit: { id: number, code: string, name: string } | null
     org_stock: { id: number, code: string, quantity_in_locations: number | string } | null
@@ -45,7 +45,7 @@ defineProps<{
                 </div>
                 <div>
                     <div class="text-xs text-gray-500 uppercase tracking-wide">{{ trans('Family') }}</div>
-                    <div class="text-sm">{{ data.artefact_family?.name || '-' }}</div>
+                    <div class="text-sm">{{ data.artefact_department?.name || '-' }}</div>
                 </div>
                 <div>
                     <div class="text-xs text-gray-500 uppercase tracking-wide">{{ trans('Tags') }}</div>

@@ -26,6 +26,8 @@ class ArtefactsResource extends JsonResource
             'code'    => $this->code,
             'name'    => $this->name,
             'state'   => $this->state ? ArtefactStateEnum::stateIcon()[$this->state instanceof ArtefactStateEnum ? $this->state->value : $this->state] : null,
+            'artefact_department_name' => $this->artefact_department_name,
+            'artefact_department_slug' => $this->artefact_department_slug,
             'artefact_family_name' => $this->artefact_family_name,
             'artefact_family_slug' => $this->artefact_family_slug,
             'tags'    => $this->whenLoaded('tags', fn () => $this->tags->pluck('name')),

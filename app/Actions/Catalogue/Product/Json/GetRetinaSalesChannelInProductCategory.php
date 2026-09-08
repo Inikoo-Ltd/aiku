@@ -10,6 +10,7 @@
 namespace App\Actions\Catalogue\Product\Json;
 
 use App\Actions\RetinaAction;
+use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\CRM\Customer;
 use Illuminate\Support\Facades\DB;
@@ -22,7 +23,11 @@ class GetRetinaSalesChannelInProductCategory extends RetinaAction
         $collectedSalesChannels = [];
         $products = $productCategory->getProducts();
 
-        foreach ($customer->customerSalesChannels as $customerSalesChannel) {
+        $customerSalesChannels = $customer->customerSalesChannels()
+            ->where('status', CustomerSalesChannelStatusEnum::OPEN)
+            ->get();
+
+        foreach ($customerSalesChannels as $customerSalesChannel) {
             $currentPortfolio = DB::table('portfolios')
                 ->where('customer_id', $customer->id)
                 ->where('item_type', 'Product')

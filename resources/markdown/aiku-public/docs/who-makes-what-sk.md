@@ -17,7 +17,7 @@ Pre manažéra alebo plánovača továrne. Dve malé kroky nastavenia urobia zoz
 
 Artefakt je jedna vec, ktorú továreň vyrába. Kategória je polica takých vecí: kúpeľové gule, mydlo, esenciálne oleje, značková séria. Každý artefakt patrí najviac do jednej kategórie.
 
-- **Factory → Crafts → Artefact families** zobrazí kategórie spolu s tým, koľko artefaktov každá obsahuje. Otvorením kategórie uvidíte jej artefakty.
+- **Factory → Crafts → Artefact departments** zobrazí kategórie spolu s tým, koľko artefaktov každá obsahuje. Otvorením kategórie uvidíte jej artefakty.
 - Na presun artefaktov medzi kategóriami ich odškrtnite v ktoromkoľvek zozname artefaktov a použite **Move to family**. Novú kategóriu vytvoríte tlačidlom **new** v zozname.
 
 Kategórie riadia dve veci: pohľad *By category* na zozname To produce a záložný variant pre remeselníkov, vysvetlený ďalej.
@@ -42,7 +42,7 @@ Najlacnejší spôsob, ako nastaviť továreň, je teda: pripojte remeselníkov 
 
 <aside class="wayfinder"><strong>Kde kliknúť v aiku</strong>
 <ul>
-<li><b>Kategórie:</b> vaša organizácia → <b>Factory</b> → <b>Crafts</b> → <b>Artefact families</b>.</li>
+<li><b>Kategórie:</b> vaša organizácia → <b>Factory</b> → <b>Crafts</b> → <b>Artefact departments</b>.</li>
 <li><b>Presunúť artefakty:</b> odškrtnite artefakty v ktoromkoľvek zozname artefaktov → <b>Move to family</b>.</li>
 <li><b>Pripojiť remeselníka:</b> otvorte kategóriu alebo artefakt → <b>Usually made by</b> → <b>Add artisan…</b>. Odpojíte krížikom na čipe.</li>
 <li><b>Vidieť účinok:</b> <b>Factory</b> → <b>To produce</b> → <b>By artisan</b>.</li>

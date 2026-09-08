@@ -17,7 +17,7 @@ Ražotnes vadītājam vai plānotājam. Divi nelieli iestatījumi padara sarakst
 
 Artefakts ir viena lieta, ko ražotne izgatavo. Kategorija ir to plaukts: vannas bumbas, ziepes, ēteriskās eļļas, zīmola līnija. Katrs artefakts pieder ne vairāk kā vienai kategorijai.
 
-- **Factory → Crafts → Artefact families** (Ražotne → Amatniecība → Artefaktu saimes) uzskaita kategorijas ar to, cik artefaktu katrā ir. Atver vienu, lai redzētu tās artefaktus.
+- **Factory → Crafts → Artefact departments** (Ražotne → Amatniecība → Artefaktu saimes) uzskaita kategorijas ar to, cik artefaktu katrā ir. Atver vienu, lai redzētu tās artefaktus.
 - Lai pārvietotu artefaktus starp kategorijām, atzīmē tos jebkurā artefaktu sarakstā un izmanto **Move to family** (Pārvietot uz saimi). Lai izveidotu kategoriju, izmanto pogu **new** (jauns) sarakstā.
 
 Kategorijas virza divas lietas: skatu *By category* sarakstā To produce un rezerves variantu amatniekiem, kas aprakstīts tālāk.
@@ -42,7 +42,7 @@ Tāpēc lētākais veids, kā iestatīt ražotni: piesaisti amatniekus kategorij
 
 <aside class="wayfinder"><strong>Kur klikšķināt aiku sistēmā</strong>
 <ul>
-<li><b>Kategorijas:</b> tava organizācija → <b>Factory</b> → <b>Crafts</b> → <b>Artefact families</b>.</li>
+<li><b>Kategorijas:</b> tava organizācija → <b>Factory</b> → <b>Crafts</b> → <b>Artefact departments</b>.</li>
 <li><b>Pārvietot artefaktus:</b> atzīmē artefaktus jebkurā artefaktu sarakstā → <b>Move to family</b>.</li>
 <li><b>Piesaistīt amatnieku:</b> atver kategoriju vai artefaktu → <b>Usually made by</b> → <b>Add artisan…</b>. Atsaisti ar krustu uz žetona.</li>
 <li><b>Redzēt rezultātu:</b> <b>Factory</b> → <b>To produce</b> → <b>By artisan</b>.</li>

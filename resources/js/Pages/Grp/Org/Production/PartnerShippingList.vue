@@ -45,6 +45,9 @@ const hiddenGroupsKey = `to-produce-hidden-${props.groupBy}`
 const hiddenGroups = ref<string[]>(JSON.parse(localStorage.getItem(hiddenGroupsKey) || "[]"))
 watch(hiddenGroups, (value) => localStorage.setItem(hiddenGroupsKey, JSON.stringify(value)), { deep: true })
 
+const showPrePick = ref(localStorage.getItem("to-produce-show-pre-pick") === "1")
+watch(showPrePick, (value) => localStorage.setItem("to-produce-show-pre-pick", value ? "1" : "0"))
+
 function toggleGroup(label: string) {
     const index = hiddenGroups.value.indexOf(label)
     index === -1 ? hiddenGroups.value.push(label) : hiddenGroups.value.splice(index, 1)
@@ -74,7 +77,7 @@ function createJobOrders(ids: number[] = Object.keys(selected).map(Number), empl
     )
 }
 
-type BoardItem = { id: number, stock_code: string, stock_name: string, state: string, quantity: number, quantity_to_produce: number | null, maker: string | null, maker_id: number | null, preparing_at: string | null, kind?: "item" | "mix", artefact_id?: number, job_order_id?: number | null, job_order_state?: string | null, job_order_reference?: string | null, job_order_artisan?: string | null }
+type BoardItem = { id: number, stock_code: string, stock_name: string, state: string, quantity: number, quantity_to_produce: number | null, maker: string | null, maker_id: number | null, preparing_at: string | null, kind?: "item" | "mix", artefact_id?: number, job_order_id?: number | null, job_order_state?: string | null, job_order_reference?: string | null, job_order_artisan?: string | null, stock_available?: number | null, buyer_code?: string | null }
 
 function isReassignable(item: BoardItem): boolean {
     return !!item.job_order_id && ["in_process", "submitted"].includes(item.job_order_state ?? "")
@@ -114,9 +117,22 @@ function mixDropTarget(laneIndex: number): boolean {
 function onMixDrop(laneIndex: number, event: DragEvent) {
     if (mixDropTarget(laneIndex)) openPicker("assign-mix", event)
 }
-const LANE_BACKLOG = 0
-const LANE_PREPARING = 1
-const LANE_ASSIGNED = 2
+const LANE_TO_PICK = 0
+const LANE_BACKLOG = 1
+const LANE_PREPARING = 2
+const LANE_ASSIGNED = 3
+
+function isDraggable(item: BoardItem, laneIndex: number): boolean {
+    return (laneIndex >= LANE_BACKLOG && laneIndex <= LANE_PREPARING && item.state === "open") || (laneIndex === LANE_ASSIGNED && isReassignable(item))
+}
+
+function pickIntoOrder(item: BoardItem) {
+    router.post(
+        route("grp.org.productions.show.to_produce.cherry_pick", [route().params["organisation"], route().params["production"]]),
+        { lines: [{ id: item.id, quantity: Number(item.quantity) }] },
+        { preserveScroll: true }
+    )
+}
 
 function dropTarget(laneIndex: number): boolean {
     const first = dragging.value[0]
@@ -583,13 +599,23 @@ function submitCherryPick() {
             </div>
         </div>
             <button v-if="boardFilters.family.length || boardFilters.requester.length || boardFilters.priority.length" type="button" class="text-xs text-gray-400 hover:text-gray-600" @click="boardFilters.family = []; boardFilters.requester = []; boardFilters.priority = []">× {{ trans("Clear") }}</button>
+            <button
+                v-if="groupBy === 'board'"
+                type="button"
+                class="ml-auto flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 transition"
+                :class="showPrePick ? 'border-indigo-500 bg-indigo-600 text-white' : 'border-gray-200 bg-gray-50 text-gray-500 hover:border-gray-300 hover:bg-white'"
+                :title="trans('Lines nothing has to be made for, take them from stock')"
+                @click="showPrePick = !showPrePick">
+                {{ trans("Pre-pick") }}
+                <span class="rounded-full px-1.5 text-xs tabular-nums" :class="showPrePick ? 'bg-white/20' : 'bg-white'">{{ filteredGroups[LANE_TO_PICK]?.items.length ?? 0 }}</span>
+            </button>
         </div>
     </div>
 
     <div v-if="groupBy === 'board' && groups" class="mx-4 mt-3 flex gap-3">
+        <template v-for="(lane, laneIndex) in filteredGroups" :key="lane.label">
         <div
-            v-for="(lane, laneIndex) in filteredGroups"
-            :key="lane.label"
+            v-if="laneIndex !== LANE_TO_PICK || showPrePick"
             class="flex min-w-0 flex-1 flex-col rounded-lg border bg-gray-50 transition dark:bg-gray-800"
             :class="dropTarget(laneIndex) ? 'border-indigo-400 ring-2 ring-indigo-200' : 'border-gray-200 dark:border-gray-700'"
             @dragover="dropTarget(laneIndex) ? $event.preventDefault() : null"
@@ -605,11 +631,11 @@ function submitCherryPick() {
                     :key="item.id"
                     class="rounded border bg-white px-2 py-1.5 text-xs transition dark:bg-gray-900"
                     :class="[
-                        (laneIndex <= LANE_PREPARING && item.state === 'open') || (laneIndex === LANE_ASSIGNED && isReassignable(item)) ? 'cursor-grab select-none active:cursor-grabbing' : '',
+                        isDraggable(item, laneIndex) ? 'cursor-grab select-none active:cursor-grabbing' : '',
                         selectedCards.includes(item.id) ? 'border-indigo-500 bg-indigo-50 ring-1 ring-indigo-500 dark:bg-indigo-950' : 'border-gray-200 dark:border-gray-700',
                     ]"
-                    :draggable="(laneIndex <= LANE_PREPARING && item.state === 'open') || (laneIndex === LANE_ASSIGNED && isReassignable(item))"
-                    @click="(laneIndex <= LANE_PREPARING && item.state === 'open') || (laneIndex === LANE_ASSIGNED && isReassignable(item)) ? toggleCard(item, laneIndex) : null"
+                    :draggable="isDraggable(item, laneIndex)"
+                    @click="isDraggable(item, laneIndex) ? toggleCard(item, laneIndex) : null"
                     @dragstart="startDrag(item, lane.items)"
                     @dragend="dragging = []">
                     <div class="flex items-center gap-1.5">
@@ -638,6 +664,18 @@ function submitCherryPick() {
                         <span v-if="item.family">· {{ item.family }}</span>
                         <Link v-if="item.job_order_slug" :href="jobOrderHref(item)" class="primaryLink ml-auto">{{ item.job_order_reference }}</Link>
                     </div>
+                    <div v-if="laneIndex <= LANE_PREPARING" class="text-gray-400">
+                        <span v-if="Number(item.stock_available) >= Number(item.quantity)" class="text-emerald-600">{{ trans("In stock") }}: {{ useLocaleStore().number(Number(item.stock_available)) }}</span>
+                        <span v-else>{{ trans("In stock") }}: {{ useLocaleStore().number(Number(item.stock_available ?? 0)) }}</span>
+                    </div>
+                    <button
+                        v-if="laneIndex === LANE_TO_PICK && item.buyer_code && item.state === 'open'"
+                        type="button"
+                        class="mt-1 w-full rounded bg-indigo-600 px-2 py-0.5 text-white hover:bg-indigo-700"
+                        :title="trans('Not made here, take it from stock')"
+                        @click.stop="pickIntoOrder(item)">
+                        {{ trans("Pre-pick") }}
+                    </button>
                     <button v-if="item.job_order_id && isReassignable(item)" type="button" class="flex items-center gap-1 rounded text-gray-600 hover:bg-indigo-50 hover:text-indigo-700" :title="trans('Change artisan')" @click.stop="openReassign(item, $event)">
                         <FontAwesomeIcon icon="fal fa-user-hard-hat" class="text-gray-400" fixed-width />
                         {{ item.job_order_artisan ?? trans("No artisan") }}
@@ -654,6 +692,7 @@ function submitCherryPick() {
                 </div>
             </div>
         </div>
+        </template>
     </div>
 
     <div v-else-if="groups" class="mx-4 mt-5 space-y-6">

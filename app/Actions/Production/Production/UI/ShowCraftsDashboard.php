@@ -12,6 +12,7 @@ use App\Actions\Dashboard\ShowOrganisationDashboard;
 use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Actions\WithActionButtons;
+use App\Enums\Production\Artefact\ArtefactStateEnum;
 use App\Enums\UI\Production\ProductionTabsEnum;
 use App\Http\Resources\History\HistoryResource;
 use App\Http\Resources\Production\ProductionResource;
@@ -86,28 +87,7 @@ class ShowCraftsDashboard extends OrgAction
 
 
                 ],
-                'stats' => [
-                    [
-                        'name'  => __('Raw materials'),
-                        'stat'  => $production->stats->number_raw_materials,
-                        'color' => 'teal',
-                        'icon'  => ['fal', 'fa-network-wired'],
-                        'route' => [
-                            'name'       => 'grp.org.productions.show.crafts.raw_materials.index',
-                            'parameters' => $request->route()->originalParameters()
-                        ],
-                    ],
-                    [
-                        'name'  => __('Artefacts'),
-                        'stat'  => $production->stats->number_artefacts,
-                        'color' => 'indigo',
-                        'icon'  => ['fal', 'fa-hamsa'],
-                        'route' => [
-                            'name'       => 'grp.org.productions.show.crafts.artefacts.index',
-                            'parameters' => $request->route()->originalParameters()
-                        ],
-                    ],
-                ],
+                'stats' => $this->getStats($production, $request->route()->originalParameters()),
                 'statsBoxNegativeTitle' => __('Artefact problems'),
                 'statsBoxNegative' => [
                     [
@@ -158,6 +138,103 @@ class ShowCraftsDashboard extends OrgAction
         )->table(IndexHistory::make()->tableStructure(prefix: ProductionTabsEnum::HISTORY->value));
     }
 
+
+    private function getStats(Production $production, array $routeParameters): array
+    {
+        $artefactCounts = ArtefactStateEnum::count($production);
+
+        $artefactsRoute = fn (array $elements = []) => [
+            'name'       => 'grp.org.productions.show.crafts.artefacts.index',
+            'parameters' => array_merge($routeParameters, $elements)
+        ];
+
+        $byState = fn (ArtefactStateEnum $state) => $artefactsRoute(['artefacts_elements[state]' => $state->value]);
+
+        return [
+            [
+                'label' => __('Departments'),
+                'icon'  => 'fal fa-folder-tree',
+                'color' => '#a3e635',
+                'value' => $production->artefactDepartments()->count(),
+                'route' => [
+                    'name'       => 'grp.org.productions.show.crafts.artefact_departments.index',
+                    'parameters' => $routeParameters
+                ],
+                'metas' => [
+                    [
+                        'tooltip' => __('Artefacts without a department'),
+                        'icon'    => ['icon' => 'fal fa-unlink', 'class' => 'text-amber-500'],
+                        'count'   => $production->artefacts()->whereNull('artefact_department_id')->count(),
+                        'route'   => $artefactsRoute(['artefacts_elements[department]' => 'unassigned']),
+                    ],
+                ],
+            ],
+            [
+                'label' => __('Families'),
+                'icon'  => 'fal fa-folder',
+                'color' => '#c084fc',
+                'value' => $production->artefactFamilies()->count(),
+                'route' => [
+                    'name'       => 'grp.org.productions.show.crafts.artefact_families.index',
+                    'parameters' => $routeParameters
+                ],
+                'metas' => [
+                    [
+                        'tooltip' => __('Artefacts without a family'),
+                        'icon'    => ['icon' => 'fal fa-unlink', 'class' => 'text-amber-500'],
+                        'count'   => $production->artefacts()->whereNull('artefact_family_id')->count(),
+                        'route'   => $artefactsRoute(['artefacts_elements[family]' => 'unassigned']),
+                    ],
+                ],
+            ],
+            [
+                'label' => __('Artefacts'),
+                'icon'  => 'fal fa-hamsa',
+                'color' => '#818cf8',
+                'value' => $production->stats->number_artefacts,
+                'route' => [
+                    'name'       => 'grp.org.productions.show.crafts.artefacts.index',
+                    'parameters' => $routeParameters
+                ],
+                'metas' => [
+                    [
+                        'tooltip' => __('Active artefacts'),
+                        'icon'    => ['icon' => 'fas fa-check-circle', 'class' => 'text-green-500'],
+                        'count'   => $artefactCounts[ArtefactStateEnum::ACTIVE->value],
+                        'route'   => $byState(ArtefactStateEnum::ACTIVE),
+                    ],
+                    [
+                        'tooltip' => __('In process'),
+                        'icon'    => ['icon' => 'fal fa-seedling', 'class' => 'text-green-500 animate-pulse'],
+                        'count'   => $artefactCounts[ArtefactStateEnum::IN_PROCESS->value],
+                        'route'   => $byState(ArtefactStateEnum::IN_PROCESS),
+                    ],
+                    [
+                        'tooltip' => __('Dormant'),
+                        'icon'    => ['icon' => 'fas fa-times-circle', 'class' => 'text-amber-500'],
+                        'count'   => $artefactCounts[ArtefactStateEnum::DORMANT->value],
+                        'route'   => $byState(ArtefactStateEnum::DORMANT),
+                    ],
+                    [
+                        'tooltip' => __('Discontinued'),
+                        'icon'    => ['icon' => 'fas fa-times-circle', 'class' => 'text-red-500'],
+                        'count'   => $artefactCounts[ArtefactStateEnum::DISCONTINUED->value],
+                        'route'   => $byState(ArtefactStateEnum::DISCONTINUED),
+                    ],
+                ],
+            ],
+            [
+                'label' => __('Raw materials'),
+                'icon'  => 'fal fa-network-wired',
+                'color' => '#2dd4bf',
+                'value' => $production->stats->number_raw_materials,
+                'route' => [
+                    'name'       => 'grp.org.productions.show.crafts.raw_materials.index',
+                    'parameters' => $routeParameters
+                ],
+            ],
+        ];
+    }
 
     public function jsonResponse(Production $production): ProductionResource
     {

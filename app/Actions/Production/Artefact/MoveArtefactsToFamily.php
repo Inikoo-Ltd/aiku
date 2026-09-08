@@ -2,15 +2,17 @@
 
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Wed, 02 Sep 2026 Malaga, Spain
+ * Created: Tue, 08 Sep 2026 Malaga, Spain
  * Copyright (c) 2026, Raul A Perusquia Flores
  */
 
 namespace App\Actions\Production\Artefact;
 
 use App\Actions\OrgAction;
+use App\Actions\Production\ArtefactDepartment\Hydrators\ArtefactDepartmentHydrateArtefacts;
 use App\Actions\Production\ArtefactFamily\Hydrators\ArtefactFamilyHydrateArtefacts;
 use App\Models\Production\Artefact;
+use App\Models\Production\ArtefactDepartment;
 use App\Models\Production\ArtefactFamily;
 use App\Models\Production\Production;
 use Illuminate\Http\RedirectResponse;
@@ -25,11 +27,21 @@ class MoveArtefactsToFamily extends OrgAction
             ->whereIn('id', $modelData['artefacts'])
             ->get();
 
-        $touchedFamilyIds = $artefacts->pluck('artefact_family_id')->push($modelData['artefact_family_id'])->filter()->unique();
+        $family = $modelData['artefact_family_id'] ? ArtefactFamily::find($modelData['artefact_family_id']) : null;
 
-        Artefact::whereIn('id', $artefacts->pluck('id'))->update(['artefact_family_id' => $modelData['artefact_family_id']]);
+        $touchedFamilies    = $artefacts->pluck('artefact_family_id')->push($family?->id)->filter()->unique();
+        $touchedDepartments = $artefacts->pluck('artefact_department_id')->push($family?->artefact_department_id)->filter()->unique();
 
-        ArtefactFamily::whereIn('id', $touchedFamilyIds)->each(fn (ArtefactFamily $family) => ArtefactFamilyHydrateArtefacts::run($family));
+        /* A family lives in exactly one department, so the artefacts follow it there. */
+        $update = ['artefact_family_id' => $family?->id];
+        if ($family) {
+            $update['artefact_department_id'] = $family->artefact_department_id;
+        }
+
+        Artefact::whereIn('id', $artefacts->pluck('id'))->update($update);
+
+        ArtefactFamily::whereIn('id', $touchedFamilies)->each(fn (ArtefactFamily $family) => ArtefactFamilyHydrateArtefacts::run($family));
+        ArtefactDepartment::whereIn('id', $touchedDepartments)->each(fn (ArtefactDepartment $department) => ArtefactDepartmentHydrateArtefacts::run($department));
 
         return $artefacts->count();
     }

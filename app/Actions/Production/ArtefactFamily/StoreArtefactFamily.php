@@ -2,30 +2,31 @@
 
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Wed, 02 Sep 2026 Malaga, Spain
+ * Created: Tue, 08 Sep 2026 Malaga, Spain
  * Copyright (c) 2026, Raul A Perusquia Flores
  */
 
 namespace App\Actions\Production\ArtefactFamily;
 
 use App\Actions\OrgAction;
+use App\Models\Production\ArtefactDepartment;
 use App\Models\Production\ArtefactFamily;
-use App\Models\Production\Production;
 use App\Rules\AlphaDashDot;
 use App\Rules\IUnique;
-use Illuminate\Http\RedirectResponse;
-use Illuminate\Support\Facades\Redirect;
 use Lorisleiva\Actions\ActionRequest;
 
 class StoreArtefactFamily extends OrgAction
 {
-    public function handle(Production $production, array $modelData): ArtefactFamily
+    private ArtefactDepartment $artefactDepartment;
+
+    public function handle(ArtefactDepartment $artefactDepartment, array $modelData): ArtefactFamily
     {
-        data_set($modelData, 'group_id', $production->group_id);
-        data_set($modelData, 'organisation_id', $production->organisation_id);
+        data_set($modelData, 'group_id', $artefactDepartment->group_id);
+        data_set($modelData, 'organisation_id', $artefactDepartment->organisation_id);
+        data_set($modelData, 'production_id', $artefactDepartment->production_id);
 
         /** @var ArtefactFamily $artefactFamily */
-        $artefactFamily = $production->artefactFamilies()->create($modelData);
+        $artefactFamily = $artefactDepartment->artefactFamilies()->create($modelData);
 
         return $artefactFamily;
     }
@@ -42,43 +43,37 @@ class StoreArtefactFamily extends OrgAction
     public function rules(): array
     {
         return [
-            'code'        => [
+            'code'                => [
                 'required',
                 new AlphaDashDot(),
                 'max:64',
                 new IUnique(
                     table: 'artefact_families',
                     extraConditions: [
-                        ['column' => 'production_id', 'value' => $this->production->id],
+                        ['column' => 'artefact_department_id', 'value' => $this->artefactDepartment->id],
                     ]
                 ),
             ],
-            'name'        => ['required', 'string', 'max:255'],
-            'description' => ['sometimes', 'nullable', 'string', 'max:1024'],
+            'name'                => ['required', 'string', 'max:255'],
+            'description'         => ['sometimes', 'nullable', 'string', 'max:1024'],
+            'org_stock_family_id' => ['sometimes', 'nullable', 'integer', 'exists:org_stock_families,id'],
         ];
     }
 
-    public function action(Production $production, array $modelData): ArtefactFamily
+    public function action(ArtefactDepartment $artefactDepartment, array $modelData): ArtefactFamily
     {
-        $this->asAction = true;
-        $this->initialisationFromProduction($production, $modelData);
+        $this->asAction           = true;
+        $this->artefactDepartment = $artefactDepartment;
+        $this->initialisationFromProduction($artefactDepartment->production, $modelData);
 
-        return $this->handle($production, $this->validatedData);
+        return $this->handle($artefactDepartment, $this->validatedData);
     }
 
-    public function asController(Production $production, ActionRequest $request): ArtefactFamily
+    public function asController(ArtefactDepartment $artefactDepartment, ActionRequest $request): ArtefactFamily
     {
-        $this->initialisationFromProduction($production, $request);
+        $this->artefactDepartment = $artefactDepartment;
+        $this->initialisationFromProduction($artefactDepartment->production, $request);
 
-        return $this->handle($production, $this->validatedData);
-    }
-
-    public function htmlResponse(ArtefactFamily $artefactFamily): RedirectResponse
-    {
-        return Redirect::route('grp.org.productions.show.crafts.artefact_families.show', [
-            $artefactFamily->organisation->slug,
-            $artefactFamily->production->slug,
-            $artefactFamily->slug,
-        ]);
+        return $this->handle($artefactDepartment, $this->validatedData);
     }
 }

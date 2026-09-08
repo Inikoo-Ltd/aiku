@@ -12,6 +12,7 @@ namespace App\Actions\Retina\Dropshipping\Portfolio;
 use App\Actions\Dropshipping\Portfolio\StorePortfolio;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
+use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
 use App\Events\StoreRetinaProductCategoryPortfolioProgressEvent;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
@@ -43,6 +44,7 @@ class StoreRetinaPortfolioToMultiChannels extends RetinaAction
 
         $channels = $customer->customerSalesChannels()
             ->whereIn('id', Arr::get($modelData, 'customer_sales_channel_ids'))
+            ->where('status', CustomerSalesChannelStatusEnum::OPEN)
             ->get();
 
         $items = Product::whereIn('id', Arr::get($modelData, 'item_id'))
@@ -95,7 +97,8 @@ class StoreRetinaPortfolioToMultiChannels extends RetinaAction
         return [
             'customer_sales_channel_ids' => 'required|array|min:1',
             'customer_sales_channel_ids.*' => ['required', 'integer', Rule::exists('customer_sales_channels', 'id')
-                ->where('customer_id', $this->customer->id)],
+                ->where('customer_id', $this->customer->id)
+                ->where('status', CustomerSalesChannelStatusEnum::OPEN->value)],
             'item_id.*' => 'required|integer|exists:products,id'
         ];
     }

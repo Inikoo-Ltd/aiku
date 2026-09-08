@@ -37,6 +37,10 @@ const optionRadio = [
         value: 'allow_dropshipping',
         label: 'Allow dropshipping'
     },
+    {
+        value: 'is_goods_out',
+        label: 'Goods out gathering'
+    },
 ]
 
 // Blueprint: data

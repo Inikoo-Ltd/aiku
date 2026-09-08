@@ -4,7 +4,7 @@ summary: Teach aiku which artisans usually make each category or artefact, so th
 date: 2026-09-02
 tags: production, crafts, hr
 category: production
-help_routes: grp.org.productions.show.crafts.artefact_families, grp.org.productions.show.crafts.artefacts
+help_routes: grp.org.productions.show.crafts.artefact_departments, grp.org.productions.show.crafts.artefacts
 series: Ordering from partners
 order: 5
 ---
@@ -17,7 +17,7 @@ For the factory manager or planner. Two small pieces of setup make the <a href="
 
 An artefact is one thing the factory makes. A category is a shelf of them: bath bombs, soap, essential oils, a brand range. Every artefact belongs to at most one category.
 
-- **Factory → Crafts → Artefact families** lists the categories with how many artefacts each holds. Open one to see its artefacts.
+- **Factory → Crafts → Artefact departments** lists the categories with how many artefacts each holds. Open one to see its artefacts.
 - To move artefacts between categories, tick them on any artefact list and use **Move to family**. To create a category, use the **new** button on the list.
 
 Categories drive two things: the *By category* view of the To produce list, and the fallback for artisans, explained next.
@@ -42,7 +42,7 @@ So the cheap way to set up a factory is: attach artisans to categories, and only
 
 <aside class="wayfinder"><strong>Where to click in aiku</strong>
 <ul>
-<li><b>Categories:</b> your organisation → <b>Factory</b> → <b>Crafts</b> → <b>Artefact families</b>.</li>
+<li><b>Categories:</b> your organisation → <b>Factory</b> → <b>Crafts</b> → <b>Artefact departments</b>.</li>
 <li><b>Move artefacts:</b> tick artefacts on any artefact list → <b>Move to family</b>.</li>
 <li><b>Attach an artisan:</b> open a category or an artefact → <b>Usually made by</b> → <b>Add artisan…</b>. Detach with the cross on the chip.</li>
 <li><b>See the effect:</b> <b>Factory</b> → <b>To produce</b> → <b>By artisan</b>.</li>
