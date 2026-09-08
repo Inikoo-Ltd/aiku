@@ -29,6 +29,11 @@ class GetArtefactShowcase
             'tags'              => $artefact->tags->pluck('name'),
             'compliance_status' => $compliance['status'],
             'compliance_label'  => $compliance['label'],
+            'recommended_batch_size' => $artefact->recommended_batch_size,
+            'update_route'      => [
+                'name'       => 'grp.models.production.artefacts.update',
+                'parameters' => [$artefact->production_id, $artefact->id]
+            ],
             'trade_unit' => $artefact->tradeUnit ? [
                 'id'   => $artefact->tradeUnit->id,
                 'code' => $artefact->tradeUnit->code,

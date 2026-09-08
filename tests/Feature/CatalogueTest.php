@@ -21,6 +21,7 @@ use App\Actions\Catalogue\Collection\AttachModelToCollection;
 use App\Actions\Catalogue\Collection\UpdateCollection;
 use App\Actions\Catalogue\Product\DeleteProduct;
 use App\Actions\Catalogue\Product\HydrateProducts;
+use App\Actions\Catalogue\Product\Json\GetIrisProductsInProductCategory;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateAvailableQuantity;
 use App\Actions\Catalogue\Product\StoreProduct;
 use App\Actions\Catalogue\Product\StoreProductVariant;
@@ -247,6 +248,11 @@ test('create sub department', function ($productCategory) {
 
     return $subDepartment;
 })->depends('create department');
+
+test('iris sub department listing sends the whole catalogue in the first page', function (ProductCategory $subDepartment) {
+    expect(GetIrisProductsInProductCategory::run($subDepartment)->perPage())->toBe(200)
+        ->and(GetIrisProductsInProductCategory::run($subDepartment->department)->perPage())->toBe(20);
+})->depends('create sub department');
 
 test('create second department', function ($shop) {
     $departmentData = ProductCategory::factory()->definition();
