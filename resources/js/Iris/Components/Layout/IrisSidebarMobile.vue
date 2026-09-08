@@ -88,7 +88,7 @@ const emit = defineEmits<{
 
 const layout = inject('layout', retinaLayoutStructure)
 const screenType: string = inject('screenType', 'desktop')
-
+const loadingItemIndex = ref<number | null>(null)
 const isLoggedIn = inject('isPreviewLoggedIn', false)
 const onLogout = inject('onLogout', () => console.log('Logout function not injected'))
 
@@ -108,6 +108,7 @@ const isLoadingSubDepartment = ref(false)
 
 // Track which department row is currently navigating
 const loadingCategoryIndex = ref<number | null>(null)
+const loadingCustomTopIndex = ref<number | null>(null)
 
 // Handle navigation with loading state
 const handleViewAllProductCategory = (url: string) => {
@@ -389,6 +390,8 @@ const handleViewAllSubDepartment = (url: string) => {
                             <LinkIris v-if="customTopItem?.url !== null"
                                 :href="customTopItem.type === 'internal' ? internalHref(customTopItem) : customTopItem.url"
                                 :target="getTarget(customTopItem)"
+                                @start="loadingCustomTopIndex = customTopIndex"
+                                @finish="loadingCustomTopIndex = null"
                                 @success="() => closeSidebar()"
                                 class="font-bold pl-2 py-2 hover:underline">
                                 {{ customTopItem.name }}
@@ -398,8 +401,10 @@ const handleViewAllSubDepartment = (url: string) => {
                                 {{ customTopItem.name }}
                             </span>
 
-                            <div v-if="!!customTopItem.sub_departments?.length" @click="setActiveCustomTopCategory(customTopIndex)" class="text-sm pr-2 py-2 ">
-                                <FontAwesomeIcon :icon="faChevronRight" fixed-width  />
+                            <div class="text-sm pr-2 py-2"
+                                @click="customTopItem.sub_departments?.length ? setActiveCustomTopCategory(customTopIndex) : null">
+                                <LoadingIcon v-if="loadingCustomTopIndex === customTopIndex" />
+                                <FontAwesomeIcon v-else-if="!!customTopItem.sub_departments?.length" :icon="faChevronRight" fixed-width class="cursor-pointer" />
                             </div>
                         </div>
                     </div>
@@ -460,20 +465,23 @@ const handleViewAllSubDepartment = (url: string) => {
 
                 <!-- Section: List additional links -->
                 <div v-if="layout.iris.isSidebarLoading" class="flex flex-col gap-y-3 mb-8">
-                    <div v-for="i in 2" class="w-full h-[1.9rem] skeleton">
-
-                    </div>
+                    <div v-for="i in 2" class="w-full h-[1.9rem] skeleton" />
                 </div>
                 <div v-else-if="props?.fieldValue?.additional_items?.items_list?.length" class="flex flex-col gap-y-3 mb-8">
-                    <LinkIris v-for="item in props?.fieldValue?.additional_items?.items_list"
+                    <LinkIris v-for="(item, itemIndex) in props?.fieldValue?.additional_items?.items_list"
+                        :key="itemIndex"
                         :href="item?.url?.href ?? ''"
-                        class="flex gap-x-2 items-center py-1 hover:underline"
+                        class="flex gap-x-2 items-center justify-between py-1 hover:underline"
                         :type="item.url?.type"
                         :target="item.url?.target"
+                        @start="() => loadingItemIndex = itemIndex"
+                        @finish="() => loadingItemIndex = null"
                     >
-                        <FontAwesomeIcon :icon="item.icon" class="text-xl" fixed-width aria-hidden="true" />
-                        <div class="text-sm" v-html="item.text">
+                        <div class="flex items-center gap-x-2 min-w-0">
+                            <FontAwesomeIcon :icon="item.icon" class="text-xl" fixed-width aria-hidden="true" />
+                            <div class="text-sm" v-html="item.text" />
                         </div>
+                        <LoadingIcon v-if="loadingItemIndex === itemIndex" class="text-sm" />
                     </LinkIris>
                 </div>
 

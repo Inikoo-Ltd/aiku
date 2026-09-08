@@ -26,8 +26,8 @@ const buildQuestionNodes = (faqs: BuildFaqStructuredDataOptions["faqs"]): Struct
     for (const faq of faqs) {
         if (!isPlainObject(faq)) continue
 
-        const name = stripHtml(faq.label)
-        const text = stripHtml(faq.description)
+        const name = stripHtml(faq.label ?? faq.question)
+        const text = stripHtml(faq.description ?? faq.answer)
 
         if (!name || !text) continue
         if (questionNodes.has(name)) continue
@@ -66,6 +66,17 @@ export const buildFaqPageNode = ({
     }
 
     return node
+}
+
+export const buildFaqPageJsonLd = (options: BuildFaqStructuredDataOptions): string | null => {
+    const faqPageNode = buildFaqPageNode(options)
+
+    if (!faqPageNode) return null
+
+    return JSON.stringify({
+        "@context": "https://schema.org",
+        ...faqPageNode,
+    }).replace(/</g, "\\u003c")
 }
 
 export const useFaqStructuredData = () => {
