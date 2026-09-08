@@ -1908,6 +1908,36 @@ describe('calculate order discounts', function () {
         SuspendOffer::run($offer);
     });
 
+    test('SubmitOrder: a gift from an offer that has since ended is dropped on re-submit', function () {
+        $order       = Order::latest('id')->first();
+        $giftProduct = Product::where('shop_id', $this->shop->id)->where('code', 'GIFT-PROD')->first();
+
+        $offer = StoreBuyXGetCheapestFree::make()->actionForProduct(
+            $this->product,
+            [
+                'trigger_data_item_quantity' => 3,
+                'free_quantity'              => 1,
+                'free_product_id'            => $giftProduct->id,
+                'duration'                   => 'interval',
+                'start_at'                   => now(),
+                'end_at'                     => now()->addDays(14)->toDateTimeString(),
+            ]
+        );
+
+        SubmitOrder::make()->processGiftOffers($order);
+
+        $giftTransaction = Transaction::where('order_id', $order->id)->where('is_gift', true)->where('model_id', $giftProduct->id)->first();
+        expect($giftTransaction)->not->toBeNull();
+
+        FinishOffer::make()->handle($offer->refresh(), false);
+
+        SubmitOrder::make()->removeGiftsFromOffersNoLongerLive($order->refresh());
+
+        expect($giftTransaction->fresh()->trashed())->toBeTrue();
+
+        $giftTransaction->forceDelete();
+    });
+
     test('CalculateOrderDiscounts: mix and match cheapest free across different family products', function () {
         $order       = Order::latest('id')->first();
         $transaction = Transaction::where('order_id', $order->id)->first();
