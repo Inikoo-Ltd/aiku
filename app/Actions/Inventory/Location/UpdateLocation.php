@@ -11,6 +11,7 @@ namespace App\Actions\Inventory\Location;
 use App\Actions\Inventory\Location\Hydrators\LocationHydrateSortCode;
 use App\Actions\Inventory\Warehouse\Hydrators\WarehouseHydrateLocations;
 use App\Actions\Inventory\WarehouseArea\Hydrators\WarehouseAreaHydrateLocations;
+use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateQuantityInLocations;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateLocations;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateLocations;
@@ -47,6 +48,15 @@ class UpdateLocation extends OrgAction
 
         if ($location->wasChanged('code')) {
             $location = LocationHydrateSortCode::run($location);
+        }
+
+        /* Stock already in the location changes side without moving: what a goods out
+           location holds is spoken for and stops being available, and comes back when the
+           location is an ordinary one again. */
+        if ($location->wasChanged('is_goods_out')) {
+            foreach ($location->locationOrgStocks()->pluck('org_stock_id') as $orgStockId) {
+                OrgStockHydrateQuantityInLocations::dispatch($orgStockId)->delay($this->hydratorsDelay);
+            }
         }
 
         // TODO allow_dropshipping change -> disable all orgLocation that use this location as default dropshipping

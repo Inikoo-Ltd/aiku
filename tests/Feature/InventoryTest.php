@@ -1276,15 +1276,13 @@ test('stock parked in a goods out location stops being available', function () {
     $inLocations = (float) $orgStock->fresh()->quantity_in_locations;
     expect((float) $orgStock->fresh()->quantity_available)->toBe($inLocations);
 
-    $slot->location->update(['is_goods_out' => true]);
-    OrgStockHydrateQuantityInLocations::run($orgStock->id);
+    UpdateLocation::make()->action($slot->location, ['is_goods_out' => true]);
 
     $orgStock->refresh();
     expect((float) $orgStock->quantity_in_locations)->toBe($inLocations)
         ->and((float) $orgStock->quantity_available)->toBe($inLocations - 10);
 
-    $slot->location->update(['is_goods_out' => false]);
-    OrgStockHydrateQuantityInLocations::run($orgStock->id);
+    UpdateLocation::make()->action($slot->location->refresh(), ['is_goods_out' => false]);
     expect((float) $orgStock->fresh()->quantity_available)->toBe($inLocations);
 });
 
