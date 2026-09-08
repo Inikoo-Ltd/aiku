@@ -10,6 +10,8 @@ namespace App\Actions\Catalogue\Product;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateHeathAndSafetyFromTradeUnits;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateMarketingDimensionFromTradeUnits;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateMarketingIngredientsFromTradeUnits;
+use App\Actions\Web\Webpage\BreakWebpageCache;
+use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\Shop;
 use Illuminate\Console\Command;
@@ -67,6 +69,10 @@ class RepairProductIngredientsAndOriginFromTradeUnits
 
                         if ($borrowedDimensions) {
                             $product->updateQuietly(['marketing_dimensions' => null]);
+
+                            if ($product->webpage && $product->webpage->state == WebpageStateEnum::LIVE) {
+                                BreakWebpageCache::dispatch($product->webpage)->delay(5);
+                            }
                         }
                     }
                 }
