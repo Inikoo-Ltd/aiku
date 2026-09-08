@@ -6,7 +6,6 @@ use App\Actions\Fulfilment\Pallet\UpdatePallet;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Fulfilment\Pallet\PalletStateEnum;
-use App\Http\Resources\Fulfilment\MayaPalletReturnItemUIResource;
 use App\Http\Resources\Fulfilment\PalletReturnItemUIResource;
 use App\Models\Fulfilment\PalletReturnItem;
 use Lorisleiva\Actions\ActionRequest;
@@ -75,11 +74,8 @@ class SetNotPickedPallet extends OrgAction
         return $this->handle($palletReturnItem);
     }
 
-    public function jsonResponse(PalletReturnItem $palletReturnItem, ActionRequest $request): PalletReturnItemUIResource|MayaPalletReturnItemUIResource
+    public function jsonResponse(PalletReturnItem $palletReturnItem, ActionRequest $request): PalletReturnItemUIResource
     {
-        if ($request->hasHeader('Maya-Version')) {
-            return MayaPalletReturnItemUIResource::make($palletReturnItem);
-        }
 
         return new PalletReturnItemUIResource($palletReturnItem);
     }

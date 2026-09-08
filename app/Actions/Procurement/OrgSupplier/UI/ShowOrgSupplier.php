@@ -48,16 +48,6 @@ class ShowOrgSupplier extends OrgAction
         return $this->handle($orgSupplier);
     }
 
-    public function maya(Organisation $organisation, OrgSupplier $orgSupplier, ActionRequest $request): OrgSupplier
-    {
-        $this->maya   = true;
-        $this->parent = $organisation;
-        $this->initialisation($organisation, $request)->withTab(SupplierTabsEnum::values());
-        $this->authorizeProcurementRecord($orgSupplier);
-
-        return $this->handle($orgSupplier);
-    }
-
     /** @noinspection PhpUnusedParameterInspection */
     public function inOrgAgent(Organisation $organisation, OrgAgent $orgAgent, OrgSupplier $orgSupplier, ActionRequest $request): OrgSupplier
     {

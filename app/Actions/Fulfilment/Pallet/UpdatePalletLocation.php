@@ -71,16 +71,6 @@ class UpdatePalletLocation extends OrgAction
         return $this->handle($location, $pallet);
     }
 
-    public function usingLocationSlug(Pallet $pallet, Location $location, ActionRequest $request): Pallet
-    {
-        $this->pallet = $pallet;
-        $this->scope  = $pallet->fulfilment;
-        $this->initialisationFromFulfilment($pallet->fulfilment, $request);
-
-        return $this->handle($location, $pallet);
-    }
-
-
     public function action(Location $location, Pallet $pallet): Pallet
     {
         $this->asAction = true;

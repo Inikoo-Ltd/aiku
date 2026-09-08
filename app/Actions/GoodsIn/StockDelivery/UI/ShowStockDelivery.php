@@ -49,10 +49,6 @@ class ShowStockDelivery extends OrgAction
 
     public function authorize(): bool
     {
-        if ($this->maya) {
-            return true;
-        }
-
         $this->canEdit = true;
 
         // TODO: Need to think of this
@@ -84,15 +80,6 @@ class ShowStockDelivery extends OrgAction
         $this->canEdit = false;
 
         return $this->handle($stockDelivery);
-    }
-
-    public function maya(Organisation $organisation, StockDelivery $stockDelivery, ActionRequest $request): void
-    {
-        $this->maya          = true;
-        $this->stockDelivery = $stockDelivery;
-
-        $this->initialisation($organisation, $request)->withTab($this->getTabs($stockDelivery));
-        $this->authorizeProcurementRecord($stockDelivery);
     }
 
     public function htmlResponse(StockDelivery $stockDelivery, ActionRequest $request): Response

@@ -21,7 +21,6 @@ use App\Http\Middleware\HandlePupilInertiaRequests;
 use App\Http\Middleware\RestrictCountryRegions;
 use App\Http\Middleware\RetinaPreparingAccount;
 use App\Http\Middleware\SameSiteSession;
-use App\Http\Middleware\SetHanAsAppScope;
 use App\Http\Middleware\Authenticate;
 use App\Http\Middleware\BindGroupInstance;
 use App\Http\Middleware\CaptureTrafficSourceMiddleWare;
@@ -132,21 +131,6 @@ class Kernel extends HttpKernel
             EnsureFrontendRequestsAreStateful::class,
             SubstituteBindings::class,
             ApiBindGroupInstance::class,
-            AddFrameOptionsHeader::class
-        ],
-
-        'han' => [
-            ForceJsonResponse::class,
-            EnsureFrontendRequestsAreStateful::class,
-            SetHanAsAppScope::class,
-            SubstituteBindings::class,
-            AddFrameOptionsHeader::class
-        ],
-
-        'maya' => [
-            ForceJsonResponse::class,
-            EnsureFrontendRequestsAreStateful::class,
-            SubstituteBindings::class,
             AddFrameOptionsHeader::class
         ],
 

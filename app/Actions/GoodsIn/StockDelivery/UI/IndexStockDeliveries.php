@@ -56,7 +56,7 @@ class IndexStockDeliveries extends OrgAction
 
     public function authorize(ActionRequest $request): bool
     {
-        if ($this->asAction || $this->maya) {
+        if ($this->asAction) {
             return true;
         }
 
@@ -266,15 +266,6 @@ class IndexStockDeliveries extends OrgAction
     public function asController(Organisation $organisation, ActionRequest $request): LengthAwarePaginator
     {
         $this->parent = $organisation;
-        $this->initialisation($organisation, $request);
-
-        return $this->handle();
-    }
-
-    public function maya(Organisation $organisation, ActionRequest $request): LengthAwarePaginator
-    {
-        $this->parent = $organisation;
-        $this->maya   = true;
         $this->initialisation($organisation, $request);
 
         return $this->handle();
