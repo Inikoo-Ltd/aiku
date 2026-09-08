@@ -14,6 +14,7 @@ use App\Enums\Discounts\Offer\OfferDurationEnum;
 use App\Models\Accounting\InvoiceTransaction;
 use App\Models\Ordering\Transaction;
 use App\Models\Traits\HasHistory;
+use Carbon\Carbon;
 use App\Models\Traits\InShop;
 use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
@@ -119,6 +120,34 @@ class Offer extends Model implements Auditable
     ];
 
     protected $guarded = [];
+
+    protected static function booted(): void
+    {
+        static::saving(function (Offer $offer) {
+            $offer->status = $offer->state == OfferStateEnum::ACTIVE && !$offer->trashed();
+        });
+    }
+
+    public static function stateForDates(Carbon|string|null $startAt, Carbon|string|null $endAt): OfferStateEnum
+    {
+        $startAt = $startAt ? Carbon::parse($startAt) : null;
+        $endAt   = $endAt ? Carbon::parse($endAt) : null;
+
+        if ($endAt && $endAt->lte(now())) {
+            return OfferStateEnum::FINISHED;
+        }
+
+        if ($startAt && $startAt->isFuture()) {
+            return OfferStateEnum::IN_PROCESS;
+        }
+
+        return OfferStateEnum::ACTIVE;
+    }
+
+    public function stateFromDates(): OfferStateEnum
+    {
+        return self::stateForDates($this->start_at, $this->end_at);
+    }
 
     public function generateTags(): array
     {

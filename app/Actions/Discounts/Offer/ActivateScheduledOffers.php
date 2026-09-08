@@ -8,8 +8,6 @@
 
 namespace App\Actions\Discounts\Offer;
 
-use App\Enums\Discounts\Offer\OfferStateEnum;
-use App\Models\Discounts\Offer;
 use Illuminate\Console\Command;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -19,13 +17,8 @@ class ActivateScheduledOffers
 
     public function handle(): void
     {
-        //Find all scheduled offers
-        $scheduledOffers = Offer::where('state', OfferStateEnum::IN_PROCESS)
-            ->whereNull('source_id')//Do not touch old aurora offers
-            ->where('start_at', '<=', now())->get();
-
-        foreach ($scheduledOffers as $offer) {
-            ActivateOffer::run($offer);
+        foreach (UpdateOfferStatusFromDates::make()->outOfSyncOffers()->get() as $offer) {
+            UpdateOfferStatusFromDates::run($offer);
         }
     }
 

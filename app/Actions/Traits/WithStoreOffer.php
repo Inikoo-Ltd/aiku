@@ -8,7 +8,6 @@
 
 namespace App\Actions\Traits;
 
-use App\Enums\Discounts\Offer\OfferStateEnum;
 use App\Models\Discounts\Offer;
 use App\Models\Discounts\OfferCampaign;
 use Carbon\Carbon;
@@ -22,19 +21,18 @@ trait WithStoreOffer
         data_set($modelData, 'organisation_id', $parent->organisation_id);
         data_set($modelData, 'shop_id', $parent->shop_id);
 
-        $status = false;
-        if ($parent instanceof Offer) {
-            if (Arr::get($modelData, 'state') == OfferStateEnum::ACTIVE) {
-                $status = true;
-            }
-        } else {
-            $status = true;
-        }
-
         $modelData = $this->prepareOfferDate($parent, $modelData);
 
-        data_set($modelData, 'status', $status);
-
+        if ($parent instanceof OfferCampaign && !Arr::get($modelData, 'state')) {
+            data_set(
+                $modelData,
+                'state',
+                Offer::stateForDates(
+                    Arr::get($modelData, 'start_at'),
+                    Arr::get($modelData, 'end_at')
+                )
+            );
+        }
 
         return $modelData;
     }

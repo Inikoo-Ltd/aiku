@@ -367,6 +367,96 @@ test('activate scheduled offers', function () {
     ActivateScheduledOffers::run();
 });
 
+test('status always follows state', function () {
+    $offerCampaign = $this->shop->offerCampaigns()->first();
+    $offer         = StoreOffer::make()->action($offerCampaign, Offer::factory()->definition());
+
+    $offer->update(['state' => OfferStateEnum::ACTIVE, 'status' => false]);
+    expect($offer->status)->toBeTrue();
+
+    $offer->update(['state' => OfferStateEnum::SUSPENDED, 'status' => true]);
+    expect($offer->status)->toBeFalse();
+});
+
+test('an offer whose end date has passed is swept off, keeping its end date', function () {
+    $offerCampaign = $this->shop->offerCampaigns()->first();
+
+    $offerData = Offer::factory()->definition();
+    data_set($offerData, 'start_at', now()->subDays(5)->toDateString());
+    data_set($offerData, 'end_at', now()->addDay()->toDateString());
+
+    $offer = StoreOffer::make()->action($offerCampaign, $offerData);
+    $offer->refresh();
+    expect($offer->status)->toBeTrue();
+
+    $endAt = $offer->end_at;
+    $this->travelTo(now()->addDays(3));
+
+    $this->artisan('offer:update_status_from_dates')->assertExitCode(0);
+
+    $offer->refresh();
+    expect($offer->status)->toBeFalse()
+        ->and($offer->state)->toBe(OfferStateEnum::FINISHED)
+        ->and($offer->end_at->toDateTimeString())->toBe($endAt->toDateTimeString());
+    $this->travelBack();
+});
+
+test('the sweep never resurrects a finished offer', function () {
+    $offerCampaign = $this->shop->offerCampaigns()->first();
+    $offer         = StoreOffer::make()->action($offerCampaign, Offer::factory()->definition());
+
+    $offer->update(['state' => OfferStateEnum::FINISHED, 'start_at' => now()->subDay(), 'end_at' => null]);
+
+    UpdateOfferStatusFromDates::run($offer);
+
+    $offer->refresh();
+    expect($offer->state)->toBe(OfferStateEnum::FINISHED)
+        ->and($offer->status)->toBeFalse();
+});
+
+test('a permanent offer started in the past stays live through the sweep', function () {
+    $offerCampaign = $this->shop->offerCampaigns()->first();
+    $offer         = StoreOffer::make()->action($offerCampaign, Offer::factory()->definition());
+
+    $offer->update([
+        'duration' => OfferDurationEnum::PERMANENT,
+        'state'    => OfferStateEnum::ACTIVE,
+        'start_at' => now()->subMonth(),
+        'end_at'   => null,
+    ]);
+
+    UpdateOfferStatusFromDates::run($offer);
+
+    $offer->refresh();
+    expect($offer->state)->toBe(OfferStateEnum::ACTIVE)
+        ->and($offer->status)->toBeTrue();
+});
+
+test('an offer created with a future start date is not live', function () {
+    $offerCampaign = $this->shop->offerCampaigns()->first();
+
+    $offerData = Offer::factory()->definition();
+    data_set($offerData, 'start_at', now()->addDays(2)->toDateString());
+    data_set($offerData, 'end_at', now()->addDays(5)->toDateString());
+
+    $offer = StoreOffer::make()->action($offerCampaign, $offerData);
+    $offer->refresh();
+
+    expect($offer->status)->toBeFalse()
+        ->and($offer->state)->toBe(OfferStateEnum::IN_PROCESS);
+
+    $this->artisan('activate:scheduled_offers')->assertExitCode(0);
+    $offer->refresh();
+    expect($offer->status)->toBeFalse();
+
+    $this->travelTo(now()->addDays(3));
+    $this->artisan('activate:scheduled_offers')->assertExitCode(0);
+    $offer->refresh();
+    expect($offer->status)->toBeTrue()
+        ->and($offer->state)->toBe(OfferStateEnum::ACTIVE);
+    $this->travelBack();
+});
+
 test('finish offer', function () {
     $shop          = $this->shop;
     $offerCampaign = $shop->offerCampaigns()->first();
@@ -832,7 +922,7 @@ test('update offer allowance signature', function () {
 
 
     $allowance1 = StoreOfferAllowance::make()->action($offer, $allowanceData);
-    $allowance1->update(['status' => true]);
+    $allowance1->update(['state' => OfferAllowanceStateEnum::ACTIVE]);
 
     UpdateOfferAllowanceSignature::run($offer);
     $offer->refresh();
@@ -847,7 +937,7 @@ test('update offer allowance signature', function () {
     data_set($allowanceData2, 'data.percentage_off', 20);
 
     $allowance2 = StoreOfferAllowance::make()->action($offer, $allowanceData2);
-    $allowance2->update(['status' => true]);
+    $allowance2->update(['state' => OfferAllowanceStateEnum::ACTIVE]);
 
     UpdateOfferAllowanceSignature::run($offer);
     $offer->refresh();
@@ -857,7 +947,7 @@ test('update offer allowance signature', function () {
     expect($offer->allowance_signature)->toBe($expectedSignature2);
 
     // Deactivate the first allowance
-    $allowance1->update(['status' => false]);
+    $allowance1->update(['state' => OfferAllowanceStateEnum::SUSPENDED]);
     UpdateOfferAllowanceSignature::run($offer);
     $offer->refresh();
 
@@ -865,7 +955,7 @@ test('update offer allowance signature', function () {
     expect($offer->allowance_signature)->toBe($expectedSignature3);
 
     // Test Command with ID
-    $allowance1->update(['status' => true]); // Re-enable
+    $allowance1->update(['state' => OfferAllowanceStateEnum::ACTIVE]); // Re-enable
     $offer->update(['allowance_signature' => '']);
 
     $this->artisan('offer:update_allowance_signature', ['offer' => $offer->id])
