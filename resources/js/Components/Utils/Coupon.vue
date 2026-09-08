@@ -48,7 +48,7 @@ const isOfferExpired = (endAt: string) => {
 </script>
 
 <template>
-    <section class="card w-96 relative isolate"
+    <section class="card w-full relative isolate"
         :class="isOfferExpired(offer.end_at) ? 'bg-gradient-to-l from-gray-100 to-gray-300/90 text-black/40' : 'bg-gradient-to-l from-purple-300 to-purple-500/90 text-white'"
     >
     <div class="text-center text-base w-[88px] flex flex-col justify-center px-1">

@@ -177,7 +177,7 @@ const adjustLabel = computed(() => isQuantityTrigger.value
 </script>
 
 <template>
-    <div class="w-full min-w-[340px]">
+    <div class="w-full">
         <div class="mb-2 text-xs text-gray-500">
             {{ ctrans('Gift preview') }}
         </div>
