@@ -16,6 +16,7 @@ use App\Actions\Production\Artefact\UpdateArtefact;
 use App\Actions\Production\ArtefactDepartment\StoreArtefactDepartment;
 use App\Actions\Production\Artefact\MoveArtefactsToFamily;
 use App\Actions\Production\ArtefactFamily\AssignArtefactsToFamiliesFromOrgStockFamilies;
+use App\Actions\Production\ArtefactFamily\DeleteArtefactFamily;
 use App\Actions\Production\ArtefactFamily\MoveArtefactFamiliesToDepartment;
 use App\Actions\Production\ArtefactFamily\StoreArtefactFamily;
 use App\Models\Production\ArtefactFamily;
@@ -82,6 +83,7 @@ use Inertia\Testing\AssertableInertia;
 
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\get;
+use function Pest\Laravel\delete;
 
 beforeAll(function () {
     loadDB();
@@ -2412,4 +2414,49 @@ test('moving artefacts to a family moves them into the family department', funct
     expect($artefact->refresh()->artefact_family_id)->toBe($family->id)
         ->and($artefact->artefact_department_id)->toBe($home->id)
         ->and($family->refresh()->number_artefacts)->toBe(1);
+});
+
+test('deleting a family orphans its artefacts but keeps them in the department', function () {
+    $department = StoreArtefactDepartment::make()->action($this->production, ['code' => 'DELDEP', 'name' => 'Delete department']);
+    $family     = StoreArtefactFamily::make()->action($department, ['code' => 'DELFAM', 'name' => 'Doomed family']);
+
+    $artefact = StoreArtefact::make()->action($this->production, [
+        'code'                   => 'DELART',
+        'name'                   => 'Orphan to be',
+        'artefact_department_id' => $department->id,
+        'artefact_family_id'     => $family->id,
+    ]);
+
+    $orphaned = DeleteArtefactFamily::make()->action($family);
+
+    expect($orphaned)->toBe(1)
+        ->and(ArtefactFamily::find($family->id))->toBeNull()
+        ->and($artefact->refresh()->artefact_family_id)->toBeNull()
+        ->and($artefact->artefact_department_id)->toBe($department->id);
+});
+
+test('UI delete artefact family', function () {
+    $department = StoreArtefactDepartment::make()->action($this->production, ['code' => 'UIDELDEP', 'name' => 'UI delete department']);
+    $family     = StoreArtefactFamily::make()->action($department, ['code' => 'UIDELFAM', 'name' => 'UI doomed family']);
+
+    $artefact = StoreArtefact::make()->action($this->production, [
+        'code'                   => 'UIDELART',
+        'name'                   => 'UI orphan to be',
+        'artefact_department_id' => $department->id,
+        'artefact_family_id'     => $family->id,
+    ]);
+
+    $response = get(route('grp.org.productions.show.crafts.artefact_families.show', [$this->organisation->slug, $this->production->slug, $family->slug]));
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page->component('Org/Production/ArtefactFamily')
+            ->where('number_artefacts', 1)
+            ->has('delete_route');
+    });
+
+    delete(route('grp.models.artefact_family.delete', [$family->id]))
+        ->assertRedirect(route('grp.org.productions.show.crafts.artefact_families.index', [$this->organisation->slug, $this->production->slug]));
+
+    expect(ArtefactFamily::find($family->id))->toBeNull()
+        ->and($artefact->refresh()->artefact_family_id)->toBeNull()
+        ->and($artefact->artefact_department_id)->toBe($department->id);
 });

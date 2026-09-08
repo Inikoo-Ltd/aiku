@@ -421,6 +421,7 @@ use App\Actions\Production\Artefact\DetachRawMaterialFromRecipeStep;
 use App\Actions\Production\Artefact\ImportArtefact;
 use App\Actions\Production\Artefact\MoveArtefactsToDepartment;
 use App\Actions\Production\Artefact\MoveArtefactsToFamily;
+use App\Actions\Production\ArtefactFamily\DeleteArtefactFamily;
 use App\Actions\Production\ArtefactFamily\MoveArtefactFamiliesToDepartment;
 use App\Actions\Production\ArtefactFamily\StoreArtefactFamily;
 use App\Actions\Production\ArtefactFamily\UpdateArtefactFamily;
@@ -1447,6 +1448,7 @@ Route::name('model_has_content.')->prefix('model-has-content/{modelHasContent:id
 
 Route::patch('artefact-department/{artefactDepartment:id}', UpdateArtefactDepartment::class)->name('artefact_department.update');
 Route::patch('artefact-family/{artefactFamily:id}', UpdateArtefactFamily::class)->name('artefact_family.update');
+Route::delete('artefact-family/{artefactFamily:id}', DeleteArtefactFamily::class)->name('artefact_family.delete');
 
 Route::name('artefact.')->prefix('artefact/{artefact:id}')->group(function () {
     Route::post('tags/store', [StoreTag::class, 'inArtefact'])->name('tags.store');

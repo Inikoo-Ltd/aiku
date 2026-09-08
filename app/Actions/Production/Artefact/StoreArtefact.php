@@ -11,6 +11,7 @@ namespace App\Actions\Production\Artefact;
 use App\Actions\Production\Production\Hydrators\ProductionHydrateArtefacts;
 use App\Actions\OrgAction;
 use App\Actions\Production\ArtefactDepartment\Hydrators\ArtefactDepartmentHydrateArtefacts;
+use App\Actions\Production\ArtefactFamily\Hydrators\ArtefactFamilyHydrateArtefacts;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateArtefacts;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateArtefacts;
 use App\Enums\Production\Artefact\ArtefactStateEnum;
@@ -35,6 +36,9 @@ class StoreArtefact extends OrgAction
         $artefact = $production->artefacts()->create($modelData);
         if ($artefact->artefactDepartment) {
             ArtefactDepartmentHydrateArtefacts::run($artefact->artefactDepartment);
+        }
+        if ($artefact->artefactFamily) {
+            ArtefactFamilyHydrateArtefacts::run($artefact->artefactFamily);
         }
         $artefact->stats()->create();
         GroupHydrateArtefacts::dispatch($artefact->group);
