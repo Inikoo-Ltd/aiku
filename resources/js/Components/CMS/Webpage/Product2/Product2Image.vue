@@ -134,6 +134,7 @@ onMounted(async () => {
             class="w-full h-full opacity-50 pointer-events-none"
             :src="props.video"
             allowfullscreen
+            loading="lazy"
           />
         </div>
       </SwiperSlide>
@@ -196,6 +197,7 @@ onMounted(async () => {
             class="w-full h-full opacity-50 pointer-events-none"
             :src="props.video"
             allowfullscreen
+            loading="lazy"
           />
         </div>
       </SwiperSlide>

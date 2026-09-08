@@ -68,7 +68,7 @@ defineExpose({ reset: () => (target.value = null) })
         <Link
             v-if="createRoute"
             :href="route(createRoute.name, createRoute.parameters)"
-            class="flex items-center gap-1.5 whitespace-nowrap text-sm text-indigo-100 underline underline-offset-2 hover:text-white">
+            class="flex items-center gap-1.5 whitespace-nowrap text-sm underline underline-offset-2 hover:text-blue-500">
             <FontAwesomeIcon icon="fal fa-folder-plus" fixed-width aria-hidden="true" />
             {{ createLabel }}
         </Link>

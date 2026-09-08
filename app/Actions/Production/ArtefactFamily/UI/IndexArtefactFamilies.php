@@ -125,6 +125,7 @@ class IndexArtefactFamilies extends OrgAction
             }
             $table
                 ->withGlobalSearch()
+                ->withLabelRecord([__('family'), __('families')])
                 ->withEmptyState([
                     'title'       => __('No artefact families yet'),
                     'description' => $this->canEdit ? __('Families group the artefacts of a department, the way stock families group org stocks.') : null,
@@ -166,6 +167,7 @@ class IndexArtefactFamilies extends OrgAction
                 'breadcrumbs'        => $this->getBreadcrumbs($request->route()->originalParameters()),
                 'title'              => __('Artefact families'),
                 'pageHead'           => [
+                    'model'        => __('Crafts'),
                     'title'         => __('Artefact families'),
                     'icon'          => ['icon' => ['fal', 'fa-folder'], 'title' => __('Artefact families')],
                     'subNavigation' => IndexArtefacts::make()->getArtefactsSubNavigation($this->production),
@@ -173,7 +175,7 @@ class IndexArtefactFamilies extends OrgAction
                         $this->canEdit ? [
                             'type'  => 'button',
                             'style' => 'create',
-                            'label' => __('family'),
+                            'label' => __('Family'),
                             'route' => [
                                 'name'       => 'grp.org.productions.show.crafts.artefact_families.create',
                                 'parameters' => $request->route()->originalParameters()

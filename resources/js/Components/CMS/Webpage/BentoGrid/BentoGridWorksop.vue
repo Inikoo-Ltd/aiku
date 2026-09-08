@@ -50,7 +50,7 @@ function onSave() {
 								class="absolute inset-x-10 bottom-0 top-10 overflow-hidden rounded-t-[12cqw] border-x-[3cqw] border-t-[3cqw] border-gray-700 bg-gray-900 shadow-2xl">
 								<img v-if="!modelValue?.column1?.image?.source"
 									src="https://flowbite.s3.amazonaws.com/blocks/marketing-ui/content/content-gallery-3.png"
-									:alt="modelValue?.column1?.image?.alt" class="h-full w-full object-cover" />
+									:alt="modelValue?.column1?.image?.alt" class="h-full w-full object-cover" loading="lazy" decoding="async" />
 								<Image v-else :src="modelValue?.column1?.image?.source" :imageCover="true"
 									:alt="modelValue?.column1?.image?.alt"
 									:imgAttributes="modelValue?.column1?.image?.attributes"
@@ -81,7 +81,7 @@ function onSave() {
 								<img v-if="!modelValue?.column2?.image?.source"
 									src="https://flowbite.s3.amazonaws.com/blocks/marketing-ui/content/content-gallery-3.png"
 									:alt="modelValue?.column2?.image?.alt"
-									class="h-full w-full object-cover rounded-lg shadow-lg" />
+									class="h-full w-full object-cover rounded-lg shadow-lg" loading="lazy" decoding="async" />
 								<Image v-else :src="modelValue?.column2?.image?.source" :imageCover="true"
 									:alt="modelValue?.column2?.image?.alt"
 									:imgAttributes="modelValue?.column2?.image?.attributes"
@@ -110,7 +110,7 @@ function onSave() {
 								<img v-if="!modelValue?.column3?.image?.source"
 									src="https://flowbite.s3.amazonaws.com/blocks/marketing-ui/content/content-gallery-3.png"
 									:alt="modelValue?.column3?.image?.alt"
-									class="h-full w-full object-cover rounded-lg shadow-lg" />
+									class="h-full w-full object-cover rounded-lg shadow-lg" loading="lazy" decoding="async" />
 								<Image v-else :src="modelValue?.column3?.image?.source" :imageCover="true"
 									:alt="modelValue?.column3?.image?.alt"
 									:imgAttributes="modelValue?.column3?.image?.attributes"
@@ -138,7 +138,7 @@ function onSave() {
 								class="absolute inset-x-10 bottom-0 top-10 overflow-hidden rounded-t-[12cqw] border-x-[3cqw] border-t-[3cqw] border-gray-700 bg-gray-900 shadow-2xl">
 								<img v-if="!modelValue?.column4?.image?.source"
 									src="https://flowbite.s3.amazonaws.com/blocks/marketing-ui/content/content-gallery-3.png"
-									:alt="modelValue?.column4?.image?.alt" class="h-full w-full object-cover" />
+									:alt="modelValue?.column4?.image?.alt" class="h-full w-full object-cover" loading="lazy" decoding="async" />
 								<Image v-else :src="modelValue?.column4?.image?.source" :imageCover="true"
 									:alt="modelValue?.column4?.image?.alt"
 									:imgAttributes="modelValue?.column4?.image?.attributes"

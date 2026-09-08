@@ -79,6 +79,7 @@ class IndexArtefactDepartments extends OrgAction
             }
             $table
                 ->withGlobalSearch()
+                ->withLabelRecord([__('department'), __('departments')])
                 ->withEmptyState([
                     'title'       => __('No artefact departments yet'),
                     'description' => $this->canEdit ? __('Group artefacts by the kind of work they need, e.g. Soap or Bath Bombs.') : null,
