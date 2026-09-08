@@ -101,7 +101,7 @@
 						}
 					}
 				},
-				"help": "<p style=\"text-align: center\">Need Help Logging in? Hit the chat button or call us:</p><p style=\"text-align: center\"><strong>+44 (0) 1143 830 344</strong></p>"
+				"help": ""
 			},
 			"register": {
 				"title": "<h3 style=\"text-align: center\">Don't have an account yet?</h3>",

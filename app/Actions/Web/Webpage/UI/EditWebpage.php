@@ -57,6 +57,7 @@ class EditWebpage extends OrgAction
     public function htmlResponse(Webpage $webpage, ActionRequest $request): Response
     {
         $isBlog = $webpage->type == WebpageTypeEnum::BLOG;
+        $isSystemPage = $webpage->type == WebpageTypeEnum::SYSTEM_PAGE;
 
         $fields = [
             "seo_image"        => [
@@ -288,7 +289,14 @@ class EditWebpage extends OrgAction
                             'label'  => __('Set online/closed'),
                             'icon'   => 'fal fa-broadcast-tower',
                             'fields' => [
-                                'state_data' => [
+                                'state_data' => $isSystemPage ? [
+                                    'type'     => 'toggle_state_system_page',
+                                    'label'    => __('State'),
+                                    'required' => true,
+                                    'value'    => [
+                                        'state' => $webpage->state,
+                                    ],
+                                ] : [
                                     'type'               => 'toggle_state_webpage',
                                     'label'              => __('State'),
                                     'placeholder'        => __('Select webpage state'),
