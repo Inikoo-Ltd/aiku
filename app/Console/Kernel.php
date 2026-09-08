@@ -217,14 +217,14 @@ class Kernel extends ConsoleKernel
                 scheduledAt: now()->format('H:i')
             );
 
-            // $this->logSchedule(
-            //     $schedule->job(RunWhatsappCampaignScheduled::makeJob())->everyMinute()->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
-            //         monitorSlug: 'RunWhatsappCampaignScheduled',
-            //     ),
-            //     name: 'RunWhatsappCampaignScheduled',
-            //     type: 'job',
-            //     scheduledAt: now()->format('H:i')
-            // );
+            $this->logSchedule(
+                $schedule->job(RunWhatsappCampaignScheduled::makeJob())->everyMinute()->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
+                    monitorSlug: 'RunWhatsappCampaignScheduled',
+                ),
+                name: 'RunWhatsappCampaignScheduled',
+                type: 'job',
+                scheduledAt: now()->format('H:i')
+            );
 
             $this->logSchedule(
                 $schedule->job(RunMailshotSecondWave::makeJob())->everyMinute()->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
