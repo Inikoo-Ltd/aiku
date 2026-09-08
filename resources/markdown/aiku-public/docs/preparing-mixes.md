@@ -1,7 +1,7 @@
 ---
 title: Preparing mixes
 summary: For the preparer and the planner - how a mix or base becomes something the factory tracks, how the Mixes tab works out what to prepare, and how the preparer's job orders flow.
-date: 2026-09-02
+date: 2026-09-08
 tags: production, crafts
 category: production
 help_routes: grp.org.productions.show.to_produce.mixes, grp.org.productions.show.crafts.raw_materials
@@ -10,7 +10,7 @@ order: 6
 ---
 
 <aside class="tldr">
-For the person who prepares mixes and bases before the artisans can start, and for the planner who sends them the work. A mix is made in-house, so aiku treats it as both a <b>raw material</b> (the artisans consume it) and an <b>artefact</b> (the preparer makes it). Once linked, the <b>Mixes</b> tab on <a href="/docs/fulfilling-partner-orders">To produce</a> works out how much of each mix is needed from the open job orders, and one button turns that into job orders for the preparer. Setup for categories and artisans is in <a href="/docs/who-makes-what">Who makes what</a>.
+For the person who prepares mixes and bases before the artisans can start, and for the planner who sends them the work. A mix is made in-house, so aiku treats it as both a <b>raw material</b> (the artisans consume it) and an <b>artefact</b> (the preparer makes it). Once linked, the <b>Mixes</b> tab on <a href="/docs/fulfilling-partner-orders">To produce</a> works out how much of each mix is short from the open job orders, and dragging a card to the preparer turns that into a job order. Setup for categories and artisans is in <a href="/docs/who-makes-what">Who makes what</a>.
 </aside>
 
 ## Why a mix is two things
@@ -31,21 +31,17 @@ The link between the two is one field on the raw material: **Made in-house as**.
 
 ## The Mixes tab
 
-**Factory → To produce → Mixes** lists every in-house raw material that an open job order needs. A job order is open from the moment it is created until it is received into stock.
+**Factory → To produce → Mixes** is a small board with four lanes: **Needed**, **Assigned**, **Mixing** and **Done**. It only shows in-house raw materials that an open job order needs. A job order is open from the moment it is created until it is received into stock.
 
-For each mix you see:
+A card in **Needed** is a mix the factory is short of. The red number is the shortfall: what the open job orders need, from their quantities and the recipe's quantity per unit, minus what is on hand, minus what is already being mixed. Under it, *for* lists the product codes that are waiting, so the preparer knows what is blocked, and the name of the usual preparer if one is attached.
 
-- **Needed**: open job order quantities multiplied by the recipe's quantity per unit, added up across products.
-- **On hand**: the stock of the mix right now.
-- **Being made**: the quantity in open job orders for the mix itself.
-- **Short**: needed minus on hand minus being made. Short lines come first and are shown in red.
-- **Needed for**: the product codes that consume it, so the preparer knows what is waiting.
+Drag the card from **Needed** to **Assigned**. aiku asks for the quantity, proposing the shortfall so you can round it to a sensible batch, and *Who mixes it?*. Pick the preparer and a job order is created in draft, addressed to them, with its reference on the card. Open it and press **Release to floor** when it should start.
 
-Tick the mixes to prepare, adjust the quantity if the shortfall is not the right batch, and press **Create job orders**. One job order per preparer is created, addressed to them, in draft. Open it and press *Release to floor* when it should start.
+**Mixing** and **Done** move on their own: the card goes to Mixing when the preparer presses START, and to Done when the last task is done. It leaves the board when the batch is put into stock.
 
 ## What the preparer does
 
-The preparer runs their own line, so they hold the <b>Mix preparer</b> position for the factory. That lets them open the Mixes tab, create and release their own job orders, and receive them into stock, without waiting for anyone. They cannot touch job orders addressed to other people; that stays with the planner. On the floor they work like any artisan: their tasks appear on the floor screen, they press START and DONE, and when the last step is done the job order is received into stock with a batch code. From that moment the mix shows as on hand and the artisans' products can be made.
+The preparer runs their own line, so they hold the <b>Mix preparer</b> position for the factory. That lets them open the Mixes tab, create and release their own job orders, and receive them into stock, without waiting for anyone. They cannot touch job orders addressed to other people; that stays with the planner. On the floor they work like any artisan: their tasks appear on the [floor screen](/docs/working-the-floor-screen), they press START and DONE, and when the last step is done the batch is put into stock with a batch code, either by the warehouse from [Dispatching → From production](/docs/putting-away-finished-production) or by the preparer from the job order's page. From that moment the mix shows as on hand and the artisans' products can be made.
 
 If the preparer is not paid by piece rate, that is a payroll setting, not a reason to skip the floor. The record of who prepared which batch and when is what gives traceability from the finished product back to its ingredients.
 
@@ -53,14 +49,14 @@ If the preparer is not paid by piece rate, that is a payroll setting, not a reas
 
 - A mix cannot need itself. If the mix artefact's own recipe lists the same raw material, that line is ignored.
 - The Mixes tab only reads job orders in this factory. A product made in another factory does not create demand here.
-- "Being made" counts a job order until it is received into stock, even if every task is done. Receive job orders promptly and the numbers stay honest.
+- A mix job order counts as being made until it is put into stock, even if every task is done. Put batches away promptly and the shortfall stays honest.
 
 <aside class="wayfinder"><strong>Where to click in aiku</strong>
 <ul>
 <li><b>Link a mix:</b> <b>Factory → Crafts → Raw materials</b> → open the mix → <b>Edit</b> → <b>Made in-house as</b>.</li>
 <li><b>See what to prepare:</b> <b>Factory → To produce → Mixes</b>.</li>
-<li><b>Send the work:</b> tick mixes → <b>Create job orders</b> → open the job order → <b>Release to floor</b>.</li>
-<li><b>Do the work:</b> <b>Factory → Floor</b> (My tasks) → <b>START</b> / <b>DONE</b>; then the job order is received into stock from its page.</li>
+<li><b>Send the work:</b> drag the card from <b>Needed</b> to <b>Assigned</b> → quantity and preparer → open the job order → <b>Release to floor</b>.</li>
+<li><b>Do the work:</b> <b>Factory → Jobs</b> → <b>START</b> / <b>DONE</b>; then the batch is put into stock from <b>Warehouse → Dispatching → From production</b> or from the job order's page.</li>
 </ul>
 </aside>
 
