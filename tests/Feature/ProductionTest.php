@@ -2543,11 +2543,12 @@ test('UI delete artefact family', function () {
         ->and($artefact->artefact_department_id)->toBe($department->id);
 });
 
-test('UI crafts dashboard as org admin', function () {
+test('UI crafts artefacts as org admin', function () {
     $this->withoutExceptionHandling();
     $user = $this->guest->getUser();
     $user->syncRoles(['org-admin-'.$this->organisation->id, 'production-orchestrator-'.$this->production->id]);
     actingAs($user->fresh());
-    $response = get(route('grp.org.productions.show.crafts.dashboard', [$this->organisation->slug, $this->production->slug]));
-    $response->assertOk();
+    foreach (['dashboard', 'artefacts.index', 'raw_materials.index'] as $page) {
+        get(route('grp.org.productions.show.crafts.'.$page, [$this->organisation->slug, $this->production->slug]))->assertOk();
+    }
 });
