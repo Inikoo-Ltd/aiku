@@ -14,7 +14,7 @@ defineProps<{
 }>()
 
 const familyRoute = (family: { slug: string }) =>
-    route("grp.org.productions.show.crafts.artefact_families.show", [route().params["organisation"], route().params["production"], family.slug])
+    route("grp.org.productions.show.crafts.artefact_departments.show", [route().params["organisation"], route().params["production"], family.slug])
 </script>
 
 <template>

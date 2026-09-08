@@ -66,12 +66,13 @@ class IndexPartnerShippingList extends OrgAction
             })
             ->leftJoin('artefacts', function ($join) {
                 $join->on('artefacts.org_stock_id', 'org_stocks.id')
+                    ->where('artefacts.production_id', $this->production->id)
                     ->whereNull('artefacts.deleted_at');
             })
-            ->leftJoin('artefact_families', 'artefacts.artefact_family_id', 'artefact_families.id')
+            ->leftJoin('artefact_departments', 'artefacts.artefact_department_id', 'artefact_departments.id')
             ->leftJoin('employees', 'employees.id', DB::raw("coalesce(
                 (select employee_id from artisan_assignments where artisanable_type = 'Artefact' and artisanable_id = artefacts.id order by position limit 1),
-                (select employee_id from artisan_assignments where artisanable_type = 'ArtefactFamily' and artisanable_id = artefact_families.id order by position limit 1)
+                (select employee_id from artisan_assignments where artisanable_type = 'ArtefactDepartment' and artisanable_id = artefact_departments.id order by position limit 1)
             )"))
             ->leftJoin('organisations', function ($join) {
                 $join->on('organisations.id', 'partner_shopping_list_items.organisation_id')
@@ -89,6 +90,10 @@ class IndexPartnerShippingList extends OrgAction
                             ->where('partner_shopping_list_items.organisation_id', $seller->id);
                     });
             });
+
+        if ($this->groupBy && $this->groupBy !== 'board') {
+            $queryBuilder->whereNotNull('artefacts.id');
+        }
 
         foreach ($this->getElementGroups() as $key => $elementGroup) {
             $queryBuilder->whereElementGroup(
@@ -111,9 +116,11 @@ class IndexPartnerShippingList extends OrgAction
                 'partner_shopping_list_items.needed_by',
                 'partner_shopping_list_items.notes',
                 'partner_shopping_list_items.created_at',
+                'artefacts.id as artefact_id',
+                'org_stocks.quantity_in_locations as stock_available',
                 'stocks.code as stock_code',
                 'stocks.name as stock_name',
-                'artefact_families.name as family',
+                'artefact_departments.name as family',
                 'employees.contact_name as maker',
                 'employees.id as maker_id',
                 'organisations.code as buyer_code',
@@ -268,9 +275,13 @@ class IndexPartnerShippingList extends OrgAction
             'booking_in'   => 'done',
             'booked_in'    => 'done',
         ];
-        $lanes  = ['backlog' => __('Backlog'), 'preparing' => __('Preparing'), 'assigned' => __('Assigned'), 'producing' => __('Producing'), 'done' => __('Done')];
+        $lanes  = ['to_pick' => __('Pre-pick'), 'backlog' => __('Backlog'), 'preparing' => __('Preparing'), 'assigned' => __('Assigned'), 'producing' => __('Producing'), 'done' => __('Done')];
         $byLane = collect($items->items())->groupBy(function ($item) use ($stageByJobOrderState) {
             if (!$item->job_order_id) {
+                if (!$item->artefact_id || (float) $item->stock_available >= (float) $item->quantity) {
+                    return 'to_pick';
+                }
+
                 return $item->preparing_at ? 'preparing' : 'backlog';
             }
 

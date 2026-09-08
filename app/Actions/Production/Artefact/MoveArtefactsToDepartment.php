@@ -9,15 +9,15 @@
 namespace App\Actions\Production\Artefact;
 
 use App\Actions\OrgAction;
-use App\Actions\Production\ArtefactFamily\Hydrators\ArtefactFamilyHydrateArtefacts;
+use App\Actions\Production\ArtefactDepartment\Hydrators\ArtefactDepartmentHydrateArtefacts;
 use App\Models\Production\Artefact;
-use App\Models\Production\ArtefactFamily;
+use App\Models\Production\ArtefactDepartment;
 use App\Models\Production\Production;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 
-class MoveArtefactsToFamily extends OrgAction
+class MoveArtefactsToDepartment extends OrgAction
 {
     public function handle(Production $production, array $modelData): int
     {
@@ -25,11 +25,11 @@ class MoveArtefactsToFamily extends OrgAction
             ->whereIn('id', $modelData['artefacts'])
             ->get();
 
-        $touchedFamilyIds = $artefacts->pluck('artefact_family_id')->push($modelData['artefact_family_id'])->filter()->unique();
+        $touchedFamilyIds = $artefacts->pluck('artefact_department_id')->push($modelData['artefact_department_id'])->filter()->unique();
 
-        Artefact::whereIn('id', $artefacts->pluck('id'))->update(['artefact_family_id' => $modelData['artefact_family_id']]);
+        Artefact::whereIn('id', $artefacts->pluck('id'))->update(['artefact_department_id' => $modelData['artefact_department_id']]);
 
-        ArtefactFamily::whereIn('id', $touchedFamilyIds)->each(fn (ArtefactFamily $family) => ArtefactFamilyHydrateArtefacts::run($family));
+        ArtefactDepartment::whereIn('id', $touchedFamilyIds)->each(fn (ArtefactDepartment $family) => ArtefactDepartmentHydrateArtefacts::run($family));
 
         return $artefacts->count();
     }
@@ -48,7 +48,7 @@ class MoveArtefactsToFamily extends OrgAction
         return [
             'artefacts'          => ['required', 'array', 'min:1'],
             'artefacts.*'        => ['integer'],
-            'artefact_family_id' => ['present', 'nullable', Rule::exists('artefact_families', 'id')->where('production_id', $this->production->id)],
+            'artefact_department_id' => ['present', 'nullable', Rule::exists('artefact_departments', 'id')->where('production_id', $this->production->id)],
         ];
     }
 

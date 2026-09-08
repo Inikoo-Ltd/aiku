@@ -127,20 +127,20 @@ class EditArtefact extends OrgAction
                                     'value'    => $artefact->recommended_batch_size,
                                     'required' => false
                                 ],
-                                'artefact_family_id' => [
+                                'artefact_department_id' => [
                                     'type'       => 'select_infinite',
                                     'label'      => __('Family'),
                                     'options'    => array_filter([
-                                        $artefact->artefactFamily ? ['id' => $artefact->artefactFamily->id, 'name' => $artefact->artefactFamily->name] : null,
+                                        $artefact->artefactDepartment ? ['id' => $artefact->artefactDepartment->id, 'name' => $artefact->artefactDepartment->name] : null,
                                     ]),
                                     'fetchRoute' => [
-                                        'name'       => 'grp.json.production.artefact_families.index',
+                                        'name'       => 'grp.json.production.artefact_departments.index',
                                         'parameters' => ['production' => $artefact->production_id]
                                     ],
                                     'valueProp' => 'id',
                                     'labelProp' => 'name',
                                     'required'  => false,
-                                    'value'     => $artefact->artefact_family_id,
+                                    'value'     => $artefact->artefact_department_id,
                                 ],
                                 'tags' => [
                                     'type'                   => 'tags-trade-unit',

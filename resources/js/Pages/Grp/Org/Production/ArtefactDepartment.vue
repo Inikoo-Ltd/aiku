@@ -23,7 +23,7 @@ const props = defineProps<{
     tabs: TSTabs
     artefacts?: object
     history?: object
-    move_to_family?: object
+    move_to_department?: object
     artisans: object
 }>()
 
@@ -41,5 +41,5 @@ const component = computed(() => ({
     <PageHeading :data="pageHead" />
     <ArtisanAssignments :data="artisans" />
     <Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" />
-    <component :is="component" :data="props[currentTab]" :tab="currentTab" :moveToFamily="move_to_family" />
+    <component :is="component" :data="props[currentTab]" :tab="currentTab" :moveToDepartment="move_to_department" />
 </template>

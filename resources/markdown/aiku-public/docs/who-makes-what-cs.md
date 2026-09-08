@@ -17,7 +17,7 @@ Pro vedoucího továrny nebo plánovače. Dvě malé věci k nastavení dělají
 
 Artefakt je jedna věc, kterou továrna vyrábí. Kategorie je polička plná takových věcí: koupelové bomby, mýdlo, éterické oleje, řada jedné značky. Každý artefakt patří nejvýše do jedné kategorie.
 
-- **Factory → Crafts → Artefact families** (Továrna → Řemesla → Rodiny artefaktů) vypíše kategorie s počtem artefaktů, které každá obsahuje. Otevřete jednu a uvidíte její artefakty.
+- **Factory → Crafts → Artefact departments** (Továrna → Řemesla → Rodiny artefaktů) vypíše kategorie s počtem artefaktů, které každá obsahuje. Otevřete jednu a uvidíte její artefakty.
 - Pro přesun artefaktů mezi kategoriemi je zaškrtněte na kterémkoli seznamu artefaktů a použijte **Move to family** (Přesunout do rodiny). Pro vytvoření kategorie použijte tlačítko **new** (nová) na seznamu.
 
 Kategorie ovlivňují dvě věci: pohled *By category* (Podle kategorie) na seznamu To produce a záložní volbu pro řemeslníky, vysvětlenou dál.
@@ -42,7 +42,7 @@ Nejlevnější způsob, jak nastavit továrnu, je proto: připojit řemeslníky 
 
 <aside class="wayfinder"><strong>Kam kliknout v aiku</strong>
 <ul>
-<li><b>Kategorie:</b> vaše organizace → <b>Factory</b> (Továrna) → <b>Crafts</b> (Řemesla) → <b>Artefact families</b> (Rodiny artefaktů).</li>
+<li><b>Kategorie:</b> vaše organizace → <b>Factory</b> (Továrna) → <b>Crafts</b> (Řemesla) → <b>Artefact departments</b> (Rodiny artefaktů).</li>
 <li><b>Přesunout artefakty:</b> zaškrtnout artefakty na kterémkoli seznamu artefaktů → <b>Move to family</b> (Přesunout do rodiny).</li>
 <li><b>Připojit řemeslníka:</b> otevřít kategorii nebo artefakt → <b>Usually made by</b> (Obvykle vyrábí) → <b>Add artisan…</b> (Přidat řemeslníka…). Odpojit křížkem na čipu.</li>
 <li><b>Vidět efekt:</b> <b>Factory</b> (Továrna) → <b>To produce</b> (K výrobě) → <b>By artisan</b> (Podle řemeslníka).</li>

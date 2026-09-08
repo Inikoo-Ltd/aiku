@@ -17,7 +17,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property string $name
  * @property int $number_artefacts
  */
-class ArtefactFamiliesResource extends JsonResource
+class ArtefactDepartmentsResource extends JsonResource
 {
     public function toArray($request): array
     {

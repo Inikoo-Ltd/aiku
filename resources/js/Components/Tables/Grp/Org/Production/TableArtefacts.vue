@@ -25,7 +25,7 @@ type Family = { id: number, code: string, name: string, number_artefacts: number
 const props = defineProps<{
     data: object
     tab?: string
-    moveToFamily?: {
+    moveToDepartment?: {
         families_route: routeType
         move_route: routeType
         create_route: routeType
@@ -51,14 +51,14 @@ const clearSelection = () => {
 }
 
 const submitMove = () => {
-    if (!props.moveToFamily || !targetFamily.value || !selectedIds.value.length) return
+    if (!props.moveToDepartment || !targetFamily.value || !selectedIds.value.length) return
 
     const family = targetFamily.value
     const count = selectedIds.value.length
 
     router.post(
-        route(props.moveToFamily.move_route.name, props.moveToFamily.move_route.parameters),
-        { artefacts: selectedIds.value, artefact_family_id: family.id },
+        route(props.moveToDepartment.move_route.name, props.moveToDepartment.move_route.parameters),
+        { artefacts: selectedIds.value, artefact_department_id: family.id },
         {
             preserveScroll: true,
             onStart: () => isMoving.value = true,
@@ -80,7 +80,7 @@ const submitMove = () => {
 function productionRoute(artefact: { slug: string }) {
     switch (routeCurrent) {
         case 'grp.org.productions.show.crafts.artefacts.index':
-        case 'grp.org.productions.show.crafts.artefact_families.show':
+        case 'grp.org.productions.show.crafts.artefact_departments.show':
             return route(
                 'grp.org.productions.show.crafts.artefacts.show',
                 [routeParams['organisation'], routeParams['production'], artefact.slug]);
@@ -95,7 +95,7 @@ function productionRoute(artefact: { slug: string }) {
         leave-active-class="transition duration-100 ease-in"
         leave-to-class="-translate-y-2 opacity-0">
         <div
-            v-if="moveToFamily && selectedIds.length"
+            v-if="moveToDepartment && selectedIds.length"
             class="sticky top-0 z-10 mx-4 mt-4 flex flex-wrap items-center gap-x-3 gap-y-2 rounded-md bg-indigo-600 px-4 py-2.5 text-white shadow-lg"
             role="region"
             :aria-label="ctrans('Bulk actions')">
@@ -112,7 +112,7 @@ function productionRoute(artefact: { slug: string }) {
                 <div class="w-72 text-gray-700">
                     <PureMultiselectInfiniteScroll
                         v-model="targetFamily"
-                        :fetchRoute="moveToFamily.families_route"
+                        :fetchRoute="moveToDepartment.families_route"
                         :placeholder="ctrans('Move to family')"
                         :noOptionsText="ctrans('No families yet')"
                         valueProp="id"
@@ -130,7 +130,7 @@ function productionRoute(artefact: { slug: string }) {
                     @click="submitMove" />
 
                 <Link
-                    :href="route(moveToFamily.create_route.name, moveToFamily.create_route.parameters)"
+                    :href="route(moveToDepartment.create_route.name, moveToDepartment.create_route.parameters)"
                     class="flex items-center gap-1.5 whitespace-nowrap text-sm text-indigo-100 underline underline-offset-2 hover:text-white">
                     <FontAwesomeIcon icon="fal fa-folder-plus" fixed-width aria-hidden="true" />
                     {{ ctrans('New family') }}
@@ -139,7 +139,7 @@ function productionRoute(artefact: { slug: string }) {
         </div>
     </Transition>
 
-    <Table ref="tableRef" :resource="data" :name="tab" class="mt-5" :isCheckBox="!!moveToFamily" checkboxKey="id" @onSelectRow="(rows) => selected = { ...rows }">
+    <Table ref="tableRef" :resource="data" :name="tab" class="mt-5" :isCheckBox="!!moveToDepartment" checkboxKey="id" @onSelectRow="(rows) => selected = { ...rows }">
         <template #cell(state)="{ item: artefact }">
             <Icon :data="artefact.state" />
         </template>
@@ -148,9 +148,9 @@ function productionRoute(artefact: { slug: string }) {
                 {{ production['code'] }}
             </Link>
         </template>
-        <template #cell(artefact_family_name)="{ item }">
-            <Link v-if="item.artefact_family_slug" :href="route('grp.org.productions.show.crafts.artefact_families.show', [routeParams['organisation'], routeParams['production'], item.artefact_family_slug])" class="secondaryLink">
-                {{ item.artefact_family_name }}
+        <template #cell(artefact_department_name)="{ item }">
+            <Link v-if="item.artefact_department_slug" :href="route('grp.org.productions.show.crafts.artefact_departments.show', [routeParams['organisation'], routeParams['production'], item.artefact_department_slug])" class="secondaryLink">
+                {{ item.artefact_department_name }}
             </Link>
             <span v-else class="text-gray-400">-</span>
         </template>

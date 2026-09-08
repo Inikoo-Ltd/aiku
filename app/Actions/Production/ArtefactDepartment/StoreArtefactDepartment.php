@@ -6,10 +6,10 @@
  * Copyright (c) 2026, Raul A Perusquia Flores
  */
 
-namespace App\Actions\Production\ArtefactFamily;
+namespace App\Actions\Production\ArtefactDepartment;
 
 use App\Actions\OrgAction;
-use App\Models\Production\ArtefactFamily;
+use App\Models\Production\ArtefactDepartment;
 use App\Models\Production\Production;
 use App\Rules\AlphaDashDot;
 use App\Rules\IUnique;
@@ -17,17 +17,17 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Redirect;
 use Lorisleiva\Actions\ActionRequest;
 
-class StoreArtefactFamily extends OrgAction
+class StoreArtefactDepartment extends OrgAction
 {
-    public function handle(Production $production, array $modelData): ArtefactFamily
+    public function handle(Production $production, array $modelData): ArtefactDepartment
     {
         data_set($modelData, 'group_id', $production->group_id);
         data_set($modelData, 'organisation_id', $production->organisation_id);
 
-        /** @var ArtefactFamily $artefactFamily */
-        $artefactFamily = $production->artefactFamilies()->create($modelData);
+        /** @var ArtefactDepartment $artefactDepartment */
+        $artefactDepartment = $production->artefactDepartments()->create($modelData);
 
-        return $artefactFamily;
+        return $artefactDepartment;
     }
 
     public function authorize(ActionRequest $request): bool
@@ -47,7 +47,7 @@ class StoreArtefactFamily extends OrgAction
                 new AlphaDashDot(),
                 'max:64',
                 new IUnique(
-                    table: 'artefact_families',
+                    table: 'artefact_departments',
                     extraConditions: [
                         ['column' => 'production_id', 'value' => $this->production->id],
                     ]
@@ -58,7 +58,7 @@ class StoreArtefactFamily extends OrgAction
         ];
     }
 
-    public function action(Production $production, array $modelData): ArtefactFamily
+    public function action(Production $production, array $modelData): ArtefactDepartment
     {
         $this->asAction = true;
         $this->initialisationFromProduction($production, $modelData);
@@ -66,19 +66,19 @@ class StoreArtefactFamily extends OrgAction
         return $this->handle($production, $this->validatedData);
     }
 
-    public function asController(Production $production, ActionRequest $request): ArtefactFamily
+    public function asController(Production $production, ActionRequest $request): ArtefactDepartment
     {
         $this->initialisationFromProduction($production, $request);
 
         return $this->handle($production, $this->validatedData);
     }
 
-    public function htmlResponse(ArtefactFamily $artefactFamily): RedirectResponse
+    public function htmlResponse(ArtefactDepartment $artefactDepartment): RedirectResponse
     {
-        return Redirect::route('grp.org.productions.show.crafts.artefact_families.show', [
-            $artefactFamily->organisation->slug,
-            $artefactFamily->production->slug,
-            $artefactFamily->slug,
+        return Redirect::route('grp.org.productions.show.crafts.artefact_departments.show', [
+            $artefactDepartment->organisation->slug,
+            $artefactDepartment->production->slug,
+            $artefactDepartment->slug,
         ]);
     }
 }

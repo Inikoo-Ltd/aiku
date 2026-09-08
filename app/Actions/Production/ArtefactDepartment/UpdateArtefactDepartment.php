@@ -6,24 +6,24 @@
  * Copyright (c) 2026, Raul A Perusquia Flores
  */
 
-namespace App\Actions\Production\ArtefactFamily;
+namespace App\Actions\Production\ArtefactDepartment;
 
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
-use App\Models\Production\ArtefactFamily;
+use App\Models\Production\ArtefactDepartment;
 use App\Rules\AlphaDashDot;
 use App\Rules\IUnique;
 use Lorisleiva\Actions\ActionRequest;
 
-class UpdateArtefactFamily extends OrgAction
+class UpdateArtefactDepartment extends OrgAction
 {
     use WithActionUpdate;
 
-    private ArtefactFamily $artefactFamily;
+    private ArtefactDepartment $artefactDepartment;
 
-    public function handle(ArtefactFamily $artefactFamily, array $modelData): ArtefactFamily
+    public function handle(ArtefactDepartment $artefactDepartment, array $modelData): ArtefactDepartment
     {
-        return $this->update($artefactFamily, $modelData, ['data']);
+        return $this->update($artefactDepartment, $modelData, ['data']);
     }
 
     public function authorize(ActionRequest $request): bool
@@ -44,10 +44,10 @@ class UpdateArtefactFamily extends OrgAction
                 new AlphaDashDot(),
                 'max:64',
                 new IUnique(
-                    table: 'artefact_families',
+                    table: 'artefact_departments',
                     extraConditions: [
                         ['column' => 'production_id', 'value' => $this->production->id],
-                        ['column' => 'id', 'operator' => '!=', 'value' => $this->artefactFamily->id],
+                        ['column' => 'id', 'operator' => '!=', 'value' => $this->artefactDepartment->id],
                     ]
                 ),
             ],
@@ -56,20 +56,20 @@ class UpdateArtefactFamily extends OrgAction
         ];
     }
 
-    public function action(ArtefactFamily $artefactFamily, array $modelData): ArtefactFamily
+    public function action(ArtefactDepartment $artefactDepartment, array $modelData): ArtefactDepartment
     {
         $this->asAction       = true;
-        $this->artefactFamily = $artefactFamily;
-        $this->initialisationFromProduction($artefactFamily->production, $modelData);
+        $this->artefactDepartment = $artefactDepartment;
+        $this->initialisationFromProduction($artefactDepartment->production, $modelData);
 
-        return $this->handle($artefactFamily, $this->validatedData);
+        return $this->handle($artefactDepartment, $this->validatedData);
     }
 
-    public function asController(ArtefactFamily $artefactFamily, ActionRequest $request): ArtefactFamily
+    public function asController(ArtefactDepartment $artefactDepartment, ActionRequest $request): ArtefactDepartment
     {
-        $this->artefactFamily = $artefactFamily;
-        $this->initialisationFromProduction($artefactFamily->production, $request);
+        $this->artefactDepartment = $artefactDepartment;
+        $this->initialisationFromProduction($artefactDepartment->production, $request);
 
-        return $this->handle($artefactFamily, $this->validatedData);
+        return $this->handle($artefactDepartment, $this->validatedData);
     }
 }

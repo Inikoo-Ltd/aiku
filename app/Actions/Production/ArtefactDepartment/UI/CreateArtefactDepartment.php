@@ -6,7 +6,7 @@
  * Copyright (c) 2026, Raul A Perusquia Flores
  */
 
-namespace App\Actions\Production\ArtefactFamily\UI;
+namespace App\Actions\Production\ArtefactDepartment\UI;
 
 use App\Actions\OrgAction;
 use App\Models\Production\Production;
@@ -15,7 +15,7 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 
-class CreateArtefactFamily extends OrgAction
+class CreateArtefactDepartment extends OrgAction
 {
     public function authorize(ActionRequest $request): bool
     {
@@ -30,16 +30,16 @@ class CreateArtefactFamily extends OrgAction
             'CreateModel',
             [
                 'breadcrumbs' => $this->getBreadcrumbs($request->route()->originalParameters()),
-                'title'       => __('New artefact family'),
+                'title'       => __('New artefact department'),
                 'pageHead'    => [
                     'model'   => __('Create'),
-                    'title'   => __('New artefact family'),
+                    'title'   => __('New artefact department'),
                     'actions' => [
                         [
                             'type'  => 'button',
                             'style' => 'cancel',
                             'route' => [
-                                'name'       => 'grp.org.productions.show.crafts.artefact_families.index',
+                                'name'       => 'grp.org.productions.show.crafts.artefact_departments.index',
                                 'parameters' => $request->route()->originalParameters()
                             ],
                         ]
@@ -48,7 +48,7 @@ class CreateArtefactFamily extends OrgAction
                 'formData'    => [
                     'blueprint' => [
                         [
-                            'title'  => __('Artefact family'),
+                            'title'  => __('Artefact department'),
                             'fields' => [
                                 'code'        => ['type' => 'input', 'label' => __('Code'), 'required' => true],
                                 'name'        => ['type' => 'input', 'label' => __('Name'), 'required' => true],
@@ -57,7 +57,7 @@ class CreateArtefactFamily extends OrgAction
                         ]
                     ],
                     'route'     => [
-                        'name'       => 'grp.models.production.artefact_families.store',
+                        'name'       => 'grp.models.production.artefact_departments.store',
                         'parameters' => [$production->id]
                     ]
                 ],
@@ -68,11 +68,11 @@ class CreateArtefactFamily extends OrgAction
     public function getBreadcrumbs(array $routeParameters): array
     {
         return array_merge(
-            IndexArtefactFamilies::make()->getBreadcrumbs($routeParameters),
+            IndexArtefactDepartments::make()->getBreadcrumbs($routeParameters),
             [
                 [
                     'type'          => 'creatingModel',
-                    'creatingModel' => ['label' => __('Creating artefact family')]
+                    'creatingModel' => ['label' => __('Creating artefact department')]
                 ]
             ]
         );

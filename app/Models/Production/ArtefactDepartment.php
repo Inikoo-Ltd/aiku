@@ -39,7 +39,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Production $production
  * @mixin \Eloquent
  */
-class ArtefactFamily extends Model implements Auditable
+class ArtefactDepartment extends Model implements Auditable
 {
     use SoftDeletes;
     use HasSlug;

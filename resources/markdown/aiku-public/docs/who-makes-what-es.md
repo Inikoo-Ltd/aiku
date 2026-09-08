@@ -17,7 +17,7 @@ Para el jefe de fábrica o el planificador. Dos pequeños ajustes hacen útil la
 
 Un artefacto es una cosa que hace la fábrica. Una categoría es una estantería de ellas: bombas de baño, jabón, aceites esenciales, una gama de marca. Cada artefacto pertenece como mucho a una categoría.
 
-- **Factory → Crafts → Artefact families** lista las categorías con cuántos artefactos tiene cada una. Abre una para ver sus artefactos.
+- **Factory → Crafts → Artefact departments** lista las categorías con cuántos artefactos tiene cada una. Abre una para ver sus artefactos.
 - Para mover artefactos entre categorías, márcalos en cualquier lista de artefactos y usa **Move to family**. Para crear una categoría, usa el botón **new** de la lista.
 
 Las categorías gobiernan dos cosas: la vista *By category* de la lista To produce, y el valor por defecto para los artesanos, que se explica a continuación.
@@ -42,7 +42,7 @@ Así que la forma barata de configurar una fábrica es: asignar artesanos a las 
 
 <aside class="wayfinder"><strong>Dónde pulsar en aiku</strong>
 <ul>
-<li><b>Categorías:</b> tu organización → <b>Factory</b> → <b>Crafts</b> → <b>Artefact families</b>.</li>
+<li><b>Categorías:</b> tu organización → <b>Factory</b> → <b>Crafts</b> → <b>Artefact departments</b>.</li>
 <li><b>Mover artefactos:</b> marca artefactos en cualquier lista de artefactos → <b>Move to family</b>.</li>
 <li><b>Asignar un artesano:</b> abre una categoría o un artefacto → <b>Usually made by</b> → <b>Add artisan…</b>. Quítalo con la cruz de la chip.</li>
 <li><b>Ver el efecto:</b> <b>Factory</b> → <b>To produce</b> → <b>By artisan</b>.</li>

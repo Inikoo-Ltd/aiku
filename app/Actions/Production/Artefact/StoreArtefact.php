@@ -10,7 +10,7 @@ namespace App\Actions\Production\Artefact;
 
 use App\Actions\Production\Production\Hydrators\ProductionHydrateArtefacts;
 use App\Actions\OrgAction;
-use App\Actions\Production\ArtefactFamily\Hydrators\ArtefactFamilyHydrateArtefacts;
+use App\Actions\Production\ArtefactDepartment\Hydrators\ArtefactDepartmentHydrateArtefacts;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateArtefacts;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateArtefacts;
 use App\Enums\Production\Artefact\ArtefactStateEnum;
@@ -33,8 +33,8 @@ class StoreArtefact extends OrgAction
 
         /** @var Artefact $artefact */
         $artefact = $production->artefacts()->create($modelData);
-        if ($artefact->artefactFamily) {
-            ArtefactFamilyHydrateArtefacts::run($artefact->artefactFamily);
+        if ($artefact->artefactDepartment) {
+            ArtefactDepartmentHydrateArtefacts::run($artefact->artefactDepartment);
         }
         $artefact->stats()->create();
         GroupHydrateArtefacts::dispatch($artefact->group);
@@ -81,7 +81,7 @@ class StoreArtefact extends OrgAction
                 Rule::exists('org_stocks', 'id')->where('organisation_id', $this->organisation->id),
             ],
             'recommended_batch_size' => ['sometimes', 'nullable', 'integer', 'min:1'],
-            'artefact_family_id'     => ['sometimes', 'nullable', Rule::exists('artefact_families', 'id')->where('organisation_id', $this->organisation->id)],
+            'artefact_department_id'     => ['sometimes', 'nullable', Rule::exists('artefact_departments', 'id')->where('organisation_id', $this->organisation->id)],
             'source_id'   => ['sometimes', 'nullable', 'string'],
             'created_at'  => ['sometimes', 'nullable', 'date'],
 

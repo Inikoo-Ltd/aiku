@@ -11,7 +11,7 @@ namespace App\Enums\UI\Production;
 use App\Enums\EnumHelperTrait;
 use App\Enums\HasTabs;
 
-enum ArtefactFamilyTabsEnum: string
+enum ArtefactDepartmentTabsEnum: string
 {
     use EnumHelperTrait;
     use HasTabs;
@@ -22,11 +22,11 @@ enum ArtefactFamilyTabsEnum: string
     public function blueprint(): array
     {
         return match ($this) {
-            ArtefactFamilyTabsEnum::ARTEFACTS => [
+            ArtefactDepartmentTabsEnum::ARTEFACTS => [
                 'title' => __('Artefacts'),
                 'icon'  => 'fal fa-hamsa',
             ],
-            ArtefactFamilyTabsEnum::HISTORY => [
+            ArtefactDepartmentTabsEnum::HISTORY => [
                 'align' => 'right',
                 'type'  => 'icon',
                 'title' => __('History'),

@@ -17,7 +17,7 @@ Dla kierownika fabryki albo planisty. Dwa drobne elementy konfiguracji sprawiaj�
 
 Wyrób (artefact) to jedna rzecz, którą wykonuje fabryka. Kategoria to półka takich rzeczy: kule do kąpieli, mydło, olejki eteryczne, gama marki. Każdy wyrób należy najwyżej do jednej kategorii.
 
-- **Factory → Crafts → Artefact families** (Fabryka → Rzemiosło → Rodziny wyrobów) wyświetla kategorie z liczbą wyrobów w każdej z nich. Otwórz jedną, aby zobaczyć jej wyroby.
+- **Factory → Crafts → Artefact departments** (Fabryka → Rzemiosło → Rodziny wyrobów) wyświetla kategorie z liczbą wyrobów w każdej z nich. Otwórz jedną, aby zobaczyć jej wyroby.
 - Aby przenieść wyroby między kategoriami, zaznacz je na dowolnej liście wyrobów i użyj **Move to family** (Przenieś do rodziny). Aby utworzyć kategorię, użyj przycisku **new** (nowa) na liście.
 
 Kategorie napędzają dwie rzeczy: widok *By category* listy To produce oraz zapasowy wybór rzemieślnika, opisany dalej.
@@ -42,7 +42,7 @@ Więc najprostszy sposób skonfigurowania fabryki to: przypisać rzemieślników
 
 <aside class="wayfinder"><strong>Gdzie kliknąć w aiku</strong>
 <ul>
-<li><b>Kategorie:</b> Twoja organizacja → <b>Factory</b> (Fabryka) → <b>Crafts</b> (Rzemiosło) → <b>Artefact families</b> (Rodziny wyrobów).</li>
+<li><b>Kategorie:</b> Twoja organizacja → <b>Factory</b> (Fabryka) → <b>Crafts</b> (Rzemiosło) → <b>Artefact departments</b> (Rodziny wyrobów).</li>
 <li><b>Przenieś wyroby:</b> zaznacz wyroby na dowolnej liście wyrobów → <b>Move to family</b> (Przenieś do rodziny).</li>
 <li><b>Przypisz rzemieślnika:</b> otwórz kategorię albo wyrób → <b>Usually made by</b> (Zwykle wykonuje) → <b>Add artisan…</b> (Dodaj rzemieślnika…). Odłącz krzyżykiem na plakietce.</li>
 <li><b>Zobacz efekt:</b> <b>Factory</b> (Fabryka) → <b>To produce</b> (Do produkcji) → <b>By artisan</b> (Wg rzemieślnika).</li>

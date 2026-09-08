@@ -6,14 +6,14 @@
  * Copyright (c) 2026, Raul A Perusquia Flores
  */
 
-namespace App\Actions\Production\ArtefactFamily\UI;
+namespace App\Actions\Production\ArtefactDepartment\UI;
 
 use App\Actions\OrgAction;
 use App\Actions\Production\Artefact\UI\IndexArtefacts;
 use App\Actions\Production\Production\UI\ShowCraftsDashboard;
-use App\Http\Resources\Production\ArtefactFamiliesResource;
+use App\Http\Resources\Production\ArtefactDepartmentsResource;
 use App\InertiaTable\InertiaTable;
-use App\Models\Production\ArtefactFamily;
+use App\Models\Production\ArtefactDepartment;
 use App\Models\Production\Production;
 use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
@@ -25,7 +25,7 @@ use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
 
-class IndexArtefactFamilies extends OrgAction
+class IndexArtefactDepartments extends OrgAction
 {
     public function authorize(ActionRequest $request): bool
     {
@@ -52,8 +52,8 @@ class IndexArtefactFamilies extends OrgAction
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
-                $query->whereStartWith('artefact_families.code', $value)
-                    ->orWhereWith('artefact_families.name', $value);
+                $query->whereStartWith('artefact_departments.code', $value)
+                    ->orWhereWith('artefact_departments.name', $value);
             });
         });
 
@@ -61,10 +61,10 @@ class IndexArtefactFamilies extends OrgAction
             InertiaTable::updateQueryBuilderParameters($prefix);
         }
 
-        return QueryBuilder::for(ArtefactFamily::class)
-            ->where('artefact_families.production_id', $production->id)
-            ->defaultSort('artefact_families.code')
-            ->select(['artefact_families.id', 'artefact_families.slug', 'artefact_families.code', 'artefact_families.name', 'artefact_families.number_artefacts'])
+        return QueryBuilder::for(ArtefactDepartment::class)
+            ->where('artefact_departments.production_id', $production->id)
+            ->defaultSort('artefact_departments.code')
+            ->select(['artefact_departments.id', 'artefact_departments.slug', 'artefact_departments.code', 'artefact_departments.name', 'artefact_departments.number_artefacts'])
             ->allowedSorts(['code', 'name', 'number_artefacts'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
@@ -80,16 +80,16 @@ class IndexArtefactFamilies extends OrgAction
             $table
                 ->withGlobalSearch()
                 ->withEmptyState([
-                    'title'       => __('No artefact families yet'),
+                    'title'       => __('No artefact departments yet'),
                     'description' => $this->canEdit ? __('Group artefacts by the kind of work they need, e.g. Soap or Bath Bombs.') : null,
-                    'count'       => $production->artefactFamilies()->count(),
+                    'count'       => $production->artefactDepartments()->count(),
                     'action'      => $this->canEdit ? [
                         'type'    => 'button',
                         'style'   => 'create',
                         'tooltip' => __('New family'),
                         'label'   => __('family'),
                         'route'   => [
-                            'name'       => 'grp.org.productions.show.crafts.artefact_families.create',
+                            'name'       => 'grp.org.productions.show.crafts.artefact_departments.create',
                             'parameters' => [$production->organisation->slug, $production->slug]
                         ]
                     ] : null
@@ -101,21 +101,21 @@ class IndexArtefactFamilies extends OrgAction
         };
     }
 
-    public function jsonResponse(LengthAwarePaginator $artefactFamilies): AnonymousResourceCollection
+    public function jsonResponse(LengthAwarePaginator $artefactDepartments): AnonymousResourceCollection
     {
-        return ArtefactFamiliesResource::collection($artefactFamilies);
+        return ArtefactDepartmentsResource::collection($artefactDepartments);
     }
 
-    public function htmlResponse(LengthAwarePaginator $artefactFamilies, ActionRequest $request): Response
+    public function htmlResponse(LengthAwarePaginator $artefactDepartments, ActionRequest $request): Response
     {
         return Inertia::render(
-            'Org/Production/ArtefactFamilies',
+            'Org/Production/ArtefactDepartments',
             [
                 'breadcrumbs'   => $this->getBreadcrumbs($request->route()->originalParameters()),
-                'title'         => __('Artefact families'),
+                'title'         => __('Artefact departments'),
                 'pageHead'      => [
-                    'title'         => __('Artefact families'),
-                    'icon'          => ['icon' => ['fal', 'fa-folder'], 'title' => __('Artefact families')],
+                    'title'         => __('Artefact departments'),
+                    'icon'          => ['icon' => ['fal', 'fa-folder'], 'title' => __('Artefact departments')],
                     'subNavigation' => IndexArtefacts::make()->getArtefactsSubNavigation($this->production),
                     'actions'       => [
                         $this->canEdit ? [
@@ -123,13 +123,13 @@ class IndexArtefactFamilies extends OrgAction
                             'style' => 'create',
                             'label' => __('family'),
                             'route' => [
-                                'name'       => 'grp.org.productions.show.crafts.artefact_families.create',
+                                'name'       => 'grp.org.productions.show.crafts.artefact_departments.create',
                                 'parameters' => $request->route()->originalParameters()
                             ]
                         ] : null,
                     ]
                 ],
-                'data'          => ArtefactFamiliesResource::collection($artefactFamilies),
+                'data'          => ArtefactDepartmentsResource::collection($artefactDepartments),
             ]
         )->table($this->tableStructure($this->production));
     }
@@ -143,10 +143,10 @@ class IndexArtefactFamilies extends OrgAction
                     'type'   => 'simple',
                     'simple' => [
                         'route' => [
-                            'name'       => 'grp.org.productions.show.crafts.artefact_families.index',
+                            'name'       => 'grp.org.productions.show.crafts.artefact_departments.index',
                             'parameters' => $routeParameters
                         ],
-                        'label' => __('Artefact families'),
+                        'label' => __('Artefact departments'),
                         'icon'  => 'fal fa-bars',
                     ],
                     'suffix' => $suffix

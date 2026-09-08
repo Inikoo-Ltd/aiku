@@ -7,7 +7,7 @@
 <script setup lang="ts">
 import { Head } from "@inertiajs/vue3"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
-import TableArtefactFamilies from "@/Components/Tables/Grp/Org/Production/TableArtefactFamilies.vue"
+import TableArtefactDepartments from "@/Components/Tables/Grp/Org/Production/TableArtefactDepartments.vue"
 import { capitalize } from "@/Composables/capitalize"
 import { PageHeadingTypes } from "@/types/PageHeading"
 
@@ -21,5 +21,5 @@ defineProps<{
 <template>
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead" />
-    <TableArtefactFamilies :data="data" />
+    <TableArtefactDepartments :data="data" />
 </template>
