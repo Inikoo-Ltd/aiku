@@ -27,6 +27,11 @@ use App\Models\Dropshipping\CustomerClient;
 use App\Models\Dropshipping\Platform;
 use App\Models\Ordering\Order;
 use Illuminate\Support\Facades\DB;
+use App\Actions\Dropshipping\Portfolio\StorePortfolio;
+use App\Actions\Ordering\Order\UpdateState\SubmitOrder;
+use App\Enums\Ordering\Order\OrderPayStatusEnum;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Validation\ValidationException;
 use Laravel\Sanctum\Sanctum;
 
 use function Pest\Laravel\deleteJson;
@@ -514,6 +519,34 @@ test('retina api requests are logged with credentials redacted', function () {
         ->and($logged->payload['password'])->toBe('***');
 });
 
+test('retina api logs query string arguments', function () {
+    Sanctum::actingAs($this->dropshippingChannel, ['retina', 'retina:read', 'retina:write']);
+
+    getJson(route('retina.api.dropshipping.images.index', ['id' => 999999999, 'type' => 'product', 'token' => 'leaked']));
+
+    $logged = \App\Models\CRM\RetinaApiRequest::where('customer_id', $this->dropshippingCustomer->id)
+        ->orderByDesc('id')->first();
+
+    expect($logged->route_parameters['id'])->toBe('999999999')
+        ->and($logged->route_parameters['type'])->toBe('product')
+        ->and($logged->route_parameters['token'])->toBe('***')
+        ->and($logged->message)->toBe('Product not found');
+});
+
+test('retina api images are scoped to the calling customer', function () {
+    $otherPortfolio = \App\Actions\Dropshipping\Portfolio\StorePortfolio::make()->action(
+        $this->fulfilmentChannel,
+        $this->fulfilmentProduct,
+        []
+    );
+
+    Sanctum::actingAs($this->dropshippingChannel, ['retina', 'retina:read', 'retina:write']);
+
+    getJson(route('retina.api.dropshipping.images.index', ['id' => $otherPortfolio->id, 'type' => 'portfolio']))
+        ->assertStatus(422)
+        ->assertJsonFragment(['message' => 'Portfolio not found']);
+});
+
 test('retina api failures keep the response message', function () {
     Sanctum::actingAs($this->dropshippingChannel, ['retina', 'retina:read', 'retina:write']);
 
@@ -593,4 +626,38 @@ test('api inflow monitor alerts discord when a customer floods', function () {
         ->and($issues[0])->toContain((string) $this->dropshippingCustomer->id);
 
     \Illuminate\Support\Facades\Http::assertSent(fn ($request) => str_contains($request['content'], 'API Inflow Alert'));
+});
+
+test('a paid order that fails to submit raises an alert', function () {
+    Sanctum::actingAs($this->dropshippingChannel, ['retina', 'retina:read', 'retina:write']);
+    config(['services.discord.webhook_url' => 'https://discord.test/hook']);
+    Http::fake();
+
+    $client = StoreCustomerClient::make()->action(
+        $this->dropshippingChannel,
+        CustomerClient::factory()->definition()
+    );
+    $order = StoreOrder::make()->action($client, [
+        'platform_id'               => $this->dropshippingChannel->platform_id,
+        'customer_sales_channel_id' => $this->dropshippingChannel->id,
+    ]);
+    $portfolio = StorePortfolio::make()->action($this->dropshippingChannel, $this->product, []);
+    postJson(route('retina.api.dropshipping.order.transaction.store', [$order, $portfolio]), [
+        'quantity_ordered' => 2,
+    ])->assertCreated();
+
+    DB::table('customers')->where('id', $this->dropshippingCustomer->id)->update(['balance' => 1000]);
+
+    SubmitOrder::mock()->shouldReceive('action')->andThrow(
+        ValidationException::withMessages(['order' => 'Order has been submitted and cannot be submitted again'])
+    );
+
+    patchJson(route('retina.api.dropshipping.order.submit', $order));
+
+    $order->refresh();
+    expect($order->pay_status)->toBe(OrderPayStatusEnum::PAID)
+        ->and($order->submitted_at)->toBeNull();
+
+    Http::assertSent(fn ($request) => $request->url() === 'https://discord.test/hook'
+        && str_contains($request['content'], $order->reference));
 });

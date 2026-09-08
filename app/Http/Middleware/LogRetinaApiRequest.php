@@ -96,7 +96,7 @@ class LogRetinaApiRequest
             'route_name'               => $request->route()?->getName(),
             'method'                   => $request->method(),
             'path'                     => mb_substr($request->path(), 0, 255),
-            'route_parameters'         => $request->route()?->originalParameters(),
+            'route_parameters'         => $this->redact(array_merge($request->route()?->originalParameters() ?? [], $request->query())),
             'payload'                  => $this->payload($request),
             'status'                   => $status,
             'message'                  => $status >= 400 ? $this->message($decoded) : null,
