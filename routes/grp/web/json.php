@@ -60,6 +60,7 @@ use App\Actions\Comms\EmailCopy\GetEmailCopy;
 use App\Actions\Comms\EmailTemplate\GetEmailTemplateLayout;
 use App\Actions\Comms\Mailshot\GetMailshotMergeTags;
 use App\Actions\Comms\Mailshot\GetMailshotTemplate;
+use App\Actions\Comms\Mailshot\GetMailshotUrls;
 use App\Actions\Comms\Mailshot\SuggestMailshotCopy;
 use App\Actions\Comms\OutboxHasSubscribers\Json\GetOutboxUsers;
 use App\Actions\CRM\Customer\UI\GetProductsForPortfolioSelect;
@@ -370,6 +371,7 @@ Route::get('product/{product}/trade-units', GetExternalProductTradeUnits::class)
 Route::post('master-product/{masterAsset}/check-org-stocks-existence', CheckMasterAssetTradeUnitOrgStockExistence::class)->name('master_product.check_org_stock_existence');
 
 Route::get('mailshot/{mailshot:id}/template', GetMailshotTemplate::class)->name('mailshot.template');
+Route::get('mailshot/{mailshot:id}/urls', GetMailshotUrls::class)->name('mailshot.urls');
 Route::post('mailshot/{mailshot:id}/copy-suggestion', SuggestMailshotCopy::class)->name('mailshot.copy_suggestion');
 Route::get('email/templates/{emailTemplate:id}/layout', GetEmailTemplateLayout::class)->name('email_templates.layout');
 

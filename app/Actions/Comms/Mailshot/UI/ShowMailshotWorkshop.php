@@ -87,8 +87,16 @@ class ShowMailshotWorkshop extends OrgAction
                     ],
                     'actions'   => [
                         [
+                            'type'  => 'button',
+                            'style' => 'tertiary',
+                            'key'   => 'utm',
+                            'icon'  => 'fal fa-link',
+                            'label' => __('Link tracking'),
+                        ],
+                        [
                             'type'      => 'button',
                             'style'     => 'primary',
+                            'key'       => 'review',
                             'icon'      => false,
                             'iconRight' => 'fal fa-arrow-right',
                             'label'     => __('Review & send'),
@@ -193,6 +201,20 @@ class ShowMailshotWorkshop extends OrgAction
                 ],
                 'updateMailshotRoute' => [
                     'name'       => 'grp.models.shop.mailshot.update',
+                    'parameters' => [
+                        'mailshot' => $mailshot->id
+                    ],
+                    'method' => 'patch'
+                ],
+                'utmLinksRoute' => [
+                    'name'       => 'grp.json.mailshot.urls',
+                    'parameters' => [
+                        'mailshot' => $mailshot->id
+                    ],
+                    'method' => 'get'
+                ],
+                'updateUtmLinkRoute' => [
+                    'name'       => 'grp.models.shop.mailshot.url-utm.update',
                     'parameters' => [
                         'mailshot' => $mailshot->id
                     ],

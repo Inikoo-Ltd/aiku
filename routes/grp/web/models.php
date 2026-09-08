@@ -92,6 +92,7 @@ use App\Actions\Comms\Mailshot\StoreMailshotTemplate;
 use App\Actions\Comms\Mailshot\UpdateMailshot;
 use App\Actions\Comms\Mailshot\UpdateMailshotRecipientFilter;
 use App\Actions\Comms\Mailshot\UpdateMailshotSecondWave;
+use App\Actions\Comms\Mailshot\UpdateMailshotUrlUtm;
 use App\Actions\Comms\Mailshot\UpdateMailshotTemplate;
 use App\Actions\Comms\Mailshot\UpdateWorkshopMailShot;
 use App\Actions\Comms\Outbox\AbandonedCheckout\SendAbandonedCheckoutReminder;
@@ -1317,6 +1318,7 @@ Route::patch('stored-items/{storedItem:id}/mark-as-discontinuing', MarkStoredIte
 Route::patch('/group-settings', UpdateGroupSettings::class)->name('group-settings.update');
 
 Route::patch('/{mailshot:id}/mailshot', UpdateMailshot::class)->name('shop.mailshot.update');
+Route::patch('/{mailshot:id}/mailshot/url-utm', UpdateMailshotUrlUtm::class)->name('shop.mailshot.url-utm.update');
 
 Route::name('email-templates.')->prefix('email-templates')->group(function () {
     Route::patch('{emailTemplate:id}/update', UpdateEmailTemplate::class)->name('content.update');
