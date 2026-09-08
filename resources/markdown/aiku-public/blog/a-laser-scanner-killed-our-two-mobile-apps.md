@@ -1,13 +1,13 @@
 ---
-title: It died before it was born
-summary: Two React Native apps — one for warehouse pallet and stock work, one for clocking in and out — were finished, tested and production-ready, and never launched. What beat them was not a new technology but a question nobody asked early enough, because the answer had been sitting on every supermarket checkout since the eighties. How we proved in production that nothing had ever called them, the two threads out of 58,000 lines that still reached back into the live app, and what a year of good work that never met a user is actually worth.
+title: A laser scanner killed our two mobile apps. Their names were Maya and Han
+summary: Maya ran warehouse pallet and stock work; Han handled clocking in and out. Both React Native apps were finished, tested and production-ready, and neither was ever launched. What beat them was not a new technology but a question nobody asked early enough, because the answer had been sitting on every supermarket checkout since the eighties. How we proved in production that nothing had ever called them, the two threads out of 58,000 lines that still reached back into the live app, and what a year of good work that never met a user is actually worth.
 date: 2026-09-08
 tags: warehouse, mobile, deletion, architecture, history
 ---
 
-<aside class="tldr"><strong>TL;DR</strong>Two React Native apps — <code>311</code> files, <code>58,241</code> lines — were finished and production-ready and never switched on. They existed because barcode scanning had to happen on the phone, and nobody checked that premise until someone pointed a <strong>laser scanner</strong> at the web app and watched the barcode arrive as keystrokes. Production proved they were never used: zero API tokens ever issued to a device, the pairing column NULL on every machine in the fleet, no traces in ninety days. Deleting them touched only two things in the live app, which is the measure of how cleanly they were built. The lesson is not about timing or quality — it is that no amount of craft downstream rescues a premise nobody checked.</aside>
+<aside class="tldr"><strong>TL;DR</strong>Two React Native apps — Maya for the warehouse floor and Han for clocking, <code>311</code> files and <code>58,241</code> lines between them — were finished and production-ready and never switched on. They existed because barcode scanning had to happen on the phone, and nobody checked that premise until someone pointed a laser scanner at the web app and watched the barcode arrive as keystrokes. Production proved they were never used: zero API tokens ever issued to a device, the pairing column NULL on every machine in the fleet, no traces in ninety days. Deleting them touched only two things in the live app, which is the measure of how cleanly they were built. The lesson is not about timing or quality — it is that no amount of craft downstream rescues a premise nobody checked.</aside>
 
-We deleted two React Native apps from our warehouse platform this week. One ran stock and pallet operations on the floor. One handled clocking in and out. Together they were **311 files and 58,241 lines**.
+We deleted two React Native apps from our warehouse platform this week. They had names, so we may as well use them: **Maya** ran stock and pallet operations on the floor, and **Han** handled clocking in and out. Together they were **311 files and 58,241 lines**.
 
 They were finished. They were production-ready. They were never launched. Not deprecated, not replaced, not switched off after a good run — never switched on. They died before they were born.
 
@@ -27,7 +27,7 @@ None of that is glamorous work. All of it is the work. Months of it. Every one o
 
 Nobody ever had that day.
 
-<figure><img src="/art/readme/draw-note-never-launched.svg" alt="Watercolor sketch: a flower bowed over on a broken stem with its petals fallen across the ground, and to the right, lit by a low dawn, a small new shoot with two fresh leaves" width="1200" height="700" loading="lazy"><figcaption>The work was real. The season for it closed before anyone saw it bloom.</figcaption></figure>
+<figure><img src="/art/readme/draw-note-never-launched.svg" alt="Watercolor sketch: a flower bowed over on a broken stem with its petals fallen across the ground, and to the right, lit by a low dawn, a small new shoot with two fresh leaves" width="1200" height="700" loading="lazy"><figcaption>Maya and Han, finished and never switched on. They died before they were born.</figcaption></figure>
 
 ## What overtook them
 
@@ -45,14 +45,14 @@ That is the cruel shape of it. The apps were not beaten by a better app, or by s
 
 We did not trust a grep. The callers would have been compiled apps on physical devices, invisible to static analysis. So we checked production:
 
-- Not one API token had ever been issued to a clocking device.
+- Not one API token had ever been issued to a clocking device. Han authenticated the machines, so a device that had run it would have left one.
 - The `device_name` column was NULL on **every** clocking machine in the fleet. That field is written by the pairing flow, so pairing had never once succeeded.
-- Clocking traffic from a "mobile app" device type turned out to be server-side sync from the legacy system, not the app.
+- Clocking traffic from a "mobile app" device type turned out to be server-side sync from the legacy system, not Han.
 - No errors and no traces for either app's URL prefix, ever.
 
 Reading those results in order is a strange experience. Each query returns nothing, and each nothing is another confirmation that a year of somebody's work never touched a single real user.
 
-There was one last detail. One mobile action had already fallen behind its web equivalent — it changed a pallet's state but skipped closing the associated recurring-bill transactions, something the web version learned to do somewhere along the way. **Code that never ran in production had already gone stale.** That is how long the window had been shut.
+There was one last detail. One of Maya's actions had already fallen behind its web equivalent — it changed a pallet's state but skipped closing the associated recurring-bill transactions, something the web version learned to do somewhere along the way. **Code that never ran in production had already gone stale.** That is how long the window had been shut.
 
 ## The deletion
 
