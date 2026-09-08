@@ -209,7 +209,7 @@ const handleSendNow = async () => {
             notify({
                 type: 'error',
                 title: 'Error',
-                text: 'Failed to send mailshot',
+                text: exception.response?.data?.message || 'Failed to send mailshot',
             })
         })
         .finally(() => {

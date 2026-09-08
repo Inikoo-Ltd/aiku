@@ -27,6 +27,8 @@ class SetMailshotAsScheduled
             throw new \Exception('Action not available for second wave mailshot');
         }
 
+        $mailshot->assertSubjectIsNotDefault();
+
         $updateData = array_merge([
             'state' => MailshotStateEnum::SCHEDULED
         ], $modelData);
