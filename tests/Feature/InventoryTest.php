@@ -2458,6 +2458,7 @@ function costFixStoreDelivery($group, $organisation, int $auroraDeliveryId, arra
             'data'              => '{}',
             'unit_quantity'     => $item['unit_quantity'],
             'net_amount'        => $item['net_amount'],
+            'org_net_amount'    => $item['org_net_amount'] ?? $item['net_amount'],
             'created_at'        => now(),
             'updated_at'        => now(),
         ]);
@@ -3028,3 +3029,79 @@ test('sko barcode scanner finds an org stock by outer or unit barcode and moves 
                 ->etc()
         );
 })->depends('create warehouse');
+
+test('repair org stock movement cost prices per sko in organisation currency', function () {
+    [$orgStock, $location]   = costFixStockInLocation($this->group, $this->organisation, 'CFCUR');
+    [$skipStock, $skipLoc]   = costFixStockInLocation($this->group, $this->organisation, 'CFNOX');
+
+    $orgStock->update(['packed_in' => 4]);
+
+    $movement = StoreOrgStockMovement::make()->action($orgStock, $location, [
+        'type'     => OrgStockMovementTypeEnum::PURCHASE->value,
+        'quantity' => 60,
+    ]);
+    $movement->update([
+        'org_amount'   => 3000,
+        'cost_per_sku' => null,
+        'note'         => 'received from <span onClick="change_view(\'delivery/15601\')">CF15601</span>',
+        'date'         => now()->subDays(20),
+    ]);
+    costFixStoreDelivery($this->group, $this->organisation, 15601, [[
+        'org_stock_id'   => $orgStock->id,
+        'unit_quantity'  => 300,
+        'net_amount'     => 6000,
+        'org_net_amount' => 60,
+    ]]);
+
+    $noOrgAmountMovement = StoreOrgStockMovement::make()->action($skipStock, $skipLoc, [
+        'type'     => OrgStockMovementTypeEnum::PURCHASE->value,
+        'quantity' => 10,
+    ]);
+    $noOrgAmountMovement->update([
+        'org_amount'   => 5000,
+        'cost_per_sku' => null,
+        'note'         => 'received from <span onClick="change_view(\'delivery/15602\')">CF15602</span>',
+        'date'         => now()->subDays(20),
+    ]);
+    costFixStoreDelivery($this->group, $this->organisation, 15602, [[
+        'org_stock_id'   => $skipStock->id,
+        'unit_quantity'  => 10,
+        'net_amount'     => 900,
+        'org_net_amount' => 0,
+    ]]);
+
+    [$nearParityStock, $nearParityLoc] = costFixStockInLocation($this->group, $this->organisation, 'CFPAR');
+
+    $nearParityMovement = StoreOrgStockMovement::make()->action($nearParityStock, $nearParityLoc, [
+        'type'     => OrgStockMovementTypeEnum::PURCHASE->value,
+        'quantity' => 20,
+    ]);
+    $nearParityMovement->update([
+        'org_amount'   => 25,
+        'cost_per_sku' => 1.25,
+        'note'         => 'received from <span onClick="change_view(\'delivery/15603\')">CF15603</span>',
+        'date'         => now()->subDays(20),
+    ]);
+    costFixStoreDelivery($this->group, $this->organisation, 15603, [[
+        'org_stock_id'   => $nearParityStock->id,
+        'unit_quantity'  => 20,
+        'net_amount'     => 25,
+        'org_net_amount' => 20,
+    ]]);
+
+    $this->artisan('org_stock_movement:repair_cost_from_stock_delivery_items', ['organisation' => $this->organisation->slug])
+        ->assertExitCode(0);
+
+    $movement->refresh();
+    $noOrgAmountMovement->refresh();
+    $nearParityMovement->refresh();
+
+    expect((float) $movement->cost_per_sku)->toBe(0.8)
+        ->and((float) $movement->org_amount)->toBe(48.0)
+        ->and((float) $movement->grp_amount)->toBe(48.0)
+        ->and($movement->cost_status)->toBe(\App\Enums\Inventory\OrgStockMovement\OrgStockMovementCostStatusEnum::DELIVERY)
+        ->and($noOrgAmountMovement->cost_per_sku)->toBeNull()
+        ->and((float) $noOrgAmountMovement->org_amount)->toBe(5000.0)
+        ->and((float) $nearParityMovement->cost_per_sku)->toBe(1.0)
+        ->and((float) $nearParityMovement->org_amount)->toBe(20.0);
+});
