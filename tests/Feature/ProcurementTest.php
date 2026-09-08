@@ -3287,6 +3287,40 @@ describe('partner shopping list', function () {
             ->toThrow(\Illuminate\Validation\ValidationException::class);
     });
 
+    test('the goods out location is set by command and refuses a location that is not one', function () {
+        $seller    = $this->orgPartner->partner;
+        $warehouse = \App\Actions\Inventory\Warehouse\StoreWarehouse::make()->action($seller, \App\Models\Inventory\Warehouse::factory()->definition());
+        $plain     = \App\Actions\Inventory\Location\StoreLocation::make()->action($warehouse, \App\Models\Inventory\Location::factory()->definition());
+        $goodsOut  = \App\Actions\Inventory\Location\StoreLocation::make()->action($warehouse, \App\Models\Inventory\Location::factory()->definition());
+        $goodsOut->update(['is_goods_out' => true]);
+
+        $sellerPartner = \App\Models\Procurement\OrgPartner::where('organisation_id', $seller->id)
+            ->where('partner_id', $this->orgPartner->organisation_id)
+            ->first()
+            ?? StoreOrgPartner::make()->action($seller, $this->orgPartner->organisation);
+        $buyer = $this->orgPartner->organisation;
+
+        $this->artisan('org:set_partner_goods_out_location', [
+            'organisation' => $seller->slug,
+            'partner'      => $buyer->slug,
+            'location'     => $plain->code,
+        ])->assertExitCode(1);
+        expect($sellerPartner->fresh()->goods_out_location_id)->not->toBe($plain->id);
+
+        $this->artisan('org:set_partner_goods_out_location', [
+            'organisation' => $seller->slug,
+            'partner'      => $buyer->slug,
+            'location'     => $goodsOut->code,
+        ])->assertExitCode(0);
+        expect($sellerPartner->fresh()->goods_out_location_id)->toBe($goodsOut->id);
+
+        $this->artisan('org:set_partner_goods_out_location', [
+            'organisation' => $seller->slug,
+            'partner'      => $buyer->slug,
+        ])->assertExitCode(0);
+        expect($sellerPartner->fresh()->goods_out_location_id)->toBeNull();
+    });
+
     test('the pre-pick tab only shows once the organisation has a partner goods out location', function () {
         $seller    = $this->orgPartner->partner;
         $warehouse = \App\Actions\Inventory\Warehouse\StoreWarehouse::make()->action($seller, \App\Models\Inventory\Warehouse::factory()->definition());
