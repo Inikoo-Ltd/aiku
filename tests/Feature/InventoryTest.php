@@ -3129,3 +3129,94 @@ test('repair org stock movement cost prices per sko in organisation currency', f
         ->and((float) $partialMovement->cost_per_sku)->toBe(0.8)
         ->and((float) $partialMovement->org_amount)->toBe(32.0);
 });
+
+describe('picking cost basis', function () {
+    test('a purchase priced only by org_amount still prices the picking', function () {
+        [$orgStock, $location] = costFixStockInLocation($this->group, $this->organisation, 'CFLPP');
+
+        $purchase = StoreOrgStockMovement::make()->action($orgStock, $location, [
+            'type'     => OrgStockMovementTypeEnum::PURCHASE->value,
+            'quantity' => 100,
+        ]);
+        $purchase->update([
+            'org_amount'   => 250,
+            'cost_per_sku' => null,
+            'date'         => now()->subDays(10),
+        ]);
+
+        $picked = StoreOrgStockMovement::make()->action($orgStock->refresh(), $location, [
+            'type'     => OrgStockMovementTypeEnum::PICKED->value,
+            'quantity' => -4,
+        ]);
+
+        expect((float) $picked->org_amount)->toBe(-10.0);
+    });
+
+    test('a stock that was never purchased has no cost basis and the picking stays at zero', function () {
+        [$orgStock, $location] = costFixStockInLocation($this->group, $this->organisation, 'CFNOCOST');
+
+        StoreOrgStockMovement::make()->action($orgStock, $location, [
+            'type'     => OrgStockMovementTypeEnum::FOUND->value,
+            'quantity' => 50,
+        ]);
+
+        $picked = StoreOrgStockMovement::make()->action($orgStock->refresh(), $location, [
+            'type'     => OrgStockMovementTypeEnum::PICKED->value,
+            'quantity' => -4,
+        ]);
+
+        expect((float) $picked->org_amount)->toBe(0.0);
+    });
+});
+
+describe('seed purchase cost from sku value', function () {
+    test('unpriced purchases are seeded from sku_value and the picking gets a cost', function () {
+        [$orgStock, $location] = costFixStockInLocation($this->group, $this->organisation, 'CFSEED');
+
+        $purchase = StoreOrgStockMovement::make()->action($orgStock, $location, [
+            'type'     => OrgStockMovementTypeEnum::PURCHASE->value,
+            'quantity' => 100,
+        ]);
+        $purchase->update(['org_amount' => 0, 'cost_per_sku' => null, 'date' => now()->subDays(10)]);
+        $orgStock->update(['sku_value' => 2.5]);
+
+        $this->artisan('org_stock_movement:seed_purchase_cost_from_sku_value', ['--dry-run' => true])->assertExitCode(0);
+        expect($purchase->refresh()->cost_per_sku)->toBeNull();
+
+        $this->artisan('org_stock_movement:seed_purchase_cost_from_sku_value')->assertExitCode(0);
+
+        $purchase->refresh();
+        expect((float) $purchase->cost_per_sku)->toBe(2.5)
+            ->and((float) $purchase->org_amount)->toBe(250.0)
+            ->and($purchase->cost_status)->toBe(\App\Enums\Inventory\OrgStockMovement\OrgStockMovementCostStatusEnum::PROVISIONAL);
+
+        $picked = StoreOrgStockMovement::make()->action($orgStock->refresh(), $location, [
+            'type'     => OrgStockMovementTypeEnum::PICKED->value,
+            'quantity' => -4,
+        ]);
+
+        expect((float) $picked->org_amount)->toBe(-10.0);
+    });
+
+    test('a stock that already has one priced purchase is left alone', function () {
+        [$orgStock, $location] = costFixStockInLocation($this->group, $this->organisation, 'CFSEEDOK');
+
+        $priced = StoreOrgStockMovement::make()->action($orgStock, $location, [
+            'type'     => OrgStockMovementTypeEnum::PURCHASE->value,
+            'quantity' => 10,
+        ]);
+        $priced->update(['org_amount' => 30, 'cost_per_sku' => 3, 'date' => now()->subDays(20)]);
+
+        $unpriced = StoreOrgStockMovement::make()->action($orgStock->refresh(), $location, [
+            'type'     => OrgStockMovementTypeEnum::PURCHASE->value,
+            'quantity' => 10,
+        ]);
+        $unpriced->update(['org_amount' => 0, 'cost_per_sku' => null, 'date' => now()->subDays(10)]);
+        $orgStock->update(['sku_value' => 99]);
+
+        $this->artisan('org_stock_movement:seed_purchase_cost_from_sku_value')->assertExitCode(0);
+
+        expect((float) $priced->refresh()->cost_per_sku)->toBe(3.0)
+            ->and($unpriced->refresh()->cost_per_sku)->toBeNull();
+    });
+});
