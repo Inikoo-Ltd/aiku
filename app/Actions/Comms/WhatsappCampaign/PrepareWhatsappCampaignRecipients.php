@@ -35,7 +35,7 @@ class PrepareWhatsappCampaignRecipients
         return ['send_whatsapp_campaign'];
     }
 
-    private const CHUNK_SIZE = 25;
+    private const CHUNK_SIZE = 50;
 
     public function handle(WhatsappCampaign $campaign): void
     {
