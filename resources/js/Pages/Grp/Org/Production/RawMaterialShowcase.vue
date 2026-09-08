@@ -3,6 +3,7 @@ import { Link } from '@inertiajs/vue3'
 import { computed, inject } from 'vue'
 import Icon from '@/Components/Icon.vue'
 import EmptyState from '@/Components/Utils/EmptyState.vue'
+import InformationIcon from '@/Components/Utils/InformationIcon.vue'
 import { ctrans } from '@/Composables/useTrans'
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
 import { library } from '@fortawesome/fontawesome-svg-core'
@@ -114,11 +115,17 @@ const quantityOnLocation = computed(() => props.data.quantity_on_location == nul
                     <div class="text-sm">{{ data.unit_label || '-' }}</div>
                 </div>
                 <div>
-                    <div class="text-xs text-gray-500 uppercase tracking-wide">{{ ctrans('Unit cost') }}</div>
+                    <div class="text-xs text-gray-500 uppercase tracking-wide">
+                        {{ ctrans('Unit cost') }}
+                        <InformationIcon :information="ctrans('Cost per unit. Refreshed from the supplier cost of the linked stock (SKU) when there is one.')" />
+                    </div>
                     <div class="text-sm tabular-nums">{{ unitCost }}</div>
                 </div>
                 <div>
-                    <div class="text-xs text-gray-500 uppercase tracking-wide">{{ ctrans('Quantity on location') }}</div>
+                    <div class="text-xs text-gray-500 uppercase tracking-wide">
+                        {{ ctrans('Quantity on location') }}
+                        <InformationIcon :information="ctrans('The figure stored on the raw material itself. It is a copy of the stock quantity, refreshed in the background, so it can lag behind. Without a linked stock (SKU) it is the only figure there is.')" />
+                    </div>
                     <div class="text-sm tabular-nums">{{ quantityOnLocation }}</div>
                 </div>
                 <div>
@@ -130,11 +137,17 @@ const quantityOnLocation = computed(() => props.data.quantity_on_location == nul
                     <div class="text-sm">{{ data.trade_unit ? `${data.trade_unit.code} - ${data.trade_unit.name}` : '-' }}</div>
                 </div>
                 <div>
-                    <div class="text-xs text-gray-500 uppercase tracking-wide">{{ ctrans('Stock (SKU)') }}</div>
+                    <div class="text-xs text-gray-500 uppercase tracking-wide">
+                        {{ ctrans('Stock (SKU)') }}
+                        <InformationIcon :information="ctrans('The inventory SKU this raw material draws from. Stock figures and unit cost are refreshed from it.')" />
+                    </div>
                     <div class="text-sm">{{ data.org_stock ? data.org_stock.code : '-' }}</div>
                 </div>
                 <div>
-                    <div class="text-xs text-gray-500 uppercase tracking-wide">{{ ctrans('Quantity in locations') }}</div>
+                    <div class="text-xs text-gray-500 uppercase tracking-wide">
+                        {{ ctrans('Quantity in locations') }}
+                        <InformationIcon :information="ctrans('The live total held across all warehouse locations, read straight from the linked stock (SKU). This is the figure production planning trusts.')" />
+                    </div>
                     <div class="text-sm tabular-nums">{{ data.org_stock ? locale.number(data.org_stock.quantity_in_locations) : '-' }}</div>
                 </div>
                 <div v-if="data.artefact">

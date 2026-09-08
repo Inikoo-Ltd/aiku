@@ -191,9 +191,9 @@ class IndexRawMaterials extends OrgAction
                 ->column(key: 'type', label: __('Type'), sortable: true)
                 ->column(key: 'unit', label: __('Unit'), sortable: true)
                 ->column(key: 'unit_cost', label: __('Unit cost'), sortable: true, type: 'currency', align: 'right')
-                ->column(key: 'quantity_on_location', label: __('On location'), sortable: true, type: 'number', align: 'right')
+                ->column(key: 'quantity_on_location', label: __('On location'), tooltip: __('The quantity stored on the raw material itself, a copy of the linked stock (SKU) refreshed in the background. Open the raw material to see the live warehouse figure.'), sortable: true, type: 'number', align: 'right', tooltipIcon: true)
                 ->column(key: 'stock_status', label: __('Stock'), type: 'icon', align: 'center')
-                ->column(key: 'number_artefacts', label: __('Artefacts'), tooltip: __('Number of artefacts using this raw material'), type: 'number', align: 'right');
+                ->column(key: 'number_artefacts', label: __('Artefacts'), tooltip: __('Number of artefacts using this raw material in their recipe'), type: 'number', align: 'right', tooltipIcon: true);
             if ($parent instanceof Group) {
                 $table->column(key: 'organisation_name', label: __('organisation'), canBeHidden: false, sortable: true, searchable: true)
                         ->column(key: 'shop_name', label: __('Shop'), canBeHidden: false, sortable: true, searchable: true);
