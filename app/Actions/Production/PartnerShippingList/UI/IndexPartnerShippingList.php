@@ -117,6 +117,7 @@ class IndexPartnerShippingList extends OrgAction
                 'partner_shopping_list_items.notes',
                 'partner_shopping_list_items.created_at',
                 'artefacts.id as artefact_id',
+                'artefacts.recommended_batch_size as batch_size',
                 'org_stocks.quantity_available as stock_available',
                 'stocks.code as stock_code',
                 'stocks.name as stock_name',

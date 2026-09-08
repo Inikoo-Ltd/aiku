@@ -30,6 +30,7 @@ class ArtefactsResource extends JsonResource
             'artefact_department_slug' => $this->artefact_department_slug,
             'artefact_family_name' => $this->artefact_family_name,
             'artefact_family_slug' => $this->artefact_family_slug,
+            'recommended_batch_size' => $this->recommended_batch_size,
             'tags'    => $this->whenLoaded('tags', fn () => $this->tags->pluck('name')),
             'organisation_name' => $this->organisation_name,
             'organisation_slug' => $this->organisation_slug,

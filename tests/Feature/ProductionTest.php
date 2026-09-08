@@ -13,6 +13,7 @@ namespace Tests\Feature;
 use App\Actions\Production\Artefact\StoreArtefact;
 use App\Actions\Production\Artefact\MoveArtefactsToDepartment;
 use App\Actions\Production\Artefact\UpdateArtefact;
+use App\Actions\Production\Artefact\UI\GetArtefactShowcase;
 use App\Actions\Production\ArtefactDepartment\StoreArtefactDepartment;
 use App\Actions\Production\Artefact\MoveArtefactsToFamily;
 use App\Actions\Production\ArtefactFamily\AssignArtefactsToFamiliesFromOrgStockFamilies;
@@ -577,6 +578,18 @@ test('UI show artifact', function () {
             ->has('tabs');
 
     });
+});
+
+test('UI show artefact showcase exposes batch size and its update route', function () {
+    $this->artefact->update(['recommended_batch_size' => null]);
+
+    $showcase = GetArtefactShowcase::run($this->artefact->refresh());
+    expect($showcase['recommended_batch_size'])->toBeNull()
+        ->and($showcase['update_route']['name'])->toBe('grp.models.production.artefacts.update');
+
+    UpdateArtefact::make()->action($this->artefact, ['recommended_batch_size' => 24]);
+
+    expect(GetArtefactShowcase::run($this->artefact->refresh())['recommended_batch_size'])->toBe(24);
 });
 
 test('UI show artifact (manufacture task tab)', function () {

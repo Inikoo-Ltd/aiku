@@ -100,6 +100,15 @@ class ShowCraftsDashboard extends OrgAction
                         ],
                     ],
                     [
+                        'label' => __('Without batch size'),
+                        'icon'  => 'fal fa-layer-group',
+                        'value' => $production->artefacts()->whereNull('recommended_batch_size')->count(),
+                        'route' => [
+                            'name'       => 'grp.org.productions.show.crafts.artefacts.index',
+                            'parameters' => $request->route()->originalParameters()
+                        ],
+                    ],
+                    [
                         'label' => __('Compliance problems'),
                         'icon'  => 'fal fa-clipboard-check',
                         'value' => $production->artefacts()->whereHas('complianceItems', function ($query) {
