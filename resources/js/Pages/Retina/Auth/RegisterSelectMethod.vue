@@ -137,12 +137,12 @@ const isLoadingVisit = ref(false)
                 <div class="border-t border-gray-200 flex justify-center items-center mt-2 pt-4">
                     <p class="text-sm text-gray-500">
                         <span class="font-normal">{{ trans("Already have an account?") }}</span>
-                        <Link :href="route('retina.login.show', {
+                        <a :href="route('retina.login.show', {
                             tiktok_code: route().queryParams?.tiktok_code
                         })"
                             class="  font-medium hover:underline transition duration-150 ease-in-out ml-1">
                             {{ trans("Login here") }}
-                        </Link>
+                        </a>
                     </p>
                 </div>
             </form>
