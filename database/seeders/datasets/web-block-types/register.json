@@ -7,6 +7,7 @@
 	"website_type": ["b2b", "b2c", "dropshipping", "fulfilment"],
 	"icon": ["fal", "user-plus"],
 	"is_in_test": false,
+	"fixed": true,
 	"data": {
 		"fieldValue": {
 			"container": {

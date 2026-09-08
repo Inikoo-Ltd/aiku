@@ -442,6 +442,23 @@ const blockNotEditableVisible = [
 		"product-3",
 
 ]
+
+const blockWithoutVisibilityOptions = [
+	"login",
+	"register",
+	"forgot-password",
+	"blog-categories",
+]
+
+const openedBlockType = computed(
+	() => props.webpage?.layout?.web_blocks?.[openedBlockSideEditor.value]?.type
+)
+
+const showBlockVisibilityOptions = computed(
+	() =>
+		!blockNotEditableVisible.includes(openedBlockType.value) &&
+		!blockWithoutVisibilityOptions.includes(openedBlockType.value)
+)
 </script>
 
 <template>
@@ -775,7 +792,7 @@ const blockNotEditableVisible = [
 								<div class="p-1 space-y-1.5">
 									<VisibleCheckmark
 										:disabled="!editable"
-										v-if="!blockNotEditableVisible.includes(webpage.layout.web_blocks?.[openedBlockSideEditor]?.type)"
+										v-if="showBlockVisibilityOptions"
 										v-model="
 											webpage.layout.web_blocks[openedBlockSideEditor]
 												.visibility
@@ -787,7 +804,7 @@ const blockNotEditableVisible = [
 										" />
 									<RevealOnClick
 										:disabled="!editable"
-										v-if="!blockNotEditableVisible.includes(webpage.layout.web_blocks?.[openedBlockSideEditor]?.type)"
+										v-if="showBlockVisibilityOptions"
 										:modelValue="
 											webpage.layout.web_blocks[openedBlockSideEditor]
 												.web_block.layout.reveal

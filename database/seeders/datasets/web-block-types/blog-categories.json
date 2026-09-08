@@ -8,6 +8,7 @@
 	"website_type": ["b2b", "b2c", "dropshipping", "fulfilment"],
 	"shop_availability": [],
 	"is_in_test": false,
+	"fixed": true,
 	"data": {
 		"fieldValue": {
 			"title": "Our Blog",
