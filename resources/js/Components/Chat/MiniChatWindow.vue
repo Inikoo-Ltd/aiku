@@ -802,16 +802,19 @@ let onMessage: ((payload: any) => void) | null = null
 let onTyping: ((payload: any) => void) | null = null
 let onStatus: ((payload: any) => void) | null = null
 let onMessagesRead: ((payload: any) => void) | null = null
+let onReaction: ((payload: any) => void) | null = null
 
 const stopSocket = () => {
     if (onMessage) chatChannel?.stopListening(".message", onMessage)
     if (onTyping) chatChannel?.stopListening(".typing", onTyping)
     if (onStatus) chatChannel?.stopListening(".status", onStatus)
     if (onMessagesRead) chatChannel?.stopListening(".messages.read", onMessagesRead)
+    if (onReaction) chatChannel?.stopListening(".reaction", onReaction)
     onMessage = null
     onTyping = null
     onStatus = null
     onMessagesRead = null
+    onReaction = null
     chatChannel = null
 }
 
@@ -894,10 +897,24 @@ const initSocket = () => {
         })
     }
 
+    onReaction = ({ message }: any) => {
+        if (!message?.id) return
+
+        const index = messages.value.findIndex((m) => m.id === message.id)
+
+        if (index === -1) return
+
+        messages.value[index] = {
+            ...messages.value[index],
+            reactions: message.reactions ?? [],
+        }
+    }
+
     chatChannel.listen(".message", onMessage)
     chatChannel.listen(".typing", onTyping)
     chatChannel.listen(".status", onStatus)
     chatChannel.listen(".messages.read", onMessagesRead)
+    chatChannel.listen(".reaction", onReaction)
 }
 
 const openFullConversation = () => {
@@ -1173,6 +1190,16 @@ onUnmounted(() => {
                                     </span>
                                 </div>
                             </div>
+                        </div>
+
+                        <!-- Read-only here: reacting is done from the full inbox. -->
+                        <div v-if="message.reactions?.length" class="-mt-0.5 flex flex-wrap gap-0.5"
+                            :class="['guest', 'user'].includes(message.sender_type) ? 'justify-start' : 'justify-end'">
+                            <span v-for="group in message.reactions" :key="group.emoji"
+                                class="inline-flex items-center gap-0.5 rounded-full border border-gray-200 bg-white px-1 py-px text-[10px] text-gray-600 shadow-sm">
+                                <span>{{ group.emoji }}</span>
+                                <span v-if="group.count > 1" class="font-semibold">{{ group.count }}</span>
+                            </span>
                         </div>
                     </template>
                 </template>
