@@ -396,12 +396,12 @@ class IndexArtefacts extends OrgAction
                                     'style' => 'secondary',
                                     'icon'  => ['fal', 'fa-upload'],
                                     'label' => __('Upload'),
-                                    // 'route' => [
-                                    //     'name'       => 'grp.models.production.artefacts.upload',
-                                    //     'parameters' => [
-                                    //         $this->parent->id
-                                    //     ]
-                                    // ]
+                                    'route' => [
+                                        'name'       => 'grp.models.production.artefacts.upload',
+                                        'parameters' => [
+                                            $this->parent->id
+                                        ]
+                                    ]
                                 ],
                                 [
 
@@ -418,6 +418,37 @@ class IndexArtefacts extends OrgAction
                         ] : null,
                     ]
                 ],
+                'upload_artefacts' => $this->parent instanceof Production ? [
+                    'title' => [
+                        'label'       => __('Upload Artefacts'),
+                        'information' => __('The list of column file: code, name, state'),
+                    ],
+                    'progressDescription' => __('Importing artefacts'),
+                    'preview_template'    => [
+                        'header' => ['code', 'name', 'state'],
+                        'rows'   => [
+                            [
+                                'code'  => 'ART-001',
+                                'name'  => 'Lavender pillow mist',
+                                'state' => ArtefactStateEnum::IN_PROCESS->value,
+                            ],
+                        ],
+                    ],
+                    'upload_spreadsheet' => [
+                        'event'           => 'action-progress',
+                        'channel'         => 'grp.personal.'.$request->user()->id,
+                        'required_fields' => ['code', 'name', 'state'],
+                        'template'        => [
+                            'label' => __('Download template (.xlsx)'),
+                        ],
+                        'route' => [
+                            'upload' => [
+                                'name'       => 'grp.models.production.artefacts.upload',
+                                'parameters' => [$this->parent->id],
+                            ],
+                        ],
+                    ],
+                ] : null,
                 'move_to_department' => $this->parent instanceof Production ? $this->getMoveToDepartmentProps($this->parent, $this->canEdit) : null,
                 'move_to_family'     => $this->parent instanceof Production ? $this->getMoveToFamilyProps($this->parent, $this->canEdit) : null,
                 'tabs'        => [
