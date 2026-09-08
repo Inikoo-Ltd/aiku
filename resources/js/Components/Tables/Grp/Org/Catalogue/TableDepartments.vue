@@ -9,11 +9,8 @@ import { Link } from "@inertiajs/vue3"
 import Table from "@/Components/Table/Table.vue"
 import { Department } from "@/types/department"
 import Icon from "@/Components/Icon.vue"
-import { remove as loRemove } from "lodash-es"
-import Button from "@/Components/Elements/Buttons/Button.vue"
 import { faOctopusDeploy } from "@fortawesome/free-brands-svg-icons"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import routes from "../../../../../../../han/src/constants/Routes"
 import { RouteParams } from "@/types/route-params"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { inject, ref } from "vue"
@@ -150,7 +147,6 @@ function masterDepartmentRoute(department: Department) {
 }
 
 
-const isLoadingDetach = ref<string[]>([])
 const dotClass = (filled: boolean) =>
     filled ? "bg-green-100 text-green-600" : "bg-red-100 text-red-600"
 const statusIcon = (filled: boolean) => (filled ? faCheckCircle : faTimesCircle)
@@ -318,28 +314,6 @@ const getIntervalStateColor = (isPositive: boolean) => {
         <template #cell(number_current_products)="{ item: department }">
             <Link :href="(productRoute(department) as string)" class="secondaryLink">
                 {{ department["number_current_products"] }}
-            </Link>
-        </template>
-
-        <template #cell(actions)="{ item }">
-            <Link
-                v-if="routes?.detach?.name"
-                as="button"
-                :href="route(routes.detach.name, routes.detach.parameters)"
-                :method="routes.detach.method"
-                :data="{
-                    family: item.id
-                }"
-                preserve-scroll
-                @start="() => isLoadingDetach.push('detach' + item.id)"
-                @finish="() => loRemove(isLoadingDetach, (xx) => xx == 'detach' + item.id)"
-            >
-                <Button
-                    icon="fal fa-times"
-                    type="negative"
-                    size="xs"
-                    :loading="isLoadingDetach.includes('detach' + item.id)"
-                />
             </Link>
         </template>
 

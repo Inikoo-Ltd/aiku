@@ -35,7 +35,6 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Support\Facades\Auth;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
@@ -214,19 +213,6 @@ class Employee extends Model implements HasMedia, Auditable
         'pin' => EmployeePinRedactor::class,
     ];
 
-
-    public static function boot(): void
-    {
-        parent::boot();
-
-        if (app('app.scope') == 'han') {
-            static::addGlobalScope('han', function ($builder) {
-                /** @var ClockingMachine $clockingMachine */
-                $clockingMachine = Auth::user();
-                $builder->where('organisation_id', $clockingMachine->organisation_id);
-            });
-        }
-    }
 
     public function getSlugOptions(): SlugOptions
     {

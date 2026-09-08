@@ -275,14 +275,6 @@ class IndexPurchaseOrders extends OrgAction
         return $this->handle($organisation);
     }
 
-    public function maya(Organisation $organisation, ActionRequest $request): LengthAwarePaginator
-    {
-        $this->maya = true;
-        $this->initialisation($organisation, $request);
-
-        return $this->handle(parent: $organisation);
-    }
-
     public function inGroup(ActionRequest $request): LengthAwarePaginator
     {
         $this->parent = group();

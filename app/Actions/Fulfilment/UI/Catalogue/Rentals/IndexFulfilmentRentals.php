@@ -136,13 +136,6 @@ class IndexFulfilmentRentals extends OrgAction
     }
 
     /** @noinspection PhpUnusedParameterInspection */
-    public function maya(Organisation $organisation, Fulfilment $fulfilment, ActionRequest $request): LengthAwarePaginator
-    {
-        $this->initialisationFromFulfilment($fulfilment, $request);
-
-        return $this->handle($fulfilment);
-    }
-
     public function htmlResponse(LengthAwarePaginator $rentals, ActionRequest $request): Response
     {
 

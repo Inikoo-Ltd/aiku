@@ -24,8 +24,6 @@ use App\Http\Resources\Inventory\OrgStockResource;
 use App\Http\Resources\Inventory\OrgStockSupplierProductsResource;
 use App\Http\Resources\Procurement\PurchaseOrdersResource;
 use App\Models\Inventory\OrgStock;
-use App\Models\Inventory\Warehouse;
-use App\Models\SysAdmin\Organisation;
 use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -43,15 +41,6 @@ class ShowOrgStock extends OrgAction
     public function handle(OrgStock $orgStock): OrgStock
     {
         return $orgStock;
-    }
-
-    public function maya(Organisation $organisation, Warehouse $warehouse, OrgStock $orgStock, ActionRequest $request): OrgStock
-    {
-        $this->maya   = true;
-        $this->parent = $organisation;
-        $this->initialisationFromWarehouse($warehouse, $request)->withTab($this->tabsEnum::values());
-
-        return $this->handle($orgStock);
     }
 
     public function getParent(OrgStock $orgStock): ?array
@@ -270,8 +259,7 @@ class ShowOrgStock extends OrgAction
             'grp.org.warehouses.show.inventory.org_stocks.in_process_org_stocks.edit',
             'grp.org.warehouses.show.inventory.org_stocks.discontinuing_org_stocks.edit',
             'grp.org.warehouses.show.inventory.org_stocks.discontinued_org_stocks.edit',
-            'grp.org.warehouses.show.inventory.org_stocks.abnormality_org_stocks.edit',
-            'maya.org.warehouses.show.inventory.org_stocks.edit' =>
+            'grp.org.warehouses.show.inventory.org_stocks.abnormality_org_stocks.edit' =>
             array_merge(
                 (new ShowInventoryDashboard())->getBreadcrumbs($routeParameters),
                 $headCrumb(

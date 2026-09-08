@@ -28,7 +28,7 @@ enum ClockingMachineTypeEnum: string
         return [
             'biometric'       => __('Biometric'),
             'static-nfc'      => __('Static NFC'),
-            'mobile-app'      => __('Mobile App').' (Han)',
+            'mobile-app'      => __('Mobile App'),
             'legacy'          => __('Legacy'),
             'qr-code'         => __('QR Code'),
             'pin'             => __('PIN'),

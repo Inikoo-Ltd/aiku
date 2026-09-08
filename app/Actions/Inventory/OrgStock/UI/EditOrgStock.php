@@ -44,16 +44,6 @@ class EditOrgStock extends OrgAction
         return $this->handle($orgStock);
     }
 
-    public function maya(Organisation $organisation, Warehouse $warehouse, OrgStock $orgStock, ActionRequest $request): OrgStock
-    {
-        $this->maya   = true;
-        $this->parent = $organisation;
-        $this->initialisationFromWarehouse($warehouse, $request)->withTab(OrgStockTabsEnum::values());
-
-        return $this->handle($orgStock);
-    }
-
-
     public function htmlResponse(OrgStock $orgStock, ActionRequest $request): Response
     {
         $warning = null;
@@ -202,8 +192,7 @@ class EditOrgStock extends OrgAction
             'grp.org.warehouses.show.inventory.org_stocks.in_process_org_stocks.edit',
             'grp.org.warehouses.show.inventory.org_stocks.discontinuing_org_stocks.edit',
             'grp.org.warehouses.show.inventory.org_stocks.discontinued_org_stocks.edit',
-            'grp.org.warehouses.show.inventory.org_stocks.abnormality_org_stocks.edit',
-            'maya.org.warehouses.show.inventory.org_stocks.edit' =>
+            'grp.org.warehouses.show.inventory.org_stocks.abnormality_org_stocks.edit' =>
                 array_merge(
                     (new ShowInventoryDashboard())->getBreadcrumbs($routeParameters),
                     $headCrumb(
