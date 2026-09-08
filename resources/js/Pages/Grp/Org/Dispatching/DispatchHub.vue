@@ -12,13 +12,13 @@ import Tabs from "@/Components/Navigation/Tabs.vue"
 import { computed, reactive, ref } from "vue"
 import { useTabChange } from "@/Composables/tab-change"
 import { trans } from "laravel-vue-i18n"
-import { faHandsHelping, faBan, faCheckCircle, faList, faCheck, faPersonCarry, faChartLine } from "@fal"
+import { faHandsHelping, faBan, faCheckCircle, faList, faCheck, faPersonCarry, faChartLine, faDolly, faIndustry } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import DispatchDashboard from "@/Components/Warehouse/DispatchDashboard.vue"
 import Table from "@/Components/Table/Table.vue"
 import { PageHeadingTypes } from "@/types/PageHeading"
 
-library.add(faHandsHelping, faBan, faCheckCircle, faList, faCheck, faPersonCarry, faChartLine)
+library.add(faHandsHelping, faBan, faCheckCircle, faList, faCheck, faPersonCarry, faChartLine, faDolly, faIndustry)
 
 const props = defineProps<{
     title: string

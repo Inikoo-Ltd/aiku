@@ -2353,9 +2353,11 @@ test('to produce queue only shows lines with an artefact in this factory', funct
     $warehouse = \App\Actions\Inventory\Warehouse\StoreWarehouse::make()->action($this->organisation, ['code' => 'WH-BRD', 'name' => 'Board warehouse']);
     $area      = \App\Actions\Inventory\WarehouseArea\StoreWarehouseArea::make()->action($warehouse, ['code' => 'A-BRD', 'name' => 'Board area']);
     $location  = \App\Actions\Inventory\Location\StoreLocation::make()->action($area, ['code' => 'L-BRD', 'name' => 'Board loc'] + \App\Models\Inventory\Location::factory()->definition());
-    $hubOutput = fn () => collect(get(route('grp.org.warehouses.show.dispatching.backlog', [$this->organisation->slug, $warehouse->slug]))
-        ->assertOk()->viewData('page')['props']['production_output'])->pluck('reference')->all();
-    expect($hubOutput())->toBe([$jobOrder->reference]);
+    $hubProps  = fn () => get(route('grp.org.warehouses.show.dispatching.backlog', [$this->organisation->slug, $warehouse->slug]))
+        ->assertOk()->viewData('page')['props'];
+    $hubOutput = fn () => collect($hubProps()['production_output'])->pluck('reference')->all();
+    expect($hubOutput())->toBe([$jobOrder->reference])
+        ->and($hubProps()['tabs']['navigation']['production_output']['number'])->toBe(1);
 
     \App\Actions\Dispatching\ProductionOutput\PutAwayFinishedJobOrder::make()->action($warehouse, $jobOrder->refresh(), 'L-BRD');
     expect($jobOrder->refresh()->state)->toBe(JobOrderStateEnum::RECEIVED)
@@ -2539,4 +2541,13 @@ test('UI delete artefact family', function () {
     expect(ArtefactFamily::find($family->id))->toBeNull()
         ->and($artefact->refresh()->artefact_family_id)->toBeNull()
         ->and($artefact->artefact_department_id)->toBe($department->id);
+});
+
+test('UI crafts dashboard as org admin', function () {
+    $this->withoutExceptionHandling();
+    $user = $this->guest->getUser();
+    $user->syncRoles(['org-admin-'.$this->organisation->id, 'production-orchestrator-'.$this->production->id]);
+    actingAs($user->fresh());
+    $response = get(route('grp.org.productions.show.crafts.dashboard', [$this->organisation->slug, $this->production->slug]));
+    $response->assertOk();
 });
