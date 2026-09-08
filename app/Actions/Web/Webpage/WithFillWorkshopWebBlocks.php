@@ -29,6 +29,9 @@ use App\Actions\Web\WebBlock\Workshop\GetWebBlockFamiliesFour;
 use App\Actions\Web\WebBlock\Workshop\GetWebBlockSubDepartmentsThree;
 use App\Actions\Web\WebBlock\Workshop\GetFaqDepartment;
 use App\Actions\Web\WebBlock\Workshop\GetTopFamilies;
+use App\Actions\Web\WebBlock\Workshop\GetWebBlockForgotPassword;
+use App\Actions\Web\WebBlock\Workshop\GetWebBlockLogin;
+use App\Actions\Web\WebBlock\Workshop\GetWebBlockRegister;
 use Illuminate\Support\Arr;
 
 trait WithFillWorkshopWebBlocks
@@ -85,6 +88,12 @@ trait WithFillWorkshopWebBlocks
             $parsedWebBlocks[$key] = GetWebBlockBlogList::run($webpage, $webBlock);
         } elseif ($webBlockType == 'blog-categories') {
             $parsedWebBlocks[$key] = GetWebBlockBlogCategories::run($webpage, $webBlock);
+        } elseif ($webBlockType == 'login') {
+            $parsedWebBlocks[$key] = GetWebBlockLogin::run($webpage, $webBlock);
+        } elseif ($webBlockType == 'register') {
+            $parsedWebBlocks[$key] = GetWebBlockRegister::run($webpage, $webBlock);
+        } elseif ($webBlockType == 'forgot-password') {
+            $parsedWebBlocks[$key] = GetWebBlockForgotPassword::run($webpage, $webBlock);
         } elseif ($webBlockType == 'recommendation-customer-recently-bought-1') {
             $parsedWebBlocks[$key] = GetWebBlockRecommendationsCRB::run($webpage, $webBlock);
         } elseif ($webBlockType == 'recommendation-from-master') {
