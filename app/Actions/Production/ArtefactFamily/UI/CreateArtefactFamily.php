@@ -51,15 +51,37 @@ class CreateArtefactFamily extends OrgAction
                             'title'  => __('Artefact family'),
                             'fields' => [
                                 'artefact_department_id' => [
-                                    'type'        => 'select',
-                                    'label'       => __('Department'),
-                                    'required'    => true,
-                                    'placeholder' => __('Select a department'),
-                                    'options'     => $this->getDepartmentOptions($production),
+                                    'type'                => 'select_infinite',
+                                    'label'               => __('Department'),
+                                    'required'            => true,
+                                    'placeholder'         => __('Search a department by code or name'),
+                                    'options'             => [],
+                                    'fetchRoute'          => [
+                                        'name'       => 'grp.json.production.artefact_departments.index',
+                                        'parameters' => ['production' => $production->id]
+                                    ],
+                                    'valueProp'           => 'id',
+                                    'labelProp'           => 'name',
+                                    'labelAdditionalProp' => 'code',
                                 ],
-                                'code'                   => ['type' => 'input', 'label' => __('Code'), 'required' => true],
-                                'name'                   => ['type' => 'input', 'label' => __('Name'), 'required' => true],
-                                'description'            => ['type' => 'textarea', 'label' => __('Description'), 'required' => false],
+                                'code'                   => [
+                                    'type'        => 'input',
+                                    'label'       => __('Code'),
+                                    'required'    => true,
+                                    'placeholder' => __('Short unique code inside the department, e.g. EO'),
+                                ],
+                                'name'                   => [
+                                    'type'        => 'input',
+                                    'label'       => __('Name'),
+                                    'required'    => true,
+                                    'placeholder' => __('e.g. Essential Oils'),
+                                ],
+                                'description'            => [
+                                    'type'        => 'textarea',
+                                    'label'       => __('Description'),
+                                    'required'    => false,
+                                    'placeholder' => __('What this family groups together (optional)'),
+                                ],
                             ]
                         ]
                     ],
@@ -70,15 +92,6 @@ class CreateArtefactFamily extends OrgAction
                 ],
             ]
         );
-    }
-
-    public function getDepartmentOptions(Production $production): array
-    {
-        return $production->artefactDepartments()
-            ->orderBy('code')
-            ->get()
-            ->map(fn ($department) => ['label' => $department->code.' - '.$department->name, 'value' => $department->id])
-            ->all();
     }
 
     public function getBreadcrumbs(array $routeParameters): array

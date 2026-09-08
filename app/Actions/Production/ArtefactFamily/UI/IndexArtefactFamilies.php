@@ -166,6 +166,7 @@ class IndexArtefactFamilies extends OrgAction
                 'breadcrumbs'        => $this->getBreadcrumbs($request->route()->originalParameters()),
                 'title'              => __('Artefact families'),
                 'pageHead'           => [
+                    'model'        => __('Crafts'),
                     'title'         => __('Artefact families'),
                     'icon'          => ['icon' => ['fal', 'fa-folder'], 'title' => __('Artefact families')],
                     'subNavigation' => IndexArtefacts::make()->getArtefactsSubNavigation($this->production),

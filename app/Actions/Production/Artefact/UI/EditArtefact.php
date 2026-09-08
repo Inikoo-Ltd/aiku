@@ -106,8 +106,8 @@ class EditArtefact extends OrgAction
                     'blueprint' => [
                         [
                             'title'  => __('Edit artefact'),
-                            'label'  => 'edit',
-                            'icon'   => ['fal', 'fa-narwhal'],
+                            'label'  => __('Properties'),
+                            // 'icon'   => ['fal', 'fa-narwhal'],
                             'fields' => [
                                 'code' => [
                                     'type'     => 'input',
