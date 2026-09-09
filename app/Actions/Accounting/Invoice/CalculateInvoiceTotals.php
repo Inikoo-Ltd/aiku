@@ -28,7 +28,7 @@ class CalculateInvoiceTotals extends OrgAction
             return CalculateInvoiceTotalsTaxOnly::run($invoice);
         }
 
-        $transactions = $invoice->invoiceTransactions;
+        $transactions = $invoice->invoiceTransactions()->get();
 
         $rentalNet     = $transactions->whereIn('model_type', ['Pallet', 'StoredItem', 'Space', 'Rental'])->sum('net_amount');
         $rentalGross   = $transactions->whereIn('model_type', ['Pallet', 'StoredItem', 'Space', 'Rental'])->sum('gross_amount');
