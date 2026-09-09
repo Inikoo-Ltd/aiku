@@ -109,7 +109,7 @@ const groupedAttachments = computed(() => {
                 <div v-for="country in countriesOfOrigin" :key="country.code"
                     class="flex items-center gap-2">
                     <img :src="'/flags/' + country.code.toLowerCase() + '.png'" :alt="country.name" :title="country.name"
-                        class="h-4 w-auto inline-block" />
+                        class="h-4 w-auto inline-block" loading="lazy" decoding="async" />
                     <span class="text-sm">
                         {{ country.name }}
                     </span>

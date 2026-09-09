@@ -25,6 +25,7 @@ use Lorisleiva\Actions\Concerns\AsAction;
 
 class StoreChatSession
 {
+    use WithTrustedChatWebUser;
     use AsAction;
 
     public function rules(): array
@@ -61,6 +62,8 @@ class StoreChatSession
         DB::beginTransaction();
 
         try {
+            $modelData['web_user_id'] = $this->trustedWebUserId($modelData['web_user_id'] ?? null);
+
             $isGuest = empty($modelData['web_user_id']);
 
             $guestIdentifier = $isGuest

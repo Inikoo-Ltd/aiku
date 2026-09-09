@@ -96,6 +96,7 @@ onBeforeUnmount(() => {
         </div>
 
         <Swiper
+            v-if="isLoadingFetch || listProducts.length"
             :slides-per-view="Math.min((listProducts.length || (isLoadingFetch ? skeletonSize : 0)), slidesPerView)"
             :loop="false"
             :autoplay="false"
@@ -150,7 +151,7 @@ onBeforeUnmount(() => {
                                 class="xfont-bold text-xs md:text-sm !mt-2 md:mt-2 md:mb-1 text-justify line-clamp-3 overflow-hidden min-h-[3rem] md:min-h-[3.75rem]"
                                 :class="product.url ? 'hover:underline' : ''"
                             >
-                                {{ product.name }}
+                                <span v-if="Number(product.units) > 1">{{product.units}}x</span> {{ product.name }}
                             </component>
 
                             <!-- SKU -->
@@ -193,5 +194,9 @@ onBeforeUnmount(() => {
                 </SwiperSlide>
             </template>
         </Swiper>
+
+        <div v-else class="py-8 text-center text-sm text-gray-500">
+            {{ trans('No recommendations available') }}
+        </div>
     </div>
 </template>

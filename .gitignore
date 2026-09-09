@@ -102,10 +102,6 @@ frankenphp
 frankenphp-worker.php
 rr
 /.rr.yaml
-/maya/private/
-/Han/private/
-/maya/node_modules/
-/Han/node_modules/
 isdoc-pdf
 rgb.icc
 /storage/app/sitemaps/

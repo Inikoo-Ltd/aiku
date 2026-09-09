@@ -43,7 +43,6 @@ import Action from '@/Components/Forms/Fields/Action.vue'
 import { faMagnifyingGlass } from '@fortawesome/free-solid-svg-icons'
 import { faShapes, faStar } from '@fas'
 import { faHatCowboy } from "@far"
-// import ButtonReindexWebpage from '@/Components/Webpages/ButtonReindexWebpage.vue'
 import TableOffers from '@/Components/Shop/Offers/TableOffers.vue'
 import TableReviews from "@/Components/Shop/Reviews/TableReviews.vue"
 import Dialog from "primevue/dialog"
@@ -328,38 +327,6 @@ const saveProductReview = async () => {
                     },
                 }"
             />
-
-            <!-- Luigi Search is discontinued, reindex button disabled
-            <div class="w-fit" v-if="currentTab === 'showcase'">
-                <ButtonReindexWebpage
-                    :webpage="{
-                        id: luigi_data.webpage_id,
-                        luigi_data: {
-                            luigisbox_tracker_id: luigi_data.luigisbox_tracker_id,
-                            luigisbox_private_key: luigi_data.luigisbox_private_key
-                        }
-                    }"
-                >
-                    <template #default="{ isLoadingReindexing }">
-                        <Button
-                            v-tooltip="trans('Use this feature to update data to Luigi Search.')"
-                            method="post"
-                            :style="'edit'"
-                            size="sm"
-                            xrouteTarget="{name: 'grp.models.webpage_luigi.reindex', parameters: { webpage: luigi_data.webpage_id }}"
-                            :loading="isLoadingReindexing"
-                        >
-                            <template #icon>
-                                <FontAwesomeIcon :icon="faSearch" class="" fixed-width aria-hidden="true" />
-                            </template>
-                            <template #label>
-                                {{ trans('Reindex') }}
-                            </template>
-                        </Button>
-                    </template>
-                </ButtonReindexWebpage>
-            </div>
-            -->
 
             <template v-if="currentTab === 'offers'">
                 <ModalCreateGiftOffers

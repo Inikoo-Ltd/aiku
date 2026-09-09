@@ -44,9 +44,9 @@ class EditRawMaterial extends OrgAction
             );
         }
 
-        $this->canEdit = $request->user()->authTo("productions_rd.{$this->production->id}.edit");
+        $this->canEdit = $request->user()->authTo(["org-supervisor.{$this->organisation->id}", "productions_rd.{$this->production->id}.edit"]);
 
-        return $request->user()->authTo("productions_rd.{$this->production->id}.view");
+        return $request->user()->authTo(["org-supervisor.{$this->organisation->id}", "productions_rd.{$this->production->id}.view"]);
     }
 
 

@@ -36,8 +36,7 @@ class ActivateOffer extends OrgAction
         }
 
         $modelData = [
-            'state'  => OfferStateEnum::ACTIVE,
-            'status' => true
+            'state' => OfferStateEnum::ACTIVE
         ];
 
         if (!$offer->start_at) {

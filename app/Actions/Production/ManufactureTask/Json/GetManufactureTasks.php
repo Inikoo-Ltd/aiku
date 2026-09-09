@@ -21,7 +21,7 @@ class GetManufactureTasks extends OrgAction
 {
     public function authorize(ActionRequest $request): bool
     {
-        return $request->user()->authTo("productions_rd.{$this->production->id}.view");
+        return $request->user()->authTo(["org-supervisor.{$this->organisation->id}", "productions_rd.{$this->production->id}.view"]);
     }
 
     public function asController(Production $production, ActionRequest $request): LengthAwarePaginator

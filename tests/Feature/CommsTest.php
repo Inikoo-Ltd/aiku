@@ -1714,6 +1714,23 @@ test('set mailshot as ready', function (Mailshot $mailshot) {
         ->and($mailshot->ready_at)->not->toBeNull();
 })->depends('create mailshot with recipe for filters');
 
+test('mailshot with default subject cannot be sent or scheduled', function (Mailshot $mailshot) {
+    $mailshot->update([
+        'is_second_wave' => false,
+        'state'          => MailshotStateEnum::READY,
+        'subject'        => 'Mailshot '.$mailshot->created_at->format('j M Y'),
+    ]);
+
+    expect($mailshot->hasDefaultSubject())->toBeTrue()
+        ->and(fn () => SendMailShot::make()->handle($mailshot))->toThrow(\Illuminate\Validation\ValidationException::class)
+        ->and(fn () => SetMailshotAsScheduled::make()->handle($mailshot, ['scheduled_at' => now()->addDay()]))->toThrow(\Illuminate\Validation\ValidationException::class)
+        ->and($mailshot->fresh()->state)->toBe(MailshotStateEnum::READY);
+
+    $mailshot->update(['subject' => 'Autumn offers']);
+
+    expect($mailshot->hasDefaultSubject())->toBeFalse();
+})->depends('create mailshot with recipe for filters');
+
 test('resume mailshot is no-op when not stopped', function (Mailshot $mailshot) {
     $mailshot->update(['state' => MailshotStateEnum::SENDING]);
 

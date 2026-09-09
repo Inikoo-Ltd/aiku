@@ -1,8 +1,8 @@
 ---
 title: Trabajar la lista To produce (Por producir)
 summary: La guía de la fábrica - una sola cola con todo lo que la fábrica debe, a organizaciones socias y a sus propios clientes, agrupada como piensa un planificador de producción.
-date: 2026-09-02
-source_date: 2026-09-02
+date: 2026-09-08
+source_date: 2026-09-08
 tags: production, procurement, intercompany, dispatch
 category: production
 series: Ordering from partners
@@ -10,7 +10,7 @@ order: 4
 ---
 
 <aside class="tldr">
-Para quienes <em>fabrican</em> las cosas y para quien planifica el día de la fábrica. <b>To produce</b> (Por producir) es la cola de la fábrica: cada línea que una organización socia ha pedido, más cada línea que un cliente propio ha comprado y que la fábrica no tiene en stock. La agrupas por artesano, por categoría o por comprador, marcas lo que puedes enviar a los socios, y el resto del papeleo sigue solo. ¿Nuevo en el flujo de socios? Empieza por la <a href="/docs/ordering-from-a-partner-organisation-es">visión general</a>. ¿Quieres que la lista sepa quién hace qué? Lee antes <a href="/docs/who-makes-what-es">Quién hace qué</a>.
+Para quienes <em>fabrican</em> las cosas y para quien planifica el día de la fábrica. <b>To produce</b> (Por producir) es la cola de la fábrica: cada línea que una organización socia ha pedido, más cada línea que un cliente propio ha comprado y que la fábrica no tiene en stock. El <b>Board</b> (Tablero) es donde planificas: arrastras una línea entre los carriles para decidir cuántas hacer y quién las hace, y se crea una orden de trabajo para el artesano. Las vistas de lista agrupan las mismas líneas por artesano, categoría o comprador, y desde ahí marcas lo que puedes enviar a los socios; el resto del papeleo sigue solo. ¿Nuevo en el flujo de socios? Empieza por la <a href="/docs/ordering-from-a-partner-organisation-es">visión general</a>. ¿Quieres que la lista sepa quién hace qué? Lee antes <a href="/docs/who-makes-what-es">Quién hace qué</a>.
 </aside>
 
 ## De dónde salen las líneas
@@ -24,16 +24,43 @@ Los pedidos que llegan por el sistema antiguo no alimentan la lista. Solo los pe
 
 El filtro **Source** (Origen) en la parte superior de la pestaña *All* te deja ver solo líneas de socios o solo líneas de clientes propios.
 
-## Las cuatro vistas
+## Las vistas
 
-La barra de pestañas encima del título es lo importante de la página. Las mismas líneas, vistas de cuatro maneras.
+La barra de pestañas encima del título es lo importante de la página. Las mismas líneas, seis maneras de verlas.
 
+- **Board** (Tablero). La vista de planificación, y con la que se abre la página. Cada línea es una tarjeta que avanza por carriles desde *Backlog* hasta *Done*. Se explica en la siguiente sección.
 - **All.** La tabla plana, ordenable y buscable, con el recuento de líneas abiertas. Úsala cuando buscas algo concreto.
 - **By artisan** (Por artesano). Un bloque por persona, usando el artesano asignado al artefacto o, si no lo tiene, el de su categoría. Las líneas sin nadie asignado quedan bajo *Unassigned*. Esta es la vista para repartir el trabajo del día.
 - **By category** (Por categoría). Un bloque por categoría de artefacto, así el que hace bombas de baño ve bombas de baño y el que hace jabón ve jabón.
 - **By buyer** (Por comprador). Un bloque por organización socia o cliente propio, para cuando estás montando un envío.
+- **Mixes** (Mezclas). Las bases y mezclas que necesitan las órdenes de trabajo abiertas, para el preparador. Se explica en [Preparar mezclas](/docs/preparing-mixes-es).
 
 En las vistas agrupadas, cada bloque tiene una cápsula encima de la lista con su nombre y el número de líneas. Haz clic en la cápsula para ocultar ese bloque, y otra vez para que vuelva. aiku recuerda tu elección en este navegador, así que un planificador que solo se ocupa de dos categorías solo ve esas dos.
+
+## El Board
+
+Seis carriles, de izquierda a derecha. Una tarjeta se mueve hacia la derecha a medida que avanza el trabajo, y la mayoría de los movimientos son un arrastre.
+
+| Carril | Qué hay ahí |
+| --- | --- |
+| Pre-pick | líneas que no hace falta fabricar, porque el stock está en el estante. Oculto hasta que pulsas **Pre-pick** encima del tablero. El almacén las recoge, ver [Recoger las mercancías de un socio](/docs/gathering-a-partners-goods-es). |
+| Backlog | líneas con un artefacto que nadie ha revisado todavía |
+| Preparing | líneas que has decidido fabricar, con la cantidad ya fijada |
+| Assigned | existe una orden de trabajo y va dirigida a un artesano, pero nadie la ha empezado |
+| Producing | un artesano ha pulsado START en una de sus tareas |
+| Done | todas las tareas de la orden de trabajo están hechas; espera a que el almacén la guarde |
+
+Cada tarjeta muestra el producto, la cantidad pedida, quién la pidió, y **In stock** (En stock) para que veas si merece la pena fabricarla.
+
+**Backlog → Preparing.** Suelta la tarjeta y aiku pregunta *¿Cuántas fabricar?*. Propone la cantidad pedida; escribe más y el extra se marca *para stock*. Si el artefacto tiene un tamaño de hornada recomendado, un pequeño botón **↑** redondea la cantidad a hornadas completas. El número sigue editable en la tarjeta mientras está en Preparing.
+
+**Preparing → Assigned.** Suelta la tarjeta y aiku pregunta *¿Quién lo hace?*. Propone el artesano asignado al artefacto o a su categoría, ver [Quién hace qué](/docs/who-makes-what-es). Elige un nombre y se crea una orden de trabajo en borrador, dirigida a esa persona. Ábrela y pulsa **Release to floor** (Liberar a planta) cuando deba empezar; hasta entonces el artesano no la ve. Para cambiar el artesano después, haz clic en el nombre de la tarjeta.
+
+**Producing** y **Done** se mueven solos según lo que pasa en la pantalla de planta. Una tarjeta sale del tablero cuando el almacén guarda el producto terminado, ver [Guardar la producción terminada](/docs/putting-away-finished-production-es), o cuando la orden de trabajo se recibe en el stock desde su propia página.
+
+Varias tarjetas a la vez: haz clic en las tarjetas para seleccionarlas, luego arrastra cualquiera de ellas y se mueve toda la selección. El menú **Everybody** (Todos) encima del tablero lo estrecha a uno o dos artesanos, y los filtros de familia, comprador y prioridad hacen lo mismo con las tarjetas.
+
+Debajo del Board y de la vista By artisan está **Open job orders per artisan** (Órdenes de trabajo abiertas por artesano): una chip por persona con cuántas órdenes de trabajo tiene abiertas. Rojo significa ninguna, ámbar significa una; todo el mundo debería tener al menos dos para que nadie se quede sin trabajo. La cruz de una chip marca a la persona como que no es artesano y la quita del recuento.
 
 ## Enviar líneas de socios
 
@@ -54,7 +81,10 @@ Marcar una línea de cliente propio no sirve de nada. Se ignora al pulsar Pick i
 
 <aside class="wayfinder"><strong>Dónde pulsar en aiku</strong>
 <ul>
-<li><b>Ver la cola:</b> tu organización → <b>Factory</b> → <b>To produce</b>. Cambia de vista con las pestañas <b>All · By artisan · By category · By buyer</b>.</li>
+<li><b>Ver la cola:</b> tu organización → <b>Factory</b> → <b>To produce</b>. Cambia de vista con las pestañas <b>Board · All · By artisan · By category · By buyer · Mixes</b>.</li>
+<li><b>Decidir la cantidad:</b> <i>Board</i> → arrastra la tarjeta de <b>Backlog</b> a <b>Preparing</b> → escribe el número, o pulsa <b>↑</b> para hornadas completas.</li>
+<li><b>Crear la orden de trabajo:</b> arrastra la tarjeta de <b>Preparing</b> a <b>Assigned</b> → elige el artesano → abre la orden de trabajo → <b>Release to floor</b>.</li>
+<li><b>Líneas que solo necesitan recogida:</b> botón <b>Pre-pick</b> encima del tablero.</li>
 <li><b>Ocultar un bloque:</b> en una vista agrupada, clic en su cápsula encima de la lista. Clic otra vez para mostrarlo.</li>
 <li><b>Solo socios o solo clientes:</b> pestaña <i>All</i> → filtro <b>Source</b>.</li>
 <li><b>Enviar a un socio:</b> marca líneas → <b>Pick into order</b> → <b>Send to warehouse</b> en el cuadro <i>Picked orders</i>.</li>
@@ -66,6 +96,6 @@ Marcar una línea de cliente propio no sirve de nada. Se ignora al pulsar Pick i
 <ul>
 <li>Los puestos se asignan en la ficha del empleado en Human Resources y llevan los permisos consigo.</li>
 <li>Ver la lista: puesto <b>Production operative</b> (operario) para la fábrica, o superior.</li>
-<li>Recoger, enviar y crear órdenes de trabajo: puesto <b>Production floor supervisor</b> (supervisor de planta) para la fábrica, o supervisor de la organización.</li>
+<li>Mover tarjetas en el Board, crear y liberar órdenes de trabajo, recoger y enviar: puesto <b>Production floor supervisor</b> (supervisor de planta) para la fábrica, o supervisor de la organización. El <b>Mix preparer</b> (preparador de mezclas) puede hacer lo mismo solo para mezclas.</li>
 </ul>
 </aside>

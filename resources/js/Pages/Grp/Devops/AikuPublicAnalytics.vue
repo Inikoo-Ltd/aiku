@@ -72,7 +72,34 @@ const currentTab = ref(props.tabs.current)
 const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 const shortDate = (value?: string) => value ? new Date(value).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" }) : "—"
 
-const maxDailyViews = computed(() => Math.max(...(props.overview?.daily ?? []).map(d => Number(d.views) + Number(d.suspect ?? 0)), 1))
+const maxDailyViews = computed(() => Math.max(...(props.overview?.daily ?? []).map(d => Number(d.views)), 1))
+
+const sort = ref<Record<string, { column: string, desc: boolean }>>({ referrer: { column: "views", desc: true } })
+
+const sortBy = (key: string, column: string) => {
+    const current = sort.value[key]
+    sort.value[key] = { column, desc: current?.column === column ? !current.desc : true }
+}
+
+const sortArrow = (key: string, column: string) => sort.value[key]?.column === column ? (sort.value[key].desc ? " ↓" : " ↑") : ""
+
+const sortRows = (key: string, rows: StatRow[]) => {
+    const current = sort.value[key]
+    if (!current) {
+        return rows
+    }
+
+    const value = (row: StatRow) => current.column === key
+        ? String(row[key as keyof StatRow] ?? "")
+        : (current.column === "last_visited_at" ? String(row.last_visited_at ?? "") : Number(row[current.column as keyof StatRow] ?? 0))
+
+    return [...rows].sort((a, b) => {
+        const left = value(a), right = value(b)
+        const comparison = typeof left === "number" ? left - (right as number) : left.localeCompare(right as string)
+
+        return current.desc ? -comparison : comparison
+    })
+}
 
 const sections = computed(() => [
     { label: trans("Pages"), key: "path", rows: props.overview?.pages ?? [] },
@@ -122,9 +149,7 @@ const sections = computed(() => [
             <h2 class="text-sm font-medium">{{ trans("Daily visits (last 30 days)") }}</h2>
             <div class="mt-2 flex h-32 items-end gap-1">
                 <div v-for="d in overview.daily" :key="d.day" class="group relative max-w-10 flex-1">
-                    <div class="w-full rounded-t bg-gray-300" :title="trans('Suspect: no referrer, single view')"
-                        :style="{ height: `${(Number(d.suspect ?? 0) / maxDailyViews) * 120}px` }" />
-                    <div class="w-full bg-indigo-500/80"
+                    <div class="w-full rounded-t bg-indigo-500/80"
                         :style="{ height: `${(Number(d.views) / maxDailyViews) * 120}px` }" />
                     <div class="pointer-events-none absolute bottom-full left-1/2 z-10 hidden -translate-x-1/2 whitespace-nowrap rounded bg-gray-800 px-2 py-1 text-xs text-white group-hover:block">
                         {{ d.day }}: {{ d.views }} {{ trans("views") }}, {{ d.visitors }} {{ trans("visitors") }}, {{ d.suspect ?? 0 }} {{ trans("suspect") }}
@@ -139,14 +164,14 @@ const sections = computed(() => [
                 <table class="mt-2 w-full text-sm">
                     <thead>
                         <tr class="border-b border-gray-200 text-left text-xs text-gray-500">
-                            <th class="py-1 font-normal">{{ section.label }}</th>
-                            <th class="py-1 text-right font-normal">{{ trans("Visitors") }}</th>
-                            <th class="py-1 text-right font-normal">{{ trans("Views") }}</th>
-                            <th class="py-1 text-right font-normal">{{ trans("Last visit") }}</th>
+                            <th class="cursor-pointer select-none py-1 font-normal" @click="sortBy(section.key, section.key)">{{ section.label }}<span class="text-gray-400">{{ sortArrow(section.key, section.key) }}</span></th>
+                            <th class="cursor-pointer select-none py-1 text-right font-normal" @click="sortBy(section.key, 'visitors')">{{ trans("Visitors") }}<span class="text-gray-400">{{ sortArrow(section.key, 'visitors') }}</span></th>
+                            <th class="cursor-pointer select-none py-1 text-right font-normal" @click="sortBy(section.key, 'views')">{{ trans("Views") }}<span class="text-gray-400">{{ sortArrow(section.key, 'views') }}</span></th>
+                            <th class="cursor-pointer select-none py-1 text-right font-normal" @click="sortBy(section.key, 'last_visited_at')">{{ trans("Last visit") }}<span class="text-gray-400">{{ sortArrow(section.key, 'last_visited_at') }}</span></th>
                         </tr>
                     </thead>
                     <tbody>
-                        <tr v-for="row in section.rows" :key="String(row[section.key as keyof StatRow])" class="border-b border-gray-100">
+                        <tr v-for="row in sortRows(section.key, section.rows)" :key="String(row[section.key as keyof StatRow])" class="border-b border-gray-100">
                             <td class="max-w-56 truncate py-1">{{ row[section.key as keyof StatRow] }}</td>
                             <td class="py-1 text-right">{{ row.visitors }}</td>
                             <td class="py-1 text-right text-gray-500">{{ row.views }}</td>

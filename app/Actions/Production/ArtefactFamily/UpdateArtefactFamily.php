@@ -50,7 +50,7 @@ class UpdateArtefactFamily extends OrgAction
             return true;
         }
 
-        return $request->user()->authTo("productions_rd.{$this->production->id}.edit");
+        return $request->user()->authTo(["org-supervisor.{$this->organisation->id}", "productions_rd.{$this->production->id}.edit"]);
     }
 
     public function rules(): array

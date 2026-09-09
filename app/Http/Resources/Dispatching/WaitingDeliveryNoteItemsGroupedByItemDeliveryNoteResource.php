@@ -124,7 +124,7 @@ class WaitingDeliveryNoteItemsGroupedByItemDeliveryNoteResource extends JsonReso
             'is_handled'                        => $this->is_handled,
             'notes'                             => $this->notes,
 
-            'locations'                         => $pickingLocations->isNotEmpty() ? LocationOrgStocksForPickingActionsResource::collection($pickingLocations) : [],
+            'locations'                         => $pickingLocations->isNotEmpty() ? LocationOrgStocksForPickingActionsResource::collectionForPicking($pickingLocations, $deliveryNoteItem?->organisation_id) : [],
             'pickings'                          => PickingResource::collection($pickings),
             'packings'                          => $deliveryNoteItem?->packings ? PackingsResource::collection($deliveryNoteItem->packings) : [],
 

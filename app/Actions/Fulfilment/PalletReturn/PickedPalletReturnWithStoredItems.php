@@ -101,13 +101,6 @@ class PickedPalletReturnWithStoredItems extends OrgAction
         return $this->handle($palletReturn, $this->validatedData);
     }
 
-    // public function maya(PalletReturn $palletReturn, ActionRequest $request): PalletReturn
-    // {
-    //     $this->initialisationFromFulfilment($palletReturn->fulfilment, $request);
-
-    //     return $this->handle($palletReturn, $this->validatedData);
-    // }
-
     // public function action(FulfilmentCustomer $fulfilmentCustomer, PalletReturn $palletReturn): PalletReturn
     // {
     //     $this->asAction = true;

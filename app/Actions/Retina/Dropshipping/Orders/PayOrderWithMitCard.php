@@ -10,7 +10,6 @@
 namespace App\Actions\Retina\Dropshipping\Orders;
 
 use App\Actions\Accounting\Payment\StorePayment;
-use App\Actions\Accounting\Traits\CalculatesPaymentWithBalance;
 use App\Actions\Accounting\WithCheckoutCom;
 use App\Actions\Ordering\Order\AttachPaymentToOrder;
 use App\Enums\Accounting\Payment\PaymentStateEnum;
@@ -32,7 +31,6 @@ class PayOrderWithMitCard
 {
     use AsAction;
     use WithCheckoutCom;
-    use CalculatesPaymentWithBalance;
 
 
     /**
@@ -53,15 +51,15 @@ class PayOrderWithMitCard
         $secretKey = $paymentAccountShop->getCredentials()[1];
 
 
-        $paymentAmounts = $this->calculatePaymentWithBalance(
-            $order->total_amount,
-            $order->customer->balance
-        );
+        /** Round to cents: raw float subtraction of the DB decimals yields values like
+         * 0.039999999999999 which StorePayment's decimal:0,2 rule rejects */
+        $toPay = round($order->total_amount - $order->payment_amount, 2);
 
+        if ($toPay < 0) {
+            $toPay = 0;
+        }
 
-        $toPay = $paymentAmounts['total'];
-
-        $toPay = (int)round((float)$toPay * 100);
+        $toPay = (int)round($toPay * 100);
 
 
         if ($toPay == 0) {
@@ -69,11 +67,6 @@ class PayOrderWithMitCard
                 'status' => 'ok',
             ];
         }
-
-        $api = CheckoutSdk::builder()->staticKeys()
-            ->environment(app()->environment('production') ? Environment::production() : Environment::sandbox())
-            ->secretKey($secretKey)
-            ->build();
 
         $channelID = $paymentAccountShop->getCheckoutComChannel();
 
@@ -103,7 +96,7 @@ class PayOrderWithMitCard
         ];
 
         try {
-            $response = $api->getPaymentsClient()->requestPayment($request);
+            $response = $this->requestMitPayment($secretKey, $request);
 
             $amount = Arr::get($response, 'amount', 0) / 100;
 
@@ -137,7 +130,8 @@ class PayOrderWithMitCard
             ]);
 
             $result = [
-                'status' => 'ok',
+                'status'           => $status == PaymentStatusEnum::SUCCESS ? 'ok' : 'declined',
+                'debug_mit_status' => Arr::get($response, 'status'),
             ];
         } catch (CheckoutApiException $e) {
             // API error
@@ -154,6 +148,19 @@ class PayOrderWithMitCard
         }
 
         return $result;
+    }
+
+    /**
+     * @throws \Checkout\CheckoutArgumentException
+     */
+    public function requestMitPayment(?string $secretKey, PaymentRequest $request): array
+    {
+        $api = CheckoutSdk::builder()->staticKeys()
+            ->environment(app()->environment('production') ? Environment::production() : Environment::sandbox())
+            ->secretKey($secretKey)
+            ->build();
+
+        return $api->getPaymentsClient()->requestPayment($request);
     }
 
     public string $commandSignature = 'test_pay';

@@ -90,7 +90,7 @@ class WebpageResource extends JsonResource
             'title'                        => $webpage->title,
             'search_in_website_availability' => $availabilityChecklist,
             'luigi_data' => [
-                'iris_search_model'     => Arr::get($website->settings, "iris_search_model", "luigi"),
+                'iris_search_model'     => Arr::get($website->settings, "iris_search_model", "internal"),
                 'last_reindexed'        => Arr::get($website->settings, "luigisbox.last_reindex_at"),
                 'luigisbox_tracker_id'  => Arr::get($website->settings, "luigisbox.tracker_id"),
                 'luigisbox_private_key' => Arr::get($website->settings, "luigisbox.private_key"),

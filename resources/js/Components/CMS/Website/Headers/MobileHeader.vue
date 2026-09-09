@@ -33,7 +33,6 @@ import { faLambda } from "@fad";
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import { computed } from 'vue'
 import LinkIris from '@/Iris/Components/LinkIris.vue'
-const LuigiSearchMobile = defineAsyncComponent(() => import('@/Components/CMS/LuigiSearchMobile.vue'))
 const IrisSearchMobile = defineAsyncComponent(() => import('@/Iris/Components/IrisSearchMobile.vue'))
 import { urlLoginWithRedirect } from '@/Composables/urlLoginWithRedirect'
 
@@ -108,15 +107,8 @@ const getStylesRemoveFontSize = (properties, screenType) => {
                 </IrisSidebar>
 
                 <!-- Search Bar -->
-                <IrisSearchMobile v-if="layout.iris?.iris_search_model === 'internal' && screenType === 'mobile'"
+                <IrisSearchMobile
                     id="iris_search_mobile"
-                    :style="{
-                        ...getStyles(headerData?.mobile?.profile?.container?.properties, screenType),
-                    }"
-                    class="text-3xl"
-                />
-                <LuigiSearchMobile v-else-if="layout.iris?.luigisbox_tracker_id && screenType === 'mobile'"
-                    id="luigi_mobile"
                     :style="{
                         ...getStyles(headerData?.mobile?.profile?.container?.properties, screenType),
                     }"

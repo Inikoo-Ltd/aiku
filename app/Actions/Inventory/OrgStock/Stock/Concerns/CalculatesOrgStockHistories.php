@@ -27,30 +27,41 @@ trait CalculatesOrgStockHistories
 {
     public function getLppPerSku(OrgStock $orgStock, Carbon $date): float
     {
-        $lastPurchase = OrgStockMovement::on('aiku_no_sticky')->select(['cost_per_sku'])
-            ->where('org_stock_id', $orgStock->id)
-            ->where('type', OrgStockMovementTypeEnum::PURCHASE->value)
-            ->whereNotNull('cost_per_sku')
-            ->where('date', '<=', $date->copy()->endOfDay()->format('Y-m-d H:i:s.u'))->orderBy('date', 'desc')->first();
+        $endOfDate = $date->copy()->endOfDay()->format('Y-m-d H:i:s.u');
 
-        if ($lastPurchase && $lastPurchase->cost_per_sku > 0) {
-            return $lastPurchase->cost_per_sku;
+        $cost = $this->lastPurchaseCostPerSku($orgStock, fn ($query) => $query->where('date', '<=', $endOfDate)->orderBy('date', 'desc'));
+        if ($cost === null) {
+            $cost = $this->lastPurchaseCostPerSku($orgStock, fn ($query) => $query->where('date', '>', $endOfDate)->orderBy('date'));
+        }
+        if ($cost !== null) {
+            return $cost;
         }
 
-        $closestPurchase = OrgStockMovement::on('aiku_no_sticky')->select(['cost_per_sku'])
-            ->where('org_stock_id', $orgStock->id)
-            ->where('type', OrgStockMovementTypeEnum::PURCHASE->value)
-            ->whereNotNull('cost_per_sku')
-            ->where('date', '>', $date->copy()->endOfDay()->format('Y-m-d H:i:s.u'))->orderBy('date')->first();
-        if ($closestPurchase && $closestPurchase->cost_per_sku > 0) {
-            return $closestPurchase->cost_per_sku;
+        return (float)($orgStock->current_supplier_sku_cost ?? 0);
+    }
+
+    /**
+     * A purchase priced only by its org_amount still carries a cost: the FIFO walk reads it that
+     * way, so the last purchase price has to agree or the two valuations disagree on the same row.
+     */
+    private function lastPurchaseCostPerSku(OrgStock $orgStock, callable $window): ?float
+    {
+        $purchases = $window(
+            OrgStockMovement::on('aiku_no_sticky')->select(['cost_per_sku', 'org_amount', 'quantity'])
+                ->where('org_stock_id', $orgStock->id)
+                ->where('type', OrgStockMovementTypeEnum::PURCHASE->value)
+        )->limit(20)->get();
+
+        foreach ($purchases as $purchase) {
+            if ($purchase->cost_per_sku > 0) {
+                return (float)$purchase->cost_per_sku;
+            }
+            if ($purchase->org_amount > 0 && $purchase->quantity > 0) {
+                return (float)$purchase->org_amount / (float)$purchase->quantity;
+            }
         }
 
-        if ($orgStock->current_supplier_sku_cost) {
-            return $orgStock->current_supplier_sku_cost;
-        }
-
-        return $orgStock->unit_cost * $orgStock->packed_in;// todo remove this, when removing $orgStock->unit_cost from DB
+        return null;
     }
 
     /**

@@ -17,6 +17,8 @@ use App\Actions\CRM\Customer\DeleteCustomer;
 use App\Actions\CRM\Favourite\UI\IndexCustomerFavourites;
 use App\Actions\Discounts\Offer\UI\IndexOffers;
 use App\Actions\Helpers\History\UI\IndexHistory;
+use App\Actions\Retina\Dropshipping\ApiToken\UI\IndexRetinaApiRequests;
+use App\Http\Resources\Api\RetinaApiRequestsResource;
 use App\Actions\Helpers\Media\UI\IndexAttachments;
 use App\Actions\Ordering\Order\UI\IndexOrders;
 use App\Actions\OrgAction;
@@ -233,6 +235,9 @@ class ShowCustomer extends OrgAction
                     fn () => GetCustomerJourney::run($customer)
                     : Inertia::optional(fn () => GetCustomerJourney::run($customer)),
 
+                $tabs::API_REQUESTS->value => $this->tab == $tabs::API_REQUESTS->value ?
+                    fn () => RetinaApiRequestsResource::collection(IndexRetinaApiRequests::run($customer, $tabs::API_REQUESTS->value))
+                    : Inertia::optional(fn () => RetinaApiRequestsResource::collection(IndexRetinaApiRequests::run($customer, $tabs::API_REQUESTS->value))),
                 $tabs::HISTORY->value             => $this->tab == $tabs::HISTORY->value ?
                     fn () => HistoryResource::collection(IndexHistory::run($customer, $tabs::HISTORY->value))
                     : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($customer, $tabs::HISTORY->value))),
@@ -268,6 +273,7 @@ class ShowCustomer extends OrgAction
         ->table(IndexDispatchedEmails::make()->tableStructure($customer, $tabs::DISPATCHED_EMAILS->value))
         ->table(IndexCreditTransactions::make()->tableStructure($customer, $tabs::CREDIT_TRANSACTIONS->value))
         ->table(IndexOffers::make()->tableStructure(parent: $customer, prefix: $tabs::OFFERS->value))
+        ->table(IndexRetinaApiRequests::make()->tableStructure($tabs::API_REQUESTS->value))
         ->table(IndexHistory::make()->tableStructure($tabs::HISTORY->value, model: $customer));
     }
 

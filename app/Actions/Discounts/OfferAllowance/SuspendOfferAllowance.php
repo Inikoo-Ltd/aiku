@@ -29,7 +29,6 @@ class SuspendOfferAllowance extends OrgAction
 
         $modelData = [
             'state'             => OfferAllowanceStateEnum::SUSPENDED,
-            'status'            => false,
             'last_suspended_at' => now(),
         ];
 

@@ -102,6 +102,17 @@ class ShowLocation extends OrgAction
                     'title'   => $location->slug,
                     'actions' => [
                         $this->canEdit ? $this->getEditActionIcon($request) : null,
+                        $this->canEdit ? [
+                            'type'  => 'button',
+                            'style' => 'delete',
+                            'key'   => 'delete',
+                            'label' => __('Delete location'),
+                            'route' => [
+                                'name'       => 'grp.models.location.delete',
+                                'parameters' => ['location' => $location->id],
+                                'method'     => 'delete',
+                            ]
+                        ] : null,
                     ],
                 ],
                 'tabs'        => [

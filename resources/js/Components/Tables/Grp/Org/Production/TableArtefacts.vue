@@ -42,10 +42,7 @@ const selectedIds = computed(() => Object.entries(selected.value).filter(([, on]
 const showBulkBar = computed(() => (props.moveToDepartment || props.moveToFamily) && selectedIds.value.length > 0)
 
 const clearSelection = () => {
-    const rows = tableRef.value?.selectRow
-    if (rows) {
-        Object.keys(rows).forEach(id => rows[id] = false)
-    }
+    tableRef.value?.clearSelection()
     selected.value = {}
 }
 
@@ -98,54 +95,48 @@ function productionRoute(artefact: { slug: string }) {
 </script>
 
 <template>
-    <Transition
-        enter-active-class="transition duration-150 ease-out"
-        enter-from-class="-translate-y-2 opacity-0"
-        leave-active-class="transition duration-100 ease-in"
-        leave-to-class="-translate-y-2 opacity-0">
-        <div
-            v-if="showBulkBar"
-            class="sticky top-0 z-10 mx-4 mt-4 flex flex-wrap items-center gap-x-3 gap-y-2 rounded-md bg-indigo-600 px-4 py-2.5 text-white shadow-lg"
-            role="region"
-            :aria-label="ctrans('Bulk actions')">
-            <span class="flex items-center gap-2 whitespace-nowrap font-medium" aria-live="polite">
-                <FontAwesomeIcon icon="fal fa-check-square" fixed-width aria-hidden="true" />
-                {{ selectedIds.length === 1 ? ctrans('1 artefact selected') : ctrans(':count artefacts selected', { count: selectedIds.length }) }}
-            </span>
+    <div
+        v-if="showBulkBar"
+        class="sticky top-0 z-10 xmx-4 mt-4 flex flex-wrap items-center gap-x-3 gap-y-2 xrounded-md bg-green-100 border-y border-slate-300 px-4 py-2.5 xshadow-lg mb-2"
+        role="region"
+        :aria-label="ctrans('Bulk actions')">
+        <span class="flex items-center gap-2 whitespace-nowrap font-medium" aria-live="polite">
+            <FontAwesomeIcon icon="fal fa-check-square" fixed-width aria-hidden="true" />
+            {{ selectedIds.length === 1 ? ctrans('1 artefact selected') : ctrans(':count artefacts selected', { count: selectedIds.length }) }}
+        </span>
 
-            <button type="button" class="text-xs text-indigo-100 underline underline-offset-2 hover:text-white" @click="clearSelection">
-                {{ ctrans('Clear') }}
-            </button>
+        <button type="button" class="text-xs xtext-indigo-100 underline underline-offset-2 hover:text-red-500" @click="clearSelection">
+            {{ ctrans('Clear') }}
+        </button>
 
-            <div class="ml-auto flex flex-wrap items-center gap-x-4 gap-y-2">
-                <BulkMoveBar
-                    v-if="moveToFamily"
-                    ref="familyBarRef"
-                    :fetchRoute="moveToFamily.families_route"
-                    :placeholder="ctrans('Move to family')"
-                    :noOptionsText="ctrans('No families yet')"
-                    :moveLabel="ctrans('Move')"
-                    :pickFirstLabel="ctrans('Pick a family first')"
-                    :createRoute="moveToFamily.create_route"
-                    :createLabel="ctrans('New family')"
-                    :loading="isMoving"
-                    @move="submitMoveToFamily" />
+        <div class="ml-auto flex flex-wrap items-center gap-x-12 gap-y-2">
+            <BulkMoveBar
+                v-if="moveToFamily"
+                ref="familyBarRef"
+                :fetchRoute="moveToFamily.families_route"
+                :placeholder="ctrans('Move to family')"
+                :noOptionsText="ctrans('No families yet')"
+                :moveLabel="ctrans('Move')"
+                :pickFirstLabel="ctrans('Pick a family first')"
+                :createRoute="moveToFamily.create_route"
+                :createLabel="ctrans('New family')"
+                :loading="isMoving"
+                @move="submitMoveToFamily" />
 
-                <BulkMoveBar
-                    v-if="moveToDepartment"
-                    ref="departmentBarRef"
-                    :fetchRoute="moveToDepartment.families_route"
-                    :placeholder="ctrans('Move to department')"
-                    :noOptionsText="ctrans('No departments yet')"
-                    :moveLabel="ctrans('Move')"
-                    :pickFirstLabel="ctrans('Pick a department first')"
-                    :createRoute="moveToDepartment.create_route"
-                    :createLabel="ctrans('New department')"
-                    :loading="isMoving"
-                    @move="submitMoveToDepartment" />
-            </div>
+            <BulkMoveBar
+                v-if="moveToDepartment"
+                ref="departmentBarRef"
+                :fetchRoute="moveToDepartment.families_route"
+                :placeholder="ctrans('Move to department')"
+                :noOptionsText="ctrans('No departments yet')"
+                :moveLabel="ctrans('Move')"
+                :pickFirstLabel="ctrans('Pick a department first')"
+                :createRoute="moveToDepartment.create_route"
+                :createLabel="ctrans('New department')"
+                :loading="isMoving"
+                @move="submitMoveToDepartment" />
         </div>
-    </Transition>
+    </div>
 
     <Table ref="tableRef" :resource="data" :name="tab" class="mt-5" :isCheckBox="!!(moveToDepartment || moveToFamily)" checkboxKey="id" @onSelectRow="(rows) => selected = { ...rows }">
         <template #cell(state)="{ item: artefact }">

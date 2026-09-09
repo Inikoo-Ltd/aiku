@@ -10,12 +10,13 @@
 namespace App\Actions\Api\Retina\Fulfilment\Order;
 
 use App\Actions\Api\Retina\Fulfilment\Resource\PalletReturnApiResource;
+use App\Actions\RetinaApiAction;
 use App\Models\Fulfilment\PalletReturn;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 
-class GetOrder
+class GetOrder extends RetinaApiAction
 {
     use AsAction;
     use WithAttributes;
@@ -32,6 +33,8 @@ class GetOrder
 
     public function asController(PalletReturn $palletReturn, ActionRequest $request): PalletReturn
     {
+        $this->initialisationFromFulfilment($request);
+
         return $this->handle($palletReturn);
     }
 }

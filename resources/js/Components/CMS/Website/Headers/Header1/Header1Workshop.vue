@@ -24,7 +24,6 @@ import {
     faEnvelope,
     faHeart
 } from "@fas"
-import LuigiSearch from "@/Components/CMS/LuigiSearch.vue"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
 import LinkIris from "@/Iris/Components/LinkIris.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
@@ -154,7 +153,7 @@ const isLoggedIn = inject("isPreviewLoggedIn", true)
 
                 <button v-if="isLoggedIn" class="flex items-center gap-2 text-gray-600 hover:text-red-500 transition-colors"
                     v-tooltip="ctrans('Favourites')">
-                    <FontAwesomeIcon :icon="faHeart" class="text-[20px]" />
+                    <FontAwesomeIcon :icon="faHeart" class="text-[20px]" fixed-width />
                     <span class="text-sm font-medium">
                         <div class="button">
                             {{ layout.iris_variables?.favourites_count }}
@@ -172,7 +171,7 @@ const isLoggedIn = inject("isPreviewLoggedIn", true)
                     <span class="button whitespace-nowrap"
                         v-html="textReplaceVariables(`({{ cart_count }})`, layout.iris_variables)">
                     </span>
-                    <FontAwesomeIcon :icon="faShoppingCart" class="text-[20px]" />
+                    <FontAwesomeIcon :icon="faShoppingCart" class="text-[20px]" fixed-width />
                     <span class="button whitespace-nowrap"
                         v-html="textReplaceVariables(`{{ cart_products_amount }}`, layout.iris_variables)">
                     </span>
@@ -186,7 +185,7 @@ const isLoggedIn = inject("isPreviewLoggedIn", true)
                 <template v-if="isLoggedIn">
                     <div class="flex items-center gap-1">
                         <div class="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center">
-                            <FontAwesomeIcon :icon="faUser" class="text-gray-500 text-lg" />
+                            <FontAwesomeIcon :icon="faUser" class="text-gray-500 text-lg" fixed-width />
                         </div>
 
                         <div class="leading-tight">

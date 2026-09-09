@@ -61,11 +61,15 @@ const ctaText = computed(() => props.ctaLabel || trans("View Dashboard"))
 					v-else-if="category.third_party_image_preview"
 					:src="category.third_party_image_preview"
 					:alt="category.image_alt ?? displayLabel"
+					loading="lazy"
+					decoding="async"
 					class="h-full w-full object-cover transition duration-500 group-hover:scale-105" />
 				<img
 					v-else-if="category.fallback_image"
 					:src="category.fallback_image"
 					:alt="displayLabel"
+					loading="lazy"
+					decoding="async"
 					class="h-full w-full object-cover transition duration-500 group-hover:scale-105" />
 				<div v-else class="h-full w-full bg-gradient-to-br from-gray-100 to-gray-200" />
 			</div>

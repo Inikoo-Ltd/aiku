@@ -292,14 +292,8 @@ const internalHref = (item) => {
 }
 
 const onClickSearch = () => {
-	if ((irisLayout as any)?.iris?.iris_search_model === 'internal') {
-		isOpenMenuMobile.value = false
-		openIrisSearchMobile('mobile_sidebar')
-		return
-	}
-
-	const input = document.getElementById('luigi_mobile') as HTMLInputElement | null
-	if (input) input.focus()
+	isOpenMenuMobile.value = false
+	openIrisSearchMobile('mobile_sidebar')
 }
 
 

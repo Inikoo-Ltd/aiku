@@ -30,7 +30,6 @@ import IrisAnnouncement from './Iris/IrisAnnouncement.vue'
 import { isAnnouncementVisible, useAnnouncementClock } from '@/Iris/Composables/useAnnouncementVisibility'
 const ChatButton = defineAsyncComponent(() => import('@/Components/Chat/Customer/ChatButton.vue'))
 import axios from 'axios'
-import { CustomerIdCollector } from '@/Composables/Unique/LuigiDataCollector'
 const BundleSidebar = defineAsyncComponent(() => import('@/Components/Dropshipping/BundleSidebar.vue'))
 import { useBundle } from '@/Composables/useBundle'
 
@@ -201,8 +200,6 @@ const containerPaddingCss = (() => {
 layout.app.webpage_layout = theme
 
 onMounted(() => {
-    CustomerIdCollector(layout.iris_variables?.customer_id?.toString())
-
     checkScreenType()
     setColorStyleRoot(theme?.color)
     window.addEventListener('resize', checkScreenType)

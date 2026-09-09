@@ -245,6 +245,11 @@ class FetchAuroraOrgStockMovement extends FetchAurora
         }
     }
 
+    /**
+     * A movement's quantity and amount are per SKO in the organisation's currency, so the
+     * delivery item is read the same way: org_net_amount because net_amount is the supplier's
+     * currency, over unit_quantity converted to SKOs because it counts individual trade units.
+     */
     protected function getDeliveryItemCostPerSku(OrgStock $orgStock, ?string $note): ?float
     {
         if (!$note || !preg_match('/delivery\/(\d+)/', $note, $matches)) {
@@ -261,15 +266,17 @@ class FetchAuroraOrgStockMovement extends FetchAurora
         $deliveryItem = DB::table('stock_delivery_items')
             ->where('stock_delivery_id', $stockDeliveryId)
             ->where('org_stock_id', $orgStock->id)
-            ->where('net_amount', '>', 0)
+            ->where('org_net_amount', '>', 0)
             ->where('unit_quantity', '>', 0)
             ->orderBy('id')
-            ->first(['net_amount', 'unit_quantity']);
+            ->first(['org_net_amount', 'unit_quantity']);
         if (!$deliveryItem) {
             return null;
         }
 
-        return round($deliveryItem->net_amount / $deliveryItem->unit_quantity, 6);
+        $skoQuantity = $deliveryItem->unit_quantity / ($orgStock->packed_in > 0 ? $orgStock->packed_in : 1);
+
+        return round($deliveryItem->org_net_amount / $skoQuantity, 6);
     }
 
     //    public function parseNote($note):?array

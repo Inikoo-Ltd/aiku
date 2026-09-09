@@ -130,10 +130,6 @@ class UpdateWebsite extends OrgAction
             data_set($modelData, "settings.luigisbox.last_reindex_at", Arr::pull($modelData, "last_reindex_at"));
         }
 
-        if (Arr::has($modelData, "iris_search_model")) {
-            data_set($modelData, "settings.iris_search_model", Arr::pull($modelData, "iris_search_model"));
-        }
-
         if (Arr::has($modelData, "sound_player_style")) {
             data_set($modelData, "settings.sound_player_style", Arr::pull($modelData, "sound_player_style"));
         }
@@ -268,7 +264,6 @@ class UpdateWebsite extends OrgAction
             'luigisbox_lbx_code'                         => ['sometimes', 'nullable', 'string', 'regex:/^LBX-\d{6,8}$/'],
             'luigisbox_private_key'                      => ['sometimes', 'nullable', 'string'],
             'last_reindex_at'                            => ['sometimes', 'nullable', 'string'],
-            'iris_search_model'                          => ['sometimes', 'string', Rule::in(['internal', 'luigi'])],
             'sound_player_style'                         => ['sometimes', 'string', Rule::in(['rainbow', 'mono', 'wave', 'equalizer', 'minimal'])],
             'jira_help_desk_widget'                      => ['sometimes', 'nullable', 'string'],
             'return_policy'                              => ['sometimes', 'string'],

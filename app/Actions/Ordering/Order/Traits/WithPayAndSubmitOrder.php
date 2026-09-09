@@ -12,9 +12,12 @@ namespace App\Actions\Ordering\Order\Traits;
 use App\Actions\Ordering\Order\UpdateState\SubmitOrder;
 use App\Actions\Ordering\Order\WithOrderForbiddenCountryCheck;
 use App\Actions\Retina\Dropshipping\Orders\PayOrderAsync;
+use App\Enums\Ordering\Order\OrderPayStatusEnum;
 use App\Models\Ordering\Order;
 use Exception;
+use Illuminate\Support\Facades\Http;
 use Sentry;
+use Throwable;
 
 trait WithPayAndSubmitOrder
 {
@@ -41,6 +44,49 @@ trait WithPayAndSubmitOrder
             }
         }
 
-        return SubmitOrder::make()->action($order);
+        try {
+            return SubmitOrder::make()->action($order);
+        } catch (Throwable $e) {
+            $this->alertPaidOrderNotSubmitted($order, $e);
+
+            throw $e;
+        }
+    }
+
+    /**
+     * The money is taken before the submit, so a submit that fails leaves a paid order sitting in
+     * the basket where nobody sees it (HELP-3064). SubmitOrder refuses with a ValidationException,
+     * which Laravel keeps off Sentry, so the alert has to be raised here by hand. Any money taken
+     * counts, not only a fully paid order: the balance is spent before the cards are tried, so a
+     * part paid basket is just as invisible and just as much the customer's money.
+     */
+    protected function alertPaidOrderNotSubmitted(Order $order, Throwable $e): void
+    {
+        $order->refresh();
+
+        $amountTaken = round($order->payment_amount, 2);
+
+        if ($amountTaken <= 0) {
+            return;
+        }
+
+        $paidDescription = $order->pay_status == OrderPayStatusEnum::PAID
+            ? 'was paid'
+            : 'was part paid ('.$amountTaken.' of '.round($order->total_amount, 2).')';
+
+        $message = 'Order '.$order->reference.' ('.$order->id.') '.$paidDescription.' and then failed to submit: '.$e->getMessage();
+
+        Sentry::captureMessage($message);
+
+        /** Queued, not posted here: the order is already paid and Sentry has been told, so a webhook
+         * that is down or slow must never become the customer's error as well. */
+        $webhookUrl = config('services.discord.webhook_url');
+        if ($webhookUrl) {
+            dispatch(function () use ($webhookUrl, $message) {
+                Http::timeout(10)->post($webhookUrl, [
+                    'content' => "💸 **Paid order not submitted** 💸\n".$message
+                ]);
+            })->afterCommit();
+        }
     }
 }

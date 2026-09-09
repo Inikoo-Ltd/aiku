@@ -8,6 +8,7 @@
 
 namespace App\Actions\Inventory\Location\UI;
 
+use App\Actions\Inventory\WarehouseArea\UI\GetWarehouseAreaOptions;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\Inventory\WithWarehouseEditAuthorisation;
 use App\Models\Inventory\Location;
@@ -56,6 +57,12 @@ class EditLocation extends OrgAction
                     'type'  => 'input',
                     'label' => __('Code'),
                     'value' => $location->code
+                ],
+                'warehouse_area_id' => [
+                    'type'    => 'select',
+                    'label'   => __('Area'),
+                    'value'   => $location->warehouse_area_id ?? '',
+                    'options' => GetWarehouseAreaOptions::run($location->warehouse)
                 ],
             ],
         ];

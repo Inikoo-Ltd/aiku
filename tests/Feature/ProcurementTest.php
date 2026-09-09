@@ -3612,6 +3612,16 @@ test('UI partner shipping list index', function () {
     });
 });
 
+test('batch size is hinted to the partner buyer and to the factory board', function () {
+    $production = Production::first() ?? StoreProduction::make()->action($this->organisation, ['code' => 'PART', 'name' => 'Partner factory']);
+    $orgStock   = OrgStock::where('organisation_id', $this->orgPartner->partner_id)->first();
+    $artefact   = StoreArtefact::make()->action($production, ['code' => 'BATCH-1', 'name' => 'Batched artefact', 'recommended_batch_size' => 45]);
+    $artefact->update(['org_stock_id' => $orgStock->id]);
+
+    $rows = collect($this->get(route('grp.json.org_partner.shopping_list_org_stocks', [$this->orgPartner->id]))->json('data'));
+    expect($rows->firstWhere('id', $orgStock->id)['batch_size'])->toBe(45);
+});
+
 test('to produce item moves backlog to preparing and back', function () {
     $production = Production::first() ?? StoreProduction::make()->action($this->organisation, ['code' => 'PART', 'name' => 'Partner factory']);
     $orgStock   = OrgStock::where('organisation_id', $this->orgPartner->organisation_id)->first() ?? createOrgStocks($this->orgPartner->organisation, [Stock::first()])[0];

@@ -137,6 +137,7 @@ class ShowManufactureFloor extends OrgAction
                     ],
                     'title' => __('My tasks'),
                 ],
+                'production_id' => $this->production->id,
                 'open_session' => $openSession ? [
                     'id'         => $openSession->id,
                     'can_reject' => $canPickOpenJobs,

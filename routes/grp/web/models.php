@@ -1274,7 +1274,6 @@ Route::patch('/org-agent/{orgAgent:id}', UpdateOrgAgent::class)->name('org_agent
 
 Route::name('production.')->prefix('production/{production:id}')->group(function () {
     Route::post('job-order', StoreJobOrder::class)->name('job-order.store');
-    Route::post('artefact-upload', ImportDummy::class)->name('artefacts.upload');
     Route::post('raw-materials-upload', ImportRawMaterial::class)->name('raw_materials.upload');
     Route::post('manufacture-tasks-upload', ImportDummy::class)->name('manufacture_tasks.upload');
     Route::post('raw-materials', StoreRawMaterial::class)->name('raw-materials.store');
@@ -1288,7 +1287,7 @@ Route::name('production.')->prefix('production/{production:id}')->group(function
     Route::post('artefact-families', StoreArtefactFamily::class)->name('artefact_families.store');
     Route::post('artefacts/move-to-family', MoveArtefactsToFamily::class)->name('artefacts.move_to_family');
     Route::post('artefact-families/move-to-department', MoveArtefactFamiliesToDepartment::class)->name('artefact_families.move_to_department');
-    Route::post('artefact-upload', ImportArtefact::class)->name('artefact.import');
+    Route::post('artefact-upload', ImportArtefact::class)->name('artefacts.upload');
 });
 
 Route::patch('/job-order/{jobOrder:id}', UpdateJobOrder::class)->name('job-order.update');

@@ -67,6 +67,16 @@ Broadcast::channel('grp.employee.{employeeID}.clocking', function (User $user, i
     return $user->employees()->where('id', $employeeID)->exists();
 });
 
+Broadcast::channel('grp.production.{productionId}.floor', function (User $user, int $productionId) {
+    $production = \App\Models\Production\Production::find($productionId);
+
+    return $production && $user->authTo([
+        'org-supervisor.'.$production->organisation_id,
+        'productions-view.'.$production->organisation_id,
+        "productions_operations.{$production->id}.view",
+    ]);
+});
+
 Broadcast::channel('grp.master-shop.{masterShopId}', function (User $user, int $masterShopId) {
     return MasterShop::where('id', $masterShopId)->value('group_id') === $user->group_id;
 });

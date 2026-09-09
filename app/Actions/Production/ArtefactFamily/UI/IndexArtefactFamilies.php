@@ -32,9 +32,9 @@ class IndexArtefactFamilies extends OrgAction
 
     public function authorize(ActionRequest $request): bool
     {
-        $this->canEdit = $request->user()->authTo("productions_rd.{$this->production->id}.edit");
+        $this->canEdit = $request->user()->authTo(["org-supervisor.{$this->organisation->id}", "productions_rd.{$this->production->id}.edit"]);
 
-        return $request->user()->authTo("productions_rd.{$this->production->id}.view");
+        return $request->user()->authTo(["org-supervisor.{$this->organisation->id}", "productions_rd.{$this->production->id}.view"]);
     }
 
     public function asController(Organisation $organisation, Production $production, ActionRequest $request): LengthAwarePaginator
@@ -125,6 +125,7 @@ class IndexArtefactFamilies extends OrgAction
             }
             $table
                 ->withGlobalSearch()
+                ->withLabelRecord([__('family'), __('families')])
                 ->withEmptyState([
                     'title'       => __('No artefact families yet'),
                     'description' => $this->canEdit ? __('Families group the artefacts of a department, the way stock families group org stocks.') : null,
@@ -166,6 +167,7 @@ class IndexArtefactFamilies extends OrgAction
                 'breadcrumbs'        => $this->getBreadcrumbs($request->route()->originalParameters()),
                 'title'              => __('Artefact families'),
                 'pageHead'           => [
+                    'model'        => __('Crafts'),
                     'title'         => __('Artefact families'),
                     'icon'          => ['icon' => ['fal', 'fa-folder'], 'title' => __('Artefact families')],
                     'subNavigation' => IndexArtefacts::make()->getArtefactsSubNavigation($this->production),
@@ -173,7 +175,7 @@ class IndexArtefactFamilies extends OrgAction
                         $this->canEdit ? [
                             'type'  => 'button',
                             'style' => 'create',
-                            'label' => __('family'),
+                            'label' => __('Family'),
                             'route' => [
                                 'name'       => 'grp.org.productions.show.crafts.artefact_families.create',
                                 'parameters' => $request->route()->originalParameters()

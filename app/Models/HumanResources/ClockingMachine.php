@@ -22,7 +22,6 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
-use Laravel\Sanctum\HasApiTokens;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
@@ -73,7 +72,6 @@ class ClockingMachine extends Authenticatable implements Auditable
     use HasFactory;
     use HasHistory;
     use InOrganisation;
-    use HasApiTokens;
 
     protected $casts = [
         'data'                        => 'array',

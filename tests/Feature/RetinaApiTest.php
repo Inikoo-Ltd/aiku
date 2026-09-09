@@ -20,12 +20,18 @@ use App\Actions\Ordering\Order\StoreOrder;
 use App\Enums\Catalogue\Product\ProductStatusEnum;
 use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
+use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\Dropshipping\CustomerClient;
 use App\Models\Dropshipping\Platform;
 use App\Models\Ordering\Order;
 use Illuminate\Support\Facades\DB;
+use App\Actions\Dropshipping\Portfolio\StorePortfolio;
+use App\Actions\Ordering\Order\UpdateState\SubmitOrder;
+use App\Enums\Ordering\Order\OrderPayStatusEnum;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Validation\ValidationException;
 use Laravel\Sanctum\Sanctum;
 
 use function Pest\Laravel\deleteJson;
@@ -238,11 +244,20 @@ test('retina api dropshipping order submit', function () {
         'quantity_ordered' => 2,
     ])->assertCreated();
 
+    DB::table('customers')->where('id', $this->dropshippingCustomer->id)->update(['balance' => 1000]);
+
     $response = patchJson(route('retina.api.dropshipping.order.submit', $order));
     $response->assertOk();
     $response->assertJsonStructure([
         'data' => ['id', 'state'],
     ]);
+
+    /** The endpoint charged the order and returned "submitted successfully" without ever calling
+     * SubmitOrder once (commit b32903604a, 2 to 4 Sep 2026, HELP-3064). A 200 is not enough,
+     * assert the order actually left the basket. */
+    $order->refresh();
+    expect($order->submitted_at)->not->toBeNull()
+        ->and($order->state)->not->toBe(OrderStateEnum::CREATING);
 });
 
 // ---- Dropshipping: products & portfolios ----
@@ -481,4 +496,241 @@ test('retina api real bearer token authenticates', function () {
     $plain = \App\Actions\Retina\Dropshipping\ApiToken\StoreCustomerToken::make()->handle($this->dropshippingChannel);
 
     getJson(route('retina.api.profile'), ['Authorization' => 'Bearer '.$plain])->assertOk();
+});
+
+test('retina api requests are logged with credentials redacted', function () {
+    Sanctum::actingAs($this->dropshippingChannel, ['retina', 'retina:read', 'retina:write']);
+
+    postJson(route('retina.api.dropshipping.clients.create'), [
+        'first_name' => 'Api',
+        'last_name'  => 'Logged',
+        'email'      => 'api-logged@example.com',
+        'phone'      => '+44 7700 900123',
+        'address'    => ['address_line_1' => '12 Greenwix Parc', 'postal_code' => 'PL30 3AF'],
+        'password'   => 'super-secret',
+    ]);
+
+    $logged = \App\Models\CRM\RetinaApiRequest::where('customer_id', $this->dropshippingCustomer->id)
+        ->orderByDesc('id')->first();
+
+    expect($logged)->not->toBeNull()
+        ->and($logged->method)->toBe('POST')
+        ->and($logged->customer_sales_channel_id)->toBe($this->dropshippingChannel->id)
+        ->and($logged->duration_ms)->not->toBeNull()
+        ->and($logged->payload['password'])->toBe('***')
+        ->and($logged->payload['first_name'])->toBe('A***')
+        ->and($logged->payload['email'])->toBe('a***@e***')
+        ->and($logged->payload['phone'])->toBe('+***')
+        ->and($logged->payload['address']['address_line_1'])->toBe('1***')
+        ->and($logged->payload['address']['postal_code'])->toBe('P***');
+});
+
+test('retina api logs query string arguments', function () {
+    Sanctum::actingAs($this->dropshippingChannel, ['retina', 'retina:read', 'retina:write']);
+
+    getJson(route('retina.api.dropshipping.images.index', ['id' => 999999999, 'type' => 'product', 'token' => 'leaked']));
+
+    $logged = \App\Models\CRM\RetinaApiRequest::where('customer_id', $this->dropshippingCustomer->id)
+        ->orderByDesc('id')->first();
+
+    expect($logged->route_parameters['id'])->toBe('999999999')
+        ->and($logged->route_parameters['type'])->toBe('product')
+        ->and($logged->route_parameters['token'])->toBe('***')
+        ->and($logged->message)->toBe('Product not found');
+});
+
+test('retina api records but allows foreign records while enforcement is off', function () {
+    config()->set('app.enforce_api_ownership', false);
+
+    $otherOrder = StoreOrder::make()->action(
+        $this->fulfilmentCustomer,
+        ['reference' => 'shadow-mode-order']
+    );
+
+    Sanctum::actingAs($this->dropshippingChannel, ['retina', 'retina:read', 'retina:write']);
+
+    getJson(route('retina.api.dropshipping.order.show', $otherOrder->id))->assertOk();
+
+    $logged = \App\Models\CRM\RetinaApiRequest::where('customer_id', $this->dropshippingCustomer->id)
+        ->orderByDesc('id')->first();
+
+    expect($logged->message)->not->toBeNull()
+        ->and(str_contains($logged->message, 'is not owned by customer'))->toBeTrue();
+});
+
+test('retina api refuses a media file that belongs to nothing of the customers', function () {
+    config()->set('app.enforce_api_ownership', true);
+
+    $foreignMedia = \App\Models\Helpers\Media::create([
+        'group_id'   => $this->group->id,
+        'ulid'       => \Illuminate\Support\Str::ulid(),
+        'name'       => 'foreign',
+        'file_name'  => 'foreign.png',
+        'disk'       => 'public',
+        'collection_name' => 'default',
+        'size'       => 1,
+        'manipulations'   => [],
+        'custom_properties' => [],
+        'generated_conversions' => [],
+        'responsive_images'     => [],
+    ]);
+
+    Sanctum::actingAs($this->dropshippingChannel, ['retina', 'retina:read', 'retina:write']);
+
+    getJson(route('retina.api.dropshipping.images.show', $foreignMedia->id))->assertNotFound();
+});
+
+test('retina api images are scoped to the calling customer', function () {
+    $otherPortfolio = \App\Actions\Dropshipping\Portfolio\StorePortfolio::make()->action(
+        $this->fulfilmentChannel,
+        $this->fulfilmentProduct,
+        []
+    );
+
+    Sanctum::actingAs($this->dropshippingChannel, ['retina', 'retina:read', 'retina:write']);
+
+    getJson(route('retina.api.dropshipping.images.index', ['id' => $otherPortfolio->id, 'type' => 'portfolio']))
+        ->assertStatus(422)
+        ->assertJsonFragment(['message' => 'Portfolio not found']);
+});
+
+test('retina api failures keep the response message', function () {
+    Sanctum::actingAs($this->dropshippingChannel, ['retina', 'retina:read', 'retina:write']);
+
+    postJson(route('retina.api.dropshipping.clients.create'), [])->assertStatus(422);
+
+    $logged = \App\Models\CRM\RetinaApiRequest::where('customer_id', $this->dropshippingCustomer->id)
+        ->orderByDesc('id')->first();
+
+    expect($logged->status)->toBe(422)
+        ->and($logged->message)->not->toBeNull();
+});
+
+test('retina api requests are pruned after the retention window and capped per customer', function () {
+    \App\Models\CRM\RetinaApiRequest::insert([
+        [
+            'customer_id' => $this->dropshippingCustomer->id,
+            'method'      => 'GET',
+            'path'        => 'app/re-api/user-profile',
+            'status'      => 200,
+            'created_at'  => now()->subDays(\App\Actions\CRM\Customer\PruneRetinaApiRequests::RETENTION_DAYS + 1),
+        ],
+        [
+            'customer_id' => $this->dropshippingCustomer->id,
+            'method'      => 'GET',
+            'path'        => 'app/re-api/user-profile',
+            'status'      => 200,
+            'created_at'  => now(),
+        ],
+    ]);
+
+    \App\Actions\CRM\Customer\PruneRetinaApiRequests::run();
+
+    expect(\App\Models\CRM\RetinaApiRequest::where('created_at', '<', now()->subDays(\App\Actions\CRM\Customer\PruneRetinaApiRequests::RETENTION_DAYS))->count())->toBe(0)
+        ->and(\App\Models\CRM\RetinaApiRequest::where('customer_id', $this->dropshippingCustomer->id)->count())->toBeGreaterThan(0)
+        ->and(\App\Models\CRM\RetinaApiRequest::where('customer_id', $this->dropshippingCustomer->id)->count())->toBeLessThanOrEqual(\App\Actions\CRM\Customer\PruneRetinaApiRequests::CAP_PER_CUSTOMER);
+});
+
+test('retina api requests index only shows the customer own calls', function () {
+    Sanctum::actingAs($this->dropshippingChannel, ['retina', 'retina:read', 'retina:write']);
+    getJson(route('retina.api.profile'))->assertOk();
+
+    \App\Models\CRM\RetinaApiRequest::create([
+        'customer_id' => $this->fulfilmentCustomer->id,
+        'method'      => 'GET',
+        'path'        => 'app/re-api/user-profile',
+        'status'      => 200,
+    ]);
+
+    $requests = \App\Actions\Retina\Dropshipping\ApiToken\UI\IndexRetinaApiRequests::run($this->dropshippingCustomer);
+
+    expect($requests->total())->toBeGreaterThan(0)
+        ->and($requests->pluck('customer_id')->unique()->all())->toBe([$this->dropshippingCustomer->id]);
+});
+
+test('api inflow monitor alerts discord when a customer floods', function () {
+    config()->set('services.discord.webhook_url', 'https://discord.test/webhook');
+    \Illuminate\Support\Facades\Http::fake();
+
+    $monitor = \App\Actions\DevOps\MonitorRetinaApiInflow::class;
+    expect($monitor::run())->toBe([]);
+
+    $rows = [];
+    for ($i = 0; $i <= $monitor::CUSTOMER_HOURLY_THRESHOLD; $i++) {
+        $rows[] = [
+            'customer_id' => $this->dropshippingCustomer->id,
+            'method'      => 'GET',
+            'path'        => 'app/re-api/dropshipping/products',
+            'status'      => $i % 2 ? 200 : 500,
+            'created_at'  => now(),
+        ];
+    }
+    \Illuminate\Support\Facades\DB::table('retina_api_requests')->insert($rows);
+
+    $issues = $monitor::run();
+
+    expect($issues)->toHaveCount(1)
+        ->and($issues[0])->toContain((string) $this->dropshippingCustomer->id);
+
+    \Illuminate\Support\Facades\Http::assertSent(fn ($request) => str_contains($request['content'], 'API Inflow Alert'));
+});
+
+test('a paid order that fails to submit raises an alert', function () {
+    Sanctum::actingAs($this->dropshippingChannel, ['retina', 'retina:read', 'retina:write']);
+    config(['services.discord.webhook_url' => 'https://discord.test/hook']);
+    Http::fake();
+
+    $client = StoreCustomerClient::make()->action(
+        $this->dropshippingChannel,
+        CustomerClient::factory()->definition()
+    );
+    $order = StoreOrder::make()->action($client, [
+        'platform_id'               => $this->dropshippingChannel->platform_id,
+        'customer_sales_channel_id' => $this->dropshippingChannel->id,
+    ]);
+    $portfolio = StorePortfolio::make()->action($this->dropshippingChannel, $this->product, []);
+    postJson(route('retina.api.dropshipping.order.transaction.store', [$order, $portfolio]), [
+        'quantity_ordered' => 2,
+    ])->assertCreated();
+
+    DB::table('customers')->where('id', $this->dropshippingCustomer->id)->update(['balance' => 1000]);
+
+    SubmitOrder::mock()->shouldReceive('action')->andThrow(
+        ValidationException::withMessages(['order' => 'Order has been submitted and cannot be submitted again'])
+    );
+
+    patchJson(route('retina.api.dropshipping.order.submit', $order));
+
+    $order->refresh();
+    expect($order->pay_status)->toBe(OrderPayStatusEnum::PAID)
+        ->and($order->submitted_at)->toBeNull();
+
+    Http::assertSent(fn ($request) => $request->url() === 'https://discord.test/hook'
+        && str_contains($request['content'], $order->reference));
+});
+
+test('retina api refuses route bound records belonging to another customer', function () {
+    config()->set('app.enforce_api_ownership', true);
+
+    $otherOrder = StoreOrder::make()->action(
+        $this->fulfilmentCustomer,
+        ['reference' => 'other-customer-order']
+    );
+
+    $otherPortfolio = \App\Actions\Dropshipping\Portfolio\StorePortfolio::make()->action(
+        $this->fulfilmentChannel,
+        $this->fulfilmentProduct,
+        []
+    );
+
+    Sanctum::actingAs($this->dropshippingChannel, ['retina', 'retina:read', 'retina:write']);
+
+    getJson(route('retina.api.dropshipping.order.show', $otherOrder->id))->assertNotFound();
+    getJson(route('retina.api.dropshipping.products.my_product.show', $otherPortfolio->id))->assertNotFound();
+    patchJson(route('retina.api.dropshipping.products.my_product.update', $otherPortfolio->id), [
+        'customer_product_name' => 'hijacked',
+    ])->assertNotFound();
+    deleteJson(route('retina.api.dropshipping.products.my_product.delete', $otherPortfolio->id))->assertNotFound();
+
+    expect($otherPortfolio->refresh()->customer_product_name)->not->toBe('hijacked');
 });

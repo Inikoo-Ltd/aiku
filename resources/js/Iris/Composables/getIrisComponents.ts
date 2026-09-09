@@ -36,9 +36,6 @@ const ProductRender = async(() => import("@/Iris/Components/IrisBlocks/Products/
 const ListProductsEcomIris = async(() => import("@/Iris/Components/IrisBlocks/Products/Ecom/ListProductsEcomIris.vue"))
 const ProductIris1 = async(() => import("@/Iris/Components/IrisBlocks/Product/Ds/ProductDsIris1.vue"))
 const ProductIris1Ecom = async(() => import("@/Iris/Components/IrisBlocks/Product/Ecom/ProductIris1Ecom.vue"))
-const LuigiTrends1Iris = async(() => import("@/Iris/Components/IrisBlocks/LuigiTrends1Iris.vue"))
-const LuigiLastSeen1Iris = async(() => import("@/Iris/Components/IrisBlocks/LuigiLastSeen1Iris.vue"))
-const LuigiItemAlternatives1Iris = async(() => import("@/Iris/Components/IrisBlocks/LuigiItemAlternatives1Iris.vue"))
 const InternalTrends1Iris = async(() => import("@/Iris/Components/IrisBlocks/InternalTrends1Iris.vue"))
 const InternalLastSeen1Iris = async(() => import("@/Iris/Components/IrisBlocks/InternalLastSeen1Iris.vue"))
 const InternalItemAlternatives1Iris = async(() => import("@/Iris/Components/IrisBlocks/InternalItemAlternatives1Iris.vue"))
@@ -128,12 +125,7 @@ const BlogListIris = async(() => import("@/Iris/Components/IrisBlocks/BlogListIr
 const BlogCategoriesIris = async(() => import("@/Iris/Components/IrisBlocks/BlogCategoriesIris.vue"))
 const CategoryComparisonIris = async(() => import("@/Iris/Components/IrisBlocks/CategoryComparisonIris.vue"))
 
-interface IrisComponentOptions {
-	search_model?: string // 'luigi' | 'internal'
-}
-
-const components = (shop_type?: string, options: IrisComponentOptions = {}): Record<string, Component> => {
-	const isInternalSearchModel = options.search_model === "internal"
+const components = (shop_type?: string): Record<string, Component> => {
 
 
 	return {
@@ -201,10 +193,10 @@ const components = (shop_type?: string, options: IrisComponentOptions = {}): Rec
 		//see-also
 		"see-also-1": SeeAlso1Iris,
 
-		// Luigi
-		"luigi-trends-1": isInternalSearchModel ? InternalTrends1Iris : LuigiTrends1Iris,
-		"luigi-last-seen-1": isInternalSearchModel ? InternalLastSeen1Iris : LuigiLastSeen1Iris,
-		"luigi-item-alternatives-1": isInternalSearchModel ? InternalItemAlternatives1Iris : LuigiItemAlternatives1Iris,
+		// Kode blok warisan Luigi, sekarang selalu dirender komponen internal
+		"luigi-trends-1": InternalTrends1Iris,
+		"luigi-last-seen-1": InternalLastSeen1Iris,
+		"luigi-item-alternatives-1": InternalItemAlternatives1Iris,
 		"recommendation-customer-recently-bought-1": RecommendationCRB1Iris,
 
 		"cta-image-background": CtaImageBackroundIris,
@@ -259,11 +251,11 @@ const components = (shop_type?: string, options: IrisComponentOptions = {}): Rec
 
 export const getIrisComponent = (
 	componentName: string,
-	options?: IrisComponentOptions & {
+	options?: {
 		shop_type?: string // 'b2b' | 'dropshipping'
 	}
 ) => {
-	return components(options?.shop_type, { search_model: options?.search_model })[componentName] ?? NotFoundComponent
+	return components(options?.shop_type)[componentName] ?? NotFoundComponent
 }
 
 export const getProductsRenderDropshippingComponent = (

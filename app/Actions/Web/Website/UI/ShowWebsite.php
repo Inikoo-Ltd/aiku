@@ -358,7 +358,6 @@ class ShowWebsite extends OrgAction
                         'route_live_users'     => $analyticsRoute('live_users'),
                         'website_type'         => $website->shop->type,
                         'migrated'             => $website->migrated,
-                        'iris_search_model'    => Arr::get($website->settings, 'iris_search_model', 'luigi'),
                         'search_insights'      => GetWebsiteSearchAnalytics::run($website),
                         'search_merchandising' => str_starts_with($request->route()->getName(), 'grp.org.shops.show.web.')
                             ? $this->searchMerchandisingProps($website, $request->route()->originalParameters())

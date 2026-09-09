@@ -117,6 +117,10 @@ class UpdateOrganisation extends OrgAction
             data_set($modelData, 'settings.orders.allow_stock_controller_set_not_picked', Arr::pull($modelData, 'allow_stock_controller_set_not_picked'));
         }
 
+        if (Arr::has($modelData, 'allow_picker_choose_location')) {
+            data_set($modelData, 'settings.orders.allow_picker_choose_location', Arr::pull($modelData, 'allow_picker_choose_location'));
+        }
+
         if (Arr::has($modelData, 'allow_scan_to_pick')) {
             data_set($modelData, 'settings.orders.allow_scan_to_pick', Arr::pull($modelData, 'allow_scan_to_pick'));
         }
@@ -273,6 +277,7 @@ class UpdateOrganisation extends OrgAction
             'procurement_shop_id'                   => ['sometimes', 'nullable', 'integer', Rule::exists('shops', 'id')->where('organisation_id', $this->organisation->id)],
             'allow_picker_set_not_picked'           => ['sometimes', 'boolean'],
             'allow_stock_controller_set_not_picked' => ['sometimes', 'boolean'],
+            'allow_picker_choose_location'          => ['sometimes', 'boolean'],
             'allow_scan_to_pick'                    => ['sometimes', 'boolean'],
             'allow_scan_to_pack'                    => ['sometimes', 'boolean'],
             'staff_chat_crm_user_ids'               => ['sometimes', 'array'],

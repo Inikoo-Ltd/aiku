@@ -41,6 +41,8 @@ const label = computed(() => props.ctaLabel || trans("Read more"))
 				v-else-if="post.third_party_image_preview"
 				:src="post.third_party_image_preview"
 				:alt="post.image_alt ? post.image_alt : post.title"
+				loading="lazy"
+				decoding="async"
 				class="h-full w-full object-cover transition duration-500 group-hover:scale-105" />
 			<div
 				v-else

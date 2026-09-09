@@ -106,6 +106,24 @@ const onSubmitRow = async (row: any) => {
 
 const debSubmitRow = debounce(onSubmitRow, 500)
 
+const nextBatchMultiple = (row: any): number | null => {
+    const batch = Number(row.batch_size) || 0
+    if (batch < 2) return null
+
+    const quantity = Number(row.quantity_ordered) || 0
+    const suggestion = Math.max(batch, Math.ceil(quantity / batch) * batch)
+
+    return suggestion === quantity ? null : suggestion
+}
+
+const onUseBatchMultiple = (row: any) => {
+    const suggestion = nextBatchMultiple(row)
+    if (!suggestion) return
+
+    row.quantity_ordered = suggestion
+    onSubmitRow(row)
+}
+
 const onFetchNext = async (event: Event) => {
     const target = event.target as HTMLElement
     const nearBottom = target.scrollHeight - target.scrollTop - target.clientHeight < 150
@@ -201,6 +219,16 @@ watch(() => model.value, async (newValue) => {
                                         </div>
                                         <div class="text-xs text-teal-600">
                                             {{ trans("Your stock") }}: {{ slotProps.data.buyer_quantity_available ?? 0 }} {{ trans("SKO") }}
+                                        </div>
+                                        <div v-if="Number(slotProps.data.batch_size) > 1" class="text-xs text-gray-500">
+                                            {{ trans("Made in batches of") }} <span class="font-medium">{{ slotProps.data.batch_size }}</span>
+                                            <button
+                                                v-if="nextBatchMultiple(slotProps.data)"
+                                                type="button"
+                                                class="ml-1 rounded bg-indigo-50 px-1.5 py-px text-indigo-700 hover:bg-indigo-100"
+                                                @click="onUseBatchMultiple(slotProps.data)">
+                                                {{ trans("order") }} {{ nextBatchMultiple(slotProps.data) }}
+                                            </button>
                                         </div>
                                         <div v-if="slotProps.data.buyer_quarterly_usage?.length" class="text-xs text-gray-500">
                                             {{ trans("Your usage") }}:

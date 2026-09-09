@@ -8,9 +8,15 @@
 
 namespace App\Actions\Inventory\WarehouseArea;
 
+use App\Actions\Inventory\Warehouse\Hydrators\WarehouseHydrateWarehouseAreas;
 use App\Actions\OrgAction;
+use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateWarehouseAreas;
+use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateWarehouseAreas;
 use App\Actions\Traits\Authorisations\Inventory\WithWarehouseSupervisorAuthorisation;
+use App\Models\Fulfilment\Pallet;
+use App\Models\Inventory\LocationOrgStock;
 use App\Models\Inventory\WarehouseArea;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Redirect;
 use Lorisleiva\Actions\ActionRequest;
@@ -25,9 +31,17 @@ class DeleteWarehouseArea extends OrgAction
 
     public function handle(WarehouseArea $warehouseArea): WarehouseArea
     {
-        $warehouseArea->locations()->delete();
-        $warehouseArea->stats()->delete();
-        $warehouseArea->delete();
+        DB::transaction(function () use ($warehouseArea) {
+            $warehouseArea->locations()->update(['warehouse_area_id' => null]);
+            LocationOrgStock::where('warehouse_area_id', $warehouseArea->id)->update(['warehouse_area_id' => null]);
+            Pallet::where('warehouse_area_id', $warehouseArea->id)->update(['warehouse_area_id' => null]);
+            $warehouseArea->stats()->delete();
+            $warehouseArea->delete();
+        });
+
+        WarehouseHydrateWarehouseAreas::dispatch($warehouseArea->warehouse)->delay($this->hydratorsDelay);
+        GroupHydrateWarehouseAreas::dispatch($warehouseArea->group)->delay($this->hydratorsDelay);
+        OrganisationHydrateWarehouseAreas::dispatch($warehouseArea->organisation)->delay($this->hydratorsDelay);
 
         return $warehouseArea;
     }
@@ -51,7 +65,13 @@ class DeleteWarehouseArea extends OrgAction
 
     public function htmlResponse(WarehouseArea $warehouseArea): RedirectResponse
     {
-        return Redirect::route('grp.org.warehouses.show.infrastructure.dashboard', $warehouseArea->warehouse->slug);
+        return Redirect::route(
+            route: 'grp.org.warehouses.show.infrastructure.warehouse_areas.index',
+            parameters: [
+                'organisation' => $warehouseArea->organisation->slug,
+                'warehouse'    => $warehouseArea->warehouse->slug
+            ]
+        );
     }
 
 }

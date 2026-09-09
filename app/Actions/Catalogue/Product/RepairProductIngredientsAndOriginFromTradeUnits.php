@@ -8,7 +8,10 @@
 namespace App\Actions\Catalogue\Product;
 
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateHeathAndSafetyFromTradeUnits;
+use App\Actions\Catalogue\Product\Hydrators\ProductHydrateMarketingDimensionFromTradeUnits;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateMarketingIngredientsFromTradeUnits;
+use App\Actions\Web\Webpage\BreakWebpageCache;
+use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\Shop;
 use Illuminate\Console\Command;
@@ -35,6 +38,7 @@ class RepairProductIngredientsAndOriginFromTradeUnits
     {
         $ingredientsHydrator = ProductHydrateMarketingIngredientsFromTradeUnits::make();
         $healthHydrator      = ProductHydrateHeathAndSafetyFromTradeUnits::make();
+        $dimensionsHydrator  = ProductHydrateMarketingDimensionFromTradeUnits::make();
 
         $query = Product::has('tradeUnits')
             ->with('tradeUnits')
@@ -50,16 +54,26 @@ class RepairProductIngredientsAndOriginFromTradeUnits
         $scanned = 0;
         $stale   = 0;
 
-        $query->chunkById(1000, function ($products) use ($ingredientsHydrator, $healthHydrator, $dryRun, $bar, &$scanned, &$stale) {
+        $query->chunkById(1000, function ($products) use ($ingredientsHydrator, $healthHydrator, $dimensionsHydrator, $dryRun, $bar, &$scanned, &$stale) {
             foreach ($products as $product) {
                 $scanned++;
 
-                if ($this->isStale($product, $ingredientsHydrator, $healthHydrator)) {
+                $borrowedDimensions = $dimensionsHydrator->cameFromOneOfSeveralTradeUnits($product);
+
+                if ($borrowedDimensions || $this->isStale($product, $ingredientsHydrator, $healthHydrator)) {
                     $stale++;
 
                     if (!$dryRun) {
                         $ingredientsHydrator->handle($product);
                         $healthHydrator->handle($product, self::ORIGIN_FIELDS);
+
+                        if ($borrowedDimensions) {
+                            $product->updateQuietly(['marketing_dimensions' => null]);
+
+                            if ($product->webpage && $product->webpage->state == WebpageStateEnum::LIVE) {
+                                BreakWebpageCache::dispatch($product->webpage)->delay(5);
+                            }
+                        }
                     }
                 }
 

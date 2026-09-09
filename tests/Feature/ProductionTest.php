@@ -13,6 +13,7 @@ namespace Tests\Feature;
 use App\Actions\Production\Artefact\StoreArtefact;
 use App\Actions\Production\Artefact\MoveArtefactsToDepartment;
 use App\Actions\Production\Artefact\UpdateArtefact;
+use App\Actions\Production\Artefact\UI\GetArtefactShowcase;
 use App\Actions\Production\ArtefactDepartment\StoreArtefactDepartment;
 use App\Actions\Production\Artefact\MoveArtefactsToFamily;
 use App\Actions\Production\ArtefactFamily\AssignArtefactsToFamiliesFromOrgStockFamilies;
@@ -579,6 +580,18 @@ test('UI show artifact', function () {
     });
 });
 
+test('UI show artefact showcase exposes batch size and its update route', function () {
+    $this->artefact->update(['recommended_batch_size' => null]);
+
+    $showcase = GetArtefactShowcase::run($this->artefact->refresh());
+    expect($showcase['recommended_batch_size'])->toBeNull()
+        ->and($showcase['update_route']['name'])->toBe('grp.models.production.artefacts.update');
+
+    UpdateArtefact::make()->action($this->artefact, ['recommended_batch_size' => 24]);
+
+    expect(GetArtefactShowcase::run($this->artefact->refresh())['recommended_batch_size'])->toBe(24);
+});
+
 test('UI show artifact (manufacture task tab)', function () {
     $response = get(route('grp.org.productions.show.crafts.artefacts.show', [
         $this->organisation->slug,
@@ -772,6 +785,41 @@ test('work queue is generated from the artefact recipe and sessions pay the work
     expect($task->state)->toBe(JobOrderItemTaskStateEnum::DONE)
         ->and((float)$task->quantity_made)->toBe(20.0)
         ->and((float)$task->quantity_rejected)->toBe(1.0);
+});
+
+test('closing short can finish the job or carry the shortfall to a new job order', function () {
+    $this->artefact->manufactureTasks()->syncWithoutDetaching([
+        $this->manufactureTask->id => ['position' => 1, 'units_per_artefact' => 1],
+    ]);
+    $user = $this->guest->getUser();
+
+    $jobOrder = StoreJobOrder::make()->action($this->production, []);
+    $item     = StoreJobOrderItem::make()->action($jobOrder, ['artefact_id' => $this->artefact->id, 'quantity' => 25]);
+    ConfirmJobOrder::make()->action($jobOrder);
+    $task = $item->tasks()->first();
+
+    $session = StartManufactureTaskSession::make()->action($user, $task);
+    CloseManufactureTaskSession::make()->action($session, ['quantity_made' => 10, 'outcome' => 'complete']);
+    expect($task->refresh()->state)->toBe(JobOrderItemTaskStateEnum::DONE)
+        ->and((float)$task->quantity_required)->toBe(10.0)
+        ->and($item->refresh()->quantity)->toBe(10)
+        ->and(\App\Models\Production\JobOrder::where('production_id', $this->production->id)->count())->toBe($before = \App\Models\Production\JobOrder::where('production_id', $this->production->id)->count());
+
+    $jobOrder = StoreJobOrder::make()->action($this->production, []);
+    $item     = StoreJobOrderItem::make()->action($jobOrder, ['artefact_id' => $this->artefact->id, 'quantity' => 25]);
+    ConfirmJobOrder::make()->action($jobOrder);
+    $task = $item->tasks()->first();
+
+    $session = StartManufactureTaskSession::make()->action($user, $task);
+    CloseManufactureTaskSession::make()->action($session, ['quantity_made' => 10, 'outcome' => 'carry_over']);
+    $carried = \App\Models\Production\JobOrder::where('production_id', $this->production->id)->orderByDesc('id')->first();
+    expect($task->refresh()->state)->toBe(JobOrderItemTaskStateEnum::DONE)
+        ->and($item->refresh()->quantity)->toBe(10)
+        ->and($carried->id)->not->toBe($jobOrder->id)
+        ->and($carried->state)->toBe(JobOrderStateEnum::CONFIRMED)
+        ->and($carried->jobOrderItems()->first()->quantity)->toBe(15)
+        ->and((float)$carried->jobOrderItems()->first()->tasks()->first()->quantity_required)->toBe(15.0);
+
 });
 
 test('historic job orders do not generate a work queue', function () {
@@ -999,10 +1047,25 @@ test('payroll csv export aggregates closed sessions with snapshotted rates', fun
 });
 
 test('a voided session removes its quantities from the task and payroll', function () {
-    $session = \App\Models\Production\ManufactureTaskSession::where('state', ManufactureTaskSessionStateEnum::CLOSED)
-        ->orderByDesc('id')->first();
-    $task = $session->jobOrderItemTask;
-    expect($task->state)->toBe(JobOrderItemTaskStateEnum::DONE);
+    $this->artefact->manufactureTasks()->syncWithoutDetaching([
+        $this->manufactureTask->id => ['position' => 1, 'units_per_artefact' => 1],
+    ]);
+    $user     = $this->guest->getUser();
+    $jobOrder = StoreJobOrder::make()->action($this->production, []);
+    $item     = StoreJobOrderItem::make()->action($jobOrder, ['artefact_id' => $this->artefact->id, 'quantity' => 20]);
+    ConfirmJobOrder::make()->action($jobOrder);
+
+    $task = $item->tasks()->first();
+    CloseManufactureTaskSession::make()->action(
+        StartManufactureTaskSession::make()->action($user, $task),
+        ['quantity_made' => 15]
+    );
+    $session = CloseManufactureTaskSession::make()->action(
+        StartManufactureTaskSession::make()->action($user, $task),
+        ['quantity_made' => 5]
+    );
+
+    expect($task->refresh()->state)->toBe(JobOrderItemTaskStateEnum::DONE);
 
     VoidManufactureTaskSession::make()->action($session);
 
@@ -2282,6 +2345,40 @@ test('to produce queue only shows lines with an artefact in this factory', funct
     expect($lanes['Pre-pick'])->toBe([$stocks[1]->code])
         ->and($lanes['Assigned'])->toBe([$stocks[0]->code]);
 
+    $made->manufactureTasks()->syncWithoutDetaching([$this->manufactureTask->id => ['position' => 1, 'units_per_artefact' => 1]]);
+    $jobOrder = \App\Models\Production\JobOrder::find($covered->refresh()->job_order_id);
+    $jobOrderItem = $jobOrder->jobOrderItems()->where('artefact_id', $made->id)->first();
+    \App\Actions\Production\JobOrderItemTask\GenerateJobOrderItemTasks::make()->handle($jobOrderItem);
+    $task = $jobOrderItem->tasks()->first();
+    ConfirmJobOrder::make()->action($jobOrder);
+    $laneOf = fn () => collect(get(route('grp.org.productions.show.to_produce.index', $routeParameters))
+        ->assertOk()->viewData('page')['props']['groups'])
+        ->mapWithKeys(fn ($lane) => [$lane['label'] => collect($lane['items'])->pluck('stock_code')->all()]);
+    expect($laneOf()['Assigned'])->toBe([$stocks[0]->code])
+        ->and($laneOf()['Producing'])->toBe([]);
+
+    $session = StartManufactureTaskSession::make()->action($this->guest->getUser(), $task);
+    expect($laneOf()['Producing'])->toBe([$stocks[0]->code])
+        ->and($laneOf()['Assigned'])->toBe([]);
+
+    CloseManufactureTaskSession::make()->action($session, ['quantity_made' => $task->quantity_required]);
+    expect($laneOf()['Done'])->toBe([$stocks[0]->code])
+        ->and($laneOf()['Producing'])->toBe([]);
+
+    $warehouse = \App\Actions\Inventory\Warehouse\StoreWarehouse::make()->action($this->organisation, ['code' => 'WH-BRD', 'name' => 'Board warehouse']);
+    $area      = \App\Actions\Inventory\WarehouseArea\StoreWarehouseArea::make()->action($warehouse, ['code' => 'A-BRD', 'name' => 'Board area']);
+    $location  = \App\Actions\Inventory\Location\StoreLocation::make()->action($area, ['code' => 'L-BRD', 'name' => 'Board loc'] + \App\Models\Inventory\Location::factory()->definition());
+    $hubProps  = fn () => get(route('grp.org.warehouses.show.dispatching.backlog', [$this->organisation->slug, $warehouse->slug]))
+        ->assertOk()->viewData('page')['props'];
+    $hubOutput = fn () => collect($hubProps()['production_output'])->pluck('reference')->all();
+    expect($hubOutput())->toContain($jobOrder->reference)
+        ->and($hubProps()['tabs']['navigation']['production_output']['number'])->toBe(count($hubOutput()));
+
+    \App\Actions\Dispatching\ProductionOutput\PutAwayFinishedJobOrder::make()->action($warehouse, $jobOrder->refresh(), 'L-BRD');
+    expect($jobOrder->refresh()->state)->toBe(JobOrderStateEnum::RECEIVED)
+        ->and($hubOutput())->not->toContain($jobOrder->reference)
+        ->and($laneOf()->flatten()->all())->not->toContain($stocks[0]->code);
+
     $byArtisan = get(route('grp.org.productions.show.to_produce.by_artisan', $routeParameters))
         ->assertOk()->viewData('page')['props'];
     expect(collect($byArtisan['groups'])->pluck('items')->flatten(1)->pluck('stock_code')->all())->toBe([$stocks[0]->code]);
@@ -2459,4 +2556,14 @@ test('UI delete artefact family', function () {
     expect(ArtefactFamily::find($family->id))->toBeNull()
         ->and($artefact->refresh()->artefact_family_id)->toBeNull()
         ->and($artefact->artefact_department_id)->toBe($department->id);
+});
+
+test('UI crafts artefacts as org admin', function () {
+    $this->withoutExceptionHandling();
+    $user = $this->guest->getUser();
+    $user->syncRoles(['org-admin-'.$this->organisation->id, 'production-orchestrator-'.$this->production->id]);
+    actingAs($user->fresh());
+    foreach (['dashboard', 'artefacts.index', 'raw_materials.index'] as $page) {
+        get(route('grp.org.productions.show.crafts.'.$page, [$this->organisation->slug, $this->production->slug]))->assertOk();
+    }
 });

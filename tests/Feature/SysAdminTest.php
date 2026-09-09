@@ -36,6 +36,8 @@ use App\Actions\SysAdmin\Guest\UpdateGuest;
 use App\Actions\SysAdmin\Organisation\HydrateOrganisations;
 use App\Actions\SysAdmin\Organisation\StoreOrganisation;
 use App\Actions\SysAdmin\Organisation\UpdateOrganisation;
+use App\Http\Resources\Inventory\LocationOrgStocksForPickingActionsResource;
+use Illuminate\Support\Arr;
 use App\Actions\SysAdmin\User\HydrateUser;
 use App\Actions\SysAdmin\User\SetUserEmployedInOrganisation;
 use App\Actions\SysAdmin\User\UpdateUser;
@@ -227,6 +229,22 @@ test('update organisation name', function (Organisation $organisation) {
         ['name' => 'Test New Organisation 2']
     );
     expect($organisation->name)->toBe('Test New Organisation 2');
+})->depends('create organisation by command');
+
+test('picker location choice setting trims the picking locations', function (Organisation $organisation) {
+    $locations = collect([
+        (object)['id' => 1, 'pickings_data' => null],
+        (object)['id' => 2, 'pickings_data' => null],
+        (object)['id' => 3, 'pickings_data' => '5;9'],
+    ]);
+
+    $organisation = UpdateOrganisation::make()->action($organisation, ['allow_picker_choose_location' => false]);
+    expect(Arr::get($organisation->settings, 'orders.allow_picker_choose_location'))->toBeFalse()
+        ->and(LocationOrgStocksForPickingActionsResource::collectionForPicking($locations, $organisation->id)->collection->map(fn ($resource) => $resource->resource->id)->all())
+        ->toBe([1, 3]);
+
+    $organisation = UpdateOrganisation::make()->action($organisation, ['allow_picker_choose_location' => true]);
+    expect(LocationOrgStocksForPickingActionsResource::collectionForPicking($locations, $organisation->id)->collection->count())->toBe(3);
 })->depends('create organisation by command');
 
 test('set organisation google key', function (Organisation $organisation) {

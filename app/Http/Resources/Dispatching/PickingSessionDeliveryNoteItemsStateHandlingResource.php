@@ -162,7 +162,7 @@ class PickingSessionDeliveryNoteItemsStateHandlingResource extends JsonResource
             'org_stock_slug'                    => $this->org_stock_slug,
             'org_stock_name'                    => $this->org_stock_name,
             'barcode'                           => $this->barcode,
-            'locations'                         => $pickingLocations->isNotEmpty() ? LocationOrgStocksForPickingActionsResource::collection($pickingLocations) : [],
+            'locations'                         => $pickingLocations->isNotEmpty() ? LocationOrgStocksForPickingActionsResource::collectionForPicking($pickingLocations, $deliveryNoteItem?->organisation_id) : [],
             'pickings'                          => PickingResource::collection($pickings),
             'packings'                          => $deliveryNoteItem->packings ? PackingsResource::collection($deliveryNoteItem->packings) : [],
             'warning'                           => $fullWarning,
