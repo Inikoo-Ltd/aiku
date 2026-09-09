@@ -216,13 +216,16 @@ export function useFilterRecipients(props: any) {
     })
 
     /* ---------------- FETCH CUSTOMERS ---------------- */
-    const fetchCustomers = debounce(() => {
+    /* Overrides ride on this one call rather than living in extraQuery, which every reload
+       path shares: a caller that means to send something once has no way to take it back out
+       again afterwards, because the debounce fires long after the handler has returned. */
+    const fetchCustomers = debounce((overrides: Record<string, unknown> = {}) => {
         const currentRoute = route().current()
         if (!currentRoute) return
 
         router.get(
             route(currentRoute, route().params),
-            { filters: filtersPayload.value, ...extraQuery },
+            { filters: filtersPayload.value, ...extraQuery, ...overrides },
             {
                 preserveState: true,
                 preserveScroll: true,

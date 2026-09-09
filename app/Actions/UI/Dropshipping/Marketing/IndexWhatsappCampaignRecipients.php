@@ -126,22 +126,25 @@ class IndexWhatsappCampaignRecipients extends OrgAction
     /**
      * Which of the contacts the page has ticked are still in the audience it is now showing.
      *
-     * The picker keeps its ticks as phone keys and survives a filter change untouched, because
-     * the reload preserves page state. Without this the ticks would go on describing contacts
-     * the new filter excludes: counted in the heading, sent on save, and then dropped by the
-     * save's own re-run of the audience query, so the count would promise more than it stores.
+     * The picker keeps its ticks as phone keys and survives a reload untouched, because the
+     * reload preserves page state. A channel change is what makes that a problem: it decides
+     * which populations are in play at all, so ticks belonging to one just switched off would
+     * go on being counted in the heading and sent on save.
      *
      * Answered here rather than on the page because the browser only ever holds one page of
-     * contacts and cannot tell whether a key it ticked three filters ago still matches.
+     * contacts and cannot tell whether a key it ticked three channel changes ago still matches.
      *
      * Runs against the audience subquery before the paginator narrows it, so paging and the
      * global search term leave the answer alone: searching is not a statement about who is
      * selected.
      *
      * Null when the page asked nothing, which is not the same as an empty answer: only the
-     * filter reload carries the ticks, so paging, sorting and searching arrive without them.
-     * Answering [] there would tell the page every tick had fallen out of the audience, and
-     * it would prune the lot.
+     * channel reload carries the ticks. A filter change deliberately arrives without them and
+     * keeps its selection, because filtering is how the audience is browsed rather than a
+     * statement about who belongs in it, and StoreWhatsappCampaignRecipients resolves an
+     * explicit tick against the channels rather than the filter in force. Answering [] to a
+     * reload that asked nothing would tell the page every tick had fallen out of the audience,
+     * and it would prune the lot.
      *
      * @param  mixed  $requested  raw request input, shaped by whoever called us
      * @return array<int, string>|null

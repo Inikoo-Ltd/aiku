@@ -136,27 +136,19 @@ if (props.channelOptions?.length) {
     extraQuery.channels = { ...selectedChannels.value }
 }
 
-/* The contacts the page has ticked, carried on every reload so the server can say which of
-   them the new audience still holds. Kept current by a watcher rather than set at each call
-   site, because fetchCustomers is reached from the filter button, the channel boxes and the
-   composable's own clear. */
-watch(
-    () => props.pendingKeys,
-    (keys) => {
-        if (keys?.length) {
-            extraQuery.pending_keys = [...keys]
-        } else {
-            delete extraQuery.pending_keys
-        }
-    },
-    { immediate: true }
-)
-
 /* The selection no longer rides along per row: the server answers per row whether the
-   campaign holds that contact, so a channel change just re-asks. */
+   campaign holds that contact, so a channel change just re-asks.
+
+   The ticks are attached to this one call rather than kept in extraQuery, which every reload
+   path shares. A channel change redefines which populations are in play, so ticks belonging to
+   one the user has just switched off are answered for and dropped. A filter change is browsing,
+   not a statement about membership, and sends nothing: the server reads no pending_keys, says
+   nothing about them, and the selection survives untouched. Carrying them in extraQuery would
+   also leave them in the URL, where Table's own paging rebuilds the query string from, and every
+   later page would go on asking a question only the channel boxes meant to ask. */
 const onChannelChange = () => {
     extraQuery.channels = { ...selectedChannels.value }
-    fetchCustomers()
+    fetchCustomers(props.pendingKeys?.length ? { pending_keys: [...props.pendingKeys] } : {})
 }
 
 const selectedStates = ref<string[]>(props.stateFilter ? [...props.stateFilter] : [])
@@ -496,7 +488,7 @@ watch(
                     <Badge :value="upcomingOutOfStockCount" class="ml-2" />
                 </Button>
 
-                <Button :label="trans('Apply Filters')" :type="'primary'" class="h-10 px-4 shrink-0 whitespace-nowrap" @click="fetchCustomers" />
+                <Button :label="trans('Apply Filters')" :type="'primary'" class="h-10 px-4 shrink-0 whitespace-nowrap" @click="() => fetchCustomers()" />
 
                 <Button v-if="Object.keys(activeFilters).length" label="Clear filters" type="warning" class="h-10 px-4 shrink-0 whitespace-nowrap"
                     @click="clearAllFilters" />

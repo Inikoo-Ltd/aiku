@@ -69,14 +69,20 @@ const pendingKeys = computed<string[]>(() => {
     return keys.slice(0, DELTA_CAP)
 })
 
-/* A filter or channel change leaves the ticks describing an audience that no longer exists,
-   because the reload preserves page state. The server answers which of them the new audience
-   still holds, and the rest are dropped: they were ticked against a question the user has
-   since replaced, and a save would drop them anyway, silently and after the fact.
+/* A channel change leaves the ticks describing an audience that no longer exists, because the
+   reload preserves page state. The server answers which of them the new audience still holds,
+   and the rest are dropped: they were ticked against a population the user has since switched
+   off.
 
-   Only that reload carries the ticks, so paging, sorting and searching are answered with null
-   and leave the selection alone. An empty array is an answer and does prune; null is the
-   server saying it was never asked. */
+   A filter change deliberately does not prune. Filtering is how the audience is browsed, not a
+   statement about who belongs in it: the user narrows to find people, ticks them, narrows
+   differently and ticks more, and wiping the selection at each pass would make that impossible.
+   The save honours those ticks against the channels rather than the filter in force, so a
+   contact the current filter hides is still stored.
+
+   Only the channel reload carries the ticks, so a filter change, paging, sorting and searching
+   are answered with null and leave the selection alone. An empty array is an answer and does
+   prune; null is the server saying it was never asked. */
 watch(
     () => props.survivingKeys,
     (surviving: string[] | null | undefined) => {
@@ -134,14 +140,16 @@ const isPageFullyTicked = computed(() => rows.value.length > 0 && rows.value.eve
 
 const hasSelection = computed(() => selectedCount.value > 0)
 
-/* Everything that changes which contacts are on screen has to be in the key, because the
-   table only reads the checkbox map when it mounts: the channels, the page, and the filters,
-   which move the rows without necessarily moving either of the other two. */
+/* Everything that changes which contacts are on screen has to be in the key, because the table
+   only reads the checkbox map when it mounts and seeds any row it was not told about to false.
+
+   Keyed on the rows themselves rather than on the things that move them. Searching is the one
+   that is invisible from here: it is held inside the table and reloads the rows without
+   touching the channels, the filters or the page, so a key built from those three would not
+   change and a contact the campaign holds would come back unticked. */
 const tableKey = computed(() =>
     [
-        Object.keys(props.channels).filter((key) => props.channels[key]).join("-"),
-        JSON.stringify(props.filters ?? {}),
-        props.customers?.meta?.current_page ?? 1,
+        rows.value.map((row) => row.recipient_key).join("."),
         tableVersion.value,
     ].join("-")
 )
@@ -356,7 +364,7 @@ const onSelect = async () => {
                      only reaches a page, so it lives here where it is reachable from any page. -->
                 <button v-if="hasSelection" type="button" class="text-sm text-gray-500 underline"
                     @click="clearSelection">
-                    {{ trans("Clear selection") }}
+                    {{ trans("Clear all selection") }}
                 </button>
                 <Button
                     :label="trans('Save')"

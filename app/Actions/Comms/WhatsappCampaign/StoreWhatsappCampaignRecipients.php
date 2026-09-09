@@ -62,7 +62,11 @@ class StoreWhatsappCampaignRecipients extends OrgAction
     {
         $this->assertEditable($campaign);
 
-        $audience = $this->audienceQuery($campaign, $channels, $customerFilters);
+        /* A null list is the whole audience, which is defined by the filters and so keeps them.
+           An explicit list names contacts the user ticked, and those are read the same way a
+           delta's are: against the channels alone, so a selection built across several filter
+           passes stores everything it names rather than only what the last pass still shows. */
+        $audience = $this->audienceQuery($campaign, $channels, $phoneKeys === null ? $customerFilters : []);
 
         DB::transaction(function () use ($campaign, $audience, $channels, $customerFilters, $phoneKeys, $unselect) {
             $mark = now();
@@ -95,6 +99,18 @@ class StoreWhatsappCampaignRecipients extends OrgAction
      * selection against the stored rows, and a delta is not a complete selection. Sweeping on
      * one would delete every contact the user simply did not scroll to.
      *
+     * The customer filters are left out of the audience the ticks are resolved against, which
+     * is what lets the picker keep a selection across a filter change. Filtering is how the
+     * audience is browsed rather than a statement about who belongs in it: a user narrows to
+     * find people, ticks them, narrows differently and ticks more, and resolving against the
+     * filter in force would drop everything the last narrowing happens to hide, silently and
+     * after the fact.
+     *
+     * The channels stay, so a tick is still bounded by the populations in play, and so does
+     * everything audienceQuery guarantees on its own: the shop, a sendable phone number, and
+     * the template's merge tags, which decide who can be delivered to at all. This widens
+     * which contacts an explicit tick may name, not what may be stored without one.
+     *
      * @param  array<int, string>  $select
      * @param  array<int, string>  $unselect
      *
@@ -104,7 +120,7 @@ class StoreWhatsappCampaignRecipients extends OrgAction
     {
         $this->assertEditable($campaign);
 
-        $audience = $this->audienceQuery($campaign, $channels, $customerFilters);
+        $audience = $this->audienceQuery($campaign, $channels, []);
 
         DB::transaction(function () use ($campaign, $audience, $channels, $customerFilters, $select, $unselect) {
             $this->removeUnselected($campaign, $unselect);
