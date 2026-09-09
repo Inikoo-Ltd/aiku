@@ -101,7 +101,6 @@ const isTrendingNow = computed(() => props.modelValue?.settings?.products_data?.
              <!--    <div class="text-sm italic text-gray-500 font-normal">{{ trans("Luigi: Top Trending, Luigi: Customer Recently Ordered, Luigi: Recently Viewed, and Luigi: You might also like is no longer supported. Please change to another type.") }}</div> -->
             </div>
         </div>
-        <!-- <RecommendersLuigi1Workshop recommendation_type="trends" :slidesPerView /> -->
     </div>
 
     <TrendingNowProducts
