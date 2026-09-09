@@ -552,6 +552,7 @@ test('creating the fulfilment service names it after the channel, learns its loc
             shopifyFulfilmentServiceNode('gid://shopify/FulfillmentService/700', $serviceName, 'gid://shopify/Location/1700'),
         ]),
         'locationEdit'             => ShopifyFake::graphql(['locationEdit' => ['location' => ['id' => 'gid://shopify/Location/1700', 'name' => $serviceName, 'address' => []], 'userErrors' => []]]),
+        'getDeliveryProfiles'      => ShopifyFake::graphql(['deliveryProfiles' => ['nodes' => []]]),
     ]);
 
     [$ok, $service] = StoreFulfilmentService::run($channel);
