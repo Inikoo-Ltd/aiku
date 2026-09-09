@@ -15,10 +15,10 @@ import { notify } from '@kyvg/vue3-notification'
 import { ctrans } from '@/Composables/useTrans'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { library } from '@fortawesome/fontawesome-svg-core'
-import { faCheckSquare } from '@fal'
+import { faCheckSquare, faEllipsisH } from '@fal'
 import '@/Composables/Icon/ArtefactStateEnum'
 
-library.add(faCheckSquare)
+library.add(faCheckSquare, faEllipsisH)
 
 type MoveTarget = { id: number, code: string, name: string }
 type MoveProps = { families_route: routeType, move_route: routeType, create_route: routeType }
@@ -28,6 +28,7 @@ const props = defineProps<{
     tab?: string
     moveToDepartment?: MoveProps
     moveToFamily?: MoveProps
+    setBatchSize?: { set_route: routeType }
 }>()
 
 const routeCurrent = route().current()
@@ -38,13 +39,43 @@ const departmentBarRef = ref<any>(null)
 const familyBarRef = ref<any>(null)
 const selected = ref<Record<string, boolean>>({})
 const isMoving = ref(false)
+const batchSize = ref<number | null>(null)
+const showMoveActions = ref(false)
 
 const selectedIds = computed(() => Object.entries(selected.value).filter(([, on]) => on).map(([id]) => Number(id)))
-const showBulkBar = computed(() => (props.moveToDepartment || props.moveToFamily) && selectedIds.value.length > 0)
+const showBulkBar = computed(() => (props.moveToDepartment || props.moveToFamily || props.setBatchSize) && selectedIds.value.length > 0)
 
 const clearSelection = () => {
     tableRef.value?.clearSelection()
     selected.value = {}
+    showMoveActions.value = false
+}
+
+const submitBatchSize = () => {
+    if (!props.setBatchSize || batchSize.value === null || batchSize.value < 1) return
+
+    const count = selectedIds.value.length
+    const size = batchSize.value
+
+    router.post(
+        route(props.setBatchSize.set_route.name, props.setBatchSize.set_route.parameters),
+        { artefacts: selectedIds.value, recommended_batch_size: size },
+        {
+            preserveScroll: true,
+            onStart: () => isMoving.value = true,
+            onFinish: () => isMoving.value = false,
+            onSuccess: () => {
+                notify({
+                    title: ctrans('Batch size set'),
+                    text: ctrans(':count artefacts now make :size at a time', { count: count, size: size }),
+                    type: 'success',
+                })
+                clearSelection()
+                batchSize.value = null
+            },
+            onError: (errors) => notify({ title: ctrans('Something went wrong'), text: Object.values(errors).join(' '), type: 'error' }),
+        }
+    )
 }
 
 const move = (moveRoute: routeType, payload: object, target: MoveTarget, reset: () => void) => {
@@ -110,9 +141,37 @@ function productionRoute(artefact: { slug: string }) {
             {{ ctrans('Clear') }}
         </button>
 
-        <div class="ml-auto flex flex-wrap items-center gap-x-12 gap-y-2">
+        <div class="ml-auto flex flex-wrap items-center gap-x-6 gap-y-2">
+            <div v-if="setBatchSize" class="flex items-center gap-2">
+                <label class="whitespace-nowrap text-sm" for="bulkBatchSize">{{ ctrans('Batch size') }}</label>
+                <input
+                    id="bulkBatchSize"
+                    v-model.number="batchSize"
+                    type="number"
+                    min="1"
+                    class="w-24 rounded border-gray-300 py-1 text-sm"
+                    :placeholder="ctrans('Units')"
+                    @keyup.enter="submitBatchSize" />
+                <button
+                    type="button"
+                    class="rounded bg-indigo-600 px-3 py-1.5 text-sm text-white disabled:opacity-50"
+                    :disabled="isMoving || batchSize === null || batchSize < 1"
+                    @click="submitBatchSize">
+                    {{ ctrans('Set') }}
+                </button>
+            </div>
+
+            <button
+                v-if="(moveToFamily || moveToDepartment) && !showMoveActions"
+                type="button"
+                class="flex items-center gap-1.5 whitespace-nowrap text-sm underline underline-offset-2 hover:text-indigo-600"
+                @click="showMoveActions = true">
+                <FontAwesomeIcon icon="fal fa-ellipsis-h" fixed-width aria-hidden="true" />
+                {{ ctrans('Move') }}
+            </button>
+
             <BulkMoveBar
-                v-if="moveToFamily"
+                v-if="moveToFamily && showMoveActions"
                 ref="familyBarRef"
                 :fetchRoute="moveToFamily.families_route"
                 :placeholder="ctrans('Move to family')"
@@ -125,7 +184,7 @@ function productionRoute(artefact: { slug: string }) {
                 @move="submitMoveToFamily" />
 
             <BulkMoveBar
-                v-if="moveToDepartment"
+                v-if="moveToDepartment && showMoveActions"
                 ref="departmentBarRef"
                 :fetchRoute="moveToDepartment.families_route"
                 :placeholder="ctrans('Move to department')"
@@ -139,7 +198,7 @@ function productionRoute(artefact: { slug: string }) {
         </div>
     </div>
 
-    <Table ref="tableRef" :resource="data" :name="tab" class="mt-5" :isCheckBox="!!(moveToDepartment || moveToFamily)" checkboxKey="id" @onSelectRow="(rows) => selected = { ...rows }">
+    <Table ref="tableRef" :resource="data" :name="tab" class="mt-5" :isCheckBox="!!(moveToDepartment || moveToFamily || setBatchSize)" checkboxKey="id" @onSelectRow="(rows) => selected = { ...rows }">
         <template #cell(state)="{ item: artefact }">
             <Icon :data="artefact.state" />
         </template>

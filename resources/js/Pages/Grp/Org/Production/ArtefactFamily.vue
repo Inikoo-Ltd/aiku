@@ -27,6 +27,7 @@ const props = defineProps<{
     artefacts?: object
     history?: object
     move_to_family?: object
+    set_batch_size?: object
     department?: { code: string; name: string; route: routeType }
     number_artefacts: number
     delete_route?: routeType
@@ -76,5 +77,5 @@ const component = computed(() => ({
         </ModalConfirmationDelete>
     </div>
     <Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" />
-    <component :is="component" :data="props[currentTab]" :tab="currentTab" :moveToFamily="move_to_family" />
+    <component :is="component" :data="props[currentTab]" :tab="currentTab" :moveToFamily="move_to_family" :setBatchSize="set_batch_size" />
 </template>

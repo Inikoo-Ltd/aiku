@@ -270,6 +270,17 @@ class IndexArtefacts extends OrgAction
         ];
     }
 
+    public function getSetBatchSizeProps(Production $production, bool $canEdit): ?array
+    {
+        if (!$canEdit) {
+            return null;
+        }
+
+        return [
+            'set_route' => ['name' => 'grp.models.production.artefacts.set_batch_size', 'parameters' => [$production->id]],
+        ];
+    }
+
     public function getArtefactsSubNavigation(Production $production): array
     {
         $parameters = [$production->organisation->slug, $production->slug];
@@ -451,6 +462,7 @@ class IndexArtefacts extends OrgAction
                 ] : null,
                 'move_to_department' => $this->parent instanceof Production ? $this->getMoveToDepartmentProps($this->parent, $this->canEdit) : null,
                 'move_to_family'     => $this->parent instanceof Production ? $this->getMoveToFamilyProps($this->parent, $this->canEdit) : null,
+                'set_batch_size'     => $this->parent instanceof Production ? $this->getSetBatchSizeProps($this->parent, $this->canEdit) : null,
                 'tabs'        => [
                     'current'    => $this->tab,
                     'navigation' => $this->parent instanceof Group ? Arr::except(ArtefactsTabsEnum::navigation(), [ArtefactsTabsEnum::ARTEFACTS_HISTORIES->value]) : ArtefactsTabsEnum::navigation(),

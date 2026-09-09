@@ -82,6 +82,7 @@ class ShowArtefactFamily extends OrgAction
                     ]
                 ] : null,
                 'move_to_family' => IndexArtefacts::make()->getMoveToFamilyProps($this->production, $this->canEdit),
+                'set_batch_size' => IndexArtefacts::make()->getSetBatchSizeProps($this->production, $this->canEdit),
                 'tabs'        => [
                     'current'    => $this->tab,
                     'navigation' => ArtefactFamilyTabsEnum::navigation()

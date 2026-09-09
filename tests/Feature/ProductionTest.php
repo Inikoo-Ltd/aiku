@@ -17,6 +17,7 @@ use App\Actions\Production\Artefact\UI\GetArtefactShowcase;
 use App\Actions\Production\ArtefactDepartment\StoreArtefactDepartment;
 use App\Actions\Production\Artefact\MoveArtefactsToFamily;
 use App\Actions\Production\Artefact\SetArtefactState;
+use App\Actions\Production\Artefact\SetArtefactsBatchSize;
 use App\Actions\Production\ArtefactFamily\Hydrators\ArtefactFamilyHydrateArtefacts;
 use App\Actions\Production\ArtefactFamily\AssignArtefactsToFamiliesFromOrgStockFamilies;
 use App\Actions\Production\ArtefactFamily\DeleteArtefactFamily;
@@ -2682,4 +2683,43 @@ test('crafts dashboard families card carries the family state counts', function 
             ->and($tooltips)->toContain('Discontinued')
             ->and(collect($card['metas'])->firstWhere('tooltip', 'Discontinued')['count'])->toBeGreaterThanOrEqual(1);
     });
+});
+
+test('set artefacts batch size in bulk and rehydrate the family', function () {
+    $department = StoreArtefactDepartment::make()->action($this->production, ['code' => 'BULKDEP', 'name' => 'Bulk department']);
+    $family     = StoreArtefactFamily::make()->action($department, ['code' => 'BULKFAM', 'name' => 'Bulk family']);
+
+    $one = StoreArtefact::make()->action($this->production, ['code' => 'BULK-01', 'name' => 'One', 'artefact_family_id' => $family->id]);
+    $two = StoreArtefact::make()->action($this->production, ['code' => 'BULK-02', 'name' => 'Two', 'artefact_family_id' => $family->id]);
+
+    expect($family->refresh()->number_artefacts_without_batch_size)->toBe(2);
+
+    $changed = SetArtefactsBatchSize::make()->action($this->production, [
+        'artefacts'              => [$one->id, $two->id],
+        'recommended_batch_size' => 200,
+    ]);
+
+    expect($changed)->toBe(2)
+        ->and($one->refresh()->recommended_batch_size)->toBe(200)
+        ->and($two->refresh()->recommended_batch_size)->toBe(200)
+        ->and($family->refresh()->number_artefacts_without_batch_size)->toBe(0);
+});
+
+test('bulk batch size leaves artefacts of another production alone', function () {
+    $mine = StoreArtefact::make()->action($this->production, ['code' => 'SCOPE-01', 'name' => 'Mine']);
+
+    $otherProduction = StoreProduction::make()->action($this->organisation, [
+        'code' => 'SCOPEPROD',
+        'name' => 'Scope production',
+    ]);
+    $theirs = StoreArtefact::make()->action($otherProduction, ['code' => 'SCOPE-02', 'name' => 'Theirs']);
+
+    $changed = SetArtefactsBatchSize::make()->action($this->production, [
+        'artefacts'              => [$mine->id, $theirs->id],
+        'recommended_batch_size' => 50,
+    ]);
+
+    expect($changed)->toBe(1)
+        ->and($mine->refresh()->recommended_batch_size)->toBe(50)
+        ->and($theirs->refresh()->recommended_batch_size)->toBeNull();
 });
