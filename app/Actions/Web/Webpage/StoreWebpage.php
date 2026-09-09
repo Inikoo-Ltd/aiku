@@ -228,21 +228,11 @@ class StoreWebpage extends OrgAction
                 }
 
                 if ($webpage->type == WebpageTypeEnum::SYSTEM_PAGE) {
-                    if ($webpage->sub_type == WebpageSubTypeEnum::LOGIN_PAGE) {
-                        $this->createWebBlock($webpage, 'login');
-                    }
+                    $systemPage = Arr::get(WebpageSubTypeEnum::systemPages(), $webpage->sub_type?->value);
 
-                    if ($webpage->sub_type == WebpageSubTypeEnum::REGISTER_PAGE) {
-                        $this->createWebBlock($webpage, 'register');
-                    }
-
-                    if ($webpage->sub_type == WebpageSubTypeEnum::FORGOT_PASSWORD_PAGE) {
-                        $this->createWebBlock($webpage, 'forgot-password');
-                    }
-
-                    if ($webpage->sub_type == WebpageSubTypeEnum::BLOG_DASHBOARD_PAGE) {
-                        $this->createWebBlock($webpage, 'blog-categories');
-                        $webpage->website->update(['blog_dashboard_page_id' => $webpage->id]);
+                    if ($systemPage) {
+                        $this->createWebBlock($webpage, $systemPage['web_block']);
+                        $webpage->website->update([$systemPage['website_field'] => $webpage->id]);
                     }
                 }
             }

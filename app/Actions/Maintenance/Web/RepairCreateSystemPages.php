@@ -23,80 +23,30 @@ class RepairCreateSystemPages
     use WithActionUpdate;
     use WithRepairWebpages;
 
-    protected function handle(Website $website, ?Command $command): void
+    protected function handle(Website $website, ?Command $command = null): void
     {
-        $loginPage = Webpage::where('website_id', $website->id)
-            ->where('type', WebpageTypeEnum::SYSTEM_PAGE)
-            ->where('sub_type', WebpageSubTypeEnum::LOGIN_PAGE)
-            ->first();
+        foreach (WebpageSubTypeEnum::systemPages() as $subTypeValue => $systemPage) {
+            $subType = WebpageSubTypeEnum::from($subTypeValue);
 
-        if (!$loginPage) {
-            $loginPage = StoreWebpage::make()->action($website, [
-                'url'           => 'login',
-                'code'          => 'login',
-                'title'         => 'Login',
-                'type'          => WebpageTypeEnum::SYSTEM_PAGE,
-                'sub_type'      => WebpageSubTypeEnum::LOGIN_PAGE,
-            ]);
+            $webpage = Webpage::where('website_id', $website->id)
+                ->where('type', WebpageTypeEnum::SYSTEM_PAGE)
+                ->where('sub_type', $subType)
+                ->first();
+
+            if (!$webpage) {
+                $webpage = StoreWebpage::make()->action($website, [
+                    'url'      => $systemPage['url'],
+                    'code'     => $systemPage['url'],
+                    'title'    => $systemPage['title'],
+                    'type'     => WebpageTypeEnum::SYSTEM_PAGE,
+                    'sub_type' => $subType,
+                ]);
+            }
+
+            $website->update([$systemPage['website_field'] => $webpage->id]);
+
+            $command?->info("{$systemPage['title']}: {$webpage->canonical_url}");
         }
-        
-        $registerPage = Webpage::where('website_id', $website->id)
-            ->where('type', WebpageTypeEnum::SYSTEM_PAGE)
-            ->where('sub_type', WebpageSubTypeEnum::REGISTER_PAGE)
-            ->first();
-
-        if (!$registerPage) {
-            $registerPage = StoreWebpage::make()->action($website, [
-                'url'           => 'register',
-                'code'          => 'register',
-                'title'         => 'Register',
-                'type'          => WebpageTypeEnum::SYSTEM_PAGE,
-                'sub_type'      => WebpageSubTypeEnum::REGISTER_PAGE,
-            ]);
-        }
-            
-        $forgotPassword = Webpage::where('website_id', $website->id)
-            ->where('type', WebpageTypeEnum::SYSTEM_PAGE)
-            ->where('sub_type', WebpageSubTypeEnum::FORGOT_PASSWORD_PAGE)
-            ->first();
-
-        if (!$forgotPassword) {
-            $forgotPassword = StoreWebpage::make()->action($website, [
-                'url'           => 'forgot-password',
-                'code'          => 'forgot-password',
-                'title'         => 'Forgot Password',
-                'type'          => WebpageTypeEnum::SYSTEM_PAGE,
-                'sub_type'      => WebpageSubTypeEnum::FORGOT_PASSWORD_PAGE,
-            ]);
-        }
-            
-        $blogDashboard = Webpage::where('website_id', $website->id)
-            ->where('type', WebpageTypeEnum::SYSTEM_PAGE)
-            ->where('sub_type', WebpageSubTypeEnum::BLOG_DASHBOARD_PAGE)
-            ->first();
-
-        if (!$blogDashboard) {
-            $blogDashboard = StoreWebpage::make()->action($website, [
-                'url'           => 'blog',
-                'code'          => 'blog',
-                'title'         => 'Our Blog',
-                'type'          => WebpageTypeEnum::SYSTEM_PAGE,
-                'sub_type'      => WebpageSubTypeEnum::BLOG_DASHBOARD_PAGE,
-            ]);
-        }
-
-
-        $website->update([
-            'login_page_id'             => $loginPage->id,
-            'register_page_id'          => $registerPage->id,
-            'forgot_password_page_id'   => $forgotPassword->id,
-            'blog_dashboard_page_id'    => $blogDashboard->id
-        ]);
-
-        $command->info("Login Page created: {$loginPage->canonical_url}");
-        $command->info("Register Page created: {$registerPage->canonical_url}");
-        $command->info("Forgot Password Page created: {$forgotPassword->canonical_url}");
-        $command->info("Blog Dashboard Page created: {$blogDashboard->canonical_url}");
     }
 
     public string $commandSignature = 'repair:create_system_pages {--website_id=}';

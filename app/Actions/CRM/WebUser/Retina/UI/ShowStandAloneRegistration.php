@@ -16,8 +16,7 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use App\Actions\Helpers\Country\UI\GetAddressDataForShop;
-use App\Actions\Web\Webpage\Iris\ShowIrisWebpage;
-use App\Enums\Web\Webpage\WebpageStateEnum;
+use App\Actions\Web\Webpage\WithSystemPageRedirect;
 use App\Http\Resources\CRM\PollsResource;
 use App\Models\CRM\Poll;
 use Illuminate\Http\RedirectResponse;
@@ -26,9 +25,14 @@ use Illuminate\Support\Arr;
 class ShowStandAloneRegistration extends IrisAction
 {
     use WithRetinaAuthRedirect;
+    use WithSystemPageRedirect;
 
     public function handle(ActionRequest $request): Response|RedirectResponse
     {
+        if ($redirect = $this->redirectToSystemPage($this->website->registerPage, $request)) {
+            return $redirect;
+        }
+
         $shop = $this->shop;
         $polls = Poll::where('shop_id', $shop->id)->where('in_registration', true)->get();
         $pollsResource = PollsResource::collection($polls)->toArray($request);
@@ -37,24 +41,7 @@ class ShowStandAloneRegistration extends IrisAction
 
         $webUser = $request->user();
 
-        $website = request()->website;
 
-        $registerPage = $website->registerPage;
-
-        if ($registerPage && $registerPage?->state == WebpageStateEnum::LIVE) {
-            $url = ShowIrisWebpage::run('register', [], $request);
-
-            parse_str(parse_url($url, PHP_URL_QUERY) ?? '', $params);
-
-            if ($request->has('ref')) {
-                $params['ref'] = $request->query('ref');
-            }
-
-            $url = strtok($url, '?') . '?' . http_build_query($params);
-
-            return redirect()->to($url);
-        }
-        
         return Inertia::render(
             'Auth/StandAloneRegistration',
             [

@@ -9,9 +9,8 @@
 namespace App\Actions\CRM\WebUser\Retina\UI;
 
 use App\Actions\Traits\WithRetinaAuthRedirect;
-use App\Actions\Web\Webpage\Iris\ShowIrisWebpage;
+use App\Actions\Web\Webpage\WithSystemPageRedirect;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
-use App\Enums\Web\Webpage\WebpageStateEnum;
 use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -22,26 +21,15 @@ class ShowRetinaLogin
 {
     use AsController;
     use WithRetinaAuthRedirect;
+    use WithSystemPageRedirect;
 
 
     public function handle(ActionRequest $request): Response|RedirectResponse
     {
-        $website = request()->website;
-
-        $loginPage = $website->loginPage;
-        if ($loginPage && $loginPage?->state == WebpageStateEnum::LIVE) {
-            $url = ShowIrisWebpage::run('login', [], $request);
-
-            parse_str(parse_url($url, PHP_URL_QUERY) ?? '', $params);
-
-            if ($request->has('ref')) {
-                $params['ref'] = $request->query('ref');
-            }
-
-            $url = strtok($url, '?') . '?' . http_build_query($params);
-
-            return redirect()->to($url);
+        if ($redirect = $this->redirectToSystemPage(request()->website->loginPage, $request)) {
+            return $redirect;
         }
+
 
         return Inertia::render('Auth/RetinaLogin', [
             "login_message" => request()->website->shop->type === ShopTypeEnum::DROPSHIPPING ?

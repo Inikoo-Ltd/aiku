@@ -26,7 +26,10 @@ class GetIrisRegistrationData extends IrisAction
             'countriesAddressData'  => GetAddressDataForShop::run($shop, excludeForbiddenBilling: true, excludeForbiddenDelivery: false),
             'requiresPhoneNumber'   => Arr::get($shop->settings, 'registration.require_phone_number', false),
             'polls'                 => PollsResource::collection($polls)->toArray($request),
-            'client'                => $request->user(),
+            'client'                => $request->user() ? [
+                'contact_name' => $request->user()->contact_name,
+                'email'        => $request->user()->email,
+            ] : null,
             'registration_settings' => Arr::get($shop->settings, 'registration', []),
             'shop_type'             => $shop->type->value,
         ];

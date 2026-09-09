@@ -54,6 +54,21 @@ enum WebpageSubTypeEnum: string
     case PRODUCT_GUIDES = 'product_guides';
     case BUSINESS_TIPS  = 'business_tips';
 
+    /**
+     * System pages that back a website column, keyed by sub type.
+     *
+     * @return array<string, array{web_block: string, website_field: string, url: string, title: string}>
+     */
+    public static function systemPages(): array
+    {
+        return [
+            self::LOGIN_PAGE->value           => ['web_block' => 'login', 'website_field' => 'login_page_id', 'url' => 'login', 'title' => 'Login'],
+            self::REGISTER_PAGE->value        => ['web_block' => 'register', 'website_field' => 'register_page_id', 'url' => 'register', 'title' => 'Register'],
+            self::FORGOT_PASSWORD_PAGE->value => ['web_block' => 'forgot-password', 'website_field' => 'forgot_password_page_id', 'url' => 'forgot-password', 'title' => 'Forgot Password'],
+            self::BLOG_DASHBOARD_PAGE->value  => ['web_block' => 'blog-categories', 'website_field' => 'blog_dashboard_page_id', 'url' => 'blog', 'title' => 'Our Blog'],
+        ];
+    }
+
     public static function labels(): array
     {
         return [
@@ -69,6 +84,11 @@ enum WebpageSubTypeEnum: string
             'newsletters'           => __('Newsletters'),
             'product_guides'        => __('Product Guides'),
             'business_tips'         => __('Business Tips'),
+
+            'login_page'            => __('Login'),
+            'register_page'         => __('Register'),
+            'forgot_password_page'  => __('Forgot Password'),
+            'blog_dashboard_page'   => __('Blog Dashboard'),
         ];
     }
 

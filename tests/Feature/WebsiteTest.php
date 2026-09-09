@@ -2119,3 +2119,46 @@ test('publish webpage records history and performance events', function (Webpage
         ->and($performance['events'][0]['date'])->toBe(now()->toDateString())
         ->and($performance['sales'])->toBe([]);
 })->depends('create webpage');
+
+test('storing a system page wires it to the website', function (Website $website) {
+    foreach (WebpageSubTypeEnum::systemPages() as $subTypeValue => $systemPage) {
+        $webpage = StoreWebpage::make()->action($website, array_merge(
+            Webpage::factory()->definition(),
+            [
+                'url'      => $systemPage['url'],
+                'code'     => $systemPage['url'],
+                'type'     => WebpageTypeEnum::SYSTEM_PAGE->value,
+                'sub_type' => $subTypeValue,
+            ]
+        ));
+
+        expect($website->refresh()->{$systemPage['website_field']})->toBe($webpage->id)
+            ->and($webpage->webBlocks()->count())->toBeGreaterThan(0)
+            ->and(WebpageSubTypeEnum::labels())->toHaveKey($subTypeValue);
+    }
+})->depends('launch website');
+
+test('system page redirect only fires for live pages', function (Website $website) {
+    $action = new class () {
+        use App\Actions\Web\Webpage\WithSystemPageRedirect;
+
+        public function run(?Webpage $webpage, $request)
+        {
+            return $this->redirectToSystemPage($webpage, $request);
+        }
+    };
+
+    $request = request();
+
+    $login = $website->refresh()->loginPage;
+    expect($action->run(null, $request))->toBeNull()
+        ->and($login->state)->not->toBe(WebpageStateEnum::LIVE)
+        ->and($action->run($login, $request))->toBeNull();
+
+    $login->update(['state' => WebpageStateEnum::LIVE]);
+
+    $redirect = $action->run($login->refresh(), $request);
+    expect($redirect)->not->toBeNull()
+        ->and($redirect->getTargetUrl())->toBeString()
+        ->and($redirect->getTargetUrl())->not->toContain('Array');
+})->depends('launch website');
