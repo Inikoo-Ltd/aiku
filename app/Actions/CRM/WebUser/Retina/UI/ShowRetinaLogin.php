@@ -10,7 +10,6 @@ namespace App\Actions\CRM\WebUser\Retina\UI;
 
 use App\Actions\Traits\WithRetinaAuthRedirect;
 use App\Actions\Web\Webpage\Iris\ShowIrisWebpage;
-use App\Actions\Web\Webpage\WithSystemPageRedirect;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Web\Webpage\WebpageStateEnum;
 use Illuminate\Http\JsonResponse;
@@ -49,14 +48,20 @@ class ShowRetinaLogin
         ];
 
         if ($loginPage && $loginPage?->state == WebpageStateEnum::LIVE) {
-            $tempWebpageData = ShowIrisWebpage::make()->getWebpageData($loginPage->id, [], $loggedIn);
+            if (config('iris.cache.webpage.ttl') == 0) {
+                $tempWebpageData = ShowIrisWebpage::make()->getWebpageData($loginPage->id, [], $loggedIn);
+            } else {
+                $key         = config('iris.cache.webpage.prefix').'_'.$request->input('website')->id.'_'.($loggedIn ? 'in' : 'out').'_'.$loginPage->id;
+                $tempWebpageData = cache()->remember($key, config('iris.cache.webpage.ttl'), function () use ($loginPage, $loggedIn) {
+                    return ShowIrisWebpage::make()->getWebpageData($loginPage->id, [], $loggedIn);
+                });
+            }
 
-            if ($tempWebpageData) {
+            if (Arr::get($tempWebpageData, 'status', null) !== 'not_found') {
                 $vueFilePath = 'RetinaWebpage';
                 $webpageData = $tempWebpageData;
 
                 $browserTitle            = Arr::get($webpageData, 'webpage_data.title', '');
-                $isDifferentWhenLoggedIn = Arr::pull($webpageData, 'is_different_when_logged_in');
             }
         }
 
@@ -67,9 +72,8 @@ class ShowRetinaLogin
                 'browserTitle' => $browserTitle,
             ])->toResponse(request());
 
-            $response->headers->set('Cache-Control', 'public, s-maxage=300, max-age=0');
-            $response->headers->set('X-Aiku-Cacheable-Inertia', '1');
-            $response->headers->set('X-Is-Diff', $isDifferentWhenLoggedIn ? 'Y' : 'N');
+            $response->headers->set('Cache-Control', 'private, no-store');
+            $response->headers->set('X-Is-Diff', 'N');
 
             $response->header('X-AIKU-WEBSITE', (string)request()->website->id);
             if (isset($webpageData['webpage_id'])) {
