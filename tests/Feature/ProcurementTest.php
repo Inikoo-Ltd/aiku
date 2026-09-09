@@ -3612,6 +3612,60 @@ test('UI partner shipping list index', function () {
     });
 });
 
+test('pre-pick list only shows partner lines that have stock behind them', function () {
+    $production = Production::first() ?? StoreProduction::make()->action($this->organisation, ['code' => 'PART', 'name' => 'Partner factory']);
+    $seller     = $this->orgPartner->partner;
+
+    PartnerShoppingListItem::where('org_partner_id', $this->orgPartner->id)->forceDelete();
+
+    $withStock = createOrgStocks($this->orgPartner->organisation, [Stock::first()])[0];
+    $sellerStock = OrgStock::where('organisation_id', $seller->id)->where('stock_id', $withStock->stock_id)->first()
+        ?? createOrgStocks($seller, [$withStock->stock])[0];
+    $sellerStock->update(['quantity_available' => 12]);
+    $item = StorePartnerShoppingListItem::make()->action($this->orgPartner, $withStock, ['quantity' => 30]);
+
+    $props = $this->get(route('grp.org.productions.show.pre_pick.index', [$seller->slug, $production->slug]))
+        ->assertOk()->viewData('page')['props'];
+
+    expect($props['data']['data'])->toHaveCount(1)
+        ->and((float) $props['data']['data'][0]['can_pick'])->toBe(12.0)
+        ->and((float) $props['data']['data'][0]['quantity'])->toBe(30.0)
+        ->and($props['filters'])->toHaveKeys(['category', 'requester', 'priority'])
+        ->and(collect($props['filters']['requester']['options'])->pluck('value')->all())
+        ->toBe([$this->orgPartner->organisation->code]);
+
+    expect(collect($props['data']['data'])->firstWhere('id', $item->id)['can_pick'])->toEqual(12);
+
+    $sellerStock->update(['quantity_available' => 0]);
+    $props = $this->get(route('grp.org.productions.show.pre_pick.index', [$seller->slug, $production->slug]))
+        ->assertOk()->viewData('page')['props'];
+    expect($props['data']['data'])->toBe([]);
+});
+
+test('production queue counts feed the sidebar and ignore deleted lines', function () {
+    $production = Production::first() ?? StoreProduction::make()->action($this->organisation, ['code' => 'PART', 'name' => 'Partner factory']);
+    $seller     = $this->orgPartner->partner;
+
+    PartnerShoppingListItem::where('org_partner_id', $this->orgPartner->id)->forceDelete();
+
+    $withStock   = createOrgStocks($this->orgPartner->organisation, [Stock::first()])[0];
+    $sellerStock = OrgStock::where('organisation_id', $seller->id)->where('stock_id', $withStock->stock_id)->first()
+        ?? createOrgStocks($seller, [$withStock->stock])[0];
+    $sellerStock->update(['quantity_available' => 12]);
+
+    $counts = fn () => $this->get(route('grp.org.productions.show.queue_counts', [$seller->slug, $production->slug]))
+        ->assertOk()->json();
+
+    $before = $counts();
+    $item   = StorePartnerShoppingListItem::make()->action($this->orgPartner, $withStock, ['quantity' => 4]);
+
+    expect($counts()['pre_pick'])->toBe($before['pre_pick'] + 1)
+        ->and($counts()['channel'])->toBe('grp.org.'.$seller->id.'.production-queues');
+
+    $item->delete();
+    expect($counts()['pre_pick'])->toBe($before['pre_pick']);
+});
+
 test('batch size is hinted to the partner buyer and to the factory board', function () {
     $production = Production::first() ?? StoreProduction::make()->action($this->organisation, ['code' => 'PART', 'name' => 'Partner factory']);
     $orgStock   = OrgStock::where('organisation_id', $this->orgPartner->partner_id)->first();

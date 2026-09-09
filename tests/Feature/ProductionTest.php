@@ -2318,7 +2318,7 @@ test('to produce queue only shows lines with an artefact in this factory', funct
     $board = get(route('grp.org.productions.show.to_produce.index', $routeParameters))
         ->assertOk()->viewData('page')['props'];
     $lanes = collect($board['groups'])->mapWithKeys(fn ($lane) => [$lane['label'] => collect($lane['items'])->pluck('stock_code')->all()]);
-    expect($lanes['Pre-pick'])->toBe([$stocks[1]->code])
+    expect($lanes)->not->toHaveKey('Pre-pick')
         ->and($lanes['Backlog'])->toBe([$stocks[0]->code]);
 
     $otherProduction = StoreProduction::make()->action($this->organisation, ['code' => 'GATEF2', 'name' => 'Other factory']);
@@ -2328,8 +2328,7 @@ test('to produce queue only shows lines with an artefact in this factory', funct
     $lanes = collect(get(route('grp.org.productions.show.to_produce.index', $routeParameters))
         ->assertOk()->viewData('page')['props']['groups'])
         ->mapWithKeys(fn ($lane) => [$lane['label'] => collect($lane['items'])->pluck('stock_code')->all()]);
-    expect($lanes['Pre-pick'])->toBe([$stocks[1]->code])
-        ->and($lanes['Backlog'])->toBe([$stocks[0]->code]);
+    expect($lanes['Backlog'])->toBe([$stocks[0]->code]);
 
     $covered = \App\Models\Procurement\PartnerShoppingListItem::where('org_stock_id', $orgStocks[0]->id)->first();
     $orgStocks[0]->update(['quantity_available' => 500, 'quantity_in_locations' => 500]);
@@ -2337,8 +2336,8 @@ test('to produce queue only shows lines with an artefact in this factory', funct
     $lanes = collect(get(route('grp.org.productions.show.to_produce.index', $routeParameters))
         ->assertOk()->viewData('page')['props']['groups'])
         ->mapWithKeys(fn ($lane) => [$lane['label'] => collect($lane['items'])->pluck('stock_code')->all()]);
-    expect($lanes['Preparing'])->toBe([$stocks[0]->code])
-        ->and($lanes['Pre-pick'])->toBe([$stocks[1]->code]);
+    expect($lanes['Preparing'])->toBe([$stocks[0]->code]);
+
     $covered->update(['preparing_at' => null]);
 
     \App\Actions\Production\PartnerShippingList\StoreJobOrdersFromToProduceItems::make()
@@ -2346,8 +2345,7 @@ test('to produce queue only shows lines with an artefact in this factory', funct
     $lanes = collect(get(route('grp.org.productions.show.to_produce.index', $routeParameters))
         ->assertOk()->viewData('page')['props']['groups'])
         ->mapWithKeys(fn ($lane) => [$lane['label'] => collect($lane['items'])->pluck('stock_code')->all()]);
-    expect($lanes['Pre-pick'])->toBe([$stocks[1]->code])
-        ->and($lanes['Assigned'])->toBe([$stocks[0]->code]);
+    expect($lanes['Assigned'])->toBe([$stocks[0]->code]);
 
     $made->manufactureTasks()->syncWithoutDetaching([$this->manufactureTask->id => ['position' => 1, 'units_per_artefact' => 1]]);
     $jobOrder = \App\Models\Production\JobOrder::find($covered->refresh()->job_order_id);

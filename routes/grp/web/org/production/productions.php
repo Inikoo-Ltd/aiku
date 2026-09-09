@@ -14,6 +14,8 @@ use App\Actions\Production\PartnerShippingList\StoreJobOrdersForMixes;
 use App\Actions\Production\Artisan\ToggleArtisanInRoster;
 use App\Actions\Production\PartnerShippingList\SendPartnerOrderToWarehouse;
 use App\Actions\Production\PartnerShippingList\UI\IndexPartnerShippingList;
+use App\Actions\Production\PartnerShippingList\UI\GetProductionQueueCounts;
+use App\Actions\Production\PartnerShippingList\UI\IndexPrePickList;
 use App\Actions\Production\Artefact\UI\CreateArtefact;
 use App\Actions\Production\ArtefactDepartment\UI\CreateArtefactDepartment;
 use App\Actions\Production\ArtefactDepartment\UI\EditArtefactDepartment;
@@ -97,6 +99,14 @@ Route::prefix('{production}')
                         Route::post('artisans/{employee:id}/hide', [ToggleArtisanInRoster::class, 'hide'])->name('artisans.hide')->withoutScopedBindings();
                         Route::post('artisans/{employee:id}/show', [ToggleArtisanInRoster::class, 'show'])->name('artisans.show')->withoutScopedBindings();
                         Route::post('orders/{order}/send-to-warehouse', SendPartnerOrderToWarehouse::class)->name('send_to_warehouse');
+                    });
+
+                Route::get('queue-counts', GetProductionQueueCounts::class)->name('.queue_counts');
+
+                Route::name('.pre_pick.')->prefix('pre-pick')
+                    ->group(function () {
+                        Route::get('', IndexPrePickList::class)->name('index');
+                        Route::post('all', [CherryPickPartnerShoppingListItems::class, 'everything'])->name('all');
                     });
 
                 Route::name('.crafts.')->prefix('crafts')

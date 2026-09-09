@@ -22,6 +22,7 @@ library.add(faRoute, faHandHoldingBox, faIndustry)
 const props = defineProps<{
 	nav: Navigation
 	navKey?: string | number // shops_navigation | warehouses_navigation
+	number?: number | null
 }>()
 
 const layout = inject("layout", layoutStructure)
@@ -74,6 +75,13 @@ onUnmounted(() => {
 				{{ nav.label }}
 			</span>
 		</Transition>
+
+		<span
+			v-if="number"
+			class="ml-auto rounded-full bg-white/20 px-1.5 text-xs leading-tight tabular-nums"
+			:class="layout.leftSidebar.show ? '' : 'hidden'">
+			{{ number }}
+		</span>
 
 		<!-- If this Navigation is active, then teleport the SubSections to #TopBarSubsections in <AppTopBar> -->
 		<template

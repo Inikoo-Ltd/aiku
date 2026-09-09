@@ -10,6 +10,7 @@ namespace App\Models\Procurement;
 
 use App\Enums\Procurement\ShoppingListItem\ShoppingListItemPriorityEnum;
 use App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum;
+use App\Events\BroadcastProductionQueuesChanged;
 use App\Models\Goods\Stock;
 use App\Models\Inventory\OrgStock;
 use App\Models\Ordering\Transaction;
@@ -61,6 +62,19 @@ class PartnerShoppingListItem extends Model
     protected $table = 'partner_shopping_list_items';
 
     protected $guarded = [];
+
+    protected static function booted(): void
+    {
+        $announce = function (self $item) {
+            $sellerId = $item->partner_organisation_id ?? $item->organisation_id;
+            if ($sellerId) {
+                BroadcastProductionQueuesChanged::dispatch($sellerId);
+            }
+        };
+
+        static::saved($announce);
+        static::deleted($announce);
+    }
 
     protected function casts(): array
     {

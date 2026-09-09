@@ -29,14 +29,6 @@ const props = defineProps<{
     artisanWorkload: { id: number, name: string, open_job_orders: number, hidden: boolean }[] | null
     mixJobOrders: { id: number, artefact_id: number, code: string, name: string, quantity: number, job_order_id: number, job_order_reference: string, job_order_slug: string, job_order_state: string, job_order_artisan: string | null }[] | null
     groups: { label: string, items: { id: number, quantity: number, state: string, stock_code: string, stock_name: string, family: string | null, maker: string | null, buyer_code: string | null, customer_name: string | null, order_reference: string | null, job_order_reference: string | null, job_order_slug: string | null, priority: string, needed_by: string | null }[] }[] | null
-    pickedOrders: {
-        id: number
-        reference: string
-        net_amount: string
-        currency_code: string
-        buyer_name: string
-        transactions_count: number
-    }[]
 }>()
 
 const selected = reactive<Record<number, number>>({})
@@ -44,9 +36,6 @@ const selected = reactive<Record<number, number>>({})
 const hiddenGroupsKey = `to-produce-hidden-${props.groupBy}`
 const hiddenGroups = ref<string[]>(JSON.parse(localStorage.getItem(hiddenGroupsKey) || "[]"))
 watch(hiddenGroups, (value) => localStorage.setItem(hiddenGroupsKey, JSON.stringify(value)), { deep: true })
-
-const showPrePick = ref(localStorage.getItem("to-produce-show-pre-pick") === "1")
-watch(showPrePick, (value) => localStorage.setItem("to-produce-show-pre-pick", value ? "1" : "0"))
 
 function toggleGroup(label: string) {
     const index = hiddenGroups.value.indexOf(label)
@@ -59,14 +48,6 @@ function toggle(item: { id: number, quantity: number }) {
     } else {
         selected[item.id] = Number(item.quantity)
     }
-}
-
-function sendToWarehouse(orderId: number) {
-    router.post(
-        route("grp.org.productions.show.to_produce.send_to_warehouse", [route().params["organisation"], route().params["production"], orderId]),
-        {},
-        { preserveScroll: true }
-    )
 }
 
 function createJobOrders(ids: number[] = Object.keys(selected).map(Number), employeeId: number | null = null, quantity: number | null = null) {
@@ -117,21 +98,12 @@ function mixDropTarget(laneIndex: number): boolean {
 function onMixDrop(laneIndex: number, event: DragEvent) {
     if (mixDropTarget(laneIndex)) openPicker("assign-mix", event)
 }
-const LANE_TO_PICK = 0
-const LANE_BACKLOG = 1
-const LANE_PREPARING = 2
-const LANE_ASSIGNED = 3
+const LANE_BACKLOG = 0
+const LANE_PREPARING = 1
+const LANE_ASSIGNED = 2
 
 function isDraggable(item: BoardItem, laneIndex: number): boolean {
     return (laneIndex >= LANE_BACKLOG && laneIndex <= LANE_PREPARING && item.state === "open") || (laneIndex === LANE_ASSIGNED && isReassignable(item))
-}
-
-function pickIntoOrder(item: BoardItem) {
-    router.post(
-        route("grp.org.productions.show.to_produce.cherry_pick", [route().params["organisation"], route().params["production"]]),
-        { lines: [{ id: item.id, quantity: Number(item.quantity) }] },
-        { preserveScroll: true }
-    )
 }
 
 function dropTarget(laneIndex: number): boolean {
@@ -400,14 +372,6 @@ function jobOrderHref(item: { job_order_slug: string }) {
     return route("grp.org.productions.show.operations.job-orders.show", [route().params["organisation"], route().params["production"], item.job_order_slug])
 }
 
-function submitCherryPick() {
-    const lines = Object.entries(selected).map(([id, quantity]) => ({ id: Number(id), quantity }))
-    router.post(
-        route("grp.org.productions.show.to_produce.cherry_pick", [route().params["organisation"], route().params["production"]]),
-        { lines },
-        { preserveScroll: true, onSuccess: () => { for (const k in selected) delete selected[k] } }
-    )
-}
 </script>
 
 <template>
@@ -420,28 +384,9 @@ function submitCherryPick() {
             <button type="button" class="rounded bg-white px-3 py-1 text-indigo-600" @click="createJobOrders">
                 {{ trans("Create job orders") }}
             </button>
-            <button type="button" class="rounded bg-white px-3 py-1 text-indigo-600" @click="submitCherryPick">
-                {{ trans("Pick into order") }}
-            </button>
         </div>
     </div>
 
-    <div v-if="pickedOrders?.length" class="mx-4 mt-4 rounded-lg border border-gray-200 dark:border-gray-700">
-        <div class="border-b border-gray-200 px-4 py-2 font-medium dark:border-gray-700">
-            {{ trans("Picked orders waiting to be sent to warehouse") }}
-        </div>
-        <div v-for="order in pickedOrders" :key="order.id" class="flex items-center justify-between px-4 py-2">
-            <div class="flex items-center gap-4">
-                <span class="font-medium">{{ order.buyer_name }}</span>
-                <span class="text-gray-500">{{ order.reference }}</span>
-                <span class="text-gray-500">{{ order.transactions_count }} {{ trans("lines") }}</span>
-                <span class="tabular-nums">{{ useLocaleStore().currencyFormat(order.currency_code, Number(order.net_amount)) }}</span>
-            </div>
-            <button type="button" class="rounded bg-indigo-600 px-3 py-1 text-white" @click="sendToWarehouse(order.id)">
-                {{ trans("Send to warehouse") }}
-            </button>
-        </div>
-    </div>
 
     <div v-if="mixes" class="mx-4 mt-5">
         <div v-if="!mixes.length && !(mixJobOrders ?? []).length" class="rounded-lg border border-dashed border-gray-300 px-4 py-10 text-center text-gray-400">
@@ -618,23 +563,12 @@ function submitCherryPick() {
             </div>
         </div>
             <button v-if="boardFilters.family.length || boardFilters.requester.length || boardFilters.priority.length" type="button" class="text-xs text-gray-400 hover:text-gray-600" @click="boardFilters.family = []; boardFilters.requester = []; boardFilters.priority = []">× {{ trans("Clear") }}</button>
-            <button
-                v-if="groupBy === 'board'"
-                type="button"
-                class="ml-auto flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 transition"
-                :class="showPrePick ? 'border-indigo-500 bg-indigo-600 text-white' : 'border-gray-200 bg-gray-50 text-gray-500 hover:border-gray-300 hover:bg-white'"
-                :title="trans('Lines nothing has to be made for, take them from stock')"
-                @click="showPrePick = !showPrePick">
-                {{ trans("Pre-pick") }}
-                <span class="rounded-full px-1.5 text-xs tabular-nums" :class="showPrePick ? 'bg-white/20' : 'bg-white'">{{ filteredGroups[LANE_TO_PICK]?.items.length ?? 0 }}</span>
-            </button>
         </div>
     </div>
 
     <div v-if="groupBy === 'board' && groups" class="mx-4 mt-3 flex gap-3">
         <template v-for="(lane, laneIndex) in filteredGroups" :key="lane.label">
         <div
-            v-if="laneIndex !== LANE_TO_PICK || showPrePick"
             class="flex min-w-0 flex-1 flex-col rounded-lg border bg-gray-50 transition dark:bg-gray-800"
             :class="dropTarget(laneIndex) ? 'border-indigo-400 ring-2 ring-indigo-200' : 'border-gray-200 dark:border-gray-700'"
             @dragover="dropTarget(laneIndex) ? $event.preventDefault() : null"
@@ -687,14 +621,6 @@ function submitCherryPick() {
                         <span v-if="Number(item.stock_available) >= Number(item.quantity)" class="text-emerald-600">{{ trans("In stock") }}: {{ useLocaleStore().number(Number(item.stock_available)) }}</span>
                         <span v-else>{{ trans("In stock") }}: {{ useLocaleStore().number(Number(item.stock_available ?? 0)) }}</span>
                     </div>
-                    <button
-                        v-if="laneIndex === LANE_TO_PICK && item.buyer_code && item.state === 'open'"
-                        type="button"
-                        class="mt-1 w-full rounded bg-indigo-600 px-2 py-0.5 text-white hover:bg-indigo-700"
-                        :title="trans('Not made here, take it from stock')"
-                        @click.stop="pickIntoOrder(item)">
-                        {{ trans("Pre-pick") }}
-                    </button>
                     <button v-if="item.job_order_id && isReassignable(item)" type="button" class="flex items-center gap-1 rounded text-gray-600 hover:bg-indigo-50 hover:text-indigo-700" :title="trans('Change artisan')" @click.stop="openReassign(item, $event)">
                         <FontAwesomeIcon icon="fal fa-user-hard-hat" class="text-gray-400" fixed-width />
                         {{ item.job_order_artisan ?? trans("No artisan") }}

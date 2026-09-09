@@ -13,12 +13,10 @@ use App\Actions\Production\PartnerShippingList\GetMixesToPrepare;
 use App\Actions\Production\PartnerShippingList\GetMixJobOrders;
 use App\Actions\Production\Production\UI\ShowProduction;
 use App\Enums\HumanResources\Employee\EmployeeStateEnum;
-use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Production\JobOrder\JobOrderStateEnum;
 use App\Models\HumanResources\Employee;
 use App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum;
 use App\InertiaTable\InertiaTable;
-use App\Models\Ordering\Order;
 use App\Models\Procurement\PartnerShoppingListItem;
 use App\Models\Production\Production;
 use App\Models\SysAdmin\Organisation;
@@ -91,7 +89,7 @@ class IndexPartnerShippingList extends OrgAction
                     });
             });
 
-        if ($this->groupBy && $this->groupBy !== 'board') {
+        if ($this->groupBy) {
             $queryBuilder->whereNotNull('artefacts.id');
         }
 
@@ -268,13 +266,9 @@ class IndexPartnerShippingList extends OrgAction
     /** @return array<int, array{label: string, items: array<int, array<string, mixed>>}> */
     public function getBoardLanes(LengthAwarePaginator $items): array
     {
-        $lanes  = ['to_pick' => __('Pre-pick'), 'backlog' => __('Backlog'), 'preparing' => __('Preparing'), 'assigned' => __('Assigned'), 'producing' => __('Producing'), 'done' => __('Done')];
+        $lanes  = ['backlog' => __('Backlog'), 'preparing' => __('Preparing'), 'assigned' => __('Assigned'), 'producing' => __('Producing'), 'done' => __('Done')];
         $byLane = collect($items->items())->groupBy(function ($item) {
             if (!$item->job_order_id) {
-                if (!$item->artefact_id) {
-                    return 'to_pick';
-                }
-
                 return $item->preparing_at ? 'preparing' : 'backlog';
             }
 
@@ -371,37 +365,8 @@ class IndexPartnerShippingList extends OrgAction
                 'mixes'        => $this->groupBy === 'mixes' ? GetMixesToPrepare::run($this->production) : null,
                 'mixJobOrders' => $this->groupBy === 'mixes' ? GetMixJobOrders::run($this->production) : null,
                 'data'         => $items,
-                'pickedOrders' => $this->getPickedOrders($this->organisation),
             ]
         )->table($this->tableStructure());
-    }
-
-    public function getPickedOrders(Organisation $seller): array
-    {
-        return Order::query()
-            ->join('sales_channels', 'sales_channels.id', 'orders.sales_channel_id')
-            ->join('customers', 'customers.id', 'orders.customer_id')
-            ->where('orders.organisation_id', $seller->id)
-            ->where('orders.state', OrderStateEnum::CREATING)
-            ->where('sales_channels.code', 'intercompany')
-            ->select([
-                'orders.id',
-                'orders.reference',
-                'orders.net_amount',
-                'orders.currency_id',
-                'customers.name as buyer_name',
-            ])
-            ->withCount('transactions')
-            ->get()
-            ->map(fn (Order $order) => [
-                'id'                 => $order->id,
-                'reference'          => $order->reference,
-                'net_amount'         => $order->net_amount,
-                'currency_code'      => $order->currency->code,
-                'buyer_name'         => $order->buyer_name,
-                'transactions_count' => $order->transactions_count,
-            ])
-            ->all();
     }
 
     public function getBreadcrumbs(array $routeParameters): array
