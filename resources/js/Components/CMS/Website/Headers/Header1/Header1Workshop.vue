@@ -24,7 +24,6 @@ import {
     faEnvelope,
     faHeart
 } from "@fas"
-import LuigiSearch from "@/Components/CMS/LuigiSearch.vue"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
 import LinkIris from "@/Iris/Components/LinkIris.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
