@@ -188,11 +188,11 @@ resetForm();
                     </label>
 
 
-                    <PureMultiselectInfiniteScroll v-model="offerProductId" :fetchRoute="productFetchRoute" placeholder="Select product" valueProp="id" :required="true">
+                    <PureMultiselectInfiniteScroll v-model="offerProductId"  labelProp="name" :fetchRoute="productFetchRoute" placeholder="Select product" valueProp="id" :required="true">
                         <template #singlelabel="{ value }">
                             <div class="w-full text-left pl-4 leading-4 truncate mr-2">
-                                {{ value.name }}
-                                <span v-if="value.code" class="text-sm text-gray-400">({{ value.code }})</span>
+                                {{ value.code }}
+                                <span class="text-sm text-gray-400">({{ value.name }})</span>
                                 <span class="text-sm text-gray-400"> · {{ trans('Stock') }}: {{ value.stock ?? 0 }}</span>
                             </div>
                         </template>
@@ -200,9 +200,9 @@ resetForm();
                         <template #option="{ option, isSelected }">
                             <div class="flex w-full items-center justify-between gap-x-2">
                                 <div>
-                                    {{ option.name }}
-                                    <span v-if="option.code" class="text-sm"
-                                        :class="isSelected(option) ? 'text-indigo-200' : 'text-gray-400'">({{ option.code }})</span>
+                                    {{ option.code }}
+                                    <span class="text-sm"
+                                        :class="isSelected(option) ? 'text-indigo-200' : 'text-gray-400'">({{ option.name }})</span>
                                 </div>
                                 <span class="text-sm whitespace-nowrap"
                                     :class="isSelected(option) ? 'text-indigo-200' : 'text-gray-400'">
