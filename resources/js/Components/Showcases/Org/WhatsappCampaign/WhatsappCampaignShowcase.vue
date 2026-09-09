@@ -450,7 +450,7 @@ const handleCancelSchedule = async () => {
                         <span v-tooltip="blockedReason ?? undefined">
                             <Button
                                 :label="trans('Schedule')"
-                                style="tertiary"
+                                type="tertiary"
                                 icon="fal fa-clock"
                                 disabled />
                         </span>
@@ -458,7 +458,7 @@ const handleCancelSchedule = async () => {
                         <span v-tooltip="blockedReason ?? undefined">
                             <Button
                                 :label="trans('Send now')"
-                                style="primary"
+                                type="primary"
                                 icon="fal fa-paper-plane"
                                 disabled />
                         </span>
@@ -468,7 +468,7 @@ const handleCancelSchedule = async () => {
                         <span v-tooltip="blockedReason ?? undefined">
                             <Button
                                 :label="trans('Schedule')"
-                                style="tertiary"
+                                type="tertiary"
                                 icon="fal fa-clock"
                                 :disabled="!!blockedReason || scheduleInProgress"
                                 :loading="scheduleInProgress"
@@ -483,7 +483,7 @@ const handleCancelSchedule = async () => {
                                 <span v-tooltip="blockedReason ?? undefined">
                                     <Button
                                         :label="trans('Send now')"
-                                        style="primary"
+                                        type="primary"
                                         icon="fal fa-paper-plane"
                                         :disabled="!!blockedReason || inProgress"
                                         @click="changeModel" />
@@ -492,7 +492,7 @@ const handleCancelSchedule = async () => {
                             <template #btn-yes>
                                 <Button
                                     :label="trans('Send now')"
-                                    style="primary"
+                                    type="primary"
                                     icon="fal fa-paper-plane"
                                     :loading="inProgress"
                                     :disabled="!!blockedReason || inProgress"
@@ -510,7 +510,7 @@ const handleCancelSchedule = async () => {
                         <template #default="{ changeModel }">
                             <Button
                                 :label="trans('Cancel schedule')"
-                                style="negative"
+                                type="negative"
                                 icon="fal fa-clock"
                                 :disabled="inProgress"
                                 @click="changeModel" />
@@ -518,7 +518,7 @@ const handleCancelSchedule = async () => {
                         <template #btn-yes>
                             <Button
                                 :label="trans('Cancel schedule')"
-                                style="negative"
+                                type="negative"
                                 icon="fal fa-clock"
                                 :loading="inProgress"
                                 :disabled="inProgress"
@@ -593,8 +593,8 @@ const handleCancelSchedule = async () => {
                 </div>
 
                 <div class="flex gap-2 justify-end w-full">
-                    <Button :label="trans('Cancel')" style="tertiary" @click="closeSchedulePicker" />
-                    <Button :label="trans('Confirm schedule')" style="primary" @click="confirmSchedule"
+                    <Button :label="trans('Cancel')" type="tertiary" @click="closeSchedulePicker" />
+                    <Button :label="trans('Confirm schedule')" type="primary" @click="confirmSchedule"
                         :disabled="!canConfirmSchedule || scheduleInProgress" :loading="scheduleInProgress" />
                 </div>
             </div>

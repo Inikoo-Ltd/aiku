@@ -129,7 +129,7 @@ watch(filteredTabs, (tabs) => {
                 <template #default="{ changeModel }">
                     <Button
                         icon="fal fa-trash-alt"
-                        style="negative"
+                        type="negative"
                         :tooltip="trans('Delete campaign')"
                         @click="changeModel" />
                 </template>
