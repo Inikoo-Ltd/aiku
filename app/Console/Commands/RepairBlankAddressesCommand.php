@@ -39,19 +39,22 @@ class RepairBlankAddressesCommand extends Command
         Nightwatch::dontSample();
 
         $customers = Customer::with(['shop'])
+            ->withMax('orders', 'created_at')
             ->whereIn('address_id', $this->blankAddresses())
             ->when($this->option('shop'), fn ($query, $shop) => $query->whereRelation('shop', 'slug', $shop))
             ->whereHas('orders', fn ($query) => $query->when($this->option('months'), fn ($query, $months) => $query->where('orders.created_at', '>', now()->subMonths((int)$months))))
+            ->orderByDesc('orders_max_created_at')
             ->get();
 
         $this->table(
-            ['Shop', 'Customer', 'Name', 'Email', 'Phone'],
+            ['Shop', 'Customer', 'Name', 'Email', 'Phone', 'Last order'],
             $customers->map(fn (Customer $customer) => [
                 $customer->shop->slug,
                 $customer->reference,
                 $customer->name,
                 $customer->email,
                 $customer->phone,
+                $customer->orders_max_created_at,
             ])
         );
         $this->info($customers->count().' customers have no address and have ordered');
