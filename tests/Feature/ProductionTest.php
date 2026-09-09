@@ -16,6 +16,8 @@ use App\Actions\Production\Artefact\UpdateArtefact;
 use App\Actions\Production\Artefact\UI\GetArtefactShowcase;
 use App\Actions\Production\ArtefactDepartment\StoreArtefactDepartment;
 use App\Actions\Production\Artefact\MoveArtefactsToFamily;
+use App\Actions\Production\Artefact\SetArtefactState;
+use App\Actions\Production\ArtefactFamily\Hydrators\ArtefactFamilyHydrateArtefacts;
 use App\Actions\Production\ArtefactFamily\AssignArtefactsToFamiliesFromOrgStockFamilies;
 use App\Actions\Production\ArtefactFamily\DeleteArtefactFamily;
 use App\Actions\Production\ArtefactFamily\MoveArtefactFamiliesToDepartment;
@@ -2566,4 +2568,118 @@ test('UI crafts artefacts as org admin', function () {
     foreach (['dashboard', 'artefacts.index', 'raw_materials.index'] as $page) {
         get(route('grp.org.productions.show.crafts.'.$page, [$this->organisation->slug, $this->production->slug]))->assertOk();
     }
+});
+
+test('artefact family state follows the liveliest of its artefacts', function () {
+    $department = StoreArtefactDepartment::make()->action($this->production, ['code' => 'STATEDEP', 'name' => 'State department']);
+    $family     = StoreArtefactFamily::make()->action($department, ['code' => 'STATEFAM', 'name' => 'State family']);
+
+    $one = StoreArtefact::make()->action($this->production, [
+        'code'               => 'STATE-01',
+        'name'               => 'First',
+        'artefact_family_id' => $family->id,
+    ]);
+    $two = StoreArtefact::make()->action($this->production, [
+        'code'               => 'STATE-02',
+        'name'               => 'Second',
+        'artefact_family_id' => $family->id,
+    ]);
+
+    SetArtefactState::make()->action($one, ArtefactStateEnum::ACTIVE);
+    SetArtefactState::make()->action($two, ArtefactStateEnum::DORMANT);
+
+    expect($family->refresh()->state)->toBe(ArtefactStateEnum::ACTIVE)
+        ->and($family->number_artefacts)->toBe(2);
+
+    SetArtefactState::make()->action($one, ArtefactStateEnum::DORMANT);
+    expect($family->refresh()->state)->toBe(ArtefactStateEnum::DORMANT);
+
+    SetArtefactState::make()->action($one, ArtefactStateEnum::DISCONTINUED);
+    SetArtefactState::make()->action($two, ArtefactStateEnum::DISCONTINUED);
+    expect($family->refresh()->state)->toBe(ArtefactStateEnum::DISCONTINUED);
+});
+
+test('artefact families index hides dormant and discontinued families by default', function () {
+    $department = StoreArtefactDepartment::make()->action($this->production, ['code' => 'HIDEDEP', 'name' => 'Hide department']);
+    $live       = StoreArtefactFamily::make()->action($department, ['code' => 'HIDELIVE', 'name' => 'Live family']);
+    $parked     = StoreArtefactFamily::make()->action($department, ['code' => 'HIDEPARK', 'name' => 'Parked family']);
+
+    $liveArtefact = StoreArtefact::make()->action($this->production, ['code' => 'HIDE-01', 'name' => 'Live', 'artefact_family_id' => $live->id]);
+    $deadArtefact = StoreArtefact::make()->action($this->production, ['code' => 'HIDE-02', 'name' => 'Dead', 'artefact_family_id' => $parked->id]);
+
+    SetArtefactState::make()->action($liveArtefact, ArtefactStateEnum::ACTIVE);
+    SetArtefactState::make()->action($deadArtefact, ArtefactStateEnum::DISCONTINUED);
+
+    expect($parked->refresh()->state)->toBe(ArtefactStateEnum::DISCONTINUED);
+
+    $response = get(route('grp.org.productions.show.crafts.artefact_families.index', [$this->organisation->slug, $this->production->slug]));
+
+    $response->assertOk();
+    expect($response->content())->toContain('HIDELIVE')
+        ->and($response->content())->not->toContain('HIDEPARK');
+});
+
+test('artefact family counts artefacts missing a recipe and a batch size', function () {
+    $department = StoreArtefactDepartment::make()->action($this->production, ['code' => 'GAPDEP', 'name' => 'Gap department']);
+    $family     = StoreArtefactFamily::make()->action($department, ['code' => 'GAPFAM', 'name' => 'Gap family']);
+
+    $complete = StoreArtefact::make()->action($this->production, [
+        'code'                   => 'GAP-01',
+        'name'                   => 'Complete',
+        'artefact_family_id'     => $family->id,
+        'recommended_batch_size' => 40,
+    ]);
+    StoreArtefact::make()->action($this->production, [
+        'code'               => 'GAP-02',
+        'name'               => 'No batch size, no recipe',
+        'artefact_family_id' => $family->id,
+    ]);
+
+    expect($family->refresh()->number_artefacts_without_batch_size)->toBe(1)
+        ->and($family->number_artefacts_without_recipe)->toBe(2);
+
+    $task = StoreManufactureTask::make()->action($this->production, [
+        'code'                            => 'GAPTASK',
+        'name'                            => 'Gap task',
+        'task_materials_cost'             => 1.0,
+        'task_energy_cost'                => 1.0,
+        'task_other_cost'                 => 1.0,
+        'task_work_cost'                  => 1.0,
+        'task_lower_target'               => 10,
+        'task_upper_target'               => 20,
+        'operative_reward_terms'          => ManufactureTaskOperativeRewardTermsEnum::ABOVE_LOWER_LIMIT,
+        'operative_reward_allowance_type' => ManufactureTaskOperativeRewardAllowanceTypeEnum::OFFSET_SALARY,
+        'operative_reward_amount'         => 1.0,
+    ]);
+    AttachManufactureTaskToArtefact::make()->action($complete, ['manufacture_task_id' => $task->id]);
+
+    ArtefactFamilyHydrateArtefacts::run($family);
+
+    expect($family->refresh()->number_artefacts_without_recipe)->toBe(1)
+        ->and($family->number_artefacts_without_batch_size)->toBe(1);
+});
+
+test('crafts dashboard families card carries the family state counts', function () {
+    $department = StoreArtefactDepartment::make()->action($this->production, ['code' => 'CARDDEP', 'name' => 'Card department']);
+    $family     = StoreArtefactFamily::make()->action($department, ['code' => 'CARDFAM', 'name' => 'Card family']);
+
+    $artefact = StoreArtefact::make()->action($this->production, [
+        'code'               => 'CARD-01',
+        'name'               => 'Card artefact',
+        'artefact_family_id' => $family->id,
+    ]);
+    SetArtefactState::make()->action($artefact, ArtefactStateEnum::DISCONTINUED);
+
+    $response = get(route('grp.org.productions.show.crafts.dashboard', [$this->organisation->slug, $this->production->slug]));
+
+    $response->assertOk();
+    $response->assertInertia(function (AssertableInertia $page) {
+        $stats   = collect($page->toArray()['props']['stats']);
+        $card    = $stats->firstWhere('label', 'Families');
+        $tooltips = collect($card['metas'])->pluck('tooltip');
+
+        expect($tooltips)->toContain('Active families')
+            ->and($tooltips)->toContain('Discontinued')
+            ->and(collect($card['metas'])->firstWhere('tooltip', 'Discontinued')['count'])->toBeGreaterThanOrEqual(1);
+    });
 });

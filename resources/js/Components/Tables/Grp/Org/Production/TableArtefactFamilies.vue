@@ -15,6 +15,7 @@ import { ctrans } from "@/Composables/useTrans"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faCheckSquare } from "@fal"
+import "@/Composables/Icon/ArtefactStateEnum"
 
 library.add(faCheckSquare)
 
@@ -108,6 +109,12 @@ const familyRoute = (family: { slug: string }) =>
     <Table ref="tableRef" :resource="data" :name="tab" class="mt-5" :isCheckBox="!!moveToDepartment" checkboxKey="id" @onSelectRow="(rows) => selected = { ...rows }">
         <template #cell(code)="{ item: family }">
             <Link :href="familyRoute(family)" class="primaryLink">{{ family.code }}</Link>
+        </template>
+        <template #cell(number_artefacts_without_recipe)="{ item }">
+            <span :class="item.number_artefacts_without_recipe ? 'text-red-500' : ''">{{ item.number_artefacts_without_recipe }}</span>
+        </template>
+        <template #cell(number_artefacts_without_batch_size)="{ item }">
+            <span :class="item.number_artefacts_without_batch_size ? 'text-red-500' : ''">{{ item.number_artefacts_without_batch_size }}</span>
         </template>
         <template #cell(artefact_department_name)="{ item }">
             <Link v-if="item.artefact_department_slug" :href="route('grp.org.productions.show.crafts.artefact_departments.show', [routeParams['organisation'], routeParams['production'], item.artefact_department_slug])" class="secondaryLink">

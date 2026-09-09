@@ -152,12 +152,29 @@ class ShowCraftsDashboard extends OrgAction
     {
         $artefactCounts = ArtefactStateEnum::count($production);
 
+        $familyStateCounts = $production->artefactFamilies()
+            ->groupBy('state')
+            ->selectRaw('state, count(*) as number')
+            ->pluck('number', 'state');
+
         $artefactsRoute = fn (array $elements = []) => [
             'name'       => 'grp.org.productions.show.crafts.artefacts.index',
             'parameters' => array_merge($routeParameters, $elements)
         ];
 
         $byState = fn (ArtefactStateEnum $state) => $artefactsRoute(['artefacts_elements[state]' => $state->value]);
+
+        $familiesByState = fn (ArtefactStateEnum $state) => [
+            'name'       => 'grp.org.productions.show.crafts.artefact_families.index',
+            'parameters' => array_merge($routeParameters, ['elements[state]' => $state->value]),
+        ];
+
+        $familyStateMeta = fn (ArtefactStateEnum $state, string $tooltip, array $icon) => [
+            'tooltip' => $tooltip,
+            'icon'    => $icon,
+            'count'   => (int) ($familyStateCounts[$state->value] ?? 0),
+            'route'   => $familiesByState($state),
+        ];
 
         return [
             [
@@ -188,6 +205,10 @@ class ShowCraftsDashboard extends OrgAction
                     'parameters' => $routeParameters
                 ],
                 'metas' => [
+                    $familyStateMeta(ArtefactStateEnum::ACTIVE, __('Active families'), ['icon' => 'fas fa-check-circle', 'class' => 'text-green-500']),
+                    $familyStateMeta(ArtefactStateEnum::IN_PROCESS, __('In process'), ['icon' => 'fal fa-seedling', 'class' => 'text-green-500 animate-pulse']),
+                    $familyStateMeta(ArtefactStateEnum::DORMANT, __('Dormant'), ['icon' => 'fas fa-times-circle', 'class' => 'text-amber-500']),
+                    $familyStateMeta(ArtefactStateEnum::DISCONTINUED, __('Discontinued'), ['icon' => 'fas fa-times-circle', 'class' => 'text-red-500']),
                     [
                         'tooltip' => __('Artefacts without a family'),
                         'icon'    => ['icon' => 'fal fa-unlink', 'class' => 'text-amber-500'],
