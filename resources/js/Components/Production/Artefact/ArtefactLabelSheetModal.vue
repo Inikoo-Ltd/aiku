@@ -615,6 +615,8 @@ const describeFailure = async (error: any): Promise<string> => {
                     </div>
                 </div>
 
+                <hr class="border-t border-gray-400 border-dashed" />
+
                 <div>
                     <div class="text-xs text-gray-500 uppercase tracking-wide mb-1">{{ ctrans("Background image") }}</div>
                     <input ref="fileInput" type="file" accept="image/*" class="hidden" @change="onFileChange" />
@@ -638,6 +640,8 @@ const describeFailure = async (error: any): Promise<string> => {
                     </div>
                 </div>
 
+                <!-- <hr class="border-t border-gray-400 border-dashed" /> -->
+
                 <div>
                     <div class="text-xs text-gray-500 uppercase tracking-wide mb-1">{{ ctrans("Canvas rotation") }}</div>
                     <div class="flex gap-1">
@@ -651,6 +655,8 @@ const describeFailure = async (error: any): Promise<string> => {
                         </button>
                     </div>
                 </div>
+
+                <hr class="border-t border-gray-400 border-dashed" />
 
                 <label class="flex items-start gap-2 rounded border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-700">
                     <input
@@ -698,6 +704,8 @@ const describeFailure = async (error: any): Promise<string> => {
                         {{ ctrans("The grid does not fit on the page, reduce the labels, the margin or the gap.") }}
                     </span>
                 </div>
+
+                <hr class="border-t border-gray-400 border-dashed" />
 
                 <label v-if="!isSheetArtwork" class="flex items-center gap-2 text-sm text-gray-700">
                     <input v-model="cutGuides" type="checkbox" class="rounded border-gray-300" />
