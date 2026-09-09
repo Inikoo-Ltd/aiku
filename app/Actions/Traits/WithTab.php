@@ -14,9 +14,9 @@ trait WithTab
 {
     protected ?string $tab                = null;
 
-    public function withTab(array $tabs): static
+    public function withTab(array $tabs, ?string $default = null): static
     {
-        $tab =  $this->get('tab', Arr::first($tabs));
+        $tab =  $this->get('tab', $default ?? Arr::first($tabs));
         if (!in_array($tab, $tabs)) {
             abort(404);
         }

@@ -4,8 +4,8 @@
  * Copyright (c) 2023, Raul A Perusquia Flores
  */
 
-import { router } from "@inertiajs/vue3"
-import { Ref } from 'vue'
+import { router, usePage } from "@inertiajs/vue3"
+import { Ref, ref, watch } from "vue"
 
 export const useTabChange = (tabSlug: string, currentTab: Ref<string>) => {
     if (tabSlug === currentTab.value) {
@@ -64,4 +64,22 @@ export const useTabChange = (tabSlug: string, currentTab: Ref<string>) => {
     //         }
     //     }
     // )
+}
+
+/**
+ * useTabChange does a partial visit, so props.tabs.current keeps the value of the
+ * first load: the tab has to be read from the page url or going back in the browser
+ * restores the stale one.
+ */
+export const useCurrentTab = (fallback: string): Ref<string> => {
+    const tabOf = (url: string) => new URLSearchParams(url.split('?')[1] ?? '').get('tab')
+
+    const page = usePage()
+    const currentTab = ref(tabOf(page.url) ?? fallback)
+
+    watch(() => usePage().url, (url) => {
+        currentTab.value = tabOf(url) ?? fallback
+    })
+
+    return currentTab
 }

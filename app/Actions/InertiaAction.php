@@ -41,9 +41,9 @@ class InertiaAction
         return $this;
     }
 
-    public function withTab(array $tabs): static
+    public function withTab(array $tabs, ?string $default = null): static
     {
-        $tab = Arr::get($this->rawInputs, 'tab', Arr::first($tabs));
+        $tab = Arr::get($this->rawInputs, 'tab', $default ?? Arr::first($tabs));
 
         if (!in_array($tab, $tabs)) {
             abort(404);
