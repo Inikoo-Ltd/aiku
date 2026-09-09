@@ -64,7 +64,9 @@ const setScope = (scope: 'domestic' | 'export') => {
     router.get(url.toString(), {}, { preserveState: true, preserveScroll: true, replace: true })
 }
 
-const currentTab = ref(props.tabs.current)
+const tabFromUrl = new URLSearchParams(usePage().url.split('?')[1] ?? '').get('tab')
+
+const currentTab = ref(tabFromUrl ?? props.tabs.current)
 const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 
 const component = computed(() => {
