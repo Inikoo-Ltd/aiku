@@ -67,6 +67,7 @@ class ShowArtefactDepartment extends OrgAction
                 'move_to_department' => IndexArtefacts::make()->getMoveToDepartmentProps($this->production, $this->canEdit),
                 'move_to_family'     => IndexArtefacts::make()->getMoveToFamilyProps($this->production, $this->canEdit),
                 'set_batch_size'     => IndexArtefacts::make()->getSetBatchSizeProps($this->production, $this->canEdit),
+                'discontinue'         => IndexArtefacts::make()->getDiscontinueProps($this->production, $this->canEdit),
                 'move_families_to_department' => IndexArtefactFamilies::make()->getMoveToDepartmentProps($this->production, $this->canEdit),
                 'artisans'       => GetArtisanAssignmentProps::run($artefactDepartment, $this->canEdit),
                 'tabs'        => [

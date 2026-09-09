@@ -16,6 +16,7 @@ use App\Actions\Production\Artefact\UpdateArtefact;
 use App\Actions\Production\Artefact\UI\GetArtefactShowcase;
 use App\Actions\Production\ArtefactDepartment\StoreArtefactDepartment;
 use App\Actions\Production\Artefact\MoveArtefactsToFamily;
+use App\Actions\Production\Artefact\DiscontinueArtefacts;
 use App\Actions\Production\Artefact\SetArtefactState;
 use App\Actions\Production\Artefact\SetArtefactsBatchSize;
 use App\Actions\Production\ArtefactFamily\Hydrators\ArtefactFamilyHydrateArtefacts;
@@ -2722,4 +2723,26 @@ test('bulk batch size leaves artefacts of another production alone', function ()
     expect($changed)->toBe(1)
         ->and($mine->refresh()->recommended_batch_size)->toBe(50)
         ->and($theirs->refresh()->recommended_batch_size)->toBeNull();
+});
+
+test('discontinue artefacts in bulk and take the family down with them', function () {
+    $department = StoreArtefactDepartment::make()->action($this->production, ['code' => 'DISCDEP', 'name' => 'Disc department']);
+    $family     = StoreArtefactFamily::make()->action($department, ['code' => 'DISCFAM', 'name' => 'Disc family']);
+
+    $one = StoreArtefact::make()->action($this->production, ['code' => 'DISC-01', 'name' => 'One', 'artefact_family_id' => $family->id]);
+    $two = StoreArtefact::make()->action($this->production, ['code' => 'DISC-02', 'name' => 'Two', 'artefact_family_id' => $family->id]);
+    SetArtefactState::make()->action($one, ArtefactStateEnum::ACTIVE);
+    SetArtefactState::make()->action($two, ArtefactStateEnum::ACTIVE);
+
+    expect($family->refresh()->state)->toBe(ArtefactStateEnum::ACTIVE);
+
+    $changed = DiscontinueArtefacts::make()->action($this->production, ['artefacts' => [$one->id, $two->id]]);
+
+    expect($changed)->toBe(2)
+        ->and($one->refresh()->state)->toBe(ArtefactStateEnum::DISCONTINUED)
+        ->and($two->refresh()->state)->toBe(ArtefactStateEnum::DISCONTINUED)
+        ->and($family->refresh()->state)->toBe(ArtefactStateEnum::DISCONTINUED);
+
+    $again = DiscontinueArtefacts::make()->action($this->production, ['artefacts' => [$one->id, $two->id]]);
+    expect($again)->toBe(0);
 });
