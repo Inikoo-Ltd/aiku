@@ -8,6 +8,7 @@
 
 namespace App\Actions\Retina\Dropshipping\Orders;
 
+use App\Actions\Ordering\Order\GetOrderInsertsWithoutArtwork;
 use App\Enums\Catalogue\Leaflet\LeafletStateEnum;
 use App\Enums\Catalogue\Packaging\PackagingStateEnum;
 use App\Models\Billables\Leaflet;
@@ -73,6 +74,9 @@ class GetRetinaOrderPackagingData
             'defaultLeafletsByFamily' => $defaultLeafletsByFamily,
             'personalisedMessage'     => $this->getPersonalisedMessage($shop, $customer),
             'customerLeaflets'        => $this->getCustomerLeaflets($shop, $customer),
+
+
+            'insertsWithoutArtwork'   => GetOrderInsertsWithoutArtwork::run($order),
         ];
     }
 

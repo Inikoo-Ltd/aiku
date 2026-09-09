@@ -47,9 +47,9 @@ import ChangePackagingSelect from "@/Components/Warehouse/PickingSessions/Change
 import OrgStockHandlingNotes from "./OrgStockHandlingNotes.vue"
 import BarcodeDisplay from "@/Components/DataDisplay/BarcodeDisplay.vue"
 import ButtonSelectBays from "@/Components/DeliveryNote/ButtonSelectBays.vue"
-import { faBoxOpen, faPrint, faFileAlt, faExclamationCircle } from "@fal"
+import { faBoxOpen, faPrint, faFileAlt, faExclamationCircle, faCloudDownload } from "@fal"
 
-library.add(faSkull, faArrowDown, faDebug, faClipboardListCheck, faUndoAlt, faHandHoldingBox, faListOl, faHourglassHalf, faWandMagic, faBox, faBarcode, faBoxOpen, faPrint, faFileAlt, faExclamationCircle, faExclamationTriangle);
+library.add(faSkull, faArrowDown, faDebug, faClipboardListCheck, faUndoAlt, faHandHoldingBox, faListOl, faHourglassHalf, faWandMagic, faBox, faBarcode, faBoxOpen, faPrint, faFileAlt, faExclamationCircle, faExclamationTriangle, faCloudDownload);
 
 
 const props = defineProps<{
@@ -86,6 +86,7 @@ const props = defineProps<{
             state: string
             state_label: string
             has_media: boolean
+            can_pull_media?: boolean
         }[]
         print_status: {
             total: number
@@ -147,6 +148,20 @@ const onPrintLeaflet = async (leaflet: { id: number, state: string }) => {
     } finally {
         printingLeafletId.value = null
     }
+}
+
+const pullingMediaLeafletId = ref<number | null>(null)
+const onPullLeafletMedia = (leaflet: { id: number }) => {
+    router.patch(
+        route("grp.models.delivery_note_leaflet.pull_media", { deliveryNoteLeaflet: leaflet.id }),
+        {},
+        {
+            preserveScroll: true,
+            onStart: () => pullingMediaLeafletId.value = leaflet.id,
+            onSuccess: () => router.reload({ only: [props.tab] }),
+            onFinish: () => pullingMediaLeafletId.value = null,
+        }
+    )
 }
 
 const isPrintingAllLeaflets = ref(false)
@@ -911,11 +926,12 @@ const warningMsg = computed(() => {
 </script>
 
 <template>
-    <Table 
-        :resource="data" 
-        :name="tab" 
+    <Table
+        :resource="data"
+        :name="tab"
         class="mt-5"
         rowAlignTop
+        :rowspan-columns="['packaging', 'leaflets', 'print_status']"
         xisUseVMemo 
         :useTopPagination="true"
         :rowColorFunction="(item) => {
@@ -1276,6 +1292,8 @@ const warningMsg = computed(() => {
 
 
         <!-- Column: Packaging -->
+        <!-- Packaging and inserts describe the whole delivery note; the table merges these
+             three columns with a rowspan, so each is rendered once. -->
         <template #cell(packaging)>
             <div v-if="packaging?.current || packaging?.options?.length" class="min-w-[190px]">
                 <div class="flex items-center gap-2 text-sm">
@@ -1314,6 +1332,18 @@ const warningMsg = computed(() => {
                         @click="onPrintLeaflet(leaflet)"
                     >
                         <FontAwesomeIcon :icon="['fal', 'print']" fixed-width aria-hidden="true" />
+                    </button>
+                    <!-- The customer uploaded artwork after this order was placed; taking it
+                         copies it onto this insert, so what shipped stays on the record. -->
+                    <button
+                        v-else-if="leaflet.can_pull_media"
+                        type="button"
+                        class="p-1 text-blue-500 hover:text-blue-600 disabled:text-gray-300"
+                        :disabled="pullingMediaLeafletId === leaflet.id"
+                        v-tooltip="trans('The customer uploaded a file after this order — take it')"
+                        @click="onPullLeafletMedia(leaflet)"
+                    >
+                        <FontAwesomeIcon :icon="['fal', 'cloud-download']" fixed-width aria-hidden="true" />
                     </button>
                     <FontAwesomeIcon
                         v-else

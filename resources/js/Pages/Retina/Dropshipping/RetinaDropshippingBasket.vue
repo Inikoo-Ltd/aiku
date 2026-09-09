@@ -142,6 +142,7 @@ const props = defineProps<{
         selectedPackaging: number | null
         leafletOptions: { id: number, label: string, price: number, family_codes: string[] }[]
         defaultLeafletsByFamily: Record<string, number[]>
+        insertsWithoutArtwork?: string[]
         personalisedMessage: string
         customerLeaflets: {
             id: number
@@ -173,6 +174,10 @@ onUnmounted(() => {
     }
 })
 const locale = inject('locale', aikuLocaleStructure)
+
+const insertsWithoutArtwork = computed<string[]>(
+    () => props.packaging_panel?.insertsWithoutArtwork ?? []
+)
 
 const isModalUploadOpen = ref(false)
 const isModalProductListOpen = ref(false)
@@ -658,8 +663,20 @@ const onChangeInsurance = async (val: boolean) => {
                 }"
                 class="w-full"
                 full
-                :disabled="!!Object.values(listLoadingProducts || {}).filter(status => status === 'loading')?.length"
+                :tooltip="insertsWithoutArtwork.length
+                    ? trans('Upload the file for :inserts before checking out', { inserts: insertsWithoutArtwork.join(', ') })
+                    : undefined"
+                :disabled="!!Object.values(listLoadingProducts || {}).filter(status => status === 'loading')?.length
+                    || insertsWithoutArtwork.length > 0"
             />
+
+            
+            <div v-if="insertsWithoutArtwork.length" class="mt-2 flex items-start gap-x-1 text-xs text-amber-600">
+                <FontAwesomeIcon icon="fal fa-exclamation-circle" class="mt-[3px]" fixed-width aria-hidden="true" />
+                <div class="leading-5">
+                    {{ trans("Upload the file for :inserts before checking out.", { inserts: insertsWithoutArtwork.join(', ') }) }}
+                </div>
+            </div>
         </div>
         <div v-else class="w-full md:w-72 pt-5 text-sm">
             <div v-if="is_forbidden_billing" class="text-red-500">*{{ trans("Your current billing address (:_country) is marked as forbidden, please update the address or contact support.", { _country: box_stats?.customer?.addresses?.billing?.country?.name }) }}</div>

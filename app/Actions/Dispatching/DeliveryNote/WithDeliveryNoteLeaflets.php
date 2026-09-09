@@ -25,16 +25,20 @@ trait WithDeliveryNoteLeaflets
                 'copies'      => $leaflet->copies,
                 'state'       => $leaflet->state->value,
                 'state_label' => $leaflet->state->labels()[$leaflet->state->value],
-                'has_media'   => $leaflet->media_id !== null,
+                'has_media'   => $leaflet->isPrintable(),
+                'can_pull_media' => $leaflet->canPullMediaFromPreference(),
             ])->values()->all();
     }
 
     /** @return array{total: int, printed: int, all_printed: bool, label: string} */
     protected function getPrintStatus(DeliveryNote $deliveryNote): array
     {
-        $leaflets = $deliveryNote->leaflets;
-        $total    = $leaflets->count();
-        $printed  = $leaflets->whereIn('state', [
+        $leaflets = $deliveryNote->leaflets->filter(
+            fn (DeliveryNoteLeaflet $leaflet) => $leaflet->isPrintable()
+        );
+
+        $total   = $leaflets->count();
+        $printed = $leaflets->whereIn('state', [
             DeliveryNoteLeafletStateEnum::PRINTED,
             DeliveryNoteLeafletStateEnum::INCLUDED,
         ])->count();

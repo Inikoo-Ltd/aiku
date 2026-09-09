@@ -45,11 +45,11 @@ import { ctrans } from "@/Composables/useTrans"
 import HelpArticles from "@/Components/Utils/HelpArticles.vue"
 import ChangePackagingSelect from "@/Components/Warehouse/PickingSessions/ChangePackagingSelect.vue"
 import OrgStockHandlingNotes from "@/Components/Warehouse/DeliveryNotes/OrgStockHandlingNotes.vue"
-import { faPrint, faFileAlt, faBoxOpen, faExclamationCircle } from "@fal"
+import { faPrint, faFileAlt, faBoxOpen, faExclamationCircle, faCloudDownload } from "@fal"
 
 const screenType = inject('screenType', ref('desktop'))
 
-library.add(faSkull, faStickyNote, faArrowDown, faDebug, faClipboardListCheck, faUndoAlt, faHandHoldingBox, faListOl, faHandPaper, faChair, faBoxCheck, faCheckDouble, faTimes, faPeopleArrows, faHourglassHalf, faBox, faPrint, faFileAlt, faBoxOpen, faExclamationCircle, faBarcodeRead)
+library.add(faSkull, faStickyNote, faArrowDown, faDebug, faClipboardListCheck, faUndoAlt, faHandHoldingBox, faListOl, faHandPaper, faChair, faBoxCheck, faCheckDouble, faTimes, faPeopleArrows, faHourglassHalf, faBox, faPrint, faFileAlt, faBoxOpen, faExclamationCircle, faBarcodeRead, faCloudDownload)
 
 // Section: Packaging & leaflet inserts (warehouse)
 const changingPackagingId = ref<number | null>(null)
@@ -63,6 +63,20 @@ const onChangePackaging = (deliveryNoteId: number, packagingId: number) => {
             onStart: () => changingPackagingId.value = deliveryNoteId,
             onSuccess: () => router.reload({ only: [props.tab] }),
             onFinish: () => changingPackagingId.value = null,
+        }
+    )
+}
+
+const pullingMediaLeafletId = ref<number | null>(null)
+const onPullLeafletMedia = (leaflet: { id: number }) => {
+    router.patch(
+        route("grp.models.delivery_note_leaflet.pull_media", { deliveryNoteLeaflet: leaflet.id }),
+        {},
+        {
+            preserveScroll: true,
+            onStart: () => pullingMediaLeafletId.value = leaflet.id,
+            onSuccess: () => router.reload({ only: [props.tab] }),
+            onFinish: () => pullingMediaLeafletId.value = null,
         }
     )
 }
@@ -1045,6 +1059,17 @@ onUnmounted(() => {
                         @click="onPrintLeaflet(leaflet)"
                     >
                         <FontAwesomeIcon :icon="['fal', 'print']" fixed-width aria-hidden="true" />
+                    </button>
+
+                    <button
+                        v-else-if="leaflet.can_pull_media"
+                        type="button"
+                        class="p-1 text-blue-500 hover:text-blue-600 disabled:text-gray-300"
+                        :disabled="pullingMediaLeafletId === leaflet.id"
+                        v-tooltip="trans('The customer uploaded a file after this order — take it')"
+                        @click="onPullLeafletMedia(leaflet)"
+                    >
+                        <FontAwesomeIcon :icon="['fal', 'cloud-download']" fixed-width aria-hidden="true" />
                     </button>
                     <FontAwesomeIcon
                         v-else

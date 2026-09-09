@@ -466,7 +466,7 @@ class ShowDeliveryNote extends OrgAction
         $startPickingLabel    = __('Start picking');
         $generateInvoiceLabel = __('Generate Invoice');
 
-        return match ($deliveryNote->state) {
+        return $this->disableActionsBlockedByInserts($deliveryNote, match ($deliveryNote->state) {
             DeliveryNoteStateEnum::UNASSIGNED => [
 
                 [
@@ -631,7 +631,35 @@ class ShowDeliveryNote extends OrgAction
                 ],
             ],
             default => []
-        };
+        });
+    }
+
+    /**
+     * @param  array<int, mixed>  $actions
+     *
+     * @return array<int, mixed>
+     */
+    private function disableActionsBlockedByInserts(DeliveryNote $deliveryNote, array $actions): array
+    {
+        if (!$deliveryNote->hasUnprintedLeaflets()) {
+            return $actions;
+        }
+
+        $blocked = [
+            'grp.models.delivery_note.state.packing',
+            'grp.models.delivery_note.state.packed',
+            'grp.models.delivery_note.state.dispatched',
+            'grp.models.delivery_note.state.finalise_and_dispatch',
+        ];
+        $reason = __('Print every insert before continuing');
+
+        return array_map(function ($action) use ($blocked, $reason) {
+            if (!is_array($action) || !in_array(Arr::get($action, 'route.name'), $blocked, true)) {
+                return $action;
+            }
+
+            return array_merge($action, ['disabled' => true, 'tooltip' => $reason]);
+        }, $actions);
     }
 
     public function getPackedActions(DeliveryNote $deliveryNote): array

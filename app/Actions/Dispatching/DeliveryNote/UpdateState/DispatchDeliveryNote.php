@@ -36,6 +36,11 @@ class DispatchDeliveryNote extends OrgAction
         $oldState     = $deliveryNote->state;
         $dispatchedAt = $dispatchedAt ?? now();
 
+
+        if (!$repair && $deliveryNote->hasUnprintedLeaflets()) {
+            abort(422, __('Cannot dispatch: every insert must be printed first'));
+        }
+
         $deliveryNote = DB::transaction(function () use ($deliveryNote, $dispatchedAt, $repair) {
             data_set($modelData, 'dispatched_at', $dispatchedAt);
             data_set($modelData, 'state', DeliveryNoteStateEnum::DISPATCHED->value);

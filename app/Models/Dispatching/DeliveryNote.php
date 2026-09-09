@@ -11,6 +11,7 @@ namespace App\Models\Dispatching;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemStateEnum;
+use App\Enums\Dispatching\DeliveryNoteLeaflet\DeliveryNoteLeafletStateEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteTypeEnum;
 use App\Helpers\NaturalLanguage;
 use App\Models\Billables\Packaging;
@@ -365,6 +366,21 @@ class DeliveryNote extends Model implements Auditable
     public function hasBlockingItems(): bool
     {
         return $this->blockingItems()->exists();
+    }
+
+    public function unprintedLeaflets(): HasMany
+    {
+        return $this->leaflets()
+            ->where(fn ($query) => $query->whereNotNull('media_id')->orWhereNotNull('message'))
+            ->whereNotIn('state', [
+                DeliveryNoteLeafletStateEnum::PRINTED,
+                DeliveryNoteLeafletStateEnum::INCLUDED,
+            ]);
+    }
+
+    public function hasUnprintedLeaflets(): bool
+    {
+        return $this->unprintedLeaflets()->exists();
     }
 
     public function warehouse(): BelongsTo

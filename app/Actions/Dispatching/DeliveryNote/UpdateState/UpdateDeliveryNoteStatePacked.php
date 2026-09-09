@@ -49,6 +49,10 @@ class UpdateDeliveryNoteStatePacked extends OrgAction
             abort(422, __('Cannot pack: some items are waiting for a replacement decision or warehouse release'));
         }
 
+        if ($deliveryNote->hasUnprintedLeaflets()) {
+            abort(422, __('Cannot pack: every insert must be printed first'));
+        }
+
         $oldState = $deliveryNote->state;
 
         data_set($modelData, 'packed_at', now());

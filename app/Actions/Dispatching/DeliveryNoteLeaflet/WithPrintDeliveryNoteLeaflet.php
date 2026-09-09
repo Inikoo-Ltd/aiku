@@ -24,17 +24,23 @@ trait WithPrintDeliveryNoteLeaflet
     {
         $media = $deliveryNoteLeaflet->media;
 
-        if (!$media) {
+        if (!$media && !filled($deliveryNoteLeaflet->message)) {
             return null;
         }
 
-        $bytes = Storage::disk($media->disk)->get($media->getPathRelativeToRoot());
-
-        if ($media->mime_type && str_starts_with($media->mime_type, 'image/')) {
-            $pdf       = PDF::loadHTML('<img src="data:'.$media->mime_type.';base64,'.base64_encode($bytes).'" style="width:100%">');
-            $pdfBase64 = base64_encode($pdf->output());
+        if (!$media) {
+            $pdfBase64 = base64_encode(
+                PDF::loadHTML($this->personalisedMessageHtml($deliveryNoteLeaflet->message))->output()
+            );
         } else {
-            $pdfBase64 = base64_encode($bytes);
+            $bytes = Storage::disk($media->disk)->get($media->getPathRelativeToRoot());
+
+            if ($media->mime_type && str_starts_with($media->mime_type, 'image/')) {
+                $pdf       = PDF::loadHTML('<img src="data:'.$media->mime_type.';base64,'.base64_encode($bytes).'" style="width:100%">');
+                $pdfBase64 = base64_encode($pdf->output());
+            } else {
+                $pdfBase64 = base64_encode($bytes);
+            }
         }
 
         $result = $this->printPdf(
@@ -50,5 +56,12 @@ trait WithPrintDeliveryNoteLeaflet
         ]);
 
         return $result;
+    }
+
+    protected function personalisedMessageHtml(string $message): string
+    {
+        return '<div style="font-family: sans-serif; font-size: 14pt; line-height: 1.6; padding: 24pt; white-space: pre-wrap;">'
+            .e($message)
+            .'</div>';
     }
 }

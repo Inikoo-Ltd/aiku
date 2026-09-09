@@ -11,6 +11,7 @@ namespace App\Actions\Retina\Dropshipping\Checkout\UI;
 
 use App\Actions\Accounting\OrderPaymentApiPoint\StoreOrderPaymentApiPoint;
 use App\Actions\Ordering\Order\CalculateOrderTotalAmounts;
+use App\Actions\Ordering\Order\GetOrderInsertsWithoutArtwork;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Redirect;
@@ -40,6 +41,39 @@ class ShowRetinaDropshippingCheckout extends RetinaAction
     {
         if ($this->isForbidden($order)) {
             abort(403, __('Order billing or delivery address is marked as forbidden'));
+        }
+
+
+        $insertsWithoutArtwork = GetOrderInsertsWithoutArtwork::run($order);
+
+        if ($insertsWithoutArtwork) {
+            $notification = [
+                'status'      => 'error',
+                'title'       => __('Insert file missing'),
+                'description' => __('Upload the file for :inserts before checking out.', [
+                    'inserts' => implode(', ', $insertsWithoutArtwork),
+                ]),
+            ];
+
+            if ($order->customerSalesChannel) {
+                return [
+                    'redirect' => true,
+                    'route'    => [
+                        'name'       => 'retina.dropshipping.customer_sales_channels.basket.show',
+                        'parameters' => [
+                            'customerSalesChannel' => $order->customerSalesChannel->slug,
+                            'order'                => $order->slug,
+                        ],
+                    ],
+                    'notification' => $notification,
+                ];
+            }
+
+            return [
+                'redirect'     => true,
+                'route'        => ['name' => 'retina.dashboard.show', 'parameters' => []],
+                'notification' => $notification,
+            ];
         }
 
         $orderPaymentApiPoint = StoreOrderPaymentApiPoint::run($order);

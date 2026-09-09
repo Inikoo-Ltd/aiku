@@ -26,7 +26,7 @@ class PrintDeliveryNoteLeaflet extends OrgAction
 
     public function handle(DeliveryNoteLeaflet $deliveryNoteLeaflet): PrintJob|RedirectResponse
     {
-        if (!$deliveryNoteLeaflet->media) {
+        if (!$deliveryNoteLeaflet->isPrintable()) {
             throw ValidationException::withMessages([
                 'messages' => __('This insert has no uploaded file to print.'),
             ]);

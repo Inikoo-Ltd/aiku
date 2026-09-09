@@ -51,6 +51,10 @@ class StartPackingDeliveryNote extends OrgAction
             abort(422, __('Cannot start packing: some items are waiting for a replacement decision or warehouse release'));
         }
 
+        if ($deliveryNote->hasUnprintedLeaflets()) {
+            abort(422, __('Cannot start packing: every insert must be printed first'));
+        }
+
         data_set($modelData, 'packing_at', now());
         data_set($modelData, 'state', DeliveryNoteStateEnum::PACKING->value);
         data_set($modelData, 'packer_user_id', $user->id);

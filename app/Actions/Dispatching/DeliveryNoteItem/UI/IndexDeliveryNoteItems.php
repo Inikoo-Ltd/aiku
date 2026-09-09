@@ -124,15 +124,6 @@ class IndexDeliveryNoteItems extends OrgAction
 
             $this->addDeliveryNoteItemBaseTableColumns($table);
 
-            if ($this->effectivePackaging($parent)) {
-                $table->column(key: 'packaging', label: __('Packaging'), canBeHidden: false);
-            }
-
-            if ($parent->leaflets->isNotEmpty()) {
-                $table->column(key: 'leaflets', label: __('Inserts to print'), canBeHidden: false);
-                $table->column(key: 'print_status', label: __('Print all inserts'), canBeHidden: false);
-            }
-
             $this->addDeliveryNoteItemQuantityTableColumns($table, $allowAction);
 
             if ($allowAction) {
@@ -143,6 +134,16 @@ class IndexDeliveryNoteItems extends OrgAction
 
             if ($allowAction && $isEditable) {
                 $table->column(key: 'action', label: __('Action'), canBeHidden: false, className: 'w-[250px]');
+            }
+
+
+            if ($this->effectivePackaging($parent)) {
+                $table->column(key: 'packaging', label: __('Packaging'), canBeHidden: false);
+            }
+
+            if ($parent->leaflets->isNotEmpty()) {
+                $table->column(key: 'leaflets', label: __('Inserts to print'), canBeHidden: false);
+                $table->column(key: 'print_status', label: __('Print all inserts'), canBeHidden: false);
             }
         };
     }

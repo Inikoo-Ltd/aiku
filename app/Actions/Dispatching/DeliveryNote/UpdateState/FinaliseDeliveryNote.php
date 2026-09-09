@@ -36,6 +36,12 @@ class FinaliseDeliveryNote extends OrgAction
             ]);
         }
 
+        if ($deliveryNote->hasUnprintedLeaflets()) {
+            throw ValidationException::withMessages([
+                'leaflets' => __('Every insert must be printed before finalizing.')
+            ]);
+        }
+
         $deliveryNote = DB::transaction(function () use ($deliveryNote, $fromOrder) {
             data_set($modelData, 'finalised_at', now());
             data_set($modelData, 'state', DeliveryNoteStateEnum::FINALISED->value);

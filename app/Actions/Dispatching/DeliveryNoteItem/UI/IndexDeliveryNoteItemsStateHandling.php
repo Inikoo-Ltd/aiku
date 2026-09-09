@@ -204,6 +204,12 @@ class IndexDeliveryNoteItemsStateHandling extends OrgAction
 
             $this->addDeliveryNoteItemBaseTableColumns($table);
 
+            $this->addDeliveryNoteItemQuantityTableColumns($table, $allowAction, false);
+            if ($allowAction) {
+                $table->column(key: 'pickings', label: __('Pickings'), canBeHidden: false);
+            }
+
+
             if ($deliveryNote && $this->effectivePackaging($deliveryNote)) {
                 $table->column(key: 'packaging', label: __('Packaging'), canBeHidden: false);
             }
@@ -211,11 +217,6 @@ class IndexDeliveryNoteItemsStateHandling extends OrgAction
             if ($deliveryNote && $deliveryNote->leaflets->isNotEmpty()) {
                 $table->column(key: 'leaflets', label: __('Inserts to print'), canBeHidden: false);
                 $table->column(key: 'print_status', label: __('Print all inserts'), canBeHidden: false);
-            }
-
-            $this->addDeliveryNoteItemQuantityTableColumns($table, $allowAction, false);
-            if ($allowAction) {
-                $table->column(key: 'pickings', label: __('Pickings'), canBeHidden: false);
             }
         };
     }
