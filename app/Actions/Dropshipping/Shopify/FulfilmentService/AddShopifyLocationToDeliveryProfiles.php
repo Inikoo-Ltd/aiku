@@ -158,10 +158,21 @@ class AddShopifyLocationToDeliveryProfiles
             $query->where('slug', $command->argument('customerSalesChannel'));
         }
 
+        $counts = ['joined' => 0, 'already' => 0, 'waiting approval' => 0, 'unreachable' => 0];
+
         foreach ($query->get() as $customerSalesChannel) {
             [$status, $message] = $this->handle($customerSalesChannel, (bool)$command->option('dry-run'));
             $command->line(($status ? 'ok   ' : 'FAIL ').$customerSalesChannel->slug.' '.$message);
+
+            $counts[match (true) {
+                $status && str_starts_with($message, 'Already') => 'already',
+                $status                                         => 'joined',
+                str_contains($message, 'ACCESS_DENIED')          => 'waiting approval',
+                default                                         => 'unreachable',
+            }]++;
         }
+
+        $command->info(collect($counts)->map(fn (int $count, string $label) => "$label: $count")->implode(', '));
 
         return 0;
     }
