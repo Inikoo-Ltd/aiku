@@ -21,6 +21,7 @@ use App\Enums\Comms\Mailshot\MailshotTypeEnum;
 use App\Enums\UI\Mail\MailshotTabsEnum;
 use App\Http\Resources\Inventory\LocationResource;
 use App\Http\Resources\Mail\DispatchedEmailsResource;
+use App\Http\Resources\Mail\MailshotClickedLinkResource;
 use App\Http\Resources\Comms\MailshotRecipient\MailshotRecipientsResource;
 use App\Models\Catalogue\Shop;
 use App\Models\Comms\Mailshot;
@@ -220,6 +221,20 @@ class ShowMailshot extends OrgAction
                             prefix: MailshotTabsEnum::DISPATCHED_EMAILS->value
                         )
                     )),
+                MailshotTabsEnum::CLICKED_LINKS->value => $this->tab == MailshotTabsEnum::CLICKED_LINKS->value
+                    ?
+                    fn () => MailshotClickedLinkResource::collection(
+                        IndexMailshotClickedLinks::run(
+                            mailshot: $mailshot,
+                            prefix: MailshotTabsEnum::CLICKED_LINKS->value
+                        )
+                    )
+                    : Inertia::optional(fn () => MailshotClickedLinkResource::collection(
+                        IndexMailshotClickedLinks::run(
+                            mailshot: $mailshot,
+                            prefix: MailshotTabsEnum::CLICKED_LINKS->value
+                        )
+                    )),
                 'sendMailshotRoute' => [
                     'name' => match ($mailshot->type) {
                         MailshotTypeEnum::NEWSLETTER => 'grp.models.shop.outboxes.newsletter.send',
@@ -330,6 +345,11 @@ class ShowMailshot extends OrgAction
             IndexMailshotRecipients::make()->tableStructure(
                 parent: $mailshot,
                 prefix: MailshotTabsEnum::RECIPIENTS->value
+            )
+        )->table(
+            IndexMailshotClickedLinks::make()->tableStructure(
+                mailshot: $mailshot,
+                prefix: MailshotTabsEnum::CLICKED_LINKS->value
             )
         );
     }
