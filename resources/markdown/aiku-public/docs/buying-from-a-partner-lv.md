@@ -1,8 +1,8 @@
 ---
 title: Pirkšana no partnera
 summary: Pircēja rokasgrāmata - sāc no iepirkumu paneļa, aizpildi sarakstu ar roku, no partnera kataloga vai ar automātisku aizpildi, un saņem preci, kad tā pienāk.
-date: 2026-09-01
-source_date: 2026-09-01
+date: 2026-09-09
+source_date: 2026-09-09
 tags: procurement, intercompany, shopping-list
 category: procurement
 series: Ordering from partners
@@ -23,6 +23,7 @@ Blakus panelim cilne **Shopping list** (Iepirkumu saraksts) satur visas atklāt�
 
 - **Add stocks** (Pievienot preces) atver partnera preču sarakstu ar viņu pieejamību, iepakojumu, tavu pašreizējo krājumu un cik daudz esi izmantojis pēdējos četros ceturkšņos. Daudzumi ir pārdevēja nosūtīšanas vienībās (SKO).
 - Katra rinda uzreiz stāsta krājuma stāstu — *viņu krājums*, *mūsu krājums* un kad *mums beigsies* — plus summa tavā pirkšanas cenā, ar atklāto vienību kopsummu tabulas apakšā.
+- Kur partneris vienību izgatavo pats, rinda arī saka *made in batches of N units* (izgatavots partijās pa N vienībām) un, ja abi skaitļi nedalās vienmērīgi, *full batches every N SKO* (pilnas partijas ik pa N SKO) — tas ir **order step** (pasūtījuma solis), mazākais pasūtījums, ko pilnas partijas aizpilda tieši. Poga noapaļo tavu daudzumu uz to. Pasūtīt ārpus soļa ir atļauts, un tas arī tiek pateikts: pilna partija tik un tā tiek izgatavota, tāpēc pasūtījums var kavēties vai daudzums tikt koriģēts, un pasūtījums, kas mazāks par vienu pilnu soli, gaida ražotnē, kamēr tam pievienojas cits pieprasījums. Skaties [Partijas, iepakojumi un daļējas partijas](/docs/batches-packs-and-part-batches-lv).
 - Atklātās rindas pilnībā pieder tev: izvēlies **priority** (prioritāti, no zema līdz steidzamam) tieši nolaižamajā izvēlnē tabulā vai noņem rindu ar tās papīrgrozu. Lai mainītu daudzumu, izmanto **Browse** (Pārlūkot) — tā paša produkta soļotājs tur tieši rediģē atklāto rindu. Tiklīdz partneris rindu nokomplektē, tā tiek slēgta, un tās statuss parāda, kur tā atrodas.
 
 ## Partnera kataloga pārlūkošana
@@ -63,6 +64,7 @@ Tiklīdz partneris [nosūta piegādi savai noliktavai](/docs/fulfilling-partner-
 <ul>
 <li><b>Redzēt, kas jāpērk:</b> tava organizācija → <b>Procurement → Partners</b> → atver partneri → <b>Shopping</b> (panelis) → strādā ar riska kartītēm.</li>
 <li><b>Pievienot sarakstam:</b> <b>Shopping list</b> → <b>Add stocks</b>, vai <b>Browse</b> un iestati daudzumus uz produktu kartītēm, vai <b>Auto-fill</b> (vai <b>+ fill</b> uz paneļa kartītes) priekšlikumam.</li>
+<li><b>Pasūtīt pilnās partijās:</b> poga blakus <i>full batches every N SKO</i> uz rindas vai produkta kartītes.</li>
 <li><b>Pielāgot atklātās rindas:</b> maini prioritāti vai dzēs rindas iepirkumu saraksta tabulā; maini daudzumus no produktu kartītēm sadaļā <b>Browse</b>.</li>
 <li><b>Izslēgt vienību no automātiskās aizpildes:</b> tava organizācija → <b>Warehouse → Inventory</b> → atver SKO → <b>Edit SKO</b> → ieslēdz <b>Do not auto order</b>.</li>
 <li><b>Sekot un saņemt piegādi:</b> tā pati partnera lapa → <b>Stock deliveries</b> → kad prece pienāk, <b>Receive</b> → pārbaudi → novieto vietās.</li>

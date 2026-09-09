@@ -1,7 +1,7 @@
 ---
 title: Working the To produce list
 summary: The factory's guide - one queue of everything the factory owes, to partner organisations and to its own customers, grouped the way a production planner thinks.
-date: 2026-09-08
+date: 2026-09-09
 tags: production, procurement, intercompany, dispatch
 category: production
 help_routes: grp.org.productions.show.to_produce
@@ -43,22 +43,25 @@ Six lanes, left to right. A card moves right as the work progresses, and most mo
 
 | Lane | What sits there |
 | --- | --- |
-| Pre-pick | lines nothing has to be made for, because the stock is on the shelf. Hidden until you press **Pre-pick** above the board. The warehouse gathers these, see [Gathering a partner's goods](/docs/gathering-a-partners-goods). |
 | Backlog | lines with an artefact that nobody has looked at yet |
 | Preparing | lines you have decided to make, with the quantity settled |
 | Assigned | a job order exists and is addressed to an artisan, but nobody has started it |
 | Producing | an artisan has pressed START on one of its tasks |
 | Done | every task on the job order is done; it waits for the warehouse to put it away |
 
-Each card shows the product, the quantity asked for, who asked, and **In stock** so you can see whether it is worth making at all.
+Each card shows the product, the quantity asked for, who asked, and **In stock** so you can see whether it is worth making at all. Only lines with an artefact in this factory reach the board; lines the stock can simply be walked off the shelf for live on their own page, **Factory → Pre-pick**, see [Gathering a partner's goods](/docs/gathering-a-partners-goods).
 
-**Backlog → Preparing.** Drop the card and aiku asks *How many to make?*. It proposes the quantity asked for; type more and the extra is marked *for stock*. If the artefact has a recommended batch size, a small **↑** button rounds the quantity up to full batches. The number stays editable on the card while it is in Preparing.
+Under the lanes sits one more line: **N lines too small for a batch are waiting for company · show**. A partner may ask for less than one full batch, and that line cannot sensibly be made on its own, so it waits at the roadside instead of cluttering the Backlog. It is picked up when open demand for the same stock across every partner list reaches a batch, when an own-customer order at the gate makes the job run anyway, or when you press *show* and make it regardless. A line may wait a long time; that is a truer description of its situation than any status we could invent for it. See [Batches, packs and part batches](/docs/batches-packs-and-part-batches).
+
+**Backlog → Preparing.** Drop the card and aiku asks *How many to make?*. It proposes the quantity asked for; type more and the extra is marked *for stock*. If the artefact has a recommended batch size, a small **↑** button rounds the quantity up to full batches. What the artisan is finally asked for is in **units**, rounded up to the next whole batch, and what comes back is divided by the pack size on its way to the shelf: 16 units of a ten-pack land as 1.6 SKOs. The number stays editable on the card while it is in Preparing.
 
 **Preparing → Assigned.** Drop the card and aiku asks *Who makes it?*. It proposes the artisan attached to the artefact or its category, see [Who makes what](/docs/who-makes-what). Pick a name and a job order is created in draft, addressed to that person. Open the job order and press **Release to floor** when it should start; until then the artisan does not see it. To change the artisan later, click the name on the card.
 
 **Producing** and **Done** move on their own from what happens on the floor screen. A card leaves the board when the warehouse puts the finished goods away, see [Putting away finished production](/docs/putting-away-finished-production), or when the job order is received into stock from its own page.
 
 Several cards at once: click the cards to select them, then drag any one of them and the whole selection moves. The **Everybody** menu above the board narrows it to one or two artisans, and the family, buyer and priority filters do the same for the cards.
+
+The factory sidebar carries the live counts for **To produce** and **Pre-pick** beside their names, and they move on their own as shopping lists change; no need to reload the page to see whether anything new came in.
 
 Under the Board and the By artisan view sits **Open job orders per artisan**: one chip per person with how many job orders they have open. Red means none, amber means one; everyone should have at least two so nobody runs dry. The cross on a chip marks the person as not an artisan and hides them from the count.
 
@@ -84,7 +87,9 @@ Ticking an own-customer line does nothing useful. It is skipped when you press P
 <li><b>See the queue:</b> your organisation → <b>Factory</b> → <b>To produce</b>. Switch views with the tabs <b>Board · All · By artisan · By category · By buyer · Mixes</b>.</li>
 <li><b>Decide the quantity:</b> <i>Board</i> → drag the card from <b>Backlog</b> to <b>Preparing</b> → type the number, or press <b>↑</b> for full batches.</li>
 <li><b>Create the job order:</b> drag the card from <b>Preparing</b> to <b>Assigned</b> → pick the artisan → open the job order → <b>Release to floor</b>.</li>
-<li><b>Lines that only need picking:</b> <b>Pre-pick</b> button above the board.</li>
+<li><b>Lines that only need picking:</b> <b>Factory</b> → <b>Pre-pick</b>, its own page.</li>
+<li><b>Small lines waiting for a batch:</b> press <b>show</b> on the line under the board.</li>
+<li><b>What is running out anyway:</b> <b>Factory</b> → <b>To restock</b>, see <a href="/docs/keeping-the-factory-stocked">Keeping the factory stocked</a>.</li>
 <li><b>Hide a block:</b> in a grouped view click its capsule above the list. Click again to show it.</li>
 <li><b>Only partners or only customers:</b> <i>All</i> tab → <b>Source</b> filter.</li>
 <li><b>Ship to a partner:</b> tick lines → <b>Pick into order</b> → <b>Send to warehouse</b> in the <i>Picked orders</i> box.</li>

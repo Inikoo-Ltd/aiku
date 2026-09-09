@@ -1,8 +1,8 @@
 ---
 title: Nákup od partnera
 summary: Sprievodca pre nákupcov - začnite na nákupnom paneli, doplňte zoznam ručne, z partnerovho katalógu alebo pomocou automatického dopĺňania, a prevezmite tovar po jeho príchode.
-date: 2026-09-01
-source_date: 2026-09-01
+date: 2026-09-09
+source_date: 2026-09-09
 tags: procurement, intercompany, shopping-list
 category: procurement
 series: Ordering from partners
@@ -23,6 +23,7 @@ Vedľa panelu záložka **Shopping list** obsahuje každý otvorený riadok.
 
 - **Add stocks** otvorí partnerov skladový zoznam s ich dostupnosťou, spôsobom balenia každej položky, vaším vlastným aktuálnym stavom skladu a tým, koľko ste spotrebovali za posledné štyri štvrťroky. Množstvá sú v predajných jednotkách predávajúceho (SKO).
 - Každý riadok na prvý pohľad rozpráva príbeh skladu — *ich sklad*, *náš sklad* a kedy *nám dôjde* — plus sumu vo vašej nákupnej cene, so súčtom otvorených položiek v päte tabuľky.
+- Tam, kde si partner položku vyrába sám, riadok tiež hovorí *made in batches of N units* (vyrába sa v dávkach po N kusoch) a tam, kde sa dve čísla nedelia presne, aj *full batches every N SKO* (celé dávky každých N SKO) — **order step**, najmenšia objednávka, ktorú celé dávky vyplnia presne. Tlačidlo zaokrúhli vaše množstvo nahor naň. Objednávka mimo stepu je povolená a hovorí to: celá dávka sa vyrobí tak či tak, takže objednávka môže byť oneskorená alebo množstvo upravené, a objednávka pod jeden celý step čaká na dielni, kým sa k nej nepridá ďalší dopyt. Viď [Dávky, balenia a čiastočné dávky](/docs/batches-packs-and-part-batches-sk).
 - Otvorené riadky sú plne vaše: vyberte **priority** (low → urgent) priamo z rozbaľovacieho zoznamu v tabuľke, alebo riadok odstráňte tlačidlom koša. Na zmenu množstva použite **Browse** — rovnaký prepínač množstva tam upravuje otvorený riadok priamo. Keď si partner riadok vyzdvihne, uzamkne sa a jeho stav vám povie, kde sa nachádza.
 
 ## Prehliadanie partnerovho katalógu
@@ -41,7 +42,7 @@ Počas prehliadania vás váš nákupný zoznam sprevádza ako účtenka pripnut
 
 Auto-fill existuje preto, aby doplňovanie skladu nezáviselo od toho, či si niekto spomenie na každú položku. Zadáte mu jedno číslo — **budget** v rovnakej mene, v akej nakupujete — a on postaví návrh, ktorý sa doň zmestí:
 
-- Prezrie každú položku, ktorú partner vie dodať a ktorú skutočne používate, zoradí ich podľa toho, **ako skoro vám dôjdu** (rovnaká predpoveď *we run out in*, akú vidíte pri prehliadaní), a najprv doplní tie, ktorým dôjde najskôr, každú v jej odporúčanom objednávacom množstve.
+- Prezrie každú položku, ktorú partner vie dodať a ktorú skutočne používate, zoradí ich podľa toho, **ako skoro vám dôjdu** (rovnaká predpoveď *we run out in*, akú vidíte pri prehliadaní), a najprv doplní tie, ktorým dôjde najskôr, každú v jej odporúčanom objednávacom množstve, zaokrúhlenom na order step danej položky.
 - Každý navrhnutý riadok ukazuje svoj **dôvod** ("Our sales/quarter ~48 · our stock 0 · we run out now"), množstvo a cenu, takže vidíte, prečo tam je. Množstvá sledujú rovnakú predpoveď ako čipy *suggested* v Browse.
 - Pole **instruction box** je voliteľné a prijíma bežný jazyk: *"prioritise essential oils, skip anything we hold over 8 weeks of"*, *"focus on candles, nothing seasonal"*. AI číta váš pokyn spolu s rovnakými údajmi o spotrebe a podľa toho návrh prispôsobí — jeho výstup sa však pred zobrazením overí voči realite: množstvá sú obmedzené tým, čo partner skutočne má, a súčet je vrátený späť do vášho rozpočtu. Ak sa pokyn nedá dodržať, dostanete namiesto neho štandardný návrh.
 - **Nič sa nepridáva samo.** Návrh je súbor zaškrtnutých riadkov, ktoré môžete odškrtnúť, prepočítať alebo znovu vygenerovať s iným rozpočtom či pokynom; iba **Add items to shopping list** niečo skutočne uloží.
@@ -63,6 +64,7 @@ Keď partner [odošle zásielku do svojho skladu](/docs/fulfilling-partner-order
 <ul>
 <li><b>Zistiť, čo treba nakúpiť:</b> vaša organizácia → <b>Procurement → Partners</b> → otvorte partnera → <b>Shopping</b> (panel) → prechádzajte rizikové dlaždice.</li>
 <li><b>Pridať do zoznamu:</b> <b>Shopping list</b> → <b>Add stocks</b>, alebo <b>Browse</b> a nastavte množstvá na kartách produktov, alebo <b>Auto-fill</b> (či <b>+ fill</b> na dlaždici panelu) pre návrh.</li>
+<li><b>Objednať v celých dávkach:</b> tlačidlo vedľa <i>full batches every N SKO</i> na riadku alebo na karte produktu.</li>
 <li><b>Upraviť otvorené riadky:</b> zmeňte prioritu alebo vymažte riadky v tabuľke nákupného zoznamu; množstvá meňte na kartách produktov v <b>Browse</b>.</li>
 <li><b>Vynechať položku z auto-fillu:</b> vaša organizácia → <b>Warehouse → Inventory</b> → otvorte SKO → <b>Edit SKO</b> → zapnite <b>Do not auto order</b>.</li>
 <li><b>Sledovať a prevziať zásielku:</b> tá istá stránka partnera → <b>Stock deliveries</b> → keď tovar dorazí, <b>Receive</b> → skontrolujte → uložte na lokácie.</li>

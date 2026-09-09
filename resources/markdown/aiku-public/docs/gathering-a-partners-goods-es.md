@@ -1,8 +1,8 @@
 ---
 title: Reunir los productos de un socio
 summary: La guía del almacén - qué significa pre-pick, por qué el stock en la bahía de reunión de un socio deja de contar como disponible, y cómo trabajar la lista Pre-pick en Dispatching.
-date: 2026-09-08
-source_date: 2026-09-08
+date: 2026-09-09
+source_date: 2026-09-09
 tags: dispatch, procurement, intercompany, warehouse
 category: dispatch
 series: Ordering from partners
@@ -47,6 +47,16 @@ La lista se recalcula cada vez que la abres - no es un conjunto de tareas que al
 
 La pestaña solo aparece para las organizaciones que tienen una bahía de reunión configurada para un socio. Si no la ves, es que todavía no se ha hecho.
 
+## La mitad del mismo trabajo que le toca a la fábrica
+
+Los recorridos salen de algún sitio: alguien en la fábrica tiene que decidir que una línea se coge de stock en vez de fabricarse. Esa decisión tiene su propia página, **Factory → Pre-pick**, y es la gemela de la lista de arriba.
+
+Lista cada línea abierta de socio que tiene stock detrás, la fabrique o no esta fábrica, y nunca muestra una línea ya pre-recogida. Cada fila lleva el solicitante, el artefacto, lo **asked** (pedido), lo **in stock** (en stock) y lo **can pick** (se puede recoger) - los dos limitados entre sí, para que una línea nunca prometa más de lo que existe. Los filtros de categoría, solicitante y urgencia acotan la lista, y los recuentos de los filtros son los recuentos reales, no solo lo que cabe en la página.
+
+**Pre-pick** en una fila, **Pre-pick selected** para lo que hayas marcado, o **Pre-pick all** para todo lo que muestren los filtros actuales. Pre-pick promete el stock a ese socio y pone el recorrido en la lista del almacén; cuando solo hay disponible parte de lo pedido, la línea se divide, la parte prometida se va y el resto queda abierto. No se vende nada y no se crea ningún pedido - el stock simplemente deja de estar disponible para cualquier otro.
+
+El número junto a **Pre-pick** en la barra lateral de la fábrica es cuántas líneas están esperando esa decisión, y se actualiza solo.
+
 ## Qué ve el socio
 
 No hay que avisarles a mano de nada. En su propia lista de la compra cada línea lleva el punto en el que va: **Requested** (Solicitado), **Being made** (En fabricación), **Pre-picked** (Pre-recogido), **Staged for you** (Reunido para ti), **Being picked** (En recogida), **On its way** (En camino) - con la orden de trabajo, el pedido o la referencia del albarán al lado.
@@ -69,6 +79,7 @@ Como los productos ya están en una sola bahía, la recogida en ese momento es u
 
 <aside class="wayfinder"><strong>Dónde pulsar en aiku</strong>
 <ul>
+<li><b>Decidir que una línea se coge de stock:</b> tu organización → <b>Factory</b> → <b>Pre-pick</b> → <b>Pre-pick</b> en la fila, o marca y usa <b>Pre-pick selected</b> / <b>Pre-pick all</b>.</li>
 <li><b>La lista de recorridos:</b> tu organización → <b>Warehouse</b> → <b>Dispatching</b> → pestaña <b>Pre-pick</b>.</li>
 <li><b>Registrar un recorrido:</b> pulsa <b>Moved</b> en la fila una vez que los productos están físicamente en la bahía.</li>
 <li><b>Comprobar qué hay en una bahía:</b> <b>Warehouse</b> → <b>Locations</b> → la ubicación → pestaña <b>SKOs</b>.</li>
