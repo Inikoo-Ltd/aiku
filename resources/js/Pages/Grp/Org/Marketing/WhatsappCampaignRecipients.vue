@@ -20,7 +20,7 @@ const props = defineProps<{
     pageHead: any
     customers: any
     recipientsCount: number
-    survivingKeys: string[]
+    survivingKeys: string[] | null
     templateTags: string[]
     channels: Record<string, boolean>
     filters: Record<string, any>
@@ -72,10 +72,14 @@ const pendingKeys = computed<string[]>(() => {
 /* A filter or channel change leaves the ticks describing an audience that no longer exists,
    because the reload preserves page state. The server answers which of them the new audience
    still holds, and the rest are dropped: they were ticked against a question the user has
-   since replaced, and a save would drop them anyway, silently and after the fact. */
+   since replaced, and a save would drop them anyway, silently and after the fact.
+
+   Only that reload carries the ticks, so paging, sorting and searching are answered with null
+   and leave the selection alone. An empty array is an answer and does prune; null is the
+   server saying it was never asked. */
 watch(
     () => props.survivingKeys,
-    (surviving: string[] | undefined) => {
+    (surviving: string[] | null | undefined) => {
         if (!Array.isArray(surviving) || !pendingKeys.value.length) {
             return
         }

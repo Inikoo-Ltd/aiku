@@ -45,7 +45,7 @@ class IndexWhatsappCampaignRecipients extends OrgAction
 
     private array $templateTags = [];
 
-    private array $survivingKeys = [];
+    private ?array $survivingKeys = null;
 
     /**
      * How many pending keys one reload may ask about, matching the cap a single save carries
@@ -131,13 +131,18 @@ class IndexWhatsappCampaignRecipients extends OrgAction
      * global search term leave the answer alone: searching is not a statement about who is
      * selected.
      *
+     * Null when the page asked nothing, which is not the same as an empty answer: only the
+     * filter reload carries the ticks, so paging, sorting and searching arrive without them.
+     * Answering [] there would tell the page every tick had fallen out of the audience, and
+     * it would prune the lot.
+     *
      * @param  mixed  $requested  raw request input, shaped by whoever called us
-     * @return array<int, string>
+     * @return array<int, string>|null
      */
-    private function keysStillInAudience(Builder $recipients, mixed $requested): array
+    private function keysStillInAudience(Builder $recipients, mixed $requested): ?array
     {
         if (!is_array($requested)) {
-            return [];
+            return null;
         }
 
         $keys = array_values(array_unique(array_filter(array_map(
@@ -241,7 +246,8 @@ class IndexWhatsappCampaignRecipients extends OrgAction
                    total an audience it never receives. */
                 'recipientsCount'    => $campaign->recipients_count,
                 /* Of the contacts the page said it had ticked, the ones this audience still
-                   holds. The page prunes its selection down to these. */
+                   holds. The page prunes its selection down to these, and leaves it alone when
+                   this is null, which is what a reload carrying no ticks answers. */
                 'survivingKeys'      => $this->survivingKeys,
                 'channels'           => $this->channels,
                 'filtersStructure'   => GetCustomerFilterStructure::run($this->shop),
