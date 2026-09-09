@@ -36,6 +36,7 @@ class IndexMailshotClickedLinks extends OrgAction
             ->join('mailshot_has_dispatched_emails', 'mailshot_has_dispatched_emails.dispatched_email_id', '=', 'email_tracking_events.dispatched_email_id')
             ->where('mailshot_has_dispatched_emails.mailshot_id', $mailshot->id)
             ->where('email_tracking_events.type', EmailTrackingEventTypeEnum::CLICKED->value)
+            ->where('email_tracking_events.is_scanner', false)
             ->whereRaw("email_tracking_events.data->>'l' is not null")
             ->selectRaw("email_tracking_events.data->>'l' as url")
             ->selectRaw('count(*) as number_clicks')
