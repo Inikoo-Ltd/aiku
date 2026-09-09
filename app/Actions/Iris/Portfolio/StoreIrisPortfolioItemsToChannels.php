@@ -12,6 +12,7 @@ use App\Actions\Dropshipping\Portfolio\StorePortfolio;
 use App\Actions\Dropshipping\Portfolio\UpdatePortfolio;
 use App\Actions\IrisAction;
 use App\Enums\Catalogue\Product\ProductStateEnum;
+use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Dropshipping\Portfolio;
 use Illuminate\Support\Collection;
@@ -24,6 +25,15 @@ class StoreIrisPortfolioItemsToChannels extends IrisAction
      */
     public function handle(Collection $channels, array $itemIds): void
     {
+        $channels = $channels->filter(
+            fn ($customerSalesChannel) => $customerSalesChannel->platform->type == PlatformTypeEnum::MANUAL
+                || $customerSalesChannel->can_connect_to_platform
+        );
+
+        if ($channels->isEmpty()) {
+            return;
+        }
+
         $items = Product::whereIn('id', $itemIds)
             ->where('is_for_sale', true)
             ->where('state', '!=', ProductStateEnum::DISCONTINUED->value)

@@ -9,6 +9,7 @@
 
 namespace App\Actions\Dropshipping\Ebay\Product;
 
+use App\Actions\Dropshipping\WithPortfolioErrorResponse;
 use App\Actions\OrgAction;
 use App\Events\UploadProductToSalesChannelProgressEvent;
 use App\Models\Dropshipping\EbayUser;
@@ -19,6 +20,7 @@ use Lorisleiva\Actions\Concerns\AsAction;
 
 class StoreNewProductToCurrentEbay extends OrgAction
 {
+    use WithPortfolioErrorResponse;
     use AsAction;
 
     public string $jobQueue = 'ebay';
@@ -32,6 +34,8 @@ class StoreNewProductToCurrentEbay extends OrgAction
         try {
             $portfolio = StoreEbayProduct::run($ebayUser, $portfolio);
         } catch (\Throwable $e) {
+            $this->recordPortfolioUploadFailure($portfolio, $e);
+
             if (!$bulkProgress) {
                 throw $e;
             }

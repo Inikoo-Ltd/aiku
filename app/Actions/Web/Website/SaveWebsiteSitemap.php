@@ -91,9 +91,6 @@ class SaveWebsiteSitemap implements ShouldBeUnique
             WebpageSubTypeEnum::COOKIES_POLICY->value       => "contents",
             WebpageSubTypeEnum::PRICING->value              => "contents",
             WebpageSubTypeEnum::ARTICLE->value              => "blogs",
-            WebpageSubTypeEnum::NEWSLETTERS->value          => "blogs",
-            WebpageSubTypeEnum::PRODUCT_GUIDES->value       => "blogs",
-            WebpageSubTypeEnum::BUSINESS_TIPS->value        => "blogs",
             WebpageSubTypeEnum::COLLECTION->value           => "collections",
             WebpageSubTypeEnum::STOREFRONT->value           => "pages",
             WebpageSubTypeEnum::BASKET->value               => "pages",
@@ -103,6 +100,11 @@ class SaveWebsiteSitemap implements ShouldBeUnique
             WebpageSubTypeEnum::CALL_BACK->value            => "pages",
             WebpageSubTypeEnum::APPOINTMENT->value          => "pages",
         ];
+
+        foreach ($this->getBlogSubTypes() as $blogSubType) {
+            $map[$blogSubType] = "blogs";
+        }
+
         $limit = 50000;
 
         DB::connection('aiku_no_sticky')->table('products')
@@ -185,6 +187,21 @@ class SaveWebsiteSitemap implements ShouldBeUnique
         $indexSitemap->writeToDisk('local', "sitemaps/sitemap_$website->id.xml");
 
         return $count;
+    }
+
+    /**
+     * Every sub type read as a blog category, including the legacy ones still stored on webpages.
+     *
+     * @return array<int, string>
+     */
+    private function getBlogSubTypes(): array
+    {
+        $subTypes = array_map(
+            fn (WebpageSubTypeEnum $blogCategory): string => $blogCategory->value,
+            WebpageSubTypeEnum::blogCategories()
+        );
+
+        return array_merge($subTypes, array_keys(WebpageSubTypeEnum::legacyBlogCategoryAliases()));
     }
 
     private function processWebpagesChunk(
