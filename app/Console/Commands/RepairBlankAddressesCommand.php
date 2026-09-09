@@ -29,7 +29,7 @@ class RepairBlankAddressesCommand extends Command
 {
     protected $signature = 'repair:blank_addresses
                            {--shop= : Only this shop slug}
-                           {--months=6 : Only customers who ordered within this many months}
+                           {--months= : Only customers who ordered within this many months, default all}
                            {--fix-open-orders : Repoint open orders whose customer now has a real address}';
 
     protected $description = 'List customers whose address is blank or "0", and repoint their open orders';
@@ -45,7 +45,7 @@ class RepairBlankAddressesCommand extends Command
         $customers = Customer::with(['shop'])
             ->whereIn('address_id', $blankAddressIds)
             ->when($this->option('shop'), fn ($query, $shop) => $query->whereRelation('shop', 'slug', $shop))
-            ->whereHas('orders', fn ($query) => $query->where('orders.created_at', '>', now()->subMonths((int)$this->option('months'))))
+            ->whereHas('orders', fn ($query) => $query->when($this->option('months'), fn ($query, $months) => $query->where('orders.created_at', '>', now()->subMonths((int)$months))))
             ->get();
 
         $this->table(
@@ -58,7 +58,7 @@ class RepairBlankAddressesCommand extends Command
                 $customer->phone,
             ])
         );
-        $this->info($customers->count().' customers have no address and have ordered recently');
+        $this->info($customers->count().' customers have no address and have ordered');
 
         if (!$this->option('fix-open-orders')) {
             return 0;
