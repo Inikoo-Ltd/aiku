@@ -3539,3 +3539,22 @@ test('export flag follows the customs territory of the organisation', function (
         'export'   => (clone $creating)->where('is_export', true)->count(),
     ])->and($counts['domestic'] + $counts['export'])->toBeGreaterThan(0);
 });
+
+
+test('an order with no billing address is held instead of going to the warehouse', function () {
+    $customer = createCustomer($this->shop);
+    $order    = StoreOrder::make()->action($customer, Order::factory()->definition());
+    StoreTransaction::make()->action($order, $this->product->currentHistoricProduct, Transaction::factory()->definition());
+    SubmitOrder::make()->action($order);
+
+    $order->refresh();
+    $order->billingAddress->update(['address_line_1' => '']);
+    $order->unsetRelation('billingAddress');
+
+    $deliveryNote = SendOrderToWarehouse::make()->action($order, []);
+    $order->refresh();
+
+    expect($deliveryNote)->toBeNull()
+        ->and($order->state)->toEqual(OrderStateEnum::SUBMITTED)
+        ->and($order->private_warehouse_note)->toContain('no address');
+});

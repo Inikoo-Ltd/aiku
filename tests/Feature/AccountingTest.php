@@ -3129,12 +3129,13 @@ describe('checkout.com payment session customer phone', function () {
 });
 
 describe('invoice pdf tax number display', function () {
-    $renderInvoiceTemplate = function ($invoice) {
+    $renderInvoiceTemplate = function ($invoice, $deliveryAddress = null, $isCollection = false) {
         return view('invoices.templates.pdf.invoice', [
             'shop'                 => $invoice->shop,
             'invoice'              => $invoice,
             'deliveryNote'         => null,
-            'deliveryAddress'      => null,
+            'isCollection'         => $isCollection,
+            'deliveryAddress'      => $deliveryAddress,
             'recipientName'        => null,
             'invoiceNumberLabel'   => 'Invoice number',
             'dateLabel'            => 'Invoice date',
@@ -3193,5 +3194,14 @@ describe('invoice pdf tax number display', function () {
         $invoice->refresh();
 
         expect($renderInvoiceTemplate($invoice))->not->toContain('FR123INVALID');
+    });
+
+    test('a collection order says collection instead of the customer delivery address', function () use ($renderInvoiceTemplate) {
+        $customer = createCustomer($this->shop);
+        $invoice  = StoreInvoice::make()->action($customer, Invoice::factory()->definition());
+
+        expect($renderInvoiceTemplate($invoice->refresh(), null, true))
+            ->toContain('Collection address')
+            ->and($renderInvoiceTemplate($invoice->refresh(), null, true))->not->toContain('Delivery address');
     });
 });

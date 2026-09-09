@@ -285,16 +285,21 @@
             </td>
             <td width="10%">&nbsp;</td>
         @endif
-        @if($deliveryAddress)
+        @php($isCollection = $isCollection ?? false)
+        @if($deliveryAddress || $isCollection)
             <td width="45%" style="border: 0.1mm solid #888888;">
                 <span
-                        style="font-size: 7pt; color: #555555; font-family: sans-serif;">{{ __('Delivery address') }}:
+                        style="font-size: 7pt; color: #555555; font-family: sans-serif;">{{ $isCollection ? __('Collection address') : __('Delivery address') }}:
                 </span>
-                @if($recipientName)
+                @if(!$deliveryAddress)
+                <div>{{ __('Collection') }}</div>
+                @endif
+                @if($recipientName && !$isCollection)
                 <div>
                     {{ $recipientName }}
                 </div>
                 @endif
+                @if($deliveryAddress)
                 <div>
                     {{ $deliveryAddress->address_line_1 }}
                 </div>
@@ -313,6 +318,7 @@
                 <div>
                     {{ $deliveryAddress->country->name }}
                 </div>
+                @endif
             </td>
         @else
             <td width="45%"></td>

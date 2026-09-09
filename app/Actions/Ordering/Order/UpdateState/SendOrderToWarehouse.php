@@ -51,6 +51,33 @@ class SendOrderToWarehouse extends OrgAction
 
 
     /**
+     * A customer can pay and submit before anyone notices the address is empty, and the payment must never
+     * be refused at that point (HELP-3102). The order is held in submitted instead, so nothing is picked and
+     * no invoice prints a "0" street, until CS gets the address from the customer.
+     */
+    private function missingAddress(Order $order): bool
+    {
+        $hasAddress           = fn (?string $line) => filled($line) && $line != '0';
+        $needsDeliveryAddress = !$order->collection_address_id;
+
+        if ($hasAddress($order->billingAddress?->address_line_1)
+            && (!$needsDeliveryAddress || $hasAddress($order->deliveryAddress?->address_line_1))
+        ) {
+            return false;
+        }
+
+        $note = __('⚠️ Order held: the customer has no address, ask them for it before picking');
+
+        if (!str_contains((string)$order->private_warehouse_note, $note)) {
+            $this->update($order, [
+                'private_warehouse_note' => collect([$order->private_warehouse_note, $note])->filter()->implode(' — ')
+            ]);
+        }
+
+        return true;
+    }
+
+    /**
      * @throws \Throwable
      */
     public function handle(Order $order, array $modelData): ?DeliveryNote
@@ -96,6 +123,10 @@ class SendOrderToWarehouse extends OrgAction
             return null;
         }
 
+
+        if ($this->missingAddress($order)) {
+            return null;
+        }
 
         if (!$this->releaseFromGate
             && $order->organisation->hasFulfilmentGate()
