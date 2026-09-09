@@ -81,7 +81,7 @@ const familyRoute = (family: { slug: string }) =>
     
     <div
         v-if="moveToDepartment && selectedIds.length"
-        class="sticky top-0 z-10 mt-4 flex flex-wrap items-center gap-x-3 gap-y-2 rounded-md bg-green-100 px-4 py-2.5 mb-2"
+        class="sticky top-0 z-10 mt-4 flex flex-wrap items-center gap-x-3 gap-y-2 border-y border-slate-300 bg-slate-50 px-4 py-2.5 mb-2"
         role="region"
         :aria-label="ctrans('Bulk actions')">
         <span class="flex items-center gap-2 whitespace-nowrap font-medium" aria-live="polite">

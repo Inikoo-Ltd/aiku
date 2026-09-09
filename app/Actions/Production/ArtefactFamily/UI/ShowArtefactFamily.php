@@ -64,11 +64,6 @@ class ShowArtefactFamily extends OrgAction
                     ],
                 ],
                 'number_artefacts' => $artefactFamily->number_artefacts,
-                'delete_route'     => $this->canEdit ? [
-                    'method'     => 'delete',
-                    'name'       => 'grp.models.artefact_family.delete',
-                    'parameters' => [$artefactFamily->id],
-                ] : null,
                 'department'  => $artefactFamily->artefactDepartment ? [
                     'code'  => $artefactFamily->artefactDepartment->code,
                     'name'  => $artefactFamily->artefactDepartment->name,

@@ -2551,8 +2551,16 @@ test('UI delete artefact family', function () {
     $response->assertInertia(function (AssertableInertia $page) {
         $page->component('Org/Production/ArtefactFamily')
             ->where('number_artefacts', 1)
-            ->has('delete_route');
+            ->missing('delete_route');
     });
+
+    /* Deleting is a thing you go into the edit screen for, not something to graze on the family page. */
+    get(route('grp.org.productions.show.crafts.artefact_families.edit', [$this->organisation->slug, $this->production->slug, $family->slug]))
+        ->assertInertia(function (AssertableInertia $page) {
+            $page->component('Org/Production/EditArtefactFamily')
+                ->where('number_artefacts', 1)
+                ->has('delete_route');
+        });
 
     delete(route('grp.models.artefact_family.delete', [$family->id]))
         ->assertRedirect(route('grp.org.productions.show.crafts.artefact_families.index', [$this->organisation->slug, $this->production->slug]));

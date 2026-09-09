@@ -15,11 +15,12 @@ import { notify } from '@kyvg/vue3-notification'
 import { ctrans } from '@/Composables/useTrans'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { library } from '@fortawesome/fontawesome-svg-core'
-import { faCheckSquare, faExclamationTriangle } from '@fal'
+import { faCheckSquare, faExclamationTriangle, faChevronDown } from '@fal'
 import Modal from '@/Components/Utils/Modal.vue'
+import Popover from '@/Components/Popover.vue'
 import '@/Composables/Icon/ArtefactStateEnum'
 
-library.add(faCheckSquare, faExclamationTriangle)
+library.add(faCheckSquare, faExclamationTriangle, faChevronDown)
 
 type MoveTarget = { id: number, code: string, name: string }
 type MoveProps = { families_route: routeType, move_route: routeType, create_route: routeType }
@@ -51,6 +52,8 @@ const bulkActions = computed(() => [
     props.moveToDepartment ? { value: 'move_department', label: ctrans('Move to department') } : null,
     props.discontinue ? { value: 'discontinue', label: ctrans('Discontinue') } : null,
 ].filter(Boolean) as { value: string, label: string }[])
+
+const currentAction = computed(() => bulkActions.value.find(action => action.value === bulkAction.value))
 
 const selectedIds = computed(() => Object.entries(selected.value).filter(([, on]) => on).map(([id]) => Number(id)))
 const showBulkBar = computed(() => (props.moveToDepartment || props.moveToFamily || props.setBatchSize || props.discontinue) && selectedIds.value.length > 0)
@@ -168,7 +171,7 @@ function productionRoute(artefact: { slug: string }) {
 <template>
     <div
         v-if="showBulkBar"
-        class="sticky top-0 z-10 xmx-4 mt-4 flex flex-wrap items-center gap-x-3 gap-y-2 xrounded-md bg-green-100 border-y border-slate-300 px-4 py-2.5 xshadow-lg mb-2"
+        class="sticky top-0 z-10 xmx-4 mt-4 flex flex-wrap items-center gap-x-3 gap-y-2 xrounded-md bg-slate-50 border-y border-slate-300 px-4 py-2.5 xshadow-lg mb-2"
         role="region"
         :aria-label="ctrans('Bulk actions')">
         <span class="flex items-center gap-2 whitespace-nowrap font-medium" aria-live="polite">
@@ -181,12 +184,6 @@ function productionRoute(artefact: { slug: string }) {
         </button>
 
         <div class="ml-auto flex flex-wrap items-center gap-x-3 gap-y-2">
-            <select
-                v-model="bulkAction"
-                class="rounded border-gray-300 py-1 text-sm"
-                :aria-label="ctrans('Bulk action')">
-                <option v-for="action in bulkActions" :key="action.value" :value="action.value">{{ action.label }}</option>
-            </select>
 
             <div v-if="setBatchSize && bulkAction === 'batch_size'" class="flex items-center gap-2">
                 <input
@@ -240,6 +237,31 @@ function productionRoute(artefact: { slug: string }) {
                 :createLabel="ctrans('New department')"
                 :loading="isMoving"
                 @move="submitMoveToDepartment" />
+
+            <div class="relative [&_button]:outline-none [&_button]:ring-0 [&_button:focus]:outline-none [&_button:focus]:ring-0">
+                <Popover width="w-48" position="right-0">
+                    <template #button>
+                        <div class="flex w-48 items-center justify-between gap-2 rounded border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-700 focus:outline-none">
+                            <span class="truncate">{{ currentAction?.label }}</span>
+                            <FontAwesomeIcon icon="fal fa-chevron-down" class="text-xs text-gray-400" aria-hidden="true" />
+                        </div>
+                    </template>
+
+                    <template #content="{ close }">
+                        <div class="flex flex-col">
+                            <button
+                                v-for="action in bulkActions"
+                                :key="action.value"
+                                type="button"
+                                class="rounded px-2 py-1.5 text-left text-sm hover:bg-gray-100"
+                                :class="action.value === bulkAction ? 'font-medium text-indigo-600' : 'text-gray-700'"
+                                @click="bulkAction = action.value; close()">
+                                {{ action.label }}
+                            </button>
+                        </div>
+                    </template>
+                </Popover>
+            </div>
         </div>
     </div>
 
