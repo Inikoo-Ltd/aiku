@@ -11,8 +11,8 @@ namespace App\Console\Commands;
 use App\Actions\Ordering\Order\UpdateOrderFixedAddress;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Models\CRM\Customer;
-use App\Models\Helpers\Address;
 use App\Models\Ordering\Order;
+use Closure;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Laravel\Nightwatch\Facades\Nightwatch;
@@ -38,12 +38,8 @@ class RepairBlankAddressesCommand extends Command
     {
         Nightwatch::dontSample();
 
-        $blankAddressIds = Address::whereIn(DB::raw("coalesce(address_line_1,'')"), ['', '0'])
-            ->whereIn(DB::raw("coalesce(locality,'')"), ['', '0'])
-            ->pluck('id');
-
         $customers = Customer::with(['shop'])
-            ->whereIn('address_id', $blankAddressIds)
+            ->whereIn('address_id', $this->blankAddresses())
             ->when($this->option('shop'), fn ($query, $shop) => $query->whereRelation('shop', 'slug', $shop))
             ->whereHas('orders', fn ($query) => $query->when($this->option('months'), fn ($query, $months) => $query->where('orders.created_at', '>', now()->subMonths((int)$months))))
             ->get();
@@ -64,21 +60,21 @@ class RepairBlankAddressesCommand extends Command
             return 0;
         }
 
-        $openOrders = Order::with(['customer.address'])
+        $openOrders = Order::with(['customer.address', 'billingAddress', 'deliveryAddress'])
             ->whereIn('state', [OrderStateEnum::CREATING, OrderStateEnum::SUBMITTED])
-            ->where(fn ($query) => $query->whereIn('billing_address_id', $blankAddressIds)->orWhereIn('delivery_address_id', $blankAddressIds))
+            ->where(fn ($query) => $query->whereIn('billing_address_id', $this->blankAddresses())->orWhereIn('delivery_address_id', $this->blankAddresses()))
             ->when($this->option('shop'), fn ($query, $shop) => $query->whereRelation('shop', 'slug', $shop))
             ->get();
 
         $repointed = 0;
         foreach ($openOrders as $order) {
             $address = $order->customer->address;
-            if (!$address || in_array($address->address_line_1, [null, '', '0'], true)) {
+            if ($this->isBlank($address?->address_line_1)) {
                 continue;
             }
 
-            foreach (['billing', 'delivery'] as $type) {
-                if (!$blankAddressIds->contains($type == 'billing' ? $order->billing_address_id : $order->delivery_address_id)) {
+            foreach (['billing' => $order->billingAddress, 'delivery' => $order->deliveryAddress] as $type => $orderAddress) {
+                if (!$this->isBlank($orderAddress?->address_line_1)) {
                     continue;
                 }
                 UpdateOrderFixedAddress::make()->action($order, ['address' => $address, 'type' => $type], audit: false);
@@ -89,5 +85,18 @@ class RepairBlankAddressesCommand extends Command
         $this->info($repointed.' open order addresses repointed to the customer address');
 
         return 0;
+    }
+
+    /** The blank addresses are tens of thousands of rows, too many to bind as a list of ids */
+    private function blankAddresses(): Closure
+    {
+        return fn ($query) => $query->select('id')->from('addresses')
+            ->whereIn(DB::raw("coalesce(address_line_1,'')"), ['', '0'])
+            ->whereIn(DB::raw("coalesce(locality,'')"), ['', '0']);
+    }
+
+    private function isBlank(?string $addressLine): bool
+    {
+        return blank($addressLine) || $addressLine == '0';
     }
 }
