@@ -11,16 +11,22 @@ namespace App\Rules;
 use Closure;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Support\Arr;
+use CommerceGuys\Addressing\AddressFormat\AddressField;
+use CommerceGuys\Addressing\AddressFormat\AddressFormatRepository;
 use Illuminate\Support\Facades\DB;
 
 class ValidAddress implements ValidationRule
 {
     /**
      * An address with only a country passes by default, because imports and prospects legitimately carry
-     * one. Registration and anything else that must end up on paperwork asks for the street as well: an
-     * all-empty address hashes to the Aurora "0" placeholder and prints as zeros on the invoice (HELP-3102).
+     * one. Registration and anything else that ends up on paperwork asks for a real address: an all-empty
+     * address hashes to the Aurora "0" placeholder and prints as zeros on the invoice (HELP-3102).
+     *
+     * What "real" means is per country and is not ours to guess: commerceguys/addressing already carries
+     * each country's format, so we ask it which fields that country requires. The UAE has no town, Hong
+     * Kong has no postal code, and neither should be blocked from registering.
      */
-    public function __construct(private bool $requireStreet = false)
+    public function __construct(private bool $requireFullAddress = false)
     {
     }
 
@@ -31,14 +37,41 @@ class ValidAddress implements ValidationRule
             $value = $value->toArray();
         }
 
-        $query = DB::table('countries');
-        if ($query->where("id", Arr::get($value, 'country_id'))->count() <= 0) {
+        $country = DB::table('countries')->where('id', Arr::get($value, 'country_id'))->first();
 
+        if (!$country) {
             $fail(__('Invalid address'));
+
+            return;
         }
 
-        if ($this->requireStreet && in_array(trim((string)Arr::get($value, 'address_line_1')), ['', '0'], true)) {
-            $fail(__('The address is required'));
+        if (!$this->requireFullAddress) {
+            return;
         }
+
+        /** Our address columns, keyed by the library's field name */
+        $columns = [
+            AddressField::ADDRESS_LINE1       => ['address_line_1', __('The address is required')],
+            AddressField::LOCALITY            => ['locality', __('The town is required')],
+            AddressField::POSTAL_CODE         => ['postal_code', __('The postal code is required')],
+            AddressField::ADMINISTRATIVE_AREA => ['administrative_area', __('The province is required')],
+        ];
+
+        foreach ((new AddressFormatRepository())->get($country->code)->getRequiredFields() as $field) {
+            if (!isset($columns[$field])) {
+                continue;
+            }
+
+            [$column, $message] = $columns[$field];
+
+            if ($this->isBlank(Arr::get($value, $column))) {
+                $fail($message);
+            }
+        }
+    }
+
+    private function isBlank(mixed $line): bool
+    {
+        return in_array(trim((string)$line), ['', '0'], true);
     }
 }
