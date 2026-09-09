@@ -3196,6 +3196,16 @@ describe('invoice pdf tax number display', function () {
         expect($renderInvoiceTemplate($invoice))->not->toContain('FR123INVALID');
     });
 
+    test('the aurora zero placeholder does not print as an address line', function () use ($renderInvoiceTemplate) {
+        $customer = createCustomer($this->shop);
+        $invoice  = StoreInvoice::make()->action($customer, Invoice::factory()->definition());
+
+        $invoice->billingAddress->update(['address_line_1' => '0', 'locality' => '0', 'postal_code' => '0']);
+        $invoice->refresh();
+
+        expect($renderInvoiceTemplate($invoice))->not->toContain('<div>0</div>');
+    });
+
     test('a collection order says collection instead of the customer delivery address', function () use ($renderInvoiceTemplate) {
         $customer = createCustomer($this->shop);
         $invoice  = StoreInvoice::make()->action($customer, Invoice::factory()->definition());
