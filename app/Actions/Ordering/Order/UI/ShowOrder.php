@@ -411,13 +411,13 @@ class ShowOrder extends OrgAction
                             'order' => $order->id,
                         ]
                     ],
-                    'rollback_dispatch'          => [
+                    'rollback_dispatch'          => $request->user()->authTo("accounting.{$order->organisation_id}.edit") ? [
                         'method'     => 'patch',
                         'name'       => 'grp.models.order.rollback_dispatch',
                         'parameters' => [
                             'order' => $order->id
                         ]
-                    ],
+                    ] : null,
                     'redispatch'                 => $redispatchRoute,
                     'products_list'              => [
                         'name'       => 'grp.json.order.products',

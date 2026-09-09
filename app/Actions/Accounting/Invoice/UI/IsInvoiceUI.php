@@ -256,7 +256,7 @@ trait IsInvoiceUI
         } else {
             $wrappedActions[] =
                 [
-                    'supervisor' => true,
+                    'supervisor' => $request->user()->authTo("accounting.{$invoice->shop->organisation_id}.edit"),
                     'type'       => 'button',
                     'style'      => 'edit',
                     'class'      => ['color' => 'red !important'],

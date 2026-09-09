@@ -60,6 +60,15 @@ class RollbackDispatchedOrder extends OrgAction
         }
     }
 
+    public function authorize(ActionRequest $request): bool
+    {
+        if ($this->asAction) {
+            return true;
+        }
+
+        return $request->user()->authTo("accounting.{$this->shop->organisation_id}.edit");
+    }
+
     public function asController(Order $order, ActionRequest $request): void
     {
         $this->initialisationFromShop($order->shop, $request);

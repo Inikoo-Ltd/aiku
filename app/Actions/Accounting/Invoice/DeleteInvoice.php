@@ -37,12 +37,22 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Validation\Rule;
+use Lorisleiva\Actions\ActionRequest;
 use Throwable;
 
 class DeleteInvoice extends OrgAction
 {
     use WithActionUpdate;
     use WithDeleteInvoiceUI;
+
+    public function authorize(ActionRequest $request): bool
+    {
+        if ($this->asAction) {
+            return true;
+        }
+
+        return $this->canDeleteInvoice($request);
+    }
 
     public function handle(Invoice $invoice, array $modelData): Invoice
     {
