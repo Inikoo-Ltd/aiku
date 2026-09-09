@@ -9,6 +9,7 @@ import WebPreview from "@/Layouts/WebPreview.vue"
 import EmptyState from "@/Components/Utils/EmptyState.vue"
 import { getComponent } from "@/Composables/getWorkshopComponents"
 import { getRevealSetting, sendMessageToParent } from "@/Composables/Workshop"
+import { getDeletePermissions } from "@/Composables/getBlueprintWorkshop"
 import { faTimes } from "@fal"
 import {debounce} from "lodash-es"
 
@@ -185,7 +186,8 @@ watch(filterBlock, updateIrisLayout, { immediate: true })
                     <FontAwesomeIcon :icon="faBringForward" fixed-width />
                   </div>
 
-                  <div v-tooltip="trans('Delete')"
+                  <div v-if="getDeletePermissions(block.web_block.layout.data)"
+                    v-tooltip="trans('Delete')"
                     class="py-1 px-2 cursor-pointer hover:bg-red-100 hover:text-red-600 transition"
                     @click="sendMessageToParent('deleteBlock', block)">
                     <FontAwesomeIcon :icon="faTrashAlt" fixed-width />

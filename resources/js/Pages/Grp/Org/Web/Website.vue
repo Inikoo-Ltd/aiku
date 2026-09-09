@@ -78,6 +78,9 @@ const props = defineProps<{
     analytics?: object
     route_welcome :routeType
     route_storefront: routeType
+    route_login?: routeType
+    route_register?: routeType
+    route_forgot_pass?: routeType
     route_redirects: {
         fetch_live_webpages: routeType
         submit: routeType
@@ -149,6 +152,9 @@ const submitForm = () => {
         :tab="currentTab"
         :route_storefront
         :route_welcome
+        :route_login
+        :route_register
+        :route_forgot_pass
     />
 
     <Modal :isOpen="openModal" width="w-full max-w-md" closeButton @onClose="openModal = false">

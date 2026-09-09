@@ -51,7 +51,7 @@ const fetchMoreReviews = async () => {
 
     try {
         const { data } = await axios.get(
-            route("iris.json.fetch_reviews_new", { webpage: props.webpage_id }),
+            `/json/reviews/${props.webpage_id}`,
             { params: { page: currentPage + 1 } }
         )
 
@@ -149,7 +149,7 @@ const toggleReaction = (item: any, target: "review" | "review_reply", isLike: bo
     reactionsRef.value[review.id] = newReaction
 
     router.post(
-        route("iris.models.review.react", { review: review.id }),
+        `/models/review/${review.id}/react`,
         {
             target: target,
             type: newReaction

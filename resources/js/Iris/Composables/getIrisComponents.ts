@@ -103,6 +103,9 @@ const CarouselImageBackgroundIris = async(() => import("@/Iris/Components/IrisBl
 const CtaVideo1Iris = async(() => import("@/Iris/Components/IrisBlocks/CtaVideo1Iris.vue"))
 const Video1Iris = async(() => import("@/Iris/Components/IrisBlocks/Video1Iris.vue"))
 const UserSubscribeIris = async(() => import("@/Iris/Components/IrisBlocks/UserSubscribeIris.vue"))
+const LoginIris = async(() => import("@/Iris/Components/IrisBlocks/LoginIris.vue"))
+const RegisterIris = async(() => import("@/Iris/Components/IrisBlocks/RegisterIris.vue"))
+const ForgetPasswordIris = async(() => import("@/Iris/Components/IrisBlocks/ForgetPasswordIris.vue"))
 const Cta4Iris = async(() => import("@/Iris/Components/IrisBlocks/Cta4Iris.vue"))
 const BlogIris = async(() => import("@/Iris/Components/IrisBlocks/BlogIris.vue"))
 const Step2Iris = async(() => import("@/Iris/Components/IrisBlocks/Step2Iris.vue"))
@@ -119,6 +122,7 @@ const TabsIris = async(() => import("@/Iris/Components/IrisBlocks/TabsIris.vue")
 const FaqDepartment = async(() => import("@/Iris/Components/IrisBlocks/FaqDepartment.vue"))
 const TopFamiliesIris = async(() => import("@/Iris/Components/IrisBlocks/TopFamiliesIris.vue"))
 const BlogListIris = async(() => import("@/Iris/Components/IrisBlocks/BlogListIris.vue"))
+const BlogCategoriesIris = async(() => import("@/Iris/Components/IrisBlocks/BlogCategoriesIris.vue"))
 const CategoryComparisonIris = async(() => import("@/Iris/Components/IrisBlocks/CategoryComparisonIris.vue"))
 
 const components = (shop_type?: string): Record<string, Component> => {
@@ -224,6 +228,9 @@ const components = (shop_type?: string): Record<string, Component> => {
 		"cta-video-1": CtaVideo1Iris,
 		video_1: Video1Iris,
 		"user-subscribe": UserSubscribeIris,
+		login: LoginIris,
+		register: RegisterIris,
+		"forgot-password": ForgetPasswordIris,
 		cta4: Cta4Iris,
 		blog: BlogIris,
 		"step-2": Step2Iris,
@@ -236,6 +243,7 @@ const components = (shop_type?: string): Record<string, Component> => {
 		'faq-department' : FaqDepartment,
 		'top-families' : TopFamiliesIris,
 		'blog-list' : BlogListIris,
+		'blog-categories' : BlogCategoriesIris,
 		'category-comparison' : CategoryComparisonIris
 	}
 }

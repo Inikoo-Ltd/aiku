@@ -1,0 +1,183 @@
+<!--
+  - Author: Raul Perusquia <raul@inikoo.com>
+  - Created: Thu, 08 Feb 2024 16:53:19 Malaysia Time, Kuala Lumpur, Malaysia
+  - Copyright (c) 2024, Raul A Perusquia Flores
+  -->
+
+<script setup lang="ts">
+import { inject, ref, onMounted, onBeforeUnmount, computed, provide } from "vue"
+import { faCheck, faPlus, faMinus } from "@fal"
+import { library } from "@fortawesome/fontawesome-svg-core"
+import { Head, usePage } from "@inertiajs/vue3"
+import LayoutIris from "@/Layouts/Iris.vue"
+import IrisBlockRenderer from "@/Iris/Components/IrisBlockRenderer.vue"
+import { useStructuredData, getEntityImageUrls } from "@/Iris/Composables/useStructuredData"
+import { resolveProductImages } from "@/Composables/useProductPage"
+import { useRevealBlocks } from "@/Iris/Composables/useRevealBlocks"
+import ReviewsIris from "@/Iris/Components/IrisBlocks/ReviewsIris.vue"
+library.add(faCheck, faPlus, faMinus)
+
+const props = defineProps<{
+    webpage_data: {  // ShowIrisWebpage
+        seo_data: {}
+        seo_image_alt?: string | null
+        title: string
+        description: string
+        canonical_url: string
+        type: string  // 'catalogue'
+        sub_type: string  // 'department' | 'sub_department' | 'family' | 'product'
+        model_type: string  // 'ProductCategory' | 'Product'
+    }
+    web_blocks: any,
+    webpage_img: any,
+    index_page: boolean,
+    follow_link: boolean
+    allow_review_reaction : boolean
+    allow_review_reply_reaction : boolean
+    minimum_reviews_to_show : number
+    webpage_reviews_count?: number | null
+    webpage_slug : string
+    show_staff_who_reply : boolean
+    webpage_id : number
+}>()
+
+defineOptions({ layout: LayoutIris })
+
+const layout: any = inject("layout", {})
+const review = ref(usePage().props?.iris?.website?.reviews_settings)
+const getScreenType = (): "mobile" | "tablet" | "desktop" => {
+    if (typeof window === "undefined") return "desktop"
+    if (window.innerWidth < 640) return "mobile"
+    if (window.innerWidth < 1024) return "tablet"
+    return "desktop"
+}
+// ponytail: init to the SSR value ('desktop') so client hydration matches the server DOM;
+// onMounted -> checkScreenType flips it to the real viewport post-hydration.
+const screenType = ref<"mobile" | "tablet" | "desktop">("desktop")
+const currentUrl = ref("")
+const structuredDataScript = ref<HTMLScriptElement | null>(null)
+const { mountStructuredData, removeStructuredDataScript } = useStructuredData()
+const { isBlockVisible } = useRevealBlocks(() => props.web_blocks)
+
+provide('webpage_data', props.webpage_data)
+provide('webpage_id', props.webpage_id)
+provide('minimum_reviews_to_show', props.minimum_reviews_to_show)
+provide('webpage_reviews_count', props.webpage_reviews_count ?? null)
+provide('allow_review_reaction', props.allow_review_reaction)
+provide('allow_review_reply_reaction', props.allow_review_reply_reaction)
+provide('show_staff_who_reply', props.show_staff_who_reply)
+
+const checkScreenType = () => {
+    screenType.value = getScreenType()
+}
+
+const shareImageAlt = computed(() => props.webpage_data.seo_image_alt || props.webpage_data.title || '')
+
+const PRODUCT_PAGE_BLOCK_TYPES = ["product-1", "product-2", "product-3"]
+
+const firstProductImage = computed(() => {
+    const blocks = Array.isArray(props.web_blocks) ? props.web_blocks : []
+
+    for (const block of blocks) {
+        if (!PRODUCT_PAGE_BLOCK_TYPES.includes(block?.type)) continue
+
+        const fieldValue = block?.web_block?.layout?.data?.fieldValue ?? block?.structure
+        const product = fieldValue?.product
+        if (!product) continue
+
+        const imageUrl = resolveProductImages(product)[0]?.source?.original ?? getEntityImageUrls(product)[0]
+        if (imageUrl) return imageUrl
+    }
+
+    return ''
+})
+
+const shareImage = computed(
+    () => props.webpage_img?.png || props.webpage_img?.original || props.webpage_img?.url || firstProductImage.value
+)
+
+const robotsContent = computed(() => {
+    const index = props.index_page ? "index" : "noindex"
+    const follow = props.follow_link ? "follow" : "nofollow"
+    return `${index}, ${follow}`
+})
+
+onMounted(() => {
+    currentUrl.value = window.location.href
+
+    // Structure data (Family)
+    // Breadcrumbs structured data is mounted independently in BreadcrumbsIris.vue
+    // Product structured data is mounted independently in the product components (product-1 / product-2)
+    // Department structured data is mounted independently in SubDepartmentsIris.vue
+    structuredDataScript.value = mountStructuredData({
+        webpageData: props.webpage_data,
+        webBlocks: props.web_blocks,
+        currencyCode: layout.iris?.currency?.code,
+        websiteName: layout.iris?.website?.name,
+        showPrice: Boolean(layout.iris?.is_logged_in || layout.iris?.show_price),
+    })
+
+    checkScreenType()
+    window.addEventListener('resize', checkScreenType)
+    window.listWebBlocks = props.web_blocks
+    layout.recordWebsiteHit()
+})
+
+
+onBeforeUnmount(() => {
+    removeStructuredDataScript(structuredDataScript.value)
+    window.removeEventListener("resize", checkScreenType)
+})
+</script>
+
+<template>
+    <Head>
+        <title>{{ webpage_data.title }}</title>
+        <meta name="description" :content="webpage_data.description || ''" />
+        <meta name="robots" :content="robotsContent" />
+        <link rel="canonical" :href="webpage_data.canonical_url || currentUrl" />
+        <meta property="og:type" content="website" />
+        <meta property="og:title" :content="webpage_data.title || ''" />
+        <meta property="og:description" :content="webpage_data.description || ''" />
+        <meta property="og:url" :content="webpage_data.canonical_url || currentUrl" />
+        <meta v-if="shareImage" property="og:image" :content="shareImage" />
+        <meta v-if="shareImage" property="og:image:alt" :content="shareImageAlt" />
+        <meta property="og:locale" content="en_US" />
+        <meta property="og:site_name" :content="usePage().props?.iris?.website?.name || webpage_data.title" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" :content="webpage_data.title || ''" />
+        <meta name="twitter:description" :content="webpage_data.description || ''" />
+        <meta v-if="shareImage" name="twitter:image" :content="shareImage" />
+        <meta v-if="shareImage" name="twitter:image:alt" :content="shareImageAlt" />
+    </Head>
+
+    <div class="bg-white">
+        <div class="mx-auto w-full">
+            <div
+                v-for="(web_block_data, index) in props.web_blocks"
+                :key="'block-' + web_block_data.id"
+                v-show="isBlockVisible(web_block_data)"
+                class="w-full"
+                :id="web_block_data.reveal?.key || `v-${web_block_data.type}-${index}`"
+            >
+                <IrisBlockRenderer
+                    :type="web_block_data.type"
+                    :shopType="layout.retina.type"
+                    :screenType="screenType"
+                    :code="web_block_data.type"
+                    :fieldValue="web_block_data?.web_block?.layout?.data?.fieldValue || web_block_data.structure"
+                    :indexBlock="Number(index)"
+                />
+            </div>
+
+            <!-- REVIEW -->
+            <div 
+                v-if="webpage_data.model_type != 'Product' && (review?.enabled ?? true)">
+                <div>
+                     <ReviewsIris :webpage_id="webpage_id" />
+                </div>
+            </div>
+
+        </div>
+    </div>
+</template>

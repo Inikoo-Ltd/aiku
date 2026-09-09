@@ -45,6 +45,9 @@ import ProductsList2Blueprint from '@/Components/CMS/Webpage/Products2/Blueprint
 import VideoBlueprint from '@/Components/CMS/Webpage/Video/Blueprint'
 import CTAVideo1Blueprint from '@/Components/CMS/Webpage/CtaVideo1/Blueprint'
 import UserSubscribe from "@/Components/CMS/Webpage/UserSubscribe/Blueprint"
+import LoginBlueprint from "@/Components/CMS/Webpage/Login/Blueprint"
+import RegisterBlueprint from "@/Components/CMS/Webpage/Register/Blueprint"
+import ForgetPasswordBlueprint from "@/Components/CMS/Webpage/ForgetPassword/Blueprint"
 import Families1Blueprint from '@/Components/CMS/Webpage/Families1/Blueprint'
 import Families2Blueprint from '@/Components/CMS/Webpage/Families2/Blueprint'
 import Families3Blueprint from '@/Components/CMS/Webpage/Families3/Blueprint'
@@ -81,6 +84,7 @@ import Tabs from "@/Components/CMS/Webpage/Tabs/Blueprint"
 import FaqDepartmentBlueprint from '@/Components/CMS/Webpage/FaqDepartment/Blueprint'
 import TopFamiliesWorkshop from '@/Components/CMS/Webpage/TopFamilies/Blueprint';
 import { blueprint as BlogListBlueprint } from '@/Components/CMS/Webpage/BlogList/Blueprint';
+import BlogCategoriesBlueprint from '@/Components/CMS/Webpage/BlogCategories/Blueprint';
 import CategoryComparisonBlueprint from '@/Components/CMS/Webpage/CategoryComparison/Blueprint';
 
 export const getBlueprint = (componentName: string, data?: object, id? : number) => {
@@ -179,6 +183,9 @@ export const getBlueprint = (componentName: string, data?: object, id? : number)
 		"cta-video-1": CTAVideo1Blueprint.blueprint,
 		"video-1": VideoBlueprint.blueprint,
 		"user-subscribe": UserSubscribe.blueprint,
+		"login": LoginBlueprint.blueprint,
+		"register": RegisterBlueprint.blueprint,
+		"forgot-password": ForgetPasswordBlueprint.blueprint,
 		"cta4": Cta4Blueprint.blueprint,
 		'carousel-cta' : CtaCarousel.blueprint,
 		'carousel-image-background' : CarouselImageBackgroundIrisBlueprint.blueprint,
@@ -191,6 +198,7 @@ export const getBlueprint = (componentName: string, data?: object, id? : number)
 		'faq-department' : FaqDepartmentBlueprint.blueprint,
 		'top-families' : TopFamiliesWorkshop.blueprint,
 		'blog-list' : () => BlogListBlueprint(data, id).blueprint,
+		'blog-categories' : BlogCategoriesBlueprint.blueprint,
 		'category-comparison' : CategoryComparisonBlueprint.blueprint
 	}
 

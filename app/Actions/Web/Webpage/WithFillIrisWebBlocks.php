@@ -21,6 +21,7 @@ use App\Actions\Web\WebBlock\Iris\GetIrisWebBlockCarousel;
 use App\Actions\Web\WebBlock\Iris\GetIrisWebBlockCta;
 use App\Actions\Web\WebBlock\Iris\GetIrisWebBlockSlider;
 use App\Actions\Web\WebBlock\Iris\GetIrisWebBlockBlog;
+use App\Actions\Web\WebBlock\Iris\GetIrisWebBlockBlogCategories;
 use App\Actions\Web\WebBlock\Iris\GetIrisWebBlockBlogList;
 use App\Actions\Web\WebBlock\Iris\GetIrisWebBlockRecommendationsCRB;
 use App\Actions\Web\WebBlock\Iris\GetIrisWebBlockRecommendationsFromMaster;
@@ -33,6 +34,9 @@ use App\Actions\Web\WebBlock\Iris\GetIrisWebBlockFamiliesFour;
 use App\Actions\Web\WebBlock\Iris\GetIrisWebBlockSubDepartmentsThree;
 use App\Actions\Web\WebBlock\Iris\GetIrisFaqDepartment;
 use App\Actions\Web\WebBlock\Iris\GetIrisTopFamilies;
+use App\Actions\Web\WebBlock\Iris\GetIrisWebBlockBlogRegister;
+use App\Actions\Web\WebBlock\Iris\GetIrisWebBlockForgotPassword;
+use App\Actions\Web\WebBlock\Iris\GetIrisWebBlockLogin;
 use App\Actions\Web\Webpage\UI\SanitiseImagesWebBlock;
 use Illuminate\Support\Arr;
 
@@ -92,6 +96,20 @@ trait WithFillIrisWebBlocks
             } else {
                 unset($parsedWebBlocks[$key]);
             }
+        } elseif ($webBlockType == 'blog-categories') {
+            $webBlockData = GetIrisWebBlockBlogCategories::run($webpage, $webBlock);
+            if ($webBlockData) {
+                $parsedWebBlocks[$key] = $webBlockData;
+            } else {
+                // for some reason, the blog categories web block is not relevant for this page, so we remove it from the web blocks
+                unset($parsedWebBlocks[$key]);
+            }
+        } elseif ($webBlockType == 'login') {
+            $parsedWebBlocks[$key] = GetIrisWebBlockLogin::run($webpage, $webBlock);
+        } elseif ($webBlockType == 'register') {
+            $parsedWebBlocks[$key] = GetIrisWebBlockBlogRegister::run($webpage, $webBlock);
+        } elseif ($webBlockType == 'forgot-password') {
+            $parsedWebBlocks[$key] = GetIrisWebBlockForgotPassword::run($webpage, $webBlock);
         } elseif ($webBlockType == 'recommendation-customer-recently-bought-1') {
             $parsedWebBlocks[$key] = GetIrisWebBlockRecommendationsCRB::run($webpage, $webBlock);
         } elseif ($webBlockType == 'recommendation-product-category-from-master') {

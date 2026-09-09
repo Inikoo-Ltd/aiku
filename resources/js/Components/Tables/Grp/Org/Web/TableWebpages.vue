@@ -42,6 +42,7 @@ function resolveWebpageRoute(webpage: Webpage) {
         case 'grp.org.fulfilments.show.web.webpages.index.type.info':
         case 'grp.org.fulfilments.show.web.webpages.index.type.content':
         case 'grp.org.fulfilments.show.web.webpages.index.type.operations':
+        case 'grp.org.fulfilments.show.web.webpages.index.type.system':
             return route(
                 'grp.org.fulfilments.show.web.webpages.show',
                 [
@@ -54,6 +55,7 @@ function resolveWebpageRoute(webpage: Webpage) {
         case 'grp.org.shops.show.web.webpages.index.type.info':
         case 'grp.org.shops.show.web.webpages.index.type.content':
         case 'grp.org.shops.show.web.webpages.index.type.operations':
+        case 'grp.org.shops.show.web.webpages.index.type.system':
             return route(
                 'grp.org.shops.show.web.webpages.show',
                 [

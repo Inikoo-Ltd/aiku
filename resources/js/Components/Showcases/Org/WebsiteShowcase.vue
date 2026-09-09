@@ -5,7 +5,8 @@
   -->
 
 <script setup lang="ts">
-import { faFragile, faGlobe, faLink, faPencil, faUser, faChartLine, faUserCheck, faUserSecret } from "@fal"
+
+import { faFragile, faGlobe, faLink, faSearch, faPencil, faUser, faChartLine, faUserCheck, faUserSecret, faUserUnlock, faSignIn, faUserPlus, faPlaneArrival } from "@fal"
 import { computed, ref, inject, watch } from "vue"
 import { Link } from "@inertiajs/vue3"
 import { library } from "@fortawesome/fontawesome-svg-core"
@@ -104,6 +105,9 @@ const props = defineProps<{
     }
     route_storefront: routeType
     route_welcome?:routeType
+    route_login?: routeType
+    route_register?: routeType
+    route_forgot_pass?: routeType
 }>()
 
 const layout = inject('layout', layoutStructure)
@@ -261,9 +265,28 @@ const links = computed(() => {
                     </div>
 
                     <div class="p-2" v-if="route_welcome?.name">
-                        <ButtonWithLink :routeTarget="route_welcome" :icon="faDoorOpen" type="tertiary"
+                        <ButtonWithLink :routeTarget="route_welcome" :icon="faPlaneArrival" type="tertiary"
                             :label="trans('Welcome Page')" full />
                     </div>
+
+                    <hr>
+
+                    <div class="m-2 bg-[#ffe06e4d]" v-if="route_login?.name">
+                        <ButtonWithLink :routeTarget="route_login" :icon="faSignIn" type="secondary"
+                            :label="trans('Login Page')" full />
+                    </div>
+
+                    <div class="m-2 bg-[#ffe06e4d]" v-if="route_register?.name">
+                        <ButtonWithLink :routeTarget="route_register" :icon="faUserPlus" type="secondary"
+                            :label="trans('Register Page')" full />
+                    </div>
+
+                    <div class="m-2 bg-[#ffe06e4d]" v-if="route_forgot_pass?.name">
+                        <ButtonWithLink :routeTarget="route_forgot_pass" :icon="faUserUnlock" type="secondary"
+                            :label="trans('Forgot Password Page')" full />
+                    </div>
+
+                    <hr class="pb-1" v-if="route_login?.name || route_register?.name || route_forgot_pass?.name">
 
                     <div v-for="(item, index) in links" :key="index" class="px-2 py-1">
                         <ButtonWithLink :routeTarget="item.route_target" full :icon="item.icon" :label="item.label"

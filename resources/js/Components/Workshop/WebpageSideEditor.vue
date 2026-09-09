@@ -442,6 +442,23 @@ const blockNotEditableVisible = [
 		"product-3",
 
 ]
+
+const blockWithoutVisibilityOptions = [
+	"login",
+	"register",
+	"forgot-password",
+	"blog-categories",
+]
+
+const openedBlockType = computed(
+	() => props.webpage?.layout?.web_blocks?.[openedBlockSideEditor.value]?.type
+)
+
+const showBlockVisibilityOptions = computed(
+	() =>
+		!blockNotEditableVisible.includes(openedBlockType.value) &&
+		!blockWithoutVisibilityOptions.includes(openedBlockType.value)
+)
 </script>
 
 <template>
@@ -658,7 +675,9 @@ const blockNotEditableVisible = [
 													v-if="
 														getEditPermissions(
 															element.web_block.layout.data
-														) && !blockNotEditableVisible.includes(element.type)
+														) &&
+														!blockNotEditableVisible.includes(element.type) &&
+														!blockWithoutVisibilityOptions.includes(element.type)
 													"
 													v-tooltip="trans('Duplicate this block')"
 													@click.stop.prevent="duplicateBlock(element)"
@@ -775,7 +794,7 @@ const blockNotEditableVisible = [
 								<div class="p-1 space-y-1.5">
 									<VisibleCheckmark
 										:disabled="!editable"
-										v-if="!blockNotEditableVisible.includes(webpage.layout.web_blocks?.[openedBlockSideEditor]?.type)"
+										v-if="showBlockVisibilityOptions"
 										v-model="
 											webpage.layout.web_blocks[openedBlockSideEditor]
 												.visibility
@@ -787,7 +806,7 @@ const blockNotEditableVisible = [
 										" />
 									<RevealOnClick
 										:disabled="!editable"
-										v-if="!blockNotEditableVisible.includes(webpage.layout.web_blocks?.[openedBlockSideEditor]?.type)"
+										v-if="showBlockVisibilityOptions"
 										:modelValue="
 											webpage.layout.web_blocks[openedBlockSideEditor]
 												.web_block.layout.reveal
@@ -908,11 +927,14 @@ const blockNotEditableVisible = [
 				<!-- Copy -->
 				<li
 					@click="
-						getEditPermissions(contextMenu.block.web_block.layout.data) && copyBlock()
+						getEditPermissions(contextMenu.block.web_block.layout.data) &&
+							!blockWithoutVisibilityOptions.includes(contextMenu.block.type) &&
+							copyBlock()
 					"
 					:class="[
 						'flex items-center gap-2 px-2.5 py-1',
-						getEditPermissions(contextMenu.block.web_block.layout.data)
+						getEditPermissions(contextMenu.block.web_block.layout.data) &&
+						!blockWithoutVisibilityOptions.includes(contextMenu.block.type)
 							? 'hover:bg-slate-100 text-slate-800 cursor-pointer'
 							: 'text-gray-400 cursor-not-allowed pointer-events-none',
 					]">

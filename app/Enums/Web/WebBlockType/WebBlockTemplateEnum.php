@@ -29,6 +29,8 @@ enum WebBlockTemplateEnum: string
     // To handle RepairProhibitedWebBlocksInNonModelWebpage dynamically. Prevent non-catalogue webpage from having any of the webBlockType listed below
     case CATALOGUE_EXCLUSIVES = 'CatalogueExclusives';
 
+    case SYSTEM_EXCLUSIVES = 'SystemExclusives';
+
     // ONLY MODIFY THE ARRAYS INSIDE templateCodes(). DO NOT CHANGE ENUM VALUES.
     public function templateCodes(): array
     {
@@ -98,6 +100,13 @@ enum WebBlockTemplateEnum: string
                 'collection-1',
                 'category-comparison',
             ],
+
+            self::SYSTEM_EXCLUSIVES => [
+                'login',
+                'register',
+                'blog-categories',
+                'forgot-password',
+            ]
         };
     }
 
