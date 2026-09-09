@@ -151,7 +151,7 @@ onBeforeUnmount(() => {
                                 class="xfont-bold text-xs md:text-sm !mt-2 md:mt-2 md:mb-1 text-justify line-clamp-3 overflow-hidden min-h-[3rem] md:min-h-[3.75rem]"
                                 :class="product.url ? 'hover:underline' : ''"
                             >
-                                {{ product.name }}
+                                <span v-if="Number(product.units) > 1">{{product.units}}x</span> {{ product.name }}
                             </component>
 
                             <!-- SKU -->

@@ -159,7 +159,7 @@ const onClickLogout = () => {
 						class="flex items-center gap-2 text-gray-600 hover:text-red-500 transition-colors disabled:opacity-60 disabled:cursor-wait"
 						:disabled="isLoading" v-tooltip="ctrans('My Interest')">
 						<LoadingIcon v-if="isLoading" class="text-[20px]" />
-						<FontAwesomeIcon v-else :icon="faHeart" class="text-[20px]" />
+						<FontAwesomeIcon v-else :icon="faHeart" class="text-[20px]" fixed-width />
 						<span class="text-sm font-medium">
 							{{ ctrans('My Interests') }}
 						</span>
@@ -177,7 +177,7 @@ const onClickLogout = () => {
 							v-html="textReplaceVariables(`({{ cart_count }})`, layout.iris_variables)">
 						</span>
 						<LoadingIcon v-if="isLoading" class="text-[20px]" />
-						<FontAwesomeIcon v-else :icon="faShoppingCart" class="text-[20px]" />
+						<FontAwesomeIcon v-else :icon="faShoppingCart" class="text-[20px]" fixed-width />
 						<span class="button whitespace-nowrap"
 							v-html="textReplaceVariables(`{{ cart_products_amount }}`, layout.iris_variables)">
 						</span>
