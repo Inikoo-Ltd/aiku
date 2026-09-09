@@ -30,7 +30,7 @@ class SearchOnWebsite extends IrisAction
         }
 
         // If search model is 'internal'
-        if ($website && Arr::get($website->settings, 'iris_search_model', 'luigi') === 'internal') {
+        if ($website && Arr::get($website->settings, 'iris_search_model', 'internal') === 'internal') {
             return Inertia::render('SearchInternal', [
                 'web_block_family'      => $webBlockData,
                 'web_block_family_code' => FetchUsedProductsWebBlock::run($website),

@@ -56,7 +56,7 @@ export const retinaLayoutStructure = {
             language_options: {} as { [key: string]: Language },
         },
         is_logged_in: false,
-        iris_search_model: 'luigi' as 'luigi' | 'internal',
+        iris_search_model: 'internal' as 'luigi' | 'internal',
         luigisbox_tracker_id: '' as string | null,
     },
     iris_variables: {

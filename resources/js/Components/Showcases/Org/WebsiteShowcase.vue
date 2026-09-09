@@ -5,37 +5,29 @@
   -->
 
 <script setup lang="ts">
-import { faFragile, faGlobe, faLink, faSearch, faPencil, faUser, faChartLine, faUserCheck, faUserSecret } from "@fal"
+import { faFragile, faGlobe, faLink, faPencil, faUser, faChartLine, faUserCheck, faUserSecret } from "@fal"
 import { computed, ref, inject, watch } from "vue"
 import { Link } from "@inertiajs/vue3"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
-import PureRadio from "@/Components/Pure/PureRadio.vue"
 import { trans } from "laravel-vue-i18n"
 import { StatsBoxTS } from "@/types/Components/StatsBox"
 import StatsBox from "@/Components/Stats/StatsBox.vue"
 import { routeType } from "@/types/route"
-import axios from "axios"
-import { notify } from "@kyvg/vue3-notification"
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
 import LiveVisitorsPanel from "@/Components/Web/LiveVisitorsPanel.vue"
 import { useLiveVisitors } from "@/Composables/useLiveVisitors"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
 import { faDoorOpen } from "@far"
 
-library.add(faGlobe, faLink, faSearch, faFragile, faUser, faChartLine, faUserCheck, faUserSecret)
+library.add(faGlobe, faLink, faFragile, faUser, faChartLine, faUserCheck, faUserSecret)
 
 import SearchAnalyticsDisplay from "@/Components/DataDisplay/Dashboard/Widget/SearchAnalyticsDisplay.vue"
 import SearchMerchandising from "@/Components/DataDisplay/Dashboard/Widget/SearchMerchandising.vue"
 
 // Deep link to the website's search analytics page; null (hidden) when the route
 // doesn't apply, e.g. fulfilment websites
-// Migrated websites are internal search only, so the engine is no longer a choice.
-const canChooseSearchEngine = computed(() => !props.data.migrated)
-
-const showSearchInsights = computed(() => props.data.migrated || savedSearchModel.value === "internal" || props.data.search_insights?.total_searches)
-
 const searchAnalyticsUrl = (() => {
     try {
         return route("grp.org.shops.show.web.analytics.search", route().params)
@@ -107,7 +99,6 @@ const props = defineProps<{
             seo?: { name: string }[]
         } | null
         route_restricted_country?: routeType
-        iris_search_model?: "luigi" | "internal"
         search_insights?: any
         search_merchandising?: any
     }
@@ -138,47 +129,6 @@ const liveUsersUrl = computed(() => statUrl({ route: props.data.route_live_users
 watch(() => props.data.website_stats, (newStats) => {
     websiteStats.value = [...newStats]
 }, { deep: true })
-
-// Section: Search engine model (internal / luigi)
-const searchModelOptions = [
-    { value: "luigi", name: trans("Luigi") },
-    { value: "internal", name: trans("Internal") },
-]
-const savedSearchModel = ref<"luigi" | "internal">(props.data.iris_search_model ?? "luigi")
-const searchModel = ref<"luigi" | "internal">(savedSearchModel.value)
-const isSavingSearchModel = ref(false)
-
-const saveSearchModel = async (value: "luigi" | "internal") => {
-    isSavingSearchModel.value = true
-    try {
-        await axios.patch(
-            route("grp.models.website.update", { website: props.data.id }),
-            { iris_search_model: value }
-        )
-        savedSearchModel.value = value
-        notify({
-            title: trans("Success"),
-            text: trans("Search engine updated"),
-            type: "success",
-        })
-    } catch (error) {
-        searchModel.value = savedSearchModel.value
-        notify({
-            title: trans("Something went wrong"),
-            text: trans("Failed to update the search engine"),
-            type: "error",
-        })
-    } finally {
-        isSavingSearchModel.value = false
-    }
-}
-
-watch(searchModel, (value) => {
-    if (value === savedSearchModel.value) {
-        return
-    }
-    saveSearchModel(value)
-})
 
 const links = computed(() => {
     const baseLinks: { label: string; route_target: any; icon: any; disabled?: boolean }[] = [
@@ -259,7 +209,7 @@ const links = computed(() => {
 
                 <div class="border-t border-gray-300 mt-6 pt-4">
                     <div class="flex flex-col xl:flex-row gap-6">
-                        <div v-if="showSearchInsights" class="flex-1 min-w-0">
+                        <div class="flex-1 min-w-0">
                             <div class="flex items-center justify-between flex-wrap gap-2 mb-2">
                                 <div class="font-semibold w-fit text-lg">
                                     {{ trans('Website Search') }}
@@ -281,18 +231,18 @@ const links = computed(() => {
                             />
                         </div>
 
-                        <div :class="showSearchInsights ? 'w-full xl:w-56 shrink-0' : ''">
+                        <div class="w-full xl:w-56 shrink-0">
                             <div class="font-semibold w-fit text-lg mb-2">
                                 {{ trans('Product Catalogue') }}
                             </div>
-                            <div class="gap-2" :class="showSearchInsights ? 'grid grid-cols-2 xl:grid-cols-1' : 'grid grid-cols-2 md:max-w-lg'">
+                            <div class="gap-2 grid grid-cols-2 xl:grid-cols-1">
                                 <StatsBox v-for="stat in props.data.stats" :stat />
                             </div>
 
                             <div class="mt-6 font-semibold w-fit text-lg mb-2">
                                 {{ trans('Content & Blog') }}
                             </div>
-                            <div class="gap-2" :class="showSearchInsights ? 'grid grid-cols-2 xl:grid-cols-1' : 'grid grid-cols-2 md:max-w-lg'">
+                            <div class="gap-2 grid grid-cols-2 xl:grid-cols-1">
                                 <StatsBox v-for="stat in props.data.content_blog_stats" :stat />
                             </div>
                         </div>
@@ -363,40 +313,6 @@ const links = computed(() => {
                             </template>
                         </ModalConfirmationDelete>
 
-                        <!-- Luigi Search is discontinued, reindex button disabled
-                        <ButtonWithLink v-if="luigi_data?.luigisbox_tracker_id && savedSearchModel !== 'internal'"
-                            :routeTarget="{
-                                name: 'grp.models.website_luigi.reindex',
-                                parameters: {
-                                    website: data?.id
-                                }
-                            }"
-                            icon="fal fa-search"
-                            method="post"
-                            :type="luigi_data?.luigisbox_private_key ? 'tertiary' : 'warning'"
-                            full
-                        >
-                            <template #label>
-                                <span class="text-xs">
-                                    {{ trans('Reindex Website Search') }}
-                                </span>
-                            </template>
-                            <template #iconRight>
-                                <div v-if="luigi_data?.luigisbox_private_key"
-                                    v-tooltip="trans('This will reindexing the product that will appear in the search feature')"
-                                    class="text-gray-400 hover:text-gray-700">
-                                    <FontAwesomeIcon icon="fal fa-info-circle" class="" fixed-width
-                                        aria-hidden="true" />
-                                </div>
-                                <div v-else v-tooltip="trans('Please input Luigi Private Key do start reindexing')"
-                                    class="text-amber-500">
-                                    <FontAwesomeIcon icon="fal fa-exclamation-triangle" class="" fixed-width
-                                        aria-hidden="true" />
-                                </div>
-                            </template>
-                        </ButtonWithLink>
-                        -->
-
                         <!-- {{ useFormatTime(lastReindexed30Minutes, {
                             formatTime: 'hm'
                         }) }}
@@ -404,23 +320,6 @@ const links = computed(() => {
                         {{ props.luigi_data.last_reindexed }} -->
                     </div>
 
-                    <!-- Section: Search Engine radio, only while the website still has a choice -->
-                    <div v-if="canChooseSearchEngine" class="p-2 mt-1 border-t border-gray-200">
-                        <div class="flex items-center gap-x-1.5 text-sm font-medium text-gray-600 mb-2">
-                            <FontAwesomeIcon :icon="faSearch" class="text-gray-400" fixed-width aria-hidden="true" />
-                            {{ ctrans('Search Engine') }}
-                            <FontAwesomeIcon icon="fal fa-info-circle" fixed-width aria-hidden="true"
-                                class="text-gray-400 hover:text-gray-700"
-                                v-tooltip="ctrans('Choose which engine powers the website search.')" />
-                        </div>
-                        <PureRadio
-                            v-model="searchModel"
-                            mode="compact"
-                            by="value"
-                            label="name"
-                            :options="searchModelOptions"
-                            :class="{ 'opacity-50 pointer-events-none': isSavingSearchModel }" />
-                    </div>
                 </div>
             </div>
         </div>

@@ -228,7 +228,7 @@ class Website extends Model implements Auditable, HasMedia
 
     public function usesLuigiSearch(): bool
     {
-        return data_get($this->settings, 'iris_search_model', 'luigi') !== 'internal';
+        return data_get($this->settings, 'iris_search_model', 'internal') !== 'internal';
     }
 
     protected $casts = [
