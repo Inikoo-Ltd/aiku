@@ -87,8 +87,8 @@ class IndexArtefactDepartments extends OrgAction
                     'action'      => $this->canEdit ? [
                         'type'    => 'button',
                         'style'   => 'create',
-                        'tooltip' => __('New family'),
-                        'label'   => __('family'),
+                        'tooltip' => __('New Department'),
+                        'label'   => __('Department'),
                         'route'   => [
                             'name'       => 'grp.org.productions.show.crafts.artefact_departments.create',
                             'parameters' => [$production->organisation->slug, $production->slug]
@@ -122,7 +122,7 @@ class IndexArtefactDepartments extends OrgAction
                         $this->canEdit ? [
                             'type'  => 'button',
                             'style' => 'create',
-                            'label' => __('family'),
+                            'label' => __('Department'),
                             'route' => [
                                 'name'       => 'grp.org.productions.show.crafts.artefact_departments.create',
                                 'parameters' => $request->route()->originalParameters()
