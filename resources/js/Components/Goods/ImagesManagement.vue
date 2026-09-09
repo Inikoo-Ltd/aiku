@@ -14,6 +14,7 @@ import Dialog from "primevue/dialog"
 import InputText from "primevue/inputtext"
 import Tag from "@/Components/Tag.vue"
 import { capitalize } from "lodash"
+import { resolveImageDropAction } from "@/Composables/useImageDropAction"
 // Types
 import { Image as ImageTS } from "@/types/Image"
 import { routeType } from "@/types/route"
@@ -160,19 +161,18 @@ function onSubmitVideoUrl() {
 function onDropImage(event: DragEvent, categoryBox: any) {
     event.preventDefault();
 
-    if (event.dataTransfer?.files?.length) {
-        uploadFiles(event.dataTransfer.files);
+    const dropAction = resolveImageDropAction(event.dataTransfer);
+
+    if (dropAction.type !== "attach") {
+        if (dropAction.type === "upload") {
+            uploadFiles(dropAction.files);
+        }
+
         activeCategory.value = null;
         return;
     }
 
-    const dataRowImage = JSON.parse(event.dataTransfer?.getData("application/json") || "{}");
-    console.log("dataRowImage", dataRowImage);
-
-    if (!dataRowImage?.id) {
-        activeCategory.value = null;
-        return;
-    }
+    const dataRowImage = dropAction.image;
 
     let payload: Record<string, any> = {
         [categoryBox.column_in_db]: dataRowImage.id
@@ -217,7 +217,7 @@ function onEndDrag(event: DragEvent) {
 /* ---------------------------
    File Upload / Delete
 ---------------------------- */
-async function uploadFiles(files: FileList) {
+async function uploadFiles(files: FileList | File[]) {
     if (!files?.length || !editable.value) return
 
     const formData = new FormData()
@@ -250,7 +250,11 @@ function onUploadFile(event: Event) {
 }
 
 function onDropFile(event: DragEvent) {
-    if (event.dataTransfer?.files?.length) uploadFiles(event.dataTransfer.files)
+    const dropAction = resolveImageDropAction(event.dataTransfer)
+
+    if (dropAction.type === "upload") {
+        uploadFiles(dropAction.files)
+    }
 }
 
 async function onPickGalleryImages(selectedImages: any[]) {
