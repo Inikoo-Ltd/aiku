@@ -62,16 +62,6 @@ class RouteServiceProvider extends ServiceProvider
             ->prefix('devops')
             ->group(base_path('routes/grp/devops.php'));
 
-        Route::middleware('han')
-            ->domain(config('app.domain'))
-            ->prefix('han')
-            ->group(base_path('routes/han/han-app.php'));
-
-        Route::middleware('maya')
-            ->domain(config('app.domain'))
-            ->prefix('maya')
-            ->group(base_path('routes/maya/maya-app.php'));
-
         Route::middleware('aiku-public')
             ->domain(config('app.domain'))
             ->prefix('wix')
@@ -119,14 +109,6 @@ class RouteServiceProvider extends ServiceProvider
             $token = $request->user()?->currentAccessToken();
 
             return Limit::perMinute(120)->by($token ? 'token:'.$token->id : 'ip:'.$request->ip());
-        });
-
-        RateLimiter::for('han', function (Request $request) {
-            return Limit::perMinute(600)->by($request->user()?->id ?: $request->ip());
-        });
-
-        RateLimiter::for('maya', function (Request $request) {
-            return Limit::perMinute(600)->by($request->user()?->id ?: $request->ip());
         });
 
         RateLimiter::for('kiosk', function (Request $request) {

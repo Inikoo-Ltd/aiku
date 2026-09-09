@@ -1046,6 +1046,67 @@ test('repair command resyncs product ingredients and origin from trade units', f
         ->and($product->country_of_origin)->toBe('IDN');
 });
 
+test('a bundle combines its trade unit ingredients and shows no component dimensions', function () {
+    $shop = Shop::first() ?? StoreShop::make()->action($this->organisation, array_merge(Shop::factory()->definition(), ['type' => ShopTypeEnum::B2B->value]));
+    createProduct($shop);
+    $product = $shop->products()->orderBy('id')->first();
+
+    $bulb = $this->tradeUnit1;
+    $bulb->update(['marketing_ingredients' => 'Cotton, Spare Bulbs', 'marketing_dimensions' => ['width' => 5]]);
+
+    $lamp = $this->tradeUnit2;
+    $lamp->update(['marketing_ingredients' => 'Himalayan Salt, Cotton', 'marketing_dimensions' => ['width' => 20]]);
+
+    \App\Actions\Catalogue\Product\SyncProductTradeUnits::run($product, [
+        ['id' => $bulb->id, 'quantity' => 1],
+        ['id' => $lamp->id, 'quantity' => 1],
+    ]);
+    \App\Actions\Catalogue\Product\Hydrators\ProductHydrateMarketingIngredientsFromTradeUnits::run(Product::find($product->id));
+    \App\Actions\Catalogue\Product\Hydrators\ProductHydrateMarketingDimensionFromTradeUnits::run(Product::find($product->id));
+
+    $product = Product::find($product->id);
+    expect(explode(', ', $product->marketing_ingredients))
+        ->toHaveCount(3)
+        ->toContain('Cotton', 'Spare Bulbs', 'Himalayan Salt')
+        ->and($product->marketing_dimensions)->toBeEmpty();
+
+    Product::where('id', $product->id)->update(['marketing_dimensions' => json_encode(['width' => 5])]);
+    $product = Product::find($product->id);
+
+    expect(\App\Actions\Catalogue\Product\Hydrators\ProductHydrateMarketingDimensionFromTradeUnits::make()->cameFromOneOfSeveralTradeUnits($product))->toBeTrue();
+
+    \App\Actions\Catalogue\Product\RepairProductIngredientsAndOriginFromTradeUnits::make()->handle($shop->id);
+
+    expect(Product::find($product->id)->marketing_dimensions)->toBeNull();
+});
+
+test('a bundle spec block says which component each ingredient and size belongs to', function () {
+    $shop = Shop::first() ?? StoreShop::make()->action($this->organisation, array_merge(Shop::factory()->definition(), ['type' => ShopTypeEnum::B2B->value]));
+    createProduct($shop);
+    $product = $shop->products()->orderBy('id')->first();
+
+    $bulb = $this->tradeUnit1;
+    $bulb->update(['marketing_ingredients' => 'Cotton', 'marketing_dimensions' => ['type' => 'rectangular', 'units' => 'cm', 'l' => 0.02, 'w' => 0.02, 'h' => 0.04]]);
+
+    $lamp = $this->tradeUnit2;
+    $lamp->update(['marketing_ingredients' => 'Himalayan Salt', 'marketing_dimensions' => ['type' => 'rectangular', 'units' => 'cm', 'l' => 0.1, 'w' => 0.1, 'h' => 0.19]]);
+
+    \App\Actions\Catalogue\Product\SyncProductTradeUnits::run($product, [
+        ['id' => $bulb->id, 'quantity' => 1],
+        ['id' => $lamp->id, 'quantity' => 1],
+    ]);
+
+    $specifications = \App\Actions\Iris\Catalogue\GetProductDetail::make()
+        ->jsonResponse(Product::find($product->id), \Lorisleiva\Actions\ActionRequest::createFrom(request()))['specifications'];
+
+    expect($specifications['ingredients'])
+        ->toContain($bulb->code.' (Cotton)')
+        ->toContain($lamp->code.' (Himalayan Salt)')
+        ->and($specifications['dimensions'])
+        ->toContain($bulb->code.' (')
+        ->toContain($lamp->code.' (');
+});
+
 test('bulk update product unit is scoped to shop', function () {
     $shop = Shop::first() ?? StoreShop::make()->action($this->organisation, array_merge(Shop::factory()->definition(), ['type' => ShopTypeEnum::B2B->value]));
     createProduct($shop);
@@ -1330,4 +1391,35 @@ test('iris collection lists the product that owns a member product webpage', fun
     AttachModelToCollection::make()->action($collection, $sample);
 
     expect($listed()->all())->toBe([$sample->code]);
+});
+
+test('shop products json carries the outer size from the stock, not the product units', function () {
+    $shop = Shop::first() ?? StoreShop::make()->action($this->organisation, array_merge(Shop::factory()->definition(), ['type' => ShopTypeEnum::B2B->value]));
+    createProduct($shop);
+    $product = $shop->products()->where('state', ProductStateEnum::ACTIVE)->orderBy('id')->first();
+
+    $orgStock = $this->orgStock1;
+    $orgStock->update(['packed_in' => 6]);
+
+    $product->update(['units' => 1, 'is_for_sale' => true]);
+    $product->orgStocks()->sync([$orgStock->id => ['quantity' => 1]]);
+
+    $products = \App\Actions\Catalogue\Product\Json\GetProductsInShop::make()->handle($shop);
+    $row      = collect($products->items())->firstWhere('id', $product->id);
+
+    expect($row)->not->toBeNull()
+        ->and((int) $row->packed_in)->toBe(6)
+        ->and((float) $row->units)->toBe(1.0);
+
+    $secondStock = \App\Actions\Inventory\OrgStock\StoreOrgStock::make()->action(
+        $this->organisation,
+        $orgStock->stock,
+        array_merge(\App\Models\Inventory\OrgStock::factory()->definition(), ['code' => 'PACKED-IN-2ND']),
+    );
+    $product->orgStocks()->sync([$orgStock->id => ['quantity' => 1], $secondStock->id => ['quantity' => 1]]);
+
+    $multi = collect(\App\Actions\Catalogue\Product\Json\GetProductsInShop::make()->handle($shop)->items())
+        ->firstWhere('id', $product->id);
+
+    expect($multi->packed_in)->toBeNull();
 });

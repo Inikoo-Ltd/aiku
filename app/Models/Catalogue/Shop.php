@@ -518,6 +518,14 @@ class Shop extends Model implements HasMedia, Auditable
         return $this->belongsTo(Timezone::class);
     }
 
+    /**
+     * The timezone the shop trades in, which is the one its opening and closing dates are meant in.
+     */
+    public function timezoneName(): string
+    {
+        return $this->timezone?->name ?? $this->organisation?->timezone?->name ?? config('app.timezone');
+    }
+
     public function orgPaymentServiceProviders(): BelongsToMany
     {
         return $this->belongsToMany(OrgPaymentServiceProvider::class)->using(OrgPaymentServiceProviderShop::class)

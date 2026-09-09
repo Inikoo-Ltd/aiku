@@ -12,6 +12,7 @@ use App\Actions\Utils\Abbreviate;
 use App\Enums\Comms\Mailshot\MailshotStateEnum;
 use App\Enums\Comms\Mailshot\MailshotTypeEnum;
 use App\Models\Catalogue\Shop;
+use Illuminate\Validation\ValidationException;
 use App\Models\Traits\HasHistory;
 use App\Models\Traits\InShop;
 use Eloquent;
@@ -193,6 +194,30 @@ class Mailshot extends Model implements Auditable
     public function requiresUnsubscribeLink(): bool
     {
         return $this->type->requiresUnsubscribeLink();
+    }
+
+    public function hasDefaultSubject(): bool
+    {
+        $labels = $this->type === MailshotTypeEnum::NEWSLETTER
+            ? ['Newsletter', __('Newsletter')]
+            : ['Mailshot', __('Mailshot')];
+
+        foreach ($labels as $label) {
+            if (trim($this->subject) === $label.' '.$this->created_at->format('j M Y')) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    public function assertSubjectIsNotDefault(): void
+    {
+        if ($this->hasDefaultSubject()) {
+            throw ValidationException::withMessages([
+                'subject' => __('The subject is still the default one. Write a real subject before sending.'),
+            ]);
+        }
     }
 
     public function sender(): string

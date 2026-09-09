@@ -171,7 +171,7 @@ class WaitingDNItemsTabsItemizedResource extends JsonResource
             'is_handled'       => $this->is_handled,
             'picking_position' => $this->picking_position,
             'warehouse_area'   => $warehouseArea,
-            'locations'        => $pickingLocations->isNotEmpty() ? LocationOrgStocksForPickingActionsResource::collection($pickingLocations) : [],
+            'locations'        => $pickingLocations->isNotEmpty() ? LocationOrgStocksForPickingActionsResource::collectionForPicking($pickingLocations, $deliveryNoteItem?->organisation_id) : [],
             'pickings'         => PickingResource::collection($pickings),
             'packings'         => $deliveryNoteItem?->packings ? PackingsResource::collection($deliveryNoteItem->packings) : [],
 

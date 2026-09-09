@@ -7,6 +7,7 @@
 /** @noinspection PhpUnhandledExceptionInspection */
 
 use App\Actions\Catalogue\Product\StoreProduct;
+use App\Actions\Catalogue\Product\UpdateProduct;
 use App\Actions\Goods\TradeUnit\StoreTradeUnit;
 use App\Actions\Helpers\Translations\Translate;
 use App\Actions\Masters\MasterAsset\StoreMasterAsset;
@@ -22,6 +23,7 @@ use App\Models\Goods\TradeUnit;
 use App\Models\Helpers\Language;
 
 use function Pest\Laravel\actingAs;
+use function Pest\Laravel\patch;
 
 beforeAll(function () {
     loadDB();
@@ -144,4 +146,79 @@ test('a shop that does not follow the master keeps its own unit label', function
     UpdateMasterAsset::make()->action($this->masterAsset, ['unit' => 'bottle']);
 
     expect($this->product->refresh()->unit)->toBe('piece');
+});
+
+test('a master name change is copied to a shop that speaks the master language', function () {
+    UpdateMasterAsset::make()->action($this->masterAsset, ['name' => 'lavender soap']);
+
+    expect($this->product->refresh()->name)->toBe('lavender soap')
+        ->and($this->product->is_name_reviewed)->toBeTrue();
+});
+
+test('a master name change never overwrites a shop that wrote its own translation', function () {
+    $this->shop->updateQuietly(['language_id' => Language::where('code', 'sk')->first()->id]);
+    $ownName = $this->product->name;
+
+    UpdateMasterAsset::make()->action($this->masterAsset, ['name' => 'lavender soap']);
+
+    expect($this->product->refresh()->name)->toBe($ownName)
+        ->and($this->product->is_name_reviewed)->toBeFalse();
+});
+
+test('the review flag is raised whatever the shop follow master setting says', function () {
+    $this->shop->updateQuietly([
+        'language_id' => Language::where('code', 'sk')->first()->id,
+        'settings'    => array_merge($this->shop->settings ?? [], [
+            'catalog' => ['product_follow_master' => true],
+        ]),
+    ]);
+    $ownName = $this->product->name;
+
+    UpdateMasterAsset::make()->action($this->masterAsset, ['name' => 'lavender soap']);
+
+    expect($this->product->refresh()->name)->toBe($ownName)
+        ->and($this->product->is_name_reviewed)->toBeFalse();
+});
+
+test('writing the shop text clears the review flag', function () {
+    $this->shop->updateQuietly(['language_id' => Language::where('code', 'sk')->first()->id]);
+    UpdateMasterAsset::make()->action($this->masterAsset, ['name' => 'lavender soap']);
+    expect($this->product->refresh()->is_name_reviewed)->toBeFalse();
+
+    patch(route('grp.models.product.update', $this->product->id), ['name' => 'levanduľové mydlo'])
+        ->assertRedirect();
+
+    expect($this->product->refresh()->name)->toBe('levanduľové mydlo')
+        ->and($this->product->is_name_reviewed)->toBeTrue();
+});
+
+test('a machine rewriting the text does not mark it reviewed', function () {
+    $this->shop->updateQuietly(['language_id' => Language::where('code', 'sk')->first()->id]);
+    UpdateMasterAsset::make()->action($this->masterAsset, ['name' => 'lavender soap']);
+    expect($this->product->refresh()->is_name_reviewed)->toBeFalse();
+
+    UpdateProduct::make()->action($this->product, ['name' => 'strojový preklad']);
+
+    expect($this->product->refresh()->name)->toBe('strojový preklad')
+        ->and($this->product->is_name_reviewed)->toBeFalse();
+});
+
+test('a master translation reaches the shop map in every language but the shop own', function () {
+    $this->shop->updateQuietly(['language_id' => Language::where('code', 'sk')->first()->id]);
+
+    $this->product->setTranslation('name_i8n', 'sk', 'levanduľové mydlo')->save();
+
+    $this->masterAsset->setTranslation('name_i8n', 'en', 'lavender soap')
+        ->setTranslation('name_i8n', 'sk', 'strojové mydlo')
+        ->setTranslation('name_i8n', 'es', 'jabón de lavanda')
+        ->save();
+
+    UpdateMasterAsset::make()->action($this->masterAsset, ['name' => 'lavender soap']);
+
+    $product = $this->product->refresh();
+
+    expect($product->getTranslation('name_i8n', 'es'))->toBe('jabón de lavanda')
+        ->and($product->getTranslation('name_i8n', 'sk'))->toBe('levanduľové mydlo')
+        ->and($product->name)->not->toBe('lavender soap')
+        ->and($product->is_name_reviewed)->toBeFalse();
 });

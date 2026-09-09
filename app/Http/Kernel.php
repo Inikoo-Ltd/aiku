@@ -21,7 +21,6 @@ use App\Http\Middleware\HandlePupilInertiaRequests;
 use App\Http\Middleware\RestrictCountryRegions;
 use App\Http\Middleware\RetinaPreparingAccount;
 use App\Http\Middleware\SameSiteSession;
-use App\Http\Middleware\SetHanAsAppScope;
 use App\Http\Middleware\Authenticate;
 use App\Http\Middleware\BindGroupInstance;
 use App\Http\Middleware\CaptureTrafficSourceMiddleWare;
@@ -30,6 +29,7 @@ use App\Http\Middleware\DetectWebsite;
 use App\Http\Middleware\HandleAikuPublicInertiaRequests;
 use App\Http\Middleware\HandleRetinaInertiaRequests;
 use App\Http\Middleware\LogAikuPublicPageVisit;
+use App\Http\Middleware\LogRetinaApiRequest;
 use App\Http\Middleware\LogUserRequestMiddleware;
 use App\Http\Middleware\EncryptCookies;
 use App\Http\Middleware\ForceJsonResponse;
@@ -118,6 +118,7 @@ class Kernel extends HttpKernel
         ],
 
         'retina-api' => [
+            LogRetinaApiRequest::class,
             ForceJsonResponse::class,
             EnsureFrontendRequestsAreStateful::class,
             SubstituteBindings::class,
@@ -130,21 +131,6 @@ class Kernel extends HttpKernel
             EnsureFrontendRequestsAreStateful::class,
             SubstituteBindings::class,
             ApiBindGroupInstance::class,
-            AddFrameOptionsHeader::class
-        ],
-
-        'han' => [
-            ForceJsonResponse::class,
-            EnsureFrontendRequestsAreStateful::class,
-            SetHanAsAppScope::class,
-            SubstituteBindings::class,
-            AddFrameOptionsHeader::class
-        ],
-
-        'maya' => [
-            ForceJsonResponse::class,
-            EnsureFrontendRequestsAreStateful::class,
-            SubstituteBindings::class,
             AddFrameOptionsHeader::class
         ],
 

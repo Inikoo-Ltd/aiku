@@ -11,6 +11,8 @@ namespace App\Actions\Production\ManufactureTaskSession;
 use App\Actions\Production\JobOrderItemTask\UI\ShowManufactureFloor;
 use App\Actions\OrgAction;
 use App\Actions\Production\JobOrderItemTask\CalculateJobOrderItemTaskQuantities;
+use App\Actions\Production\JobOrderItemTask\SettleShortJobOrderItemTask;
+use App\Enums\Production\JobOrderItemTask\JobOrderItemTaskStateEnum;
 use App\Enums\Production\ManufactureTaskSession\ManufactureTaskSessionActivityTypeEnum;
 use App\Enums\Production\ManufactureTaskSession\ManufactureTaskSessionStateEnum;
 use App\Models\Production\ManufactureTaskSession;
@@ -46,8 +48,13 @@ class CloseManufactureTaskSession extends OrgAction
             'non_productive_reason'           => $modelData['non_productive_reason'] ?? null,
         ]);
 
-        CalculateJobOrderItemTaskQuantities::run($session->jobOrderItemTask);
+        $task = CalculateJobOrderItemTaskQuantities::run($session->jobOrderItemTask);
         CalculateManufactureTaskSessionPay::run($session);
+
+        $outcome = $modelData['outcome'] ?? null;
+        if ($outcome && $task->state != JobOrderItemTaskStateEnum::DONE) {
+            SettleShortJobOrderItemTask::run($task, $outcome === 'carry_over');
+        }
 
         return $session;
     }
@@ -58,6 +65,7 @@ class CloseManufactureTaskSession extends OrgAction
             'quantity_made'          => ['required', 'numeric', 'min:0'],
             'quantity_rejected'      => ['sometimes', 'numeric', 'min:0'],
             'break_minutes'          => ['sometimes', 'integer', 'min:0'],
+            'outcome'                => ['sometimes', 'nullable', Rule::in(['complete', 'carry_over'])],
             'activity_type'          => ['sometimes', Rule::enum(ManufactureTaskSessionActivityTypeEnum::class)],
             'non_productive_reason'  => [
                 Rule::requiredIf(function () {

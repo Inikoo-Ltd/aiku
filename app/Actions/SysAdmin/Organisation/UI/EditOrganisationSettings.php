@@ -114,6 +114,14 @@ class EditOrganisationSettings extends OrgAction
             ];
         }
 
+        $pickingFields['allow_picker_choose_location'] = [
+            'type'        => 'toggle',
+            'label'       => __('Allow pickers to choose the location'),
+            'information' => __('When off, pickers can only pick from the designated picking location'),
+            'icon'        => 'fal fa-inventory',
+            'value'       => Arr::get($organisation->settings, 'orders.allow_picker_choose_location', false),
+        ];
+
         $pickingFields['allow_scan_to_pick'] = [
             'type'        => 'toggle',
             'label'       => __('Allow pickers to scan items to pick them'),

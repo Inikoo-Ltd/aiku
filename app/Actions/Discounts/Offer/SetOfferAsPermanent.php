@@ -34,7 +34,6 @@ class SetOfferAsPermanent extends OrgAction
 
         $modelData = [
             'state'    => OfferStateEnum::ACTIVE,
-            'status'   => true,
             'duration' => OfferDurationEnum::PERMANENT,
             'end_at'   => null,
         ];

@@ -25,15 +25,12 @@ class ProductHydrateMarketingDimensionFromTradeUnits implements ShouldBeUnique
     {
         $tradeUnits = $product->tradeUnits;
 
-        if ($tradeUnits->count() == 1) {
-            $this->updateFromSingleTradeUnit($tradeUnits->first(), $product);
-        } else {
-            $this->updateFromMultipleTradeUnits($tradeUnits, $product);
+        if ($tradeUnits->count() != 1) {
+            return;
         }
-    }
 
-    private function updateFromSingleTradeUnit($tradeUnit, Product $product): void
-    {
+        $tradeUnit = $tradeUnits->first();
+
         if ($tradeUnit->marketing_dimensions) {
             $product->updateQuietly([
                 'marketing_dimensions' => $tradeUnit->marketing_dimensions,
@@ -41,16 +38,23 @@ class ProductHydrateMarketingDimensionFromTradeUnits implements ShouldBeUnique
         }
     }
 
-    private function updateFromMultipleTradeUnits($tradeUnits, Product $product): void
+    /**
+     * The dimensions of one component are not the dimensions of the bundle that contains it,
+     * so a product built from several trade units keeps whatever was set by hand and is
+     * never given a component's measurements.
+     */
+    public function cameFromOneOfSeveralTradeUnits(Product $product): bool
     {
-        // For multiple trade units, we'll use the dimensions from the first trade unit that has them
-        foreach ($tradeUnits as $tradeUnit) {
-            if ($tradeUnit->marketing_dimensions) {
-                $product->updateQuietly([
-                    'marketing_dimensions' => $tradeUnit->marketing_dimensions,
-                ]);
-                return;
+        if ($product->tradeUnits->count() < 2 || blank($product->marketing_dimensions)) {
+            return false;
+        }
+
+        foreach ($product->tradeUnits as $tradeUnit) {
+            if ($tradeUnit->marketing_dimensions == $product->marketing_dimensions) {
+                return true;
             }
         }
+
+        return false;
     }
 }

@@ -36,6 +36,8 @@ class SendMailShot extends OrgAction
             return $mailshot;
         }
 
+        $mailshot->assertSubjectIsNotDefault();
+
         if (!$mailshot->start_sending_at) {
             data_set($modelData, 'start_sending_at', now());
         }

@@ -42,10 +42,7 @@ const selectedIds = computed(() => Object.entries(selected.value).filter(([, on]
 const showBulkBar = computed(() => (props.moveToDepartment || props.moveToFamily) && selectedIds.value.length > 0)
 
 const clearSelection = () => {
-    const rows = tableRef.value?.selectRow
-    if (rows) {
-        Object.keys(rows).forEach(id => rows[id] = false)
-    }
+    tableRef.value?.clearSelection()
     selected.value = {}
 }
 
@@ -108,7 +105,7 @@ function productionRoute(artefact: { slug: string }) {
             {{ selectedIds.length === 1 ? ctrans('1 artefact selected') : ctrans(':count artefacts selected', { count: selectedIds.length }) }}
         </span>
 
-        <button type="button" class="text-xs xtext-indigo-100 underline underline-offset-2 hover:text-blue-500" @click="clearSelection">
+        <button type="button" class="text-xs xtext-indigo-100 underline underline-offset-2 hover:text-red-500" @click="clearSelection">
             {{ ctrans('Clear') }}
         </button>
 

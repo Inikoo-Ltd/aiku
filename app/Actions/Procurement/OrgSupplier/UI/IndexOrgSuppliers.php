@@ -117,15 +117,6 @@ class IndexOrgSuppliers extends OrgAction
         return $this->handle($organisation);
     }
 
-    public function maya(Organisation $organisation, ActionRequest $request): LengthAwarePaginator
-    {
-        $this->maya   = true;
-        $this->parent = $organisation;
-        $this->initialisation($organisation, $request);
-
-        return $this->handle(parent: $organisation);
-    }
-
     public function htmlResponse(LengthAwarePaginator $suppliers, ActionRequest $request): Response
     {
         return Inertia::render(

@@ -81,6 +81,11 @@ class GetImages extends RetinaApiAction
         );
     }
 
+    /**
+     * The lookups are scoped rather than guarded afterwards: an id belonging to another
+     * customer must be unfindable, not merely rejected, and a miss and a not-yours read
+     * the same so the error cannot be used to probe which ids exist.
+     */
     public function afterValidator(Validator $validator): void
     {
         if ($validator->errors()->isNotEmpty()) {
@@ -91,12 +96,12 @@ class GetImages extends RetinaApiAction
         $type = $this->get('type');
 
         if ($type === 'portfolio') {
-            $this->model = Portfolio::find($id);
+            $this->model = $this->customerSalesChannel->portfolios()->find($id);
             if (!$this->model) {
                 $validator->errors()->add('id', 'Portfolio not found');
             }
         } elseif ($type === 'product') {
-            $this->model = Product::find($id);
+            $this->model = Product::where('shop_id', $this->shop->id)->find($id);
             if (!$this->model) {
                 $validator->errors()->add('id', 'Product not found');
             }

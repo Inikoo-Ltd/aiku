@@ -64,6 +64,7 @@ beforeEach(function () {
     $this->customer = createCustomer($this->shop);
 
     config(['app.server_name' => 'test-server']);
+    config(['app.sandbox.checkout_com.payment_channel' => 'pc_test_channel']);
 
     actingAs($this->user);
 });
@@ -962,4 +963,142 @@ test('production events are not processed outside production', function () {
 
     expect($paymentGatewayLog->state)->not->toBe(PaymentGatewayLogStateEnum::PROCESSED)
         ->and($orderPaymentApiPoint->state)->toBe(OrderPaymentApiPointStateEnum::IN_PROCESS);
+});
+
+/** The shipped test dump still carries the old foreign key from
+ * mit_saved_cards.payment_account_shop_id onto customers, so the fixture stores the customer
+ * id there; nothing in this path reads the column back. Pass the real payment account shop
+ * once the dumps are regenerated against the corrected constraint. */
+function createMitSavedCard($customer, int $priority): App\Models\Accounting\MitSavedCard
+{
+    return $customer->mitSavedCard()->create([
+        'group_id'                => $customer->group_id,
+        'organisation_id'         => $customer->organisation_id,
+        'shop_id'                 => $customer->shop_id,
+        'payment_account_shop_id' => $customer->id,
+        'ulid'                    => (string)Illuminate\Support\Str::ulid(),
+        'state'                   => App\Enums\Accounting\MitSavedCard\MitSavedCardStateEnum::SUCCESS->value,
+        'token'                   => 'tok_mit_'.$priority,
+        'priority'                => $priority,
+    ]);
+}
+
+test('a declined mit card falls through to the next card by priority', function () {
+    GetCurrencyExchange::shouldRun()->andReturn(1);
+
+    $paymentAccountShop = createCheckoutPaymentAccountShop($this->organisation, $this->shop);
+    list($order) = createOrderWithCheckoutApiPoint($this->customer, $this->product, $paymentAccountShop);
+
+    $order->update(['total_amount' => 19.88]);
+    DB::table('customers')->where('id', $this->customer->id)->update(['balance' => 0]);
+
+    createMitSavedCard($this->customer, 1);
+    createMitSavedCard($this->customer, 2);
+
+    $chargedAmounts = [];
+
+    App\Actions\Retina\Dropshipping\Orders\PayOrderWithMitCard::partialMock()
+        ->shouldReceive('requestMitPayment')
+        ->andReturnUsing(function ($secretKey, $request) use (&$chargedAmounts) {
+            $chargedAmounts[] = $request->amount;
+
+            return count($chargedAmounts) == 1
+                ? ['id' => 'pay_mit_declined', 'status' => 'Declined', 'approved' => false, 'amount' => 0, 'source' => ['type' => 'card']]
+                : ['id' => 'pay_mit_second_card', 'status' => 'Authorized', 'approved' => true, 'amount' => $request->amount, 'source' => ['type' => 'card']];
+        });
+
+    App\Actions\Retina\Dropshipping\Orders\PayOrderAsync::run($order->refresh());
+
+    $order->refresh();
+
+    expect($chargedAmounts)->toBe([1988, 1988])
+        ->and($order->payments()->where('payments.reference', 'pay_mit_declined')->first()->status)->toBe(PaymentStatusEnum::FAIL)
+        ->and($order->payments()->where('payments.reference', 'pay_mit_second_card')->first()->status)->toBe(PaymentStatusEnum::SUCCESS)
+        ->and((float)$order->payment_amount)->toBe(19.88);
+});
+
+test('mit card is charged only the amount still outstanding after balance', function () {
+    GetCurrencyExchange::shouldRun()->andReturn(1);
+
+    $paymentAccountShop = createCheckoutPaymentAccountShop($this->organisation, $this->shop);
+    list($order) = createOrderWithCheckoutApiPoint($this->customer, $this->product, $paymentAccountShop);
+
+    $order->update(['total_amount' => 19.88]);
+    $balanceBefore = (float)$this->customer->balance;
+    DB::table('customers')->where('id', $this->customer->id)->update(['balance' => $balanceBefore + 5.00]);
+
+    createMitSavedCard($this->customer, 1);
+
+    $outstandingAtCharge = null;
+
+    App\Actions\Retina\Dropshipping\Orders\PayOrderWithMitCard::partialMock()
+        ->shouldReceive('handle')
+        ->andReturnUsing(function ($order) use (&$outstandingAtCharge) {
+            $outstandingAtCharge = round($order->total_amount - $order->payment_amount, 2);
+
+            return ['status' => 'ok'];
+        });
+
+    App\Actions\Retina\Dropshipping\Orders\PayOrderAsync::run($order->refresh());
+
+    $order->refresh();
+
+    expect($outstandingAtCharge)->toBe(14.88)
+        ->and((float)$order->payment_amount)->toBe(5.0)
+        ->and((float)$order->payments()->where('payments.reference', 'like', 'cu-%')->first()->amount)->toBe(5.0);
+});
+
+test('an already paid order is not charged to the card again', function () {
+    GetCurrencyExchange::shouldRun()->andReturn(1);
+
+    $paymentAccountShop = createCheckoutPaymentAccountShop($this->organisation, $this->shop);
+    list($order) = createOrderWithCheckoutApiPoint($this->customer, $this->product, $paymentAccountShop);
+
+    $order->update(['total_amount' => 19.88]);
+    DB::table('customers')->where('id', $this->customer->id)->update(['balance' => 0]);
+
+    $payment = App\Actions\Accounting\Payment\StorePayment::make()->action($this->customer, $paymentAccountShop->paymentAccount, [
+        'reference'               => 'pay_already_settled',
+        'amount'                  => 19.88,
+        'status'                  => PaymentStatusEnum::SUCCESS,
+        'state'                   => PaymentStateEnum::COMPLETED,
+        'type'                    => App\Enums\Accounting\Payment\PaymentTypeEnum::PAYMENT,
+        'payment_account_shop_id' => $paymentAccountShop->id,
+    ]);
+    App\Actions\Ordering\Order\AttachPaymentToOrder::make()->action($order, $payment, ['amount' => $payment->amount]);
+
+    createMitSavedCard($this->customer, 1);
+
+    App\Actions\Retina\Dropshipping\Orders\PayOrderWithMitCard::partialMock()
+        ->shouldNotReceive('requestMitPayment');
+
+    App\Actions\Retina\Dropshipping\Orders\PayOrderAsync::run($order->refresh());
+
+    $order->refresh();
+
+    expect((float)$order->payment_amount)->toBe(19.88)
+        ->and($order->payments()->count())->toBe(1);
+});
+
+test('a declined card does not corrupt the amount still outstanding', function () {
+    GetCurrencyExchange::shouldRun()->andReturn(1);
+
+    $paymentAccountShop = createCheckoutPaymentAccountShop($this->organisation, $this->shop);
+    list($order) = createOrderWithCheckoutApiPoint($this->customer, $this->product, $paymentAccountShop);
+
+    $order->update(['total_amount' => 19.88]);
+    DB::table('customers')->where('id', $this->customer->id)->update(['balance' => 5.00]);
+
+    createMitSavedCard($this->customer, 1);
+
+    App\Actions\Retina\Dropshipping\Orders\PayOrderWithMitCard::partialMock()
+        ->shouldReceive('requestMitPayment')
+        ->andReturn(['id' => 'pay_mit_declined_only', 'status' => 'Declined', 'approved' => false, 'amount' => 0, 'source' => ['type' => 'card']]);
+
+    App\Actions\Retina\Dropshipping\Orders\PayOrderAsync::run($order->refresh());
+
+    $order->refresh();
+
+    expect((float)$order->payment_amount)->toBe(5.0)
+        ->and($order->pay_status)->toBe(App\Enums\Ordering\Order\OrderPayStatusEnum::UNPAID);
 });

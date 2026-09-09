@@ -8,6 +8,7 @@
 
 namespace App\Actions\Inventory\Location\UI;
 
+use App\Actions\Inventory\WarehouseArea\UI\GetWarehouseAreaOptions;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\Inventory\WithWarehouseEditAuthorisation;
 use App\Models\Inventory\Warehouse;
@@ -25,6 +26,24 @@ class CreateLocation extends OrgAction
 
     public function handle(ActionRequest $request): Response
     {
+        $idFields = [
+            'code' => [
+                'type'     => 'input',
+                'label'    => __('Code'),
+                'value'    => '',
+                'required' => true
+            ],
+        ];
+
+        if (!$this->parent instanceof WarehouseArea) {
+            $idFields['warehouse_area_id'] = [
+                'type'    => 'select',
+                'label'   => __('Area'),
+                'value'   => '',
+                'options' => GetWarehouseAreaOptions::run($this->parent)
+            ];
+        }
+
         if ($this->parent instanceof WarehouseArea) {
             $routeName = preg_replace('/.locations.create$/', '', $request->route()->getName());
         } else {
@@ -60,15 +79,7 @@ class CreateLocation extends OrgAction
                     'blueprint' => [
                         [
                             'title'  => __('id'),
-                            'fields' => [
-
-                                'code' => [
-                                    'type'     => 'input',
-                                    'label'    => __('Code'),
-                                    'value'    => '',
-                                    'required' => true
-                                ],
-                            ]
+                            'fields' => $idFields
                         ],
                         [
                             'title'  => __('capacity'),

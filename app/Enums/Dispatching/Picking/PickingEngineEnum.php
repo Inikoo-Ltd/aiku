@@ -15,13 +15,11 @@ enum PickingEngineEnum: string
     use EnumHelperTrait;
 
     case AIKU               = 'aiku';
-    case MAYA               = 'maya';
 
     public static function labels(): array
     {
         return [
             'aiku'              => __('Aiku'),
-            'maya'              => __('Maya'),
         ];
     }
 }

@@ -21,6 +21,7 @@ import { PageHeadingTypes } from "@/types/PageHeading"
 import ModelDetails from "@/Components/ModelDetails.vue"
 import TableOrders from "@/Components/Tables/Grp/Org/Ordering/TableOrders.vue"
 import TableDispatchedEmails from "@/Components/Tables/TableDispatchedEmails.vue"
+import RetinaTableApiRequests from "@/Components/Tables/Retina/RetinaTableApiRequests.vue"
 import TableCustomerFavourites from "@/Components/Tables/Grp/Org/CRM/TableCustomerFavourites.vue"
 import TableCustomerBackInStockReminders from "@/Components/Tables/Grp/Org/CRM/TableCustomerBackInStockReminders.vue"
 import TableAttachments from "@/Components/Tables/Grp/Helpers/TableAttachments.vue"
@@ -67,6 +68,7 @@ const props = defineProps<{
     can_add_order: boolean
     products?: {}
     dispatched_emails?: {}
+    api_requests?: {}
     web_users?: {}
     attachments?: {}
     attachmentRoutes?: {}
@@ -130,6 +132,7 @@ const component = computed(() => {
         details: ModelDetails,
         history: TableHistories,
         dispatched_emails: TableDispatchedEmails,
+        api_requests: RetinaTableApiRequests,
         web_users: TableWebUsers,
         favourites: TableCustomerFavourites,
         reminders: TableCustomerBackInStockReminders,
@@ -179,8 +182,8 @@ const layout = inject('layout')
                     :updateRoute="updateRoute"
                 />
                 <UpcomingTransactionsPanel
-                    v-if="props.showcase.upcoming_transaction_route && shop_data.type !== 'external'"
-                    :routes="props.showcase.upcoming_transaction_route"
+                    v-if="props.showcase?.upcoming_transaction_route && shop_data.type !== 'external'"
+                    :routes="props.showcase?.upcoming_transaction_route"
                     :shopSlug="props.showcase.shop.slug"
                     :temporaryNote="notes?.temporary_note"
                     :hideButton="true"

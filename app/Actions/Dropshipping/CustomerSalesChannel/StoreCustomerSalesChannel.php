@@ -13,6 +13,7 @@ use App\Actions\Catalogue\ShopPlatformStats\ShopPlatformStatsHydrateCustomerSale
 use App\Actions\Dropshipping\Platform\Hydrators\PlatformHydrateCustomers;
 use App\Actions\OrgAction;
 use App\Enums\Dropshipping\CustomerSalesChannelStateEnum;
+use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\CRM\Customer;
 use App\Models\Dropshipping\CustomerSalesChannel;
@@ -29,6 +30,8 @@ class StoreCustomerSalesChannel extends OrgAction
             data_set($modelData, 'exist_in_platform', true);
             data_set($modelData, 'platform_status', true);
         }
+
+        data_set($modelData, 'status', CustomerSalesChannelStatusEnum::OPEN, overwrite: false);
 
         $modelData['group_id']          = $customer->group_id;
         $modelData['organisation_id']   = $customer->organisation_id;

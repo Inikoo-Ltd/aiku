@@ -70,7 +70,6 @@ class SeedShopOfferCampaigns extends OrgAction
                     $offerCampaign,
                     [
                         'state'            => OfferStateEnum::ACTIVE,
-                        'status'           => true,
                         'duration'         => OfferDurationEnum::PERMANENT,
                         'code'             => 'di-'.$shop->slug,
                         'name'             => 'Discretionary Discount',

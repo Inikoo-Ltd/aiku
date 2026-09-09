@@ -16,6 +16,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import {  } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import RetinaTableApiKey from "@/Components/Tables/Retina/RetinaTableApiKey.vue"
+import RetinaTableApiRequests from "@/Components/Tables/Retina/RetinaTableApiRequests.vue"
 import { routeType } from "@/types/route"
 import { Table as TSTable } from '@/types/Table'
 import { useTabChange } from "@/Composables/tab-change"
@@ -30,6 +31,7 @@ const props = defineProps<{
 	title: string
 	pageHead: PageHeadingTypes
 	api_tokens?: TSTable
+	api_requests?: TSTable
 	history?: TSTable
     tabs:{
         current: string
@@ -105,6 +107,7 @@ const component = computed(() => {
         showcase: RetinaApiShowcase,
         // api_tokens: RetinaApiShowcase,
         api_tokens: RetinaTableApiKey,
+        api_requests: RetinaTableApiRequests,
         history: TableHistories,
     };
     return components[currentTab.value];

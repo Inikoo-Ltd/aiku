@@ -23,34 +23,35 @@ class FinishOffer extends OrgAction
     use AsAction;
     use HandlesOfferSideEffects;
 
-    public function handle(Offer $offer): Offer
+    public function handle(Offer $offer, bool $notifySubscribers = true): Offer
     {
-        if ($offer->state == OfferStateEnum::FINISHED) {
+        if ($offer->state == OfferStateEnum::FINISHED && !$offer->status) {
             return $offer;
         }
 
         $currentStatus = $offer->status;
+        $endAt         = $offer->end_at && $offer->end_at->lte(now()) ? $offer->end_at : now();
 
         $offer->update(
             [
                 'state'  => OfferStateEnum::FINISHED,
-                'status' => false,
-                'end_at' => now()
+                'end_at' => $endAt
             ]
         );
 
         foreach ($offer->offerAllowances as $offerAllowance) {
             $offerAllowance->update([
                 'state'  => OfferAllowanceStateEnum::FINISHED,
-                'status' => false,
-                'end_at' => now()
+                'end_at' => $endAt
             ]);
         }
         if ($currentStatus != $offer->status) {
             $this->handleOfferSideEffects($offer);
         }
 
-        SendFinishOfferEmailToSubscribers::dispatch($offer->id)->delay(now()->addSeconds(10));
+        if ($notifySubscribers) {
+            SendFinishOfferEmailToSubscribers::dispatch($offer->id)->delay(now()->addSeconds(10));
+        }
 
         return $offer;
     }

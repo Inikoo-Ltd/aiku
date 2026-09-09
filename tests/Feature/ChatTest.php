@@ -84,7 +84,6 @@ use App\Models\Catalogue\Product;
 use App\Models\CRM\Customer;
 use App\Models\CRM\WebUser;
 use App\Models\Helpers\Media;
-use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use App\Models\SysAdmin\Permission;
 use App\Models\SysAdmin\User;
@@ -98,6 +97,7 @@ use Illuminate\Validation\Rule;
 use Inertia\Testing\AssertableInertia;
 
 use function Pest\Laravel\actingAs;
+use function Pest\Laravel\getJson;
 use function Pest\Laravel\get;
 
 beforeAll(function () {
@@ -225,7 +225,7 @@ test('creates chat event for authenticated user session', function () {
     $organisation = Organisation::first() ?? Organisation::factory()->create();
     $website      = Website::first() ?? Website::factory()->create();
     $customer     = Customer::first() ?? Customer::factory()->create();
-    $group        = Group::first() ?? Group::factory()->create();
+    $group        = createGroup();
 
     /** @var \App\Models\CRM\WebUser $webUser */
     $webUser = WebUser::factory()->create([
@@ -411,7 +411,7 @@ test('can send text message from web user', function () {
     $organisation = Organisation::first() ?? Organisation::factory()->create();
     $website      = Website::first() ?? Website::factory()->create();
     $customer     = Customer::first() ?? Customer::factory()->create();
-    $group        = Group::first() ?? Group::factory()->create();
+    $group        = createGroup();
 
     /** @var \App\Models\CRM\WebUser $webUser */
     $webUser = WebUser::factory()->create([
@@ -2604,6 +2604,64 @@ describe('staff chat audience seeding', function () {
 
         expect(\Illuminate\Support\Arr::get($this->shop->fresh()->settings, 'staff_chat.crm_user_ids'))->toBe([$curated->id]);
     });
+});
+
+test('a chat session cannot be bound to a web user the caller is not logged in as', function () {
+    $victim = StoreWebUser::make()->action($this->customer, WebUser::factory()->definition());
+
+    $modelData = [
+        'web_user_id' => $victim->id,
+        'language_id' => 68,
+        'priority'    => ChatPriorityEnum::NORMAL->value,
+        'shop_id'     => $this->shop->id,
+    ];
+
+    config()->set('app.enforce_chat_identity', true);
+    \Illuminate\Support\Facades\Auth::guard('retina')->logout();
+
+    $hijacked = $this->action->handle($modelData);
+
+    expect($hijacked->web_user_id)->toBeNull()
+        ->and($hijacked->guest_identifier)->not->toBeNull();
+
+    \Illuminate\Support\Facades\Auth::guard('retina')->login($victim);
+
+    $legitimate = $this->action->handle($modelData);
+
+    expect($legitimate->web_user_id)->toBe($victim->id);
+});
+
+test('a claimed chat web user is recorded but honoured while enforcement is off', function () {
+    $victim = StoreWebUser::make()->action($this->customer, WebUser::factory()->definition());
+
+    config()->set('app.enforce_chat_identity', false);
+    \Illuminate\Support\Facades\Auth::guard('retina')->logout();
+    \Illuminate\Support\Facades\Log::spy();
+
+    $chatSession = $this->action->handle([
+        'web_user_id' => $victim->id,
+        'language_id' => 68,
+        'priority'    => ChatPriorityEnum::NORMAL->value,
+        'shop_id'     => $this->shop->id,
+    ]);
+
+    expect($chatSession->web_user_id)->toBe($victim->id);
+    \Illuminate\Support\Facades\Log::shouldHaveReceived('warning')
+        ->withArgs(fn ($message) => $message === 'Chat web user claimed without a matching login');
+});
+
+test('an agent queue can only be read by the agent it belongs to', function () {
+    actingAs($this->user);
+
+    $someoneElse = \App\Models\SysAdmin\User::where('id', '!=', $this->user->id)->firstOr(function () {
+        return \App\Models\SysAdmin\User::factory()->create(['group_id' => $this->user->group_id]);
+    });
+
+    getJson('/app/api/chats/users/'.$someoneElse->id.'/unread-messages')->assertForbidden();
+    getJson('/app/api/chats/users/'.$someoneElse->id.'/agent-notifications')->assertForbidden();
+
+    getJson('/app/api/chats/users/'.$this->user->id.'/unread-messages')->assertOk();
+    getJson('/app/api/chats/users/'.$this->user->id.'/agent-notifications')->assertOk();
 });
 
 test('customer chat history merges website and whatsapp sessions', function () {

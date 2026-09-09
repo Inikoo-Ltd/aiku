@@ -20,7 +20,6 @@ use App\Enums\HumanResources\Clocking\ClockingTypeEnum;
 use App\Enums\HumanResources\ClockingMachine\ClockingMachineTypeEnum;
 use App\Events\BroadcastEmployeeClockingUpdated;
 use App\Enums\HumanResources\Employee\EmployeeStateEnum;
-use App\Http\Resources\HumanResources\ClockingHanResource;
 use App\Http\Resources\HumanResources\ClockingResource;
 use App\Models\HumanResources\Clocking;
 use App\Models\HumanResources\ClockingMachine;
@@ -49,7 +48,7 @@ class StoreClocking extends OrgAction
 
     public function authorize(ActionRequest $request): bool
     {
-        if ($this->asAction || $this->han) {
+        if ($this->asAction) {
             return true;
         }
 
@@ -159,12 +158,8 @@ class StoreClocking extends OrgAction
             ->first();
     }
 
-    public function jsonResponse(Clocking $clocking): ClockingResource|ClockingHanResource
+    public function jsonResponse(Clocking $clocking): ClockingResource
     {
-        if ($this->han) {
-            return ClockingHanResource::make($clocking);
-        }
-
         return ClockingResource::make($clocking);
     }
 
@@ -194,36 +189,6 @@ class StoreClocking extends OrgAction
         $this->initialisation($parent->organisation, $request);
 
         return $this->handle($request->user(), $parent, $subject, $this->validatedData);
-    }
-
-    /**
-     * @throws \Throwable
-     */
-    public function han(Employee $employee, ActionRequest $request): Clocking
-    {
-        $this->han = true;
-
-
-        if ($request->user()->group_id !== $employee->group_id) {
-            abort(404);
-        }
-        if (in_array($employee->state, [EmployeeStateEnum::HIRED, EmployeeStateEnum::LEFT])) {
-            abort(405);
-        }
-        $modelData = [];
-        if ($request->has('photo')) {
-            data_set(
-                $modelData,
-                'photo',
-                $this->convertBase64ToFile($this->get('photo'), $employee)
-            );
-        }
-        $this->employee  = $employee;
-        $clockingMachine = $request->user();
-
-        $this->initialisation($clockingMachine->organisation, $modelData);
-
-        return $this->handle($employee, $clockingMachine, $employee, $this->validatedData);
     }
 
     public function htmlResponse(Clocking $clocking): RedirectResponse

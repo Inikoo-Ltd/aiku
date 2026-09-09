@@ -161,7 +161,14 @@ const isCutViewLocked = computed(() => !Number.isInteger(waitingQuantity.value))
 
 const isCutViewReplace = computed(() => isCutViewLocked.value || isCutViewSelected.value)
 
-const hasCuttableProduct = computed(() => modalProducts.value.some(product => Number(product.units) > 1))
+/*
+ * Both sides of the swap are counted in SKO, so the outer size comes from the stock behind the
+ * product. A dropshipping product sells one item out of an outer of six and carries units 1, which
+ * would have offered whole outers only against a line already cut to 4/6.
+ */
+const productPackedIn = (product: Record<string, any>): number => Number(product?.packed_in) || Number(product?.units) || 1
+
+const hasCuttableProduct = computed(() => modalProducts.value.some(product => productPackedIn(product) > 1))
 const canToggleCutView = computed(() => isCutViewLocked.value || replacePackedIn.value > 1 || hasCuttableProduct.value)
 
 const packsToUnits = (quantity: number, packedIn: number): number => Math.round(quantity * packedIn)
@@ -215,16 +222,16 @@ const toggleCutViewReplace = (isCutView: boolean) => {
 }
 
 // Section: replacement product quantities, typed in the same view as the item being replaced
-const isProductCutView = (product: Record<string, any>): boolean => isCutViewReplace.value && Number(product?.units) > 1
+const isProductCutView = (product: Record<string, any>): boolean => isCutViewReplace.value && productPackedIn(product) > 1
 
 const productQuantityInput = (product: Record<string, any>): number => {
     const quantity = productQuantities[product.id]?.quantity ?? 0
-    return isProductCutView(product) ? packsToUnits(quantity, Number(product.units)) : quantity
+    return isProductCutView(product) ? packsToUnits(quantity, productPackedIn(product)) : quantity
 }
 
 const productStockInView = (product: Record<string, any>): number => {
     const stock = Number(product?.stock) || 0
-    return isProductCutView(product) ? packsToUnits(stock, Number(product.units)) : stock
+    return isProductCutView(product) ? packsToUnits(stock, productPackedIn(product)) : stock
 }
 
 /*
@@ -251,7 +258,7 @@ const onUpdateProductQuantity = (product: Record<string, any>, value: number | n
     }
 
     const raw = Number(value) || 0
-    const quantity = isProductCutView(product) ? unitsToPacks(raw, Number(product.units)) : raw
+    const quantity = isProductCutView(product) ? unitsToPacks(raw, productPackedIn(product)) : raw
     entry.quantity = Math.max(quantity, 0)
 }
 
@@ -331,7 +338,7 @@ const fetchModalProducts = debounce(async () => {
                     code: product.code,
                     name: product.name,
                     stock: product.stock ?? 0,
-                    units: Number(product.units) || 1,
+                    units: productPackedIn(product),
                     image: productImage(product),
                 }
             }
@@ -749,8 +756,8 @@ const submitSendBackWarehouse = () => {
                                     <div>
                                         <div class="font-bold">{{ product.code }}</div>
                                         <div class="italic opacity-75">{{ product.name }}</div>
-                                        <div v-if="Number(product.units) > 1" class="italic opacity-60 text-xs">
-                                            ({{ ctrans('Pack of') }}: {{ Number(product.units) }})
+                                        <div v-if="productPackedIn(product) > 1" class="italic opacity-60 text-xs">
+                                            ({{ ctrans('Pack of') }}: {{ productPackedIn(product) }})
                                         </div>
                                     </div>
                                 </div>
@@ -759,7 +766,7 @@ const submitSendBackWarehouse = () => {
                                 <template v-if="product.stock > 0">
                                     <FractionDisplay
                                         v-if="isProductCutView(product)"
-                                        :fractionData="toMixedFractionData(Number(product.stock), Number(product.units))"
+                                        :fractionData="toMixedFractionData(Number(product.stock), productPackedIn(product))"
                                         class="justify-end"
                                     />
                                     <template v-else>{{ locale.number(productStockInView(product)) }}</template>
@@ -773,7 +780,7 @@ const submitSendBackWarehouse = () => {
                                         @update:model-value="(e) => onUpdateProductQuantity(product, e)"
                                         @input="(e) => onUpdateProductQuantity(product, Number(e.value))"
                                         :min="0"
-                                        :suffix="isProductCutView(product) ? `/${Number(product.units)}` : undefined"
+                                        :suffix="isProductCutView(product) ? `/${productPackedIn(product)}` : undefined"
                                         :key="String(isCutViewReplace) + product.id"
                                         inputClass="w-28"
                                         showButtons

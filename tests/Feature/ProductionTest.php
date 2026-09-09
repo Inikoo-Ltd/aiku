@@ -787,6 +787,41 @@ test('work queue is generated from the artefact recipe and sessions pay the work
         ->and((float)$task->quantity_rejected)->toBe(1.0);
 });
 
+test('closing short can finish the job or carry the shortfall to a new job order', function () {
+    $this->artefact->manufactureTasks()->syncWithoutDetaching([
+        $this->manufactureTask->id => ['position' => 1, 'units_per_artefact' => 1],
+    ]);
+    $user = $this->guest->getUser();
+
+    $jobOrder = StoreJobOrder::make()->action($this->production, []);
+    $item     = StoreJobOrderItem::make()->action($jobOrder, ['artefact_id' => $this->artefact->id, 'quantity' => 25]);
+    ConfirmJobOrder::make()->action($jobOrder);
+    $task = $item->tasks()->first();
+
+    $session = StartManufactureTaskSession::make()->action($user, $task);
+    CloseManufactureTaskSession::make()->action($session, ['quantity_made' => 10, 'outcome' => 'complete']);
+    expect($task->refresh()->state)->toBe(JobOrderItemTaskStateEnum::DONE)
+        ->and((float)$task->quantity_required)->toBe(10.0)
+        ->and($item->refresh()->quantity)->toBe(10)
+        ->and(\App\Models\Production\JobOrder::where('production_id', $this->production->id)->count())->toBe($before = \App\Models\Production\JobOrder::where('production_id', $this->production->id)->count());
+
+    $jobOrder = StoreJobOrder::make()->action($this->production, []);
+    $item     = StoreJobOrderItem::make()->action($jobOrder, ['artefact_id' => $this->artefact->id, 'quantity' => 25]);
+    ConfirmJobOrder::make()->action($jobOrder);
+    $task = $item->tasks()->first();
+
+    $session = StartManufactureTaskSession::make()->action($user, $task);
+    CloseManufactureTaskSession::make()->action($session, ['quantity_made' => 10, 'outcome' => 'carry_over']);
+    $carried = \App\Models\Production\JobOrder::where('production_id', $this->production->id)->orderByDesc('id')->first();
+    expect($task->refresh()->state)->toBe(JobOrderItemTaskStateEnum::DONE)
+        ->and($item->refresh()->quantity)->toBe(10)
+        ->and($carried->id)->not->toBe($jobOrder->id)
+        ->and($carried->state)->toBe(JobOrderStateEnum::CONFIRMED)
+        ->and($carried->jobOrderItems()->first()->quantity)->toBe(15)
+        ->and((float)$carried->jobOrderItems()->first()->tasks()->first()->quantity_required)->toBe(15.0);
+
+});
+
 test('historic job orders do not generate a work queue', function () {
     $jobOrder = StoreJobOrder::make()->action($this->production, [
         'state'       => JobOrderStateEnum::RECEIVED,
@@ -1012,10 +1047,25 @@ test('payroll csv export aggregates closed sessions with snapshotted rates', fun
 });
 
 test('a voided session removes its quantities from the task and payroll', function () {
-    $session = \App\Models\Production\ManufactureTaskSession::where('state', ManufactureTaskSessionStateEnum::CLOSED)
-        ->orderByDesc('id')->first();
-    $task = $session->jobOrderItemTask;
-    expect($task->state)->toBe(JobOrderItemTaskStateEnum::DONE);
+    $this->artefact->manufactureTasks()->syncWithoutDetaching([
+        $this->manufactureTask->id => ['position' => 1, 'units_per_artefact' => 1],
+    ]);
+    $user     = $this->guest->getUser();
+    $jobOrder = StoreJobOrder::make()->action($this->production, []);
+    $item     = StoreJobOrderItem::make()->action($jobOrder, ['artefact_id' => $this->artefact->id, 'quantity' => 20]);
+    ConfirmJobOrder::make()->action($jobOrder);
+
+    $task = $item->tasks()->first();
+    CloseManufactureTaskSession::make()->action(
+        StartManufactureTaskSession::make()->action($user, $task),
+        ['quantity_made' => 15]
+    );
+    $session = CloseManufactureTaskSession::make()->action(
+        StartManufactureTaskSession::make()->action($user, $task),
+        ['quantity_made' => 5]
+    );
+
+    expect($task->refresh()->state)->toBe(JobOrderItemTaskStateEnum::DONE);
 
     VoidManufactureTaskSession::make()->action($session);
 
@@ -2318,8 +2368,16 @@ test('to produce queue only shows lines with an artefact in this factory', funct
     $warehouse = \App\Actions\Inventory\Warehouse\StoreWarehouse::make()->action($this->organisation, ['code' => 'WH-BRD', 'name' => 'Board warehouse']);
     $area      = \App\Actions\Inventory\WarehouseArea\StoreWarehouseArea::make()->action($warehouse, ['code' => 'A-BRD', 'name' => 'Board area']);
     $location  = \App\Actions\Inventory\Location\StoreLocation::make()->action($area, ['code' => 'L-BRD', 'name' => 'Board loc'] + \App\Models\Inventory\Location::factory()->definition());
-    \App\Actions\Production\JobOrder\ReceiveJobOrderIntoStock::make()->action($jobOrder->refresh(), ['location_id' => $location->id]);
-    expect($laneOf()->flatten()->all())->not->toContain($stocks[0]->code);
+    $hubProps  = fn () => get(route('grp.org.warehouses.show.dispatching.backlog', [$this->organisation->slug, $warehouse->slug]))
+        ->assertOk()->viewData('page')['props'];
+    $hubOutput = fn () => collect($hubProps()['production_output'])->pluck('reference')->all();
+    expect($hubOutput())->toContain($jobOrder->reference)
+        ->and($hubProps()['tabs']['navigation']['production_output']['number'])->toBe(count($hubOutput()));
+
+    \App\Actions\Dispatching\ProductionOutput\PutAwayFinishedJobOrder::make()->action($warehouse, $jobOrder->refresh(), 'L-BRD');
+    expect($jobOrder->refresh()->state)->toBe(JobOrderStateEnum::RECEIVED)
+        ->and($hubOutput())->not->toContain($jobOrder->reference)
+        ->and($laneOf()->flatten()->all())->not->toContain($stocks[0]->code);
 
     $byArtisan = get(route('grp.org.productions.show.to_produce.by_artisan', $routeParameters))
         ->assertOk()->viewData('page')['props'];
@@ -2498,4 +2556,14 @@ test('UI delete artefact family', function () {
     expect(ArtefactFamily::find($family->id))->toBeNull()
         ->and($artefact->refresh()->artefact_family_id)->toBeNull()
         ->and($artefact->artefact_department_id)->toBe($department->id);
+});
+
+test('UI crafts artefacts as org admin', function () {
+    $this->withoutExceptionHandling();
+    $user = $this->guest->getUser();
+    $user->syncRoles(['org-admin-'.$this->organisation->id, 'production-orchestrator-'.$this->production->id]);
+    actingAs($user->fresh());
+    foreach (['dashboard', 'artefacts.index', 'raw_materials.index'] as $page) {
+        get(route('grp.org.productions.show.crafts.'.$page, [$this->organisation->slug, $this->production->slug]))->assertOk();
+    }
 });

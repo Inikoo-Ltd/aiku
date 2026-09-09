@@ -121,19 +121,6 @@ class PickedPalletReturn extends OrgAction
     /**
      * @throws \Throwable
      */
-    public function maya(PalletReturn $palletReturn, ActionRequest $request): PalletReturn
-    {
-        $this->palletReturn = $palletReturn;
-        $this->initialisationFromFulfilment($palletReturn->fulfilment, $request);
-
-        $user = $request->user();
-
-        return $this->handle($palletReturn, $this->validatedData, $user instanceof User ? $user : null);
-    }
-
-    /**
-     * @throws \Throwable
-     */
     public function action(PalletReturn $palletReturn): PalletReturn
     {
         $this->asAction = true;

@@ -47,15 +47,6 @@ class ShowOrgAgent extends OrgAction
         return $this->handle($orgAgent);
     }
 
-    public function maya(Organisation $organisation, OrgAgent $orgAgent, ActionRequest $request): OrgAgent
-    {
-        $this->maya   = true;
-        $this->initialisation($organisation, $request)->withTab(OrgAgentTabsEnum::values());
-        $this->authorizeProcurementRecord($orgAgent);
-
-        return $this->handle($orgAgent);
-    }
-
     public function htmlResponse(OrgAgent $orgAgent, ActionRequest $request): Response
     {
         return Inertia::render(

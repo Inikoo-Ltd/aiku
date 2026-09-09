@@ -3176,6 +3176,36 @@ test('channel import never submits an order with no transactions', function () {
         ->and($result->submitted_at)->toBeNull();
 });
 
+test('a part paid order that fails to submit is alerted, an unpaid one is not', function () {
+    config(['services.discord.webhook_url' => 'https://discord.test/webhook']);
+    Illuminate\Support\Facades\Queue::fake();
+
+    $modelData = Order::factory()->definition();
+    data_set($modelData, 'billing_address', new Address(Address::factory()->definition()));
+    data_set($modelData, 'delivery_address', new Address(Address::factory()->definition()));
+    $order = StoreOrder::make()->action($this->customer, $modelData);
+    $order->update(['total_amount' => 19.88, 'payment_amount' => 0]);
+
+    $action = new class () {
+        use \App\Actions\Ordering\Order\Traits\WithPayAndSubmitOrder;
+
+        public function alert(Order $order, Throwable $e): void
+        {
+            $this->alertPaidOrderNotSubmitted($order, $e);
+        }
+    };
+
+    $action->alert($order, new Exception('submit refused'));
+
+    Illuminate\Support\Facades\Queue::assertNotPushed(Illuminate\Queue\CallQueuedClosure::class);
+
+    $order->update(['payment_amount' => 5.00]);
+
+    $action->alert($order, new Exception('submit refused'));
+
+    Illuminate\Support\Facades\Queue::assertPushed(Illuminate\Queue\CallQueuedClosure::class, 1);
+});
+
 test('fulfilment gate holds order from warehouse until released', function () {
     $settings = $this->organisation->settings ?? [];
     $this->organisation->update(['settings' => array_merge($settings, ['fulfilment_gate' => true])]);

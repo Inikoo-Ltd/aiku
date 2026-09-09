@@ -83,14 +83,27 @@ const nextBand = computed(() => {
     return bands[currentBandIndex.value + 1] ?? null
 })
 
-function closeSession() {
+const askOutcome = ref(false)
+const isShort = computed(() => quantityMade.value !== null && quantityMade.value < remaining.value)
+
+function onDone() {
+    if (isShort.value) {
+        askOutcome.value = true
+        return
+    }
+    closeSession()
+}
+
+function closeSession(outcome: 'complete' | 'carry_over' | null = null) {
     if (quantityMade.value === null) return
+    askOutcome.value = false
     processing.value = true
     router.patch(
         route(props.session.close_route.name, props.session.close_route.parameters),
         {
             quantity_made: quantityMade.value,
             quantity_rejected: quantityRejected.value || 0,
+            outcome,
         },
         {
             preserveScroll: true,
@@ -129,7 +142,7 @@ function closeSession() {
             <div class="text-7xl font-mono tabular-nums text-indigo-700">{{ elapsed }}</div>
         </div>
 
-        <div class="mt-6 flex items-end gap-4">
+        <div v-if="!askOutcome" class="mt-6 flex items-end gap-4">
             <div>
                 <label class="block text-lg text-gray-600 mb-1">{{ trans('Quantity made') }}</label>
                 <input
@@ -150,10 +163,33 @@ function closeSession() {
                 type="button"
                 class="flex-1 rounded-lg bg-green-600 text-white text-4xl font-semibold py-6 disabled:opacity-40"
                 :disabled="processing || quantityMade === null"
-                @click="closeSession"
+                @click="onDone"
             >
                 {{ trans('DONE') }}
             </button>
+        </div>
+
+        <div v-if="askOutcome" class="mt-4 rounded-lg border border-amber-300 bg-amber-50 p-4">
+            <div class="flex items-baseline gap-6">
+                <div><span class="text-4xl font-semibold tabular-nums text-green-700">{{ quantityMade }}</span> <span class="text-lg text-gray-600">{{ trans('done') }}</span></div>
+                <div><span class="text-4xl font-semibold tabular-nums text-amber-700">{{ remaining - (quantityMade ?? 0) }}</span> <span class="text-lg text-gray-600">{{ trans('to do') }}</span></div>
+            </div>
+            <div class="mt-3 grid gap-3 sm:grid-cols-3">
+                <button type="button" class="rounded-lg bg-indigo-600 text-white text-xl font-semibold py-4 disabled:opacity-40"
+                    :disabled="processing" @click="closeSession('carry_over')">
+                    {{ trans('Continue later') }}
+                    <div class="text-xs font-normal opacity-80">{{ trans('New job for the rest') }}</div>
+                </button>
+                <button type="button" class="rounded-lg bg-green-600 text-white text-xl font-semibold py-4 disabled:opacity-40"
+                    :disabled="processing" @click="closeSession('complete')">
+                    {{ trans('Job finished') }}
+                    <div class="text-xs font-normal opacity-80">{{ trans('Close with what was made') }}</div>
+                </button>
+                <button type="button" class="rounded-lg border border-gray-300 bg-white text-gray-700 text-xl font-semibold py-4"
+                    @click="askOutcome = false">
+                    {{ trans('Back') }}
+                </button>
+            </div>
         </div>
 
         <div v-if="session.band_feedback" class="mt-6 border-t border-indigo-200 pt-4">

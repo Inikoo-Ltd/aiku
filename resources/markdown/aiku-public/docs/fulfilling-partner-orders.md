@@ -1,16 +1,16 @@
 ---
 title: Working the To produce list
 summary: The factory's guide - one queue of everything the factory owes, to partner organisations and to its own customers, grouped the way a production planner thinks.
-date: 2026-09-02
+date: 2026-09-08
 tags: production, procurement, intercompany, dispatch
 category: production
-help_routes: grp.org.productions.show.partners
+help_routes: grp.org.productions.show.to_produce
 series: Ordering from partners
 order: 4
 ---
 
 <aside class="tldr">
-For the people who <em>make things</em> and the person who plans the factory's day. <b>To produce</b> is the factory's queue: every line a partner organisation has asked for, plus every line an own customer has ordered that the factory has not got in stock. You group it by artisan, by category or by buyer, tick what you can send to partners, and the rest of the paperwork follows on its own. New to the partner flow? Start with the <a href="/docs/ordering-from-a-partner-organisation">overview</a>. Want the list to know who makes what? Read <a href="/docs/who-makes-what">Who makes what</a> first.
+For the people who <em>make things</em> and the person who plans the factory's day. <b>To produce</b> is the factory's queue: every line a partner organisation has asked for, plus every line an own customer has ordered that the factory has not got in stock. The <b>Board</b> is where you plan: drag a line across the lanes to decide how many to make and who makes it, and a job order is created for the artisan. The list views group the same lines by artisan, category or buyer, and from there you tick what you can send to partners; the rest of the paperwork follows on its own. New to the partner flow? Start with the <a href="/docs/ordering-from-a-partner-organisation">overview</a>. Want the list to know who makes what? Read <a href="/docs/who-makes-what">Who makes what</a> first.
 </aside>
 
 ## Where the lines come from
@@ -24,16 +24,43 @@ Orders that arrive through the old system do not feed the list. Only orders subm
 
 The **Source** filter at the top of the *All* tab lets you see only partner lines or only own-customer lines.
 
-## The four views
+## The views
 
-The tab bar above the title is the whole point of the page. Same lines, four ways of looking at them.
+The tab bar above the title is the whole point of the page. Same lines, six ways of looking at them.
 
+- **Board.** The planning view, and the one the page opens on. Each line is a card that moves through lanes from *Backlog* to *Done*. Explained in the next section.
 - **All.** The flat table, sortable and searchable, with the count of open lines. Use it when you are looking for one thing.
 - **By artisan.** One block per person, using the artisan attached to the artefact or, failing that, to its category. Lines with nobody attached sit under *Unassigned*. This is the view for handing out the day's work.
 - **By category.** One block per artefact category, so the bath bomb maker sees bath bombs and the soap maker sees soap.
 - **By buyer.** One block per partner organisation or own customer, for when you are building a shipment.
+- **Mixes.** The bases and mixes the open job orders need, for the preparer. Explained in [Preparing mixes](/docs/preparing-mixes).
 
 In the grouped views every block has a capsule above the list showing its name and line count. Click a capsule to hide that block, click again to bring it back. aiku remembers your choice in this browser, so a planner who only cares about two categories only ever sees two.
+
+## The Board
+
+Six lanes, left to right. A card moves right as the work progresses, and most moves are a drag.
+
+| Lane | What sits there |
+| --- | --- |
+| Pre-pick | lines nothing has to be made for, because the stock is on the shelf. Hidden until you press **Pre-pick** above the board. The warehouse gathers these, see [Gathering a partner's goods](/docs/gathering-a-partners-goods). |
+| Backlog | lines with an artefact that nobody has looked at yet |
+| Preparing | lines you have decided to make, with the quantity settled |
+| Assigned | a job order exists and is addressed to an artisan, but nobody has started it |
+| Producing | an artisan has pressed START on one of its tasks |
+| Done | every task on the job order is done; it waits for the warehouse to put it away |
+
+Each card shows the product, the quantity asked for, who asked, and **In stock** so you can see whether it is worth making at all.
+
+**Backlog → Preparing.** Drop the card and aiku asks *How many to make?*. It proposes the quantity asked for; type more and the extra is marked *for stock*. If the artefact has a recommended batch size, a small **↑** button rounds the quantity up to full batches. The number stays editable on the card while it is in Preparing.
+
+**Preparing → Assigned.** Drop the card and aiku asks *Who makes it?*. It proposes the artisan attached to the artefact or its category, see [Who makes what](/docs/who-makes-what). Pick a name and a job order is created in draft, addressed to that person. Open the job order and press **Release to floor** when it should start; until then the artisan does not see it. To change the artisan later, click the name on the card.
+
+**Producing** and **Done** move on their own from what happens on the floor screen. A card leaves the board when the warehouse puts the finished goods away, see [Putting away finished production](/docs/putting-away-finished-production), or when the job order is received into stock from its own page.
+
+Several cards at once: click the cards to select them, then drag any one of them and the whole selection moves. The **Everybody** menu above the board narrows it to one or two artisans, and the family, buyer and priority filters do the same for the cards.
+
+Under the Board and the By artisan view sits **Open job orders per artisan**: one chip per person with how many job orders they have open. Red means none, amber means one; everyone should have at least two so nobody runs dry. The cross on a chip marks the person as not an artisan and hides them from the count.
 
 ## Sending partner lines
 
@@ -54,7 +81,10 @@ Ticking an own-customer line does nothing useful. It is skipped when you press P
 
 <aside class="wayfinder"><strong>Where to click in aiku</strong>
 <ul>
-<li><b>See the queue:</b> your organisation → <b>Factory</b> → <b>To produce</b>. Switch views with the tabs <b>All · By artisan · By category · By buyer</b>.</li>
+<li><b>See the queue:</b> your organisation → <b>Factory</b> → <b>To produce</b>. Switch views with the tabs <b>Board · All · By artisan · By category · By buyer · Mixes</b>.</li>
+<li><b>Decide the quantity:</b> <i>Board</i> → drag the card from <b>Backlog</b> to <b>Preparing</b> → type the number, or press <b>↑</b> for full batches.</li>
+<li><b>Create the job order:</b> drag the card from <b>Preparing</b> to <b>Assigned</b> → pick the artisan → open the job order → <b>Release to floor</b>.</li>
+<li><b>Lines that only need picking:</b> <b>Pre-pick</b> button above the board.</li>
 <li><b>Hide a block:</b> in a grouped view click its capsule above the list. Click again to show it.</li>
 <li><b>Only partners or only customers:</b> <i>All</i> tab → <b>Source</b> filter.</li>
 <li><b>Ship to a partner:</b> tick lines → <b>Pick into order</b> → <b>Send to warehouse</b> in the <i>Picked orders</i> box.</li>
@@ -66,6 +96,6 @@ Ticking an own-customer line does nothing useful. It is skipped when you press P
 <ul>
 <li>Positions are set on the employee record under Human Resources and carry the rights with them.</li>
 <li>Seeing the list: <b>Production operative</b> for the factory, or above.</li>
-<li>Picking, sending and creating job orders: <b>Production floor supervisor</b> for the factory, or organisation supervisor.</li>
+<li>Moving cards on the Board, creating and releasing job orders, picking and sending: <b>Production floor supervisor</b> for the factory, or organisation supervisor. The <b>Mix preparer</b> can do the same for mixes only.</li>
 </ul>
 </aside>

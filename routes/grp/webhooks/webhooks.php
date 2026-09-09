@@ -47,7 +47,7 @@ Route::name('webhooks.')->group(function () {
 
 Route::get('google-ads/callback', CallbackShopGoogleAds::class)->name('google_ads.callback');
 
-Route::prefix('shopify/{shopifyUser:id}')->name('webhooks.shopify.')->group(function () {
+Route::middleware('verify.shopify.webhook')->prefix('shopify/{shopifyUser:id}')->name('webhooks.shopify.')->group(function () {
     Route::any('fulfillment_order_notification', CallbackFulfillmentOrderNotification::class)->name('fulfillment_order_notification');
     Route::get('fetch_stock.json', CallbackFetchStock::class)->name('fetch_stock');
     Route::post('app-uninstalled', WebhookUninstalledShopifyUser::class)->name('app_uninstalled');

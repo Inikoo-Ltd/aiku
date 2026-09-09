@@ -38,6 +38,8 @@ const props = defineProps<{
                   v-if="!fieldValue?.column1?.image?.source"
                   src="https://flowbite.s3.amazonaws.com/blocks/marketing-ui/content/content-gallery-3.png"
                   class="h-full w-full object-cover"
+                  loading="lazy"
+                  decoding="async"
                 />
                 <Image
                   v-else
@@ -68,6 +70,8 @@ const props = defineProps<{
                   v-if="!fieldValue?.column2?.image?.source"
                   src="https://flowbite.s3.amazonaws.com/blocks/marketing-ui/content/content-gallery-3.png"
                   class="h-full w-full object-cover rounded-lg shadow-lg"
+                  loading="lazy"
+                  decoding="async"
                 />
                 <Image
                   v-else
@@ -98,6 +102,8 @@ const props = defineProps<{
                   v-if="!fieldValue?.column3?.image?.source"
                   src="https://flowbite.s3.amazonaws.com/blocks/marketing-ui/content/content-gallery-3.png"
                   class="h-full w-full object-cover rounded-lg shadow-lg"
+                  loading="lazy"
+                  decoding="async"
                 />
                 <Image
                   v-else
@@ -128,6 +134,8 @@ const props = defineProps<{
                   v-if="!fieldValue?.column4?.image?.source"
                   src="https://flowbite.s3.amazonaws.com/blocks/marketing-ui/content/content-gallery-3.png"
                   class="h-full w-full object-cover"
+                  loading="lazy"
+                  decoding="async"
                 />
                 <Image
                   v-else

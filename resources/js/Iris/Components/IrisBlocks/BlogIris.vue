@@ -143,7 +143,7 @@ const screenType = inject("screenType", "desktop")
                <Image v-if="post.image_src" :src="post.image_src"
                         :alt="post.image_alt"
                         class="w-16 h-14 object-cover rounded-md border border-gray-200 shadow-sm" :imageCover="true"/>
-            <img v-if="post.third_party_image_preview" :alt="post.image_alt ? post.image_alt : post.title"  :src="post.third_party_image_preview"  class="w-16 h-14 object-cover rounded-md border border-gray-200 shadow-sm" />
+            <img v-if="post.third_party_image_preview" :alt="post.image_alt ? post.image_alt : post.title"  :src="post.third_party_image_preview" loading="lazy" decoding="async" class="w-16 h-14 object-cover rounded-md border border-gray-200 shadow-sm" />
             <div class="text-sm font-medium text-gray-700 group-hover:text-gray-900">
               {{ post.title }}
             </div>

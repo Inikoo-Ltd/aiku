@@ -1,8 +1,8 @@
 ---
 title: Preparar mezclas
-summary: Para el preparador y el planificador - cómo una mezcla o base se convierte en algo que la fábrica rastrea, cómo la pestaña Mixes calcula qué preparar, y cómo fluyen las órdenes de trabajo del preparador.
-date: 2026-09-02
-source_date: 2026-09-02
+summary: Para el preparador y el planificador - cómo una mezcla o base se convierte en algo que la fábrica rastrea, cómo el tablero Mixes calcula la falta, y cómo fluyen las órdenes de trabajo del preparador.
+date: 2026-09-08
+source_date: 2026-09-08
 tags: production, crafts
 category: production
 series: Ordering from partners
@@ -10,7 +10,7 @@ order: 6
 ---
 
 <aside class="tldr">
-Para la persona que prepara mezclas y bases antes de que los artesanos puedan empezar, y para el planificador que les manda el trabajo. Una mezcla se hace en casa, así que aiku la trata a la vez como <b>materia prima</b> (los artesanos la consumen) y como <b>artefacto</b> (el preparador la hace). Una vez enlazadas, la pestaña <b>Mixes</b> (Mezclas) en <a href="/docs/fulfilling-partner-orders-es">To produce</a> calcula cuánto se necesita de cada mezcla a partir de las órdenes de trabajo abiertas, y un botón lo convierte en órdenes de trabajo para el preparador. La configuración de categorías y artesanos está en <a href="/docs/who-makes-what-es">Quién hace qué</a>.
+Para la persona que prepara mezclas y bases antes de que los artesanos puedan empezar, y para el planificador que les manda el trabajo. Una mezcla se hace en casa, así que aiku la trata a la vez como <b>materia prima</b> (los artesanos la consumen) y como <b>artefacto</b> (el preparador la hace). Una vez enlazadas, la pestaña <b>Mixes</b> (Mezclas) en <a href="/docs/fulfilling-partner-orders-es">To produce</a> calcula cuánto falta de cada mezcla a partir de las órdenes de trabajo abiertas, y al arrastrar una tarjeta al preparador se convierte en una orden de trabajo. La configuración de categorías y artesanos está en <a href="/docs/who-makes-what-es">Quién hace qué</a>.
 </aside>
 
 ## Por qué una mezcla es dos cosas
@@ -31,21 +31,17 @@ El enlace entre las dos es un solo campo en la materia prima: **Made in-house as
 
 ## La pestaña Mixes
 
-**Factory → To produce → Mixes** lista cada materia prima hecha en casa que necesita una orden de trabajo abierta. Una orden de trabajo está abierta desde que se crea hasta que se recibe en el stock.
+**Factory → To produce → Mixes** es un pequeño tablero con cuatro carriles: **Needed** (Necesario), **Assigned**, **Mixing** y **Done**. Solo muestra materias primas hechas en casa que necesita una orden de trabajo abierta. Una orden de trabajo está abierta desde que se crea hasta que se recibe en el stock.
 
-Para cada mezcla ves:
+Una tarjeta en **Needed** es una mezcla de la que la fábrica anda corta. El número en rojo es la falta: lo que necesitan las órdenes de trabajo abiertas, según sus cantidades y la cantidad por unidad de la receta, menos lo disponible, menos lo que ya se está mezclando. Debajo, *for* lista los códigos de producto que están esperando, para que el preparador sepa qué está bloqueado, y el nombre del preparador habitual si tiene uno asignado.
 
-- **Needed** (Necesario): las cantidades de las órdenes de trabajo abiertas multiplicadas por la cantidad por unidad de la receta, sumadas entre productos.
-- **On hand** (Disponible): el stock de la mezcla ahora mismo.
-- **Being made** (En preparación): la cantidad en órdenes de trabajo abiertas para la propia mezcla.
-- **Short** (Falta): necesario menos disponible menos en preparación. Las líneas con falta van primero y se muestran en rojo.
-- **Needed for** (Necesario para): los códigos de producto que la consumen, para que el preparador sepa qué está esperando.
+Arrastra la tarjeta de **Needed** a **Assigned**. aiku pide la cantidad, proponiendo la falta para que puedas redondearla a una hornada razonable, y *¿Quién la mezcla?*. Elige al preparador y se crea una orden de trabajo en borrador, dirigida a esa persona, con su referencia en la tarjeta. Ábrela y pulsa **Release to floor** (Liberar a planta) cuando deba empezar.
 
-Marca las mezclas que hay que preparar, ajusta la cantidad si la falta no coincide con el tamaño de hornada correcto, y pulsa **Create job orders**. Se crea una orden de trabajo por preparador, dirigida a esa persona, en borrador. Ábrela y pulsa *Release to floor* (Liberar a planta) cuando deba empezar.
+**Mixing** y **Done** se mueven solos: la tarjeta pasa a Mixing cuando el preparador pulsa START, y a Done cuando la última tarea está hecha. Sale del tablero cuando la hornada se guarda en el stock.
 
 ## Qué hace el preparador
 
-El preparador lleva su propia línea, así que tiene el puesto de <b>Mix preparer</b> (preparador de mezclas) para la fábrica. Eso le permite abrir la pestaña Mixes, crear y liberar sus propias órdenes de trabajo y recibirlas en el stock sin esperar a nadie. No puede tocar las órdenes de trabajo dirigidas a otras personas; eso queda para el planificador. En la planta trabaja como cualquier artesano: sus tareas aparecen en la pantalla de planta, pulsa START y DONE, y cuando el último paso está hecho, la orden de trabajo se recibe en el stock con un código de hornada. Desde ese momento la mezcla aparece como disponible y los artesanos pueden hacer sus productos.
+El preparador lleva su propia línea, así que tiene el puesto de <b>Mix preparer</b> (preparador de mezclas) para la fábrica. Eso le permite abrir la pestaña Mixes, crear y liberar sus propias órdenes de trabajo y recibirlas en el stock sin esperar a nadie. No puede tocar las órdenes de trabajo dirigidas a otras personas; eso queda para el planificador. En la planta trabaja como cualquier artesano: sus tareas aparecen en la [pantalla de planta](/docs/working-the-floor-screen-es), pulsa START y DONE, y cuando el último paso está hecho, la hornada se guarda en el stock con un código de hornada, ya sea por el almacén desde [Dispatching → From production](/docs/putting-away-finished-production-es) o por el propio preparador desde la página de la orden de trabajo. Desde ese momento la mezcla aparece como disponible y los artesanos pueden hacer sus productos.
 
 Si al preparador no se le paga a destajo, eso es un ajuste de nómina, no un motivo para saltarse la planta. El registro de quién preparó cada hornada y cuándo es lo que da trazabilidad desde el producto terminado hasta sus ingredientes.
 
@@ -53,14 +49,14 @@ Si al preparador no se le paga a destajo, eso es un ajuste de nómina, no un mot
 
 - Una mezcla no puede necesitarse a sí misma. Si la propia receta del artefacto de la mezcla incluye la misma materia prima, esa línea se ignora.
 - La pestaña Mixes solo lee órdenes de trabajo de esta fábrica. Un producto hecho en otra fábrica no genera demanda aquí.
-- "Being made" cuenta una orden de trabajo hasta que se recibe en el stock, aunque todas las tareas estén hechas. Recibe las órdenes de trabajo con prontitud y los números se mantienen honestos.
+- Una orden de trabajo de mezcla cuenta como "en preparación" hasta que se guarda en el stock, aunque todas las tareas estén hechas. Guarda las hornadas con prontitud y la falta se mantiene honesta.
 
 <aside class="wayfinder"><strong>Dónde pulsar en aiku</strong>
 <ul>
 <li><b>Enlazar una mezcla:</b> <b>Factory → Crafts → Raw materials</b> → abre la mezcla → <b>Edit</b> → <b>Made in-house as</b>.</li>
 <li><b>Ver qué preparar:</b> <b>Factory → To produce → Mixes</b>.</li>
-<li><b>Mandar el trabajo:</b> marca mezclas → <b>Create job orders</b> → abre la orden de trabajo → <b>Release to floor</b>.</li>
-<li><b>Hacer el trabajo:</b> <b>Factory → Floor</b> (My tasks) → <b>START</b> / <b>DONE</b>; luego la orden de trabajo se recibe en el stock desde su página.</li>
+<li><b>Mandar el trabajo:</b> arrastra la tarjeta de <b>Needed</b> a <b>Assigned</b> → cantidad y preparador → abre la orden de trabajo → <b>Release to floor</b>.</li>
+<li><b>Hacer el trabajo:</b> <b>Factory → Jobs</b> → <b>START</b> / <b>DONE</b>; luego la hornada se guarda en el stock desde <b>Warehouse → Dispatching → From production</b> o desde la página de la orden de trabajo.</li>
 </ul>
 </aside>
 

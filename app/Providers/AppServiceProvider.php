@@ -38,10 +38,6 @@ class AppServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
-        $this->app->bind('app.scope', function () {
-            return 'aiku';
-        });
-
         $this->app->bind(\Inertia\Ssr\Gateway::class, \App\Services\ReportingSsrGateway::class);
 
         /**

@@ -25,6 +25,7 @@ use App\Models\Ordering\Order;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Sentry;
 
 class PayOrderWithCustomerBalance extends OrgAction
 {
@@ -92,17 +93,19 @@ class PayOrderWithCustomerBalance extends OrgAction
             ];
             StoreCreditTransaction::make()->action($customer, $creditTransactionData);
 
-            if ($order->refresh()->state == OrderStateEnum::SUBMITTED && $order->pay_status == OrderPayStatusEnum::PAID) {
-                SendOrderToWarehouse::run(
-                    $order,
-                    [
-                        'warehouse_id' => $order->organisation->warehouses()->first()->id
-                    ]
-                );
-            }
-
             return $order;
         });
+
+        /** Outside the payment transaction on purpose: routing to the warehouse creates a delivery
+         * note, and for a services only order finalises and dispatches it. A failure in any of that
+         * must not roll back money the customer has already been charged. */
+        if ($order->refresh()->state == OrderStateEnum::SUBMITTED && $order->pay_status == OrderPayStatusEnum::PAID) {
+            try {
+                SendOrderToWarehouse::make()->action($order, []);
+            } catch (\Throwable $e) {
+                Sentry::captureException($e);
+            }
+        }
 
         return [
             'success' => true,

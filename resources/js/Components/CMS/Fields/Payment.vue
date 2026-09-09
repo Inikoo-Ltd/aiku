@@ -171,7 +171,7 @@ const togglePopover = (event: Event, popoverRef: any) => {
           <FontAwesomeIcon :icon="['fas','times']" class="text-red-500 text-sm" />
         </button>
 
-        <img v-if="item.image" class="h-20 w-20 object-contain" :src="item.image" />
+        <img v-if="item.image" class="h-20 w-20 object-contain" :src="item.image" loading="lazy" decoding="async" />
       </div>
 
       <Popover :ref="el => _editop[index] = el">
@@ -182,7 +182,7 @@ const togglePopover = (event: Event, popoverRef: any) => {
             @click="() => updatePayment(index, icon)"
             class="flex flex-col items-center border border-gray-200 rounded-lg shadow-md hover:shadow-lg transition-shadow p-3 cursor-pointer bg-gray-200"
           >
-            <img class="h-20 w-20 object-contain mb-2" :src="icon.image" />
+            <img class="h-20 w-20 object-contain mb-2" :src="icon.image" loading="lazy" decoding="async" />
             <div class="text-center text-sm font-medium truncate">{{ icon.name }}</div>
           </div>
         </div>
@@ -207,7 +207,7 @@ const togglePopover = (event: Event, popoverRef: any) => {
           @click="() => addPayment(icon)"
           class="flex flex-col items-center border border-gray-200 rounded-lg shadow-md hover:shadow-lg transition-shadow p-3 cursor-pointer bg-gray-200"
         >
-          <img class="h-20 w-20 object-contain mb-2" :src="icon.image" />
+          <img class="h-20 w-20 object-contain mb-2" :src="icon.image" loading="lazy" decoding="async" />
           <div class="text-center text-sm font-medium truncate">{{ icon.name }}</div>
         </div>
       </div>

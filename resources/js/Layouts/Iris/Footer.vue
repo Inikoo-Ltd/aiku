@@ -79,7 +79,7 @@ onMounted(() => {
                     <span aria-hidden="true">·</span>
                 </template>
                 <a href="https://aiku.io/" target="_blank" rel="noopener" aria-label="Made with love using aiku.io" class="inline-flex items-center gap-x-1 hover:text-white">
-                    <img src="/art/invader.svg" alt="" aria-hidden="true" class="h-1.5 w-auto select-none" />{{ appVersion }}</a>
+                    <img src="/art/invader.svg" alt="" aria-hidden="true" loading="lazy" decoding="async" class="h-1.5 w-auto select-none" />{{ appVersion }}</a>
             </span>
         </div>
     </div>

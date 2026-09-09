@@ -12,6 +12,7 @@ use App\Actions\Catalogue\Shop\UI\ShowCatalogue;
 use App\Actions\Catalogue\WithCollectionSubNavigation;
 use App\Actions\Catalogue\WithDepartmentSubNavigation;
 use App\Actions\Catalogue\WithFamilySubNavigation;
+use App\Actions\Catalogue\Product\GetProductsNeedReviewBadgeData;
 use App\Actions\Masters\MasterAsset\GetMasterUpdatedBadgeData;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
@@ -58,7 +59,10 @@ class IndexProductsInCatalogue extends OrgAction
                         ProductStateEnum::labels($bucket),
                         ProductStateEnum::count($shop, $bucket)
                     ),
-                    ['price_not_match_master' => [__('Price/RRP ≠ Master'), null]]
+                    [
+                        'price_not_match_master' => [__('Price/RRP ≠ Master'), null],
+                        'needs_content_review'   => [__('Master text changed'), null],
+                    ]
                 ),
 
                 'engine' => function ($query, $elements) {
@@ -66,7 +70,11 @@ class IndexProductsInCatalogue extends OrgAction
                         GetMasterUpdatedBadgeData::make()->applyDriftConstraints($query);
                     }
 
-                    $states = array_diff($elements, ['price_not_match_master']);
+                    if (in_array('needs_content_review', $elements)) {
+                        GetProductsNeedReviewBadgeData::make()->applyReviewConstraints($query);
+                    }
+
+                    $states = array_diff($elements, ['price_not_match_master', 'needs_content_review']);
                     if ($states) {
                         $query->whereIn('products.state', $states);
                     }

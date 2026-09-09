@@ -58,7 +58,6 @@ test('master-only schedules register when app.master is enabled', function () {
     $events = scheduledEventIds(rebuildSchedule());
 
     expect($events)
-        ->toContain(\App\Actions\Discounts\Offer\ActivateScheduledOffers::class)
         ->toContain('offer:update_status_from_dates')
         ->toContain('ebay:ping')
         ->not->toContain('queue:prune-failed --hours=168')
@@ -73,7 +72,6 @@ test('slave-only schedules register when app.slave is enabled', function () {
     expect($events)
         ->toContain('queue:prune-failed --hours=168')
         ->toContain(\App\Actions\Reviews\AutoPublishReviews::class)
-        ->not->toContain(\App\Actions\Discounts\Offer\ActivateScheduledOffers::class)
         ->not->toContain('ebay:ping');
 });
 

@@ -16,7 +16,6 @@ use App\Enums\Fulfilment\Pallet\PalletStatusEnum;
 use App\Http\Resources\Fulfilment\PalletResource;
 use App\Models\Fulfilment\Pallet;
 use Lorisleiva\Actions\ActionRequest;
-use App\Http\Resources\Fulfilment\MayaPalletResource;
 
 class UndoBookedInPallet extends OrgAction
 {
@@ -65,11 +64,8 @@ class UndoBookedInPallet extends OrgAction
         return $this->handle($pallet);
     }
 
-    public function jsonResponse(Pallet $pallet, ActionRequest $request): PalletResource|MayaPalletResource
+    public function jsonResponse(Pallet $pallet, ActionRequest $request): PalletResource
     {
-        if ($request->hasHeader('Maya-Version')) {
-            return MayaPalletResource::make($pallet);
-        }
         return new PalletResource($pallet);
     }
 }

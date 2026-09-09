@@ -59,16 +59,6 @@ class IndexOrgStocks extends OrgAction
         return $this->handle(parent: $organisation, prefix: $this->tab);
     }
 
-    public function maya(Organisation $organisation, Warehouse $warehouse, ActionRequest $request): LengthAwarePaginator
-    {
-        $this->bucket = 'all';
-        $this->maya   = true;
-        $this->parent = $organisation;
-        $this->initialisationFromWarehouse($warehouse, $request)->withTab(OrgStocksTabsEnum::values());
-
-        return $this->handle(parent: $organisation, prefix: $this->tab);
-    }
-
     public function current(Organisation $organisation, Warehouse $warehouse, ActionRequest $request): LengthAwarePaginator
     {
         $this->bucket = 'current';

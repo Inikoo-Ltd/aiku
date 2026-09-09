@@ -607,6 +607,7 @@ onMounted(async () => {
                 <div v-if="fieldValue.setting?.payments_and_policy && fieldValue.paymentData" class="mt-5">
                     <div class="flex flex-wrap items-center gap-6 py-2">
                         <img v-for="logo in fieldValue.paymentData" :key="logo.code" :src="logo.image" :alt="logo.code"
+                            loading="lazy" decoding="async"
                             class="h-4 px-1" />
                     </div>
                 </div>
@@ -629,7 +630,7 @@ onMounted(async () => {
                             <div class="spec-value flex  gap-1 justify-end align-end">
                                 <div v-for="country in countriesOfOrigin" :key="country.code" class="flex items-center gap-2">
                                     <img :src="'/flags/' + country.code.toLowerCase() + '.png'" :alt="country.name"
-                                        :title="country.name" class="h-4 w-auto" />
+                                        :title="country.name" loading="lazy" decoding="async" class="h-4 w-auto" />
                                     <span>{{ country.name }}</span>
                                 </div>
                             </div>
@@ -857,7 +858,7 @@ onMounted(async () => {
 
             <div v-if="fieldValue?.setting?.payments_and_policy && fieldValue.paymentData">
                 <div class="flex flex-wrap gap-4">
-                    <img v-for="logo in fieldValue.paymentData" :key="logo.code" :src="logo.image" class="h-4" />
+                    <img v-for="logo in fieldValue.paymentData" :key="logo.code" :src="logo.image" loading="lazy" decoding="async" class="h-4" />
                 </div>
             </div>
 
@@ -875,7 +876,7 @@ onMounted(async () => {
                         <div class="spec-value flex flex-col gap-1 justify-end align-end">
                             <div v-for="country in countriesOfOrigin" :key="country.code" class="flex items-center gap-2 ">
                                 <img :src="'/flags/' + country.code.toLowerCase() + '.png'" :alt="country.name"
-                                    :title="country.name" class="h-4 w-auto" />
+                                    :title="country.name" loading="lazy" decoding="async" class="h-4 w-auto" />
                                 <span>{{ country.name }}</span>
                             </div>
                         </div>

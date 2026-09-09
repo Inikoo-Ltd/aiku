@@ -100,7 +100,7 @@ class OfferAllowance extends Model implements Auditable
         'class'             => OfferAllowanceClass::class,
         'target_type'       => OfferAllowanceTargetTypeEnum::class,
         'duration'          => OfferDurationEnum::class,
-        'begin_at'          => 'datetime',
+        'start_at'          => 'datetime',
         'end_at'            => 'datetime',
         'last_suspended_at' => 'datetime',
         'fetched_at'        => 'datetime',
@@ -114,6 +114,13 @@ class OfferAllowance extends Model implements Auditable
     ];
 
     protected $guarded = [];
+
+    protected static function booted(): void
+    {
+        static::saving(function (OfferAllowance $offerAllowance) {
+            $offerAllowance->status = $offerAllowance->state == OfferAllowanceStateEnum::ACTIVE && !$offerAllowance->trashed();
+        });
+    }
 
     public function generateTags(): array
     {

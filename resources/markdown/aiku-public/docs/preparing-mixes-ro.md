@@ -1,8 +1,8 @@
 ---
 title: Pregătirea amestecurilor
 summary: Pentru preparator și pentru planificator - cum devine un amestec sau o bază ceva ce fabrica urmărește, cum calculează fila Mixes ce trebuie preparat, și cum curg ordinele de lucru ale preparatorului.
-date: 2026-09-02
-source_date: 2026-09-02
+date: 2026-09-08
+source_date: 2026-09-08
 tags: production, crafts
 category: production
 series: Ordering from partners
@@ -10,7 +10,7 @@ order: 6
 ---
 
 <aside class="tldr">
-Pentru persoana care pregătește amestecuri și baze înainte ca artizanii să poată începe, și pentru planificatorul care le trimite treaba. Un amestec este făcut chiar în fabrică, așa că aiku îl tratează atât ca <b>materie primă</b> (artizanii îl consumă), cât și ca <b>artefact</b> (preparatorul îl face). Odată legate, fila <b>Mixes (Amestecuri)</b> din <a href="/docs/fulfilling-partner-orders">To produce</a> calculează cât e nevoie din fiecare amestec pornind de la ordinele de lucru deschise, iar un singur buton transformă asta în ordine de lucru pentru preparator. Configurarea categoriilor și a artizanilor e explicată în <a href="/docs/who-makes-what-ro">Cine face ce</a>.
+Pentru persoana care pregătește amestecuri și baze înainte ca artizanii să poată începe, și pentru planificatorul care le trimite treaba. Un amestec este făcut chiar în fabrică, așa că aiku îl tratează atât ca <b>materie primă</b> (artizanii îl consumă), cât și ca <b>artefact</b> (preparatorul îl face). Odată legate, fila <b>Mixes (Amestecuri)</b> din <a href="/docs/fulfilling-partner-orders-ro">To produce</a> calculează cât lipsește din fiecare amestec pornind de la ordinele de lucru deschise, iar tragerea unei cartele la preparator transformă asta într-un ordin de lucru. Configurarea categoriilor și a artizanilor e explicată în <a href="/docs/who-makes-what-ro">Cine face ce</a>.
 </aside>
 
 ## De ce un amestec este două lucruri
@@ -31,21 +31,17 @@ Legătura dintre cele două este un singur câmp pe materia primă: **Made in-ho
 
 ## Fila Mixes (Amestecuri)
 
-**Factory → To produce → Mixes (Fabrică → De produs → Amestecuri)** listează fiecare materie primă făcută intern de care are nevoie un ordin de lucru deschis. Un ordin de lucru rămâne deschis din momentul creării până când e recepționat în stoc.
+**Factory → To produce → Mixes (Fabrică → De produs → Amestecuri)** e un mic panou cu patru culoare: **Needed** (necesar), **Assigned** (atribuit), **Mixing** (în amestecare) și **Done** (gata). Arată doar materiile prime făcute intern de care are nevoie un ordin de lucru deschis. Un ordin de lucru rămâne deschis din momentul creării până când e recepționat în stoc.
 
-Pentru fiecare amestec vezi:
+O cartelă din **Needed** e un amestec de care fabrica duce lipsă. Numărul roșu e lipsa: ce au nevoie ordinele de lucru deschise, din cantitățile lor și cantitatea pe unitate din rețetă, minus ce e în stoc, minus ce e deja în amestecare. Dedesubt, *for* listează codurile de produs care așteaptă, ca preparatorul să știe ce e blocat, și numele preparatorului obișnuit dacă e atașat unul.
 
-- **Needed (Necesar)**: cantitățile din ordinele de lucru deschise înmulțite cu cantitatea pe unitate din rețetă, adunate pe toate produsele.
-- **On hand (În stoc)**: stocul amestecului chiar acum.
-- **Being made (În lucru)**: cantitatea din ordinele de lucru deschise pentru amestecul însuși.
-- **Short (Lipsă)**: necesar minus în stoc minus în lucru. Liniile cu lipsă apar primele și sunt afișate cu roșu.
-- **Needed for (Necesar pentru)**: codurile de produs care îl consumă, ca preparatorul să știe ce așteaptă.
+Trage cartela din **Needed** în **Assigned**. aiku cere cantitatea, propunând lipsa ca s-o rotunjești la un lot rezonabil, și *Cine amestecă?*. Alege preparatorul și un ordin de lucru e creat ca ciornă, adresat lui, cu referința lui pe cartelă. Deschide-l și apasă **Release to floor** (trimite pe hală) când trebuie să înceapă.
 
-Bifează amestecurile de preparat, ajustează cantitatea dacă lipsa nu e chiar lotul potrivit, și apasă **Create job orders (Creează ordine de lucru)**. Se creează câte un ordin de lucru pentru fiecare preparator, adresat lui, ca ciornă. Deschide-l și apasă *Release to floor (Trimite pe hală)* când trebuie să înceapă.
+**Mixing** și **Done** se mișcă singure: cartela ajunge în Mixing când preparatorul apasă START, și în Done când ultima sarcină e gata. Părăsește panoul când lotul e pus în stoc.
 
 ## Ce face preparatorul
 
-Preparatorul își conduce propria linie, așa că are poziția <b>Mix preparer</b> (preparator de amestecuri) pentru fabrică. Asta îi permite să deschidă fila Mixes, să creeze și să trimită propriile ordine de lucru și să le recepționeze în stoc, fără să aștepte pe nimeni. Nu poate umbla la ordinele de lucru adresate altor persoane; acelea rămân la planificator. În hală lucrează ca orice artizan: sarcinile lui apar pe ecranul halei, apasă START și DONE, și când ultimul pas e gata, ordinul de lucru e recepționat în stoc cu un cod de lot. Din acel moment amestecul apare ca fiind în stoc și artizanii pot face produsele lor.
+Preparatorul își conduce propria linie, așa că are poziția <b>Mix preparer</b> (preparator de amestecuri) pentru fabrică. Asta îi permite să deschidă fila Mixes, să creeze și să trimită propriile ordine de lucru și să le recepționeze în stoc, fără să aștepte pe nimeni. Nu poate umbla la ordinele de lucru adresate altor persoane; acelea rămân la planificator. În hală lucrează ca orice artizan: sarcinile lui apar pe [ecranul halei](/docs/working-the-floor-screen-ro), apasă START și DONE, și când ultimul pas e gata, lotul e pus în stoc cu un cod de lot, fie de depozit din [Dispatching → From production](/docs/putting-away-finished-production-ro), fie de preparator din pagina ordinului de lucru. Din acel moment amestecul apare ca fiind în stoc și artizanii pot face produsele lor.
 
 Dacă preparatorul nu e plătit cu bucata, asta e o setare de salarizare, nu un motiv să sară peste hală. Înregistrarea cine a preparat ce lot și când este ceea ce oferă trasabilitatea de la produsul finit înapoi la ingredientele lui.
 
@@ -53,14 +49,14 @@ Dacă preparatorul nu e plătit cu bucata, asta e o setare de salarizare, nu un 
 
 - Un amestec nu poate avea nevoie de el însuși. Dacă rețeta artefactului-amestec listează aceeași materie primă, linia aceea e ignorată.
 - Fila Mixes citește doar ordinele de lucru din această fabrică. Un produs făcut în altă fabrică nu creează cerere aici.
-- "Being made (În lucru)" numără un ordin de lucru până e recepționat în stoc, chiar dacă toate sarcinile sunt gata. Recepționează ordinele de lucru la timp și numerele rămân corecte.
+- Un ordin de lucru pentru amestec numără ca fiind în lucru până e pus în stoc, chiar dacă toate sarcinile sunt gata. Pune loturile la loc la timp și lipsa rămâne corectă.
 
 <aside class="wayfinder"><strong>Unde apeși în aiku</strong>
 <ul>
 <li><b>Leagă un amestec:</b> <b>Factory → Crafts → Raw materials</b> → deschide amestecul → <b>Edit</b> → <b>Made in-house as</b>.</li>
 <li><b>Vezi ce trebuie preparat:</b> <b>Factory → To produce → Mixes</b>.</li>
-<li><b>Trimite treaba:</b> bifează amestecurile → <b>Create job orders</b> → deschide ordinul de lucru → <b>Release to floor</b>.</li>
-<li><b>Fă treaba:</b> <b>Factory → Floor</b> (My tasks) → <b>START</b> / <b>DONE</b>; apoi ordinul de lucru e recepționat în stoc din pagina lui.</li>
+<li><b>Trimite treaba:</b> trage cartela din <b>Needed</b> în <b>Assigned</b> → cantitate și preparator → deschide ordinul de lucru → <b>Release to floor</b>.</li>
+<li><b>Fă treaba:</b> <b>Factory → Jobs</b> → <b>START</b> / <b>DONE</b>; apoi lotul e pus în stoc din <b>Warehouse → Dispatching → From production</b> sau din pagina ordinului de lucru.</li>
 </ul>
 </aside>
 
