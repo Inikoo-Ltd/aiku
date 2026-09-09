@@ -22,7 +22,7 @@ class MonitorRetinaApiInflow
 {
     use AsAction;
 
-    public const int CUSTOMER_HOURLY_THRESHOLD = 1000;
+    public const int CUSTOMER_HOURLY_THRESHOLD = 2000;
 
     public string $commandSignature = 'monitor:retina_api_inflow';
     public string $commandDescription = 'Alert Discord when a customer floods the API in the last hour';

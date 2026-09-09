@@ -580,6 +580,17 @@ test('retina api refuses a media file that belongs to nothing of the customers',
     getJson(route('retina.api.dropshipping.images.show', $foreignMedia->id))->assertNotFound();
 });
 
+test('retina api images accept a portfolio id sent as a product', function () {
+    DB::statement("select setval('portfolios_id_seq', (select max(id) from products) + 1000)");
+    $portfolio = StorePortfolio::make()->action($this->dropshippingChannel, $this->product, []);
+    expect(\App\Models\Catalogue\Product::find($portfolio->id))->toBeNull();
+
+    Sanctum::actingAs($this->dropshippingChannel, ['retina', 'retina:read']);
+
+    getJson(route('retina.api.dropshipping.images.index', ['id' => $portfolio->id, 'type' => 'product']))
+        ->assertOk();
+});
+
 test('retina api images are scoped to the calling customer', function () {
     $otherPortfolio = \App\Actions\Dropshipping\Portfolio\StorePortfolio::make()->action(
         $this->fulfilmentChannel,
