@@ -306,12 +306,14 @@ trait WithInvoicesExport
         $deliveryNote = $invoice->order?->deliveryNotes?->first();
         $filename     = $invoice->slug.'-'.now()->format('Y-m-d');
 
-        $hasStreet    = fn ($address) => filled($address?->address_line_1) && $address->address_line_1 != '0';
         $isCollection = (bool)($deliveryNote?->collection_address_id ?? $invoice->order?->collection_address_id);
 
-        $deliveryAddress = $isCollection
-            ? collect([$invoice->order?->collectionAddress, $invoice->shop->collectionAddress])->first($hasStreet)
-            : $deliveryNote?->deliveryAddress;
+        /** Both are addresses stored on the document when it was issued, never looked up live */
+        $deliveryAddress = $isCollection ? $invoice->deliveryAddress : $deliveryNote?->deliveryAddress;
+
+        if (blank($deliveryAddress?->address_line_1) || $deliveryAddress?->address_line_1 == '0') {
+            $deliveryAddress = null;
+        }
 
         $pdf = PDF::loadView('invoices.templates.pdf.invoice', [
             'shop'                    => $invoice->shop,

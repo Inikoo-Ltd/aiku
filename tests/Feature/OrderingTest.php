@@ -3558,3 +3558,23 @@ test('an order with no billing address is held instead of going to the warehouse
         ->and($order->state)->toEqual(OrderStateEnum::SUBMITTED)
         ->and($order->private_warehouse_note)->toContain('no address');
 });
+
+test('a collection invoice stores the collection address it was issued with', function () {
+    $customer = createCustomer($this->shop);
+    $order    = StoreOrder::make()->action($customer, Order::factory()->definition());
+    StoreTransaction::make()->action($order, $this->product->currentHistoricProduct, Transaction::factory()->definition());
+
+    $collectionAddress = \App\Models\Helpers\Address::create(array_merge(
+        \App\Models\Helpers\Address::factory()->definition(),
+        ['group_id' => $order->group_id, 'address_line_1' => 'Affinity Park']
+    ));
+    $order->shop->update(['collection_address_id' => $collectionAddress->id]);
+    $order->update(['collection_address_id' => $collectionAddress->id]);
+
+    SubmitOrder::make()->action($order);
+    $invoice = GenerateInvoiceFromOrder::make()->action($order->refresh(), []);
+
+    $collectionAddress->update(['address_line_1' => 'Somewhere else entirely']);
+
+    expect($invoice->deliveryAddress?->address_line_1)->toBe('Affinity Park');
+});

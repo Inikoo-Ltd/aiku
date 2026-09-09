@@ -187,6 +187,14 @@ class EditShop extends OrgAction
                                 'countriesAddressData' => GetAddressData::run()
                             ]
                         ],
+                        'collection_address'  => [
+                            'type'    => 'address',
+                            'label'   => __('Collection address'),
+                            'value'   => AddressFormFieldsResource::make($shop->collectionAddress)->getArray(),
+                            'options' => [
+                                'countriesAddressData' => GetAddressData::run()
+                            ]
+                        ],
                         'registration_number' => [
                             'type'  => 'input',
                             'label' => __('Registration number'),
