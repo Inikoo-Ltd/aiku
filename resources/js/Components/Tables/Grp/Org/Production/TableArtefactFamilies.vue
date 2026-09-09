@@ -71,6 +71,8 @@ const submitMove = (department: Department) => {
     )
 }
 
+const sharePercentage = (count: number, total: number) => total ? Math.round((count / total) * 100) : 0
+
 const familyRoute = (family: { slug: string }) =>
     route("grp.org.productions.show.crafts.artefact_families.show", [routeParams["organisation"], routeParams["production"], family.slug])
 </script>
@@ -111,9 +113,11 @@ const familyRoute = (family: { slug: string }) =>
             <Link :href="familyRoute(family)" class="primaryLink">{{ family.code }}</Link>
         </template>
         <template #cell(number_artefacts_without_recipe)="{ item }">
+            <span v-if="item.number_artefacts_without_recipe" class="mr-1.5 text-xs text-gray-400">{{ sharePercentage(item.number_artefacts_without_recipe, item.number_artefacts) }}%</span>
             <span :class="item.number_artefacts_without_recipe ? 'text-red-500' : ''">{{ item.number_artefacts_without_recipe }}</span>
         </template>
         <template #cell(number_artefacts_without_batch_size)="{ item }">
+            <span v-if="item.number_artefacts_without_batch_size" class="mr-1.5 text-xs text-gray-400">{{ sharePercentage(item.number_artefacts_without_batch_size, item.number_artefacts) }}%</span>
             <span :class="item.number_artefacts_without_batch_size ? 'text-red-500' : ''">{{ item.number_artefacts_without_batch_size }}</span>
         </template>
         <template #cell(artefact_department_name)="{ item }">
