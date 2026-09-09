@@ -508,3 +508,24 @@ test('outbound shopify calls are blocked in tests unless every http request is f
     Http::preventStrayRequests();
     expect(PlatformOutboundGuard::blocks('Shopify'))->toBeFalse();
 });
+
+test('an upload throwing a non-Exception error records it on the portfolio instead of vanishing', function () {
+    Queue::fake();
+    $shopifyUser = shopifyProductChannel($this, 'product-throws');
+    $portfolio   = StorePortfolio::make()->action($shopifyUser->customerSalesChannel, $this->product, []);
+
+    ShopifyFake::fake([
+        'productCreate' => fn () => throw new Error('Call to a member function on null'),
+    ]);
+
+    StoreNewProductToCurrentShopify::make()->asJob($portfolio, ['cache_key' => 'upload_progress_test', 'total' => 1]);
+    $portfolio->refresh();
+
+    expect($portfolio->platform_product_id)->toBeNull()
+        ->and($portfolio->platform_status)->toBeFalse()
+        ->and($portfolio->errors_response)->not->toBeNull()
+        ->and($portfolio->errors_response['message'])->toContain('Something went wrong on our side');
+
+    expect(fn () => StoreNewProductToCurrentShopify::make()->asJob($portfolio->refresh()))
+        ->toThrow(Error::class);
+});

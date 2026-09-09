@@ -8,7 +8,11 @@
 
 namespace App\Actions\Dropshipping;
 
+use App\Actions\Dropshipping\Portfolio\UpdatePortfolio;
 use App\Helpers\PlatformResponseFormatter;
+use App\Models\Dropshipping\Portfolio;
+use Sentry;
+use Throwable;
 
 trait WithPortfolioErrorResponse
 {
@@ -25,5 +29,14 @@ trait WithPortfolioErrorResponse
     protected function portfolioErrorMessage(mixed $response): ?string
     {
         return PlatformResponseFormatter::make()->message($response);
+    }
+
+    protected function recordPortfolioUploadFailure(Portfolio $portfolio, Throwable $e): void
+    {
+        Sentry::captureException($e);
+
+        UpdatePortfolio::run($portfolio, [
+            'errors_response' => $this->portfolioErrorResponse($e->getMessage()) ?? ['message' => class_basename($e)],
+        ]);
     }
 }
