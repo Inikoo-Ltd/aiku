@@ -45,11 +45,11 @@ import { ctrans } from "@/Composables/useTrans"
 import HelpArticles from "@/Components/Utils/HelpArticles.vue"
 import ChangePackagingSelect from "@/Components/Warehouse/PickingSessions/ChangePackagingSelect.vue"
 import OrgStockHandlingNotes from "@/Components/Warehouse/DeliveryNotes/OrgStockHandlingNotes.vue"
-import { faPrint, faFileAlt, faBoxOpen, faExclamationCircle, faCloudDownload } from "@fal"
+import { faPrint, faRedo, faFileAlt, faBoxOpen, faExclamationCircle, faCloudDownload } from "@fal"
 
 const screenType = inject('screenType', ref('desktop'))
 
-library.add(faSkull, faStickyNote, faArrowDown, faDebug, faClipboardListCheck, faUndoAlt, faHandHoldingBox, faListOl, faHandPaper, faChair, faBoxCheck, faCheckDouble, faTimes, faPeopleArrows, faHourglassHalf, faBox, faPrint, faFileAlt, faBoxOpen, faExclamationCircle, faBarcodeRead, faCloudDownload)
+library.add(faSkull, faStickyNote, faArrowDown, faDebug, faClipboardListCheck, faUndoAlt, faHandHoldingBox, faListOl, faHandPaper, faChair, faBoxCheck, faCheckDouble, faTimes, faPeopleArrows, faHourglassHalf, faBox, faPrint, faRedo, faFileAlt, faBoxOpen, faExclamationCircle, faBarcodeRead, faCloudDownload)
 
 // Section: Packaging & leaflet inserts (warehouse)
 const changingPackagingId = ref<number | null>(null)
@@ -81,6 +81,8 @@ const onPullLeafletMedia = (leaflet: { id: number }) => {
     )
 }
 
+const isLeafletPrinted = (leaflet: { state: string }) => leaflet.state === "printed" || leaflet.state === "included"
+
 const printingLeafletId = ref<number | null>(null)
 const onPrintLeaflet = async (leaflet: { id: number, state: string }) => {
     try {
@@ -93,6 +95,7 @@ const onPrintLeaflet = async (leaflet: { id: number, state: string }) => {
         } else {
             leaflet.state = "printed"
             notify({ title: trans("Sent to printer"), text: trans("Insert sent to your printer"), type: "success" })
+            router.reload({ only: [props.tab] })
         }
     } catch (error: any) {
         notify({ title: trans("Something went wrong"), text: error?.response?.data?.message ?? trans("Failed to print insert"), type: "error" })
@@ -1053,12 +1056,13 @@ onUnmounted(() => {
                     <button
                         v-if="leaflet.has_media"
                         type="button"
-                        class="p-1 text-orange-500 hover:text-orange-600 disabled:text-gray-300"
+                        class="p-1 disabled:text-gray-300"
+                        :class="isLeafletPrinted(leaflet) ? 'text-gray-400 hover:text-gray-600' : 'text-orange-500 hover:text-orange-600'"
                         :disabled="printingLeafletId === leaflet.id"
-                        v-tooltip="(leaflet.state === 'printed' || leaflet.state === 'included') ? trans('Reprint') : trans('Print')"
+                        v-tooltip="isLeafletPrinted(leaflet) ? trans('Reprint') : trans('Print')"
                         @click="onPrintLeaflet(leaflet)"
                     >
-                        <FontAwesomeIcon :icon="['fal', 'print']" fixed-width aria-hidden="true" />
+                        <FontAwesomeIcon :icon="['fal', isLeafletPrinted(leaflet) ? 'redo' : 'print']" fixed-width aria-hidden="true" />
                     </button>
 
                     <button

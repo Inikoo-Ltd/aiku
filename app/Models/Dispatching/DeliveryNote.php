@@ -371,7 +371,7 @@ class DeliveryNote extends Model implements Auditable
     public function unprintedLeaflets(): HasMany
     {
         return $this->leaflets()
-            ->where(fn ($query) => $query->whereNotNull('media_id')->orWhereNotNull('message'))
+            ->printable()
             ->whereNotIn('state', [
                 DeliveryNoteLeafletStateEnum::PRINTED,
                 DeliveryNoteLeafletStateEnum::INCLUDED,

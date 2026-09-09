@@ -47,9 +47,9 @@ import ChangePackagingSelect from "@/Components/Warehouse/PickingSessions/Change
 import OrgStockHandlingNotes from "./OrgStockHandlingNotes.vue"
 import BarcodeDisplay from "@/Components/DataDisplay/BarcodeDisplay.vue"
 import ButtonSelectBays from "@/Components/DeliveryNote/ButtonSelectBays.vue"
-import { faBoxOpen, faPrint, faFileAlt, faExclamationCircle, faCloudDownload } from "@fal"
+import { faBoxOpen, faPrint, faRedo, faFileAlt, faExclamationCircle, faCloudDownload } from "@fal"
 
-library.add(faSkull, faArrowDown, faDebug, faClipboardListCheck, faUndoAlt, faHandHoldingBox, faListOl, faHourglassHalf, faWandMagic, faBox, faBarcode, faBoxOpen, faPrint, faFileAlt, faExclamationCircle, faExclamationTriangle, faCloudDownload);
+library.add(faSkull, faArrowDown, faDebug, faClipboardListCheck, faUndoAlt, faHandHoldingBox, faListOl, faHourglassHalf, faWandMagic, faBox, faBarcode, faBoxOpen, faPrint, faRedo, faFileAlt, faExclamationCircle, faExclamationTriangle, faCloudDownload);
 
 
 const props = defineProps<{
@@ -130,6 +130,8 @@ const onChangePackaging = (packagingId: number) => {
     )
 }
 
+const isLeafletPrinted = (leaflet: { state: string }) => leaflet.state === "printed" || leaflet.state === "included"
+
 const printingLeafletId = ref<number | null>(null)
 const onPrintLeaflet = async (leaflet: { id: number, state: string }) => {
     try {
@@ -142,6 +144,7 @@ const onPrintLeaflet = async (leaflet: { id: number, state: string }) => {
         } else {
             leaflet.state = "printed"
             notify({ title: trans("Sent to printer"), text: trans("Insert sent to your printer"), type: "success" })
+            router.reload({ only: [props.tab] })
         }
     } catch (error: any) {
         notify({ title: trans("Something went wrong"), text: error?.response?.data?.message ?? trans("Failed to print insert"), type: "error" })
@@ -1326,12 +1329,13 @@ const warningMsg = computed(() => {
                     <button
                         v-if="leaflet.has_media"
                         type="button"
-                        class="p-1 text-orange-500 hover:text-orange-600 disabled:text-gray-300"
+                        class="p-1 disabled:text-gray-300"
+                        :class="isLeafletPrinted(leaflet) ? 'text-gray-400 hover:text-gray-600' : 'text-orange-500 hover:text-orange-600'"
                         :disabled="printingLeafletId === leaflet.id"
-                        v-tooltip="(leaflet.state === 'printed' || leaflet.state === 'included') ? trans('Reprint') : trans('Print')"
+                        v-tooltip="isLeafletPrinted(leaflet) ? trans('Reprint') : trans('Print')"
                         @click="onPrintLeaflet(leaflet)"
                     >
-                        <FontAwesomeIcon :icon="['fal', 'print']" fixed-width aria-hidden="true" />
+                        <FontAwesomeIcon :icon="['fal', isLeafletPrinted(leaflet) ? 'redo' : 'print']" fixed-width aria-hidden="true" />
                     </button>
                     <!-- The customer uploaded artwork after this order was placed; taking it
                          copies it onto this insert, so what shipped stays on the record. -->

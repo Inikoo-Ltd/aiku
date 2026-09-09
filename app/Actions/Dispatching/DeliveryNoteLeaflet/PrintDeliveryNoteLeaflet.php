@@ -66,6 +66,8 @@ class PrintDeliveryNoteLeaflet extends OrgAction
 
     public function asController(DeliveryNoteLeaflet $deliveryNoteLeaflet, ActionRequest $request): PrintJob|RedirectResponse
     {
+        $this->initialisationFromGroup($deliveryNoteLeaflet->group, $request);
+
         return $this->handle($deliveryNoteLeaflet);
     }
 

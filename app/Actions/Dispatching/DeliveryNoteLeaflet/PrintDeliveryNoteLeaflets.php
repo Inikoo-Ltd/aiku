@@ -30,7 +30,7 @@ class PrintDeliveryNoteLeaflets extends OrgAction
         $printed   = 0;
 
         try {
-            foreach ($deliveryNote->leaflets()->whereNotNull('media_id')->get() as $leaflet) {
+            foreach ($deliveryNote->leaflets()->printable()->get() as $leaflet) {
                 if ($this->printDeliveryNoteLeaflet($leaflet, $printerId)) {
                     $printed++;
                 }
@@ -71,6 +71,8 @@ class PrintDeliveryNoteLeaflets extends OrgAction
 
     public function asController(DeliveryNote $deliveryNote, ActionRequest $request): RedirectResponse
     {
+        $this->initialisationFromGroup($deliveryNote->group, $request);
+
         return $this->handle($deliveryNote);
     }
 }

@@ -14,6 +14,7 @@ use App\Models\Billables\ModelHasLeaflet;
 use App\Models\Helpers\Media;
 use App\Models\SysAdmin\User;
 use App\Models\Traits\InShop;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -87,6 +88,18 @@ class DeliveryNoteLeaflet extends Model
     public function isPrintable(): bool
     {
         return $this->media_id !== null || filled($this->message);
+    }
+
+    /**
+     * Inserts that have something to put on paper: their own artwork, or their own text.
+     * The counterpart of isPrintable() for queries, so a guard and a print run always
+     * agree on which rows count.
+     */
+    public function scopePrintable(Builder $query): Builder
+    {
+        return $query->where(
+            fn (Builder $printable) => $printable->whereNotNull('media_id')->orWhereNotNull('message')
+        );
     }
 
     /**
