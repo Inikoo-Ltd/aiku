@@ -14,6 +14,7 @@ interface ArtefactShowcaseData {
     compliance_status: string
     compliance_label: string
     recommended_batch_size: number | null
+    batch_pack: { packed_in: number, batch_in_skos: number, suggested_batch_size: number | null } | null
     update_route: { name: string, parameters: any }
     label_sheet?: {
         route: { name: string, parameters: any }
@@ -86,6 +87,12 @@ const onSaveBatchSize = async () => {
             <div v-if="data.recommended_batch_size" class="mb-6 flex items-baseline gap-3 rounded-lg border border-gray-200 bg-gray-50 px-4 py-3">
                 <span class="text-xs text-gray-500 uppercase tracking-wide">{{ trans('Recommended batch size') }}</span>
                 <span class="text-2xl font-semibold leading-none">{{ data.recommended_batch_size }}</span>
+                <span v-if="data.batch_pack" class="text-xs text-gray-500">
+                    {{ trans('is') }} {{ data.batch_pack.batch_in_skos }} {{ trans('SKOs of') }} {{ data.batch_pack.packed_in }}
+                    <template v-if="data.batch_pack.suggested_batch_size">
+                        &middot; {{ trans('whole SKOs at') }} {{ data.batch_pack.suggested_batch_size }}
+                    </template>
+                </span>
             </div>
             <div v-else class="mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3">
                 <div class="text-sm font-semibold text-red-700">{{ trans('No recommended batch size') }}</div>

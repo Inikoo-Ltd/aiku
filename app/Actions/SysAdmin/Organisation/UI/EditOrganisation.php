@@ -133,6 +133,18 @@ class EditOrganisation extends OrgAction
                         ],
                     ],
                     [
+                        "label"  => __("Production"),
+                        "icon"   => "fal fa-flask-potion",
+                        "fields" => [
+                            "default_shelf_life_days" => [
+                                "type"        => "input",
+                                "label"       => __("Default shelf life (days)"),
+                                "information" => __("Assumed shelf life of anything we make that has none set on the artefact itself. It caps how much the factory is told to make, so we do not fill the warehouse with stock that expires before it sells."),
+                                "value"       => Arr::get($organisation->settings, 'make_queue.default_shelf_life_days', 365),
+                            ],
+                        ],
+                    ],
+                    [
                         "label"  => __("Procurement"),
                         "icon"   => "fal fa-box-usd",
                         "fields" => [

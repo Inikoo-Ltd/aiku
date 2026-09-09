@@ -109,6 +109,15 @@ class ShowCraftsDashboard extends OrgAction
                         ],
                     ],
                     [
+                        'label' => __('Without shelf life'),
+                        'icon'  => 'fal fa-hourglass-half',
+                        'value' => $production->artefacts()->whereNull('shelf_life_days')->count(),
+                        'route' => [
+                            'name'       => 'grp.org.productions.show.crafts.artefacts.index',
+                            'parameters' => $request->route()->originalParameters()
+                        ],
+                    ],
+                    [
                         'label' => __('Compliance problems'),
                         'icon'  => 'fal fa-clipboard-check',
                         'value' => $production->artefacts()->whereHas('complianceItems', function ($query) {
@@ -176,7 +185,33 @@ class ShowCraftsDashboard extends OrgAction
             'route'   => $familiesByState($state),
         ];
 
+        $batchesWithPack = $production->artefacts()
+            ->join('org_stocks', 'artefacts.org_stock_id', 'org_stocks.id')
+            ->whereNotNull('artefacts.recommended_batch_size')
+            ->whereNotNull('org_stocks.packed_in');
+
+        $batchesNotWholeSkos = (clone $batchesWithPack)
+            ->whereRaw('mod(artefacts.recommended_batch_size, org_stocks.packed_in) <> 0')
+            ->count();
+
+        $batchesWholeSkos = (clone $batchesWithPack)->count() - $batchesNotWholeSkos;
+
         return [
+            [
+                'label' => __('Batches in whole SKOs'),
+                'icon'  => 'fal fa-box-open',
+                'color' => '#38bdf8',
+                'value' => $batchesWholeSkos,
+                'route' => $artefactsRoute(['artefacts_elements[batch_size]' => 'assigned']),
+                'metas' => [
+                    [
+                        'tooltip' => __('Batch makes a part SKO, the shop sells another pack size'),
+                        'icon'    => ['icon' => 'fal fa-box-open', 'class' => 'text-gray-400'],
+                        'count'   => $batchesNotWholeSkos,
+                        'route'   => $artefactsRoute(['artefacts_elements[batch_size]' => 'fractional']),
+                    ],
+                ],
+            ],
             [
                 'label' => __('Departments'),
                 'icon'  => 'fal fa-folder-tree',

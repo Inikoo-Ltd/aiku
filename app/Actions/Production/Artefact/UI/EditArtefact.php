@@ -127,6 +127,13 @@ class EditArtefact extends OrgAction
                                     'value'    => $artefact->recommended_batch_size,
                                     'required' => false
                                 ],
+                                'shelf_life_days' => [
+                                    'type'        => 'input',
+                                    'label'       => __('Shelf life (days)'),
+                                    'information' => __('How long it keeps once made — 365 is a year, 730 two years. Left empty it falls back to the organisation default, and it caps how much the factory is told to make at once.'),
+                                    'value'       => $artefact->shelf_life_days,
+                                    'required'    => false
+                                ],
                                 'artefact_department_id' => [
                                     'type'       => 'select_infinite',
                                     'label'      => __('Department'),

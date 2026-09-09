@@ -9,6 +9,7 @@
 namespace App\Actions\Production\PartnerShippingList\UI;
 
 use App\Actions\OrgAction;
+use App\Actions\Production\JobOrder\BatchedUnitsForDemand;
 use App\Actions\Production\PartnerShippingList\GetMixesToPrepare;
 use App\Actions\Production\PartnerShippingList\GetMixJobOrders;
 use App\Actions\Production\Production\UI\ShowProduction;
@@ -116,6 +117,7 @@ class IndexPartnerShippingList extends OrgAction
                 'partner_shopping_list_items.created_at',
                 'artefacts.id as artefact_id',
                 'artefacts.recommended_batch_size as batch_size',
+                'org_stocks.packed_in',
                 'org_stocks.quantity_available as stock_available',
                 'stocks.code as stock_code',
                 'stocks.name as stock_name',
@@ -137,7 +139,16 @@ class IndexPartnerShippingList extends OrgAction
             ->allowedFilters([$globalSearch])
             ->allowedSorts(['stock_code', 'family', 'maker', 'buyer_code', 'priority', 'needed_by', 'state', 'created_at'])
             ->withPaginator(null, $this->groupBy === 'mixes' ? 1 : ($this->groupBy ? 10000 : null), tableName: request()->route()->getName())
-            ->withQueryString();
+            ->withQueryString()
+            ->through(function ($item) {
+                $item->job_units = BatchedUnitsForDemand::run(
+                    (float) ($item->quantity_to_produce ?? $item->quantity),
+                    $item->packed_in,
+                    $item->batch_size
+                );
+
+                return $item;
+            });
     }
 
     /** @return array<string, array{label: string, elements: array<string, array{0: string, 1: int}>, engine: Closure}> */

@@ -20,6 +20,7 @@ use App\Actions\Production\Artefact\SetArtefactsState;
 use App\Actions\Production\Artefact\SetArtefactState;
 use App\Actions\Production\Artefact\SetArtefactsBatchSize;
 use App\Actions\Production\ArtefactFamily\Hydrators\ArtefactFamilyHydrateArtefacts;
+use App\Actions\Production\Artefact\UI\IndexArtefacts;
 use App\Actions\Production\ArtefactFamily\AssignArtefactsToFamiliesFromOrgStockFamilies;
 use App\Actions\Production\ArtefactFamily\DeleteArtefactFamily;
 use App\Actions\Production\ArtefactFamily\MoveArtefactFamiliesToDepartment;
@@ -625,7 +626,7 @@ test('UI edit artefact', function () {
         $page
             ->component('EditModel')
             ->has('title')
-            ->has('formData.blueprint.0.fields', 8)
+            ->has('formData.blueprint.0.fields', 9)
             ->has('pageHead')
             ->has('breadcrumbs', 4);
     });
@@ -2214,7 +2215,7 @@ test('an operative only sees the factory jobs page and nothing group or commerci
         ->and(array_keys(\App\Actions\UI\Grp\Layout\GetOrganisationNavigation::run($user, $this->organisation)))
         ->not->toContain('overview', 'chat', 'calendar_offers')
         ->and(array_keys(\App\Actions\UI\Grp\Layout\GetProductionNavigation::run($this->production, $this->guest->getUser())))
-        ->toBe(['jobs', 'crafts', 'operations', 'partners', 'artisans']);
+        ->toBe(['jobs', 'crafts', 'operations', 'partners', 'to_restock', 'pre_pick', 'artisans']);
 
     actingAs($user);
     get(route('grp.dashboard.show'))->assertRedirect(route('grp.org.dashboard.show', $this->organisation->slug));
@@ -2389,6 +2390,65 @@ test('to produce queue only shows lines with an artefact in this factory', funct
         ->assertOk()->viewData('page')['props'];
     expect(collect($all['data']['data'])->pluck('stock_code')->sort()->values()->all())
         ->toBe(collect([$stocks[0]->code, $stocks[1]->code])->sort()->values()->all());
+});
+
+test('to restock bands rank artefacts by cover and queue them onto the to produce board', function () {
+    $stocks    = createStocks($this->group);
+    $orgStocks = createOrgStocks($this->organisation, [$stocks[0], $stocks[1]]);
+
+    \App\Models\Production\Artefact::where('production_id', $this->production->id)
+        ->whereIn('org_stock_id', [$orgStocks[0]->id, $orgStocks[1]->id])
+        ->update(['org_stock_id' => null]);
+
+    /* createStocks hands back the suite's shared stocks, so clear any board line an earlier test left. */
+    \App\Models\Procurement\PartnerShoppingListItem::whereIn('stock_id', collect($orgStocks)->pluck('stock_id'))->forceDelete();
+
+    $empty   = StoreArtefact::make()->action($this->production, ['code' => 'RES-01', 'name' => 'Sold out here']);
+    $covered = StoreArtefact::make()->action($this->production, ['code' => 'RES-02', 'name' => 'Plenty here']);
+    $empty->update(['org_stock_id' => $orgStocks[0]->id]);
+    $covered->update(['org_stock_id' => $orgStocks[1]->id]);
+
+    $orgStocks[0]->update(['quantity_available' => 0]);
+    $orgStocks[1]->update(['quantity_available' => 500]);
+    $orgStocks[1]->stats()->update(['days_of_cover' => 400, 'predicted_daily_usage' => 1, 'recommended_order_quantity' => 12]);
+    /* days_of_cover 0 keeps it at the head of the lane whatever else the suite has left behind. */
+    $orgStocks[0]->stats()->update(['recommended_order_quantity' => 9, 'days_of_cover' => 0]);
+
+    $bucketOf = function (int $artefactId) {
+        $buckets = \App\Actions\Production\Restock\GetProductionStockCoverBuckets::make();
+
+        return collect(\App\Actions\Production\Restock\GetProductionStockCoverBuckets::BUCKETS)
+            ->keys()
+            ->first(fn (string $bucket) => in_array($artefactId, $buckets->artefactIdsInBucket($this->production, $bucket), true));
+    };
+
+    expect($bucketOf($empty->id))->toBe('out')
+        ->and($bucketOf($covered->id))->toBe('ok');
+
+    actingAs($this->guest->getUser());
+    $routeParameters = [$this->organisation->slug, $this->production->slug];
+
+    $props = get(route('grp.org.productions.show.to_restock.index', $routeParameters))
+        ->assertOk()->viewData('page')['props'];
+    $toDo = collect($props['lanes']['to_do'])->pluck('stock_code');
+
+    expect($toDo)->toContain($orgStocks[0]->code)
+        ->and($toDo)->not->toContain($orgStocks[1]->code)
+        ->and($props['leadTime']['days'])->toBeGreaterThan(0);
+
+    \App\Actions\Production\Restock\QueueArtefactsToProduce::make()
+        ->action($this->organisation, $this->production, [['artefact_id' => $empty->id, 'quantity' => 9]]);
+
+    $queued = \App\Models\Procurement\PartnerShoppingListItem::where('org_stock_id', $orgStocks[0]->id)->first();
+    expect((float) $queued->quantity)->toBe(9.0)
+        ->and($queued->partner_organisation_id)->toBeNull()
+        ->and($queued->organisation_id)->toBe($this->organisation->id);
+
+    $lanes = get(route('grp.org.productions.show.to_restock.index', $routeParameters))
+        ->assertOk()->viewData('page')['props']['lanes'];
+
+    expect(collect($lanes['to_do'])->pluck('stock_code'))->not->toContain($orgStocks[0]->code)
+        ->and(collect($lanes['queued'])->pluck('stock_code'))->toContain($orgStocks[0]->code);
 });
 
 test('repair assigns artefacts to families mirroring their org stock family', function () {
@@ -2758,4 +2818,121 @@ test('discontinue artefacts in bulk and take the family down with them', functio
     expect($revived)->toBe(2)
         ->and($one->refresh()->state)->toBe(ArtefactStateEnum::ACTIVE)
         ->and($family->refresh()->state)->toBe(ArtefactStateEnum::ACTIVE);
+});
+
+test('artefact index reports the batch size in SKOs', function () {
+    $stock = \App\Actions\Goods\Stock\StoreStock::make()->action(
+        $this->group,
+        array_merge(\App\Models\Goods\Stock::factory()->definition(), [
+            'state' => \App\Enums\Goods\Stock\StockStateEnum::ACTIVE
+        ])
+    );
+    $orgStock = \App\Actions\Inventory\OrgStock\StoreOrgStock::make()->action($this->organisation, $stock);
+    $orgStock->update(['packed_in' => 10]);
+
+    $artefact = StoreArtefact::make()->action($this->production, [
+        'code'                   => 'SKOMISMATCH',
+        'name'                   => 'Batch that does not fit the pack',
+        'org_stock_id'           => $orgStock->id,
+        'recommended_batch_size' => 16,
+    ]);
+
+    $this->get(route('grp.org.productions.show.crafts.artefacts.index', [$this->organisation->slug, $this->production->slug]));
+
+    $row = IndexArtefacts::make()->handle($this->production)
+        ->firstWhere('id', $artefact->id);
+
+    expect($row)->not->toBeNull()
+        ->and((int) $row->packed_in)->toBe(10);
+
+    $resource = \App\Http\Resources\Production\ArtefactsResource::make($row)->resolve();
+    expect($resource['batch_in_skos'])->toBe(1.6)
+        ->and($resource['suggested_batch_size'])->toBe(20);
+
+    $showcase = \App\Actions\Production\Artefact\UI\GetArtefactShowcase::run($artefact->refresh());
+    expect($showcase['batch_pack'])->toBe([
+        'packed_in'            => 10,
+        'batch_in_skos'        => 1.6,
+        'suggested_batch_size' => 20,
+    ]);
+});
+
+test('units made become SKOs when the stock is packed in outers', function () {
+    $stock = \App\Actions\Goods\Stock\StoreStock::make()->action(
+        $this->group,
+        array_merge(\App\Models\Goods\Stock::factory()->definition(), [
+            'state' => \App\Enums\Goods\Stock\StockStateEnum::ACTIVE
+        ])
+    );
+    $orgStock = \App\Actions\Inventory\OrgStock\StoreOrgStock::make()->action($this->organisation, $stock);
+    $orgStock->update(['packed_in' => 10]);
+
+    $artefact = StoreArtefact::make()->action($this->production, [
+        'code'                   => 'PACKEDART1',
+        'name'                   => 'Artefact sold in tens',
+        'org_stock_id'           => $orgStock->id,
+        'recommended_batch_size' => 16,
+    ]);
+    $artefact->manufactureTasks()->syncWithoutDetaching([
+        $this->manufactureTask->id => ['position' => 1, 'units_per_artefact' => 1],
+    ]);
+
+    $warehouse = \App\Actions\Inventory\Warehouse\StoreWarehouse::make()->action($this->organisation, [
+        'code' => 'WH-PACK',
+        'name' => 'Warehouse for packed receiving',
+    ]);
+    $area = \App\Actions\Inventory\WarehouseArea\StoreWarehouseArea::make()->action($warehouse, [
+        'code' => 'A-PACK',
+        'name' => 'Area packed receiving',
+    ]);
+    $location = \App\Actions\Inventory\Location\StoreLocation::make()->action(
+        $area,
+        [
+            'code' => 'L-PACK',
+            'name' => 'Loc packed receiving',
+        ] + \App\Models\Inventory\Location::factory()->definition()
+    );
+
+    $jobOrder = StoreJobOrder::make()->action($this->production, []);
+    $jobOrderItem = StoreJobOrderItem::make()->action($jobOrder, [
+        'artefact_id' => $artefact->id,
+        'quantity'    => 16,
+    ]);
+
+    ConfirmJobOrder::make()->action($jobOrder);
+
+    $task = $jobOrderItem->tasks()->first();
+    $session = StartManufactureTaskSession::make()->action($this->guest->getUser(), $task);
+    CloseManufactureTaskSession::make()->action($session, ['quantity_made' => 16]);
+
+    \App\Actions\Production\JobOrder\ReceiveJobOrderIntoStock::make()->action($jobOrder, [
+        'location_id' => $location->id,
+    ]);
+
+    $movement = \App\Models\Inventory\OrgStockMovement::where('org_stock_id', $orgStock->id)
+        ->where('type', \App\Enums\Inventory\OrgStockMovement\OrgStockMovementTypeEnum::PRODUCTION)
+        ->first();
+
+    expect((float) $movement->quantity)->toBe(1.6);
+});
+
+test('a job order is raised in whole batches of units for the SKOs asked for', function () {
+    $units = \App\Actions\Production\JobOrder\BatchedUnitsForDemand::run(12, 10, 16);
+
+    expect($units)->toBe(128)
+        ->and(\App\Actions\Production\JobOrder\BatchedUnitsForDemand::run(1, 10, 16))->toBe(16)
+        ->and(\App\Actions\Production\JobOrder\BatchedUnitsForDemand::run(2.5, 1, 16))->toBe(16)
+        ->and(\App\Actions\Production\JobOrder\BatchedUnitsForDemand::run(3, 10, null))->toBe(30)
+        ->and(\App\Actions\Production\JobOrder\BatchedUnitsForDemand::run(0, null, null))->toBe(1);
+});
+
+test('the partner order quantum is the smallest whole SKO order that whole batches fill', function () {
+    $quantum = fn (?int $packedIn, ?int $batchSize) => \App\Actions\Production\JobOrder\BatchedUnitsForDemand::make()->quantumInSkos($packedIn, $batchSize);
+
+    expect($quantum(10, 16))->toBe(8)
+        ->and($quantum(10, 20))->toBe(2)
+        ->and($quantum(10, 10))->toBe(1)
+        ->and($quantum(1, 16))->toBe(16)
+        ->and($quantum(6, 4))->toBe(2)
+        ->and($quantum(10, null))->toBe(1);
 });

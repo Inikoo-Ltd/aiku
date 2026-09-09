@@ -426,6 +426,7 @@ use App\Actions\Production\Artefact\MoveArtefactsToDepartment;
 use App\Actions\Production\Artefact\MoveArtefactsToFamily;
 use App\Actions\Production\Artefact\SetArtefactsState;
 use App\Actions\Production\Artefact\SetArtefactsBatchSize;
+use App\Actions\Production\Artefact\SetArtefactsShelfLife;
 use App\Actions\Production\ArtefactFamily\DeleteArtefactFamily;
 use App\Actions\Production\ArtefactFamily\MoveArtefactFamiliesToDepartment;
 use App\Actions\Production\ArtefactFamily\StoreArtefactFamily;
@@ -1290,6 +1291,7 @@ Route::name('production.')->prefix('production/{production:id}')->group(function
     Route::post('artefact-families', StoreArtefactFamily::class)->name('artefact_families.store');
     Route::post('artefacts/move-to-family', MoveArtefactsToFamily::class)->name('artefacts.move_to_family');
     Route::post('artefacts/batch-size', SetArtefactsBatchSize::class)->name('artefacts.set_batch_size');
+    Route::post('artefacts/shelf-life', SetArtefactsShelfLife::class)->name('artefacts.set_shelf_life');
     Route::post('artefacts/state', SetArtefactsState::class)->name('artefacts.set_state');
     Route::post('artefact-families/move-to-department', MoveArtefactFamiliesToDepartment::class)->name('artefact_families.move_to_department');
     Route::post('artefact-upload', ImportArtefact::class)->name('artefacts.upload');

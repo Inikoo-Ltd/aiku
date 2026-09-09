@@ -107,13 +107,20 @@ const onSubmitRow = async (row: any) => {
 const debSubmitRow = debounce(onSubmitRow, 500)
 
 const nextBatchMultiple = (row: any): number | null => {
-    const batch = Number(row.batch_size) || 0
-    if (batch < 2) return null
+    const quantum = Number(row.order_quantum) || 0
+    if (quantum < 2) return null
 
     const quantity = Number(row.quantity_ordered) || 0
-    const suggestion = Math.max(batch, Math.ceil(quantity / batch) * batch)
+    const suggestion = Math.max(quantum, Math.ceil(quantity / quantum) * quantum)
 
     return suggestion === quantity ? null : suggestion
+}
+
+const leavesPartBatch = (row: any): boolean => {
+    const quantum = Number(row.order_quantum) || 0
+    const quantity = Number(row.quantity_ordered) || 0
+
+    return quantum > 1 && quantity > 0 && quantity % quantum !== 0
 }
 
 const onUseBatchMultiple = (row: any) => {
@@ -221,7 +228,10 @@ watch(() => model.value, async (newValue) => {
                                             {{ trans("Your stock") }}: {{ slotProps.data.buyer_quantity_available ?? 0 }} {{ trans("SKO") }}
                                         </div>
                                         <div v-if="Number(slotProps.data.batch_size) > 1" class="text-xs text-gray-500">
-                                            {{ trans("Made in batches of") }} <span class="font-medium">{{ slotProps.data.batch_size }}</span>
+                                            {{ trans("Made in batches of") }} <span class="font-medium">{{ slotProps.data.batch_size }}</span> {{ trans("units") }}
+                                            <template v-if="Number(slotProps.data.order_quantum) > 1">
+                                                &middot; {{ trans("full batches every") }} <span class="font-medium">{{ slotProps.data.order_quantum }}</span> {{ trans("SKO") }}
+                                            </template>
                                             <button
                                                 v-if="nextBatchMultiple(slotProps.data)"
                                                 type="button"
@@ -229,6 +239,9 @@ watch(() => model.value, async (newValue) => {
                                                 @click="onUseBatchMultiple(slotProps.data)">
                                                 {{ trans("order") }} {{ nextBatchMultiple(slotProps.data) }}
                                             </button>
+                                        </div>
+                                        <div v-if="leavesPartBatch(slotProps.data)" class="text-xs text-amber-600">
+                                            {{ trans("A full batch is made either way, so this order may be delayed or the quantity adjusted") }}
                                         </div>
                                         <div v-if="slotProps.data.buyer_quarterly_usage?.length" class="text-xs text-gray-500">
                                             {{ trans("Your usage") }}:

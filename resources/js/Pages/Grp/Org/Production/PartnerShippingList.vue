@@ -58,7 +58,7 @@ function createJobOrders(ids: number[] = Object.keys(selected).map(Number), empl
     )
 }
 
-type BoardItem = { id: number, batch_size?: number | null, stock_code: string, stock_name: string, state: string, quantity: number, quantity_to_produce: number | null, maker: string | null, maker_id: number | null, preparing_at: string | null, kind?: "item" | "mix", artefact_id?: number, job_order_id?: number | null, job_order_state?: string | null, job_order_reference?: string | null, job_order_artisan?: string | null, stock_available?: number | null, buyer_code?: string | null }
+type BoardItem = { id: number, batch_size?: number | null, packed_in?: number | null, stock_code: string, stock_name: string, state: string, quantity: number, quantity_to_produce: number | null, maker: string | null, maker_id: number | null, preparing_at: string | null, kind?: "item" | "mix", artefact_id?: number, job_order_id?: number | null, job_order_state?: string | null, job_order_reference?: string | null, job_order_artisan?: string | null, stock_available?: number | null, buyer_code?: string | null }
 
 function isReassignable(item: BoardItem): boolean {
     return !!item.job_order_id && ["in_process", "submitted"].includes(item.job_order_state ?? "")
@@ -232,14 +232,11 @@ function assign(employeeId: number) {
     pendingItems.value = []
 }
 
-function batchSuggestion(item: BoardItem): number | null {
+function jobUnits(item: BoardItem): number {
+    const units = Math.ceil((Number(pendingQuantities[item.id]) || 0) * (Number(item.packed_in) || 1))
     const batch = Number(item.batch_size) || 0
-    if (batch < 2) return null
 
-    const quantity = Number(pendingQuantities[item.id]) || 0
-    const suggestion = Math.max(batch, Math.ceil(quantity / batch) * batch)
-
-    return suggestion === quantity ? null : suggestion
+    return batch > 0 ? Math.ceil(units / batch) * batch : units
 }
 
 const pendingDefaultMaker = computed(() => {
@@ -481,15 +478,12 @@ function jobOrderHref(item: { job_order_slug: string }) {
                             <span v-if="pendingItems.length > 1" class="w-24 truncate font-medium" :title="item.stock_name">{{ item.stock_code }}</span>
                             <input v-model.number="pendingQuantities[item.id]" type="number" min="1" step="1" :autofocus="index === 0" class="w-20 rounded border-gray-300 py-0.5 text-xs tabular-nums" />
                             <span v-if="pendingQuantities[item.id] > Math.ceil(Number(item.quantity))" class="text-gray-400">+{{ pendingQuantities[item.id] - Math.ceil(Number(item.quantity)) }} {{ trans("for stock") }}</span>
-                            <button
-                                v-if="batchSuggestion(item)"
-                                type="button"
-                                class="rounded bg-indigo-50 px-1.5 py-px text-indigo-700 hover:bg-indigo-100"
-                                :title="trans('Batch of :batch', { batch: item.batch_size ?? 0 })"
-                                @click="pendingQuantities[item.id] = batchSuggestion(item) as number">
-                                ↑ {{ batchSuggestion(item) }}
-                            </button>
-                            <span v-else-if="Number(item.batch_size) > 1" class="text-gray-400">{{ trans("full batches") }}</span>
+                            <span
+                                v-if="item.batch_size"
+                                class="rounded bg-indigo-50 px-1.5 py-px text-indigo-700"
+                                :title="trans('Batch of :batch units, packed in :packed', { batch: item.batch_size ?? 0, packed: item.packed_in ?? 1 })">
+                                {{ trans("makes") }} {{ jobUnits(item) }} {{ trans("units") }}
+                            </span>
                         </label>
                     </div>
                     <button type="submit" class="mt-2 w-full rounded bg-indigo-600 px-3 py-1 font-medium text-white hover:bg-indigo-500">{{ pendingItems.length > 1 ? trans("Prepare :count", { count: pendingItems.length }) : trans("Prepare") }}</button>

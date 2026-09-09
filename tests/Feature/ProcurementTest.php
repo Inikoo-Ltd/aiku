@@ -3220,7 +3220,6 @@ describe('partner shopping list', function () {
         $buyerOrgStock  = createOrgStocks($this->orgPartner->organisation, [$sellerOrgStock->stock])[0];
 
         $item = StorePartnerShoppingListItem::make()->action($this->orgPartner, $buyerOrgStock, ['quantity' => 5]);
-        CherryPickPartnerShoppingListItems::make()->action($seller, [['id' => $item->id]]);
 
         $warehouse = \App\Actions\Inventory\Warehouse\StoreWarehouse::make()->action($seller, \App\Models\Inventory\Warehouse::factory()->definition());
         $source    = \App\Actions\Inventory\Location\StoreLocation::make()->action($warehouse, \App\Models\Inventory\Location::factory()->definition());
@@ -3238,6 +3237,11 @@ describe('partner shopping list', function () {
         ]);
         \App\Actions\Inventory\LocationOrgStock\UpdateLocationOrgStock::make()->action($sourceSlot, ['quantity' => 500]);
         $sourceSlot->refresh();
+
+        /* Reserving is what puts the line in front of the warehouse; it takes no money and
+           can only promise stock we actually hold. */
+        \App\Actions\Production\PartnerShippingList\PrePickPartnerShoppingListItems::make()
+            ->action($seller, [['id' => $item->id]]);
 
         $task = collect(\App\Actions\Dispatching\PartnerStaging\GetPartnerStagingTasks::run($warehouse))
             ->firstWhere('org_stock_id', $sellerOrgStock->id);
@@ -3664,6 +3668,44 @@ test('production queue counts feed the sidebar and ignore deleted lines', functi
 
     $item->delete();
     expect($counts()['pre_pick'])->toBe($before['pre_pick']);
+});
+
+test('pre-picking reserves stock for the partner without creating any order', function () {
+    $production = Production::first() ?? StoreProduction::make()->action($this->organisation, ['code' => 'PART', 'name' => 'Partner factory']);
+    $seller     = $this->orgPartner->partner;
+
+    PartnerShoppingListItem::where('org_partner_id', $this->orgPartner->id)->forceDelete();
+
+    $buyerOrgStock  = createOrgStocks($this->orgPartner->organisation, [Stock::first()])[0];
+    $sellerOrgStock = OrgStock::where('organisation_id', $seller->id)->where('stock_id', $buyerOrgStock->stock_id)->first()
+        ?? createOrgStocks($seller, [$buyerOrgStock->stock])[0];
+    $sellerOrgStock->update(['quantity_available' => 4]);
+
+    $item        = StorePartnerShoppingListItem::make()->action($this->orgPartner, $buyerOrgStock, ['quantity' => 10]);
+    $ordersBefore = \App\Models\Ordering\Order::count();
+
+    $result = \App\Actions\Production\PartnerShippingList\PrePickPartnerShoppingListItems::make()
+        ->action($seller, [['id' => $item->id, 'quantity' => 10]]);
+
+    expect($result['pre_picked'])->toBe(1)
+        ->and($result['quantity'])->toBe(4.0)
+        ->and(\App\Models\Ordering\Order::count())->toBe($ordersBefore);
+
+    $item->refresh();
+    expect($item->pre_picked_at)->not->toBeNull()
+        ->and((float) $item->quantity)->toBe(4.0)
+        ->and($item->transaction_id)->toBeNull()
+        ->and($item->state)->toBe(ShoppingListItemStateEnum::OPEN);
+
+    /* What could not be covered stays on the list, still waiting and not pre-picked. */
+    $remainder = PartnerShoppingListItem::where('parent_id', $item->id)->first();
+    expect((float) $remainder->quantity)->toBe(6.0)
+        ->and($remainder->pre_picked_at)->toBeNull();
+
+    /* A pre-picked line drops off the pre-pick list, it is now the warehouse's job. */
+    $listed = $this->get(route('grp.org.productions.show.pre_pick.index', [$seller->slug, $production->slug]))
+        ->assertOk()->viewData('page')['props']['data']['data'];
+    expect(collect($listed)->pluck('id'))->not->toContain($item->id);
 });
 
 test('batch size is hinted to the partner buyer and to the factory board', function () {
