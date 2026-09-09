@@ -74,6 +74,12 @@ export default {
 					type: "text",
 				},
 				{
+					key: ["forgot_password", "link"],
+					label: "Forgot password link",
+					information: "The page the forgot password text links to.",
+					type: "link",
+				},
+				{
 					key: ["remember", "visible"],
 					label: "Show remember me",
 					type: "switch",
@@ -142,6 +148,12 @@ export default {
 					key: ["text"],
 					label: "Text",
 					type: "text",
+				},
+				{
+					key: ["link"],
+					label: "Link",
+					information: "The page the register button links to.",
+					type: "link",
 				},
 				{
 					key: ["container", "properties", "text"],

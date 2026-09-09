@@ -111,7 +111,14 @@
 				},
 				"terms": {
 					"text": "I agree with the terms and conditions",
-					"url": "/terms-and-conditions"
+					"link": {
+						"type": "internal",
+						"href": "/terms-and-conditions",
+						"url": null,
+						"canonical_url": null,
+						"id": null,
+						"target": "_blank"
+					}
 				},
 				"button": {
 					"text": "Register",

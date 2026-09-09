@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { nextTick, onMounted, provide, ref } from "vue"
+import { computed, nextTick, onMounted, provide, ref } from "vue"
 import axios from "axios"
 import { useForm } from "@inertiajs/vue3"
 import { trans } from "laravel-vue-i18n"
@@ -16,6 +16,7 @@ import { getStyles } from "@/Composables/styles"
 import PureInput from "@/Components/Pure/PureInput.vue"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import Modal from "@/Components/Utils/Modal.vue"
+import LinkIris from "@/Iris/Components/LinkIris.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import FieldStandaloneRegistration from "@/Pages/Retina/Auth/Field/FieldStandaloneRegistration.vue"
 import { getRefRedirect } from "@/Composables/Retina/useGetRedirectUrl"
@@ -24,11 +25,22 @@ import { get } from "lodash-es"
 
 library.add(faEnvelope, faUser, faAsterisk, faExclamationTriangle, faInfoCircle, faPhone, faBuilding, faGlobe)
 
-defineProps<{
+const props = defineProps<{
 	fieldValue: any
 	theme?: any
 	screenType: "mobile" | "tablet" | "desktop"
 }>()
+
+const termsLink = computed(() => {
+	const link = props.fieldValue?.register?.terms?.link
+
+	return {
+		type: link?.type ?? "internal",
+		target: link?.target ?? "_blank",
+		href: link?.href || "/terms-and-conditions",
+		canonical_url: link?.canonical_url,
+	}
+})
 
 const isLoadingData = ref(true)
 const countriesAddressData = ref<any>({})
@@ -308,9 +320,14 @@ const submit = async () => {
 								class="mt-0.5"
 								@update:model-value="() => (isErrorTnc = false)" />
 							<label for="is_agree_tnc">
-								<a :href="fieldValue?.register?.terms?.url || '/terms-and-conditions'" target="_blank" class="underline">
+								<LinkIris
+									:href="termsLink.href"
+									:canonical_url="termsLink.canonical_url"
+									:target="termsLink.target"
+									:type="termsLink.type"
+									class="underline">
 									{{ fieldValue?.register?.terms?.text || trans("I agree with the terms and conditions") }}
-								</a>
+								</LinkIris>
 							</label>
 						</div>
 					</div>

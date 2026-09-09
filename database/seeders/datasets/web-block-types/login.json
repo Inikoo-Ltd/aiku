@@ -54,7 +54,15 @@
 					"placeholder": ""
 				},
 				"forgot_password": {
-					"text": "Forgot password?"
+					"text": "Forgot password?",
+					"link": {
+						"type": "internal",
+						"href": "/app/reset-password-send",
+						"url": null,
+						"canonical_url": null,
+						"id": null,
+						"target": "_self"
+					}
 				},
 				"remember": {
 					"visible": false,
@@ -108,6 +116,14 @@
 				"title": "<h3 style=\"text-align: center\">Don't have an account yet?</h3>",
 				"button": {
 					"text": "CREATE ACCOUNT",
+					"link": {
+						"type": "internal",
+						"href": "/app/register",
+						"url": null,
+						"canonical_url": null,
+						"id": null,
+						"target": "_self"
+					},
 					"container": {
 						"properties": {
 							"text": {

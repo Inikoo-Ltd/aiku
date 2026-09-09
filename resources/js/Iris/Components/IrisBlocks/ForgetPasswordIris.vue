@@ -7,10 +7,11 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { faCheckCircle } from "@fal"
 import { getStyles } from "@/Composables/styles"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
+import LinkIris from "@/Iris/Components/LinkIris.vue"
 
 library.add(faCheckCircle)
 
-defineProps<{
+const props = defineProps<{
 	fieldValue: any
 	theme?: any
 	screenType: "mobile" | "tablet" | "desktop"
@@ -38,10 +39,24 @@ const urlWithParams = (path: string, params: Record<string, string | null>) => {
 		.map(([key, value]) => `${key}=${encodeURIComponent(value as string)}`)
 		.join("&")
 
-	return query ? `${path}?${query}` : path
+	if (!query) {
+		return path
+	}
+
+	return `${path}${path.includes("?") ? "&" : "?"}${query}`
 }
 
-const loginUrl = computed(() => urlWithParams("/app/login", { tiktok_code: queryParam("tiktok_code") }))
+const loginLink = computed(() => {
+	const link = props.fieldValue?.forgot_password?.login?.link
+	const params = { tiktok_code: queryParam("tiktok_code") }
+
+	return {
+		type: link?.type ?? "internal",
+		target: link?.target ?? "_self",
+		href: urlWithParams(link?.href || "/app/login", params),
+		canonical_url: link?.canonical_url ? urlWithParams(link.canonical_url, params) : link?.canonical_url,
+	}
+})
 
 const clearError = () => {
 	errorMessage.value = null
@@ -146,9 +161,14 @@ const submit = async () => {
 			<div class="editor-class mt-6 text-sm" v-html="fieldValue?.forgot_password?.login?.note" />
 
 			<div v-if="fieldValue?.forgot_password?.login?.text" class="mt-2 text-center text-sm">
-				<a :href="loginUrl" class="underline">
+				<LinkIris
+					:href="loginLink.href"
+					:canonical_url="loginLink.canonical_url"
+					:target="loginLink.target"
+					:type="loginLink.type"
+					class="underline">
 					{{ fieldValue?.forgot_password?.login?.text }}
-				</a>
+				</LinkIris>
 			</div>
 		</div>
 	</div>

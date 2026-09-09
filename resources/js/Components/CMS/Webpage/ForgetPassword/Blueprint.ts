@@ -63,6 +63,12 @@ export default {
 					information: "Leave it empty to hide the link back to the login page.",
 					type: "text",
 				},
+				{
+					key: ["login", "link"],
+					label: "Back to login link",
+					information: "The page the back to login text links to.",
+					type: "link",
+				},
 			],
 		},
 		{

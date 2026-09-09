@@ -7,6 +7,7 @@ import { googleTokenLogin } from "vue3-google-login"
 import { getStyles } from "@/Composables/styles"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import Modal from "@/Components/Utils/Modal.vue"
+import LinkIris from "@/Iris/Components/LinkIris.vue"
 
 const props = defineProps<{
 	fieldValue: any
@@ -41,17 +42,40 @@ const urlWithParams = (path: string, params: Record<string, string | null>) => {
 		.map(([key, value]) => `${key}=${encodeURIComponent(value as string)}`)
 		.join("&")
 
-	return query ? `${path}?${query}` : path
+	if (!query) {
+		return path
+	}
+
+	return `${path}${path.includes("?") ? "&" : "?"}${query}`
+}
+
+const linkWithParams = (link: any, fallbackHref: string, params: Record<string, string | null>) => {
+	const type = link?.type ?? "internal"
+	const href = link?.href || fallbackHref
+	const canonicalUrl = link?.canonical_url
+
+	return {
+		type,
+		target: link?.target ?? "_self",
+		href: urlWithParams(href, params),
+		canonical_url: canonicalUrl ? urlWithParams(canonicalUrl, params) : canonicalUrl,
+	}
 }
 
 const googleClientId = computed(() => layout?.iris?.google?.client_id)
 const isGoogleLoginVisible = computed(() => !!googleClientId.value && props.fieldValue?.login?.google?.visible !== false)
 
-const registerUrl = computed(() => urlWithParams("/app/register", { tiktok_code: queryParam("tiktok_code") }))
-const registerWithGoogleUrl = computed(() =>
-	urlWithParams("/app/register-from-google", { google_access_token: googleAccount.value?.google_access_token })
+const registerLink = computed(() =>
+	linkWithParams(props.fieldValue?.register?.button?.link, "/app/register", { tiktok_code: queryParam("tiktok_code") })
 )
-const forgotPasswordUrl = computed(() => urlWithParams("/app/reset-password-send", { tiktok_code: queryParam("tiktok_code") }))
+const registerWithGoogleLink = computed(() =>
+	linkWithParams(null, "/app/register-from-google", { google_access_token: googleAccount.value?.google_access_token })
+)
+const forgotPasswordLink = computed(() =>
+	linkWithParams(props.fieldValue?.login?.forgot_password?.link, "/app/reset-password-send", {
+		tiktok_code: queryParam("tiktok_code"),
+	})
+)
 
 const submit = async () => {
 	if (isLoading.value) {
@@ -191,9 +215,14 @@ const loginWithGoogle = async () => {
 							</label>
 							<span v-else />
 
-							<a :href="forgotPasswordUrl" class="text-sm underline">
+							<LinkIris
+								:href="forgotPasswordLink.href"
+								:canonical_url="forgotPasswordLink.canonical_url"
+								:target="forgotPasswordLink.target"
+								:type="forgotPasswordLink.type"
+								class="text-sm underline">
 								{{ fieldValue?.login?.forgot_password?.text }}
-							</a>
+							</LinkIris>
 						</div>
 					</div>
 
@@ -239,12 +268,15 @@ const loginWithGoogle = async () => {
 				<div class="editor-class text-xl font-semibold sm:text-2xl" v-html="fieldValue?.register?.title" />
 
 				<div class="mt-6 flex justify-center">
-					<a
-						:href="registerUrl"
+					<LinkIris
+						:href="registerLink.href"
+						:canonical_url="registerLink.canonical_url"
+						:target="registerLink.target"
+						:type="registerLink.type"
 						class="inline-flex cursor-pointer items-center justify-center rounded-sm transition duration-75 ease-in-out"
 						:style="getStyles(fieldValue?.register?.button?.container?.properties, screenType)">
 						{{ fieldValue?.register?.button?.text }}
-					</a>
+					</LinkIris>
 				</div>
 
 				<div class="editor-class mt-2 text-sm" v-html="fieldValue?.register?.note" />
@@ -278,12 +310,14 @@ const loginWithGoogle = async () => {
 						{{ trans("No, thanks") }}
 					</button>
 
-					<a
-						:href="registerWithGoogleUrl"
+					<LinkIris
+						:href="registerWithGoogleLink.href"
+						:target="registerWithGoogleLink.target"
+						:type="registerWithGoogleLink.type"
 						class="cursor-pointer rounded-sm px-4 py-2 text-sm"
 						:style="getStyles(fieldValue?.register?.button?.container?.properties, screenType)">
 						{{ trans("Yes") }}
-					</a>
+					</LinkIris>
 				</div>
 			</div>
 		</Modal>

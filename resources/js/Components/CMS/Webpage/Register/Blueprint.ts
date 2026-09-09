@@ -76,10 +76,10 @@ export default {
 					type: "text",
 				},
 				{
-					key: ["url"],
+					key: ["link"],
 					label: "Link",
 					information: "The page the terms and conditions text links to.",
-					type: "text",
+					type: "link",
 				},
 			],
 		},
