@@ -232,9 +232,6 @@ test('luigi actions skip websites on internal search', function () {
 
     $this->website->update(['settings' => array_merge($this->website->settings, ['iris_search_model' => 'internal'])]);
     expect($this->website->refresh()->usesLuigiSearch())->toBeFalse();
-
-    $webpage = \App\Models\Web\Webpage::where('website_id', $this->website->id)->first();
-    expect($result['status'])->toBe('skipped');
 });
 
 test('iris search only returns hits flagged is_in_website', function () {

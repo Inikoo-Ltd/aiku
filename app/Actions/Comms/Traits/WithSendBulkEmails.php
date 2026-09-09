@@ -349,7 +349,7 @@ trait WithSendBulkEmails
             }
 
             // Skip if URL already has source parameter
-            if (strpos($url, 'source=') !== false) {
+            if (preg_match('/(?:[?&]|&amp;)source=/i', $url)) {
                 return $matches[0];
             }
 

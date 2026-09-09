@@ -8,6 +8,7 @@
 
 namespace App\Actions\Dropshipping\Shopify\Product;
 
+use App\Actions\Dropshipping\WithPortfolioErrorResponse;
 use App\Actions\OrgAction;
 use App\Events\UploadProductToSalesChannelProgressEvent;
 use App\Models\Dropshipping\Portfolio;
@@ -19,6 +20,7 @@ use Lorisleiva\Actions\Concerns\AsAction;
 class StoreNewProductToCurrentShopify extends OrgAction implements ShouldBeUnique
 {
     use AsAction;
+    use WithPortfolioErrorResponse;
 
     public string $jobQueue = 'shopify';
 
@@ -32,7 +34,12 @@ class StoreNewProductToCurrentShopify extends OrgAction implements ShouldBeUniqu
     {
         try {
             $portfolio = $this->handle($portfolio, []);
-        } catch (\Throwable) {
+        } catch (\Throwable $e) {
+            $this->recordPortfolioUploadFailure($portfolio, $e);
+
+            if (!$bulkProgress) {
+                throw $e;
+            }
         }
 
         if ($bulkProgress) {

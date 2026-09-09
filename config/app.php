@@ -329,11 +329,6 @@ return [
             'payment_channel' => env('CHECKOUT_COM_PAYMENT_CHANNEL'),
             'webhook_key'     => env('LOCAL_CHECKOUT_COM_WEBHOOK_KEY'),
         ],
-        'luigisbox'       => [
-            'tracker_id'   => env('LS_TRACKER_ID'),
-            'private_key'  => env('LS_PRIVATE_KEY'),
-            'run_on_local' => env('LS_RUN_ON_LOCAL', false),
-        ],
     ],
     'master'  => env('MASTER_SERVER', true),
     'slave'   => env('SLAVE_SERVER', true),

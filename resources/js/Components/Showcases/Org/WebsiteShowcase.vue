@@ -108,12 +108,6 @@ const props = defineProps<{
     route_login?: routeType
     route_register?: routeType
     route_forgot_pass?: routeType
-    luigi_data: {
-        last_reindexed: string
-        luigisbox_tracker_id: string
-        luigisbox_private_key: string
-        luigisbox_lbx_code: string
-    }
 }>()
 
 const layout = inject('layout', layoutStructure)
@@ -153,19 +147,6 @@ const links = computed(() => {
 
     return baseLinks;
 })
-
-// Section: Button reindex website search
-// const isAbleReindex = computed(() => {
-//     const lastReindexed30Minutes = new Date(props.luigi_data.last_reindexed)
-//     lastReindexed30Minutes.setMinutes(lastReindexed30Minutes.getMinutes() + 30)
-
-//     return lastReindexed30Minutes < new Date()
-// })
-// const dateAdd30MinutesLastReindex = computed(() => {
-//     const dateLastReindex = new Date(props.luigi_data.last_reindexed)
-//     return dateLastReindex.setMinutes(dateLastReindex.getMinutes() + 30)
-// })
-
 
 </script>
 
@@ -336,11 +317,6 @@ const links = computed(() => {
                             </template>
                         </ModalConfirmationDelete>
 
-                        <!-- {{ useFormatTime(lastReindexed30Minutes, {
-                            formatTime: 'hm'
-                        }) }}
-                        <br>
-                        {{ props.luigi_data.last_reindexed }} -->
                     </div>
 
                 </div>

@@ -83,11 +83,6 @@ const props = defineProps<{
 			product_state_icon: []
 			parentLink?: []
 		}
-		luigi_availability_checklist?: {
-			label: string
-			passed: boolean
-			detail: string | null
-		}[] | null
 		images: any
 		main_image: ImageTS
 	}

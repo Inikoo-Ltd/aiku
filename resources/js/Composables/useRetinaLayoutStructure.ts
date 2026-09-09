@@ -57,7 +57,6 @@ export const retinaLayoutStructure = {
         },
         is_logged_in: false,
         iris_search_model: 'internal' as 'luigi' | 'internal',
-        luigisbox_tracker_id: '' as string | null,
     },
     iris_variables: {
         cart_count: 0,

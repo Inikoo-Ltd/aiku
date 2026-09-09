@@ -43,12 +43,6 @@ const props = defineProps<{
     layout?: {
       web_blocks?: any[]
     }
-    luigi_data?: {
-      last_reindexed?: string
-      luigisbox_tracker_id?: string
-      luigisbox_private_key?: string
-      luigisbox_lbx_code?: string
-    }
   },
   redirected_to?: {
     slug?: string
@@ -160,7 +154,7 @@ const visitRedirect = () => {
       <!-- Right Panel (Optional) -->
       <div class="row-start-1 xl:row-start-auto flex justify-end w-full">
         <!-- Optional sidebar -->
-        <div class="w-64 border border-gray-300 rounded-md p-2 h-fit" v-if="data?.luigi_data && data?.state == 'live'">
+        <div class="w-64 border border-gray-300 rounded-md p-2 h-fit" v-if="data?.state == 'live'">
           <div class="space-y-2">
             <ModalConfirmationDelete
               v-if="data?.state == 'live'"

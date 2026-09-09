@@ -30,7 +30,6 @@ const props = defineProps<{
   layout: {
     color: string[]
   }
-  luigisbox_tracker_id?: string
   editable : boolean
 }>()
 let layout: any = inject("layout", {});
@@ -54,8 +53,7 @@ const DEFAULT_CURRENCY = {
 const updateIrisLayout = () => {
   layout.iris = {
     currency: DEFAULT_CURRENCY,
-    is_logged_in: filterBlock.value === "logged-in",
-    luigisbox_tracker_id: props.luigisbox_tracker_id
+    is_logged_in: filterBlock.value === "logged-in"
   }
 }
 
