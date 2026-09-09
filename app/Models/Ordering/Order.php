@@ -461,6 +461,21 @@ class Order extends Model implements HasMedia, Auditable
         return $this->morphToMany(Address::class, 'model', 'model_has_fixed_addresses')->withTimestamps();
     }
 
+    /**
+     * The one predicate for "this order has nowhere to send an invoice or a parcel to". A collection order
+     * needs no delivery address; the Aurora placeholder "0" counts as nothing (HELP-3102).
+     */
+    public function isMissingARequiredAddress(): bool
+    {
+        $hasAddress = fn (?string $line) => filled($line) && $line != '0';
+
+        if (!$hasAddress($this->billingAddress?->address_line_1)) {
+            return true;
+        }
+
+        return !$this->collection_address_id && !$hasAddress($this->deliveryAddress?->address_line_1);
+    }
+
     public function billingAddress(): BelongsTo
     {
         return $this->belongsTo(Address::class);

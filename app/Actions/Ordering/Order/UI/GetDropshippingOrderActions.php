@@ -79,6 +79,24 @@ class GetDropshippingOrderActions
                         ] : [],
                 ],
                 OrderStateEnum::SUBMITTED => [
+                    [
+                        'type'    => 'button',
+                        'style'   => 'negative',
+                        'icon'    => 'fal fa-exclamation-triangle',
+                        'key'     => 'send-to-warehouse-without-an-address',
+                        'label'   => __('Send anyway, no address'),
+                        'tooltip' => __('The customer has no address. Send it to the warehouse regardless, only when they cannot be reached'),
+                        'route'   => [
+                            'method'     => 'patch',
+                            'name'       => 'grp.models.order.state.in-warehouse',
+                            'parameters' => [
+                                'order' => $order->id,
+                            ],
+                            'body'       => [
+                                'without_an_address' => true,
+                            ],
+                        ]
+                    ],
                     $platform && $platform->type == PlatformTypeEnum::MANUAL ? [
                         'type'   => 'buttonGroup',
                         'key'    => 'upload-add',

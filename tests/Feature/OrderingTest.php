@@ -3606,3 +3606,22 @@ test('a held order goes to the warehouse once its address is put on it', functio
     expect($order->refresh()->state)->toEqual(OrderStateEnum::IN_WAREHOUSE)
         ->and($order->deliveryNotes()->count())->toBe(1);
 });
+
+test('the warehouse can be sent an order without an address on purpose', function () {
+    $customer = createCustomer($this->shop);
+    $order    = StoreOrder::make()->action($customer, Order::factory()->definition());
+    StoreTransaction::make()->action($order, $this->product->currentHistoricProduct, Transaction::factory()->definition());
+    SubmitOrder::make()->action($order);
+
+    $order->refresh();
+    $order->billingAddress->update(['address_line_1' => '']);
+    $order->unsetRelation('billingAddress');
+    $order->update(['pay_status' => OrderPayStatusEnum::PAID]);
+
+    expect(SendOrderToWarehouse::make()->action($order, []))->toBeNull();
+
+    $deliveryNote = SendOrderToWarehouse::make()->action($order, [], withoutAnAddress: true);
+
+    expect($deliveryNote)->toBeInstanceOf(DeliveryNote::class)
+        ->and($order->refresh()->state)->toEqual(OrderStateEnum::IN_WAREHOUSE);
+});
