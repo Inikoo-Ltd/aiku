@@ -189,7 +189,6 @@ const components = (shop_type?: string): Record<string, Component> => {
 		//see-also
 		"see-also-1": SeeAlso1Iris,
 
-		// Kode blok warisan Luigi, sekarang selalu dirender komponen internal
 		"luigi-trends-1": InternalTrends1Iris,
 		"luigi-last-seen-1": InternalLastSeen1Iris,
 		"luigi-item-alternatives-1": InternalItemAlternatives1Iris,

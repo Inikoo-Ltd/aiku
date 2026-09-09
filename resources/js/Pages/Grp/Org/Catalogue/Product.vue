@@ -102,13 +102,6 @@ const props = defineProps<{
     images?: {}
     attachments?: {}
     family_slug : string
-    luigi_data: {
-        webpage_id: number
-        last_reindexed: string
-        luigisbox_tracker_id: string
-        luigisbox_private_key: string
-        luigisbox_lbx_code: string
-    }
     master : boolean
     mini_breadcrumbs? : any[]
     masterRoute?: routeType

@@ -89,13 +89,6 @@ class WebpageResource extends JsonResource
             'state'                        => $webpage->state,
             'title'                        => $webpage->title,
             'search_in_website_availability' => $availabilityChecklist,
-            'luigi_data' => [
-                'iris_search_model'     => Arr::get($website->settings, "iris_search_model", "internal"),
-                'last_reindexed'        => Arr::get($website->settings, "luigisbox.last_reindex_at"),
-                'luigisbox_tracker_id'  => Arr::get($website->settings, "luigisbox.tracker_id"),
-                'luigisbox_private_key' => Arr::get($website->settings, "luigisbox.private_key"),
-                'luigisbox_lbx_code'    => Arr::get($website->settings, "luigisbox.lbx_code"),
-            ],
 
             'add_web_block_route'                    => [
                 'name'       => 'grp.models.webpage.web_block.store',

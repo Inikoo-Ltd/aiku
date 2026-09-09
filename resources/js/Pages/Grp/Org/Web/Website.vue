@@ -82,11 +82,6 @@ const props = defineProps<{
         fetch_live_webpages: routeType
         submit: routeType
     }
-    luigi_data: {
-        luigisbox_tracker_id: string
-        luigisbox_private_key: string
-        luigisbox_lbx_code: string
-    }
 }>()
 
 
@@ -153,7 +148,6 @@ const submitForm = () => {
         :data="(props as Record<string, any>)[currentTab]"
         :tab="currentTab"
         :route_storefront
-        :luigi_data
         :route_welcome
     />
 

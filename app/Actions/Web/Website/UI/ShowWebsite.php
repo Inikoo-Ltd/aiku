@@ -304,13 +304,6 @@ class ShowWebsite extends OrgAction
 
                 'route_storefront'   => $route_storefront,
                 'route_welcome'      => $route_landing_page,
-                'luigi_data'         => [
-                    'last_reindexed'        => Arr::get($website->settings, "luigisbox.last_reindex_at"),
-                    'luigisbox_tracker_id'  => Arr::get($website->settings, "luigisbox.tracker_id"),
-                    'luigisbox_private_key' => Arr::get($website->settings, "luigisbox.private_key"),
-                    'luigisbox_lbx_code'    => Arr::get($website->settings, "luigisbox.lbx_code"),
-                ],
-
 
                 WebsiteTabsEnum::SHOWCASE->value => $this->tab == WebsiteTabsEnum::SHOWCASE->value ? array_merge(
                     WebsiteResource::make($website)->getArray(),

@@ -195,7 +195,6 @@ class Website extends Model implements Auditable, HasMedia
      */
     private const IRIS_CACHED_SETTINGS = [
         'iris_search_model',
-        'luigisbox.tracker_id',
         'google_tag_id',
         'webpage.show_price',
     ];

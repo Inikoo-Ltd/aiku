@@ -71,7 +71,6 @@ const props = defineProps<{
   webpage: RootWebpage,
   webBlockTypes: Root
   url: string
-  luigi_tracker_id: string
   editable : boolean
 }>();
 
@@ -150,7 +149,6 @@ const revealBlockOptions = computed(() =>
 
 provide('revealBlockOptions', revealBlockOptions);
 
-provide('webpage_luigi_tracker_id', props.luigi_tracker_id)
 provide('currentView', currentView);
 provide('openedBlockSideEditor', openedBlockSideEditor);
 provide('openedChildSideEditor', openedChildSideEditor);
