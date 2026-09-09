@@ -58,9 +58,6 @@ class UndoStoredItemPick extends OrgAction
 
     public function jsonResponse(PalletReturnItem $palletReturnItem, ActionRequest $request): PalletReturnItem|PalletReturnItemResource
     {
-        if ($request->hasHeader('Maya-Version')) {
-            return PalletReturnItemResource::make($palletReturnItem);
-        }
 
         return $palletReturnItem;
     }

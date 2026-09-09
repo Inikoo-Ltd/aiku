@@ -11,6 +11,7 @@ namespace App\Actions\Inventory\Location;
 use App\Actions\Inventory\Location\Hydrators\LocationHydrateSortCode;
 use App\Actions\Inventory\Warehouse\Hydrators\WarehouseHydrateLocations;
 use App\Actions\Inventory\WarehouseArea\Hydrators\WarehouseAreaHydrateLocations;
+use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateQuantityInLocations;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateLocations;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateLocations;
@@ -19,7 +20,9 @@ use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
 use App\Http\Resources\Inventory\LocationResource;
 use App\Models\Inventory\Location;
+use App\Models\Inventory\WarehouseArea;
 use App\Rules\IUnique;
+use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 
 class UpdateLocation extends OrgAction
@@ -32,8 +35,9 @@ class UpdateLocation extends OrgAction
 
     public function handle(Location $location, array $modelData): Location
     {
+        $originalWarehouseAreaId = $location->warehouse_area_id;
+
         $location = $this->update($location, $modelData, ['data']);
-        $changes  = $location->getChanges();
 
         if ($location->wasChanged('status')) {
             GroupHydrateLocations::dispatch($location->group)->delay($this->hydratorsDelay);
@@ -45,8 +49,26 @@ class UpdateLocation extends OrgAction
             }
         }
 
+        if ($location->wasChanged('warehouse_area_id')) {
+            $location->locationOrgStocks()->update(['warehouse_area_id' => $location->warehouse_area_id]);
+            $location->pallets()->update(['warehouse_area_id' => $location->warehouse_area_id]);
+
+            foreach (array_filter([$originalWarehouseAreaId, $location->warehouse_area_id]) as $warehouseAreaId) {
+                WarehouseAreaHydrateLocations::dispatch(WarehouseArea::find($warehouseAreaId))->delay($this->hydratorsDelay);
+            }
+        }
+
         if ($location->wasChanged('code')) {
             $location = LocationHydrateSortCode::run($location);
+        }
+
+        /* Stock already in the location changes side without moving: what a goods out
+           location holds is spoken for and stops being available, and comes back when the
+           location is an ordinary one again. */
+        if ($location->wasChanged('is_goods_out')) {
+            foreach ($location->locationOrgStocks()->pluck('org_stock_id') as $orgStockId) {
+                OrgStockHydrateQuantityInLocations::dispatch($orgStockId)->delay($this->hydratorsDelay);
+            }
         }
 
         // TODO allow_dropshipping change -> disable all orgLocation that use this location as default dropshipping
@@ -74,9 +96,15 @@ class UpdateLocation extends OrgAction
                     ]
                 ),
             ],
+            'warehouse_area_id'  => [
+                'sometimes',
+                'nullable',
+                Rule::exists('warehouse_areas', 'id')->where('warehouse_id', $this->location->warehouse_id)->whereNull('deleted_at'),
+            ],
             'allow_stocks'       => ['sometimes', 'required', 'boolean'],
             'allow_fulfilment'   => ['sometimes', 'required', 'boolean'],
             'allow_dropshipping' => ['sometimes', 'required', 'boolean'],
+            'is_goods_out'       => ['sometimes', 'required', 'boolean'],
             'max_weight'         => ['sometimes', 'nullable', 'numeric', 'min:0.1', 'max:1000000'],
             'max_volume'         => ['sometimes', 'nullable', 'numeric', 'min:0.1', 'max:1000000'],
         ];

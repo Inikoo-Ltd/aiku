@@ -19,6 +19,7 @@ use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Process;
+use Symfony\Component\Process\Exception\ProcessTimedOutException;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -229,8 +230,13 @@ class ShowAikuPublicAnalytics extends OrgAction
     private function getArticleCommitDates(): array
     {
         return cache()->remember('aiku_public_article_commit_dates', 3600, function () {
-            $result = Process::path(base_path())
-                ->run('git log --diff-filter=A --format="C %aI" --name-only -- resources/markdown/aiku-public/blog');
+            try {
+                $result = Process::path(base_path())
+                    ->run('git log --diff-filter=A --format="C %aI" --name-only -- resources/markdown/aiku-public/blog');
+            } catch (ProcessTimedOutException) {
+                return [];
+            }
+
             if (! $result->successful()) {
                 return [];
             }

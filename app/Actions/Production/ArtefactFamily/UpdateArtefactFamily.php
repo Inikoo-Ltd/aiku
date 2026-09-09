@@ -2,17 +2,20 @@
 
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Wed, 02 Sep 2026 Malaga, Spain
+ * Created: Tue, 08 Sep 2026 Malaga, Spain
  * Copyright (c) 2026, Raul A Perusquia Flores
  */
 
 namespace App\Actions\Production\ArtefactFamily;
 
 use App\Actions\OrgAction;
+use App\Actions\Production\ArtefactDepartment\Hydrators\ArtefactDepartmentHydrateArtefacts;
 use App\Actions\Traits\WithActionUpdate;
+use App\Models\Production\Artefact;
 use App\Models\Production\ArtefactFamily;
 use App\Rules\AlphaDashDot;
 use App\Rules\IUnique;
+use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 
 class UpdateArtefactFamily extends OrgAction
@@ -23,7 +26,22 @@ class UpdateArtefactFamily extends OrgAction
 
     public function handle(ArtefactFamily $artefactFamily, array $modelData): ArtefactFamily
     {
-        return $this->update($artefactFamily, $modelData, ['data']);
+        $previousDepartment = $artefactFamily->artefactDepartment;
+
+        $artefactFamily = $this->update($artefactFamily, $modelData, ['data']);
+
+        /* The artefacts follow their family: a family only ever sits in one department. */
+        if ($artefactFamily->wasChanged('artefact_department_id')) {
+            Artefact::where('artefact_family_id', $artefactFamily->id)
+                ->update(['artefact_department_id' => $artefactFamily->artefact_department_id]);
+
+            $artefactFamily->unsetRelation('artefactDepartment');
+            foreach (array_filter([$previousDepartment, $artefactFamily->artefactDepartment]) as $department) {
+                ArtefactDepartmentHydrateArtefacts::run($department);
+            }
+        }
+
+        return $artefactFamily;
     }
 
     public function authorize(ActionRequest $request): bool
@@ -32,13 +50,13 @@ class UpdateArtefactFamily extends OrgAction
             return true;
         }
 
-        return $request->user()->authTo("productions_rd.{$this->production->id}.edit");
+        return $request->user()->authTo(["org-supervisor.{$this->organisation->id}", "productions_rd.{$this->production->id}.edit"]);
     }
 
     public function rules(): array
     {
         return [
-            'code'        => [
+            'code'                   => [
                 'sometimes',
                 'required',
                 new AlphaDashDot(),
@@ -46,13 +64,18 @@ class UpdateArtefactFamily extends OrgAction
                 new IUnique(
                     table: 'artefact_families',
                     extraConditions: [
-                        ['column' => 'production_id', 'value' => $this->production->id],
+                        ['column' => 'artefact_department_id', 'value' => $this->artefactFamily->artefact_department_id],
                         ['column' => 'id', 'operator' => '!=', 'value' => $this->artefactFamily->id],
                     ]
                 ),
             ],
-            'name'        => ['sometimes', 'required', 'string', 'max:255'],
-            'description' => ['sometimes', 'nullable', 'string', 'max:1024'],
+            'name'                   => ['sometimes', 'required', 'string', 'max:255'],
+            'description'            => ['sometimes', 'nullable', 'string', 'max:1024'],
+            'artefact_department_id' => [
+                'sometimes',
+                'required',
+                Rule::exists('artefact_departments', 'id')->where('production_id', $this->production->id),
+            ],
         ];
     }
 

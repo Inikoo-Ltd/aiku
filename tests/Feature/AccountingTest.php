@@ -2031,9 +2031,8 @@ test('increase and decrease customer credit', function () {
 */
 
 test('update mit saved card', function () {
-    // ponytail: StoreMitSavedCard validation targets a non-existent table
-    // ('payment_account_shops' vs real 'payment_account_shop'), so create the
-    // card directly to exercise UpdateMitSavedCard. See bug report.
+    // ponytail: create the card directly to exercise UpdateMitSavedCard on its own,
+    // without dragging StoreMitSavedCard's sales channel side effects into this test.
     $shop     = $this->shop;
     $customer = createCustomer($shop);
 

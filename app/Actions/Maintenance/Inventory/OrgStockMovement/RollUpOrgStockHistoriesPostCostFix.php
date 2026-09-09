@@ -32,7 +32,10 @@ class RollUpOrgStockHistoriesPostCostFix
     {
         $earliestRepaired = DB::table('org_stock_movements')
             ->where('organisation_id', $organisation->id)
-            ->where('cost_status', OrgStockMovementCostStatusEnum::DELIVERY->value)
+            ->whereIn('cost_status', [
+                OrgStockMovementCostStatusEnum::DELIVERY->value,
+                OrgStockMovementCostStatusEnum::PROVISIONAL->value,
+            ])
             ->min('date');
 
         if (!$earliestRepaired) {

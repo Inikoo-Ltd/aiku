@@ -281,6 +281,25 @@ return [
     ],
     'log_user_requests' => env('LOG_USER_REQUESTS', false),
 
+    /*
+     * Off, the customer API records the calls it would have refused instead of refusing them,
+     * so a client relying on the old unscoped behaviour shows up in the request log before it
+     * is broken. Turn on once the log is quiet.
+     */
+    'enforce_api_ownership' => env('ENFORCE_API_OWNERSHIP', false),
+
+    /*
+     * Off, an unsigned Shopify webhook is logged and allowed instead of rejected, so a callback
+     * Shopify does not sign is discovered from the log rather than by an integration breaking.
+     */
+    'enforce_webhook_signatures' => env('ENFORCE_WEBHOOK_SIGNATURES', false),
+
+    /*
+     * Off, a chat conversation may still be attached to a web user the caller only claims to be,
+     * and the mismatch is logged instead. On, only the visitor's own login counts.
+     */
+    'enforce_chat_identity' => env('ENFORCE_CHAT_IDENTITY', false),
+
     'default_outbox_builder'              => env('DEFAULT_OUTBOX_BUILDER', 'beefree'),
     'send_email_in_non_production_env'    => env('SEND_EMAIL_IN_NON_PRODUCTION_ENV', false),
     'email_address_in_non_production_env' => env('EMAIL_ADDRESS_IN_NON_PRODUCTION_ENV', 'dev@aiku.io'),

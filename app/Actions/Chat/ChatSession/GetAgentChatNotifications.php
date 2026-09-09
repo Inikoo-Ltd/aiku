@@ -164,8 +164,14 @@ class GetAgentChatNotifications
         return ChatSessionListResource::collection($sessions)->resolve();
     }
 
+    /**
+     * The id in the URL is the caller's own: user ids are sequential, and an agent's queue names
+     * the customers they are talking to, so another agent's is not theirs to read.
+     */
     public function asController(ActionRequest $request, $userId): JsonResponse
     {
+        abort_unless((int) $userId === $request->user()?->id, 403);
+
         $user = User::find($userId);
 
         if (!$user || !$user->chatAgent) {

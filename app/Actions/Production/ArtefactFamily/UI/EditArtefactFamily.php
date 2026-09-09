@@ -2,7 +2,7 @@
 
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Wed, 02 Sep 2026 Malaga, Spain
+ * Created: Tue, 08 Sep 2026 Malaga, Spain
  * Copyright (c) 2026, Raul A Perusquia Flores
  */
 
@@ -20,7 +20,7 @@ class EditArtefactFamily extends OrgAction
 {
     public function authorize(ActionRequest $request): bool
     {
-        return $request->user()->authTo("productions_rd.{$this->production->id}.edit");
+        return $request->user()->authTo(["org-supervisor.{$this->organisation->id}", "productions_rd.{$this->production->id}.edit"]);
     }
 
     public function asController(Organisation $organisation, Production $production, ArtefactFamily $artefactFamily, ActionRequest $request): Response
@@ -31,9 +31,11 @@ class EditArtefactFamily extends OrgAction
             'EditModel',
             [
                 'breadcrumbs' => $this->getBreadcrumbs($request->route()->originalParameters()),
-                'title'       => __('Edit artefact family'),
+                'title'       => __('Edit Artefact Family') . ' ' . $artefactFamily->code,
                 'pageHead'    => [
-                    'title'   => __('Edit artefact family'),
+                    'icon'      => 'fal fa-folder',
+                    'model'     => __('Artefact Family'),
+                    'title'   => __('Edit') . ' ' . $artefactFamily->name,
                     'actions' => [
                         [
                             'type'  => 'button',
@@ -50,9 +52,26 @@ class EditArtefactFamily extends OrgAction
                         [
                             'title'  => __('Artefact family'),
                             'fields' => [
-                                'code'        => ['type' => 'input', 'label' => __('Code'), 'value' => $artefactFamily->code, 'required' => true],
-                                'name'        => ['type' => 'input', 'label' => __('Name'), 'value' => $artefactFamily->name, 'required' => true],
-                                'description' => ['type' => 'textarea', 'label' => __('Description'), 'value' => $artefactFamily->description, 'required' => false],
+                                'artefact_department_id' => [
+                                    'type'                => 'select_infinite',
+                                    'label'               => __('Department'),
+                                    'required'            => true,
+                                    'placeholder'         => __('Search a department by code or name'),
+                                    'value'               => $artefactFamily->artefact_department_id,
+                                    'options'             => array_filter([
+                                        $artefactFamily->artefactDepartment ? ['id' => $artefactFamily->artefactDepartment->id, 'name' => $artefactFamily->artefactDepartment->name, 'code' => $artefactFamily->artefactDepartment->code] : null,
+                                    ]),
+                                    'fetchRoute'          => [
+                                        'name'       => 'grp.json.production.artefact_departments.index',
+                                        'parameters' => ['production' => $production->id]
+                                    ],
+                                    'valueProp'           => 'id',
+                                    'labelProp'           => 'name',
+                                    'labelAdditionalProp' => 'code',
+                                ],
+                                'code'                   => ['type' => 'input', 'label' => __('Code'), 'value' => $artefactFamily->code, 'required' => true],
+                                'name'                   => ['type' => 'input', 'label' => __('Name'), 'value' => $artefactFamily->name, 'required' => true],
+                                'description'            => ['type' => 'textarea', 'label' => __('Description'), 'value' => $artefactFamily->description, 'required' => false],
                             ]
                         ]
                     ],

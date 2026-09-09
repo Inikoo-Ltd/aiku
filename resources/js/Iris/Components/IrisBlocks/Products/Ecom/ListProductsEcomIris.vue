@@ -581,7 +581,7 @@ watch(
 
                 <!-- Load More -->
                 <!--  {{ page   }}{{ lastPage }} -->
-                <div v-if="page < lastPage && !isLoadingInitial" class="flex justify-center my-4  mb-12"
+                <div v-if="page < lastPage && !isLoadingInitial" class="flex justify-center my-4 mb-12"
                     :class="{ 'max-lg:hidden': isMobileCollapsed }">
                     <Button @click="loadMore" type="tertiary" :disabled="isLoadingMore"
                         :injectStyle="{ padding: '14px 65px', fontSize: '1.2rem' }">

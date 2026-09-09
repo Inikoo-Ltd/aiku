@@ -32,15 +32,6 @@ class ShowWarehouseArea extends OrgAction
     use WithWarehouseAuthorisation;
 
 
-    public function maya(Organisation $organisation, WarehouseArea $warehouseArea, ActionRequest $request): WarehouseArea
-    {
-        $this->maya = true;
-        $this->initialisation($organisation, $request)->withTab(WarehouseAreaTabsEnum::values());
-
-        return $this->handle($warehouseArea);
-    }
-
-
     public function asController(Organisation $organisation, Warehouse $warehouse, WarehouseArea $warehouseArea, ActionRequest $request): WarehouseArea
     {
         $this->initialisationFromWarehouse($warehouse, $request)->withTab(WarehouseAreaTabsEnum::values());
@@ -87,6 +78,17 @@ class ShowWarehouseArea extends OrgAction
                             ]
                             : null,
                         $this->canEdit ? $this->getEditActionIcon($request) : null,
+                        $this->canEdit ? [
+                            'type'  => 'button',
+                            'style' => 'delete',
+                            'key'   => 'delete',
+                            'label' => __('Delete area'),
+                            'route' => [
+                                'name'       => 'grp.models.warehouse_area.delete',
+                                'parameters' => ['warehouseArea' => $warehouseArea->id],
+                                'method'     => 'delete',
+                            ]
+                        ] : null,
                     ],
                     'meta'    => [
                         [

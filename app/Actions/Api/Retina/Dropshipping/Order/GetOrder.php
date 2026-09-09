@@ -10,12 +10,13 @@
 namespace App\Actions\Api\Retina\Dropshipping\Order;
 
 use App\Actions\Api\Retina\Dropshipping\Resource\OrderApiResource;
+use App\Actions\RetinaApiAction;
 use App\Models\Ordering\Order;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 
-class GetOrder
+class GetOrder extends RetinaApiAction
 {
     use AsAction;
     use WithAttributes;
@@ -32,6 +33,8 @@ class GetOrder
 
     public function asController(Order $order, ActionRequest $request): Order
     {
+        $this->initialisationFromDropshipping($request);
+
         return $this->handle($order);
     }
 }

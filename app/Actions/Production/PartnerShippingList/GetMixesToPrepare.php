@@ -32,7 +32,7 @@ class GetMixesToPrepare
         $intermediates = RawMaterial::query()
             ->where('production_id', $production->id)
             ->whereNotNull('artefact_id')
-            ->with(['artefact.artefactFamily', 'orgStock'])
+            ->with(['artefact.artefactDepartment', 'orgStock'])
             ->get()
             ->keyBy('id');
 
@@ -77,7 +77,7 @@ class GetMixesToPrepare
                 'on_hand'     => $onHand,
                 'in_progress' => $inProgress,
                 'shortfall'   => round(max(0, $line['needed'] - $onHand - $inProgress), 3),
-                'artisan'     => $artefact->artisans()->first()?->contact_name ?? $artefact->artefactFamily?->artisans()->first()?->contact_name,
+                'artisan'     => $artefact->artisans()->first()?->contact_name ?? $artefact->artefactDepartment?->artisans()->first()?->contact_name,
                 'needed_for'  => array_keys($line['needed_for']),
             ];
         }

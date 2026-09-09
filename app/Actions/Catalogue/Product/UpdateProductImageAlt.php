@@ -18,8 +18,11 @@ class UpdateProductImageAlt extends OrgAction
     public function handle(Product $product, Media $media, array $modelData): Product
     {
         $product->images()->updateExistingPivot($media->id, [
-            'caption' => $modelData['alt'] ?? null,
+            'caption'             => $modelData['alt'] ?? null,
+            'is_caption_reviewed' => true,
         ]);
+
+        BreakProductInWebpagesCache::dispatch($product)->delay(15);
 
         return $product;
     }

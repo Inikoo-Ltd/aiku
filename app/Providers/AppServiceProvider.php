@@ -38,10 +38,6 @@ class AppServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
-        $this->app->bind('app.scope', function () {
-            return 'aiku';
-        });
-
         $this->app->bind(\Inertia\Ssr\Gateway::class, \App\Services\ReportingSsrGateway::class);
 
         /**
@@ -405,6 +401,7 @@ class AppServiceProvider extends ServiceProvider
                 'RawMaterial'                      => 'App\Models\Production\RawMaterial',
                 'ManufactureTask'                  => 'App\Models\Production\ManufactureTask',
                 'Artefact'                         => 'App\Models\Production\Artefact',
+                'ArtefactDepartment'                   => 'App\Models\Production\ArtefactDepartment',
                 'ArtefactFamily'                   => 'App\Models\Production\ArtefactFamily',
 
                 //Reviews

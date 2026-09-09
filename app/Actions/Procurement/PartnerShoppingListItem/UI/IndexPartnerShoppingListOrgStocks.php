@@ -60,6 +60,7 @@ class IndexPartnerShoppingListOrgStocks extends OrgAction
                 'buyer_org_stocks.quantity_available as buyer_quantity_available',
                 'partner_shopping_list_items.id as shopping_list_item_id',
                 'partner_shopping_list_items.quantity as quantity_ordered',
+                DB::raw('(select recommended_batch_size from artefacts where artefacts.org_stock_id = org_stocks.id and artefacts.deleted_at is null and artefacts.recommended_batch_size is not null limit 1) as batch_size'),
             ])
             ->defaultSort('org_stocks.code')
             ->allowedSorts(['code', 'name'])

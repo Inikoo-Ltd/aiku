@@ -35,8 +35,8 @@ class RepairEbayProductPublish
     public function asCommand(Command $command): void
     {
         Nightwatch::dontSample();
-        $customerSalesChannel = CustomerSalesChannel::where('slug', $command->argument('customerSalesChannel'))->first();
-        $portfolio = Portfolio::where('item_code', $command->argument('portfolio'))->first();
+        $customerSalesChannel = CustomerSalesChannel::where('slug', $command->argument('customerSalesChannel'))->firstOrFail();
+        $portfolio = $customerSalesChannel->portfolios()->where('item_code', $command->argument('portfolio'))->firstOrFail();
 
         $this->handle($customerSalesChannel->user, $portfolio);
     }

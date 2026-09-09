@@ -41,8 +41,8 @@ class DeleteOffer extends OrgAction
                     $allowance->stats()->delete();
                     $allowance->forceDelete();
                 } else {
-                    $allowance->update(['status' => false]);
                     $allowance->delete();
+                    $allowance->update(['status' => false]);
                 }
             }
 
@@ -50,8 +50,8 @@ class DeleteOffer extends OrgAction
                 $offer->stats()->delete();
                 $offer->forceDelete();
             } else {
-                $offer->update(['status' => false]);
                 $offer->delete();
+                $offer->update(['status' => false]);
             }
         });
 

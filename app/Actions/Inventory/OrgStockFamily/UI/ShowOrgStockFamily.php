@@ -44,14 +44,6 @@ class ShowOrgStockFamily extends OrgAction
         return $this->handle($orgStockFamily);
     }
 
-    public function maya(Organisation $organisation, OrgStockFamily $orgStockFamily, ActionRequest $request): OrgStockFamily
-    {
-        $this->maya = true;
-        $this->initialisation($organisation, $request)->withTab(OrgStockFamilyTabsEnum::values());
-
-        return $this->handle($orgStockFamily);
-    }
-
     private function getSubNavigation(OrgStockFamily $orgStockFamily, ActionRequest $request): array
     {
         $routeParameters = $request->route()->originalParameters();

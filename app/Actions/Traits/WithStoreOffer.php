@@ -8,7 +8,6 @@
 
 namespace App\Actions\Traits;
 
-use App\Enums\Discounts\Offer\OfferStateEnum;
 use App\Models\Discounts\Offer;
 use App\Models\Discounts\OfferCampaign;
 use Carbon\Carbon;
@@ -22,31 +21,35 @@ trait WithStoreOffer
         data_set($modelData, 'organisation_id', $parent->organisation_id);
         data_set($modelData, 'shop_id', $parent->shop_id);
 
-        $status = false;
-        if ($parent instanceof Offer) {
-            if (Arr::get($modelData, 'state') == OfferStateEnum::ACTIVE) {
-                $status = true;
-            }
-        } else {
-            $status = true;
-        }
-
         $modelData = $this->prepareOfferDate($parent, $modelData);
 
-        data_set($modelData, 'status', $status);
-
+        if ($parent instanceof OfferCampaign && !Arr::get($modelData, 'state')) {
+            data_set(
+                $modelData,
+                'state',
+                Offer::stateForDates(
+                    Arr::get($modelData, 'start_at'),
+                    Arr::get($modelData, 'end_at')
+                )
+            );
+        }
 
         return $modelData;
     }
 
+    /**
+     * A date typed in by a shop's staff means midnight in the shop's own timezone, not in UTC.
+     */
     protected function prepareOfferDate(OfferCampaign|Offer $parent, array $modelData): array
     {
+        $timezone = $parent->shop->timezoneName();
+
         if (Arr::has($modelData, 'start_at') && Arr::get($modelData, 'start_at') != '' && is_string(Arr::get($modelData, 'start_at'))) {
-            $startAt = Carbon::parse(Arr::get($modelData, 'start_at'))->startOfDay();
+            $startAt = Carbon::parse(Arr::get($modelData, 'start_at'), $timezone)->startOfDay()->utc();
             data_set($modelData, 'start_at', $startAt);
         }
         if (Arr::has($modelData, 'end_at') && Arr::get($modelData, 'end_at') != '' && is_string(Arr::get($modelData, 'end_at'))) {
-            $endAt = Carbon::parse(Arr::get($modelData, 'end_at'))->endOfDay();
+            $endAt = Carbon::parse(Arr::get($modelData, 'end_at'), $timezone)->endOfDay()->utc();
             data_set($modelData, 'end_at', $endAt);
         }
 

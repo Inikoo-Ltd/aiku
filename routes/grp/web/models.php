@@ -419,13 +419,18 @@ use App\Actions\Production\Artefact\DeleteArtefactComplianceItem;
 use App\Actions\Production\Artefact\DetachManufactureTaskFromArtefact;
 use App\Actions\Production\Artefact\DetachRawMaterialFromRecipeStep;
 use App\Actions\Production\Artefact\ImportArtefact;
+use App\Actions\Production\Artefact\MoveArtefactsToDepartment;
 use App\Actions\Production\Artefact\MoveArtefactsToFamily;
+use App\Actions\Production\ArtefactFamily\DeleteArtefactFamily;
+use App\Actions\Production\ArtefactFamily\MoveArtefactFamiliesToDepartment;
+use App\Actions\Production\ArtefactFamily\StoreArtefactFamily;
+use App\Actions\Production\ArtefactFamily\UpdateArtefactFamily;
 use App\Actions\Production\Artefact\StoreArtefact;
 use App\Actions\Production\Artefact\StoreArtefactComplianceItem;
 use App\Actions\Production\Artefact\UpdateArtefact;
 use App\Actions\Production\Artefact\UpdateArtefactComplianceItem;
-use App\Actions\Production\ArtefactFamily\StoreArtefactFamily;
-use App\Actions\Production\ArtefactFamily\UpdateArtefactFamily;
+use App\Actions\Production\ArtefactDepartment\StoreArtefactDepartment;
+use App\Actions\Production\ArtefactDepartment\UpdateArtefactDepartment;
 use App\Actions\Production\JobOrder\ConfirmJobOrder;
 use App\Actions\Production\JobOrder\ReceiveJobOrderIntoStock;
 use App\Actions\Production\JobOrder\StoreJobOrder;
@@ -1269,7 +1274,6 @@ Route::patch('/org-agent/{orgAgent:id}', UpdateOrgAgent::class)->name('org_agent
 
 Route::name('production.')->prefix('production/{production:id}')->group(function () {
     Route::post('job-order', StoreJobOrder::class)->name('job-order.store');
-    Route::post('artefact-upload', ImportDummy::class)->name('artefacts.upload');
     Route::post('raw-materials-upload', ImportRawMaterial::class)->name('raw_materials.upload');
     Route::post('manufacture-tasks-upload', ImportDummy::class)->name('manufacture_tasks.upload');
     Route::post('raw-materials', StoreRawMaterial::class)->name('raw-materials.store');
@@ -1278,9 +1282,12 @@ Route::name('production.')->prefix('production/{production:id}')->group(function
     Route::patch('manufacture-tasks/{manufactureTask:id}', UpdateManufactureTask::class)->name('manufacture_tasks.update');
     Route::post('artefacts', StoreArtefact::class)->name('artefacts.store');
     Route::patch('artefacts/{artefact:id}', UpdateArtefact::class)->name('artefacts.update');
+    Route::post('artefact-departments', StoreArtefactDepartment::class)->name('artefact_departments.store');
+    Route::post('artefacts/move-to-department', MoveArtefactsToDepartment::class)->name('artefacts.move_to_department');
     Route::post('artefact-families', StoreArtefactFamily::class)->name('artefact_families.store');
     Route::post('artefacts/move-to-family', MoveArtefactsToFamily::class)->name('artefacts.move_to_family');
-    Route::post('artefact-upload', ImportArtefact::class)->name('artefact.import');
+    Route::post('artefact-families/move-to-department', MoveArtefactFamiliesToDepartment::class)->name('artefact_families.move_to_department');
+    Route::post('artefact-upload', ImportArtefact::class)->name('artefacts.upload');
 });
 
 Route::patch('/job-order/{jobOrder:id}', UpdateJobOrder::class)->name('job-order.update');
@@ -1290,8 +1297,8 @@ Route::patch('/job-order/{jobOrder:id}/receive', ReceiveJobOrderIntoStock::class
 Route::patch('/manufacture-task-session/{manufactureTaskSession:id}/void', VoidManufactureTaskSession::class)->name('manufacture-task-session.void')->withoutScopedBindings();
 Route::post('/artefact/{artefact:id}/artisans', [AttachArtisan::class, 'inArtefact'])->name('artefact.artisans.attach')->withoutScopedBindings();
 Route::delete('/artefact/{artefact:id}/artisans/{employee:id}', [DetachArtisan::class, 'inArtefact'])->name('artefact.artisans.detach')->withoutScopedBindings();
-Route::post('/artefact-family/{artefactFamily:id}/artisans', [AttachArtisan::class, 'inArtefactFamily'])->name('artefact_family.artisans.attach')->withoutScopedBindings();
-Route::delete('/artefact-family/{artefactFamily:id}/artisans/{employee:id}', [DetachArtisan::class, 'inArtefactFamily'])->name('artefact_family.artisans.detach')->withoutScopedBindings();
+Route::post('/artefact-department/{artefactDepartment:id}/artisans', [AttachArtisan::class, 'inArtefactDepartment'])->name('artefact_department.artisans.attach')->withoutScopedBindings();
+Route::delete('/artefact-department/{artefactDepartment:id}/artisans/{employee:id}', [DetachArtisan::class, 'inArtefactDepartment'])->name('artefact_department.artisans.detach')->withoutScopedBindings();
 Route::post('/artefact/{artefact:id}/manufacture-task/attach', AttachManufactureTaskToArtefact::class)->name('artefact.manufacture-task.attach')->withoutScopedBindings();
 Route::delete('/artefact/{artefact:id}/manufacture-task/{manufactureTask:id}', DetachManufactureTaskFromArtefact::class)->name('artefact.manufacture-task.detach')->withoutScopedBindings();
 Route::post('/recipe-step/{recipeStep:id}/raw-material/attach', AttachRawMaterialToRecipeStep::class)->name('recipe-step.raw-material.attach')->withoutScopedBindings();
@@ -1438,7 +1445,9 @@ Route::name('model_has_content.')->prefix('model-has-content/{modelHasContent:id
     Route::delete('delete', DeleteModelHasContent::class)->name('delete');
 });
 
+Route::patch('artefact-department/{artefactDepartment:id}', UpdateArtefactDepartment::class)->name('artefact_department.update');
 Route::patch('artefact-family/{artefactFamily:id}', UpdateArtefactFamily::class)->name('artefact_family.update');
+Route::delete('artefact-family/{artefactFamily:id}', DeleteArtefactFamily::class)->name('artefact_family.delete');
 
 Route::name('artefact.')->prefix('artefact/{artefact:id}')->group(function () {
     Route::post('tags/store', [StoreTag::class, 'inArtefact'])->name('tags.store');

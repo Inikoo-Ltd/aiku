@@ -1,8 +1,8 @@
 ---
 title: Przygotowywanie mieszanek
 summary: Dla przygotowującego i dla planisty - jak mieszanka lub baza staje się czymś, co śledzi fabryka, jak zakładka Mixes wylicza, co przygotować, i jak płyną zlecenia przygotowującego.
-date: 2026-09-02
-source_date: 2026-09-02
+date: 2026-09-08
+source_date: 2026-09-08
 tags: production, crafts
 category: production
 series: Ordering from partners
@@ -10,7 +10,7 @@ order: 6
 ---
 
 <aside class="tldr">
-Dla osoby, która przygotowuje mieszanki i bazy, zanim rzemieślnicy mogą zacząć, oraz dla planisty, który wysyła jej pracę. Mieszanka jest wytwarzana u nas, więc aiku traktuje ją jednocześnie jako <b>surowiec</b> (rzemieślnicy go zużywają) i jako <b>wyrób</b> (przygotowujący go wykonuje). Po połączeniu obu, zakładka <b>Mixes</b> (Mieszanki) na liście <a href="/docs/fulfilling-partner-orders-pl">To produce</a> wylicza, ile każdej mieszanki potrzeba na podstawie otwartych zleceń produkcyjnych, a jeden przycisk zamienia to w zlecenia dla przygotowującego. Konfiguracja kategorii i rzemieślników jest opisana w <a href="/docs/who-makes-what-pl">Kto co wykonuje</a>.
+Dla osoby, która przygotowuje mieszanki i bazy, zanim rzemieślnicy mogą zacząć, oraz dla planisty, który wysyła jej pracę. Mieszanka jest wytwarzana u nas, więc aiku traktuje ją jednocześnie jako <b>surowiec</b> (rzemieślnicy go zużywają) i jako <b>wyrób</b> (przygotowujący go wykonuje). Po połączeniu obu, zakładka <b>Mixes</b> (Mieszanki) na liście <a href="/docs/fulfilling-partner-orders-pl">To produce</a> wylicza, ile każdej mieszanki brakuje na podstawie otwartych zleceń produkcyjnych, a przeciągnięcie karty do przygotowującego zamienia to w zlecenie. Konfiguracja kategorii i rzemieślników jest opisana w <a href="/docs/who-makes-what-pl">Kto co wykonuje</a>.
 </aside>
 
 ## Dlaczego mieszanka jest dwiema rzeczami
@@ -31,21 +31,17 @@ Połączenie między nimi to jedno pole na surowcu: **Made in-house as** (Wytwar
 
 ## Zakładka Mixes
 
-**Factory → To produce → Mixes** (Fabryka → Do produkcji → Mieszanki) pokazuje każdy wytwarzany u nas surowiec, którego potrzebuje otwarte zlecenie produkcyjne. Zlecenie jest otwarte od chwili utworzenia aż do przyjęcia na magazyn.
+**Factory → To produce → Mixes** (Fabryka → Do produkcji → Mieszanki) to mała tablica z czterema pasami: **Needed** (Potrzeba), **Assigned** (Przypisane), **Mixing** (Mieszanie) i **Done** (Gotowe). Pokazuje tylko wytwarzane u nas surowce, których potrzebuje otwarte zlecenie produkcyjne. Zlecenie jest otwarte od chwili utworzenia aż do przyjęcia na magazyn.
 
-Dla każdej mieszanki widać:
+Karta w **Needed** to mieszanka, której fabryce brakuje. Czerwona liczba to niedobór: to, czego potrzebują otwarte zlecenia, wyliczone z ich ilości i ilości na sztukę z receptury, minus to, co jest na magazynie, minus to, co jest już mieszane. Pod nią *for* (dla) wymienia kody produktów, które czekają, żeby przygotowujący wiedział, co jest zablokowane, oraz imię zwykłego przygotowującego, jeśli jest przypisany.
 
-- **Needed** (Potrzeba): ilości z otwartych zleceń pomnożone przez ilość na sztukę z receptury, zsumowane po wszystkich produktach.
-- **On hand** (Na magazynie): aktualny zapas mieszanki.
-- **Being made** (W przygotowaniu): ilość w otwartych zleceniach na samą mieszankę.
-- **Short** (Brakuje): potrzeba minus na magazynie minus w przygotowaniu. Braki są na górze listy i pokazane na czerwono.
-- **Needed for** (Potrzebne do): kody produktów, które ją zużywają, żeby przygotowujący wiedział, na co czekają.
+Przeciągnij kartę z **Needed** do **Assigned**. aiku pyta o ilość, proponując niedobór, żeby można było zaokrąglić do sensownej partii, oraz *Kto miesza?*. Wybierz przygotowującego, a zlecenie produkcyjne powstaje w wersji roboczej, zaadresowane do niego, z jego numerem na karcie. Otwórz je i naciśnij **Release to floor** (Skieruj na halę), gdy ma się zacząć.
 
-Zaznacz mieszanki do przygotowania, popraw ilość, jeśli brak nie odpowiada właściwej wielkości partii, i naciśnij **Create job orders** (Utwórz zlecenia). Powstaje jedno zlecenie na przygotowującego, zaadresowane do niego, w wersji roboczej. Otwórz je i naciśnij *Release to floor* (Skieruj na halę), gdy ma się zacząć.
+**Mixing** i **Done** przesuwają się same: karta trafia do Mixing, gdy przygotowujący naciśnie START, i do Done, gdy ostatnie zadanie jest gotowe. Opuszcza tablicę, gdy partia trafia na magazyn.
 
 ## Co robi przygotowujący
 
-Przygotowujący prowadzi własną linię, więc dla fabryki ma stanowisko <b>Mix preparer</b> (przygotowujący mieszanki). To daje mu dostęp do zakładki Mixes, możliwość tworzenia i kierowania na halę własnych zleceń oraz przyjmowania ich na magazyn, bez czekania na nikogo. Nie może dotknąć zleceń zaadresowanych do innych osób - to zostaje przy planiście. Na hali pracuje jak każdy rzemieślnik: jego zadania pojawiają się na ekranie hali, naciska START i DONE (Zakończono), a gdy ostatni krok jest gotowy, zlecenie jest przyjmowane na magazyn z kodem partii. Od tej chwili mieszanka jest widoczna jako dostępna na magazynie i rzemieślnicy mogą wykonywać swoje produkty.
+Przygotowujący prowadzi własną linię, więc dla fabryki ma stanowisko <b>Mix preparer</b> (przygotowujący mieszanki). To daje mu dostęp do zakładki Mixes, możliwość tworzenia i kierowania na halę własnych zleceń oraz przyjmowania ich na magazyn, bez czekania na nikogo. Nie może dotknąć zleceń zaadresowanych do innych osób - to zostaje przy planiście. Na hali pracuje jak każdy rzemieślnik: jego zadania pojawiają się na [ekranie hali](/docs/working-the-floor-screen-pl), naciska START i DONE (Zakończono), a gdy ostatni krok jest gotowy, partia trafia na magazyn z kodem partii, albo za sprawą magazynu z [Dispatching → From production](/docs/putting-away-finished-production-pl), albo przez przygotowującego ze strony zlecenia. Od tej chwili mieszanka jest widoczna jako dostępna na magazynie i rzemieślnicy mogą wykonywać swoje produkty.
 
 Jeśli przygotowujący nie jest rozliczany stawką akordową, to ustawienie w kadrach, a nie powód, żeby pomijać halę. Zapis, kto przygotował którą partię i kiedy, daje możliwość prześledzenia od gotowego produktu z powrotem do jego składników.
 
@@ -53,14 +49,14 @@ Jeśli przygotowujący nie jest rozliczany stawką akordową, to ustawienie w ka
 
 - Mieszanka nie może potrzebować samej siebie. Jeśli receptura wyrobu-mieszanki wymienia ten sam surowiec, ta pozycja jest pomijana.
 - Zakładka Mixes czyta tylko zlecenia z tej fabryki. Produkt wykonywany w innej fabryce nie tworzy tu zapotrzebowania.
-- "Being made" (W przygotowaniu) liczy zlecenie aż do przyjęcia na magazyn, nawet jeśli wszystkie kroki są zrobione. Przyjmuj zlecenia na bieżąco, a liczby pozostaną wiarygodne.
+- Zlecenie na mieszankę liczy się jako będące w przygotowaniu aż do odłożenia na magazyn, nawet jeśli wszystkie kroki są zrobione. Odkładaj partie na bieżąco, a niedobór pozostanie wiarygodny.
 
 <aside class="wayfinder"><strong>Gdzie kliknąć w aiku</strong>
 <ul>
 <li><b>Połącz mieszankę:</b> <b>Factory → Crafts → Raw materials</b> (Fabryka → Rzemiosło → Surowce) → otwórz mieszankę → <b>Edit</b> (Edytuj) → <b>Made in-house as</b> (Wytwarzane u nas jako).</li>
 <li><b>Zobacz, co przygotować:</b> <b>Factory → To produce → Mixes</b> (Fabryka → Do produkcji → Mieszanki).</li>
-<li><b>Wyślij pracę:</b> zaznacz mieszanki → <b>Create job orders</b> (Utwórz zlecenia) → otwórz zlecenie → <b>Release to floor</b> (Skieruj na halę).</li>
-<li><b>Wykonaj pracę:</b> <b>Factory → Floor</b> (Fabryka → Hala) (My tasks / Moje zadania) → <b>START</b> / <b>DONE</b> (Zakończono); potem zlecenie jest przyjmowane na magazyn ze swojej strony.</li>
+<li><b>Wyślij pracę:</b> przeciągnij kartę z <b>Needed</b> do <b>Assigned</b> → ilość i przygotowujący → otwórz zlecenie → <b>Release to floor</b> (Skieruj na halę).</li>
+<li><b>Wykonaj pracę:</b> <b>Factory → Jobs</b> (Fabryka → Zlecenia) → <b>START</b> / <b>DONE</b> (Zakończono); potem partia trafia na magazyn z <b>Warehouse → Dispatching → From production</b> albo ze strony zlecenia.</li>
 </ul>
 </aside>
 

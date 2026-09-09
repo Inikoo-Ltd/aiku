@@ -11,6 +11,7 @@ namespace App\Actions\Catalogue\Concerns;
 use App\Actions\Catalogue\Product\BreakProductInWebpagesCache;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateImages;
 use App\Actions\Catalogue\Product\UpdateProductWebImages;
+use App\Actions\Helpers\Translations\TranslateProductImageAlts;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateProductsWithNoImage;
 use App\Models\Catalogue\Collection;
 use App\Models\Catalogue\Product;
@@ -45,6 +46,12 @@ trait CanCloneImages
     {
         $this->dedupeAttachedImages($target);
 
+        $currentPivots = DB::table('model_has_media')
+            ->where('model_type', $target->getMorphClass())
+            ->where('model_id', $target->id)
+            ->get()
+            ->keyBy('media_id');
+
         $images   = [];
         $position = 1;
 
@@ -53,17 +60,47 @@ trait CanCloneImages
                 'is_public'       => true,
                 'scope'           => $image->pivot->scope === 'audio' ? 'audio' : 'photo',
                 'sub_scope'       => $image->pivot->sub_scope,
-                'caption'         => $image->pivot->caption,
                 'organisation_id' => $target->organisation_id ?? null,
                 'group_id'        => $target->group_id ?? null,
                 'position'        => $position++,
                 'created_at'      => now(),
                 'updated_at'      => now(),
                 'data'            => '{}',
-            ];
+            ] + $this->captionToKeep($image->pivot->caption, $currentPivots->get($image->id));
         }
 
         $target->images()->sync($images);
+    }
+
+    /**
+     * A caption edited by hand, or already translated from the same source caption, outlives the
+     * sync that would otherwise put the source's own caption back.
+     *
+     * @return array{caption: string|null, source_caption: string|null, is_caption_reviewed: bool}
+     */
+    protected function captionToKeep(?string $sourceCaption, ?object $currentPivot): array
+    {
+        if ($currentPivot?->is_caption_reviewed) {
+            return [
+                'caption'             => $currentPivot->caption,
+                'source_caption'      => $currentPivot->source_caption,
+                'is_caption_reviewed' => true,
+            ];
+        }
+
+        if ($currentPivot && $currentPivot->source_caption !== null && $currentPivot->source_caption === $sourceCaption) {
+            return [
+                'caption'             => $currentPivot->caption,
+                'source_caption'      => $currentPivot->source_caption,
+                'is_caption_reviewed' => false,
+            ];
+        }
+
+        return [
+            'caption'             => $sourceCaption,
+            'source_caption'      => null,
+            'is_caption_reviewed' => false,
+        ];
     }
 
     protected function syncProductImages(TradeUnit|MasterAsset|Model $source, Product $product): void
@@ -73,6 +110,8 @@ trait CanCloneImages
         }
 
         $this->cloneImages($source, $product);
+
+        TranslateProductImageAlts::dispatch($product);
 
         $product->update([
             'bucket_images'            => count($product->images) > 0 || !empty($product->video_url),

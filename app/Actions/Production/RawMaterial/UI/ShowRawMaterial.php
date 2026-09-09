@@ -73,11 +73,14 @@ class ShowRawMaterial extends OrgAction
                 'pageHead'                         => [
                     'icon'    =>
                         [
-                            'icon'  => ['fal', 'industry'],
+                            'icon'  => ['fal', 'drone'],
                             'title' => $title
                         ],
-                    'title'   => $rawMaterial->code,
-                    'model'   => $title,
+                    'title'      => $rawMaterial->code,
+                    'afterTitle' => [
+                        'label' => $rawMaterial->description,
+                    ],
+                    'model'      => $title,
                     'actions' => [
                         [
                             'type'    => 'button',

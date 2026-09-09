@@ -110,9 +110,6 @@ class PickPalletReturnItemInPalletReturnWithStoredItem extends OrgAction
 
     public function jsonResponse(PalletReturnItem $palletReturnItem, ActionRequest $request): PalletReturnItemResource|PalletReturnItemUIResource
     {
-        if ($request->hasHeader('Maya-Version')) {
-            return PalletReturnItemResource::make($palletReturnItem);
-        }
         return PalletReturnItemUIResource::make($palletReturnItem);
     }
 }

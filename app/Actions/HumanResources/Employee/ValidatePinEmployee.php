@@ -12,12 +12,10 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\WithPreparePositionsForValidation;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\HumanResources\Employee\EmployeeStateEnum;
-use App\Http\Resources\HumanResources\EmployeeHanResource;
 use App\Models\HumanResources\ClockingMachine;
 use App\Models\HumanResources\Employee;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Support\Arr;
-use Lorisleiva\Actions\ActionRequest;
 
 class ValidatePinEmployee extends OrgAction
 {
@@ -62,19 +60,4 @@ class ValidatePinEmployee extends OrgAction
         ];
     }
 
-    public function asController(ActionRequest $request)
-    {
-        /** @var ClockingMachine $clockingMachine */
-        $clockingMachine = $request->user();
-        $this->clockingMachine = $clockingMachine;
-
-        $this->initialisation($clockingMachine->organisation, $request);
-
-        return $this->handle($clockingMachine->organisation, $this->validatedData);
-    }
-
-    public function jsonResponse(Employee $employee): EmployeeHanResource
-    {
-        return new EmployeeHanResource($employee);
-    }
 }

@@ -18,6 +18,7 @@ use App\Actions\Dropshipping\CustomerClient\Hydrators\CustomerClientHydrateBaske
 use App\Actions\Dropshipping\CustomerSalesChannel\Hydrators\CustomerSalesChannelsHydrateOrders;
 use App\Actions\Ordering\Order\HasOrderHydrators;
 use App\Actions\Ordering\Order\ProcessOrderTrafficSource;
+use App\Actions\Ordering\Transaction\DeleteTransaction;
 use App\Actions\Ordering\Transaction\StoreTransaction;
 use App\Actions\Ordering\UpcomingTransaction\UpdateUpcomingTransaction;
 use App\Actions\OrgAction;
@@ -105,6 +106,7 @@ class SubmitOrder extends OrgAction
         }
 
         $this->processGrGift($order);
+        $this->removeGiftsFromOffersNoLongerLive($order);
         $this->processGiftOffers($order);
         $this->processVoucherGiftOffers($order);
         $this->processUpComingTransactions($order);
@@ -226,6 +228,28 @@ class SubmitOrder extends OrgAction
             } catch (Exception $e) {
                 Sentry::captureException($e);
             }
+        }
+    }
+
+    /**
+     * A gift line materialises at submit, but an order sent back to the basket keeps it.
+     * If its offer has since ended or been deleted, re-submitting would ship the gift again (HELP-2926).
+     */
+    public function removeGiftsFromOffersNoLongerLive(Order $order): void
+    {
+        $deadOfferIds = DB::table('transaction_has_offer_allowances as pivot')
+            ->join('offers', 'offers.id', '=', 'pivot.offer_id')
+            ->join('transactions', 'transactions.id', '=', 'pivot.transaction_id')
+            ->where('transactions.order_id', $order->id)
+            ->where('pivot.is_gift', true)
+            ->whereNull('transactions.deleted_at')
+            ->where(function ($query) {
+                $query->where('offers.status', false)->orWhereNotNull('offers.deleted_at');
+            })
+            ->pluck('pivot.transaction_id');
+
+        foreach (Transaction::whereIn('id', $deadOfferIds)->where('is_gift', true)->get() as $transaction) {
+            DeleteTransaction::make()->action($transaction);
         }
     }
 

@@ -13,7 +13,6 @@ use App\Actions\OrgAction;
 use App\Actions\Overview\ShowGroupOverviewHub;
 use App\Actions\Traits\Authorisations\WithFulfilmentShopAuthorisation;
 use App\Enums\Fulfilment\Pallet\PalletStatusEnum;
-use App\Http\Resources\Fulfilment\MayaPalletsResource;
 use App\Http\Resources\Fulfilment\PalletsResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Fulfilment\Fulfilment;
@@ -192,9 +191,6 @@ class IndexPallets extends OrgAction
 
     public function jsonResponse(LengthAwarePaginator $pallets, ActionRequest $request): AnonymousResourceCollection
     {
-        if ($request->hasHeader('Maya-Version')) {
-            return MayaPalletsResource::collection($pallets);
-        }
         return PalletsResource::collection($pallets);
     }
 

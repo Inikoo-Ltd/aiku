@@ -110,6 +110,7 @@ use App\Actions\Helpers\Brand\Json\GetBrands;
 use App\Actions\Helpers\Brand\Json\GetGrpBrands;
 use App\Actions\Helpers\Tag\Json\GetGrpTags;
 use App\Actions\Helpers\Tag\UI\IndexTags;
+use App\Actions\Production\ArtefactDepartment\UI\IndexArtefactDepartments;
 use App\Actions\Production\ArtefactFamily\UI\IndexArtefactFamilies;
 use App\Actions\Production\ManufactureTask\Json\GetManufactureTasks;
 use App\Actions\Production\RawMaterial\Json\GetRawMaterials;
@@ -129,6 +130,7 @@ use App\Actions\Dispatching\DeliveryNoteItem\FetchDeliveryNoteItemImage;
 use App\Actions\Masters\MasterAsset\Json\GetMasterProductsPricingSales;
 use App\Actions\Goods\Stock\JSON\ValidateStockTradeUnitChanges;
 use App\Actions\Masters\MasterAsset\Json\GetMasterUpdatedBadge;
+use App\Actions\Catalogue\Product\Json\GetProductsNeedReviewBadge;
 use App\Actions\Masters\MasterAsset\Json\GetPriceRebelProducts;
 use App\Actions\Masters\MasterCollection\UI\GetMasterCollections;
 use App\Actions\Masters\MasterCollection\UI\GetMasterDepartments;
@@ -249,6 +251,7 @@ Route::get('warehouse/{warehouse}/org-stock/{orgStock:id}/stocks-management', Fe
 
 Route::get('trade-units/{tradeUnit}/tags', [IndexTags::class, 'inTradeUnit'])->name('trade_units.tags.index');
 Route::get('artefacts/{artefact:id}/tags', [IndexTags::class, 'inArtefact'])->name('artefacts.tags.index');
+Route::get('production/{production:id}/artefact-departments', [IndexArtefactDepartments::class, 'inJson'])->name('production.artefact_departments.index');
 Route::get('production/{production:id}/artefact-families', [IndexArtefactFamilies::class, 'inJson'])->name('production.artefact_families.index');
 Route::get('production/{production:id}/manufacture-tasks', GetManufactureTasks::class)->name('production.manufacture_tasks.index');
 Route::get('production/{production:id}/raw-materials', GetRawMaterials::class)->name('production.raw_materials.index');
@@ -387,6 +390,7 @@ Route::get('dispatching/crm-waiting-badge', GetCrmWaitingBadge::class)->name('cr
 Route::get('shops/crm-return-badge', GetCrmReturnedBadge::class)->name('crm_return_badge');
 Route::get('shops/master-updated-badge', GetMasterUpdatedBadge::class)->name('master_updated_badge');
 Route::get('shops/faire-skipped-badge', GetFaireSkippedBadge::class)->name('faire_skipped_badge');
+Route::get('shops/products-need-review-badge', GetProductsNeedReviewBadge::class)->name('products_need_review_badge');
 
 Route::get('{website}/webpages-for-workshop-select', GetWebpagesForWorkshopSelect::class)->name('webpages_for_workshop_select');
 

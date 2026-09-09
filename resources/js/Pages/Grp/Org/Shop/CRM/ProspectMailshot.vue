@@ -178,7 +178,7 @@ const handleSendNow = async () => {
             notify({
                 type: 'error',
                 title: 'Error',
-                text: 'Failed to send mailshot',
+                text: exception.response?.data?.message || 'Failed to send mailshot',
             })
         })
         .finally(() => {
@@ -248,7 +248,7 @@ const confirmSchedule = async () => {
             notify({
                 type: 'error',
                 title: 'Error',
-                text: 'Failed to schedule mailshot',
+                text: exception.response?.data?.message || 'Failed to schedule mailshot',
             })
         })
         .finally(() => {

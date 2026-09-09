@@ -8,6 +8,7 @@
 
 namespace App\Models\Production;
 
+use App\Events\BroadcastManufactureFloorChanged;
 use App\Enums\Production\ManufactureTaskSession\ManufactureTaskSessionActivityTypeEnum;
 use App\Enums\Production\ManufactureTaskSession\ManufactureTaskSessionStateEnum;
 use App\Models\HumanResources\Employee;
@@ -62,6 +63,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 class ManufactureTaskSession extends Model
 {
+    protected static function booted(): void
+    {
+        static::saved(fn (self $model) => BroadcastManufactureFloorChanged::dispatch($model->production_id));
+    }
+
     protected $guarded = [];
 
     protected $casts = [

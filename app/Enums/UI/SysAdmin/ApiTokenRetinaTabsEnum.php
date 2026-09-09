@@ -20,6 +20,7 @@ enum ApiTokenRetinaTabsEnum: string
 
     case SHOWCASE  = 'showcase';
     case API_TOKENS   = 'api_tokens';
+    case API_REQUESTS = 'api_requests';
     case HISTORY      = 'history';
 
 
@@ -29,6 +30,12 @@ enum ApiTokenRetinaTabsEnum: string
             ApiTokenRetinaTabsEnum::SHOWCASE => [
                 'title' => __('Overview'),
                 'icon'  => 'fas fa-info-circle',
+            ],
+
+            ApiTokenRetinaTabsEnum::API_REQUESTS => [
+                'title' => __('API calls'),
+                'icon'  => 'fal fa-exchange',
+                'type'  => 'icon',
             ],
 
             ApiTokenRetinaTabsEnum::HISTORY => [

@@ -139,6 +139,11 @@ class Production extends Model implements Auditable
         return $this->hasMany(ArtefactFamily::class);
     }
 
+    public function artefactDepartments(): HasMany
+    {
+        return $this->hasMany(ArtefactDepartment::class);
+    }
+
     public function artefacts(): HasMany
     {
         return $this->hasMany(Artefact::class);

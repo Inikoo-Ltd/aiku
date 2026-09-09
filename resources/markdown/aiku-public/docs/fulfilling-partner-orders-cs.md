@@ -1,8 +1,8 @@
 ---
 title: Práce se seznamem To produce
 summary: Průvodce pro továrnu - jedna fronta všeho, co továrna dluží, partnerským organizacím i vlastním zákazníkům, seskupená tak, jak přemýšlí plánovač výroby.
-date: 2026-09-02
-source_date: 2026-09-02
+date: 2026-09-08
+source_date: 2026-09-08
 tags: production, procurement, intercompany, dispatch
 category: production
 series: Ordering from partners
@@ -10,7 +10,7 @@ order: 4
 ---
 
 <aside class="tldr">
-Pro lidi, kteří <em>vyrábějí věci</em>, a pro osobu, která plánuje den v továrně. <b>To produce</b> (K výrobě) je fronta továrny: každý řádek, který si vyžádala partnerská organizace, plus každý řádek, který objednal vlastní zákazník a který továrna nemá skladem. Seskupíte to podle řemeslníka, kategorie nebo odběratele, zaškrtnete, co lze poslat partnerům, a zbytek papírování se odehraje samo. Jste v partnerském toku noví? Začněte <a href="/docs/ordering-from-a-partner-organisation-cs">přehledem</a>. Chcete, aby seznam věděl, kdo co vyrábí? Přečtěte si nejdřív <a href="/docs/who-makes-what-cs">Kdo co vyrábí</a>.
+Pro lidi, kteří <em>vyrábějí věci</em>, a pro osobu, která plánuje den v továrně. <b>To produce</b> (K výrobě) je fronta továrny: každý řádek, který si vyžádala partnerská organizace, plus každý řádek, který objednal vlastní zákazník a který továrna nemá skladem. <b>Board</b> (Nástěnka) je místo, kde plánujete: přetáhnete řádek napříč pruhy a rozhodnete, kolik se má vyrobit a kdo to udělá, a řemeslníkovi se vytvoří výrobní příkaz. Pohledy typu seznam seskupují tytéž řádky podle řemeslníka, kategorie nebo odběratele, a odtud zaškrtnete, co lze poslat partnerům; zbytek papírování se odehraje samo. Jste v partnerském toku noví? Začněte <a href="/docs/ordering-from-a-partner-organisation-cs">přehledem</a>. Chcete, aby seznam věděl, kdo co vyrábí? Přečtěte si nejdřív <a href="/docs/who-makes-what-cs">Kdo co vyrábí</a>.
 </aside>
 
 ## Odkud řádky pocházejí
@@ -24,16 +24,43 @@ Objednávky, které přicházejí přes starý systém, seznam nekrmí. Jen obje
 
 Filtr **Source** (Zdroj) nahoře na záložce *All* (Vše) vám umožní vidět jen partnerské řádky nebo jen řádky vlastních zákazníků.
 
-## Čtyři pohledy
+## Pohledy
 
-Lišta záložek nad nadpisem je celý smysl stránky. Stejné řádky, čtyři způsoby pohledu.
+Lišta záložek nad nadpisem je celý smysl stránky. Stejné řádky, šest způsobů pohledu.
 
+- **Board** (Nástěnka). Plánovací pohled, ten, na kterém se stránka otevírá. Každý řádek je karta, která postupuje pruhy od *Backlog* (Fronta) k *Done* (Hotovo). Vysvětleno v další části.
 - **All** (Vše). Plochá tabulka, řaditelná a prohledávatelná, s počtem otevřených řádků. Použijte, když hledáte jednu konkrétní věc.
 - **By artisan** (Podle řemeslníka). Jeden blok na osobu, podle řemeslníka připojeného k artefaktu, nebo, když ten chybí, k jeho kategorii. Řádky, ke kterým nikdo připojený není, spadají pod *Unassigned* (Nepřiřazeno). Toto je pohled pro rozdělování denní práce.
 - **By category** (Podle kategorie). Jeden blok na kategorii artefaktu, takže výrobce koupelových bomb vidí koupelové bomby a mydlář vidí mýdlo.
 - **By buyer** (Podle odběratele). Jeden blok na partnerskou organizaci nebo vlastního zákazníka, pro chvíle, kdy sestavujete zásilku.
+- **Mixes** (Směsi). Základy a směsi, které potřebují otevřené výrobní příkazy, pro přípraváře. Vysvětleno v [Příprava směsí](/docs/preparing-mixes-cs).
 
 V seskupených pohledech má každý blok nad seznamem kapsli se svým názvem a počtem řádků. Kliknutím na kapsli blok skryjete, dalším kliknutím ho zase zobrazíte. aiku si vaši volbu pamatuje v tomto prohlížeči, takže plánovač, kterému záleží jen na dvou kategoriích, vidí vždy jen dvě.
+
+## Board (Nástěnka)
+
+Šest pruhů zleva doprava. Karta se posouvá doprava, jak práce postupuje, a většina posunů je přetažení.
+
+| Pruh | Co v něm sedí |
+| --- | --- |
+| Pre-pick (Předvychystat) | řádky, pro které se nic nemusí vyrábět, protože zboží je na regálu. Skrytý, dokud nestisknete **Pre-pick** nad nástěnkou. Sklad je shromáždí, viz [Sbírání zboží pro partnera](/docs/gathering-a-partners-goods-cs). |
+| Backlog (Fronta) | řádky s artefaktem, na který se ještě nikdo nepodíval |
+| Preparing (Připravuje se) | řádky, u kterých jste rozhodli vyrábět, s ustáleným množstvím |
+| Assigned (Přiřazeno) | výrobní příkaz existuje a je adresovaný řemeslníkovi, ale nikdo ho ještě nezačal |
+| Producing (Vyrábí se) | řemeslník stiskl START u jednoho z jeho úkolů |
+| Done (Hotovo) | všechny úkoly na výrobním příkazu jsou hotové; čeká, až ho sklad uloží na místo |
+
+Každá karta ukazuje produkt, požadované množství, kdo ho žádal, a **In stock** (Na skladě), abyste viděli, jestli se vůbec vyplatí vyrábět.
+
+**Backlog → Preparing.** Přetáhněte kartu a aiku se zeptá *Kolik vyrobit?*. Navrhne požadované množství; zadáte-li víc, přebytek se označí jako *pro sklad*. Pokud má artefakt doporučenou velikost dávky, malé tlačítko **↑** zaokrouhlí množství nahoru na celé dávky. Číslo zůstává na kartě editovatelné, dokud je v Preparing.
+
+**Preparing → Assigned.** Přetáhněte kartu a aiku se zeptá *Kdo to vyrobí?*. Navrhne řemeslníka připojeného k artefaktu nebo jeho kategorii, viz [Kdo co vyrábí](/docs/who-makes-what-cs). Vyberte jméno a výrobní příkaz se vytvoří jako koncept, adresovaný této osobě. Otevřete výrobní příkaz a stiskněte **Release to floor** (Uvolnit do dílny), až má začít; do té doby ho řemeslník nevidí. Řemeslníka pozdějí změníte kliknutím na jméno na kartě.
+
+**Producing** (Vyrábí se) a **Done** (Hotovo) se posouvají samy podle toho, co se děje na obrazovce dílny. Karta z nástěnky zmizí, jakmile sklad uloží hotové zboží na místo, viz [Uložení hotové výroby](/docs/putting-away-finished-production-cs), nebo když je výrobní příkaz přijatý na sklad ze své vlastní stránky.
+
+Několik karet najednou: kliknutím karty vyberte, pak přetáhněte kteroukoli z nich a přesune se celý výběr. Menu **Everybody** (Všichni) nad nástěnkou ji zúží na jednoho nebo dva řemeslníky, a filtry na rodinu, odběratele a prioritu dělají totéž pro karty.
+
+Pod nástěnkou a pohledem By artisan sedí **Open job orders per artisan** (Otevřené výrobní příkazy na řemeslníka): jeden čip na osobu s počtem otevřených výrobních příkazů. Červená znamená žádný, oranžová jeden; každý by měl mít aspoň dva, aby nikomu nedošla práce. Křížek na čipu označí danou osobu jako ne-řemeslníka a skryje ji z počtu.
 
 ## Odesílání partnerských řádků
 
@@ -54,7 +81,10 @@ Zaškrtnutí řádku vlastního zákazníka nedělá nic užitečného. Přesko�
 
 <aside class="wayfinder"><strong>Kam kliknout v aiku</strong>
 <ul>
-<li><b>Zobrazit frontu:</b> vaše organizace → <b>Factory</b> (Továrna) → <b>To produce</b> (K výrobě). Přepínejte pohledy záložkami <b>All · By artisan · By category · By buyer</b> (Vše · Podle řemeslníka · Podle kategorie · Podle odběratele).</li>
+<li><b>Zobrazit frontu:</b> vaše organizace → <b>Factory</b> (Továrna) → <b>To produce</b> (K výrobě). Přepínejte pohledy záložkami <b>Board · All · By artisan · By category · By buyer · Mixes</b> (Nástěnka · Vše · Podle řemeslníka · Podle kategorie · Podle odběratele · Směsi).</li>
+<li><b>Rozhodnout množství:</b> <i>Board</i> → přetáhnout kartu z <b>Backlog</b> do <b>Preparing</b> → zadat číslo, nebo stisknout <b>↑</b> pro celé dávky.</li>
+<li><b>Vytvořit výrobní příkaz:</b> přetáhnout kartu z <b>Preparing</b> do <b>Assigned</b> → vybrat řemeslníka → otevřít výrobní příkaz → <b>Release to floor</b> (Uvolnit do dílny).</li>
+<li><b>Řádky, které stačí jen vychystat:</b> tlačítko <b>Pre-pick</b> nad nástěnkou.</li>
 <li><b>Skrýt blok:</b> v seskupeném pohledu kliknout na jeho kapsli nad seznamem. Dalším kliknutím zase zobrazit.</li>
 <li><b>Jen partneři nebo jen zákazníci:</b> záložka <i>All</i> → filtr <b>Source</b> (Zdroj).</li>
 <li><b>Odeslat partnerovi:</b> zaškrtnout řádky → <b>Pick into order</b> (Vychystat do objednávky) → <b>Send to warehouse</b> (Odeslat do skladu) v poli <i>Picked orders</i>.</li>
@@ -66,6 +96,6 @@ Zaškrtnutí řádku vlastního zákazníka nedělá nic užitečného. Přesko�
 <ul>
 <li>Pozice se nastavují na kartě zaměstnance v sekci Human Resources a nesou s sebou příslušná práva.</li>
 <li>Zobrazení seznamu: pozice <b>Production operative</b> (dělník) pro danou továrnu, nebo výše.</li>
-<li>Vychystávání, odesílání a vytváření výrobních příkazů: pozice <b>Production floor supervisor</b> (vedoucí výroby) pro danou továrnu, nebo supervizor organizace.</li>
+<li>Posouvání karet na nástěnce, vytváření a uvolňování výrobních příkazů, vychystávání a odesílání: pozice <b>Production floor supervisor</b> (vedoucí výroby) pro danou továrnu, nebo supervizor organizace. <b>Mix preparer</b> (přípravář směsí) může totéž jen pro směsi.</li>
 </ul>
 </aside>

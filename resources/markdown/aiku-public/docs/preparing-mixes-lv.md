@@ -1,16 +1,17 @@
 ---
 title: Maisījumu gatavošana
 summary: Gatavotājam un plānotājam - kā maisījums vai bāze kļūst par kaut ko, ko ražotne uzskaita, kā cilne Mixes izrēķina, kas jāgatavo, un kā plūst gatavotāja darba uzdevumi.
-date: 2026-09-02
-source_date: 2026-09-02
+date: 2026-09-08
+source_date: 2026-09-08
 tags: production, crafts
 category: production
+help_routes: grp.org.productions.show.to_produce.mixes, grp.org.productions.show.crafts.raw_materials
 series: Ordering from partners
 order: 6
 ---
 
 <aside class="tldr">
-Cilvēkam, kas gatavo maisījumus un bāzes, pirms amatnieki var sākt, un plānotājam, kas viņam nodod darbu. Maisījums tiek gatavots ražotnē, tāpēc aiku to uzskata gan par **izejmateriālu** (amatnieki to patērē), gan par **artefaktu** (gatavotājs to izgatavo). Kad tie ir sasaistīti, cilne **Mixes** (Maisījumi) sarakstā <a href="/docs/fulfilling-partner-orders-lv">To produce</a> izrēķina, cik daudz katra maisījuma vajadzīgs no atklātajiem darba uzdevumiem, un viena poga to pārvērš gatavotāja darba uzdevumos. Kategoriju un amatnieku iestatīšana ir aprakstīta rakstā <a href="/docs/who-makes-what-lv">Kurš ko izgatavo</a>.
+Cilvēkam, kas gatavo maisījumus un bāzes, pirms amatnieki var sākt, un plānotājam, kas viņam nodod darbu. Maisījums tiek gatavots ražotnē, tāpēc aiku to uzskata gan par <b>izejmateriālu</b> (amatnieki to patērē), gan par <b>artefaktu</b> (gatavotājs to izgatavo). Kad tie ir sasaistīti, cilne <b>Mixes</b> (Maisījumi) sarakstā <a href="/docs/fulfilling-partner-orders-lv">To produce</a> izrēķina, cik daudz katra maisījuma trūkst no atklātajiem darba uzdevumiem, un kartītes pavilkšana pie gatavotāja to pārvērš darba uzdevumā. Kategoriju un amatnieku iestatīšana ir aprakstīta rakstā <a href="/docs/who-makes-what-lv">Kurš ko izgatavo</a>.
 </aside>
 
 ## Kāpēc maisījums ir divas lietas
@@ -31,21 +32,17 @@ Saikni starp abiem veido viens lauks izejmateriālam: **Made in-house as** (Raž
 
 ## Cilne Mixes
 
-**Factory → To produce → Mixes** (Ražotne → Ražojamie darbi → Maisījumi) uzskaita katru pašu ražotu izejmateriālu, ko vajag kāds atklāts darba uzdevums. Darba uzdevums ir atklāts no brīža, kad tas izveidots, līdz brīdim, kad tas ieskaitīts krājumā.
+**Factory → To produce → Mixes** (Ražotne → Ražojamie darbi → Maisījumi) ir neliels dēlis ar četrām joslām: **Needed**, **Assigned**, **Mixing** un **Done**. Tas rāda tikai pašu ražotos izejmateriālus, ko vajag kāds atklāts darba uzdevums. Darba uzdevums ir atklāts no brīža, kad tas izveidots, līdz brīdim, kad tas ieskaitīts krājumā.
 
-Katram maisījumam redzi:
+Kartīte joslā **Needed** ir maisījums, kura ražotnei trūkst. Sarkanais skaitlis ir trūkums: cik atklātajiem darba uzdevumiem vajag, pēc to daudzumiem un receptes daudzuma uz vienību, mīnus tas, kas ir pieejams, mīnus tas, kas jau tiek maisīts. Zem tā *for* uzskaita produktu kodus, kas gaida, lai gatavotājs zina, kas ir bloķēts, un parastā gatavotāja vārdu, ja tāds ir piesaistīts.
 
-- **Needed** (Vajadzīgs): atklāto darba uzdevumu daudzumi, reizināti ar receptes daudzumu uz vienību, saskaitīti pa visiem produktiem.
-- **On hand** (Pieejams): maisījuma krājums šobrīd.
-- **Being made** (Tiek gatavots): daudzums atklātajos darba uzdevumos pašam maisījumam.
-- **Short** (Trūkst): vajadzīgs mīnus pieejams mīnus tiek gatavots. Trūkstošās rindas ir pirmās un rādītas sarkanā krāsā.
-- **Needed for** (Vajadzīgs priekš): produktu kodi, kas to patērē, lai gatavotājs zina, kas gaida.
+Velc kartīti no **Needed** uz **Assigned**. aiku jautā daudzumu, piedāvājot trūkumu, lai to var noapaļot uz saprātīgu partiju, un *Who mixes it?* (Kurš maisa?). Izvēlies gatavotāju, un tiek izveidots darba uzdevums melnrakstā, adresēts viņam, ar tā atsauci kartītē. Atver to un spied **Release to floor** (Nodot ražotnei), kad tam jāsākas.
 
-Atzīmē maisījumus, kas jāgatavo, pielāgo daudzumu, ja trūkums nesakrīt ar īsto partiju, un spied **Create job orders** (Izveidot darba uzdevumus). Tiek izveidots viens darba uzdevums katram gatavotājam, adresēts viņam, melnrakstā. Atver to un spied *Release to floor* (Nodot ražotnei), kad tam jāsākas.
+**Mixing** un **Done** pārvietojas pašas: kartīte pāriet uz Mixing, kad gatavotājs nospiež START, un uz Done, kad pēdējais uzdevums pabeigts. Tā pamet dēli, kad partija tiek ielikta krājumā.
 
 ## Ko dara gatavotājs
 
-Gatavotājs vada savu līniju, tāpēc viņam ir ražotnes amats **Mix preparer** (maisījumu gatavotājs). Tas ļauj viņam atvērt cilni Mixes, izveidot un nodot savus darba uzdevumus un ieskaitīt tos krājumā, negaidot nevienu citu. Viņš nevar aiztikt darba uzdevumus, kas adresēti citiem — tas paliek plānotāja pārziņā. Ražotnē viņš strādā kā jebkurš amatnieks: viņa uzdevumi parādās ražotnes ekrānā, viņš spiež START un DONE, un, kad pēdējais solis pabeigts, darba uzdevums tiek ieskaitīts krājumā ar partijas kodu. No tā brīža maisījums rādās kā pieejams, un amatnieki var izgatavot savus produktus.
+Gatavotājs vada savu līniju, tāpēc viņam ir ražotnes amats **Mix preparer** (maisījumu gatavotājs). Tas ļauj viņam atvērt cilni Mixes, izveidot un nodot savus darba uzdevumus un ieskaitīt tos krājumā, negaidot nevienu citu. Viņš nevar aiztikt darba uzdevumus, kas adresēti citiem — tas paliek plānotāja pārziņā. Ražotnē viņš strādā kā jebkurš amatnieks: viņa uzdevumi parādās [ražotnes ekrānā](/docs/working-the-floor-screen-lv), viņš spiež START un DONE, un, kad pēdējais solis pabeigts, partija tiek ielikta krājumā ar partijas kodu — vai nu noliktava no [Dispatching → From production](/docs/putting-away-finished-production-lv), vai gatavotājs no darba uzdevuma lapas. No tā brīža maisījums rādās kā pieejams, un amatnieki var izgatavot savus produktus.
 
 Ja gatavotājam nemaksā par gabalu, tas ir algas iestatījums, nevis iemesls izlaist darbu ražotnē. Ieraksts par to, kurš kuru partiju sagatavoja un kad, dod izsekojamību no gatavā produkta atpakaļ līdz tā sastāvdaļām.
 
@@ -53,14 +50,14 @@ Ja gatavotājam nemaksā par gabalu, tas ir algas iestatījums, nevis iemesls iz
 
 - Maisījums nevar būt vajadzīgs pats sev. Ja maisījuma artefakta pašā receptē ir minēts tas pats izejmateriāls, šī rinda tiek ignorēta.
 - Cilne Mixes lasa tikai šīs ražotnes darba uzdevumus. Produkts, kas izgatavots citā ražotnē, šeit pieprasījumu neveido.
-- "Being made" (Tiek gatavots) skaita darba uzdevumu, kamēr tas nav ieskaitīts krājumā, pat ja katrs uzdevums ir pabeigts. Ieskaiti darba uzdevumus savlaicīgi, lai skaitļi paliktu godīgi.
+- Maisījuma darba uzdevums skaitās kā tiek gatavots, kamēr tas nav ielikts krājumā, pat ja katrs uzdevums ir pabeigts. Noliec partijas vietā savlaicīgi, lai trūkums paliktu godīgs.
 
 <aside class="wayfinder"><strong>Kur klikšķināt aiku sistēmā</strong>
 <ul>
 <li><b>Sasaistīt maisījumu:</b> <b>Factory → Crafts → Raw materials</b> → atver maisījumu → <b>Edit</b> → <b>Made in-house as</b>.</li>
 <li><b>Redzēt, kas jāgatavo:</b> <b>Factory → To produce → Mixes</b>.</li>
-<li><b>Nosūtīt darbu:</b> atzīmē maisījumus → <b>Create job orders</b> → atver darba uzdevumu → <b>Release to floor</b>.</li>
-<li><b>Veikt darbu:</b> <b>Factory → Floor</b> (My tasks / Mani uzdevumi) → <b>START</b> / <b>DONE</b>; tad darba uzdevums tiek ieskaitīts krājumā no tā lapas.</li>
+<li><b>Nosūtīt darbu:</b> velc kartīti no <b>Needed</b> uz <b>Assigned</b> → daudzums un gatavotājs → atver darba uzdevumu → <b>Release to floor</b>.</li>
+<li><b>Veikt darbu:</b> <b>Factory → Jobs</b> → <b>START</b> / <b>DONE</b>; tad partija tiek ielikta krājumā no <b>Warehouse → Dispatching → From production</b> vai no darba uzdevuma lapas.</li>
 </ul>
 </aside>
 

@@ -61,15 +61,6 @@ class ShowPurchaseOrder extends OrgAction
         return $this->handle($purchaseOrder);
     }
 
-    public function maya(Organisation $organisation, PurchaseOrder $purchaseOrder, ActionRequest $request): PurchaseOrder
-    {
-        $this->maya = true;
-        $this->initialisation($organisation, $request)->withTab(PurchaseOrderTabsEnum::values());
-        $this->authorizeProcurementRecord($purchaseOrder);
-
-        return $this->handle($purchaseOrder);
-    }
-
     public function inOrgSupplier(Organisation $organisation, OrgSupplier $orgSupplier, PurchaseOrder $purchaseOrder, ActionRequest $request): PurchaseOrder
     {
         $this->initialisation($organisation, $request)->withTab(PurchaseOrderTabsEnum::values());

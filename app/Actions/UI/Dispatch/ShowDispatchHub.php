@@ -19,6 +19,9 @@ use App\Actions\UI\Dashboards\ShowGroupDashboard;
 use App\Enums\DateIntervals\DateIntervalEnum;
 use App\Enums\Dispatching\PickingSession\PickingSessionStateEnum;
 use App\Enums\UI\Dispatch\DispatchHubTabsEnum;
+use App\Actions\Dispatching\PartnerStaging\GetPartnerStagingTasks;
+use App\Actions\Dispatching\ProductionOutput\GetFinishedProductionJobOrders;
+use App\Models\Procurement\OrgPartner;
 use App\Http\Resources\Dispatching\DashboardDispatchHubDashboardResource;
 use App\Http\Resources\Dispatching\DispatchPersonnelCurrentWorkResource;
 use App\InertiaTable\InertiaTable;
@@ -53,9 +56,36 @@ class ShowDispatchHub extends OrgAction
         return $this->handle($warehouse);
     }
 
+    /**
+     * Every shop organisation is partnered with every other one by StoreOrganisation, so
+     * having partners says nothing. What marks an aroma type seller is having somewhere to
+     * gather a partner's stock: no goods out location, nothing to pre-pick into.
+     */
+    private function suppliesPartners(Warehouse $warehouse): bool
+    {
+        return OrgPartner::where('organisation_id', $warehouse->organisation_id)
+            ->whereNotNull('goods_out_location_id')
+            ->exists();
+    }
+
     public function htmlResponse(Warehouse $warehouse, ActionRequest $request): Response
     {
-        $userSettings = $request->user()->settings;
+        $userSettings   = $request->user()->settings;
+        $suppliesPartners = $this->suppliesPartners($warehouse);
+        $hasProduction    = $this->organisation->productions()->exists();
+        $hiddenTabs       = array_filter([
+            $suppliesPartners ? null : DispatchHubTabsEnum::PARTNER_STAGING,
+            $hasProduction ? null : DispatchHubTabsEnum::PRODUCTION_OUTPUT,
+        ]);
+        $partnerStaging   = $suppliesPartners ? GetPartnerStagingTasks::run($warehouse) : null;
+        $productionOutput = $hasProduction ? GetFinishedProductionJobOrders::run($warehouse) : null;
+        $navigation       = DispatchHubTabsEnum::navigationExcept(array_values($hiddenTabs));
+        if ($partnerStaging !== null) {
+            $navigation[DispatchHubTabsEnum::PARTNER_STAGING->value]['number'] = count($partnerStaging);
+        }
+        if ($productionOutput !== null) {
+            $navigation[DispatchHubTabsEnum::PRODUCTION_OUTPUT->value]['number'] = count($productionOutput);
+        }
 
         return Inertia::render(
             'Org/Dispatching/DispatchHub',
@@ -70,7 +100,7 @@ class ShowDispatchHub extends OrgAction
                 ],
                 'tabs' => [
                     'current'    => $this->tab,
-                    'navigation' => DispatchHubTabsEnum::navigation()
+                    'navigation' => $navigation,
                 ],
                 'intervals'   => [
                     'options'        => $this->dashboardIntervalOption(),
@@ -86,6 +116,16 @@ class ShowDispatchHub extends OrgAction
                 'picking_session' => $this->getPickingSessionStats($warehouse),
                 'pickers_current' => DispatchPersonnelCurrentWorkResource::collection($this->currentWork($warehouse, 'picker_user_id', ['handling', 'handling_blocked'], 'pickers_current')),
                 'packers_current' => DispatchPersonnelCurrentWorkResource::collection($this->currentWork($warehouse, 'packer_user_id', ['packing'], 'packers_current')),
+                'partner_staging' => $partnerStaging,
+                'production_output' => $productionOutput,
+                'put_away_route'    => $hasProduction ? [
+                    'name'       => 'grp.org.warehouses.show.dispatching.production_output.put_away',
+                    'parameters' => $request->route()->originalParameters(),
+                ] : null,
+                'stage_route'     => $suppliesPartners ? [
+                    'name'       => 'grp.org.warehouses.show.dispatching.partner_staging.stage',
+                    'parameters' => $request->route()->originalParameters(),
+                ] : null,
                 'gate_route'      => $this->organisation->hasFulfilmentGate() ? [
                     'name'       => 'grp.org.warehouses.show.dispatching.gate',
                     'parameters' => $request->route()->originalParameters(),

@@ -23,17 +23,22 @@ class PayOrderAsync extends RetinaAction
      */
     public function handle(Order $order): void
     {
-        $customer = $order->customer;
+        if ($this->getWarnings($order)) {
+            return;
+        }
 
-        if ($customer->balance >= $order->total_amount) {
-            PayRetinaOrderWithBalance::run($order, false);
-        } else {
-            foreach ($customer->mitSavedCard->sortBy('priority') as $card) {
-                if ($card->state == 'success') {
-                    $result = PayOrderWithMitCard::run($order, $card);
-                    if (Arr::get($result, 'status') == 'ok') {
-                        break;
-                    }
+        SettleRetinaOrderWithBalance::run($order);
+        $order->refresh();
+
+        if (round($order->total_amount - $order->payment_amount, 2) <= 0) {
+            return;
+        }
+
+        foreach ($order->customer->mitSavedCard->sortBy('priority') as $card) {
+            if ($card->state == 'success') {
+                $result = PayOrderWithMitCard::run($order, $card);
+                if (Arr::get($result, 'status') == 'ok') {
+                    break;
                 }
             }
         }

@@ -811,6 +811,15 @@ const onClickSelectAll = (state: boolean) => {
      emits('onCheckedAll', {data : props.resource.data, allChecked : compIsAllChecked.value})
 }
 
+const clearSelection = () => {
+    for (const key in selectRow) {
+        selectRow[key] = false
+    }
+    for (const row in props.resource.data) {
+        setLodash(props.resource.data, [row, 'is_checked'], false)
+    }
+}
+
 // Check props.isCheckbox to improve performance
 const compIsAllChecked = props.isCheckBox
   ? computed(() => {
@@ -830,6 +839,7 @@ defineExpose({
     data : props?.resource?.data,
     queryBuilderData : queryBuilderData,
     selectRow : selectRow,
+    clearSelection : clearSelection,
     compResourceData : compResourceData.value
 })
 

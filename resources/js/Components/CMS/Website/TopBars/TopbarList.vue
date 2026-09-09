@@ -76,7 +76,7 @@ const props = withDefaults(defineProps<{
                             class="group flex items-center gap-x-2 relative border border-gray-300 px-3 py-2 rounded cursor-pointer hover:bg-gray-100"
                         >
                             <div class="flex items-center justify-center">
-                                <img :src="topbar.image">
+                                <img :src="topbar.image" loading="lazy" decoding="async">
                             </div>
 
                             <div class="bg-gray-800 text-white px-2 py-1 w-full text-center text-sm font-medium absolute bottom-0 left-1/2 -translate-x-1/2">

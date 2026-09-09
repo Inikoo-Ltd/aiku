@@ -11,10 +11,17 @@
 namespace Tests\Feature;
 
 use App\Actions\Production\Artefact\StoreArtefact;
-use App\Actions\Production\Artefact\MoveArtefactsToFamily;
+use App\Actions\Production\Artefact\MoveArtefactsToDepartment;
 use App\Actions\Production\Artefact\UpdateArtefact;
+use App\Actions\Production\Artefact\UI\GetArtefactShowcase;
+use App\Actions\Production\ArtefactDepartment\StoreArtefactDepartment;
+use App\Actions\Production\Artefact\MoveArtefactsToFamily;
+use App\Actions\Production\ArtefactFamily\AssignArtefactsToFamiliesFromOrgStockFamilies;
+use App\Actions\Production\ArtefactFamily\DeleteArtefactFamily;
+use App\Actions\Production\ArtefactFamily\MoveArtefactFamiliesToDepartment;
 use App\Actions\Production\ArtefactFamily\StoreArtefactFamily;
-use App\Actions\Production\ArtefactFamily\UpdateArtefactFamily;
+use App\Models\Production\ArtefactFamily;
+use App\Actions\Production\ArtefactDepartment\UpdateArtefactDepartment;
 use App\Actions\Production\Artisan\AttachArtisan;
 use App\Actions\Production\Artisan\DetachArtisan;
 use App\Actions\Production\Artisan\ToggleArtisanInRoster;
@@ -77,6 +84,7 @@ use Inertia\Testing\AssertableInertia;
 
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\get;
+use function Pest\Laravel\delete;
 
 beforeAll(function () {
     loadDB();
@@ -492,43 +500,43 @@ test('UI edit raw material', function () {
 test('update artefact category and tags', function () {
     $tag = Tag::create(['group_id' => $this->group->id, 'name' => 'lavender', 'scope' => TagScopeEnum::ARTEFACT]);
 
-    $family = StoreArtefactFamily::make()->action($this->production, ['code' => 'SOAP', 'name' => 'Soaps']);
+    $family = StoreArtefactDepartment::make()->action($this->production, ['code' => 'SOAP', 'name' => 'Soaps']);
 
     $artefact = UpdateArtefact::make()->action($this->artefact, [
-        'artefact_family_id' => $family->id,
+        'artefact_department_id' => $family->id,
         'tags'               => [$tag->id],
     ]);
 
-    expect($artefact->artefactFamily->id)->toBe($family->id)
+    expect($artefact->artefactDepartment->id)->toBe($family->id)
         ->and($family->refresh()->number_artefacts)->toBe(1)
         ->and($artefact->tags->pluck('name')->all())->toBe(['lavender']);
 
     $artefact = UpdateArtefact::make()->action($artefact, ['tags' => []]);
     expect($artefact->tags)->toHaveCount(0);
 
-    $response = $this->get(route('grp.org.productions.show.crafts.artefact_families.index', [$this->organisation->slug, $this->production->slug]));
+    $response = $this->get(route('grp.org.productions.show.crafts.artefact_departments.index', [$this->organisation->slug, $this->production->slug]));
     $response->assertInertia(function (AssertableInertia $page) {
-        $page->component('Org/Production/ArtefactFamilies')->has('data.data', 1)->where('data.data.0.code', 'SOAP');
+        $page->component('Org/Production/ArtefactDepartments')->has('data.data', 1)->where('data.data.0.code', 'SOAP');
     });
 
-    $response = $this->get(route('grp.org.productions.show.crafts.artefact_families.show', [$this->organisation->slug, $this->production->slug, $family->slug]));
+    $response = $this->get(route('grp.org.productions.show.crafts.artefact_departments.show', [$this->organisation->slug, $this->production->slug, $family->slug]));
     $response->assertInertia(function (AssertableInertia $page) {
-        $page->component('Org/Production/ArtefactFamily')->has('artefacts.data', 1)->where('artefacts.data.0.artefact_family_name', 'Soaps');
+        $page->component('Org/Production/ArtefactDepartment')->has('artefacts.data', 1)->where('artefacts.data.0.artefact_department_name', 'Soaps');
     });
 
-    $response = $this->get(route('grp.org.productions.show.crafts.artefact_families.edit', [$this->organisation->slug, $this->production->slug, $family->slug]));
+    $response = $this->get(route('grp.org.productions.show.crafts.artefact_departments.edit', [$this->organisation->slug, $this->production->slug, $family->slug]));
     $response->assertInertia(fn (AssertableInertia $page) => $page->component('EditModel')->has('formData.blueprint.0.fields', 3));
 
-    $response = $this->get(route('grp.org.productions.show.crafts.artefact_families.create', [$this->organisation->slug, $this->production->slug]));
+    $response = $this->get(route('grp.org.productions.show.crafts.artefact_departments.create', [$this->organisation->slug, $this->production->slug]));
     $response->assertInertia(fn (AssertableInertia $page) => $page->component('CreateModel'));
 
-    $family = UpdateArtefactFamily::make()->action($family, ['name' => 'Soap bars']);
+    $family = UpdateArtefactDepartment::make()->action($family, ['name' => 'Soap bars']);
     expect($family->name)->toBe('Soap bars');
 
-    $otherFamily = StoreArtefactFamily::make()->action($this->production, ['code' => 'BOMB', 'name' => 'Bath bombs']);
-    $moved = MoveArtefactsToFamily::make()->action($this->production, ['artefacts' => [$artefact->id], 'artefact_family_id' => $otherFamily->id]);
+    $otherFamily = StoreArtefactDepartment::make()->action($this->production, ['code' => 'BOMB', 'name' => 'Bath bombs']);
+    $moved = MoveArtefactsToDepartment::make()->action($this->production, ['artefacts' => [$artefact->id], 'artefact_department_id' => $otherFamily->id]);
     expect($moved)->toBe(1)
-        ->and($artefact->refresh()->artefact_family_id)->toBe($otherFamily->id)
+        ->and($artefact->refresh()->artefact_department_id)->toBe($otherFamily->id)
         ->and($family->refresh()->number_artefacts)->toBe(0)
         ->and($otherFamily->refresh()->number_artefacts)->toBe(1);
 });
@@ -572,6 +580,18 @@ test('UI show artifact', function () {
     });
 });
 
+test('UI show artefact showcase exposes batch size and its update route', function () {
+    $this->artefact->update(['recommended_batch_size' => null]);
+
+    $showcase = GetArtefactShowcase::run($this->artefact->refresh());
+    expect($showcase['recommended_batch_size'])->toBeNull()
+        ->and($showcase['update_route']['name'])->toBe('grp.models.production.artefacts.update');
+
+    UpdateArtefact::make()->action($this->artefact, ['recommended_batch_size' => 24]);
+
+    expect(GetArtefactShowcase::run($this->artefact->refresh())['recommended_batch_size'])->toBe(24);
+});
+
 test('UI show artifact (manufacture task tab)', function () {
     $response = get(route('grp.org.productions.show.crafts.artefacts.show', [
         $this->organisation->slug,
@@ -601,7 +621,7 @@ test('UI edit artefact', function () {
         $page
             ->component('EditModel')
             ->has('title')
-            ->has('formData.blueprint.0.fields', 7)
+            ->has('formData.blueprint.0.fields', 8)
             ->has('pageHead')
             ->has('breadcrumbs', 4);
     });
@@ -765,6 +785,41 @@ test('work queue is generated from the artefact recipe and sessions pay the work
     expect($task->state)->toBe(JobOrderItemTaskStateEnum::DONE)
         ->and((float)$task->quantity_made)->toBe(20.0)
         ->and((float)$task->quantity_rejected)->toBe(1.0);
+});
+
+test('closing short can finish the job or carry the shortfall to a new job order', function () {
+    $this->artefact->manufactureTasks()->syncWithoutDetaching([
+        $this->manufactureTask->id => ['position' => 1, 'units_per_artefact' => 1],
+    ]);
+    $user = $this->guest->getUser();
+
+    $jobOrder = StoreJobOrder::make()->action($this->production, []);
+    $item     = StoreJobOrderItem::make()->action($jobOrder, ['artefact_id' => $this->artefact->id, 'quantity' => 25]);
+    ConfirmJobOrder::make()->action($jobOrder);
+    $task = $item->tasks()->first();
+
+    $session = StartManufactureTaskSession::make()->action($user, $task);
+    CloseManufactureTaskSession::make()->action($session, ['quantity_made' => 10, 'outcome' => 'complete']);
+    expect($task->refresh()->state)->toBe(JobOrderItemTaskStateEnum::DONE)
+        ->and((float)$task->quantity_required)->toBe(10.0)
+        ->and($item->refresh()->quantity)->toBe(10)
+        ->and(\App\Models\Production\JobOrder::where('production_id', $this->production->id)->count())->toBe($before = \App\Models\Production\JobOrder::where('production_id', $this->production->id)->count());
+
+    $jobOrder = StoreJobOrder::make()->action($this->production, []);
+    $item     = StoreJobOrderItem::make()->action($jobOrder, ['artefact_id' => $this->artefact->id, 'quantity' => 25]);
+    ConfirmJobOrder::make()->action($jobOrder);
+    $task = $item->tasks()->first();
+
+    $session = StartManufactureTaskSession::make()->action($user, $task);
+    CloseManufactureTaskSession::make()->action($session, ['quantity_made' => 10, 'outcome' => 'carry_over']);
+    $carried = \App\Models\Production\JobOrder::where('production_id', $this->production->id)->orderByDesc('id')->first();
+    expect($task->refresh()->state)->toBe(JobOrderItemTaskStateEnum::DONE)
+        ->and($item->refresh()->quantity)->toBe(10)
+        ->and($carried->id)->not->toBe($jobOrder->id)
+        ->and($carried->state)->toBe(JobOrderStateEnum::CONFIRMED)
+        ->and($carried->jobOrderItems()->first()->quantity)->toBe(15)
+        ->and((float)$carried->jobOrderItems()->first()->tasks()->first()->quantity_required)->toBe(15.0);
+
 });
 
 test('historic job orders do not generate a work queue', function () {
@@ -992,10 +1047,25 @@ test('payroll csv export aggregates closed sessions with snapshotted rates', fun
 });
 
 test('a voided session removes its quantities from the task and payroll', function () {
-    $session = \App\Models\Production\ManufactureTaskSession::where('state', ManufactureTaskSessionStateEnum::CLOSED)
-        ->orderByDesc('id')->first();
-    $task = $session->jobOrderItemTask;
-    expect($task->state)->toBe(JobOrderItemTaskStateEnum::DONE);
+    $this->artefact->manufactureTasks()->syncWithoutDetaching([
+        $this->manufactureTask->id => ['position' => 1, 'units_per_artefact' => 1],
+    ]);
+    $user     = $this->guest->getUser();
+    $jobOrder = StoreJobOrder::make()->action($this->production, []);
+    $item     = StoreJobOrderItem::make()->action($jobOrder, ['artefact_id' => $this->artefact->id, 'quantity' => 20]);
+    ConfirmJobOrder::make()->action($jobOrder);
+
+    $task = $item->tasks()->first();
+    CloseManufactureTaskSession::make()->action(
+        StartManufactureTaskSession::make()->action($user, $task),
+        ['quantity_made' => 15]
+    );
+    $session = CloseManufactureTaskSession::make()->action(
+        StartManufactureTaskSession::make()->action($user, $task),
+        ['quantity_made' => 5]
+    );
+
+    expect($task->refresh()->state)->toBe(JobOrderItemTaskStateEnum::DONE);
 
     VoidManufactureTaskSession::make()->action($session);
 
@@ -1845,8 +1915,8 @@ test('create job order from gate shortfall', function () {
 });
 
 test('artisans can be attached and detached from a family and an artefact, first one is primary', function () {
-    $family   = StoreArtefactFamily::make()->action($this->production, ['code' => 'ARTS', 'name' => 'Artisan family']);
-    $artefact = StoreArtefact::make()->action($this->production, ['code' => 'ARTS-1', 'name' => 'Artisan artefact', 'artefact_family_id' => $family->id]);
+    $family   = StoreArtefactDepartment::make()->action($this->production, ['code' => 'ARTS', 'name' => 'Artisan family']);
+    $artefact = StoreArtefact::make()->action($this->production, ['code' => 'ARTS-1', 'name' => 'Artisan artefact', 'artefact_department_id' => $family->id]);
 
     $employees = collect(range(1, 2))->map(function () {
         $modelData = Employee::factory()->make(['organisation_id' => $this->organisation->id])->toArray();
@@ -2213,4 +2283,287 @@ test('artefacts with nothing sold in three years go dormant and wake up when the
 
     $this->artisan('repair:dormant_artefacts', ['production' => $this->production->slug, '--fix' => true])->assertExitCode(0);
     expect($artefact->refresh()->state)->toBe(ArtefactStateEnum::ACTIVE);
+});
+
+test('to produce queue only shows lines with an artefact in this factory', function () {
+    $stocks    = createStocks($this->group);
+    $orgStocks = createOrgStocks($this->organisation, [$stocks[0], $stocks[1]]);
+
+    \App\Models\Production\Artefact::where('production_id', $this->production->id)
+        ->whereIn('org_stock_id', [$orgStocks[0]->id, $orgStocks[1]->id])
+        ->update(['org_stock_id' => null]);
+
+    $made = StoreArtefact::make()->action($this->production, ['code' => 'GATE-01', 'name' => 'Made here']);
+    $made->update(['org_stock_id' => $orgStocks[0]->id]);
+    $orgStocks[0]->update(['quantity_in_locations' => 0]);
+    $orgStocks[1]->update(['quantity_in_locations' => 0]);
+
+    foreach ($orgStocks as $orgStock) {
+        \App\Models\Procurement\PartnerShoppingListItem::create([
+            'group_id'        => $this->group->id,
+            'organisation_id' => $this->organisation->id,
+            'stock_id'        => $orgStock->stock_id,
+            'org_stock_id'    => $orgStock->id,
+            'quantity'        => 5,
+        ]);
+    }
+
+    actingAs($this->guest->getUser());
+    $routeParameters = [$this->organisation->slug, $this->production->slug];
+
+    $board = get(route('grp.org.productions.show.to_produce.index', $routeParameters))
+        ->assertOk()->viewData('page')['props'];
+    $lanes = collect($board['groups'])->mapWithKeys(fn ($lane) => [$lane['label'] => collect($lane['items'])->pluck('stock_code')->all()]);
+    expect($lanes['Pre-pick'])->toBe([$stocks[1]->code])
+        ->and($lanes['Backlog'])->toBe([$stocks[0]->code]);
+
+    $otherProduction = StoreProduction::make()->action($this->organisation, ['code' => 'GATEF2', 'name' => 'Other factory']);
+    $elsewhere = StoreArtefact::make()->action($otherProduction, ['code' => 'GATE-02', 'name' => 'Made in the other factory']);
+    $elsewhere->update(['org_stock_id' => $orgStocks[1]->id]);
+
+    $lanes = collect(get(route('grp.org.productions.show.to_produce.index', $routeParameters))
+        ->assertOk()->viewData('page')['props']['groups'])
+        ->mapWithKeys(fn ($lane) => [$lane['label'] => collect($lane['items'])->pluck('stock_code')->all()]);
+    expect($lanes['Pre-pick'])->toBe([$stocks[1]->code])
+        ->and($lanes['Backlog'])->toBe([$stocks[0]->code]);
+
+    $covered = \App\Models\Procurement\PartnerShoppingListItem::where('org_stock_id', $orgStocks[0]->id)->first();
+    $orgStocks[0]->update(['quantity_available' => 500, 'quantity_in_locations' => 500]);
+    $covered->update(['preparing_at' => now()]);
+    $lanes = collect(get(route('grp.org.productions.show.to_produce.index', $routeParameters))
+        ->assertOk()->viewData('page')['props']['groups'])
+        ->mapWithKeys(fn ($lane) => [$lane['label'] => collect($lane['items'])->pluck('stock_code')->all()]);
+    expect($lanes['Preparing'])->toBe([$stocks[0]->code])
+        ->and($lanes['Pre-pick'])->toBe([$stocks[1]->code]);
+    $covered->update(['preparing_at' => null]);
+
+    \App\Actions\Production\PartnerShippingList\StoreJobOrdersFromToProduceItems::make()
+        ->action($this->production, [$covered->id]);
+    $lanes = collect(get(route('grp.org.productions.show.to_produce.index', $routeParameters))
+        ->assertOk()->viewData('page')['props']['groups'])
+        ->mapWithKeys(fn ($lane) => [$lane['label'] => collect($lane['items'])->pluck('stock_code')->all()]);
+    expect($lanes['Pre-pick'])->toBe([$stocks[1]->code])
+        ->and($lanes['Assigned'])->toBe([$stocks[0]->code]);
+
+    $made->manufactureTasks()->syncWithoutDetaching([$this->manufactureTask->id => ['position' => 1, 'units_per_artefact' => 1]]);
+    $jobOrder = \App\Models\Production\JobOrder::find($covered->refresh()->job_order_id);
+    $jobOrderItem = $jobOrder->jobOrderItems()->where('artefact_id', $made->id)->first();
+    \App\Actions\Production\JobOrderItemTask\GenerateJobOrderItemTasks::make()->handle($jobOrderItem);
+    $task = $jobOrderItem->tasks()->first();
+    ConfirmJobOrder::make()->action($jobOrder);
+    $laneOf = fn () => collect(get(route('grp.org.productions.show.to_produce.index', $routeParameters))
+        ->assertOk()->viewData('page')['props']['groups'])
+        ->mapWithKeys(fn ($lane) => [$lane['label'] => collect($lane['items'])->pluck('stock_code')->all()]);
+    expect($laneOf()['Assigned'])->toBe([$stocks[0]->code])
+        ->and($laneOf()['Producing'])->toBe([]);
+
+    $session = StartManufactureTaskSession::make()->action($this->guest->getUser(), $task);
+    expect($laneOf()['Producing'])->toBe([$stocks[0]->code])
+        ->and($laneOf()['Assigned'])->toBe([]);
+
+    CloseManufactureTaskSession::make()->action($session, ['quantity_made' => $task->quantity_required]);
+    expect($laneOf()['Done'])->toBe([$stocks[0]->code])
+        ->and($laneOf()['Producing'])->toBe([]);
+
+    $warehouse = \App\Actions\Inventory\Warehouse\StoreWarehouse::make()->action($this->organisation, ['code' => 'WH-BRD', 'name' => 'Board warehouse']);
+    $area      = \App\Actions\Inventory\WarehouseArea\StoreWarehouseArea::make()->action($warehouse, ['code' => 'A-BRD', 'name' => 'Board area']);
+    $location  = \App\Actions\Inventory\Location\StoreLocation::make()->action($area, ['code' => 'L-BRD', 'name' => 'Board loc'] + \App\Models\Inventory\Location::factory()->definition());
+    $hubProps  = fn () => get(route('grp.org.warehouses.show.dispatching.backlog', [$this->organisation->slug, $warehouse->slug]))
+        ->assertOk()->viewData('page')['props'];
+    $hubOutput = fn () => collect($hubProps()['production_output'])->pluck('reference')->all();
+    expect($hubOutput())->toContain($jobOrder->reference)
+        ->and($hubProps()['tabs']['navigation']['production_output']['number'])->toBe(count($hubOutput()));
+
+    \App\Actions\Dispatching\ProductionOutput\PutAwayFinishedJobOrder::make()->action($warehouse, $jobOrder->refresh(), 'L-BRD');
+    expect($jobOrder->refresh()->state)->toBe(JobOrderStateEnum::RECEIVED)
+        ->and($hubOutput())->not->toContain($jobOrder->reference)
+        ->and($laneOf()->flatten()->all())->not->toContain($stocks[0]->code);
+
+    $byArtisan = get(route('grp.org.productions.show.to_produce.by_artisan', $routeParameters))
+        ->assertOk()->viewData('page')['props'];
+    expect(collect($byArtisan['groups'])->pluck('items')->flatten(1)->pluck('stock_code')->all())->toBe([$stocks[0]->code]);
+
+    $all = get(route('grp.org.productions.show.to_produce.list', $routeParameters))
+        ->assertOk()->viewData('page')['props'];
+    expect(collect($all['data']['data'])->pluck('stock_code')->sort()->values()->all())
+        ->toBe(collect([$stocks[0]->code, $stocks[1]->code])->sort()->values()->all());
+});
+
+test('repair assigns artefacts to families mirroring their org stock family', function () {
+    $department = StoreArtefactDepartment::make()->action($this->production, ['code' => 'FAMDEP', 'name' => 'Family department']);
+
+    $stockFamily = \App\Actions\Goods\StockFamily\StoreStockFamily::make()->action(
+        $this->group,
+        \App\Models\Goods\StockFamily::factory()->definition()
+    );
+    $stock = \App\Actions\Goods\Stock\StoreStock::make()->action(
+        $stockFamily,
+        array_merge(\App\Models\Goods\Stock::factory()->definition(), [
+            'state' => \App\Enums\Goods\Stock\StockStateEnum::ACTIVE
+        ])
+    );
+    $orgStockFamily = \App\Actions\Inventory\OrgStockFamily\StoreOrgStockFamily::make()->action($this->organisation, $stockFamily, []);
+    $orgStock       = \App\Actions\Inventory\OrgStock\StoreOrgStock::make()->action($orgStockFamily, $stock);
+
+    $artefact = StoreArtefact::make()->action($this->production, [
+        'code'                   => 'FAMART1',
+        'name'                   => 'Artefact with org stock family',
+        'org_stock_id'           => $orgStock->id,
+        'artefact_department_id' => $department->id,
+    ]);
+
+    $orphan = StoreArtefact::make()->action($this->production, [
+        'code'                   => 'FAMART2',
+        'name'                   => 'Artefact without org stock',
+        'artefact_department_id' => $department->id,
+    ]);
+
+    $dryRun = AssignArtefactsToFamiliesFromOrgStockFamilies::make()->handle();
+    expect($dryRun['families_created'])->toBe(1)
+        ->and($artefact->refresh()->artefact_family_id)->toBeNull();
+
+    $result = AssignArtefactsToFamiliesFromOrgStockFamilies::make()->handle(true);
+    expect($result['families_created'])->toBe(1)
+        ->and($result['artefacts_assigned'])->toBe(1);
+
+    $family = ArtefactFamily::where('org_stock_family_id', $orgStockFamily->id)->first();
+    expect($family)->not->toBeNull()
+        ->and($family->artefact_department_id)->toBe($department->id)
+        ->and($family->production_id)->toBe($this->production->id)
+        ->and($family->code)->toBe($orgStockFamily->code)
+        ->and($family->number_artefacts)->toBe(1)
+        ->and($artefact->refresh()->artefact_family_id)->toBe($family->id)
+        ->and($orphan->refresh()->artefact_family_id)->toBeNull();
+
+    $rerun = AssignArtefactsToFamiliesFromOrgStockFamilies::make()->handle(true);
+    expect($rerun['families_created'])->toBe(0)
+        ->and($rerun['artefacts_assigned'])->toBe(0);
+});
+
+test('artefact family UI pages render', function () {
+    $department = StoreArtefactDepartment::make()->action($this->production, ['code' => 'UIDEP', 'name' => 'UI department']);
+    $family     = StoreArtefactFamily::make()->action($department, ['code' => 'UIFAM', 'name' => 'UI family']);
+    StoreArtefact::make()->action($this->production, [
+        'code'                   => 'UIFAMART',
+        'name'                   => 'UI family artefact',
+        'artefact_department_id' => $department->id,
+        'artefact_family_id'     => $family->id,
+    ]);
+
+    $routeParameters = [$this->organisation->slug, $this->production->slug];
+
+    get(route('grp.org.productions.show.crafts.artefact_families.index', $routeParameters))->assertOk();
+    get(route('grp.org.productions.show.crafts.artefact_families.create', $routeParameters))->assertOk();
+    get(route('grp.org.productions.show.crafts.artefact_families.show', array_merge($routeParameters, [$family->slug])))->assertOk();
+    get(route('grp.org.productions.show.crafts.artefact_families.edit', array_merge($routeParameters, [$family->slug])))->assertOk();
+    get(route('grp.org.productions.show.crafts.artefact_departments.show', array_merge($routeParameters, [$department->slug])).'?tab=families')->assertOk();
+});
+
+test('moving a family to another department takes its artefacts along', function () {
+    $from = StoreArtefactDepartment::make()->action($this->production, ['code' => 'MVFROM', 'name' => 'From department']);
+    $to   = StoreArtefactDepartment::make()->action($this->production, ['code' => 'MVTO', 'name' => 'To department']);
+
+    $family   = StoreArtefactFamily::make()->action($from, ['code' => 'MVFAM', 'name' => 'Moving family']);
+    $artefact = StoreArtefact::make()->action($this->production, [
+        'code'                   => 'MVART',
+        'name'                   => 'Moving artefact',
+        'artefact_department_id' => $from->id,
+        'artefact_family_id'     => $family->id,
+    ]);
+
+    $moved = MoveArtefactFamiliesToDepartment::make()->action($this->production, [
+        'families'               => [$family->id],
+        'artefact_department_id' => $to->id,
+    ]);
+
+    expect($moved)->toBe(1)
+        ->and($family->refresh()->artefact_department_id)->toBe($to->id)
+        ->and($artefact->refresh()->artefact_department_id)->toBe($to->id)
+        ->and($artefact->artefact_family_id)->toBe($family->id);
+
+    /* Moving the artefact to a third department drops a family that does not live there. */
+    $other = StoreArtefactDepartment::make()->action($this->production, ['code' => 'MVOTHER', 'name' => 'Other department']);
+    MoveArtefactsToDepartment::make()->action($this->production, [
+        'artefacts'              => [$artefact->id],
+        'artefact_department_id' => $other->id,
+    ]);
+
+    expect($artefact->refresh()->artefact_family_id)->toBeNull()
+        ->and($family->refresh()->number_artefacts)->toBe(0);
+});
+
+test('moving artefacts to a family moves them into the family department', function () {
+    $home    = StoreArtefactDepartment::make()->action($this->production, ['code' => 'HOMEDEP', 'name' => 'Home department']);
+    $elsewhere = StoreArtefactDepartment::make()->action($this->production, ['code' => 'AWAYDEP', 'name' => 'Away department']);
+
+    $family   = StoreArtefactFamily::make()->action($home, ['code' => 'HOMEFAM', 'name' => 'Home family']);
+    $artefact = StoreArtefact::make()->action($this->production, [
+        'code'                   => 'STRAYART',
+        'name'                   => 'Stray artefact',
+        'artefact_department_id' => $elsewhere->id,
+    ]);
+
+    MoveArtefactsToFamily::make()->action($this->production, [
+        'artefacts'          => [$artefact->id],
+        'artefact_family_id' => $family->id,
+    ]);
+
+    expect($artefact->refresh()->artefact_family_id)->toBe($family->id)
+        ->and($artefact->artefact_department_id)->toBe($home->id)
+        ->and($family->refresh()->number_artefacts)->toBe(1);
+});
+
+test('deleting a family orphans its artefacts but keeps them in the department', function () {
+    $department = StoreArtefactDepartment::make()->action($this->production, ['code' => 'DELDEP', 'name' => 'Delete department']);
+    $family     = StoreArtefactFamily::make()->action($department, ['code' => 'DELFAM', 'name' => 'Doomed family']);
+
+    $artefact = StoreArtefact::make()->action($this->production, [
+        'code'                   => 'DELART',
+        'name'                   => 'Orphan to be',
+        'artefact_department_id' => $department->id,
+        'artefact_family_id'     => $family->id,
+    ]);
+
+    $orphaned = DeleteArtefactFamily::make()->action($family);
+
+    expect($orphaned)->toBe(1)
+        ->and(ArtefactFamily::find($family->id))->toBeNull()
+        ->and($artefact->refresh()->artefact_family_id)->toBeNull()
+        ->and($artefact->artefact_department_id)->toBe($department->id);
+});
+
+test('UI delete artefact family', function () {
+    $department = StoreArtefactDepartment::make()->action($this->production, ['code' => 'UIDELDEP', 'name' => 'UI delete department']);
+    $family     = StoreArtefactFamily::make()->action($department, ['code' => 'UIDELFAM', 'name' => 'UI doomed family']);
+
+    $artefact = StoreArtefact::make()->action($this->production, [
+        'code'                   => 'UIDELART',
+        'name'                   => 'UI orphan to be',
+        'artefact_department_id' => $department->id,
+        'artefact_family_id'     => $family->id,
+    ]);
+
+    $response = get(route('grp.org.productions.show.crafts.artefact_families.show', [$this->organisation->slug, $this->production->slug, $family->slug]));
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page->component('Org/Production/ArtefactFamily')
+            ->where('number_artefacts', 1)
+            ->has('delete_route');
+    });
+
+    delete(route('grp.models.artefact_family.delete', [$family->id]))
+        ->assertRedirect(route('grp.org.productions.show.crafts.artefact_families.index', [$this->organisation->slug, $this->production->slug]));
+
+    expect(ArtefactFamily::find($family->id))->toBeNull()
+        ->and($artefact->refresh()->artefact_family_id)->toBeNull()
+        ->and($artefact->artefact_department_id)->toBe($department->id);
+});
+
+test('UI crafts artefacts as org admin', function () {
+    $this->withoutExceptionHandling();
+    $user = $this->guest->getUser();
+    $user->syncRoles(['org-admin-'.$this->organisation->id, 'production-orchestrator-'.$this->production->id]);
+    actingAs($user->fresh());
+    foreach (['dashboard', 'artefacts.index', 'raw_materials.index'] as $page) {
+        get(route('grp.org.productions.show.crafts.'.$page, [$this->organisation->slug, $this->production->slug]))->assertOk();
+    }
 });

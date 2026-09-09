@@ -23,7 +23,6 @@ use App\Http\Resources\Fulfilment\PalletReturnItemUIResource;
 use App\Models\Fulfilment\PalletReturnItem;
 use App\Models\Fulfilment\StoredItemMovement;
 use Lorisleiva\Actions\ActionRequest;
-use App\Http\Resources\Fulfilment\MayaPalletReturnItemUIResource;
 
 class UndoPickingPalletFromReturn extends OrgAction
 {
@@ -112,11 +111,8 @@ class UndoPickingPalletFromReturn extends OrgAction
     }
 
 
-    public function jsonResponse(PalletReturnItem $palletReturnItem, ActionRequest $request): PalletReturnItemUIResource|MayaPalletReturnItemUIResource
+    public function jsonResponse(PalletReturnItem $palletReturnItem, ActionRequest $request): PalletReturnItemUIResource
     {
-        if ($request->hasHeader('Maya-Version')) {
-            return MayaPalletReturnItemUIResource::make($palletReturnItem);
-        }
 
         return new PalletReturnItemUIResource($palletReturnItem);
     }

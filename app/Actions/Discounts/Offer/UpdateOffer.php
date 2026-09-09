@@ -127,13 +127,7 @@ class UpdateOffer extends OrgAction
         $offer = $this->update($offer, $modelData);
 
         if ($offer->wasChanged(['start_at', 'end_at'])) {
-            if (now()->gt($offer->start_at)) {
-                ActivateOffer::run($offer);
-            }
-
-            if (now()->gt($offer->end_at)) {
-                FinishOffer::run($offer);
-            }
+            UpdateOfferStatusFromDates::run($offer);
         }
 
         if ($offer->wasChanged(['trigger_data']) || $allowancesChanged) {

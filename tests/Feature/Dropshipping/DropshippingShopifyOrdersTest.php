@@ -46,6 +46,7 @@ use App\Models\Helpers\Country;
 use App\Models\Ordering\Order;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -739,4 +740,33 @@ test('closing the channel from aiku tears down the store side and a reconnect br
     expect($again->customer_sales_channel_id)->toBe($channel->id)
         ->and($channel->refresh()->status)->toBe(CustomerSalesChannelStatusEnum::OPEN)
         ->and($portfolio->refresh()->status)->toBeTrue();
+});
+
+test('shopify webhooks record unverified callers while enforcement is off and refuse them when on', function () {
+    Queue::fake();
+    $shopifyUser = shopifyOrderChannel($this, 'webhook-verify');
+
+    $url = 'https://'.config('app.domain').'/webhooks/shopify/'.$shopifyUser->id.'/products-updated';
+
+    $signed = function (string $shopDomain) use ($url) {
+        $body = json_encode(['id' => 1]);
+
+        return $this->call('POST', $url, [], [], [], [
+            'CONTENT_TYPE'               => 'application/json',
+            'HTTP_ACCEPT'                => 'application/json',
+            'HTTP_X_SHOPIFY_HMAC_SHA256' => base64_encode(hash_hmac('sha256', $body, (string) config('shopify-app.api_secret'), true)),
+            'HTTP_X_SHOPIFY_SHOP_DOMAIN' => $shopDomain,
+        ], $body);
+    };
+
+    // 422 means the request reached the action; 401 means the middleware stopped it.
+    config()->set('app.enforce_webhook_signatures', false);
+    Log::spy();
+    expect($this->postJson($url, [])->status())->not->toBe(401);
+    Log::shouldHaveReceived('warning')->withArgs(fn ($message) => $message === 'Unverified Shopify webhook allowed');
+
+    config()->set('app.enforce_webhook_signatures', true);
+    $this->postJson($url, [])->assertStatus(401);
+    $signed('someone-else.myshopify.com')->assertStatus(401);
+    expect($signed($shopifyUser->name)->status())->not->toBe(401);
 });

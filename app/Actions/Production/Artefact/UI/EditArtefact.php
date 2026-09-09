@@ -42,9 +42,9 @@ class EditArtefact extends OrgAction
             );
         }
 
-        $this->canEdit = $request->user()->authTo("productions_rd.{$this->production->id}.edit");
+        $this->canEdit = $request->user()->authTo(["org-supervisor.{$this->organisation->id}", "productions_rd.{$this->production->id}.edit"]);
 
-        return $request->user()->authTo("productions_rd.{$this->production->id}.view");
+        return $request->user()->authTo(["org-supervisor.{$this->organisation->id}", "productions_rd.{$this->production->id}.view"]);
     }
 
 
@@ -106,8 +106,8 @@ class EditArtefact extends OrgAction
                     'blueprint' => [
                         [
                             'title'  => __('Edit artefact'),
-                            'label'  => 'edit',
-                            'icon'   => ['fal', 'fa-narwhal'],
+                            'label'  => __('Properties'),
+                            // 'icon'   => ['fal', 'fa-narwhal'],
                             'fields' => [
                                 'code' => [
                                     'type'     => 'input',
@@ -126,6 +126,21 @@ class EditArtefact extends OrgAction
                                     'label'    => __('Recommended batch size'),
                                     'value'    => $artefact->recommended_batch_size,
                                     'required' => false
+                                ],
+                                'artefact_department_id' => [
+                                    'type'       => 'select_infinite',
+                                    'label'      => __('Department'),
+                                    'options'    => array_filter([
+                                        $artefact->artefactDepartment ? ['id' => $artefact->artefactDepartment->id, 'name' => $artefact->artefactDepartment->name] : null,
+                                    ]),
+                                    'fetchRoute' => [
+                                        'name'       => 'grp.json.production.artefact_departments.index',
+                                        'parameters' => ['production' => $artefact->production_id]
+                                    ],
+                                    'valueProp' => 'id',
+                                    'labelProp' => 'name',
+                                    'required'  => false,
+                                    'value'     => $artefact->artefact_department_id,
                                 ],
                                 'artefact_family_id' => [
                                     'type'       => 'select_infinite',

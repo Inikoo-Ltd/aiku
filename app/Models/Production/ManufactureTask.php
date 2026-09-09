@@ -12,6 +12,7 @@ use App\Enums\Production\ManufactureTask\ManufactureTaskOperativeRewardAllowance
 use App\Enums\Production\ManufactureTask\ManufactureTaskOperativeRewardTermsEnum;
 use App\Models\SysAdmin\Organisation;
 use App\Models\Traits\HasHistory;
+use App\Models\Traits\HasSearch;
 use App\Models\Traits\InProduction;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -69,6 +70,7 @@ class ManufactureTask extends Model implements Auditable
     use InProduction;
     use SoftDeletes;
     use HasSlug;
+    use HasSearch;
     use HasHistory;
 
     protected $guarded = [];
@@ -96,6 +98,19 @@ class ManufactureTask extends Model implements Auditable
         'standard_rate',
         'target_override_reason',
     ];
+
+    public function toSearchableArray(): array
+    {
+        return [
+            'id'              => (string)$this->id,
+            'code'            => (string)$this->code,
+            'name'            => (string)$this->name,
+            'slug'            => (string)$this->slug,
+            'production_id'   => $this->production_id,
+            'organisation_id' => $this->organisation_id,
+            'created_at'      => $this->created_at?->timestamp ?? 0,
+        ];
+    }
 
     public function getSlugOptions(): SlugOptions
     {

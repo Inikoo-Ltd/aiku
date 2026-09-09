@@ -41,8 +41,6 @@ class OrgAction
     protected bool $isSupervisor = false;
     public int $hydratorsDelay = 0;
     protected bool $strict = true;
-    protected bool $han = false;
-    protected bool $maya = false;
 
     protected array $validatedData;
     protected DateIntervalEnum $dateInterval = DateIntervalEnum::YEAR_TO_DAY;

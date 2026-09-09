@@ -44,15 +44,6 @@ class IndexLocations extends OrgAction
     private string $mode = 'exclude';
     private ?string $emptyStockFilter = null;
 
-    public function maya(Warehouse $warehouse, ActionRequest $request): LengthAwarePaginator
-    {
-        $this->maya   = true;
-        $this->parent = $warehouse;
-        $this->initialisationFromWarehouse($this->parent, $request);
-
-        return $this->handle(parent: $warehouse);
-    }
-
     public function inGroup(ActionRequest $request): LengthAwarePaginator
     {
         $this->parent = group();

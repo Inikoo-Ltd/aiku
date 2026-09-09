@@ -15,6 +15,7 @@ use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\UI\Catalogue\RetinaProductTabsEnum;
 use App\Http\Resources\Catalogue\ProductsResource;
 use App\Models\Catalogue\Product;
+use Illuminate\Database\Eloquent\Builder;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -29,6 +30,14 @@ class ShowRetinaCatalogueProduct extends RetinaAction
     public function asController(Product $product, ActionRequest $request): Product
     {
         $this->initialisation($request)->withTab(RetinaProductTabsEnum::values());
+
+        if ($product->shop_id !== $this->shop->id) {
+            abort(404);
+        }
+
+        if ($product->exclusive_for_customer_id && $product->exclusive_for_customer_id !== $this->customer?->id) {
+            abort(404);
+        }
 
         return $this->handle($product);
     }
@@ -123,7 +132,7 @@ class ShowRetinaCatalogueProduct extends RetinaAction
 
     public function getBreadcrumbs(string $routeName, array $routeParameters, $suffix = null): array
     {
-        $headCrumb = function (Product $product, array $routeParameters, $suffix) {
+        $headCrumb = function (Product $product, array $routeParameters, $suffix, string $indexLabel) {
             return [
 
                 [
@@ -131,7 +140,7 @@ class ShowRetinaCatalogueProduct extends RetinaAction
                     'modelWithIndex' => [
                         'index' => [
                             'route' => $routeParameters['index'],
-                            'label' => __('Products')
+                            'label' => $indexLabel
                         ],
                         'model' => [
                             'route' => $routeParameters['model'],
@@ -164,7 +173,27 @@ class ShowRetinaCatalogueProduct extends RetinaAction
                             'parameters' => $routeParameters
                         ]
                     ],
-                    $suffix
+                    $suffix,
+                    __('Products')
+                )
+            ),
+            'retina.catalogue.bundles.show' =>
+            array_merge(
+                ShowRetinaCatalogue::make()->getBreadcrumbs($routeParameters),
+                $headCrumb(
+                    $product,
+                    [
+                        'index' => [
+                            'name'       => 'retina.catalogue.bundles.index',
+                            'parameters' => $routeParameters
+                        ],
+                        'model' => [
+                            'name'       => 'retina.catalogue.bundles.show',
+                            'parameters' => $routeParameters
+                        ]
+                    ],
+                    $suffix,
+                    __('Bundles')
                 )
             ),
             default => []
@@ -173,19 +202,29 @@ class ShowRetinaCatalogueProduct extends RetinaAction
 
     public function getPrevious(Product $product, ActionRequest $request): ?array
     {
-        $previous = Product::where('code', '<', $product->code)->whereIn('state', [ProductStateEnum::ACTIVE->value, ProductStateEnum::DISCONTINUING->value])->where('shop_id', $this->shop->id)->orderBy('code', 'desc')->first();
+        $previous = $this->siblingsQuery($request)->where('code', '<', $product->code)->orderBy('code', 'desc')->first();
 
         return $this->getNavigation($previous, $request->route()->getName());
     }
 
     public function getNext(Product $product, ActionRequest $request): ?array
     {
-        $next = Product::where('code', '>', $product->code)->whereIn(
-            'state',
-            [ProductStateEnum::ACTIVE->value, ProductStateEnum::DISCONTINUING->value]
-        )->where('shop_id', $this->shop->id)->orderBy('code')->first();
+        $next = $this->siblingsQuery($request)->where('code', '>', $product->code)->orderBy('code')->first();
 
         return $this->getNavigation($next, $request->route()->getName());
+    }
+
+    private function siblingsQuery(ActionRequest $request): Builder
+    {
+        $query = Product::whereIn('state', [ProductStateEnum::ACTIVE->value, ProductStateEnum::DISCONTINUING->value])
+            ->where('shop_id', $this->shop->id);
+
+        if ($request->route()->getName() === 'retina.catalogue.bundles.show') {
+            return $query->where('is_bundle', true)
+                ->where('exclusive_for_customer_id', $this->customer->id);
+        }
+
+        return $query->whereNull('exclusive_for_customer_id');
     }
 
     private function getNavigation(?Product $product, string $routeName): ?array
@@ -193,16 +232,19 @@ class ShowRetinaCatalogueProduct extends RetinaAction
         if (!$product) {
             return null;
         }
-        return match ($routeName) {
-            'retina.catalogue.products.show' => [
-                'label' => $product->name,
-                'route' => [
-                    'name'       => $routeName,
-                    'parameters' => [
-                        'product'   => $product->slug
-                    ]
+
+        if (!in_array($routeName, ['retina.catalogue.products.show', 'retina.catalogue.bundles.show'], true)) {
+            return null;
+        }
+
+        return [
+            'label' => $product->name,
+            'route' => [
+                'name'       => $routeName,
+                'parameters' => [
+                    'product'   => $product->slug
                 ]
-            ],
-        };
+            ]
+        ];
     }
 }

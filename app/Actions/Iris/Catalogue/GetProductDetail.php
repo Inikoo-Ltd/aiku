@@ -16,6 +16,7 @@ use App\Http\Resources\Traits\HasPriceMetrics;
 use App\Models\Catalogue\Product;
 use App\Models\Discounts\Offer;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Collection;
 use Lorisleiva\Actions\ActionRequest;
 use App\Helpers\NaturalLanguage;
 use App\Http\Resources\Catalogue\TagResource;
@@ -88,12 +89,22 @@ class GetProductDetail extends IrisAction
             $countriesOrigin[] = NaturalLanguage::make()->country($country);
         }
 
+        $tradeUnits = $product->tradeUnits;
+
+        $ingredients = $product->marketing_ingredients;
+        $dimensions  = $this->dimensions($product->marketing_dimensions);
+
+        if ($tradeUnits->count() > 1) {
+            $ingredients = $this->perTradeUnit($tradeUnits, fn ($tradeUnit) => $tradeUnit->marketing_ingredients);
+            $dimensions  = $this->perTradeUnit($tradeUnits, fn ($tradeUnit) => $this->dimensions($tradeUnit->marketing_dimensions));
+        }
+
         $specifications = [
             'countries_of_origin' => $countriesOrigin,
-            'ingredients'         => $product->marketing_ingredients,
+            'ingredients'         => $ingredients,
             'gross_weight'        => $product->gross_weight,
             'barcode'             => $product->barcode,
-            'dimensions'          => NaturalLanguage::make()->dimensions(json_encode($product->marketing_dimensions)),
+            'dimensions'          => $dimensions,
             'cpnp'                => $product->cpnp_number,
             'marketing_weight'    => $product->marketing_weight,
             'unit'                => $product->unit,
@@ -116,6 +127,31 @@ class GetProductDetail extends IrisAction
 
         ];
 
+    }
+
+    private function dimensions(mixed $marketingDimensions): ?string
+    {
+        return blank($marketingDimensions) ? null : NaturalLanguage::make()->dimensions(json_encode($marketingDimensions));
+    }
+
+    /**
+     * A product made of several trade units, a bundle or a starter, says which of its
+     * components each value belongs to, so one component's ingredients or measurements
+     * are never read as the whole product's.
+     */
+    private function perTradeUnit(Collection $tradeUnits, callable $value): ?string
+    {
+        $parts = [];
+
+        foreach ($tradeUnits->sortBy('id') as $tradeUnit) {
+            $tradeUnitValue = $value($tradeUnit);
+
+            if (filled($tradeUnitValue)) {
+                $parts[] = $tradeUnit->code.' ('.$tradeUnitValue.')';
+            }
+        }
+
+        return $parts ? implode(', ', $parts) : null;
     }
 
     public function asController(Product $product, ActionRequest $request): Product

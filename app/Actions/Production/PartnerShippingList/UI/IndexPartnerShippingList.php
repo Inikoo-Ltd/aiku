@@ -66,12 +66,13 @@ class IndexPartnerShippingList extends OrgAction
             })
             ->leftJoin('artefacts', function ($join) {
                 $join->on('artefacts.org_stock_id', 'org_stocks.id')
+                    ->where('artefacts.production_id', $this->production->id)
                     ->whereNull('artefacts.deleted_at');
             })
-            ->leftJoin('artefact_families', 'artefacts.artefact_family_id', 'artefact_families.id')
+            ->leftJoin('artefact_departments', 'artefacts.artefact_department_id', 'artefact_departments.id')
             ->leftJoin('employees', 'employees.id', DB::raw("coalesce(
                 (select employee_id from artisan_assignments where artisanable_type = 'Artefact' and artisanable_id = artefacts.id order by position limit 1),
-                (select employee_id from artisan_assignments where artisanable_type = 'ArtefactFamily' and artisanable_id = artefact_families.id order by position limit 1)
+                (select employee_id from artisan_assignments where artisanable_type = 'ArtefactDepartment' and artisanable_id = artefact_departments.id order by position limit 1)
             )"))
             ->leftJoin('organisations', function ($join) {
                 $join->on('organisations.id', 'partner_shopping_list_items.organisation_id')
@@ -89,6 +90,10 @@ class IndexPartnerShippingList extends OrgAction
                             ->where('partner_shopping_list_items.organisation_id', $seller->id);
                     });
             });
+
+        if ($this->groupBy && $this->groupBy !== 'board') {
+            $queryBuilder->whereNotNull('artefacts.id');
+        }
 
         foreach ($this->getElementGroups() as $key => $elementGroup) {
             $queryBuilder->whereElementGroup(
@@ -111,9 +116,12 @@ class IndexPartnerShippingList extends OrgAction
                 'partner_shopping_list_items.needed_by',
                 'partner_shopping_list_items.notes',
                 'partner_shopping_list_items.created_at',
+                'artefacts.id as artefact_id',
+                'artefacts.recommended_batch_size as batch_size',
+                'org_stocks.quantity_available as stock_available',
                 'stocks.code as stock_code',
                 'stocks.name as stock_name',
-                'artefact_families.name as family',
+                'artefact_departments.name as family',
                 'employees.contact_name as maker',
                 'employees.id as maker_id',
                 'organisations.code as buyer_code',
@@ -124,6 +132,8 @@ class IndexPartnerShippingList extends OrgAction
                 'job_orders.state as job_order_state',
                 'job_order_artisans.contact_name as job_order_artisan',
                 DB::raw('(select sum(quantity) from job_order_items where job_order_items.job_order_id = job_orders.id and job_order_items.artefact_id = artefacts.id) as job_order_quantity'),
+                DB::raw("exists(select 1 from job_order_item_tasks join job_order_items on job_order_items.id = job_order_item_tasks.job_order_item_id where job_order_items.job_order_id = job_orders.id and job_order_items.artefact_id = artefacts.id and job_order_item_tasks.state = 'in_progress') as is_in_progress"),
+                DB::raw("(select count(*) > 0 and bool_and(job_order_item_tasks.state = 'done') from job_order_item_tasks join job_order_items on job_order_items.id = job_order_item_tasks.job_order_item_id where job_order_items.job_order_id = job_orders.id and job_order_items.artefact_id = artefacts.id) as is_finished"),
             ])
             ->defaultSort('-created_at')
             ->allowedFilters([$globalSearch])
@@ -258,23 +268,25 @@ class IndexPartnerShippingList extends OrgAction
     /** @return array<int, array{label: string, items: array<int, array<string, mixed>>}> */
     public function getBoardLanes(LengthAwarePaginator $items): array
     {
-        $stageByJobOrderState = [
-            ''             => 'backlog',
-            'in_process'   => 'assigned',
-            'submitted'    => 'assigned',
-            'confirmed'    => 'producing',
-            'received'     => 'done',
-            'not_received' => 'done',
-            'booking_in'   => 'done',
-            'booked_in'    => 'done',
-        ];
-        $lanes  = ['backlog' => __('Backlog'), 'preparing' => __('Preparing'), 'assigned' => __('Assigned'), 'producing' => __('Producing'), 'done' => __('Done')];
-        $byLane = collect($items->items())->groupBy(function ($item) use ($stageByJobOrderState) {
+        $lanes  = ['to_pick' => __('Pre-pick'), 'backlog' => __('Backlog'), 'preparing' => __('Preparing'), 'assigned' => __('Assigned'), 'producing' => __('Producing'), 'done' => __('Done')];
+        $byLane = collect($items->items())->groupBy(function ($item) {
             if (!$item->job_order_id) {
+                if (!$item->artefact_id) {
+                    return 'to_pick';
+                }
+
                 return $item->preparing_at ? 'preparing' : 'backlog';
             }
 
-            return $stageByJobOrderState[$item->job_order_state] ?? 'assigned';
+            if ($item->job_order_state !== 'confirmed') {
+                return in_array($item->job_order_state, ['in_process', 'submitted']) ? 'assigned' : 'received';
+            }
+
+            if ($item->is_finished) {
+                return 'done';
+            }
+
+            return $item->is_in_progress ? 'producing' : 'assigned';
         });
 
         return collect($lanes)

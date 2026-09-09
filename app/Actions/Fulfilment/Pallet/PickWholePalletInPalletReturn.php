@@ -19,7 +19,6 @@ use App\Enums\Fulfilment\Pallet\PalletStateEnum;
 use App\Enums\Fulfilment\Pallet\PalletStatusEnum;
 use App\Enums\Fulfilment\PalletReturn\PalletReturnItemStateEnum;
 use App\Enums\Fulfilment\PalletReturn\PalletReturnTypeEnum;
-use App\Http\Resources\Fulfilment\MayaPalletReturnItemUIResource;
 use App\Http\Resources\Fulfilment\PalletReturnItemUIResource;
 use App\Models\CRM\WebUser;
 use App\Models\Fulfilment\FulfilmentCustomer;
@@ -163,11 +162,8 @@ class PickWholePalletInPalletReturn extends OrgAction
         return $this->handle($palletReturnItem, $user);
     }
 
-    public function jsonResponse(PalletReturnItem $palletReturnItem, ActionRequest $request): PalletReturnItemUIResource|MayaPalletReturnItemUIResource
+    public function jsonResponse(PalletReturnItem $palletReturnItem, ActionRequest $request): PalletReturnItemUIResource
     {
-        if ($request->hasHeader('Maya-Version')) {
-            return MayaPalletReturnItemUIResource::make($palletReturnItem);
-        }
 
         return new PalletReturnItemUIResource($palletReturnItem);
     }

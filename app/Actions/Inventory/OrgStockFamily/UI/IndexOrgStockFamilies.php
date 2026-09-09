@@ -79,15 +79,6 @@ class IndexOrgStockFamilies extends OrgAction
         return $this->handle($organisation, prefix: OrgStockFamiliesTabsEnum::INDEX->value);
     }
 
-    public function maya(Organisation $organisation, ActionRequest $request): LengthAwarePaginator
-    {
-        $this->maya = true;
-        $this->initialisation($organisation, $request)->withTab(OrgStockFamiliesTabsEnum::values());
-
-        return $this->handle($organisation, prefix: OrgStockFamiliesTabsEnum::INDEX->value);
-    }
-
-
     protected function getElementGroups(Organisation $organisation): array
     {
         return

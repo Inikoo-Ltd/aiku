@@ -14,8 +14,6 @@ use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateLocations;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateLocations;
 use App\Actions\Traits\Authorisations\Inventory\WithWarehouseSupervisorAuthorisation;
-use App\Models\Inventory\Warehouse;
-use App\Models\Inventory\WarehouseArea;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Redirect;
 use Lorisleiva\Actions\ActionRequest;
@@ -30,10 +28,12 @@ class DeleteLocation extends OrgAction
     use WithWarehouseSupervisorAuthorisation;
 
 
-    private Warehouse|WarehouseArea $parent;
+    private Location $location;
 
     public function handle(Location $location): Location
     {
+        $this->location = $location;
+
         $location->delete();
 
         GroupHydrateLocations::dispatch($location->group)->delay($this->hydratorsDelay);
@@ -59,6 +59,10 @@ class DeleteLocation extends OrgAction
     {
         $this->initialisationFromWarehouse($location->warehouse, $request);
 
+        if ($location->locationOrgStocks()->where('quantity', '>', 0)->exists() || $location->pallets()->exists()) {
+            abort(422, __('This location is not empty, move its contents before deleting it.'));
+        }
+
         return $this->handle($location);
     }
 
@@ -68,8 +72,8 @@ class DeleteLocation extends OrgAction
         return Redirect::route(
             route: 'grp.org.warehouses.show.infrastructure.locations.index',
             parameters: [
-                'organisation' => $this->parent->organisation->slug,
-                'warehouse'    => $this->parent->slug
+                'organisation' => $this->location->organisation->slug,
+                'warehouse'    => $this->location->warehouse->slug
             ]
         );
     }

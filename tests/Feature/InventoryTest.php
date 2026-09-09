@@ -1188,7 +1188,7 @@ test('store org stock audit delta from location org stock', function () {
         ->and($delta->location_id)->toBe($locationOrgStock->location_id);
 });
 
-test('delete warehouse area with its locations', function () {
+test('delete warehouse area orphans its locations', function () {
     $warehouse = StoreWarehouse::make()->action($this->organisation, [
         'code' => 'WA-DEL',
         'name' => 'Warehouse for area delete test',
@@ -1199,12 +1199,39 @@ test('delete warehouse area with its locations', function () {
         'name' => 'Area for delete test',
     ]);
 
-    StoreLocation::make()->action($area, array_merge(Location::factory()->definition(), ['code' => 'LO-D']));
+    $location = StoreLocation::make()->action($area, array_merge(Location::factory()->definition(), ['code' => 'LO-D']));
 
     $areaId = $area->id;
     DeleteWarehouseArea::make()->handle($area);
 
-    expect(WarehouseArea::find($areaId))->toBeNull();
+    expect(WarehouseArea::find($areaId))->toBeNull()
+        ->and(Location::find($location->id)->warehouse_area_id)->toBeNull();
+});
+
+test('move location between warehouse areas', function () {
+    $warehouse = StoreWarehouse::make()->action($this->organisation, [
+        'code' => 'WA-MOV',
+        'name' => 'Warehouse for area move test',
+    ]);
+
+    $areaA = StoreWarehouseArea::make()->action($warehouse, ['code' => 'AR-MA', 'name' => 'Area A']);
+    $areaB = StoreWarehouseArea::make()->action($warehouse, ['code' => 'AR-MB', 'name' => 'Area B']);
+
+    $location = StoreLocation::make()->action($warehouse, array_merge(Location::factory()->definition(), [
+        'code'              => 'LO-MOV',
+        'warehouse_area_id' => $areaA->id,
+    ]));
+
+    expect($location->warehouse_area_id)->toBe($areaA->id);
+
+    $location = UpdateLocation::make()->action($location, ['warehouse_area_id' => $areaB->id]);
+    expect($location->warehouse_area_id)->toBe($areaB->id)
+        ->and($areaA->refresh()->stats->number_locations)->toBe(0)
+        ->and($areaB->refresh()->stats->number_locations)->toBe(1);
+
+    $location = UpdateLocation::make()->action($location, ['warehouse_area_id' => null]);
+    expect($location->warehouse_area_id)->toBeNull()
+        ->and($areaB->refresh()->stats->number_locations)->toBe(0);
 });
 
 test('delete org stock family dissociates its org stocks', function () {
@@ -1262,6 +1289,28 @@ test('OrgStockHydrateQuantityInLocations recomputes quantities and short-circuit
     OrgStockHydrateQuantityInLocations::run(null);
     OrgStockHydrateQuantityInLocations::run(999999999);
     expect((float) $orgStock->fresh()->quantity_in_locations)->toBe($expectedQuantity);
+});
+
+test('stock parked in a goods out location stops being available', function () {
+    $warehouse = createWarehouse();
+    $location  = StoreLocation::make()->action($warehouse, Location::factory()->definition());
+    $orgStock  = createOrgStocks($this->organisation, [createStocks($this->group)[0]])[0];
+    $slot      = StoreLocationOrgStock::make()->action($orgStock, $location, ['type' => LocationStockTypeEnum::PICKING]);
+    UpdateLocationOrgStock::make()->action($slot, ['quantity' => 10]);
+    $slot->refresh();
+
+    OrgStockHydrateQuantityInLocations::run($orgStock->id);
+    $inLocations = (float) $orgStock->fresh()->quantity_in_locations;
+    expect((float) $orgStock->fresh()->quantity_available)->toBe($inLocations);
+
+    UpdateLocation::make()->action($slot->location, ['is_goods_out' => true]);
+
+    $orgStock->refresh();
+    expect((float) $orgStock->quantity_in_locations)->toBe($inLocations)
+        ->and((float) $orgStock->quantity_available)->toBe($inLocations - 10);
+
+    UpdateLocation::make()->action($slot->location->refresh(), ['is_goods_out' => false]);
+    expect((float) $orgStock->fresh()->quantity_available)->toBe($inLocations);
 });
 
 test('OrgStockHydrate simple field hydrators recompute their target fields', function () {
@@ -2408,7 +2457,9 @@ function costFixStoreDelivery($group, $organisation, int $auroraDeliveryId, arra
             'state'             => 'placed',
             'data'              => '{}',
             'unit_quantity'     => $item['unit_quantity'],
+            'unit_quantity_placed' => $item['unit_quantity_placed'] ?? $item['unit_quantity'],
             'net_amount'        => $item['net_amount'],
+            'org_net_amount'    => $item['org_net_amount'] ?? $item['net_amount'],
             'created_at'        => now(),
             'updated_at'        => now(),
         ]);
@@ -2692,6 +2743,9 @@ test('merging a duplicate stock moves its links to the stocked twin and retires 
 
     [$emptyOrgStock] = createOrgStocks($this->organisation, [$empty]);
     createOrgStocks($this->organisation, [$held]);
+
+    // The merge only retires org stocks holding nothing, and the fixture stock is shared with earlier tests
+    DB::table('location_org_stocks')->where('org_stock_id', $emptyOrgStock->id)->update(['quantity' => 0]);
 
     $tradeUnit = StoreTradeUnit::make()->action($group, TradeUnit::factory()->definition());
     DB::table('model_has_trade_units')->insert([
@@ -2979,3 +3033,233 @@ test('sko barcode scanner finds an org stock by outer or unit barcode and moves 
                 ->etc()
         );
 })->depends('create warehouse');
+
+test('repair org stock movement cost prices per sko in organisation currency', function () {
+    [$orgStock, $location]   = costFixStockInLocation($this->group, $this->organisation, 'CFCUR');
+    [$skipStock, $skipLoc]   = costFixStockInLocation($this->group, $this->organisation, 'CFNOX');
+
+    $orgStock->update(['packed_in' => 4]);
+
+    $movement = StoreOrgStockMovement::make()->action($orgStock, $location, [
+        'type'     => OrgStockMovementTypeEnum::PURCHASE->value,
+        'quantity' => 60,
+    ]);
+    $movement->update([
+        'org_amount'   => 3000,
+        'cost_per_sku' => null,
+        'note'         => 'received from <span onClick="change_view(\'delivery/15601\')">CF15601</span>',
+        'date'         => now()->subDays(20),
+    ]);
+    costFixStoreDelivery($this->group, $this->organisation, 15601, [[
+        'org_stock_id'   => $orgStock->id,
+        'unit_quantity'  => 300,
+        'net_amount'     => 6000,
+        'org_net_amount' => 60,
+    ]]);
+
+    $noOrgAmountMovement = StoreOrgStockMovement::make()->action($skipStock, $skipLoc, [
+        'type'     => OrgStockMovementTypeEnum::PURCHASE->value,
+        'quantity' => 10,
+    ]);
+    $noOrgAmountMovement->update([
+        'org_amount'   => 5000,
+        'cost_per_sku' => null,
+        'note'         => 'received from <span onClick="change_view(\'delivery/15602\')">CF15602</span>',
+        'date'         => now()->subDays(20),
+    ]);
+    costFixStoreDelivery($this->group, $this->organisation, 15602, [[
+        'org_stock_id'   => $skipStock->id,
+        'unit_quantity'  => 10,
+        'net_amount'     => 900,
+        'org_net_amount' => 0,
+    ]]);
+
+    [$nearParityStock, $nearParityLoc] = costFixStockInLocation($this->group, $this->organisation, 'CFPAR');
+
+    $nearParityMovement = StoreOrgStockMovement::make()->action($nearParityStock, $nearParityLoc, [
+        'type'     => OrgStockMovementTypeEnum::PURCHASE->value,
+        'quantity' => 20,
+    ]);
+    $nearParityMovement->update([
+        'org_amount'   => 25,
+        'cost_per_sku' => 1.25,
+        'note'         => 'received from <span onClick="change_view(\'delivery/15603\')">CF15603</span>',
+        'date'         => now()->subDays(20),
+    ]);
+    costFixStoreDelivery($this->group, $this->organisation, 15603, [[
+        'org_stock_id'   => $nearParityStock->id,
+        'unit_quantity'  => 20,
+        'net_amount'     => 25,
+        'org_net_amount' => 20,
+    ]]);
+
+    [$partialStock, $partialLoc] = costFixStockInLocation($this->group, $this->organisation, 'CFPUT');
+
+    $partialMovement = StoreOrgStockMovement::make()->action($partialStock, $partialLoc, [
+        'type'     => OrgStockMovementTypeEnum::PURCHASE->value,
+        'quantity' => 40,
+    ]);
+    $partialMovement->update([
+        'org_amount'   => 320,
+        'cost_per_sku' => 8,
+        'note'         => 'received from <span onClick="change_view(\'delivery/15604\')">CF15604</span>',
+        'date'         => now()->subDays(20),
+    ]);
+    costFixStoreDelivery($this->group, $this->organisation, 15604, [[
+        'org_stock_id'         => $partialStock->id,
+        'unit_quantity'        => 100,
+        'unit_quantity_placed' => 40,
+        'net_amount'           => 800,
+        'org_net_amount'       => 80,
+    ]]);
+
+    $this->artisan('org_stock_movement:repair_cost_from_stock_delivery_items', ['organisation' => $this->organisation->slug])
+        ->assertExitCode(0);
+
+    $movement->refresh();
+    $noOrgAmountMovement->refresh();
+    $nearParityMovement->refresh();
+    $partialMovement->refresh();
+
+    expect((float) $movement->cost_per_sku)->toBe(0.8)
+        ->and((float) $movement->org_amount)->toBe(48.0)
+        ->and((float) $movement->grp_amount)->toBe(48.0)
+        ->and($movement->cost_status)->toBe(\App\Enums\Inventory\OrgStockMovement\OrgStockMovementCostStatusEnum::DELIVERY)
+        ->and($noOrgAmountMovement->cost_per_sku)->toBeNull()
+        ->and((float) $noOrgAmountMovement->org_amount)->toBe(5000.0)
+        ->and((float) $nearParityMovement->cost_per_sku)->toBe(1.0)
+        ->and((float) $nearParityMovement->org_amount)->toBe(20.0)
+        ->and((float) $partialMovement->cost_per_sku)->toBe(0.8)
+        ->and((float) $partialMovement->org_amount)->toBe(32.0);
+});
+
+describe('picking cost basis', function () {
+    test('a purchase priced only by org_amount still prices the picking', function () {
+        [$orgStock, $location] = costFixStockInLocation($this->group, $this->organisation, 'CFLPP');
+
+        $purchase = StoreOrgStockMovement::make()->action($orgStock, $location, [
+            'type'     => OrgStockMovementTypeEnum::PURCHASE->value,
+            'quantity' => 100,
+        ]);
+        $purchase->update([
+            'org_amount'   => 250,
+            'cost_per_sku' => null,
+            'date'         => now()->subDays(10),
+        ]);
+
+        $picked = StoreOrgStockMovement::make()->action($orgStock->refresh(), $location, [
+            'type'     => OrgStockMovementTypeEnum::PICKED->value,
+            'quantity' => -4,
+        ]);
+
+        expect((float) $picked->org_amount)->toBe(-10.0);
+    });
+
+    test('a stock that was never purchased has no cost basis and the picking stays at zero', function () {
+        [$orgStock, $location] = costFixStockInLocation($this->group, $this->organisation, 'CFNOCOST');
+
+        StoreOrgStockMovement::make()->action($orgStock, $location, [
+            'type'     => OrgStockMovementTypeEnum::FOUND->value,
+            'quantity' => 50,
+        ]);
+
+        $picked = StoreOrgStockMovement::make()->action($orgStock->refresh(), $location, [
+            'type'     => OrgStockMovementTypeEnum::PICKED->value,
+            'quantity' => -4,
+        ]);
+
+        expect((float) $picked->org_amount)->toBe(0.0);
+    });
+});
+
+describe('seed purchase cost from sku value', function () {
+    test('unpriced purchases are seeded from sku_value and the picking gets a cost', function () {
+        [$orgStock, $location] = costFixStockInLocation($this->group, $this->organisation, 'CFSEED');
+
+        $purchase = StoreOrgStockMovement::make()->action($orgStock, $location, [
+            'type'     => OrgStockMovementTypeEnum::PURCHASE->value,
+            'quantity' => 100,
+        ]);
+        $purchase->update(['org_amount' => 0, 'cost_per_sku' => null, 'date' => now()->subDays(10)]);
+        $orgStock->update(['sku_value' => 2.5]);
+
+        $this->artisan('org_stock_movement:seed_purchase_cost_from_sku_value', ['--dry-run' => true])->assertExitCode(0);
+        expect($purchase->refresh()->cost_per_sku)->toBeNull();
+
+        $this->artisan('org_stock_movement:seed_purchase_cost_from_sku_value')->assertExitCode(0);
+
+        $purchase->refresh();
+        expect((float) $purchase->cost_per_sku)->toBe(2.5)
+            ->and((float) $purchase->org_amount)->toBe(250.0)
+            ->and($purchase->cost_status)->toBe(\App\Enums\Inventory\OrgStockMovement\OrgStockMovementCostStatusEnum::PROVISIONAL);
+
+        $picked = StoreOrgStockMovement::make()->action($orgStock->refresh(), $location, [
+            'type'     => OrgStockMovementTypeEnum::PICKED->value,
+            'quantity' => -4,
+        ]);
+
+        expect((float) $picked->org_amount)->toBe(-10.0);
+    });
+
+    test('a stock that already has one priced purchase is left alone', function () {
+        [$orgStock, $location] = costFixStockInLocation($this->group, $this->organisation, 'CFSEEDOK');
+
+        $priced = StoreOrgStockMovement::make()->action($orgStock, $location, [
+            'type'     => OrgStockMovementTypeEnum::PURCHASE->value,
+            'quantity' => 10,
+        ]);
+        $priced->update(['org_amount' => 30, 'cost_per_sku' => 3, 'date' => now()->subDays(20)]);
+
+        $unpriced = StoreOrgStockMovement::make()->action($orgStock->refresh(), $location, [
+            'type'     => OrgStockMovementTypeEnum::PURCHASE->value,
+            'quantity' => 10,
+        ]);
+        $unpriced->update(['org_amount' => 0, 'cost_per_sku' => null, 'date' => now()->subDays(10)]);
+        $orgStock->update(['sku_value' => 99]);
+
+        $this->artisan('org_stock_movement:seed_purchase_cost_from_sku_value')->assertExitCode(0);
+
+        expect((float) $priced->refresh()->cost_per_sku)->toBe(3.0)
+            ->and($unpriced->refresh()->cost_per_sku)->toBeNull();
+    });
+});
+
+test('the post costfix rollup window reaches back to the oldest provisional purchase', function () {
+    [$orgStock, $location] = costFixStockInLocation($this->group, $this->organisation, 'CFROLL');
+
+    $provisional = StoreOrgStockMovement::make()->action($orgStock, $location, [
+        'type'     => OrgStockMovementTypeEnum::PURCHASE->value,
+        'quantity' => 10,
+    ]);
+    $provisional->update([
+        'cost_per_sku' => 3,
+        'org_amount'   => 30,
+        'cost_status'  => \App\Enums\Inventory\OrgStockMovement\OrgStockMovementCostStatusEnum::PROVISIONAL,
+        'date'         => '2024-01-10 10:00:00',
+    ]);
+
+    $delivery = StoreOrgStockMovement::make()->action($orgStock->refresh(), $location, [
+        'type'     => OrgStockMovementTypeEnum::PURCHASE->value,
+        'quantity' => 10,
+    ]);
+    $delivery->update([
+        'cost_per_sku' => 4,
+        'org_amount'   => 40,
+        'cost_status'  => \App\Enums\Inventory\OrgStockMovement\OrgStockMovementCostStatusEnum::DELIVERY,
+        'date'         => '2026-01-10 10:00:00',
+    ]);
+
+    foreach (['2024-02-01', '2026-02-01'] as $date) {
+        \App\Actions\Inventory\OrgStock\Stock\CalculateOrgStockHistoricStockHistories::run($orgStock, \Illuminate\Support\Carbon::parse($date));
+    }
+
+    $rolledUp = \App\Actions\Maintenance\Inventory\OrgStockMovement\RollUpOrgStockHistoriesPostCostFix::run($this->organisation);
+
+    $earlyDay = DB::table('organisation_stock_histories')
+        ->where('organisation_id', $this->organisation->id)
+        ->where('date', '2024-02-01')
+        ->exists();
+
+    expect($earlyDay)->toBeTrue()
+        ->and($rolledUp)->toBeGreaterThanOrEqual(2);
+});

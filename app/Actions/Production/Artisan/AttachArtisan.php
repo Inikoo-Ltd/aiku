@@ -11,16 +11,16 @@ namespace App\Actions\Production\Artisan;
 use App\Actions\OrgAction;
 use App\Enums\HumanResources\Employee\EmployeeStateEnum;
 use App\Models\Production\Artefact;
-use App\Models\Production\ArtefactFamily;
+use App\Models\Production\ArtefactDepartment;
 use Illuminate\Validation\Rule;
 use Illuminate\Http\RedirectResponse;
 use Lorisleiva\Actions\ActionRequest;
 
 class AttachArtisan extends OrgAction
 {
-    private Artefact|ArtefactFamily $model;
+    private Artefact|ArtefactDepartment $model;
 
-    public function handle(Artefact|ArtefactFamily $model, array $modelData): Artefact|ArtefactFamily
+    public function handle(Artefact|ArtefactDepartment $model, array $modelData): Artefact|ArtefactDepartment
     {
         $position = ((int) $model->artisans()->max('position')) + 1;
         $model->artisans()->syncWithoutDetaching([$modelData['employee_id'] => ['position' => $position]]);
@@ -57,7 +57,7 @@ class AttachArtisan extends OrgAction
         ]);
     }
 
-    public function action(Artefact|ArtefactFamily $model, array $modelData): Artefact|ArtefactFamily
+    public function action(Artefact|ArtefactDepartment $model, array $modelData): Artefact|ArtefactDepartment
     {
         $this->asAction = true;
         $this->model    = $model;
@@ -74,11 +74,11 @@ class AttachArtisan extends OrgAction
         return $this->handle($artefact, $this->validatedData);
     }
 
-    public function inArtefactFamily(ArtefactFamily $artefactFamily, ActionRequest $request): ArtefactFamily
+    public function inArtefactDepartment(ArtefactDepartment $artefactDepartment, ActionRequest $request): ArtefactDepartment
     {
-        $this->model = $artefactFamily;
-        $this->initialisationFromProduction($artefactFamily->production, $request);
+        $this->model = $artefactDepartment;
+        $this->initialisationFromProduction($artefactDepartment->production, $request);
 
-        return $this->handle($artefactFamily, $this->validatedData);
+        return $this->handle($artefactDepartment, $this->validatedData);
     }
 }
