@@ -92,6 +92,10 @@ class GetAgentUnreadMessagesSummary
     }
 
     /**
+     * A meta session is never stored as `waiting`: it is written as `active` and stays there,
+     * so an unanswered WhatsApp chat is one that is not closed and has nobody assigned. Only
+     * guest messages count, or a marketing broadcast would put thousands on the rail.
+     *
      * @return array{assigned: int, unassigned: int}
      */
     protected function whatsappCounts(ChatAgent $agent, $shopIds): array
@@ -113,7 +117,7 @@ class GetAgentUnreadMessagesSummary
             ->where('is_read', false)
             ->where('sender_type', ChatSenderTypeEnum::GUEST->value)
             ->whereHas('metaChatSession', function ($query) use ($shopIds) {
-                $query->where('status', ChatSessionStatusEnum::WAITING->value)
+                $query->where('status', '!=', ChatSessionStatusEnum::CLOSED->value)
                     ->where('is_spam', false)
                     ->whereIn('shop_id', $shopIds)
                     ->whereDoesntHave('assignments', function ($assignmentQuery) {

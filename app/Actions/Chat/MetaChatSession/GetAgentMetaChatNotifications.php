@@ -63,23 +63,28 @@ class GetAgentMetaChatNotifications
         });
     }
 
+    /**
+     * A meta session is never stored as `waiting`: it is written as `active` and stays there, so
+     * waiting is "not closed and nobody has picked it up". Matching on the status column returns
+     * nothing at all, which is why this badge stayed empty while the list beside it had rows.
+     */
     private function waitingSessions(Collection $shopIds): array
     {
-        $sessions = $this->baseQuery($shopIds)
-            ->where('status', ChatSessionStatusEnum::WAITING->value)
+        $query = $this->baseQuery($shopIds)
+            ->where('status', '!=', ChatSessionStatusEnum::CLOSED->value)
             ->whereDoesntHave('assignments', function ($assignmentQuery) {
                 $assignmentQuery->where('status', ChatAssignmentStatusEnum::ACTIVE->value);
-            })
-            ->limit(self::GROUP_LIMIT)
-            ->get();
+            });
 
-        return MetaChatSessionListResource::collection($sessions)->resolve();
+        return MetaChatSessionListResource::collection(
+            $this->withUnreadVisitorMessages($query)->limit(self::GROUP_LIMIT)->get()
+        )->resolve();
     }
 
     private function activeAssignedSessions(ChatAgent $agent, Collection $shopIds): array
     {
         $query = $this->baseQuery($shopIds)
-            ->where('status', ChatSessionStatusEnum::ACTIVE->value)
+            ->where('status', '!=', ChatSessionStatusEnum::CLOSED->value)
             ->whereHas('assignments', function ($assignmentQuery) use ($agent) {
                 $assignmentQuery->where('chat_agent_id', $agent->id)
                     ->where('status', ChatAssignmentStatusEnum::ACTIVE->value);
