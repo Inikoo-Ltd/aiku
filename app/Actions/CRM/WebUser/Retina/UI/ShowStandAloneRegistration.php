@@ -38,11 +38,9 @@ class ShowStandAloneRegistration extends IrisAction
 
         $webUser = $request->user();
 
-        $website = request()->website;
+        $website = $request->input('website');
 
         $registerPage = $website->registerPage;
-
-        $loggedIn = auth()->check();
 
         $browserTitle = null;
 
@@ -60,27 +58,30 @@ class ShowStandAloneRegistration extends IrisAction
             ],
         ];
 
+        $isCustomPage = false;
+
         if ($registerPage && $registerPage?->state == WebpageStateEnum::LIVE) {
             if (config('iris.cache.webpage.ttl') == 0) {
-                $tempWebpageData = ShowIrisWebpage::make()->getWebpageData($registerPage->id, [], $loggedIn);
+                $tempWebpageData = ShowIrisWebpage::make()->getWebpageData($registerPage->id, [], false);
             } else {
-                $key         = config('iris.cache.webpage.prefix').'_'.$request->input('website')->id.'_'.($loggedIn ? 'in' : 'out').'_'.$registerPage->id;
-                $tempWebpageData = cache()->remember($key, config('iris.cache.webpage.ttl'), function () use ($registerPage, $loggedIn) {
-                    return ShowIrisWebpage::make()->getWebpageData($registerPage->id, [], $loggedIn);
+                $key         = config('iris.cache.webpage.prefix').'_'.$website->id.'_'.('out').'_'.$registerPage->id;
+                $tempWebpageData = cache()->remember($key, config('iris.cache.webpage.ttl'), function () use ($registerPage) {
+                    return ShowIrisWebpage::make()->getWebpageData($registerPage->id, [], false);
                 });
             }
-    
-            if (Arr::get($tempWebpageData, 'status', null) !== 'not_found') {
+
+            if (Arr::get($tempWebpageData, 'status', null) === 'ok') {
                 $vueFilePath = 'RetinaWebpage';
                 $webpageData = $tempWebpageData;
 
-                $browserTitle            = Arr::get($webpageData, 'webpage_data.title', '');
+                $browserTitle = Arr::get($webpageData, 'webpage_data.title', '');
+                $isCustomPage = true;
             }
         }
 
         $response =  Inertia::render($vueFilePath, $webpageData);
 
-        if ($browserTitle) {
+        if ($isCustomPage) {
             $response = $response->withViewData([
                 'browserTitle' => $browserTitle,
             ])->toResponse(request());
@@ -93,7 +94,7 @@ class ShowStandAloneRegistration extends IrisAction
                 $response->header('X-AIKU-WEBPAGE', (string)$webpageData['webpage_id']);
             }
         }
-        
+
         return $response;
     }
 

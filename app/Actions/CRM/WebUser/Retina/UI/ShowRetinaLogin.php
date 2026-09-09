@@ -28,10 +28,9 @@ class ShowRetinaLogin
 
     public function handle(ActionRequest $request): Response|HttpResponse|JsonResponse
     {
-        $website = request()->website;
+        $website = $request->input('website');
 
         $loginPage = $website->loginPage;
-        $loggedIn = auth()->check();
 
         $browserTitle = null;
 
@@ -47,13 +46,15 @@ class ShowRetinaLogin
             ]
         ];
 
+        $isCustomPage = false;
+
         if ($loginPage && $loginPage?->state == WebpageStateEnum::LIVE) {
             if (config('iris.cache.webpage.ttl') == 0) {
-                $tempWebpageData = ShowIrisWebpage::make()->getWebpageData($loginPage->id, [], $loggedIn);
+                $tempWebpageData = ShowIrisWebpage::make()->getWebpageData($loginPage->id, [], false);
             } else {
-                $key         = config('iris.cache.webpage.prefix').'_'.$request->input('website')->id.'_'.($loggedIn ? 'in' : 'out').'_'.$loginPage->id;
-                $tempWebpageData = cache()->remember($key, config('iris.cache.webpage.ttl'), function () use ($loginPage, $loggedIn) {
-                    return ShowIrisWebpage::make()->getWebpageData($loginPage->id, [], $loggedIn);
+                $key         = config('iris.cache.webpage.prefix').'_'.$website->id.'_'.('out').'_'.$loginPage->id;
+                $tempWebpageData = cache()->remember($key, config('iris.cache.webpage.ttl'), function () use ($loginPage) {
+                    return ShowIrisWebpage::make()->getWebpageData($loginPage->id, [], false);
                 });
             }
 
@@ -61,13 +62,14 @@ class ShowRetinaLogin
                 $vueFilePath = 'RetinaWebpage';
                 $webpageData = $tempWebpageData;
 
-                $browserTitle            = Arr::get($webpageData, 'webpage_data.title', '');
+                $browserTitle = Arr::get($webpageData, 'webpage_data.title', '');
+                $isCustomPage = true;
             }
         }
 
         $response =  Inertia::render($vueFilePath, $webpageData);
 
-        if ($browserTitle) {
+        if ($isCustomPage) {
             $response = $response->withViewData([
                 'browserTitle' => $browserTitle,
             ])->toResponse(request());

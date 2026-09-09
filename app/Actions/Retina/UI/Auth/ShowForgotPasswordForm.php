@@ -24,11 +24,9 @@ class ShowForgotPasswordForm
 
     public function handle(ActionRequest $request): Response|HttpResponse|JsonResponse
     {
-        $website = request()->website;
+        $website = $request->input('website');
 
         $forgotPasswordPage = $website->forgotPasswordPage;
-
-        $loggedIn = auth()->check();
 
         $browserTitle = null;
 
@@ -39,13 +37,15 @@ class ShowForgotPasswordForm
             'status' => session('status'),
         ];
 
+        $isCustomPage = false;
+
         if ($forgotPasswordPage && $forgotPasswordPage?->state == WebpageStateEnum::LIVE) {
             if (config('iris.cache.webpage.ttl') == 0) {
-                $tempWebpageData = ShowIrisWebpage::make()->getWebpageData($forgotPasswordPage->id, [], $loggedIn);
+                $tempWebpageData = ShowIrisWebpage::make()->getWebpageData($forgotPasswordPage->id, [], false);
             } else {
-                $key         = config('iris.cache.webpage.prefix').'_'.$request->input('website')->id.'_'.($loggedIn ? 'in' : 'out').'_'.$forgotPasswordPage->id;
-                $tempWebpageData = cache()->remember($key, config('iris.cache.webpage.ttl'), function () use ($forgotPasswordPage, $loggedIn) {
-                    return ShowIrisWebpage::make()->getWebpageData($forgotPasswordPage->id, [], $loggedIn);
+                $key         = config('iris.cache.webpage.prefix').'_'.$website->id.'_'.('out').'_'.$forgotPasswordPage->id;
+                $tempWebpageData = cache()->remember($key, config('iris.cache.webpage.ttl'), function () use ($forgotPasswordPage) {
+                    return ShowIrisWebpage::make()->getWebpageData($forgotPasswordPage->id, [], false);
                 });
             }
 
@@ -53,13 +53,14 @@ class ShowForgotPasswordForm
                 $vueFilePath = 'RetinaWebpage';
                 $webpageData = $tempWebpageData;
 
-                $browserTitle            = Arr::get($webpageData, 'webpage_data.title', '');
+                $browserTitle = Arr::get($webpageData, 'webpage_data.title', '');
+                $isCustomPage = true;
             }
         }
 
         $response =  Inertia::render($vueFilePath, $webpageData);
 
-        if ($browserTitle) {
+        if ($isCustomPage) {
             $response = $response->withViewData([
                 'browserTitle' => $browserTitle,
             ])->toResponse(request());
