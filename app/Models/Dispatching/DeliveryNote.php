@@ -378,8 +378,13 @@ class DeliveryNote extends Model implements Auditable
             ]);
     }
 
+
     public function hasUnprintedLeaflets(): bool
     {
+        if (!$this->shop?->hasPackagingAndInserts()) {
+            return false;
+        }
+
         return $this->unprintedLeaflets()->exists();
     }
 

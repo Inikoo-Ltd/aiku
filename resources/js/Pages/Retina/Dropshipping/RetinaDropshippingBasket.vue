@@ -175,6 +175,12 @@ onUnmounted(() => {
 })
 const locale = inject('locale', aikuLocaleStructure)
 
+// Packaging & inserts is a per-shop setting. With it off the panel has nothing to show, so the
+// items table takes the whole row instead of leaving an empty column beside it.
+const hasPackagingPanel = computed<boolean>(
+    () => (props.packaging_panel?.packagingOptions?.length ?? 0) > 0
+)
+
 const insertsWithoutArtwork = computed<string[]>(
     () => props.packaging_panel?.insertsWithoutArtwork ?? []
 )
@@ -468,8 +474,8 @@ const onChangeInsurance = async (val: boolean) => {
     <Tabs v-if="currentTab != 'products'" :current="currentTab" :navigation="tabs?.navigation"
           @update:tab="handleTabUpdate"/>
 
-    <div class="mx-4 mt-4 grid grid-cols-1 xl:grid-cols-3 gap-4 items-start">
-      <div class="xl:col-span-2 min-w-0 mb-4 overflow-x-auto rounded-md border border-gray-200">
+    <div class="mx-4 mt-4 grid grid-cols-1 gap-4 items-start" :class="hasPackagingPanel ? 'xl:grid-cols-3' : 'xl:grid-cols-1'">
+      <div class="min-w-0 mb-4 overflow-x-auto rounded-md border border-gray-200" :class="hasPackagingPanel ? 'xl:col-span-2' : 'xl:col-span-1'">
         <component :is="component"
                    :data="props[currentTab as keyof typeof props]" :tab="currentTab"
                    :updateRoute="routes?.updateOrderRoute" :state="data?.data?.state"
@@ -554,7 +560,7 @@ const onChangeInsurance = async (val: boolean) => {
       </div>
 
       <!-- Packaging & Personalisation panel (frontend only, no order logic) -->
-      <div class="xl:col-span-1">
+      <div v-if="hasPackagingPanel" class="xl:col-span-1">
         <OrderPackagingPanel
           :accentColor="layout?.app?.theme?.[4]"
           :currencyCode="currency?.code"

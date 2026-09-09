@@ -81,7 +81,8 @@ class UpdateRetinaLeaflet extends RetinaAction
 
     public function authorize(ActionRequest $request): bool
     {
-        return $request->user()->is_root;
+        return $request->user()->is_root
+            && $request->user()->customer?->shop?->hasPackagingAndInserts();
     }
 
     public function rules(): array

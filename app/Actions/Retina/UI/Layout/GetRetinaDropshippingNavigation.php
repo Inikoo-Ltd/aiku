@@ -271,15 +271,17 @@ class GetRetinaDropshippingNavigation
 
                         ]
                     ],
-                    [
-                        'label' => __('Packaging preferences'),
-                        'icon'  => ['fal', 'fa-gift'],
-                        'root'  => 'retina.sysadmin.packaging-preferences.',
-                        'route' => [
-                            'name' => 'retina.sysadmin.packaging-preferences.show',
+                    ...($webUser->customer?->shop?->hasPackagingAndInserts() ? [
+                        [
+                            'label' => __('Packaging preferences'),
+                            'icon'  => ['fal', 'fa-gift'],
+                            'root'  => 'retina.sysadmin.packaging-preferences.',
+                            'route' => [
+                                'name' => 'retina.sysadmin.packaging-preferences.show',
 
-                        ]
-                    ],
+                            ]
+                        ],
+                    ] : []),
                     [
                         'label' => __('History'),
                         'icon'  => ['fal', 'fa-history'],

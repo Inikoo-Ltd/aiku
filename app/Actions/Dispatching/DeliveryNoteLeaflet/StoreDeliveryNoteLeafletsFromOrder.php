@@ -23,6 +23,10 @@ class StoreDeliveryNoteLeafletsFromOrder
 
     public function handle(DeliveryNote $deliveryNote, Order $order): void
     {
+        if (!$order->shop?->hasPackagingAndInserts()) {
+            return;
+        }
+
         $familyCode = $order->packaging?->family_code;
 
         foreach ($order->insert_types ?? [] as $leafletId) {

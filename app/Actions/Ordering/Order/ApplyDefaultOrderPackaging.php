@@ -21,6 +21,10 @@ class ApplyDefaultOrderPackaging
 
     public function handle(Order $order): Order
     {
+        if (!$order->shop?->hasPackagingAndInserts()) {
+            return $order;
+        }
+
         if ($order->insert_types !== null) {
             return $order;
         }

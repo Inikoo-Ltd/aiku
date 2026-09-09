@@ -25,7 +25,8 @@ class UpdateRetinaOrderPackaging extends RetinaAction
     {
         $order = $request->route('order');
 
-        return $order->customer_id == $this->customer->id;
+        return $order->customer_id == $this->customer->id
+            && $order->shop?->hasPackagingAndInserts();
     }
 
     public function rules(): array

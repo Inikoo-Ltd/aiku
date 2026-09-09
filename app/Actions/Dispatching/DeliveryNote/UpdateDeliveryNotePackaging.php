@@ -47,6 +47,15 @@ class UpdateDeliveryNotePackaging extends OrgAction
 
     public function afterValidator(Validator $validator): void
     {
+        if (!$this->deliveryNote->shop?->hasPackagingAndInserts()) {
+            $validator->errors()->add(
+                'packaging_id',
+                __('Packaging & inserts is not enabled for this shop.')
+            );
+
+            return;
+        }
+
         if ($this->deliveryNote->state !== DeliveryNoteStateEnum::HANDLING) {
             $validator->errors()->add(
                 'packaging_id',

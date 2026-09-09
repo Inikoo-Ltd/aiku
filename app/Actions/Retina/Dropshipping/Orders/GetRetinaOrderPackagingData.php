@@ -37,6 +37,18 @@ class GetRetinaOrderPackagingData
      */
     public function handle(Shop $shop, Customer $customer, Order $order): array
     {
+        if (!$shop->hasPackagingAndInserts()) {
+            return [
+                'packagingOptions'        => [],
+                'selectedPackaging'       => null,
+                'leafletOptions'          => [],
+                'defaultLeafletsByFamily' => [],
+                'personalisedMessage'     => '',
+                'customerLeaflets'        => [],
+                'insertsWithoutArtwork'   => [],
+            ];
+        }
+
         $packagings = Packaging::where('shop_id', $shop->id)
             ->where('state', PackagingStateEnum::ACTIVE)
             ->orderBy('position')

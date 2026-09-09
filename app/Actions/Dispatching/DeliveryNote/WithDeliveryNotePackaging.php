@@ -21,6 +21,10 @@ trait WithDeliveryNotePackaging
      */
     protected function effectivePackaging(DeliveryNote $deliveryNote): ?Packaging
     {
+        if (!$deliveryNote->shop?->hasPackagingAndInserts()) {
+            return null;
+        }
+
         return $deliveryNote->packaging ?? $deliveryNote->orders()->first()?->packaging;
     }
 
@@ -61,7 +65,7 @@ trait WithDeliveryNotePackaging
     {
         // The customer already paid for a specific packaging family, so the warehouse may
         // only swap to another size within that exact same family.
-        if (!$familyCode) {
+        if (!$familyCode || !$deliveryNote->shop?->hasPackagingAndInserts()) {
             return [];
         }
 

@@ -17,6 +17,10 @@ trait WithDeliveryNoteLeaflets
     /** @return array<int, array{id: int, name: string, type: string, copies: int, state: string, state_label: string, has_media: bool}> */
     protected function getLeaflets(DeliveryNote $deliveryNote): array
     {
+        if (!$deliveryNote->shop?->hasPackagingAndInserts()) {
+            return [];
+        }
+
         return $deliveryNote->leaflets
             ->map(fn (DeliveryNoteLeaflet $leaflet) => [
                 'id'          => $leaflet->id,
@@ -33,9 +37,9 @@ trait WithDeliveryNoteLeaflets
     /** @return array{total: int, printed: int, all_printed: bool, label: string} */
     protected function getPrintStatus(DeliveryNote $deliveryNote): array
     {
-        $leaflets = $deliveryNote->leaflets->filter(
-            fn (DeliveryNoteLeaflet $leaflet) => $leaflet->isPrintable()
-        );
+        $leaflets = $deliveryNote->shop?->hasPackagingAndInserts()
+            ? $deliveryNote->leaflets->filter(fn (DeliveryNoteLeaflet $leaflet) => $leaflet->isPrintable())
+            : collect();
 
         $total   = $leaflets->count();
         $printed = $leaflets->whereIn('state', [

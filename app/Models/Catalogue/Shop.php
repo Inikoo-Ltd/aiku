@@ -16,6 +16,7 @@ use App\Enums\Catalogue\Review\ReviewContextEnum;
 use App\Enums\Catalogue\Shop\ShopEngineEnum;
 use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
+use Illuminate\Support\Arr;
 use App\Models\Accounting\CreditTransaction;
 use App\Models\Accounting\Invoice;
 use App\Models\Accounting\OrgPaymentServiceProvider;
@@ -858,5 +859,11 @@ class Shop extends Model implements HasMedia, Auditable
     public function testEmailRecipients(): HasMany
     {
         return $this->hasMany(TestEmailRecipient::class);
+    }
+
+    public function hasPackagingAndInserts(): bool
+    {
+        return $this->type === ShopTypeEnum::DROPSHIPPING
+            && (bool) Arr::get($this->settings, 'packaging_and_inserts.enabled', false);
     }
 }

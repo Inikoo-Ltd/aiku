@@ -21,6 +21,10 @@ class GetOrderInsertsWithoutArtwork
      */
     public function handle(Order $order): array
     {
+        if (!$order->shop?->hasPackagingAndInserts()) {
+            return [];
+        }
+
         $leafletIds = array_filter((array) ($order->insert_types ?? []));
 
         if (!$leafletIds) {

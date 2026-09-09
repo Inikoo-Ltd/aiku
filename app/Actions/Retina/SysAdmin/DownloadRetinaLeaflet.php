@@ -29,7 +29,8 @@ class DownloadRetinaLeaflet extends RetinaAction
 
     public function authorize(ActionRequest $request): bool
     {
-        return $request->user()->is_root;
+        return $request->user()->is_root
+            && $request->user()->customer?->shop?->hasPackagingAndInserts();
     }
 
     public function asController(ModelHasLeaflet $customerLeaflet, ActionRequest $request): StreamedResponse

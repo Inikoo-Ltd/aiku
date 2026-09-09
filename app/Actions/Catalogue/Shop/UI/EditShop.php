@@ -594,6 +594,19 @@ class EditShop extends OrgAction
                 ],
 
                 $shop->type === ShopTypeEnum::DROPSHIPPING ? [
+                    'label'  => __('Packaging & Inserts'),
+                    'icon'   => 'fa-light fa-box-open',
+                    'fields' => [
+                        'packaging_and_inserts_enabled' => [
+                            'type'        => 'toggle',
+                            'label'       => __('Enable packaging & inserts'),
+                            'value'       => $shop->hasPackagingAndInserts(),
+                            'information' => __('Lets customers choose packaging and add printed inserts to an order. While off, none of it is shown or required: no packaging preferences, no insert add-ons at checkout, no packaging or insert columns in the warehouse, and delivery notes are never held back for unprinted inserts.'),
+                        ],
+                    ],
+                ] : [],
+
+                $shop->type === ShopTypeEnum::DROPSHIPPING ? [
                     'label'  => __('Ebay Redirect Key'),
                     'icon'   => 'fa-light fa-key',
                     'fields' => [

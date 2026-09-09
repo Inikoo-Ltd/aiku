@@ -141,7 +141,7 @@ class IndexDeliveryNoteItems extends OrgAction
                 $table->column(key: 'packaging', label: __('Packaging'), canBeHidden: false);
             }
 
-            if ($parent->leaflets->isNotEmpty()) {
+            if ($parent->shop?->hasPackagingAndInserts() && $parent->leaflets->isNotEmpty()) {
                 $table->column(key: 'leaflets', label: __('Inserts to print'), canBeHidden: false);
                 $table->column(key: 'print_status', label: __('Print all inserts'), canBeHidden: false);
             }
