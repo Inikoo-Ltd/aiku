@@ -50,7 +50,7 @@ class AddRetinaDeliveryAddressToCustomer extends RetinaAction
     public function rules(): array
     {
         return [
-            'delivery_address'         => ['required', new ValidAddress()],
+            'delivery_address'         => ['required', new ValidAddress(requireFullAddress: true)],
         ];
     }
 

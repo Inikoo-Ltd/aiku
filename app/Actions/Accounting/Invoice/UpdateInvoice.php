@@ -338,9 +338,9 @@ class UpdateInvoice extends OrgAction
             'date'                         => ['sometimes', 'date'],
             'tax_liability_at'             => ['sometimes', 'date'],
             'footer'                       => ['sometimes', 'string'],
-            'billing_address'              => ['sometimes', 'required', new ValidAddress()],
-            'invoice_billing_address'      => ['sometimes', 'required', new ValidAddress()], // TODO: consolidate(rename) this fields names after aurora migration
-            'delivery_address'             => ['sometimes', 'required', new ValidAddress()],
+            'billing_address'              => ['sometimes', 'required', new ValidAddress(requireFullAddress: true)],
+            'invoice_billing_address'      => ['sometimes', 'required', new ValidAddress(requireFullAddress: true)], // TODO: consolidate(rename) this fields names after aurora migration
+            'delivery_address'             => ['sometimes', 'required', new ValidAddress(requireFullAddress: true)],
             'sales_channel_id'             => [
                 'sometimes',
                 'required',

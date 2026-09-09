@@ -82,7 +82,7 @@ class UpdateRetinaProfile extends RetinaAction
         if ($this->webUser->is_root) {
             $rules['company_name']    = ['sometimes', 'nullable', 'string', 'max:255'];
             $rules['phone']           = ['sometimes', 'nullable', new Phone()];
-            $rules['contact_address'] = ['sometimes', 'required', new ValidAddress()];
+            $rules['contact_address'] = ['sometimes', 'required', new ValidAddress(requireFullAddress: true)];
         }
 
 

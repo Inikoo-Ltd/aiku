@@ -43,7 +43,7 @@ class StoreDeliveryNoteAddress extends OrgAction
     public function rules(): array
     {
         return [
-            'address' => ['required', new ValidAddress()],
+            'address' => ['required', new ValidAddress(requireFullAddress: true)],
         ];
     }
 

@@ -58,7 +58,7 @@ class RegisterRetinaFulfilmentCustomer extends RetinaAction
                 ),
             ],
             'phone'                    => ['required', 'max:255'],
-            'contact_address'          => ['required', new ValidAddress()],
+            'contact_address'          => ['required', new ValidAddress(requireFullAddress: true)],
 
             'password'                 =>
                 [

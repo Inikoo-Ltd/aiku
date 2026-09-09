@@ -56,7 +56,7 @@ class UpdateDeliveryNoteFixedAddress extends OrgAction
     {
         return [
 
-            'address' => ['required', new ValidAddress()],
+            'address' => ['required', new ValidAddress(requireFullAddress: true)],
 
         ];
     }
