@@ -50,7 +50,7 @@ class UpdateOrderBillingAddress extends OrgAction
     public function rules(): array
     {
         return [
-            'address' => ['required', new ValidAddress(requireFullAddress: true)],
+            'address' => ['required', new ValidAddress(requireFullAddress: !$this->asAction)],
         ];
     }
 

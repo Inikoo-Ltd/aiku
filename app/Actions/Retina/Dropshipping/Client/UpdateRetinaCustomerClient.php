@@ -49,7 +49,7 @@ class UpdateRetinaCustomerClient extends RetinaAction
         'company_name'   => ['sometimes', 'nullable', 'string', 'max:255'],
         'email'          => ['sometimes', 'nullable', 'email'],
         'phone'          => ['sometimes', 'nullable', new Phone()],
-        'address'        => ['sometimes', new ValidAddress(requireFullAddress: true)],
+        'address'        => ['sometimes', new ValidAddress(requireFullAddress: !$this->asAction)],
         'status'         => ['sometimes', 'boolean'],
         ];
     }

@@ -42,7 +42,7 @@ class StoreShopAddress extends OrgAction
     {
         return [
 
-            'address' => ['required', new ValidAddress()],
+            'address' => ['required', new ValidAddress(requireFullAddress: !$this->asAction)],
             'type'    => ['required', Rule::in(['legal', 'collection'])],
         ];
     }

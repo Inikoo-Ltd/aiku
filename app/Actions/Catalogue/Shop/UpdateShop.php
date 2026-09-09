@@ -753,8 +753,8 @@ class UpdateShop extends OrgAction
             'country_id'                                              => ['sometimes', 'required', 'exists:countries,id'],
             'language_id'                                             => ['sometimes', 'required', 'exists:languages,id'],
             'timezone_id'                                             => ['sometimes', 'required', 'exists:timezones,id'],
-            'address'                                                 => ['sometimes', 'required', new ValidAddress()],
-            'collection_address'                                      => ['sometimes', 'required', new ValidAddress()],
+            'address'                                                 => ['sometimes', 'required', new ValidAddress(requireFullAddress: !$this->asAction)],
+            'collection_address'                                      => ['sometimes', 'required', new ValidAddress(requireFullAddress: !$this->asAction)],
             'state'                                                   => $this->asAction
                 ? ['sometimes', Rule::enum(ShopStateEnum::class)]
                 : ['prohibited'],

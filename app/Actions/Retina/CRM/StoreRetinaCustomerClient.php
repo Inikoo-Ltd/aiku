@@ -60,7 +60,7 @@ class StoreRetinaCustomerClient extends RetinaAction
 
         /** Typed by a person in retina, so the address can be asked for in full; the same base rules serve
          * the channel importers, where a partial address must never fail an order that is already paid */
-        $rules['address'] = ['required', new ValidAddress(requireFullAddress: true)];
+        $rules['address'] = ['required', new ValidAddress(requireFullAddress: !$this->asAction)];
 
         return $rules;
     }

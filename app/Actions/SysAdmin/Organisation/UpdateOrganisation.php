@@ -260,7 +260,7 @@ class UpdateOrganisation extends OrgAction
             'customer_notification_access_id'       => ['sometimes', 'string', 'nullable'],
             'customer_notification_access_key'      => ['sometimes', 'string', 'nullable'],
             'customer_notification_region'          => ['sometimes', 'nullable', Rule::enum(SesRegionEnum::class)],
-            'address'                               => ['sometimes', 'required', new ValidAddress()],
+            'address'                               => ['sometimes', 'required', new ValidAddress(requireFullAddress: !$this->asAction)],
             'language_id'                           => ['sometimes', 'exists:languages,id'],
             'timezone_id'                           => ['sometimes', 'exists:timezones,id'],
             'currency_id'                           => ['sometimes', 'exists:currencies,id'],

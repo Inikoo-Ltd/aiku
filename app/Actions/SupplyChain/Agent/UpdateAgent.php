@@ -123,7 +123,7 @@ class UpdateAgent extends OrgAction
             'contact_name' => ['sometimes', 'nullable', 'string', 'max:255'],
             'email'        => ['sometimes', 'nullable', 'email'],
             'phone'        => ['sometimes', 'nullable', new Phone()],
-            'address'      => ['sometimes', 'required', new ValidAddress()],
+            'address'      => ['sometimes', 'required', new ValidAddress(requireFullAddress: !$this->asAction)],
             'currency_id'  => ['sometimes', 'required', 'exists:currencies,id'],
             'country_id'   => ['sometimes', 'required', 'exists:countries,id'],
             'timezone_id'  => ['sometimes', 'required', 'exists:timezones,id'],

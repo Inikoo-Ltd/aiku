@@ -69,7 +69,7 @@ class UpdateOrderFixedAddress extends OrgAction
     {
         return [
 
-            'address' => ['required', new ValidAddress(requireFullAddress: true)],
+            'address' => ['required', new ValidAddress(requireFullAddress: !$this->asAction)],
             'type'    => ['required', Rule::in(['billing', 'delivery'])],
 
         ];

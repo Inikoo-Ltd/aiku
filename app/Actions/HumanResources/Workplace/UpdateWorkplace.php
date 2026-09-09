@@ -74,7 +74,7 @@ class UpdateWorkplace extends OrgAction
             ],
             'type'        => ['sometimes', Rule::Enum(WorkplaceTypeEnum::class)],
             'timezone_id' => ['sometimes'],
-            'address'     => ['sometimes', 'required', new ValidAddress()]
+            'address'     => ['sometimes', 'required', new ValidAddress(requireFullAddress: !$this->asAction)]
         ];
     }
 

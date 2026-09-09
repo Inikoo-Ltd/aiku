@@ -74,7 +74,7 @@ class UpdateWarehouse extends OrgAction
             'allow_stock'        => ['sometimes', 'required', 'boolean'],
             'allow_fulfilment'   => ['sometimes', 'required', 'boolean'],
             'allow_dropshipping' => ['sometimes', 'required', 'boolean'],
-            'address'            => ['sometimes', 'required', new ValidAddress()],
+            'address'            => ['sometimes', 'required', new ValidAddress(requireFullAddress: !$this->asAction)],
 
         ];
 

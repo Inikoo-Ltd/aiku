@@ -134,7 +134,7 @@ class UpdateSupplier extends OrgAction
             'company_name'    => ['sometimes', 'nullable', 'string', 'max:255'],
             'email'           => ['sometimes', 'nullable', 'email'],
             'phone'           => ['sometimes', 'nullable', new Phone()],
-            'address'         => ['sometimes', 'required', new ValidAddress()],
+            'address'         => ['sometimes', 'required', new ValidAddress(requireFullAddress: !$this->asAction)],
             'currency_id'     => ['sometimes', 'required', 'exists:currencies,id'],
             'image'           => ['sometimes', 'nullable', File::image()->max(12 * 1024)],
         ];
