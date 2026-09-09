@@ -14,7 +14,6 @@ use App\Actions\Catalogue\Product\Hydrators\ProductHydrateHasLiveWebpage;
 use App\Actions\OrgAction;
 use App\Actions\Web\Redirect\StoreRedirect;
 use App\Actions\Web\Webpage\Hydrators\WebpageHydrateRedirects;
-use App\Actions\Web\Webpage\Luigi\DeleteReindexWebpageLuigiData;
 use App\Actions\Web\Website\HydrateRedirect;
 use App\Enums\Web\Redirect\RedirectTypeEnum;
 use App\Enums\Web\Webpage\WebpageStateEnum;
@@ -39,8 +38,6 @@ class DeleteWebpage extends OrgAction
     public function handle(Webpage $webpage, bool $forceDelete = false, array $modelData = []): Webpage
     {
         $product = $webpage->model instanceof Product ? $webpage->model : null;
-
-        DeleteReindexWebpageLuigiData::dispatch($webpage)->delay(5);
 
         DB::table('webpages')->where('redirect_webpage_id', $webpage->id)->update(['redirect_webpage_id' => null]);
 

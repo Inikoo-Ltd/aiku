@@ -511,7 +511,6 @@ use App\Actions\Web\WebLayoutTemplate\DeleteWebLayoutTemplate;
 use App\Actions\Web\WebLayoutTemplate\StoreWebLayoutTemplate;
 use App\Actions\Web\Webpage\BreakWebpageCache;
 use App\Actions\Web\Webpage\DeleteWebpage;
-use App\Actions\Web\Webpage\Luigi\ReindexWebpageLuigi;
 use App\Actions\Web\Webpage\PublishWebpage;
 use App\Actions\Web\Webpage\ReorderWebBlocks;
 use App\Actions\Web\Webpage\SetWebpageOfflineBulk;
@@ -522,7 +521,6 @@ use App\Actions\Web\Website\AutosaveWebsiteMarginal;
 use App\Actions\Web\Website\BreakWebsiteCache;
 use App\Actions\Web\Website\LaunchWebsite;
 use App\Actions\Web\Website\LlmsTxt\StoreLlmsTxt;
-use App\Actions\Web\Website\Luigi\ReindexWebsiteLuigiAsync;
 use App\Actions\Web\Website\PublishWebsiteMarginal;
 use App\Actions\Web\Website\PublishWebsiteProductTemplate;
 use App\Actions\Web\Website\StoreWebsite;
@@ -1489,9 +1487,6 @@ Route::post('webpage/{webpage:id}/redirect', StoreRedirectFromWebpage::class)->n
 
 Route::post('website/{website:id}/break-cache', BreakWebsiteCache::class)->name('website.break_cache')->withoutScopedBindings();
 Route::post('website/{website:id}/redirect', StoreRedirectFromWebsite::class)->name('website.redirect.store')->withoutScopedBindings();
-Route::post('website/{website:id}/reindex-luigi', ReindexWebsiteLuigiAsync::class)->name('website_luigi.reindex')->withoutScopedBindings();
-
-Route::post('webpage/{webpage:id}/reindex-luigi', ReindexWebpageLuigi::class)->name('webpage_luigi.reindex')->withoutScopedBindings();
 
 Route::delete('/shipment/{shipment:id}', DeleteShipment::class)->name('shipment.delete');
 Route::patch('snapshot/{snapshot:id}/update', UpdateSnapshot::class)->name('snapshot.update');

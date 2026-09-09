@@ -36,7 +36,6 @@ use App\Actions\Web\Redirect\StoreRedirectFromWebpage;
 use App\Actions\Web\Webpage\HydrateWebpage;
 use App\Actions\Web\Webpage\Iris\ShowIrisRobotsTxt;
 use App\Actions\Web\Webpage\Iris\ShowIrisWebpage;
-use App\Actions\Web\Webpage\Luigi\ReindexWebpageLuigiData;
 use App\Actions\Web\Webpage\ProcessWebpageTimeSeriesRecords;
 use App\Actions\Web\Webpage\StoreWebpage;
 use App\Actions\Web\Webpage\UpdateWebpage;
@@ -136,11 +135,6 @@ beforeEach(function () {
         [resource_path('js/Pages/Grp')]
     );
     actingAs($this->user);
-
-    ReindexWebpageLuigiData::shouldRun();
-    ReindexWebpageLuigiData::mock()
-        ->shouldReceive('getJobUniqueId')
-        ->andReturn(1);
 
     $this->artisan('group:seed_aiku_scoped_sections')->assertExitCode(0);
 });
@@ -1763,12 +1757,6 @@ it('creates ruleset if none of zone kind exists', function () {
     expect($result['result']['id'])->toBe('new_zone_ruleset_id');
 });
 
-test('luigi object from blog webpage without model', function (array $cat) {
-    $object = (new ReindexWebpageLuigiData())->getObjectFromWebpage($cat['blogWebpage']);
-
-    expect($object['type'])->toBe('news')
-        ->and($object['fields']['slug'])->toBe('webpage-'.$cat['blogWebpage']->slug);
-})->depends('create catalogue webpages');
 
 /*
  * Folded in from its own file, which restored the whole database in beforeEach rather than beforeAll

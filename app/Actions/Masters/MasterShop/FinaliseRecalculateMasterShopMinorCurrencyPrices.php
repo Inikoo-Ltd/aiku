@@ -9,7 +9,6 @@
 namespace App\Actions\Masters\MasterShop;
 
 use App\Actions\Ordering\Order\RecalculateTotalsOrdersInBasket;
-use App\Actions\Web\Webpage\Luigi\ReindexWebpageLuigiData;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Web\Crawl\CrawlTriggerEnum;
 use App\Models\Catalogue\Product;
@@ -68,15 +67,8 @@ class FinaliseRecalculateMasterShopMinorCurrencyPrices
 
         Log::info("price-finalize [$currencyCode] breaking cache");
         RecalculateMasterShopMinorCurrencyPrices::breakWebsitesCache($affectedShops, CrawlTriggerEnum::WEBSITE_UPDATE);
-        Log::info("price-finalize [$currencyCode] cache broken, dispatching luigi");
 
-        Product::whereIn('shop_id', $affectedShops->pluck('id'))
-            ->whereNotNull('webpage_id')
-            ->pluck('webpage_id')
-            ->unique()
-            ->each(fn ($webpageID) => ReindexWebpageLuigiData::dispatch($webpageID)->delay(60));
 
-        Log::info("price-finalize [$currencyCode] luigi dispatched, scout reindex");
         Product::whereIn('shop_id', $affectedShops->pluck('id'))->searchable();
         Log::info("price-finalize [$currencyCode] scout queued, repricing baskets");
 

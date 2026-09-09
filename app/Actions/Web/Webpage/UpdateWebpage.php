@@ -13,7 +13,6 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\UI\WithImageSeo;
 use App\Actions\Traits\WithActionUpdate;
-use App\Actions\Web\Webpage\Luigi\DeleteReindexWebpageLuigiData;
 use App\Actions\Web\Webpage\Traits\WithWebpageHydrators;
 use App\Actions\Catalogue\Product\BreakProductInWebpagesCache;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateHasLiveWebpage;
@@ -161,7 +160,6 @@ class UpdateWebpage extends OrgAction
             $this->dispatchWebpageHydrators($webpage);
         }
 
-        DeleteReindexWebpageLuigiData::dispatch($webpage)->delay(5);
         BreakWebpageCache::run($webpage);
         BreakProductInWebpagesCache::make()->breakCache($webpage);
         return $webpage;

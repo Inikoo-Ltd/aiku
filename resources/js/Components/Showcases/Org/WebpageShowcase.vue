@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch, computed } from 'vue'
+import { ref, watch } from 'vue'
 import BrowserView from '@/Components/Pure/BrowserView.vue'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 import ToggleSwitch from 'primevue/toggleswitch'
@@ -20,7 +20,6 @@ import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.
 import { trans } from "laravel-vue-i18n"
 import { Message } from 'primevue'
 import { router } from "@inertiajs/vue3"
-import InformationIcon from '@/Components/Utils/InformationIcon.vue'
 import SearchInWebsiteAvailabilityChecklist from '@/Components/Utils/SearchInWebsiteAvailabilityChecklist.vue'
 
 library.add(faUser, faUserSlash, faDesktop, faTabletAlt, faMobileAlt, faGlobe, faLink, faSearch, faFragile)
@@ -63,16 +62,6 @@ const screenMode = ref<'desktop' | 'tablet' | 'mobile'>('desktop')
 const isIframeLoading = ref(true)
 const _iframe = ref<HTMLIFrameElement | null>(null)
 
-/* const iframeSrc = route('grp.websites.preview', [
-  route().params['website'],
-  route().params['webpage'],
-  {
-    organisation: route().params['organisation'],
-    shop: route().params['shop'],
-    fulfilment: route().params['fulfilment']
-  }
-]) */
-
 const sendToIframe = (data: any) => {
   _iframe.value?.contentWindow?.postMessage(data, '*')
 }
@@ -86,14 +75,6 @@ const screenModeOptions = [
   { label: 'Tablet', value: 'tablet', icon: ['fal', 'tablet-alt'] },
   { label: 'Mobile', value: 'mobile', icon: ['fal', 'mobile-alt'] }
 ]
-
-// Section: Button reindex website search
-// const isAbleReindex = computed(() => {
-//   const lastReindexed30Minutes = new Date(props.data?.luigi_data.last_reindexed)
-//   lastReindexed30Minutes.setMinutes(lastReindexed30Minutes.getMinutes() + 30)
-
-//   return lastReindexed30Minutes < new Date()
-// })
 
 const visitRedirect = () => {
   router.visit(route('grp.org.shops.show.web.webpages.show', {
@@ -202,27 +183,6 @@ const visitRedirect = () => {
             <div v-if="data?.search_in_website_availability" class="mt-3 border-t border-gray-200 pt-3">
                 <SearchInWebsiteAvailabilityChecklist :availability="data?.search_in_website_availability" />
             </div>
-
-            <!-- <ButtonWithLink v-if="data?.luigi_data?.luigisbox_tracker_id"
-              :routeTarget="{
-                name: 'grp.models.webpage_luigi.reindex',
-                parameters: {
-                  webpage: data?.id
-                }
-              }" icon="fal fa-search" method="post"
-              :type="data?.luigi_data?.luigisbox_private_key ? 'tertiary' : 'warning'" full>
-              <template #label>
-                <span class="text-xs">
-                  {{ trans('Reindex Webpage Search') }}
-                </span>
-              </template>
-              <template #iconRight>
-                <div v-if="!data?.luigi_data?.luigisbox_private_key" v-tooltip="trans('Please input Luigi Private Key do start reindexing')"
-                  class="text-amber-500">
-                  <FontAwesomeIcon icon="fal fa-exclamation-triangle" class="" fixed-width aria-hidden="true" />
-                </div>
-              </template>
-            </ButtonWithLink> -->
           </div>
         </div>
       </div>

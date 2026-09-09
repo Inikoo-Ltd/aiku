@@ -9,7 +9,6 @@ namespace App\Actions\Maintenance\Catalogue;
 
 use App\Actions\Helpers\Translations\Translate;
 use App\Actions\Web\Webpage\BreakWebpageCache;
-use App\Actions\Web\Webpage\Luigi\ReindexWebpageLuigiData;
 use App\Models\Catalogue\Collection as CatalogueCollection;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
@@ -250,7 +249,6 @@ class RepairEscapedDescriptions
         }
 
         BreakWebpageCache::dispatch($webpage, true);
-        ReindexWebpageLuigiData::dispatch($webpage->id)->delay(60);
     }
 
     public string $commandSignature = 'repair:escaped_descriptions {--apply : Persist the changes, otherwise only report} {--retranslate : Regenerate fields that cannot be unpicked from their English source} {--driver= : Translation driver, defaults to the configured default}';

@@ -29,7 +29,6 @@ use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Traits\WithMasterAssetTradeUnits;
 use App\Actions\Web\Webpage\CloseWebpage;
-use App\Actions\Web\Webpage\Luigi\ReindexWebpageLuigiData;
 use App\Actions\Web\Webpage\ReopenWebpage;
 use App\Actions\Web\Webpage\UpdateWebpage;
 use App\Enums\Catalogue\Product\ProductStateEnum;
@@ -316,16 +315,7 @@ class UpdateProduct extends OrgAction
             'price',
         ];
 
-        if (!$this->bulkPriceUpdate
-            && $product->webpage
-            && (Arr::hasAny(
-                $changed,
-                $fieldsUsedInLuigi
-            )
-                || $isInStock != $oldIsInStock)
-        ) {
-            ReindexWebpageLuigiData::dispatch($product->webpage->id)->delay(60);
-        }
+
 
         $fieldsUsedInWebpages = array_merge(
             $fieldsUsedInLuigi,

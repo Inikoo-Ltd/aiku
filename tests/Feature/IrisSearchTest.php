@@ -234,7 +234,6 @@ test('luigi actions skip websites on internal search', function () {
     expect($this->website->refresh()->usesLuigiSearch())->toBeFalse();
 
     $webpage = \App\Models\Web\Webpage::where('website_id', $this->website->id)->first();
-    $result  = \App\Actions\Web\Webpage\Luigi\ReindexWebpageLuigiData::run($webpage->id);
     expect($result['status'])->toBe('skipped');
 });
 

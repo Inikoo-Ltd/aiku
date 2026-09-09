@@ -10,7 +10,6 @@ namespace App\Actions\Maintenance\Masters;
 use App\Actions\Catalogue\Product\UpdateProduct;
 use App\Actions\Masters\MasterShop\RecalculateMasterShopMinorCurrencyPrices;
 use App\Actions\Ordering\Order\RecalculateTotalsOrdersInBasket;
-use App\Actions\Web\Webpage\Luigi\ReindexWebpageLuigiData;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Web\Crawl\CrawlTriggerEnum;
 use App\Models\Catalogue\Product;
@@ -84,7 +83,7 @@ class SyncMasterChildPricesWhereUnambiguous
 
     /**
      * Products are written with UpdateProduct::$bulkPriceUpdate, which suppresses the per-product
-     * cache break, Luigi/Scout reindex and basket recalculation so a run of this size does not fire
+     * cache break, Scout reindex and basket recalculation so a run of this size does not fire
      * one varnish ban per product. Those have to happen once at the end instead, for the shops that
      * actually changed - same closing sequence as FinaliseRecalculateMasterShopMinorCurrencyPrices.
      */
@@ -96,13 +95,6 @@ class SyncMasterChildPricesWhereUnambiguous
 
         $command?->info('Breaking website caches for '.$shops->count().' shop(s)');
         RecalculateMasterShopMinorCurrencyPrices::breakWebsitesCache($shops, CrawlTriggerEnum::WEBSITE_UPDATE);
-
-        $command?->info('Dispatching Luigi reindex');
-        Product::whereIn('shop_id', $shops->pluck('id'))
-            ->whereNotNull('webpage_id')
-            ->pluck('webpage_id')
-            ->unique()
-            ->each(fn ($webpageID) => ReindexWebpageLuigiData::dispatch($webpageID)->delay(60));
 
         $command?->info('Queueing Scout reindex');
         Product::whereIn('shop_id', $shops->pluck('id'))->searchable();
