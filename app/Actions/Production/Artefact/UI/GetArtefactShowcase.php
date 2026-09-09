@@ -34,6 +34,14 @@ class GetArtefactShowcase
                 'name'       => 'grp.models.production.artefacts.update',
                 'parameters' => [$artefact->production_id, $artefact->id]
             ],
+            'label_sheet'       => [
+                'route' => [
+                    'name'       => 'grp.models.artefact.label_sheet',
+                    'parameters' => ['artefact' => $artefact->id]
+                ],
+                'batch_code'  => $this->getPlaceholderBatchCode($artefact),
+                'expiry_date' => $this->getPlaceholderExpiryDate(),
+            ],
             'trade_unit' => $artefact->tradeUnit ? [
                 'id'   => $artefact->tradeUnit->id,
                 'code' => $artefact->tradeUnit->code,
@@ -53,5 +61,21 @@ class GetArtefactShowcase
                 'task_work_cost'     => $task->task_work_cost,
             ]),
         ];
+    }
+
+    /**
+     * Artefacts have no batch code column yet, this is the stand in until the real one is stored.
+     */
+    private function getPlaceholderBatchCode(Artefact $artefact): string
+    {
+        return strtoupper($artefact->code).'-'.now()->format('ymd');
+    }
+
+    /**
+     * Artefacts have no expiry date column yet, this is the stand in until the real one is stored.
+     */
+    private function getPlaceholderExpiryDate(): string
+    {
+        return now()->addYear()->format('d/m/Y');
     }
 }
