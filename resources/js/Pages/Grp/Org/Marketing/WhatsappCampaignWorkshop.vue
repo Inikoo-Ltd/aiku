@@ -96,6 +96,12 @@ const tagsDiffer = (a: string[] = [], b: string[] = []) => {
     return left.length !== right.length || left.some((tag, index) => tag !== right[index])
 }
 
+/* Recipients are picked against the stored template, so the picker opens on what the server
+   actually holds: templateId moves as soon as the user chooses, which is a step ahead of the
+   save and a step behind it again when the save fails. */
+const savedTemplateId = ref<number | null>(props.campaign.meta_message_template_id)
+const isSavingTemplate = ref(false)
+
 const pendingTemplateId = ref<number | null>(null)
 const isConfirmingReset = ref(false)
 const isResettingRecipients = ref(false)
@@ -110,10 +116,17 @@ const selectKey = ref(0)
    never agreed to lose. */
 const applyTemplate = async (value: number | null, resetRecipients = false) => {
     templateId.value = value
+    isSavingTemplate.value = true
 
     await persist({ meta_message_template_id: value })
 
-    if (!resetRecipients || saveError.value) return
+    isSavingTemplate.value = false
+
+    if (saveError.value) return
+
+    savedTemplateId.value = value
+
+    if (!resetRecipients) return
 
     isResettingRecipients.value = true
 
@@ -296,18 +309,18 @@ const confirmTemplateChange = async () => {
                     </div>
                     <ButtonWithLink
                         v-if="isEditable"
-                        :routeTarget="templateId ? recipientsRoute : undefined"
+                        :routeTarget="savedTemplateId ? recipientsRoute : undefined"
                         :label="trans('Edit')"
                         type="tertiary"
                         size="xs"
                         icon="fal fa-pencil"
-                        :disabled="!templateId"
-                        :loading="isResettingRecipients"
-                        :tooltip="templateId ? undefined : trans('Choose a template first')"
+                        :disabled="!savedTemplateId"
+                        :loading="isResettingRecipients || isSavingTemplate"
+                        :tooltip="savedTemplateId ? undefined : trans('Choose a template first')"
                         class="shrink-0" />
                 </div>
 
-                <p v-if="isEditable && !templateId" class="mt-2 text-xs text-gray-500">
+                <p v-if="isEditable && !savedTemplateId" class="mt-2 text-xs text-gray-500">
                     {{ trans("A template's merge tags decide who can be reached, so recipients are chosen after it.") }}
                 </p>
 
