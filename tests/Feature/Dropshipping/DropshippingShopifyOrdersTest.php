@@ -656,6 +656,7 @@ test('installing the app registers the uninstall webhook, reads the store and cr
             ->push(shopifyShopReply([shopifyFulfilmentServiceNode('gid://shopify/FulfillmentService/700', $serviceName, 'gid://shopify/Location/1700')])),
         'fulfillmentServiceCreate'  => ShopifyFake::graphql(['fulfillmentServiceCreate' => ['fulfillmentService' => ['id' => 'gid://shopify/FulfillmentService/700', 'serviceName' => $serviceName, 'callbackUrl' => 'x', 'inventoryManagement' => true, 'trackingSupport' => false, 'fulfillmentOrdersOptIn' => true], 'userErrors' => []]]),
         'locationEdit'              => ShopifyFake::graphql(['locationEdit' => ['location' => ['id' => 'gid://shopify/Location/1700', 'name' => $serviceName, 'address' => []], 'userErrors' => []]]),
+        'getDeliveryProfiles'       => ShopifyFake::graphql(['deliveryProfiles' => ['nodes' => []]]),
     ]);
 
     (new ShopifyAppInstalledListener())->handle(new AppInstalledEvent(ShopId::fromNative($shopifyUser->id)));
@@ -711,6 +712,7 @@ test('resetting a channel rebuilds only aiku webhooks and fulfilment service on 
         'fulfillmentServiceCreate'  => ShopifyFake::graphql(['fulfillmentServiceCreate' => ['fulfillmentService' => ['id' => 'gid://shopify/FulfillmentService/700', 'serviceName' => $serviceName, 'callbackUrl' => 'x', 'inventoryManagement' => true, 'trackingSupport' => false, 'fulfillmentOrdersOptIn' => true], 'userErrors' => []]]),
         'locationEdit'              => ShopifyFake::graphql(['locationEdit' => ['location' => ['id' => 'gid://shopify/Location/1700', 'name' => $serviceName, 'address' => []], 'userErrors' => []]]),
         'webhookSubscriptionCreate' => fn (array $variables) => ShopifyFake::graphql(['webhookSubscriptionCreate' => ['webhookSubscription' => ['id' => 'gid://shopify/WebhookSubscription/2', 'topic' => $variables['topic'], 'endpoint' => ['__typename' => 'WebhookHttpEndpoint', 'callbackUrl' => 'x'], 'format' => 'JSON'], 'userErrors' => []]]),
+        'getDeliveryProfiles'       => ShopifyFake::graphql(['deliveryProfiles' => ['nodes' => []]]),
     ]);
 
     ResetShopifyChannel::run($channel);
