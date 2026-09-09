@@ -9,7 +9,7 @@ help_routes: grp.org.shops.show.ordering.orders.show, grp.org.accounting.invoice
 ---
 
 <aside class="tldr">
-Un <b>pedido para recoger</b> es el que el cliente recoge en persona. No lleva gastos de transporte ni dirección de entrega; en su lugar lleva la dirección donde se recoge. En la factura esa dirección ocupa el lugar de la dirección de entrega, bajo el título <b>Collection address</b>. Si el cliente no tiene ninguna dirección en su cuenta, el pedido se detiene antes del almacén hasta que alguien la añada.
+Un <b>pedido para recoger</b> es el que el cliente recoge en persona. No lleva gastos de transporte ni dirección de entrega; en su lugar lleva la dirección donde se recoge y, si la tienda cobra por la recogida, un cargo de recogida. En la factura esa dirección ocupa el lugar de la dirección de entrega, bajo el título <b>Collection address</b>. Si el cliente no tiene ninguna dirección en su cuenta, el pedido se detiene antes del almacén hasta que alguien la añada.
 </aside>
 
 ## Qué hace que un pedido sea para recoger
@@ -17,6 +17,8 @@ Un <b>pedido para recoger</b> es el que el cliente recoge en persona. No lleva g
 Un pedido normal se envía: tiene dirección de entrega, se cobra con gastos de transporte y el albarán sale con un transportista. Un pedido para recoger no tiene nada de eso. La mercancía se sigue preparando y empaquetando igual, pero el cliente viene a nosotros, así que no hay línea de transporte en el pedido ni dirección de entrega que imprimir.
 
 Lo que el pedido lleva en su lugar es una **dirección de recogida** — el sitio donde el cliente recoge. Viene de la tienda, así que todos los pedidos para recoger de esa tienda apuntan al mismo sitio salvo que se haya indicado otra cosa.
+
+Si la tienda tiene activo un cargo de tipo **Collection** en sus billables, ese cargo se añade al pedido en lugar del transporte. Aparece como una línea propia, sigue el importe configurado en el cargo y se retira solo si el pedido deja de ser para recoger. Una tienda sin ese cargo simplemente no lleva nada ahí.
 
 ## Qué muestra la factura
 
@@ -50,6 +52,7 @@ Son dos tareas distintas y se hacen en dos pantallas distintas.
 ### Dónde hacer clic en aiku
 
 - **Ver si un pedido es para recoger** — abra el pedido; un pedido para recoger muestra una dirección de recogida en lugar de la de entrega y no lleva línea de transporte.
+- **Definir cuánto cuesta la recogida** — abra la tienda, luego **Billables → Charges**, y use el cargo de tipo **Collection**. Mientras esté activo, todos los pedidos para recoger de esa tienda lo aplican.
 - **Encontrar un pedido detenido** — la lista de pedidos de la organización, grupo **Submitted**. El motivo está en la nota de almacén del pedido.
 - **Añadir una dirección a un cliente** — abra el cliente desde **CRM → Customers** y edite su dirección.
 - **Cambiar desde dónde recogen los clientes** — abra la tienda, luego **Settings**, y edite **Collection address**.

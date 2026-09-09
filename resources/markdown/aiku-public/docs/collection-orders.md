@@ -8,12 +8,14 @@ help_routes: grp.org.shops.show.ordering.orders.show, grp.org.accounting.invoice
 ---
 
 <aside class="tldr">
-A <b>collection order</b> is one the customer picks up themselves. It carries no shipping charge and no delivery address; instead it carries the address they collect from. On the invoice that address takes the place of the delivery address, under the heading <b>Collection address</b>. If a customer has no address on their account, the order stops before the warehouse until someone adds one.
+A <b>collection order</b> is one the customer picks up themselves. It carries no shipping charge and no delivery address; instead it carries the address they collect from, and, if the shop charges for collection, a collection charge. On the invoice that address takes the place of the delivery address, under the heading <b>Collection address</b>. If a customer has no address on their account, the order stops before the warehouse until someone adds one.
 </aside>
 
 ## What makes an order a collection
 
 An ordinary order is shipped: it has a delivery address, it is priced with a shipping charge, and the delivery note is sent out with a carrier. A collection order has none of that. The goods are still picked and packed as normal, but the customer comes to us, so there is no shipping line on the order and no delivery address to print.
+
+If the shop has an active **Collection** charge in its billables, that charge is added to the order instead. It appears as its own line, follows the amount set on the charge, and is taken off again by itself if the order stops being a collection. A shop with no such charge simply has nothing there.
 
 What the order carries instead is a **collection address** — the place the customer collects from. It comes from the shop, so every collection order for that shop points at the same place unless it has been set otherwise.
 
@@ -48,7 +50,8 @@ There are two different jobs here, and they use two different screens.
 
 ### Where to click in aiku
 
-- **See whether an order is a collection** — open the order; a collection order shows a collection address in place of a delivery address, and carries no shipping line.
+- **See whether an order is a collection** — open the order; a collection order shows a collection address in place of a delivery address, and has no shipping line.
+- **Set what collection costs** — open the shop, then **Billables → Charges**, and use the charge of type **Collection**. While it is active, every collection order in that shop picks it up.
 - **Find an order that is being held** — the organisation's orders list, **Submitted** bucket. The reason sits in the order's warehouse note.
 - **Add an address to a customer** — open the customer from **CRM → Customers**, then edit their address.
 - **Change where customers collect from** — open the shop, then **Settings**, and edit **Collection address**.

@@ -9,7 +9,7 @@ help_routes: grp.org.shops.show.ordering.orders.show, grp.org.accounting.invoice
 ---
 
 <aside class="tldr">
-<b>Objednávka na osobný odber</b> je taká, ktorú si zákazník vyzdvihne sám. Nemá poplatok za dopravu ani doručovaciu adresu; namiesto toho nesie adresu, kde si tovar vyzdvihne. Na faktúre táto adresa nahrádza doručovaciu adresu, pod nadpisom <b>Collection address</b>. Ak zákazník nemá na účte žiadnu adresu, objednávka sa zastaví pred skladom, kým ju niekto nedoplní.
+<b>Objednávka na osobný odber</b> je taká, ktorú si zákazník vyzdvihne sám. Nemá poplatok za dopravu ani doručovaciu adresu; namiesto toho nesie adresu, kde si tovar vyzdvihne, a ak si obchod za odber účtuje, aj poplatok za odber. Na faktúre táto adresa nahrádza doručovaciu adresu, pod nadpisom <b>Collection address</b>. Ak zákazník nemá na účte žiadnu adresu, objednávka sa zastaví pred skladom, kým ju niekto nedoplní.
 </aside>
 
 ## Čím je objednávka na osobný odber iná
@@ -17,6 +17,8 @@ help_routes: grp.org.shops.show.ordering.orders.show, grp.org.accounting.invoice
 Bežná objednávka sa odosiela: má doručovaciu adresu, je ocenená s poplatkom za dopravu a dodací list ide von s prepravcom. Objednávka na osobný odber nič z toho nemá. Tovar sa stále vychystá a zabalí ako obvykle, ale zákazník príde k nám, takže na objednávke nie je riadok s dopravou a nie je čo tlačiť ako doručovaciu adresu.
 
 Namiesto toho nesie objednávka **adresu odberu** — miesto, kde si zákazník tovar vyzdvihne. Pochádza z obchodu, takže všetky objednávky na odber v tom obchode ukazujú na rovnaké miesto, pokiaľ nie je nastavené inak.
+
+Ak má obchod v billables aktívny poplatok typu **Collection**, pridá sa na objednávku namiesto dopravy. Je to samostatný riadok, riadi sa sumou nastavenou na poplatku a sám sa odstráni, ak objednávka prestane byť na odber. Obchod bez takého poplatku nemá na objednávke nič.
 
 ## Čo ukazuje faktúra
 
@@ -50,6 +52,7 @@ Sú to dve rôzne úlohy a používajú dve rôzne obrazovky.
 ### Kde v aiku kliknúť
 
 - **Zistiť, či je objednávka na odber** — otvorte objednávku; objednávka na odber má namiesto doručovacej adresy adresu odberu a nemá riadok s dopravou.
+- **Nastaviť, koľko odber stojí** — otvorte obchod, potom **Billables → Charges**, a použite poplatok typu **Collection**. Kým je aktívny, preberá ho každá objednávka na odber v tom obchode.
 - **Nájsť zastavenú objednávku** — zoznam objednávok organizácie, skupina **Submitted**. Dôvod je v skladovej poznámke objednávky.
 - **Doplniť adresu zákazníkovi** — otvorte zákazníka cez **CRM → Customers** a upravte jeho adresu.
 - **Zmeniť, odkiaľ si zákazníci odoberajú** — otvorte obchod, potom **Settings**, a upravte **Collection address**.
