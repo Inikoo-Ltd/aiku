@@ -16,7 +16,9 @@ use App\Actions\Dropshipping\CustomerSalesChannel\CloseCustomerSalesChannel;
 use App\Actions\Dropshipping\CustomerSalesChannel\StoreCustomerSalesChannel;
 use App\Actions\Dropshipping\Portfolio\StorePortfolio;
 use App\Actions\Dropshipping\Shopify\FulfilmentService\AdoptShopifyFulfilmentService;
+use App\Actions\Dropshipping\Shopify\FulfilmentService\AddShopifyLocationToDeliveryProfiles;
 use App\Actions\Dropshipping\Shopify\Product\BulkUpdateShopifyPortfolio;
+use App\Actions\Dropshipping\Shopify\Product\StoreShopifyLocationToProductVariant;
 use App\Actions\Dropshipping\Shopify\Product\CreateNewBulkPortfoliosToShopify;
 use App\Actions\Dropshipping\Shopify\Product\StoreNewProductToCurrentShopify;
 use App\Actions\Maintenance\Dropshipping\RepairShopifyChannelReconnects;
@@ -224,7 +226,7 @@ test('adopting a location keeps the oldest aiku fulfilment service and drops the
     expect($picked['adopt'])->toBeNull();
 });
 
-test('the stock push sends shopify ids as a list even when the portfolios are keyed by id', function () {
+test('the stock push sends product ids as a list even when the portfolios are keyed by id', function () {
     $portfolios = collect([
         new Portfolio(['id' => 12, 'platform_product_id' => 'gid://shopify/Product/1']),
         new Portfolio(['id' => 34, 'platform_product_id' => 'gid://shopify/Product/2', 'platform_product_variant_id' => 'gid://shopify/ProductVariant/2']),
@@ -235,7 +237,61 @@ test('the stock push sends shopify ids as a list even when the portfolios are ke
     $ids = BulkUpdateShopifyPortfolio::shopifyIdsToFetch($portfolios);
 
     expect(array_is_list($ids))->toBeTrue()
-        ->and($ids)->toBe(['gid://shopify/Product/1', 'gid://shopify/ProductVariant/2', 'gid://shopify/Product/2']);
+        ->and($ids)->toBe(['gid://shopify/Product/1', 'gid://shopify/Product/2']);
+});
+
+test('the stock push resolves the variant by sku and never falls back to a sibling variant', function () {
+    $variant   = fn (string $id, string $sku) => ['variantId' => "gid://shopify/ProductVariant/$id", 'inventoryItemId' => "gid://shopify/InventoryItem/$id", 'sku' => $sku];
+    $bracelets = [$variant('1', 'BFGx-01'), $variant('3', 'BFGx-03')];
+    $product   = fn (string $code) => new \App\Models\Catalogue\Product(['code' => $code]);
+
+    $rewrittenOntoSibling = new Portfolio(['sku' => 'bfgx-03', 'platform_product_variant_id' => 'gid://shopify/ProductVariant/1']);
+    expect(BulkUpdateShopifyPortfolio::resolveVariant($rewrittenOntoSibling, $product('BFGx-03'), $bracelets)['variantId'])->toBe('gid://shopify/ProductVariant/3');
+
+    $deletedVariant = new Portfolio(['sku' => 'spbic-12', 'platform_product_variant_id' => 'gid://shopify/ProductVariant/10']);
+    expect(BulkUpdateShopifyPortfolio::resolveVariant($deletedVariant, $product('SPBiC-12'), [$variant('10', 'spbic-10')]))->toBeNull();
+
+    $merchantWithoutSkus = new Portfolio(['sku' => 'gel-08', 'platform_product_variant_id' => 'gid://shopify/ProductVariant/dead']);
+    expect(BulkUpdateShopifyPortfolio::resolveVariant($merchantWithoutSkus, $product('GEL-08'), [$variant('8', '')])['variantId'])->toBe('gid://shopify/ProductVariant/8')
+        ->and(BulkUpdateShopifyPortfolio::resolveVariant($merchantWithoutSkus, $product('GEL-08'), [$variant('8', ''), $variant('9', '')]))->toBeNull()
+        ->and(BulkUpdateShopifyPortfolio::resolveVariant($merchantWithoutSkus, $product('GEL-08'), []))->toBeNull();
+
+    $storedUnlabelledAmongMany = new Portfolio(['sku' => 'gel-08', 'platform_product_variant_id' => 'gid://shopify/ProductVariant/9']);
+    expect(BulkUpdateShopifyPortfolio::resolveVariant($storedUnlabelledAmongMany, $product('GEL-08'), [$variant('8', ''), $variant('9', '')])['variantId'])->toBe('gid://shopify/ProductVariant/9');
+});
+
+test('a new fulfilment location joins the shipping profiles the previous aiku location was in, or the default one', function () {
+    $shopifyUser = shopifyProductChannel($this, 'shipping-profile');
+    $channel     = $shopifyUser->customerSalesChannel;
+
+    $group = fn (string $groupId, array $locations) => ['locationGroup' => ['id' => "gid://shopify/DeliveryLocationGroup/$groupId", 'locations' => ['nodes' => array_map(fn (array $location) => ['id' => 'gid://shopify/Location/'.$location[0], 'name' => $location[1]], $locations)]]];
+    $profiles = [
+        ['id' => 'gid://shopify/DeliveryProfile/1', 'name' => 'General', 'default' => true, 'profileLocationGroups' => [$group('g1', [['5', 'Shop'], ['1000', 'aiku-dse (sho-old)']])]],
+        ['id' => 'gid://shopify/DeliveryProfile/2', 'name' => 'Local pickup', 'default' => false, 'profileLocationGroups' => [$group('g2', [['5', 'Shop']])]],
+    ];
+
+    expect(AddShopifyLocationToDeliveryProfiles::groupsToJoin($profiles, 'gid://shopify/Location/1001'))->toBe([['profileId' => 'gid://shopify/DeliveryProfile/1', 'groupId' => 'gid://shopify/DeliveryLocationGroup/g1']])
+        ->and(AddShopifyLocationToDeliveryProfiles::groupsToJoin($profiles, 'gid://shopify/Location/1000'))->toBe([])
+        ->and(AddShopifyLocationToDeliveryProfiles::groupsToJoin([$profiles[1], ['id' => 'gid://shopify/DeliveryProfile/3', 'default' => true, 'profileLocationGroups' => [$group('g3', [['5', 'Shop']])]]], 'gid://shopify/Location/1001'))->toBe([['profileId' => 'gid://shopify/DeliveryProfile/3', 'groupId' => 'gid://shopify/DeliveryLocationGroup/g3']]);
+
+    ShopifyFake::fake([
+        'getDeliveryProfiles'   => ShopifyFake::graphql(['deliveryProfiles' => ['nodes' => $profiles]]),
+        'deliveryProfileUpdate' => ShopifyFake::graphql(['deliveryProfileUpdate' => ['userErrors' => []]]),
+    ]);
+
+    [$status, $message] = AddShopifyLocationToDeliveryProfiles::run($channel);
+    $update = ShopifyFake::calls('deliveryProfileUpdate');
+
+    expect($status)->toBeTrue()
+        ->and($message)->toBe('Joined 1 shipping profile group(s)')
+        ->and($update)->toHaveCount(1)
+        ->and($update[0]['variables'])->toBe(['id' => 'gid://shopify/DeliveryProfile/1', 'profile' => ['locationGroupsToUpdate' => [['id' => 'gid://shopify/DeliveryLocationGroup/g1', 'locationsToAdd' => ['gid://shopify/Location/1001']]]]]);
+
+    ShopifyFake::fake([
+        'getDeliveryProfiles' => ShopifyFake::graphql([], [['message' => 'Access denied for deliveryProfiles field. Required access: `read_shipping` access scope.', 'extensions' => ['code' => 'ACCESS_DENIED']]]),
+    ]);
+    [$status, $message] = AddShopifyLocationToDeliveryProfiles::run($channel);
+    expect($status)->toBeFalse()->and($message)->toContain('read_shipping');
 });
 
 function shopifyProductChannel($test, string $name): ShopifyUser
@@ -433,7 +489,7 @@ test('bulk matching links portfolios by sku to the active listings and skips amb
     MatchPortfolioToCurrentShopifyProduct::assertPushed(fn ($action, $parameters) => $parameters[0]->id === $portfolio->id && $parameters[1] === ['shopify_product_id' => 'gid://shopify/Product/7300']);
 });
 
-test('the stock push heals a stale variant id through the product, applies threshold and cap and records failures per line', function () {
+test('the stock push heals a stale variant id by sku, applies threshold and cap, records failures per line and activates unstocked items', function () {
     Queue::fake();
     $shopifyUser = shopifyProductChannel($this, 'product-stock');
     $channel     = $shopifyUser->customerSalesChannel;
@@ -448,22 +504,22 @@ test('the stock push heals a stale variant id through the product, applies thres
     $stale = StorePortfolio::make()->action($channel, $secondProduct, []);
     $stale->update(['platform_product_id' => 'gid://shopify/Product/7401', 'platform_product_variant_id' => 'gid://shopify/ProductVariant/dead', 'platform_status' => true]);
 
+    $variantEdge = fn (string $id, string $sku) => ['node' => ['id' => "gid://shopify/ProductVariant/$id", 'sku' => $sku, 'inventoryItem' => ['id' => "gid://shopify/InventoryItem/$id"]]];
     ShopifyFake::fake([
-        'getNodes'             => fn (array $variables) => ShopifyFake::graphql(['nodes' => array_map(fn (string $id) => match ($id) {
-            'gid://shopify/ProductVariant/8400' => ['__typename' => 'ProductVariant', 'id' => $id, 'inventoryItem' => ['id' => 'gid://shopify/InventoryItem/8400']],
-            'gid://shopify/Product/7400'        => ['__typename' => 'Product', 'id' => $id, 'variants' => ['edges' => [['node' => ['id' => 'gid://shopify/ProductVariant/8400', 'inventoryItem' => ['id' => 'gid://shopify/InventoryItem/8400']]]]]],
-            'gid://shopify/Product/7401'        => ['__typename' => 'Product', 'id' => $id, 'variants' => ['edges' => [['node' => ['id' => 'gid://shopify/ProductVariant/8401', 'inventoryItem' => ['id' => 'gid://shopify/InventoryItem/8401']]]]]],
-            default                             => null,
+        'getProductsVariants'    => fn (array $variables) => ShopifyFake::graphql(['nodes' => array_map(fn (string $id) => match ($id) {
+            'gid://shopify/Product/7400' => ['id' => $id, 'variants' => ['edges' => [$variantEdge('8400', '')]]],
+            'gid://shopify/Product/7401' => ['id' => $id, 'variants' => ['edges' => [$variantEdge('8402', 'other-sku'), $variantEdge('8401', strtoupper($secondProduct->code))]]],
+            default                      => null,
         }, $variables['ids'])]),
         'inventorySetQuantities' => ShopifyFake::graphql(['inventorySetQuantities' => ['userErrors' => [['field' => ['input', 'quantities', '1', 'inventoryItemId'], 'message' => 'The specified inventory item is not stocked at the location.']]]]),
     ]);
 
     BulkUpdateShopifyPortfolio::run($channel->id);
 
-    $ids        = ShopifyFake::calls('getNodes')[0]['variables']['ids'];
+    $ids        = ShopifyFake::calls('getProductsVariants')[0]['variables']['ids'];
     $quantities = ShopifyFake::calls('inventorySetQuantities')[0]['variables']['input']['quantities'];
     expect(array_is_list($ids))->toBeTrue()
-        ->and($ids)->toContain('gid://shopify/ProductVariant/dead', 'gid://shopify/Product/7401')
+        ->and($ids)->toBe(['gid://shopify/Product/7400', 'gid://shopify/Product/7401'])
         ->and($quantities)->toBe([
             ['inventoryItemId' => 'gid://shopify/InventoryItem/8400', 'locationId' => 'gid://shopify/Location/1001', 'quantity' => 10],
             ['inventoryItemId' => 'gid://shopify/InventoryItem/8401', 'locationId' => 'gid://shopify/Location/1001', 'quantity' => 0],
@@ -474,9 +530,10 @@ test('the stock push heals a stale variant id through the product, applies thres
         ->and($stale->refresh()->platform_product_variant_id)->toBe('gid://shopify/ProductVariant/8401')
         ->and($stale->stock_last_fail_updated_at)->not->toBeNull()
         ->and($stale->stock_last_updated_at)->toBeNull();
+    StoreShopifyLocationToProductVariant::assertPushed(fn ($action, $parameters) => $parameters[0]->id === $stale->id);
 
     ShopifyFake::fake([
-        'getNodes'               => fn (array $variables) => ShopifyFake::graphql(['nodes' => array_map(fn (string $id) => str_contains($id, 'ProductVariant') ? ['__typename' => 'ProductVariant', 'id' => $id, 'inventoryItem' => ['id' => 'gid://shopify/InventoryItem/'.Str::afterLast($id, '/')]] : null, $variables['ids'])]),
+        'getProductsVariants'    => fn (array $variables) => ShopifyFake::graphql(['nodes' => array_map(fn (string $id) => ['id' => $id, 'variants' => ['edges' => [$variantEdge(Str::afterLast($id, '/') === '7400' ? '8400' : '8401', '')]]], $variables['ids'])]),
         'inventorySetQuantities' => Http::response(['errors' => [['message' => 'Throttled', 'extensions' => ['code' => 'THROTTLED']]]]),
     ]);
     BulkUpdateShopifyPortfolio::run($channel->id);
