@@ -9,7 +9,6 @@ namespace App\Actions\Dropshipping\WooCommerce\Product;
 
 use App\Models\Dropshipping\WooCommerceUser;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Lorisleiva\Actions\Concerns\AsAction;
 

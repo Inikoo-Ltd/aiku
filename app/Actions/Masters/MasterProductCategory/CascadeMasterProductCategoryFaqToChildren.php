@@ -45,12 +45,15 @@ class CascadeMasterProductCategoryFaqToChildren
 
         $total = $productCategories->count();
 
-        MasterProductCategoryJsonbCascadeProgressEvent::dispatch($masterProductCategory, [
+        MasterProductCategoryJsonbCascadeProgressEvent::dispatch(
+            $masterProductCategory,
+            [
             'state' => 'updating',
             'done'  => 0,
             'total' => $total,
         ],
-        'faq-cascade-progress');
+            'faq-cascade-progress'
+        );
 
         /** @var ProductCategory $productCategory */
         foreach ($productCategories as $index => $productCategory) {
@@ -58,19 +61,25 @@ class CascadeMasterProductCategoryFaqToChildren
                 'faq' => $this->getJsonbForShopLanguage($masterProductCategory, $productCategory, $english, 'faq'),
             ]);
 
-            MasterProductCategoryJsonbCascadeProgressEvent::dispatch($masterProductCategory, [
+            MasterProductCategoryJsonbCascadeProgressEvent::dispatch(
+                $masterProductCategory,
+                [
                 'state' => 'updating',
                 'done'  => $index + 1,
                 'total' => $total,
             ],
-            'faq-cascade-progress');
+                'faq-cascade-progress'
+            );
         }
 
-        MasterProductCategoryJsonbCascadeProgressEvent::dispatch($masterProductCategory, [
+        MasterProductCategoryJsonbCascadeProgressEvent::dispatch(
+            $masterProductCategory,
+            [
             'state' => 'done',
             'done'  => $total,
             'total' => $total,
         ],
-        'faq-cascade-progress');
+            'faq-cascade-progress'
+        );
     }
 }

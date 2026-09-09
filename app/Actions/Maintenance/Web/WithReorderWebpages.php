@@ -19,7 +19,7 @@ trait WithReorderWebpages
             if (count($this->getWebpageBlocksByType($webpage, 'luigi-trends-1')) == 0) {
                 $this->createWebBlock($webpage, 'luigi-trends-1');
             }
-            
+
             if (count($this->getWebpageBlocksByType($webpage, 'recommendation-product-category-from-master')) == 0) {
                 $this->createWebBlock($webpage, 'recommendation-product-category-from-master');
             }
@@ -36,10 +36,10 @@ trait WithReorderWebpages
         } else {
             $this->deleteWebBlocksByType($webpage, WebBlockTemplateEnum::LIST_PRODUCTS);
         }
-        
+
         if ($code == 'department-description-3') {
             $this->normalizeWebBlockByType($webpage, WebBlockTemplateEnum::FAMILIES->templateCodes(), WebBlockTemplateEnum::FAMILIES);
-            
+
             if (count($this->getWebpageBlocksByType($webpage, 'see-also-1')) == 0) {
                 $this->createWebBlock($webpage, 'see-also-1');
             }

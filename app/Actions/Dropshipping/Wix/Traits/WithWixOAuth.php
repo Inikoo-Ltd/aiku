@@ -27,7 +27,7 @@ trait WithWixOAuth
     {
         $base = config('services.wix.install_url') ?: 'https://www.wix.com/app-installer';
 
-       [$path, $query] = array_pad(explode('?', $base, 2), 2, '');
+        [$path, $query] = array_pad(explode('?', $base, 2), 2, '');
         parse_str($query, $params);
 
         $params['appId'] ??= config('services.wix.app_id');
