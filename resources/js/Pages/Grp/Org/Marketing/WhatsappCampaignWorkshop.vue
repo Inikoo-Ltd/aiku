@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from "vue"
-import { Head, Link } from "@inertiajs/vue3"
+import { Head } from "@inertiajs/vue3"
 import axios from "axios"
 import { trans } from "laravel-vue-i18n"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -13,6 +13,7 @@ import PureInput from "@/Components/Pure/PureInput.vue"
 import PureMultiselect from "@/Components/Pure/PureMultiselect.vue"
 import WhatsappTemplatePreview from "@/Components/Chat/WhatsappTemplatePreview.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
+import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
 import Modal from "@/Components/Utils/Modal.vue"
 import { routeType } from "@/types/route"
@@ -183,7 +184,7 @@ const confirmTemplateChange = async () => {
                 <template #default="{ changeModel }">
                     <Button
                         icon="fal fa-trash-alt"
-                        style="negative"
+                        type="negative"
                         :tooltip="trans('Delete campaign')"
                         @click="changeModel" />
                 </template>
@@ -255,11 +256,13 @@ const confirmTemplateChange = async () => {
                             {{ trans("No approved templates yet. Create one and wait for Meta to approve it.") }}
                         </p>
 
-                        <Link
-                            :href="route(createTemplateRoute.name, createTemplateRoute.parameters)"
-                            class="inline-block mt-2">
-                            <Button :label="trans('Create Template')" style="tertiary" size="xs" icon="fal fa-plus" />
-                        </Link>
+                        <ButtonWithLink
+                            :routeTarget="createTemplateRoute"
+                            :label="trans('Create Template')"
+                            type="tertiary"
+                            size="xs"
+                            icon="fal fa-plus"
+                            class="inline-block mt-2" />
                     </div>
                 </div>
 
@@ -282,7 +285,7 @@ const confirmTemplateChange = async () => {
             </header>
 
             <div class="p-4 max-w-md">
-                <div class="rounded-lg border border-gray-200 p-4 flex items-start justify-between gap-4">
+                <div class="rounded-lg border border-gray-200 p-4 flex items-center justify-between gap-4">
                     <div>
                         <div class="text-sm font-medium text-gray-700">
                             {{ trans(":count contacts selected", { count: recipientsCount }) }}
@@ -291,22 +294,17 @@ const confirmTemplateChange = async () => {
                             {{ trans("Choose which contacts receive this campaign.") }}
                         </p>
                     </div>
-                    <Link
-                        v-if="isEditable && templateId"
-                        :href="route(recipientsRoute.name, recipientsRoute.parameters)">
-                        <Button
-                            :label="trans('Edit')"
-                            style="tertiary"
-                            size="xs"
-                            :loading="isResettingRecipients" />
-                    </Link>
-                    <Button
-                        v-else-if="isEditable"
+                    <ButtonWithLink
+                        v-if="isEditable"
+                        :routeTarget="templateId ? recipientsRoute : undefined"
                         :label="trans('Edit')"
-                        style="tertiary"
+                        type="tertiary"
                         size="xs"
-                        :disabled="true"
-                        v-tooltip="trans('Choose a template first')" />
+                        icon="fal fa-pencil"
+                        :disabled="!templateId"
+                        :loading="isResettingRecipients"
+                        :tooltip="templateId ? undefined : trans('Choose a template first')"
+                        class="shrink-0" />
                 </div>
 
                 <p v-if="isEditable && !templateId" class="mt-2 text-xs text-gray-500">
@@ -336,10 +334,10 @@ const confirmTemplateChange = async () => {
                 {{ trans("Your :count selected contacts were chosen for the current template's merge tags. This template needs different ones, so the selection will be cleared and you will need to choose recipients again.", { count: recipientsCount }) }}
             </p>
             <div class="mt-6 flex justify-end gap-2">
-                <Button :label="trans('Cancel')" style="tertiary" @click="cancelTemplateChange" />
+                <Button :label="trans('Cancel')" type="tertiary" @click="cancelTemplateChange" />
                 <Button
                     :label="trans('Change template and clear recipients')"
-                    style="primary"
+                    type="primary"
                     :loading="isResettingRecipients"
                     @click="confirmTemplateChange" />
             </div>

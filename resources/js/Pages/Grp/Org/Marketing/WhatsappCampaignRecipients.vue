@@ -349,9 +349,9 @@ const onSelect = async () => {
             </template>
         </Table>
 
-        <div class="sticky bottom-0 z-10 mt-6 flex items-center justify-between border-t border-gray-200 bg-white py-4">
-            <Button :label="trans('Back')" style="tertiary" @click="goBack" />
-            <div class="flex items-center gap-x-4">
+        <div class="sticky bottom-4 z-10 mt-6 mb-6 flex flex-wrap items-center justify-between gap-3 border-t border-gray-200 bg-white px-4 py-3">
+            <Button :label="trans('Back')" type="tertiary" icon="far fa-arrow-left" @click="goBack" />
+            <div class="ml-auto flex flex-wrap items-center justify-end gap-x-4 gap-y-2">
                 <!-- Emptying the audience has no checkbox of its own now that the header one
                      only reaches a page, so it lives here where it is reachable from any page. -->
                 <button v-if="hasSelection" type="button" class="text-sm text-gray-500 underline"
@@ -360,7 +360,7 @@ const onSelect = async () => {
                 </button>
                 <Button
                     :label="trans('Save')"
-                    style="primary"
+                    type="save"
                     :loading="isSaving"
                     :disabled="isOverCap"
                     @click="onSelect" />
