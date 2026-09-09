@@ -6,14 +6,15 @@
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
-use App\Actions\Production\PartnerShippingList\CherryPickPartnerShoppingListItems;
 use App\Actions\Production\PartnerShippingList\SetToProduceItemPreparing;
 use App\Actions\Production\PartnerShippingList\StoreJobOrdersFromToProduceItems;
 use App\Actions\Production\PartnerShippingList\UnassignToProduceItems;
 use App\Actions\Production\PartnerShippingList\StoreJobOrdersForMixes;
 use App\Actions\Production\Artisan\ToggleArtisanInRoster;
-use App\Actions\Production\PartnerShippingList\SendPartnerOrderToWarehouse;
 use App\Actions\Production\PartnerShippingList\UI\IndexPartnerShippingList;
+use App\Actions\Production\PartnerShippingList\PrePickPartnerShoppingListItems;
+use App\Actions\Production\Restock\QueueArtefactsToProduce;
+use App\Actions\Production\Restock\UI\ShowToRestock;
 use App\Actions\Production\PartnerShippingList\UI\GetProductionQueueCounts;
 use App\Actions\Production\PartnerShippingList\UI\IndexPrePickList;
 use App\Actions\Production\Artefact\UI\CreateArtefact;
@@ -92,21 +93,26 @@ Route::prefix('{production}')
                         Route::get('for', [IndexPartnerShippingList::class, 'byFor'])->name('by_for');
                         Route::get('mixes', [IndexPartnerShippingList::class, 'mixes'])->name('mixes');
                         Route::post('mixes/job-orders', StoreJobOrdersForMixes::class)->name('mixes.job_orders.store');
-                        Route::post('cherry-pick', CherryPickPartnerShoppingListItems::class)->name('cherry_pick');
                         Route::post('job-orders', StoreJobOrdersFromToProduceItems::class)->name('job_orders.store');
                         Route::post('items/preparing', SetToProduceItemPreparing::class)->name('items.preparing');
                         Route::post('items/unassign', UnassignToProduceItems::class)->name('items.unassign');
                         Route::post('artisans/{employee:id}/hide', [ToggleArtisanInRoster::class, 'hide'])->name('artisans.hide')->withoutScopedBindings();
                         Route::post('artisans/{employee:id}/show', [ToggleArtisanInRoster::class, 'show'])->name('artisans.show')->withoutScopedBindings();
-                        Route::post('orders/{order}/send-to-warehouse', SendPartnerOrderToWarehouse::class)->name('send_to_warehouse');
                     });
 
                 Route::get('queue-counts', GetProductionQueueCounts::class)->name('.queue_counts');
 
+                Route::name('.to_restock.')->prefix('to-restock')
+                    ->group(function () {
+                        Route::get('', ShowToRestock::class)->name('index');
+                        Route::post('queue', QueueArtefactsToProduce::class)->name('queue');
+                    });
+
                 Route::name('.pre_pick.')->prefix('pre-pick')
                     ->group(function () {
                         Route::get('', IndexPrePickList::class)->name('index');
-                        Route::post('all', [CherryPickPartnerShoppingListItems::class, 'everything'])->name('all');
+                        Route::post('', PrePickPartnerShoppingListItems::class)->name('pick');
+                        Route::post('all', [PrePickPartnerShoppingListItems::class, 'everything'])->name('all');
                     });
 
                 Route::name('.crafts.')->prefix('crafts')

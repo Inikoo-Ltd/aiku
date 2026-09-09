@@ -30,6 +30,8 @@ class GetArtefactShowcase
             'compliance_status' => $compliance['status'],
             'compliance_label'  => $compliance['label'],
             'recommended_batch_size' => $artefact->recommended_batch_size,
+            'batch_pack'        => $this->getBatchPack($artefact),
+            'shelf_life_days'   => $artefact->shelf_life_days,
             'update_route'      => [
                 'name'       => 'grp.models.production.artefacts.update',
                 'parameters' => [$artefact->production_id, $artefact->id]
@@ -60,6 +62,30 @@ class GetArtefactShowcase
                 'units_per_artefact' => $task->pivot->units_per_artefact,
                 'task_work_cost'     => $task->task_work_cost,
             ]),
+        ];
+    }
+
+    /**
+     * The batch is made in units, the org stock is sold in packs, they do not have to agree.
+     *
+     * @return array{packed_in: int, batch_in_skos: float, suggested_batch_size: int|null}|null
+     */
+    private function getBatchPack(Artefact $artefact): ?array
+    {
+        $packedIn = $artefact->orgStock?->packed_in;
+
+        if (!$artefact->recommended_batch_size || !$packedIn) {
+            return null;
+        }
+
+        $remainder = $artefact->recommended_batch_size % $packedIn;
+
+        return [
+            'packed_in'            => $packedIn,
+            'batch_in_skos'        => round($artefact->recommended_batch_size / $packedIn, 2),
+            'suggested_batch_size' => $remainder
+                ? max($packedIn, (int) round($artefact->recommended_batch_size / $packedIn) * $packedIn)
+                : null,
         ];
     }
 

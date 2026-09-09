@@ -31,6 +31,7 @@ const props = defineProps<{
     moveToDepartment?: MoveProps
     moveToFamily?: MoveProps
     setBatchSize?: { set_route: routeType }
+    setShelfLife?: { set_route: routeType }
     setState?: { set_state_route: routeType }
 }>()
 
@@ -43,11 +44,13 @@ const familyBarRef = ref<any>(null)
 const selected = ref<Record<string, boolean>>({})
 const isMoving = ref(false)
 const batchSize = ref<number | null>(null)
+const shelfLifeDays = ref<number | null>(null)
 const confirmingDiscontinue = ref(false)
 const bulkAction = ref('batch_size')
 
 const bulkActions = computed(() => [
     props.setBatchSize ? { value: 'batch_size', label: ctrans('Batch size') } : null,
+    props.setShelfLife ? { value: 'shelf_life', label: ctrans('Shelf life') } : null,
     props.moveToFamily ? { value: 'move_family', label: ctrans('Move to family') } : null,
     props.moveToDepartment ? { value: 'move_department', label: ctrans('Move to department') } : null,
     props.setState ? { value: 'discontinue', label: ctrans('Discontinue') } : null,
@@ -57,7 +60,7 @@ const bulkActions = computed(() => [
 const currentAction = computed(() => bulkActions.value.find(action => action.value === bulkAction.value))
 
 const selectedIds = computed(() => Object.entries(selected.value).filter(([, on]) => on).map(([id]) => Number(id)))
-const showBulkBar = computed(() => (props.moveToDepartment || props.moveToFamily || props.setBatchSize || props.setState) && selectedIds.value.length > 0)
+const showBulkBar = computed(() => (props.moveToDepartment || props.moveToFamily || props.setBatchSize || props.setShelfLife || props.setState) && selectedIds.value.length > 0)
 
 const clearSelection = () => {
     confirmingDiscontinue.value = false
@@ -118,6 +121,33 @@ const submitBatchSize = () => {
                 })
                 clearSelection()
                 batchSize.value = null
+            },
+            onError: (errors) => notify({ title: ctrans('Something went wrong'), text: Object.values(errors).join(' '), type: 'error' }),
+        }
+    )
+}
+
+const submitShelfLife = () => {
+    if (!props.setShelfLife || shelfLifeDays.value === null || shelfLifeDays.value < 1) return
+
+    const count = selectedIds.value.length
+    const days = shelfLifeDays.value
+
+    router.post(
+        route(props.setShelfLife.set_route.name, props.setShelfLife.set_route.parameters),
+        { artefacts: selectedIds.value, shelf_life_days: days },
+        {
+            preserveScroll: true,
+            onStart: () => isMoving.value = true,
+            onFinish: () => isMoving.value = false,
+            onSuccess: () => {
+                notify({
+                    title: ctrans('Shelf life set'),
+                    text: ctrans(':count artefacts now keep for :days days', { count: count, days: days }),
+                    type: 'success',
+                })
+                clearSelection()
+                shelfLifeDays.value = null
             },
             onError: (errors) => notify({ title: ctrans('Something went wrong'), text: Object.values(errors).join(' '), type: 'error' }),
         }
@@ -203,6 +233,24 @@ function productionRoute(artefact: { slug: string }) {
                     class="rounded bg-indigo-600 px-3 py-1.5 text-sm text-white disabled:opacity-50"
                     :disabled="isMoving || batchSize === null || batchSize < 1"
                     @click="submitBatchSize">
+                    {{ ctrans('Set') }}
+                </button>
+            </div>
+
+            <div v-if="setShelfLife && bulkAction === 'shelf_life'" class="flex items-center gap-2">
+                <input
+                    id="bulkShelfLife"
+                    v-model.number="shelfLifeDays"
+                    type="number"
+                    min="1"
+                    class="w-24 rounded border-gray-300 py-1 text-sm"
+                    :placeholder="ctrans('Days')"
+                    @keyup.enter="submitShelfLife" />
+                <button
+                    type="button"
+                    class="rounded bg-indigo-600 px-3 py-1.5 text-sm text-white disabled:opacity-50"
+                    :disabled="isMoving || shelfLifeDays === null || shelfLifeDays < 1"
+                    @click="submitShelfLife">
                     {{ ctrans('Set') }}
                 </button>
             </div>
@@ -328,6 +376,17 @@ function productionRoute(artefact: { slug: string }) {
             </Link>
             <span v-else class="text-gray-400">-</span>
         </template>
+        <template #cell(batch_in_skos)="{ item }">
+            <span v-if="item.batch_in_skos">
+                {{ item.batch_in_skos }}
+                <span class="text-gray-400 text-xs">&times;{{ item.packed_in }}</span>
+                <span v-if="item.suggested_batch_size" class="text-gray-500 text-xs" :title="ctrans('Nearest batch that is whole SKOs')">
+                    &rarr; {{ item.suggested_batch_size }}
+                </span>
+            </span>
+            <span v-else class="text-gray-300">-</span>
+        </template>
+
         <template #cell(tags)="{ item }">
             <div class="flex flex-wrap gap-1">
                 <span v-for="tag in item.tags" :key="tag" class="px-1.5 py-0.5 rounded bg-gray-100 text-gray-700 text-xs">#{{ tag }}</span>

@@ -8,7 +8,7 @@
 
 namespace App\Actions\Dispatching\PartnerStaging;
 
-use App\Enums\Ordering\Order\OrderStateEnum;
+use App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum;
 use App\Models\Inventory\Warehouse;
 use App\Models\Procurement\OrgPartner;
 use Illuminate\Support\Facades\DB;
@@ -23,6 +23,8 @@ class GetPartnerStagingTasks
      *
      * Derived, never stored: pre-picked quantity minus what already sits in the partner's
      * location, so a row disappears the moment the stock is actually moved.
+     *
+     * Pre-picking is a reservation, not a sale: the line carries pre_picked_at and no order.
      *
      * @return array<int, array<string, mixed>>
      */
@@ -39,10 +41,10 @@ class GetPartnerStagingTasks
         }
 
         $prePicked = DB::table('partner_shopping_list_items as items')
-            ->join('orders', 'orders.id', DB::raw('(select order_id from transactions where transactions.id = items.transaction_id)'))
             ->join('org_stocks', 'org_stocks.id', 'items.org_stock_id')
             ->join('stocks', 'stocks.id', 'items.stock_id')
-            ->where('orders.state', OrderStateEnum::CREATING)
+            ->whereNotNull('items.pre_picked_at')
+            ->where('items.state', ShoppingListItemStateEnum::OPEN)
             ->where('items.partner_organisation_id', $warehouse->organisation_id)
             ->whereNull('items.deleted_at')
             ->whereIn('items.organisation_id', $partners->keys())

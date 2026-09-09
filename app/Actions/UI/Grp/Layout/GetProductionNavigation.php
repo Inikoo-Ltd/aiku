@@ -159,6 +159,18 @@ class GetProductionNavigation
             ];
 
 
+            $navigation['to_restock'] = [
+                'root'  => 'grp.org.productions.show.to_restock.',
+                'label' => __('To restock'),
+                'icon'  => ['fal', 'fa-inventory'],
+
+                'route' => [
+                    'name'       => 'grp.org.productions.show.to_restock.index',
+                    'parameters' => [$production->organisation->slug, $production->slug]
+                ],
+            ];
+
+
             $navigation['pre_pick'] = [
                 'root'  => 'grp.org.productions.show.pre_pick.',
                 'label' => __('Pre-pick'),

@@ -68,6 +68,7 @@ class IndexPrePickList extends OrgAction
             ->join('organisations', 'organisations.id', 'partner_shopping_list_items.organisation_id')
             ->where('partner_shopping_list_items.partner_organisation_id', $seller->id)
             ->where('partner_shopping_list_items.state', ShoppingListItemStateEnum::OPEN)
+            ->whereNull('partner_shopping_list_items.pre_picked_at')
             ->where('org_stocks.quantity_available', '>', 0);
 
         foreach ($this->getElementGroups() as $key => $elementGroup) {
@@ -133,6 +134,7 @@ class IndexPrePickList extends OrgAction
             ->join('organisations', 'organisations.id', 'partner_shopping_list_items.organisation_id')
             ->where('partner_shopping_list_items.partner_organisation_id', $this->organisation->id)
             ->where('partner_shopping_list_items.state', ShoppingListItemStateEnum::OPEN)
+            ->whereNull('partner_shopping_list_items.pre_picked_at')
             ->where('org_stocks.quantity_available', '>', 0)
             ->selectRaw("$expression as element, count(*) as total")
             ->groupBy('element')

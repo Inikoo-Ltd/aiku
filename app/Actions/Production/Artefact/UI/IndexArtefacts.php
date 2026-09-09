@@ -108,9 +108,26 @@ class IndexArtefacts extends OrgAction
                 'elements' => [
                     'assigned'   => [__('With batch size'), $assignmentCounts['batch_size_assigned']],
                     'unassigned' => [__('Without batch size'), $assignmentCounts['batch_size_unassigned']],
+                    'fractional' => [__('Batch not whole SKOs'), $assignmentCounts['batch_size_fractional']],
                 ],
                 'engine'   => function ($query, $elements) {
+                    if (in_array('fractional', $elements)) {
+                        $query->whereNotNull('artefacts.recommended_batch_size')
+                            ->whereRaw('mod(artefacts.recommended_batch_size, org_stocks.packed_in) <> 0');
+
+                        return;
+                    }
                     $this->applyAssignmentFilter($query, 'artefacts.recommended_batch_size', $elements);
+                },
+            ],
+            'shelf_life' => [
+                'label'    => __('Shelf life'),
+                'elements' => [
+                    'assigned'   => [__('With shelf life'), $assignmentCounts['shelf_life_assigned']],
+                    'unassigned' => [__('Without shelf life'), $assignmentCounts['shelf_life_unassigned']],
+                ],
+                'engine'   => function ($query, $elements) {
+                    $this->applyAssignmentFilter($query, 'artefacts.shelf_life_days', $elements);
                 },
             ],
             'family' => [
@@ -127,7 +144,7 @@ class IndexArtefacts extends OrgAction
     }
 
     /**
-     * @return array{department_assigned: int, department_unassigned: int, family_assigned: int, family_unassigned: int, batch_size_assigned: int, batch_size_unassigned: int}
+     * @return array{department_assigned: int, department_unassigned: int, family_assigned: int, family_unassigned: int, batch_size_assigned: int, batch_size_unassigned: int, batch_size_fractional: int, shelf_life_assigned: int, shelf_life_unassigned: int}
      */
     private function getAssignmentCounts(Group|Production|Organisation|ArtefactDepartment|ArtefactFamily $parent): array
     {
@@ -146,6 +163,9 @@ class IndexArtefacts extends OrgAction
             ->selectRaw('count(*) - count(artefact_family_id) as family_unassigned')
             ->selectRaw('count(recommended_batch_size) as batch_size_assigned')
             ->selectRaw('count(*) - count(recommended_batch_size) as batch_size_unassigned')
+            ->selectRaw('count(shelf_life_days) as shelf_life_assigned')
+            ->selectRaw('count(*) - count(shelf_life_days) as shelf_life_unassigned')
+            ->selectRaw('count(*) filter (where mod(recommended_batch_size, (select packed_in from org_stocks where org_stocks.id = artefacts.org_stock_id)) <> 0) as batch_size_fractional')
             ->first();
 
         return [
@@ -155,6 +175,9 @@ class IndexArtefacts extends OrgAction
             'family_unassigned'     => (int) $counts->family_unassigned,
             'batch_size_assigned'   => (int) $counts->batch_size_assigned,
             'batch_size_unassigned' => (int) $counts->batch_size_unassigned,
+            'shelf_life_assigned'   => (int) $counts->shelf_life_assigned,
+            'shelf_life_unassigned' => (int) $counts->shelf_life_unassigned,
+            'batch_size_fractional' => (int) $counts->batch_size_fractional,
         ];
     }
 
@@ -188,6 +211,7 @@ class IndexArtefacts extends OrgAction
 
         $queryBuilder = QueryBuilder::for(Artefact::class)
                         ->with('tags')
+                        ->leftJoin('org_stocks', 'artefacts.org_stock_id', '=', 'org_stocks.id')
                         ->leftJoin('organisations', 'artefacts.organisation_id', '=', 'organisations.id');
         if ($parent instanceof Group) {
             $queryBuilder->where('artefacts.group_id', $parent->id);
@@ -220,6 +244,8 @@ class IndexArtefacts extends OrgAction
                     'artefacts.name',
                     'artefacts.state',
                     'artefacts.recommended_batch_size',
+                    'org_stocks.packed_in',
+                    'artefacts.shelf_life_days',
                     'artefact_departments.name as artefact_department_name',
                     'artefact_departments.slug as artefact_department_slug',
                     'artefact_families.name as artefact_family_name',
@@ -234,7 +260,7 @@ class IndexArtefacts extends OrgAction
             ->leftJoin('artefact_departments', 'artefacts.artefact_department_id', 'artefact_departments.id')
             ->leftJoin('artefact_families', 'artefacts.artefact_family_id', 'artefact_families.id')
             ->leftJoin('productions', 'artefacts.production_id', 'productions.id')
-            ->allowedSorts(['code', 'name', 'artefact_department_name', 'artefact_family_name', 'recommended_batch_size'])
+            ->allowedSorts(['code', 'name', 'artefact_department_name', 'artefact_family_name', 'recommended_batch_size', 'shelf_life_days'])
             ->allowedFilters([$globalSearch, $tagFilter])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -278,6 +304,17 @@ class IndexArtefacts extends OrgAction
 
         return [
             'set_route' => ['name' => 'grp.models.production.artefacts.set_batch_size', 'parameters' => [$production->id]],
+        ];
+    }
+
+    public function getSetShelfLifeProps(Production $production, bool $canEdit): ?array
+    {
+        if (!$canEdit) {
+            return null;
+        }
+
+        return [
+            'set_route' => ['name' => 'grp.models.production.artefacts.set_shelf_life', 'parameters' => [$production->id]],
         ];
     }
 
@@ -377,6 +414,8 @@ class IndexArtefacts extends OrgAction
                 ->column(key: 'artefact_department_name', label: __('Department'), canBeHidden: false, sortable: true)
                 ->column(key: 'artefact_family_name', label: __('Family'), canBeHidden: false, sortable: true)
                 ->column(key: 'recommended_batch_size', label: __('Batch'), canBeHidden: false, sortable: true, align: 'right')
+                ->column(key: 'batch_in_skos', label: __('Batch in SKOs'), canBeHidden: true, align: 'right')
+                ->column(key: 'shelf_life_days', label: __('Shelf life'), canBeHidden: false, sortable: true, align: 'right')
                 ->column(key: 'tags', label: __('Tags'), canBeHidden: false);
             if ($parent instanceof Group) {
                 $table->column(key: 'organisation_name', label: __('organisation'), canBeHidden: false, sortable: true, searchable: true);
@@ -474,6 +513,7 @@ class IndexArtefacts extends OrgAction
                 'move_to_department' => $this->parent instanceof Production ? $this->getMoveToDepartmentProps($this->parent, $this->canEdit) : null,
                 'move_to_family'     => $this->parent instanceof Production ? $this->getMoveToFamilyProps($this->parent, $this->canEdit) : null,
                 'set_batch_size'     => $this->parent instanceof Production ? $this->getSetBatchSizeProps($this->parent, $this->canEdit) : null,
+                'set_shelf_life'     => $this->parent instanceof Production ? $this->getSetShelfLifeProps($this->parent, $this->canEdit) : null,
                 'set_state'          => $this->parent instanceof Production ? $this->getSetStateProps($this->parent, $this->canEdit) : null,
                 'tabs'        => [
                     'current'    => $this->tab,

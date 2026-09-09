@@ -112,7 +112,7 @@ function prePickAll() {
 
 function prePick(lines: { id: number; quantity: number }[]) {
 	router.post(
-		route("grp.org.productions.show.to_produce.cherry_pick", [
+		route("grp.org.productions.show.pre_pick.pick", [
 			route().params["organisation"],
 			route().params["production"],
 		]),
@@ -134,7 +134,7 @@ function prePick(lines: { id: number; quantity: number }[]) {
 			<button
 				type="button"
 				class="rounded bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-700"
-				:title="trans('Pre-pick every line listed here, up to what is in stock')"
+				:title="trans('Reserve every line listed here, up to what is in stock')"
 				@click="prePickAll">
 				{{ trans("Pre-pick all") }}
 			</button>
@@ -224,7 +224,7 @@ function prePick(lines: { id: number; quantity: number }[]) {
 			<button
 				type="button"
 				class="rounded bg-indigo-600 px-2 py-0.5 text-xs text-white hover:bg-indigo-700"
-				:title="trans('Take it from stock for this partner')"
+				:title="trans('Reserve it for this partner and send it to their bay')"
 				@click="prePick([{ id: item.id, quantity: Number(item.can_pick) }])">
 				{{ trans("Pre-pick") }}
 			</button>
