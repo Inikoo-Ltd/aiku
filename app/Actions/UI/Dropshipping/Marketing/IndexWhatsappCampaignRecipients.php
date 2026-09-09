@@ -76,10 +76,17 @@ class IndexWhatsappCampaignRecipients extends OrgAction
 
         $this->survivingKeys = $this->keysStillInAudience($recipients, request()->input('pending_keys'));
 
+        /* Every sort this table offers is full of ties: last_visitor_message_at is null for
+           all but the contacted branch, and names and dates repeat freely. Ties leave the
+           order to the plan, which each page is free to answer differently, so a row can sit
+           on two pages and be missing from a third. recipient_key is the group key and so
+           unique per row, which makes the order total. Chained after allowedSorts, which is
+           where a requested sort is applied, so it trails whichever sort is in force. */
         return QueryBuilder::for($this->markStoredRecipients($recipients))
             ->defaultSort('-last_visitor_message_at')
             ->allowedSorts(['name', 'phone_number', 'last_visitor_message_at', 'created_at'])
             ->allowedFilters([$globalSearch])
+            ->orderBy('recipient_key')
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
     }
