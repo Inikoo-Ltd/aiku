@@ -28,6 +28,7 @@ const props = defineProps<{
     mixes: { artefact_id: number, code: string, name: string, unit: string, needed: number, on_hand: number, in_progress: number, shortfall: number, artisan: string | null, needed_for: string[] }[] | null
     artisanWorkload: { id: number, name: string, open_job_orders: number, hidden: boolean }[] | null
     mixJobOrders: { id: number, artefact_id: number, code: string, name: string, quantity: number, job_order_id: number, job_order_reference: string, job_order_slug: string, job_order_state: string, job_order_artisan: string | null }[] | null
+    hitchhikers?: { count: number, showing: boolean }
     groups: { label: string, items: { id: number, quantity: number, state: string, stock_code: string, stock_name: string, family: string | null, maker: string | null, buyer_code: string | null, customer_name: string | null, order_reference: string | null, job_order_reference: string | null, job_order_slug: string | null, priority: string, needed_by: string | null }[] }[] | null
 }>()
 
@@ -58,7 +59,7 @@ function createJobOrders(ids: number[] = Object.keys(selected).map(Number), empl
     )
 }
 
-type BoardItem = { id: number, batch_size?: number | null, packed_in?: number | null, stock_code: string, stock_name: string, state: string, quantity: number, quantity_to_produce: number | null, maker: string | null, maker_id: number | null, preparing_at: string | null, kind?: "item" | "mix", artefact_id?: number, job_order_id?: number | null, job_order_state?: string | null, job_order_reference?: string | null, job_order_artisan?: string | null, stock_available?: number | null, buyer_code?: string | null }
+type BoardItem = { id: number, batch_size?: number | null, packed_in?: number | null, order_quantum?: number | null, is_hitchhiker?: boolean, stock_code: string, stock_name: string, state: string, quantity: number, quantity_to_produce: number | null, maker: string | null, maker_id: number | null, preparing_at: string | null, kind?: "item" | "mix", artefact_id?: number, job_order_id?: number | null, job_order_state?: string | null, job_order_reference?: string | null, job_order_artisan?: string | null, stock_available?: number | null, buyer_code?: string | null }
 
 function isReassignable(item: BoardItem): boolean {
     return !!item.job_order_id && ["in_process", "submitted"].includes(item.job_order_state ?? "")
@@ -560,6 +561,16 @@ function jobOrderHref(item: { job_order_slug: string }) {
         </div>
     </div>
 
+    <div v-if="groupBy === 'board' && hitchhikers && (hitchhikers.count || hitchhikers.showing)" class="mx-4 mt-3 text-xs text-gray-500">
+        <Link
+            :href="route(route().current() as string, { ...route().params, hitchhikers: hitchhikers.showing ? undefined : 1 })"
+            preserve-scroll
+            class="hover:text-indigo-600">
+            <template v-if="hitchhikers.showing">{{ trans("Hiding lines that are too small for a batch") }}</template>
+            <template v-else>{{ hitchhikers.count }} {{ trans("lines too small for a batch are waiting for company") }} · {{ trans("show") }}</template>
+        </Link>
+    </div>
+
     <div v-if="groupBy === 'board' && groups" class="mx-4 mt-3 flex gap-3">
         <template v-for="(lane, laneIndex) in filteredGroups" :key="lane.label">
         <div
@@ -587,6 +598,12 @@ function jobOrderHref(item: { job_order_slug: string }) {
                     @dragend="dragging = []">
                     <div class="flex items-center gap-1.5">
                         <span class="font-medium">{{ item.stock_code }}</span>
+                        <span
+                            v-if="item.is_hitchhiker"
+                            class="rounded bg-gray-100 px-1 font-normal text-gray-500 dark:bg-gray-800"
+                            :title="trans('Under a batch of :batch units, waiting for another order to ride with', { batch: item.batch_size ?? 0 })">
+                            {{ trans("hitchhiking") }}
+                        </span>
                         <span class="ml-auto flex items-center gap-1 tabular-nums" :class="item.priority === 'urgent' ? 'text-red-600 font-semibold' : ''">
                             ×{{ useLocaleStore().number(Number(item.quantity)) }}
                             <template v-if="laneIndex === LANE_PREPARING && item.state === 'open'">

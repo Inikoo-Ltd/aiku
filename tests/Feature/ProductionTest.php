@@ -2936,3 +2936,54 @@ test('the partner order quantum is the smallest whole SKO order that whole batch
         ->and($quantum(6, 4))->toBe(2)
         ->and($quantum(10, null))->toBe(1);
 });
+
+test('an order too small for a batch hitchhikes until something else fills the batch', function () {
+    $stocks    = createStocks($this->group);
+    $orgStocks = createOrgStocks($this->organisation, [$stocks[0]]);
+    $orgStock  = $orgStocks[0];
+
+    \App\Models\Production\Artefact::where('production_id', $this->production->id)
+        ->where('org_stock_id', $orgStock->id)
+        ->update(['org_stock_id' => null]);
+
+    $orgStock->update(['packed_in' => 10, 'quantity_in_locations' => 0]);
+
+    $artefact = StoreArtefact::make()->action($this->production, [
+        'code'                   => 'HITCH-01',
+        'name'                   => 'Made in batches of sixteen',
+        'recommended_batch_size' => 16,
+    ]);
+    $artefact->update(['org_stock_id' => $orgStock->id]);
+
+    \App\Models\Procurement\PartnerShoppingListItem::where('stock_id', $orgStock->stock_id)->forceDelete();
+
+    $item = \App\Models\Procurement\PartnerShoppingListItem::create([
+        'group_id'        => $this->group->id,
+        'organisation_id' => $this->organisation->id,
+        'stock_id'        => $orgStock->stock_id,
+        'org_stock_id'    => $orgStock->id,
+        'quantity'        => 1,
+    ]);
+
+    actingAs($this->guest->getUser());
+    $routeParameters = [$this->organisation->slug, $this->production->slug];
+
+    $props = fn (array $query = []) => get(route('grp.org.productions.show.to_produce.index', $routeParameters + $query))
+        ->assertOk()->viewData('page')['props'];
+
+    $backlogOf = fn (array $props) => collect($props['groups'])
+        ->firstWhere('label', 'Backlog')['items'];
+
+    $hidden = $props();
+    expect($backlogOf($hidden))->toBe([])
+        ->and($hidden['hitchhikers']['count'])->toBe(1)
+        ->and($hidden['hitchhikers']['showing'])->toBeFalse();
+
+    $shown = $props(['hitchhikers' => 1]);
+    expect(collect($backlogOf($shown))->pluck('stock_code')->all())->toBe([$stocks[0]->code])
+        ->and(collect($backlogOf($shown))->first()['is_hitchhiker'])->toBeTrue();
+
+    /* Enough partners asking for the same thing fills the batch, so it stops hitchhiking. */
+    $item->update(['quantity' => 8]);
+    expect(collect($backlogOf($props()))->pluck('stock_code')->all())->toBe([$stocks[0]->code]);
+});
