@@ -28,7 +28,7 @@ const props = defineProps<{
     move_to_department?: object
     move_to_family?: object
     set_batch_size?: object
-    discontinue?: object
+    set_state?: object
     move_families_to_department?: object
     artisans: object
 }>()
@@ -43,7 +43,7 @@ const component = computed(() => ({
 }[currentTab.value]))
 
 const componentProps = computed(() => ({
-    artefacts: { moveToDepartment: props.move_to_department, moveToFamily: props.move_to_family, setBatchSize: props.set_batch_size, discontinue: props.discontinue },
+    artefacts: { moveToDepartment: props.move_to_department, moveToFamily: props.move_to_family, setBatchSize: props.set_batch_size, setState: props.set_state },
     families: { moveToDepartment: props.move_families_to_department },
     history: {},
 }[currentTab.value] ?? {}))

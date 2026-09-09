@@ -17,19 +17,22 @@ use App\Models\Production\ArtefactDepartment;
 use App\Models\Production\ArtefactFamily;
 use App\Models\Production\Production;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 
-class DiscontinueArtefacts extends OrgAction
+class SetArtefactsState extends OrgAction
 {
     public function handle(Production $production, array $modelData): int
     {
+        $state = ArtefactStateEnum::from($modelData['state']);
+
         $artefacts = Artefact::where('production_id', $production->id)
             ->whereIn('id', $modelData['artefacts'])
-            ->where('state', '!=', ArtefactStateEnum::DISCONTINUED)
+            ->where('state', '!=', $state)
             ->get();
 
         Artefact::whereIn('id', $artefacts->pluck('id'))
-            ->update(['state' => ArtefactStateEnum::DISCONTINUED]);
+            ->update(['state' => $state]);
 
         /* A family and a department take their own state from the artefacts under them. */
         ArtefactFamily::whereIn('id', $artefacts->pluck('artefact_family_id')->filter()->unique())
@@ -54,6 +57,7 @@ class DiscontinueArtefacts extends OrgAction
         return [
             'artefacts'   => ['required', 'array', 'min:1'],
             'artefacts.*' => ['integer'],
+            'state'       => ['required', Rule::in([ArtefactStateEnum::ACTIVE->value, ArtefactStateEnum::DISCONTINUED->value])],
         ];
     }
 

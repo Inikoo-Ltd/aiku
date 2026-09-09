@@ -281,14 +281,14 @@ class IndexArtefacts extends OrgAction
         ];
     }
 
-    public function getDiscontinueProps(Production $production, bool $canEdit): ?array
+    public function getSetStateProps(Production $production, bool $canEdit): ?array
     {
         if (!$canEdit) {
             return null;
         }
 
         return [
-            'discontinue_route' => ['name' => 'grp.models.production.artefacts.discontinue', 'parameters' => [$production->id]],
+            'set_state_route' => ['name' => 'grp.models.production.artefacts.set_state', 'parameters' => [$production->id]],
         ];
     }
 
@@ -474,7 +474,7 @@ class IndexArtefacts extends OrgAction
                 'move_to_department' => $this->parent instanceof Production ? $this->getMoveToDepartmentProps($this->parent, $this->canEdit) : null,
                 'move_to_family'     => $this->parent instanceof Production ? $this->getMoveToFamilyProps($this->parent, $this->canEdit) : null,
                 'set_batch_size'     => $this->parent instanceof Production ? $this->getSetBatchSizeProps($this->parent, $this->canEdit) : null,
-                'discontinue'        => $this->parent instanceof Production ? $this->getDiscontinueProps($this->parent, $this->canEdit) : null,
+                'set_state'          => $this->parent instanceof Production ? $this->getSetStateProps($this->parent, $this->canEdit) : null,
                 'tabs'        => [
                     'current'    => $this->tab,
                     'navigation' => $this->parent instanceof Group ? Arr::except(ArtefactsTabsEnum::navigation(), [ArtefactsTabsEnum::ARTEFACTS_HISTORIES->value]) : ArtefactsTabsEnum::navigation(),

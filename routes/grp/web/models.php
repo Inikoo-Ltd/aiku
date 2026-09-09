@@ -424,7 +424,7 @@ use App\Actions\Production\Artefact\ImportArtefact;
 use App\Actions\Production\Artefact\Label\PdfArtefactLabelSheet;
 use App\Actions\Production\Artefact\MoveArtefactsToDepartment;
 use App\Actions\Production\Artefact\MoveArtefactsToFamily;
-use App\Actions\Production\Artefact\DiscontinueArtefacts;
+use App\Actions\Production\Artefact\SetArtefactsState;
 use App\Actions\Production\Artefact\SetArtefactsBatchSize;
 use App\Actions\Production\ArtefactFamily\DeleteArtefactFamily;
 use App\Actions\Production\ArtefactFamily\MoveArtefactFamiliesToDepartment;
@@ -1290,7 +1290,7 @@ Route::name('production.')->prefix('production/{production:id}')->group(function
     Route::post('artefact-families', StoreArtefactFamily::class)->name('artefact_families.store');
     Route::post('artefacts/move-to-family', MoveArtefactsToFamily::class)->name('artefacts.move_to_family');
     Route::post('artefacts/batch-size', SetArtefactsBatchSize::class)->name('artefacts.set_batch_size');
-    Route::post('artefacts/discontinue', DiscontinueArtefacts::class)->name('artefacts.discontinue');
+    Route::post('artefacts/state', SetArtefactsState::class)->name('artefacts.set_state');
     Route::post('artefact-families/move-to-department', MoveArtefactFamiliesToDepartment::class)->name('artefact_families.move_to_department');
     Route::post('artefact-upload', ImportArtefact::class)->name('artefacts.upload');
 });

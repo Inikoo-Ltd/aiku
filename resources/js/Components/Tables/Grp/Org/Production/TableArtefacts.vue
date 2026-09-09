@@ -31,7 +31,7 @@ const props = defineProps<{
     moveToDepartment?: MoveProps
     moveToFamily?: MoveProps
     setBatchSize?: { set_route: routeType }
-    discontinue?: { discontinue_route: routeType }
+    setState?: { set_state_route: routeType }
 }>()
 
 const routeCurrent = route().current()
@@ -50,13 +50,14 @@ const bulkActions = computed(() => [
     props.setBatchSize ? { value: 'batch_size', label: ctrans('Batch size') } : null,
     props.moveToFamily ? { value: 'move_family', label: ctrans('Move to family') } : null,
     props.moveToDepartment ? { value: 'move_department', label: ctrans('Move to department') } : null,
-    props.discontinue ? { value: 'discontinue', label: ctrans('Discontinue') } : null,
+    props.setState ? { value: 'discontinue', label: ctrans('Discontinue') } : null,
+    props.setState ? { value: 'activate', label: ctrans('Make active') } : null,
 ].filter(Boolean) as { value: string, label: string }[])
 
 const currentAction = computed(() => bulkActions.value.find(action => action.value === bulkAction.value))
 
 const selectedIds = computed(() => Object.entries(selected.value).filter(([, on]) => on).map(([id]) => Number(id)))
-const showBulkBar = computed(() => (props.moveToDepartment || props.moveToFamily || props.setBatchSize || props.discontinue) && selectedIds.value.length > 0)
+const showBulkBar = computed(() => (props.moveToDepartment || props.moveToFamily || props.setBatchSize || props.setState) && selectedIds.value.length > 0)
 
 const clearSelection = () => {
     confirmingDiscontinue.value = false
@@ -64,8 +65,8 @@ const clearSelection = () => {
     selected.value = {}
 }
 
-const submitDiscontinue = () => {
-    if (!props.discontinue) return
+const applyState = (state: string, title: string) => {
+    if (!props.setState) return
 
     const count = selectedIds.value.length
     const artefacts = [...selectedIds.value]
@@ -74,16 +75,16 @@ const submitDiscontinue = () => {
     confirmingDiscontinue.value = false
 
     router.post(
-        route(props.discontinue.discontinue_route.name, props.discontinue.discontinue_route.parameters),
-        { artefacts: artefacts },
+        route(props.setState.set_state_route.name, props.setState.set_state_route.parameters),
+        { artefacts: artefacts, state: state },
         {
             preserveScroll: true,
             onStart: () => isMoving.value = true,
             onFinish: () => isMoving.value = false,
             onSuccess: () => {
                 notify({
-                    title: ctrans('Artefacts discontinued'),
-                    text: count === 1 ? ctrans('1 artefact discontinued') : ctrans(':count artefacts discontinued', { count: count }),
+                    title: title,
+                    text: count === 1 ? ctrans('1 artefact changed') : ctrans(':count artefacts changed', { count: count }),
                     type: 'success',
                 })
                 clearSelection()
@@ -92,6 +93,9 @@ const submitDiscontinue = () => {
         }
     )
 }
+
+const submitDiscontinue = () => applyState('discontinued', ctrans('Artefacts discontinued'))
+const submitActivate = () => applyState('active', ctrans('Artefacts made active'))
 
 const submitBatchSize = () => {
     if (!props.setBatchSize || batchSize.value === null || batchSize.value < 1) return
@@ -204,7 +208,16 @@ function productionRoute(artefact: { slug: string }) {
             </div>
 
             <button
-                v-if="discontinue && bulkAction === 'discontinue'"
+                v-if="setState && bulkAction === 'activate'"
+                type="button"
+                class="whitespace-nowrap rounded bg-indigo-600 px-3 py-1.5 text-sm text-white disabled:opacity-50"
+                :disabled="isMoving"
+                @click="submitActivate">
+                {{ ctrans('Make active') }}
+            </button>
+
+            <button
+                v-if="setState && bulkAction === 'discontinue'"
                 type="button"
                 class="whitespace-nowrap rounded bg-red-600 px-3 py-1.5 text-sm text-white disabled:opacity-50"
                 :disabled="isMoving"
@@ -274,7 +287,7 @@ function productionRoute(artefact: { slug: string }) {
                         {{ selectedIds.length === 1 ? ctrans('Discontinue 1 artefact?') : ctrans('Discontinue :count artefacts?', { count: selectedIds.length }) }}
                     </h3>
                     <p class="mt-1 text-sm text-gray-500">
-                        {{ ctrans('A discontinued artefact leaves the working lists and keeps its recipe. You can set it back to active one by one.') }}
+                        {{ ctrans('A discontinued artefact leaves the working lists and keeps its recipe. Pick Make active to bring it back.') }}
                     </p>
                 </div>
             </div>
@@ -294,7 +307,7 @@ function productionRoute(artefact: { slug: string }) {
         </div>
     </Modal>
 
-    <Table ref="tableRef" :resource="data" :name="tab" class="mt-5" :isCheckBox="!!(moveToDepartment || moveToFamily || setBatchSize || discontinue)" checkboxKey="id" @onSelectRow="(rows) => selected = { ...rows }">
+    <Table ref="tableRef" :resource="data" :name="tab" class="mt-5" :isCheckBox="!!(moveToDepartment || moveToFamily || setBatchSize || setState)" checkboxKey="id" @onSelectRow="(rows) => selected = { ...rows }">
         <template #cell(state)="{ item: artefact }">
             <Icon :data="artefact.state" />
         </template>

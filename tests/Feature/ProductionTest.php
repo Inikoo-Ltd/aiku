@@ -16,7 +16,7 @@ use App\Actions\Production\Artefact\UpdateArtefact;
 use App\Actions\Production\Artefact\UI\GetArtefactShowcase;
 use App\Actions\Production\ArtefactDepartment\StoreArtefactDepartment;
 use App\Actions\Production\Artefact\MoveArtefactsToFamily;
-use App\Actions\Production\Artefact\DiscontinueArtefacts;
+use App\Actions\Production\Artefact\SetArtefactsState;
 use App\Actions\Production\Artefact\SetArtefactState;
 use App\Actions\Production\Artefact\SetArtefactsBatchSize;
 use App\Actions\Production\ArtefactFamily\Hydrators\ArtefactFamilyHydrateArtefacts;
@@ -2744,13 +2744,20 @@ test('discontinue artefacts in bulk and take the family down with them', functio
 
     expect($family->refresh()->state)->toBe(ArtefactStateEnum::ACTIVE);
 
-    $changed = DiscontinueArtefacts::make()->action($this->production, ['artefacts' => [$one->id, $two->id]]);
+    $changed = SetArtefactsState::make()->action($this->production, ['artefacts' => [$one->id, $two->id], 'state' => ArtefactStateEnum::DISCONTINUED->value]);
 
     expect($changed)->toBe(2)
         ->and($one->refresh()->state)->toBe(ArtefactStateEnum::DISCONTINUED)
         ->and($two->refresh()->state)->toBe(ArtefactStateEnum::DISCONTINUED)
         ->and($family->refresh()->state)->toBe(ArtefactStateEnum::DISCONTINUED);
 
-    $again = DiscontinueArtefacts::make()->action($this->production, ['artefacts' => [$one->id, $two->id]]);
+    $again = SetArtefactsState::make()->action($this->production, ['artefacts' => [$one->id, $two->id], 'state' => ArtefactStateEnum::DISCONTINUED->value]);
     expect($again)->toBe(0);
+
+    /* Discontinuing has to be undoable, otherwise one wrong click needs a developer. */
+    $revived = SetArtefactsState::make()->action($this->production, ['artefacts' => [$one->id, $two->id], 'state' => ArtefactStateEnum::ACTIVE->value]);
+
+    expect($revived)->toBe(2)
+        ->and($one->refresh()->state)->toBe(ArtefactStateEnum::ACTIVE)
+        ->and($family->refresh()->state)->toBe(ArtefactStateEnum::ACTIVE);
 });
