@@ -77,7 +77,7 @@ class EditDepartment extends OrgAction
                 'id'    => $item->id
             ]
         ]);
-        
+
         $iconLinks = [];
 
         if ($department->masterProductCategory) {

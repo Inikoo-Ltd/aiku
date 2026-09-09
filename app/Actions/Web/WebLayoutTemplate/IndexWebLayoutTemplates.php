@@ -29,7 +29,7 @@ class IndexWebLayoutTemplates extends OrgAction
                     ->orWhereStartWith('users.username', $value);
             });
         });
-        
+
         $showSearch = AllowedFilter::callback('show', function ($query, $value) use ($webpage) {
             if ($value == 'matching') {
                 $query

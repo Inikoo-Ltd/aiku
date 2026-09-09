@@ -46,12 +46,15 @@ class CascadeMasterProductCategoryCustomizeOptionToChildren
 
         $total = $productCategories->count();
 
-        MasterProductCategoryJsonbCascadeProgressEvent::dispatch($masterProductCategory, [
+        MasterProductCategoryJsonbCascadeProgressEvent::dispatch(
+            $masterProductCategory,
+            [
             'state' => 'updating',
             'done'  => 0,
             'total' => $total,
         ],
-        'customize-option-cascade-progress');
+            'customize-option-cascade-progress'
+        );
 
         /** @var ProductCategory $productCategory */
         foreach ($productCategories as $index => $productCategory) {
@@ -59,19 +62,25 @@ class CascadeMasterProductCategoryCustomizeOptionToChildren
                 'customize_option' => $this->getJsonbForShopLanguage($masterProductCategory, $productCategory, $english, 'customize_option'),
             ]);
 
-            MasterProductCategoryJsonbCascadeProgressEvent::dispatch($masterProductCategory, [
+            MasterProductCategoryJsonbCascadeProgressEvent::dispatch(
+                $masterProductCategory,
+                [
                 'state' => 'updating',
                 'done'  => $index + 1,
                 'total' => $total,
             ],
-            'customize-option-cascade-progress');
+                'customize-option-cascade-progress'
+            );
         }
 
-        MasterProductCategoryJsonbCascadeProgressEvent::dispatch($masterProductCategory, [
+        MasterProductCategoryJsonbCascadeProgressEvent::dispatch(
+            $masterProductCategory,
+            [
             'state' => 'done',
             'done'  => $total,
             'total' => $total,
         ],
-        'customize-option-cascade-progress');
+            'customize-option-cascade-progress'
+        );
     }
 }

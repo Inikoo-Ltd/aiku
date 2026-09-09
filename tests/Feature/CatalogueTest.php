@@ -38,7 +38,6 @@ use App\Actions\Catalogue\ProductCategory\UpdateProductCategory;
 use App\Actions\Catalogue\Shop\HydrateShops;
 use App\Actions\Catalogue\Shop\StoreShop;
 use App\Actions\Catalogue\Shop\UpdateShop;
-use App\Actions\Web\Webpage\Luigi\ReindexWebpageLuigiData;
 use App\Actions\Web\Website\StoreWebsite;
 use App\Enums\Billables\Service\ServiceStateEnum;
 use App\Enums\Catalogue\Charge\ChargeStateEnum;
@@ -77,10 +76,6 @@ beforeAll(function () {
 
 
 beforeEach(function () {
-    ReindexWebpageLuigiData::shouldRun();
-    ReindexWebpageLuigiData::mock()
-        ->shouldReceive('getJobUniqueId')
-        ->andReturn(1);
     $this->organisation = createOrganisation();
     $this->guest        = createAdminGuest($this->organisation->group);
     $this->warehouse    = createWarehouse();

@@ -92,7 +92,7 @@ class ShowArtefact extends OrgAction
                         //     ]
                         //     : null,
                         // $this->canDelete ? $this->getDeleteActionIcon($request) : null,
-                        
+
                         [
                             'type'    => 'button',
                             'tooltip'     => __('Edit'),

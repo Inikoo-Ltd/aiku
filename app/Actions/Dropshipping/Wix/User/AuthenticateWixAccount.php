@@ -80,7 +80,7 @@ class AuthenticateWixAccount extends OrgAction
                 ];
 
                 if (!$wixUser && !$customer) {
-                   WixUser::create(array_merge($userData, ['wix_instance_id' => $instanceId]));
+                    WixUser::create(array_merge($userData, ['wix_instance_id' => $instanceId]));
 
                     return null;
                 }

@@ -9,7 +9,6 @@
 
 /** @noinspection PhpUnhandledExceptionInspection */
 
-use App\Actions\Web\Webpage\Luigi\ReindexWebpageLuigiData;
 use App\Actions\Web\Website\StoreWebsite;
 use App\Enums\Web\Webpage\WebpageSubTypeEnum;
 use App\Enums\Web\Webpage\WebpageTypeEnum;
@@ -31,11 +30,6 @@ beforeEach(function () {
     ) = createShop();
 
     actingAs($this->user);
-
-    ReindexWebpageLuigiData::shouldRun();
-    ReindexWebpageLuigiData::mock()
-        ->shouldReceive('getJobUniqueId')
-        ->andReturn(1);
 
     $this->website = $this->shop->website ?? StoreWebsite::make()->action(
         $this->shop,
