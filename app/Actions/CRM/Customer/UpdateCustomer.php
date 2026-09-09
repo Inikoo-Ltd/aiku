@@ -53,6 +53,7 @@ use App\Rules\IUnique;
 use App\Rules\Phone;
 use App\Rules\ValidAddress;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Validation\Rule;
@@ -102,8 +103,23 @@ class UpdateCustomer extends OrgAction
                 }
                 $customer->refresh();
 
+                /**
+                 * Baskets follow the customer's address as they always have. A submitted order is history and
+                 * must not, with one exception: one held back because it never had an address at all, which
+                 * is exactly what fixing the customer is meant to release (HELP-3102).
+                 */
+                $ordersToFollowTheCustomer = $customer->orders()
+                    ->where(function ($query) {
+                        $query->where('state', OrderStateEnum::CREATING)
+                            ->orWhere(
+                                fn ($query) => $query->where('state', OrderStateEnum::SUBMITTED)
+                                    ->whereHas('billingAddress', fn ($query) => $query->whereIn(DB::raw("coalesce(address_line_1,'')"), ['', '0']))
+                            );
+                    })
+                    ->get();
+
                 /** @var Order $order */
-                foreach ($customer->orders()->where('state', OrderStateEnum::CREATING)->get() as $order) {
+                foreach ($ordersToFollowTheCustomer as $order) {
                     $editDelivery = $order->billing_address_id == $order->delivery_address_id;
 
                     UpdateOrderBillingAddress::make()->action(

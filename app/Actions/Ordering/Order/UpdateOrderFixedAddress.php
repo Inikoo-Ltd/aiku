@@ -9,10 +9,14 @@
 namespace App\Actions\Ordering\Order;
 
 use App\Actions\Helpers\Address\FixedAddressGarbageCollection;
+use App\Actions\Ordering\Order\UpdateState\SendOrderToWarehouse;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Traits\WithFixedAddressActions;
 use App\Actions\Traits\WithModelAddressActions;
+use App\Enums\Ordering\Order\OrderPayStatusEnum;
+use App\Enums\Ordering\Order\OrderStateEnum;
+use App\Enums\Ordering\Order\OrderToBePaidByEnum;
 use App\Models\Ordering\Order;
 use App\Rules\ValidAddress;
 use Illuminate\Support\Arr;
@@ -59,10 +63,33 @@ class UpdateOrderFixedAddress extends OrgAction
             FixedAddressGarbageCollection::dispatch($oldAddress->id)->delay($this->hydratorsDelay);
         }
 
-
-
+        $this->releaseIfHeldForAMissingAddress($order);
 
         return $order;
+    }
+
+    /**
+     * An order whose customer had no address never reached the warehouse (HELP-3102). Now that an address
+     * has been put on it, it is offered to the warehouse again: SendOrderToWarehouse holds it once more by
+     * itself if what arrived is still not enough, so there is nothing to check twice here.
+     */
+    private function releaseIfHeldForAMissingAddress(Order $order): void
+    {
+        $order->refresh();
+
+        if ($order->state != OrderStateEnum::SUBMITTED) {
+            return;
+        }
+
+        if ($order->pay_status != OrderPayStatusEnum::PAID && $order->to_be_paid_by != OrderToBePaidByEnum::CASH_ON_DELIVERY) {
+            return;
+        }
+
+        if ($order->deliveryNotes()->exists()) {
+            return;
+        }
+
+        SendOrderToWarehouse::make()->action($order, []);
     }
 
     public function rules(): array

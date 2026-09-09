@@ -61,6 +61,7 @@ use App\Actions\Ordering\Order\PayOrder;
 use App\Actions\Ordering\Order\StoreOrder;
 use App\Actions\Ordering\Order\UpdateOrder;
 use App\Actions\Ordering\Order\UpdateOrderBillingAddress;
+use App\Actions\Ordering\Order\UpdateOrderDeliveryAddress;
 use App\Actions\Ordering\Order\UpdateOrderIsShippingTBC;
 use App\Actions\Billables\Service\StoreService;
 use App\Actions\Ordering\Order\UpdateState\DispatchOrder;
@@ -3577,4 +3578,31 @@ test('a collection invoice stores the collection address it was issued with', fu
     $collectionAddress->update(['address_line_1' => 'Somewhere else entirely']);
 
     expect($invoice->deliveryAddress?->address_line_1)->toBe('Affinity Park');
+});
+
+test('a held order goes to the warehouse once its address is put on it', function () {
+    $customer = createCustomer($this->shop);
+    $order    = StoreOrder::make()->action($customer, Order::factory()->definition());
+    StoreTransaction::make()->action($order, $this->product->currentHistoricProduct, Transaction::factory()->definition());
+    SubmitOrder::make()->action($order);
+
+    $order->refresh();
+    $order->billingAddress->update(['address_line_1' => '']);
+    $order->unsetRelation('billingAddress');
+    $order->update(['pay_status' => OrderPayStatusEnum::PAID]);
+
+    expect(SendOrderToWarehouse::make()->action($order, []))->toBeNull()
+        ->and($order->refresh()->state)->toEqual(OrderStateEnum::SUBMITTED);
+
+    $realAddress = array_merge(\App\Models\Helpers\Address::factory()->definition(), ['address_line_1' => '31 Bradley Road']);
+
+    /** A B2B order carries one address row for both sides, so it stays held until that row is real.
+     * A dropshipping order has two different rows and each side is checked on its own. */
+    UpdateOrderBillingAddress::make()->action($order, ['address' => $realAddress]);
+    expect($order->refresh()->state)->toEqual(OrderStateEnum::SUBMITTED);
+
+    UpdateOrderDeliveryAddress::make()->action($order, ['address' => $realAddress, 'update_parent' => false]);
+
+    expect($order->refresh()->state)->toEqual(OrderStateEnum::IN_WAREHOUSE)
+        ->and($order->deliveryNotes()->count())->toBe(1);
 });
