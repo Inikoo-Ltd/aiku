@@ -35,6 +35,7 @@ use App\Actions\Web\Redirect\StoreRedirect;
 use App\Actions\Web\Redirect\StoreRedirectFromWebpage;
 use App\Actions\Web\Webpage\HydrateWebpage;
 use App\Actions\Web\Webpage\Iris\ShowIrisRobotsTxt;
+use App\Actions\CRM\WebUser\Retina\UI\ShowRetinaLogin;
 use App\Actions\Web\Webpage\Iris\ShowIrisWebpage;
 use App\Actions\Web\Webpage\ProcessWebpageTimeSeriesRecords;
 use App\Actions\Web\Webpage\StoreWebpage;
@@ -1521,6 +1522,23 @@ test('iris webpage redirects to trimmed canonical url', function (Website $websi
         ->and($request->attributes->get('iris_redirect_webpage_id'))->toBe($website->storefront->id);
 })->depends('launch website');
 
+test('logged in visitor to an auth page is redirected without being cached', function (Website $website) {
+    $request = ActionRequest::createFrom(Request::create('https://'.$website->domain.'/login'));
+    $request->merge(['website' => $website]);
+    $request->headers->set('X-Logged-Status', 'In');
+
+    $result = ShowIrisWebpage::make()->handle('login', [], $request);
+    expect($result)->toBe('logged-in');
+
+    app()->instance('request', $request);
+    $response = ShowIrisWebpage::make()->htmlResponse($result);
+
+    expect($response->getStatusCode())->toBe(302)
+        ->and($response->getTargetUrl())->toBe($website->storefront->getCanonicalUrl())
+        ->and($response->headers->get('Cache-Control'))->toContain('no-store')
+        ->and($response->headers->get('X-Aiku-Cacheable-Redirect'))->toBe('0');
+})->depends('launch website');
+
 test('process website time series records', function (Website $website) {
     ProcessWebsiteTimeSeriesRecords::run(
         $website->id,
@@ -2138,27 +2156,29 @@ test('storing a system page wires it to the website', function (Website $website
     }
 })->depends('launch website');
 
-test('system page redirect only fires for live pages', function (Website $website) {
-    $action = new class () {
-        use App\Actions\Web\Webpage\WithSystemPageRedirect;
+test('retina login renders the iris login block only when that page is live', function (Website $website) {
+    config()->set('iris.cache.webpage_path.ttl', 0);
+    config()->set('iris.cache.webpage.ttl', 0);
 
-        public function run(?Webpage $webpage, $request)
-        {
-            return $this->redirectToSystemPage($webpage, $request);
-        }
-    };
-
-    $request = request();
+    $request = ActionRequest::createFrom(Request::create('https://'.$website->domain.'/app/login'));
+    $request->merge(['website' => $website]);
+    app()->instance('request', $request);
+    Inertia\Inertia::setRootView('app-retina');
 
     $login = $website->refresh()->loginPage;
-    expect($action->run(null, $request))->toBeNull()
-        ->and($login->state)->not->toBe(WebpageStateEnum::LIVE)
-        ->and($action->run($login, $request))->toBeNull();
+    expect($login)->not->toBeNull()
+        ->and($login->state)->not->toBe(WebpageStateEnum::LIVE);
+
+    $inertiaResponse = (new ShowRetinaLogin())->handle($request);
+    $component       = new ReflectionProperty($inertiaResponse, 'component');
+    $component->setAccessible(true);
+
+    expect($inertiaResponse)->toBeInstanceOf(Inertia\Response::class)
+        ->and($component->getValue($inertiaResponse))->toBe('Auth/RetinaLogin');
 
     $login->update(['state' => WebpageStateEnum::LIVE]);
 
-    $redirect = $action->run($login->refresh(), $request);
-    expect($redirect)->not->toBeNull()
-        ->and($redirect->getTargetUrl())->toBeString()
-        ->and($redirect->getTargetUrl())->not->toContain('Array');
+    $liveResponse = (new ShowRetinaLogin())->handle($request);
+    expect($liveResponse)->toBeInstanceOf(Illuminate\Http\Response::class)
+        ->and($liveResponse->headers->get('X-AIKU-WEBSITE'))->toBe((string) $website->id);
 })->depends('launch website');

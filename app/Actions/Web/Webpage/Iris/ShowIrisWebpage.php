@@ -139,7 +139,7 @@ class ShowIrisWebpage
         }
 
         if (in_array($path, ['login', 'register', 'forgot-password']) && $loggedIn) {
-            return 'welcome';
+            return 'logged-in';
         }
 
         if (config('iris.cache.webpage_path.ttl') == 0) {
@@ -273,6 +273,15 @@ class ShowIrisWebpage
     public function htmlResponse($webpageData): \Illuminate\Http\JsonResponse|\Illuminate\Http\RedirectResponse|\Symfony\Component\HttpFoundation\Response|string
     {
         if (is_string($webpageData)) {
+
+            // Depends on the visitor, so it must never reach Varnish or the browser cache.
+            if ($webpageData == 'logged-in') {
+                return redirect()->to(request()->website->storefront->getCanonicalUrl())
+                    ->withHeaders([
+                        'Cache-Control'             => 'private, no-store',
+                        'X-Aiku-Cacheable-Redirect' => '0',
+                    ]);
+            }
 
             if ($webpageData == 'robots') {
                 $robotText = ShowIrisRobotsTxt::make()->getRobotText(request()->website);
