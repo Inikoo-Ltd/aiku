@@ -11,11 +11,18 @@ import InformationIcon from '../Utils/InformationIcon.vue'
 import { notify } from '@kyvg/vue3-notification'
 import { router } from '@inertiajs/vue3'
 import PureInput from '../Pure/PureInput.vue'
+import axios from 'axios'
 
 const props = defineProps<{
     shop_data: {
+        id: number
         slug: string
         currency_code: string
+        organisation: string
+        offercampaign: string
+        default_dates?: {
+            start: string
+        }
     }
 }>()
 
@@ -26,7 +33,7 @@ const typeOffer = ref('quantity')
 const offerQtyItems = ref<number | null>(null)
 const offerAmount = ref<number | null>(0)
 const discountPercentage = ref<number | null>(null)
-const offerCategoryId = ref(null)
+const offerProductId = ref<number | null>(null)
 const dateType = ref<'permanent' | 'interval'>('permanent')
 const startDate = ref<Date | null>(null)
 const endDate = ref<Date | null>(null)
@@ -52,51 +59,53 @@ const productFetchRoute = {
     }
 }
 
-const submitCategoryOffer = () => {
-    // Section: Submit
-    router.post(
-        route('grp.org.shops.show.discounts.campaigns.store_products', {
-            organisation: 'sk',
-            shop: 'se',
-            offerCampaign: 'co-se',
+const submitProductOffer = () => {
+    isLoadingSubmit.value = true
+
+    axios.post(
+        route('grp.models.product_offer.store', {
+            shop: props.shop_data.id,
         }),
         {
             name: offerLabel.value,
             type: typeOffer.value,
-            offerCategoryId: offerCategoryId.value,
-            offer_qty_items: offerQtyItems.value,
-            offer_amount: offerAmount.value,
-            discount_percentage: discountPercentage.value,
-            date_type: dateType.value,
-            start_date: formatDate(startDate.value),
-            end_date: formatDate(endDate.value)
-        },
-        {
-            preserveScroll: true,
-            preserveState: true,
-            onStart: () => {
-                isLoadingSubmit.value = true
-            },
-            onSuccess: () => {
-                resetForm()
-                notify({
-                    title: trans("Success"),
-                    text: trans("Successfully submit the data"),
-                    type: "success"
-                })
-            },
-            onError: errors => {
-                notify({
-                    title: trans("Something went wrong"),
-                    text: trans("Failed to submit the data, please try again"),
-                    type: "error"
-                })
-            },
-            onFinish: () => {
-                isLoadingSubmit.value = false
-            },
+            product_id: offerProductId.value,
+            trigger_data_item_quantity: offerQtyItems.value != null ? Math.floor(offerQtyItems.value) : null,
+            trigger_data_item_amount: offerAmount.value,
+            percentage_off: discountPercentage.value != null ? discountPercentage.value / 100 : null,
+            duration: dateType.value,
+            start_at: formatDate(startDate.value),
+            end_at: dateType.value === 'interval' ? formatDate(endDate.value) : null
         }
     )
+        .then((response) => {
+            notify({
+                title: trans("Success"),
+                text: trans("Successfully submit the data"),
+                type: "success"
+            })
+            resetForm()
+            isOpenModal.value = false
+
+            router.visit(route('grp.org.shops.show.discounts.campaigns.offer.show', {
+                organisation: props.shop_data.organisation,
+                shop: props.shop_data.slug,
+                offerCampaign: props.shop_data.offercampaign,
+                offer: response.data.slug
+            }))
+        })
+        .catch((error) => {
+            const errors = error.response?.data?.errors || {}
+            const errMsg = Object.values(errors).join('. ') || trans("Failed to submit the data, please try again")
+            notify({
+                title: trans("Something went wrong"),
+                text: errMsg,
+                type: "error"
+            })
+        })
+        .finally(() => {
+            isLoadingSubmit.value = false
+        })
 }
 
 const resetForm = () => {
@@ -105,15 +114,15 @@ const resetForm = () => {
     offerQtyItems.value = null
     offerAmount.value = 0
     discountPercentage.value = null
-    offerCategoryId.value = null
+    offerProductId.value = null
     dateType.value = 'permanent'
-    startDate.value = null
+    startDate.value = props.shop_data.default_dates?.start ? new Date(props.shop_data.default_dates.start) : today
     endDate.value = null
 }
 
 const isFormInvalid = computed(() => {
 
-    if (!offerCategoryId.value) return true
+    if (!offerProductId.value) return true
 
     if (!offerLabel.value) return true
 
@@ -179,11 +188,11 @@ resetForm();
                     </label>
 
 
-                    <PureMultiselectInfiniteScroll v-model="offerCategoryId" :fetchRoute="productFetchRoute" placeholder="Select product" valueProp="id" :required="true">
+                    <PureMultiselectInfiniteScroll v-model="offerProductId"  labelProp="name" :fetchRoute="productFetchRoute" placeholder="Select product" valueProp="id" :required="true">
                         <template #singlelabel="{ value }">
                             <div class="w-full text-left pl-4 leading-4 truncate mr-2">
-                                {{ value.name }}
-                                <span v-if="value.code" class="text-sm text-gray-400">({{ value.code }})</span>
+                                {{ value.code }}
+                                <span class="text-sm text-gray-400">({{ value.name }})</span>
                                 <span class="text-sm text-gray-400"> · {{ trans('Stock') }}: {{ value.stock ?? 0 }}</span>
                             </div>
                         </template>
@@ -191,9 +200,9 @@ resetForm();
                         <template #option="{ option, isSelected }">
                             <div class="flex w-full items-center justify-between gap-x-2">
                                 <div>
-                                    {{ option.name }}
-                                    <span v-if="option.code" class="text-sm"
-                                        :class="isSelected(option) ? 'text-indigo-200' : 'text-gray-400'">({{ option.code }})</span>
+                                    {{ option.code }}
+                                    <span class="text-sm"
+                                        :class="isSelected(option) ? 'text-indigo-200' : 'text-gray-400'">({{ option.name }})</span>
                                 </div>
                                 <span class="text-sm whitespace-nowrap"
                                     :class="isSelected(option) ? 'text-indigo-200' : 'text-gray-400'">
@@ -315,7 +324,7 @@ resetForm();
 
                 <div class="mt-8 flex justify-end gap-x-4">
                     <Button @click="isOpenModal = false" type="cancel" />
-                    <Button full icon="fad fa-save" :label="trans('Save')" @click="submitCategoryOffer"
+                    <Button full icon="fad fa-save" :label="trans('Save')" @click="submitProductOffer"
                         :loading="isLoadingSubmit" :disabled="isFormInvalid">
                     </Button>
                 </div>
