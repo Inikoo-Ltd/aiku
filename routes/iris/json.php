@@ -58,8 +58,6 @@ use App\Actions\Search\GetIrisSearchFeaturedItems;
 use App\Actions\Search\RecordWebsiteSearchClick;
 use App\Actions\Search\SearchIrisCatalogue;
 use App\Actions\Search\SearchIrisCataloguePage;
-use App\Actions\Web\Luigi\LuigiBoxGetProductDetail;
-use App\Actions\Web\Luigi\LuigiBoxRecommendation;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(["retina-auth:retina"])->group(function () {
@@ -121,8 +119,7 @@ Route::middleware(["iris-relax-auth:retina"])->group(function () {
 
     Route::get('variant/{variant:id}/products', GetProductsOfVariant::class)->name('products.variant')->whereNumber('variant');
     Route::get('variant/{variant:id}', GetVariantAndProducts::class)->name('variant')->whereNumber('variant');
-    Route::post('luigi-product-recommendation', LuigiBoxRecommendation::class)->name('luigi.product_recommendation');
-    Route::get('luigi-product-details', LuigiBoxGetProductDetail::class)->name('luigi.product_details');
+
 
     Route::get('banner/{banner:id}', GetBanner::class)->name('get_banner')->whereNumber('banner');
 
