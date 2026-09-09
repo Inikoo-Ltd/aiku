@@ -23,6 +23,7 @@ use Lorisleiva\Actions\ActionRequest;
 class UpdateDeliveryNotePackaging extends OrgAction
 {
     use WithActionUpdate;
+    use WithDeliveryNotePackaging;
 
     private DeliveryNote $deliveryNote;
 
@@ -67,10 +68,29 @@ class UpdateDeliveryNotePackaging extends OrgAction
         }
 
         $new = Packaging::find($packagingId);
-        if ($new && $new->family_code !== $currentFamily) {
+        if (!$new) {
+            return;
+        }
+
+        if ($new->family_code !== $currentFamily) {
             $validator->errors()->add(
                 'packaging_id',
                 __('You can only change to another size within the same packaging family.')
+            );
+
+            return;
+        }
+
+        $paidPrice = $this->paidPackagingPrice($this->deliveryNote);
+
+        if ($paidPrice !== null && round((float) $new->price, 2) !== $paidPrice) {
+            $validator->errors()->add(
+                'packaging_id',
+                __('The order is already paid, so only a packaging costing the same (:paid) can be used. :name costs :price.', [
+                    'paid'  => number_format($paidPrice, 2),
+                    'name'  => $new->name,
+                    'price' => number_format((float) $new->price, 2),
+                ])
             );
         }
     }

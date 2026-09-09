@@ -38,6 +38,24 @@ trait WithDeliveryNotePackaging
         ];
     }
 
+
+    protected function paidPackagingPrice(DeliveryNote $deliveryNote): ?float
+    {
+        $order = $deliveryNote->orders()->first();
+
+        if (!$order) {
+            return null;
+        }
+
+        $transaction = $order->transactions()->where('model_type', 'Packaging')->first();
+
+        if ($transaction && (float) $transaction->quantity_ordered > 0) {
+            return round((float) $transaction->net_amount / (float) $transaction->quantity_ordered, 2);
+        }
+
+        return $order->packaging ? round((float) $order->packaging->price, 2) : null;
+    }
+
     /** @return array<int, array{id: int, name: string, dimensions: string|null, price: float, is_free: bool, family_code: string|null, image: mixed}> */
     protected function getPackagingOptions(DeliveryNote $deliveryNote, ?string $familyCode): array
     {
@@ -47,13 +65,27 @@ trait WithDeliveryNotePackaging
             return [];
         }
 
-        return Packaging::where('shop_id', $deliveryNote->shop_id)
+        $paidPrice = $this->paidPackagingPrice($deliveryNote);
+
+        $options = Packaging::where('shop_id', $deliveryNote->shop_id)
             ->where('state', PackagingStateEnum::ACTIVE)
             ->where('family_code', $familyCode)
+            ->when(
+                $paidPrice !== null,
+                fn ($query) => $query->whereRaw('ROUND(price::numeric, 2) = ?', [$paidPrice])
+            )
             ->with('image')
             ->orderBy('position')
             ->orderBy('price')
-            ->get()
+            ->get();
+
+        // A single option is the one already on the delivery note: nothing to offer, so the
+        // warehouse is not shown a picker that cannot change anything.
+        if ($options->count() < 2) {
+            return [];
+        }
+
+        return $options
             ->map(fn (Packaging $packaging) => [
                 'id'          => $packaging->id,
                 'name'        => $packaging->name,
