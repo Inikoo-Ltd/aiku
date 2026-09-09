@@ -61,7 +61,8 @@ class IndexDepartments extends OrgAction
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
                 $query->whereAnyWordStartWith('product_categories.name', $value)
-                    ->orWhereStartWith('product_categories.slug', $value);
+                    ->orWhereAnyWordStartWith('product_categories.slug', $value)
+                    ->orWhereAnyWordStartWith('product_categories.code', $value);
             });
         });
 
