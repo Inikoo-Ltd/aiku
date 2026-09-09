@@ -13,6 +13,7 @@ use App\Actions\Web\Webpage\Iris\ShowIrisWebpage;
 use App\Actions\Web\Webpage\WithSystemPageRedirect;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Web\Webpage\WebpageStateEnum;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Response as HttpResponse;
 use Illuminate\Support\Arr;
 use Inertia\Inertia;
@@ -26,7 +27,7 @@ class ShowRetinaLogin
     use WithRetinaAuthRedirect;
 
 
-    public function handle(ActionRequest $request): Response|HttpResponse
+    public function handle(ActionRequest $request): Response|HttpResponse|JsonResponse
     {
         $website = request()->website;
 
@@ -79,7 +80,7 @@ class ShowRetinaLogin
         return $response;
     }
 
-    public function asController(ActionRequest $request): Response|HttpResponse
+    public function asController(ActionRequest $request): Response|HttpResponse|JsonResponse
     {
         $this->rememberRetinaIntendedUrl($request, $request->input('website'));
 

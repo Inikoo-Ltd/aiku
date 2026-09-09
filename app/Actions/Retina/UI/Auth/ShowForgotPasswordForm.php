@@ -10,6 +10,7 @@ namespace App\Actions\Retina\UI\Auth;
 
 use App\Actions\Web\Webpage\Iris\ShowIrisWebpage;
 use App\Enums\Web\Webpage\WebpageStateEnum;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Response as HttpResponse;
 use Illuminate\Support\Arr;
 use Inertia\Inertia;
@@ -21,7 +22,7 @@ class ShowForgotPasswordForm
 {
     use AsController;
 
-    public function handle(ActionRequest $request): Response|HttpResponse
+    public function handle(ActionRequest $request): Response|HttpResponse|JsonResponse
     {
         $website = request()->website;
 
@@ -70,7 +71,7 @@ class ShowForgotPasswordForm
         return $response;
     }
 
-    public function asController(ActionRequest $request): Response|HttpResponse
+    public function asController(ActionRequest $request): Response|HttpResponse|JsonResponse
     {
         return $this->handle($request);
     }

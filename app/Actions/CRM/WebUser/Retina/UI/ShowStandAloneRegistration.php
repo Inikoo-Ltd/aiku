@@ -21,6 +21,7 @@ use App\Actions\Web\Webpage\WithSystemPageRedirect;
 use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Http\Resources\CRM\PollsResource;
 use App\Models\CRM\Poll;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Response as HttpResponse;
 use Illuminate\Support\Arr;
 
@@ -28,7 +29,7 @@ class ShowStandAloneRegistration extends IrisAction
 {
     use WithRetinaAuthRedirect;
 
-    public function handle(ActionRequest $request): Response|HttpResponse
+    public function handle(ActionRequest $request): Response|HttpResponse|JsonResponse
     {
         $shop = $this->shop;
         $polls = Poll::where('shop_id', $shop->id)->where('in_registration', true)->get();
@@ -92,7 +93,7 @@ class ShowStandAloneRegistration extends IrisAction
         return $response;
     }
 
-    public function asController(ActionRequest $request): Response|HttpResponse
+    public function asController(ActionRequest $request): Response|HttpResponse|JsonResponse
     {
         $this->initialisation($request);
         $this->rememberRetinaIntendedUrl($request, $this->website);
