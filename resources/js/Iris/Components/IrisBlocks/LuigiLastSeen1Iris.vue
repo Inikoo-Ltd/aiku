@@ -20,7 +20,6 @@ import { faChevronLeft, faChevronRight } from '@fortawesome/free-solid-svg-icons
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { trans } from "laravel-vue-i18n"
 import { ProductHit } from "@/types/Luigi/LuigiTypes"
-import { RecommendationCollector } from "@/Composables/Unique/LuigiDataCollector"
 library.add(faChevronLeft, faChevronRight)
 
 library.add(faChevronLeft, faChevronRight)
@@ -134,7 +133,6 @@ const fetchRecommenders = async () => {
         }
 
         console.log(`LLS (${response.data?.[0]?.hits?.length}): `, response.data)
-        RecommendationCollector(response.data[0], { product: props.fieldValue?.product })
 
         listProductsFromLuigi.value = response.data[0].hits
         fetchRecommendersToGetProducts()

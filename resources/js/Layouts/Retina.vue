@@ -35,7 +35,6 @@ import { faExclamationTriangle as fadExclamationTriangle, faMedal as fadMedal, f
 import { initialiseIrisVarnish } from "@/Composables/initialiseIrisVarnish"
 import { setColorStyleRoot } from "@/Composables/useApp"
 import ChatButton from '@/Components/Chat/Customer/ChatButton.vue'
-import { CustomerIdCollector } from "@/Composables/Unique/LuigiDataCollector"
 import { pushServerGtmEvent, pushServerGtmEventOnce } from "@/Composables/useGtm"
 import { useColorTheme } from "@/Composables/useStockList"
 import { computed } from 'vue'
@@ -208,7 +207,6 @@ const checkScreenType = () => {
 provide('screenType', screenType)
 onMounted(() => {
     checkScreenType()
-    CustomerIdCollector(layout.iris_variables?.customer_id?.toString())  // Luigi: to set customer_id
 
     // window.addEventListener('resize', checkScreenType)
 })

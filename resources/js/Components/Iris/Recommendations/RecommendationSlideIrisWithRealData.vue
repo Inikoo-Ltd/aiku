@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { SelectItemCollector } from '@/Composables/Unique/LuigiDataCollector'
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import { ProductHit } from '@/types/Luigi/LuigiTypes'
@@ -36,7 +35,7 @@ const isLoadingVisit = ref(false)
 
 
                 class="w-full max-w-[220px] aspect-square flex items-center justify-center"
-                @success="() => SelectItemCollector(product)" @start="() => isLoadingVisit = true"
+                @start="() => isLoadingVisit = true"
 
                 @finish="() => isLoadingVisit = false">
                 <Image v-if="product.iris_attributes?.web_images?.main?.gallery"
@@ -85,7 +84,7 @@ const isLoadingVisit = ref(false)
         <span class="mb-1 !text-sm font-semibold leading-snug line-clamp-2 min-h-[3em] text-justify"
             :title="product.attributes.title">
             <component :is="product.attributes.web_url[0] ? LinkIris : 'div'" :href="product.iris_attributes?.url"
-                class="hover:underline" @success="() => SelectItemCollector(product)"
+                class="hover:underline"
                 @start="() => isLoadingVisit = true" @finish="() => isLoadingVisit = false">
                 {{ product.attributes.title }}
             </component>
@@ -97,11 +96,10 @@ const isLoadingVisit = ref(false)
             </div>
             <div class="font-semibold underline text-xs">
                 <component :is="product.attributes.web_url[0] ? LinkIris : 'div'" :href="product.iris_attributes?.url"
-               @success="() => SelectItemCollector(product)"
                 @start="() => isLoadingVisit = true" @finish="() => isLoadingVisit = false">
                  {{ ctrans('See Details') }}
             </component>
-               
+
             </div>
         </div>
 

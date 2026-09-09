@@ -14,7 +14,6 @@ import Cookies from 'js-cookie';
 import { faChevronLeft, faChevronRight } from '@fortawesome/free-solid-svg-icons'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { ProductHit } from "@/types/Luigi/LuigiTypes"
-import { RecommendationCollector } from "@/Composables/Unique/LuigiDataCollector"
 import RecommendationSlideIrisWithRealData from "@/Components/Iris/Recommendations/RecommendationSlideIrisWithRealData.vue"
 import { usePage } from "@inertiajs/vue3"
 import { ctrans } from "@/Composables/useTrans"
@@ -222,11 +221,6 @@ const fetchRecommenders = async () => {
 
         if (response.status !== 200) {
             console.error('Error fetching recommenders:', response.statusText)
-        }
-
-        // Luigi: Send Analytics
-        if (layout.app.environment === 'production') {
-            RecommendationCollector(response.data[0])
         }
 
         console.log(`LTrends1 (${response.data?.[0]?.hits?.length}): `, subType, response.data)

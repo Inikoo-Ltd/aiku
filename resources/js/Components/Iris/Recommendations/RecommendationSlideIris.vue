@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import Button from '@/Components/Elements/Buttons/Button.vue'
-import { SelectItemCollector } from '@/Composables/Unique/LuigiDataCollector'
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import { ProductHit } from '@/types/Luigi/LuigiTypes'
@@ -32,7 +31,6 @@ const isLoadingVisit = ref(false)
             :is="product.attributes.url?.[0] ? LinkIris : 'div'"
             :href="product.attributes.url?.[0]"
             class="block rounded aspect-[5/4] w-full overflow-hidden"
-            @success="() => SelectItemCollector(product)"
             @start="() => isLoadingVisit = true"
             @finish="() => isLoadingVisit = false"
         >
@@ -50,7 +48,6 @@ const isLoadingVisit = ref(false)
                     :is="product.attributes.url?.[0] ? LinkIris : 'div'"
                     :href="product.attributes.url?.[0]"
                     class="!font-bold !text-sm !leading-tight hover:!underline !cursor-pointer !mb-2 inline-block text-justify"
-                    @success="() => SelectItemCollector(product)"
                     @start="() => isLoadingVisit = true"
                     @finish="() => isLoadingVisit = false"
                 >

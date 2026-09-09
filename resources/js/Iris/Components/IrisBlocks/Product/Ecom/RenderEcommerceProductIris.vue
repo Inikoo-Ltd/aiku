@@ -13,7 +13,6 @@ import ProductIris1Ecom from "@/Iris/Components/IrisBlocks/Product/Ecom/ProductI
 import ProductIris2Ecom from "@/Iris/Components/IrisBlocks/Product/Ecom/ProductIris2Ecom.vue"
 import ProductIris3Ecom from "@/Iris/Components/IrisBlocks/Product/Ecom/ProductIris3Ecom.vue"
 import { resolveProductImages, resolveProductVideo } from "@/Composables/useProductPage"
-import { ProductViewCollector } from "@/Composables/Unique/LuigiDataCollector"
 import { useProductStructuredData } from "@/Iris/Composables/useProductStructuredData"
 
 library.add(faCube, faLink, faFilePdf, faFileDownload)
@@ -341,10 +340,6 @@ const { mountProductStructuredData, removeStructuredDataScript } = useProductStr
 const productStructuredDataScript = ref<HTMLScriptElement | null>(null)
 
 onMounted(() => {
-  if (props.fieldValue?.product?.luigi_identity) {
-    ProductViewCollector(props.fieldValue.product.luigi_identity)
-  }
-
   productStructuredDataScript.value = mountProductStructuredData({
     product: props.fieldValue?.product,
     variant: props.fieldValue?.variant,

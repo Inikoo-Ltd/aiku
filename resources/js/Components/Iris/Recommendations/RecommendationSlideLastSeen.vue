@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import Button from '@/Components/Elements/Buttons/Button.vue'
-import { SelectItemCollector } from '@/Composables/Unique/LuigiDataCollector'
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import { ProductHit } from '@/types/Luigi/LuigiTypes'
@@ -36,7 +35,7 @@ const isLoadingVisit = ref(false)
     <div class="mb-3 flex justify-center relative">
       <component :is="product.url ? LinkIris : 'div'" :href="product.url"
         class="w-full max-w-[220px] aspect-square flex items-center justify-center"
-        @start="() => (SelectItemCollector(product), isLoadingVisit = true)" @finish="() => isLoadingVisit = false">
+        @start="() => isLoadingVisit = true" @finish="() => isLoadingVisit = false">
         <Image :src="product?.web_images?.main?.original" :alt="product.name" class="object-contain w-full h-full" />
       </component>
 
@@ -56,7 +55,7 @@ const isLoadingVisit = ref(false)
     <!-- TITLE -->
     <span class="mb-1 text-[13px] md:text-[16px] text-justify font-semibold leading-snug line-clamp-2 min-h-[3em]"  :title="product.name">
       <component :is="product.url ? LinkIris : 'div'"  :href="product.url" class="hover:underline"
-        @start="() => (SelectItemCollector(product), isLoadingVisit = true)"
+        @start="() => isLoadingVisit = true"
         @finish="() => isLoadingVisit = false">
         {{ product.name }}
       </component>
@@ -69,7 +68,7 @@ const isLoadingVisit = ref(false)
       </div>
       <div class="font-semibold underline text-xs">
         <component :is="product.url ? LinkIris : 'div'"  :href="product.url" class="hover:underline"
-        @start="() => (SelectItemCollector(product), isLoadingVisit = true)"
+        @start="() => isLoadingVisit = true"
         @finish="() => isLoadingVisit = false">
           {{ ctrans('See Details') }}
       </component>

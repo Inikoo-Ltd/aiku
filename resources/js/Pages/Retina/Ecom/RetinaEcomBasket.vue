@@ -25,7 +25,6 @@ import Button from '@/Components/Elements/Buttons/Button.vue'
 import Modal from '@/Components/Utils/Modal.vue'
 import ProductsSelectorAutoSelect from '@/Components/Dropshipping/ProductsSelectorAutoSelect.vue'
 // import RecommendersLuigi1Iris from '@/Components/CMS/Webpage/SeeAlso1/RecommendersLuigi1Iris.vue'
-import BasketRecommendations from '@/Components/Retina/BasketRecommendations.vue'
 import BasketRecommendationsInternal from '@/Components/Retina/BasketRecommendationsInternal.vue'
 import { Address, AddressManagement } from '@/types/PureComponent/Address'
 import { InputText, ToggleSwitch } from 'primevue'
@@ -978,14 +977,6 @@ const onChangeInsurance = async (val: boolean) => {
                     v-if="isInternalRecommendation"
                     @add-to-basket="(productId: string, productCode: string, product: {}) => onAddProductFromRecommender(productId, productCode, product)"
                     :listLoadingProducts
-                />
-
-                <BasketRecommendations
-                    v-else
-                    @add-to-basket="(productId: string, productCode: string, productLuigi: {}) => onAddProductFromRecommender(productId, productCode, productLuigi)"
-                    :listLoadingProducts
-                    xblacklistItems="blackListProductIds"
-                    :basketItemIds="basketProductIdentities"
                 />
             </div>
         </div>
