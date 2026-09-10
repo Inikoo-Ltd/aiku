@@ -34,6 +34,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $order_slug
  * @property mixed $customer_slug
  * @property mixed $fulfilment_customer_slug
+ * @property mixed $outbox_id
  *
  */
 class DispatchedEmailsResource extends JsonResource
@@ -78,6 +79,7 @@ class DispatchedEmailsResource extends JsonResource
             'shop_slug'                    => $customer?->shop?->slug ?? null,
             'fulfilment_customer_slug'     => $this->fulfilment_customer_slug,
             'outbox_code'                  => $outbox?->code?->value ? OutboxCodeEnum::from($outbox->code->value)->label() : null,
+            'outbox_slug'                  => $outbox?->slug,
             'has_email_preview'            => $hasEmailPreview,
         );
     }

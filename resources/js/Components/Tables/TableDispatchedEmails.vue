@@ -104,6 +104,19 @@ function dispatchedEmailRoute(dispatchedEmail: DispatchedEmailResource) {
                     dispatchedEmail.shop_slug,
                     outboxParam.outbox,
                     dispatchedEmail.id]);
+        case "grp.org.shops.show.marketing.mailshots.show":
+        case "grp.org.shops.show.marketing.newsletters.show":
+            const mailshotParams = (route().params as RouteParams);
+            if (!mailshotParams.organisation || !mailshotParams.shop || !dispatchedEmail.outbox_slug || !dispatchedEmail.id) {
+                return null;
+            }
+            return route(
+                "grp.org.shops.show.dashboard.comms.outboxes.dispatched-email.show",
+                [
+                    mailshotParams.organisation,
+                    mailshotParams.shop,
+                    dispatchedEmail.outbox_slug,
+                    dispatchedEmail.id]);
         default:
             return null;
     }
