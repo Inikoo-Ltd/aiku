@@ -118,7 +118,9 @@ class UpdateOrderPaymentsStatus extends OrgAction
             ]
         );
         $changes = Arr::except($order->getChanges(), ['updated_at', 'last_fetched_at']);
-        if ($order->status == OrderStateEnum::SUBMITTED && Arr::has($changes, 'pay_status')) {
+        /** Was $order->status, an OrderStatusEnum, compared against an OrderStateEnum: never true, so
+         * the paid and unpaid counters never moved when a payment landed on a submitted order. */
+        if ($order->state == OrderStateEnum::SUBMITTED && Arr::has($changes, 'pay_status')) {
             $this->orderHandlingHydrators($order, $order->state);
         }
 

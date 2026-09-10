@@ -17,7 +17,6 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\Ordering\WithOrderingAuthorisation;
 use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
-use App\Enums\Ordering\Order\OrderPayStatusEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\UI\Ordering\OrdersBacklogTabsEnum;
 use App\Enums\UI\Ordering\OrdersTabsEnum;
@@ -201,11 +200,10 @@ class IndexOrders extends OrgAction
             $query->where('orders.state', OrderStateEnum::CREATING);
         } elseif ($this->bucket == OrdersBacklogTabsEnum::SUBMITTED_PAID->value) {
             $query->where('orders.state', OrderStateEnum::SUBMITTED->value)
-                ->whereIn('orders.pay_status', [OrderPayStatusEnum::PAID, OrderPayStatusEnum::NO_NEED]);
+                ->paySettled();
         } elseif ($this->bucket == OrdersBacklogTabsEnum::SUBMITTED_UNPAID->value) {
             $query->where('orders.state', OrderStateEnum::SUBMITTED->value)
-                ->where(fn ($query) => $query->whereIn('orders.pay_status', [OrderPayStatusEnum::UNPAID, OrderPayStatusEnum::UNKNOWN])
-                    ->orWhereNull('orders.pay_status'));
+                ->payNotSettled();
         } elseif ($this->bucket == OrdersBacklogTabsEnum::IN_WAREHOUSE->value) {
             $query->where('orders.state', OrderStateEnum::IN_WAREHOUSE);
         } elseif ($this->bucket == OrdersBacklogTabsEnum::HANDLING->value) {

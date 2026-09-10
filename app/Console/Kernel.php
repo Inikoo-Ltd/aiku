@@ -37,6 +37,7 @@ use App\Actions\CRM\Prospect\Mailshots\RunProspectMailshotScheduled;
 use App\Actions\CRM\Prospect\Mailshots\RunProspectMailshotSecondWave;
 use App\Actions\CRM\WebUserPasswordReset\PurgeWebUserPasswordReset;
 use App\Actions\DevOps\MonitorNightowlIngest;
+use App\Actions\DevOps\MonitorOrdersInLimbo;
 use App\Actions\DevOps\MonitorQueueBacklogs;
 use App\Actions\DevOps\MonitorRetinaApiInflow;
 use App\Actions\DevOps\WebsiteHealthLog\MonitorWebsitesUptime;
@@ -180,6 +181,15 @@ class Kernel extends ConsoleKernel
                 name: 'MonitorQueueBacklogs',
                 type: 'job',
                 scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
+                $schedule->job(MonitorOrdersInLimbo::makeJob())->dailyAt('07:30')->timezone('UTC')->withoutOverlapping()->onOneServer()->sentryMonitor(
+                    monitorSlug: 'MonitorOrdersInLimbo',
+                ),
+                name: 'MonitorOrdersInLimbo',
+                type: 'job',
+                scheduledAt: '07:30'
             );
 
             $this->logSchedule(

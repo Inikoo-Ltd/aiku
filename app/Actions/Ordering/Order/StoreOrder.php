@@ -69,6 +69,16 @@ class StoreOrder extends OrgAction
         }
         data_set($modelData, 'date', now(), overwrite: false);
 
+        /**
+         * Outside strict mode this was left unset, so a channel order was born with no pay status
+         * at all and belonged to neither half of the backlog once submitted (HELP-3116). Set here
+         * without overwriting, because an importer that already knows what was paid says so.
+         */
+        if (!$this->strict) {
+            data_set($modelData, 'pay_status', OrderPayStatusEnum::UNPAID->value, overwrite: false);
+            data_set($modelData, 'pay_detailed_status', OrderPayDetailedStatusEnum::UNPAID->value, overwrite: false);
+        }
+
         if ($this->strict) {
             $modelData['pay_status']          = OrderPayStatusEnum::UNPAID->value;
             $modelData['pay_detailed_status'] = OrderPayDetailedStatusEnum::UNPAID->value;

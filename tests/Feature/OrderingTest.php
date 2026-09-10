@@ -139,6 +139,7 @@ use App\Models\Helpers\Country;
 use App\Actions\Ordering\Order\WriteOffOrderShortfall;
 use App\Enums\Ordering\Order\OrderPayDetailedStatusEnum;
 use App\Enums\Ordering\Order\OrderPayStatusEnum;
+use App\Enums\UI\Ordering\OrdersBacklogTabsEnum;
 use App\Models\Ordering\Adjustment;
 use App\Enums\Helpers\Import\UploadRecordStatusEnum;
 use App\Imports\Ordering\TransactionImport;
@@ -680,11 +681,14 @@ test('update order', function ($order) {
 })->depends('create order');
 
 test('update order state to submitted', function (Order $order) {
-    /** An order that never reached a payment attempt must not submit with a null pay_status,
-     * it would belong to neither submitted queue (HELP-3116) */
-    $order->update(['pay_status' => null, 'pay_detailed_status' => null]);
-
     $order = SubmitOrder::make()->action($order);
+
+    /** The backlog splits submitted orders into paid and unpaid and CS work from those two
+     * counters alone, so the halves must always add back up to the whole */
+    $handlingStats = $order->shop->orderHandlingStats->refresh();
+    expect($handlingStats->number_orders_state_submitted_paid + $handlingStats->number_orders_state_submitted_not_paid)
+        ->toBe($handlingStats->number_orders_state_submitted);
+
     expect($order->pay_status)->toEqual(OrderPayStatusEnum::UNPAID)
         ->and($order->state)->toEqual(OrderStateEnum::SUBMITTED)
         ->and($order->shop->orderingStats->number_orders_state_submitted)->toBe(1)
@@ -694,6 +698,39 @@ test('update order state to submitted', function (Order $order) {
 
     return $order;
 })->depends('create order');
+
+test('no pay status can hide a submitted order from the backlog', function (Order $order) {
+    /** Staff only ever see submitted orders through these two buckets, so between them they must
+     * account for every submitted order whatever its pay status is (HELP-3116). A status invented
+     * later must land in the chase queue by default, never in neither. */
+    $statuses = collect(OrderPayStatusEnum::cases())->pluck('value')->push('a_status_invented_later');
+
+    foreach ($statuses as $status) {
+        DB::table('orders')->where('id', $order->id)->update(['pay_status' => $status]);
+
+        $settled    = Order::where('id', $order->id)->paySettled()->count();
+        $notSettled = Order::where('id', $order->id)->payNotSettled()->count();
+
+        expect($settled + $notSettled)->toBe(1, "pay status [$status] is in ".($settled + $notSettled).' buckets, must be exactly 1');
+    }
+
+    DB::table('orders')->where('id', $order->id)->update(['pay_status' => OrderPayStatusEnum::UNPAID->value]);
+})->depends('update order state to submitted');
+
+test('every order state has a backlog queue or is deliberately excluded from one', function () {
+    /** The backlog's tabs are a hand written list while the states are an enum, so a state added
+     * later would have no tab and its orders would be as invisible as a null pay status was
+     * (HELP-3116). Give a new state a tab, or say out loud that it needs no queue. */
+    $accountedFor = collect(OrdersBacklogTabsEnum::statesShown())
+        ->merge(OrdersBacklogTabsEnum::statesNeedingNoQueue())
+        ->pluck('value');
+
+    $homeless = collect(OrderStateEnum::cases())
+        ->reject(fn (OrderStateEnum $state) => $accountedFor->contains($state->value))
+        ->pluck('value');
+
+    expect($homeless)->toBeEmpty('order states shown by no backlog tab: '.$homeless->implode(', '));
+});
 
 test('customer cannot update basket transaction on submitted order', function (Order $order) {
     $webUser = new \App\Models\CRM\WebUser();

@@ -223,6 +223,8 @@ class Order extends Model implements HasMedia, Auditable
     use HasAttachments;
     use HasHistory;
     use HasSearch;
+    /** @see Order::scopePaySettled() - the only statuses that owe nothing */
+    public const PAY_SETTLED_STATUSES = [OrderPayStatusEnum::PAID, OrderPayStatusEnum::NO_NEED];
 
     protected $casts = [
         'data'                          => 'array',
@@ -569,6 +571,30 @@ class Order extends Model implements HasMedia, Auditable
     public function reviewStats(): HasOne
     {
         return $this->hasOne(OrderReviewStat::class);
+    }
+
+    /**
+     * The two halves of a submitted order's payment state, and the only definition of them: the
+     * backlog splits submitted orders between these two and staff work from that split alone, so
+     * an order that fell between them was invisible (HELP-3116).
+     *
+     * Settled is the closed list, because there are only two ways an order needs no money taken.
+     * Not settled is its complement rather than a list of its own, so a status nobody has thought
+     * of yet - a new enum case, or the null of a status never computed - is chased by default
+     * instead of disappearing. Money owed is the safe side to be wrong on.
+     */
+    public function scopePaySettled(Builder $query): Builder
+    {
+        return $query->whereIn('orders.pay_status', self::PAY_SETTLED_STATUSES);
+    }
+
+    public function scopePayNotSettled(Builder $query): Builder
+    {
+        return $query->where(
+            fn (Builder $query) => $query
+                ->whereNotIn('orders.pay_status', self::PAY_SETTLED_STATUSES)
+                ->orWhereNull('orders.pay_status')
+        );
     }
 
     public function trafficSources(): MorphToMany
