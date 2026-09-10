@@ -128,7 +128,7 @@ class ShowIrisWebpage
     {
         if ($path == 'robots.txt') {
             return 'robots';
-        } elseif (in_array($path, ['login.sys', 'register.sys', 'index.php', 'asset_label.php', 'home.sys'])) {
+        } elseif (in_array($path, ['login.sys', 'register.sys', 'index.php', 'asset_label.php', 'home.sys', 'login', 'register', 'forgot-password'])) {
             return $path;
         }
 
@@ -138,19 +138,6 @@ class ShowIrisWebpage
             $loggedIn = $loggedStatusFromHeader === 'In';
         } else {
             $loggedIn = auth()->check();
-        }
-
-        if (in_array($path, ['login', 'register', 'forgot-password'])) {
-            $redirect = match($path) {
-                'login'             => 'app/login',
-                'register'          => 'app/register',
-                'forgot-password'   => 'app/reset-password-send',
-                default             => null,
-            };
-            
-            $normalizedCanon = rtrim($this->getEnvironmentUrl($request->input('website')->domain . $redirect), '/');
-
-            return redirect()->to($normalizedCanon);
         }
 
         if (config('iris.cache.webpage_path.ttl') == 0) {
@@ -286,8 +273,17 @@ class ShowIrisWebpage
         if (is_string($webpageData)) {
 
             // Depends on the visitor, so it must never reach Varnish or the browser cache.
-            if ($webpageData == 'logged-in') {
-                return redirect()->to(request()->website->storefront->getCanonicalUrl())
+            if (in_array($webpageData, ['login', 'register', 'forgot-password'])) {
+                $redirect = match($webpageData) {
+                    'login'             => '/app/login',
+                    'register'          => '/app/register',
+                    'forgot-password'   => '/app/reset-password-send',
+                    default             => null,
+                };
+                
+                $normalizedCanon = rtrim($this->getEnvironmentUrl(request()->input('website')->storefront->getCanonicalUrl() . $redirect), '/');
+
+                return redirect()->to($normalizedCanon)
                     ->withHeaders([
                         'Cache-Control'             => 'private, no-store',
                         'X-Aiku-Cacheable-Redirect' => '0',
