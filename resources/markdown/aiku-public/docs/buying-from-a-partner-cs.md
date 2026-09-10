@@ -1,8 +1,8 @@
 ---
 title: Nákup od partnera
 summary: Průvodce pro kupujícího - začněte u nákupního dashboardu, naplňte seznam ručně, z partnerova katalogu nebo pomocí automatického doplnění, a přijměte zboží, když dorazí.
-date: 2026-09-01
-source_date: 2026-09-01
+date: 2026-09-09
+source_date: 2026-09-09
 tags: procurement, intercompany, shopping-list
 category: procurement
 series: Ordering from partners
@@ -23,6 +23,7 @@ Vedle dashboardu drží záložka **Shopping list** (Nákupní seznam) všechny 
 
 - **Add stocks** (Přidat skladové položky) otevře partnerův seznam skladových zásob s jejich dostupností, způsobem balení, vaším aktuálním skladem a tím, kolik jste toho spotřebovali za poslední čtyři čtvrtletí. Množství jsou v prodejních jednotkách prodávajícího (SKO).
 - Každý řádek na první pohled ukazuje příběh skladu — *jejich sklad*, *náš sklad* a kdy *nám dojde* — plus částku ve vaší nákupní ceně, s celkovým součtem otevřených položek v patě tabulky.
+- Tam, kde si partner položku sám vyrábí, řádek navíc uvádí *made in batches of N units* (vyrobeno v dávkách po N kusech) a tam, kde se to s baleními nedělí rovnoměrně, *full batches every N SKO* (celé dávky po N SKO) — **order step** (objednávací krok), nejmenší objednávka, kterou celé dávky zaplní přesně. Tlačítko zaokrouhlí vaše množství nahoru na tento krok. Objednávka mimo krok je povolená a stránka to říká: stejně se vyrobí celá dávka, takže se objednávka může zpozdit nebo se upraví množství, a objednávka pod jeden celý krok čeká v továrně, dokud se k ní nepřipojí jiná poptávka. Viz [Dávky, balení a částečné dávky](/docs/batches-packs-and-part-batches-cs).
 - Otevřené řádky jsou plně vaše: zvolte **priority** (prioritu, od nízké po naléhavou) přímo z rozevíracího seznamu v tabulce, nebo řádek odstraňte tlačítkem koše. Pro změnu množství použijte **Browse** (Procházet) — stejný stepper u dané položky tam upraví otevřený řádek přímo. Jakmile partner řádek vychystá, uzamkne se a jeho stav vám ukáže, kde se nachází.
 
 ## Procházení partnerova katalogu
@@ -41,7 +42,7 @@ Zatímco procházíte, váš nákupní seznam se veze s vámi jako účtenka př
 
 **Auto-fill** (Automatické doplnění) existuje proto, aby doplňování zásob nezáviselo na tom, že si někdo vzpomene na každou položku. Zadáte jedno číslo — **budget** (rozpočet), ve stejné měně jako ceny, za které nakupujete — a nástroj sestaví návrh, který se do něj vejde:
 
-- Podívá se na každou položku, kterou partner dokáže dodat a kterou skutečně používáte, seřadí je podle toho, **jak brzy vám dojdou** (stejná prognóza *dojde nám za*, kterou vidíte při procházení), a doplní nejdřív ty, které dojdou nejdřív, každou v jejím doporučeném objednacím množství.
+- Podívá se na každou položku, kterou partner dokáže dodat a kterou skutečně používáte, seřadí je podle toho, **jak brzy vám dojdou** (stejná prognóza *dojde nám za*, kterou vidíte při procházení), a doplní nejdřív ty, které dojdou nejdřív, každou v jejím doporučeném objednacím množství, zaokrouhleném na objednávací krok dané položky.
 - Každý navržený řádek ukazuje svůj **důvod** ("Náš prodej/čtvrtletí ~48 · náš sklad 0 · dochází nám teď"), množství a cenu, takže vidíte, proč tam je. Množství se řídí stejnou prognózou jako čipy *suggested* v Browse.
 - **Instruction box** (pole pro instrukci) je volitelné a přijímá běžný jazyk: *"upřednostni éterické oleje, přeskoč cokoliv, čeho máme na skladě na víc než 8 týdnů"*, *"zaměř se na svíčky, nic sezónního"*. AI přečte vaši instrukci spolu se stejnými daty o spotřebě a podle toho návrh přetvoří — ale výstup je před zobrazením ověřen proti realitě: množství jsou omezena tím, co partner skutečně má, a celková částka je vrácena zpět do vašeho rozpočtu. Pokud instrukci nelze splnit, dostanete standardní návrh.
 - **Nic se nepřidá samo od sebe.** Návrh je sada zaškrtnutých řádků, které můžete odškrtnout, přepočítat nebo znovu vygenerovat s jiným rozpočtem či instrukcí; potvrdí to jen **Add items to shopping list** (Přidat položky do nákupního seznamu).
@@ -63,6 +64,7 @@ Jakmile partner [odešle zásilku do svého skladu](/docs/fulfilling-partner-ord
 <ul>
 <li><b>Zjistit, co je třeba koupit:</b> vaše organizace → <b>Procurement → Partners</b> (Nákup → Partneři) → otevřít partnera → <b>Shopping</b> (dashboard) → projít dlaždice rizik.</li>
 <li><b>Přidat na seznam:</b> <b>Shopping list</b> (Nákupní seznam) → <b>Add stocks</b> (Přidat skladové položky), nebo <b>Browse</b> (Procházet) a nastavit množství na kartách produktů, nebo <b>Auto-fill</b> (Automatické doplnění) (nebo <b>+ fill</b> na dlaždici dashboardu) pro návrh.</li>
+<li><b>Objednat v celých dávkách:</b> tlačítko vedle <i>full batches every N SKO</i> na řádku nebo na kartě produktu.</li>
 <li><b>Upravit otevřené řádky:</b> změnit prioritu nebo smazat řádky v tabulce nákupního seznamu; změnit množství na kartách produktů v <b>Browse</b>.</li>
 <li><b>Vyloučit položku z automatického doplnění:</b> vaše organizace → <b>Warehouse → Inventory</b> (Sklad → Zásoby) → otevřít SKO → <b>Edit SKO</b> (Upravit SKO) → zapnout <b>Do not auto order</b> (Neobjednávat automaticky).</li>
 <li><b>Sledovat a přijmout zásilku:</b> stejná stránka partnera → <b>Stock deliveries</b> (Skladové dodávky) → až zboží dorazí, <b>Receive</b> (Přijmout) → zkontrolovat → uložit na místa.</li>

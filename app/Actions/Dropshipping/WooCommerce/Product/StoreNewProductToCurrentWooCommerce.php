@@ -8,6 +8,7 @@
 
 namespace App\Actions\Dropshipping\WooCommerce\Product;
 
+use App\Actions\Dropshipping\WithPortfolioErrorResponse;
 use App\Actions\OrgAction;
 use App\Events\UploadProductToSalesChannelProgressEvent;
 use App\Models\Dropshipping\Portfolio;
@@ -19,6 +20,7 @@ use Lorisleiva\Actions\Concerns\AsAction;
 
 class StoreNewProductToCurrentWooCommerce extends OrgAction implements ShouldBeUnique
 {
+    use WithPortfolioErrorResponse;
     use AsAction;
 
     public string $jobQueue = 'woo';
@@ -48,6 +50,8 @@ class StoreNewProductToCurrentWooCommerce extends OrgAction implements ShouldBeU
                 ]);
             }
         } catch (\Throwable $e) {
+            $this->recordPortfolioUploadFailure($portfolio, $e);
+
             if (!$bulkProgress) {
                 throw $e;
             }

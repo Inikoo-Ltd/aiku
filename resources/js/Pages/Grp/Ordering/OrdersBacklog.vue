@@ -13,8 +13,7 @@ import { PageHeadingTypes } from '@/types/PageHeading'
 import { Tabs as TSTabs } from '@/types/Tabs'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { faInventory, faWarehouse, faMapSigns, faBox, faBoxesAlt, faCircle, faCheckCircle, faHandsHelping, faBoxOpen } from '@fal'
-import { ref } from 'vue'
-import { useTabChange } from '@/Composables/tab-change'
+import { useTabChange, useCurrentTab } from '@/Composables/tab-change'
 import TableOrders from '@/Components/Tables/Grp/Org/Ordering/TableOrders.vue'
 import TableDeliveryNotes from '@/Components/Tables/Grp/Org/Dispatching/TableDeliveryNotes.vue'
 import { computed } from 'vue'
@@ -64,7 +63,7 @@ const setScope = (scope: 'domestic' | 'export') => {
     router.get(url.toString(), {}, { preserveState: true, preserveScroll: true, replace: true })
 }
 
-const currentTab = ref(props.tabs.current)
+const currentTab = useCurrentTab(props.tabs.current)
 const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 
 const component = computed(() => {

@@ -41,7 +41,7 @@ class StoreOrderAddressCollection extends RetinaAction
     {
         $warehouse = $this->order->organisation?->warehouses?->first();
 
-        if ($warehouse->address_id) {
+        if (!$warehouse?->address_id) {
             throw ValidationException::withMessages(['message' => __('The warehouse did not have any address.')]);
         }
 

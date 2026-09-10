@@ -31,7 +31,7 @@
         {{Vite::useHotFile('retina.hot')->useBuildDirectory('retina')->withEntryPoints(['resources/js/app-retina.js'])}}
         @inertiaHead
 
-        <!-- Third parties (GTM, Luigi search) deferred to first interaction or shortly after load -->
+        <!-- Third parties (GTM) deferred to first interaction or shortly after load -->
         <script>
             (function () {
                 var fired = false;

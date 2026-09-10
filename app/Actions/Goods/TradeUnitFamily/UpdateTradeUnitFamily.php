@@ -35,7 +35,7 @@ class UpdateTradeUnitFamily extends OrgAction
                 'brand_id' => Arr::pull($modelData, 'brands')
             ]);
         }
-        
+
         // Handle labeling_guide pdf file upload
         if (Arr::has($modelData, 'labeling_guide_file') && data_get($modelData, 'labeling_guide_file', null) instanceof \Illuminate\Http\UploadedFile) {
             StoreLabelingGuide::make()->action($tradeUnitFamily, Arr::only($modelData, 'labeling_guide_file'));

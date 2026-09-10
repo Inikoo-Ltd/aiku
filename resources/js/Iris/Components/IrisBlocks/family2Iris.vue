@@ -61,6 +61,7 @@ const cleanedDescription = computed(() => {
 })
 
 const images = computed<FamilyImage[]>(() => {
+	console.log("props.fieldValue?.family?.description_image", props.fieldValue)
 	const data = props.fieldValue?.family?.description_image
 
 	if (!data) return []

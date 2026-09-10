@@ -8,6 +8,7 @@
 
 namespace App\Models\Production;
 
+use App\Enums\Production\Artefact\ArtefactStateEnum;
 use App\Models\Inventory\OrgStockFamily;
 use App\Models\Traits\HasHistory;
 use App\Models\Traits\HasSearch;
@@ -32,6 +33,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property string $name
  * @property string|null $description
  * @property int $number_artefacts
+ * @property ArtefactStateEnum $state
  * @property array $data
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
@@ -47,7 +49,8 @@ class ArtefactFamily extends Model implements Auditable
     use HasHistory;
 
     protected $casts = [
-        'data' => 'array',
+        'data'  => 'array',
+        'state' => ArtefactStateEnum::class,
     ];
 
     protected $attributes = [
@@ -60,6 +63,7 @@ class ArtefactFamily extends Model implements Auditable
         'code',
         'name',
         'description',
+        'state',
         'artefact_department_id',
     ];
 

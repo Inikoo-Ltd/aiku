@@ -1,7 +1,7 @@
 ---
 title: Buying from a partner
 summary: The buyer's guide - start from the shopping dashboard, fill the list by hand, from the partner's catalogue or with auto-fill, and receive the goods when they arrive.
-date: 2026-09-01
+date: 2026-09-09
 tags: procurement, intercompany, shopping-list
 category: procurement
 help_routes: grp.org.procurement.org_partners.show.browse, grp.org.procurement.org_partners.show.shopping_list
@@ -23,6 +23,7 @@ Next to the dashboard, the **Shopping list** tab holds every open line.
 
 - **Add stocks** opens the partner's stock list with their availability, how each item is packed, your own current stock, and how much you have used over the last four quarters. Quantities are in the seller's shipping units (SKOs).
 - Each line tells the stock story at a glance — *their stock*, *our stock*, and when *we run out* — plus the amount at your buying price, with the open items' total at the foot of the table.
+- Where the partner makes the item themselves, the line also says *made in batches of N units* and, where the two do not divide evenly, *full batches every N SKO* - the **order step**, the smallest order whole batches fill exactly. A button rounds your quantity up to it. Ordering off the step is allowed and says so: a full batch is made either way, so the order may be delayed or the quantity adjusted, and an order below one whole step waits at the factory until other demand joins it. See [Batches, packs and part batches](/docs/batches-packs-and-part-batches).
 - Open lines are fully yours: pick the **priority** (low → urgent) straight from the dropdown in the table, or remove the line with its bin button. To change a quantity, use **Browse** — the same item's stepper there edits the open line directly. Once the partner picks a line it locks, and its state tells you where it is.
 
 ## Browsing the partner's catalogue
@@ -41,7 +42,7 @@ While you browse, your shopping list rides along as a receipt pinned to the righ
 
 Auto-fill exists so replenishment doesn't depend on someone remembering every item. You give it one number — a **budget**, in the same currency as the prices you are buying at — and it builds a proposal that fits inside it:
 
-- It looks at every item the partner can supply that you actually use, ranks them by **how soon you run out** (the same *we run out in* forecast you see while browsing), and tops up the soonest-out first, each at its recommended order quantity.
+- It looks at every item the partner can supply that you actually use, ranks them by **how soon you run out** (the same *we run out in* forecast you see while browsing), and tops up the soonest-out first, each at its recommended order quantity, rounded to that item's order step.
 - Every proposed line shows its **reason** ("Our sales/quarter ~48 · our stock 0 · we run out now"), the quantity and the cost, so you can see why it is there. Quantities follow the same forecast as the *suggested* chips in Browse.
 - The **instruction box** is optional and takes plain language: *"prioritise essential oils, skip anything we hold over 8 weeks of"*, *"focus on candles, nothing seasonal"*. An AI reads your instruction together with the same usage data and reshapes the proposal accordingly — but its output is checked against reality before you see it: quantities are capped at what the partner actually has, and the total is forced back inside your budget. If the instruction can't be followed, you get the standard proposal instead.
 - **Nothing is added by itself.** The proposal is a set of ticked lines you can untick, re-quantify or regenerate with a different budget or instruction; only **Add items to shopping list** commits anything.
@@ -63,6 +64,7 @@ Once the partner [sends a shipment to their warehouse](/docs/fulfilling-partner-
 <ul>
 <li><b>See what needs buying:</b> your organisation → <b>Procurement → Partners</b> → open the partner → <b>Shopping</b> (the dashboard) → work the risk tiles.</li>
 <li><b>Add to the list:</b> <b>Shopping list</b> → <b>Add stocks</b>, or <b>Browse</b> and set quantities on the product cards, or <b>Auto-fill</b> (or <b>+ fill</b> on a dashboard tile) for a proposal.</li>
+<li><b>Order in whole batches:</b> the button beside <i>full batches every N SKO</i> on the line or the product card.</li>
 <li><b>Adjust open lines:</b> change the priority or delete lines in the shopping list table; change quantities from the product cards in <b>Browse</b>.</li>
 <li><b>Keep an item out of auto-fill:</b> your organisation → <b>Warehouse → Inventory</b> → open the SKO → <b>Edit SKO</b> → switch on <b>Do not auto order</b>.</li>
 <li><b>Watch and receive the shipment:</b> same partner page → <b>Stock deliveries</b> → when the goods arrive, <b>Receive</b> → check → place into locations.</li>

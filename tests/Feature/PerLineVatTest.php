@@ -18,6 +18,8 @@ use App\Actions\Masters\MasterAsset\UpdateMasterAsset;
 use App\Actions\Masters\MasterProductCategory\StoreMasterDepartment;
 use App\Actions\Masters\MasterProductCategory\StoreMasterFamily;
 use App\Actions\Masters\MasterShop\StoreMasterShop;
+use App\Actions\Accounting\Invoice\CalculateInvoiceTotals;
+use App\Models\Accounting\Invoice;
 use App\Actions\Ordering\Order\GenerateInvoiceFromOrder;
 use App\Actions\Ordering\Order\CalculateOrderTotalAmounts;
 use App\Actions\Ordering\Order\ResetOrderTaxCategory;
@@ -563,3 +565,15 @@ test('a uk delivery is standard rated whatever the billing country, and a uk bil
     'both in the UK'                          => ['GB', 'GB', 0.2],
     'billed in Ukraine, delivered in France'  => ['UA', 'FR', 0.0],
 ]);
+
+/** A pastpay invoice rendered its pdf before its lines existed, caching an empty relation, and the
+ *  header derived from that cache was zero (HELP-3106). Totals always read the lines afresh. */
+test('the invoice totals read the lines afresh, not a relation cached before they were stored', function ($invoice) {
+    $invoice = Invoice::find($invoice->id);
+    $invoice->setRelation('invoiceTransactions', new \Illuminate\Database\Eloquent\Collection());
+
+    CalculateInvoiceTotals::make()->action($invoice);
+
+    expect((float)$invoice->refresh()->net_amount)->toBe(120.0)
+        ->and((float)$invoice->total_amount)->toBe(144.0);
+})->depends('the invoice header is derived from the same lines it stores, not from the order columns');

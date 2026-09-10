@@ -1,8 +1,8 @@
 ---
 title: Zhromažďovanie tovaru pre partnera
 summary: Sprievodca pre sklad - čo znamená pre-pick, prečo sa tovar v zbernom mieste partnera prestáva počítať ako dostupný, a ako pracovať so zoznamom Pre-pick v Dispatching.
-date: 2026-09-08
-source_date: 2026-09-08
+date: 2026-09-09
+source_date: 2026-09-09
 tags: dispatch, procurement, intercompany, warehouse
 category: dispatch
 series: Ordering from partners
@@ -47,6 +47,16 @@ Zoznam sa počíta nanovo zakaždým, keď ho otvoríte - nie je to súbor úloh
 
 Táto záložka sa zobrazí iba organizáciám, ktoré majú pre partnera nastavené zberné miesto. Ak ju nevidíte, ešte to nebolo nastavené.
 
+## Polovica tej istej práce na strane výroby
+
+Cesty niekde vznikajú: niekto vo výrobe musí rozhodnúť, že sa položka vezme zo skladu namiesto toho, aby sa vyrobila. Toto rozhodnutie má vlastnú stránku, **Factory → Pre-pick**, a je dvojičkou zoznamu vyššie.
+
+Zobrazuje každú otvorenú partnerskú položku, za ktorou stojí sklad, bez ohľadu na to, či ju táto výroba vyrába, a nikdy nezobrazí položku, ktorá už bola pre-vychystaná. Každý riadok nesie žiadateľa, artefakt, čo bolo **asked** (požadované), čo je **in stock** (na sklade) a čo **can pick** (možno vychystať) - tieto dve hodnoty sú navzájom obmedzené, takže položka nikdy nesľúbi viac, ako existuje. Zoznam sa dá filtrovať podľa kategórie, žiadateľa a naliehavosti, a počty vo filtroch sú skutočné počty, nielen to, čo sa zmestí na stránku.
+
+**Pre-pick** na riadku, **Pre-pick selected** pre to, čo označíte, alebo **Pre-pick all** pre všetko, čo aktuálne filtre zobrazujú. Pre-pick sľúbi tovar danému partnerovi a dá cestu na zoznam skladu; ak je dostupná iba časť požadovaného, položka sa rozdelí, sľúbená časť odíde a zvyšok zostane otvorený. Nič sa nepredáva a nevzniká žiadna objednávka - tovar sa jednoducho prestáva počítať ako dostupný pre kohokoľvek iného.
+
+Číslo vedľa **Pre-pick** v bočnom paneli výroby udáva, koľko položiek čaká na toto rozhodnutie, a aktualizuje sa samo.
+
 ## Čo vidí partner
 
 Nič sa mu netreba oznamovať ručne. Na svojom vlastnom nákupnom zozname má každá položka pri sebe stav, kam sa dostala: **Requested** (Vyžiadané), **Being made** (Vo výrobe), **Pre-picked** (Pre-vychystané), **Staged for you** (Pripravené pre vás), **Being picked** (Vo vychystávaní), **On its way** (Na ceste) - spolu s číslom pracovného príkazu, objednávky alebo dodacieho listu.
@@ -69,6 +79,7 @@ Keďže tovar je už v jednom zbernom mieste, vychystávanie v tej chvíli je ce
 
 <aside class="wayfinder"><strong>Kde kliknúť v aiku</strong>
 <ul>
+<li><b>Rozhodnúť, že položka sa vezme zo skladu:</b> vaša organizácia → <b>Factory</b> → <b>Pre-pick</b> → <b>Pre-pick</b> na riadku, alebo označte a použite <b>Pre-pick selected</b> / <b>Pre-pick all</b>.</li>
 <li><b>Zoznam ciest:</b> vaša organizácia → <b>Warehouse</b> → <b>Dispatching</b> → záložka <b>Pre-pick</b>.</li>
 <li><b>Zaznamenať cestu:</b> stlačte <b>Moved</b> na riadku, keď je tovar fyzicky v zbernom mieste.</li>
 <li><b>Skontrolovať, čo je v zbernom mieste:</b> <b>Warehouse</b> → <b>Locations</b> → lokácia → záložka <b>SKOs</b>.</li>

@@ -60,6 +60,7 @@ const DynamicList = defineAsyncComponent(() => import('@/Components/Forms/Fields
 const TaxPreset = defineAsyncComponent(() => import('@/Components/Forms/Fields/TaxPreset.vue'))
 const PricingPolicy = defineAsyncComponent(() => import('@/Components/Forms/Fields/PricingPolicy.vue'))
 import ToggleStateWebpage from '@/Components/Forms/Fields/ToggleStateWebpage.vue'
+import ToggleStateSystemPage from '@/Components/Forms/Fields/ToggleStateSystemPage.vue'
 import DeleteWebpage from '@/Components/Forms/Fields/DeleteWebpage.vue'
 import InputTranslation from '@/Components/Forms/Fields/InputTranslation.vue'
 import TextEditorTranslation from '@/Components/Forms/Fields/TextEditorTranslation.vue'
@@ -168,6 +169,7 @@ export const componentsList: { [key: string]: Component } = {
     'structure_data_website': StructureDataWebsite,
     'poll_type_select': PollTypeSelect,
     'toggle_state_webpage': ToggleStateWebpage,
+    'toggle_state_system_page': ToggleStateSystemPage,
     'delete_webpage': DeleteWebpage,
     'button': ButtonForm,
     'input_translation': InputTranslation,

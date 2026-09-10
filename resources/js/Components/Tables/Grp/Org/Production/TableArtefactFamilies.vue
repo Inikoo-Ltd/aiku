@@ -15,6 +15,7 @@ import { ctrans } from "@/Composables/useTrans"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faCheckSquare } from "@fal"
+import "@/Composables/Icon/ArtefactStateEnum"
 
 library.add(faCheckSquare)
 
@@ -70,6 +71,8 @@ const submitMove = (department: Department) => {
     )
 }
 
+const sharePercentage = (count: number, total: number) => total ? Math.round((count / total) * 100) : 0
+
 const familyRoute = (family: { slug: string }) =>
     route("grp.org.productions.show.crafts.artefact_families.show", [routeParams["organisation"], routeParams["production"], family.slug])
 </script>
@@ -78,7 +81,7 @@ const familyRoute = (family: { slug: string }) =>
     
     <div
         v-if="moveToDepartment && selectedIds.length"
-        class="sticky top-0 z-10 mt-4 flex flex-wrap items-center gap-x-3 gap-y-2 rounded-md bg-green-100 px-4 py-2.5 mb-2"
+        class="sticky top-0 z-10 mt-4 flex flex-wrap items-center gap-x-3 gap-y-2 border-y border-slate-300 bg-slate-50 px-4 py-2.5 mb-2"
         role="region"
         :aria-label="ctrans('Bulk actions')">
         <span class="flex items-center gap-2 whitespace-nowrap font-medium" aria-live="polite">
@@ -108,6 +111,14 @@ const familyRoute = (family: { slug: string }) =>
     <Table ref="tableRef" :resource="data" :name="tab" class="mt-5" :isCheckBox="!!moveToDepartment" checkboxKey="id" @onSelectRow="(rows) => selected = { ...rows }">
         <template #cell(code)="{ item: family }">
             <Link :href="familyRoute(family)" class="primaryLink">{{ family.code }}</Link>
+        </template>
+        <template #cell(number_artefacts_without_recipe)="{ item }">
+            <span v-if="item.number_artefacts_without_recipe" class="mr-1.5 text-xxs text-red-400">{{ sharePercentage(item.number_artefacts_without_recipe, item.number_artefacts) }}%</span>
+            <span :class="item.number_artefacts_without_recipe ? 'text-red-500' : ''">{{ item.number_artefacts_without_recipe }}</span>
+        </template>
+        <template #cell(number_artefacts_without_batch_size)="{ item }">
+            <span v-if="item.number_artefacts_without_batch_size" class="mr-1.5 text-xxs text-red-400">{{ sharePercentage(item.number_artefacts_without_batch_size, item.number_artefacts) }}%</span>
+            <span :class="item.number_artefacts_without_batch_size ? 'text-red-500' : ''">{{ item.number_artefacts_without_batch_size }}</span>
         </template>
         <template #cell(artefact_department_name)="{ item }">
             <Link v-if="item.artefact_department_slug" :href="route('grp.org.productions.show.crafts.artefact_departments.show', [routeParams['organisation'], routeParams['production'], item.artefact_department_slug])" class="secondaryLink">

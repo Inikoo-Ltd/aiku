@@ -7,22 +7,48 @@ import { faPlaneDeparture, faBookOpen, faChartBar } from "@fal"
 import Image from "@common/Components/Image.vue"
 import type { BlogCategory } from "@/types/Iris/Blog"
 import { getBlogCategoryDisplayName } from "@/Iris/Composables/useBlogCategoryDisplayName"
+import { getStyles } from "@/Composables/styles"
 
 library.add(faPlaneDeparture, faBookOpen, faChartBar)
 
-const props = defineProps<{
-	category: BlogCategory
-	position: number
-}>()
-
-const displayLabel = computed(() =>
-	getBlogCategoryDisplayName(props.category.value, props.category.label)
+const props = withDefaults(
+	defineProps<{
+		category: BlogCategory
+		position: number
+		cardProperties?: any
+		showIcon?: boolean
+		showPosition?: boolean
+		showDescription?: boolean
+		showCta?: boolean
+		ctaLabel?: string
+		showUrl?: boolean
+		screenType?: "mobile" | "tablet" | "desktop"
+	}>(),
+	{
+		cardProperties: undefined,
+		showIcon: true,
+		showPosition: true,
+		showDescription: true,
+		showCta: true,
+		ctaLabel: undefined,
+		showUrl: true,
+		screenType: "desktop",
+	}
 )
+
+const displayLabel = computed(
+	() =>
+		props.category.custom_label?.trim() ||
+		getBlogCategoryDisplayName(props.category.value, props.category.label)
+)
+
+const ctaText = computed(() => props.ctaLabel || trans("View Dashboard"))
 </script>
 
 <template>
 	<article
-		class="group relative flex h-full flex-col overflow-hidden rounded-2xl bg-white text-center ring-1 ring-gray-200 transition duration-300 hover:-translate-y-1 hover:shadow-xl hover:ring-gray-300">
+		class="group relative flex h-full flex-col overflow-hidden rounded-2xl bg-white text-center ring-1 ring-gray-200 transition duration-300 hover:-translate-y-1 hover:shadow-xl hover:ring-gray-300"
+		:style="getStyles(cardProperties, screenType)">
 		<div class="relative w-full">
 			<div class="aspect-[16/9] w-full overflow-hidden bg-gray-100">
 				<Image
@@ -49,13 +75,18 @@ const displayLabel = computed(() =>
 			</div>
 
 			<div
+				v-if="showIcon && category.icon"
 				class="absolute -bottom-6 left-1/2 flex h-12 w-12 -translate-x-1/2 items-center justify-center rounded-full bg-[var(--theme-color-0)] text-[var(--theme-color-1)] shadow-lg ring-4 ring-white">
 				<FontAwesomeIcon :icon="category.icon" class="text-base" fixed-width aria-hidden="true" />
 			</div>
 		</div>
 
-		<div class="flex flex-1 flex-col gap-3 px-6 pb-6 pt-10">
-			<span class="text-[11px] font-semibold uppercase tracking-widest text-[var(--theme-color-0)]">
+		<div
+			class="flex flex-1 flex-col gap-3 px-6 pb-6"
+			:class="showIcon && category.icon ? 'pt-10' : 'pt-6'">
+			<span
+				v-if="showPosition"
+				class="text-[11px] font-semibold uppercase tracking-widest text-[var(--theme-color-0)]">
 				{{ trans("Category :position", { position: position }) }}
 			</span>
 
@@ -63,17 +94,21 @@ const displayLabel = computed(() =>
 				{{ displayLabel }}
 			</h2>
 
-			<p class="text-sm leading-relaxed text-gray-500">
-				{{ category.description }}
-			</p>
+			<div v-if="showDescription" class="editor-class text-sm leading-relaxed text-gray-500">
+				<slot name="description">
+					<div v-html="category.description" />
+				</slot>
+			</div>
 
 			<span
+				v-if="showCta"
 				class="mt-auto inline-flex items-center justify-center gap-1.5 pt-3 text-sm font-semibold text-[var(--theme-color-0)]">
-				{{ trans("View Dashboard") }}
+				{{ ctaText }}
 				<span aria-hidden="true" class="transition-transform duration-300 group-hover:translate-x-1">→</span>
 			</span>
 
 			<span
+				v-if="showUrl"
 				class="mx-auto rounded-full bg-[color-mix(in_srgb,var(--theme-color-0)_10%,white)] px-3 py-1 text-xs font-medium text-[var(--theme-color-0)]">
 				{{ category.url }}
 			</span>

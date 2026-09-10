@@ -171,12 +171,12 @@ const onCallbackGoogleLogin = async (e: GoogleLoginResponse) => {
                                 <label for="remember-me" class="ml-2 block text-sm select-none cursor-pointer"> {{ trans('Remember me') }} </label>
                             </div>
 
-                            <Link :href="route('retina.reset-password.edit', {
+                            <a :href="route('retina.reset-password.edit', {
                                 tiktok_code: route().queryParams?.tiktok_code
                             })"
                                 class="text-sm   font-medium hover:underline transition duration-150 ease-in-out">
                                 {{ trans("Forgot password?") }}
-                            </Link>
+                        </a>
                         </div>
                     </div>
                 </div>
@@ -224,12 +224,12 @@ const onCallbackGoogleLogin = async (e: GoogleLoginResponse) => {
                 <div class="border-t border-gray-200 flex justify-center items-center mt-2 pt-4">
                     <p class="text-sm text-gray-500">
                         {{ trans("Don't have an account") }}?
-                        <Link :href="route('retina.register', {
+                        <a :href="route('retina.register', {
                             tiktok_code: route().queryParams?.tiktok_code
                         })"
                             class="  font-medium hover:underline transition duration-150 ease-in-out ml-1">
                             {{ trans("Register here") }}
-                        </Link>
+                        </a>
                     </p>
                 </div>
             </form>

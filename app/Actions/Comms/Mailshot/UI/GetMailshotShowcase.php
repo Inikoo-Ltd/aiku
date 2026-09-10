@@ -8,6 +8,7 @@
 
 namespace App\Actions\Comms\Mailshot\UI;
 
+use App\Actions\Comms\Mailshot\InjectUtmToEmailLinks;
 use App\Http\Resources\Mail\MailshotResource;
 use App\Models\Comms\Mailshot;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -19,7 +20,7 @@ class GetMailshotShowcase
     public function handle(Mailshot $mailshot): array
     {
         $email          = $mailshot->email;
-        $compiledLayout = $email?->liveSnapshot?->compiled_layout;
+        $compiledLayout = InjectUtmToEmailLinks::run($mailshot, $email?->liveSnapshot?->compiled_layout);
         $snapshot       = $email?->unpublishedSnapshot;
         $bytes = strlen($compiledLayout);
         $kb    = round(($bytes / 1024), 2);

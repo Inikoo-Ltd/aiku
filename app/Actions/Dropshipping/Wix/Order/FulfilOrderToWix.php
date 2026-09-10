@@ -54,7 +54,7 @@ class FulfilOrderToWix extends RetinaAction
                     'shippingProvider' => $shipment->shipper?->trade_as ?: 'other'
                 ];
 
-                if(Arr::first($shipment->tracking_urls)) {
+                if (Arr::first($shipment->tracking_urls)) {
                     $fulfillment['trackingInfo']['trackingLink'] = Arr::first($shipment->tracking_urls);
                 }
             }

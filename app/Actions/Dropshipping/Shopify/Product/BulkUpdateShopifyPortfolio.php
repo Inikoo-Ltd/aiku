@@ -20,6 +20,7 @@ use App\Models\Dropshipping\ShopifyUser;
 use Illuminate\Console\Command;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Str;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Sentry;
 
@@ -69,7 +70,7 @@ class BulkUpdateShopifyPortfolio implements ShouldBeUnique
 
         $productMap = Product::on('aiku_no_sticky')
             ->whereIn('id', $portfolios->pluck('item_id')->unique())
-            ->select('id', 'available_quantity', 'is_for_sale', 'exclusive_for_customer_id', 'state')
+            ->select('id', 'code', 'available_quantity', 'is_for_sale', 'exclusive_for_customer_id', 'state')
             ->get()
             ->keyBy('id');
 
@@ -93,7 +94,7 @@ class BulkUpdateShopifyPortfolio implements ShouldBeUnique
         $portfoliosToUpdateData = [];
         $indexToPortfolioId     = [];
 
-        $shopifyDataMap = $this->getShopifyDataBatch($shopifyUser, self::shopifyIdsToFetch($portfolios));
+        $variantsByProduct = $this->getShopifyVariantsBatch($shopifyUser, self::shopifyIdsToFetch($portfolios));
 
         foreach ($portfolios as $portfolio) {
             $productData = $productMap->get($portfolio->item_id);
@@ -104,16 +105,21 @@ class BulkUpdateShopifyPortfolio implements ShouldBeUnique
 
             $availableQuantity = UpdateWooCustomerSalesChannelPortfolio::quantityToSend($productData, $customerSalesChannel);
 
-            $shopifyData = $shopifyDataMap[$portfolio->platform_product_variant_id] ?? $shopifyDataMap[$portfolio->platform_product_id] ?? null;
+            $shopifyData = self::resolveVariant($portfolio, $productData, $variantsByProduct[$portfolio->platform_product_id] ?? []);
 
             if (!$shopifyData) {
+                $portfolio->update(['stock_last_fail_updated_at' => now()]);
+                UpdatePlatformPortfolioLog::dispatch(StorePlatformPortfolioLog::run($portfolio, []), [
+                    'status'   => PlatformPortfolioLogsStatusEnum::FAIL,
+                    'response' => 'No variant on Shopify matches this sku'
+                ]);
                 continue;
             }
 
             $variantId       = $shopifyData['variantId'];
             $inventoryItemId = $shopifyData['inventoryItemId'];
 
-            if ($variantId && $portfolio->platform_product_variant_id !== $variantId) {
+            if ($portfolio->platform_product_variant_id !== $variantId) {
                 $portfolio->update(['platform_product_variant_id' => $variantId]);
             }
 
@@ -199,6 +205,9 @@ class BulkUpdateShopifyPortfolio implements ShouldBeUnique
                 $portfolio?->update([
                     'stock_last_fail_updated_at' => now(),
                 ]);
+                if ($portfolio && str_contains($failedIndices[$index], 'not stocked at the location')) {
+                    StoreShopifyLocationToProductVariant::dispatch($portfolio);
+                }
                 if ($log) {
                     UpdatePlatformPortfolioLog::dispatch($log, [
                         'status'   => PlatformPortfolioLogsStatusEnum::FAIL,
@@ -221,37 +230,71 @@ class BulkUpdateShopifyPortfolio implements ShouldBeUnique
     }
 
     /**
-     * The product id goes along with the variant id because a stored variant id can point at a
-     * variant Shopify has since replaced, and the product still resolves to the live one.
-     *
      * @param  Collection<int, Portfolio>  $portfolios
      * @return list<string>
      */
     public static function shopifyIdsToFetch(Collection $portfolios): array
     {
-        return $portfolios->flatMap(fn (Portfolio $portfolio) => [$portfolio->platform_product_variant_id, $portfolio->platform_product_id])
+        return $portfolios->pluck('platform_product_id')
             ->filter()
             ->unique()
             ->values()
             ->toArray();
     }
 
-    private function getShopifyDataBatch(ShopifyUser $shopifyUser, array $shopifyIds): array
+    /**
+     * A stored variant id is only trusted while its sku still belongs to this portfolio: Shopify
+     * keeps the id when a merchant deletes or reorders variants, and the first variant of a
+     * product is not ours unless its sku says so.
+     *
+     * @param  list<array{variantId: string, inventoryItemId: string|null, sku: string}>  $variants
+     * @return array{variantId: string, inventoryItemId: string|null, sku: string}|null
+     */
+    public static function resolveVariant(Portfolio $portfolio, Product $product, array $variants): ?array
     {
-        if (empty($shopifyIds)) {
+        if (empty($variants)) {
+            return null;
+        }
+
+        $ownSkus = array_filter([Str::lower((string)$portfolio->sku), Str::lower((string)$product->code)]);
+
+        foreach ($variants as $variant) {
+            if (in_array(Str::lower($variant['sku']), $ownSkus, true)) {
+                return $variant;
+            }
+        }
+
+        $unlabelled = array_values(array_filter($variants, fn (array $variant) => $variant['sku'] === ''));
+
+        foreach ($unlabelled as $variant) {
+            if ($variant['variantId'] === $portfolio->platform_product_variant_id) {
+                return $variant;
+            }
+        }
+
+        return count($variants) === 1 && count($unlabelled) === 1 ? $unlabelled[0] : null;
+    }
+
+    /**
+     * @param  list<string>  $productIds
+     * @return array<string, list<array{variantId: string, inventoryItemId: string|null, sku: string}>>
+     */
+    private function getShopifyVariantsBatch(ShopifyUser $shopifyUser, array $productIds): array
+    {
+        if (empty($productIds)) {
             return [];
         }
 
         $query = <<<'QUERY'
-            query getNodes($ids: [ID!]!) {
+            query getProductsVariants($ids: [ID!]!) {
                 nodes(ids: $ids) {
-                    __typename
                     ... on Product {
                         id
-                        variants(first: 1) {
+                        variants(first: 100) {
                             edges {
                                 node {
                                     id
+                                    sku
                                     inventoryItem {
                                         id
                                     }
@@ -259,17 +302,11 @@ class BulkUpdateShopifyPortfolio implements ShouldBeUnique
                             }
                         }
                     }
-                    ... on ProductVariant {
-                        id
-                        inventoryItem {
-                            id
-                        }
-                    }
                 }
             }
         QUERY;
 
-        [$status, $res] = $this->doPost($shopifyUser, $query, ['ids' => $shopifyIds]);
+        [$status, $res] = $this->doPost($shopifyUser, $query, ['ids' => $productIds]);
 
         if (!$status) {
             return [];
@@ -278,24 +315,15 @@ class BulkUpdateShopifyPortfolio implements ShouldBeUnique
         $body    = $res['body']->toArray();
         $results = [];
         foreach ($body['data']['nodes'] ?? [] as $node) {
-            if (!$node) {
+            if (!$node || !isset($node['id'])) {
                 continue;
             }
 
-            if ($node['__typename'] === 'Product') {
-                $variant = $node['variants']['edges'][0]['node'] ?? null;
-                if ($variant) {
-                    $results[$node['id']] = [
-                        'variantId'       => $variant['id'],
-                        'inventoryItemId' => $variant['inventoryItem']['id'] ?? null
-                    ];
-                }
-            } elseif ($node['__typename'] === 'ProductVariant') {
-                $results[$node['id']] = [
-                    'variantId'       => $node['id'],
-                    'inventoryItemId' => $node['inventoryItem']['id'] ?? null
-                ];
-            }
+            $results[$node['id']] = array_map(fn (array $edge) => [
+                'variantId'       => $edge['node']['id'],
+                'inventoryItemId' => $edge['node']['inventoryItem']['id'] ?? null,
+                'sku'             => trim((string)($edge['node']['sku'] ?? '')),
+            ], $node['variants']['edges'] ?? []);
         }
 
         return $results;

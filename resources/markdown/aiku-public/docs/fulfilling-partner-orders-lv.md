@@ -1,8 +1,8 @@
 ---
 title: Darbs ar sarakstu To produce
 summary: Ražotnes rokasgrāmata - viena rinda ar visu, ko ražotne ir parādā gan partnerorganizācijām, gan saviem klientiem, sagrupēta tā, kā domā ražošanas plānotājs.
-date: 2026-09-08
-source_date: 2026-09-08
+date: 2026-09-09
+source_date: 2026-09-09
 tags: production, procurement, intercompany, dispatch
 category: production
 series: Ordering from partners
@@ -43,22 +43,25 @@ Sešas joslas, no kreisās uz labo. Kartīte pārvietojas pa labi, darbam virzot
 
 | Josla | Kas tur atrodas |
 | --- | --- |
-| Pre-pick | rindas, kam nekas nav jāgatavo, jo krājums jau ir plauktā. Slēpta, kamēr virs dēļa nenospiež **Pre-pick**. Šīs savāc noliktava, skaties [Partnera preču savākšana](/docs/gathering-a-partners-goods-lv). |
 | Backlog | rindas ar artefaktu, uz ko vēl neviens nav paskatījies |
 | Preparing | rindas, ko esi izlēmis gatavot, ar noskaidrotu daudzumu |
 | Assigned | darba uzdevums eksistē un adresēts amatniekam, bet neviens vēl nav sācis |
 | Producing | amatnieks vienam no tā uzdevumiem ir nospiedis START |
 | Done | visi darba uzdevuma uzdevumi ir pabeigti; tas gaida, kad noliktava to noliks vietā |
 
-Katra kartīte rāda produktu, pieprasīto daudzumu, kas pieprasīja, un **In stock** (Krājumā), lai redzētu, vai gatavošana vispār ir vērta.
+Katra kartīte rāda produktu, pieprasīto daudzumu, kas pieprasīja, un **In stock** (Krājumā), lai redzētu, vai gatavošana vispār ir vērta. Dēlī nonāk tikai rindas ar artefaktu šajā ražotnē; rindas, ko krājums vienkārši ļauj noņemt no plaukta, dzīvo savā lapā, **Factory → Pre-pick** (Ražotne → Iepriekšēja komplektēšana), skaties [Partnera preču savākšana](/docs/gathering-a-partners-goods-lv).
 
-**Backlog → Preparing.** Nomet kartīti, un aiku jautā *How many to make?* (Cik gatavot?). Tas piedāvā pieprasīto daudzumu; ieraksti vairāk, un starpība tiek atzīmēta kā *for stock* (krājumam). Ja artefaktam ir ieteicamais partijas lielums, mazā poga **↑** noapaļo daudzumu uz pilnām partijām. Skaitlis paliek rediģējams uz kartītes, kamēr tā ir Preparing.
+Zem joslām atrodas vēl viena rinda: **N rindas, kas ir par mazu partijai, gaida sabiedrību · rādīt**. Partneris var pieprasīt mazāk par vienu pilnu partiju, un šo rindu nevar prātīgi izgatavot atsevišķi, tāpēc tā gaida ceļmalā, nevis piegružo Backlog. To paņem, kad atklātais pieprasījums pēc tā paša krājuma visos partneru sarakstos kopā sasniedz partiju, kad pašu klienta pasūtījums pie vārtiem tik un tā liek uzdevumam darboties, vai kad spied *rādīt* un izgatavo to jebkurā gadījumā. Rinda var gaidīt ilgi; tas ir patiesāks tās stāvokļa apraksts nekā jebkurš statuss, ko mēs varētu izdomāt. Skaties [Partijas, iepakojumi un daļējas partijas](/docs/batches-packs-and-part-batches-lv).
+
+**Backlog → Preparing.** Nomet kartīti, un aiku jautā *How many to make?* (Cik gatavot?). Tas piedāvā pieprasīto daudzumu; ieraksti vairāk, un starpība tiek atzīmēta kā *for stock* (krājumam). Ja artefaktam ir ieteicamais partijas lielums, mazā poga **↑** noapaļo daudzumu uz pilnām partijām. Tas, kas amatniekam galu galā tiek pieprasīts, ir **vienībās**, noapaļots uz nākamo pilno partiju, un tas, kas atgriežas, tiek dalīts ar iepakojuma lielumu ceļā uz plauktu: 16 desmitnieka vienības nonāk kā 1,6 SKO. Skaitlis paliek rediģējams uz kartītes, kamēr tā ir Preparing.
 
 **Preparing → Assigned.** Nomet kartīti, un aiku jautā *Who makes it?* (Kurš izgatavo?). Tas piedāvā amatnieku, kas piesaistīts artefaktam vai tā kategorijai, skaties [Kurš ko izgatavo](/docs/who-makes-what-lv). Izvēlies vārdu, un tiek izveidots darba uzdevums melnrakstā, adresēts šim cilvēkam. Atver darba uzdevumu un spied **Release to floor** (Nodot ražotnei), kad tam jāsākas; līdz tam amatnieks to neredz. Lai vēlāk mainītu amatnieku, klikšķini uz vārda kartītē.
 
 **Producing** un **Done** pārvietojas pašas, atkarībā no tā, kas notiek ražotnes ekrānā. Kartīte pamet dēli, kad noliktava noliek vietā gatavo produkciju, skaties [Gatavās produkcijas novietošana](/docs/putting-away-finished-production-lv), vai kad darba uzdevums tiek ieskaitīts krājumā no tā pašas lapas.
 
 Vairākas kartītes vienlaikus: klikšķini uz kartītēm, lai tās izvēlētos, tad velc jebkuru no tām, un pārvietojas visa izvēle. Izvēlne **Everybody** (Visi) virs dēļa sašaurina to līdz vienam vai diviem amatniekiem, un tāpat kartītēm strādā saimes, pircēja un prioritātes filtri.
+
+Ražotnes sānjoslā blakus nosaukumiem ir dzīvi skaitītāji **To produce** un **Pre-pick**, un tie pārvietojas paši, mainoties iepirkumu sarakstiem; nav jāpārlādē lapa, lai redzētu, vai kaut kas jauns ienācis.
 
 Zem dēļa un skata By artisan atrodas **Open job orders per artisan** (Atklātie darba uzdevumi pa amatniekiem): viens žetons katram cilvēkam ar to, cik darba uzdevumu viņam ir atklāti. Sarkans nozīmē neviena, dzintara krāsa — viens; visiem vajadzētu būt vismaz diviem, lai neviens nepaliktu bez darba. Krusts uz žetona atzīmē cilvēku kā tādu, kas nav amatnieks, un paslēpj viņu no skaitīšanas.
 
@@ -84,7 +87,9 @@ Atzīmējot pašu klienta rindu, nekas noderīgs nenotiek. To izlaiž, kad spied
 <li><b>Redzēt rindu:</b> tava organizācija → <b>Factory</b> → <b>To produce</b>. Maini skatus ar cilnēm <b>Board · All · By artisan · By category · By buyer · Mixes</b>.</li>
 <li><b>Izlemt daudzumu:</b> <i>Board</i> → velc kartīti no <b>Backlog</b> uz <b>Preparing</b> → ieraksti skaitli, vai spied <b>↑</b> pilnām partijām.</li>
 <li><b>Izveidot darba uzdevumu:</b> velc kartīti no <b>Preparing</b> uz <b>Assigned</b> → izvēlies amatnieku → atver darba uzdevumu → <b>Release to floor</b>.</li>
-<li><b>Rindas, kam vajag tikai komplektēšanu:</b> poga <b>Pre-pick</b> virs dēļa.</li>
+<li><b>Rindas, kam vajag tikai komplektēšanu:</b> <b>Factory</b> → <b>Pre-pick</b>, tās pašas lapa.</li>
+<li><b>Mazas rindas, kas gaida partiju:</b> spied <b>rādīt</b> uz rindas zem dēļa.</li>
+<li><b>Kas tik un tā beidzas:</b> <b>Factory</b> → <b>To restock</b>, skaties [Ražotnes krājuma uzturēšana](/docs/keeping-the-factory-stocked-lv).</li>
 <li><b>Paslēpt bloku:</b> sagrupētā skatā klikšķini uz tā kapsulas virs saraksta. Klikšķini vēlreiz, lai parādītu.</li>
 <li><b>Tikai partneri vai tikai klienti:</b> cilne <i>All</i> → filtrs <b>Source</b>.</li>
 <li><b>Nosūtīt partnerim:</b> atzīmē rindas → <b>Pick into order</b> → <b>Send to warehouse</b> lodziņā <i>Picked orders</i>.</li>

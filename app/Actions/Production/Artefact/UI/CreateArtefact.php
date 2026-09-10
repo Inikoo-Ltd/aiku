@@ -75,6 +75,16 @@ class CreateArtefact extends OrgAction
                                     'value'    => '',
                                     'required' => false
                                 ],
+                                'shelf_life_days' => [
+                                    'type'     => 'input_number',
+                                    'label'    => __('Shelf life (days)'),
+                                    'bind'  => [
+                                        'min' => 0,
+                                        'placeholder' => __('How long it keeps') . ' (365 = 1 year)',
+                                    ],
+                                    'value'    => '',
+                                    'required' => false
+                                ],
                                 'trade_unit_id' => [
                                     'type'       => 'select_infinite',
                                     'label'      => __('Trade unit'),

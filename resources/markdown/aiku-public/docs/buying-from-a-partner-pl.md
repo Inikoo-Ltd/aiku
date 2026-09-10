@@ -1,8 +1,8 @@
 ---
 title: Kupowanie od partnera
 summary: Przewodnik dla kupującego - zacznij od pulpitu zakupów, uzupełnij listę ręcznie, z katalogu partnera albo za pomocą auto-fill, i odbierz towar, gdy dotrze.
-date: 2026-09-01
-source_date: 2026-09-01
+date: 2026-09-09
+source_date: 2026-09-09
 tags: procurement, intercompany, shopping-list
 category: procurement
 series: Ordering from partners
@@ -23,6 +23,7 @@ Obok pulpitu zakładka **Shopping list** (Lista zakupowa) przechowuje wszystkie 
 
 - **Add stocks** (Dodaj towary) otwiera listę stanów magazynowych partnera z ich dostępnością, sposobem pakowania każdej pozycji, Twoim własnym bieżącym stanem i tym, ile zużyłeś w ostatnich czterech kwartałach. Ilości podane są w jednostkach wysyłkowych sprzedającego (SKO).
 - Każda pozycja pokazuje historię stanu na pierwszy rzut oka - *their stock* (ich stan), *our stock* (nasz stan) i kiedy *we run out* (nam się skończy) - a do tego kwotę w Twojej cenie zakupu, z sumą otwartych pozycji u dołu tabeli.
+- Tam, gdzie partner sam wytwarza dany produkt, pozycja podaje też *made in batches of N units* (wytwarzane w partiach po N sztuk) i, gdy te dwie liczby nie dzielą się równo, *full batches every N SKO* (pełne partie co N SKO) - **order step** (krok zamówienia), najmniejsze zamówienie, które wypełnia pełne partie dokładnie. Przycisk zaokrągla Twoją ilość w górę do niego. Zamawianie poza krokiem jest dozwolone i tak jest napisane: pełna partia i tak powstaje, więc zamówienie może zostać opóźnione albo ilość dostosowana, a zamówienie poniżej jednego pełnego kroku czeka w fabryce, aż dołączy do niego inny popyt. Zobacz [Partie, opakowania i częściowe partie](/docs/batches-packs-and-part-batches-pl).
 - Otwarte pozycje są w pełni Twoje: wybierz **priority** (priorytet, low → urgent, niski → pilny) prosto z listy rozwijanej w tabeli, albo usuń pozycję przyciskiem kosza. Aby zmienić ilość, użyj **Browse** (Przeglądaj) - licznik przy tym samym produkcie edytuje tam otwartą pozycję bezpośrednio. Gdy partner skompletuje pozycję, blokuje się ona, a jej stan mówi, na jakim jest etapie.
 
 ## Przeglądanie katalogu partnera
@@ -41,7 +42,7 @@ Podczas przeglądania Twoja lista zakupowa towarzyszy Ci jako paragon przypięty
 
 Auto-fill (automatyczne uzupełnienie) istnieje po to, żeby uzupełnianie zapasów nie zależało od tego, czy ktoś pamięta o każdej pozycji. Podajesz mu jedną liczbę - **budget** (budżet), w tej samej walucie, w jakiej kupujesz - a ono buduje propozycję, która się w niej mieści:
 
-- Przegląda każdą pozycję, którą partner może dostarczyć i której faktycznie używasz, szereguje je wg tego, **jak szybko Ci się skończy** (ta sama prognoza *we run out in*, którą widzisz podczas przeglądania), i uzupełnia najpierw te najbliższe wyczerpania, każdą w zalecanej ilości zamówienia.
+- Przegląda każdą pozycję, którą partner może dostarczyć i której faktycznie używasz, szereguje je wg tego, **jak szybko Ci się skończy** (ta sama prognoza *we run out in*, którą widzisz podczas przeglądania), i uzupełnia najpierw te najbliższe wyczerpania, każdą w zalecanej ilości zamówienia, zaokrąglonej do kroku zamówienia (order step) danej pozycji.
 - Każda proponowana pozycja pokazuje swój **reason** (powód, np. "Our sales/quarter ~48 · our stock 0 · we run out now"), ilość i koszt, więc widzisz, dlaczego się tam znalazła. Ilości wynikają z tej samej prognozy co plakietki *suggested* w Browse.
 - **Instruction box** (pole instrukcji) jest opcjonalne i przyjmuje zwykły język: *"prioritise essential oils, skip anything we hold over 8 weeks of"* ("traktuj priorytetowo olejki eteryczne, pomiń wszystko, czego mamy zapas na ponad 8 tygodni"), *"focus on candles, nothing seasonal"* ("skup się na świecach, nic sezonowego"). AI czyta Twoją instrukcję razem z tymi samymi danymi o zużyciu i odpowiednio przekształca propozycję - ale jej wynik jest sprawdzany wobec rzeczywistości, zanim go zobaczysz: ilości są ograniczone do tego, co partner faktycznie ma, a suma jest wymuszona z powrotem w granicach Twojego budżetu. Jeśli instrukcji nie da się zrealizować, dostajesz standardową propozycję.
 - **Nic nie dodaje się samo.** Propozycja to zestaw zaznaczonych pozycji, które możesz odznaczyć, zmienić ilość albo wygenerować ponownie z innym budżetem lub instrukcją; dopiero **Add items to shopping list** (Dodaj pozycje do listy zakupowej) coś zatwierdza.
@@ -63,6 +64,7 @@ Gdy partner [wyśle przesyłkę do swojego magazynu](/docs/fulfilling-partner-or
 <ul>
 <li><b>Zobacz, co trzeba kupić:</b> Twoja organizacja → <b>Procurement → Partners</b> (Zakupy → Partnerzy) → otwórz partnera → <b>Shopping</b> (Zakupy, pulpit) → popracuj nad kafelkami ryzyka.</li>
 <li><b>Dodaj do listy:</b> <b>Shopping list</b> (Lista zakupowa) → <b>Add stocks</b> (Dodaj towary), albo <b>Browse</b> (Przeglądaj) i ustaw ilości na kartach produktów, albo <b>Auto-fill</b> (lub <b>+ fill</b> na kafelku pulpitu) po propozycję.</li>
+<li><b>Zamów w pełnych partiach:</b> przycisk obok <i>full batches every N SKO</i> na pozycji albo na karcie produktu.</li>
 <li><b>Dostosuj otwarte pozycje:</b> zmień priorytet albo usuń pozycje w tabeli listy zakupowej; zmień ilości z kart produktów w <b>Browse</b> (Przeglądaj).</li>
 <li><b>Wyłącz pozycję z auto-fill:</b> Twoja organizacja → <b>Warehouse → Inventory</b> (Magazyn → Zapasy) → otwórz SKO → <b>Edit SKO</b> (Edytuj SKO) → włącz <b>Do not auto order</b> (Nie zamawiaj automatycznie).</li>
 <li><b>Śledź i przyjmij przesyłkę:</b> ta sama strona partnera → <b>Stock deliveries</b> (Dostawy towaru) → gdy towar dotrze, <b>Receive</b> (Przyjmij) → sprawdź → rozmieść na lokalizacjach.</li>

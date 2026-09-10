@@ -1,8 +1,8 @@
 ---
 title: Zbieranie towaru partnera
 summary: Przewodnik dla magazynu - co znaczy pre-pick, dlaczego towar w skrzyni zbiorczej partnera przestaje liczyć się jako dostępny, i jak pracować z listą Pre-pick w Dispatching.
-date: 2026-09-08
-source_date: 2026-09-08
+date: 2026-09-09
+source_date: 2026-09-09
 tags: dispatch, procurement, intercompany, warehouse
 category: dispatch
 series: Ordering from partners
@@ -46,6 +46,16 @@ Weź towar, włóż go do skrzyni, potem naciśnij **Moved** (przeniesiono). To 
 Lista jest liczona na nowo za każdym razem, gdy ją otwierasz - to nie jest zestaw zadań do odhaczenia czy posprzątania. Jeśli towar jest już w skrzyni, wiersza po prostu nie ma. Jeśli ktoś doda więcej do zapytania, wiersz wraca.
 
 Zakładka pojawia się tylko dla organizacji, które mają skonfigurowaną skrzynię zbiorczą dla partnera. Jeśli jej nie widzisz, jeszcze tego nie zrobiono.
+
+## Połowa tej samej pracy po stronie fabryki
+
+Spacery skądś się biorą: ktoś w fabryce musi zdecydować, że pozycja jest brana z magazynu, a nie wytwarzana. Ta decyzja ma własną stronę, **Factory → Pre-pick** (Fabryka → Wstępna kompletacja), i jest bliźniaczą do listy powyżej.
+
+Pokazuje każdą otwartą pozycję partnerską mającą towar za sobą, niezależnie czy ta fabryka wytwarza dany wyrób, i nigdy nie pokazuje pozycji już wstępnie skompletowanej. Każdy wiersz niesie zamawiającego, wyrób, ile **asked** (zamówiono), ile jest **in stock** (w magazynie) i ile **can pick** (można skompletować) - te dwie liczby ograniczone wzajemnie, więc pozycji nigdy nie obiecuje się więcej, niż istnieje. Kategoria, zamawiający i pilność filtrują listę, a liczby na filtrach są rzeczywistymi liczbami, nie tylko tym, co mieści się na stronie.
+
+**Pre-pick** na wierszu, **Pre-pick selected** (Wstępnie skompletuj zaznaczone) dla tego, co zaznaczyłeś, albo **Pre-pick all** (Wstępnie skompletuj wszystko) dla wszystkiego, co pokazują bieżące filtry. Wstępna kompletacja obiecuje towar temu partnerowi i umieszcza spacer na liście magazynu; gdy dostępna jest tylko część zamówienia, pozycja dzieli się - obiecana część odchodzi, a reszta zostaje otwarta. Nic nie jest sprzedawane i nie powstaje żadne zamówienie - towar po prostu przestaje być dostępny dla kogokolwiek innego.
+
+Liczba obok **Pre-pick** w pasku bocznym fabryki to ile pozycji czeka na tę decyzję, i aktualizuje się sama.
 
 ## Co widzi partner
 

@@ -109,6 +109,15 @@ class ShowCraftsDashboard extends OrgAction
                         ],
                     ],
                     [
+                        'label' => __('Without shelf life'),
+                        'icon'  => 'fal fa-hourglass-half',
+                        'value' => $production->artefacts()->whereNull('shelf_life_days')->count(),
+                        'route' => [
+                            'name'       => 'grp.org.productions.show.crafts.artefacts.index',
+                            'parameters' => $request->route()->originalParameters()
+                        ],
+                    ],
+                    [
                         'label' => __('Compliance problems'),
                         'icon'  => 'fal fa-clipboard-check',
                         'value' => $production->artefacts()->whereHas('complianceItems', function ($query) {
@@ -152,6 +161,11 @@ class ShowCraftsDashboard extends OrgAction
     {
         $artefactCounts = ArtefactStateEnum::count($production);
 
+        $familyStateCounts = $production->artefactFamilies()
+            ->groupBy('state')
+            ->selectRaw('state, count(*) as number')
+            ->pluck('number', 'state');
+
         $artefactsRoute = fn (array $elements = []) => [
             'name'       => 'grp.org.productions.show.crafts.artefacts.index',
             'parameters' => array_merge($routeParameters, $elements)
@@ -159,7 +173,45 @@ class ShowCraftsDashboard extends OrgAction
 
         $byState = fn (ArtefactStateEnum $state) => $artefactsRoute(['artefacts_elements[state]' => $state->value]);
 
+        $familiesByState = fn (ArtefactStateEnum $state) => [
+            'name'       => 'grp.org.productions.show.crafts.artefact_families.index',
+            'parameters' => array_merge($routeParameters, ['elements[state]' => $state->value]),
+        ];
+
+        $familyStateMeta = fn (ArtefactStateEnum $state, string $tooltip, array $icon) => [
+            'tooltip' => $tooltip,
+            'icon'    => $icon,
+            'count'   => (int) ($familyStateCounts[$state->value] ?? 0),
+            'route'   => $familiesByState($state),
+        ];
+
+        $batchesWithPack = $production->artefacts()
+            ->join('org_stocks', 'artefacts.org_stock_id', 'org_stocks.id')
+            ->whereNotNull('artefacts.recommended_batch_size')
+            ->whereNotNull('org_stocks.packed_in');
+
+        $batchesNotWholeSkos = (clone $batchesWithPack)
+            ->whereRaw('mod(artefacts.recommended_batch_size, org_stocks.packed_in) <> 0')
+            ->count();
+
+        $batchesWholeSkos = (clone $batchesWithPack)->count() - $batchesNotWholeSkos;
+
         return [
+            [
+                'label' => __('Batches in whole SKOs'),
+                'icon'  => 'fal fa-box-open',
+                'color' => '#38bdf8',
+                'value' => $batchesWholeSkos,
+                'route' => $artefactsRoute(['artefacts_elements[batch_size]' => 'assigned']),
+                'metas' => [
+                    [
+                        'tooltip' => __('Batch makes a part SKO, the shop sells another pack size'),
+                        'icon'    => ['icon' => 'fal fa-box-open', 'class' => 'text-gray-400'],
+                        'count'   => $batchesNotWholeSkos,
+                        'route'   => $artefactsRoute(['artefacts_elements[batch_size]' => 'fractional']),
+                    ],
+                ],
+            ],
             [
                 'label' => __('Departments'),
                 'icon'  => 'fal fa-folder-tree',
@@ -188,6 +240,10 @@ class ShowCraftsDashboard extends OrgAction
                     'parameters' => $routeParameters
                 ],
                 'metas' => [
+                    $familyStateMeta(ArtefactStateEnum::ACTIVE, __('Active families'), ['icon' => 'fas fa-check-circle', 'class' => 'text-green-500']),
+                    $familyStateMeta(ArtefactStateEnum::IN_PROCESS, __('In process'), ['icon' => 'fal fa-seedling', 'class' => 'text-green-500 animate-pulse']),
+                    $familyStateMeta(ArtefactStateEnum::DORMANT, __('Dormant'), ['icon' => 'fas fa-times-circle', 'class' => 'text-amber-500']),
+                    $familyStateMeta(ArtefactStateEnum::DISCONTINUED, __('Discontinued'), ['icon' => 'fas fa-times-circle', 'class' => 'text-red-500']),
                     [
                         'tooltip' => __('Artefacts without a family'),
                         'icon'    => ['icon' => 'fal fa-unlink', 'class' => 'text-amber-500'],

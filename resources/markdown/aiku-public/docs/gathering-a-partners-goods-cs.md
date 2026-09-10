@@ -1,8 +1,8 @@
 ---
 title: Shromažďování partnerova zboží
 summary: Průvodce pro sklad - co znamená pre-pick, proč zboží v partnerově shromažďovacím místě přestává počítat jako dostupné, a jak pracovat se seznamem Pre-pick v sekci Dispatching.
-date: 2026-09-08
-source_date: 2026-09-08
+date: 2026-09-09
+source_date: 2026-09-09
 tags: dispatch, procurement, intercompany, warehouse
 category: dispatch
 series: Ordering from partners
@@ -47,6 +47,16 @@ Seznam se při každém otevření počítá znovu - není to sada úkolů, kter
 
 Záložka se zobrazuje jen organizacím, které mají pro partnera zřízené shromažďovací místo. Pokud ji nevidíte, ještě to nastavené není.
 
+## Druhá polovina téže práce v továrně
+
+Přenosy odněkud přicházejí: někdo v továrně musí rozhodnout, že se řádek vezme ze skladu, místo aby se vyráběl. Toto rozhodnutí má vlastní stránku, **Factory → Pre-pick** (Továrna → Předvychystat), a je dvojčetem seznamu výše.
+
+Uvádí každý otevřený partnerský řádek, za kterým je sklad, ať už tento artefakt tato továrna vyrábí nebo ne, a nikdy nezobrazuje řádek, který je už předvychystaný. Každý řádek nese žadatele, artefakt, kolik bylo **asked** (požadováno), kolik je **in stock** (na skladě) a kolik **can pick** (lze vychystat) - obojí navzájem omezené, takže se řádku nikdy neslíbí víc, než existuje. Kategorie, žadatel a naléhavost seznam filtrují, a počty na filtrech jsou skutečné počty, ne jen to, co se vejde na stránku.
+
+**Pre-pick** na řádku, **Pre-pick selected** (Předvychystat vybrané) pro zaškrtnuté, nebo **Pre-pick all** (Předvychystat vše) pro všechno, co ukazují aktuální filtry. Předvychystání přislíbí sklad danému partnerovi a dá přenos na seznam skladu; tam, kde je dostupná jen část požadovaného, se řádek rozdělí, přislíbená část odejde a zbytek zůstane otevřený. Nic se neprodává a žádná objednávka nevzniká - sklad prostě přestane být dostupný pro kohokoli jiného.
+
+Číslo vedle **Pre-pick** (Předvychystat) v postranním panelu továrny udává, kolik řádků na toto rozhodnutí čeká, a mění se samo.
+
 ## Co vidí partner
 
 Není potřeba nic hlásit ručně. Ve svém vlastním nákupním seznamu má každý řádek uveden svůj stav: **Requested**, **Being made**, **Pre-picked**, **Staged for you**, **Being picked**, **On its way** - vedle s odkazem na výrobní příkaz, objednávku nebo dodací list.
@@ -69,6 +79,7 @@ Protože je zboží už na jednom místě, vychystávání je v tu chvíli jen p
 
 <aside class="wayfinder"><strong>Kam kliknout v aiku</strong>
 <ul>
+<li><b>Rozhodnout, že se řádek vezme ze skladu:</b> vaše organizace → <b>Factory</b> (Továrna) → <b>Pre-pick</b> (Předvychystat) → <b>Pre-pick</b> na řádku, nebo zaškrtnout a použít <b>Pre-pick selected</b> / <b>Pre-pick all</b>.</li>
 <li><b>Seznam přenosů:</b> vaše organizace → <b>Warehouse</b> → <b>Dispatching</b> → záložka <b>Pre-pick</b>.</li>
 <li><b>Zapsat přenos:</b> stiskněte <b>Moved</b> na řádku, jakmile je zboží fyzicky v místě.</li>
 <li><b>Zkontrolovat obsah místa:</b> <b>Warehouse</b> → <b>Locations</b> → dané místo → záložka <b>SKOs</b>.</li>

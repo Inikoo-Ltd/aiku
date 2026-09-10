@@ -15,6 +15,15 @@ use Lorisleiva\Actions\ActionRequest;
 
 trait WithDeleteInvoiceUI
 {
+    public function canDeleteInvoice(ActionRequest $request): bool
+    {
+        if ($this->shop->fulfilment) {
+            return $request->user()->authTo("supervisor-fulfilment-shop.{$this->shop->fulfilment->id}");
+        }
+
+        return $request->user()->authTo("accounting.{$this->shop->organisation_id}.edit");
+    }
+
     public function asController(Invoice $invoice, ActionRequest $request): Invoice
     {
         $this->set('deleted_by', $request->user()->id);

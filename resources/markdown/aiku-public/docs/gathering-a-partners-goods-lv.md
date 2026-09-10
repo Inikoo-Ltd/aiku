@@ -1,8 +1,8 @@
 ---
 title: Partnera preču savākšana
 summary: Noliktavas rokasgrāmata - ko nozīmē pre-pick, kāpēc krājums partnera savākšanas vietā vairs neskaitās kā pieejams, un kā strādāt ar Pre-pick sarakstu sadaļā Dispatching.
-date: 2026-09-08
-source_date: 2026-09-08
+date: 2026-09-09
+source_date: 2026-09-09
 tags: dispatch, procurement, intercompany, warehouse
 category: dispatch
 series: Ordering from partners
@@ -47,6 +47,16 @@ Saraksts katru reizi tiek pārrēķināts no jauna, atverot to - tas nav uzdevum
 
 Cilne parādās tikai organizācijām, kurām partnerim ir izveidota savākšanas vieta. Ja to neredzi, tas vēl nav izdarīts.
 
+## Ražotnes puse tam pašam darbam
+
+Pastaigas no kaut kurienes rodas: kādam ražotnē jāizlemj, ka rinda tiek ņemta no krājuma, nevis ražota. Šim lēmumam ir sava lapa, **Factory → Pre-pick** (Ražotne → Iepriekšēja komplektēšana), un tā ir iepriekšējā saraksta dvīnis.
+
+Tā uzskaita katru atklāto partnera rindu, kurai ir krājums aizmugurē, neatkarīgi no tā, vai šī ražotne šo artefaktu izgatavo, un nekad nerāda rindu, kas jau iepriekš komplektēta. Katra rinda nes pieprasītāju, artefaktu, cik **pieprasīts**, cik ir **krājumā** un cik **var komplektēt** - abus ierobežojot vienu ar otru, lai rindai nekad neapsola vairāk, nekā ir. Kategorija, pieprasītājs un steidzamība filtrē sarakstu, un skaitļi uz filtriem ir īstie skaitļi, nevis tikai tas, kas iekļaujas lapā.
+
+**Pre-pick** uz rindas, **Pre-pick selected** (Iepriekš komplektēt atzīmētās) atzīmētajām, vai **Pre-pick all** (Iepriekš komplektēt visas) visam, ko rāda pašreizējie filtri. Iepriekšēja komplektēšana apsola krājumu šim partnerim un liek pastaigu noliktavas sarakstā; ja pieejama tikai daļa no pieprasītā, rinda sadalās - apsolītā daļa aiziet, pārējais paliek atklāts. Nekas netiek pārdots un netiek izveidots neviens pasūtījums - krājums vienkārši pārstāj būt pieejams jebkuram citam.
+
+Skaitlis blakus **Pre-pick** ražotnes sānjoslā rāda, cik rindu gaida šo lēmumu, un tas atjaunojas pats.
+
 ## Ko redz partneris
 
 Nekas nav jāpasaka ar roku. Savā iepirkumu sarakstā katrai rindai ir redzams tās statuss: **Requested**, **Being made**, **Pre-picked**, **Staged for you**, **Being picked**, **On its way** - blakus ar darba uzdevuma, pasūtījuma vai piegādes pavadzīmes numuru.
@@ -69,6 +79,7 @@ Tā kā preces jau atrodas vienā vietā, komplektēšana tajā brīdī ir pasta
 
 <aside class="wayfinder"><strong>Kur klikšķināt aiku sistēmā</strong>
 <ul>
+<li><b>Izlemt, ka rinda tiek ņemta no krājuma:</b> tava organizācija → <b>Factory</b> → <b>Pre-pick</b> → <b>Pre-pick</b> uz rindas, vai atzīmē un izmanto <b>Pre-pick selected</b> / <b>Pre-pick all</b>.</li>
 <li><b>Veicamo pastaigu saraksts:</b> tava organizācija → <b>Warehouse</b> → <b>Dispatching</b> → cilne <b>Pre-pick</b>.</li>
 <li><b>Ieraksti pastaigu:</b> spied <b>Moved</b> uz rindas, kad preces fiziski atrodas vietā.</li>
 <li><b>Pārbaudi, kas atrodas vietā:</b> <b>Warehouse</b> → <b>Locations</b> → vieta → cilne <b>SKOs</b>.</li>

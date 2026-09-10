@@ -18,6 +18,7 @@ enum MailshotTabsEnum: string
     case SHOWCASE = 'showcase';
     case RECIPIENTS = 'recipients';
     case DISPATCHED_EMAILS = 'dispatched_emails';
+    case CLICKED_LINKS = 'clicked_links';
 
     public function blueprint(Mailshot $mailshot): array
     {
@@ -33,6 +34,10 @@ enum MailshotTabsEnum: string
             MailshotTabsEnum::DISPATCHED_EMAILS => [
                 'title' => __('Dispatched Emails') . " ({$mailshot->stats->number_dispatched_emails})",
                 'icon'  => 'fal fa-paper-plane',
+            ],
+            MailshotTabsEnum::CLICKED_LINKS => [
+                'title' => __('Clicked links'),
+                'icon'  => 'fal fa-mouse-pointer',
             ],
         };
     }

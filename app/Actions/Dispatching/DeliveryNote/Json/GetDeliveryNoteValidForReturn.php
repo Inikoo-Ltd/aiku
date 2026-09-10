@@ -67,12 +67,14 @@ class GetDeliveryNoteValidForReturn extends OrgAction
                     if ($ids) {
                         $query->whereIn('delivery_notes.id', $ids);
                     }
-                
+
                     if (!$exactRefSearch) {
                         $query->orWhereWith('delivery_notes.reference', $value);
                     }
 
-                    if (!$value) return;
+                    if (!$value) {
+                        return;
+                    }
 
                     $query
                         ->orWhereWith('delivery_notes.tracking_number', $value)

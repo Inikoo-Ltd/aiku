@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch, computed } from 'vue'
+import { ref, watch } from 'vue'
 import BrowserView from '@/Components/Pure/BrowserView.vue'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 import ToggleSwitch from 'primevue/toggleswitch'
@@ -18,10 +18,8 @@ import { library } from '@fortawesome/fontawesome-svg-core'
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
 import { trans } from "laravel-vue-i18n"
-// import ButtonReindexWebpage from '@/Components/Webpages/ButtonReindexWebpage.vue'
 import { Message } from 'primevue'
 import { router } from "@inertiajs/vue3"
-import InformationIcon from '@/Components/Utils/InformationIcon.vue'
 import SearchInWebsiteAvailabilityChecklist from '@/Components/Utils/SearchInWebsiteAvailabilityChecklist.vue'
 
 library.add(faUser, faUserSlash, faDesktop, faTabletAlt, faMobileAlt, faGlobe, faLink, faSearch, faFragile)
@@ -45,12 +43,6 @@ const props = defineProps<{
     layout?: {
       web_blocks?: any[]
     }
-    luigi_data?: {
-      last_reindexed?: string
-      luigisbox_tracker_id?: string
-      luigisbox_private_key?: string
-      luigisbox_lbx_code?: string
-    }
   },
   redirected_to?: {
     slug?: string
@@ -63,16 +55,6 @@ const filterBlock = ref<boolean>(true)
 const screenMode = ref<'desktop' | 'tablet' | 'mobile'>('desktop')
 const isIframeLoading = ref(true)
 const _iframe = ref<HTMLIFrameElement | null>(null)
-
-/* const iframeSrc = route('grp.websites.preview', [
-  route().params['website'],
-  route().params['webpage'],
-  {
-    organisation: route().params['organisation'],
-    shop: route().params['shop'],
-    fulfilment: route().params['fulfilment']
-  }
-]) */
 
 const sendToIframe = (data: any) => {
   _iframe.value?.contentWindow?.postMessage(data, '*')
@@ -87,14 +69,6 @@ const screenModeOptions = [
   { label: 'Tablet', value: 'tablet', icon: ['fal', 'tablet-alt'] },
   { label: 'Mobile', value: 'mobile', icon: ['fal', 'mobile-alt'] }
 ]
-
-// Section: Button reindex website search
-// const isAbleReindex = computed(() => {
-//   const lastReindexed30Minutes = new Date(props.data?.luigi_data.last_reindexed)
-//   lastReindexed30Minutes.setMinutes(lastReindexed30Minutes.getMinutes() + 30)
-
-//   return lastReindexed30Minutes < new Date()
-// })
 
 const visitRedirect = () => {
   router.visit(route('grp.org.shops.show.web.webpages.show', {
@@ -180,7 +154,7 @@ const visitRedirect = () => {
       <!-- Right Panel (Optional) -->
       <div class="row-start-1 xl:row-start-auto flex justify-end w-full">
         <!-- Optional sidebar -->
-        <div class="w-64 border border-gray-300 rounded-md p-2 h-fit" v-if="data?.luigi_data && data?.state == 'live'">
+        <div class="w-64 border border-gray-300 rounded-md p-2 h-fit" v-if="data?.state == 'live'">
           <div class="space-y-2">
             <ModalConfirmationDelete
               v-if="data?.state == 'live'"
@@ -198,38 +172,11 @@ const visitRedirect = () => {
                 </ButtonWithLink>
               </template>
             </ModalConfirmationDelete>
-            
-            <!-- Luigi Search is discontinued, reindex button disabled
-            <ButtonReindexWebpage
-              :webpage="data"
-            />
-            -->
 
             <!-- Internal Search Availability Checklist -->
             <div v-if="data?.search_in_website_availability" class="mt-3 border-t border-gray-200 pt-3">
                 <SearchInWebsiteAvailabilityChecklist :availability="data?.search_in_website_availability" />
             </div>
-
-            <!-- <ButtonWithLink v-if="data?.luigi_data?.luigisbox_tracker_id"
-              :routeTarget="{
-                name: 'grp.models.webpage_luigi.reindex',
-                parameters: {
-                  webpage: data?.id
-                }
-              }" icon="fal fa-search" method="post"
-              :type="data?.luigi_data?.luigisbox_private_key ? 'tertiary' : 'warning'" full>
-              <template #label>
-                <span class="text-xs">
-                  {{ trans('Reindex Webpage Search') }}
-                </span>
-              </template>
-              <template #iconRight>
-                <div v-if="!data?.luigi_data?.luigisbox_private_key" v-tooltip="trans('Please input Luigi Private Key do start reindexing')"
-                  class="text-amber-500">
-                  <FontAwesomeIcon icon="fal fa-exclamation-triangle" class="" fixed-width aria-hidden="true" />
-                </div>
-              </template>
-            </ButtonWithLink> -->
           </div>
         </div>
       </div>

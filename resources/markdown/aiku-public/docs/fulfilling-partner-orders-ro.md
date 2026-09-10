@@ -1,8 +1,8 @@
 ---
 title: Lucrul cu lista To produce
 summary: Ghidul fabricii - o singură coadă cu tot ce datorează fabrica, organizațiilor partenere și propriilor clienți, grupată așa cum gândește un planificator de producție.
-date: 2026-09-08
-source_date: 2026-09-08
+date: 2026-09-09
+source_date: 2026-09-09
 tags: production, procurement, intercompany, dispatch
 category: production
 series: Ordering from partners
@@ -43,22 +43,25 @@ Bara de tab-uri de deasupra titlului e tot rostul paginii. Aceleași linii, șas
 
 | Culoar | Ce stă acolo |
 | --- | --- |
-| Pre-pick | linii pentru care nu trebuie făcut nimic, pentru că stocul e pe raft. Ascuns până apeși **Pre-pick** deasupra panoului. Depozitul strânge astea, vezi [Adunarea mărfii unui partener](/docs/gathering-a-partners-goods-ro). |
 | Backlog | linii cu un artefact la care nimeni nu s-a uitat încă |
 | Preparing | linii pe care ai decis să le faci, cu cantitatea stabilită |
 | Assigned | există un ordin de lucru și e adresat unui artizan, dar nimeni nu l-a început |
 | Producing | un artizan a apăsat START pe una din sarcinile lui |
 | Done | toate sarcinile ordinului de lucru sunt gata; așteaptă ca depozitul să îl pună la loc |
 
-Fiecare cartelă arată produsul, cantitatea cerută, cine a cerut și **In stock** (în stoc), ca să vezi dacă merită produs deloc.
+Fiecare cartelă arată produsul, cantitatea cerută, cine a cerut și **In stock** (în stoc), ca să vezi dacă merită produs deloc. Doar liniile cu un artefact în această fabrică ajung pe panou; liniile pentru care stocul poate fi pur și simplu luat de pe raft trăiesc pe propria lor pagină, **Factory → Pre-pick**, vezi [Adunarea mărfii unui partener](/docs/gathering-a-partners-goods-ro).
 
-**Backlog → Preparing.** Lasă cartela și aiku întreabă *Câte se fac?*. Propune cantitatea cerută; scrie mai mult și diferența e marcată *for stock* (pentru stoc). Dacă artefactul are o dimensiune de lot recomandată, un mic buton **↑** rotunjește cantitatea la loturi întregi. Numărul rămâne editabil pe cartelă cât timp e în Preparing.
+Sub culoare mai stă o linie: **N lines too small for a batch are waiting for company · show** (N linii prea mici pentru un lot așteaptă companie · arată). Un partener poate cere mai puțin decât un lot întreg, iar acea linie nu poate fi făcută rezonabil de una singură, așa că așteaptă la marginea drumului în loc să aglomereze Backlog-ul. E preluată când cererea deschisă pentru același stoc, adunată de pe toate listele partenerilor, ajunge la un lot, când o comandă de client propriu la poartă face lucrarea să pornească oricum, sau când apeși *show* și o faci oricum. O linie poate aștepta mult; asta e o descriere mai adevărată a situației ei decât orice stare am putea inventa. Vezi [Loturi, pachete și loturi parțiale](/docs/batches-packs-and-part-batches-ro).
+
+**Backlog → Preparing.** Lasă cartela și aiku întreabă *Câte se fac?*. Propune cantitatea cerută; scrie mai mult și diferența e marcată *for stock* (pentru stoc). Dacă artefactul are o dimensiune de lot recomandată, un mic buton **↑** rotunjește cantitatea la loturi întregi. Ce i se cere în cele din urmă artizanului e în **units** (unități), rotunjit la lotul întreg următor, iar ce se întoarce e împărțit la dimensiunea pachetului pe drumul spre raft: 16 unități dintr-un pachet de zece ajung ca 1,6 SKO-uri. Numărul rămâne editabil pe cartelă cât timp e în Preparing.
 
 **Preparing → Assigned.** Lasă cartela și aiku întreabă *Cine o face?*. Propune artizanul atașat artefactului sau categoriei lui, vezi [Cine face ce](/docs/who-makes-what-ro). Alege un nume și un ordin de lucru e creat ca ciornă, adresat persoanei respective. Deschide ordinul de lucru și apasă **Release to floor** (trimite pe hală) când trebuie să înceapă; până atunci artizanul nu îl vede. Ca să schimbi artizanul mai târziu, apasă pe nume pe cartelă.
 
 **Producing** și **Done** se mișcă singure, în funcție de ce se întâmplă pe ecranul halei. O cartelă părăsește panoul când depozitul pune la loc marfa finită, vezi [Punerea la loc a producției finite](/docs/putting-away-finished-production-ro), sau când ordinul de lucru e recepționat în stoc din propria lui pagină.
 
 Mai multe cartele odată: apasă pe cartele ca să le selectezi, apoi trage oricare din ele și toată selecția se mișcă. Meniul **Everybody** (toată lumea) deasupra panoului îl restrânge la unul sau doi artizani, iar filtrele de familie, cumpărător și prioritate fac același lucru pentru cartele.
+
+Bara laterală a fabricii poartă numărătorile live pentru **To produce** și **Pre-pick** lângă numele lor, și se mișcă singure pe măsură ce listele de cumpărături se schimbă; nu trebuie reîncărcată pagina ca să vezi dacă a intrat ceva nou.
 
 Sub Board și vederea By artisan stă **Open job orders per artisan** (ordine de lucru deschise per artizan): câte o etichetă per persoană cu câte ordine de lucru deschise are. Roșu înseamnă niciunul, chihlimbariu înseamnă unul; toată lumea ar trebui să aibă cel puțin două ca nimeni să nu rămână fără. Cruciulița de pe o etichetă marchează persoana ca nefiind artizan și o ascunde din numărătoare.
 
@@ -84,7 +87,9 @@ Bifarea unei linii de client propriu nu face nimic util. E sărită când apeși
 <li><b>Vezi coada:</b> organizația ta → <b>Factory</b> → <b>To produce</b>. Schimbă vederea cu tab-urile <b>Board · All · By artisan · By category · By buyer · Mixes</b>.</li>
 <li><b>Decide cantitatea:</b> <i>Board</i> → trage cartela din <b>Backlog</b> în <b>Preparing</b> → scrie numărul, sau apasă <b>↑</b> pentru loturi întregi.</li>
 <li><b>Creează ordinul de lucru:</b> trage cartela din <b>Preparing</b> în <b>Assigned</b> → alege artizanul → deschide ordinul de lucru → <b>Release to floor</b>.</li>
-<li><b>Linii care au nevoie doar de picking:</b> butonul <b>Pre-pick</b> deasupra panoului.</li>
+<li><b>Linii care au nevoie doar de picking:</b> <b>Factory</b> → <b>Pre-pick</b>, pagina ei proprie.</li>
+<li><b>Linii mici care așteaptă un lot:</b> apasă <b>show</b> pe linia de sub panou.</li>
+<li><b>Ce se termină oricum:</b> <b>Factory</b> → <b>To restock</b>, vezi <a href="/docs/keeping-the-factory-stocked-ro">Menținerea stocului fabricii</a>.</li>
 <li><b>Ascunde un bloc:</b> într-o vedere grupată, click pe capsula lui deasupra listei. Click din nou ca să-l arăți.</li>
 <li><b>Doar parteneri sau doar clienți:</b> tab-ul <i>All</i> → filtrul <b>Source</b>.</li>
 <li><b>Expediază la un partener:</b> bifează liniile → <b>Pick into order</b> → <b>Send to warehouse</b> în căsuța <i>Picked orders</i>.</li>

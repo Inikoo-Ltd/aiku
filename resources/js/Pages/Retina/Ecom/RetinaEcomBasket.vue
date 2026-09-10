@@ -24,8 +24,6 @@ import EmptyState from '@/Components/Utils/EmptyState.vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import Modal from '@/Components/Utils/Modal.vue'
 import ProductsSelectorAutoSelect from '@/Components/Dropshipping/ProductsSelectorAutoSelect.vue'
-// import RecommendersLuigi1Iris from '@/Components/CMS/Webpage/SeeAlso1/RecommendersLuigi1Iris.vue'
-import BasketRecommendations from '@/Components/Retina/BasketRecommendations.vue'
 import BasketRecommendationsInternal from '@/Components/Retina/BasketRecommendationsInternal.vue'
 import { Address, AddressManagement } from '@/types/PureComponent/Address'
 import { InputText, ToggleSwitch } from 'primevue'
@@ -98,7 +96,6 @@ const props = defineProps<{
             created_at: string
             available_quantity: string
             currency_code: string
-            luigi_identity: string | null
             deleteRoute: routeType
         }[]
     }
@@ -339,28 +336,6 @@ interface Product {
     price?: number | string | null
     currency_code?: string | null
     family_code?: string | null
-    luigi_identity?: string | null
-}
-
-const pushAddToCartLuigi = (product: Product) => {
-    if (product?.transaction_id) {
-        return
-    }
-
-    const addToCartEcommerce = {
-        currency: layout?.iris?.currency?.code,
-        value: product.price,
-        items: [
-            {
-                item_id: product?.luigi_identity,
-            }
-        ]
-    }
-
-    window?.dataLayer?.push({
-        event: "add_to_cart",
-        ecommerce: addToCartEcommerce,
-    })
 }
 
 const pushAddToCartGtm = (product: Product, quantity: number) => {
@@ -431,7 +406,6 @@ const onAddProducts = async (product: Product) => {
                 listLoadingProducts.value[`id-${product.historic_asset_id}`] = 'error'
             },
             onSuccess: () => {
-                pushAddToCartLuigi(product)
                 pushAddToCartGtm(product, quantityAdded)
                 listLoadingProducts.value[`id-${product.historic_asset_id}`] = 'success'
                 layout?.reload_handle?.()
@@ -445,7 +419,7 @@ const onAddProducts = async (product: Product) => {
         })
 }
 
-const onAddProductFromRecommender = async (productId: string, productCode: string, productLuigi: {}) => {
+const onAddProductFromRecommender = async (productId: string, productCode: string, product: {}) => {
     // Check if product already exists in transactions
     const existingTransaction = props.transactions?.data?.find(transaction => 
         transaction.asset_code === productCode
@@ -500,21 +474,6 @@ const onAddProductFromRecommender = async (productId: string, productCode: strin
                     type: "success"
                 })
                 
-                if (!isInternalRecommendation.value) {
-                    const addToCartEcommerce = {
-                        currency: layout?.iris?.currency?.code,
-                        value: productLuigi?.attributes?.price || 0,
-                        items: [
-                            {
-                                item_id: productLuigi?.url,
-                            }
-                        ]
-                    }
-                    window?.dataLayer?.push({
-                        event: "add_to_cart",
-                        ecommerce: addToCartEcommerce,
-                    })
-                }
                 layout?.reload_handle?.()
 
                 listLoadingProducts.value[`recommender-${productId}`] = 'success'
@@ -535,17 +494,6 @@ const onAddProductFromRecommender = async (productId: string, productCode: strin
 //         .map(transaction => transaction.id.toString())
 //         .filter(Boolean)
 // })
-
-// Section: recommendations, websites on the internal search model use our own recommender
-const isInternalRecommendation = computed(() => layout.iris?.iris_search_model === 'internal')
-
-const basketProductIdentities = computed(() => {
-    if (!props.transactions?.data) return []
-
-    return props.transactions.data
-        .map(transaction => transaction.luigi_identity)
-        .filter(Boolean)
-})
 
 // Section: Charge Priority Dispatch
 const isLoadingPriorityDispatch = ref(false)
@@ -975,17 +923,8 @@ const onChangeInsurance = async (val: boolean) => {
             <h2 class="text-2xl font-bold text-center p-4 mb-2">{{ ctrans('You might also like') }}</h2>
             <div class="bg-white p-4 rounded-md shadow-lg">
                 <BasketRecommendationsInternal
-                    v-if="isInternalRecommendation"
                     @add-to-basket="(productId: string, productCode: string, product: {}) => onAddProductFromRecommender(productId, productCode, product)"
                     :listLoadingProducts
-                />
-
-                <BasketRecommendations
-                    v-else
-                    @add-to-basket="(productId: string, productCode: string, productLuigi: {}) => onAddProductFromRecommender(productId, productCode, productLuigi)"
-                    :listLoadingProducts
-                    xblacklistItems="blackListProductIds"
-                    :basketItemIds="basketProductIdentities"
                 />
             </div>
         </div>

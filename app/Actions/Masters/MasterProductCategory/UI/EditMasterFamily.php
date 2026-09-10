@@ -80,7 +80,7 @@ class EditMasterFamily extends OrgAction
         }
 
         $iconLinks = [];
-        
+
         if ($masterProductCategory->tradeUnitFamily) {
             $iconLinks[] = [
                 'icon'    => 'fal fa-atom-alt',

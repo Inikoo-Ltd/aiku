@@ -261,58 +261,39 @@
 </table>
 <table width="100%" style="font-family: sans-serif;" cellpadding="10">
     <tr>
+        @php($addressLines = fn ($address) => collect([
+            $address->address_line_1,
+            $address->address_line_2,
+            $address->administrative_area,
+            $address->locality,
+            $address->postal_code,
+            $address->country->name,
+        ])->reject(fn ($line) => blank($line) || $line === '0'))
         @if($invoice->billingAddress)
             <td width="45%" style="border: 0.1mm solid #888888;"><span
                         style="font-size: 7pt; color: #555555; font-family: sans-serif;">{{ __('Billing address') }}:</span>
-                <div>
-                    {{ $invoice->billingAddress->address_line_1 }}
-                </div>
-                <div>
-                    {{ $invoice->billingAddress->address_line_2 }}
-                </div>
-                <div>
-                    {{ $invoice->billingAddress->administrative_area }}
-                </div>
-                <div>
-                    {{ $invoice->billingAddress->locality }}
-                </div>
-                <div>
-                    {{ $invoice->billingAddress->postal_code }}
-                </div>
-                <div>
-                    {{ $invoice->billingAddress->country->name }}
-                </div>
+                @foreach($addressLines($invoice->billingAddress) as $line)
+                <div>{{ $line }}</div>
+                @endforeach
             </td>
             <td width="10%">&nbsp;</td>
         @endif
-        @if($deliveryAddress)
+        @php($isCollection = $isCollection ?? false)
+        @if($deliveryAddress || $isCollection)
             <td width="45%" style="border: 0.1mm solid #888888;">
                 <span
-                        style="font-size: 7pt; color: #555555; font-family: sans-serif;">{{ __('Delivery address') }}:
+                        style="font-size: 7pt; color: #555555; font-family: sans-serif;">{{ $isCollection ? __('Collection address') : __('Delivery address') }}:
                 </span>
-                @if($recipientName)
-                <div>
-                    {{ $recipientName }}
-                </div>
+                @if($recipientName && !$isCollection)
+                <div>{{ $recipientName }}</div>
                 @endif
-                <div>
-                    {{ $deliveryAddress->address_line_1 }}
-                </div>
-                <div>
-                    {{ $deliveryAddress->address_line_2 }}
-                </div>
-                <div>
-                    {{ $deliveryAddress->administrative_area }}
-                </div>
-                <div>
-                    {{ $deliveryAddress->locality }}
-                </div>
-                <div>
-                    {{ $deliveryAddress->postal_code }}
-                </div>
-                <div>
-                    {{ $deliveryAddress->country->name }}
-                </div>
+                @if($deliveryAddress)
+                    @foreach($addressLines($deliveryAddress) as $line)
+                <div>{{ $line }}</div>
+                    @endforeach
+                @else
+                <div>{{ __('Collection') }}</div>
+                @endif
             </td>
         @else
             <td width="45%"></td>

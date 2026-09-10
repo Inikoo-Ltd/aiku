@@ -93,8 +93,7 @@ const isTrendingNow = computed(() => props.fieldValue?.settings?.products_data?.
 
     <div
       v-if="['luigi-trends', 'luigi-recently_ordered', 'luigi-last_seen', 'luigi-item_detail_alternatives'].includes(fieldValue.settings.products_data.type)">
-      <!-- Render nothing due to deprecated -->
-      <!-- <RecommendersLuigi1Iris :slidesPerView recommendation_type="trends" /> -->
+      <!-- Tipe warisan Luigi: sengaja tidak merender apa pun -->
     </div>
 
     <TrendingNowProducts

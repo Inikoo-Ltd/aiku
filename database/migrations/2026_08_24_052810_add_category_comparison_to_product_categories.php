@@ -4,8 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration
-{
+return new class () extends Migration {
     /**
      * Run the migrations.
      *
@@ -16,7 +15,7 @@ return new class extends Migration
         Schema::table('product_categories', function (Blueprint $table) {
             $table->jsonb('category_comparison')->default('{}')->index();
         });
-        
+
         Schema::table('master_product_categories', function (Blueprint $table) {
             $table->jsonb('category_comparison')->default('{}')->index();
         });
@@ -32,7 +31,7 @@ return new class extends Migration
         Schema::table('product_categories', function (Blueprint $table) {
             $table->dropColumn('category_comparison');
         });
-        
+
         Schema::table('master_product_categories', function (Blueprint $table) {
             $table->dropColumn('category_comparison');
         });

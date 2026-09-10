@@ -28,7 +28,7 @@ class EditArtefactFamily extends OrgAction
         $this->initialisationFromProduction($production, $request);
 
         return Inertia::render(
-            'EditModel',
+            'Org/Production/EditArtefactFamily',
             [
                 'breadcrumbs' => $this->getBreadcrumbs($request->route()->originalParameters()),
                 'title'       => __('Edit Artefact Family') . ' ' . $artefactFamily->code,
@@ -46,6 +46,12 @@ class EditArtefactFamily extends OrgAction
                             ],
                         ]
                     ]
+                ],
+                'number_artefacts' => $artefactFamily->number_artefacts,
+                'delete_route'     => [
+                    'method'     => 'delete',
+                    'name'       => 'grp.models.artefact_family.delete',
+                    'parameters' => [$artefactFamily->id],
                 ],
                 'formData'    => [
                     'blueprint' => [

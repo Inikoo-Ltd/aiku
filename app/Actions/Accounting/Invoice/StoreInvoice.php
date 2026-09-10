@@ -130,6 +130,13 @@ class StoreInvoice extends OrgAction
             $deliveryAddressData = Arr::pull($modelData, 'delivery_address');
         }
 
+        /** An invoice is a fixed document: a collection order keeps the address it was collected from,
+         * it must not follow the shop's address if that changes later (HELP-3102) */
+        if (!$deliveryAddressData && $parent instanceof Order && $parent->collection_address_id) {
+            $deliveryAddressData = collect([$parent->collectionAddress, $parent->shop->collectionAddress])
+                ->first(fn ($address) => filled($address?->address_line_1) && $address->address_line_1 != '0');
+        }
+
 
         if ($parent instanceof Order || $parent instanceof Customer) {
             data_set($modelData, 'is_re', $parent->is_re);

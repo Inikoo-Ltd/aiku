@@ -92,7 +92,7 @@ class StoreAgent extends OrgAction
             'contact_name' => ['sometimes', 'string', 'max:255'],
             'email'        => ['nullable', 'email'],
             'phone'        => ['nullable', new Phone()],
-            'address'      => ['required', new ValidAddress()],
+            'address'      => ['required', new ValidAddress(requireFullAddress: !$this->asAction)],
 
             'currency_id' => ['sometimes', 'exists:currencies,id'],
             'country_id'  => ['sometimes', 'exists:countries,id'],

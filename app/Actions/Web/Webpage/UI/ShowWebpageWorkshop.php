@@ -18,7 +18,6 @@ use App\Models\Fulfilment\Fulfilment;
 use App\Models\SysAdmin\Organisation;
 use App\Models\Web\Webpage;
 use App\Models\Web\Website;
-use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -122,7 +121,6 @@ class ShowWebpageWorkshop extends OrgAction
                         ],
                     ],
                 ],
-                'luigi_tracker_id' => Arr::get($website->settings, 'luigisbox.tracker_id'),
                 'url'           => $url,
                 'webpage'       => WebpageWorkshopResource::make($webpage)->getArray(),
                 'webBlockTypes' => WebBlockTypesResource::collection($webBlockTypes),

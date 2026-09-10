@@ -55,6 +55,7 @@ class IndexEmailTrackingEvents extends OrgAction
             }
 
             $table->column(key: 'type', label: '', canBeHidden: false, type: 'icon');
+            $table->column(key: 'label', label: __('Link'), canBeHidden: false);
             $table->column(key: 'ip', label: __('Ip Address'), canBeHidden: false, sortable: true);
             $table->column(key: 'device', label: __('Device'), canBeHidden: false, sortable: true);
             $table->column(key: 'date', label: __('Date'), canBeHidden: false, sortable: true);

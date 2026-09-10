@@ -46,11 +46,13 @@ use App\Actions\Iris\CRM\StoreIrisProductLastSeen;
 use App\Actions\Iris\Json\GetBanner;
 use App\Actions\Iris\Json\GetIrisFirstHitData;
 use App\Actions\Iris\Json\GetIrisFooterData;
+use App\Actions\Iris\Json\GetIrisRegistrationData;
 use App\Actions\Iris\Json\GetIrisSidebarData;
 use App\Actions\Iris\Json\GetRetinaEcomCustomerData;
 use App\Actions\Iris\Reviews\FetchIrisReviewsInWebpage;
 use App\Actions\Retina\Dropshipping\CustomerSalesChannel\UI\IndexRetinaDropshippingCustomerSalesChannels;
 use App\Actions\Retina\Dropshipping\Portfolio\ZentradaWebApi;
+use App\Actions\Iris\Blog\GetIrisBlogs;
 use App\Actions\Reviews\GetReviewableReviews;
 use App\Actions\Reviews\GetReviews;
 use App\Actions\Reviews\Iris\GetIrisReviews;
@@ -58,8 +60,6 @@ use App\Actions\Search\GetIrisSearchFeaturedItems;
 use App\Actions\Search\RecordWebsiteSearchClick;
 use App\Actions\Search\SearchIrisCatalogue;
 use App\Actions\Search\SearchIrisCataloguePage;
-use App\Actions\Web\Luigi\LuigiBoxGetProductDetail;
-use App\Actions\Web\Luigi\LuigiBoxRecommendation;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(["retina-auth:retina"])->group(function () {
@@ -93,6 +93,8 @@ Route::middleware(["iris-relax-auth:retina"])->group(function () {
     Route::get('/sidebar', GetIrisSidebarData::class)->name('sidebar');
     Route::get('/footer', GetIrisFooterData::class)->name('footer');
 
+    Route::get('registration-data', GetIrisRegistrationData::class)->name('registration_data');
+
     Route::get('first-hit', GetIrisFirstHitData::class)->name('first_hit');
     Route::get('ecom-customer-data', GetRetinaEcomCustomerData::class)->name('ecom_customer_data');
 
@@ -121,8 +123,7 @@ Route::middleware(["iris-relax-auth:retina"])->group(function () {
 
     Route::get('variant/{variant:id}/products', GetProductsOfVariant::class)->name('products.variant')->whereNumber('variant');
     Route::get('variant/{variant:id}', GetVariantAndProducts::class)->name('variant')->whereNumber('variant');
-    Route::post('luigi-product-recommendation', LuigiBoxRecommendation::class)->name('luigi.product_recommendation');
-    Route::get('luigi-product-details', LuigiBoxGetProductDetail::class)->name('luigi.product_details');
+
 
     Route::get('banner/{banner:id}', GetBanner::class)->name('get_banner')->whereNumber('banner');
 
@@ -141,6 +142,9 @@ Route::middleware(["iris-relax-auth:retina"])->group(function () {
     // Families list for range comparison in Family Page Workshop
     Route::get('{productCategory}/comparison-detail', GetFamiliesComparisonDetail::class)->name('website.category.comparison_detail');
     Route::get('{productCategory}/comparison-option', GetFamiliesForComparisonOption::class)->name('website.category.comparison_option');
+
+    // Blogs
+    Route::get('blogs', GetIrisBlogs::class)->name('blogs.index');
 
     Route::get('{webpage:slug}/reviews', FetchIrisReviewsInWebpage::class)->name('fetch_reviews');
     Route::get('reviews/{webpage:id}', GetIrisReviews::class)->name('fetch_reviews_new')->whereNumber('webpage');

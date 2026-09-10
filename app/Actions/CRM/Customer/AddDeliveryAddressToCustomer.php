@@ -56,7 +56,7 @@ class AddDeliveryAddressToCustomer extends OrgAction
     public function rules(): array
     {
         return [
-            'delivery_address' => ['required', new ValidAddress()],
+            'delivery_address' => ['required', new ValidAddress(requireFullAddress: !$this->asAction)],
         ];
     }
 

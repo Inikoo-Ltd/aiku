@@ -118,29 +118,6 @@ class UpdateWebsite extends OrgAction
             data_set($modelData, "settings.catalogue_template", Arr::pull($modelData, "catalogue_template"));
         }
 
-        if (Arr::has($modelData, "luigisbox_tracker_id")) {
-            data_set($modelData, "settings.luigisbox.tracker_id", Arr::pull($modelData, "luigisbox_tracker_id"));
-        }
-
-        if (Arr::has($modelData, "luigisbox_script_lbx")) {
-            data_set($modelData, "settings.luigisbox.script_lbx", Arr::pull($modelData, "luigisbox_script_lbx"));
-        }
-
-        if (Arr::has($modelData, "luigisbox_lbx_code")) {
-            data_set($modelData, "settings.luigisbox.lbx_code", Arr::pull($modelData, "luigisbox_lbx_code"));
-        }
-
-        if (Arr::has($modelData, "luigisbox_private_key")) {
-            data_set($modelData, "settings.luigisbox.private_key", Arr::pull($modelData, "luigisbox_private_key"));
-        }
-
-        if (Arr::has($modelData, "last_reindex_at")) {
-            data_set($modelData, "settings.luigisbox.last_reindex_at", Arr::pull($modelData, "last_reindex_at"));
-        }
-
-        if (Arr::has($modelData, "iris_search_model")) {
-            data_set($modelData, "settings.iris_search_model", Arr::pull($modelData, "iris_search_model"));
-        }
 
         if (Arr::has($modelData, "sound_player_style")) {
             data_set($modelData, "settings.sound_player_style", Arr::pull($modelData, "sound_player_style"));
@@ -231,9 +208,9 @@ class UpdateWebsite extends OrgAction
                             'value'  => $this->organisation->group_id
                         ],
                         [
-                            'column'    => 'status',
-                            'operator'  => '=',
-                            'value'     => true
+                            'column'   => 'status',
+                            'operator' => '=',
+                            'value'    => true
                         ],
                         [
                             'column'   => 'id',
@@ -271,12 +248,6 @@ class UpdateWebsite extends OrgAction
             'google_tag_id'                              => ['sometimes', 'nullable', 'string', 'regex:/^GTM-[A-Z0-9]+$/'],
             'gsc_content'                                => ['sometimes', 'nullable', 'string', 'regex:/^[A-Za-z0-9_\-]+$/'],
             'catalogue_template'                         => ['sometimes', 'array'],
-            'luigisbox_tracker_id'                       => ['sometimes', 'string', 'nullable', 'regex:/^\d{6}-\d{6,8}$/'],
-            'luigisbox_script_lbx'                       => ['sometimes', 'nullable', 'string'],
-            'luigisbox_lbx_code'                         => ['sometimes', 'nullable', 'string', 'regex:/^LBX-\d{6,8}$/'],
-            'luigisbox_private_key'                      => ['sometimes', 'nullable', 'string'],
-            'last_reindex_at'                            => ['sometimes', 'nullable', 'string'],
-            'iris_search_model'                          => ['sometimes', 'string', Rule::in(['internal', 'luigi'])],
             'sound_player_style'                         => ['sometimes', 'string', Rule::in(['rainbow', 'mono', 'wave', 'equalizer', 'minimal'])],
             'jira_help_desk_widget'                      => ['sometimes', 'nullable', 'string'],
             'return_policy'                              => ['sometimes', 'string'],
@@ -326,9 +297,9 @@ class UpdateWebsite extends OrgAction
                             'value'  => $this->organisation->id
                         ],
                         [
-                            'column'    => 'status',
-                            'operator'  => '=',
-                            'value'     => true
+                            'column'   => 'status',
+                            'operator' => '=',
+                            'value'    => true
                         ],
                         [
                             'column'   => 'id',

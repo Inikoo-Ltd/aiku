@@ -223,7 +223,7 @@ trait WithRetinaRegistration
             ],
             'phone'           => [Arr::get($this->shop->settings, 'registration.require_phone_number', false) ? 'required' : 'nullable', 'max:255'],
             'tiktok_code'     => ['nullable', 'string', 'max:255'],
-            'contact_address' => ['required', new ValidAddress()],
+            'contact_address' => ['required', new ValidAddress(requireFullAddress: !$this->asAction)],
             'is_opt_in'       => ['required', 'boolean'],
             'is_whatsapp_newsletter_opt_in' => ['required', 'boolean'],
             'poll_replies'    => ['sometimes', 'array'],

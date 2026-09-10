@@ -118,40 +118,6 @@ class EditWebsite extends OrgAction
                     'placeholder' => 'GTM-ABC456GH',
                     'required'    => false,
                 ],
-               /*  'gsc_content' => [
-                    'type'        => 'input',
-                    'information' => __('Paste your Google Search Console verification code (meta tag content only, not the full tag).'),
-                    'label'       => __('GSC Content'),
-                    'value'       => Arr::get($website->settings, "gsc_content"),
-                    'placeholder' => 'ilqmL8SuzLUaiOmvUCGdfIsgSfsROt96bIdbgZVazFa',
-                    'required'    => false,
-                ], */
-                'luigisbox_tracker_id'  => [
-                    'type'        => 'input',
-                    'label'       => __('Luigi Search Tracker ID'),
-                    'information' => __('To showing the result search. This code will be placed the header. e.g. 123456-123456'),
-                    'value'       => Arr::get($website->settings, "luigisbox.tracker_id"),
-                    'placeholder' => '',
-                    'required'    => false,
-                ],
-                'luigisbox_private_key' => [
-                    'type'                 => 'purePassword',
-                    'label'                => __('Luigi Search Private Key'),
-                    'information'          => __('Private key for API Luigi search. We need it for indexing the data.'),
-                    'value'                => Arr::get($website->settings, "luigisbox.private_key"),
-                    'placeholder'          => '',
-                    'current_value_length' => strlen(Arr::get($website->settings, "luigisbox.private_key", '')),
-                    'required'             => false,
-                ],
-
-                'luigisbox_lbx_code'    => [
-                    'type'        => 'input',
-                    'label'       => __('Luigi LBX Tracker Script'),
-                    'information' => __('If this not provided, the statistics will not be collected. e.g. LBX-123456'),
-                    'value'       => Arr::get($website->settings, "luigisbox.lbx_code"),
-                    'placeholder' => '',
-                    'required'    => false,
-                ],
                 "image"                 => [
                     "type"    => "image_crop_square",
                     "label"   => __("Logo"),

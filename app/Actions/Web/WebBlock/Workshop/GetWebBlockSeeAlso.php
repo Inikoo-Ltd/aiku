@@ -24,6 +24,13 @@ class GetWebBlockSeeAlso
 {
     use AsObject;
 
+    private const DISCONTINUED_PRODUCTS_DATA_TYPES = [
+        'luigi-trends',
+        'luigi-recently_ordered',
+        'luigi-last_seen',
+        'luigi-item_detail_alternatives',
+    ];
+
     /**
      * Handle building "See Also" web block data.
      *
@@ -39,13 +46,13 @@ class GetWebBlockSeeAlso
         // Products selected manually
         $products = Arr::get($webBlock, "$settingsPath.products", []);
 
-        // Ensure the type exists but don’t overwrite if already set
-        $luigiTrackerId = data_get($webpage->website, 'settings.luigisbox.tracker_id');
+        if (in_array(Arr::get($webBlock, "$settingsPath.type"), self::DISCONTINUED_PRODUCTS_DATA_TYPES, true)) {
+            Arr::forget($webBlock, "$settingsPath.type");
+        }
+
         if (!Arr::has($webBlock, "$settingsPath.type")) {
             if ($webpage->sub_type == WebpageSubTypeEnum::PRODUCT) {
                 data_set($webBlock, "$settingsPath.type", "current-family");
-            } elseif ($luigiTrackerId) {
-                data_set($webBlock, "$settingsPath.type", "luigi-trends");
             }
         }
 

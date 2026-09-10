@@ -3129,12 +3129,13 @@ describe('checkout.com payment session customer phone', function () {
 });
 
 describe('invoice pdf tax number display', function () {
-    $renderInvoiceTemplate = function ($invoice) {
+    $renderInvoiceTemplate = function ($invoice, $deliveryAddress = null, $isCollection = false) {
         return view('invoices.templates.pdf.invoice', [
             'shop'                 => $invoice->shop,
             'invoice'              => $invoice,
             'deliveryNote'         => null,
-            'deliveryAddress'      => null,
+            'isCollection'         => $isCollection,
+            'deliveryAddress'      => $deliveryAddress,
             'recipientName'        => null,
             'invoiceNumberLabel'   => 'Invoice number',
             'dateLabel'            => 'Invoice date',
@@ -3193,5 +3194,24 @@ describe('invoice pdf tax number display', function () {
         $invoice->refresh();
 
         expect($renderInvoiceTemplate($invoice))->not->toContain('FR123INVALID');
+    });
+
+    test('the aurora zero placeholder does not print as an address line', function () use ($renderInvoiceTemplate) {
+        $customer = createCustomer($this->shop);
+        $invoice  = StoreInvoice::make()->action($customer, Invoice::factory()->definition());
+
+        $invoice->billingAddress->update(['address_line_1' => '0', 'locality' => '0', 'postal_code' => '0']);
+        $invoice->refresh();
+
+        expect($renderInvoiceTemplate($invoice))->not->toContain('<div>0</div>');
+    });
+
+    test('a collection order says collection instead of the customer delivery address', function () use ($renderInvoiceTemplate) {
+        $customer = createCustomer($this->shop);
+        $invoice  = StoreInvoice::make()->action($customer, Invoice::factory()->definition());
+
+        expect($renderInvoiceTemplate($invoice->refresh(), null, true))
+            ->toContain('Collection address')
+            ->and($renderInvoiceTemplate($invoice->refresh(), null, true))->not->toContain('Delivery address');
     });
 });

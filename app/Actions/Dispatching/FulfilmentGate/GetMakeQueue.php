@@ -22,7 +22,7 @@ class GetMakeQueue
     use AsObject;
 
     /**
-     * @return array{usage_days: int, horizon_days: int, shelf_life_safety_factor: float, weight_blocked_paid: float, weight_partner_quantity: float, weight_stock_cover: float}
+     * @return array{usage_days: int, horizon_days: int, default_shelf_life_days: int, shelf_life_safety_factor: float, weight_blocked_paid: float, weight_partner_quantity: float, weight_stock_cover: float}
      */
     public function settings(Organisation $organisation): array
     {
@@ -31,6 +31,7 @@ class GetMakeQueue
         return [
             'usage_days'               => (int) ($settings['usage_days'] ?? 90),
             'horizon_days'             => (int) ($settings['horizon_days'] ?? 90),
+            'default_shelf_life_days'  => (int) ($settings['default_shelf_life_days'] ?? 365),
             'shelf_life_safety_factor' => (float) ($settings['shelf_life_safety_factor'] ?? 0.5),
             'weight_blocked_paid'      => (float) ($settings['weight_blocked_paid'] ?? 1),
             'weight_partner_quantity'  => (float) ($settings['weight_partner_quantity'] ?? 5),
@@ -40,9 +41,27 @@ class GetMakeQueue
 
     public function handle(Organisation $organisation): LengthAwarePaginator
     {
-        $config = $this->settings($organisation);
         $prefix = 'make_queue';
         InertiaTable::updateQueryBuilderParameters($prefix);
+
+        $base = $this->baseQuery($organisation);
+
+        return QueryBuilder::for(Order::query()->withoutGlobalScopes()->fromSub($base, $prefix))
+            ->defaultSort('-score')
+            ->allowedSorts(['org_stock_code', 'quantity_available', 'days_cover', 'blocked_paid_amount', 'partner_quantity', 'suggested_quantity', 'score'])
+            ->withPaginator($prefix, tableName: request()->route()?->getName())
+            ->withQueryString();
+    }
+
+    /**
+     * What is worth making and how much of it: demand from dispatches, blocked paid orders and
+     * partner lines, with the quantity capped so it sells well inside its shelf life.
+     *
+     * Pass $onlyWorthMaking false to keep the artefacts nothing is asking for, scored 0.
+     */
+    public function baseQuery(Organisation $organisation, ?int $productionId = null, bool $onlyWorthMaking = true): \Illuminate\Database\Query\Builder
+    {
+        $config = $this->settings($organisation);
 
         $usage = DB::table('delivery_note_items')
             ->join('delivery_notes', 'delivery_notes.id', 'delivery_note_items.delivery_note_id')
@@ -78,7 +97,8 @@ class GetMakeQueue
             ->select('seller_org_stocks.id as org_stock_id', DB::raw('sum(partner_shopping_list_items.quantity) as quantity'));
 
         $usageDaily = 'coalesce(usage.quantity, 0) / '.$config['usage_days'];
-        $shelfCap   = 'least('.$config['horizon_days'].', coalesce(artefacts.shelf_life_days * '.$config['shelf_life_safety_factor'].', '.$config['horizon_days'].'))';
+        $shelfLife  = 'coalesce(artefacts.shelf_life_days, '.$config['default_shelf_life_days'].')';
+        $shelfCap   = 'least('.$config['horizon_days'].', '.$shelfLife.' * '.$config['shelf_life_safety_factor'].')';
 
         // ponytail: deterministic explainable score, weights are org settings; AI planner pass later
         $score = '('
@@ -93,18 +113,21 @@ class GetMakeQueue
             .'('.$usageDaily.') * '.$shelfCap.' - org_stocks.quantity_available'
             .'))';
 
-        $base = DB::table('artefacts')
+        return DB::table('artefacts')
             ->join('org_stocks', 'org_stocks.id', 'artefacts.org_stock_id')
             ->leftJoinSub($usage, 'usage', 'usage.org_stock_id', 'org_stocks.id')
             ->leftJoinSub($gateDemand, 'gate_demand', 'gate_demand.org_stock_id', 'org_stocks.id')
             ->leftJoinSub($partnerDemand, 'partner_demand', 'partner_demand.org_stock_id', 'org_stocks.id')
             ->where('artefacts.organisation_id', $organisation->id)
-            ->whereRaw($suggested.' > 0')
-            ->whereRaw($score.' > 0')
+            ->when($productionId, fn ($query) => $query->where('artefacts.production_id', $productionId))
+            ->when($onlyWorthMaking, function ($query) use ($suggested, $score) {
+                $query->whereRaw($suggested.' > 0')->whereRaw($score.' > 0');
+            })
             ->select([
                 'artefacts.id as artefact_id',
                 'artefacts.code as artefact_code',
                 'artefacts.shelf_life_days',
+                DB::raw($shelfLife.' as effective_shelf_life_days'),
                 'org_stocks.id as org_stock_id',
                 'org_stocks.code as org_stock_code',
                 'org_stocks.name as org_stock_name',
@@ -118,11 +141,5 @@ class GetMakeQueue
                 DB::raw($suggested.' as suggested_quantity'),
                 DB::raw("round(($score)::numeric, 2) as score"),
             ]);
-
-        return QueryBuilder::for(Order::query()->withoutGlobalScopes()->fromSub($base, $prefix))
-            ->defaultSort('-score')
-            ->allowedSorts(['org_stock_code', 'quantity_available', 'days_cover', 'blocked_paid_amount', 'partner_quantity', 'suggested_quantity', 'score'])
-            ->withPaginator($prefix, tableName: request()->route()?->getName())
-            ->withQueryString();
     }
 }

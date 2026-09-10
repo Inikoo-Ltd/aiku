@@ -503,6 +503,10 @@ class SubmitOrder extends OrgAction
     {
         if ($this->order->state == OrderStateEnum::CREATING && !$this->order->transactions->count() && !$this->asAction) {
             $validator->errors()->add('state', __('Can not submit an order without any transactions'));
+        } elseif (!$this->asAction && in_array($this->order->billingAddress?->address_line_1, [null, '', '0'], true)) {
+            /** Staff only: a customer paying in retina, the API or a channel submits through run() and must
+             * never be refused here, the payment is already taken (HELP-3102) */
+            $validator->errors()->add('billing_address', __('Can not submit an order without a billing address'));
         } elseif ($this->order->state == OrderStateEnum::SUBMITTED) {
             $validator->errors()->add('state', __('Order is already submitted'));
         } elseif ($this->order->state == OrderStateEnum::PACKED || $this->order->state == OrderStateEnum::HANDLING) {

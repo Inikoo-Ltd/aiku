@@ -1,8 +1,8 @@
 ---
 title: Praca z listą To produce
 summary: Przewodnik dla fabryki - jedna kolejka wszystkiego, co fabryka jest winna, zarówno organizacjom partnerskim, jak i własnym klientom, pogrupowana tak, jak myśli planista produkcji.
-date: 2026-09-08
-source_date: 2026-09-08
+date: 2026-09-09
+source_date: 2026-09-09
 tags: production, procurement, intercompany, dispatch
 category: production
 series: Ordering from partners
@@ -43,22 +43,25 @@ Sześć pasów, od lewej do prawej. Karta przesuwa się w prawo w miarę postęp
 
 | Pas | Co tam się znajduje |
 | --- | --- |
-| Pre-pick (Wstępna kompletacja) | pozycje, dla których nic nie trzeba wytwarzać, bo towar jest na półce. Ukryty, dopóki nie naciśniesz **Pre-pick** nad tablicą. Magazyn zbiera te pozycje, patrz [Kompletowanie towaru dla partnera](/docs/gathering-a-partners-goods-pl). |
 | Backlog (Zaległości) | pozycje z wyrobem, na który jeszcze nikt nie spojrzał |
 | Preparing (Przygotowywanie) | pozycje, które postanowiłeś wykonać, z ustaloną ilością |
 | Assigned (Przypisane) | istnieje zlecenie produkcyjne skierowane do rzemieślnika, ale nikt jeszcze nie zaczął |
 | Producing (W produkcji) | rzemieślnik nacisnął START na jednym z jego zadań |
 | Done (Gotowe) | wszystkie zadania na zleceniu produkcyjnym są zrobione; czeka na odłożenie przez magazyn |
 
-Każda karta pokazuje produkt, zamówioną ilość, kto zamówił oraz **In stock** (W magazynie), więc widzisz, czy w ogóle warto to wytwarzać.
+Każda karta pokazuje produkt, zamówioną ilość, kto zamówił oraz **In stock** (W magazynie), więc widzisz, czy w ogóle warto to wytwarzać. Do tablicy trafiają tylko pozycje z wyrobem wytwarzanym w tej fabryce; pozycje, których towar można po prostu zdjąć z półki, żyją na własnej stronie, **Factory → Pre-pick** (Fabryka → Wstępna kompletacja), patrz [Kompletowanie towaru dla partnera](/docs/gathering-a-partners-goods-pl).
 
-**Backlog → Preparing.** Upuść kartę, a aiku zapyta *Ile wykonać?*. Proponuje zamówioną ilość; wpisz więcej, a nadwyżka zostanie oznaczona jako *na zapas*. Jeśli wyrób ma zalecaną wielkość partii, mały przycisk **↑** zaokrągla ilość do pełnych partii. Liczba pozostaje edytowalna na karcie, gdy jest w Preparing.
+Pod pasami znajduje się jeszcze jedna pozycja: **N lines too small for a batch are waiting for company · show** (N pozycji za małych na partię czeka na towarzystwo · pokaż). Partner może poprosić o mniej niż jedną pełną partię, a taka pozycja nie da się sensownie wykonać sama, więc czeka na poboczu zamiast zaśmiecać Backlog. Jest podejmowana, gdy otwarty popyt na ten sam towar ze wszystkich list partnerskich razem osiąga partię, gdy zamówienie własnego klienta czekające u bramy sprawia, że zlecenie i tak rusza, albo gdy naciśniesz *show* i wykonasz ją mimo wszystko. Pozycja może czekać długo; to trafniejszy opis jej sytuacji niż jakikolwiek status, jaki moglibyśmy dla niej wymyślić. Patrz [Partie, opakowania i częściowe partie](/docs/batches-packs-and-part-batches-pl).
+
+**Backlog → Preparing.** Upuść kartę, a aiku zapyta *Ile wykonać?*. Proponuje zamówioną ilość; wpisz więcej, a nadwyżka zostanie oznaczona jako *na zapas*. Jeśli wyrób ma zalecaną wielkość partii, mały przycisk **↑** zaokrągla ilość do pełnych partii. To, o co ostatecznie prosi się rzemieślnika, jest w **units** (sztukach), zaokrąglone w górę do najbliższej pełnej partii, a to, co wraca, jest dzielone przez rozmiar opakowania w drodze na półkę: 16 sztuk z opakowania po dziesięć trafia na półkę jako 1,6 SKO. Liczba pozostaje edytowalna na karcie, gdy jest w Preparing.
 
 **Preparing → Assigned.** Upuść kartę, a aiku zapyta *Kto to wykona?*. Proponuje rzemieślnika przypisanego do wyrobu albo jego kategorii, patrz [Kto co wykonuje](/docs/who-makes-what-pl). Wybierz imię, a zlecenie produkcyjne powstaje w wersji roboczej, skierowane do tej osoby. Otwórz zlecenie i naciśnij **Release to floor** (Skieruj na halę), gdy ma się zacząć; do tego momentu rzemieślnik go nie widzi. Aby zmienić rzemieślnika później, kliknij imię na karcie.
 
 **Producing** i **Done** przesuwają się same, w zależności od tego, co dzieje się na ekranie hali. Karta opuszcza tablicę, gdy magazyn odkłada gotowy towar, patrz [Odkładanie gotowej produkcji](/docs/putting-away-finished-production-pl), albo gdy zlecenie produkcyjne zostaje przyjęte na stan bezpośrednio ze swojej strony.
 
 Kilka kart naraz: kliknij karty, żeby je zaznaczyć, a następnie przeciągnij dowolną z nich, a całe zaznaczenie się przesunie. Menu **Everybody** (Wszyscy) nad tablicą zawęża ją do jednego lub dwóch rzemieślników, a filtry rodziny, kupującego i priorytetu robią to samo dla kart.
+
+Pasek boczny fabryki pokazuje na żywo liczniki dla **To produce** (Do produkcji) i **Pre-pick** (Wstępna kompletacja) obok ich nazw, i przesuwają się same w miarę zmian na listach zakupowych; nie trzeba odświeżać strony, żeby zobaczyć, czy coś nowego dotarło.
 
 Pod tablicą Board i widokiem By artisan znajduje się **Open job orders per artisan** (Otwarte zlecenia na rzemieślnika): jeden znacznik na osobę z liczbą otwartych zleceń. Czerwony oznacza brak, bursztynowy - jedno; każdy powinien mieć co najmniej dwa, żeby nikomu nie zabrakło pracy. Krzyżyk na znaczniku oznacza osobę jako nie-rzemieślnika i usuwa ją z licznika.
 
@@ -84,7 +87,9 @@ Zaznaczenie pozycji własnego klienta nic nie daje. Jest pomijana, gdy naciśnie
 <li><b>Zobacz kolejkę:</b> Twoja organizacja → <b>Factory</b> (Fabryka) → <b>To produce</b> (Do produkcji). Przełączaj widoki zakładkami <b>Board · All · By artisan · By category · By buyer · Mixes</b> (Tablica · Wszystkie · Wg rzemieślnika · Wg kategorii · Wg kupującego · Mieszanki).</li>
 <li><b>Zdecyduj o ilości:</b> <i>Board</i> → przeciągnij kartę z <b>Backlog</b> do <b>Preparing</b> → wpisz liczbę albo naciśnij <b>↑</b>, aby zaokrąglić do pełnych partii.</li>
 <li><b>Utwórz zlecenie produkcyjne:</b> przeciągnij kartę z <b>Preparing</b> do <b>Assigned</b> → wybierz rzemieślnika → otwórz zlecenie → <b>Release to floor</b>.</li>
-<li><b>Pozycje wymagające tylko kompletacji:</b> przycisk <b>Pre-pick</b> nad tablicą.</li>
+<li><b>Pozycje wymagające tylko kompletacji:</b> <b>Factory</b> (Fabryka) → <b>Pre-pick</b> (Wstępna kompletacja), jej własna strona.</li>
+<li><b>Małe pozycje czekające na partię:</b> naciśnij <b>show</b> (pokaż) na pozycji pod tablicą.</li>
+<li><b>Co i tak się kończy:</b> <b>Factory</b> (Fabryka) → <b>To restock</b> (Do uzupełnienia), patrz <a href="/docs/keeping-the-factory-stocked-pl">Utrzymywanie zapasów fabryki</a>.</li>
 <li><b>Ukryj blok:</b> w widoku grupowanym kliknij jego kapsułę nad listą. Kliknij ponownie, aby go pokazać.</li>
 <li><b>Tylko partnerzy albo tylko klienci:</b> zakładka <i>All</i> (Wszystkie) → filtr <b>Source</b> (Źródło).</li>
 <li><b>Wyślij do partnera:</b> zaznacz pozycje → <b>Pick into order</b> (Skompletuj do zamówienia) → <b>Send to warehouse</b> (Wyślij do magazynu) w polu <i>Picked orders</i> (Skompletowane zamówienia).</li>

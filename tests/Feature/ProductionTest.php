@@ -16,6 +16,11 @@ use App\Actions\Production\Artefact\UpdateArtefact;
 use App\Actions\Production\Artefact\UI\GetArtefactShowcase;
 use App\Actions\Production\ArtefactDepartment\StoreArtefactDepartment;
 use App\Actions\Production\Artefact\MoveArtefactsToFamily;
+use App\Actions\Production\Artefact\SetArtefactsState;
+use App\Actions\Production\Artefact\SetArtefactState;
+use App\Actions\Production\Artefact\SetArtefactsBatchSize;
+use App\Actions\Production\ArtefactFamily\Hydrators\ArtefactFamilyHydrateArtefacts;
+use App\Actions\Production\Artefact\UI\IndexArtefacts;
 use App\Actions\Production\ArtefactFamily\AssignArtefactsToFamiliesFromOrgStockFamilies;
 use App\Actions\Production\ArtefactFamily\DeleteArtefactFamily;
 use App\Actions\Production\ArtefactFamily\MoveArtefactFamiliesToDepartment;
@@ -621,7 +626,7 @@ test('UI edit artefact', function () {
         $page
             ->component('EditModel')
             ->has('title')
-            ->has('formData.blueprint.0.fields', 8)
+            ->has('formData.blueprint.0.fields', 9)
             ->has('pageHead')
             ->has('breadcrumbs', 4);
     });
@@ -2210,7 +2215,7 @@ test('an operative only sees the factory jobs page and nothing group or commerci
         ->and(array_keys(\App\Actions\UI\Grp\Layout\GetOrganisationNavigation::run($user, $this->organisation)))
         ->not->toContain('overview', 'chat', 'calendar_offers')
         ->and(array_keys(\App\Actions\UI\Grp\Layout\GetProductionNavigation::run($this->production, $this->guest->getUser())))
-        ->toBe(['jobs', 'crafts', 'operations', 'partners', 'artisans']);
+        ->toBe(['jobs', 'crafts', 'operations', 'partners', 'to_restock', 'pre_pick', 'artisans']);
 
     actingAs($user);
     get(route('grp.dashboard.show'))->assertRedirect(route('grp.org.dashboard.show', $this->organisation->slug));
@@ -2314,7 +2319,7 @@ test('to produce queue only shows lines with an artefact in this factory', funct
     $board = get(route('grp.org.productions.show.to_produce.index', $routeParameters))
         ->assertOk()->viewData('page')['props'];
     $lanes = collect($board['groups'])->mapWithKeys(fn ($lane) => [$lane['label'] => collect($lane['items'])->pluck('stock_code')->all()]);
-    expect($lanes['Pre-pick'])->toBe([$stocks[1]->code])
+    expect($lanes)->not->toHaveKey('Pre-pick')
         ->and($lanes['Backlog'])->toBe([$stocks[0]->code]);
 
     $otherProduction = StoreProduction::make()->action($this->organisation, ['code' => 'GATEF2', 'name' => 'Other factory']);
@@ -2324,8 +2329,7 @@ test('to produce queue only shows lines with an artefact in this factory', funct
     $lanes = collect(get(route('grp.org.productions.show.to_produce.index', $routeParameters))
         ->assertOk()->viewData('page')['props']['groups'])
         ->mapWithKeys(fn ($lane) => [$lane['label'] => collect($lane['items'])->pluck('stock_code')->all()]);
-    expect($lanes['Pre-pick'])->toBe([$stocks[1]->code])
-        ->and($lanes['Backlog'])->toBe([$stocks[0]->code]);
+    expect($lanes['Backlog'])->toBe([$stocks[0]->code]);
 
     $covered = \App\Models\Procurement\PartnerShoppingListItem::where('org_stock_id', $orgStocks[0]->id)->first();
     $orgStocks[0]->update(['quantity_available' => 500, 'quantity_in_locations' => 500]);
@@ -2333,8 +2337,8 @@ test('to produce queue only shows lines with an artefact in this factory', funct
     $lanes = collect(get(route('grp.org.productions.show.to_produce.index', $routeParameters))
         ->assertOk()->viewData('page')['props']['groups'])
         ->mapWithKeys(fn ($lane) => [$lane['label'] => collect($lane['items'])->pluck('stock_code')->all()]);
-    expect($lanes['Preparing'])->toBe([$stocks[0]->code])
-        ->and($lanes['Pre-pick'])->toBe([$stocks[1]->code]);
+    expect($lanes['Preparing'])->toBe([$stocks[0]->code]);
+
     $covered->update(['preparing_at' => null]);
 
     \App\Actions\Production\PartnerShippingList\StoreJobOrdersFromToProduceItems::make()
@@ -2342,8 +2346,7 @@ test('to produce queue only shows lines with an artefact in this factory', funct
     $lanes = collect(get(route('grp.org.productions.show.to_produce.index', $routeParameters))
         ->assertOk()->viewData('page')['props']['groups'])
         ->mapWithKeys(fn ($lane) => [$lane['label'] => collect($lane['items'])->pluck('stock_code')->all()]);
-    expect($lanes['Pre-pick'])->toBe([$stocks[1]->code])
-        ->and($lanes['Assigned'])->toBe([$stocks[0]->code]);
+    expect($lanes['Assigned'])->toBe([$stocks[0]->code]);
 
     $made->manufactureTasks()->syncWithoutDetaching([$this->manufactureTask->id => ['position' => 1, 'units_per_artefact' => 1]]);
     $jobOrder = \App\Models\Production\JobOrder::find($covered->refresh()->job_order_id);
@@ -2387,6 +2390,65 @@ test('to produce queue only shows lines with an artefact in this factory', funct
         ->assertOk()->viewData('page')['props'];
     expect(collect($all['data']['data'])->pluck('stock_code')->sort()->values()->all())
         ->toBe(collect([$stocks[0]->code, $stocks[1]->code])->sort()->values()->all());
+});
+
+test('to restock bands rank artefacts by cover and queue them onto the to produce board', function () {
+    $stocks    = createStocks($this->group);
+    $orgStocks = createOrgStocks($this->organisation, [$stocks[0], $stocks[1]]);
+
+    \App\Models\Production\Artefact::where('production_id', $this->production->id)
+        ->whereIn('org_stock_id', [$orgStocks[0]->id, $orgStocks[1]->id])
+        ->update(['org_stock_id' => null]);
+
+    /* createStocks hands back the suite's shared stocks, so clear any board line an earlier test left. */
+    \App\Models\Procurement\PartnerShoppingListItem::whereIn('stock_id', collect($orgStocks)->pluck('stock_id'))->forceDelete();
+
+    $empty   = StoreArtefact::make()->action($this->production, ['code' => 'RES-01', 'name' => 'Sold out here']);
+    $covered = StoreArtefact::make()->action($this->production, ['code' => 'RES-02', 'name' => 'Plenty here']);
+    $empty->update(['org_stock_id' => $orgStocks[0]->id]);
+    $covered->update(['org_stock_id' => $orgStocks[1]->id]);
+
+    $orgStocks[0]->update(['quantity_available' => 0]);
+    $orgStocks[1]->update(['quantity_available' => 500]);
+    $orgStocks[1]->stats()->update(['days_of_cover' => 400, 'predicted_daily_usage' => 1, 'recommended_order_quantity' => 12]);
+    /* days_of_cover 0 keeps it at the head of the lane whatever else the suite has left behind. */
+    $orgStocks[0]->stats()->update(['recommended_order_quantity' => 9, 'days_of_cover' => 0]);
+
+    $bucketOf = function (int $artefactId) {
+        $buckets = \App\Actions\Production\Restock\GetProductionStockCoverBuckets::make();
+
+        return collect(\App\Actions\Production\Restock\GetProductionStockCoverBuckets::BUCKETS)
+            ->keys()
+            ->first(fn (string $bucket) => in_array($artefactId, $buckets->artefactIdsInBucket($this->production, $bucket), true));
+    };
+
+    expect($bucketOf($empty->id))->toBe('out')
+        ->and($bucketOf($covered->id))->toBe('ok');
+
+    actingAs($this->guest->getUser());
+    $routeParameters = [$this->organisation->slug, $this->production->slug];
+
+    $props = get(route('grp.org.productions.show.to_restock.index', $routeParameters))
+        ->assertOk()->viewData('page')['props'];
+    $toDo = collect($props['lanes']['to_do'])->pluck('stock_code');
+
+    expect($toDo)->toContain($orgStocks[0]->code)
+        ->and($toDo)->not->toContain($orgStocks[1]->code)
+        ->and($props['leadTime']['days'])->toBeGreaterThan(0);
+
+    \App\Actions\Production\Restock\QueueArtefactsToProduce::make()
+        ->action($this->organisation, $this->production, [['artefact_id' => $empty->id, 'quantity' => 9]]);
+
+    $queued = \App\Models\Procurement\PartnerShoppingListItem::where('org_stock_id', $orgStocks[0]->id)->first();
+    expect((float) $queued->quantity)->toBe(9.0)
+        ->and($queued->partner_organisation_id)->toBeNull()
+        ->and($queued->organisation_id)->toBe($this->organisation->id);
+
+    $lanes = get(route('grp.org.productions.show.to_restock.index', $routeParameters))
+        ->assertOk()->viewData('page')['props']['lanes'];
+
+    expect(collect($lanes['to_do'])->pluck('stock_code'))->not->toContain($orgStocks[0]->code)
+        ->and(collect($lanes['queued'])->pluck('stock_code'))->toContain($orgStocks[0]->code);
 });
 
 test('repair assigns artefacts to families mirroring their org stock family', function () {
@@ -2547,8 +2609,16 @@ test('UI delete artefact family', function () {
     $response->assertInertia(function (AssertableInertia $page) {
         $page->component('Org/Production/ArtefactFamily')
             ->where('number_artefacts', 1)
-            ->has('delete_route');
+            ->missing('delete_route');
     });
+
+    /* Deleting is a thing you go into the edit screen for, not something to graze on the family page. */
+    get(route('grp.org.productions.show.crafts.artefact_families.edit', [$this->organisation->slug, $this->production->slug, $family->slug]))
+        ->assertInertia(function (AssertableInertia $page) {
+            $page->component('Org/Production/EditArtefactFamily')
+                ->where('number_artefacts', 1)
+                ->has('delete_route');
+        });
 
     delete(route('grp.models.artefact_family.delete', [$family->id]))
         ->assertRedirect(route('grp.org.productions.show.crafts.artefact_families.index', [$this->organisation->slug, $this->production->slug]));
@@ -2566,4 +2636,354 @@ test('UI crafts artefacts as org admin', function () {
     foreach (['dashboard', 'artefacts.index', 'raw_materials.index'] as $page) {
         get(route('grp.org.productions.show.crafts.'.$page, [$this->organisation->slug, $this->production->slug]))->assertOk();
     }
+});
+
+test('artefact family state follows the liveliest of its artefacts', function () {
+    $department = StoreArtefactDepartment::make()->action($this->production, ['code' => 'STATEDEP', 'name' => 'State department']);
+    $family     = StoreArtefactFamily::make()->action($department, ['code' => 'STATEFAM', 'name' => 'State family']);
+
+    $one = StoreArtefact::make()->action($this->production, [
+        'code'               => 'STATE-01',
+        'name'               => 'First',
+        'artefact_family_id' => $family->id,
+    ]);
+    $two = StoreArtefact::make()->action($this->production, [
+        'code'               => 'STATE-02',
+        'name'               => 'Second',
+        'artefact_family_id' => $family->id,
+    ]);
+
+    SetArtefactState::make()->action($one, ArtefactStateEnum::ACTIVE);
+    SetArtefactState::make()->action($two, ArtefactStateEnum::DORMANT);
+
+    expect($family->refresh()->state)->toBe(ArtefactStateEnum::ACTIVE)
+        ->and($family->number_artefacts)->toBe(2);
+
+    SetArtefactState::make()->action($one, ArtefactStateEnum::DORMANT);
+    expect($family->refresh()->state)->toBe(ArtefactStateEnum::DORMANT);
+
+    SetArtefactState::make()->action($one, ArtefactStateEnum::DISCONTINUED);
+    SetArtefactState::make()->action($two, ArtefactStateEnum::DISCONTINUED);
+    expect($family->refresh()->state)->toBe(ArtefactStateEnum::DISCONTINUED);
+});
+
+test('artefact families index hides dormant and discontinued families by default', function () {
+    $department = StoreArtefactDepartment::make()->action($this->production, ['code' => 'HIDEDEP', 'name' => 'Hide department']);
+    $live       = StoreArtefactFamily::make()->action($department, ['code' => 'HIDELIVE', 'name' => 'Live family']);
+    $parked     = StoreArtefactFamily::make()->action($department, ['code' => 'HIDEPARK', 'name' => 'Parked family']);
+
+    $liveArtefact = StoreArtefact::make()->action($this->production, ['code' => 'HIDE-01', 'name' => 'Live', 'artefact_family_id' => $live->id]);
+    $deadArtefact = StoreArtefact::make()->action($this->production, ['code' => 'HIDE-02', 'name' => 'Dead', 'artefact_family_id' => $parked->id]);
+
+    SetArtefactState::make()->action($liveArtefact, ArtefactStateEnum::ACTIVE);
+    SetArtefactState::make()->action($deadArtefact, ArtefactStateEnum::DISCONTINUED);
+
+    expect($parked->refresh()->state)->toBe(ArtefactStateEnum::DISCONTINUED);
+
+    $response = get(route('grp.org.productions.show.crafts.artefact_families.index', [$this->organisation->slug, $this->production->slug]));
+
+    $response->assertOk();
+    expect($response->content())->toContain('HIDELIVE')
+        ->and($response->content())->not->toContain('HIDEPARK');
+});
+
+test('artefact family counts artefacts missing a recipe and a batch size', function () {
+    $department = StoreArtefactDepartment::make()->action($this->production, ['code' => 'GAPDEP', 'name' => 'Gap department']);
+    $family     = StoreArtefactFamily::make()->action($department, ['code' => 'GAPFAM', 'name' => 'Gap family']);
+
+    $complete = StoreArtefact::make()->action($this->production, [
+        'code'                   => 'GAP-01',
+        'name'                   => 'Complete',
+        'artefact_family_id'     => $family->id,
+        'recommended_batch_size' => 40,
+    ]);
+    StoreArtefact::make()->action($this->production, [
+        'code'               => 'GAP-02',
+        'name'               => 'No batch size, no recipe',
+        'artefact_family_id' => $family->id,
+    ]);
+
+    expect($family->refresh()->number_artefacts_without_batch_size)->toBe(1)
+        ->and($family->number_artefacts_without_recipe)->toBe(2);
+
+    $task = StoreManufactureTask::make()->action($this->production, [
+        'code'                            => 'GAPTASK',
+        'name'                            => 'Gap task',
+        'task_materials_cost'             => 1.0,
+        'task_energy_cost'                => 1.0,
+        'task_other_cost'                 => 1.0,
+        'task_work_cost'                  => 1.0,
+        'task_lower_target'               => 10,
+        'task_upper_target'               => 20,
+        'operative_reward_terms'          => ManufactureTaskOperativeRewardTermsEnum::ABOVE_LOWER_LIMIT,
+        'operative_reward_allowance_type' => ManufactureTaskOperativeRewardAllowanceTypeEnum::OFFSET_SALARY,
+        'operative_reward_amount'         => 1.0,
+    ]);
+    AttachManufactureTaskToArtefact::make()->action($complete, ['manufacture_task_id' => $task->id]);
+
+    ArtefactFamilyHydrateArtefacts::run($family);
+
+    expect($family->refresh()->number_artefacts_without_recipe)->toBe(1)
+        ->and($family->number_artefacts_without_batch_size)->toBe(1);
+});
+
+test('crafts dashboard families card carries the family state counts', function () {
+    $department = StoreArtefactDepartment::make()->action($this->production, ['code' => 'CARDDEP', 'name' => 'Card department']);
+    $family     = StoreArtefactFamily::make()->action($department, ['code' => 'CARDFAM', 'name' => 'Card family']);
+
+    $artefact = StoreArtefact::make()->action($this->production, [
+        'code'               => 'CARD-01',
+        'name'               => 'Card artefact',
+        'artefact_family_id' => $family->id,
+    ]);
+    SetArtefactState::make()->action($artefact, ArtefactStateEnum::DISCONTINUED);
+
+    $response = get(route('grp.org.productions.show.crafts.dashboard', [$this->organisation->slug, $this->production->slug]));
+
+    $response->assertOk();
+    $response->assertInertia(function (AssertableInertia $page) {
+        $stats   = collect($page->toArray()['props']['stats']);
+        $card    = $stats->firstWhere('label', 'Families');
+        $tooltips = collect($card['metas'])->pluck('tooltip');
+
+        expect($tooltips)->toContain('Active families')
+            ->and($tooltips)->toContain('Discontinued')
+            ->and(collect($card['metas'])->firstWhere('tooltip', 'Discontinued')['count'])->toBeGreaterThanOrEqual(1);
+    });
+});
+
+test('set artefacts batch size in bulk and rehydrate the family', function () {
+    $department = StoreArtefactDepartment::make()->action($this->production, ['code' => 'BULKDEP', 'name' => 'Bulk department']);
+    $family     = StoreArtefactFamily::make()->action($department, ['code' => 'BULKFAM', 'name' => 'Bulk family']);
+
+    $one = StoreArtefact::make()->action($this->production, ['code' => 'BULK-01', 'name' => 'One', 'artefact_family_id' => $family->id]);
+    $two = StoreArtefact::make()->action($this->production, ['code' => 'BULK-02', 'name' => 'Two', 'artefact_family_id' => $family->id]);
+
+    expect($family->refresh()->number_artefacts_without_batch_size)->toBe(2);
+
+    $changed = SetArtefactsBatchSize::make()->action($this->production, [
+        'artefacts'              => [$one->id, $two->id],
+        'recommended_batch_size' => 200,
+    ]);
+
+    expect($changed)->toBe(2)
+        ->and($one->refresh()->recommended_batch_size)->toBe(200)
+        ->and($two->refresh()->recommended_batch_size)->toBe(200)
+        ->and($family->refresh()->number_artefacts_without_batch_size)->toBe(0);
+});
+
+test('bulk batch size leaves artefacts of another production alone', function () {
+    $mine = StoreArtefact::make()->action($this->production, ['code' => 'SCOPE-01', 'name' => 'Mine']);
+
+    $otherProduction = StoreProduction::make()->action($this->organisation, [
+        'code' => 'SCOPEPROD',
+        'name' => 'Scope production',
+    ]);
+    $theirs = StoreArtefact::make()->action($otherProduction, ['code' => 'SCOPE-02', 'name' => 'Theirs']);
+
+    $changed = SetArtefactsBatchSize::make()->action($this->production, [
+        'artefacts'              => [$mine->id, $theirs->id],
+        'recommended_batch_size' => 50,
+    ]);
+
+    expect($changed)->toBe(1)
+        ->and($mine->refresh()->recommended_batch_size)->toBe(50)
+        ->and($theirs->refresh()->recommended_batch_size)->toBeNull();
+});
+
+test('discontinue artefacts in bulk and take the family down with them', function () {
+    $department = StoreArtefactDepartment::make()->action($this->production, ['code' => 'DISCDEP', 'name' => 'Disc department']);
+    $family     = StoreArtefactFamily::make()->action($department, ['code' => 'DISCFAM', 'name' => 'Disc family']);
+
+    $one = StoreArtefact::make()->action($this->production, ['code' => 'DISC-01', 'name' => 'One', 'artefact_family_id' => $family->id]);
+    $two = StoreArtefact::make()->action($this->production, ['code' => 'DISC-02', 'name' => 'Two', 'artefact_family_id' => $family->id]);
+    SetArtefactState::make()->action($one, ArtefactStateEnum::ACTIVE);
+    SetArtefactState::make()->action($two, ArtefactStateEnum::ACTIVE);
+
+    expect($family->refresh()->state)->toBe(ArtefactStateEnum::ACTIVE);
+
+    $changed = SetArtefactsState::make()->action($this->production, ['artefacts' => [$one->id, $two->id], 'state' => ArtefactStateEnum::DISCONTINUED->value]);
+
+    expect($changed)->toBe(2)
+        ->and($one->refresh()->state)->toBe(ArtefactStateEnum::DISCONTINUED)
+        ->and($two->refresh()->state)->toBe(ArtefactStateEnum::DISCONTINUED)
+        ->and($family->refresh()->state)->toBe(ArtefactStateEnum::DISCONTINUED);
+
+    $again = SetArtefactsState::make()->action($this->production, ['artefacts' => [$one->id, $two->id], 'state' => ArtefactStateEnum::DISCONTINUED->value]);
+    expect($again)->toBe(0);
+
+    /* Discontinuing has to be undoable, otherwise one wrong click needs a developer. */
+    $revived = SetArtefactsState::make()->action($this->production, ['artefacts' => [$one->id, $two->id], 'state' => ArtefactStateEnum::ACTIVE->value]);
+
+    expect($revived)->toBe(2)
+        ->and($one->refresh()->state)->toBe(ArtefactStateEnum::ACTIVE)
+        ->and($family->refresh()->state)->toBe(ArtefactStateEnum::ACTIVE);
+});
+
+test('artefact index reports the batch size in SKOs', function () {
+    $stock = \App\Actions\Goods\Stock\StoreStock::make()->action(
+        $this->group,
+        array_merge(\App\Models\Goods\Stock::factory()->definition(), [
+            'state' => \App\Enums\Goods\Stock\StockStateEnum::ACTIVE
+        ])
+    );
+    $orgStock = \App\Actions\Inventory\OrgStock\StoreOrgStock::make()->action($this->organisation, $stock);
+    $orgStock->update(['packed_in' => 10]);
+
+    $artefact = StoreArtefact::make()->action($this->production, [
+        'code'                   => 'SKOMISMATCH',
+        'name'                   => 'Batch that does not fit the pack',
+        'org_stock_id'           => $orgStock->id,
+        'recommended_batch_size' => 16,
+    ]);
+
+    $this->get(route('grp.org.productions.show.crafts.artefacts.index', [$this->organisation->slug, $this->production->slug]));
+
+    $row = IndexArtefacts::make()->handle($this->production)
+        ->firstWhere('id', $artefact->id);
+
+    expect($row)->not->toBeNull()
+        ->and((int) $row->packed_in)->toBe(10);
+
+    $resource = \App\Http\Resources\Production\ArtefactsResource::make($row)->resolve();
+    expect($resource['batch_in_skos'])->toBe(1.6)
+        ->and($resource['suggested_batch_size'])->toBe(20);
+
+    $showcase = \App\Actions\Production\Artefact\UI\GetArtefactShowcase::run($artefact->refresh());
+    expect($showcase['batch_pack'])->toBe([
+        'packed_in'            => 10,
+        'batch_in_skos'        => 1.6,
+        'suggested_batch_size' => 20,
+    ]);
+});
+
+test('units made become SKOs when the stock is packed in outers', function () {
+    $stock = \App\Actions\Goods\Stock\StoreStock::make()->action(
+        $this->group,
+        array_merge(\App\Models\Goods\Stock::factory()->definition(), [
+            'state' => \App\Enums\Goods\Stock\StockStateEnum::ACTIVE
+        ])
+    );
+    $orgStock = \App\Actions\Inventory\OrgStock\StoreOrgStock::make()->action($this->organisation, $stock);
+    $orgStock->update(['packed_in' => 10]);
+
+    $artefact = StoreArtefact::make()->action($this->production, [
+        'code'                   => 'PACKEDART1',
+        'name'                   => 'Artefact sold in tens',
+        'org_stock_id'           => $orgStock->id,
+        'recommended_batch_size' => 16,
+    ]);
+    $artefact->manufactureTasks()->syncWithoutDetaching([
+        $this->manufactureTask->id => ['position' => 1, 'units_per_artefact' => 1],
+    ]);
+
+    $warehouse = \App\Actions\Inventory\Warehouse\StoreWarehouse::make()->action($this->organisation, [
+        'code' => 'WH-PACK',
+        'name' => 'Warehouse for packed receiving',
+    ]);
+    $area = \App\Actions\Inventory\WarehouseArea\StoreWarehouseArea::make()->action($warehouse, [
+        'code' => 'A-PACK',
+        'name' => 'Area packed receiving',
+    ]);
+    $location = \App\Actions\Inventory\Location\StoreLocation::make()->action(
+        $area,
+        [
+            'code' => 'L-PACK',
+            'name' => 'Loc packed receiving',
+        ] + \App\Models\Inventory\Location::factory()->definition()
+    );
+
+    $jobOrder = StoreJobOrder::make()->action($this->production, []);
+    $jobOrderItem = StoreJobOrderItem::make()->action($jobOrder, [
+        'artefact_id' => $artefact->id,
+        'quantity'    => 16,
+    ]);
+
+    ConfirmJobOrder::make()->action($jobOrder);
+
+    $task = $jobOrderItem->tasks()->first();
+    $session = StartManufactureTaskSession::make()->action($this->guest->getUser(), $task);
+    CloseManufactureTaskSession::make()->action($session, ['quantity_made' => 16]);
+
+    \App\Actions\Production\JobOrder\ReceiveJobOrderIntoStock::make()->action($jobOrder, [
+        'location_id' => $location->id,
+    ]);
+
+    $movement = \App\Models\Inventory\OrgStockMovement::where('org_stock_id', $orgStock->id)
+        ->where('type', \App\Enums\Inventory\OrgStockMovement\OrgStockMovementTypeEnum::PRODUCTION)
+        ->first();
+
+    expect((float) $movement->quantity)->toBe(1.6);
+});
+
+test('a job order is raised in whole batches of units for the SKOs asked for', function () {
+    $units = \App\Actions\Production\JobOrder\BatchedUnitsForDemand::run(12, 10, 16);
+
+    expect($units)->toBe(128)
+        ->and(\App\Actions\Production\JobOrder\BatchedUnitsForDemand::run(1, 10, 16))->toBe(16)
+        ->and(\App\Actions\Production\JobOrder\BatchedUnitsForDemand::run(2.5, 1, 16))->toBe(16)
+        ->and(\App\Actions\Production\JobOrder\BatchedUnitsForDemand::run(3, 10, null))->toBe(30)
+        ->and(\App\Actions\Production\JobOrder\BatchedUnitsForDemand::run(0, null, null))->toBe(1);
+});
+
+test('the partner order quantum is the smallest whole SKO order that whole batches fill', function () {
+    $quantum = fn (?int $packedIn, ?int $batchSize) => \App\Actions\Production\JobOrder\BatchedUnitsForDemand::make()->quantumInSkos($packedIn, $batchSize);
+
+    expect($quantum(10, 16))->toBe(8)
+        ->and($quantum(10, 20))->toBe(2)
+        ->and($quantum(10, 10))->toBe(1)
+        ->and($quantum(1, 16))->toBe(16)
+        ->and($quantum(6, 4))->toBe(2)
+        ->and($quantum(10, null))->toBe(1);
+});
+
+test('an order too small for a batch hitchhikes until something else fills the batch', function () {
+    $stocks    = createStocks($this->group);
+    $orgStocks = createOrgStocks($this->organisation, [$stocks[0]]);
+    $orgStock  = $orgStocks[0];
+
+    \App\Models\Production\Artefact::where('production_id', $this->production->id)
+        ->where('org_stock_id', $orgStock->id)
+        ->update(['org_stock_id' => null]);
+
+    $orgStock->update(['packed_in' => 10, 'quantity_in_locations' => 0]);
+
+    $artefact = StoreArtefact::make()->action($this->production, [
+        'code'                   => 'HITCH-01',
+        'name'                   => 'Made in batches of sixteen',
+        'recommended_batch_size' => 16,
+    ]);
+    $artefact->update(['org_stock_id' => $orgStock->id]);
+
+    \App\Models\Procurement\PartnerShoppingListItem::where('stock_id', $orgStock->stock_id)->forceDelete();
+
+    $item = \App\Models\Procurement\PartnerShoppingListItem::create([
+        'group_id'        => $this->group->id,
+        'organisation_id' => $this->organisation->id,
+        'stock_id'        => $orgStock->stock_id,
+        'org_stock_id'    => $orgStock->id,
+        'quantity'        => 1,
+    ]);
+
+    actingAs($this->guest->getUser());
+    $routeParameters = [$this->organisation->slug, $this->production->slug];
+
+    $props = fn (array $query = []) => get(route('grp.org.productions.show.to_produce.index', $routeParameters + $query))
+        ->assertOk()->viewData('page')['props'];
+
+    $backlogOf = fn (array $props) => collect($props['groups'])
+        ->firstWhere('label', 'Backlog')['items'];
+
+    $hidden = $props();
+    expect($backlogOf($hidden))->toBe([])
+        ->and($hidden['hitchhikers']['count'])->toBe(1)
+        ->and($hidden['hitchhikers']['showing'])->toBeFalse();
+
+    $shown = $props(['hitchhikers' => 1]);
+    expect(collect($backlogOf($shown))->pluck('stock_code')->all())->toBe([$stocks[0]->code])
+        ->and(collect($backlogOf($shown))->first()['is_hitchhiker'])->toBeTrue();
+
+    /* Enough partners asking for the same thing fills the batch, so it stops hitchhiking. */
+    $item->update(['quantity' => 8]);
+    expect(collect($backlogOf($props()))->pluck('stock_code')->all())->toBe([$stocks[0]->code]);
 });

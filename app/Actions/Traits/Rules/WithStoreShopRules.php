@@ -56,7 +56,7 @@ trait WithStoreShopRules
             'settings'                    => ['sometimes', 'array'],
             'warehouses'                  => ['sometimes', 'array'],
             'warehouses.*'                => [Rule::Exists('warehouses', 'id')->where('organisation_id', $this->organisation->id)],
-            'address'                     => ['sometimes', 'required', new ValidAddress()],
+            'address'                     => ['sometimes', 'required', new ValidAddress(requireFullAddress: !$this->asAction)],
             'engine'                      => ['sometimes', Rule::enum(ShopEngineEnum::class)],
             'is_aiku'                     => ['sometimes', 'boolean'],
             'open_at'                     => ['sometimes', 'date']

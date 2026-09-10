@@ -11,7 +11,6 @@ namespace App\Actions\Catalogue;
 use App\Actions\Helpers\ClearCacheByWildcard;
 use App\Actions\Helpers\Images\GetPictureSources;
 use App\Actions\Web\Webpage\BreakWebpageCache;
-use App\Actions\Web\Webpage\Luigi\ReindexWebpageLuigiData;
 use App\Models\Catalogue\Collection;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
@@ -58,7 +57,6 @@ trait WithUpdateWebImages
         } elseif ($model instanceof ProductCategory && $model->wasChanged('web_images')) {
             if ($model->webpage) {
                 BreakWebpageCache::run($model->webpage, true);
-                ReindexWebpageLuigiData::dispatch($model->webpage->id)->delay(60);
                 ClearCacheByWildcard::run("irisData:website:{$model->webpage->website_id}:*");
             }
         }
@@ -134,32 +132,40 @@ trait WithUpdateWebImages
         ];
     }
 
+    /**
+     * An empty or dangling slot only skips itself: the filled slots around it keep their images,
+     * and never inherit the previous slot's media.
+     */
     public function getDescriptionImageData(ProductCategory|MasterProductCategory $model): array
     {
-        $media = null;
         $column = 'desc_art';
 
         $images = [];
 
         for ($i = 1; $i <= 5; $i++) {
-            if ($model->{$column.$i}) {
-                $media = Media::find($model->{$column.$i});
+            $mediaId = $model->{$column.$i};
+
+            if (!$mediaId) {
+                continue;
             }
 
+            $media = Media::find($mediaId);
+
             if (!$media) {
-                return [];
+                continue;
             }
 
             $imageOriginal  = $media->getImage();
             $imageGallery   = $media->getImage()->resize(0, 600);
             $imageThumbnail = $media->getImage()->resize(0, 48);
 
-            data_set($images, "{$column}{$i}", [
+            $images[$column.$i] = [
                 'original'  => GetPictureSources::run($imageOriginal),
                 'gallery'   => GetPictureSources::run($imageGallery),
                 'thumbnail' => GetPictureSources::run($imageThumbnail),
-            ]);
+            ];
         }
+
         return $images;
     }
 
