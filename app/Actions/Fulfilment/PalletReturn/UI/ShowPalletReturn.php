@@ -11,6 +11,7 @@ namespace App\Actions\Fulfilment\PalletReturn\UI;
 use App\Actions\Fulfilment\GetNotesData;
 use App\Actions\Fulfilment\PalletReturn\IndexPalletsInReturnPalletWholePallets;
 use App\Actions\Fulfilment\StoredItem\UI\IndexStoredItemsInReturn;
+use App\Http\Resources\Fulfilment\PalletReturnItemsWithStoredItemsResource;
 use App\Actions\Fulfilment\WithFulfilmentCustomerSubNavigation;
 use App\Actions\Fulfilment\PalletReturn\UI\Traits\WithShowPalletReturnHelpers;
 use App\Actions\Helpers\Media\UI\IndexAttachments;
@@ -271,6 +272,10 @@ class ShowPalletReturn extends OrgAction
                     fn () => PalletReturnItemsUIResource::collection(IndexPalletsInReturnPalletWholePallets::run($palletReturn, PalletReturnTabsEnum::PALLETS->value))
                     : Inertia::optional(fn () => PalletReturnItemsUIResource::collection(IndexPalletsInReturnPalletWholePallets::run($palletReturn, PalletReturnTabsEnum::PALLETS->value))),
 
+
+                PalletReturnTabsEnum::STORED_ITEMS->value => $this->tab == PalletReturnTabsEnum::STORED_ITEMS->value ?
+                    fn () => PalletReturnItemsWithStoredItemsResource::collection(IndexStoredItemsInReturn::run($palletReturn, PalletReturnTabsEnum::STORED_ITEMS->value))
+                    : Inertia::optional(fn () => PalletReturnItemsWithStoredItemsResource::collection(IndexStoredItemsInReturn::run($palletReturn, PalletReturnTabsEnum::STORED_ITEMS->value))),
 
                 PalletReturnTabsEnum::SERVICES->value => $this->tab == PalletReturnTabsEnum::SERVICES->value ?
                     fn () => FulfilmentTransactionsResource::collection(IndexServiceInPalletReturn::run($palletReturn))

@@ -23,10 +23,16 @@ use Lorisleiva\Actions\ActionRequest;
 class AttachPalletToReturn extends OrgAction
 {
     use WithFulfilmentShopAuthorisation;
+    use WithVirtualPalletGuard;
 
 
+    /**
+     * @throws \Illuminate\Validation\ValidationException
+     */
     public function handle(PalletReturn $palletReturn, Pallet $pallet): PalletReturn
     {
+        $this->assertPalletIsPhysical($pallet);
+
         $palletReturn->pallets()->attach($pallet->id, [
             'quantity_ordered'     => 1,
             'type'                 => 'Pallet'

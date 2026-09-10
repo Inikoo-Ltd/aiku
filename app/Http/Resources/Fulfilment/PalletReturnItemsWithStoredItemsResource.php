@@ -75,6 +75,7 @@ class PalletReturnItemsWithStoredItemsResource extends JsonResource
                         'id'                         => $palletStoredItem->id,
                         'reference'                  => $palletStoredItem->pallet->reference ?? null,
                         'pallet_slug'                => $palletStoredItem->pallet?->slug ?? null,
+                        'is_virtual'                 => (bool) ($palletStoredItem->pallet?->is_virtual ?? false),
                         'selected_quantity'          => (int) ($palletReturnItem->quantity_ordered ?? 0),
                         'available_quantity'         => (int) $palletStoredItem->quantity,
                         'max_quantity'               => (int) $palletStoredItem->quantity,

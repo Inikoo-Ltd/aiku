@@ -9,6 +9,7 @@
 namespace App\Enums\Fulfilment\PalletReturn;
 
 use App\Enums\EnumHelperTrait;
+use App\Enums\Fulfilment\Pallet\PalletStatusEnum;
 use App\Models\Fulfilment\PalletReturn;
 
 enum PalletsInPalletReturnWholePalletsOptionEnum: string
@@ -31,7 +32,10 @@ enum PalletsInPalletReturnWholePalletsOptionEnum: string
     public static function count(PalletReturn $palletReturn): array
     {
         return [
-            'all_stored_pallets' => $palletReturn->fulfilmentCustomer->number_pallets_status_storing,
+            'all_stored_pallets' => $palletReturn->fulfilmentCustomer->pallets()
+                ->physical()
+                ->where('pallets.status', PalletStatusEnum::STORING)
+                ->count(),
             'selected'           => $palletReturn->stats->number_pallets
         ];
     }

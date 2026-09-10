@@ -13,6 +13,8 @@ use App\Actions\Fulfilment\PalletReturn\UI\GetPalletReturnBoxStats;
 use App\Actions\Fulfilment\PalletReturn\UI\GetRetinaPalletReturnActions;
 use App\Actions\Fulfilment\PalletReturn\UI\IndexPhysicalGoodInPalletReturn;
 use App\Actions\Fulfilment\PalletReturn\UI\IndexServiceInPalletReturn;
+use App\Actions\Fulfilment\StoredItem\UI\IndexStoredItemsInReturn;
+use App\Http\Resources\Fulfilment\PalletReturnItemsWithStoredItemsResource;
 use App\Actions\Helpers\Media\UI\IndexAttachments;
 use App\Actions\Retina\Fulfilment\UI\ShowRetinaStorageDashboard;
 use App\Actions\RetinaAction;
@@ -264,6 +266,10 @@ class ShowRetinaPalletReturn extends RetinaAction
                     fn () => PalletReturnItemsUIResource::collection(IndexRetinaPalletsInReturnPalletWholePallets::run($palletReturn, RetinaPalletReturnTabsEnum::GOODS->value))
                     : Inertia::optional(fn () => PalletReturnItemsUIResource::collection(IndexRetinaPalletsInReturnPalletWholePallets::run($palletReturn, RetinaPalletReturnTabsEnum::GOODS->value))),
 
+                RetinaPalletReturnTabsEnum::STORED_ITEMS->value => $this->tab == RetinaPalletReturnTabsEnum::STORED_ITEMS->value ?
+                    fn () => PalletReturnItemsWithStoredItemsResource::collection(IndexStoredItemsInReturn::run($palletReturn, RetinaPalletReturnTabsEnum::STORED_ITEMS->value))
+                    : Inertia::optional(fn () => PalletReturnItemsWithStoredItemsResource::collection(IndexStoredItemsInReturn::run($palletReturn, RetinaPalletReturnTabsEnum::STORED_ITEMS->value))),
+
                 RetinaPalletReturnTabsEnum::SERVICES->value => $this->tab == RetinaPalletReturnTabsEnum::SERVICES->value ?
                     fn () => FulfilmentTransactionsResource::collection(IndexServiceInPalletReturn::run($palletReturn, RetinaPalletReturnTabsEnum::SERVICES->value))
                     : Inertia::optional(fn () => FulfilmentTransactionsResource::collection(IndexServiceInPalletReturn::run($palletReturn, RetinaPalletReturnTabsEnum::SERVICES->value))),
@@ -281,6 +287,12 @@ class ShowRetinaPalletReturn extends RetinaAction
                 $palletReturn,
                 request: $request,
                 prefix: RetinaPalletReturnTabsEnum::GOODS->value
+            )
+        )->table(
+            IndexStoredItemsInReturn::make()->tableStructure(
+                $palletReturn,
+                request: $request,
+                prefix: RetinaPalletReturnTabsEnum::STORED_ITEMS->value
             )
         )->table(
             IndexServiceInPalletReturn::make()->tableStructure(

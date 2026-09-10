@@ -46,6 +46,7 @@ class StoredItemDeltasInProcessResource extends JsonResource
             'slug'                 => $this->slug,
             'reference'            => $this->reference,
             'customer_reference'   => (string)$this->customer_reference,
+            'is_virtual'           => (bool)$this->is_virtual,
 
             'location_slug' => $this->location_slug,
             'location_code' => $this->location_code,

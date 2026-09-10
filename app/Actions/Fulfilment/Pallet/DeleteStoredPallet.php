@@ -32,14 +32,18 @@ class DeleteStoredPallet extends OrgAction
 {
     use WithActionUpdate;
     use WithFulfilmentShopSupervisorAuthorisation;
+    use WithVirtualPalletGuard;
 
     private Pallet $pallet;
 
     /**
      * @throws \Throwable
+     * @throws \Illuminate\Validation\ValidationException
      */
     public function handle(Pallet $pallet, array $modelData, $quiet = false): Pallet
     {
+        $this->assertVirtualPalletIsEmpty($pallet);
+
         $recurringBillTransactionDeleted = DB::transaction(function () use ($pallet, $modelData) {
             $recurringBillTransactionDeleted = false;
             if ($pallet->currentRecurringBill) {

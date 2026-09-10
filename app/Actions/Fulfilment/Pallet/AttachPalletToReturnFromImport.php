@@ -22,9 +22,13 @@ use Lorisleiva\Actions\Concerns\AsCommand;
 class AttachPalletToReturnFromImport extends OrgAction
 {
     use AsCommand;
+    use WithVirtualPalletGuard;
 
     private PalletReturn $parent;
 
+    /**
+     * @throws \Illuminate\Validation\ValidationException
+     */
     public function handle(PalletReturn $palletReturn, array $modelData): PalletReturn
     {
         $reference  = Arr::get($modelData, 'reference');
@@ -41,6 +45,8 @@ class AttachPalletToReturnFromImport extends OrgAction
                 'message' => ['reference' => 'pallet does not exist'],
             ]);
         }
+
+        $this->assertPalletIsPhysical($pallet, 'reference');
 
         $this->attach($palletReturn, $pallet);
 

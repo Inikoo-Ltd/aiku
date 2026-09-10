@@ -16,6 +16,7 @@ use App\Enums\Fulfilment\Pallet\PalletStateEnum;
 use App\Enums\Fulfilment\Pallet\PalletStatusEnum;
 use App\Models\Fulfilment\Pallet;
 use App\Models\Fulfilment\PalletReturn;
+use App\Rules\PalletIsPhysical;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
@@ -74,7 +75,8 @@ class AttachPalletWithStoredItemsToReturn extends OrgAction
                 'string',
                 Rule::exists('pallets', 'reference')->where(function ($query) {
                     $query->where('fulfilment_customer_id', $this->parent->fulfilment_customer_id);
-                })
+                }),
+                new PalletIsPhysical('reference')
             ],
         ];
     }
