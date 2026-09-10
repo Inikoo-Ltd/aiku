@@ -104,6 +104,7 @@
     ":days days late": ":days days late",
     ":days days of cover left": ":days days of cover left",
     ":engine external shop": ":engine external shop",
+    ":field is required": ":field is required",
     ":free free, order :quantity more to get :next free": ":free free, order :quantity more to get :next free",
     ":from - :to items": ":from - :to items",
     ":from and above": ":from and above",

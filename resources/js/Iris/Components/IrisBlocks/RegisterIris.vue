@@ -21,6 +21,7 @@ import Button from "@/Components/Elements/Buttons/Button.vue"
 import FieldStandaloneRegistration from "@/Pages/Retina/Auth/Field/FieldStandaloneRegistration.vue"
 import { getRefRedirect } from "@/Composables/Retina/useGetRedirectUrl"
 import { buildRegistrationUserData, pushGtmEventAndWaitForTags } from "@/Composables/useGtm"
+import { missingRequiredAddressFields } from "@/Composables/useAddressValidation"
 import { get } from "lodash-es"
 
 library.add(faEnvelope, faUser, faAsterisk, faExclamationTriangle, faInfoCircle, faPhone, faBuilding, faGlobe)
@@ -146,17 +147,20 @@ const submit = async () => {
 		return
 	}
 
-	let isAddressFieldFailedPass = false
-	for (const [fieldName, fieldData] of Object.entries(fieldsOfSelectedCountry)) {
-		if (fieldData.required && !get(form, ["contact_address", fieldName])) {
-			form.setError(fieldName, `${fieldName} is required`)
-			isAddressFieldFailedPass = true
-		} else {
+	const missingAddressFields = missingRequiredAddressFields(fieldsOfSelectedCountry, form.contact_address)
+	const missingAddressFieldNames = new Set(missingAddressFields.map(({ name }) => name))
+
+	for (const fieldName of Object.keys(fieldsOfSelectedCountry)) {
+		if (!missingAddressFieldNames.has(fieldName)) {
 			form.clearErrors(fieldName)
 		}
 	}
 
-	if (isAddressFieldFailedPass) {
+	for (const { name, label } of missingAddressFields) {
+		form.setError(name, trans(":field is required", { field: label }))
+	}
+
+	if (missingAddressFields.length) {
 		return
 	}
 
@@ -196,7 +200,7 @@ const submit = async () => {
 		if (responseErrors) {
 			for (const key in responseErrors) {
 				const message = responseErrors[key]
-				form.setError(key, Array.isArray(message) ? message[0] : message)
+				form.setError(key, Array.isArray(message) ? message.join(" ") : message)
 			}
 		} else if (error.response?.data?.message) {
 			form.setError("email", error.response.data.message)
