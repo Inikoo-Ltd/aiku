@@ -21,7 +21,8 @@ return new class () extends Migration {
             $table->unsignedSmallInteger('meta_channel_id')->index();
             $table->foreign('meta_channel_id')->references('id')->on('meta_channels')->onUpdate('cascade')->onDelete('cascade');
 
-            // TODO: Make sure is unique per template_id or need to combine with meta_channel_id and shop_id
+            /* ponytail: Meta template ids are unique per WABA, so shops sharing one would
+               collide here; key on (meta_channel_id, template_id) the day that happens. */
             $table->string('template_id')->unique();
             $table->string('name');
             $table->string('parameter_format')->nullable();

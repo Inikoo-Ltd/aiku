@@ -75,35 +75,18 @@ trait WithWhatsappCampaignSendable
     }
 
     /**
-     * The conditions a campaign must meet before it can be sent or scheduled.
-     * Mirrors the isConfigured/recipients checks the UI disables its buttons on,
-     * so a hand-rolled request gets the same answer as the page.
+     * The conditions a campaign must meet before it can be sent or scheduled, as the
+     * request that asked for it hears them.
      *
      * @throws ValidationException
      */
     protected function assertSendable(WhatsappCampaign $campaign): void
     {
-        if (!$campaign->meta_message_template_id) {
-            throw ValidationException::withMessages([
-                'campaign' => __('Choose a template before sending this campaign.'),
-            ]);
-        }
+        $reason = $campaign->unsendableReason();
 
-        if ($campaign->recipients_count < 1) {
+        if ($reason !== null) {
             throw ValidationException::withMessages([
-                'campaign' => __('This campaign has no recipients.'),
-            ]);
-        }
-
-        if (blank(Arr::get($campaign->shop->settings, 'whatsapp.phone_number_id'))) {
-            throw ValidationException::withMessages([
-                'campaign' => __('WhatsApp is not configured for this shop.'),
-            ]);
-        }
-
-        if ($campaign->isFillingRecipients()) {
-            throw ValidationException::withMessages([
-                'campaign' => __('Recipient data is still being prepared.'),
+                'campaign' => $reason,
             ]);
         }
     }

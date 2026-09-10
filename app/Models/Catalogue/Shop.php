@@ -37,6 +37,7 @@ use App\Models\Comms\Mailshot;
 use App\Models\Comms\Outbox;
 use App\Models\Comms\SenderEmail;
 use App\Models\Comms\TestEmailRecipient;
+use App\Models\Comms\WhatsappCampaign;
 use App\Models\CRM\Customer;
 use App\Models\CRM\Poll;
 use App\Models\CRM\Prospect;
@@ -815,6 +816,11 @@ class Shop extends Model implements HasMedia, Auditable
     public function emailTemplates(): HasMany
     {
         return $this->hasMany(EmailTemplate::class);
+    }
+
+    public function whatsappCampaigns(): HasMany
+    {
+        return $this->hasMany(WhatsappCampaign::class);
     }
 
     public function workSchedules(): MorphMany

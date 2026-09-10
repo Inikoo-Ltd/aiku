@@ -135,7 +135,7 @@ class ShowMarketingDashboard extends OrgAction
                     ],
                     [
                         'name' => __('Whatsapp Campaigns'),
-                        'value' => 0,
+                        'value' => $this->shop->whatsappCampaigns()->count(),
                         'icon'  => ['fab', 'fa-whatsapp'],
                         'route' => [
                             'name'       => 'grp.org.shops.show.marketing.whatsapp_campaigns.index',

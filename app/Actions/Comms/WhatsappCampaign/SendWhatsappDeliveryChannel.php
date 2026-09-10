@@ -54,9 +54,16 @@ class SendWhatsappDeliveryChannel
         }
 
         $campaign = $channel->whatsappCampaign;
-        $template = $campaign?->metaMessageTemplate;
 
-        if (!$campaign || !$template) {
+        if (!$campaign) {
+            return;
+        }
+
+        $template = $campaign->metaMessageTemplate;
+
+        if (!$template) {
+            $this->stopChannel($channel, $campaign);
+
             return;
         }
 
@@ -66,7 +73,7 @@ class SendWhatsappDeliveryChannel
         ] = $this->whatsappCredentials($campaign->shop);
 
         if ($phoneNumberId === '' || $accessToken === '') {
-            $channel->update(['state' => WhatsappDeliveryChannelStateEnum::STOPPED]);
+            $this->stopChannel($channel, $campaign);
 
             return;
         }
@@ -101,6 +108,18 @@ class SendWhatsappDeliveryChannel
         ]);
 
         WhatsappCampaignHydrateStats::dispatch($campaign->id);
+
+        UpdateWhatsappCampaignSentState::run($campaign->refresh());
+    }
+
+    /**
+     * A channel that cannot send is finished, not paused, so the campaign is reconciled
+     * here the same way a completed one reconciles it. Without this the campaign waits in
+     * SENDING for a channel that has already given up.
+     */
+    private function stopChannel(WhatsappDeliveryChannel $channel, WhatsappCampaign $campaign): void
+    {
+        $channel->update(['state' => WhatsappDeliveryChannelStateEnum::STOPPED]);
 
         UpdateWhatsappCampaignSentState::run($campaign->refresh());
     }

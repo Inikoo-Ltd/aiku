@@ -22,6 +22,10 @@ class HandleWhatsappWebhook
     use WithWhatsappCredentials;
 
     /**
+     * Every change is queued rather than worked here. Meta retries a webhook it does not get
+     * a 200 for within seconds, and a retry means the same message stored twice and the same
+     * broadcasts fired again, so the response must not wait on the work the payload asks for.
+     *
      * @param  array<string, mixed>  $payload
      */
     public function handle(array $payload): void
@@ -29,7 +33,7 @@ class HandleWhatsappWebhook
         foreach (Arr::get($payload, 'entry', []) as $entry) {
             foreach (Arr::get($entry, 'changes', []) as $change) {
                 if (Arr::get($change, 'field') === 'message_template_status_update') {
-                    UpdateWhatsappTemplateStatus::run($change['value']);
+                    UpdateWhatsappTemplateStatus::dispatch($change['value']);
 
                     continue;
                 }
@@ -39,11 +43,11 @@ class HandleWhatsappWebhook
                 }
 
                 if (filled(Arr::get($change, 'value.messages'))) {
-                    StoreIncomingWhatsappMessage::run($change['value']);
+                    StoreIncomingWhatsappMessage::dispatch($change['value']);
                 }
 
                 if (filled(Arr::get($change, 'value.statuses'))) {
-                    UpdateWhatsappMessageStatus::run($change['value']);
+                    UpdateWhatsappMessageStatus::dispatch($change['value']);
                 }
             }
         }

@@ -48,9 +48,6 @@ return new class () extends Migration {
 
             $table->json('metadata')->nullable();
 
-            $table->unsignedInteger('whatsapp_campaign_id')->index()->nullable();
-            $table->foreign('whatsapp_campaign_id')->references('id')->on('whatsapp_campaigns')->nullOnDelete();
-
             $table->timestampsTz();
             $this->softDeletes($table);
         });

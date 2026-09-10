@@ -157,4 +157,34 @@ class WhatsappCampaign extends Model
     {
         return $this->recipientsPendingFill() > 0;
     }
+
+    /**
+     * Why the campaign cannot be sent, or null when nothing stands in the way. Mirrors the
+     * conditions the UI disables its send button on, so a hand-rolled request gets the same
+     * answer as the page.
+     *
+     * On the campaign rather than in WithWhatsappCampaignSendable because the scheduled
+     * runner, which has nobody to hand a ValidationException to, reads the same conditions
+     * to record why it stopped a campaign that came due unsendable.
+     */
+    public function unsendableReason(): ?string
+    {
+        if (!$this->meta_message_template_id) {
+            return __('Choose a template before sending this campaign.');
+        }
+
+        if ($this->recipients_count < 1) {
+            return __('This campaign has no recipients.');
+        }
+
+        if (blank(Arr::get($this->shop->settings, 'whatsapp.phone_number_id'))) {
+            return __('WhatsApp is not configured for this shop.');
+        }
+
+        if ($this->isFillingRecipients()) {
+            return __('Recipient data is still being prepared.');
+        }
+
+        return null;
+    }
 }
