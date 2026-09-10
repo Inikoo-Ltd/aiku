@@ -132,11 +132,17 @@ class SuggestSupplierShoppingList extends OrgAction
                 ? ceil($candidate['recommended'])
                 : max(0.0, ceil($candidate['quarterly_usage'] - $candidate['our_stock']));
 
-            $quantity = $this->roundToCarton($target, $candidate['units_per_carton']);
-            $quantity = min($quantity, floor($remaining / $candidate['cost']));
-            $quantity = $this->roundDownToCarton($quantity, $candidate['units_per_carton']);
+            $minimum  = $this->minimumOrder($candidate);
+            $quantity = max($minimum, $this->roundToCarton($target, $candidate['units_per_carton']));
 
-            if ($quantity < 1) {
+            if ($quantity * $candidate['cost'] > $remaining) {
+                $quantity = $this->roundDownToCarton(
+                    floor($remaining / $candidate['cost']),
+                    $candidate['units_per_carton']
+                );
+            }
+
+            if ($quantity < 1 || $quantity < $minimum) {
                 continue;
             }
 
@@ -163,6 +169,16 @@ class SuggestSupplierShoppingList extends OrgAction
         }
 
         return $lines;
+    }
+
+    /**
+     * @param array<string, mixed> $candidate
+     */
+    protected function minimumOrder(array $candidate): float
+    {
+        $cartonUnits = max(1, $candidate['units_per_carton']);
+
+        return max(1, (int) ($candidate['minimum_carton_order'] ?: 1)) * $cartonUnits;
     }
 
     protected function roundToCarton(float $quantity, int $unitsPerCarton): float
