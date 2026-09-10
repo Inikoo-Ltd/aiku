@@ -378,8 +378,13 @@ class StoreWhatsappCampaignRecipients extends OrgAction
         $unselect = Arr::get($this->validatedData, 'unselect', []);
 
         /* A delta only makes sense against a stored selection, so select_all wins: it says
-           the user restated the whole audience rather than edited it. */
-        if (!$isSelectAll && ($select || $unselect)) {
+           the user restated the whole audience rather than edited it.
+
+           A delta payload carrying no toggles is a save with nothing changed, and it goes
+           down this branch too: falling through would read the absent phone_keys as an empty
+           explicit list, which is the deliberate clear, and sweep the stored selection away.
+           Only phone_keys says clear. */
+        if (!$isSelectAll && !$this->has('phone_keys')) {
             return $this->handleDelta($campaign, $channels, $filters, $select, $unselect);
         }
 
