@@ -700,6 +700,7 @@ const describeFailure = async (error: any): Promise<string> => {
 
                 <hr class="border-t border-gray-400 border-dashed" />
 
+                <!-- Field: Background artwork -->
                 <div>
                     <div class="text-xs text-gray-500 uppercase tracking-wide mb-1">
                         {{ ctrans("Background artwork") }}
