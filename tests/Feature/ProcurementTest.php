@@ -3702,6 +3702,13 @@ test('pre-picking reserves stock for the partner without creating any order', fu
     expect((float) $remainder->quantity)->toBe(6.0)
         ->and($remainder->pre_picked_at)->toBeNull();
 
+    /* Once the partner is preparing it, the buyer can no longer change or remove the line. */
+    expect(fn () => UpdatePartnerShoppingListItem::make()->action($item, ['quantity' => 2]))
+        ->toThrow(\Symfony\Component\HttpKernel\Exception\HttpException::class)
+        ->and(fn () => \App\Actions\Procurement\PartnerShoppingListItem\DeletePartnerShoppingListItem::make()->action($item))
+        ->toThrow(\Symfony\Component\HttpKernel\Exception\HttpException::class);
+    expect((float) $item->refresh()->quantity)->toBe(4.0);
+
     /* A pre-picked line drops off the pre-pick list, it is now the warehouse's job. */
     $listed = $this->get(route('grp.org.productions.show.pre_pick.index', [$seller->slug, $production->slug]))
         ->assertOk()->viewData('page')['props']['data']['data'];

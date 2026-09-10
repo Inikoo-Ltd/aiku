@@ -129,7 +129,7 @@ function deleteItem(item: { id: number }) {
         </template>
         <template #cell(priority)="{ item }">
             <select
-                v-if="item.state === 'open'"
+                v-if="item.state === 'open' && !item.pre_picked_at"
                 :value="item.priority"
                 class="rounded border-gray-300 py-0.5 pl-2 pr-7 text-xs"
                 :class="{ 'text-red-600': item.priority === 'urgent', 'text-amber-600': item.priority === 'high', 'text-gray-400': item.priority === 'low' }"
@@ -160,7 +160,7 @@ function deleteItem(item: { id: number }) {
         </template>
         <template #cell(actions)="{ item }">
             <Button
-                v-if="item.state === 'open'"
+                v-if="item.state === 'open' && !item.pre_picked_at"
                 icon="fal fa-trash-alt"
                 :tooltip="trans('Remove from the shopping list')"
                 type="negative"
