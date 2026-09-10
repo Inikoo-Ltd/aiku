@@ -32,6 +32,7 @@ const componentsMap = {
     'Subdepartment Ordered': defineAsyncComponent(() => import("@/Components/Utils/Label/DiscountTemplate/CategoryOrdered/OfferPivotCategoryOrdered.vue")),
     'Category Quantity Ordered': defineAsyncComponent(() => import("@/Components/Utils/Label/DiscountTemplate/CategoryOrdered/OfferPivotCategoryOrdered.vue")),
     'Product Quantity Ordered': defineAsyncComponent(() => import("@/Components/Utils/Label/DiscountTemplate/CategoryOrdered/OfferPivotCategoryOrdered.vue")),
+    'Product Amount Ordered': defineAsyncComponent(() => import("@/Components/Utils/Label/DiscountTemplate/CategoryOrdered/OfferPivotCategoryOrdered.vue")),
     'Shop Ordered': defineAsyncComponent(() => import("@/Components/Utils/Label/DiscountTemplate/CategoryOrdered/OfferPivotCategoryOrdered.vue"))
 
 } as const
