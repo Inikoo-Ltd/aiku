@@ -45,8 +45,10 @@ use Illuminate\Validation\Rules\File;
 use Lorisleiva\Actions\ActionRequest;
 use App\Models\Ordering\SalesChannel;
 use Closure;
+use App\Actions\Web\Webpage\BreakWebpageCache;
 use App\Actions\Web\Website\BreakWebsiteCache;
 use App\Enums\Web\Crawl\CrawlTriggerEnum;
+use App\Enums\Web\Webpage\WebpageStateEnum;
 use Illuminate\Support\Facades\Event;
 use OwenIt\Auditing\Events\AuditCustom;
 
@@ -56,6 +58,16 @@ class UpdateShop extends OrgAction
     use WithModelAddressActions;
     use WithNoStrictRules;
 
+    /**
+     * The registration settings the register page is built from, so a change to one of them
+     * leaves the cached page describing a form the shop no longer asks.
+     */
+    private const REGISTER_PAGE_SETTINGS = [
+        'marketing_opt_in_label',
+        'marketing_opt_in_default',
+        'whatsapp_newsletter_label',
+        'whatsapp_newsletter_default',
+    ];
 
     public function authorize(ActionRequest $request): bool
     {
@@ -74,6 +86,15 @@ class UpdateShop extends OrgAction
         $originalViewContactOptionsPanel = Arr::get($shop->settings ?? [], 'chat.view_contact_options_panel');
         $originalDataContactOptionsPanel = Arr::get($shop->settings ?? [], 'chat.data_contact_options_panel');
         $originalEnableChat              = Arr::get($shop->settings ?? [], 'chat.enable_chat');
+
+        /* Read off the shop rather than the payload because the two callers name these
+           differently: the shop screen sends them flat and they are nested below, while
+           UpdateWebsite nests them itself and arrives with settings.registration already
+           built. Committed state is the one shape both agree on. */
+        $originalRegistrationSettings = Arr::only(
+            Arr::get($shop->settings ?? [], 'registration', []),
+            self::REGISTER_PAGE_SETTINGS
+        );
 
         if ($reviewRatingLabelsTouched) {
             $this->syncReviewRatingLabels($shop, Arr::get($modelData, 'review_rating_labels'));
@@ -560,6 +581,24 @@ class UpdateShop extends OrgAction
 
         if ($shop->website && ($reviewRatingLabelsTouched || Arr::get($shop->settings ?? [], 'reviews') != $originalReviewSettings || $chatSettingsChanged)) {
             BreakWebsiteCache::run($shop->website, CrawlTriggerEnum::WEBSITE_UPDATE);
+        }
+
+        /* Compared by value rather than read off getChanges(), which reports the whole settings
+           blob because the column is written as a json merge and so cannot say which key moved.
+
+           Only a live register page is worth breaking: the cache is written by the branch that
+           serves it, so anything else has nothing stored to forget. */
+        $registrationSettingsChanged = Arr::only(
+            Arr::get($shop->settings ?? [], 'registration', []),
+            self::REGISTER_PAGE_SETTINGS
+        ) != $originalRegistrationSettings;
+
+        if ($registrationSettingsChanged) {
+            $registerPage = $shop->website?->registerPage;
+
+            if ($registerPage && $registerPage->state == WebpageStateEnum::LIVE) {
+                BreakWebpageCache::run($registerPage);
+            }
         }
 
         if (Arr::hasAny($changes, ['state', 'type'])) {
