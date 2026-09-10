@@ -260,7 +260,7 @@ const props = defineProps<{
         updateOrderRoute: routeType
         products_list: routeType
         delivery_note: routeType
-        rollback_dispatch: routeType
+        rollback_dispatch: routeType | null
         redispatch?: routeType
     }
     // nonProductItems: {}
@@ -1682,7 +1682,7 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
 
             <div class="w-48 flex flex-col gap-2">
                 <!-- Button: Undispatched -->
-                <ModalConfirmationDelete v-if="props.data?.data?.state === 'dispatched'"
+                <ModalConfirmationDelete v-if="props.data?.data?.state === 'dispatched' && routes.rollback_dispatch"
                     :routeDelete="routes.rollback_dispatch"
                     :title="ctrans('Are you sure you want to rollback the Order??')"
                     :description="ctrans('The state of the Order will go back to finalised state.')" isFullLoading

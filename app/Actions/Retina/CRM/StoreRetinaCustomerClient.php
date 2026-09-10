@@ -11,6 +11,7 @@ namespace App\Actions\Retina\CRM;
 
 use App\Actions\Dropshipping\CustomerClient\StoreCustomerClient;
 use App\Actions\RetinaAction;
+use App\Rules\ValidAddress;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithModelAddressActions;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
@@ -55,7 +56,13 @@ class StoreRetinaCustomerClient extends RetinaAction
 
     public function rules(): array
     {
-        return StoreCustomerClient::make()->getBaseRules($this->customer);
+        $rules = StoreCustomerClient::make()->getBaseRules($this->customer);
+
+        /** Typed by a person in retina, so the address can be asked for in full; the same base rules serve
+         * the channel importers, where a partial address must never fail an order that is already paid */
+        $rules['address'] = ['required', new ValidAddress(requireFullAddress: !$this->asAction)];
+
+        return $rules;
     }
 
     public function htmlResponse(CustomerClient $customerClient): RedirectResponse

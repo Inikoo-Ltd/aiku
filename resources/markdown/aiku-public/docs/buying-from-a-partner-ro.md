@@ -1,8 +1,8 @@
 ---
 title: Cumpărarea de la un partener
 summary: Ghidul cumpărătorului - pornește de la dashboard-ul de cumpărături, completează lista manual, din catalogul partenerului sau cu auto-completare, și recepționează marfa la sosire.
-date: 2026-09-01
-source_date: 2026-09-01
+date: 2026-09-09
+source_date: 2026-09-09
 tags: procurement, intercompany, shopping-list
 category: procurement
 series: Ordering from partners
@@ -23,6 +23,7 @@ Lângă dashboard, tab-ul **Shopping list** (lista de cumpărături) ține fieca
 
 - **Add stocks** (adaugă stocuri) deschide lista de stocuri a partenerului cu disponibilitatea lor, cum e ambalat fiecare articol, stocul tău propriu curent, și cât ai folosit în ultimele patru trimestre. Cantitățile sunt în unitățile de expediere ale vânzătorului (SKO-uri).
 - Fiecare linie spune povestea stocului dintr-o privire — *stocul lor*, *stocul nostru* și când *ne terminăm* — plus suma la prețul tău de cumpărare, cu totalul articolelor deschise la baza tabelului.
+- Unde partenerul face el însuși articolul, linia mai spune și *made in batches of N units* (făcut în loturi de N unități) și, unde cele două nu se împart exact, *full batches every N SKO* (loturi întregi la fiecare N SKO) - **order step** (pasul de comandă), cea mai mică comandă pe care loturile întregi o umplu exact. Un buton rotunjește cantitatea ta în sus la el. Comanda în afara pasului e permisă și spune asta: un lot întreg se face oricum, așa că livrarea poate întârzia sau cantitatea poate fi ajustată, iar o comandă sub un pas întreg așteaptă la fabrică până se alătură altă cerere. Vezi [Loturi, pachete și loturi parțiale](/docs/batches-packs-and-part-batches-ro).
 - Liniile deschise sunt pe deplin ale tale: alege **priority** (prioritatea, de la scăzut la urgent) direct din dropdown-ul din tabel, sau șterge linia cu butonul de coș. Ca să schimbi o cantitate, folosește **Browse** (răsfoire) — stepper-ul aceluiași articol de acolo editează direct linia deschisă. Odată ce partenerul preia o linie, aceasta se blochează, iar starea ei îți spune unde se află.
 
 ## Răsfoirea catalogului partenerului
@@ -41,7 +42,7 @@ Cât timp răsfoiești, lista ta de cumpărături merge alături, ca o chitanț�
 
 Auto-fill (auto-completarea) există ca reaprovizionarea să nu depindă de cineva care își amintește fiecare articol. Îi dai un singur număr — un **budget** (buget), în aceeași monedă ca prețurile la care cumperi — și el construiește o propunere care încape în el:
 
-- Se uită la fiecare articol pe care partenerul îl poate furniza și pe care chiar îl folosești, le clasează după **cât de curând te termini** (aceeași prognoză *ne terminăm în* pe care o vezi în Browse), și completează mai întâi cele mai apropiate de epuizare, fiecare la cantitatea lui recomandată de comandă.
+- Se uită la fiecare articol pe care partenerul îl poate furniza și pe care chiar îl folosești, le clasează după **cât de curând te termini** (aceeași prognoză *ne terminăm în* pe care o vezi în Browse), și completează mai întâi cele mai apropiate de epuizare, fiecare la cantitatea lui recomandată de comandă, rotunjită la pasul de comandă al articolului.
 - Fiecare linie propusă arată **motivul** ei ("Vânzările noastre/trimestru ~48 · stocul nostru 0 · ne terminăm acum"), cantitatea și costul, ca să vezi de ce e acolo. Cantitățile urmează aceeași prognoză ca și chip-urile *suggested* din Browse.
 - Căsuța de **instrucțiune** e opțională și acceptă limbaj natural: *"prioritizează uleiurile esențiale, sari peste orice avem stoc pe mai mult de 8 săptămâni"*, *"concentrează-te pe lumânări, nimic sezonier"*. Un AI citește instrucțiunea ta împreună cu aceleași date de utilizare și remodelează propunerea în consecință — dar rezultatul e verificat față de realitate înainte să-l vezi: cantitățile sunt plafonate la ce are efectiv partenerul, iar totalul e forțat înapoi în bugetul tău. Dacă instrucțiunea nu poate fi urmată, primești propunerea standard.
 - **Nimic nu se adaugă singur.** Propunerea e un set de linii bifate pe care le poți debifa, recantitatea sau regenera cu alt buget sau altă instrucțiune; doar **Add items to shopping list** (adaugă articolele pe lista de cumpărături) confirmă ceva.
@@ -63,6 +64,7 @@ Odată ce partenerul [trimite o expediere către depozitul lui](/docs/fulfilling
 <ul>
 <li><b>Vezi ce trebuie cumpărat:</b> organizația ta → <b>Procurement → Partners</b> → deschide partenerul → <b>Shopping</b> (dashboard-ul) → lucrează plăcile de risc.</li>
 <li><b>Adaugă pe listă:</b> <b>Shopping list</b> → <b>Add stocks</b>, sau <b>Browse</b> și setează cantități pe fișele de produs, sau <b>Auto-fill</b> (sau <b>+ fill</b> pe o placă din dashboard) pentru o propunere.</li>
+<li><b>Comandă în loturi întregi:</b> butonul de lângă <i>full batches every N SKO</i> pe linie sau pe fișa produsului.</li>
 <li><b>Ajustează liniile deschise:</b> schimbă prioritatea sau șterge linii în tabelul listei de cumpărături; schimbă cantități din fișele de produs în <b>Browse</b>.</li>
 <li><b>Ține un articol în afara auto-completării:</b> organizația ta → <b>Warehouse → Inventory</b> → deschide SKO-ul → <b>Edit SKO</b> → activează <b>Do not auto order</b>.</li>
 <li><b>Urmărește și recepționează expedierea:</b> aceeași pagină de partener → <b>Stock deliveries</b> → când marfa ajunge, <b>Receive</b> → verifică → plasează în locații.</li>

@@ -167,8 +167,8 @@ class UpdateVariant extends OrgAction
 
     public function prepareForValidation(): void
     {
-        if (!$this->asAction) {
-            $this->data = $this->variants;
+        if (!$this->asAction && $this->get('variants')) {
+            $this->data = $this->get('variants');
             unset($this->variants);
         }
 

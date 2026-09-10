@@ -225,7 +225,15 @@ class StoreWebpage extends OrgAction
                     } else {
                         $this->createWebBlock($webpage, 'blog', $webpage);
                     }
+                }
 
+                if ($webpage->type == WebpageTypeEnum::SYSTEM_PAGE) {
+                    $systemPage = Arr::get(WebpageSubTypeEnum::systemPages(), $webpage->sub_type?->value);
+
+                    if ($systemPage) {
+                        $this->createWebBlock($webpage, $systemPage['web_block']);
+                        $webpage->website->update([$systemPage['website_field'] => $webpage->id]);
+                    }
                 }
             }
 

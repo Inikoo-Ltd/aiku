@@ -1,8 +1,8 @@
 ---
 title: Práca so zoznamom To produce
 summary: Sprievodca pre továreň - jedna fronta všetkého, čo továreň dlhuje, partnerským organizáciám aj vlastným zákazníkom, zoskupená tak, ako uvažuje plánovač výroby.
-date: 2026-09-08
-source_date: 2026-09-08
+date: 2026-09-09
+source_date: 2026-09-09
 tags: production, procurement, intercompany, dispatch
 category: production
 series: Ordering from partners
@@ -43,16 +43,17 @@ V zoskupených pohľadoch má každý blok kapsulu nad zoznamom, ktorá ukazuje 
 
 | Dráha | Čo tam sedí |
 | --- | --- |
-| Pre-pick | riadky, pri ktorých sa nič nevyrába, lebo tovar je na sklade. Skrytá, kým nestlačíte **Pre-pick** nad boardom. Sklad ich zhromaždí, viď [Zhromažďovanie tovaru pre partnera](/docs/gathering-a-partners-goods-sk). |
 | Backlog | riadky s artefaktom, na ktorý sa ešte nikto nepozrel |
 | Preparing | riadky, o ktorých ste rozhodli, že sa vyrobia, s ustáleným množstvom |
 | Assigned | pracovný príkaz existuje a je adresovaný remeselníkovi, ale nikto ho ešte nezačal |
 | Producing | remeselník stlačil START na jednej z jeho úloh |
 | Done | všetky úlohy pracovného príkazu sú hotové; čaká, kým ho sklad uloží |
 
-Každá karta zobrazuje produkt, požadované množstvo, kto ho žiadal, a **In stock** (na sklade), aby ste videli, či sa vôbec oplatí vyrábať.
+Každá karta zobrazuje produkt, požadované množstvo, kto ho žiadal, a **In stock** (na sklade), aby ste videli, či sa vôbec oplatí vyrábať. Na board sa dostanú iba riadky s artefaktom v tejto továrni; riadky, ktoré sa dajú jednoducho zložiť z regálu, žijú na svojej vlastnej stránke, **Factory → Pre-pick**, viď [Zhromažďovanie tovaru pre partnera](/docs/gathering-a-partners-goods-sk).
 
-**Backlog → Preparing.** Pustite kartu a aiku sa opýta *Koľko vyrobiť?*. Navrhne požadované množstvo; napíšete viac a extra sa označí *pre sklad*. Ak má artefakt odporúčanú veľkosť dávky, malé tlačidlo **↑** zaokrúhli množstvo na celé dávky. Číslo zostáva na karte upraviteľné, kým je v Preparing.
+Pod dráhami sedí ešte jeden riadok: **N riadkov príliš malých na dávku čaká na spoločnosť · show**. Partner môže požiadať o menej, ako je jedna celá dávka, a takýto riadok sa nedá rozumne vyrobiť samostatne, takže čaká pri ceste namiesto toho, aby zapratal Backlog. Vyzdvihne sa, keď otvorený dopyt po tom istom tovare naprieč všetkými zoznamami partnerov dosiahne dávku, keď objednávka vlastného zákazníka tak či tak rozbehne prácu, alebo keď stlačíte *show* a vyrobíte ho bez ohľadu na to. Riadok môže čakať dlho; to je pravdivejší popis jeho situácie ako akýkoľvek stav, ktorý by sme preň mohli vymyslieť. Viď [Dávky, balenia a čiastočné dávky](/docs/batches-packs-and-part-batches-sk).
+
+**Backlog → Preparing.** Pustite kartu a aiku sa opýta *Koľko vyrobiť?*. Navrhne požadované množstvo; napíšete viac a extra sa označí *pre sklad*. Ak má artefakt odporúčanú veľkosť dávky, malé tlačidlo **↑** zaokrúhli množstvo na celé dávky. To, o čo je remeselník napokon požiadaný, je v **units** (kusoch), zaokrúhlené nahor na najbližšiu celú dávku, a to, čo sa vráti, sa na ceste na regál delí veľkosťou balenia: 16 kusov desaťbalenia pristane ako 1,6 SKO. Číslo zostáva na karte upraviteľné, kým je v Preparing.
 
 **Preparing → Assigned.** Pustite kartu a aiku sa opýta *Kto to vyrobí?*. Navrhne remeselníka priradeného k artefaktu alebo jeho kategórii, viď [Kto čo vyrába](/docs/who-makes-what-sk). Vyberte meno a pracovný príkaz sa vytvorí v stave návrhu (draft), adresovaný danej osobe. Otvorte pracovný príkaz a stlačte **Release to floor** (uvoľniť na dielňu), keď má začať; dovtedy ho remeselník nevidí. Remeselníka neskôr zmeníte kliknutím na meno na karte.
 
@@ -84,7 +85,9 @@ Zaškrtnutie riadku vlastného zákazníka nemá žiadny účinok. Pri stlačen�
 <li><b>Zobraziť frontu:</b> vaša organizácia → <b>Factory</b> → <b>To produce</b>. Prepínajte pohľady záložkami <b>Board · All · By artisan · By category · By buyer · Mixes</b>.</li>
 <li><b>Rozhodnúť množstvo:</b> <i>Board</i> → potiahnite kartu z <b>Backlog</b> do <b>Preparing</b> → napíšte číslo, alebo stlačte <b>↑</b> pre celé dávky.</li>
 <li><b>Vytvoriť pracovný príkaz:</b> potiahnite kartu z <b>Preparing</b> do <b>Assigned</b> → vyberte remeselníka → otvorte pracovný príkaz → <b>Release to floor</b>.</li>
-<li><b>Riadky, ktoré potrebujú iba vychystanie:</b> tlačidlo <b>Pre-pick</b> nad boardom.</li>
+<li><b>Riadky, ktoré potrebujú iba vychystanie:</b> <b>Factory</b> → <b>Pre-pick</b>, jeho vlastná stránka.</li>
+<li><b>Malé riadky čakajúce na dávku:</b> stlačte <b>show</b> na riadku pod boardom.</li>
+<li><b>Čo aj tak dochádza:</b> <b>Factory</b> → <b>To restock</b>, viď [Udržiavanie zásob továrne](/docs/keeping-the-factory-stocked-sk).</li>
 <li><b>Skryť blok:</b> v zoskupenom pohľade kliknite na jeho kapsulu nad zoznamom. Ďalším kliknutím ho zobrazíte.</li>
 <li><b>Iba partneri alebo iba zákazníci:</b> záložka <i>All</i> → filter <b>Source</b>.</li>
 <li><b>Odoslať partnerovi:</b> odškrtnite riadky → <b>Pick into order</b> → <b>Send to warehouse</b> v boxe <i>Picked orders</i>.</li>

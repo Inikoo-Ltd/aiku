@@ -126,6 +126,7 @@ Route::prefix('{website}/webpages')->name('webpages.')->group(function () {
     Route::get('tree', ShowWebpagesTree::class)->name('tree');
     Route::get('/type/catalogue', [IndexWebpages::class, 'catalogue'])->name('index.type.catalogue');
     Route::get('/type/content', [IndexWebpages::class, 'content'])->name('index.type.content');
+    Route::get('/type/system', [IndexWebpages::class, 'system'])->name('index.type.system');
     Route::get('/type/info', [IndexWebpages::class, 'info'])->name('index.type.info');
 
     Route::get('/type/operations', [IndexWebpages::class, 'operations'])->name('index.type.operations');

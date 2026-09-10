@@ -30,6 +30,7 @@ use App\Actions\Dropshipping\Ebay\StoreEbayUser;
 use App\Actions\Dropshipping\Ebay\Product\CheckEbayPortfolio;
 use App\Actions\Dropshipping\Ebay\Product\UpdateEbayPortfolio;
 use App\Actions\Dropshipping\Portfolio\StorePortfolio;
+use App\Actions\Iris\Portfolio\StoreIrisPortfolioItemsToChannels;
 use App\Actions\Retina\UI\Dashboard\GetRetinaDropshippingHomeData;
 use App\Actions\Dropshipping\WooCommerce\Product\UpdateInventoryInEbayPortfolio;
 use App\Actions\Dropshipping\Portfolio\UpdatePortfolio;
@@ -1157,4 +1158,34 @@ test('ebay duplicate repair folds the extra channel into the one holding most an
         ->and($keep->refresh()->portfolios()->count())->toBe(3)
         ->and($extra->refresh()->status)->toBe(CustomerSalesChannelStatusEnum::CLOSED)
         ->and(EbayUser::withTrashed()->find($b->id)->trashed())->toBeTrue();
+});
+
+test('iris only creates portfolios on manual channels and channels that can connect', function () {
+    $this->product->update(['is_for_sale' => true, 'state' => ProductStateEnum::ACTIVE]);
+
+    $manual = StoreCustomerSalesChannel::make()->action(
+        $this->customer,
+        Platform::where('type', PlatformTypeEnum::MANUAL)->first(),
+        []
+    );
+
+    $unconnected = StoreCustomerSalesChannel::make()->action(
+        $this->customer,
+        Platform::where('code', 'shopify')->first(),
+        []
+    );
+    $unconnected->update(['can_connect_to_platform' => false]);
+
+    StoreIrisPortfolioItemsToChannels::run(
+        collect([$manual->refresh(), $unconnected->refresh()]),
+        [$this->product->id]
+    );
+
+    expect($manual->refresh()->portfolios()->count())->toBe(1)
+        ->and($unconnected->refresh()->portfolios()->count())->toBe(0);
+
+    $unconnected->update(['can_connect_to_platform' => true]);
+    StoreIrisPortfolioItemsToChannels::run(collect([$unconnected->refresh()]), [$this->product->id]);
+
+    expect($unconnected->refresh()->portfolios()->count())->toBe(1);
 });

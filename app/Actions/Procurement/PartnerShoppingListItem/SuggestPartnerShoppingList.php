@@ -10,6 +10,7 @@ namespace App\Actions\Procurement\PartnerShoppingListItem;
 
 use App\Actions\Helpers\AI\Traits\WithAICreditErrorHandler;
 use App\Actions\Procurement\OrgPartner\GetPartnerBuyingPriceFactor;
+use App\Actions\Production\JobOrder\BatchedUnitsForDemand;
 use App\Actions\Procurement\OrgPartner\GetPartnerOrderCapacity;
 use App\Actions\Procurement\OrgPartner\GetPartnerStockCoverBuckets;
 use App\Enums\Catalogue\HealthRankEnum;
@@ -168,6 +169,8 @@ class SuggestPartnerShoppingList extends OrgAction
                 'buyer_stats.days_of_cover as buyer_days_of_cover',
                 'buyer_stats.predicted_daily_usage as buyer_daily_usage',
                 'buyer_stats.recommended_order_quantity as buyer_recommended',
+                'org_stocks.packed_in',
+                DB::raw('(select recommended_batch_size from artefacts where artefacts.org_stock_id = org_stocks.id and artefacts.deleted_at is null and artefacts.recommended_batch_size is not null limit 1) as batch_size'),
             ])
             ->orderBy('org_stocks.id')
             ->get()
@@ -193,6 +196,7 @@ class SuggestPartnerShoppingList extends OrgAction
                 'price_per_sko'     => round((float) $row->product_price * $exchange / $skosPerProductUnit, 4),
                 'days_of_cover'     => $row->buyer_days_of_cover !== null ? (float) $row->buyer_days_of_cover : null,
                 'recommended'       => $row->buyer_recommended !== null ? (float) $row->buyer_recommended : null,
+                'order_quantum'     => BatchedUnitsForDemand::make()->quantumInSkos($row->packed_in, $row->batch_size),
             ];
         })->all();
     }
@@ -269,7 +273,10 @@ class SuggestPartnerShoppingList extends OrgAction
                 ? ceil($candidate['recommended'])
                 : max(0.0, ceil($candidate['quarterly_usage'] - $candidate['buyer_available']));
 
+            $quantum  = max(1, (int) ($candidate['order_quantum'] ?? 1));
+            $target   = ceil($target / $quantum) * $quantum;
             $quantity = min($target, $candidate['partner_available'], floor($remaining / $candidate['price_per_sko']));
+            $quantity = floor($quantity / $quantum) * $quantum;
 
             if ($quantity < 1) {
                 continue;
@@ -370,11 +377,13 @@ class SuggestPartnerShoppingList extends OrgAction
                     if (!$candidate) {
                         continue;
                     }
+                    $quantum  = max(1, (int) ($candidate['order_quantum'] ?? 1));
                     $quantity = min(
-                        floor((float) ($item['quantity'] ?? 0)),
+                        ceil((float) ($item['quantity'] ?? 0) / $quantum) * $quantum,
                         $candidate['partner_available'],
                         floor($remaining / max($candidate['price_per_sko'], 0.0001))
                     );
+                    $quantity = floor($quantity / $quantum) * $quantum;
                     if ($quantity < 1) {
                         continue;
                     }

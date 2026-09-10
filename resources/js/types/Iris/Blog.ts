@@ -10,9 +10,17 @@ export type BlogPost = {
 	published_at?: string
 }
 
+export type BlogCategoryContent = {
+	label?: string
+	description?: string
+	image?: Image
+	image_alt?: string
+}
+
 export type BlogCategory = {
 	value: string
 	label: string
+	custom_label?: string
 	description: string
 	url: string
 	icon: string

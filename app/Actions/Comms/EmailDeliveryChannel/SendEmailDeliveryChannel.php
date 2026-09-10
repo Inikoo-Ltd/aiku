@@ -14,6 +14,7 @@ use App\Actions\Comms\EmailBulkRun\Hydrators\EmailBulkRunHydrateDispatchedEmails
 use App\Actions\Comms\EmailBulkRun\UpdateEmailBulkRunSentState;
 use App\Actions\Comms\Mailshot\GetHtmlLayout;
 use App\Actions\Comms\Mailshot\Hydrators\MailshotHydrateDispatchedEmails;
+use App\Actions\Comms\Mailshot\InjectUtmToEmailLinks;
 use App\Actions\Comms\Mailshot\UpdateMailshotSentState;
 use App\Actions\Comms\Traits\WithSendBulkEmails;
 use App\Actions\CRM\Prospect\Mailshots\ProspectHydrateDispatchedEmails;
@@ -71,6 +72,10 @@ class SendEmailDeliveryChannel
                 $outbox = $model->outbox;
                 $emailHtmlBody = Arr::get($outbox->emailOngoingRun?->email?->liveSnapshot?->layout, 'blade_template');
             }
+        }
+
+        if ($model instanceof Mailshot) {
+            $emailHtmlBody = InjectUtmToEmailLinks::run($model, $emailHtmlBody);
         }
 
         if ($model->requiresUnsubscribeLink()) {

@@ -101,6 +101,10 @@ class UpdateOrganisation extends OrgAction
             data_set($modelData, 'settings.procurement.shop_id', Arr::pull($modelData, 'procurement_shop_id'));
         }
 
+        if (Arr::has($modelData, 'default_shelf_life_days')) {
+            data_set($modelData, 'settings.make_queue.default_shelf_life_days', (int) Arr::pull($modelData, 'default_shelf_life_days'));
+        }
+
         if (Arr::has($modelData, 'margin_break_even_pct')) {
             data_set($modelData, 'settings.margins.break_even_pct', (float) Arr::pull($modelData, 'margin_break_even_pct'));
         }
@@ -256,7 +260,7 @@ class UpdateOrganisation extends OrgAction
             'customer_notification_access_id'       => ['sometimes', 'string', 'nullable'],
             'customer_notification_access_key'      => ['sometimes', 'string', 'nullable'],
             'customer_notification_region'          => ['sometimes', 'nullable', Rule::enum(SesRegionEnum::class)],
-            'address'                               => ['sometimes', 'required', new ValidAddress()],
+            'address'                               => ['sometimes', 'required', new ValidAddress(requireFullAddress: !$this->asAction)],
             'language_id'                           => ['sometimes', 'exists:languages,id'],
             'timezone_id'                           => ['sometimes', 'exists:timezones,id'],
             'currency_id'                           => ['sometimes', 'exists:currencies,id'],
@@ -274,6 +278,7 @@ class UpdateOrganisation extends OrgAction
             'hr_probation_period_days'              => ['sometimes', 'required', 'integer', 'min:0', 'max:365'],
             'allow_waiting'                         => ['sometimes', 'boolean'],
             'margin_break_even_pct'                 => ['sometimes', 'numeric', 'min:0', 'max:100'],
+            'default_shelf_life_days'               => ['sometimes', 'integer', 'min:1', 'max:3650'],
             'procurement_shop_id'                   => ['sometimes', 'nullable', 'integer', Rule::exists('shops', 'id')->where('organisation_id', $this->organisation->id)],
             'allow_picker_set_not_picked'           => ['sometimes', 'boolean'],
             'allow_stock_controller_set_not_picked' => ['sometimes', 'boolean'],

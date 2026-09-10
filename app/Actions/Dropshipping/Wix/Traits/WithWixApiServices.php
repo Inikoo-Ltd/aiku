@@ -13,7 +13,6 @@ use App\Enums\Dropshipping\WixCatalogVersionEnum;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Log;
 
 trait WithWixApiServices
 {

@@ -136,14 +136,6 @@ class ShowMasterSubDepartment extends OrgAction
                                 'parameters' => $request->route()->originalParameters()
                             ]
                         ] : false,
-                        $this->canDelete ? [
-                            'type'  => 'button',
-                            'style' => 'delete',
-                            'route' => [
-                                'name'       => 'shops.show.departments.remove',
-                                'parameters' => $request->route()->originalParameters()
-                            ]
-                        ] : false
                     ],
                     'subNavigation' => $subNavigation,
                 ],
@@ -151,7 +143,6 @@ class ShowMasterSubDepartment extends OrgAction
                     'current'    => $this->tab,
                     'navigation' => MasterSubDepartmentTabsEnum::navigation()
                 ],
-
                 'routes'     => [
                     'fetch_families'  => [
                         'name'       => 'grp.json.master_product_category.families.index',
@@ -187,6 +178,17 @@ class ShowMasterSubDepartment extends OrgAction
                     ],
                     default => []
                 },
+                'delete_route' => [
+                    'method'     => 'delete',
+                    'name'       => 'grp.masters.master_departments.delete',
+                    'parameters' => [
+                        'masterProductCategory' => $masterSubDepartment->slug
+                    ]
+                ],
+                'delete_condition' => [
+                    'can_delete'        => !$masterSubDepartment->children()->exists(),
+                    'master_shop_slug'  => $masterSubDepartment->masterShop->slug,
+                ],
                 'shopsData'  => OpenShopsInMasterShopResource::collection(IndexOpenShopsInMasterShop::run($masterSubDepartment->masterShop, 'shops')),
 
                 MasterSubDepartmentTabsEnum::SHOWCASE->value => $this->tab == MasterSubDepartmentTabsEnum::SHOWCASE->value ?

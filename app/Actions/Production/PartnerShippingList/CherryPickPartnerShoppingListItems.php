@@ -10,6 +10,7 @@ namespace App\Actions\Production\PartnerShippingList;
 
 use App\Actions\CRM\Customer\StoreCustomer;
 use App\Actions\OrgAction;
+use App\Actions\Production\PartnerShippingList\UI\IndexPrePickList;
 use App\Actions\Ordering\Order\StoreOrder;
 use App\Actions\Ordering\SalesChannel\StoreSalesChannel;
 use App\Actions\Ordering\Transaction\StoreTransaction;
@@ -245,6 +246,17 @@ class CherryPickPartnerShoppingListItems extends OrgAction
         $this->initialisation($organisation, $request);
 
         return $this->handle($organisation, $request->input('lines', []));
+    }
+
+    public function everything(Organisation $organisation, Production $production, ActionRequest $request): array
+    {
+        $this->initialisation($organisation, $request);
+
+        $index = IndexPrePickList::make();
+        $index->initialisationFromProduction($production, $request);
+        $lines = $index->eligibleLines($organisation);
+
+        return $this->handle($organisation, $lines);
     }
 
     public function action(Organisation $seller, array $lines): array

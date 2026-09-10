@@ -1,8 +1,8 @@
 ---
 title: Adunarea mărfii unui partener
 summary: Ghidul depozitului - ce înseamnă pre-pick, de ce stocul din chesonul de adunare al unui partener nu mai contează ca disponibil, și cum se lucrează lista Pre-pick din Dispatching.
-date: 2026-09-08
-source_date: 2026-09-08
+date: 2026-09-09
+source_date: 2026-09-09
 tags: dispatch, procurement, intercompany, warehouse
 category: dispatch
 series: Ordering from partners
@@ -47,6 +47,16 @@ Lista se recalculează de fiecare dată când o deschizi - nu e un set de sarcin
 
 Tab-ul apare doar pentru organizațiile care au un cheson de adunare configurat pentru un partener. Dacă nu-l vezi, încă nu a fost făcut.
 
+## Jumătatea fabricii din aceeași muncă
+
+Drumurile vin de undeva: cineva de la fabrică trebuie să decidă că o linie e luată din stoc, nu făcută. Acea decizie are propria ei pagină, **Factory → Pre-pick**, și e geamăna listei de mai sus.
+
+Listează fiecare linie deschisă de partener cu stoc în spate, indiferent dacă fabrica face sau nu acel artefact, și nu arată niciodată o linie deja pre-preluată. Fiecare rând poartă solicitantul, artefactul, ce s-a **cerut**, ce e **în stoc**, și ce **se poate prelua** - cele două plafonate una față de cealaltă, așa că o linie nu e niciodată promisă mai mult decât există. Categoria, solicitantul și urgența filtrează lista, iar numerele de pe filtre sunt numere reale, nu doar ce încape pe pagină.
+
+**Pre-pick** pe un rând, **Pre-pick selected** pentru ce ai bifat, sau **Pre-pick all** pentru tot ce arată filtrele curente. Pre-preluarea promite stocul acelui partener și pune drumul pe lista depozitului; unde e disponibilă doar o parte din ce s-a cerut, linia se împarte, partea promisă pleacă, iar restul rămâne deschis. Nimic nu e vândut și nicio comandă nu e creată - stocul pur și simplu nu mai e disponibil pentru nimeni altcineva.
+
+Numărul de lângă **Pre-pick** din bara laterală a fabricii arată câte linii așteaptă acea decizie, și se actualizează singur.
+
 ## Ce vede partenerul
 
 Nimic de anunțat manual. Pe lista lor de cumpărături fiecare linie poartă stadiul până unde a ajuns: **Requested** (cerut), **Being made** (în lucru), **Pre-picked** (pre-preluat), **Staged for you** (pregătit pentru tine), **Being picked** (în preluare), **On its way** (pe drum) - cu referința ordinului de lucru, a comenzii sau a avizului de expediere alături.
@@ -69,6 +79,7 @@ Pentru că marfa e deja într-un singur cheson, preluarea de la acel moment e un
 
 <aside class="wayfinder"><strong>Unde apeși în aiku</strong>
 <ul>
+<li><b>Decide că o linie e luată din stoc:</b> organizația ta → <b>Factory</b> → <b>Pre-pick</b> → <b>Pre-pick</b> pe rând, sau bifează și folosește <b>Pre-pick selected</b> / <b>Pre-pick all</b>.</li>
 <li><b>Lista drumurilor:</b> organizația ta → <b>Warehouse</b> → <b>Dispatching</b> → tab-ul <b>Pre-pick</b>.</li>
 <li><b>Înregistrează un drum:</b> apasă <b>Moved</b> pe rând după ce marfa e fizic în cheson.</li>
 <li><b>Verifică ce e într-un cheson:</b> <b>Warehouse</b> → <b>Locations</b> → locația → tab-ul <b>SKOs</b>.</li>

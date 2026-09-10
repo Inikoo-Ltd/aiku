@@ -13,7 +13,6 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\UI\WithImageSeo;
 use App\Actions\Traits\WithActionUpdate;
-use App\Actions\Web\Webpage\Luigi\DeleteReindexWebpageLuigiData;
 use App\Actions\Web\Webpage\Traits\WithWebpageHydrators;
 use App\Actions\Catalogue\Product\BreakProductInWebpagesCache;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateHasLiveWebpage;
@@ -102,7 +101,7 @@ class UpdateWebpage extends OrgAction
                 data_set($modelData, 'redirect_webpage_id', Arr::get($modelData, 'state_data.redirect_webpage_id'));
             }
 
-            if (Arr::get($modelData, 'state_data.state') == 'closed') {
+            if (Arr::get($modelData, 'state_data.state') == 'closed' && $webpage->type != WebpageTypeEnum::SYSTEM_PAGE) {
                 if ($redirect = $webpage->redirectedTo) {
                     $redirect->update([
                         'from_webpage_id'   => $webpage->id
@@ -161,7 +160,6 @@ class UpdateWebpage extends OrgAction
             $this->dispatchWebpageHydrators($webpage);
         }
 
-        DeleteReindexWebpageLuigiData::dispatch($webpage)->delay(5);
         BreakWebpageCache::run($webpage);
         BreakProductInWebpagesCache::make()->breakCache($webpage);
         return $webpage;
@@ -213,7 +211,12 @@ class UpdateWebpage extends OrgAction
             'type'                           => ['sometimes', Rule::enum(WebpageTypeEnum::class)],
             'state_data'                     => ['sometimes', 'array'],
             'state_data.state'               => ['sometimes', Rule::enum(WebpageStateEnum::class)],
-            'state_data.redirect_webpage_id' => ['required_if:state_data.state,'.WebpageStateEnum::CLOSED->value, 'exists:webpages,id'],
+            'state_data.redirect_webpage_id' => [
+                $this->webpage->type == WebpageTypeEnum::SYSTEM_PAGE
+                    ? 'sometimes'
+                    : 'required_if:state_data.state,'.WebpageStateEnum::CLOSED->value,
+                'exists:webpages,id'
+            ],
             // 'state'                       => ['sometimes', Rule::enum(WebpageStateEnum::class)],
             'webpage_type'                   => ['sometimes', 'array'],
             'ready_at'                       => ['sometimes', 'date'],

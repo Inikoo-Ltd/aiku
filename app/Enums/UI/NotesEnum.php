@@ -21,7 +21,7 @@ enum NotesEnum: string
     case WAREHOUSE_TEMPORARY    = 'warehouse_temporary';
     case CREDIT_TRANSACTION     = 'credit_transaction';
 
-    
+
     public function label(): string
     {
         return match ($this) {
@@ -66,6 +66,6 @@ enum NotesEnum: string
                 "bgColor"       => "#B873F5",
                 "textColor"     => "#B873F5",
             ],
-        },  $excludedKeys);
+        }, $excludedKeys);
     }
 }

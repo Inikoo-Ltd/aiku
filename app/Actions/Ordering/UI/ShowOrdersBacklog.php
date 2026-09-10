@@ -33,21 +33,21 @@ class ShowOrdersBacklog extends OrgAction
 
     public function asController(Organisation $organisation, Shop $shop, ActionRequest $request): Shop
     {
-        $this->initialisationFromShop($shop, $request)->withTab(OrdersBacklogTabsEnum::values());
+        $this->initialisationFromShop($shop, $request)->withTab(OrdersBacklogTabsEnum::values(), OrdersBacklogTabsEnum::SUBMITTED_UNPAID->value);
 
         return $shop;
     }
 
     public function inOrganisation(Organisation $organisation, ActionRequest $request): Organisation
     {
-        $this->initialisation($organisation, $request)->withTab(OrdersBacklogTabsEnum::values());
+        $this->initialisation($organisation, $request)->withTab(OrdersBacklogTabsEnum::values(), OrdersBacklogTabsEnum::SUBMITTED_UNPAID->value);
 
         return $organisation;
     }
 
     public function inGroup(ActionRequest $request): Group
     {
-        $this->initialisationFromGroup(group(), $request)->withTab(OrdersBacklogTabsEnum::values());
+        $this->initialisationFromGroup(group(), $request)->withTab(OrdersBacklogTabsEnum::values(), OrdersBacklogTabsEnum::SUBMITTED_UNPAID->value);
 
         return group();
     }

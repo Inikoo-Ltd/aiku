@@ -1529,7 +1529,41 @@ test('mixed order with service picks and invoices', function () {
 
     $order->refresh();
     expect($order->state)->toBe(\App\Enums\Ordering\Order\OrderStateEnum::DISPATCHED);
+
+    return $order;
 });
+
+/** Undispatching an order and deleting its invoice undo an issued document: accountants and their supervisors only (HELP-3106). */
+test('only accounting staff can undispatch an order or delete its invoice', function (\App\Models\Ordering\Order $order) {
+    $invoice = $order->invoices()->first();
+    $user    = $this->adminGuest->getUser();
+    setPermissionsTeamId($user->group_id);
+    $originalRoles = $user->roles->pluck('name')->toArray();
+
+    $actAs = function (string $role, $scope) use ($user) {
+        setPermissionsTeamId($user->group_id);
+        $user->syncRoles([RolesEnum::getRoleName($role, $scope)]);
+        Cache::tags('auth-user:'.$user->id)->flush();
+        app(\Spatie\Permission\PermissionRegistrar::class)->forgetCachedPermissions();
+        actingAs($user->refresh());
+    };
+
+    $actAs('dispatch-clerk', $this->warehouse);
+    post(route('grp.models.invoice.delete', $invoice->id), ['deleted_note' => 'no'])->assertForbidden();
+    patch(route('grp.models.order.rollback_dispatch', $order->id))->assertForbidden();
+    expect($invoice->refresh()->trashed())->toBeFalse()
+        ->and($order->refresh()->state)->toBe(OrderStateEnum::DISPATCHED);
+
+    $actAs('accounting-clerk', $this->organisation);
+    patch(route('grp.models.order.rollback_dispatch', $order->id))->assertSessionHasNoErrors();
+    post(route('grp.models.invoice.delete', $invoice->id), ['deleted_note' => 'yes'])->assertSessionHasNoErrors();
+    expect($order->refresh()->state)->not->toBe(OrderStateEnum::DISPATCHED)
+        ->and($invoice->refresh()->trashed())->toBeTrue();
+
+    setPermissionsTeamId($user->group_id);
+    $user->syncRoles($originalRoles);
+    actingAs($user->refresh());
+})->depends('mixed order with service picks and invoices');
 
 test('delivery note finalise and dispatch combined and pick as employee', function () {
     [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($this);

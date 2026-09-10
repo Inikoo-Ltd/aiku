@@ -17,12 +17,15 @@ use App\Http\Resources\Web\BlogsIrisResource;
 use App\Models\Web\Webpage;
 use App\Models\Web\Website;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
+use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
 
 class ShowIrisBlogDashboard
 {
@@ -31,21 +34,33 @@ class ShowIrisBlogDashboard
 
     private const COVER_LOOKUP_LIMIT = 10;
 
-    public function handle(Website $website): LengthAwarePaginator
+    /**
+     * A website with a live blog dashboard webpage serves it here, blocks and all, like any other webpage.
+     * The rest, offline dashboard pages included, fall back to the dashboard rendered from the blogs of the website.
+     */
+    public function handle(Website $website, ?ActionRequest $request = null): LengthAwarePaginator|string|array
     {
+        if ($request && $website->blogDashboardPage?->state === WebpageStateEnum::LIVE) {
+            return ShowIrisWebpage::make()->handle($website->blogDashboardPage->url, [], $request);
+        }
+
         return IndexIrisBlogs::make()->handle($website, IndexIrisBlogs::PREFIX, WebpageSubTypeEnum::blogCategories());
     }
 
-    public function asController(ActionRequest $request): LengthAwarePaginator
+    public function asController(ActionRequest $request): LengthAwarePaginator|string|array
     {
         /** @var Website $website */
         $website = $request->input('website');
 
-        return $this->handle($website);
+        return $this->handle($website, $request);
     }
 
-    public function htmlResponse(LengthAwarePaginator $blogs, ActionRequest $request): Response
+    public function htmlResponse(LengthAwarePaginator|string|array $blogs, ActionRequest $request): Response|JsonResponse|RedirectResponse|SymfonyResponse|string
     {
+        if (!$blogs instanceof LengthAwarePaginator) {
+            return ShowIrisWebpage::make()->htmlResponse($blogs);
+        }
+
         /** @var Website $website */
         $website = $request->input('website');
 

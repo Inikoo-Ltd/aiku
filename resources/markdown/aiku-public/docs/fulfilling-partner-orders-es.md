@@ -1,8 +1,8 @@
 ---
 title: Trabajar la lista To produce (Por producir)
 summary: La guía de la fábrica - una sola cola con todo lo que la fábrica debe, a organizaciones socias y a sus propios clientes, agrupada como piensa un planificador de producción.
-date: 2026-09-08
-source_date: 2026-09-08
+date: 2026-09-09
+source_date: 2026-09-09
 tags: production, procurement, intercompany, dispatch
 category: production
 series: Ordering from partners
@@ -43,22 +43,25 @@ Seis carriles, de izquierda a derecha. Una tarjeta se mueve hacia la derecha a m
 
 | Carril | Qué hay ahí |
 | --- | --- |
-| Pre-pick | líneas que no hace falta fabricar, porque el stock está en el estante. Oculto hasta que pulsas **Pre-pick** encima del tablero. El almacén las recoge, ver [Recoger las mercancías de un socio](/docs/gathering-a-partners-goods-es). |
 | Backlog | líneas con un artefacto que nadie ha revisado todavía |
 | Preparing | líneas que has decidido fabricar, con la cantidad ya fijada |
 | Assigned | existe una orden de trabajo y va dirigida a un artesano, pero nadie la ha empezado |
 | Producing | un artesano ha pulsado START en una de sus tareas |
 | Done | todas las tareas de la orden de trabajo están hechas; espera a que el almacén la guarde |
 
-Cada tarjeta muestra el producto, la cantidad pedida, quién la pidió, y **In stock** (En stock) para que veas si merece la pena fabricarla.
+Cada tarjeta muestra el producto, la cantidad pedida, quién la pidió, y **In stock** para que veas si merece la pena fabricarla siquiera. Al Board solo llegan líneas con un artefacto en esta fábrica; las líneas cuyo stock se puede coger directamente del estante viven en su propia página, **Factory → Pre-pick**, ver [Recoger las mercancías de un socio](/docs/gathering-a-partners-goods-es).
 
-**Backlog → Preparing.** Suelta la tarjeta y aiku pregunta *¿Cuántas fabricar?*. Propone la cantidad pedida; escribe más y el extra se marca *para stock*. Si el artefacto tiene un tamaño de hornada recomendado, un pequeño botón **↑** redondea la cantidad a hornadas completas. El número sigue editable en la tarjeta mientras está en Preparing.
+Debajo de los carriles hay una línea más: **N lines too small for a batch are waiting for company · show**. Un socio puede pedir menos de una hornada completa, y esa línea no se puede fabricar por sí sola con sentido, así que espera al margen en vez de amontonarse en el Backlog. Se recoge cuando la demanda abierta de ese mismo stock entre todas las listas de socios llega a una hornada, cuando un pedido de cliente propio en la puerta hace que el trabajo se ejecute de todos modos, o cuando pulsas *show* y lo fabricas igualmente. Una línea puede esperar mucho tiempo; eso describe su situación con más honestidad que cualquier estado que pudiéramos inventar. Ver [Hornadas, packs y hornadas parciales](/docs/batches-packs-and-part-batches-es).
+
+**Backlog → Preparing.** Suelta la tarjeta y aiku pregunta *¿Cuántas fabricar?*. Propone la cantidad pedida; escribe más y el extra se marca *para stock*. Si el artefacto tiene un tamaño de hornada recomendado, un pequeño botón **↑** redondea la cantidad a hornadas completas. Lo que finalmente se le pide al artesano está en **units**, redondeado hacia arriba a la siguiente hornada completa, y lo que vuelve se divide por el tamaño del pack camino del estante: 16 unidades de un pack de diez llegan como 1,6 SKOs. El número sigue editable en la tarjeta mientras está en Preparing.
 
 **Preparing → Assigned.** Suelta la tarjeta y aiku pregunta *¿Quién lo hace?*. Propone el artesano asignado al artefacto o a su categoría, ver [Quién hace qué](/docs/who-makes-what-es). Elige un nombre y se crea una orden de trabajo en borrador, dirigida a esa persona. Ábrela y pulsa **Release to floor** (Liberar a planta) cuando deba empezar; hasta entonces el artesano no la ve. Para cambiar el artesano después, haz clic en el nombre de la tarjeta.
 
 **Producing** y **Done** se mueven solos según lo que pasa en la pantalla de planta. Una tarjeta sale del tablero cuando el almacén guarda el producto terminado, ver [Guardar la producción terminada](/docs/putting-away-finished-production-es), o cuando la orden de trabajo se recibe en el stock desde su propia página.
 
 Varias tarjetas a la vez: haz clic en las tarjetas para seleccionarlas, luego arrastra cualquiera de ellas y se mueve toda la selección. El menú **Everybody** (Todos) encima del tablero lo estrecha a uno o dos artesanos, y los filtros de familia, comprador y prioridad hacen lo mismo con las tarjetas.
+
+La barra lateral de la fábrica lleva los recuentos en vivo de **To produce** y **Pre-pick** junto a sus nombres, y se mueven solos a medida que cambian las listas de la compra; no hace falta recargar la página para ver si ha entrado algo nuevo.
 
 Debajo del Board y de la vista By artisan está **Open job orders per artisan** (Órdenes de trabajo abiertas por artesano): una chip por persona con cuántas órdenes de trabajo tiene abiertas. Rojo significa ninguna, ámbar significa una; todo el mundo debería tener al menos dos para que nadie se quede sin trabajo. La cruz de una chip marca a la persona como que no es artesano y la quita del recuento.
 
@@ -84,7 +87,9 @@ Marcar una línea de cliente propio no sirve de nada. Se ignora al pulsar Pick i
 <li><b>Ver la cola:</b> tu organización → <b>Factory</b> → <b>To produce</b>. Cambia de vista con las pestañas <b>Board · All · By artisan · By category · By buyer · Mixes</b>.</li>
 <li><b>Decidir la cantidad:</b> <i>Board</i> → arrastra la tarjeta de <b>Backlog</b> a <b>Preparing</b> → escribe el número, o pulsa <b>↑</b> para hornadas completas.</li>
 <li><b>Crear la orden de trabajo:</b> arrastra la tarjeta de <b>Preparing</b> a <b>Assigned</b> → elige el artesano → abre la orden de trabajo → <b>Release to floor</b>.</li>
-<li><b>Líneas que solo necesitan recogida:</b> botón <b>Pre-pick</b> encima del tablero.</li>
+<li><b>Líneas que solo necesitan recogida:</b> <b>Factory</b> → <b>Pre-pick</b>, su propia página.</li>
+<li><b>Líneas pequeñas esperando una hornada:</b> pulsa <b>show</b> en la línea bajo el tablero.</li>
+<li><b>Qué se está agotando de todos modos:</b> <b>Factory</b> → <b>To restock</b>, ver <a href="/docs/keeping-the-factory-stocked-es">Mantener la fábrica abastecida</a>.</li>
 <li><b>Ocultar un bloque:</b> en una vista agrupada, clic en su cápsula encima de la lista. Clic otra vez para mostrarlo.</li>
 <li><b>Solo socios o solo clientes:</b> pestaña <i>All</i> → filtro <b>Source</b>.</li>
 <li><b>Enviar a un socio:</b> marca líneas → <b>Pick into order</b> → <b>Send to warehouse</b> en el cuadro <i>Picked orders</i>.</li>
@@ -95,7 +100,7 @@ Marcar una línea de cliente propio no sirve de nada. Se ignora al pulsar Pick i
 <aside class="wayfinder"><strong>Permisos que necesitas</strong>
 <ul>
 <li>Los puestos se asignan en la ficha del empleado en Human Resources y llevan los permisos consigo.</li>
-<li>Ver la lista: puesto <b>Production operative</b> (operario) para la fábrica, o superior.</li>
-<li>Mover tarjetas en el Board, crear y liberar órdenes de trabajo, recoger y enviar: puesto <b>Production floor supervisor</b> (supervisor de planta) para la fábrica, o supervisor de la organización. El <b>Mix preparer</b> (preparador de mezclas) puede hacer lo mismo solo para mezclas.</li>
+<li>Ver la lista: puesto <b>Production operative</b> para la fábrica, o superior.</li>
+<li>Mover tarjetas en el Board, crear y liberar órdenes de trabajo, recoger y enviar: puesto <b>Production floor supervisor</b> para la fábrica, o supervisor de la organización. El <b>Mix preparer</b> (preparador de mezclas) puede hacer lo mismo solo para mezclas.</li>
 </ul>
 </aside>

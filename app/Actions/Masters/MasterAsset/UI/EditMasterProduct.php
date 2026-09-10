@@ -80,7 +80,7 @@ class EditMasterProduct extends OrgAction
      */
     public function htmlResponse(MasterAsset $masterAsset, ActionRequest $request): Response
     {
-        
+
         $iconLinks = [];
 
         if ($masterAsset->is_single_trade_unit && $masterAsset->tradeUnits->first()) {

@@ -85,6 +85,11 @@ class GetImages extends RetinaApiAction
      * The lookups are scoped rather than guarded afterwards: an id belonging to another
      * customer must be unfindable, not merely rejected, and a miss and a not-yours read
      * the same so the error cannot be used to probe which ids exist.
+     *
+     * A product id falls back to a portfolio lookup because the my-products listing hands
+     * clients a portfolio id alongside a `type` of `Product`, so asking for that id as a
+     * product is the reading our own payload invites. Products are tried first, leaving
+     * an id that is valid in both scopes resolving as it always did.
      */
     public function afterValidator(Validator $validator): void
     {
@@ -101,7 +106,8 @@ class GetImages extends RetinaApiAction
                 $validator->errors()->add('id', 'Portfolio not found');
             }
         } elseif ($type === 'product') {
-            $this->model = Product::where('shop_id', $this->shop->id)->find($id);
+            $this->model = Product::where('shop_id', $this->shop->id)->find($id)
+                ?? $this->customerSalesChannel->portfolios()->find($id);
             if (!$this->model) {
                 $validator->errors()->add('id', 'Product not found');
             }

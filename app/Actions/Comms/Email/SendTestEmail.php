@@ -9,6 +9,7 @@
 namespace App\Actions\Comms\Email;
 
 use App\Actions\Comms\DispatchedEmail\StoreDispatchedEmail;
+use App\Actions\Comms\Mailshot\InjectUtmToEmailLinks;
 use App\Actions\Comms\TestEmailRecipient\StoreTestEmailRecipient;
 use App\Actions\Comms\Traits\WithSendBulkEmails;
 use App\Actions\OrgAction;
@@ -81,7 +82,9 @@ class SendTestEmail extends OrgAction
             dispatchedEmail: $dispatchedEmail,
             sender: $sender,
             subject: $subject,
-            emailHtmlBody: $modelData['compiled_layout'],
+            emailHtmlBody: $entity instanceof Mailshot
+                ? InjectUtmToEmailLinks::run($entity, $modelData['compiled_layout'])
+                : $modelData['compiled_layout'],
             senderName: $senderName,
             isTest: true,
             previewText: $modelData['preview_text'] ?? null

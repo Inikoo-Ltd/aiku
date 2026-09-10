@@ -75,13 +75,14 @@ class ReceiveJobOrderIntoStock extends OrgAction
             }
 
             foreach ($items as $item) {
-                $producedQuantity = $this->producedQuantity($item);
+                $producedUnits = $this->producedQuantity($item);
 
-                if ($producedQuantity <= 0) {
+                if ($producedUnits <= 0) {
                     continue;
                 }
 
                 $orgStock = $item->artefact->orgStock;
+                $producedSkos = $producedUnits / max(1, (int) $orgStock->packed_in);
 
                 if (!LocationOrgStock::where('location_id', $location->id)->where('org_stock_id', $orgStock->id)->exists()) {
                     StoreLocationOrgStock::make()->action($orgStock, $location, []);
@@ -93,12 +94,12 @@ class ReceiveJobOrderIntoStock extends OrgAction
                 ]);
 
                 StoreOrgStockMovement::make()->action($orgStock, $location, [
-                    'quantity' => $producedQuantity,
+                    'quantity' => $producedSkos,
                     'type'     => OrgStockMovementTypeEnum::PRODUCTION,
                     'user_id'  => $this->request?->user()?->id,
                 ]);
 
-                $this->deductRawMaterials($item, $producedQuantity);
+                $this->deductRawMaterials($item, $producedUnits);
             }
 
             $jobOrder->update([
@@ -110,6 +111,9 @@ class ReceiveJobOrderIntoStock extends OrgAction
         return $jobOrder;
     }
 
+    /**
+     * The artisan works in artefact units, the stock is kept in SKOs, packed_in is the only bridge.
+     */
     private function producedQuantity(JobOrderItem $item): float
     {
         $lastTask = $item->tasks->sortByDesc('position')->first();

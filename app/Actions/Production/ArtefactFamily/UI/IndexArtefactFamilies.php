@@ -11,6 +11,7 @@ namespace App\Actions\Production\ArtefactFamily\UI;
 use App\Actions\OrgAction;
 use App\Actions\Production\Artefact\UI\IndexArtefacts;
 use App\Actions\Production\Production\UI\ShowCraftsDashboard;
+use App\Enums\Production\Artefact\ArtefactStateEnum;
 use App\Http\Resources\Production\ArtefactFamiliesResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Production\ArtefactDepartment;
@@ -60,6 +61,26 @@ class IndexArtefactFamilies extends OrgAction
         return $this->handle($artefactDepartment, $prefix);
     }
 
+    protected function getElementGroups(Production|ArtefactDepartment $parent): array
+    {
+        $column = $parent instanceof ArtefactDepartment ? 'artefact_department_id' : 'production_id';
+        $counts = ArtefactFamily::where($column, $parent->id)->groupBy('state')->selectRaw('state, count(*) as number')->pluck('number', 'state');
+
+        return [
+            'state' => [
+                'label'    => __('State'),
+                'default'  => ArtefactStateEnum::IN_PROCESS->value.','.ArtefactStateEnum::ACTIVE->value,
+                'elements' => array_merge_recursive(
+                    ArtefactStateEnum::labels(),
+                    array_map(fn ($state) => (int) ($counts[$state] ?? 0), array_combine(ArtefactStateEnum::values(), ArtefactStateEnum::values()))
+                ),
+                'engine'   => function ($query, $elements) {
+                    $query->whereIn('artefact_families.state', $elements);
+                },
+            ],
+        ];
+    }
+
     public function handle(Production|ArtefactDepartment $parent, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
@@ -75,6 +96,16 @@ class IndexArtefactFamilies extends OrgAction
 
         $queryBuilder = QueryBuilder::for(ArtefactFamily::class);
 
+        foreach ($this->getElementGroups($parent) as $key => $elementGroup) {
+            $queryBuilder->whereElementGroup(
+                key: $key,
+                allowedElements: array_keys($elementGroup['elements']),
+                engine: $elementGroup['engine'],
+                prefix: $prefix,
+                default: $elementGroup['default'] ?? null,
+            );
+        }
+
         if ($parent instanceof ArtefactDepartment) {
             $queryBuilder->where('artefact_families.artefact_department_id', $parent->id);
         } else {
@@ -89,11 +120,14 @@ class IndexArtefactFamilies extends OrgAction
                 'artefact_families.code',
                 'artefact_families.name',
                 'artefact_families.number_artefacts',
+                'artefact_families.number_artefacts_without_recipe',
+                'artefact_families.number_artefacts_without_batch_size',
+                'artefact_families.state',
                 'artefact_departments.name as artefact_department_name',
                 'artefact_departments.slug as artefact_department_slug',
             ])
             ->leftJoin('artefact_departments', 'artefact_families.artefact_department_id', 'artefact_departments.id')
-            ->allowedSorts(['code', 'name', 'number_artefacts', 'artefact_department_name'])
+            ->allowedSorts(['code', 'name', 'number_artefacts', 'artefact_department_name', 'state', 'number_artefacts_without_recipe', 'number_artefacts_without_batch_size'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -123,6 +157,14 @@ class IndexArtefactFamilies extends OrgAction
             if ($prefix) {
                 $table->name($prefix)->pageName($prefix.'Page');
             }
+            foreach ($this->getElementGroups($parent) as $key => $elementGroup) {
+                $table->elementGroup(
+                    key: $key,
+                    label: $elementGroup['label'],
+                    elements: $elementGroup['elements'],
+                    default: $elementGroup['default'] ?? null,
+                );
+            }
             $table
                 ->withGlobalSearch()
                 ->withLabelRecord([__('family'), __('families')])
@@ -141,6 +183,7 @@ class IndexArtefactFamilies extends OrgAction
                         ]
                     ] : null
                 ])
+                ->column(key: 'state', label: '', canBeHidden: false, type: 'icon')
                 ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
 
@@ -150,6 +193,8 @@ class IndexArtefactFamilies extends OrgAction
 
             $table
                 ->column(key: 'number_artefacts', label: __('Artefacts'), canBeHidden: false, sortable: true, align: 'right')
+                ->column(key: 'number_artefacts_without_recipe', label: '', icon: 'fal fa-exclamation-triangle', tooltip: __('Artefacts without recipe'), canBeHidden: false, sortable: true, align: 'right')
+                ->column(key: 'number_artefacts_without_batch_size', label: '', icon: 'fal fa-layer-group', tooltip: __('Artefacts without batch size'), canBeHidden: false, sortable: true, align: 'right')
                 ->defaultSort('code');
         };
     }

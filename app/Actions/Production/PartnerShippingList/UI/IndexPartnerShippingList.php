@@ -9,16 +9,15 @@
 namespace App\Actions\Production\PartnerShippingList\UI;
 
 use App\Actions\OrgAction;
+use App\Actions\Production\JobOrder\BatchedUnitsForDemand;
 use App\Actions\Production\PartnerShippingList\GetMixesToPrepare;
 use App\Actions\Production\PartnerShippingList\GetMixJobOrders;
 use App\Actions\Production\Production\UI\ShowProduction;
 use App\Enums\HumanResources\Employee\EmployeeStateEnum;
-use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Production\JobOrder\JobOrderStateEnum;
 use App\Models\HumanResources\Employee;
 use App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum;
 use App\InertiaTable\InertiaTable;
-use App\Models\Ordering\Order;
 use App\Models\Procurement\PartnerShoppingListItem;
 use App\Models\Production\Production;
 use App\Models\SysAdmin\Organisation;
@@ -36,6 +35,10 @@ class IndexPartnerShippingList extends OrgAction
 {
     private ?string $groupBy = null;
 
+    private bool $showHitchhikers = false;
+
+    private int $hitchhikerCount = 0;
+
     public function authorize(ActionRequest $request): bool
     {
         return $request->user()->authTo([
@@ -50,6 +53,8 @@ class IndexPartnerShippingList extends OrgAction
 
     public function handle(Organisation $seller): LengthAwarePaginator
     {
+        $this->showHitchhikers = request()->boolean('hitchhikers');
+
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
                 $query->whereStartWith('stocks.code', $value)
@@ -81,6 +86,29 @@ class IndexPartnerShippingList extends OrgAction
             ->leftJoin('transactions', 'transactions.id', 'partner_shopping_list_items.transaction_id')
             ->leftJoin('orders', 'orders.id', 'transactions.order_id')
             ->leftJoin('customers', 'customers.id', 'orders.customer_id')
+            ->leftJoinSub(
+                DB::table('partner_shopping_list_items')
+                    ->where('state', ShoppingListItemStateEnum::OPEN)
+                    ->whereNull('deleted_at')
+                    ->groupBy('stock_id')
+                    ->select('stock_id', DB::raw('sum(quantity) as quantity')),
+                'open_demand',
+                'open_demand.stock_id',
+                'partner_shopping_list_items.stock_id'
+            )
+            ->leftJoinSub(
+                DB::table('transactions')
+                    ->join('orders', 'orders.id', 'transactions.order_id')
+                    ->join('product_has_org_stocks', 'product_has_org_stocks.product_id', 'transactions.model_id')
+                    ->where('transactions.model_type', 'Product')
+                    ->whereNull('transactions.deleted_at')
+                    ->whereNotNull('orders.at_gate_at')
+                    ->groupBy('product_has_org_stocks.org_stock_id')
+                    ->select('product_has_org_stocks.org_stock_id', DB::raw('count(*) as lines')),
+                'customer_demand',
+                'customer_demand.org_stock_id',
+                'org_stocks.id'
+            )
             ->leftJoin('job_orders', 'job_orders.id', 'partner_shopping_list_items.job_order_id')
             ->leftJoin('employees as job_order_artisans', 'job_order_artisans.id', 'job_orders.employee_id')
             ->where(function ($query) use ($seller) {
@@ -91,7 +119,7 @@ class IndexPartnerShippingList extends OrgAction
                     });
             });
 
-        if ($this->groupBy && $this->groupBy !== 'board') {
+        if ($this->groupBy) {
             $queryBuilder->whereNotNull('artefacts.id');
         }
 
@@ -118,7 +146,10 @@ class IndexPartnerShippingList extends OrgAction
                 'partner_shopping_list_items.created_at',
                 'artefacts.id as artefact_id',
                 'artefacts.recommended_batch_size as batch_size',
+                'org_stocks.packed_in',
                 'org_stocks.quantity_available as stock_available',
+                DB::raw('coalesce(open_demand.quantity, 0) as open_demand_quantity'),
+                DB::raw('coalesce(customer_demand.lines, 0) as customer_demand_lines'),
                 'stocks.code as stock_code',
                 'stocks.name as stock_name',
                 'artefact_departments.name as family',
@@ -139,7 +170,21 @@ class IndexPartnerShippingList extends OrgAction
             ->allowedFilters([$globalSearch])
             ->allowedSorts(['stock_code', 'family', 'maker', 'buyer_code', 'priority', 'needed_by', 'state', 'created_at'])
             ->withPaginator(null, $this->groupBy === 'mixes' ? 1 : ($this->groupBy ? 10000 : null), tableName: request()->route()->getName())
-            ->withQueryString();
+            ->withQueryString()
+            ->through(function ($item) {
+                $item->job_units = BatchedUnitsForDemand::run(
+                    (float) ($item->quantity_to_produce ?? $item->quantity),
+                    $item->packed_in,
+                    $item->batch_size
+                );
+                $item->order_quantum  = BatchedUnitsForDemand::make()->quantumInSkos($item->packed_in, $item->batch_size);
+                $item->is_hitchhiker  = !$item->job_order_id
+                    && $item->order_quantum > 1
+                    && (float) $item->open_demand_quantity < $item->order_quantum
+                    && !$item->customer_demand_lines;
+
+                return $item;
+            });
     }
 
     /** @return array<string, array{label: string, elements: array<string, array{0: string, 1: int}>, engine: Closure}> */
@@ -268,11 +313,11 @@ class IndexPartnerShippingList extends OrgAction
     /** @return array<int, array{label: string, items: array<int, array<string, mixed>>}> */
     public function getBoardLanes(LengthAwarePaginator $items): array
     {
-        $lanes  = ['to_pick' => __('Pre-pick'), 'backlog' => __('Backlog'), 'preparing' => __('Preparing'), 'assigned' => __('Assigned'), 'producing' => __('Producing'), 'done' => __('Done')];
+        $lanes  = ['backlog' => __('Backlog'), 'preparing' => __('Preparing'), 'assigned' => __('Assigned'), 'producing' => __('Producing'), 'done' => __('Done')];
         $byLane = collect($items->items())->groupBy(function ($item) {
             if (!$item->job_order_id) {
-                if (!$item->artefact_id) {
-                    return 'to_pick';
+                if ($item->is_hitchhiker && !$this->showHitchhikers) {
+                    return 'hitchhiking';
                 }
 
                 return $item->preparing_at ? 'preparing' : 'backlog';
@@ -288,6 +333,8 @@ class IndexPartnerShippingList extends OrgAction
 
             return $item->is_in_progress ? 'producing' : 'assigned';
         });
+
+        $this->hitchhikerCount = $byLane->get('hitchhiking', collect())->count();
 
         return collect($lanes)
             ->map(fn ($label, $key) => ['label' => $label, 'items' => $byLane->get($key, collect())->values()->all()])
@@ -368,40 +415,12 @@ class IndexPartnerShippingList extends OrgAction
                 'groupBy'      => $this->groupBy,
                 'artisanWorkload' => in_array($this->groupBy, ['maker', 'board', 'mixes']) ? $this->getArtisanWorkload() : null,
                 'groups'       => $this->groupBy && $this->groupBy !== 'mixes' ? $this->getGroups($items) : null,
+                'hitchhikers'  => ['count' => $this->hitchhikerCount, 'showing' => $this->showHitchhikers],
                 'mixes'        => $this->groupBy === 'mixes' ? GetMixesToPrepare::run($this->production) : null,
                 'mixJobOrders' => $this->groupBy === 'mixes' ? GetMixJobOrders::run($this->production) : null,
                 'data'         => $items,
-                'pickedOrders' => $this->getPickedOrders($this->organisation),
             ]
         )->table($this->tableStructure());
-    }
-
-    public function getPickedOrders(Organisation $seller): array
-    {
-        return Order::query()
-            ->join('sales_channels', 'sales_channels.id', 'orders.sales_channel_id')
-            ->join('customers', 'customers.id', 'orders.customer_id')
-            ->where('orders.organisation_id', $seller->id)
-            ->where('orders.state', OrderStateEnum::CREATING)
-            ->where('sales_channels.code', 'intercompany')
-            ->select([
-                'orders.id',
-                'orders.reference',
-                'orders.net_amount',
-                'orders.currency_id',
-                'customers.name as buyer_name',
-            ])
-            ->withCount('transactions')
-            ->get()
-            ->map(fn (Order $order) => [
-                'id'                 => $order->id,
-                'reference'          => $order->reference,
-                'net_amount'         => $order->net_amount,
-                'currency_code'      => $order->currency->code,
-                'buyer_name'         => $order->buyer_name,
-                'transactions_count' => $order->transactions_count,
-            ])
-            ->all();
     }
 
     public function getBreadcrumbs(array $routeParameters): array

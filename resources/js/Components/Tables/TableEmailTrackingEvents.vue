@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import {Link} from '@inertiajs/vue3';
 import Table from '@/Components/Table/Table.vue';
 import {
     faBan,
@@ -14,7 +13,7 @@ import {
     faPaperPlane,
     faSpellCheck,
     faSquare,
-    faTimesCircle,  
+    faTimesCircle,
 } from "@fal";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import Icon from '../Icon.vue'
@@ -22,6 +21,8 @@ import { inject } from 'vue'
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
 import { useFormatTime } from '@/Composables/useFormatTime'
 import { faDesktopAlt } from '@far'
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
+import { faExternalLink } from '@fal'
 import { faMobileAlt, faRobot } from '@fas'
 
 library.add(
@@ -57,6 +58,16 @@ const locale = inject('locale', aikuLocaleStructure)
         <template #cell(type)="{ item: emailTrackingEvent }">
             <Icon :data="emailTrackingEvent.type" />
         </template>
+        <template #cell(label)="{ item: emailTrackingEvent }">
+            <a v-if="emailTrackingEvent.url" :href="emailTrackingEvent.url" target="_blank" rel="noopener noreferrer"
+                :title="emailTrackingEvent.url"
+                class="text-gray-700 hover:text-gray-900 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 rounded">
+                {{ emailTrackingEvent.label }}
+                <FontAwesomeIcon :icon="faExternalLink" class="text-gray-400 text-xs" fixed-width aria-hidden="true" />
+            </a>
+            <span v-if="emailTrackingEvent.element"
+                class="ml-1 font-mono text-xs bg-gray-100 text-gray-700 rounded px-1.5 py-0.5">{{ emailTrackingEvent.element }}</span>
+        </template>
         <template #cell(device)="{ item: emailTrackingEvent }">
             <Icon :data="emailTrackingEvent.device" /> <span>{{ emailTrackingEvent.device['tooltip'] }}</span>
         </template>
@@ -65,5 +76,3 @@ const locale = inject('locale', aikuLocaleStructure)
         </template>
     </Table>
 </template>
-
-

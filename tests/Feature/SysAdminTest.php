@@ -1075,6 +1075,28 @@ test('get helpers select options data', function () {
     expect($translatedLanguagesData)->toBeGreaterThan(15);
 });
 
+test('address data gives every required field a readable label', function () {
+    $countryData = GetAddressData::run();
+
+    $labelOf = function (string $code, string $field) use ($countryData) {
+        $country = Country::where('code', $code)->first();
+
+        return data_get($countryData, [$country->id, 'fields', $field, 'label']);
+    };
+
+    expect($labelOf('GB', 'locality'))->toBe('Town/City')
+        ->and($labelOf('NZ', 'locality'))->toBe('Town/City')
+        ->and($labelOf('GB', 'postal_code'))->toBe('Postal code')
+        ->and($labelOf('GB', 'address_line_1'))->toBe('Address line 1')
+        ->and($labelOf('AE', 'administrative_area'))->toBe('Emirate');
+
+    foreach ($countryData as $country) {
+        foreach ($country['fields'] as $field) {
+            expect($field['label'])->not->toContain('_');
+        }
+    }
+});
+
 test('update search', function () {
     $this->artisan('search')->assertSuccessful();
 });

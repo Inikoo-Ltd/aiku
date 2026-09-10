@@ -143,6 +143,28 @@ class IndexWebpages extends OrgAction
     }
 
     /** @noinspection PhpUnusedParameterInspection */
+    public function system(Organisation $organisation, Shop $shop, Website $website, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->bucket = 'system';
+        $this->parent = $website;
+        $this->initialisationFromShop($shop, $request);
+
+
+        return $this->handle(parent: $this->parent, bucket: $this->bucket);
+    }
+
+    /** @noinspection PhpUnusedParameterInspection */
+    public function systemInFulfilment(Organisation $organisation, Fulfilment $fulfilment, Website $website, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->bucket = 'system';
+        $this->parent = $website;
+        $this->initialisationFromFulfilment($fulfilment, $request);
+
+
+        return $this->handle(parent: $this->parent, bucket: $this->bucket);
+    }
+
+    /** @noinspection PhpUnusedParameterInspection */
     public function info(Organisation $organisation, Shop $shop, Website $website, ActionRequest $request): LengthAwarePaginator
     {
         $this->bucket = 'info';
@@ -291,13 +313,15 @@ class IndexWebpages extends OrgAction
                 );
             }
 
-            foreach ($this->getSubTypeElementGroups($parent) as $key => $elementGroup) {
-                $queryBuilder->whereAdditionalElementGroup(
-                    key: $key,
-                    allowedElements: array_keys($elementGroup['elements']),
-                    engine: $elementGroup['engine'],
-                    prefix: $prefix
-                );
+            if (in_array($bucket, ['all', 'catalogue'])) {
+                foreach ($this->getSubTypeElementGroups($parent) as $key => $elementGroup) {
+                    $queryBuilder->whereAdditionalElementGroup(
+                        key: $key,
+                        allowedElements: array_keys($elementGroup['elements']),
+                        engine: $elementGroup['engine'],
+                        prefix: $prefix
+                    );
+                }
             }
         }
 
@@ -320,6 +344,8 @@ class IndexWebpages extends OrgAction
             $queryBuilder->where('webpages.type', WebpageTypeEnum::BLOG);
         } elseif ($bucket == 'storefront') {
             $queryBuilder->where('webpages.type', WebpageTypeEnum::STOREFRONT);
+        } elseif ($bucket == 'system') {
+            $queryBuilder->where('webpages.type', WebpageTypeEnum::SYSTEM_PAGE);
         } else {
             $queryBuilder->whereNot('webpages.type', WebpageTypeEnum::BLOG);
         }
@@ -396,12 +422,14 @@ class IndexWebpages extends OrgAction
                     );
                 }
 
-                foreach ($this->getSubTypeElementGroups($parent) as $key => $elementGroup) {
-                    $table->additionalElementGroup(
-                        key: $key,
-                        label: $elementGroup['label'],
-                        elements: $elementGroup['elements']
-                    );
+                if (in_array($bucket, ['all', 'catalogue'])) {
+                    foreach ($this->getSubTypeElementGroups($parent) as $key => $elementGroup) {
+                        $table->additionalElementGroup(
+                            key: $key,
+                            label: $elementGroup['label'],
+                            elements: $elementGroup['elements']
+                        );
+                    }
                 }
             }
 
@@ -503,7 +531,11 @@ class IndexWebpages extends OrgAction
                 'pageHead'    => [
                     'model'         => __('Webpages'),
                     'title'         => ucfirst($this->bucket),
-                    'color'         => $this->bucket === 'content' ? '#b45309' : null,
+                    'color'         => match($this->bucket) {
+                        'content'   =>  '#b45309', 
+                        'system'    => '#90b400',
+                        default     => null,
+                    },
                     'icon'          => [
                         'icon'  => ['fal', 'fa-browser'],
                         'title' => __('Webpage')
@@ -595,6 +627,24 @@ class IndexWebpages extends OrgAction
                             'parameters' => $routeParameters
                         ],
                         trim('('.__('Shop').') '.$suffix)
+                    )
+                );
+            case 'grp.org.shops.show.web.webpages.index.type.system':
+                /** @var Website $website */
+                $website = request()->route()->parameter('website');
+
+                return array_merge(
+                    ShowWebsite::make()->getBreadcrumbs(
+                        $website,
+                        'grp.org.shops.show.web.websites.show',
+                        $routeParameters
+                    ),
+                    $headCrumb(
+                        [
+                            'name'       => 'grp.org.shops.show.web.webpages.index.type.system',
+                            'parameters' => $routeParameters
+                        ],
+                        trim('('.__('System').') '.$suffix)
                     )
                 );
             case 'grp.org.shops.show.web.webpages.index.type.content':
@@ -718,6 +768,7 @@ class IndexWebpages extends OrgAction
                 );
             case 'grp.org.fulfilments.show.web.webpages.index':
             case 'grp.org.fulfilments.show.web.webpages.index.type.content':
+            case 'grp.org.fulfilments.show.web.webpages.index.type.system':
             case 'grp.org.fulfilments.show.web.webpages.index.type.info':
             case 'grp.org.fulfilments.show.web.webpages.index.type.operations':
                 /** @var Website $website */

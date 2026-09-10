@@ -9,6 +9,7 @@
 namespace App\Actions\Procurement\PartnerShoppingListItem\UI;
 
 use App\Actions\OrgAction;
+use App\Actions\Production\JobOrder\BatchedUnitsForDemand;
 use App\Actions\Traits\Authorisations\WithProcurementAuthorisation;
 use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
 use App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum;
@@ -67,6 +68,12 @@ class IndexPartnerShoppingListOrgStocks extends OrgAction
             ->allowedFilters([$globalSearch])
             ->withPaginator(null, tableName: request()->route()->getName())
             ->withQueryString();
+
+        $paginator->getCollection()->transform(function ($row) {
+            $row->order_quantum = BatchedUnitsForDemand::make()->quantumInSkos($row->packed_in, $row->batch_size);
+
+            return $row;
+        });
 
         $this->attachImages($paginator);
         $this->attachBuyerUsage($paginator);

@@ -61,6 +61,7 @@ use App\Actions\Ordering\Order\PayOrder;
 use App\Actions\Ordering\Order\StoreOrder;
 use App\Actions\Ordering\Order\UpdateOrder;
 use App\Actions\Ordering\Order\UpdateOrderBillingAddress;
+use App\Actions\Ordering\Order\UpdateOrderDeliveryAddress;
 use App\Actions\Ordering\Order\UpdateOrderIsShippingTBC;
 use App\Actions\Billables\Service\StoreService;
 use App\Actions\Ordering\Order\UpdateState\DispatchOrder;
@@ -1034,7 +1035,7 @@ test('UI show ordering backlog', function () {
             ->component('Ordering/OrdersBacklog')
             ->where('title', 'Orders backlog')
             ->has('breadcrumbs', 4)
-            ->has('tabs')
+            ->where('tabs.current', 'submitted_unpaid')
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page
@@ -3538,4 +3539,89 @@ test('export flag follows the customs territory of the organisation', function (
         'domestic' => (clone $creating)->where('is_export', false)->count(),
         'export'   => (clone $creating)->where('is_export', true)->count(),
     ])->and($counts['domestic'] + $counts['export'])->toBeGreaterThan(0);
+});
+
+
+test('an order with no billing address is held instead of going to the warehouse', function () {
+    $customer = createCustomer($this->shop);
+    $order    = StoreOrder::make()->action($customer, Order::factory()->definition());
+    StoreTransaction::make()->action($order, $this->product->currentHistoricProduct, Transaction::factory()->definition());
+    SubmitOrder::make()->action($order);
+
+    $order->refresh();
+    $order->billingAddress->update(['address_line_1' => '']);
+    $order->unsetRelation('billingAddress');
+
+    $deliveryNote = SendOrderToWarehouse::make()->action($order, []);
+    $order->refresh();
+
+    expect($deliveryNote)->toBeNull()
+        ->and($order->state)->toEqual(OrderStateEnum::SUBMITTED)
+        ->and($order->private_warehouse_note)->toContain('no address');
+});
+
+test('a collection invoice stores the collection address it was issued with', function () {
+    $customer = createCustomer($this->shop);
+    $order    = StoreOrder::make()->action($customer, Order::factory()->definition());
+    StoreTransaction::make()->action($order, $this->product->currentHistoricProduct, Transaction::factory()->definition());
+
+    $collectionAddress = \App\Models\Helpers\Address::create(array_merge(
+        \App\Models\Helpers\Address::factory()->definition(),
+        ['group_id' => $order->group_id, 'address_line_1' => 'Affinity Park']
+    ));
+    $order->shop->update(['collection_address_id' => $collectionAddress->id]);
+    $order->update(['collection_address_id' => $collectionAddress->id]);
+
+    SubmitOrder::make()->action($order);
+    $invoice = GenerateInvoiceFromOrder::make()->action($order->refresh(), []);
+
+    $collectionAddress->update(['address_line_1' => 'Somewhere else entirely']);
+
+    expect($invoice->deliveryAddress?->address_line_1)->toBe('Affinity Park');
+});
+
+test('a held order goes to the warehouse once its address is put on it', function () {
+    $customer = createCustomer($this->shop);
+    $order    = StoreOrder::make()->action($customer, Order::factory()->definition());
+    StoreTransaction::make()->action($order, $this->product->currentHistoricProduct, Transaction::factory()->definition());
+    SubmitOrder::make()->action($order);
+
+    $order->refresh();
+    $order->billingAddress->update(['address_line_1' => '']);
+    $order->unsetRelation('billingAddress');
+    $order->update(['pay_status' => OrderPayStatusEnum::PAID]);
+
+    expect(SendOrderToWarehouse::make()->action($order, []))->toBeNull()
+        ->and($order->refresh()->state)->toEqual(OrderStateEnum::SUBMITTED);
+
+    $realAddress = array_merge(\App\Models\Helpers\Address::factory()->definition(), ['address_line_1' => '31 Bradley Road']);
+
+    /** A B2B order carries one address row for both sides, so it stays held until that row is real.
+     * A dropshipping order has two different rows and each side is checked on its own. */
+    UpdateOrderBillingAddress::make()->action($order, ['address' => $realAddress]);
+    expect($order->refresh()->state)->toEqual(OrderStateEnum::SUBMITTED);
+
+    UpdateOrderDeliveryAddress::make()->action($order, ['address' => $realAddress, 'update_parent' => false]);
+
+    expect($order->refresh()->state)->toEqual(OrderStateEnum::IN_WAREHOUSE)
+        ->and($order->deliveryNotes()->count())->toBe(1);
+});
+
+test('the warehouse can be sent an order without an address on purpose', function () {
+    $customer = createCustomer($this->shop);
+    $order    = StoreOrder::make()->action($customer, Order::factory()->definition());
+    StoreTransaction::make()->action($order, $this->product->currentHistoricProduct, Transaction::factory()->definition());
+    SubmitOrder::make()->action($order);
+
+    $order->refresh();
+    $order->billingAddress->update(['address_line_1' => '']);
+    $order->unsetRelation('billingAddress');
+    $order->update(['pay_status' => OrderPayStatusEnum::PAID]);
+
+    expect(SendOrderToWarehouse::make()->action($order, []))->toBeNull();
+
+    $deliveryNote = SendOrderToWarehouse::make()->action($order, [], withoutAnAddress: true);
+
+    expect($deliveryNote)->toBeInstanceOf(DeliveryNote::class)
+        ->and($order->refresh()->state)->toEqual(OrderStateEnum::IN_WAREHOUSE);
 });

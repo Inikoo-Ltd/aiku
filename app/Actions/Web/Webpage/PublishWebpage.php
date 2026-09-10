@@ -16,7 +16,6 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithWebEditAuthorisation;
 use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Web\ModelHasWebBlocks\UpdateModelHasWebBlocks;
-use App\Actions\Web\Webpage\Luigi\ReindexWebpageLuigiData;
 use App\Enums\Helpers\Snapshot\SnapshotStateEnum;
 use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Models\Helpers\Snapshot;
@@ -112,7 +111,6 @@ class PublishWebpage extends OrgAction
         }
         UpdateWebpageIsDifferentWhenLoggedIn::run($webpage);
         BreakWebpageCache::run($webpage);
-        ReindexWebpageLuigiData::dispatch($webpage->id)->delay(30);
 
         return $webpage;
     }

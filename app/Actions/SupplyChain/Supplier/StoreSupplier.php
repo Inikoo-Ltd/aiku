@@ -136,7 +136,7 @@ class StoreSupplier extends OrgAction
             'company_name'    => ['nullable', 'string', 'max:255'],
             'email'           => ['nullable', 'email'],
             'phone'           => ['nullable', new Phone()],
-            'address'         => ['required', new ValidAddress()],
+            'address'         => ['required', new ValidAddress(requireFullAddress: !$this->asAction)],
             'currency_id'     => ['required', 'exists:currencies,id'],
             'status'          => ['sometimes', 'required', 'boolean'],
             'scope_type'      => ['string', Rule::in(['Group', 'Organisation'])],

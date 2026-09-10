@@ -5,14 +5,13 @@ import { getIrisComponent } from "@/Iris/Composables/getIrisComponents"
 const props = defineProps<{
 	type: string
 	shopType?: string
-	searchModel?: string
 	code: string
 	fieldValue: any
 	indexBlock: number
 	screenType?: string
 }>()
 
-const blockComponent = computed(() => getIrisComponent(props.type, { shop_type: props.shopType, search_model: props.searchModel }))
+const blockComponent = computed(() => getIrisComponent(props.type, { shop_type: props.shopType }))
 
 // SSR renders every block with screenType 'desktop' and the live value only flips after
 // mount; changing a prop on a still-loading async component swaps its SSR DOM for the

@@ -19,7 +19,7 @@ class StoreJobOrdersGroupedByArtisan
     use AsObject;
 
     /**
-     * @param  array<int, array{artefact: Artefact, quantity: float|int, after?: callable(JobOrder): void}>  $lines
+     * @param  array<int, array{artefact: Artefact, quantity: float|int, after?: callable(JobOrder): void}>  $lines  quantity in SKOs, as the boards ask for it
      * @return array<int, JobOrder>
      */
     public function handle(Production $production, array $lines, ?int $employeeId = null): array
@@ -42,7 +42,11 @@ class StoreJobOrdersGroupedByArtisan
             foreach ($artisanLines as $line) {
                 StoreJobOrderItem::make()->action($jobOrder, [
                     'artefact_id' => $line['artefact']->id,
-                    'quantity'    => max(1, (int) ceil((float) $line['quantity'])),
+                    'quantity'    => BatchedUnitsForDemand::run(
+                        (float) $line['quantity'],
+                        $line['artefact']->orgStock?->packed_in,
+                        $line['artefact']->recommended_batch_size
+                    ),
                 ]);
                 if (isset($line['after'])) {
                     $line['after']($jobOrder);

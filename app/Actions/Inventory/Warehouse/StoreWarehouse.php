@@ -104,7 +104,7 @@ class StoreWarehouse extends OrgAction
                 ),
             ],
             'name'    => ['required', 'max:250', 'string'],
-            'address' => ['sometimes', 'required', new ValidAddress()],
+            'address' => ['sometimes', 'required', new ValidAddress(requireFullAddress: !$this->asAction)],
 
         ];
 

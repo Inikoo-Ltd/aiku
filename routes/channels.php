@@ -77,6 +77,19 @@ Broadcast::channel('grp.production.{productionId}.floor', function (User $user, 
     ]);
 });
 
+Broadcast::channel('grp.org.{organisationId}.production-queues', function (User $user, int $organisationId) {
+    if ($user->authTo(['org-supervisor.'.$organisationId, 'productions-view.'.$organisationId])) {
+        return true;
+    }
+
+    return \App\Models\Production\Production::where('organisation_id', $organisationId)
+        ->pluck('id')
+        ->contains(fn (int $productionId) => $user->authTo([
+            "productions_operations.$productionId.view",
+            "productions_procurement.$productionId.view",
+        ]));
+});
+
 Broadcast::channel('grp.master-shop.{masterShopId}', function (User $user, int $masterShopId) {
     return MasterShop::where('id', $masterShopId)->value('group_id') === $user->group_id;
 });

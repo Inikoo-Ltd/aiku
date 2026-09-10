@@ -212,7 +212,7 @@ class UpdateFulfilment extends OrgAction
             'company_name'               => ['sometimes', 'nullable', 'string', 'max:255'],
             'email'                      => ['sometimes', 'nullable', 'email'],
             'phone'                      => ['sometimes', 'nullable'],
-            'address'                    => ['sometimes', 'required', new ValidAddress()],
+            'address'                    => ['sometimes', 'required', new ValidAddress(requireFullAddress: !$this->asAction)],
             'registration_number'        => ['sometimes', 'string'],
             'vat_number'                 => ['sometimes', 'string'],
             'invoice_footer'             => ['sometimes', 'string'],

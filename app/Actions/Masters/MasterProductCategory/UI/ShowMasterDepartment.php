@@ -141,7 +141,7 @@ class ShowMasterDepartment extends OrgAction
                     ]
                 ],
                 'delete_condition' => [
-                    'can_delete' => $masterDepartment->children()->exists() === false,
+                    'can_delete' => !$masterDepartment->children()->exists(),
                     'master_shop_slug' => $masterDepartment->masterShop->slug,
                 ],
                 MasterDepartmentTabsEnum::SHOWCASE->value => $this->tab == MasterDepartmentTabsEnum::SHOWCASE->value ?

@@ -26,7 +26,6 @@ import {
 	faMeat,
 	faMedal
 } from "@fas"
-import LuigiSearch from "@/Components/CMS/LuigiSearch.vue"
 import IrisSearch from "@/Iris/Components/IrisSearch.vue"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
 import LinkIris from "@/Iris/Components/LinkIris.vue"
@@ -147,10 +146,7 @@ const onClickLogout = () => {
 			<!-- Search -->
 			<div class="flex-1 flex justify-center">
 				<div class="w-full max-w-[760px]">
-					<IrisSearch v-if="layout.iris?.iris_search_model === 'internal'" :fieldValueSearch="fieldValue?.search"
-						id="iris_search_header_1" />
-					<LuigiSearch v-else-if="layout.iris?.luigisbox_tracker_id" :fieldValueSearch="fieldValue?.search"
-						id="luigi_header_2" />
+					<IrisSearch :fieldValueSearch="fieldValue?.search" id="iris_search_header_1" />
 				</div>
 			</div>
 
@@ -163,7 +159,7 @@ const onClickLogout = () => {
 						class="flex items-center gap-2 text-gray-600 hover:text-red-500 transition-colors disabled:opacity-60 disabled:cursor-wait"
 						:disabled="isLoading" v-tooltip="ctrans('My Interest')">
 						<LoadingIcon v-if="isLoading" class="text-[20px]" />
-						<FontAwesomeIcon v-else :icon="faHeart" class="text-[20px]" />
+						<FontAwesomeIcon v-else :icon="faHeart" class="text-[20px]" fixed-width />
 						<span class="text-sm font-medium">
 							{{ ctrans('My Interests') }}
 						</span>
@@ -181,7 +177,7 @@ const onClickLogout = () => {
 							v-html="textReplaceVariables(`({{ cart_count }})`, layout.iris_variables)">
 						</span>
 						<LoadingIcon v-if="isLoading" class="text-[20px]" />
-						<FontAwesomeIcon v-else :icon="faShoppingCart" class="text-[20px]" />
+						<FontAwesomeIcon v-else :icon="faShoppingCart" class="text-[20px]" fixed-width />
 						<span class="button whitespace-nowrap"
 							v-html="textReplaceVariables(`{{ cart_products_amount }}`, layout.iris_variables)">
 						</span>

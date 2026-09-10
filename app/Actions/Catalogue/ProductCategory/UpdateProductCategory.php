@@ -22,7 +22,6 @@ use App\Actions\Traits\UI\WithImageCatalogue;
 use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Web\Webpage\BreakWebpageCache;
 use App\Actions\Web\Webpage\CloseDiscontinuedWebpage;
-use App\Actions\Web\Webpage\Luigi\ReindexWebpageLuigiData;
 use App\Actions\Web\Webpage\ReopenDiscontinuedWebpage;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
@@ -235,7 +234,6 @@ class UpdateProductCategory extends OrgAction
             }
 
             if ($productCategory->webpage_id) {
-                ReindexWebpageLuigiData::dispatch($productCategory->webpage->id)->delay(60);
                 ClearCacheByWildcard::run("irisData:website:{$productCategory->webpage->website_id}:*");
             }
         }

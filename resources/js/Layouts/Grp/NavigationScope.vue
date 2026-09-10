@@ -1,9 +1,10 @@
 <script setup lang='ts'>
 import { layoutStructure } from '@/Composables/useLayoutStructure'
-import { inject } from 'vue'
+import { computed, inject, onMounted, onUnmounted, watch } from 'vue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import NavigationSimple from '@/Layouts/Grp/NavigationSimple.vue'
 import { Navigation } from '@/types/Navigation'
+import { useProductionQueueCounts } from '@/Stores/productionQueueCounts'
 
 const props = defineProps<{
     navs: {
@@ -15,6 +16,40 @@ const props = defineProps<{
 }>()
 
 const layout = inject('layout', layoutStructure)
+
+const queueCounts = useProductionQueueCounts()
+const isProduction = computed(() => props.root === 'grp.org.productions.show.')
+
+const followCurrentProduction = () => {
+    if (!isProduction.value) {
+        return
+    }
+
+    const { organisation, production } = layout.currentParams ?? {}
+    if (organisation && production) {
+        queueCounts.watch(organisation, production)
+    }
+}
+
+onMounted(followCurrentProduction)
+watch(() => layout.currentParams, followCurrentProduction, { deep: true })
+onUnmounted(() => {
+    if (isProduction.value) {
+        queueCounts.unwatch()
+    }
+})
+
+const numberFor = (nav: Navigation): number | null => {
+    if (!isProduction.value || !queueCounts.counts) {
+        return null
+    }
+
+    if (nav.root === 'grp.org.productions.show.to_produce.') {
+        return queueCounts.counts.to_produce
+    }
+
+    return nav.root === 'grp.org.productions.show.pre_pick.' ? queueCounts.counts.pre_pick : null
+}
 
 </script>
 
@@ -38,7 +73,7 @@ const layout = inject('layout', layoutStructure)
         </div>
 
         <div v-for="nav, navIndex in navs" :key="scope + navIndex" class="flex flex-col gap-y-1 mb-1">
-            <NavigationSimple :nav="nav" :navKey="scope + 's'" />
+            <NavigationSimple :nav="nav" :navKey="scope + 's'" :number="numberFor(nav)" />
         </div>
 
         <Transition name="slide-to-right">

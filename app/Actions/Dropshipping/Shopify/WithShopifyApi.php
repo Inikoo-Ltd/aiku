@@ -28,12 +28,16 @@ trait WithShopifyApi
         $response = $client->request('POST', '/admin/api/2025-07/graphql.json', [
             'json' => [
                 'query'     => $mutation,
-                'variables' => $variables
+                'variables' => $variables ?: new \stdClass()
             ]
         ]);
 
         if (!empty($response['errors']) || !isset($response['body'])) {
-            return [false, 'Error in API response: '.json_encode($response['errors'] ?? [])];
+            $detail = $response['errors'] === true
+                ? 'HTTP '.($response['status'] ?? '?').' '.json_encode($response['body'] ?? $response['exception']?->getMessage())
+                : json_encode($response['errors'] ?? []);
+
+            return [false, 'Error in API response: '.trim($detail)];
         }
 
         $body = $response['body']->toArray();

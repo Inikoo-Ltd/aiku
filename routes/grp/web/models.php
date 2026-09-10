@@ -92,6 +92,8 @@ use App\Actions\Comms\Mailshot\StoreMailshotTemplate;
 use App\Actions\Comms\Mailshot\UpdateMailshot;
 use App\Actions\Comms\Mailshot\UpdateMailshotRecipientFilter;
 use App\Actions\Comms\Mailshot\UpdateMailshotSecondWave;
+use App\Actions\Comms\Mailshot\UpdateMailshotUrlUtm;
+use App\Actions\Comms\Mailshot\UpdateMailshotUtmSettings;
 use App\Actions\Comms\Mailshot\UpdateMailshotTemplate;
 use App\Actions\Comms\Mailshot\UpdateWorkshopMailShot;
 use App\Actions\Comms\Outbox\AbandonedCheckout\SendAbandonedCheckoutReminder;
@@ -419,8 +421,12 @@ use App\Actions\Production\Artefact\DeleteArtefactComplianceItem;
 use App\Actions\Production\Artefact\DetachManufactureTaskFromArtefact;
 use App\Actions\Production\Artefact\DetachRawMaterialFromRecipeStep;
 use App\Actions\Production\Artefact\ImportArtefact;
+use App\Actions\Production\Artefact\Label\PdfArtefactLabelSheet;
 use App\Actions\Production\Artefact\MoveArtefactsToDepartment;
 use App\Actions\Production\Artefact\MoveArtefactsToFamily;
+use App\Actions\Production\Artefact\SetArtefactsState;
+use App\Actions\Production\Artefact\SetArtefactsBatchSize;
+use App\Actions\Production\Artefact\SetArtefactsShelfLife;
 use App\Actions\Production\ArtefactFamily\DeleteArtefactFamily;
 use App\Actions\Production\ArtefactFamily\MoveArtefactFamiliesToDepartment;
 use App\Actions\Production\ArtefactFamily\StoreArtefactFamily;
@@ -511,7 +517,6 @@ use App\Actions\Web\WebLayoutTemplate\DeleteWebLayoutTemplate;
 use App\Actions\Web\WebLayoutTemplate\StoreWebLayoutTemplate;
 use App\Actions\Web\Webpage\BreakWebpageCache;
 use App\Actions\Web\Webpage\DeleteWebpage;
-use App\Actions\Web\Webpage\Luigi\ReindexWebpageLuigi;
 use App\Actions\Web\Webpage\PublishWebpage;
 use App\Actions\Web\Webpage\ReorderWebBlocks;
 use App\Actions\Web\Webpage\SetWebpageOfflineBulk;
@@ -522,7 +527,6 @@ use App\Actions\Web\Website\AutosaveWebsiteMarginal;
 use App\Actions\Web\Website\BreakWebsiteCache;
 use App\Actions\Web\Website\LaunchWebsite;
 use App\Actions\Web\Website\LlmsTxt\StoreLlmsTxt;
-use App\Actions\Web\Website\Luigi\ReindexWebsiteLuigiAsync;
 use App\Actions\Web\Website\PublishWebsiteMarginal;
 use App\Actions\Web\Website\PublishWebsiteProductTemplate;
 use App\Actions\Web\Website\StoreWebsite;
@@ -1286,6 +1290,9 @@ Route::name('production.')->prefix('production/{production:id}')->group(function
     Route::post('artefacts/move-to-department', MoveArtefactsToDepartment::class)->name('artefacts.move_to_department');
     Route::post('artefact-families', StoreArtefactFamily::class)->name('artefact_families.store');
     Route::post('artefacts/move-to-family', MoveArtefactsToFamily::class)->name('artefacts.move_to_family');
+    Route::post('artefacts/batch-size', SetArtefactsBatchSize::class)->name('artefacts.set_batch_size');
+    Route::post('artefacts/shelf-life', SetArtefactsShelfLife::class)->name('artefacts.set_shelf_life');
+    Route::post('artefacts/state', SetArtefactsState::class)->name('artefacts.set_state');
     Route::post('artefact-families/move-to-department', MoveArtefactFamiliesToDepartment::class)->name('artefact_families.move_to_department');
     Route::post('artefact-upload', ImportArtefact::class)->name('artefacts.upload');
 });
@@ -1316,6 +1323,8 @@ Route::patch('stored-items/{storedItem:id}/mark-as-discontinuing', MarkStoredIte
 Route::patch('/group-settings', UpdateGroupSettings::class)->name('group-settings.update');
 
 Route::patch('/{mailshot:id}/mailshot', UpdateMailshot::class)->name('shop.mailshot.update');
+Route::patch('/{mailshot:id}/mailshot/url-utm', UpdateMailshotUrlUtm::class)->name('shop.mailshot.url-utm.update');
+Route::patch('/{mailshot:id}/mailshot/utm-settings', UpdateMailshotUtmSettings::class)->name('shop.mailshot.utm-settings.update');
 
 Route::name('email-templates.')->prefix('email-templates')->group(function () {
     Route::patch('{emailTemplate:id}/update', UpdateEmailTemplate::class)->name('content.update');
@@ -1450,6 +1459,7 @@ Route::patch('artefact-family/{artefactFamily:id}', UpdateArtefactFamily::class)
 Route::delete('artefact-family/{artefactFamily:id}', DeleteArtefactFamily::class)->name('artefact_family.delete');
 
 Route::name('artefact.')->prefix('artefact/{artefact:id}')->group(function () {
+    Route::post('label-sheet', PdfArtefactLabelSheet::class)->name('label_sheet');
     Route::post('tags/store', [StoreTag::class, 'inArtefact'])->name('tags.store');
     Route::patch('tags/{tag:id}/update', [UpdateTag::class, 'inArtefact'])->name('tags.update');
     Route::delete('tags/{tag:id}/delete', [DeleteTag::class, 'inArtefact'])->name('tags.delete');
@@ -1489,9 +1499,6 @@ Route::post('webpage/{webpage:id}/redirect', StoreRedirectFromWebpage::class)->n
 
 Route::post('website/{website:id}/break-cache', BreakWebsiteCache::class)->name('website.break_cache')->withoutScopedBindings();
 Route::post('website/{website:id}/redirect', StoreRedirectFromWebsite::class)->name('website.redirect.store')->withoutScopedBindings();
-Route::post('website/{website:id}/reindex-luigi', ReindexWebsiteLuigiAsync::class)->name('website_luigi.reindex')->withoutScopedBindings();
-
-Route::post('webpage/{webpage:id}/reindex-luigi', ReindexWebpageLuigi::class)->name('webpage_luigi.reindex')->withoutScopedBindings();
 
 Route::delete('/shipment/{shipment:id}', DeleteShipment::class)->name('shipment.delete');
 Route::patch('snapshot/{snapshot:id}/update', UpdateSnapshot::class)->name('snapshot.update');

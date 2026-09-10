@@ -47,12 +47,15 @@ class CascadeMasterProductCategoryStorageOptionToChildren
 
         $total = $productCategories->count();
 
-        MasterProductCategoryJsonbCascadeProgressEvent::dispatch($masterProductCategory, [
+        MasterProductCategoryJsonbCascadeProgressEvent::dispatch(
+            $masterProductCategory,
+            [
             'state' => 'updating',
             'done'  => 0,
             'total' => $total,
         ],
-        'storage-option-cascade-progress');
+            'storage-option-cascade-progress'
+        );
 
         /** @var ProductCategory $productCategory */
         foreach ($productCategories as $index => $productCategory) {
@@ -64,19 +67,25 @@ class CascadeMasterProductCategoryStorageOptionToChildren
 
             UpdateProductCategory::make()->action($productCategory, $dataToBeUpdated);
 
-            MasterProductCategoryJsonbCascadeProgressEvent::dispatch($masterProductCategory, [
+            MasterProductCategoryJsonbCascadeProgressEvent::dispatch(
+                $masterProductCategory,
+                [
                 'state' => 'updating',
                 'done'  => $index + 1,
                 'total' => $total,
             ],
-            'storage-option-cascade-progress');
+                'storage-option-cascade-progress'
+            );
         }
 
-        MasterProductCategoryJsonbCascadeProgressEvent::dispatch($masterProductCategory, [
+        MasterProductCategoryJsonbCascadeProgressEvent::dispatch(
+            $masterProductCategory,
+            [
             'state' => 'done',
             'done'  => $total,
             'total' => $total,
         ],
-        'storage-option-cascade-progress');
+            'storage-option-cascade-progress'
+        );
     }
 }

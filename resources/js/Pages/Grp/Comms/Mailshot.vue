@@ -6,7 +6,7 @@ import MailshotSubjectEdit from "@/Components/Workshop/Mailshot/MailshotSubjectE
 import Tabs from "@/Components/Navigation/Tabs.vue";
 import { useTabChange } from "@/Composables/tab-change";
 import { capitalize } from "@/Composables/capitalize";
-import {reactive, computed, ref, watch, onMounted, onUnmounted } from "vue";
+import { computed, ref, watch, onMounted, onUnmounted } from "vue";
 import type { Component } from "vue";
 import EmailPreview from "@/Components/Showcases/Org/Mailshot/EmailPreview.vue";
 import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue";
@@ -14,10 +14,11 @@ import { PageHeadingTypes } from "@/types/PageHeading";
 import { Tabs as TSTabs } from "@/types/Tabs";
 import MailshotShowcase from "@/Components/Showcases/Org/Mailshot/MailshotShowcase.vue";
 import { faEnvelope, faStop } from "@fas";
-import { faDraftingCompass, faUsers, faPaperPlane, faBullhorn, faClock, faSpinner, faSave } from "@fal";
+import { faDraftingCompass, faUsers, faPaperPlane, faBullhorn, faClock, faMousePointer } from "@fal";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import TableDispatchedEmails from "@/Components/Tables/TableDispatchedEmails.vue";
 import TableMailshotRecipients from "@/Components/Tables/TableMailshotRecipients.vue";
+import TableMailshotClickedLinks from "@/Components/Tables/TableMailshotClickedLinks.vue";
 import Button from "@/Components/Elements/Buttons/Button.vue";
 import axios from "axios"
 import { notify } from '@kyvg/vue3-notification'
@@ -31,7 +32,7 @@ import { toZonedTime, formatInTimeZone } from 'date-fns-tz';
 
 
 
-library.add(faEnvelope, faDraftingCompass, faStop, faUsers, faPaperPlane, faBullhorn, faClock);
+library.add(faEnvelope, faDraftingCompass, faStop, faUsers, faPaperPlane, faBullhorn, faClock, faMousePointer);
 
 
 const props = defineProps<{
@@ -46,6 +47,7 @@ const props = defineProps<{
     email_preview?: Object
     recipients?: {}
     dispatched_emails?: {}
+    clicked_links?: {}
     sendMailshotRoute?: routeType
     scheduleMailshotRoute?: routeType
     deleteMailshotRoute?: routeType
@@ -78,8 +80,8 @@ const pageHeadData = computed(() => savedSubject.value ? { ...props.pageHead, ti
 const currentTab = ref(props.tabs.current);
 const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab);
 const TAB_HIDE_RULES: Record<string, string[]> = {
-    in_process: ["recipients", "dispatched_emails"],
-    ready: ["recipients", "dispatched_emails"],
+    in_process: ["recipients", "dispatched_emails", "clicked_links"],
+    ready: ["recipients", "dispatched_emails", "clicked_links"],
 }
 const filteredTabs = computed(() => {
     const hiddenTabs = TAB_HIDE_RULES[props.status ?? ""] ?? []
@@ -351,6 +353,7 @@ const component = computed(() => {
         email_preview: EmailPreview,
         history: TableHistories,
         dispatched_emails: TableDispatchedEmails,
+        clicked_links: TableMailshotClickedLinks,
         recipients: TableMailshotRecipients,
     };
     return components[currentTab.value];

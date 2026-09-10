@@ -5,6 +5,7 @@ import axios from "axios"
 import { router } from "@inertiajs/vue3"
 import { notify } from "@kyvg/vue3-notification"
 import Button from "@/Components/Elements/Buttons/Button.vue"
+import ArtefactLabelSheetModal from "@/Components/Production/Artefact/ArtefactLabelSheetModal.vue"
 
 interface ArtefactShowcaseData {
     code: string
@@ -13,7 +14,13 @@ interface ArtefactShowcaseData {
     compliance_status: string
     compliance_label: string
     recommended_batch_size: number | null
+    batch_pack: { packed_in: number, batch_in_skos: number, suggested_batch_size: number | null } | null
     update_route: { name: string, parameters: any }
+    label_sheet?: {
+        route: { name: string, parameters: any }
+        batch_code: string
+        expiry_date: string
+    }
     artefact_department: { slug: string, name: string } | null
     tags: string[]
     trade_unit: { id: number, code: string, name: string } | null
@@ -33,6 +40,7 @@ const props = defineProps<{
 }>()
 
 const batchSize = ref<number | string>(props.data.recommended_batch_size ?? '')
+const isOpenLabelSheet = ref(false)
 const isSavingBatchSize = ref(false)
 
 const onSaveBatchSize = async () => {
@@ -57,8 +65,18 @@ const onSaveBatchSize = async () => {
 <template>
     <div class="p-4">
         <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <h2 class="text-lg font-semibold">{{ data.name }}</h2>
-            <p class="text-sm text-gray-500 mb-2">{{ data.code }}</p>
+            <div class="flex items-start justify-between gap-4">
+                <div>
+                    <h2 class="text-lg font-semibold">{{ data.name }}</h2>
+                    <p class="text-sm text-gray-500 mb-2">{{ data.code }}</p>
+                </div>
+                <Button
+                    v-if="data.label_sheet"
+                    type="tertiary"
+                    icon="fal fa-file-pdf"
+                    :label="trans('Add label')"
+                    @click="isOpenLabelSheet = true" />
+            </div>
             <span class="inline-block text-xs px-2 py-1 rounded border mb-6" :class="{
                 'bg-gray-100 text-gray-600 border-gray-200': data.compliance_status === 'not_configured',
                 'bg-green-50 text-green-700 border-green-200': data.compliance_status === 'ok',
@@ -69,6 +87,12 @@ const onSaveBatchSize = async () => {
             <div v-if="data.recommended_batch_size" class="mb-6 flex items-baseline gap-3 rounded-lg border border-gray-200 bg-gray-50 px-4 py-3">
                 <span class="text-xs text-gray-500 uppercase tracking-wide">{{ trans('Recommended batch size') }}</span>
                 <span class="text-2xl font-semibold leading-none">{{ data.recommended_batch_size }}</span>
+                <span v-if="data.batch_pack" class="text-xs text-gray-500">
+                    {{ trans('is') }} {{ data.batch_pack.batch_in_skos }} {{ trans('SKOs of') }} {{ data.batch_pack.packed_in }}
+                    <template v-if="data.batch_pack.suggested_batch_size">
+                        &middot; {{ trans('whole SKOs at') }} {{ data.batch_pack.suggested_batch_size }}
+                    </template>
+                </span>
             </div>
             <div v-else class="mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3">
                 <div class="text-sm font-semibold text-red-700">{{ trans('No recommended batch size') }}</div>
@@ -142,5 +166,11 @@ const onSaveBatchSize = async () => {
                 </table>
             </div>
         </div>
+
+        <ArtefactLabelSheetModal
+            v-if="data.label_sheet"
+            :isOpen="isOpenLabelSheet"
+            :labelSheet="data.label_sheet"
+            @onClose="isOpenLabelSheet = false" />
     </div>
 </template>

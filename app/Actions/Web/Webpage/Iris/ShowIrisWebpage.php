@@ -8,7 +8,9 @@
 
 namespace App\Actions\Web\Webpage\Iris;
 
+use App\Actions\CRM\WebUser\Retina\UI\ShowRetinaLogin;
 use App\Actions\Web\RefreshGrpAssetUrls;
+use App\Actions\Web\Webpage\BreakWebpageCache;
 use App\Actions\Web\Webpage\Traits\WithIrisBlogBreadcrumbs;
 use App\Actions\Web\Webpage\WithIrisGetWebpageWebBlocks;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
@@ -126,7 +128,7 @@ class ShowIrisWebpage
     {
         if ($path == 'robots.txt') {
             return 'robots';
-        } elseif (in_array($path, ['login.sys', 'register.sys', 'index.php', 'asset_label.php', 'home.sys'])) {
+        } elseif (in_array($path, ['login.sys', 'register.sys', 'index.php', 'asset_label.php', 'home.sys', 'login', 'register', 'forgot-password'])) {
             return $path;
         }
 
@@ -269,6 +271,24 @@ class ShowIrisWebpage
     public function htmlResponse($webpageData): \Illuminate\Http\JsonResponse|\Illuminate\Http\RedirectResponse|\Symfony\Component\HttpFoundation\Response|string
     {
         if (is_string($webpageData)) {
+
+            // Depends on the visitor, so it must never reach Varnish or the browser cache.
+            if (in_array($webpageData, ['login', 'register', 'forgot-password'])) {
+                $redirect = match($webpageData) {
+                    'login'             => '/app/login',
+                    'register'          => '/app/register',
+                    'forgot-password'   => '/app/reset-password-send',
+                    default             => null,
+                };
+                
+                $normalizedCanon = rtrim($this->getEnvironmentUrl(request()->input('website')->storefront->getCanonicalUrl() . $redirect), '/');
+
+                return redirect()->to($normalizedCanon)
+                    ->withHeaders([
+                        'Cache-Control'             => 'private, no-store',
+                        'X-Aiku-Cacheable-Redirect' => '0',
+                    ]);
+            }
 
             if ($webpageData == 'robots') {
                 $robotText = ShowIrisRobotsTxt::make()->getRobotText(request()->website);

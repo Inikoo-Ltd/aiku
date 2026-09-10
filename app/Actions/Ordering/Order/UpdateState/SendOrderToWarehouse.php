@@ -33,6 +33,8 @@ use App\Models\Ordering\Transaction;
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\Redirect;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
@@ -49,6 +51,35 @@ class SendOrderToWarehouse extends OrgAction
 
     private bool $releaseFromGate = false;
 
+    /** Set from the "send it anyway" button: the customer could not be reached for an address */
+    private bool $withoutAnAddress = false;
+
+
+    /**
+     * A customer can pay and submit before anyone notices the address is empty, and the payment must never
+     * be refused at that point (HELP-3102). The order is held in submitted instead, so nothing is picked and
+     * no invoice prints a "0" street, until CS gets the address from the customer.
+     */
+    private function missingAddress(Order $order): bool
+    {
+        if ($this->withoutAnAddress) {
+            return false;
+        }
+
+        if (!$order->isMissingARequiredAddress()) {
+            return false;
+        }
+
+        $note = __('⚠️ Order held: the customer has no address, ask them for it before picking');
+
+        if (!str_contains((string)$order->private_warehouse_note, $note)) {
+            $this->update($order, [
+                'private_warehouse_note' => collect([$order->private_warehouse_note, $note])->filter()->implode(' — ')
+            ]);
+        }
+
+        return true;
+    }
 
     /**
      * @throws \Throwable
@@ -96,6 +127,10 @@ class SendOrderToWarehouse extends OrgAction
             return null;
         }
 
+
+        if ($this->missingAddress($order)) {
+            return null;
+        }
 
         if (!$this->releaseFromGate
             && $order->organisation->hasFulfilmentGate()
@@ -260,6 +295,7 @@ class SendOrderToWarehouse extends OrgAction
                 Rule::exists('warehouses', 'id')
                     ->where('organisation_id', $this->organisation->id),
             ],
+            'without_an_address' => ['sometimes', 'boolean'],
         ];
     }
 
@@ -294,11 +330,12 @@ class SendOrderToWarehouse extends OrgAction
     /**
      * @throws \Throwable
      */
-    public function action(Order $order, array $modelData, bool $releaseFromGate = false): ?DeliveryNote
+    public function action(Order $order, array $modelData, bool $releaseFromGate = false, bool $withoutAnAddress = false): ?DeliveryNote
     {
-        $this->asAction        = true;
-        $this->releaseFromGate = $releaseFromGate;
-        $this->order           = $order;
+        $this->asAction         = true;
+        $this->releaseFromGate  = $releaseFromGate;
+        $this->withoutAnAddress = $withoutAnAddress;
+        $this->order            = $order;
         $this->initialisationFromShop($order->shop, $modelData);
 
         return $this->handle($order, $this->validatedData);
@@ -312,7 +349,35 @@ class SendOrderToWarehouse extends OrgAction
         $this->order = $order;
         $this->initialisationFromShop($order->shop, $request);
 
+        $this->withoutAnAddress = (bool)Arr::pull($this->validatedData, 'without_an_address', false);
+
+        /** Otherwise the ordinary button quietly does nothing and the order sits there (HELP-3102) */
+        if (!$this->withoutAnAddress && $order->isMissingARequiredAddress()) {
+            $request->session()->flash('notification', [
+                'status'      => 'error',
+                'title'       => __('This order has no address'),
+                'description' => __('Add an address to the order or to the customer, or use "Send anyway, no address".'),
+            ]);
+
+            return null;
+        }
+
+        if ($this->withoutAnAddress) {
+            $this->update($order, [
+                'private_warehouse_note' => collect([
+                    $order->private_warehouse_note,
+                    __('Sent without an address on purpose, the customer could not be reached'),
+                ])->filter()->implode(' — ')
+            ]);
+        }
+
         return $this->handle($order, $this->validatedData);
+    }
+
+    /** Inertia needs a page back, otherwise the flashed message is never rendered */
+    public function htmlResponse(?DeliveryNote $deliveryNote, ActionRequest $request): RedirectResponse
+    {
+        return Redirect::back();
     }
 
     public function getCommandSignature(): string

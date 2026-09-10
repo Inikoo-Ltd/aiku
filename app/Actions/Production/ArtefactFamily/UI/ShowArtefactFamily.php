@@ -64,11 +64,6 @@ class ShowArtefactFamily extends OrgAction
                     ],
                 ],
                 'number_artefacts' => $artefactFamily->number_artefacts,
-                'delete_route'     => $this->canEdit ? [
-                    'method'     => 'delete',
-                    'name'       => 'grp.models.artefact_family.delete',
-                    'parameters' => [$artefactFamily->id],
-                ] : null,
                 'department'  => $artefactFamily->artefactDepartment ? [
                     'code'  => $artefactFamily->artefactDepartment->code,
                     'name'  => $artefactFamily->artefactDepartment->name,
@@ -82,6 +77,8 @@ class ShowArtefactFamily extends OrgAction
                     ]
                 ] : null,
                 'move_to_family' => IndexArtefacts::make()->getMoveToFamilyProps($this->production, $this->canEdit),
+                'set_batch_size' => IndexArtefacts::make()->getSetBatchSizeProps($this->production, $this->canEdit),
+                'set_state'   => IndexArtefacts::make()->getSetStateProps($this->production, $this->canEdit),
                 'tabs'        => [
                     'current'    => $this->tab,
                     'navigation' => ArtefactFamilyTabsEnum::navigation()

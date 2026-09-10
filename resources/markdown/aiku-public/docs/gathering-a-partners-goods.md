@@ -1,10 +1,10 @@
 ---
 title: Gathering a partner's goods
 summary: The warehouse guide - what pre-pick means, why stock in a partner's gathering bay stops counting as available, and how to work the Pre-pick list in Dispatching.
-date: 2026-09-08
+date: 2026-09-09
 tags: dispatch, procurement, intercompany, warehouse
 category: dispatch
-help_routes: grp.org.warehouses.show.dispatching
+help_routes: grp.org.warehouses.show.dispatching, grp.org.productions.show.pre_pick
 series: Ordering from partners
 order: 8
 ---
@@ -47,6 +47,16 @@ The list is worked out fresh every time you open it - it is not a set of tasks s
 
 The tab only appears for organisations that have a gathering bay set up for a partner. If you cannot see it, that has not been done yet.
 
+## The factory's half of the same job
+
+The walks come from somewhere: somebody at the factory has to decide that a line is taken from stock rather than made. That decision has its own page, **Factory → Pre-pick**, and it is the twin of the list above.
+
+It lists every open partner line with stock behind it, whether or not this factory makes that artefact, and never shows a line already pre-picked. Each row carries the requester, the artefact, what was **asked** for, what is **in stock**, and what **can pick** - the two capped against each other, so a line is never promised more than exists. Category, requester and urgency filter the list, and the counts on the filters are the real counts, not just what fits on the page.
+
+**Pre-pick** on a row, **Pre-pick selected** for what you ticked, or **Pre-pick all** for everything the current filters show. Pre-picking promises the stock to that partner and puts the walk on the warehouse's list; where only part of what was asked for is available the line splits, the promised part goes and the rest stays open. Nothing is sold and no order is created - the stock simply stops being available to anybody else.
+
+The number beside **Pre-pick** in the factory sidebar is how many lines are waiting for that decision, and it updates on its own.
+
 ## What the partner sees
 
 Nothing to tell them by hand. On their own shopping list every line carries where it has got to: **Requested**, **Being made**, **Pre-picked**, **Staged for you**, **Being picked**, **On its way** - with the job order, order or delivery note reference beside it.
@@ -69,6 +79,7 @@ Because the goods are already in one bay, the picking at that point is a walk to
 
 <aside class="wayfinder"><strong>Where to click in aiku</strong>
 <ul>
+<li><b>Decide a line is taken from stock:</b> your organisation → <b>Factory</b> → <b>Pre-pick</b> → <b>Pre-pick</b> on the row, or tick and use <b>Pre-pick selected</b> / <b>Pre-pick all</b>.</li>
 <li><b>The list of walks:</b> your organisation → <b>Warehouse</b> → <b>Dispatching</b> → <b>Pre-pick</b> tab.</li>
 <li><b>Record a walk:</b> press <b>Moved</b> on the row after the goods are physically in the bay.</li>
 <li><b>Check what is in a bay:</b> <b>Warehouse</b> → <b>Locations</b> → the location → <b>SKOs</b> tab.</li>

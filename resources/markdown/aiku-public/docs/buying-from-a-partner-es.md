@@ -1,8 +1,8 @@
 ---
 title: Comprar a un socio
 summary: La guía del comprador - empieza por el panel de compras, rellena la lista a mano, desde el catálogo del socio o con auto-fill, y recibe la mercancía cuando llega.
-date: 2026-09-01
-source_date: 2026-09-01
+date: 2026-09-09
+source_date: 2026-09-09
 tags: procurement, intercompany, shopping-list
 category: procurement
 series: Ordering from partners
@@ -23,6 +23,7 @@ Junto al panel, la pestaña **Shopping list** contiene todas las líneas abierta
 
 - **Add stocks** abre la lista de stock del socio con su disponibilidad, cómo se empaqueta cada artículo, tu propio stock actual y cuánto has usado en los últimos cuatro trimestres. Las cantidades están en las unidades de envío del vendedor (SKOs).
 - Cada línea cuenta la historia del stock de un vistazo — *su stock*, *nuestro stock* y cuándo *nos quedamos sin él* — más el importe a tu precio de compra, con el total de las líneas abiertas al pie de la tabla.
+- Cuando el socio fabrica él mismo el artículo, la línea también dice *made in batches of N units* y, cuando los dos números no dividen exacto, *full batches every N SKO* - el **order step**, el pedido más pequeño que llena hornadas completas exactamente. Un botón redondea tu cantidad hasta ahí. Pedir fuera del step está permitido y lo dice: se fabrica una hornada completa de todos modos, así que el pedido puede retrasarse o la cantidad ajustarse, y un pedido por debajo de un step completo espera en la fábrica hasta que se le une otra demanda. Ver [Hornadas, packs y hornadas parciales](/docs/batches-packs-and-part-batches-es).
 - Las líneas abiertas son totalmente tuyas: elige la **priority** (low → urgent) directamente en el desplegable de la tabla, o elimina la línea con su botón de papelera. Para cambiar una cantidad, usa **Browse** — el stepper del mismo artículo ahí edita la línea abierta directamente. En cuanto el socio recoge una línea, esta se bloquea, y su estado te dice dónde está.
 
 ## Explorar el catálogo del socio
@@ -41,7 +42,7 @@ Mientras exploras, tu lista de la compra te acompaña como un recibo fijado a la
 
 Auto-fill existe para que la reposición no dependa de que alguien recuerde cada artículo. Le das un solo número — un **budget**, en la misma moneda que los precios a los que compras — y construye una propuesta que cabe dentro de él:
 
-- Mira cada artículo que el socio puede suministrar y que realmente usas, los ordena por **cuánto tardas en quedarte sin él** (el mismo pronóstico *we run out in* que ves al explorar), y repone primero los que se agotan antes, cada uno a su cantidad de pedido recomendada.
+- Mira cada artículo que el socio puede suministrar y que realmente usas, los ordena por **cuánto tardas en quedarte sin él** (el mismo pronóstico *we run out in* que ves al explorar), y repone primero los que se agotan antes, cada uno a su cantidad de pedido recomendada, redondeada al order step de ese artículo.
 - Cada línea propuesta muestra su **motivo** ("Our sales/quarter ~48 · our stock 0 · we run out now"), la cantidad y el coste, así puedes ver por qué está ahí. Las cantidades siguen el mismo pronóstico que las insignias *suggested* de Browse.
 - El **instruction box** es opcional y acepta lenguaje natural: *"prioritise essential oils, skip anything we hold over 8 weeks of"*, *"focus on candles, nothing seasonal"*. Una IA lee tu instrucción junto con los mismos datos de consumo y remodela la propuesta en consecuencia — pero su resultado se contrasta con la realidad antes de que lo veas: las cantidades quedan topadas a lo que el socio realmente tiene, y el total se fuerza de vuelta dentro de tu presupuesto. Si la instrucción no se puede seguir, recibes la propuesta estándar en su lugar.
 - **Nada se añade por sí solo.** La propuesta es un conjunto de líneas marcadas que puedes desmarcar, recalcular o regenerar con otro presupuesto o instrucción; solo **Add items to shopping list** confirma algo.
@@ -63,6 +64,7 @@ En cuanto el socio [envía un cargamento a su almacén](/docs/fulfilling-partner
 <ul>
 <li><b>Ver qué hay que comprar:</b> tu organización → <b>Procurement → Partners</b> → abre el socio → <b>Shopping</b> (el panel) → trabaja las casillas de riesgo.</li>
 <li><b>Añadir a la lista:</b> <b>Shopping list</b> → <b>Add stocks</b>, o <b>Browse</b> y fija cantidades en las fichas de producto, o <b>Auto-fill</b> (o <b>+ fill</b> en una casilla del panel) para una propuesta.</li>
+<li><b>Pedir en hornadas completas:</b> el botón junto a <i>full batches every N SKO</i> en la línea o en la ficha de producto.</li>
 <li><b>Ajustar líneas abiertas:</b> cambia la priority o elimina líneas en la tabla de la lista de la compra; cambia cantidades desde las fichas de producto en <b>Browse</b>.</li>
 <li><b>Mantener un artículo fuera de auto-fill:</b> tu organización → <b>Warehouse → Inventory</b> → abre el SKO → <b>Edit SKO</b> → activa <b>Do not auto order</b>.</li>
 <li><b>Seguir y recibir el envío:</b> misma página del socio → <b>Stock deliveries</b> → cuando llega la mercancía, <b>Receive</b> → comprueba → coloca en ubicaciones.</li>

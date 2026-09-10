@@ -132,7 +132,7 @@ class EditProduct extends OrgAction
                 'color'   => 'rgb(75, 0, 130)'
             ];
         }
-        
+
         if ($product->is_single_trade_unit && $product->tradeUnits->first()) {
             $iconLinks[] = [
                 'icon'    => 'fal fa-atom',
