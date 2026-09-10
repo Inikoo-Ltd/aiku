@@ -37,6 +37,7 @@ class DeleteOpenPartnerShoppingListItems extends OrgAction
         $deleted = PartnerShoppingListItem::query()
             ->where('org_partner_id', $orgPartner->id)
             ->where('state', ShoppingListItemStateEnum::OPEN)
+            ->whereNull('pre_picked_at')
             ->delete();
 
         OrgPartnerHydrateShoppingListItems::dispatch($orgPartner);

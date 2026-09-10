@@ -71,6 +71,7 @@ class ManufacturePayBand extends Model
             ->where(function (Builder $query) use ($at) {
                 $query->whereNull('effective_to')
                     ->orWhere('effective_to', '>', $at);
-            });
+            })
+            ->orderByDesc('effective_from');
     }
 }

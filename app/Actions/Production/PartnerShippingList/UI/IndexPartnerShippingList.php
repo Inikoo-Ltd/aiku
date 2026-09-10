@@ -90,6 +90,14 @@ class IndexPartnerShippingList extends OrgAction
                 DB::table('partner_shopping_list_items')
                     ->where('state', ShoppingListItemStateEnum::OPEN)
                     ->whereNull('deleted_at')
+                    ->whereNull('pre_picked_at')
+                    ->whereNull('job_order_id')
+                    ->where(function ($query) use ($seller) {
+                        $query->where('partner_organisation_id', $seller->id)
+                            ->orWhere(function ($query) use ($seller) {
+                                $query->whereNull('partner_organisation_id')->where('organisation_id', $seller->id);
+                            });
+                    })
                     ->groupBy('stock_id')
                     ->select('stock_id', DB::raw('sum(quantity) as quantity')),
                 'open_demand',
@@ -117,7 +125,8 @@ class IndexPartnerShippingList extends OrgAction
                         $query->whereNull('partner_shopping_list_items.partner_organisation_id')
                             ->where('partner_shopping_list_items.organisation_id', $seller->id);
                     });
-            });
+            })
+            ->whereNull('partner_shopping_list_items.pre_picked_at');
 
         if ($this->groupBy) {
             $queryBuilder->whereNotNull('artefacts.id');

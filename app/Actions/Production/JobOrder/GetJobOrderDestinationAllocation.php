@@ -25,11 +25,15 @@ class GetJobOrderDestinationAllocation
      * complete quantity instead of dribbling partials into every bay; only the leftover is short.
      * Anything made beyond what the lines asked for goes to normal stock.
      *
+     * Lines are denominated in SKOs, artisans work in artefact units, org_stocks.packed_in is the
+     * only bridge; every quantity returned here is in artefact units.
+     *
+     * @param  array<int, float>  $madeByItem  artefact units per job order item, when the caller knows better than the last task
      * @return array<int, array{item: JobOrderItem, line: PartnerShoppingListItem|null, location_id: int|null, quantity: float}>
      */
-    public function handle(JobOrder $jobOrder): array
+    public function handle(JobOrder $jobOrder, array $madeByItem = []): array
     {
-        $items = $jobOrder->jobOrderItems()->with(['artefact', 'tasks'])->get();
+        $items = $jobOrder->jobOrderItems()->with(['artefact.orgStock', 'tasks'])->get();
 
         $lines = PartnerShoppingListItem::where('job_order_id', $jobOrder->id)
             ->get()
@@ -39,25 +43,36 @@ class GetJobOrderDestinationAllocation
             ->whereNotNull('goods_out_location_id')
             ->pluck('goods_out_location_id', 'partner_id');
 
-        $allocations = [];
+        $remainingUnitsByLine = [];
+        $allocations          = [];
 
         foreach ($items as $item) {
-            $made = $this->producedArtefacts($item);
+            $packedIn = max(1, (int) $item->artefact->orgStock?->packed_in);
+            $made     = $madeByItem[$item->id] ?? min((float) $item->quantity, $this->producedArtefacts($item));
 
             if ($made <= 0) {
                 continue;
             }
 
-            $itemLines = $lines->get($item->artefact->org_stock_id, collect())
-                ->sortByDesc(fn (PartnerShoppingListItem $line) => (float) ($line->quantity_to_produce ?? $line->quantity));
+            $itemLines = $lines->get($item->artefact->org_stock_id, collect());
+            foreach ($itemLines as $line) {
+                $remainingUnitsByLine[$line->id] ??= (float) ($line->quantity_to_produce ?? $line->quantity) * $packedIn;
+            }
+
+            $itemLines = $itemLines->sortByDesc(fn (PartnerShoppingListItem $line) => $remainingUnitsByLine[$line->id]);
 
             foreach ($itemLines as $line) {
                 if ($made <= 0) {
                     break;
                 }
 
-                $wanted   = min($made, (float) ($line->quantity_to_produce ?? $line->quantity));
-                $made    -= $wanted;
+                $wanted = min($made, $remainingUnitsByLine[$line->id]);
+                if ($wanted <= 0) {
+                    continue;
+                }
+
+                $made                            -= $wanted;
+                $remainingUnitsByLine[$line->id] -= $wanted;
 
                 $allocations[] = [
                     'item'        => $item,
@@ -81,9 +96,9 @@ class GetJobOrderDestinationAllocation
     }
 
     /**
-     * The artisan works in task units, the job order item counts artefacts, units_per_artefact bridges.
+     * Whole artefacts the last task has produced; the paperwork never counts a fraction of one.
      */
-    private function producedArtefacts(JobOrderItem $item): float
+    public function producedArtefacts(JobOrderItem $item): float
     {
         $lastTask = $item->tasks->sortByDesc('position')->first();
 
@@ -95,6 +110,6 @@ class GetJobOrderDestinationAllocation
             ->where('manufacture_task_id', $lastTask->manufacture_task_id)
             ->value('units_per_artefact') ?: 1;
 
-        return (float) $lastTask->quantity_made / $unitsPerArtefact;
+        return floor((float) $lastTask->quantity_made / $unitsPerArtefact);
     }
 }

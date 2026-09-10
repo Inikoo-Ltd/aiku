@@ -69,6 +69,13 @@ class QueueArtefactsToProduce extends OrgAction
 
             $alreadyOpen = PartnerShoppingListItem::where('stock_id', $artefact->orgStock->stock_id)
                 ->where('state', ShoppingListItemStateEnum::OPEN)
+                ->whereNull('pre_picked_at')
+                ->where(function ($query) use ($seller) {
+                    $query->where('partner_organisation_id', $seller->id)
+                        ->orWhere(function ($query) use ($seller) {
+                            $query->whereNull('partner_organisation_id')->where('organisation_id', $seller->id);
+                        });
+                })
                 ->exists();
 
             if ($alreadyOpen) {
@@ -94,11 +101,21 @@ class QueueArtefactsToProduce extends OrgAction
     }
 
     /** @return array{queued: int, skipped: array<int, array{artefact_id: int, reason: string}>} */
+    public function rules(): array
+    {
+        return [
+            'lines'               => ['required', 'array', 'min:1'],
+            'lines.*.artefact_id' => ['required', 'integer'],
+            'lines.*.quantity'    => ['required', 'numeric', 'min:0.001'],
+            'lines.*.priority'    => ['sometimes', 'nullable', 'string'],
+        ];
+    }
+
     public function asController(Organisation $organisation, Production $production, ActionRequest $request): array
     {
         $this->initialisationFromProduction($production, $request);
 
-        return $this->handle($organisation, $production, $request->input('lines', []));
+        return $this->handle($organisation, $production, $this->validatedData['lines']);
     }
 
     /**
@@ -109,9 +126,9 @@ class QueueArtefactsToProduce extends OrgAction
     public function action(Organisation $seller, Production $production, array $lines): array
     {
         $this->asAction = true;
-        $this->initialisationFromProduction($production, []);
+        $this->initialisationFromProduction($production, ['lines' => $lines]);
 
-        return $this->handle($seller, $production, $lines);
+        return $this->handle($seller, $production, $this->validatedData['lines']);
     }
 
     public function htmlResponse(): RedirectResponse

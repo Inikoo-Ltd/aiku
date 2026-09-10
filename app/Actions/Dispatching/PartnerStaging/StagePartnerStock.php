@@ -38,6 +38,9 @@ class StagePartnerStock extends OrgAction
         if ($orgPartner->organisation_id !== $warehouse->organisation_id) {
             throw ValidationException::withMessages(['org_partner' => __('Partner does not belong to this warehouse')]);
         }
+        if ($source->location->warehouse_id !== $warehouse->id || $source->location->is_goods_out) {
+            throw ValidationException::withMessages(['source' => __('Stock can only be staged from a shelf in this warehouse')]);
+        }
         if ($quantity > (float) $source->quantity) {
             throw ValidationException::withMessages(['quantity' => __('Not that much stock in :location', ['location' => $source->location->code])]);
         }

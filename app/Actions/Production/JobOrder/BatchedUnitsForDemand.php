@@ -20,7 +20,7 @@ class BatchedUnitsForDemand
      */
     public function handle(float $demandInSkos, ?int $packedIn, ?int $batchSize): int
     {
-        $units = (int) ceil($demandInSkos * max(1, (int) $packedIn));
+        $units = (int) ceil(round($demandInSkos * max(1, (int) $packedIn), 6));
 
         if ($batchSize > 0) {
             $units = (int) (ceil($units / $batchSize) * $batchSize);

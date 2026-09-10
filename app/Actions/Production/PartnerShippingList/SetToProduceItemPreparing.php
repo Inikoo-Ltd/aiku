@@ -24,6 +24,9 @@ class SetToProduceItemPreparing extends OrgAction
         if ($item->job_order_id) {
             throw ValidationException::withMessages(['item' => __('Already assigned to a job order')]);
         }
+        if ($item->pre_picked_at) {
+            throw ValidationException::withMessages(['item' => __('Already covered from stock, nothing to make')]);
+        }
 
         $item->update([
             'preparing_at'        => $preparing ? now() : null,

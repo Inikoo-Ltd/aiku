@@ -191,7 +191,7 @@ class ShowCraftsDashboard extends OrgAction
             ->whereNotNull('org_stocks.packed_in');
 
         $batchesNotWholeSkos = (clone $batchesWithPack)
-            ->whereRaw('mod(artefacts.recommended_batch_size, org_stocks.packed_in) <> 0')
+            ->whereRaw('mod(artefacts.recommended_batch_size, nullif(org_stocks.packed_in, 0)) <> 0')
             ->count();
 
         $batchesWholeSkos = (clone $batchesWithPack)->count() - $batchesNotWholeSkos;

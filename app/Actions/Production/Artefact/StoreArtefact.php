@@ -85,9 +85,9 @@ class StoreArtefact extends OrgAction
                 Rule::exists('org_stocks', 'id')->where('organisation_id', $this->organisation->id),
             ],
             'recommended_batch_size' => ['sometimes', 'nullable', 'integer', 'min:1'],
-            'shelf_life_days'        => ['sometimes', 'nullable', 'integer', 'min:1'],
+            'shelf_life_days'        => ['sometimes', 'nullable', 'integer', 'min:1', 'max:3650'],
             'artefact_department_id'     => ['sometimes', 'nullable', Rule::exists('artefact_departments', 'id')->where('organisation_id', $this->organisation->id)],
-            'artefact_family_id'         => ['sometimes', 'nullable', Rule::exists('artefact_families', 'id')->where('organisation_id', $this->organisation->id)],
+            'artefact_family_id'         => ['sometimes', 'nullable', Rule::exists('artefact_families', 'id')->where('production_id', $this->production->id)],
             'source_id'   => ['sometimes', 'nullable', 'string'],
             'created_at'  => ['sometimes', 'nullable', 'date'],
 
@@ -99,6 +99,7 @@ class StoreArtefact extends OrgAction
     {
         $this->asAction       = true;
         $this->hydratorsDelay = $hydratorsDelay;
+        $this->production = $production;
         $this->initialisation($production->organisation, $modelData);
 
         return $this->handle($production, $this->validatedData);

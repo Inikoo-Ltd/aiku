@@ -5,11 +5,11 @@
   -->
 
 <script setup lang="ts">
-import { Head, Link, router } from "@inertiajs/vue3"
+import { Head, Link, router, usePage } from "@inertiajs/vue3"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import { capitalize } from "@/Composables/capitalize"
 import Tabs from "@/Components/Navigation/Tabs.vue"
-import { computed, reactive, ref } from "vue"
+import { computed, reactive, ref, watch } from "vue"
 import { useTabChange } from "@/Composables/tab-change"
 import { trans } from "laravel-vue-i18n"
 import { faHandsHelping, faBan, faCheckCircle, faList, faCheck, faPersonCarry, faChartLine, faDolly, faIndustry } from "@fal"
@@ -48,6 +48,7 @@ const props = defineProps<{
         job_order_ids: number[]
         jobs: { reference: string, artisan: string | null, items: { code: string, name: string, quantity: number }[] }[]
     }[] | null
+    can_edit?: boolean
     put_away_route?: { name: string; parameters: Record<string, string> } | null
     reports_route?: { name: string; parameters: Record<string, string> }
     gate_route?: { name: string; parameters: Record<string, string> } | null
@@ -61,14 +62,20 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 const isPersonnelTab = computed(() => currentTab.value === "pickers" || currentTab.value === "packers")
 const isStagingTab = computed(() => currentTab.value === "partner_staging")
 const isProductionTab = computed(() => currentTab.value === "production_output")
-const putAwayLocation = reactive<Record<number, string>>({})
-props.production_output?.forEach((trip, index) => putAwayLocation[index] = trip.destination.location_code ?? '')
+const tripKey = (trip: { destination: { location_code: string | null } }) => trip.destination.location_code ?? 'stock'
+const putAwayLocation = reactive<Record<string, string>>({})
+watch(() => props.production_output, trips => {
+    trips?.forEach(trip => putAwayLocation[tripKey(trip)] ??= trip.destination.location_code ?? '')
+}, { immediate: true })
 
-function putAway(index: number) {
-    const trip = props.production_output?.[index]
-    if (!props.put_away_route || !trip || !putAwayLocation[index]) return
+const page = usePage()
+const actionError = computed(() => Object.values((page.props.errors ?? {}) as Record<string, string>)[0])
+
+function putAway(trip: NonNullable<typeof props.production_output>[number]) {
+    const key = tripKey(trip)
+    if (!props.put_away_route || !putAwayLocation[key]) return
     router.post(route(props.put_away_route.name, props.put_away_route.parameters), {
-        location_code: putAwayLocation[index],
+        location_code: putAwayLocation[key],
         job_order_ids: trip.job_order_ids,
     }, { preserveScroll: true })
 }
@@ -103,6 +110,9 @@ const trolleyRoute = (trolley: { slug: string }) =>
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead"></PageHeading>
     <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
+    <div v-if="actionError && (isStagingTab || isProductionTab)" class="mx-4 mt-4 rounded border border-red-200 bg-red-50 px-4 py-2 text-sm text-red-700">
+        {{ actionError }}
+    </div>
 
     <div v-if="isStagingTab" class="mx-4 mt-4 overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700">
         <table class="w-full text-sm">
@@ -132,7 +142,7 @@ const trolleyRoute = (trolley: { slug: string }) =>
                     <td class="px-4 py-2 text-right tabular-nums text-gray-500">{{ task.quantity_staged }}</td>
                     <td class="px-4 py-2 text-right font-semibold tabular-nums">{{ task.quantity_to_move }}</td>
                     <td class="px-4 py-2 text-right">
-                        <button v-if="task.from_locations.length" type="button" class="rounded bg-indigo-600 px-3 py-1 text-white hover:bg-indigo-700" @click="stage(task)">
+                        <button v-if="can_edit && task.from_locations.length" type="button" class="rounded bg-indigo-600 px-3 py-1 text-white hover:bg-indigo-700" @click="stage(task)">
                             {{ trans("Moved") }}
                         </button>
                     </td>
@@ -155,7 +165,7 @@ const trolleyRoute = (trolley: { slug: string }) =>
                 </tr>
             </thead>
             <tbody>
-                <tr v-for="(trip, index) in production_output" :key="index" class="border-t border-gray-100 dark:border-gray-800 align-top">
+                <tr v-for="trip in production_output" :key="tripKey(trip)" class="border-t border-gray-100 dark:border-gray-800 align-top">
                     <td class="px-4 py-2" :class="trip.destination.type === 'partner' ? 'font-semibold text-indigo-700' : 'text-gray-500'">
                         {{ trip.destination.label }}
                     </td>
@@ -169,12 +179,13 @@ const trolleyRoute = (trolley: { slug: string }) =>
                         </div>
                     </td>
                     <td class="px-4 py-2">
-                        <input v-model.trim="putAwayLocation[index]" type="text" :placeholder="trans('Location code')"
-                            class="w-36 rounded border-gray-300 font-mono text-sm uppercase" @keyup.enter="putAway(index)" />
+                        <input v-if="can_edit" v-model.trim="putAwayLocation[tripKey(trip)]" type="text" :placeholder="trans('Location code')"
+                            class="w-36 rounded border-gray-300 font-mono text-sm uppercase" @keyup.enter="putAway(trip)" />
+                        <span v-else class="font-mono">{{ trip.destination.location_code ?? '—' }}</span>
                     </td>
                     <td class="px-4 py-2 text-right">
-                        <button type="button" class="rounded bg-indigo-600 px-3 py-1 text-white hover:bg-indigo-700 disabled:opacity-40"
-                            :disabled="!putAwayLocation[index]" @click="putAway(index)">
+                        <button v-if="can_edit" type="button" class="rounded bg-indigo-600 px-3 py-1 text-white hover:bg-indigo-700 disabled:opacity-40"
+                            :disabled="!putAwayLocation[tripKey(trip)]" @click="putAway(trip)">
                             {{ trans("Put away") }}
                         </button>
                     </td>

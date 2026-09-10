@@ -2257,7 +2257,7 @@ test('artefacts with nothing sold in three years go dormant and wake up when the
     $since  = now()->subMonths(36)->toDateTimeString();
 
     $artefact = StoreArtefact::make()->action($this->production, ['code' => 'DORM-01', 'name' => 'Dormant candidate']);
-    $artefact->update(['state' => ArtefactStateEnum::ACTIVE]);
+    $artefact->update(['state' => ArtefactStateEnum::ACTIVE, 'created_at' => now()->subYears(4)]);
     expect($repair->toPark($this->production, $since)->pluck('id')->all())->toContain($artefact->id);
 
     $repair->handle($artefact, ArtefactStateEnum::DORMANT);
@@ -3004,6 +3004,7 @@ test('a short day splits the made goods into whole destination trips and carries
         ->where('id', '!=', $this->artefact->id)
         ->update(['org_stock_id' => null]);
     $this->artefact->update(['org_stock_id' => $orgStock->id]);
+    $orgStock->update(['packed_in' => 5]);
 
     $warehouse = \App\Actions\Inventory\Warehouse\StoreWarehouse::make()->action($this->organisation, ['code' => 'WH-TRIP', 'name' => 'Trip warehouse']);
     $area      = \App\Actions\Inventory\WarehouseArea\StoreWarehouseArea::make()->action($warehouse, ['code' => 'A-TRIP', 'name' => 'Trip area']);
@@ -3035,8 +3036,9 @@ test('a short day splits the made goods into whole destination trips and carries
         'quantity'                => $quantity,
     ]);
 
-    $skLine = $lineFor($buyers[0], 30);
-    $esLine = $lineFor($buyers[1], 20);
+    /* Lines count SKOs, the job counts artefact units: 6 + 4 SKOs of five = 50 units. */
+    $skLine = $lineFor($buyers[0], 6);
+    $esLine = $lineFor($buyers[1], 4);
 
     $jobOrder = StoreJobOrder::make()->action($this->production, []);
     $item     = StoreJobOrderItem::make()->action($jobOrder, ['artefact_id' => $this->artefact->id, 'quantity' => 50]);
@@ -3060,8 +3062,10 @@ test('a short day splits the made goods into whole destination trips and carries
     expect($carried->jobOrderItems()->first()->quantity)->toBe(15)
         ->and($skLine->refresh()->job_order_id)->toBe($jobOrder->id)
         ->and($esLine->refresh()->job_order_id)->toBe($jobOrder->id)
-        ->and((float) $esLine->quantity_to_produce)->toBe(5.0)
-        ->and(\App\Models\Procurement\PartnerShoppingListItem::where('job_order_id', $carried->id)->sum('quantity_to_produce'))->toEqual(15);
+        ->and((float) $esLine->quantity_to_produce)->toBe(1.0)
+        ->and((float) $esLine->quantity)->toBe(1.0)
+        ->and(\App\Models\Procurement\PartnerShoppingListItem::where('job_order_id', $carried->id)->sum('quantity_to_produce'))->toEqual(3)
+        ->and(\App\Models\Procurement\PartnerShoppingListItem::where('job_order_id', $carried->id)->sum('quantity'))->toEqual(3);
 
     /* The warehouse gets one walk per bay, not one per job order. */
     $tripsTo = fn () => collect(\App\Actions\Dispatching\ProductionOutput\GetFinishedProductionJobOrders::run($warehouse))
@@ -3069,7 +3073,12 @@ test('a short day splits the made goods into whole destination trips and carries
         ->values();
     $trips = $tripsTo();
     expect($trips->pluck('destination.location_code')->all())->toBe(['BAY-SKBUY', 'BAY-ESBUY'])
-        ->and($trips->map(fn (array $trip) => $trip['jobs'][0]['items'][0]['quantity'])->all())->toBe([30.0, 5.0]);
+        ->and($trips->map(fn (array $trip) => $trip['jobs'][0]['items'][0]['quantity'])->all())->toBe([6.0, 1.0]);
+
+    /* Nothing of this job is bound for plain stock, so a shelf code is refused, not silently ignored. */
+    $bayFor('SHELF-CO');
+    expect(fn () => \App\Actions\Dispatching\ProductionOutput\PutAwayFinishedJobOrder::make()->action($warehouse, $trips[0]['job_order_ids'], 'SHELF-CO'))
+        ->toThrow(ValidationException::class);
 
     \App\Actions\Dispatching\ProductionOutput\PutAwayFinishedJobOrder::make()->action($warehouse, $trips[0]['job_order_ids'], 'BAY-SKBUY');
 
@@ -3080,5 +3089,62 @@ test('a short day splits the made goods into whole destination trips and carries
     \App\Actions\Dispatching\ProductionOutput\PutAwayFinishedJobOrder::make()->action($warehouse, $trips[1]['job_order_ids'], 'BAY-ESBUY');
 
     expect($jobOrder->refresh()->state)->toBe(JobOrderStateEnum::RECEIVED)
-        ->and((float) $item->refresh()->quantity_received)->toBe(35.0);
+        ->and((float) $item->refresh()->quantity_received)->toBe(35.0)
+        ->and((float) \App\Models\Inventory\LocationOrgStock::where('location_id', $buyers[0]['bay']->id)->where('org_stock_id', $orgStock->id)->value('quantity'))->toBe(6.0)
+        ->and((float) \App\Models\Inventory\LocationOrgStock::where('location_id', $buyers[1]['bay']->id)->where('org_stock_id', $orgStock->id)->value('quantity'))->toBe(1.0);
+});
+
+test('carrying over a job does not ask for, or pay, the earlier steps twice', function () {
+    $pack = StoreManufactureTask::make()->action($this->production, [
+        'code'                            => 'PACK-CO',
+        'name'                            => 'Pack',
+        'task_materials_cost'             => 0,
+        'task_energy_cost'                => 0,
+        'task_other_cost'                 => 0,
+        'task_work_cost'                  => 0.1,
+        'task_lower_target'               => 10,
+        'task_upper_target'               => 10,
+        'operative_reward_terms'          => ManufactureTaskOperativeRewardTermsEnum::ABOVE_LOWER_LIMIT->value,
+        'operative_reward_allowance_type' => ManufactureTaskOperativeRewardAllowanceTypeEnum::OFFSET_SALARY->value,
+        'operative_reward_amount'         => 0,
+    ]);
+    $this->artefact->manufactureTasks()->detach();
+    $this->artefact->manufactureTasks()->syncWithoutDetaching([
+        $this->manufactureTask->id => ['position' => 1, 'units_per_artefact' => 1],
+        $pack->id                  => ['position' => 2, 'units_per_artefact' => 1],
+    ]);
+    $user = $this->guest->getUser();
+
+    $jobOrder = StoreJobOrder::make()->action($this->production, []);
+    $item     = StoreJobOrderItem::make()->action($jobOrder, ['artefact_id' => $this->artefact->id, 'quantity' => 100]);
+    ConfirmJobOrder::make()->action($jobOrder);
+    [$make, $packTask] = $item->tasks()->orderBy('position')->get();
+
+    CloseManufactureTaskSession::make()->action(StartManufactureTaskSession::make()->action($user, $make), ['quantity_made' => 100]);
+    CloseManufactureTaskSession::make()->action(StartManufactureTaskSession::make()->action($user, $packTask), ['quantity_made' => 60, 'outcome' => 'carry_over']);
+
+    $carried      = \App\Models\Production\JobOrder::where('production_id', $this->production->id)->orderByDesc('id')->first();
+    $carriedTasks = $carried->jobOrderItems()->first()->tasks()->orderBy('position')->get();
+
+    expect($item->refresh()->quantity)->toBe(60)
+        ->and($carried->jobOrderItems()->first()->quantity)->toBe(40)
+        ->and((float) $carriedTasks[0]->quantity_required)->toBe(0.0)
+        ->and($carriedTasks[0]->state)->toBe(JobOrderItemTaskStateEnum::DONE)
+        ->and((float) $carriedTasks[1]->quantity_required)->toBe(40.0);
+
+    /* Nobody can book more than what is left on a task. */
+    expect(fn () => CloseManufactureTaskSession::make()->action(StartManufactureTaskSession::make()->action($user, $carriedTasks[1]), ['quantity_made' => 41]))
+        ->toThrow(ValidationException::class);
+});
+
+test('factory search is gated by production permissions', function () {
+    $stranger = \App\Models\SysAdmin\User::factory()->create(['group_id' => $this->group->id]);
+
+    actingAs($stranger);
+    get(route('grp.search.index', ['route_src' => 'grp.org.productions.show', 'production' => $this->production->slug, 'q' => 'a']))
+        ->assertForbidden();
+
+    actingAs($this->guest->getUser());
+    get(route('grp.search.index', ['route_src' => 'grp.org.productions.show', 'production' => $this->production->slug, 'q' => 'a']))
+        ->assertOk();
 });

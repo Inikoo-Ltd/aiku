@@ -54,6 +54,7 @@ class RepairDormantArtefacts
     {
         return Artefact::where('production_id', $production->id)
             ->where('state', ArtefactStateEnum::ACTIVE)
+            ->where('created_at', '<=', $since)
             ->where(fn ($query) => $query->whereNull('org_stock_id')->orWhereNotExists($this->soldSince($since)))
             ->whereNotExists($this->madeSince($since))
             ->orderBy('code');

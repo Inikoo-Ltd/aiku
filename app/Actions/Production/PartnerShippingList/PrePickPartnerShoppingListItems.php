@@ -18,6 +18,7 @@ use App\Models\Production\Production;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Redirect;
+use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 
 class PrePickPartnerShoppingListItems extends OrgAction
@@ -47,6 +48,16 @@ class PrePickPartnerShoppingListItems extends OrgAction
      */
     public function handle(Organisation $seller, array $lines): array
     {
+        return DB::transaction(fn () => $this->prePick($seller, $lines));
+    }
+
+    /**
+     * @param array<int, array{id: int, quantity?: float}> $lines
+     *
+     * @return array{pre_picked: int, quantity: float, skipped: array<int, array{id: int, reason: string}>}
+     */
+    private function prePick(Organisation $seller, array $lines): array
+    {
         $items = PartnerShoppingListItem::query()
             ->whereIn('id', collect($lines)->pluck('id'))
             ->where('state', ShoppingListItemStateEnum::OPEN)
@@ -59,6 +70,7 @@ class PrePickPartnerShoppingListItems extends OrgAction
         $quantity           = 0.0;
         $skipped            = [];
         $touchedOrgPartners = [];
+        $promised           = [];
 
         foreach ($lines as $line) {
             /** @var PartnerShoppingListItem|null $item */
@@ -68,9 +80,12 @@ class PrePickPartnerShoppingListItems extends OrgAction
                 continue;
             }
 
+            $promised[$item->stock_id] ??= $this->promisedButNotStaged($seller, $item->stock_id);
+
             $available = (float) OrgStock::where('organisation_id', $seller->id)
                 ->where('stock_id', $item->stock_id)
-                ->value('quantity_available');
+                ->lockForUpdate()
+                ->value('quantity_available') - $promised[$item->stock_id];
 
             $wanted = round(min((float) ($line['quantity'] ?? $item->quantity), (float) $item->quantity, $available), 3);
             if ($wanted <= 0) {
@@ -107,6 +122,7 @@ class PrePickPartnerShoppingListItems extends OrgAction
             ]);
 
             $touchedOrgPartners[$item->org_partner_id] = $item->orgPartner;
+            $promised[$item->stock_id] += $wanted;
             $prePicked++;
             $quantity += $wanted;
         }
@@ -120,12 +136,35 @@ class PrePickPartnerShoppingListItems extends OrgAction
         return ['pre_picked' => $prePicked, 'quantity' => round($quantity, 3), 'skipped' => $skipped];
     }
 
+    /**
+     * Stock already promised to earlier pre-picks is not on the shelf for anyone else, even though
+     * availability only drops once the warehouse has walked it into the bay.
+     */
+    private function promisedButNotStaged(Organisation $seller, int $stockId): float
+    {
+        return (float) PartnerShoppingListItem::query()
+            ->where('partner_organisation_id', $seller->id)
+            ->where('stock_id', $stockId)
+            ->where('state', ShoppingListItemStateEnum::OPEN)
+            ->whereNotNull('pre_picked_at')
+            ->sum('quantity');
+    }
+
+    public function rules(): array
+    {
+        return [
+            'lines'            => ['required', 'array', 'min:1'],
+            'lines.*.id'       => ['required', 'integer'],
+            'lines.*.quantity' => ['sometimes', 'nullable', 'numeric', 'min:0.001'],
+        ];
+    }
+
     /** @return array{pre_picked: int, quantity: float, skipped: array<int, array{id: int, reason: string}>} */
     public function asController(Organisation $organisation, Production $production, ActionRequest $request): array
     {
         $this->initialisationFromProduction($production, $request);
 
-        return $this->handle($organisation, $request->input('lines', []));
+        return $this->handle($organisation, $this->validatedData['lines']);
     }
 
     /** Everything the pre-pick list currently offers, honouring its filters. */
@@ -147,9 +186,9 @@ class PrePickPartnerShoppingListItems extends OrgAction
     public function action(Organisation $seller, array $lines): array
     {
         $this->asAction = true;
-        $this->initialisation($seller, []);
+        $this->initialisation($seller, ['lines' => $lines]);
 
-        return $this->handle($seller, $lines);
+        return $this->handle($seller, $this->validatedData['lines']);
     }
 
     public function htmlResponse(): RedirectResponse

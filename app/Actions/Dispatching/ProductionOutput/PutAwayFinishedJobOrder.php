@@ -16,7 +16,9 @@ use App\Models\Inventory\Warehouse;
 use App\Models\Production\JobOrder;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redirect;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -37,17 +39,20 @@ class PutAwayFinishedJobOrder extends OrgAction
 
         $jobOrders = JobOrder::whereIn('id', $jobOrderIds)->get();
 
-        return $jobOrders->map(function (JobOrder $jobOrder) use ($warehouse, $location) {
+        foreach ($jobOrders as $jobOrder) {
             if ($jobOrder->organisation_id !== $warehouse->organisation_id) {
                 throw ValidationException::withMessages(['job_order' => __('Job order does not belong to this warehouse')]);
             }
+        }
 
-            return ReceiveJobOrderIntoStock::make()->action($jobOrder, [
-                'location_id' => $location->id,
-                'allocations' => $this->allocationsFor($jobOrder, $location),
-            ]);
-        })->all();
+        return DB::transaction(fn () => $jobOrders->map(fn (JobOrder $jobOrder) => ReceiveJobOrderIntoStock::make()->action($jobOrder, [
+            'location_id' => $location->id,
+            'allocations' => $this->allocationsFor($jobOrder, $location),
+            'user_id'     => $this->userId,
+        ]))->all());
     }
+
+    private ?int $userId = null;
 
     /**
      * What this job order owes this location, minus whatever earlier walks already put away.
@@ -87,7 +92,7 @@ class PutAwayFinishedJobOrder extends OrgAction
         return [
             'location_code'   => ['required', 'string'],
             'job_order_ids'   => ['required', 'array', 'min:1'],
-            'job_order_ids.*' => ['integer'],
+            'job_order_ids.*' => ['integer', Rule::exists('job_orders', 'id')->where('organisation_id', $this->organisation->id)],
         ];
     }
 
@@ -117,6 +122,7 @@ class PutAwayFinishedJobOrder extends OrgAction
      */
     public function asController(Organisation $organisation, Warehouse $warehouse, ActionRequest $request): array
     {
+        $this->userId = $request->user()->id;
         $this->initialisationFromWarehouse($warehouse, $request);
 
         return $this->handle($warehouse, $this->validatedData['job_order_ids'], $this->validatedData['location_code']);

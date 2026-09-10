@@ -33,7 +33,7 @@ class GetFinishedProductionJobOrders
             ->where('state', JobOrderStateEnum::CONFIRMED)
             ->whereExists(fn ($query) => $query->selectRaw('1')->from('job_order_item_tasks')->whereColumn('job_order_item_tasks.job_order_id', 'job_orders.id'))
             ->whereNotExists(fn ($query) => $query->selectRaw('1')->from('job_order_item_tasks')->whereColumn('job_order_item_tasks.job_order_id', 'job_orders.id')->where('job_order_item_tasks.state', '!=', 'done'))
-            ->with(['employee', 'jobOrderItems.artefact', 'jobOrderItems.tasks'])
+            ->with(['employee', 'jobOrderItems.artefact.orgStock', 'jobOrderItems.tasks'])
             ->orderBy('confirmed_at')
             ->get();
 
@@ -71,10 +71,11 @@ class GetFinishedProductionJobOrders
                 $trips[$key]['job_order_ids'][$jobOrder->id]                = $jobOrder->id;
                 $trips[$key]['jobs'][$jobOrder->id]['reference']            = $jobOrder->reference;
                 $trips[$key]['jobs'][$jobOrder->id]['artisan']              = $jobOrder->employee?->contact_name;
+                $packedIn = max(1, (int) $item->artefact->orgStock?->packed_in);
                 $trips[$key]['jobs'][$jobOrder->id]['items'][$item->id]     = [
                     'code'     => $item->artefact->code,
                     'name'     => $item->artefact->name,
-                    'quantity' => ($trips[$key]['jobs'][$jobOrder->id]['items'][$item->id]['quantity'] ?? 0) + $quantity,
+                    'quantity' => round(($trips[$key]['jobs'][$jobOrder->id]['items'][$item->id]['quantity'] ?? 0) + $quantity / $packedIn, 3),
                 ];
             }
         }

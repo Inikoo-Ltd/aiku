@@ -115,19 +115,42 @@ class Search extends OrgAction
                 $options = ['organisation_id' => Organisation::where('slug', $request->query('organisation'))->first()?->id];
             }
         } elseif (in_array($scope, self::ORGANISATION_SCOPES, true)) {
-            $organisation = Organisation::where('slug', $request->query('organisation'))->firstOrFail();
+            $organisation = Organisation::where('slug', $request->query('organisation'))->where('group_id', $request->user()->group_id)->firstOrFail();
             $this->initialisation($organisation, $request);
+            $this->authoriseScope($request, [
+                'org-supervisor.'.$organisation->id,
+                match ($scope) {
+                    'accounting'  => "accounting.{$organisation->id}.view",
+                    'hr'          => "human-resources.{$organisation->id}.view",
+                    'procurement' => "procurement.{$organisation->id}.view",
+                },
+            ]);
             $options = ['organisation_id' => $organisation->id];
         } elseif (in_array($scope, self::WAREHOUSE_SCOPES, true)) {
-            $warehouse = Warehouse::where('slug', $request->query('warehouse'))->firstOrFail();
+            $warehouse = Warehouse::where('slug', $request->query('warehouse'))->where('group_id', $request->user()->group_id)->firstOrFail();
             $this->initialisationFromWarehouse($warehouse, $request);
+            $this->authoriseScope($request, [
+                'org-supervisor.'.$warehouse->organisation_id,
+                "inventory.{$warehouse->id}.view",
+                "dispatching.{$warehouse->id}.view",
+                "incoming.{$warehouse->id}.view",
+                "locations.{$warehouse->id}.view",
+            ]);
             $options = [
                 'warehouse_id'    => $warehouse->id,
                 'organisation_id' => $warehouse->organisation_id,
             ];
         } elseif (in_array($scope, self::PRODUCTION_SCOPES, true)) {
-            $production = Production::where('slug', $request->query('production'))->firstOrFail();
+            $production = Production::where('slug', $request->query('production'))->where('group_id', $request->user()->group_id)->firstOrFail();
             $this->initialisationFromProduction($production, $request);
+            $this->authoriseScope($request, [
+                'org-supervisor.'.$production->organisation_id,
+                'productions-view.'.$production->organisation_id,
+                "productions_operations.{$production->id}.view",
+                "productions_operations.{$production->id}.orchestrate",
+                "productions_rd.{$production->id}.view",
+                "productions_procurement.{$production->id}.view",
+            ]);
             $options = [
                 'production_id'     => $production->id,
                 'production_slug'   => $production->slug,
@@ -135,8 +158,18 @@ class Search extends OrgAction
                 'organisation_slug' => $production->organisation->slug,
             ];
         } elseif (in_array($scope, self::SHOP_SCOPES, true)) {
-            $shop = Shop::where('slug', $request->query('shop'))->firstOrFail();
+            $shop = Shop::where('slug', $request->query('shop'))->where('group_id', $request->user()->group_id)->firstOrFail();
             $this->initialisationFromShop($shop, $request);
+            $this->authoriseScope($request, [
+                'org-supervisor.'.$shop->organisation_id,
+                'shops-view.'.$shop->organisation_id,
+                "products.{$shop->id}.view",
+                "crm.{$shop->id}.view",
+                "orders.{$shop->id}.view",
+                "marketing.{$shop->id}.view",
+                "web.{$shop->id}.view",
+                "accounting.{$shop->organisation_id}.view",
+            ]);
             $options = ['shop_id' => $shop->id, 'language' => $shop->language->code];
         } else {
             return [];
@@ -162,6 +195,14 @@ class Search extends OrgAction
         $results['search_log_ulid'] = $ulid;
 
         return $results;
+    }
+
+    /**
+     * @param  array<int, string>  $permissions
+     */
+    private function authoriseScope(ActionRequest $request, array $permissions): void
+    {
+        abort_unless($request->user()->authTo($permissions), 403);
     }
 
     public function getRouteScope(string $route): ?string

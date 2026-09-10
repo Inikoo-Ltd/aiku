@@ -113,7 +113,7 @@ class IndexArtefacts extends OrgAction
                 'engine'   => function ($query, $elements) {
                     if (in_array('fractional', $elements)) {
                         $query->whereNotNull('artefacts.recommended_batch_size')
-                            ->whereRaw('mod(artefacts.recommended_batch_size, org_stocks.packed_in) <> 0');
+                            ->whereRaw('mod(artefacts.recommended_batch_size, nullif(org_stocks.packed_in, 0)) <> 0');
 
                         return;
                     }
@@ -165,7 +165,7 @@ class IndexArtefacts extends OrgAction
             ->selectRaw('count(*) - count(recommended_batch_size) as batch_size_unassigned')
             ->selectRaw('count(shelf_life_days) as shelf_life_assigned')
             ->selectRaw('count(*) - count(shelf_life_days) as shelf_life_unassigned')
-            ->selectRaw('count(*) filter (where mod(recommended_batch_size, (select packed_in from org_stocks where org_stocks.id = artefacts.org_stock_id)) <> 0) as batch_size_fractional')
+            ->selectRaw('count(*) filter (where mod(recommended_batch_size, nullif((select packed_in from org_stocks where org_stocks.id = artefacts.org_stock_id), 0)) <> 0) as batch_size_fractional')
             ->first();
 
         return [

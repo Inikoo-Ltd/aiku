@@ -35,6 +35,7 @@ class StoreJobOrdersFromToProduceItems extends OrgAction
             ->whereIn('id', $ids)
             ->where('state', ShoppingListItemStateEnum::OPEN)
             ->whereNull('job_order_id')
+            ->whereNull('pre_picked_at')
             ->where(function ($query) use ($seller) {
                 $query->where('partner_organisation_id', $seller->id)
                     ->orWhere(function ($query) use ($seller) {

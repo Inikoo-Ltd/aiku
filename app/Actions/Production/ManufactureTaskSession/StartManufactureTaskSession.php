@@ -18,6 +18,7 @@ use App\Enums\Production\ManufactureTaskSession\ManufactureTaskSessionStateEnum;
 use App\Models\Production\JobOrderItemTask;
 use App\Models\Production\ManufactureTaskSession;
 use App\Models\SysAdmin\User;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Validation\ValidationException;
@@ -54,7 +55,8 @@ class StartManufactureTaskSession extends OrgAction
             ]);
         }
 
-        $session = ManufactureTaskSession::create([
+        try {
+            $session = ManufactureTaskSession::create([
             'group_id'               => $jobOrderItemTask->group_id,
             'organisation_id'        => $jobOrderItemTask->organisation_id,
             'production_id'          => $jobOrderItemTask->production_id,
@@ -65,6 +67,11 @@ class StartManufactureTaskSession extends OrgAction
             'state'                  => ManufactureTaskSessionStateEnum::OPEN,
             'started_at'             => now(),
         ]);
+        } catch (UniqueConstraintViolationException) {
+            throw ValidationException::withMessages([
+                'job_order_item_task_id' => __('You already have an open task, close it first'),
+            ]);
+        }
 
         if ($jobOrderItemTask->state == JobOrderItemTaskStateEnum::TODO) {
             $jobOrderItemTask->update(['state' => JobOrderItemTaskStateEnum::IN_PROGRESS]);
