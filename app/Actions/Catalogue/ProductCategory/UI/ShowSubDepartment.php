@@ -156,7 +156,7 @@ class ShowSubDepartment extends OrgAction
                                 'parameters' => $request->route()->originalParameters()
                             ]
                         ] : false,
-                        !$subDepartment->children()->exists() ? [
+                        [
                             'type'  => 'button',
                             'style' => 'delete',
                             'key'   => 'delete',
@@ -167,7 +167,7 @@ class ShowSubDepartment extends OrgAction
                                 ],
                                 'method'     => 'delete',
                             ]
-                        ] : false,
+                        ]
                     ],
                     'parentTag'     => $parentTag,
                     'subNavigation' => $this->getSubDepartmentSubNavigation($subDepartment)
