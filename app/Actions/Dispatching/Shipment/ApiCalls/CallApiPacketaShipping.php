@@ -63,6 +63,16 @@ class CallApiPacketaShipping extends OrgAction
             $parentResource = GetShippingDeliveryNoteData::run($parent);
         }
 
+        if (Arr::get($parentResource, 'cash_on_delivery')) {
+            return [
+                'status'    => 'fail',
+                'errorData' => [
+                    'message' => 'Packeta does not collect cash on delivery, use another shipper for this delivery note.',
+                ],
+                'modelData' => [],
+            ];
+        }
+
         $parcels     = $parent->parcels;
         $weight      = collect($parcels)->sum('weight') ?? 0;
         $order       = $parent->orders->first();
@@ -77,7 +87,7 @@ class CallApiPacketaShipping extends OrgAction
                 'modelData' => [],
             ];
         }
-        $value            = $this->getInsuranceValueByCountryCode($countryCode, $weight, !empty($parent->cash_on_delivery));
+        $value            = $this->getInsuranceValueByCountryCode($countryCode, $weight);
         $packetAttributes = [
             'number'      => Str::limit($parent->reference, 30),
             'name'        => Arr::get($parentResource, 'to_first_name'),
@@ -96,11 +106,6 @@ class CallApiPacketaShipping extends OrgAction
             'zip'         => Arr::get($parentResource, 'to_address.postal_code'),
             'note'        => $parent->shipping_notes,
         ];
-
-        // Add COD (Cash on Delivery) if applicable
-        if (!empty($parent->cash_on_delivery)) {
-            $packetAttributes['cod'] = (float)$parent->cash_on_delivery;
-        }
 
         $errorData = [];
         $modelData = [];

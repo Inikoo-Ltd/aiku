@@ -1608,6 +1608,26 @@ test('delivery note address actions and temp picker and shipping data', function
     expect($shippingData['cash_on_delivery'])->toBeNull();
 });
 
+test('packeta refuses a cash on delivery delivery note', function () {
+    [$deliveryNote] = handlingDeliveryNoteWithPicking($this);
+
+    \App\Actions\Dispatching\DeliveryNote\StoreDeliveryNoteAddress::make()->action($deliveryNote, ['address' => new Address(Address::factory()->definition())]);
+    $deliveryNote->update(['is_cash_on_delivery' => true]);
+    $deliveryNote->orders->first()->update(['total_amount' => 100, 'payment_amount' => 0]);
+
+    config(['app.sandbox.shipper_packeta_access_token' => json_encode(['api_password' => 'test'])]);
+    $shipper = StoreShipper::make()->action($this->organisation, [
+        'code'        => 'PKT'.Str::random(4),
+        'name'        => 'Packeta',
+        'trade_as'    => 'pkt',
+        'api_shipper' => 'packeta-sk',
+    ]);
+
+    $response = \App\Actions\Dispatching\Shipment\ApiCalls\CallApiPacketaShipping::run($deliveryNote->refresh(), $shipper);
+    expect($response['status'])->toBe('fail')
+        ->and($response['errorData']['message'])->toContain('does not collect cash on delivery');
+});
+
 test('change picking bay on delivery note', function () {
     [$deliveryNote] = handlingDeliveryNoteWithPicking($this);
     $pickedBay = StorePickedBay::make()->handle($this->warehouse, ['code' => 'CPB'.Str::random(4)]);
