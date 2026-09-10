@@ -37,6 +37,7 @@ use App\Actions\Web\WebBlock\Iris\GetIrisTopFamilies;
 use App\Actions\Web\WebBlock\Iris\GetIrisWebBlockBlogRegister;
 use App\Actions\Web\WebBlock\Iris\GetIrisWebBlockForgotPassword;
 use App\Actions\Web\WebBlock\Iris\GetIrisWebBlockLogin;
+use App\Actions\Web\WebBlock\Iris\GetIrisWebBlockRegister;
 use App\Actions\Web\Webpage\UI\SanitiseImagesWebBlock;
 use Illuminate\Support\Arr;
 
@@ -107,7 +108,7 @@ trait WithFillIrisWebBlocks
         } elseif ($webBlockType == 'login') {
             $parsedWebBlocks[$key] = GetIrisWebBlockLogin::run($webpage, $webBlock);
         } elseif ($webBlockType == 'register') {
-            $parsedWebBlocks[$key] = GetIrisWebBlockBlogRegister::run($webpage, $webBlock);
+            $parsedWebBlocks[$key] = GetIrisWebBlockRegister::run($webpage, $webBlock);
         } elseif ($webBlockType == 'forgot-password') {
             $parsedWebBlocks[$key] = GetIrisWebBlockForgotPassword::run($webpage, $webBlock);
         } elseif ($webBlockType == 'recommendation-customer-recently-bought-1') {
