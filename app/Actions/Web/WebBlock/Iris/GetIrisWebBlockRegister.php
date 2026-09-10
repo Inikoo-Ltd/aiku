@@ -14,7 +14,7 @@ use App\Models\Web\Webpage;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsObject;
 
-class GetIrisWebBlockBlogRegister
+class GetIrisWebBlockRegister
 {
     use AsObject;
     use WithBlogCategoriesBlock;
