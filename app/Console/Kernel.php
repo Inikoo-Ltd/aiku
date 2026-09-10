@@ -37,6 +37,7 @@ use App\Actions\CRM\Prospect\Mailshots\RunProspectMailshotScheduled;
 use App\Actions\CRM\Prospect\Mailshots\RunProspectMailshotSecondWave;
 use App\Actions\CRM\WebUserPasswordReset\PurgeWebUserPasswordReset;
 use App\Actions\DevOps\MonitorNightowlIngest;
+use App\Actions\Comms\Email\RemindChannelOrdersOnHold;
 use App\Actions\DevOps\MonitorOrdersInLimbo;
 use App\Actions\DevOps\MonitorQueueBacklogs;
 use App\Actions\DevOps\MonitorRetinaApiInflow;
@@ -181,6 +182,15 @@ class Kernel extends ConsoleKernel
                 name: 'MonitorQueueBacklogs',
                 type: 'job',
                 scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
+                $schedule->job(RemindChannelOrdersOnHold::makeJob())->dailyAt('08:00')->timezone('UTC')->withoutOverlapping()->onOneServer()->sentryMonitor(
+                    monitorSlug: 'RemindChannelOrdersOnHold',
+                ),
+                name: 'RemindChannelOrdersOnHold',
+                type: 'job',
+                scheduledAt: '08:00'
             );
 
             $this->logSchedule(
