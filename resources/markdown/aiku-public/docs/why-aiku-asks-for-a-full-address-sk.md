@@ -5,7 +5,7 @@ date: 2026-09-10
 source_date: 2026-09-10
 tags: orders, crm, invoices, addresses, accounting
 category: orders
-help_routes: grp.org.shops.show.crm.customers, grp.org.shops.show.ordering.orders.show, grp.org.accounting.invoices
+help_routes: grp.org.shops.show.crm.customers, grp.org.accounting.invoices
 ---
 
 <aside class="tldr">

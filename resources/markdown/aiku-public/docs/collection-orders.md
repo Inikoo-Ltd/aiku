@@ -4,7 +4,7 @@ summary: What changes when a customer collects an order instead of having it shi
 date: 2026-09-10
 tags: orders, invoices, collection, accounting, crm
 category: orders
-help_routes: grp.org.shops.show.ordering.orders.show, grp.org.accounting.invoices
+help_routes: grp.org.accounting.invoices
 ---
 
 <aside class="tldr">

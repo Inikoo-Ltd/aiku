@@ -15,7 +15,6 @@ use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateMasterProductCategories;
 use App\Actions\Traits\Authorisations\WithMastersEditAuthorisation;
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
-use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Models\Masters\MasterProductCategory;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
@@ -31,25 +30,25 @@ class DeleteMasterProductCategory extends OrgAction
 
     public function handle(MasterProductCategory $masterProductCategory, bool $forceDelete = false): MasterProductCategory
     {
-        // DB::table('product_categories')->where('master_product_category_id', $masterProductCategory->id)->update(['master_product_category_id' => null]);
+        DB::table('product_categories')->where('master_product_category_id', $masterProductCategory->id)->update(['master_product_category_id' => null]);
 
-        // if ($forceDelete) {
-        //     DB::table('master_product_category_stats')->where('master_product_category_id', $masterProductCategory->id)->delete();
-        //     DB::table('master_product_category_time_series')->where('master_product_category_id', $masterProductCategory->id)->delete();
-        //     DB::table('master_product_category_ordering_stats')->where('master_product_category_id', $masterProductCategory->id)->delete();
+        if ($forceDelete) {
+            DB::table('master_product_category_stats')->where('master_product_category_id', $masterProductCategory->id)->delete();
+            DB::table('master_product_category_time_series')->where('master_product_category_id', $masterProductCategory->id)->delete();
+            DB::table('master_product_category_ordering_stats')->where('master_product_category_id', $masterProductCategory->id)->delete();
 
-        //     $masterProductCategory->forceDelete();
-        // } else {
-        //     $masterProductCategory->delete();
-        // }
+            $masterProductCategory->forceDelete();
+        } else {
+            $masterProductCategory->delete();
+        }
 
-        // match ($masterProductCategory->type) {
-        //     MasterProductCategoryTypeEnum::DEPARTMENT     => MasterShopHydrateMasterDepartments::dispatch($masterProductCategory->masterShop)->delay($this->hydratorsDelay),
-        //     MasterProductCategoryTypeEnum::SUB_DEPARTMENT => MasterShopHydrateMasterSubDepartments::dispatch($masterProductCategory->masterShop)->delay($this->hydratorsDelay),
-        //     MasterProductCategoryTypeEnum::FAMILY         => MasterShopHydrateMasterFamilies::dispatch($masterProductCategory->masterShop)->delay($this->hydratorsDelay),
-        // };
-        
-        // GroupHydrateMasterProductCategories::dispatch($masterProductCategory->group)->delay($this->hydratorsDelay);
+        match ($masterProductCategory->type) {
+            MasterProductCategoryTypeEnum::DEPARTMENT     => MasterShopHydrateMasterDepartments::dispatch($masterProductCategory->masterShop)->delay($this->hydratorsDelay),
+            MasterProductCategoryTypeEnum::SUB_DEPARTMENT => MasterShopHydrateMasterSubDepartments::dispatch($masterProductCategory->masterShop)->delay($this->hydratorsDelay),
+            MasterProductCategoryTypeEnum::FAMILY         => MasterShopHydrateMasterFamilies::dispatch($masterProductCategory->masterShop)->delay($this->hydratorsDelay),
+        };
+
+        GroupHydrateMasterProductCategories::dispatch($masterProductCategory->group)->delay($this->hydratorsDelay);
 
         return $masterProductCategory;
     }
