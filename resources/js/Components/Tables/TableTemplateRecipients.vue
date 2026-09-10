@@ -83,7 +83,7 @@ const props = withDefaults(defineProps<{
     filtersStructure: Record<string, any>
     recipientsRecipe: any,
     shopId: number,
-    estimatedRecipients: number,
+    estimatedRecipients?: number,
     shopSlug: string
     showSave?: boolean
     exportRoutes?: { xlsx: routeType, csv: routeType }
@@ -95,9 +95,15 @@ const props = withDefaults(defineProps<{
     upcomingOutOfStockCount?: number
     upcomingFilter?: string | null
     estimateLabel?: string
+    showEstimate?: boolean
     exportFields?: { key: string, label: string }[]
+    channels?: Record<string, boolean>
+    channelOptions?: { value: string, label: string }[]
+    reloadOnly?: string[]
+    pendingKeys?: string[]
 }>(), {
     showSave: true,
+    showEstimate: true,
     estimateLabel: 'Estimated Recipients',
 });
 
@@ -123,6 +129,27 @@ const {
     hydrateSavedFilters,
     extraQuery,
 } = useFilterRecipients(props)
+
+const selectedChannels = ref<Record<string, boolean>>({ ...(props.channels ?? {}) })
+
+if (props.channelOptions?.length) {
+    extraQuery.channels = { ...selectedChannels.value }
+}
+
+/* The selection no longer rides along per row: the server answers per row whether the
+   campaign holds that contact, so a channel change just re-asks.
+
+   The ticks are attached to this one call rather than kept in extraQuery, which every reload
+   path shares. A channel change redefines which populations are in play, so ticks belonging to
+   one the user has just switched off are answered for and dropped. A filter change is browsing,
+   not a statement about membership, and sends nothing: the server reads no pending_keys, says
+   nothing about them, and the selection survives untouched. Carrying them in extraQuery would
+   also leave them in the URL, where Table's own paging rebuilds the query string from, and every
+   later page would go on asking a question only the channel boxes meant to ask. */
+const onChannelChange = () => {
+    extraQuery.channels = { ...selectedChannels.value }
+    fetchCustomers(props.pendingKeys?.length ? { pending_keys: [...props.pendingKeys] } : {})
+}
 
 const selectedStates = ref<string[]>(props.stateFilter ? [...props.stateFilter] : [])
 
@@ -400,6 +427,15 @@ watch(
         <div class="flex flex-col gap-3 mb-6 xl:flex-row xl:items-center xl:justify-between">
             <!-- left side -->
             <div class="flex flex-wrap items-center gap-2 min-w-0">
+                <div v-if="channelOptions?.length" class="flex items-center gap-4 h-10 px-4 rounded-lg border border-gray-200 bg-white">
+                    <label v-for="option in channelOptions" :key="option.value"
+                        class="flex items-center gap-2 cursor-pointer select-none">
+                        <input type="checkbox" v-model="selectedChannels[option.value]" @change="onChannelChange"
+                            class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
+                        <span class="text-sm text-gray-700 whitespace-nowrap">{{ trans(option.label) }}</span>
+                    </label>
+                </div>
+
                 <Menu :model="availableFilters" popup ref="filterMenu">
                 </Menu>
 
@@ -452,13 +488,13 @@ watch(
                     <Badge :value="upcomingOutOfStockCount" class="ml-2" />
                 </Button>
 
-                <Button :label="trans('Apply Filters')" :type="'primary'" class="h-10 px-4 shrink-0 whitespace-nowrap" @click="fetchCustomers" />
+                <Button :label="trans('Apply Filters')" :type="'primary'" class="h-10 px-4 shrink-0 whitespace-nowrap" @click="() => fetchCustomers()" />
 
                 <Button v-if="Object.keys(activeFilters).length" label="Clear filters" type="warning" class="h-10 px-4 shrink-0 whitespace-nowrap"
                     @click="clearAllFilters" />
             </div>
             <!-- center side -->
-            <div v-if="isAllCustomers" class="flex items-center">
+            <div v-if="isAllCustomers && showEstimate" class="flex items-center">
                 <span class="text-blue-600 font-medium">
                     {{ trans("Audience: All Customers") }}
                 </span>
@@ -727,7 +763,7 @@ watch(
             </div>
         </div>
 
-        <div class="mt-8">
+        <div v-if="showEstimate" class="mt-8">
             <div class="bg-white shadow-sm ring-1 ring-gray-200 rounded-2xl p-8 flex items-center justify-between">
 
                 <div>

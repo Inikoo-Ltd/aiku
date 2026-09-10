@@ -37,6 +37,7 @@ use App\Models\Inventory\Warehouse;
 use App\Models\Reviews\ReviewRatingLabel;
 use App\Models\SysAdmin\Organisation;
 use App\Rules\IUnique;
+use App\Rules\Phone;
 use App\Rules\ValidAddress;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
@@ -44,8 +45,10 @@ use Illuminate\Validation\Rules\File;
 use Lorisleiva\Actions\ActionRequest;
 use App\Models\Ordering\SalesChannel;
 use Closure;
+use App\Actions\Web\Webpage\BreakWebpageCache;
 use App\Actions\Web\Website\BreakWebsiteCache;
 use App\Enums\Web\Crawl\CrawlTriggerEnum;
+use App\Enums\Web\Webpage\WebpageStateEnum;
 use Illuminate\Support\Facades\Event;
 use OwenIt\Auditing\Events\AuditCustom;
 
@@ -55,6 +58,16 @@ class UpdateShop extends OrgAction
     use WithModelAddressActions;
     use WithNoStrictRules;
 
+    /**
+     * The registration settings the register page is built from, so a change to one of them
+     * leaves the cached page describing a form the shop no longer asks.
+     */
+    private const REGISTER_PAGE_SETTINGS = [
+        'marketing_opt_in_label',
+        'marketing_opt_in_default',
+        'whatsapp_newsletter_label',
+        'whatsapp_newsletter_default',
+    ];
 
     public function authorize(ActionRequest $request): bool
     {
@@ -73,6 +86,15 @@ class UpdateShop extends OrgAction
         $originalViewContactOptionsPanel = Arr::get($shop->settings ?? [], 'chat.view_contact_options_panel');
         $originalDataContactOptionsPanel = Arr::get($shop->settings ?? [], 'chat.data_contact_options_panel');
         $originalEnableChat              = Arr::get($shop->settings ?? [], 'chat.enable_chat');
+
+        /* Read off the shop rather than the payload because the two callers name these
+           differently: the shop screen sends them flat and they are nested below, while
+           UpdateWebsite nests them itself and arrives with settings.registration already
+           built. Committed state is the one shape both agree on. */
+        $originalRegistrationSettings = Arr::only(
+            Arr::get($shop->settings ?? [], 'registration', []),
+            self::REGISTER_PAGE_SETTINGS
+        );
 
         if ($reviewRatingLabelsTouched) {
             $this->syncReviewRatingLabels($shop, Arr::get($modelData, 'review_rating_labels'));
@@ -283,6 +305,10 @@ class UpdateShop extends OrgAction
                     'customer_notification_access_id' => 'settings.email.provider.customer_notification.access_id',
                     'customer_notification_access_key' => 'settings.email.provider.customer_notification.access_key',
                     'customer_notification_region' => 'settings.email.provider.customer_notification.region',
+                    'enable_whatsapp' => 'settings.whatsapp.enabled',
+                    'whatsapp_phone_number_id' => 'settings.whatsapp.phone_number_id',
+                    'whatsapp_waba_id' => 'settings.whatsapp.waba_id',
+                    'whatsapp_phone_number' => 'settings.whatsapp.phone_number',
                     default => $key
                 },
                 $value
@@ -322,6 +348,10 @@ class UpdateShop extends OrgAction
         data_forget($modelData, 'customer_notification_access_id');
         data_forget($modelData, 'customer_notification_access_key');
         data_forget($modelData, 'customer_notification_region');
+        data_forget($modelData, 'enable_whatsapp');
+        data_forget($modelData, 'whatsapp_phone_number_id');
+        data_forget($modelData, 'whatsapp_waba_id');
+        data_forget($modelData, 'whatsapp_phone_number');
 
         if (Arr::exists($modelData, 'chat_slack_token') || Arr::exists($modelData, 'chat_slack_channels')) {
             $settings = $shop->settings ?? [];
@@ -440,6 +470,14 @@ class UpdateShop extends OrgAction
             data_set($modelData, "settings.registration.marketing_opt_in_default", Arr::pull($modelData, 'marketing_opt_in_default'));
         }
 
+        if (Arr::exists($modelData, 'whatsapp_newsletter_label')) {
+            data_set($modelData, "settings.registration.whatsapp_newsletter_label", Arr::pull($modelData, 'whatsapp_newsletter_label'));
+        }
+
+        if (Arr::exists($modelData, 'whatsapp_newsletter_default')) {
+            data_set($modelData, "settings.registration.whatsapp_newsletter_default", Arr::pull($modelData, 'whatsapp_newsletter_default'));
+        }
+
         if (Arr::exists($modelData, 'stand_alone_invoice_numbers')) {
             data_set($modelData, "settings.invoicing.stand_alone_invoice_numbers", Arr::pull($modelData, 'stand_alone_invoice_numbers'));
         }
@@ -543,6 +581,24 @@ class UpdateShop extends OrgAction
 
         if ($shop->website && ($reviewRatingLabelsTouched || Arr::get($shop->settings ?? [], 'reviews') != $originalReviewSettings || $chatSettingsChanged)) {
             BreakWebsiteCache::run($shop->website, CrawlTriggerEnum::WEBSITE_UPDATE);
+        }
+
+        /* Compared by value rather than read off getChanges(), which reports the whole settings
+           blob because the column is written as a json merge and so cannot say which key moved.
+
+           Only a live register page is worth breaking: the cache is written by the branch that
+           serves it, so anything else has nothing stored to forget. */
+        $registrationSettingsChanged = Arr::only(
+            Arr::get($shop->settings ?? [], 'registration', []),
+            self::REGISTER_PAGE_SETTINGS
+        ) != $originalRegistrationSettings;
+
+        if ($registrationSettingsChanged) {
+            $registerPage = $shop->website?->registerPage;
+
+            if ($registerPage && $registerPage->state == WebpageStateEnum::LIVE) {
+                BreakWebpageCache::run($registerPage);
+            }
         }
 
         if (Arr::hasAny($changes, ['state', 'type'])) {
@@ -797,6 +853,8 @@ class UpdateShop extends OrgAction
             'required_phone_number'                                   => ['sometimes', 'boolean'],
             'marketing_opt_in_default'                                => ['sometimes', 'boolean'],
             'marketing_opt_in_label'                                  => ['sometimes', 'string'],
+            'whatsapp_newsletter_default'                             => ['sometimes', 'boolean'],
+            'whatsapp_newsletter_label'                               => ['sometimes', 'string'],
             'invoice_footer'                                          => ['sometimes', 'string', 'max:10000'],
             'download_pdf_columns'                                    => ['sometimes', 'array'],
             'extra_languages'                                         => ['sometimes', 'array', 'nullable'],
@@ -851,6 +909,10 @@ class UpdateShop extends OrgAction
             'customer_notification_access_id'                         => ['sometimes', 'nullable', 'string'],
             'customer_notification_access_key'                        => ['sometimes', 'nullable', 'string'],
             'customer_notification_region'                            => ['sometimes', 'nullable', Rule::enum(SesRegionEnum::class)],
+            'enable_whatsapp'                                         => ['sometimes', 'boolean'],
+            'whatsapp_phone_number_id'                                => ['sometimes', 'nullable', 'required_if:enable_whatsapp,true', 'string'],
+            'whatsapp_waba_id'                                        => ['sometimes', 'nullable', 'required_if:enable_whatsapp,true', 'string'],
+            'whatsapp_phone_number'                                   => ['sometimes', 'nullable', 'required_if:enable_whatsapp,true', new Phone()],
             'follow_master_pricing'                                   => ['sometimes', 'boolean'],
             'banned_countries'                                        => ['sometimes', 'nullable', 'array'],
             'banned_countries.is_follow_organisation_banned_list'     => ['sometimes', 'boolean'],

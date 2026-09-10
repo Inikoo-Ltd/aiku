@@ -39,6 +39,7 @@ const props = defineProps<{
 const emits = defineEmits<{
     (e: 'optionsList', value: any[]): void
     (e: 'selectedObject', value: any[]): void
+    (e: 'searchChange', value: string): void
 }>()
 
 const layout = inject('layout', layoutStructure)
@@ -198,7 +199,7 @@ defineExpose({
         :loading="isLoading || isComponentLoading === 'fetchProduct'"
         :placeholder="placeholder || trans('Select option')" :resolve-on-load="true" :min-chars="1"
         @open="() => onOpen()"
-        @search-change="(val: string) => val ? onSearchQuery(val) : (onSearchQuery.cancel(), fetchProductList(getUrlFetch({ 'filter[global]': '' }), 'search'))">
+        @search-change="(val: string) => { emits('searchChange', val ?? ''); val ? onSearchQuery(val) : (onSearchQuery.cancel(), fetchProductList(getUrlFetch({ 'filter[global]': '' }), 'search')) }">
 
         <template #singlelabel="{ value }">
             <!-- {{ $attrs }} -->

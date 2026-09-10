@@ -19,9 +19,12 @@ interface PanelSession {
     ulid: string
     contact_name: string
     is_guest: boolean
+    channel?: 'website' | 'whatsapp' | string
     web_user_id?: number | null
+    customer_id?: number | null
     guest_email?: string | null
     guest_phone?: string | null
+    phone_number?: string | null
     shop_name?: string | null
     status: string
     priority?: string | null
@@ -60,6 +63,7 @@ const emit = defineEmits<{
     (e: 'close'): void
     (e: 'priority-updated', value: string): void
     (e: 'synced', webUser: { id: number; name: string; email: string | null }): void
+    (e: 'customer-synced', customer: { id: number; name: string; email: string | null; phone: string | null }): void
 }>()
 
 const PRIORITIES: Array<{ value: string; label: string; color: string; icon: any }> = [
@@ -120,7 +124,10 @@ const timelineError = ref<string | null>(null)
 
 const historySessions = ref<any[]>([])
 const isLoadingHistory = ref(false)
+const isLoadingMoreHistory = ref(false)
 const historyLoaded = ref(false)
+const historyHasMore = ref(false)
+const historyPage = ref(1)
 const selectedHistory = ref<any | null>(null)
 
 const statusColors: Record<string, string> = {
@@ -139,11 +146,17 @@ const tabs: { key: SidePanelTab; label: string; onlyRegistered?: boolean }[] = [
     { key: 'log',        label: 'Log' },
 ]
 
+const sessionApiBase = computed(() =>
+    props.session.channel === 'whatsapp'
+        ? `${baseUrl}/app/api/chats/meta/sessions`
+        : `${baseUrl}/app/api/chats/sessions`
+)
+
 const loadCustomerProfile = async () => {
     if (props.session.is_guest || profileLoaded.value || !props.session.ulid) return
     try {
         isLoadingProfile.value = true
-        const res = await axios.get(`${baseUrl}/app/api/chats/sessions/${props.session.ulid}/customer-profile`)
+        const res = await axios.get(`${sessionApiBase.value}/${props.session.ulid}/customer-profile`)
         customerProfile.value = res.data
         profileLoaded.value = true
     } finally {
@@ -156,7 +169,7 @@ const loadTimeline = async () => {
     try {
         isLoadingTimeline.value = true
         timelineError.value = null
-        const res = await axios.get(`${baseUrl}/app/api/chats/sessions/${props.session.ulid}/customer-timeline`)
+        const res = await axios.get(`${sessionApiBase.value}/${props.session.ulid}/customer-timeline`)
         timelineData.value = res.data
         timelineLoaded.value = true
     } catch (e: any) {
@@ -166,17 +179,42 @@ const loadTimeline = async () => {
     }
 }
 
-const loadHistory = async () => {
-    if (props.session.is_guest || historyLoaded.value || !props.session.web_user_id) return
-    try {
+const loadHistory = async (loadMore = false) => {
+    if (props.session.is_guest) return
+    if (!loadMore && historyLoaded.value) return
+    if (!props.session.customer_id && !props.session.web_user_id) return
+
+    const params: Record<string, any> = { limit: 20 }
+    if (props.session.customer_id) params.customer_id = props.session.customer_id
+    if (props.session.web_user_id) params.web_user_id = props.session.web_user_id
+
+    if (loadMore) {
+        params.page = historyPage.value + 1
+        isLoadingMoreHistory.value = true
+    } else {
         isLoadingHistory.value = true
-        const res = await axios.get(`${baseUrl}/app/api/chats/sessions`, {
-            params: { web_user_id: props.session.web_user_id },
+    }
+
+    try {
+        const res = await axios.get(`${baseUrl}/app/api/chats/customer-chat-history`, {
+            params,
+            withCredentials: true,
         })
-        historySessions.value = res.data?.data?.sessions ?? []
+        const sessions = res.data?.data?.sessions ?? []
+        const pagination = res.data?.data?.pagination ?? {}
+
+        if (loadMore) {
+            historySessions.value = [...historySessions.value, ...sessions]
+        } else {
+            historySessions.value = sessions
+        }
+
+        historyHasMore.value = !!pagination.has_more
+        historyPage.value = pagination.current_page ?? historyPage.value
         historyLoaded.value = true
     } finally {
         isLoadingHistory.value = false
+        isLoadingMoreHistory.value = false
     }
 }
 
@@ -185,6 +223,8 @@ const resetAndLoad = () => {
     timelineLoaded.value = false
     historyLoaded.value = false
     historySessions.value = []
+    historyHasMore.value = false
+    historyPage.value = 1
     selectedHistory.value = null
     customerProfile.value = { tags: [], stats: null, email: null, profile_url: null }
     activeTab.value = 'profile'
@@ -209,23 +249,48 @@ watch(() => props.session.is_guest, (isGuest) => {
 const isSyncing = ref(false)
 const syncError = ref<string | null>(null)
 
-const syncGuestEmail = async () => {
-    if (!props.session.guest_email || isSyncing.value) return
+const isWhatsapp = computed(() => props.session.channel === 'whatsapp')
+
+const canMatchCustomer = computed(() => {
+    if (!props.session.is_guest) return false
+    if (isWhatsapp.value) return !!(props.session.phone_number || props.session.guest_phone)
+    return !!props.session.guest_email
+})
+
+const syncGuest = async () => {
+    if (!canMatchCustomer.value || isSyncing.value) return
     isSyncing.value = true
     syncError.value = null
+
     try {
-        const res = await axios.put(
-            `${baseUrl}/app/api/chats/sessions/${props.session.ulid}/sync-by-email`,
-            { email: props.session.guest_email },
-            { withCredentials: true }
-        )
-        if (res.data?.success && res.data?.data?.web_user) {
-            emit('synced', res.data.data.web_user)
+        if (isWhatsapp.value) {
+            const phone = props.session.phone_number || props.session.guest_phone
+            const res = await axios.put(
+                `${baseUrl}/app/api/chats/meta/sessions/${props.session.ulid}/sync-by-phone`,
+                { phone },
+                { withCredentials: true }
+            )
+            if (res.data?.success && res.data?.data?.customer) {
+                emit('customer-synced', res.data.data.customer)
+            } else {
+                syncError.value = res.data?.message ?? 'No matching Aiku customer for this phone number'
+            }
         } else {
-            syncError.value = res.data?.message ?? 'No matching Aiku customer for this email'
+            const res = await axios.put(
+                `${baseUrl}/app/api/chats/sessions/${props.session.ulid}/sync-by-email`,
+                { email: props.session.guest_email },
+                { withCredentials: true }
+            )
+            if (res.data?.success && res.data?.data?.web_user) {
+                emit('synced', res.data.data.web_user)
+            } else {
+                syncError.value = res.data?.message ?? 'No matching Aiku customer for this email'
+            }
         }
     } catch (e: any) {
-        syncError.value = e?.response?.data?.message ?? 'No matching Aiku customer for this email'
+        syncError.value = e?.response?.data?.message ?? (isWhatsapp.value
+            ? 'No matching Aiku customer for this phone number'
+            : 'No matching Aiku customer for this email')
     } finally {
         isSyncing.value = false
     }
@@ -313,17 +378,17 @@ const copyChatId = async () => {
                             <a :href="`mailto:${session.guest_email}`" class="hover:underline" :style="{ color: themePrimary }">{{ session.guest_email }}</a>
                         </div>
                     </div>
-                    <div v-if="session.is_guest && session.guest_phone" class="grid grid-cols-3 gap-2 items-start">
+                    <div v-if="session.phone_number || session.guest_phone" class="grid grid-cols-3 gap-2 items-start">
                         <div class="text-gray-500 text-xs">Phone</div>
-                        <div class="col-span-2 text-xs font-medium text-gray-800 break-all">{{ session.guest_phone }}</div>
+                        <div class="col-span-2 text-xs font-medium text-gray-800 break-all">{{ session.phone_number || session.guest_phone }}</div>
                     </div>
-                    <div v-if="session.is_guest && session.guest_email" class="grid grid-cols-3 gap-2 items-start">
+                    <div v-if="canMatchCustomer" class="grid grid-cols-3 gap-2 items-start">
                         <div></div>
                         <div class="col-span-2">
                             <button type="button" :disabled="isSyncing"
                                 class="inline-flex items-center gap-1 text-[11px] font-medium rounded border px-1.5 py-0.5 transition-colors disabled:opacity-60 hover:bg-gray-50"
                                 :style="{ color: themePrimary, borderColor: themePrimary }"
-                                @click="syncGuestEmail">
+                                @click="syncGuest">
                                 <FontAwesomeIcon :icon="['fal', 'fa-link']" class="text-[9px]" />
                                 {{ isSyncing ? 'Matching…' : 'Match to Aiku customer' }}
                             </button>
@@ -478,7 +543,7 @@ const copyChatId = async () => {
 
             <!-- Log -->
             <div v-if="activeTab === 'log'" class="px-4">
-                <ChatActivityTimeline :sessionUlid="session.ulid" :baseUrl="baseUrl" />
+                <ChatActivityTimeline :sessionUlid="session.ulid" :baseUrl="baseUrl" :channel="session.channel" />
             </div>
 
             <!-- History -->
@@ -491,13 +556,15 @@ const copyChatId = async () => {
                         <p class="text-xs">No previous chats</p>
                     </div>
                     <HistoryChatList v-else :data="historySessions" :loading="isLoadingHistory"
-                        :show-ai-summary="true" @click-session="selectedHistory = $event" />
+                        :loading-more="isLoadingMoreHistory" :has-more="historyHasMore"
+                        :show-ai-summary="true" @click-session="selectedHistory = $event"
+                        @load-more="loadHistory(true)" />
                 </template>
 
-                <!-- Detail: a past session's messages (MessageHistory has its own back + status header) -->
                 <template v-else>
                     <MessageHistory class="flex-1 min-h-0" :sessionUlid="selectedHistory.ulid"
-                        :session="selectedHistory" viewerType="agent" @back="selectedHistory = null" />
+                        :session="selectedHistory" viewerType="agent"
+                        :channel="selectedHistory.channel ?? session.channel" @back="selectedHistory = null" />
                 </template>
             </div>
         </div>

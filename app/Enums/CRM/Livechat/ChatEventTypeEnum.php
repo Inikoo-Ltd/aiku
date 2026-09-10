@@ -36,6 +36,27 @@ enum ChatEventTypeEnum: string
 
     case NOT_SPAM = 'not_spam';
 
+    /**
+     * Events shown as chips inside the conversation. Close and reopen are absent on
+     * purpose: both channels already store a system message for them, which the thread
+     * renders in the same chip style, and listing them here would show each twice.
+     *
+     * @return array<int, string>
+     */
+    public static function timelineTypes(): array
+    {
+        return [
+            self::SPAM->value,
+            self::NOT_SPAM->value,
+            self::PRIORITY->value,
+            self::TRANSFER->value,
+            self::TRANSFER_ACCEPT->value,
+            self::TRANSFER_REJECT->value,
+            self::TRANSFER_TO_AGENT->value,
+            self::ASSIGNMENT_TO_SELF->value,
+        ];
+    }
+
     public static function labels(): array
     {
         return [

@@ -1,31 +1,44 @@
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, onUnmounted, nextTick } from "vue"
+import { ref, computed, watch, onMounted, onUnmounted, nextTick, defineAsyncComponent } from "vue"
 import axios from "axios"
 import { trans } from "laravel-vue-i18n"
 import { router } from "@inertiajs/vue3"
+import { useJumpToMessage } from "@/Composables/useJumpToMessage"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import {
     faXmark,
     faChevronDown,
     faPaperPlane,
+    faReply,
     faArrowUpRightFromSquare,
-    faPlus,
     faImage,
     faPaperclip,
-    faEnvelope,
     faFileLines,
     faTimesCircle,
+    faRotateRight,
+    faFaceSmile,
+    faEllipsisVertical,
+    faSpinner,
+    faEnvelope,
+    faLocationDot,
+    faPhone,
+    faCopy,
+    faCircleExclamation,
 } from "@fortawesome/free-solid-svg-icons"
 import { faJira } from "@fortawesome/free-brands-svg-icons"
 import { faUser } from "@fal"
-import { faCheck, faCheckDouble } from "@far"
-import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
+import { faCheck, faCheckDouble, faExclamationCircle } from "@far"
+import { useCopyText } from "@/Composables/useCopyText"
 import { notify } from "@kyvg/vue3-notification"
 import { useLayoutStore } from "@/Stores/layout"
 import Image from "@common/Components/Image.vue"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
+import ChatTimelineEvent from "@/Components/Chat/ChatTimelineEvent.vue"
 import JiraTicketModal from "@/Components/Chat/Agent/JiraTicketModal.vue"
+import WhatsappTemplatePicker from "@/Components/Chat/WhatsappTemplatePicker.vue"
 import type { MiniChat } from "@/Composables/useMiniChats"
+
+const EmojiPicker = defineAsyncComponent(() => import("@/Components/Messaging/EmojiPicker.vue"))
 
 type LocalMessageStatus = "sending" | "sent" | "failed"
 
@@ -41,7 +54,18 @@ const emit = defineEmits(["close", "toggle", "read"])
 const layout: any = useLayoutStore()
 const baseUrl = layout?.appUrl ?? ""
 
+// The two channels store their conversations in separate tables behind separate
+// endpoints, so every call the window makes has to pick the matching one.
+const isWhatsapp = computed(() => props.chat.channel === "whatsapp")
+
+const sessionApiBase = computed(() =>
+    `${baseUrl}/app/api/chats${isWhatsapp.value ? "/meta" : ""}/sessions/${props.chat.ulid}`
+)
+
 const messages = ref<LocalChatMessage[]>([])
+const hasMore = ref(false)
+const nextCursor = ref<string | null>(null)
+const isLoadingOlder = ref(false)
 const newMessage = ref("")
 const messageInput = ref<HTMLTextAreaElement | null>(null)
 
@@ -57,15 +81,89 @@ const unreadCount = ref(0)
 const remoteTypingUser = ref<string | null>(null)
 const messagesContainer = ref<HTMLElement | null>(null)
 
+const { jumpToMessage } = useJumpToMessage(messagesContainer)
+
 const imageInput = ref<HTMLInputElement | null>(null)
 const fileInput = ref<HTMLInputElement | null>(null)
 const selectedFile = ref<File | null>(null)
 const previewUrl = ref<string | null>(null)
 const previewType = ref<"image" | "file" | null>(null)
-const isEmailNotif = ref(false)
-const isOptionMenuOpen = ref(false)
-const optionMenuRef = ref<HTMLElement | null>(null)
 const isJiraModalOpen = ref(false)
+const isEmailNotif = ref(false)
+
+const showEmojiPicker = ref(false)
+const emojiButtonRef = ref<HTMLElement | null>(null)
+const emojiPickerRef = ref<HTMLElement | null>(null)
+const emojiPickerStyle = ref<Record<string, string>>({})
+
+const showHeaderMenu = ref(false)
+const headerMenuRef = ref<HTMLElement | null>(null)
+
+const canSendNonTemplate = ref<boolean | undefined>(undefined)
+const templateOnly = computed(() => isWhatsapp.value && canSendNonTemplate.value === false)
+const isTemplateDialogOpen = ref(false)
+const templates = ref<any[]>([])
+const isLoadingTemplates = ref(false)
+const selectedTemplate = ref<any>(null)
+const templateParameters = ref<string[]>([])
+const hasTemplate = computed(() => !!selectedTemplate.value)
+const templateAutoFills = computed(() => !!selectedTemplate.value?.auto_fill)
+const templateMissingTags = computed(() => selectedTemplate.value?.missing_tags ?? [])
+
+const escapeHtml = (str: string) =>
+    str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;")
+
+const parameterLabel = (index: number): string => {
+    const tags = selectedTemplate.value?.merge_tags ?? []
+    if (tags[index]) {
+        return String(tags[index]).replace(/_/g, " ")
+    }
+    return `{{${index + 1}}}`
+}
+
+const tagBadge = (label: string) =>
+    `<span class="inline-flex items-center px-1 py-0.5 mx-0.5 rounded bg-blue-50 text-blue-600 text-[9px] font-medium align-baseline whitespace-nowrap">${escapeHtml(label)}</span>`
+
+const formatBodyWithTags = (body: string, tags: string[] = [], values: string[] = []) => {
+    return escapeHtml(body).replace(/\{\{(\d+)\}\}/g, (_match, num) => {
+        const index = parseInt(num) - 1
+        if (values[index]?.trim()) return escapeHtml(values[index])
+        const label = tags[index] ? String(tags[index]).replace(/_/g, " ") : `{{${num}}}`
+        return tagBadge(label)
+    })
+}
+
+const templatePreview = computed(() => {
+    if (!selectedTemplate.value) return ""
+    if (selectedTemplate.value.auto_fill) return selectedTemplate.value.preview ?? selectedTemplate.value.body
+    let body = selectedTemplate.value.body
+    templateParameters.value.forEach((parameter, index) => {
+        if (parameter) {
+            body = body.replaceAll(`{{${index + 1}}}`, parameter)
+        }
+    })
+    return body
+})
+
+const templatePreviewHtml = computed(() => {
+    if (!selectedTemplate.value) return ""
+    if (selectedTemplate.value.auto_fill) {
+        return formatBodyWithTags(
+            selectedTemplate.value.preview ?? selectedTemplate.value.body,
+            selectedTemplate.value.merge_tags ?? []
+        )
+    }
+    return formatBodyWithTags(
+        selectedTemplate.value.body,
+        selectedTemplate.value.merge_tags ?? [],
+        templateParameters.value
+    )
+})
+
+const canSendTemplate = computed(() => {
+    if (!selectedTemplate.value) return false
+    return templateParameters.value.every((p) => p.trim() !== "")
+})
 
 const IMAGE_TYPES = ["image/webp", "image/jpeg", "image/jpg", "image/png", "image/avif"]
 
@@ -77,14 +175,57 @@ const FILE_TYPES = [
 
 const MAX_SIZE = 10 * 1024 * 1024
 
+const waReadIcon = (message: LocalChatMessage) => {
+    const waStatus = message.metadata?.wa_status
+    if (waStatus === 'failed') return faExclamationCircle
+    if (waStatus === 'delivered' || waStatus === 'read') return faCheckDouble
+    if (waStatus === 'sent') return faCheck
+    return message.is_read ? faCheckDouble : faCheck
+}
+
+const waReadIconClass = (message: LocalChatMessage): string => {
+    const waStatus = message.metadata?.wa_status
+    if (waStatus === 'failed') return 'text-red-500'
+    if (waStatus === 'read') return 'text-sky-400'
+    return ''
+}
+
 const isClosed = computed(() => props.chat.status === "closed")
 const isWaiting = computed(() => props.chat.status === "waiting")
-const canSend = computed(() => !isClosed.value && !isWaiting.value)
+const canSend = computed(() => !isClosed.value && !isWaiting.value && !templateOnly.value)
 const hasAttachment = computed(() => !!selectedFile.value)
 
-const onChatEnded = () => {
-    isOptionMenuOpen.value = false
+const isEndingChat = ref(false)
+const showEndConfirm = ref(false)
+const endChat = async () => {
+    if (isEndingChat.value) return
+    isEndingChat.value = true
+    try {
+        const routeName = isWhatsapp.value
+            ? "grp.org.chat.agents.whatsapp.sessions.close"
+            : "grp.org.chat.agents.sessions.close"
+        const url = route(routeName, [props.chat.organisationSlug, props.chat.ulid])
+        await axios.patch(url, {}, {
+            withCredentials: true,
+            headers: { Accept: "application/json" },
+        })
+    } catch (e: any) {
+        const status = e?.response?.status ?? 0
+        if (status >= 400) {
+            notify({
+                title: trans("Error"),
+                text: e?.response?.data?.message ?? trans("Failed to end chat"),
+                type: "error",
+            })
+            isEndingChat.value = false
+            return
+        }
+    }
     props.chat.status = "closed"
+    showHeaderMenu.value = false
+    showEndConfirm.value = false
+    await getMessages()
+    isEndingChat.value = false
 }
 
 const isAssigningSelf = ref(false)
@@ -109,15 +250,49 @@ const assignSelf = async () => {
     }
 }
 
+const isReopening = ref(false)
+const reopenChat = async () => {
+    if (!props.chat.organisationSlug || !props.chat.ulid || isReopening.value) return
+    isReopening.value = true
+    try {
+        const routeName = isWhatsapp.value
+            ? "grp.org.chat.agents.whatsapp.sessions.reopen"
+            : "grp.org.chat.agents.sessions.reopen"
+        await axios.patch(
+            route(routeName, [props.chat.organisationSlug, props.chat.ulid]),
+            {},
+            { withCredentials: true }
+        )
+        props.chat.status = "active"
+        await getMessages()
+    } catch (e: any) {
+        notify({
+            title: trans("Error"),
+            text: e?.response?.data?.message ?? trans("Failed to reopen chat"),
+            type: "error",
+        })
+    } finally {
+        isReopening.value = false
+    }
+}
+
 const jiraSession = computed(() => ({
     ulid: props.chat.ulid,
     contact_name: props.chat.contactName,
 }))
 
-const scrollBottom = () =>
+const messagesReady = ref(false)
+
+const scrollBottom = (instant = false) =>
     nextTick(() => {
-        if (messagesContainer.value) {
-            messagesContainer.value.scrollTop = messagesContainer.value.scrollHeight
+        const el = messagesContainer.value
+        if (!el) return
+        el.scrollTop = el.scrollHeight
+        if (!messagesReady.value) {
+            messagesReady.value = true
+        }
+        if (!instant) {
+            setTimeout(() => { if (el) el.scrollTop = el.scrollHeight }, 350)
         }
     })
 
@@ -138,17 +313,186 @@ const openAttachment = (message: LocalChatMessage) => {
     }
 }
 
+/* Quick reactions, matching the inbox toolbar. The endpoint differs per channel because
+   the two channels store their messages in separate tables. */
+const quickReactions = ["✅", "👀", "👏"] as const
+
+const reactingMessageId = ref<number | null>(null)
+
+const replyingTo = ref<LocalChatMessage | null>(null)
+
+const startReply = (message: LocalChatMessage) => {
+    replyingTo.value = message
+    nextTick(() => messageInput.value?.focus())
+}
+
+const cancelReply = () => {
+    replyingTo.value = null
+}
+
+const replyPreviewText = (message: LocalChatMessage) =>
+    messageText(message) || message.file_name || trans("Attachment")
+
+const myReactedEmojis = (message: LocalChatMessage): Set<string> => {
+    const mine = new Set<string>()
+
+    for (const group of message.reactions ?? []) {
+        if (group.reactors?.some((reactor: any) => reactor.type === "agent")) {
+            mine.add(group.emoji)
+        }
+    }
+
+    return mine
+}
+
+const toggleReaction = async (message: LocalChatMessage, emoji: string) => {
+    if (!message.id || reactingMessageId.value) return
+
+    reactingMessageId.value = message.id as number
+
+    try {
+        const base = isWhatsapp.value ? "/app/api/chats/meta/messages" : "/app/api/chats/messages"
+
+        const { data } = await axios.post(
+            `${baseUrl}${base}/${message.id}/reactions`,
+            { emoji, reactor: "agent", session_ulid: props.chat.ulid },
+            { withCredentials: true }
+        )
+
+        const index = messages.value.findIndex((m) => m.id === message.id)
+
+        if (index !== -1) {
+            messages.value[index] = {
+                ...messages.value[index],
+                reactions: data?.data?.reactions ?? messages.value[index].reactions,
+            }
+        }
+    } catch {
+        notify({ title: trans("Failed"), text: trans("Could not update reaction."), type: "error" })
+    } finally {
+        reactingMessageId.value = null
+    }
+}
+
+const attachmentMime = (message: LocalChatMessage) =>
+    (message as any).file_mime ?? message.media_url?.mime ?? ""
+
+const isVideoMessage = (message: LocalChatMessage) =>
+    message.message_type === "file" &&
+    (attachmentMime(message).startsWith("video/") || message.metadata?.wa_type === "video")
+
+// Images go through imgproxy; everything else is streamed by the download route, where
+// `inline=1` makes the browser play it in place rather than save it.
+const inlineUrl = (message: LocalChatMessage): string | null => {
+    const url = message.download_route?.url
+
+    if (!url) return null
+
+    return url + (url.includes("?") ? "&" : "?") + "inline=1"
+}
+
+const fileIcon = (message: LocalChatMessage) => {
+    const mime = attachmentMime(message)
+
+    if (mime.includes("pdf")) return "📕"
+    if (mime.includes("excel") || mime.includes("spreadsheet")) return "📊"
+    if (mime.startsWith("audio/")) return "🎧"
+    if (mime.startsWith("video/")) return "🎬"
+
+    return "📄"
+}
+
+const fileSizeLabel = (message: LocalChatMessage) => {
+    const bytes = Number((message as any).file_size ?? 0)
+
+    if (!bytes) return null
+
+    return bytes >= 1048576
+        ? `${(bytes / 1048576).toFixed(1)} MB`
+        : `${Math.max(1, Math.round(bytes / 1024))} KB`
+}
+
+const MAP = { tile: 256, zoom: 16, width: 200, height: 90 }
+
+const getLocation = (message: LocalChatMessage) => {
+    if (message.metadata?.wa_type !== "location") return null
+    const payload = message.metadata?.wa_payload
+    const lat = Number(payload?.latitude)
+    const lng = Number(payload?.longitude)
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null
+    return {
+        latitude: lat,
+        longitude: lng,
+        name: payload?.name || trans("Shared location"),
+        address: payload?.address || `${lat.toFixed(5)}, ${lng.toFixed(5)}`,
+    }
+}
+
+const getMapTiles = (loc: { latitude: number; longitude: number }) => {
+    const count = 2 ** MAP.zoom
+    const latRad = (loc.latitude * Math.PI) / 180
+    const worldX = ((loc.longitude + 180) / 360) * count * MAP.tile
+    const worldY = ((1 - Math.log(Math.tan(latRad) + 1 / Math.cos(latRad)) / Math.PI) / 2) * count * MAP.tile
+    const originX = worldX - MAP.width / 2
+    const originY = worldY - MAP.height / 2
+    const tiles: { key: string; src: string; left: number; top: number }[] = []
+    for (let x = Math.floor(originX / MAP.tile); x <= Math.floor((originX + MAP.width - 1) / MAP.tile); x++) {
+        for (let y = Math.floor(originY / MAP.tile); y <= Math.floor((originY + MAP.height - 1) / MAP.tile); y++) {
+            if (y < 0 || y >= count) continue
+            tiles.push({
+                key: `${x}-${y}`,
+                src: `https://tile.openstreetmap.org/${MAP.zoom}/${((x % count) + count) % count}/${y}.png`,
+                left: x * MAP.tile - originX,
+                top: y * MAP.tile - originY,
+            })
+        }
+    }
+    return tiles
+}
+
+const getSharedContacts = (message: LocalChatMessage) => {
+    if (message.metadata?.wa_type !== "contacts") return []
+    const payload = message.metadata?.wa_payload
+    if (!Array.isArray(payload)) return []
+    return payload.map((c: any, i: number) => {
+        const name = c?.name?.formatted_name
+            || [c?.name?.first_name, c?.name?.last_name].filter(Boolean).join(" ")
+            || trans("Shared contact")
+        return {
+            key: `${i}-${name}`,
+            name,
+            initial: name.trim().charAt(0).toUpperCase(),
+            phones: (c?.phones ?? []).map((p: any) => ({ number: p?.phone, label: p?.type })).filter((p: any) => !!p.number),
+        }
+    })
+}
+
+const isUnsupported = (message: LocalChatMessage) => message.metadata?.wa_type === "unsupported"
+
 const getMessages = async () => {
     isLoading.value = true
     try {
         const { data } = await axios.get(
-            `${baseUrl}/app/api/chats/sessions/${props.chat.ulid}/messages`,
+            `${sessionApiBase.value}/messages`,
             { params: { limit: 20, request_from: "agent" } }
         )
         messages.value = (data?.data?.messages ?? []).map((message: any) => ({
             ...message,
             _status: "sent",
         }))
+
+        hasMore.value = data?.data?.pagination?.has_more ?? false
+        nextCursor.value = data?.data?.pagination?.next_cursor ?? null
+
+        if (data?.data?.can_send_non_template_message !== undefined) {
+            canSendNonTemplate.value = data.data.can_send_non_template_message
+        }
+
+        const serverStatus = data?.data?.session_status
+        if (serverStatus) {
+            props.chat.status = serverStatus
+        }
+
         scrollBottom()
     } catch (e) {
         console.error("Failed to fetch mini chat messages", e)
@@ -157,12 +501,52 @@ const getMessages = async () => {
     }
 }
 
+const loadOlderMessages = async () => {
+    if (isLoadingOlder.value || !hasMore.value || !nextCursor.value) return
+    isLoadingOlder.value = true
+
+    const container = messagesContainer.value
+    const prevHeight = container?.scrollHeight ?? 0
+
+    try {
+        const { data } = await axios.get(
+            `${sessionApiBase.value}/messages`,
+            { params: { limit: 20, cursor: nextCursor.value, request_from: "agent" } }
+        )
+        const older = (data?.data?.messages ?? []).map((message: any) => ({
+            ...message,
+            _status: "sent",
+        }))
+
+        const existingIds = new Set(messages.value.map((m) => m.id))
+        const newMessages = older.filter((m: any) => !existingIds.has(m.id))
+        messages.value = [...newMessages, ...messages.value]
+
+        hasMore.value = data?.data?.pagination?.has_more ?? false
+        nextCursor.value = data?.data?.pagination?.next_cursor ?? null
+
+        nextTick(() => {
+            if (container) {
+                container.scrollTop = container.scrollHeight - prevHeight
+            }
+        })
+    } catch (e) {
+        console.error("Failed to load older messages", e)
+    } finally {
+        isLoadingOlder.value = false
+    }
+}
+
 const markAsRead = async () => {
     try {
-        await axios.post(`${baseUrl}/app/api/chats/read`, {
-            session_ulid: props.chat.ulid,
-            request_from: "agent",
-        })
+        if (isWhatsapp.value) {
+            await axios.post(`${sessionApiBase.value}/read`)
+        } else {
+            await axios.post(`${baseUrl}/app/api/chats/read`, {
+                session_ulid: props.chat.ulid,
+                request_from: "agent",
+            })
+        }
         unreadCount.value = 0
         emit("read")
     } catch (e) {
@@ -226,32 +610,157 @@ const clearAttachment = (revokePreview = true) => {
     if (fileInput.value) fileInput.value.value = ""
 }
 
-const pickAttachment = (input: HTMLInputElement | null) => {
-    isOptionMenuOpen.value = false
-    input?.click()
+const toggleEmojiPicker = () => {
+    showEmojiPicker.value = !showEmojiPicker.value
+    if (showEmojiPicker.value && emojiButtonRef.value) {
+        const rect = emojiButtonRef.value.getBoundingClientRect()
+        const pickerWidth = 288
+        const pickerHeight = 320
+        let left = rect.left
+        if (left + pickerWidth > window.innerWidth) {
+            left = window.innerWidth - pickerWidth - 8
+        }
+        left = Math.max(8, left)
+        emojiPickerStyle.value = {
+            position: 'fixed',
+            bottom: `${window.innerHeight - rect.top + 4}px`,
+            left: `${left}px`,
+            zIndex: '9999',
+        }
+    }
 }
 
-const toggleEmailNotif = () => {
-    isEmailNotif.value = !isEmailNotif.value
-    isOptionMenuOpen.value = false
+const pickEmoji = (emoji: string) => {
+    const el = messageInput.value
+    if (!el) {
+        newMessage.value += emoji
+        return
+    }
+    const start = el.selectionStart ?? newMessage.value.length
+    const end = el.selectionEnd ?? newMessage.value.length
+    newMessage.value = newMessage.value.slice(0, start) + emoji + newMessage.value.slice(end)
+    nextTick(() => {
+        el.focus()
+        const pos = start + emoji.length
+        el.setSelectionRange(pos, pos)
+        autoResize()
+    })
 }
 
-const openJiraModal = () => {
-    isOptionMenuOpen.value = false
-    isJiraModalOpen.value = true
+const openTemplateDialog = async () => {
+    if (!props.chat.shopId) return
+    isTemplateDialogOpen.value = true
+    isLoadingTemplates.value = true
+    try {
+        const { data } = await axios.get(`${baseUrl}/app/api/chats/meta/templates`, {
+            params: { shop_id: props.chat.shopId, session_ulid: props.chat.ulid },
+        })
+        templates.value = data?.data ?? []
+    } catch {
+        notify({ title: trans("Error"), text: trans("Failed to load templates"), type: "error" })
+    } finally {
+        isLoadingTemplates.value = false
+    }
 }
 
-const closeOptionMenu = (event: MouseEvent) => {
-    if (isOptionMenuOpen.value && optionMenuRef.value && !optionMenuRef.value.contains(event.target as Node)) {
-        isOptionMenuOpen.value = false
+const selectTemplate = (template: any) => {
+    selectedTemplate.value = template
+    if (template.auto_fill && template.resolved_values) {
+        templateParameters.value = template.resolved_values.map((v: any) => v ?? "")
+    } else {
+        templateParameters.value = Array(template.parameter_count).fill("")
+    }
+    isTemplateDialogOpen.value = false
+    newMessage.value = ""
+    clearAttachment()
+}
+
+const clearTemplate = () => {
+    selectedTemplate.value = null
+    templateParameters.value = []
+}
+
+const handleClickOutside = (event: MouseEvent) => {
+    if (showEmojiPicker.value) {
+        const target = event.target as Node
+        const insideButton = emojiButtonRef.value?.contains(target)
+        const insidePicker = emojiPickerRef.value?.contains(target)
+        if (!insideButton && !insidePicker) {
+            showEmojiPicker.value = false
+        }
+    }
+    if (showHeaderMenu.value && headerMenuRef.value && !headerMenuRef.value.contains(event.target as Node)) {
+        showHeaderMenu.value = false
+    }
+}
+
+const sendTemplateMessage = async () => {
+    if (!selectedTemplate.value || !canSendTemplate.value) return
+
+    const tempId = `tmp-${Date.now()}`
+    messages.value.push({
+        id: tempId,
+        _tempId: tempId,
+        message_text: templatePreview.value,
+        sender_type: "agent",
+        message_type: "text",
+        created_at: new Date().toISOString(),
+        _status: "sending",
+    })
+
+    isSending.value = true
+    scrollBottom()
+
+    const formData = new FormData()
+    formData.append("template_id", String(selectedTemplate.value.id))
+    formData.append("template_name", selectedTemplate.value.name)
+    formData.append("template_language", selectedTemplate.value.language)
+    templateParameters.value.forEach((parameter, index) => {
+        formData.append(`template_parameters[${index}]`, parameter)
+    })
+
+    clearTemplate()
+
+    try {
+        await axios.post(
+            route("grp.org.chat.agents.whatsapp.messages.send", [props.chat.organisationSlug, props.chat.ulid]),
+            formData,
+            { headers: { "Content-Type": "multipart/form-data" } }
+        )
+    } catch (error: any) {
+        const failed = messages.value.find((m) => m._tempId === tempId)
+        if (failed) failed._status = "failed"
+        notify({
+            title: trans("Error"),
+            text: error?.response?.data?.message ?? trans("Failed to send template"),
+            type: "error",
+        })
+    } finally {
+        isSending.value = false
     }
 }
 
 const sendMessage = async () => {
+    if (isSending.value) return
+
+    if (hasTemplate.value) {
+        await sendTemplateMessage()
+        return
+    }
+
+    if (templateOnly.value) {
+        notify({
+            title: trans("Error"),
+            text: trans("The customer has not messaged in the last 24 hours. Only template messages can be sent."),
+            type: "error",
+        })
+        return
+    }
+
     const text = newMessage.value.trim()
     const file = selectedFile.value
 
-    if ((!text && !file) || isSending.value || !canSend.value) return
+    if ((!text && !file) || !canSend.value) return
 
     const messageType = file ? previewType.value ?? "file" : "text"
     const tempId = `tmp-${Date.now()}`
@@ -267,10 +776,14 @@ const sendMessage = async () => {
         _status: "sending",
     })
 
+    // Captured before the composer is cleared, since the payload is built below.
+    const quoted = replyingTo.value
+
     newMessage.value = ""
     nextTick(autoResize)
     isSending.value = true
     clearAttachment(false)
+    cancelReply()
     scrollBottom()
 
     try {
@@ -278,14 +791,26 @@ const sendMessage = async () => {
         formData.append("message_text", text)
         formData.append("message_type", messageType)
         formData.append("sender_type", "agent")
-        formData.append("is_email_notif", String(isEmailNotif.value))
+
+        if (!isWhatsapp.value) {
+            formData.append("is_email_notif", String(isEmailNotif.value))
+        }
 
         if (file) {
             formData.append(messageType === "image" ? "image" : "file", file)
         }
 
+        if (isWhatsapp.value && quoted?.id) {
+            formData.append("replied_to_id", String(quoted.id))
+        }
+
         await axios.post(
-            route("grp.org.chat.agents.messages.send", [props.chat.organisationSlug, props.chat.ulid]),
+            route(
+                isWhatsapp.value
+                    ? "grp.org.chat.agents.whatsapp.messages.send"
+                    : "grp.org.chat.agents.messages.send",
+                [props.chat.organisationSlug, props.chat.ulid]
+            ),
             formData,
             { headers: { "Content-Type": "multipart/form-data" } }
         )
@@ -311,6 +836,8 @@ let remoteTypingTimeout: ReturnType<typeof setTimeout> | null = null
 let isTyping = false
 
 const sendTypingStatus = async (status: boolean) => {
+    if (isWhatsapp.value) return
+
     try {
         await axios.post(`${baseUrl}/app/api/chats/typing`, {
             session_ulid: props.chat.ulid,
@@ -338,9 +865,27 @@ const handleTyping = () => {
 
 let chatChannel: any = null
 
+// Echo hands back the same channel object for a name already subscribed, so the inbox
+// and this window share one channel when both have the chat open. Dropping a listener
+// by event name alone would take the other component's with it, which is why each
+// handler is kept and removed individually.
+let onMessage: ((payload: any) => void) | null = null
+let onTyping: ((payload: any) => void) | null = null
+let onStatus: ((payload: any) => void) | null = null
+let onMessagesRead: ((payload: any) => void) | null = null
+let onReaction: ((payload: any) => void) | null = null
+
 const stopSocket = () => {
-    chatChannel?.stopListening(".message")
-    chatChannel?.stopListening(".typing")
+    if (onMessage) chatChannel?.stopListening(".message", onMessage)
+    if (onTyping) chatChannel?.stopListening(".typing", onTyping)
+    if (onStatus) chatChannel?.stopListening(".status", onStatus)
+    if (onMessagesRead) chatChannel?.stopListening(".messages.read", onMessagesRead)
+    if (onReaction) chatChannel?.stopListening(".reaction", onReaction)
+    onMessage = null
+    onTyping = null
+    onStatus = null
+    onMessagesRead = null
+    onReaction = null
     chatChannel = null
 }
 
@@ -349,9 +894,11 @@ const initSocket = () => {
 
     stopSocket()
 
-    chatChannel = window.Echo.channel(`chat-session.${props.chat.ulid}`)
+    chatChannel = isWhatsapp.value
+        ? window.Echo.private(`meta-chat-session.${props.chat.ulid}`)
+        : window.Echo.channel(`chat-session.${props.chat.ulid}`)
 
-    chatChannel.listen(".message", ({ message }: any) => {
+    onMessage = ({ message, session_status }: any) => {
         messages.value = messages.value.filter(
             (item) => !(item._status === "sending" && item.sender_type === "agent")
         )
@@ -360,12 +907,15 @@ const initSocket = () => {
 
         if (index !== -1) {
             messages.value[index] = { ...messages.value[index], ...message, _status: "sent" }
-            return
+        } else {
+            messages.value.push({ ...message, _status: "sent" })
         }
 
-        messages.value.push({ ...message, _status: "sent" })
+        if (session_status) {
+            props.chat.status = typeof session_status === "object" ? session_status.value : session_status
+        }
 
-        if (message.sender_type !== "agent") {
+        if (message.sender_type !== "agent" && message.sender_type !== "system") {
             if (props.chat.isMinimised) {
                 unreadCount.value += 1
             } else {
@@ -374,9 +924,9 @@ const initSocket = () => {
         }
 
         scrollBottom()
-    })
+    }
 
-    chatChannel.listen(".typing", (payload: any) => {
+    onTyping = (payload: any) => {
         if (payload.user_name === "agent") return
 
         remoteTypingUser.value = payload.is_typing ? payload.user_name : null
@@ -386,12 +936,74 @@ const initSocket = () => {
         remoteTypingTimeout = setTimeout(() => {
             remoteTypingUser.value = null
         }, 1500)
-    })
+    }
+
+    // WhatsApp reports its delivery lifecycle by webhook, so the ticks only advance
+    // past "sent" when this arrives.
+    onStatus = (payload: any) => {
+        const index = messages.value.findIndex((m) => m.id === payload?.message_id)
+
+        if (index === -1) return
+
+        messages.value[index] = {
+            ...messages.value[index],
+            is_read: payload.is_read ?? messages.value[index].is_read,
+            metadata: {
+                ...(messages.value[index].metadata ?? {}),
+                wa_status: payload.status,
+                wa_error: payload.error,
+            },
+            _status: payload.status === "failed" ? "failed" : "sent",
+        }
+    }
+
+    // Website chat has no delivery states; its tick turns on when the reader marks read.
+    onMessagesRead = (event: any) => {
+        if (event.reader_type === "agent") return
+
+        messages.value.forEach((message) => {
+            if (event.message_ids?.includes(message.id)) {
+                message.is_read = true
+            }
+        })
+    }
+
+    onReaction = ({ message }: any) => {
+        if (!message?.id) return
+
+        const index = messages.value.findIndex((m) => m.id === message.id)
+
+        if (index === -1) return
+
+        messages.value[index] = {
+            ...messages.value[index],
+            reactions: message.reactions ?? [],
+        }
+    }
+
+    chatChannel.listen(".message", onMessage)
+    chatChannel.listen(".typing", onTyping)
+    chatChannel.listen(".status", onStatus)
+    chatChannel.listen(".messages.read", onMessagesRead)
+    chatChannel.listen(".reaction", onReaction)
 }
 
 const openFullConversation = () => {
-    console.log("openFullConversation", props.chat)
     if (!props.chat.organisationSlug) return
+
+    // WhatsApp has no standalone conversation page yet, so it opens the inbox on the
+    // right shop and channel instead.
+    if (isWhatsapp.value) {
+        if (!props.chat.shopSlug) return
+
+        router.visit(
+            route("grp.org.shops.show.chat.inbox", [props.chat.organisationSlug, props.chat.shopSlug])
+            + `?channel=whatsapp&session=${props.chat.ulid}`
+        )
+
+        return
+    }
+
     router.visit(route("grp.org.chat.inbox.conversation", [props.chat.organisationSlug, props.chat.ulid]))
 }
 
@@ -406,14 +1018,14 @@ watch(
 )
 
 onMounted(async () => {
-    document.addEventListener("click", closeOptionMenu)
+    document.addEventListener("click", handleClickOutside)
     await getMessages()
     initSocket()
     await markAsRead()
 })
 
 onUnmounted(() => {
-    document.removeEventListener("click", closeOptionMenu)
+    document.removeEventListener("click", handleClickOutside)
     stopSocket()
     clearAttachment()
     if (typingTimeout) clearTimeout(typingTimeout)
@@ -441,6 +1053,53 @@ onUnmounted(() => {
                 {{ unreadCount }}
             </span>
 
+            <div ref="headerMenuRef" class="relative shrink-0">
+                <button class="w-5 h-5 rounded hover:bg-gray-100 text-gray-400 hover:text-gray-600"
+                    v-tooltip="trans('More options')" @click.stop="showHeaderMenu = !showHeaderMenu">
+                    <FontAwesomeIcon :icon="faEllipsisVertical" class="text-[9px]" />
+                </button>
+
+                <div v-if="showHeaderMenu" @click.stop
+                    class="absolute right-0 top-full mt-0.5 w-36 py-1 bg-white border border-gray-200 rounded-md shadow-lg z-50">
+                    <button v-if="chat.organisationSlug" type="button"
+                        class="w-full flex items-center gap-2 px-2 py-1 text-[10px] text-gray-700 hover:bg-gray-100"
+                        @click="showHeaderMenu = false; isJiraModalOpen = true">
+                        <FontAwesomeIcon :icon="faJira" class="text-[9px] text-gray-400" />
+                        {{ trans('Create Jira ticket') }}
+                    </button>
+
+                    <template v-if="!isClosed && !isWaiting">
+                        <div class="my-0.5 border-t border-gray-100"></div>
+                        <template v-if="!showEndConfirm">
+                            <button type="button"
+                                class="w-full flex items-center gap-2 px-2 py-1 text-[10px] text-red-600 hover:bg-red-50"
+                                @click="showEndConfirm = true">
+                                <FontAwesomeIcon :icon="faTimesCircle" class="text-[9px]" />
+                                {{ trans('End chat') }}
+                            </button>
+                        </template>
+                        <template v-else>
+                            <div class="px-2 py-1 space-y-1">
+                                <p class="text-[10px] text-gray-600">{{ trans('End this chat session?') }}</p>
+                                <div class="flex gap-1">
+                                    <button type="button"
+                                        class="flex-1 text-[10px] py-0.5 rounded bg-red-500 text-white hover:bg-red-600 disabled:opacity-60"
+                                        :disabled="isEndingChat" @click="endChat">
+                                        <LoadingIcon v-if="isEndingChat" class="w-2.5 h-2.5 inline" />
+                                        {{ trans('Yes') }}
+                                    </button>
+                                    <button type="button"
+                                        class="flex-1 text-[10px] py-0.5 rounded bg-gray-100 text-gray-600 hover:bg-gray-200"
+                                        @click="showEndConfirm = false">
+                                        {{ trans('No') }}
+                                    </button>
+                                </div>
+                            </div>
+                        </template>
+                    </template>
+                </div>
+            </div>
+
             <button class="w-5 h-5 rounded hover:bg-gray-100 text-gray-400 hover:text-gray-600"
                 v-tooltip="trans('Open in inbox')" @click.stop="openFullConversation">
                 <FontAwesomeIcon :icon="faArrowUpRightFromSquare" class="text-[9px]" />
@@ -462,7 +1121,8 @@ onUnmounted(() => {
             class="flex flex-col min-h-0 overflow-hidden transition-[height,opacity] duration-300 ease-in-out"
             :class="chat.isMinimised ? 'h-0 opacity-0' : 'h-[320px] max-h-[60vh] opacity-100'">
             <div ref="messagesContainer"
-                class="flex-1 min-h-0 overflow-y-auto overflow-x-hidden px-2 py-1.5 space-y-1 bg-[#F0F4F8]">
+                class="flex-1 min-h-0 overflow-y-auto overflow-x-hidden px-2 py-1.5 space-y-1 bg-[#F0F4F8]"
+                :class="{ 'invisible': !isLoading && sortedMessages.length > 0 && !messagesReady }">
                 <div v-if="isLoading" class="h-full flex items-center justify-center">
                     <LoadingIcon class="w-4 h-4 text-gray-400" />
                 </div>
@@ -473,37 +1133,176 @@ onUnmounted(() => {
                 </div>
 
                 <template v-else>
-                    <div v-for="message in sortedMessages" :key="message.id" class="flex"
-                        :class="message.sender_type === 'agent' ? 'justify-end' : 'justify-start'">
-                        <div class="max-w-[85%] min-w-0 px-2 py-1 rounded-lg text-[11px] leading-snug shadow-sm"
-                            :class="message.sender_type === 'agent'
-                                ? 'bg-indigo-500 text-white rounded-br-sm'
-                                : 'bg-white text-gray-800 rounded-bl-sm'">
-                            <p v-if="messageText(message)" class="whitespace-pre-wrap break-words">
-                                {{ messageText(message) }}
-                            </p>
+                    <div v-if="hasMore" class="flex justify-center py-1">
+                        <button type="button"
+                            class="text-[10px] text-gray-500 hover:text-gray-700 border border-gray-300 rounded-full px-3 py-0.5 hover:bg-gray-50 disabled:opacity-50"
+                            :disabled="isLoadingOlder" @click="loadOlderMessages">
+                            <LoadingIcon v-if="isLoadingOlder" class="w-3 h-3 inline mr-1" />
+                            {{ trans('Load older messages') }}
+                        </button>
+                    </div>
+                    <template v-for="message in sortedMessages" :key="message.id">
+                        <ChatTimelineEvent
+                            v-if="message.sender_type === 'system'"
+                            :event="{ description: trans(message.message_text), created_at: message.created_at }"
+                        />
 
-                            <img v-if="message.message_type === 'image' && message.media_url"
-                                :src="message.media_url.webp ?? message.media_url.original" :alt="trans('Attachment')"
-                                class="mt-1 rounded max-w-full max-h-28 object-contain cursor-pointer bg-gray-50"
-                                @click="openAttachment(message)" />
+                        <div v-else class="group/msg relative flex rounded-lg transition-colors"
+                            :data-message-id="message.id"
+                            :class="['guest', 'user'].includes(message.sender_type) ? 'justify-start' : 'justify-end'">
+                            <!-- Quick reactions on hover, sized down for the narrow window.
+                                 Reply is WhatsApp only: the website send endpoint takes no
+                                 replied_to_id. -->
+                            <div v-if="message.id && message._status !== 'sending'"
+                                class="absolute -top-3.5 z-20 flex items-center gap-px rounded-full border border-gray-200 bg-white px-0.5 py-px shadow-md opacity-0 scale-95 pointer-events-none transition-all duration-150 group-hover/msg:opacity-100 group-hover/msg:scale-100 group-hover/msg:pointer-events-auto"
+                                :class="['guest', 'user'].includes(message.sender_type) ? 'left-0' : 'right-0'">
+                                <button v-for="emoji in quickReactions" :key="emoji" type="button"
+                                    :disabled="reactingMessageId === message.id"
+                                    class="flex h-[18px] w-[18px] items-center justify-center rounded-full text-[11px] leading-none transition-all hover:bg-gray-100 hover:scale-110 disabled:opacity-50"
+                                    :class="myReactedEmojis(message).has(emoji) ? 'bg-indigo-50 ring-1 ring-indigo-200' : ''"
+                                    @click="toggleReaction(message, emoji)">
+                                    {{ emoji }}
+                                </button>
 
-                            <button v-else-if="message.message_type === 'file' && message.media_url" type="button"
-                                class="mt-1 flex items-center gap-1 max-w-full text-[10px] underline truncate"
-                                @click="openAttachment(message)">
-                                📄 {{ message.file_name || message.media_url.name || trans('Attachment') }}
-                            </button>
+                                <template v-if="isWhatsapp && canSend">
+                                    <span class="mx-px h-3 w-px bg-gray-200"></span>
+                                    <button type="button" :title="trans('Reply')"
+                                        class="flex h-[18px] w-[18px] items-center justify-center rounded-full text-gray-500 transition-all hover:bg-gray-100 hover:text-indigo-600 hover:scale-110"
+                                        @click="startReply(message)">
+                                        <FontAwesomeIcon :icon="faReply" class="text-[9px]" />
+                                    </button>
+                                </template>
+                            </div>
 
-                            <div class="flex items-center justify-end gap-1 mt-0.5 text-[9px]"
-                                :class="message.sender_type === 'agent' ? 'text-white/70' : 'text-gray-400'">
-                                <span>{{ formatTime(message.created_at) }}</span>
-                                <LoadingIcon v-if="message._status === 'sending'" class="w-2.5 h-2.5" />
-                                <span v-else-if="message._status === 'failed'" class="text-red-300">!</span>
-                                <FontAwesomeIcon v-else-if="message.sender_type === 'agent'"
-                                    :icon="message.is_read ? faCheckDouble : faCheck" class="text-[9px]" />
+                            <div class="max-w-[85%] min-w-0 px-2 py-1 rounded-lg text-[11px] leading-snug shadow-sm"
+                                :class="['guest', 'user'].includes(message.sender_type)
+                                    ? 'bg-white text-gray-800 rounded-bl-sm'
+                                    : 'bg-indigo-500 text-white rounded-br-sm'">
+                                <!-- Tapping the quote jumps to the message it answers. -->
+                                <div v-if="message.replied_to" role="button" tabindex="0"
+                                    :title="trans('Go to the quoted message')"
+                                    class="mb-1 cursor-pointer rounded border-l-[3px] border-current bg-black/10 px-1.5 py-0.5 text-[10px] leading-snug opacity-90 transition hover:bg-black/20"
+                                    @click.stop="jumpToMessage(message.replied_to.id)"
+                                    @keydown.enter.stop.prevent="jumpToMessage(message.replied_to.id)">
+                                    <div class="truncate opacity-80">
+                                        {{ message.replied_to.message_text || trans('Attachment') }}
+                                    </div>
+                                </div>
+
+                                <div v-if="isUnsupported(message)"
+                                    class="inline-flex items-center gap-1 text-[10px] italic opacity-60">
+                                    <FontAwesomeIcon :icon="faCircleExclamation" class="text-[9px]" />
+                                    <span>{{ messageText(message) || trans('Unsupported message') }}</span>
+                                </div>
+
+                                <div v-else-if="getSharedContacts(message).length" class="mb-0.5 flex flex-col gap-1 w-full">
+                                    <div v-for="contact in getSharedContacts(message)" :key="contact.key"
+                                        class="rounded border border-black/10 bg-white px-2 py-1.5">
+                                        <div class="flex items-center gap-1.5">
+                                            <span class="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-gray-200 text-[9px] font-semibold text-gray-600">
+                                                {{ contact.initial }}
+                                            </span>
+                                            <span class="min-w-0 truncate text-[10px] font-semibold text-gray-800">{{ contact.name }}</span>
+                                        </div>
+                                        <div v-for="phone in contact.phones" :key="phone.number"
+                                            class="mt-1 flex items-center gap-1.5 border-t border-gray-100 pt-1">
+                                            <FontAwesomeIcon :icon="faPhone" class="text-[8px] text-gray-400" />
+                                            <div class="min-w-0 flex-1">
+                                                <div class="truncate text-[10px] text-gray-700">{{ phone.number }}</div>
+                                                <div v-if="phone.label" class="text-[9px] text-gray-400">{{ phone.label }}</div>
+                                            </div>
+                                            <button type="button" v-tooltip="trans('Copy')" @click="useCopyText(phone.number)"
+                                                class="shrink-0 rounded p-0.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600">
+                                                <FontAwesomeIcon :icon="faCopy" class="text-[8px]" />
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <a v-else-if="getLocation(message)"
+                                    :href="`https://www.google.com/maps/search/?api=1&query=${getLocation(message)!.latitude},${getLocation(message)!.longitude}`"
+                                    target="_blank" rel="noopener noreferrer"
+                                    class="mb-0.5 block w-full overflow-hidden rounded border border-black/10 bg-white hover:border-black/25 transition">
+                                    <div class="relative overflow-hidden bg-gray-100" :style="{ width: MAP.width + 'px', height: MAP.height + 'px' }">
+                                        <img v-for="tile in getMapTiles(getLocation(message)!)" :key="tile.key" :src="tile.src" alt="" loading="lazy"
+                                            class="absolute max-w-none"
+                                            :style="{ left: `${tile.left}px`, top: `${tile.top}px`, width: '256px', height: '256px' }" />
+                                        <FontAwesomeIcon :icon="faLocationDot"
+                                            class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-full text-base text-red-500 drop-shadow" />
+                                        <span class="absolute bottom-0 right-0 bg-white/75 px-0.5 text-[7px] text-gray-500">© OpenStreetMap</span>
+                                    </div>
+                                    <div class="flex items-start gap-1 px-1.5 py-1">
+                                        <FontAwesomeIcon :icon="faLocationDot" class="mt-0.5 text-[9px] text-red-500" />
+                                        <div class="min-w-0">
+                                            <div class="truncate text-[10px] font-semibold text-gray-800">{{ getLocation(message)!.name }}</div>
+                                            <div class="text-[9px] leading-snug text-gray-500">{{ getLocation(message)!.address }}</div>
+                                        </div>
+                                    </div>
+                                </a>
+
+                                <template v-else>
+                                    <p v-if="messageText(message)" class="whitespace-pre-wrap break-words">
+                                        {{ messageText(message) }}
+                                    </p>
+
+                                    <img v-if="message.message_type === 'image' && message.media_url"
+                                        :src="message.media_url.webp ?? message.media_url.original" :alt="trans('Attachment')"
+                                        class="mt-1 rounded max-w-full max-h-28 object-contain cursor-pointer bg-gray-50"
+                                        @click="openAttachment(message)" />
+
+                                    <!-- Played in place, the way the recipient sees it on WhatsApp. -->
+                                    <video v-else-if="isVideoMessage(message) && inlineUrl(message)"
+                                        :src="inlineUrl(message)!" controls preload="metadata"
+                                        class="mt-1 w-full max-h-32 rounded bg-black object-contain" />
+
+                                    <button v-else-if="message.message_type === 'file' && message.media_url" type="button"
+                                        class="mt-1 flex w-full items-center gap-1.5 rounded border border-black/10 bg-white/90 px-1.5 py-1 text-left text-gray-800 transition hover:bg-white"
+                                        @click="openAttachment(message)">
+                                        <span class="text-sm leading-none">{{ fileIcon(message) }}</span>
+                                        <span class="min-w-0 flex-1">
+                                            <span class="block truncate text-[10px] font-medium">
+                                                {{ message.file_name || message.media_url.name || trans('Attachment') }}
+                                            </span>
+                                            <span v-if="fileSizeLabel(message)" class="block text-[9px] text-gray-500">
+                                                {{ fileSizeLabel(message) }}
+                                            </span>
+                                        </span>
+                                    </button>
+                                </template>
+
+                                <div class="flex items-center justify-end gap-1 mt-0.5 text-[9px]"
+                                    :class="['guest', 'user'].includes(message.sender_type) ? 'text-gray-400' : 'text-white/70'">
+                                    <span>{{ formatTime(message.created_at) }}</span>
+                                    <LoadingIcon v-if="message._status === 'sending'" class="w-2.5 h-2.5" />
+                                    <span v-else-if="message._status === 'failed'" class="text-red-300">
+                                        <FontAwesomeIcon :icon="faExclamationCircle" class="text-[9px]" />
+                                    </span>
+                                    <span v-else-if="!['guest', 'user'].includes(message.sender_type)" class="leading-none">
+                                        <FontAwesomeIcon
+                                            :icon="waReadIcon(message)"
+                                            class="text-[9px]"
+                                            :class="waReadIconClass(message)" />
+                                    </span>
+                                </div>
                             </div>
                         </div>
-                    </div>
+
+                        <!-- Clicking a chip toggles it, so a reaction added from the popup
+                             above can be taken back the same way. -->
+                        <div v-if="message.reactions?.length" class="-mt-0.5 flex flex-wrap gap-0.5"
+                            :class="['guest', 'user'].includes(message.sender_type) ? 'justify-start' : 'justify-end'">
+                            <button v-for="group in message.reactions" :key="group.emoji" type="button"
+                                :disabled="reactingMessageId === message.id"
+                                class="inline-flex items-center gap-0.5 rounded-full border px-1 py-px text-[10px] shadow-sm transition disabled:opacity-50"
+                                :class="myReactedEmojis(message).has(group.emoji)
+                                    ? 'border-indigo-200 bg-indigo-50 text-indigo-700 hover:bg-indigo-100'
+                                    : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'"
+                                @click="toggleReaction(message, group.emoji)">
+                                <span>{{ group.emoji }}</span>
+                                <span v-if="group.count > 1" class="font-semibold">{{ group.count }}</span>
+                            </button>
+                        </div>
+                    </template>
                 </template>
             </div>
 
@@ -511,8 +1310,16 @@ onUnmounted(() => {
                 {{ remoteTypingUser }} {{ trans('is typing...') }}
             </div>
 
-            <div v-if="isClosed" class="px-2 py-1.5 border-t border-gray-200 text-[10px] text-gray-500 shrink-0">
-                {{ trans('This chat has been closed') }}
+            <div v-if="isClosed" class="px-2 py-1.5 border-t border-gray-200 shrink-0 space-y-1.5">
+                <span class="block text-center text-[10px] text-gray-500">{{ trans('This chat has been closed') }}</span>
+                <button type="button"
+                    class="w-full flex items-center justify-center gap-1.5 h-7 rounded-md text-[11px] font-medium text-white transition hover:opacity-90 disabled:opacity-60"
+                    :style="{ backgroundColor: 'var(--theme-color-4)' }"
+                    :disabled="isReopening" @click="reopenChat">
+                    <LoadingIcon v-if="isReopening" class="w-3 h-3" />
+                    <FontAwesomeIcon v-else :icon="faRotateRight" class="text-[9px]" />
+                    {{ trans('Reopen chat') }}
+                </button>
             </div>
 
             <div v-else-if="isWaiting" class="px-2 py-1.5 border-t border-gray-200 shrink-0 space-y-1.5">
@@ -534,122 +1341,146 @@ onUnmounted(() => {
             </div>
 
             <template v-else>
-                <div v-if="previewType === 'image' && previewUrl" class="px-2 pt-1.5 shrink-0">
-                    <div class="relative inline-block">
-                        <img :src="previewUrl" class="h-12 rounded border border-gray-200 object-cover" />
-                        <button type="button"
-                            class="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-white shadow border border-gray-200 text-gray-500 hover:text-red-500"
-                            @click="clearAttachment()">
-                            <FontAwesomeIcon :icon="faXmark" class="text-[8px]" />
-                        </button>
-                    </div>
-                </div>
-
-                <div v-else-if="previewType === 'file' && selectedFile" class="px-2 pt-1.5 shrink-0">
-                    <div class="flex items-center gap-1.5 px-1.5 py-1 rounded border border-gray-200 bg-gray-50 min-w-0">
-                        <FontAwesomeIcon :icon="faFileLines" class="text-[10px] text-gray-400 shrink-0" />
-                        <div class="flex-1 min-w-0">
-                            <div class="text-[10px] text-gray-700 truncate">{{ selectedFile.name }}</div>
-                            <div class="text-[9px] text-gray-400">{{ (selectedFile.size / 1024).toFixed(1) }} KB</div>
-                        </div>
-                        <button type="button" class="text-gray-400 hover:text-red-500 shrink-0"
-                            @click="clearAttachment()">
-                            <FontAwesomeIcon :icon="faXmark" class="text-[9px]" />
-                        </button>
-                    </div>
-                </div>
-
-                <div class="flex items-end gap-1.5 px-2 py-1.5 border-t border-gray-200 shrink-0">
-                    <input ref="imageInput" type="file" accept=".webp,.jpg,.jpeg,.png,.avif" class="hidden"
+                <div class="border-t border-gray-200 shrink-0">
+                    <input ref="imageInput" type="file" :accept="isWhatsapp ? '.jpg,.jpeg,.png' : '.webp,.jpg,.jpeg,.png,.avif'" class="hidden"
                         @change="handleImageSelect" />
-                    <input ref="fileInput" type="file" accept=".pdf,.xls,.xlsx" class="hidden"
+                    <input ref="fileInput" type="file" :accept="isWhatsapp ? '.pdf,.txt,.doc,.docx,.xls,.xlsx,.ppt,.pptx' : '.pdf,.xls,.xlsx'" class="hidden"
                         @change="handleDocSelect" />
 
-                    <textarea ref="messageInput" v-model="newMessage" rows="1" :placeholder="trans('Type message...')"
-                        style="max-height: 96px;"
-                        class="flex-1 min-w-0 resize-none overflow-y-auto text-[11px] leading-tight px-2 py-1 border border-gray-300 rounded-md focus:outline-none focus:border-gray-400 focus:ring-0"
-                        @input="handleTyping(); autoResize()" @keydown.enter.exact.prevent="sendMessage" />
+                    <div v-if="templateOnly && !hasTemplate"
+                        class="flex items-center gap-1.5 mx-2 mt-1.5 px-2 py-1 rounded bg-amber-50 border border-amber-200 text-amber-700 text-[9px]">
+                        <FontAwesomeIcon :icon="faFileLines" class="text-[8px]" />
+                        <span>{{ trans('24h window closed. Send a template.') }}</span>
+                    </div>
 
-                    <div ref="optionMenuRef" class="relative shrink-0">
-                        <button type="button"
-                            class="w-6 h-6 rounded-md flex items-center justify-center border border-gray-300 text-gray-500 hover:bg-gray-100"
-                            :class="{ 'bg-gray-100 text-gray-700': isOptionMenuOpen }" v-tooltip="trans('More options')"
-                            @click.stop="isOptionMenuOpen = !isOptionMenuOpen">
-                            <FontAwesomeIcon :icon="faPlus" class="text-[9px]" />
-                        </button>
-
-                        <div v-if="isOptionMenuOpen"
-                            class="absolute bottom-full right-0 mb-1 w-36 py-1 bg-white border border-gray-200 rounded-md shadow-lg z-50">
-                            <button type="button"
-                                class="w-full flex items-center gap-2 px-2 py-1 text-[10px] text-gray-700 hover:bg-gray-100"
-                                @click="pickAttachment(imageInput)">
-                                <FontAwesomeIcon :icon="faImage" class="text-[9px] text-gray-400" />
-                                {{ trans('Upload image') }}
+                    <div v-if="hasTemplate" class="mx-2 mt-1.5">
+                        <div class="flex items-center gap-1.5 px-2 py-1 rounded bg-green-50 text-green-700 text-[10px]">
+                            <FontAwesomeIcon :icon="faFileLines" class="text-[9px]" />
+                            <span class="font-medium truncate">{{ selectedTemplate?.name }}</span>
+                            <span class="text-green-600/70 text-[9px]">{{ selectedTemplate?.language }}</span>
+                            <button @click="clearTemplate" class="ml-auto text-green-600 hover:text-red-500">
+                                <FontAwesomeIcon :icon="faXmark" class="text-[8px]" />
                             </button>
-
-                            <button type="button"
-                                class="w-full flex items-center gap-2 px-2 py-1 text-[10px] text-gray-700 hover:bg-gray-100"
-                                @click="pickAttachment(fileInput)">
-                                <FontAwesomeIcon :icon="faPaperclip" class="text-[9px] text-gray-400" />
-                                {{ trans('Upload file') }}
-                            </button>
-
-                            <button type="button"
-                                class="w-full flex items-center justify-between gap-2 px-2 py-1 text-[10px] text-gray-700 hover:bg-gray-100"
-                                @click="toggleEmailNotif">
-                                <span class="flex items-center gap-2">
-                                    <FontAwesomeIcon :icon="faEnvelope" class="text-[9px] text-gray-400" />
-                                    {{ trans('Email notification') }}
-                                </span>
-                                <span class="text-[8px] font-semibold"
-                                    :class="isEmailNotif ? 'text-green-600' : 'text-gray-400'">
-                                    {{ isEmailNotif ? trans('ON') : trans('OFF') }}
-                                </span>
-                            </button>
-
-                            <button v-if="chat.organisationSlug" type="button"
-                                class="w-full flex items-center gap-2 px-2 py-1 text-[10px] text-gray-700 hover:bg-gray-100"
-                                @click="openJiraModal">
-                                <FontAwesomeIcon :icon="faJira" class="text-[9px] text-gray-400" />
-                                {{ trans('Create Jira ticket') }}
-                            </button>
-
-                            <div class="my-1 border-t border-gray-100"></div>
-
-                            <ModalConfirmationDelete
-                                :routeDelete="{
-                                    name: 'grp.org.chat.agents.sessions.close',
-                                    parameters: [chat.organisationSlug, chat.ulid],
-                                    method: 'patch',
-                                }"
-                                :title="trans('Are you sure you want to end this chat?')"
-                                :description="trans('This will close the chat session. The conversation history will be preserved.')"
-                                :noLabel="trans('End chat')"
-                                :noIcon="faTimesCircle"
-                                @success="onChatEnded">
-                                <template #default="{ changeModel }">
-                                    <button type="button"
-                                        class="w-full flex items-center gap-2 px-2 py-1 text-[10px] text-red-600 hover:bg-red-50"
-                                        @click="changeModel">
-                                        <FontAwesomeIcon :icon="faTimesCircle" class="text-[9px]" />
-                                        {{ trans('End chat') }}
-                                    </button>
-                                </template>
-                            </ModalConfirmationDelete>
+                        </div>
+                        <div class="px-1 pt-1 text-[10px] text-gray-500 whitespace-pre-line max-h-16 overflow-y-auto leading-snug"
+                            v-html="templatePreviewHtml"></div>
+                        <div v-if="hasTemplate && templateParameters.length" class="mt-1 space-y-1">
+                            <template v-for="(_, index) in templateParameters" :key="index">
+                                <input v-if="!selectedTemplate?.resolved_values || selectedTemplate.resolved_values[index] == null"
+                                    v-model="templateParameters[index]" type="text"
+                                    :placeholder="trans('Value for :placeholder', { placeholder: parameterLabel(index) })"
+                                    class="w-full text-[10px] border rounded px-2 py-1 focus:outline-none focus:border-green-500" />
+                            </template>
                         </div>
                     </div>
 
-                    <button
-                        class="w-6 h-6 shrink-0 rounded-md flex items-center justify-center text-white disabled:opacity-50"
-                        :style="{ backgroundColor: 'var(--theme-color-4)' }"
-                        :disabled="isSending || (!newMessage.trim() && !hasAttachment)" @click="sendMessage">
-                        <FontAwesomeIcon :icon="faPaperPlane" class="text-[9px]" />
-                    </button>
+                    <div v-if="previewType === 'image' && previewUrl" class="px-2 pt-1.5">
+                        <div class="relative inline-block">
+                            <img :src="previewUrl" class="h-12 rounded border border-gray-200 object-cover" />
+                            <button type="button"
+                                class="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-white shadow border border-gray-200 text-gray-500 hover:text-red-500"
+                                @click="clearAttachment()">
+                                <FontAwesomeIcon :icon="faXmark" class="text-[8px]" />
+                            </button>
+                        </div>
+                    </div>
+
+                    <div v-else-if="previewType === 'file' && selectedFile" class="px-2 pt-1.5">
+                        <div class="flex items-center gap-1.5 px-1.5 py-1 rounded border border-gray-200 bg-gray-50 min-w-0">
+                            <FontAwesomeIcon :icon="faFileLines" class="text-[10px] text-gray-400 shrink-0" />
+                            <div class="flex-1 min-w-0">
+                                <div class="text-[10px] text-gray-700 truncate">{{ selectedFile.name }}</div>
+                                <div class="text-[9px] text-gray-400">{{ (selectedFile.size / 1024).toFixed(1) }} KB</div>
+                            </div>
+                            <button type="button" class="text-gray-400 hover:text-red-500 shrink-0"
+                                @click="clearAttachment()">
+                                <FontAwesomeIcon :icon="faXmark" class="text-[9px]" />
+                            </button>
+                        </div>
+                    </div>
+
+                    <div v-if="replyingTo" class="px-2 pt-1.5">
+                        <div class="flex items-center gap-1.5 rounded border-l-2 border-indigo-400 bg-gray-50 px-1.5 py-1 min-w-0">
+                            <div class="min-w-0 flex-1">
+                                <div class="text-[9px] font-semibold text-indigo-500">{{ trans("Replying to") }}</div>
+                                <div class="truncate text-[10px] text-gray-600">{{ replyPreviewText(replyingTo) }}</div>
+                            </div>
+                            <button type="button" class="shrink-0 text-gray-400 hover:text-red-500"
+                                :title="trans('Cancel reply')" @click="cancelReply">
+                                <FontAwesomeIcon :icon="faXmark" class="text-[9px]" />
+                            </button>
+                        </div>
+                    </div>
+
+                    <textarea v-if="!hasTemplate" ref="messageInput" v-model="newMessage" rows="1"
+                        :disabled="templateOnly"
+                        :placeholder="templateOnly ? trans('Send a template message') : trans('Type message...')"
+                        style="max-height: 96px;"
+                        class="w-full resize-none overflow-y-auto text-[11px] leading-tight px-2 pt-1.5 pb-0.5 border-none focus:outline-none focus:ring-0 bg-transparent disabled:bg-gray-50 disabled:text-gray-400"
+                        @input="handleTyping(); autoResize()" @keydown.enter.exact.prevent="sendMessage" />
+
+                    <div class="flex items-center justify-between px-1.5 pb-1.5 pt-0.5">
+                        <div class="flex items-center gap-0.5">
+                            <button type="button" @click="imageInput?.click()" :disabled="hasTemplate || templateOnly"
+                                class="w-6 h-6 flex items-center justify-center rounded hover:bg-gray-100 text-gray-500 transition-colors disabled:opacity-40"
+                                :title="trans('Upload image')">
+                                <FontAwesomeIcon :icon="faImage" class="text-[10px]" />
+                            </button>
+                            <button type="button" @click="fileInput?.click()" :disabled="hasTemplate || templateOnly"
+                                class="w-6 h-6 flex items-center justify-center rounded hover:bg-gray-100 text-gray-500 transition-colors disabled:opacity-40"
+                                :title="trans('Upload file')">
+                                <FontAwesomeIcon :icon="faPaperclip" class="text-[10px]" />
+                            </button>
+                            <div class="relative">
+                                <button ref="emojiButtonRef" type="button" @click.stop="toggleEmojiPicker"
+                                    :disabled="hasTemplate || templateOnly"
+                                    class="w-6 h-6 flex items-center justify-center rounded hover:bg-gray-100 transition-colors disabled:opacity-40"
+                                    :class="showEmojiPicker ? 'text-green-600 bg-gray-100' : 'text-gray-500'"
+                                    :title="trans('Emoji')">
+                                    <FontAwesomeIcon :icon="faFaceSmile" class="text-[10px]" />
+                                </button>
+                                <Teleport to="body">
+                                    <div v-if="showEmojiPicker" ref="emojiPickerRef" :style="emojiPickerStyle"
+                                        @click.stop>
+                                        <EmojiPicker @pick="pickEmoji" />
+                                    </div>
+                                </Teleport>
+                            </div>
+                            <button v-if="!isWhatsapp" type="button" @click="isEmailNotif = !isEmailNotif"
+                                class="w-6 h-6 flex items-center justify-center rounded hover:bg-gray-100 transition-colors"
+                                :class="isEmailNotif ? 'text-green-600 bg-green-50' : 'text-gray-500'"
+                                :title="isEmailNotif ? trans('Email notification ON') : trans('Email notification OFF')">
+                                <FontAwesomeIcon :icon="faEnvelope" class="text-[10px]" />
+                            </button>
+                            <button v-if="isWhatsapp" type="button" @click="openTemplateDialog"
+                                class="w-6 h-6 flex items-center justify-center rounded hover:bg-green-50 text-gray-500 hover:text-green-600 transition-colors"
+                                :title="trans('Send template message')">
+                                <FontAwesomeIcon :icon="faFileLines" class="text-[10px]" />
+                            </button>
+                        </div>
+                        <button
+                            class="w-6 h-6 shrink-0 rounded-md flex items-center justify-center text-white disabled:opacity-50"
+                            :style="{ backgroundColor: 'var(--theme-color-4)' }"
+                            :disabled="isSending || (hasTemplate ? !canSendTemplate : (templateOnly || (!newMessage.trim() && !hasAttachment)))"
+                            @click="sendMessage">
+                            <FontAwesomeIcon :icon="faPaperPlane" class="text-[9px]" />
+                        </button>
+                    </div>
                 </div>
             </template>
         </div>
 
         <JiraTicketModal v-if="chat.organisationSlug" :is-open="isJiraModalOpen" :session="(jiraSession as any)"
             :organisation="chat.organisationSlug" @close="isJiraModalOpen = false" />
+
+        <WhatsappTemplatePicker v-if="isWhatsapp"
+            :visible="isTemplateDialogOpen"
+            @update:visible="isTemplateDialogOpen = $event"
+            :templates="templates"
+            :is-loading="isLoadingTemplates"
+            :selected-template-id="selectedTemplate?.id"
+            :organisation-slug="chat.organisationSlug"
+            :shop-slug="chat.shopSlug"
+            @select="selectTemplate" />
     </div>
 </template>

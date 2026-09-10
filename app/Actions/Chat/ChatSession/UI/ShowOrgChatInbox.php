@@ -18,6 +18,7 @@ use App\Models\Chat\ChatSession;
 use App\Models\SysAdmin\Organisation;
 use Inertia\Inertia;
 use Inertia\Response;
+use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -108,6 +109,12 @@ class ShowOrgChatInbox extends OrgAction
         return (new ChatSessionListResource($this->selectedSession))->resolve();
     }
 
+    /**
+     * The website channel comes from the agent's real shop assignments; the WhatsApp channel is a
+     * ponytail: static stub until chat sessions carry a channel and WhatsApp inboxes are modelled.
+     *
+     * @return array<int, array{id: int, name: string, slug: string, type: string|null, channels: array<int, array{key: string, name: string, unread: int}>}>
+     */
     private function getAgentInboxes(Organisation $organisation, ActionRequest $request): array
     {
         $agent = $request->user()?->chatAgent;
@@ -134,12 +141,23 @@ class ShowOrgChatInbox extends OrgAction
             $shopsQuery->whereIn('id', $assignments->pluck('shop_id')->filter());
         }
 
-        return $shopsQuery->get()->map(fn ($shop) => [
-            'id'   => $shop->id,
-            'name' => $shop->name,
-            'slug' => $shop->slug,
-            'type' => $shop->type?->value,
-        ])->values()->all();
+        return $shopsQuery->get()->map(function ($shop) {
+            $channels = [
+                ['key' => 'website', 'name' => __('Website'), 'unread' => 0],
+            ];
+
+            if (Arr::get($shop->settings, 'whatsapp.enabled', false)) {
+                $channels[] = ['key' => 'whatsapp', 'name' => __('WhatsApp'), 'unread' => 0];
+            }
+
+            return [
+                'id'       => $shop->id,
+                'name'     => $shop->name,
+                'slug'     => $shop->slug,
+                'type'     => $shop->type?->value,
+                'channels' => $channels,
+            ];
+        })->values()->all();
     }
 
     public function getBreadcrumbs(array $routeParameters): array

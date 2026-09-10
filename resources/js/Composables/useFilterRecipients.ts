@@ -219,10 +219,13 @@ export function useFilterRecipients(props: any) {
     })
 
     /* ---------------- FETCH CUSTOMERS ---------------- */
+    /* Overrides ride on this one call rather than living in extraQuery, which every reload
+       path shares: a caller that means to send something once has no way to take it back out
+       again afterwards, because the debounce fires long after the handler has returned. */
     const isEmptyQueryValue = (value: any) =>
         value === null || value === undefined || value === '' || (Array.isArray(value) && value.length === 0)
 
-    const fetchCustomers = debounce(() => {
+    const fetchCustomers = debounce((overrides: Record<string, unknown> = {}) => {
         const takeTagOutOfUrl = dropUrlTagFilter.value
         dropUrlTagFilter.value = false
 
@@ -244,14 +247,19 @@ export function useFilterRecipients(props: any) {
             delete routeParams.filter.tag
         }
 
+        /* Back to the first page, because every reload from here changes which contacts the
+           audience holds and the page number describes the old one: the params carry the query
+           string back in, and Inertia merges data over it rather than replacing it, so a page
+           left alone survives into an audience that may not be that long any more and answers
+           with nothing. */
         router.get(
             route(currentRoute, routeParams),
-            { filters: filtersPayload.value, ...filledExtraQuery },
+            { filters: filtersPayload.value, ...filledExtraQuery, page: 1, ...overrides },
             {
                 preserveState: true,
                 preserveScroll: true,
                 replace: true,
-                only: ['customers', 'filters', 'estimatedRecipients', 'queryBuilderProps']
+                only: props.reloadOnly ?? ['customers', 'filters', 'estimatedRecipients', 'queryBuilderProps']
             }
         )
     }, 400)

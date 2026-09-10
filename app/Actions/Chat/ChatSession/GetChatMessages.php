@@ -8,8 +8,10 @@
 
 namespace App\Actions\Chat\ChatSession;
 
+use App\Enums\CRM\Livechat\ChatEventTypeEnum;
 use App\Enums\CRM\Livechat\ChatSenderTypeEnum;
 use App\Http\Resources\CRM\Livechat\ChatMessageResource;
+use App\Http\Resources\CRM\Livechat\ChatTimelineEventResource;
 use App\Models\Chat\ChatAgent;
 use App\Models\Chat\ChatSession;
 use Illuminate\Http\JsonResponse;
@@ -71,6 +73,7 @@ class GetChatMessages
         return [
             'chatSession' => $chatSession,
             'messages' => $messages,
+            'events' => $this->timelineEvents($chatSession, $messages, $validated),
             'pagination' => [
                 'has_more'    => $hasMore,
                 'next_cursor' => $hasMore ? $nextCursor : null,
@@ -165,9 +168,33 @@ class GetChatMessages
                 'assigned_agent' => $firstName,
                 'rating'         => $result['chatSession']->rating,
                 'messages'       => ChatMessageResource::collection($result['messages']),
+                'events'         => ChatTimelineEventResource::collection($result['events']),
                 'pagination'     => $result['pagination'],
             ]
         ]);
+    }
+
+    /**
+     * Events are windowed to the messages on this page rather than paginated on their
+     * own, so loading older messages brings their events along without a second cursor.
+     * Only the agent view gets them: the visitor widget has no business seeing that its
+     * chat was flagged as spam or moved between agents.
+     */
+    protected function timelineEvents(ChatSession $chatSession, Collection $messages, array $filters): Collection
+    {
+        if (($filters['request_from'] ?? null) !== ChatSenderTypeEnum::AGENT->value || $messages->isEmpty()) {
+            return collect();
+        }
+
+        $query = $chatSession->chatEvents()
+            ->whereIn('event_type', ChatEventTypeEnum::timelineTypes())
+            ->where('created_at', '>=', $messages->first()->created_at);
+
+        if (!empty($filters['cursor'])) {
+            $query->where('created_at', '<', $filters['cursor']);
+        }
+
+        return $query->orderBy('created_at')->get();
     }
 
     private function hasMore(ChatSession $chatSession, ?string $cursor): bool

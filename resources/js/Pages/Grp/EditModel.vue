@@ -82,7 +82,7 @@ import {
     faNotEqual,
     faCamera
 } from "@fal"
-import { faOctopusDeploy } from "@fortawesome/free-brands-svg-icons"
+import { faOctopusDeploy, faMeta } from "@fortawesome/free-brands-svg-icons"
 import { faExclamationTriangle, faBrowser as faBrowserSolid } from "@fas"
 import { faBan } from "@far"
 import { faTh, faFolderTree } from "@fad"
@@ -101,6 +101,7 @@ library.add(
     faBookOpen,
     faNotesMedical,
     faOctopusDeploy,
+    faMeta,
     faExclamationTriangle,
     faAtom,
     faAtomAlt,

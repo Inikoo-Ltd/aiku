@@ -61,6 +61,7 @@ const form = useForm({
 	contact_address: {},
 	poll_replies: [],
 	is_opt_in: false,
+	is_whatsapp_newsletter_opt_in: false,
 	interest: [],
 	tax_number: "",
 })
@@ -97,6 +98,7 @@ onMounted(async () => {
 			answer: poll.type === "option" ? null : "",
 		}))
 		form.is_opt_in = !!registrationSettings.value?.marketing_opt_in_default
+		form.is_whatsapp_newsletter_opt_in = !!registrationSettings.value?.whatsapp_newsletter_default
 
 		const client = response.data?.client
 		form.contact_name = client?.contact_name || ""
@@ -312,6 +314,18 @@ const submit = async () => {
 							<Checkbox v-model="form.is_opt_in" inputId="opt_in_newsletter" name="opt_in_newsletter" binary class="mt-0.5" />
 							<label for="opt_in_newsletter">
 								{{ registrationSettings?.marketing_opt_in_label ?? trans("Opt in to our newsletter for updates and offers.") }}
+							</label>
+						</div>
+
+						<div class="flex gap-2 sm:col-span-6">
+							<Checkbox
+								v-model="form.is_whatsapp_newsletter_opt_in"
+								inputId="opt_in_whatsapp_newsletter"
+								name="opt_in_whatsapp_newsletter"
+								binary
+								class="mt-0.5" />
+							<label for="opt_in_whatsapp_newsletter">
+								{{ registrationSettings?.whatsapp_newsletter_label ?? trans("Opt in to receive our newsletter and offers via WhatsApp.") }}
 							</label>
 						</div>
 
