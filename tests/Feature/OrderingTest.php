@@ -680,8 +680,13 @@ test('update order', function ($order) {
 })->depends('create order');
 
 test('update order state to submitted', function (Order $order) {
+    /** An order that never reached a payment attempt must not submit with a null pay_status,
+     * it would belong to neither submitted queue (HELP-3116) */
+    $order->update(['pay_status' => null, 'pay_detailed_status' => null]);
+
     $order = SubmitOrder::make()->action($order);
-    expect($order->state)->toEqual(OrderStateEnum::SUBMITTED)
+    expect($order->pay_status)->toEqual(OrderPayStatusEnum::UNPAID)
+        ->and($order->state)->toEqual(OrderStateEnum::SUBMITTED)
         ->and($order->shop->orderingStats->number_orders_state_submitted)->toBe(1)
         ->and($order->organisation->orderingStats->number_orders_state_submitted)->toBe(1)
         ->and($order->group->orderingStats->number_orders_state_submitted)->toBe(1)
@@ -721,8 +726,13 @@ test('delivery note recipient follows the order recipient, not the customer', fu
         ->and(SendOrderToWarehouse::make()->getCompanyName($order))->toBe('Novak Retail s.r.o.')
         ->and(SendOrderToWarehouse::make()->getContactName($order))->toBe('Jana Novak');
 
+    $deliveryNote = $order->deliveryNotes()->first();
+    expect($deliveryNote->company_name)->toBe('Novak Retail s.r.o.')
+        ->and($deliveryNote->contact_name)->toBe('Jana Novak');
+
     $order = UpdateOrder::make()->action($order, ['company_name' => null]);
-    expect(SendOrderToWarehouse::make()->getCompanyName($order))->toBe($order->customer->company_name);
+    expect(SendOrderToWarehouse::make()->getCompanyName($order))->toBe($order->customer->company_name)
+        ->and($order->deliveryNotes()->first()->company_name)->toBe($order->customer->company_name);
 
     return $order;
 })->depends('update order state to in warehouse');

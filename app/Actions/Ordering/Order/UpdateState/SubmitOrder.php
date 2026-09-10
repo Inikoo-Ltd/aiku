@@ -17,6 +17,7 @@ use App\Actions\Dropshipping\CustomerClient\Hydrators\CustomerClientHydrateBaske
 use App\Actions\Dropshipping\CustomerSalesChannel\Hydrators\CustomerSalesChannelsHydrateOrders;
 use App\Actions\Ordering\Order\HasOrderHydrators;
 use App\Actions\Ordering\Order\ProcessOrderTrafficSource;
+use App\Actions\Ordering\Order\UpdateOrderPaymentsStatus;
 use App\Actions\Ordering\Transaction\DeleteTransaction;
 use App\Actions\Ordering\Transaction\StoreTransaction;
 use App\Actions\Ordering\UpcomingTransaction\UpdateUpcomingTransaction;
@@ -118,6 +119,15 @@ class SubmitOrder extends OrgAction
         }
 
         $this->update($order, $modelData);
+
+        /**
+         * An order that never reached a payment attempt - no balance to settle and no working saved
+         * card - keeps the null pay_status it was created with, and then belongs to neither the
+         * submitted paid nor the submitted unpaid queue, so nobody ever chases it (HELP-3116).
+         */
+        if ($order->pay_status === null) {
+            $order = UpdateOrderPaymentsStatus::run($order);
+        }
 
         if ($order->customer->warehouse_temporary_notes) {
             UpdateCustomer::make()->action($order->customer, [
