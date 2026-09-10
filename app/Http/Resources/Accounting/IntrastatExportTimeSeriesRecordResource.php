@@ -27,6 +27,7 @@ class IntrastatExportTimeSeriesRecordResource extends JsonResource
                 'name' => $this->country_name,
                 'code' => $this->country_code,
             ],
+            'origin_country_code'       => $this->origin_country_code,
             'tax_category'              => [
                 'id'   => $this->tax_category_id,
                 'name' => $this->tax_category_name ?? __('N/A'),
@@ -39,6 +40,7 @@ class IntrastatExportTimeSeriesRecordResource extends JsonResource
             'delivery_notes_count'      => $this->delivery_notes_count,
             'products_count'            => $this->products_count,
             'invoices_count'            => $this->invoices_count,
+            'partner_tax_number'        => $this->partner_tax_number,
             'partner_tax_numbers'       => $this->partner_tax_numbers,
             'valid_tax_numbers_count'   => $this->valid_tax_numbers_count,
             'invalid_tax_numbers_count' => $this->invalid_tax_numbers_count,

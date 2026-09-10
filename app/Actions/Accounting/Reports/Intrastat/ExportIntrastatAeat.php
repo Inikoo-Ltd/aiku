@@ -9,23 +9,29 @@
 namespace App\Actions\Accounting\Reports\Intrastat;
 
 use App\Actions\OrgAction;
+use App\Enums\Accounting\Intrastat\IntrastatDeliveryTermsEnum;
+use App\Enums\Accounting\Intrastat\IntrastatNatureOfTransactionEnum;
+use App\Enums\Accounting\Intrastat\IntrastatTransportModeEnum;
+use App\Helpers\IntrastatVatNumber;
 use App\Models\Accounting\IntrastatExportTimeSeriesRecord;
 use App\Models\SysAdmin\Organisation;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\Response;
 use Lorisleiva\Actions\ActionRequest;
+use ZipArchive;
 
 class ExportIntrastatAeat extends OrgAction
 {
+    public const int ROWS_PER_FILE = 9999;
+
     private const string PROVINCE_OF_ORIGIN = '29';
-    private const string TERMS_OF_DELIVERY = 'DAP';
-    private const string NATURE_OF_TRANSACTION = '11';
-    private const string MODE_OF_TRANSPORT = '3';
-    private const string COUNTRY_OF_ORIGIN = 'ES';
     private const string STATISTICAL_PROCEDURE = '1';
     private const string SEPARATOR = ';';
     private const string LINE_ENDING = "\r\n";
+
+    /** @var array<string, string>|null CN 2026 codes keyed by eight-digit code, value is the supplementary unit or '-' */
+    private static ?array $combinedNomenclature = null;
 
     public function authorize(ActionRequest $request): bool
     {
@@ -35,38 +41,138 @@ class ExportIntrastatAeat extends OrgAction
         );
     }
 
-    public function handle(Organisation $organisation, array $filters): string
+    /**
+     * @return array{lines: list<string>, log: list<string>, errors: list<string>}
+     */
+    public function handle(Organisation $organisation, array $filters): array
     {
-        $records = $this->getRecords($organisation, $filters);
+        return $this->build($this->getRecords($organisation, $filters));
+    }
 
-        $lines = $records->map(function (IntrastatExportTimeSeriesRecord $record): ?string {
-            $commodityCode = $this->commodityCode($record->intrastatExportTimeSeries->tariff_code);
+    /**
+     * @return array{lines: list<string>, log: list<string>, errors: list<string>}
+     */
+    public function build(Collection $records): array
+    {
+        $lines  = [];
+        $log    = [];
+        $errors = [];
 
-            if ($commodityCode === '') {
-                return null;
-            }
+        foreach ($records as $record) {
+            $series      = $record->intrastatExportTimeSeries;
+            $destination = $series->country?->code ?? '';
+            $origin      = $series->originCountry?->code ?? '';
+            $commodity   = $this->commodityCode($series->tariff_code);
+            $vat         = $series->partner_tax_number ?? IntrastatVatNumber::UNKNOWN;
+            $weightKg    = (float) ($record->weight ?? 0) / 1000;
+            $quantity    = (float) ($record->quantity ?? 0);
+            $unit        = $this->supplementaryUnit($commodity);
+            $value       = (float) ($record->value_org_currency ?? 0);
+            $source      = "record {$record->id} {$record->from} {$series->tariff_code} {$destination}";
 
             $fields = [
-                $record->intrastatExportTimeSeries->country?->code ?? '',
+                $destination,
                 self::PROVINCE_OF_ORIGIN,
-                self::TERMS_OF_DELIVERY,
-                self::NATURE_OF_TRANSACTION,
-                self::MODE_OF_TRANSPORT,
+                ($record->delivery_terms ?? IntrastatDeliveryTermsEnum::DAP)->value,
+                ($record->nature_of_transaction ?? IntrastatNatureOfTransactionEnum::OUTRIGHT_PURCHASE)->value,
+                ($record->mode_of_transport ?? IntrastatTransportModeEnum::ROAD)->value,
                 '',
-                $commodityCode,
-                self::COUNTRY_OF_ORIGIN,
+                $commodity,
+                $origin,
                 self::STATISTICAL_PROCEDURE,
-                $this->decimal((float) ($record->weight ?? 0) / 1000, 3),
-                $this->decimal((float) ($record->quantity ?? 0), 3),
-                $this->amount((float) ($record->value_org_currency ?? 0)),
-                $this->amount((float) ($record->value_org_currency ?? 0)),
-                $this->counterpartyVatNumber($record->partner_tax_numbers),
+                $this->decimal($weightKg, 3),
+                $this->supplementaryUnits($unit, $quantity, (float) ($record->weight ?? 0)),
+                $this->amount($value),
+                $this->amount($value),
+                $vat,
             ];
 
-            return implode(self::SEPARATOR, $fields);
-        })->filter()->values();
+            $rowErrors = $this->validateRow($fields, $destination, $origin, $commodity, $unit, $weightKg, $quantity, $value);
 
-        return $lines->implode(self::LINE_ENDING);
+            foreach ($rowErrors as $rowError) {
+                $errors[] = "$source: $rowError";
+            }
+
+            if ($rowErrors === []) {
+                $lines[] = implode(self::SEPARATOR, $fields);
+            }
+
+            $originalVats = collect($record->partner_tax_numbers ?? [])->pluck('number')->implode(' ');
+            $log[]        = implode("\t", [$source, $originalVats, $vat, $vat === IntrastatVatNumber::UNKNOWN ? 'QV: VAT charged, category not intra-EU, or VAT failed validation' : 'retained intra-EU VAT', $series->tariff_code, $commodity]);
+        }
+
+        return ['lines' => $lines, 'log' => $log, 'errors' => $errors];
+    }
+
+    /**
+     * @return list<string>
+     */
+    protected function validateRow(array $fields, string $destination, string $origin, string $commodity, ?string $unit, float $weightKg, float $quantity, float $value): array
+    {
+        $errors = [];
+
+        if (count($fields) !== 14) {
+            $errors[] = 'field count is not 14';
+        }
+        if (!preg_match('/^[A-Z]{2}$/', $destination)) {
+            $errors[] = 'destination country code missing';
+        }
+        if (!preg_match('/^[A-Z]{2}$/', $origin)) {
+            $errors[] = 'country of origin missing on the product';
+        }
+        if (!preg_match('/^\d{8}$/', $commodity)) {
+            $errors[] = "commodity code '$commodity' is not eight digits";
+        } elseif ($unit === null) {
+            $errors[] = "commodity code '$commodity' is not in the 2026 Combined Nomenclature";
+        }
+        if ($weightKg <= 0) {
+            $errors[] = 'net mass is zero';
+        }
+        if (in_array($unit, ['p/st', 'pa'], true) && $quantity <= 0) {
+            $errors[] = 'supplementary units is zero';
+        }
+        if ($value <= 0) {
+            $errors[] = 'invoiced amount is zero';
+        }
+        if (str_contains(implode('', $fields), self::SEPARATOR)) {
+            $errors[] = 'a field contains the separator';
+        }
+
+        return $errors;
+    }
+
+    protected function commodityCode(?string $tariffCode): string
+    {
+        $digits = preg_replace('/[^0-9]/', '', (string) $tariffCode);
+
+        return strlen($digits) === 10 ? substr($digits, 0, 8) : $digits;
+    }
+
+    protected function supplementaryUnit(string $commodity): ?string
+    {
+        self::$combinedNomenclature ??= json_decode(file_get_contents(database_path('intrastat/cn2026.json')), true);
+
+        return self::$combinedNomenclature[$commodity] ?? null;
+    }
+
+    protected function supplementaryUnits(?string $unit, float $quantity, float $weightGrams): string
+    {
+        return match ($unit) {
+            'p/st', 'pa' => $this->decimal($quantity, 3),
+            'g'          => $this->decimal($weightGrams, 3),
+            default      => '',
+        };
+    }
+
+    /**
+     * @return list<string>
+     */
+    public function splitFiles(array $lines): array
+    {
+        return array_map(
+            fn (array $chunk) => implode(self::LINE_ENDING, $chunk).self::LINE_ENDING,
+            array_chunk($lines, self::ROWS_PER_FILE)
+        );
     }
 
     protected function getRecords(Organisation $organisation, array $filters): Collection
@@ -74,7 +180,7 @@ class ExportIntrastatAeat extends OrgAction
         $query = IntrastatExportTimeSeriesRecord::where('intrastat_export_time_series_records.organisation_id', $organisation->id)
             ->where('intrastat_export_time_series_records.frequency', 'D')
             ->join('intrastat_export_time_series', 'intrastat_export_time_series_records.intrastat_export_time_series_id', '=', 'intrastat_export_time_series.id')
-            ->with(['intrastatExportTimeSeries.country', 'intrastatExportTimeSeries.taxCategory']);
+            ->with(['intrastatExportTimeSeries.country', 'intrastatExportTimeSeries.originCountry', 'intrastatExportTimeSeries.taxCategory']);
 
         if (!empty($filters['between']['date'])) {
             [$start, $end] = explode('-', $filters['between']['date']);
@@ -110,11 +216,6 @@ class ExportIntrastatAeat extends OrgAction
             ->get();
     }
 
-    protected function commodityCode(?string $tariffCode): string
-    {
-        return substr(preg_replace('/[^0-9]/', '', (string) $tariffCode), 0, 8);
-    }
-
     protected function decimal(float $value, int $decimals): string
     {
         $formatted = number_format($value, $decimals, ',', '');
@@ -131,18 +232,6 @@ class ExportIntrastatAeat extends OrgAction
         return number_format($value, 2, ',', '');
     }
 
-    protected function counterpartyVatNumber(?array $partnerTaxNumbers): string
-    {
-        if (empty($partnerTaxNumbers)) {
-            return '';
-        }
-
-        $valid = array_filter($partnerTaxNumbers, fn ($taxNumber) => !empty($taxNumber['valid']));
-        $selected = $valid !== [] ? reset($valid) : reset($partnerTaxNumbers);
-
-        return str_replace(' ', '', (string) ($selected['number'] ?? ''));
-    }
-
     public function asController(Organisation $organisation, ActionRequest $request): Response
     {
         $this->initialisation($organisation, $request);
@@ -152,13 +241,35 @@ class ExportIntrastatAeat extends OrgAction
             'elements' => $request->input('elements', []),
         ];
 
-        $content = $this->handle($organisation, $filters);
+        $result = $this->handle($organisation, $filters);
 
-        $filename = 'intrastat_aeat_' . $organisation->slug . '_' . Carbon::now()->format('Y-m-d_His') . '.csv';
+        if ($result['errors'] !== []) {
+            return response(
+                "Export stopped, fix these records first:\n\n".implode("\n", $result['errors']),
+                422,
+                ['Content-Type' => 'text/plain; charset=UTF-8']
+            );
+        }
+
+        $stamp    = Carbon::now()->format('Y-m-d_His');
+        $baseName = 'intrastat_aeat_'.$organisation->slug.'_'.$stamp;
+        $zipPath  = tempnam(sys_get_temp_dir(), 'aeat');
+        $zip      = new ZipArchive();
+        $zip->open($zipPath, ZipArchive::OVERWRITE);
+
+        foreach ($this->splitFiles($result['lines']) as $index => $content) {
+            $zip->addFromString(sprintf('%s_%02d.csv', $baseName, $index + 1), $content);
+        }
+
+        $zip->addFromString($baseName.'_log.tsv', implode("\n", $result['log']));
+        $zip->close();
+
+        $content = file_get_contents($zipPath);
+        unlink($zipPath);
 
         return response($content, 200, [
-            'Content-Type'        => 'text/csv; charset=UTF-8',
-            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+            'Content-Type'        => 'application/zip',
+            'Content-Disposition' => 'attachment; filename="'.$baseName.'.zip"',
         ]);
     }
 }

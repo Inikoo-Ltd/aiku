@@ -24,7 +24,9 @@ use Illuminate\Support\Carbon;
  * @property int $organisation_id
  * @property string $tariff_code Tariff code (HS code)
  * @property int $country_id
+ * @property int|null $origin_country_id
  * @property int|null $tax_category_id
+ * @property string|null $partner_tax_number Counterparty VAT retained for Intrastat, null means unknown (QV)
  * @property TimeSeriesFrequencyEnum $frequency
  * @property string|null $from
  * @property string|null $to
@@ -70,6 +72,11 @@ class IntrastatExportTimeSeries extends Model
     public function country(): BelongsTo
     {
         return $this->belongsTo(Country::class);
+    }
+
+    public function originCountry(): BelongsTo
+    {
+        return $this->belongsTo(Country::class, 'origin_country_id');
     }
 
     public function taxCategory(): BelongsTo

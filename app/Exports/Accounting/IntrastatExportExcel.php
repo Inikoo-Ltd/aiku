@@ -34,13 +34,16 @@ class IntrastatExportExcel implements FromQuery, WithMapping, WithHeadings, Shou
             ->join('intrastat_export_time_series', 'intrastat_export_time_series_records.intrastat_export_time_series_id', '=', 'intrastat_export_time_series.id')
             ->leftJoin('countries', 'intrastat_export_time_series.country_id', '=', 'countries.id')
             ->leftJoin('tax_categories', 'intrastat_export_time_series.tax_category_id', '=', 'tax_categories.id')
+            ->leftJoin('countries as origin_countries', 'intrastat_export_time_series.origin_country_id', '=', 'origin_countries.id')
             ->select([
                 'intrastat_export_time_series_records.from as date',
                 'intrastat_export_time_series.tariff_code',
                 'countries.code as country_code',
                 'countries.name as country_name',
+                'origin_countries.code as origin_country_code',
                 'intrastat_export_time_series_records.delivery_note_type',
                 'tax_categories.name as tax_category_name',
+                'intrastat_export_time_series.partner_tax_number',
                 'intrastat_export_time_series_records.invoices_count',
                 'intrastat_export_time_series_records.valid_tax_numbers_count',
                 'intrastat_export_time_series_records.invalid_tax_numbers_count',
@@ -88,8 +91,10 @@ class IntrastatExportExcel implements FromQuery, WithMapping, WithHeadings, Shou
             __('Tariff Code'),
             __('Country Code'),
             __('Country Name'),
+            __('Origin'),
             __('Delivery Type'),
             __('VAT Category'),
+            __('Counterparty VAT'),
             __('Invoices'),
             __('Valid Tax Numbers'),
             __('Invalid Tax Numbers'),
@@ -107,8 +112,10 @@ class IntrastatExportExcel implements FromQuery, WithMapping, WithHeadings, Shou
             $row->tariff_code,
             $row->country_code,
             $row->country_name,
+            $row->origin_country_code ?? '',
             $row->delivery_note_type instanceof \BackedEnum ? $row->delivery_note_type->value : ($row->delivery_note_type ?? ''),
             $row->tax_category_name ?? '',
+            $row->partner_tax_number ?? 'QV999999999999',
             $row->invoices_count,
             $row->valid_tax_numbers_count,
             $row->invalid_tax_numbers_count,
