@@ -178,7 +178,7 @@ const exportUrl = (type: 'csv' | 'xlsx') => {
     const current = new URLSearchParams(window.location.search)
     const filterQuery = new URLSearchParams()
     current.forEach((value, key) => {
-        if (key === 'filters' || key.startsWith('filters[') || key === 'state' || key.startsWith('state[') || key === 'status' || key.startsWith('status[') || key === 'upcoming') {
+        if (key === 'filters' || key.startsWith('filters[') || key === 'state' || key.startsWith('state[') || key === 'status' || key.startsWith('status[') || key === 'upcoming' || key === 'filter[tag]') {
             filterQuery.append(key, value)
         }
     })

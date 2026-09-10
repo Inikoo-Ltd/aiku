@@ -15,6 +15,8 @@ export function useFilterRecipients(props: any) {
 
     const extraQuery = reactive<Record<string, any>>({})
 
+    const dropUrlTagFilter = ref(false)
+
     /* ---------------- COMPUTED ---------------- */
     const activeFilterCount = computed(() =>
         Object.keys(activeFilters.value ?? {}).length
@@ -113,6 +115,7 @@ export function useFilterRecipients(props: any) {
 
     const clearAllFilters = () => {
         Object.keys(activeFilters.value).forEach(k => delete activeFilters.value[k])
+        dropUrlTagFilter.value = true
         fetchCustomers()
     }
 
@@ -216,13 +219,34 @@ export function useFilterRecipients(props: any) {
     })
 
     /* ---------------- FETCH CUSTOMERS ---------------- */
+    const isEmptyQueryValue = (value: any) =>
+        value === null || value === undefined || value === '' || (Array.isArray(value) && value.length === 0)
+
     const fetchCustomers = debounce(() => {
+        const takeTagOutOfUrl = dropUrlTagFilter.value
+        dropUrlTagFilter.value = false
+
         const currentRoute = route().current()
         if (!currentRoute) return
 
+        const filledExtraQuery = Object.fromEntries(
+            Object.entries(extraQuery).filter(([_, value]) => !isEmptyQueryValue(value))
+        )
+
+        // Inertia replaces query keys it receives, so a key left out here would keep the value
+        // already in the address bar. Drop them from the base route to make clearing one stick.
+        const routeParams = { ...route().params }
+        Object.keys(extraQuery).forEach((key) => delete routeParams[key])
+
+        // The tag arrives as filter[tag] from the dashboard and rides along as a By Tags chip, so
+        // clearing the panel has to take it out of the address bar as well.
+        if (takeTagOutOfUrl && routeParams.filter?.tag) {
+            delete routeParams.filter.tag
+        }
+
         router.get(
-            route(currentRoute, route().params),
-            { filters: filtersPayload.value, ...extraQuery },
+            route(currentRoute, routeParams),
+            { filters: filtersPayload.value, ...filledExtraQuery },
             {
                 preserveState: true,
                 preserveScroll: true,

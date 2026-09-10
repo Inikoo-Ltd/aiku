@@ -20,7 +20,7 @@ class CustomersExport implements FromArray, ShouldAutoSize, WithHeadings
     /**
      * @param array<int, string> $fields Selected field keys; empty means all fields.
      */
-    public function __construct(public Organisation|Shop $parent, public array $recipe = [], public array $states = [], public array $statuses = [], public array $fields = [], public ?string $upcoming = null)
+    public function __construct(public Organisation|Shop $parent, public array $recipe = [], public array $states = [], public array $statuses = [], public array $fields = [], public ?string $upcoming = null, public ?string $tag = null)
     {
     }
 
@@ -88,9 +88,15 @@ class CustomersExport implements FromArray, ShouldAutoSize, WithHeadings
         $query = Customer::where($key, $this->parent->id);
 
         if ($this->parent instanceof Shop && $this->recipeHasFilters()) {
-            $recipeQuery = GetCustomersQueryByRecipe::run($this->parent->id, $this->recipe);
+            $recipeQuery = GetCustomersQueryByRecipe::run($this->parent->id, $this->recipe, false);
 
             $query->whereIn('customers.id', $recipeQuery->select('customers.id'));
+        }
+
+        if ($this->tag) {
+            $query->whereHas('tags', function ($tagQuery) {
+                $tagQuery->where('tags.slug', $this->tag);
+            });
         }
 
         if (count($this->states) > 0) {

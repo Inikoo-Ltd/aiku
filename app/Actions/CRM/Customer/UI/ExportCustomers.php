@@ -38,8 +38,9 @@ class ExportCustomers extends OrgAction
         $statuses = $this->getStatusFilter($modelData['status'] ?? []);
         $upcoming = in_array($modelData['upcoming'] ?? null, ['ready', 'out_of_stock'], true) ? $modelData['upcoming'] : null;
         $fields = $modelData['columns'] ?? [];
+        $tag = $modelData['filter']['tag'] ?? null;
 
-        $export = new CustomersExport($parent, $recipe, $states, $statuses, $fields, $upcoming);
+        $export = new CustomersExport($parent, $recipe, $states, $statuses, $fields, $upcoming, $tag);
 
         if ($type === ExportTypeEnum::XLSX->value && $export->query()->toBase()->count() < self::STREAM_THRESHOLD) {
             return $this->export($export, 'customers', $type);
@@ -51,15 +52,17 @@ class ExportCustomers extends OrgAction
     public function rules(): array
     {
         return [
-            'type'      => ['required', 'string', Rule::in('csv', 'xlsx')],
-            'filters'   => ['sometimes', 'nullable', 'array'],
-            'state'     => ['sometimes', 'nullable', 'array'],
-            'state.*'   => ['string'],
-            'status'    => ['sometimes', 'nullable', 'array'],
-            'status.*'  => ['string'],
-            'upcoming'  => ['sometimes', 'nullable', 'string', Rule::in('ready', 'out_of_stock')],
-            'columns'   => ['sometimes', 'nullable', 'array'],
-            'columns.*' => ['string', Rule::in(array_keys(CustomersExport::fieldDefinitions()))],
+            'type'       => ['required', 'string', Rule::in('csv', 'xlsx')],
+            'filters'    => ['sometimes', 'nullable', 'array'],
+            'filter'     => ['sometimes', 'nullable', 'array'],
+            'filter.tag' => ['sometimes', 'nullable', 'string'],
+            'state'      => ['sometimes', 'nullable', 'array'],
+            'state.*'    => ['string'],
+            'status'     => ['sometimes', 'nullable', 'array'],
+            'status.*'   => ['string'],
+            'upcoming'   => ['sometimes', 'nullable', 'string', Rule::in('ready', 'out_of_stock')],
+            'columns'    => ['sometimes', 'nullable', 'array'],
+            'columns.*'  => ['string', Rule::in(array_keys(CustomersExport::fieldDefinitions()))],
         ];
     }
 
