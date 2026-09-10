@@ -36,6 +36,7 @@ use App\Http\Middleware\ForceJsonResponse;
 use App\Http\Middleware\HandleIrisInertiaRequests;
 use App\Http\Middleware\NewRelicTransactionMiddleware;
 use App\Http\Middleware\ResetUserPasswordMiddleware;
+use App\Http\Middleware\ResolveShopifyShopDomain;
 use App\Http\Middleware\ResetWebUserPasswordMiddleware;
 use App\Http\Middleware\RetinaAuthenticate;
 use App\Http\Middleware\SetWebsiteLocale;
@@ -226,6 +227,7 @@ class Kernel extends HttpKernel
         ],
         'pupil'       => [
             DisableSSR::class,
+            ResolveShopifyShopDomain::class,
             VerifyShopify::class,
             EncryptCookies::class,
             AddQueuedCookiesToResponse::class,
