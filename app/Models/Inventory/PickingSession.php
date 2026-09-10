@@ -54,6 +54,7 @@ use App\Models\Dispatching\Trolley;
  * @property numeric $packing_percentage
  * @property PickingSessionTypeEnum $type
  * @property int $number_pallet_returns
+ * @property bool $is_done_waiting
  * @property-read \Illuminate\Database\Eloquent\Collection<int, DeliveryNote> $deliveryNotes
  * @property-read \Illuminate\Database\Eloquent\Collection<int, DeliveryNoteItem> $deliveryNotesItems
  * @property-read Group|null $group
@@ -78,6 +79,7 @@ class PickingSession extends Model
     protected $casts = [
         'state'                  => PickingSessionStateEnum::class,
         'type'                   => PickingSessionTypeEnum::class,
+        'is_done_waiting'        => 'boolean',
     ];
 
     public function getRouteKeyName(): string
