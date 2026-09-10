@@ -445,6 +445,10 @@ const onHideStepsPopover = () => {
                         :offers_data="product?.product_offers_data" template="max_discount_3" :use_duration="false" />
                     <DiscountByType v-if="bestOffer?.type == 'Subdepartment Ordered'"
                         :offers_data="product?.product_offers_data" template="max_discount_3" :use_duration="false" />
+                    <DiscountByType v-if="bestOffer?.type == 'Product Quantity Ordered'"
+                        :offers_data="product?.product_offers_data" template="max_discount_3" :use_duration="false" />
+                    <DiscountByType v-if="bestOffer?.type == 'Product Amount Ordered'"
+                        :offers_data="product?.product_offers_data" template="max_discount_3" :use_duration="false" />
                     <div v-else class="w-full"></div>
                 </div>
 
