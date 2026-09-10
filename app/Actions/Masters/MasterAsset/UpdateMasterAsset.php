@@ -284,6 +284,8 @@ class UpdateMasterAsset extends OrgAction
 
         if ($masterAsset->wasChanged(['master_prices', 'master_rrps'])) {
             MasterAssetHydrateMasterPricesRRPtoChild::run($masterAsset);
+
+            NotifyMasterPriceDrift::dispatch($masterAsset)->delay($this->hydratorsDelay);
         }
 
         if ($masterAsset->wasChanged(['price', 'rrp', 'status'])) {

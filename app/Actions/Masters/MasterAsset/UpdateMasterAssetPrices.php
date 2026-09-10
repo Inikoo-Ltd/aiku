@@ -99,6 +99,8 @@ class UpdateMasterAssetPrices extends OrgAction
             } else {
                 CascadeMasterAssetPricesToChildren::dispatch($masterAsset, $type);
             }
+
+            NotifyMasterPriceDrift::dispatch($masterAsset);
         }
 
         $masterAsset->auditEvent = 'updated_master_prices';

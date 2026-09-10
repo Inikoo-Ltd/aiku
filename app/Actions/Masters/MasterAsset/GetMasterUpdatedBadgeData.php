@@ -7,11 +7,15 @@
 
 namespace App\Actions\Masters\MasterAsset;
 
+use App\Actions\SysAdmin\Task\GetUserNotificationTask;
+use App\Enums\Task\SubTaskTypeEnum;
+use App\Enums\Task\TaskStatusEnum;
 use App\Models\Catalogue\Product;
-use App\Models\Catalogue\Shop;
+use App\Models\SysAdmin\SubTask;
 use App\Models\SysAdmin\User;
 use App\Services\QueryBuilder;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Lorisleiva\Actions\Concerns\AsObject;
 
 class GetMasterUpdatedBadgeData
@@ -22,12 +26,16 @@ class GetMasterUpdatedBadgeData
     {
         $organisationsMap = [];
 
-        foreach ($user->authorisedShops()->with('organisation')->get() as $shop) {
-            if (!$user->authTo("products.{$shop->id}.view")) {
+        foreach ($this->pendingSubTasks($user) as $subTask) {
+            /** @var Product $product */
+            $product = $subTask->model;
+
+            if (!$product) {
                 continue;
             }
 
-            $org = $shop->organisation;
+            $shop = $product->shop;
+            $org  = $shop->organisation;
 
             if (!isset($organisationsMap[$org->slug])) {
                 $organisationsMap[$org->slug] = [
@@ -40,13 +48,13 @@ class GetMasterUpdatedBadgeData
                 ];
             }
 
-            $organisationsMap[$org->slug]['shops'][] = [
-                'slug'                 => $shop->slug,
-                'name'                 => $shop->name,
-                'code'                 => $shop->code,
-                'master_updated_items' => [
-                    'count' => $this->query($shop)->count(),
-                    'route' => [
+            if (!isset($organisationsMap[$org->slug]['shops'][$shop->slug])) {
+                $organisationsMap[$org->slug]['shops'][$shop->slug] = [
+                    'slug'     => $shop->slug,
+                    'name'     => $shop->name,
+                    'code'     => $shop->code,
+                    'products' => [],
+                    'route'    => [
                         'name'       => 'grp.org.shops.show.catalogue.products.all_products.index',
                         'parameters' => [
                             'organisation'   => $org->slug,
@@ -54,26 +62,57 @@ class GetMasterUpdatedBadgeData
                             'index_elements' => ['state' => 'price_not_match_master'],
                         ],
                     ],
-                ],
+                ];
+            }
+
+            $organisationsMap[$org->slug]['shops'][$shop->slug]['products'][] = [
+                'sub_task_id' => $subTask->id,
+                'code'        => $product->code,
+                'name'        => $product->name,
+                'slug'        => $product->slug,
             ];
         }
 
-        return array_values($organisationsMap);
+        return array_values(array_map(
+            fn (array $organisation) => [
+                ...$organisation,
+                'shops' => array_values(array_map(
+                    fn (array $shop) => [...$shop, 'count' => count($shop['products'])],
+                    $organisation['shops']
+                )),
+            ],
+            $organisationsMap
+        ));
     }
 
+    /**
+     * Read from the hydrated column rather than counting rows, since this runs on every page load.
+     * Scoped to the notification task because the user's other tasks carry their own sub task
+     * counts, which have nothing to do with this badge.
+     */
     public function totalCount(User $user): int
     {
-        $total = 0;
+        return (int)$user->tasks()
+            ->where('tasks.code', GetUserNotificationTask::TASK_TYPE_CODE)
+            ->value('tasks.number_subtasks');
+    }
 
-        foreach ($user->authorisedShops()->get() as $shop) {
-            if (!$user->authTo("products.{$shop->id}.view")) {
-                continue;
-            }
+    /**
+     * @return Collection<int, SubTask>
+     */
+    private function pendingSubTasks(User $user): Collection
+    {
+        return $this->pendingSubTaskQuery($user)
+            ->with('model.shop.organisation')
+            ->orderBy('id')
+            ->get();
+    }
 
-            $total += $this->query($shop)->count();
-        }
-
-        return $total;
+    private function pendingSubTaskQuery(User $user): Builder
+    {
+        return SubTask::whereIn('task_id', $user->tasks()->select('tasks.id'))
+            ->where('type', SubTaskTypeEnum::MASTER_PRICE_DRIFT->value)
+            ->where('status', TaskStatusEnum::PENDING->value);
     }
 
     /**
@@ -81,7 +120,7 @@ class GetMasterUpdatedBadgeData
      * matches the master value for the product's own currency code. A drift in
      * either one is enough; a master with no entry for that currency is skipped.
      *
-     * Shared by the badge count and by the products index element filter, so the two
+     * Shared by the sub task producer and by the products index element filter, so the two
      * can never report a different set.
      */
     public function applyDriftConstraints(Builder|QueryBuilder $query): void
@@ -99,14 +138,5 @@ class GetMasterUpdatedBadgeData
                     ->orWhereRaw("jsonb_exists(master_assets.master_rrps, currencies.code)
                         AND products.rrp <> (master_assets.master_rrps #>> ARRAY[currencies.code, 'value'])::numeric");
             });
-    }
-
-    private function query(Shop $shop): Builder
-    {
-        $query = Product::where('products.shop_id', $shop->id);
-
-        $this->applyDriftConstraints($query);
-
-        return $query;
     }
 }

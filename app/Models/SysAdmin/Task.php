@@ -10,6 +10,8 @@ namespace App\Models\SysAdmin;
 
 use App\Models\Traits\InOrganisation;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
@@ -30,12 +32,14 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $description
  * @property string|null $start_date
  * @property string|null $complete_date
+ * @property int $number_subtasks Pending sub tasks only, not the lifetime total
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property \Illuminate\Support\Carbon|null $deleted_at
  * @property-read Model|\Eloquent|null $assigner
  * @property-read \App\Models\SysAdmin\Group|null $group
  * @property-read \App\Models\SysAdmin\Organisation $organisation
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\SysAdmin\SubTask> $subTasks
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\SysAdmin\User> $users
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Task newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Task newQuery()
@@ -66,9 +70,16 @@ class Task extends Model
         return 'slug';
     }
 
-    public function users()
+    public function users(): BelongsToMany
     {
-        return $this->morphToMany(User::class, 'taskable', 'users_has_tasks');
+        return $this->belongsToMany(User::class, 'users_has_tasks', 'task_id', 'user_id')
+            ->withPivot(['taskable_type', 'employee_id', 'start_date', 'complete_date'])
+            ->withTimestamps();
+    }
+
+    public function subTasks(): HasMany
+    {
+        return $this->hasMany(SubTask::class);
     }
 
     public function assigner()
