@@ -90,18 +90,36 @@ class HandleWhatsappWebhook
 
     /**
      * Every organisation registers its own Meta app, so which secret signs a payload
-     * depends on the number it is addressed to. Reading that number from the unverified
-     * body only selects which secret to check against — the signature still has to match,
-     * so nothing is trusted before it is proven.
+     * depends on which account it is addressed to. Reading that from the unverified body
+     * only selects which secret to check against — the signature still has to match, so
+     * nothing is trusted before it is proven.
      */
     protected function webhookSecret(ActionRequest $request): string
     {
+        return $this->metaAppCredentials($this->webhookShop($request)?->organisation)['app_secret'];
+    }
+
+    /**
+     * Messages and statuses are addressed to a phone number, but a template belongs to the
+     * WhatsApp Business Account rather than to any one of the numbers under it, so a
+     * message_template_status_update carries no metadata at all. Its account is the entry
+     * id, which every payload carries, so the number answers first and the account is what
+     * is left when there is no number to go on.
+     */
+    protected function webhookShop(ActionRequest $request): ?Shop
+    {
         $phoneNumberId = (string) $request->json('entry.0.changes.0.value.metadata.phone_number_id');
 
-        $organisation = $phoneNumberId === ''
-            ? null
-            : Shop::whereJsonContains('settings->whatsapp->phone_number_id', $phoneNumberId)->first()?->organisation;
+        if ($phoneNumberId !== '') {
+            return Shop::whereJsonContains('settings->whatsapp->phone_number_id', $phoneNumberId)->first();
+        }
 
-        return $this->metaAppCredentials($organisation)['app_secret'];
+        $wabaId = (string) $request->json('entry.0.id');
+
+        if ($wabaId !== '') {
+            return Shop::whereJsonContains('settings->whatsapp->waba_id', $wabaId)->first();
+        }
+
+        return null;
     }
 }

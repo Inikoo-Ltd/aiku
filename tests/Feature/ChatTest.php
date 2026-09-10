@@ -77,6 +77,7 @@ use App\Models\Chat\ChatEvent;
 use App\Models\Chat\ChatMessage;
 use App\Models\Chat\ChatSession;
 use App\Models\Chat\MetaChannel;
+use App\Models\Chat\MetaMessageTemplate;
 use App\Models\Chat\MetaChatEvent;
 use App\Models\Chat\MetaChatSession;
 use App\Models\Chat\ShopHasChatAgent;
@@ -2841,4 +2842,120 @@ test('my chats excludes a whatsapp thread now held by another agent', function (
 
     expect($mineUlids)->not->toContain($metaChatSession->ulid)
         ->and($teamUlids)->toContain($metaChatSession->ulid);
+});
+
+
+test('a template status webhook is verified by the WhatsApp Business Account it names', function () {
+    $channel = MetaChannel::firstOrCreate(['code' => 'whatsapp'], ['name' => 'WhatsApp']);
+
+    $appSecret = 'test-meta-app-secret';
+    $wabaId    = '102290129340398';
+
+    $this->organisation->update([
+        'settings' => array_merge($this->organisation->settings ?? [], [
+            'meta' => ['app_secret' => $appSecret],
+        ]),
+    ]);
+
+    $this->shop->update([
+        'settings' => array_merge($this->shop->settings ?? [], [
+            'whatsapp' => ['waba_id' => $wabaId],
+        ]),
+    ]);
+
+    $template = MetaMessageTemplate::create([
+        'group_id'        => $this->shop->group_id,
+        'organisation_id' => $this->shop->organisation_id,
+        'shop_id'         => $this->shop->id,
+        'meta_channel_id' => $channel->id,
+        'template_id'     => '1234567890'.$this->shop->id,
+        'name'            => 'webhook_status_template',
+        'status'          => 'PENDING',
+    ]);
+
+    /* The payload Meta sends for a template verdict: it names the account in entry.id and
+       carries no metadata, because a template belongs to the account rather than to any one
+       of the numbers under it. */
+    $body = json_encode([
+        'object' => 'whatsapp_business_account',
+        'entry'  => [
+            [
+                'id'      => $wabaId,
+                'changes' => [
+                    [
+                        'field' => 'message_template_status_update',
+                        'value' => [
+                            'event'                 => 'APPROVED',
+                            'message_template_id'   => $template->template_id,
+                            'message_template_name' => $template->name,
+                            'reason'                => 'NONE',
+                        ],
+                    ],
+                ],
+            ],
+        ],
+    ]);
+
+    $response = $this->call(
+        'POST',
+        route('webhooks.whatsapp.handle'),
+        [],
+        [],
+        [],
+        [
+            'CONTENT_TYPE'              => 'application/json',
+            'HTTP_X_HUB_SIGNATURE_256'  => 'sha256='.hash_hmac('sha256', $body, $appSecret),
+        ],
+        $body
+    );
+
+    $response->assertOk();
+
+    expect($template->refresh()->status)->toBe('APPROVED');
+});
+
+test('a template status webhook signed with the wrong secret is rejected', function () {
+    $wabaId = '102290129340399';
+
+    $this->organisation->update([
+        'settings' => array_merge($this->organisation->settings ?? [], [
+            'meta' => ['app_secret' => 'test-meta-app-secret'],
+        ]),
+    ]);
+
+    $this->shop->update([
+        'settings' => array_merge($this->shop->settings ?? [], [
+            'whatsapp' => ['waba_id' => $wabaId],
+        ]),
+    ]);
+
+    $body = json_encode([
+        'object' => 'whatsapp_business_account',
+        'entry'  => [
+            [
+                'id'      => $wabaId,
+                'changes' => [
+                    [
+                        'field' => 'message_template_status_update',
+                        'value' => ['event' => 'APPROVED', 'message_template_id' => '404'],
+                    ],
+                ],
+            ],
+        ],
+    ]);
+
+    $response = $this->call(
+        'POST',
+        route('webhooks.whatsapp.handle'),
+        [],
+        [],
+        [],
+        [
+            'CONTENT_TYPE'             => 'application/json',
+            'HTTP_X_HUB_SIGNATURE_256' => 'sha256='.hash_hmac('sha256', $body, 'not-the-app-secret'),
+        ],
+        $body
+    );
+
+    $response->assertStatus(401);
 });
