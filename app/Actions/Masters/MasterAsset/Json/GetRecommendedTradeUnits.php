@@ -63,8 +63,13 @@ class GetRecommendedTradeUnits extends OrgAction
             $wildCardCode = Str::before($parent->code, '-');
         }
 
+        $tradeUnitFamilyId = $parent instanceof MasterProductCategory ? $parent->trade_unit_family_id : null;
+
         $queryBuilder->where('trade_units.group_id', $parent->group_id)
-            ->whereRaw("trade_units.code COLLATE \"C\" ILIKE ?", $wildCardCode.'-%')
+            ->where(function ($query) use ($wildCardCode, $tradeUnitFamilyId) {
+                $query->whereRaw("trade_units.code COLLATE \"C\" ILIKE ?", $wildCardCode.'-%')
+                    ->when($tradeUnitFamilyId, fn ($query) => $query->orWhere('trade_units.trade_unit_family_id', $tradeUnitFamilyId));
+            })
             ->leftJoin('model_has_trade_units', function ($join) use ($modelType) {
                 $join->on('trade_units.id', '=', 'model_has_trade_units.trade_unit_id')
                     ->where('model_has_trade_units.model_type', '=', $modelType);
