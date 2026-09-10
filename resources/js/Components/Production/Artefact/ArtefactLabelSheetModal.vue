@@ -10,6 +10,7 @@ import Modal from "@/Components/Utils/Modal.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { ctrans } from "@/Composables/useTrans"
 import { routeType } from "@/types/route"
+import PingIcon from "@/Components/Utils/PingIcon.vue"
 
 library.add(faCopy, faFilePdf, faImage, faPlus, faTags, faTrashAlt)
 
@@ -700,7 +701,10 @@ const describeFailure = async (error: any): Promise<string> => {
                 <hr class="border-t border-gray-400 border-dashed" />
 
                 <div>
-                    <div class="text-xs text-gray-500 uppercase tracking-wide mb-1">{{ ctrans("Background artwork") }}</div>
+                    <div class="text-xs text-gray-500 uppercase tracking-wide mb-1">
+                        {{ ctrans("Background artwork") }}
+                        <PingIcon v-if="!backgroundFile" class="text-[6px] text-orange-500" />
+                    </div>
                     <input ref="fileInput" type="file" accept="image/*,application/pdf" class="hidden" @change="onFileChange" />
                     <div class="flex gap-2">
                         <Button
@@ -718,7 +722,7 @@ const describeFailure = async (error: any): Promise<string> => {
                             @click="removeBackground" />
                     </div>
                     <div v-if="backgroundFile" class="mt-1 truncate text-xs text-gray-500">
-                        {{ backgroundFile.name }} · {{ formatBytes(backgroundFile.size) }}
+                        {{ backgroundFile.name }} • {{ formatBytes(backgroundFile.size) }}
                     </div>
                     <div v-if="isVectorArtwork" class="mt-1 text-xs text-emerald-600">
                         {{ ctrans("Placed as vector, the text inside the PDF stays selectable.") }}
