@@ -10,6 +10,7 @@ namespace App\Actions\Procurement\PartnerShoppingListItem;
 
 use App\Actions\Helpers\AI\Traits\WithAICreditErrorHandler;
 use App\Actions\Procurement\OrgPartner\GetPartnerBuyingPriceFactor;
+use App\Actions\Procurement\OrgPartner\PartnerSkoPrice;
 use App\Actions\Production\JobOrder\BatchedUnitsForDemand;
 use App\Actions\Procurement\OrgPartner\GetPartnerOrderCapacity;
 use App\Actions\Procurement\OrgPartner\GetPartnerStockCoverBuckets;
@@ -18,7 +19,6 @@ use App\Actions\OrgAction;
 use App\Exceptions\AICreditException;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
-use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum;
 use App\Models\Procurement\OrgPartner;
 use App\Models\SysAdmin\Organisation;
@@ -150,7 +150,6 @@ class SuggestPartnerShoppingList extends OrgAction
             })
             ->where('org_stocks.organisation_id', $orgPartner->partner_id)
             ->where('org_stocks.state', OrgStockStateEnum::ACTIVE->value)
-            ->where('products.state', ProductStateEnum::ACTIVE->value)
             ->whereNull('partner_shopping_list_items.id')
             ->where('org_stocks.quantity_available', '>', 0)
             ->whereRaw('coalesce(buyer_org_stocks.is_on_demand, false) = false')
@@ -172,7 +171,7 @@ class SuggestPartnerShoppingList extends OrgAction
                 'org_stocks.packed_in',
                 DB::raw('(select recommended_batch_size from artefacts where artefacts.org_stock_id = org_stocks.id and artefacts.deleted_at is null and artefacts.recommended_batch_size is not null limit 1) as batch_size'),
             ])
-            ->orderBy('org_stocks.id')
+            ->tap(fn ($query) => PartnerSkoPrice::scopeToPricingProducts($query))
             ->get()
             ->unique('id')
             ->values();

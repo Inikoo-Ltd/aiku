@@ -9,13 +9,13 @@
 namespace App\Actions\Procurement\OrgPartner;
 
 use App\Enums\Catalogue\HealthRankEnum;
-use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderDeliveryStateEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum;
 use App\Models\Inventory\OrgStock;
 use App\Models\Procurement\OrgPartner;
+use App\Models\Procurement\PartnerShoppingListItem;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsObject;
@@ -137,10 +137,7 @@ class GetPartnerOrderCapacity
             })
             ->where('dni.quantity_dispatched', '>', 0)
             ->where('dni.created_at', '>=', now()->subDays(90))
-            ->selectRaw("coalesce(sum(dni.quantity_dispatched * coalesce((select pr.price / nullif(phos.quantity, 0)
-                from product_has_org_stocks phos
-                join products pr on pr.id = phos.product_id and pr.state = '".ProductStateEnum::ACTIVE->value."'
-                where phos.org_stock_id = p.id limit 1), 0)) / 3, 0) as total")
+            ->selectRaw('coalesce(sum(dni.quantity_dispatched * coalesce('.PartnerSkoPrice::pricePerSkoSql('p.id').', 0)) / 3, 0) as total')
             ->value('total'), 2);
     }
 
@@ -164,13 +161,7 @@ class GetPartnerOrderCapacity
 
     public function pricePerSkoSubQuery(): string
     {
-        return "(select pr.price / nullif(phos.quantity, 0)
-            from product_has_org_stocks phos
-            join products pr on pr.id = phos.product_id and pr.state = '".ProductStateEnum::ACTIVE->value."'
-            join org_stocks sos on sos.id = phos.org_stock_id
-            where sos.stock_id = partner_shopping_list_items.stock_id
-                and sos.organisation_id = partner_shopping_list_items.partner_organisation_id
-            limit 1)";
+        return PartnerShoppingListItem::pricePerSkoSql();
     }
 
     /**

@@ -2846,6 +2846,30 @@ describe('partner shopping list', function () {
         $this->buyerOrgStock = createOrgStocks($this->orgPartner->organisation, [$sellerOrgStock->stock])[0];
     });
 
+    test('a mixed bundle holding the SKO does not price it (HELP-3104)', function () {
+        $sellerOrgStock = $this->sellerProduct->orgStocks()->first();
+        $item           = StorePartnerShoppingListItem::make()->action($this->orgPartner, $this->buyerOrgStock, ['quantity' => 1]);
+        $basePrice      = (float) $this->sellerProduct->price / (float) $sellerOrgStock->pivot->quantity;
+
+        $bundle        = $this->sellerProduct->replicate();
+        $bundle->code  = 'BUNDLE-'.$this->sellerProduct->id;
+        $bundle->slug  = 'bundle-'.$this->sellerProduct->id;
+        $bundle->price = 999;
+        $bundle->save();
+
+        DB::table('product_has_org_stocks')->insert([
+            ['product_id' => $bundle->id, 'org_stock_id' => $sellerOrgStock->id, 'quantity' => 1],
+            ['product_id' => $bundle->id, 'org_stock_id' => $this->buyerOrgStock->id, 'quantity' => 1],
+        ]);
+
+        $price = DB::table('partner_shopping_list_items')
+            ->where('id', $item->id)
+            ->selectRaw(PartnerShoppingListItem::pricePerSkoSql().' as price_per_sko')
+            ->value('price_per_sko');
+
+        expect(round((float) $price, 4))->toBe(round($basePrice, 4));
+    });
+
     test('submitting an order adds out-of-stock artefact-linked products to the to-produce list', function () {
         $seller         = $this->orgPartner->partner;
         $sellerOrgStock = $this->sellerProduct->orgStocks()->first();
