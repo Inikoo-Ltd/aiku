@@ -9,6 +9,7 @@
 namespace App\Actions\Production\JobOrderItemTask;
 
 use App\Actions\Production\JobOrder\ConfirmJobOrder;
+use App\Actions\Production\JobOrder\GetJobOrderDestinationAllocation;
 use App\Actions\Production\JobOrder\StoreJobOrder;
 use App\Actions\Production\JobOrderItem\StoreJobOrderItem;
 use App\Models\Procurement\PartnerShoppingListItem;
@@ -60,9 +61,48 @@ class SettleShortJobOrderItemTask
             ]);
             ConfirmJobOrder::make()->action($carried);
 
-            PartnerShoppingListItem::where('job_order_id', $original->id)->update(['job_order_id' => $carried->id]);
+            $this->carryLines($original, $carried, $item->artefact->org_stock_id);
 
             return $carried;
         });
+    }
+
+    /**
+     * The lines the made goods already cover stay with the original job order, so the warehouse
+     * still knows where to walk them; only what is still owed follows the carried job order.
+     */
+    private function carryLines(JobOrder $original, JobOrder $carried, ?int $orgStockId): void
+    {
+        $covered = [];
+        foreach (GetJobOrderDestinationAllocation::run($original) as $allocation) {
+            if ($allocation['line']) {
+                $covered[$allocation['line']->id] = ($covered[$allocation['line']->id] ?? 0) + $allocation['quantity'];
+            }
+        }
+
+        $lines = PartnerShoppingListItem::where('job_order_id', $original->id)
+            ->when($orgStockId, fn ($query) => $query->where('org_stock_id', $orgStockId))
+            ->get();
+
+        foreach ($lines as $line) {
+            $wanted    = (float) ($line->quantity_to_produce ?? $line->quantity);
+            $allocated = (float) ($covered[$line->id] ?? 0);
+
+            if ($allocated <= 0) {
+                $line->update(['job_order_id' => $carried->id]);
+                continue;
+            }
+
+            if ($allocated >= $wanted) {
+                continue;
+            }
+
+            $owed = $line->replicate();
+            $owed->job_order_id = $carried->id;
+            $owed->quantity_to_produce = $wanted - $allocated;
+            $owed->save();
+
+            $line->update(['quantity_to_produce' => $allocated]);
+        }
     }
 }

@@ -2373,11 +2373,11 @@ test('to produce queue only shows lines with an artefact in this factory', funct
     $location  = \App\Actions\Inventory\Location\StoreLocation::make()->action($area, ['code' => 'L-BRD', 'name' => 'Board loc'] + \App\Models\Inventory\Location::factory()->definition());
     $hubProps  = fn () => get(route('grp.org.warehouses.show.dispatching.backlog', [$this->organisation->slug, $warehouse->slug]))
         ->assertOk()->viewData('page')['props'];
-    $hubOutput = fn () => collect($hubProps()['production_output'])->pluck('reference')->all();
+    $hubOutput = fn () => collect($hubProps()['production_output'])->pluck('jobs')->flatten(1)->pluck('reference')->all();
     expect($hubOutput())->toContain($jobOrder->reference)
-        ->and($hubProps()['tabs']['navigation']['production_output']['number'])->toBe(count($hubOutput()));
+        ->and($hubProps()['tabs']['navigation']['production_output']['number'])->toBe(count($hubProps()['production_output']));
 
-    \App\Actions\Dispatching\ProductionOutput\PutAwayFinishedJobOrder::make()->action($warehouse, $jobOrder->refresh(), 'L-BRD');
+    \App\Actions\Dispatching\ProductionOutput\PutAwayFinishedJobOrder::make()->action($warehouse, [$jobOrder->id], 'L-BRD');
     expect($jobOrder->refresh()->state)->toBe(JobOrderStateEnum::RECEIVED)
         ->and($hubOutput())->not->toContain($jobOrder->reference)
         ->and($laneOf()->flatten()->all())->not->toContain($stocks[0]->code);
@@ -2986,4 +2986,99 @@ test('an order too small for a batch hitchhikes until something else fills the b
     /* Enough partners asking for the same thing fills the batch, so it stops hitchhiking. */
     $item->update(['quantity' => 8]);
     expect(collect($backlogOf($props()))->pluck('stock_code')->all())->toBe([$stocks[0]->code]);
+});
+
+test('a short day splits the made goods into whole destination trips and carries only what is still owed', function () {
+    $this->artefact->manufactureTasks()->detach();
+    $this->artefact->manufactureTasks()->syncWithoutDetaching([
+        $this->manufactureTask->id => ['position' => 1, 'units_per_artefact' => 1],
+    ]);
+
+    $stocks    = createStocks($this->group);
+    $orgStocks = createOrgStocks($this->organisation, [$stocks[0]]);
+    $orgStock  = $orgStocks[0];
+    $stock     = $stocks[0];
+    \App\Models\Procurement\PartnerShoppingListItem::where('org_stock_id', $orgStock->id)->forceDelete();
+    \App\Models\Production\Artefact::where('production_id', $this->production->id)
+        ->where('org_stock_id', $orgStock->id)
+        ->where('id', '!=', $this->artefact->id)
+        ->update(['org_stock_id' => null]);
+    $this->artefact->update(['org_stock_id' => $orgStock->id]);
+
+    $warehouse = \App\Actions\Inventory\Warehouse\StoreWarehouse::make()->action($this->organisation, ['code' => 'WH-TRIP', 'name' => 'Trip warehouse']);
+    $area      = \App\Actions\Inventory\WarehouseArea\StoreWarehouseArea::make()->action($warehouse, ['code' => 'A-TRIP', 'name' => 'Trip area']);
+    $bayFor    = fn (string $code) => \App\Actions\Inventory\Location\StoreLocation::make()->action($area, ['code' => $code, 'name' => $code] + \App\Models\Inventory\Location::factory()->definition());
+
+    $buyers = collect(['SKBUY', 'ESBUY'])->map(function (string $code) use ($bayFor) {
+        $buyer = \App\Models\SysAdmin\Organisation::where('code', $code)->first()
+            ?? \App\Actions\SysAdmin\Organisation\StoreOrganisation::make()->action($this->group, [
+                'code' => $code,
+                'name' => $code,
+                'type' => \App\Enums\SysAdmin\Organisation\OrganisationTypeEnum::SHOP,
+            ] + \App\Models\SysAdmin\Organisation::factory()->definition());
+        $bay        = $bayFor('BAY-'.$code);
+        $orgPartner = \App\Models\Procurement\OrgPartner::firstOrCreate(
+            ['group_id' => $this->group->id, 'organisation_id' => $this->organisation->id, 'partner_id' => $buyer->id],
+            ['status' => true],
+        );
+        $orgPartner->update(['goods_out_location_id' => $bay->id]);
+
+        return ['organisation' => $buyer, 'bay' => $bay];
+    });
+
+    $lineFor = fn (array $buyer, int $quantity) => \App\Models\Procurement\PartnerShoppingListItem::create([
+        'group_id'                => $this->group->id,
+        'organisation_id'         => $buyer['organisation']->id,
+        'partner_organisation_id' => $this->organisation->id,
+        'stock_id'                => $stock->id,
+        'org_stock_id'            => $orgStock->id,
+        'quantity'                => $quantity,
+    ]);
+
+    $skLine = $lineFor($buyers[0], 30);
+    $esLine = $lineFor($buyers[1], 20);
+
+    $jobOrder = StoreJobOrder::make()->action($this->production, []);
+    $item     = StoreJobOrderItem::make()->action($jobOrder, ['artefact_id' => $this->artefact->id, 'quantity' => 50]);
+    ConfirmJobOrder::make()->action($jobOrder);
+    $skLine->update(['job_order_id' => $jobOrder->id]);
+    $esLine->update(['job_order_id' => $jobOrder->id]);
+
+    $session = StartManufactureTaskSession::make()->action($this->guest->getUser(), $item->tasks()->first());
+    CloseManufactureTaskSession::make()->action($session, ['quantity_made' => 35, 'outcome' => 'carry_over']);
+
+    /* The big destination is filled whole, only the leftover walk is short. */
+    $allocation = collect(\App\Actions\Production\JobOrder\GetJobOrderDestinationAllocation::run($jobOrder->refresh()))
+        ->map(fn (array $row) => [$row['location_id'], $row['quantity']]);
+    expect($allocation->all())->toBe([
+        [$buyers[0]['bay']->id, 30.0],
+        [$buyers[1]['bay']->id, 5.0],
+    ]);
+
+    /* What is still owed follows the carried job, and only that. */
+    $carried = \App\Models\Production\JobOrder::where('production_id', $this->production->id)->orderByDesc('id')->first();
+    expect($carried->jobOrderItems()->first()->quantity)->toBe(15)
+        ->and($skLine->refresh()->job_order_id)->toBe($jobOrder->id)
+        ->and($esLine->refresh()->job_order_id)->toBe($jobOrder->id)
+        ->and((float) $esLine->quantity_to_produce)->toBe(5.0)
+        ->and(\App\Models\Procurement\PartnerShoppingListItem::where('job_order_id', $carried->id)->sum('quantity_to_produce'))->toEqual(15);
+
+    /* The warehouse gets one walk per bay, not one per job order. */
+    $tripsTo = fn () => collect(\App\Actions\Dispatching\ProductionOutput\GetFinishedProductionJobOrders::run($warehouse))
+        ->filter(fn (array $trip) => str_starts_with((string) $trip['destination']['location_code'], 'BAY-'))
+        ->values();
+    $trips = $tripsTo();
+    expect($trips->pluck('destination.location_code')->all())->toBe(['BAY-SKBUY', 'BAY-ESBUY'])
+        ->and($trips->map(fn (array $trip) => $trip['jobs'][0]['items'][0]['quantity'])->all())->toBe([30.0, 5.0]);
+
+    \App\Actions\Dispatching\ProductionOutput\PutAwayFinishedJobOrder::make()->action($warehouse, $trips[0]['job_order_ids'], 'BAY-SKBUY');
+
+    expect($jobOrder->refresh()->state)->toBe(JobOrderStateEnum::CONFIRMED)
+        ->and((float) $item->refresh()->quantity_received)->toBe(30.0)
+        ->and($tripsTo()->pluck('destination.location_code')->all())->toBe(['BAY-ESBUY']);
+
+    \App\Actions\Dispatching\ProductionOutput\PutAwayFinishedJobOrder::make()->action($warehouse, $trips[1]['job_order_ids'], 'BAY-ESBUY');
+
+    expect($jobOrder->refresh()->state)->toBe(JobOrderStateEnum::RECEIVED)
+        ->and((float) $item->refresh()->quantity_received)->toBe(35.0);
 });

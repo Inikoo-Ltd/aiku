@@ -8,11 +8,12 @@
 
 namespace App\Actions\Dispatching\ProductionOutput;
 
+use App\Actions\Production\JobOrder\GetJobOrderDestinationAllocation;
 use App\Enums\Production\JobOrder\JobOrderStateEnum;
+use App\Models\Inventory\Location;
 use App\Models\Inventory\Warehouse;
 use App\Models\Procurement\OrgPartner;
 use App\Models\Production\JobOrder;
-use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class GetFinishedProductionJobOrders
@@ -20,20 +21,14 @@ class GetFinishedProductionJobOrders
     use AsAction;
 
     /**
-     * Job orders the artisans have finished that the warehouse still has to put somewhere.
-     * Destination is derived from the to-produce lines behind the job order: a partner's
-     * gathering location when every line is for that partner, otherwise normal stock.
+     * One row per destination, not per job order: the warehouse walks to a bay once and carries
+     * everything every artisan has finished for it. Quantities come from the to-produce lines
+     * behind each job order, filled whole and biggest first.
      *
      * @return array<int, array<string, mixed>>
      */
     public function handle(Warehouse $warehouse): array
     {
-        $partners = OrgPartner::where('organisation_id', $warehouse->organisation_id)
-            ->whereNotNull('goods_out_location_id')
-            ->with(['partner', 'goodsOutLocation'])
-            ->get()
-            ->keyBy('partner_id');
-
         $jobOrders = JobOrder::where('organisation_id', $warehouse->organisation_id)
             ->where('state', JobOrderStateEnum::CONFIRMED)
             ->whereExists(fn ($query) => $query->selectRaw('1')->from('job_order_item_tasks')->whereColumn('job_order_item_tasks.job_order_id', 'job_orders.id'))
@@ -42,33 +37,56 @@ class GetFinishedProductionJobOrders
             ->orderBy('confirmed_at')
             ->get();
 
-        $buyersByJobOrder = DB::table('partner_shopping_list_items')
-            ->whereIn('job_order_id', $jobOrders->pluck('id'))
-            ->whereNull('deleted_at')
-            ->get(['job_order_id', 'organisation_id', 'partner_organisation_id'])
-            ->groupBy('job_order_id');
+        $partnersByLocation = OrgPartner::where('organisation_id', $warehouse->organisation_id)
+            ->whereNotNull('goods_out_location_id')
+            ->with('partner')
+            ->get()
+            ->keyBy('goods_out_location_id');
 
-        return $jobOrders->map(function (JobOrder $jobOrder) use ($partners, $buyersByJobOrder) {
-            $lines    = $buyersByJobOrder->get($jobOrder->id, collect());
-            $buyerIds = $lines->whereNotNull('partner_organisation_id')->pluck('organisation_id')->unique();
-            $partner  = $buyerIds->count() === 1 && $lines->count() === $lines->whereNotNull('partner_organisation_id')->count()
-                ? $partners->get($buyerIds->first())
-                : null;
+        $locations = Location::whereIn('id', $partnersByLocation->keys())->pluck('code', 'id');
 
-            return [
-                'id'           => $jobOrder->id,
-                'reference'    => $jobOrder->reference,
-                'artisan'      => $jobOrder->employee?->contact_name,
-                'finished_at'  => $jobOrder->jobOrderItems->flatMap->tasks->max('updated_at')?->toISOString(),
-                'items'        => $jobOrder->jobOrderItems->map(fn ($item) => [
+        $trips = [];
+
+        foreach ($jobOrders as $jobOrder) {
+            $alreadyPutAway = [];
+
+            foreach (GetJobOrderDestinationAllocation::run($jobOrder) as $allocation) {
+                $item = $allocation['item'];
+
+                $alreadyPutAway[$item->id] ??= (float) $item->quantity_received;
+                $putAway                     = min($allocation['quantity'], $alreadyPutAway[$item->id]);
+                $alreadyPutAway[$item->id]  -= $putAway;
+                $quantity                    = $allocation['quantity'] - $putAway;
+
+                if ($quantity <= 0) {
+                    continue;
+                }
+
+                $locationId = $allocation['location_id'];
+                $key        = $locationId ?? 'stock';
+
+                $trips[$key]['destination'] ??= $locationId
+                    ? ['type' => 'partner', 'label' => $partnersByLocation[$locationId]->partner->code, 'location_code' => $locations[$locationId]]
+                    : ['type' => 'stock', 'label' => __('Stock'), 'location_code' => null];
+                $trips[$key]['job_order_ids'][$jobOrder->id]                = $jobOrder->id;
+                $trips[$key]['jobs'][$jobOrder->id]['reference']            = $jobOrder->reference;
+                $trips[$key]['jobs'][$jobOrder->id]['artisan']              = $jobOrder->employee?->contact_name;
+                $trips[$key]['jobs'][$jobOrder->id]['items'][$item->id]     = [
                     'code'     => $item->artefact->code,
                     'name'     => $item->artefact->name,
-                    'quantity' => (float) $item->tasks->sortByDesc('position')->first()?->quantity_made,
-                ])->values()->all(),
-                'destination'  => $partner
-                    ? ['type' => 'partner', 'label' => $partner->partner->code, 'location_code' => $partner->goodsOutLocation->code]
-                    : ['type' => 'stock', 'label' => __('Stock'), 'location_code' => null],
-            ];
-        })->all();
+                    'quantity' => ($trips[$key]['jobs'][$jobOrder->id]['items'][$item->id]['quantity'] ?? 0) + $quantity,
+                ];
+            }
+        }
+
+        return collect($trips)->map(fn (array $trip) => [
+            'destination'   => $trip['destination'],
+            'job_order_ids' => array_values($trip['job_order_ids']),
+            'jobs'          => collect($trip['jobs'])->map(fn (array $job) => [
+                'reference' => $job['reference'],
+                'artisan'   => $job['artisan'],
+                'items'     => array_values($job['items']),
+            ])->values()->all(),
+        ])->values()->all();
     }
 }

@@ -44,7 +44,7 @@ Route::get('/', ShowDispatchHub::class)->name('backlog');
 Route::get('/reports', ShowDispatchReports::class)->name('reports');
 Route::get('/gate', IndexOrdersAtGate::class)->name('gate');
 Route::post('/partner-staging/stage', StagePartnerStock::class)->name('partner_staging.stage');
-Route::post('/production-output/{jobOrder:id}/put-away', PutAwayFinishedJobOrder::class)->name('production_output.put_away')->withoutScopedBindings();
+Route::post('/production-output/put-away', PutAwayFinishedJobOrder::class)->name('production_output.put_away')->withoutScopedBindings();
 Route::post('/gate/job-order', StoreJobOrderFromShortfall::class)->name('gate.job_order');
 
 Route::get('/waiting_items', IndexWaitingDeliveryNoteItems::class)->name('waiting_items');

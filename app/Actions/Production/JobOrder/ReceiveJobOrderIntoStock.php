@@ -66,7 +66,9 @@ class ReceiveJobOrderIntoStock extends OrgAction
             ]);
         }
 
-        DB::transaction(function () use ($items, $jobOrder, $location) {
+        $allocations = $modelData['allocations'] ?? null;
+
+        DB::transaction(function () use ($items, $jobOrder, $location, $allocations) {
             $lockedState = JobOrder::lockForUpdate()->find($jobOrder->id)->state;
             if ($lockedState != JobOrderStateEnum::CONFIRMED) {
                 throw ValidationException::withMessages([
@@ -75,7 +77,10 @@ class ReceiveJobOrderIntoStock extends OrgAction
             }
 
             foreach ($items as $item) {
-                $producedUnits = $this->producedQuantity($item);
+                $outstanding = $this->producedQuantity($item) - (float) $item->quantity_received;
+                $producedUnits = $allocations === null
+                    ? $outstanding
+                    : min($outstanding, (float) ($allocations[$item->id] ?? 0));
 
                 if ($producedUnits <= 0) {
                     continue;
@@ -100,12 +105,18 @@ class ReceiveJobOrderIntoStock extends OrgAction
                 ]);
 
                 $this->deductRawMaterials($item, $producedUnits);
+
+                $item->update(['quantity_received' => (float) $item->quantity_received + $producedUnits]);
             }
 
-            $jobOrder->update([
-                'state'       => JobOrderStateEnum::RECEIVED,
-                'received_at' => now(),
-            ]);
+            $stillOut = $items->contains(fn (JobOrderItem $item) => $this->producedQuantity($item) - (float) $item->refresh()->quantity_received > 0.0001);
+
+            if (!$stillOut) {
+                $jobOrder->update([
+                    'state'       => JobOrderStateEnum::RECEIVED,
+                    'received_at' => now(),
+                ]);
+            }
         });
 
         return $jobOrder;
@@ -187,6 +198,7 @@ class ReceiveJobOrderIntoStock extends OrgAction
     public function rules(): array
     {
         return [
+            'allocations' => ['sometimes', 'array'],
             'location_id' => [
                 'required',
                 Rule::exists('locations', 'id')->where(
