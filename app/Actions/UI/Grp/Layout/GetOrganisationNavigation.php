@@ -152,7 +152,7 @@ class GetOrganisationNavigation
                             ]
                         ],
                         [
-                            'label' => __("Agent's Shipping List"),
+                            'label' => __("Agent's Shopping List"),
                             'icon'  => ['fal', 'fa-shopping-basket'],
                             'root'  => 'grp.org.procurement.shopping_list.',
                             'route' => [
