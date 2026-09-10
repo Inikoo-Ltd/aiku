@@ -152,15 +152,6 @@ class GetOrganisationNavigation
                             ]
                         ],
                         [
-                            'label' => __("Agent's Shopping List"),
-                            'icon'  => ['fal', 'fa-shopping-basket'],
-                            'root'  => 'grp.org.procurement.shopping_list.',
-                            'route' => [
-                                'name'       => 'grp.org.procurement.shopping_list.index',
-                                'parameters' => [$organisation->slug],
-                            ]
-                        ],
-                        [
                             'label' => __('Agent Suppliers'),
                             'icon'  => ['fal', 'fa-person-dolly'],
                             'root'  => 'grp.org.procurement.org_agent_suppliers.',
