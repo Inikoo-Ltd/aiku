@@ -7,7 +7,6 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 return new class () extends Migration {
@@ -27,18 +26,6 @@ return new class () extends Migration {
             $table->unsignedInteger('number_failed')->default(0);
 
             $table->timestampsTz();
-        });
-
-        /* Campaigns created before this table existed would otherwise read a null stats
-           relation on every page load, so each one gets a zeroed row to hydrate into. */
-        DB::table('whatsapp_campaigns')->orderBy('id')->chunk(1000, function ($campaigns) {
-            DB::table('whatsapp_campaign_stats')->insert(
-                $campaigns->map(fn ($campaign) => [
-                    'whatsapp_campaign_id' => $campaign->id,
-                    'created_at'           => now(),
-                    'updated_at'           => now(),
-                ])->all()
-            );
         });
     }
 
