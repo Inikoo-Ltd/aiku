@@ -47,6 +47,7 @@ class PackagingsResource extends JsonResource
                 ? "{$this->width} × {$this->height} × {$this->depth} mm"
                 : null,
             'leaflets'      => json_decode($this->leaflets_data ?? '[]', true),
+            'is_default'    => (int) $this->id === (int) $this->default_packaging_id,
             'created_at'    => $this->created_at,
             'updated_at'    => $this->updated_at,
         ];

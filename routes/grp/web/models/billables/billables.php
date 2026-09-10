@@ -12,6 +12,7 @@ use App\Actions\Billables\Leaflet\StoreLeaflet;
 use App\Actions\Billables\Leaflet\UpdateLeaflet;
 use App\Actions\Billables\Packaging\DeletePackaging;
 use App\Actions\Billables\Packaging\StorePackaging;
+use App\Actions\Billables\Packaging\SetShopDefaultPackaging;
 use App\Actions\Billables\Packaging\StorePackagingFamily;
 use App\Actions\Billables\Packaging\UpdatePackaging;
 use App\Actions\Billables\Service\StoreService;
@@ -39,6 +40,7 @@ Route::name('billables.')->prefix('shop/{shop:id}/billables')->group(function ()
 
 Route::name('billables.packagings.')->prefix('packaging/{packaging:id}')->group(function () {
     Route::patch('update', UpdatePackaging::class)->name('update');
+    Route::patch('set-default', SetShopDefaultPackaging::class)->name('set_default');
     Route::delete('', DeletePackaging::class)->name('delete');
 });
 

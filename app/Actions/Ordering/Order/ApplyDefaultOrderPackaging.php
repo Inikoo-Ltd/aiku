@@ -44,6 +44,8 @@ class ApplyDefaultOrderPackaging
             ->first()
             ?->packaging;
 
+        $preferredPackaging = $preferredPackaging ?? $shop->defaultPackaging();
+
         if (!$preferredPackaging) {
             return $order;
         }

@@ -13,7 +13,6 @@ use App\Enums\Catalogue\Packaging\PackagingStateEnum;
 use App\Models\Billables\ModelHasLeaflet;
 use App\Models\Billables\Packaging;
 use App\Models\CRM\Customer;
-use App\Models\Helpers\Media;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
@@ -23,6 +22,8 @@ use Lorisleiva\Actions\ActionRequest;
 
 class DeleteRetinaLeaflet extends RetinaAction
 {
+    use WithDisposableLeafletMedia;
+
     public function handle(Customer $customer, array $modelData): void
     {
         DB::transaction(function () use ($customer, $modelData) {
@@ -43,9 +44,7 @@ class DeleteRetinaLeaflet extends RetinaAction
             ModelHasLeaflet::whereIn('id', $rows->pluck('id'))->update(['media_id' => null]);
 
             foreach ($mediaIds as $mediaId) {
-                if (!ModelHasLeaflet::where('media_id', $mediaId)->exists()) {
-                    Media::find($mediaId)?->delete();
-                }
+                $this->deleteLeafletMediaIfUnused($mediaId);
             }
         });
     }

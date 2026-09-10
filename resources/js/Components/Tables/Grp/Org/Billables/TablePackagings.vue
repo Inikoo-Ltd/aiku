@@ -15,12 +15,14 @@ import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.
 import ToggleSwitch from "primevue/toggleswitch"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faPencil, faTrashAlt } from "@far"
-import { faFileAlt, faPrint } from "@fal"
+import { faFileAlt, faPrint, faStar as faStarOutline } from "@fal"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { trans } from "laravel-vue-i18n"
 import { ref } from "vue"
 
-library.add(faPencil, faTrashAlt, faFileAlt, faPrint)
+import { faStar } from "@fas"
+
+library.add(faPencil, faTrashAlt, faFileAlt, faPrint, faStar, faStarOutline)
 
 defineProps<{
     data: {
@@ -43,6 +45,23 @@ const toggleState = (packaging: { id: number, state: string }, isActive: boolean
             preserveScroll: true,
             onStart: () => togglingStateId.value = packaging.id,
             onFinish: () => togglingStateId.value = null,
+        }
+    )
+}
+
+const settingDefaultId = ref<number | null>(null)
+
+const setAsDefault = (packaging: { id: number, is_default: boolean }) => {
+    if (packaging.is_default) return
+
+    router.patch(
+        route('grp.models.billables.packagings.set_default', [packaging.id]),
+        {},
+        {
+            preserveScroll: true,
+            onStart: () => settingDefaultId.value = packaging.id,
+            onSuccess: () => router.reload(),
+            onFinish: () => settingDefaultId.value = null,
         }
     )
 }
@@ -94,6 +113,24 @@ const packagingEditRoute = (packaging: { slug: string }) => {
         </template>
         <template #cell(price)="{ item: packaging }">
             {{ locale.currencyFormat(packaging.currency_code, packaging.price) }}
+        </template>
+        <template #cell(is_default)="{ item: packaging }">
+            <button
+                type="button"
+                class="p-1 disabled:opacity-40"
+                :class="packaging.is_default ? 'text-amber-500' : 'text-gray-300 hover:text-amber-400'"
+                :disabled="settingDefaultId === packaging.id || packaging.state !== 'active'"
+                v-tooltip="packaging.is_default
+                    ? trans('Used when the customer has not chosen their own packaging')
+                    : trans('Set as default packaging')"
+                @click="setAsDefault(packaging)"
+            >
+                <FontAwesomeIcon
+                    :icon="packaging.is_default ? ['fas', 'star'] : ['fal', 'star']"
+                    fixed-width
+                    aria-hidden="true"
+                />
+            </button>
         </template>
         <template #cell(actions)="{ item: packaging }">
             <div class="flex items-center gap-3 justify-end">

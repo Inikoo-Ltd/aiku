@@ -130,6 +130,13 @@ const onChangePackaging = (packagingId: number) => {
     )
 }
 
+// The insert rows and their print status live in the page's `inserts` prop, and the buttons the
+// unprinted-insert guard disables live in `pageHead` — neither is inside the tab's table data, so
+// reloading the tab alone leaves both showing the state from before the print.
+const reloadInserts = () => router.reload({
+    only: [props.tab, "inserts", "packaging", "pageHead"].filter(Boolean) as string[],
+})
+
 const isLeafletPrinted = (leaflet: { state: string }) => leaflet.state === "printed" || leaflet.state === "included"
 
 const printingLeafletId = ref<number | null>(null)
@@ -144,7 +151,7 @@ const onPrintLeaflet = async (leaflet: { id: number, state: string }) => {
         } else {
             leaflet.state = "printed"
             notify({ title: trans("Sent to printer"), text: trans("Insert sent to your printer"), type: "success" })
-            router.reload({ only: [props.tab] })
+            reloadInserts()
         }
     } catch (error: any) {
         notify({ title: trans("Something went wrong"), text: error?.response?.data?.message ?? trans("Failed to print insert"), type: "error" })
@@ -161,7 +168,7 @@ const onPullLeafletMedia = (leaflet: { id: number }) => {
         {
             preserveScroll: true,
             onStart: () => pullingMediaLeafletId.value = leaflet.id,
-            onSuccess: () => router.reload({ only: [props.tab] }),
+            onSuccess: () => reloadInserts(),
             onFinish: () => pullingMediaLeafletId.value = null,
         }
     )
@@ -179,6 +186,7 @@ const onPrintAllLeaflets = () => {
         {
             preserveScroll: true,
             onStart: () => isPrintingAllLeaflets.value = true,
+            onSuccess: () => reloadInserts(),
             onFinish: () => isPrintingAllLeaflets.value = false,
         }
     )

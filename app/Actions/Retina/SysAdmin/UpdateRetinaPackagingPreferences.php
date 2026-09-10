@@ -21,6 +21,7 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 use Lorisleiva\Actions\ActionRequest;
 
 class UpdateRetinaPackagingPreferences extends RetinaAction
@@ -118,6 +119,54 @@ class UpdateRetinaPackagingPreferences extends RetinaAction
             ],
             'personalised_message' => ['sometimes', 'nullable', 'string', 'max:200'],
         ];
+    }
+
+    
+    public function afterValidator(Validator $validator): void
+    {
+        $checkedLeafletIds = collect($this->get('leaflet_ids', []))
+            ->filter()
+            ->map(fn ($id) => (int) $id);
+
+        if ($checkedLeafletIds->isEmpty()) {
+            return;
+        }
+
+        $packagingIds = Packaging::where('shop_id', $this->shop->id)
+            ->where('family_code', $this->get('family_code'))
+            ->where('state', PackagingStateEnum::ACTIVE)
+            ->pluck('id');
+
+        if ($packagingIds->isEmpty()) {
+            return;
+        }
+
+        $coveredByLeaflet = ModelHasLeaflet::where('model_type', 'Customer')
+            ->where('model_id', $this->customer->id)
+            ->where('shop_id', $this->shop->id)
+            ->whereIn('leaflet_id', $checkedLeafletIds)
+            ->whereIn('packaging_id', $packagingIds)
+            ->whereNotNull('media_id')
+            ->get()
+            ->groupBy('leaflet_id')
+            ->map->count();
+
+        $missingIds = $checkedLeafletIds->reject(
+            fn (int $leafletId) => ($coveredByLeaflet[$leafletId] ?? 0) >= $packagingIds->count()
+        );
+
+        if ($missingIds->isEmpty()) {
+            return;
+        }
+
+        $names = Leaflet::whereIn('id', $missingIds)->orderBy('name')->pluck('name');
+
+        $validator->errors()->add(
+            'leaflet_ids',
+            __('Upload a file for :names before saving. Every insert you tick has to be printable.', [
+                'names' => $names->implode(', '),
+            ])
+        );
     }
 
     public function asController(ActionRequest $request): Customer

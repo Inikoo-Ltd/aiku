@@ -26,6 +26,8 @@ use Lorisleiva\Actions\ActionRequest;
 
 class UpdateRetinaLeaflet extends RetinaAction
 {
+    use WithDisposableLeafletMedia;
+
     public function handle(Customer $customer, array $modelData): ModelHasLeaflet
     {
         return DB::transaction(function () use ($customer, $modelData) {
@@ -68,9 +70,7 @@ class UpdateRetinaLeaflet extends RetinaAction
 
                 ModelHasLeaflet::whereIn('id', $rows->pluck('id'))->update(['media_id' => $mediaId]);
 
-                if ($oldMediaId && !ModelHasLeaflet::where('media_id', $oldMediaId)->exists()) {
-                    Media::find($oldMediaId)?->delete();
-                }
+                $this->deleteLeafletMediaIfUnused($oldMediaId);
             } elseif (Arr::has($modelData, 'name') && $mediaId) {
                 Media::where('id', $mediaId)->update(['name' => Arr::get($modelData, 'name')]);
             }
@@ -101,7 +101,7 @@ class UpdateRetinaLeaflet extends RetinaAction
                     ->where('state', PackagingStateEnum::ACTIVE->value),
             ],
             'name'        => ['sometimes', 'required', 'string', 'max:250'],
-            'file'        => ['sometimes', 'required', 'file', 'mimes:pdf,jpg,jpeg,png,webp', 'max:20480'],
+            'file'        => ['sometimes', 'required', 'file', 'mimes:pdf', 'max:20480'],
         ];
     }
 

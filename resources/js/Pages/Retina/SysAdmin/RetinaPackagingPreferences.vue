@@ -13,6 +13,7 @@ import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import { PageHeadingTypes } from "@/types/PageHeading"
 import type { Image as ImageProxy } from "@/types/Image"
 import { trans } from "laravel-vue-i18n"
+import { notify } from "@kyvg/vue3-notification"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import PureInput from "@/Components/Pure/PureInput.vue"
 import Image from "@common/Components/Image.vue"
@@ -155,7 +156,7 @@ const formatInsertPrice = (price: number) => {
     return locale.currencyFormat(props.currencyCode ?? "USD", price)
 }
 
-const personalisedMessage = ref(props.personalisedMessage ?? "Thank you for your order!\nWe hope you love our products.")
+const personalisedMessage = ref(props.personalisedMessage ?? "")
 const maxMessageLength = 200
 
 const leaflets = computed(() =>
@@ -208,6 +209,13 @@ const submitUpload = () => {
                 uploadLeafletId.value = null
                 uploadFile.value = null
             },
+            onError: (errors) => {
+                notify({
+                    title: trans("Upload failed"),
+                    text: errors?.file ?? trans("Inserts are printed from a PDF, so only PDF files can be uploaded."),
+                    type: "error",
+                })
+            },
         }
     )
 }
@@ -249,6 +257,13 @@ const submitEdit = () => {
             onSuccess: () => {
                 editRow.value = null
                 editFile.value = null
+            },
+            onError: (errors) => {
+                notify({
+                    title: trans("Upload failed"),
+                    text: errors?.file ?? trans("Inserts are printed from a PDF, so only PDF files can be uploaded."),
+                    type: "error",
+                })
             },
         }
     )
@@ -304,6 +319,15 @@ const saveSettings = () => {
             onSuccess: () => {
                 justSaved.value = true
                 setTimeout(() => justSaved.value = false, 2000)
+            },
+            // A ticked insert with no artwork is refused by the server. Without this the Save
+            // button simply stops, with nothing on screen saying why.
+            onError: (errors) => {
+                notify({
+                    title: trans("Artwork missing"),
+                    text: errors?.leaflet_ids ?? trans("Upload a file for every insert you tick before saving."),
+                    type: "error",
+                })
             },
         }
     )
@@ -510,9 +534,9 @@ const saveSettings = () => {
                             <label class="flex h-10 cursor-pointer items-center gap-2 rounded-lg border border-dashed border-gray-300 px-3 text-sm hover:border-gray-400">
                                 <FontAwesomeIcon :icon="['fal', 'upload']" class="text-gray-400" fixed-width aria-hidden="true" />
                                 <span class="truncate" :class="uploadFileName ? '' : 'text-gray-400'">
-                                    {{ uploadFileName ?? trans("Choose a PDF or image (max 20MB)") }}
+                                    {{ uploadFileName ?? trans("Choose a PDF (max 20MB)") }}
                                 </span>
-                                <input type="file" accept=".pdf,image/*" class="hidden" @change="onUploadFileSelected" />
+                                <input type="file" accept="application/pdf,.pdf" class="hidden" @change="onUploadFileSelected" />
                             </label>
                         </div>
                     </div>
@@ -603,7 +627,7 @@ const saveSettings = () => {
                                                         <span class="truncate" :class="editFileName ? '' : 'text-gray-400'">
                                                             {{ editFileName ?? trans("Keep current file (optional)") }}
                                                         </span>
-                                                        <input type="file" accept=".pdf,image/*" class="hidden" @change="onEditFileSelected" />
+                                                        <input type="file" accept="application/pdf,.pdf" class="hidden" @change="onEditFileSelected" />
                                                     </label>
                                                 </div>
                                             </div>

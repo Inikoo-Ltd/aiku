@@ -92,11 +92,13 @@ class GetRetinaOrderPackagingData
         ];
     }
 
+    /**
+     * The customer's own preference, else the shop's default. The default exists so an order
+     * still ships in something the shop chose rather than in nothing at all.
+     */
     private function getSelectedPackagingId(Shop $shop, Customer $customer): ?int
     {
-        // Only the customer's own preference — no standard fallback. When the customer
-        // has not set a preference, the panel shows the "Select packaging" placeholder.
-        return CustomerHasPackaging::where('customer_id', $customer->id)
+        $preferred = CustomerHasPackaging::where('customer_id', $customer->id)
             ->whereHas('packaging', fn ($query) => $query->where('shop_id', $shop->id)->where('state', PackagingStateEnum::ACTIVE))
             ->with('packaging')
             ->get()
@@ -104,6 +106,8 @@ class GetRetinaOrderPackagingData
             ->first()
             ?->packaging
             ?->id;
+
+        return $preferred ?? $shop->defaultPackaging()?->id;
     }
 
     /** @return array<int, array{id: int, label: string, price: float, family_codes: array<int, string>}> */

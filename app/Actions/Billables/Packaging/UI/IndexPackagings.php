@@ -77,6 +77,7 @@ class IndexPackagings extends OrgAction
                     and leaflets.deleted_at is null
                     and jsonb_exists(leaflets.family_codes, packagings.family_code)
             ) as leaflets_data")
+            ->selectRaw('? as default_packaging_id', [$shop->defaultPackaging()?->id])
             ->allowedSorts(['code', 'family_code', 'name', 'type', 'price'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
@@ -112,6 +113,7 @@ class IndexPackagings extends OrgAction
                 ->column(key: 'dimensions', label: __('Dimensions'), canBeHidden: false)
                 ->column(key: 'price', label: __('Price'), canBeHidden: false, sortable: true, align: 'right', type: 'currency')
                 ->column(key: 'leaflets', label: __('Default leaflets'), canBeHidden: false)
+                ->column(key: 'is_default', label: __('Default'), canBeHidden: false, align: 'center')
                 ->column(key: 'actions', label: '', canBeHidden: false);
         };
     }
