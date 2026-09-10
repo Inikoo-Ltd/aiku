@@ -425,7 +425,7 @@ class IndexMasterFamilies extends OrgAction
                 ->withEmptyState(
                     [
                         'title' => __("No master families found"),
-                        'count' => $parent->stats->number_current_master_product_categories_type_family
+                        'count' => $parent->stats->number_master_product_categories_type_family
                     ],
                 );
 

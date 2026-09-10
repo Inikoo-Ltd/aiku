@@ -5,7 +5,7 @@
   -->
 
 <script setup lang="ts">
-import { Head, Link } from "@inertiajs/vue3";
+import { Head, Link, router } from "@inertiajs/vue3";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import {
     faBullhorn,
@@ -124,26 +124,33 @@ function masterDepartmentRoute(department: Department) {
         [department.master_product_category_id]);
 }
 
+const isLoadingDelete = ref(false);
 
-  async function deleteItem() {
-      try {
-         const response: any = await axios.delete(
-            route(props.delete_route?.name, props.delete_route?.parameters),
-         );
-
-         if (response.status !== 200) {
-             throw new Error('Failed to delete department');
-         }
-
-        window.location.href = route('grp.masters.master_shops.show.master_departments.index', {
-            masterShop: props.delete_condition?.master_shop_slug
-        });
-         return true
-      } catch (error: any) {
-          console.error('Error deleting department:', error);
-          return false
-      }
-  }
+async function deleteItem() {
+    await router.delete(route(props.delete_route?.name, props.delete_route?.parameters), {
+        preserveScroll: true,
+        onStart: () => { 
+            isLoadingDelete.value = true 
+        },
+        onSuccess: () => {
+            notify({
+                title: trans('Success'),
+                text: trans('Successfully deleted Master Department'),
+                type: 'error'
+            })
+        },
+        onError: () => {
+            notify({
+                title: trans('Error'),
+                text: trans('Failed to delete bundle'),
+                type: 'error'
+            })
+        },
+        onFinish: () => {
+            isLoadingDelete.value = false;
+        }
+    })
+}
 
 
 </script>
@@ -154,17 +161,18 @@ function masterDepartmentRoute(department: Department) {
     <PageHeading :data="pageHead">
           <template #other>
             <ModalConfirmationDelete
-            @onYes="deleteItem"
-                :title="trans('Are you sure you want to delete this department?')"
+                @onYes="deleteItem"
+                :title="trans('Are you sure you want to delete this Master Department?')"
                 isFullLoading
             >
                 <template #default="{ isOpenModal, changeModel }">
                     <Button
+                        :loading="isLoadingDelete"
                         :disabled="!props.delete_condition?.can_delete"
                         icon="fal fa-trash-alt"
                         type="negative"
                         @click="changeModel"
-                        :tooltip="props.delete_condition?.can_delete ? 'Delete' : 'Cannot delete this department due to existing children'"
+                        :tooltip="props.delete_condition?.can_delete ? 'Delete' : 'Cannot delete this Master Department due to existing children'"
                     />
                 </template>
             </ModalConfirmationDelete>

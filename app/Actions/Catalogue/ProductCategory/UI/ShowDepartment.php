@@ -167,18 +167,18 @@ class ShowDepartment extends OrgAction
                                 'parameters' => $request->route()->originalParameters()
                             ]
                         ] : false,
-                        !$department->children()->exists() ? [
-                            'type'  => 'button',
-                            'style' => 'delete',
-                            'key'   => 'delete',
-                            'route' => [
-                                'name'       => 'grp.models.product_category.delete',
-                                'parameters' => [
-                                    'productCategory' => $department->id,
-                                ],
-                                'method' => 'delete',
-                            ]
-                        ] : false,
+                        // !$department->children()->exists() ? [
+                        //     'type'  => 'button',
+                        //     'style' => 'delete',
+                        //     'key'   => 'delete',
+                        //     'route' => [
+                        //         'name'       => 'grp.models.product_category.delete',
+                        //         'parameters' => [
+                        //             'productCategory' => $department->id,
+                        //         ],
+                        //         'method' => 'delete',
+                        //     ]
+                        // ] : false,
                     ],
                     'subNavigation' => $this->getDepartmentSubNavigation($department)
                 ],
