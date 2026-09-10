@@ -223,9 +223,14 @@ export function useFilterRecipients(props: any) {
         const currentRoute = route().current()
         if (!currentRoute) return
 
+        /* Back to the first page, because every reload from here changes which contacts the
+           audience holds and the page number describes the old one: ziggy's route().params
+           carries the query string back in, and Inertia merges data over it rather than
+           replacing it, so a page left alone survives into an audience that may not be that
+           long any more and answers with nothing. */
         router.get(
             route(currentRoute, route().params),
-            { filters: filtersPayload.value, ...extraQuery, ...overrides },
+            { filters: filtersPayload.value, ...extraQuery, page: 1, ...overrides },
             {
                 preserveState: true,
                 preserveScroll: true,
