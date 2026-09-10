@@ -133,6 +133,11 @@ use App\Models\Comms\Outbox;
 use App\Models\Comms\SubscriptionEvent;
 use App\Models\Comms\TestEmailRecipient;
 use App\Models\Comms\WhatsappCampaign;
+use App\Actions\Comms\WhatsappCampaign\RunWhatsappCampaignScheduled;
+use App\Actions\Comms\WhatsappCampaign\UpdateWhatsappCampaignSentState;
+use App\Enums\Comms\WhatsappDeliveryChannel\WhatsappDeliveryChannelStateEnum;
+use App\Models\Comms\WhatsappDeliveryChannel;
+use Illuminate\Support\Arr;
 use App\Models\CRM\Customer;
 use App\Models\CRM\WebUser;
 use App\Models\Fulfilment\Fulfilment;
@@ -3812,4 +3817,204 @@ test('late delivery notification does not overwrite a bounce recorded meanwhile'
 
     expect($dispatchedEmail->refresh()->state)->toBe(\App\Enums\Comms\DispatchedEmail\DispatchedEmailStateEnum::SOFT_BOUNCE)
         ->and($dispatchedEmail->emailTrackingEvents()->where('type', 'delivered')->count())->toBe(1);
+});
+
+
+test('UI Index Whatsapp Campaigns', function () {
+    WhatsappCampaign::create([
+        'group_id'         => $this->group->id,
+        'organisation_id'  => $this->organisation->id,
+        'shop_id'          => $this->shop->id,
+        'name'             => 'Test Whatsapp Campaign',
+        'type'             => WhatsappCampaignTypeEnum::NEWSLETTER,
+        'state'            => WhatsappCampaignStateEnum::SENT,
+        'recipients_count' => 42,
+        'sent_at'          => now(),
+    ]);
+
+    $response = $this->get(route('grp.org.shops.show.marketing.whatsapp_campaigns.index', [$this->organisation->slug, $this->shop->slug]));
+
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('Org/Marketing/WhatsappCampaigns')
+            ->has('title')
+            ->has(
+                'pageHead',
+                fn (AssertableInertia $page) => $page
+                    ->where('title', 'Whatsapp Campaigns')
+                    ->has('actions', 1)
+                    ->etc()
+            )
+            ->has('data.data', 1)
+            ->has(
+                'data.data.0',
+                fn (AssertableInertia $page) => $page
+                    ->where('name', 'Test Whatsapp Campaign')
+                    ->where('recipients_count', 42)
+                    ->where('state_label', 'Sent')
+                    ->where('type_label', 'Newsletter')
+                    ->etc()
+            );
+    });
+});
+
+test('UI Whatsapp Campaign Workshop', function () {
+    $campaign = WhatsappCampaign::create([
+        'group_id'        => $this->group->id,
+        'organisation_id' => $this->organisation->id,
+        'shop_id'         => $this->shop->id,
+        'name'            => 'Workshop Campaign',
+        'type'            => WhatsappCampaignTypeEnum::NEWSLETTER,
+        'state'           => WhatsappCampaignStateEnum::IN_PROCESS,
+    ]);
+
+    $response = $this->get(route('grp.org.shops.show.marketing.whatsapp_campaigns.workshop', [
+        $this->organisation->slug,
+        $this->shop->slug,
+        $campaign->slug,
+    ]));
+
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('Org/Marketing/WhatsappCampaignWorkshop')
+            ->has('templates')
+            ->has('mergeTags')
+            ->where('campaign.name', 'Workshop Campaign')
+            ->has('journey', 2)
+            ->where('journey.0.key', 'compose')
+            ->where('journey.0.current', true)
+            ->where('journey.1.key', 'review')
+            ->where('journey.1.disabled', true)
+            ->where('updateRoute.name', 'grp.org.shops.show.marketing.whatsapp_campaigns.update');
+    });
+});
+
+test('UI Whatsapp Campaign review step', function () {
+    $campaign = WhatsappCampaign::create([
+        'group_id'        => $this->group->id,
+        'organisation_id' => $this->organisation->id,
+        'shop_id'         => $this->shop->id,
+        'name'            => 'Review Campaign',
+        'type'            => WhatsappCampaignTypeEnum::NEWSLETTER,
+        'state'           => WhatsappCampaignStateEnum::IN_PROCESS,
+    ]);
+
+    $response = $this->get(route('grp.org.shops.show.marketing.whatsapp_campaigns.show', [
+        $this->organisation->slug,
+        $this->shop->slug,
+        $campaign->slug,
+    ]));
+
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('Org/Marketing/WhatsappCampaign')
+            ->where('campaign.name', 'Review Campaign')
+            ->where('template', null)
+            ->has('journey', 2)
+            ->where('journey.1.key', 'review')
+            ->where('journey.1.current', true);
+    });
+});
+
+test('Store Whatsapp Campaign redirects into the workshop with defaults', function () {
+    $response = $this->post(
+        route('grp.org.shops.show.marketing.whatsapp_campaigns.store', [$this->organisation->slug, $this->shop->slug])
+    );
+
+    $campaign = WhatsappCampaign::where('shop_id', $this->shop->id)->latest('id')->first();
+
+    expect($campaign)->not->toBeNull()
+        ->and($campaign->state)->toBe(WhatsappCampaignStateEnum::IN_PROCESS)
+        ->and($campaign->type)->toBe(WhatsappCampaignTypeEnum::NEWSLETTER)
+        ->and($campaign->name)->toContain('New campaign by')
+        ->and($campaign->slug)->not->toBeEmpty();
+
+    $response->assertRedirect(route('grp.org.shops.show.marketing.whatsapp_campaigns.workshop', [
+        $this->organisation->slug,
+        $this->shop->slug,
+        $campaign->slug,
+    ]));
+});
+
+test('Store Whatsapp Campaign twice does not collide on the default name', function () {
+    $route = route('grp.org.shops.show.marketing.whatsapp_campaigns.store', [$this->organisation->slug, $this->shop->slug]);
+
+    $this->post($route);
+    $this->post($route);
+
+    expect(WhatsappCampaign::where('shop_id', $this->shop->id)->count())->toBe(2);
+});
+
+test('Update Whatsapp Campaign sets the template and completes the compose step', function () {
+    $campaign = WhatsappCampaign::create([
+        'group_id'        => $this->group->id,
+        'organisation_id' => $this->organisation->id,
+        'shop_id'         => $this->shop->id,
+        'name'            => 'Updatable Campaign',
+        'type'            => WhatsappCampaignTypeEnum::NEWSLETTER,
+        'state'           => WhatsappCampaignStateEnum::IN_PROCESS,
+    ]);
+
+    $this->patch(
+        route('grp.org.shops.show.marketing.whatsapp_campaigns.update', [
+            $this->organisation->slug,
+            $this->shop->slug,
+            $campaign->slug,
+        ]),
+        ['name' => 'Renamed Campaign']
+    );
+
+    expect($campaign->refresh()->name)->toBe('Renamed Campaign');
+});
+
+test('a scheduled campaign that came due unsendable is stopped rather than sent', function () {
+    $campaign = WhatsappCampaign::create([
+        'group_id'        => $this->group->id,
+        'organisation_id' => $this->organisation->id,
+        'shop_id'         => $this->shop->id,
+        'name'            => 'Unsendable Scheduled Campaign',
+        'type'            => WhatsappCampaignTypeEnum::NEWSLETTER,
+        'state'           => WhatsappCampaignStateEnum::SCHEDULED,
+        'scheduled_at'    => now()->subMinute(),
+    ]);
+
+    RunWhatsappCampaignScheduled::run();
+
+    $campaign->refresh();
+
+    expect($campaign->state)->toBe(WhatsappCampaignStateEnum::STOPPED)
+        ->and($campaign->stopped_at)->not->toBeNull()
+        ->and($campaign->start_sending_at)->toBeNull()
+        ->and(Arr::get($campaign->data, 'stopped_reason'))->toBe('Choose a template before sending this campaign.');
+});
+
+test('a campaign whose channels all stopped does not stay in sending', function () {
+    $campaign = WhatsappCampaign::create([
+        'group_id'         => $this->group->id,
+        'organisation_id'  => $this->organisation->id,
+        'shop_id'          => $this->shop->id,
+        'name'             => 'Stopped Channels Campaign',
+        'type'             => WhatsappCampaignTypeEnum::NEWSLETTER,
+        'state'            => WhatsappCampaignStateEnum::SENDING,
+        'recipients_count' => 2,
+        'start_sending_at' => now(),
+    ]);
+
+    WhatsappDeliveryChannel::create([
+        'whatsapp_campaign_id' => $campaign->id,
+        'number_messages'      => 1,
+        'state'                => WhatsappDeliveryChannelStateEnum::SENT,
+        'sent_at'              => now(),
+    ]);
+
+    WhatsappDeliveryChannel::create([
+        'whatsapp_campaign_id' => $campaign->id,
+        'number_messages'      => 1,
+        'state'                => WhatsappDeliveryChannelStateEnum::STOPPED,
+    ]);
+
+    UpdateWhatsappCampaignSentState::run($campaign);
+
+    expect($campaign->refresh()->state)->toBe(WhatsappCampaignStateEnum::STOPPED)
+        ->and($campaign->stopped_at)->not->toBeNull();
 });

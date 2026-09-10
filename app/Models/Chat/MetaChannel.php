@@ -31,11 +31,6 @@ class MetaChannel extends Model
         'deleted_at' => 'datetime',
     ];
 
-    public function agents(): HasMany
-    {
-        return $this->hasMany(MetaChatAgent::class);
-    }
-
     public function sessions(): HasMany
     {
         return $this->hasMany(MetaChatSession::class);
@@ -59,10 +54,5 @@ class MetaChannel extends Model
     public function messageTemplates(): HasMany
     {
         return $this->hasMany(MetaMessageTemplate::class);
-    }
-
-    public function shopAgents(): HasMany
-    {
-        return $this->hasMany(ShopHasMetaChatAgent::class);
     }
 }
