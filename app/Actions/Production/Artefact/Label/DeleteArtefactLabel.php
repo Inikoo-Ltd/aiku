@@ -9,6 +9,7 @@
 namespace App\Actions\Production\Artefact\Label;
 
 use App\Actions\OrgAction;
+use App\Models\Production\Artefact;
 use App\Models\Production\ArtefactLabel;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -44,9 +45,9 @@ class DeleteArtefactLabel extends OrgAction
         return $this->handle($artefactLabel);
     }
 
-    public function asController(ArtefactLabel $label, ActionRequest $request): ArtefactLabel
+    public function asController(Artefact $artefact, ArtefactLabel $label, ActionRequest $request): ArtefactLabel
     {
-        $this->initialisationFromProduction($label->artefact->production, $request);
+        $this->initialisationFromProduction($artefact->production, $request);
 
         return $this->handle($label);
     }

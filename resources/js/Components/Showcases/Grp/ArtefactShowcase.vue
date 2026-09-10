@@ -4,8 +4,22 @@ import { ref } from "vue"
 import axios from "axios"
 import { router } from "@inertiajs/vue3"
 import { notify } from "@kyvg/vue3-notification"
+import { library } from "@fortawesome/fontawesome-svg-core"
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { faFilePdf, faImage, faPlus, faTags, faTrashAlt } from "@fal"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import ArtefactLabelSheetModal from "@/Components/Production/Artefact/ArtefactLabelSheetModal.vue"
+import { useFormatTime } from "@/Composables/useFormatTime"
+
+library.add(faFilePdf, faImage, faPlus, faTags, faTrashAlt)
+
+interface ArtefactLabel {
+    id: number
+    name: string
+    layout: Record<string, any>
+    artwork: { name: string, size: number, mime_type: string, url: string } | null
+    updated_at: string | null
+}
 
 interface ArtefactShowcaseData {
     code: string
@@ -23,13 +37,7 @@ interface ArtefactShowcaseData {
         delete_route: { name: string, parameters: any }
         batch_code: string
         expiry_date: string
-        labels: {
-            id: number
-            name: string
-            layout: Record<string, any>
-            artwork: { name: string, size: number, mime_type: string, url: string } | null
-            updated_at: string | null
-        }[]
+        labels: ArtefactLabel[]
     }
     artefact_department: { slug: string, name: string } | null
     tags: string[]
@@ -52,6 +60,52 @@ const props = defineProps<{
 const batchSize = ref<number | string>(props.data.recommended_batch_size ?? '')
 const isOpenLabelSheet = ref(false)
 const isSavingBatchSize = ref(false)
+const labelToEdit = ref<ArtefactLabel | null>(null)
+const deletingLabelId = ref<number | null>(null)
+
+const openLabel = (label: ArtefactLabel | null) => {
+    labelToEdit.value = label
+    isOpenLabelSheet.value = true
+}
+
+const onDeleteLabel = async (label: ArtefactLabel) => {
+    if (!props.data.label_sheet) return
+
+    deletingLabelId.value = label.id
+
+    try {
+        await axios.delete(route(props.data.label_sheet.delete_route.name, {
+            ...props.data.label_sheet.delete_route.parameters,
+            label: label.id,
+        }))
+        router.reload()
+    } catch (error: any) {
+        notify({
+            title: trans("Something went wrong"),
+            text: error?.response?.data?.message ?? trans("The label could not be deleted"),
+            type: "error",
+        })
+    } finally {
+        deletingLabelId.value = null
+    }
+}
+
+const describeLabel = (label: ArtefactLabel) => {
+    const parts = [
+        `${label.layout.columns ?? '?'} × ${label.layout.rows ?? '?'}`,
+        label.layout.orientation === 'landscape' ? trans('Horizontal') : trans('Vertical'),
+    ]
+
+    if (label.artwork) {
+        parts.push(label.artwork.mime_type === 'application/pdf' ? trans('PDF artwork') : trans('Image artwork'))
+    }
+
+    if (label.updated_at) {
+        parts.push(useFormatTime(label.updated_at, { formatTime: 'aiku' }))
+    }
+
+    return parts.join(' · ')
+}
 
 const onSaveBatchSize = async () => {
     if (!batchSize.value || Number(batchSize.value) < 1) return
@@ -80,12 +134,6 @@ const onSaveBatchSize = async () => {
                     <h2 class="text-lg font-semibold">{{ data.name }}</h2>
                     <p class="text-sm text-gray-500 mb-2">{{ data.code }}</p>
                 </div>
-                <Button
-                    v-if="data.label_sheet"
-                    type="tertiary"
-                    icon="fal fa-file-pdf"
-                    :label="trans('Add label')"
-                    @click="isOpenLabelSheet = true" />
             </div>
             <span class="inline-block text-xs px-2 py-1 rounded border mb-6" :class="{
                 'bg-gray-100 text-gray-600 border-gray-200': data.compliance_status === 'not_configured',
@@ -154,6 +202,52 @@ const onSaveBatchSize = async () => {
                 </div>
             </div>
 
+            <hr class="my-6 border-t border-dashed border-gray-400" />
+
+            <div class="" v-if="data.label_sheet">
+                <div class="mb-3 flex items-center justify-between gap-2">
+                    <h3 class="text-sm font-semibold">{{ trans('Labels') }}</h3>
+                    <Button
+                        type="tertiary"
+                        size="xs"
+                        icon="fal fa-plus"
+                        :label="trans('New label')"
+                        @click="openLabel(null)" />
+                </div>
+
+                <div
+                    v-if="!data.label_sheet.labels.length"
+                    class="rounded border border-dashed border-gray-300 px-3 py-4 text-center text-xs text-gray-500">
+                    {{ trans('No label designed yet. A saved label keeps its artwork, so it can be printed again any time.') }}
+                </div>
+
+                <div v-else class="grid grid-cols-1 md:grid-cols-2 gap-2">
+                    <div
+                        v-for="label in data.label_sheet.labels"
+                        :key="label.id"
+                        class="flex items-center gap-3 rounded border border-gray-200 px-3 py-2 cursor-pointer hover:bg-gray-50"
+                        @click="openLabel(label)">
+                        <FontAwesomeIcon
+                            :icon="label.artwork
+                                ? (label.artwork.mime_type === 'application/pdf' ? 'fal fa-file-pdf' : 'fal fa-image')
+                                : 'fal fa-tags'"
+                            class="text-gray-400"
+                            fixed-width
+                            aria-hidden="true" />
+                        <div class="min-w-0 flex-1">
+                            <div class="truncate text-sm">{{ label.name }}</div>
+                            <div class="truncate text-xs text-gray-500">{{ describeLabel(label) }}</div>
+                        </div>
+                        <button
+                            class="text-gray-400 hover:text-red-600 disabled:opacity-40"
+                            :disabled="deletingLabelId === label.id"
+                            @click.stop="onDeleteLabel(label)">
+                            <FontAwesomeIcon icon="fal fa-trash-alt" fixed-width aria-hidden="true" />
+                        </button>
+                    </div>
+                </div>
+            </div>
+
             <div class="mt-8" v-if="data.manufacture_tasks.length">
                 <h3 class="text-sm font-semibold mb-3">{{ trans('Recipe steps') }}</h3>
                 <table class="w-full text-sm">
@@ -181,6 +275,8 @@ const onSaveBatchSize = async () => {
             v-if="data.label_sheet"
             :isOpen="isOpenLabelSheet"
             :labelSheet="data.label_sheet"
-            @onClose="isOpenLabelSheet = false" />
+            :labelToEdit="labelToEdit"
+            @onClose="isOpenLabelSheet = false"
+            @onSaved="router.reload()" />
     </div>
 </template>

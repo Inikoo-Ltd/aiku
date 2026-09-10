@@ -31,6 +31,7 @@ interface SavedLabel {
 
 const props = defineProps<{
     isOpen: boolean
+    labelToEdit: SavedLabel | null
     labelSheet: {
         route: routeType
         store_route: routeType
@@ -42,7 +43,7 @@ const props = defineProps<{
     }
 }>()
 
-const emits = defineEmits<{ (e: "onClose"): void }>()
+const emits = defineEmits<{ (e: "onClose"): void; (e: "onSaved"): void }>()
 
 type ItemSource = "batch_code" | "expiry_date"
 
@@ -95,14 +96,25 @@ const A4_ASPECT_TOLERANCE = 0.06
 const PDF_MIME_TYPE = "application/pdf"
 const PDF_PREVIEW_EDGE = 1400
 
-const orientation = ref<"portrait" | "landscape">("portrait")
-const columns = ref(3)
-const rows = ref(8)
-const pageMargin = ref(8)
-const gap = ref(3)
-const cutGuides = ref(true)
-const isSheetArtwork = ref(false)
-const canvasRotation = ref<Rotation>(0)
+const DEFAULT_LAYOUT = {
+    orientation: "portrait" as "portrait" | "landscape",
+    columns: 3,
+    rows: 8,
+    pageMargin: 8,
+    gap: 3,
+    cutGuides: true,
+    isSheetArtwork: false,
+    canvasRotation: 0 as Rotation,
+}
+
+const orientation = ref<"portrait" | "landscape">(DEFAULT_LAYOUT.orientation)
+const columns = ref(DEFAULT_LAYOUT.columns)
+const rows = ref(DEFAULT_LAYOUT.rows)
+const pageMargin = ref(DEFAULT_LAYOUT.pageMargin)
+const gap = ref(DEFAULT_LAYOUT.gap)
+const cutGuides = ref(DEFAULT_LAYOUT.cutGuides)
+const isSheetArtwork = ref(DEFAULT_LAYOUT.isSheetArtwork)
+const canvasRotation = ref<Rotation>(DEFAULT_LAYOUT.canvasRotation)
 const isGenerating = ref(false)
 
 const backgroundFile = ref<File | null>(null)
@@ -110,25 +122,12 @@ const backgroundPreview = ref<string | null>(null)
 const isVectorArtwork = ref(false)
 const storedArtwork = ref<StoredArtwork | null>(null)
 
-const savedLabels = ref<SavedLabel[]>([])
 const currentLabelId = ref<number | null>(null)
 const labelName = ref("")
 const isSaving = ref(false)
 const isLoadingLabel = ref(false)
 const fileInput = ref<HTMLInputElement | null>(null)
 const isPreparingArtwork = ref(false)
-
-/**
- * The showcase sends its props lazily and Inertia restores an older payload from history, so the
- * saved labels are taken whenever they arrive rather than once at setup.
- */
-watch(
-    () => props.labelSheet.labels,
-    labels => {
-        savedLabels.value = [...(labels ?? [])]
-    },
-    { immediate: true }
-)
 
 const gridBeforeSheetArtwork = {
     columns: columns.value,
@@ -744,6 +743,7 @@ const saveLabel = async (asNewLabel: boolean) => {
         )
 
         rememberSavedLabel(response.data?.data ?? response.data)
+        emits("onSaved")
 
         notify({
             title: ctrans("Saved"),
@@ -766,14 +766,6 @@ const saveLabel = async (asNewLabel: boolean) => {
  * printing it stops carrying the file up again.
  */
 const rememberSavedLabel = (label: SavedLabel) => {
-    const existing = savedLabels.value.findIndex(candidate => candidate.id === label.id)
-
-    if (existing >= 0) {
-        savedLabels.value.splice(existing, 1, label)
-    } else {
-        savedLabels.value.push(label)
-    }
-
     currentLabelId.value = label.id
     labelName.value = label.name
     storedArtwork.value = label.artwork
@@ -847,32 +839,38 @@ const startNewLabel = () => {
     currentLabelId.value = null
     labelName.value = ""
 
+    orientation.value = DEFAULT_LAYOUT.orientation
+    columns.value = DEFAULT_LAYOUT.columns
+    rows.value = DEFAULT_LAYOUT.rows
+    pageMargin.value = DEFAULT_LAYOUT.pageMargin
+    gap.value = DEFAULT_LAYOUT.gap
+    cutGuides.value = DEFAULT_LAYOUT.cutGuides
+    isSheetArtwork.value = DEFAULT_LAYOUT.isSheetArtwork
+    canvasRotation.value = DEFAULT_LAYOUT.canvasRotation
+
     removeBackground()
 
     items.value = [createItem("batch_code"), createItem("expiry_date")]
     selectedItemId.value = items.value[0]?.id ?? null
 }
 
-const deleteLabel = async (label: SavedLabel) => {
-    try {
-        await axios.delete(route(props.labelSheet.delete_route.name, {
-            ...props.labelSheet.delete_route.parameters,
-            label: label.id,
-        }))
+/**
+ * The modal is opened either on a saved label or on a blank one, so the design it shows is decided
+ * on the way in rather than being whatever the last visit left behind.
+ */
+watch(
+    () => props.isOpen,
+    async isOpen => {
+        if (!isOpen) return
 
-        savedLabels.value = savedLabels.value.filter(candidate => candidate.id !== label.id)
-
-        if (currentLabelId.value === label.id) {
+        if (props.labelToEdit) {
+            await loadLabel(props.labelToEdit)
+        } else {
             startNewLabel()
         }
-    } catch (error: any) {
-        notify({
-            title: ctrans("Something went wrong"),
-            text: error?.response?.data?.message ?? ctrans("The label could not be deleted"),
-            type: "error",
-        })
     }
-}
+)
+
 
 /**
  * The response arrives as a blob because a sheet is expected, so an error body has to be read back
@@ -904,7 +902,7 @@ const describeFailure = async (error: any): Promise<string> => {
     <Modal :isOpen="isOpen" closeButton :isClosableInBackground="false" @onClose="emits('onClose')" width="w-full max-w-6xl">
         <div class="flex flex-wrap items-center gap-2 mb-4">
             <FontAwesomeIcon icon="fal fa-tags" class="text-gray-400" fixed-width aria-hidden="true" />
-            <h2 class="text-lg font-semibold">{{ ctrans("Label sheet") }}</h2>
+            <h2 class="text-lg font-semibold">{{ currentLabelId ? ctrans("Edit label") : ctrans("New label") }}</h2>
 
             <div class="ml-auto flex items-center gap-2">
                 <input
@@ -933,40 +931,6 @@ const describeFailure = async (error: any): Promise<string> => {
 
         <div class="flex flex-col lg:flex-row gap-6">
             <div class="w-full lg:w-80 shrink-0 space-y-4">
-                <!-- Field: Saved labels -->
-                <div v-if="savedLabels.length">
-                    <div class="text-xs text-gray-500 uppercase tracking-wide mb-1">{{ ctrans("Saved labels") }}</div>
-                    <div class="space-y-1">
-                        <div
-                            v-for="label in savedLabels"
-                            :key="label.id"
-                            class="flex items-center gap-2 rounded border px-2 py-1.5 cursor-pointer"
-                            :class="label.id === currentLabelId ? 'border-indigo-500 bg-indigo-50' : 'border-gray-200 hover:bg-gray-50'"
-                            @click="loadLabel(label)">
-                            <FontAwesomeIcon
-                                v-if="label.artwork"
-                                :icon="label.artwork.mime_type === 'application/pdf' ? 'fal fa-file-pdf' : 'fal fa-image'"
-                                class="text-gray-400"
-                                fixed-width
-                                aria-hidden="true" />
-                            <span class="min-w-0 flex-1 truncate text-sm">{{ label.name }}</span>
-                            <button class="text-gray-400 hover:text-red-600" @click.stop="deleteLabel(label)">
-                                <FontAwesomeIcon icon="fal fa-trash-alt" fixed-width aria-hidden="true" />
-                            </button>
-                        </div>
-                    </div>
-                    <Button
-                        class="mt-2"
-                        type="tertiary"
-                        size="xs"
-                        icon="fal fa-plus"
-                        :label="ctrans('New label')"
-                        :loading="isLoadingLabel"
-                        @click="startNewLabel" />
-                </div>
-
-                <hr v-if="savedLabels.length" class="border-t border-gray-400 border-dashed" />
-
                 <div>
                     <div class="text-xs text-gray-500 uppercase tracking-wide mb-1">{{ ctrans("Orientation") }}</div>
                     <div class="flex gap-2">
