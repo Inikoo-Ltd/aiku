@@ -18,8 +18,18 @@ interface ArtefactShowcaseData {
     update_route: { name: string, parameters: any }
     label_sheet?: {
         route: { name: string, parameters: any }
+        store_route: { name: string, parameters: any }
+        update_route: { name: string, parameters: any }
+        delete_route: { name: string, parameters: any }
         batch_code: string
         expiry_date: string
+        labels: {
+            id: number
+            name: string
+            layout: Record<string, any>
+            artwork: { name: string, size: number, mime_type: string, url: string } | null
+            updated_at: string | null
+        }[]
     }
     artefact_department: { slug: string, name: string } | null
     tags: string[]

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, reactive, ref } from "vue"
+import { computed, nextTick, reactive, ref, watch } from "vue"
 import axios from "axios"
 import { notify } from "@kyvg/vue3-notification"
 import { library } from "@fortawesome/fontawesome-svg-core"
@@ -14,12 +14,31 @@ import PingIcon from "@/Components/Utils/PingIcon.vue"
 
 library.add(faCopy, faFilePdf, faImage, faPlus, faTags, faTrashAlt)
 
+interface StoredArtwork {
+    name: string
+    size: number
+    mime_type: string
+    url: string
+}
+
+interface SavedLabel {
+    id: number
+    name: string
+    layout: Record<string, any>
+    artwork: StoredArtwork | null
+    updated_at: string | null
+}
+
 const props = defineProps<{
     isOpen: boolean
     labelSheet: {
         route: routeType
+        store_route: routeType
+        update_route: routeType
+        delete_route: routeType
         batch_code: string
         expiry_date: string
+        labels: SavedLabel[]
     }
 }>()
 
@@ -89,8 +108,27 @@ const isGenerating = ref(false)
 const backgroundFile = ref<File | null>(null)
 const backgroundPreview = ref<string | null>(null)
 const isVectorArtwork = ref(false)
+const storedArtwork = ref<StoredArtwork | null>(null)
+
+const savedLabels = ref<SavedLabel[]>([])
+const currentLabelId = ref<number | null>(null)
+const labelName = ref("")
+const isSaving = ref(false)
+const isLoadingLabel = ref(false)
 const fileInput = ref<HTMLInputElement | null>(null)
 const isPreparingArtwork = ref(false)
+
+/**
+ * The showcase sends its props lazily and Inertia restores an older payload from history, so the
+ * saved labels are taken whenever they arrive rather than once at setup.
+ */
+watch(
+    () => props.labelSheet.labels,
+    labels => {
+        savedLabels.value = [...(labels ?? [])]
+    },
+    { immediate: true }
+)
 
 const gridBeforeSheetArtwork = {
     columns: columns.value,
@@ -530,6 +568,10 @@ const onFileChange = async (event: Event) => {
     target.value = ""
     if (!file) return
 
+    await applyArtworkFile(file, true)
+}
+
+const applyArtworkFile = async (file: File, isFromDisk: boolean) => {
     isPreparingArtwork.value = true
 
     try {
@@ -537,23 +579,28 @@ const onFileChange = async (event: Event) => {
             const { preview, width, height } = await renderPdfPreview(file)
 
             replaceBackground(file, preview, true)
-            detectSheetArtwork(width, height)
-            warnAboutPdfSize(file)
+
+            if (isFromDisk) {
+                detectSheetArtwork(width, height)
+                warnAboutPdfSize(file)
+            }
         } else {
             const sourceUrl = URL.createObjectURL(file)
 
             try {
                 const image = await loadImage(sourceUrl)
-                const prepared = await shrinkForUpload(file, image)
+                const prepared = isFromDisk ? await shrinkForUpload(file, image) : file
 
                 replaceBackground(prepared, URL.createObjectURL(prepared), false)
-                detectSheetArtwork(image.width, image.height)
+
+                if (isFromDisk) {
+                    detectSheetArtwork(image.width, image.height)
+                }
             } finally {
                 URL.revokeObjectURL(sourceUrl)
             }
         }
     } catch (error: any) {
-        console.log('eeeeeeeeeee', error)
         notify({
             title: ctrans("Something went wrong"),
             text: isPdf(file) ? ctrans("The PDF could not be read") : ctrans("The image could not be read"),
@@ -580,6 +627,7 @@ const replaceBackground = (file: File, preview: string, vector: boolean) => {
     backgroundFile.value = file
     backgroundPreview.value = preview
     isVectorArtwork.value = vector
+    storedArtwork.value = null
 }
 
 const releasePreview = () => {
@@ -594,6 +642,34 @@ const removeBackground = () => {
     backgroundFile.value = null
     backgroundPreview.value = null
     isVectorArtwork.value = false
+    storedArtwork.value = null
+}
+
+const appendLayout = (formData: FormData) => {
+    formData.append("orientation", orientation.value)
+    formData.append("columns", String(columns.value))
+    formData.append("rows", String(rows.value))
+    formData.append("page_margin", String(pageMargin.value))
+    formData.append("gap", String(gap.value))
+    formData.append("cut_guides", cutGuides.value ? "1" : "0")
+    formData.append("canvas_rotation", String(canvasRotation.value))
+    formData.append("is_sheet_artwork", isSheetArtwork.value ? "1" : "0")
+
+    printableItems.value.forEach((item, index) => {
+        formData.append(`fields[${index}][source]`, item.source)
+        formData.append(`fields[${index}][text]`, item.text)
+        formData.append(`fields[${index}][x]`, String(item.x))
+        formData.append(`fields[${index}][y]`, String(item.y))
+        formData.append(`fields[${index}][font_size]`, String(item.fontSize))
+        formData.append(`fields[${index}][color]`, item.color)
+        formData.append(`fields[${index}][bold]`, item.bold ? "1" : "0")
+        formData.append(`fields[${index}][rotation]`, String(item.rotation))
+
+        const length = textLengthInMillimeters(item)
+        if (length) {
+            formData.append(`fields[${index}][length]`, length.toFixed(3))
+        }
+    })
 }
 
 const generatePdf = async () => {
@@ -603,32 +679,13 @@ const generatePdf = async () => {
 
     try {
         const formData = new FormData()
-        formData.append("orientation", orientation.value)
-        formData.append("columns", String(columns.value))
-        formData.append("rows", String(rows.value))
-        formData.append("page_margin", String(pageMargin.value))
-        formData.append("gap", String(gap.value))
-        formData.append("cut_guides", cutGuides.value ? "1" : "0")
-        formData.append("canvas_rotation", String(canvasRotation.value))
+        appendLayout(formData)
 
-        if (backgroundFile.value) {
+        if (storedArtwork.value && currentLabelId.value) {
+            formData.append("artefact_label_id", String(currentLabelId.value))
+        } else if (backgroundFile.value) {
             formData.append("background_artwork", backgroundFile.value)
         }
-
-        printableItems.value.forEach((item, index) => {
-            formData.append(`fields[${index}][text]`, item.text)
-            formData.append(`fields[${index}][x]`, String(item.x))
-            formData.append(`fields[${index}][y]`, String(item.y))
-            formData.append(`fields[${index}][font_size]`, String(item.fontSize))
-            formData.append(`fields[${index}][color]`, item.color)
-            formData.append(`fields[${index}][bold]`, item.bold ? "1" : "0")
-            formData.append(`fields[${index}][rotation]`, String(item.rotation))
-
-            const length = textLengthInMillimeters(item)
-            if (length) {
-                formData.append(`fields[${index}][length]`, length.toFixed(3))
-            }
-        })
 
         const response = await axios.post(
             route(props.labelSheet.route.name, props.labelSheet.route.parameters),
@@ -646,6 +703,174 @@ const generatePdf = async () => {
         })
     } finally {
         isGenerating.value = false
+    }
+}
+
+const saveLabel = async (asNewLabel: boolean) => {
+    const name = labelName.value.trim()
+
+    if (!name) {
+        notify({
+            title: ctrans("Name the label first"),
+            text: ctrans("A saved label is found back by its name."),
+            type: "warn",
+        })
+        return
+    }
+
+    const isUpdate = !asNewLabel && !!currentLabelId.value
+
+    isSaving.value = true
+
+    try {
+        const formData = new FormData()
+        formData.append("name", name)
+        appendLayout(formData)
+
+        if (backgroundFile.value && (!storedArtwork.value || !isUpdate)) {
+            formData.append("artwork", backgroundFile.value)
+        } else if (!backgroundFile.value && isUpdate) {
+            formData.append("remove_artwork", "1")
+        }
+
+        const response = await axios.post(
+            isUpdate
+                ? route(props.labelSheet.update_route.name, {
+                    ...props.labelSheet.update_route.parameters,
+                    label: currentLabelId.value,
+                })
+                : route(props.labelSheet.store_route.name, props.labelSheet.store_route.parameters),
+            formData
+        )
+
+        rememberSavedLabel(response.data?.data ?? response.data)
+
+        notify({
+            title: ctrans("Saved"),
+            text: ctrans("The label can be picked up again later."),
+            type: "success",
+        })
+    } catch (error: any) {
+        notify({
+            title: ctrans("Something went wrong"),
+            text: error?.response?.data?.message ?? ctrans("The label could not be saved"),
+            type: "error",
+        })
+    } finally {
+        isSaving.value = false
+    }
+}
+
+/**
+ * The freshly uploaded bytes are now on the server, so the label points at the stored artwork and
+ * printing it stops carrying the file up again.
+ */
+const rememberSavedLabel = (label: SavedLabel) => {
+    const existing = savedLabels.value.findIndex(candidate => candidate.id === label.id)
+
+    if (existing >= 0) {
+        savedLabels.value.splice(existing, 1, label)
+    } else {
+        savedLabels.value.push(label)
+    }
+
+    currentLabelId.value = label.id
+    labelName.value = label.name
+    storedArtwork.value = label.artwork
+}
+
+const loadLabel = async (label: SavedLabel) => {
+    if (isLoadingLabel.value) return
+
+    isLoadingLabel.value = true
+
+    try {
+        const layout = label.layout ?? {}
+
+        orientation.value = layout.orientation === "landscape" ? "landscape" : "portrait"
+        columns.value = Number(layout.columns ?? columns.value)
+        rows.value = Number(layout.rows ?? rows.value)
+        pageMargin.value = Number(layout.page_margin ?? pageMargin.value)
+        gap.value = Number(layout.gap ?? gap.value)
+        cutGuides.value = Boolean(layout.cut_guides)
+        isSheetArtwork.value = Boolean(layout.is_sheet_artwork)
+        canvasRotation.value = (Number(layout.canvas_rotation ?? 0) as Rotation)
+
+        items.value = (layout.fields ?? []).map((field: Record<string, any>) =>
+            createItem(field.source === "expiry_date" ? "expiry_date" : "batch_code", {
+                text: String(field.text ?? ""),
+                x: Number(field.x ?? 0),
+                y: Number(field.y ?? 0),
+                fontSize: Number(field.font_size ?? 8),
+                color: String(field.color ?? "#111827"),
+                bold: Boolean(field.bold),
+                rotation: (Number(field.rotation ?? 0) as Rotation),
+            })
+        )
+        selectedItemId.value = items.value[0]?.id ?? null
+
+        currentLabelId.value = label.id
+        labelName.value = label.name
+
+        removeBackground()
+
+        if (label.artwork) {
+            await loadStoredArtwork(label.artwork)
+        }
+    } finally {
+        isLoadingLabel.value = false
+    }
+}
+
+/**
+ * The stored file is pulled back only to draw the preview, the sheet itself is rendered from the
+ * copy that never left the server.
+ */
+const loadStoredArtwork = async (artwork: StoredArtwork) => {
+    try {
+        const response = await axios.get(artwork.url, { responseType: "blob" })
+        const file = new File([response.data], artwork.name, { type: artwork.mime_type })
+
+        await applyArtworkFile(file, false)
+
+        storedArtwork.value = artwork
+    } catch {
+        notify({
+            title: ctrans("Something went wrong"),
+            text: ctrans("The saved artwork could not be loaded"),
+            type: "error",
+        })
+    }
+}
+
+const startNewLabel = () => {
+    currentLabelId.value = null
+    labelName.value = ""
+
+    removeBackground()
+
+    items.value = [createItem("batch_code"), createItem("expiry_date")]
+    selectedItemId.value = items.value[0]?.id ?? null
+}
+
+const deleteLabel = async (label: SavedLabel) => {
+    try {
+        await axios.delete(route(props.labelSheet.delete_route.name, {
+            ...props.labelSheet.delete_route.parameters,
+            label: label.id,
+        }))
+
+        savedLabels.value = savedLabels.value.filter(candidate => candidate.id !== label.id)
+
+        if (currentLabelId.value === label.id) {
+            startNewLabel()
+        }
+    } catch (error: any) {
+        notify({
+            title: ctrans("Something went wrong"),
+            text: error?.response?.data?.message ?? ctrans("The label could not be deleted"),
+            type: "error",
+        })
     }
 }
 
@@ -677,13 +902,71 @@ const describeFailure = async (error: any): Promise<string> => {
 
 <template>
     <Modal :isOpen="isOpen" closeButton :isClosableInBackground="false" @onClose="emits('onClose')" width="w-full max-w-6xl">
-        <div class="flex items-center gap-2 mb-4">
+        <div class="flex flex-wrap items-center gap-2 mb-4">
             <FontAwesomeIcon icon="fal fa-tags" class="text-gray-400" fixed-width aria-hidden="true" />
             <h2 class="text-lg font-semibold">{{ ctrans("Label sheet") }}</h2>
+
+            <div class="ml-auto flex items-center gap-2">
+                <input
+                    v-model="labelName"
+                    type="text"
+                    class="w-56 rounded border border-gray-300 px-2 py-1 text-sm"
+                    :placeholder="ctrans('Label name')" />
+                <Button
+                    type="save"
+                    size="xs"
+                    :label="currentLabelId ? ctrans('Save') : ctrans('Save label')"
+                    :loading="isSaving"
+                    :disabled="!isGridValid"
+                    @click="saveLabel(false)" />
+                <Button
+                    v-if="currentLabelId"
+                    type="tertiary"
+                    size="xs"
+                    icon="fal fa-copy"
+                    :label="ctrans('Save as new')"
+                    :loading="isSaving"
+                    :disabled="!isGridValid"
+                    @click="saveLabel(true)" />
+            </div>
         </div>
 
         <div class="flex flex-col lg:flex-row gap-6">
             <div class="w-full lg:w-80 shrink-0 space-y-4">
+                <!-- Field: Saved labels -->
+                <div v-if="savedLabels.length">
+                    <div class="text-xs text-gray-500 uppercase tracking-wide mb-1">{{ ctrans("Saved labels") }}</div>
+                    <div class="space-y-1">
+                        <div
+                            v-for="label in savedLabels"
+                            :key="label.id"
+                            class="flex items-center gap-2 rounded border px-2 py-1.5 cursor-pointer"
+                            :class="label.id === currentLabelId ? 'border-indigo-500 bg-indigo-50' : 'border-gray-200 hover:bg-gray-50'"
+                            @click="loadLabel(label)">
+                            <FontAwesomeIcon
+                                v-if="label.artwork"
+                                :icon="label.artwork.mime_type === 'application/pdf' ? 'fal fa-file-pdf' : 'fal fa-image'"
+                                class="text-gray-400"
+                                fixed-width
+                                aria-hidden="true" />
+                            <span class="min-w-0 flex-1 truncate text-sm">{{ label.name }}</span>
+                            <button class="text-gray-400 hover:text-red-600" @click.stop="deleteLabel(label)">
+                                <FontAwesomeIcon icon="fal fa-trash-alt" fixed-width aria-hidden="true" />
+                            </button>
+                        </div>
+                    </div>
+                    <Button
+                        class="mt-2"
+                        type="tertiary"
+                        size="xs"
+                        icon="fal fa-plus"
+                        :label="ctrans('New label')"
+                        :loading="isLoadingLabel"
+                        @click="startNewLabel" />
+                </div>
+
+                <hr v-if="savedLabels.length" class="border-t border-gray-400 border-dashed" />
+
                 <div>
                     <div class="text-xs text-gray-500 uppercase tracking-wide mb-1">{{ ctrans("Orientation") }}</div>
                     <div class="flex gap-2">
@@ -712,7 +995,7 @@ const describeFailure = async (error: any): Promise<string> => {
                             type="tertiary"
                             size="xs"
                             :icon="isVectorArtwork ? 'fal fa-file-pdf' : 'fal fa-image'"
-                            :loading="isPreparingArtwork"
+                            :loading="isPreparingArtwork || isLoadingLabel"
                             :label="backgroundFile ? ctrans('Replace artwork') : ctrans('Upload image or PDF')"
                             @click="() => fileInput?.click()" />
                         <Button
@@ -724,6 +1007,9 @@ const describeFailure = async (error: any): Promise<string> => {
                     </div>
                     <div v-if="backgroundFile" class="mt-1 truncate text-xs text-gray-500">
                         {{ backgroundFile.name }} • {{ formatBytes(backgroundFile.size) }}
+                    </div>
+                    <div v-if="storedArtwork" class="mt-1 text-xs text-gray-500">
+                        {{ ctrans("Kept with this label, it does not have to be uploaded again.") }}
                     </div>
                     <div v-if="isVectorArtwork" class="mt-1 text-xs text-emerald-600">
                         {{ ctrans("Placed as vector, the text inside the PDF stays selectable.") }}
