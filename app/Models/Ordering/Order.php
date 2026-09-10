@@ -463,17 +463,29 @@ class Order extends Model implements HasMedia, Auditable
 
     /**
      * The one predicate for "this order has nowhere to send an invoice or a parcel to". A collection order
-     * needs no delivery address; the Aurora placeholder "0" counts as nothing (HELP-3102).
+     * needs no delivery address; the Aurora placeholder "0" counts as nothing (HELP-3102). An address is
+     * only missing when every line is blank: people type the street into the town field and that parcel
+     * still arrives (HELP-3110).
      */
     public function isMissingARequiredAddress(): bool
     {
-        $hasAddress = fn (?string $line) => filled($line) && $line != '0';
+        $hasAddress = function (?Address $address) {
+            $filled = fn (?string $line) => filled($line) && $line != '0';
 
-        if (!$hasAddress($this->billingAddress?->address_line_1)) {
+            return $address && collect([
+                $address->address_line_1,
+                $address->address_line_2,
+                $address->locality,
+                $address->postal_code,
+                $address->administrative_area,
+            ])->contains($filled);
+        };
+
+        if (!$hasAddress($this->billingAddress)) {
             return true;
         }
 
-        return !$this->collection_address_id && !$hasAddress($this->deliveryAddress?->address_line_1);
+        return !$this->collection_address_id && !$hasAddress($this->deliveryAddress);
     }
 
     public function billingAddress(): BelongsTo
