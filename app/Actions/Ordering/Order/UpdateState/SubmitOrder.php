@@ -163,7 +163,13 @@ class SubmitOrder extends OrgAction
             SalesChannelTypeEnum::OTHER
         ])) {
             SendNewOrderEmailToSubscribers::dispatch($order->id);
-            SendNewOrderEmailToCustomer::dispatch($order->id);
+
+            /** A channel order we could not charge gets the on-hold notice from payAndSubmitOrder
+             * instead: 142 customers were sent a confirmation for an order that then never moved,
+             * and a confirmation says the opposite of what they needed to hear (HELP-3116). */
+            if ($order->pay_status == OrderPayStatusEnum::PAID || !$order->isPlacedOnAChannel()) {
+                SendNewOrderEmailToCustomer::dispatch($order->id);
+            }
         }
 
         if ($order->pay_status == OrderPayStatusEnum::PAID || $order->to_be_paid_by == OrderToBePaidByEnum::CASH_ON_DELIVERY) {

@@ -9,6 +9,7 @@
 
 namespace App\Actions\Ordering\Order\Traits;
 
+use App\Actions\Comms\Email\SendChannelOrderOnHoldEmail;
 use App\Actions\Ordering\Order\UpdateState\SubmitOrder;
 use App\Actions\Ordering\Order\WithOrderForbiddenCountryCheck;
 use App\Actions\Retina\Dropshipping\Orders\PayOrderAsync;
@@ -45,12 +46,30 @@ trait WithPayAndSubmitOrder
         }
 
         try {
-            return SubmitOrder::make()->action($order);
+            $order = SubmitOrder::make()->action($order);
         } catch (Throwable $e) {
             $this->alertPaidOrderNotSubmitted($order, $e);
 
             throw $e;
         }
+
+        $this->tellCustomerWeCouldNotTakePayment($order);
+
+        return $order;
+    }
+
+    /**
+     * A platform order is placed without the customer watching, so an order we cannot charge would
+     * otherwise stop dead without anyone outside this building knowing (HELP-3116). Only channel
+     * orders: on a manual order the customer is at the checkout and sees the failure themselves.
+     */
+    protected function tellCustomerWeCouldNotTakePayment(Order $order): void
+    {
+        if (!$order->isPlacedOnAChannel() || $order->refresh()->pay_status === OrderPayStatusEnum::PAID) {
+            return;
+        }
+
+        SendChannelOrderOnHoldEmail::dispatch($order->id);
     }
 
     /**

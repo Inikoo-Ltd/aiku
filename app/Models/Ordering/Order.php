@@ -11,6 +11,8 @@ namespace App\Models\Ordering;
 use App\Enums\Ordering\Order\OrderChargesEngineEnum;
 use App\Enums\Ordering\Order\OrderHandingTypeEnum;
 use App\Enums\Ordering\Order\OrderPayDetailedStatusEnum;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
+use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Enums\Ordering\Order\OrderPayStatusEnum;
 use App\Enums\Ordering\Order\OrderShippingEngineEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
@@ -583,6 +585,17 @@ class Order extends Model implements HasMedia, Auditable
      * of yet - a new enum case, or the null of a status never computed - is chased by default
      * instead of disappearing. Money owed is the safe side to be wrong on.
      */
+    /**
+     * Placed on a platform without the customer watching, so nobody was at a checkout to see a
+     * payment fail. These get the on-hold notice instead of a confirmation when unpaid (HELP-3116).
+     */
+    public function isPlacedOnAChannel(): bool
+    {
+        return $this->shop->type === ShopTypeEnum::DROPSHIPPING
+            && $this->platform !== null
+            && $this->platform->type !== PlatformTypeEnum::MANUAL;
+    }
+
     public function scopePaySettled(Builder $query): Builder
     {
         return $query->whereIn('orders.pay_status', self::PAY_SETTLED_STATUSES);

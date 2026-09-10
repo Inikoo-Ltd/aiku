@@ -188,6 +188,9 @@ trait WithSendBulkEmails
             'customer-note' => Arr::get($additionalData, 'customer_note'),
             'order' => Arr::get($additionalData, 'order'),
             'pay-info' => Arr::get($additionalData, 'pay_info'),
+            /** A compiled_layout is frozen English at seed time, so prose that has to follow the
+             * shop's language is built by the sending action under its locale and injected here. */
+            'email-body' => Arr::get($additionalData, 'email_body'),
             'platform' => Arr::get($additionalData, 'platform'),
             'balance' => Arr::get($additionalData, 'balance'),
             'products' => Arr::get($additionalData, 'products'),
