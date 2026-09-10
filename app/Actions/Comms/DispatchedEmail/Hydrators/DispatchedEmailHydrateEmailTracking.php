@@ -30,6 +30,7 @@ class DispatchedEmailHydrateEmailTracking implements ShouldBeUnique
         $stats = [
             'number_email_tracking_events' => $dispatchedEmail
                 ->emailTrackingEvents()
+                ->useWritePdo()
                 ->count()
         ];
 

@@ -280,27 +280,6 @@ class UpdateMasterProductCategory extends OrgAction
         return $masterProductCategory;
     }
 
-    public function prepareForValidation(): void
-    {
-        $this->discardBlankStorageGuidelines();
-    }
-
-    /**
-     * Rows added but left blank arrive as null once empty strings are converted, drop them
-     * instead of failing validation on guidelines the user never wrote.
-     */
-    private function discardBlankStorageGuidelines(): void
-    {
-        if (!$this->has('storage_guidelines') || !is_array($this->get('storage_guidelines'))) {
-            return;
-        }
-
-        $this->set('storage_guidelines', array_values(array_filter(
-            $this->get('storage_guidelines'),
-            fn ($guideline) => !is_array($guideline) || !Arr::exists($guideline, 'text') || filled($guideline['text'])
-        )));
-    }
-
     public function afterValidator(Validator $validator): void
     {
         $currErrBag = $validator->errors();

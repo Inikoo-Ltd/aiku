@@ -15,6 +15,8 @@ export function useFilterRecipients(props: any) {
 
     const extraQuery = reactive<Record<string, any>>({})
 
+    const dropUrlTagFilter = ref(false)
+
     /* ---------------- COMPUTED ---------------- */
     const activeFilterCount = computed(() =>
         Object.keys(activeFilters.value ?? {}).length
@@ -113,6 +115,7 @@ export function useFilterRecipients(props: any) {
 
     const clearAllFilters = () => {
         Object.keys(activeFilters.value).forEach(k => delete activeFilters.value[k])
+        dropUrlTagFilter.value = true
         fetchCustomers()
     }
 
@@ -219,18 +222,39 @@ export function useFilterRecipients(props: any) {
     /* Overrides ride on this one call rather than living in extraQuery, which every reload
        path shares: a caller that means to send something once has no way to take it back out
        again afterwards, because the debounce fires long after the handler has returned. */
+    const isEmptyQueryValue = (value: any) =>
+        value === null || value === undefined || value === '' || (Array.isArray(value) && value.length === 0)
+
     const fetchCustomers = debounce((overrides: Record<string, unknown> = {}) => {
+        const takeTagOutOfUrl = dropUrlTagFilter.value
+        dropUrlTagFilter.value = false
+
         const currentRoute = route().current()
         if (!currentRoute) return
 
+        const filledExtraQuery = Object.fromEntries(
+            Object.entries(extraQuery).filter(([_, value]) => !isEmptyQueryValue(value))
+        )
+
+        // Inertia replaces query keys it receives, so a key left out here would keep the value
+        // already in the address bar. Drop them from the base route to make clearing one stick.
+        const routeParams = { ...route().params }
+        Object.keys(extraQuery).forEach((key) => delete routeParams[key])
+
+        // The tag arrives as filter[tag] from the dashboard and rides along as a By Tags chip, so
+        // clearing the panel has to take it out of the address bar as well.
+        if (takeTagOutOfUrl && routeParams.filter?.tag) {
+            delete routeParams.filter.tag
+        }
+
         /* Back to the first page, because every reload from here changes which contacts the
-           audience holds and the page number describes the old one: ziggy's route().params
-           carries the query string back in, and Inertia merges data over it rather than
-           replacing it, so a page left alone survives into an audience that may not be that
-           long any more and answers with nothing. */
+           audience holds and the page number describes the old one: the params carry the query
+           string back in, and Inertia merges data over it rather than replacing it, so a page
+           left alone survives into an audience that may not be that long any more and answers
+           with nothing. */
         router.get(
-            route(currentRoute, route().params),
-            { filters: filtersPayload.value, ...extraQuery, page: 1, ...overrides },
+            route(currentRoute, routeParams),
+            { filters: filtersPayload.value, ...filledExtraQuery, page: 1, ...overrides },
             {
                 preserveState: true,
                 preserveScroll: true,

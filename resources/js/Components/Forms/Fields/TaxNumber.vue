@@ -4,7 +4,7 @@ import Multiselect from '@vueform/multiselect'
 import "@vueform/multiselect/themes/default.css"
 import { set, get, debounce } from 'lodash-es'
 import { checkVAT, countries } from "jsvat-next"
-import { ref, computed, watch ,inject} from "vue"
+import { ref, computed, watch, inject, type Ref } from "vue"
 import { faExclamationCircle, faCheckCircle } from '@fas'
 import { faCopy, faCheck } from '@fal'
 import { faSpinnerThird } from '@fad'
@@ -12,6 +12,7 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { trans } from "laravel-vue-i18n"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { useFormatTime } from '@/Composables/useFormatTime'
+import { taxNumberStatus } from '@/Composables/useTaxNumberValidation'
 import { Tooltip } from 'floating-vue'
 import Modal from "@/Components/Utils/Modal.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
@@ -34,7 +35,9 @@ const props = defineProps<{
 
 const emits = defineEmits()
 
-const registrationWarning = inject('registrationWarning', ref({}))
+const injectedRegistrationWarning = inject<Ref<Record<string, any>> | null>('registrationWarning', null)
+const registrationWarning = injectedRegistrationWarning ?? ref<Record<string, any>>({})
+const isWarningRenderedByHost = injectedRegistrationWarning !== null
 
 const setFormValue = (data: Object, fieldName: string) => {
     if (Array.isArray(fieldName)) {
@@ -170,7 +173,11 @@ const countryCode = ref(
 )
 const isCountryPickedByUser = ref(false)
 
-const isCountryMissing = computed(() => !!number.value && !countryCode.value)
+const isValidVatNumber = (prefixedNumber: string) => checkVAT(prefixedNumber, countries).isValid
+
+const currentTaxNumberStatus = computed(() => taxNumberStatus(number.value, countryCode.value, isValidVatNumber))
+
+const isCountryMissing = computed(() => currentTaxNumberStatus.value === 'country_missing')
 
 const updateFormValue = () => {
     const payload = {
@@ -189,36 +196,31 @@ const updateFormValue = () => {
     emits("update:form", props.form)
 }
 
+const taxNumberErrorKey = computed(() => `${props.fieldName}`)
+
+const setTaxNumberWarning = (message: string | null) => {
+    set(registrationWarning.value, ['tax_number'], message)
+}
+
+const clearTaxNumberError = () => {
+    props.form.clearErrors?.(taxNumberErrorKey.value)
+}
+
 const validateTaxNumber = () => {
-    if (isCountryMissing.value) {
+    const status = currentTaxNumberStatus.value
+
+    if (status === 'empty' || status === 'country_missing') {
         vatValidationResult.value = null
-        set(props.form, ['errors', props.fieldName], trans('Tax number needs its country'))
-        set(registrationWarning.value, ['tax_number'], null)
+        setTaxNumberWarning(null)
 
         return
     }
 
-    if (!number.value) {
-        vatValidationResult.value = null
-        set(props.form, ['errors', props.fieldName], '')
-        set(registrationWarning.value, ['tax_number'], null)
+    vatValidationResult.value = status === 'valid' ? trans("Valid tax number") : trans("Invalid tax number")
 
-        return
-    }
-
-    const validation = checkVAT(countryCode.value + number.value, countries)
-    vatValidationResult.value = validation.isValid ? trans("Valid tax number") : trans("Invalid tax number")
-
-    if (!validation.isValid) {
-        const messageWarning = '🤔 ' + trans('Tax number looks invalid. Are you sure you want to save it?')
-        set(registrationWarning.value, ['tax_number'], messageWarning)
-        set(props.form, ['errors', props.fieldName], messageWarning)
-
-        return
-    }
-
-    set(registrationWarning.value, ['tax_number'], null)
-    set(props.form, ['errors', props.fieldName], '')
+    setTaxNumberWarning(
+        status === 'valid' ? null : '🤔 ' + trans('Tax number looks invalid. Are you sure you want to save it?')
+    )
 }
 
 const debouncedValidation = debounce(() => validateTaxNumber(), 500)
@@ -226,6 +228,7 @@ const debouncedValidation = debounce(() => validateTaxNumber(), 500)
 const updateVat = (newInputValue: string) => {
     isFormDirty.value = true
     number.value = newInputValue
+    clearTaxNumberError()
     updateFormValue()
     debouncedValidation()
 }
@@ -233,6 +236,7 @@ const updateVat = (newInputValue: string) => {
 const updateCountry = (newCountryCode: string) => {
     isCountryPickedByUser.value = true
     countryCode.value = newCountryCode ?? ''
+    clearTaxNumberError()
     updateFormValue()
     validateTaxNumber()
 }
@@ -421,6 +425,10 @@ const markAsValid = () => {
             </div>
         </slot>
     </Modal>
+
+    <p v-if="!isWarningRenderedByHost && registrationWarning.tax_number" class="mt-2 text-sm text-amber-600">
+        {{ registrationWarning.tax_number }}
+    </p>
 
     <p v-if="get(form, ['errors', `${fieldName}`])" class="mt-2 text-sm text-red-600" :id="`${fieldName}-error`">
         {{ form.errors[fieldName] }}

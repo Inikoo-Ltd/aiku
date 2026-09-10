@@ -28,20 +28,27 @@ class GetCustomersQueryByRecipe
     use AsObject;
 
     /**
-     * Build the marketing-consent gated customers query for a given filter recipe.
+     * Build the customers query for a given filter recipe.
+     *
+     * Marketing consent gating (subscribed to marketing, has an email) belongs to recipient
+     * selection, so listings that only browse customers pass $onlyMarketingSubscribers as false.
      *
      * @throws \Exception
      */
-    public function handle(?int $shopId, array $filters): Builder
+    public function handle(?int $shopId, array $filters, bool $onlyMarketingSubscribers = true): Builder
     {
         $query = DB::table('customers');
 
-        $query->whereExists(function (Builder $query) {
-            $query->select(DB::raw(1))
-                ->from('customer_comms')
-                ->whereColumn('customer_comms.customer_id', 'customers.id')
-                ->where('customer_comms.is_subscribed_to_marketing', true);
-        });
+        if ($onlyMarketingSubscribers) {
+            $query->whereExists(function (Builder $query) {
+                $query->select(DB::raw(1))
+                    ->from('customer_comms')
+                    ->whereColumn('customer_comms.customer_id', 'customers.id')
+                    ->where('customer_comms.is_subscribed_to_marketing', true);
+            });
+
+            $query->whereNotNull('customers.email');
+        }
 
         if ($shopId) {
             $query->where('customers.shop_id', $shopId);
@@ -49,7 +56,6 @@ class GetCustomersQueryByRecipe
             $query->whereRaw('1 = 0');
         }
 
-        $query->whereNotNull('customers.email');
         $query->whereNull('customers.deleted_at');
 
         (new FilterRegisteredNeverOrdered())->apply($query, $filters);

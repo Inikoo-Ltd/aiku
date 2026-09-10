@@ -15,6 +15,7 @@ use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Models\Masters\MasterProductCategory;
 use App\Models\Masters\MasterShop;
+use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
 
 trait WithMasterProductCategoryAction
@@ -25,6 +26,22 @@ trait WithMasterProductCategoryAction
 
     private MasterProductCategory $masterProductCategory;
     private MasterShop $masterShop;
+
+    /**
+     * Rows added but left blank arrive as null once empty strings are converted, drop them
+     * instead of failing validation on guidelines the user never wrote.
+     */
+    private function discardBlankStorageGuidelines(): void
+    {
+        if (!$this->has('storage_guidelines') || !is_array($this->get('storage_guidelines'))) {
+            return;
+        }
+
+        $this->set('storage_guidelines', array_values(array_filter(
+            $this->get('storage_guidelines'),
+            fn ($guideline) => !is_array($guideline) || !Arr::exists($guideline, 'text') || filled($guideline['text'])
+        )));
+    }
 
     public function prepareForValidation(): void
     {
@@ -41,6 +58,8 @@ trait WithMasterProductCategoryAction
                 $this->set('master_sub_department_id', $parent->id);
             }
         }
+
+        $this->discardBlankStorageGuidelines();
     }
 
     public function action(MasterProductCategory $masterProductCategory, array $modelData, int $hydratorsDelay = 0, bool $strict = true, bool $audit = true): MasterProductCategory

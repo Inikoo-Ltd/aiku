@@ -9,10 +9,13 @@
 namespace App\Actions\Masters\MasterProductCategory;
 
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateMasterDepartments;
+use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateMasterFamilies;
+use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateMasterSubDepartments;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateMasterProductCategories;
 use App\Actions\Traits\Authorisations\WithMastersEditAuthorisation;
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
+use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Models\Masters\MasterProductCategory;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
@@ -28,23 +31,25 @@ class DeleteMasterProductCategory extends OrgAction
 
     public function handle(MasterProductCategory $masterProductCategory, bool $forceDelete = false): MasterProductCategory
     {
+        // DB::table('product_categories')->where('master_product_category_id', $masterProductCategory->id)->update(['master_product_category_id' => null]);
 
-        DB::table('product_categories')->where('master_product_category_id', $masterProductCategory->id)->update(['master_product_category_id' => null]);
+        // if ($forceDelete) {
+        //     DB::table('master_product_category_stats')->where('master_product_category_id', $masterProductCategory->id)->delete();
+        //     DB::table('master_product_category_time_series')->where('master_product_category_id', $masterProductCategory->id)->delete();
+        //     DB::table('master_product_category_ordering_stats')->where('master_product_category_id', $masterProductCategory->id)->delete();
 
-        if ($forceDelete) {
+        //     $masterProductCategory->forceDelete();
+        // } else {
+        //     $masterProductCategory->delete();
+        // }
 
-
-            DB::table('master_product_category_stats')->where('master_product_category_id', $masterProductCategory->id)->delete();
-            DB::table('master_product_category_time_series')->where('master_product_category_id', $masterProductCategory->id)->delete();
-            DB::table('master_product_category_ordering_stats')->where('master_product_category_id', $masterProductCategory->id)->delete();
-
-
-            $masterProductCategory->forceDelete();
-        } else {
-            $masterProductCategory->delete();
-        }
-        MasterShopHydrateMasterDepartments::dispatch($masterProductCategory->masterShop)->delay($this->hydratorsDelay);
-        GroupHydrateMasterProductCategories::dispatch($masterProductCategory->group)->delay($this->hydratorsDelay);
+        // match ($masterProductCategory->type) {
+        //     MasterProductCategoryTypeEnum::DEPARTMENT     => MasterShopHydrateMasterDepartments::dispatch($masterProductCategory->masterShop)->delay($this->hydratorsDelay),
+        //     MasterProductCategoryTypeEnum::SUB_DEPARTMENT => MasterShopHydrateMasterSubDepartments::dispatch($masterProductCategory->masterShop)->delay($this->hydratorsDelay),
+        //     MasterProductCategoryTypeEnum::FAMILY         => MasterShopHydrateMasterFamilies::dispatch($masterProductCategory->masterShop)->delay($this->hydratorsDelay),
+        // };
+        
+        // GroupHydrateMasterProductCategories::dispatch($masterProductCategory->group)->delay($this->hydratorsDelay);
 
         return $masterProductCategory;
     }
@@ -67,8 +72,6 @@ class DeleteMasterProductCategory extends OrgAction
         return $this->handle($masterProductCategory, $forceDelete);
     }
 
-
-
     public function afterValidator(Validator $validator, ActionRequest $request): void
     {
 
@@ -80,8 +83,12 @@ class DeleteMasterProductCategory extends OrgAction
     public function htmlResponse(MasterProductCategory $masterProductCategory, ActionRequest $request): \Illuminate\Http\Response|array|\Illuminate\Http\RedirectResponse
     {
         return match ($masterProductCategory->type) {
-            MasterProductCategoryTypeEnum::DEPARTMENT => Redirect::route('grp.masters.master_departments.index'),
-            MasterProductCategoryTypeEnum::SUB_DEPARTMENT => Redirect::route('grp.masters.master_families.index'),
+            MasterProductCategoryTypeEnum::DEPARTMENT => Redirect::route('grp.masters.master_shops.show.master_departments.index', [
+                'masterShop'    => $masterProductCategory->masterShop->slug
+            ]),
+            MasterProductCategoryTypeEnum::SUB_DEPARTMENT => Redirect::route('grp.masters.master_shops.show.master_sub_departments.index', [
+                'masterShop'    => $masterProductCategory->masterShop->slug
+            ]),
             default => []
         };
     }

@@ -5,7 +5,7 @@
   -->
 
 <script setup lang="ts">
-import { Head, Link } from "@inertiajs/vue3"
+import { Head, Link, router } from "@inertiajs/vue3"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import {
     faBullhorn,
@@ -26,6 +26,7 @@ import { faDiagramNext } from "@fortawesome/free-solid-svg-icons"
 import TableProducts from "@/Components/Tables/Grp/Org/Catalogue/TableProducts.vue"
 import { capitalize } from "@/Composables/capitalize"
 import { trans } from "laravel-vue-i18n"
+import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
 import MasterSubDepartmentShowcase from "@/Components/Showcases/Grp/MasterSubDepartmentShowcase.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { routeType } from "@/types/route"
@@ -79,6 +80,11 @@ const props = defineProps<{
     salesData?: object
     related_product_category? : object
     mini_breadcrumbs: any
+    delete_route?: routeType;
+    delete_condition?: {
+        can_delete: boolean;
+        master_shop_slug: string;
+    };
 }>()
 
 let currentTab = ref(props.tabs.current)
@@ -101,7 +107,34 @@ const component: Component = computed(() => {
 
 })
 
-const showDialog = ref(false)
+const isLoadingDelete = ref(false);
+
+async function deleteItem() {
+    await router.delete(route(props.delete_route?.name, props.delete_route?.parameters), {
+        preserveScroll: true,
+        onStart: () => { 
+            isLoadingDelete.value = true 
+        },
+        onSuccess: () => {
+            notify({
+                title: trans('Success'),
+                text: trans('Successfully deleted Master Department'),
+                type: 'error'
+            })
+        },
+        onError: () => {
+            notify({
+                title: trans('Error'),
+                text: trans('Failed to delete bundle'),
+                type: 'error'
+            })
+        },
+        onFinish: () => {
+            isLoadingDelete.value = false;
+        }
+    })
+}
+
 </script>
 
 
@@ -111,6 +144,25 @@ const showDialog = ref(false)
     <PageHeading :data="pageHead">
         <template #button-add-master-family>
             <Button :label="trans('Master family')" @click="showDialog = true" :style="'create'" />
+        </template>
+
+        <template #other>
+            <ModalConfirmationDelete
+                @onYes="deleteItem"
+                :title="trans('Are you sure you want to delete this Master Sub Department?')"
+                isFullLoading
+            >
+                <template #default="{ isOpenModal, changeModel }">
+                    <Button
+                        :loading="isLoadingDelete"
+                        :disabled="!props.delete_condition?.can_delete"
+                        icon="fal fa-trash-alt"
+                        type="negative"
+                        @click="changeModel"
+                        :tooltip="props.delete_condition?.can_delete ? 'Delete' : 'Cannot delete this Master Sub Department due to existing children'"
+                    />
+                </template>
+            </ModalConfirmationDelete>
         </template>
     </PageHeading>
 

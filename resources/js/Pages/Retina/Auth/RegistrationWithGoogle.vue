@@ -13,7 +13,6 @@ import { faBuilding, faGlobe, faPhone, faUser } from "@fal"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import { Checkbox } from "primevue"
 import FieldStandaloneRegistration from "./Field/FieldStandaloneRegistration.vue"
-import { provide } from "vue"
 import { getRefRedirect } from "@/Composables/Retina/useGetRedirectUrl"
 import { pushGtmEventAndWaitForTags, buildRegistrationUserData } from "@/Composables/useGtm"
 
@@ -111,8 +110,6 @@ onMounted(async () => {
 	document.getElementById("contact_name")?.focus()
 })
 
-const registrationWarning = ref({})
-provide('registrationWarning', registrationWarning)
 </script>
 
 <template>

@@ -34,6 +34,7 @@ class DispatchedEmailHydrateClicks implements ShouldBeUnique
                 ->emailTrackingEvents()
                 ->where('type', EmailTrackingEventTypeEnum::CLICKED)
                 ->where('is_scanner', false)
+                ->useWritePdo()
                 ->count()
         ];
 
