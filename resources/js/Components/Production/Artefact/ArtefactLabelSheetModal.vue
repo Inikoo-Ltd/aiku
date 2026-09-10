@@ -4,13 +4,14 @@ import axios from "axios"
 import { notify } from "@kyvg/vue3-notification"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faCopy, faImage, faPlus, faTags, faTrashAlt } from "@fal"
+import { faCopy, faFilePdf, faImage, faPlus, faTags, faTrashAlt } from "@fal"
+import pdfWorkerUrl from "pdfjs-dist/build/pdf.worker.min.mjs?url"
 import Modal from "@/Components/Utils/Modal.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { ctrans } from "@/Composables/useTrans"
 import { routeType } from "@/types/route"
 
-library.add(faCopy, faImage, faPlus, faTags, faTrashAlt)
+library.add(faCopy, faFilePdf, faImage, faPlus, faTags, faTrashAlt)
 
 const props = defineProps<{
     isOpen: boolean
@@ -67,6 +68,13 @@ const IMAGE_VARIANTS = [
 const A4_ASPECT_RATIO = 210 / 297
 const A4_ASPECT_TOLERANCE = 0.06
 
+/**
+ * A PDF artwork is uploaded byte for byte so its text and vectors reach the sheet intact, the
+ * picture drawn here is only ever the on screen preview.
+ */
+const PDF_MIME_TYPE = "application/pdf"
+const PDF_PREVIEW_EDGE = 1400
+
 const orientation = ref<"portrait" | "landscape">("portrait")
 const columns = ref(3)
 const rows = ref(8)
@@ -79,8 +87,9 @@ const isGenerating = ref(false)
 
 const backgroundFile = ref<File | null>(null)
 const backgroundPreview = ref<string | null>(null)
+const isVectorArtwork = ref(false)
 const fileInput = ref<HTMLInputElement | null>(null)
-const isPreparingImage = ref(false)
+const isPreparingArtwork = ref(false)
 
 const gridBeforeSheetArtwork = {
     columns: columns.value,
@@ -100,7 +109,7 @@ const createItem = (source: ItemSource, overrides: Partial<LabelItem> = {}): Lab
     y: source === "batch_code" ? 0.08 : 0.28,
     fontSize: 8,
     color: "#111827",
-    bold: source === "batch_code",
+    bold: true,
     rotation: 0,
     ...overrides,
 })
@@ -313,8 +322,8 @@ const toggleSheetArtwork = (enabled: boolean) => {
     cutGuides.value = gridBeforeSheetArtwork.cutGuides
 }
 
-const detectSheetArtwork = (image: HTMLImageElement) => {
-    const ratio = image.width / image.height
+const detectSheetArtwork = (width: number, height: number) => {
+    const ratio = width / height
     const looksPortrait = Math.abs(ratio - A4_ASPECT_RATIO) < A4_ASPECT_TOLERANCE
     const looksLandscape = Math.abs(ratio - 1 / A4_ASPECT_RATIO) < A4_ASPECT_TOLERANCE
 
@@ -325,9 +334,43 @@ const detectSheetArtwork = (image: HTMLImageElement) => {
 
     notify({
         title: ctrans("Full sheet artwork detected"),
-        text: ctrans("The image has A4 proportions, the grid is set to 1 × 1 so it covers the whole page."),
+        text: ctrans("The artwork has A4 proportions, the grid is set to 1 × 1 so it covers the whole page."),
         type: "success",
     })
+}
+
+const isPdf = (file: File) => file.type === PDF_MIME_TYPE || /\.pdf$/i.test(file.name)
+
+let pdfjs: typeof import("pdfjs-dist") | null = null
+
+const loadPdfjs = async () => {
+    if (!pdfjs) {
+        pdfjs = await import("pdfjs-dist")
+        pdfjs.GlobalWorkerOptions.workerSrc = pdfWorkerUrl
+    }
+
+    return pdfjs
+}
+
+const renderPdfPreview = async (file: File): Promise<{ preview: string; width: number; height: number }> => {
+    const { getDocument } = await loadPdfjs()
+    const loadingTask = getDocument({ data: new Uint8Array(await file.arrayBuffer()) })
+
+    try {
+        const page = await (await loadingTask.promise).getPage(1)
+        const { width, height } = page.getViewport({ scale: 1 })
+        const viewport = page.getViewport({ scale: Math.min(PDF_PREVIEW_EDGE / Math.max(width, height), 4) })
+
+        const canvas = document.createElement("canvas")
+        canvas.width = Math.round(viewport.width)
+        canvas.height = Math.round(viewport.height)
+
+        await page.render({ canvas, viewport }).promise
+
+        return { preview: canvas.toDataURL("image/png"), width, height }
+    } finally {
+        loadingTask.destroy()
+    }
 }
 
 const loadImage = (source: string) =>
@@ -486,31 +529,70 @@ const onFileChange = async (event: Event) => {
     target.value = ""
     if (!file) return
 
-    const sourceUrl = URL.createObjectURL(file)
-    isPreparingImage.value = true
+    isPreparingArtwork.value = true
 
     try {
-        const image = await loadImage(sourceUrl)
-        const prepared = await shrinkForUpload(file, image)
+        if (isPdf(file)) {
+            const { preview, width, height } = await renderPdfPreview(file)
 
-        backgroundFile.value = prepared
-        backgroundPreview.value = URL.createObjectURL(prepared)
-        detectSheetArtwork(image)
+            replaceBackground(file, preview, true)
+            detectSheetArtwork(width, height)
+            warnAboutPdfSize(file)
+        } else {
+            const sourceUrl = URL.createObjectURL(file)
+
+            try {
+                const image = await loadImage(sourceUrl)
+                const prepared = await shrinkForUpload(file, image)
+
+                replaceBackground(prepared, URL.createObjectURL(prepared), false)
+                detectSheetArtwork(image.width, image.height)
+            } finally {
+                URL.revokeObjectURL(sourceUrl)
+            }
+        }
     } catch (error: any) {
+        console.log('eeeeeeeeeee', error)
         notify({
             title: ctrans("Something went wrong"),
-            text: ctrans("The image could not be read"),
+            text: isPdf(file) ? ctrans("The PDF could not be read") : ctrans("The image could not be read"),
             type: "error",
         })
     } finally {
-        URL.revokeObjectURL(sourceUrl)
-        isPreparingImage.value = false
+        isPreparingArtwork.value = false
+    }
+}
+
+const warnAboutPdfSize = (file: File) => {
+    if (file.size <= MAX_UPLOAD_BYTES) return
+
+    notify({
+        title: ctrans("Large PDF"),
+        text: ctrans("Shrinking it would flatten the text, so it is sent as it is and the server may refuse it."),
+        type: "warn",
+    })
+}
+
+const replaceBackground = (file: File, preview: string, vector: boolean) => {
+    releasePreview()
+
+    backgroundFile.value = file
+    backgroundPreview.value = preview
+    isVectorArtwork.value = vector
+}
+
+const releasePreview = () => {
+    if (backgroundPreview.value?.startsWith("blob:")) {
+        URL.revokeObjectURL(backgroundPreview.value)
     }
 }
 
 const removeBackground = () => {
+    releasePreview()
+
     backgroundFile.value = null
     backgroundPreview.value = null
+    isVectorArtwork.value = false
 }
 
 const generatePdf = async () => {
@@ -529,7 +611,7 @@ const generatePdf = async () => {
         formData.append("canvas_rotation", String(canvasRotation.value))
 
         if (backgroundFile.value) {
-            formData.append("background_image", backgroundFile.value)
+            formData.append("background_artwork", backgroundFile.value)
         }
 
         printableItems.value.forEach((item, index) => {
@@ -574,7 +656,7 @@ const describeFailure = async (error: any): Promise<string> => {
     const status = error?.response?.status
 
     if (status === 413) {
-        return ctrans("The background image is too large for the server to accept, use a smaller one.")
+        return ctrans("The background artwork is too large for the server to accept, use a smaller one.")
     }
 
     try {
@@ -618,15 +700,15 @@ const describeFailure = async (error: any): Promise<string> => {
                 <hr class="border-t border-gray-400 border-dashed" />
 
                 <div>
-                    <div class="text-xs text-gray-500 uppercase tracking-wide mb-1">{{ ctrans("Background image") }}</div>
-                    <input ref="fileInput" type="file" accept="image/*" class="hidden" @change="onFileChange" />
+                    <div class="text-xs text-gray-500 uppercase tracking-wide mb-1">{{ ctrans("Background artwork") }}</div>
+                    <input ref="fileInput" type="file" accept="image/*,application/pdf" class="hidden" @change="onFileChange" />
                     <div class="flex gap-2">
                         <Button
                             type="tertiary"
                             size="xs"
-                            icon="fal fa-image"
-                            :loading="isPreparingImage"
-                            :label="backgroundFile ? ctrans('Replace image') : ctrans('Upload image')"
+                            :icon="isVectorArtwork ? 'fal fa-file-pdf' : 'fal fa-image'"
+                            :loading="isPreparingArtwork"
+                            :label="backgroundFile ? ctrans('Replace artwork') : ctrans('Upload image or PDF')"
                             @click="() => fileInput?.click()" />
                         <Button
                             v-if="backgroundFile"
@@ -637,6 +719,9 @@ const describeFailure = async (error: any): Promise<string> => {
                     </div>
                     <div v-if="backgroundFile" class="mt-1 truncate text-xs text-gray-500">
                         {{ backgroundFile.name }} · {{ formatBytes(backgroundFile.size) }}
+                    </div>
+                    <div v-if="isVectorArtwork" class="mt-1 text-xs text-emerald-600">
+                        {{ ctrans("Placed as vector, the text inside the PDF stays selectable.") }}
                     </div>
                 </div>
 
@@ -665,7 +750,7 @@ const describeFailure = async (error: any): Promise<string> => {
                         :checked="isSheetArtwork"
                         @change="toggleSheetArtwork(($event.target as HTMLInputElement).checked)" />
                     <span>
-                        {{ ctrans("Image already contains the grid") }}
+                        {{ ctrans("Artwork already contains the grid") }}
                         <span class="block text-xs text-gray-500">
                             {{ ctrans("The whole A4 is one label, drop the texts straight onto the artwork.") }}
                         </span>
