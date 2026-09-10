@@ -17,3 +17,19 @@ export const missingRequiredAddressFields = (
 	Object.entries(countryFields ?? {})
 		.filter(([name, fieldFormat]) => fieldFormat?.required && isBlankAddressLine(address?.[name]))
 		.map(([name, fieldFormat]) => ({ name, label: fieldFormat.label || name }))
+
+export interface AdministrativeArea {
+	name: string
+}
+
+export const isKnownAdministrativeArea = (
+	administrativeAreas: AdministrativeArea[] = [],
+	administrativeArea?: string | null,
+): boolean => (administrativeAreas ?? []).some((area) => area?.name === administrativeArea)
+
+export const picksAdministrativeAreaFromList = (
+	administrativeAreas: AdministrativeArea[] = [],
+	administrativeArea?: string | null,
+): boolean =>
+	(administrativeAreas ?? []).length > 0 &&
+	(!administrativeArea || isKnownAdministrativeArea(administrativeAreas, administrativeArea))

@@ -8,6 +8,7 @@
 import Multiselect from '@vueform/multiselect'
 import "@vueform/multiselect/themes/default.css"
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
+import { picksAdministrativeAreaFromList } from '@/Composables/useAddressValidation'
 
 const props = defineProps<{
     form: any
@@ -31,10 +32,9 @@ for (const item in props.options.countriesAddressData) {
     countries[item] = props.options.countriesAddressData[item]['label']
 }
 
-const administrativeAreas = (countryID: number) => props.options.countriesAddressData[countryID]['administrativeAreas']
-const inAdministrativeAreas = (administrativeArea: string, countryID: number) => {
-    !!props.options.countriesAddressData[countryID]['administrativeAreas'].find(c => c.name === administrativeArea);
-}
+const administrativeAreas = (countryID: number) => props.options.countriesAddressData[countryID]['administrativeAreas'] ?? []
+const picksFromAdministrativeAreaList = (countryID: number, administrativeArea?: string | null) =>
+    picksAdministrativeAreaFromList(administrativeAreas(countryID), administrativeArea)
 const addressFields = (countryID: number) => {
     return props.options.countriesAddressData[countryID]['fields'];
 }
@@ -94,14 +94,14 @@ const handleChange = (fieldAddress?: string) => {
                             {{ addressFieldData.label }}
                         </label>
                         <Multiselect
-                            v-if="administrativeAreas(addressValues['country_id']).length && (!addressValues['administrative_area'] || inAdministrativeAreas(addressValues['administrative_area'], addressValues['country_id']))"
+                            v-if="picksFromAdministrativeAreaList(addressValues['country_id'], addressValues['administrative_area'])"
                             :options="administrativeAreas(addressValues['country_id'])" :label="'name'" :value-prop="'name'"
                             v-model="addressValues['administrative_area']"
                             @update:modelValue="handleChange(addressField)"
                             :class="form.errors[fieldName] || form.errors[addressField] ? 'errorShake' : ''"
                         />
                         <input v-else v-model="addressValues['administrative_area']" type="text" name="administrative_area"
-                            @update:modelValue="handleChange(addressField)"
+                            @input="handleChange(addressField)"
                             id="administrative_area"
                             class="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md" />
                     </div>
@@ -111,7 +111,7 @@ const handleChange = (fieldAddress?: string) => {
                             {{ addressFieldData.label }}
                         </label>
                         <input @input="handleChange(addressField)" v-model="addressValues[addressField]" type="text"
-                            name="address_line_2" :id="`${addressField}`"
+                            :name="`${addressField}`" :id="`${addressField}`"
                             class="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
                             :class="form.errors[fieldName] || form.errors[addressField] ? 'errorShake' : ''"
                         />
