@@ -21,17 +21,6 @@ class GetIrisWebBlockBlogRegister
 
     public function handle(Webpage $webpage, array $webBlock): ?array
     {
-        $categories = $this->getBlogCategories($webpage, $webBlock);
-        $blogs      = $this->getBlogCategoriesList($webpage, $webBlock);
-
-        if (empty($categories) && empty($blogs)) {
-            return null;
-        }
-
-        data_set($webBlock, 'web_block.layout.data.fieldValue.categories', $categories);
-        data_set($webBlock, 'web_block.layout.data.fieldValue.blogs', $blogs);
-        data_set($webBlock, 'web_block.layout.data.fieldValue.blogs_total', $this->getBlogsTotal($webpage));
-
         return [
             'type'      => $webBlock['type'],
             'structure' => Arr::get(

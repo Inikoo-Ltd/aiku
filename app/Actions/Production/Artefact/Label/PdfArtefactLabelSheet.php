@@ -13,7 +13,9 @@ use App\Models\Production\Artefact;
 use Illuminate\Http\UploadedFile;
 use Lorisleiva\Actions\ActionRequest;
 use Mccarlosen\LaravelMpdf\Facades\LaravelMpdf as PDF;
+use Mpdf\Mpdf;
 use Symfony\Component\HttpFoundation\Response;
+use Throwable;
 
 class PdfArtefactLabelSheet extends OrgAction
 {
@@ -29,13 +31,14 @@ class PdfArtefactLabelSheet extends OrgAction
     /**
      * @throws \Mpdf\MpdfException
      */
-    public function handle(Artefact $artefact, array $modelData, ?UploadedFile $backgroundImage): Response
+    public function handle(Artefact $artefact, array $modelData, ?UploadedFile $backgroundArtwork): Response
     {
-        $orientation = $modelData['orientation'];
-        $columns     = (int) $modelData['columns'];
-        $rows        = (int) $modelData['rows'];
-        $pageMargin  = (float) $modelData['page_margin'];
-        $gap         = (float) $modelData['gap'];
+        $orientation    = $modelData['orientation'];
+        $columns        = (int) $modelData['columns'];
+        $rows           = (int) $modelData['rows'];
+        $pageMargin     = (float) $modelData['page_margin'];
+        $gap            = (float) $modelData['gap'];
+        $canvasRotation = (int) ($modelData['canvas_rotation'] ?? 0);
 
         $page        = self::PAGE_SIZES[$orientation];
         $labelWidth  = ($page['width'] - 2 * $pageMargin - $gap * ($columns - 1)) / $columns;
@@ -46,30 +49,72 @@ class PdfArtefactLabelSheet extends OrgAction
         }
 
         $filename = 'labels-'.$artefact->code.'-'.now()->format('Y-m-d').'.pdf';
+        $cells    = $this->getCells($columns, $rows, $pageMargin, $gap, $labelWidth, $labelHeight);
+        $isVector = $backgroundArtwork?->getMimeType() === 'application/pdf';
 
-        $pdf = PDF::loadView('labels.templates.pdf.artefact_sheet', [
-            'cells'       => $this->getCells($columns, $rows, $pageMargin, $gap, $labelWidth, $labelHeight),
-            'fields'      => $this->getFields($modelData['fields'] ?? [], $labelWidth, $labelHeight, max($page['width'], $page['height'])),
-            'labelWidth'  => $labelWidth,
-            'labelHeight' => $labelHeight,
-            'imageSource'   => $backgroundImage?->getRealPath(),
-            'imageRotation' => $this->getMpdfRotation((int) ($modelData['canvas_rotation'] ?? 0)),
-            'cutGuides'   => (bool) ($modelData['cut_guides'] ?? false),
-        ], [], [
-            'title'                  => $filename,
-            'format'                 => 'A4',
-            'orientation'            => $orientation === 'landscape' ? 'L' : 'P',
-            'margin_left'            => 0,
-            'margin_right'           => 0,
-            'margin_top'             => 0,
-            'margin_bottom'          => 0,
-            'margin_header'          => 0,
-            'margin_footer'          => 0,
+        $pdf  = PDF::getPdf([
+            'title'         => $filename,
+            'format'        => 'A4',
+            'orientation'   => $orientation === 'landscape' ? 'L' : 'P',
+            'margin_left'   => 0,
+            'margin_right'  => 0,
+            'margin_top'    => 0,
+            'margin_bottom' => 0,
+            'margin_header' => 0,
+            'margin_footer' => 0,
         ]);
+        $mpdf = $pdf->getMpdf();
+        $mpdf->AddPage();
+
+        if ($isVector) {
+            $this->drawVectorArtwork($mpdf, $backgroundArtwork->getRealPath(), $cells, $labelWidth, $labelHeight, $canvasRotation);
+        }
+
+        $mpdf->WriteHTML(view('labels.templates.pdf.artefact_sheet', [
+            'cells'         => $cells,
+            'fields'        => $this->getFields($modelData['fields'] ?? [], $labelWidth, $labelHeight, max($page['width'], $page['height'])),
+            'labelWidth'    => $labelWidth,
+            'labelHeight'   => $labelHeight,
+            'imageSource'   => $isVector ? null : $backgroundArtwork?->getRealPath(),
+            'imageRotation' => $this->getMpdfRotation($canvasRotation),
+            'cutGuides'     => (bool) ($modelData['cut_guides'] ?? false),
+        ])->render());
 
         return response($pdf->output(), 200)
             ->header('Content-Type', 'application/pdf')
             ->header('Content-Disposition', 'inline; filename="'.$filename.'"');
+    }
+
+    /**
+     * FPDI copies the artwork page in as a form XObject, so its own text and vectors survive into
+     * the sheet and stay selectable, which stamping it as a picture would destroy.
+     *
+     * @param  array<int, array{left: float, top: float}>  $cells
+     *
+     * @throws \Mpdf\MpdfException
+     */
+    private function drawVectorArtwork(Mpdf $mpdf, string $path, array $cells, float $labelWidth, float $labelHeight, int $rotation): void
+    {
+        try {
+            $mpdf->setSourceFile($path);
+            $template = $mpdf->importPage(1);
+        } catch (Throwable) {
+            abort(422, __('The PDF artwork could not be read, export it again without a password or protection.'));
+        }
+
+        $runsSideways = $rotation === 90 || $rotation === 270;
+        $boxWidth     = $runsSideways ? $labelHeight : $labelWidth;
+        $boxHeight    = $runsSideways ? $labelWidth : $labelHeight;
+
+        foreach ($cells as $cell) {
+            $centreX = $cell['left'] + $labelWidth / 2;
+            $centreY = $cell['top'] + $labelHeight / 2;
+
+            $mpdf->StartTransform();
+            $mpdf->transformRotate($rotation, $centreX, $centreY);
+            $mpdf->useTemplate($template, $centreX - $boxWidth / 2, $centreY - $boxHeight / 2, $boxWidth, $boxHeight);
+            $mpdf->StopTransform();
+        }
     }
 
     /**
@@ -177,7 +222,7 @@ class PdfArtefactLabelSheet extends OrgAction
             'gap'                => ['required', 'numeric', 'min:0', 'max:30'],
             'cut_guides'         => ['sometimes', 'boolean'],
             'canvas_rotation'    => ['sometimes', 'integer', 'in:0,90,180,270'],
-            'background_image'   => ['sometimes', 'nullable', 'image', 'max:8192'],
+            'background_artwork' => ['sometimes', 'nullable', 'file', 'mimetypes:image/jpeg,image/png,image/gif,image/webp,application/pdf', 'max:8192'],
             'fields'             => ['sometimes', 'array', 'max:100'],
             'fields.*.text'      => ['required', 'string', 'max:255'],
             'fields.*.x'         => ['required', 'numeric', 'min:0', 'max:1'],
@@ -212,6 +257,6 @@ class PdfArtefactLabelSheet extends OrgAction
     {
         $this->initialisationFromProduction($artefact->production, $request);
 
-        return $this->handle($artefact, $this->validatedData, $request->file('background_image'));
+        return $this->handle($artefact, $this->validatedData, $request->file('background_artwork'));
     }
 }
