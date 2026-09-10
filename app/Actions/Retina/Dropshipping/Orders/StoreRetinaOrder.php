@@ -11,7 +11,6 @@ namespace App\Actions\Retina\Dropshipping\Orders;
 
 use App\Actions\Dropshipping\CustomerClient\Hydrators\CustomerClientHydrateOrders;
 use App\Actions\Dropshipping\CustomerSalesChannel\Hydrators\CustomerSalesChannelsHydrateOrders;
-use App\Actions\Ordering\Order\ApplyDefaultOrderPackaging;
 use App\Actions\Ordering\Order\StoreOrder;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
@@ -39,7 +38,6 @@ class StoreRetinaOrder extends RetinaAction
             'delivery_address' => $customerClient->address,
         ]);
 
-        ApplyDefaultOrderPackaging::run($order);
 
         CustomerSalesChannelsHydrateOrders::dispatch($customerClient->salesChannel);
 

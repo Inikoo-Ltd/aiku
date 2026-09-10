@@ -26,8 +26,10 @@ trait WithPayAndSubmitOrder
     public function payAndSubmitOrder(Order $order)
     {
         /** A channel order whose line items all failed to resolve must stay in basket state,
-         * visible and unpaid, instead of submitting empty. */
-        if ($order->transactions()->count() === 0) {
+         * visible and unpaid, instead of submitting empty. Packaging and inserts are applied by
+         * StoreOrder before the line items arrive, so they are not evidence that any resolved:
+         * counting them would submit and charge for a parcel with nothing in it. */
+        if ($order->transactions()->whereNotIn('model_type', ['Packaging', 'Leaflet'])->count() === 0) {
             Sentry::captureMessage('Channel order '.$order->reference.' ('.$order->id.') has no transactions after import, submit skipped');
 
             return $order;
