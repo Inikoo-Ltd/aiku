@@ -34,19 +34,30 @@ class OrgStockHydrateSkuValue implements ShouldBeUnique
 
     public function handle(OrgStock $orgStock): void
     {
-        $costPerSku = $this->getOfficialPerSku($orgStock, Carbon::now());
+        $date       = Carbon::now();
+        $costPerSku = $this->getOfficialPerSku($orgStock, $date);
+        $lppPerSku  = $this->getLppPerSku($orgStock, $date);
 
-        if ($costPerSku <= 0) {
+        $costFields = [];
+        if ($costPerSku > 0) {
+            $costFields['sku_value'] = $costPerSku;
+        }
+        if ($lppPerSku > 0) {
+            $costFields['lpp_per_sku'] = $lppPerSku;
+        }
+
+        if (!$costFields) {
             return;
         }
 
-        $orgStock->update([
-            'sku_value' => $costPerSku
-        ]);
+        $orgStock->update($costFields);
 
         if ($orgStock->wasChanged('sku_value')) {
             OrgStockHydrateValueInLocations::dispatch($orgStock);
             OrgStockHydrateStockValue::dispatch($orgStock);
+        }
+
+        if ($orgStock->wasChanged(['sku_value', 'lpp_per_sku'])) {
             MasterAssetHydrateEffectiveCost::dispatchForOrgStock($orgStock);
         }
     }

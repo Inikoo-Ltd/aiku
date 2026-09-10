@@ -173,7 +173,8 @@ class GetTradeUnitDataForMasterProductCreation extends OrgAction
                     }
 
 
-                    $orgStockUnitCost  = ($orgStock->current_supplier_sku_cost ?? 0) / ($orgStock->packed_in ?? 1);
+                    $orgStockSkuCost   = (float) ($orgStock->lpp_per_sku ?: $orgStock->current_supplier_sku_cost ?: 0);
+                    $orgStockUnitCost  = $orgStockSkuCost / ($orgStock->packed_in ?? 1);
                     $orgStockUnitValue = ($orgStock->sku_value ?? 0) / ($orgStock->packed_in ?? 1);
 
 

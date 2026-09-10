@@ -25,7 +25,9 @@ use Illuminate\Support\Facades\DB;
  * movements' org_amount, written per SKU at pick time, so multi-SKU products aggregate
  * correctly for free. A line whose pickings do not yet cover the ordered quantity tops
  * the actual cost up from the estimate and is flagged estimated. Lines not picked at all
- * fall back to an estimate from the current official per-SKU valuation (sku_value).
+ * fall back to an estimate from the replacement cost (lpp_per_sku, the last price actually
+ * paid), because a commercial margin answers "is this priced to profit if we buy it again"
+ * rather than "what did the units still in the bay happen to cost".
  * A product line with no cost basis at all is excluded from summary totals and counted,
  * never treated as zero cost: silence must not read as 100% margin.
  */
@@ -62,10 +64,12 @@ trait WithMarginData
 
     protected function estimatedCostSql(string $quantityColumn): string
     {
-        return "(SELECT SUM(os.sku_value * phos.quantity)
+        $replacementCost = 'COALESCE(NULLIF(os.lpp_per_sku, 0), os.sku_value)';
+
+        return "(SELECT SUM($replacementCost * phos.quantity)
             FROM product_has_org_stocks phos
             JOIN org_stocks os ON os.id = phos.org_stock_id
-            WHERE phos.product_id = products.id AND os.sku_value > 0) * $quantityColumn";
+            WHERE phos.product_id = products.id AND $replacementCost > 0) * $quantityColumn";
     }
 
     /**

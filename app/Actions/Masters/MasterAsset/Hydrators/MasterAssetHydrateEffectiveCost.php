@@ -71,7 +71,10 @@ class MasterAssetHydrateEffectiveCost implements ShouldBeUnique
             $tradeUnitQuantity = (float) $tradeUnit->pivot->quantity;
 
             foreach ($tradeUnit->orgStocks as $orgStock) {
-                $skuCost = (float) ($orgStock->current_supplier_sku_cost ?? 0);
+                $skuCost = (float) ($orgStock->lpp_per_sku ?? 0);
+                if ($skuCost <= 0) {
+                    $skuCost = (float) ($orgStock->current_supplier_sku_cost ?? 0);
+                }
                 if ($skuCost <= 0) {
                     $skuCost = (float) ($orgStock->sku_value ?? 0);
                 }
