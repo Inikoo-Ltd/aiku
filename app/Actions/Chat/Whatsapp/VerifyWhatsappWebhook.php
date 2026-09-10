@@ -21,12 +21,18 @@ class VerifyWhatsappWebhook
 
         if (
             $verifyToken !== ''
-            && $request->query('hub_mode') === 'subscribe'
-            && hash_equals($verifyToken, (string) $request->query('hub_verify_token'))
+            && $this->hubParameter($request, 'mode') === 'subscribe'
+            && hash_equals($verifyToken, $this->hubParameter($request, 'verify_token'))
         ) {
-            return response($request->query('hub_challenge'), 200);
+            return response($this->hubParameter($request, 'challenge'), 200);
         }
 
         abort(403);
+    }
+
+  
+    private function hubParameter(ActionRequest $request, string $name): string
+    {
+        return (string) ($request->query->get('hub.'.$name) ?? $request->query->get('hub_'.$name, ''));
     }
 }
