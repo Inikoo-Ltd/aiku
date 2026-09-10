@@ -8,7 +8,9 @@
 
 namespace App\Actions\Web\Webpage\Iris;
 
+use App\Actions\CRM\WebUser\Retina\UI\ShowRetinaLogin;
 use App\Actions\Web\RefreshGrpAssetUrls;
+use App\Actions\Web\Webpage\BreakWebpageCache;
 use App\Actions\Web\Webpage\Traits\WithIrisBlogBreadcrumbs;
 use App\Actions\Web\Webpage\WithIrisGetWebpageWebBlocks;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
@@ -138,8 +140,17 @@ class ShowIrisWebpage
             $loggedIn = auth()->check();
         }
 
-        if (in_array($path, ['login', 'register', 'forgot-password']) && $loggedIn) {
-            return 'logged-in';
+        if (in_array($path, ['login', 'register', 'forgot-password'])) {
+            $redirect = match($path) {
+                'login'             => 'app/login',
+                'register'          => 'app/register',
+                'forgot-password'   => 'app/reset-password-send',
+                default             => null,
+            };
+            
+            $normalizedCanon = rtrim($this->getEnvironmentUrl($request->input('website')->domain . $redirect), '/');
+
+            return redirect()->to($normalizedCanon);
         }
 
         if (config('iris.cache.webpage_path.ttl') == 0) {
