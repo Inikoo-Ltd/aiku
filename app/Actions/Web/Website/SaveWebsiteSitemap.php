@@ -198,7 +198,7 @@ class SaveWebsiteSitemap implements ShouldBeUnique
     {
         $subTypes = array_map(
             fn (WebpageSubTypeEnum $blogCategory): string => $blogCategory->value,
-            WebpageSubTypeEnum::blogCategories()
+            WebpageSubTypeEnum::allBlogCategories()
         );
 
         return array_merge($subTypes, array_keys(WebpageSubTypeEnum::legacyBlogCategoryAliases()));

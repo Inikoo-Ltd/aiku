@@ -6,7 +6,6 @@
 
 namespace App\Actions\Iris\Blog;
 
-use App\Enums\Web\Webpage\WebpageSubTypeEnum;
 use App\Http\Resources\Web\BlogsIrisResource;
 use App\Models\Web\Website;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -20,7 +19,7 @@ class GetIrisBlogs
     public function handle(Website $website): AnonymousResourceCollection
     {
         return BlogsIrisResource::collection(
-            IndexIrisBlogs::make()->handle($website, null, WebpageSubTypeEnum::blogCategories())
+            IndexIrisBlogs::make()->handle($website)
         );
     }
 

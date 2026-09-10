@@ -198,7 +198,7 @@ export const getBlueprint = (componentName: string, data?: object, id? : number)
 		'faq-department' : FaqDepartmentBlueprint.blueprint,
 		'top-families' : TopFamiliesWorkshop.blueprint,
 		'blog-list' : () => BlogListBlueprint(data, id).blueprint,
-		'blog-categories' : BlogCategoriesBlueprint.blueprint,
+		'blog-categories' : () => BlogCategoriesBlueprint(data).blueprint,
 		'category-comparison' : CategoryComparisonBlueprint.blueprint
 	}
 

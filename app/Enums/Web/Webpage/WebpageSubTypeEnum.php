@@ -8,7 +8,9 @@
 
 namespace App\Enums\Web\Webpage;
 
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\EnumHelperTrait;
+use Illuminate\Support\Arr;
 
 enum WebpageSubTypeEnum: string
 {
@@ -53,6 +55,8 @@ enum WebpageSubTypeEnum: string
     case NEWSLETTERS    = 'newsletters';
     case PRODUCT_GUIDES = 'product_guides';
     case BUSINESS_TIPS  = 'business_tips';
+    case INTEGRATIONS_GUIDES = 'integrations_guides';
+    case DROPSHIPPING_GUIDES = 'dropshipping_guides';
 
     /**
      * System pages that back a website column, keyed by sub type.
@@ -84,6 +88,8 @@ enum WebpageSubTypeEnum: string
             'newsletters'           => __('Newsletters'),
             'product_guides'        => __('Product Guides'),
             'business_tips'         => __('Business Tips'),
+            'integrations_guides'   => __('Integrations Guides'),
+            'dropshipping_guides'   => __('Dropshipping Guides'),
 
             'login_page'            => __('Login'),
             'register_page'         => __('Register'),
@@ -93,38 +99,63 @@ enum WebpageSubTypeEnum: string
     }
 
     /**
+     * Blog categories offered by a shop type. A dropshipping shop writes about a different set of
+     * subjects than a shop selling its own catalogue, so each type is given its own categories.
+     *
      * @return array<int, self>
      */
-    public static function blogCategories(): array
+    public static function blogCategories(?ShopTypeEnum $shopType = null): array
     {
+        if ($shopType === ShopTypeEnum::DROPSHIPPING) {
+            return [
+                self::INTEGRATIONS_GUIDES,
+                self::DROPSHIPPING_GUIDES,
+                self::PRODUCT_GUIDES,
+            ];
+        }
+
         return [
-         /*    self::BLOG, */
             self::NEWSLETTERS,
             self::PRODUCT_GUIDES,
             self::BUSINESS_TIPS,
         ];
     }
 
-    public static function blogCategoriesWithLabel(): array
+    /**
+     * Blog categories of every shop type, used to read sub types already stored on webpages, which
+     * keep their category when the shop they belong to is not at hand.
+     *
+     * @return array<int, self>
+     */
+    public static function allBlogCategories(): array
     {
-        return [
-           /*  [
-                'value' => self::BLOG->value,
-                'label' => __("Blog"),
-            ], */
-            [
-                'value'       => self::NEWSLETTERS->value,
-                'label'       => __('Newsletters'),
+        $categories = self::blogCategories();
+
+        foreach (ShopTypeEnum::cases() as $shopType) {
+            foreach (self::blogCategories($shopType) as $category) {
+                if (!in_array($category, $categories, true)) {
+                    $categories[] = $category;
+                }
+            }
+        }
+
+        return $categories;
+    }
+
+    /**
+     * @return array<int, array{value: string, label: string}>
+     */
+    public static function blogCategoriesWithLabel(?ShopTypeEnum $shopType = null): array
+    {
+        $labels = self::labels();
+
+        return array_map(
+            fn (self $category): array => [
+                'value' => $category->value,
+                'label' => Arr::get($labels, $category->value, $category->value),
             ],
-            [
-                'value' => self::PRODUCT_GUIDES->value,
-                'label' => __("Product Guides"),
-            ],
-            [
-                'value' => self::BUSINESS_TIPS->value,
-                'label' => __("Business Tips"),
-            ],
-        ];
+            self::blogCategories($shopType)
+        );
     }
 
     /**
@@ -138,6 +169,8 @@ enum WebpageSubTypeEnum: string
             self::NEWSLETTERS->value    => '/david-aw-news',
             self::PRODUCT_GUIDES->value => '/product-guides',
             self::BUSINESS_TIPS->value  => '/business-tips',
+            self::INTEGRATIONS_GUIDES->value => '/integrations-guides',
+            self::DROPSHIPPING_GUIDES->value => '/dropshipping-guides',
         ];
     }
 
@@ -165,21 +198,28 @@ enum WebpageSubTypeEnum: string
 
     /**
      * Legacy sub types that were used as a catch all and therefore do not identify a blog
-     * category on their own; they are read as the alias they are mapped to.
+     * category on their own; they are read as the alias they are mapped to. A dropshipping shop
+     * offers a single guide category the catch all can belong to, so there it decides a category
+     * like any other sub type and can be persisted as one.
      *
      * @return array<int, string>
      */
-    public static function ambiguousBlogSubTypes(): array
+    public static function ambiguousBlogSubTypes(?ShopTypeEnum $shopType = null): array
     {
+        if ($shopType === ShopTypeEnum::DROPSHIPPING) {
+            return [];
+        }
+
         return ['blog'];
     }
 
     /**
      * Resolves the blog category of a webpage. A catch all sub type does not identify a category on
      * its own and is read as its alias, unless $withAmbiguousFallback is disabled, which callers
-     * persisting the result use to leave undecidable webpages alone.
+     * persisting the result use to leave undecidable webpages alone. Which sub types are undecidable
+     * depends on the shop type, so a shop offering a single home for the catch all decides it here.
      */
-    public static function resolveBlogCategory(?string $subType, bool $withAmbiguousFallback = true): ?self
+    public static function resolveBlogCategory(?string $subType, bool $withAmbiguousFallback = true, ?ShopTypeEnum $shopType = null): ?self
     {
         if ($subType === null) {
             return null;
@@ -187,13 +227,13 @@ enum WebpageSubTypeEnum: string
 
         $aliases = self::legacyBlogCategoryAliases();
 
-        if (in_array($subType, self::ambiguousBlogSubTypes(), true)) {
+        if (in_array($subType, self::ambiguousBlogSubTypes($shopType), true)) {
             return $withAmbiguousFallback ? ($aliases[$subType] ?? null) : null;
         }
 
         $category = self::tryFrom($subType);
 
-        if ($category && in_array($category, self::blogCategories(), true)) {
+        if ($category && in_array($category, self::allBlogCategories(), true)) {
             return $category;
         }
 
@@ -213,7 +253,7 @@ enum WebpageSubTypeEnum: string
         $aliases   = self::legacyBlogCategoryAliases();
         $branches  = [];
 
-        foreach (self::blogCategories() as $category) {
+        foreach (self::allBlogCategories() as $category) {
             $storedValues = [$category->value];
 
             foreach ($aliases as $legacyValue => $aliasedCategory) {
@@ -237,9 +277,17 @@ enum WebpageSubTypeEnum: string
     /**
      * @return array<int, string>
      */
-    public static function blogCategoryValues(): array
+    public static function blogCategoryValues(?ShopTypeEnum $shopType = null): array
     {
-        return array_map(fn (self $subType) => $subType->value, self::blogCategories());
+        return array_map(fn (self $subType) => $subType->value, self::blogCategories($shopType));
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    public static function allBlogCategoryValues(): array
+    {
+        return array_map(fn (self $subType) => $subType->value, self::allBlogCategories());
     }
 
     public static function catalogueLabels(): array

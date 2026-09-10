@@ -52,7 +52,7 @@ trait WithBlogCategoriesBlock
             ->where('type', WebpageTypeEnum::BLOG)
             ->where('state', WebpageStateEnum::LIVE)
             ->whereNull('deleted_at')
-            ->whereIn(DB::raw(WebpageSubTypeEnum::blogCategorySqlExpression()), WebpageSubTypeEnum::blogCategoryValues())
+            ->whereIn(DB::raw(WebpageSubTypeEnum::blogCategorySqlExpression()), WebpageSubTypeEnum::blogCategoryValues($webpage->shop?->type))
             ->count();
     }
 
