@@ -46,8 +46,9 @@ const props = defineProps<{
                   :src="fieldValue.column1.image.source"
                   :alt="fieldValue.column1.image.alt"
                   :imgAttributes="fieldValue.column1.image.attributes"
-                  :style="getStyles(fieldValue.column1.image.properties, screenType)"
+                  :style="getStyles(fieldValue.column1.image.properties, screenType) ?? undefined"
                   :imageCover="true"
+                  :preload="Number(indexBlock) === 0"
                 />
               </div>
             </div>
@@ -78,8 +79,9 @@ const props = defineProps<{
                   :src="fieldValue.column2.image.source"
                   :alt="fieldValue.column2.image.alt"
                   :imgAttributes="fieldValue.column2.image.attributes"
-                  :style="getStyles(fieldValue.column2.image.properties, screenType)"
+                  :style="getStyles(fieldValue.column2.image.properties, screenType) ?? undefined"
                   :imageCover="true"
+                  :preload="Number(indexBlock) === 0"
                 />
               </div>
             </div>
@@ -110,7 +112,7 @@ const props = defineProps<{
                   :src="fieldValue.column3.image.source"
                   :alt="fieldValue.column3.image.alt"
                   :imgAttributes="fieldValue.column3.image.attributes"
-                  :style="getStyles(fieldValue.column3.image.properties, screenType)"
+                  :style="getStyles(fieldValue.column3.image.properties, screenType) ?? undefined"
                   :imageCover="true"
                 />
               </div>
@@ -142,7 +144,7 @@ const props = defineProps<{
                   :src="fieldValue.column4.image.source"
                   :alt="fieldValue.column4.image.alt"
                   :imgAttributes="fieldValue.column4.image.attributes"
-                  :style="getStyles(fieldValue.column4.image.properties, screenType)"
+                  :style="getStyles(fieldValue.column4.image.properties, screenType) ?? undefined"
                   :imageCover="true"
                 />
               </div>

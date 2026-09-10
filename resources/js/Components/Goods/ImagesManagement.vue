@@ -15,6 +15,7 @@ import InputText from "primevue/inputtext"
 import Tag from "@/Components/Tag.vue"
 import { capitalize } from "lodash"
 import { resolveImageDropAction } from "@/Composables/useImageDropAction"
+import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 // Types
 import { Image as ImageTS } from "@/types/Image"
 import { routeType } from "@/types/route"
@@ -161,11 +162,16 @@ function onSubmitVideoUrl() {
 function onDropImage(event: DragEvent, categoryBox: any) {
     event.preventDefault();
 
+    if (loadingSubmit.value === categoryBox.column_in_db) {
+        activeCategory.value = null;
+        return;
+    }
+
     const dropAction = resolveImageDropAction(event.dataTransfer);
 
     if (dropAction.type !== "attach") {
         if (dropAction.type === "upload") {
-            uploadFiles(dropAction.files);
+            uploadFiles(dropAction.files, categoryBox.column_in_db);
         }
 
         activeCategory.value = null;
@@ -217,14 +223,14 @@ function onEndDrag(event: DragEvent) {
 /* ---------------------------
    File Upload / Delete
 ---------------------------- */
-async function uploadFiles(files: FileList | File[]) {
+async function uploadFiles(files: FileList | File[], loadingKey: string = "upload") {
     if (!files?.length || !editable.value) return
 
     const formData = new FormData()
     Array.from(files).forEach((file) => formData.append("images[]", file))
 
     try {
-        loadingSubmit.value = "upload"
+        loadingSubmit.value = loadingKey
 
         await axios.post(
             route(props.data.upload_images_route.name, props.data.upload_images_route.parameters),
@@ -306,6 +312,8 @@ async function uploadAudioFile(event: Event) {
 }
 
 function onDeletefilesInBox(categoryBox: any) {
+    if (loadingSubmit.value !== null) return
+
     let payload = { [categoryBox.column_in_db]: null }
     onSubmitImage(payload, categoryBox)
 }
@@ -342,6 +350,8 @@ function onSubmitAlt() {
 }
 
 function onDeleteFilesInList(categoryBox: any) {
+    if (loadingSubmit.value !== null) return
+
     router.delete(
         route(props.data.delete_images_route.name, {
             ...props.data.delete_images_route.parameters,
@@ -351,7 +361,7 @@ function onDeleteFilesInList(categoryBox: any) {
             preserveScroll: true,
             preserveState: true,
             only: ["images_category_box"],
-            onStart: () => (loadingSubmit.value = categoryBox.column_in_db),
+            onStart: () => (loadingSubmit.value = categoryBox.column_in_db ?? categoryBox.id),
             onSuccess: () => {
                 notifySuccess(trans("File deleted successfully"))
                 router.reload({ only: ["images"] })
@@ -415,11 +425,11 @@ function onDeleteFilesInList(categoryBox: any) {
                                     @change="uploadAudioFile($event)" />
                             </label>
                             <FontAwesomeIcon v-if="categoryBox.type == 'audio' && categoryBox.audio && editable"
-                                :icon="faUnlink" @click="() => onDeleteFilesInList(categoryBox)"
-                                class="text-gray-400 text-red-600 cursor-pointer text-xs" />
+                                :icon="faUnlink" @click="() => onDeleteFilesInList(categoryBox)" class="text-xs"
+                                :class="loadingSubmit !== null ? 'text-gray-300 pointer-events-none' : 'text-red-600 cursor-pointer'" v-tooltip="trans('Delete audio')" />
                             <FontAwesomeIcon v-if="(categoryBox.images || categoryBox.url) && editable" :icon="faUnlink"
-                                @click="() => onDeletefilesInBox(categoryBox)"
-                                class="text-gray-400 text-red-600 cursor-pointer text-xs" />
+                                @click="() => onDeletefilesInBox(categoryBox)" class="text-xs"
+                                :class="loadingSubmit !== null ? 'text-gray-300 pointer-events-none' : 'text-red-600 cursor-pointer'" v-tooltip="trans('Delete image')" />
                         </div>
                     </div>
 
@@ -433,6 +443,12 @@ function onDeleteFilesInList(categoryBox: any) {
                         <div v-else class="flex flex-col items-center justify-center text-gray-400">
                             <FontAwesomeIcon :icon="faImage" class="mb-1 text-2xl" />
                             <span class="text-[12px] font-medium">{{ trans('Drop image here') }}</span>
+                        </div>
+
+                        <div v-if="loadingSubmit === categoryBox.column_in_db"
+                            class="absolute inset-0 z-10 flex flex-col items-center justify-center gap-1 bg-white/70 backdrop-blur-sm text-blue-500">
+                            <LoadingIcon />
+                            <span class="text-[11px] font-medium">{{ trans('Processing') }}</span>
                         </div>
                     </div>
 
@@ -585,7 +601,7 @@ function onDeleteFilesInList(categoryBox: any) {
                         </div>
 
                         <!-- Delete -->
-                        <button v-if="editable" @click="onDeleteFilesInList(item)" class="ml-2 flex-shrink-0 rounded-full p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 transition" v-tooltip="trans('Delete')">
+                        <button v-if="editable" @click="onDeleteFilesInList(item)" :disabled="loadingSubmit !== null" class="ml-2 flex-shrink-0 rounded-full p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 transition disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent" v-tooltip="trans('Delete')">
                             <FontAwesomeIcon icon="fal fa-trash-alt" class="text-sm text-red-400" />
                         </button>
                     </article>

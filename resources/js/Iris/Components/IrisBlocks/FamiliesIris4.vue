@@ -278,6 +278,7 @@ onBeforeUnmount(() => {
           <Image :src="family.image" :alt="family.name"
             :srcset="family.srcset"
             :sizes="familyImageSizes"
+            :preload="Number(indexBlock) === 0 && familyIndex === 0"
             class="h-full w-full object-contain transition duration-300 group-hover:scale-105"
             :class="!family.image ? 'opacity-0' : ''" />
         </div>
