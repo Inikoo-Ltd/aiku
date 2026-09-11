@@ -262,6 +262,7 @@ return [
         ],
         'google'     => [
             'client_oauth_secret' => env('GOOGLE_OAUTH_CLIENT_SECRET'),
+            'pagespeed_api_key'   => env('GOOGLE_PAGESPEED_API_KEY'),
         ],
     ],
 

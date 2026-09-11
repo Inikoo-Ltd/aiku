@@ -1,0 +1,447 @@
+<script setup lang="ts">
+import { computed, onBeforeUnmount, ref, watch } from "vue"
+import axios from "axios"
+import Chart from "primevue/chart"
+import { router } from "@inertiajs/vue3"
+import { trans } from "laravel-vue-i18n"
+import { notify } from "@kyvg/vue3-notification"
+import { useFormatTime } from "@/Composables/useFormatTime"
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { faMobile, faDesktop, faSyncAlt } from "@fal"
+import Button from "@/Components/Elements/Buttons/Button.vue"
+
+type Rating = "fast" | "average" | "slow" | "good" | "needs_improvement" | "poor" | null
+type Strategy = "mobile" | "desktop"
+type HistoryScore = "performance" | "accessibility" | "best_practices" | "seo"
+type HistoryRecord = { date: string } & Record<Strategy, Record<HistoryScore, number | null>>
+
+type StrategyReport = {
+	url: string
+	strategy: string
+	fetched_at: string
+	overall_rating: string | null
+	measuring?: boolean
+	error?: string
+	scores: Array<{ key: string; label: string; score: number; rating: Rating }>
+	lab: Array<{ key: string; label: string; value: number | null; display: string | null; rating: Rating }>
+	field: Array<{ key: string; label: string; percentile: number | null; display: string | null; rating: Rating; distributions: number[] }>
+}
+
+const props = defineProps<{
+	pagespeed?: {
+		status: "ready" | "measuring" | "unavailable"
+		message?: string
+		refresh_route?: { name: string; parameters: Record<string, string | number> }
+		mobile?: StrategyReport | null
+		desktop?: StrategyReport | null
+	}
+	history?: HistoryRecord[]
+	historyFrequency?: "daily" | "weekly"
+}>()
+
+const POLL_INTERVAL_MS = 15000
+const MAX_POLLS = 12
+const HISTORY_COLOR = "#E8710A"
+
+const strategy = ref<Strategy>("desktop")
+const polls = ref(0)
+const isRefreshing = ref(false)
+let pollTimer: ReturnType<typeof setTimeout> | null = null
+
+const markColor = {
+	fast: "#0CCE6B",
+	good: "#0CCE6B",
+	average: "#FFA400",
+	needs_improvement: "#FFA400",
+	slow: "#FF4E42",
+	poor: "#FF4E42",
+}
+
+// Google's rating colors are too light for text on white, so readable variants carry the numbers
+const textColor = {
+	fast: "#0A7B41",
+	good: "#0A7B41",
+	average: "#8F5700",
+	needs_improvement: "#8F5700",
+	slow: "#B3261E",
+	poor: "#B3261E",
+}
+
+const colorOf = (rating: Rating) => markColor[rating ?? "average"] ?? "#9ca3af"
+const textColorOf = (rating: Rating) => textColor[rating ?? "average"] ?? "#4b5563"
+
+const strategies: Array<{ key: Strategy; label: string; icon: typeof faMobile }> = [
+	{ key: "desktop", label: trans("Desktop"), icon: faDesktop },
+	{ key: "mobile", label: trans("Mobile"), icon: faMobile },
+]
+
+const scoreDescriptions: Record<string, string> = {
+	performance: trans("How quickly the page loads and becomes usable, measured in a simulated lab run"),
+	accessibility: trans("How well the page works for people using assistive technology such as screen readers"),
+	"best-practices": trans("Security and modern web development checks, such as HTTPS and browser console errors"),
+	seo: trans("Basic checks that help search engines find, crawl and understand the page"),
+}
+
+const scoreBands: Array<{ rating: Rating; label: string; range: string }> = [
+	{ rating: "slow", label: trans("Poor"), range: "0–49" },
+	{ rating: "average", label: trans("Needs improvement"), range: "50–89" },
+	{ rating: "fast", label: trans("Good"), range: "90–100" },
+]
+
+const ratingLabelOf = (rating: Rating) => scoreBands.find((band) => band.rating === rating)?.label ?? trans("n/a")
+
+const scoreOnEachStrategy = (key: string) =>
+	strategies.map((option) => ({
+		...option,
+		score: props.pagespeed?.[option.key]?.scores?.find((score) => score.key === key) ?? null,
+	}))
+
+const historyScores: Array<{ key: HistoryScore; label: string }> = [
+	{ key: "performance", label: trans("Performance") },
+	{ key: "accessibility", label: trans("Accessibility") },
+	{ key: "best_practices", label: trans("Best practices") },
+	{ key: "seo", label: trans("SEO") },
+]
+const historyLines: Array<{ key: Strategy; label: string; borderDash: number[]; pointStyle: string }> = [
+	{ key: "desktop", label: trans("Desktop"), borderDash: [], pointStyle: "circle" },
+	{ key: "mobile", label: trans("Mobile"), borderDash: [6, 4], pointStyle: "rectRot" },
+]
+
+const historyScore = ref<HistoryScore>("performance")
+
+const isLoading = computed(() => props.pagespeed === undefined)
+const isUnavailable = computed(() => props.pagespeed?.status === "unavailable")
+const report = computed<StrategyReport | null>(() => props.pagespeed?.[strategy.value] ?? null)
+const hasScores = computed(() => !!report.value?.scores?.length)
+const isStalled = computed(() => props.pagespeed?.status === "measuring" && polls.value >= MAX_POLLS)
+const hasHistory = computed(() => (props.history ?? []).length > 0)
+
+const fieldChartData = computed(() => ({
+	labels: (report.value?.field ?? []).map((metric) => metric.label),
+	datasets: [
+		{ label: trans("Good"), data: (report.value?.field ?? []).map((metric) => metric.distributions[0] ?? 0), backgroundColor: markColor.good },
+		{ label: trans("Needs improvement"), data: (report.value?.field ?? []).map((metric) => metric.distributions[1] ?? 0), backgroundColor: markColor.average },
+		{ label: trans("Poor"), data: (report.value?.field ?? []).map((metric) => metric.distributions[2] ?? 0), backgroundColor: markColor.poor },
+	],
+}))
+
+const fieldChartOptions = {
+	responsive: true,
+	maintainAspectRatio: false,
+	indexAxis: "y",
+	plugins: {
+		legend: { position: "bottom", labels: { boxWidth: 10, boxHeight: 10, usePointStyle: true, pointStyle: "circle", color: "#4b5563" } },
+		tooltip: { callbacks: { label: (item: any) => `${item.dataset.label}: ${item.raw}%` } },
+	},
+	scales: {
+		x: { stacked: true, max: 100, grid: { display: false }, ticks: { callback: (value: number) => `${value}%`, color: "#4b5563" } },
+		y: { stacked: true, grid: { display: false }, ticks: { color: "#374151" } },
+	},
+}
+
+const historyChartData = computed(() => ({
+	labels: (props.history ?? []).map((record) => record.date),
+	datasets: historyLines.map((line) => ({
+		label: line.label,
+		data: (props.history ?? []).map((record) => record[line.key]?.[historyScore.value] ?? null),
+		borderColor: HISTORY_COLOR,
+		backgroundColor: HISTORY_COLOR,
+		borderDash: line.borderDash,
+		borderWidth: 2,
+		pointRadius: 3,
+		pointStyle: line.pointStyle,
+		spanGaps: true,
+	})),
+}))
+
+const historyChartOptions = computed(() => ({
+	responsive: true,
+	maintainAspectRatio: false,
+	interaction: { mode: "index", intersect: false },
+	plugins: {
+		legend: { display: false },
+		tooltip: {
+			backgroundColor: "#fff",
+			titleColor: "#111827",
+			bodyColor: "#374151",
+			borderColor: "#d1d5db",
+			borderWidth: 1,
+			padding: 10,
+			callbacks: {
+				title: (items: any[]) => (props.historyFrequency === "weekly" ? trans("Week of") + " " : "") + useFormatTime(items[0].label, { formatTime: "PPP" }),
+				label: (item: any) => `${item.dataset.label}: ${item.raw}`,
+			},
+		},
+	},
+	scales: {
+		x: { grid: { display: false }, ticks: { autoSkip: true, maxTicksLimit: 10, color: "#4b5563" } },
+		y: { min: 0, max: 100, grid: { color: "#f3f4f6" }, ticks: { stepSize: 25, color: "#4b5563" } },
+	},
+}))
+
+const circumference = 2 * Math.PI * 20
+
+const stopPolling = () => {
+	if (pollTimer) {
+		clearTimeout(pollTimer)
+		pollTimer = null
+	}
+}
+
+const pollUntilMeasured = () => {
+	stopPolling()
+
+	if (polls.value >= MAX_POLLS) {
+		return
+	}
+
+	pollTimer = setTimeout(() => {
+		polls.value++
+		router.reload({ only: ["pagespeed"] })
+	}, POLL_INTERVAL_MS)
+}
+
+const reMeasure = async () => {
+	const refreshRoute = props.pagespeed?.refresh_route
+
+	if (!refreshRoute || isRefreshing.value) {
+		return
+	}
+
+	isRefreshing.value = true
+
+	try {
+		await axios.post(route(refreshRoute.name, refreshRoute.parameters))
+		polls.value = 0
+		router.reload({ only: ["pagespeed"] })
+	} catch (error) {
+		notify({
+			title: trans("Something went wrong"),
+			text: trans("The PageSpeed Insights run could not be queued"),
+			type: "error",
+		})
+	} finally {
+		isRefreshing.value = false
+	}
+}
+
+watch(
+	() => props.pagespeed,
+	(pagespeed) => {
+		stopPolling()
+
+		if (pagespeed?.status === "measuring") {
+			pollUntilMeasured()
+		} else {
+			polls.value = 0
+		}
+	},
+	{ immediate: true }
+)
+
+onBeforeUnmount(stopPolling)
+</script>
+
+<template>
+	<div class="rounded-lg bg-white shadow">
+		<div class="flex flex-wrap items-center gap-3 border-b px-6 py-3">
+			<span class="text-sm font-semibold">{{ trans("PageSpeed Insights") }}</span>
+
+			<div v-if="!isLoading && !isUnavailable" class="flex rounded-md bg-gray-100 p-0.5">
+				<button
+					v-for="option in strategies"
+					:key="option.key"
+					type="button"
+					:aria-pressed="strategy === option.key"
+					class="flex items-center gap-1.5 rounded px-2.5 py-1 text-xs focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600"
+					:class="strategy === option.key ? 'bg-white font-semibold text-gray-800 shadow-sm' : 'text-gray-600 hover:text-gray-800'"
+					@click="strategy = option.key">
+					<FontAwesomeIcon :icon="option.icon" fixed-width />
+					{{ option.label }}
+				</button>
+			</div>
+
+			<span v-if="report?.fetched_at" class="text-xs text-gray-600">
+				{{ trans("Measured") }} {{ useFormatTime(report.fetched_at, { formatTime: "PPp" }) }}
+			</span>
+
+			<span v-if="report?.measuring" class="text-xs text-gray-600">{{ trans("Re-measuring now") }}</span>
+
+			<Button
+				v-if="pagespeed?.refresh_route"
+				class="ml-auto focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600"
+				size="xs"
+				type="tertiary"
+				:icon="faSyncAlt"
+				:label="trans('Re-measure')"
+				:loading="isRefreshing"
+				:disabled="isRefreshing"
+				@click="reMeasure" />
+		</div>
+
+		<div v-if="isLoading" class="grid grid-cols-2 gap-6 p-6 sm:grid-cols-4">
+			<div v-for="placeholder in 4" :key="placeholder" class="flex animate-pulse flex-col items-center gap-2">
+				<div class="h-24 w-24 rounded-full bg-gray-200" />
+				<div class="h-3 w-20 rounded bg-gray-200" />
+			</div>
+		</div>
+
+		<div v-else-if="isUnavailable" class="px-6 py-6 text-sm text-gray-600">
+			{{ pagespeed?.message ?? trans("No PageSpeed Insights data available for this page") }}
+		</div>
+
+		<div v-else-if="report?.error" class="space-y-1 px-6 py-6 text-sm">
+			<div class="text-gray-800">{{ trans("Google could not measure this page") }}</div>
+			<div class="text-gray-600">{{ report.error }}</div>
+		</div>
+
+		<div v-else-if="!report" class="space-y-4 p-6">
+			<div class="grid grid-cols-2 gap-6 sm:grid-cols-4">
+				<div v-for="placeholder in 4" :key="placeholder" class="flex animate-pulse flex-col items-center gap-2">
+					<div class="h-24 w-24 rounded-full bg-gray-200" />
+					<div class="h-3 w-20 rounded bg-gray-200" />
+				</div>
+			</div>
+			<div class="text-sm text-gray-600">
+				{{ isStalled
+					? trans("Google is still measuring this page. Use Re-measure to check again.")
+					: trans("Google is measuring this page, results usually arrive within a minute.") }}
+			</div>
+		</div>
+
+		<div v-else-if="!hasScores" class="px-6 py-6 text-sm text-gray-600">
+			{{ trans("No PageSpeed Insights data available for this page") }}
+		</div>
+
+		<div v-else class="space-y-6 p-6">
+			<div class="grid grid-cols-2 gap-6 sm:grid-cols-4">
+				<VDropdown
+					v-for="score in report.scores"
+					:key="score.key"
+					class="flex justify-center"
+					placement="top"
+					:triggers="['hover', 'focus']"
+					:popper-triggers="['hover', 'focus']"
+					:delay="{ show: 80, hide: 150 }"
+					:distance="6">
+					<button
+						type="button"
+						:aria-label="`${score.label}: ${score.score} / 100`"
+						class="flex flex-col items-center gap-2 rounded-lg p-1 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600">
+						<span class="relative h-24 w-24">
+							<svg viewBox="0 0 48 48" class="h-full w-full -rotate-90" aria-hidden="true">
+								<circle cx="24" cy="24" r="20" fill="none" stroke="#e5e7eb" stroke-width="4" />
+								<circle
+									cx="24"
+									cy="24"
+									r="20"
+									fill="none"
+									:stroke="colorOf(score.rating)"
+									stroke-width="4"
+									stroke-linecap="round"
+									:stroke-dasharray="circumference"
+									:stroke-dashoffset="circumference * (1 - score.score / 100)" />
+							</svg>
+							<span class="absolute inset-0 flex items-center justify-center text-xl font-semibold" :style="{ color: textColorOf(score.rating) }">
+								{{ score.score }}
+							</span>
+						</span>
+						<span class="text-center text-xs text-gray-600">{{ score.label }}</span>
+					</button>
+
+					<template #popper>
+						<div class="w-72 space-y-3 p-3 text-xs" data-pagespeed-score-popover>
+							<div class="flex items-baseline justify-between gap-2">
+								<span class="text-sm font-semibold text-gray-800">{{ score.label }}</span>
+								<span class="font-semibold" :style="{ color: textColorOf(score.rating) }">
+									{{ score.score }}/100 · {{ ratingLabelOf(score.rating) }}
+								</span>
+							</div>
+
+							<p class="text-gray-600">{{ scoreDescriptions[score.key] }}</p>
+
+							<div class="grid grid-cols-2 gap-2">
+								<div
+									v-for="option in scoreOnEachStrategy(score.key)"
+									:key="option.key"
+									class="rounded border px-2 py-1.5"
+									:class="option.key === strategy ? 'border-gray-400' : 'border-gray-200'">
+									<div class="flex items-center gap-1 text-gray-600">
+										<FontAwesomeIcon :icon="option.icon" fixed-width aria-hidden="true" />
+										{{ option.label }}
+									</div>
+									<div class="text-sm font-semibold" :style="{ color: option.score ? textColorOf(option.score.rating) : '#4b5563' }">
+										{{ option.score?.score ?? trans("n/a") }}
+									</div>
+								</div>
+							</div>
+
+							<div class="grid grid-cols-3 gap-2 border-t pt-2 text-gray-600">
+								<div v-for="band in scoreBands" :key="band.range" class="flex flex-col items-center gap-0.5 text-center">
+									<span class="flex items-center gap-1 font-semibold text-gray-700">
+										<span class="inline-block h-2 w-2 rounded-full" :style="{ backgroundColor: colorOf(band.rating) }" />
+										{{ band.range }}
+									</span>
+									<span>{{ band.label }}</span>
+								</div>
+							</div>
+						</div>
+					</template>
+				</VDropdown>
+			</div>
+
+			<div v-if="report.field?.length" class="space-y-3">
+				<div class="text-sm font-semibold">{{ trans("Core Web Vitals") }} <span class="font-normal text-gray-600">({{ trans("real users, last 28 days") }})</span></div>
+				<div class="grid gap-3 sm:grid-cols-5">
+					<div v-for="metric in report.field" :key="metric.key" class="rounded border p-3" :style="{ borderColor: colorOf(metric.rating) }">
+						<div class="text-xs text-gray-600">{{ metric.label }}</div>
+						<div class="text-lg font-semibold" :style="{ color: textColorOf(metric.rating) }">{{ metric.display ?? trans("n/a") }}</div>
+					</div>
+				</div>
+				<div class="h-64 w-full">
+					<Chart type="bar" class="h-full" :data="fieldChartData" :options="fieldChartOptions" />
+				</div>
+			</div>
+
+			<div v-if="report.lab?.length" class="space-y-3">
+				<div class="text-sm font-semibold">{{ trans("Lab metrics") }}</div>
+				<div class="grid gap-3 sm:grid-cols-5">
+					<div v-for="metric in report.lab" :key="metric.key" class="rounded border border-gray-200 p-3">
+						<div class="flex items-center gap-1.5 text-xs text-gray-600">
+							<span class="inline-block h-2 w-2 rounded-full" :style="{ backgroundColor: colorOf(metric.rating) }" />
+							{{ metric.label }}
+						</div>
+						<div class="text-lg font-semibold text-gray-800">{{ metric.display ?? trans("n/a") }}</div>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<div v-if="history && !isLoading && !isUnavailable" class="space-y-3 border-t px-6 py-6" data-pagespeed-history>
+			<div class="flex flex-wrap items-center gap-3">
+				<span class="text-sm font-semibold">
+					{{ trans("Score history") }}
+					<span class="font-normal text-gray-600">
+						({{ historyFrequency === "weekly" ? trans("weekly average in the selected period") : trans("daily in the selected period") }})
+					</span>
+				</span>
+				<select v-model="historyScore" :aria-label="trans('PageSpeed score')" class="rounded border-gray-300 py-1 pl-2 pr-8 text-xs">
+					<option v-for="option in historyScores" :key="option.key" :value="option.key">{{ option.label }}</option>
+				</select>
+				<span v-for="line in historyLines" :key="line.key" class="flex items-center gap-1 text-xs text-gray-600">
+					<svg width="18" height="4" aria-hidden="true">
+						<line x1="0" y1="2" x2="18" y2="2" :stroke="HISTORY_COLOR" stroke-width="2" :stroke-dasharray="line.borderDash.join(' ')" />
+					</svg>
+					{{ line.label }}
+				</span>
+			</div>
+
+			<div v-if="hasHistory" class="h-64 w-full">
+				<Chart type="line" class="h-full" :data="historyChartData" :options="historyChartOptions" />
+			</div>
+			<div v-else class="text-sm text-gray-600">
+				{{ trans("No scores recorded in the selected period yet. A point is added every day the page is measured.") }}
+			</div>
+		</div>
+	</div>
+</template>

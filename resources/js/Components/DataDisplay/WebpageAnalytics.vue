@@ -7,30 +7,55 @@ import { trans } from "laravel-vue-i18n"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { useLocaleStore } from "@/Stores/locale"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faRocketLaunch, faTag } from "@fal"
+import { faRocketLaunch, faTag, faInfoCircle } from "@fal"
+import PageSpeedInsights from "@/Components/DataDisplay/PageSpeedInsights.vue"
+
+type EventType = "publish" | "price"
 
 const props = defineProps<{
+	pagespeed?: any
 	data: {
 		start_date: string
 		end_date: string
 		currency: string
 		search: Array<{ clicks: number; impressions: number; keys: string[] }>
 		sales: Array<{ date: string; sales: number; orders: number }>
-		events: Array<{ date: string; datetime: string; type: "publish" | "price"; label: string; user: string | null }>
+		events: Array<{ date: string; datetime: string; type: EventType; label: string; user: string | null }>
+		pagespeed?: any[]
+		pagespeed_frequency?: "daily" | "weekly"
 	}
 }>()
 
 const locale = useLocaleStore()
 
 const series = {
-	clicks: { label: trans("Clicks"), color: "#4285F4", axis: "y2" },
-	impressions: { label: trans("Impressions"), color: "#5E35B1", axis: "y1" },
-	sales: { label: trans("Net sales"), color: "#0F9D58", axis: "y3" },
+	clicks: {
+		label: trans("Clicks"),
+		color: "#4285F4",
+		axis: "y2",
+		source: trans("Google Search Console"),
+		sourceDetail: trans("Clicks from Google Search results to this page, reported by Google Search Console. The last 2 to 3 days can still change."),
+	},
+	impressions: {
+		label: trans("Impressions"),
+		color: "#5E35B1",
+		axis: "y1",
+		source: trans("Google Search Console"),
+		sourceDetail: trans("Times this page appeared in Google Search results, reported by Google Search Console. The last 2 to 3 days can still change."),
+	},
+	sales: {
+		label: trans("Net sales"),
+		color: "#0F9D58",
+		axis: "y3",
+		source: trans("Invoices"),
+		sourceDetail: trans("Net invoiced amount of the product, category or collection shown on this page, from every sales channel, not only visits to this page."),
+	},
 }
 const eventStyle = {
 	publish: { label: trans("Page published"), color: "#F4B400", icon: faRocketLaunch },
 	price: { label: trans("Price change"), color: "#DB4437", icon: faTag },
 }
+const chartEventTypes: EventType[] = ["price"]
 
 
 const rangeDays = computed(() => Math.round((new Date(props.data.end_date).getTime() - new Date(props.data.start_date).getTime()) / 86400000) + 1)
@@ -75,7 +100,7 @@ const visible = ref({ clicks: totals.value.clicks > 0, impressions: totals.value
 
 const eventsByDate = computed(() => {
 	const grouped: Record<string, typeof props.data.events> = {}
-	for (const event of props.data.events ?? []) {
+	for (const event of (props.data.events ?? []).filter((event) => chartEventTypes.includes(event.type))) {
 		;(grouped[bucketOf(event.date)] ??= []).push(event)
 	}
 	return grouped
@@ -222,10 +247,10 @@ const formatTotal = (key: keyof typeof series) =>
 					{{ option === "day" ? trans("Daily") : trans("Weekly") }}
 				</button>
 			</div>
-			<div class="ml-auto flex items-center gap-4 text-xs text-gray-500">
-				<span v-for="(style, type) in eventStyle" :key="type" class="flex items-center gap-1">
-					<span class="inline-block h-2.5 w-2.5 rounded-full" :style="{ backgroundColor: style.color }" />
-					{{ style.label }}
+			<div class="ml-auto flex items-center gap-4 text-xs text-gray-500" data-chart-event-legend>
+				<span v-for="type in chartEventTypes" :key="type" class="flex items-center gap-1">
+					<span class="inline-block h-2.5 w-2.5 rounded-full" :style="{ backgroundColor: eventStyle[type].color }" />
+					{{ eventStyle[type].label }}
 				</span>
 			</div>
 		</div>
@@ -240,8 +265,13 @@ const formatTotal = (key: keyof typeof series) =>
 					:class="visible[key] ? 'text-white' : 'bg-white'"
 					:style="visible[key] ? { backgroundColor: meta.color, borderColor: meta.color } : { color: meta.color, borderColor: meta.color }"
 					@click="visible[key] = !visible[key]">
-					<div class="text-xs">{{ meta.label }}</div>
+					<div class="text-xs">
+						{{ meta.label }}
+						<FontAwesomeIcon v-tooltip="meta.sourceDetail" :icon="faInfoCircle" class="ml-0.5 opacity-70" fixed-width aria-hidden="true" />
+					</div>
 					<div class="text-lg font-semibold">{{ formatTotal(key) }}</div>
+					<div class="mt-1 text-[11px] opacity-80" data-card-source>{{ trans("Source") }}: {{ meta.source }}</div>
+					<span class="sr-only">{{ meta.sourceDetail }}</span>
 				</button>
 			</div>
 
@@ -249,6 +279,8 @@ const formatTotal = (key: keyof typeof series) =>
 				<Chart type="line" class="h-full" :data="chartData" :options="chartOptions" :plugins="[eventMarkers]" />
 			</div>
 		</div>
+
+		<PageSpeedInsights :pagespeed="pagespeed" :history="data.pagespeed" :history-frequency="data.pagespeed_frequency" />
 
 		<div class="rounded-lg bg-white shadow">
 			<div class="border-b px-6 py-3 text-sm font-semibold">{{ trans("Changes in this period") }}</div>

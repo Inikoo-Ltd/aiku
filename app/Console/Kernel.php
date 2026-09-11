@@ -62,6 +62,7 @@ use App\Actions\Web\Crawl\PurgeStaleCrawls;
 use App\Actions\Web\Website\Analytics\RecordVarnishHitRatio;
 use App\Actions\Web\Website\Analytics\RecordVarnishMemoryUsage;
 use App\Actions\Web\Website\PruneWebsiteConversionEvents;
+use App\Actions\Web\Webpage\FetchTopWebpagesPageSpeed;
 use App\Actions\Web\Website\PruneWebsitePageViews;
 use App\Actions\Web\Website\PruneWebsiteVisitors;
 use App\Actions\Web\Website\SaveWebsitesSitemap;
@@ -901,6 +902,15 @@ class Kernel extends ConsoleKernel
                 name: 'PruneWebsitePageViews',
                 type: 'job',
                 scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
+                $schedule->job(FetchTopWebpagesPageSpeed::makeJob())->dailyAt('00:00')->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
+                    monitorSlug: 'FetchTopWebpagesPageSpeed',
+                ),
+                name: 'FetchTopWebpagesPageSpeed',
+                type: 'job',
+                scheduledAt: '00:00'
             );
 
             $this->logSchedule(

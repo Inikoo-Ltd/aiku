@@ -39,6 +39,7 @@ use App\Actions\CRM\WebUser\Retina\UI\ShowRetinaLogin;
 use App\Actions\Web\Webpage\Iris\ShowIrisWebpage;
 use App\Actions\Web\Webpage\ProcessWebpageTimeSeriesRecords;
 use App\Actions\Web\Webpage\StoreWebpage;
+use App\Actions\Web\Webpage\StoreWebpagePageSpeedTimeSeriesRecord;
 use App\Actions\Web\Webpage\UpdateWebpage;
 use App\Actions\Web\Webpage\UpdateWebpageCanonicalUrl;
 use App\Actions\Web\Website\AutosaveWebsiteMarginal;
@@ -47,6 +48,7 @@ use App\Actions\Web\Website\HydrateWebsite;
 use App\Actions\Web\Website\LaunchWebsite;
 use App\Actions\Web\Website\ProcessWebsiteTimeSeriesRecords;
 use App\Actions\Web\Website\PublishWebsiteMarginal;
+use App\Actions\Web\Webpage\GetWebpagePageSpeed;
 use App\Actions\Web\Webpage\GetWebpagePerformance;
 use App\Actions\Web\Webpage\PublishWebpage;
 use App\Enums\Helpers\Audit\AuditEventEnum;
@@ -1559,6 +1561,101 @@ test('process webpage time series records', function (Webpage $webpage) {
     );
 
     expect($webpage->timeSeries()->where('frequency', TimeSeriesFrequencyEnum::DAILY->value)->exists())->toBeTrue();
+})->depends('create webpage');
+
+test('pagespeed runs are kept in the webpage time series, averaged per week and plotted in the webpage performance', function (Webpage $webpage) {
+    $pageSpeedResult = fn (string $strategy, string $fetchedAt, int $performance) => [
+        'url'            => 'https://www.example.com/landing',
+        'strategy'       => $strategy,
+        'fetched_at'     => $fetchedAt,
+        'scores'         => [
+            ['key' => 'performance', 'label' => 'Performance', 'score' => $performance, 'rating' => 'average'],
+            ['key' => 'accessibility', 'label' => 'Accessibility', 'score' => 97, 'rating' => 'fast'],
+            ['key' => 'best-practices', 'label' => 'Best practices', 'score' => 96, 'rating' => 'fast'],
+            ['key' => 'seo', 'label' => 'SEO', 'score' => 85, 'rating' => 'average'],
+        ],
+        'lab'            => [],
+        'field'          => [],
+        'overall_rating' => 'AVERAGE',
+    ];
+
+    StoreWebpagePageSpeedTimeSeriesRecord::run($webpage, $pageSpeedResult('desktop', '2026-06-01T08:00:00.000Z', 80));
+    StoreWebpagePageSpeedTimeSeriesRecord::run($webpage, $pageSpeedResult('desktop', '2026-06-02T08:00:00.000Z', 90));
+    StoreWebpagePageSpeedTimeSeriesRecord::run($webpage, $pageSpeedResult('mobile', '2026-06-02T08:10:00.000Z', 40));
+
+    ProcessWebpageTimeSeriesRecords::run($webpage->id, TimeSeriesFrequencyEnum::DAILY, '2026-06-01', '2026-06-07');
+
+    $dailyRecord = $webpage->timeSeries()->where('frequency', TimeSeriesFrequencyEnum::DAILY->value)->first()
+        ->records()->where('period', '2026-06-02')->first();
+
+    expect($dailyRecord->pagespeed_desktop_performance)->toBe(90)
+        ->and($dailyRecord->pagespeed_mobile_performance)->toBe(40)
+        ->and($dailyRecord->pagespeed_desktop_accessibility)->toBe(97)
+        ->and($dailyRecord->pagespeed_desktop_best_practices)->toBe(96)
+        ->and($dailyRecord->pagespeed_desktop_seo)->toBe(85);
+
+    $weeklyRecord = $webpage->timeSeries()->where('frequency', TimeSeriesFrequencyEnum::WEEKLY->value)->first()
+        ->records()->where('period', '2026 W23')->first();
+
+    expect($weeklyRecord->pagespeed_desktop_performance)->toBe(85)
+        ->and($weeklyRecord->pagespeed_mobile_performance)->toBe(40)
+        ->and($weeklyRecord->pagespeed_desktop_accessibility)->toBe(97);
+
+    $dailyPerformance = GetWebpagePerformance::run($webpage, ['startDate' => '2026-06-01', 'endDate' => '2026-06-07']);
+
+    expect($dailyPerformance['pagespeed_frequency'])->toBe('daily')
+        ->and($dailyPerformance['pagespeed'])->toHaveCount(2)
+        ->and($dailyPerformance['pagespeed'][0]['date'])->toBe('2026-06-01')
+        ->and($dailyPerformance['pagespeed'][0]['desktop']['performance'])->toBe(80)
+        ->and($dailyPerformance['pagespeed'][0]['mobile']['performance'])->toBeNull()
+        ->and($dailyPerformance['pagespeed'][1]['mobile']['performance'])->toBe(40)
+        ->and($dailyPerformance['pagespeed'][1]['desktop'])->toBe([
+            'performance'    => 90,
+            'accessibility'  => 97,
+            'best_practices' => 96,
+            'seo'            => 85,
+        ]);
+
+    $weeklyPerformance = GetWebpagePerformance::run($webpage, ['startDate' => '2026-03-01', 'endDate' => '2026-06-30']);
+
+    expect($weeklyPerformance['pagespeed_frequency'])->toBe('weekly')
+        ->and($weeklyPerformance['pagespeed'])->toHaveCount(1)
+        ->and($weeklyPerformance['pagespeed'][0]['date'])->toBe('2026-06-01')
+        ->and($weeklyPerformance['pagespeed'][0]['desktop']['performance'])->toBe(85);
+})->depends('create webpage');
+
+test('webpage performance adds a cached pagespeed result that is not in the history yet', function (Webpage $webpage) {
+    $result = [
+        'url'            => 'https://www.example.com/landing',
+        'strategy'       => 'mobile',
+        'fetched_at'     => '2026-07-14T09:30:00.000Z',
+        'scores'         => [
+            ['key' => 'performance', 'label' => 'Performance', 'score' => 52, 'rating' => 'average'],
+            ['key' => 'accessibility', 'label' => 'Accessibility', 'score' => 90, 'rating' => 'fast'],
+            ['key' => 'best-practices', 'label' => 'Best practices', 'score' => 78, 'rating' => 'average'],
+            ['key' => 'seo', 'label' => 'SEO', 'score' => 92, 'rating' => 'fast'],
+        ],
+        'lab'            => [],
+        'field'          => [],
+        'overall_rating' => null,
+    ];
+
+    cache()->put(GetWebpagePageSpeed::resultKey($webpage, 'mobile'), $result, now()->addHour());
+
+    expect(StoreWebpagePageSpeedTimeSeriesRecord::isRecorded($webpage, $result))->toBeFalse();
+
+    $performance = GetWebpagePerformance::run($webpage, ['startDate' => '2026-07-13', 'endDate' => '2026-07-19']);
+
+    expect($performance['pagespeed'])->toHaveCount(1)
+        ->and($performance['pagespeed'][0]['date'])->toBe('2026-07-14')
+        ->and($performance['pagespeed'][0]['mobile'])->toBe([
+            'performance'    => 52,
+            'accessibility'  => 90,
+            'best_practices' => 78,
+            'seo'            => 92,
+        ])
+        ->and($performance['pagespeed'][0]['desktop']['performance'])->toBeNull()
+        ->and(StoreWebpagePageSpeedTimeSeriesRecord::isRecorded($webpage, $result))->toBeTrue();
 })->depends('create webpage');
 
 test('publish announcement', function (Website $website) {
