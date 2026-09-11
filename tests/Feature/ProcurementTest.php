@@ -3528,12 +3528,16 @@ describe('partner browse', function () {
                 'quantity' => 1,
             ]))->toThrow(ValidationException::class);
 
-        request()->merge(['force' => true]);
         $forcedItem = StorePartnerShoppingListItem::make()->action($this->orgPartner, $this->buyerOrgStock, [
             'quantity' => 1,
+            'force'    => true,
         ]);
         expect($forcedItem)->toBeInstanceOf(PartnerShoppingListItem::class);
-        request()->merge(['force' => false]);
+
+        $bulk = StorePartnerShoppingListItems::make()->action($this->orgPartner, [
+            ['org_stock_id' => $this->buyerOrgStock->id, 'quantity' => 1],
+        ]);
+        expect($bulk)->toMatchArray(['created' => 1, 'skipped' => [], 'over_budget' => true]);
 
         $this->buyerOrgStock->update(['quantity_available' => 0]);
         $outOfStockItem = StorePartnerShoppingListItem::make()->action($this->orgPartner, $this->buyerOrgStock, [

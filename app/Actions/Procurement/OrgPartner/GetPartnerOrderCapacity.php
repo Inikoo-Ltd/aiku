@@ -243,11 +243,11 @@ class GetPartnerOrderCapacity
             ->exists();
     }
 
-    public static function guardAdd(OrgPartner $orgPartner, OrgStock $sellerOrgStock): void
+    public static function guardAdd(OrgPartner $orgPartner, OrgStock $sellerOrgStock, bool $force = false): void
     {
         $capacity = static::run($orgPartner);
 
-        if ($capacity['blocked']['at_capacity'] && !static::isExemptFromCap($orgPartner, $sellerOrgStock) && !request()->boolean('force')) {
+        if ($capacity['blocked']['at_capacity'] && !static::isExemptFromCap($orgPartner, $sellerOrgStock) && !$force) {
             throw ValidationException::withMessages(['over_budget' => __(
                 'Shopping list is already at the level :partner historically delivers to us in one order cycle (:cap :currency). More than this is unlikely to arrive any sooner.',
                 [

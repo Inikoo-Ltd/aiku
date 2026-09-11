@@ -247,11 +247,11 @@ class GetAgentOrderCapacity
      * this agent's fair share of free slots, and an item we have run out of or rank A always gets
      * through the budget cap.
      */
-    public static function guardAdd(OrgAgent $orgAgent, OrgSupplierProduct $orgSupplierProduct): void
+    public static function guardAdd(OrgAgent $orgAgent, OrgSupplierProduct $orgSupplierProduct, bool $force = false): void
     {
         $capacity = static::run($orgAgent);
 
-        if ($capacity['blocked']['at_capacity'] && !static::isExemptFromCap($orgSupplierProduct) && !request()->boolean('force')) {
+        if ($capacity['blocked']['at_capacity'] && !static::isExemptFromCap($orgSupplierProduct) && !$force) {
             throw ValidationException::withMessages(['over_budget' => __(
                 'Shopping list is already at the level :agent historically lands for us in one order cycle (:cap :currency). More than this is unlikely to arrive any sooner.',
                 [

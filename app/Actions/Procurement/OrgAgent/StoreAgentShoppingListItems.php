@@ -22,7 +22,7 @@ class StoreAgentShoppingListItems extends OrgAction
     use WithProcurementEditAuthorisation;
 
     /**
-     * @return array{added: int}
+     * @return array{added: int, over_budget: bool}
      */
     public function handle(OrgAgent $orgAgent, array $modelData): array
     {
@@ -32,7 +32,7 @@ class StoreAgentShoppingListItems extends OrgAction
             ->get()
             ->keyBy('id');
 
-        return DB::transaction(function () use ($modelData, $orgSupplierProducts) {
+        $result = DB::transaction(function () use ($modelData, $orgSupplierProducts) {
             $added = 0;
 
             foreach ($modelData['lines'] as $line) {
@@ -45,6 +45,7 @@ class StoreAgentShoppingListItems extends OrgAction
                 StoreShoppingListItem::make()->action($orgSupplierProduct, [
                     'quantity_units' => $line['quantity_units'],
                     'notes'          => $line['notes'] ?? null,
+                    'force'          => true,
                 ]);
 
                 $added++;
@@ -52,6 +53,8 @@ class StoreAgentShoppingListItems extends OrgAction
 
             return ['added' => $added];
         });
+
+        return [...$result, 'over_budget' => GetAgentOrderCapacity::run($orgAgent)['blocked']['at_capacity']];
     }
 
     public function rules(): array

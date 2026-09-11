@@ -9,6 +9,8 @@
 namespace App\Actions\Procurement\ShoppingListItem;
 
 use App\Actions\OrgAction;
+use App\Actions\Procurement\OrgAgent\GetAgentOrderCapacity;
+use App\Actions\Procurement\OrgSupplier\GetSupplierOrderCapacity;
 use App\Models\Procurement\OrgSupplierProduct;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Http\RedirectResponse;
@@ -36,6 +38,7 @@ class StoreShoppingListItems extends OrgAction
     {
         $created = 0;
         $skipped = [];
+        $touched = [];
 
         foreach ($lines as $line) {
             $orgSupplierProduct = OrgSupplierProduct::find($line['org_supplier_product_id']);
@@ -47,8 +50,10 @@ class StoreShoppingListItems extends OrgAction
                 StoreShoppingListItem::make()->action($orgSupplierProduct, [
                     'quantity_units' => $line['quantity_units'],
                     'notes'          => $line['notes'] ?? null,
+                    'force'          => true,
                 ]);
                 $created++;
+                $touched[$orgSupplierProduct->id] = $orgSupplierProduct;
             } catch (HttpException $exception) {
                 $skipped[] = [
                     'org_supplier_product_id' => $orgSupplierProduct->id,
@@ -57,7 +62,29 @@ class StoreShoppingListItems extends OrgAction
             }
         }
 
-        return ['created' => $created, 'skipped' => $skipped];
+        return ['created' => $created, 'skipped' => $skipped, 'over_budget' => $this->isOverBudget($touched)];
+    }
+
+    /**
+     * @param array<int, OrgSupplierProduct> $orgSupplierProducts
+     */
+    protected function isOverBudget(array $orgSupplierProducts): bool
+    {
+        foreach ($orgSupplierProducts as $orgSupplierProduct) {
+            $orgSupplier = $orgSupplierProduct->orgSupplier;
+            $orgAgent    = $orgSupplierProduct->orgAgent ?? $orgSupplier?->orgAgent;
+            $capacity    = match (true) {
+                $orgAgent !== null    => GetAgentOrderCapacity::run($orgAgent),
+                $orgSupplier !== null => GetSupplierOrderCapacity::run($orgSupplier),
+                default               => null,
+            };
+
+            if ($capacity && $capacity['blocked']['at_capacity']) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     public function rules(): array

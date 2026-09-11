@@ -17,6 +17,7 @@ use App\Models\Procurement\OrgSupplierProduct;
 use App\Models\Procurement\ShoppingListItem;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
@@ -32,10 +33,12 @@ class StoreShoppingListItem extends OrgAction
         $orgSupplier = $orgSupplierProduct->orgSupplier;
         $orgAgent    = $orgSupplierProduct->orgAgent ?? $orgSupplier?->orgAgent;
 
+        $force = (bool) Arr::pull($modelData, 'force', false);
+
         if ($orgAgent) {
-            GetAgentOrderCapacity::guardAdd($orgAgent, $orgSupplierProduct);
+            GetAgentOrderCapacity::guardAdd($orgAgent, $orgSupplierProduct, $force);
         } elseif ($orgSupplier) {
-            GetSupplierOrderCapacity::guardAdd($orgSupplier, $orgSupplierProduct);
+            GetSupplierOrderCapacity::guardAdd($orgSupplier, $orgSupplierProduct, $force);
         }
 
         data_set($modelData, 'group_id', $orgSupplierProduct->group_id);
@@ -58,6 +61,7 @@ class StoreShoppingListItem extends OrgAction
     {
         return [
             'quantity_units' => ['required', 'numeric', 'min:0.01'],
+            'force'          => ['sometimes', 'boolean'],
             'priority'       => ['sometimes', 'required', Rule::enum(ShoppingListItemPriorityEnum::class)],
             'needed_by'      => ['sometimes', 'nullable', 'date'],
             'notes'          => ['sometimes', 'nullable', 'string'],

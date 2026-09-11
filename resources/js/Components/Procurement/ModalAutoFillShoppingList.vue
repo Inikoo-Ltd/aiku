@@ -92,7 +92,7 @@ async function commit() {
     isCommitting.value = true
 
     try {
-        await axios.post(
+        const response = await axios.post(
             route("grp.org.procurement.org_partners.show.shopping_list.bulk_store", [
                 route().params["organisation"],
                 props.orgPartnerId,
@@ -110,6 +110,13 @@ async function commit() {
             text: `${selectedLines.value.length} ${trans("items added to the shopping list")}`,
             type: "success",
         })
+        if (response.data?.over_budget) {
+            notify({
+                title: trans("Over the recommended budget"),
+                text: trans("The shopping list is now over the recommended budget. This is a recommendation only, you decide."),
+                type: "warning",
+            })
+        }
         closeModal()
         router.reload()
     } catch (error: any) {

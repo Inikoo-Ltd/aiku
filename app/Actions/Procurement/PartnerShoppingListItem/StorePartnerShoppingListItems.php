@@ -9,6 +9,7 @@
 namespace App\Actions\Procurement\PartnerShoppingListItem;
 
 use App\Actions\OrgAction;
+use App\Actions\Procurement\OrgPartner\GetPartnerOrderCapacity;
 use App\Models\Inventory\OrgStock;
 use App\Models\Procurement\OrgPartner;
 use App\Models\SysAdmin\Organisation;
@@ -47,6 +48,7 @@ class StorePartnerShoppingListItems extends OrgAction
                 StorePartnerShoppingListItem::make()->action($orgPartner, $orgStock, [
                     'quantity' => $line['quantity'],
                     'notes'    => $line['notes'] ?? null,
+                    'force'    => true,
                 ]);
                 $created++;
             } catch (HttpException $exception) {
@@ -57,7 +59,11 @@ class StorePartnerShoppingListItems extends OrgAction
             }
         }
 
-        return ['created' => $created, 'skipped' => $skipped];
+        return [
+            'created'     => $created,
+            'skipped'     => $skipped,
+            'over_budget' => GetPartnerOrderCapacity::run($orgPartner)['blocked']['at_capacity'],
+        ];
     }
 
     public function rules(): array

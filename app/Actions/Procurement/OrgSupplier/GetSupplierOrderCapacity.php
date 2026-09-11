@@ -235,11 +235,11 @@ class GetSupplierOrderCapacity
             || $orgStock->health_rank === HealthRankEnum::A;
     }
 
-    public static function guardAdd(OrgSupplier $orgSupplier, OrgSupplierProduct $orgSupplierProduct): void
+    public static function guardAdd(OrgSupplier $orgSupplier, OrgSupplierProduct $orgSupplierProduct, bool $force = false): void
     {
         $capacity = static::run($orgSupplier);
 
-        if ($capacity['blocked']['at_capacity'] && !static::isExemptFromCap($orgSupplierProduct) && !request()->boolean('force')) {
+        if ($capacity['blocked']['at_capacity'] && !static::isExemptFromCap($orgSupplierProduct) && !$force) {
             throw ValidationException::withMessages(['over_budget' => __(
                 'Shopping list is already at the level :supplier historically delivers to us in one order cycle (:cap :currency). More than this is unlikely to arrive any sooner.',
                 [
