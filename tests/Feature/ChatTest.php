@@ -82,6 +82,7 @@ use App\Models\Chat\MetaChatEvent;
 use App\Models\Chat\MetaChatSession;
 use App\Models\Chat\ShopHasChatAgent;
 use App\Models\Catalogue\Product;
+use App\Actions\CRM\Customer\StoreCustomer;
 use App\Models\CRM\Customer;
 use App\Models\CRM\WebUser;
 use App\Models\Helpers\Media;
@@ -2667,7 +2668,7 @@ test('an agent queue can only be read by the agent it belongs to', function () {
 });
 
 test('customer chat history merges website and whatsapp sessions', function () {
-    $customer = createCustomer($this->shop);
+    $customer = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
     $webUser  = StoreWebUser::make()->action($customer, WebUser::factory()->definition());
 
     $websiteSession = ChatSession::create([
@@ -2710,7 +2711,7 @@ test('customer chat history merges website and whatsapp sessions', function () {
 });
 
 test('customer chat history resolves the customer from a web user id', function () {
-    $customer = createCustomer($this->shop);
+    $customer = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
     $webUser  = StoreWebUser::make()->action($customer, WebUser::factory()->definition());
 
     $channel = MetaChannel::firstOrCreate(['code' => 'whatsapp'], ['name' => 'WhatsApp']);
