@@ -9,6 +9,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faFilePdf, faImage, faPlus, faTags, faTrashAlt } from "@fal"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import ArtefactLabelSheetModal from "@/Components/Production/Artefact/ArtefactLabelSheetModal.vue"
+import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
 import { useFormatTime } from "@/Composables/useFormatTime"
 
 library.add(faFilePdf, faImage, faPlus, faTags, faTrashAlt)
@@ -238,12 +239,21 @@ const onSaveBatchSize = async () => {
                             <div class="truncate text-sm">{{ label.name }}</div>
                             <div class="truncate text-xs text-gray-500">{{ describeLabel(label) }}</div>
                         </div>
-                        <button
-                            class="text-gray-400 hover:text-red-600 disabled:opacity-40"
-                            :disabled="deletingLabelId === label.id"
-                            @click.stop="onDeleteLabel(label)">
-                            <FontAwesomeIcon icon="fal fa-trash-alt" fixed-width aria-hidden="true" />
-                        </button>
+                        <div @click.stop>
+                            <ModalConfirmationDelete
+                                :title="trans('Delete label :name?', { name: label.name })"
+                                :description="trans('The label and its layout will no longer be available to print.')"
+                                @onYes="onDeleteLabel(label)">
+                                <template #default="{ changeModel }">
+                                    <button
+                                        class="text-gray-400 hover:text-red-600 disabled:opacity-40"
+                                        :disabled="deletingLabelId === label.id"
+                                        @click="changeModel">
+                                        <FontAwesomeIcon icon="fal fa-trash-alt" fixed-width aria-hidden="true" />
+                                    </button>
+                                </template>
+                            </ModalConfirmationDelete>
+                        </div>
                     </div>
                 </div>
             </div>

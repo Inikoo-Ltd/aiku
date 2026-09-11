@@ -124,6 +124,7 @@ const backgroundFile = ref<File | null>(null)
 const backgroundPreview = ref<string | null>(null)
 const isVectorArtwork = ref(false)
 const storedArtwork = ref<StoredArtwork | null>(null)
+const isArtworkRemovedByUser = ref(false)
 
 const currentLabelId = ref<number | null>(null)
 const labelName = ref("")
@@ -649,6 +650,7 @@ const replaceBackground = (file: File, preview: string, vector: boolean) => {
     backgroundPreview.value = preview
     isVectorArtwork.value = vector
     storedArtwork.value = null
+    isArtworkRemovedByUser.value = false
 }
 
 const releasePreview = () => {
@@ -750,7 +752,7 @@ const saveLabel = async (asNewLabel: boolean) => {
 
         if (backgroundFile.value && (!storedArtwork.value || !isUpdate)) {
             formData.append("artwork", backgroundFile.value)
-        } else if (!backgroundFile.value && isUpdate) {
+        } else if (isArtworkRemovedByUser.value && isUpdate) {
             formData.append("remove_artwork", "1")
         }
 
@@ -989,7 +991,7 @@ const describeFailure = async (error: any): Promise<string> => {
                             type="negative"
                             size="xs"
                             icon="fal fa-trash-alt"
-                            @click="removeBackground" />
+                            @click="() => (removeBackground(), isArtworkRemovedByUser = true)" />
                     </div>
                     <div v-if="backgroundFile" class="mt-1 truncate text-xs text-gray-500">
                         {{ backgroundFile.name }} • {{ formatBytes(backgroundFile.size) }}

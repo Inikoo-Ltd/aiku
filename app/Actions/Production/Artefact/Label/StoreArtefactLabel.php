@@ -54,13 +54,7 @@ class StoreArtefactLabel extends OrgAction
             return true;
         }
 
-        return $request->user()->authTo([
-            'org-supervisor.'.$this->organisation->id,
-            'productions-view.'.$this->organisation->id,
-            "productions_operations.{$this->production->id}.view",
-            "productions_operations.{$this->production->id}.orchestrate",
-            "productions_rd.{$this->production->id}.view",
-        ]);
+        return $request->user()->authTo(["org-supervisor.{$this->organisation->id}", "productions_rd.{$this->production->id}.edit"]);
     }
 
     public function action(Artefact $artefact, array $modelData): ArtefactLabel
