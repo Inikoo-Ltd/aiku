@@ -5,6 +5,7 @@ import { ref, computed } from "vue"
 import { router } from "@inertiajs/vue3"
 import { faCircle, faPlay, faTrash, faPlus, faBarcode, faCheckCircle } from "@fas"
 import { trans } from "laravel-vue-i18n"
+import { useStringToHex } from "@/Composables/useStringToHex"
 import { routeType } from "@/types/route"
 import { Accordion, AccordionPanel, AccordionHeader, AccordionContent } from "primevue"
 import { faTag } from "@far"
@@ -187,6 +188,16 @@ const labelInfoLabels: Record<keyof LabelInfoPresence, string> = {
     weee_symbol: trans("WEEE Symbol"),
     ip_rating: trans("IP Rating"),
     sorting_recycling_information: trans("Sorting / Recycling Information"),
+}
+
+const getLanguageChipStyle = (code: string) => {
+    const hex = useStringToHex(code.toUpperCase())
+
+    return {
+        backgroundColor: `color-mix(in srgb, ${hex} 30%, white)`,
+        border: `1px solid color-mix(in srgb, ${hex} 80%, black)`,
+        color: `color-mix(in srgb, ${hex} 70%, black)`,
+    }
 }
 
 const showFullWarnings = ref(false)
@@ -622,7 +633,8 @@ const getIcon = (type?: string) => {
                             <dt class="text-gray-500 whitespace-nowrap">{{ trans("Languages") }}</dt>
                             <dd v-if="labelInfo.languages?.show" class="font-medium flex flex-wrap gap-1 justify-end">
                                 <span v-for="language in labelInfo.languages.value" :key="language.code"
-                                    class="px-2 py-0.5 rounded-full text-xs bg-emerald-50 text-emerald-700 border border-emerald-100">
+                                    class="px-2 py-0.5 rounded-full text-xs"
+                                    :style="getLanguageChipStyle(language.code)">
                                     {{ language.name }}
                                 </span>
                             </dd>
