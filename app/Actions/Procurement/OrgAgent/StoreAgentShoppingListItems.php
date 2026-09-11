@@ -45,7 +45,6 @@ class StoreAgentShoppingListItems extends OrgAction
                 StoreShoppingListItem::make()->action($orgSupplierProduct, [
                     'quantity_units' => $line['quantity_units'],
                     'notes'          => $line['notes'] ?? null,
-                    'force'          => true,
                 ]);
 
                 $added++;

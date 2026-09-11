@@ -9,6 +9,7 @@
 namespace App\Actions\Procurement\PartnerShoppingListItem\UI;
 
 use App\Actions\OrgAction;
+use App\Actions\Procurement\OrgPartner\GetPartnerOrderCapacity;
 use App\Actions\Production\JobOrder\BatchedUnitsForDemand;
 use App\Actions\Traits\Authorisations\WithProcurementAuthorisation;
 use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
@@ -178,5 +179,13 @@ class IndexPartnerShoppingListOrgStocks extends OrgAction
         $this->initialisation($orgPartner->organisation, $request);
 
         return $this->handle($orgPartner);
+    }
+
+    public function jsonResponse(LengthAwarePaginator $orgStocks): array
+    {
+        return [
+            ...$orgStocks->toArray(),
+            'over_budget_message' => GetPartnerOrderCapacity::overBudgetMessage($this->orgPartner),
+        ];
     }
 }

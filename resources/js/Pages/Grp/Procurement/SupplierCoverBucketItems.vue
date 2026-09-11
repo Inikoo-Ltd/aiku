@@ -9,7 +9,6 @@ import { Head, Link, router } from "@inertiajs/vue3"
 import { ref } from "vue"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import NumberWithButtonSave from "@/Components/NumberWithButtonSave.vue"
-import ModalOverBudget from "@/Components/Procurement/ModalOverBudget.vue"
 import { capitalize } from "@/Composables/capitalize"
 import { useLocaleStore } from "@/Stores/locale"
 import { trans } from "laravel-vue-i18n"
@@ -56,7 +55,7 @@ function setQuantity(item: BucketItem, quantity: number) {
     commitTimers[item.id] = setTimeout(() => commitQuantity(item), 600)
 }
 
-function commitQuantity(item: BucketItem, force = false) {
+function commitQuantity(item: BucketItem) {
     const quantity = quantityFor(item)
     if (quantity === (item.ordered_quantity ?? 0)) {
         return
@@ -84,24 +83,10 @@ function commitQuantity(item: BucketItem, force = false) {
     } else if (quantity > 0) {
         router.post(
             route("grp.org.procurement.shopping_list.store", [organisation, item.slug]),
-            { quantity_units: quantity, force },
-            {
-                ...reloadOptions,
-                onError: (errors) => {
-                    if (errors.over_budget) overBudget.value = { message: errors.over_budget, item, quantity }
-                },
-            }
+            { quantity_units: quantity },
+            reloadOptions
         )
     }
-}
-
-const overBudget = ref<{ message: string, item: BucketItem, quantity: number } | null>(null)
-const shoppingListHref = route("grp.org.procurement.shopping_list.index", [route().params["organisation"]])
-
-const onOverBudgetConfirm = () => {
-    const pending = overBudget.value
-    overBudget.value = null
-    if (pending) commitQuantity(pending.item, true)
 }
 
 const cartonsOf = (item: BucketItem) =>
@@ -113,7 +98,6 @@ const amountOf = (item: BucketItem) => quantityFor(item) * Number(item.cost ?? 0
 <template>
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead" />
-    <ModalOverBudget :message="overBudget?.message ?? null" :removeHref="shoppingListHref" @back="overBudget = null" @confirm="onOverBudgetConfirm" />
 
     <div class="mx-4 mt-5">
         <div class="mb-2 flex items-baseline justify-between text-sm text-gray-500">

@@ -13,6 +13,11 @@ import Button from "@/Components/Elements/Buttons/Button.vue"
 import { notify } from "@kyvg/vue3-notification"
 import { trans } from "laravel-vue-i18n"
 import { useLocaleStore } from "@/Stores/locale"
+import { library } from "@fortawesome/fontawesome-svg-core"
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { faExclamationTriangle } from "@fas"
+
+library.add(faExclamationTriangle)
 
 const locale = useLocaleStore()
 
@@ -66,6 +71,8 @@ const lineCost = (line: ProposalLine) => Math.round(line.cartons * (line.cost_pe
 
 const selectedTotal = computed(() => Math.round(selectedLines.value.reduce((sum, line) => sum + lineCost(line), 0) * 100) / 100)
 
+const budgetLeft = ref<number | null>(null)
+const exceedsOrderBudget = computed(() => budgetLeft.value !== null && selectedTotal.value > budgetLeft.value)
 const cappedBelowAsked = computed(() => allowedBudget.value !== null && budget.value !== null && allowedBudget.value < budget.value)
 
 async function generate() {
@@ -83,6 +90,7 @@ async function generate() {
             }
         )
         allowedBudget.value = response.data.budget ?? null
+        budgetLeft.value = response.data.budget_left ?? null
         proposal.value = (response.data.lines ?? []).map((line: ProposalLine) => ({
             ...line,
             selected: true,
@@ -104,7 +112,7 @@ async function commit() {
     isCommitting.value = true
 
     try {
-        const response = await axios.post(
+        await axios.post(
             route("grp.org.procurement.org_agents.show.shopping.bulk_store", [route().params["organisation"], props.orgAgentSlug]),
             {
                 lines: selectedLines.value.map((line) => ({
@@ -119,13 +127,6 @@ async function commit() {
             text: `${selectedLines.value.length} ${trans("items added to the shopping list")}`,
             type: "success",
         })
-        if (response.data?.over_budget) {
-            notify({
-                title: trans("Over the recommended budget"),
-                text: trans("The shopping list is now over the recommended budget. This is a recommendation only, you decide."),
-                type: "warning",
-            })
-        }
         closeModal()
         router.reload()
     } catch (error: any) {
@@ -224,13 +225,19 @@ async function commit() {
                         <div class="text-gray-600">
                             {{ trans("Total") }}: {{ locale.currencyFormat(currency, selectedTotal) }}
                         </div>
-                        <Button
-                            type="save"
-                            :label="`${trans('Add')} ${selectedLines.length} ${trans('items to shopping list')}`"
-                            :loading="isCommitting"
-                            :disabled="!selectedLines.length"
-                            @click="commit"
-                        />
+                        <div class="flex items-center gap-3">
+                            <span v-if="exceedsOrderBudget" class="flex items-center gap-1.5 text-sm font-medium text-red-600">
+                                <FontAwesomeIcon icon="fas fa-exclamation-triangle" fixed-width aria-hidden="true" />
+                                {{ trans("Warning: budget exceeded") }}
+                            </span>
+                            <Button
+                                type="save"
+                                :label="`${trans('Add')} ${selectedLines.length} ${trans('items to shopping list')}`"
+                                :loading="isCommitting"
+                                :disabled="!selectedLines.length"
+                                @click="commit"
+                            />
+                        </div>
                     </div>
                 </template>
             </template>

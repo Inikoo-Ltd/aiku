@@ -48,7 +48,6 @@ class StorePartnerShoppingListItems extends OrgAction
                 StorePartnerShoppingListItem::make()->action($orgPartner, $orgStock, [
                     'quantity' => $line['quantity'],
                     'notes'    => $line['notes'] ?? null,
-                    'force'    => true,
                 ]);
                 $created++;
             } catch (HttpException $exception) {

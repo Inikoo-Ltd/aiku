@@ -18,15 +18,14 @@ import { routeType } from "@/types/route"
 import axios from "axios"
 import { debounce } from "lodash-es"
 import { faSearch, faSpinner } from "@fal"
-import { faMinus, faPlus } from "@fas"
+import { faExclamationTriangle, faMinus, faPlus } from "@fas"
 import { notify } from "@kyvg/vue3-notification"
 import { trans } from "laravel-vue-i18n"
 import Image from "@common/Components/Image.vue"
 import NumberWithButtonSave from "@/Components/NumberWithButtonSave.vue"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
-import ModalOverBudget from "@/Components/Procurement/ModalOverBudget.vue"
 
-library.add(faSearch, faPlus, faMinus, faSpinner)
+library.add(faSearch, faPlus, faMinus, faSpinner, faExclamationTriangle)
 
 const props = defineProps<{
     fetchRoute: routeType
@@ -38,7 +37,7 @@ const optionsLinks = ref<any>(null)
 const isLoading = ref(false)
 const isRowLoading = ref<number | null>(null)
 const searchQuery = ref("")
-const overBudget = ref<{ message: string, row: any } | null>(null)
+const overBudgetMessage = ref<string | null>(null)
 
 const closeModal = () => {
     model.value = false
@@ -58,6 +57,7 @@ const fetchRows = async (url?: string, append = false) => {
     try {
         const response = await axios.get(urlToFetch)
         rows.value = append ? [...rows.value, ...response.data.data] : response.data.data
+        overBudgetMessage.value = response.data.over_budget_message ?? null
         optionsLinks.value = { next: response.data.links?.next ?? response.data.next_page_url }
     } catch (error) {
         console.error("Error fetching partner stock list:", error)
@@ -72,6 +72,7 @@ const debouncedFetch = debounce(async (query: string) => {
 
 const refreshSingleRow = async (rowData: any) => {
     const response = await axios.get(getUrlFetch({ "filter[global]": rowData.code }))
+    overBudgetMessage.value = response.data.over_budget_message ?? null
     const updated = response.data.data.find((r: any) => r.id === rowData.id)
     if (updated) {
         const idx = rows.value.findIndex((r: any) => r.id === rowData.id)
@@ -82,25 +83,20 @@ const refreshSingleRow = async (rowData: any) => {
     }
 }
 
-const onSubmitRow = async (row: any, force = false) => {
+const onSubmitRow = async (row: any) => {
     isRowLoading.value = row.id
 
     try {
         const quantity = Number(row.quantity_ordered) || 0
         if (quantity > 0 && row.saveRoute) {
             const method = String(row.saveRoute.method ?? "post").toLowerCase()
-            await axios[method](route(row.saveRoute.name, row.saveRoute.parameters), { quantity, force })
+            await axios[method](route(row.saveRoute.name, row.saveRoute.parameters), { quantity })
             await refreshSingleRow(row)
         } else if (quantity === 0 && row.deleteRoute) {
             await axios.delete(route(row.deleteRoute.name, row.deleteRoute.parameters))
             await refreshSingleRow(row)
         }
     } catch (error: any) {
-        const overBudgetMessage = error?.response?.data?.errors?.over_budget?.[0]
-        if (overBudgetMessage) {
-            overBudget.value = { message: overBudgetMessage, row }
-            return
-        }
         notify({
             title: trans("Something went wrong"),
             text: error?.response?.data?.message || trans("Failed to add or update the quantity"),
@@ -112,18 +108,6 @@ const onSubmitRow = async (row: any, force = false) => {
 }
 
 const debSubmitRow = debounce(onSubmitRow, 500)
-
-const onOverBudgetBack = async () => {
-    const row = overBudget.value?.row
-    overBudget.value = null
-    if (row) await refreshSingleRow(row)
-}
-
-const onOverBudgetConfirm = () => {
-    const row = overBudget.value?.row
-    overBudget.value = null
-    if (row) onSubmitRow(row, true)
-}
 
 const nextBatchMultiple = (row: any): number | null => {
     const quantum = Number(row.order_quantum) || 0
@@ -197,11 +181,18 @@ watch(() => model.value, async (newValue) => {
 <template>
     <KeepAlive>
         <Modal :isOpen="model" @onClose="closeModal" :closeButton="true" width="w-full max-w-2xl md:max-w-5xl">
-            <ModalOverBudget :message="overBudget?.message ?? null" @back="onOverBudgetBack" @confirm="onOverBudgetConfirm" />
             <div class="flex flex-col justify-between h-[600px] overflow-y-auto pb-4 px-3">
                 <div>
                     <div class="flex justify-center py-2 text-gray-600 font-medium mb-3">
                         <h2>{{ trans("Partner stocks") }}</h2>
+                    </div>
+
+                    <div v-if="overBudgetMessage" class="mb-3 flex items-start gap-2 rounded-lg border border-red-300 bg-red-50 px-4 py-2 text-sm text-red-800">
+                        <FontAwesomeIcon icon="fas fa-exclamation-triangle" class="mt-0.5 text-red-600" fixed-width aria-hidden="true" />
+                        <div>
+                            <span class="font-semibold">{{ trans("Over the recommended budget.") }}</span>
+                            {{ overBudgetMessage }}
+                        </div>
                     </div>
 
                     <div class="card w-full">

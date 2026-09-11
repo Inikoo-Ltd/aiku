@@ -8,7 +8,6 @@
 
 namespace App\Actions\Procurement\OrgPartner;
 
-use App\Enums\Catalogue\HealthRankEnum;
 use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderDeliveryStateEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
@@ -18,7 +17,6 @@ use App\Models\Procurement\OrgPartner;
 use App\Models\Procurement\PartnerShoppingListItem;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\Concerns\AsObject;
 
 class GetPartnerOrderCapacity
@@ -222,18 +220,22 @@ class GetPartnerOrderCapacity
             ->count();
     }
 
-    public static function isExemptFromCap(OrgPartner $orgPartner, OrgStock $sellerOrgStock): bool
+    public static function overBudgetMessage(OrgPartner $orgPartner): ?string
     {
-        $buyerOrgStock = OrgStock::where('organisation_id', $orgPartner->organisation_id)
-            ->where('stock_id', $sellerOrgStock->stock_id)
-            ->first();
+        $capacity = static::run($orgPartner);
 
-        if (!$buyerOrgStock) {
-            return false;
+        if (!$capacity['blocked']['at_capacity']) {
+            return null;
         }
 
-        return (float) $buyerOrgStock->quantity_available <= 0
-            || $buyerOrgStock->health_rank === HealthRankEnum::A;
+        return __(
+            'Shopping list is already at the level :partner historically delivers to us in one order cycle (:cap :currency). More than this is unlikely to arrive any sooner.',
+            [
+                'partner'  => $orgPartner->partner->name,
+                'cap'      => number_format((float) $capacity['partner_capacity']['delivers_to_us_per_30d'] * $orgPartner->exchangeToOrgCurrency(), 2),
+                'currency' => $orgPartner->organisation->currency->code,
+            ]
+        );
     }
 
     public static function isNeverStocked(OrgPartner $orgPartner, OrgStock $sellerOrgStock): bool
@@ -243,20 +245,10 @@ class GetPartnerOrderCapacity
             ->exists();
     }
 
-    public static function guardAdd(OrgPartner $orgPartner, OrgStock $sellerOrgStock, bool $force = false): void
+    public static function guardAdd(OrgPartner $orgPartner, OrgStock $sellerOrgStock): void
     {
         $capacity = static::run($orgPartner);
 
-        if ($capacity['blocked']['at_capacity'] && !static::isExemptFromCap($orgPartner, $sellerOrgStock) && !$force) {
-            throw ValidationException::withMessages(['over_budget' => __(
-                'Shopping list is already at the level :partner historically delivers to us in one order cycle (:cap :currency). More than this is unlikely to arrive any sooner.',
-                [
-                    'partner'  => $orgPartner->partner->name,
-                    'cap'      => number_format((float) $capacity['partner_capacity']['delivers_to_us_per_30d'] * $orgPartner->exchangeToOrgCurrency(), 2),
-                    'currency' => $orgPartner->organisation->currency->code,
-                ]
-            )]);
-        }
 
         if ($capacity['warehouse']['total_locations'] > 0 && static::isNeverStocked($orgPartner, $sellerOrgStock)) {
             if ($capacity['blocked']['warehouse_full']) {

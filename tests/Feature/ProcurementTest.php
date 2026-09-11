@@ -3492,7 +3492,7 @@ describe('partner browse', function () {
             ->and($capacity['blocked'])->toHaveKeys(['at_capacity', 'warehouse_full']);
     });
 
-    test('capacity guard blocks non-exempt adds and lets A-rank or out-of-stock through', function () {
+    test('shopping list adds are never blocked by the order budget', function () {
         $seller = $this->orgPartner->partner;
         $sellerShop = $seller->shops()->first() ?? StoreShop::run($seller, Shop::factory()->definition());
         [, $sellerProduct] = createProduct($sellerShop);
@@ -3518,15 +3518,10 @@ describe('partner browse', function () {
         ]);
 
         expect(GetPartnerOrderCapacity::run($this->orgPartner->refresh())['blocked']['at_capacity'])->toBeTrue()
-            ->and(fn () => StorePartnerShoppingListItem::make()->action($this->orgPartner, $this->buyerOrgStock, [
+            ->and(GetPartnerOrderCapacity::overBudgetMessage($this->orgPartner))->toBeString()
+            ->and(StorePartnerShoppingListItem::make()->action($this->orgPartner, $this->buyerOrgStock, [
                 'quantity' => 1,
-            ]))->toThrow(ValidationException::class);
-
-        $forcedItem = StorePartnerShoppingListItem::make()->action($this->orgPartner, $this->buyerOrgStock, [
-            'quantity' => 1,
-            'force'    => true,
-        ]);
-        expect($forcedItem)->toBeInstanceOf(PartnerShoppingListItem::class);
+            ]))->toBeInstanceOf(PartnerShoppingListItem::class);
 
         $bulk = StorePartnerShoppingListItems::make()->action($this->orgPartner, [
             ['org_stock_id' => $this->buyerOrgStock->id, 'quantity' => 1],
@@ -4186,7 +4181,7 @@ test('supplier misplaced shopping list cleanup only accepts non-orderable bucket
         ->toBeInt();
 });
 
-test('supplier capacity cap blocks non-exempt adds to the shopping list', function () {
+test('supplier order budget does not block adds to the shopping list', function () {
     [$orgSupplier, , $orgSupplierProduct] = independentOrgSupplierFixture($this);
 
     Cache::put("supplier-order-capacity:{$orgSupplier->id}", [
@@ -4207,14 +4202,15 @@ test('supplier capacity cap blocks non-exempt adds to the shopping list', functi
     $first = StoreShoppingListItem::make()->action($orgSupplierProduct, ['quantity_units' => 5]);
 
     expect(App\Actions\Procurement\OrgSupplier\GetSupplierOrderCapacity::run($orgSupplier)['blocked']['at_capacity'])->toBeTrue()
-        ->and(fn () => StoreShoppingListItem::make()->action($orgSupplierProduct, ['quantity_units' => 1]))
-        ->toThrow(ValidationException::class);
+        ->and($second = StoreShoppingListItem::make()->action($orgSupplierProduct, ['quantity_units' => 1]))
+        ->toBeInstanceOf(ShoppingListItem::class);
 
+    DeleteShoppingListItem::make()->action($second);
     DeleteShoppingListItem::make()->action($first);
     Cache::forget("supplier-order-capacity:{$orgSupplier->id}");
 });
 
-test('agent capacity guard blocks non-exempt adds and lets A-rank or out-of-stock through', function () {
+test('agent order budget does not block adds to the shopping list', function () {
     $this->orgSupplier->update(['org_agent_id' => $this->orgAgent->id, 'agent_id' => $this->orgAgent->agent_id]);
     $this->orgSupplierProduct->update(['org_agent_id' => $this->orgAgent->id]);
 
@@ -4266,9 +4262,11 @@ test('agent capacity guard blocks non-exempt adds and lets A-rank or out-of-stoc
 
     expect(App\Actions\Procurement\OrgAgent\GetAgentOrderCapacity::run($this->orgAgent)['blocked']['at_capacity'])->toBeTrue();
 
-    expect(fn () => App\Actions\Procurement\ShoppingListItem\StoreShoppingListItem::make()
-        ->action($this->orgSupplierProduct, ['quantity_units' => 1]))
-        ->toThrow(ValidationException::class);
+    $overBudgetItem = App\Actions\Procurement\ShoppingListItem\StoreShoppingListItem::make()
+        ->action($this->orgSupplierProduct, ['quantity_units' => 1]);
+
+    expect($overBudgetItem->agent_id)->toBe($this->orgAgent->agent_id);
+    $overBudgetItem->forceDelete();
 
     $orgStock->update(['quantity_available' => 0]);
 

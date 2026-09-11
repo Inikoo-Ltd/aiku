@@ -9,7 +9,6 @@
 namespace App\Actions\Procurement\OrgAgent;
 
 use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
-use App\Enums\Catalogue\HealthRankEnum;
 use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
 use App\Enums\Procurement\OrgSupplierProduct\OrgSupplierProductStateEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderDeliveryStateEnum;
@@ -21,7 +20,6 @@ use App\Models\Procurement\OrgAgent;
 use App\Models\Procurement\OrgSupplierProduct;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\Concerns\AsObject;
 
 class GetAgentOrderCapacity
@@ -230,37 +228,15 @@ class GetAgentOrderCapacity
             ->first();
     }
 
-    public static function isExemptFromCap(OrgSupplierProduct $orgSupplierProduct): bool
-    {
-        $orgStock = static::linkedOrgStock($orgSupplierProduct);
-
-        if (!$orgStock) {
-            return false;
-        }
-
-        return (float) $orgStock->quantity_available <= 0
-            || $orgStock->health_rank === HealthRankEnum::A;
-    }
-
     /**
      * The budget is the agent's, but the warehouse is everyone's: a new product still has to fit
      * this agent's fair share of free slots, and an item we have run out of or rank A always gets
      * through the budget cap.
      */
-    public static function guardAdd(OrgAgent $orgAgent, OrgSupplierProduct $orgSupplierProduct, bool $force = false): void
+    public static function guardAdd(OrgAgent $orgAgent, OrgSupplierProduct $orgSupplierProduct): void
     {
         $capacity = static::run($orgAgent);
 
-        if ($capacity['blocked']['at_capacity'] && !static::isExemptFromCap($orgSupplierProduct) && !$force) {
-            throw ValidationException::withMessages(['over_budget' => __(
-                'Shopping list is already at the level :agent historically lands for us in one order cycle (:cap :currency). More than this is unlikely to arrive any sooner.',
-                [
-                    'agent'    => $orgAgent->agent->name,
-                    'cap'      => number_format((float) $capacity['agent_capacity']['lands_for_us_per_30d'], 2),
-                    'currency' => $capacity['currency'],
-                ]
-            )]);
-        }
 
         if ($capacity['warehouse']['total_locations'] > 0 && !static::linkedOrgStock($orgSupplierProduct)) {
             if ($capacity['blocked']['warehouse_full']) {

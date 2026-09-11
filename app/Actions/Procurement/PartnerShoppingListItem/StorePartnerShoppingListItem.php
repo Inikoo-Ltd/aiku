@@ -19,7 +19,6 @@ use App\Models\Procurement\OrgPartner;
 use App\Models\Procurement\PartnerShoppingListItem;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
@@ -36,7 +35,7 @@ class StorePartnerShoppingListItem extends OrgAction
             'Org stock does not belong to the buying organisation or its partner'
         );
 
-        GetPartnerOrderCapacity::guardAdd($orgPartner, $orgStock, (bool) Arr::pull($modelData, 'force', false));
+        GetPartnerOrderCapacity::guardAdd($orgPartner, $orgStock);
 
         $buyerOrgStock = $orgStock;
         if ($orgStock->organisation_id !== $orgPartner->organisation_id) {
@@ -68,7 +67,6 @@ class StorePartnerShoppingListItem extends OrgAction
     {
         return [
             'quantity' => ['required', 'numeric', 'min:0.01'],
-            'force'    => ['sometimes', 'boolean'],
             'priority'       => ['sometimes', 'required', Rule::enum(ShoppingListItemPriorityEnum::class)],
             'needed_by'      => ['sometimes', 'nullable', 'date'],
             'notes'          => ['sometimes', 'nullable', 'string'],

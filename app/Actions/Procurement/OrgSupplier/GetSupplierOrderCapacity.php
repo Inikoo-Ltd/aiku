@@ -8,7 +8,6 @@
 
 namespace App\Actions\Procurement\OrgSupplier;
 
-use App\Enums\Catalogue\HealthRankEnum;
 use App\Enums\Procurement\OrgSupplierProduct\OrgSupplierProductStateEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderDeliveryStateEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
@@ -18,7 +17,6 @@ use App\Models\Procurement\OrgSupplier;
 use App\Models\Procurement\OrgSupplierProduct;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\Concerns\AsObject;
 
 class GetSupplierOrderCapacity
@@ -223,32 +221,10 @@ class GetSupplierOrderCapacity
             ->first();
     }
 
-    public static function isExemptFromCap(OrgSupplierProduct $orgSupplierProduct): bool
-    {
-        $orgStock = static::linkedOrgStock($orgSupplierProduct);
-
-        if (!$orgStock) {
-            return false;
-        }
-
-        return (float) $orgStock->quantity_available <= 0
-            || $orgStock->health_rank === HealthRankEnum::A;
-    }
-
-    public static function guardAdd(OrgSupplier $orgSupplier, OrgSupplierProduct $orgSupplierProduct, bool $force = false): void
+    public static function guardAdd(OrgSupplier $orgSupplier, OrgSupplierProduct $orgSupplierProduct): void
     {
         $capacity = static::run($orgSupplier);
 
-        if ($capacity['blocked']['at_capacity'] && !static::isExemptFromCap($orgSupplierProduct) && !$force) {
-            throw ValidationException::withMessages(['over_budget' => __(
-                'Shopping list is already at the level :supplier historically delivers to us in one order cycle (:cap :currency). More than this is unlikely to arrive any sooner.',
-                [
-                    'supplier' => $orgSupplier->supplier->name,
-                    'cap'      => number_format((float) $capacity['supplier_capacity']['delivers_to_us_per_30d'], 2),
-                    'currency' => $orgSupplier->supplier->currency->code,
-                ]
-            )]);
-        }
 
         if ($capacity['warehouse']['total_locations'] > 0 && !static::linkedOrgStock($orgSupplierProduct)) {
             if ($capacity['blocked']['warehouse_full']) {
