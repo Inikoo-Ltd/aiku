@@ -109,7 +109,7 @@ const screenType = inject("screenType", "desktop")
 </script>
 
 <template>
-  <div v-if="fieldValue?.builderType != 'beefree'" class="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-12 max-w-7xl mx-auto px-4 py-10 text-gray-800"   :style="{fontFamily: 'Raleway, sans-serif'}">
+  <div v-if="fieldValue?.builderType != 'beefree'" class="grid grid-cols-1 lg:grid-cols-[280px_minmax(0,1fr)] gap-12 max-w-7xl mx-auto px-4 py-10 text-gray-800"   :style="{fontFamily: 'Raleway, sans-serif'}">
     <!-- Sidebar -->
     <aside class="lg:sticky lg:top-10 max-h-[80vh] overflow-y-auto hidden lg:block border-r border-gray-100 pr-6">
       <div v-if="headings.length" class="text-sm font-semibold text-gray-500 mb-4 uppercase tracking-wider">
@@ -153,7 +153,7 @@ const screenType = inject("screenType", "desktop")
     </aside>
 
     <!-- Main Content -->
-    <article class="max-w-3xl mx-auto">
+    <article class="w-full min-w-0 max-w-3xl mx-auto">
       <!-- <h1 class="text-4xl font-bold tracking-tight mb-3 leading-snug text-gray-900">
         {{ fieldValue.title }}
       </h1> -->
@@ -174,7 +174,7 @@ const screenType = inject("screenType", "desktop")
 
       <!-- Article Content -->
       <div :style="{fontFamily: 'Raleway, sans-serif', fontSize: '1.1250rem', ...getStyles(fieldValue.properties, screenType)}">
-        <div class="prose prose-blue max-w-none scroll-smooth mb-10" ref="contentRef" v-html="contentHtml" />
+        <div class="prose prose-blue max-w-none scroll-smooth mb-10 break-words" ref="contentRef" v-html="contentHtml" />
       </div>
 
 
@@ -221,8 +221,18 @@ const screenType = inject("screenType", "desktop")
 </template>
 
 <style scoped>
-.prose img {
+.prose :deep(*) {
+  max-width: 100%;
+}
+
+.prose :deep(img) {
+  height: auto;
   border-radius: 0.5rem;
+}
+
+.prose :deep(table) {
+  display: block;
+  overflow-x: auto;
 }
 
 html {
