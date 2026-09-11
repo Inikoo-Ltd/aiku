@@ -10,14 +10,11 @@ namespace App\Console\Commands;
 
 use App\Actions\Production\Artefact\AttachRawMaterialToRecipeStep;
 use App\Actions\Production\Artefact\StoreArtefact;
-use App\Actions\Production\ManufactureTask\StoreManufactureTask;
+use App\Actions\Production\ManufactureTask\GetDefaultManufactureTask;
 use App\Actions\Production\RawMaterial\StoreRawMaterial;
-use App\Enums\Production\ManufactureTask\ManufactureTaskOperativeRewardAllowanceTypeEnum;
-use App\Enums\Production\ManufactureTask\ManufactureTaskOperativeRewardTermsEnum;
 use App\Enums\Production\RawMaterial\RawMaterialTypeEnum;
 use App\Models\Production\Artefact;
 use App\Models\Production\ArtefactManufactureTask;
-use App\Models\Production\ManufactureTask;
 use App\Models\Production\Production;
 use App\Models\Production\RawMaterial;
 use App\Models\Inventory\OrgStock;
@@ -473,20 +470,7 @@ class ImportProductionCostings extends Command
 
     private function recipeStep(Artefact $artefact): ArtefactManufactureTask
     {
-        $task = ManufactureTask::where('production_id', $this->production->id)->where('code', 'PROD')->first()
-            ?? StoreManufactureTask::make()->action($this->production, [
-                'code'                            => 'PROD',
-                'name'                            => 'Production',
-                'task_materials_cost'             => 0,
-                'task_energy_cost'                => 0,
-                'task_other_cost'                 => 0,
-                'task_work_cost'                  => 0,
-                'task_lower_target'               => 0,
-                'task_upper_target'               => 0,
-                'operative_reward_terms'          => ManufactureTaskOperativeRewardTermsEnum::NEVER,
-                'operative_reward_allowance_type' => ManufactureTaskOperativeRewardAllowanceTypeEnum::ON_TOP_SALARY,
-                'operative_reward_amount'         => 0,
-            ]);
+        $task = GetDefaultManufactureTask::run($this->production);
 
         $artefact->manufactureTasks()->syncWithoutDetaching([$task->id => ['position' => 1, 'units_per_artefact' => 1]]);
 

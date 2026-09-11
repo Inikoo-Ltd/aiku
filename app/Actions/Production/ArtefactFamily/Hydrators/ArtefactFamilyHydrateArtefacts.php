@@ -8,6 +8,7 @@
 
 namespace App\Actions\Production\ArtefactFamily\Hydrators;
 
+use App\Models\Production\RecipeStepRawMaterial;
 use App\Enums\Production\Artefact\ArtefactStateEnum;
 use App\Models\Production\ArtefactFamily;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -26,7 +27,7 @@ class ArtefactFamilyHydrateArtefacts
         $artefactFamily->update([
             'number_artefacts'                    => $counts->sum(),
             'state'                               => $this->state($counts->toArray()),
-            'number_artefacts_without_recipe'     => $artefactFamily->artefacts()->whereDoesntHave('manufactureTasks')->count(),
+            'number_artefacts_without_recipe'     => $artefactFamily->artefacts()->whereNotIn('artefacts.id', RecipeStepRawMaterial::query()->join('artefacts_manufacture_tasks', 'artefacts_manufacture_tasks.id', 'recipe_step_raw_materials.artefact_manufacture_task_id')->select('artefacts_manufacture_tasks.artefact_id'))->count(),
             'number_artefacts_without_batch_size' => $artefactFamily->artefacts()->whereNull('recommended_batch_size')->count(),
         ]);
     }

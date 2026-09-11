@@ -141,7 +141,7 @@ beforeEach(function () {
     }
     $this->rawMaterial = $rawMaterial;
 
-    $manufactureTask = ManufactureTask::orderBy('id')->first();
+    $manufactureTask = ManufactureTask::where('code', '!=', 'PROD')->orderBy('id')->first();
     if (!$manufactureTask) {
         data_set($storeData, 'code', 'CODE');
         data_set($storeData, 'name', 'name');
@@ -738,8 +738,47 @@ test('UI get section route org productions index', function () {
         ->and($sectionScope->model_slug)->toBe($this->organisation->slug);
 });
 
+test('a new artefact gets the default production task attached', function () {
+    $artefact = StoreArtefact::make()->action($this->production, ['code' => 'DFLT1', 'name' => 'Default task artefact']);
+
+    expect($artefact->manufactureTasks()->pluck('code')->all())->toBe(['PROD']);
+});
+
+test('an artefact without a recipe still queues work through the default production task', function () {
+    $this->artefact->manufactureTasks()->detach();
+
+    $jobOrder     = StoreJobOrder::make()->action($this->production, []);
+    $jobOrderItem = StoreJobOrderItem::make()->action($jobOrder, ['artefact_id' => $this->artefact->id, 'quantity' => 4]);
+
+    $task = $jobOrderItem->tasks()->first();
+    expect($jobOrderItem->tasks()->count())->toBe(1)
+        ->and($task->manufactureTask->code)->toBe('PROD')
+        ->and((float)$task->quantity_required)->toBe(4.0)
+        ->and($this->artefact->refresh()->manufactureTasks()->count())->toBe(1);
+
+    $this->artefact->manufactureTasks()->detach();
+});
+
+test('attaching a task to an artefact backfills the work queue of open job orders', function () {
+    $this->artefact->manufactureTasks()->detach();
+
+    $jobOrder     = StoreJobOrder::make()->action($this->production, []);
+    $jobOrderItem = StoreJobOrderItem::make()->action($jobOrder, ['artefact_id' => $this->artefact->id, 'quantity' => 4]);
+
+    AttachManufactureTaskToArtefact::make()->action($this->artefact, [
+        'manufacture_task_id' => $this->manufactureTask->id,
+        'units_per_artefact'  => 2,
+    ]);
+
+    $task = $jobOrderItem->tasks()->where('manufacture_task_id', $this->manufactureTask->id)->first();
+    expect($jobOrderItem->tasks()->count())->toBe(2)
+        ->and((float)$task->quantity_required)->toBe(8.0);
+
+    $this->artefact->manufactureTasks()->detach();
+});
+
 test('work queue is generated from the artefact recipe and sessions pay the worker', function () {
-    $this->artefact->manufactureTasks()->syncWithoutDetaching([
+    $this->artefact->manufactureTasks()->sync([
         $this->manufactureTask->id => ['position' => 1, 'units_per_artefact' => 2],
     ]);
 
@@ -793,7 +832,7 @@ test('work queue is generated from the artefact recipe and sessions pay the work
 });
 
 test('closing short can finish the job or carry the shortfall to a new job order', function () {
-    $this->artefact->manufactureTasks()->syncWithoutDetaching([
+    $this->artefact->manufactureTasks()->sync([
         $this->manufactureTask->id => ['position' => 1, 'units_per_artefact' => 1],
     ]);
     $user = $this->guest->getUser();
@@ -870,7 +909,7 @@ test('recipe can be edited by attaching and detaching manufacture tasks', functi
 });
 
 test('recipe steps consume raw materials', function () {
-    $this->artefact->manufactureTasks()->syncWithoutDetaching([
+    $this->artefact->manufactureTasks()->sync([
         $this->manufactureTask->id => ['position' => 1, 'units_per_artefact' => 1],
     ]);
 
@@ -935,7 +974,7 @@ test('floor shows job orders addressed to the worker first and the dashboard lis
     ]);
     AttachArtisan::make()->action($this->artefact, ['employee_id' => $idle->id]);
 
-    $this->artefact->manufactureTasks()->syncWithoutDetaching([
+    $this->artefact->manufactureTasks()->sync([
         $this->manufactureTask->id => ['position' => 1, 'units_per_artefact' => 1],
     ]);
 
@@ -1052,7 +1091,7 @@ test('payroll csv export aggregates closed sessions with snapshotted rates', fun
 });
 
 test('a voided session removes its quantities from the task and payroll', function () {
-    $this->artefact->manufactureTasks()->syncWithoutDetaching([
+    $this->artefact->manufactureTasks()->sync([
         $this->manufactureTask->id => ['position' => 1, 'units_per_artefact' => 1],
     ]);
     $user     = $this->guest->getUser();
@@ -1084,7 +1123,7 @@ test('a voided session removes its quantities from the task and payroll', functi
 });
 
 test('UI index artisans aggregates worker sessions', function () {
-    $this->artefact->manufactureTasks()->syncWithoutDetaching([
+    $this->artefact->manufactureTasks()->sync([
         $this->manufactureTask->id => ['position' => 1, 'units_per_artefact' => 1],
     ]);
     $jobOrder = StoreJobOrder::make()->action($this->production, []);
@@ -1203,7 +1242,7 @@ test('completed job order is received into stock with a batch code', function ()
         'name'         => 'Receivable artefact',
         'org_stock_id' => $orgStock->id,
     ]);
-    $artefact->manufactureTasks()->syncWithoutDetaching([
+    $artefact->manufactureTasks()->sync([
         $this->manufactureTask->id => ['position' => 1, 'units_per_artefact' => 1],
     ]);
 
@@ -1283,7 +1322,7 @@ test('completed job order into stock converts units and deducts raw materials', 
         'name'         => 'Receivable artefact with recipe',
         'org_stock_id' => $orgStock->id,
     ]);
-    $artefact->manufactureTasks()->syncWithoutDetaching([
+    $artefact->manufactureTasks()->sync([
         $this->manufactureTask->id => ['position' => 1, 'units_per_artefact' => 2],
     ]);
 
@@ -1460,7 +1499,7 @@ test('a raw material can be updated while keeping its own code', function () {
 
 describe('production reward pay bands', function () {
     beforeEach(function () {
-        $this->artefact->manufactureTasks()->syncWithoutDetaching([
+        $this->artefact->manufactureTasks()->sync([
             $this->manufactureTask->id => ['position' => 1, 'units_per_artefact' => 1],
         ]);
 
@@ -1561,7 +1600,7 @@ describe('production reward pay bands', function () {
         if (!$exportArtefact) {
             $exportArtefact = StoreArtefact::make()->action($this->production, ['code' => 'EXPRTA1', 'name' => 'Export artefact']);
         }
-        $exportArtefact->manufactureTasks()->syncWithoutDetaching([
+        $exportArtefact->manufactureTasks()->sync([
             $exportTask->id => ['position' => 1, 'units_per_artefact' => 1],
         ]);
         $exportJobOrder     = StoreJobOrder::make()->action($this->production, []);
@@ -1710,7 +1749,7 @@ describe('production reward pay bands', function () {
         );
         $unbandedTask->update(['standard_rate' => 152]);
         $unbandedArtefact = StoreArtefact::make()->action($unbandedProduction, ['code' => 'NBA1', 'name' => 'No band artefact']);
-        $unbandedArtefact->manufactureTasks()->syncWithoutDetaching([
+        $unbandedArtefact->manufactureTasks()->sync([
             $unbandedTask->id => ['position' => 1, 'units_per_artefact' => 1],
         ]);
         $jobOrder     = StoreJobOrder::make()->action($unbandedProduction, []);
@@ -1981,7 +2020,7 @@ test('mixes to prepare are derived from open job orders and become job orders', 
     $mix         = UpdateRawMaterial::make()->action($this->rawMaterial, ['artefact_id' => $mixArtefact->id, 'quantity_on_location' => 2]);
     $mix->update(['org_stock_id' => null]);
 
-    $this->artefact->manufactureTasks()->syncWithoutDetaching([
+    $this->artefact->manufactureTasks()->sync([
         $this->manufactureTask->id => ['position' => 1, 'units_per_artefact' => 1],
     ]);
     $step = ArtefactManufactureTask::where('artefact_id', $this->artefact->id)->where('manufacture_task_id', $this->manufactureTask->id)->first();
@@ -2033,7 +2072,7 @@ test('mixes to prepare are derived from open job orders and become job orders', 
 test('a task that is not piece rate snapshots a zero rate when its session closes', function () {
     $this->manufactureTask->update(['is_piece_rate' => false]);
     $jobOrder = StoreJobOrder::make()->action($this->production, []);
-    $this->artefact->manufactureTasks()->syncWithoutDetaching([
+    $this->artefact->manufactureTasks()->sync([
         $this->manufactureTask->id => ['position' => 1, 'units_per_artefact' => 1],
     ]);
     $item = StoreJobOrderItem::make()->action($jobOrder, ['artefact_id' => $this->artefact->id, 'quantity' => 4]);
@@ -2153,7 +2192,7 @@ test('costings import resolves materials, creates artefacts and writes per-unit 
         ->and(str_contains(file_get_contents($dir.'/review/recipes_review.csv'), 'existing recipe kept'))->toBeTrue();
 
     $auroraArtefact = StoreArtefact::make()->action($this->production, ['code' => 'CST-AURORA2', 'name' => 'Aurora product', 'source_id' => '4:999']);
-    $auroraArtefact->manufactureTasks()->syncWithoutDetaching([$this->manufactureTask->id => ['position' => 1, 'units_per_artefact' => 1]]);
+    $auroraArtefact->manufactureTasks()->sync([$this->manufactureTask->id => ['position' => 1, 'units_per_artefact' => 1]]);
     AttachRawMaterialToRecipeStep::make()->action(ArtefactManufactureTask::where('artefact_id', $auroraArtefact->id)->first(), ['raw_material_id' => $this->rawMaterial->id, 'quantity_per_unit' => 3]);
 
     $edited = json_decode(file_get_contents($dir.'/import.json'), true);
@@ -2177,7 +2216,7 @@ test('costings import resolves materials, creates artefacts and writes per-unit 
 
 test('aurora recipe quantities are divided by batch size exactly once', function () {
     $artefact = StoreArtefact::make()->action($this->production, ['code' => 'CST-AURORA', 'name' => 'Aurora product', 'source_id' => '4:99999', 'recommended_batch_size' => 10]);
-    $artefact->manufactureTasks()->syncWithoutDetaching([$this->manufactureTask->id => ['position' => 1, 'units_per_artefact' => 1]]);
+    $artefact->manufactureTasks()->sync([$this->manufactureTask->id => ['position' => 1, 'units_per_artefact' => 1]]);
     $step = ArtefactManufactureTask::where('artefact_id', $artefact->id)->first();
     AttachRawMaterialToRecipeStep::make()->action($step, ['raw_material_id' => $this->rawMaterial->id, 'quantity_per_unit' => 10]);
 
@@ -2221,7 +2260,7 @@ test('an operative only sees the factory jobs page and nothing group or commerci
     get(route('grp.dashboard.show'))->assertRedirect(route('grp.org.dashboard.show', $this->organisation->slug));
     get(route('grp.org.dashboard.show', $this->organisation->slug))
         ->assertRedirect(route('grp.org.productions.show.floor', [$this->organisation->slug, $this->production->slug]));
-    $this->artefact->manufactureTasks()->syncWithoutDetaching([
+    $this->artefact->manufactureTasks()->sync([
         $this->manufactureTask->id => ['position' => 1, 'units_per_artefact' => 1],
     ]);
     $assigned = StoreJobOrder::make()->action($this->production, ['employee_id' => $employee->id]);
@@ -2348,10 +2387,8 @@ test('to produce queue only shows lines with an artefact in this factory', funct
         ->mapWithKeys(fn ($lane) => [$lane['label'] => collect($lane['items'])->pluck('stock_code')->all()]);
     expect($lanes['Assigned'])->toBe([$stocks[0]->code]);
 
-    $made->manufactureTasks()->syncWithoutDetaching([$this->manufactureTask->id => ['position' => 1, 'units_per_artefact' => 1]]);
     $jobOrder = \App\Models\Production\JobOrder::find($covered->refresh()->job_order_id);
     $jobOrderItem = $jobOrder->jobOrderItems()->where('artefact_id', $made->id)->first();
-    \App\Actions\Production\JobOrderItemTask\GenerateJobOrderItemTasks::make()->handle($jobOrderItem);
     $task = $jobOrderItem->tasks()->first();
     ConfirmJobOrder::make()->action($jobOrder);
     $laneOf = fn () => collect(get(route('grp.org.productions.show.to_produce.index', $routeParameters))
@@ -2762,6 +2799,10 @@ test('artefact family counts artefacts missing a recipe and a batch size', funct
         'operative_reward_amount'         => 1.0,
     ]);
     AttachManufactureTaskToArtefact::make()->action($complete, ['manufacture_task_id' => $task->id]);
+    AttachRawMaterialToRecipeStep::make()->action(
+        ArtefactManufactureTask::where('artefact_id', $complete->id)->where('manufacture_task_id', $task->id)->first(),
+        ['raw_material_id' => $this->rawMaterial->id, 'quantity_per_unit' => 1]
+    );
 
     ArtefactFamilyHydrateArtefacts::run($family);
 
@@ -2915,7 +2956,7 @@ test('units made become SKOs when the stock is packed in outers', function () {
         'org_stock_id'           => $orgStock->id,
         'recommended_batch_size' => 16,
     ]);
-    $artefact->manufactureTasks()->syncWithoutDetaching([
+    $artefact->manufactureTasks()->sync([
         $this->manufactureTask->id => ['position' => 1, 'units_per_artefact' => 1],
     ]);
 
@@ -3032,7 +3073,7 @@ test('an order too small for a batch hitchhikes until something else fills the b
 
 test('a short day splits the made goods into whole destination trips and carries only what is still owed', function () {
     $this->artefact->manufactureTasks()->detach();
-    $this->artefact->manufactureTasks()->syncWithoutDetaching([
+    $this->artefact->manufactureTasks()->sync([
         $this->manufactureTask->id => ['position' => 1, 'units_per_artefact' => 1],
     ]);
 
@@ -3151,7 +3192,7 @@ test('carrying over a job does not ask for, or pay, the earlier steps twice', fu
         'operative_reward_amount'         => 0,
     ]);
     $this->artefact->manufactureTasks()->detach();
-    $this->artefact->manufactureTasks()->syncWithoutDetaching([
+    $this->artefact->manufactureTasks()->sync([
         $this->manufactureTask->id => ['position' => 1, 'units_per_artefact' => 1],
         $pack->id                  => ['position' => 2, 'units_per_artefact' => 1],
     ]);

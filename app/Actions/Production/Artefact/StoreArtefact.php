@@ -8,6 +8,7 @@
 
 namespace App\Actions\Production\Artefact;
 
+use App\Actions\Production\ManufactureTask\GetDefaultManufactureTask;
 use App\Actions\Production\Production\Hydrators\ProductionHydrateArtefacts;
 use App\Actions\OrgAction;
 use App\Actions\Production\ArtefactDepartment\Hydrators\ArtefactDepartmentHydrateArtefacts;
@@ -41,6 +42,7 @@ class StoreArtefact extends OrgAction
             ArtefactFamilyHydrateArtefacts::run($artefact->artefactFamily);
         }
         $artefact->stats()->create();
+        $artefact->manufactureTasks()->attach(GetDefaultManufactureTask::run($production)->id, ['position' => 1, 'units_per_artefact' => 1]);
         GroupHydrateArtefacts::dispatch($artefact->group);
         OrganisationHydrateArtefacts::dispatch($artefact->organisation);
         ProductionHydrateArtefacts::dispatch($artefact->production);

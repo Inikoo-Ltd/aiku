@@ -8,6 +8,7 @@
 
 namespace App\Actions\Production\JobOrderItemTask;
 
+use App\Actions\Production\ManufactureTask\GetDefaultManufactureTask;
 use App\Enums\Production\JobOrderItemTask\JobOrderItemTaskStateEnum;
 use App\Models\Production\JobOrderItem;
 use App\Models\Production\JobOrderItemTask;
@@ -24,8 +25,13 @@ class GenerateJobOrderItemTasks
     {
         $jobOrder = $jobOrderItem->jobOrder;
         $tasks    = [];
+        $artefact = $jobOrderItem->artefact;
 
-        foreach ($jobOrderItem->artefact->manufactureTasks as $manufactureTask) {
+        if ($artefact->manufactureTasks()->doesntExist()) {
+            $artefact->manufactureTasks()->attach(GetDefaultManufactureTask::run($jobOrder->production)->id, ['position' => 1, 'units_per_artefact' => 1]);
+        }
+
+        foreach ($artefact->manufactureTasks()->get() as $manufactureTask) {
             $tasks[] = JobOrderItemTask::firstOrCreate(
                 [
                     'job_order_item_id'   => $jobOrderItem->id,

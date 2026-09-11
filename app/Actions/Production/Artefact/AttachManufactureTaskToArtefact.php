@@ -9,6 +9,9 @@
 namespace App\Actions\Production\Artefact;
 
 use App\Actions\OrgAction;
+use App\Actions\Production\JobOrderItemTask\GenerateJobOrderItemTasks;
+use App\Enums\Production\JobOrder\JobOrderStateEnum;
+use App\Models\Production\JobOrderItem;
 use App\Models\Production\Artefact;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Redirect;
@@ -25,6 +28,10 @@ class AttachManufactureTaskToArtefact extends OrgAction
                 'units_per_artefact' => $modelData['units_per_artefact'] ?? 1,
             ],
         ]);
+
+        JobOrderItem::where('artefact_id', $artefact->id)
+            ->whereHas('jobOrder', fn ($query) => $query->whereNotIn('state', [JobOrderStateEnum::RECEIVED, JobOrderStateEnum::NOT_RECEIVED]))
+            ->each(fn (JobOrderItem $jobOrderItem) => GenerateJobOrderItemTasks::run($jobOrderItem));
 
         return $artefact;
     }
