@@ -8,13 +8,16 @@
 
 namespace App\Actions\Dispatching\DeliveryNote;
 
+use App\Actions\Ordering\Order\CalculateOrderTotalAmounts;
+use App\Actions\Ordering\Order\UpdateOrderPackaging;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Catalogue\Packaging\PackagingStateEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
-use App\Models\Billables\Packaging;
 use App\Models\Dispatching\DeliveryNote;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
@@ -29,7 +32,35 @@ class UpdateDeliveryNotePackaging extends OrgAction
 
     public function handle(DeliveryNote $deliveryNote, array $modelData): DeliveryNote
     {
-        return $this->update($deliveryNote, $modelData);
+        return DB::transaction(function () use ($deliveryNote, $modelData) {
+            $deliveryNote = $this->update($deliveryNote, $modelData);
+
+            $this->repriceOrderPackaging($deliveryNote);
+
+            return $deliveryNote;
+        });
+    }
+
+    private function repriceOrderPackaging(DeliveryNote $deliveryNote): void
+    {
+        $order = $deliveryNote->orders()->first();
+
+        if (!$order || !$deliveryNote->packaging_id || $order->packaging_id == $deliveryNote->packaging_id) {
+            return;
+        }
+
+        if (!Arr::get($order->data ?? [], 'ordered_packaging_id') && $order->packaging_id) {
+            $order->update([
+                'data' => array_merge($order->data ?? [], ['ordered_packaging_id' => $order->packaging_id]),
+            ]);
+        }
+
+        UpdateOrderPackaging::make()->action($order, [
+            'packaging_id' => $deliveryNote->packaging_id,
+            'leaflet_ids'  => $order->insert_types ?? [],
+        ]);
+
+        CalculateOrderTotalAmounts::run($order->refresh());
     }
 
     public function rules(): array
@@ -70,23 +101,15 @@ class UpdateDeliveryNotePackaging extends OrgAction
             return;
         }
 
-        $currentFamily = $this->deliveryNote->packaging?->family_code
-            ?? $this->deliveryNote->orders()->first()?->packaging?->family_code;
-        if (!$currentFamily) {
-            return;
-        }
+        $allowedIds = array_column(
+            $this->getPackagingOptions($this->deliveryNote, $this->effectivePackaging($this->deliveryNote)?->family_code),
+            'id'
+        );
 
-        $new = Packaging::find($packagingId);
-        if (!$new) {
-            return;
-        }
-
-        // Any size of the family the customer paid for, or a packaging at no extra charge when
-        // the order fits into none of those sizes.
-        if ($new->family_code !== $currentFamily && (float) $new->price > 0) {
+        if (!in_array((int) $packagingId, $allowedIds, true)) {
             $validator->errors()->add(
                 'packaging_id',
-                __('You can only change to another size within the same packaging family, or to a packaging at no extra charge.')
+                __('This packaging is not one of the options for this delivery note.')
             );
         }
     }

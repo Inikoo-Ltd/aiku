@@ -5,7 +5,8 @@
   -->
 
 <script setup lang="ts">
-import { nextTick, onBeforeUnmount, ref } from "vue"
+import { inject, nextTick, onBeforeUnmount, ref } from "vue"
+import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import { trans } from "laravel-vue-i18n"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import Image from "@common/Components/Image.vue"
@@ -22,6 +23,7 @@ interface PackagingOption {
     is_free: boolean
     is_downgrade?: boolean
     family_code: string | null
+    currency_code?: string | null
     image?: { thumbnail?: any, source?: any } | null
 }
 
@@ -34,6 +36,8 @@ const props = defineProps<{
 const emit = defineEmits<{
     (e: "change", packagingId: number): void
 }>()
+
+const locale = inject("locale", aikuLocaleStructure)
 
 const MENU_WIDTH = 288
 const MENU_MAX_HEIGHT = 320
@@ -131,11 +135,11 @@ onBeforeUnmount(close)
                         v-for="option in options"
                         :key="option.id"
                         type="button"
-                        class="flex w-full items-center gap-3 px-3 py-2 text-left transition hover:bg-gray-50"
+                        class="flex w-full items-start gap-3 px-3 py-2 text-left transition hover:bg-gray-50"
                         @click="onSelect(option)"
                     >
                         <span
-                            class="flex h-4 w-4 shrink-0 items-center justify-center rounded-full border"
+                            class="mt-3 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border"
                             :class="option.id === selectedId ? 'border-orange-500' : 'border-gray-300'"
                         >
                             <span v-if="option.id === selectedId" class="h-2 w-2 rounded-full bg-orange-500" />
@@ -152,10 +156,14 @@ onBeforeUnmount(close)
                         </div>
 
                         <div class="min-w-0 flex-1">
-                            <div class="truncate text-sm font-medium text-gray-800">{{ option.name }}</div>
-                            <div class="text-xs text-gray-400">
-                                <span v-if="option.is_free">{{ trans("No extra charge") }}</span>
-                                <span v-else>{{ option.dimensions }}</span>
+                            <div class="break-words text-sm font-medium leading-snug text-gray-800">{{ option.name }}</div>
+                            <div class="mt-0.5 flex flex-wrap items-center gap-x-2 text-xs text-gray-500">
+                                <span v-if="option.dimensions">{{ option.dimensions }}</span>
+                                <span class="font-bold text-gray-800">
+                                    {{ option.is_free
+                                        ? trans("No extra charge")
+                                        : locale.currencyFormat(option.currency_code ?? "", option.price) }}
+                                </span>
                             </div>
                             <div v-if="option.is_downgrade" class="text-xs text-amber-600">
                                 {{ trans("Cheaper than the customer paid") }}

@@ -12,6 +12,7 @@ use App\Enums\Catalogue\Packaging\PackagingStateEnum;
 use App\Http\Resources\Helpers\ImageResource;
 use App\Models\Billables\Packaging;
 use App\Models\Dispatching\DeliveryNote;
+use Illuminate\Support\Arr;
 
 trait WithDeliveryNotePackaging
 {
@@ -26,6 +27,17 @@ trait WithDeliveryNotePackaging
         }
 
         return $deliveryNote->packaging ?? $deliveryNote->orders()->first()?->packaging;
+    }
+
+    protected function orderedPackagingFamily(DeliveryNote $deliveryNote): ?string
+    {
+        $order = $deliveryNote->orders()->first();
+
+        $orderedPackagingId = Arr::get($order?->data ?? [], 'ordered_packaging_id');
+
+        $ordered = $orderedPackagingId ? Packaging::find($orderedPackagingId) : $order?->packaging;
+
+        return $ordered?->family_code ?? $deliveryNote->packaging?->family_code;
     }
 
     /** @return array{id: int, name: string, dimensions: string|null}|null */
@@ -63,18 +75,21 @@ trait WithDeliveryNotePackaging
     /** @return array<int, array{id: int, name: string, dimensions: string|null, price: float, is_free: bool, is_downgrade: bool, family_code: string|null, image: mixed}> */
     protected function getPackagingOptions(DeliveryNote $deliveryNote, ?string $familyCode): array
     {
+        $familyCode = $this->orderedPackagingFamily($deliveryNote) ?? $familyCode;
+
         if (!$familyCode || !$deliveryNote->shop?->hasPackagingAndInserts()) {
             return [];
         }
 
-        // The customer picks a packaging family, so the warehouse may swap to any size within
-        // that family. Free packaging is always offered on top, for the orders that do not fit
-        // into any size of the family the customer paid for.
+        $defaultPackagingId = $deliveryNote->shop->defaultPackaging()?->id;
+
         $options = Packaging::where('shop_id', $deliveryNote->shop_id)
             ->where('state', PackagingStateEnum::ACTIVE)
             ->where(
                 fn ($query) => $query->where('family_code', $familyCode)
                     ->orWhere('price', 0)
+                    ->when($defaultPackagingId, fn ($q) => $q->orWhere('id', $defaultPackagingId))
+                    ->when($deliveryNote->packaging_id, fn ($q) => $q->orWhere('id', $deliveryNote->packaging_id))
             )
             ->with('image')
             ->orderBy('position')
@@ -99,15 +114,18 @@ trait WithDeliveryNotePackaging
                 'is_downgrade' => $paidPrice !== null && round((float) $packaging->price, 2) < $paidPrice,
                 'family_code'  => $packaging->family_code,
                 'image'        => $packaging->image ? ImageResource::make($packaging->image)->resolve() : null,
+                'currency_code'   => $deliveryNote->shop->currency?->code,
             ])->all();
     }
 
     protected function packagingDimensions(Packaging $packaging): ?string
     {
-        if (!$packaging->width || !$packaging->height || !$packaging->depth) {
+        if (!$packaging->width || !$packaging->height) {
             return null;
         }
 
-        return "{$packaging->width}x{$packaging->height}+{$packaging->depth}mm";
+        return $packaging->depth
+            ? "{$packaging->width} × {$packaging->height} × {$packaging->depth} mm"
+            : "{$packaging->width} × {$packaging->height} mm";
     }
 }

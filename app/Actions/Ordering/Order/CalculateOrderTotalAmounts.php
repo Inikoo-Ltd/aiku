@@ -156,6 +156,18 @@ class CalculateOrderTotalAmounts extends OrgAction implements ShouldBeUnique
                 CalculateCollectionCharges::run($order);
             }
         }
+
+        if (in_array($order->state, [
+            OrderStateEnum::SUBMITTED,
+            OrderStateEnum::IN_WAREHOUSE,
+            OrderStateEnum::HANDLING,
+            OrderStateEnum::HANDLING_BLOCKED,
+            OrderStateEnum::PICKED,
+            OrderStateEnum::PACKING,
+            OrderStateEnum::PACKED,
+        ])) {
+            UpdateOrderPaymentsStatus::run($order);
+        }
     }
 
     public string $commandSignature = 'order:totals {order} {--ignoreCalculateDiscounts}';
