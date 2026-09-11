@@ -12,6 +12,8 @@ import Button from "@/Components/Elements/Buttons/Button.vue"
 
 type Rating = "fast" | "average" | "slow" | "good" | "needs_improvement" | "poor" | null
 type Strategy = "mobile" | "desktop"
+type HistoryScore = "performance" | "accessibility" | "best_practices" | "seo"
+type HistoryRecord = { date: string } & Record<Strategy, Record<HistoryScore, number | null>>
 
 type StrategyReport = {
 	url: string
@@ -33,10 +35,13 @@ const props = defineProps<{
 		mobile?: StrategyReport | null
 		desktop?: StrategyReport | null
 	}
+	history?: HistoryRecord[]
+	historyFrequency?: "daily" | "weekly"
 }>()
 
 const POLL_INTERVAL_MS = 15000
 const MAX_POLLS = 12
+const HISTORY_COLOR = "#E8710A"
 
 const strategy = ref<Strategy>("desktop")
 const polls = ref(0)
@@ -91,11 +96,25 @@ const scoreOnEachStrategy = (key: string) =>
 		score: props.pagespeed?.[option.key]?.scores?.find((score) => score.key === key) ?? null,
 	}))
 
+const historyScores: Array<{ key: HistoryScore; label: string }> = [
+	{ key: "performance", label: trans("Performance") },
+	{ key: "accessibility", label: trans("Accessibility") },
+	{ key: "best_practices", label: trans("Best practices") },
+	{ key: "seo", label: trans("SEO") },
+]
+const historyLines: Array<{ key: Strategy; label: string; borderDash: number[]; pointStyle: string }> = [
+	{ key: "desktop", label: trans("Desktop"), borderDash: [], pointStyle: "circle" },
+	{ key: "mobile", label: trans("Mobile"), borderDash: [6, 4], pointStyle: "rectRot" },
+]
+
+const historyScore = ref<HistoryScore>("performance")
+
 const isLoading = computed(() => props.pagespeed === undefined)
 const isUnavailable = computed(() => props.pagespeed?.status === "unavailable")
 const report = computed<StrategyReport | null>(() => props.pagespeed?.[strategy.value] ?? null)
 const hasScores = computed(() => !!report.value?.scores?.length)
 const isStalled = computed(() => props.pagespeed?.status === "measuring" && polls.value >= MAX_POLLS)
+const hasHistory = computed(() => (props.history ?? []).length > 0)
 
 const fieldChartData = computed(() => ({
 	labels: (report.value?.field ?? []).map((metric) => metric.label),
@@ -119,6 +138,46 @@ const fieldChartOptions = {
 		y: { stacked: true, grid: { display: false }, ticks: { color: "#374151" } },
 	},
 }
+
+const historyChartData = computed(() => ({
+	labels: (props.history ?? []).map((record) => record.date),
+	datasets: historyLines.map((line) => ({
+		label: line.label,
+		data: (props.history ?? []).map((record) => record[line.key]?.[historyScore.value] ?? null),
+		borderColor: HISTORY_COLOR,
+		backgroundColor: HISTORY_COLOR,
+		borderDash: line.borderDash,
+		borderWidth: 2,
+		pointRadius: 3,
+		pointStyle: line.pointStyle,
+		spanGaps: true,
+	})),
+}))
+
+const historyChartOptions = computed(() => ({
+	responsive: true,
+	maintainAspectRatio: false,
+	interaction: { mode: "index", intersect: false },
+	plugins: {
+		legend: { display: false },
+		tooltip: {
+			backgroundColor: "#fff",
+			titleColor: "#111827",
+			bodyColor: "#374151",
+			borderColor: "#d1d5db",
+			borderWidth: 1,
+			padding: 10,
+			callbacks: {
+				title: (items: any[]) => (props.historyFrequency === "weekly" ? trans("Week of") + " " : "") + useFormatTime(items[0].label, { formatTime: "PPP" }),
+				label: (item: any) => `${item.dataset.label}: ${item.raw}`,
+			},
+		},
+	},
+	scales: {
+		x: { grid: { display: false }, ticks: { autoSkip: true, maxTicksLimit: 10, color: "#4b5563" } },
+		y: { min: 0, max: 100, grid: { color: "#f3f4f6" }, ticks: { stepSize: 25, color: "#4b5563" } },
+	},
+}))
 
 const circumference = 2 * Math.PI * 20
 
@@ -355,6 +414,33 @@ onBeforeUnmount(stopPolling)
 						<div class="text-lg font-semibold text-gray-800">{{ metric.display ?? trans("n/a") }}</div>
 					</div>
 				</div>
+			</div>
+		</div>
+
+		<div v-if="history && !isLoading && !isUnavailable" class="space-y-3 border-t px-6 py-6" data-pagespeed-history>
+			<div class="flex flex-wrap items-center gap-3">
+				<span class="text-sm font-semibold">
+					{{ trans("Score history") }}
+					<span class="font-normal text-gray-600">
+						({{ historyFrequency === "weekly" ? trans("weekly average in the selected period") : trans("daily in the selected period") }})
+					</span>
+				</span>
+				<select v-model="historyScore" :aria-label="trans('PageSpeed score')" class="rounded border-gray-300 py-1 pl-2 pr-8 text-xs">
+					<option v-for="option in historyScores" :key="option.key" :value="option.key">{{ option.label }}</option>
+				</select>
+				<span v-for="line in historyLines" :key="line.key" class="flex items-center gap-1 text-xs text-gray-600">
+					<svg width="18" height="4" aria-hidden="true">
+						<line x1="0" y1="2" x2="18" y2="2" :stroke="HISTORY_COLOR" stroke-width="2" :stroke-dasharray="line.borderDash.join(' ')" />
+					</svg>
+					{{ line.label }}
+				</span>
+			</div>
+
+			<div v-if="hasHistory" class="h-64 w-full">
+				<Chart type="line" class="h-full" :data="historyChartData" :options="historyChartOptions" />
+			</div>
+			<div v-else class="text-sm text-gray-600">
+				{{ trans("No scores recorded in the selected period yet. A point is added every day the page is measured.") }}
 			</div>
 		</div>
 	</div>

@@ -1603,7 +1603,8 @@ test('pagespeed runs are kept in the webpage time series, averaged per week and 
 
     $dailyPerformance = GetWebpagePerformance::run($webpage, ['startDate' => '2026-06-01', 'endDate' => '2026-06-07']);
 
-    expect($dailyPerformance['pagespeed'])->toHaveCount(2)
+    expect($dailyPerformance['pagespeed_frequency'])->toBe('daily')
+        ->and($dailyPerformance['pagespeed'])->toHaveCount(2)
         ->and($dailyPerformance['pagespeed'][0]['date'])->toBe('2026-06-01')
         ->and($dailyPerformance['pagespeed'][0]['desktop']['performance'])->toBe(80)
         ->and($dailyPerformance['pagespeed'][0]['mobile']['performance'])->toBeNull()
@@ -1617,7 +1618,8 @@ test('pagespeed runs are kept in the webpage time series, averaged per week and 
 
     $weeklyPerformance = GetWebpagePerformance::run($webpage, ['startDate' => '2026-03-01', 'endDate' => '2026-06-30']);
 
-    expect($weeklyPerformance['pagespeed'])->toHaveCount(1)
+    expect($weeklyPerformance['pagespeed_frequency'])->toBe('weekly')
+        ->and($weeklyPerformance['pagespeed'])->toHaveCount(1)
         ->and($weeklyPerformance['pagespeed'][0]['date'])->toBe('2026-06-01')
         ->and($weeklyPerformance['pagespeed'][0]['desktop']['performance'])->toBe(85);
 })->depends('create webpage');

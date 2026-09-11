@@ -30,7 +30,7 @@ class GetWebpagePerformance
     private const int PAGESPEED_DAILY_MAX_DAYS = 92;
 
     /**
-     * @return array{start_date: string, end_date: string, currency: string, search: array, sales: array, events: array, pagespeed: array}
+     * @return array{start_date: string, end_date: string, currency: string, search: array, sales: array, events: array, pagespeed: array, pagespeed_frequency: string}
      */
     public function handle(Webpage $webpage, array $modelData): array
     {
@@ -46,14 +46,19 @@ class GetWebpagePerformance
             $search = [];
         }
 
+        $pageSpeedFrequency = $startDate->diffInDays($endDate) > self::PAGESPEED_DAILY_MAX_DAYS
+            ? TimeSeriesFrequencyEnum::WEEKLY
+            : TimeSeriesFrequencyEnum::DAILY;
+
         return [
-            'start_date' => $startDate->toDateString(),
-            'end_date'   => $endDate->toDateString(),
-            'currency'   => $webpage->shop->currency->code,
-            'search'     => $search,
-            'sales'      => $this->sales($webpage, $startDate, $endDate),
-            'events'     => $this->events($webpage, $startDate, $endDate),
-            'pagespeed'  => $this->pageSpeed($webpage, $startDate, $endDate),
+            'start_date'          => $startDate->toDateString(),
+            'end_date'            => $endDate->toDateString(),
+            'currency'            => $webpage->shop->currency->code,
+            'search'              => $search,
+            'sales'               => $this->sales($webpage, $startDate, $endDate),
+            'events'              => $this->events($webpage, $startDate, $endDate),
+            'pagespeed'           => $this->pageSpeed($webpage, $pageSpeedFrequency, $startDate, $endDate),
+            'pagespeed_frequency' => $pageSpeedFrequency->value,
         ];
     }
 
@@ -97,13 +102,9 @@ class GetWebpagePerformance
         }
     }
 
-    private function pageSpeed(Webpage $webpage, Carbon $startDate, Carbon $endDate): array
+    private function pageSpeed(Webpage $webpage, TimeSeriesFrequencyEnum $frequency, Carbon $startDate, Carbon $endDate): array
     {
         $this->recordCachedPageSpeedResults($webpage);
-
-        $frequency = $startDate->diffInDays($endDate) > self::PAGESPEED_DAILY_MAX_DAYS
-            ? TimeSeriesFrequencyEnum::WEEKLY
-            : TimeSeriesFrequencyEnum::DAILY;
 
         $timeSeries = $webpage->timeSeries()->where('frequency', $frequency->value)->first();
 
