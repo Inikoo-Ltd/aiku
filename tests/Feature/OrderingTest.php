@@ -3612,6 +3612,7 @@ test('an order with no billing address is held instead of going to the warehouse
 test('a collection invoice stores the collection address it was issued with', function () {
     $customer = createCustomer($this->shop);
     $order    = StoreOrder::make()->action($customer, Order::factory()->definition());
+    $order->update(['shipping_engine' => \App\Enums\Ordering\Order\OrderShippingEngineEnum::MANUAL]);
     StoreTransaction::make()->action($order, $this->product->currentHistoricProduct, Transaction::factory()->definition());
 
     $collectionAddress = \App\Models\Helpers\Address::create(array_merge(
@@ -3858,4 +3859,83 @@ test('a decision to send without an address survives a later retry', function ()
 
     expect(SendOrderToWarehouse::make()->action($order->refresh(), []))->toBeInstanceOf(DeliveryNote::class)
         ->and($order->refresh()->state)->toEqual(OrderStateEnum::IN_WAREHOUSE);
+});
+
+/** A customer whose last delivered order went to one address while their default, never delivered to, is another */
+function customerWithANeverDeliveredDefault(\App\Models\Catalogue\Shop $shop, \App\Models\CRM\Customer $template): array
+{
+    $customer = freshCustomerLike($shop, $template);
+
+    $lastDelivered = StoreOrder::make()->action($customer, Order::factory()->definition());
+    $lastDelivered->update(['shipping_engine' => \App\Enums\Ordering\Order\OrderShippingEngineEnum::MANUAL]);
+    $deliveredTo = \App\Models\Helpers\Address::create(heldOrderAddressLike($template, [
+        'address_line_1' => '19 Periwinkle Gardens '.fake()->unique()->numberBetween(1, 9999999),
+        'postal_code'    => 'NN14 2AH',
+        'group_id'       => $lastDelivered->group_id,
+    ]));
+    $lastDelivered->forceFill(['state' => OrderStateEnum::DISPATCHED, 'delivery_address_id' => $deliveredTo->id])->saveQuietly();
+
+    $basket = StoreOrder::make()->action($customer->refresh(), Order::factory()->definition());
+    $basket->update(['shipping_engine' => \App\Enums\Ordering\Order\OrderShippingEngineEnum::MANUAL]);
+
+    return [$customer, $lastDelivered->refresh(), $basket->refresh()];
+}
+
+test('an order going to a default that never received a delivery shows where the last order went', function () {
+    [, $lastDelivered, $basket] = customerWithANeverDeliveredDefault($this->shop, $this->customer);
+    $warning = \App\Actions\Ordering\Order\UI\GetEarlierDeliveryAddressWarning::class;
+
+    $forCustomer = $warning::run($basket, withCustomerActions: true);
+    $forStaff    = $warning::run($basket);
+
+    expect($forCustomer)->not->toBeNull()
+        ->and($forCustomer['previous_order_reference'])->toBe($lastDelivered->reference)
+        ->and($forCustomer['previous_address'])->toContain('19 Periwinkle Gardens')
+        ->and($forCustomer['confirmed'])->toBeFalse()
+        ->and($forCustomer['actions']['confirm_route']['name'])->toBe('retina.models.order.delivery_address_confirm')
+        ->and($forCustomer['actions']['use_previous_route']['name'])->toBe('retina.models.order.delivery_address_use_previous')
+        ->and($forStaff['actions'])->toBeNull()
+        ->and(\App\Actions\Ordering\Order\UI\GetOrderDeliveryAddressManagement::run($basket)['addresses']['earlier_delivery_address'])->toBe($forStaff);
+});
+
+test('no earlier address note when the address has been delivered to, is not the default, or is a collection', function () {
+    $warning = fn (Order $order) => \App\Actions\Ordering\Order\UI\GetEarlierDeliveryAddressWarning::run($order->refresh());
+
+    /** A parcel already reached this address once, so it is a real address of theirs */
+    [$customer, , $basket] = customerWithANeverDeliveredDefault($this->shop, $this->customer);
+    $older = StoreOrder::make()->action($customer, Order::factory()->definition());
+    $older->forceFill(['state' => OrderStateEnum::DISPATCHED, 'delivery_address_id' => $basket->delivery_address_id, 'created_at' => now()->subYear()])->saveQuietly();
+    expect($warning($basket))->toBeNull();
+
+    /** The customer typed a different address on this order, so it is their choice, not a stale default */
+    [, , $basket] = customerWithANeverDeliveredDefault($this->shop, $this->customer);
+    UpdateOrderDeliveryAddress::make()->action($basket, ['address' => heldOrderAddressLike($this->customer, ['address_line_1' => 'Chosen on this order '.fake()->unique()->numberBetween(1, 9999999)])]);
+    expect($warning($basket))->toBeNull();
+
+    /** A collection is not delivered anywhere */
+    [, , $basket] = customerWithANeverDeliveredDefault($this->shop, $this->customer);
+    $basket->forceFill(['collection_address_id' => $basket->delivery_address_id])->saveQuietly();
+    expect($warning($basket))->toBeNull();
+});
+
+test('a customer confirming the address hides the note from them and tells staff', function () {
+    [, , $basket] = customerWithANeverDeliveredDefault($this->shop, $this->customer);
+
+    \App\Actions\Retina\Ordering\ConfirmRetinaOrderDeliveryAddress::make()->handle($basket);
+
+    $forCustomer = \App\Actions\Ordering\Order\UI\GetEarlierDeliveryAddressWarning::run($basket->refresh(), withCustomerActions: true);
+
+    expect($forCustomer['confirmed'])->toBeTrue()
+        ->and($forCustomer['actions'])->toBeNull();
+});
+
+test('a customer can send the order to the address their last order went to in one step', function () {
+    [, , $basket] = customerWithANeverDeliveredDefault($this->shop, $this->customer);
+
+    \App\Actions\Retina\Ordering\UseRetinaOrderPreviousDeliveryAddress::make()->handle($basket);
+    $basket->refresh();
+
+    expect($basket->deliveryAddress->address_line_1)->toStartWith('19 Periwinkle Gardens')
+        ->and($basket->deliveryAddress->postal_code)->toBe('NN14 2AH')
+        ->and(\App\Actions\Ordering\Order\UI\GetEarlierDeliveryAddressWarning::run($basket, withCustomerActions: true))->toBeNull();
 });

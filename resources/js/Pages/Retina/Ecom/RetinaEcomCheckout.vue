@@ -47,6 +47,7 @@ const props = defineProps<{
         total: number
     },
     currency_code: string
+    earlier_delivery_address?: { previous_address: string, previous_address_line: string, previous_order_reference: string, current_address_line: string, confirmed: boolean, actions: { confirm_route: routeType, use_previous_route: routeType } | null } | null
     whatsapp_newsletter?: {
         is_subscribed: boolean
         label: string
@@ -121,6 +122,8 @@ const locale = inject("locale", aikuLocaleStructure)
             :summary
             :balance
             :order="order"
+            :earlier_delivery_address="earlier_delivery_address"
+            :changeAddressRoute="routes?.back_to_basket"
             xisInBasket
             isInCheckout
             class="md:px-4 !px-0"

@@ -10,6 +10,7 @@
 
 namespace App\Actions\Retina\Ecom\Checkout\UI;
 
+use App\Actions\Ordering\Order\UI\GetEarlierDeliveryAddressWarning;
 use App\Actions\Accounting\OrderPaymentApiPoint\StoreOrderPaymentApiPoint;
 use App\Actions\Ordering\Order\CalculateOrderTotalAmounts;
 use App\Actions\Accounting\Traits\CalculatesPaymentWithBalance;
@@ -118,6 +119,7 @@ class ShowRetinaEcomCheckout extends RetinaAction
                 ],
                 'order'          => OrderResource::make($order)->resolve(),
                 'summary'        => $this->getOrderBoxStats($order),
+                'earlier_delivery_address' => GetEarlierDeliveryAddressWarning::run($order, withCustomerActions: true),
                 'paymentMethods' => Arr::get($checkoutData, 'paymentMethods'),
                 'balance'        => $this->customer->balance,
                 'total_amount'   => $order->total_amount,

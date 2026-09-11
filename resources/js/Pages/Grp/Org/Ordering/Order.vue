@@ -2021,6 +2021,17 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                             <CopyButton
                                 :text="box_stats?.customer?.addresses?.delivery?.formatted_address?.replace(/<[^>]*>/g, '')" />
                         </dl>
+                        <div v-if="!isCollection && delivery_address_management?.addresses?.earlier_delivery_address"
+                            class="mt-2 ml-7 text-xs text-yellow-800 bg-yellow-50 border border-yellow-300 rounded px-2.5 py-2">
+                            <template v-if="delivery_address_management.addresses.earlier_delivery_address.confirmed">
+                                {{ ctrans("The customer confirmed this delivery address. Their last order (:reference) went to:", { reference: delivery_address_management.addresses.earlier_delivery_address.previous_order_reference }) }}
+                            </template>
+                            <template v-else>
+                                {{ ctrans("This customer's last order (:reference) went to a different address:", { reference: delivery_address_management.addresses.earlier_delivery_address.previous_order_reference }) }}
+                            </template>
+                            <div class="mt-1" v-html="delivery_address_management.addresses.earlier_delivery_address.previous_address"></div>
+                            <div v-if="!delivery_address_management.addresses.earlier_delivery_address.confirmed" class="mt-1">{{ ctrans("Check with the customer before this order is picked.") }}</div>
+                        </div>
                     </div>
 
                 </div>

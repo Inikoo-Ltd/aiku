@@ -4,7 +4,7 @@ import { FontAwesomeIcon, FontAwesomeLayers } from "@fortawesome/vue-fontawesome
 import { faClipboard, faDollarSign, faSortNumericDown, faWeight, faMapPin } from "@fal"
 import OrderSummary from "@/Components/Summary/OrderSummary.vue"
 import { trans } from "laravel-vue-i18n"
-import { inject, ref } from "vue"
+import { computed, inject, ref } from "vue"
 import { Address, AddressManagement } from "@/types/PureComponent/Address"
 import Modal from "@/Components/Utils/Modal.vue"
 import AddressEditModal from "@/Components/Utils/AddressEditModal.vue"
@@ -14,7 +14,7 @@ import Toggle from "@/Components/Pure/Toggle.vue"
 import { get, set } from "lodash"
 import { notify } from "@kyvg/vue3-notification"
 import { routeType } from "@/types/route"
-import { router } from "@inertiajs/vue3"
+import { Link, router } from "@inertiajs/vue3"
 import InformationIcon from "@/Components/Utils/InformationIcon.vue"
 import payments from "@/Pages/Grp/Overview/Accounting/Payments.vue"
 import MissedOfferFOB from "@/Components/Iris/Offers/MissedOffers/MissedOfferFOB.vue"
@@ -55,6 +55,7 @@ const props = defineProps<{
     }
     balance?: string
     address_management?: AddressManagement
+    earlier_delivery_address?: { previous_address: string, previous_address_line: string, previous_order_reference: string, current_address_line: string, confirmed: boolean, actions: { confirm_route: routeType, use_previous_route: routeType } | null } | null
     is_forbidden_delivery?: boolean
     is_forbidden_billing?: boolean
     contact_address?: Address | null
@@ -63,6 +64,7 @@ const props = defineProps<{
     missed_offers: {}
     isInBasket?: boolean
     isInCheckout?: boolean
+    changeAddressRoute?: routeType
     upcoming_transactions?: {
         data: {
             id: number
@@ -75,6 +77,18 @@ const props = defineProps<{
         }[]
     }
 }>()
+
+const earlierDeliveryAddress = computed(() => props.earlier_delivery_address ?? props.address_management?.addresses?.earlier_delivery_address ?? null)
+
+const choosingDeliveryAddress = ref<string | null>(null)
+const chooseDeliveryAddress = (choice: string, action: routeType) => {
+    router.patch(route(action.name, action.parameters), {}, {
+        preserveScroll: true,
+        onStart: () => { choosingDeliveryAddress.value = choice },
+        onFinish: () => { choosingDeliveryAddress.value = null },
+        onError: () => notify({ title: trans("Something went wrong"), text: trans("Please try again or contact support."), type: "error" }),
+    })
+}
 
 const locale = inject('locale', {})
 const layout = inject('layout', retinaLayoutStructure)
@@ -194,6 +208,29 @@ const updateCollection = (value: boolean) => {
                         <FontAwesomeIcon icon="fal fa-pencil" class="" fixed-width aria-hidden="true"/>
                     </div>
                 
+                    <div v-if="earlierDeliveryAddress && !earlierDeliveryAddress.confirmed" class="ml-6 mr-3 mt-2 text-xs text-yellow-800 bg-yellow-50 border border-yellow-300 rounded px-2.5 py-2">
+                        <div>
+                            <FontAwesomeIcon icon="fas fa-exclamation-triangle" class="mr-1" fixed-width aria-hidden="true" />{{ trans("Your last order went to:") }}
+                        </div>
+                        <div class="mt-1 pl-5" v-html="earlierDeliveryAddress.previous_address"></div>
+                        <div v-if="earlierDeliveryAddress.actions" class="mt-2 pl-5 flex flex-col gap-y-1.5">
+                            <div class="block w-full text-center cursor-pointer rounded-md border border-yellow-400 bg-yellow-100 px-3 py-1.5 font-medium hover:bg-yellow-200"
+                                :class="choosingDeliveryAddress ? 'pointer-events-none opacity-50' : ''"
+                                @click="chooseDeliveryAddress('confirm', earlierDeliveryAddress.actions.confirm_route)">
+                                {{ trans("Yes, deliver to :_address", { _address: earlierDeliveryAddress.current_address_line }) }}
+                            </div>
+                            <div class="block w-full text-center cursor-pointer rounded-md border border-yellow-400 bg-yellow-100 px-3 py-1.5 font-medium hover:bg-yellow-200"
+                                :class="choosingDeliveryAddress ? 'pointer-events-none opacity-50' : ''"
+                                @click="chooseDeliveryAddress('previous', earlierDeliveryAddress.actions.use_previous_route)">
+                                {{ trans("Deliver to :_address instead", { _address: earlierDeliveryAddress.previous_address_line }) }}
+                            </div>
+                            <Link v-if="changeAddressRoute?.name" :href="route(changeAddressRoute.name, changeAddressRoute.parameters)"
+                                class="block w-full text-center cursor-pointer rounded-md border border-yellow-400 bg-yellow-100 px-3 py-1.5 font-medium hover:bg-yellow-200">
+                                {{ trans("Use another address (in your basket)") }}
+                            </Link>
+                        </div>
+                    </div>
+
                     <div v-if="is_forbidden_delivery" class="pl-6 pr-4 text-red-500 mt-2 text-xs">
                         <FontAwesomeIcon icon="fas fa-exclamation-triangle" class="mr-1" fixed-width aria-hidden="true" />{{ trans("We cannot deliver to :_country, please update the address or contact support.", { _country: summary?.customer?.addresses?.delivery?.country?.name }) }}
                     </div>
