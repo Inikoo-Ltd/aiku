@@ -115,6 +115,11 @@ class StoreCustomerClient extends OrgAction
     {
         $rules = $this->getBaseRules($this->customer);
 
+        /** A person typing in the back office; the channel importers come through action() and keep the loose rule */
+        if (!$this->asAction) {
+            $rules['address'] = ['required', new ValidAddress(requireFullAddress: true)];
+        }
+
         if (!$this->strict) {
             $rules          = $this->noStrictStoreRules($rules);
             $rules['email'] = ['sometimes', 'nullable', 'string', 'max:255'];

@@ -473,23 +473,21 @@ class Order extends Model implements HasMedia, Auditable
      */
     public function isMissingARequiredAddress(): bool
     {
-        $hasAddress = function (?Address $address) {
-            $filled = fn (?string $line) => filled($line) && $line != '0';
+        return $this->missingRequiredAddress() !== null;
+    }
 
-            return $address && collect([
-                $address->address_line_1,
-                $address->address_line_2,
-                $address->locality,
-                $address->postal_code,
-                $address->administrative_area,
-            ])->contains($filled);
-        };
-
-        if (!$hasAddress($this->billingAddress)) {
-            return true;
+    /** Which address stops the order, so staff are not sent looking at the one that is there (HELP-3102, HELP-3110) */
+    public function missingRequiredAddress(): ?string
+    {
+        if (!$this->billingAddress?->hasAnyLine()) {
+            return __('billing address');
         }
 
-        return !$this->collection_address_id && !$hasAddress($this->deliveryAddress);
+        if (!$this->collection_address_id && !$this->deliveryAddress?->hasAnyLine()) {
+            return __('delivery address');
+        }
+
+        return null;
     }
 
     public function billingAddress(): BelongsTo

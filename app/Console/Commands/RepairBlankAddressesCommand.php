@@ -9,6 +9,8 @@
 namespace App\Console\Commands;
 
 use App\Actions\Ordering\Order\UpdateOrderFixedAddress;
+use App\Actions\Ordering\Order\UpdateState\SendOrderToWarehouse;
+use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Models\CRM\Customer;
 use App\Models\Ordering\Order;
@@ -24,13 +26,15 @@ use Laravel\Nightwatch\Facades\Nightwatch;
  *
  * Dispatched orders and their invoices are history and are never rewritten; only open orders whose
  * customer has since given a real address are repointed. The rest is a chase list for CS.
+ * "Blank" means every line empty, the same test the warehouse hold uses (HELP-3110).
  */
 class RepairBlankAddressesCommand extends Command
 {
     protected $signature = 'repair:blank_addresses
                            {--shop= : Only this shop slug}
                            {--months= : Only customers who ordered within this many months, default all}
-                           {--fix-open-orders : Repoint open orders whose customer now has a real address}';
+                           {--fix-open-orders : Repoint open orders whose customer now has a real address}
+                           {--clean-held-notes : Remove the held warning from orders, and their open delivery notes, that are no longer held}';
 
     protected $description = 'List customers whose address is blank or "0", and repoint their open orders';
 
@@ -59,6 +63,10 @@ class RepairBlankAddressesCommand extends Command
         );
         $this->info($customers->count().' customers have no address and have ordered');
 
+        if ($this->option('clean-held-notes')) {
+            $this->cleanHeldNotes();
+        }
+
         if (!$this->option('fix-open-orders')) {
             return 0;
         }
@@ -72,12 +80,12 @@ class RepairBlankAddressesCommand extends Command
         $repointed = 0;
         foreach ($openOrders as $order) {
             $address = $order->customer->address;
-            if ($this->isBlank($address?->address_line_1)) {
+            if (!$address?->hasAnyLine()) {
                 continue;
             }
 
             foreach (['billing' => $order->billingAddress, 'delivery' => $order->deliveryAddress] as $type => $orderAddress) {
-                if (!$this->isBlank($orderAddress?->address_line_1)) {
+                if ($orderAddress?->hasAnyLine()) {
                     continue;
                 }
                 UpdateOrderFixedAddress::make()->action($order, ['address' => $address, 'type' => $type], audit: false);
@@ -94,12 +102,39 @@ class RepairBlankAddressesCommand extends Command
     private function blankAddresses(): Closure
     {
         return fn ($query) => $query->select('id')->from('addresses')
-            ->whereIn(DB::raw("coalesce(address_line_1,'')"), ['', '0'])
-            ->whereIn(DB::raw("coalesce(locality,'')"), ['', '0']);
+            ->whereIn(DB::raw("trim(coalesce(address_line_1,''))"), ['', '0'])
+            ->whereIn(DB::raw("trim(coalesce(address_line_2,''))"), ['', '0'])
+            ->whereIn(DB::raw("trim(coalesce(locality,''))"), ['', '0'])
+            ->whereIn(DB::raw("trim(coalesce(postal_code,''))"), ['', '0'])
+            ->whereIn(DB::raw("trim(coalesce(administrative_area,''))"), ['', '0']);
     }
 
-    private function isBlank(?string $addressLine): bool
+    /** A held warning left on an order that has moved on, or on its delivery note, tells a picker to stop for nothing */
+    private function cleanHeldNotes(): void
     {
-        return blank($addressLine) || $addressLine == '0';
+        $cleaned = 0;
+
+        Order::with(['deliveryNotes', 'billingAddress', 'deliveryAddress'])
+            ->where('private_warehouse_note', 'like', '%'.SendOrderToWarehouse::HELD_MARKER.'%')
+            ->when($this->option('shop'), fn ($query, $shop) => $query->whereRelation('shop', 'slug', $shop))
+            ->each(function (Order $order) use (&$cleaned) {
+                $stillHeld = $order->state == OrderStateEnum::SUBMITTED && $order->deliveryNotes->isEmpty() && $order->isMissingARequiredAddress();
+                if ($stillHeld) {
+                    return;
+                }
+
+                $order->update(['private_warehouse_note' => SendOrderToWarehouse::withoutHeldNote($order->private_warehouse_note)]);
+
+                foreach ($order->deliveryNotes as $deliveryNote) {
+                    if (str_contains((string)$deliveryNote->private_warehouse_note, SendOrderToWarehouse::HELD_MARKER)
+                        && !in_array($deliveryNote->state, [DeliveryNoteStateEnum::DISPATCHED, DeliveryNoteStateEnum::CANCELLED])) {
+                        $deliveryNote->update(['private_warehouse_note' => SendOrderToWarehouse::withoutHeldNote($deliveryNote->private_warehouse_note)]);
+                    }
+                }
+
+                $cleaned++;
+            });
+
+        $this->info($cleaned.' orders no longer held had the held warning removed');
     }
 }

@@ -42,7 +42,7 @@ class GetAddressData
         }
         /** @var Country $country */
         foreach ($countries as $country) {
-            $fields = Arr::get($country->data, 'fields', []);
+            $fields = $country->addressFieldsInDisplayOrder();
             if (isset($fields['address_line_3'])) {
                 unset($fields['address_line_3']);
             }

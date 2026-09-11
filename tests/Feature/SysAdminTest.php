@@ -2321,3 +2321,13 @@ describe('audit merging', function () {
             ->and($firstAudit->new_values)->toBe(['sku' => 'B1']);
     });
 });
+
+test('address boxes come in the order the country writes an address', function () {
+    $countryData = GetAddressData::run();
+    $order       = fn (string $code) => array_keys($countryData[Country::where('code', $code)->firstOrFail()->id]['fields']);
+
+    expect($order('GB'))->toBe(['address_line_1', 'address_line_2', 'locality', 'postal_code'])
+        ->and($order('ES'))->toBe(['address_line_1', 'address_line_2', 'postal_code', 'locality', 'administrative_area'])
+        ->and($order('HU'))->toBe(['locality', 'address_line_1', 'address_line_2', 'postal_code'])
+        ->and(array_slice($order('US'), 0, 2))->toBe(['address_line_1', 'address_line_2']);
+});

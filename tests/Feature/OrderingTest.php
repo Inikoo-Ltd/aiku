@@ -3590,13 +3590,15 @@ test('export flag follows the customs territory of the organisation', function (
 
 
 test('an order with no billing address is held instead of going to the warehouse', function () {
-    $customer = createCustomer($this->shop);
+    $customer = freshCustomerLike($this->shop, $this->customer);
     $order    = StoreOrder::make()->action($customer, Order::factory()->definition());
+    /** These tests are about addresses, not shipping: the zones earlier tests in this file create are random */
+    $order->update(['shipping_engine' => \App\Enums\Ordering\Order\OrderShippingEngineEnum::MANUAL]);
     StoreTransaction::make()->action($order, $this->product->currentHistoricProduct, Transaction::factory()->definition());
     SubmitOrder::make()->action($order);
 
     $order->refresh();
-    $order->billingAddress->update(['address_line_1' => '']);
+    $order->billingAddress->update(['address_line_1' => '', 'address_line_2' => '', 'locality' => '', 'postal_code' => '', 'administrative_area' => '']);
     $order->unsetRelation('billingAddress');
 
     $deliveryNote = SendOrderToWarehouse::make()->action($order, []);
@@ -3604,7 +3606,7 @@ test('an order with no billing address is held instead of going to the warehouse
 
     expect($deliveryNote)->toBeNull()
         ->and($order->state)->toEqual(OrderStateEnum::SUBMITTED)
-        ->and($order->private_warehouse_note)->toContain('no address');
+        ->and($order->private_warehouse_note)->toContain('billing address is missing');
 });
 
 test('a collection invoice stores the collection address it was issued with', function () {
@@ -3628,13 +3630,15 @@ test('a collection invoice stores the collection address it was issued with', fu
 });
 
 test('a held order goes to the warehouse once its address is put on it', function () {
-    $customer = createCustomer($this->shop);
+    $customer = freshCustomerLike($this->shop, $this->customer);
     $order    = StoreOrder::make()->action($customer, Order::factory()->definition());
+    /** These tests are about addresses, not shipping: the zones earlier tests in this file create are random */
+    $order->update(['shipping_engine' => \App\Enums\Ordering\Order\OrderShippingEngineEnum::MANUAL]);
     StoreTransaction::make()->action($order, $this->product->currentHistoricProduct, Transaction::factory()->definition());
     SubmitOrder::make()->action($order);
 
     $order->refresh();
-    $order->billingAddress->update(['address_line_1' => '']);
+    $order->billingAddress->update(['address_line_1' => '', 'address_line_2' => '', 'locality' => '', 'postal_code' => '', 'administrative_area' => '']);
     $order->unsetRelation('billingAddress');
     $order->update(['pay_status' => OrderPayStatusEnum::PAID]);
 
@@ -3655,13 +3659,15 @@ test('a held order goes to the warehouse once its address is put on it', functio
 });
 
 test('the warehouse can be sent an order without an address on purpose', function () {
-    $customer = createCustomer($this->shop);
+    $customer = freshCustomerLike($this->shop, $this->customer);
     $order    = StoreOrder::make()->action($customer, Order::factory()->definition());
+    /** These tests are about addresses, not shipping: the zones earlier tests in this file create are random */
+    $order->update(['shipping_engine' => \App\Enums\Ordering\Order\OrderShippingEngineEnum::MANUAL]);
     StoreTransaction::make()->action($order, $this->product->currentHistoricProduct, Transaction::factory()->definition());
     SubmitOrder::make()->action($order);
 
     $order->refresh();
-    $order->billingAddress->update(['address_line_1' => '']);
+    $order->billingAddress->update(['address_line_1' => '', 'address_line_2' => '', 'locality' => '', 'postal_code' => '', 'administrative_area' => '']);
     $order->unsetRelation('billingAddress');
     $order->update(['pay_status' => OrderPayStatusEnum::PAID]);
 
@@ -3670,5 +3676,186 @@ test('the warehouse can be sent an order without an address on purpose', functio
     $deliveryNote = SendOrderToWarehouse::make()->action($order, [], withoutAnAddress: true);
 
     expect($deliveryNote)->toBeInstanceOf(DeliveryNote::class)
+        ->and($order->refresh()->state)->toEqual(OrderStateEnum::IN_WAREHOUSE);
+});
+
+test('send anyway only shows on an order missing an address', function () {
+    $customer = freshCustomerLike($this->shop, $this->customer);
+    $order    = StoreOrder::make()->action($customer, Order::factory()->definition());
+    /** These tests are about addresses, not shipping: the zones earlier tests in this file create are random */
+    $order->update(['shipping_engine' => \App\Enums\Ordering\Order\OrderShippingEngineEnum::MANUAL]);
+    StoreTransaction::make()->action($order, $this->product->currentHistoricProduct, Transaction::factory()->definition());
+    SubmitOrder::make()->action($order);
+    $order->refresh();
+
+    $hasSendAnyway = fn (Order $order) => collect(\App\Actions\Ordering\Order\UI\GetEcomOrderActions::run($order, true))
+        ->contains(fn ($action) => ($action['key'] ?? null) === 'send-to-warehouse-without-an-address');
+
+    expect($hasSendAnyway($order))->toBeFalse();
+
+    $order->billingAddress->update(['address_line_1' => '', 'address_line_2' => '', 'locality' => '', 'postal_code' => '', 'administrative_area' => '']);
+    $order->unsetRelation('billingAddress');
+
+    expect($hasSendAnyway($order))->toBeTrue();
+});
+
+/** An address in the fixture customer's country and postcode, so the shop can price shipping for it */
+function heldOrderAddressLike(\App\Models\CRM\Customer $customer, array $overrides = []): array
+{
+    return array_merge(
+        $customer->address->only(['address_line_1', 'address_line_2', 'sorting_code', 'postal_code', 'dependent_locality', 'locality', 'administrative_area', 'country_code', 'country_id']),
+        $overrides
+    );
+}
+
+function freshCustomerLike(\App\Models\Catalogue\Shop $shop, \App\Models\CRM\Customer $template): \App\Models\CRM\Customer
+{
+    return \App\Actions\CRM\Customer\StoreCustomer::make()->action($shop, array_merge(
+        \App\Models\CRM\Customer::factory()->definition(),
+        ['contact_address' => heldOrderAddressLike($template, ['address_line_1' => fake()->unique()->streetAddress()])]
+    ));
+}
+
+function orderForAFreshCustomerWithNoBillingAddress(\App\Models\Catalogue\Shop $shop, $historicAsset, \App\Models\CRM\Customer $template, bool $separateDeliveryAddress = false): Order
+{
+    $customer = freshCustomerLike($shop, $template);
+    $order    = StoreOrder::make()->action($customer, Order::factory()->definition());
+    /** These tests are about addresses, not shipping: the zones earlier tests in this file create are random */
+    $order->update(['shipping_engine' => \App\Enums\Ordering\Order\OrderShippingEngineEnum::MANUAL]);
+    StoreTransaction::make()->action($order, $historicAsset, Transaction::factory()->definition());
+
+    if ($separateDeliveryAddress) {
+        UpdateOrderDeliveryAddress::make()->action($order, [
+            'address'       => heldOrderAddressLike($template, ['address_line_1' => '9 End Customer Road', 'address_line_2' => 'Unit '.fake()->unique()->numberBetween(1, 9999999)]),
+            'update_parent' => false,
+        ]);
+        $order->refresh();
+    }
+
+    $order->billingAddress->update(['address_line_1' => '', 'address_line_2' => '', 'locality' => '', 'postal_code' => '', 'administrative_area' => '']);
+    $order->update(['pay_status' => OrderPayStatusEnum::PAID]);
+
+    return $order->refresh();
+}
+
+test('a customer who pays with no address is never refused, the order is held instead', function () {
+    $order = orderForAFreshCustomerWithNoBillingAddress($this->shop, $this->product->currentHistoricProduct, $this->customer);
+
+    SubmitOrder::make()->action($order);
+    $order->refresh();
+
+    expect($order->state)->toEqual(OrderStateEnum::SUBMITTED)
+        ->and($order->deliveryNotes()->count())->toBe(0)
+        ->and($order->private_warehouse_note)->toContain(SendOrderToWarehouse::HELD_MARKER)
+        ->and($order->private_warehouse_note)->toContain('billing address');
+});
+
+test('the held warning is written once and replaces an older wording, however often the order is retried', function () {
+    $order = orderForAFreshCustomerWithNoBillingAddress($this->shop, $this->product->currentHistoricProduct, $this->customer);
+    SubmitOrder::make()->action($order);
+
+    $order->refresh()->update(['private_warehouse_note' => 'Keep this — ⚠️ Order held: the customer has no address, ask them for it before picking']);
+    SendOrderToWarehouse::make()->action($order->refresh(), []);
+    SendOrderToWarehouse::make()->action($order->refresh(), []);
+
+    $note = (string)$order->refresh()->private_warehouse_note;
+
+    expect(substr_count($note, SendOrderToWarehouse::HELD_MARKER))->toBe(1)
+        ->and($note)->toStartWith('Keep this — ')
+        ->and($note)->toContain('billing address is missing')
+        ->and($note)->not->toContain('the customer has no address');
+});
+
+test('the held warning comes off cleanly and keeps what staff wrote', function () {
+    expect(SendOrderToWarehouse::withoutHeldNote('Keep this — ⚠️ Order held: the customer has no address, ask them for it before picking'))->toBe('Keep this')
+        ->and(SendOrderToWarehouse::withoutHeldNote("⚠️ Order held: the customer has no address, ask them for it before picking \nI send a ticket for it"))->toBe('I send a ticket for it')
+        ->and(SendOrderToWarehouse::withoutHeldNote('A — ⚠️ Order held: the billing address is missing — B'))->toBe('A — B')
+        ->and(SendOrderToWarehouse::withoutHeldNote('⚠️ Order held: the billing address is missing'))->toBeNull()
+        ->and(SendOrderToWarehouse::withoutHeldNote(null))->toBeNull();
+});
+
+test('fixing the customer releases an order held on its billing address, and the warning never reaches the delivery note', function () {
+    $order = orderForAFreshCustomerWithNoBillingAddress($this->shop, $this->product->currentHistoricProduct, $this->customer);
+    SubmitOrder::make()->action($order);
+    expect($order->refresh()->state)->toEqual(OrderStateEnum::SUBMITTED);
+
+    \App\Actions\CRM\Customer\UpdateCustomer::make()->action($order->customer, [
+        'contact_address' => heldOrderAddressLike($this->customer, ['address_line_1' => '1 Fixed Street']),
+    ]);
+
+    $order->refresh();
+    $deliveryNote = $order->deliveryNotes()->first();
+
+    expect($order->state)->toEqual(OrderStateEnum::IN_WAREHOUSE)
+        ->and($deliveryNote)->toBeInstanceOf(DeliveryNote::class)
+        ->and((string)$order->private_warehouse_note)->not->toContain(SendOrderToWarehouse::HELD_MARKER)
+        ->and((string)$deliveryNote->private_warehouse_note)->not->toContain(SendOrderToWarehouse::HELD_MARKER);
+});
+
+test('an order with its own delivery address keeps it when the customer is fixed', function () {
+    $order = orderForAFreshCustomerWithNoBillingAddress($this->shop, $this->product->currentHistoricProduct, $this->customer, separateDeliveryAddress: true);
+    SubmitOrder::make()->action($order);
+    $order->refresh();
+
+    expect($order->state)->toEqual(OrderStateEnum::SUBMITTED)
+        ->and($order->billing_address_id)->not->toBe($order->delivery_address_id);
+
+    $deliveryAddressId = $order->delivery_address_id;
+
+    \App\Actions\CRM\Customer\UpdateCustomer::make()->action($order->customer, [
+        'contact_address' => heldOrderAddressLike($this->customer, ['address_line_1' => '1 Fixed Street']),
+    ]);
+
+    $order->refresh();
+
+    expect($order->state)->toEqual(OrderStateEnum::IN_WAREHOUSE)
+        ->and($order->delivery_address_id)->toBe($deliveryAddressId)
+        ->and($order->deliveryAddress->address_line_1)->toBe('9 End Customer Road');
+});
+
+test('a submitted order whose street sits in the town box is left alone when the customer changes address', function () {
+    $customer = freshCustomerLike($this->shop, $this->customer);
+    $order    = StoreOrder::make()->action($customer, Order::factory()->definition());
+    /** These tests are about addresses, not shipping: the zones earlier tests in this file create are random */
+    $order->update(['shipping_engine' => \App\Enums\Ordering\Order\OrderShippingEngineEnum::MANUAL]);
+    StoreTransaction::make()->action($order, $this->product->currentHistoricProduct, Transaction::factory()->definition());
+    SubmitOrder::make()->action($order);
+
+    $order->refresh();
+    $order->billingAddress->update(['address_line_1' => '', 'locality' => 'Rear of 230 Church Lane']);
+    $billingAddressId = $order->billing_address_id;
+
+    \App\Actions\CRM\Customer\UpdateCustomer::make()->action($customer, [
+        'contact_address' => heldOrderAddressLike($this->customer, ['address_line_1' => '1 Fixed Street']),
+    ]);
+
+    $order->refresh();
+
+    expect($order->state)->toEqual(OrderStateEnum::SUBMITTED)
+        ->and($order->billing_address_id)->toBe($billingAddressId)
+        ->and($order->billingAddress->locality)->toBe('Rear of 230 Church Lane');
+});
+
+test('an address change on an order fetched from aurora never pushes it to the warehouse', function () {
+    $order = orderForAFreshCustomerWithNoBillingAddress($this->shop, $this->product->currentHistoricProduct, $this->customer, separateDeliveryAddress: true);
+    SubmitOrder::make()->action($order);
+    $order->refresh()->update(['source_id' => '9990001']);
+
+    \App\Actions\Ordering\Order\UpdateOrderFixedAddress::make()->action($order->refresh(), [
+        'address' => new \App\Models\Helpers\Address(heldOrderAddressLike($this->customer, ['address_line_1' => '1 Fixed Street'])),
+        'type'    => 'billing',
+    ]);
+
+    expect($order->refresh()->state)->toEqual(OrderStateEnum::SUBMITTED)
+        ->and($order->deliveryNotes()->count())->toBe(0);
+});
+
+test('a decision to send without an address survives a later retry', function () {
+    $order = orderForAFreshCustomerWithNoBillingAddress($this->shop, $this->product->currentHistoricProduct, $this->customer);
+    SubmitOrder::make()->action($order);
+
+    $order->refresh()->update(['private_warehouse_note' => SendOrderToWarehouse::SENT_WITHOUT_AN_ADDRESS_MARKER.', the customer could not be reached']);
+
+    expect(SendOrderToWarehouse::make()->action($order->refresh(), []))->toBeInstanceOf(DeliveryNote::class)
         ->and($order->refresh()->state)->toEqual(OrderStateEnum::IN_WAREHOUSE);
 });

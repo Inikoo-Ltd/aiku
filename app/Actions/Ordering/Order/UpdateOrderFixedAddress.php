@@ -77,6 +77,11 @@ class UpdateOrderFixedAddress extends OrgAction
     {
         $order->refresh();
 
+        /** Only an order aiku itself held; an Aurora fetch changing an address must not push anything to the warehouse */
+        if ($order->source_id || !str_contains((string)$order->private_warehouse_note, SendOrderToWarehouse::HELD_MARKER)) {
+            return;
+        }
+
         if ($order->state != OrderStateEnum::SUBMITTED) {
             return;
         }

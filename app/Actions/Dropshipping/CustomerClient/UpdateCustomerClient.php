@@ -96,7 +96,7 @@ class UpdateCustomerClient extends OrgAction
             'company_name'   => ['sometimes', 'nullable', 'string', 'max:255'],
             'email'          => ['sometimes', 'nullable', 'email'],
             'phone'          => ['sometimes', 'nullable', new Phone()],
-            'address'        => ['sometimes', new ValidAddress()],
+            'address'        => ['sometimes', new ValidAddress(requireFullAddress: !$this->asAction)],
             'deactivated_at' => ['sometimes', 'nullable', 'date'],
         ];
 

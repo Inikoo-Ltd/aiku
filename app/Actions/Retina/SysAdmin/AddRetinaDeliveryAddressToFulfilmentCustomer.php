@@ -49,7 +49,7 @@ class AddRetinaDeliveryAddressToFulfilmentCustomer extends RetinaAction
     public function rules(): array
     {
         return [
-            'delivery_address'         => ['required', new ValidAddress()],
+            'delivery_address'         => ['required', new ValidAddress(requireFullAddress: !$this->asAction)],
         ];
     }
 
@@ -64,6 +64,7 @@ class AddRetinaDeliveryAddressToFulfilmentCustomer extends RetinaAction
 
     public function action(FulfilmentCustomer $fulfilmentCustomer, array $modelData): FulfilmentCustomer
     {
+        $this->asAction = true;
         $this->action = true;
         $this->initialisationFulfilmentActions($fulfilmentCustomer, $modelData); // TODO: Raul please do the permission for the web user($request);
 

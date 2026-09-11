@@ -10,6 +10,7 @@
 namespace App\Actions\Retina\Fulfilment\Dropshipping\Client;
 
 use App\Actions\Dropshipping\CustomerClient\StoreCustomerClient;
+use App\Rules\ValidAddress;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithModelAddressActions;
@@ -47,7 +48,13 @@ class StoreRetinaFulfilmentCustomerClient extends RetinaAction
 
     public function rules(): array
     {
-        return StoreCustomerClient::make()->getBaseRules($this->customer);
+        $rules = StoreCustomerClient::make()->getBaseRules($this->customer);
+
+        if (!$this->asAction) {
+            $rules['address'] = ['required', new ValidAddress(requireFullAddress: true)];
+        }
+
+        return $rules;
     }
 
     public function htmlResponse(CustomerClient $customerClient): RedirectResponse
