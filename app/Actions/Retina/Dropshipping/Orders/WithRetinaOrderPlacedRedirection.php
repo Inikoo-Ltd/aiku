@@ -8,6 +8,7 @@
 
 namespace App\Actions\Retina\Dropshipping\Orders;
 
+use App\Actions\CRM\Customer\GetCustomerAcquisitionGtmData;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Models\Ordering\Order;
 use Illuminate\Http\RedirectResponse;
@@ -54,15 +55,19 @@ trait WithRetinaOrderPlacedRedirection
                 'description' => __('Your order has been submitted.'),
             ];
 
+            $customerAcquisitionData = GetCustomerAcquisitionGtmData::run($arr['order']);
+
             $gtm = [
                 'key'            => 'retina_dropshipping_order_placed',
                 'event'          => 'purchase',
                 'data_to_submit' => [
                     'ecommerce' => [
-                        'transaction_id' => $arr['order']->id,
-                        'value'          => (float)$arr['order']->total_amount,
-                        'currency'       => $arr['order']->shop->currency->code,
-                        'items'          => $itemsToPushLayer
+                        'transaction_id'          => $arr['order']->id,
+                        'value'                   => (float)$arr['order']->total_amount,
+                        'currency'                => $arr['order']->shop->currency->code,
+                        'items'                   => $itemsToPushLayer,
+                        'new_customer'            => $customerAcquisitionData['new_customer'],
+                        'customer_lifetime_value' => $customerAcquisitionData['customer_lifetime_value'],
                     ]
                 ]
             ];
