@@ -519,6 +519,7 @@ use App\Actions\Web\Webpage\BreakWebpageCache;
 use App\Actions\Web\Webpage\DeleteWebpage;
 use App\Actions\Web\Webpage\PublishWebpage;
 use App\Actions\Web\Webpage\ReorderWebBlocks;
+use App\Actions\Web\Webpage\SetBlogWebpagesCategoryBulk;
 use App\Actions\Web\Webpage\SetWebpageOfflineBulk;
 use App\Actions\Web\Webpage\StoreWebpage;
 use App\Actions\Web\Webpage\UpdateWebpage;
@@ -1206,6 +1207,7 @@ Route::name('webpage.')->prefix('webpage/{webpage:id}')->group(function () {
 Route::delete('{template:id}/delete-template', DeleteWebLayoutTemplate::class)->name('web_layout_template.delete');
 
 Route::patch('website/{website:id}/bulk-offline-webpages', SetWebpageOfflineBulk::class)->name('webpage.set_offline_bulk');
+Route::patch('website/{website:id}/bulk-blog-category-webpages', SetBlogWebpagesCategoryBulk::class)->name('webpage.set_blog_category_bulk');
 
 Route::name('redirect.')->prefix('redirect/{redirect:id}')->group(function () {
     Route::patch('', UpdateRedirect::class)->name('update');

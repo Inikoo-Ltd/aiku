@@ -17,6 +17,7 @@ import ModalConfirmation from '@/Components/Utils/ModalConfirmation.vue'
 import Popover from '@/Components/Popover.vue'
 import { trans } from 'laravel-vue-i18n'
 import PureMultiselectInfiniteScroll from '@/Components/Pure/PureMultiselectInfiniteScroll.vue'
+import PureMultiselect from '@/Components/Pure/PureMultiselect.vue'
 import { get } from 'lodash-es'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 import { computed, reactive, ref } from 'vue'
@@ -34,9 +35,14 @@ const props = defineProps<{
     routes_list: {
         fetch_products_without_webpage?: routeType
         bulk_offline?: routeType
+        bulk_blog_category?: routeType
         submit_product_webpage: routeType
         fetch_live_webpages: routeType
     }
+    blog_categories?: {
+        value: string
+        label: string
+    }[]
 }>()
 
 const formAddWebpageProduct = useForm({ product_id: null })
@@ -74,6 +80,13 @@ const selectedWebpagesList = computed(() => [...selectedWebpages.values()])
 const redirectUrl = ref<string|null>(null)
 const key = ref(ulid())
 const processingBulkDelete = ref(false)
+const bulkBlogCategory = ref<string | null>(null)
+const processingBulkBlogCategory = ref(false)
+
+const resetSelection = () => {
+    key.value = ulid()
+    selectedWebpages.clear()
+}
 
 </script>
 
@@ -146,6 +159,94 @@ const processingBulkDelete = ref(false)
             </div>
         </template>
 
+        <template #button-bulk-blog-category>
+            <ModalConfirmation
+                v-if="selectedWebpages.size && routes_list?.bulk_blog_category"
+                :noLabel="ctrans('Cancel')"
+                :body="{
+                    webpages: selectedWebpagesList,
+                    sub_type: bulkBlogCategory
+                }"
+                :modalClass="'text-pretty scrollbar-none'"
+                :dialogClass="'w-full text-pretty container'"
+                :disableIconWarn="true"
+                :allowOverflow="true"
+                :successMessage="ctrans('Successfully changed the category of the selected webpages')"
+                :routeYes="routes_list.bulk_blog_category"
+                @finishedProcess="() => {
+                    resetSelection();
+                    processingBulkBlogCategory = false;
+                    bulkBlogCategory = null;
+                }"
+                @modalClosedAction="() => {
+                    bulkBlogCategory = null;
+                    processingBulkBlogCategory = false
+                }"
+            >
+                <template #title>
+                    <div class="font-semibold text-lg">
+                        <FontAwesomeIcon icon="fal fa-shapes" fixed-width aria-hidden="true" />
+                        {{ ctrans('Change Category') }}
+                    </div>
+                </template>
+                <template #description>
+                    <div class="flex text-sm mt-4 font-semibold">
+                        {{ ctrans('The category below is given to every selected webpage.') }}
+                    </div>
+                    <div class="grid text-sm max-h-[10rem] overflow-x-hidden mt-2 mb-3" style="scrollbar-width: thin;">
+                        <div v-for="webpage in selectedWebpagesList" :key="webpage.id" class="grid grid-cols-8">
+                            <span class="flex" :class="webpage.title ? 'col-span-3' : 'col-span-8'">
+                                <span>
+                                    • {{ webpage.code }}
+                                </span>
+                                <span class="ml-auto mr-2" v-if="webpage.title">
+                                    |
+                                </span>
+                            </span>
+                            <span class="col-span-5" v-if="webpage.title">
+                                {{ webpage.title }}
+                            </span>
+                        </div>
+                    </div>
+                    <div class="w-full">
+                        <div class="w-full text-sm font-semibold mb-1">
+                            <span class="text-red-500">*</span> {{ ctrans('Category') }}:
+                        </div>
+                        <PureMultiselect
+                            v-model="bulkBlogCategory"
+                            :options="blog_categories ?? []"
+                            :placeholder="ctrans('Select category')"
+                            mode="single"
+                            required
+                            :disabled="processingBulkBlogCategory"
+                        />
+                    </div>
+                </template>
+                <template #default="{ changeModel }">
+                    <Button
+                        :icon="faShapes"
+                        :label="ctrans('Change Category of :selectedCount', { selectedCount: selectedWebpages.size })"
+                        type="secondary"
+                        key="2"
+                        @click="changeModel"
+                    />
+                </template>
+                <template #btn-yes="{ isLoadingdelete, clickYes }">
+                    <Button
+                        :loading="isLoadingdelete"
+                        :disabled="!bulkBlogCategory"
+                        :icon="faShapes"
+                        :label="ctrans('Confirm')"
+                        @click="() => {
+                            processingBulkBlogCategory = true;
+                            clickYes();
+                        }"
+                    />
+                </template>
+            </ModalConfirmation>
+            <span v-else></span>
+        </template>
+
         <template #button-bulk-offline>
             <ModalConfirmation
                 v-if="selectedWebpages.size && routes_list.bulk_offline"
@@ -161,8 +262,7 @@ const processingBulkDelete = ref(false)
                 :successMessage="ctrans('Successfully set selected webpages as offline')"
                 :routeYes="routes_list.bulk_offline"
                 @finishedProcess="() => {
-                    key = ulid();
-                    selectedWebpages.clear();
+                    resetSelection();
                     processingBulkDelete = false;
                     redirectUrl = null;
                 }"
