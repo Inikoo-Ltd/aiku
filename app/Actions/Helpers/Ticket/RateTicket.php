@@ -34,7 +34,7 @@ class RateTicket
 
     public function handle(Ticket $ticket, array $modelData): Ticket
     {
-        $this->guardTicketsWritable();
+        $this->guardTicketsWritable($ticket->type);
 
         $ticket->update([
             'rating'         => Arr::get($modelData, 'rating'),

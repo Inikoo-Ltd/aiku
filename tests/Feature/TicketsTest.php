@@ -529,9 +529,9 @@ test('deployed commits that name a ticket are recorded on it once', function () 
 test('read-only mirror mode blocks every write but still lets everyone read', function () {
     $ticket         = StoreTicket::make()->action($this->group, ['subject' => 'Before freeze']);
     $customerTicket = StoreRetinaTicket::make()->action($this->webUser, ['subject' => 'Customer before freeze']);
-    Config::set('tickets.read_only', true);
+    Config::set('tickets.read_only_types', ['help', 'customer']);
 
-    get(route('grp.tickets.index'))->assertOk()->assertInertia(fn (AssertableInertia $page) => $page->where('tickets_read_only', true));
+    get(route('grp.tickets.index'))->assertOk()->assertInertia(fn (AssertableInertia $page) => $page->where('tickets_read_only_types', ['help', 'customer']));
     get(route('grp.tickets.show', $ticket->reference))->assertOk();
 
     post(route('grp.models.ticket.store'), ['subject' => 'During freeze'])->assertStatus(423);
@@ -546,6 +546,18 @@ test('read-only mirror mode blocks every write but still lets everyone read', fu
     expect(Ticket::where('subject', 'During freeze')->exists())->toBeFalse()
         ->and($ticket->fresh()->status)->toBe(TicketStatusEnum::OPEN)
         ->and($ticket->comments()->count())->toBe(0);
+
+    Config::set('tickets.read_only_types', ['customer']);
+
+    post(route('grp.models.ticket.store'), ['subject' => 'Help after cut-over'])->assertRedirect();
+    post(route('grp.models.ticket.comment.store', $ticket->id), ['body' => 'help is writable'])->assertRedirect();
+    post(route('grp.models.ticket.escalate', $customerTicket->id))->assertRedirect();
+    expect(fn () => StoreRetinaTicket::make()->action($this->webUser, ['subject' => 'retina still frozen']))->toThrow(HttpException::class);
+    AikuServer::actingAs($this->user)->tool(TicketWriteTool::class, ['reference' => $customerTicket->reference, 'comment' => 'x'])->assertHasErrors();
+    AikuServer::actingAs($this->user)->tool(TicketWriteTool::class, ['reference' => $ticket->reference, 'comment' => 'via mcp'])->assertOk();
+
+    expect(Ticket::where('subject', 'Help after cut-over')->exists())->toBeTrue()
+        ->and($ticket->comments()->count())->toBe(2);
 });
 
 test('slack ticket reaction raises a ticket from the message and mirrors replies into its thread', function () {

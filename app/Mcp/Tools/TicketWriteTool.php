@@ -40,13 +40,13 @@ class TicketWriteTool extends Tool
             'tags.*'      => ['string', 'max:64'],
         ]);
 
-        if (WithTicketsWriteGuard::ticketsAreReadOnly()) {
-            return Response::error(WithTicketsWriteGuard::readOnlyMessage());
-        }
-
         $user = $request->user();
 
         if (!$request->filled('reference')) {
+            if (WithTicketsWriteGuard::ticketsAreReadOnly()) {
+                return Response::error(WithTicketsWriteGuard::readOnlyMessage());
+            }
+
             $ticket = StoreTicket::make()->action($user->group, array_filter([
                 'subject'       => $request->string('subject')->toString(),
                 'description'   => $request->get('description'),
@@ -64,6 +64,9 @@ class TicketWriteTool extends Tool
         $ticket = Ticket::where('group_id', $user->group_id)->visibleTo($user)->where('reference', strtoupper($request->string('reference')))->first();
         if (!$ticket) {
             return Response::error('Ticket not found or not visible to you.');
+        }
+        if (WithTicketsWriteGuard::ticketsAreReadOnly($ticket->type)) {
+            return Response::error(WithTicketsWriteGuard::readOnlyMessage());
         }
 
         $changes = array_filter([

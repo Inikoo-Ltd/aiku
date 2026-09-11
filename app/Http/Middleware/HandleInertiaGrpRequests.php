@@ -51,7 +51,7 @@ class HandleInertiaGrpRequests extends Middleware
                 'auth'  => [
                     'user' => $request->user() ? GetLoggedUser::run($request->user()) : null,
                 ],
-                'tickets_read_only' => (bool) config('tickets.read_only'),
+                'tickets_read_only_types' => config('tickets.read_only_types', []),
                 'flash' => [
                     'notification' => fn () => $request->session()->get('notification'),
                     'modal'        => fn () => $request->session()->get('modal')

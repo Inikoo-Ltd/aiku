@@ -36,9 +36,8 @@ class StoreTicket extends OrgAction
 
     public function handle(Group $group, array $modelData): Ticket
     {
-        $this->guardTicketsWritable();
-
         $type = TicketTypeEnum::from(Arr::get($modelData, 'type', TicketTypeEnum::HELP->value));
+        $this->guardTicketsWritable($type);
 
         $number = DB::selectOne('SELECT nextval(?) AS number', [$type->sequence()])->number;
 

@@ -29,7 +29,7 @@ class UpdateTicket extends OrgAction
 
     public function handle(Ticket $ticket, array $modelData): Ticket
     {
-        $this->guardTicketsWritable();
+        $this->guardTicketsWritable($ticket->type);
 
         if ($status = Arr::get($modelData, 'status')) {
             $status = TicketStatusEnum::from($status);

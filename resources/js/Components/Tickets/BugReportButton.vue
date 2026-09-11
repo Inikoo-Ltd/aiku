@@ -17,7 +17,7 @@ import { faBug, faCheckCircle, faPaperPlane } from "@fal"
 library.add(faBug, faCheckCircle, faPaperPlane)
 import TicketComposer from "@/Components/Tickets/TicketComposer.vue"
 
-const readOnly = computed(() => !!(usePage().props as any).tickets_read_only)
+const readOnly = computed(() => ((usePage().props as any).tickets_read_only_types ?? []).includes('help'))
 const isOpen = ref(false)
 const sentReference = ref<string | null>(null)
 

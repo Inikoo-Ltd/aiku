@@ -43,7 +43,7 @@ const props = defineProps<{
     }
 }>()
 
-const readOnly = computed(() => !!(usePage().props as any).tickets_read_only)
+const readOnly = computed(() => ((usePage().props as any).tickets_read_only_types ?? []).includes(props.ticket.type))
 const staffMessaging = useStaffMessaging()
 
 const newTag = ref("")

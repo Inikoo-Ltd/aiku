@@ -8,13 +8,16 @@
 
 namespace App\Actions\Helpers\Ticket\Concerns;
 
+use App\Enums\Helpers\Ticket\TicketTypeEnum;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 
 trait WithTicketsWriteGuard
 {
-    public static function ticketsAreReadOnly(): bool
+    public static function ticketsAreReadOnly(TicketTypeEnum|string $type = TicketTypeEnum::HELP): bool
     {
-        return (bool) config('tickets.read_only');
+        $type = $type instanceof TicketTypeEnum ? $type->value : $type;
+
+        return in_array($type, config('tickets.read_only_types', []), true);
     }
 
     public static function readOnlyMessage(): string
@@ -22,9 +25,9 @@ trait WithTicketsWriteGuard
         return __('Tickets are read-only while we mirror Jira. Please raise or update the ticket in Jira until the cut-over.');
     }
 
-    protected function guardTicketsWritable(): void
+    protected function guardTicketsWritable(TicketTypeEnum|string $type): void
     {
-        if (self::ticketsAreReadOnly()) {
+        if (self::ticketsAreReadOnly($type)) {
             throw new HttpException(423, self::readOnlyMessage());
         }
     }

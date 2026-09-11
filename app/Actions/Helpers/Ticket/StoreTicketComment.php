@@ -25,7 +25,7 @@ class StoreTicketComment extends OrgAction
 
     public function handle(Ticket $ticket, User|WebUser $author, array $modelData): TicketComment
     {
-        $this->guardTicketsWritable();
+        $this->guardTicketsWritable($ticket->type);
 
         $comment = $ticket->comments()->create([
             'author_type' => $author instanceof User ? 'User' : 'WebUser',
