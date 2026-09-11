@@ -8,8 +8,10 @@ import { useFormatTime } from "@/Composables/useFormatTime"
 import { useLocaleStore } from "@/Stores/locale"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faRocketLaunch, faTag } from "@fal"
+import PageSpeedInsights from "@/Components/DataDisplay/PageSpeedInsights.vue"
 
 const props = defineProps<{
+	pagespeed?: any
 	data: {
 		start_date: string
 		end_date: string
@@ -249,6 +251,8 @@ const formatTotal = (key: keyof typeof series) =>
 				<Chart type="line" class="h-full" :data="chartData" :options="chartOptions" :plugins="[eventMarkers]" />
 			</div>
 		</div>
+
+		<PageSpeedInsights :pagespeed="pagespeed" />
 
 		<div class="rounded-lg bg-white shadow">
 			<div class="border-b px-6 py-3 text-sm font-semibold">{{ trans("Changes in this period") }}</div>
