@@ -69,6 +69,9 @@ const PAGE_SIZES = {
 }
 
 const PREVIEW_BOX = { width: 460, height: 600 }
+const HIGHLIGHTED_ARTWORK_OPACITY = 0.15
+const HIGHLIGHT_ON_DARK_TEXT = { backgroundColor: "#fde047", boxShadow: "0 0 0 2px #b45309" }
+const HIGHLIGHT_ON_LIGHT_TEXT = { backgroundColor: "#111827", boxShadow: "0 0 0 2px #fbbf24" }
 const LINE_HEIGHT = 1.1
 const ZOOM_LIMITS = { min: 0.5, max: 8 }
 const ZOOM_STEP = 1.25
@@ -202,6 +205,7 @@ const labelHeight = computed(
 const isGridValid = computed(() => labelWidth.value > 2 && labelHeight.value > 2)
 
 const zoom = ref(1)
+const isHighlightingTexts = ref(false)
 const previewViewport = ref<HTMLElement | null>(null)
 
 const fitScale = computed(() =>
@@ -290,6 +294,7 @@ const backgroundStyle = computed(() => {
         height: `${runsSideways ? width : height}px`,
         transform: `translate(-50%, -50%) rotate(${canvasRotation.value}deg)`,
         objectFit: "fill",
+        opacity: isHighlightingTexts.value ? String(HIGHLIGHTED_ARTWORK_OPACITY) : "1",
     }
 })
 
@@ -310,6 +315,22 @@ const itemTransform = (item: LabelItem) => {
     }
 }
 
+const isLightText = (color: string) => {
+    const hex = color.replace("#", "")
+
+    if (hex.length !== 6) return false
+
+    const [red, green, blue] = [0, 2, 4].map(offset => parseInt(hex.slice(offset, offset + 2), 16))
+
+    return 0.299 * red + 0.587 * green + 0.114 * blue > 140
+}
+
+const previewOnlyHighlightStyle = (item: LabelItem) => {
+    if (!isHighlightingTexts.value) return {}
+
+    return isLightText(item.color) ? HIGHLIGHT_ON_LIGHT_TEXT : HIGHLIGHT_ON_DARK_TEXT
+}
+
 const itemStyle = (item: LabelItem) => ({
     left: `${item.x * toPx(labelWidth.value)}px`,
     top: `${item.y * toPx(labelHeight.value)}px`,
@@ -320,6 +341,7 @@ const itemStyle = (item: LabelItem) => ({
     fontFamily: "Arial, sans-serif",
     transform: itemTransform(item),
     transformOrigin: "0 0",
+    ...previewOnlyHighlightStyle(item),
 })
 
 /**
@@ -1160,6 +1182,13 @@ const describeFailure = async (error: any): Promise<string> => {
                         <button
                             class="rounded border border-gray-300 px-2 py-0.5 text-xs text-gray-600 hover:bg-gray-50"
                             @click="showEditedLabel">{{ ctrans("Edited label") }}</button>
+                        <button
+                            class="rounded border px-2 py-0.5 text-xs"
+                            :class="isHighlightingTexts ? 'border-amber-500 bg-amber-100 text-amber-700' : 'border-gray-300 text-gray-600 hover:bg-gray-50'"
+                            :title="ctrans('Fades the artwork and puts the texts on a contrasting patch, only here in the preview.')"
+                            @click="isHighlightingTexts = !isHighlightingTexts">
+                            {{ ctrans("Highlight texts") }}
+                        </button>
                     </div>
 
                     
