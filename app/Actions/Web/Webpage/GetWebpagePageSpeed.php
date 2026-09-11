@@ -20,7 +20,14 @@ class GetWebpagePageSpeed
 {
     use AsAction;
 
+    public string $jobQueue = 'cache-warming';
+
+    public const array STRATEGIES = ['mobile', 'desktop'];
+
     private const ENDPOINT = 'https://www.googleapis.com/pagespeedonline/v5/runPagespeed';
+
+    private const RESULT_TTL_HOURS   = 25;
+    private const ERROR_TTL_MINUTES  = 15;
 
     private const CATEGORIES = [
         'performance'    => 'Performance',
@@ -45,31 +52,19 @@ class GetWebpagePageSpeed
         'EXPERIMENTAL_TIME_TO_FIRST_BYTE' => 'Time to First Byte',
     ];
 
-    /**
-     * @return array{url: string, strategy: string, fetched_at: string, scores: array, lab: array, field: array, overall_rating: string|null}|array{error: string}
-     */
-    public function handle(Webpage $webpage, string $strategy = 'mobile'): array
+    public static function resultKey(Webpage $webpage, string $strategy): string
     {
-        $url = $this->publiclyReachableUrl($webpage);
+        return "webpage-pagespeed:$webpage->id:$strategy";
+    }
 
-        if (!$url) {
-            return ['error' => __('This webpage has no publicly reachable URL to analyse')];
-        }
+    public static function errorKey(Webpage $webpage, string $strategy): string
+    {
+        return "webpage-pagespeed-error:$webpage->id:$strategy";
+    }
 
-        $cacheKey = "webpage-pagespeed:$webpage->id:$strategy";
-        $cached   = cache()->get($cacheKey);
-
-        if ($cached) {
-            return $cached;
-        }
-
-        $result = $this->fetch($url, $strategy);
-
-        if (!Arr::get($result, 'error')) {
-            cache()->put($cacheKey, $result, now()->addHours(6));
-        }
-
-        return $result;
+    public static function pendingKey(Webpage $webpage, string $strategy): string
+    {
+        return "webpage-pagespeed-pending:$webpage->id:$strategy";
     }
 
     /**
@@ -77,7 +72,7 @@ class GetWebpagePageSpeed
      * page. Locally getUrl() resolves to an unreachable *.test domain, hence the canonical_url
      * of the real published page takes precedence.
      */
-    private function publiclyReachableUrl(Webpage $webpage): ?string
+    public static function publiclyReachableUrl(Webpage $webpage): ?string
     {
         $url  = $webpage->canonical_url ?: $webpage->getUrl();
         $host = parse_url($url, PHP_URL_HOST);
@@ -89,17 +84,73 @@ class GetWebpagePageSpeed
         return $url;
     }
 
+    /**
+     * @return array{url: string, strategy: string, fetched_at: string, scores: array, lab: array, field: array, overall_rating: string|null}|array{error: string}
+     */
+    public function handle(Webpage $webpage, string $strategy = 'mobile', bool $force = false): array
+    {
+        $url = self::publiclyReachableUrl($webpage);
+
+        if (!$url) {
+            return ['error' => __('This webpage has no publicly reachable URL to analyse')];
+        }
+
+        if (!$force) {
+            $cached = cache()->get(self::resultKey($webpage, $strategy));
+
+            if ($cached) {
+                return $cached;
+            }
+        }
+
+        $result = $this->fetch($url, $strategy);
+
+        $this->remember($webpage, $strategy, $result);
+
+        return $result;
+    }
+
+    private function remember(Webpage $webpage, string $strategy, array $result): void
+    {
+        cache()->forget(self::pendingKey($webpage, $strategy));
+
+        $error = Arr::get($result, 'error');
+
+        if ($error) {
+            cache()->put(self::errorKey($webpage, $strategy), $error, now()->addMinutes(self::ERROR_TTL_MINUTES));
+
+            return;
+        }
+
+        cache()->forget(self::errorKey($webpage, $strategy));
+        cache()->put(self::resultKey($webpage, $strategy), $result, now()->addHours(self::RESULT_TTL_HOURS));
+    }
+
+    /**
+     * The categories have to travel as repeated query parameters. Sent as an indexed array they
+     * are ignored and the response comes back with the performance score only.
+     */
+    private function query(string $url, string $strategy): string
+    {
+        $query = Arr::query(array_filter([
+            'url'      => $url,
+            'strategy' => $strategy,
+            'key'      => config('app.analytics.google.pagespeed_api_key'),
+        ]));
+
+        foreach (array_keys(self::CATEGORIES) as $category) {
+            $query .= '&category='.$category;
+        }
+
+        return $query;
+    }
+
     private function fetch(string $url, string $strategy): array
     {
         try {
             $response = Http::timeout(90)
                 ->retry(2, 2000, fn (Throwable $exception) => $exception instanceof ConnectionException, false)
-                ->get(self::ENDPOINT, array_filter([
-                    'url'      => $url,
-                    'strategy' => $strategy,
-                    'category' => array_keys(self::CATEGORIES),
-                    'key'      => config('app.analytics.google.pagespeed_api_key'),
-                ]));
+                ->get(self::ENDPOINT.'?'.$this->query($url, $strategy));
         } catch (Throwable $e) {
             Sentry::captureException($e);
 

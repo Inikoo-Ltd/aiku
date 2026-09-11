@@ -127,7 +127,7 @@ it('requests the webpage url with the selected strategy and caches the result', 
     Http::assertSent(function ($request) use ($webpage) {
         return $request['url'] === $webpage->canonical_url
             && $request['strategy'] === 'desktop'
-            && $request['category'] === ['performance', 'accessibility', 'best-practices', 'seo'];
+            && str_contains($request->url(), 'category=performance&category=accessibility&category=best-practices&category=seo');
     });
 });
 
