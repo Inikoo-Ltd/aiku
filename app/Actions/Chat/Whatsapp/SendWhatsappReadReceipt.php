@@ -8,6 +8,8 @@
 namespace App\Actions\Chat\Whatsapp;
 
 use App\Actions\Chat\Whatsapp\Concerns\WithWhatsappCredentials;
+use App\Helpers\WhatsappSettingsKey;
+use App\Models\Chat\MetaChannel;
 use App\Models\Chat\MetaChatMessage;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Http;
@@ -35,14 +37,16 @@ class SendWhatsappReadReceipt
     {
         $metaMessageId = (string) $metaChatMessage->meta_message_id;
 
-        if ($metaMessageId === '' || $metaChatMessage->metaChannel?->code !== 'whatsapp') {
+        $metaChatSession = $metaChatMessage->metaChatSession;
+
+        if ($metaMessageId === '' || $metaChatMessage->metaChannel?->code !== MetaChannel::WHATSAPP) {
             return false;
         }
 
         [
             'phone_number_id' => $phoneNumberId,
             'access_token'    => $accessToken,
-        ] = $this->whatsappCredentials($metaChatMessage->metaChatSession?->shop);
+        ] = $this->whatsappCredentials($metaChatSession?->shop, $metaChatSession?->whatsappSettingsKey() ?? WhatsappSettingsKey::SALES);
 
         if ($phoneNumberId === '' || $accessToken === '') {
             Log::warning('WhatsApp read receipt skipped, channel is not configured', [

@@ -26,6 +26,7 @@ class StoreMetaChatSession
             'customer_id'  => ['nullable', 'exists:customers,id'],
             'phone_number' => ['required_without:customer_id', 'nullable', 'string', 'max:50', 'regex:/^\+[1-9][\d\s\-().]{6,20}$/'],
             'name'         => ['nullable', 'string'],
+            'whatsapp_phone_number_id' => ['sometimes', 'nullable', 'string', 'max:50'],
         ];
     }
 
@@ -76,10 +77,15 @@ class StoreMetaChatSession
 
         $name = $customer?->contact_name ?? $customer?->name ?? Arr::get($modelData, 'name');
 
-        $metaChatSession = DB::transaction(function () use ($metaChannel, $customer, $modelData, $phoneNumber, $name) {
+        $whatsappPhoneNumberId = Arr::get($modelData, 'whatsapp_phone_number_id');
+
+        $metaChatSession = DB::transaction(function () use ($metaChannel, $customer, $modelData, $phoneNumber, $name, $whatsappPhoneNumberId) {
+            /* A shop may also answer on a support number, and both share this channel, so a
+               thread is only the same thread if it came in on the same number. */
             $existing = MetaChatSession::where('meta_channel_id', $metaChannel->id)
                 ->where('shop_id', $modelData['shop_id'])
                 ->where('phone_number', $phoneNumber)
+                ->where('whatsapp_phone_number_id', $whatsappPhoneNumberId)
                 ->latest('id')
                 ->first();
 
@@ -92,6 +98,7 @@ class StoreMetaChatSession
                 'shop_id'          => $modelData['shop_id'],
                 'customer_id'      => $customer?->id,
                 'phone_number'     => $phoneNumber,
+                'whatsapp_phone_number_id' => $whatsappPhoneNumberId,
                 'ulid'             => Str::ulid(),
                 'status'           => ChatSessionStatusEnum::ACTIVE,
                 'guest_identifier' => $name,

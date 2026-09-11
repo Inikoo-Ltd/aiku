@@ -60,7 +60,7 @@ class SendWhatsappReaction
         [
             'phone_number_id' => $phoneNumberId,
             'access_token'    => $accessToken,
-        ] = $this->whatsappCredentials($metaChatSession->shop);
+        ] = $this->whatsappCredentials($metaChatSession->shop, $metaChatSession->whatsappSettingsKey());
 
         if ($phoneNumberId === '' || $accessToken === '') {
             return [

@@ -21,6 +21,8 @@ class MetaChannel extends Model
     use HasFactory;
     use SoftDeletes;
 
+    public const string WHATSAPP = 'whatsapp';
+
     protected $table = 'meta_channels';
 
     protected $guarded = [];

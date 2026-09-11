@@ -14,8 +14,10 @@ use App\Actions\Chat\MetaChatSession\StoreMetaChatSession;
 use App\Enums\CRM\Livechat\ChatMessageTypeEnum;
 use App\Enums\CRM\Livechat\ChatSenderTypeEnum;
 use App\Enums\CRM\Livechat\ChatSessionStatusEnum;
+use App\Actions\Chat\Whatsapp\Concerns\WithWhatsappCredentials;
 use App\Events\BroadcastMetaChatListEvent;
 use App\Events\BroadcastRealtimeMetaChat;
+use App\Helpers\WhatsappSettingsKey;
 use App\Models\CRM\Customer;
 use App\Models\Catalogue\Shop;
 use App\Models\Chat\MetaChannel;
@@ -28,6 +30,7 @@ use Lorisleiva\Actions\Concerns\AsAction;
 class StoreIncomingWhatsappMessage
 {
     use AsAction;
+    use WithWhatsappCredentials;
 
     public string $jobQueue = 'urgent';
 
@@ -48,7 +51,7 @@ class StoreIncomingWhatsappMessage
     {
         $phoneNumberId = (string) Arr::get($value, 'metadata.phone_number_id');
 
-        $shop = Shop::whereJsonContains('settings->whatsapp->phone_number_id', $phoneNumberId)->first();
+        $shop = $this->resolveWhatsappNumber($phoneNumberId)['shop'] ?? null;
 
         if (!$shop) {
             Log::warning('WhatsApp message for unknown phone_number_id', [
@@ -58,7 +61,7 @@ class StoreIncomingWhatsappMessage
             return;
         }
 
-        $metaChannel = MetaChannel::where('code', 'whatsapp')->first();
+        $metaChannel = MetaChannel::where('code', MetaChannel::WHATSAPP)->first();
 
         if (!$metaChannel) {
             Log::warning('WhatsApp meta channel is not configured');
@@ -67,7 +70,7 @@ class StoreIncomingWhatsappMessage
         }
 
         foreach (Arr::get($value, 'messages', []) as $message) {
-            $this->storeMessage($shop, $metaChannel, $value, $message);
+            $this->storeMessage($shop, $metaChannel, $value, $message, $phoneNumberId);
         }
     }
 
@@ -75,7 +78,7 @@ class StoreIncomingWhatsappMessage
      * @param  array<string, mixed>  $value
      * @param  array<string, mixed>  $message
      */
-    protected function storeMessage(Shop $shop, MetaChannel $metaChannel, array $value, array $message): void
+    protected function storeMessage(Shop $shop, MetaChannel $metaChannel, array $value, array $message, string $phoneNumberId): void
     {
         $waMessageId = (string) Arr::get($message, 'id');
 
@@ -90,9 +93,21 @@ class StoreIncomingWhatsappMessage
         $digits      = preg_replace('/\D/', '', (string) Arr::get($message, 'from'));
         $profileName = Arr::get($value, 'contacts.0.profile.name');
 
+        /* A shop may also answer on a support number. Both share this channel, so without
+           matching the number the message came in on, a customer who has written to sales
+           would have their support message filed into that open sales conversation.
+           Threads stored before the support number existed have none recorded and can only
+           have arrived on the sales number. */
         $metaChatSession = MetaChatSession::where('meta_channel_id', $metaChannel->id)
             ->where('shop_id', $shop->id)
             ->whereIn('phone_number', ['+'.$digits, $digits])
+            ->where(function ($query) use ($shop, $phoneNumberId) {
+                $query->where('whatsapp_phone_number_id', $phoneNumberId);
+
+                if (WhatsappSettingsKey::forNumber($shop, $phoneNumberId) === WhatsappSettingsKey::SALES) {
+                    $query->orWhereNull('whatsapp_phone_number_id');
+                }
+            })
             ->latest('id')
             ->first();
 
@@ -100,10 +115,11 @@ class StoreIncomingWhatsappMessage
             $customer = $this->findCustomer($shop, $digits);
 
             $metaChatSession = StoreMetaChatSession::run([
-                'shop_id'      => $shop->id,
-                'customer_id'  => $customer?->id,
-                'phone_number' => '+'.$digits,
-                'name'         => $profileName,
+                'shop_id'                  => $shop->id,
+                'customer_id'              => $customer?->id,
+                'phone_number'             => '+'.$digits,
+                'name'                     => $profileName,
+                'whatsapp_phone_number_id' => $phoneNumberId,
             ]);
         } elseif ($metaChatSession->status === ChatSessionStatusEnum::CLOSED) {
             $metaChatSession = ReopenMetaChatSession::make()->reopenToWaiting($metaChatSession);

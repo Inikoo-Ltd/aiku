@@ -88,7 +88,7 @@ class SendMetaChatMessage
         [
             'phone_number_id' => $phoneNumberId,
             'access_token'    => $accessToken,
-        ] = $this->whatsappCredentials($shop);
+        ] = $this->whatsappCredentials($shop, $metaChatSession->whatsappSettingsKey());
 
         if ($phoneNumberId === '' || $accessToken === '') {
             return [

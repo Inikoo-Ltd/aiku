@@ -10,7 +10,7 @@ class MetaChannelSeeder extends Seeder
     public function run(): void
     {
         MetaChannel::firstOrCreate(
-            ['code' => 'whatsapp'],
+            ['code' => MetaChannel::WHATSAPP],
             ['name' => 'WhatsApp']
         );
     }

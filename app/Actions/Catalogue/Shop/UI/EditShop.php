@@ -782,6 +782,29 @@ class EditShop extends OrgAction
                                     ],
                                 ],
                             ],
+                            'whatsapp_support' => [
+                                'type'         => 'field_group',
+                                'label'        => __('WhatsApp Support Number'),
+                                'information'  => __('Optional second number answered by support. Leave blank to handle everything on the number above.'),
+                                'noSaveButton' => true,
+                                'fields'       => [
+                                    'whatsapp_support_phone_number_id' => [
+                                        'type'  => 'input',
+                                        'label' => __('Phone Number ID'),
+                                        'value' => Arr::get($shop->settings, 'whatsapp_support.phone_number_id', ''),
+                                    ],
+                                    'whatsapp_support_waba_id'         => [
+                                        'type'  => 'input',
+                                        'label' => __('WABA ID'),
+                                        'value' => Arr::get($shop->settings, 'whatsapp_support.waba_id', ''),
+                                    ],
+                                    'whatsapp_support_phone_number'    => [
+                                        'type'  => 'phone',
+                                        'label' => __('Phone Number'),
+                                        'value' => Arr::get($shop->settings, 'whatsapp_support.phone_number', ''),
+                                    ],
+                                ],
+                            ],
                         ] : [],
                     ],
                 ],

@@ -309,6 +309,9 @@ class UpdateShop extends OrgAction
                     'whatsapp_phone_number_id' => 'settings.whatsapp.phone_number_id',
                     'whatsapp_waba_id' => 'settings.whatsapp.waba_id',
                     'whatsapp_phone_number' => 'settings.whatsapp.phone_number',
+                    'whatsapp_support_phone_number_id' => 'settings.whatsapp_support.phone_number_id',
+                    'whatsapp_support_waba_id' => 'settings.whatsapp_support.waba_id',
+                    'whatsapp_support_phone_number' => 'settings.whatsapp_support.phone_number',
                     default => $key
                 },
                 $value
@@ -352,6 +355,9 @@ class UpdateShop extends OrgAction
         data_forget($modelData, 'whatsapp_phone_number_id');
         data_forget($modelData, 'whatsapp_waba_id');
         data_forget($modelData, 'whatsapp_phone_number');
+        data_forget($modelData, 'whatsapp_support_phone_number_id');
+        data_forget($modelData, 'whatsapp_support_waba_id');
+        data_forget($modelData, 'whatsapp_support_phone_number');
 
         if (Arr::exists($modelData, 'chat_slack_token') || Arr::exists($modelData, 'chat_slack_channels')) {
             $settings = $shop->settings ?? [];
@@ -913,6 +919,9 @@ class UpdateShop extends OrgAction
             'whatsapp_phone_number_id'                                => ['sometimes', 'nullable', 'required_if:enable_whatsapp,true', 'string'],
             'whatsapp_waba_id'                                        => ['sometimes', 'nullable', 'required_if:enable_whatsapp,true', 'string'],
             'whatsapp_phone_number'                                   => ['sometimes', 'nullable', 'required_if:enable_whatsapp,true', new Phone()],
+            'whatsapp_support_phone_number_id'                        => ['sometimes', 'nullable', 'string'],
+            'whatsapp_support_waba_id'                                => ['sometimes', 'nullable', 'string'],
+            'whatsapp_support_phone_number'                           => ['sometimes', 'nullable', new Phone()],
             'follow_master_pricing'                                   => ['sometimes', 'boolean'],
             'banned_countries'                                        => ['sometimes', 'nullable', 'array'],
             'banned_countries.is_follow_organisation_banned_list'     => ['sometimes', 'boolean'],

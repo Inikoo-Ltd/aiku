@@ -105,13 +105,16 @@ class HandleWhatsappWebhook
      * message_template_status_update carries no metadata at all. Its account is the entry
      * id, which every payload carries, so the number answers first and the account is what
      * is left when there is no number to go on.
+     *
+     * A shop's support number resolves here too: it belongs to the same organisation, so
+     * it is the same app secret that has to verify the payload.
      */
     protected function webhookShop(ActionRequest $request): ?Shop
     {
         $phoneNumberId = (string) $request->json('entry.0.changes.0.value.metadata.phone_number_id');
 
         if ($phoneNumberId !== '') {
-            return Shop::whereJsonContains('settings->whatsapp->phone_number_id', $phoneNumberId)->first();
+            return $this->resolveWhatsappNumber($phoneNumberId)['shop'] ?? null;
         }
 
         $wabaId = (string) $request->json('entry.0.id');

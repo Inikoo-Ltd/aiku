@@ -6,6 +6,7 @@ use App\Enums\CRM\Livechat\ChatPriorityEnum;
 use App\Enums\CRM\Livechat\ChatSenderTypeEnum;
 use App\Enums\CRM\Livechat\ChatSessionClosedByTypeEnum;
 use App\Enums\CRM\Livechat\ChatSessionStatusEnum;
+use App\Helpers\WhatsappSettingsKey;
 use App\Models\CRM\Customer;
 use App\Models\Catalogue\Shop;
 use App\Models\Helpers\Language;
@@ -39,6 +40,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property int|null $highlighted_by_agent_id
  * @property array|null $metadata
  * @property string|null $geo_country_code
+ * @property string|null $whatsapp_phone_number_id
  * @property int|null $website_visitor_id
  * @property \Illuminate\Support\Carbon|null $last_visitor_message_at
  * @property \Illuminate\Support\Carbon|null $last_agent_message_at
@@ -120,6 +122,15 @@ class MetaChatSession extends Model
             ChatSenderTypeEnum::GUEST->value,
             ChatSenderTypeEnum::USER->value,
         ]);
+    }
+
+    /**
+     * A reply has to leave from the number the customer wrote to, so which of the shop's
+     * settings blocks a send reads is decided by the number the thread arrived on.
+     */
+    public function whatsappSettingsKey(): string
+    {
+        return WhatsappSettingsKey::forNumber($this->shop, $this->whatsapp_phone_number_id);
     }
 
     public function getCanSendNonTemplateMessageAttribute(): bool
