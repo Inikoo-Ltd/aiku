@@ -3,7 +3,6 @@ import { getStyles } from "@/Composables/styles";
 import { ref, onMounted, inject, watch, computed, defineAsyncComponent } from "vue";
 import axios from "axios";
 import { notify } from "@kyvg/vue3-notification";
-import LoadingIcon from "@/Components/Utils/LoadingIcon.vue";
 
 const SliderSquare = defineAsyncComponent(() => import("@/Components/Banners/Slider/SliderSquare.vue"));
 const SliderLandscape = defineAsyncComponent(() => import("@/Components/Banners/Slider/SliderLandscape.vue"));
@@ -28,7 +27,9 @@ const props = defineProps<{
 
 const layout = inject("layout");
 const data = ref<any>(null);
-const isLoading = ref(false);
+const loadFailed = ref(false);
+
+let requestedBannerId: number | string | null = null;
 
 /*
  * Measure the real viewport directly instead of waiting for the screenType prop
@@ -92,6 +93,17 @@ const bannerType = computed(() => {
     ?? 'landscape'
 })
 
+const mobileImageRatio = computed<number | null>(() => {
+  const image = data.value?.compiled_layout?.components?.[0]?.image
+  const variant = image?.mobile ?? image?.desktop
+
+  if (variant?.width > 0 && variant?.height > 0) {
+    return variant.width / variant.height
+  }
+
+  return null
+})
+
 /*
  * The box geometry for both views is emitted as CSS variables consumed by the
  * .banner-box media queries, so the reserved size is correct from first paint
@@ -150,36 +162,31 @@ const bannerBoxVars = computed<Record<string, string>>(() => {
 })
 
 
-const mobileImageRatio = computed<number | null>(() => {
-  const image = data.value?.compiled_layout?.components?.[0]?.image
-  const variant = image?.mobile ?? image?.desktop
-
-  if (variant?.width > 0 && variant?.height > 0) {
-    return variant.width / variant.height
-  }
-
-  return null
-})
-
 const getDataBanner = async (): Promise<void> => {
   if (typeof window === "undefined") return;
 
-  if (!activeId.value) {
+  const bannerId = activeId.value;
+
+  if (!bannerId) {
     data.value = null;
     return;
   }
 
-  const embedded = embeddedBannerData(activeId.value);
+  const embedded = embeddedBannerData(bannerId);
   if (embedded) {
     data.value = embedded;
+    loadFailed.value = false;
     return;
   }
 
+  if (requestedBannerId === bannerId) return;
+
   try {
-    isLoading.value = true;
+    requestedBannerId = bannerId;
+    loadFailed.value = false;
 
     const response = await axios.get(
-      `/json/banner/${activeId.value}`
+      `/json/banner/${bannerId}`
     );
 
     const components = response.data.compiled_layout.components.filter((item: any) => item?.visibility == true)
@@ -198,8 +205,8 @@ const getDataBanner = async (): Promise<void> => {
       type: "error",
     });
     data.value = null;
-  } finally {
-    isLoading.value = false;
+    loadFailed.value = true;
+    requestedBannerId = null;
   }
 };
 
@@ -216,17 +223,19 @@ watch(
 
 onMounted(() => {
   effectiveScreenType.value = detectScreenType();
-
-  if (activeId.value) {
-    getDataBanner();
-  }
 });
 </script>
 
 <template>  
   <div :id="fieldValue?.id ? fieldValue?.id : 'banner'+indexBlock" component="banner">
-    <div v-if="activeId && !data" class="banner-box flex justify-center items-center mx-auto" :style="bannerBoxVars">
-      <LoadingIcon v-if="isLoading" class="text-4xl" />
+    <div v-if="activeId && !data" class="banner-box relative mx-auto" :style="bannerBoxVars">
+      <div
+        v-if="loadFailed"
+        class="absolute inset-0 flex items-center justify-center rounded-xl border border-dashed border-gray-300 px-4 text-center text-sm text-gray-400"
+      >
+        {{ ctrans("Banner could not be loaded") }}
+      </div>
+      <div v-else class="absolute inset-0 skeleton h-full w-full" />
     </div>
 
     <section v-else-if="data" class="banner-box relative mx-auto" :style="bannerBoxVars">
