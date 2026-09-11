@@ -3474,11 +3474,15 @@ describe('partner browse', function () {
     });
 
     test('partner order capacity bootstraps deterministically from forecast', function () {
-        DB::table('org_stock_stats')
-            ->whereIn('org_stock_id', DB::table('org_stocks')->where('organisation_id', $this->organisation->id)->pluck('id'))
-            ->update(['predicted_daily_usage' => 0]);
+        DB::beginTransaction();
+        DB::table('stock_deliveries')
+            ->where('organisation_id', $this->orgPartner->organisation_id)
+            ->where('partner_id', $this->orgPartner->partner_id)
+            ->update(['deleted_at' => now()]);
 
         $capacity = GetPartnerOrderCapacity::run($this->orgPartner);
+        DB::rollBack();
+
         expect($capacity['partner_capacity'])
             ->toMatchArray(['delivers_to_us_per_30d' => null, 'source' => 'none'])
             ->and($capacity['warehouse'])->toHaveKeys([
