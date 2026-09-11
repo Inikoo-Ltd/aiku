@@ -2781,7 +2781,8 @@ test('new meta chat session response carries the assigned agent', function () {
         'priority'        => ChatPriorityEnum::NORMAL,
     ]);
 
-    $agent = StoreChatAgent::make()->handle(['user_id' => $this->user->id]);
+    $agent = ChatAgent::where('user_id', $this->user->id)->first()
+        ?? StoreChatAgent::make()->handle(['user_id' => $this->user->id]);
 
     AssignMetaChatToAgent::make()->handle($metaChatSession, $agent, 'Assigned to agent who started the chat');
 
@@ -2797,8 +2798,9 @@ test('new meta chat session response carries the assigned agent', function () {
 test('my chats excludes a whatsapp thread now held by another agent', function () {
     $channel = MetaChannel::firstOrCreate(['code' => 'whatsapp'], ['name' => 'WhatsApp']);
 
-    $mine  = StoreChatAgent::make()->handle(['user_id' => $this->user->id]);
-    $other = StoreChatAgent::make()->handle(['user_id' => createAdminGuest($this->organisation->group)->getUser()->id]);
+    $mine  = ChatAgent::where('user_id', $this->user->id)->first()
+        ?? StoreChatAgent::make()->handle(['user_id' => $this->user->id]);
+    $other = StoreChatAgent::make()->handle(['user_id' => User::factory()->create(['group_id' => $this->organisation->group_id])->id]);
 
     foreach ([$mine, $other] as $agent) {
         AssignChatAgentToScope::make()->handle([
