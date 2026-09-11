@@ -10,6 +10,9 @@
 
 namespace App\Actions\Goods\TradeUnit\UI;
 
+use App\Actions\Goods\TradeUnit\GetLabelInfoLanguages;
+use App\Enums\Goods\TradeUnit\TradeUnitLabelPresenceEnum;
+use App\Enums\Goods\TradeUnit\TradeUnitMarketEnum;
 use App\Enums\SysAdmin\Organisation\OrganisationTypeEnum;
 use App\Models\SysAdmin\Organisation;
 use App\Actions\Traits\HasBucketAttachment;
@@ -180,6 +183,11 @@ class GetTradeUnitShowcase
         return [
             'properties' => $properties,
             'gpsr'  => $gpsr,
+            'label_info' => [
+                ...TradeUnitLabelPresenceEnum::presenceFromLabelInfo($tradeUnit->label_info),
+                'markets'   => TradeUnitMarketEnum::marketsFromLabelInfo($tradeUnit->label_info),
+                'languages' => GetLabelInfoLanguages::run($tradeUnit->label_info),
+            ],
             'tradeUnit' => TradeUnitResource::make($tradeUnit)->toArray(request()),
             'brand_routes' => $brandRoute,
             'brand' => $tradeUnit->brand(),

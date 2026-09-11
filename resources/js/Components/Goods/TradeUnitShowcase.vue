@@ -149,6 +149,7 @@ console.log
 			:data="data.tradeUnit" 
 			:gpsr="data.gpsr"
 			:properties="data.properties" 
+			:labelInfo="data.label_info"
 		/>
 
 		<!-- Attachments -->

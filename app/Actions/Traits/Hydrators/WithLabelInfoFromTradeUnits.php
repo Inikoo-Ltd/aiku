@@ -10,26 +10,60 @@
 namespace App\Actions\Traits\Hydrators;
 
 use App\Enums\Goods\TradeUnit\TradeUnitLabelPresenceEnum;
+use App\Enums\Goods\TradeUnit\TradeUnitMarketEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Masters\MasterAsset;
 
 trait WithLabelInfoFromTradeUnits
 {
-    public function getLabelPresenceFromTradeUnits(Product|MasterAsset $model): array
+    public function getLabelInfoFromTradeUnits(Product|MasterAsset $model): array
     {
-        $labelPresence = [];
+        $tradeUnits = $model->tradeUnits()->get();
+
+        $labelInfo = [];
 
         foreach (TradeUnitLabelPresenceEnum::values() as $field) {
-            $labelPresence[$field] = $model->tradeUnits->contains(
+            $labelInfo[$field] = $tradeUnits->contains(
                 fn ($tradeUnit) => (bool) data_get($tradeUnit->label_info, $field, false)
             );
         }
 
-        return $labelPresence;
+        $labelInfo['markets'] = $tradeUnits->isEmpty()
+            ? []
+            : array_values(array_filter(
+                TradeUnitMarketEnum::values(),
+                fn ($market) => $tradeUnits->every(fn ($tradeUnit) => in_array($market, (array) data_get($tradeUnit->label_info, 'markets', []), true))
+            ));
+
+        $labelInfo['languages'] = $tradeUnits
+            ->flatMap(fn ($tradeUnit) => (array) data_get($tradeUnit->label_info, 'languages', []))
+            ->filter()
+            ->unique()
+            ->sort()
+            ->values()
+            ->all();
+
+        return $labelInfo;
     }
 
-    public function mergeLabelPresence(Product|MasterAsset $model, array $labelPresence): array
+    public function getLabelInfoFromMaster(MasterAsset $masterAsset): array
     {
-        return array_merge($model->label_info ?? [], $labelPresence);
+        $masterLabelInfo = $masterAsset->label_info ?? [];
+
+        $labelInfo = [];
+
+        foreach (TradeUnitLabelPresenceEnum::values() as $field) {
+            $labelInfo[$field] = (bool) data_get($masterLabelInfo, $field, false);
+        }
+
+        $labelInfo['markets']   = (array) data_get($masterLabelInfo, 'markets', []);
+        $labelInfo['languages'] = (array) data_get($masterLabelInfo, 'languages', []);
+
+        return $labelInfo;
+    }
+
+    public function mergeLabelInfo(Product|MasterAsset $model, array $labelInfo): array
+    {
+        return array_merge($model->label_info ?? [], $labelInfo);
     }
 }

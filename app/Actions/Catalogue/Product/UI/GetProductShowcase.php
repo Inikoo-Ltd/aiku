@@ -11,6 +11,9 @@ namespace App\Actions\Catalogue\Product\UI;
 use App\Actions\Traits\HasBucketImages;
 use App\Actions\Traits\WithSearchInWebsiteAvailabilityChecklist;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
+use App\Actions\Goods\TradeUnit\GetLabelInfoLanguages;
+use App\Enums\Goods\TradeUnit\TradeUnitLabelPresenceEnum;
+use App\Enums\Goods\TradeUnit\TradeUnitMarketEnum;
 use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Http\Resources\Catalogue\ProductResource;
 use App\Http\Resources\Catalogue\TagsResource;
@@ -98,6 +101,11 @@ class GetProductShowcase
             'is_external'                  => $product->shop->type == ShopTypeEnum::EXTERNAL,
             'properties'                   => $properties,
             'gpsr'                         => $gpsr,
+            'label_info'                   => [
+                ...TradeUnitLabelPresenceEnum::presenceFromLabelInfo($product->label_info),
+                'markets'   => TradeUnitMarketEnum::marketsFromLabelInfo($product->label_info),
+                'languages' => GetLabelInfoLanguages::run($product->label_info),
+            ],
             'parts'                        => // todo: delete this asap use org_stocks
                 OrgStocksResource::collection(GetOrgStocksInProduct::run($product))->resolve(),
             'org_stocks'                   => OrgStocksResource::collection(GetOrgStocksInProduct::run($product))->resolve(),

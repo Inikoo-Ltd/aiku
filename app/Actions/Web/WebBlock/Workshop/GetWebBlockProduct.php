@@ -11,6 +11,9 @@ namespace App\Actions\Web\WebBlock\Workshop;
 
 use App\Actions\Web\WebBlock\Concerns\HasWebBlockLayoutData;
 use App\Enums\Goods\TradeUnit\TradeAttachmentScopeEnum;
+use App\Actions\Goods\TradeUnit\GetLabelInfoLanguages;
+use App\Enums\Goods\TradeUnit\TradeUnitLabelPresenceEnum;
+use App\Enums\Goods\TradeUnit\TradeUnitMarketEnum;
 use App\Http\Resources\Helpers\Attachment\IrisAttachmentsResource;
 use App\Http\Resources\Web\WebBlockFamilyResource;
 use App\Http\Resources\Web\WebBlockProductForWorkshopResource;
@@ -73,6 +76,11 @@ class GetWebBlockProduct
         data_set($webBlock, 'web_block.layout.data.fieldValue.tabs_style', $this->getFamilyExtraDescriptionLayoutData($webPublishedLayout));
         data_set($webBlock, 'web_block.layout.data.fieldValue.product', $resourceWebBlockProduct);
         data_set($webBlock, 'web_block.layout.data.fieldValue.product.attachments', IrisAttachmentsResource::collection($attachments)->resolve());
+        data_set($webBlock, 'web_block.layout.data.fieldValue.product.label_info', [
+            ...TradeUnitLabelPresenceEnum::presenceFromLabelInfo($product->label_info),
+            'markets'   => TradeUnitMarketEnum::marketsFromLabelInfo($product->label_info),
+            'languages' => GetLabelInfoLanguages::run($product->label_info),
+        ]);
 
         if ($variant) {
             data_set($webBlock, 'web_block.layout.data.fieldValue.variant', $variant->only(['id', 'data']));

@@ -31,4 +31,17 @@ enum TradeUnitLabelPresenceEnum: string
             'sorting_recycling_information' => __('Sorting / Recycling Information'),
         ];
     }
+
+    public static function presenceFromLabelInfo(?array $labelInfo): array
+    {
+        $presence = [];
+
+        foreach (self::values() as $field) {
+            $presence[$field] = [
+                'show' => data_get($labelInfo, $field, false) === true,
+            ];
+        }
+
+        return $presence;
+    }
 }

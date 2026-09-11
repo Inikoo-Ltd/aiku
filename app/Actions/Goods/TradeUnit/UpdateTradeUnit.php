@@ -25,6 +25,7 @@ use App\Actions\Masters\MasterAsset\Hydrators\MasterAssetHydrateMarketingWeightF
 use App\Actions\Masters\MasterAsset\UpdateMasterAsset;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateTradeUnits;
 use App\Enums\Goods\TradeUnit\TradeUnitLabelPresenceEnum;
+use App\Enums\Goods\TradeUnit\TradeUnitMarketEnum;
 use App\Enums\Masters\MasterAsset\MasterAssetTypeEnum;
 use App\Models\Helpers\Country;
 use App\Stubs\Migrations\HasDangerousGoodsFields;
@@ -138,6 +139,12 @@ class UpdateTradeUnit extends OrgAction
         foreach (TradeUnitLabelPresenceEnum::values() as $labelPresenceField) {
             if (Arr::has($modelData, $labelPresenceField)) {
                 data_set($modelData, 'label_info.'.$labelPresenceField, (bool) Arr::pull($modelData, $labelPresenceField));
+            }
+        }
+
+        foreach (['markets', 'languages'] as $labelInfoField) {
+            if (Arr::has($modelData, $labelInfoField)) {
+                data_set($modelData, 'label_info.'.$labelInfoField, Arr::pull($modelData, $labelInfoField));
             }
         }
 
@@ -340,6 +347,10 @@ class UpdateTradeUnit extends OrgAction
             'weee_symbol'                   => ['sometimes', 'boolean'],
             'ip_rating'                     => ['sometimes', 'boolean'],
             'sorting_recycling_information' => ['sometimes', 'boolean'],
+            'markets'                       => ['sometimes', 'nullable', 'array'],
+            'markets.*'                     => ['string', Rule::enum(TradeUnitMarketEnum::class)],
+            'languages'                     => ['sometimes', 'nullable', 'array'],
+            'languages.*'                   => ['string', Rule::exists('languages', 'code')],
 
 
             'cpnp_number'           => ['sometimes', 'nullable', 'string'],
@@ -386,6 +397,22 @@ class UpdateTradeUnit extends OrgAction
 
     public function prepareForValidation(): void
     {
+        if (is_array($this->get('markets'))) {
+            $selectedMarkets = [];
+            foreach ($this->get('markets') as $market) {
+                if (!is_array($market)) {
+                    $selectedMarkets[] = $market;
+                } elseif (filter_var(Arr::get($market, 'value'), FILTER_VALIDATE_BOOLEAN)) {
+                    $selectedMarkets[] = Arr::get($market, 'key');
+                }
+            }
+
+            $this->set('markets', array_values(array_unique([
+                ...array_intersect(TradeUnitMarketEnum::values(), $selectedMarkets),
+                ...array_diff($selectedMarkets, TradeUnitMarketEnum::values()),
+            ])));
+        }
+
         if ($this->has('origin_country_id')) {
             if (is_string($this->get('origin_country_id'))) {
 

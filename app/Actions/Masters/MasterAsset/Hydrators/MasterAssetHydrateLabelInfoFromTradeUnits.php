@@ -28,7 +28,7 @@ class MasterAssetHydrateLabelInfoFromTradeUnits implements ShouldBeUnique
     public function handle(MasterAsset $masterAsset): void
     {
         $masterAsset->updateQuietly([
-            'label_info' => $this->mergeLabelPresence($masterAsset, $this->getLabelPresenceFromTradeUnits($masterAsset)),
+            'label_info' => $this->mergeLabelInfo($masterAsset, $this->getLabelInfoFromTradeUnits($masterAsset)),
         ]);
 
         foreach ($masterAsset->products()->where('not_follow_master_trade_units', false)->get() as $product) {

@@ -12,6 +12,8 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithGoodsAuthorisation;
 use App\Http\Resources\Goods\IngredientsResource;
 use App\Actions\Traits\UI\WithBucketNavigation;
+use App\Actions\Helpers\Language\UI\GetLanguagesOptions;
+use App\Enums\Goods\TradeUnit\TradeUnitMarketEnum;
 use App\Enums\Goods\TradeUnit\TradeUnitStatusEnum;
 use App\Models\Goods\TradeUnit;
 use Inertia\Inertia;
@@ -445,6 +447,24 @@ class EditTradeUnit extends OrgAction
                             'label'  => __('Labeling & Compliance Marks'),
                             'icon'   => 'fa-light fa-stamp',
                             'fields' => [
+                                'markets' => [
+                                    'type'         => 'checkbox',
+                                    'label'        => __('Markets'),
+                                    'mode'         => 'inline',
+                                    'emptyWarning' => __('Markets are shown on the product page. With none selected, the product page may not show market details.'),
+                                    'value'        => TradeUnitMarketEnum::checkboxValue(data_get($tradeUnit->label_info, 'markets')),
+                                ],
+                                'languages' => [
+                                    'type'         => 'select-improved',
+                                    'label'        => __('Languages'),
+                                    'placeholder'  => __('Select languages'),
+                                    'options'      => array_values(GetLanguagesOptions::make()->all()),
+                                    'labelProp'    => 'name',
+                                    'valueProp'    => 'code',
+                                    'tagLabelProp' => 'code',
+                                    'tagUppercase' => true,
+                                    'value'        => data_get($tradeUnit->label_info, 'languages', []),
+                                ],
                                 'ce_marking' => [
                                     'type'  => 'toggle',
                                     'label' => __('CE Markings'),

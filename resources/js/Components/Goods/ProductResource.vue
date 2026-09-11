@@ -8,7 +8,7 @@ import { trans } from "laravel-vue-i18n"
 import { routeType } from "@/types/route"
 import { Accordion, AccordionPanel, AccordionHeader, AccordionContent } from "primevue"
 import { faTag } from "@far"
-import { faFileCheck, faFilePdf, faFileWord, faTrash as falTrash, faEdit, faExternalLink, faPuzzlePiece, faShieldAlt, faInfoCircle, faChevronDown, faChevronUp, faBox, faVideo } from "@fal"
+import { faFileCheck, faFilePdf, faFileWord, faTrash as falTrash, faEdit, faExternalLink, faPuzzlePiece, faShieldAlt, faInfoCircle, faChevronDown, faChevronUp, faBox, faVideo, faStamp, faTimesCircle } from "@fal"
 
 interface TariffCodeByOrganisation {
     organisation_code: string
@@ -69,6 +69,19 @@ interface Gpsr {
     warnings: string | null
 }
 
+interface LabelInfoPresence {
+    ce_marking?: { show: boolean }
+    ukca_marking?: { show: boolean }
+    weee_symbol?: { show: boolean }
+    ip_rating?: { show: boolean }
+    sorting_recycling_information?: { show: boolean }
+}
+
+interface LabelInfo extends LabelInfoPresence {
+    markets?: { show: boolean, value: { value: string, label: string }[] }
+    languages?: { show: boolean, value: { code: string, name: string, flag?: string }[] }
+}
+
 interface Attachment {
     label?: string
     attachment?: {
@@ -106,6 +119,7 @@ const props = withDefaults(
     defineProps<{
         data: PropsData
         gpsr?: Gpsr
+        labelInfo?: LabelInfo
         hide?: string[]
         // publicAttachment: array<any>
         attachments: {
@@ -166,6 +180,14 @@ library.add(
     faVideo
 )
 
+
+const labelInfoLabels: Record<keyof LabelInfoPresence, string> = {
+    ce_marking: trans("CE Markings"),
+    ukca_marking: trans("UKCA Markings"),
+    weee_symbol: trans("WEEE Symbol"),
+    ip_rating: trans("IP Rating"),
+    sorting_recycling_information: trans("Sorting / Recycling Information"),
+}
 
 const showFullWarnings = ref(false)
 const showFullInstructions = ref(false)
@@ -559,6 +581,52 @@ const getIcon = (type?: string) => {
                                 <FontAwesomeIcon icon="fal fa-info-circle" class="mr-2" />
                                 {{ trans("No instructions specified") }}
                             </div>
+                        </div>
+                    </div>
+                </AccordionContent>
+            </AccordionPanel>
+
+            <AccordionPanel v-if="labelInfo" value="9">
+                <AccordionHeader>
+                    <div class="flex items-center gap-2">
+                        <span class="text-sm font-semibold text-gray-700">{{ trans("Labeling & Compliance Marks") }}</span>
+                        <FontAwesomeIcon :icon="faStamp" class="text-emerald-600" />
+                    </div>
+                </AccordionHeader>
+                <AccordionContent>
+                    <div class="space-y-3 py-2">
+                        <div v-for="(label, key) in labelInfoLabels" :key="key" class="flex justify-between items-center gap-3">
+                            <dt class="text-gray-500">{{ label }}</dt>
+                            <dd v-if="labelInfo[key]?.show" class="font-medium text-green-600 flex items-center gap-1">
+                                <FontAwesomeIcon :icon="faCheckCircle" class="text-xs" fixed-width aria-hidden="true" />
+                                {{ trans("Present") }}
+                            </dd>
+                            <dd v-else class="text-gray-400 flex items-center gap-1">
+                                <FontAwesomeIcon :icon="faTimesCircle" class="text-xs" fixed-width aria-hidden="true" />
+                                {{ trans("Not present") }}
+                            </dd>
+                        </div>
+
+                        <div class="flex justify-between items-start gap-3">
+                            <dt class="text-gray-500 whitespace-nowrap">{{ trans("Markets") }}</dt>
+                            <dd v-if="labelInfo.markets?.show" class="font-medium flex flex-wrap gap-1 justify-end">
+                                <span v-for="market in labelInfo.markets.value" :key="market.value"
+                                    class="px-2 py-0.5 rounded-full text-xs bg-emerald-50 text-emerald-700 border border-emerald-100">
+                                    {{ market.label }}
+                                </span>
+                            </dd>
+                            <dd v-else class="opacity-40 font-normal italic text-xs">{{ trans("No market") }}</dd>
+                        </div>
+
+                        <div class="flex justify-between items-start gap-3">
+                            <dt class="text-gray-500 whitespace-nowrap">{{ trans("Languages") }}</dt>
+                            <dd v-if="labelInfo.languages?.show" class="font-medium flex flex-wrap gap-1 justify-end">
+                                <span v-for="language in labelInfo.languages.value" :key="language.code"
+                                    class="px-2 py-0.5 rounded-full text-xs bg-emerald-50 text-emerald-700 border border-emerald-100">
+                                    {{ language.name }}
+                                </span>
+                            </dd>
+                            <dd v-else class="opacity-40 font-normal italic text-xs">{{ trans("No language") }}</dd>
                         </div>
                     </div>
                 </AccordionContent>
