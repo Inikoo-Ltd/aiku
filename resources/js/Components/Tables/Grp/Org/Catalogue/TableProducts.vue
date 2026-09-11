@@ -66,6 +66,7 @@ const props = defineProps<{
 const exportPanel = ref()
 const exportFields = computed(() => props.productsExport?.fields ?? [])
 const selectedExportColumns = ref<string[]>([])
+const exportImagesAsJpg = ref(false)
 
 const allExportColumnsSelected = computed({
     get: () => !!exportFields.value.length && selectedExportColumns.value.length === exportFields.value.length,
@@ -91,6 +92,9 @@ const exportUrl = (type: 'csv' | 'xlsx') => {
         }
     })
     selectedExportColumns.value.forEach(column => query.append('columns[]', column))
+    if (exportImagesAsJpg.value) {
+        query.append('image_format', 'jpg')
+    }
 
     const queryString = query.toString()
     return queryString ? base + (base.includes('?') ? '&' : '?') + queryString : base
@@ -740,6 +744,12 @@ const familyRoute = (item) => {
                     <label class="flex items-center gap-2 px-1 py-1.5 font-medium cursor-pointer select-none">
                         <Checkbox v-model="allExportColumnsSelected" :binary="true" />
                         <span>{{ trans("Select all") }}</span>
+                    </label>
+
+                    <label class="flex items-center gap-2 px-1 py-1.5 mb-1 border-b border-gray-200 cursor-pointer select-none"
+                        v-tooltip="trans('Image links always open as JPG, even when the picture was uploaded as PNG or GIF')">
+                        <Checkbox v-model="exportImagesAsJpg" :binary="true" />
+                        <span>{{ trans("Images as JPG") }}</span>
                     </label>
 
                     <div class="max-h-72 overflow-y-auto">

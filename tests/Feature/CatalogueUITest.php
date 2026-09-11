@@ -861,3 +861,36 @@ test('product index queries use time series aggregation', function () {
         ->and(\App\Actions\Catalogue\Product\Json\GetProductsInCollection::make()->handle($this->collectionModel)->total())->toBeGreaterThanOrEqual(0)
         ->and(\App\Actions\Catalogue\Product\Json\GetProductsWithNoWebpage::make()->handle($this->shop)->total())->toBeGreaterThanOrEqual(0);
 });
+
+test('products export links every image as a jpg', function () {
+    config([
+        'img-proxy.base_url' => 'https://media.test',
+        'img-proxy.key'      => str_repeat('ab', 32),
+        'img-proxy.salt'     => str_repeat('cd', 32),
+    ]);
+    $encodeSource = fn (string $source) => rtrim(strtr(base64_encode($source), '+/', '-_'), '=');
+
+    $product = \App\Models\Catalogue\Product::where('shop_id', $this->shop->id)->where('is_main', true)->whereNull('exclusive_for_customer_id')->first();
+    $product->update([
+        'web_images' => [
+            'all' => [
+                ['original' => ['original' => 'https://media.test/signature/'.$encodeSource('local://media/first.jpeg'), 'webp' => 'https://media.test/other/first.webp']],
+                ['original' => ['original' => 'https://media.test/signature/'.$encodeSource('local://media/second.png')]],
+            ],
+        ],
+    ]);
+
+    $export = new \App\Exports\Catalogue\ProductsExport($this->shop, 'all', ['code', 'images', 'image_1', 'image_2', 'image_3'], imagesAsJpg: true);
+    $row    = $export->mapRow($export->dataQuery()->where('products.id', $product->id)->first());
+
+    $firstJpg  = \App\Actions\Helpers\Images\GetImgProxyUrl::run(new \App\Helpers\ImgProxy\Image()->make('local://media/first.jpeg')->extension('jpg'));
+    $secondJpg = \App\Actions\Helpers\Images\GetImgProxyUrl::run(new \App\Helpers\ImgProxy\Image()->make('local://media/second.png')->extension('jpg'));
+
+    expect($firstJpg)->toEndWith('.jpg')
+        ->and($secondJpg)->toEndWith('.jpg')
+        ->and($row)->toBe([$product->code, "$firstJpg, $secondJpg", $firstJpg, $secondJpg, null]);
+
+    $originalExport = new \App\Exports\Catalogue\ProductsExport($this->shop, 'all', ['image_1']);
+    expect($originalExport->mapRow($originalExport->dataQuery()->where('products.id', $product->id)->first()))
+        ->toBe(['https://media.test/signature/'.$encodeSource('local://media/first.jpeg')]);
+});

@@ -36,13 +36,13 @@ class ExportProducts extends OrgAction
         $bucket = $modelData['bucket'] ?? 'all';
         $fields = $modelData['columns'] ?? [];
 
-        $export = new ProductsExport($shop, $bucket, $fields, $modelData['prefix'] ?? null);
+        $export = new ProductsExport($shop, $bucket, $fields, $modelData['prefix'] ?? null, ($modelData['image_format'] ?? 'original') === 'jpg');
 
         if ($type === ExportTypeEnum::XLSX->value && $export->count() < self::STREAM_THRESHOLD) {
             return $this->export($export, 'products', $type);
         }
 
-        return $this->streamCsv($export->dataQuery(), $export->headings(), 'products');
+        return $this->streamCsv($export->dataQuery(), $export->headings(), 'products', $export->mapRow(...));
     }
 
     public function rules(): array
@@ -53,6 +53,7 @@ class ExportProducts extends OrgAction
             'prefix'    => ['sometimes', 'nullable', 'string'],
             'columns'   => ['sometimes', 'nullable', 'array'],
             'columns.*' => ['string', Rule::in(array_keys(ProductsExport::fieldDefinitions()))],
+            'image_format' => ['sometimes', 'nullable', 'string', Rule::in('original', 'jpg')],
         ];
     }
 
