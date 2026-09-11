@@ -63,7 +63,8 @@ class CreateWebpage extends OrgAction
                 'parameters' => [$this->scope->id, $parent->id]
             ];
         }
-        $isBlog = str_contains($request->route()->getName(), '.blogs.');
+        $isBlog   = str_contains($request->route()->getName(), '.blogs.');
+        $shopType = ($parent instanceof Webpage ? $parent->website : $parent)->shop?->type;
 
         $fields = [
             'code' => [
@@ -96,7 +97,7 @@ class CreateWebpage extends OrgAction
                 'label'       => __('Blog Category'),
                 'placeholder' => __('Select a blog category'),
                 'mode'        => 'single',
-                'options'     => WebpageSubTypeEnum::blogCategoriesWithLabel(),
+                'options'     => WebpageSubTypeEnum::blogCategoriesWithLabel($shopType),
                 'value'       => '',
                 'required'    => true,
             ];

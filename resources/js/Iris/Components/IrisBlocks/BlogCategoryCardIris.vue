@@ -3,13 +3,13 @@ import { computed } from "vue"
 import { trans } from "laravel-vue-i18n"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faPlaneDeparture, faBookOpen, faChartBar } from "@fal"
+import { faPlaneDeparture, faBookOpen, faChartBar, faPlug, faBoxes } from "@fal"
 import Image from "@common/Components/Image.vue"
 import type { BlogCategory } from "@/types/Iris/Blog"
 import { getBlogCategoryDisplayName } from "@/Iris/Composables/useBlogCategoryDisplayName"
 import { getStyles } from "@/Composables/styles"
 
-library.add(faPlaneDeparture, faBookOpen, faChartBar)
+library.add(faPlaneDeparture, faBookOpen, faChartBar, faPlug, faBoxes)
 
 const props = withDefaults(
 	defineProps<{

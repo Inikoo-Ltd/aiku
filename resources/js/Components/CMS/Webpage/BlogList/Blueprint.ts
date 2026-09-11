@@ -1,3 +1,5 @@
+import { getBlogCategoryOptions, getShopType } from "@/Composables/useBlogCategories"
+
 const idField = {
 	label: "# Id ",
 	key: ["id"],
@@ -26,21 +28,17 @@ const sourceField = {
 	information: "Latest pulls posts automatically, hand-picked lets you choose them yourself.",
 }
 
-const categoriesField = {
+const categoriesField = (shopType?: string) => ({
 	label: "Categories",
 	key: ["categories"],
 	type: "select",
 	props_data: {
 		mode: "multiple",
 		placeholder: "All blog categories",
-		options: [
-			{ label: "Newsletters", value: "newsletters" },
-			{ label: "Product Guides", value: "product_guides" },
-			{ label: "Business Tips", value: "business_tips" },
-		],
+		options: getBlogCategoryOptions(shopType),
 	},
 	information: "Only posts in the selected categories are listed. Leave empty to show them all.",
-}
+})
 
 const numberOfPostsField = {
 	label: "Number of posts",
@@ -181,7 +179,7 @@ export const blueprint = (data?: any, id?: number) => {
 			idField,
 			titleField,
 			sourceField,
-			...(isManual ? [pickedPostsField] : [categoriesField]),
+			...(isManual ? [pickedPostsField] : [categoriesField(getShopType(data))]),
 			numberOfPostsField,
 			...presentationFields,
 			cardGroup,

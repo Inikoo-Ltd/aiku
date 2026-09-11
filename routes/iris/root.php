@@ -25,6 +25,8 @@ use App\Actions\Web\Webpage\Iris\ShowIrisBlogDashboard;
 use App\Actions\Web\Webpage\Iris\ShowIrisNewslettersDashboard;
 use App\Actions\Web\Webpage\Iris\ShowIrisProductGuidesDashboard;
 use App\Actions\Web\Webpage\Iris\ShowIrisBusinessTipsDashboard;
+use App\Actions\Web\Webpage\Iris\ShowIrisDropshippingGuidesDashboard;
+use App\Actions\Web\Webpage\Iris\ShowIrisIntegrationsGuidesDashboard;
 use App\Actions\Comms\Unsubscribe\ShowUnsubscribeFromAurora;
 use App\Actions\Accounting\Payment\CheckoutCom\ReceiveCheckoutComPaymentWebhook;
 use App\Actions\Web\Webpage\Iris\ShowIrisCatalogue;
@@ -109,6 +111,8 @@ Route::middleware(["iris-relax-auth:retina"])->group(function () {
         Route::get('/david-aw-news', ShowIrisNewslettersDashboard::class)->name('iris_newsletters');
         Route::get('/product-guides', ShowIrisProductGuidesDashboard::class)->name('iris_product_guides');
         Route::get('/business-tips', ShowIrisBusinessTipsDashboard::class)->name('iris_business_tips');
+        Route::get('/integrations-guides', ShowIrisIntegrationsGuidesDashboard::class)->name('iris_integrations_guides');
+        Route::get('/dropshipping-guides', ShowIrisDropshippingGuidesDashboard::class)->name('iris_dropshipping_guides');
 
         // LLMs.txt for AI crawlers
         Route::get('/llms.txt', ServeLlmsTxt::class)->name('iris_llms_txt');

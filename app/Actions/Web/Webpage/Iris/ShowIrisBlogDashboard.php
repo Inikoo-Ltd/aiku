@@ -44,7 +44,7 @@ class ShowIrisBlogDashboard
             return ShowIrisWebpage::make()->handle($website->blogDashboardPage->url, [], $request);
         }
 
-        return IndexIrisBlogs::make()->handle($website, IndexIrisBlogs::PREFIX, WebpageSubTypeEnum::blogCategories());
+        return IndexIrisBlogs::make()->handle($website, IndexIrisBlogs::PREFIX, WebpageSubTypeEnum::blogCategories($website->shop?->type));
     }
 
     public function asController(ActionRequest $request): LengthAwarePaginator|string|array
@@ -83,7 +83,7 @@ class ShowIrisBlogDashboard
                 ],
                 'data'       => BlogsIrisResource::collection($blogs),
             ]
-        )->table(IndexIrisBlogs::make()->tableStructure($website, IndexIrisBlogs::PREFIX, WebpageSubTypeEnum::blogCategories()));
+        )->table(IndexIrisBlogs::make()->tableStructure($website, IndexIrisBlogs::PREFIX, WebpageSubTypeEnum::blogCategories($website->shop?->type)));
     }
 
     /**
@@ -92,17 +92,22 @@ class ShowIrisBlogDashboard
     public function getCategories(Website $website): array
     {
         $blogCategory = WebpageSubTypeEnum::blogCategorySqlExpression();
+        $shopType     = $website->shop?->type;
 
         $counts = Webpage::where('webpages.website_id', $website->id)
             ->where('webpages.type', WebpageTypeEnum::BLOG)
             ->where('webpages.state', WebpageStateEnum::LIVE)
-            ->whereIn(DB::raw($blogCategory), WebpageSubTypeEnum::blogCategoryValues())
+            ->whereIn(DB::raw($blogCategory), WebpageSubTypeEnum::blogCategoryValues($shopType))
             ->groupBy(DB::raw($blogCategory))
             ->selectRaw($blogCategory.' as blog_category, count(*) as total')
             ->pluck('total', 'blog_category');
 
+        $presentations = $this->getCategoryPresentation();
+
         $categories = [];
-        foreach ($this->getCategoryPresentation() as $value => $presentation) {
+        foreach (WebpageSubTypeEnum::blogCategoryValues($shopType) as $value) {
+            $presentation = $presentations[$value];
+
             $categories[] = array_merge(
                 [
                     'value'          => $value,
@@ -146,6 +151,20 @@ class ShowIrisBlogDashboard
                 'url'            => WebpageSubTypeEnum::BUSINESS_TIPS->blogCategoryUrl(),
                 'icon'           => 'fal fa-chart-bar',
                 'fallback_image' => '/art/blog/business-tips.webp',
+            ],
+            WebpageSubTypeEnum::INTEGRATIONS_GUIDES->value => [
+                'label'          => __('Integrations Guides'),
+                'description'    => __('Walkthroughs for connecting your shop to the platforms and channels you already sell on, step by step.'),
+                'url'            => WebpageSubTypeEnum::INTEGRATIONS_GUIDES->blogCategoryUrl(),
+                'icon'           => 'fal fa-plug',
+                'fallback_image' => '/art/blog/integrations-guides.webp',
+            ],
+            WebpageSubTypeEnum::DROPSHIPPING_GUIDES->value => [
+                'label'          => __('Dropshipping Guides'),
+                'description'    => __('How to source, list and fulfil products without holding stock, from your first order to a running catalogue.'),
+                'url'            => WebpageSubTypeEnum::DROPSHIPPING_GUIDES->blogCategoryUrl(),
+                'icon'           => 'fal fa-boxes',
+                'fallback_image' => '/art/blog/dropshipping-guides.webp',
             ],
         ];
     }
