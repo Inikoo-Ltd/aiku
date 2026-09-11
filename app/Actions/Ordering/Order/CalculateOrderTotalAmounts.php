@@ -54,6 +54,8 @@ class CalculateOrderTotalAmounts extends OrgAction implements ShouldBeUnique
         $numberItemTransactions = $order->transactions()->where('model_type', 'Product')->count();
 
         $chargesAmount   = $order->transactions()->where('model_type', 'Charge')->sum('net_amount');
+        $packagingAmount = $order->transactions()->where('model_type', 'Packaging')->sum('net_amount');
+        $leafletAmount   = $order->transactions()->where('model_type', 'Leaflet')->sum('net_amount');
         $servicesAmount  = $order->transactions()->where('model_type', 'Service')->sum('net_amount');
         $estimatedWeight = $order->transactions()->where('model_type', 'Product')->sum('estimated_weight');
 
@@ -80,6 +82,8 @@ class CalculateOrderTotalAmounts extends OrgAction implements ShouldBeUnique
         data_set($modelData, 'gross_amount', $itemsGross);
         data_set($modelData, 'shipping_amount', $shippingAmount);
         data_set($modelData, 'charges_amount', $chargesAmount);
+        data_set($modelData, 'packaging_amount', $packagingAmount);
+        data_set($modelData, 'leaflet_amount', $leafletAmount);
         data_set($modelData, 'services_amount', $servicesAmount);
         data_set($modelData, 'estimated_weight', $estimatedWeight);
         data_set($modelData, 'number_item_transactions', $numberItemTransactions);

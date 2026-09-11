@@ -11,8 +11,10 @@ namespace App\Models\Dispatching;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemStateEnum;
+use App\Enums\Dispatching\DeliveryNoteLeaflet\DeliveryNoteLeafletStateEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteTypeEnum;
 use App\Helpers\NaturalLanguage;
+use App\Models\Billables\Packaging;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
 use App\Models\Dropshipping\CustomerClient;
@@ -366,6 +368,26 @@ class DeliveryNote extends Model implements Auditable
         return $this->blockingItems()->exists();
     }
 
+    public function unprintedLeaflets(): HasMany
+    {
+        return $this->leaflets()
+            ->printable()
+            ->whereNotIn('state', [
+                DeliveryNoteLeafletStateEnum::PRINTED,
+                DeliveryNoteLeafletStateEnum::INCLUDED,
+            ]);
+    }
+
+
+    public function hasUnprintedLeaflets(): bool
+    {
+        if (!$this->shop?->hasPackagingAndInserts()) {
+            return false;
+        }
+
+        return $this->unprintedLeaflets()->exists();
+    }
+
     public function warehouse(): BelongsTo
     {
         return $this->belongsTo(Warehouse::class);
@@ -419,6 +441,16 @@ class DeliveryNote extends Model implements Auditable
     public function pickings(): HasMany
     {
         return $this->hasMany(Picking::class);
+    }
+
+    public function packaging(): BelongsTo
+    {
+        return $this->belongsTo(Packaging::class);
+    }
+
+    public function leaflets(): HasMany
+    {
+        return $this->hasMany(DeliveryNoteLeaflet::class);
     }
 
     public function packings(): HasMany

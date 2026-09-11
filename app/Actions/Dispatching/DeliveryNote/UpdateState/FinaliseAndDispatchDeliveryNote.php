@@ -11,11 +11,14 @@ namespace App\Actions\Dispatching\DeliveryNote\UpdateState;
 
 use App\Actions\OrgAction;
 use App\Models\Dispatching\DeliveryNote;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 
 class FinaliseAndDispatchDeliveryNote extends OrgAction
 {
+    use WithUnprintedLeafletsGuard;
+
     /**
      * @throws \Throwable
      */
@@ -38,11 +41,17 @@ class FinaliseAndDispatchDeliveryNote extends OrgAction
     /**
      * @throws \Throwable
      */
-    public function asController(DeliveryNote $deliveryNote, ActionRequest $request): void
+    public function asController(DeliveryNote $deliveryNote, ActionRequest $request): ?RedirectResponse
     {
+        if ($notification = $this->unprintedLeafletsNotification($deliveryNote, __('Every insert must be printed before finalising and dispatching.'))) {
+            return $notification;
+        }
+
         $this->initialisationFromShop($deliveryNote->shop, $request);
 
         $this->handle($deliveryNote);
+
+        return null;
     }
 
     /**

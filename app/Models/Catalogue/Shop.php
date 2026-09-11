@@ -12,10 +12,12 @@ use App\Actions\Catalogue\Shop\Traits\WithFaireApi;
 use App\Actions\Catalogue\Shop\Traits\WithReviewIOApi;
 use App\Enums\Accounting\PaymentAccount\PaymentAccountTypeEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
+use App\Enums\Catalogue\Packaging\PackagingStateEnum;
 use App\Enums\Catalogue\Review\ReviewContextEnum;
 use App\Enums\Catalogue\Shop\ShopEngineEnum;
 use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
+use Illuminate\Support\Arr;
 use App\Models\Accounting\CreditTransaction;
 use App\Models\Accounting\Invoice;
 use App\Models\Accounting\OrgPaymentServiceProvider;
@@ -26,6 +28,7 @@ use App\Models\Accounting\PaymentAccountShop;
 use App\Models\Accounting\TopUp;
 use App\Models\Analytics\AikuSection;
 use App\Models\Billables\Charge;
+use App\Models\Billables\Packaging;
 use App\Models\Billables\Rental;
 use App\Models\Billables\Service;
 use App\Models\Billables\ShippingZone;
@@ -864,5 +867,26 @@ class Shop extends Model implements HasMedia, Auditable
     public function testEmailRecipients(): HasMany
     {
         return $this->hasMany(TestEmailRecipient::class);
+    }
+
+    public function hasPackagingAndInserts(): bool
+    {
+        return $this->type === ShopTypeEnum::DROPSHIPPING
+            && (bool) Arr::get($this->settings, 'packaging_and_inserts.enabled', false);
+    }
+
+    
+    public function defaultPackaging(): ?Packaging
+    {
+        $packagingId = Arr::get($this->settings, 'packaging_and_inserts.default_packaging_id');
+
+        if (!$packagingId) {
+            return null;
+        }
+
+        return Packaging::where('id', $packagingId)
+            ->where('shop_id', $this->id)
+            ->where('state', PackagingStateEnum::ACTIVE)
+            ->first();
     }
 }

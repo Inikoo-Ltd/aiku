@@ -62,6 +62,12 @@ const props = defineProps(
             type: Boolean,
         },
 
+
+        rowspanColumns: {
+            type: Array as () => string[],
+            default: () => [],
+        },
+
         striped: {
             type: Boolean,
             default: false,
@@ -751,6 +757,18 @@ function show(key) {
     const intKey = findDataKey('columns', key);
 
     return !queryBuilderData?.value?.columns?.[intKey]?.hidden;
+}
+
+function isRowspanColumn(key) {
+    return props.rowspanColumns.includes(key)
+}
+
+function showCell(key, rowIndex) {
+    return !isRowspanColumn(key) || rowIndex === 0
+}
+
+function cellRowspan(key) {
+    return isRowspanColumn(key) ? (props.resource?.data?.length || 1) : undefined
 }
 
 function header(key) {
@@ -1572,16 +1590,18 @@ const getSeverity = (type?: string) => {
                                             </td>
 
                                             <!-- Rows: main data -->
-                                            <td v-for="(column, index) in queryBuilderProps.columns"
+                                            <template v-for="(column, index) in queryBuilderProps.columns"
+                                                :key="`table-${name}-row-${key}-column-${column.key}`">
+                                            <td v-if="showCell(column.key, key)"
                                                 v-show="show(column.key)"
-                                                :key="`table-${name}-row-${key}-column-${column.key}`"
+                                                :rowspan="cellRowspan(column.key)"
                                                 class="text-xs lg:text-[13px] py-1 lg:py-2 text-gray-600 whitespace-normal h-full" :class="[
                                                     column.type === 'avatar' || column.type === 'icon'
                                                         ? 'text-center min-w-fit px-1.5 lg:px-3'  // if type = icon
                                                         : typeof item[column.key] == 'number' || column.type === 'number' || column.type === 'currency' || column.type === 'date' || column.type === 'date_hm' || column.type === 'date_hms' || column.align === 'right'
                                                             ? 'text-right pl-1.5 pr-2 lg:pl-3 lg:pr-9 tabular-nums'  // if the value is number
                                                             : 'px-2 lg:px-6',
-                                                    props.rowAlignTop ? 'align-top' : '',
+                                                    props.rowAlignTop || isRowspanColumn(column.key) ? 'align-top' : '',
                                                     queryBuilderProps?.betweenDatesValue?.column === column.key ? 'bg-amber-50/60' : '',
                                                     { 'first:border-l-4 first:border-gray-700 bg-gray-200/75': selectedRow?.[name]?.includes(item[checkboxKey]) },
                                                     column.className
@@ -1592,6 +1612,7 @@ const getSeverity = (type?: string) => {
                                                     <TableRows :column :item />
                                                 </slot>
                                             </td>
+                                            </template>
                                         </tr>
 
                                         <tr v-if="useExpandTable">

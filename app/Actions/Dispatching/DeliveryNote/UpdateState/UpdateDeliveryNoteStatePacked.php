@@ -24,6 +24,7 @@ use App\Enums\Dispatching\DeliveryNote\DeliveryNoteTypeEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\SysAdmin\User;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -31,6 +32,7 @@ class UpdateDeliveryNoteStatePacked extends OrgAction
 {
     use WithActionUpdate;
     use HasDeliveryNoteHydrators;
+    use WithUnprintedLeafletsGuard;
 
     private DeliveryNote $deliveryNote;
     protected User $user;
@@ -47,6 +49,10 @@ class UpdateDeliveryNoteStatePacked extends OrgAction
 
         if ($deliveryNote->hasBlockingItems()) {
             abort(422, __('Cannot pack: some items are waiting for a replacement decision or warehouse release'));
+        }
+
+        if ($deliveryNote->hasUnprintedLeaflets()) {
+            abort(422, __('Cannot pack: every insert must be printed first'));
         }
 
         $oldState = $deliveryNote->state;
@@ -134,8 +140,12 @@ class UpdateDeliveryNoteStatePacked extends OrgAction
     /**
      * @throws \Throwable
      */
-    public function asController(DeliveryNote $deliveryNote, ActionRequest $request): DeliveryNote
+    public function asController(DeliveryNote $deliveryNote, ActionRequest $request): DeliveryNote|RedirectResponse
     {
+        if ($notification = $this->unprintedLeafletsNotification($deliveryNote, __('Every insert must be printed before this delivery note can be packed.'))) {
+            return $notification;
+        }
+
         $this->user         = $request->user();
         $this->deliveryNote = $deliveryNote;
         $this->initialisationFromShop($deliveryNote->shop, $request);
