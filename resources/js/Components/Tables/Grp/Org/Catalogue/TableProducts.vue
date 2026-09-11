@@ -733,30 +733,30 @@ const familyRoute = (item) => {
                 @click="exportPanel.toggle($event)" />
 
             <Popover ref="exportPanel">
-                <div class="w-72">
-                    <div class="flex items-center gap-2 pb-2 mb-2 border-b border-gray-200">
-                        <Button :icon="faDownload" label="XLSX" type="tertiary"
+                <div class="w-64 text-xs">
+                    <div class="flex items-center gap-2 pb-2">
+                        <Button :icon="faDownload" label="XLSX" type="tertiary" size="xs"
                             :disabled="!selectedExportColumns.length" @click="onExport('xlsx')" />
-                        <Button :icon="faDownload" label="CSV" type="tertiary"
+                        <Button :icon="faDownload" label="CSV" type="tertiary" size="xs"
                             :disabled="!selectedExportColumns.length" @click="onExport('csv')" />
                     </div>
 
-                    <label class="flex items-center gap-2 px-1 py-1.5 font-medium cursor-pointer select-none">
-                        <Checkbox v-model="allExportColumnsSelected" :binary="true" />
-                        <span>{{ trans("Select all") }}</span>
-                    </label>
-
-                    <label class="flex items-center gap-2 px-1 py-1.5 mb-1 border-b border-gray-200 cursor-pointer select-none"
+                    <label class="flex items-center justify-between px-1 py-1.5 border-y border-gray-200 cursor-pointer select-none"
                         v-tooltip="trans('Image links always open as JPG, even when the picture was uploaded as PNG or GIF')">
-                        <Checkbox v-model="exportImagesAsJpg" :binary="true" />
-                        <span>{{ trans("Images as JPG") }}</span>
+                        <span class="font-medium">{{ trans("Images as JPG") }}</span>
+                        <Checkbox v-model="exportImagesAsJpg" :binary="true" size="small" />
                     </label>
 
-                    <div class="max-h-72 overflow-y-auto">
+                    <label class="flex items-center justify-end px-1 pt-2 pb-1 border-b border-gray-200 cursor-pointer select-none">
+                        <span class="sr-only">{{ trans("Select all") }}</span>
+                        <Checkbox v-model="allExportColumnsSelected" :binary="true" size="small" />
+                    </label>
+
+                    <div class="max-h-[28rem] overflow-y-auto">
                         <label v-for="field in exportFields" :key="field.key"
-                            class="flex items-center gap-2 px-1 py-1.5 cursor-pointer select-none hover:bg-gray-50 rounded">
-                            <Checkbox v-model="selectedExportColumns" :value="field.key" />
+                            class="flex items-center justify-between px-1 py-1 border-b border-gray-100 last:border-b-0 cursor-pointer select-none hover:bg-gray-50">
                             <span>{{ field.label }}</span>
+                            <Checkbox v-model="selectedExportColumns" :value="field.key" size="small" />
                         </label>
                     </div>
                 </div>
