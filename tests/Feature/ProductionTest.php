@@ -2471,6 +2471,33 @@ test('a partner line the factory has stock for belongs on pre-pick, not the to p
         ->and($counts()['to_produce'])->toBe($before['to_produce'] + 1);
 });
 
+test('an own customer line leaves the to produce board once its order is dispatched', function () {
+    $stocks    = createStocks($this->group);
+    $orgStocks = createOrgStocks($this->organisation, [$stocks[0]]);
+    \App\Models\Production\Artefact::where('production_id', $this->production->id)->where('org_stock_id', $orgStocks[0]->id)->update(['org_stock_id' => null]);
+    $made = StoreArtefact::make()->action($this->production, ['code' => 'DISP-01', 'name' => 'Dispatched line']);
+    $made->update(['org_stock_id' => $orgStocks[0]->id]);
+
+    $line = \App\Models\Procurement\PartnerShoppingListItem::create([
+        'group_id'        => $this->group->id,
+        'organisation_id' => $this->organisation->id,
+        'stock_id'        => $stocks[0]->id,
+        'org_stock_id'    => $orgStocks[0]->id,
+        'quantity'        => 2,
+    ]);
+
+    actingAs($this->guest->getUser());
+    $routeParameters = [$this->organisation->slug, $this->production->slug];
+    $backlog = fn () => collect(collect(get(route('grp.org.productions.show.to_produce.index', $routeParameters))
+        ->assertOk()->viewData('page')['props']['groups'])
+        ->firstWhere('label', 'Backlog')['items'])->pluck('id')->all();
+
+    expect($backlog())->toContain($line->id);
+
+    $line->update(['state' => \App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum::ORDERED]);
+    expect($backlog())->not->toContain($line->id);
+});
+
 test('to restock bands rank artefacts by cover and queue them onto the to produce board', function () {
     $stocks    = createStocks($this->group);
     $orgStocks = createOrgStocks($this->organisation, [$stocks[0], $stocks[1]]);

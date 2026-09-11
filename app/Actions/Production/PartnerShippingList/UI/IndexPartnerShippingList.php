@@ -126,6 +126,7 @@ class IndexPartnerShippingList extends OrgAction
                             ->where('partner_shopping_list_items.organisation_id', $seller->id);
                     });
             })
+            ->where('partner_shopping_list_items.state', ShoppingListItemStateEnum::OPEN)
             ->whereNull('partner_shopping_list_items.pre_picked_at')
             ->where(function ($query) {
                 $query->whereNotNull('partner_shopping_list_items.job_order_id')
@@ -206,6 +207,7 @@ class IndexPartnerShippingList extends OrgAction
     {
         $counts = PartnerShoppingListItem::query()
             ->selectRaw("case when partner_organisation_id is null then 'local' else 'partners' end as source, count(*) as total")
+            ->where('state', ShoppingListItemStateEnum::OPEN)
             ->where(function ($query) {
                 $query->where('partner_organisation_id', $this->organisation->id)
                     ->orWhere(function ($query) {
