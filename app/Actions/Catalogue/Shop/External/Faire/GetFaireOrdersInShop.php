@@ -36,10 +36,22 @@ class GetFaireOrdersInShop extends OrgAction
      */
     public function handle(Shop $shop, Command|null $command = null): void
     {
-        $filters = [
-            'created_at_min' => Carbon::parse('2026-02-01')->toIsoString(),
-        ];
+        $this->fetchFaireOrders($shop, [
+            'excluded_states' => 'PRE_TRANSIT,IN_TRANSIT,DELIVERED,PENDING_RETAILER_CONFIRMATION,BACKORDERED,CANCELED',
+            'created_at_min'  => Carbon::parse('2026-02-01')->toIsoString(),
+        ], $command);
 
+        $this->fetchFaireOrders($shop, [
+            'excluded_states' => 'NEW,PROCESSING,PRE_TRANSIT,IN_TRANSIT,DELIVERED,PENDING_RETAILER_CONFIRMATION,BACKORDERED',
+            'updated_at_min'  => now()->subDays(2)->toIsoString(),
+        ], $command);
+    }
+
+    /**
+     * @throws \Throwable
+     */
+    private function fetchFaireOrders(Shop $shop, array $filters, Command|null $command): void
+    {
         $cursor = null;
         $pages  = 0;
         do {
@@ -47,8 +59,7 @@ class GetFaireOrdersInShop extends OrgAction
                 'cursor' => $cursor,
                 'limit'  => 50,
             ] : [
-                'excluded_states' => 'PRE_TRANSIT,IN_TRANSIT,DELIVERED,PENDING_RETAILER_CONFIRMATION,BACKORDERED,CANCELED',
-                'limit'           => 50,
+                'limit' => 50,
                 ...$filters
             ]);
 
@@ -86,10 +97,20 @@ class GetFaireOrdersInShop extends OrgAction
             $command?->info('Processing order '.Arr::get($faireOrder, 'display_id'));
 
 
-            $orderExists = Order::where('shop_id', $shop->id)->where('external_id', $externalId)->exists();
+            $existingOrder = Order::where('shop_id', $shop->id)->where('external_id', $externalId)->first();
 
-            if ($orderExists) {
+            if ($existingOrder) {
                 $this->clearSkippedFaireOrder($shop, $externalId);
+
+                if (Arr::get($faireOrder, 'state') == 'CANCELED'
+                    && !in_array($existingOrder->state, [OrderStateEnum::CANCELLED, OrderStateEnum::DISPATCHED, OrderStateEnum::FINALISED])) {
+                    UpdateFaireOrder::run($existingOrder);
+                }
+
+                continue;
+            }
+
+            if (Arr::get($faireOrder, 'state') == 'CANCELED') {
                 continue;
             }
 
