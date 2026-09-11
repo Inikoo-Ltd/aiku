@@ -82,6 +82,37 @@ enum TradeUnitPackagingMaterialEnum: string
         ];
     }
 
+    public static function options(): array
+    {
+        return array_map(
+            fn (self $packagingMaterial) => [
+                'value' => $packagingMaterial->value,
+                'code'  => self::labels()[$packagingMaterial->value],
+                'label' => self::labels()[$packagingMaterial->value].' · '.$packagingMaterial->material(),
+            ],
+            self::cases()
+        );
+    }
+
+    public static function packagingMaterialCodesFromLabelInfo(?array $labelInfo): array
+    {
+        $selectedCodes = (array) data_get($labelInfo, 'packaging_material_codes.value', []);
+
+        $packagingMaterials = array_values(array_map(
+            fn (self $packagingMaterial) => [
+                'value'    => $packagingMaterial->value,
+                'code'     => self::labels()[$packagingMaterial->value],
+                'material' => $packagingMaterial->material(),
+            ],
+            array_filter(self::cases(), fn (self $packagingMaterial) => in_array($packagingMaterial->value, $selectedCodes, true))
+        ));
+
+        return [
+            'show'  => data_get($labelInfo, 'packaging_material_codes.show', false) === true && $packagingMaterials !== [],
+            'value' => $packagingMaterials,
+        ];
+    }
+
     public function abbreviation(): string
     {
         return strtoupper(explode('_', $this->value)[0]);

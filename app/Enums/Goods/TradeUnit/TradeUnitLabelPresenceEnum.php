@@ -20,6 +20,8 @@ enum TradeUnitLabelPresenceEnum: string
     case WEEE_SYMBOL = 'weee_symbol';
     case IP_RATING = 'ip_rating';
     case SORTING_RECYCLING_INFORMATION = 'sorting_recycling_information';
+    case SAFETY_ICONS = 'safety_icons';
+    case BATCH_NUMBER = 'batch_number';
 
     public static function labels(): array
     {
@@ -29,6 +31,8 @@ enum TradeUnitLabelPresenceEnum: string
             'weee_symbol'                   => __('WEEE Symbol'),
             'ip_rating'                     => __('IP Rating'),
             'sorting_recycling_information' => __('Sorting / Recycling Information'),
+            'safety_icons'                  => __('Safety Icons'),
+            'batch_number'                  => __('Batch Number'),
         ];
     }
 

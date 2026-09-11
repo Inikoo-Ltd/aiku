@@ -12,7 +12,9 @@ namespace App\Actions\Goods\TradeUnit\UI;
 
 use App\Actions\Goods\TradeUnit\GetLabelInfoLanguages;
 use App\Enums\Goods\TradeUnit\TradeUnitLabelPresenceEnum;
+use App\Enums\Goods\TradeUnit\TradeUnitBestBeforeEnum;
 use App\Enums\Goods\TradeUnit\TradeUnitMarketEnum;
+use App\Enums\Goods\TradeUnit\TradeUnitPackagingMaterialEnum;
 use App\Enums\SysAdmin\Organisation\OrganisationTypeEnum;
 use App\Models\SysAdmin\Organisation;
 use App\Actions\Traits\HasBucketAttachment;
@@ -187,6 +189,8 @@ class GetTradeUnitShowcase
                 ...TradeUnitLabelPresenceEnum::presenceFromLabelInfo($tradeUnit->label_info),
                 'markets'   => TradeUnitMarketEnum::marketsFromLabelInfo($tradeUnit->label_info),
                 'languages' => GetLabelInfoLanguages::run($tradeUnit->label_info),
+                'best_before' => TradeUnitBestBeforeEnum::bestBeforeFromLabelInfo($tradeUnit->label_info),
+                'packaging_material_codes' => TradeUnitPackagingMaterialEnum::packagingMaterialCodesFromLabelInfo($tradeUnit->label_info),
             ],
             'tradeUnit' => TradeUnitResource::make($tradeUnit)->toArray(request()),
             'brand_routes' => $brandRoute,

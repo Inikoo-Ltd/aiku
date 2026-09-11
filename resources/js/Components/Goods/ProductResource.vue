@@ -76,11 +76,15 @@ interface LabelInfoPresence {
     weee_symbol?: { show: boolean }
     ip_rating?: { show: boolean }
     sorting_recycling_information?: { show: boolean }
+    batch_number?: { show: boolean }
 }
 
 interface LabelInfo extends LabelInfoPresence {
+    safety_icons?: { show: boolean }
     markets?: { show: boolean, value: { value: string, label: string }[] }
     languages?: { show: boolean, value: { code: string, name: string, flag?: string }[] }
+    best_before?: { show: boolean, value: { value: string, label: string } | null }
+    packaging_material_codes?: { show: boolean, value: { value: string, code: string, material: string }[] }
 }
 
 interface Attachment {
@@ -188,10 +192,11 @@ const labelInfoLabels: Record<keyof LabelInfoPresence, string> = {
     weee_symbol: trans("WEEE Symbol"),
     ip_rating: trans("IP Rating"),
     sorting_recycling_information: trans("Sorting / Recycling Information"),
+    batch_number: trans("Batch Number"),
 }
 
-const getLanguageChipStyle = (code: string) => {
-    const hex = useStringToHex(code.toUpperCase())
+const getChipStyle = (label: string) => {
+    const hex = useStringToHex(label)
 
     return {
         backgroundColor: `color-mix(in srgb, ${hex} 30%, white)`,
@@ -618,6 +623,17 @@ const getIcon = (type?: string) => {
                             </dd>
                         </div>
 
+                        <div v-if="labelInfo.safety_icons?.show" class="flex justify-between items-center gap-3">
+                            <dt class="text-gray-500">
+                                {{ trans("Safety Icons") }}
+                                <span class="text-xs font-light text-gray-400">({{ trans("Candles") }})</span>
+                            </dt>
+                            <dd class="font-medium text-green-600 flex items-center gap-1">
+                                <FontAwesomeIcon :icon="faCheckCircle" class="text-xs" fixed-width aria-hidden="true" />
+                                {{ trans("Present") }}
+                            </dd>
+                        </div>
+
                         <div class="flex justify-between items-start gap-3">
                             <dt class="text-gray-500 whitespace-nowrap">{{ trans("Markets") }}</dt>
                             <dd v-if="labelInfo.markets?.show" class="font-medium flex flex-wrap gap-1 justify-end">
@@ -634,11 +650,35 @@ const getIcon = (type?: string) => {
                             <dd v-if="labelInfo.languages?.show" class="font-medium flex flex-wrap gap-1 justify-end">
                                 <span v-for="language in labelInfo.languages.value" :key="language.code"
                                     class="px-2 py-0.5 rounded-full text-xs"
-                                    :style="getLanguageChipStyle(language.code)">
+                                    :style="getChipStyle(language.code.toUpperCase())">
                                     {{ language.name }}
                                 </span>
                             </dd>
                             <dd v-else class="opacity-40 font-normal italic text-xs">{{ trans("No language") }}</dd>
+                        </div>
+
+                        <div class="flex justify-between items-start gap-3">
+                            <dt class="text-gray-500 whitespace-nowrap">{{ trans("PAO / Expiry Date / Best Before") }}</dt>
+                            <dd v-if="labelInfo.best_before?.show" class="font-medium flex flex-wrap gap-1 justify-end">
+                                <span class="px-2 py-0.5 rounded-full text-xs"
+                                    :style="getChipStyle(labelInfo.best_before.value.label)">
+                                    {{ labelInfo.best_before.value.label }}
+                                </span>
+                            </dd>
+                            <dd v-else class="opacity-40 font-normal italic text-xs">{{ trans("Not set") }}</dd>
+                        </div>
+
+                        <div class="flex justify-between items-start gap-3">
+                            <dt class="text-gray-500 whitespace-nowrap">{{ trans("Packaging Material Codes") }}</dt>
+                            <dd v-if="labelInfo.packaging_material_codes?.show" class="font-medium flex flex-wrap gap-1 justify-end">
+                                <span v-for="packagingMaterial in labelInfo.packaging_material_codes.value" :key="packagingMaterial.value"
+                                    v-tooltip="packagingMaterial.material"
+                                    class="px-2 py-0.5 rounded-full text-xs"
+                                    :style="getChipStyle(packagingMaterial.code)">
+                                    {{ packagingMaterial.code }}
+                                </span>
+                            </dd>
+                            <dd v-else class="opacity-40 font-normal italic text-xs">{{ trans("Not shown") }}</dd>
                         </div>
                     </div>
                 </AccordionContent>

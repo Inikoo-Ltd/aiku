@@ -25,7 +25,9 @@ use App\Actions\Masters\MasterAsset\Hydrators\MasterAssetHydrateMarketingWeightF
 use App\Actions\Masters\MasterAsset\UpdateMasterAsset;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateTradeUnits;
 use App\Enums\Goods\TradeUnit\TradeUnitLabelPresenceEnum;
+use App\Enums\Goods\TradeUnit\TradeUnitBestBeforeEnum;
 use App\Enums\Goods\TradeUnit\TradeUnitMarketEnum;
+use App\Enums\Goods\TradeUnit\TradeUnitPackagingMaterialEnum;
 use App\Enums\Masters\MasterAsset\MasterAssetTypeEnum;
 use App\Models\Helpers\Country;
 use App\Stubs\Migrations\HasDangerousGoodsFields;
@@ -142,10 +144,18 @@ class UpdateTradeUnit extends OrgAction
             }
         }
 
-        foreach (['markets', 'languages'] as $labelInfoField) {
+        foreach (['markets', 'languages', 'best_before'] as $labelInfoField) {
             if (Arr::has($modelData, $labelInfoField)) {
                 data_set($modelData, 'label_info.'.$labelInfoField, Arr::pull($modelData, $labelInfoField));
             }
+        }
+
+        if (Arr::has($modelData, 'packaging_material_codes')) {
+            data_set($modelData, 'label_info.packaging_material_codes.value', Arr::pull($modelData, 'packaging_material_codes') ?? []);
+        }
+
+        if (Arr::has($modelData, 'packaging_material_codes_show')) {
+            data_set($modelData, 'label_info.packaging_material_codes.show', (bool) Arr::pull($modelData, 'packaging_material_codes_show'));
         }
 
         $tradeUnit = $this->update($tradeUnit, $modelData, ['data', 'marketing_dimensions', 'label_info']);
@@ -347,10 +357,16 @@ class UpdateTradeUnit extends OrgAction
             'weee_symbol'                   => ['sometimes', 'boolean'],
             'ip_rating'                     => ['sometimes', 'boolean'],
             'sorting_recycling_information' => ['sometimes', 'boolean'],
+            'safety_icons'                  => ['sometimes', 'boolean'],
+            'batch_number'                  => ['sometimes', 'boolean'],
             'markets'                       => ['sometimes', 'nullable', 'array'],
             'markets.*'                     => ['string', Rule::enum(TradeUnitMarketEnum::class)],
             'languages'                     => ['sometimes', 'nullable', 'array'],
             'languages.*'                   => ['string', Rule::exists('languages', 'code')],
+            'best_before'                   => ['sometimes', 'nullable', Rule::enum(TradeUnitBestBeforeEnum::class)],
+            'packaging_material_codes'      => ['sometimes', 'nullable', 'array'],
+            'packaging_material_codes.*'    => ['string', Rule::enum(TradeUnitPackagingMaterialEnum::class)],
+            'packaging_material_codes_show' => ['sometimes', 'boolean'],
 
 
             'cpnp_number'           => ['sometimes', 'nullable', 'string'],

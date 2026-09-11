@@ -17,7 +17,9 @@ use App\Models\Helpers\Currency;
 use App\Actions\Traits\HasBucketImages;
 use App\Actions\Goods\TradeUnit\GetLabelInfoLanguages;
 use App\Enums\Goods\TradeUnit\TradeUnitLabelPresenceEnum;
+use App\Enums\Goods\TradeUnit\TradeUnitBestBeforeEnum;
 use App\Enums\Goods\TradeUnit\TradeUnitMarketEnum;
+use App\Enums\Goods\TradeUnit\TradeUnitPackagingMaterialEnum;
 use App\Http\Resources\Masters\MasterProductResource;
 use App\Models\Masters\MasterAsset;
 use Lorisleiva\Actions\Concerns\AsObject;
@@ -111,6 +113,8 @@ class GetMasterProductShowcase
                 ...TradeUnitLabelPresenceEnum::presenceFromLabelInfo($masterAsset->label_info),
                 'markets'   => TradeUnitMarketEnum::marketsFromLabelInfo($masterAsset->label_info),
                 'languages' => GetLabelInfoLanguages::run($masterAsset->label_info),
+                'best_before' => TradeUnitBestBeforeEnum::bestBeforeFromLabelInfo($masterAsset->label_info),
+                'packaging_material_codes' => TradeUnitPackagingMaterialEnum::packagingMaterialCodesFromLabelInfo($masterAsset->label_info),
             ],
             'attachment_box'      => [
                 'public'  => [],

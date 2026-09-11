@@ -1,14 +1,17 @@
 <script setup lang="ts">
 import MultiSelect from 'primevue/multiselect'
+import Select from 'primevue/select'
 import { ref, computed } from 'vue'
 import { trans } from 'laravel-vue-i18n'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import Tag from '@/Components/Tag.vue'
+import { Switch } from '@headlessui/vue'
 import { faTimes } from '@fal'
+import { faCheck, faTimes as fasTimes } from '@fas'
 
-library.add(faTimes)
+library.add(faTimes, faCheck, fasTimes)
 
 defineOptions({ inheritAttrs: false })
 
@@ -22,10 +25,43 @@ const props = defineProps<{
         valueProp?: string
         tagLabelProp?: string
         tagUppercase?: boolean
+        enableHideToggle?: boolean
+        toggle_value?: boolean
+        multiple?: boolean
     }
 }>()
 
 const _multiselect = ref(null)
+
+const isMultiple = computed(() => props.fieldData?.multiple ?? true)
+
+const formSelectedValue = computed({
+    get: () => props.form[props.fieldName] ?? null,
+    set: (newVal) => {
+        props.form[props.fieldName] = newVal ?? null
+        props.form.errors[props.fieldName] = null
+    }
+})
+
+const toggleFieldName = computed(() => `${props.fieldName}_show`)
+const localToggleValue = ref<boolean>(props.fieldData?.toggle_value ?? false)
+
+const isSelectShown = computed({
+    get: () => {
+        if (!(props.fieldData?.enableHideToggle ?? false)) {
+            return true
+        }
+
+        return toggleFieldName.value in props.form ? !!props.form[toggleFieldName.value] : localToggleValue.value
+    },
+    set: (newVal: boolean) => {
+        if (toggleFieldName.value in props.form) {
+            props.form[toggleFieldName.value] = newVal
+        } else {
+            localToggleValue.value = newVal
+        }
+    }
+})
 
 const labelProp = computed(() => props.fieldData?.labelProp ?? 'label')
 const valueProp = computed(() => props.fieldData?.valueProp ?? 'value')
@@ -66,6 +102,40 @@ const onRemoveValue = (value: string | number) => {
 
 <template>
     <div class="w-full max-w-md">
+        <!-- Toggle: show/hide select -->
+        <div v-if="fieldData?.enableHideToggle ?? false" class="mb-2">
+            <Switch
+                v-model="isSelectShown"
+                class="pr-1 relative inline-flex h-6 w-12 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-opacity-75"
+                :class="isSelectShown ? 'bg-indigo-500' : 'bg-indigo-100'"
+            >
+                <span
+                    aria-hidden="true"
+                    :class="isSelectShown ? 'translate-x-6 bg-white' : 'translate-x-0 bg-gray-50'"
+                    class="flex items-center justify-center pointer-events-none h-full w-1/2 transform rounded-full shadow-lg ring-0 transition"
+                >
+                    <FontAwesomeIcon v-if="isSelectShown" icon="fas fa-check" class="text-xs text-green-500" fixed-width aria-hidden="true" />
+                    <FontAwesomeIcon v-else icon="fas fa-times" class="text-xs text-red-500" fixed-width aria-hidden="true" />
+                </span>
+            </Switch>
+        </div>
+
+        <template v-if="isSelectShown">
+        <!-- Single select -->
+        <div v-if="!isMultiple" class="w-full max-w-64">
+            <Select
+                v-model="formSelectedValue"
+                :options="optionsList"
+                :optionLabel="labelProp"
+                :optionValue="valueProp"
+                :placeholder="fieldData?.placeholder ?? trans('Select an option')"
+                filter
+                showClear
+                class="w-full md:w-80"
+            />
+        </div>
+
+        <template v-else>
         <!-- Multiselect -->
         <div class="w-full max-w-64">
             <MultiSelect
@@ -110,6 +180,8 @@ const onRemoveValue = (value: string | number) => {
                 </template>
             </Tag>
         </div>
+        </template>
+        </template>
 
         <p v-if="form.errors?.[fieldName]" class="mt-2 text-sm text-red-600">
             {{ form.errors[fieldName] }}
