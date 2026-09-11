@@ -2392,6 +2392,48 @@ test('to produce queue only shows lines with an artefact in this factory', funct
         ->toBe(collect([$stocks[0]->code, $stocks[1]->code])->sort()->values()->all());
 });
 
+test('a partner line the factory has stock for belongs on pre-pick, not the to produce board', function () {
+    $stocks    = createStocks($this->group);
+    $orgStocks = createOrgStocks($this->organisation, [$stocks[0]]);
+    \App\Models\Production\Artefact::where('production_id', $this->production->id)->where('org_stock_id', $orgStocks[0]->id)->update(['org_stock_id' => null]);
+    $made = StoreArtefact::make()->action($this->production, ['code' => 'COVER-01', 'name' => 'Covered by stock']);
+    $made->update(['org_stock_id' => $orgStocks[0]->id]);
+    $orgStocks[0]->update(['quantity_in_locations' => 40, 'quantity_available' => 40]);
+
+    $buyer = \App\Actions\SysAdmin\Organisation\StoreOrganisation::make()->action($this->group, [
+            'code' => 'CVR',
+            'name' => 'Covered buyer',
+            'type' => \App\Enums\SysAdmin\Organisation\OrganisationTypeEnum::SHOP,
+        ] + \App\Models\SysAdmin\Organisation::factory()->definition());
+    $counts = fn () => \App\Actions\Production\PartnerShippingList\UI\GetProductionQueueCounts::run($this->organisation, $this->production);
+    $before = $counts();
+    $line   = \App\Models\Procurement\PartnerShoppingListItem::create([
+        'group_id'                => $this->group->id,
+        'organisation_id'         => $buyer->id,
+        'partner_organisation_id' => $this->organisation->id,
+        'stock_id'                => $stocks[0]->id,
+        'org_stock_id'            => $orgStocks[0]->id,
+        'quantity'                => 6,
+    ]);
+
+    actingAs($this->guest->getUser());
+    $routeParameters = [$this->organisation->slug, $this->production->slug];
+    $backlog = fn () => collect(get(route('grp.org.productions.show.to_produce.index', $routeParameters))
+        ->assertOk()->viewData('page')['props']['groups'])
+        ->firstWhere('label', 'Backlog')['items'];
+
+    expect(collect($backlog())->pluck('id')->all())->not->toContain($line->id)
+        ->and($counts()['to_produce'])->toBe($before['to_produce'])
+        ->and($counts()['pre_pick'])->toBe($before['pre_pick'] + 1);
+
+    $orgStocks[0]->update(['quantity_in_locations' => 2, 'quantity_available' => 2]);
+    expect(collect($backlog())->pluck('id')->all())->not->toContain($line->id);
+
+    $orgStocks[0]->update(['quantity_in_locations' => 0, 'quantity_available' => 0]);
+    expect(collect($backlog())->pluck('id')->all())->toContain($line->id)
+        ->and($counts()['to_produce'])->toBe($before['to_produce'] + 1);
+});
+
 test('to restock bands rank artefacts by cover and queue them onto the to produce board', function () {
     $stocks    = createStocks($this->group);
     $orgStocks = createOrgStocks($this->organisation, [$stocks[0], $stocks[1]]);
