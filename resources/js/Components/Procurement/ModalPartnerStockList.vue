@@ -24,6 +24,7 @@ import { trans } from "laravel-vue-i18n"
 import Image from "@common/Components/Image.vue"
 import NumberWithButtonSave from "@/Components/NumberWithButtonSave.vue"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
+import ModalOverBudget from "@/Components/Procurement/ModalOverBudget.vue"
 
 library.add(faSearch, faPlus, faMinus, faSpinner)
 
@@ -37,6 +38,7 @@ const optionsLinks = ref<any>(null)
 const isLoading = ref(false)
 const isRowLoading = ref<number | null>(null)
 const searchQuery = ref("")
+const overBudget = ref<{ message: string, row: any } | null>(null)
 
 const closeModal = () => {
     model.value = false
@@ -80,20 +82,25 @@ const refreshSingleRow = async (rowData: any) => {
     }
 }
 
-const onSubmitRow = async (row: any) => {
+const onSubmitRow = async (row: any, force = false) => {
     isRowLoading.value = row.id
 
     try {
         const quantity = Number(row.quantity_ordered) || 0
         if (quantity > 0 && row.saveRoute) {
             const method = String(row.saveRoute.method ?? "post").toLowerCase()
-            await axios[method](route(row.saveRoute.name, row.saveRoute.parameters), { quantity })
+            await axios[method](route(row.saveRoute.name, row.saveRoute.parameters), { quantity, force })
             await refreshSingleRow(row)
         } else if (quantity === 0 && row.deleteRoute) {
             await axios.delete(route(row.deleteRoute.name, row.deleteRoute.parameters))
             await refreshSingleRow(row)
         }
     } catch (error: any) {
+        const overBudgetMessage = error?.response?.data?.errors?.over_budget?.[0]
+        if (overBudgetMessage) {
+            overBudget.value = { message: overBudgetMessage, row }
+            return
+        }
         notify({
             title: trans("Something went wrong"),
             text: error?.response?.data?.message || trans("Failed to add or update the quantity"),
@@ -105,6 +112,18 @@ const onSubmitRow = async (row: any) => {
 }
 
 const debSubmitRow = debounce(onSubmitRow, 500)
+
+const onOverBudgetBack = async () => {
+    const row = overBudget.value?.row
+    overBudget.value = null
+    if (row) await refreshSingleRow(row)
+}
+
+const onOverBudgetConfirm = () => {
+    const row = overBudget.value?.row
+    overBudget.value = null
+    if (row) onSubmitRow(row, true)
+}
 
 const nextBatchMultiple = (row: any): number | null => {
     const quantum = Number(row.order_quantum) || 0
@@ -176,6 +195,7 @@ watch(() => model.value, async (newValue) => {
 </script>
 
 <template>
+    <ModalOverBudget :message="overBudget?.message ?? null" @back="onOverBudgetBack" @confirm="onOverBudgetConfirm" />
     <KeepAlive>
         <Modal :isOpen="model" @onClose="closeModal" :closeButton="true" width="w-full max-w-2xl md:max-w-5xl">
             <div class="flex flex-col justify-between h-[600px] overflow-y-auto pb-4 px-3">

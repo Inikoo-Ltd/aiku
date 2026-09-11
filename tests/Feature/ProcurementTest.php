@@ -135,7 +135,6 @@ use App\Models\Inventory\LocationOrgStock;
 use App\Actions\Procurement\OrgPartner\GetPartnerLeadTime;
 use App\Actions\Procurement\OrgPartner\GetPartnerOrderCapacity;
 use App\Enums\Catalogue\HealthRankEnum;
-use Symfony\Component\HttpKernel\Exception\HttpException;
 use App\Actions\CRM\Customer\StoreCustomer;
 use App\Actions\Procurement\OrgPartner\GetPartnerCustomerDiscount;
 use App\Actions\Procurement\OrgPartner\GetPartnerIntercompanyCustomer;
@@ -3527,7 +3526,14 @@ describe('partner browse', function () {
         expect(GetPartnerOrderCapacity::run($this->orgPartner->refresh())['blocked']['at_capacity'])->toBeTrue()
             ->and(fn () => StorePartnerShoppingListItem::make()->action($this->orgPartner, $this->buyerOrgStock, [
                 'quantity' => 1,
-            ]))->toThrow(HttpException::class);
+            ]))->toThrow(ValidationException::class);
+
+        request()->merge(['force' => true]);
+        $forcedItem = StorePartnerShoppingListItem::make()->action($this->orgPartner, $this->buyerOrgStock, [
+            'quantity' => 1,
+        ]);
+        expect($forcedItem)->toBeInstanceOf(PartnerShoppingListItem::class);
+        request()->merge(['force' => false]);
 
         $this->buyerOrgStock->update(['quantity_available' => 0]);
         $outOfStockItem = StorePartnerShoppingListItem::make()->action($this->orgPartner, $this->buyerOrgStock, [
@@ -4204,7 +4210,7 @@ test('supplier capacity cap blocks non-exempt adds to the shopping list', functi
 
     expect(App\Actions\Procurement\OrgSupplier\GetSupplierOrderCapacity::run($orgSupplier)['blocked']['at_capacity'])->toBeTrue()
         ->and(fn () => StoreShoppingListItem::make()->action($orgSupplierProduct, ['quantity_units' => 1]))
-        ->toThrow(Symfony\Component\HttpKernel\Exception\HttpException::class);
+        ->toThrow(ValidationException::class);
 
     DeleteShoppingListItem::make()->action($first);
     Cache::forget("supplier-order-capacity:{$orgSupplier->id}");
@@ -4264,7 +4270,7 @@ test('agent capacity guard blocks non-exempt adds and lets A-rank or out-of-stoc
 
     expect(fn () => App\Actions\Procurement\ShoppingListItem\StoreShoppingListItem::make()
         ->action($this->orgSupplierProduct, ['quantity_units' => 1]))
-        ->toThrow(Symfony\Component\HttpKernel\Exception\HttpException::class);
+        ->toThrow(ValidationException::class);
 
     $orgStock->update(['quantity_available' => 0]);
 

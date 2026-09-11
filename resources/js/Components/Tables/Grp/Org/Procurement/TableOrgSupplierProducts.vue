@@ -9,18 +9,34 @@ import { Link, router } from "@inertiajs/vue3"
 import Table from "@/Components/Table/Table.vue"
 import { OrgSupplierProduct } from "@/types/org-supplier-product"
 import { trans } from "laravel-vue-i18n"
+import { ref } from "vue"
+import ModalOverBudget from "@/Components/Procurement/ModalOverBudget.vue"
 
 defineProps<{
   data: object
   tab?: string
 }>()
 
-function addToShoppingList(supplierProduct: OrgSupplierProduct & { units_per_carton?: number }) {
+const overBudget = ref<{ message: string, supplierProduct: OrgSupplierProduct & { units_per_carton?: number } } | null>(null)
+const shoppingListHref = () => route("grp.org.procurement.shopping_list.index", [route().params["organisation"]])
+
+function addToShoppingList(supplierProduct: OrgSupplierProduct & { units_per_carton?: number }, force = false) {
   router.post(
     route("grp.org.procurement.shopping_list.store", [route().params["organisation"], supplierProduct.slug]),
-    { quantity_units: supplierProduct.units_per_carton ?? 1 },
-    { preserveScroll: true }
+    { quantity_units: supplierProduct.units_per_carton ?? 1, force },
+    {
+      preserveScroll: true,
+      onError: (errors) => {
+        if (errors.over_budget) overBudget.value = { message: errors.over_budget, supplierProduct }
+      },
+    }
   )
+}
+
+function onOverBudgetConfirm() {
+  const supplierProduct = overBudget.value?.supplierProduct
+  overBudget.value = null
+  if (supplierProduct) addToShoppingList(supplierProduct, true)
 }
 
 function supplierProductRoute(supplierProduct: OrgSupplierProduct) {
@@ -45,6 +61,8 @@ function supplierProductRoute(supplierProduct: OrgSupplierProduct) {
 </script>
 
 <template>
+  <div>
+  <ModalOverBudget :message="overBudget?.message ?? null" :removeHref="shoppingListHref()" @back="overBudget = null" @confirm="onOverBudgetConfirm" />
   <Table :resource="data" :name="tab" class="mt-5">
     <template #cell(code)="{ item: supplier_product }">
       <Link :href="supplierProductRoute(supplier_product)" class="primaryLink">
@@ -57,4 +75,5 @@ function supplierProductRoute(supplierProduct: OrgSupplierProduct) {
       </button>
     </template>
   </Table>
+  </div>
 </template>

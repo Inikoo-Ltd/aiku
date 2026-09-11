@@ -18,13 +18,13 @@ use App\Models\Procurement\OrgSupplier;
 use App\Models\Procurement\OrgSupplierProduct;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\Concerns\AsObject;
 
 class GetSupplierOrderCapacity
 {
     use AsObject;
 
-    public const MIN_MONTHS = 3;
     // ponytail: 20% fair share is a guess, upgrade path is an org-level setting
     public const SUPPLIER_SHARE_OF_EMPTY_LOCATIONS = 0.2;
     public const WAREHOUSE_FULL_FREE_RATIO = 0.05;
@@ -67,23 +67,24 @@ class GetSupplierOrderCapacity
      */
     protected function supplierCapacity(OrgSupplier $orgSupplier): array
     {
-        $measured = DB::table('stock_deliveries')
+        $months = DB::table('stock_deliveries')
             ->where('parent_type', 'OrgSupplier')
             ->where('parent_id', $orgSupplier->id)
             ->whereNull('deleted_at')
             ->whereRaw('coalesce(booked_in_at, placed_at, date) >= ?', [now()->subMonths(6)])
-            ->selectRaw("count(*) as samples,
-                count(distinct date_trunc('month', coalesce(booked_in_at, placed_at, date))) as months,
-                coalesce(sum(cost_total), 0) as total")
-            ->first();
+            ->selectRaw("count(*) as samples, coalesce(sum(cost_total), 0) as total")
+            ->groupByRaw("date_trunc('month', coalesce(booked_in_at, placed_at, date))")
+            ->get();
+        $peakMonth = (float) $months->max('total');
+        $samples   = (int) $months->sum('samples');
 
         $cycleShare = $this->orderCycleShare($orgSupplier);
 
-        if ((int) $measured->months >= self::MIN_MONTHS) {
+        if ($peakMonth > 0) {
             return [
-                'delivers_to_us_per_30d' => round((float) $measured->total / (int) $measured->months * $cycleShare, 2),
+                'delivers_to_us_per_30d' => round($peakMonth * $cycleShare, 2),
                 'source'                 => 'measured',
-                'samples'                => (int) $measured->samples,
+                'samples'                => $samples,
             ];
         }
 
@@ -92,7 +93,7 @@ class GetSupplierOrderCapacity
         return [
             'delivers_to_us_per_30d' => $sales > 0 ? round($sales * $cycleShare, 2) : null,
             'source'                 => $sales > 0 ? 'sales' : 'none',
-            'samples'                => (int) $measured->samples,
+            'samples'                => $samples,
         ];
     }
 
@@ -238,15 +239,15 @@ class GetSupplierOrderCapacity
     {
         $capacity = static::run($orgSupplier);
 
-        if ($capacity['blocked']['at_capacity'] && !static::isExemptFromCap($orgSupplierProduct)) {
-            abort(422, __(
-                'Shopping list is at the level :supplier historically delivers to us monthly (:cap :currency). Remove or deprioritize items first — only A-rank or out-of-stock items can be added past the cap.',
+        if ($capacity['blocked']['at_capacity'] && !static::isExemptFromCap($orgSupplierProduct) && !request()->boolean('force')) {
+            throw ValidationException::withMessages(['over_budget' => __(
+                'Shopping list is already at the level :supplier historically delivers to us in one order cycle (:cap :currency). More than this is unlikely to arrive any sooner.',
                 [
                     'supplier' => $orgSupplier->supplier->name,
                     'cap'      => number_format((float) $capacity['supplier_capacity']['delivers_to_us_per_30d'], 2),
                     'currency' => $orgSupplier->supplier->currency->code,
                 ]
-            ));
+            )]);
         }
 
         if ($capacity['warehouse']['total_locations'] > 0 && !static::linkedOrgStock($orgSupplierProduct)) {
