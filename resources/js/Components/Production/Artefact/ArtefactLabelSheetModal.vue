@@ -1075,7 +1075,12 @@ const describeFailure = async (error: any): Promise<string> => {
                 </label>
 
                 <div class="space-y-2">
-                    <div class="text-xs text-gray-500 uppercase tracking-wide">{{ ctrans("Texts") }}</div>
+                    <div class="flex items-center gap-2 text-xs text-gray-500 uppercase tracking-wide">
+                        {{ ctrans("Texts") }}
+                        <span class="rounded-full bg-gray-200 px-1.5 py-0.5 text-[10px] font-semibold tabular-nums text-gray-600">
+                            {{ items.length }}
+                        </span>
+                    </div>
                     <div class="flex gap-2">
                         <Button type="tertiary" size="xs" icon="fal fa-plus"
                             :label="sourceLabels.batch_code" @click="addItem('batch_code')" />
@@ -1087,21 +1092,24 @@ const describeFailure = async (error: any): Promise<string> => {
                         {{ ctrans("No text on the label yet.") }}
                     </div>
 
-                    <div
-                        v-for="item in items"
-                        :key="item.id"
-                        class="flex items-center gap-2 rounded border px-2 py-1.5 cursor-pointer"
-                        :class="item.id === selectedItemId ? 'border-indigo-500 bg-indigo-50' : 'border-gray-200 hover:bg-gray-50'"
-                        @click="selectedItemId = item.id">
-                        <span class="min-w-0 flex-1 truncate text-sm" :style="{ color: item.color }">{{ item.text || sourceLabels[item.source] }}</span>
-                        <span class="text-xs text-gray-400">{{ item.fontSize }}pt</span>
-                        <span v-if="item.rotation" class="text-xs text-gray-400">{{ item.rotation }}°</span>
-                        <button class="text-gray-400 hover:text-indigo-600" @click.stop="duplicateItem(item)">
-                            <FontAwesomeIcon icon="fal fa-copy" fixed-width aria-hidden="true" />
-                        </button>
-                        <button class="text-gray-400 hover:text-red-600" @click.stop="removeItem(item)">
-                            <FontAwesomeIcon icon="fal fa-trash-alt" fixed-width aria-hidden="true" />
-                        </button>
+                    <div v-if="items.length" class="max-h-56 space-y-2 overflow-y-auto pr-1">
+                        <div
+                            v-for="(item, index) in items"
+                            :key="item.id"
+                            class="flex items-center gap-2 rounded border px-2 py-1.5 cursor-pointer"
+                            :class="item.id === selectedItemId ? 'border-indigo-500 bg-indigo-50' : 'border-gray-200 hover:bg-gray-50'"
+                            @click="selectedItemId = item.id">
+                            <span class="w-4 shrink-0 text-xs tabular-nums text-gray-400">{{ index + 1 }}</span>
+                            <span class="min-w-0 flex-1 truncate text-sm" :style="{ color: item.color }">{{ item.text || sourceLabels[item.source] }}</span>
+                            <span class="text-xs text-gray-400">{{ item.fontSize }}pt</span>
+                            <span v-if="item.rotation" class="text-xs text-gray-400">{{ item.rotation }}°</span>
+                            <button class="text-gray-400 hover:text-indigo-600" @click.stop="duplicateItem(item)">
+                                <FontAwesomeIcon icon="fal fa-copy" fixed-width aria-hidden="true" />
+                            </button>
+                            <button class="text-gray-400 hover:text-red-600" @click.stop="removeItem(item)">
+                                <FontAwesomeIcon icon="fal fa-trash-alt" fixed-width aria-hidden="true" />
+                            </button>
+                        </div>
                     </div>
                 </div>
 
