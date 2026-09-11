@@ -89,7 +89,8 @@ class ProcessWebpageTimeSeriesRecords implements ShouldBeUnique
                     'avg_time_on_page' => $avgTimeOnPage,
                     'add_to_baskets'   => $result->add_to_baskets,
                     'conversion_rate'  => round($conversionRate, 2),
-                ]
+                ],
+                ...$this->pageSpeedAverages($timeSeries, $result),
             ];
         }
 
@@ -147,6 +148,10 @@ class ProcessWebpageTimeSeriesRecords implements ShouldBeUnique
             DB::raw('SUM(page_views) as page_views'),
             DB::raw('SUM(add_to_baskets) as add_to_baskets'),
             DB::raw('SUM(avg_time_on_page * page_views) as total_duration'),
+            ...array_map(
+                fn (string $column) => DB::raw("AVG($column) as $column"),
+                StoreWebpagePageSpeedTimeSeriesRecord::columns()
+            ),
         ];
 
         $query = DB::connection('aiku_no_sticky')->table('webpage_time_series_records')
@@ -155,5 +160,25 @@ class ProcessWebpageTimeSeriesRecords implements ShouldBeUnique
             ->where('to', '<=', $to);
 
         return $this->applyAggregatedFrequencyGrouping($query, $timeSeries->frequency, $selects)->get();
+    }
+
+    /**
+     * @return array<string, int|null>
+     */
+    protected function pageSpeedAverages(WebpageTimeSeries $timeSeries, object $result): array
+    {
+        if ($timeSeries->frequency === TimeSeriesFrequencyEnum::DAILY) {
+            return [];
+        }
+
+        $averages = [];
+
+        foreach (StoreWebpagePageSpeedTimeSeriesRecord::columns() as $column) {
+            $average = $result->{$column};
+
+            $averages[$column] = $average === null ? null : (int)round((float)$average);
+        }
+
+        return $averages;
     }
 }

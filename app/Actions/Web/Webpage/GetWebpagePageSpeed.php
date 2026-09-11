@@ -22,11 +22,11 @@ class GetWebpagePageSpeed
 
     public string $jobQueue = 'cache-warming';
 
-    public const array STRATEGIES = ['mobile', 'desktop'];
+    public const array STRATEGIES = ['desktop', 'mobile'];
 
     private const ENDPOINT = 'https://www.googleapis.com/pagespeedonline/v5/runPagespeed';
 
-    private const RESULT_TTL_HOURS   = 25;
+    public const int RESULT_TTL_HOURS = 25;
     private const ERROR_TTL_MINUTES  = 15;
 
     private const CATEGORIES = [
@@ -87,7 +87,7 @@ class GetWebpagePageSpeed
     /**
      * @return array{url: string, strategy: string, fetched_at: string, scores: array, lab: array, field: array, overall_rating: string|null}|array{error: string}
      */
-    public function handle(Webpage $webpage, string $strategy = 'mobile', bool $force = false): array
+    public function handle(Webpage $webpage, string $strategy = 'desktop', bool $force = false): array
     {
         $url = self::publiclyReachableUrl($webpage);
 
@@ -124,6 +124,8 @@ class GetWebpagePageSpeed
 
         cache()->forget(self::errorKey($webpage, $strategy));
         cache()->put(self::resultKey($webpage, $strategy), $result, now()->addHours(self::RESULT_TTL_HOURS));
+
+        StoreWebpagePageSpeedTimeSeriesRecord::run($webpage, $result);
     }
 
     /**

@@ -16,7 +16,9 @@ use App\Models\Catalogue\ProductCategory;
 use App\Models\Helpers\Audit;
 use App\Models\SysAdmin\User;
 use App\Models\Web\Webpage;
+use App\Models\Web\WebpageTimeSeriesRecord;
 use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Throwable;
@@ -25,8 +27,10 @@ class GetWebpagePerformance
 {
     use AsAction;
 
+    private const int PAGESPEED_DAILY_MAX_DAYS = 92;
+
     /**
-     * @return array{start_date: string, end_date: string, currency: string, search: array, sales: array, events: array}
+     * @return array{start_date: string, end_date: string, currency: string, search: array, sales: array, events: array, pagespeed: array}
      */
     public function handle(Webpage $webpage, array $modelData): array
     {
@@ -49,6 +53,7 @@ class GetWebpagePerformance
             'search'     => $search,
             'sales'      => $this->sales($webpage, $startDate, $endDate),
             'events'     => $this->events($webpage, $startDate, $endDate),
+            'pagespeed'  => $this->pageSpeed($webpage, $startDate, $endDate),
         ];
     }
 
@@ -79,6 +84,67 @@ class GetWebpagePerformance
                 'sales'  => round($record->sales_external + $record->sales_internal, 2),
                 'orders' => (int)$record->orders,
             ])->values()->all();
+    }
+
+    private function recordCachedPageSpeedResults(Webpage $webpage): void
+    {
+        foreach (GetWebpagePageSpeed::STRATEGIES as $strategy) {
+            $result = cache()->get(GetWebpagePageSpeed::resultKey($webpage, $strategy));
+
+            if ($result && !StoreWebpagePageSpeedTimeSeriesRecord::isRecorded($webpage, $result)) {
+                StoreWebpagePageSpeedTimeSeriesRecord::run($webpage, $result);
+            }
+        }
+    }
+
+    private function pageSpeed(Webpage $webpage, Carbon $startDate, Carbon $endDate): array
+    {
+        $this->recordCachedPageSpeedResults($webpage);
+
+        $frequency = $startDate->diffInDays($endDate) > self::PAGESPEED_DAILY_MAX_DAYS
+            ? TimeSeriesFrequencyEnum::WEEKLY
+            : TimeSeriesFrequencyEnum::DAILY;
+
+        $timeSeries = $webpage->timeSeries()->where('frequency', $frequency->value)->first();
+
+        if (!$timeSeries) {
+            return [];
+        }
+
+        $columns = StoreWebpagePageSpeedTimeSeriesRecord::columns();
+
+        return $timeSeries->records()
+            ->where('to', '>=', $startDate)
+            ->where('from', '<=', $endDate)
+            ->where(function (Builder $query) use ($columns) {
+                foreach ($columns as $column) {
+                    $query->orWhereNotNull($column);
+                }
+            })
+            ->orderBy('from')
+            ->get(['from', ...$columns])
+            ->map(fn (WebpageTimeSeriesRecord $record) => [
+                'date' => $record->from->toDateString(),
+                ...$this->pageSpeedScoresByStrategy($record),
+            ])->values()->all();
+    }
+
+    /**
+     * @return array<string, array<string, int|null>>
+     */
+    private function pageSpeedScoresByStrategy(WebpageTimeSeriesRecord $record): array
+    {
+        $scoresByStrategy = [];
+
+        foreach (GetWebpagePageSpeed::STRATEGIES as $strategy) {
+            foreach (StoreWebpagePageSpeedTimeSeriesRecord::SCORES as $score) {
+                $value = $record->{StoreWebpagePageSpeedTimeSeriesRecord::column($strategy, $score)};
+
+                $scoresByStrategy[$strategy][$score] = $value === null ? null : (int)$value;
+            }
+        }
+
+        return $scoresByStrategy;
     }
 
     private function events(Webpage $webpage, Carbon $startDate, Carbon $endDate): array

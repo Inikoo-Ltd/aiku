@@ -7,6 +7,7 @@
  */
 
 use App\Actions\Web\Webpage\GetWebpagePageSpeed;
+use App\Actions\Web\Webpage\StoreWebpagePageSpeedTimeSeriesRecord;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\Web\Webpage;
@@ -76,10 +77,12 @@ it('maps the PageSpeed Insights response into scores, lab and field metrics', fu
         'www.googleapis.com/pagespeedonline/*' => Http::response(pageSpeedPayload()),
     ]);
 
+    StoreWebpagePageSpeedTimeSeriesRecord::shouldRun();
+
     $result = GetWebpagePageSpeed::run(fakeWebpage());
 
     expect($result['url'])->toBe('https://example.test/landing')
-        ->and($result['strategy'])->toBe('mobile')
+        ->and($result['strategy'])->toBe('desktop')
         ->and($result['fetched_at'])->toBe('2026-09-10T08:00:00.000Z')
         ->and($result['overall_rating'])->toBe('AVERAGE');
 
@@ -112,21 +115,25 @@ it('maps the PageSpeed Insights response into scores, lab and field metrics', fu
         ->and($result['field'][1]['display'])->toBe('0.08');
 });
 
-it('requests the webpage url with the selected strategy and caches the result', function () {
+it('requests the webpage url with the selected strategy, caches the result and records it once in the time series', function () {
     Http::fake([
         'www.googleapis.com/pagespeedonline/*' => Http::response(pageSpeedPayload()),
     ]);
 
+    StoreWebpagePageSpeedTimeSeriesRecord::shouldRun()
+        ->once()
+        ->withArgs(fn (Webpage $webpage, array $result) => $webpage->id === 2 && $result['strategy'] === 'mobile');
+
     $webpage = fakeWebpage(2);
 
-    GetWebpagePageSpeed::run($webpage, 'desktop');
-    GetWebpagePageSpeed::run($webpage, 'desktop');
+    GetWebpagePageSpeed::run($webpage, 'mobile');
+    GetWebpagePageSpeed::run($webpage, 'mobile');
 
     Http::assertSentCount(1);
 
     Http::assertSent(function ($request) use ($webpage) {
         return $request['url'] === $webpage->canonical_url
-            && $request['strategy'] === 'desktop'
+            && $request['strategy'] === 'mobile'
             && str_contains($request->url(), 'category=performance&category=accessibility&category=best-practices&category=seo');
     });
 });
@@ -135,6 +142,8 @@ it('analyses the live canonical url instead of the unreachable local url', funct
     Http::fake([
         'www.googleapis.com/pagespeedonline/*' => Http::response(pageSpeedPayload()),
     ]);
+
+    StoreWebpagePageSpeedTimeSeriesRecord::shouldRun();
 
     $webpage = fakeWebpage(3);
 
@@ -148,6 +157,8 @@ it('analyses the live canonical url instead of the unreachable local url', funct
 it('reports why it could not measure a page with no public url', function () {
     Http::fake();
 
+    StoreWebpagePageSpeedTimeSeriesRecord::shouldNotRun();
+
     $result = GetWebpagePageSpeed::run(fakeWebpage(4, null));
 
     expect($result)->toHaveKey('error');
@@ -155,12 +166,14 @@ it('reports why it could not measure a page with no public url', function () {
     Http::assertNothingSent();
 });
 
-it('surfaces the PageSpeed Insights error message and does not cache it', function () {
+it('surfaces the PageSpeed Insights error message and does not cache or record it', function () {
     Http::fake([
         'www.googleapis.com/pagespeedonline/*' => Http::response([
             'error' => ['message' => 'Quota exceeded for quota metric Queries'],
         ], 429),
     ]);
+
+    StoreWebpagePageSpeedTimeSeriesRecord::shouldNotRun();
 
     $webpage = fakeWebpage(5);
 

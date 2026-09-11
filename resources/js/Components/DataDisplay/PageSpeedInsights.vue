@@ -38,7 +38,7 @@ const props = defineProps<{
 const POLL_INTERVAL_MS = 15000
 const MAX_POLLS = 12
 
-const strategy = ref<Strategy>("mobile")
+const strategy = ref<Strategy>("desktop")
 const polls = ref(0)
 const isRefreshing = ref(false)
 let pollTimer: ReturnType<typeof setTimeout> | null = null
@@ -66,9 +66,30 @@ const colorOf = (rating: Rating) => markColor[rating ?? "average"] ?? "#9ca3af"
 const textColorOf = (rating: Rating) => textColor[rating ?? "average"] ?? "#4b5563"
 
 const strategies: Array<{ key: Strategy; label: string; icon: typeof faMobile }> = [
-	{ key: "mobile", label: trans("Mobile"), icon: faMobile },
 	{ key: "desktop", label: trans("Desktop"), icon: faDesktop },
+	{ key: "mobile", label: trans("Mobile"), icon: faMobile },
 ]
+
+const scoreDescriptions: Record<string, string> = {
+	performance: trans("How quickly the page loads and becomes usable, measured in a simulated lab run"),
+	accessibility: trans("How well the page works for people using assistive technology such as screen readers"),
+	"best-practices": trans("Security and modern web development checks, such as HTTPS and browser console errors"),
+	seo: trans("Basic checks that help search engines find, crawl and understand the page"),
+}
+
+const scoreBands: Array<{ rating: Rating; label: string; range: string }> = [
+	{ rating: "slow", label: trans("Poor"), range: "0–49" },
+	{ rating: "average", label: trans("Needs improvement"), range: "50–89" },
+	{ rating: "fast", label: trans("Good"), range: "90–100" },
+]
+
+const ratingLabelOf = (rating: Rating) => scoreBands.find((band) => band.rating === rating)?.label ?? trans("n/a")
+
+const scoreOnEachStrategy = (key: string) =>
+	strategies.map((option) => ({
+		...option,
+		score: props.pagespeed?.[option.key]?.scores?.find((score) => score.key === key) ?? null,
+	}))
 
 const isLoading = computed(() => props.pagespeed === undefined)
 const isUnavailable = computed(() => props.pagespeed?.status === "unavailable")
@@ -235,27 +256,79 @@ onBeforeUnmount(stopPolling)
 
 		<div v-else class="space-y-6 p-6">
 			<div class="grid grid-cols-2 gap-6 sm:grid-cols-4">
-				<div v-for="score in report.scores" :key="score.key" class="flex flex-col items-center gap-2">
-					<div class="relative h-24 w-24">
-						<svg viewBox="0 0 48 48" class="h-full w-full -rotate-90">
-							<circle cx="24" cy="24" r="20" fill="none" stroke="#e5e7eb" stroke-width="4" />
-							<circle
-								cx="24"
-								cy="24"
-								r="20"
-								fill="none"
-								:stroke="colorOf(score.rating)"
-								stroke-width="4"
-								stroke-linecap="round"
-								:stroke-dasharray="circumference"
-								:stroke-dashoffset="circumference * (1 - score.score / 100)" />
-						</svg>
-						<span class="absolute inset-0 flex items-center justify-center text-xl font-semibold" :style="{ color: textColorOf(score.rating) }">
-							{{ score.score }}
+				<VDropdown
+					v-for="score in report.scores"
+					:key="score.key"
+					class="flex justify-center"
+					placement="top"
+					:triggers="['hover', 'focus']"
+					:popper-triggers="['hover', 'focus']"
+					:delay="{ show: 80, hide: 150 }"
+					:distance="6">
+					<button
+						type="button"
+						:aria-label="`${score.label}: ${score.score} / 100`"
+						class="flex flex-col items-center gap-2 rounded-lg p-1 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600">
+						<span class="relative h-24 w-24">
+							<svg viewBox="0 0 48 48" class="h-full w-full -rotate-90" aria-hidden="true">
+								<circle cx="24" cy="24" r="20" fill="none" stroke="#e5e7eb" stroke-width="4" />
+								<circle
+									cx="24"
+									cy="24"
+									r="20"
+									fill="none"
+									:stroke="colorOf(score.rating)"
+									stroke-width="4"
+									stroke-linecap="round"
+									:stroke-dasharray="circumference"
+									:stroke-dashoffset="circumference * (1 - score.score / 100)" />
+							</svg>
+							<span class="absolute inset-0 flex items-center justify-center text-xl font-semibold" :style="{ color: textColorOf(score.rating) }">
+								{{ score.score }}
+							</span>
 						</span>
-					</div>
-					<span class="text-center text-xs text-gray-600">{{ score.label }}</span>
-				</div>
+						<span class="text-center text-xs text-gray-600">{{ score.label }}</span>
+					</button>
+
+					<template #popper>
+						<div class="w-72 space-y-3 p-3 text-xs" data-pagespeed-score-popover>
+							<div class="flex items-baseline justify-between gap-2">
+								<span class="text-sm font-semibold text-gray-800">{{ score.label }}</span>
+								<span class="font-semibold" :style="{ color: textColorOf(score.rating) }">
+									{{ score.score }}/100 · {{ ratingLabelOf(score.rating) }}
+								</span>
+							</div>
+
+							<p class="text-gray-600">{{ scoreDescriptions[score.key] }}</p>
+
+							<div class="grid grid-cols-2 gap-2">
+								<div
+									v-for="option in scoreOnEachStrategy(score.key)"
+									:key="option.key"
+									class="rounded border px-2 py-1.5"
+									:class="option.key === strategy ? 'border-gray-400' : 'border-gray-200'">
+									<div class="flex items-center gap-1 text-gray-600">
+										<FontAwesomeIcon :icon="option.icon" fixed-width aria-hidden="true" />
+										{{ option.label }}
+									</div>
+									<div class="text-sm font-semibold" :style="{ color: option.score ? textColorOf(option.score.rating) : '#4b5563' }">
+										{{ option.score?.score ?? trans("n/a") }}
+									</div>
+								</div>
+							</div>
+
+							<div class="grid grid-cols-3 gap-2 border-t pt-2 text-gray-600">
+								<div v-for="band in scoreBands" :key="band.range" class="flex flex-col items-center gap-0.5 text-center">
+									<span class="flex items-center gap-1 font-semibold text-gray-700">
+										<span class="inline-block h-2 w-2 rounded-full" :style="{ backgroundColor: colorOf(band.rating) }" />
+										{{ band.range }}
+									</span>
+									<span>{{ band.label }}</span>
+								</div>
+							</div>
+						</div>
+					</template>
+				</VDropdown>
 			</div>
 
 			<div v-if="report.field?.length" class="space-y-3">

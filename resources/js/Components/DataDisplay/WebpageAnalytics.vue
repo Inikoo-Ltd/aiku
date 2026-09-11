@@ -10,6 +10,10 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faRocketLaunch, faTag } from "@fal"
 import PageSpeedInsights from "@/Components/DataDisplay/PageSpeedInsights.vue"
 
+type PageSpeedScore = "performance" | "accessibility" | "best_practices" | "seo"
+type PageSpeedStrategy = "desktop" | "mobile"
+type PageSpeedRecord = { date: string } & Record<PageSpeedStrategy, Record<PageSpeedScore, number | null>>
+
 const props = defineProps<{
 	pagespeed?: any
 	data: {
@@ -19,6 +23,7 @@ const props = defineProps<{
 		search: Array<{ clicks: number; impressions: number; keys: string[] }>
 		sales: Array<{ date: string; sales: number; orders: number }>
 		events: Array<{ date: string; datetime: string; type: "publish" | "price"; label: string; user: string | null }>
+		pagespeed?: PageSpeedRecord[]
 	}
 }>()
 
@@ -28,12 +33,25 @@ const series = {
 	clicks: { label: trans("Clicks"), color: "#4285F4", axis: "y2" },
 	impressions: { label: trans("Impressions"), color: "#5E35B1", axis: "y1" },
 	sales: { label: trans("Net sales"), color: "#0F9D58", axis: "y3" },
+	pagespeed: { label: trans("PageSpeed"), color: "#E8710A", axis: "y4" },
 }
 const eventStyle = {
 	publish: { label: trans("Page published"), color: "#F4B400", icon: faRocketLaunch },
 	price: { label: trans("Price change"), color: "#DB4437", icon: faTag },
 }
 
+const pageSpeedScores: Array<{ key: PageSpeedScore; label: string }> = [
+	{ key: "performance", label: trans("Performance") },
+	{ key: "accessibility", label: trans("Accessibility") },
+	{ key: "best_practices", label: trans("Best practices") },
+	{ key: "seo", label: trans("SEO") },
+]
+const pageSpeedStrategies: Array<{ key: PageSpeedStrategy; label: string; borderDash: number[]; pointStyle: string }> = [
+	{ key: "desktop", label: trans("Desktop"), borderDash: [], pointStyle: "circle" },
+	{ key: "mobile", label: trans("Mobile"), borderDash: [6, 4], pointStyle: "rectRot" },
+]
+
+const pageSpeedScore = ref<PageSpeedScore>("performance")
 
 const rangeDays = computed(() => Math.round((new Date(props.data.end_date).getTime() - new Date(props.data.start_date).getTime()) / 86400000) + 1)
 const granularity = ref<"day" | "week">(rangeDays.value > 60 ? "week" : "day")
@@ -67,13 +85,38 @@ const clicksByBucket = computed(() => sumBy(props.data.search ?? [], (row) => ro
 const impressionsByBucket = computed(() => sumBy(props.data.search ?? [], (row) => row.keys[0], "impressions"))
 const salesByBucket = computed(() => sumBy(props.data.sales ?? [], (row) => row.date, "sales"))
 
+const pageSpeedValuesOf = (strategy: PageSpeedStrategy) =>
+	(props.data.pagespeed ?? [])
+		.map((record) => ({ date: record.date, value: record[strategy]?.[pageSpeedScore.value] ?? null }))
+		.filter((measurement): measurement is { date: string; value: number } => measurement.value !== null)
+
+const averageByBucket = (measurements: Array<{ date: string; value: number }>) => {
+	const buckets: Record<string, { total: number; count: number }> = {}
+	for (const { date, value } of measurements) {
+		const bucket = (buckets[bucketOf(date)] ??= { total: 0, count: 0 })
+		bucket.total += value
+		bucket.count++
+	}
+	return Object.fromEntries(Object.entries(buckets).map(([bucket, { total, count }]) => [bucket, Math.round(total / count)]))
+}
+
+const pageSpeedByStrategy = computed(() =>
+	pageSpeedStrategies.map((strategy) => {
+		const measurements = pageSpeedValuesOf(strategy.key)
+		return { ...strategy, byBucket: averageByBucket(measurements), latest: measurements.at(-1)?.value ?? null }
+	})
+)
+
+const hasPageSpeed = computed(() => (props.data.pagespeed ?? []).length > 0)
+const pageSpeedScoreLabel = computed(() => pageSpeedScores.find((option) => option.key === pageSpeedScore.value)?.label ?? "")
+
 const totals = computed(() => ({
 	clicks: (props.data.search ?? []).reduce((sum, row) => sum + row.clicks, 0),
 	impressions: (props.data.search ?? []).reduce((sum, row) => sum + row.impressions, 0),
 	sales: (props.data.sales ?? []).reduce((sum, row) => sum + row.sales, 0),
 }))
 
-const visible = ref({ clicks: totals.value.clicks > 0, impressions: totals.value.impressions > 0, sales: true })
+const visible = ref({ clicks: totals.value.clicks > 0, impressions: totals.value.impressions > 0, sales: true, pagespeed: hasPageSpeed.value })
 
 const eventsByDate = computed(() => {
 	const grouped: Record<string, typeof props.data.events> = {}
@@ -118,6 +161,22 @@ const chartData = computed(() => ({
 			yAxisID: "y3",
 			order: 1,
 		},
+		...pageSpeedByStrategy.value.map(
+			(strategy) =>
+				visible.value.pagespeed && {
+					label: `${pageSpeedScoreLabel.value} (${strategy.label})`,
+					data: labels.value.map((bucket) => strategy.byBucket[bucket] ?? null),
+					borderColor: series.pagespeed.color,
+					backgroundColor: series.pagespeed.color,
+					borderDash: strategy.borderDash,
+					borderWidth: 2,
+					pointRadius: 3,
+					pointStyle: strategy.pointStyle,
+					spanGaps: true,
+					yAxisID: "y4",
+					order: 0,
+				}
+		),
 	].filter(Boolean),
 }))
 
@@ -174,6 +233,7 @@ const chartOptions = computed(() => ({
 			borderColor: "#d1d5db",
 			borderWidth: 1,
 			padding: 10,
+			filter: (item: any) => item.raw !== null,
 			callbacks: {
 				title: (items: any[]) => (granularity.value === "week" ? trans("Week of") + " " : "") + useFormatTime(items[0].label, { formatTime: "PPP" }),
 				label: (item: any) =>
@@ -189,6 +249,7 @@ const chartOptions = computed(() => ({
 		y1: { type: "linear", position: "left", display: visible.value.impressions, grid: { color: "#EDE7F6" }, ticks: { color: series.impressions.color }, beginAtZero: true, title: { display: true, text: series.impressions.label, color: series.impressions.color } },
 		y2: { type: "linear", position: "right", display: visible.value.clicks, grid: { drawOnChartArea: false }, ticks: { color: series.clicks.color, precision: 0 }, beginAtZero: true, grace: "15%", title: { display: true, text: series.clicks.label, color: series.clicks.color } },
 		y3: { type: "linear", position: "right", display: visible.value.sales, grid: { drawOnChartArea: false }, ticks: { color: series.sales.color }, min: 0, title: { display: true, text: `${series.sales.label} (${props.data.currency})`, color: series.sales.color } },
+		y4: { type: "linear", position: "left", display: visible.value.pagespeed, grid: { drawOnChartArea: false }, ticks: { color: series.pagespeed.color, stepSize: 25 }, min: 0, max: 100, title: { display: true, text: `${series.pagespeed.label} ${pageSpeedScoreLabel.value}`, color: series.pagespeed.color } },
 	},
 }))
 
@@ -198,8 +259,14 @@ const reload = debounce(() => {
 	router.reload({ data: { startDate: range.value.startDate, endDate: range.value.endDate }, only: ["analytics"] })
 }, 400)
 
-const formatTotal = (key: keyof typeof series) =>
-	key === "sales" ? locale.currencyFormat(props.data.currency, totals.value.sales) : totals.value[key].toLocaleString()
+const formatTotal = (key: keyof typeof series) => {
+	if (key === "sales") return locale.currencyFormat(props.data.currency, totals.value.sales)
+	if (key === "pagespeed") return pageSpeedByStrategy.value.map((strategy) => strategy.latest ?? trans("n/a")).join(" / ")
+	return totals.value[key].toLocaleString()
+}
+
+const cardLabel = (key: keyof typeof series) =>
+	key === "pagespeed" ? `${series.pagespeed.label} ${pageSpeedScoreLabel.value} (${pageSpeedStrategies.map((strategy) => strategy.label).join(" / ")})` : series[key].label
 </script>
 
 <template>
@@ -224,6 +291,17 @@ const formatTotal = (key: keyof typeof series) =>
 					{{ option === "day" ? trans("Daily") : trans("Weekly") }}
 				</button>
 			</div>
+			<div v-if="hasPageSpeed" class="flex items-center gap-3">
+				<select v-model="pageSpeedScore" :aria-label="trans('PageSpeed score')" class="rounded border-gray-300 py-1 pl-2 pr-8 text-xs">
+					<option v-for="option in pageSpeedScores" :key="option.key" :value="option.key">{{ option.label }}</option>
+				</select>
+				<span v-for="strategy in pageSpeedStrategies" :key="strategy.key" class="flex items-center gap-1 text-xs text-gray-500">
+					<svg width="18" height="4" aria-hidden="true">
+						<line x1="0" y1="2" x2="18" y2="2" :stroke="series.pagespeed.color" stroke-width="2" :stroke-dasharray="strategy.borderDash.join(' ')" />
+					</svg>
+					{{ strategy.label }}
+				</span>
+			</div>
 			<div class="ml-auto flex items-center gap-4 text-xs text-gray-500">
 				<span v-for="(style, type) in eventStyle" :key="type" class="flex items-center gap-1">
 					<span class="inline-block h-2.5 w-2.5 rounded-full" :style="{ backgroundColor: style.color }" />
@@ -233,7 +311,7 @@ const formatTotal = (key: keyof typeof series) =>
 		</div>
 
 		<div class="rounded-lg bg-white p-6 shadow space-y-6">
-			<div class="grid grid-cols-3 gap-4">
+			<div class="grid grid-cols-2 gap-4 sm:grid-cols-4">
 				<button
 					v-for="(meta, key) in series"
 					:key="key"
@@ -242,7 +320,7 @@ const formatTotal = (key: keyof typeof series) =>
 					:class="visible[key] ? 'text-white' : 'bg-white'"
 					:style="visible[key] ? { backgroundColor: meta.color, borderColor: meta.color } : { color: meta.color, borderColor: meta.color }"
 					@click="visible[key] = !visible[key]">
-					<div class="text-xs">{{ meta.label }}</div>
+					<div class="text-xs">{{ cardLabel(key) }}</div>
 					<div class="text-lg font-semibold">{{ formatTotal(key) }}</div>
 				</button>
 			</div>
