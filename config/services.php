@@ -132,6 +132,7 @@ return [
     ],
     'discord' => [
         'webhook_url' => env('DISCORD_WEBHOOK_URL'),
+        'bot_token'   => env('DISCORD_BOT_TOKEN'),
     ],
     'github' => [
         'token' => env('GITHUB_TOKEN'),
