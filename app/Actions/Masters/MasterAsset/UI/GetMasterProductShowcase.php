@@ -15,6 +15,11 @@ use App\Actions\Masters\MasterAsset\Json\GetPriceRebelProducts;
 use App\Actions\Masters\MasterShop\GetMasterShopCurrenciesRate;
 use App\Models\Helpers\Currency;
 use App\Actions\Traits\HasBucketImages;
+use App\Actions\Goods\TradeUnit\GetLabelInfoLanguages;
+use App\Enums\Goods\TradeUnit\TradeUnitLabelPresenceEnum;
+use App\Enums\Goods\TradeUnit\TradeUnitBestBeforeEnum;
+use App\Enums\Goods\TradeUnit\TradeUnitMarketEnum;
+use App\Enums\Goods\TradeUnit\TradeUnitPackagingMaterialEnum;
 use App\Http\Resources\Masters\MasterProductResource;
 use App\Models\Masters\MasterAsset;
 use Lorisleiva\Actions\Concerns\AsObject;
@@ -104,6 +109,13 @@ class GetMasterProductShowcase
             'rebel_prices'        => GetPriceRebelProducts::run($masterAsset, ['type' => 'price']),
             'rebel_rrp'           => GetPriceRebelProducts::run($masterAsset, ['type' => 'rrp']),
             'gpsr'                => $gpsr,
+            'label_info'          => [
+                ...TradeUnitLabelPresenceEnum::presenceFromLabelInfo($masterAsset->label_info),
+                'markets'   => TradeUnitMarketEnum::marketsFromLabelInfo($masterAsset->label_info),
+                'languages' => GetLabelInfoLanguages::run($masterAsset->label_info),
+                'best_before' => TradeUnitBestBeforeEnum::bestBeforeFromLabelInfo($masterAsset->label_info),
+                'packaging_material_codes' => TradeUnitPackagingMaterialEnum::packagingMaterialCodesFromLabelInfo($masterAsset->label_info),
+            ],
             'attachment_box'      => [
                 'public'  => [],
                 'private' => []

@@ -36,6 +36,7 @@ const props = defineProps<{
 		warnOnEnableOnly?: boolean
 		submitOnConfirm?: boolean
 		description?: string | string[]
+		single_description?: string
 		descriptionLinks?: {   // EditShop
             [key: string]: {
                 label?: string
@@ -244,6 +245,10 @@ const getDescriptionSegments = (description: string) => {
 				</template>
 			</li>
 		</ul>
+
+		<p v-if="fieldData?.single_description" class="mt-2 text-sm text-gray-500">
+			{{ fieldData.single_description }}
+		</p>
 
 		<slot v-if="fieldData.suffixImage" name="suffix-image">
 			<img :src="fieldData.suffixImage" class="inline-block h-8 w-8 ml-2 object-cover" />

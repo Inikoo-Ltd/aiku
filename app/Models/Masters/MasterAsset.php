@@ -227,6 +227,7 @@ class MasterAsset extends Model implements Auditable, HasMedia
         'price'                   => 'decimal:2',
         'rrp'                     => 'decimal:2',
         'data'                    => 'array',
+        'label_info'              => 'array',
         'status'                  => 'boolean',
         'has_independent_units'   => 'boolean',
         'variant_is_visible'      => 'boolean',
@@ -246,6 +247,7 @@ class MasterAsset extends Model implements Auditable, HasMedia
 
     protected $attributes = [
         'data'          => '{}',
+        'label_info'    => '{}',
         'offers_data'   => '{}',
         'web_images'    => '{}',
         'tax_category'  => '{}',

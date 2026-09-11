@@ -11,17 +11,23 @@ namespace App\Actions\Goods\TradeUnit;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateBarcodeFromTradeUnit;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateMarketingIngredientsFromTradeUnits;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateHeathAndSafetyFromTradeUnits;
+use App\Actions\Catalogue\Product\Hydrators\ProductHydrateLabelInfoFromTradeUnits;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateGrossWeightFromTradeUnits;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateMarketingWeightFromTradeUnits;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateMarketingDimensionFromTradeUnits;
 use App\Actions\Catalogue\Product\UpdateProduct;
 use App\Actions\Masters\MasterAsset\Hydrators\MasterAssetHydrateGrossWeightFromTradeUnits;
 use App\Actions\Masters\MasterAsset\Hydrators\MasterAssetHydrateHealthAndSafetyFromTradeUnits;
+use App\Actions\Masters\MasterAsset\Hydrators\MasterAssetHydrateLabelInfoFromTradeUnits;
 use App\Actions\Goods\Stock\Hydrators\StockHydrateGrossWeightFromTradeUnits;
 use App\Actions\Goods\TradeUnitFamily\Hydrators\TradeUnitFamilyHydrateTradeUnits;
 use App\Actions\Masters\MasterAsset\Hydrators\MasterAssetHydrateMarketingWeightFromTradeUnits;
 use App\Actions\Masters\MasterAsset\UpdateMasterAsset;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateTradeUnits;
+use App\Enums\Goods\TradeUnit\TradeUnitLabelPresenceEnum;
+use App\Enums\Goods\TradeUnit\TradeUnitBestBeforeEnum;
+use App\Enums\Goods\TradeUnit\TradeUnitMarketEnum;
+use App\Enums\Goods\TradeUnit\TradeUnitPackagingMaterialEnum;
 use App\Enums\Masters\MasterAsset\MasterAssetTypeEnum;
 use App\Models\Helpers\Country;
 use App\Stubs\Migrations\HasDangerousGoodsFields;
@@ -132,7 +138,27 @@ class UpdateTradeUnit extends OrgAction
             data_set($modelData, 'not_for_sale_since', Arr::get($modelData, 'is_for_sale') ? now() : null);
         }
 
-        $tradeUnit = $this->update($tradeUnit, $modelData, ['data', 'marketing_dimensions']);
+        foreach (TradeUnitLabelPresenceEnum::values() as $labelPresenceField) {
+            if (Arr::has($modelData, $labelPresenceField)) {
+                data_set($modelData, 'label_info.'.$labelPresenceField, (bool) Arr::pull($modelData, $labelPresenceField));
+            }
+        }
+
+        foreach (['markets', 'languages', 'best_before'] as $labelInfoField) {
+            if (Arr::has($modelData, $labelInfoField)) {
+                data_set($modelData, 'label_info.'.$labelInfoField, Arr::pull($modelData, $labelInfoField));
+            }
+        }
+
+        if (Arr::has($modelData, 'packaging_material_codes')) {
+            data_set($modelData, 'label_info.packaging_material_codes.value', Arr::pull($modelData, 'packaging_material_codes') ?? []);
+        }
+
+        if (Arr::has($modelData, 'packaging_material_codes_show')) {
+            data_set($modelData, 'label_info.packaging_material_codes.show', (bool) Arr::pull($modelData, 'packaging_material_codes_show'));
+        }
+
+        $tradeUnit = $this->update($tradeUnit, $modelData, ['data', 'marketing_dimensions', 'label_info']);
         $tradeUnit->refresh();
 
         if (Arr::has($modelData, 'description')) {
@@ -241,6 +267,20 @@ class UpdateTradeUnit extends OrgAction
             }
         }
 
+        if ($tradeUnit->wasChanged('label_info')) {
+            foreach ($tradeUnit->masterAssets as $masterAsset) {
+                MasterAssetHydrateLabelInfoFromTradeUnits::run($masterAsset);
+            }
+
+            $independentProducts = $tradeUnit->products()
+                ->where(fn ($query) => $query->whereNull('master_product_id')->orWhere('not_follow_master_trade_units', true))
+                ->get();
+
+            foreach ($independentProducts as $product) {
+                ProductHydrateLabelInfoFromTradeUnits::run($product);
+            }
+        }
+
         if ($tradeUnit->wasChanged('barcode')) {
             foreach ($tradeUnit->products as $product) {
                 ProductHydrateBarcodeFromTradeUnit::dispatch($product);
@@ -312,6 +352,22 @@ class UpdateTradeUnit extends OrgAction
             'pictogram_oxidising'          => ['sometimes', 'boolean'],
             'pictogram_danger'             => ['sometimes', 'boolean'],
 
+            'ce_marking'                    => ['sometimes', 'boolean'],
+            'ukca_marking'                  => ['sometimes', 'boolean'],
+            'weee_symbol'                   => ['sometimes', 'boolean'],
+            'ip_rating'                     => ['sometimes', 'boolean'],
+            'sorting_recycling_information' => ['sometimes', 'boolean'],
+            'safety_icons'                  => ['sometimes', 'boolean'],
+            'batch_number'                  => ['sometimes', 'boolean'],
+            'markets'                       => ['sometimes', 'nullable', 'array'],
+            'markets.*'                     => ['string', Rule::enum(TradeUnitMarketEnum::class)],
+            'languages'                     => ['sometimes', 'nullable', 'array'],
+            'languages.*'                   => ['string', Rule::exists('languages', 'code')],
+            'best_before'                   => ['sometimes', 'nullable', Rule::enum(TradeUnitBestBeforeEnum::class)],
+            'packaging_material_codes'      => ['sometimes', 'nullable', 'array'],
+            'packaging_material_codes.*'    => ['string', Rule::enum(TradeUnitPackagingMaterialEnum::class)],
+            'packaging_material_codes_show' => ['sometimes', 'boolean'],
+
 
             'cpnp_number'           => ['sometimes', 'nullable', 'string'],
             'ufi_number'            => ['sometimes', 'nullable', 'string'],
@@ -357,6 +413,22 @@ class UpdateTradeUnit extends OrgAction
 
     public function prepareForValidation(): void
     {
+        if (is_array($this->get('markets'))) {
+            $selectedMarkets = [];
+            foreach ($this->get('markets') as $market) {
+                if (!is_array($market)) {
+                    $selectedMarkets[] = $market;
+                } elseif (filter_var(Arr::get($market, 'value'), FILTER_VALIDATE_BOOLEAN)) {
+                    $selectedMarkets[] = Arr::get($market, 'key');
+                }
+            }
+
+            $this->set('markets', array_values(array_unique([
+                ...array_intersect(TradeUnitMarketEnum::values(), $selectedMarkets),
+                ...array_diff($selectedMarkets, TradeUnitMarketEnum::values()),
+            ])));
+        }
+
         if ($this->has('origin_country_id')) {
             if (is_string($this->get('origin_country_id'))) {
 

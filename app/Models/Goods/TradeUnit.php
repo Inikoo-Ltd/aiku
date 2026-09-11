@@ -198,6 +198,7 @@ class TradeUnit extends Model implements HasMedia, Auditable
         'data'                 => 'array',
         'marketing_dimensions' => 'array',
         'sources'              => 'array',
+        'label_info'           => 'array',
         'fetched_at'           => 'datetime',
         'last_fetched_at'      => 'datetime',
     ];
@@ -206,6 +207,7 @@ class TradeUnit extends Model implements HasMedia, Auditable
         'data'                 => '{}',
         'marketing_dimensions' => '{}',
         'sources'              => '{}',
+        'label_info'           => '{}',
     ];
 
     protected $guarded = [];

@@ -11,6 +11,7 @@ namespace App\Actions\Traits;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateMarketingIngredientsFromTradeUnits;
 use App\Actions\Masters\MasterAsset\Hydrators\MasterAssetHydrateGrossWeightFromTradeUnits;
 use App\Actions\Masters\MasterAsset\Hydrators\MasterAssetHydrateHealthAndSafetyFromTradeUnits;
+use App\Actions\Masters\MasterAsset\Hydrators\MasterAssetHydrateLabelInfoFromTradeUnits;
 use App\Actions\Masters\MasterAsset\Hydrators\MasterAssetHydrateMarketingWeightFromTradeUnits;
 use App\Models\Catalogue\Product;
 use App\Models\Goods\TradeUnit;
@@ -135,6 +136,7 @@ trait WithMasterAssetTradeUnits
         $masterAsset->stocks()->sync($stocks);
         ModelHydrateSingleTradeUnits::run($masterAsset);
         MasterAssetHydrateHealthAndSafetyFromTradeUnits::run($masterAsset);
+        MasterAssetHydrateLabelInfoFromTradeUnits::run($masterAsset);
         MasterAssetHydrateMarketingWeightFromTradeUnits::run($masterAsset->id);
         MasterAssetHydrateGrossWeightFromTradeUnits::run($masterAsset->id);
         ProductHydrateMarketingIngredientsFromTradeUnits::run($masterAsset);
