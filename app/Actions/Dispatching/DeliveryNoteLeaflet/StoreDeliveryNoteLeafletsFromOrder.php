@@ -35,6 +35,12 @@ class StoreDeliveryNoteLeafletsFromOrder
                 continue;
             }
 
+            // The personalised message is printed from the order's message below, not from an
+            // uploaded file, so ticking it as an insert must not queue a second, empty print.
+            if ($leaflet->type === LeafletTypeEnum::PERSONALISED_MESSAGE) {
+                continue;
+            }
+
             $modelHasLeaflet = $this->findCustomerLeaflet($order, (int) $leafletId, $familyCode);
 
             $this->createLeaflet($deliveryNote, [

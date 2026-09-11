@@ -7,6 +7,7 @@
 
 namespace App\Actions\Ordering\Order;
 
+use App\Enums\Catalogue\Leaflet\LeafletTypeEnum;
 use App\Models\Billables\Leaflet;
 use App\Models\Billables\ModelHasLeaflet;
 use App\Models\Ordering\Order;
@@ -17,6 +18,8 @@ class GetOrderInsertsWithoutArtwork
     use AsAction;
 
     /**
+     * A personalised message is typed, not uploaded, so it is never counted as missing artwork.
+     *
      * @return array<int, string> names of the inserts still missing their artwork
      */
     public function handle(Order $order): array
@@ -34,7 +37,11 @@ class GetOrderInsertsWithoutArtwork
         $familyCode = $order->packaging?->family_code;
         $missing    = [];
 
-        foreach (Leaflet::whereIn('id', $leafletIds)->get() as $leaflet) {
+        $leaflets = Leaflet::whereIn('id', $leafletIds)
+            ->where('type', '!=', LeafletTypeEnum::PERSONALISED_MESSAGE)
+            ->get();
+
+        foreach ($leaflets as $leaflet) {
             $hasArtwork = ModelHasLeaflet::where('model_type', 'Customer')
                 ->where('model_id', $order->customer_id)
                 ->where('shop_id', $order->shop_id)

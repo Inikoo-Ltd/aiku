@@ -9,6 +9,7 @@
 namespace App\Actions\Retina\UI\SysAdmin;
 
 use App\Actions\RetinaAction;
+use App\Actions\Traits\WithPackagingFamily;
 use App\Enums\Catalogue\Leaflet\LeafletStateEnum;
 use App\Enums\Catalogue\Packaging\PackagingStateEnum;
 use App\Http\Resources\Helpers\ImageResource;
@@ -24,6 +25,8 @@ use Lorisleiva\Actions\ActionRequest;
 
 class ShowRetinaPackagingPreferences extends RetinaAction
 {
+    use WithPackagingFamily;
+
     public function authorize(ActionRequest $request): bool
     {
         return $request->user()->is_root
@@ -94,10 +97,8 @@ class ShowRetinaPackagingPreferences extends RetinaAction
                 return [
                     'family_code' => $familyCode,
                     'type'        => $packagings->first()->type->value,
-                    'label'       => $this->getFamilyLabel($packagings),
-                    'sizes'       => $packagings->count() > 1
-                        ? __('Various sizes')
-                        : $this->getDimensionsLabel($packagings->first()),
+                    'label'       => $this->packagingFamilyLabel($packagings),
+                    'sizes'       => $this->packagingSizesLabel($packagings),
                     'price_min'   => (float) $packagings->min('price'),
                     'price_max'   => (float) $packagings->max('price'),
                     'image'       => $image ? ImageResource::make($image)->resolve() : null,
@@ -189,31 +190,6 @@ class ShowRetinaPackagingPreferences extends RetinaAction
             ->unique(fn (array $row) => $row['leaflet_id'].'|'.$row['family_code'])
             ->values()
             ->all();
-    }
-
-    private function getFamilyLabel(Collection $packagings): string
-    {
-        $names  = $packagings->pluck('name')->all();
-        $prefix = array_shift($names);
-
-        foreach ($names as $name) {
-            while ($prefix !== '' && !str_starts_with($name, $prefix)) {
-                $prefix = substr($prefix, 0, -1);
-            }
-        }
-
-        $prefix = trim($prefix, " -–");
-
-        return strlen($prefix) >= 3 ? $prefix : $packagings->first()->name;
-    }
-
-    private function getDimensionsLabel(Packaging $packaging): ?string
-    {
-        if (!$packaging->width || !$packaging->height || !$packaging->depth) {
-            return null;
-        }
-
-        return "{$packaging->width} × {$packaging->height} × {$packaging->depth} mm";
     }
 
     public function getBreadcrumbs(): array

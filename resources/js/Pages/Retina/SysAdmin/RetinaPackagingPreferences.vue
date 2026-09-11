@@ -127,12 +127,22 @@ const selectedPackaging = ref(props.selectedFamilyCode ?? packagingOptions.value
 
 const leafletOptions = computed(() => props.leafletOptions ?? [])
 
+const personalisedMessage = ref(props.personalisedMessage ?? "")
+const maxMessageLength = 200
+const hasMessage = computed(() => personalisedMessage.value.trim().length > 0)
+
+const isPersonalisedMessage = (insert: LeafletOption) => insert.type === "personalised_message"
+
+// A personalised message needs no upload, so writing one is what selects it: the insert
+// follows the message box instead of a checkbox the customer has to remember to tick.
 const savedEnabledInserts = (familyCode: string | null) =>
     Object.fromEntries(
         leafletOptions.value.map(leaflet => [
             leaflet.id,
-            familyCode === props.selectedFamilyCode
-                && (props.selectedLeafletIds ?? []).includes(leaflet.id),
+            isPersonalisedMessage(leaflet)
+                ? hasMessage.value
+                : familyCode === props.selectedFamilyCode
+                    && (props.selectedLeafletIds ?? []).includes(leaflet.id),
         ])
     )
 
@@ -156,8 +166,13 @@ const formatInsertPrice = (price: number) => {
     return locale.currencyFormat(props.currencyCode ?? "USD", price)
 }
 
-const personalisedMessage = ref(props.personalisedMessage ?? "")
-const maxMessageLength = 200
+const personalisedMessageInsert = computed(() => inserts.value.find(isPersonalisedMessage) ?? null)
+
+watch([hasMessage, personalisedMessageInsert], () => {
+    if (personalisedMessageInsert.value) {
+        enabledInserts.value[personalisedMessageInsert.value.id] = hasMessage.value
+    }
+}, { immediate: true })
 
 const leaflets = computed(() =>
     (props.customerLeaflets ?? []).filter(leaflet => leaflet.family_code === selectedPackaging.value)
@@ -166,14 +181,14 @@ const leaflets = computed(() =>
 const summary = computed(() => ({
     defaultPackaging: packagingOptions.value.find(option => option.family_code === selectedPackaging.value)?.label,
     insertsSelected: inserts.value.filter(insert => enabledInserts.value[insert.id]).length,
-    hasMessage: personalisedMessage.value.trim().length > 0,
+    hasMessage: hasMessage.value,
     leafletsUploaded: leaflets.value.length,
 }))
 
 const uploadedLeafletIds = computed(() => new Set(leaflets.value.map(leaflet => leaflet.leaflet_id)))
 
 const availableUploadLeaflets = computed(() =>
-    inserts.value.filter(insert => !uploadedLeafletIds.value.has(insert.id))
+    inserts.value.filter(insert => !isPersonalisedMessage(insert) && !uploadedLeafletIds.value.has(insert.id))
 )
 
 const isUploadOpen = ref(false)
@@ -430,18 +445,32 @@ const saveSettings = () => {
                     <label
                         v-for="insert in inserts"
                         :key="insert.id"
-                        class="flex items-center gap-3 py-3 cursor-pointer"
+                        class="flex items-center gap-3 py-3"
+                        :class="isPersonalisedMessage(insert) ? 'cursor-default' : 'cursor-pointer'"
                     >
-                        <Checkbox v-model="enabledInserts[insert.id]" :binary="true" />
+                        <Checkbox
+                            v-model="enabledInserts[insert.id]"
+                            :binary="true"
+                            :disabled="isPersonalisedMessage(insert)"
+                        />
                         <span class="flex h-8 w-8 items-center justify-center rounded border border-gray-200 text-gray-400">
                             <FontAwesomeIcon :icon="['fal', 'file-alt']" fixed-width aria-hidden="true" />
                         </span>
                         <span class="flex-1">
                             <span class="block text-sm">
                                 <span class="font-medium">{{ insert.label }}</span>
-                                <span class="ml-1 text-xs font-medium" :style="{ color: accentStyle.text }">({{ trans("Size to be confirmed") }})</span>
+                                <span
+                                    v-if="!isPersonalisedMessage(insert)"
+                                    class="ml-1 text-xs font-medium"
+                                    :style="{ color: accentStyle.text }"
+                                >({{ trans("Size to be confirmed") }})</span>
                             </span>
-                            <span class="block text-xs text-gray-500">{{ insert.type_label }}</span>
+                            <span class="block text-xs text-gray-500">
+                                <template v-if="isPersonalisedMessage(insert)">
+                                    {{ trans("Added automatically when you write a message in section 3") }}
+                                </template>
+                                <template v-else>{{ insert.type_label }}</template>
+                            </span>
                         </span>
                         <span class="text-sm text-gray-600">{{ formatInsertPrice(insert.price) }}</span>
                         <button type="button" class="p-1 text-gray-400 hover:text-gray-600" :aria-label="trans('More actions')">

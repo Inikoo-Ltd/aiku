@@ -9,7 +9,9 @@
 namespace App\Actions\Retina\Dropshipping\Orders;
 
 use App\Actions\Ordering\Order\GetOrderInsertsWithoutArtwork;
+use App\Actions\Traits\WithPackagingFamily;
 use App\Enums\Catalogue\Leaflet\LeafletStateEnum;
+use App\Enums\Catalogue\Leaflet\LeafletTypeEnum;
 use App\Enums\Catalogue\Packaging\PackagingStateEnum;
 use App\Models\Billables\Leaflet;
 use App\Models\Billables\ModelHasLeaflet;
@@ -24,12 +26,13 @@ use Lorisleiva\Actions\Concerns\AsAction;
 class GetRetinaOrderPackagingData
 {
     use AsAction;
+    use WithPackagingFamily;
 
     /**
      * @return array{
-     *     packagingOptions: array<int, array{value: int, label: string, price: float, family_code: string|null}>,
+     *     packagingOptions: array<int, array{value: int, label: string, price: float, price_max: float, sizes: string|null, family_code: string|null}>,
      *     selectedPackaging: int|null,
-     *     leafletOptions: array<int, array{id: int, label: string, price: float, family_codes: array<int, string>}>,
+     *     leafletOptions: array<int, array{id: int, label: string, type: string, price: float, family_codes: array<int, string>}>,
      *     defaultLeafletsByFamily: array<string, array<int, int>>,
      *     personalisedMessage: string,
      *     customerLeaflets: array<int, array{id: int, leaflet_id: int, family_code: string|null, name: string, mime_type: string|null, meta: string|null, state: string, state_label: string}>,
@@ -46,6 +49,7 @@ class GetRetinaOrderPackagingData
                 'personalisedMessage'     => '',
                 'customerLeaflets'        => [],
                 'insertsWithoutArtwork'   => [],
+                'personalisedMessageLeafletIds' => [],
             ];
         }
 
@@ -55,13 +59,20 @@ class GetRetinaOrderPackagingData
             ->orderBy('price')
             ->get();
 
-        $packagingOptions = $packagings
-            ->map(fn (Packaging $packaging) => [
-                'value'       => $packaging->id,
-                'label'       => $packaging->name,
-                'price'       => (float) $packaging->price,
-                'family_code' => $packaging->family_code,
+        // One row per family, mirroring the packaging preferences page: the customer picks the
+        // packaging they want, the warehouse picks the size of it that fits the order.
+        $families = $packagings->groupBy('family_code');
+
+        $packagingOptions = $families
+            ->map(fn (Collection $family) => [
+                'value'       => $this->representativePackaging($family)->id,
+                'label'       => $this->packagingFamilyLabel($family),
+                'price'       => (float) $family->min('price'),
+                'price_max'   => (float) $family->max('price'),
+                'sizes'       => $this->packagingSizesLabel($family),
+                'family_code' => $family->first()->family_code,
             ])
+            ->sortBy('price')
             ->values()
             ->all();
 
@@ -79,6 +90,14 @@ class GetRetinaOrderPackagingData
             }
         }
 
+        $selectedFamily = $selectedPackaging
+            ? $packagings->firstWhere('id', $selectedPackaging)?->family_code
+            : null;
+
+        if ($selectedFamily && $families->has($selectedFamily)) {
+            $selectedPackaging = $this->representativePackaging($families->get($selectedFamily))->id;
+        }
+
         return [
             'packagingOptions'        => $packagingOptions,
             'selectedPackaging'       => $selectedPackaging ? (int) $selectedPackaging : null,
@@ -89,7 +108,24 @@ class GetRetinaOrderPackagingData
 
 
             'insertsWithoutArtwork'   => GetOrderInsertsWithoutArtwork::run($order),
+
+            'personalisedMessageLeafletIds' => $this->getPersonalisedMessageLeafletIds($shop),
         ];
+    }
+
+    /**
+     * Inserts that carry the customer's own message rather than an uploaded file. They are
+     * driven by the message box, never by an upload.
+     *
+     * @return array<int, int>
+     */
+    private function getPersonalisedMessageLeafletIds(Shop $shop): array
+    {
+        return Leaflet::where('shop_id', $shop->id)
+            ->where('type', LeafletTypeEnum::PERSONALISED_MESSAGE)
+            ->pluck('id')
+            ->map(fn ($id) => (int) $id)
+            ->all();
     }
 
     /**
@@ -110,7 +146,7 @@ class GetRetinaOrderPackagingData
         return $preferred ?? $shop->defaultPackaging()?->id;
     }
 
-    /** @return array<int, array{id: int, label: string, price: float, family_codes: array<int, string>}> */
+    /** @return array<int, array{id: int, label: string, type: string, price: float, family_codes: array<int, string>}> */
     private function getLeafletOptions(Shop $shop): array
     {
         return Leaflet::where('shop_id', $shop->id)
@@ -121,6 +157,7 @@ class GetRetinaOrderPackagingData
             ->map(fn (Leaflet $leaflet) => [
                 'id'           => $leaflet->id,
                 'label'        => $leaflet->name,
+                'type'         => $leaflet->type->value,
                 'price'        => (float) $leaflet->price,
                 'family_codes' => $leaflet->family_codes ?? [],
             ])->all();

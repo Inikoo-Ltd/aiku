@@ -60,23 +60,21 @@ trait WithDeliveryNotePackaging
         return $order->packaging ? round((float) $order->packaging->price, 2) : null;
     }
 
-    /** @return array<int, array{id: int, name: string, dimensions: string|null, price: float, is_free: bool, family_code: string|null, image: mixed}> */
+    /** @return array<int, array{id: int, name: string, dimensions: string|null, price: float, is_free: bool, is_downgrade: bool, family_code: string|null, image: mixed}> */
     protected function getPackagingOptions(DeliveryNote $deliveryNote, ?string $familyCode): array
     {
-        // The customer already paid for a specific packaging family, so the warehouse may
-        // only swap to another size within that exact same family.
         if (!$familyCode || !$deliveryNote->shop?->hasPackagingAndInserts()) {
             return [];
         }
 
-        $paidPrice = $this->paidPackagingPrice($deliveryNote);
-
+        // The customer picks a packaging family, so the warehouse may swap to any size within
+        // that family. Free packaging is always offered on top, for the orders that do not fit
+        // into any size of the family the customer paid for.
         $options = Packaging::where('shop_id', $deliveryNote->shop_id)
             ->where('state', PackagingStateEnum::ACTIVE)
-            ->where('family_code', $familyCode)
-            ->when(
-                $paidPrice !== null,
-                fn ($query) => $query->whereRaw('ROUND(price::numeric, 2) = ?', [$paidPrice])
+            ->where(
+                fn ($query) => $query->where('family_code', $familyCode)
+                    ->orWhere('price', 0)
             )
             ->with('image')
             ->orderBy('position')
@@ -89,15 +87,18 @@ trait WithDeliveryNotePackaging
             return [];
         }
 
+        $paidPrice = $this->paidPackagingPrice($deliveryNote);
+
         return $options
             ->map(fn (Packaging $packaging) => [
-                'id'          => $packaging->id,
-                'name'        => $packaging->name,
-                'dimensions'  => $this->packagingDimensions($packaging),
-                'price'       => (float) $packaging->price,
-                'is_free'     => (float) $packaging->price === 0.0,
-                'family_code' => $packaging->family_code,
-                'image'       => $packaging->image ? ImageResource::make($packaging->image)->resolve() : null,
+                'id'           => $packaging->id,
+                'name'         => $packaging->name,
+                'dimensions'   => $this->packagingDimensions($packaging),
+                'price'        => (float) $packaging->price,
+                'is_free'      => (float) $packaging->price === 0.0,
+                'is_downgrade' => $paidPrice !== null && round((float) $packaging->price, 2) < $paidPrice,
+                'family_code'  => $packaging->family_code,
+                'image'        => $packaging->image ? ImageResource::make($packaging->image)->resolve() : null,
             ])->all();
     }
 

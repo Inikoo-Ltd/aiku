@@ -10,6 +10,7 @@ namespace App\Actions\Retina\SysAdmin;
 
 use App\Actions\RetinaAction;
 use App\Enums\Catalogue\Leaflet\LeafletStateEnum;
+use App\Enums\Catalogue\Leaflet\LeafletTypeEnum;
 use App\Enums\Catalogue\Packaging\PackagingStateEnum;
 use App\Models\Billables\Leaflet;
 use App\Models\Billables\ModelHasLeaflet;
@@ -121,12 +122,15 @@ class UpdateRetinaPackagingPreferences extends RetinaAction
         ];
     }
 
-    
+    /**
+     * Every ticked insert has to be printable before it can be saved, except a personalised
+     * message: that one is typed into the message box, never uploaded as a file.
+     */
     public function afterValidator(Validator $validator): void
     {
-        $checkedLeafletIds = collect($this->get('leaflet_ids', []))
-            ->filter()
-            ->map(fn ($id) => (int) $id);
+        $checkedLeafletIds = Leaflet::whereIn('id', collect($this->get('leaflet_ids', []))->filter())
+            ->where('type', '!=', LeafletTypeEnum::PERSONALISED_MESSAGE)
+            ->pluck('id');
 
         if ($checkedLeafletIds->isEmpty()) {
             return;

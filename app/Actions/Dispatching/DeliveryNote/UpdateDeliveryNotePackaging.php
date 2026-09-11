@@ -81,25 +81,12 @@ class UpdateDeliveryNotePackaging extends OrgAction
             return;
         }
 
-        if ($new->family_code !== $currentFamily) {
+        // Any size of the family the customer paid for, or a packaging at no extra charge when
+        // the order fits into none of those sizes.
+        if ($new->family_code !== $currentFamily && (float) $new->price > 0) {
             $validator->errors()->add(
                 'packaging_id',
-                __('You can only change to another size within the same packaging family.')
-            );
-
-            return;
-        }
-
-        $paidPrice = $this->paidPackagingPrice($this->deliveryNote);
-
-        if ($paidPrice !== null && round((float) $new->price, 2) !== $paidPrice) {
-            $validator->errors()->add(
-                'packaging_id',
-                __('The order is already paid, so only a packaging costing the same (:paid) can be used. :name costs :price.', [
-                    'paid'  => number_format($paidPrice, 2),
-                    'name'  => $new->name,
-                    'price' => number_format((float) $new->price, 2),
-                ])
+                __('You can only change to another size within the same packaging family, or to a packaging at no extra charge.')
             );
         }
     }

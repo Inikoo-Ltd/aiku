@@ -138,11 +138,12 @@ const props = defineProps<{
     is_forbidden_delivery: boolean
     is_forbidden_billing?: boolean
     packaging_panel: {
-        packagingOptions: { value: number, label: string, price: number, family_code: string | null }[]
+        packagingOptions: { value: number, label: string, price: number, price_max: number, sizes: string | null, family_code: string | null }[]
         selectedPackaging: number | null
-        leafletOptions: { id: number, label: string, price: number, family_codes: string[] }[]
+        leafletOptions: { id: number, label: string, type: string, price: number, family_codes: string[] }[]
         defaultLeafletsByFamily: Record<string, number[]>
         insertsWithoutArtwork?: string[]
+        personalisedMessageLeafletIds?: number[]
         personalisedMessage: string
         customerLeaflets: {
             id: number
@@ -569,6 +570,7 @@ const onChangeInsurance = async (val: boolean) => {
           :leafletOptions="packaging_panel.leafletOptions"
           :defaultLeafletsByFamily="packaging_panel.defaultLeafletsByFamily"
           :personalisedMessage="packaging_panel.personalisedMessage"
+          :personalisedMessageLeafletIds="packaging_panel.personalisedMessageLeafletIds"
           :customerLeaflets="packaging_panel.customerLeaflets"
           :packagingPreferencesHref="route('retina.sysadmin.packaging-preferences.show')"
           :updateRoute="{ name: 'retina.models.order.update_packaging', parameters: { order: data.data.id } }"
