@@ -195,9 +195,9 @@ watch(() => model.value, async (newValue) => {
 </script>
 
 <template>
-    <ModalOverBudget :message="overBudget?.message ?? null" @back="onOverBudgetBack" @confirm="onOverBudgetConfirm" />
     <KeepAlive>
         <Modal :isOpen="model" @onClose="closeModal" :closeButton="true" width="w-full max-w-2xl md:max-w-5xl">
+            <ModalOverBudget :message="overBudget?.message ?? null" @back="onOverBudgetBack" @confirm="onOverBudgetConfirm" />
             <div class="flex flex-col justify-between h-[600px] overflow-y-auto pb-4 px-3">
                 <div>
                     <div class="flex justify-center py-2 text-gray-600 font-medium mb-3">
