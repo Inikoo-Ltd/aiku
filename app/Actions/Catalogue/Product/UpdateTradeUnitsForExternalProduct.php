@@ -10,6 +10,7 @@
 namespace App\Actions\Catalogue\Product;
 
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateAvailableQuantity;
+use App\Actions\Maintenance\Catalogue\FlagFaireCaseSizeMismatch;
 use App\Actions\OrgAction;
 use App\Actions\Traits\ModelHydrateSingleTradeUnits;
 use App\Actions\Traits\Rules\WithNoStrictRules;
@@ -34,8 +35,9 @@ class UpdateTradeUnitsForExternalProduct extends OrgAction
         $product = UpdateProduct::make()->action($product, $modelData);
 
         $product->update([
-            'is_for_sale' => true,
-            'state'       => ProductStateEnum::ACTIVE,
+            'is_for_sale'  => true,
+            'state'        => ProductStateEnum::ACTIVE,
+            'units_review' => $product->units_review === FlagFaireCaseSizeMismatch::BUCKET ? null : $product->units_review,
         ]);
         ModelHydrateSingleTradeUnits::run($product);
 

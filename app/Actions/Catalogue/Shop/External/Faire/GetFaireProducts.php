@@ -12,6 +12,7 @@ use App\Actions\Catalogue\Product\StoreProduct;
 use App\Actions\Catalogue\Product\UpdateProduct;
 use App\Actions\Catalogue\Shop\UpdateShop;
 use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
+use App\Actions\Maintenance\Catalogue\FlagFaireCaseSizeMismatch;
 use App\Actions\Maintenance\Catalogue\SetTradeUnitsForFaireShops;
 use App\Actions\OrgAction;
 use App\Enums\Catalogue\Product\ProductStateEnum;
@@ -101,6 +102,7 @@ class GetFaireProducts extends OrgAction
 
                 if ($product) {
                     try {
+                        $caseSizeChanged = (float) $product->units != (float) $faireProduct['unit_multiplier'];
                         UpdateProduct::make()->action($product, [
                             'code'                  => $faireSKU,
                             'name'                  => $faireProduct['name'].' - '.$variant['name'],
@@ -113,6 +115,9 @@ class GetFaireProducts extends OrgAction
                                 'faire' => $variant
                             ]
                         ], strict: false);
+                        if ($caseSizeChanged && $product->tradeUnits()->exists()) {
+                            $product->updateQuietly(['units_review' => FlagFaireCaseSizeMismatch::BUCKET]);
+                        }
                     } catch (Exception $e) {
                         $command?->error("Product update failed: ".$faireProduct['name'].' - '.$variant['name'].' '.$e->getMessage());
                     }

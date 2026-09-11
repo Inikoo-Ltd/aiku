@@ -26,6 +26,7 @@ use App\Actions\Catalogue\Product\Hydrators\ProductHydrateAvailableQuantity;
 use App\Actions\Catalogue\Product\StoreProduct;
 use App\Actions\Catalogue\Product\StoreProductVariant;
 use App\Actions\Catalogue\Product\StoreProductWebpage;
+use App\Actions\Catalogue\Product\SyncProductTradeUnits;
 use App\Actions\Catalogue\Product\UpdateProduct;
 use App\Actions\Catalogue\ProductCategory\AttachFamiliesToSubDepartment;
 use App\Actions\Catalogue\ProductCategory\DetachFamilyToSubDepartment;
@@ -63,7 +64,6 @@ use App\Models\SysAdmin\Permission;
 use App\Models\SysAdmin\Role;
 use App\Models\Web\Webpage;
 use App\Models\Web\Website;
-use Illuminate\Support\Arr;
 use Inertia\Testing\AssertableInertia;
 
 use function Pest\Laravel\actingAs;
@@ -1417,4 +1417,43 @@ test('shop products json carries the outer size from the stock, not the product 
         ->firstWhere('id', $product->id);
 
     expect($multi->packed_in)->toBeNull();
+});
+
+test('faire case size change flags the product for units review until its trade units are saved', function () {
+    $seederShop = Shop::first() ?? StoreShop::make()->action($this->organisation, array_merge(Shop::factory()->definition(), ['type' => ShopTypeEnum::B2B->value]));
+    [, $seederProduct] = createProduct($seederShop);
+    SyncProductTradeUnits::run($seederProduct, [['id' => $this->tradeUnit1->id, 'quantity' => 1]]);
+
+    $faireShop = StoreShop::make()->action($this->organisation, array_merge(Shop::factory()->definition(), [
+        'type'   => ShopTypeEnum::EXTERNAL->value,
+        'engine' => \App\Enums\Catalogue\Shop\ShopEngineEnum::FAIRE->value,
+    ]));
+    $faireShop->updateQuietly(['seeder_shop_id' => $seederShop->id]);
+    $product = StoreProduct::make()->action($faireShop, array_merge(Product::factory()->definition(), [
+        'code'           => $seederProduct->code,
+        'trade_units'    => [['id' => $this->tradeUnit1->id, 'quantity' => 1]],
+        'price'          => 10,
+        'marketplace_id' => 'variant_1',
+    ]));
+    expect((float) $product->units)->toBe(1.0)->and($product->units_review)->toBeNull();
+
+    $faireVariant = ['id' => 'variant_1', 'sku' => $product->code, 'name' => 'default', 'lifecycle_state' => 'PUBLISHED', 'prices' => [['retail_price' => ['currency' => $faireShop->currency->code, 'amount_minor' => 3000], 'wholesale_price' => ['currency' => $faireShop->currency->code, 'amount_minor' => 1000]]]];
+    $faireProduct = ['id' => 'product_1', 'name' => 'Gift box', 'description' => 'Red', 'lifecycle_state' => 'PUBLISHED', 'unit_multiplier' => 3, 'variants' => [$faireVariant]];
+    \App\Actions\Catalogue\Shop\External\Faire\GetFaireProducts::make()->upsertFaireProduct($faireShop, $faireProduct);
+    $product->refresh();
+    expect((float) $product->units)->toBe(3.0)
+        ->and($product->units_review)->toBe(\App\Actions\Maintenance\Catalogue\FlagFaireCaseSizeMismatch::BUCKET);
+
+    \App\Actions\Catalogue\Shop\External\Faire\GetFaireProducts::make()->upsertFaireProduct($faireShop, $faireProduct);
+    expect($product->refresh()->units_review)->toBe(\App\Actions\Maintenance\Catalogue\FlagFaireCaseSizeMismatch::BUCKET);
+
+    $product->updateQuietly(['units_review' => null]);
+    expect(\App\Actions\Maintenance\Catalogue\FlagFaireCaseSizeMismatch::make()->handle())->toBe(1)
+        ->and($product->refresh()->units_review)->toBe(\App\Actions\Maintenance\Catalogue\FlagFaireCaseSizeMismatch::BUCKET);
+
+    \App\Actions\Catalogue\Product\UpdateTradeUnitsForExternalProduct::make()->action($product, ['trade_units' => [['id' => $this->tradeUnit1->id, 'quantity' => 3]]]);
+    $product->refresh();
+    expect($product->units_review)->toBeNull()
+        ->and((float) $product->tradeUnits->first()->pivot->quantity)->toBe(3.0)
+        ->and(\App\Actions\Maintenance\Catalogue\FlagFaireCaseSizeMismatch::make()->handle())->toBe(0);
 });
