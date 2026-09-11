@@ -442,6 +442,42 @@ class EditTradeUnit extends OrgAction
                             ],
                         ],
                         [
+                            'label'  => __('Labeling & Compliance Marks'),
+                            'icon'   => 'fa-light fa-stamp',
+                            'fields' => [
+                                'ce_marking' => [
+                                    'type'  => 'toggle',
+                                    'label' => __('CE Markings'),
+                                    'value' => data_get($tradeUnit->label_info, 'ce_marking', false),
+                                    'single_description' => __("When enabled, this will be marked as 'Present'"),
+                                ],
+                                'ukca_marking' => [
+                                    'type'  => 'toggle',
+                                    'label' => __('UKCA Markings'),
+                                    'value' => data_get($tradeUnit->label_info, 'ukca_marking', false),
+                                    'single_description' => __("When enabled, this will be marked as 'Present'"),
+                                ],
+                                'weee_symbol' => [
+                                    'type'  => 'toggle',
+                                    'label' => __('WEEE Symbol'),
+                                    'value' => data_get($tradeUnit->label_info, 'weee_symbol', false),
+                                    'single_description' => __("When enabled, this will be marked as 'Present'"),
+                                ],
+                                'ip_rating' => [
+                                    'type'  => 'toggle',
+                                    'label' => __('IP Rating'),
+                                    'value' => data_get($tradeUnit->label_info, 'ip_rating', false),
+                                    'single_description' => __("When enabled, this will be marked as 'Present'"),
+                                ],
+                                'sorting_recycling_information' => [
+                                    'type'  => 'toggle',
+                                    'label' => __('Sorting / Recycling Information'),
+                                    'value' => data_get($tradeUnit->label_info, 'sorting_recycling_information', false),
+                                    'single_description' => __("When enabled, this will be marked as 'Present'"),
+                                ],
+                            ],
+                        ],
+                        [
                             'label'  => __('Sale Status'),
                             'icon'   => 'fal fa-cart-arrow-down',
                             'fields' => [
