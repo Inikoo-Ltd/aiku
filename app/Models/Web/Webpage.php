@@ -290,7 +290,8 @@ class Webpage extends Model implements Auditable, HasMedia
     {
         return WebpageSubTypeEnum::resolveBlogCategory(
             $this->getRawOriginal('sub_type'),
-            $withAmbiguousFallback
+            $withAmbiguousFallback,
+            $this->shop?->type
         );
     }
 

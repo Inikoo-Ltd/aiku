@@ -1,3 +1,5 @@
+import { getBlogCategoryOptions, getShopType } from "@/Composables/useBlogCategories"
+
 const idField = {
 	label: "# Id ",
 	key: ["id"],
@@ -182,17 +184,11 @@ const newsletterGroup = {
 	],
 }
 
-const blogSubTypes = [
-	{ value: "newsletters", label: "Newsletters" },
-	{ value: "product_guides", label: "Product Guides" },
-	{ value: "business_tips", label: "Business Tips" },
-]
-
-const categoryContentGroup = {
+const categoryContentGroup = (shopType?: string) => ({
 	name: "Category content",
 	key: ["category_content"],
 	information: "Label, description and image of each blog category, saved with this page so every shop keeps its own. Leave a field empty to use the value taken from the blogs of that category.",
-	replaceForm: blogSubTypes.map(subType => ({
+	replaceForm: getBlogCategoryOptions(shopType).map(subType => ({
 		name: subType.label,
 		key: [subType.value],
 		replaceForm: [
@@ -226,7 +222,7 @@ const categoryContentGroup = {
 			},
 		],
 	})),
-}
+})
 
 const cardGroup = {
 	name: "Card",
@@ -298,18 +294,18 @@ const layoutGroup = {
 	],
 }
 
-export default {
+export default (data?: any) => ({
 	blueprint: [
 		idField,
 		titleField,
 		subtitleField,
 		columnsField,
 		...presentationFields,
-		categoryContentGroup,
+		categoryContentGroup(getShopType(data)),
 		...blogListFields,
 		exploreGroup,
 		newsletterGroup,
 		cardGroup,
 		layoutGroup,
 	],
-}
+})

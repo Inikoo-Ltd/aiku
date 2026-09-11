@@ -39,6 +39,7 @@ class CreateBlogWebpage extends OrgAction
 
     public function htmlResponse(Webpage|Website $parent, ActionRequest $request): Response
     {
+        $shopType = ($parent instanceof Webpage ? $parent->website : $parent)->shop?->type;
 
         $route = [
             'name'       => 'grp.models.shop.blog_webpage.store',
@@ -101,7 +102,7 @@ class CreateBlogWebpage extends OrgAction
                                     'label'       => __('Blog Category'),
                                     'placeholder' => __('Select a blog category'),
                                     'mode'        => 'single',
-                                    'options'     => WebpageSubTypeEnum::blogCategoriesWithLabel(),
+                                    'options'     => WebpageSubTypeEnum::blogCategoriesWithLabel($shopType),
                                     'value'       => '',
                                     'required'    => true,
                                 ],
