@@ -58,7 +58,7 @@ class UpdateLocation extends OrgAction
             }
         }
 
-        if ($location->wasChanged('code')) {
+        if ($location->wasChanged('code') || $location->wasChanged('warehouse_area_id')) {
             $location = LocationHydrateSortCode::run($location);
         }
 

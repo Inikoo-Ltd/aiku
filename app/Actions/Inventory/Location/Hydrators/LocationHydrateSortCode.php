@@ -37,7 +37,7 @@ class LocationHydrateSortCode implements ShouldBeUnique
         // Generate the sort code using the CreateSortCode helper
         $sortCode = CreateSortCode::run($code);
 
-        $warehouseArea = $location->warehouseArea;
+        $warehouseArea = $location->warehouseArea()->first();
         if ($warehouseArea) {
             $pickingPosition = $warehouseArea->picking_position;
 

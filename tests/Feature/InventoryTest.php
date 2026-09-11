@@ -20,6 +20,7 @@ use App\Actions\Inventory\Location\Hydrators\LocationHydrateSortCode;
 use App\Actions\Inventory\Location\Hydrators\LocationHydrateOrgStocks;
 use App\Actions\Inventory\Location\Hydrators\LocationHydrateStockValue;
 use App\Actions\Inventory\Location\Hydrators\LocationHydrateTotalWeight;
+use App\Actions\Helpers\CreateSortCode;
 use App\Actions\Inventory\Location\StoreLocation;
 use App\Actions\Inventory\Location\UpdateLocation;
 use App\Actions\Inventory\LocationOrgStock\AuditLocationOrgStock;
@@ -1226,11 +1227,13 @@ test('move location between warehouse areas', function () {
 
     $location = UpdateLocation::make()->action($location, ['warehouse_area_id' => $areaB->id]);
     expect($location->warehouse_area_id)->toBe($areaB->id)
+        ->and($location->sort_code)->toContain('-'.CreateSortCode::run('AR-MB').'-')
         ->and($areaA->refresh()->stats->number_locations)->toBe(0)
         ->and($areaB->refresh()->stats->number_locations)->toBe(1);
 
     $location = UpdateLocation::make()->action($location, ['warehouse_area_id' => null]);
     expect($location->warehouse_area_id)->toBeNull()
+        ->and($location->sort_code)->toBe(CreateSortCode::run('LO-MOV'))
         ->and($areaB->refresh()->stats->number_locations)->toBe(0);
 });
 
