@@ -9,6 +9,7 @@
 namespace App\Actions\Production\Artefact\UI;
 
 use App\Actions\Production\Artefact\GetArtefactComplianceStatus;
+use App\Http\Resources\Production\ArtefactLabelResource;
 use App\Models\Production\Artefact;
 use Lorisleiva\Actions\Concerns\AsObject;
 
@@ -41,8 +42,21 @@ class GetArtefactShowcase
                     'name'       => 'grp.models.artefact.label_sheet',
                     'parameters' => ['artefact' => $artefact->id]
                 ],
+                'store_route' => [
+                    'name'       => 'grp.models.artefact.labels.store',
+                    'parameters' => ['artefact' => $artefact->id]
+                ],
+                'update_route' => [
+                    'name'       => 'grp.models.artefact.labels.update',
+                    'parameters' => ['artefact' => $artefact->id]
+                ],
+                'delete_route' => [
+                    'name'       => 'grp.models.artefact.labels.delete',
+                    'parameters' => ['artefact' => $artefact->id]
+                ],
                 'batch_code'  => $this->getPlaceholderBatchCode($artefact),
                 'expiry_date' => $this->getPlaceholderExpiryDate(),
+                'labels'      => ArtefactLabelResource::collection($artefact->labels()->with('artwork')->get())->resolve(),
             ],
             'trade_unit' => $artefact->tradeUnit ? [
                 'id'   => $artefact->tradeUnit->id,

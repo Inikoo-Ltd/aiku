@@ -3148,3 +3148,53 @@ test('factory search is gated by production permissions', function () {
     get(route('grp.search.index', ['route_src' => 'grp.org.productions.show', 'production' => $this->production->slug, 'q' => 'a']))
         ->assertOk();
 });
+
+test('artefact labels can be saved, updated and deleted', function () {
+    $layout = [
+        'orientation' => 'portrait',
+        'columns'     => 3,
+        'rows'        => 8,
+        'page_margin' => 8,
+        'gap'         => 3,
+        'fields'      => [['source' => 'batch_code', 'text' => 'B-1', 'x' => 0.1, 'y' => 0.2, 'font_size' => 8, 'color' => '#111827']],
+    ];
+
+    $labelId = \Pest\Laravel\postJson(route('grp.models.artefact.labels.store', $this->artefact->id), array_merge($layout, ['name' => 'Front']))
+        ->assertCreated()
+        ->json('data.id');
+
+    $label = \App\Models\Production\ArtefactLabel::find($labelId);
+    expect($label->name)->toBe('Front')
+        ->and($label->layout['columns'])->toBe(3)
+        ->and($label->layout['fields'][0]['text'])->toBe('B-1');
+
+    \Pest\Laravel\postJson(route('grp.models.artefact.labels.update', [$this->artefact->id, $labelId]), array_merge($layout, ['name' => 'Back', 'columns' => 4]))
+        ->assertOk();
+    expect($label->refresh()->name)->toBe('Back')
+        ->and($label->layout['columns'])->toBe(4);
+
+    \Pest\Laravel\deleteJson(route('grp.models.artefact.labels.delete', [$this->artefact->id, $labelId]))
+        ->assertOk();
+    expect(\App\Models\Production\ArtefactLabel::find($labelId))->toBeNull();
+});
+
+test('artefact labels cannot be changed with view only production access', function () {
+    $label = \App\Models\Production\ArtefactLabel::create([
+        'group_id'        => $this->artefact->group_id,
+        'organisation_id' => $this->artefact->organisation_id,
+        'artefact_id'     => $this->artefact->id,
+        'name'            => 'Kept',
+        'layout'          => ['columns' => 3],
+    ]);
+
+    $operator = \App\Models\SysAdmin\User::factory()->create(['group_id' => $this->group->id]);
+    $operator->syncRoles(['production-operator-'.$this->production->id]);
+    actingAs($operator->fresh());
+
+    \Pest\Laravel\postJson(route('grp.models.artefact.labels.store', $this->artefact->id), ['name' => 'New'])
+        ->assertForbidden();
+    \Pest\Laravel\deleteJson(route('grp.models.artefact.labels.delete', [$this->artefact->id, $label->id]))
+        ->assertForbidden();
+
+    expect($label->refresh()->deleted_at)->toBeNull();
+});

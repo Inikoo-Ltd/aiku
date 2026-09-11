@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, reactive, ref } from "vue"
+import { computed, nextTick, reactive, ref, watch } from "vue"
 import axios from "axios"
 import { notify } from "@kyvg/vue3-notification"
 import { library } from "@fortawesome/fontawesome-svg-core"
@@ -14,16 +14,36 @@ import PingIcon from "@/Components/Utils/PingIcon.vue"
 
 library.add(faCopy, faFilePdf, faImage, faPlus, faTags, faTrashAlt)
 
+interface StoredArtwork {
+    name: string
+    size: number
+    mime_type: string
+    url: string
+}
+
+interface SavedLabel {
+    id: number
+    name: string
+    layout: Record<string, any>
+    artwork: StoredArtwork | null
+    updated_at: string | null
+}
+
 const props = defineProps<{
     isOpen: boolean
+    labelToEdit: SavedLabel | null
     labelSheet: {
         route: routeType
+        store_route: routeType
+        update_route: routeType
+        delete_route: routeType
         batch_code: string
         expiry_date: string
+        labels: SavedLabel[]
     }
 }>()
 
-const emits = defineEmits<{ (e: "onClose"): void }>()
+const emits = defineEmits<{ (e: "onClose"): void; (e: "onSaved"): void }>()
 
 type ItemSource = "batch_code" | "expiry_date"
 
@@ -49,6 +69,9 @@ const PAGE_SIZES = {
 }
 
 const PREVIEW_BOX = { width: 460, height: 600 }
+const HIGHLIGHTED_ARTWORK_OPACITY = 0.15
+const HIGHLIGHT_ON_DARK_TEXT = { backgroundColor: "#fde047", boxShadow: "0 0 0 2px #b45309" }
+const HIGHLIGHT_ON_LIGHT_TEXT = { backgroundColor: "#111827", boxShadow: "0 0 0 2px #fbbf24" }
 const LINE_HEIGHT = 1.1
 const ZOOM_LIMITS = { min: 0.5, max: 8 }
 const ZOOM_STEP = 1.25
@@ -76,19 +99,37 @@ const A4_ASPECT_TOLERANCE = 0.06
 const PDF_MIME_TYPE = "application/pdf"
 const PDF_PREVIEW_EDGE = 1400
 
-const orientation = ref<"portrait" | "landscape">("portrait")
-const columns = ref(3)
-const rows = ref(8)
-const pageMargin = ref(8)
-const gap = ref(3)
-const cutGuides = ref(true)
-const isSheetArtwork = ref(false)
-const canvasRotation = ref<Rotation>(0)
+const DEFAULT_LAYOUT = {
+    orientation: "portrait" as "portrait" | "landscape",
+    columns: 3,
+    rows: 8,
+    pageMargin: 8,
+    gap: 3,
+    cutGuides: true,
+    isSheetArtwork: false,
+    canvasRotation: 0 as Rotation,
+}
+
+const orientation = ref<"portrait" | "landscape">(DEFAULT_LAYOUT.orientation)
+const columns = ref(DEFAULT_LAYOUT.columns)
+const rows = ref(DEFAULT_LAYOUT.rows)
+const pageMargin = ref(DEFAULT_LAYOUT.pageMargin)
+const gap = ref(DEFAULT_LAYOUT.gap)
+const cutGuides = ref(DEFAULT_LAYOUT.cutGuides)
+const isSheetArtwork = ref(DEFAULT_LAYOUT.isSheetArtwork)
+const canvasRotation = ref<Rotation>(DEFAULT_LAYOUT.canvasRotation)
 const isGenerating = ref(false)
 
 const backgroundFile = ref<File | null>(null)
 const backgroundPreview = ref<string | null>(null)
 const isVectorArtwork = ref(false)
+const storedArtwork = ref<StoredArtwork | null>(null)
+const isArtworkRemovedByUser = ref(false)
+
+const currentLabelId = ref<number | null>(null)
+const labelName = ref("")
+const isSaving = ref(false)
+const isLoadingLabel = ref(false)
 const fileInput = ref<HTMLInputElement | null>(null)
 const isPreparingArtwork = ref(false)
 
@@ -165,6 +206,7 @@ const labelHeight = computed(
 const isGridValid = computed(() => labelWidth.value > 2 && labelHeight.value > 2)
 
 const zoom = ref(1)
+const isHighlightingTexts = ref(false)
 const previewViewport = ref<HTMLElement | null>(null)
 
 const fitScale = computed(() =>
@@ -253,6 +295,7 @@ const backgroundStyle = computed(() => {
         height: `${runsSideways ? width : height}px`,
         transform: `translate(-50%, -50%) rotate(${canvasRotation.value}deg)`,
         objectFit: "fill",
+        opacity: isHighlightingTexts.value ? String(HIGHLIGHTED_ARTWORK_OPACITY) : "1",
     }
 })
 
@@ -273,6 +316,22 @@ const itemTransform = (item: LabelItem) => {
     }
 }
 
+const isLightText = (color: string) => {
+    const hex = color.replace("#", "")
+
+    if (hex.length !== 6) return false
+
+    const [red, green, blue] = [0, 2, 4].map(offset => parseInt(hex.slice(offset, offset + 2), 16))
+
+    return 0.299 * red + 0.587 * green + 0.114 * blue > 140
+}
+
+const previewOnlyHighlightStyle = (item: LabelItem) => {
+    if (!isHighlightingTexts.value) return {}
+
+    return isLightText(item.color) ? HIGHLIGHT_ON_LIGHT_TEXT : HIGHLIGHT_ON_DARK_TEXT
+}
+
 const itemStyle = (item: LabelItem) => ({
     left: `${item.x * toPx(labelWidth.value)}px`,
     top: `${item.y * toPx(labelHeight.value)}px`,
@@ -283,6 +342,7 @@ const itemStyle = (item: LabelItem) => ({
     fontFamily: "Arial, sans-serif",
     transform: itemTransform(item),
     transformOrigin: "0 0",
+    ...previewOnlyHighlightStyle(item),
 })
 
 /**
@@ -530,6 +590,10 @@ const onFileChange = async (event: Event) => {
     target.value = ""
     if (!file) return
 
+    await applyArtworkFile(file, true)
+}
+
+const applyArtworkFile = async (file: File, isFromDisk: boolean) => {
     isPreparingArtwork.value = true
 
     try {
@@ -537,23 +601,28 @@ const onFileChange = async (event: Event) => {
             const { preview, width, height } = await renderPdfPreview(file)
 
             replaceBackground(file, preview, true)
-            detectSheetArtwork(width, height)
-            warnAboutPdfSize(file)
+
+            if (isFromDisk) {
+                detectSheetArtwork(width, height)
+                warnAboutPdfSize(file)
+            }
         } else {
             const sourceUrl = URL.createObjectURL(file)
 
             try {
                 const image = await loadImage(sourceUrl)
-                const prepared = await shrinkForUpload(file, image)
+                const prepared = isFromDisk ? await shrinkForUpload(file, image) : file
 
                 replaceBackground(prepared, URL.createObjectURL(prepared), false)
-                detectSheetArtwork(image.width, image.height)
+
+                if (isFromDisk) {
+                    detectSheetArtwork(image.width, image.height)
+                }
             } finally {
                 URL.revokeObjectURL(sourceUrl)
             }
         }
     } catch (error: any) {
-        console.log('eeeeeeeeeee', error)
         notify({
             title: ctrans("Something went wrong"),
             text: isPdf(file) ? ctrans("The PDF could not be read") : ctrans("The image could not be read"),
@@ -580,6 +649,8 @@ const replaceBackground = (file: File, preview: string, vector: boolean) => {
     backgroundFile.value = file
     backgroundPreview.value = preview
     isVectorArtwork.value = vector
+    storedArtwork.value = null
+    isArtworkRemovedByUser.value = false
 }
 
 const releasePreview = () => {
@@ -594,6 +665,34 @@ const removeBackground = () => {
     backgroundFile.value = null
     backgroundPreview.value = null
     isVectorArtwork.value = false
+    storedArtwork.value = null
+}
+
+const appendLayout = (formData: FormData) => {
+    formData.append("orientation", orientation.value)
+    formData.append("columns", String(columns.value))
+    formData.append("rows", String(rows.value))
+    formData.append("page_margin", String(pageMargin.value))
+    formData.append("gap", String(gap.value))
+    formData.append("cut_guides", cutGuides.value ? "1" : "0")
+    formData.append("canvas_rotation", String(canvasRotation.value))
+    formData.append("is_sheet_artwork", isSheetArtwork.value ? "1" : "0")
+
+    printableItems.value.forEach((item, index) => {
+        formData.append(`fields[${index}][source]`, item.source)
+        formData.append(`fields[${index}][text]`, item.text)
+        formData.append(`fields[${index}][x]`, String(item.x))
+        formData.append(`fields[${index}][y]`, String(item.y))
+        formData.append(`fields[${index}][font_size]`, String(item.fontSize))
+        formData.append(`fields[${index}][color]`, item.color)
+        formData.append(`fields[${index}][bold]`, item.bold ? "1" : "0")
+        formData.append(`fields[${index}][rotation]`, String(item.rotation))
+
+        const length = textLengthInMillimeters(item)
+        if (length) {
+            formData.append(`fields[${index}][length]`, length.toFixed(3))
+        }
+    })
 }
 
 const generatePdf = async () => {
@@ -603,32 +702,13 @@ const generatePdf = async () => {
 
     try {
         const formData = new FormData()
-        formData.append("orientation", orientation.value)
-        formData.append("columns", String(columns.value))
-        formData.append("rows", String(rows.value))
-        formData.append("page_margin", String(pageMargin.value))
-        formData.append("gap", String(gap.value))
-        formData.append("cut_guides", cutGuides.value ? "1" : "0")
-        formData.append("canvas_rotation", String(canvasRotation.value))
+        appendLayout(formData)
 
-        if (backgroundFile.value) {
+        if (storedArtwork.value && currentLabelId.value) {
+            formData.append("artefact_label_id", String(currentLabelId.value))
+        } else if (backgroundFile.value) {
             formData.append("background_artwork", backgroundFile.value)
         }
-
-        printableItems.value.forEach((item, index) => {
-            formData.append(`fields[${index}][text]`, item.text)
-            formData.append(`fields[${index}][x]`, String(item.x))
-            formData.append(`fields[${index}][y]`, String(item.y))
-            formData.append(`fields[${index}][font_size]`, String(item.fontSize))
-            formData.append(`fields[${index}][color]`, item.color)
-            formData.append(`fields[${index}][bold]`, item.bold ? "1" : "0")
-            formData.append(`fields[${index}][rotation]`, String(item.rotation))
-
-            const length = textLengthInMillimeters(item)
-            if (length) {
-                formData.append(`fields[${index}][length]`, length.toFixed(3))
-            }
-        })
 
         const response = await axios.post(
             route(props.labelSheet.route.name, props.labelSheet.route.parameters),
@@ -648,6 +728,173 @@ const generatePdf = async () => {
         isGenerating.value = false
     }
 }
+
+const saveLabel = async (asNewLabel: boolean) => {
+    const name = labelName.value.trim()
+
+    if (!name) {
+        notify({
+            title: ctrans("Name the label first"),
+            text: ctrans("A saved label is found back by its name."),
+            type: "warn",
+        })
+        return
+    }
+
+    const isUpdate = !asNewLabel && !!currentLabelId.value
+
+    isSaving.value = true
+
+    try {
+        const formData = new FormData()
+        formData.append("name", name)
+        appendLayout(formData)
+
+        if (backgroundFile.value && (!storedArtwork.value || !isUpdate)) {
+            formData.append("artwork", backgroundFile.value)
+        } else if (isArtworkRemovedByUser.value && isUpdate) {
+            formData.append("remove_artwork", "1")
+        }
+
+        const response = await axios.post(
+            isUpdate
+                ? route(props.labelSheet.update_route.name, {
+                    ...props.labelSheet.update_route.parameters,
+                    label: currentLabelId.value,
+                })
+                : route(props.labelSheet.store_route.name, props.labelSheet.store_route.parameters),
+            formData
+        )
+
+        rememberSavedLabel(response.data?.data ?? response.data)
+        emits("onSaved")
+
+        notify({
+            title: ctrans("Saved"),
+            text: ctrans("The label can be picked up again later."),
+            type: "success",
+        })
+    } catch (error: any) {
+        notify({
+            title: ctrans("Something went wrong"),
+            text: error?.response?.data?.message ?? ctrans("The label could not be saved"),
+            type: "error",
+        })
+    } finally {
+        isSaving.value = false
+    }
+}
+
+/**
+ * The freshly uploaded bytes are now on the server, so the label points at the stored artwork and
+ * printing it stops carrying the file up again.
+ */
+const rememberSavedLabel = (label: SavedLabel) => {
+    currentLabelId.value = label.id
+    labelName.value = label.name
+    storedArtwork.value = label.artwork
+}
+
+const loadLabel = async (label: SavedLabel) => {
+    if (isLoadingLabel.value) return
+
+    isLoadingLabel.value = true
+
+    try {
+        const layout = label.layout ?? {}
+
+        orientation.value = layout.orientation === "landscape" ? "landscape" : "portrait"
+        columns.value = Number(layout.columns ?? columns.value)
+        rows.value = Number(layout.rows ?? rows.value)
+        pageMargin.value = Number(layout.page_margin ?? pageMargin.value)
+        gap.value = Number(layout.gap ?? gap.value)
+        cutGuides.value = Boolean(layout.cut_guides)
+        isSheetArtwork.value = Boolean(layout.is_sheet_artwork)
+        canvasRotation.value = (Number(layout.canvas_rotation ?? 0) as Rotation)
+
+        items.value = (layout.fields ?? []).map((field: Record<string, any>) =>
+            createItem(field.source === "expiry_date" ? "expiry_date" : "batch_code", {
+                text: String(field.text ?? ""),
+                x: Number(field.x ?? 0),
+                y: Number(field.y ?? 0),
+                fontSize: Number(field.font_size ?? 8),
+                color: String(field.color ?? "#111827"),
+                bold: Boolean(field.bold),
+                rotation: (Number(field.rotation ?? 0) as Rotation),
+            })
+        )
+        selectedItemId.value = items.value[0]?.id ?? null
+
+        currentLabelId.value = label.id
+        labelName.value = label.name
+
+        removeBackground()
+
+        if (label.artwork) {
+            await loadStoredArtwork(label.artwork)
+        }
+    } finally {
+        isLoadingLabel.value = false
+    }
+}
+
+/**
+ * The stored file is pulled back only to draw the preview, the sheet itself is rendered from the
+ * copy that never left the server.
+ */
+const loadStoredArtwork = async (artwork: StoredArtwork) => {
+    try {
+        const response = await axios.get(artwork.url, { responseType: "blob" })
+        const file = new File([response.data], artwork.name, { type: artwork.mime_type })
+
+        await applyArtworkFile(file, false)
+
+        storedArtwork.value = artwork
+    } catch {
+        notify({
+            title: ctrans("Something went wrong"),
+            text: ctrans("The saved artwork could not be loaded"),
+            type: "error",
+        })
+    }
+}
+
+const startNewLabel = () => {
+    currentLabelId.value = null
+    labelName.value = ""
+
+    orientation.value = DEFAULT_LAYOUT.orientation
+    columns.value = DEFAULT_LAYOUT.columns
+    rows.value = DEFAULT_LAYOUT.rows
+    pageMargin.value = DEFAULT_LAYOUT.pageMargin
+    gap.value = DEFAULT_LAYOUT.gap
+    cutGuides.value = DEFAULT_LAYOUT.cutGuides
+    isSheetArtwork.value = DEFAULT_LAYOUT.isSheetArtwork
+    canvasRotation.value = DEFAULT_LAYOUT.canvasRotation
+
+    removeBackground()
+
+    items.value = [createItem("batch_code"), createItem("expiry_date")]
+    selectedItemId.value = items.value[0]?.id ?? null
+}
+
+/**
+ * The modal is opened either on a saved label or on a blank one, so the design it shows is decided
+ * on the way in rather than being whatever the last visit left behind.
+ */
+watch(
+    () => props.isOpen,
+    async isOpen => {
+        if (!isOpen) return
+
+        if (props.labelToEdit) {
+            await loadLabel(props.labelToEdit)
+        } else {
+            startNewLabel()
+        }
+    }
+)
+
 
 /**
  * The response arrives as a blob because a sheet is expected, so an error body has to be read back
@@ -677,9 +924,33 @@ const describeFailure = async (error: any): Promise<string> => {
 
 <template>
     <Modal :isOpen="isOpen" closeButton :isClosableInBackground="false" @onClose="emits('onClose')" width="w-full max-w-6xl">
-        <div class="flex items-center gap-2 mb-4">
+        <div class="flex flex-wrap items-center gap-2 mb-4">
             <FontAwesomeIcon icon="fal fa-tags" class="text-gray-400" fixed-width aria-hidden="true" />
-            <h2 class="text-lg font-semibold">{{ ctrans("Label sheet") }}</h2>
+            <h2 class="text-lg font-semibold">{{ currentLabelId ? ctrans("Edit label") : ctrans("New label") }}</h2>
+
+            <div class="ml-auto flex items-center gap-2">
+                <input
+                    v-model="labelName"
+                    type="text"
+                    class="w-56 rounded border border-gray-300 px-2 py-1 text-sm"
+                    :placeholder="ctrans('Label name')" />
+                <Button
+                    type="save"
+                    size="xs"
+                    :label="currentLabelId ? ctrans('Save') : ctrans('Save label')"
+                    :loading="isSaving"
+                    :disabled="!isGridValid"
+                    @click="saveLabel(false)" />
+                <Button
+                    v-if="currentLabelId"
+                    type="tertiary"
+                    size="xs"
+                    icon="fal fa-copy"
+                    :label="ctrans('Save as new')"
+                    :loading="isSaving"
+                    :disabled="!isGridValid"
+                    @click="saveLabel(true)" />
+            </div>
         </div>
 
         <div class="flex flex-col lg:flex-row gap-6">
@@ -700,6 +971,7 @@ const describeFailure = async (error: any): Promise<string> => {
 
                 <hr class="border-t border-gray-400 border-dashed" />
 
+                <!-- Field: Background artwork -->
                 <div>
                     <div class="text-xs text-gray-500 uppercase tracking-wide mb-1">
                         {{ ctrans("Background artwork") }}
@@ -711,7 +983,7 @@ const describeFailure = async (error: any): Promise<string> => {
                             type="tertiary"
                             size="xs"
                             :icon="isVectorArtwork ? 'fal fa-file-pdf' : 'fal fa-image'"
-                            :loading="isPreparingArtwork"
+                            :loading="isPreparingArtwork || isLoadingLabel"
                             :label="backgroundFile ? ctrans('Replace artwork') : ctrans('Upload image or PDF')"
                             @click="() => fileInput?.click()" />
                         <Button
@@ -719,10 +991,13 @@ const describeFailure = async (error: any): Promise<string> => {
                             type="negative"
                             size="xs"
                             icon="fal fa-trash-alt"
-                            @click="removeBackground" />
+                            @click="() => (removeBackground(), isArtworkRemovedByUser = true)" />
                     </div>
                     <div v-if="backgroundFile" class="mt-1 truncate text-xs text-gray-500">
                         {{ backgroundFile.name }} • {{ formatBytes(backgroundFile.size) }}
+                    </div>
+                    <div v-if="storedArtwork" class="mt-1 text-xs text-gray-500">
+                        {{ ctrans("Kept with this label, it does not have to be uploaded again.") }}
                     </div>
                     <div v-if="isVectorArtwork" class="mt-1 text-xs text-emerald-600">
                         {{ ctrans("Placed as vector, the text inside the PDF stays selectable.") }}
@@ -802,7 +1077,12 @@ const describeFailure = async (error: any): Promise<string> => {
                 </label>
 
                 <div class="space-y-2">
-                    <div class="text-xs text-gray-500 uppercase tracking-wide">{{ ctrans("Texts") }}</div>
+                    <div class="flex items-center gap-2 text-xs text-gray-500 uppercase tracking-wide">
+                        {{ ctrans("Texts") }}
+                        <span class="rounded-full bg-gray-200 px-1.5 py-0.5 text-[10px] font-semibold tabular-nums text-gray-600">
+                            {{ items.length }}
+                        </span>
+                    </div>
                     <div class="flex gap-2">
                         <Button type="tertiary" size="xs" icon="fal fa-plus"
                             :label="sourceLabels.batch_code" @click="addItem('batch_code')" />
@@ -814,21 +1094,24 @@ const describeFailure = async (error: any): Promise<string> => {
                         {{ ctrans("No text on the label yet.") }}
                     </div>
 
-                    <div
-                        v-for="item in items"
-                        :key="item.id"
-                        class="flex items-center gap-2 rounded border px-2 py-1.5 cursor-pointer"
-                        :class="item.id === selectedItemId ? 'border-indigo-500 bg-indigo-50' : 'border-gray-200 hover:bg-gray-50'"
-                        @click="selectedItemId = item.id">
-                        <span class="min-w-0 flex-1 truncate text-sm" :style="{ color: item.color }">{{ item.text || sourceLabels[item.source] }}</span>
-                        <span class="text-xs text-gray-400">{{ item.fontSize }}pt</span>
-                        <span v-if="item.rotation" class="text-xs text-gray-400">{{ item.rotation }}°</span>
-                        <button class="text-gray-400 hover:text-indigo-600" @click.stop="duplicateItem(item)">
-                            <FontAwesomeIcon icon="fal fa-copy" fixed-width aria-hidden="true" />
-                        </button>
-                        <button class="text-gray-400 hover:text-red-600" @click.stop="removeItem(item)">
-                            <FontAwesomeIcon icon="fal fa-trash-alt" fixed-width aria-hidden="true" />
-                        </button>
+                    <div v-if="items.length" class="max-h-56 space-y-2 overflow-y-auto pr-1">
+                        <div
+                            v-for="(item, index) in items"
+                            :key="item.id"
+                            class="flex items-center gap-2 rounded border px-2 py-1.5 cursor-pointer"
+                            :class="item.id === selectedItemId ? 'border-indigo-500 bg-indigo-50' : 'border-gray-200 hover:bg-gray-50'"
+                            @click="selectedItemId = item.id">
+                            <span class="w-4 shrink-0 text-xs tabular-nums text-gray-400">{{ index + 1 }}</span>
+                            <span class="min-w-0 flex-1 truncate text-sm" :style="{ color: item.color }">{{ item.text || sourceLabels[item.source] }}</span>
+                            <span class="text-xs text-gray-400">{{ item.fontSize }}pt</span>
+                            <span v-if="item.rotation" class="text-xs text-gray-400">{{ item.rotation }}°</span>
+                            <button class="text-gray-400 hover:text-indigo-600" @click.stop="duplicateItem(item)">
+                                <FontAwesomeIcon icon="fal fa-copy" fixed-width aria-hidden="true" />
+                            </button>
+                            <button class="text-gray-400 hover:text-red-600" @click.stop="removeItem(item)">
+                                <FontAwesomeIcon icon="fal fa-trash-alt" fixed-width aria-hidden="true" />
+                            </button>
+                        </div>
                     </div>
                 </div>
 
@@ -909,6 +1192,13 @@ const describeFailure = async (error: any): Promise<string> => {
                         <button
                             class="rounded border border-gray-300 px-2 py-0.5 text-xs text-gray-600 hover:bg-gray-50"
                             @click="showEditedLabel">{{ ctrans("Edited label") }}</button>
+                        <button
+                            class="rounded border px-2 py-0.5 text-xs"
+                            :class="isHighlightingTexts ? 'border-amber-500 bg-amber-100 text-amber-700' : 'border-gray-300 text-gray-600 hover:bg-gray-50'"
+                            :title="ctrans('Fades the artwork and puts the texts on a contrasting patch, only here in the preview.')"
+                            @click="isHighlightingTexts = !isHighlightingTexts">
+                            {{ ctrans("Highlight texts") }}
+                        </button>
                     </div>
 
                     

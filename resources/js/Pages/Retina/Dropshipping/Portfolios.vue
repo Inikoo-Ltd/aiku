@@ -1273,7 +1273,7 @@ const layout = inject("layout", layoutStructure)
 				</Popover>
 			</div>
 		</template>
-		<template v-if="currentTab === 'bundles'" #other>
+		<template v-if="!props.is_closed && currentTab === 'bundles'" #other>
 			<Button
 				@click="() => (isOpenModalCreateBundle = true)"
 				:label="trans('Create bundle')"
@@ -1656,6 +1656,7 @@ const layout = inject("layout", layoutStructure)
 				@hideBulkButton="hideBulkButton()"
 				:data="props.bundles"
 				:bundle_routes="props.bundle_routes"
+				:disabled="props.is_closed"
 				:tab="'bundles'"
 				:selectedData
 				:platform_data

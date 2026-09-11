@@ -13,6 +13,7 @@ use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateBundles;
 use App\Actions\Dropshipping\Portfolio\StorePortfolio;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
+use App\Actions\Traits\WithOpenCustomerSalesChannelCheck;
 use App\Models\Catalogue\Product;
 use App\Models\CRM\Customer;
 use App\Models\Dropshipping\Bundle;
@@ -28,6 +29,7 @@ use Lorisleiva\Actions\ActionRequest;
 class StoreBundle extends OrgAction
 {
     use WithNoStrictRules;
+    use WithOpenCustomerSalesChannelCheck;
 
     private Customer $customer;
 
@@ -36,6 +38,8 @@ class StoreBundle extends OrgAction
      */
     public function handle(CustomerSalesChannel $customerSalesChannel, array $modelData): Bundle
     {
+        $this->assertCustomerSalesChannelIsOpen($customerSalesChannel);
+
         return DB::transaction(function () use ($customerSalesChannel, $modelData) {
             Arr::forget($modelData, 'id');
 

@@ -24,9 +24,17 @@ class UpdateRetinaBundle extends RetinaAction
 
     private CustomerSalesChannel $customerSalesChannel;
 
+    private Bundle $bundle;
+
     public function handle(Bundle $bundle, array $modelData): Bundle
     {
         return UpdateBundle::make()->action($bundle, $modelData);
+    }
+
+    public function authorize(ActionRequest $request): bool
+    {
+        return $this->customerSalesChannel->customer_id == $this->customer?->id
+            && $this->bundle->customer_sales_channel_id == $this->customerSalesChannel->id;
     }
 
     public function rules(): array
@@ -38,6 +46,7 @@ class UpdateRetinaBundle extends RetinaAction
     {
         $this->enableSanitize();
         $this->customerSalesChannel = $customerSalesChannel;
+        $this->bundle               = $bundle;
         $this->initialisation($request);
 
         return $this->handle($bundle, $this->validatedData);
