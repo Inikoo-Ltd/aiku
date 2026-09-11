@@ -39,6 +39,10 @@ class UpdateTicket extends OrgAction
 
         $ticket = $this->update($ticket, $modelData);
 
+        if ($ticket->wasChanged('status')) {
+            PostTicketSlackThreadReply::run($ticket, $ticket->reference.' is now '.TicketStatusEnum::labels()[$ticket->status->value]);
+        }
+
         if ($ticket->wasChanged('assignee_id') && $ticket->assignee_id && $conversation = $ticket->staffConversation) {
             $conversation->participants()->syncWithoutDetaching([$ticket->assignee_id]);
         }

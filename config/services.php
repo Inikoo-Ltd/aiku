@@ -92,7 +92,8 @@ return [
         'api_version'  => env('META_ADS_API_VERSION', 'v21.0'),
     ],
     'slack'     => [
-        'signing_secret' => env('SLACK_SIGNING_SECRET'),
+        'signing_secret'  => env('SLACK_SIGNING_SECRET'),
+        'ticket_reaction' => env('SLACK_TICKET_REACTION', 'ticket'),
         'notifications' => [
             'bot_user_oauth_token' => env('SLACK_BOT_USER_OAUTH_TOKEN'),
             'channel'              => env('SLACK_CHANNEL', '#general'),
