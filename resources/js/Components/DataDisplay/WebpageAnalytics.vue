@@ -7,7 +7,7 @@ import { trans } from "laravel-vue-i18n"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { useLocaleStore } from "@/Stores/locale"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faRocketLaunch, faTag } from "@fal"
+import { faRocketLaunch, faTag, faInfoCircle } from "@fal"
 import PageSpeedInsights from "@/Components/DataDisplay/PageSpeedInsights.vue"
 
 type PageSpeedScore = "performance" | "accessibility" | "best_practices" | "seo"
@@ -30,10 +30,34 @@ const props = defineProps<{
 const locale = useLocaleStore()
 
 const series = {
-	clicks: { label: trans("Clicks"), color: "#4285F4", axis: "y2" },
-	impressions: { label: trans("Impressions"), color: "#5E35B1", axis: "y1" },
-	sales: { label: trans("Net sales"), color: "#0F9D58", axis: "y3" },
-	pagespeed: { label: trans("PageSpeed"), color: "#E8710A", axis: "y4" },
+	clicks: {
+		label: trans("Clicks"),
+		color: "#4285F4",
+		axis: "y2",
+		source: trans("Google Search Console"),
+		sourceDetail: trans("Clicks from Google Search results to this page, reported by Google Search Console. The last 2 to 3 days can still change."),
+	},
+	impressions: {
+		label: trans("Impressions"),
+		color: "#5E35B1",
+		axis: "y1",
+		source: trans("Google Search Console"),
+		sourceDetail: trans("Times this page appeared in Google Search results, reported by Google Search Console. The last 2 to 3 days can still change."),
+	},
+	sales: {
+		label: trans("Net sales"),
+		color: "#0F9D58",
+		axis: "y3",
+		source: trans("Invoices"),
+		sourceDetail: trans("Net invoiced amount of the product, category or collection shown on this page, from every sales channel, not only visits to this page."),
+	},
+	pagespeed: {
+		label: trans("PageSpeed"),
+		color: "#E8710A",
+		axis: "y4",
+		source: trans("Google PageSpeed Insights"),
+		sourceDetail: trans("Lab scores from Google PageSpeed Insights, measured daily for the most visited pages and whenever the page is re-measured."),
+	},
 }
 const eventStyle = {
 	publish: { label: trans("Page published"), color: "#F4B400", icon: faRocketLaunch },
@@ -320,8 +344,13 @@ const cardLabel = (key: keyof typeof series) =>
 					:class="visible[key] ? 'text-white' : 'bg-white'"
 					:style="visible[key] ? { backgroundColor: meta.color, borderColor: meta.color } : { color: meta.color, borderColor: meta.color }"
 					@click="visible[key] = !visible[key]">
-					<div class="text-xs">{{ cardLabel(key) }}</div>
+					<div class="text-xs">
+						{{ cardLabel(key) }}
+						<FontAwesomeIcon v-tooltip="meta.sourceDetail" :icon="faInfoCircle" class="ml-0.5 opacity-70" fixed-width aria-hidden="true" />
+					</div>
 					<div class="text-lg font-semibold">{{ formatTotal(key) }}</div>
+					<div class="mt-1 text-[11px] opacity-80" data-card-source>{{ trans("Source") }}: {{ meta.source }}</div>
+					<span class="sr-only">{{ meta.sourceDetail }}</span>
 				</button>
 			</div>
 
