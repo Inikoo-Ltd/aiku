@@ -1660,10 +1660,11 @@ test('web registration files the tax number under the contact address country, n
         'company_name'    => 'Arcana Test',
         'email'           => 'registration-tax@example.com',
         'password'        => 'password',
-        'is_opt_in'       => true,
-        'contact_address' => array_merge(Address::factory()->definition(), ['country_id' => $italy->id, 'country_code' => 'IT']),
+        'is_opt_in'                     => true,
+        'is_whatsapp_newsletter_opt_in' => false,
+        'contact_address'               => array_merge(Address::factory()->definition(), ['country_id' => $italy->id, 'country_code' => 'IT']),
         'tax_number'      => ['number' => '04851400400'],
-    ]);
+    ])->assertSessionHasNoErrors();
 
     $customer = Customer::where('email', 'registration-tax@example.com')->firstOrFail();
     expect($customer->taxNumber->country_code)->toBe('IT')

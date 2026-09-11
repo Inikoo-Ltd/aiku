@@ -1231,22 +1231,16 @@ test('UI Index org suppliers', function () {
     });
 });
 
-test('procurement navigation positions the shipping list and separates agent suppliers', function () {
+test('procurement navigation leaves the shopping list to each agent and separates agent suppliers', function () {
     $navigation = GetOrganisationNavigation::run($this->adminGuest->getUser(), $this->organisation);
 
-    expect(data_get($navigation, 'procurement.topMenu.subSections.2'))
-        ->toMatchArray([
-            'label' => "Agent's Shipping List",
-            'route' => [
-                'name'       => 'grp.org.procurement.shopping_list.index',
-                'parameters' => [$this->organisation->slug],
-            ],
-        ])
-        ->and(data_get($navigation, 'procurement.topMenu.subSections.3.route'))->toBe([
+    expect(collect(data_get($navigation, 'procurement.topMenu.subSections'))->pluck('route.name'))
+        ->not->toContain('grp.org.procurement.shopping_list.index')
+        ->and(data_get($navigation, 'procurement.topMenu.subSections.2.route'))->toBe([
             'name'       => 'grp.org.procurement.org_agent_suppliers.index',
             'parameters' => [$this->organisation->slug],
         ])
-        ->and(data_get($navigation, 'procurement.topMenu.subSections.4.route'))->toBe([
+        ->and(data_get($navigation, 'procurement.topMenu.subSections.3.route'))->toBe([
             'name'       => 'grp.org.procurement.org_suppliers.index',
             'parameters' => [
                 'organisation' => $this->organisation->slug,

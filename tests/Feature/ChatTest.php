@@ -1322,6 +1322,7 @@ test('GetAgentUnreadMessagesSummary returns zero counts when agent has no shops 
     expect($summary)->toBe([
         'assigned_unread_count'   => 0,
         'unassigned_unread_count' => 0,
+        'total_unread_count'      => 0,
     ]);
 });
 
