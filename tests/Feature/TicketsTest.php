@@ -547,3 +547,55 @@ test('read-only mirror mode blocks every write but still lets everyone read', fu
         ->and($ticket->fresh()->status)->toBe(TicketStatusEnum::OPEN)
         ->and($ticket->comments()->count())->toBe(0);
 });
+
+test('slack ticket reaction raises a ticket from the message and mirrors replies into its thread', function () {
+    Config::set('services.slack.signing_secret', 'shh');
+    Config::set('services.slack.notifications.bot_user_oauth_token', 'xoxb-test');
+    $this->user->update(['email' => 'raul@example.com']);
+    Http::fake([
+        'slack.com/api/users.info*'            => Http::response(['ok' => true, 'user' => ['profile' => ['email' => 'raul@example.com']]]),
+        'slack.com/api/conversations.history*' => Http::response(['ok' => true, 'messages' => [[
+            'user'  => 'U1',
+            'text'  => "Picking shows 1 instead of 3\nFaire FPGB",
+            'files' => [['id' => 'F1', 'name' => 'shot.png', 'mimetype' => 'image/png', 'size' => 100, 'url_private_download' => 'https://files.slack.com/shot.png']],
+        ]]]),
+        'files.slack.com/*'                    => Http::response(UploadedFile::fake()->image('shot.png', 10, 10)->getContent(), 200, ['Content-Type' => 'image/png']),
+        'slack.com/api/chat.postMessage'       => Http::response(['ok' => true]),
+    ]);
+    Auth::logout();
+
+    $post = function (array $payload, string $signature = null) {
+        $body      = json_encode($payload);
+        $timestamp = (string) time();
+        $headers   = [
+            'X-Slack-Request-Timestamp' => $timestamp,
+            'X-Slack-Signature'         => $signature ?? 'v0='.hash_hmac('sha256', "v0:$timestamp:$body", 'shh'),
+            'Content-Type'              => 'application/json',
+        ];
+
+        return $this->call('POST', route('webhooks.slack_events'), [], [], [], $this->transformHeadersToServerVars($headers), $body);
+    };
+
+    $post(['type' => 'url_verification', 'challenge' => 'abc'])->assertOk()->assertJson(['challenge' => 'abc']);
+    $post(['type' => 'event_callback', 'event' => []], 'v0=bad')->assertStatus(401);
+
+    $event = ['type' => 'event_callback', 'event' => ['type' => 'reaction_added', 'reaction' => 'ticket', 'user' => 'U2', 'item' => ['type' => 'message', 'channel' => 'C1', 'ts' => '1789138198.657369']]];
+    $post($event)->assertOk();
+    $post($event)->assertOk();
+    $post(['type' => 'event_callback', 'event' => ['type' => 'reaction_added', 'reaction' => 'eyes', 'item' => ['type' => 'message', 'channel' => 'C1', 'ts' => '2']]])->assertOk();
+
+    $ticket = Ticket::where('subject', 'Picking shows 1 instead of 3')->sole();
+    expect($ticket->description)->toBe('Faire FPGB')
+        ->and($ticket->reporter_id)->toBe($this->user->id)
+        ->and($ticket->data['slack']['ts'])->toBe('1789138198.657369')
+        ->and($ticket->getMedia('ticket_images')->count())->toBe(1);
+    Http::assertSentCount(4);
+    Http::assertSent(fn ($request) => str_contains($request->url(), 'chat.postMessage') && $request['thread_ts'] === '1789138198.657369' && str_contains($request['text'], $ticket->reference));
+
+    StoreTicketComment::make()->action($ticket, $this->user, ['body' => 'Fixed, please check']);
+    StoreTicketComment::make()->action($ticket, $this->user, ['body' => 'private', 'is_internal' => true]);
+    UpdateTicket::make()->action($ticket, ['status' => TicketStatusEnum::RESOLVED->value]);
+    Http::assertSent(fn ($request) => str_contains($request->url(), 'chat.postMessage') && str_contains($request['text'], 'Fixed, please check'));
+    Http::assertNotSent(fn ($request) => str_contains($request->url(), 'chat.postMessage') && str_contains($request['text'], 'private'));
+    Http::assertSent(fn ($request) => str_contains($request->url(), 'chat.postMessage') && str_ends_with($request['text'], 'Resolved'));
+});

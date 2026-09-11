@@ -16,6 +16,7 @@ use App\Models\Helpers\TicketComment;
 use App\Models\SysAdmin\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Str;
 use Lorisleiva\Actions\ActionRequest;
 
 class StoreTicketComment extends OrgAction
@@ -35,6 +36,10 @@ class StoreTicketComment extends OrgAction
 
         $comment->attachTicketImages(Arr::get($modelData, 'images', []));
         $ticket->touch();
+
+        if (!$comment->is_internal) {
+            PostTicketSlackThreadReply::run($ticket, ($author->contact_name ?? $author->email).': '.Str::limit($comment->body, 2000));
+        }
 
         return $comment;
     }
