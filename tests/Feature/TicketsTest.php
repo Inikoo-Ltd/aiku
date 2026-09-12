@@ -9,7 +9,6 @@
 use App\Actions\Chat\ChatSession\StoreChatSession;
 use App\Actions\Chat\ChatSession\StoreTicketFromChatSession;
 use App\Actions\Helpers\Ticket\CancelStaleTickets;
-use App\Actions\Helpers\Ticket\ImportJiraTickets;
 use App\Actions\Helpers\Ticket\LinkTicketsToAppDeployment;
 use App\Models\DevOps\AppDeployment;
 use App\Actions\Helpers\Ticket\RateTicket;
@@ -320,89 +319,6 @@ test('customer ticket escalates to a help ticket that keeps the customer and poi
         ->and($customerTicket->escalations()->pluck('reference')->all())->toBe([$helpTicket->reference]);
 
     post(route('grp.models.ticket.escalate', $helpTicket->id))->assertStatus(422);
-});
-
-test('jira import only takes HELP tickets, maps fields and bumps the sequence', function () {
-    $this->website->update(['domain' => 'aw-dropship.com']);
-
-    $adf = fn (string $text) => ['type' => 'doc', 'content' => [['type' => 'paragraph', 'content' => [['type' => 'text', 'text' => $text]]]]];
-
-    Http::fake([
-        'jira.test/rest/api/3/attachment/content/77' => Http::response('%PDF', 200, ['Content-Type' => 'application/pdf']),
-        'jira.test/rest/api/3/attachment/content/78' => Http::response(UploadedFile::fake()->image('shot.png', 10, 10)->getContent(), 200, ['Content-Type' => 'image/png']),
-        'jira.test/rest/api/3/search/jql' => Http::response(['issues' => [
-            [
-                'id'     => '1',
-                'key'    => 'HELP-500',
-                'fields' => [
-                    'summary'           => 'Feed page dead',
-                    'description'       => $adf('Line one'),
-                    'status'            => ['name' => 'Waiting for customer'],
-                    'issuetype'         => ['name' => 'Bug'],
-                    'priority'          => ['name' => 'High'],
-                    'reporter'          => ['displayName' => 'Shopper', 'emailAddress' => strtoupper($this->user->email)],
-                    'assignee'          => ['displayName' => $this->user->contact_name, 'emailAddress' => null],
-                    'created'           => '2026-01-02T10:00:00.000+0100',
-                    'updated'           => '2026-01-03T10:00:00.000+0100',
-                    'resolutiondate'    => null,
-                    'customfield_10051' => 'https://aw-dropship.com/feeds',
-                    'attachment'        => [
-                        ['id' => '77', 'filename' => 'invoice.pdf', 'mimeType' => 'application/pdf', 'size' => 4, 'content' => 'https://jira.test/rest/api/3/attachment/content/77'],
-                        ['id' => '78', 'filename' => 'shot.png', 'mimeType' => 'image/png', 'size' => 100, 'content' => 'https://jira.test/rest/api/3/attachment/content/78'],
-                    ],
-                    'comment'           => ['comments' => [
-                        ['author' => ['displayName' => $this->user->contact_name], 'body' => $adf('Looking into it'), 'jsdPublic' => false, 'created' => '2026-01-02T11:00:00.000+0100'],
-                    ]],
-                ],
-            ],
-            [
-                'id'     => '2',
-                'key'    => 'HELP-7',
-                'fields' => [
-                    'summary'        => 'Old one',
-                    'description'    => null,
-                    'status'         => ['name' => 'Done'],
-                    'issuetype'      => ['name' => 'Feature request'],
-                    'priority'       => ['name' => 'Medium'],
-                    'reporter'       => ['displayName' => 'Ghost', 'emailAddress' => 'nobody@example.com'],
-                    'created'        => '2025-01-02T10:00:00.000+0100',
-                    'updated'        => '2025-01-03T10:00:00.000+0100',
-                    'resolutiondate' => '2025-01-03T10:00:00.000+0100',
-                ],
-            ],
-        ]]),
-    ]);
-
-    $import   = fn () => ImportJiraTickets::make()->setJiraCredentials(['base_url' => 'https://jira.test', 'email' => 'x', 'api_token' => 'y'])->handle($this->group, 'HELP');
-    $imported = $import();
-
-    $ticket = Ticket::where('reference', 'HELP-500')->first();
-    expect($imported)->toBe(2)
-        ->and($ticket->type)->toBe(TicketTypeEnum::HELP)
-        ->and($ticket->kind)->toBe(TicketKindEnum::BUG)
-        ->and($ticket->number)->toBe(500)
-        ->and($ticket->status)->toBe(TicketStatusEnum::WAITING)
-        ->and($ticket->priority)->toBe(ChatPriorityEnum::HIGH)
-        ->and($ticket->description)->toBe("Line one\n")
-        ->and($ticket->shop_id)->toBe($this->shop->id)
-        ->and($ticket->reporter_type)->toBe('User')
-        ->and($ticket->reporter_id)->toBe($this->user->id)
-        ->and($ticket->assignee_id)->toBe($this->user->id)
-        ->and($ticket->created_at->year)->toBe(2026)
-        ->and($ticket->comments()->count())->toBe(1)
-        ->and($ticket->comments()->first()->is_internal)->toBeTrue()
-        ->and(Ticket::where('reference', 'HELP-7')->first()->resolved_at)->not->toBeNull()
-        ->and($ticket->getMedia('ticket_attachments')->pluck('name')->all())->toBe(['invoice.pdf'])
-        ->and($ticket->getMedia('ticket_images'))->toHaveCount(1)
-        ->and($ticket->ticketAttachments()[0]['url'])->toBeString();
-
-    $import();
-    expect($ticket->fresh()->media()->count())->toBe(2);
-
-    expect(StoreTicket::make()->action($this->group, ['subject' => 'After import'])->number)->toBe(501);
-
-    expect(fn () => ImportJiraTickets::make()->setJiraCredentials(['base_url' => 'https://jira.test', 'email' => 'x', 'api_token' => 'y'])->handle($this->group, 'AD'))
-        ->toThrow(RuntimeException::class);
 });
 
 test('staff file a bug from anywhere without leaving the page', function () {

@@ -29,7 +29,6 @@ use App\Actions\Dropshipping\Tiktok\Webhooks\HandleOrderIncomingTiktok;
 use App\Actions\Dropshipping\WooCommerce\CallbackRetinaWooCommerceUser;
 use App\Actions\Dropshipping\WooCommerce\Orders\CallbackFetchWooUserOrders;
 use App\Actions\Dropshipping\WooCommerce\Webhook\DeleteProductWebhooksWooCommerce;
-use App\Actions\Helpers\Jira\Webhook\HandleJiraWebhook;
 use App\Actions\Helpers\Ticket\ReceiveSlackInteraction;
 use App\Actions\Helpers\Ticket\ReceiveSlackTicketCommand;
 use App\Actions\Helpers\Ticket\ReceiveSlackTicketReaction;
@@ -101,8 +100,4 @@ Route::prefix('wix')->as('webhooks.wix.')->group(function () {
         Route::post('approved', HandleWixOrderApproved::class)->name('approved');
         Route::post('canceled', HandleWixOrderCanceled::class)->name('canceled');
     });
-});
-
-Route::prefix('jira/{group:id}')->as('webhooks.jira.')->group(function () {
-    Route::post('updated', HandleJiraWebhook::class)->name('updated');
 });
