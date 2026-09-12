@@ -54,7 +54,7 @@ class TicketsTool extends Tool
 
         $query
             ->when($request->filled('type'), fn ($query) => $query->where('type', $request->string('type')))
-            ->when($request->filled('status'), fn ($query) => $query->whereIn('status', explode(',', $request->string('status'))), fn ($query) => $query->whereNotIn('status', ['resolved', 'closed']))
+            ->when($request->filled('status'), fn ($query) => $query->whereIn('status', explode(',', $request->string('status'))), fn ($query) => $query->whereNotIn('status', ['resolved', 'cancelled']))
             ->when($request->filled('priority'), fn ($query) => $query->whereIn('priority', explode(',', $request->string('priority'))))
             ->when($request->filled('module'), fn ($query) => $query->where('module', $request->string('module')))
             ->when($request->filled('kind'), fn ($query) => $query->where('kind', $request->string('kind')))
@@ -94,7 +94,7 @@ class TicketsTool extends Tool
         return [
             'reference' => $schema->string()->description('Ticket reference, e.g. HELP-3074 or AD-1697. Returns the full ticket with comments.'),
             'type'      => $schema->string()->description('customer or help'),
-            'status'    => $schema->string()->description('Comma list of open,in_progress,waiting,resolved,closed. Default: everything not resolved or closed'),
+            'status'    => $schema->string()->description('Comma list of open,in_progress,waiting,resolved,cancelled. Default: everything not resolved or cancelled'),
             'priority'  => $schema->string()->description('Comma list of urgent,high,normal,low'),
             'module'    => $schema->string()->description('Aiku module, e.g. dispatching, crm, ordering'),
             'kind'      => $schema->string()->description('escalation, bug or feature'),

@@ -27,7 +27,7 @@ class ShowTicketsBoard extends OrgAction
     public function handle(Group $group): array
     {
         $tickets = Ticket::where('group_id', $group->id)->visibleTo(request()->user())
-            ->where(fn ($query) => $query->where('status', '!=', TicketStatusEnum::CLOSED)->orWhere('closed_at', '>=', now()->subDays(7)))
+            ->where(fn ($query) => $query->where('status', '!=', TicketStatusEnum::CANCELLED)->orWhere('closed_at', '>=', now()->subDays(7)))
             ->with(['reporter', 'assignee', 'customer'])
             ->orderByRaw("CASE priority WHEN 'urgent' THEN 0 WHEN 'high' THEN 1 WHEN 'normal' THEN 2 ELSE 3 END")
             ->orderByDesc('updated_at')

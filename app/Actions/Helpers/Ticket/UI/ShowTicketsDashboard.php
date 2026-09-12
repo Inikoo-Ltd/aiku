@@ -52,7 +52,7 @@ class ShowTicketsDashboard extends OrgAction
             ->join('users', 'users.id', '=', 'tickets.assignee_id')
             ->selectRaw("
                 coalesce(users.contact_name, users.username) as name,
-                count(*) filter (where tickets.status not in ('resolved', 'closed')) as open,
+                count(*) filter (where tickets.status not in ('resolved', 'cancelled')) as open,
                 count(*) filter (where tickets.resolved_at >= ?) as done,
                 percentile_cont(0.5) within group (order by extract(epoch from tickets.resolved_at - tickets.created_at) / 3600)
                     filter (where tickets.resolved_at >= ?) as median_hours
@@ -78,13 +78,13 @@ class ShowTicketsDashboard extends OrgAction
             return ['month' => $month, 'average' => isset($monthlyCsat[$month]) ? (float) $monthlyCsat[$month]->average : null, 'total' => (int) ($monthlyCsat[$month]->total ?? 0)];
         });
 
-        $oldestOpen = (clone $base)->whereNotIn('status', [TicketStatusEnum::RESOLVED, TicketStatusEnum::CLOSED])->orderBy('created_at')->first();
+        $oldestOpen = (clone $base)->whereNotIn('status', [TicketStatusEnum::RESOLVED, TicketStatusEnum::CANCELLED])->orderBy('created_at')->first();
 
         return [
             'days'          => $days,
             'created'       => $daily->sum('created'),
             'done'          => $daily->sum('done'),
-            'open'          => (int) $byStatus->except(['resolved', 'closed'])->sum(),
+            'open'          => (int) $byStatus->except(['resolved', 'cancelled'])->sum(),
             'median_hours'  => $medianHours === null ? null : round((float) $medianHours, 1),
             'oldest_open'   => $oldestOpen ? ['reference' => $oldestOpen->reference, 'age_days' => (int) Carbon::parse($oldestOpen->created_at)->diffInDays()] : null,
             'csat'          => $csat === null ? null : round((float) $csat, 1),

@@ -18,7 +18,7 @@ enum TicketStatusEnum: string
     case IN_PROGRESS = 'in_progress';
     case WAITING     = 'waiting';
     case RESOLVED    = 'resolved';
-    case CLOSED      = 'closed';
+    case CANCELLED   = 'cancelled';
 
     public static function labels(): array
     {
@@ -27,7 +27,7 @@ enum TicketStatusEnum: string
             'in_progress' => __('In progress'),
             'waiting'     => __('Waiting'),
             'resolved'    => __('Resolved'),
-            'closed'      => __('Closed'),
+            'cancelled'   => __("Won't do"),
         ];
     }
 
@@ -38,12 +38,12 @@ enum TicketStatusEnum: string
             'in_progress' => ['tooltip' => __('In progress'), 'icon' => 'fal fa-spinner', 'class' => 'text-amber-500', 'color' => 'amber'],
             'waiting'     => ['tooltip' => __('Waiting'), 'icon' => 'fal fa-clock', 'class' => 'text-gray-500', 'color' => 'gray'],
             'resolved'    => ['tooltip' => __('Resolved'), 'icon' => 'fal fa-check-circle', 'class' => 'text-green-500', 'color' => 'green'],
-            'closed'      => ['tooltip' => __('Closed'), 'icon' => 'fal fa-times-circle', 'class' => 'text-gray-400', 'color' => 'gray'],
+            'cancelled'   => ['tooltip' => __("Won't do"), 'icon' => 'fal fa-ban', 'class' => 'text-gray-400', 'color' => 'gray'],
         ];
     }
 
     public function isOpen(): bool
     {
-        return !in_array($this, [self::RESOLVED, self::CLOSED]);
+        return !in_array($this, [self::RESOLVED, self::CANCELLED]);
     }
 }

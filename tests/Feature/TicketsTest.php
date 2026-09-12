@@ -8,6 +8,7 @@
 
 use App\Actions\Chat\ChatSession\StoreChatSession;
 use App\Actions\Chat\ChatSession\StoreTicketFromChatSession;
+use App\Actions\Helpers\Ticket\CancelStaleTickets;
 use App\Actions\Helpers\Ticket\ImportJiraTickets;
 use App\Actions\Helpers\Ticket\LinkTicketsToAppDeployment;
 use App\Models\DevOps\AppDeployment;
@@ -96,7 +97,7 @@ test('status changes stamp resolved and closed dates', function (Ticket $ticket)
     $ticket = UpdateTicket::make()->action($ticket, ['status' => TicketStatusEnum::RESOLVED->value]);
     expect($ticket->resolved_at)->not->toBeNull()->and($ticket->closed_at)->toBeNull();
 
-    $ticket = UpdateTicket::make()->action($ticket, ['status' => TicketStatusEnum::CLOSED->value]);
+    $ticket = UpdateTicket::make()->action($ticket, ['status' => TicketStatusEnum::CANCELLED->value]);
     expect($ticket->closed_at)->not->toBeNull();
 
     $ticket = UpdateTicket::make()->action($ticket, ['status' => TicketStatusEnum::OPEN->value, 'assignee_id' => $this->user->id]);
@@ -104,6 +105,19 @@ test('status changes stamp resolved and closed dates', function (Ticket $ticket)
         ->and($ticket->closed_at)->toBeNull()
         ->and($ticket->assignee_id)->toBe($this->user->id);
 })->depends('help ticket gets a HELP reference and defaults');
+
+test('a ticket waiting longer than the grace period is cancelled, a fresh one is left alone', function () {
+    $stale = StoreTicket::make()->action($this->group, ['subject' => 'Waited forever']);
+    $fresh = StoreTicket::make()->action($this->group, ['subject' => 'Just asked']);
+    Ticket::whereIn('id', [$stale->id, $fresh->id])->update(['status' => TicketStatusEnum::WAITING]);
+    Ticket::where('id', $stale->id)->update(['updated_at' => now()->subDays(20)]);
+
+    expect(CancelStaleTickets::run(14))->toBe(1)
+        ->and($stale->fresh()->status)->toBe(TicketStatusEnum::CANCELLED)
+        ->and($stale->fresh()->closed_at)->not->toBeNull()
+        ->and($stale->comments()->where('is_internal', true)->count())->toBe(1)
+        ->and($fresh->fresh()->status)->toBe(TicketStatusEnum::WAITING);
+});
 
 test('staff can leave internal notes but customers never can', function (Ticket $ticket) {
     $staffNote = StoreTicketComment::make()->action($ticket, $this->user, ['body' => 'Looking into it', 'is_internal' => true]);
@@ -259,7 +273,7 @@ test('reporter rates a resolved ticket once and CSAT shows on the dashboard', fu
 
 test('staff reporter rates their own resolved help ticket from grp', function () {
     $ticket = StoreTicket::make()->action($this->group, ['subject' => 'Rate from grp', 'reporter_type' => 'User', 'reporter_id' => $this->user->id]);
-    UpdateTicket::make()->action($ticket, ['status' => TicketStatusEnum::CLOSED->value]);
+    UpdateTicket::make()->action($ticket, ['status' => TicketStatusEnum::CANCELLED->value]);
 
     get(route('grp.tickets.show', $ticket->reference))->assertInertia(fn (AssertableInertia $page) => $page->where('can_rate', true));
     post(route('grp.models.ticket.rate', $ticket->id), ['rating' => 5])->assertRedirect();
@@ -740,7 +754,7 @@ test('only the help desk manages tickets, everyone else reports, comments and cl
     expect($other->fresh()->assignee_id)->toBe($boss->id);
 
     AikuServer::actingAs($reporter)->tool(TicketWriteTool::class, ['reference' => $other->reference, 'priority' => 'low'])->assertHasErrors();
-    AikuServer::actingAs($reporter)->tool(TicketWriteTool::class, ['reference' => $ticket->reference, 'status' => 'closed'])->assertOk();
+    AikuServer::actingAs($reporter)->tool(TicketWriteTool::class, ['reference' => $ticket->reference, 'status' => 'cancelled'])->assertOk();
     AikuServer::actingAs($helper)->tool(TicketWriteTool::class, ['reference' => $other->reference, 'priority' => 'low'])->assertOk();
     AikuServer::actingAs($helper)->tool(TicketWriteTool::class, ['reference' => $other->reference, 'assignee' => $reporter->username])->assertHasErrors();
     AikuServer::actingAs($boss)->tool(TicketWriteTool::class, ['reference' => $other->reference, 'assignee' => $helper->username])->assertOk();

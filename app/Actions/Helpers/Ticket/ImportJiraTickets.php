@@ -121,8 +121,8 @@ class ImportJiraTickets
                     'reference_url'    => Arr::get($fields, 'customfield_10051'),
                     'attachments'      => collect(Arr::get($fields, 'attachment', []))->map(fn ($attachment) => Arr::only($attachment, ['filename', 'content', 'mimeType', 'size']))->all(),
                 ],
-                'resolved_at'     => $status === TicketStatusEnum::RESOLVED || $status === TicketStatusEnum::CLOSED ? $this->date(Arr::get($fields, 'resolutiondate')) ?? $this->date(Arr::get($fields, 'updated')) : null,
-                'closed_at'       => $status === TicketStatusEnum::CLOSED ? $this->date(Arr::get($fields, 'resolutiondate')) ?? $this->date(Arr::get($fields, 'updated')) : null,
+                'resolved_at'     => $status === TicketStatusEnum::RESOLVED || $status === TicketStatusEnum::CANCELLED ? $this->date(Arr::get($fields, 'resolutiondate')) ?? $this->date(Arr::get($fields, 'updated')) : null,
+                'closed_at'       => $status === TicketStatusEnum::CANCELLED ? $this->date(Arr::get($fields, 'resolutiondate')) ?? $this->date(Arr::get($fields, 'updated')) : null,
                 'created_at'      => $this->date(Arr::get($fields, 'created')),
                 'updated_at'      => $this->date(Arr::get($fields, 'updated')),
             ]
@@ -210,9 +210,9 @@ class ImportJiraTickets
     {
         return match (strtolower((string) $status)) {
             'in progress', 'escalated'                                                   => TicketStatusEnum::IN_PROGRESS,
-            'waiting for customer', 'customer replied', 'reopen by customer', 'no reply' => TicketStatusEnum::WAITING,
+            'waiting for customer', 'customer replied', 'reopen by customer'              => TicketStatusEnum::WAITING,
             'done', 'resolved'                                                           => TicketStatusEnum::RESOLVED,
-            'canceled', 'cancelled', 'no applicable', 'closed'                            => TicketStatusEnum::CLOSED,
+            'canceled', 'cancelled', 'no applicable', 'closed', 'no reply', 'no relpy'    => TicketStatusEnum::CANCELLED,
             default                                                                      => TicketStatusEnum::OPEN,
         };
     }

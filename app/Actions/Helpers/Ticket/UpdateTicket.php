@@ -35,7 +35,7 @@ class UpdateTicket extends OrgAction
         if ($status = Arr::get($modelData, 'status')) {
             $status = TicketStatusEnum::from($status);
             data_set($modelData, 'resolved_at', $status === TicketStatusEnum::RESOLVED ? now() : ($status->isOpen() ? null : $ticket->resolved_at));
-            data_set($modelData, 'closed_at', $status === TicketStatusEnum::CLOSED ? now() : null);
+            data_set($modelData, 'closed_at', $status === TicketStatusEnum::CANCELLED ? now() : null);
         }
 
         $ticket = $this->update($ticket, $modelData);

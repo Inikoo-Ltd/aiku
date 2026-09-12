@@ -20,7 +20,7 @@ use Laravel\Mcp\Response;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
 
-#[Description('Change a ticket or create a help ticket. With a reference: add a comment (internal by default, public reaches the customer on AD tickets), change status (open, in_progress, waiting, resolved, closed), priority, assignee (username), kind, module or tags. Without a reference: creates a new HELP ticket with subject, and optional description, kind, module, priority. Every change is recorded as the authenticated user.')]
+#[Description('Change a ticket or create a help ticket. With a reference: add a comment (internal by default, public reaches the customer on AD tickets), change status (open, in_progress, waiting, resolved, cancelled), priority, assignee (username), kind, module or tags. Without a reference: creates a new HELP ticket with subject, and optional description, kind, module, priority. Every change is recorded as the authenticated user.')]
 class TicketWriteTool extends Tool
 {
     public function handle(Request $request): Response
@@ -31,7 +31,7 @@ class TicketWriteTool extends Tool
             'description' => ['sometimes', 'nullable', 'string'],
             'comment'     => ['sometimes', 'string'],
             'public'      => ['sometimes', 'boolean'],
-            'status'      => ['sometimes', 'in:open,in_progress,waiting,resolved,closed'],
+            'status'      => ['sometimes', 'in:open,in_progress,waiting,resolved,cancelled'],
             'priority'    => ['sometimes', 'in:low,normal,high,urgent'],
             'assignee'    => ['sometimes', 'nullable', 'string'],
             'kind'        => ['sometimes', 'nullable', 'in:escalation,bug,feature'],
@@ -120,7 +120,7 @@ class TicketWriteTool extends Tool
             'description' => $schema->string()->description('Description for a new ticket'),
             'comment'     => $schema->string()->description('Comment to add to the ticket'),
             'public'      => $schema->boolean()->description('Make the comment visible to the customer (AD tickets). Default false: internal note'),
-            'status'      => $schema->string()->description('open, in_progress, waiting, resolved or closed'),
+            'status'      => $schema->string()->description('open, in_progress, waiting, resolved or cancelled'),
             'priority'    => $schema->string()->description('low, normal, high or urgent'),
             'assignee'    => $schema->string()->description('Username to assign, empty string to unassign'),
             'kind'        => $schema->string()->description('escalation, bug or feature'),

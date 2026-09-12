@@ -76,6 +76,7 @@ class Kernel extends ConsoleKernel
     protected function schedule(Schedule $schedule): void
     {
         $schedule->command('horizon:snapshot')->everyFiveMinutes()->onOneServer();
+        $schedule->command('tickets:cancel_stale')->dailyAt('03:00')->onOneServer();
         if (in_array('help', config('tickets.read_only_types', []), true)) {
             $schedule->command('jira:import_tickets HELP --since=60')->everyFifteenMinutes()->withoutOverlapping()->onOneServer();
         }
