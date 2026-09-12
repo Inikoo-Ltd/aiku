@@ -29,7 +29,11 @@ class StoreTicketCommentFromSlackThread
             return null;
         }
 
-        $ticket = Ticket::where('data->slack->ts', Arr::get($event, 'thread_ts'))->where('data->slack->channel_id', Arr::get($event, 'channel'))->first();
+        $ticket = Ticket::where(
+            fn ($query) => $query
+            ->where(fn ($origin) => $origin->where('data->slack->ts', Arr::get($event, 'thread_ts'))->where('data->slack->channel_id', Arr::get($event, 'channel')))
+            ->orWhere(fn ($alert) => $alert->where('data->slack_alert->ts', Arr::get($event, 'thread_ts'))->where('data->slack_alert->channel', Arr::get($event, 'channel')))
+        )->first();
         $author = $ticket ? $this->slackUserToAikuUser(Arr::get($event, 'user')) : null;
         if (!$ticket || !$author) {
             return null;

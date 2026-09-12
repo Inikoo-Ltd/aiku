@@ -427,12 +427,14 @@ test('new tickets post one alert in the Slack tickets channel and edit it as sta
     UpdateTicket::make()->action($ticket, ['assignee_id' => $this->user->id, 'status' => TicketStatusEnum::IN_PROGRESS->value]);
     Http::assertSent(fn ($request) => str_contains($request->url(), 'chat.update') && $request['ts'] === '42.1' && $request['channel'] === 'C9' && str_contains(json_encode($request['blocks']), 'Status:* In progress') && str_contains(json_encode($request['blocks']), $this->user->username));
 
+    Http::assertSent(fn ($request) => str_contains($request->url(), 'chat.postMessage') && ($request['thread_ts'] ?? null) === '42.1' && str_ends_with($request['text'], 'In progress'));
+
     UpdateTicket::make()->action($ticket, ['priority' => 'urgent']);
-    Http::assertSentCount(2);
+    Http::assertSentCount(3);
 
     Config::set('services.slack.notifications.tickets_channel', null);
     StoreTicket::make()->action($this->group, ['subject' => 'Silent']);
-    Http::assertSentCount(2);
+    Http::assertSentCount(3);
 });
 
 
@@ -538,6 +540,11 @@ test('slack ticket reaction raises a ticket from the message and mirrors replies
     $post(['type' => 'event_callback', 'event' => ['type' => 'message', 'channel' => 'C1', 'user' => 'U1', 'ts' => '1789138199.1', 'thread_ts' => '1789138198.657369', 'text' => 'It is FPGB-123']])->assertOk();
     $post(['type' => 'event_callback', 'event' => ['type' => 'message', 'channel' => 'C1', 'bot_id' => 'B1', 'ts' => '1789138199.2', 'thread_ts' => '1789138198.657369', 'text' => 'HELP-1 is now Waiting']])->assertOk();
     $post(['type' => 'event_callback', 'event' => ['type' => 'message', 'channel' => 'C1', 'user' => 'U1', 'ts' => '1789138199.3', 'text' => 'unrelated top level message']])->assertOk();
+    $fromModal = StoreTicket::make()->action($this->group, ['subject' => 'Born in aiku', 'data' => ['slack_alert' => ['channel' => 'C9', 'ts' => '55.1']]]);
+    $post(['type' => 'event_callback', 'event' => ['type' => 'message', 'channel' => 'C9', 'user' => 'U1', 'ts' => '55.2', 'thread_ts' => '55.1', 'text' => 'reply under the alert card']])->assertOk();
+    expect($fromModal->comments()->pluck('body')->all())->toBe(['reply under the alert card']);
+    StoreTicketComment::make()->action($fromModal, $this->user, ['body' => 'answer from aiku']);
+    Http::assertSent(fn ($request) => str_contains($request->url(), 'chat.postMessage') && $request['thread_ts'] === '55.1' && str_contains($request['text'], 'answer from aiku'));
     expect($ticket->fresh()->status)->toBe(TicketStatusEnum::OPEN)
         ->and($ticket->comments()->where('is_internal', false)->pluck('body')->all())->toBe(['Fixed, please check', 'It is FPGB-123']);
     Http::assertNotSent(fn ($request) => str_contains($request->url(), 'chat.postMessage') && str_contains($request['text'], 'It is FPGB-123'));

@@ -19,8 +19,8 @@ class PostTicketSlackThreadReply
 
     public function handle(Ticket $ticket, string $text): void
     {
-        $channel = data_get($ticket->data, 'slack.channel_id');
-        $threadTs = data_get($ticket->data, 'slack.ts');
+        $channel  = data_get($ticket->data, 'slack.channel_id') ?? data_get($ticket->data, 'slack_alert.channel');
+        $threadTs = data_get($ticket->data, 'slack.ts') ?? data_get($ticket->data, 'slack_alert.ts');
         if (!$channel || !$threadTs || !$client = $this->slackClient()) {
             return;
         }
