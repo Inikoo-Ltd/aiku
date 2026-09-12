@@ -125,7 +125,7 @@ test('create group', function () {
 
     $group = StoreGroup::make()->action($modelData);
     expect($group)->toBeInstanceOf(Group::class)
-        ->and($group->roles()->count())->toBe(10)
+        ->and($group->roles()->count())->toBe(12)
         ->and($group->jobPositionCategories()->count())->toBe($jobPositions->count());
 
     return $group;

@@ -92,6 +92,7 @@ test('neither master nor slave schedules register when both flags are disabled',
                 'prune-traffic-source-clicks',
                 'search:propose-synonyms',
                 'sync:customers-to-google-ads --all',
+                'tickets:cancel_stale',
                 'traffic-source:collect-visits',
                 'traffic-source:fetch-meta-costs --days=2'
             ]
