@@ -51,6 +51,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $password
  * @property UserAuthTypeEnum $auth_type
  * @property string|null $contact_name no-normalised depends on parent
+ * @property string|null $slack_user_id
  * @property string|null $nickname
  * @property string|null $email
  * @property string|null $about

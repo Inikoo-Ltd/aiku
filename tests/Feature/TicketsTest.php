@@ -12,6 +12,7 @@ use App\Actions\Helpers\Ticket\ImportJiraTickets;
 use App\Actions\Helpers\Ticket\LinkTicketsToAppDeployment;
 use App\Models\DevOps\AppDeployment;
 use App\Actions\Helpers\Ticket\RateTicket;
+use App\Actions\Helpers\Ticket\RepairSlackTicketReporters;
 use App\Actions\Helpers\Ticket\StoreTicket;
 use App\Actions\Helpers\Ticket\StoreTicketComment;
 use App\Actions\Helpers\Ticket\UI\ShowTicketsDashboard;
@@ -599,9 +600,11 @@ test('slack ticket reaction raises a ticket from the message and mirrors replies
     $ticket = Ticket::where('subject', 'Picking shows 1 instead of 3')->sole();
     expect($ticket->description)->toBe('Faire FPGB')
         ->and($ticket->reporter_id)->toBe($this->user->id)
+        ->and($this->user->fresh()->slack_user_id)->toBe('U1')
         ->and($ticket->data['slack']['ts'])->toBe('1789138198.657369')
         ->and($ticket->getMedia('ticket_images')->count())->toBe(1);
-    Http::assertSentCount(4);
+    Http::assertSent(fn ($request) => str_contains($request->url(), 'conversations.history'));
+    Http::assertSent(fn ($request) => str_contains($request->url(), 'files.slack.com'));
     Http::assertSent(fn ($request) => str_contains($request->url(), 'chat.postMessage') && $request['thread_ts'] === '1789138198.657369' && str_contains($request['text'], $ticket->reference));
 
     StoreTicketComment::make()->action($ticket, $this->user, ['body' => 'Fixed, please check']);
@@ -610,4 +613,9 @@ test('slack ticket reaction raises a ticket from the message and mirrors replies
     Http::assertSent(fn ($request) => str_contains($request->url(), 'chat.postMessage') && str_contains($request['text'], 'Fixed, please check'));
     Http::assertNotSent(fn ($request) => str_contains($request->url(), 'chat.postMessage') && str_contains($request['text'], 'private'));
     Http::assertSent(fn ($request) => str_contains($request->url(), 'chat.postMessage') && str_ends_with($request['text'], 'Resolved'));
+
+    $orphan = StoreTicket::make()->action($this->group, ['subject' => 'Unknown reporter', 'data' => ['slack' => ['user_id' => 'U1', 'channel_id' => 'C1', 'ts' => '9']]]);
+    expect($orphan->reporter_id)->toBeNull()
+        ->and(RepairSlackTicketReporters::run())->toBe(1)
+        ->and($orphan->fresh()->reporter_id)->toBe($this->user->id);
 });

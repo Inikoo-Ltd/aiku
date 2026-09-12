@@ -40,12 +40,16 @@ trait WithSlack
             return null;
         }
 
+        if ($known = User::where('status', true)->where('slack_user_id', $slackUserId)->first()) {
+            return $known;
+        }
+
         $slackUser = $client->get('users.info', ['user' => $slackUserId])->json('user', []);
         $email     = strtolower((string) data_get($slackUser, 'profile.email'));
         $username  = strtolower((string) data_get($slackUser, 'name'));
         $realName  = trim((string) (data_get($slackUser, 'real_name') ?: data_get($slackUser, 'profile.real_name')));
 
-        return User::query()
+        $user = User::query()
             ->where('status', true)
             ->where(function ($query) use ($email, $username, $realName) {
                 $query->whereRaw('false');
@@ -61,5 +65,11 @@ trait WithSlack
             })
             ->orderByRaw('lower(email) = ? desc', [$email])
             ->first();
+
+        if ($user) {
+            $user->update(['slack_user_id' => $slackUserId]);
+        }
+
+        return $user;
     }
 }
