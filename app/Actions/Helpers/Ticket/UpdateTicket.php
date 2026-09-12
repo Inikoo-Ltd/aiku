@@ -74,9 +74,9 @@ class UpdateTicket extends OrgAction
 
         $ticket = $request->route('ticket');
         if (Ticket::canBeManagedBy($request->user())) {
-            $takesItself = !$request->has('assignee_id') || ((int) $request->input('assignee_id') === $request->user()->id && $ticket instanceof Ticket && !$ticket->assignee_id);
+            $onOwnPlate = $ticket instanceof Ticket && $ticket->assignee_id === $request->user()->id && $request->filled('assignee_id');
 
-            return $takesItself && !$request->has('is_confidential');
+            return (!$request->has('assignee_id') || $onOwnPlate) && !$request->has('is_confidential');
         }
 
         return $ticket instanceof Ticket && $ticket->isReportedBy($request->user()) && array_keys($request->all()) === ['status'];

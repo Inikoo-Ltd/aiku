@@ -74,8 +74,8 @@ class TicketWriteTool extends Tool
         if (!Ticket::canBeManagedBy($user) && $request->hasAny(['priority', 'kind', 'module', 'tags', 'assignee'])) {
             return Response::error('Only the help desk can change priority, kind, module, tags or assignee. You can change the status of your own ticket and comment.');
         }
-        if (!Ticket::canBeAssignedBy($user) && $request->has('assignee') && !($request->get('assignee') === $user->username && !$ticket->assignee_id)) {
-            return Response::error('Only a help desk supervisor assigns tickets to others. You can take an unassigned ticket yourself.');
+        if (!Ticket::canBeAssignedBy($user) && $request->has('assignee') && !($ticket->assignee_id === $user->id && $request->filled('assignee'))) {
+            return Response::error('Only a help desk supervisor hands out unassigned tickets. You can pass a ticket assigned to you on to a colleague.');
         }
 
         $changes = array_filter([

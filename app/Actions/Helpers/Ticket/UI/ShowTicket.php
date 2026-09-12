@@ -67,7 +67,8 @@ class ShowTicket extends OrgAction
                 ],
                 'can_rate'    => RateTicket::canRate($ticket, request()->user()),
                 'can_manage'  => Ticket::canBeManagedBy(request()->user()),
-                'can_assign'  => Ticket::canBeAssignedBy(request()->user()),
+                'can_assign'  => Ticket::canBeAssignedBy(request()->user()) || (Ticket::canBeManagedBy(request()->user()) && $ticket->assignee_id === request()->user()->id),
+                'can_flag_confidential' => Ticket::canBeAssignedBy(request()->user()),
                 'is_reporter' => $ticket->isReportedBy(request()->user()),
                 'routes'      => [
                     'update'  => ['name' => 'grp.models.ticket.update', 'parameters' => ['ticket' => $ticket->id]],
