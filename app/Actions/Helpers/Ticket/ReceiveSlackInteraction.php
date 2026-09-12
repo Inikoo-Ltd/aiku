@@ -14,6 +14,7 @@ use App\Models\SysAdmin\Group;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Log;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 /**
@@ -35,7 +36,7 @@ class ReceiveSlackInteraction
     {
         [$subject, $description] = array_pad(explode("\n", trim((string) Arr::get($context, 'text')), 2), 2, '');
 
-        $this->slackClient()?->post('views.open', [
+        $response = $this->slackClient()?->post('views.open', [
             'trigger_id' => $context['trigger_id'],
             'view'       => [
                 'type'             => 'modal',
@@ -45,13 +46,17 @@ class ReceiveSlackInteraction
                 'submit'           => ['type' => 'plain_text', 'text' => 'Send'],
                 'close'            => ['type' => 'plain_text', 'text' => 'Cancel'],
                 'blocks'           => [
-                    $this->input('subject', 'What is wrong', ['type' => 'plain_text_input', 'action_id' => 'value', 'max_length' => 255, 'initial_value' => mb_substr($subject, 0, 255)]),
-                    $this->input('description', 'Details', ['type' => 'plain_text_input', 'action_id' => 'value', 'multiline' => true, 'initial_value' => trim($description)], true),
+                    $this->input('subject', 'What is wrong', array_filter(['type' => 'plain_text_input', 'action_id' => 'value', 'max_length' => 255, 'initial_value' => mb_substr(trim($subject), 0, 255)])),
+                    $this->input('description', 'Details', array_filter(['type' => 'plain_text_input', 'action_id' => 'value', 'multiline' => true, 'initial_value' => trim($description)]), true),
                     $this->input('reference_url', 'Link to the page where it happens', ['type' => 'url_text_input', 'action_id' => 'value', 'placeholder' => ['type' => 'plain_text', 'text' => 'https://app.aiku.io/...']]),
                     $this->input('files', 'Screenshots (they help a lot)', ['type' => 'file_input', 'action_id' => 'value', 'max_files' => 5], true),
                 ],
             ],
         ]);
+
+        if ($response && !$response->json('ok')) {
+            Log::warning('Slack views.open failed', ['error' => $response->json('error'), 'response_metadata' => $response->json('response_metadata')]);
+        }
     }
 
     private function input(string $blockId, string $label, array $element, bool $optional = false): array
