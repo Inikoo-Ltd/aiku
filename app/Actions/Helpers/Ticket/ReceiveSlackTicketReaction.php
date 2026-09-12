@@ -10,15 +10,12 @@ namespace App\Actions\Helpers\Ticket;
 
 use App\Actions\Helpers\Ticket\Concerns\WithSlack;
 use App\Actions\Helpers\Ticket\Concerns\WithTicketsWriteGuard;
-use App\Enums\Helpers\Ticket\TicketKindEnum;
-use App\Enums\Helpers\Ticket\TicketTypeEnum;
 use App\Models\Helpers\Ticket;
 use App\Models\SysAdmin\Group;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Str;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class ReceiveSlackTicketReaction
@@ -40,52 +37,20 @@ class ReceiveSlackTicketReaction
             return null;
         }
 
-        $text     = trim((string) Arr::get($message, 'text', ''));
-        $reporter = $this->slackUserToAikuUser(Arr::get($message, 'user')) ?? $this->slackUserToAikuUser($reactedBy);
-        [$subject, $description] = array_pad(explode("\n", $text, 2), 2, null);
+        $reporterId = Arr::get($message, 'user');
+        if ($reporterId && !$this->slackUserToAikuUser($reporterId)) {
+            $reporterId = $reactedBy;
+        }
+        [$subject, $description] = array_pad(explode("\n", trim((string) Arr::get($message, 'text', '')), 2), 2, null);
 
-        $ticket = StoreTicket::make()->action($group, [
-            'type'          => TicketTypeEnum::HELP->value,
-            'kind'          => TicketKindEnum::BUG->value,
-            'subject'       => Str::limit($subject ?: 'Slack message', 255, ''),
-            'description'   => trim((string) $description) ?: null,
-            'reporter_type' => $reporter ? 'User' : null,
-            'reporter_id'   => $reporter?->id,
-            'data'          => [
-                'slack' => [
-                    'user_id'    => Arr::get($message, 'user'),
-                    'channel_id' => $channel,
-                    'ts'         => $ts,
-                ],
-            ],
+        return StoreTicketFromSlack::run($group, [
+            'user_id'     => $reporterId ?: Arr::get($message, 'user'),
+            'channel_id'  => $channel,
+            'ts'          => $ts,
+            'subject'     => $subject,
+            'description' => $description,
+            'files'       => Arr::get($message, 'files', []),
         ]);
-
-        foreach (Arr::get($message, 'files', []) as $file) {
-            $this->attachSlackFile($ticket, $file);
-        }
-
-        PostTicketSlackThreadReply::run($ticket, $ticket->reference.' raised: '.route('grp.tickets.show', $ticket->reference));
-
-        return $ticket;
-    }
-
-    private function attachSlackFile(Ticket $ticket, array $file): void
-    {
-        $url = Arr::get($file, 'url_private_download');
-        if (!$url || Arr::get($file, 'size', 0) > config('media-library.max_file_size')) {
-            return;
-        }
-        $path = tempnam(sys_get_temp_dir(), 'slack');
-        try {
-            $response = $this->slackClient()->timeout(60)->sink($path)->get($url);
-            if ($response->successful()) {
-                $ticket->attachTicketFile($path, Arr::get($file, 'name', 'file'), Arr::get($file, 'mimetype'), ['slack_file_id' => Arr::get($file, 'id')]);
-            }
-        } catch (\Throwable $e) {
-            Log::warning('Slack ticket file download failed', ['ticket' => $ticket->reference, 'file' => Arr::get($file, 'id'), 'error' => $e->getMessage()]);
-        } finally {
-            @unlink($path);
-        }
     }
 
     public function asController(Request $request): JsonResponse

@@ -619,3 +619,62 @@ test('slack ticket reaction raises a ticket from the message and mirrors replies
         ->and(RepairSlackTicketReporters::run())->toBe(1)
         ->and($orphan->fresh()->reporter_id)->toBe($this->user->id);
 });
+
+test('slack shortcut opens the ticket modal and only its submit creates the ticket', function () {
+    Config::set('services.slack.signing_secret', 'shh');
+    Config::set('services.slack.notifications.bot_user_oauth_token', 'xoxb-test');
+    Http::fake([
+        'slack.com/api/users.info*'      => Http::response(['ok' => true, 'user' => ['name' => $this->user->username, 'profile' => ['email' => 'nobody@example.com']]]),
+        'slack.com/api/views.open'       => Http::response(['ok' => true]),
+        'slack.com/api/chat.postMessage' => Http::response(['ok' => true]),
+        'files.slack.com/*'              => Http::response(UploadedFile::fake()->image('modal.png', 10, 10)->getContent(), 200, ['Content-Type' => 'image/png']),
+    ]);
+    Auth::logout();
+
+    $post = function (array $payload) {
+        $body      = http_build_query(['payload' => json_encode($payload)]);
+        $timestamp = (string) time();
+        $headers   = [
+            'X-Slack-Request-Timestamp' => $timestamp,
+            'X-Slack-Signature'         => 'v0='.hash_hmac('sha256', "v0:$timestamp:$body", 'shh'),
+            'Content-Type'              => 'application/x-www-form-urlencoded',
+        ];
+
+        return $this->call('POST', route('webhooks.slack_interactivity'), ['payload' => json_encode($payload)], [], [], $this->transformHeadersToServerVars($headers), $body);
+    };
+
+    $post(['type' => 'message_action', 'callback_id' => 'raise_ticket', 'trigger_id' => 'T1', 'user' => ['id' => 'U1'], 'channel' => ['id' => 'C1'], 'message' => ['ts' => '55.1', 'text' => "Labels blank\nSK printer only"]])->assertOk();
+    Http::assertSent(function ($request) {
+        $view = $request['view'] ?? null;
+
+        return str_contains($request->url(), 'views.open')
+            && $request['trigger_id'] === 'T1'
+            && $view['blocks'][0]['element']['initial_value'] === 'Labels blank'
+            && $view['blocks'][1]['element']['initial_value'] === 'SK printer only'
+            && json_decode($view['private_metadata'], true) === ['user_id' => 'U1', 'channel_id' => 'C1', 'ts' => '55.1'];
+    });
+    expect(Ticket::where('subject', 'Labels blank')->exists())->toBeFalse();
+
+    $post([
+        'type' => 'view_submission',
+        'user' => ['id' => 'U1'],
+        'view' => [
+            'callback_id'      => 'raise_ticket',
+            'private_metadata' => json_encode(['user_id' => 'U1', 'channel_id' => 'C1', 'ts' => '55.1']),
+            'state'            => ['values' => [
+                'subject'       => ['value' => ['value' => 'Labels blank']],
+                'description'   => ['value' => ['value' => 'SK printer only']],
+                'reference_url' => ['value' => ['value' => 'https://app.aiku.io/org/aw/warehouses/ac']],
+                'files'         => ['value' => ['files' => [['id' => 'F9', 'name' => 'modal.png', 'mimetype' => 'image/png', 'size' => 100, 'url_private_download' => 'https://files.slack.com/modal.png']]]],
+            ]],
+        ],
+    ])->assertOk();
+
+    $ticket = Ticket::where('subject', 'Labels blank')->sole();
+    expect($ticket->description)->toBe('SK printer only')
+        ->and($ticket->reporter_id)->toBe($this->user->id)
+        ->and($ticket->data['reference_url'])->toBe('https://app.aiku.io/org/aw/warehouses/ac')
+        ->and($ticket->data['slack']['ts'])->toBe('55.1')
+        ->and($ticket->getMedia('ticket_images')->count())->toBe(1);
+    Http::assertSent(fn ($request) => str_contains($request->url(), 'chat.postMessage') && $request['thread_ts'] === '55.1' && str_contains($request['text'], $ticket->reference));
+});

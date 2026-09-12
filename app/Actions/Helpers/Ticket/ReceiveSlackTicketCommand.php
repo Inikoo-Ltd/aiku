@@ -54,7 +54,13 @@ class ReceiveSlackTicketCommand
         }
 
         if (trim((string) $request->input('text')) === '') {
-            return response()->json(['response_type' => 'ephemeral', 'text' => 'Usage: /ticket what is broken. Add a second line for details.']);
+            ReceiveSlackInteraction::make()->openTicketModal([
+                'trigger_id' => $request->input('trigger_id'),
+                'user_id'    => $request->input('user_id'),
+                'channel_id' => $request->input('channel_id'),
+            ]);
+
+            return response()->json([]);
         }
 
         $ticket = $this->handle(Group::firstOrFail(), $request->all());
