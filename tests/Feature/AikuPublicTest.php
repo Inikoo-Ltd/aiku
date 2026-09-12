@@ -15,6 +15,7 @@ use function Pest\Laravel\get;
 
 beforeEach(function () {
     $this->host = 'http://'.config('app.domain');
+    cache()->put('aiku_public_article_commit_dates', ['anatomy-of-a-deploy' => '2026-08-19T10:00:00+08:00'], 600);
 });
 
 test('home renders server side with drawings and latest notes', function () {
@@ -255,7 +256,7 @@ test('analytics articles tab lists every note with real commit date and visit st
     expect($row['views'])->toBeGreaterThanOrEqual(1)
         ->and($row['url'])->toBe('https://aiku.io/blog/anatomy-of-a-deploy')
         ->and($row['date'])->toBe('2026-08-19')
-        ->and($row['committed_at'])->toStartWith('2026-08-');
+        ->and($row['committed_at'])->toStartWith('2026-08-19');
 });
 
 test('blog post shows related notes ranked by shared tags', function () {
