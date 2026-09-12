@@ -30,17 +30,20 @@ defineProps<{
         <template #cell(status)="{ item }">
             <Icon :data="item.status_icon" /> {{ item.status_label }}
         </template>
+        <template #cell(subject)="{ item }">
+            <span class="block truncate" :title="item.subject">{{ item.subject }}</span>
+        </template>
         <template #cell(priority)="{ item }">
-            <Icon :data="item.priority_icon" /> {{ item.priority_label }}
+            <Icon :data="item.priority_icon" />
         </template>
         <template #cell(reporter)="{ item }">
-            {{ item.reporter || "-" }}<span v-if="item.customer" class="text-gray-400"> · {{ item.customer }}</span>
+            <span :title="item.customer ? `${item.reporter} · ${item.customer}` : item.reporter">{{ item.reporter_short || "-" }}</span>
         </template>
         <template #cell(assignee)="{ item }">
-            {{ item.assignee || "-" }}
+            <span :title="item.assignee">{{ item.assignee_username || "-" }}</span>
         </template>
         <template #cell(updated_at)="{ item }">
-            {{ useFormatTime(item.updated_at, { formatTime: "hm" }) }}
+            <span :title="useFormatTime(item.updated_at, { formatTime: 'hm' })">{{ useFormatTime(item.updated_at, { formatTime: "d MMM HH:mm" }) }}</span>
         </template>
     </Table>
 </template>

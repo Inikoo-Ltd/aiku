@@ -127,13 +127,13 @@ class IndexTickets extends OrgAction
             $table
                 ->withGlobalSearch()
                 ->withLabelRecord([__('ticket'), __('tickets')])
-                ->column(key: 'reference', label: __('Reference'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'subject', label: __('Subject'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'status', label: __('Status'), canBeHidden: false, sortable: true)
-                ->column(key: 'priority', label: __('Priority'), canBeHidden: false, sortable: true)
-                ->column(key: 'reporter', label: __('Reporter'), canBeHidden: false)
-                ->column(key: 'assignee', label: __('Assignee'), canBeHidden: false)
-                ->column(key: 'updated_at', label: __('Updated'), canBeHidden: false, sortable: true, type: 'date')
+                ->column(key: 'reference', label: __('Reference'), canBeHidden: false, sortable: true, searchable: true, className: 'whitespace-nowrap w-px')
+                ->column(key: 'subject', label: __('Subject'), canBeHidden: false, sortable: true, searchable: true, className: 'w-full max-w-0')
+                ->column(key: 'status', label: __('Status'), canBeHidden: false, sortable: true, className: 'whitespace-nowrap w-px')
+                ->column(key: 'priority', label: __('Priority'), icon: 'fal fa-flag', canBeHidden: false, sortable: true, className: 'w-px text-center')
+                ->column(key: 'reporter', label: __('Reporter'), canBeHidden: false, className: 'whitespace-nowrap w-px')
+                ->column(key: 'assignee', label: __('Assignee'), canBeHidden: false, className: 'whitespace-nowrap w-px')
+                ->column(key: 'updated_at', label: __('Updated'), canBeHidden: false, sortable: true, type: 'date', className: 'whitespace-nowrap w-px')
                 ->defaultSort('-updated_at');
         };
     }
