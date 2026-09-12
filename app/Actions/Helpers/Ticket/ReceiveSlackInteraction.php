@@ -26,6 +26,8 @@ class ReceiveSlackInteraction
 
     public const string CALLBACK_ID = 'raise_ticket';
 
+    public const string GLOBAL_CALLBACK_ID = 'raise_ticket_global';
+
     /**
      * @param  array{trigger_id: string, user_id?: string|null, channel_id?: string|null, ts?: string|null, text?: string|null}  $context
      */
@@ -66,7 +68,7 @@ class ReceiveSlackInteraction
             return response('', 200);
         }
 
-        if (in_array(Arr::get($payload, 'type'), ['message_action', 'shortcut'], true) && Arr::get($payload, 'callback_id') === self::CALLBACK_ID) {
+        if (in_array(Arr::get($payload, 'type'), ['message_action', 'shortcut'], true) && in_array(Arr::get($payload, 'callback_id'), [self::CALLBACK_ID, self::GLOBAL_CALLBACK_ID], true)) {
             $this->openTicketModal([
                 'trigger_id' => Arr::get($payload, 'trigger_id'),
                 'user_id'    => Arr::get($payload, 'user.id'),
