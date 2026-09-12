@@ -18,6 +18,7 @@ import { computed, inject, ref } from "vue"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { trans } from "laravel-vue-i18n"
+import { Link } from "@inertiajs/vue3"
 
 library.add(faChevronLeft, faSignOutAlt, faSensor, faLifeRing, faHeadset, faCommentAlt, faSignOut, faServer)
 
@@ -39,7 +40,7 @@ const logoutData = computed(() => ({
 
 const helpData = computed(() => ({
     label: trans("Help"),
-    tooltip: trans("Open help portal"),
+    tooltip: trans("Tickets: report a problem or ask for help"),
     icon: "fal fa-life-ring"
 }))
 
@@ -90,9 +91,8 @@ const onLogoutAuth = () => {
 
         <div class="absolute bottom-20 w-full">
             <div class="flex flex-col justify-center">
-                <a
-                    v-if="layout.help_portal_url"
-                    :href="layout.help_portal_url"
+                <Link
+                    :href="route('grp.tickets.index')"
                     class="relative group hover:underline px-4 rounded-md py-2 w-full group flex items-center text-sm gap-x-2"
                     xclass="[open ? 'bg-black/25' : '']"
                     v-tooltip="{
@@ -101,8 +101,7 @@ const onLogoutAuth = () => {
 					}"
                     :style="{
 						color: layout?.app?.theme[1],
-					}"
-                    target="_blank">
+					}">
                     <FontAwesomeIcon
                         aria-hidden="true"
                         class="flex-shrink-0 h-4 w-4"
@@ -124,16 +123,7 @@ const onLogoutAuth = () => {
 							{{ helpData.label }}
 						</span>
                     </Transition>
-
-                    <FontAwesomeIcon
-                        icon="fal fa-external-link-alt"
-                        class="opacity-50 group-hover:opacity-100 absolute right-4"
-                        fixed-width
-                        aria-hidden="true"
-                        :style="{
-							color: layout?.app?.theme[1],
-						}" />
-                </a>
+                </Link>
 
                 <Popover class="relative w-full" v-slot="{ open }">
                     <PopoverButton
