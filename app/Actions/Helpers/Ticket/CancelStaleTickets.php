@@ -25,13 +25,19 @@ class CancelStaleTickets
         $cutoff = now()->subDays($days);
 
         Ticket::where('status', TicketStatusEnum::WAITING)
-            ->where('created_at', '<', $cutoff)
-            ->whereDoesntHave('comments', fn ($query) => $query->where('is_internal', false)->where('created_at', '>=', $cutoff))
+            ->where(fn ($query) => $query
+                ->where('waiting_until', '<', now())
+                ->orWhere(fn ($query) => $query
+                    ->whereNull('waiting_until')
+                    ->where('created_at', '<', $cutoff)
+                    ->whereDoesntHave('comments', fn ($query) => $query->where('is_internal', false)->where('created_at', '>=', $cutoff))))
             ->cursor()
             ->each(function (Ticket $ticket) use ($days, &$cancelled) {
+                $days = $ticket->waiting_at && $ticket->waiting_until ? max(1, (int) round($ticket->waiting_at->diffInDays($ticket->waiting_until))) : $days;
                 $ticket->update([
-                    'status'    => TicketStatusEnum::CANCELLED,
-                    'closed_at' => now(),
+                    'status'        => TicketStatusEnum::CANCELLED,
+                    'closed_at'     => now(),
+                    'waiting_until' => null,
                 ]);
                 $ticket->comments()->create([
                     'is_internal' => true,

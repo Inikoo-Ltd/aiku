@@ -60,6 +60,8 @@ class TicketResource extends JsonResource
             'assigned_at'    => $this->assigned_at,
             'started_at'     => $this->started_at,
             'waiting_at'     => $this->waiting_at,
+            'waiting_until'  => $this->waiting_until,
+            'default_waiting_hours' => $this->defaultWaitingHours(),
             'closed_at'      => $this->closed_at,
             'rating'         => $this->rating,
             'rating_comment' => $this->rating_comment,

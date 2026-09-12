@@ -33,6 +33,7 @@ use App\Mcp\Tools\TicketsTool;
 use App\Mcp\Tools\TicketWriteTool;
 use App\Http\Resources\Helpers\TicketResource;
 use App\Models\Helpers\Ticket;
+use App\Models\Helpers\TicketComment;
 use App\Models\SysAdmin\Guest;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Config;
@@ -170,6 +171,51 @@ test('grp form endpoints create, update and comment', function () {
     $ticket->refresh();
     expect($ticket->status)->toBe(TicketStatusEnum::IN_PROGRESS)
         ->and($ticket->comments()->count())->toBe(1);
+});
+
+test('comment author edits and deletes their own comment', function () {
+    $ticket = StoreTicket::make()->action($this->group, ['subject' => 'Comment edit']);
+    $comment = StoreTicketComment::make()->action($ticket, $this->user, ['body' => 'Typo'], false);
+
+    patch(route('grp.models.ticket.comment.update', $comment->id), ['body' => 'Fixed'])->assertRedirect();
+    expect($comment->refresh()->body)->toBe('Fixed');
+
+    $admin = StoreGuest::make()->action($this->group, array_merge(Guest::factory()->definition(), ['positions' => [['slug' => 'group-admin', 'scopes' => []]]]))->getUser();
+    actingAs($admin);
+    patch(route('grp.models.ticket.comment.update', $comment->id), ['body' => 'Hijacked'])->assertForbidden();
+    delete(route('grp.models.ticket.comment.delete', $comment->id))->assertForbidden();
+    actingAs($this->user);
+
+    delete(route('grp.models.ticket.comment.delete', $comment->id))->assertRedirect();
+    expect(TicketComment::find($comment->id))->toBeNull();
+});
+
+test('asking the reporter posts the question and cancels the ticket when its own deadline passes', function () {
+    $ticket = StoreTicket::make()->action($this->group, ['subject' => 'Need info']);
+    UpdateTicket::make()->action($ticket, ['status' => TicketStatusEnum::IN_PROGRESS->value]);
+
+    patch(route('grp.models.ticket.update', $ticket->id), ['status' => 'waiting', 'question' => 'Which order?', 'waiting_hours' => 2])->assertRedirect();
+
+    $ticket->refresh();
+    expect($ticket->status)->toBe(TicketStatusEnum::WAITING)
+        ->and($ticket->waiting_until->between(now()->addMinutes(119), now()->addMinutes(121)))->toBeTrue()
+        ->and($ticket->comments()->where('is_internal', false)->where('body', 'Which order?')->exists())->toBeTrue();
+
+    expect(CancelStaleTickets::run())->toBe(0);
+
+    $this->travel(3)->hours();
+    expect(CancelStaleTickets::run())->toBe(1)
+        ->and($ticket->fresh()->status)->toBe(TicketStatusEnum::CANCELLED)
+        ->and($ticket->fresh()->waiting_until)->toBeNull();
+});
+
+test('ticket page shows a history from opened to its status changes, newest first', function () {
+    $ticket = StoreTicket::make()->action($this->group, ['subject' => 'Timeline']);
+    UpdateTicket::make()->action($ticket, ['status' => TicketStatusEnum::IN_PROGRESS->value]);
+
+    get(route('grp.tickets.show', $ticket->reference))->assertInertia(
+        fn (AssertableInertia $page) => $page->where('timeline.0.text', 'Status: Todo → In progress')->where('timeline.1.text', 'Ticket opened')
+    );
 });
 
 test('chat agent raises a ticket linked to the session', function () {

@@ -51,4 +51,9 @@ class TicketComment extends Model implements HasMedia
     {
         return $this->morphTo();
     }
+
+    public function isAuthoredBy(?Model $user): bool
+    {
+        return $user !== null && $this->author_type === class_basename($user) && (int) $this->author_id === (int) $user->id;
+    }
 }

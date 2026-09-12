@@ -51,6 +51,7 @@ use Spatie\MediaLibrary\InteractsWithMedia;
  * @property string|null $reporter_type
  * @property int|null $reporter_id
  * @property int|null $assignee_id
+ * @property \Illuminate\Support\Carbon|null $waiting_until
  * @property string|null $model_type
  * @property int|null $model_id
  * @property array<array-key, mixed> $data
@@ -108,6 +109,7 @@ class Ticket extends Model implements Auditable, HasMedia
             'status'      => TicketStatusEnum::class,
             'priority'    => ChatPriorityEnum::class,
             'data'        => 'array',
+            'waiting_until' => 'datetime',
             'tags'        => 'array',
             'is_confidential' => 'boolean',
             'rated_at'    => 'datetime',
@@ -166,6 +168,11 @@ class Ticket extends Model implements Auditable, HasMedia
     public static function canBeAssignedBy(?User $user): bool
     {
         return $user !== null && $user->authTo('help-desk.assign');
+    }
+
+    public function defaultWaitingHours(): int
+    {
+        return $this->reporter_type === 'User' ? 72 : 14 * 24;
     }
 
     public function isReportedBy(?User $user): bool

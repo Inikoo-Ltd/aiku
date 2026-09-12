@@ -28,6 +28,12 @@ class UpdateTicket extends OrgAction
 
     public function handle(Ticket $ticket, array $modelData): Ticket
     {
+        $question     = trim((string) Arr::pull($modelData, 'question', ''));
+        $waitingHours = Arr::pull($modelData, 'waiting_hours');
+
+        if ($question !== '' && ($asker = request()->user()) instanceof User) {
+            StoreTicketComment::make()->action($ticket, $asker, ['body' => $question]);
+        }
 
         if (Arr::exists($modelData, 'assignee_id') && Arr::get($modelData, 'assignee_id') != $ticket->assignee_id) {
             data_set($modelData, 'assigned_at', Arr::get($modelData, 'assignee_id') ? now() : null);
@@ -54,6 +60,9 @@ class UpdateTicket extends OrgAction
 
             data_set($modelData, 'assigned_at', $status === TicketStatusEnum::OPEN ? null : (Arr::get($modelData, 'assigned_at') ?? $ticket->assigned_at ?? now()));
             data_set($modelData, 'waiting_at', $status === TicketStatusEnum::WAITING ? ($ticket->waiting_at ?? now()) : null);
+            data_set($modelData, 'waiting_until', $status === TicketStatusEnum::WAITING
+                ? ($waitingHours ? now()->addHours((int) $waitingHours) : ($ticket->waiting_until ?? now()->addHours($ticket->defaultWaitingHours())))
+                : null);
             data_set($modelData, 'started_at', $status->group() === TicketStatusGroupEnum::TODO ? null : ($ticket->started_at ?? now()));
             data_set($modelData, 'resolved_at', $status === TicketStatusEnum::RESOLVED ? now() : ($status->isOpen() ? null : $ticket->resolved_at));
             data_set($modelData, 'closed_at', $status->isOpen() ? null : now());
@@ -100,6 +109,8 @@ class UpdateTicket extends OrgAction
             'module'      => ['sometimes', 'nullable', Rule::enum(TicketModuleEnum::class)],
             'tags'        => ['sometimes', 'array'],
             'is_confidential' => ['sometimes', 'boolean'],
+            'question'      => ['sometimes', 'nullable', 'string', 'max:10000'],
+            'waiting_hours' => ['sometimes', 'nullable', 'integer', 'min:1', 'max:720'],
             'tags.*'        => ['string', 'max:64'],
         ];
     }

@@ -50,7 +50,7 @@ class ShowRetinaTicket extends RetinaAction
                 ],
                 'ticket'      => TicketResource::make($ticket)->toArray(request()),
                 'comments'    => TicketCommentResource::collection(
-                    $ticket->comments()->where('is_internal', false)->with('author')->orderBy('id')->get()
+                    $ticket->comments()->where('is_internal', false)->with('author')->orderByDesc('id')->get()
                 )->toArray(request()),
                 'can_rate'    => RateTicket::canRate($ticket, $this->webUser),
                 'routes'      => [
