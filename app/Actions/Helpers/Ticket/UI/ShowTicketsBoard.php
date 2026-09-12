@@ -10,6 +10,7 @@ namespace App\Actions\Helpers\Ticket\UI;
 
 use App\Actions\OrgAction;
 use App\Enums\Helpers\Ticket\TicketStatusEnum;
+use App\Enums\Helpers\Ticket\TicketStatusGroupEnum;
 use App\Http\Resources\Helpers\TicketResource;
 use App\Models\Helpers\Ticket;
 use App\Models\SysAdmin\Group;
@@ -24,32 +25,73 @@ class ShowTicketsBoard extends OrgAction
         return Ticket::canBeManagedBy($request->user());
     }
 
-    public function handle(Group $group): array
+    private const array PERIODS = ['24h', 'today', '1w', 'all'];
+
+    /**
+     * Todo is aged on when the ticket was raised, Done and Cancelled on when it was closed.
+     */
+    private const array DATED_STATUSES = ['open' => 'created_at', 'resolved' => 'closed_at', 'cancelled' => 'closed_at'];
+
+    private const array DEFAULT_PERIODS = ['open' => 'all', 'resolved' => '24h', 'cancelled' => '24h'];
+
+    /**
+     * @param  array<string, string>  $periods
+     */
+    public function handle(Group $group, array $periods = []): array
     {
+        $periods = array_merge(self::DEFAULT_PERIODS, array_intersect_key($periods, self::DEFAULT_PERIODS));
+
         $tickets = Ticket::where('group_id', $group->id)->visibleTo(request()->user())
-            ->where(fn ($query) => $query->where('status', '!=', TicketStatusEnum::CANCELLED)->orWhere('closed_at', '>=', now()->subDays(7)))
+            ->where(function ($query) use ($periods) {
+                foreach (TicketStatusEnum::cases() as $status) {
+                    $query->orWhere(function ($statusQuery) use ($status, $periods) {
+                        $statusQuery->where('status', $status);
+
+                        if ($since = $this->since($periods[$status->value] ?? 'all')) {
+                            $statusQuery->where(self::DATED_STATUSES[$status->value], '>=', $since);
+                        }
+                    });
+                }
+            })
             ->with(['reporter', 'assignee', 'customer'])
             ->orderByRaw("CASE priority WHEN 'urgent' THEN 0 WHEN 'high' THEN 1 WHEN 'normal' THEN 2 ELSE 3 END")
             ->orderByDesc('updated_at')
             ->get()
             ->groupBy(fn (Ticket $ticket) => $ticket->status->value);
 
-        return collect(TicketStatusEnum::cases())->map(fn (TicketStatusEnum $status) => [
+        $columns = collect(TicketStatusEnum::cases())->map(fn (TicketStatusEnum $status) => [
             'status'  => $status->value,
+            'group'   => $status->group()->value,
             'label'   => TicketStatusEnum::labels()[$status->value],
+            'color'   => TicketStatusGroupEnum::stateIcon()[$status->group()->value]['color'],
             'icon'    => TicketStatusEnum::stateIcon()[$status->value],
+            'period'  => $periods[$status->value] ?? null,
             'tickets' => TicketResource::collection($tickets->get($status->value, collect()))->toArray(request()),
         ])->values()->all();
+
+        return ['columns' => $columns, 'periods' => $periods, 'periodOptions' => self::PERIODS];
+    }
+
+    private function since(string $period): ?\Illuminate\Support\Carbon
+    {
+        return match ($period) {
+            '24h'   => now()->subDay(),
+            'today' => now()->startOfDay(),
+            '1w'    => now()->subWeek(),
+            default => null,
+        };
     }
 
     public function asController(ActionRequest $request): array
     {
         $this->initialisationFromGroup(group(), $request);
 
-        return $this->handle($this->group);
+        $periods = array_filter((array) $request->input('periods', []), fn ($period) => in_array($period, self::PERIODS, true));
+
+        return $this->handle($this->group, $periods);
     }
 
-    public function htmlResponse(array $columns): Response
+    public function htmlResponse(array $board): Response
     {
         return Inertia::render(
             'Tickets/TicketsBoard',
@@ -71,7 +113,8 @@ class ShowTicketsBoard extends OrgAction
                         ],
                     ],
                 ],
-                'columns'     => $columns,
+                'columns'       => $board['columns'],
+                'periodOptions' => $board['periodOptions'],
                 'updateRoute' => 'grp.models.ticket.update',
             ]
         );

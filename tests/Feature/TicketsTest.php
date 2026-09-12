@@ -93,7 +93,7 @@ test('customer ticket from retina gets an AD reference and the customer attached
 
 test('status changes stamp resolved and closed dates', function (Ticket $ticket) {
     $ticket = UpdateTicket::make()->action($ticket, ['status' => TicketStatusEnum::RESOLVED->value]);
-    expect($ticket->resolved_at)->not->toBeNull()->and($ticket->closed_at)->toBeNull();
+    expect($ticket->resolved_at)->not->toBeNull()->and($ticket->closed_at)->not->toBeNull();
 
     $ticket = UpdateTicket::make()->action($ticket, ['status' => TicketStatusEnum::CANCELLED->value]);
     expect($ticket->closed_at)->not->toBeNull();
@@ -422,7 +422,7 @@ test('new tickets post one alert in the Slack tickets channel and edit it as sta
 
     $ticket = StoreTicket::make()->action($this->group, ['subject' => 'Ping me']);
     expect($ticket->fresh()->data['slack_alert'])->toEqualCanonicalizing(['channel' => 'C9', 'ts' => '42.1']);
-    Http::assertSent(fn ($request) => str_contains($request->url(), 'chat.postMessage') && $request['channel'] === '#tickets' && str_contains(json_encode($request['blocks']), 'Status:* Open'));
+    Http::assertSent(fn ($request) => str_contains($request->url(), 'chat.postMessage') && $request['channel'] === '#tickets' && str_contains(json_encode($request['blocks']), 'Status:* Todo'));
 
     UpdateTicket::make()->action($ticket, ['assignee_id' => $this->user->id, 'status' => TicketStatusEnum::IN_PROGRESS->value]);
     Http::assertSent(fn ($request) => str_contains($request->url(), 'chat.update') && $request['ts'] === '42.1' && $request['channel'] === 'C9' && str_contains(json_encode($request['blocks']), 'Status:* In progress') && str_contains(json_encode($request['blocks']), $this->user->username));
@@ -551,7 +551,7 @@ test('slack ticket reaction raises a ticket from the message and mirrors replies
     UpdateTicket::make()->action($ticket, ['status' => TicketStatusEnum::RESOLVED->value]);
     Http::assertSent(fn ($request) => str_contains($request->url(), 'chat.postMessage') && str_contains($request['text'], 'Fixed, please check'));
     Http::assertNotSent(fn ($request) => str_contains($request->url(), 'chat.postMessage') && str_contains($request['text'], 'private'));
-    Http::assertSent(fn ($request) => str_contains($request->url(), 'chat.postMessage') && str_ends_with($request['text'], 'Resolved'));
+    Http::assertSent(fn ($request) => str_contains($request->url(), 'chat.postMessage') && str_ends_with($request['text'], 'Done'));
 
     $bare = StoreTicketFromSlack::run($this->group, ['user_id' => 'U1', 'channel_id' => 'C1', 'ts' => '7', 'subject' => 'No clue where <https://app.aiku.io/org/aw/shops/uk|here>']);
     expect($bare->data['reference_url'])->toBe('https://app.aiku.io/org/aw/shops/uk');
@@ -688,4 +688,54 @@ test('only the help desk manages tickets, everyone else reports, comments and cl
     delete(route('grp.models.ticket.delete', $other->id))->assertRedirect(route('grp.tickets.index'));
     expect(Ticket::find($other->id))->toBeNull()
         ->and(Ticket::withTrashed()->find($other->id))->not->toBeNull();
+});
+
+test('board only shows tickets closed in the last 24 hours', function () {
+    $fresh = StoreTicket::make()->action($this->group, ['subject' => 'Closed today']);
+    $stale = StoreTicket::make()->action($this->group, ['subject' => 'Closed last week']);
+    UpdateTicket::make()->action($fresh, ['status' => TicketStatusEnum::RESOLVED->value]);
+    UpdateTicket::make()->action($stale, ['status' => TicketStatusEnum::RESOLVED->value]);
+    $stale->update(['closed_at' => now()->subDays(7)]);
+
+    get(route('grp.tickets.board', ['periods' => ['resolved' => '24h']]))->assertInertia(function (AssertableInertia $page) use ($fresh, $stale) {
+        $references = collect($page->toArray()['props']['columns'])
+            ->firstWhere('status', TicketStatusEnum::RESOLVED->value)['tickets'];
+        $references = collect($references)->pluck('reference');
+
+        expect($references)->toContain($fresh->reference)
+            ->and($references)->not->toContain($stale->reference);
+    });
+});
+
+test('assigning and starting a ticket stamps its lifecycle dates', function () {
+    $ticket = StoreTicket::make()->action($this->group, ['subject' => 'Lifecycle']);
+    expect($ticket->status)->toBe(TicketStatusEnum::OPEN)
+        ->and($ticket->assigned_at)->toBeNull()
+        ->and($ticket->started_at)->toBeNull();
+
+    $ticket = UpdateTicket::make()->action($ticket, ['assignee_id' => $this->user->id]);
+    expect($ticket->status)->toBe(TicketStatusEnum::ASSIGNED)
+        ->and($ticket->assigned_at)->not->toBeNull()
+        ->and($ticket->started_at)->toBeNull();
+
+    $ticket = UpdateTicket::make()->action($ticket, ['status' => TicketStatusEnum::IN_PROGRESS->value]);
+    $startedAt = $ticket->started_at;
+    expect($startedAt)->not->toBeNull();
+
+    $ticket = UpdateTicket::make()->action($ticket, ['status' => TicketStatusEnum::WAITING->value]);
+    expect($ticket->started_at->eq($startedAt))->toBeTrue()
+        ->and($ticket->closed_at)->toBeNull();
+
+    $ticket = UpdateTicket::make()->action($ticket, ['status' => TicketStatusEnum::RESOLVED->value]);
+    expect($ticket->resolved_at)->not->toBeNull()->and($ticket->closed_at)->not->toBeNull();
+
+    $ticket = UpdateTicket::make()->action($ticket, ['status' => TicketStatusEnum::OPEN->value]);
+    expect($ticket->status)->toBe(TicketStatusEnum::ASSIGNED)
+        ->and($ticket->started_at)->toBeNull()
+        ->and($ticket->resolved_at)->toBeNull()
+        ->and($ticket->closed_at)->toBeNull();
+
+    $ticket = UpdateTicket::make()->action($ticket, ['assignee_id' => null]);
+    expect($ticket->status)->toBe(TicketStatusEnum::OPEN)
+        ->and($ticket->assigned_at)->toBeNull();
 });

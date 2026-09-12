@@ -14,6 +14,7 @@ use App\Enums\CRM\Livechat\ChatPriorityEnum;
 use App\Enums\Helpers\Ticket\TicketKindEnum;
 use App\Enums\Helpers\Ticket\TicketModuleEnum;
 use App\Enums\Helpers\Ticket\TicketStatusEnum;
+use App\Enums\Helpers\Ticket\TicketStatusGroupEnum;
 use App\Models\Helpers\Ticket;
 use App\Models\SysAdmin\User;
 use Illuminate\Http\RedirectResponse;
@@ -28,10 +29,33 @@ class UpdateTicket extends OrgAction
     public function handle(Ticket $ticket, array $modelData): Ticket
     {
 
+        if (Arr::exists($modelData, 'assignee_id') && Arr::get($modelData, 'assignee_id') != $ticket->assignee_id) {
+            data_set($modelData, 'assigned_at', Arr::get($modelData, 'assignee_id') ? now() : null);
+
+            if (!Arr::has($modelData, 'status') && in_array($ticket->status, [TicketStatusEnum::OPEN, TicketStatusEnum::ASSIGNED], true)) {
+                data_set($modelData, 'status', Arr::get($modelData, 'assignee_id') ? TicketStatusEnum::ASSIGNED->value : TicketStatusEnum::OPEN->value);
+            }
+        }
+
         if ($status = Arr::get($modelData, 'status')) {
             $status = TicketStatusEnum::from($status);
+
+            $assignee = Arr::exists($modelData, 'assignee_id') ? Arr::get($modelData, 'assignee_id') : $ticket->assignee_id;
+
+            if ($status === TicketStatusEnum::ASSIGNED && !$assignee) {
+                $status = TicketStatusEnum::OPEN;
+                data_set($modelData, 'status', $status->value);
+            }
+
+            if ($status === TicketStatusEnum::OPEN && $assignee) {
+                $status = TicketStatusEnum::ASSIGNED;
+                data_set($modelData, 'status', $status->value);
+            }
+
+            data_set($modelData, 'assigned_at', $status === TicketStatusEnum::OPEN ? null : (Arr::get($modelData, 'assigned_at') ?? $ticket->assigned_at ?? now()));
+            data_set($modelData, 'started_at', $status->group() === TicketStatusGroupEnum::TODO ? null : ($ticket->started_at ?? now()));
             data_set($modelData, 'resolved_at', $status === TicketStatusEnum::RESOLVED ? now() : ($status->isOpen() ? null : $ticket->resolved_at));
-            data_set($modelData, 'closed_at', $status === TicketStatusEnum::CANCELLED ? now() : null);
+            data_set($modelData, 'closed_at', $status->isOpen() ? null : now());
         }
 
         $ticket = $this->update($ticket, $modelData);

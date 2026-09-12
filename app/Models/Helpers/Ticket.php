@@ -58,6 +58,8 @@ use Spatie\MediaLibrary\InteractsWithMedia;
  * @property string|null $rating_comment
  * @property \Illuminate\Support\Carbon|null $rated_at
  * @property \Illuminate\Support\Carbon|null $resolved_at
+ * @property \Illuminate\Support\Carbon|null $assigned_at
+ * @property \Illuminate\Support\Carbon|null $started_at
  * @property \Illuminate\Support\Carbon|null $closed_at
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
@@ -108,6 +110,8 @@ class Ticket extends Model implements Auditable, HasMedia
             'tags'        => 'array',
             'is_confidential' => 'boolean',
             'rated_at'    => 'datetime',
+            'assigned_at' => 'datetime',
+            'started_at'  => 'datetime',
             'resolved_at' => 'datetime',
             'closed_at'   => 'datetime',
         ];
