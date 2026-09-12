@@ -94,7 +94,7 @@ class StoreTicket extends OrgAction
 
     public function authorize(ActionRequest $request): bool
     {
-        return $this->asAction || $request->user() !== null;
+        return $this->asAction || Ticket::canBeRaisedBy($request->user());
     }
 
     public function action(Group $group, array $modelData): Ticket

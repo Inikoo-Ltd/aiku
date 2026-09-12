@@ -43,6 +43,7 @@ enum GroupPermissionsEnum: string
     case HELP_DESK = 'help-desk';
     case HELP_DESK_RESOLVE = 'help-desk.resolve';
     case HELP_DESK_ASSIGN = 'help-desk.assign';
+    case HELP_DESK_QA = 'help-desk.qa';
     case SUPPLY_CHAIN_EDIT = 'supply-chain.edit';
     case SUPPLY_CHAIN_VIEW = 'supply-chain.view';
 

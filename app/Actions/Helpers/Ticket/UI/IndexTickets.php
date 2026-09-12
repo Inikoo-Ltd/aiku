@@ -9,7 +9,6 @@
 namespace App\Actions\Helpers\Ticket\UI;
 
 use App\Actions\OrgAction;
-use App\Actions\UI\Dashboards\ShowGroupDashboard;
 use App\Enums\Helpers\Ticket\TicketStatusEnum;
 use App\Enums\Helpers\Ticket\TicketTypeEnum;
 use App\Http\Resources\Helpers\TicketResource;
@@ -153,14 +152,14 @@ class IndexTickets extends OrgAction
                 'pageHead'    => [
                     'title'   => __('Tickets'),
                     'icon'    => ['fal', 'fa-life-ring'],
-                    'actions' => [
+                    'actions' => Ticket::canBeRaisedBy(request()->user()) ? [
                         [
                             'type'  => 'button',
                             'style' => 'create',
                             'label' => __('New ticket'),
                             'route' => ['name' => 'grp.tickets.create'],
                         ],
-                    ],
+                    ] : [],
                 ],
                 'data'        => TicketResource::collection($tickets),
             ]
@@ -170,13 +169,13 @@ class IndexTickets extends OrgAction
     public function getBreadcrumbs(): array
     {
         return array_merge(
-            ShowGroupDashboard::make()->getBreadcrumbs(),
+            ShowTicketsDashboard::make()->getBreadcrumbs(),
             [
                 [
                     'type'   => 'simple',
                     'simple' => [
-                        'route' => ['name' => 'grp.tickets.index'],
-                        'label' => __('Tickets'),
+                        'route' => ['name' => 'grp.tickets.list'],
+                        'label' => __('List'),
                     ],
                 ],
             ]

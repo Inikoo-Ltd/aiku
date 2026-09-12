@@ -101,11 +101,19 @@ class GetGroupNavigation
             'topMenu' => [
                 'subSections' => [
                     [
-                        'label' => __('List'),
-                        'icon'  => ['fal', 'fa-list'],
+                        'label' => __('Dashboard'),
+                        'icon'  => ['fal', 'fa-tachometer-alt'],
                         'root'  => 'grp.tickets.index',
                         'route' => [
                             'name' => 'grp.tickets.index',
+                        ],
+                    ],
+                    [
+                        'label' => __('List'),
+                        'icon'  => ['fal', 'fa-list'],
+                        'root'  => 'grp.tickets.list',
+                        'route' => [
+                            'name' => 'grp.tickets.list',
                         ],
                     ],
                     ...($user->authTo('help-desk.resolve') ? [
@@ -122,9 +130,9 @@ class GetGroupNavigation
                         [
                             'label' => __('Reports'),
                             'icon'  => ['fal', 'fa-chart-line'],
-                            'root'  => 'grp.tickets.dashboard',
+                            'root'  => 'grp.tickets.reports',
                             'route' => [
-                                'name' => 'grp.tickets.dashboard',
+                                'name' => 'grp.tickets.reports',
                             ],
                         ],
                     ] : []),

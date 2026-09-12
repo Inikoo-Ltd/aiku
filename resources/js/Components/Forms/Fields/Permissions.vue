@@ -7,12 +7,12 @@ import { trans } from "laravel-vue-i18n"
 import Fieldset from "primevue/fieldset"
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faHelmetBattle, faStar, faGlobe } from "@fas"
+import { faHelmetBattle, faStar, faGlobe, faUserHardHat } from "@fas"
 import { faCircle } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { routeType } from "@/types/route"
 
-library.add(faHelmetBattle, faStar, faCircle, faGlobe)
+library.add(faHelmetBattle, faStar, faCircle, faGlobe, faUserHardHat)
 
 const props = defineProps<{
     form: {
@@ -51,6 +51,23 @@ const props = defineProps<{
 
 
 const groupPositionList = {
+    engineering: {
+        key: "engineering",
+        department: trans("Engineering"),
+        level: "group_admin",
+        independent: true,
+        icon: "fas fa-user-hard-hat",
+        subDepartment: [
+            {
+                slug: "gp-hd", // Note, this is not slug is job position code
+                label: trans("Engineer")
+            },
+            {
+                slug: "gp-hd-m", // Note, this is not slug is job position code
+                label: trans("Lead engineer")
+            }
+        ]
+    },
     group_admin: {
         department: trans("Group admin"),
         key: "group_admin",
@@ -237,14 +254,14 @@ const organisationPositionCounts = ref({})
                                             <button
                                                 @click.prevent="onClickButtonGroup(departmentName, subDepartment.slug)"
                                                 class="group h-full cursor-pointer flex items-center justify-start rounded-md py-3 px-3 font-medium disabled:text-gray-400 disabled:cursor-not-allowed disabled:ring-0 disabled:active:active:ring-offset-0"
-                                                :class="(isRadioChecked('org-admin') && subDepartment.slug != 'org-admin') || (isRadioChecked('group-admin') && subDepartment.slug != 'group-admin') ? 'text-green-500' : ''"
-                                                :disabled="!!(isRadioChecked('group-admin') && subDepartment.slug != 'group-admin')"
+                                                :class="(isRadioChecked('org-admin') && subDepartment.slug != 'org-admin') || (isRadioChecked('group-admin') && !jobGroup.independent && subDepartment.slug != 'group-admin') ? 'text-green-500' : ''"
+                                                :disabled="!!(isRadioChecked('group-admin') && !jobGroup.independent && subDepartment.slug != 'group-admin')"
                                             >
 
                                                 <div class="relative text-left">
                                                     <div class="absolute -left-1 -translate-x-full top-1/2 -translate-y-1/2">
                                                         <template
-                                                            v-if="(isRadioChecked('org-admin') && subDepartment.slug != 'org-admin') || (isRadioChecked('group-admin') && subDepartment.slug != 'group-admin') || (isRadioChecked('shop-admin') && jobGroup.scope === 'shop' && subDepartment.slug !== 'shop-admin')">
+                                                            v-if="(isRadioChecked('org-admin') && subDepartment.slug != 'org-admin') || (isRadioChecked('group-admin') && !jobGroup.independent && subDepartment.slug != 'group-admin') || (isRadioChecked('shop-admin') && jobGroup.scope === 'shop' && subDepartment.slug !== 'shop-admin')">
                                                             <FontAwesomeIcon v-if="idxSubDepartment === 0" icon="fas fa-check-circle" class="" fixed-width aria-hidden="true" />
                                                             <FontAwesomeIcon v-else icon="fal fa-circle" class="" fixed-width aria-hidden="true" />
                                                         </template>
@@ -254,7 +271,7 @@ const organisationPositionCounts = ref({})
                                                         <FontAwesomeIcon v-else icon="fal fa-circle" fixed-width aria-hidden="true" class="text-gray-400 hover:text-gray-700" />
                                                     </div>
                                                     <span :class="[
-                                                        (isRadioChecked('org-admin') && subDepartment.slug != 'org-admin') || (isRadioChecked('group-admin') && subDepartment.slug != 'group-admin') || (isRadioChecked('shop-admin') && jobGroup.scope === 'shop' && subDepartment.slug !== 'shop-admin') ? 'text-gray-400' : 'text-gray-600 group-hover:text-gray-700'
+                                                        (isRadioChecked('org-admin') && subDepartment.slug != 'org-admin') || (isRadioChecked('group-admin') && !jobGroup.independent && subDepartment.slug != 'group-admin') || (isRadioChecked('shop-admin') && jobGroup.scope === 'shop' && subDepartment.slug !== 'shop-admin') ? 'text-gray-400' : 'text-gray-600 group-hover:text-gray-700'
                                                     ]">
                                                         {{ subDepartment.label }}
                                                     </span>

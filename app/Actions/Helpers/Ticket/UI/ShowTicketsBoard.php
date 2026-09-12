@@ -120,7 +120,7 @@ class ShowTicketsBoard extends OrgAction
             'Tickets/TicketsBoard',
             [
                 'breadcrumbs' => array_merge(
-                    IndexTickets::make()->getBreadcrumbs(),
+                    ShowTicketsDashboard::make()->getBreadcrumbs(),
                     [['type' => 'simple', 'simple' => ['route' => ['name' => 'grp.tickets.board'], 'label' => __('Board')]]]
                 ),
                 'title'       => __('Tickets board'),

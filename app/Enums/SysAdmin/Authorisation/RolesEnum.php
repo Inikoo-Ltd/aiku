@@ -33,6 +33,7 @@ enum RolesEnum: string
 
     case HELP_DESK_CLERK = 'help-desk-clerk';
     case HELP_DESK_SUPERVISOR = 'help-desk-supervisor';
+    case QA = 'qa';
 
     case SUPPLY_CHAIN = 'supply-chain';
 
@@ -123,8 +124,9 @@ enum RolesEnum: string
             RolesEnum::GROUP_ADMIN => __('Group admin'),
             RolesEnum::SYSTEM_ADMIN => __('System admin'),
             RolesEnum::GROUP_WEBMASTER => __('Group webmaster'),
-            RolesEnum::HELP_DESK_CLERK => __('Help desk'),
-            RolesEnum::HELP_DESK_SUPERVISOR => __('Help desk supervisor'),
+            RolesEnum::HELP_DESK_CLERK => __('Engineer'),
+            RolesEnum::HELP_DESK_SUPERVISOR => __('Lead engineer'),
+            RolesEnum::QA => __('QA'),
             RolesEnum::SUPPLY_CHAIN => __('Supply chain'),
             RolesEnum::PROCUREMENT_CLERK => __('Procurement clerk'),
             RolesEnum::PROCUREMENT_SUPERVISOR => __('Procurement supervisor'),
@@ -182,32 +184,36 @@ enum RolesEnum: string
         };
     }
 
+    /**
+     * @return array<GroupPermissionsEnum>
+     */
+    public static function groupAdminPermissions(): array
+    {
+        return [
+            GroupPermissionsEnum::GROUP_REPORTS,
+            GroupPermissionsEnum::GROUP_OVERVIEW,
+            GroupPermissionsEnum::SYSADMIN,
+            GroupPermissionsEnum::SUPPLY_CHAIN,
+            GroupPermissionsEnum::ORGANISATIONS,
+            GroupPermissionsEnum::GOODS,
+            GroupPermissionsEnum::MASTERS,
+            GroupPermissionsEnum::GROUP_WEBMASTER,
+        ];
+    }
+
     public function getPermissions(): array
     {
         return match ($this) {
-            RolesEnum::GROUP_ADMIN => [
-                GroupPermissionsEnum::GROUP_REPORTS,
-                GroupPermissionsEnum::GROUP_OVERVIEW,
-                GroupPermissionsEnum::SYSADMIN,
-                GroupPermissionsEnum::SUPPLY_CHAIN,
-                GroupPermissionsEnum::ORGANISATIONS,
-                GroupPermissionsEnum::GOODS,
-                GroupPermissionsEnum::MASTERS,
-                GroupPermissionsEnum::GROUP_WEBMASTER,
-                GroupPermissionsEnum::HELP_DESK,
-            ],
+            RolesEnum::GROUP_ADMIN => self::groupAdminPermissions(),
             RolesEnum::SYSTEM_ADMIN => [
                 GroupPermissionsEnum::SYSADMIN
             ],
             RolesEnum::GROUP_WEBMASTER => [
                 GroupPermissionsEnum::GROUP_WEBMASTER
             ],
-            RolesEnum::HELP_DESK_CLERK => [
-                GroupPermissionsEnum::HELP_DESK_RESOLVE
-            ],
-            RolesEnum::HELP_DESK_SUPERVISOR => [
-                GroupPermissionsEnum::HELP_DESK
-            ],
+            RolesEnum::HELP_DESK_CLERK => [...self::groupAdminPermissions(), GroupPermissionsEnum::HELP_DESK_RESOLVE],
+            RolesEnum::QA => [...self::groupAdminPermissions(), GroupPermissionsEnum::HELP_DESK_QA],
+            RolesEnum::HELP_DESK_SUPERVISOR => [...self::groupAdminPermissions(), GroupPermissionsEnum::HELP_DESK],
             RolesEnum::SUPPLY_CHAIN => [
                 GroupPermissionsEnum::SUPPLY_CHAIN
             ],
@@ -525,6 +531,7 @@ enum RolesEnum: string
             RolesEnum::GROUP_WEBMASTER,
             RolesEnum::HELP_DESK_CLERK,
             RolesEnum::HELP_DESK_SUPERVISOR,
+            RolesEnum::QA,
             RolesEnum::SUPPLY_CHAIN,
             RolesEnum::GOODS_MANAGER,
             RolesEnum::MASTERS_MANAGER,

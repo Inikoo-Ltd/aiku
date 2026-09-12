@@ -16,7 +16,7 @@ use App\Actions\Helpers\Ticket\RepairSlackTicketReporters;
 use App\Actions\Helpers\Ticket\StoreTicket;
 use App\Actions\Helpers\Ticket\StoreTicketComment;
 use App\Actions\Helpers\Ticket\StoreTicketFromSlack;
-use App\Actions\Helpers\Ticket\UI\ShowTicketsDashboard;
+use App\Actions\Helpers\Ticket\UI\ShowTicketsReports;
 use App\Actions\Helpers\Ticket\UpdateTicket;
 use App\Actions\Retina\Dropshipping\Ticket\StoreRetinaTicket;
 use App\Enums\CRM\Livechat\ChatEventTypeEnum;
@@ -63,6 +63,8 @@ beforeEach(function () {
 
     app()->instance('group', $this->group);
     setPermissionsTeamId($this->group->id);
+    $this->user->assignRole('help-desk-supervisor');
+    $this->user->forgetWildcardPermissionIndex();
     Config::set('inertia.testing.page_paths', [resource_path('js/Pages/Grp')]);
     actingAs($this->user);
 });
@@ -150,9 +152,12 @@ test('staff can leave internal notes but customers never can', function (Ticket 
 })->depends('customer ticket from retina gets an AD reference and the customer attached');
 
 test('grp ticket pages render', function (Ticket $ticket) {
-    get(route('grp.tickets.index'))->assertInertia(fn (AssertableInertia $page) => $page->component('Tickets/Tickets')->has('data.data', Ticket::count()));
+    get(route('grp.tickets.index'))->assertInertia(fn (AssertableInertia $page) => $page->component('Tickets/TicketsDashboard')->where('can_manage', true)->has('queue')->has('stats.open'));
+    get(route('grp.tickets.list'))->assertInertia(fn (AssertableInertia $page) => $page->component('Tickets/Tickets')->has('data.data', Ticket::count()));
     get(route('grp.tickets.board'))->assertInertia(fn (AssertableInertia $page) => $page->component('Tickets/TicketsBoard')->has('columns', 5));
+    actingAs(User::factory()->create(['group_id' => $this->group->id]));
     get(route('grp.tickets.create'))->assertInertia(fn (AssertableInertia $page) => $page->component('Tickets/CreateTicket'));
+    actingAs($this->user);
     get(route('grp.tickets.show', $ticket->reference))->assertInertia(
         fn (AssertableInertia $page) => $page->component('Tickets/Ticket')->where('ticket.reference', $ticket->reference)->has('comments', 2)
     );
@@ -160,11 +165,14 @@ test('grp ticket pages render', function (Ticket $ticket) {
 
 test('grp form endpoints create, update and comment', function () {
     $countBefore = Ticket::count();
+    $reporter    = User::factory()->create(['group_id' => $this->group->id]);
 
+    actingAs($reporter);
     post(route('grp.models.ticket.store'), ['subject' => 'From the form', 'priority' => 'urgent'])->assertRedirect();
+    actingAs($this->user);
     $ticket = Ticket::latest('id')->first();
     expect(Ticket::count())->toBe($countBefore + 1)
-        ->and($ticket->reporter_id)->toBe($this->user->id)
+        ->and($ticket->reporter_id)->toBe($reporter->id)
         ->and($ticket->priority)->toBe(ChatPriorityEnum::URGENT);
 
     patch(route('grp.models.ticket.update', $ticket->id), ['status' => 'in_progress'])->assertRedirect();
@@ -307,13 +315,13 @@ test('screenshots can be attached to tickets and comments', function () {
 });
 
 test('tickets dashboard counts created, done, status and assignees', function () {
-    $before = ShowTicketsDashboard::make()->handle($this->group, 7);
+    $before = ShowTicketsReports::make()->handle($this->group, 7);
 
     $ticket = StoreTicket::make()->action($this->group, ['subject' => 'Report me', 'assignee_id' => $this->user->id]);
     UpdateTicket::make()->action($ticket, ['status' => TicketStatusEnum::RESOLVED->value]);
     StoreTicket::make()->action($this->group, ['subject' => 'Still open', 'assignee_id' => $this->user->id]);
 
-    $stats = ShowTicketsDashboard::make()->handle($this->group, 7);
+    $stats = ShowTicketsReports::make()->handle($this->group, 7);
     $today = collect($stats['daily'])->firstWhere('date', now()->toDateString());
     $me    = collect($stats['assignees'])->firstWhere('name', $this->user->contact_name ?: $this->user->username);
 
@@ -327,8 +335,8 @@ test('tickets dashboard counts created, done, status and assignees', function ()
         ->and($me['open'])->toBeGreaterThanOrEqual(1)
         ->and($me['median_hours'])->not->toBeNull();
 
-    get(route('grp.tickets.dashboard', ['days' => 30]))->assertInertia(
-        fn (AssertableInertia $page) => $page->component('Tickets/TicketsDashboard')->where('stats.days', 30)->has('stats.daily', 30)
+    get(route('grp.tickets.reports', ['days' => 30]))->assertInertia(
+        fn (AssertableInertia $page) => $page->component('Tickets/TicketsReports')->where('stats.days', 30)->has('stats.daily', 30)
     );
 });
 
@@ -357,7 +365,7 @@ test('reporter rates a resolved ticket once and CSAT shows on the dashboard', fu
         ->post('http://'.$this->website->domain.'/app/models/ticket/'.$ticket->id.'/rate', ['rating' => 1])
         ->assertForbidden();
 
-    $stats = ShowTicketsDashboard::make()->handle($this->group, 7);
+    $stats = ShowTicketsReports::make()->handle($this->group, 7);
     expect($stats['csat'])->toBeGreaterThan(0)
         ->and(count($stats['csat_by_month']))->toBe(12)
         ->and(collect($stats['csat_by_month'])->last()['total'])->toBeGreaterThanOrEqual(1);
@@ -415,6 +423,7 @@ test('customer ticket escalates to a help ticket that keeps the customer and poi
 });
 
 test('staff file a bug from anywhere without leaving the page', function () {
+    actingAs(User::factory()->create(['group_id' => $this->group->id]));
     $response = post(route('grp.models.ticket.store'), [
         'subject' => 'Button dead',
         'kind'    => 'bug',
@@ -449,7 +458,7 @@ test('confidential tickets are only visible to reporter, assignee and admins', f
 
     actingAs($outsider);
     get(route('grp.tickets.show', $ticket->reference))->assertForbidden();
-    get(route('grp.tickets.index', ['elements' => ['mine' => 'reported']]))->assertOk();
+    get(route('grp.tickets.list', ['elements' => ['mine' => 'reported']]))->assertOk();
 
     UpdateTicket::make()->action($ticket, ['assignee_id' => $outsider->id]);
     expect(Ticket::visibleTo($outsider)->whereKey($ticket->id)->exists())->toBeTrue();
@@ -714,7 +723,8 @@ test('only the help desk manages tickets, everyone else reports, comments and cl
     $other  = StoreTicket::make()->action($this->group, ['subject' => 'Not mine']);
 
     get(route('grp.tickets.show', $ticket->reference))->assertOk()->assertInertia(fn (AssertableInertia $page) => $page->where('can_manage', false)->where('is_reporter', true));
-    get(route('grp.tickets.dashboard'))->assertForbidden();
+    get(route('grp.tickets.index'))->assertOk()->assertInertia(fn (AssertableInertia $page) => $page->component('Tickets/TicketsDashboard')->where('can_manage', false)->has('mine', 1)->missing('queue'));
+    get(route('grp.tickets.reports'))->assertForbidden();
     get(route('grp.tickets.board'))->assertForbidden();
     patch(route('grp.models.ticket.update', $other->id), ['status' => 'resolved'])->assertForbidden();
     patch(route('grp.models.ticket.update', $ticket->id), ['priority' => 'urgent'])->assertForbidden();
@@ -723,9 +733,18 @@ test('only the help desk manages tickets, everyone else reports, comments and cl
     expect($ticket->fresh()->status)->toBe(TicketStatusEnum::RESOLVED)
         ->and($other->comments()->sole()->is_internal)->toBeFalse();
 
+    $manager = User::factory()->create(['group_id' => $this->group->id]);
+    $manager->assignRole('group-admin');
+    actingAs($manager);
+    get(route('grp.tickets.show', $other->reference))->assertOk()->assertInertia(fn (AssertableInertia $page) => $page->where('can_manage', false));
+    get(route('grp.tickets.board'))->assertForbidden();
+    patch(route('grp.models.ticket.update', $other->id), ['status' => 'resolved'])->assertForbidden();
+
     actingAs($helper);
+    get(route('grp.tickets.create'))->assertForbidden();
+    post(route('grp.models.ticket.store'), ['subject' => 'Engineers do not report'])->assertForbidden();
     get(route('grp.tickets.show', $other->reference))->assertOk()->assertInertia(fn (AssertableInertia $page) => $page->where('can_manage', true));
-    get(route('grp.tickets.dashboard'))->assertForbidden();
+    get(route('grp.tickets.reports'))->assertForbidden();
     get(route('grp.tickets.board'))->assertOk();
     patch(route('grp.models.ticket.update', $other->id), ['is_confidential' => true])->assertForbidden();
     patch(route('grp.models.ticket.update', $other->id), ['assignee_id' => $helper->id])->assertForbidden();
@@ -742,7 +761,7 @@ test('only the help desk manages tickets, everyone else reports, comments and cl
         ->and($other->comments()->where('body', 'like', 'Passed from%')->count())->toBeGreaterThanOrEqual(1);
 
     actingAs($boss);
-    get(route('grp.tickets.dashboard'))->assertOk();
+    get(route('grp.tickets.reports'))->assertOk();
     patch(route('grp.models.ticket.update', $other->id), ['assignee_id' => $boss->id])->assertRedirect();
     expect($other->fresh()->assignee_id)->toBe($boss->id);
 
