@@ -75,6 +75,7 @@ class ShowTicket extends OrgAction
                     'comment' => ['name' => 'grp.models.ticket.comment.store', 'parameters' => ['ticket' => $ticket->id]],
                     'rate'    => ['name' => 'grp.models.ticket.rate', 'parameters' => ['ticket' => $ticket->id]],
                     'escalate' => ['name' => 'grp.models.ticket.escalate', 'parameters' => ['ticket' => $ticket->id]],
+                    'delete'   => ['name' => 'grp.models.ticket.delete', 'parameters' => ['ticket' => $ticket->id]],
                 ],
             ]
         );

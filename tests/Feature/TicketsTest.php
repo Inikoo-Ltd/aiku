@@ -44,6 +44,7 @@ use Inertia\Testing\AssertableInertia;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 
 use function Pest\Laravel\actingAs;
+use function Pest\Laravel\delete;
 use function Pest\Laravel\get;
 use function Pest\Laravel\patch;
 use function Pest\Laravel\post;
@@ -740,8 +741,15 @@ test('only the help desk manages tickets, everyone else reports, comments and cl
     AikuServer::actingAs($boss)->tool(TicketWriteTool::class, ['reference' => $other->reference, 'assignee' => $helper->username])->assertOk();
     AikuServer::actingAs($helper)->tool(TicketWriteTool::class, ['reference' => $other->reference, 'assignee' => $boss->username])->assertOk();
 
+    actingAs($helper);
+    delete(route('grp.models.ticket.delete', $other->id))->assertForbidden();
     actingAs($boss);
     patch(route('grp.models.ticket.update', $other->id), ['assignee_id' => $boss->id, 'is_confidential' => true])->assertRedirect();
     expect($other->fresh()->is_confidential)->toBeTrue();
     AikuServer::actingAs($helper)->tool(TicketWriteTool::class, ['reference' => $other->reference, 'priority' => 'low'])->assertHasErrors();
+
+    actingAs($boss);
+    delete(route('grp.models.ticket.delete', $other->id))->assertRedirect(route('grp.tickets.index'));
+    expect(Ticket::find($other->id))->toBeNull()
+        ->and(Ticket::withTrashed()->find($other->id))->not->toBeNull();
 });

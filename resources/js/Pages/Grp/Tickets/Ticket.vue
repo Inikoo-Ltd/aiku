@@ -66,6 +66,11 @@ const openStaffChat = async () => {
     staffMessaging.openConversation(props.ticket.staff_conversation_ulid)
 }
 
+const deleteTicket = () => {
+    if (!confirm(trans("Delete :reference for good?", { reference: props.ticket.reference }))) return
+    router.delete(route(props.routes.delete.name, props.routes.delete.parameters))
+}
+
 const update = (field: string, value: unknown) => {
     router.patch(route(props.routes.update.name, props.routes.update.parameters), { [field]: value }, { preserveScroll: true })
 }
@@ -117,6 +122,7 @@ const update = (field: string, value: unknown) => {
             </div>
             <Button v-if="ticket.type === 'customer' && !ticket.escalations.length" type="secondary" icon="fal fa-level-up" :label="trans('Escalate to help desk')" full @click="escalate" />
             <Button v-if="ticket.staff_conversation_ulid" type="tertiary" icon="fal fa-comments" :label="trans('Staff chat')" full @click="openStaffChat" />
+            <Button v-if="can_flag_confidential" type="negative" icon="fal fa-trash-alt" :label="trans('Delete ticket')" full @click="deleteTicket" />
             <label v-if="can_flag_confidential" class="flex items-center gap-x-2 text-gray-600 cursor-pointer">
                 <input type="checkbox" :checked="ticket.is_confidential" class="rounded border-gray-300" @change="update('is_confidential', ($event.target as HTMLInputElement).checked)" />
                 {{ trans("Confidential") }} <span class="text-xs text-gray-400">({{ trans("only reporter, assignee and admins") }})</span>
