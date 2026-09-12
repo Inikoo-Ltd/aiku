@@ -20,7 +20,6 @@ use App\Models\SysAdmin\Group;
 use App\Helpers\SlackNotification;
 use App\Models\SysAdmin\User;
 use Illuminate\Notifications\AnonymousNotifiable;
-use Illuminate\Notifications\Slack\BlockKit\Blocks\ActionsBlock;
 use Illuminate\Notifications\Slack\BlockKit\Blocks\SectionBlock;
 use Illuminate\Notifications\Slack\SlackMessage;
 use Illuminate\Support\Str;
@@ -80,7 +79,7 @@ class StoreTicket extends OrgAction
                     $block->field('*Module:* '.TicketModuleEnum::labels()[$ticket->module->value])->markdown();
                 }
             })
-            ->actionsBlock(fn (ActionsBlock $block) => $block->button('Open ticket')->primary()->url(route('grp.tickets.show', $ticket->reference)));
+            ->sectionBlock(fn (SectionBlock $block) => $block->text('<'.route('grp.tickets.show', $ticket->reference).'|Open ticket>')->markdown());
 
         (new AnonymousNotifiable())->route('slack', $channel)->notify(new SlackNotification($message));
     }
