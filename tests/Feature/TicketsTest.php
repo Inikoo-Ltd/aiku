@@ -565,7 +565,7 @@ test('slack ticket reaction raises a ticket from the message and mirrors replies
     Config::set('services.slack.notifications.bot_user_oauth_token', 'xoxb-test');
     $this->user->update(['email' => 'raul@example.com']);
     Http::fake([
-        'slack.com/api/users.info*'            => Http::response(['ok' => true, 'user' => ['profile' => ['email' => 'raul@example.com']]]),
+        'slack.com/api/users.info*'            => Http::response(['ok' => true, 'user' => ['name' => $this->user->username, 'real_name' => 'Somebody Else', 'profile' => ['email' => 'raul-on-slack@example.com']]]),
         'slack.com/api/conversations.history*' => Http::response(['ok' => true, 'messages' => [[
             'user'  => 'U1',
             'text'  => "Picking shows 1 instead of 3\nFaire FPGB",
