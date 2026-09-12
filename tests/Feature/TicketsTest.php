@@ -15,6 +15,7 @@ use App\Actions\Helpers\Ticket\RateTicket;
 use App\Actions\Helpers\Ticket\RepairSlackTicketReporters;
 use App\Actions\Helpers\Ticket\StoreTicket;
 use App\Actions\Helpers\Ticket\StoreTicketComment;
+use App\Actions\Helpers\Ticket\StoreTicketFromSlack;
 use App\Actions\Helpers\Ticket\UI\ShowTicketsDashboard;
 use App\Actions\Helpers\Ticket\UpdateTicket;
 use App\Actions\Retina\Dropshipping\Ticket\StoreRetinaTicket;
@@ -614,6 +615,12 @@ test('slack ticket reaction raises a ticket from the message and mirrors replies
     Http::assertNotSent(fn ($request) => str_contains($request->url(), 'chat.postMessage') && str_contains($request['text'], 'private'));
     Http::assertSent(fn ($request) => str_contains($request->url(), 'chat.postMessage') && str_ends_with($request['text'], 'Resolved'));
 
+    $bare = StoreTicketFromSlack::run($this->group, ['user_id' => 'U1', 'channel_id' => 'C1', 'ts' => '7', 'subject' => 'No clue where <https://app.aiku.io/org/aw/shops/uk|here>']);
+    expect($bare->data['reference_url'])->toBe('https://app.aiku.io/org/aw/shops/uk');
+    $bare = StoreTicketFromSlack::run($this->group, ['user_id' => 'U1', 'channel_id' => 'C1', 'ts' => '8', 'subject' => 'Nothing to go on']);
+    Http::assertSent(fn ($request) => str_contains($request->url(), 'chat.postMessage') && $request['thread_ts'] === '8' && str_contains($request['text'], 'screenshot'));
+    Http::assertNotSent(fn ($request) => str_contains($request->url(), 'chat.postMessage') && $request['thread_ts'] === '7' && str_contains($request['text'], 'screenshot'));
+
     $orphan = StoreTicket::make()->action($this->group, ['subject' => 'Unknown reporter', 'data' => ['slack' => ['user_id' => 'U1', 'channel_id' => 'C1', 'ts' => '9']]]);
     expect($orphan->reporter_id)->toBeNull()
         ->and(RepairSlackTicketReporters::run())->toBe(1)
@@ -651,6 +658,7 @@ test('slack shortcut opens the ticket modal and only its submit creates the tick
             && $request['trigger_id'] === 'T1'
             && $view['blocks'][0]['element']['initial_value'] === 'Labels blank'
             && $view['blocks'][1]['element']['initial_value'] === 'SK printer only'
+            && $view['blocks'][2]['optional'] === false
             && json_decode($view['private_metadata'], true) === ['user_id' => 'U1', 'channel_id' => 'C1', 'ts' => '55.1'];
     });
     expect(Ticket::where('subject', 'Labels blank')->exists())->toBeFalse();

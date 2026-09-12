@@ -29,6 +29,10 @@ class StoreTicketFromSlack
     public function handle(Group $group, array $slackData): Ticket
     {
         $reporter = $this->slackUserToAikuUser(Arr::get($slackData, 'user_id'));
+        $text     = Arr::get($slackData, 'subject').' '.Arr::get($slackData, 'description');
+        if (!Arr::get($slackData, 'reference_url') && preg_match('#https?://[^\s<>|]+#', $text, $match)) {
+            $slackData['reference_url'] = rtrim($match[0], '>.,)');
+        }
 
         $ticket = StoreTicket::make()->action($group, array_filter([
             'type'          => TicketTypeEnum::HELP->value,
@@ -47,7 +51,11 @@ class StoreTicketFromSlack
             $this->attachSlackFile($ticket, $file);
         }
 
-        PostTicketSlackThreadReply::run($ticket, $ticket->reference.' raised: '.route('grp.tickets.show', $ticket->reference));
+        $reply = $ticket->reference.' raised: '.route('grp.tickets.show', $ticket->reference);
+        if (!Arr::get($slackData, 'reference_url') && !Arr::get($slackData, 'files')) {
+            $reply .= "\nPlease reply here with the link to the page where it happens and a screenshot, tickets without them are hard to fix.";
+        }
+        PostTicketSlackThreadReply::run($ticket, $reply);
 
         return $ticket;
     }
