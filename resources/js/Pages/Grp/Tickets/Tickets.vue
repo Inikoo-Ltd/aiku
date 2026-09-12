@@ -22,7 +22,6 @@ defineProps<{
 <template>
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead" />
-    <div v-if="(($page.props as any).tickets_read_only_types ?? []).length" class="mx-4 mt-4 rounded-md bg-amber-50 border border-amber-300 text-amber-800 px-4 py-2 text-sm">{{ trans("Mirror of Jira, read-only until the cut-over. Raise or update tickets in Jira for now.") }}</div>
     <Table :resource="data" class="mt-2">
         <template #cell(reference)="{ item }">
             <Link :href="route('grp.tickets.show', item.reference)" class="primaryLink">{{ item.reference }}</Link>

@@ -22,8 +22,11 @@ class CancelStaleTickets
     {
         $cancelled = 0;
 
+        $cutoff = now()->subDays($days);
+
         Ticket::where('status', TicketStatusEnum::WAITING)
-            ->where('updated_at', '<', now()->subDays($days))
+            ->where('created_at', '<', $cutoff)
+            ->whereDoesntHave('comments', fn ($query) => $query->where('is_internal', false)->where('created_at', '>=', $cutoff))
             ->cursor()
             ->each(function (Ticket $ticket) use ($days, &$cancelled) {
                 $ticket->update([
@@ -34,7 +37,7 @@ class CancelStaleTickets
                     'is_internal' => true,
                     'body'        => __('No reply for :days days', ['days' => $days]),
                 ]);
-                PostTicketSlackThreadReply::run($ticket, $ticket->reference.' is now '.TicketStatusEnum::labels()[$ticket->status->value]);
+                PostTicketSlackThreadReply::run($ticket, $ticket->reference.' is now '.TicketStatusEnum::labels()[$ticket->status->value].': '.__('no reply for :days days. Reply here to reopen it', ['days' => $days]));
                 SyncTicketSlackAlert::run($ticket);
                 $cancelled++;
             });

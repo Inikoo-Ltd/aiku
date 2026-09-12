@@ -9,7 +9,6 @@
 namespace App\Actions\Helpers\Ticket;
 
 use App\Actions\Helpers\Ticket\Concerns\WithSlack;
-use App\Actions\Helpers\Ticket\Concerns\WithTicketsWriteGuard;
 use App\Models\Helpers\Ticket;
 use App\Models\SysAdmin\Group;
 use Illuminate\Http\JsonResponse;
@@ -62,11 +61,15 @@ class ReceiveSlackTicketReaction
         }
 
         $event = $request->input('event', []);
+        if (Arr::get($event, 'type') === 'message') {
+            dispatch(fn () => StoreTicketCommentFromSlackThread::run($event));
+
+            return response()->json(['ok' => true]);
+        }
         if (
             Arr::get($event, 'type') !== 'reaction_added'
             || Arr::get($event, 'reaction') !== config('services.slack.ticket_reaction')
             || Arr::get($event, 'item.type') !== 'message'
-            || WithTicketsWriteGuard::ticketsAreReadOnly()
         ) {
             return response()->json(['ok' => true]);
         }

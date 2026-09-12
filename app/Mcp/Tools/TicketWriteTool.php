@@ -8,7 +8,6 @@
 
 namespace App\Mcp\Tools;
 
-use App\Actions\Helpers\Ticket\Concerns\WithTicketsWriteGuard;
 use App\Actions\Helpers\Ticket\StoreTicket;
 use App\Actions\Helpers\Ticket\StoreTicketComment;
 use App\Actions\Helpers\Ticket\UpdateTicket;
@@ -43,10 +42,6 @@ class TicketWriteTool extends Tool
         $user = $request->user();
 
         if (!$request->filled('reference')) {
-            if (WithTicketsWriteGuard::ticketsAreReadOnly()) {
-                return Response::error(WithTicketsWriteGuard::readOnlyMessage());
-            }
-
             $ticket = StoreTicket::make()->action($user->group, array_filter([
                 'subject'       => $request->string('subject')->toString(),
                 'description'   => $request->get('description'),
@@ -64,9 +59,6 @@ class TicketWriteTool extends Tool
         $ticket = Ticket::where('group_id', $user->group_id)->visibleTo($user)->where('reference', strtoupper($request->string('reference')))->first();
         if (!$ticket) {
             return Response::error('Ticket not found or not visible to you.');
-        }
-        if (WithTicketsWriteGuard::ticketsAreReadOnly($ticket->type)) {
-            return Response::error(WithTicketsWriteGuard::readOnlyMessage());
         }
         if (!Ticket::canBeManagedBy($user) && !$ticket->isReportedBy($user) && $request->hasAny(['subject', 'description', 'status', 'priority', 'kind', 'module', 'tags', 'assignee'])) {
             return Response::error('Only the help desk can change tickets. You can comment on it.');

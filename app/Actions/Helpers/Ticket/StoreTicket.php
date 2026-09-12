@@ -8,7 +8,6 @@
 
 namespace App\Actions\Helpers\Ticket;
 
-use App\Actions\Helpers\Ticket\Concerns\WithTicketsWriteGuard;
 use App\Actions\Chat\Staff\StoreStaffConversation;
 use App\Actions\OrgAction;
 use App\Enums\CRM\Livechat\ChatPriorityEnum;
@@ -26,12 +25,9 @@ use Lorisleiva\Actions\ActionRequest;
 
 class StoreTicket extends OrgAction
 {
-    use WithTicketsWriteGuard;
-
     public function handle(Group $group, array $modelData): Ticket
     {
         $type = TicketTypeEnum::from(Arr::get($modelData, 'type', TicketTypeEnum::HELP->value));
-        $this->guardTicketsWritable($type);
 
         $number = DB::selectOne('SELECT nextval(?) AS number', [$type->sequence()])->number;
 

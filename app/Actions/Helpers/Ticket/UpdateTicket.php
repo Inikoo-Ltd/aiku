@@ -8,7 +8,6 @@
 
 namespace App\Actions\Helpers\Ticket;
 
-use App\Actions\Helpers\Ticket\Concerns\WithTicketsWriteGuard;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\CRM\Livechat\ChatPriorityEnum;
@@ -24,13 +23,10 @@ use Lorisleiva\Actions\ActionRequest;
 
 class UpdateTicket extends OrgAction
 {
-    use WithTicketsWriteGuard;
-
     use WithActionUpdate;
 
     public function handle(Ticket $ticket, array $modelData): Ticket
     {
-        $this->guardTicketsWritable($ticket->type);
 
         if ($status = Arr::get($modelData, 'status')) {
             $status = TicketStatusEnum::from($status);

@@ -8,7 +8,6 @@
 
 namespace App\Actions\Helpers\Ticket;
 
-use App\Actions\Helpers\Ticket\Concerns\WithTicketsWriteGuard;
 use App\Actions\OrgAction;
 use App\Models\Helpers\Ticket;
 use Illuminate\Http\RedirectResponse;
@@ -16,11 +15,8 @@ use Lorisleiva\Actions\ActionRequest;
 
 class DeleteTicket extends OrgAction
 {
-    use WithTicketsWriteGuard;
-
     public function handle(Ticket $ticket): void
     {
-        $this->guardTicketsWritable($ticket->type);
         $ticket->delete();
     }
 

@@ -9,7 +9,6 @@
 namespace App\Actions\Helpers\Ticket;
 
 use App\Actions\Helpers\Ticket\Concerns\WithSlack;
-use App\Actions\Helpers\Ticket\Concerns\WithTicketsWriteGuard;
 use App\Models\SysAdmin\Group;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -68,10 +67,6 @@ class ReceiveSlackInteraction
     {
         abort_unless($this->slackSignatureIsValid($request), 401);
         $payload = json_decode((string) $request->input('payload'), true) ?: [];
-
-        if (WithTicketsWriteGuard::ticketsAreReadOnly()) {
-            return response('', 200);
-        }
 
         if (in_array(Arr::get($payload, 'type'), ['message_action', 'shortcut'], true) && in_array(Arr::get($payload, 'callback_id'), [self::CALLBACK_ID, self::GLOBAL_CALLBACK_ID], true)) {
             $this->openTicketModal([

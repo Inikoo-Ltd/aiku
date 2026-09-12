@@ -39,7 +39,6 @@ use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Testing\AssertableInertia;
-use Symfony\Component\HttpKernel\Exception\HttpException;
 
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\delete;
@@ -108,14 +107,32 @@ test('status changes stamp resolved and closed dates', function (Ticket $ticket)
 test('a ticket waiting longer than the grace period is cancelled, a fresh one is left alone', function () {
     $stale = StoreTicket::make()->action($this->group, ['subject' => 'Waited forever']);
     $fresh = StoreTicket::make()->action($this->group, ['subject' => 'Just asked']);
-    Ticket::whereIn('id', [$stale->id, $fresh->id])->update(['status' => TicketStatusEnum::WAITING]);
-    Ticket::where('id', $stale->id)->update(['updated_at' => now()->subDays(20)]);
+    $answered = StoreTicket::make()->action($this->group, ['subject' => 'Old but answered']);
+    Ticket::whereIn('id', [$stale->id, $fresh->id, $answered->id])->update(['status' => TicketStatusEnum::WAITING]);
+    Ticket::whereIn('id', [$stale->id, $answered->id])->update(['created_at' => now()->subDays(20), 'updated_at' => now()]);
+    $answered->comments()->create(['body' => 'asked 20 days ago', 'is_internal' => false, 'created_at' => now()->subDays(20)]);
+    $answered->comments()->create(['body' => 'here is the info', 'is_internal' => false, 'created_at' => now()->subDays(2)]);
+    $stale->comments()->create(['body' => 'tagged it', 'is_internal' => true]);
 
     expect(CancelStaleTickets::run(14))->toBe(1)
         ->and($stale->fresh()->status)->toBe(TicketStatusEnum::CANCELLED)
         ->and($stale->fresh()->closed_at)->not->toBeNull()
-        ->and($stale->comments()->where('is_internal', true)->count())->toBe(1)
-        ->and($fresh->fresh()->status)->toBe(TicketStatusEnum::WAITING);
+        ->and($stale->comments()->where('is_internal', true)->count())->toBe(2)
+        ->and($fresh->fresh()->status)->toBe(TicketStatusEnum::WAITING)
+        ->and($answered->fresh()->status)->toBe(TicketStatusEnum::WAITING);
+
+    $stale = $stale->fresh();
+    StoreTicketComment::make()->action($stale, $this->webUser, ['body' => 'sorry, was on holiday']);
+    expect($stale->fresh()->status)->toBe(TicketStatusEnum::OPEN)
+        ->and($stale->fresh()->closed_at)->toBeNull();
+
+    UpdateTicket::make()->action($stale, ['status' => TicketStatusEnum::RESOLVED->value]);
+    StoreTicketComment::make()->action($stale, $this->webUser, ['body' => 'thanks!']);
+    expect($stale->fresh()->status)->toBe(TicketStatusEnum::RESOLVED);
+
+    UpdateTicket::make()->action($stale, ['status' => TicketStatusEnum::WAITING->value]);
+    StoreTicketComment::make()->action($stale, $this->user, ['body' => 'any news?']);
+    expect($stale->fresh()->status)->toBe(TicketStatusEnum::WAITING);
 });
 
 test('staff can leave internal notes but customers never can', function (Ticket $ticket) {
@@ -469,40 +486,6 @@ test('deployed commits that name a ticket are recorded on it once', function () 
         ->and(TicketResource::make($ticket)->resolve()['commits'][0]['hash'])->toBe('deadbeef0001');
 });
 
-test('read-only mirror mode blocks every write but still lets everyone read', function () {
-    $ticket         = StoreTicket::make()->action($this->group, ['subject' => 'Before freeze']);
-    $customerTicket = StoreRetinaTicket::make()->action($this->webUser, ['subject' => 'Customer before freeze']);
-    Config::set('tickets.read_only_types', ['help', 'customer']);
-
-    get(route('grp.tickets.index'))->assertOk()->assertInertia(fn (AssertableInertia $page) => $page->where('tickets_read_only_types', ['help', 'customer']));
-    get(route('grp.tickets.show', $ticket->reference))->assertOk();
-
-    post(route('grp.models.ticket.store'), ['subject' => 'During freeze'])->assertStatus(423);
-    patch(route('grp.models.ticket.update', $ticket->id), ['status' => 'resolved'])->assertStatus(423);
-    post(route('grp.models.ticket.comment.store', $ticket->id), ['body' => 'nope'])->assertStatus(423);
-    post(route('grp.models.ticket.escalate', $customerTicket->id))->assertStatus(423);
-    expect(fn () => StoreRetinaTicket::make()->action($this->webUser, ['subject' => 'retina during freeze']))->toThrow(HttpException::class);
-
-    AikuServer::actingAs($this->user)->tool(TicketWriteTool::class, ['reference' => $ticket->reference, 'comment' => 'x'])->assertHasErrors();
-    AikuServer::actingAs($this->user)->tool(TicketsTool::class, ['reference' => $ticket->reference])->assertOk();
-
-    expect(Ticket::where('subject', 'During freeze')->exists())->toBeFalse()
-        ->and($ticket->fresh()->status)->toBe(TicketStatusEnum::OPEN)
-        ->and($ticket->comments()->count())->toBe(0);
-
-    Config::set('tickets.read_only_types', ['customer']);
-
-    post(route('grp.models.ticket.store'), ['subject' => 'Help after cut-over'])->assertRedirect();
-    post(route('grp.models.ticket.comment.store', $ticket->id), ['body' => 'help is writable'])->assertRedirect();
-    post(route('grp.models.ticket.escalate', $customerTicket->id))->assertRedirect();
-    expect(fn () => StoreRetinaTicket::make()->action($this->webUser, ['subject' => 'retina still frozen']))->toThrow(HttpException::class);
-    AikuServer::actingAs($this->user)->tool(TicketWriteTool::class, ['reference' => $customerTicket->reference, 'comment' => 'x'])->assertHasErrors();
-    AikuServer::actingAs($this->user)->tool(TicketWriteTool::class, ['reference' => $ticket->reference, 'comment' => 'via mcp'])->assertOk();
-
-    expect(Ticket::where('subject', 'Help after cut-over')->exists())->toBeTrue()
-        ->and($ticket->comments()->count())->toBe(2);
-});
-
 test('slack ticket reaction raises a ticket from the message and mirrors replies into its thread', function () {
     Config::set('services.slack.signing_secret', 'shh');
     Config::set('services.slack.notifications.bot_user_oauth_token', 'xoxb-test');
@@ -551,6 +534,13 @@ test('slack ticket reaction raises a ticket from the message and mirrors replies
 
     StoreTicketComment::make()->action($ticket, $this->user, ['body' => 'Fixed, please check']);
     StoreTicketComment::make()->action($ticket, $this->user, ['body' => 'private', 'is_internal' => true]);
+    UpdateTicket::make()->action($ticket, ['status' => TicketStatusEnum::WAITING->value]);
+    $post(['type' => 'event_callback', 'event' => ['type' => 'message', 'channel' => 'C1', 'user' => 'U1', 'ts' => '1789138199.1', 'thread_ts' => '1789138198.657369', 'text' => 'It is FPGB-123']])->assertOk();
+    $post(['type' => 'event_callback', 'event' => ['type' => 'message', 'channel' => 'C1', 'bot_id' => 'B1', 'ts' => '1789138199.2', 'thread_ts' => '1789138198.657369', 'text' => 'HELP-1 is now Waiting']])->assertOk();
+    $post(['type' => 'event_callback', 'event' => ['type' => 'message', 'channel' => 'C1', 'user' => 'U1', 'ts' => '1789138199.3', 'text' => 'unrelated top level message']])->assertOk();
+    expect($ticket->fresh()->status)->toBe(TicketStatusEnum::OPEN)
+        ->and($ticket->comments()->where('is_internal', false)->pluck('body')->all())->toBe(['Fixed, please check', 'It is FPGB-123']);
+    Http::assertNotSent(fn ($request) => str_contains($request->url(), 'chat.postMessage') && str_contains($request['text'], 'It is FPGB-123'));
     UpdateTicket::make()->action($ticket, ['status' => TicketStatusEnum::RESOLVED->value]);
     Http::assertSent(fn ($request) => str_contains($request->url(), 'chat.postMessage') && str_contains($request['text'], 'Fixed, please check'));
     Http::assertNotSent(fn ($request) => str_contains($request->url(), 'chat.postMessage') && str_contains($request['text'], 'private'));
