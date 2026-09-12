@@ -14,7 +14,6 @@ use App\Enums\Helpers\Ticket\TicketKindEnum;
 use App\Enums\Helpers\Ticket\TicketStatusEnum;
 use App\Enums\Helpers\Ticket\TicketTypeEnum;
 use App\Models\Catalogue\Shop;
-use App\Models\CRM\WebUser;
 use App\Models\Helpers\Ticket;
 use App\Models\Helpers\TicketComment;
 use App\Models\SysAdmin\Group;
@@ -34,7 +33,7 @@ class ImportJiraTickets
     use AsAction;
     use WithJiraApiRequest;
 
-    public string $commandSignature = 'jira:import_tickets {project : AD or HELP} {--base-url=} {--email=} {--token=} {--jql=} {--since= : only issues updated in the last N minutes}';
+    public string $commandSignature = 'jira:import_tickets {project : HELP} {--base-url=} {--email=} {--token=} {--jql=} {--since= : only issues updated in the last N minutes}';
 
     private const array USERNAME_BY_JIRA_NAME = [
         'Raul A Perusquia' => 'raul',
@@ -46,15 +45,12 @@ class ImportJiraTickets
         'arya'             => 'arya',
     ];
 
-    private const array SHOP_BY_DROPSHIP_OPTION = [
-        'Dropship UK' => 'awd',
-        'Dropship EU' => 'dssk',
-        'Dropship ES' => 'dse',
-    ];
-
     public function handle(Group $group, string $project, ?string $jql = null): int
     {
-        $type      = $project === 'AD' ? TicketTypeEnum::CUSTOMER : TicketTypeEnum::HELP;
+        if ($project !== 'HELP') {
+            throw new \RuntimeException('Only HELP tickets are imported from Jira');
+        }
+        $type      = TicketTypeEnum::HELP;
         $jql       = $jql ?: 'project = '.$project.' ORDER BY created ASC';
         $imported  = 0;
         $pageToken = null;
@@ -63,7 +59,7 @@ class ImportJiraTickets
             $page = $this->makeJiraRequest('POST', 'search/jql', array_filter([
                 'jql'           => $jql,
                 'maxResults'    => 100,
-                'fields'        => ['summary', 'description', 'status', 'issuetype', 'priority', 'assignee', 'reporter', 'created', 'updated', 'resolutiondate', 'comment', 'attachment', 'customfield_10227', 'customfield_10051', 'customfield_10294'],
+                'fields'        => ['summary', 'description', 'status', 'issuetype', 'priority', 'assignee', 'reporter', 'created', 'updated', 'resolutiondate', 'comment', 'attachment', 'customfield_10051', 'customfield_10294'],
                 'nextPageToken' => $pageToken,
             ]));
 
@@ -87,14 +83,14 @@ class ImportJiraTickets
     private function importIssue(Group $group, TicketTypeEnum $type, array $issue): Ticket
     {
         $fields   = $issue['fields'];
-        $shop     = $this->resolveShop($group, $type, $fields);
-        $reporter = $this->resolveReporter($type, $shop, Arr::get($fields, 'reporter'));
+        $shop     = $this->resolveShop($group, $fields);
+        $reporter = $this->resolveUser(Arr::get($fields, 'reporter'));
         $status   = $this->mapStatus(Arr::get($fields, 'status.name'));
 
         return Ticket::withoutTimestamps(fn () => TicketComment::withoutTimestamps(fn () => $this->upsertIssue($group, $type, $issue, $shop, $reporter, $status)));
     }
 
-    private function upsertIssue(Group $group, TicketTypeEnum $type, array $issue, ?Shop $shop, WebUser|User|null $reporter, TicketStatusEnum $status): Ticket
+    private function upsertIssue(Group $group, TicketTypeEnum $type, array $issue, ?Shop $shop, ?User $reporter, TicketStatusEnum $status): Ticket
     {
         $fields = $issue['fields'];
         $ticket = Ticket::withTrashed()->updateOrCreate(
@@ -103,7 +99,7 @@ class ImportJiraTickets
                 'group_id'        => $group->id,
                 'organisation_id' => $shop?->organisation_id,
                 'shop_id'         => $shop?->id,
-                'customer_id'     => $reporter instanceof WebUser ? $reporter->customer_id : null,
+                'customer_id'     => null,
                 'type'            => $type,
                 'kind'            => $type === TicketTypeEnum::HELP ? $this->mapKind(Arr::get($fields, 'issuetype.name')) : null,
                 'number'          => (int) Str::after($issue['key'], '-'),
@@ -136,7 +132,7 @@ class ImportJiraTickets
 
         $ticket->comments()->delete();
         foreach (Arr::get($fields, 'comment.comments', []) as $comment) {
-            $author = $this->resolveReporter($type, $shop, Arr::get($comment, 'author'));
+            $author = $this->resolveUser(Arr::get($comment, 'author'));
             $ticket->comments()->create([
                 'author_type' => $author ? class_basename($author) : null,
                 'author_id'   => $author?->id,
@@ -178,14 +174,8 @@ class ImportJiraTickets
         }
     }
 
-    private function resolveShop(Group $group, TicketTypeEnum $type, array $fields): ?Shop
+    private function resolveShop(Group $group, array $fields): ?Shop
     {
-        if ($type === TicketTypeEnum::CUSTOMER) {
-            $slug = self::SHOP_BY_DROPSHIP_OPTION[Arr::get($fields, 'customfield_10227.value')] ?? null;
-
-            return $slug ? Shop::where('group_id', $group->id)->where('slug', $slug)->first() : null;
-        }
-
         $url = (string) Arr::get($fields, 'customfield_10051');
         if (preg_match('#/shops/([a-z0-9-]+)/#', $url, $matches)) {
             return Shop::where('group_id', $group->id)->where('slug', $matches[1])->first();
@@ -193,19 +183,6 @@ class ImportJiraTickets
         $host = preg_replace('/^www\./', '', (string) parse_url($url, PHP_URL_HOST));
 
         return $host ? Website::where('group_id', $group->id)->where('domain', $host)->first()?->shop : null;
-    }
-
-    private function resolveReporter(TicketTypeEnum $type, ?Shop $shop, ?array $jiraUser): WebUser|User|null
-    {
-        $email = Arr::get($jiraUser, 'emailAddress');
-
-        if ($type === TicketTypeEnum::CUSTOMER && $email && $shop) {
-            if ($webUser = WebUser::where('shop_id', $shop->id)->whereRaw('lower(email) = ?', [strtolower($email)])->first()) {
-                return $webUser;
-            }
-        }
-
-        return $this->resolveUser($jiraUser);
     }
 
     private function resolveUser(?array $jiraUser): ?User
