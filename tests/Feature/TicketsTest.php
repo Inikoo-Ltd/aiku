@@ -148,7 +148,7 @@ test('staff can leave internal notes but customers never can', function (Ticket 
 
 test('grp ticket pages render', function (Ticket $ticket) {
     get(route('grp.tickets.index'))->assertInertia(fn (AssertableInertia $page) => $page->component('Tickets/Tickets')->has('data.data', Ticket::count()));
-    get(route('grp.tickets.board'))->assertInertia(fn (AssertableInertia $page) => $page->component('Tickets/TicketsBoard')->has('columns', count(TicketStatusEnum::cases())));
+    get(route('grp.tickets.board'))->assertInertia(fn (AssertableInertia $page) => $page->component('Tickets/TicketsBoard')->has('columns', 5));
     get(route('grp.tickets.create'))->assertInertia(fn (AssertableInertia $page) => $page->component('Tickets/CreateTicket'));
     get(route('grp.tickets.show', $ticket->reference))->assertInertia(
         fn (AssertableInertia $page) => $page->component('Tickets/Ticket')->where('ticket.reference', $ticket->reference)->has('comments', 2)
@@ -697,9 +697,9 @@ test('board only shows tickets closed in the last 24 hours', function () {
     UpdateTicket::make()->action($stale, ['status' => TicketStatusEnum::RESOLVED->value]);
     $stale->update(['closed_at' => now()->subDays(7)]);
 
-    get(route('grp.tickets.board', ['periods' => ['resolved' => '24h']]))->assertInertia(function (AssertableInertia $page) use ($fresh, $stale) {
+    get(route('grp.tickets.board', ['periods' => ['closed' => '24h']]))->assertInertia(function (AssertableInertia $page) use ($fresh, $stale) {
         $references = collect($page->toArray()['props']['columns'])
-            ->firstWhere('status', TicketStatusEnum::RESOLVED->value)['tickets'];
+            ->firstWhere('key', 'closed')['tickets'];
         $references = collect($references)->pluck('reference');
 
         expect($references)->toContain($fresh->reference)

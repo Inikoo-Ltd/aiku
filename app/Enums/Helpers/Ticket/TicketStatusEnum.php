@@ -41,7 +41,7 @@ enum TicketStatusEnum: string
             'in_progress' => ['tooltip' => __('In progress'), 'icon' => 'fal fa-spinner', 'class' => 'text-blue-500', 'color' => 'blue'],
             'waiting'     => ['tooltip' => __('Waiting'), 'icon' => 'fal fa-clock', 'class' => 'text-blue-400', 'color' => 'blue'],
             'resolved'    => ['tooltip' => __('Done'), 'icon' => 'fal fa-check-circle', 'class' => 'text-green-500', 'color' => 'green'],
-            'cancelled'   => ['tooltip' => __('Cancelled'), 'icon' => 'fal fa-ban', 'class' => 'text-green-700', 'color' => 'green'],
+            'cancelled'   => ['tooltip' => __('Cancelled'), 'icon' => 'fal fa-ban', 'class' => 'text-red-500', 'color' => 'red'],
         ];
     }
 

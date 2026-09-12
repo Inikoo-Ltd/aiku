@@ -28,11 +28,22 @@ class ShowTicketsBoard extends OrgAction
     private const array PERIODS = ['24h', 'today', '1w', 'all'];
 
     /**
-     * Todo is aged on when the ticket was raised, Done and Cancelled on when it was closed.
+     * Done and Cancelled share one column, each keeping its own count in its header.
+     *
+     * @var array<string, array<int, string>>
      */
-    private const array DATED_STATUSES = ['open' => 'created_at', 'resolved' => 'closed_at', 'cancelled' => 'closed_at'];
+    private const array COLUMNS = [
+        'open'        => ['open'],
+        'assigned'    => ['assigned'],
+        'in_progress' => ['in_progress'],
+        'waiting'     => ['waiting'],
+        'closed'      => ['resolved', 'cancelled'],
+    ];
 
-    private const array DEFAULT_PERIODS = ['open' => 'all', 'resolved' => '24h', 'cancelled' => '24h'];
+    /**
+     * Todo is aged on when the ticket was raised, the closed column on when it was closed.
+     */
+    private const array DEFAULT_PERIODS = ['open' => 'all', 'closed' => '24h'];
 
     /**
      * @param  array<string, string>  $periods
@@ -43,12 +54,12 @@ class ShowTicketsBoard extends OrgAction
 
         $tickets = Ticket::where('group_id', $group->id)->visibleTo(request()->user())
             ->where(function ($query) use ($periods) {
-                foreach (TicketStatusEnum::cases() as $status) {
-                    $query->orWhere(function ($statusQuery) use ($status, $periods) {
-                        $statusQuery->where('status', $status);
+                foreach (self::COLUMNS as $key => $statuses) {
+                    $query->orWhere(function ($columnQuery) use ($key, $statuses, $periods) {
+                        $columnQuery->whereIn('status', $statuses);
 
-                        if ($since = $this->since($periods[$status->value] ?? 'all')) {
-                            $statusQuery->where(self::DATED_STATUSES[$status->value], '>=', $since);
+                        if ($since = $this->since($periods[$key] ?? 'all')) {
+                            $columnQuery->where($key === 'open' ? 'created_at' : 'closed_at', '>=', $since);
                         }
                     });
                 }
@@ -59,15 +70,27 @@ class ShowTicketsBoard extends OrgAction
             ->get()
             ->groupBy(fn (Ticket $ticket) => $ticket->status->value);
 
-        $columns = collect(TicketStatusEnum::cases())->map(fn (TicketStatusEnum $status) => [
-            'status'  => $status->value,
-            'group'   => $status->group()->value,
-            'label'   => TicketStatusEnum::labels()[$status->value],
-            'color'   => TicketStatusGroupEnum::stateIcon()[$status->group()->value]['color'],
-            'icon'    => TicketStatusEnum::stateIcon()[$status->value],
-            'period'  => $periods[$status->value] ?? null,
-            'tickets' => TicketResource::collection($tickets->get($status->value, collect()))->toArray(request()),
-        ])->values()->all();
+        $columns = collect(self::COLUMNS)->map(function (array $statuses, string $key) use ($tickets, $periods) {
+            $cases = array_map(fn (string $status) => TicketStatusEnum::from($status), $statuses);
+            $group = $cases[0]->group();
+            $columnTickets = collect($statuses)->flatMap(fn (string $status) => $tickets->get($status, collect()));
+
+            return [
+                'key'      => $key,
+                'status'   => $statuses[0],
+                'group'    => $group->value,
+                'label'    => count($cases) > 1 ? TicketStatusGroupEnum::labels()[$group->value] : TicketStatusEnum::labels()[$statuses[0]],
+                'color'    => TicketStatusGroupEnum::stateIcon()[$group->value]['color'],
+                'icon'     => count($cases) > 1 ? TicketStatusGroupEnum::stateIcon()[$group->value] : TicketStatusEnum::stateIcon()[$statuses[0]],
+                'period'   => $periods[$key] ?? null,
+                'statuses' => collect($cases)->map(fn (TicketStatusEnum $status) => [
+                    'status' => $status->value,
+                    'label'  => TicketStatusEnum::labels()[$status->value],
+                    'count'  => $tickets->get($status->value, collect())->count(),
+                ])->all(),
+                'tickets'  => TicketResource::collection($columnTickets)->toArray(request()),
+            ];
+        })->values()->all();
 
         return ['columns' => $columns, 'periods' => $periods, 'periodOptions' => self::PERIODS];
     }

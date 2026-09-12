@@ -17,12 +17,14 @@ const props = defineProps<{
 	pageHead: any
 	title: string
 	columns: {
+		key: string
 		status: string
 		group: string
 		label: string
 		color: string
 		icon: any
 		period: string | null
+		statuses: { status: string; label: string; count: number }[]
 		tickets: any[]
 	}[]
 	periodOptions: string[]
@@ -44,12 +46,11 @@ const periodLabels: Record<string, string> = {
 
 const openPicker = ref<string | null>(null)
 
-const setPeriod = (status: string, period: string) => {
+const setPeriod = (columnKey: string, period: string) => {
 	openPicker.value = null
 	const periods: Record<string, string> = {}
 	props.columns.forEach((column) => {
-		if (column.period)
-			periods[column.status] = column.status === status ? period : column.period
+		if (column.period) periods[column.key] = column.key === columnKey ? period : column.period
 	})
 	router.get(route("grp.tickets.board"), { periods }, { preserveScroll: true })
 }
@@ -109,12 +110,25 @@ const activeFilters = computed(() =>
 const clearFilters = () =>
 	(Object.keys(boardFilters) as FilterKey[]).forEach((key) => (boardFilters[key] = []))
 
-const matchesFilters = (ticket: any) =>
+const subFilter = reactive<Record<string, string | null>>({})
+
+const toggleSubFilter = (columnKey: string, status: string) =>
+	(subFilter[columnKey] = subFilter[columnKey] === status ? null : status)
+
+const matchesBoardFilters = (ticket: any) =>
 	(Object.keys(boardFilters) as FilterKey[]).every(
 		(key) => !boardFilters[key].length || boardFilters[key].includes(ticket[key])
 	)
 
-const visibleCount = (tickets: any[]) => tickets.filter(matchesFilters).length
+const matchesFilters = (ticket: any, columnKey: string) =>
+	(!subFilter[columnKey] || subFilter[columnKey] === ticket.status) && matchesBoardFilters(ticket)
+
+const visibleCount = (column: { key: string; tickets: any[] }) =>
+	column.tickets.filter((ticket) => matchesFilters(ticket, column.key)).length
+
+const subCount = (column: { tickets: any[] }, status: string) =>
+	column.tickets.filter((ticket) => ticket.status === status && matchesBoardFilters(ticket))
+		.length
 
 const assigneeMenuOpen = ref(false)
 
@@ -243,27 +257,49 @@ const onMoved = (status: string, event: { added?: { element: { id: number } } })
 		<div class="flex gap-3 min-w-max">
 			<div
 				v-for="column in columns"
-				:key="column.status"
+				:key="column.key"
 				class="w-72 rounded-lg p-2 flex flex-col"
 				:class="columnClasses[column.color]">
 				<div class="flex items-center gap-1.5 px-1 pb-2 flex-nowrap whitespace-nowrap">
 					<Icon :data="column.icon" />
 					<span class="text-sm font-semibold">{{ column.label }}</span>
 					<span
+						v-if="column.statuses.length === 1"
 						class="text-xs text-gray-600 bg-white/70 rounded px-1.5 py-0.5 tabular-nums"
-						>{{ visibleCount(column.tickets) }}</span
+						>{{ visibleCount(column) }}</span
 					>
+					<span
+						v-else
+						class="flex items-center text-xs bg-white/70 rounded px-1 py-0.5 tabular-nums">
+						<template v-for="(sub, index) in column.statuses" :key="sub.status">
+							<span v-if="index" class="px-0.5 text-gray-300">|</span>
+							<button
+								type="button"
+								class="px-1 rounded"
+								:title="sub.label"
+								:class="
+									subFilter[column.key] === sub.status
+										? sub.status === 'cancelled'
+											? 'bg-red-500 text-white'
+											: 'bg-green-600 text-white'
+										: subFilter[column.key]
+											? 'text-gray-400 hover:text-gray-600'
+											: 'text-gray-600 hover:text-gray-900'
+								"
+								@click="toggleSubFilter(column.key, sub.status)">
+								{{ subCount(column, sub.status) }}
+							</button>
+						</template>
+					</span>
 					<div v-if="column.period" class="ml-auto relative">
 						<button
 							type="button"
 							class="text-xs text-gray-600 hover:text-gray-900 border border-gray-300 rounded px-1.5 py-0.5 bg-white"
-							@click="
-								openPicker = openPicker === column.status ? null : column.status
-							">
+							@click="openPicker = openPicker === column.key ? null : column.key">
 							{{ periodLabels[column.period] ?? column.period }}
 						</button>
 						<div
-							v-if="openPicker === column.status"
+							v-if="openPicker === column.key"
 							class="absolute right-0 z-20 mt-1 w-28 bg-white border border-gray-200 rounded shadow-lg py-1">
 							<button
 								v-for="option in periodOptions"
@@ -275,7 +311,7 @@ const onMoved = (status: string, event: { added?: { element: { id: number } } })
 										? 'font-semibold text-gray-900'
 										: 'text-gray-600'
 								"
-								@click="setPeriod(column.status, option)">
+								@click="setPeriod(column.key, option)">
 								{{ periodLabels[option] ?? option }}
 							</button>
 						</div>
@@ -289,7 +325,7 @@ const onMoved = (status: string, event: { added?: { element: { id: number } } })
 					@change="onMoved(column.status, $event)">
 					<template #item="{ element }">
 						<div
-							v-show="matchesFilters(element)"
+							v-show="matchesFilters(element, column.key)"
 							class="bg-white rounded-md border border-gray-200 shadow-sm p-2.5 cursor-grab active:cursor-grabbing hover:border-gray-400">
 							<p class="text-sm leading-snug break-words line-clamp-3">
 								{{ element.subject }}
@@ -303,6 +339,7 @@ const onMoved = (status: string, event: { added?: { element: { id: number } } })
 								<Icon
 									v-if="column.group !== 'closed'"
 									:data="element.priority_icon" />
+								<Icon v-else :data="element.status_icon" />
 								<span
 									v-if="element.assignee"
 									class="ml-auto"
