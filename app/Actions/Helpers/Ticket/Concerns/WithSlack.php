@@ -22,9 +22,19 @@ trait WithSlack
         if (!$secret || !$timestamp || abs(time() - (int) $timestamp) > 300) {
             return false;
         }
-        $expected = 'v0='.hash_hmac('sha256', 'v0:'.$timestamp.':'.$request->getContent(), $secret);
+        $bodies = array_unique(array_filter([
+            $request->getContent(),
+            $request->isJson() ? null : http_build_query($request->request->all()),
+        ]));
 
-        return hash_equals($expected, (string) $request->header('X-Slack-Signature'));
+        foreach ($bodies as $body) {
+            $expected = 'v0='.hash_hmac('sha256', 'v0:'.$timestamp.':'.$body, $secret);
+            if (hash_equals($expected, (string) $request->header('X-Slack-Signature'))) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     protected function slackClient(): ?PendingRequest
