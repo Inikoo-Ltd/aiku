@@ -39,7 +39,7 @@ const logoutData = computed(() => ({
 }))
 
 const helpData = computed(() => ({
-    label: trans("Help"),
+    label: trans("Tickets"),
     tooltip: trans("Tickets: report a problem or ask for help"),
     icon: "fal fa-life-ring"
 }))
