@@ -39,6 +39,8 @@ enum GroupPermissionsEnum: string
     case MASTER_OFFER_EDIT = 'masters.offer_edit';
 
     case SUPPLY_CHAIN = 'supply-chain';
+
+    case HELP_DESK = 'help-desk';
     case SUPPLY_CHAIN_EDIT = 'supply-chain.edit';
     case SUPPLY_CHAIN_VIEW = 'supply-chain.view';
 

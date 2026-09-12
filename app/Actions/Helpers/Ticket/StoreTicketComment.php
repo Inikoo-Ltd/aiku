@@ -31,7 +31,7 @@ class StoreTicketComment extends OrgAction
             'author_type' => $author instanceof User ? 'User' : 'WebUser',
             'author_id'   => $author->id,
             'body'        => (string) Arr::get($modelData, 'body', ''),
-            'is_internal' => $author instanceof User && Arr::get($modelData, 'is_internal', false),
+            'is_internal' => $author instanceof User && Ticket::canBeManagedBy($author) && Arr::get($modelData, 'is_internal', false),
         ]);
 
         $comment->attachTicketImages(Arr::get($modelData, 'images', []));

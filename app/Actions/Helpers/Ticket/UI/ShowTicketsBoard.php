@@ -21,7 +21,7 @@ class ShowTicketsBoard extends OrgAction
 {
     public function authorize(ActionRequest $request): bool
     {
-        return $request->user() !== null;
+        return Ticket::canBeManagedBy($request->user());
     }
 
     public function handle(Group $group): array

@@ -68,7 +68,13 @@ class UpdateTicket extends OrgAction
 
     public function authorize(ActionRequest $request): bool
     {
-        return $this->asAction || $request->user() !== null;
+        if ($this->asAction || Ticket::canBeManagedBy($request->user())) {
+            return true;
+        }
+
+        $ticket = $request->route('ticket');
+
+        return $ticket instanceof Ticket && $ticket->isReportedBy($request->user()) && array_keys($request->all()) === ['status'];
     }
 
     public function action(Ticket $ticket, array $modelData): Ticket

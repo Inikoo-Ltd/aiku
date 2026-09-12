@@ -28,6 +28,7 @@ use App\Enums\Helpers\Ticket\TicketTypeEnum;
 use App\Models\Chat\ChatAgent;
 use App\Actions\SysAdmin\Guest\StoreGuest;
 use App\Mcp\Servers\AikuServer;
+use App\Models\SysAdmin\User;
 use App\Mcp\Tools\TicketsTool;
 use App\Mcp\Tools\TicketWriteTool;
 use App\Http\Resources\Helpers\TicketResource;
@@ -685,4 +686,37 @@ test('slack shortcut opens the ticket modal and only its submit creates the tick
         ->and($ticket->data['slack']['ts'])->toBe('55.1')
         ->and($ticket->getMedia('ticket_images')->count())->toBe(1);
     Http::assertSent(fn ($request) => str_contains($request->url(), 'chat.postMessage') && $request['thread_ts'] === '55.1' && str_contains($request['text'], $ticket->reference));
+});
+
+test('only the help desk manages tickets, everyone else reports, comments and closes their own', function () {
+    $reporter = User::factory()->create(['group_id' => $this->group->id]);
+    $helper   = User::factory()->create(['group_id' => $this->group->id]);
+    setPermissionsTeamId($this->group->id);
+    $helper->assignRole('help-desk');
+
+    actingAs($reporter);
+    $ticket = StoreTicket::make()->action($this->group, ['subject' => 'Mine', 'reporter_type' => 'User', 'reporter_id' => $reporter->id]);
+    $other  = StoreTicket::make()->action($this->group, ['subject' => 'Not mine']);
+
+    get(route('grp.tickets.show', $ticket->reference))->assertOk()->assertInertia(fn (AssertableInertia $page) => $page->where('can_manage', false)->where('is_reporter', true));
+    get(route('grp.tickets.dashboard'))->assertForbidden();
+    get(route('grp.tickets.board'))->assertForbidden();
+    patch(route('grp.models.ticket.update', $other->id), ['status' => 'resolved'])->assertForbidden();
+    patch(route('grp.models.ticket.update', $ticket->id), ['priority' => 'urgent'])->assertForbidden();
+    patch(route('grp.models.ticket.update', $ticket->id), ['status' => 'resolved'])->assertRedirect();
+    post(route('grp.models.ticket.comment.store', $other->id), ['body' => 'secret?', 'is_internal' => true])->assertRedirect();
+    expect($ticket->fresh()->status)->toBe(TicketStatusEnum::RESOLVED)
+        ->and($other->comments()->sole()->is_internal)->toBeFalse();
+
+    actingAs($helper);
+    get(route('grp.tickets.show', $other->reference))->assertOk()->assertInertia(fn (AssertableInertia $page) => $page->where('can_manage', true));
+    get(route('grp.tickets.dashboard'))->assertOk();
+    patch(route('grp.models.ticket.update', $other->id), ['priority' => 'urgent', 'assignee_id' => $helper->id])->assertRedirect();
+    post(route('grp.models.ticket.comment.store', $other->id), ['body' => 'internal', 'is_internal' => true])->assertRedirect();
+    expect($other->fresh()->priority)->toBe(ChatPriorityEnum::URGENT)
+        ->and($other->comments()->where('is_internal', true)->count())->toBe(1);
+
+    AikuServer::actingAs($reporter)->tool(TicketWriteTool::class, ['reference' => $other->reference, 'priority' => 'low'])->assertHasErrors();
+    AikuServer::actingAs($reporter)->tool(TicketWriteTool::class, ['reference' => $ticket->reference, 'status' => 'closed'])->assertOk();
+    AikuServer::actingAs($helper)->tool(TicketWriteTool::class, ['reference' => $other->reference, 'priority' => 'low'])->assertOk();
 });

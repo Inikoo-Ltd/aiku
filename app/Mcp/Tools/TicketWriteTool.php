@@ -68,6 +68,12 @@ class TicketWriteTool extends Tool
         if (WithTicketsWriteGuard::ticketsAreReadOnly($ticket->type)) {
             return Response::error(WithTicketsWriteGuard::readOnlyMessage());
         }
+        if (!Ticket::canBeManagedBy($user) && !$ticket->isReportedBy($user) && $request->hasAny(['status', 'priority', 'kind', 'module', 'tags', 'assignee'])) {
+            return Response::error('Only the help desk can change tickets. You can comment on it.');
+        }
+        if (!Ticket::canBeManagedBy($user) && $request->hasAny(['priority', 'kind', 'module', 'tags', 'assignee'])) {
+            return Response::error('Only the help desk can change priority, kind, module, tags or assignee. You can change the status of your own ticket and comment.');
+        }
 
         $changes = array_filter([
             'status'   => $request->get('status'),

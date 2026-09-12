@@ -66,6 +66,8 @@ class ShowTicket extends OrgAction
                         ->map(fn (User $user) => ['label' => $user->contact_name ?: $user->username, 'value' => $user->id])->values(),
                 ],
                 'can_rate'    => RateTicket::canRate($ticket, request()->user()),
+                'can_manage'  => Ticket::canBeManagedBy(request()->user()),
+                'is_reporter' => $ticket->isReportedBy(request()->user()),
                 'routes'      => [
                     'update'  => ['name' => 'grp.models.ticket.update', 'parameters' => ['ticket' => $ticket->id]],
                     'comment' => ['name' => 'grp.models.ticket.comment.store', 'parameters' => ['ticket' => $ticket->id]],

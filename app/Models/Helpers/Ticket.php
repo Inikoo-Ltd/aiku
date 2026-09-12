@@ -152,6 +152,16 @@ class Ticket extends Model implements Auditable, HasMedia
         return array_values(array_unique(array_merge(self::PRESET_TAGS, $used)));
     }
 
+    public static function canBeManagedBy(?User $user): bool
+    {
+        return $user !== null && $user->authTo('help-desk');
+    }
+
+    public function isReportedBy(?User $user): bool
+    {
+        return $user !== null && $this->reporter_type === 'User' && $this->reporter_id === $user->id;
+    }
+
     public function scopeVisibleTo(Builder $query, User $user): Builder
     {
         if ($user->hasRole('group-admin')) {

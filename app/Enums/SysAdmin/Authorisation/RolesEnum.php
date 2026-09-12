@@ -31,6 +31,8 @@ enum RolesEnum: string
 
     case GROUP_WEBMASTER = 'group-webmaster';
 
+    case HELP_DESK = 'help-desk';
+
     case SUPPLY_CHAIN = 'supply-chain';
 
     case GOODS_MANAGER = 'goods-manager';
@@ -120,6 +122,7 @@ enum RolesEnum: string
             RolesEnum::GROUP_ADMIN => __('Group admin'),
             RolesEnum::SYSTEM_ADMIN => __('System admin'),
             RolesEnum::GROUP_WEBMASTER => __('Group webmaster'),
+            RolesEnum::HELP_DESK => __('Help desk'),
             RolesEnum::SUPPLY_CHAIN => __('Supply chain'),
             RolesEnum::PROCUREMENT_CLERK => __('Procurement clerk'),
             RolesEnum::PROCUREMENT_SUPERVISOR => __('Procurement supervisor'),
@@ -188,14 +191,17 @@ enum RolesEnum: string
                 GroupPermissionsEnum::ORGANISATIONS,
                 GroupPermissionsEnum::GOODS,
                 GroupPermissionsEnum::MASTERS,
-                GroupPermissionsEnum::GROUP_WEBMASTER
-
+                GroupPermissionsEnum::GROUP_WEBMASTER,
+                GroupPermissionsEnum::HELP_DESK,
             ],
             RolesEnum::SYSTEM_ADMIN => [
                 GroupPermissionsEnum::SYSADMIN
             ],
             RolesEnum::GROUP_WEBMASTER => [
                 GroupPermissionsEnum::GROUP_WEBMASTER
+            ],
+            RolesEnum::HELP_DESK => [
+                GroupPermissionsEnum::HELP_DESK
             ],
             RolesEnum::SUPPLY_CHAIN => [
                 GroupPermissionsEnum::SUPPLY_CHAIN
@@ -512,6 +518,7 @@ enum RolesEnum: string
             RolesEnum::GROUP_ADMIN,
             RolesEnum::SYSTEM_ADMIN,
             RolesEnum::GROUP_WEBMASTER,
+            RolesEnum::HELP_DESK,
             RolesEnum::SUPPLY_CHAIN,
             RolesEnum::GOODS_MANAGER,
             RolesEnum::MASTERS_MANAGER,

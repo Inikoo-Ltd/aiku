@@ -45,6 +45,16 @@ return [
             ],
             'organisation_types' => []
         ],
+        'gp-hd'       => [
+            'code'               => 'gp-hd',
+            'name'               => 'Help desk',
+            'scope'              => JobPositionScopeEnum::GROUP,
+            'department'         => 'help-desk',
+            'roles'              => [
+                RolesEnum::HELP_DESK
+            ],
+            'organisation_types' => []
+        ],
         'gp-sc'       => [
             'code'               => 'gp-sc',
             'name'               => 'Supply Chain Manager',

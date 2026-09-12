@@ -27,6 +27,8 @@ const props = defineProps<{
     ticket: any
     comments: any[]
     can_rate: boolean
+    can_manage: boolean
+    is_reporter: boolean
     options: {
         statuses: { label: string; value: string }[]
         priorities: { label: string; value: string }[]
@@ -75,13 +77,14 @@ const update = (field: string, value: unknown) => {
         <div class="lg:col-span-2 space-y-4">
             <h2 class="text-lg font-semibold">{{ ticket.subject }}</h2>
             <TicketRating :rating="ticket.rating" :rating-comment="ticket.rating_comment" :can-rate="can_rate" :rate-route="routes.rate" />
-            <TicketThread :ticket="ticket" :comments="comments" :comment-route="routes.comment" allow-internal />
+            <TicketThread :ticket="ticket" :comments="comments" :comment-route="routes.comment" :allow-internal="can_manage" />
         </div>
         <aside class="bg-white rounded-lg border border-gray-300 p-4 space-y-4 text-sm self-start">
-            <div>
+            <div v-if="can_manage || is_reporter">
                 <p class="text-xs text-gray-500 mb-1">{{ trans("Status") }}</p>
                 <Select :model-value="ticket.status" :options="options.statuses" option-label="label" option-value="value" class="w-full" @update:model-value="update('status', $event)" />
             </div>
+            <template v-if="can_manage">
             <div>
                 <p class="text-xs text-gray-500 mb-1">{{ trans("Priority") }}</p>
                 <Select :model-value="ticket.priority" :options="options.priorities" option-label="label" option-value="value" class="w-full" @update:model-value="update('priority', $event)" />
@@ -112,6 +115,7 @@ const update = (field: string, value: unknown) => {
                 <input type="checkbox" :checked="ticket.is_confidential" class="rounded border-gray-300" @change="update('is_confidential', ($event.target as HTMLInputElement).checked)" />
                 {{ trans("Confidential") }} <span class="text-xs text-gray-400">({{ trans("only reporter, assignee and admins") }})</span>
             </label>
+            </template>
             <div v-if="ticket.commits?.length">
                 <p class="text-xs text-gray-500 mb-1">{{ trans("Commits") }}</p>
                 <ul class="space-y-1 text-xs">
