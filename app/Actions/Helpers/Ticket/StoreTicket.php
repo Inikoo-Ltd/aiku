@@ -17,12 +17,7 @@ use App\Enums\Helpers\Ticket\TicketModuleEnum;
 use App\Enums\Helpers\Ticket\TicketTypeEnum;
 use App\Models\Helpers\Ticket;
 use App\Models\SysAdmin\Group;
-use App\Helpers\SlackNotification;
 use App\Models\SysAdmin\User;
-use Illuminate\Notifications\AnonymousNotifiable;
-use Illuminate\Notifications\Slack\BlockKit\Blocks\SectionBlock;
-use Illuminate\Notifications\Slack\SlackMessage;
-use Illuminate\Support\Str;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
@@ -54,34 +49,9 @@ class StoreTicket extends OrgAction
         $ticket = Ticket::create($modelData);
         $ticket->attachTicketImages($images);
         $this->openStaffConversation($ticket);
-        $this->notifySlack($ticket);
+        SyncTicketSlackAlert::run($ticket);
 
         return $ticket;
-    }
-
-    private function notifySlack(Ticket $ticket): void
-    {
-        $channel = config('services.slack.notifications.tickets_channel');
-        if (!$channel || !config('services.slack.notifications.bot_user_oauth_token')) {
-            return;
-        }
-
-        $message = (new SlackMessage())
-            ->text($ticket->reference.' '.$ticket->subject)
-            ->headerBlock($ticket->reference.' · '.Str::limit($ticket->subject, 120))
-            ->sectionBlock(function (SectionBlock $block) use ($ticket) {
-                $block->field('*Type:* '.TicketTypeEnum::labels()[$ticket->type->value].($ticket->kind ? ' / '.TicketKindEnum::labels()[$ticket->kind->value] : ''))->markdown();
-                $block->field('*Priority:* '.ChatPriorityEnum::labels()[$ticket->priority->value])->markdown();
-                if ($ticket->shop) {
-                    $block->field('*Shop:* '.$ticket->shop->name)->markdown();
-                }
-                if ($ticket->module) {
-                    $block->field('*Module:* '.TicketModuleEnum::labels()[$ticket->module->value])->markdown();
-                }
-            })
-            ->sectionBlock(fn (SectionBlock $block) => $block->text('<'.route('grp.tickets.show', $ticket->reference).'|Open ticket>')->markdown());
-
-        (new AnonymousNotifiable())->route('slack', $channel)->notify(new SlackNotification($message));
     }
 
     private function openStaffConversation(Ticket $ticket): void

@@ -37,9 +37,7 @@ use App\Models\SysAdmin\Guest;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Auth;
-use App\Helpers\SlackNotification;
 use Inertia\Testing\AssertableInertia;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 
@@ -466,19 +464,26 @@ test('assistant raises, lists, works and closes a ticket through MCP', function 
     AikuServer::actingAs($this->user)->tool(TicketWriteTool::class, ['reference' => $reference, 'assignee' => 'nobody-here'])->assertHasErrors();
 });
 
-test('new tickets ping the Slack tickets channel when one is configured', function () {
-    Notification::fake();
+test('new tickets post one alert in the Slack tickets channel and edit it as status and assignee change', function () {
     Config::set('services.slack.notifications.tickets_channel', '#tickets');
     Config::set('services.slack.notifications.bot_user_oauth_token', 'xoxb-test');
+    Http::fake(['slack.com/api/chat.postMessage' => Http::response(['ok' => true, 'channel' => 'C9', 'ts' => '42.1']), 'slack.com/api/chat.update' => Http::response(['ok' => true])]);
 
     $ticket = StoreTicket::make()->action($this->group, ['subject' => 'Ping me']);
+    expect($ticket->fresh()->data['slack_alert'])->toEqualCanonicalizing(['channel' => 'C9', 'ts' => '42.1']);
+    Http::assertSent(fn ($request) => str_contains($request->url(), 'chat.postMessage') && $request['channel'] === '#tickets' && str_contains(json_encode($request['blocks']), 'Status:* Open'));
 
-    Notification::assertSentOnDemand(SlackNotification::class, fn ($notification, $channels, $notifiable) => $notifiable->routes['slack'] === '#tickets');
+    UpdateTicket::make()->action($ticket, ['assignee_id' => $this->user->id, 'status' => TicketStatusEnum::IN_PROGRESS->value]);
+    Http::assertSent(fn ($request) => str_contains($request->url(), 'chat.update') && $request['ts'] === '42.1' && $request['channel'] === 'C9' && str_contains(json_encode($request['blocks']), 'Status:* In progress') && str_contains(json_encode($request['blocks']), $this->user->username));
+
+    UpdateTicket::make()->action($ticket, ['priority' => 'urgent']);
+    Http::assertSentCount(2);
 
     Config::set('services.slack.notifications.tickets_channel', null);
     StoreTicket::make()->action($this->group, ['subject' => 'Silent']);
-    Notification::assertSentOnDemandTimes(SlackNotification::class, 1);
+    Http::assertSentCount(2);
 });
+
 
 test('slack slash command raises a bug ticket for the matching aiku user', function () {
     Config::set('services.slack.signing_secret', 'shh');
