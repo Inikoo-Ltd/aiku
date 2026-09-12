@@ -15,6 +15,7 @@ trait WithDeliveryNoteTariffCodesQuery
         $origin     = 'COALESCE(c.code, tu.country_of_origin)';
         $incomplete = "(tu.tariff_code IS NULL OR $origin IS NULL)";
         $tariffCode = "COALESCE(left(replace(tu.tariff_code, ' ', ''), 6) || tco.national_extension, tu.tariff_code)";
+        $share      = $this->getTransactionShareSql();
 
         return DB::table('delivery_note_items as dni')
             ->leftJoin('model_has_trade_units as mhtu', function ($join) {
@@ -30,6 +31,7 @@ trait WithDeliveryNoteTariffCodesQuery
             ->leftJoin('countries as c', 'c.id', '=', 'tu.origin_country_id')
             ->leftJoin('tariff_codes as tc', 'tc.hs_code', '=', DB::raw('left(tu.tariff_code, 6)'))
             ->leftJoin('transactions as t', 't.id', '=', 'dni.transaction_id')
+            ->leftJoinSub($this->getTransactionPartsQuery($deliveryNote), 'tp', 'tp.transaction_id', '=', 'dni.transaction_id')
             ->where('dni.delivery_note_id', $deliveryNote->id)
             ->groupBy(
                 DB::raw("CASE WHEN $incomplete THEN NULL ELSE $tariffCode END"),
@@ -56,7 +58,48 @@ trait WithDeliveryNoteTariffCodesQuery
                 )) FILTER (WHERE $incomplete) as offenders"),
                 DB::raw('COALESCE(SUM(dni.quantity_required), 0) as units'),
                 DB::raw('ROUND(COALESCE(SUM(tu.gross_weight * mhtu.quantity * dni.quantity_required), 0)::numeric / 1000, 3) as weight'),
-                DB::raw('ROUND(COALESCE(SUM(t.net_amount), 0)::numeric, 2) as amount'),
+                DB::raw("ROUND(COALESCE(SUM(t.net_amount * $share), 0)::numeric, 2) as amount"),
             ]);
+    }
+
+    /**
+     * A product made of several parts (HELP-3131: roller + pouch) has one transaction but one delivery note
+     * item per part, so the transaction amount is split between the parts. Per transaction the best basis
+     * every part has is used: its own selling price, else supplier cost, else stock value, else equal shares.
+     *
+     * @return array<string, string>
+     */
+    protected function getPartValueSources(): array
+    {
+        return [
+            'price' => 'sku_commercial_value',
+            'cost'  => 'current_supplier_sku_cost',
+            'value' => 'sku_value',
+        ];
+    }
+
+    protected function getTransactionShareSql(): string
+    {
+        $cases = '';
+        foreach ($this->getPartValueSources() as $key => $column) {
+            $cases .= " WHEN tp.all_have_$key THEN dni.quantity_required * os.$column / tp.{$key}_sum";
+        }
+
+        return "CASE$cases ELSE 1.0 / COALESCE(tp.parts_count, 1) END";
+    }
+
+    protected function getTransactionPartsQuery(DeliveryNote $deliveryNote): Builder
+    {
+        $selects = ['x.transaction_id', DB::raw('COUNT(*) as parts_count')];
+        foreach ($this->getPartValueSources() as $key => $column) {
+            $selects[] = DB::raw("bool_and(COALESCE(xos.$column, 0) > 0) as all_have_$key");
+            $selects[] = DB::raw("SUM(x.quantity_required * COALESCE(xos.$column, 0)) as {$key}_sum");
+        }
+
+        return DB::table('delivery_note_items as x')
+            ->leftJoin('org_stocks as xos', 'xos.id', '=', 'x.org_stock_id')
+            ->where('x.delivery_note_id', $deliveryNote->id)
+            ->groupBy('x.transaction_id')
+            ->select($selects);
     }
 }

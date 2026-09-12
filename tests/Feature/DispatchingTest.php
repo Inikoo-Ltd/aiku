@@ -3939,6 +3939,49 @@ test('delivery note tariff codes use the organisation override for the national 
         ->and((bool) $row->is_incomplete)->toBeFalse();
 });
 
+test('a two-part product splits its transaction amount between the parts by cost instead of counting it twice (HELP-3131)', function () {
+    [$deliveryNote, $deliveryNoteItem] = handlingDeliveryNoteWithPicking($this);
+    $transaction                       = $deliveryNoteItem->transaction;
+    $transaction->update(['net_amount' => 40]);
+
+    $pouchStock    = StoreStock::make()->action($this->group, Stock::factory()->definition());
+    $pouchStock    = UpdateStock::make()->action($pouchStock, ['state' => StockStateEnum::ACTIVE]);
+    $pouchOrgStock = StoreOrgStock::make()->action($this->organisation, $pouchStock);
+    StoreDeliveryNoteItem::make()->action($deliveryNote, [
+        'delivery_note_id'  => $deliveryNote->id,
+        'org_stock_id'      => $pouchOrgStock->id,
+        'transaction_id'    => $transaction->id,
+        'quantity_required' => 10,
+    ]);
+
+    $deliveryNoteItem->orgStock->update(['current_supplier_sku_cost' => 3, 'sku_commercial_value' => 9]);
+    $pouchOrgStock->update(['current_supplier_sku_cost' => 1, 'sku_commercial_value' => 0]);
+
+    foreach ([[$deliveryNoteItem->orgStock, '3304990000'], [$pouchOrgStock, '4202390010']] as [$orgStock, $tariffCode]) {
+        \App\Actions\Goods\TradeUnit\UpdateTradeUnit::make()->action($orgStock->tradeUnits->first(), [
+            'tariff_code'       => $tariffCode,
+            'origin_country_id' => $this->organisation->country_id,
+        ]);
+    }
+
+    request()->setRouteResolver(fn () => new Route('GET', 'test', []));
+    $rows = \App\Actions\Dispatching\DeliveryNote\UI\IndexDeliveryNoteTariffCodes::run($deliveryNote);
+
+    expect((float) $rows->firstWhere('tariff_code', '3304990000')->amount)->toBe(30.0)
+        ->and((float) $rows->firstWhere('tariff_code', '4202390010')->amount)->toBe(10.0);
+
+    $pouchOrgStock->update(['sku_commercial_value' => 1]);
+    $rows = \App\Actions\Dispatching\DeliveryNote\UI\IndexDeliveryNoteTariffCodes::run($deliveryNote);
+    expect((float) $rows->firstWhere('tariff_code', '3304990000')->amount)->toBe(36.0)
+        ->and((float) $rows->firstWhere('tariff_code', '4202390010')->amount)->toBe(4.0);
+
+    $pouchOrgStock->update(['sku_commercial_value' => 0, 'current_supplier_sku_cost' => 0, 'sku_value' => 0]);
+    $deliveryNoteItem->orgStock->update(['sku_commercial_value' => 0, 'current_supplier_sku_cost' => 0, 'sku_value' => 0]);
+    $rows = \App\Actions\Dispatching\DeliveryNote\UI\IndexDeliveryNoteTariffCodes::run($deliveryNote);
+    expect((float) $rows->firstWhere('tariff_code', '3304990000')->amount)->toBe(20.0)
+        ->and((float) $rows->firstWhere('tariff_code', '4202390010')->amount)->toBe(20.0);
+});
+
 test('replacing one single of a 3-pack orders a third of a pack, not a whole pack (HELP-3083)', function () {
     $settings = $this->organisation->settings;
     data_set($settings, 'orders.allow_waiting', true);
