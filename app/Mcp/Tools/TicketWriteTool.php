@@ -20,7 +20,7 @@ use Laravel\Mcp\Response;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
 
-#[Description('Change a ticket or create a help ticket. With a reference: add a comment (internal by default, public reaches the customer on AD tickets), change status (open, in_progress, waiting, resolved, cancelled), priority, assignee (username), kind, module or tags. Without a reference: creates a new HELP ticket with subject, and optional description, kind, module, priority. Every change is recorded as the authenticated user.')]
+#[Description('Change a ticket or create a help ticket. With a reference: add a comment (internal by default, public is seen by the reporter), rewrite subject or description, change status (open, in_progress, waiting, resolved, cancelled), priority, assignee (username), kind, module or tags. Without a reference: creates a new HELP ticket with subject, and optional description, kind, module, priority. Every change is recorded as the authenticated user.')]
 class TicketWriteTool extends Tool
 {
     public function handle(Request $request): Response
@@ -68,7 +68,7 @@ class TicketWriteTool extends Tool
         if (WithTicketsWriteGuard::ticketsAreReadOnly($ticket->type)) {
             return Response::error(WithTicketsWriteGuard::readOnlyMessage());
         }
-        if (!Ticket::canBeManagedBy($user) && !$ticket->isReportedBy($user) && $request->hasAny(['status', 'priority', 'kind', 'module', 'tags', 'assignee'])) {
+        if (!Ticket::canBeManagedBy($user) && !$ticket->isReportedBy($user) && $request->hasAny(['subject', 'description', 'status', 'priority', 'kind', 'module', 'tags', 'assignee'])) {
             return Response::error('Only the help desk can change tickets. You can comment on it.');
         }
         if (!Ticket::canBeManagedBy($user) && $request->hasAny(['priority', 'kind', 'module', 'tags', 'assignee'])) {
@@ -79,6 +79,8 @@ class TicketWriteTool extends Tool
         }
 
         $changes = array_filter([
+            'subject'     => $request->get('subject'),
+            'description' => $request->get('description'),
             'status'   => $request->get('status'),
             'priority' => $request->get('priority'),
             'kind'     => $request->get('kind'),
@@ -116,8 +118,8 @@ class TicketWriteTool extends Tool
     {
         return [
             'reference'   => $schema->string()->description('Ticket to change, e.g. HELP-3074. Omit to create a new HELP ticket'),
-            'subject'     => $schema->string()->description('Subject for a new ticket'),
-            'description' => $schema->string()->description('Description for a new ticket'),
+            'subject'     => $schema->string()->description('Subject: for a new ticket, or to rewrite it on an existing one'),
+            'description' => $schema->string()->description('Description: for a new ticket, or to rewrite it on an existing one'),
             'comment'     => $schema->string()->description('Comment to add to the ticket'),
             'public'      => $schema->boolean()->description('Make the comment visible to the customer (AD tickets). Default false: internal note'),
             'status'      => $schema->string()->description('open, in_progress, waiting, resolved or cancelled'),

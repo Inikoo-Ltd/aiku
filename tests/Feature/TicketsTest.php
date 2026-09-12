@@ -475,6 +475,10 @@ test('assistant raises, lists, works and closes a ticket through MCP', function 
     $shown = AikuServer::actingAs($this->user)->tool(TicketsTool::class, ['reference' => strtolower($reference)]);
     $shown->assertOk()->assertSee('Fixed by clearing the stale lock');
 
+    AikuServer::actingAs($this->user)->tool(TicketWriteTool::class, ['reference' => $reference, 'subject' => 'Stale lock on picking', 'description' => 'Rewritten'])->assertOk();
+    expect($ticket->fresh()->subject)->toBe('Stale lock on picking')
+        ->and($ticket->fresh()->description)->toBe('Rewritten');
+
     AikuServer::actingAs($this->user)->tool(TicketWriteTool::class, ['reference' => $reference, 'assignee' => 'nobody-here'])->assertHasErrors();
 });
 
