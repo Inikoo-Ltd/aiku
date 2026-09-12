@@ -132,6 +132,34 @@ const subCount = (column: { tickets: any[] }, status: string) =>
 
 const assigneeMenuOpen = ref(false)
 
+const bucketStamps: Record<string, string> = {
+	open: "created_at",
+	assigned: "assigned_at",
+	in_progress: "started_at",
+	waiting: "waiting_at",
+	closed: "closed_at",
+}
+
+const shortDate = (value: string | null) =>
+	value ? new Date(value).toLocaleDateString([], { day: "numeric", month: "short" }) : ""
+
+const shortTime = (value: string) =>
+	new Date(value).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+
+const ageIn = (column: { key: string; period: string | null }, ticket: any) => {
+	const since = ticket[bucketStamps[column.key]] ?? ticket.updated_at
+	if (!since) return ""
+
+	if (column.key === "closed") {
+		return column.period === "24h" || column.period === "today"
+			? shortTime(since)
+			: shortDate(since)
+	}
+
+	const hours = Math.floor((Date.now() - new Date(since).getTime()) / 3600000)
+	return hours < 48 ? `${Math.max(hours, 0)}h` : `${Math.floor(hours / 24)}d`
+}
+
 const initials = (name: string) =>
 	name
 		.split(/[\s-]+/)
@@ -340,6 +368,12 @@ const onMoved = (status: string, event: { added?: { element: { id: number } } })
 									v-if="column.group !== 'closed'"
 									:data="element.priority_icon" />
 								<Icon v-else :data="element.status_icon" />
+								<span class="text-gray-400" :title="trans('Raised')">{{
+									shortDate(element.created_at)
+								}}</span>
+								<span class="text-gray-500" :title="column.label">{{
+									ageIn(column, element)
+								}}</span>
 								<span
 									v-if="element.assignee"
 									class="ml-auto"

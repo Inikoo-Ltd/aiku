@@ -60,6 +60,7 @@ use Spatie\MediaLibrary\InteractsWithMedia;
  * @property \Illuminate\Support\Carbon|null $resolved_at
  * @property \Illuminate\Support\Carbon|null $assigned_at
  * @property \Illuminate\Support\Carbon|null $started_at
+ * @property \Illuminate\Support\Carbon|null $waiting_at
  * @property \Illuminate\Support\Carbon|null $closed_at
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
@@ -112,6 +113,7 @@ class Ticket extends Model implements Auditable, HasMedia
             'rated_at'    => 'datetime',
             'assigned_at' => 'datetime',
             'started_at'  => 'datetime',
+            'waiting_at'  => 'datetime',
             'resolved_at' => 'datetime',
             'closed_at'   => 'datetime',
         ];
