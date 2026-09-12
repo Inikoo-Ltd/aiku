@@ -51,7 +51,17 @@ return [
             'scope'              => JobPositionScopeEnum::GROUP,
             'department'         => 'help-desk',
             'roles'              => [
-                RolesEnum::HELP_DESK
+                RolesEnum::HELP_DESK_CLERK
+            ],
+            'organisation_types' => []
+        ],
+        'gp-hd-m'     => [
+            'code'               => 'gp-hd-m',
+            'name'               => 'Help desk supervisor',
+            'scope'              => JobPositionScopeEnum::GROUP,
+            'department'         => 'help-desk',
+            'roles'              => [
+                RolesEnum::HELP_DESK_SUPERVISOR
             ],
             'organisation_types' => []
         ],

@@ -154,7 +154,12 @@ class Ticket extends Model implements Auditable, HasMedia
 
     public static function canBeManagedBy(?User $user): bool
     {
-        return $user !== null && $user->authTo('help-desk');
+        return $user !== null && $user->authTo('help-desk.resolve');
+    }
+
+    public static function canBeAssignedBy(?User $user): bool
+    {
+        return $user !== null && $user->authTo('help-desk.assign');
     }
 
     public function isReportedBy(?User $user): bool

@@ -28,6 +28,7 @@ const props = defineProps<{
     comments: any[]
     can_rate: boolean
     can_manage: boolean
+    can_assign: boolean
     is_reporter: boolean
     options: {
         statuses: { label: string; value: string }[]
@@ -105,13 +106,18 @@ const update = (field: string, value: unknown) => {
                     <template #emptyfilter><button type="button" class="text-sm text-blue-600 px-2 py-1" @click="addTypedTag">{{ trans("Add") }} "{{ newTag }}"</button></template>
                 </MultiSelect>
             </div>
-            <div>
+            <div v-if="can_assign">
                 <p class="text-xs text-gray-500 mb-1">{{ trans("Assignee") }}</p>
                 <Select :model-value="ticket.assignee_id" :options="options.assignees" option-label="label" option-value="value" show-clear filter class="w-full" :placeholder="trans('Unassigned')" @update:model-value="update('assignee_id', $event)" />
             </div>
+            <div v-else>
+                <p class="text-xs text-gray-500 mb-1">{{ trans("Assignee") }}</p>
+                <p v-if="ticket.assignee">{{ ticket.assignee }}</p>
+                <Button v-else type="secondary" icon="fal fa-hand-paper" :label="trans('Take it')" full @click="update('assignee_id', (usePage().props as any).auth.user.id)" />
+            </div>
             <Button v-if="ticket.type === 'customer' && !ticket.escalations.length" type="secondary" icon="fal fa-level-up" :label="trans('Escalate to help desk')" full @click="escalate" />
             <Button v-if="ticket.staff_conversation_ulid" type="tertiary" icon="fal fa-comments" :label="trans('Staff chat')" full @click="openStaffChat" />
-            <label class="flex items-center gap-x-2 text-gray-600 cursor-pointer">
+            <label v-if="can_assign" class="flex items-center gap-x-2 text-gray-600 cursor-pointer">
                 <input type="checkbox" :checked="ticket.is_confidential" class="rounded border-gray-300" @change="update('is_confidential', ($event.target as HTMLInputElement).checked)" />
                 {{ trans("Confidential") }} <span class="text-xs text-gray-400">({{ trans("only reporter, assignee and admins") }})</span>
             </label>

@@ -23,7 +23,7 @@ class ShowTicketsDashboard extends OrgAction
 
     public function authorize(ActionRequest $request): bool
     {
-        return Ticket::canBeManagedBy($request->user());
+        return Ticket::canBeAssignedBy($request->user());
     }
 
     public function handle(Group $group, int $days): array

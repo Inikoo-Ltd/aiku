@@ -692,7 +692,9 @@ test('only the help desk manages tickets, everyone else reports, comments and cl
     $reporter = User::factory()->create(['group_id' => $this->group->id]);
     $helper   = User::factory()->create(['group_id' => $this->group->id]);
     setPermissionsTeamId($this->group->id);
-    $helper->assignRole('help-desk');
+    $helper->assignRole('help-desk-clerk');
+    $boss = User::factory()->create(['group_id' => $this->group->id]);
+    $boss->assignRole('help-desk-supervisor');
 
     actingAs($reporter);
     $ticket = StoreTicket::make()->action($this->group, ['subject' => 'Mine', 'reporter_type' => 'User', 'reporter_id' => $reporter->id]);
@@ -710,13 +712,30 @@ test('only the help desk manages tickets, everyone else reports, comments and cl
 
     actingAs($helper);
     get(route('grp.tickets.show', $other->reference))->assertOk()->assertInertia(fn (AssertableInertia $page) => $page->where('can_manage', true));
-    get(route('grp.tickets.dashboard'))->assertOk();
+    get(route('grp.tickets.dashboard'))->assertForbidden();
+    get(route('grp.tickets.board'))->assertOk();
+    patch(route('grp.models.ticket.update', $other->id), ['assignee_id' => $boss->id])->assertForbidden();
+    patch(route('grp.models.ticket.update', $other->id), ['is_confidential' => true])->assertForbidden();
     patch(route('grp.models.ticket.update', $other->id), ['priority' => 'urgent', 'assignee_id' => $helper->id])->assertRedirect();
+    patch(route('grp.models.ticket.update', $other->id), ['assignee_id' => null])->assertForbidden();
     post(route('grp.models.ticket.comment.store', $other->id), ['body' => 'internal', 'is_internal' => true])->assertRedirect();
     expect($other->fresh()->priority)->toBe(ChatPriorityEnum::URGENT)
+        ->and($other->fresh()->assignee_id)->toBe($helper->id)
         ->and($other->comments()->where('is_internal', true)->count())->toBe(1);
+
+    actingAs($boss);
+    get(route('grp.tickets.dashboard'))->assertOk();
+    patch(route('grp.models.ticket.update', $other->id), ['assignee_id' => $boss->id])->assertRedirect();
+    expect($other->fresh()->assignee_id)->toBe($boss->id);
 
     AikuServer::actingAs($reporter)->tool(TicketWriteTool::class, ['reference' => $other->reference, 'priority' => 'low'])->assertHasErrors();
     AikuServer::actingAs($reporter)->tool(TicketWriteTool::class, ['reference' => $ticket->reference, 'status' => 'closed'])->assertOk();
     AikuServer::actingAs($helper)->tool(TicketWriteTool::class, ['reference' => $other->reference, 'priority' => 'low'])->assertOk();
+    AikuServer::actingAs($helper)->tool(TicketWriteTool::class, ['reference' => $other->reference, 'assignee' => $reporter->username])->assertHasErrors();
+    AikuServer::actingAs($boss)->tool(TicketWriteTool::class, ['reference' => $other->reference, 'assignee' => $helper->username])->assertOk();
+
+    actingAs($boss);
+    patch(route('grp.models.ticket.update', $other->id), ['assignee_id' => $boss->id, 'is_confidential' => true])->assertRedirect();
+    expect($other->fresh()->is_confidential)->toBeTrue();
+    AikuServer::actingAs($helper)->tool(TicketWriteTool::class, ['reference' => $other->reference, 'priority' => 'low'])->assertHasErrors();
 });

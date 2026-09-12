@@ -108,7 +108,7 @@ class GetGroupNavigation
                             'name' => 'grp.tickets.index',
                         ],
                     ],
-                    ...($user->hasPermissionTo('help-desk') ? [
+                    ...($user->authTo('help-desk.resolve') ? [
                         [
                             'label' => __('Board'),
                             'icon'  => ['fal', 'fa-columns'],
@@ -117,6 +117,8 @@ class GetGroupNavigation
                                 'name' => 'grp.tickets.board',
                             ],
                         ],
+                    ] : []),
+                    ...($user->authTo('help-desk.assign') ? [
                         [
                             'label' => __('Reports'),
                             'icon'  => ['fal', 'fa-chart-line'],
