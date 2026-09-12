@@ -31,7 +31,8 @@ class UpdateTicket extends OrgAction
         $question     = trim((string) Arr::pull($modelData, 'question', ''));
         $waitingHours = Arr::pull($modelData, 'waiting_hours');
 
-        if ($question !== '' && ($asker = request()->user()) instanceof User) {
+        $asker = request()->user();
+        if ($question !== '' && $asker instanceof User) {
             StoreTicketComment::make()->action($ticket, $asker, ['body' => $question]);
         }
 
@@ -69,6 +70,14 @@ class UpdateTicket extends OrgAction
         }
 
         $ticket = $this->update($ticket, $modelData);
+
+        if ($question !== '' && $asker instanceof User && $ticket->status === TicketStatusEnum::WAITING) {
+            NotifyTicketReporter::make()->asked($ticket, $asker, $question);
+        }
+
+        if ($ticket->wasChanged('status') && $ticket->status === TicketStatusEnum::RESOLVED) {
+            NotifyTicketReporter::make()->done($ticket, $asker instanceof User ? $asker : null);
+        }
 
         if ($ticket->wasChanged('status')) {
             PostTicketSlackThreadReply::run($ticket, $ticket->reference.' is now '.TicketStatusEnum::labels()[$ticket->status->value]);

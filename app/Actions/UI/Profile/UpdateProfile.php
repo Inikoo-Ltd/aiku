@@ -40,6 +40,10 @@ class UpdateProfile extends OrgAction
             $modelData['settings']['hide_logo'] = $hideLogo;
         }
 
+        if (Arr::exists($modelData, 'ticket_notifications')) {
+            $modelData['settings']['ticket_notifications'] = Arr::pull($modelData, 'ticket_notifications');
+        }
+
         if (Arr::exists($modelData, 'timezone')) {
             $timezoneName            = Arr::pull($modelData, 'timezone');
             $modelData['timezone_id'] = $timezoneName ? Timezone::where('name', $timezoneName)->value('id') : null;
@@ -133,6 +137,7 @@ class UpdateProfile extends OrgAction
             'app_theme'         => ['sometimes', 'required'],
             'chat_theme'        => ['sometimes', 'nullable', Rule::in(['light', 'sky', 'blush', 'sand', 'mint', 'dracula', 'nord', 'gruvbox', 'monokai', 'onedark', 'solarized'])],
             'hide_logo'         => ['sometimes', 'boolean'],
+            'ticket_notifications' => ['sometimes', 'in:both,email,slack,none'],
             'preferred_printer' => ['sometimes', 'integer'],
             'image'             => [
                 'sometimes',

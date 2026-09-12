@@ -38,6 +38,8 @@ use App\Models\SysAdmin\Guest;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Notification;
+use App\Notifications\TicketReporterNotification;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Testing\AssertableInertia;
 
@@ -207,6 +209,34 @@ test('asking the reporter posts the question and cancels the ticket when its own
     expect(CancelStaleTickets::run())->toBe(1)
         ->and($ticket->fresh()->status)->toBe(TicketStatusEnum::CANCELLED)
         ->and($ticket->fresh()->waiting_until)->toBeNull();
+});
+
+test('staff reporter is told of the question by email and slack as their profile prefers', function () {
+    Notification::fake();
+    Config::set('services.slack.notifications.bot_user_oauth_token', 'xoxb-test');
+    Http::fake(['slack.com/*' => Http::response(['ok' => true])]);
+
+    $reporter = StoreGuest::make()->action($this->group, Guest::factory()->definition())->getUser();
+    $reporter->update(['slack_user_id' => 'U123', 'settings' => ['ticket_notifications' => 'both']]);
+
+    $ticket = StoreTicket::make()->action($this->group, ['subject' => 'Ask me']);
+    $ticket->update(['reporter_type' => 'User', 'reporter_id' => $reporter->id]);
+    UpdateTicket::make()->action($ticket, ['status' => TicketStatusEnum::IN_PROGRESS->value]);
+
+    patch(route('grp.models.ticket.update', $ticket->id), ['status' => 'waiting', 'question' => 'Which order?', 'waiting_hours' => 24])->assertRedirect();
+
+    Notification::assertSentTo($reporter, TicketReporterNotification::class);
+    Http::assertSent(fn ($request) => str_contains($request->url(), 'chat.postMessage') && $request['channel'] === 'U123');
+
+    $reporter->update(['settings' => ['ticket_notifications' => 'none']]);
+    Notification::fake();
+    UpdateTicket::make()->action($ticket->fresh(), ['status' => TicketStatusEnum::IN_PROGRESS->value]);
+    patch(route('grp.models.ticket.update', $ticket->id), ['status' => 'waiting', 'question' => 'Still?'])->assertRedirect();
+    Notification::assertNothingSent();
+
+    $reporter->update(['settings' => ['ticket_notifications' => 'email']]);
+    patch(route('grp.models.ticket.update', $ticket->id), ['status' => 'resolved'])->assertRedirect();
+    Notification::assertSentTo($reporter, TicketReporterNotification::class, fn ($notification) => str_contains($notification->subject, 'is done'));
 });
 
 test('ticket page shows a history from opened to its status changes, newest first', function () {
