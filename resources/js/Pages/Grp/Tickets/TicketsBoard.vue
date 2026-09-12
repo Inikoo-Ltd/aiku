@@ -6,12 +6,13 @@
 
 <script setup lang="ts">
 import { Head, Link, router } from "@inertiajs/vue3"
-import { computed, reactive, ref, watch } from "vue"
+import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from "vue"
 import draggable from "vuedraggable"
 import { trans } from "laravel-vue-i18n"
 import { capitalize } from "@/Composables/capitalize"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import Icon from "@/Components/Icon.vue"
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 
 const props = defineProps<{
 	pageHead: any
@@ -132,6 +133,28 @@ const subCount = (column: { tickets: any[] }, status: string) =>
 
 const assigneeMenuOpen = ref(false)
 
+const quickLook = ref<any | null>(null)
+
+// ponytail: vuedraggable eats dblclick and bubbled clicks, so the board listens in capture
+let lastClick = { id: 0, at: 0 }
+
+const onBoardClick = (event: MouseEvent) => {
+	const card = (event.target as HTMLElement)?.closest?.("[data-ticket-id]") as HTMLElement | null
+	if (!card) return
+
+	const id = Number(card.dataset.ticketId)
+	const now = Date.now()
+
+	if (lastClick.id === id && now - lastClick.at < 600) {
+		quickLook.value = props.columns.flatMap((column) => column.tickets).find((t) => t.id === id)
+	}
+
+	lastClick = { id, at: now }
+}
+
+onMounted(() => window.addEventListener("click", onBoardClick, true))
+onBeforeUnmount(() => window.removeEventListener("click", onBoardClick, true))
+
 const bucketStamps: Record<string, string> = {
 	open: "created_at",
 	assigned: "assigned_at",
@@ -159,6 +182,10 @@ const ageIn = (column: { key: string; period: string | null }, ticket: any) => {
 	const hours = Math.floor((Date.now() - new Date(since).getTime()) / 3600000)
 	return hours < 48 ? `${Math.max(hours, 0)}h` : `${Math.floor(hours / 24)}d`
 }
+
+const avatarFor = (assignee: string) =>
+	props.columns.flatMap((column) => column.tickets).find((ticket) => ticket.assignee === assignee)
+		?.assignee_avatar?.original ?? null
 
 const initials = (name: string) =>
 	name
@@ -258,7 +285,13 @@ const onMoved = (status: string, event: { added?: { element: { id: number } } })
 							type="checkbox"
 							:checked="boardFilters.assignee.includes(option.value)"
 							@change="toggleFilter('assignee', option.value)" />
+						<img
+							v-if="avatarFor(option.value)"
+							:src="avatarFor(option.value)"
+							class="h-6 w-6 rounded-full object-cover"
+							:alt="option.value" />
 						<span
+							v-else
 							class="flex h-6 w-6 items-center justify-center rounded-full bg-gray-200 text-[10px] font-semibold text-gray-600"
 							>{{ initials(option.value) }}</span
 						>
@@ -354,7 +387,8 @@ const onMoved = (status: string, event: { added?: { element: { id: number } } })
 					<template #item="{ element }">
 						<div
 							v-show="matchesFilters(element, column.key)"
-							class="bg-white rounded-md border border-gray-200 shadow-sm p-2.5 cursor-grab active:cursor-grabbing hover:border-gray-400">
+							class="bg-white rounded-md border border-gray-200 shadow-sm p-2.5 cursor-grab active:cursor-grabbing hover:border-gray-400"
+							:data-ticket-id="element.id">
 							<p class="text-sm leading-snug break-words line-clamp-3">
 								{{ element.subject }}
 							</p>
@@ -362,22 +396,26 @@ const onMoved = (status: string, event: { added?: { element: { id: number } } })
 								<Link
 									:href="route('grp.tickets.show', element.reference)"
 									class="primaryLink font-medium"
+									@click.stop
 									>{{ element.reference }}</Link
 								>
 								<Icon
-									v-if="column.group !== 'closed'"
-									:data="element.priority_icon" />
-								<Icon v-else :data="element.status_icon" />
-								<span class="text-gray-400" :title="trans('Raised')">{{
-									shortDate(element.created_at)
-								}}</span>
-								<span class="text-gray-500" :title="column.label">{{
-									ageIn(column, element)
-								}}</span>
+									v-if="column.group === 'closed'"
+									:data="element.status_icon" />
+								<span
+									class="text-gray-400"
+									v-tooltip="{ content: trans('Raised'), delay: 0 }"
+									>{{ shortDate(element.created_at) }}</span
+								>
+								<span
+									class="text-gray-500"
+									v-tooltip="{ content: column.label, delay: 0 }"
+									>{{ ageIn(column, element) }}</span
+								>
 								<span
 									v-if="element.assignee"
-									class="ml-auto"
-									:title="element.assignee || element.reporter || ''">
+									v-tooltip="{ content: element.assignee, delay: 0 }"
+									class="ml-auto">
 									<img
 										v-if="element.assignee_avatar?.original"
 										:src="element.assignee_avatar.original"
@@ -393,6 +431,84 @@ const onMoved = (status: string, event: { added?: { element: { id: number } } })
 						</div>
 					</template>
 				</draggable>
+			</div>
+		</div>
+	</div>
+	<div
+		v-if="quickLook"
+		class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+		@click.self="quickLook = null">
+		<div class="relative w-3/5 rounded-2xl bg-white p-6 shadow-xl">
+			<button
+				type="button"
+				class="absolute right-4 top-3 text-gray-400 hover:text-gray-700"
+				@click="quickLook = null">
+				<FontAwesomeIcon icon="fal fa-times" fixed-width />
+			</button>
+			<div class="max-h-[75vh] overflow-y-auto pr-1">
+				<div class="flex items-center gap-2 text-xs mb-2">
+					<Link
+						:href="route('grp.tickets.show', quickLook.reference)"
+						class="primaryLink font-medium"
+						>{{ quickLook.reference }}</Link
+					>
+					<Icon :data="quickLook.status_icon" />
+					<span class="text-gray-600">{{ quickLook.status_label }}</span>
+					<Icon :data="quickLook.priority_icon" />
+					<span class="text-gray-600">{{ quickLook.priority_label }}</span>
+					<span v-if="quickLook.kind_label" class="text-gray-400"
+						>· {{ quickLook.kind_label }}</span
+					>
+					<span v-if="quickLook.module_label" class="text-gray-400"
+						>· {{ quickLook.module_label }}</span
+					>
+				</div>
+				<h2 class="text-lg font-semibold leading-snug mb-3">{{ quickLook.subject }}</h2>
+				<div class="grid grid-cols-2 gap-x-6 gap-y-1 text-xs text-gray-600 mb-4">
+					<span
+						>{{ trans("Raised") }}: {{ shortDate(quickLook.created_at) }}
+						{{ quickLook.reporter ? "· " + quickLook.reporter : "" }}</span
+					>
+					<span v-if="quickLook.assignee"
+						>{{ trans("Assignee") }}: {{ quickLook.assignee }}</span
+					>
+					<span v-if="quickLook.assigned_at"
+						>{{ trans("Assigned") }}: {{ shortDate(quickLook.assigned_at) }}</span
+					>
+					<span v-if="quickLook.started_at"
+						>{{ trans("Started") }}: {{ shortDate(quickLook.started_at) }}</span
+					>
+					<span v-if="quickLook.waiting_at"
+						>{{ trans("Waiting since") }}: {{ shortDate(quickLook.waiting_at) }}</span
+					>
+					<span v-if="quickLook.closed_at"
+						>{{ trans("Closed") }}: {{ shortDate(quickLook.closed_at) }}</span
+					>
+					<span v-if="quickLook.customer"
+						>{{ trans("Customer") }}: {{ quickLook.customer }}</span
+					>
+					<span v-if="quickLook.shop">{{ trans("Shop") }}: {{ quickLook.shop }}</span>
+				</div>
+				<p class="text-sm whitespace-pre-wrap break-words">{{ quickLook.description }}</p>
+				<div v-if="quickLook.images?.length" class="mt-4 grid grid-cols-2 gap-2">
+					<a
+						v-for="(image, index) in quickLook.images"
+						:key="index"
+						:href="image.original"
+						target="_blank">
+						<img :src="image.original" class="rounded border border-gray-200" />
+					</a>
+				</div>
+				<ul v-if="quickLook.attachments?.length" class="mt-4 space-y-1 text-sm">
+					<li v-for="file in quickLook.attachments" :key="file.url">
+						<a
+							:href="file.url"
+							target="_blank"
+							class="text-blue-600 hover:underline break-all">
+							<FontAwesomeIcon icon="fal fa-paperclip" class="mr-1" />{{ file.name }}
+						</a>
+					</li>
+				</ul>
 			</div>
 		</div>
 	</div>
