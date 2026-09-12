@@ -16,6 +16,7 @@ use App\Enums\Helpers\Ticket\TicketKindEnum;
 use App\Enums\Helpers\Ticket\TicketModuleEnum;
 use App\Enums\Helpers\Ticket\TicketStatusEnum;
 use App\Models\Helpers\Ticket;
+use App\Models\SysAdmin\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
@@ -41,6 +42,18 @@ class UpdateTicket extends OrgAction
 
         if ($ticket->wasChanged('status')) {
             PostTicketSlackThreadReply::run($ticket, $ticket->reference.' is now '.TicketStatusEnum::labels()[$ticket->status->value]);
+        }
+
+        if ($ticket->wasChanged('assignee_id') && ($actor = request()->user()) instanceof User) {
+            $previous = $ticket->getOriginal('assignee_id') ? User::find($ticket->getOriginal('assignee_id')) : null;
+            $ticket->comments()->create([
+                'author_type' => 'User',
+                'author_id'   => $actor->id,
+                'is_internal' => true,
+                'body'        => $ticket->assignee
+                    ? ($previous ? __('Passed from :from to :to', ['from' => $previous->contact_name ?: $previous->username, 'to' => $ticket->assignee->contact_name ?: $ticket->assignee->username]) : __('Assigned to :to', ['to' => $ticket->assignee->contact_name ?: $ticket->assignee->username]))
+                    : __('Unassigned'),
+            ]);
         }
 
         if ($ticket->wasChanged('assignee_id') && $ticket->assignee_id && $conversation = $ticket->staffConversation) {

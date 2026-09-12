@@ -725,7 +725,8 @@ test('only the help desk manages tickets, everyone else reports, comments and cl
     post(route('grp.models.ticket.comment.store', $other->id), ['body' => 'internal', 'is_internal' => true])->assertRedirect();
     expect($other->fresh()->priority)->toBe(ChatPriorityEnum::URGENT)
         ->and($other->fresh()->assignee_id)->toBe($helper->id)
-        ->and($other->comments()->where('is_internal', true)->count())->toBe(1);
+        ->and($other->comments()->where('is_internal', true)->where('body', 'internal')->count())->toBe(1)
+        ->and($other->comments()->where('body', 'like', 'Passed from%')->count())->toBeGreaterThanOrEqual(1);
 
     actingAs($boss);
     get(route('grp.tickets.dashboard'))->assertOk();
