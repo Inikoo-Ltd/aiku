@@ -46,9 +46,9 @@ class ReceiveSlackInteraction
                 'submit'           => ['type' => 'plain_text', 'text' => 'Send'],
                 'close'            => ['type' => 'plain_text', 'text' => 'Cancel'],
                 'blocks'           => [
-                    $this->input('subject', 'What is wrong', array_filter(['type' => 'plain_text_input', 'action_id' => 'value', 'max_length' => 255, 'initial_value' => mb_substr(trim($subject), 0, 255)])),
-                    $this->input('description', 'Details', array_filter(['type' => 'plain_text_input', 'action_id' => 'value', 'multiline' => true, 'initial_value' => trim($description)]), true),
-                    $this->input('reference_url', 'Link to the page where it happens', ['type' => 'url_text_input', 'action_id' => 'value', 'placeholder' => ['type' => 'plain_text', 'text' => 'https://app.aiku.io/...']]),
+                    $this->input('subject', 'Subject', array_filter(['type' => 'plain_text_input', 'action_id' => 'value', 'max_length' => 255, 'initial_value' => mb_substr(trim($subject), 0, 255)])),
+                    $this->input('description', 'Details: what happens, or what you need and why', array_filter(['type' => 'plain_text_input', 'action_id' => 'value', 'multiline' => true, 'initial_value' => trim($description)]), true),
+                    $this->input('reference_url', 'Link to the page: where it breaks, or where the new feature belongs', ['type' => 'url_text_input', 'action_id' => 'value', 'placeholder' => ['type' => 'plain_text', 'text' => 'https://app.aiku.io/...']]),
                     $this->input('files', 'Screenshots (they help a lot)', ['type' => 'file_input', 'action_id' => 'value', 'max_files' => 5], true),
                 ],
             ],
