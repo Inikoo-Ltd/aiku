@@ -122,15 +122,11 @@ const selectedItemStyle = {
 const sidePanelVisible = ref(false)
 
 const chatSettingVisible = ref(false)
-const settingInitialTab = ref<"general" | "jira" | "slack">("general")
+const settingInitialTab = ref<"general" | "slack">("general")
 
 const newChatVisible = ref(false)
 const openChatSettings = () => {
     settingInitialTab.value = "general"
-    chatSettingVisible.value = true
-}
-const onOpenJiraSettings = () => {
-    settingInitialTab.value = "jira"
     chatSettingVisible.value = true
 }
 const onOpenSlackSettings = () => {
@@ -1423,7 +1419,6 @@ onUnmounted(() => {
                     @view-user-profile="showProfilePanel" @view-message-details="showMessageDetailsPanel"
                     @transfer-agent-success="onTransferAgentSuccess"
                     @assign-self-success="onAssignSelfSuccess" @messages-read="onMessagesRead"
-                    @open-jira-settings="onOpenJiraSettings"
                     @open-slack-settings="onOpenSlackSettings"
                     @spam-success="onSpamFromThread"
                     @restore-success="onRestoreFromThread" />

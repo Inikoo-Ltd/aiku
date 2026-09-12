@@ -80,15 +80,6 @@ class UpdateGroupSettings extends OrgAction
         if (Arr::has($modelData, 'official_stock_valuation_method')) {
             data_set($modelData, 'settings.inventory.official_valuation_method', Arr::pull($modelData, 'official_stock_valuation_method'));
         }
-        if (Arr::has($modelData, 'jira_base_url')) {
-            data_set($modelData, 'settings.jira.base_url', Arr::pull($modelData, 'jira_base_url'));
-        }
-        if (Arr::has($modelData, 'jira_email')) {
-            data_set($modelData, 'settings.jira.email', Arr::pull($modelData, 'jira_email'));
-        }
-        if (Arr::has($modelData, 'jira_api_token')) {
-            data_set($modelData, 'settings.jira.api_token', Arr::pull($modelData, 'jira_api_token'));
-        }
 
         if (Arr::exists($modelData, 'access_id')) {
             data_set($modelData, 'settings.email.provider.failover.access_id', Arr::pull($modelData, 'access_id'));
@@ -155,9 +146,6 @@ class UpdateGroupSettings extends OrgAction
                 \App\Enums\Inventory\OrgStock\OrgStockValuationMethodEnum::FIFO->value,
                 \App\Enums\Inventory\OrgStock\OrgStockValuationMethodEnum::WAC->value,
             ])],
-            'jira_base_url'      => ['sometimes', 'nullable', 'url'],
-            'jira_email'         => ['sometimes', 'nullable', 'email'],
-            'jira_api_token'     => ['sometimes', 'nullable', 'string'],
             'access_id'                    => ['sometimes', 'string', 'nullable'],
             'access_key'                   => ['sometimes', 'string', 'nullable'],
             'region'                       => ['sometimes', 'nullable', Rule::enum(SesRegionEnum::class)],

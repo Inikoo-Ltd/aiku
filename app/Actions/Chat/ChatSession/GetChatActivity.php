@@ -33,7 +33,6 @@ class GetChatActivity
                     ChatEventTypeEnum::CLOSE,
                     ChatEventTypeEnum::GUEST_PROFILE,
                     ChatEventTypeEnum::REOPEN,
-                    ChatEventTypeEnum::JIRA_TICKET,
                     ChatEventTypeEnum::TICKET,
                     ChatEventTypeEnum::SPAM,
                     ChatEventTypeEnum::NOT_SPAM,
@@ -152,9 +151,8 @@ class GetChatActivity
                 $formatted['details'] = $this->formatReopenEvent($event);
                 break;
 
-            case ChatEventTypeEnum::JIRA_TICKET:
             case ChatEventTypeEnum::TICKET:
-                $formatted['details'] = $this->formatJiraTicketEvent($event);
+                $formatted['details'] = $this->formatTicketEvent($event);
                 break;
 
             case ChatEventTypeEnum::SPAM:
@@ -176,7 +174,7 @@ class GetChatActivity
         ];
     }
 
-    private function formatJiraTicketEvent($event): array
+    private function formatTicketEvent($event): array
     {
         $payload = $event->payload ?? [];
 
@@ -185,10 +183,7 @@ class GetChatActivity
             'ticket_key'    => Arr::get($payload, 'key'),
             'ticket_url'    => Arr::get($payload, 'url'),
             'summary'       => Arr::get($payload, 'summary'),
-            'issue_type'    => Arr::get($payload, 'issue_type'),
-            'project_key'   => Arr::get($payload, 'project_key'),
             'priority_name' => Arr::get($payload, 'priority_name'),
-            'labels'        => Arr::get($payload, 'labels', []),
         ];
     }
 
