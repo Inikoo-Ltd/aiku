@@ -2293,6 +2293,24 @@ describe('staff messaging', function () {
         expect((int) $theirs->unread_count)->toBe(0);
     });
 
+    test('the conversations list loads avatars and contexts once, not per conversation', function () {
+        Event::fake([\App\Events\StaffMessageSent::class]);
+        Bus::fake([\App\Actions\Chat\Staff\TranslateStaffMessage::class]);
+        $conversation = \App\Actions\Chat\Staff\StoreStaffConversation::run($this->user, ['user_ids' => [$this->otherUser->id]]);
+        \App\Actions\Chat\Staff\SendStaffMessage::run($conversation, $this->user, ['body' => 'list me']);
+
+        \Illuminate\Support\Facades\DB::enableQueryLog();
+        $rows = \App\Http\Resources\Chat\StaffConversationResource::collection(
+            \App\Actions\Chat\Staff\Json\GetStaffConversations::run($this->user)
+        )->resolve();
+        $queries = collect(\Illuminate\Support\Facades\DB::getQueryLog())->pluck('query');
+        \Illuminate\Support\Facades\DB::disableQueryLog();
+
+        expect(collect($rows)->pluck('ulid'))->toContain($conversation->ulid)
+            ->and($queries->filter(fn (string $sql) => str_contains($sql, 'from "media"'))->count())->toBeLessThanOrEqual(1)
+            ->and($queries->filter(fn (string $sql) => preg_match('/from "(delivery_notes|orders|picking_sessions)"/', $sql))->count())->toBeLessThanOrEqual(3);
+    });
+
     test('reaction toggles on and off', function () {
         Event::fake([\App\Events\StaffMessageSent::class]);
         Bus::fake([\App\Actions\Chat\Staff\TranslateStaffMessage::class]);
