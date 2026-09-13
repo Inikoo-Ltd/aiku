@@ -324,7 +324,7 @@ const update = (field: string, value: unknown) => {
             <Button v-if="ticket.staff_conversation_ulid" type="tertiary" icon="fal fa-comments" :label="trans('Staff chat')" full @click="openStaffChat" />
             <label v-if="can_flag_confidential" class="flex items-center gap-x-2 text-gray-600 cursor-pointer">
                 <input type="checkbox" :checked="ticket.is_confidential" class="rounded border-gray-300" @change="update('is_confidential', ($event.target as HTMLInputElement).checked)" />
-                {{ trans("Confidential") }} <span class="text-xs text-gray-400">({{ trans("only reporter, assignee and admins") }})</span>
+                {{ trans("Confidential") }} <span class="text-xs text-gray-400">({{ trans("only reporter and lead engineers") }})</span>
             </label>
             </template>
             <div v-if="ticket.commits?.length">

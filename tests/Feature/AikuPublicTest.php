@@ -369,9 +369,9 @@ test('translated docs are served, linked and kept out of the English listings', 
         ->assertDontSee('versi bahasa Inggris yang berlaku', false);
 });
 
-test('every guide has a Spanish and a Slovak translation made from the current English', function () {
+test('staff guides have Spanish and Slovak, engineer and QA guides Indonesian, made from the current English', function () {
     foreach (BlogPosts::all('docs') as $english) {
-        foreach (['es', 'sk'] as $lang) {
+        foreach ($english['audience'] ? ['id'] : ['es', 'sk'] as $lang) {
             $translation = BlogPosts::everything('docs')->firstWhere('slug', $english['slug'].'-'.$lang);
             expect($translation)->not->toBeNull($english['slug'].' has no '.$lang.' translation')
                 ->and($translation['source_date']?->toDateString())->toBe($english['date']->toDateString(), $english['slug'].'-'.$lang.' is stale');

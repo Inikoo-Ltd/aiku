@@ -182,6 +182,7 @@ class BlogPosts
             'tags' => array_map('trim', explode(',', $meta['tags'] ?? '')),
             'help_routes' => array_values(array_filter(array_map('trim', explode(',', $meta['help_routes'] ?? '')))),
             'category' => $meta['category'] ?? null,
+            'audience' => $meta['audience'] ?? null,
             'series' => $meta['series'] ?? null,
             'series_order' => (int) ($meta['order'] ?? 0),
             'body' => $matches[2],
