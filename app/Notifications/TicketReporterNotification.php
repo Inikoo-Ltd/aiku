@@ -34,6 +34,7 @@ class TicketReporterNotification extends Notification implements ShouldQueue
     {
         $message = (new MailMessage())
             ->subject($this->subject)
+            ->markdown('notifications::email', ['shop' => $this->ticket->group->name, 'shop_url' => config('app.url')])
             ->greeting(__('Hello :name,', ['name' => $notifiable->contact_name ?: $notifiable->username]));
 
         foreach ($this->lines as $line) {
