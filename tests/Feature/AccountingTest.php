@@ -3215,3 +3215,11 @@ describe('invoice pdf tax number display', function () {
             ->and($renderInvoiceTemplate($invoice->refresh(), null, true))->not->toContain('Delivery address');
     });
 });
+
+test('a pdf whose html is larger than the default pcre backtrack limit still renders', function () {
+    $html = '<p>'.str_repeat('a', 1_100_000).'</p>';
+    $mpdf = new \Mpdf\Mpdf(['tempDir' => sys_get_temp_dir()]);
+
+    expect(strlen($html))->toBeGreaterThan(1_000_000)
+        ->and($mpdf->AdjustHTML($html))->toContain('aaaa');
+});
