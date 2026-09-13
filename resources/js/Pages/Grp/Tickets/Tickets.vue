@@ -12,11 +12,14 @@ import Table from "@/Components/Table/Table.vue"
 import Icon from "@/Components/Icon.vue"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { useLiveTickets } from "@/Composables/useLiveTickets"
+import TicketsCreatedInterval from "@/Components/Tickets/TicketsCreatedInterval.vue"
 
 defineProps<{
     pageHead: any
     title: string
     data: any
+    createdIntervals: Record<string, string>
+    createdInterval: string
 }>()
 
 useLiveTickets(["data"])
@@ -25,6 +28,7 @@ useLiveTickets(["data"])
 <template>
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead" />
+    <TicketsCreatedInterval :options="createdIntervals" :selected="createdInterval" class="mx-4 mt-2" />
     <Table :resource="data" class="mt-2">
         <template #cell(reference)="{ item }">
             <Link :href="route('grp.tickets.show', item.reference)" class="primaryLink">{{ item.reference }}</Link>

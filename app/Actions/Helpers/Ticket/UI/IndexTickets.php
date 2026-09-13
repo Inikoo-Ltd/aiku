@@ -9,6 +9,10 @@
 namespace App\Actions\Helpers\Ticket\UI;
 
 use App\Actions\OrgAction;
+use App\Enums\CRM\Livechat\ChatPriorityEnum;
+use App\Enums\DateIntervals\DateIntervalEnum;
+use App\Enums\Helpers\Ticket\TicketKindEnum;
+use App\Enums\Helpers\Ticket\TicketModuleEnum;
 use App\Enums\Helpers\Ticket\TicketStatusEnum;
 use App\Enums\Helpers\Ticket\TicketTypeEnum;
 use App\Http\Resources\Helpers\TicketResource;
@@ -34,7 +38,7 @@ class IndexTickets extends OrgAction
     protected function getElementGroups(Group $group): array
     {
         $user = request()->user();
-        $base = Ticket::where('group_id', $group->id)->visibleTo($user);
+        $base = $this->whereCreatedIn(Ticket::where('tickets.group_id', $group->id)->visibleTo($user), $this->createdInterval(), 'tickets.created_at');
 
         return [
             'mine'   => [
@@ -72,6 +76,35 @@ class IndexTickets extends OrgAction
                     $query->whereIn('tickets.type', $elements);
                 },
             ],
+            'module'   => $this->countedElementGroup($base, 'module', __('Module'), TicketModuleEnum::labels()),
+            'kind'     => $this->countedElementGroup($base, 'kind', __('Kind'), TicketKindEnum::labels()),
+            'priority' => $this->countedElementGroup($base, 'priority', __('Urgency'), ChatPriorityEnum::labels()),
+            'assignee' => [
+                'label'    => __('Assignee'),
+                'elements' => (clone $base)->join('users', 'users.id', '=', 'tickets.assignee_id')
+                    ->selectRaw('users.username, count(*) as total')->groupBy('users.username')->orderByDesc('total')
+                    ->pluck('total', 'username')->map(fn ($total, $username) => [$username, $total])->all(),
+                'engine'   => function ($query, $elements) {
+                    $query->whereIn('users.username', $elements);
+                },
+            ],
+        ];
+    }
+
+    /**
+     * @param  array<string, string>  $labels
+     */
+    protected function countedElementGroup($base, string $column, string $label, array $labels): array
+    {
+        $counts = (clone $base)->whereNotNull($column)->selectRaw("$column as value, count(*) as total")
+            ->groupBy($column)->orderByDesc('total')->pluck('total', 'value');
+
+        return [
+            'label'    => $label,
+            'elements' => $counts->mapWithKeys(fn ($total, $value) => [$value => [$labels[$value] ?? $value, $total]])->all(),
+            'engine'   => function ($query, $elements) use ($column) {
+                $query->whereIn("tickets.$column", $elements);
+            },
         ];
     }
 
@@ -109,6 +142,8 @@ class IndexTickets extends OrgAction
             ->visibleTo(request()->user())
             ->leftJoin('users', 'users.id', '=', 'tickets.assignee_id')
             ->with(['reporter', 'customer']);
+
+        $this->whereCreatedIn($queryBuilder, $this->createdInterval(), 'tickets.created_at');
 
         foreach ($this->getElementGroups($group) as $key => $elementGroup) {
             $queryBuilder->whereElementGroup(
@@ -178,8 +213,52 @@ class IndexTickets extends OrgAction
                     ] : [],
                 ],
                 'data'        => TicketResource::collection($tickets),
+                'createdIntervals' => $this->createdIntervalOptions(),
+                'createdInterval'  => $this->createdInterval(),
             ]
         )->table($this->tableStructure($this->group));
+    }
+
+    private const array HOURLY_INTERVALS = ['1h' => 1, '3h' => 3, '24h' => 24];
+
+    /**
+     * @return array<string, string>
+     */
+    public function createdIntervalOptions(): array
+    {
+        $labels = DateIntervalEnum::labels();
+
+        return [
+            'all' => $labels['all'],
+            '1h'  => __('1 hour'),
+            '3h'  => __('3 hours'),
+            '24h' => __('24 hours'),
+            'tdy' => $labels['tdy'],
+            'ld'  => $labels['ld'],
+            '3d'  => $labels['3d'],
+            '1w'  => $labels['1w'],
+            'lw'  => $labels['lw'],
+            '1m'  => $labels['1m'],
+            'lm'  => $labels['lm'],
+            '1q'  => $labels['1q'],
+            '1y'  => $labels['1y'],
+        ];
+    }
+
+    public function createdInterval(): string
+    {
+        $interval = (string) request()->input('created');
+
+        return array_key_exists($interval, $this->createdIntervalOptions()) ? $interval : 'all';
+    }
+
+    public function whereCreatedIn($query, string $interval, string $column)
+    {
+        if (isset(self::HOURLY_INTERVALS[$interval])) {
+            return $query->where($column, '>=', now()->subHours(self::HOURLY_INTERVALS[$interval]));
+        }
+
+        return DateIntervalEnum::from($interval)->wherePeriod($query, $column);
     }
 
     public function getBreadcrumbs(): array

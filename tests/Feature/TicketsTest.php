@@ -744,8 +744,8 @@ test('only the help desk manages tickets, everyone else reports, comments and cl
     patch(route('grp.models.ticket.update', $other->id), ['status' => 'resolved'])->assertForbidden();
 
     actingAs($helper);
-    get(route('grp.tickets.create'))->assertForbidden();
-    post(route('grp.models.ticket.store'), ['subject' => 'Engineers do not report'])->assertForbidden();
+    get(route('grp.tickets.create'))->assertOk();
+    post(route('grp.models.ticket.store'), ['subject' => 'Engineers report too'])->assertRedirect();
     get(route('grp.tickets.show', $other->reference))->assertOk()->assertInertia(fn (AssertableInertia $page) => $page->where('can_manage', true));
     get(route('grp.tickets.reports'))->assertOk();
     get(route('grp.tickets.board'))->assertOk()->assertInertia(fn (AssertableInertia $page) => $page->where('can_manage', true));
@@ -822,6 +822,34 @@ test('board only shows tickets closed in the last 24 hours', function () {
 
         expect($references)->toContain($fresh->reference)
             ->and($references)->not->toContain($stale->reference);
+    });
+});
+
+test('list and board show only tickets created in the chosen interval', function () {
+    $fresh = StoreTicket::make()->action($this->group, ['subject' => 'Raised today']);
+    $old   = StoreTicket::make()->action($this->group, ['subject' => 'Raised last year']);
+    $old->update(['created_at' => now()->subYear()->subMonth()]);
+
+    get(route('grp.tickets.list', ['created' => 'tdy']))->assertInertia(function (AssertableInertia $page) use ($fresh, $old) {
+        $references = collect($page->toArray()['props']['data']['data'])->pluck('reference');
+        expect($references)->toContain($fresh->reference)->and($references)->not->toContain($old->reference)
+            ->and($page->toArray()['props']['createdInterval'])->toBe('tdy');
+    });
+
+    $old->update(['created_at' => now(), 'priority' => 'urgent']);
+    get(route('grp.tickets.list', ['elements' => ['priority' => 'urgent']]))->assertInertia(function (AssertableInertia $page) use ($fresh, $old) {
+        $references = collect($page->toArray()['props']['data']['data'])->pluck('reference');
+        expect($references)->toContain($old->reference)->and($references)->not->toContain($fresh->reference);
+    });
+    $old->update(['created_at' => now()->subYear()->subMonth()]);
+
+    $fresh->update(['created_at' => now()->subHours(2)]);
+    get(route('grp.tickets.list', ['created' => '1h']))->assertInertia(fn (AssertableInertia $page) => expect(collect($page->toArray()['props']['data']['data'])->pluck('reference'))->not->toContain($fresh->reference));
+    get(route('grp.tickets.list', ['created' => '3h']))->assertInertia(fn (AssertableInertia $page) => expect(collect($page->toArray()['props']['data']['data'])->pluck('reference'))->toContain($fresh->reference));
+
+    get(route('grp.tickets.board', ['created' => '24h']))->assertInertia(function (AssertableInertia $page) use ($fresh, $old) {
+        $references = collect($page->toArray()['props']['columns'])->flatMap(fn ($column) => $column['tickets'])->pluck('reference');
+        expect($references)->toContain($fresh->reference)->and($references)->not->toContain($old->reference);
     });
 });
 

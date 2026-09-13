@@ -48,11 +48,11 @@ class ShowTicketsBoard extends OrgAction
     /**
      * @param  array<string, string>  $periods
      */
-    public function handle(Group $group, array $periods = []): array
+    public function handle(Group $group, array $periods = [], string $created = 'all'): array
     {
         $periods = array_merge(self::DEFAULT_PERIODS, array_intersect_key($periods, self::DEFAULT_PERIODS));
 
-        $tickets = Ticket::where('group_id', $group->id)->visibleTo(request()->user())
+        $tickets = IndexTickets::make()->whereCreatedIn(Ticket::where('group_id', $group->id)->visibleTo(request()->user()), $created, 'created_at')
             ->where(function ($query) use ($periods) {
                 foreach (self::COLUMNS as $key => $statuses) {
                     $query->orWhere(function ($columnQuery) use ($key, $statuses, $periods) {
@@ -92,7 +92,7 @@ class ShowTicketsBoard extends OrgAction
             ];
         })->values()->all();
 
-        return ['columns' => $columns, 'periods' => $periods, 'periodOptions' => self::PERIODS];
+        return ['columns' => $columns, 'periods' => $periods, 'periodOptions' => self::PERIODS, 'created' => $created];
     }
 
     private function since(string $period): ?\Illuminate\Support\Carbon
@@ -111,7 +111,7 @@ class ShowTicketsBoard extends OrgAction
 
         $periods = array_filter((array) $request->input('periods', []), fn ($period) => in_array($period, self::PERIODS, true));
 
-        return $this->handle($this->group, $periods);
+        return $this->handle($this->group, $periods, IndexTickets::make()->createdInterval());
     }
 
     public function htmlResponse(array $board): Response
@@ -139,6 +139,8 @@ class ShowTicketsBoard extends OrgAction
                 'can_manage'    => Ticket::canBeManagedBy(request()->user()),
                 'columns'       => $board['columns'],
                 'periodOptions' => $board['periodOptions'],
+                'createdIntervals' => IndexTickets::make()->createdIntervalOptions(),
+                'createdInterval'  => $board['created'],
                 'updateRoute' => 'grp.models.ticket.update',
             ]
         );

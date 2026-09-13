@@ -16,6 +16,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faVial, faShieldCheck, faShield } from "@fal"
 import { useLiveTickets } from "@/Composables/useLiveTickets"
+import TicketsCreatedInterval from "@/Components/Tickets/TicketsCreatedInterval.vue"
 
 library.add(faVial, faShieldCheck, faShield)
 
@@ -34,6 +35,8 @@ const props = defineProps<{
 		tickets: any[]
 	}[]
 	periodOptions: string[]
+	createdIntervals: Record<string, string>
+	createdInterval: string
 	updateRoute: string
 	can_manage: boolean
 }>()
@@ -217,6 +220,7 @@ const onMoved = (status: string, event: { added?: { element: { id: number } } })
 	<Head :title="capitalize(title)" />
 	<PageHeading :data="pageHead" />
 	<div class="p-4 overflow-x-auto">
+		<TicketsCreatedInterval :options="createdIntervals" :selected="createdInterval" class="mb-3" />
 		<div
 			class="mb-3 flex flex-wrap items-center gap-x-6 gap-y-2 rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm">
 			<div
