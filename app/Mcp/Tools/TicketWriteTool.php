@@ -19,9 +19,14 @@ use Laravel\Mcp\Response;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
 
-#[Description('Change a ticket or create a help ticket. With a reference: add a comment (internal by default, public is seen by the reporter), rewrite subject or description, change status (open, in_progress, waiting, resolved, cancelled), priority, assignee (username), kind, module or tags. Without a reference: creates a new HELP ticket with subject, and optional description, kind, module, priority. Every change is recorded as the authenticated user.')]
+#[Description('Change a ticket or create a help ticket. With a reference: add a comment (public, posted as you, only on a ticket assigned to you), rewrite subject or description, change status (open, in_progress, waiting, resolved, cancelled), priority, assignee (username), kind, module or tags. Without a reference: creates a new HELP ticket with subject, and optional description, kind, module, priority. Every change is recorded as the authenticated user. Only engineers, lead engineers and QA can use it.')]
 class TicketWriteTool extends Tool
 {
+    public function shouldRegister(Request $request): bool
+    {
+        return Ticket::canUseAssistant($request->user());
+    }
+
     public function handle(Request $request): Response
     {
         $request->validate([
@@ -29,7 +34,6 @@ class TicketWriteTool extends Tool
             'subject'     => ['required_without:reference', 'string', 'max:255'],
             'description' => ['sometimes', 'nullable', 'string'],
             'comment'     => ['sometimes', 'string'],
-            'public'      => ['sometimes', 'boolean'],
             'status'      => ['sometimes', 'in:open,in_progress,waiting,resolved,cancelled'],
             'priority'    => ['sometimes', 'in:low,normal,high,urgent'],
             'assignee'    => ['sometimes', 'nullable', 'string'],
@@ -90,14 +94,17 @@ class TicketWriteTool extends Tool
         }
 
         if ($changes) {
-            UpdateTicket::make()->action($ticket, $changes);
+            $ticket = UpdateTicket::make()->action($ticket, $changes);
         }
 
         if ($request->filled('comment')) {
-            StoreTicketComment::make()->action($ticket, $user, [
-                'body'        => $request->string('comment')->toString(),
-                'is_internal' => !$request->boolean('public'),
-            ]);
+            if (!$ticket->assignee_id) {
+                return Response::error("$ticket->reference has no assignee. Assign it before commenting.");
+            }
+            if ($ticket->assignee_id !== $user->id) {
+                return Response::error("Only the assignee of $ticket->reference can comment on it through the assistant.");
+            }
+            StoreTicketComment::make()->action($ticket, $user, ['body' => $request->string('comment')->toString()]);
         }
 
         return Response::json(['updated' => $ticket->reference, 'changes' => array_keys($changes), 'commented' => $request->filled('comment'), 'ticket' => TicketResource::make($ticket->fresh())->resolve()]);
@@ -112,8 +119,7 @@ class TicketWriteTool extends Tool
             'reference'   => $schema->string()->description('Ticket to change, e.g. HELP-3074. Omit to create a new HELP ticket'),
             'subject'     => $schema->string()->description('Subject: for a new ticket, or to rewrite it on an existing one'),
             'description' => $schema->string()->description('Description: for a new ticket, or to rewrite it on an existing one'),
-            'comment'     => $schema->string()->description('Comment to add to the ticket'),
-            'public'      => $schema->boolean()->description('Make the comment visible to the customer (AD tickets). Default false: internal note'),
+            'comment'     => $schema->string()->description('Public comment to add to the ticket, posted as you; you must be its assignee'),
             'status'      => $schema->string()->description('open, in_progress, waiting, resolved or cancelled'),
             'priority'    => $schema->string()->description('low, normal, high or urgent'),
             'assignee'    => $schema->string()->description('Username to assign, empty string to unassign'),

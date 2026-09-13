@@ -204,7 +204,7 @@ const update = (field: string, value: unknown) => {
                 </ModalConfirmationDelete>
             </div>
             <TicketRating :rating="ticket.rating" :rating-comment="ticket.rating_comment" :can-rate="can_rate" :rate-route="routes.rate" />
-            <TicketThread :ticket="ticket" :comments="comments" :comment-route="routes.comment" :allow-internal="can_manage" />
+            <TicketThread :ticket="ticket" :comments="comments" :comment-route="routes.comment" />
         </div>
         <div class="space-y-4 self-start">
         <aside class="bg-white rounded-lg border border-gray-300 p-4 space-y-4 text-sm">

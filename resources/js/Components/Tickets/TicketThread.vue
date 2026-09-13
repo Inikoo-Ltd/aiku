@@ -21,12 +21,11 @@ library.add(faPencil, faTrashAlt)
 
 const props = defineProps<{
     ticket: { description: string | null; reporter: string | null; created_at: string; images?: Record<string, string>[] }
-    comments: { id: number; body: string; is_internal: boolean; is_staff: boolean; author: string | null; created_at: string; images?: Record<string, string>[]; attachments?: { name: string; url: string }[]; can_edit?: boolean; can_delete?: boolean }[]
+    comments: { id: number; body: string; is_internal: boolean; can_toggle_visibility?: boolean; is_staff: boolean; author: string | null; created_at: string; images?: Record<string, string>[]; attachments?: { name: string; url: string }[]; can_edit?: boolean; can_delete?: boolean }[]
     commentRoute: { name: string; parameters: Record<string, unknown> }
-    allowInternal?: boolean
 }>()
 
-const form = useForm<{ body: string; is_internal: boolean; images: File[] }>({ body: "", is_internal: false, images: [] })
+const form = useForm<{ body: string; images: File[] }>({ body: "", images: [] })
 
 const editingId = ref<number | null>(null)
 const editBody = ref("")
@@ -38,6 +37,10 @@ const startEdit = (comment: { id: number; body: string }) => {
 
 const saveEdit = (id: number) => {
     router.patch(route("grp.models.ticket.comment.update", id), { body: editBody.value }, { preserveScroll: true, onSuccess: () => (editingId.value = null) })
+}
+
+const toggleVisibility = (id: number) => {
+    router.patch(route("grp.models.ticket.comment.toggle_visibility", id), {}, { preserveScroll: true })
 }
 
 const submit = () => {
@@ -63,12 +66,7 @@ const submit = () => {
         <form class="bg-white rounded-lg border border-gray-300 p-4 space-y-3" @submit.prevent="submit">
             <TicketComposer v-model:body="form.body" v-model:images="form.images" :rows="4" :placeholder="trans('Write a comment, paste a screenshot or drop images')" />
             <p v-if="form.errors.body || form.errors.images" class="text-xs text-red-600">{{ form.errors.body || form.errors.images }}</p>
-            <div class="flex items-center justify-between">
-                <label v-if="allowInternal" class="flex items-center gap-2 text-sm text-gray-600">
-                    <input v-model="form.is_internal" type="checkbox" class="rounded border-gray-300" />
-                    {{ trans("Internal note (hidden from customer)") }}
-                </label>
-                <span v-else />
+            <div class="flex items-center justify-end">
                 <Button :label="trans('Comment')" :loading="form.processing" :disabled="!form.body.trim() && !form.images.length" @click="submit" />
             </div>
         </form>
@@ -78,13 +76,14 @@ const submit = () => {
                 v-for="comment in comments"
                 :key="comment.id"
                 class="rounded-md border px-3 py-2 text-sm"
-                :class="comment.is_internal ? 'bg-amber-50 border-amber-200' : comment.is_staff ? 'bg-gray-50 border-gray-200' : 'bg-blue-50 border-blue-200'"
+                :class="comment.is_internal ? 'bg-amber-50 border-amber-200' : comment.is_staff ?'bg-gray-50 border-gray-200' : 'bg-blue-50 border-blue-200'"
             >
                 <div class="text-xs text-gray-500 mb-1 flex items-center gap-2">
                     <span class="font-medium text-gray-700">{{ comment.author || trans("Unknown") }}</span>
                     · {{ useFormatTime(comment.created_at, { formatTime: "hm" }) }}
                     <span v-if="comment.is_internal" class="px-1.5 py-0.5 rounded bg-amber-200 text-amber-900 text-[10px] font-medium">{{ trans("Internal") }}</span>
                     <span class="ml-auto flex gap-1">
+                        <Button v-if="comment.can_toggle_visibility" type="tertiary" size="xs" :label="comment.is_internal ? trans('Make public') : trans('Hide')" @click="toggleVisibility(comment.id)" />
                         <button v-if="comment.can_edit" v-tooltip="trans('Edit')" type="button" class="p-1 text-gray-500 hover:text-gray-800" @click="startEdit(comment)">
                             <FontAwesomeIcon icon="fal fa-pencil" fixed-width />
                         </button>

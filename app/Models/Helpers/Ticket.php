@@ -190,6 +190,16 @@ class Ticket extends Model implements Auditable, HasMedia
         return $user !== null && $user->authTo('help-desk.assign');
     }
 
+    public static function canUseAssistant(?User $user): bool
+    {
+        return self::canBeManagedBy($user) || self::canCheckQa($user);
+    }
+
+    public function commentsVisibleTo(mixed $viewer): HasMany
+    {
+        return $this->comments()->when(!($viewer instanceof User && self::canBeAssignedBy($viewer)), fn ($query) => $query->where('is_internal', false));
+    }
+
     public function defaultWaitingHours(): int
     {
         return $this->reporter_type === 'User' ? 72 : 14 * 24;
@@ -208,7 +218,6 @@ class Ticket extends Model implements Auditable, HasMedia
 
         return $query->where(fn (Builder $query) => $query
             ->where('tickets.is_confidential', false)
-            ->orWhere('tickets.assignee_id', $user->id)
             ->orWhere(fn (Builder $query) => $query->where('tickets.reporter_type', 'User')->where('tickets.reporter_id', $user->id)));
     }
 

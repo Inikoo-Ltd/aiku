@@ -119,14 +119,14 @@ test('a ticket waiting longer than the grace period is cancelled, a fresh one is
     $answered = StoreTicket::make()->action($this->group, ['subject' => 'Old but answered']);
     Ticket::whereIn('id', [$stale->id, $fresh->id, $answered->id])->update(['status' => TicketStatusEnum::WAITING]);
     Ticket::whereIn('id', [$stale->id, $answered->id])->update(['created_at' => now()->subDays(20), 'updated_at' => now()]);
-    $answered->comments()->create(['body' => 'asked 20 days ago', 'is_internal' => false, 'created_at' => now()->subDays(20)]);
-    $answered->comments()->create(['body' => 'here is the info', 'is_internal' => false, 'created_at' => now()->subDays(2)]);
-    $stale->comments()->create(['body' => 'tagged it', 'is_internal' => true]);
+    $answered->comments()->create(['body' => 'asked 20 days ago', 'created_at' => now()->subDays(20)]);
+    $answered->comments()->create(['body' => 'here is the info', 'created_at' => now()->subDays(2)]);
+    $stale->comments()->create(['body' => 'tagged it', 'created_at' => now()->subDays(20)]);
 
     expect(CancelStaleTickets::run(14))->toBe(1)
         ->and($stale->fresh()->status)->toBe(TicketStatusEnum::CANCELLED)
         ->and($stale->fresh()->closed_at)->not->toBeNull()
-        ->and($stale->comments()->where('is_internal', true)->count())->toBe(2)
+        ->and($stale->comments()->count())->toBe(2)
         ->and($fresh->fresh()->status)->toBe(TicketStatusEnum::WAITING)
         ->and($answered->fresh()->status)->toBe(TicketStatusEnum::WAITING);
 
@@ -144,13 +144,11 @@ test('a ticket waiting longer than the grace period is cancelled, a fresh one is
     expect($stale->fresh()->status)->toBe(TicketStatusEnum::WAITING);
 });
 
-test('staff can leave internal notes but customers never can', function (Ticket $ticket) {
-    $staffNote = StoreTicketComment::make()->action($ticket, $this->user, ['body' => 'Looking into it', 'is_internal' => true]);
-    $customerNote = StoreTicketComment::make()->action($ticket, $this->webUser, ['body' => 'Any news?', 'is_internal' => true]);
+test('staff and customers comment on the same public thread', function (Ticket $ticket) {
+    $staffNote = StoreTicketComment::make()->action($ticket, $this->user, ['body' => 'Looking into it']);
+    $customerNote = StoreTicketComment::make()->action($ticket, $this->webUser, ['body' => 'Any news?']);
 
-    expect($staffNote->is_internal)->toBeTrue()
-        ->and($staffNote->author_type)->toBe('User')
-        ->and($customerNote->is_internal)->toBeFalse()
+    expect($staffNote->author_type)->toBe('User')
         ->and($customerNote->author_type)->toBe('WebUser')
         ->and($ticket->comments()->count())->toBe(2);
 })->depends('customer ticket from retina gets an AD reference and the customer attached');
@@ -452,7 +450,7 @@ test('tickets take free tags and the known list grows with them', function () {
         ->and(Ticket::knownTags($this->group->id))->toContain('printer voodoo', 'lack of training');
 });
 
-test('confidential tickets are only visible to reporter, assignee and admins', function () {
+test('confidential tickets are only visible to reporter and lead engineers', function () {
     $outsider = StoreGuest::make()->action($this->group, array_merge(Guest::factory()->definition(), ['positions' => [['slug' => 'group-admin', 'scopes' => []]]]))->getUser();
     $outsider->removeRole('group-admin');
     $ticket = StoreTicket::make()->action($this->group, ['subject' => 'HR matter', 'is_confidential' => true, 'reporter_type' => 'User', 'reporter_id' => $this->user->id]);
@@ -465,7 +463,7 @@ test('confidential tickets are only visible to reporter, assignee and admins', f
     get(route('grp.tickets.list', ['elements' => ['mine' => 'reported']]))->assertOk();
 
     UpdateTicket::make()->action($ticket, ['assignee_id' => $outsider->id]);
-    expect(Ticket::visibleTo($outsider)->whereKey($ticket->id)->exists())->toBeTrue();
+    expect(Ticket::visibleTo($outsider)->whereKey($ticket->id)->exists())->toBeFalse();
 });
 
 test('assistant raises, lists, works and closes a ticket through MCP', function () {
@@ -492,7 +490,7 @@ test('assistant raises, lists, works and closes a ticket through MCP', function 
     expect($ticket->status)->toBe(TicketStatusEnum::RESOLVED)
         ->and($ticket->assignee_id)->toBe($this->user->id)
         ->and($ticket->tags)->toBe(['data fix'])
-        ->and($ticket->comments()->first()->is_internal)->toBeTrue();
+        ->and($ticket->comments()->where('body', 'Fixed by clearing the stale lock')->value('author_id'))->toBe($this->user->id);
 
     $shown = AikuServer::actingAs($this->user)->tool(TicketsTool::class, ['reference' => strtolower($reference)]);
     $shown->assertOk()->assertSee('Fixed by clearing the stale lock');
@@ -624,7 +622,6 @@ test('slack ticket reaction raises a ticket from the message and mirrors replies
     Http::assertSent(fn ($request) => str_contains($request->url(), 'chat.postMessage') && ($request['thread_ts'] ?? null) === '1789138198.657369' && str_contains($request['text'], $ticket->reference));
 
     StoreTicketComment::make()->action($ticket, $this->user, ['body' => 'Fixed, please check']);
-    StoreTicketComment::make()->action($ticket, $this->user, ['body' => 'private', 'is_internal' => true]);
     UpdateTicket::make()->action($ticket, ['status' => TicketStatusEnum::WAITING->value]);
     $post(['type' => 'event_callback', 'event' => ['type' => 'message', 'channel' => 'C1', 'user' => 'U1', 'ts' => '1789138199.1', 'thread_ts' => '1789138198.657369', 'text' => 'It is FPGB-123']])->assertOk();
     $post(['type' => 'event_callback', 'event' => ['type' => 'message', 'channel' => 'C1', 'bot_id' => 'B1', 'ts' => '1789138199.2', 'thread_ts' => '1789138198.657369', 'text' => 'HELP-1 is now Waiting']])->assertOk();
@@ -635,11 +632,10 @@ test('slack ticket reaction raises a ticket from the message and mirrors replies
     StoreTicketComment::make()->action($fromModal, $this->user, ['body' => 'answer from aiku']);
     Http::assertSent(fn ($request) => str_contains($request->url(), 'chat.postMessage') && ($request['thread_ts'] ?? null) === '55.1' && str_contains($request['text'], 'answer from aiku'));
     expect($ticket->fresh()->status)->toBe(TicketStatusEnum::OPEN)
-        ->and($ticket->comments()->where('is_internal', false)->pluck('body')->all())->toBe(['Fixed, please check', 'It is FPGB-123']);
+        ->and($ticket->comments()->pluck('body')->all())->toBe(['Fixed, please check', 'It is FPGB-123']);
     Http::assertNotSent(fn ($request) => str_contains($request->url(), 'chat.postMessage') && str_contains($request['text'], 'It is FPGB-123'));
     UpdateTicket::make()->action($ticket, ['status' => TicketStatusEnum::RESOLVED->value]);
     Http::assertSent(fn ($request) => str_contains($request->url(), 'chat.postMessage') && str_contains($request['text'], 'Fixed, please check'));
-    Http::assertNotSent(fn ($request) => str_contains($request->url(), 'chat.postMessage') && str_contains($request['text'], 'private'));
     Http::assertSent(fn ($request) => str_contains($request->url(), 'chat.postMessage') && str_ends_with($request['text'], 'Done'));
 
     $bare = StoreTicketFromSlack::run($this->group, ['user_id' => 'U1', 'channel_id' => 'C1', 'ts' => '7', 'subject' => 'No clue where <https://app.aiku.io/org/aw/shops/uk|here>']);
@@ -733,9 +729,9 @@ test('only the help desk manages tickets, everyone else reports, comments and cl
     patch(route('grp.models.ticket.update', $other->id), ['status' => 'resolved'])->assertForbidden();
     patch(route('grp.models.ticket.update', $ticket->id), ['priority' => 'urgent'])->assertForbidden();
     patch(route('grp.models.ticket.update', $ticket->id), ['status' => 'resolved'])->assertRedirect();
-    post(route('grp.models.ticket.comment.store', $other->id), ['body' => 'secret?', 'is_internal' => true])->assertRedirect();
+    post(route('grp.models.ticket.comment.store', $other->id), ['body' => 'secret?'])->assertRedirect();
     expect($ticket->fresh()->status)->toBe(TicketStatusEnum::RESOLVED)
-        ->and($other->comments()->sole()->is_internal)->toBeFalse();
+        ->and($other->comments()->sole()->body)->toBe('secret?');
 
     $manager = User::factory()->create(['group_id' => $this->group->id]);
     $manager->assignRole('group-admin');
@@ -758,10 +754,10 @@ test('only the help desk manages tickets, everyone else reports, comments and cl
     patch(route('grp.models.ticket.update', $other->id), ['assignee_id' => $boss->id])->assertRedirect();
     patch(route('grp.models.ticket.update', $other->id), ['assignee_id' => $helper->id])->assertForbidden();
     UpdateTicket::make()->action($other->refresh(), ['assignee_id' => $helper->id]);
-    post(route('grp.models.ticket.comment.store', $other->id), ['body' => 'internal', 'is_internal' => true])->assertRedirect();
+    post(route('grp.models.ticket.comment.store', $other->id), ['body' => 'from the page'])->assertRedirect();
     expect($other->fresh()->priority)->toBe(ChatPriorityEnum::URGENT)
         ->and($other->fresh()->assignee_id)->toBe($helper->id)
-        ->and($other->comments()->where('is_internal', true)->where('body', 'internal')->count())->toBe(1)
+        ->and($other->comments()->where('body', 'from the page')->count())->toBe(1)
         ->and($other->comments()->where('body', 'like', 'Passed from%')->count())->toBeGreaterThanOrEqual(1);
 
     actingAs($boss);
@@ -770,11 +766,31 @@ test('only the help desk manages tickets, everyone else reports, comments and cl
     expect($other->fresh()->assignee_id)->toBe($boss->id);
 
     AikuServer::actingAs($reporter)->tool(TicketWriteTool::class, ['reference' => $other->reference, 'priority' => 'low'])->assertHasErrors();
-    AikuServer::actingAs($reporter)->tool(TicketWriteTool::class, ['reference' => $ticket->reference, 'status' => 'cancelled'])->assertOk();
+    AikuServer::actingAs($reporter)->tool(TicketWriteTool::class, ['reference' => $ticket->reference, 'status' => 'cancelled'])->assertHasErrors();
+    AikuServer::actingAs($reporter)->tool(TicketsTool::class, ['reference' => $ticket->reference])->assertHasErrors();
     AikuServer::actingAs($helper)->tool(TicketWriteTool::class, ['reference' => $other->reference, 'priority' => 'low'])->assertOk();
     AikuServer::actingAs($helper)->tool(TicketWriteTool::class, ['reference' => $other->reference, 'assignee' => $reporter->username])->assertHasErrors();
     AikuServer::actingAs($boss)->tool(TicketWriteTool::class, ['reference' => $other->reference, 'assignee' => $helper->username])->assertOk();
     AikuServer::actingAs($helper)->tool(TicketWriteTool::class, ['reference' => $other->reference, 'assignee' => $boss->username])->assertOk();
+    AikuServer::actingAs($reporter)->tool(TicketWriteTool::class, ['reference' => $other->reference, 'comment' => 'reporters use the page'])->assertHasErrors();
+    AikuServer::actingAs($helper)->tool(TicketWriteTool::class, ['reference' => $other->reference, 'comment' => 'not my ticket any more'])->assertHasErrors();
+    AikuServer::actingAs($boss)->tool(TicketWriteTool::class, ['reference' => $other->reference, 'comment' => 'on it'])->assertOk();
+    $unassigned = StoreTicket::make()->action($this->group, ['subject' => 'Nobody owns me']);
+    AikuServer::actingAs($boss)->tool(TicketWriteTool::class, ['reference' => $unassigned->reference, 'comment' => 'too early'])->assertHasErrors();
+    expect($other->comments()->where('body', 'on it')->value('author_id'))->toBe($boss->id)
+        ->and($other->comments()->whereIn('body', ['reporters use the page', 'not my ticket any more'])->exists())->toBeFalse()
+        ->and($unassigned->comments()->exists())->toBeFalse();
+
+    $oldNote = $other->comments()->create(['body' => 'old internal note', 'is_internal' => true]);
+    expect($other->commentsVisibleTo($helper)->whereKey($oldNote->id)->exists())->toBeFalse()
+        ->and($other->commentsVisibleTo($boss)->whereKey($oldNote->id)->exists())->toBeTrue();
+    actingAs($helper);
+    patch(route('grp.models.ticket.comment.toggle_visibility', $oldNote->id))->assertForbidden();
+    actingAs($boss);
+    patch(route('grp.models.ticket.comment.toggle_visibility', $oldNote->id))->assertRedirect();
+    expect($oldNote->fresh()->is_internal)->toBeFalse();
+    patch(route('grp.models.ticket.comment.toggle_visibility', $oldNote->id))->assertRedirect();
+    expect($oldNote->fresh()->is_internal)->toBeTrue();
 
     actingAs($helper);
     delete(route('grp.models.ticket.delete', $other->id))->assertForbidden();
@@ -872,8 +888,7 @@ test('an engineer asks QA to check, QA answers with a verdict and the engineer s
     expect($ticket->refresh()->qa_status)->toBe(TicketQaStatusEnum::FAILED)
         ->and($ticket->qa_user_id)->toBe($qa->id)
         ->and($ticket->qa_checked_at)->not->toBeNull()
-        ->and($ticket->comments()->latest('id')->value('body'))->toBe('QA failed: Still wrong with a voucher')
-        ->and($ticket->comments()->latest('id')->value('is_internal'))->toBeTrue();
+        ->and($ticket->comments()->latest('id')->value('body'))->toBe('QA failed: Still wrong with a voucher');
 
     actingAs($engineer);
     patch(route('grp.models.ticket.update', $ticket->id), ['qa_status' => 'requested'])->assertRedirect();

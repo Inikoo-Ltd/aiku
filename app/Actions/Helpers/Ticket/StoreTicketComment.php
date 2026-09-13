@@ -28,7 +28,6 @@ class StoreTicketComment extends OrgAction
             'author_type' => $author instanceof User ? 'User' : 'WebUser',
             'author_id'   => $author->id,
             'body'        => (string) Arr::get($modelData, 'body', ''),
-            'is_internal' => $author instanceof User && Ticket::canBeManagedBy($author) && Arr::get($modelData, 'is_internal', false),
         ]);
 
         $comment->attachTicketImages(Arr::get($modelData, 'images', []));
@@ -36,24 +35,24 @@ class StoreTicketComment extends OrgAction
 
         NotifyTicketUsers::make()->pushBadges($ticket, $author instanceof User ? $author : null);
 
-        if (!$comment->is_internal && $mirrorToSlack) {
+        if ($mirrorToSlack) {
             PostTicketSlackThreadReply::run($ticket, ($author->contact_name ?? $author->email).': '.Str::limit($comment->body, 2000));
         }
 
-        if ($this->replyReopens($ticket, $author, $comment)) {
+        if ($this->replyReopens($ticket, $author)) {
             UpdateTicket::make()->action($ticket, ['status' => TicketStatusEnum::OPEN->value]);
         }
 
-        if (!$comment->is_internal && $author instanceof User && $notifyUsers) {
+        if ($author instanceof User && $notifyUsers) {
             NotifyTicketUsers::make()->commented($ticket, $author, $comment->body);
         }
 
         return $comment;
     }
 
-    private function replyReopens(Ticket $ticket, User|WebUser $author, TicketComment $comment): bool
+    private function replyReopens(Ticket $ticket, User|WebUser $author): bool
     {
-        if ($comment->is_internal || !in_array($ticket->status, [TicketStatusEnum::WAITING, TicketStatusEnum::CANCELLED], true)) {
+        if (!in_array($ticket->status, [TicketStatusEnum::WAITING, TicketStatusEnum::CANCELLED], true)) {
             return false;
         }
 
@@ -63,10 +62,9 @@ class StoreTicketComment extends OrgAction
     public function rules(): array
     {
         return [
-            'body'        => ['required_without:images', 'nullable', 'string', 'max:10000'],
-            'is_internal' => ['sometimes', 'boolean'],
-            'images'      => ['sometimes', 'array', 'max:5'],
-            'images.*'    => ['image', 'max:10240'],
+            'body'     => ['required_without:images', 'nullable', 'string', 'max:10000'],
+            'images'   => ['sometimes', 'array', 'max:5'],
+            'images.*' => ['image', 'max:10240'],
         ];
     }
 

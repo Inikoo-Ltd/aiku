@@ -107,7 +107,7 @@ class ShowTicket extends OrgAction
                     'icon'  => ['fal', 'fa-life-ring'],
                 ],
                 'ticket'      => TicketResource::make($ticket)->toArray(request()),
-                'comments'    => TicketCommentResource::collection($ticket->comments()->with('author')->orderByDesc('id')->get())->toArray(request()),
+                'comments'    => TicketCommentResource::collection($ticket->commentsVisibleTo(request()->user())->with('author')->orderByDesc('id')->get())->toArray(request()),
                 'options'     => [
                     'statuses'   => collect(TicketStatusEnum::labels())->map(fn ($label, $value) => ['label' => $label, 'value' => $value])->values(),
                     'priorities' => collect(ChatPriorityEnum::labels())->map(fn ($label, $value) => ['label' => $label, 'value' => $value])->values(),

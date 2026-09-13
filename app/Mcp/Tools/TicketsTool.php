@@ -18,10 +18,15 @@ use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
 use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 
-#[Description('Aiku tickets. Pass a reference (HELP-123 or AD-45) to get one ticket with its comments; otherwise list tickets, most urgent and most recently updated first. Types: customer (AD, from customers) and help (HELP, internal: bugs, feature requests, escalations). Confidential tickets are hidden unless the user reported them, is assigned or is admin.')]
+#[Description('Aiku tickets. Pass a reference (HELP-123 or AD-45) to get one ticket with its comments; otherwise list tickets, most urgent and most recently updated first. Types: customer (AD, from customers) and help (HELP, internal: bugs, feature requests, escalations). Only engineers, lead engineers and QA can use it. Confidential tickets are hidden unless the user reported them or is a lead engineer.')]
 #[IsReadOnly]
 class TicketsTool extends Tool
 {
+    public function shouldRegister(Request $request): bool
+    {
+        return Ticket::canUseAssistant($request->user());
+    }
+
     public function handle(Request $request): Response
     {
         $request->validate([
@@ -48,7 +53,7 @@ class TicketsTool extends Tool
 
             return Response::json([
                 'ticket'   => TicketResource::make($ticket)->resolve(),
-                'comments' => TicketCommentResource::collection($ticket->comments()->with('author')->orderBy('id')->get())->resolve(),
+                'comments' => TicketCommentResource::collection($ticket->commentsVisibleTo($user)->with('author')->orderBy('id')->get())->resolve(),
             ]);
         }
 
