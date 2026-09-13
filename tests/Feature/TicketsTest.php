@@ -677,18 +677,18 @@ test('slack shortcut opens the ticket modal and only its submit creates the tick
         return $this->call('POST', route('webhooks.slack_interactivity'), ['payload' => json_encode($payload)], [], [], $this->transformHeadersToServerVars($headers), $body);
     };
 
-    $post(['type' => 'message_action', 'callback_id' => 'raise_ticket', 'trigger_id' => 'T1', 'user' => ['id' => 'U1'], 'channel' => ['id' => 'C1'], 'message' => ['ts' => '55.1', 'text' => "Labels blank\nSK printer only"]])->assertOk();
+    $post(['type' => 'message_action', 'callback_id' => 'raise_ticket', 'trigger_id' => 'T1', 'user' => ['id' => 'U1'], 'channel' => ['id' => 'C1'], 'message' => ['ts' => '55.1', 'text' => "Shortcut labels blank\nSK printer only"]])->assertOk();
     Http::assertSent(function ($request) {
         $view = $request['view'] ?? null;
 
         return str_contains($request->url(), 'views.open')
             && $request['trigger_id'] === 'T1'
-            && $view['blocks'][0]['element']['initial_value'] === 'Labels blank'
+            && $view['blocks'][0]['element']['initial_value'] === 'Shortcut labels blank'
             && $view['blocks'][1]['element']['initial_value'] === 'SK printer only'
             && $view['blocks'][2]['optional'] === false
             && json_decode($view['private_metadata'], true) === ['user_id' => 'U1', 'channel_id' => 'C1', 'ts' => '55.1'];
     });
-    expect(Ticket::where('subject', 'Labels blank')->exists())->toBeFalse();
+    expect(Ticket::where('subject', 'Shortcut labels blank')->exists())->toBeFalse();
 
     $post([
         'type' => 'view_submission',
@@ -697,7 +697,7 @@ test('slack shortcut opens the ticket modal and only its submit creates the tick
             'callback_id'      => 'raise_ticket',
             'private_metadata' => json_encode(['user_id' => 'U1', 'channel_id' => 'C1', 'ts' => '55.1']),
             'state'            => ['values' => [
-                'subject'       => ['value' => ['value' => 'Labels blank']],
+                'subject'       => ['value' => ['value' => 'Shortcut labels blank']],
                 'description'   => ['value' => ['value' => 'SK printer only']],
                 'reference_url' => ['value' => ['value' => 'https://app.aiku.io/org/aw/warehouses/ac']],
                 'files'         => ['value' => ['files' => [['id' => 'F9', 'name' => 'modal.png', 'mimetype' => 'image/png', 'size' => 100, 'url_private_download' => 'https://files.slack.com/modal.png']]]],
@@ -705,7 +705,7 @@ test('slack shortcut opens the ticket modal and only its submit creates the tick
         ],
     ])->assertOk();
 
-    $ticket = Ticket::where('subject', 'Labels blank')->sole();
+    $ticket = Ticket::where('subject', 'Shortcut labels blank')->sole();
     expect($ticket->description)->toBe('SK printer only')
         ->and($ticket->reporter_id)->toBe($this->user->id)
         ->and($ticket->data['reference_url'])->toBe('https://app.aiku.io/org/aw/warehouses/ac')
