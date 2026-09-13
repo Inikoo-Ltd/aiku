@@ -965,3 +965,29 @@ test('tickets reports link to filtered lists by assignee and dates', function ()
         expect($row)->toHaveKeys(['username', 'short_name']);
     }
 });
+
+test('engineers raise task and qa tickets, staff cannot, and internal tickets stay out of the to-do rail count', function () {
+    Mail::fake();
+    Notification::fake();
+    $engineer = User::factory()->create(['group_id' => $this->group->id]);
+    $staff    = User::factory()->create(['group_id' => $this->group->id]);
+    setPermissionsTeamId($this->group->id);
+    $engineer->assignRole('help-desk-clerk');
+
+    expect(collect(TicketKindEnum::raisableBy($engineer))->pluck('value')->all())->toBe(['bug', 'feature', 'task', 'qa'])
+        ->and(collect(TicketKindEnum::raisableBy($staff))->pluck('value')->all())->toBe(['bug', 'feature']);
+
+    $todoBefore = GetTicketBadgeData::run($engineer)['queue']['todo_week']['count'];
+
+    actingAs($staff);
+    post(route('grp.models.ticket.store'), ['subject' => 'Do it for me', 'kind' => 'task'])->assertSessionHasErrors('kind');
+
+    actingAs($engineer);
+    post(route('grp.models.ticket.store'), ['subject' => 'Please test totals', 'kind' => 'qa'])->assertSessionHasNoErrors();
+    post(route('grp.models.ticket.store'), ['subject' => 'Printer blank', 'kind' => 'bug'])->assertSessionHasNoErrors();
+
+    $qaTicket = Ticket::where('subject', 'Please test totals')->first();
+    expect($qaTicket->kind)->toBe(TicketKindEnum::QA)
+        ->and($qaTicket->defaultWaitingHours())->toBe(14 * 24)
+        ->and(GetTicketBadgeData::run($engineer)['queue']['todo_week']['count'])->toBe($todoBefore + 1);
+});

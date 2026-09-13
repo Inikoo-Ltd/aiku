@@ -108,7 +108,7 @@ class ShowTicketsDashboard extends OrgAction
                 'storeRoute'  => ['name' => 'grp.models.ticket.store'],
                 'priorities'  => collect(ChatPriorityEnum::labels())->map(fn ($label, $value) => ['label' => $label, 'value' => $value])->values(),
                 'modules'     => collect(TicketModuleEnum::labels())->map(fn ($label, $value) => ['label' => $label, 'value' => $value])->values(),
-                'kinds'       => collect(TicketKindEnum::labels())->except('escalation')->map(fn ($label, $value) => ['label' => $label, 'value' => $value])->values(),
+                'kinds'       => TicketKindEnum::raisableBy(request()->user()),
                 ...$dashboard,
             ]
         );

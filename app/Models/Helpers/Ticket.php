@@ -182,7 +182,7 @@ class Ticket extends Model implements Auditable, HasMedia
 
     public static function canBeRaisedBy(?User $user): bool
     {
-        return $user !== null && ! self::canBeManagedBy($user);
+        return $user !== null;
     }
 
     public static function canBeAssignedBy(?User $user): bool
@@ -202,7 +202,7 @@ class Ticket extends Model implements Auditable, HasMedia
 
     public function defaultWaitingHours(): int
     {
-        return $this->reporter_type === 'User' ? 72 : 14 * 24;
+        return $this->reporter_type === 'User' && !in_array($this->kind?->value, TicketKindEnum::internalValues(), true) ? 72 : 14 * 24;
     }
 
     public function isReportedBy(?User $user): bool

@@ -12,7 +12,9 @@ use App\Actions\Helpers\Ticket\StoreTicket;
 use App\Actions\Helpers\Ticket\StoreTicketComment;
 use App\Actions\Helpers\Ticket\UpdateTicket;
 use App\Http\Resources\Helpers\TicketResource;
+use App\Enums\Helpers\Ticket\TicketKindEnum;
 use App\Models\Helpers\Ticket;
+use Illuminate\Validation\Rule;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
@@ -37,7 +39,7 @@ class TicketWriteTool extends Tool
             'status'      => ['sometimes', 'in:open,in_progress,waiting,resolved,cancelled'],
             'priority'    => ['sometimes', 'in:low,normal,high,urgent'],
             'assignee'    => ['sometimes', 'nullable', 'string'],
-            'kind'        => ['sometimes', 'nullable', 'in:escalation,bug,feature'],
+            'kind'        => ['sometimes', 'nullable', Rule::enum(TicketKindEnum::class)],
             'module'      => ['sometimes', 'nullable', 'string'],
             'tags'        => ['sometimes', 'array'],
             'tags.*'      => ['string', 'max:64'],
@@ -123,7 +125,7 @@ class TicketWriteTool extends Tool
             'status'      => $schema->string()->description('open, in_progress, waiting, resolved or cancelled'),
             'priority'    => $schema->string()->description('low, normal, high or urgent'),
             'assignee'    => $schema->string()->description('Username to assign, empty string to unassign'),
-            'kind'        => $schema->string()->description('escalation, bug or feature'),
+            'kind'        => $schema->string()->description('escalation, bug, feature, task (engineer to engineer) or qa (engineer to QA)'),
             'module'      => $schema->string()->description('Aiku module slug, e.g. dispatching'),
             'tags'        => $schema->array()->description('Full tag list to set, e.g. ["not a bug"]')->items($schema->string()),
         ];

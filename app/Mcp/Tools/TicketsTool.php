@@ -102,7 +102,7 @@ class TicketsTool extends Tool
             'status'    => $schema->string()->description('Comma list of open,in_progress,waiting,resolved,cancelled. Default: everything not resolved or cancelled'),
             'priority'  => $schema->string()->description('Comma list of urgent,high,normal,low'),
             'module'    => $schema->string()->description('Aiku module, e.g. dispatching, crm, ordering'),
-            'kind'      => $schema->string()->description('escalation, bug or feature'),
+            'kind'      => $schema->string()->description('escalation, bug, feature, task (engineer to engineer) or qa (engineer to QA)'),
             'tag'       => $schema->string()->description('Only tickets carrying this tag'),
             'mine'      => $schema->boolean()->description('Only tickets the user reported or is assigned'),
             'search'    => $schema->string()->description('Text in subject or description'),
