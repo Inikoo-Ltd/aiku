@@ -12,6 +12,7 @@ use App\Events\BroadcastManufactureFloorChanged;
 use App\Enums\Production\JobOrderItemTask\JobOrderItemTaskStateEnum;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -83,7 +84,12 @@ class JobOrderItemTask extends Model
 
     public function manufactureTask(): BelongsTo
     {
-        return $this->belongsTo(ManufactureTask::class);
+        return $this->belongsTo(ManufactureTask::class)->withTrashed();
+    }
+
+    public function scopeLive(Builder $query): Builder
+    {
+        return $query->whereHas('jobOrder')->whereHas('jobOrderItem');
     }
 
     public function sessions(): HasMany

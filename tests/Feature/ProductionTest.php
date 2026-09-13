@@ -79,6 +79,8 @@ use App\Models\Analytics\AikuScopedSection;
 use App\Enums\Production\Artefact\ArtefactStateEnum;
 use App\Models\Production\Artefact;
 use App\Models\Production\JobOrder;
+use App\Models\Production\JobOrderItemTask;
+use App\Models\Production\ManufactureTaskSession;
 use App\Models\Production\JobOrderItem;
 use App\Models\Production\ManufactureTask;
 use App\Models\Production\Production;
@@ -953,6 +955,97 @@ test('UI show manufacture floor', function () {
                 ->has('earned'))
             ->where('open_session', null);
     });
+});
+
+test('floor skips tasks left behind by a deleted job order item or job order', function () {
+    $this->artefact->manufactureTasks()->sync([
+        $this->manufactureTask->id => ['position' => 1, 'units_per_artefact' => 1],
+    ]);
+
+    $orphanedItem = StoreJobOrder::make()->action($this->production, []);
+    $deletedItem  = StoreJobOrderItem::make()->action($orphanedItem, ['artefact_id' => $this->artefact->id, 'quantity' => 2]);
+    ConfirmJobOrder::make()->action($orphanedItem);
+    $deletedItem->delete();
+
+    $orphanedOrder = StoreJobOrder::make()->action($this->production, []);
+    StoreJobOrderItem::make()->action($orphanedOrder, ['artefact_id' => $this->artefact->id, 'quantity' => 2]);
+    ConfirmJobOrder::make()->action($orphanedOrder);
+    $orphanedOrder->delete();
+
+    $references = collect(get(route('grp.org.productions.show.floor', [$this->organisation->slug, $this->production->slug]))
+        ->assertOk()
+        ->viewData('page')['props']['tasks'])->pluck('job_order_reference');
+
+    expect($references)->not->toContain($orphanedItem->reference)
+        ->and($references)->not->toContain($orphanedOrder->reference);
+
+    $queue = collect(get(route('grp.org.productions.show.operations.dashboard', [$this->organisation->slug, $this->production->slug]))
+        ->assertOk()
+        ->viewData('page')['props']['command_control']['queue'])->pluck('job_order_reference');
+
+    expect($queue)->not->toContain($orphanedItem->reference)
+        ->and($queue)->not->toContain($orphanedOrder->reference);
+
+    $orphanedTask = JobOrderItemTask::where('job_order_id', $orphanedOrder->id)->first();
+    expect(fn () => StartManufactureTaskSession::make()->action($this->guest->getUser(), $orphanedTask))
+        ->toThrow(ValidationException::class, __('This job is no longer on the floor'));
+});
+
+test('a finished task cannot be started, a stale session on it closes with nothing made, and a session closes once', function () {
+    $this->artefact->manufactureTasks()->sync([
+        $this->manufactureTask->id => ['position' => 1, 'units_per_artefact' => 1],
+    ]);
+    $user = $this->guest->getUser();
+
+    $jobOrder = StoreJobOrder::make()->action($this->production, []);
+    $item     = StoreJobOrderItem::make()->action($jobOrder, ['artefact_id' => $this->artefact->id, 'quantity' => 4]);
+    ConfirmJobOrder::make()->action($jobOrder);
+    $task = $item->tasks()->first();
+
+    $session = StartManufactureTaskSession::make()->action($user, $task);
+    CloseManufactureTaskSession::make()->action($session, ['quantity_made' => 4]);
+    expect($task->refresh()->state)->toBe(JobOrderItemTaskStateEnum::DONE);
+
+    expect(fn () => CloseManufactureTaskSession::make()->action($session, ['quantity_made' => 0]))
+        ->toThrow(ValidationException::class, __('This task session is already closed'));
+
+    expect(fn () => StartManufactureTaskSession::make()->action($user, $task))
+        ->toThrow(ValidationException::class, __('This task is already finished'));
+
+    $stale = ManufactureTaskSession::create([
+        ...$session->only(['group_id', 'organisation_id', 'production_id', 'job_order_item_task_id', 'manufacture_task_id', 'user_id', 'employee_id']),
+        'state'      => ManufactureTaskSessionStateEnum::OPEN,
+        'started_at' => now(),
+    ]);
+
+    expect(fn () => CloseManufactureTaskSession::make()->action($stale, ['quantity_made' => 1]))
+        ->toThrow(ValidationException::class);
+    expect(CloseManufactureTaskSession::make()->action($stale, ['quantity_made' => 0])->state)
+        ->toBe(ManufactureTaskSessionStateEnum::CLOSED);
+});
+
+test('closing with nothing made keeps the job when continued later and refuses to call it finished', function () {
+    $this->artefact->manufactureTasks()->sync([
+        $this->manufactureTask->id => ['position' => 1, 'units_per_artefact' => 1],
+    ]);
+    $user = $this->guest->getUser();
+
+    $jobOrder = StoreJobOrder::make()->action($this->production, []);
+    $item     = StoreJobOrderItem::make()->action($jobOrder, ['artefact_id' => $this->artefact->id, 'quantity' => 6]);
+    ConfirmJobOrder::make()->action($jobOrder);
+    $task          = $item->tasks()->first();
+    $jobOrderCount = JobOrder::where('production_id', $this->production->id)->count();
+
+    $session = StartManufactureTaskSession::make()->action($user, $task);
+    expect(fn () => CloseManufactureTaskSession::make()->action($session, ['quantity_made' => 0, 'outcome' => 'complete']))
+        ->toThrow(ValidationException::class);
+    expect($session->refresh()->state)->toBe(ManufactureTaskSessionStateEnum::OPEN);
+
+    CloseManufactureTaskSession::make()->action($session, ['quantity_made' => 0, 'outcome' => 'carry_over']);
+    expect($session->refresh()->state)->toBe(ManufactureTaskSessionStateEnum::CLOSED)
+        ->and($item->refresh()->quantity)->toBe(6)
+        ->and((float)$task->refresh()->quantity_required)->toBe(6.0)
+        ->and(JobOrder::where('production_id', $this->production->id)->count())->toBe($jobOrderCount);
 });
 
 test('floor shows job orders addressed to the worker first and the dashboard lists artisans with nothing queued', function () {

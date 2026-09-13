@@ -2918,9 +2918,13 @@ describe('partner shopping list', function () {
         $again = StoreJobOrdersFromToProduceItems::make()->action($production, [$item->id]);
         expect($again['job_orders'])->toBe([]);
 
+        $jobOrderItemId = $jobOrder->jobOrderItems()->first()->id;
+        expect(\App\Models\Production\JobOrderItemTask::where('job_order_item_id', $jobOrderItemId)->count())->toBeGreaterThan(0);
+
         \App\Actions\Production\PartnerShippingList\UnassignToProduceItems::make()->action($production, [$item->id]);
         expect($item->fresh()->job_order_id)->toBeNull()
-            ->and(JobOrder::withTrashed()->find($jobOrder->id)->jobOrderItems()->count())->toBe(0);
+            ->and(JobOrder::withTrashed()->find($jobOrder->id)->jobOrderItems()->count())->toBe(0)
+            ->and(\App\Models\Production\JobOrderItemTask::where('job_order_item_id', $jobOrderItemId)->count())->toBe(0);
     });
 
     test('store partner shopping list item denormalises', function () {

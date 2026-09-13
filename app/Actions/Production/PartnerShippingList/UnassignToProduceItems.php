@@ -14,9 +14,11 @@ use App\Models\Inventory\OrgStock;
 use App\Models\Procurement\PartnerShoppingListItem;
 use App\Models\Production\Artefact;
 use App\Models\Production\JobOrder;
+use App\Models\Production\ManufactureTaskSession;
 use App\Models\Production\Production;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redirect;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -31,27 +33,43 @@ class UnassignToProduceItems extends OrgAction
         $items = PartnerShoppingListItem::query()
             ->whereIn('id', $ids)
             ->whereNotNull('job_order_id')
-            ->with('jobOrder')
-            ->get()
-            ->filter(fn (PartnerShoppingListItem $item) => in_array($item->jobOrder?->state, [JobOrderStateEnum::IN_PROCESS, JobOrderStateEnum::SUBMITTED]));
+            ->get();
 
+        $unassigned = [];
         foreach ($items as $item) {
-            /** @var JobOrder $jobOrder */
-            $jobOrder  = $item->jobOrder;
-            $artefactId = $this->resolveArtefactId($production, $item);
-
-            if ($artefactId) {
-                $jobOrder->jobOrderItems()->where('artefact_id', $artefactId)->first()?->delete();
-            }
-
-            $item->update(['job_order_id' => null]);
-
-            if (!$jobOrder->jobOrderItems()->exists()) {
-                $jobOrder->delete();
+            if (DB::transaction(fn () => $this->unassign($production, $item))) {
+                $unassigned[] = $item;
             }
         }
 
-        return $items->values()->all();
+        return $unassigned;
+    }
+
+    private function unassign(Production $production, PartnerShoppingListItem $item): bool
+    {
+        $jobOrder = JobOrder::lockForUpdate()->find($item->job_order_id);
+        if (!$jobOrder || !in_array($jobOrder->state, [JobOrderStateEnum::IN_PROCESS, JobOrderStateEnum::SUBMITTED])) {
+            return false;
+        }
+
+        $artefactId   = $this->resolveArtefactId($production, $item);
+        $jobOrderItem = $artefactId ? $jobOrder->jobOrderItems()->where('artefact_id', $artefactId)->first() : null;
+
+        if ($jobOrderItem) {
+            if (ManufactureTaskSession::whereIn('job_order_item_task_id', $jobOrderItem->tasks()->reorder()->select('id'))->exists()) {
+                return false;
+            }
+            $jobOrderItem->tasks()->delete();
+            $jobOrderItem->delete();
+        }
+
+        $item->update(['job_order_id' => null]);
+
+        if (!$jobOrder->jobOrderItems()->exists()) {
+            $jobOrder->delete();
+        }
+
+        return true;
     }
 
     private function resolveArtefactId(Production $production, PartnerShoppingListItem $item): ?int

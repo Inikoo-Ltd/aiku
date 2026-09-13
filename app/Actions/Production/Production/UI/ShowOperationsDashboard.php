@@ -124,6 +124,7 @@ class ShowOperationsDashboard extends OrgAction
                         ],
                         'stat' => JobOrderItemTask::where('job_order_item_tasks.production_id', $production->id)
                                 ->where('job_order_item_tasks.state', '!=', JobOrderItemTaskStateEnum::DONE)
+                                ->live()
                                 ->join('job_orders', 'job_orders.id', '=', 'job_order_item_tasks.job_order_id')
                                 ->where('job_orders.state', JobOrderStateEnum::CONFIRMED)
                                 ->count(),
@@ -219,6 +220,7 @@ class ShowOperationsDashboard extends OrgAction
                     'queue'       => JobOrderItemTask::where('job_order_item_tasks.production_id', $production->id)
                         ->where('job_order_item_tasks.state', '!=', JobOrderItemTaskStateEnum::DONE)
                         ->with(['jobOrderItem.artefact', 'jobOrder', 'manufactureTask'])
+                        ->live()
                         ->join('job_orders', 'job_orders.id', '=', 'job_order_item_tasks.job_order_id')
                         ->where('job_orders.state', JobOrderStateEnum::CONFIRMED)
                         ->orderBy('job_orders.date')

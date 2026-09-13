@@ -31,12 +31,15 @@ class GetJobOrderItemMissingMixes
         $missing = [];
         foreach ($usages as $usage) {
             $rawMaterial = $usage->rawMaterial;
-            $needed      = round((float) $jobOrderItem->quantity * (float) $usage->quantity_per_unit, 3);
+            if (!$rawMaterial) {
+                continue;
+            }
+            $needed     = round((float) $jobOrderItem->quantity * (float) $usage->quantity_per_unit, 3);
             $onHand      = (float) ($rawMaterial->orgStock?->quantity_in_locations ?? $rawMaterial->quantity_on_location ?? 0);
             if ($onHand >= $needed) {
                 continue;
             }
-            $missing[] = ['code' => $rawMaterial->artefact->code, 'needed' => $needed, 'on_hand' => $onHand];
+            $missing[] = ['code' => $rawMaterial->artefact?->code ?? '', 'needed' => $needed, 'on_hand' => $onHand];
         }
 
         return $missing;

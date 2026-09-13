@@ -28,18 +28,19 @@ class CloseManufactureTaskSession extends OrgAction
 {
     public function handle(ManufactureTaskSession $session, array $modelData): ManufactureTaskSession
     {
-        if ($session->state == ManufactureTaskSessionStateEnum::CLOSED) {
-            throw ValidationException::withMessages([
-                'state' => __('This task session is already closed'),
-            ]);
-        }
+        return DB::transaction(function () use ($session, $modelData) {
+            $session = ManufactureTaskSession::lockForUpdate()->find($session->id);
+            if ($session->state == ManufactureTaskSessionStateEnum::CLOSED) {
+                throw ValidationException::withMessages([
+                    'state' => __('This task session is already closed'),
+                ]);
+            }
 
-        $manufactureTask = $session->manufactureTask;
+            $manufactureTask = $session->manufactureTask;
 
-        return DB::transaction(function () use ($session, $manufactureTask, $modelData) {
             $task = JobOrderItemTask::lockForUpdate()->find($session->job_order_item_task_id);
             $left = max(0, (float) $task->quantity_required - (float) $task->quantity_made);
-            if ($task->state == JobOrderItemTaskStateEnum::DONE || (float) $modelData['quantity_made'] > $left) {
+            if ((float) $modelData['quantity_made'] > $left) {
                 throw ValidationException::withMessages([
                     'quantity_made' => __('Only :left left on this task', ['left' => $left]),
                 ]);
