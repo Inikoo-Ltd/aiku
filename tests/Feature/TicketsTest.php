@@ -618,7 +618,7 @@ test('slack ticket reaction raises a ticket from the message and mirrors replies
         ->and($ticket->getMedia('ticket_images')->count())->toBe(1);
     Http::assertSent(fn ($request) => str_contains($request->url(), 'conversations.history'));
     Http::assertSent(fn ($request) => str_contains($request->url(), 'files.slack.com'));
-    Http::assertSent(fn ($request) => str_contains($request->url(), 'chat.postMessage') && $request['thread_ts'] === '1789138198.657369' && str_contains($request['text'], $ticket->reference));
+    Http::assertSent(fn ($request) => str_contains($request->url(), 'chat.postMessage') && ($request['thread_ts'] ?? null) === '1789138198.657369' && str_contains($request['text'], $ticket->reference));
 
     StoreTicketComment::make()->action($ticket, $this->user, ['body' => 'Fixed, please check']);
     StoreTicketComment::make()->action($ticket, $this->user, ['body' => 'private', 'is_internal' => true]);
@@ -630,7 +630,7 @@ test('slack ticket reaction raises a ticket from the message and mirrors replies
     $post(['type' => 'event_callback', 'event' => ['type' => 'message', 'channel' => 'C9', 'user' => 'U1', 'ts' => '55.2', 'thread_ts' => '55.1', 'text' => 'reply under the alert card']])->assertOk();
     expect($fromModal->comments()->pluck('body')->all())->toBe(['reply under the alert card']);
     StoreTicketComment::make()->action($fromModal, $this->user, ['body' => 'answer from aiku']);
-    Http::assertSent(fn ($request) => str_contains($request->url(), 'chat.postMessage') && $request['thread_ts'] === '55.1' && str_contains($request['text'], 'answer from aiku'));
+    Http::assertSent(fn ($request) => str_contains($request->url(), 'chat.postMessage') && ($request['thread_ts'] ?? null) === '55.1' && str_contains($request['text'], 'answer from aiku'));
     expect($ticket->fresh()->status)->toBe(TicketStatusEnum::OPEN)
         ->and($ticket->comments()->where('is_internal', false)->pluck('body')->all())->toBe(['Fixed, please check', 'It is FPGB-123']);
     Http::assertNotSent(fn ($request) => str_contains($request->url(), 'chat.postMessage') && str_contains($request['text'], 'It is FPGB-123'));
@@ -642,8 +642,8 @@ test('slack ticket reaction raises a ticket from the message and mirrors replies
     $bare = StoreTicketFromSlack::run($this->group, ['user_id' => 'U1', 'channel_id' => 'C1', 'ts' => '7', 'subject' => 'No clue where <https://app.aiku.io/org/aw/shops/uk|here>']);
     expect($bare->data['reference_url'])->toBe('https://app.aiku.io/org/aw/shops/uk');
     $bare = StoreTicketFromSlack::run($this->group, ['user_id' => 'U1', 'channel_id' => 'C1', 'ts' => '8', 'subject' => 'Nothing to go on']);
-    Http::assertSent(fn ($request) => str_contains($request->url(), 'chat.postMessage') && $request['thread_ts'] === '8' && str_contains($request['text'], 'screenshot'));
-    Http::assertNotSent(fn ($request) => str_contains($request->url(), 'chat.postMessage') && $request['thread_ts'] === '7' && str_contains($request['text'], 'screenshot'));
+    Http::assertSent(fn ($request) => str_contains($request->url(), 'chat.postMessage') && ($request['thread_ts'] ?? null) === '8' && str_contains($request['text'], 'screenshot'));
+    Http::assertNotSent(fn ($request) => str_contains($request->url(), 'chat.postMessage') && ($request['thread_ts'] ?? null) === '7' && str_contains($request['text'], 'screenshot'));
 
     $orphan = StoreTicket::make()->action($this->group, ['subject' => 'Unknown reporter', 'data' => ['slack' => ['user_id' => 'U1', 'channel_id' => 'C1', 'ts' => '9']]]);
     expect($orphan->reporter_id)->toBeNull()
@@ -708,7 +708,7 @@ test('slack shortcut opens the ticket modal and only its submit creates the tick
         ->and($ticket->data['reference_url'])->toBe('https://app.aiku.io/org/aw/warehouses/ac')
         ->and($ticket->data['slack']['ts'])->toBe('55.1')
         ->and($ticket->getMedia('ticket_images')->count())->toBe(1);
-    Http::assertSent(fn ($request) => str_contains($request->url(), 'chat.postMessage') && $request['thread_ts'] === '55.1' && str_contains($request['text'], $ticket->reference));
+    Http::assertSent(fn ($request) => str_contains($request->url(), 'chat.postMessage') && ($request['thread_ts'] ?? null) === '55.1' && str_contains($request['text'], $ticket->reference));
 });
 
 test('only the help desk manages tickets, everyone else reports, comments and closes their own', function () {

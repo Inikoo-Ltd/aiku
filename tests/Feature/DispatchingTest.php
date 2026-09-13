@@ -3941,6 +3941,7 @@ test('delivery note tariff codes use the organisation override for the national 
 
 test('a two-part product splits its transaction amount between the parts by cost instead of counting it twice (HELP-3131)', function () {
     [$deliveryNote, $deliveryNoteItem] = handlingDeliveryNoteWithPicking($this);
+    $deliveryNote->deliveryNoteItems()->whereKeyNot($deliveryNoteItem->id)->delete();
     $transaction                       = $deliveryNoteItem->transaction;
     $transaction->update(['net_amount' => 40]);
 
