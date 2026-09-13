@@ -34,6 +34,8 @@ class StoreTicketComment extends OrgAction
         $comment->attachTicketImages(Arr::get($modelData, 'images', []));
         $ticket->touch();
 
+        NotifyTicketUsers::make()->pushBadges($ticket, $author instanceof User ? $author : null);
+
         if (!$comment->is_internal && $mirrorToSlack) {
             PostTicketSlackThreadReply::run($ticket, ($author->contact_name ?? $author->email).': '.Str::limit($comment->body, 2000));
         }

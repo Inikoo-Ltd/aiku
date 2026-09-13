@@ -10,6 +10,7 @@ namespace App\Actions\Helpers\Ticket;
 
 use App\Actions\OrgAction;
 use App\Models\Helpers\TicketComment;
+use App\Models\SysAdmin\User;
 use Illuminate\Http\RedirectResponse;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -17,7 +18,11 @@ class DeleteTicketComment extends OrgAction
 {
     public function handle(TicketComment $ticketComment): void
     {
+        $ticket = $ticketComment->ticket;
         $ticketComment->delete();
+
+        $actor = request()->user();
+        NotifyTicketUsers::make()->pushBadges($ticket, $actor instanceof User ? $actor : null);
     }
 
     public function authorize(ActionRequest $request): bool

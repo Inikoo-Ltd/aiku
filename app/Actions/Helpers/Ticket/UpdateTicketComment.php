@@ -10,6 +10,7 @@ namespace App\Actions\Helpers\Ticket;
 
 use App\Actions\OrgAction;
 use App\Models\Helpers\TicketComment;
+use App\Models\SysAdmin\User;
 use Illuminate\Http\RedirectResponse;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -18,6 +19,9 @@ class UpdateTicketComment extends OrgAction
     public function handle(TicketComment $ticketComment, array $modelData): TicketComment
     {
         $ticketComment->update($modelData);
+
+        $actor = request()->user();
+        NotifyTicketUsers::make()->pushBadges($ticketComment->ticket, $actor instanceof User ? $actor : null);
 
         return $ticketComment;
     }

@@ -38,6 +38,8 @@ class RateTicket
             'rated_at'       => now(),
         ]);
 
+        NotifyTicketUsers::make()->pushBadges($ticket);
+
         return $ticket;
     }
 

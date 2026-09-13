@@ -17,6 +17,7 @@ import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.
 import { Popover, Listbox, Dialog } from "primevue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { useStaffMessaging } from "@/Stores/staff-messaging"
+import { useLiveTickets } from "@/Composables/useLiveTickets"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faPaperclip, faCircle, faUserCheck, faSpinner, faClock, faCheckCircle, faBan, faPlay, faPause, faStop, faCheck, faUndo, faBug, faLightbulb, faLevelUp, faCube, faQuestionCircle, faEllipsisV, faTrashAlt, faUser, faPencil, faTimes, faPlus, faPlusCircle, faExchange, faHourglassHalf, faVial, faShieldCheck, faShield } from "@fal"
@@ -89,6 +90,8 @@ const props = defineProps<{
         escalate: { name: string; parameters: Record<string, unknown> }
     }
 }>()
+
+useLiveTickets(["ticket", "comments", "timeline", "can_rate", "can_manage", "can_assign", "can_flag_confidential", "can_qa", "is_reporter"], props.ticket.reference)
 
 const staffMessaging = useStaffMessaging()
 

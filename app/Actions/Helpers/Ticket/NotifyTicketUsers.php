@@ -11,6 +11,7 @@ namespace App\Actions\Helpers\Ticket;
 use App\Actions\Helpers\Ticket\Concerns\WithSlack;
 use App\Enums\Helpers\Ticket\TicketQaStatusEnum;
 use App\Events\BroadcastTicketBadgeUpdate;
+use App\Events\BroadcastTicketChanged;
 use App\Models\Helpers\Ticket;
 use App\Models\SysAdmin\User;
 use App\Notifications\TicketNotification;
@@ -109,6 +110,8 @@ class NotifyTicketUsers
 
     public function pushBadges(Ticket $ticket, ?User $actor = null): void
     {
+        BroadcastTicketChanged::dispatch($ticket);
+
         $users = collect([$ticket->reporter, $ticket->assignee()->first(), $actor])
             ->filter(fn ($user) => $user instanceof User)
             ->unique('id');

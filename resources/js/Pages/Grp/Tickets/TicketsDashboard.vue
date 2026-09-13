@@ -12,6 +12,7 @@ import PageHeading from "@/Components/Headings/PageHeading.vue"
 import TicketForm from "@/Components/Tickets/TicketForm.vue"
 import TicketMiniList from "@/Components/Tickets/TicketMiniList.vue"
 import Icon from "@/Components/Icon.vue"
+import { useLiveTickets } from "@/Composables/useLiveTickets"
 
 defineProps<{
     pageHead: any
@@ -31,6 +32,8 @@ defineProps<{
     waiting_due?: any[]
     by_status?: { status: string; label: string; icon: any; total: number }[]
 }>()
+
+useLiveTickets(["can_manage", "can_qa", "mine", "recently_closed", "stats", "queue", "qa_queue", "assigned", "waiting_due", "by_status"])
 
 const hours = (value: number | null) => (value === null ? "-" : value >= 48 ? `${(value / 24).toFixed(1)} ${trans("days")}` : `${value} ${trans("h")}`)
 </script>

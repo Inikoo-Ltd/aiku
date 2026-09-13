@@ -9,6 +9,7 @@
 namespace App\Actions\Helpers\Ticket;
 
 use App\Actions\OrgAction;
+use App\Events\BroadcastTicketChanged;
 use App\Models\Helpers\Ticket;
 use Illuminate\Http\RedirectResponse;
 use Lorisleiva\Actions\ActionRequest;
@@ -17,6 +18,7 @@ class DeleteTicket extends OrgAction
 {
     public function handle(Ticket $ticket): void
     {
+        BroadcastTicketChanged::dispatch($ticket);
         $ticket->delete();
     }
 

@@ -15,6 +15,7 @@ import Icon from "@/Components/Icon.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faVial, faShieldCheck, faShield } from "@fal"
+import { useLiveTickets } from "@/Composables/useLiveTickets"
 
 library.add(faVial, faShieldCheck, faShield)
 
@@ -35,6 +36,8 @@ const props = defineProps<{
 	periodOptions: string[]
 	updateRoute: string
 }>()
+
+useLiveTickets(["columns", "periodOptions"])
 
 const columnClasses: Record<string, string> = {
 	gray: "bg-gray-100 border-t-4 border-gray-400",

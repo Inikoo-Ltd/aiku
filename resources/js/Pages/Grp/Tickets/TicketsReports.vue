@@ -12,6 +12,7 @@ import { capitalize } from "@/Composables/capitalize"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import Chart from "primevue/chart"
 import { Select } from "primevue"
+import { useLiveTickets } from "@/Composables/useLiveTickets"
 
 const props = defineProps<{
     pageHead: any
@@ -31,6 +32,8 @@ const props = defineProps<{
         assignees: { name: string; open: number; done: number; median_hours: number | null }[]
     }
 }>()
+
+useLiveTickets(["stats"])
 
 const STATUS_COLORS: Record<string, string> = { blue: "#3b82f6", amber: "#f59e0b", gray: "#9ca3af", green: "#22c55e" }
 

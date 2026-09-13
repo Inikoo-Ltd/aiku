@@ -112,9 +112,7 @@ class UpdateTicket extends OrgAction
             SyncTicketSlackAlert::run($ticket);
         }
 
-        if ($ticket->wasChanged(['status', 'assignee_id', 'qa_status'])) {
-            NotifyTicketUsers::make()->pushBadges($ticket, $asker instanceof User ? $asker : null);
-        }
+        NotifyTicketUsers::make()->pushBadges($ticket, $asker instanceof User ? $asker : null);
 
         if ($ticket->wasChanged('assignee_id') && ($actor = request()->user()) instanceof User) {
             $previous = $ticket->getOriginal('assignee_id') ? User::find($ticket->getOriginal('assignee_id')) : null;

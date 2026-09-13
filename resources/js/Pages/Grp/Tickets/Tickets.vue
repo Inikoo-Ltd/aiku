@@ -11,12 +11,15 @@ import PageHeading from "@/Components/Headings/PageHeading.vue"
 import Table from "@/Components/Table/Table.vue"
 import Icon from "@/Components/Icon.vue"
 import { useFormatTime } from "@/Composables/useFormatTime"
+import { useLiveTickets } from "@/Composables/useLiveTickets"
 
 defineProps<{
     pageHead: any
     title: string
     data: any
 }>()
+
+useLiveTickets(["data"])
 </script>
 
 <template>
