@@ -12,6 +12,7 @@ use App\Actions\OrgAction;
 use App\Enums\Helpers\Ticket\TicketStatusEnum;
 use App\Models\Helpers\Ticket;
 use App\Models\SysAdmin\Group;
+use App\Models\SysAdmin\User;
 use Illuminate\Support\Carbon;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -48,9 +49,11 @@ class ShowTicketsReports extends OrgAction
 
         $byStatus = (clone $base)->selectRaw('status, count(*) as total')->groupBy('status')->pluck('total', 'status');
 
-        $assignees = (clone $base)
+        $assigneeRows = (clone $base)
             ->join('users', 'users.id', '=', 'tickets.assignee_id')
             ->selectRaw("
+                users.id as id,
+                users.username as username,
                 coalesce(users.contact_name, users.username) as name,
                 count(*) filter (where tickets.status not in ('resolved', 'cancelled')) as open,
                 count(*) filter (where tickets.resolved_at >= ?) as done,
@@ -59,13 +62,19 @@ class ShowTicketsReports extends OrgAction
             ", [$from, $from])
             ->groupBy('users.id', 'users.contact_name', 'users.username')
             ->orderByDesc('open')
-            ->get()
-            ->map(fn ($row) => [
-                'name'         => $row->name,
-                'open'         => (int) $row->open,
-                'done'         => (int) $row->done,
-                'median_hours' => $row->median_hours === null ? null : round((float) $row->median_hours, 1),
-            ]);
+            ->get();
+
+        $assigneeUsers = User::whereIn('id', $assigneeRows->pluck('id'))->get()->keyBy('id');
+
+        $assignees = $assigneeRows->map(fn ($row) => [
+            'name'         => $row->name,
+            'username'     => $row->username,
+            'short_name'   => strtok((string) $row->name, ' '),
+            'avatar'       => $assigneeUsers->get($row->id)?->imageSources(48, 48),
+            'open'         => (int) $row->open,
+            'done'         => (int) $row->done,
+            'median_hours' => $row->median_hours === null ? null : round((float) $row->median_hours, 1),
+        ]);
 
         $csat = (clone $base)->where('rated_at', '>=', $from)->avg('rating');
 
@@ -82,6 +91,7 @@ class ShowTicketsReports extends OrgAction
 
         return [
             'days'          => $days,
+            'from'          => $from->toDateString(),
             'created'       => $daily->sum('created'),
             'done'          => $daily->sum('done'),
             'open'          => (int) $byStatus->except(['resolved', 'cancelled'])->sum(),

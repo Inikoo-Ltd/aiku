@@ -20,6 +20,7 @@ const props = defineProps<{
     periods: number[]
     stats: {
         days: number
+        from: string
         created: number
         done: number
         open: number
@@ -29,7 +30,7 @@ const props = defineProps<{
         csat_by_month: { month: string; average: number | null; total: number }[]
         daily: { date: string; created: number; done: number }[]
         by_status: { status: string; label: string; color: string; total: number }[]
-        assignees: { name: string; open: number; done: number; median_hours: number | null }[]
+        assignees: { name: string; username: string; short_name: string; avatar: any; open: number; done: number; median_hours: number | null }[]
     }
 }>()
 
@@ -78,6 +79,10 @@ const csatOptions = {
 const totalTickets = computed(() => props.stats.by_status.reduce((sum, row) => sum + row.total, 0))
 
 const hours = (value: number | null) => (value === null ? "-" : value >= 48 ? `${(value / 24).toFixed(1)} ${trans("days")}` : `${value} ${trans("h")}`)
+
+const OPEN_STATUSES = computed(() => props.stats.by_status.filter((s) => !["resolved", "cancelled"].includes(s.status)).map((s) => s.status).join(","))
+
+const listUrl = (params: Record<string, any>) => route("grp.tickets.list", params)
 </script>
 
 <template>
@@ -91,23 +96,27 @@ const hours = (value: number | null) => (value === null ? "-" : value >= 48 ? `$
 
         <div class="flex flex-wrap gap-x-10 gap-y-4">
             <div>
-                <p class="text-4xl font-bold text-pink-600">{{ stats.created }}</p>
+                <p class="text-4xl font-bold text-pink-600"><Link :href="listUrl({ filter: { created_since: stats.from } })" class="primaryLink">{{ stats.created }}</Link></p>
                 <p class="text-sm text-gray-600">{{ trans("Created") }}</p>
             </div>
             <div>
-                <p class="text-4xl font-bold text-green-700">{{ stats.done }}</p>
+                <p class="text-4xl font-bold text-green-700"><Link :href="listUrl({ filter: { resolved_since: stats.from } })" class="primaryLink">{{ stats.done }}</Link></p>
                 <p class="text-sm text-gray-600">{{ trans("Done") }}</p>
             </div>
             <div>
-                <p class="text-4xl font-bold">{{ stats.open }}</p>
+                <p class="text-4xl font-bold"><Link :href="listUrl({ elements: { status: OPEN_STATUSES } })" class="primaryLink">{{ stats.open }}</Link></p>
                 <p class="text-sm text-gray-600">{{ trans("Open now") }}</p>
             </div>
             <div>
-                <p class="text-4xl font-bold">{{ hours(stats.median_hours) }}</p>
+                <p class="text-4xl font-bold"><Link :href="listUrl({ filter: { resolved_since: stats.from } })" class="primaryLink">{{ hours(stats.median_hours) }}</Link></p>
                 <p class="text-sm text-gray-600">{{ trans("Median time to resolve") }}</p>
             </div>
             <div>
-                <p class="text-4xl font-bold">{{ stats.csat ?? "-" }}<span v-if="stats.csat" class="text-lg text-gray-400">/5</span></p>
+                <p class="text-4xl font-bold">
+                    <Link v-if="stats.csat" :href="listUrl({ filter: { rated_since: stats.from } })" class="primaryLink">{{ stats.csat }}</Link>
+                    <span v-else>-</span>
+                    <span v-if="stats.csat" class="text-lg text-gray-400">/5</span>
+                </p>
                 <p class="text-sm text-gray-600">{{ trans("Customer satisfaction") }}</p>
             </div>
             <div v-if="stats.oldest_open">
@@ -115,7 +124,9 @@ const hours = (value: number | null) => (value === null ? "-" : value >= 48 ? `$
                     <Link :href="route('grp.tickets.show', stats.oldest_open.reference)" class="primaryLink">{{ stats.oldest_open.age_days }}</Link>
                     <span class="text-lg text-gray-400"> {{ trans("days") }}</span>
                 </p>
-                <p class="text-sm text-gray-600">{{ trans("Oldest open") }} · {{ stats.oldest_open.reference }}</p>
+                <p class="text-sm text-gray-600">
+                    {{ trans("Oldest open") }} · <Link :href="route('grp.tickets.show', stats.oldest_open.reference)" class="primaryLink">{{ stats.oldest_open.reference }}</Link>
+                </p>
             </div>
         </div>
 
@@ -140,7 +151,9 @@ const hours = (value: number | null) => (value === null ? "-" : value >= 48 ? `$
                     <ul class="space-y-1.5 text-sm">
                         <li v-for="row in stats.by_status" :key="row.status" class="flex items-center gap-2">
                             <span class="h-3 w-3 rounded-sm" :style="{ backgroundColor: STATUS_COLORS[row.color] ?? '#9ca3af' }" />
-                            {{ row.label }}: <span class="font-medium">{{ row.total }}</span>
+                            {{ row.label }}:
+                            <Link v-if="row.total" :href="listUrl({ elements: { status: row.status } })" class="primaryLink font-medium">{{ row.total }}</Link>
+                            <span v-else class="font-medium">{{ row.total }}</span>
                         </li>
                     </ul>
                 </div>
@@ -166,10 +179,22 @@ const hours = (value: number | null) => (value === null ? "-" : value >= 48 ? `$
                     </tr>
                 </thead>
                 <tbody>
-                    <tr v-for="row in stats.assignees" :key="row.name" class="border-t border-gray-100">
-                        <td class="px-4 py-2 font-medium">{{ row.name }}</td>
-                        <td class="px-4 py-2 text-right">{{ row.open }}</td>
-                        <td class="px-4 py-2 text-right">{{ row.done }}</td>
+                    <tr v-for="row in stats.assignees" :key="row.username" class="border-t border-gray-100">
+                        <td class="px-4 py-2 font-medium">
+                            <span class="inline-flex items-center gap-2" v-tooltip="{ content: row.name, delay: 0 }">
+                                <img v-if="row.avatar?.original" :src="row.avatar.original" class="h-6 w-6 rounded-full object-cover" />
+                                <span v-else class="h-6 w-6 rounded-full bg-gray-300 inline-block" />
+                                {{ row.short_name }}
+                            </span>
+                        </td>
+                        <td class="px-4 py-2 text-right">
+                            <Link v-if="row.open" :href="listUrl({ filter: { assignee: row.username }, elements: { status: OPEN_STATUSES } })" class="primaryLink">{{ row.open }}</Link>
+                            <span v-else>{{ row.open }}</span>
+                        </td>
+                        <td class="px-4 py-2 text-right">
+                            <Link v-if="row.done" :href="listUrl({ filter: { assignee: row.username, resolved_since: stats.from } })" class="primaryLink">{{ row.done }}</Link>
+                            <span v-else>{{ row.done }}</span>
+                        </td>
                         <td class="px-4 py-2 text-right">{{ hours(row.median_hours) }}</td>
                     </tr>
                     <tr v-if="!stats.assignees.length">

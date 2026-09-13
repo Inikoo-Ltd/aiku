@@ -923,3 +923,26 @@ test('ticket badges count my tickets and the engineer queue, and engineers hear 
     expect($count($reporter, 'mine', 'done_24h'))->toBe(1)
         ->and($count($this->user, 'queue', 'overdue'))->toBe($baseline['overdue']['count']);
 });
+
+test('tickets reports link to filtered lists by assignee and dates', function () {
+    $mine = StoreTicket::make()->action($this->group, ['subject' => 'Assigned to me', 'assignee_id' => $this->user->id]);
+    UpdateTicket::make()->action($mine, ['status' => TicketStatusEnum::RESOLVED->value]);
+    StoreTicket::make()->action($this->group, ['subject' => 'Not assigned to me']);
+
+    $from = $mine->fresh()->created_at->toDateString();
+
+    get(route('grp.tickets.list', ['filter' => ['assignee' => $this->user->username]]))
+        ->assertInertia(fn (AssertableInertia $page) => $page->has('data.data', Ticket::where('assignee_id', $this->user->id)->count()));
+
+    get(route('grp.tickets.list', ['filter' => ['created_since' => $from]]))
+        ->assertInertia(fn (AssertableInertia $page) => $page->has('data.data', Ticket::where('created_at', '>=', $from)->count()));
+
+    get(route('grp.tickets.list', ['filter' => ['resolved_since' => $from]]))
+        ->assertInertia(fn (AssertableInertia $page) => $page->has('data.data', Ticket::where('resolved_at', '>=', $from)->count()));
+
+    $stats = ShowTicketsReports::make()->handle($this->group, 7);
+    expect($stats)->toHaveKey('from');
+    foreach ($stats['assignees'] as $row) {
+        expect($row)->toHaveKeys(['username', 'short_name']);
+    }
+});

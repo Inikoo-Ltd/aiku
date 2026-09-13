@@ -84,6 +84,22 @@ class IndexTickets extends OrgAction
             });
         });
 
+        $assigneeFilter = AllowedFilter::callback('assignee', function ($query, $value) {
+            $query->where('users.username', $value);
+        });
+
+        $createdSinceFilter = AllowedFilter::callback('created_since', function ($query, $value) {
+            $query->where('tickets.created_at', '>=', $value);
+        });
+
+        $resolvedSinceFilter = AllowedFilter::callback('resolved_since', function ($query, $value) {
+            $query->where('tickets.resolved_at', '>=', $value);
+        });
+
+        $ratedSinceFilter = AllowedFilter::callback('rated_since', function ($query, $value) {
+            $query->where('tickets.rated_at', '>=', $value);
+        });
+
         if ($prefix) {
             InertiaTable::updateQueryBuilderParameters($prefix);
         }
@@ -107,7 +123,7 @@ class IndexTickets extends OrgAction
             ->defaultSort('-tickets.updated_at')
             ->select(['tickets.*', 'users.username as assignee_username'])
             ->allowedSorts(['reference', 'subject', 'status', 'priority', 'created_at', 'updated_at'])
-            ->allowedFilters([$globalSearch])
+            ->allowedFilters([$globalSearch, $assigneeFilter, $createdSinceFilter, $resolvedSinceFilter, $ratedSinceFilter])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
     }
