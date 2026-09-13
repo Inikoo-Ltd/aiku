@@ -42,27 +42,27 @@ const hours = (value: number | null) => (value === null ? "-" : value >= 48 ? `$
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead" />
     <div class="p-4 space-y-4">
-        <div class="flex flex-wrap gap-x-10 gap-y-4">
+        <div class="bg-white rounded-lg shadow-sm border border-gray-300 px-4 py-3 flex flex-wrap gap-x-10 gap-y-3">
             <div>
-                <p class="text-4xl font-bold">{{ stats.open }}</p>
-                <p class="text-sm text-gray-600">{{ trans("Open now") }}</p>
+                <p class="text-2xl font-bold">{{ stats.open }}</p>
+                <p class="text-xs text-gray-600">{{ trans("Open now") }}</p>
             </div>
             <div>
-                <p class="text-4xl font-bold text-pink-600">{{ stats.created_week }}</p>
-                <p class="text-sm text-gray-600">{{ trans("Raised this week") }}</p>
+                <p class="text-2xl font-bold text-pink-600">{{ stats.created_week }}</p>
+                <p class="text-xs text-gray-600">{{ trans("Raised this week") }}</p>
             </div>
             <div>
-                <p class="text-4xl font-bold text-green-700">{{ stats.done_week }}</p>
-                <p class="text-sm text-gray-600">{{ trans("Done this week") }}</p>
+                <p class="text-2xl font-bold text-green-700">{{ stats.done_week }}</p>
+                <p class="text-xs text-gray-600">{{ trans("Done this week") }}</p>
             </div>
             <div>
-                <p class="text-4xl font-bold">{{ hours(stats.median_hours) }}</p>
-                <p class="text-sm text-gray-600">{{ trans("Typical time to resolve") }}</p>
+                <p class="text-2xl font-bold">{{ hours(stats.median_hours) }}</p>
+                <p class="text-xs text-gray-600">{{ trans("Typical time to resolve") }}</p>
             </div>
             <template v-if="by_status">
                 <div v-for="row in by_status" :key="row.status">
-                    <p class="text-4xl font-bold"><Icon :data="row.icon" class="text-2xl" /> {{ row.total }}</p>
-                    <p class="text-sm text-gray-600">{{ row.label }}</p>
+                    <p class="text-2xl font-bold"><Icon :data="row.icon" class="text-lg" /> {{ row.total }}</p>
+                    <p class="text-xs text-gray-600">{{ row.label }}</p>
                 </div>
             </template>
         </div>
@@ -82,9 +82,11 @@ const hours = (value: number | null) => (value === null ? "-" : value >= 48 ? `$
         </div>
 
         <div v-else class="grid gap-4 lg:grid-cols-5">
-            <div class="lg:col-span-3 bg-white rounded-lg shadow-sm border border-gray-300 p-4">
-                <h3 class="font-semibold mb-3">{{ trans("New ticket") }}</h3>
-                <TicketForm :store-route="storeRoute" :priorities="priorities" :kinds="kinds" :modules="modules" />
+            <div class="lg:col-span-3 bg-white rounded-lg shadow-sm border border-gray-300 overflow-hidden">
+                <h3 class="bg-indigo-600 text-white font-semibold px-4 py-2.5">{{ trans("New ticket") }}</h3>
+                <div class="p-4">
+                    <TicketForm :store-route="storeRoute" />
+                </div>
             </div>
             <div class="lg:col-span-2 space-y-4">
                 <TicketMiniList :title="trans('My open tickets')" :tickets="mine" :empty="trans('You have no open tickets')" show-assignee />

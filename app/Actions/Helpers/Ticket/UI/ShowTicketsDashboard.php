@@ -102,16 +102,8 @@ class ShowTicketsDashboard extends OrgAction
                 'breadcrumbs' => $this->getBreadcrumbs(),
                 'title'       => __('Tickets'),
                 'pageHead'    => [
-                    'title'   => __('Tickets'),
-                    'icon'    => ['fal', 'fa-life-ring'],
-                    'actions' => Ticket::canBeRaisedBy(request()->user()) ? [
-                        [
-                            'type'  => 'button',
-                            'style' => 'create',
-                            'label' => __('New ticket'),
-                            'route' => ['name' => 'grp.tickets.create'],
-                        ],
-                    ] : [],
+                    'title' => __('Tickets'),
+                    'icon'  => ['fal', 'fa-life-ring'],
                 ],
                 'storeRoute'  => ['name' => 'grp.models.ticket.store'],
                 'priorities'  => collect(ChatPriorityEnum::labels())->map(fn ($label, $value) => ['label' => $label, 'value' => $value])->values(),
