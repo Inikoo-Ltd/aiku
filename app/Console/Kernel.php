@@ -94,6 +94,7 @@ class Kernel extends ConsoleKernel
             ->name('prune-traffic-source-clicks')->dailyAt('04:30')->timezone('UTC')->onOneServer();
         $schedule->command('search:propose-synonyms')->weeklyOn(1, '03:00')->onOneServer();
         $schedule->command('nightowl:prune')->dailyAt('04:00')->timezone('UTC')->onOneServer()->withoutOverlapping(180);
+        $schedule->command('nightowl:freeze-cold-partitions')->dailyAt('05:00')->timezone('UTC')->onOneServer()->withoutOverlapping(180);
         $schedule->command('comms:archive_dispatched_emails')->dailyAt('03:00')->timezone('UTC')->onOneServer()->withoutOverlapping(180);
         $schedule->command('inventory:archive_stock_histories --dates=5')->dailyAt('03:40')->timezone('UTC')->onOneServer()->withoutOverlapping(60)
             ->when(fn () => config('archive.stock_history_nightly'));
