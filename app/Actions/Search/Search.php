@@ -20,7 +20,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class Search extends OrgAction
 {
-    protected const array GROUP_SCOPES = ['sysadmin', 'goods', 'supply_chain', 'trade_units', 'master_shop', 'chat'];
+    protected const array GROUP_SCOPES = ['sysadmin', 'goods', 'supply_chain', 'trade_units', 'master_shop', 'chat', 'tickets'];
     protected const array ORGANISATION_SCOPES = ['accounting', 'hr', 'procurement'];
     protected const array SHOP_SCOPES = ['catalogue', 'prospects', 'customers', 'orders', 'reviews', 'billables', 'offers', 'marketing', 'website', 'shop_accounting'];
     protected const array WAREHOUSE_SCOPES = ['inventory', 'dispatching', 'locations'];
@@ -38,6 +38,7 @@ class Search extends OrgAction
             'trade_units'  => static fn () => SearchTradeUnits::run($query),
             'master_shop'  => static fn () => SearchMasterShop::run($query, $options),
             'chat'         => static fn () => SearchChat::run($query, $options),
+            'tickets'      => static fn () => SearchTickets::run($query),
             'billables'    => static fn () => SearchBillables::run($query, $options),
             'offers'       => static fn () => SearchOffers::run($query, $options),
             'marketing'    => static fn () => SearchMarketing::run($query, $options),
@@ -214,6 +215,7 @@ class Search extends OrgAction
             'grp.trade_units.'                        => 'trade_units',
             'grp.masters.'                            => 'master_shop',
             'grp.chat.'                               => 'chat',
+            'grp.tickets.'                            => 'tickets',
             'grp.org.chat.'                           => 'chat',
             'grp.org.accounting.'                     => 'accounting',
             'grp.org.hr.'                             => 'hr',

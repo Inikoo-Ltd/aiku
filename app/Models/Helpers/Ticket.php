@@ -126,6 +126,38 @@ class Ticket extends Model implements Auditable, HasMedia
         ];
     }
 
+    protected static function booted(): void
+    {
+        static::saved(function (Ticket $ticket) {
+            if ($ticket->wasRecentlyCreated || $ticket->wasChanged(['reference', 'subject', 'description', 'tags', 'reporter_id', 'assignee_id', 'customer_id'])) {
+                self::refreshSearchVectors($ticket->id);
+            }
+        });
+    }
+
+    /**
+     * Weighted Postgres full text index, rebuilt at the point of change for one ticket or for all of them:
+     * A reference and subject, B description and tags, C comments, D the people on the ticket.
+     * Internal comments live in their own vector so only lead engineers search them.
+     */
+    public static function refreshSearchVectors(?int $ticketId = null): void
+    {
+        DB::update(
+            "UPDATE tickets t SET
+                search_vector = setweight(to_tsvector('english', concat_ws(' ', t.reference, replace(t.reference, '-', ' '), t.subject)), 'A')
+                    || setweight(to_tsvector('english', concat_ws(' ', t.description, (SELECT string_agg(tag, ' ') FROM jsonb_array_elements_text(t.tags) tag))), 'B')
+                    || setweight(to_tsvector('english', coalesce((SELECT string_agg(c.body, ' ') FROM ticket_comments c WHERE c.ticket_id = t.id AND NOT c.is_internal), '')), 'C')
+                    || setweight(to_tsvector('simple', concat_ws(' ', ru.username, ru.contact_name, au.username, au.contact_name, cu.name, cu.contact_name)), 'D'),
+                internal_search_vector = setweight(to_tsvector('english', coalesce((SELECT string_agg(c.body, ' ') FROM ticket_comments c WHERE c.ticket_id = t.id AND c.is_internal), '')), 'C')
+            FROM tickets s
+                LEFT JOIN users ru ON s.reporter_type = 'User' AND ru.id = s.reporter_id
+                LEFT JOIN users au ON au.id = s.assignee_id
+                LEFT JOIN customers cu ON cu.id = s.customer_id
+            WHERE s.id = t.id".($ticketId ? ' AND t.id = ?' : ''),
+            $ticketId ? [$ticketId] : []
+        );
+    }
+
     public function getRouteKeyName(): string
     {
         return 'reference';

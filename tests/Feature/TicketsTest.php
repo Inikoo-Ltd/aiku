@@ -18,6 +18,7 @@ use App\Actions\Helpers\Ticket\StoreTicketComment;
 use App\Actions\Helpers\Ticket\StoreTicketFromSlack;
 use App\Actions\Helpers\Ticket\UI\ShowTicketsReports;
 use App\Actions\Helpers\Ticket\UpdateTicket;
+use App\Actions\Search\SearchTickets;
 use App\Actions\Retina\Dropshipping\Ticket\StoreRetinaTicket;
 use App\Enums\CRM\Livechat\ChatEventTypeEnum;
 use App\Enums\CRM\Livechat\ChatPriorityEnum;
@@ -1018,4 +1019,48 @@ test('engineers raise task and qa tickets, staff cannot, and internal tickets st
     expect($qaTicket->kind)->toBe(TicketKindEnum::QA)
         ->and($qaTicket->defaultWaitingHours())->toBe(14 * 24)
         ->and(GetTicketBadgeData::run($engineer)['queue']['todo_week']['count'])->toBe($todoBefore + 1);
+});
+
+test('ticket search ranks subject over description over comments, understands key:value tokens and jumps to a reference', function () {
+    $bySubject     = StoreTicket::make()->action($this->group, ['subject' => 'Email marketing broken', 'description' => 'nothing here', 'reporter_type' => 'User', 'reporter_id' => $this->user->id]);
+    $byDescription = StoreTicket::make()->action($this->group, ['subject' => 'Something else', 'description' => 'The email marketing tool times out']);
+    $byComment     = StoreTicket::make()->action($this->group, ['subject' => 'Unrelated', 'description' => 'unrelated']);
+    StoreTicketComment::make()->handle($byComment, $this->user, ['body' => 'Same as the email marketing bug'], mirrorToSlack: false, notifyUsers: false);
+    $byInternal    = StoreTicket::make()->action($this->group, ['subject' => 'Quiet', 'description' => 'quiet']);
+    StoreTicketComment::make()->handle($byInternal, $this->user, ['body' => 'email marketing note'], mirrorToSlack: false, notifyUsers: false)->update(['is_internal' => true]);
+    $other         = StoreTicket::make()->action($this->group, ['subject' => 'Invoice PDF export', 'description' => 'nothing']);
+
+    $search = function (string $q) {
+        $hits = collect();
+        get(route('grp.tickets.list', ['filter' => ['global' => $q]]))->assertInertia(function (AssertableInertia $page) use (&$hits) {
+            $hits = collect($page->toArray()['props']['data']['data']);
+        });
+
+        return $hits;
+    };
+
+    $hits = $search('email marke');
+    expect($hits->pluck('reference')->all())->toBe([$bySubject->reference, $byDescription->reference, $byComment->reference, $byInternal->reference])
+        ->and($hits->first()['search_snippet'])->toContain('<mark>Email</mark>')
+        ->and($search('email -tool')->pluck('reference'))->not->toContain($byDescription->reference)
+        ->and($search('"marketing tool"')->pluck('reference')->all())->toBe([$byDescription->reference])
+        ->and($search('email status:open reporter:me')->pluck('reference'))->toContain($bySubject->reference)
+        ->and($search('email status:resolved'))->toBeEmpty()
+        ->and($search('email is:unassigned after:'.now()->toDateString())->count())->toBe(4)
+        ->and($search('email before:'.now()->toDateString()))->toBeEmpty()
+        ->and($search('email assignee:'.$this->user->username))->toBeEmpty();
+
+    foreach ([(string) $other->number, 'help-'.$other->number, 'HELP'.$other->number, 'https://app.aiku.io/tickets/'.$other->reference.'?tab=comments'] as $reference) {
+        expect($search($reference)->pluck('reference')->all())->toBe([$other->reference], $reference);
+    }
+
+    $other->update(['subject' => 'Renamed to email digest']);
+    expect($search('digest')->pluck('reference')->all())->toBe([$other->reference]);
+
+    $staff = StoreGuest::make()->action($this->group, array_merge(Guest::factory()->definition(), ['positions' => [['slug' => 'group-admin', 'scopes' => []]]]))->getUser();
+    $staff->removeRole('group-admin');
+    actingAs($staff);
+    expect($search('email')->pluck('reference'))->not->toContain($byInternal->reference)
+        ->and(get(route('grp.search.index', ['q' => 'email marke', 'route_src' => 'grp.tickets.board']))->assertOk()->json('results.tickets.*.code'))->toContain($bySubject->reference)
+        ->and(SearchTickets::run((string) $other->number)['results']['tickets'][0]['href'])->toBe(route('grp.tickets.show', $other->reference));
 });

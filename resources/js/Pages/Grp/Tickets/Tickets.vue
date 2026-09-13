@@ -6,6 +6,7 @@
 
 <script setup lang="ts">
 import { Head, Link } from "@inertiajs/vue3"
+import { trans } from "laravel-vue-i18n"
 import { capitalize } from "@/Composables/capitalize"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import Table from "@/Components/Table/Table.vue"
@@ -20,6 +21,7 @@ defineProps<{
     data: any
     createdIntervals: Record<string, string>
     createdInterval: string
+    searchHelp: string[]
 }>()
 
 useLiveTickets(["data"])
@@ -29,6 +31,10 @@ useLiveTickets(["data"])
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead" />
     <TicketsCreatedInterval :options="createdIntervals" :selected="createdInterval" class="mx-4 mt-2" />
+    <div class="mx-4 mt-1 flex flex-wrap items-center gap-1 text-xs text-gray-400">
+        <span class="mr-1">{{ trans("Search tips") }}:</span>
+        <code v-for="tip in searchHelp" :key="tip" class="rounded bg-gray-100 px-1.5 py-0.5 text-gray-500">{{ tip }}</code>
+    </div>
     <Table :resource="data" class="mt-2">
         <template #cell(reference)="{ item }">
             <Link :href="route('grp.tickets.show', item.reference)" class="primaryLink">{{ item.reference }}</Link>
@@ -38,6 +44,7 @@ useLiveTickets(["data"])
         </template>
         <template #cell(subject)="{ item }">
             <span class="block truncate" :title="item.subject">{{ item.subject }}</span>
+            <span v-if="item.search_snippet" class="block truncate text-xs text-gray-500 [&_mark]:rounded [&_mark]:bg-yellow-200 [&_mark]:px-0.5" v-html="item.search_snippet" />
         </template>
         <template #cell(priority)="{ item }">
             <Icon :data="item.priority_icon" />

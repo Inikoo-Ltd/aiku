@@ -49,6 +49,7 @@ class TicketResource extends JsonResource
             'priority_label' => ChatPriorityEnum::labels()[$this->priority->value],
             'priority_icon'  => ChatPriorityEnum::stateIcon()[$this->priority->value],
             'subject'        => $this->subject,
+            'search_snippet' => $this->search_snippet ? str_replace(['[[', ']]', '~~'], ['<mark>', '</mark>', ' … '], e($this->search_snippet)) : null,
             'description'    => $this->description,
             'reporter'       => $this->reporter?->contact_name ?: $this->reporter?->username,
             'reporter_short' => $this->reporter_type === 'User' ? $this->reporter?->username : ($this->reporter?->contact_name ?: $this->reporter?->username),

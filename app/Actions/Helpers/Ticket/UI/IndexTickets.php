@@ -8,6 +8,7 @@
 
 namespace App\Actions\Helpers\Ticket\UI;
 
+use App\Actions\Helpers\Ticket\ApplyTicketSearch;
 use App\Actions\OrgAction;
 use App\Enums\CRM\Livechat\ChatPriorityEnum;
 use App\Enums\DateIntervals\DateIntervalEnum;
@@ -111,10 +112,9 @@ class IndexTickets extends OrgAction
     public function handle(Group $group, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
-            $query->where(function ($query) use ($value) {
-                $query->whereRaw('tickets.reference ILIKE ?', ["%$value%"])
-                    ->orWhereRaw('tickets.subject ILIKE ?', ["%$value%"]);
-            });
+            if (ApplyTicketSearch::run($query, (string) $value, request()->user()) && !request()->filled('sort')) {
+                $query->orderByDesc('search_rank');
+            }
         });
 
         $assigneeFilter = AllowedFilter::callback('assignee', function ($query, $value) {
@@ -155,10 +155,10 @@ class IndexTickets extends OrgAction
         }
 
         return $queryBuilder
-            ->defaultSort('-tickets.updated_at')
             ->select(['tickets.*', 'users.username as assignee_username'])
-            ->allowedSorts(['reference', 'subject', 'status', 'priority', 'created_at', 'updated_at'])
             ->allowedFilters([$globalSearch, $assigneeFilter, $createdSinceFilter, $resolvedSinceFilter, $ratedSinceFilter])
+            ->defaultSort('-tickets.updated_at')
+            ->allowedSorts(['reference', 'subject', 'status', 'priority', 'created_at', 'updated_at'])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
     }
@@ -175,7 +175,7 @@ class IndexTickets extends OrgAction
             }
 
             $table
-                ->withGlobalSearch()
+                ->withGlobalSearch(__('Search tickets: words, "phrase", -word, status:open assignee:me after:2026-09-01'))
                 ->withLabelRecord([__('ticket'), __('tickets')])
                 ->column(key: 'reference', label: __('Reference'), canBeHidden: false, sortable: true, searchable: true, className: 'whitespace-nowrap w-px')
                 ->column(key: 'subject', label: __('Subject'), canBeHidden: false, sortable: true, searchable: true, className: 'w-full max-w-0')
