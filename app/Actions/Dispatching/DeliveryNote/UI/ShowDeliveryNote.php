@@ -881,9 +881,6 @@ class ShowDeliveryNote extends OrgAction
                 'email'        => $deliveryNote->email,
                 'address'      => [
                     'delivery' => AddressResource::make($deliveryNote->deliveryAddress ?? new Address()),
-                    'options'  => [
-                        'countriesAddressData' => $this->countriesAddressData
-                    ]
                 ]
             ],
             'shipping_fields_update_route' => [
@@ -1169,9 +1166,6 @@ class ShowDeliveryNote extends OrgAction
 
             'address'             => [
                 'delivery' => AddressResource::make($deliveryNote->deliveryAddress ?? new Address()),
-                'options'  => [
-                    'countriesAddressData' => $this->countriesAddressData
-                ]
             ],
             'allowActions'        => $allowAction,
             'timelines'           => $this->getTimeline($deliveryNote),

@@ -145,13 +145,6 @@ const props = defineProps<{
     }
     address: {
         delivery: {}
-        options: {
-            countriesAddressData: {
-                id: number
-                name: string
-                code: string
-            }[]
-        }
     }
     warehouse: {
         slug: string
@@ -1386,7 +1379,7 @@ const stopSocketListener = () => {
 					v-if="formTrackingNumber?.errors?.address"
 					class="my-3 p-2 rounded bg-gray-100"
 					:class="formTrackingNumber?.errors?.address ? 'errorShake' : ''">
-					<PureAddress v-model="xxxCopyAddress" :options="address.options" xfieldLabel />
+					<PureAddress v-model="xxxCopyAddress" :options="box_stats.address.options" xfieldLabel />
 				</div>
 
 				<!-- Button: Save -->
