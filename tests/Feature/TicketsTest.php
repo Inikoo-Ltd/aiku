@@ -1055,7 +1055,9 @@ test('ticket search ranks subject over description over comments, understands ke
     }
 
     $other->update(['subject' => 'Renamed to email digest']);
-    expect($search('digest')->pluck('reference')->all())->toBe([$other->reference]);
+    expect($search('digest')->pluck('reference')->all())->toBe([$other->reference])
+        ->and($search('emial digest')->pluck('reference')->all())->toBe([$other->reference])
+        ->and($search('email marketting')->pluck('reference')->first())->toBe($bySubject->reference);
 
     $staff = StoreGuest::make()->action($this->group, array_merge(Guest::factory()->definition(), ['positions' => [['slug' => 'group-admin', 'scopes' => []]]]))->getUser();
     $staff->removeRole('group-admin');

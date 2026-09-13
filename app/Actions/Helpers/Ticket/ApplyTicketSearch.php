@@ -26,6 +26,9 @@ use Lorisleiva\Actions\Concerns\AsAction;
  *
  * Keys: status priority module kind type assignee reporter customer tag is after before
  * Values: me, none, a comma list, or a partial name. is: confidential unassigned mine rated
+ *
+ * When the full text search finds nothing, typos are caught by trigram similarity on the subject.
+ * ponytail: a sequential scan over the subjects, add a gin_trgm index on subject if tickets ever pass six figures
  */
 class ApplyTicketSearch
 {
@@ -76,9 +79,14 @@ class ApplyTicketSearch
         $vector  = Ticket::canBeAssignedBy($user) ? "(tickets.search_vector || coalesce(tickets.internal_search_vector, ''))" : 'tickets.search_vector';
         $comments = 'SELECT string_agg(c.body, \' \') FROM ticket_comments c WHERE c.ticket_id = tickets.id'.(Ticket::canBeAssignedBy($user) ? '' : ' AND NOT c.is_internal');
 
+        $typo = 'word_similarity(?, tickets.subject COLLATE "C")';
+
         $query
-            ->whereRaw("$vector @@ to_tsquery('english', ?)", [$tsQuery])
-            ->selectRaw("ts_rank($vector, to_tsquery('english', ?)) AS search_rank", [$tsQuery])
+            ->whereRaw(
+                "($vector @@ to_tsquery('english', ?) OR (NOT EXISTS (SELECT 1 FROM tickets x WHERE x.group_id = tickets.group_id AND x.deleted_at IS NULL AND x.search_vector @@ to_tsquery('english', ?)) AND $typo > 0.5))",
+                [$tsQuery, $tsQuery, $search]
+            )
+            ->selectRaw("ts_rank($vector, to_tsquery('english', ?)) + $typo * 0.05 AS search_rank", [$tsQuery, $search])
             ->selectRaw(
                 "ts_headline('english', concat_ws(' ', tickets.subject, tickets.description, ($comments)), to_tsquery('english', ?), 'StartSel=[[, StopSel=]], MaxFragments=2, MaxWords=14, MinWords=6, FragmentDelimiter=~~') AS search_snippet",
                 [$tsQuery]
