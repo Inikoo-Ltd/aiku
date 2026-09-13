@@ -12,6 +12,7 @@ namespace App\Actions\Retina\Ecom\Basket\UI;
 
 use App\Actions\OrgAction;
 use App\InertiaTable\InertiaTable;
+use App\Models\Helpers\Media;
 use App\Models\Ordering\Order;
 use App\Models\Ordering\Transaction;
 use App\Services\QueryBuilder;
@@ -42,8 +43,11 @@ class IndexBasketTransactions extends OrgAction
         $query->leftjoin('assets', 'transactions.asset_id', '=', 'assets.id');
         $query->leftjoin('products', 'assets.model_id', '=', 'products.id');
         $query->leftjoin('upcoming_transactions', 'transactions.id', '=', 'upcoming_transactions.transaction_id');
+        $query->leftJoin('webpages', function ($join) {
+            $join->on('webpages.id', '=', 'products.webpage_id')->whereNull('webpages.deleted_at');
+        });
 
-        return $query->defaultSort('transactions.id')
+        $transactions = $query->defaultSort('transactions.id')
             ->select([
                 'transactions.id',
                 'transactions.state',
@@ -73,12 +77,26 @@ class IndexBasketTransactions extends OrgAction
                 'upcoming_transactions.private_notes as upcoming_transaction_private_notes',
                 'upcoming_transactions.type as upcoming_transaction_type',
 
+                'webpages.id as webpage_id',
+                'webpages.canonical_url as webpage_canonical_url',
+                'webpages.website_id as webpage_website_id',
+                'webpages.group_id as webpage_group_id',
+                'webpages.organisation_id as webpage_organisation_id',
+                'webpages.shop_id as webpage_shop_id',
             ])
             ->selectRaw("'{$order->currency->code}'  as currency_code")
+            ->selectRaw("'{$order->shop->type->value}'  as shop_type")
             ->allowedSorts(['asset_code', 'asset_name', 'net_amount', 'quantity_ordered', 'price'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
+
+        $images = Media::whereIn('id', $transactions->getCollection()->pluck('product_image_id')->filter()->unique())->get()->keyBy('id');
+        $transactions->getCollection()->each(function (Transaction $transaction) use ($images) {
+            $transaction->setRelation('productImage', $images->get($transaction->product_image_id));
+        });
+
+        return $transactions;
     }
 
     public function tableStructure($tableRows = null, $prefix = null): Closure

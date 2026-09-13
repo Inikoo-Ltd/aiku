@@ -59,6 +59,9 @@ use App\Actions\Ordering\Order\ImportTransactionInOrder;
 use App\Actions\Ordering\Order\Hydrators\OrderHydrateShipments;
 use App\Actions\Ordering\Order\PayOrder;
 use App\Actions\Ordering\Order\StoreOrder;
+use App\Actions\Retina\Ecom\Basket\UI\IndexBasketTransactions;
+use App\Actions\Catalogue\Product\StoreProduct;
+use App\Actions\Catalogue\Product\StoreProductWebpage;
 use App\Actions\Ordering\Order\UpdateOrder;
 use App\Actions\Ordering\Order\UpdateOrderBillingAddress;
 use App\Actions\Ordering\Order\UpdateOrderDeliveryAddress;
@@ -113,6 +116,7 @@ use App\Enums\Ordering\Transaction\TransactionStateEnum;
 use App\Enums\Ordering\Transaction\UpcomingTransactionStateEnum;
 use App\Enums\Ordering\Transaction\UpcomingTransactionTypeEnum;
 use App\Enums\Catalogue\Product\ProductStatusEnum;
+use App\Http\Resources\Fulfilment\RetinaEcomBasketTransactionsResources;
 use App\Http\Resources\Ordering\TransactionsResource;
 use App\Models\Ordering\UpcomingTransaction;
 use App\Models\Accounting\CreditTransaction;
@@ -122,6 +126,7 @@ use App\Models\Accounting\PaymentServiceProvider;
 use App\Models\Analytics\AikuScopedSection;
 use App\Models\Billables\Charge;
 use App\Models\Catalogue\Asset;
+use App\Models\Catalogue\Product;
 use Illuminate\Validation\ValidationException;
 use App\Enums\Billables\Service\ServiceStateEnum;
 use App\Models\Billables\ShippingZone;
@@ -162,6 +167,7 @@ use App\Models\SysAdmin\Permission;
 use Carbon\Carbon;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Date;
@@ -3938,4 +3944,49 @@ test('a customer can send the order to the address their last order went to in o
     expect($basket->deliveryAddress->address_line_1)->toStartWith('19 Periwinkle Gardens')
         ->and($basket->deliveryAddress->postal_code)->toBe('NN14 2AH')
         ->and(\App\Actions\Ordering\Order\UI\GetEarlierDeliveryAddressWarning::run($basket, withCustomerActions: true))->toBeNull();
+});
+
+test('retina basket lines resolve their webpage and image without a query per line', function () {
+    createWebsite($this->shop);
+    $basket   = StoreOrder::make()->action($this->customer, Order::factory()->definition());
+    $webpages = [];
+    [, $bulk] = createProduct($this->shop);
+    foreach (range(1, 3) as $quantity) {
+        $product = StoreProduct::make()->action($bulk->family, array_merge(
+            Product::factory()->definition(),
+            ['trade_units' => [['id' => $bulk->tradeUnits->first()->id, 'quantity' => 1]], 'price' => 2]
+        ));
+        $webpages[$product->code] = StoreProductWebpage::make()->action($product);
+        DB::table('webpages')->insert(array_merge(
+            Arr::except($webpages[$product->code]->getAttributes(), ['id']),
+            ['url' => $webpages[$product->code]->url.'-old', 'slug' => $webpages[$product->code]->slug.'-old', 'state' => 'closed']
+        ));
+        $transactionData                 = Transaction::factory()->definition();
+        $transactionData['quantity_ordered'] = $quantity;
+        $transactionData['order_id']         = $basket->id;
+        StoreTransaction::make()->action($basket, $product->currentHistoricProduct, $transactionData);
+    }
+
+    $fakeRoute = new \Illuminate\Routing\Route('GET', '/fake-retina-basket', []);
+    $fakeRoute->name('retina.ecom.basket.show');
+    app('request')->setRouteResolver(fn () => $fakeRoute);
+
+    $lines = IndexBasketTransactions::run($basket->fresh());
+
+    DB::enableQueryLog();
+    DB::flushQueryLog();
+    $rows = RetinaEcomBasketTransactionsResources::collection($lines)->resolve();
+    $queriesWhileResolving = count(DB::getQueryLog());
+    DB::disableQueryLog();
+
+    expect($lines->total())->toBe(3)
+        ->and($rows)->toHaveCount(3)
+        ->and($queriesWhileResolving)->toBe(0);
+
+    foreach ($rows as $row) {
+        $webpage = $webpages[$row['asset_code']];
+        expect($row['webpage_url'])->toBe($webpage->canonical_url)
+            ->and($row['luigi_identity'])->toBe("$webpage->group_id:$webpage->organisation_id:$webpage->shop_id:$webpage->website_id:$webpage->id")
+            ->and($row['image'])->toBeNull();
+    }
 });

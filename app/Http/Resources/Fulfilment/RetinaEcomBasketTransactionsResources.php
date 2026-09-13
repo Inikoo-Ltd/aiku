@@ -11,8 +11,7 @@
 namespace App\Http\Resources\Fulfilment;
 
 use App\Http\Resources\Helpers\ImageResource;
-use App\Models\Catalogue\Product;
-use App\Models\Helpers\Media;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Models\Web\Webpage;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -39,6 +38,14 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property numeric-string|int|float|null $available_quantity
  * @property string|null $currency_code
+ * @property string $shop_type
+ * @property int|null $webpage_id
+ * @property string|null $webpage_canonical_url
+ * @property int|null $webpage_website_id
+ * @property int|null $webpage_group_id
+ * @property int|null $webpage_organisation_id
+ * @property int|null $webpage_shop_id
+ * @property \App\Models\Helpers\Media|null $productImage
  */
 class RetinaEcomBasketTransactionsResources extends JsonResource
 {
@@ -47,23 +54,12 @@ class RetinaEcomBasketTransactionsResources extends JsonResource
     public function toArray($request): array
     {
         $transaction = $this;
-        $media = null;
-        if ($transaction->product_image_id) {
-            $media = Media::find($transaction->product_image_id);
-        }
 
-        $webpageUrl = null;
+        $webpageUrl    = null;
         $luigiIdentity = null;
-        if ($transaction->model_type === class_basename(Product::class)) {
-            $webpage = Webpage::where('model_id', $transaction->product_id)
-            ->where('model_type', class_basename(Product::class))->first();
-
-            $webpageUrl = $webpage?->getCanonicalUrl();
-
-            if ($transaction->product_id) {
-                $product = Product::with('webpage.website')->find($transaction->product_id);
-                $luigiIdentity = $product?->getLuigiIdentity();
-            }
+        if ($transaction->model_type === 'Product' && $transaction->webpage_id) {
+            $webpageUrl    = Webpage::canonicalUrlForEnvironment($transaction->webpage_canonical_url, fn () => ShopTypeEnum::from($transaction->shop_type));
+            $luigiIdentity = "$transaction->webpage_group_id:$transaction->webpage_organisation_id:$transaction->webpage_shop_id:$transaction->webpage_website_id:$transaction->webpage_id";
         }
 
         return [
@@ -83,7 +79,7 @@ class RetinaEcomBasketTransactionsResources extends JsonResource
             'units'               => $transaction->units,
             'price'               => $transaction->price,
             'product_slug'        => $transaction->product_slug,
-            'image'               => $transaction->product_image_id ? ImageResource::make($media)->getArray() : null,
+            'image'               => $transaction->productImage ? ImageResource::make($transaction->productImage)->getArray() : null,
             'created_at'          => $transaction->created_at,
             'available_quantity'    => $transaction->available_quantity,
             'currency_code'       => $transaction->currency_code,
