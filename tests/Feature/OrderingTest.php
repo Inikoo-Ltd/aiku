@@ -59,6 +59,7 @@ use App\Actions\Ordering\Order\ImportTransactionInOrder;
 use App\Actions\Ordering\Order\Hydrators\OrderHydrateShipments;
 use App\Actions\Ordering\Order\PayOrder;
 use App\Actions\Ordering\Order\StoreOrder;
+use App\Actions\Retina\Ecom\Basket\RetinaEcomUpdateTransaction;
 use App\Actions\Retina\Ecom\Basket\UI\IndexBasketTransactions;
 use App\Actions\Catalogue\Product\StoreProduct;
 use App\Actions\Catalogue\Product\StoreProductWebpage;
@@ -78,7 +79,9 @@ use App\Actions\Ordering\Purge\UpdatePurge;
 use App\Actions\Ordering\PurgedOrder\UpdatePurgedOrder;
 use App\Actions\Ordering\Transaction\DeleteTransaction;
 use App\Actions\Ordering\Order\GenerateInvoiceFromOrder;
+use App\Actions\Iris\Basket\StoreEcomBasketTransaction;
 use App\Actions\Ordering\Transaction\StoreTransaction;
+use App\Actions\Ordering\Transaction\SyncBasketLinesWithProductStock;
 use Illuminate\Support\Str;
 use App\Enums\Accounting\PaymentAccount\PaymentAccountTypeEnum;
 use App\Actions\Accounting\Payment\StorePayment;
@@ -3949,6 +3952,7 @@ test('a customer can send the order to the address their last order went to in o
 test('retina basket lines resolve their webpage and image without a query per line', function () {
     createWebsite($this->shop);
     $basket   = StoreOrder::make()->action($this->customer, Order::factory()->definition());
+    $basket->update(['shipping_engine' => \App\Enums\Ordering\Order\OrderShippingEngineEnum::MANUAL]);
     $webpages = [];
     [, $bulk] = createProduct($this->shop);
     foreach (range(1, 3) as $quantity) {
@@ -3989,4 +3993,140 @@ test('retina basket lines resolve their webpage and image without a query per li
             ->and($row['luigi_identity'])->toBe("$webpage->group_id:$webpage->organisation_id:$webpage->shop_id:$webpage->website_id:$webpage->id")
             ->and($row['image'])->toBeNull();
     }
+});
+
+test('a basket line may exceed stock, is zeroed while out of stock and restored when back, never blocking the order', function () {
+    $basket = StoreOrder::make()->action($this->customer, Order::factory()->definition());
+    $basket->update(['shipping_engine' => \App\Enums\Ordering\Order\OrderShippingEngineEnum::MANUAL]);
+    [, $bulk] = createProduct($this->shop);
+    $lowStock = StoreProduct::make()->action($bulk->family, array_merge(
+        Product::factory()->definition(),
+        ['trade_units' => [['id' => $bulk->tradeUnits->first()->id, 'quantity' => 1]], 'price' => 2]
+    ));
+    $lowStockData                     = Transaction::factory()->definition();
+    $lowStockData['quantity_ordered'] = 3;
+    $lowStockData['order_id']         = $basket->id;
+    $lowStockLine                     = StoreTransaction::make()->action($basket, $lowStock->currentHistoricProduct, $lowStockData);
+    DB::table('products')->where('id', $lowStock->id)->update(['available_quantity' => 5]);
+
+    $lowStockLine = RetinaEcomUpdateTransaction::make()->action($lowStockLine, $this->customer, ['quantity_ordered' => 7]);
+    expect((float) $lowStockLine->quantity_ordered)->toBe(7.0);
+
+    $issues = fn () => (new class () {
+        use \App\Actions\Traits\WithBasketStockIssues;
+
+        public function issues(Order $order): array
+        {
+            return $this->getBasketStockIssues($order);
+        }
+    })->issues($basket->fresh());
+
+    expect($issues()['low_stock'])->toHaveCount(1)
+        ->and($issues()['low_stock'][0]['code'])->toBe($lowStock->code)
+        ->and($issues()['low_stock'][0]['quantity_ordered'])->toBe(7.0)
+        ->and($issues()['low_stock'][0]['available_quantity'])->toBe(5.0)
+        ->and($issues()['out_of_stock'])->toBe([]);
+
+    DB::table('products')->where('id', $lowStock->id)->update(['available_quantity' => 0]);
+
+    SyncBasketLinesWithProductStock::run($lowStock->fresh());
+    $lowStockLine = $lowStockLine->fresh();
+
+    expect((float) $lowStockLine->quantity_ordered)->toBe(0.0)
+        ->and((float) $lowStockLine->net_amount)->toBe(0.0)
+        ->and((float) $lowStockLine->estimated_weight)->toBe(0.0)
+        ->and((float) $basket->fresh()->goods_amount)->toBe(0.0)
+        ->and((float) Arr::get($lowStockLine->data, SyncBasketLinesWithProductStock::HELD_QUANTITY_KEY))->toBe(7.0)
+        ->and($issues()['low_stock'])->toBe([])
+        ->and($issues()['out_of_stock'][0]['code'])->toBe($lowStock->code)
+        ->and($issues()['out_of_stock'][0]['held_quantity'])->toBe(7.0);
+
+    DB::table('products')->where('id', $lowStock->id)->update(['available_quantity' => 5]);
+    SyncBasketLinesWithProductStock::run($lowStock->fresh());
+    $lowStockLine = $lowStockLine->fresh();
+
+    expect((float) $lowStockLine->quantity_ordered)->toBe(7.0)
+        ->and((float) $lowStockLine->net_amount)->toBe(14.0)
+        ->and((float) $basket->fresh()->goods_amount)->toBe(14.0)
+        ->and(Arr::get($lowStockLine->data, SyncBasketLinesWithProductStock::HELD_QUANTITY_KEY))->toBeNull()
+        ->and($issues()['low_stock'][0]['held_quantity'])->toBe(0.0);
+
+    DB::table('products')->where('id', $lowStock->id)->update(['available_quantity' => 0]);
+    SyncBasketLinesWithProductStock::run($lowStock->fresh());
+    $lowStockLine = RetinaEcomUpdateTransaction::make()->action($lowStockLine->fresh(), $this->customer, ['quantity_ordered' => 3]);
+
+    expect((float) $lowStockLine->quantity_ordered)->toBe(3.0)
+        ->and(Arr::get($lowStockLine->fresh()->data, SyncBasketLinesWithProductStock::HELD_QUANTITY_KEY))->toBeNull();
+
+    $goneProduct = StoreProduct::make()->action($bulk->family, array_merge(
+        Product::factory()->definition(),
+        ['trade_units' => [['id' => $bulk->tradeUnits->first()->id, 'quantity' => 1]], 'price' => 2]
+    ));
+    $goneData                     = Transaction::factory()->definition();
+    $goneData['quantity_ordered'] = 4;
+    $goneData['order_id']         = $basket->id;
+    $goneLine                     = StoreTransaction::make()->action($basket, $goneProduct->currentHistoricProduct, $goneData);
+    DB::table('products')->where('id', $goneProduct->id)->update(['available_quantity' => 0]);
+    SyncBasketLinesWithProductStock::run($goneProduct->fresh());
+
+    expect($basket->fresh()->stats->number_item_transactions)->toBe(1);
+
+    $submitted = SubmitOrder::run($basket->fresh());
+
+    expect($submitted->state)->toBe(OrderStateEnum::SUBMITTED)
+        ->and($goneLine->fresh()->trashed())->toBeTrue()
+        ->and($submitted->transactions()->where('model_type', 'Product')->count())->toBe(1);
+});
+
+test('a product that is not for sale cannot be added to a basket', function () {
+    $basket = StoreOrder::make()->action($this->customer, Order::factory()->definition());
+    $basket->update(['shipping_engine' => \App\Enums\Ordering\Order\OrderShippingEngineEnum::MANUAL]);
+    $this->customer->update(['current_order_in_basket_id' => $basket->id]);
+    [, $bulk] = createProduct($this->shop);
+    $product  = StoreProduct::make()->action($bulk->family, array_merge(
+        Product::factory()->definition(),
+        ['trade_units' => [['id' => $bulk->tradeUnits->first()->id, 'quantity' => 1]], 'price' => 2]
+    ));
+
+    $product->update(['status' => ProductStatusEnum::FOR_SALE]);
+    $line = StoreEcomBasketTransaction::make()->handle($this->customer->fresh(), $product->fresh(), ['quantity' => 2]);
+    expect((float) $line->quantity_ordered)->toBe(2.0);
+
+    foreach ([ProductStatusEnum::OUT_OF_STOCK, ProductStatusEnum::COMING_SOON, ProductStatusEnum::DISCONTINUED, ProductStatusEnum::NOT_FOR_SALE] as $status) {
+        $product->update(['status' => $status]);
+        expect(fn () => StoreEcomBasketTransaction::make()->handle($this->customer->fresh(), $product->fresh(), ['quantity' => 3]))
+            ->toThrow(ValidationException::class);
+    }
+});
+
+test('an exclusive product can be added only by its own customer, and only while in stock', function () {
+    $owner = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+    $other = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+    foreach ([$owner, $other] as $customer) {
+        $basket = StoreOrder::make()->action($customer, Order::factory()->definition());
+        $basket->update(['shipping_engine' => \App\Enums\Ordering\Order\OrderShippingEngineEnum::MANUAL]);
+        $customer->update(['current_order_in_basket_id' => $basket->id]);
+    }
+    [, $bulk]  = createProduct($this->shop);
+    $exclusive = StoreProduct::make()->action($bulk->family, array_merge(
+        Product::factory()->definition(),
+        ['trade_units' => [['id' => $bulk->tradeUnits->first()->id, 'quantity' => 1]], 'price' => 2]
+    ));
+    $exclusive->update(['status' => ProductStatusEnum::NOT_FOR_SALE, 'is_for_sale' => false, 'exclusive_for_customer_id' => $owner->id]);
+    $exclusive->exclusiveCustomers()->attach($owner->id);
+    DB::table('products')->where('id', $exclusive->id)->update(['available_quantity' => 10]);
+
+    $line = StoreEcomBasketTransaction::make()->handle($owner->fresh(), $exclusive->fresh(), ['quantity' => 2]);
+    expect((float) $line->quantity_ordered)->toBe(2.0)
+        ->and(fn () => StoreEcomBasketTransaction::make()->handle($other->fresh(), $exclusive->fresh(), ['quantity' => 2]))
+        ->toThrow(ValidationException::class);
+
+    DB::table('products')->where('id', $exclusive->id)->update(['available_quantity' => 0]);
+    expect(fn () => StoreEcomBasketTransaction::make()->handle($owner->fresh(), $exclusive->fresh(), ['quantity' => 2]))
+        ->toThrow(ValidationException::class);
+
+    DB::table('products')->where('id', $exclusive->id)->update(['is_on_demand' => true]);
+    $line = StoreEcomBasketTransaction::make()->handle($owner->fresh(), $exclusive->fresh(), ['quantity' => 4]);
+    SyncBasketLinesWithProductStock::run($exclusive->fresh());
+    expect((float) $line->fresh()->quantity_ordered)->toBe(4.0);
 });

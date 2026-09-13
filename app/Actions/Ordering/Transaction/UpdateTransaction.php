@@ -99,6 +99,10 @@ class UpdateTransaction extends OrgAction
             $changes = Arr::except($transaction->getChanges(), ['updated_at', 'last_fetched_at']);
 
 
+            if (Arr::has($changes, 'quantity_ordered') && Arr::has($transaction->data, SyncBasketLinesWithProductStock::HELD_QUANTITY_KEY)) {
+                $transaction->update(['data' => Arr::except($transaction->data, [SyncBasketLinesWithProductStock::HELD_QUANTITY_KEY])]);
+            }
+
             if (Arr::hasAny($changes, ['quantity_ordered', 'net_amount', 'gross_amount'])) {
                 OrderHydrateCategoriesData::run($transaction->order);
                 CalculateOrderTotalAmounts::run($transaction->order, $calculateShipping, $calculateDiscounts);

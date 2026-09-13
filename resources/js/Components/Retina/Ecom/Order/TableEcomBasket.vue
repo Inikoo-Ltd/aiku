@@ -18,6 +18,11 @@ import LinkIris from "@/Iris/Components/LinkIris.vue"
 import Discount from "@/Components/Utils/Label/Discount.vue"
 import GridProducts from "@/Components/Product/GridProducts/GridProducts.vue"
 import { pushGtmEvent, buildGtmProductPayload } from "@/Composables/useGtm"
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { faInfoCircle } from "@fal"
+import { library } from "@fortawesome/fontawesome-svg-core"
+
+library.add(faInfoCircle)
 
 const props = defineProps<{
     data: any[] | TableTS
@@ -29,6 +34,16 @@ const props = defineProps<{
 
 const layout = inject("layout", {})
 const locale = inject("locale", retinaLayoutStructure)
+
+const outOfStockTooltip = (item: { held_quantity: number | string }) => trans(
+    'This item went out of stock, so its quantity is set to 0 and it is not charged. If it is back in stock before you place the order, your :count is put back automatically.',
+    { count: locale.number(Number(item.held_quantity)) }
+)
+
+const lowStockTooltip = (item: { quantity_ordered: number | string, available_quantity: number | string }) => trans(
+    'Only :available showing in stock. We will do our best to send all :ordered. If we cannot, we will try to contact you first to offer a suitable replacement. Anything still missing is credited to your account balance.',
+    { available: locale.number(Number(item.available_quantity)), ordered: locale.number(Number(item.quantity_ordered)) }
+)
 
 
 // Section: Quantity
@@ -153,7 +168,12 @@ const isOffersData = (offersData: any): boolean => {
                 <div class="text-base"><span v-if="Number(item.units) > 1" class="mr-1">{{ Number(item.units)
                         }}x</span>{{ item.asset_name }}</div>
                 <div v-if="!item.available_quantity">
-                    <Tag label="Out of stock" no-hover-color :theme="7" size="xxs" />
+                    <Tag :label="trans('Out of stock')" no-hover-color :theme="7" size="xxs" />
+                    <span v-if="Number(item.held_quantity) > 0" v-tooltip="outOfStockTooltip(item)" class="text-xs text-gray-500 italic ml-1">{{ trans(':count kept, restored when back in stock', { count: locale.number(Number(item.held_quantity)) }) }}</span>
+                </div>
+                <div v-else-if="Number(item.quantity_ordered) > Number(item.available_quantity)" v-tooltip="lowStockTooltip(item)">
+                    <Tag :label="trans('Only :count in stock', { count: locale.number(item.available_quantity) })" no-hover-color :theme="8" size="xxs" />
+                    <FontAwesomeIcon icon="fal fa-info-circle" class="text-amber-500 ml-1 text-xs" fixed-width aria-hidden="true" />
                 </div>
                 <div v-else class="text-gray-400 italic text-xs">
                     {{ trans('Stock') }}  {{ locale.number(item.available_quantity || 0) }} {{ trans('available') }}
@@ -178,7 +198,6 @@ const isOffersData = (offersData: any): boolean => {
                         noSaveButton
                         noUndoButton
                         :min="0"
-                        :max="item.available_quantity"
                         :denominator="(item.quantity_ordered % 1 !== 0 || item.is_cut_view) ? Number(item.units) : undefined"
                         :disableInput="item.quantity_ordered % 1 !== 0"
                     />
@@ -235,7 +254,12 @@ const isOffersData = (offersData: any): boolean => {
                                 </a>
                                 <div class="text-xxs text-gray-400">{{ item.asset_code }}</div>
                                 <div v-if="!item.available_quantity">
-                                    <Tag label="Out of stock" no-hover-color :theme="7" size="xxs" />
+                                    <Tag :label="trans('Out of stock')" no-hover-color :theme="7" size="xxs" />
+                    <span v-if="Number(item.held_quantity) > 0" v-tooltip="outOfStockTooltip(item)" class="text-xs text-gray-500 italic ml-1">{{ trans(':count kept, restored when back in stock', { count: locale.number(Number(item.held_quantity)) }) }}</span>
+                                </div>
+                                <div v-else-if="Number(item.quantity_ordered) > Number(item.available_quantity)" v-tooltip="lowStockTooltip(item)">
+                                    <Tag :label="trans('Only :count in stock', { count: locale.number(item.available_quantity) })" no-hover-color :theme="8" size="xxs" />
+                                    <FontAwesomeIcon icon="fal fa-info-circle" class="text-amber-500 ml-1 text-xs" fixed-width aria-hidden="true" />
                                 </div>
                                 <div v-else class="text-gray-400 italic text-xs">
                                      {{ trans('Stock') }}  {{ locale.number(item.available_quantity || 0) }} {{ trans('available') }}
@@ -250,8 +274,7 @@ const isOffersData = (offersData: any): boolean => {
                                             item.quantity_ordered != value ? debounceUpdateQuantity(item, value) : null
                                         }" :routeSubmit="item.updateRoute" key-submit="quantity_ordered"
                                             isWithRefreshModel noSaveButton noUndoButton :min="1"
-                                            :max="item.available_quantity"
-                                            :denominator="item.quantity_ordered % 1 !== 0 ? Number(item.units) : undefined"
+                                                                :denominator="item.quantity_ordered % 1 !== 0 ? Number(item.units) : undefined"
                                             :disableInput="item.quantity_ordered % 1 !== 0" />
                                     </div>
 

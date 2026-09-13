@@ -20,6 +20,7 @@ use App\Actions\Retina\Ecom\Basket\UI\IsOrder;
 use App\Actions\Retina\GetRetinaPaymentMethods;
 use App\Actions\Retina\UI\Dashboard\ShowRetinaDashboard;
 use App\Actions\RetinaAction;
+use App\Actions\Traits\WithBasketStockIssues;
 use App\Http\Resources\Sales\OrderResource;
 use App\Models\CRM\Customer;
 use App\Models\Ordering\Order;
@@ -33,6 +34,7 @@ class ShowRetinaEcomCheckout extends RetinaAction
 {
     use IsOrder;
     use WithOrderForbiddenCountryCheck;
+    use WithBasketStockIssues;
     use CalculatesPaymentWithBalance;
 
     public function handle(Customer $customer): array
@@ -119,6 +121,7 @@ class ShowRetinaEcomCheckout extends RetinaAction
                 ],
                 'order'          => OrderResource::make($order)->resolve(),
                 'summary'        => $this->getOrderBoxStats($order),
+                'stock_issues'   => $this->getBasketStockIssues($order),
                 'earlier_delivery_address' => GetEarlierDeliveryAddressWarning::run($order, withCustomerActions: true),
                 'paymentMethods' => Arr::get($checkoutData, 'paymentMethods'),
                 'balance'        => $this->customer->balance,

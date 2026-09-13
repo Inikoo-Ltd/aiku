@@ -12,7 +12,9 @@ namespace App\Http\Resources\Fulfilment;
 
 use App\Http\Resources\Helpers\ImageResource;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
+use App\Actions\Ordering\Transaction\SyncBasketLinesWithProductStock;
 use App\Models\Web\Webpage;
+use Illuminate\Support\Arr;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
@@ -87,6 +89,7 @@ class RetinaEcomBasketTransactionsResources extends JsonResource
             'luigi_identity'      => $luigiIdentity,
             'offers_data'         => $transaction->offers_data,
             'is_cut_view'         => $transaction->is_cut_view,
+            'held_quantity'       => (float) Arr::get($transaction->data, SyncBasketLinesWithProductStock::HELD_QUANTITY_KEY, 0),
 
             'upcoming_transaction_type'          => $this->upcoming_transaction_type,
             'upcoming_transaction_private_notes' => $this->upcoming_transaction_private_notes,

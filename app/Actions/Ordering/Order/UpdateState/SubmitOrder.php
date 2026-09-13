@@ -100,6 +100,19 @@ class SubmitOrder extends OrgAction
         $this->processVoucherGiftOffers($order);
         $this->processUpComingTransactions($order);
 
+        /**
+         * A product line at zero quantity with no bonus is nothing to pick: it was zeroed while out
+         * of stock, or the customer typed 0. It leaves with the basket rather than reaching the
+         * warehouse as an empty pick line.
+         */
+        $order->transactions()
+            ->where('state', TransactionStateEnum::CREATING)
+            ->where('model_type', 'Product')
+            ->where('quantity_ordered', '<=', 0)
+            ->where('quantity_bonus', '<=', 0)
+            ->get()
+            ->each(fn (Transaction $emptyLine) => DeleteTransaction::make()->action($emptyLine));
+
         $transactions = $order->transactions()->where('state', TransactionStateEnum::CREATING)->get();
         /** @var Transaction $transaction */
         if ($transactions->isNotEmpty()) {

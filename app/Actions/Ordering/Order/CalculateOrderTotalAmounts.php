@@ -51,7 +51,9 @@ class CalculateOrderTotalAmounts extends OrgAction implements ShouldBeUnique
         $itemsNet   = $order->transactions()->where('model_type', 'Product')->sum('net_amount');
         $itemsGross = $order->transactions()->where('model_type', 'Product')->sum('gross_amount');
 
-        $numberItemTransactions = $order->transactions()->where('model_type', 'Product')->count();
+        $numberItemTransactions = $order->transactions()->where('model_type', 'Product')
+            ->where(fn ($query) => $query->where('quantity_ordered', '>', 0)->orWhere('quantity_bonus', '>', 0))
+            ->count();
 
         $chargesAmount   = $order->transactions()->where('model_type', 'Charge')->sum('net_amount');
         $servicesAmount  = $order->transactions()->where('model_type', 'Service')->sum('net_amount');

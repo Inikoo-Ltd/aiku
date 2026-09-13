@@ -9,6 +9,7 @@
 namespace App\Actions\Catalogue\Product\Hydrators;
 
 use App\Actions\Catalogue\Product\UpdateProduct;
+use App\Actions\Ordering\Transaction\SyncBasketLinesWithProductStock;
 use App\Actions\Traits\WithEnumStats;
 use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\Catalogue\Product\ProductStatusEnum;
@@ -31,10 +32,16 @@ class ProductHydrateAvailableQuantity implements ShouldBeUnique
     public function handle(Product $product): Product
     {
         if ($product->state == ProductStateEnum::DISCONTINUED) {
-            return UpdateProduct::run($product, [
+            $wasAvailable = $product->available_quantity > 0;
+            $product      = UpdateProduct::run($product, [
                 'available_quantity' => null,
                 'status'             => ProductStatusEnum::DISCONTINUED,
             ]);
+            if ($wasAvailable) {
+                SyncBasketLinesWithProductStock::dispatch($product);
+            }
+
+            return $product;
         }
 
 
@@ -121,7 +128,15 @@ class ProductHydrateAvailableQuantity implements ShouldBeUnique
             $dataToUpdate['status'] = ProductStatusEnum::NOT_FOR_SALE;
         }
 
-        return UpdateProduct::run($product, $dataToUpdate);
+        $product = UpdateProduct::run($product, $dataToUpdate);
+
+        $wentOutOfStock = ($currentQuantity ?? 0) > 0 && $availableQuantity == 0;
+        $cameBackInStock = ($currentQuantity ?? 0) == 0 && $availableQuantity > 0;
+        if ($wentOutOfStock || $cameBackInStock) {
+            SyncBasketLinesWithProductStock::dispatch($product);
+        }
+
+        return $product;
     }
 
     public string $commandSignature = 'product:hydrate-available-quantity {id?} {--shop=* : Shop slugs, all aiku shops when omitted}';

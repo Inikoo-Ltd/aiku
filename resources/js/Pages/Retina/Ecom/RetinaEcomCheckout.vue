@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import EcomCheckoutSummary from "@/Components/Retina/Ecom/EcomCheckoutSummary.vue"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
+import BasketStockIssues, { StockIssues } from "@/Components/Retina/Basket/BasketStockIssues.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { computed, inject, onMounted, onUnmounted, ref } from "vue"
 import type { Component } from "vue"
@@ -47,6 +48,7 @@ const props = defineProps<{
         total: number
     },
     currency_code: string
+    stock_issues?: StockIssues
     earlier_delivery_address?: { previous_address: string, previous_address_line: string, previous_order_reference: string, current_address_line: string, confirmed: boolean, actions: { confirm_route: routeType, use_previous_route: routeType } | null } | null
     whatsapp_newsletter?: {
         is_subscribed: boolean
@@ -117,6 +119,10 @@ const locale = inject("locale", aikuLocaleStructure)
     </div>
 
     <div v-else class="w-full px-4 xmt-8">
+
+        <div v-if="stock_issues?.out_of_stock?.length || stock_issues?.low_stock?.length" class="md:px-4 mb-4 space-y-3">
+            <BasketStockIssues :stock_issues />
+        </div>
 
         <EcomCheckoutSummary
             :summary

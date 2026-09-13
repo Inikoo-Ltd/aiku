@@ -72,6 +72,7 @@ class IndexBasketTransactions extends OrgAction
                 'products.image_id as product_image_id',
                 'products.available_quantity as available_quantity',
                 'transactions.offers_data',
+                'transactions.data',
 
                 'upcoming_transactions.public_notes as upcoming_transaction_public_notes',
                 'upcoming_transactions.private_notes as upcoming_transaction_private_notes',

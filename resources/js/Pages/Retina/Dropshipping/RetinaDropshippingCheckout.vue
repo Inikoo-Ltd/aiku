@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
+import BasketStockIssues, { StockIssues } from "@/Components/Retina/Basket/BasketStockIssues.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { computed, inject, onMounted, onUnmounted, ref } from "vue"
 import { retinaLayoutStructure } from "@/Composables/useRetinaLayoutStructure"
@@ -23,6 +24,7 @@ const props = defineProps<{
     title: string
     pageHead: PageHeadingTypes
     order: {},
+    stock_issues?: StockIssues
     paymentMethods: []
     box_stats: {
         net_amount: string
@@ -119,6 +121,9 @@ const component = computed(() => {
     </div>
 
     <div v-else class="w-full px-4 mt-8">
+        <div v-if="stock_issues?.out_of_stock?.length || stock_issues?.low_stock?.length" class="px-4 mb-4 space-y-3">
+            <BasketStockIssues :stock_issues />
+        </div>
         <div class="px-4 text-xl">
             <span class="text-gray-500">{{ trans("Order number") }}</span> <span class="font-bold">#{{ order.reference }}</span>
         </div>

@@ -19,6 +19,7 @@ use App\Actions\Retina\Ecom\Basket\IndexRetinaUpcomingTransactions;
 use App\Actions\Retina\Ecom\Orders\IndexRetinaEcomOrders;
 use App\Actions\Traits\HasBasketDetails;
 use App\Actions\Traits\InteractsWithOrderInBasket;
+use App\Actions\Traits\WithBasketStockIssues;
 use App\Actions\RetinaAction;
 use App\Http\Resources\Catalogue\ChargeResource;
 use App\Http\Resources\Fulfilment\RetinaEcomBasketTransactionsResources;
@@ -38,6 +39,7 @@ class ShowRetinaEcomBasket extends RetinaAction
     use InteractsWithOrderInBasket;
     use HasBasketDetails;
     use WithOrderForbiddenCountryCheck;
+    use WithBasketStockIssues;
 
     public function handle(Customer $customer): Order|null
     {
@@ -243,7 +245,8 @@ class ShowRetinaEcomBasket extends RetinaAction
                 'total_products'     => $order ? $order->transactions->whereIn('model_type', ['Product', 'Service'])->count() : 0,
                 'transactions'       => $order ? RetinaEcomBasketTransactionsResources::collection(IndexBasketTransactions::run($order)) : null,
                 'gr_gifts'           => $grGifts,
-                'missed_offers'      => $order ? $this->getMissedOffers($order) : []
+                'missed_offers'      => $order ? $this->getMissedOffers($order) : [],
+                'stock_issues'       => $order ? $this->getBasketStockIssues($order) : ['low_stock' => [], 'out_of_stock' => []],
             ]
         )->table(
             IndexBasketTransactions::make()->tableStructure()
