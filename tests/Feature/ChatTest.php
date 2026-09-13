@@ -1496,6 +1496,24 @@ test('HandleChatRead asController marks unread visitor messages as read via the 
     expect($guestMessage->refresh()->is_read)->toBeTrue();
 });
 
+test('chat status for a session moved to trash answers not found instead of failing', function () {
+    $chatSession = ChatSession::create([
+        'ulid'             => (string)Str::ulid(),
+        'status'           => ChatSessionStatusEnum::ACTIVE,
+        'guest_identifier' => 'guest_'.Str::random(5),
+        'language_id'      => 68,
+        'priority'         => ChatPriorityEnum::NORMAL,
+        'shop_id'          => $this->shop->id,
+        'ai_model_version' => 'default',
+    ]);
+    $chatSession->delete();
+
+    $this->getJson(route('grp.api.chats.status', [
+        'shop_id' => $this->shop->id,
+        'ulid'    => $chatSession->ulid,
+    ]))->assertNotFound();
+});
+
 test('ShareChatSessionToSlack notifies configured channels', function () {
     Notification::fake();
 
