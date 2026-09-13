@@ -2490,6 +2490,51 @@ describe('staff messaging team', function () {
         expect(\App\Actions\Chat\Staff\ToggleStaffTeamMember::run($this->user, $other))->toBeFalse()
             ->and($this->user->teamMembers()->count())->toBe(0);
     });
+
+    test('the coworkers poll shares the group list between viewers but keeps team and closeness per viewer', function () {
+        $other = User::where('group_id', $this->user->group_id)->where('id', '!=', $this->user->id)->first()
+            ?? User::factory()->create(['group_id' => $this->user->group_id]);
+
+        \Illuminate\Support\Facades\Cache::forget('staff-coworkers:'.$this->user->group_id);
+        \App\Actions\Chat\Staff\ToggleStaffTeamMember::run($this->user, $other);
+
+        actingAs($this->user)->getJson(route('grp.chat.staff.coworkers.index'))->assertOk();
+
+        \Illuminate\Support\Facades\DB::enableQueryLog();
+        $mine = actingAs($this->user)->getJson(route('grp.chat.staff.coworkers.index'))->assertOk()->json('data');
+        $queryLog          = collect(\Illuminate\Support\Facades\DB::getQueryLog());
+        $queriesOnWarmPoll = $queryLog
+            ->filter(fn (array $query) => preg_match('/"(users|user_has_models|employees|media|user_has_team_members)"/', $query['query']))
+            ->count();
+        expect($queryLog->count())->toBeLessThanOrEqual(6);
+        \Illuminate\Support\Facades\DB::disableQueryLog();
+
+        $theirs = actingAs($other)->getJson(route('grp.chat.staff.coworkers.index'))->assertOk()->json('data');
+
+        expect(collect($mine)->firstWhere('id', $other->id)['in_team'])->toBeTrue()
+            ->and(collect($mine)->pluck('id'))->not->toContain($this->user->id)
+            ->and(collect($theirs)->pluck('id'))->not->toContain($other->id)
+            ->and(collect($theirs)->firstWhere('id', $this->user->id)['in_team'])->toBeFalse()
+            ->and($queriesOnWarmPoll)->toBeLessThanOrEqual(2);
+
+        $searched = actingAs($this->user)->getJson(route('grp.chat.staff.coworkers.index', ['q' => $other->chatName()]))->assertOk()->json('data');
+        expect(collect($searched)->pluck('id'))->toContain($other->id);
+
+        \App\Actions\Chat\Staff\ToggleStaffTeamMember::run($this->user, $other);
+    });
+
+    test('json-only grp routes exist and skip building the layout', function () {
+        $routeNames = (new ReflectionClassConstant(\App\Http\Middleware\HandleInertiaGrpRequests::class, 'JSON_ONLY_ROUTES'))->getValue();
+
+        foreach ($routeNames as $routeName) {
+            expect(\Illuminate\Support\Facades\Route::has($routeName))->toBeTrue("$routeName is not a registered route");
+
+            $request = \Illuminate\Http\Request::create('/');
+            $request->setRouteResolver(fn () => \Illuminate\Support\Facades\Route::getRoutes()->getByName($routeName));
+
+            expect(app(\App\Http\Middleware\HandleInertiaGrpRequests::class)->share($request))->toBe([]);
+        }
+    });
 });
 
 describe('staff messaging archive', function () {
