@@ -2293,6 +2293,22 @@ describe('staff messaging', function () {
         expect((int) $theirs->unread_count)->toBe(0);
     });
 
+    test('a message sent in the same second the conversation was read still counts unread', function () {
+        Event::fake([\App\Events\StaffMessageSent::class]);
+        Bus::fake([\App\Actions\Chat\Staff\TranslateStaffMessage::class]);
+        $other        = User::factory()->create(['group_id' => $this->user->group_id, 'language_id' => $this->user->language_id]);
+        $conversation = \App\Actions\Chat\Staff\StoreStaffConversation::run($this->user, ['user_ids' => [$other->id]]);
+
+        \Illuminate\Support\Carbon::setTestNow('2026-09-14 10:00:00.100000');
+        \App\Actions\Chat\Staff\MarkStaffConversationRead::run($conversation, $other);
+        \Illuminate\Support\Carbon::setTestNow('2026-09-14 10:00:00.200000');
+        \App\Actions\Chat\Staff\SendStaffMessage::run($conversation, $this->user, ['body' => 'same second']);
+        \Illuminate\Support\Carbon::setTestNow();
+
+        $theirs = \App\Actions\Chat\Staff\Json\GetStaffConversations::run($other)->firstWhere('id', $conversation->id);
+        expect((int) $theirs->unread_count)->toBe(1);
+    });
+
     test('the conversations list loads avatars and contexts once, not per conversation', function () {
         Event::fake([\App\Events\StaffMessageSent::class]);
         Bus::fake([\App\Actions\Chat\Staff\TranslateStaffMessage::class]);
@@ -2367,12 +2383,11 @@ describe('staff messaging mentions', function () {
     test('mention resolves to participant and flags unread for them', function () {
         Event::fake([\App\Events\StaffMessageSent::class]);
         Bus::fake([\App\Actions\Chat\Staff\TranslateStaffMessage::class]);
-        $other = User::where('group_id', $this->user->group_id)->where('id', '!=', $this->user->id)->first()
-            ?? User::factory()->create(['group_id' => $this->user->group_id, 'language_id' => $this->user->language_id]);
-        $other->update(['nickname' => 'adamm']);
+        $nickname = 'adamm'.Str::lower(Str::random(6));
+        $other    = User::factory()->create(['group_id' => $this->user->group_id, 'language_id' => $this->user->language_id, 'nickname' => $nickname]);
 
         $conversation = \App\Actions\Chat\Staff\StoreStaffConversation::run($this->user, ['user_ids' => [$other->id]]);
-        $message      = \App\Actions\Chat\Staff\SendStaffMessage::run($conversation, $this->user, ['body' => 'hey @adamm check this']);
+        $message      = \App\Actions\Chat\Staff\SendStaffMessage::run($conversation, $this->user, ['body' => "hey @$nickname check this"]);
 
         expect($message->mentions)->toBe([$other->id]);
 
