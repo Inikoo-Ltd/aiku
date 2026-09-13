@@ -59,12 +59,16 @@ const groupPositionList = {
         icon: "fas fa-user-hard-hat",
         subDepartment: [
             {
+                slug: "gp-hd-m", // Note, this is not slug is job position code
+                label: trans("Lead engineer")
+            },
+            {
                 slug: "gp-hd", // Note, this is not slug is job position code
                 label: trans("Engineer")
             },
             {
-                slug: "gp-hd-m", // Note, this is not slug is job position code
-                label: trans("Lead engineer")
+                slug: "gp-qa", // Note, this is not slug is job position code
+                label: trans("QA")
             }
         ]
     },
