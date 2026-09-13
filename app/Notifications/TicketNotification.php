@@ -14,20 +14,30 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
-class TicketReporterNotification extends Notification implements ShouldQueue
+class TicketNotification extends Notification implements ShouldQueue
 {
     use Queueable;
 
     /**
      * @param array<int, string> $lines
      */
-    public function __construct(public Ticket $ticket, public string $subject, public array $lines, public string $actionLabel)
+    public function __construct(public Ticket $ticket, public string $subject, public array $lines, public string $actionLabel, public bool $byEmail = true)
     {
     }
 
     public function via($notifiable): array
     {
-        return ['mail'];
+        return $this->byEmail ? ['database', 'mail'] : ['database'];
+    }
+
+    public function toArray($notifiable): array
+    {
+        return [
+            'title' => $this->subject,
+            'body'  => $this->lines[0] ?? '',
+            'type'  => 'ticket',
+            'route' => route('grp.tickets.show', $this->ticket->reference),
+        ];
     }
 
     public function toMail($notifiable): MailMessage

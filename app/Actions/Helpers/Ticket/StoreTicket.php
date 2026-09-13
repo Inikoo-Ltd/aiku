@@ -46,6 +46,8 @@ class StoreTicket extends OrgAction
         $ticket->attachTicketImages($images);
         $this->openStaffConversation($ticket);
         SyncTicketSlackAlert::run($ticket);
+        NotifyTicketUsers::make()->raised($ticket);
+        NotifyTicketUsers::make()->pushBadges($ticket);
 
         return $ticket;
     }

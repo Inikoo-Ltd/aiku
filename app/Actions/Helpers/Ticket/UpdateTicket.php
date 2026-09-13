@@ -34,7 +34,7 @@ class UpdateTicket extends OrgAction
 
         $asker = request()->user();
         if ($question !== '' && $asker instanceof User) {
-            StoreTicketComment::make()->action($ticket, $asker, ['body' => $question]);
+            StoreTicketComment::make()->action($ticket, $asker, ['body' => $question], notifyUsers: false);
         }
 
         if (Arr::exists($modelData, 'assignee_id') && Arr::get($modelData, 'assignee_id') != $ticket->assignee_id) {
@@ -93,11 +93,15 @@ class UpdateTicket extends OrgAction
         }
 
         if ($question !== '' && $asker instanceof User && $ticket->status === TicketStatusEnum::WAITING) {
-            NotifyTicketReporter::make()->asked($ticket, $asker, $question);
+            NotifyTicketUsers::make()->asked($ticket, $asker, $question);
+        }
+
+        if ($ticket->wasChanged('qa_status') && $asker instanceof User) {
+            NotifyTicketUsers::make()->qaChanged($ticket, $asker);
         }
 
         if ($ticket->wasChanged('status') && $ticket->status === TicketStatusEnum::RESOLVED) {
-            NotifyTicketReporter::make()->done($ticket, $asker instanceof User ? $asker : null);
+            NotifyTicketUsers::make()->done($ticket, $asker instanceof User ? $asker : null);
         }
 
         if ($ticket->wasChanged('status')) {
@@ -106,6 +110,10 @@ class UpdateTicket extends OrgAction
 
         if ($ticket->wasChanged(['status', 'assignee_id'])) {
             SyncTicketSlackAlert::run($ticket);
+        }
+
+        if ($ticket->wasChanged(['status', 'assignee_id', 'qa_status'])) {
+            NotifyTicketUsers::make()->pushBadges($ticket, $asker instanceof User ? $asker : null);
         }
 
         if ($ticket->wasChanged('assignee_id') && ($actor = request()->user()) instanceof User) {

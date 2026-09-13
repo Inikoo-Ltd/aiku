@@ -40,7 +40,10 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Notification;
-use App\Notifications\TicketReporterNotification;
+use App\Notifications\TicketNotification;
+use App\Actions\Helpers\Ticket\GetTicketBadgeData;
+use App\Events\BroadcastTicketBadgeUpdate;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Testing\AssertableInertia;
 
@@ -234,18 +237,18 @@ test('staff reporter is told of the question by email and slack as their profile
 
     patch(route('grp.models.ticket.update', $ticket->id), ['status' => 'waiting', 'question' => 'Which order?', 'waiting_hours' => 24])->assertRedirect();
 
-    Notification::assertSentTo($reporter, TicketReporterNotification::class);
+    Notification::assertSentTo($reporter, TicketNotification::class);
     Http::assertSent(fn ($request) => str_contains($request->url(), 'chat.postMessage') && $request['channel'] === 'U123');
 
     $reporter->update(['settings' => ['ticket_notifications' => 'none']]);
     Notification::fake();
     UpdateTicket::make()->action($ticket->fresh(), ['status' => TicketStatusEnum::IN_PROGRESS->value]);
     patch(route('grp.models.ticket.update', $ticket->id), ['status' => 'waiting', 'question' => 'Still?'])->assertRedirect();
-    Notification::assertNothingSent();
+    Notification::assertSentTo($reporter, TicketNotification::class, fn ($notification, $channels) => $channels === ['database']);
 
     $reporter->update(['settings' => ['ticket_notifications' => 'email']]);
     patch(route('grp.models.ticket.update', $ticket->id), ['status' => 'resolved'])->assertRedirect();
-    Notification::assertSentTo($reporter, TicketReporterNotification::class, fn ($notification) => str_contains($notification->subject, 'is done'));
+    Notification::assertSentTo($reporter, TicketNotification::class, fn ($notification) => str_contains($notification->subject, 'is done'));
 });
 
 test('ticket page shows a history from opened to its status changes, newest first', function () {
@@ -881,4 +884,42 @@ test('an engineer asks QA to check, QA answers with a verdict and the engineer s
     expect($ticket->refresh()->qa_status)->toBe(TicketQaStatusEnum::PASSED)
         ->and($ticket->status)->toBe(TicketStatusEnum::RESOLVED)
         ->and($ticket->comments()->where('body', 'QA passed')->exists())->toBeTrue();
+});
+
+test('ticket badges count my tickets and the engineer queue, and engineers hear of new tickets in-app', function () {
+    Notification::fake();
+    Event::fake([BroadcastTicketBadgeUpdate::class]);
+
+    $count    = fn (User $user, string $slot, string $key) => GetTicketBadgeData::run($user)[$slot][$key]['count'];
+    $baseline = GetTicketBadgeData::run($this->user)['queue'];
+
+    $reporter = StoreGuest::make()->action($this->group, Guest::factory()->definition())->getUser();
+    $ticket   = StoreTicket::make()->action($this->group, ['subject' => 'Badge me', 'reporter_type' => 'User', 'reporter_id' => $reporter->id]);
+
+    Notification::assertSentTo($this->user, TicketNotification::class, fn ($notification, $channels) => $channels === ['database'] && str_contains($notification->subject, $ticket->reference));
+    Notification::assertNotSentTo($reporter, TicketNotification::class);
+    Event::assertDispatched(BroadcastTicketBadgeUpdate::class, fn (BroadcastTicketBadgeUpdate $event) => $event->user->id === $this->user->id && $event->notification !== null);
+
+    expect(GetTicketBadgeData::run($reporter)['queue'])->toBeNull()
+        ->and($count($reporter, 'mine', 'in_progress'))->toBe(1)
+        ->and($count($reporter, 'mine', 'waiting'))->toBe(0)
+        ->and($count($this->user, 'queue', 'new_unassigned'))->toBe($baseline['new_unassigned']['count'] + 1)
+        ->and($count($this->user, 'queue', 'overdue'))->toBe($baseline['overdue']['count'])
+        ->and($count($this->user, 'queue', 'assigned_to_me'))->toBe($baseline['assigned_to_me']['count']);
+
+    UpdateTicket::make()->action($ticket, ['assignee_id' => $this->user->id, 'status' => TicketStatusEnum::WAITING->value, 'question' => 'Which printer?']);
+    $ticket->update(['created_at' => now()->subDays(2)]);
+
+    expect($count($reporter, 'mine', 'waiting'))->toBe(1)
+        ->and($count($this->user, 'queue', 'assigned_to_me'))->toBe($baseline['assigned_to_me']['count']);
+
+    StoreTicketComment::make()->action($ticket, $reporter, ['body' => 'The red one']);
+    Notification::assertSentTo($this->user, TicketNotification::class, fn ($notification) => str_contains($notification->subject, 'new comment'));
+
+    expect($count($this->user, 'queue', 'assigned_to_me'))->toBe($baseline['assigned_to_me']['count'] + 1)
+        ->and($count($this->user, 'queue', 'overdue'))->toBe($baseline['overdue']['count'] + 1);
+
+    UpdateTicket::make()->action($ticket, ['status' => TicketStatusEnum::RESOLVED->value]);
+    expect($count($reporter, 'mine', 'done_24h'))->toBe(1)
+        ->and($count($this->user, 'queue', 'overdue'))->toBe($baseline['overdue']['count']);
 });

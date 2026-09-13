@@ -21,7 +21,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class StoreTicketComment extends OrgAction
 {
-    public function handle(Ticket $ticket, User|WebUser $author, array $modelData, bool $mirrorToSlack = true): TicketComment
+    public function handle(Ticket $ticket, User|WebUser $author, array $modelData, bool $mirrorToSlack = true, bool $notifyUsers = true): TicketComment
     {
 
         $comment = $ticket->comments()->create([
@@ -40,6 +40,10 @@ class StoreTicketComment extends OrgAction
 
         if ($this->replyReopens($ticket, $author, $comment)) {
             UpdateTicket::make()->action($ticket, ['status' => TicketStatusEnum::OPEN->value]);
+        }
+
+        if (!$comment->is_internal && $author instanceof User && $notifyUsers) {
+            NotifyTicketUsers::make()->commented($ticket, $author, $comment->body);
         }
 
         return $comment;
@@ -69,7 +73,7 @@ class StoreTicketComment extends OrgAction
         return $this->asAction || $request->user() !== null;
     }
 
-    public function action(Ticket $ticket, User|WebUser $author, array $modelData, bool $mirrorToSlack = true): TicketComment
+    public function action(Ticket $ticket, User|WebUser $author, array $modelData, bool $mirrorToSlack = true, bool $notifyUsers = true): TicketComment
     {
         $this->asAction = true;
         $this->initialisationFromGroup($ticket->group, $modelData);

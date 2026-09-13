@@ -242,6 +242,10 @@ export const initialiseApp = () => {
             layout.avatar_thumbnail = usePage().props.avatar_thumbnail
         }
 
+        if (usePage().props.ticket_badges !== undefined) {
+            layout.ticket_badges = usePage().props.ticket_badges as any
+        }
+
         if (usePage().props.dispatching_waiting_count !== undefined) {
             layout.dispatching_waiting_count = usePage().props.dispatching_waiting_count as number
         }
