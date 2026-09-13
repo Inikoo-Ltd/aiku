@@ -46,6 +46,7 @@ const queueOverdue = computed(() => layout.ticket_badges?.queue?.overdue?.count 
         </div>
 
         <div v-if="layout.ticket_badges?.queue || (layout.ticket_badges?.mine && myTicketsCount > 0)" class="flex flex-col items-center shrink-0">
+        <FontAwesomeIcon icon="fal fa-life-ring" class="text-[var(--chat-muted)] text-xs mb-1" fixed-width :title="trans('Tickets')" aria-hidden="true" />
         <!-- Badge: Ticket work queue (engineers and QA) -->
         <div v-if="layout.ticket_badges?.queue" class="relative flex items-center justify-center shrink-0">
             <Popover width="w-72" position="right-full mr-2 top-0">
