@@ -23,6 +23,7 @@ use App\Enums\CRM\Livechat\ChatEventTypeEnum;
 use App\Enums\CRM\Livechat\ChatPriorityEnum;
 use App\Enums\Helpers\Ticket\TicketKindEnum;
 use App\Enums\Helpers\Ticket\TicketModuleEnum;
+use App\Enums\Helpers\Ticket\TicketQaStatusEnum;
 use App\Enums\Helpers\Ticket\TicketStatusEnum;
 use App\Enums\Helpers\Ticket\TicketTypeEnum;
 use App\Models\Chat\ChatAgent;
@@ -833,4 +834,51 @@ test('assigning and starting a ticket stamps its lifecycle dates', function () {
     $ticket = UpdateTicket::make()->action($ticket, ['assignee_id' => null]);
     expect($ticket->status)->toBe(TicketStatusEnum::OPEN)
         ->and($ticket->assigned_at)->toBeNull();
+});
+
+test('an engineer asks QA to check, QA answers with a verdict and the engineer still decides when it is done', function () {
+    Mail::fake();
+    Notification::fake();
+    $engineer = User::factory()->create(['group_id' => $this->group->id]);
+    $qa       = User::factory()->create(['group_id' => $this->group->id]);
+    $reporter = User::factory()->create(['group_id' => $this->group->id]);
+    setPermissionsTeamId($this->group->id);
+    $engineer->assignRole('help-desk-clerk');
+    $qa->assignRole('qa');
+
+    $ticket = StoreTicket::make()->action($this->group, ['subject' => 'Totals wrong', 'reporter_type' => 'User', 'reporter_id' => $reporter->id]);
+    UpdateTicket::make()->action($ticket, ['assignee_id' => $engineer->id, 'status' => TicketStatusEnum::IN_PROGRESS->value]);
+
+    actingAs($qa);
+    get(route('grp.tickets.index'))->assertOk()->assertInertia(fn (AssertableInertia $page) => $page->where('can_manage', false)->where('can_qa', true)->has('qa_queue', 0));
+    patch(route('grp.models.ticket.update', $ticket->id), ['qa_status' => 'requested'])->assertForbidden();
+    patch(route('grp.models.ticket.update', $ticket->id), ['status' => 'resolved'])->assertForbidden();
+    get(route('grp.tickets.create'))->assertOk();
+
+    actingAs($engineer);
+    patch(route('grp.models.ticket.update', $ticket->id), ['qa_status' => 'passed'])->assertForbidden();
+    patch(route('grp.models.ticket.update', $ticket->id), ['qa_status' => 'requested'])->assertRedirect();
+    expect($ticket->refresh()->qa_status)->toBe(TicketQaStatusEnum::REQUESTED)
+        ->and($ticket->qa_requested_at)->not->toBeNull()
+        ->and($ticket->status)->toBe(TicketStatusEnum::IN_PROGRESS);
+
+    actingAs($qa);
+    get(route('grp.tickets.index'))->assertInertia(fn (AssertableInertia $page) => $page->has('qa_queue', 1));
+    get(route('grp.tickets.show', $ticket->reference))->assertInertia(fn (AssertableInertia $page) => $page->where('can_qa', true)->where('ticket.qa_status', 'requested'));
+    patch(route('grp.models.ticket.update', $ticket->id), ['qa_status' => 'failed', 'qa_note' => 'Still wrong with a voucher'])->assertRedirect();
+    expect($ticket->refresh()->qa_status)->toBe(TicketQaStatusEnum::FAILED)
+        ->and($ticket->qa_user_id)->toBe($qa->id)
+        ->and($ticket->qa_checked_at)->not->toBeNull()
+        ->and($ticket->comments()->latest('id')->value('body'))->toBe('QA failed: Still wrong with a voucher')
+        ->and($ticket->comments()->latest('id')->value('is_internal'))->toBeTrue();
+
+    actingAs($engineer);
+    patch(route('grp.models.ticket.update', $ticket->id), ['qa_status' => 'requested'])->assertRedirect();
+    actingAs($qa);
+    patch(route('grp.models.ticket.update', $ticket->id), ['qa_status' => 'passed'])->assertRedirect();
+    actingAs($engineer);
+    patch(route('grp.models.ticket.update', $ticket->id), ['status' => 'resolved'])->assertRedirect();
+    expect($ticket->refresh()->qa_status)->toBe(TicketQaStatusEnum::PASSED)
+        ->and($ticket->status)->toBe(TicketStatusEnum::RESOLVED)
+        ->and($ticket->comments()->where('body', 'QA passed')->exists())->toBeTrue();
 });

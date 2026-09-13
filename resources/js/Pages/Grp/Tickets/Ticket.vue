@@ -19,9 +19,9 @@ import Button from "@/Components/Elements/Buttons/Button.vue"
 import { useStaffMessaging } from "@/Stores/staff-messaging"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faPaperclip, faCircle, faUserCheck, faSpinner, faClock, faCheckCircle, faBan, faPlay, faPause, faStop, faCheck, faUndo, faBug, faLightbulb, faLevelUp, faCube, faQuestionCircle, faEllipsisV, faTrashAlt, faUser, faPencil, faTimes, faPlus, faPlusCircle, faExchange, faHourglassHalf } from "@fal"
+import { faPaperclip, faCircle, faUserCheck, faSpinner, faClock, faCheckCircle, faBan, faPlay, faPause, faStop, faCheck, faUndo, faBug, faLightbulb, faLevelUp, faCube, faQuestionCircle, faEllipsisV, faTrashAlt, faUser, faPencil, faTimes, faPlus, faPlusCircle, faExchange, faHourglassHalf, faVial, faShieldCheck, faShield } from "@fal"
 
-library.add(faHourglassHalf, faPlusCircle, faExchange, faEllipsisV, faTrashAlt, faUser, faPencil, faTimes, faPlus,faPaperclip, faCircle, faUserCheck, faSpinner, faClock, faCheckCircle, faBan, faPlay, faPause, faStop, faCheck, faUndo, faBug, faLightbulb, faLevelUp, faCube, faQuestionCircle)
+library.add(faVial, faShieldCheck, faShield, faHourglassHalf, faPlusCircle, faExchange, faEllipsisV, faTrashAlt, faUser, faPencil, faTimes, faPlus,faPaperclip, faCircle, faUserCheck, faSpinner, faClock, faCheckCircle, faBan, faPlay, faPause, faStop, faCheck, faUndo, faBug, faLightbulb, faLevelUp, faCube, faQuestionCircle)
 
 const kindIcons: Record<string, string> = {
     bug: "fal fa-bug",
@@ -40,6 +40,7 @@ const statusBadgeClasses: Record<string, string> = {
     gray: "bg-gray-100 text-gray-700",
     blue: "bg-blue-100 text-blue-700",
     green: "bg-green-100 text-green-700",
+    amber: "bg-amber-100 text-amber-700",
     red: "bg-red-100 text-red-700",
 }
 
@@ -71,6 +72,7 @@ const props = defineProps<{
     can_manage: boolean
     can_assign: boolean
     can_flag_confidential: boolean
+    can_qa: boolean
     is_reporter: boolean
     options: {
         statuses: { label: string; value: string }[]
@@ -140,6 +142,32 @@ const askReporter = () => {
         }
     )
 }
+
+const isQaVerdictOpen = ref(false)
+const qaVerdict = ref<"passed" | "failed">("passed")
+const qaNote = ref("")
+const isSendingVerdict = ref(false)
+
+const openQaVerdict = (verdict: "passed" | "failed") => {
+    qaVerdict.value = verdict
+    qaNote.value = ""
+    isQaVerdictOpen.value = true
+}
+
+const sendQaVerdict = () => {
+    router.patch(
+        route(props.routes.update.name, props.routes.update.parameters),
+        { qa_status: qaVerdict.value, qa_note: qaNote.value },
+        {
+            preserveScroll: true,
+            onStart: () => (isSendingVerdict.value = true),
+            onFinish: () => (isSendingVerdict.value = false),
+            onSuccess: () => (isQaVerdictOpen.value = false),
+        }
+    )
+}
+
+const canAskQa = computed(() => props.can_manage && ["in_progress", "waiting", "resolved"].includes(props.ticket.status) && props.ticket.qa_status !== "requested")
 
 const update = (field: string, value: unknown) => {
     router.patch(route(props.routes.update.name, props.routes.update.parameters), { [field]: value }, { preserveScroll: true })
@@ -216,6 +244,18 @@ const update = (field: string, value: unknown) => {
                         <FontAwesomeIcon :icon="action.icon" fixed-width />
                     </button>
                 </div>
+            </div>
+            <div v-if="ticket.qa_status || canAskQa" class="flex items-center gap-2">
+                <span v-if="ticket.qa_status" v-tooltip="ticket.qa_user ? `${ticket.qa_status_label} · ${ticket.qa_user}` : ticket.qa_status_label" class="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-sm font-medium" :class="statusBadgeClasses[ticket.qa_status_icon.color]">
+                    <FontAwesomeIcon :icon="ticket.qa_status_icon.icon" fixed-width />
+                    {{ ticket.qa_status_label }}
+                </span>
+                <template v-if="can_qa && ticket.qa_status === 'requested'">
+                    <button v-tooltip="trans('QA passed')" type="button" class="rounded-md p-1.5 text-green-600 hover:bg-gray-100" @click="openQaVerdict('passed')"><FontAwesomeIcon icon="fal fa-shield-check" fixed-width /></button>
+                    <button v-tooltip="trans('QA failed')" type="button" class="rounded-md p-1.5 text-red-500 hover:bg-gray-100" @click="openQaVerdict('failed')"><FontAwesomeIcon icon="fal fa-shield" fixed-width /></button>
+                </template>
+                <button v-if="canAskQa" v-tooltip="ticket.qa_status ? trans('Ask QA to check again') : trans('Ask QA to check')" type="button" class="rounded-md p-1.5 text-amber-600 hover:bg-gray-100" @click="update('qa_status', 'requested')"><FontAwesomeIcon icon="fal fa-vial" fixed-width /></button>
+                <button v-if="can_manage && ticket.qa_status === 'requested'" v-tooltip="trans('Withdraw QA request')" type="button" class="rounded-md p-1.5 text-gray-400 hover:bg-gray-100" @click="update('qa_status', null)"><FontAwesomeIcon icon="fal fa-times" fixed-width /></button>
             </div>
             <template v-if="can_manage">
             <div v-if="ticket.type === 'help'" class="flex flex-wrap gap-2">
@@ -326,6 +366,18 @@ const update = (field: string, value: unknown) => {
         </div>
         </div>
     </div>
+    <Dialog v-model:visible="isQaVerdictOpen" modal :header="qaVerdict === 'passed' ? trans('QA passed') : trans('QA failed')" :style="{ width: '32rem' }">
+        <div class="space-y-4 text-sm">
+            <div>
+                <p class="text-xs text-gray-500 mb-1">{{ qaVerdict === 'passed' ? trans("What did you check?") : trans("What is still wrong?") }}</p>
+                <textarea v-model="qaNote" rows="5" class="w-full rounded border-gray-300 text-sm" :placeholder="qaVerdict === 'passed' ? trans('e.g. tried it on the SK shop with three orders, all fine') : trans('e.g. the total is still wrong when the order has a voucher')" />
+            </div>
+            <div class="flex justify-end gap-2">
+                <Button type="tertiary" :label="trans('Cancel')" @click="isQaVerdictOpen = false" />
+                <Button :type="qaVerdict === 'passed' ? 'primary' : 'negative'" :label="qaVerdict === 'passed' ? trans('Pass') : trans('Fail')" :icon="qaVerdict === 'passed' ? 'fal fa-shield-check' : 'fal fa-shield'" :loading="isSendingVerdict" :disabled="qaVerdict === 'failed' && !qaNote.trim()" @click="sendQaVerdict" />
+            </div>
+        </div>
+    </Dialog>
     <Dialog v-model:visible="isAskReporterOpen" modal :header="trans('Ask reporter')" :style="{ width: '32rem' }">
         <div class="space-y-4 text-sm">
             <div>

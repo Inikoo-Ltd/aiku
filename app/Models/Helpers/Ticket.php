@@ -11,6 +11,7 @@ namespace App\Models\Helpers;
 use App\Enums\CRM\Livechat\ChatPriorityEnum;
 use App\Enums\Helpers\Ticket\TicketKindEnum;
 use App\Enums\Helpers\Ticket\TicketModuleEnum;
+use App\Enums\Helpers\Ticket\TicketQaStatusEnum;
 use App\Enums\Helpers\Ticket\TicketStatusEnum;
 use App\Enums\Helpers\Ticket\TicketTypeEnum;
 use App\Models\Chat\StaffConversation;
@@ -98,6 +99,7 @@ class Ticket extends Model implements Auditable, HasMedia
         'module',
         'tags',
         'is_confidential',
+        'qa_status',
     ];
 
     protected function casts(): array
@@ -112,6 +114,9 @@ class Ticket extends Model implements Auditable, HasMedia
             'waiting_until' => 'datetime',
             'tags'        => 'array',
             'is_confidential' => 'boolean',
+            'qa_status'   => TicketQaStatusEnum::class,
+            'qa_requested_at' => 'datetime',
+            'qa_checked_at' => 'datetime',
             'rated_at'    => 'datetime',
             'assigned_at' => 'datetime',
             'started_at'  => 'datetime',
@@ -141,6 +146,11 @@ class Ticket extends Model implements Auditable, HasMedia
         return $this->belongsTo(User::class, 'assignee_id');
     }
 
+    public function qaUser(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'qa_user_id');
+    }
+
     public function customer(): BelongsTo
     {
         return $this->belongsTo(Customer::class);
@@ -163,6 +173,11 @@ class Ticket extends Model implements Auditable, HasMedia
     public static function canBeManagedBy(?User $user): bool
     {
         return $user !== null && $user->authTo('help-desk.resolve');
+    }
+
+    public static function canCheckQa(?User $user): bool
+    {
+        return $user !== null && ($user->authTo('help-desk.qa') || $user->authTo('help-desk.assign'));
     }
 
     public static function canBeRaisedBy(?User $user): bool

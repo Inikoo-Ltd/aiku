@@ -13,6 +13,10 @@ import { capitalize } from "@/Composables/capitalize"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import Icon from "@/Components/Icon.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { library } from "@fortawesome/fontawesome-svg-core"
+import { faVial, faShieldCheck, faShield } from "@fal"
+
+library.add(faVial, faShieldCheck, faShield)
 
 const props = defineProps<{
 	pageHead: any
@@ -402,6 +406,9 @@ const onMoved = (status: string, event: { added?: { element: { id: number } } })
 								<Icon
 									v-if="column.group === 'closed'"
 									:data="element.status_icon" />
+								<Icon
+									v-if="element.qa_status_icon"
+									:data="element.qa_status_icon" />
 								<span
 									class="text-gray-400"
 									v-tooltip="{ content: trans('Raised'), delay: 0 }"

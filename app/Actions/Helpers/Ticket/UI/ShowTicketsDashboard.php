@@ -13,6 +13,7 @@ use App\Actions\UI\Dashboards\ShowGroupDashboard;
 use App\Enums\CRM\Livechat\ChatPriorityEnum;
 use App\Enums\Helpers\Ticket\TicketKindEnum;
 use App\Enums\Helpers\Ticket\TicketModuleEnum;
+use App\Enums\Helpers\Ticket\TicketQaStatusEnum;
 use App\Enums\Helpers\Ticket\TicketStatusEnum;
 use App\Http\Resources\Helpers\TicketResource;
 use App\Models\Helpers\Ticket;
@@ -45,9 +46,11 @@ class ShowTicketsDashboard extends OrgAction
             ->value('median');
 
         $canManage = Ticket::canBeManagedBy($user);
+        $canQa     = Ticket::canCheckQa($user);
 
         $data = [
             'can_manage'      => $canManage,
+            'can_qa'          => $canQa,
             'mine'            => $this->tickets($reportedBy($open())->orderByDesc('updated_at')),
             'recently_closed' => $this->tickets($reportedBy((clone $base))->where('closed_at', '>=', $monthAgo)->orderByDesc('closed_at')->limit(10)),
             'stats'           => [
@@ -57,6 +60,10 @@ class ShowTicketsDashboard extends OrgAction
                 'median_hours' => $medianHours === null ? null : round((float) $medianHours, 1),
             ],
         ];
+
+        if ($canManage || $canQa) {
+            $data['qa_queue'] = $this->tickets((clone $base)->where('qa_status', TicketQaStatusEnum::REQUESTED)->visibleTo($user)->orderBy('qa_requested_at'));
+        }
 
         if ($canManage) {
             $byStatus = $open()->selectRaw('status, count(*) as total')->groupBy('status')->pluck('total', 'status');

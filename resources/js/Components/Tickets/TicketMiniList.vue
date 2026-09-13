@@ -8,6 +8,10 @@
 import { Link } from "@inertiajs/vue3"
 import Icon from "@/Components/Icon.vue"
 import { useFormatTime } from "@/Composables/useFormatTime"
+import { library } from "@fortawesome/fontawesome-svg-core"
+import { faVial, faShieldCheck, faShield } from "@fal"
+
+library.add(faVial, faShieldCheck, faShield)
 
 defineProps<{
     title: string
@@ -29,6 +33,7 @@ defineProps<{
                 <Icon :data="ticket.status_icon" />
                 <Link :href="route('grp.tickets.show', ticket.reference)" class="primaryLink whitespace-nowrap">{{ ticket.reference }}</Link>
                 <span class="truncate flex-1" :title="ticket.subject">{{ ticket.subject }}</span>
+                <Icon v-if="ticket.qa_status_icon" :data="ticket.qa_status_icon" />
                 <Icon :data="ticket.priority_icon" />
                 <span v-if="showAssignee" class="text-xs text-gray-500 whitespace-nowrap">{{ ticket.assignee_username || "-" }}</span>
                 <span class="text-xs text-gray-500 whitespace-nowrap" :title="useFormatTime(ticket[dateKey ?? 'updated_at'], { formatTime: 'hm' })">

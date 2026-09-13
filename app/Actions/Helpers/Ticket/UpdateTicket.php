@@ -13,6 +13,7 @@ use App\Actions\Traits\WithActionUpdate;
 use App\Enums\CRM\Livechat\ChatPriorityEnum;
 use App\Enums\Helpers\Ticket\TicketKindEnum;
 use App\Enums\Helpers\Ticket\TicketModuleEnum;
+use App\Enums\Helpers\Ticket\TicketQaStatusEnum;
 use App\Enums\Helpers\Ticket\TicketStatusEnum;
 use App\Enums\Helpers\Ticket\TicketStatusGroupEnum;
 use App\Models\Helpers\Ticket;
@@ -69,7 +70,27 @@ class UpdateTicket extends OrgAction
             data_set($modelData, 'closed_at', $status->isOpen() ? null : now());
         }
 
+        $qaNote = trim((string) Arr::pull($modelData, 'qa_note', ''));
+        if (Arr::exists($modelData, 'qa_status')) {
+            $qaStatus = Arr::get($modelData, 'qa_status') ? TicketQaStatusEnum::from(Arr::get($modelData, 'qa_status')) : null;
+            $isVerdict = in_array($qaStatus, [TicketQaStatusEnum::PASSED, TicketQaStatusEnum::FAILED], true);
+            data_set($modelData, 'qa_requested_at', $qaStatus === TicketQaStatusEnum::REQUESTED ? now() : ($qaStatus ? $ticket->qa_requested_at : null));
+            data_set($modelData, 'qa_checked_at', $isVerdict ? now() : null);
+            data_set($modelData, 'qa_user_id', $isVerdict && $asker instanceof User ? $asker->id : null);
+        }
+
         $ticket = $this->update($ticket, $modelData);
+
+        if ($ticket->wasChanged('qa_status') && $asker instanceof User) {
+            $verdict = $ticket->qa_status ? TicketQaStatusEnum::labels()[$ticket->qa_status->value] : __('QA check withdrawn');
+            $ticket->comments()->create([
+                'author_type' => 'User',
+                'author_id'   => $asker->id,
+                'is_internal' => true,
+                'body'        => $qaNote !== '' ? $verdict.': '.$qaNote : $verdict,
+            ]);
+            PostTicketSlackThreadReply::run($ticket, $ticket->reference.' · '.$verdict);
+        }
 
         if ($question !== '' && $asker instanceof User && $ticket->status === TicketStatusEnum::WAITING) {
             NotifyTicketReporter::make()->asked($ticket, $asker, $question);
@@ -119,6 +140,8 @@ class UpdateTicket extends OrgAction
             'tags'        => ['sometimes', 'array'],
             'is_confidential' => ['sometimes', 'boolean'],
             'question'      => ['sometimes', 'nullable', 'string', 'max:10000'],
+            'qa_status'     => ['sometimes', 'nullable', Rule::enum(TicketQaStatusEnum::class)],
+            'qa_note'       => ['sometimes', 'nullable', 'string', 'max:10000'],
             'waiting_hours' => ['sometimes', 'nullable', 'integer', 'min:1', 'max:720'],
             'tags.*'        => ['string', 'max:64'],
         ];
@@ -131,6 +154,13 @@ class UpdateTicket extends OrgAction
         }
 
         $ticket = $request->route('ticket');
+        if ($request->has('qa_status')) {
+            $isVerdict = in_array($request->input('qa_status'), [TicketQaStatusEnum::PASSED->value, TicketQaStatusEnum::FAILED->value], true);
+
+            return array_diff(array_keys($request->all()), ['qa_status', 'qa_note']) === []
+                && ($isVerdict ? Ticket::canCheckQa($request->user()) : Ticket::canBeManagedBy($request->user()));
+        }
+
         if (Ticket::canBeManagedBy($request->user())) {
             $onOwnPlate = $ticket instanceof Ticket && $ticket->assignee_id === $request->user()->id && $request->filled('assignee_id');
 

@@ -13,6 +13,7 @@ use App\Actions\OrgAction;
 use App\Enums\CRM\Livechat\ChatPriorityEnum;
 use App\Enums\Helpers\Ticket\TicketKindEnum;
 use App\Enums\Helpers\Ticket\TicketModuleEnum;
+use App\Enums\Helpers\Ticket\TicketQaStatusEnum;
 use App\Enums\Helpers\Ticket\TicketStatusEnum;
 use App\Http\Resources\Helpers\TicketCommentResource;
 use App\Http\Resources\Helpers\TicketResource;
@@ -72,12 +73,17 @@ class ShowTicket extends OrgAction
                     'tags'            => __('Tags changed'),
                     'subject'         => __('Subject edited'),
                     'is_confidential' => $value ? __('Marked confidential') : __('No longer confidential'),
+                    'qa_status'       => $value ? TicketQaStatusEnum::labels()[$value] : __('QA check withdrawn'),
                     default           => null,
                 };
                 if ($text) {
                     $events[] = [
                         'at'   => $audit->created_at,
-                        'icon' => $field === 'status' ? ($statusIcons[$value]['icon'] ?? 'fal fa-exchange') : 'fal fa-pencil',
+                        'icon' => match ($field) {
+                            'status'    => $statusIcons[$value]['icon'] ?? 'fal fa-exchange',
+                            'qa_status' => TicketQaStatusEnum::stateIcon()[$value]['icon'] ?? 'fal fa-vial',
+                            default     => 'fal fa-pencil',
+                        },
                         'text' => $text,
                         'by'   => $by,
                     ];
@@ -116,6 +122,7 @@ class ShowTicket extends OrgAction
                 'can_manage'  => Ticket::canBeManagedBy(request()->user()),
                 'can_assign'  => Ticket::canBeAssignedBy(request()->user()) || (Ticket::canBeManagedBy(request()->user()) && $ticket->assignee_id === request()->user()->id),
                 'can_flag_confidential' => Ticket::canBeAssignedBy(request()->user()),
+                'can_qa'      => Ticket::canCheckQa(request()->user()),
                 'is_reporter' => $ticket->isReportedBy(request()->user()),
                 'routes'      => [
                     'update'  => ['name' => 'grp.models.ticket.update', 'parameters' => ['ticket' => $ticket->id]],

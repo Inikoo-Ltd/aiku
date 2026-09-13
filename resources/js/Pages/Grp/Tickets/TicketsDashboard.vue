@@ -17,6 +17,7 @@ defineProps<{
     pageHead: any
     title: string
     can_manage: boolean
+    can_qa: boolean
     storeRoute: { name: string; parameters?: Record<string, unknown> }
     priorities: { label: string; value: string }[]
     kinds: { label: string; value: string }[]
@@ -25,6 +26,7 @@ defineProps<{
     recently_closed: any[]
     stats: { open: number; created_week: number; done_week: number; median_hours: number | null }
     queue?: any[]
+    qa_queue?: any[]
     assigned?: any[]
     waiting_due?: any[]
     by_status?: { status: string; label: string; icon: any; total: number }[]
@@ -62,8 +64,11 @@ const hours = (value: number | null) => (value === null ? "-" : value >= 48 ? `$
             </template>
         </div>
 
+        <TicketMiniList v-if="can_qa && !can_manage" :title="trans('Waiting for a QA check, oldest first')" :tickets="qa_queue ?? []" :empty="trans('Nothing to check')" date-key="qa_requested_at" show-assignee />
+
         <div v-if="can_manage" class="grid gap-4 lg:grid-cols-2">
             <TicketMiniList :title="trans('Assigned to me')" :tickets="assigned ?? []" :empty="trans('Nothing on your plate')" />
+            <TicketMiniList :title="trans('Waiting for a QA check')" :tickets="qa_queue ?? []" :empty="trans('Nothing to check')" date-key="qa_requested_at" show-assignee />
             <TicketMiniList :title="trans('Waiting, due now')" :tickets="waiting_due ?? []" :empty="trans('Nothing due')" date-key="waiting_until" show-assignee />
             <div class="lg:col-span-2">
                 <TicketMiniList :title="trans('Todo, unassigned, oldest and most urgent first')" :tickets="queue ?? []" :empty="trans('Queue is empty')" date-key="created_at" />
