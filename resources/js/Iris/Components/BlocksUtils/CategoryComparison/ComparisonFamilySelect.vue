@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, ref, watch } from "vue"
+import { computed, nextTick, onMounted, ref, watch } from "vue"
 import { defaultWindow, onClickOutside, useEventListener } from "@vueuse/core"
 import { ctrans } from "@/Composables/useTrans"
 import Image from "@/Common/Components/Image.vue"
@@ -24,6 +24,11 @@ const searchInput = ref<HTMLInputElement | null>(null)
 const isOpen = ref(false)
 const search = ref("")
 const panelPosition = ref({ top: 0, left: 0 })
+
+const isMounted = ref(false)
+onMounted(() => {
+    isMounted.value = true
+})
 
 onClickOutside(root, () => {
     isOpen.value = false
@@ -94,7 +99,7 @@ const panelWidth = computed(() => (props.screenType === "mobile" ? "w-64" : "w-8
             <span class="text-[10px] leading-none" aria-hidden="true">{{ isOpen ? "▲" : "▼" }}</span>
         </button>
 
-        <Teleport to="body">
+        <Teleport v-if="isMounted" to="body">
             <div
                 v-if="isOpen"
                 ref="panel"
