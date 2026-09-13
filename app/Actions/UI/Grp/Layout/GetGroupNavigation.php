@@ -116,26 +116,22 @@ class GetGroupNavigation
                             'name' => 'grp.tickets.list',
                         ],
                     ],
-                    ...($user->authTo('help-desk.resolve') ? [
-                        [
-                            'label' => __('Board'),
-                            'icon'  => ['fal', 'fa-columns'],
-                            'root'  => 'grp.tickets.board',
-                            'route' => [
-                                'name' => 'grp.tickets.board',
-                            ],
+                    [
+                        'label' => __('Board'),
+                        'icon'  => ['fal', 'fa-columns'],
+                        'root'  => 'grp.tickets.board',
+                        'route' => [
+                            'name' => 'grp.tickets.board',
                         ],
-                    ] : []),
-                    ...($user->authTo('help-desk.assign') ? [
-                        [
-                            'label' => __('Reports'),
-                            'icon'  => ['fal', 'fa-chart-line'],
-                            'root'  => 'grp.tickets.reports',
-                            'route' => [
-                                'name' => 'grp.tickets.reports',
-                            ],
+                    ],
+                    [
+                        'label' => __('Reports'),
+                        'icon'  => ['fal', 'fa-chart-line'],
+                        'root'  => 'grp.tickets.reports',
+                        'route' => [
+                            'name' => 'grp.tickets.reports',
                         ],
-                    ] : []),
+                    ],
                 ],
             ],
         ];

@@ -450,7 +450,7 @@ test('tickets take free tags and the known list grows with them', function () {
         ->and(Ticket::knownTags($this->group->id))->toContain('printer voodoo', 'lack of training');
 });
 
-test('confidential tickets are only visible to reporter and lead engineers', function () {
+test('confidential tickets are only visible to reporter, assignee and lead engineers', function () {
     $outsider = StoreGuest::make()->action($this->group, array_merge(Guest::factory()->definition(), ['positions' => [['slug' => 'group-admin', 'scopes' => []]]]))->getUser();
     $outsider->removeRole('group-admin');
     $ticket = StoreTicket::make()->action($this->group, ['subject' => 'HR matter', 'is_confidential' => true, 'reporter_type' => 'User', 'reporter_id' => $this->user->id]);
@@ -461,9 +461,12 @@ test('confidential tickets are only visible to reporter and lead engineers', fun
     actingAs($outsider);
     get(route('grp.tickets.show', $ticket->reference))->assertForbidden();
     get(route('grp.tickets.list', ['elements' => ['mine' => 'reported']]))->assertOk();
+    post(route('grp.models.ticket.comment.store', $ticket->id), ['body' => 'peek'])->assertForbidden();
+    get(route('grp.tickets.reports'))->assertInertia(fn (AssertableInertia $page) => $page->where('stats.open', Ticket::visibleTo($outsider)->whereNotIn('status', ['resolved', 'cancelled'])->count()));
 
     UpdateTicket::make()->action($ticket, ['assignee_id' => $outsider->id]);
-    expect(Ticket::visibleTo($outsider)->whereKey($ticket->id)->exists())->toBeFalse();
+    expect(Ticket::visibleTo($outsider)->whereKey($ticket->id)->exists())->toBeTrue();
+    post(route('grp.models.ticket.comment.store', $ticket->id), ['body' => 'on it'])->assertRedirect();
 });
 
 test('assistant raises, lists, works and closes a ticket through MCP', function () {
@@ -724,8 +727,8 @@ test('only the help desk manages tickets, everyone else reports, comments and cl
 
     get(route('grp.tickets.show', $ticket->reference))->assertOk()->assertInertia(fn (AssertableInertia $page) => $page->where('can_manage', false)->where('is_reporter', true));
     get(route('grp.tickets.index'))->assertOk()->assertInertia(fn (AssertableInertia $page) => $page->component('Tickets/TicketsDashboard')->where('can_manage', false)->has('mine', 1)->missing('queue'));
-    get(route('grp.tickets.reports'))->assertForbidden();
-    get(route('grp.tickets.board'))->assertForbidden();
+    get(route('grp.tickets.reports'))->assertOk();
+    get(route('grp.tickets.board'))->assertOk()->assertInertia(fn (AssertableInertia $page) => $page->where('can_manage', false));
     patch(route('grp.models.ticket.update', $other->id), ['status' => 'resolved'])->assertForbidden();
     patch(route('grp.models.ticket.update', $ticket->id), ['priority' => 'urgent'])->assertForbidden();
     patch(route('grp.models.ticket.update', $ticket->id), ['status' => 'resolved'])->assertRedirect();
@@ -737,15 +740,15 @@ test('only the help desk manages tickets, everyone else reports, comments and cl
     $manager->assignRole('group-admin');
     actingAs($manager);
     get(route('grp.tickets.show', $other->reference))->assertOk()->assertInertia(fn (AssertableInertia $page) => $page->where('can_manage', false));
-    get(route('grp.tickets.board'))->assertForbidden();
+    get(route('grp.tickets.board'))->assertOk();
     patch(route('grp.models.ticket.update', $other->id), ['status' => 'resolved'])->assertForbidden();
 
     actingAs($helper);
     get(route('grp.tickets.create'))->assertForbidden();
     post(route('grp.models.ticket.store'), ['subject' => 'Engineers do not report'])->assertForbidden();
     get(route('grp.tickets.show', $other->reference))->assertOk()->assertInertia(fn (AssertableInertia $page) => $page->where('can_manage', true));
-    get(route('grp.tickets.reports'))->assertForbidden();
-    get(route('grp.tickets.board'))->assertOk();
+    get(route('grp.tickets.reports'))->assertOk();
+    get(route('grp.tickets.board'))->assertOk()->assertInertia(fn (AssertableInertia $page) => $page->where('can_manage', true));
     patch(route('grp.models.ticket.update', $other->id), ['is_confidential' => true])->assertForbidden();
     patch(route('grp.models.ticket.update', $other->id), ['assignee_id' => $helper->id])->assertForbidden();
     patch(route('grp.models.ticket.update', $other->id), ['priority' => 'urgent'])->assertRedirect();

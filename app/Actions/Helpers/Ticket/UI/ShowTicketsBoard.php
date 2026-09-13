@@ -22,7 +22,7 @@ class ShowTicketsBoard extends OrgAction
 {
     public function authorize(ActionRequest $request): bool
     {
-        return Ticket::canBeManagedBy($request->user());
+        return $request->user() !== null;
     }
 
     private const array PERIODS = ['24h', 'today', '1w', 'all'];
@@ -127,15 +127,16 @@ class ShowTicketsBoard extends OrgAction
                 'pageHead'    => [
                     'title'   => __('Tickets board'),
                     'icon'    => ['fal', 'fa-columns'],
-                    'actions' => [
+                    'actions' => Ticket::canBeRaisedBy(request()->user()) ? [
                         [
                             'type'  => 'button',
                             'style' => 'create',
                             'label' => __('New ticket'),
                             'route' => ['name' => 'grp.tickets.create'],
                         ],
-                    ],
+                    ] : [],
                 ],
+                'can_manage'    => Ticket::canBeManagedBy(request()->user()),
                 'columns'       => $board['columns'],
                 'periodOptions' => $board['periodOptions'],
                 'updateRoute' => 'grp.models.ticket.update',

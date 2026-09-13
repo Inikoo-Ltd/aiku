@@ -24,13 +24,13 @@ class ShowTicketsReports extends OrgAction
 
     public function authorize(ActionRequest $request): bool
     {
-        return Ticket::canBeAssignedBy($request->user());
+        return $request->user() !== null;
     }
 
-    public function handle(Group $group, int $days): array
+    public function handle(Group $group, int $days, ?User $viewer = null): array
     {
         $from = now()->subDays($days - 1)->startOfDay();
-        $base = Ticket::where('tickets.group_id', $group->id);
+        $base = Ticket::where('tickets.group_id', $group->id)->when($viewer, fn ($query) => $query->visibleTo($viewer));
 
         $createdByDay  = (clone $base)->where('created_at', '>=', $from)
             ->selectRaw('date(created_at) as day, count(*) as total')->groupBy('day')->pluck('total', 'day');
@@ -115,7 +115,7 @@ class ShowTicketsReports extends OrgAction
         $this->initialisationFromGroup(group(), $request);
         $days = (int) $request->input('days', 7);
 
-        return $this->handle($this->group, in_array($days, self::PERIODS) ? $days : 7);
+        return $this->handle($this->group, in_array($days, self::PERIODS) ? $days : 7, $request->user());
     }
 
     public function htmlResponse(array $stats): Response

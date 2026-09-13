@@ -35,6 +35,7 @@ const props = defineProps<{
 	}[]
 	periodOptions: string[]
 	updateRoute: string
+	can_manage: boolean
 }>()
 
 useLiveTickets(["columns", "periodOptions"])
@@ -389,12 +390,14 @@ const onMoved = (status: string, event: { added?: { element: { id: number } } })
 					v-model="column.tickets"
 					item-key="id"
 					group="tickets"
+					:disabled="!can_manage"
 					class="flex-1 space-y-2 min-h-24 max-h-[70vh] overflow-y-auto pr-0.5"
 					@change="onMoved(column.status, $event)">
 					<template #item="{ element }">
 						<div
 							v-show="matchesFilters(element, column.key)"
-							class="bg-white rounded-md border border-gray-200 shadow-sm p-2.5 cursor-grab active:cursor-grabbing hover:border-gray-400"
+							class="bg-white rounded-md border border-gray-200 shadow-sm p-2.5 hover:border-gray-400"
+							:class="can_manage ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'"
 							:data-ticket-id="element.id">
 							<p class="text-sm leading-snug break-words line-clamp-3">
 								{{ element.subject }}

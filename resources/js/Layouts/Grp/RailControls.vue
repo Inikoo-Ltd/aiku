@@ -49,9 +49,9 @@ const queueOverdue = computed(() => layout.ticket_badges?.queue?.overdue?.count 
         <div v-if="layout.ticket_badges?.queue" class="relative flex items-center justify-center shrink-0" :class="layout.messagingSidebar.show ? '' : 'h-9 w-9'">
             <Popover width="w-72" position="right-full mr-2 top-0">
                 <template #button="{ open }">
-                    <div :title="trans('Tickets to fix')" class="relative rounded-md w-8 h-8 flex items-center justify-center opacity-70 hover:opacity-100 cursor-pointer font-medium tabular-nums" :class="queueOverdue ? 'bg-red-300 text-red-800' : 'bg-emerald-300 text-emerald-800'">
+                    <div :title="trans('Tickets to fix')" class="relative rounded-full w-8 h-8 flex items-center justify-center opacity-70 hover:opacity-100 cursor-pointer font-medium tabular-nums" :class="queueOverdue ? 'bg-fuchsia-300 text-fuchsia-900' : 'bg-lime-300 text-lime-900'">
                         <Transition name="spin-to-right"><span :key="queueCount"><span :class="queueCount > 99 ? 'text-xxs' : 'text-xs'">{{ queueCount > 99 ? '99+' : queueCount }}</span></span></Transition>
-                        <FontAwesomeIcon v-if="queueOverdue" icon="fas fa-circle" class="absolute top-0 -right-0.5 text-red-600 text-[5px] animate-ping" fixed-width aria-hidden="true" />
+                        <FontAwesomeIcon v-if="queueOverdue" icon="fas fa-circle" class="absolute top-0 -right-0.5 text-fuchsia-500 text-[5px] animate-ping" fixed-width aria-hidden="true" />
                     </div>
                 </template>
                 <template #content="{ close }">
@@ -64,9 +64,9 @@ const queueOverdue = computed(() => layout.ticket_badges?.queue?.overdue?.count 
         <div v-if="layout.ticket_badges?.mine && (myTicketsCount > 0 || layout.ticket_badges.mine.done_24h.count > 0)" class="relative flex items-center justify-center shrink-0" :class="layout.messagingSidebar.show ? '' : 'h-9 w-9'">
             <Popover width="w-72" position="right-full mr-2 top-0">
                 <template #button="{ open }">
-                    <div :title="trans('My tickets')" class="relative rounded-md w-8 h-8 flex items-center justify-center opacity-70 hover:opacity-100 cursor-pointer font-medium tabular-nums" :class="myTicketsWaiting ? 'bg-orange-300 text-orange-800' : 'bg-sky-300 text-sky-800'">
+                    <div :title="trans('My tickets')" class="relative rounded-full w-8 h-8 flex items-center justify-center opacity-70 hover:opacity-100 cursor-pointer font-medium tabular-nums bg-stone-200 text-stone-800">
                         <Transition name="spin-to-right"><span :key="myTicketsCount"><span :class="myTicketsCount > 99 ? 'text-xxs' : 'text-xs'">{{ myTicketsCount > 99 ? '99+' : myTicketsCount }}</span></span></Transition>
-                        <FontAwesomeIcon v-if="myTicketsWaiting" icon="fas fa-circle" class="absolute top-0 -right-0.5 text-orange-600 text-[5px] animate-ping" fixed-width aria-hidden="true" />
+                        <FontAwesomeIcon v-if="myTicketsWaiting" icon="fas fa-circle" class="absolute top-0 -right-0.5 text-lime-400 text-[5px] animate-ping" fixed-width aria-hidden="true" />
                     </div>
                 </template>
                 <template #content="{ close }">
@@ -74,6 +74,8 @@ const queueOverdue = computed(() => layout.ticket_badges?.queue?.overdue?.count 
                 </template>
             </Popover>
         </div>
+
+        <div v-if="layout.ticket_badges?.queue || layout.ticket_badges?.mine" class="w-6 border-t border-[var(--chat-line)] shrink-0" aria-hidden="true" />
 
         <!-- Badge: Warehouse Waiting Items -->
         <div v-if="layout?.dispatching_waiting_count > 0" class="relative flex items-center justify-center shrink-0" :class="layout.messagingSidebar.show ? '' : 'h-9 w-9'">

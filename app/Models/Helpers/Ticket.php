@@ -218,6 +218,7 @@ class Ticket extends Model implements Auditable, HasMedia
 
         return $query->where(fn (Builder $query) => $query
             ->where('tickets.is_confidential', false)
+            ->orWhere('tickets.assignee_id', $user->id)
             ->orWhere(fn (Builder $query) => $query->where('tickets.reporter_type', 'User')->where('tickets.reporter_id', $user->id)));
     }
 

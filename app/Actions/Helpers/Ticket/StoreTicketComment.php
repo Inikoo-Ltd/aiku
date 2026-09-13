@@ -70,7 +70,13 @@ class StoreTicketComment extends OrgAction
 
     public function authorize(ActionRequest $request): bool
     {
-        return $this->asAction || $request->user() !== null;
+        if ($this->asAction) {
+            return true;
+        }
+
+        $user = $request->user();
+
+        return $user instanceof User && $request->route('ticket')->isVisibleTo($user);
     }
 
     public function action(Ticket $ticket, User|WebUser $author, array $modelData, bool $mirrorToSlack = true, bool $notifyUsers = true): TicketComment
