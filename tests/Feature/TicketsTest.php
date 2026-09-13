@@ -922,6 +922,7 @@ test('ticket badges count my tickets and the engineer queue, and engineers hear 
         ->and($count($reporter, 'mine', 'in_progress'))->toBe(1)
         ->and($count($reporter, 'mine', 'waiting'))->toBe(0)
         ->and($count($this->user, 'queue', 'new_unassigned'))->toBe($baseline['new_unassigned']['count'] + 1)
+        ->and($count($this->user, 'queue', 'todo_week'))->toBe($baseline['todo_week']['count'] + 1)
         ->and($count($this->user, 'queue', 'overdue'))->toBe($baseline['overdue']['count'])
         ->and($count($this->user, 'queue', 'assigned_to_me'))->toBe($baseline['assigned_to_me']['count']);
 

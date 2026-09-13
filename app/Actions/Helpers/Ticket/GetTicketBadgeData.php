@@ -45,6 +45,7 @@ class GetTicketBadgeData
         $open = fn () => (clone $all)->whereIn('status', [TicketStatusEnum::OPEN, TicketStatusEnum::ASSIGNED, TicketStatusEnum::IN_PROGRESS]);
 
         $badges['queue'] = [
+            'todo_week'      => $this->row(__('To do, created this week'), (clone $all)->whereIn('status', [TicketStatusEnum::OPEN, TicketStatusEnum::ASSIGNED])->where('created_at', '>=', now()->subWeek()), ['status' => 'open,assigned']),
             'new_unassigned' => $this->row(__('New, nobody on it'), (clone $all)->where('status', TicketStatusEnum::OPEN), ['status' => 'open']),
             'overdue'        => $this->row(__('Open for more than 24h'), $open()->where('created_at', '<', now()->subDay()), ['status' => 'open,assigned,in_progress']),
             'assigned_to_me' => $this->row(__('Assigned to me'), $open()->where('assignee_id', $user->id), ['mine' => 'assigned', 'status' => 'open,assigned,in_progress']),
