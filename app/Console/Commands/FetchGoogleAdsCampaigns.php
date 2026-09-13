@@ -35,7 +35,7 @@ class FetchGoogleAdsCampaigns extends Command
 
     protected $description = 'Fetch the campaign inventory from the Google Ads API';
 
-    private const string API_VERSION = 'v21';
+    private const string API_VERSION = 'v25';
 
     private const string CAMPAIGN_QUERY = "SELECT campaign.id, campaign.name, campaign.status, campaign.advertising_channel_type, campaign_budget.amount_micros, customer.currency_code FROM campaign WHERE campaign.status != 'REMOVED'";
 
