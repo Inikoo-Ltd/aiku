@@ -45,3 +45,20 @@ test('returns the SSR response when rendering succeeds', function () {
         ->and($response->head)->toBe('<title>Family</title>')
         ->and($response->body)->toBe('<div>Family</div>');
 });
+
+test('a storefront 404 is not rendered on the server, so junk urls cannot hold a worker waiting for it', function () {
+    Http::preventStrayRequests();
+    request()->headers->set('X-Inertia', 'true');
+
+    $response = app(\App\Exceptions\Handler::class)->renderErrorForLogOutWebpages(
+        'iris',
+        request(),
+        new \Symfony\Component\HttpKernel\Exception\NotFoundHttpException(),
+        response('', 404)
+    );
+
+    expect($response->getStatusCode())->toBe(404)
+        ->and(config('inertia.ssr.enabled'))->toBeFalse();
+
+    Http::assertNothingSent();
+});
