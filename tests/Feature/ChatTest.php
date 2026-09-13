@@ -1959,9 +1959,36 @@ test('GetChatSessions returns a paginator of sessions with messages', function (
         'updated_at'      => now(),
     ]);
 
+    ChatMessage::create([
+        'chat_session_id' => $chatSession->id,
+        'message_type'    => ChatMessageTypeEnum::TEXT->value,
+        'sender_type'     => ChatSenderTypeEnum::GUEST->value,
+        'sender_id'       => null,
+        'message_text'    => 'Already seen',
+        'is_read'         => true,
+        'created_at'      => now(),
+        'updated_at'      => now(),
+    ]);
+
+    ChatMessage::create([
+        'chat_session_id' => $chatSession->id,
+        'message_type'    => ChatMessageTypeEnum::TEXT->value,
+        'sender_type'     => ChatSenderTypeEnum::AGENT->value,
+        'sender_id'       => null,
+        'message_text'    => 'Agent reply',
+        'is_read'         => false,
+        'created_at'      => now(),
+        'updated_at'      => now(),
+    ]);
+
     $result = GetChatSessions::make()->handle([]);
 
     expect($result->total())->toBeGreaterThanOrEqual(1);
+
+    $session = collect($result->items())->firstWhere('id', $chatSession->id);
+    expect($session)->not->toBeNull()
+        ->and((int) $session->unread_count)->toBe(1)
+        ->and(\App\Http\Resources\CRM\Livechat\ChatSessionListResource::make($session)->resolve()['unread_count'])->toBe(1);
 });
 
 test('GetChatAgentByUserId asController returns 404 json when agent does not exist', function () {

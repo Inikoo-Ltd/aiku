@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, inject, onMounted, onUnmounted, watch, nextTick } from "vue"
 import { Head } from "@inertiajs/vue3"
-import { watchDebounced } from "@vueuse/core"
+import { useDebounceFn, watchDebounced } from "@vueuse/core"
 import axios from "axios"
 import { trans } from "laravel-vue-i18n"
 import { capitalize } from "@/Composables/capitalize"
@@ -213,6 +213,9 @@ const reloadContacts = async () => {
         console.error("Failed to reload contacts:", e)
     }
 }
+
+// A burst of chat-list broadcasts (a message, its read receipt, an assignment) reloads the list once
+const reloadContactsSoon = useDebounceFn(reloadContacts, 500)
 
 const loadMore = async () => {
     if (isLoadingMore.value || !hasMore.value) return
@@ -932,7 +935,7 @@ const openSelectedFromProp = () => {
 }
 
 const onChatListEvent = (e: any) => {
-    reloadContacts()
+    reloadContactsSoon()
     fetchInboxNotifications()
 
     const s = e?.session
@@ -964,7 +967,7 @@ const onMetaChatListEvent = (e: any) => {
     // Contact list only needs a full reload when viewing the WhatsApp channel.
     if (selectedChannel.value !== "whatsapp") return
 
-    reloadContacts()
+    reloadContactsSoon()
 
     const s = e?.session
     const open = selectedSession.value
