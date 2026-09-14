@@ -13,10 +13,10 @@ import { useFormatTime } from "@/Composables/useFormatTime"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import TicketThread from "@/Components/Tickets/TicketThread.vue"
 import TicketRating from "@/Components/Tickets/TicketRating.vue"
+import TicketPdfPreview, { isPdfAttachment } from "@/Components/Tickets/TicketPdfPreview.vue"
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
 import { Popover, Listbox, Dialog } from "primevue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
-import { useStaffMessaging } from "@/Stores/staff-messaging"
 import { useLiveTickets } from "@/Composables/useLiveTickets"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
@@ -30,9 +30,11 @@ const kindIcons: Record<string, string> = {
     escalation: "fal fa-level-up",
 }
 
+const previewPdfIndex = ref<number | null>(null)
+const ticketPdfFiles = computed(() => (props.ticket.attachments ?? []).filter(isPdfAttachment))
+
 const kindPopover = ref()
 const modulePopover = ref()
-const moreMenu = ref()
 const assigneePopover = ref()
 
 const optionLabel = (options: { label: string; value: string }[], value: string | null) => options.find((option) => option.value === value)?.label
@@ -50,7 +52,7 @@ const cancel = { status: "cancelled", label: trans("Cancel"), icon: "fal fa-ban"
 const start = { status: "in_progress", label: trans("Start"), icon: "fal fa-play", class: "text-blue-600" }
 
 const statusActions: Record<string, { status: string; label: string; icon: string; class: string }[]> = {
-    open: [start, done, cancel],
+    open: [],
     assigned: [start, done, cancel],
     in_progress: [
         { status: "waiting", label: trans("Ask reporter"), icon: "fal fa-question-circle", class: "text-blue-500" },
@@ -93,7 +95,6 @@ const props = defineProps<{
 
 useLiveTickets(["ticket", "comments", "timeline", "can_rate", "can_manage", "can_assign", "can_flag_confidential", "can_qa", "is_reporter"], props.ticket.reference)
 
-const staffMessaging = useStaffMessaging()
 
 const newTag = ref("")
 const tagOptions = computed(() => Array.from(new Set([...props.options.tags, ...props.ticket.tags])))
@@ -107,12 +108,6 @@ const addTypedTag = () => {
 }
 
 const escalate = () => router.post(route(props.routes.escalate.name, props.routes.escalate.parameters))
-
-const openStaffChat = async () => {
-    if (!staffMessaging.fetched) await staffMessaging.fetchConversations()
-    staffMessaging.openConversation(props.ticket.staff_conversation_ulid)
-}
-
 
 const waitingPresets = [
     { label: trans("2 hours"), hours: 2 },
@@ -179,48 +174,58 @@ const update = (field: string, value: unknown) => {
 
 <template>
     <Head :title="capitalize(title)" />
-    <PageHeading :data="pageHead" />
+    <PageHeading :data="pageHead">
+        <template #wrapped-delete>
+            <ModalConfirmationDelete
+                :title="trans('Delete :reference?', { reference: ticket.reference })"
+                :description="trans('The ticket and its comments will be removed for good.')"
+                :noLabel="trans('Yes, delete')"
+                :routeDelete="routes.delete"
+                class="w-full">
+                <template #default="{ changeModel }">
+                    <Button type="negative" icon="fal fa-trash-alt" :label="trans('Delete ticket')" full @click="changeModel" />
+                </template>
+            </ModalConfirmationDelete>
+        </template>
+    </PageHeading>
     <div class="p-4 grid gap-4 lg:grid-cols-3">
         <div class="lg:col-span-2 space-y-4">
-            <div class="flex items-start justify-between gap-2">
-                <h2 class="text-lg font-semibold">{{ ticket.subject }}</h2>
-                <ModalConfirmationDelete
-                    v-if="can_flag_confidential"
-                    :title="trans('Delete :reference?', { reference: ticket.reference })"
-                    :description="trans('The ticket and its comments will be removed for good.')"
-                    :noLabel="trans('Yes, delete')"
-                    :routeDelete="routes.delete">
-                    <template #default="{ changeModel }">
-                        <button v-tooltip="trans('More')" type="button" class="rounded-md px-2 py-1 text-gray-500 hover:bg-gray-100" @click="moreMenu.toggle($event)">
-                            <FontAwesomeIcon icon="fal fa-ellipsis-v" fixed-width />
-                        </button>
-                        <Popover ref="moreMenu">
-                            <button type="button" class="flex items-center gap-2 px-2 py-1 text-sm text-red-600 hover:bg-red-50 rounded" @click="moreMenu.hide(); changeModel()">
-                                <FontAwesomeIcon icon="fal fa-trash-alt" fixed-width />
-                                {{ trans("Delete ticket") }}
-                            </button>
-                        </Popover>
-                    </template>
-                </ModalConfirmationDelete>
-            </div>
             <TicketRating :rating="ticket.rating" :rating-comment="ticket.rating_comment" :can-rate="can_rate" :rate-route="routes.rate" />
             <TicketThread :ticket="ticket" :comments="comments" :comment-route="routes.comment" />
         </div>
         <div class="space-y-4 self-start">
         <aside class="bg-white rounded-lg border border-gray-300 p-4 space-y-4 text-sm">
             <div>
-                <div class="flex items-center gap-2">
+                <component :is="can_assign ? 'button' : 'div'" type="button" class="flex items-center gap-2 rounded" :class="can_assign && 'hover:bg-gray-100 pr-2'" @click="can_assign && assigneePopover.toggle($event)">
                     <img v-if="ticket.assignee_avatar?.original" :src="ticket.assignee_avatar.original" class="h-7 w-7 rounded-full object-cover" alt="" />
                     <span v-else class="flex h-7 w-7 items-center justify-center rounded-full bg-gray-200 text-gray-500">
                         <FontAwesomeIcon icon="fal fa-user" fixed-width />
                     </span>
                     <span :class="ticket.assignee ? 'text-gray-800' : 'text-gray-400'">{{ ticket.assignee || trans("Unassigned") }}</span>
-                    <button v-if="can_assign" v-tooltip="trans('Change assignee')" type="button" class="rounded p-1 text-gray-400 hover:text-gray-700" @click="assigneePopover.toggle($event)">
-                        <FontAwesomeIcon icon="fal fa-pencil" fixed-width />
-                    </button>
-                </div>
+                </component>
                 <Popover v-if="can_assign" ref="assigneePopover">
-                    <Listbox :model-value="ticket.assignee_id" :options="options.assignees" option-label="label" option-value="value" filter scroll-height="16rem" class="border-0" @update:model-value="update('assignee_id', $event); assigneePopover.hide()" />
+                    <button
+                        v-if="options.assignees.some((engineer) => engineer.is_me && engineer.value !== ticket.assignee_id)"
+                        type="button"
+                        class="mb-2 w-full rounded bg-indigo-50 px-2 py-1 text-sm font-medium text-indigo-700 hover:bg-indigo-100"
+                        @click="update('assignee_id', options.assignees.find((engineer) => engineer.is_me)!.value); assigneePopover.hide()">
+                        {{ trans("Assign to me") }}
+                    </button>
+                    <div class="grid grid-cols-4 gap-2">
+                        <button
+                            v-for="engineer in options.assignees"
+                            :key="engineer.value"
+                            type="button"
+                            class="flex w-16 flex-col items-center gap-1 rounded p-1 text-xs hover:bg-gray-100"
+                            :class="engineer.value === ticket.assignee_id && 'bg-indigo-50 text-indigo-700'"
+                            @click="update('assignee_id', engineer.value); assigneePopover.hide()">
+                            <img v-if="engineer.avatar?.original" :src="engineer.avatar.original" class="h-9 w-9 rounded-full object-cover" alt="" />
+                            <span v-else class="flex h-9 w-9 items-center justify-center rounded-full bg-gray-200 text-gray-500">
+                                <FontAwesomeIcon icon="fal fa-user" fixed-width />
+                            </span>
+                            <span class="w-full truncate text-center">{{ engineer.label }}</span>
+                        </button>
+                    </div>
                     <button v-if="can_flag_confidential && ticket.assignee_id" type="button" class="mt-2 w-full rounded px-2 py-1 text-sm text-gray-500 hover:bg-gray-100" @click="update('assignee_id', null); assigneePopover.hide()">
                         {{ trans("Unassign") }}
                     </button>
@@ -321,7 +326,6 @@ const update = (field: string, value: unknown) => {
                 </Popover>
             </div>
             <Button v-if="ticket.type === 'customer' && !ticket.escalations.length" type="secondary" icon="fal fa-level-up" :label="trans('Escalate to help desk')" full @click="escalate" />
-            <Button v-if="ticket.staff_conversation_ulid" type="tertiary" icon="fal fa-comments" :label="trans('Staff chat')" full @click="openStaffChat" />
             <label v-if="can_flag_confidential" class="flex items-center gap-x-2 text-gray-600 cursor-pointer">
                 <input type="checkbox" :checked="ticket.is_confidential" class="rounded border-gray-300" @change="update('is_confidential', ($event.target as HTMLInputElement).checked)" />
                 {{ trans("Confidential") }} <span class="text-xs text-gray-400">({{ trans("only reporter and lead engineers") }})</span>
@@ -341,14 +345,16 @@ const update = (field: string, value: unknown) => {
             <div v-if="ticket.attachments?.length">
                 <p class="text-xs text-gray-500 mb-1">{{ trans("Attachments") }}</p>
                 <ul class="space-y-1">
-                    <li v-for="file in ticket.attachments" :key="file.url"><a :href="file.url" target="_blank" class="text-blue-600 hover:underline break-all"><FontAwesomeIcon icon="fal fa-paperclip" class="mr-1" />{{ file.name }}</a></li>
+                    <li v-for="file in ticket.attachments" :key="file.url">
+                        <button v-if="isPdfAttachment(file)" type="button" class="text-left text-blue-600 hover:underline break-all" @click="previewPdfIndex = ticketPdfFiles.indexOf(file)"><FontAwesomeIcon icon="fal fa-paperclip" class="mr-1" />{{ file.name }}</button>
+                        <a v-else :href="file.url" target="_blank" class="text-blue-600 hover:underline break-all"><FontAwesomeIcon icon="fal fa-paperclip" class="mr-1" />{{ file.name }}</a>
+                    </li>
                 </ul>
+                <TicketPdfPreview v-model:index="previewPdfIndex" :files="ticketPdfFiles" />
             </div>
             <dl class="space-y-1 text-gray-600">
-                <div class="flex justify-between"><dt>{{ trans("Type") }}</dt><dd>{{ ticket.type }}</dd></div>
                 <div v-if="ticket.parent" class="flex justify-between"><dt>{{ trans("Escalated from") }}</dt><dd><Link :href="route('grp.tickets.show', ticket.parent)" class="text-blue-600 hover:underline">{{ ticket.parent }}</Link></dd></div>
                 <div v-if="ticket.escalations.length" class="flex justify-between"><dt>{{ trans("Escalated to") }}</dt><dd class="space-x-1"><Link v-for="ref in ticket.escalations" :key="ref" :href="route('grp.tickets.show', ref)" class="text-blue-600 hover:underline">{{ ref }}</Link></dd></div>
-                <div class="flex justify-between"><dt>{{ trans("Reporter") }}</dt><dd>{{ ticket.reporter || "-" }}</dd></div>
                 <div v-if="ticket.customer" class="flex justify-between"><dt>{{ trans("Customer") }}</dt><dd>{{ ticket.customer }}</dd></div>
                 <div v-if="ticket.shop" class="flex justify-between"><dt>{{ trans("Shop") }}</dt><dd>{{ ticket.shop }}</dd></div>
             </dl>

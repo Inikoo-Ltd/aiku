@@ -27,7 +27,6 @@ defineProps<{
     <PageHeading :data="pageHead" />
     <div class="p-4 max-w-3xl space-y-4">
         <div class="flex items-center gap-3">
-            <h2 class="text-lg font-semibold">{{ ticket.subject }}</h2>
             <span class="text-sm text-gray-600"><Icon :data="ticket.status_icon" /> {{ ticket.status_label }}</span>
         </div>
         <TicketRating :rating="ticket.rating" :rating-comment="ticket.rating_comment" :can-rate="can_rate" :rate-route="routes.rate" />
