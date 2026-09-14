@@ -8,6 +8,7 @@
 
 namespace App\Actions\UI\Grp\Layout;
 
+use App\Enums\SysAdmin\Authorisation\RolesEnum;
 use App\Models\SysAdmin\User;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -96,7 +97,7 @@ class GetGroupNavigation
             'icon'    => ['fal', 'fa-life-ring'],
             'root'    => 'grp.tickets.',
             'route'   => [
-                'name' => 'grp.tickets.index',
+                'name' => $user->roles()->where('name', RolesEnum::HELP_DESK_SUPERVISOR->value)->exists() ? 'grp.tickets.board' : 'grp.tickets.index',
             ],
             'topMenu' => [
                 'subSections' => [

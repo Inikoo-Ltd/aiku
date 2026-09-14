@@ -1256,3 +1256,11 @@ test('slack ticket direct message logs a refused delivery without failing and re
 
     expect(fn () => \App\Actions\Helpers\Ticket\SendTicketSlackDirectMessage::run($user, 'Hello'))->toThrow(RuntimeException::class);
 });
+
+test('tickets sidebar link opens the board for lead engineers and the dashboard for everyone else', function () {
+    $clerk = User::factory()->create(['group_id' => $this->group->id]);
+    $clerk->assignRole('help-desk-clerk');
+
+    expect(\App\Actions\UI\Grp\Layout\GetGroupNavigation::run($this->user)['tickets']['route']['name'])->toBe('grp.tickets.board')
+        ->and(\App\Actions\UI\Grp\Layout\GetGroupNavigation::run($clerk)['tickets']['route']['name'])->toBe('grp.tickets.index');
+});
