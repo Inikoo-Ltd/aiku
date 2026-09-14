@@ -34,7 +34,11 @@ class UpdateTicket extends OrgAction
 
         $asker = request()->user();
         if ($question !== '' && $asker instanceof User) {
-            StoreTicketComment::make()->action($ticket, $asker, ['body' => $question], notifyUsers: false);
+            if (Arr::get($modelData, 'status') === TicketStatusEnum::PENDING_DEPLOY->value) {
+                data_set($modelData, 'data', array_merge($ticket->data ?? [], ['deploy_comment' => ['body' => $question, 'user_id' => $asker->id]]));
+            } else {
+                StoreTicketComment::make()->action($ticket, $asker, ['body' => $question], notifyUsers: false);
+            }
         }
 
         if (Arr::exists($modelData, 'assignee_id') && Arr::get($modelData, 'assignee_id') != $ticket->assignee_id) {

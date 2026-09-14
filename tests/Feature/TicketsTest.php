@@ -9,6 +9,7 @@
 use App\Actions\Chat\ChatSession\StoreChatSession;
 use App\Actions\Chat\ChatSession\StoreTicketFromChatSession;
 use App\Actions\Helpers\Ticket\CancelStaleTickets;
+use App\Actions\Helpers\Ticket\CloseTicketsAfterDeployment;
 use App\Actions\Helpers\Ticket\LinkTicketsToAppDeployment;
 use App\Models\DevOps\AppDeployment;
 use App\Actions\Helpers\Ticket\RateTicket;
@@ -249,8 +250,9 @@ test('staff reporter is told of the question by email and slack as their profile
     Notification::assertSentTo($reporter, TicketNotification::class, fn ($notification, $channels) => $channels === ['database']);
 
     $reporter->update(['settings' => ['ticket_notifications' => 'email']]);
-    patch(route('grp.models.ticket.update', $ticket->id), ['status' => 'resolved'])->assertRedirect();
+    patch(route('grp.models.ticket.update', $ticket->id), ['status' => 'resolved', 'question' => 'Fixed the voucher total'])->assertRedirect();
     Notification::assertSentTo($reporter, TicketNotification::class, fn ($notification) => str_contains($notification->subject, 'is done'));
+    expect($ticket->comments()->where('body', 'Fixed the voucher total')->count())->toBe(1);
 });
 
 test('ticket page shows a history from opened to its status changes, newest first', function () {
@@ -1134,4 +1136,24 @@ test('ticket search ranks subject over description over comments, understands ke
     expect($search('email')->pluck('reference'))->not->toContain($byInternal->reference)
         ->and(get(route('grp.search.index', ['q' => 'email marke', 'route_src' => 'grp.tickets.board']))->assertOk()->json('results.tickets.*.code'))->toContain($bySubject->reference)
         ->and(SearchTickets::run((string) $other->number)['results']['tickets'][0]['href'])->toBe(route('grp.tickets.show', $other->reference));
+});
+
+test('done after next deployment holds the ticket, then the deployment closes it and posts the engineer comment', function () {
+    $ticket = StoreTicket::make()->action($this->group, ['subject' => 'Ship it']);
+    UpdateTicket::make()->action($ticket, ['status' => TicketStatusEnum::IN_PROGRESS->value]);
+
+    patch(route('grp.models.ticket.update', $ticket->id), ['status' => 'pending_deploy', 'question' => 'Fixed, live after the deploy'])->assertRedirect();
+
+    expect($ticket->fresh()->status)->toBe(TicketStatusEnum::PENDING_DEPLOY)
+        ->and($ticket->fresh()->status->isOpen())->toBeTrue()
+        ->and($ticket->comments()->where('body', 'Fixed, live after the deploy')->count())->toBe(0);
+
+    expect(CloseTicketsAfterDeployment::run())->toBe(1);
+
+    $ticket->refresh();
+    expect($ticket->status)->toBe(TicketStatusEnum::RESOLVED)
+        ->and($ticket->resolved_at)->not->toBeNull()
+        ->and($ticket->comments()->where('body', 'Fixed, live after the deploy')->sole()->author_type)->toBe('User')
+        ->and(data_get($ticket->data, 'deploy_comment'))->toBeNull()
+        ->and(CloseTicketsAfterDeployment::run())->toBe(0);
 });

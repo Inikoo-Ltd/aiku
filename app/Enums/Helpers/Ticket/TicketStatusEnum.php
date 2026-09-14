@@ -18,6 +18,7 @@ enum TicketStatusEnum: string
     case ASSIGNED    = 'assigned';
     case IN_PROGRESS = 'in_progress';
     case WAITING     = 'waiting';
+    case PENDING_DEPLOY = 'pending_deploy';
     case RESOLVED    = 'resolved';
     case CANCELLED   = 'cancelled';
 
@@ -28,6 +29,7 @@ enum TicketStatusEnum: string
             'assigned'    => __('Assigned'),
             'in_progress' => __('In progress'),
             'waiting'     => __('Waiting'),
+            'pending_deploy' => __('Waiting for deployment'),
             'resolved'    => __('Done'),
             'cancelled'   => __('Cancelled'),
         ];
@@ -40,6 +42,7 @@ enum TicketStatusEnum: string
             'assigned'    => ['tooltip' => __('Assigned'), 'icon' => 'fal fa-user-check', 'class' => 'text-gray-600', 'color' => 'gray'],
             'in_progress' => ['tooltip' => __('In progress'), 'icon' => 'fal fa-spinner', 'class' => 'text-blue-500', 'color' => 'blue'],
             'waiting'     => ['tooltip' => __('Waiting'), 'icon' => 'fal fa-clock', 'class' => 'text-blue-400', 'color' => 'blue'],
+            'pending_deploy' => ['tooltip' => __('Waiting for deployment'), 'icon' => 'fal fa-rocket', 'class' => 'text-green-500', 'color' => 'green'],
             'resolved'    => ['tooltip' => __('Done'), 'icon' => 'fal fa-check-circle', 'class' => 'text-green-500', 'color' => 'green'],
             'cancelled'   => ['tooltip' => __('Cancelled'), 'icon' => 'fal fa-ban', 'class' => 'text-red-500', 'color' => 'red'],
         ];
@@ -49,7 +52,7 @@ enum TicketStatusEnum: string
     {
         return match ($this) {
             self::OPEN, self::ASSIGNED           => TicketStatusGroupEnum::TODO,
-            self::IN_PROGRESS, self::WAITING     => TicketStatusGroupEnum::IN_PROGRESS,
+            self::IN_PROGRESS, self::WAITING, self::PENDING_DEPLOY => TicketStatusGroupEnum::IN_PROGRESS,
             self::RESOLVED, self::CANCELLED      => TicketStatusGroupEnum::CLOSED,
         };
     }

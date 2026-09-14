@@ -14,11 +14,11 @@ import PageHeading from "@/Components/Headings/PageHeading.vue"
 import Icon from "@/Components/Icon.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faVial, faShieldCheck, faShield } from "@fal"
+import { faVial, faShieldCheck, faShield, faRocket } from "@fal"
 import { useLiveTickets } from "@/Composables/useLiveTickets"
 import TicketsCreatedInterval from "@/Components/Tickets/TicketsCreatedInterval.vue"
 
-library.add(faVial, faShieldCheck, faShield)
+library.add(faVial, faShieldCheck, faShield, faRocket)
 
 const props = defineProps<{
 	pageHead: any
@@ -513,7 +513,7 @@ const onMoved = (status: string, event: { added?: { element: { id: number } } })
 									>{{ element.reference }}</Link
 								>
 								<Icon
-									v-if="column.group === 'closed'"
+									v-if="column.statuses.length > 1"
 									:data="element.status_icon" />
 								<Icon
 									v-if="element.qa_status_icon"

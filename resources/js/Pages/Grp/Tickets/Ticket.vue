@@ -20,9 +20,9 @@ import Button from "@/Components/Elements/Buttons/Button.vue"
 import { useLiveTickets } from "@/Composables/useLiveTickets"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faPaperclip, faCircle, faUserCheck, faSpinner, faClock, faCheckCircle, faBan, faPlay, faPause, faStop, faCheck, faUndo, faBug, faLightbulb, faLevelUp, faCube, faQuestionCircle, faEllipsisV, faTrashAlt, faUser, faPencil, faTimes, faPlus, faPlusCircle, faExchange, faHourglassHalf, faVial, faShieldCheck, faShield } from "@fal"
+import { faPaperclip, faCircle, faUserCheck, faSpinner, faClock, faCheckCircle, faBan, faPlay, faPause, faStop, faCheck, faUndo, faBug, faLightbulb, faLevelUp, faCube, faQuestionCircle, faEllipsisV, faTrashAlt, faUser, faPencil, faTimes, faPlus, faPlusCircle, faExchange, faHourglassHalf, faVial, faShieldCheck, faShield, faRocket } from "@fal"
 
-library.add(faVial, faShieldCheck, faShield, faHourglassHalf, faPlusCircle, faExchange, faEllipsisV, faTrashAlt, faUser, faPencil, faTimes, faPlus,faPaperclip, faCircle, faUserCheck, faSpinner, faClock, faCheckCircle, faBan, faPlay, faPause, faStop, faCheck, faUndo, faBug, faLightbulb, faLevelUp, faCube, faQuestionCircle)
+library.add(faVial, faShieldCheck, faShield, faRocket, faHourglassHalf, faPlusCircle, faExchange, faEllipsisV, faTrashAlt, faUser, faPencil, faTimes, faPlus,faPaperclip, faCircle, faUserCheck, faSpinner, faClock, faCheckCircle, faBan, faPlay, faPause, faStop, faCheck, faUndo, faBug, faLightbulb, faLevelUp, faCube, faQuestionCircle)
 
 const kindIcons: Record<string, string> = {
     bug: "fal fa-bug",
@@ -61,6 +61,7 @@ const statusActions: Record<string, { status: string; label: string; icon: strin
         cancel,
     ],
     waiting: [{ ...start, label: trans("Resume") }, done, cancel],
+    pending_deploy: [{ ...start, label: trans("Back to in progress") }, done, cancel],
     resolved: [{ status: "open", label: trans("Reopen"), icon: "fal fa-undo", class: "text-gray-600" }],
     cancelled: [{ status: "open", label: trans("Reopen"), icon: "fal fa-undo", class: "text-gray-600" }],
 }
@@ -137,6 +138,30 @@ const askReporter = () => {
             onStart: () => (isAsking.value = true),
             onFinish: () => (isAsking.value = false),
             onSuccess: () => (isAskReporterOpen.value = false),
+        }
+    )
+}
+
+const closingStatus = ref<"resolved" | "cancelled" | null>(null)
+const closingComment = ref("")
+const closeAfterDeployment = ref(false)
+const isClosing = ref(false)
+
+const openClosing = (status: "resolved" | "cancelled") => {
+    closingComment.value = ""
+    closeAfterDeployment.value = false
+    closingStatus.value = status
+}
+
+const closeTicket = () => {
+    router.patch(
+        route(props.routes.update.name, props.routes.update.parameters),
+        { status: closingStatus.value === "resolved" && closeAfterDeployment.value ? "pending_deploy" : closingStatus.value, question: closingComment.value },
+        {
+            preserveScroll: true,
+            onStart: () => (isClosing.value = true),
+            onFinish: () => (isClosing.value = false),
+            onSuccess: () => (closingStatus.value = null),
         }
     )
 }
@@ -248,7 +273,7 @@ const update = (field: string, value: unknown) => {
                         type="button"
                         class="rounded-md p-1.5 hover:bg-gray-100"
                         :class="action.class"
-                        @click="action.status === 'waiting' ? openAskReporter() : update('status', action.status)">
+                        @click="action.status === 'waiting' ? openAskReporter() : action.status === 'resolved' || action.status === 'cancelled' ? openClosing(action.status) : update('status', action.status)">
                         <FontAwesomeIcon :icon="action.icon" fixed-width />
                     </button>
                 </div>
@@ -384,6 +409,25 @@ const update = (field: string, value: unknown) => {
             <div class="flex justify-end gap-2">
                 <Button type="tertiary" :label="trans('Cancel')" @click="isQaVerdictOpen = false" />
                 <Button :type="qaVerdict === 'passed' ? 'primary' : 'negative'" :label="qaVerdict === 'passed' ? trans('Pass') : trans('Fail')" :icon="qaVerdict === 'passed' ? 'fal fa-shield-check' : 'fal fa-shield'" :loading="isSendingVerdict" :disabled="qaVerdict === 'failed' && !qaNote.trim()" @click="sendQaVerdict" />
+            </div>
+        </div>
+    </Dialog>
+    <Dialog :visible="closingStatus !== null" @update:visible="(visible) => !visible && (closingStatus = null)" modal :header="closingStatus === 'resolved' ? trans('Done') : trans('Cancel ticket')" :style="{ width: '32rem' }">
+        <div class="space-y-4 text-sm">
+            <div>
+                <p class="text-xs text-gray-500 mb-1">{{ closingStatus === 'resolved' ? trans("What was done?") : trans("Why is it cancelled?") }}</p>
+                <textarea v-model="closingComment" rows="5" class="w-full rounded border-gray-300 text-sm" :placeholder="closingStatus === 'resolved' ? trans('e.g. fixed the voucher total, deployed today') : trans('e.g. duplicate of HELP-1234')" />
+            </div>
+            <label v-if="closingStatus === 'resolved'" class="flex items-center gap-2 text-gray-700">
+                <input v-model="closeAfterDeployment" type="checkbox" class="rounded border-gray-300 text-indigo-600" />
+                {{ trans("Close after next deployment") }}
+            </label>
+            <p v-if="closingStatus === 'resolved' && closeAfterDeployment" class="text-xs text-gray-500">
+                {{ trans("Only tick when the fix is already on main. The ticket closes and posts this comment after the next deployment") }}
+            </p>
+            <div class="flex justify-end gap-2">
+                <Button type="tertiary" :label="trans('Back')" @click="closingStatus = null" />
+                <Button :type="closingStatus === 'resolved' ? 'primary' : 'negative'" :label="closingStatus === 'resolved' ? (closeAfterDeployment ? trans('Wait for deployment') : trans('Mark as done')) : trans('Cancel ticket')" :icon="closingStatus === 'resolved' ? 'fal fa-check' : 'fal fa-ban'" :loading="isClosing" :disabled="!closingComment.trim()" @click="closeTicket" />
             </div>
         </div>
     </Dialog>

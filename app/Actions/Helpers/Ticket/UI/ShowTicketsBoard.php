@@ -37,7 +37,7 @@ class ShowTicketsBoard extends OrgAction
     private const array COLUMNS = [
         'open'        => ['open'],
         'assigned'    => ['assigned'],
-        'in_progress' => ['in_progress'],
+        'in_progress' => ['in_progress', 'pending_deploy'],
         'waiting'     => ['waiting'],
         'closed'      => ['resolved', 'cancelled'],
     ];
