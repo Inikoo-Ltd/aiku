@@ -52,7 +52,16 @@ const peopleTab = ref<"assignees" | "reporters">("assignees")
 
 useLiveTickets(["stats"])
 
-const STATUS_COLORS: Record<string, string> = { blue: "#3b82f6", amber: "#f59e0b", gray: "#9ca3af", green: "#22c55e" }
+const STATUS_COLORS: Record<string, string> = {
+    open: "#9ca3af",
+    assigned: "#7c8fb5",
+    in_progress: "#3b82f6",
+    waiting: "#93c5fd",
+    answered: "#f59e0b",
+    pending_deploy: "#86efac",
+    resolved: "#16a34a",
+    cancelled: "#d1d5db",
+}
 
 const lineChart = computed(() => ({
     labels: props.stats.daily.map((day) => day.date.slice(5)),
@@ -71,7 +80,7 @@ const lineOptions = {
 
 const donutChart = computed(() => ({
     labels: props.stats.by_status.map((row) => row.label),
-    datasets: [{ data: props.stats.by_status.map((row) => row.total), backgroundColor: props.stats.by_status.map((row) => STATUS_COLORS[row.color] ?? "#9ca3af") }],
+    datasets: [{ data: props.stats.by_status.map((row) => row.total), backgroundColor: props.stats.by_status.map((row) => STATUS_COLORS[row.status] ?? "#9ca3af") }],
 }))
 
 const donutOptions = { responsive: true, maintainAspectRatio: false, cutout: "70%", plugins: { legend: { display: false } } }
@@ -215,7 +224,7 @@ const dashboardBoxes = computed(() => (props.stats.interval === "all" ? (["peopl
                     <p class="mb-2 flex items-center gap-2 text-sm font-semibold text-gray-600">
                         <FontAwesomeIcon icon="fal fa-chart-pie" class="text-blue-600" fixed-width aria-hidden="true" />
                         {{ trans("Status overview") }}
-                        <span class="text-xs font-normal text-gray-400">{{ trans("All tickets") }} · <Link :href="route('grp.tickets.list')" class="hover:text-gray-600">{{ trans("View all") }}</Link></span>
+                        <span class="text-xs font-normal text-gray-400">{{ trans("Tickets created in this period") }} · <Link :href="listUrl({ filter: { created_since: stats.from } })" class="hover:text-gray-600">{{ trans("View all") }}</Link></span>
                     </p>
                     <div class="flex items-center gap-4">
                         <div class="relative h-40 w-40 shrink-0">
@@ -226,10 +235,10 @@ const dashboardBoxes = computed(() => (props.stats.interval === "all" ? (["peopl
                             </div>
                         </div>
                         <ul class="space-y-1.5 text-sm">
-                            <li v-for="row in stats.by_status" :key="row.status" class="flex items-center gap-2">
-                                <span class="h-3 w-3 rounded-sm" :style="{ backgroundColor: STATUS_COLORS[row.color] ?? '#9ca3af' }" />
+                            <li v-for="row in stats.by_status.filter((status) => status.total)" :key="row.status" class="flex items-center gap-2">
+                                <span class="h-3 w-3 rounded-sm" :style="{ backgroundColor: STATUS_COLORS[row.status] ?? '#9ca3af' }" />
                                 {{ row.label }}:
-                                <Link v-if="row.total" :href="listUrl({ elements: { status: row.status } })" class="hover:underline font-medium">{{ row.total }}</Link>
+                                <Link v-if="row.total" :href="listUrl({ filter: { created_since: stats.from }, elements: { status: row.status } })" class="hover:underline font-medium">{{ row.total }}</Link>
                                 <span v-else class="font-medium">{{ row.total }}</span>
                             </li>
                         </ul>

@@ -47,7 +47,8 @@ class ShowTicketsReports extends OrgAction
             ->selectRaw('percentile_cont(0.5) within group (order by extract(epoch from resolved_at - created_at) / 3600) as median')
             ->value('median');
 
-        $byStatus = (clone $base)->selectRaw('status, count(*) as total')->groupBy('status')->pluck('total', 'status');
+        $byStatus        = (clone $base)->selectRaw('status, count(*) as total')->groupBy('status')->pluck('total', 'status');
+        $byStatusInRange = (clone $base)->whereBetween('created_at', [$from, $to])->selectRaw('status, count(*) as total')->groupBy('status')->pluck('total', 'status');
 
         $createdInRange  = (clone $base)->whereBetween('tickets.created_at', [$from, $to]);
         $resolvedInRange = (clone $base)->whereBetween('tickets.resolved_at', [$from, $to])->where('tickets.created_at', '<', $from);
@@ -100,7 +101,7 @@ class ShowTicketsReports extends OrgAction
                 'status' => $status->value,
                 'label'  => TicketStatusEnum::labels()[$status->value],
                 'color'  => TicketStatusEnum::stateIcon()[$status->value]['color'],
-                'total'  => (int) ($byStatus[$status->value] ?? 0),
+                'total'  => (int) ($byStatusInRange[$status->value] ?? 0),
             ])->values()->all(),
             'assignees'       => $this->assigneeRows($createdInRange),
             'assignees_total' => $this->metrics((clone $createdInRange)->selectRaw(self::METRICS_SQL)->first()),
