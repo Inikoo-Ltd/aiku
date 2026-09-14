@@ -31,6 +31,7 @@ trait WithDeliveryNoteLeaflets
                 'state_label' => $leaflet->state->labels()[$leaflet->state->value],
                 'has_media'   => $leaflet->isPrintable(),
                 'can_pull_media' => $leaflet->canPullMediaFromPreference(),
+                'message'        => $leaflet->message,
             ])->values()->all();
     }
 

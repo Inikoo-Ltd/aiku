@@ -24,6 +24,7 @@ import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import Modal from "@/Components/Utils/Modal.vue"
 import { RadioButton, Tab, Dialog } from "primevue"
+import Popover from "primevue/popover"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import FractionDisplay from "@/Components/DataDisplay/FractionDisplay.vue"
 import { faAnalytics, faPencil } from "@far"
@@ -45,11 +46,11 @@ import { ctrans } from "@/Composables/useTrans"
 import HelpArticles from "@/Components/Utils/HelpArticles.vue"
 import ChangePackagingSelect from "@/Components/Warehouse/PickingSessions/ChangePackagingSelect.vue"
 import OrgStockHandlingNotes from "@/Components/Warehouse/DeliveryNotes/OrgStockHandlingNotes.vue"
-import { faPrint, faRedo, faFileAlt, faBoxOpen, faExclamationCircle, faCloudDownload } from "@fal"
+import { faPrint, faRedo, faFileAlt, faBoxOpen, faExclamationCircle, faCloudDownload, faEye } from "@fal"
 
 const screenType = inject('screenType', ref('desktop'))
 
-library.add(faSkull, faStickyNote, faArrowDown, faDebug, faClipboardListCheck, faUndoAlt, faHandHoldingBox, faListOl, faHandPaper, faChair, faBoxCheck, faCheckDouble, faTimes, faPeopleArrows, faHourglassHalf, faBox, faPrint, faRedo, faFileAlt, faBoxOpen, faExclamationCircle, faBarcodeRead, faCloudDownload)
+library.add(faSkull, faStickyNote, faArrowDown, faDebug, faClipboardListCheck, faUndoAlt, faHandHoldingBox, faListOl, faHandPaper, faChair, faBoxCheck, faCheckDouble, faTimes, faPeopleArrows, faHourglassHalf, faBox, faPrint, faRedo, faFileAlt, faBoxOpen, faExclamationCircle, faBarcodeRead, faCloudDownload, faEye)
 
 // Section: Packaging & leaflet inserts (warehouse)
 const changingPackagingId = ref<number | null>(null)
@@ -79,6 +80,13 @@ const onPullLeafletMedia = (leaflet: { id: number }) => {
             onFinish: () => pullingMediaLeafletId.value = null,
         }
     )
+}
+
+const messagePopover = ref()
+const shownLeafletMessage = ref("")
+const showLeafletMessage = (event: Event, message: string) => {
+    shownLeafletMessage.value = message
+    messagePopover.value?.toggle(event)
 }
 
 const isLeafletPrinted = (leaflet: { state: string }) => leaflet.state === "printed" || leaflet.state === "included"
@@ -1054,6 +1062,15 @@ onUnmounted(() => {
                     <span class="flex-1 truncate">{{ leaflet.name }}</span>
                     <span class="text-xs text-gray-400">x{{ leaflet.copies }}</span>
                     <button
+                        v-if="leaflet.type === 'personalised_message' && leaflet.message"
+                        type="button"
+                        class="p-1 text-gray-400 hover:text-gray-600"
+                        v-tooltip="trans('View message')"
+                        @click="showLeafletMessage($event, leaflet.message)"
+                    >
+                        <FontAwesomeIcon :icon="['fal', 'eye']" fixed-width aria-hidden="true" />
+                    </button>
+                    <button
                         v-if="leaflet.has_media"
                         type="button"
                         class="p-1 disabled:text-gray-300"
@@ -1214,4 +1231,10 @@ onUnmounted(() => {
     </Modal>
 
 
+    <Popover ref="messagePopover">
+        <div class="max-w-xs">
+            <div class="mb-1 text-xs font-semibold text-gray-500">{{ trans("Personalised Message") }}</div>
+            <p class="whitespace-pre-line break-words text-sm text-gray-800">{{ shownLeafletMessage }}</p>
+        </div>
+    </Popover>
 </template>

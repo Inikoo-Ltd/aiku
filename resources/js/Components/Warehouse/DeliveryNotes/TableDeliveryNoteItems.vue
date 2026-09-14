@@ -24,6 +24,7 @@ import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue";
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure";
 import Modal from "@/Components/Utils/Modal.vue"
 import { RadioButton, Dialog } from "primevue"
+import Popover from "primevue/popover"
 import PureMultiselectInfiniteScroll from "@/Components/Pure/PureMultiselectInfiniteScroll.vue"
 import FractionDisplay from "@/Components/DataDisplay/FractionDisplay.vue"
 import FractionDisplayFE from "@/Components/DataDisplay/FractionDisplayFE.vue"
@@ -47,9 +48,9 @@ import ChangePackagingSelect from "@/Components/Warehouse/PickingSessions/Change
 import OrgStockHandlingNotes from "./OrgStockHandlingNotes.vue"
 import BarcodeDisplay from "@/Components/DataDisplay/BarcodeDisplay.vue"
 import ButtonSelectBays from "@/Components/DeliveryNote/ButtonSelectBays.vue"
-import { faBoxOpen, faPrint, faRedo, faFileAlt, faExclamationCircle, faCloudDownload } from "@fal"
+import { faBoxOpen, faPrint, faRedo, faFileAlt, faExclamationCircle, faCloudDownload, faEye } from "@fal"
 
-library.add(faSkull, faArrowDown, faDebug, faClipboardListCheck, faUndoAlt, faHandHoldingBox, faListOl, faHourglassHalf, faWandMagic, faBox, faBarcode, faBoxOpen, faPrint, faRedo, faFileAlt, faExclamationCircle, faExclamationTriangle, faCloudDownload);
+library.add(faSkull, faArrowDown, faDebug, faClipboardListCheck, faUndoAlt, faHandHoldingBox, faListOl, faHourglassHalf, faWandMagic, faBox, faBarcode, faBoxOpen, faPrint, faRedo, faFileAlt, faExclamationCircle, faExclamationTriangle, faCloudDownload, faEye);
 
 
 const props = defineProps<{
@@ -136,6 +137,13 @@ const onChangePackaging = (packagingId: number) => {
 const reloadInserts = () => router.reload({
     only: [props.tab, "inserts", "packaging", "pageHead"].filter(Boolean) as string[],
 })
+
+const messagePopover = ref()
+const shownLeafletMessage = ref("")
+const showLeafletMessage = (event: Event, message: string) => {
+    shownLeafletMessage.value = message
+    messagePopover.value?.toggle(event)
+}
 
 const isLeafletPrinted = (leaflet: { state: string }) => leaflet.state === "printed" || leaflet.state === "included"
 
@@ -1335,6 +1343,15 @@ const warningMsg = computed(() => {
                     <span class="flex-1 truncate">{{ leaflet.name }}</span>
                     <span class="text-xs text-gray-400">x{{ leaflet.copies }}</span>
                     <button
+                        v-if="leaflet.type === 'personalised_message' && leaflet.message"
+                        type="button"
+                        class="p-1 text-gray-400 hover:text-gray-600"
+                        v-tooltip="trans('View message')"
+                        @click="showLeafletMessage($event, leaflet.message)"
+                    >
+                        <FontAwesomeIcon :icon="['fal', 'eye']" fixed-width aria-hidden="true" />
+                    </button>
+                    <button
                         v-if="leaflet.has_media"
                         type="button"
                         class="p-1 disabled:text-gray-300"
@@ -2275,4 +2292,10 @@ const warningMsg = computed(() => {
             </div>
         </div>
     </Modal>
+    <Popover ref="messagePopover">
+        <div class="max-w-xs">
+            <div class="mb-1 text-xs font-semibold text-gray-500">{{ trans("Personalised Message") }}</div>
+            <p class="whitespace-pre-line break-words text-sm text-gray-800">{{ shownLeafletMessage }}</p>
+        </div>
+    </Popover>
 </template>
