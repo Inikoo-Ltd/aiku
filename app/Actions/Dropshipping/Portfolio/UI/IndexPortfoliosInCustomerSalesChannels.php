@@ -323,7 +323,7 @@ class IndexPortfoliosInCustomerSalesChannels extends OrgAction
                 ],
             ]
         )->table($this->tableStructure())
-            ->table(IndexPlatformPortfolioLogs::make()->tableStructure(null, PortfoliosInCustomerSalesChannelTabsEnum::LOGS->value));
+            ->table(IndexPlatformPortfolioLogs::make()->tableStructure(null, PortfoliosInCustomerSalesChannelTabsEnum::LOGS->value, withTechnicalDetails: true));
     }
 
 
