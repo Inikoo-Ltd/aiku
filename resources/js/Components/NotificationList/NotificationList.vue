@@ -4,9 +4,9 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { useFormatTime } from '@/Composables/useFormatTime'
 import { Link } from "@inertiajs/vue3"
-import { inject, onMounted, onBeforeUnmount, ref } from "vue"
+import { defineAsyncComponent, inject, onMounted, onBeforeUnmount, ref } from "vue"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
-import Profile from "@/Pages/Grp/Profile.vue"
+const Profile = defineAsyncComponent(() => import("@/Pages/Grp/Profile.vue"))
 import axios from "axios"
 import { notify } from "@kyvg/vue3-notification"
 import { trans } from 'laravel-vue-i18n'

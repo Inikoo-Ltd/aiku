@@ -1,9 +1,9 @@
 <script setup lang='ts'>
 import { trans } from 'laravel-vue-i18n'
-import { inject } from 'vue'
+import { defineAsyncComponent, inject } from 'vue'
 import Image from "@common/Components/Image.vue";
 import Popover from '@/Components/Popover.vue'
-import Profile from "@/Pages/Grp/Profile.vue"
+const Profile = defineAsyncComponent(() => import("@/Pages/Grp/Profile.vue"))
 import WaitingWarehouseList from "@/Layouts/Grp/WaitingWarehouseList.vue"
 import WaitingCrmList from "@/Layouts/Grp/WaitingCrmList.vue"
 
