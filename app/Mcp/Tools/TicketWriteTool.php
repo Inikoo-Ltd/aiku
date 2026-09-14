@@ -36,7 +36,7 @@ class TicketWriteTool extends Tool
             'subject'     => ['required_without:reference', 'string', 'max:255'],
             'description' => ['sometimes', 'nullable', 'string'],
             'comment'     => ['sometimes', 'string'],
-            'status'      => ['sometimes', 'in:open,in_progress,waiting,resolved,cancelled'],
+            'status'      => ['sometimes', 'in:open,in_progress,waiting,resolved,pending_deploy,cancelled'],
             'priority'    => ['sometimes', 'in:low,normal,high,urgent'],
             'assignee'    => ['sometimes', 'nullable', 'string'],
             'kind'        => ['sometimes', 'nullable', Rule::enum(TicketKindEnum::class)],
@@ -108,11 +108,16 @@ class TicketWriteTool extends Tool
             $changes['assignee_id'] = $assignee?->id;
         }
 
+        $isClosingAfterDeployment = $request->get('status') === 'pending_deploy';
+        if ($isClosingAfterDeployment && $request->filled('comment')) {
+            $changes['question'] = $request->string('comment')->toString();
+        }
+
         if ($changes) {
             $ticket = UpdateTicket::make()->action($ticket, $changes);
         }
 
-        if ($request->filled('comment')) {
+        if ($request->filled('comment') && !$isClosingAfterDeployment) {
             if (!$ticket->assignee_id) {
                 return Response::error("$ticket->reference has no assignee. Assign it before commenting.");
             }
@@ -132,7 +137,7 @@ class TicketWriteTool extends Tool
             'subject'     => $schema->string()->description('Subject: for a new ticket, or to rewrite it on an existing one'),
             'description' => $schema->string()->description('Description: for a new ticket, or to rewrite it on an existing one'),
             'comment'     => $schema->string()->description('Public comment to add to the ticket, posted as you'),
-            'status'      => $schema->string()->description('open, in_progress, waiting, resolved or cancelled'),
+            'status'      => $schema->string()->description('open, in_progress, waiting, resolved, pending_deploy or cancelled. pending_deploy = close after next deployment (fix already on main): the comment is held and posted when the deployment closes the ticket'),
             'priority'    => $schema->string()->description('low, normal, high or urgent'),
             'assignee'    => $schema->string()->description('Username to assign, empty string to unassign'),
             'kind'        => $schema->string()->description('escalation, bug, feature, task (engineer to engineer) or qa (engineer to QA)'),

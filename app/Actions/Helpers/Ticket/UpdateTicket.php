@@ -32,7 +32,7 @@ class UpdateTicket extends OrgAction
         $question     = trim((string) Arr::pull($modelData, 'question', ''));
         $waitingHours = Arr::pull($modelData, 'waiting_hours');
 
-        $asker = request()->user();
+        $asker = auth()->user();
         if ($question !== '' && $asker instanceof User) {
             if (Arr::get($modelData, 'status') === TicketStatusEnum::PENDING_DEPLOY->value) {
                 data_set($modelData, 'data', array_merge($ticket->data ?? [], ['deploy_comment' => ['body' => $question, 'user_id' => $asker->id]]));

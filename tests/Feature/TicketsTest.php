@@ -1210,6 +1210,22 @@ test('done after next deployment holds the ticket, then the deployment closes it
         ->and(CloseTicketsAfterDeployment::run())->toBe(0);
 });
 
+test('the ticket write tool closes after next deployment and holds the comment until then', function () {
+    $ticket = StoreTicket::make()->action($this->group, ['subject' => 'Ship it by MCP']);
+    UpdateTicket::make()->action($ticket, ['status' => TicketStatusEnum::IN_PROGRESS->value, 'assignee_id' => $this->user->id]);
+
+    AikuServer::actingAs($this->user)->tool(TicketWriteTool::class, ['reference' => $ticket->reference, 'status' => 'pending_deploy', 'comment' => 'Fixed, live after the deploy'])->assertOk();
+
+    expect($ticket->fresh()->status)->toBe(TicketStatusEnum::PENDING_DEPLOY)
+        ->and($ticket->comments()->count())->toBe(0)
+        ->and(data_get($ticket->fresh()->data, 'deploy_comment.user_id'))->toBe($this->user->id);
+
+    CloseTicketsAfterDeployment::run();
+
+    expect($ticket->fresh()->status)->toBe(TicketStatusEnum::RESOLVED)
+        ->and($ticket->comments()->where('body', 'Fixed, live after the deploy')->sole()->author_id)->toBe($this->user->id);
+});
+
 test('a mentioned user is notified on the channels they chose and the plain comment notice is not doubled', function () {
     Notification::fake();
     Config::set('services.slack.notifications.bot_user_oauth_token', 'xoxb-test');
