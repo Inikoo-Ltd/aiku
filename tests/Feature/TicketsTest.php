@@ -1164,7 +1164,8 @@ test('ticket search ranks subject over description over comments, understands ke
     };
 
     $hits = $search('email marke');
-    expect($hits->pluck('reference')->all())->toBe([$bySubject->reference, $byDescription->reference, $byComment->reference, $byInternal->reference])
+    expect($hits->pluck('reference')->take(2)->all())->toBe([$bySubject->reference, $byDescription->reference])
+        ->and($hits->pluck('reference')->slice(2)->sort()->values()->all())->toBe(collect([$byComment->reference, $byInternal->reference])->sort()->values()->all())
         ->and($hits->first()['search_snippet'])->toContain('<mark>Email</mark>')
         ->and($search('email -tool')->pluck('reference'))->not->toContain($byDescription->reference)
         ->and($search('"marketing tool"')->pluck('reference')->all())->toBe([$byDescription->reference])

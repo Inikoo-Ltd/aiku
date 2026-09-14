@@ -2507,7 +2507,7 @@ test('to produce queue only shows lines with an artefact in this factory', funct
     expect($hubOutput())->toContain($jobOrder->reference)
         ->and($hubProps()['tabs']['navigation']['production_output']['number'])->toBe(count($hubProps()['production_output']));
 
-    $stockItem = collect($hubProps()['production_output'])->firstWhere('destination.type', 'stock')['jobs'][0]['items'][0];
+    $stockItem = collect($hubProps()['production_output'])->where('destination.type', 'stock')->pluck('jobs')->flatten(1)->firstWhere('reference', $jobOrder->reference)['items'][0];
     expect(fn () => \App\Actions\Dispatching\ProductionOutput\PutAwayFinishedJobOrder::make()->action($warehouse, [$jobOrder->id], [$stockItem['id'] => 'L-BRD']))
         ->toThrow(ValidationException::class, 'is not kept in L-BRD yet');
 
