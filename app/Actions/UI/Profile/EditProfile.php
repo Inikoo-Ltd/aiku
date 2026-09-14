@@ -87,6 +87,18 @@ class EditProfile
                                 "channels"    => [
                                     ['value' => 'email', 'label' => __('Email'), 'available' => (bool) $user->email, 'unavailable_reason' => __('Add your email above to use this')],
                                     ['value' => 'slack', 'label' => __('Slack'), 'available' => (bool) $user->slack_user_id, 'unavailable_reason' => __('Add your Slack ID above to use this')],
+                                    [
+                                        'value'         => 'browser',
+                                        'label'         => __('Browser'),
+                                        'available'     => (bool) config('services.webpush.public_key'),
+                                        'unavailable_reason' => __('Browser notifications are not set up on this server'),
+                                        'push'          => [
+                                            'public_key'    => config('services.webpush.public_key'),
+                                            'devices_count' => $user->pushSubscriptions()->count(),
+                                            'store_route'   => ['name' => 'grp.profile.push-subscriptions.store'],
+                                            'delete_route'  => ['name' => 'grp.profile.push-subscriptions.delete'],
+                                        ],
+                                    ],
                                 ],
                                 "value"       => UserNotificationEnum::valuesFor($user),
                             ],

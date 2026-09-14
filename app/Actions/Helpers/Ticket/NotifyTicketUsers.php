@@ -8,6 +8,7 @@
 
 namespace App\Actions\Helpers\Ticket;
 
+use App\Actions\SysAdmin\User\SendUserPushNotification;
 use App\Enums\Helpers\Ticket\TicketQaStatusEnum;
 use App\Enums\SysAdmin\User\UserNotificationEnum;
 use App\Events\BroadcastTicketBadgeUpdate;
@@ -182,6 +183,15 @@ class NotifyTicketUsers
 
         if (in_array('slack', $channels, true) && $recipient->slack_user_id) {
             SendTicketSlackDirectMessage::dispatch($recipient, '*'.$subject."*\n".implode("\n", $lines).' <'.route('grp.tickets.show', $ticket->reference).'|'.$actionLabel.'>');
+        }
+
+        if (in_array('browser', $channels, true) && $recipient->pushSubscriptions()->exists()) {
+            SendUserPushNotification::dispatch($recipient, [
+                'title' => $subject,
+                'body'  => Str::limit($lines[0] ?? '', 200),
+                'url'   => route('grp.tickets.show', $ticket->reference),
+                'tag'   => $ticket->reference,
+            ]);
         }
     }
 }

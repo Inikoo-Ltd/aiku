@@ -48,6 +48,13 @@ use App\Actions\Helpers\Ticket\GetTicketBadgeData;
 use App\Events\BroadcastTicketBadgeUpdate;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Queue;
+use App\Actions\Helpers\Ticket\NotifyTicketUsers;
+use App\Actions\SysAdmin\User\SendUserPushNotification;
+use GuzzleHttp\Psr7\Request as GuzzleRequest;
+use GuzzleHttp\Psr7\Response as GuzzleResponse;
+use Minishlink\WebPush\MessageSentReport;
+use Minishlink\WebPush\WebPush;
 use Inertia\Testing\AssertableInertia;
 
 use function Pest\Laravel\actingAs;
@@ -253,6 +260,39 @@ test('staff reporter is told of the question by email and slack as their profile
     patch(route('grp.models.ticket.update', $ticket->id), ['status' => 'resolved', 'question' => 'Fixed the voucher total'])->assertRedirect();
     Notification::assertSentTo($reporter, TicketNotification::class, fn ($notification) => str_contains($notification->subject, 'is done'));
     expect($ticket->comments()->where('body', 'Fixed the voucher total')->count())->toBe(1);
+});
+
+test('browser channel queues a web push to the reporter devices and prunes expired endpoints', function () {
+    Notification::fake();
+    Config::set('services.webpush.public_key', 'public');
+    Config::set('services.webpush.private_key', 'private');
+
+    post(route('grp.profile.push-subscriptions.store'), ['endpoint' => 'https://push.example.com/live', 'keys' => ['p256dh' => 'p', 'auth' => 'a']])->assertOk();
+    post(route('grp.profile.push-subscriptions.store'), ['endpoint' => 'https://push.example.com/gone', 'keys' => ['p256dh' => 'p', 'auth' => 'a']])->assertOk();
+    expect($this->user->pushSubscriptions()->count())->toBe(2);
+
+    $this->user->update(['settings' => ['notifications' => ['ticket_resolved' => ['browser']]]]);
+    $ticket = StoreTicket::make()->action($this->group, ['subject' => 'Push me']);
+    $ticket->update(['reporter_type' => 'User', 'reporter_id' => $this->user->id]);
+
+    Queue::fake();
+    NotifyTicketUsers::make()->done($ticket->fresh(), null);
+    SendUserPushNotification::assertPushed(1);
+
+    $webPush = Mockery::mock(WebPush::class);
+    $webPush->shouldReceive('queueNotification')->twice();
+    $webPush->shouldReceive('flush')->andReturn((function () {
+        yield new MessageSentReport(new GuzzleRequest('POST', 'https://push.example.com/live'), new GuzzleResponse(201), true);
+        yield new MessageSentReport(new GuzzleRequest('POST', 'https://push.example.com/gone'), new GuzzleResponse(410), false);
+    })());
+    app()->bind(WebPush::class, fn () => $webPush);
+
+    expect(SendUserPushNotification::run($this->user, ['title' => 'T', 'body' => 'B', 'url' => '/']))->toBe(1)
+        ->and($this->user->pushSubscriptions()->pluck('endpoint')->all())->toBe(['https://push.example.com/live'])
+        ->and($this->user->pushSubscriptions()->first()->last_used_at)->not->toBeNull();
+
+    delete(route('grp.profile.push-subscriptions.delete'), ['endpoint' => 'https://push.example.com/live'])->assertOk();
+    expect($this->user->pushSubscriptions()->count())->toBe(0);
 });
 
 test('ticket page shows a history from opened to its status changes, newest first', function () {

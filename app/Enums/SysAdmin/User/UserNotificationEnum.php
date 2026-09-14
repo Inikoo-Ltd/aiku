@@ -18,7 +18,7 @@ enum UserNotificationEnum: string
     case TICKET_MENTION = 'ticket_mention';
     case TICKET_NEEDS_REPLY = 'ticket_needs_reply';
 
-    public const array CHANNELS = ['email', 'slack'];
+    public const array CHANNELS = ['email', 'slack', 'browser'];
 
     public function label(): string
     {
@@ -48,7 +48,7 @@ enum UserNotificationEnum: string
             'email' => ['email'],
             'slack' => ['slack'],
             'none'  => [],
-            default => self::CHANNELS,
+            default => ['email', 'slack'],
         };
     }
 

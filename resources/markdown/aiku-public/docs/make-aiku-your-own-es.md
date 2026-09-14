@@ -22,7 +22,6 @@ La propia página de perfil es un pequeño panel sobre *ti*: pestañas para tu l
 **Edit profile** es la página de "así soy yo":
 
 - **Photo** - sube una foto y recórtala en cuadrado. Se convierte en el avatar que tus compañeros ven en la esquina, en el chat y en cualquier sitio donde aparezca tu nombre. Una cara de verdad gana siempre a un círculo gris.
-- **About** - una línea corta sobre ti, hasta unos cincuenta caracteres.
 - **Chat nickname** - el nombre corto que se muestra en el chat de plantilla. Si tu nombre de usuario es largo o formal, pon algo por lo que la gente realmente te llame.
 - **Email** y **password** - cambia cualquiera de los dos aquí cuando lo necesites. Elige una contraseña de al menos ocho caracteres que no uses en ningún otro sitio.
 

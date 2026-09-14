@@ -336,6 +336,11 @@ class User extends Authenticatable implements HasMedia, Auditable, PasskeyUser
         return $this->hasMany(UserLogin::class);
     }
 
+    public function pushSubscriptions(): HasMany
+    {
+        return $this->hasMany(UserPushSubscription::class);
+    }
+
     public function userFailedLogins(): HasMany
     {
         return $this->hasMany(UserFailedLogIn::class);
