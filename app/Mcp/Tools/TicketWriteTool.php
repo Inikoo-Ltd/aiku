@@ -21,7 +21,7 @@ use Laravel\Mcp\Response;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
 
-#[Description('Change a ticket or create a help ticket. With a reference: add a comment (public, posted as you, only on a ticket assigned to you), rewrite subject or description, change status (open, in_progress, waiting, resolved, cancelled), priority, assignee (username), kind, module or tags. Without a reference: creates a new HELP ticket with subject, and optional description, kind, module, priority. Every change is recorded as the authenticated user. Only engineers, lead engineers and QA can use it.')]
+#[Description('Change a ticket or create a help ticket. With a reference: add a comment (public, posted as you), rewrite subject or description, change status (open, in_progress, waiting, resolved, cancelled), priority, assignee (username), kind, module or tags. Without a reference: creates a new HELP ticket with subject, and optional description, kind, module, priority. Every change is recorded as the authenticated user, or as the user named in acting_as when a help desk supervisor passes it. Only engineers, lead engineers and QA can use it.')]
 class TicketWriteTool extends Tool
 {
     public function shouldRegister(Request $request): bool
@@ -43,9 +43,22 @@ class TicketWriteTool extends Tool
             'module'      => ['sometimes', 'nullable', 'string'],
             'tags'        => ['sometimes', 'array'],
             'tags.*'      => ['string', 'max:64'],
+            'acting_as'   => ['sometimes', 'nullable', 'string'],
         ]);
 
         $user = $request->user();
+
+        if ($request->filled('acting_as')) {
+            if (!Ticket::canBeAssignedBy($user)) {
+                return Response::error('Only a help desk supervisor can act as another user.');
+            }
+            $actingUser = $user->group->users()->where('username', $request->string('acting_as')->toString())->first();
+            if (!$actingUser) {
+                return Response::error('No user with username '.$request->string('acting_as').'.');
+            }
+            auth()->setUser($actingUser);
+            $user = $actingUser;
+        }
 
         if (!$request->filled('reference')) {
             $ticket = StoreTicket::make()->action($user->group, array_filter([
@@ -103,9 +116,6 @@ class TicketWriteTool extends Tool
             if (!$ticket->assignee_id) {
                 return Response::error("$ticket->reference has no assignee. Assign it before commenting.");
             }
-            if ($ticket->assignee_id !== $user->id) {
-                return Response::error("Only the assignee of $ticket->reference can comment on it through the assistant.");
-            }
             StoreTicketComment::make()->action($ticket, $user, ['body' => $request->string('comment')->toString()]);
         }
 
@@ -121,13 +131,14 @@ class TicketWriteTool extends Tool
             'reference'   => $schema->string()->description('Ticket to change, e.g. HELP-3074. Omit to create a new HELP ticket'),
             'subject'     => $schema->string()->description('Subject: for a new ticket, or to rewrite it on an existing one'),
             'description' => $schema->string()->description('Description: for a new ticket, or to rewrite it on an existing one'),
-            'comment'     => $schema->string()->description('Public comment to add to the ticket, posted as you; you must be its assignee'),
+            'comment'     => $schema->string()->description('Public comment to add to the ticket, posted as you'),
             'status'      => $schema->string()->description('open, in_progress, waiting, resolved or cancelled'),
             'priority'    => $schema->string()->description('low, normal, high or urgent'),
             'assignee'    => $schema->string()->description('Username to assign, empty string to unassign'),
             'kind'        => $schema->string()->description('escalation, bug, feature, task (engineer to engineer) or qa (engineer to QA)'),
             'module'      => $schema->string()->description('Aiku module slug, e.g. dispatching'),
             'tags'        => $schema->array()->description('Full tag list to set, e.g. ["not a bug"]')->items($schema->string()),
+            'acting_as'   => $schema->string()->description('Username to act as: the comment, assignment or status change is recorded as that user. Help desk supervisors only'),
         ];
     }
 }

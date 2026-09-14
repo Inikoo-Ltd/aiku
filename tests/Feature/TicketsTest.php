@@ -888,13 +888,20 @@ test('only the help desk manages tickets, everyone else reports, comments and cl
     AikuServer::actingAs($boss)->tool(TicketWriteTool::class, ['reference' => $other->reference, 'assignee' => $helper->username])->assertOk();
     AikuServer::actingAs($helper)->tool(TicketWriteTool::class, ['reference' => $other->reference, 'assignee' => $boss->username])->assertOk();
     AikuServer::actingAs($reporter)->tool(TicketWriteTool::class, ['reference' => $other->reference, 'comment' => 'reporters use the page'])->assertHasErrors();
-    AikuServer::actingAs($helper)->tool(TicketWriteTool::class, ['reference' => $other->reference, 'comment' => 'not my ticket any more'])->assertHasErrors();
+    AikuServer::actingAs($helper)->tool(TicketWriteTool::class, ['reference' => $other->reference, 'comment' => 'not my ticket any more'])->assertOk();
     AikuServer::actingAs($boss)->tool(TicketWriteTool::class, ['reference' => $other->reference, 'comment' => 'on it'])->assertOk();
     $unassigned = StoreTicket::make()->action($this->group, ['subject' => 'Nobody owns me']);
     AikuServer::actingAs($boss)->tool(TicketWriteTool::class, ['reference' => $unassigned->reference, 'comment' => 'too early'])->assertHasErrors();
     expect($other->comments()->where('body', 'on it')->value('author_id'))->toBe($boss->id)
-        ->and($other->comments()->whereIn('body', ['reporters use the page', 'not my ticket any more'])->exists())->toBeFalse()
+        ->and($other->comments()->where('body', 'not my ticket any more')->value('author_id'))->toBe($helper->id)
+        ->and($other->comments()->where('body', 'reporters use the page')->exists())->toBeFalse()
         ->and($unassigned->comments()->exists())->toBeFalse();
+
+    AikuServer::actingAs($boss)->tool(TicketWriteTool::class, ['reference' => $other->reference, 'acting_as' => $helper->username, 'comment' => 'said at the desk'])->assertOk();
+    AikuServer::actingAs($boss)->tool(TicketWriteTool::class, ['reference' => $other->reference, 'acting_as' => 'nobody-here', 'comment' => 'ghost'])->assertHasErrors();
+    AikuServer::actingAs($helper)->tool(TicketWriteTool::class, ['reference' => $other->reference, 'acting_as' => $boss->username, 'comment' => 'impersonating the boss'])->assertHasErrors();
+    expect($other->comments()->where('body', 'said at the desk')->value('author_id'))->toBe($helper->id)
+        ->and($other->comments()->whereIn('body', ['ghost', 'impersonating the boss'])->exists())->toBeFalse();
 
     $oldNote = $other->comments()->create(['body' => 'old internal note', 'is_internal' => true]);
     expect($other->commentsVisibleTo($helper)->whereKey($oldNote->id)->exists())->toBeFalse()
