@@ -49,7 +49,7 @@ const props = defineProps<{
     production_output?: {
         destination: { type: 'partner' | 'stock', label: string, location_code: string | null }
         job_order_ids: number[]
-        jobs: { reference: string, artisan: string | null, items: { code: string, name: string, quantity: number }[] }[]
+        jobs: { reference: string, artisan: string | null, items: { id: number, location_code: string | null, code: string, name: string, quantity: number }[] }[]
     }[] | null
     can_edit?: boolean
     put_away_route?: { name: string; parameters: Record<string, string> } | null
@@ -67,20 +67,40 @@ const isStagingTab = computed(() => currentTab.value === "partner_staging")
 const isProductionTab = computed(() => currentTab.value === "production_output")
 const tripKey = (trip: { destination: { location_code: string | null } }) => trip.destination.location_code ?? 'stock'
 const putAwayLocation = reactive<Record<string, string>>({})
+const itemLocation = reactive<Record<number, string>>({})
 watch(() => props.production_output, trips => {
-    trips?.forEach(trip => putAwayLocation[tripKey(trip)] ??= trip.destination.location_code ?? '')
+    trips?.forEach(trip => {
+        putAwayLocation[tripKey(trip)] ??= trip.destination.location_code ?? ''
+        trip.jobs.forEach(job => job.items.forEach(item => itemLocation[item.id] ??= item.location_code ?? ''))
+    })
 }, { immediate: true })
 
 const page = usePage()
 const actionError = computed(() => Object.values((page.props.errors ?? {}) as Record<string, string>)[0])
 
-function putAway(trip: NonNullable<typeof props.production_output>[number]) {
-    const key = tripKey(trip)
-    if (!props.put_away_route || !putAwayLocation[key]) return
+type ProductionTrip = NonNullable<typeof props.production_output>[number]
+const tripItems = (trip: ProductionTrip) => trip.jobs.flatMap(job => job.items)
+const canPutAway = (trip: ProductionTrip) => trip.destination.type === 'stock'
+    ? tripItems(trip).every(item => itemLocation[item.id])
+    : !!putAwayLocation[tripKey(trip)]
+
+function putAway(trip: ProductionTrip, allowNewLocations = false) {
+    if (!props.put_away_route || !canPutAway(trip)) return
+    const locations = trip.destination.type === 'stock'
+        ? { item_locations: Object.fromEntries(tripItems(trip).map(item => [item.id, itemLocation[item.id]])) }
+        : { location_code: putAwayLocation[tripKey(trip)] }
     router.post(route(props.put_away_route.name, props.put_away_route.parameters), {
-        location_code: putAwayLocation[key],
+        ...locations,
         job_order_ids: trip.job_order_ids,
-    }, { preserveScroll: true })
+        allow_new_locations: allowNewLocations,
+    }, {
+        preserveScroll: true,
+        onError: errors => {
+            if (errors.new_location && window.confirm(errors.new_location + '. ' + trans('Add this location to the stock?'))) {
+                putAway(trip, true)
+            }
+        },
+    })
 }
 
 const stagingKey = (task: { org_partner_id: number, org_stock_id: number }) => task.org_partner_id + '-' + task.org_stock_id
@@ -211,21 +231,26 @@ const trolleyRoute = (trolley: { slug: string }) =>
                     </td>
                     <td class="px-4 py-2">
                         <div v-for="job in trip.jobs" :key="job.reference" class="mb-1">
-                            <div v-for="item in job.items" :key="item.code">
-                                <span class="font-semibold tabular-nums">{{ item.quantity }}</span> × <span class="font-medium">{{ item.code }}</span>
-                                <span class="text-gray-500">{{ item.name }}</span>
+                            <div v-for="item in job.items" :key="item.id" class="flex items-center gap-2">
+                                <input v-if="can_edit && trip.destination.type === 'stock'" v-model.trim="itemLocation[item.id]" type="text" :placeholder="trans('Location code')"
+                                    class="w-36 rounded border-gray-300 py-0.5 font-mono text-sm uppercase" @keyup.enter="putAway(trip)" />
+                                <span>
+                                    <span class="font-semibold tabular-nums">{{ item.quantity }}</span> × <span class="font-medium">{{ item.code }}</span>
+                                    <span class="text-gray-500">{{ item.name }}</span>
+                                </span>
                             </div>
                             <div class="text-xs text-gray-500">{{ job.reference }}<span v-if="job.artisan"> · {{ job.artisan }}</span></div>
                         </div>
                     </td>
                     <td class="px-4 py-2">
-                        <input v-if="can_edit" v-model.trim="putAwayLocation[tripKey(trip)]" type="text" :placeholder="trans('Location code')"
+                        <span v-if="trip.destination.type === 'stock'" class="text-gray-500">{{ trans("Per item") }}</span>
+                        <input v-else-if="can_edit" v-model.trim="putAwayLocation[tripKey(trip)]" type="text" :placeholder="trans('Location code')"
                             class="w-36 rounded border-gray-300 font-mono text-sm uppercase" @keyup.enter="putAway(trip)" />
                         <span v-else class="font-mono">{{ trip.destination.location_code ?? '—' }}</span>
                     </td>
                     <td class="px-4 py-2 text-right">
                         <button v-if="can_edit" type="button" class="rounded bg-indigo-600 px-3 py-1 text-white hover:bg-indigo-700 disabled:opacity-40"
-                            :disabled="!putAwayLocation[tripKey(trip)]" @click="putAway(trip)">
+                            :disabled="!canPutAway(trip)" @click="putAway(trip)">
                             {{ trans("Put away") }}
                         </button>
                     </td>

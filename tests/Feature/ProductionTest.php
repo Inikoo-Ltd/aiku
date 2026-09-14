@@ -2507,8 +2507,13 @@ test('to produce queue only shows lines with an artefact in this factory', funct
     expect($hubOutput())->toContain($jobOrder->reference)
         ->and($hubProps()['tabs']['navigation']['production_output']['number'])->toBe(count($hubProps()['production_output']));
 
-    \App\Actions\Dispatching\ProductionOutput\PutAwayFinishedJobOrder::make()->action($warehouse, [$jobOrder->id], 'L-BRD');
-    expect($jobOrder->refresh()->state)->toBe(JobOrderStateEnum::RECEIVED)
+    $stockItem = collect($hubProps()['production_output'])->firstWhere('destination.type', 'stock')['jobs'][0]['items'][0];
+    expect(fn () => \App\Actions\Dispatching\ProductionOutput\PutAwayFinishedJobOrder::make()->action($warehouse, [$jobOrder->id], [$stockItem['id'] => 'L-BRD']))
+        ->toThrow(ValidationException::class, 'is not kept in L-BRD yet');
+
+    \App\Actions\Dispatching\ProductionOutput\PutAwayFinishedJobOrder::make()->action($warehouse, [$jobOrder->id], [$stockItem['id'] => 'l-brd'], true);
+    expect(\App\Models\Inventory\LocationOrgStock::where('location_id', $location->id)->exists())->toBeTrue()
+        ->and($jobOrder->refresh()->state)->toBe(JobOrderStateEnum::RECEIVED)
         ->and($hubOutput())->not->toContain($jobOrder->reference)
         ->and($laneOf()->flatten()->all())->not->toContain($stocks[0]->code);
 
