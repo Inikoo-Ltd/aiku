@@ -55,6 +55,15 @@ class CreateGoogleAdsCampaign extends OrgAction
                 'unreachable_reason' => GoogleAdsClient::unreachableReason($shop),
                 'currency'           => $shop->currency->code,
 
+                /* A suggestion can open this form with what it already knows filled in: the department
+                   it found, and the site searches behind it as starting keywords. Everything stays
+                   editable, and nothing is created until the form is submitted, so a weak suggestion
+                   costs a glance rather than a campaign. */
+                'prefill' => [
+                    'name'     => $request->query('name'),
+                    'keywords' => array_filter(explode("\n", (string) $request->query('keywords'))),
+                ],
+
                 /* Keyed by ISO code rather than by Aiku's country id, because that is what Google
                    translates into its own geo target constants at submit time.
                    The shop's own country is where it almost certainly wants to advertise, so the form

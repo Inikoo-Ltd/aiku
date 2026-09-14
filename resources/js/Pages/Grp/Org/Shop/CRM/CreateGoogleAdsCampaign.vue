@@ -30,6 +30,7 @@ const props = defineProps<{
     countries: { value: string; label: string }[]
     default_country: string | null
     default_url: string | null
+    prefill?: { name: string | null; keywords: string[] }
     store_route: { name: string; parameters: Record<string, unknown> }
     index_route: { name: string; parameters: Record<string, unknown> }
 }>()
@@ -39,13 +40,13 @@ const DESCRIPTION_MAX = 90
 const MATCH_TYPES = ["BROAD", "PHRASE", "EXACT"]
 
 const form = useForm({
-    name: "",
+    name: props.prefill?.name ?? "",
     budget_amount: null as number | null,
     max_cpc: null as number | null,
     country_codes: props.default_country ? [props.default_country] : [],
     target_search_partners: false,
-    ad_group_name: "",
-    keywords: "",
+    ad_group_name: props.prefill?.name ?? "",
+    keywords: (props.prefill?.keywords ?? []).join("\n"),
     match_type: "PHRASE",
     final_url: props.default_url ?? "",
     headlines: ["", "", ""],

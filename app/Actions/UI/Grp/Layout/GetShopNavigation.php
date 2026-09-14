@@ -393,6 +393,16 @@ class GetShopNavigation
                                 "parameters" => [$shop->organisation->slug, $shop->slug],
                             ],
                         ],
+                        [
+                            "label"   => __("Suggestions"),
+                            "tooltip" => __("Changes worth making to your advertising, found in your own figures"),
+                            "icon"    => ["fal", "fa-lightbulb"],
+                            'root'    => 'grp.org.shops.show.marketing.ad_proposals.',
+                            "route"   => [
+                                "name"       => "grp.org.shops.show.marketing.ad_proposals.index",
+                                "parameters" => [$shop->organisation->slug, $shop->slug],
+                            ],
+                        ],
 
 
                     ],
