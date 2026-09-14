@@ -47,7 +47,7 @@ const props = defineProps<{
     }
 }>()
 
-type Metrics = { created: number; open: number; assigned: number; in_progress: number; done: number; median_hours: number | null; longest_wait_days: number | null; rating: number | null; ratings: number }
+type Metrics = { created: number; open: number; assigned: number; in_progress: number; resolved: number; cancelled: number; done: number; median_hours: number | null; longest_wait_days: number | null; rating: number | null; ratings: number }
 
 const peopleTab = ref<"assignees" | "reporters">("assignees")
 
@@ -178,7 +178,8 @@ const reporterColumns = [
     { key: "name", label: trans("Reporter") },
     { key: "created", label: trans("Created") },
     { key: "open", label: trans("Still open") },
-    { key: "done", label: trans("Resolved") },
+    { key: "resolved", label: trans("Resolved") },
+    { key: "cancelled", label: trans("Cancelled") },
     { key: "median_hours", label: trans("Median time to resolve") },
     { key: "longest_wait_days", label: trans("Longest wait") },
     { key: "rating", label: trans("Average rating") },
@@ -323,7 +324,8 @@ const dashboardBoxes = computed(() => (props.stats.interval === "all" ? (["peopl
                         </td>
                         <td class="px-4 py-2 text-right">{{ row.created }}<span class="inline-block w-16 text-gray-400">{{ sharePercent(row.created, stats.assignees_total.created) }}</span></td>
                         <td class="px-4 py-2 text-right">{{ row.open }}</td>
-                        <td class="px-4 py-2 text-right">{{ row.done }}</td>
+                        <td class="px-4 py-2 text-right">{{ row.resolved }}</td>
+                        <td class="px-4 py-2 text-right">{{ row.cancelled }}</td>
                         <td class="px-4 py-2 text-right">{{ hours(row.median_hours) }}</td>
                         <td class="px-4 py-2 text-right">{{ days(row.longest_wait_days) }}</td>
                         <td class="px-4 py-2 text-right">
@@ -332,7 +334,7 @@ const dashboardBoxes = computed(() => (props.stats.interval === "all" ? (["peopl
                         </td>
                     </tr>
                     <tr v-if="!stats.reporters.length">
-                        <td colspan="7" class="px-4 py-6 text-center text-gray-400">{{ trans("No tickets in this period") }}</td>
+                        <td colspan="8" class="px-4 py-6 text-center text-gray-400">{{ trans("No tickets in this period") }}</td>
                     </tr>
                 </tbody>
                 <tfoot v-if="stats.reporters.length" class="border-t-2 border-gray-200 font-semibold">
@@ -340,7 +342,8 @@ const dashboardBoxes = computed(() => (props.stats.interval === "all" ? (["peopl
                         <td class="px-4 py-2">{{ trans("Total") }}</td>
                         <td class="px-4 py-2 text-right">{{ stats.assignees_total.created }}<span class="inline-block w-16" /></td>
                         <td class="px-4 py-2 text-right">{{ stats.assignees_total.open }}</td>
-                        <td class="px-4 py-2 text-right">{{ stats.assignees_total.done }}</td>
+                        <td class="px-4 py-2 text-right">{{ stats.assignees_total.resolved }}</td>
+                        <td class="px-4 py-2 text-right">{{ stats.assignees_total.cancelled }}</td>
                         <td class="px-4 py-2 text-right">{{ hours(stats.assignees_total.median_hours) }}</td>
                         <td class="px-4 py-2 text-right">{{ days(stats.assignees_total.longest_wait_days) }}</td>
                         <td class="px-4 py-2 text-right">

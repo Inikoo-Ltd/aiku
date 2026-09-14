@@ -121,6 +121,8 @@ class ShowTicketsReports extends OrgAction
         count(*) filter (where tickets.status not in ('resolved', 'cancelled')) as open,
         count(*) filter (where tickets.status = 'assigned') as assigned,
         count(*) filter (where tickets.status = 'in_progress') as in_progress,
+        count(*) filter (where tickets.status = 'resolved') as resolved,
+        count(*) filter (where tickets.status = 'cancelled') as cancelled,
         count(*) filter (where tickets.resolved_at is not null) as done,
         percentile_cont(0.5) within group (order by extract(epoch from tickets.resolved_at - tickets.created_at) / 3600)
             filter (where tickets.resolved_at is not null) as median_hours,
@@ -157,6 +159,8 @@ class ShowTicketsReports extends OrgAction
             'open'              => (int) $row->open,
             'assigned'          => (int) $row->assigned,
             'in_progress'       => (int) $row->in_progress,
+            'resolved'          => (int) $row->resolved,
+            'cancelled'         => (int) $row->cancelled,
             'done'              => (int) $row->done,
             'median_hours'      => $row->median_hours === null ? null : round((float) $row->median_hours, 1),
             'longest_wait_days' => $row->longest_wait_days === null ? null : (int) $row->longest_wait_days,
