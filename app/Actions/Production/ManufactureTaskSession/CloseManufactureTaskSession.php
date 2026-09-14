@@ -17,6 +17,8 @@ use App\Enums\Production\ManufactureTaskSession\ManufactureTaskSessionActivityTy
 use App\Enums\Production\ManufactureTaskSession\ManufactureTaskSessionStateEnum;
 use App\Models\Production\ManufactureTaskSession;
 use Illuminate\Http\RedirectResponse;
+use App\Models\Production\JobOrderItemTask;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
@@ -26,15 +28,25 @@ class CloseManufactureTaskSession extends OrgAction
 {
     public function handle(ManufactureTaskSession $session, array $modelData): ManufactureTaskSession
     {
-        if ($session->state == ManufactureTaskSessionStateEnum::CLOSED) {
-            throw ValidationException::withMessages([
-                'state' => __('This task session is already closed'),
-            ]);
-        }
+        return DB::transaction(function () use ($session, $modelData) {
+            $session = ManufactureTaskSession::lockForUpdate()->find($session->id);
+            if ($session->state == ManufactureTaskSessionStateEnum::CLOSED) {
+                throw ValidationException::withMessages([
+                    'state' => __('This task session is already closed'),
+                ]);
+            }
 
-        $manufactureTask = $session->manufactureTask;
+            $manufactureTask = $session->manufactureTask;
 
-        $session->update([
+            $task = JobOrderItemTask::lockForUpdate()->find($session->job_order_item_task_id);
+            $left = max(0, (float) $task->quantity_required - (float) $task->quantity_made);
+            if ((float) $modelData['quantity_made'] > $left) {
+                throw ValidationException::withMessages([
+                    'quantity_made' => __('Only :left left on this task', ['left' => $left]),
+                ]);
+            }
+
+            $session->update([
             'quantity_made'                   => $modelData['quantity_made'],
             'quantity_rejected'               => $modelData['quantity_rejected'] ?? 0,
             'ended_at'                        => now(),
@@ -48,15 +60,16 @@ class CloseManufactureTaskSession extends OrgAction
             'non_productive_reason'           => $modelData['non_productive_reason'] ?? null,
         ]);
 
-        $task = CalculateJobOrderItemTaskQuantities::run($session->jobOrderItemTask);
-        CalculateManufactureTaskSessionPay::run($session);
+            $task = CalculateJobOrderItemTaskQuantities::run($session->jobOrderItemTask);
+            CalculateManufactureTaskSessionPay::run($session);
 
-        $outcome = $modelData['outcome'] ?? null;
-        if ($outcome && $task->state != JobOrderItemTaskStateEnum::DONE) {
-            SettleShortJobOrderItemTask::run($task, $outcome === 'carry_over');
-        }
+            $outcome = $modelData['outcome'] ?? null;
+            if ($outcome && $task->state != JobOrderItemTaskStateEnum::DONE) {
+                SettleShortJobOrderItemTask::run($task, $outcome === 'carry_over');
+            }
 
-        return $session;
+            return $session;
+        });
     }
 
     public function rules(): array
@@ -89,8 +102,6 @@ class CloseManufactureTaskSession extends OrgAction
         return $request->user()->id == $this->manufactureTaskSession->user_id
             || $request->user()->authTo([
                 'org-supervisor.'.$this->organisation->id,
-                'productions-view.'.$this->organisation->id,
-                "productions_operations.{$this->production->id}.view",
                 "productions_operations.{$this->production->id}.orchestrate",
             ]);
     }

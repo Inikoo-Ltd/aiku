@@ -37,6 +37,8 @@ use App\Actions\CRM\Prospect\Mailshots\RunProspectMailshotScheduled;
 use App\Actions\CRM\Prospect\Mailshots\RunProspectMailshotSecondWave;
 use App\Actions\CRM\WebUserPasswordReset\PurgeWebUserPasswordReset;
 use App\Actions\DevOps\MonitorNightowlIngest;
+use App\Actions\Comms\Email\RemindChannelOrdersOnHold;
+use App\Actions\DevOps\MonitorOrdersInLimbo;
 use App\Actions\DevOps\MonitorQueueBacklogs;
 use App\Actions\DevOps\MonitorRetinaApiInflow;
 use App\Actions\DevOps\WebsiteHealthLog\MonitorWebsitesUptime;
@@ -74,10 +76,7 @@ class Kernel extends ConsoleKernel
     protected function schedule(Schedule $schedule): void
     {
         $schedule->command('horizon:snapshot')->everyFiveMinutes()->onOneServer();
-        if (config('tickets.read_only')) {
-            $schedule->command('jira:import_tickets AD --since=60')->everyFifteenMinutes()->withoutOverlapping()->onOneServer();
-            $schedule->command('jira:import_tickets HELP --since=60')->everyFifteenMinutes()->withoutOverlapping()->onOneServer();
-        }
+        $schedule->command('tickets:cancel_stale')->everyFifteenMinutes()->onOneServer();
         $schedule->command('cloudflare:reload')->daily()->onOneServer();
         /* Every five minutes: the run reads a counter per shop channel and writes only the ones that
            moved, so it is cheap, and the alternative is a dashboard whose visit column is an hour
@@ -95,6 +94,7 @@ class Kernel extends ConsoleKernel
             ->name('prune-traffic-source-clicks')->dailyAt('04:30')->timezone('UTC')->onOneServer();
         $schedule->command('search:propose-synonyms')->weeklyOn(1, '03:00')->onOneServer();
         $schedule->command('nightowl:prune')->dailyAt('04:00')->timezone('UTC')->onOneServer()->withoutOverlapping(180);
+        $schedule->command('nightowl:freeze-cold-partitions')->dailyAt('05:00')->timezone('UTC')->onOneServer()->withoutOverlapping(180);
         $schedule->command('comms:archive_dispatched_emails')->dailyAt('03:00')->timezone('UTC')->onOneServer()->withoutOverlapping(180);
         $schedule->command('inventory:archive_stock_histories --dates=5')->dailyAt('03:40')->timezone('UTC')->onOneServer()->withoutOverlapping(60)
             ->when(fn () => config('archive.stock_history_nightly'));
@@ -180,6 +180,24 @@ class Kernel extends ConsoleKernel
                 name: 'MonitorQueueBacklogs',
                 type: 'job',
                 scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
+                $schedule->job(RemindChannelOrdersOnHold::makeJob())->dailyAt('08:00')->timezone('UTC')->withoutOverlapping()->onOneServer()->sentryMonitor(
+                    monitorSlug: 'RemindChannelOrdersOnHold',
+                ),
+                name: 'RemindChannelOrdersOnHold',
+                type: 'job',
+                scheduledAt: '08:00'
+            );
+
+            $this->logSchedule(
+                $schedule->job(MonitorOrdersInLimbo::makeJob())->dailyAt('07:30')->timezone('UTC')->withoutOverlapping()->onOneServer()->sentryMonitor(
+                    monitorSlug: 'MonitorOrdersInLimbo',
+                ),
+                name: 'MonitorOrdersInLimbo',
+                type: 'job',
+                scheduledAt: '07:30'
             );
 
             $this->logSchedule(

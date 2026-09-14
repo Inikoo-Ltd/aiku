@@ -53,16 +53,16 @@ trait WithExportData
      *
      * @param  array<int, string>  $headings
      */
-    public function streamCsv(QueryBuilderContract $query, array $headings, string $prefix): StreamedResponse
+    public function streamCsv(QueryBuilderContract $query, array $headings, string $prefix, ?callable $mapRow = null): StreamedResponse
     {
         $filename = now()->format('Y-m-d') . '-' . $prefix . '-' . rand(111, 999) . '.csv';
 
-        return response()->streamDownload(function () use ($query, $headings) {
+        return response()->streamDownload(function () use ($query, $headings, $mapRow) {
             $handle = fopen('php://output', 'w');
             fputcsv($handle, $headings, ',', '"', '');
 
             foreach ($query->cursor() as $row) {
-                fputcsv($handle, array_values((array) $row), ',', '"', '');
+                fputcsv($handle, $mapRow ? $mapRow($row) : array_values((array) $row), ',', '"', '');
             }
 
             fclose($handle);

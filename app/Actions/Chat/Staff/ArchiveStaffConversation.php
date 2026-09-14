@@ -20,7 +20,7 @@ class ArchiveStaffConversation
 
     public function handle(StaffConversation $conversation, User $user): void
     {
-        $conversation->participants()->updateExistingPivot($user->id, ['archived_at' => now(), 'last_read_at' => now()]);
+        $conversation->participants()->updateExistingPivot($user->id, ['archived_at' => now(), 'last_read_at' => now()->format(StaffConversation::PRECISE_DATE_FORMAT)]);
         StaffConversationArchived::dispatch($conversation, $user);
     }
 

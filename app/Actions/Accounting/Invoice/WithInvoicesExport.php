@@ -13,6 +13,8 @@ namespace App\Actions\Accounting\Invoice;
 use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
 use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemStateEnum;
 use App\Models\Accounting\Invoice;
+use App\Models\Helpers\Address;
+use App\Models\Dispatching\DeliveryNote;
 use App\Models\Fulfilment\Pallet;
 use App\Models\Helpers\TariffCode;
 use Carbon\Carbon;
@@ -172,6 +174,17 @@ trait WithInvoicesExport
     }
 
     /**
+     * Both are addresses stored on the document when it was issued, never looked up live. It prints when any
+     * line is filled: a street typed into the town box used to drop the whole delivery box (HELP-3110).
+     */
+    public function invoicePdfDeliveryAddress(Invoice $invoice, ?DeliveryNote $deliveryNote, bool $isCollection): ?Address
+    {
+        $address = $isCollection ? $invoice->deliveryAddress : $deliveryNote?->deliveryAddress;
+
+        return $address?->hasAnyLine() ? $address : null;
+    }
+
+    /**
      * @return array{0: \Mccarlosen\LaravelMpdf\LaravelMpdf, 1: string}
      */
     private function buildInvoicePdf(Invoice $invoice): array
@@ -308,12 +321,7 @@ trait WithInvoicesExport
 
         $isCollection = (bool)($deliveryNote?->collection_address_id ?? $invoice->order?->collection_address_id);
 
-        /** Both are addresses stored on the document when it was issued, never looked up live */
-        $deliveryAddress = $isCollection ? $invoice->deliveryAddress : $deliveryNote?->deliveryAddress;
-
-        if (blank($deliveryAddress?->address_line_1) || $deliveryAddress?->address_line_1 == '0') {
-            $deliveryAddress = null;
-        }
+        $deliveryAddress = $this->invoicePdfDeliveryAddress($invoice, $deliveryNote, $isCollection);
 
         $pdf = PDF::loadView('invoices.templates.pdf.invoice', [
             'shop'                    => $invoice->shop,

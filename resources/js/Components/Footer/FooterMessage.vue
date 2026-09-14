@@ -260,8 +260,7 @@ const handleChatListEvent = async (e: any) => {
     // message: just refresh the counts, no sound.
     if (!msg) {
         await refreshUnread()
-        await fetchTabCounts()
-        if (showPopover.value) await fetchSessions()
+        if (showPopover.value) await Promise.all([fetchTabCounts(), fetchSessions()])
         return
     }
 
@@ -269,8 +268,7 @@ const handleChatListEvent = async (e: any) => {
     // preview, ordering) and the unread badge, just without a notification sound.
     if (msg.sender_type === "agent") {
         await refreshUnread()
-        await fetchTabCounts()
-        if (showPopover.value) await fetchSessions()
+        if (showPopover.value) await Promise.all([fetchTabCounts(), fetchSessions()])
         return
     }
 
@@ -283,8 +281,7 @@ const handleChatListEvent = async (e: any) => {
 
     playNotificationSoundFile(soundUrl)
     await refreshUnread()
-    await fetchTabCounts()
-    if (showPopover.value) await fetchSessions()
+    if (showPopover.value) await Promise.all([fetchTabCounts(), fetchSessions()])
 }
 
 const subscribeChannels = () => {
@@ -309,16 +306,15 @@ onMounted(() => {
     if (!myAgentId) return
 
     refreshUnread()
-    fetchTabCounts()
 
     waitEchoReady(subscribeChannels)
 
     // Safety net: keep the badge fresh even if a broadcast is missed
     // or the agent handles shops org-wide (no per-shop channel).
+    // The per-tab counts only show inside the popover, which fetches them when it opens.
     pollTimer = setInterval(() => {
-        if (!showPopover.value) {
+        if (!showPopover.value && !document.hidden) {
             refreshUnread()
-            fetchTabCounts()
         }
     }, 30000)
 })

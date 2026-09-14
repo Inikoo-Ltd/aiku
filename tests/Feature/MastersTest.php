@@ -2673,6 +2673,23 @@ test('master product creation seeds minor prices from the official exchange, not
         ->and(data_get($data, 'currencies.GBP.is_major'))->toBeTrue();
 });
 
+test('master product creation data refuses a trade unit quantity of zero instead of dividing by it', function () {
+    $masterShop       = createFreshMasterShop();
+    $masterDepartment = StoreMasterDepartment::make()->action($masterShop, [
+        'code' => 'ZQDEP-'.uniqid(),
+        'name' => 'Zero quantity dept',
+    ]);
+    $masterFamily = StoreMasterFamily::make()->action($masterDepartment, [
+        'code' => 'ZQFAM-'.uniqid(),
+        'name' => 'Zero quantity family',
+    ]);
+    $tradeUnit = StoreTradeUnit::make()->action(group(), TradeUnit::factory()->definition());
+
+    post(route('grp.models.master_product_category.product_creation_data', [$masterFamily->id]), [
+        'trade_units' => [['id' => $tradeUnit->id, 'quantity' => 0]],
+    ])->assertSessionHasErrors('trade_units.0.quantity');
+});
+
 test('minor currency recalculation includes variant master assets', function () {
     $masterShop = createFreshMasterShop();
     $masterShop->update(['price_exchanges' => [
@@ -3198,3 +3215,36 @@ test('master collection from origin country keeps only assets made there', funct
     expect($masterCollection->masterFamilies()->count())->toBe(0)
         ->and($masterCollection->masterProducts()->pluck('master_assets.id')->all())->toBe([$nepalMasterAsset->id]);
 })->depends('create master collection', 'create master asset');
+
+test('recommended trade units follow the linked trade unit family, not the family code', function () {
+    $masterFamily = ensureMasterProductCategory();
+
+    $tradeUnitFamily = \App\Actions\Goods\TradeUnitFamily\StoreTradeUnitFamily::make()->action(group(), [
+        'code' => 'TUF-'.uniqid(),
+        'name' => 'Trade unit family',
+    ]);
+
+    $tradeUnit = StoreTradeUnit::make()->action(group(), array_merge(
+        TradeUnit::factory()->definition(),
+        ['code' => 'XX'.uniqid()]
+    ));
+    $tradeUnit->update(['trade_unit_family_id' => $tradeUnitFamily->id]);
+
+    expect(
+        \App\Actions\Masters\MasterAsset\Json\GetRecommendedTradeUnits::make()
+            ->handle($masterFamily)->pluck('id')->all()
+    )->not->toContain($tradeUnit->id);
+
+    $prefixOnlyTradeUnit = StoreTradeUnit::make()->action(group(), array_merge(
+        TradeUnit::factory()->definition(),
+        ['code' => $masterFamily->code.'-'.uniqid()]
+    ));
+
+    $masterFamily->update(['trade_unit_family_id' => $tradeUnitFamily->id]);
+
+    $recommended = \App\Actions\Masters\MasterAsset\Json\GetRecommendedTradeUnits::make()
+        ->handle($masterFamily->refresh())->pluck('id')->all();
+
+    expect($recommended)->toContain($tradeUnit->id)
+        ->and($recommended)->toContain($prefixOnlyTradeUnit->id);
+});

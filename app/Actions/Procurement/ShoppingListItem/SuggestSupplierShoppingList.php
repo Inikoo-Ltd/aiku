@@ -40,12 +40,14 @@ class SuggestSupplierShoppingList extends OrgAction
     {
         $candidates = $this->candidates($orgSupplier, $bucket, $rank);
         $lines      = $this->respectSupplierCap($orgSupplier, $this->greedyFill($candidates, $budget));
+        $capacity   = GetSupplierOrderCapacity::run($orgSupplier);
 
         return [
-            'currency' => $orgSupplier->supplier->currency->code,
-            'budget'   => $budget,
-            'total'    => round(array_sum(array_column($lines, 'cost')), 2),
-            'lines'    => $lines,
+            'currency'    => $orgSupplier->supplier->currency->code,
+            'budget'      => $budget,
+            'total'       => round(array_sum(array_column($lines, 'cost')), 2),
+            'lines'       => $lines,
+            'budget_left' => $this->budgetLeft($capacity['supplier_capacity']['delivers_to_us_per_30d'], $capacity['list']['value']),
         ];
     }
 
@@ -132,11 +134,17 @@ class SuggestSupplierShoppingList extends OrgAction
                 ? ceil($candidate['recommended'])
                 : max(0.0, ceil($candidate['quarterly_usage'] - $candidate['our_stock']));
 
-            $quantity = $this->roundToCarton($target, $candidate['units_per_carton']);
-            $quantity = min($quantity, floor($remaining / $candidate['cost']));
-            $quantity = $this->roundDownToCarton($quantity, $candidate['units_per_carton']);
+            $minimum  = $this->minimumOrder($candidate);
+            $quantity = max($minimum, $this->roundToCarton($target, $candidate['units_per_carton']));
 
-            if ($quantity < 1) {
+            if ($quantity * $candidate['cost'] > $remaining) {
+                $quantity = $this->roundDownToCarton(
+                    floor($remaining / $candidate['cost']),
+                    $candidate['units_per_carton']
+                );
+            }
+
+            if ($quantity < 1 || $quantity < $minimum) {
                 continue;
             }
 
@@ -163,6 +171,16 @@ class SuggestSupplierShoppingList extends OrgAction
         }
 
         return $lines;
+    }
+
+    /**
+     * @param array<string, mixed> $candidate
+     */
+    protected function minimumOrder(array $candidate): float
+    {
+        $cartonUnits = max(1, $candidate['units_per_carton']);
+
+        return max(1, (int) ($candidate['minimum_carton_order'] ?: 1)) * $cartonUnits;
     }
 
     protected function roundToCarton(float $quantity, int $unitsPerCarton): float
@@ -204,6 +222,11 @@ class SuggestSupplierShoppingList extends OrgAction
      *
      * @return array<int, array<string, mixed>>
      */
+    protected function budgetLeft(?float $cap, float $listValue): ?float
+    {
+        return $cap === null ? null : round(max(0, $cap - $listValue), 2);
+    }
+
     protected function respectSupplierCap(OrgSupplier $orgSupplier, array $lines): array
     {
         $capacity  = GetSupplierOrderCapacity::run($orgSupplier);

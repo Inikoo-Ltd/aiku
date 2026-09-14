@@ -9,7 +9,6 @@
 namespace App\Actions\Procurement\OrgAgent;
 
 use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
-use App\Enums\Catalogue\HealthRankEnum;
 use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
 use App\Enums\Procurement\OrgSupplierProduct\OrgSupplierProductStateEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderDeliveryStateEnum;
@@ -27,7 +26,6 @@ class GetAgentOrderCapacity
 {
     use AsObject;
 
-    public const MIN_MONTHS = 3;
     // ponytail: 20% fair share is a guess, upgrade path is an org-level setting
     public const AGENT_SHARE_OF_EMPTY_LOCATIONS = 0.2;
     public const WAREHOUSE_FULL_FREE_RATIO = 0.05;
@@ -72,23 +70,24 @@ class GetAgentOrderCapacity
      */
     protected function agentCapacity(OrgAgent $orgAgent): array
     {
-        $measured = DB::table('stock_deliveries')
+        $months = DB::table('stock_deliveries')
             ->where('organisation_id', $orgAgent->organisation_id)
             ->where('agent_id', $orgAgent->agent_id)
             ->whereNull('deleted_at')
             ->whereRaw('coalesce(booked_in_at, placed_at, date) >= ?', [now()->subMonths(6)])
-            ->selectRaw("count(*) as samples,
-                count(distinct date_trunc('month', coalesce(booked_in_at, placed_at, date))) as months,
-                coalesce(sum(cost_total * coalesce(org_exchange, 1)), 0) as total")
-            ->first();
+            ->selectRaw("count(*) as samples, coalesce(sum(cost_total), 0) as total")
+            ->groupByRaw("date_trunc('month', coalesce(booked_in_at, placed_at, date))")
+            ->get();
+        $peakMonth = (float) $months->max('total');
+        $samples   = (int) $months->sum('samples');
 
         $cycleShare = $this->orderCycleShare($orgAgent);
 
-        if ((int) $measured->months >= self::MIN_MONTHS) {
+        if ($peakMonth > 0) {
             return [
-                'lands_for_us_per_30d' => round((float) $measured->total / (int) $measured->months * $cycleShare, 2),
+                'lands_for_us_per_30d' => round($peakMonth * $cycleShare, 2),
                 'source'               => 'measured',
-                'samples'              => (int) $measured->samples,
+                'samples'              => $samples,
             ];
         }
 
@@ -97,7 +96,7 @@ class GetAgentOrderCapacity
         return [
             'lands_for_us_per_30d' => $sales > 0 ? round($sales * $cycleShare, 2) : null,
             'source'               => $sales > 0 ? 'sales' : 'none',
-            'samples'              => (int) $measured->samples,
+            'samples'              => $samples,
         ];
     }
 
@@ -229,18 +228,6 @@ class GetAgentOrderCapacity
             ->first();
     }
 
-    public static function isExemptFromCap(OrgSupplierProduct $orgSupplierProduct): bool
-    {
-        $orgStock = static::linkedOrgStock($orgSupplierProduct);
-
-        if (!$orgStock) {
-            return false;
-        }
-
-        return (float) $orgStock->quantity_available <= 0
-            || $orgStock->health_rank === HealthRankEnum::A;
-    }
-
     /**
      * The budget is the agent's, but the warehouse is everyone's: a new product still has to fit
      * this agent's fair share of free slots, and an item we have run out of or rank A always gets
@@ -250,16 +237,6 @@ class GetAgentOrderCapacity
     {
         $capacity = static::run($orgAgent);
 
-        if ($capacity['blocked']['at_capacity'] && !static::isExemptFromCap($orgSupplierProduct)) {
-            abort(422, __(
-                'Shopping list is at the level :agent historically lands for us monthly (:cap :currency). Remove or deprioritize items first — only A-rank or out-of-stock items can be added past the cap.',
-                [
-                    'agent'    => $orgAgent->agent->name,
-                    'cap'      => number_format((float) $capacity['agent_capacity']['lands_for_us_per_30d'], 2),
-                    'currency' => $capacity['currency'],
-                ]
-            ));
-        }
 
         if ($capacity['warehouse']['total_locations'] > 0 && !static::linkedOrgStock($orgSupplierProduct)) {
             if ($capacity['blocked']['warehouse_full']) {

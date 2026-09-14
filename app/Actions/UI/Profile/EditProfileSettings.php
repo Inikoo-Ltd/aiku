@@ -89,6 +89,17 @@ class EditProfileSettings
                                 "label" => __("Chat panel color"),
                                 "value" => Arr::get($user->settings, 'chat_theme'),
                             ],
+                            "ticket_notifications" => [
+                                "type"    => "select",
+                                "label"   => __("Ticket notifications"),
+                                "value"   => Arr::get($user->settings, 'ticket_notifications', 'both'),
+                                'options' => [
+                                    ['value' => 'both', 'label' => __('Email and Slack')],
+                                    ['value' => 'email', 'label' => __('Email')],
+                                    ['value' => 'slack', 'label' => __('Slack')],
+                                    ['value' => 'none', 'label' => __('None')],
+                                ],
+                            ],
                             "hide_logo" => [
                                 "type"    => "toggle",
                                 "label"   => __("Hide logo"),

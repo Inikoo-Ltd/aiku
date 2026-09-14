@@ -8,7 +8,6 @@
 
 namespace App\Actions\Helpers\Ticket;
 
-use App\Actions\Helpers\Ticket\Concerns\WithTicketsWriteGuard;
 use App\Models\CRM\WebUser;
 use App\Models\Helpers\Ticket;
 use App\Models\SysAdmin\User;
@@ -19,8 +18,6 @@ use Lorisleiva\Actions\Concerns\AsAction;
 
 class RateTicket
 {
-    use WithTicketsWriteGuard;
-
     use AsAction;
 
     public static function canRate(Ticket $ticket, User|WebUser|null $user): bool
@@ -34,13 +31,14 @@ class RateTicket
 
     public function handle(Ticket $ticket, array $modelData): Ticket
     {
-        $this->guardTicketsWritable();
 
         $ticket->update([
             'rating'         => Arr::get($modelData, 'rating'),
             'rating_comment' => Arr::get($modelData, 'comment'),
             'rated_at'       => now(),
         ]);
+
+        NotifyTicketUsers::make()->pushBadges($ticket);
 
         return $ticket;
     }

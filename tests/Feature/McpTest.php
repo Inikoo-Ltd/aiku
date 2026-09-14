@@ -21,6 +21,7 @@ use App\Mcp\Servers\AikuServer;
 use App\Mcp\Tools\CustomerConversionTool;
 use App\Mcp\Tools\CustomerEmailPressureTool;
 use App\Mcp\Tools\CustomerNotesTool;
+use App\Mcp\Tools\DiscordMessageTool;
 use App\Mcp\Tools\DeliveryNotesSummaryTool;
 use App\Mcp\Tools\DescribeTablesTool;
 use App\Mcp\Tools\EmployeeAttendanceTool;
@@ -63,6 +64,7 @@ use App\Models\Ordering\Order;
 use App\Models\SysAdmin\Guest;
 use App\Models\SysAdmin\McpRequest;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
 
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\getJson;
@@ -1405,5 +1407,90 @@ describe('payment methods tool', function () {
             'from'         => '2026-01-01',
             'to'           => '2026-12-31',
         ])->assertOk()->assertSee('"currency"');
+    });
+});
+
+describe('discord message tool', function () {
+    beforeEach(function () {
+        config()->set('services.discord.bot_token', 'bot-token');
+        $this->user->update(['settings' => array_merge($this->user->settings, ['discord_user_id' => '4242'])]);
+    });
+
+    test('sends a signed dm and returns the dm link', function () {
+        Http::fake([
+            'discord.com/api/v10/users/@me/channels' => Http::response(['id' => '777']),
+            'discord.com/api/v10/channels/777/messages' => Http::response(['id' => '1']),
+        ]);
+
+        AikuServer::actingAs($this->user)->tool(DiscordMessageTool::class, [
+            'to'      => $this->user->username,
+            'message' => "Please test HELP-3116\nhttps://app.aiku.io/x",
+        ])->assertOk()->assertSee('https://discord.com/channels/@me/777');
+
+        Http::assertSent(fn ($request) => str_ends_with($request->url(), '/users/@me/channels')
+            && $request['recipient_id'] === '4242'
+            && $request->header('Authorization')[0] === 'Bot bot-token');
+
+        Http::assertSent(fn ($request) => str_ends_with($request->url(), '/channels/777/messages')
+            && str_starts_with($request['content'], '**'.$this->user->contact_name.'** via aiku'."\n".'Please test HELP-3116'));
+    });
+
+    test('long messages are split on line breaks under the discord limit', function () {
+        Http::fake([
+            'discord.com/api/v10/users/@me/channels' => Http::response(['id' => '777']),
+            'discord.com/api/v10/channels/777/messages' => Http::response(['id' => '1']),
+        ]);
+
+        $lines = implode("\n", array_fill(0, 60, str_repeat('x', 50)));
+
+        AikuServer::actingAs($this->user)->tool(DiscordMessageTool::class, [
+            'to'      => $this->user->username,
+            'message' => $lines,
+        ])->assertOk();
+
+        $sent = collect(Http::recorded())
+            ->map(fn ($pair) => $pair[0])
+            ->filter(fn ($request) => str_ends_with($request->url(), '/messages'))
+            ->map(fn ($request) => $request['content']);
+
+        expect($sent->count())->toBe(2)
+            ->and($sent->every(fn ($content) => mb_strlen($content) <= 2000))->toBeTrue()
+            ->and($sent->every(fn ($content) => !str_starts_with($content, "\n")))->toBeTrue()
+            ->and(strlen(str_replace("\n", '', $sent->join(''))))->toBe(60 * 50 + strlen('**'.$this->user->contact_name.'** via aiku'));
+    });
+
+    test('a colleague without a discord id gets a clear error and nothing is sent', function () {
+        Http::fake();
+        $this->user->update(['settings' => array_diff_key($this->user->settings, ['discord_user_id' => 1])]);
+
+        AikuServer::actingAs($this->user)->tool(DiscordMessageTool::class, [
+            'to'      => $this->user->username,
+            'message' => 'hi',
+        ])->assertHasErrors(['has no Discord user id']);
+
+        Http::assertNothingSent();
+    });
+
+    test('a refused dm reports the discord reason', function () {
+        Http::fake([
+            'discord.com/api/v10/users/@me/channels' => Http::response(['id' => '777']),
+            'discord.com/api/v10/channels/777/messages' => Http::response(['message' => 'Cannot send messages to this user'], 403),
+        ]);
+
+        AikuServer::actingAs($this->user)->tool(DiscordMessageTool::class, [
+            'to'      => $this->user->username,
+            'message' => 'hi',
+        ])->assertHasErrors(['Cannot send messages to this user']);
+    });
+
+    test('unknown username is rejected before touching discord', function () {
+        Http::fake();
+
+        AikuServer::actingAs($this->user)->tool(DiscordMessageTool::class, [
+            'to'      => 'nobody-here',
+            'message' => 'hi',
+        ])->assertHasErrors(['No aiku user with username']);
+
+        Http::assertNothingSent();
     });
 });

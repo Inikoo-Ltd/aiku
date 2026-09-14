@@ -401,4 +401,17 @@ trait WithTiktokApiServices
             'page_size' => 10
         ]);
     }
+
+    public function getManufacturers()
+    {
+        $path = "/product/202501/compliance/manufacturers/search";
+
+        return $this->makeApiRequest('POST', $path, [
+            'keyword' => '',
+        ], false, [
+            'content-type' => 'application/json'
+        ], true, [
+            'page_size' => 10
+        ]);
+    }
 }

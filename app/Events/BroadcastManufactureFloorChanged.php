@@ -10,13 +10,15 @@ namespace App\Events;
 
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Broadcasting\PrivateChannel;
-use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
+use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Foundation\Events\Dispatchable;
 
-class BroadcastManufactureFloorChanged implements ShouldBroadcastNow
+class BroadcastManufactureFloorChanged implements ShouldBroadcast
 {
     use Dispatchable;
     use InteractsWithSockets;
+
+    public bool $afterCommit = true;
 
     public function __construct(public int $productionId)
     {

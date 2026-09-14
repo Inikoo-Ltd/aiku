@@ -67,14 +67,10 @@ const closeSidePanel = () => {
 
 // settingchat
 const chatSettingVisible = ref(false)
-const settingInitialTab = ref<"general" | "jira" | "slack">("general")
+const settingInitialTab = ref<"general" | "slack">("general")
 const selectedContact = ref<Contact | null>(null)
 const openGlobalChatSettings = () => {
     settingInitialTab.value = "general"
-    chatSettingVisible.value = true
-}
-const openJiraSettings = () => {
-    settingInitialTab.value = "jira"
     chatSettingVisible.value = true
 }
 
@@ -687,7 +683,7 @@ onMounted(async () => {
                     <MessageAreaAgent :messages="messages" :session="selectedSession" @back="back"
                         @send-message="handleSendMessage" @close-session="closeSession" @view-history="showHistoryPanel"
                         @view-user-profile="showProfilePanel" @view-message-details="showMessageDetailsPanel"
-                        @transfer-agent-success="onTransferAgentSuccess" @open-jira-settings="openJiraSettings" />
+                        @transfer-agent-success="onTransferAgentSuccess" />
                 </div>
             </div>
         </div>

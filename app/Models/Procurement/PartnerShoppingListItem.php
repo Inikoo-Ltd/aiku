@@ -14,7 +14,7 @@ use App\Events\BroadcastProductionQueuesChanged;
 use App\Models\Goods\Stock;
 use App\Models\Inventory\OrgStock;
 use App\Models\Ordering\Transaction;
-use App\Enums\Catalogue\Product\ProductStateEnum;
+use App\Actions\Procurement\OrgPartner\PartnerSkoPrice;
 use App\Models\SysAdmin\Organisation;
 use App\Models\Traits\InOrganisation;
 use Illuminate\Database\Eloquent\Model;
@@ -131,12 +131,11 @@ class PartnerShoppingListItem extends Model
      */
     public static function pricePerSkoSql(): string
     {
-        return "(select pr.price / nullif(phos.quantity, 0)
-            from product_has_org_stocks phos
-            join products pr on pr.id = phos.product_id and pr.state = '".ProductStateEnum::ACTIVE->value."'
-            join org_stocks sos on sos.id = phos.org_stock_id
-            where sos.stock_id = partner_shopping_list_items.stock_id
-                and sos.organisation_id = partner_shopping_list_items.partner_organisation_id
-            limit 1)";
+        return PartnerSkoPrice::pricePerSkoSql(
+            "(select sos.id from org_stocks sos
+                where sos.stock_id = partner_shopping_list_items.stock_id
+                    and sos.organisation_id = partner_shopping_list_items.partner_organisation_id
+                limit 1)"
+        );
     }
 }

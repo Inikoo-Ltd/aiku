@@ -23,12 +23,6 @@ class IndexIrisBlogs extends IrisAction
 {
     public const PREFIX = 'blogs';
 
-    public const SUB_TYPES = [
-        WebpageSubTypeEnum::NEWSLETTERS,
-        WebpageSubTypeEnum::PRODUCT_GUIDES,
-        WebpageSubTypeEnum::BUSINESS_TIPS,
-    ];
-
     /**
      * @param  array<int, WebpageSubTypeEnum>  $subTypes
      * @return array<int, string>
@@ -93,7 +87,7 @@ class IndexIrisBlogs extends IrisAction
      */
     public function handle(Website $website, ?string $prefix = null, ?array $subTypes = null): LengthAwarePaginator
     {
-        $subTypes = $subTypes ?? self::SUB_TYPES;
+        $subTypes = $subTypes ?? WebpageSubTypeEnum::blogCategories($website->shop?->type);
 
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -158,7 +152,7 @@ class IndexIrisBlogs extends IrisAction
      */
     public function tableStructure(Website $website, ?string $prefix = null, ?array $subTypes = null): Closure
     {
-        $subTypes = $subTypes ?? self::SUB_TYPES;
+        $subTypes = $subTypes ?? WebpageSubTypeEnum::blogCategories($website->shop?->type);
 
         return function (InertiaTable $table) use ($website, $prefix, $subTypes) {
             if ($prefix) {

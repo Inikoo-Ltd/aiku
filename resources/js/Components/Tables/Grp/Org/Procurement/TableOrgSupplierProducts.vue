@@ -45,6 +45,7 @@ function supplierProductRoute(supplierProduct: OrgSupplierProduct) {
 </script>
 
 <template>
+  <div>
   <Table :resource="data" :name="tab" class="mt-5">
     <template #cell(code)="{ item: supplier_product }">
       <Link :href="supplierProductRoute(supplier_product)" class="primaryLink">
@@ -57,4 +58,5 @@ function supplierProductRoute(supplierProduct: OrgSupplierProduct) {
       </button>
     </template>
   </Table>
+  </div>
 </template>

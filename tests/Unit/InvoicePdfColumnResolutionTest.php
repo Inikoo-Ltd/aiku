@@ -73,3 +73,16 @@ test('export by tariff code collapses lines into one row per tariff code and ori
         ->and($rows[1])->toMatchArray(['tariff_code' => '3307410000', 'origin' => 'IND', 'description' => 'Incense', 'codes' => 'SBIS-12, SBIS-09', 'quantity' => 7.0, 'net_amount' => 27.79])
         ->and($rows[2]['origin'])->toBe('PER');
 });
+
+test('the invoice prints a delivery address whose street was typed into the town box, and nothing for a blank one', function () {
+    $invoice      = new Invoice();
+    $deliveryNote = new \App\Models\Dispatching\DeliveryNote();
+    $streetInTown = new \App\Models\Helpers\Address(['address_line_1' => '', 'locality' => 'Rear of 230 Church Lane', 'postal_code' => 'NR25 6LZ']);
+    $placeholder  = new \App\Models\Helpers\Address(['address_line_1' => '0', 'locality' => '0', 'postal_code' => '0']);
+
+    $deliveryNote->setRelation('deliveryAddress', $streetInTown);
+    expect(\App\Actions\Accounting\Invoice\PdfInvoice::make()->invoicePdfDeliveryAddress($invoice, $deliveryNote, false))->toBe($streetInTown);
+
+    $deliveryNote->setRelation('deliveryAddress', $placeholder);
+    expect(\App\Actions\Accounting\Invoice\PdfInvoice::make()->invoicePdfDeliveryAddress($invoice, $deliveryNote, false))->toBeNull();
+});

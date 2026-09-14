@@ -33,7 +33,7 @@ class ReportingSsrGateway extends HttpGateway
 
         try {
             $response = Http::connectTimeout(2)
-                ->timeout(10)
+                ->timeout(5)
                 ->post($this->getUrl('/render'), $page)
                 ->throw()
                 ->json();

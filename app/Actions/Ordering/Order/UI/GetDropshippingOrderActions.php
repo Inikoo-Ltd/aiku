@@ -31,6 +31,28 @@ class GetDropshippingOrderActions
             $platform = Platform::where('type', PlatformTypeEnum::MANUAL)->first();
         }
 
+        /** Only on an order actually held for a missing address, otherwise it reads as "this customer has no address" (HELP-3126) */
+        $sendWithoutAnAddress = $order->state == OrderStateEnum::SUBMITTED && $order->isMissingARequiredAddress() ? [
+        [
+            'type'    => 'button',
+            'style'   => 'negative',
+            'icon'    => 'fal fa-exclamation-triangle',
+            'key'     => 'send-to-warehouse-without-an-address',
+            'label'   => __('Send anyway, no address'),
+            'tooltip' => __('The order is missing an address. Send it to the warehouse regardless, only when the customer cannot be reached'),
+            'route'   => [
+                'method'     => 'patch',
+                'name'       => 'grp.models.order.state.in-warehouse',
+                'parameters' => [
+                    'order' => $order->id,
+                ],
+                'body'       => [
+                    'without_an_address' => true,
+                ],
+            ]
+        ],
+        ] : [];
+
         if ($canEdit) {
             $actions    = match ($order->state) {
                 OrderStateEnum::CREATING => [
@@ -79,24 +101,7 @@ class GetDropshippingOrderActions
                         ] : [],
                 ],
                 OrderStateEnum::SUBMITTED => [
-                    [
-                        'type'    => 'button',
-                        'style'   => 'negative',
-                        'icon'    => 'fal fa-exclamation-triangle',
-                        'key'     => 'send-to-warehouse-without-an-address',
-                        'label'   => __('Send anyway, no address'),
-                        'tooltip' => __('The customer has no address. Send it to the warehouse regardless, only when they cannot be reached'),
-                        'route'   => [
-                            'method'     => 'patch',
-                            'name'       => 'grp.models.order.state.in-warehouse',
-                            'parameters' => [
-                                'order' => $order->id,
-                            ],
-                            'body'       => [
-                                'without_an_address' => true,
-                            ],
-                        ]
-                    ],
+                    ...$sendWithoutAnAddress,
                     $platform && $platform->type == PlatformTypeEnum::MANUAL ? [
                         'type'   => 'buttonGroup',
                         'key'    => 'upload-add',

@@ -37,7 +37,7 @@ class RepairWebpageBlogSubType
     public function asCommand(Command $command)
     {
         Nightwatch::dontSample();
-        $webpages = Webpage::where('type', WebpageTypeEnum::BLOG)->get();
+        $webpages = Webpage::where('type', WebpageTypeEnum::BLOG)->with('shop')->get();
 
         foreach ($webpages as $webpage) {
             $blogCategory = $webpage->getBlogCategory(withAmbiguousFallback: false);

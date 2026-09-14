@@ -20,6 +20,7 @@ use App\Actions\Inventory\Location\Hydrators\LocationHydrateSortCode;
 use App\Actions\Inventory\Location\Hydrators\LocationHydrateOrgStocks;
 use App\Actions\Inventory\Location\Hydrators\LocationHydrateStockValue;
 use App\Actions\Inventory\Location\Hydrators\LocationHydrateTotalWeight;
+use App\Actions\Helpers\CreateSortCode;
 use App\Actions\Inventory\Location\StoreLocation;
 use App\Actions\Inventory\Location\UpdateLocation;
 use App\Actions\Inventory\LocationOrgStock\AuditLocationOrgStock;
@@ -1226,11 +1227,13 @@ test('move location between warehouse areas', function () {
 
     $location = UpdateLocation::make()->action($location, ['warehouse_area_id' => $areaB->id]);
     expect($location->warehouse_area_id)->toBe($areaB->id)
+        ->and($location->sort_code)->toContain('-'.CreateSortCode::run('AR-MB').'-')
         ->and($areaA->refresh()->stats->number_locations)->toBe(0)
         ->and($areaB->refresh()->stats->number_locations)->toBe(1);
 
     $location = UpdateLocation::make()->action($location, ['warehouse_area_id' => null]);
     expect($location->warehouse_area_id)->toBeNull()
+        ->and($location->sort_code)->toBe(CreateSortCode::run('LO-MOV'))
         ->and($areaB->refresh()->stats->number_locations)->toBe(0);
 });
 
@@ -1571,6 +1574,40 @@ test('wac per sku calculation', function () {
         ->and((float) $calculator->getWacPerSku($orgStock, now()))->toBe(3.0);
 
     expect($calculator->getValuationPerSku($orgStock, now()))->toBe(['wac' => 3.0, 'fifo' => 4.0]);
+});
+
+test('lpp per sku is stored on the org stock and holds the replacement cost while sku value blends the old layers', function () {
+    $stock    = StoreStock::make()->action($this->group, array_merge(Stock::factory()->definition(), ['state' => StockStateEnum::ACTIVE]));
+    $orgStock = StoreOrgStock::make()->action($this->organisation, $stock);
+
+    $warehouse = StoreWarehouse::make()->action($this->organisation, ['code' => 'LPP-WH', 'name' => 'Lpp WH']);
+    $area      = StoreWarehouseArea::make()->action($warehouse, ['code' => 'LPP-AR', 'name' => 'Lpp Area']);
+    $location  = StoreLocation::make()->action($area, array_merge(Location::factory()->definition(), ['code' => 'LPP-LOC']));
+
+    StoreLocationOrgStock::make()->action($orgStock, $location, ['type' => LocationStockTypeEnum::STORING]);
+
+    $this->organisation->update(['wac_calculations_start_date' => now()->subYear()->toDateString()]);
+    $orgStock->unsetRelation('organisation');
+
+    $oldPurchase = StoreOrgStockMovement::make()->action($orgStock, $location, [
+        'type'     => OrgStockMovementTypeEnum::PURCHASE->value,
+        'quantity' => 10,
+    ]);
+    $oldPurchase->update(['cost_per_sku' => 7, 'date' => now()->subDays(3)]);
+
+    $newPurchase = StoreOrgStockMovement::make()->action($orgStock, $location, [
+        'type'     => OrgStockMovementTypeEnum::PURCHASE->value,
+        'quantity' => 10,
+    ]);
+    $newPurchase->update(['cost_per_sku' => 5.472667, 'date' => now()->subDay()]);
+
+    \App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateSkuValue::run($orgStock);
+
+    $orgStock->refresh();
+
+    expect((float) $orgStock->lpp_per_sku)->toBe(5.472667)
+        ->and(round((float) $orgStock->sku_value, 2))->toBe(6.24)
+        ->and((float) $orgStock->lpp_per_sku)->toBeLessThan((float) $orgStock->sku_value);
 });
 
 test('movement org amount uses the per sku cost, not the total stock value', function () {

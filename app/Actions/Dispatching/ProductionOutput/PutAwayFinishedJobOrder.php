@@ -9,33 +9,91 @@
 namespace App\Actions\Dispatching\ProductionOutput;
 
 use App\Actions\OrgAction;
+use App\Actions\Production\JobOrder\GetJobOrderDestinationAllocation;
 use App\Actions\Production\JobOrder\ReceiveJobOrderIntoStock;
+use App\Models\Inventory\Location;
 use App\Models\Inventory\Warehouse;
 use App\Models\Production\JobOrder;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redirect;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 
 class PutAwayFinishedJobOrder extends OrgAction
 {
-    public function handle(Warehouse $warehouse, JobOrder $jobOrder, string $locationCode): JobOrder
+    /**
+     * One walk to one location, carrying every job order's share of it.
+     *
+     * @param  array<int, int>  $jobOrderIds
+     * @return array<int, JobOrder>
+     */
+    public function handle(Warehouse $warehouse, array $jobOrderIds, string $locationCode): array
     {
         $location = $warehouse->locations()->where('code', $locationCode)->first();
         if (!$location) {
             throw ValidationException::withMessages(['location_code' => __('No location :code in this warehouse', ['code' => $locationCode])]);
         }
-        if ($jobOrder->organisation_id !== $warehouse->organisation_id) {
-            throw ValidationException::withMessages(['job_order' => __('Job order does not belong to this warehouse')]);
+
+        $jobOrders = JobOrder::whereIn('id', $jobOrderIds)->get();
+
+        foreach ($jobOrders as $jobOrder) {
+            if ($jobOrder->organisation_id !== $warehouse->organisation_id) {
+                throw ValidationException::withMessages(['job_order' => __('Job order does not belong to this warehouse')]);
+            }
         }
 
-        return ReceiveJobOrderIntoStock::make()->action($jobOrder, ['location_id' => $location->id]);
+        return DB::transaction(fn () => $jobOrders->map(fn (JobOrder $jobOrder) => ReceiveJobOrderIntoStock::make()->action($jobOrder, [
+            'location_id' => $location->id,
+            'allocations' => $this->allocationsFor($jobOrder, $location),
+            'user_id'     => $this->userId,
+        ]))->all());
+    }
+
+    private ?int $userId = null;
+
+    /**
+     * What this job order owes this location, minus whatever earlier walks already put away.
+     *
+     * @return array<int, float>
+     */
+    private function allocationsFor(JobOrder $jobOrder, Location $location): array
+    {
+        $partnerLocationIds = $jobOrder->organisation->orgPartners()->whereNotNull('goods_out_location_id')->pluck('goods_out_location_id');
+        $isPartnerBay       = $partnerLocationIds->contains($location->id);
+
+        $allocations    = [];
+        $alreadyPutAway = [];
+
+        foreach (GetJobOrderDestinationAllocation::run($jobOrder) as $allocation) {
+            $item = $allocation['item'];
+
+            $alreadyPutAway[$item->id] ??= (float) $item->quantity_received;
+            $putAway                     = min($allocation['quantity'], $alreadyPutAway[$item->id]);
+            $alreadyPutAway[$item->id]  -= $putAway;
+            $quantity                    = $allocation['quantity'] - $putAway;
+
+            $goesHere = $isPartnerBay
+                ? $allocation['location_id'] === $location->id
+                : $allocation['location_id'] === null;
+
+            if ($quantity > 0 && $goesHere) {
+                $allocations[$item->id] = ($allocations[$item->id] ?? 0) + $quantity;
+            }
+        }
+
+        return $allocations;
     }
 
     public function rules(): array
     {
-        return ['location_code' => ['required', 'string']];
+        return [
+            'location_code'   => ['required', 'string'],
+            'job_order_ids'   => ['required', 'array', 'min:1'],
+            'job_order_ids.*' => ['integer', Rule::exists('job_orders', 'id')->where('organisation_id', $this->organisation->id)],
+        ];
     }
 
     public function authorize(ActionRequest $request): bool
@@ -47,19 +105,27 @@ class PutAwayFinishedJobOrder extends OrgAction
         return $request->user()->authTo("dispatching.{$this->organisation->id}.edit");
     }
 
-    public function action(Warehouse $warehouse, JobOrder $jobOrder, string $locationCode): JobOrder
+    /**
+     * @param  array<int, int>  $jobOrderIds
+     * @return array<int, JobOrder>
+     */
+    public function action(Warehouse $warehouse, array $jobOrderIds, string $locationCode): array
     {
         $this->asAction = true;
-        $this->initialisationFromWarehouse($warehouse, ['location_code' => $locationCode]);
+        $this->initialisationFromWarehouse($warehouse, ['location_code' => $locationCode, 'job_order_ids' => $jobOrderIds]);
 
-        return $this->handle($warehouse, $jobOrder, $locationCode);
+        return $this->handle($warehouse, $jobOrderIds, $locationCode);
     }
 
-    public function asController(Organisation $organisation, Warehouse $warehouse, JobOrder $jobOrder, ActionRequest $request): JobOrder
+    /**
+     * @return array<int, JobOrder>
+     */
+    public function asController(Organisation $organisation, Warehouse $warehouse, ActionRequest $request): array
     {
+        $this->userId = $request->user()->id;
         $this->initialisationFromWarehouse($warehouse, $request);
 
-        return $this->handle($warehouse, $jobOrder, $this->validatedData['location_code']);
+        return $this->handle($warehouse, $this->validatedData['job_order_ids'], $this->validatedData['location_code']);
     }
 
     public function htmlResponse(): RedirectResponse

@@ -5,11 +5,11 @@
   -->
 
 <script setup lang="ts">
-import { Head, Link, router } from "@inertiajs/vue3"
+import { Head, Link, router, usePage } from "@inertiajs/vue3"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import { capitalize } from "@/Composables/capitalize"
 import Tabs from "@/Components/Navigation/Tabs.vue"
-import { computed, reactive, ref } from "vue"
+import { computed, reactive, ref, watch } from "vue"
 import { useTabChange } from "@/Composables/tab-change"
 import { trans } from "laravel-vue-i18n"
 import { faHandsHelping, faBan, faCheckCircle, faList, faCheck, faPersonCarry, faChartLine, faDolly, faIndustry } from "@fal"
@@ -44,13 +44,11 @@ const props = defineProps<{
     }[]
     stage_route?: { name: string; parameters: Record<string, string> }
     production_output?: {
-        id: number
-        reference: string
-        artisan: string | null
-        finished_at: string | null
-        items: { code: string, name: string, quantity: number }[]
         destination: { type: 'partner' | 'stock', label: string, location_code: string | null }
+        job_order_ids: number[]
+        jobs: { reference: string, artisan: string | null, items: { code: string, name: string, quantity: number }[] }[]
     }[] | null
+    can_edit?: boolean
     put_away_route?: { name: string; parameters: Record<string, string> } | null
     reports_route?: { name: string; parameters: Record<string, string> }
     gate_route?: { name: string; parameters: Record<string, string> } | null
@@ -64,13 +62,21 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 const isPersonnelTab = computed(() => currentTab.value === "pickers" || currentTab.value === "packers")
 const isStagingTab = computed(() => currentTab.value === "partner_staging")
 const isProductionTab = computed(() => currentTab.value === "production_output")
-const putAwayLocation = reactive<Record<number, string>>({})
-props.production_output?.forEach(jobOrder => putAwayLocation[jobOrder.id] = jobOrder.destination.location_code ?? '')
+const tripKey = (trip: { destination: { location_code: string | null } }) => trip.destination.location_code ?? 'stock'
+const putAwayLocation = reactive<Record<string, string>>({})
+watch(() => props.production_output, trips => {
+    trips?.forEach(trip => putAwayLocation[tripKey(trip)] ??= trip.destination.location_code ?? '')
+}, { immediate: true })
 
-function putAway(jobOrderId: number) {
-    if (!props.put_away_route || !putAwayLocation[jobOrderId]) return
-    router.post(route(props.put_away_route.name, { ...props.put_away_route.parameters, jobOrder: jobOrderId }), {
-        location_code: putAwayLocation[jobOrderId],
+const page = usePage()
+const actionError = computed(() => Object.values((page.props.errors ?? {}) as Record<string, string>)[0])
+
+function putAway(trip: NonNullable<typeof props.production_output>[number]) {
+    const key = tripKey(trip)
+    if (!props.put_away_route || !putAwayLocation[key]) return
+    router.post(route(props.put_away_route.name, props.put_away_route.parameters), {
+        location_code: putAwayLocation[key],
+        job_order_ids: trip.job_order_ids,
     }, { preserveScroll: true })
 }
 
@@ -104,6 +110,9 @@ const trolleyRoute = (trolley: { slug: string }) =>
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead"></PageHeading>
     <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
+    <div v-if="actionError && (isStagingTab || isProductionTab)" class="mx-4 mt-4 rounded border border-red-200 bg-red-50 px-4 py-2 text-sm text-red-700">
+        {{ actionError }}
+    </div>
 
     <div v-if="isStagingTab" class="mx-4 mt-4 overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700">
         <table class="w-full text-sm">
@@ -133,7 +142,7 @@ const trolleyRoute = (trolley: { slug: string }) =>
                     <td class="px-4 py-2 text-right tabular-nums text-gray-500">{{ task.quantity_staged }}</td>
                     <td class="px-4 py-2 text-right font-semibold tabular-nums">{{ task.quantity_to_move }}</td>
                     <td class="px-4 py-2 text-right">
-                        <button v-if="task.from_locations.length" type="button" class="rounded bg-indigo-600 px-3 py-1 text-white hover:bg-indigo-700" @click="stage(task)">
+                        <button v-if="can_edit && task.from_locations.length" type="button" class="rounded bg-indigo-600 px-3 py-1 text-white hover:bg-indigo-700" @click="stage(task)">
                             {{ trans("Moved") }}
                         </button>
                     </td>
@@ -149,40 +158,40 @@ const trolleyRoute = (trolley: { slug: string }) =>
         <table class="w-full text-sm">
             <thead class="bg-gray-50 text-left text-xs uppercase tracking-wide text-gray-500 dark:bg-gray-800">
                 <tr>
-                    <th class="px-4 py-2">{{ trans("Job order") }}</th>
-                    <th class="px-4 py-2">{{ trans("Artisan") }}</th>
-                    <th class="px-4 py-2">{{ trans("Made") }}</th>
                     <th class="px-4 py-2">{{ trans("For") }}</th>
+                    <th class="px-4 py-2">{{ trans("Carry") }}</th>
                     <th class="px-4 py-2">{{ trans("To location") }}</th>
                     <th class="px-4 py-2"></th>
                 </tr>
             </thead>
             <tbody>
-                <tr v-for="jobOrder in production_output" :key="jobOrder.id" class="border-t border-gray-100 dark:border-gray-800 align-top">
-                    <td class="px-4 py-2 font-medium">{{ jobOrder.reference }}</td>
-                    <td class="px-4 py-2">{{ jobOrder.artisan ?? '—' }}</td>
+                <tr v-for="trip in production_output" :key="tripKey(trip)" class="border-t border-gray-100 dark:border-gray-800 align-top">
+                    <td class="px-4 py-2" :class="trip.destination.type === 'partner' ? 'font-semibold text-indigo-700' : 'text-gray-500'">
+                        {{ trip.destination.label }}
+                    </td>
                     <td class="px-4 py-2">
-                        <div v-for="item in jobOrder.items" :key="item.code">
-                            <span class="font-semibold tabular-nums">{{ item.quantity }}</span> × <span class="font-medium">{{ item.code }}</span>
-                            <span class="text-gray-500">{{ item.name }}</span>
+                        <div v-for="job in trip.jobs" :key="job.reference" class="mb-1">
+                            <div v-for="item in job.items" :key="item.code">
+                                <span class="font-semibold tabular-nums">{{ item.quantity }}</span> × <span class="font-medium">{{ item.code }}</span>
+                                <span class="text-gray-500">{{ item.name }}</span>
+                            </div>
+                            <div class="text-xs text-gray-500">{{ job.reference }}<span v-if="job.artisan"> · {{ job.artisan }}</span></div>
                         </div>
                     </td>
-                    <td class="px-4 py-2" :class="jobOrder.destination.type === 'partner' ? 'font-semibold text-indigo-700' : 'text-gray-500'">
-                        {{ jobOrder.destination.label }}
-                    </td>
                     <td class="px-4 py-2">
-                        <input v-model.trim="putAwayLocation[jobOrder.id]" type="text" :placeholder="trans('Location code')"
-                            class="w-36 rounded border-gray-300 font-mono text-sm uppercase" @keyup.enter="putAway(jobOrder.id)" />
+                        <input v-if="can_edit" v-model.trim="putAwayLocation[tripKey(trip)]" type="text" :placeholder="trans('Location code')"
+                            class="w-36 rounded border-gray-300 font-mono text-sm uppercase" @keyup.enter="putAway(trip)" />
+                        <span v-else class="font-mono">{{ trip.destination.location_code ?? '—' }}</span>
                     </td>
                     <td class="px-4 py-2 text-right">
-                        <button type="button" class="rounded bg-indigo-600 px-3 py-1 text-white hover:bg-indigo-700 disabled:opacity-40"
-                            :disabled="!putAwayLocation[jobOrder.id]" @click="putAway(jobOrder.id)">
+                        <button v-if="can_edit" type="button" class="rounded bg-indigo-600 px-3 py-1 text-white hover:bg-indigo-700 disabled:opacity-40"
+                            :disabled="!putAwayLocation[tripKey(trip)]" @click="putAway(trip)">
                             {{ trans("Put away") }}
                         </button>
                     </td>
                 </tr>
                 <tr v-if="!production_output?.length">
-                    <td colspan="6" class="px-4 py-6 text-center text-gray-400">{{ trans("Nothing finished waiting for the warehouse") }}</td>
+                    <td colspan="4" class="px-4 py-6 text-center text-gray-400">{{ trans("Nothing finished waiting for the warehouse") }}</td>
                 </tr>
             </tbody>
         </table>

@@ -82,6 +82,7 @@ use App\Models\Chat\MetaChatEvent;
 use App\Models\Chat\MetaChatSession;
 use App\Models\Chat\ShopHasChatAgent;
 use App\Models\Catalogue\Product;
+use App\Actions\CRM\Customer\StoreCustomer;
 use App\Models\CRM\Customer;
 use App\Models\CRM\WebUser;
 use App\Models\Helpers\Media;
@@ -1322,6 +1323,7 @@ test('GetAgentUnreadMessagesSummary returns zero counts when agent has no shops 
     expect($summary)->toBe([
         'assigned_unread_count'   => 0,
         'unassigned_unread_count' => 0,
+        'total_unread_count'      => 0,
     ]);
 });
 
@@ -1492,6 +1494,24 @@ test('HandleChatRead asController marks unread visitor messages as read via the 
     expect($data['success'])->toBeTrue();
 
     expect($guestMessage->refresh()->is_read)->toBeTrue();
+});
+
+test('chat status for a session moved to trash answers not found instead of failing', function () {
+    $chatSession = ChatSession::create([
+        'ulid'             => (string)Str::ulid(),
+        'status'           => ChatSessionStatusEnum::ACTIVE,
+        'guest_identifier' => 'guest_'.Str::random(5),
+        'language_id'      => 68,
+        'priority'         => ChatPriorityEnum::NORMAL,
+        'shop_id'          => $this->shop->id,
+        'ai_model_version' => 'default',
+    ]);
+    $chatSession->delete();
+
+    $this->getJson(route('grp.api.chats.status', [
+        'shop_id' => $this->shop->id,
+        'ulid'    => $chatSession->ulid,
+    ]))->assertNotFound();
 });
 
 test('ShareChatSessionToSlack notifies configured channels', function () {
@@ -1939,9 +1959,36 @@ test('GetChatSessions returns a paginator of sessions with messages', function (
         'updated_at'      => now(),
     ]);
 
+    ChatMessage::create([
+        'chat_session_id' => $chatSession->id,
+        'message_type'    => ChatMessageTypeEnum::TEXT->value,
+        'sender_type'     => ChatSenderTypeEnum::GUEST->value,
+        'sender_id'       => null,
+        'message_text'    => 'Already seen',
+        'is_read'         => true,
+        'created_at'      => now(),
+        'updated_at'      => now(),
+    ]);
+
+    ChatMessage::create([
+        'chat_session_id' => $chatSession->id,
+        'message_type'    => ChatMessageTypeEnum::TEXT->value,
+        'sender_type'     => ChatSenderTypeEnum::AGENT->value,
+        'sender_id'       => null,
+        'message_text'    => 'Agent reply',
+        'is_read'         => false,
+        'created_at'      => now(),
+        'updated_at'      => now(),
+    ]);
+
     $result = GetChatSessions::make()->handle([]);
 
     expect($result->total())->toBeGreaterThanOrEqual(1);
+
+    $session = collect($result->items())->firstWhere('id', $chatSession->id);
+    expect($session)->not->toBeNull()
+        ->and((int) $session->unread_count)->toBe(1)
+        ->and(\App\Http\Resources\CRM\Livechat\ChatSessionListResource::make($session)->resolve()['unread_count'])->toBe(1);
 });
 
 test('GetChatAgentByUserId asController returns 404 json when agent does not exist', function () {
@@ -2246,6 +2293,40 @@ describe('staff messaging', function () {
         expect((int) $theirs->unread_count)->toBe(0);
     });
 
+    test('a message sent in the same second the conversation was read still counts unread', function () {
+        Event::fake([\App\Events\StaffMessageSent::class]);
+        Bus::fake([\App\Actions\Chat\Staff\TranslateStaffMessage::class]);
+        $other        = User::factory()->create(['group_id' => $this->user->group_id, 'language_id' => $this->user->language_id]);
+        $conversation = \App\Actions\Chat\Staff\StoreStaffConversation::run($this->user, ['user_ids' => [$other->id]]);
+
+        \Illuminate\Support\Carbon::setTestNow('2026-09-14 10:00:00.100000');
+        \App\Actions\Chat\Staff\MarkStaffConversationRead::run($conversation, $other);
+        \Illuminate\Support\Carbon::setTestNow('2026-09-14 10:00:00.200000');
+        \App\Actions\Chat\Staff\SendStaffMessage::run($conversation, $this->user, ['body' => 'same second']);
+        \Illuminate\Support\Carbon::setTestNow();
+
+        $theirs = \App\Actions\Chat\Staff\Json\GetStaffConversations::run($other)->firstWhere('id', $conversation->id);
+        expect((int) $theirs->unread_count)->toBe(1);
+    });
+
+    test('the conversations list loads avatars and contexts once, not per conversation', function () {
+        Event::fake([\App\Events\StaffMessageSent::class]);
+        Bus::fake([\App\Actions\Chat\Staff\TranslateStaffMessage::class]);
+        $conversation = \App\Actions\Chat\Staff\StoreStaffConversation::run($this->user, ['user_ids' => [$this->otherUser->id]]);
+        \App\Actions\Chat\Staff\SendStaffMessage::run($conversation, $this->user, ['body' => 'list me']);
+
+        \Illuminate\Support\Facades\DB::enableQueryLog();
+        $rows = \App\Http\Resources\Chat\StaffConversationResource::collection(
+            \App\Actions\Chat\Staff\Json\GetStaffConversations::run($this->user)
+        )->resolve();
+        $queries = collect(\Illuminate\Support\Facades\DB::getQueryLog())->pluck('query');
+        \Illuminate\Support\Facades\DB::disableQueryLog();
+
+        expect(collect($rows)->pluck('ulid'))->toContain($conversation->ulid)
+            ->and($queries->filter(fn (string $sql) => str_contains($sql, 'from "media"'))->count())->toBeLessThanOrEqual(1)
+            ->and($queries->filter(fn (string $sql) => preg_match('/from "(delivery_notes|orders|picking_sessions)"/', $sql))->count())->toBeLessThanOrEqual(3);
+    });
+
     test('reaction toggles on and off', function () {
         Event::fake([\App\Events\StaffMessageSent::class]);
         Bus::fake([\App\Actions\Chat\Staff\TranslateStaffMessage::class]);
@@ -2302,12 +2383,11 @@ describe('staff messaging mentions', function () {
     test('mention resolves to participant and flags unread for them', function () {
         Event::fake([\App\Events\StaffMessageSent::class]);
         Bus::fake([\App\Actions\Chat\Staff\TranslateStaffMessage::class]);
-        $other = User::where('group_id', $this->user->group_id)->where('id', '!=', $this->user->id)->first()
-            ?? User::factory()->create(['group_id' => $this->user->group_id, 'language_id' => $this->user->language_id]);
-        $other->update(['nickname' => 'adamm']);
+        $nickname = 'adamm'.Str::lower(Str::random(6));
+        $other    = User::factory()->create(['group_id' => $this->user->group_id, 'language_id' => $this->user->language_id, 'nickname' => $nickname]);
 
         $conversation = \App\Actions\Chat\Staff\StoreStaffConversation::run($this->user, ['user_ids' => [$other->id]]);
-        $message      = \App\Actions\Chat\Staff\SendStaffMessage::run($conversation, $this->user, ['body' => 'hey @adamm check this']);
+        $message      = \App\Actions\Chat\Staff\SendStaffMessage::run($conversation, $this->user, ['body' => "hey @$nickname check this"]);
 
         expect($message->mentions)->toBe([$other->id]);
 
@@ -2469,6 +2549,51 @@ describe('staff messaging team', function () {
 
         expect(\App\Actions\Chat\Staff\ToggleStaffTeamMember::run($this->user, $other))->toBeFalse()
             ->and($this->user->teamMembers()->count())->toBe(0);
+    });
+
+    test('the coworkers poll shares the group list between viewers but keeps team and closeness per viewer', function () {
+        $other = User::where('group_id', $this->user->group_id)->where('id', '!=', $this->user->id)->first()
+            ?? User::factory()->create(['group_id' => $this->user->group_id]);
+
+        \Illuminate\Support\Facades\Cache::forget('staff-coworkers:'.$this->user->group_id);
+        \App\Actions\Chat\Staff\ToggleStaffTeamMember::run($this->user, $other);
+
+        actingAs($this->user)->getJson(route('grp.chat.staff.coworkers.index'))->assertOk();
+
+        \Illuminate\Support\Facades\DB::enableQueryLog();
+        $mine = actingAs($this->user)->getJson(route('grp.chat.staff.coworkers.index'))->assertOk()->json('data');
+        $queryLog          = collect(\Illuminate\Support\Facades\DB::getQueryLog());
+        $queriesOnWarmPoll = $queryLog
+            ->filter(fn (array $query) => preg_match('/"(users|user_has_models|employees|media|user_has_team_members)"/', $query['query']))
+            ->count();
+        expect($queryLog->count())->toBeLessThanOrEqual(6);
+        \Illuminate\Support\Facades\DB::disableQueryLog();
+
+        $theirs = actingAs($other)->getJson(route('grp.chat.staff.coworkers.index'))->assertOk()->json('data');
+
+        expect(collect($mine)->firstWhere('id', $other->id)['in_team'])->toBeTrue()
+            ->and(collect($mine)->pluck('id'))->not->toContain($this->user->id)
+            ->and(collect($theirs)->pluck('id'))->not->toContain($other->id)
+            ->and(collect($theirs)->firstWhere('id', $this->user->id)['in_team'])->toBeFalse()
+            ->and($queriesOnWarmPoll)->toBeLessThanOrEqual(2);
+
+        $searched = actingAs($this->user)->getJson(route('grp.chat.staff.coworkers.index', ['q' => $other->chatName()]))->assertOk()->json('data');
+        expect(collect($searched)->pluck('id'))->toContain($other->id);
+
+        \App\Actions\Chat\Staff\ToggleStaffTeamMember::run($this->user, $other);
+    });
+
+    test('json-only grp routes exist and skip building the layout', function () {
+        $routeNames = (new ReflectionClassConstant(\App\Http\Middleware\HandleInertiaGrpRequests::class, 'JSON_ONLY_ROUTES'))->getValue();
+
+        foreach ($routeNames as $routeName) {
+            expect(\Illuminate\Support\Facades\Route::has($routeName))->toBeTrue("$routeName is not a registered route");
+
+            $request = \Illuminate\Http\Request::create('/');
+            $request->setRouteResolver(fn () => \Illuminate\Support\Facades\Route::getRoutes()->getByName($routeName));
+
+            expect(app(\App\Http\Middleware\HandleInertiaGrpRequests::class)->share($request))->toBe([]);
+        }
     });
 });
 
@@ -2666,7 +2791,7 @@ test('an agent queue can only be read by the agent it belongs to', function () {
 });
 
 test('customer chat history merges website and whatsapp sessions', function () {
-    $customer = createCustomer($this->shop);
+    $customer = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
     $webUser  = StoreWebUser::make()->action($customer, WebUser::factory()->definition());
 
     $websiteSession = ChatSession::create([
@@ -2709,7 +2834,7 @@ test('customer chat history merges website and whatsapp sessions', function () {
 });
 
 test('customer chat history resolves the customer from a web user id', function () {
-    $customer = createCustomer($this->shop);
+    $customer = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
     $webUser  = StoreWebUser::make()->action($customer, WebUser::factory()->definition());
 
     $channel = MetaChannel::firstOrCreate(['code' => 'whatsapp'], ['name' => 'WhatsApp']);
@@ -2779,7 +2904,8 @@ test('new meta chat session response carries the assigned agent', function () {
         'priority'        => ChatPriorityEnum::NORMAL,
     ]);
 
-    $agent = StoreChatAgent::make()->handle(['user_id' => $this->user->id]);
+    $agent = ChatAgent::where('user_id', $this->user->id)->first()
+        ?? StoreChatAgent::make()->handle(['user_id' => $this->user->id]);
 
     AssignMetaChatToAgent::make()->handle($metaChatSession, $agent, 'Assigned to agent who started the chat');
 
@@ -2795,8 +2921,9 @@ test('new meta chat session response carries the assigned agent', function () {
 test('my chats excludes a whatsapp thread now held by another agent', function () {
     $channel = MetaChannel::firstOrCreate(['code' => 'whatsapp'], ['name' => 'WhatsApp']);
 
-    $mine  = StoreChatAgent::make()->handle(['user_id' => $this->user->id]);
-    $other = StoreChatAgent::make()->handle(['user_id' => createAdminGuest($this->organisation->group)->getUser()->id]);
+    $mine  = ChatAgent::where('user_id', $this->user->id)->first()
+        ?? StoreChatAgent::make()->handle(['user_id' => $this->user->id]);
+    $other = StoreChatAgent::make()->handle(['user_id' => User::factory()->create(['group_id' => $this->organisation->group_id])->id]);
 
     foreach ([$mine, $other] as $agent) {
         AssignChatAgentToScope::make()->handle([

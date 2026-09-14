@@ -62,7 +62,7 @@ class SyncRolesFromJobPositions
             }
         }
 
-        if ($user->roles()->where('name', RolesEnum::GROUP_ADMIN->value)->exists()) {
+        if ($user->roles()->whereIn('name', [RolesEnum::GROUP_ADMIN->value, RolesEnum::HELP_DESK_CLERK->value, RolesEnum::HELP_DESK_SUPERVISOR->value, RolesEnum::QA->value])->exists()) {
             foreach ($user->group->organisations as $organisation) {
                 UserAddRoles::run(
                     $user,

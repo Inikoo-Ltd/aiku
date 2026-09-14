@@ -24,8 +24,8 @@ import {
     faPhone,
     faCopy,
     faCircleExclamation,
+    faLifeRing,
 } from "@fortawesome/free-solid-svg-icons"
-import { faJira } from "@fortawesome/free-brands-svg-icons"
 import { faUser } from "@fal"
 import { faCheck, faCheckDouble, faExclamationCircle } from "@far"
 import { useCopyText } from "@/Composables/useCopyText"
@@ -34,7 +34,7 @@ import { useLayoutStore } from "@/Stores/layout"
 import Image from "@common/Components/Image.vue"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import ChatTimelineEvent from "@/Components/Chat/ChatTimelineEvent.vue"
-import JiraTicketModal from "@/Components/Chat/Agent/JiraTicketModal.vue"
+import TicketModal from "@/Components/Chat/Agent/TicketModal.vue"
 import WhatsappTemplatePicker from "@/Components/Chat/WhatsappTemplatePicker.vue"
 import type { MiniChat } from "@/Composables/useMiniChats"
 
@@ -88,7 +88,7 @@ const fileInput = ref<HTMLInputElement | null>(null)
 const selectedFile = ref<File | null>(null)
 const previewUrl = ref<string | null>(null)
 const previewType = ref<"image" | "file" | null>(null)
-const isJiraModalOpen = ref(false)
+const isTicketModalOpen = ref(false)
 const isEmailNotif = ref(false)
 
 const showEmojiPicker = ref(false)
@@ -276,7 +276,7 @@ const reopenChat = async () => {
     }
 }
 
-const jiraSession = computed(() => ({
+const ticketSession = computed(() => ({
     ulid: props.chat.ulid,
     contact_name: props.chat.contactName,
 }))
@@ -1063,9 +1063,9 @@ onUnmounted(() => {
                     class="absolute right-0 top-full mt-0.5 w-36 py-1 bg-white border border-gray-200 rounded-md shadow-lg z-50">
                     <button v-if="chat.organisationSlug" type="button"
                         class="w-full flex items-center gap-2 px-2 py-1 text-[10px] text-gray-700 hover:bg-gray-100"
-                        @click="showHeaderMenu = false; isJiraModalOpen = true">
-                        <FontAwesomeIcon :icon="faJira" class="text-[9px] text-gray-400" />
-                        {{ trans('Create Jira ticket') }}
+                        @click="showHeaderMenu = false; isTicketModalOpen = true">
+                        <FontAwesomeIcon :icon="faLifeRing" class="text-[9px] text-gray-400" />
+                        {{ trans('Create ticket') }}
                     </button>
 
                     <template v-if="!isClosed && !isWaiting">
@@ -1470,8 +1470,8 @@ onUnmounted(() => {
             </template>
         </div>
 
-        <JiraTicketModal v-if="chat.organisationSlug" :is-open="isJiraModalOpen" :session="(jiraSession as any)"
-            :organisation="chat.organisationSlug" @close="isJiraModalOpen = false" />
+        <TicketModal v-if="chat.organisationSlug" :is-open="isTicketModalOpen" :session="(ticketSession as any)"
+            :organisation="chat.organisationSlug" @close="isTicketModalOpen = false" />
 
         <WhatsappTemplatePicker v-if="isWhatsapp"
             :visible="isTemplateDialogOpen"

@@ -41,7 +41,6 @@ class GetTakenTradeUnits extends OrgAction
 
         $queryBuilder = QueryBuilder::for(TradeUnit::class);
         $queryBuilder->where('trade_units.group_id', $parent->group_id)
-            ->whereRaw("trade_units.code COLLATE \"C\" ILIKE ?", $parent->code.'%')
             ->leftJoin('model_has_trade_units', function ($join) {
                 $join->on('trade_units.id', '=', 'model_has_trade_units.trade_unit_id')
                     ->where('model_has_trade_units.model_type', '=', 'MasterAsset');

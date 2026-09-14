@@ -80,6 +80,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property HealthRankEnum|null $health_rank
  * @property bool $movements_fixed
  * @property numeric|null $sku_value
+ * @property numeric|null $lpp_per_sku
  * @property numeric|null $current_supplier_sku_cost
  * @property int $current_batch_codes
  * @property int|null $main_batch_code_id

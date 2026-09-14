@@ -46,27 +46,10 @@ class ReceiveJobOrderIntoStock extends OrgAction
         /** @var Location $location */
         $location = Location::findOrFail($modelData['location_id']);
 
-        $items = $jobOrder->jobOrderItems()->with(['artefact', 'tasks'])->get();
+        $allocations = $modelData['allocations'] ?? null;
+        $userId      = $modelData['user_id'] ?? $this->request?->user()?->id;
 
-        $totalProduced = 0;
-
-        foreach ($items as $item) {
-            if (!$item->artefact->org_stock_id) {
-                throw ValidationException::withMessages([
-                    'location_id' => __('Artefact :code is not linked to a stock', ['code' => $item->artefact->code]),
-                ]);
-            }
-
-            $totalProduced += $this->producedQuantity($item);
-        }
-
-        if ($totalProduced <= 0) {
-            throw ValidationException::withMessages([
-                'location_id' => __('Nothing has been made yet'),
-            ]);
-        }
-
-        DB::transaction(function () use ($items, $jobOrder, $location) {
+        DB::transaction(function () use ($jobOrder, $location, $allocations, $userId) {
             $lockedState = JobOrder::lockForUpdate()->find($jobOrder->id)->state;
             if ($lockedState != JobOrderStateEnum::CONFIRMED) {
                 throw ValidationException::withMessages([
@@ -74,9 +57,36 @@ class ReceiveJobOrderIntoStock extends OrgAction
                 ]);
             }
 
-            foreach ($items as $item) {
-                $producedUnits = $this->producedQuantity($item);
+            $items = $jobOrder->jobOrderItems()->lockForUpdate()->with(['artefact', 'tasks'])->get();
 
+            $toReceive = [];
+            foreach ($items as $item) {
+                if (!$item->artefact->org_stock_id) {
+                    throw ValidationException::withMessages([
+                        'location_id' => __('Artefact :code is not linked to a stock', ['code' => $item->artefact->code]),
+                    ]);
+                }
+
+                $outstanding   = round($this->producedQuantity($item) - (float) $item->quantity_received, 3);
+                $producedUnits = $allocations === null
+                    ? $outstanding
+                    : min($outstanding, round((float) ($allocations[$item->id] ?? 0), 3));
+
+                if ($producedUnits > 0) {
+                    $toReceive[$item->id] = $producedUnits;
+                }
+            }
+
+            if (!$toReceive) {
+                throw ValidationException::withMessages([
+                    'location_id' => $allocations === null
+                        ? __('Nothing has been made yet')
+                        : __('Nothing from this job order goes to :code', ['code' => $location->code]),
+                ]);
+            }
+
+            foreach ($items as $item) {
+                $producedUnits = $toReceive[$item->id] ?? 0;
                 if ($producedUnits <= 0) {
                     continue;
                 }
@@ -96,23 +106,30 @@ class ReceiveJobOrderIntoStock extends OrgAction
                 StoreOrgStockMovement::make()->action($orgStock, $location, [
                     'quantity' => $producedSkos,
                     'type'     => OrgStockMovementTypeEnum::PRODUCTION,
-                    'user_id'  => $this->request?->user()?->id,
+                    'user_id'  => $userId,
                 ]);
 
-                $this->deductRawMaterials($item, $producedUnits);
+                $this->deductRawMaterials($item, $producedUnits, $userId);
+
+                $item->update(['quantity_received' => round((float) $item->quantity_received + $producedUnits, 3)]);
             }
 
-            $jobOrder->update([
-                'state'       => JobOrderStateEnum::RECEIVED,
-                'received_at' => now(),
-            ]);
+            $stillOut = $items->contains(fn (JobOrderItem $item) => round($this->producedQuantity($item) - (float) $item->refresh()->quantity_received, 3) > 0);
+
+            if (!$stillOut) {
+                $jobOrder->update([
+                    'state'       => JobOrderStateEnum::RECEIVED,
+                    'received_at' => now(),
+                ]);
+            }
         });
 
         return $jobOrder;
     }
 
     /**
-     * The artisan works in artefact units, the stock is kept in SKOs, packed_in is the only bridge.
+     * Whole artefacts the last task produced, never more than the item asked for: the artisan
+     * works in artefact units, the stock is kept in SKOs, packed_in is the only bridge.
      */
     private function producedQuantity(JobOrderItem $item): float
     {
@@ -126,16 +143,16 @@ class ReceiveJobOrderIntoStock extends OrgAction
             ->where('manufacture_task_id', $lastTask->manufacture_task_id)
             ->value('units_per_artefact');
 
-        $unitsPerArtefact = (float) $unitsPerArtefact;
-
-        if ($unitsPerArtefact <= 0) {
-            $unitsPerArtefact = 1;
+        if ($unitsPerArtefact === null || (float) $unitsPerArtefact <= 0) {
+            throw ValidationException::withMessages([
+                'location_id' => __('Artefact :code no longer has task :task in its recipe', ['code' => $item->artefact->code, 'task' => $lastTask->manufactureTask?->name]),
+            ]);
         }
 
-        return (float) $lastTask->quantity_made / $unitsPerArtefact;
+        return min((float) $item->quantity, floor((float) $lastTask->quantity_made / (float) $unitsPerArtefact));
     }
 
-    private function deductRawMaterials(JobOrderItem $item, float $producedArtefactUnits): void
+    private function deductRawMaterials(JobOrderItem $item, float $producedArtefactUnits, ?int $userId): void
     {
         $recipeSteps = ArtefactManufactureTask::where('artefact_id', $item->artefact_id)
             ->with('rawMaterials.rawMaterial.orgStock')
@@ -179,7 +196,7 @@ class ReceiveJobOrderIntoStock extends OrgAction
             StoreOrgStockMovement::make()->action($orgStock, $deductionLocationOrgStock->location, [
                 'quantity' => -$consumption['quantity'],
                 'type'     => OrgStockMovementTypeEnum::PRODUCTION,
-                'user_id'  => $this->request?->user()?->id,
+                'user_id'  => $userId,
             ]);
         }
     }
@@ -187,6 +204,8 @@ class ReceiveJobOrderIntoStock extends OrgAction
     public function rules(): array
     {
         return [
+            'allocations' => ['sometimes', 'array'],
+            'user_id'     => ['sometimes', 'nullable', 'integer'],
             'location_id' => [
                 'required',
                 Rule::exists('locations', 'id')->where(

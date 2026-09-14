@@ -11,6 +11,8 @@ namespace App\Models\Ordering;
 use App\Enums\Ordering\Order\OrderChargesEngineEnum;
 use App\Enums\Ordering\Order\OrderHandingTypeEnum;
 use App\Enums\Ordering\Order\OrderPayDetailedStatusEnum;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
+use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Enums\Ordering\Order\OrderPayStatusEnum;
 use App\Enums\Ordering\Order\OrderShippingEngineEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
@@ -224,6 +226,8 @@ class Order extends Model implements HasMedia, Auditable
     use HasAttachments;
     use HasHistory;
     use HasSearch;
+    /** @see Order::scopePaySettled() - the only statuses that owe nothing */
+    public const PAY_SETTLED_STATUSES = [OrderPayStatusEnum::PAID, OrderPayStatusEnum::NO_NEED];
 
     protected $casts = [
         'data'                          => 'array',
@@ -467,17 +471,27 @@ class Order extends Model implements HasMedia, Auditable
 
     /**
      * The one predicate for "this order has nowhere to send an invoice or a parcel to". A collection order
-     * needs no delivery address; the Aurora placeholder "0" counts as nothing (HELP-3102).
+     * needs no delivery address; the Aurora placeholder "0" counts as nothing (HELP-3102). An address is
+     * only missing when every line is blank: people type the street into the town field and that parcel
+     * still arrives (HELP-3110).
      */
     public function isMissingARequiredAddress(): bool
     {
-        $hasAddress = fn (?string $line) => filled($line) && $line != '0';
+        return $this->missingRequiredAddress() !== null;
+    }
 
-        if (!$hasAddress($this->billingAddress?->address_line_1)) {
-            return true;
+    /** Which address stops the order, so staff are not sent looking at the one that is there (HELP-3102, HELP-3110) */
+    public function missingRequiredAddress(): ?string
+    {
+        if (!$this->billingAddress?->hasAnyLine()) {
+            return __('billing address');
         }
 
-        return !$this->collection_address_id && !$hasAddress($this->deliveryAddress?->address_line_1);
+        if (!$this->collection_address_id && !$this->deliveryAddress?->hasAnyLine()) {
+            return __('delivery address');
+        }
+
+        return null;
     }
 
     public function billingAddress(): BelongsTo
@@ -566,6 +580,41 @@ class Order extends Model implements HasMedia, Auditable
     public function reviewStats(): HasOne
     {
         return $this->hasOne(OrderReviewStat::class);
+    }
+
+    /**
+     * The two halves of a submitted order's payment state, and the only definition of them: the
+     * backlog splits submitted orders between these two and staff work from that split alone, so
+     * an order that fell between them was invisible (HELP-3116).
+     *
+     * Settled is the closed list, because there are only two ways an order needs no money taken.
+     * Not settled is its complement rather than a list of its own, so a status nobody has thought
+     * of yet - a new enum case, or the null of a status never computed - is chased by default
+     * instead of disappearing. Money owed is the safe side to be wrong on.
+     */
+    /**
+     * Placed on a platform without the customer watching, so nobody was at a checkout to see a
+     * payment fail. These get the on-hold notice instead of a confirmation when unpaid (HELP-3116).
+     */
+    public function isPlacedOnAChannel(): bool
+    {
+        return $this->shop->type === ShopTypeEnum::DROPSHIPPING
+            && $this->platform !== null
+            && $this->platform->type !== PlatformTypeEnum::MANUAL;
+    }
+
+    public function scopePaySettled(Builder $query): Builder
+    {
+        return $query->whereIn('orders.pay_status', self::PAY_SETTLED_STATUSES);
+    }
+
+    public function scopePayNotSettled(Builder $query): Builder
+    {
+        return $query->where(
+            fn (Builder $query) => $query
+                ->whereNotIn('orders.pay_status', self::PAY_SETTLED_STATUSES)
+                ->orWhereNull('orders.pay_status')
+        );
     }
 
     public function trafficSources(): MorphToMany

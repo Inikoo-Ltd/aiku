@@ -38,9 +38,9 @@ trait WithBlogListQuery
     /**
      * @return array<int, string>
      */
-    public function getCategories(array $webBlock): array
+    public function getCategories(Webpage $webpage, array $webBlock): array
     {
-        $allowed    = WebpageSubTypeEnum::blogCategoryValues();
+        $allowed    = WebpageSubTypeEnum::blogCategoryValues($webpage->shop?->type);
         $categories = Arr::get($webBlock, 'web_block.layout.data.fieldValue.categories');
 
         if (!is_array($categories)) {
@@ -96,7 +96,7 @@ trait WithBlogListQuery
                 ->take($numberOfPosts)
                 ->values();
         } else {
-            $blogs = $query->whereIn(DB::raw(WebpageSubTypeEnum::blogCategorySqlExpression()), $this->getCategories($webBlock))
+            $blogs = $query->whereIn(DB::raw(WebpageSubTypeEnum::blogCategorySqlExpression()), $this->getCategories($webpage, $webBlock))
                 ->latest('live_at')
                 ->limit($numberOfPosts)
                 ->get();

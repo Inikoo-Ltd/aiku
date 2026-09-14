@@ -119,7 +119,7 @@ const props = withDefaults(defineProps<{
             email: string
             address: {
                 delivery: Address
-                options: AddressOptions
+                options?: AddressOptions
             }
         }
         shipping_fields_update_route: routeType

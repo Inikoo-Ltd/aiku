@@ -109,9 +109,16 @@ const imageSizes = computed(() => {
     "1": 1, "2": 0.5, "3": 1 / 3, "4": 0.25, "6": 1 / 6,
     "12": 0.5, "21": 0.5, "13": 0.75, "31": 0.75, "211": 0.5,
   }
-  const fraction = largestFraction[String(getVal(props.fieldValue?.value?.layout_type) ?? "1")] ?? 1
 
-  return `${Math.round(fraction * 100)}vw`
+  const viewportWidthFor = (view: 'mobile' | 'tablet' | 'desktop') => {
+    const layoutType = resolveResponsiveValue(props.fieldValue?.value?.layout_type, view)
+
+    return Math.round((largestFraction[String(layoutType ?? "1")] ?? 1) * 100)
+  }
+
+  return `(max-width: 640px) ${viewportWidthFor('mobile')}vw, `
+    + `(max-width: 1024px) ${viewportWidthFor('tablet')}vw, `
+    + `${viewportWidthFor('desktop')}vw`
 })
 
 

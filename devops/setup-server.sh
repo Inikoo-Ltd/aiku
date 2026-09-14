@@ -59,6 +59,28 @@ echo "haproxy:"
 place "$DEVOPS/haproxy/haproxy.cfg"        /etc/haproxy/haproxy.cfg
 place "$DEVOPS/haproxy/CF_ips.lst"         /etc/haproxy/CF_ips.lst
 place "$DEVOPS/haproxy/facebook-bots.lst"  /etc/haproxy/facebook-bots.lst
+# haproxy.cfg reads the stats credentials from the environment, so the tracked file is byte-identical to the live one;
+# the systemd unit loads /etc/default/haproxy, which keeps the values on the box only
+if [[ $DRY_RUN == 1 ]]; then
+  echo "  [dry-run] would set HAPROXY_STATS_USER/PASSWORD in /etc/default/haproxy (mode 600)"
+else
+  touch /etc/default/haproxy
+  for var in HAPROXY_STATS_USER HAPROXY_STATS_PASSWORD; do
+    sed -i "/^$var=/d" /etc/default/haproxy
+    printf '%s=%s\n' "$var" "${!var}" >> /etc/default/haproxy
+  done
+  chmod 600 /etc/default/haproxy
+  echo "  -> /etc/default/haproxy (stats credentials)"
+fi
+# Banned IPs are kept on the box only; haproxy refuses to start if the list is missing, so create it empty once and never overwrite it
+if [[ ! -f /etc/haproxy/banned-ips.lst ]]; then
+  if [[ $DRY_RUN == 1 ]]; then
+    echo "  [dry-run] would create empty /etc/haproxy/banned-ips.lst"
+  else
+    install -D -m 644 /dev/null /etc/haproxy/banned-ips.lst
+    echo "  -> /etc/haproxy/banned-ips.lst (created empty)"
+  fi
+fi
 
 echo "nginx:"
 place "$DEVOPS/nginx/aiku-octane-production.conf" /etc/nginx/sites-available/aiku-octane-production.conf
@@ -160,7 +182,7 @@ fi
 
 echo "validating + reloading:"
 nginx -t && systemctl reload nginx
-haproxy -c -f /etc/haproxy/haproxy.cfg && systemctl reload haproxy
+(set -a; . /etc/default/haproxy; set +a; haproxy -c -f /etc/haproxy/haproxy.cfg) && systemctl reload haproxy
 supervisorctl reread && supervisorctl update
 systemctl daemon-reload
 # Varnish reload semantics vary by install (varnishreload vs restart); leave it

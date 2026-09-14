@@ -125,7 +125,7 @@ test('create group', function () {
 
     $group = StoreGroup::make()->action($modelData);
     expect($group)->toBeInstanceOf(Group::class)
-        ->and($group->roles()->count())->toBe(10)
+        ->and($group->roles()->count())->toBe(13)
         ->and($group->jobPositionCategories()->count())->toBe($jobPositions->count());
 
     return $group;
@@ -133,14 +133,14 @@ test('create group', function () {
 
 test('group scoped job positions', function (Group $group) {
     $jobPositions = collect(config("blueprint.job_positions.positions"));
-    expect($group->jobPositions()->count())->toBe(9)
+    expect($group->jobPositions()->count())->toBe(12)
         ->and($group->jobPositionCategories()->count())->toBe($jobPositions->count());
 
     $this->artisan('group:seed-job-positions', [
         'group' => $group->slug,
     ])->assertSuccessful();
 
-    expect($group->jobPositions()->count())->toBe(9)
+    expect($group->jobPositions()->count())->toBe(12)
         ->and($group->jobPositionCategories()->count())->toBe($jobPositions->count());
 })->depends('create group');
 
@@ -193,7 +193,7 @@ test('create organisation type shop', function (Group $group) {
     expect($organisation)->toBeInstanceOf(Organisation::class)
         ->and($organisation->address)->toBeInstanceOf(Address::class)
         ->and($organisation->roles()->count())->toBe(8)
-        ->and($group->roles()->count())->toBe(18)
+        ->and($group->roles()->count())->toBe(21)
         ->and($organisation->accountingStats->number_org_payment_service_providers)->toBe(1)
         ->and($organisation->accountingStats->number_org_payment_service_providers_type_account)->toBe(1);
 
@@ -2320,4 +2320,14 @@ describe('audit merging', function () {
             ->and($firstAudit->old_values)->toBe(['sku' => 'A1'])
             ->and($firstAudit->new_values)->toBe(['sku' => 'B1']);
     });
+});
+
+test('address boxes come in the order the country writes an address', function () {
+    $countryData = GetAddressData::run();
+    $order       = fn (string $code) => array_keys($countryData[Country::where('code', $code)->firstOrFail()->id]['fields']);
+
+    expect($order('GB'))->toBe(['address_line_1', 'address_line_2', 'locality', 'postal_code'])
+        ->and($order('ES'))->toBe(['address_line_1', 'address_line_2', 'postal_code', 'locality', 'administrative_area'])
+        ->and($order('HU'))->toBe(['locality', 'address_line_1', 'address_line_2', 'postal_code'])
+        ->and(array_slice($order('US'), 0, 2))->toBe(['address_line_1', 'address_line_2']);
 });

@@ -633,7 +633,7 @@ const openSessionFromHistory = async (ulid: string) => {
     forceScrollBottom()
 }
 
-const checkChatStatus = async (sessionUlid: string) => {
+const checkChatStatus = async (sessionUlid: string, isRetry = false) => {
     isCheckingStatus.value = true
 
     try {
@@ -662,7 +662,15 @@ const checkChatStatus = async (sessionUlid: string) => {
             }
         }
 
-    } catch (e) {
+    } catch (e: any) {
+        if (!isRetry && [404, 422].includes(e?.response?.status)) {
+            localStorage.removeItem("chat")
+            const freshSession = await createSession()
+            if (freshSession) {
+                await checkChatStatus(freshSession.ulid, true)
+                return
+            }
+        }
         console.error("Chat status fetch failed", e)
         statusChat.value = false
         chatOfflineInfo.value = null

@@ -1,0 +1,48 @@
+<?php
+
+/*
+ * Author: Vika Aqordi <aqordeon@gmail.com>
+ * Created: Thu, 10 Sep 2026, Bali, Indonesia
+ * Copyright (c) 2026, Inikoo LTD
+ */
+
+namespace App\Actions\Production\Artefact\Label;
+
+use App\Actions\OrgAction;
+use App\Models\Production\Artefact;
+use App\Models\Production\ArtefactLabel;
+use Lorisleiva\Actions\ActionRequest;
+
+class DeleteArtefactLabel extends OrgAction
+{
+    public function handle(ArtefactLabel $artefactLabel): ArtefactLabel
+    {
+        $artefactLabel->delete();
+
+        return $artefactLabel;
+    }
+
+    public function authorize(ActionRequest $request): bool
+    {
+        if ($this->asAction) {
+            return true;
+        }
+
+        return $request->user()->authTo(["org-supervisor.{$this->organisation->id}", "productions_rd.{$this->production->id}.edit"]);
+    }
+
+    public function action(ArtefactLabel $artefactLabel): ArtefactLabel
+    {
+        $this->asAction = true;
+        $this->initialisationFromProduction($artefactLabel->artefact->production, []);
+
+        return $this->handle($artefactLabel);
+    }
+
+    public function asController(Artefact $artefact, ArtefactLabel $label, ActionRequest $request): ArtefactLabel
+    {
+        $this->initialisationFromProduction($artefact->production, $request);
+
+        return $this->handle($label);
+    }
+}

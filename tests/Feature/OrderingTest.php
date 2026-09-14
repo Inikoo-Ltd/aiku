@@ -59,6 +59,10 @@ use App\Actions\Ordering\Order\ImportTransactionInOrder;
 use App\Actions\Ordering\Order\Hydrators\OrderHydrateShipments;
 use App\Actions\Ordering\Order\PayOrder;
 use App\Actions\Ordering\Order\StoreOrder;
+use App\Actions\Retina\Ecom\Basket\RetinaEcomUpdateTransaction;
+use App\Actions\Retina\Ecom\Basket\UI\IndexBasketTransactions;
+use App\Actions\Catalogue\Product\StoreProduct;
+use App\Actions\Catalogue\Product\StoreProductWebpage;
 use App\Actions\Ordering\Order\UpdateOrder;
 use App\Actions\Ordering\Order\UpdateOrderBillingAddress;
 use App\Actions\Ordering\Order\UpdateOrderDeliveryAddress;
@@ -75,7 +79,9 @@ use App\Actions\Ordering\Purge\UpdatePurge;
 use App\Actions\Ordering\PurgedOrder\UpdatePurgedOrder;
 use App\Actions\Ordering\Transaction\DeleteTransaction;
 use App\Actions\Ordering\Order\GenerateInvoiceFromOrder;
+use App\Actions\Iris\Basket\StoreEcomBasketTransaction;
 use App\Actions\Ordering\Transaction\StoreTransaction;
+use App\Actions\Ordering\Transaction\SyncBasketLinesWithProductStock;
 use Illuminate\Support\Str;
 use App\Enums\Accounting\PaymentAccount\PaymentAccountTypeEnum;
 use App\Actions\Accounting\Payment\StorePayment;
@@ -113,6 +119,7 @@ use App\Enums\Ordering\Transaction\TransactionStateEnum;
 use App\Enums\Ordering\Transaction\UpcomingTransactionStateEnum;
 use App\Enums\Ordering\Transaction\UpcomingTransactionTypeEnum;
 use App\Enums\Catalogue\Product\ProductStatusEnum;
+use App\Http\Resources\Fulfilment\RetinaEcomBasketTransactionsResources;
 use App\Http\Resources\Ordering\TransactionsResource;
 use App\Models\Ordering\UpcomingTransaction;
 use App\Models\Accounting\CreditTransaction;
@@ -122,6 +129,7 @@ use App\Models\Accounting\PaymentServiceProvider;
 use App\Models\Analytics\AikuScopedSection;
 use App\Models\Billables\Charge;
 use App\Models\Catalogue\Asset;
+use App\Models\Catalogue\Product;
 use Illuminate\Validation\ValidationException;
 use App\Enums\Billables\Service\ServiceStateEnum;
 use App\Models\Billables\ShippingZone;
@@ -139,6 +147,7 @@ use App\Models\Helpers\Country;
 use App\Actions\Ordering\Order\WriteOffOrderShortfall;
 use App\Enums\Ordering\Order\OrderPayDetailedStatusEnum;
 use App\Enums\Ordering\Order\OrderPayStatusEnum;
+use App\Enums\UI\Ordering\OrdersBacklogTabsEnum;
 use App\Models\Ordering\Adjustment;
 use App\Enums\Helpers\Import\UploadRecordStatusEnum;
 use App\Imports\Ordering\TransactionImport;
@@ -161,6 +170,7 @@ use App\Models\SysAdmin\Permission;
 use Carbon\Carbon;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Date;
@@ -681,7 +691,15 @@ test('update order', function ($order) {
 
 test('update order state to submitted', function (Order $order) {
     $order = SubmitOrder::make()->action($order);
-    expect($order->state)->toEqual(OrderStateEnum::SUBMITTED)
+
+    /** The backlog splits submitted orders into paid and unpaid and CS work from those two
+     * counters alone, so the halves must always add back up to the whole */
+    $handlingStats = $order->shop->orderHandlingStats->refresh();
+    expect($handlingStats->number_orders_state_submitted_paid + $handlingStats->number_orders_state_submitted_not_paid)
+        ->toBe($handlingStats->number_orders_state_submitted);
+
+    expect($order->pay_status)->toEqual(OrderPayStatusEnum::UNPAID)
+        ->and($order->state)->toEqual(OrderStateEnum::SUBMITTED)
         ->and($order->shop->orderingStats->number_orders_state_submitted)->toBe(1)
         ->and($order->organisation->orderingStats->number_orders_state_submitted)->toBe(1)
         ->and($order->group->orderingStats->number_orders_state_submitted)->toBe(1)
@@ -689,6 +707,39 @@ test('update order state to submitted', function (Order $order) {
 
     return $order;
 })->depends('create order');
+
+test('no pay status can hide a submitted order from the backlog', function (Order $order) {
+    /** Staff only ever see submitted orders through these two buckets, so between them they must
+     * account for every submitted order whatever its pay status is (HELP-3116). A status invented
+     * later must land in the chase queue by default, never in neither. */
+    $statuses = collect(OrderPayStatusEnum::cases())->pluck('value')->push('a_status_invented_later');
+
+    foreach ($statuses as $status) {
+        DB::table('orders')->where('id', $order->id)->update(['pay_status' => $status]);
+
+        $settled    = Order::where('id', $order->id)->paySettled()->count();
+        $notSettled = Order::where('id', $order->id)->payNotSettled()->count();
+
+        expect($settled + $notSettled)->toBe(1, "pay status [$status] is in ".($settled + $notSettled).' buckets, must be exactly 1');
+    }
+
+    DB::table('orders')->where('id', $order->id)->update(['pay_status' => OrderPayStatusEnum::UNPAID->value]);
+})->depends('update order state to submitted');
+
+test('every order state has a backlog queue or is deliberately excluded from one', function () {
+    /** The backlog's tabs are a hand written list while the states are an enum, so a state added
+     * later would have no tab and its orders would be as invisible as a null pay status was
+     * (HELP-3116). Give a new state a tab, or say out loud that it needs no queue. */
+    $accountedFor = collect(OrdersBacklogTabsEnum::statesShown())
+        ->merge(OrdersBacklogTabsEnum::statesNeedingNoQueue())
+        ->pluck('value');
+
+    $homeless = collect(OrderStateEnum::cases())
+        ->reject(fn (OrderStateEnum $state) => $accountedFor->contains($state->value))
+        ->pluck('value');
+
+    expect($homeless)->toBeEmpty('order states shown by no backlog tab: '.$homeless->implode(', '));
+});
 
 test('customer cannot update basket transaction on submitted order', function (Order $order) {
     $webUser = new \App\Models\CRM\WebUser();
@@ -721,8 +772,13 @@ test('delivery note recipient follows the order recipient, not the customer', fu
         ->and(SendOrderToWarehouse::make()->getCompanyName($order))->toBe('Novak Retail s.r.o.')
         ->and(SendOrderToWarehouse::make()->getContactName($order))->toBe('Jana Novak');
 
+    $deliveryNote = $order->deliveryNotes()->first();
+    expect($deliveryNote->company_name)->toBe('Novak Retail s.r.o.')
+        ->and($deliveryNote->contact_name)->toBe('Jana Novak');
+
     $order = UpdateOrder::make()->action($order, ['company_name' => null]);
-    expect(SendOrderToWarehouse::make()->getCompanyName($order))->toBe($order->customer->company_name);
+    expect(SendOrderToWarehouse::make()->getCompanyName($order))->toBe($order->customer->company_name)
+        ->and($order->deliveryNotes()->first()->company_name)->toBe($order->customer->company_name);
 
     return $order;
 })->depends('update order state to in warehouse');
@@ -3543,13 +3599,15 @@ test('export flag follows the customs territory of the organisation', function (
 
 
 test('an order with no billing address is held instead of going to the warehouse', function () {
-    $customer = createCustomer($this->shop);
+    $customer = freshCustomerLike($this->shop, $this->customer);
     $order    = StoreOrder::make()->action($customer, Order::factory()->definition());
+    /** These tests are about addresses, not shipping: the zones earlier tests in this file create are random */
+    $order->update(['shipping_engine' => \App\Enums\Ordering\Order\OrderShippingEngineEnum::MANUAL]);
     StoreTransaction::make()->action($order, $this->product->currentHistoricProduct, Transaction::factory()->definition());
     SubmitOrder::make()->action($order);
 
     $order->refresh();
-    $order->billingAddress->update(['address_line_1' => '']);
+    $order->billingAddress->update(['address_line_1' => '', 'address_line_2' => '', 'locality' => '', 'postal_code' => '', 'administrative_area' => '']);
     $order->unsetRelation('billingAddress');
 
     $deliveryNote = SendOrderToWarehouse::make()->action($order, []);
@@ -3557,12 +3615,13 @@ test('an order with no billing address is held instead of going to the warehouse
 
     expect($deliveryNote)->toBeNull()
         ->and($order->state)->toEqual(OrderStateEnum::SUBMITTED)
-        ->and($order->private_warehouse_note)->toContain('no address');
+        ->and($order->private_warehouse_note)->toContain('billing address is missing');
 });
 
 test('a collection invoice stores the collection address it was issued with', function () {
     $customer = createCustomer($this->shop);
     $order    = StoreOrder::make()->action($customer, Order::factory()->definition());
+    $order->update(['shipping_engine' => \App\Enums\Ordering\Order\OrderShippingEngineEnum::MANUAL]);
     StoreTransaction::make()->action($order, $this->product->currentHistoricProduct, Transaction::factory()->definition());
 
     $collectionAddress = \App\Models\Helpers\Address::create(array_merge(
@@ -3581,13 +3640,15 @@ test('a collection invoice stores the collection address it was issued with', fu
 });
 
 test('a held order goes to the warehouse once its address is put on it', function () {
-    $customer = createCustomer($this->shop);
+    $customer = freshCustomerLike($this->shop, $this->customer);
     $order    = StoreOrder::make()->action($customer, Order::factory()->definition());
+    /** These tests are about addresses, not shipping: the zones earlier tests in this file create are random */
+    $order->update(['shipping_engine' => \App\Enums\Ordering\Order\OrderShippingEngineEnum::MANUAL]);
     StoreTransaction::make()->action($order, $this->product->currentHistoricProduct, Transaction::factory()->definition());
     SubmitOrder::make()->action($order);
 
     $order->refresh();
-    $order->billingAddress->update(['address_line_1' => '']);
+    $order->billingAddress->update(['address_line_1' => '', 'address_line_2' => '', 'locality' => '', 'postal_code' => '', 'administrative_area' => '']);
     $order->unsetRelation('billingAddress');
     $order->update(['pay_status' => OrderPayStatusEnum::PAID]);
 
@@ -3608,13 +3669,15 @@ test('a held order goes to the warehouse once its address is put on it', functio
 });
 
 test('the warehouse can be sent an order without an address on purpose', function () {
-    $customer = createCustomer($this->shop);
+    $customer = freshCustomerLike($this->shop, $this->customer);
     $order    = StoreOrder::make()->action($customer, Order::factory()->definition());
+    /** These tests are about addresses, not shipping: the zones earlier tests in this file create are random */
+    $order->update(['shipping_engine' => \App\Enums\Ordering\Order\OrderShippingEngineEnum::MANUAL]);
     StoreTransaction::make()->action($order, $this->product->currentHistoricProduct, Transaction::factory()->definition());
     SubmitOrder::make()->action($order);
 
     $order->refresh();
-    $order->billingAddress->update(['address_line_1' => '']);
+    $order->billingAddress->update(['address_line_1' => '', 'address_line_2' => '', 'locality' => '', 'postal_code' => '', 'administrative_area' => '']);
     $order->unsetRelation('billingAddress');
     $order->update(['pay_status' => OrderPayStatusEnum::PAID]);
 
@@ -3624,4 +3687,446 @@ test('the warehouse can be sent an order without an address on purpose', functio
 
     expect($deliveryNote)->toBeInstanceOf(DeliveryNote::class)
         ->and($order->refresh()->state)->toEqual(OrderStateEnum::IN_WAREHOUSE);
+});
+
+test('send anyway only shows on an order missing an address', function () {
+    $customer = freshCustomerLike($this->shop, $this->customer);
+    $order    = StoreOrder::make()->action($customer, Order::factory()->definition());
+    /** These tests are about addresses, not shipping: the zones earlier tests in this file create are random */
+    $order->update(['shipping_engine' => \App\Enums\Ordering\Order\OrderShippingEngineEnum::MANUAL]);
+    StoreTransaction::make()->action($order, $this->product->currentHistoricProduct, Transaction::factory()->definition());
+    SubmitOrder::make()->action($order);
+    $order->refresh();
+
+    $hasSendAnyway = fn (Order $order) => collect(\App\Actions\Ordering\Order\UI\GetEcomOrderActions::run($order, true))
+        ->contains(fn ($action) => ($action['key'] ?? null) === 'send-to-warehouse-without-an-address');
+
+    expect($hasSendAnyway($order))->toBeFalse();
+
+    $order->billingAddress->update(['address_line_1' => '', 'address_line_2' => '', 'locality' => '', 'postal_code' => '', 'administrative_area' => '']);
+    $order->unsetRelation('billingAddress');
+
+    expect($hasSendAnyway($order))->toBeTrue();
+});
+
+/** An address in the fixture customer's country and postcode, so the shop can price shipping for it */
+function heldOrderAddressLike(\App\Models\CRM\Customer $customer, array $overrides = []): array
+{
+    return array_merge(
+        $customer->address->only(['address_line_1', 'address_line_2', 'sorting_code', 'postal_code', 'dependent_locality', 'locality', 'administrative_area', 'country_code', 'country_id']),
+        $overrides
+    );
+}
+
+function freshCustomerLike(\App\Models\Catalogue\Shop $shop, \App\Models\CRM\Customer $template): \App\Models\CRM\Customer
+{
+    return \App\Actions\CRM\Customer\StoreCustomer::make()->action($shop, array_merge(
+        \App\Models\CRM\Customer::factory()->definition(),
+        ['contact_address' => heldOrderAddressLike($template, ['address_line_1' => fake()->unique()->streetAddress()])]
+    ));
+}
+
+function orderForAFreshCustomerWithNoBillingAddress(\App\Models\Catalogue\Shop $shop, $historicAsset, \App\Models\CRM\Customer $template, bool $separateDeliveryAddress = false): Order
+{
+    $customer = freshCustomerLike($shop, $template);
+    $order    = StoreOrder::make()->action($customer, Order::factory()->definition());
+    /** These tests are about addresses, not shipping: the zones earlier tests in this file create are random */
+    $order->update(['shipping_engine' => \App\Enums\Ordering\Order\OrderShippingEngineEnum::MANUAL]);
+    StoreTransaction::make()->action($order, $historicAsset, Transaction::factory()->definition());
+
+    if ($separateDeliveryAddress) {
+        UpdateOrderDeliveryAddress::make()->action($order, [
+            'address'       => heldOrderAddressLike($template, ['address_line_1' => '9 End Customer Road', 'address_line_2' => 'Unit '.fake()->unique()->numberBetween(1, 9999999)]),
+            'update_parent' => false,
+        ]);
+        $order->refresh();
+    }
+
+    $order->billingAddress->update(['address_line_1' => '', 'address_line_2' => '', 'locality' => '', 'postal_code' => '', 'administrative_area' => '']);
+    $order->update(['pay_status' => OrderPayStatusEnum::PAID]);
+
+    return $order->refresh();
+}
+
+test('a customer who pays with no address is never refused, the order is held instead', function () {
+    $order = orderForAFreshCustomerWithNoBillingAddress($this->shop, $this->product->currentHistoricProduct, $this->customer);
+
+    SubmitOrder::make()->action($order);
+    $order->refresh();
+
+    expect($order->state)->toEqual(OrderStateEnum::SUBMITTED)
+        ->and($order->deliveryNotes()->count())->toBe(0)
+        ->and($order->private_warehouse_note)->toContain(SendOrderToWarehouse::HELD_MARKER)
+        ->and($order->private_warehouse_note)->toContain('billing address');
+});
+
+test('the held warning is written once and replaces an older wording, however often the order is retried', function () {
+    $order = orderForAFreshCustomerWithNoBillingAddress($this->shop, $this->product->currentHistoricProduct, $this->customer);
+    SubmitOrder::make()->action($order);
+
+    $order->refresh()->update(['private_warehouse_note' => 'Keep this — ⚠️ Order held: the customer has no address, ask them for it before picking']);
+    SendOrderToWarehouse::make()->action($order->refresh(), []);
+    SendOrderToWarehouse::make()->action($order->refresh(), []);
+
+    $note = (string)$order->refresh()->private_warehouse_note;
+
+    expect(substr_count($note, SendOrderToWarehouse::HELD_MARKER))->toBe(1)
+        ->and($note)->toStartWith('Keep this — ')
+        ->and($note)->toContain('billing address is missing')
+        ->and($note)->not->toContain('the customer has no address');
+});
+
+test('the held warning comes off cleanly and keeps what staff wrote', function () {
+    expect(SendOrderToWarehouse::withoutHeldNote('Keep this — ⚠️ Order held: the customer has no address, ask them for it before picking'))->toBe('Keep this')
+        ->and(SendOrderToWarehouse::withoutHeldNote("⚠️ Order held: the customer has no address, ask them for it before picking \nI send a ticket for it"))->toBe('I send a ticket for it')
+        ->and(SendOrderToWarehouse::withoutHeldNote('A — ⚠️ Order held: the billing address is missing — B'))->toBe('A — B')
+        ->and(SendOrderToWarehouse::withoutHeldNote('⚠️ Order held: the billing address is missing'))->toBeNull()
+        ->and(SendOrderToWarehouse::withoutHeldNote(null))->toBeNull();
+});
+
+test('fixing the customer releases an order held on its billing address, and the warning never reaches the delivery note', function () {
+    $order = orderForAFreshCustomerWithNoBillingAddress($this->shop, $this->product->currentHistoricProduct, $this->customer);
+    SubmitOrder::make()->action($order);
+    expect($order->refresh()->state)->toEqual(OrderStateEnum::SUBMITTED);
+
+    \App\Actions\CRM\Customer\UpdateCustomer::make()->action($order->customer, [
+        'contact_address' => heldOrderAddressLike($this->customer, ['address_line_1' => '1 Fixed Street']),
+    ]);
+
+    $order->refresh();
+    $deliveryNote = $order->deliveryNotes()->first();
+
+    expect($order->state)->toEqual(OrderStateEnum::IN_WAREHOUSE)
+        ->and($deliveryNote)->toBeInstanceOf(DeliveryNote::class)
+        ->and((string)$order->private_warehouse_note)->not->toContain(SendOrderToWarehouse::HELD_MARKER)
+        ->and((string)$deliveryNote->private_warehouse_note)->not->toContain(SendOrderToWarehouse::HELD_MARKER);
+});
+
+test('an order with its own delivery address keeps it when the customer is fixed', function () {
+    $order = orderForAFreshCustomerWithNoBillingAddress($this->shop, $this->product->currentHistoricProduct, $this->customer, separateDeliveryAddress: true);
+    SubmitOrder::make()->action($order);
+    $order->refresh();
+
+    expect($order->state)->toEqual(OrderStateEnum::SUBMITTED)
+        ->and($order->billing_address_id)->not->toBe($order->delivery_address_id);
+
+    $deliveryAddressId = $order->delivery_address_id;
+
+    \App\Actions\CRM\Customer\UpdateCustomer::make()->action($order->customer, [
+        'contact_address' => heldOrderAddressLike($this->customer, ['address_line_1' => '1 Fixed Street']),
+    ]);
+
+    $order->refresh();
+
+    expect($order->state)->toEqual(OrderStateEnum::IN_WAREHOUSE)
+        ->and($order->delivery_address_id)->toBe($deliveryAddressId)
+        ->and($order->deliveryAddress->address_line_1)->toBe('9 End Customer Road');
+});
+
+test('a submitted order whose street sits in the town box is left alone when the customer changes address', function () {
+    $customer = freshCustomerLike($this->shop, $this->customer);
+    $order    = StoreOrder::make()->action($customer, Order::factory()->definition());
+    /** These tests are about addresses, not shipping: the zones earlier tests in this file create are random */
+    $order->update(['shipping_engine' => \App\Enums\Ordering\Order\OrderShippingEngineEnum::MANUAL]);
+    StoreTransaction::make()->action($order, $this->product->currentHistoricProduct, Transaction::factory()->definition());
+    SubmitOrder::make()->action($order);
+
+    $order->refresh();
+    $order->billingAddress->update(['address_line_1' => '', 'locality' => 'Rear of 230 Church Lane']);
+    $billingAddressId = $order->billing_address_id;
+
+    \App\Actions\CRM\Customer\UpdateCustomer::make()->action($customer, [
+        'contact_address' => heldOrderAddressLike($this->customer, ['address_line_1' => '1 Fixed Street']),
+    ]);
+
+    $order->refresh();
+
+    expect($order->state)->toEqual(OrderStateEnum::SUBMITTED)
+        ->and($order->billing_address_id)->toBe($billingAddressId)
+        ->and($order->billingAddress->locality)->toBe('Rear of 230 Church Lane');
+});
+
+test('an address change on an order fetched from aurora never pushes it to the warehouse', function () {
+    $order = orderForAFreshCustomerWithNoBillingAddress($this->shop, $this->product->currentHistoricProduct, $this->customer, separateDeliveryAddress: true);
+    SubmitOrder::make()->action($order);
+    $order->refresh()->update(['source_id' => '9990001']);
+
+    \App\Actions\Ordering\Order\UpdateOrderFixedAddress::make()->action($order->refresh(), [
+        'address' => new \App\Models\Helpers\Address(heldOrderAddressLike($this->customer, ['address_line_1' => '1 Fixed Street'])),
+        'type'    => 'billing',
+    ]);
+
+    expect($order->refresh()->state)->toEqual(OrderStateEnum::SUBMITTED)
+        ->and($order->deliveryNotes()->count())->toBe(0);
+});
+
+test('a decision to send without an address survives a later retry', function () {
+    $order = orderForAFreshCustomerWithNoBillingAddress($this->shop, $this->product->currentHistoricProduct, $this->customer);
+    SubmitOrder::make()->action($order);
+
+    $order->refresh()->update(['private_warehouse_note' => SendOrderToWarehouse::SENT_WITHOUT_AN_ADDRESS_MARKER.', the customer could not be reached']);
+
+    expect(SendOrderToWarehouse::make()->action($order->refresh(), []))->toBeInstanceOf(DeliveryNote::class)
+        ->and($order->refresh()->state)->toEqual(OrderStateEnum::IN_WAREHOUSE);
+});
+
+/** A customer whose last delivered order went to one address while their default, never delivered to, is another */
+function customerWithANeverDeliveredDefault(\App\Models\Catalogue\Shop $shop, \App\Models\CRM\Customer $template): array
+{
+    $customer = freshCustomerLike($shop, $template);
+
+    $lastDelivered = StoreOrder::make()->action($customer, Order::factory()->definition());
+    $lastDelivered->update(['shipping_engine' => \App\Enums\Ordering\Order\OrderShippingEngineEnum::MANUAL]);
+    $deliveredTo = \App\Models\Helpers\Address::create(heldOrderAddressLike($template, [
+        'address_line_1' => '19 Periwinkle Gardens '.fake()->unique()->numberBetween(1, 9999999),
+        'postal_code'    => 'NN14 2AH',
+        'group_id'       => $lastDelivered->group_id,
+    ]));
+    $lastDelivered->forceFill(['state' => OrderStateEnum::DISPATCHED, 'delivery_address_id' => $deliveredTo->id])->saveQuietly();
+
+    $basket = StoreOrder::make()->action($customer->refresh(), Order::factory()->definition());
+    $basket->update(['shipping_engine' => \App\Enums\Ordering\Order\OrderShippingEngineEnum::MANUAL]);
+
+    return [$customer, $lastDelivered->refresh(), $basket->refresh()];
+}
+
+test('an order going to a default that never received a delivery shows where the last order went', function () {
+    [, $lastDelivered, $basket] = customerWithANeverDeliveredDefault($this->shop, $this->customer);
+    $warning = \App\Actions\Ordering\Order\UI\GetEarlierDeliveryAddressWarning::class;
+
+    $forCustomer = $warning::run($basket, withCustomerActions: true);
+    $forStaff    = $warning::run($basket);
+
+    expect($forCustomer)->not->toBeNull()
+        ->and($forCustomer['previous_order_reference'])->toBe($lastDelivered->reference)
+        ->and($forCustomer['previous_address'])->toContain('19 Periwinkle Gardens')
+        ->and($forCustomer['confirmed'])->toBeFalse()
+        ->and($forCustomer['actions']['confirm_route']['name'])->toBe('retina.models.order.delivery_address_confirm')
+        ->and($forCustomer['actions']['use_previous_route']['name'])->toBe('retina.models.order.delivery_address_use_previous')
+        ->and($forStaff['actions'])->toBeNull()
+        ->and(\App\Actions\Ordering\Order\UI\GetOrderDeliveryAddressManagement::run($basket)['addresses']['earlier_delivery_address'])->toBe($forStaff);
+});
+
+test('no earlier address note when the address has been delivered to, is not the default, or is a collection', function () {
+    $warning = fn (Order $order) => \App\Actions\Ordering\Order\UI\GetEarlierDeliveryAddressWarning::run($order->refresh());
+
+    /** A parcel already reached this address once, so it is a real address of theirs */
+    [$customer, , $basket] = customerWithANeverDeliveredDefault($this->shop, $this->customer);
+    $older = StoreOrder::make()->action($customer, Order::factory()->definition());
+    $older->forceFill(['state' => OrderStateEnum::DISPATCHED, 'delivery_address_id' => $basket->delivery_address_id, 'created_at' => now()->subYear()])->saveQuietly();
+    expect($warning($basket))->toBeNull();
+
+    /** The customer typed a different address on this order, so it is their choice, not a stale default */
+    [, , $basket] = customerWithANeverDeliveredDefault($this->shop, $this->customer);
+    UpdateOrderDeliveryAddress::make()->action($basket, ['address' => heldOrderAddressLike($this->customer, ['address_line_1' => 'Chosen on this order '.fake()->unique()->numberBetween(1, 9999999)])]);
+    expect($warning($basket))->toBeNull();
+
+    /** A collection is not delivered anywhere */
+    [, , $basket] = customerWithANeverDeliveredDefault($this->shop, $this->customer);
+    $basket->forceFill(['collection_address_id' => $basket->delivery_address_id])->saveQuietly();
+    expect($warning($basket))->toBeNull();
+});
+
+test('a customer confirming the address hides the note from them and tells staff', function () {
+    [, , $basket] = customerWithANeverDeliveredDefault($this->shop, $this->customer);
+
+    \App\Actions\Retina\Ordering\ConfirmRetinaOrderDeliveryAddress::make()->handle($basket);
+
+    $forCustomer = \App\Actions\Ordering\Order\UI\GetEarlierDeliveryAddressWarning::run($basket->refresh(), withCustomerActions: true);
+
+    expect($forCustomer['confirmed'])->toBeTrue()
+        ->and($forCustomer['actions'])->toBeNull();
+});
+
+test('a customer can send the order to the address their last order went to in one step', function () {
+    [, , $basket] = customerWithANeverDeliveredDefault($this->shop, $this->customer);
+
+    \App\Actions\Retina\Ordering\UseRetinaOrderPreviousDeliveryAddress::make()->handle($basket);
+    $basket->refresh();
+
+    expect($basket->deliveryAddress->address_line_1)->toStartWith('19 Periwinkle Gardens')
+        ->and($basket->deliveryAddress->postal_code)->toBe('NN14 2AH')
+        ->and(\App\Actions\Ordering\Order\UI\GetEarlierDeliveryAddressWarning::run($basket, withCustomerActions: true))->toBeNull();
+});
+
+test('retina basket lines resolve their webpage and image without a query per line', function () {
+    createWebsite($this->shop);
+    $basket   = StoreOrder::make()->action($this->customer, Order::factory()->definition());
+    $basket->update(['shipping_engine' => \App\Enums\Ordering\Order\OrderShippingEngineEnum::MANUAL]);
+    $webpages = [];
+    [, $bulk] = createProduct($this->shop);
+    foreach (range(1, 3) as $quantity) {
+        $product = StoreProduct::make()->action($bulk->family, array_merge(
+            Product::factory()->definition(),
+            ['trade_units' => [['id' => $bulk->tradeUnits->first()->id, 'quantity' => 1]], 'price' => 2]
+        ));
+        $webpages[$product->code] = StoreProductWebpage::make()->action($product);
+        DB::table('webpages')->insert(array_merge(
+            Arr::except($webpages[$product->code]->getAttributes(), ['id']),
+            ['url' => $webpages[$product->code]->url.'-old', 'slug' => $webpages[$product->code]->slug.'-old', 'state' => 'closed']
+        ));
+        $transactionData                 = Transaction::factory()->definition();
+        $transactionData['quantity_ordered'] = $quantity;
+        $transactionData['order_id']         = $basket->id;
+        StoreTransaction::make()->action($basket, $product->currentHistoricProduct, $transactionData);
+    }
+
+    $fakeRoute = new \Illuminate\Routing\Route('GET', '/fake-retina-basket', []);
+    $fakeRoute->name('retina.ecom.basket.show');
+    app('request')->setRouteResolver(fn () => $fakeRoute);
+
+    $lines = IndexBasketTransactions::run($basket->fresh());
+
+    DB::enableQueryLog();
+    DB::flushQueryLog();
+    $rows = RetinaEcomBasketTransactionsResources::collection($lines)->resolve();
+    $queriesWhileResolving = count(DB::getQueryLog());
+    DB::disableQueryLog();
+
+    expect($lines->total())->toBe(3)
+        ->and($rows)->toHaveCount(3)
+        ->and($queriesWhileResolving)->toBe(0);
+
+    foreach ($rows as $row) {
+        $webpage = $webpages[$row['asset_code']];
+        expect($row['webpage_url'])->toBe($webpage->canonical_url)
+            ->and($row['luigi_identity'])->toBe("$webpage->group_id:$webpage->organisation_id:$webpage->shop_id:$webpage->website_id:$webpage->id")
+            ->and($row['image'])->toBeNull();
+    }
+});
+
+test('a basket line may exceed stock, is zeroed while out of stock and restored when back, never blocking the order', function () {
+    $basket = StoreOrder::make()->action($this->customer, Order::factory()->definition());
+    $basket->update(['shipping_engine' => \App\Enums\Ordering\Order\OrderShippingEngineEnum::MANUAL]);
+    [, $bulk] = createProduct($this->shop);
+    $lowStock = StoreProduct::make()->action($bulk->family, array_merge(
+        Product::factory()->definition(),
+        ['trade_units' => [['id' => $bulk->tradeUnits->first()->id, 'quantity' => 1]], 'price' => 2]
+    ));
+    $lowStockData                     = Transaction::factory()->definition();
+    $lowStockData['quantity_ordered'] = 3;
+    $lowStockData['order_id']         = $basket->id;
+    $lowStockLine                     = StoreTransaction::make()->action($basket, $lowStock->currentHistoricProduct, $lowStockData);
+    DB::table('products')->where('id', $lowStock->id)->update(['available_quantity' => 5]);
+
+    $lowStockLine = RetinaEcomUpdateTransaction::make()->action($lowStockLine, $this->customer, ['quantity_ordered' => 7]);
+    expect((float) $lowStockLine->quantity_ordered)->toBe(7.0);
+
+    $issues = fn () => (new class () {
+        use \App\Actions\Traits\WithBasketStockIssues;
+
+        public function issues(Order $order): array
+        {
+            return $this->getBasketStockIssues($order);
+        }
+    })->issues($basket->fresh());
+
+    expect($issues()['low_stock'])->toHaveCount(1)
+        ->and($issues()['low_stock'][0]['code'])->toBe($lowStock->code)
+        ->and($issues()['low_stock'][0]['quantity_ordered'])->toBe(7.0)
+        ->and($issues()['low_stock'][0]['available_quantity'])->toBe(5.0)
+        ->and($issues()['out_of_stock'])->toBe([]);
+
+    DB::table('products')->where('id', $lowStock->id)->update(['available_quantity' => 0]);
+
+    SyncBasketLinesWithProductStock::run($lowStock->fresh());
+    $lowStockLine = $lowStockLine->fresh();
+
+    expect((float) $lowStockLine->quantity_ordered)->toBe(0.0)
+        ->and((float) $lowStockLine->net_amount)->toBe(0.0)
+        ->and((float) $lowStockLine->estimated_weight)->toBe(0.0)
+        ->and((float) $basket->fresh()->goods_amount)->toBe(0.0)
+        ->and((float) Arr::get($lowStockLine->data, SyncBasketLinesWithProductStock::HELD_QUANTITY_KEY))->toBe(7.0)
+        ->and($issues()['low_stock'])->toBe([])
+        ->and($issues()['out_of_stock'][0]['code'])->toBe($lowStock->code)
+        ->and($issues()['out_of_stock'][0]['held_quantity'])->toBe(7.0);
+
+    DB::table('products')->where('id', $lowStock->id)->update(['available_quantity' => 5]);
+    SyncBasketLinesWithProductStock::run($lowStock->fresh());
+    $lowStockLine = $lowStockLine->fresh();
+
+    expect((float) $lowStockLine->quantity_ordered)->toBe(7.0)
+        ->and((float) $lowStockLine->net_amount)->toBe(14.0)
+        ->and((float) $basket->fresh()->goods_amount)->toBe(14.0)
+        ->and(Arr::get($lowStockLine->data, SyncBasketLinesWithProductStock::HELD_QUANTITY_KEY))->toBeNull()
+        ->and($issues()['low_stock'][0]['held_quantity'])->toBe(0.0);
+
+    DB::table('products')->where('id', $lowStock->id)->update(['available_quantity' => 0]);
+    SyncBasketLinesWithProductStock::run($lowStock->fresh());
+    $lowStockLine = RetinaEcomUpdateTransaction::make()->action($lowStockLine->fresh(), $this->customer, ['quantity_ordered' => 3]);
+
+    expect((float) $lowStockLine->quantity_ordered)->toBe(3.0)
+        ->and(Arr::get($lowStockLine->fresh()->data, SyncBasketLinesWithProductStock::HELD_QUANTITY_KEY))->toBeNull();
+
+    $goneProduct = StoreProduct::make()->action($bulk->family, array_merge(
+        Product::factory()->definition(),
+        ['trade_units' => [['id' => $bulk->tradeUnits->first()->id, 'quantity' => 1]], 'price' => 2]
+    ));
+    $goneData                     = Transaction::factory()->definition();
+    $goneData['quantity_ordered'] = 4;
+    $goneData['order_id']         = $basket->id;
+    $goneLine                     = StoreTransaction::make()->action($basket, $goneProduct->currentHistoricProduct, $goneData);
+    DB::table('products')->where('id', $goneProduct->id)->update(['available_quantity' => 0]);
+    SyncBasketLinesWithProductStock::run($goneProduct->fresh());
+
+    expect($basket->fresh()->stats->number_item_transactions)->toBe(1);
+
+    $submitted = SubmitOrder::run($basket->fresh());
+
+    expect($submitted->state)->toBe(OrderStateEnum::SUBMITTED)
+        ->and($goneLine->fresh()->trashed())->toBeTrue()
+        ->and($submitted->transactions()->where('model_type', 'Product')->count())->toBe(1);
+});
+
+test('a product that is not for sale cannot be added to a basket', function () {
+    $basket = StoreOrder::make()->action($this->customer, Order::factory()->definition());
+    $basket->update(['shipping_engine' => \App\Enums\Ordering\Order\OrderShippingEngineEnum::MANUAL]);
+    $this->customer->update(['current_order_in_basket_id' => $basket->id]);
+    [, $bulk] = createProduct($this->shop);
+    $product  = StoreProduct::make()->action($bulk->family, array_merge(
+        Product::factory()->definition(),
+        ['trade_units' => [['id' => $bulk->tradeUnits->first()->id, 'quantity' => 1]], 'price' => 2]
+    ));
+
+    $product->update(['status' => ProductStatusEnum::FOR_SALE]);
+    $line = StoreEcomBasketTransaction::make()->handle($this->customer->fresh(), $product->fresh(), ['quantity' => 2]);
+    expect((float) $line->quantity_ordered)->toBe(2.0);
+
+    foreach ([ProductStatusEnum::OUT_OF_STOCK, ProductStatusEnum::COMING_SOON, ProductStatusEnum::DISCONTINUED, ProductStatusEnum::NOT_FOR_SALE] as $status) {
+        $product->update(['status' => $status]);
+        expect(fn () => StoreEcomBasketTransaction::make()->handle($this->customer->fresh(), $product->fresh(), ['quantity' => 3]))
+            ->toThrow(ValidationException::class);
+    }
+});
+
+test('an exclusive product can be added only by its own customer, and only while in stock', function () {
+    $owner = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+    $other = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+    foreach ([$owner, $other] as $customer) {
+        $basket = StoreOrder::make()->action($customer, Order::factory()->definition());
+        $basket->update(['shipping_engine' => \App\Enums\Ordering\Order\OrderShippingEngineEnum::MANUAL]);
+        $customer->update(['current_order_in_basket_id' => $basket->id]);
+    }
+    [, $bulk]  = createProduct($this->shop);
+    $exclusive = StoreProduct::make()->action($bulk->family, array_merge(
+        Product::factory()->definition(),
+        ['trade_units' => [['id' => $bulk->tradeUnits->first()->id, 'quantity' => 1]], 'price' => 2]
+    ));
+    $exclusive->update(['status' => ProductStatusEnum::NOT_FOR_SALE, 'is_for_sale' => false, 'exclusive_for_customer_id' => $owner->id]);
+    $exclusive->exclusiveCustomers()->attach($owner->id);
+    DB::table('products')->where('id', $exclusive->id)->update(['available_quantity' => 10]);
+
+    $line = StoreEcomBasketTransaction::make()->handle($owner->fresh(), $exclusive->fresh(), ['quantity' => 2]);
+    expect((float) $line->quantity_ordered)->toBe(2.0)
+        ->and(fn () => StoreEcomBasketTransaction::make()->handle($other->fresh(), $exclusive->fresh(), ['quantity' => 2]))
+        ->toThrow(ValidationException::class);
+
+    DB::table('products')->where('id', $exclusive->id)->update(['available_quantity' => 0]);
+    expect(fn () => StoreEcomBasketTransaction::make()->handle($owner->fresh(), $exclusive->fresh(), ['quantity' => 2]))
+        ->toThrow(ValidationException::class);
+
+    DB::table('products')->where('id', $exclusive->id)->update(['is_on_demand' => true]);
+    $line = StoreEcomBasketTransaction::make()->handle($owner->fresh(), $exclusive->fresh(), ['quantity' => 4]);
+    SyncBasketLinesWithProductStock::run($exclusive->fresh());
+    expect((float) $line->fresh()->quantity_ordered)->toBe(4.0);
 });

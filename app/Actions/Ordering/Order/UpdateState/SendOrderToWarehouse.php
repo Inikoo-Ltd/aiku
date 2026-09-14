@@ -49,6 +49,11 @@ class SendOrderToWarehouse extends OrgAction
 
     private Order $order;
 
+    /** Fixed and never translated, so the notes are found and removed whatever language wrote them */
+    public const string HELD_MARKER = '⚠️ Order held:';
+
+    public const string SENT_WITHOUT_AN_ADDRESS_MARKER = 'Sent without an address on purpose';
+
     private bool $releaseFromGate = false;
 
     /** Set from the "send it anyway" button: the customer could not be reached for an address */
@@ -62,7 +67,8 @@ class SendOrderToWarehouse extends OrgAction
      */
     private function missingAddress(Order $order): bool
     {
-        if ($this->withoutAnAddress) {
+        /** A decision to send it without an address survives the fulfilment gate and any later retry */
+        if ($this->withoutAnAddress || str_contains((string)$order->private_warehouse_note, self::SENT_WITHOUT_AN_ADDRESS_MARKER)) {
             return false;
         }
 
@@ -70,15 +76,27 @@ class SendOrderToWarehouse extends OrgAction
             return false;
         }
 
-        $note = __('⚠️ Order held: the customer has no address, ask them for it before picking');
+        /** Replaces any earlier held warning instead of stacking a second one */
+        $note = collect([
+            self::withoutHeldNote($order->private_warehouse_note),
+            self::HELD_MARKER.' '.__('the :address is missing, ask the customer for it before picking', ['address' => $order->missingRequiredAddress()]),
+        ])->filter()->implode(' — ');
 
-        if (!str_contains((string)$order->private_warehouse_note, $note)) {
-            $this->update($order, [
-                'private_warehouse_note' => collect([$order->private_warehouse_note, $note])->filter()->implode(' — ')
-            ]);
+        if ($note !== $order->private_warehouse_note) {
+            $this->update($order, ['private_warehouse_note' => $note]);
         }
 
         return true;
+    }
+
+    /** The note without the held warning, keeping whatever staff wrote around it */
+    public static function withoutHeldNote(?string $note): ?string
+    {
+        $cleaned = preg_replace('/'.preg_quote(self::HELD_MARKER, '/').'.*?(?=\s—\s|\R|$)/u', '', (string)$note);
+        $cleaned = preg_replace('/(\s*—\s*){2,}/u', ' — ', $cleaned);
+        $cleaned = trim(preg_replace('/^[\s—]+|[\s—]+$/u', '', $cleaned));
+
+        return $cleaned === '' ? null : $cleaned;
     }
 
     /**
@@ -130,6 +148,11 @@ class SendOrderToWarehouse extends OrgAction
 
         if ($this->missingAddress($order)) {
             return null;
+        }
+
+        /** Released: the warning goes, so it is not copied onto the delivery note the picker reads */
+        if (str_contains((string)$order->private_warehouse_note, self::HELD_MARKER)) {
+            $this->update($order, ['private_warehouse_note' => self::withoutHeldNote($order->private_warehouse_note)]);
         }
 
         if (!$this->releaseFromGate
@@ -355,18 +378,18 @@ class SendOrderToWarehouse extends OrgAction
         if (!$this->withoutAnAddress && $order->isMissingARequiredAddress()) {
             $request->session()->flash('notification', [
                 'status'      => 'error',
-                'title'       => __('This order has no address'),
+                'title'       => __('This order has no :address', ['address' => $order->missingRequiredAddress()]),
                 'description' => __('Add an address to the order or to the customer, or use "Send anyway, no address".'),
             ]);
 
             return null;
         }
 
-        if ($this->withoutAnAddress) {
+        if ($this->withoutAnAddress && !str_contains((string)$order->private_warehouse_note, self::SENT_WITHOUT_AN_ADDRESS_MARKER)) {
             $this->update($order, [
                 'private_warehouse_note' => collect([
-                    $order->private_warehouse_note,
-                    __('Sent without an address on purpose, the customer could not be reached'),
+                    self::withoutHeldNote($order->private_warehouse_note),
+                    self::SENT_WITHOUT_AN_ADDRESS_MARKER.', '.__('the customer could not be reached'),
                 ])->filter()->implode(' — ')
             ]);
         }

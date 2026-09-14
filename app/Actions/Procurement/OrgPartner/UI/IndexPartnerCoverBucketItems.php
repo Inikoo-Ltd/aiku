@@ -10,11 +10,11 @@ namespace App\Actions\Procurement\OrgPartner\UI;
 
 use App\Actions\OrgAction;
 use App\Actions\Procurement\OrgPartner\GetPartnerBuyingPriceFactor;
+use App\Actions\Procurement\OrgPartner\PartnerSkoPrice;
 use App\Actions\Procurement\OrgPartner\GetPartnerLeadTime;
 use App\Actions\Procurement\OrgPartner\GetPartnerStockCoverBuckets;
 use App\Actions\Procurement\OrgPartner\WithPartnerShoppingSubNavigation;
 use App\Actions\Traits\Authorisations\WithProcurementAuthorisation;
-use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum;
 use App\Models\Inventory\OrgStock;
 use App\Models\Procurement\OrgPartner;
@@ -64,7 +64,7 @@ class IndexPartnerCoverBucketItems extends OrgAction
         $products = DB::table('product_has_org_stocks')
             ->join('products', 'products.id', 'product_has_org_stocks.product_id')
             ->whereIn('product_has_org_stocks.org_stock_id', $sellerOrgStockIds)
-            ->where('products.state', ProductStateEnum::ACTIVE->value)
+            ->tap(fn ($query) => PartnerSkoPrice::scopeToPricingProducts($query))
             ->select([
                 'product_has_org_stocks.org_stock_id',
                 'products.web_images',
@@ -72,7 +72,8 @@ class IndexPartnerCoverBucketItems extends OrgAction
                 'product_has_org_stocks.quantity',
             ])
             ->get()
-            ->keyBy('org_stock_id');
+            ->groupBy('org_stock_id')
+            ->map->first();
 
         $buyerOrgStocks = OrgStock::with('stats')
             ->where('organisation_id', $this->orgPartner->organisation_id)

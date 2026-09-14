@@ -12,6 +12,7 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithWebAuthorisation;
 use App\Actions\Web\Website\UI\ShowWebsite;
 use App\Enums\Web\Webpage\WebpageStateEnum;
+use App\Enums\Web\Webpage\WebpageSubTypeEnum;
 use App\Enums\Web\Webpage\WebpageTypeEnum;
 use App\Http\Resources\Web\WebpagesResource;
 use App\InertiaTable\InertiaTable;
@@ -244,6 +245,14 @@ class IndexBlogWebpages extends OrgAction
         /** @var Website $website */
         $website = request()->route()->parameter('website');
 
+        if ($this->canEdit && $website) {
+            $actions[] = [
+                'key'   => 'bulk-blog-category',
+                'type'  => 'button',
+                'label' => __('Bulk Category'),
+            ];
+        }
+
         return Inertia::render(
             'Org/Web/Webpages',
             [
@@ -264,7 +273,16 @@ class IndexBlogWebpages extends OrgAction
                     'actions'       => $actions,
                 ],
                 'data'        => WebpagesResource::collection($webpages),
-
+                'blog_categories' => WebpageSubTypeEnum::blogCategoriesWithLabel($website?->shop?->type),
+                'routes_list'     => [
+                    'bulk_blog_category' => [
+                        'method'     => 'patch',
+                        'name'       => 'grp.models.webpage.set_blog_category_bulk',
+                        'parameters' => [
+                            'website' => $website?->id
+                        ]
+                    ],
+                ],
             ]
         )->table($this->tableStructure(parent: $this->parent, bucket: $this->bucket));
     }

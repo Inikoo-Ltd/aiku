@@ -1016,11 +1016,9 @@ class ShowOrder extends OrgAction
         };
 
         if ($bucket == OrdersBacklogTabsEnum::SUBMITTED_PAID->value) {
-            $query->where('orders.state', OrderStateEnum::SUBMITTED)
-                ->whereIn('orders.pay_status', [OrderPayStatusEnum::PAID, OrderPayStatusEnum::NO_NEED]);
+            $query->where('orders.state', OrderStateEnum::SUBMITTED)->paySettled();
         } elseif ($bucket == OrdersBacklogTabsEnum::SUBMITTED_UNPAID->value) {
-            $query->where('orders.state', OrderStateEnum::SUBMITTED)
-                ->whereIn('orders.pay_status', [OrderPayStatusEnum::UNPAID, OrderPayStatusEnum::UNKNOWN]);
+            $query->where('orders.state', OrderStateEnum::SUBMITTED)->payNotSettled();
         } elseif ($bucket == OrdersBacklogTabsEnum::DISPATCHED_TODAY->value) {
             $query->whereDate('orders.dispatched_at', Carbon::today());
         } else {

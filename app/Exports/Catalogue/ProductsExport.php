@@ -9,13 +9,16 @@
 namespace App\Exports\Catalogue;
 
 use App\Actions\Catalogue\Product\UI\IndexProductsInCatalogue;
+use App\Actions\Helpers\Images\GetImgProxyUrl;
 use App\Enums\Catalogue\Product\ProductStateEnum;
+use App\Helpers\ImgProxy\Image;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\Shop;
 use App\Services\QueryBuilder;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Maatwebsite\Excel\Concerns\FromArray;
 use Maatwebsite\Excel\Concerns\ShouldAutoSize;
 use Maatwebsite\Excel\Concerns\WithHeadings;
@@ -26,7 +29,7 @@ class ProductsExport implements FromArray, ShouldAutoSize, WithHeadings
     /**
      * @param array<int, string> $fields Selected field keys; empty means all fields.
      */
-    public function __construct(public Shop $shop, public ?string $bucket = null, public array $fields = [], public ?string $prefix = null)
+    public function __construct(public Shop $shop, public ?string $bucket = null, public array $fields = [], public ?string $prefix = null, public bool $imagesAsJpg = false)
     {
     }
 
@@ -77,6 +80,10 @@ class ProductsExport implements FromArray, ShouldAutoSize, WithHeadings
             'hts_us'                => ['heading' => 'HTS US', 'select' => 'products.hts_us'],
             'available_quantity'    => ['heading' => 'Available quantity', 'select' => 'products.available_quantity'],
             'url'                   => ['heading' => 'Webpage url', 'select' => 'products.url'],
+            'images'                => ['heading' => 'Images', 'select' => self::imagesExpression()],
+            'image_1'               => ['heading' => '1st image', 'select' => self::imageExpression(0)],
+            'image_2'               => ['heading' => '2nd image', 'select' => self::imageExpression(1)],
+            'image_3'               => ['heading' => '3rd image', 'select' => self::imageExpression(2)],
             'created_at'            => ['heading' => 'Creation date', 'select' => 'products.created_at'],
         ];
     }
@@ -130,6 +137,17 @@ class ProductsExport implements FromArray, ShouldAutoSize, WithHeadings
             ."), ''), "
             ."products.marketing_dimensions->>'units'"
             ."), '')";
+    }
+
+    protected static function imagesExpression(): string
+    {
+        return "(SELECT STRING_AGG(image->'original'->>'original', ', ' ORDER BY ordinality) "
+            ."FROM JSONB_ARRAY_ELEMENTS(products.web_images->'all') WITH ORDINALITY AS images(image, ordinality))";
+    }
+
+    protected static function imageExpression(int $index): string
+    {
+        return "products.web_images->'all'->$index->'original'->>'original'";
     }
 
     protected static function plainTextExpression(string $column): string
@@ -219,8 +237,41 @@ class ProductsExport implements FromArray, ShouldAutoSize, WithHeadings
     public function array(): array
     {
         return $this->dataQuery()->get()
-            ->map(fn ($row) => array_values((array) $row))
+            ->map(fn ($row) => $this->mapRow($row))
             ->all();
+    }
+
+    /**
+     * @return array<int, mixed>
+     */
+    public function mapRow(object $row): array
+    {
+        if (!$this->imagesAsJpg) {
+            return array_values((array) $row);
+        }
+
+        foreach (['image_1', 'image_2', 'image_3'] as $field) {
+            if (property_exists($row, $field)) {
+                $row->$field = self::jpgUrl($row->$field);
+            }
+        }
+
+        if (property_exists($row, 'images') && $row->images) {
+            $row->images = implode(', ', array_map(self::jpgUrl(...), explode(', ', $row->images)));
+        }
+
+        return array_values((array) $row);
+    }
+
+    public static function jpgUrl(?string $originalUrl): ?string
+    {
+        if (!$originalUrl) {
+            return null;
+        }
+
+        $source = base64_decode(strtr(Str::afterLast($originalUrl, '/'), '-_', '+/'));
+
+        return GetImgProxyUrl::run(new Image()->make($source)->extension('jpg'));
     }
 
     public function headings(): array

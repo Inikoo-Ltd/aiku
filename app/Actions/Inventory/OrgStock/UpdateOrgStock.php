@@ -144,7 +144,7 @@ class UpdateOrgStock extends OrgAction
             'is_excluded_from_auto_ordering' => ['sometimes', 'boolean'],
             'estimated_lead_time_days' => ['sometimes', 'nullable', 'integer', 'min:1', 'max:365'],
             'name'         => ['sometimes', 'string', 'max:255'],
-            'packed_in'    => ['sometimes', 'nullable', 'numeric', 'min:0'],
+            'packed_in'    => ['sometimes', 'nullable', 'numeric', 'min:1'],
             'barcode'      => [
                 'sometimes',
                 'nullable',

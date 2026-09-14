@@ -536,5 +536,16 @@
     "arguments": [
       "customer"
     ]
+  },
+  {
+    "outboxes": [
+      "channel_order_on_hold"
+    ],
+    "name": "Channel order on hold",
+    "content": "channel_order_on_hold.blade.php",
+    "builder": "blade",
+    "arguments": [
+      "order"
+    ]
   }
 ]

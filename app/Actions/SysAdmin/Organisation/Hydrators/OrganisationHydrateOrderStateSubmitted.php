@@ -8,7 +8,6 @@
 
 namespace App\Actions\SysAdmin\Organisation\Hydrators;
 
-use App\Enums\Ordering\Order\OrderPayStatusEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
@@ -38,24 +37,24 @@ class OrganisationHydrateOrderStateSubmitted implements ShouldBeUnique
 
 
             'number_orders_state_submitted_paid'              => $organisation->orders()->where('state', OrderStateEnum::SUBMITTED)
-                ->whereIn('orders.pay_status', [OrderPayStatusEnum::PAID, OrderPayStatusEnum::NO_NEED])
+                ->paySettled()
                 ->count(),
             'orders_state_submitted_paid_amount_org_currency' => $organisation->orders()->where('state', OrderStateEnum::SUBMITTED)
-                ->whereIn('orders.pay_status', [OrderPayStatusEnum::PAID, OrderPayStatusEnum::NO_NEED])
+                ->paySettled()
                 ->sum('org_net_amount'),
 
             'orders_state_submitted_paid_amount_grp_currency' => $organisation->orders()->where('state', OrderStateEnum::SUBMITTED)
-                ->whereIn('orders.pay_status', [OrderPayStatusEnum::PAID, OrderPayStatusEnum::NO_NEED])
+                ->paySettled()
                 ->sum('grp_net_amount'),
 
             'number_orders_state_submitted_not_paid'              => $organisation->orders()->where('state', OrderStateEnum::SUBMITTED)
-                ->whereIn('orders.pay_status', [OrderPayStatusEnum::UNPAID, OrderPayStatusEnum::UNKNOWN])
+                ->payNotSettled()
                 ->count(),
             'orders_state_submitted_not_paid_amount_org_currency' => $organisation->orders()->where('state', OrderStateEnum::SUBMITTED)
-                ->whereIn('orders.pay_status', [OrderPayStatusEnum::UNPAID, OrderPayStatusEnum::UNKNOWN])
+                ->payNotSettled()
                 ->sum('org_net_amount'),
             'orders_state_submitted_not_paid_amount_grp_currency' => $organisation->orders()->where('state', OrderStateEnum::SUBMITTED)
-                ->whereIn('orders.pay_status', [OrderPayStatusEnum::UNPAID, OrderPayStatusEnum::UNKNOWN])
+                ->payNotSettled()
                 ->sum('grp_net_amount'),
 
         ];

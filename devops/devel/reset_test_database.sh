@@ -6,7 +6,16 @@ else
   JOBS="$7"
 fi
 
-PGPASSWORD=$4 psql -v ON_ERROR_STOP=1 -U "$3" -p "$2" -h "$5" -d postgres -c "drop database if exists $1 WITH (FORCE)" || exit 1
+# A worker that reconnects between the termination and the drop makes WITH (FORCE) fail with
+# "database is being accessed by other users"; kick the sessions and retry rather than crashing
+# the whole parallel run on a race that clears itself in a second.
+for attempt in 1 2 3 4 5; do
+  PGPASSWORD=$4 psql -U "$3" -p "$2" -h "$5" -d postgres -c \
+    "select pg_terminate_backend(pid) from pg_stat_activity where datname = '$1' and pid <> pg_backend_pid()" >/dev/null 2>&1
+  PGPASSWORD=$4 psql -v ON_ERROR_STOP=1 -U "$3" -p "$2" -h "$5" -d postgres -c "drop database if exists $1 WITH (FORCE)" && break
+  if [ "$attempt" = 5 ]; then exit 1; fi
+  sleep 1
+done
 PGPASSWORD=$4 psql -v ON_ERROR_STOP=1 -U "$3" -p "$2" -h "$5" -d postgres -c "create database $1" || exit 1
 PGPASSWORD=$4 pg_restore --no-owner --no-acl --clean --if-exists -j "$JOBS" -U "$3" -p "$2" -h "$5" -c -d "$1" "$6" || exit 1
 PGPASSWORD=$4 psql -v ON_ERROR_STOP=1 -U "$3" -p "$2" -h "$5" -d "$1" -c "

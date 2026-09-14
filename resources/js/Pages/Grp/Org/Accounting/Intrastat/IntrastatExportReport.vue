@@ -122,6 +122,12 @@ const exportExcel = () => {
             </span>
         </template>
 
+        <template #cell(partner_tax_number)="{ item }">
+            <span class="font-mono text-sm" :class="item.partner_tax_number ? 'text-gray-900' : 'text-gray-400'">
+                {{ item.partner_tax_number ?? 'QV999999999999' }}
+            </span>
+        </template>
+
         <template #cell(invoices)="{ item }">
             <div class="flex flex-col items-end">
                 <span class="text-sm text-gray-900">

@@ -135,7 +135,6 @@ use App\Models\Inventory\LocationOrgStock;
 use App\Actions\Procurement\OrgPartner\GetPartnerLeadTime;
 use App\Actions\Procurement\OrgPartner\GetPartnerOrderCapacity;
 use App\Enums\Catalogue\HealthRankEnum;
-use Symfony\Component\HttpKernel\Exception\HttpException;
 use App\Actions\CRM\Customer\StoreCustomer;
 use App\Actions\Procurement\OrgPartner\GetPartnerCustomerDiscount;
 use App\Actions\Procurement\OrgPartner\GetPartnerIntercompanyCustomer;
@@ -1232,22 +1231,16 @@ test('UI Index org suppliers', function () {
     });
 });
 
-test('procurement navigation positions the shipping list and separates agent suppliers', function () {
+test('procurement navigation leaves the shopping list to each agent and separates agent suppliers', function () {
     $navigation = GetOrganisationNavigation::run($this->adminGuest->getUser(), $this->organisation);
 
-    expect(data_get($navigation, 'procurement.topMenu.subSections.2'))
-        ->toMatchArray([
-            'label' => "Agent's Shipping List",
-            'route' => [
-                'name'       => 'grp.org.procurement.shopping_list.index',
-                'parameters' => [$this->organisation->slug],
-            ],
-        ])
-        ->and(data_get($navigation, 'procurement.topMenu.subSections.3.route'))->toBe([
+    expect(collect(data_get($navigation, 'procurement.topMenu.subSections'))->pluck('route.name'))
+        ->not->toContain('grp.org.procurement.shopping_list.index')
+        ->and(data_get($navigation, 'procurement.topMenu.subSections.2.route'))->toBe([
             'name'       => 'grp.org.procurement.org_agent_suppliers.index',
             'parameters' => [$this->organisation->slug],
         ])
-        ->and(data_get($navigation, 'procurement.topMenu.subSections.4.route'))->toBe([
+        ->and(data_get($navigation, 'procurement.topMenu.subSections.3.route'))->toBe([
             'name'       => 'grp.org.procurement.org_suppliers.index',
             'parameters' => [
                 'organisation' => $this->organisation->slug,
@@ -2846,6 +2839,30 @@ describe('partner shopping list', function () {
         $this->buyerOrgStock = createOrgStocks($this->orgPartner->organisation, [$sellerOrgStock->stock])[0];
     });
 
+    test('a mixed bundle holding the SKO does not price it (HELP-3104)', function () {
+        $sellerOrgStock = $this->sellerProduct->orgStocks()->first();
+        $item           = StorePartnerShoppingListItem::make()->action($this->orgPartner, $this->buyerOrgStock, ['quantity' => 1]);
+        $basePrice      = (float) $this->sellerProduct->price / (float) $sellerOrgStock->pivot->quantity;
+
+        $bundle        = $this->sellerProduct->replicate();
+        $bundle->code  = 'BUNDLE-'.$this->sellerProduct->id;
+        $bundle->slug  = 'bundle-'.$this->sellerProduct->id;
+        $bundle->price = 999;
+        $bundle->save();
+
+        DB::table('product_has_org_stocks')->insert([
+            ['product_id' => $bundle->id, 'org_stock_id' => $sellerOrgStock->id, 'quantity' => 1],
+            ['product_id' => $bundle->id, 'org_stock_id' => $this->buyerOrgStock->id, 'quantity' => 1],
+        ]);
+
+        $price = DB::table('partner_shopping_list_items')
+            ->where('id', $item->id)
+            ->selectRaw(PartnerShoppingListItem::pricePerSkoSql().' as price_per_sko')
+            ->value('price_per_sko');
+
+        expect(round((float) $price, 4))->toBe(round($basePrice, 4));
+    });
+
     test('submitting an order adds out-of-stock artefact-linked products to the to-produce list', function () {
         $seller         = $this->orgPartner->partner;
         $sellerOrgStock = $this->sellerProduct->orgStocks()->first();
@@ -2901,9 +2918,13 @@ describe('partner shopping list', function () {
         $again = StoreJobOrdersFromToProduceItems::make()->action($production, [$item->id]);
         expect($again['job_orders'])->toBe([]);
 
+        $jobOrderItemId = $jobOrder->jobOrderItems()->first()->id;
+        expect(\App\Models\Production\JobOrderItemTask::where('job_order_item_id', $jobOrderItemId)->count())->toBeGreaterThan(0);
+
         \App\Actions\Production\PartnerShippingList\UnassignToProduceItems::make()->action($production, [$item->id]);
         expect($item->fresh()->job_order_id)->toBeNull()
-            ->and(JobOrder::withTrashed()->find($jobOrder->id)->jobOrderItems()->count())->toBe(0);
+            ->and(JobOrder::withTrashed()->find($jobOrder->id)->jobOrderItems()->count())->toBe(0)
+            ->and(\App\Models\Production\JobOrderItemTask::where('job_order_item_id', $jobOrderItemId)->count())->toBe(0);
     });
 
     test('store partner shopping list item denormalises', function () {
@@ -3457,11 +3478,15 @@ describe('partner browse', function () {
     });
 
     test('partner order capacity bootstraps deterministically from forecast', function () {
-        DB::table('org_stock_stats')
-            ->whereIn('org_stock_id', DB::table('org_stocks')->where('organisation_id', $this->organisation->id)->pluck('id'))
-            ->update(['predicted_daily_usage' => 0]);
+        DB::beginTransaction();
+        DB::table('stock_deliveries')
+            ->where('organisation_id', $this->orgPartner->organisation_id)
+            ->where('partner_id', $this->orgPartner->partner_id)
+            ->update(['deleted_at' => now()]);
 
         $capacity = GetPartnerOrderCapacity::run($this->orgPartner);
+        DB::rollBack();
+
         expect($capacity['partner_capacity'])
             ->toMatchArray(['delivers_to_us_per_30d' => null, 'source' => 'none'])
             ->and($capacity['warehouse'])->toHaveKeys([
@@ -3475,7 +3500,7 @@ describe('partner browse', function () {
             ->and($capacity['blocked'])->toHaveKeys(['at_capacity', 'warehouse_full']);
     });
 
-    test('capacity guard blocks non-exempt adds and lets A-rank or out-of-stock through', function () {
+    test('shopping list adds are never blocked by the order budget', function () {
         $seller = $this->orgPartner->partner;
         $sellerShop = $seller->shops()->first() ?? StoreShop::run($seller, Shop::factory()->definition());
         [, $sellerProduct] = createProduct($sellerShop);
@@ -3501,9 +3526,15 @@ describe('partner browse', function () {
         ]);
 
         expect(GetPartnerOrderCapacity::run($this->orgPartner->refresh())['blocked']['at_capacity'])->toBeTrue()
-            ->and(fn () => StorePartnerShoppingListItem::make()->action($this->orgPartner, $this->buyerOrgStock, [
+            ->and(GetPartnerOrderCapacity::overBudgetMessage($this->orgPartner))->toBeString()
+            ->and(StorePartnerShoppingListItem::make()->action($this->orgPartner, $this->buyerOrgStock, [
                 'quantity' => 1,
-            ]))->toThrow(HttpException::class);
+            ]))->toBeInstanceOf(PartnerShoppingListItem::class);
+
+        $bulk = StorePartnerShoppingListItems::make()->action($this->orgPartner, [
+            ['org_stock_id' => $this->buyerOrgStock->id, 'quantity' => 1],
+        ]);
+        expect($bulk)->toMatchArray(['created' => 1, 'skipped' => [], 'over_budget' => true]);
 
         $this->buyerOrgStock->update(['quantity_available' => 0]);
         $outOfStockItem = StorePartnerShoppingListItem::make()->action($this->orgPartner, $this->buyerOrgStock, [
@@ -4158,7 +4189,7 @@ test('supplier misplaced shopping list cleanup only accepts non-orderable bucket
         ->toBeInt();
 });
 
-test('supplier capacity cap blocks non-exempt adds to the shopping list', function () {
+test('supplier order budget does not block adds to the shopping list', function () {
     [$orgSupplier, , $orgSupplierProduct] = independentOrgSupplierFixture($this);
 
     Cache::put("supplier-order-capacity:{$orgSupplier->id}", [
@@ -4179,14 +4210,15 @@ test('supplier capacity cap blocks non-exempt adds to the shopping list', functi
     $first = StoreShoppingListItem::make()->action($orgSupplierProduct, ['quantity_units' => 5]);
 
     expect(App\Actions\Procurement\OrgSupplier\GetSupplierOrderCapacity::run($orgSupplier)['blocked']['at_capacity'])->toBeTrue()
-        ->and(fn () => StoreShoppingListItem::make()->action($orgSupplierProduct, ['quantity_units' => 1]))
-        ->toThrow(Symfony\Component\HttpKernel\Exception\HttpException::class);
+        ->and($second = StoreShoppingListItem::make()->action($orgSupplierProduct, ['quantity_units' => 1]))
+        ->toBeInstanceOf(ShoppingListItem::class);
 
+    DeleteShoppingListItem::make()->action($second);
     DeleteShoppingListItem::make()->action($first);
     Cache::forget("supplier-order-capacity:{$orgSupplier->id}");
 });
 
-test('agent capacity guard blocks non-exempt adds and lets A-rank or out-of-stock through', function () {
+test('agent order budget does not block adds to the shopping list', function () {
     $this->orgSupplier->update(['org_agent_id' => $this->orgAgent->id, 'agent_id' => $this->orgAgent->agent_id]);
     $this->orgSupplierProduct->update(['org_agent_id' => $this->orgAgent->id]);
 
@@ -4238,9 +4270,11 @@ test('agent capacity guard blocks non-exempt adds and lets A-rank or out-of-stoc
 
     expect(App\Actions\Procurement\OrgAgent\GetAgentOrderCapacity::run($this->orgAgent)['blocked']['at_capacity'])->toBeTrue();
 
-    expect(fn () => App\Actions\Procurement\ShoppingListItem\StoreShoppingListItem::make()
-        ->action($this->orgSupplierProduct, ['quantity_units' => 1]))
-        ->toThrow(Symfony\Component\HttpKernel\Exception\HttpException::class);
+    $overBudgetItem = App\Actions\Procurement\ShoppingListItem\StoreShoppingListItem::make()
+        ->action($this->orgSupplierProduct, ['quantity_units' => 1]);
+
+    expect($overBudgetItem->agent_id)->toBe($this->orgAgent->agent_id);
+    $overBudgetItem->forceDelete();
 
     $orgStock->update(['quantity_available' => 0]);
 

@@ -35,7 +35,7 @@ trait WithIrisBlogBreadcrumbs
             ],
         ];
 
-        if ($blogCategory && in_array($blogCategory, WebpageSubTypeEnum::blogCategories(), true)) {
+        if ($blogCategory && in_array($blogCategory, WebpageSubTypeEnum::allBlogCategories(), true)) {
             $label = Arr::get(WebpageSubTypeEnum::labels(), $blogCategory->value, $blogCategory->value);
 
             $breadcrumbs[] = [

@@ -80,8 +80,16 @@ class CalculateOrgStockCurrentStockHistories implements ShouldBeUnique
         $this->persistOrgStockHistories($orgStock, $date, $orgStockLocationData, $costPerSku, $lastSoldDate, $this->hydrateDelay, $wacPerSku, $fifoPerSku);
 
         $officialPerSku = $fifoPerSku > 0 ? $fifoPerSku : $costPerSku;
+
+        $costFields = [];
         if ($officialPerSku > 0) {
-            $orgStock->update(['sku_value' => $officialPerSku]);
+            $costFields['sku_value'] = $officialPerSku;
+        }
+        if ($costPerSku > 0) {
+            $costFields['lpp_per_sku'] = $costPerSku;
+        }
+        if ($costFields) {
+            $orgStock->update($costFields);
         }
 
         OrgStockHydrateStockValue::run($orgStock);

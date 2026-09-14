@@ -85,6 +85,7 @@ class ShowManufactureFloor extends OrgAction
             ->where('job_order_item_tasks.state', '!=', JobOrderItemTaskStateEnum::DONE)
             ->with(['jobOrderItem.artefact', 'jobOrder.employee', 'manufactureTask'])
             ->join('job_orders', 'job_orders.id', '=', 'job_order_item_tasks.job_order_id')
+            ->live()
             ->where(function ($query) {
                 $query->where('job_orders.state', JobOrderStateEnum::CONFIRMED)
                     ->orWhere(function ($query) {

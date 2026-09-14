@@ -285,6 +285,10 @@ class Handler extends ExceptionHandler
     {
         Inertia::setRootView('app-'.$app);
 
+        if ($response->getStatusCode() == 404) {
+            config(['inertia.ssr.enabled' => false]);
+        }
+
         $user = $request->user();
         if (!$user) {
             $user = null;

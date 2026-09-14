@@ -1528,13 +1528,13 @@ test('logged in visitor to an auth page is redirected without being cached', fun
     $request->headers->set('X-Logged-Status', 'In');
 
     $result = ShowIrisWebpage::make()->handle('login', [], $request);
-    expect($result)->toBe('logged-in');
+    expect($result)->toBe('login');
 
     app()->instance('request', $request);
     $response = ShowIrisWebpage::make()->htmlResponse($result);
 
     expect($response->getStatusCode())->toBe(302)
-        ->and($response->getTargetUrl())->toBe($website->storefront->getCanonicalUrl())
+        ->and($response->getTargetUrl())->toBe(rtrim($website->storefront->getCanonicalUrl(), '/').'/app/login')
         ->and($response->headers->get('Cache-Control'))->toContain('no-store')
         ->and($response->headers->get('X-Aiku-Cacheable-Redirect'))->toBe('0');
 })->depends('launch website');

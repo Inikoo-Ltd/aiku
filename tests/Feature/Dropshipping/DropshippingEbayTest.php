@@ -41,6 +41,7 @@ use App\Enums\Dropshipping\CustomerSalesChannelStateEnum;
 use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
 use App\Enums\Dropshipping\EbayUserStepEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
+use App\Enums\Ordering\Order\OrderPayStatusEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Ordering\PlatformLogs\PlatformPortfolioLogsStatusEnum;
 use App\Enums\Ordering\PlatformLogs\PlatformPortfolioLogsTypeEnum;
@@ -57,7 +58,16 @@ use Illuminate\Http\Client\Factory;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
+use App\Actions\Catalogue\Shop\Seeders\SeedShopOutboxes;
+use App\Actions\Comms\Email\RemindChannelOrdersOnHold;
+use App\Actions\Comms\Email\SendChannelOrderOnHoldEmail;
+use App\Actions\Comms\Email\SendNewOrderEmailToCustomer;
+use App\Enums\Comms\Outbox\OutboxCodeEnum;
+use App\Enums\Comms\Outbox\OutboxStateEnum;
+use App\Models\Comms\DispatchedEmail;
+use App\Models\Comms\Outbox;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -1384,4 +1394,97 @@ test('the authorised check only passes when eBay identifies the seller', functio
     fakeEbay($this, ['/commerce/identity/v1/user/' => fn () => Http::response(['errors' => [['errorId' => 1001]]], 401), 'oauth2/token' => fn () => Http::response(['error' => 'invalid_grant'], 400)]);
 
     expect(fn () => CheckEbayUserAuthorized::run($ebayUser))->toThrow(ValidationException::class);
+});
+
+test('an eBay order we cannot charge gets the on-hold notice and not an order confirmation', function () {
+    /** The fixture customer has no saved card and no balance, so this is the HELP-3116 case: the
+     * order submits unpaid. The customer must be told it is waiting, and must not be sent a
+     * confirmation that says the opposite. */
+    Queue::fake();
+    $ebayUser  = ebayChannel($this);
+    listedEbayPortfolio($this, $ebayUser);
+    $ebayOrder = ebayOrder();
+    fakeEbay($this, [
+        '/sell/fulfillment/v1/order' => ['orders' => [$ebayOrder], 'total' => 1],
+    ]);
+
+    FetchEbayUserOrders::run($ebayUser);
+
+    $order = Order::where('platform_order_id', $ebayOrder['orderId'])->firstOrFail();
+    expect($order->state)->toBe(OrderStateEnum::SUBMITTED)
+        ->and($order->pay_status)->not->toBe(OrderPayStatusEnum::PAID)
+        ->and($order->isPlacedOnAChannel())->toBeTrue();
+
+    SendChannelOrderOnHoldEmail::assertPushed(1);
+    SendChannelOrderOnHoldEmail::assertPushed(fn ($job, $arguments) => $arguments[0] === $order->id);
+    SendNewOrderEmailToCustomer::assertNotPushed();
+});
+
+test('the on-hold notice goes out through the seeded channel_order_on_hold outbox in the shop language', function () {
+    /** Seeding is idempotent: the first pass creates the outbox and its email from the dataset
+     * template, the second sees a blade email in place and activates it, as it does for every shop. */
+    SeedShopOutboxes::run($this->shop);
+    SeedShopOutboxes::run($this->shop);
+    $outbox = Outbox::where('shop_id', $this->shop->id)->where('code', OutboxCodeEnum::CHANNEL_ORDER_ON_HOLD)->firstOrFail();
+    expect($outbox->state)->toBe(OutboxStateEnum::ACTIVE);
+
+    $ebayUser  = ebayChannel($this);
+    listedEbayPortfolio($this, $ebayUser);
+    $ebayOrder = ebayOrder();
+    fakeEbay($this, [
+        '/sell/fulfillment/v1/order' => ['orders' => [$ebayOrder], 'total' => 1],
+    ]);
+
+    /** The queue is sync under test, so the import itself sends the notice: this is the whole
+     * path a real eBay order takes, from fetch to a dispatched email on the order. */
+    FetchEbayUserOrders::run($ebayUser);
+    $order = Order::where('platform_order_id', $ebayOrder['orderId'])->firstOrFail();
+
+    $dispatchedEmail = $order->dispatchedEmails()->first();
+    expect($order->dispatchedEmails()->count())->toBe(1)
+        ->and($dispatchedEmail)->toBeInstanceOf(DispatchedEmail::class)
+        ->and($dispatchedEmail->outbox_id)->toBe($outbox->id);
+
+    app()->setLocale($this->shop->language->code);
+    expect(SendChannelOrderOnHoldEmail::make()->generateBodyHtml($order))
+        ->toContain($order->reference)
+        ->toContain(__('We strongly recommend saving a payment card on your sales channel.'));
+});
+
+test('a channel order still unpaid a week later is reminded once, on the day it crosses the line', function () {
+    Queue::fake();
+    $ebayUser  = ebayChannel($this);
+    listedEbayPortfolio($this, $ebayUser);
+    $ebayOrder = ebayOrder();
+    fakeEbay($this, [
+        '/sell/fulfillment/v1/order' => ['orders' => [$ebayOrder], 'total' => 1],
+    ]);
+    FetchEbayUserOrders::run($ebayUser);
+    $order = Order::where('platform_order_id', $ebayOrder['orderId'])->firstOrFail();
+
+    /** The import itself sent the first notice */
+    SendChannelOrderOnHoldEmail::assertPushed(1);
+
+    /** Three days in: too soon, nothing more */
+    DB::table('orders')->where('id', $order->id)->update(['submitted_at' => now()->subDays(3)]);
+    expect(RemindChannelOrdersOnHold::run())->toBe([]);
+    SendChannelOrderOnHoldEmail::assertPushed(1);
+
+    /** Crossed the week: reminded, and only this order */
+    DB::table('orders')->where('id', $order->id)->update(['submitted_at' => now()->subDays(RemindChannelOrdersOnHold::REMIND_AFTER_DAYS)->subHours(12)]);
+    expect(RemindChannelOrdersOnHold::run())->toBe([$order->id]);
+    SendChannelOrderOnHoldEmail::assertPushed(2);
+
+    /** Well past the week: it had its turn, the standing pile is not re-mailed every morning */
+    DB::table('orders')->where('id', $order->id)->update(['submitted_at' => now()->subDays(30)]);
+    expect(RemindChannelOrdersOnHold::run())->toBe([]);
+    SendChannelOrderOnHoldEmail::assertPushed(2);
+
+    /** Paid in the meantime: nothing to remind about */
+    DB::table('orders')->where('id', $order->id)->update([
+        'submitted_at' => now()->subDays(RemindChannelOrdersOnHold::REMIND_AFTER_DAYS)->subHours(12),
+        'pay_status'   => OrderPayStatusEnum::PAID->value,
+    ]);
+    expect(RemindChannelOrdersOnHold::run())->toBe([]);
+    SendChannelOrderOnHoldEmail::assertPushed(2);
 });

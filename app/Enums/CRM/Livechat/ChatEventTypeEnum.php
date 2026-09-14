@@ -27,7 +27,6 @@ enum ChatEventTypeEnum: string
     case SEND = 'send';
     case REOPEN = 'reopen';
 
-    case JIRA_TICKET = 'jira_ticket';
     case TICKET = 'ticket';
 
     case GUEST_PROFILE = 'guest_profile';
@@ -78,7 +77,6 @@ enum ChatEventTypeEnum: string
             'priority' => __('Priority Updated'),
             'guest_profile' => __('Guest Profile'),
             'reopen' => __('Chat Reopened'),
-            'jira_ticket' => __('Jira Ticket Created'),
             'ticket'      => __('Ticket Created'),
         ];
     }
@@ -165,11 +163,6 @@ enum ChatEventTypeEnum: string
                 'tooltip' => __('Chat Reopened'),
                 'icon' => 'fas fa-redo',
                 'class' => 'text-green-500',
-            ],
-            'jira_ticket' => [
-                'tooltip' => __('Jira Ticket Created'),
-                'icon' => 'fab fa-jira',
-                'class' => 'text-blue-600',
             ],
             'ticket' => [
                 'tooltip' => __('Ticket Created'),

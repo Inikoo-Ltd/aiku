@@ -32,6 +32,18 @@
 					"description": null,
 					"image": null,
 					"image_alt": null
+				},
+				"integrations_guides": {
+					"label": null,
+					"description": null,
+					"image": null,
+					"image_alt": null
+				},
+				"dropshipping_guides": {
+					"label": null,
+					"description": null,
+					"image": null,
+					"image_alt": null
 				}
 			},
 			"show_list": true,

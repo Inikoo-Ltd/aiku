@@ -43,7 +43,7 @@ class GetBlogWebpages extends OrgAction
             ->where('webpages.website_id', $website->id)
             ->where('webpages.type', WebpageTypeEnum::BLOG)
             ->where('webpages.state', WebpageStateEnum::LIVE)
-            ->whereIn(DB::raw(WebpageSubTypeEnum::blogCategorySqlExpression()), WebpageSubTypeEnum::blogCategoryValues())
+            ->whereIn(DB::raw(WebpageSubTypeEnum::blogCategorySqlExpression()), WebpageSubTypeEnum::blogCategoryValues($website->shop?->type))
             ->select([
                 'webpages.id',
                 'webpages.slug',

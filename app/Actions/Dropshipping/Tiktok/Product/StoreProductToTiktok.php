@@ -90,6 +90,20 @@ class StoreProductToTiktok extends RetinaAction
                 ];
             }
 
+            $requiredManufacturer = [];
+
+            if (Arr::get($categoryRules, 'data.manufacturer.is_required')) {
+                $manufacturers = $tiktokUser->getManufacturers();
+                /** @var array $manufacturer */
+                $manufacturer = collect(Arr::get($manufacturers, 'data.manufacturers', []))->first();
+
+                if (Arr::get($manufacturer, 'id')) {
+                    $requiredManufacturer = [
+                        'manufacturer_ids' => [Arr::get($manufacturer, 'id')]
+                    ];
+                }
+            }
+
             $categoryAttributes = $tiktokUser->getCategoryAttributes($leafCategoryId);
             $attributes = Arr::get($categoryAttributes, 'data.attributes', []);
 
@@ -152,6 +166,7 @@ class StoreProductToTiktok extends RetinaAction
                 ],
                 'product_certifications' => $requiredCertifications,
                 ...$requiredPersonResponsible,
+                ...$requiredManufacturer,
                 'external_product_id' => (string) $portfolio->id,
                 'identifier_code' => [
                     'code' => (string) $product->barcode,

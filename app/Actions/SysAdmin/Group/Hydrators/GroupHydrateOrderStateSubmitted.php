@@ -9,7 +9,6 @@
 namespace App\Actions\SysAdmin\Group\Hydrators;
 
 use App\Actions\Traits\WithEnumStats;
-use App\Enums\Ordering\Order\OrderPayStatusEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Models\SysAdmin\Group;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
@@ -40,17 +39,17 @@ class GroupHydrateOrderStateSubmitted implements ShouldBeUnique
             'orders_state_submitted_amount_grp_currency' => $group->orders()->where('state', OrderStateEnum::SUBMITTED)->sum('grp_net_amount'),
 
             'number_orders_state_submitted_paid'              => $group->orders()->where('state', OrderStateEnum::SUBMITTED)
-                ->whereIn('orders.pay_status', [OrderPayStatusEnum::PAID, OrderPayStatusEnum::NO_NEED])
+                ->paySettled()
                 ->count(),
             'orders_state_submitted_paid_amount_grp_currency' => $group->orders()->where('state', OrderStateEnum::SUBMITTED)
-                ->whereIn('orders.pay_status', [OrderPayStatusEnum::PAID, OrderPayStatusEnum::NO_NEED])
+                ->paySettled()
                 ->sum('grp_net_amount'),
 
             'number_orders_state_submitted_not_paid'              => $group->orders()->where('state', OrderStateEnum::SUBMITTED)
-                ->whereIn('orders.pay_status', [OrderPayStatusEnum::UNPAID, OrderPayStatusEnum::UNKNOWN])
+                ->payNotSettled()
                 ->count(),
             'orders_state_submitted_not_paid_amount_grp_currency' => $group->orders()->where('state', OrderStateEnum::SUBMITTED)
-                ->whereIn('orders.pay_status', [OrderPayStatusEnum::UNPAID, OrderPayStatusEnum::UNKNOWN])
+                ->payNotSettled()
                 ->sum('grp_net_amount'),
 
         ];

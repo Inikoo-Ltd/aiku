@@ -23,6 +23,7 @@ use App\Actions\Retina\Ecom\Basket\UI\IsOrder;
 use App\Actions\Retina\GetRetinaPaymentMethods;
 use App\Actions\Retina\UI\Dashboard\ShowRetinaDashboard;
 use App\Actions\RetinaAction;
+use App\Actions\Traits\WithBasketStockIssues;
 use App\Http\Resources\Sales\OrderResource;
 use App\Models\CRM\Customer;
 use App\Models\Ordering\Order;
@@ -36,6 +37,7 @@ class ShowRetinaDropshippingCheckout extends RetinaAction
     use IsOrder;
     use CalculatesPaymentWithBalance;
     use WithOrderForbiddenCountryCheck;
+    use WithBasketStockIssues;
 
     public function handle(Order $order, Customer $customer): array
     {
@@ -166,6 +168,7 @@ class ShowRetinaDropshippingCheckout extends RetinaAction
                 ],
                 'order'          => OrderResource::make($order)->resolve(),
                 'box_stats'      => ShowRetinaDropshippingBasket::make()->getDropshippingBasketBoxStats($order),
+                'stock_issues'   => $this->getBasketStockIssues($order),
                 'paymentMethods' => Arr::get($checkoutData, 'paymentMethods'),
                 'balance'        => $this->customer->balance,
                 'total_amount'   => $order->total_amount,

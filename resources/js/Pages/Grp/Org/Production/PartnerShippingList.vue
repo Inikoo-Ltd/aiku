@@ -234,7 +234,7 @@ function assign(employeeId: number) {
 }
 
 function jobUnits(item: BoardItem): number {
-    const units = Math.ceil((Number(pendingQuantities[item.id]) || 0) * (Number(item.packed_in) || 1))
+    const units = Math.ceil(Math.round((Number(pendingQuantities[item.id]) || 0) * (Number(item.packed_in) || 1) * 1e6) / 1e6)
     const batch = Number(item.batch_size) || 0
 
     return batch > 0 ? Math.ceil(units / batch) * batch : units

@@ -16,6 +16,7 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Traits\WithAttachMediaToModel;
+use App\Actions\Traits\WithOpenCustomerSalesChannelCheck;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\Catalogue\Product;
 use App\Models\CRM\Customer;
@@ -35,6 +36,7 @@ class UpdateBundle extends OrgAction
     use WithNoStrictRules;
     use WithActionUpdate;
     use WithAttachMediaToModel;
+    use WithOpenCustomerSalesChannelCheck;
 
     private Customer $customer;
 
@@ -43,6 +45,8 @@ class UpdateBundle extends OrgAction
      */
     public function handle(Bundle $bundle, array $modelData): Bundle
     {
+        $this->assertCustomerSalesChannelIsOpen($bundle->customerSalesChannel);
+
         return DB::transaction(function () use ($bundle, $modelData) {
             $tradeUnits = [];
             Arr::forget($modelData, 'id');

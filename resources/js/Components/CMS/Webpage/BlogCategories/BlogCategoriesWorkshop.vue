@@ -12,6 +12,7 @@ import { retinaLayoutStructure } from "@/Composables/useRetinaLayoutStructure"
 import { getStyles } from "@/Composables/styles"
 import { sendMessageToParent } from "@/Composables/Workshop"
 import type { BlogCategory, BlogPost } from "@/types/Iris/Blog"
+import { getBlogCategoryOptions, getShopType } from "@/Composables/useBlogCategories"
 
 library.add(faEnvelope)
 
@@ -37,35 +38,45 @@ const uploadImageRoute = computed(() => ({
 
 const textToggle = ["bold", "italic", "underline", "bulletList", "orderedList", "alignLeft", "alignCenter", "alignRight", "color", "clear", "undo", "redo"]
 
-const placeholderCategories: BlogCategory[] = [
-	{
-		value: "newsletters",
-		label: trans("Newsletters"),
+const placeholderContent: Record<string, { description: string; url: string; icon: string }> = {
+	newsletters: {
 		description: trans("Stories, updates and highlights sent to our subscribers."),
-		url: "/blog/newsletters",
+		url: "/david-aw-news",
 		icon: "fal fa-plane-departure",
-		count: 0,
 	},
-	{
-		value: "product_guides",
-		label: trans("Product Guides"),
+	product_guides: {
 		description: trans("Step by step guides to get the most out of every range."),
-		url: "/blog/product-guides",
+		url: "/product-guides",
 		icon: "fal fa-book-open",
-		count: 0,
 	},
-	{
-		value: "business_tips",
-		label: trans("Business Tips"),
+	business_tips: {
 		description: trans("Practical advice to help your business grow faster."),
-		url: "/blog/business-tips",
+		url: "/business-tips",
 		icon: "fal fa-chart-bar",
-		count: 0,
 	},
-]
+	integrations_guides: {
+		description: trans("Walkthroughs for connecting your shop to the channels you already sell on."),
+		url: "/integrations-guides",
+		icon: "fal fa-plug",
+	},
+	dropshipping_guides: {
+		description: trans("How to source, list and fulfil products without holding stock."),
+		url: "/dropshipping-guides",
+		icon: "fal fa-boxes",
+	},
+}
+
+const placeholderCategories = computed<BlogCategory[]>(() =>
+	getBlogCategoryOptions(getShopType(props.webpageData)).map(category => ({
+		value: category.value,
+		label: trans(category.label),
+		count: 0,
+		...placeholderContent[category.value],
+	}))
+)
 
 const categories = computed<BlogCategory[]>(() => {
-	const stored = props.modelValue?.categories?.length ? props.modelValue.categories : placeholderCategories
+	const stored = props.modelValue?.categories?.length ? props.modelValue.categories : placeholderCategories.value
 
 	return stored.map((category: BlogCategory) => {
 		const content = props.modelValue?.category_content?.[category.value]

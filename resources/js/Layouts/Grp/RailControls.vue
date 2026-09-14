@@ -16,9 +16,19 @@ import ReturnCrmList from './ReturnCrmList.vue';
 import MasterUpdatedList from './MasterUpdatedList.vue';
 import ProductsNeedReviewList from './ProductsNeedReviewList.vue';
 import FaireSkippedList from './FaireSkippedList.vue';
+import TicketBadgeList from './TicketBadgeList.vue';
+import { computed } from 'vue'
 library.add(faCircle)
 
 const layout = inject('layout', layoutStructure)
+
+const sumCounts = (rows: Record<string, { count: number }> | null | undefined, keys?: string[]) =>
+    Object.entries(rows ?? {}).filter(([key]) => !keys || keys.includes(key)).reduce((total, [, row]) => total + row.count, 0)
+
+const myTicketsCount = computed(() => sumCounts(layout.ticket_badges?.mine, ['waiting', 'done_24h']))
+const myTicketsWaiting = computed(() => layout.ticket_badges?.mine?.waiting?.count ?? 0)
+const queueCount = computed(() => layout.ticket_badges?.queue?.todo_week?.count ?? 0)
+const queueOverdue = computed(() => layout.ticket_badges?.queue?.overdue?.count ?? 0)
 
 // ponytail: only ever mounted inside MessagingSideBar, so read the expand state straight off layout instead of threading a prop
 </script>
@@ -34,6 +44,42 @@ const layout = inject('layout', layoutStructure)
             <span class="sr-only">{{ trans("Open user menu") }}</span>
             <Image class="h-8 w-8 rounded-full" :src="layout.avatar_thumbnail" alt="" />
         </div>
+
+        <div v-if="layout.ticket_badges?.queue || (layout.ticket_badges?.mine && myTicketsCount > 0)" class="flex flex-col items-center shrink-0">
+        <FontAwesomeIcon icon="fal fa-life-ring" class="text-[var(--chat-muted)] text-xs mb-1" fixed-width :title="trans('Tickets')" aria-hidden="true" />
+        <!-- Badge: Ticket work queue (engineers and QA) -->
+        <div v-if="layout.ticket_badges?.queue" class="relative flex items-center justify-center shrink-0">
+            <Popover width="w-72" position="right-full mr-2 top-0">
+                <template #button="{ open }">
+                    <div :title="trans('Tickets to fix')" class="relative w-8 h-8 flex items-center justify-center opacity-80 hover:opacity-100 cursor-pointer font-medium tabular-nums bg-lime-300 text-lime-900" :class="layout.ticket_badges?.mine && myTicketsCount > 0 ? 'rounded-t-xl' : 'rounded-xl'">
+                        <Transition name="spin-to-right"><span :key="queueCount"><span :class="queueCount > 99 ? 'text-xxs' : 'text-xs'">{{ queueCount > 99 ? '99+' : queueCount }}</span></span></Transition>
+                        <FontAwesomeIcon v-if="queueOverdue" icon="fas fa-circle" class="absolute top-0 -right-0.5 text-fuchsia-500 text-[5px] animate-ping" fixed-width aria-hidden="true" />
+                    </div>
+                </template>
+                <template #content="{ close }">
+                    <TicketBadgeList :title="trans('Tickets to fix')" :rows="layout.ticket_badges.queue" :close="close" />
+                </template>
+            </Popover>
+        </div>
+
+        <!-- Badge: My tickets -->
+        <div v-if="layout.ticket_badges?.mine && myTicketsCount > 0" class="relative flex items-center justify-center shrink-0">
+            <Popover width="w-72" position="right-full mr-2 top-0">
+                <template #button="{ open }">
+                    <div :title="trans('My tickets')" class="relative w-8 h-8 flex items-center justify-center opacity-80 hover:opacity-100 cursor-pointer font-medium tabular-nums bg-lime-100 text-lime-900" :class="layout.ticket_badges?.queue ? 'rounded-b-xl' : 'rounded-xl'">
+                        <Transition name="spin-to-right"><span :key="myTicketsCount"><span :class="myTicketsCount > 99 ? 'text-xxs' : 'text-xs'">{{ myTicketsCount > 99 ? '99+' : myTicketsCount }}</span></span></Transition>
+                        <FontAwesomeIcon v-if="myTicketsWaiting" icon="fas fa-circle" class="absolute top-0 -right-0.5 text-lime-400 text-[5px] animate-ping" fixed-width aria-hidden="true" />
+                    </div>
+                </template>
+                <template #content="{ close }">
+                    <TicketBadgeList :title="trans('My tickets')" :rows="layout.ticket_badges.mine" :close="close" />
+                </template>
+            </Popover>
+        </div>
+
+        </div>
+
+        <div v-if="layout.ticket_badges?.queue || (layout.ticket_badges?.mine && myTicketsCount > 0)" class="w-6 border-t border-[var(--chat-line)] shrink-0" aria-hidden="true" />
 
         <!-- Badge: Warehouse Waiting Items -->
         <div v-if="layout?.dispatching_waiting_count > 0" class="relative flex items-center justify-center shrink-0" :class="layout.messagingSidebar.show ? '' : 'h-9 w-9'">

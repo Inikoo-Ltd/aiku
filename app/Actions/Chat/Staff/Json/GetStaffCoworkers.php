@@ -9,6 +9,7 @@
 namespace App\Actions\Chat\Staff\Json;
 
 use App\Models\SysAdmin\User;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
@@ -54,14 +55,39 @@ class GetStaffCoworkers
         return $map;
     }
 
-    public function asController(ActionRequest $request): array
+    /**
+     * @param Collection<int, User> $users
+     * @return array<int, array|null> user id => picture sources
+     */
+    protected function avatarsByUser(Collection $users): array
     {
-        $me    = $request->user();
-        $query = mb_strtolower(trim((string) $request->validated('q', '')));
+        $keys = $users->filter(fn (User $user) => $user->image_id)
+            ->mapWithKeys(fn (User $user) => [$user->id => 'staff-avatar:'.$user->id.':'.$user->image_id]);
 
+        if ($keys->isEmpty()) {
+            return [];
+        }
+
+        $avatars = Cache::many($keys->values()->all());
+        $missing = $users->filter(fn (User $user) => $keys->has($user->id) && $avatars[$keys[$user->id]] === null);
+
+        if ($missing->isNotEmpty()) {
+            $missing->load('image');
+            $fresh = $missing->mapWithKeys(fn (User $user) => [$keys[$user->id] => $user->imageSources(0, 48)])->all();
+            Cache::putMany($fresh, now()->addDay());
+            $avatars = array_merge($avatars, $fresh);
+        }
+
+        return $keys->map(fn (string $key) => $avatars[$key])->all();
+    }
+
+    /**
+     * @return array<int, array{id: int, name: string, avatar: array|null, organisation_ids: int[]}>
+     */
+    protected function coworkerRows(int $groupId, string $query): array
+    {
         $users = User::query()
-            ->where('group_id', $me->group_id)
-            ->where('id', '!=', $me->id)
+            ->where('group_id', $groupId)
             ->where('status', true)
             ->when($query !== '', fn ($builder) => $builder->where(function ($builder) use ($query) {
                 $builder->whereRaw('lower(contact_name) like ?', ['%'.$query.'%'])
@@ -70,22 +96,39 @@ class GetStaffCoworkers
             }))
             ->get(['id', 'username', 'contact_name', 'nickname', 'image_id', 'language_id']);
 
-        $orgIds   = $this->organisationIdsByUser($users->pluck('id')->push($me->id)->all());
-        $myOrgIds = $orgIds[$me->id] ?? [];
-        $teamIds  = DB::table('user_has_team_members')->where('user_id', $me->id)->pluck('member_user_id')->all();
-        $lastActive = Cache::many($users->map(fn (User $user) => 'staff-last-active:'.$user->id)->all());
+        $orgIds  = $this->organisationIdsByUser($users->pluck('id')->all());
+        $avatars = $this->avatarsByUser($users);
 
-        $data = $users
-            ->map(fn (User $user) => [
-                'id'       => $user->id,
-                'name'     => $user->chatName(),
-                'avatar'   => $user->image_id
-                    ? Cache::remember('staff-avatar:'.$user->id.':'.$user->image_id, now()->addDay(), fn () => $user->imageSources(0, 48))
-                    : null,
-                'is_close' => count(array_intersect($orgIds[$user->id] ?? [], $myOrgIds)) > 0,
-                'organisation_ids' => $orgIds[$user->id] ?? [],
-                'in_team'  => in_array($user->id, $teamIds),
-                'last_active_at' => $lastActive['staff-last-active:'.$user->id] ?? null,
+        return $users->map(fn (User $user) => [
+            'id'               => $user->id,
+            'name'             => $user->chatName(),
+            'avatar'           => $avatars[$user->id] ?? null,
+            'organisation_ids' => $orgIds[$user->id] ?? [],
+        ])->all();
+    }
+
+    public function asController(ActionRequest $request): array
+    {
+        $me    = $request->user();
+        $query = mb_strtolower(trim((string) $request->validated('q', '')));
+
+        $rows = $query === ''
+            ? Cache::remember('staff-coworkers:'.$me->group_id, 60, fn () => $this->coworkerRows($me->group_id, ''))
+            : $this->coworkerRows($me->group_id, $query);
+
+        $rows     = array_values(array_filter($rows, fn (array $row) => $row['id'] !== $me->id));
+        $myOrgIds = $this->organisationIdsByUser([$me->id])[$me->id] ?? [];
+        $teamIds  = DB::table('user_has_team_members')->where('user_id', $me->id)->pluck('member_user_id')->all();
+
+        $lastActive = $rows === []
+            ? []
+            : Cache::many(array_map(fn (array $row) => 'staff-last-active:'.$row['id'], $rows));
+
+        $data = collect($rows)
+            ->map(fn (array $row) => $row + [
+                'is_close'       => count(array_intersect($row['organisation_ids'], $myOrgIds)) > 0,
+                'in_team'        => in_array($row['id'], $teamIds),
+                'last_active_at' => $lastActive['staff-last-active:'.$row['id']] ?? null,
             ])
             ->sortBy([['in_team', 'desc'], ['is_close', 'desc'], ['name', 'asc']])
             ->values();

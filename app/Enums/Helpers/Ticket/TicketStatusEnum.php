@@ -15,35 +15,47 @@ enum TicketStatusEnum: string
     use EnumHelperTrait;
 
     case OPEN        = 'open';
+    case ASSIGNED    = 'assigned';
     case IN_PROGRESS = 'in_progress';
     case WAITING     = 'waiting';
     case RESOLVED    = 'resolved';
-    case CLOSED      = 'closed';
+    case CANCELLED   = 'cancelled';
 
     public static function labels(): array
     {
         return [
-            'open'        => __('Open'),
+            'open'        => __('Todo'),
+            'assigned'    => __('Assigned'),
             'in_progress' => __('In progress'),
             'waiting'     => __('Waiting'),
-            'resolved'    => __('Resolved'),
-            'closed'      => __('Closed'),
+            'resolved'    => __('Done'),
+            'cancelled'   => __('Cancelled'),
         ];
     }
 
     public static function stateIcon(): array
     {
         return [
-            'open'        => ['tooltip' => __('Open'), 'icon' => 'fal fa-circle', 'class' => 'text-blue-500', 'color' => 'blue'],
-            'in_progress' => ['tooltip' => __('In progress'), 'icon' => 'fal fa-spinner', 'class' => 'text-amber-500', 'color' => 'amber'],
-            'waiting'     => ['tooltip' => __('Waiting'), 'icon' => 'fal fa-clock', 'class' => 'text-gray-500', 'color' => 'gray'],
-            'resolved'    => ['tooltip' => __('Resolved'), 'icon' => 'fal fa-check-circle', 'class' => 'text-green-500', 'color' => 'green'],
-            'closed'      => ['tooltip' => __('Closed'), 'icon' => 'fal fa-times-circle', 'class' => 'text-gray-400', 'color' => 'gray'],
+            'open'        => ['tooltip' => __('Todo'), 'icon' => 'fal fa-circle', 'class' => 'text-gray-500', 'color' => 'gray'],
+            'assigned'    => ['tooltip' => __('Assigned'), 'icon' => 'fal fa-user-check', 'class' => 'text-gray-600', 'color' => 'gray'],
+            'in_progress' => ['tooltip' => __('In progress'), 'icon' => 'fal fa-spinner', 'class' => 'text-blue-500', 'color' => 'blue'],
+            'waiting'     => ['tooltip' => __('Waiting'), 'icon' => 'fal fa-clock', 'class' => 'text-blue-400', 'color' => 'blue'],
+            'resolved'    => ['tooltip' => __('Done'), 'icon' => 'fal fa-check-circle', 'class' => 'text-green-500', 'color' => 'green'],
+            'cancelled'   => ['tooltip' => __('Cancelled'), 'icon' => 'fal fa-ban', 'class' => 'text-red-500', 'color' => 'red'],
         ];
+    }
+
+    public function group(): TicketStatusGroupEnum
+    {
+        return match ($this) {
+            self::OPEN, self::ASSIGNED           => TicketStatusGroupEnum::TODO,
+            self::IN_PROGRESS, self::WAITING     => TicketStatusGroupEnum::IN_PROGRESS,
+            self::RESOLVED, self::CANCELLED      => TicketStatusGroupEnum::CLOSED,
+        };
     }
 
     public function isOpen(): bool
     {
-        return !in_array($this, [self::RESOLVED, self::CLOSED]);
+        return $this->group() !== TicketStatusGroupEnum::CLOSED;
     }
 }

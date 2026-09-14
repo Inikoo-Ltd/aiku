@@ -107,6 +107,7 @@ class GetPartnerStagingTasks
             ->join('locations', 'locations.id', 'location_org_stocks.location_id')
             ->where('location_org_stocks.org_stock_id', $orgStockId)
             ->where('location_org_stocks.location_id', '!=', $goodsOutLocationId)
+            ->where('locations.is_goods_out', false)
             ->where('location_org_stocks.quantity', '>', 0)
             ->orderByDesc('location_org_stocks.quantity')
             ->limit(5)

@@ -67,7 +67,9 @@ class ShowToRestock extends OrgAction
             ->whereRaw("not exists (select 1 from partner_shopping_list_items sli
                 where sli.stock_id = os.stock_id
                     and sli.state = '".ShoppingListItemStateEnum::OPEN->value."'
-                    and sli.deleted_at is null)")
+                    and sli.deleted_at is null
+                    and sli.pre_picked_at is null
+                    and (sli.partner_organisation_id = os.organisation_id or (sli.partner_organisation_id is null and sli.organisation_id = os.organisation_id)))")
             ->select([
                 'a.id as artefact_id',
                 'os.id as org_stock_id',

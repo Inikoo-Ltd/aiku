@@ -55,6 +55,7 @@ class WebpageWorkshopResource extends JsonResource
             'shop'                                   => $webpage->shop ? [
                 'id'   => $webpage->shop->id,
                 'slug' => $webpage->shop->slug,
+                'type' => $webpage->shop->type,
             ] : null,
             'organisation'                           => $webpage->organisation ? [
                 'id'   => $webpage->organisation->id,

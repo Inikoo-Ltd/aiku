@@ -12,9 +12,12 @@ use App\Actions\Accounting\Reports\IntrastatExportTimeSeries\Hydrators\Intrastat
 use App\Enums\Accounting\Intrastat\IntrastatDeliveryTermsEnum;
 use App\Enums\Accounting\Intrastat\IntrastatNatureOfTransactionEnum;
 use App\Enums\Accounting\Intrastat\IntrastatTransportModeEnum;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteTypeEnum;
+use App\Enums\Helpers\TaxCategories\TaxCategoryTypeEnum;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
+use App\Helpers\IntrastatVatNumber;
 use App\Helpers\TimeSeriesPeriodCalculator;
 use App\Models\Accounting\IntrastatExportTimeSeries;
 use App\Models\Helpers\Country;
@@ -64,7 +67,8 @@ class ProcessIntrastatExportTimeSeriesRecords implements ShouldBeUnique
                     ->select(
                         'phos.org_stock_id',
                         DB::raw('MIN(p.id) as product_id'),
-                        DB::raw('MIN(p.tariff_code) as tariff_code')
+                        DB::raw('MIN(p.tariff_code) as tariff_code'),
+                        DB::raw('MIN(p.origin_country_id) as origin_country_id')
                     )
                     ->whereNotNull('p.tariff_code')
                     ->where('p.tariff_code', '!=', '')
@@ -76,6 +80,9 @@ class ProcessIntrastatExportTimeSeriesRecords implements ShouldBeUnique
             )
             ->leftJoin('transactions as t', 't.id', '=', 'dni.transaction_id')
             ->leftJoin('invoices as inv', 'inv.id', '=', 't.invoice_id')
+            ->leftJoin('tax_categories as tc', 'tc.id', '=', 't.tax_category_id')
+            ->join('countries as c', 'c.id', '=', 'dn.delivery_country_id')
+            ->join('shops as s', 's.id', '=', 'dn.shop_id')
             ->where('dn.organisation_id', $organisation->id)
             ->where('dn.state', DeliveryNoteStateEnum::DISPATCHED)
             ->whereIn('dn.delivery_country_id', $euCountryIds)
@@ -83,10 +90,15 @@ class ProcessIntrastatExportTimeSeriesRecords implements ShouldBeUnique
             ->select(
                 'dn.id as delivery_note_id',
                 'dn.type as delivery_note_type',
+                's.type as shop_type',
+                'stock_products.origin_country_id',
                 'dn.dispatched_at',
                 'stock_products.tariff_code',
                 'dn.delivery_country_id as country_id',
+                'c.code as country_code',
                 't.tax_category_id',
+                'tc.type as tax_category_type',
+                'tc.rate as tax_category_rate',
                 'inv.id as invoice_id',
                 'inv.tax_number',
                 'inv.tax_number_valid',
@@ -100,7 +112,8 @@ class ProcessIntrastatExportTimeSeriesRecords implements ShouldBeUnique
         $aggregated = [];
 
         foreach ($rawMetrics as $item) {
-            $tariffCodes = array_map('trim', explode(',', $item->tariff_code));
+            $partnerTaxNumber = $this->counterpartyVat($item);
+            $tariffCodes      = array_map('trim', explode(',', $item->tariff_code));
 
             foreach ($tariffCodes as $tariffCode) {
                 $tariffCode = str_replace(' ', '', trim($tariffCode));
@@ -111,7 +124,7 @@ class ProcessIntrastatExportTimeSeriesRecords implements ShouldBeUnique
 
                 ['period' => $period, 'periodFrom' => $periodFrom, 'periodTo' => $periodTo] = TimeSeriesPeriodCalculator::resolvePeriodFromDate(Carbon::parse($item->dispatched_at), $frequency);
 
-                $key = $period . '|' . $tariffCode . '|' . $item->country_id . '|' . ($item->tax_category_id ?? 'null') . '|' . ($item->delivery_note_type ?? 'null');
+                $key = $period . '|' . $tariffCode . '|' . $item->country_id . '|' . ($item->tax_category_id ?? 'null') . '|' . ($partnerTaxNumber ?? 'null') . '|' . ($item->origin_country_id ?? 'null') . '|' . ($item->shop_type ?? 'null') . '|' . ($item->delivery_note_type ?? 'null');
 
                 if (!isset($aggregated[$key])) {
                     $aggregated[$key] = [
@@ -120,7 +133,10 @@ class ProcessIntrastatExportTimeSeriesRecords implements ShouldBeUnique
                         'period_to'          => $periodTo,
                         'tariff_code'        => $tariffCode,
                         'country_id'         => $item->country_id,
+                        'origin_country_id'  => $item->origin_country_id,
+                        'shop_type'          => $item->shop_type,
                         'tax_category_id'    => $item->tax_category_id,
+                        'partner_tax_number' => $partnerTaxNumber,
                         'delivery_note_type' => $item->delivery_note_type,
                         'quantity'           => 0,
                         'value'              => 0,
@@ -168,18 +184,21 @@ class ProcessIntrastatExportTimeSeriesRecords implements ShouldBeUnique
                 }
             }
 
-            $natureOfTransaction = match ($data['delivery_note_type']) {
-                DeliveryNoteTypeEnum::REPLACEMENT->value => IntrastatNatureOfTransactionEnum::RETURN_REPLACEMENT,
-                default                                  => IntrastatNatureOfTransactionEnum::OUTRIGHT_PURCHASE,
+            $natureOfTransaction = match (true) {
+                $data['delivery_note_type'] === DeliveryNoteTypeEnum::REPLACEMENT->value => IntrastatNatureOfTransactionEnum::RETURN_REPLACEMENT,
+                $data['shop_type'] === ShopTypeEnum::DROPSHIPPING->value                 => IntrastatNatureOfTransactionEnum::PRIVATE_CONSUMER,
+                default                                                                  => IntrastatNatureOfTransactionEnum::OUTRIGHT_PURCHASE,
             };
 
             $timeSeries = IntrastatExportTimeSeries::firstOrCreate(
                 [
                     'organisation_id' => $organisation->id,
                     'tariff_code'     => $data['tariff_code'],
-                    'country_id'      => $data['country_id'],
-                    'tax_category_id' => $data['tax_category_id'],
-                    'frequency'       => $frequency,
+                    'country_id'         => $data['country_id'],
+                    'origin_country_id'  => $data['origin_country_id'],
+                    'tax_category_id'    => $data['tax_category_id'],
+                    'partner_tax_number' => $data['partner_tax_number'],
+                    'frequency'          => $frequency,
                 ],
                 [
                     'from' => null,
@@ -215,5 +234,17 @@ class ProcessIntrastatExportTimeSeriesRecords implements ShouldBeUnique
 
             IntrastatExportTimeSeriesHydrateNumberRecords::run($timeSeries->id);
         }
+    }
+
+    protected function counterpartyVat(object $item): ?string
+    {
+        $zeroRatedIntraEu = $item->tax_category_type === TaxCategoryTypeEnum::EU_VTC->value
+            && (float) ($item->tax_category_rate ?? 0) == 0.0;
+
+        if (!$zeroRatedIntraEu) {
+            return null;
+        }
+
+        return IntrastatVatNumber::normalise($item->tax_number, $item->country_code);
     }
 }

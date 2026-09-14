@@ -5,7 +5,7 @@
   -->
 
 <script setup lang="ts">
-import { router } from '@inertiajs/vue3'
+import { router, usePage } from '@inertiajs/vue3'
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { trans } from 'laravel-vue-i18n'
 
@@ -31,6 +31,12 @@ const props = defineProps<{
         }
     }
 }>()
+
+const page = usePage()
+const closeError = computed(() => {
+    const errors = page.props.errors as Record<string, string> | undefined
+    return errors?.quantity_made ?? errors?.state ?? errors?.quantity_rejected ?? errors?.non_productive_reason
+})
 
 const processing = ref(false)
 const quantityMade = ref<number | null>(null)
@@ -142,6 +148,8 @@ function closeSession(outcome: 'complete' | 'carry_over' | null = null) {
             <div class="text-7xl font-mono tabular-nums text-indigo-700">{{ elapsed }}</div>
         </div>
 
+        <div v-if="closeError" class="mt-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-lg text-red-700">{{ closeError }}</div>
+
         <div v-if="!askOutcome" class="mt-6 flex items-end gap-4">
             <div>
                 <label class="block text-lg text-gray-600 mb-1">{{ trans('Quantity made') }}</label>
@@ -172,7 +180,7 @@ function closeSession(outcome: 'complete' | 'carry_over' | null = null) {
         <div v-if="askOutcome" class="mt-4 rounded-lg border border-amber-300 bg-amber-50 p-4">
             <div class="flex items-baseline gap-6">
                 <div><span class="text-4xl font-semibold tabular-nums text-green-700">{{ quantityMade }}</span> <span class="text-lg text-gray-600">{{ trans('done') }}</span></div>
-                <div><span class="text-4xl font-semibold tabular-nums text-amber-700">{{ remaining - (quantityMade ?? 0) }}</span> <span class="text-lg text-gray-600">{{ trans('to do') }}</span></div>
+                <div><span class="text-4xl font-semibold tabular-nums text-amber-700">{{ Math.max(0, remaining - (quantityMade ?? 0)) }}</span> <span class="text-lg text-gray-600">{{ trans('to do') }}</span></div>
             </div>
             <div class="mt-3 grid gap-3 sm:grid-cols-3">
                 <button type="button" class="rounded-lg bg-indigo-600 text-white text-xl font-semibold py-4 disabled:opacity-40"

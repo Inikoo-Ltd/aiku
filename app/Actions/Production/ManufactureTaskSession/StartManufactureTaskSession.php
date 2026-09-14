@@ -15,10 +15,13 @@ use App\Actions\Production\JobOrderItemTask\UI\ShowManufactureFloor;
 use App\Enums\Production\JobOrder\JobOrderStateEnum;
 use App\Enums\Production\JobOrderItemTask\JobOrderItemTaskStateEnum;
 use App\Enums\Production\ManufactureTaskSession\ManufactureTaskSessionStateEnum;
+use App\Models\Production\JobOrder;
 use App\Models\Production\JobOrderItemTask;
 use App\Models\Production\ManufactureTaskSession;
 use App\Models\SysAdmin\User;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
@@ -27,8 +30,27 @@ class StartManufactureTaskSession extends OrgAction
 {
     public function handle(User $user, JobOrderItemTask $jobOrderItemTask): ManufactureTaskSession
     {
+        return DB::transaction(fn () => $this->startSession($user, $jobOrderItemTask));
+    }
+
+    private function startSession(User $user, JobOrderItemTask $jobOrderItemTask): ManufactureTaskSession
+    {
+        $jobOrder         = JobOrder::lockForUpdate()->find($jobOrderItemTask->job_order_id);
+        $jobOrderItemTask = JobOrderItemTask::find($jobOrderItemTask->id);
+
+        if (!$jobOrder || !$jobOrderItemTask?->jobOrderItem) {
+            throw ValidationException::withMessages([
+                'job_order_item_task_id' => __('This job is no longer on the floor'),
+            ]);
+        }
+
+        if ($jobOrderItemTask->state == JobOrderItemTaskStateEnum::DONE) {
+            throw ValidationException::withMessages([
+                'job_order_item_task_id' => __('This task is already finished'),
+            ]);
+        }
+
         $employee = GetUserCurrentEmployee::run($user, $jobOrderItemTask->organisation_id);
-        $jobOrder = $jobOrderItemTask->jobOrder()->first();
         $isMine   = $employee && $jobOrder->employee_id == $employee->id;
 
         if (!$isMine && !ShowManufactureFloor::canPickOpenJobs($user, $jobOrderItemTask->production)) {
@@ -54,7 +76,8 @@ class StartManufactureTaskSession extends OrgAction
             ]);
         }
 
-        $session = ManufactureTaskSession::create([
+        try {
+            $session = ManufactureTaskSession::create([
             'group_id'               => $jobOrderItemTask->group_id,
             'organisation_id'        => $jobOrderItemTask->organisation_id,
             'production_id'          => $jobOrderItemTask->production_id,
@@ -65,6 +88,11 @@ class StartManufactureTaskSession extends OrgAction
             'state'                  => ManufactureTaskSessionStateEnum::OPEN,
             'started_at'             => now(),
         ]);
+        } catch (UniqueConstraintViolationException) {
+            throw ValidationException::withMessages([
+                'job_order_item_task_id' => __('You already have an open task, close it first'),
+            ]);
+        }
 
         if ($jobOrderItemTask->state == JobOrderItemTaskStateEnum::TODO) {
             $jobOrderItemTask->update(['state' => JobOrderItemTaskStateEnum::IN_PROGRESS]);

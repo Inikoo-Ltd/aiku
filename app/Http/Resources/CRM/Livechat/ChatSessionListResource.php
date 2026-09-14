@@ -140,7 +140,7 @@ class ChatSessionListResource extends JsonResource
                 'name'    => $activeAssignment->chatAgent?->user?->contact_name,
             ] : null,
 
-            'unread_count' => ChatMessage::where('chat_session_id', $this->id)
+            'unread_count' => $this->unread_count ?? ChatMessage::where('chat_session_id', $this->id)
                 ->where('is_read', false)
                 ->whereIn('sender_type', [
                     ChatSenderTypeEnum::GUEST->value,

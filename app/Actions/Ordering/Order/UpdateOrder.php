@@ -13,6 +13,7 @@ use App\Actions\Billables\ShippingZoneSchema\Hydrators\ShippingZoneSchemaHydrate
 use App\Actions\Dispatching\DeliveryNote\UpdateDeliveryNote;
 use App\Actions\Dropshipping\Platform\Hydrators\PlatformHydrateOrders;
 use App\Actions\Ordering\Order\Hydrators\OrderHydrateShipments;
+use App\Actions\Ordering\Order\UpdateState\SendOrderToWarehouse;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
@@ -116,6 +117,14 @@ class UpdateOrder extends OrgAction
                 if ($changedNotes) {
                     $deliveryNote->update($changedNotes);
                     UpdateOrderNotesEvent::dispatch($deliveryNote);
+                }
+
+                if (Arr::hasAny($changes, ['contact_name', 'company_name']) && !in_array($deliveryNote->state, [DeliveryNoteStateEnum::CANCELLED, DeliveryNoteStateEnum::DISPATCHED])) {
+                    $sendOrderToWarehouse = SendOrderToWarehouse::make();
+                    $deliveryNote->update([
+                        'company_name' => $sendOrderToWarehouse->getCompanyName($order),
+                        'contact_name' => $sendOrderToWarehouse->getContactName($order),
+                    ]);
                 }
             }
 

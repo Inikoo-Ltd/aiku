@@ -10,7 +10,8 @@
         ['label' => 'Accounting', 'category' => 'accounting', 'color' => '#d1a3b5', 'size' => 'small', 'pos' => ['lg' => [160, 425], 'md' => [470, 430], 'sm' => [460, 545]]],
         ['label' => 'HR', 'category' => 'hr', 'color' => '#a3c17f', 'size' => 'small', 'pos' => ['lg' => [455, 430], 'md' => [775, 430], 'sm' => [160, 695]]],
         ['label' => 'My Profile', 'category' => 'profile', 'color' => '#8fc1b5', 'size' => 'small', 'pos' => ['lg' => [750, 430], 'md' => [165, 595], 'sm' => [460, 695]]],
-        ['label' => 'Marketing', 'category' => 'marketing', 'color' => '#e0b04a', 'size' => 'small', 'pos' => ['lg' => [1045, 425], 'md' => [470, 595], 'sm' => [310, 845]]],
+        ['label' => 'Marketing', 'category' => 'marketing', 'color' => '#e0b04a', 'size' => 'small', 'pos' => ['lg' => [1045, 425], 'md' => [470, 595], 'sm' => [160, 845]]],
+        ['label' => 'Help desk', 'category' => 'help-desk', 'color' => '#9aa7c9', 'size' => 'small', 'pos' => ['lg' => [1045, 100], 'md' => [775, 595], 'sm' => [460, 845]]],
     ];
     $layouts = [
         'lg' => ['viewBox' => '0 0 1200 505', 'maxWidth' => '940px'],

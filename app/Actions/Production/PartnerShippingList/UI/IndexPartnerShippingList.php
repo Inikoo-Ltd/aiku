@@ -90,6 +90,14 @@ class IndexPartnerShippingList extends OrgAction
                 DB::table('partner_shopping_list_items')
                     ->where('state', ShoppingListItemStateEnum::OPEN)
                     ->whereNull('deleted_at')
+                    ->whereNull('pre_picked_at')
+                    ->whereNull('job_order_id')
+                    ->where(function ($query) use ($seller) {
+                        $query->where('partner_organisation_id', $seller->id)
+                            ->orWhere(function ($query) use ($seller) {
+                                $query->whereNull('partner_organisation_id')->where('organisation_id', $seller->id);
+                            });
+                    })
                     ->groupBy('stock_id')
                     ->select('stock_id', DB::raw('sum(quantity) as quantity')),
                 'open_demand',
@@ -117,6 +125,13 @@ class IndexPartnerShippingList extends OrgAction
                         $query->whereNull('partner_shopping_list_items.partner_organisation_id')
                             ->where('partner_shopping_list_items.organisation_id', $seller->id);
                     });
+            })
+            ->where('partner_shopping_list_items.state', ShoppingListItemStateEnum::OPEN)
+            ->whereNull('partner_shopping_list_items.pre_picked_at')
+            ->where(function ($query) {
+                $query->whereNotNull('partner_shopping_list_items.job_order_id')
+                    ->orWhereNull('partner_shopping_list_items.partner_organisation_id')
+                    ->orWhereRaw('coalesce(org_stocks.quantity_available, 0) <= 0');
             });
 
         if ($this->groupBy) {
@@ -192,6 +207,7 @@ class IndexPartnerShippingList extends OrgAction
     {
         $counts = PartnerShoppingListItem::query()
             ->selectRaw("case when partner_organisation_id is null then 'local' else 'partners' end as source, count(*) as total")
+            ->where('state', ShoppingListItemStateEnum::OPEN)
             ->where(function ($query) {
                 $query->where('partner_organisation_id', $this->organisation->id)
                     ->orWhere(function ($query) {

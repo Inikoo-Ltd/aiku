@@ -143,6 +143,7 @@ class IndexIntrastatExportReport extends OrgAction
 
         $queryBuilder->join('intrastat_export_time_series', 'intrastat_export_time_series_records.intrastat_export_time_series_id', '=', 'intrastat_export_time_series.id');
         $queryBuilder->leftJoin('countries', 'intrastat_export_time_series.country_id', '=', 'countries.id');
+        $queryBuilder->leftJoin('countries as origin_countries', 'intrastat_export_time_series.origin_country_id', '=', 'origin_countries.id');
         $queryBuilder->leftJoin('tax_categories', 'intrastat_export_time_series.tax_category_id', '=', 'tax_categories.id');
 
         if ($this->bucket == 'orders') {
@@ -213,6 +214,7 @@ class IndexIntrastatExportReport extends OrgAction
                 'intrastat_export_time_series.tariff_code',
                 'intrastat_export_time_series.country_id',
                 'intrastat_export_time_series.tax_category_id',
+                'intrastat_export_time_series.partner_tax_number',
                 'intrastat_export_time_series_records.quantity',
                 'intrastat_export_time_series_records.value_org_currency',
                 'intrastat_export_time_series_records.weight',
@@ -220,6 +222,7 @@ class IndexIntrastatExportReport extends OrgAction
                 'intrastat_export_time_series_records.products_count',
                 'countries.name as country_name',
                 'countries.code as country_code',
+                'origin_countries.code as origin_country_code',
                 'tax_categories.name as tax_category_name',
                 DB::raw("'" . $organisation->currency->code . "' as currency_code"),
                 'intrastat_export_time_series_records.invoices_count',
@@ -266,8 +269,10 @@ class IndexIntrastatExportReport extends OrgAction
                 ->column(key: 'date', label: __('Date'), sortable: true)
                 ->column(key: 'tariff_code', label: __('Tariff Code'), sortable: true, searchable: true)
                 ->column(key: 'country', label: __('Destination'))
+                ->column(key: 'origin_country_code', label: __('Origin'))
                 ->column(key: 'delivery_type', label: __('Type'))
                 ->column(key: 'tax_category', label: __('VAT Category'))
+                ->column(key: 'partner_tax_number', label: __('Counterparty VAT'))
                 ->column(key: 'invoices', label: __('Invoices'), type: 'number')
                 ->column(key: 'quantity', label: __('Quantity'), sortable: true, type: 'number')
                 ->column(key: 'value_org_currency', label: __('Value'), sortable: true, type: 'currency')

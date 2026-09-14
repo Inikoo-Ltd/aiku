@@ -138,6 +138,7 @@ const onClickLogout = () => {
 						:href="fieldValue?.logo?.link?.href" :type="fieldValue?.logo?.link?.type"
 						:target="fieldValue?.logo?.link?.target || '_self'" class="block h-full">
 						<Image :src="fieldValue?.logo?.image?.source" :alt="fieldValue?.logo?.alt" imageCover
+							:imgAttributes="{ loading: 'eager', decoding: 'async' }"
 							class="w-full h-full object-contain" />
 					</component>
 				</div>

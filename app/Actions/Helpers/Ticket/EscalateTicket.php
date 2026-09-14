@@ -47,7 +47,7 @@ class EscalateTicket extends OrgAction
 
     public function authorize(ActionRequest $request): bool
     {
-        return $request->user() !== null;
+        return Ticket::canBeManagedBy($request->user());
     }
 
     public function asController(Ticket $ticket, ActionRequest $request): Ticket

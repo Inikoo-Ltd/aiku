@@ -118,6 +118,7 @@ class ShowDispatchHub extends OrgAction
                 'packers_current' => DispatchPersonnelCurrentWorkResource::collection($this->currentWork($warehouse, 'packer_user_id', ['packing'], 'packers_current')),
                 'partner_staging' => $partnerStaging,
                 'production_output' => $productionOutput,
+                'can_edit'          => $request->user()->authTo("dispatching.{$this->organisation->id}.edit"),
                 'put_away_route'    => $hasProduction ? [
                     'name'       => 'grp.org.warehouses.show.dispatching.production_output.put_away',
                     'parameters' => $request->route()->originalParameters(),

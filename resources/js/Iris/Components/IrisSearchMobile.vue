@@ -68,6 +68,11 @@ onBeforeUnmount(() => {
     clearDragHintTimer()
 })
 
+const isMounted = ref(false)
+onMounted(() => {
+    isMounted.value = true
+})
+
 // The floating button can be dragged vertically to uncover content beneath it;
 // the position sticks per device
 const FAB_POSITION_KEY = 'iris-search-fab-bottom'
@@ -288,11 +293,11 @@ const visitSearchPage = () => {
             <FontAwesomeIcon icon="far fa-search" class="text-3xl" fixed-width aria-hidden="true" />
         </button>
 
-    <Teleport to="body">
+    <Teleport v-if="isMounted" to="body">
         <!-- Always-present floating search button in the thumb zone; drag it up or down -->
         <div
             v-if="!isOverlayOpen"
-            class="fixed right-6 bottom-[calc(env(safe-area-inset-bottom)+13rem)] z-40 w-14 h-14"
+            class="md:hidden fixed right-6 bottom-[calc(env(safe-area-inset-bottom)+13rem)] z-40 w-14 h-14"
             :style="fabBottom !== null ? { bottom: `${fabBottom}px` } : undefined"
         >
             <Transition
@@ -337,7 +342,7 @@ const visitSearchPage = () => {
 
         <!-- Full-screen overlay: the input sits at the top, immune to the keyboard
              appearing/disappearing (a bottom-pinned input wobbles on iOS) -->
-        <div v-if="isOverlayOpen" class="fixed inset-0 z-50 bg-white flex flex-col">
+        <div v-if="isOverlayOpen" class="md:hidden fixed inset-0 z-50 bg-white flex flex-col">
             <div class="relative shrink-0 flex items-center gap-1 p-2 border-b border-gray-200">
                 <div class="relative flex-1">
                     <input

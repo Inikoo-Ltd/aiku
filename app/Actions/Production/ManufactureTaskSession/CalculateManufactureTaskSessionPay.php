@@ -32,6 +32,8 @@ class CalculateManufactureTaskSessionPay
         );
 
         if ($hours <= 0) {
+            $session->update(['hours' => 0, 'pay' => 0, 'bonus' => 0]);
+
             return $session;
         }
 

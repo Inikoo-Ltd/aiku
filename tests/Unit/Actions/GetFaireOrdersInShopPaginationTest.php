@@ -25,12 +25,31 @@ test('follows faire cursor pagination until exhausted', function () {
 
     GetFaireOrdersInShop::make()->handle($shop);
 
-    Http::assertSentCount(2);
+    Http::assertSentCount(4);
     Http::assertSent(function ($request) {
         parse_str(parse_url($request->url(), PHP_URL_QUERY) ?: '', $query);
 
         return ($query['cursor'] ?? null) === 'next-page-cursor'
             && !isset($query['excluded_states']);
+    });
+});
+
+test('also pulls recently cancelled faire orders so cancellations on faire reach aiku', function () {
+    Http::fake(fn () => Http::response(['orders' => [], 'cursor' => null]));
+
+    $shop           = new Shop();
+    $shop->settings = ['faire' => ['access_token' => 'test-token']];
+
+    GetFaireOrdersInShop::make()->handle($shop);
+
+    Http::assertSent(function ($request) {
+        parse_str(parse_url($request->url(), PHP_URL_QUERY) ?: '', $query);
+        $excludedStates = explode(',', $query['excluded_states'] ?? '');
+
+        return isset($query['updated_at_min'])
+            && !in_array('CANCELED', $excludedStates)
+            && in_array('NEW', $excludedStates)
+            && in_array('PROCESSING', $excludedStates);
     });
 });
 

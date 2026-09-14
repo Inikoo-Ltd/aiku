@@ -76,7 +76,9 @@ class GetProductionStockCoverBuckets
         return "exists (select 1 from partner_shopping_list_items sli
                 where sli.stock_id = os.stock_id
                     and sli.state = '".ShoppingListItemStateEnum::OPEN->value."'
-                    and sli.deleted_at is null)
+                    and sli.deleted_at is null
+                    and sli.pre_picked_at is null
+                    and (sli.partner_organisation_id = os.organisation_id or (sli.partner_organisation_id is null and sli.organisation_id = os.organisation_id)))
             or exists (select 1 from job_order_items joi
                 join job_orders jo on jo.id = joi.job_order_id
                 where joi.artefact_id = a.id

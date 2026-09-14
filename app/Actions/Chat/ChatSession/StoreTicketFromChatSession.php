@@ -8,7 +8,6 @@
 
 namespace App\Actions\Chat\ChatSession;
 
-use App\Actions\Chat\Jira\Concerns\WithChatJiraContext;
 use App\Actions\Helpers\Ticket\StoreTicket;
 use App\Enums\CRM\Livechat\ChatActorTypeEnum;
 use App\Enums\CRM\Livechat\ChatEventTypeEnum;
@@ -20,13 +19,13 @@ use App\Models\Helpers\Ticket;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class StoreTicketFromChatSession
 {
     use AsAction;
-    use WithChatJiraContext;
 
     public function handle(ChatSession $chatSession, ChatAgent $agent, array $modelData): Ticket
     {
@@ -81,7 +80,7 @@ class StoreTicketFromChatSession
     /** @noinspection PhpUnusedParameterInspection */
     public function asController(?string $organisation, ChatSession $chatSession, Request $request): JsonResponse
     {
-        $agent = $this->currentChatAgent();
+        $agent = Auth::user()?->chatAgent;
 
         if (!$agent) {
             return response()->json(['success' => false, 'message' => 'Only authenticated agents can create tickets'], 403);

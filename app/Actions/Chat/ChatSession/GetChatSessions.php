@@ -10,6 +10,7 @@ namespace App\Actions\Chat\ChatSession;
 
 use App\Enums\CRM\Livechat\ChatAssignmentStatusEnum;
 use App\Enums\CRM\Livechat\ChatEventTypeEnum;
+use App\Enums\CRM\Livechat\ChatSenderTypeEnum;
 use App\Enums\CRM\Livechat\ChatSessionStatusEnum;
 use App\Http\Resources\CRM\Livechat\ChatSessionListResource;
 use App\Models\Chat\ChatAgent;
@@ -81,6 +82,15 @@ class GetChatSessions
             'assignments.chatAgent.user'
         ])
             ->whereHas('messages')
+            ->withCount([
+                'messages as unread_count' => function ($q) {
+                    $q->where('is_read', false)
+                        ->whereIn('sender_type', [
+                            ChatSenderTypeEnum::GUEST->value,
+                            ChatSenderTypeEnum::USER->value,
+                        ]);
+                }
+            ])
             ->withLastMessageTime()
             ->orderBy('last_message_at', 'desc');
 

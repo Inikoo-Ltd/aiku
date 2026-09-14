@@ -89,6 +89,9 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        ini_set('pcre.backtrack_limit', '10000000');
+        ini_set('pcre.recursion_limit', '10000000');
+
         Event::listen(function (CommandStarting $event) {
             if (in_array($event->command, [
                 'fetch:orders',

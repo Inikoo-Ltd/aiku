@@ -18,10 +18,15 @@ use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
 use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 
-#[Description('Aiku tickets. Pass a reference (HELP-123 or AD-45) to get one ticket with its comments; otherwise list tickets, most urgent and most recently updated first. Types: customer (AD, from customers) and help (HELP, internal: bugs, feature requests, escalations). Confidential tickets are hidden unless the user reported them, is assigned or is admin.')]
+#[Description('Aiku tickets. Pass a reference (HELP-123 or AD-45) to get one ticket with its comments; otherwise list tickets, most urgent and most recently updated first. Types: customer (AD, from customers) and help (HELP, internal: bugs, feature requests, escalations). Only engineers, lead engineers and QA can use it. Confidential tickets are hidden unless the user reported them or is a lead engineer.')]
 #[IsReadOnly]
 class TicketsTool extends Tool
 {
+    public function shouldRegister(Request $request): bool
+    {
+        return Ticket::canUseAssistant($request->user());
+    }
+
     public function handle(Request $request): Response
     {
         $request->validate([
@@ -48,13 +53,13 @@ class TicketsTool extends Tool
 
             return Response::json([
                 'ticket'   => TicketResource::make($ticket)->resolve(),
-                'comments' => TicketCommentResource::collection($ticket->comments()->with('author')->orderBy('id')->get())->resolve(),
+                'comments' => TicketCommentResource::collection($ticket->commentsVisibleTo($user)->with('author')->orderBy('id')->get())->resolve(),
             ]);
         }
 
         $query
             ->when($request->filled('type'), fn ($query) => $query->where('type', $request->string('type')))
-            ->when($request->filled('status'), fn ($query) => $query->whereIn('status', explode(',', $request->string('status'))), fn ($query) => $query->whereNotIn('status', ['resolved', 'closed']))
+            ->when($request->filled('status'), fn ($query) => $query->whereIn('status', explode(',', $request->string('status'))), fn ($query) => $query->whereNotIn('status', ['resolved', 'cancelled']))
             ->when($request->filled('priority'), fn ($query) => $query->whereIn('priority', explode(',', $request->string('priority'))))
             ->when($request->filled('module'), fn ($query) => $query->where('module', $request->string('module')))
             ->when($request->filled('kind'), fn ($query) => $query->where('kind', $request->string('kind')))
@@ -94,10 +99,10 @@ class TicketsTool extends Tool
         return [
             'reference' => $schema->string()->description('Ticket reference, e.g. HELP-3074 or AD-1697. Returns the full ticket with comments.'),
             'type'      => $schema->string()->description('customer or help'),
-            'status'    => $schema->string()->description('Comma list of open,in_progress,waiting,resolved,closed. Default: everything not resolved or closed'),
+            'status'    => $schema->string()->description('Comma list of open,in_progress,waiting,resolved,cancelled. Default: everything not resolved or cancelled'),
             'priority'  => $schema->string()->description('Comma list of urgent,high,normal,low'),
             'module'    => $schema->string()->description('Aiku module, e.g. dispatching, crm, ordering'),
-            'kind'      => $schema->string()->description('escalation, bug or feature'),
+            'kind'      => $schema->string()->description('escalation, bug, feature, task (engineer to engineer) or qa (engineer to QA)'),
             'tag'       => $schema->string()->description('Only tickets carrying this tag'),
             'mine'      => $schema->boolean()->description('Only tickets the user reported or is assigned'),
             'search'    => $schema->string()->description('Text in subject or description'),

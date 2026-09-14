@@ -566,6 +566,25 @@ test('outbound shopify calls are blocked in tests unless every http request is f
     expect(PlatformOutboundGuard::blocks('Shopify'))->toBeFalse();
 });
 
+test('a store that cannot give us a client is reported once a day, not on every call', function () {
+    Http::preventStrayRequests();
+
+    $unavailable = new class () extends ShopifyUser {
+        public function api(): \Gnikyt\BasicShopifyAPI\BasicShopifyAPI
+        {
+            throw new \Osiset\ShopifyApp\Exceptions\OAuthTokenRefreshException('This store is unavailable');
+        }
+    };
+    $unavailable->forceFill(shopifyProductChannel($this, 'frozen-store')->getAttributes());
+    $unavailable->exists = true;
+
+    \Illuminate\Support\Facades\Cache::forget('shopify-client-failure:'.$unavailable->id);
+
+    expect($unavailable->getShopifyClient())->toBeNull()
+        ->and(\Illuminate\Support\Facades\Cache::has('shopify-client-failure:'.$unavailable->id))->toBeTrue()
+        ->and($unavailable->getShopifyClient(true))->toBeNull();
+});
+
 test('an upload throwing a non-Exception error records it on the portfolio instead of vanishing', function () {
     Queue::fake();
     $shopifyUser = shopifyProductChannel($this, 'product-throws');

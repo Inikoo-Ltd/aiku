@@ -13,14 +13,15 @@ import TicketComposer from "@/Components/Tickets/TicketComposer.vue"
 
 const props = defineProps<{
     storeRoute: { name: string; parameters?: Record<string, unknown> }
-    priorities: { label: string; value: string }[]
+    priorities?: { label: string; value: string }[]
     kinds?: { label: string; value: string }[]
     modules?: { label: string; value: string }[]
 }>()
 
-const form = useForm<{ subject: string; description: string; priority: string; kind: string | null; module: string | null; images: File[] }>({
+const form = useForm<{ subject: string; description: string; reference_url: string; priority: string; kind: string | null; module: string | null; images: File[] }>({
     subject: "",
     description: "",
+    reference_url: "",
     priority: "normal",
     kind: props.kinds?.[0]?.value ?? null,
     module: null,
@@ -38,9 +39,14 @@ const submit = () => form.post(route(props.storeRoute.name, props.storeRoute.par
             <p v-if="form.errors.subject" class="text-xs text-red-600 mt-1">{{ form.errors.subject }}</p>
         </div>
         <div>
-            <label class="block text-xs text-gray-500 mb-1">{{ trans("Details") }}</label>
+            <label class="block text-xs text-gray-500 mb-1">{{ trans("Details") }} <span class="text-gray-400">{{ trans("(markdown works: **bold**, lists, links)") }}</span></label>
             <TicketComposer v-model:body="form.description" v-model:images="form.images" :rows="8" />
             <p v-if="form.errors.description || form.errors.images" class="text-xs text-red-600 mt-1">{{ form.errors.description || form.errors.images }}</p>
+        </div>
+        <div>
+            <label class="block text-xs text-gray-500 mb-1">{{ trans("Page where it happens") }}</label>
+            <input v-model="form.reference_url" type="url" maxlength="2048" class="w-full rounded-md border-gray-300 text-sm focus:border-gray-500 focus:ring-0" placeholder="https://app.aiku.io/..." />
+            <p v-if="form.errors.reference_url" class="text-xs text-red-600 mt-1">{{ form.errors.reference_url }}</p>
         </div>
         <div v-if="kinds?.length" class="grid grid-cols-2 gap-4">
             <div>
@@ -52,7 +58,7 @@ const submit = () => form.post(route(props.storeRoute.name, props.storeRoute.par
                 <Select v-model="form.module" :options="modules" option-label="label" option-value="value" show-clear filter class="w-full" :placeholder="trans('Which part of aiku')" />
             </div>
         </div>
-        <div class="max-w-xs">
+        <div v-if="priorities?.length" class="max-w-xs">
             <label class="block text-xs text-gray-500 mb-1">{{ trans("Priority") }}</label>
             <Select v-model="form.priority" :options="priorities" option-label="label" option-value="value" class="w-full" />
         </div>
