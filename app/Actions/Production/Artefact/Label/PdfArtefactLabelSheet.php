@@ -167,7 +167,7 @@ class PdfArtefactLabelSheet extends OrgAction
 
     /**
      * @param  array<int, array<string, mixed>>  $fields
-     * @return array<int, array{text: string, left: float, top: float, width: float, height: float, font_size: float, color: string, weight: string, rotation: int}>
+     * @return array<int, array{text: string, left: float, top: float, width: float, height: float, font_size: float, color: string, background_color: string|null, weight: string, rotation: int}>
      */
     private function getFields(array $fields, float $labelWidth, float $labelHeight, float $longestPageSide): array
     {
@@ -203,12 +203,20 @@ class PdfArtefactLabelSheet extends OrgAction
                 'height'    => $lineHeight,
                 'font_size' => $fontSize,
                 'color'     => $field['color'] ?? '#000000',
+                'background_color' => $this->getBackgroundColor($field['background_color'] ?? null),
                 'weight'    => filter_var($field['bold'] ?? false, FILTER_VALIDATE_BOOLEAN) ? 'bold' : 'normal',
                 'rotation'  => $this->getMpdfRotation($rotation),
             ];
         }
 
         return $placedFields;
+    }
+
+    private function getBackgroundColor(mixed $backgroundColor): ?string
+    {
+        return is_string($backgroundColor) && preg_match('/^#[0-9a-fA-F]{6}$/', $backgroundColor)
+            ? $backgroundColor
+            : null;
     }
 
     /**

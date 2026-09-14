@@ -4,7 +4,7 @@ import axios from "axios"
 import { notify } from "@kyvg/vue3-notification"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faCopy, faFilePdf, faImage, faPlus, faTags, faTrashAlt } from "@fal"
+import { faCopy, faEyeDropper, faFilePdf, faImage, faPlus, faTags, faTrashAlt } from "@fal"
 import pdfWorkerUrl from "pdfjs-dist/build/pdf.worker.min.mjs?url"
 import Modal from "@/Components/Utils/Modal.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
@@ -12,7 +12,7 @@ import { ctrans } from "@/Composables/useTrans"
 import { routeType } from "@/types/route"
 import PingIcon from "@/Components/Utils/PingIcon.vue"
 
-library.add(faCopy, faFilePdf, faImage, faPlus, faTags, faTrashAlt)
+library.add(faCopy, faEyeDropper, faFilePdf, faImage, faPlus, faTags, faTrashAlt)
 
 interface StoredArtwork {
     name: string
@@ -62,6 +62,7 @@ interface LabelItem {
     y: number
     fontSize: number
     color: string
+    backgroundColor: string | null
     bold: boolean
     rotation: Rotation
 }
@@ -158,6 +159,7 @@ const createItem = (source: ItemSource, overrides: Partial<LabelItem> = {}): Lab
     y: source === "batch_code" ? 0.08 : 0.28,
     fontSize: 8,
     color: "#111827",
+    backgroundColor: null,
     bold: true,
     rotation: 0,
     ...overrides,
@@ -186,6 +188,7 @@ const duplicateItem = (item: LabelItem) => {
         y: Math.min(item.y + 0.05, 0.95),
         fontSize: item.fontSize,
         color: item.color,
+        backgroundColor: item.backgroundColor,
         bold: item.bold,
         rotation: item.rotation,
     })
@@ -345,12 +348,55 @@ const itemStyle = (item: LabelItem) => ({
     fontSize: `${fontSizePx(item)}px`,
     lineHeight: String(LINE_HEIGHT),
     color: item.color,
+    backgroundColor: item.backgroundColor ?? "transparent",
     fontWeight: item.bold ? 700 : 400,
     fontFamily: "Arial, sans-serif",
     transform: itemTransform(item),
     transformOrigin: "0 0",
     ...previewOnlyHighlightStyle(item),
 })
+
+type ColorTarget = "color" | "backgroundColor"
+
+type EyeDropperConstructor = new () => { open: () => Promise<{ sRGBHex: string }> }
+
+const isEyeDropperSupported = typeof window !== "undefined" && "EyeDropper" in window
+
+const pickingColorTarget = ref<ColorTarget | null>(null)
+
+const toHexColor = (color: string) => {
+    if (color.startsWith("#")) return color.slice(0, 7).toLowerCase()
+
+    const channels = color.match(/\d+/g)?.slice(0, 3).map(Number) ?? [0, 0, 0]
+
+    return `#${channels.map(channel => channel.toString(16).padStart(2, "0")).join("")}`
+}
+
+const pickColorFromScreen = async (item: LabelItem, target: ColorTarget) => {
+    if (pickingColorTarget.value) return
+
+    if (!isEyeDropperSupported) {
+        notify({
+            title: ctrans("Eyedropper not available"),
+            text: ctrans("This browser cannot pick colors from the screen, open the label in Chrome or Edge on a computer."),
+            type: "warn",
+        })
+        return
+    }
+
+    pickingColorTarget.value = target
+
+    try {
+        const EyeDropper = (window as unknown as { EyeDropper: EyeDropperConstructor }).EyeDropper
+        const { sRGBHex } = await new EyeDropper().open()
+
+        item[target] = toHexColor(sRGBHex)
+    } catch {
+        return
+    } finally {
+        pickingColorTarget.value = null
+    }
+}
 
 /**
  * mPDF needs the length of the run to lay a turned block out, and the browser is the only side that
@@ -692,6 +738,9 @@ const appendLayout = (formData: FormData) => {
         formData.append(`fields[${index}][y]`, String(item.y))
         formData.append(`fields[${index}][font_size]`, String(item.fontSize))
         formData.append(`fields[${index}][color]`, item.color)
+        if (item.backgroundColor) {
+            formData.append(`fields[${index}][background_color]`, item.backgroundColor)
+        }
         formData.append(`fields[${index}][bold]`, item.bold ? "1" : "0")
         formData.append(`fields[${index}][rotation]`, String(item.rotation))
 
@@ -849,6 +898,7 @@ const loadLabel = async (label: SavedLabel) => {
                 y: Number(field.y ?? 0),
                 fontSize: Number(field.font_size ?? 8),
                 color: String(field.color ?? "#111827"),
+                backgroundColor: field.background_color ? String(field.background_color) : null,
                 bold: Boolean(field.bold),
                 rotation: (Number(field.rotation ?? 0) as Rotation),
             })
@@ -1158,7 +1208,9 @@ const describeFailure = async (error: any): Promise<string> => {
                             :class="item.id === selectedItemId ? 'border-indigo-500 bg-indigo-50' : 'border-gray-200 hover:bg-gray-50'"
                             @click="selectedItemId = item.id">
                             <span class="w-4 shrink-0 text-xs tabular-nums text-gray-400">{{ index + 1 }}</span>
-                            <span class="min-w-0 flex-1 truncate text-sm" :style="{ color: item.color }">{{ item.text || sourceLabels[item.source] }}</span>
+                            <span class="min-w-0 flex-1 truncate text-sm">
+                                <span class="rounded-sm px-0.5" :style="{ color: item.color, backgroundColor: item.backgroundColor ?? 'transparent' }">{{ item.text || sourceLabels[item.source] }}</span>
+                            </span>
                             <span class="text-xs text-gray-400">{{ item.fontSize }}pt</span>
                             <span v-if="item.rotation" class="text-xs text-gray-400">{{ item.rotation }}°</span>
                             <button class="text-gray-400 hover:text-indigo-600" @click.stop="duplicateItem(item)">
@@ -1183,11 +1235,48 @@ const describeFailure = async (error: any): Promise<string> => {
                             <input v-model.number="selectedItem.fontSize" type="number" min="3" max="72" step="0.5"
                                 class="w-16 rounded border border-gray-300 px-1.5 py-1 text-sm" />
                         </label>
-                        <input v-model="selectedItem.color" type="color" class="h-7 w-8 rounded border border-gray-300" />
+                        <label class="flex items-center gap-1 text-xs text-gray-500" :title="ctrans('Text color')">
+                            {{ ctrans("Text") }}
+                            <input v-model="selectedItem.color" type="color" class="h-7 w-8 rounded border border-gray-300" />
+                        </label>
+                        <button
+                            type="button"
+                            class="rounded border border-gray-300 px-1.5 py-1 text-xs text-gray-600 hover:bg-gray-50 disabled:cursor-wait disabled:opacity-60"
+                            :title="ctrans('Pick text color from the screen')"
+                            :disabled="!!pickingColorTarget"
+                            @click="pickColorFromScreen(selectedItem, 'color')">
+                            <FontAwesomeIcon icon="fal fa-eye-dropper" fixed-width aria-hidden="true" />
+                        </button>
                         <label class="flex items-center gap-1 text-xs text-gray-500">
                             <input v-model="selectedItem.bold" type="checkbox" class="rounded border-gray-300" />
                             {{ ctrans("Bold") }}
                         </label>
+                    </div>
+
+                    <div class="flex items-center gap-2">
+                        <label class="flex items-center gap-1 text-xs text-gray-500">
+                            <input
+                                type="checkbox"
+                                class="rounded border-gray-300"
+                                :checked="!!selectedItem.backgroundColor"
+                                @change="selectedItem.backgroundColor = ($event.target as HTMLInputElement).checked ? '#ffffff' : null" />
+                            {{ ctrans("Background") }}
+                        </label>
+                        <input
+                            v-if="selectedItem.backgroundColor"
+                            v-model="selectedItem.backgroundColor"
+                            type="color"
+                            class="h-7 w-8 rounded border border-gray-300"
+                            :title="ctrans('Background color')" />
+                        <span v-else class="text-xs text-gray-400">{{ ctrans("Transparent") }}</span>
+                        <button
+                            type="button"
+                            class="rounded border border-gray-300 px-1.5 py-1 text-xs text-gray-600 hover:bg-gray-50 disabled:cursor-wait disabled:opacity-60"
+                            :title="ctrans('Pick background color from the screen')"
+                            :disabled="!!pickingColorTarget"
+                            @click="pickColorFromScreen(selectedItem, 'backgroundColor')">
+                            <FontAwesomeIcon icon="fal fa-eye-dropper" fixed-width aria-hidden="true" />
+                        </button>
                     </div>
 
                     <div class="flex items-center gap-2">
