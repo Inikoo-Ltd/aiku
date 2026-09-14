@@ -32,6 +32,7 @@ class DispatchedEmailHydrateReads implements ShouldBeUnique
             'number_reads' => $dispatchedEmail
                 ->emailTrackingEvents()
                 ->where('type', EmailTrackingEventTypeEnum::OPENED)
+                ->useWritePdo()
                 ->count(),
         ];
 

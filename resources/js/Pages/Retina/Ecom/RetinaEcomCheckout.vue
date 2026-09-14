@@ -20,6 +20,7 @@ import CheckoutPaymentCashOnDelivery from "@/Components/Retina/Ecom/CheckoutPaym
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import { Select } from "primevue"
 import CheckoutPaymentPastpay from "@/Components/Retina/Ecom/CheckoutPaymentPastpay.vue"
+import WhatsAppNewsletterOptIn from "@/Components/Retina/Ecom/WhatsAppNewsletterOptIn.vue"
 
 library.add(faCreditCardFront, faUniversity, faExclamationTriangle)
 
@@ -46,6 +47,11 @@ const props = defineProps<{
         total: number
     },
     currency_code: string
+    whatsapp_newsletter?: {
+        is_subscribed: boolean
+        label: string
+        update_route: routeType
+    }
 }>()
 
 const currentTab = ref({
@@ -118,6 +124,12 @@ const locale = inject("locale", aikuLocaleStructure)
             xisInBasket
             isInCheckout
             class="md:px-4 !px-0"
+        />
+
+        <WhatsAppNewsletterOptIn
+            v-if="whatsapp_newsletter && !whatsapp_newsletter.is_subscribed && whatsapp_newsletter.update_route.parameters.customerComms"
+            :label="whatsapp_newsletter.label"
+            :updateRoute="whatsapp_newsletter.update_route"
         />
 
         <!-- If 'Total' is 0 or less -->

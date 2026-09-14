@@ -212,7 +212,19 @@ class Offer extends Model implements Auditable
 
     public function hydratesCatalogueOffersData(): bool
     {
-        return $this->trigger_type == 'ProductCategory' || $this->targetCollectionIds() !== [];
+        return $this->trigger_type == 'ProductCategory' || $this->isProductPercentageOffDiscount() || $this->targetCollectionIds() !== [];
+    }
+
+    public function isProductPercentageOffDiscount(): bool
+    {
+        if ($this->trigger_type != 'Product') {
+            return false;
+        }
+
+        return $this->offerAllowances()
+            ->where('status', true)
+            ->whereNotNull('data->percentage_off')
+            ->exists();
     }
 
     public function transactions(): BelongsToMany

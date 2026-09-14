@@ -7,6 +7,7 @@
 
 namespace App\Actions\Chat\ChatSession;
 
+use App\Actions\Chat\MetaChatSession\GetAgentMetaChatNotifications;
 use App\Enums\CRM\Livechat\ChatAssignmentStatusEnum;
 use App\Enums\CRM\Livechat\ChatEventTypeEnum;
 use App\Enums\CRM\Livechat\ChatSenderTypeEnum;
@@ -183,6 +184,7 @@ class GetAgentChatNotifications
                     'active'      => [],
                     'reopen'      => [],
                     'team_unread' => (object) [],
+                    'whatsapp'    => ['waiting' => [], 'active' => [], 'reopen' => []],
                 ],
             ]);
         }
@@ -190,7 +192,9 @@ class GetAgentChatNotifications
         return response()->json([
             'success' => true,
             'message' => 'Agent chat notifications retrieved successfully',
-            'data'    => $this->handle($user->chatAgent),
+            'data'    => $this->handle($user->chatAgent) + [
+                'whatsapp' => GetAgentMetaChatNotifications::run($user->chatAgent),
+            ],
         ]);
     }
 }

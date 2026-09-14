@@ -62,6 +62,7 @@ const props = defineProps<{
 				date: string;
 				data: Record<string, Record<string, number>>;
 				total: number;
+				is_live: boolean;
 			};
 			previous: {
 				date: string | null;
@@ -134,6 +135,19 @@ const visitSegment = (group: SegmentGroup, segment: string) => {
 	}
 }
 
+const segmentChips = (group: SegmentGroup, hoverClass: string) =>
+	group.segments.map((segment) => {
+		const url = segmentUrl(group, segment)
+
+		return {
+			segment,
+			is: url ? Link : 'span',
+			href: url ?? undefined,
+			class: url ? hoverClass : 'cursor-default',
+			tooltip: group.tooltips?.[segment],
+		}
+	})
+
 const buildBarOptions = (group: SegmentGroup) => ({
 	responsive: true,
 	maintainAspectRatio: false,
@@ -145,7 +159,9 @@ const buildBarOptions = (group: SegmentGroup) => ({
 	},
 	onHover: (event: any, elements: any[]) => {
 		if (event.native?.target) {
-			event.native.target.style.cursor = elements.length ? 'pointer' : 'default'
+			const clickable = elements.length > 0 && !!segmentUrl(group, group.segments[elements[0].index])
+
+			event.native.target.style.cursor = clickable ? 'pointer' : 'default'
 		}
 	},
 	plugins: {
@@ -360,17 +376,19 @@ const isLoadingVisit = ref<number | null>(null)
 					</div>
 
 					<div class="mt-4 flex flex-wrap gap-2">
-						<Link
-							v-for="segment in data.segments.recency.segments"
-							:key="segment"
-							:href="segmentUrl(data.segments.recency, segment) ?? ''"
-							v-tooltip="data.segments.recency.tooltips?.[segment]"
-							class="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs bg-blue-50 text-blue-700 hover:bg-blue-100"
+						<component
+							v-for="chip in segmentChips(data.segments.recency, 'hover:bg-blue-100')"
+							:is="chip.is"
+							:key="chip.segment"
+							:href="chip.href"
+							v-tooltip="chip.tooltip"
+							class="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs bg-blue-50 text-blue-700"
+							:class="chip.class"
 						>
-							{{ segment }}
-							<span class="font-semibold">{{ locale.number(data.comparison.current.data.recency[segment] ?? 0) }}</span>
+							{{ chip.segment }}
+							<span class="font-semibold">{{ locale.number(data.comparison.current.data.recency[chip.segment] ?? 0) }}</span>
 							<FontAwesomeIcon :icon="['fal', 'info-circle']" class="text-blue-400 text-xs" />
-						</Link>
+						</component>
 					</div>
 				</div>
 
@@ -393,17 +411,19 @@ const isLoadingVisit = ref<number | null>(null)
 					</div>
 
 					<div class="mt-4 flex flex-wrap gap-2">
-						<Link
-							v-for="segment in data.segments.frequency.segments"
-							:key="segment"
-							:href="segmentUrl(data.segments.frequency, segment) ?? ''"
-							v-tooltip="data.segments.frequency.tooltips?.[segment]"
-							class="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs bg-green-50 text-green-700 hover:bg-green-100"
+						<component
+							v-for="chip in segmentChips(data.segments.frequency, 'hover:bg-green-100')"
+							:is="chip.is"
+							:key="chip.segment"
+							:href="chip.href"
+							v-tooltip="chip.tooltip"
+							class="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs bg-green-50 text-green-700"
+							:class="chip.class"
 						>
-							{{ segment }}
-							<span class="font-semibold">{{ locale.number(data.comparison.current.data.frequency[segment] ?? 0) }}</span>
+							{{ chip.segment }}
+							<span class="font-semibold">{{ locale.number(data.comparison.current.data.frequency[chip.segment] ?? 0) }}</span>
 							<FontAwesomeIcon :icon="['fal', 'info-circle']" class="text-green-400 text-xs" />
-						</Link>
+						</component>
 					</div>
 				</div>
 
@@ -450,20 +470,27 @@ const isLoadingVisit = ref<number | null>(null)
 					</div>
 
 					<div class="mt-4 flex flex-wrap gap-2">
-						<Link
-							v-for="segment in data.segments.monetary.segments"
-							:key="segment"
-							:href="segmentUrl(data.segments.monetary, segment) ?? ''"
-							v-tooltip="data.segments.monetary.tooltips?.[segment]"
-							class="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs bg-purple-50 text-purple-700 hover:bg-purple-100"
+						<component
+							v-for="chip in segmentChips(data.segments.monetary, 'hover:bg-purple-100')"
+							:is="chip.is"
+							:key="chip.segment"
+							:href="chip.href"
+							v-tooltip="chip.tooltip"
+							class="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs bg-purple-50 text-purple-700"
+							:class="chip.class"
 						>
-							{{ segment }}
-							<span class="font-semibold">{{ locale.number(data.comparison.current.data.monetary[segment] ?? 0) }}</span>
+							{{ chip.segment }}
+							<span class="font-semibold">{{ locale.number(data.comparison.current.data.monetary[chip.segment] ?? 0) }}</span>
 							<FontAwesomeIcon :icon="['fal', 'info-circle']" class="text-purple-400 text-xs" />
-						</Link>
+						</component>
 					</div>
 				</div>
 			</div>
+
+			<p v-if="data.segments && !data.comparison.current.is_live" class="mt-3 text-xs text-gray-500">
+				{{ trans('Counts taken from the snapshot on') }} {{ currentDate }}.
+				{{ trans('Customer tags only reflect today, so you can open a segment customer list from a period that ends today.') }}
+			</p>
 		</div>
 	</div>
 </template>

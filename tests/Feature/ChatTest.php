@@ -53,6 +53,11 @@ use App\Actions\Chat\ChatSession\TranslateSessionMessages;
 use App\Actions\Chat\ChatSession\TranslateSingleMessage;
 use App\Actions\Chat\ChatSession\UpdateChatAgent;
 use App\Actions\Chat\ChatSession\UpdateChatSession;
+use App\Actions\Chat\GetCustomerChatHistory;
+use App\Actions\Chat\MetaChatSession\AssignMetaChatToAgent;
+use App\Actions\Chat\MetaChatSession\StoreMetaChatSession;
+use App\Actions\Chat\MetaChatSession\UI\GetMetaChatSessions;
+use App\Actions\Chat\MetaChatSession\UpdateMetaChatSession;
 use App\Actions\Catalogue\Shop\Seeders\SeedShopPermissions;
 use App\Actions\CRM\WebUser\StoreWebUser;
 use App\Enums\CRM\Livechat\ChatActorTypeEnum;
@@ -71,6 +76,10 @@ use App\Models\Chat\ChatAssignment;
 use App\Models\Chat\ChatEvent;
 use App\Models\Chat\ChatMessage;
 use App\Models\Chat\ChatSession;
+use App\Models\Chat\MetaChannel;
+use App\Models\Chat\MetaMessageTemplate;
+use App\Models\Chat\MetaChatEvent;
+use App\Models\Chat\MetaChatSession;
 use App\Models\Chat\ShopHasChatAgent;
 use App\Models\Catalogue\Product;
 use App\Models\CRM\Customer;
@@ -2654,4 +2663,299 @@ test('an agent queue can only be read by the agent it belongs to', function () {
 
     getJson('/app/api/chats/users/'.$this->user->id.'/unread-messages')->assertOk();
     getJson('/app/api/chats/users/'.$this->user->id.'/agent-notifications')->assertOk();
+});
+
+test('customer chat history merges website and whatsapp sessions', function () {
+    $customer = createCustomer($this->shop);
+    $webUser  = StoreWebUser::make()->action($customer, WebUser::factory()->definition());
+
+    $websiteSession = ChatSession::create([
+        'ulid'        => (string)Str::ulid(),
+        'status'      => ChatSessionStatusEnum::ACTIVE,
+        'web_user_id' => $webUser->id,
+        'language_id' => 68,
+        'priority'    => ChatPriorityEnum::NORMAL,
+        'shop_id'     => $this->shop->id,
+    ]);
+
+    // GetChatSessions only surfaces sessions that actually have messages.
+    SendChatMessage::make()->handle($websiteSession, [
+        'message_text' => 'Website enquiry',
+        'message_type' => ChatMessageTypeEnum::TEXT->value,
+        'sender_type'  => ChatSenderTypeEnum::GUEST->value,
+        'sender_id'    => null,
+    ]);
+
+    $channel = MetaChannel::firstOrCreate(['code' => 'whatsapp'], ['name' => 'WhatsApp']);
+
+    $whatsappSession = MetaChatSession::create([
+        'ulid'            => (string)Str::ulid(),
+        'meta_channel_id' => $channel->id,
+        'shop_id'         => $this->shop->id,
+        'customer_id'     => $customer->id,
+        'phone_number'    => '+628123456789',
+        'status'          => ChatSessionStatusEnum::ACTIVE,
+        'language_id'     => 68,
+        'priority'        => ChatPriorityEnum::NORMAL,
+    ]);
+
+    $result = GetCustomerChatHistory::make()->handle(['customer_id' => $customer->id]);
+
+    $byUlid = $result['rows']->keyBy(fn (array $row) => $row['session']->ulid);
+
+    expect($result['rows'])->toHaveCount(2)
+        ->and($byUlid[$websiteSession->ulid]['channel'])->toBe('website')
+        ->and($byUlid[$whatsappSession->ulid]['channel'])->toBe('whatsapp');
+});
+
+test('customer chat history resolves the customer from a web user id', function () {
+    $customer = createCustomer($this->shop);
+    $webUser  = StoreWebUser::make()->action($customer, WebUser::factory()->definition());
+
+    $channel = MetaChannel::firstOrCreate(['code' => 'whatsapp'], ['name' => 'WhatsApp']);
+
+    $whatsappSession = MetaChatSession::create([
+        'ulid'            => (string)Str::ulid(),
+        'meta_channel_id' => $channel->id,
+        'shop_id'         => $this->shop->id,
+        'customer_id'     => $customer->id,
+        'phone_number'    => '+628987654321',
+        'status'          => ChatSessionStatusEnum::ACTIVE,
+        'language_id'     => 68,
+        'priority'        => ChatPriorityEnum::NORMAL,
+    ]);
+
+    // Only the web user id is known; the WhatsApp thread is keyed by customer.
+    $result = GetCustomerChatHistory::make()->handle(['web_user_id' => $webUser->id]);
+
+    expect($result['rows'])->toHaveCount(1)
+        ->and($result['rows'][0]['channel'])->toBe('whatsapp')
+        ->and($result['rows'][0]['session']->ulid)->toBe($whatsappSession->ulid);
+});
+
+test('customer chat history is empty when no identity is given', function () {
+    $result = GetCustomerChatHistory::make()->handle([]);
+
+    expect($result['rows'])->toHaveCount(0)
+        ->and($result['has_more'])->toBeFalse();
+});
+
+test('can update rating on a meta chat session', function () {
+    $channel = MetaChannel::firstOrCreate(['code' => 'whatsapp'], ['name' => 'WhatsApp']);
+
+    $metaChatSession = MetaChatSession::create([
+        'ulid'            => (string)Str::ulid(),
+        'meta_channel_id' => $channel->id,
+        'shop_id'         => $this->shop->id,
+        'phone_number'    => '+628111222333',
+        'status'          => ChatSessionStatusEnum::ACTIVE,
+        'language_id'     => 68,
+        'priority'        => ChatPriorityEnum::NORMAL,
+    ]);
+
+    $updated = UpdateMetaChatSession::make()->handle($metaChatSession, ['rating' => 4]);
+
+    expect($updated)->toBe(['rating' => 4])
+        ->and($metaChatSession->fresh()->rating)->toBe(4);
+
+    $event = MetaChatEvent::where('meta_chat_session_id', $metaChatSession->id)
+        ->where('event_type', ChatEventTypeEnum::RATING)
+        ->first();
+
+    expect($event)->toBeInstanceOf(MetaChatEvent::class)
+        ->and($event->payload['values']['rating'])->toBe(4);
+});
+
+test('new meta chat session response carries the assigned agent', function () {
+    $channel = MetaChannel::firstOrCreate(['code' => 'whatsapp'], ['name' => 'WhatsApp']);
+
+    $metaChatSession = MetaChatSession::create([
+        'ulid'            => (string)Str::ulid(),
+        'meta_channel_id' => $channel->id,
+        'shop_id'         => $this->shop->id,
+        'phone_number'    => '+628555666777',
+        'status'          => ChatSessionStatusEnum::ACTIVE,
+        'language_id'     => 68,
+        'priority'        => ChatPriorityEnum::NORMAL,
+    ]);
+
+    $agent = StoreChatAgent::make()->handle(['user_id' => $this->user->id]);
+
+    AssignMetaChatToAgent::make()->handle($metaChatSession, $agent, 'Assigned to agent who started the chat');
+
+    $payload = StoreMetaChatSession::make()->jsonResponse($metaChatSession->fresh());
+
+    // Without this the agent panel treats the brand new chat as unassigned and
+    // blocks the composer behind "Assign to me".
+    expect($payload['assigned_agent'])->not->toBeNull()
+        ->and($payload['assigned_agent']['id'])->toBe($agent->id)
+        ->and($payload['assigned_agent']['user_id'])->toBe($this->user->id);
+});
+
+test('my chats excludes a whatsapp thread now held by another agent', function () {
+    $channel = MetaChannel::firstOrCreate(['code' => 'whatsapp'], ['name' => 'WhatsApp']);
+
+    $mine  = StoreChatAgent::make()->handle(['user_id' => $this->user->id]);
+    $other = StoreChatAgent::make()->handle(['user_id' => createAdminGuest($this->organisation->group)->getUser()->id]);
+
+    foreach ([$mine, $other] as $agent) {
+        AssignChatAgentToScope::make()->handle([
+            'organisation_id' => $this->organisation->id,
+            'shop_id'         => [$this->shop->id],
+        ], $agent);
+    }
+
+    $metaChatSession = MetaChatSession::create([
+        'ulid'            => (string)Str::ulid(),
+        'meta_channel_id' => $channel->id,
+        'shop_id'         => $this->shop->id,
+        'phone_number'    => '+628444555666',
+        'status'          => ChatSessionStatusEnum::ACTIVE,
+        'language_id'     => 68,
+        'priority'        => ChatPriorityEnum::NORMAL,
+    ]);
+
+    // I handled it first, then it was handed over: my row goes stale, theirs is active.
+    $metaChatSession->assignments()->create([
+        'meta_channel_id' => $channel->id,
+        'chat_agent_id'   => $mine->id,
+        'status'          => ChatAssignmentStatusEnum::RESOLVED->value,
+        'assigned_by'     => ChatAssignmentAssignedByEnum::AGENT->value,
+        'assigned_at'     => now()->subDay(),
+    ]);
+    $metaChatSession->assignments()->create([
+        'meta_channel_id' => $channel->id,
+        'chat_agent_id'   => $other->id,
+        'status'          => ChatAssignmentStatusEnum::ACTIVE->value,
+        'assigned_by'     => ChatAssignmentAssignedByEnum::AGENT->value,
+        'assigned_at'     => now(),
+    ]);
+
+    $filters = [
+        'assigned_to_me' => $this->user->id,
+        'statuses'       => [ChatSessionStatusEnum::ACTIVE->value],
+        'shop_id'        => $this->shop->id,
+    ];
+
+    $mineUlids = collect(GetMetaChatSessions::make()->handle($filters)->items())->pluck('ulid');
+    $teamUlids = collect(GetMetaChatSessions::make()->handle($filters + ['view_team' => true])->items())->pluck('ulid');
+
+    expect($mineUlids)->not->toContain($metaChatSession->ulid)
+        ->and($teamUlids)->toContain($metaChatSession->ulid);
+});
+
+
+test('a template status webhook is verified by the WhatsApp Business Account it names', function () {
+    $channel = MetaChannel::firstOrCreate(['code' => 'whatsapp'], ['name' => 'WhatsApp']);
+
+    $appSecret = 'test-meta-app-secret';
+    $wabaId    = '102290129340398';
+
+    $this->organisation->update([
+        'settings' => array_merge($this->organisation->settings ?? [], [
+            'meta' => ['app_secret' => $appSecret],
+        ]),
+    ]);
+
+    $this->shop->update([
+        'settings' => array_merge($this->shop->settings ?? [], [
+            'whatsapp' => ['waba_id' => $wabaId],
+        ]),
+    ]);
+
+    $template = MetaMessageTemplate::create([
+        'group_id'        => $this->shop->group_id,
+        'organisation_id' => $this->shop->organisation_id,
+        'shop_id'         => $this->shop->id,
+        'meta_channel_id' => $channel->id,
+        'template_id'     => '1234567890'.$this->shop->id,
+        'name'            => 'webhook_status_template',
+        'status'          => 'PENDING',
+    ]);
+
+    /* The payload Meta sends for a template verdict: it names the account in entry.id and
+       carries no metadata, because a template belongs to the account rather than to any one
+       of the numbers under it. */
+    $body = json_encode([
+        'object' => 'whatsapp_business_account',
+        'entry'  => [
+            [
+                'id'      => $wabaId,
+                'changes' => [
+                    [
+                        'field' => 'message_template_status_update',
+                        'value' => [
+                            'event'                 => 'APPROVED',
+                            'message_template_id'   => $template->template_id,
+                            'message_template_name' => $template->name,
+                            'reason'                => 'NONE',
+                        ],
+                    ],
+                ],
+            ],
+        ],
+    ]);
+
+    $response = $this->call(
+        'POST',
+        route('webhooks.whatsapp.handle'),
+        [],
+        [],
+        [],
+        [
+            'CONTENT_TYPE'              => 'application/json',
+            'HTTP_X_HUB_SIGNATURE_256'  => 'sha256='.hash_hmac('sha256', $body, $appSecret),
+        ],
+        $body
+    );
+
+    $response->assertOk();
+
+    expect($template->refresh()->status)->toBe('APPROVED');
+});
+
+test('a template status webhook signed with the wrong secret is rejected', function () {
+    $wabaId = '102290129340399';
+
+    $this->organisation->update([
+        'settings' => array_merge($this->organisation->settings ?? [], [
+            'meta' => ['app_secret' => 'test-meta-app-secret'],
+        ]),
+    ]);
+
+    $this->shop->update([
+        'settings' => array_merge($this->shop->settings ?? [], [
+            'whatsapp' => ['waba_id' => $wabaId],
+        ]),
+    ]);
+
+    $body = json_encode([
+        'object' => 'whatsapp_business_account',
+        'entry'  => [
+            [
+                'id'      => $wabaId,
+                'changes' => [
+                    [
+                        'field' => 'message_template_status_update',
+                        'value' => ['event' => 'APPROVED', 'message_template_id' => '404'],
+                    ],
+                ],
+            ],
+        ],
+    ]);
+
+    $response = $this->call(
+        'POST',
+        route('webhooks.whatsapp.handle'),
+        [],
+        [],
+        [],
+        [
+            'CONTENT_TYPE'             => 'application/json',
+            'HTTP_X_HUB_SIGNATURE_256' => 'sha256='.hash_hmac('sha256', $body, 'not-the-app-secret'),
+        ],
+        $body
+    );
+
+    $response->assertStatus(401);
 });

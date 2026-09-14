@@ -35,6 +35,17 @@ use App\Actions\Chat\ChatSession\UpdateChatMessage;
 use App\Actions\Chat\ChatSession\UpdateChatSessionSlackSettings;
 use App\Actions\Chat\ChatSession\VerifyChatImageMessage;
 use App\Actions\Chat\ChatSession\StoreTicketFromChatSession;
+use App\Actions\Chat\MetaChatSession\AssignMetaChatToAgent;
+use App\Actions\Chat\MetaChatSession\CloseMetaChatSession;
+use App\Actions\Chat\MetaChatSession\DeleteMetaChatSessionPermanently;
+use App\Actions\Chat\MetaChatSession\MarkMetaChatSessionAsSpam;
+use App\Actions\Chat\MetaChatSession\RestoreMetaChatSession;
+use App\Actions\Chat\MetaChatSession\SetMetaChatSessionPriority;
+use App\Actions\Chat\MetaChatSession\ToggleMetaChatSessionHighlight;
+use App\Actions\Chat\MetaChatSession\TrashMetaChatSession;
+use App\Actions\Chat\MetaChatSession\UnmarkMetaChatSessionAsSpam;
+use App\Actions\Chat\MetaChatSession\ReopenMetaChatSession;
+use App\Actions\Chat\MetaChatSession\SendMetaChatMessage;
 use Illuminate\Support\Facades\Route;
 
 Route::name('agents.')->prefix('agents')->group(function () {
@@ -53,6 +64,29 @@ Route::name('agents.')->prefix('agents')->group(function () {
     Route::patch('{chatSession:ulid}/takeover', [AssignChatToAgent::class, 'takeOver'])
         ->name('takeover');
     Route::post('/messages/{chatSession:ulid}/send', SendChatMessage::class)->name('messages.send');
+    Route::post('/whatsapp/messages/{metaChatSession:ulid}/send', SendMetaChatMessage::class)->name('whatsapp.messages.send');
+    Route::post('/whatsapp/{metaChatSession:ulid}/assign-to-self', [AssignMetaChatToAgent::class, 'assignToSelf'])
+        ->name('whatsapp.assign.self');
+    Route::patch('/whatsapp/{metaChatSession:ulid}/takeover', [AssignMetaChatToAgent::class, 'takeOver'])
+        ->name('whatsapp.takeover');
+    Route::patch('/whatsapp/{metaChatSession:ulid}/close', CloseMetaChatSession::class)
+        ->name('whatsapp.sessions.close');
+    Route::patch('/whatsapp/{metaChatSession:ulid}/reopen', ReopenMetaChatSession::class)
+        ->name('whatsapp.sessions.reopen');
+    Route::patch('/whatsapp/{metaChatSession:ulid}/spam', MarkMetaChatSessionAsSpam::class)
+        ->name('whatsapp.sessions.spam');
+    Route::patch('/whatsapp/{metaChatSession:ulid}/not-spam', UnmarkMetaChatSessionAsSpam::class)
+        ->name('whatsapp.sessions.not_spam');
+    Route::patch('/whatsapp/{metaChatSession:ulid}/priority', SetMetaChatSessionPriority::class)
+        ->name('whatsapp.sessions.priority');
+    Route::patch('/whatsapp/{metaChatSession:ulid}/highlight', ToggleMetaChatSessionHighlight::class)
+        ->name('whatsapp.sessions.highlight');
+    Route::delete('/whatsapp/{metaChatSession:ulid}/trash', TrashMetaChatSession::class)
+        ->name('whatsapp.sessions.trash');
+    Route::patch('/whatsapp/{metaChatSession:ulid}/restore', RestoreMetaChatSession::class)
+        ->name('whatsapp.sessions.restore')->withTrashed();
+    Route::delete('/whatsapp/{metaChatSession:ulid}/force', DeleteMetaChatSessionPermanently::class)
+        ->name('whatsapp.sessions.force_delete')->withTrashed();
     Route::patch('/messages/{chatSession:ulid}/{chatMessage}/edit', UpdateChatMessage::class)->name('messages.update');
     Route::post('/messages/{chatMessage}/verify-image', VerifyChatImageMessage::class)->name('messages.verify_image');
     Route::get('/messages/{chatMessage}/slack-settings', GetChatMessageSlackSettings::class)->name('messages.slack_settings');

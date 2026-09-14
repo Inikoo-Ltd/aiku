@@ -1,0 +1,72 @@
+<?php
+
+/*
+ * Author: Artha <artha@aw-advantage.com>
+ * Copyright (c) 2026, Raul A Perusquia Flores
+ */
+
+namespace App\Actions\Chat\Whatsapp\Templates;
+
+use App\Actions\Chat\Whatsapp\Concerns\WithWhatsappCredentials;
+use App\Models\Catalogue\Shop;
+use Illuminate\Console\Command;
+use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
+use Lorisleiva\Actions\Concerns\AsAction;
+
+class GetWhatsappMessageTemplate
+{
+    use AsAction;
+    use WithWhatsappCredentials;
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    public function handle(Shop $shop): array
+    {
+        $wabaId      = (string) Arr::get($shop->settings, 'whatsapp.waba_id');
+        $accessToken = (string) Arr::get($shop->organisation->settings, 'meta.access_key');
+
+        if ($wabaId === '' || $accessToken === '') {
+            Log::warning('WhatsApp WABA ID or access token is not set', ['shop' => $shop->slug]);
+
+            return [];
+        }
+
+        $url = $this->whatsappEndpoint($wabaId.'/message_templates');
+
+        $templates = [];
+        while ($url) {
+            $response = Http::withToken($accessToken)->get($url);
+
+            if ($response->failed()) {
+                Log::warning('WhatsApp message templates request failed', [
+                    'shop'   => $shop->slug,
+                    'status' => $response->status(),
+                    'body'   => $response->json(),
+                ]);
+                break;
+            }
+
+            $templates = array_merge($templates, $response->json('data') ?? []);
+            $url       = $response->json('paging.next');
+        }
+
+        return $templates;
+    }
+
+    public function getCommandSignature(): string
+    {
+        return 'whatsapp:templates {shop : Shop slug}';
+    }
+
+    public function asCommand(Command $command): int
+    {
+        $shop = Shop::where('slug', $command->argument('shop'))->firstOrFail();
+
+        $this->handle($shop);
+
+        return 0;
+    }
+}

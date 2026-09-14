@@ -128,3 +128,9 @@ p span.country {
 .v-popper--theme-tooltip .v-popper__inner {
     max-width: 20rem;
 }
+
+/* Flashes the message a reply quote jumped to, so the eye lands on it after the scroll. */
+.chat-jump-highlight {
+    background-color: rgb(253 224 71 / 0.35);
+    box-shadow: 0 0 0 4px rgb(253 224 71 / 0.35);
+}

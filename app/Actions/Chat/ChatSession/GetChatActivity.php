@@ -38,7 +38,6 @@ class GetChatActivity
                     ChatEventTypeEnum::SPAM,
                     ChatEventTypeEnum::NOT_SPAM,
                 ])
-                ->with(['actor'])
                 ->orderBy('created_at', 'desc')
                 ->get()
                 ->map(function ($event) use ($chatSession) {

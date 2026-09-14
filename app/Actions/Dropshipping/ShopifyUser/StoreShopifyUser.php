@@ -127,7 +127,7 @@ class StoreShopifyUser extends RetinaAction
         }
 
         if (!preg_match('/^[a-zA-Z0-9-]+$/', $this->get('name'))) {
-            $validator->errors()->add('name', __('Shop name can only contain letters, numbers, and hyphens'));
+            $validator->errors()->add('name', __('This does not look like a Shopify store name. Use the .myshopify.com name, not your own domain. You can find it in your Shopify admin under Settings → Domains.'));
 
             return;
         }
@@ -172,6 +172,12 @@ class StoreShopifyUser extends RetinaAction
         $nameInput = trim($nameInput);
 
         $nameInput = preg_replace('#^https?:?:?//+#i', '', $nameInput);
+
+        if (preg_match('#^admin\.shopify\.com/store/([^/?\#]+)#i', $nameInput, $matches)) {
+            $nameInput = $matches[1];
+        }
+
+        $nameInput = preg_replace('#/.*$#', '', $nameInput);
         $nameInput = preg_replace('/\.myshopify\.com$/i', '', $nameInput);
 
         $nameInput = trim($nameInput);

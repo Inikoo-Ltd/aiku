@@ -11,6 +11,7 @@
 namespace App\Actions\Pupil\Auth;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Support\Facades\View;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -46,10 +47,13 @@ class AuthShopifyUser extends AuthController
         [$result, $status] = $authShop($request);
 
         if ($status === null) {
-            // Show exception, something is wrong
+            $this->logAuthFailure('Invalid HMAC verification', $request, $shopDomain, $result);
+
             throw new SignatureVerificationException('Invalid HMAC verification');
         } elseif ($status === false) {
             if (!$result['url']) {
+                $this->logAuthFailure('Missing auth url', $request, $shopDomain, $result);
+
                 throw new MissingAuthUrlException('Missing auth url');
             }
 
@@ -78,6 +82,28 @@ class AuthShopifyUser extends AuthController
                 ]
             );
         }
+    }
+
+    /**
+     * InstallShop swallows every exception from the token exchange and returns
+     * ['completed' => false, 'url' => null], so a network blip, a 401, an HMAC mismatch and a
+     * database constraint all surface here as the same opaque failure. Record what we do know
+     * about the request so the intermittent cases can be told apart.
+     *
+     * @param array{url?: string|null, completed?: bool, shop_id?: mixed} $result
+     */
+    private function logAuthFailure(string $reason, Request $request, ShopDomain $shopDomain, array $result): void
+    {
+        Log::warning('Shopify authenticate failed: '.$reason, [
+            'shop'          => $shopDomain->toNative(),
+            'shop_source'   => $request->has('shop') ? 'request' : 'user',
+            'has_host'      => $request->filled('host'),
+            'has_hmac'      => $request->filled('hmac'),
+            'has_code'      => $request->filled('code'),
+            'has_timestamp' => $request->filled('timestamp'),
+            'result_url'    => $result['url'] ?? null,
+            'shop_id'       => $result['shop_id'] ?? null,
+        ]);
     }
 
     public function token(Request $request)

@@ -19,6 +19,7 @@ use App\Actions\Traits\Authorisations\WithCRMAuthorisation;
 use App\Actions\Traits\WithCustomersSubNavigation;
 use App\Enums\Catalogue\Product\ProductStatusEnum;
 use App\Enums\Catalogue\Shop\ShopEngineEnum;
+use App\Enums\Helpers\Tag\TagScopeEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\CRM\Customer\CustomerStateEnum;
 use App\Enums\CRM\TrafficSource\TrafficSourcesTypeEnum;
@@ -32,6 +33,7 @@ use App\Models\Catalogue\Shop;
 use App\Models\Catalogue\Product;
 use App\Models\CRM\Customer;
 use App\Models\CRM\TrafficSource;
+use App\Models\Helpers\Tag;
 use App\Models\Discounts\Offer;
 use App\Models\Ordering\UpcomingTransaction;
 use App\Models\SysAdmin\Group;
@@ -73,6 +75,33 @@ class IndexCustomers extends OrgAction
     protected function recipeHasFilters(array $recipe): bool
     {
         return count(array_diff_key($recipe, ['all_customers' => true])) > 0;
+    }
+
+    /**
+     * Shows the tag coming from the url (dashboard segments, tags index) as a By Tags chip in the
+     * filter panel, so the panel and the export carry it instead of ignoring it.
+     *
+     * @return array<string, array{value: array<int, int>}>
+     */
+    protected function tagFilterAsRecipe(Shop $shop, ?string $prefix = null): array
+    {
+        $tagSlug = request()->input(($prefix ? $prefix.'_' : '').'filter.tag');
+
+        if (!$tagSlug) {
+            return [];
+        }
+
+        $tagId = Tag::where('slug', $tagSlug)
+            ->where(function ($query) use ($shop) {
+                $query->where('scope', TagScopeEnum::SYSTEM_CUSTOMER)
+                    ->orWhere(function ($query) use ($shop) {
+                        $query->whereIn('scope', [TagScopeEnum::ADMIN_CUSTOMER, TagScopeEnum::USER_CUSTOMER])
+                            ->where('shop_id', $shop->id);
+                    });
+            })
+            ->value('id');
+
+        return $tagId ? ['by_interest' => ['value' => [$tagId]]] : [];
     }
 
     protected function getElementGroups($parent): array
@@ -337,26 +366,12 @@ class IndexCustomers extends OrgAction
             if (is_array($recipe) && $this->recipeHasFilters($recipe)) {
                 $this->customerFilters = $recipe;
 
-                $recipeQuery = GetCustomersQueryByRecipe::run($parent->id, $recipe);
+                $recipeQuery = GetCustomersQueryByRecipe::run($parent->id, $recipe, false);
 
-                $queryBuilder->whereIn('customers.id', (clone $recipeQuery)->select('customers.id'));
-
-                $estimateQuery = (clone $recipeQuery);
+                $queryBuilder->whereIn('customers.id', $recipeQuery->select('customers.id'));
             } else {
-                $estimateQuery = Customer::where('shop_id', $parent->id);
+                $this->customerFilters = $this->tagFilterAsRecipe($parent, $prefix);
             }
-
-            if (count($this->stateFilter) > 0) {
-                $estimateQuery->whereIn('customers.state', $this->stateFilter);
-            }
-
-            if (count($this->statusFilter) > 0) {
-                $estimateQuery->whereIn('customers.status', $this->statusFilter);
-            }
-
-            $this->applyUpcomingFilter($estimateQuery, $parent->id);
-
-            $this->estimatedRecipients = $estimateQuery->count('customers.id');
         }
 
         if ($parent instanceof Organisation || $parent instanceof Shop) {
@@ -484,7 +499,7 @@ class IndexCustomers extends OrgAction
             }]);
         }
 
-        return $queryBuilder
+        $customers = $queryBuilder
             ->defaultSort('-created_at')
             ->addSelect([
                 'customers.location',
@@ -512,6 +527,10 @@ class IndexCustomers extends OrgAction
             ->allowedFilters([$globalSearch, $tagFilter, $countryFilter, $hasOrdersFilter])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
+
+        $this->estimatedRecipients = $customers->total();
+
+        return $customers;
     }
 
     public function tableStructure(Group|Organisation|Shop|Product|TrafficSource|Offer $parent, ?array $modelOperations = null, $prefix = null, ?TrafficSourcesTypeEnum $channelType = null): Closure

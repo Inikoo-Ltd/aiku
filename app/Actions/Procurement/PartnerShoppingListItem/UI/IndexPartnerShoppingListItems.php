@@ -70,6 +70,7 @@ class IndexPartnerShoppingListItems extends OrgAction
                 'partner_shopping_list_items.needed_by',
                 'partner_shopping_list_items.notes',
                 'partner_shopping_list_items.created_at',
+                'partner_shopping_list_items.pre_picked_at',
                 'partner_shopping_list_items.org_stock_id',
                 'org_stocks.code as org_stock_code',
                 'org_stocks.name as org_stock_name',

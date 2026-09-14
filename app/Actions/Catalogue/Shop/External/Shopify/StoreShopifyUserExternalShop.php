@@ -96,6 +96,12 @@ class StoreShopifyUserExternalShop extends OrgAction
         $nameInput = trim($nameInput);
 
         $nameInput = preg_replace('#^https?:?:?//+#i', '', $nameInput);
+
+        if (preg_match('#^admin\.shopify\.com/store/([^/?\#]+)#i', $nameInput, $matches)) {
+            $nameInput = $matches[1];
+        }
+
+        $nameInput = preg_replace('#/.*$#', '', $nameInput);
         $nameInput = preg_replace('/\.myshopify\.com$/i', '', $nameInput);
 
         $nameInput = trim($nameInput);

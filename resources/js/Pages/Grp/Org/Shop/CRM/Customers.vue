@@ -70,9 +70,10 @@ const downloadUrl = (type: string) => {
         :recipients-recipe="filters && Object.keys(filters).length ? filters : null" :shop-id="(shop_id as number)"
         :shop-slug="(shop_slug as string)" :estimated-recipients="estimatedRecipients ?? 0"
         :export-routes="download_route" :show-save="false" :state-options="stateOptions" :state-filter="stateFilter ?? []"
-        :status-options="statusOptions" :status-filter="statusFilter ?? []" estimate-label="Estimated Customers"
+        :status-options="statusOptions" :status-filter="statusFilter ?? []"
         :upcoming-ready-count="upcomingReadyCount" :upcoming-out-of-stock-count="upcomingOutOfStockCount"
-        :upcoming-filter="upcomingFilter ?? null" :export-fields="exportFields" />
+        :upcoming-filter="upcomingFilter ?? null" :export-fields="exportFields"
+        estimate-label="Customers found" />
 
     <TableCustomers :data="customers" />
 </template>

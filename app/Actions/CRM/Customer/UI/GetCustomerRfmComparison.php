@@ -4,8 +4,10 @@ namespace App\Actions\CRM\Customer\UI;
 
 use App\Enums\CRM\Customer\CustomerRfmSegmentEnum;
 use App\Models\Catalogue\Shop;
+use App\Models\CRM\Customer;
 use App\Models\CRM\CustomerRfmSnapshot;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsObject;
 
 class GetCustomerRfmComparison
@@ -30,15 +32,20 @@ class GetCustomerRfmComparison
             $previous = null;
         }
 
-        $currentData  = $current ? $this->rfmData($current) : $this->emptyRfmData();
+        $isLivePeriod = $periodEnd->greaterThanOrEqualTo(now()->startOfDay());
+
+        $currentData  = $isLivePeriod
+            ? $this->summaryToRfmData($this->liveTagsSummary($shop->id))
+            : ($current ? $this->rfmData($current) : $this->emptyRfmData());
         $previousData = $previous ? $this->rfmData($previous) : $this->emptyRfmData();
 
         return [
             'comparison' => [
                 'current'    => [
-                    'date'  => $current?->snapshot_date,
-                    'data'  => $currentData,
-                    'total' => array_sum($currentData[CustomerRfmSegmentEnum::TYPE_RECENCY]),
+                    'date'    => $isLivePeriod ? now() : $current?->snapshot_date,
+                    'data'    => $currentData,
+                    'total'   => array_sum($currentData[CustomerRfmSegmentEnum::TYPE_RECENCY]),
+                    'is_live' => $isLivePeriod,
                 ],
                 'previous'   => [
                     'date'  => $previous?->snapshot_date,
@@ -51,7 +58,7 @@ class GetCustomerRfmComparison
                     'to'   => $periodEnd->toDateString(),
                 ],
             ],
-            'segments'          => $this->getRfmSegmentsStructure($shop),
+            'segments'          => $this->getRfmSegmentsStructure($shop, $isLivePeriod),
             'newsletterRevenue' => [
                 'currency' => $shop->currency->code,
                 'data'     => GetCustomerRfmNewsletterRevenue::run($shop, $this->parseDate($from), $this->parseDate($to)),
@@ -83,17 +90,45 @@ class GetCustomerRfmComparison
         return $snapshot->rfm_data();
     }
 
-    protected function emptyRfmData(): array
+    /**
+     * @return array<string, int>
+     */
+    protected function liveTagsSummary(int $shopId): array
+    {
+        return DB::table('customers as c')
+            ->join('model_has_tags as mht', function ($join) {
+                $join->on('c.id', '=', 'mht.model_id')
+                    ->where('mht.model_type', '=', (new Customer())->getMorphClass());
+            })
+            ->join('tags as t', 't.id', '=', 'mht.tag_id')
+            ->where('c.shop_id', $shopId)
+            ->whereNull('c.deleted_at')
+            ->whereIn(DB::raw("t.data->>'type'"), CustomerRfmSegmentEnum::types())
+            ->groupBy('t.name')
+            ->select('t.name', DB::raw('count(distinct c.id) as customer_count'))
+            ->pluck('customer_count', 'name')
+            ->toArray();
+    }
+
+    /**
+     * @param  array<string, int>  $tagsSummary
+     */
+    protected function summaryToRfmData(array $tagsSummary): array
     {
         $data = [];
 
         foreach (CustomerRfmSegmentEnum::types() as $type) {
             foreach (CustomerRfmSegmentEnum::tagNamesOfType($type) as $tagName) {
-                $data[$type][$tagName] = 0;
+                $data[$type][$tagName] = $tagsSummary[$tagName] ?? 0;
             }
         }
 
         return $data;
+    }
+
+    protected function emptyRfmData(): array
+    {
+        return $this->summaryToRfmData([]);
     }
 
     protected function calculateChanges(array $currentData, array $previousData): array
@@ -117,7 +152,7 @@ class GetCustomerRfmComparison
         return $changes;
     }
 
-    public function getRfmSegmentsStructure(Shop $shop): array
+    public function getRfmSegmentsStructure(Shop $shop, bool $isLivePeriod = true): array
     {
         $structure = [];
 
@@ -129,7 +164,9 @@ class GetCustomerRfmComparison
                 'description' => CustomerRfmSegmentEnum::typeDescriptions()[$type],
                 'segments'    => array_map(fn (CustomerRfmSegmentEnum $segment) => $segment->tagName(), $segments),
                 'tooltips'    => $this->keyByTagName($segments, fn (CustomerRfmSegmentEnum $segment) => CustomerRfmSegmentEnum::tooltips()[$segment->value]),
-                'routes'      => $this->keyByTagName($segments, fn (CustomerRfmSegmentEnum $segment) => $this->segmentRoute($shop, $segment)),
+                'routes'      => $isLivePeriod
+                    ? $this->keyByTagName($segments, fn (CustomerRfmSegmentEnum $segment) => $this->segmentRoute($shop, $segment))
+                    : [],
             ];
         }
 

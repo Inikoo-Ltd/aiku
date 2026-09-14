@@ -137,6 +137,19 @@ class UpdateProductCategoryOffersData
                 'category'   => $categoryLink,
                 'percentage' => $percentage
             ]);
+        } elseif ($offer->type == 'Product Quantity Ordered') {
+            $triggerLabels[] = __(':n or more', ['n' => $offer->trigger_data['item_quantity']]);
+
+            $productsTriggerLabel = __('Order :n+ of this product to get :percentage off', [
+                'n'          => (int)$offer->trigger_data['item_quantity'],
+                'percentage' => $percentage
+            ]);
+        } elseif ($offer->type == 'Product Amount Ordered') {
+            $triggerLabels[] = __('Order this product');
+
+            $productsTriggerLabel = __('Order this product to get :percentage off', [
+                'percentage' => $percentage
+            ]);
         } elseif ($offer->type == 'Category Ordered') {
             $triggerLabels[] = __('Order any product in this range');
 

@@ -3,7 +3,7 @@
 // --------------------------
 export interface LastMessage {
 	message?: string
-	sender_type: "guest" | "user" | "agent" | "system"
+	sender_type: "guest" | "user" | "agent" | "system" | "system_campaign"
 	created_at?: string
 	created_at_timestamp?: number
 	is_read: boolean
@@ -28,9 +28,12 @@ export interface ChatInboxOrganisation {
 // --------------------------
 // Session data from API
 // --------------------------
+export type ChatChannel = "website" | "whatsapp"
+
 export interface SessionAPI {
 	id: string
 	ulid: string
+	channel?: ChatChannel
 	status: "waiting" | "active" | "closed"
 	guest_identifier: string | null
 	contact_name: string | null
@@ -49,12 +52,20 @@ export interface SessionAPI {
 		name: string
 	}
 	unread_count: number
+	can_send_non_template_message?: boolean
 	message_count: number
 	duration: string
 	ai_summary: {
 		summary: string
 		key_points: string
 		sentiment: string
+	} | null
+	customer?: {
+		id: string
+		name: string
+		slug?: string
+		email?: string
+		phone?: string
 	} | null
 	web_user?: {
 		id: string
@@ -104,6 +115,7 @@ export interface Contact {
 	id: string
 	name: string
 	ulid: string
+	channel?: ChatChannel
 	avatar: string
 	lastMessage: string
 	priority: string
@@ -135,6 +147,7 @@ export interface Contact {
 		phone?: string
 		[key: string]: any
 	} | null
+	phone_number?: string | null
 	agent?: {
 		id: string
 		name: string
@@ -170,7 +183,7 @@ export interface ChatMessage {
 	message?: string
 	ulid?: string
 	message_text: string
-	sender_type: "guest" | "user" | "agent" | "system"
+	sender_type: "guest" | "user" | "agent" | "system" | "system_campaign"
 	created_at: string
 	is_read?: boolean
 	reactions?: ChatMessageReactionGroup[]

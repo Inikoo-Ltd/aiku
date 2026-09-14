@@ -22,6 +22,8 @@ import Button from "@/Components/Elements/Buttons/Button.vue"
 import Image from "@common/Components/Image.vue"
 import { faUser, faSpinner } from "@far"
 import BubbleChat from "@/Components/Chat/BubbleChat.vue"
+import { useJumpToMessage } from "@/Composables/useJumpToMessage"
+import ChatTimelineEvent from "@/Components/Chat/ChatTimelineEvent.vue"
 import { useChatLanguages } from "@/Composables/useLanguages"
 import { notify } from "@kyvg/vue3-notification"
 import { Select } from "primevue"
@@ -211,6 +213,7 @@ const reopenChat = async () => {
 }
 
 const messagesLocal = ref<LocalChatMessage[]>([])
+const eventsLocal = ref<any[]>([])
 const newMessage = ref("")
 
 const handleEditMessage = async ({ id, text }: { id: number; text: string }) => {
@@ -243,6 +246,8 @@ const handleEditMessage = async ({ id, text }: { id: number; text: string }) => 
 
 const messageInput = ref<HTMLTextAreaElement>()
 const messagesContainer = ref<HTMLDivElement>()
+
+const { jumpToMessage } = useJumpToMessage(messagesContainer)
 
 const showEmojiPicker = ref(false)
 const emojiPickerContainer = ref<HTMLElement | null>(null)
@@ -522,16 +527,20 @@ const getMessages = async (loadMore = false) => {
     )
 
     const messages = data?.data?.messages ?? data?.messages ?? []
+    const events = data?.data?.events ?? []
 
     if (!loadMore) {
         messagesLocal.value = messages.map((m: ChatMessage) => ({
             ...m,
             _status: "sent",
         }))
+        eventsLocal.value = events
     } else {
         messagesLocal.value.unshift(
             ...messages.map((m: ChatMessage) => ({ ...m, _status: "sent" }))
         )
+        const known = new Set(eventsLocal.value.map((e: any) => e.id))
+        eventsLocal.value = [...events.filter((e: any) => !known.has(e.id)), ...eventsLocal.value]
     }
 
     const page = data?.data?.pagination ?? data?.pagination
@@ -544,32 +553,66 @@ const getMessages = async (loadMore = false) => {
     }
 }
 
-const groupedMessages = computed(() => {
-    const groups: Record<string, LocalChatMessage[]> = {}
+type TimelineEntry =
+    | { kind: "message"; at: number; key: string; message: LocalChatMessage }
+    | { kind: "event"; at: number; key: string; event: any }
 
-    messagesLocal.value
-        .slice()
-        .sort((a, b) => +new Date(a.created_at) - +new Date(b.created_at))
-        .forEach((msg) => {
-            const label = new Intl.DateTimeFormat("id-ID", {
-                day: "2-digit",
-                month: "long",
-                year: "numeric",
-            }).format(new Date(msg.created_at))
+// Messages and status events share one chronological stream so the agent can see what
+// happened to the conversation exactly where it happened.
+const groupedTimeline = computed(() => {
+    const entries: TimelineEntry[] = [
+        ...messagesLocal.value.map((message) => ({
+            kind: "message" as const,
+            at: +new Date(message.created_at),
+            key: `m-${message.id}`,
+            message,
+        })),
+        ...eventsLocal.value.map((event: any) => ({
+            kind: "event" as const,
+            at: +new Date(event.created_at),
+            key: `e-${event.id}`,
+            event,
+        })),
+    ].sort((a, b) => a.at - b.at)
 
-                ; (groups[label] ??= []).push(msg)
-        })
+    const groups: Record<string, TimelineEntry[]> = {}
+
+    entries.forEach((entry) => {
+        const label = new Intl.DateTimeFormat("id-ID", {
+            day: "2-digit",
+            month: "long",
+            year: "numeric",
+        }).format(new Date(entry.at))
+
+            ; (groups[label] ??= []).push(entry)
+    })
 
     return groups
 })
 
 let chatChannel: any = null
 
+// Echo hands back the same channel object for a name already subscribed, so this pane
+// and a mini chat window on the same conversation share one channel. Dropping a
+// listener by event name alone would take the other component's with it, which is why
+// each handler is kept and removed individually.
+let onMessage: ((payload: any) => void) | null = null
+let onReaction: ((payload: any) => void) | null = null
+let onMessagesRead: ((payload: any) => void) | null = null
+let onTyping: ((payload: any) => void) | null = null
+let onTranslation: ((payload: any) => void) | null = null
+
 const stopSocket = () => {
-    chatChannel?.stopListening(".message")
-    chatChannel?.stopListening(".typing")
-    chatChannel?.stopListening(".messages.read")
-    chatChannel?.stopListening(".translation")
+    if (onMessage) chatChannel?.stopListening(".message", onMessage)
+    if (onReaction) chatChannel?.stopListening(".reaction", onReaction)
+    if (onMessagesRead) chatChannel?.stopListening(".messages.read", onMessagesRead)
+    if (onTyping) chatChannel?.stopListening(".typing", onTyping)
+    if (onTranslation) chatChannel?.stopListening(".translation", onTranslation)
+    onMessage = null
+    onReaction = null
+    onMessagesRead = null
+    onTyping = null
+    onTranslation = null
     chatChannel = null
 }
 
@@ -584,7 +627,7 @@ const initSocket = () => {
     chatChannel = window.Echo.channel(`chat-session.${chatSession.value.ulid}`)
 
     // Message
-    chatChannel.listen(".message", ({ message }: any) => {
+    onMessage = ({ message }: any) => {
         messagesLocal.value = messagesLocal.value.filter(
             (m) => !(m._status === "sending" && m.sender_type === "agent")
         )
@@ -621,8 +664,9 @@ const initSocket = () => {
         }
 
         scrollBottom()
-    })
-    chatChannel.listen(".reaction", ({ message }: any) => {
+    }
+
+    onReaction = ({ message }: any) => {
         if (!message?.id) return
         const index = messagesLocal.value.findIndex((m) => m.id === message.id)
         if (index !== -1) {
@@ -631,8 +675,9 @@ const initSocket = () => {
                 reactions: message.reactions ?? [],
             }
         }
-    })
-    chatChannel.listen(".messages.read", (event: any) => {
+    }
+
+    onMessagesRead = (event: any) => {
         if (event.reader_type !== "agent") {
             messagesLocal.value.forEach((msg) => {
                 if (event.message_ids.includes(msg.id)) {
@@ -640,9 +685,9 @@ const initSocket = () => {
                 }
             })
         }
-    })
+    }
 
-    chatChannel.listen(".typing", (payload: any) => {
+    onTyping = (payload: any) => {
         if (payload.user_name === "agent") return
 
         if (payload.is_typing) {
@@ -662,13 +707,19 @@ const initSocket = () => {
         remoteTypingTimeout = setTimeout(() => {
             remoteTypingUser.value = null
         }, 800)
-    })
+    }
 
-    chatChannel.listen(".translation", async (event: any) => {
+    onTranslation = async () => {
         isTranslatingAll.value = false
 
         await getMessages()
-    })
+    }
+
+    chatChannel.listen(".message", onMessage)
+    chatChannel.listen(".reaction", onReaction)
+    chatChannel.listen(".messages.read", onMessagesRead)
+    chatChannel.listen(".typing", onTyping)
+    chatChannel.listen(".translation", onTranslation)
 }
 
 const markAsRead = async () => {
@@ -925,19 +976,24 @@ const handleClickOutside = (e: MouseEvent) => {
                 </button>
             </div>
 
-            <template v-for="(msgs, date) in groupedMessages" :key="date">
+            <template v-for="(entries, date) in groupedTimeline" :key="date">
                 <div class="text-center text-xs text-gray-400">{{ date }}</div>
-                <div v-for="msg in msgs" :key="msg.id" class="flex"
-                    :class="msg.sender_type === 'agent' ? 'justify-end' : 'justify-start'">
-                    <BubbleChat :message="msg" viewerType="agent"
-                        :contactName="session?.contact_name || session?.guest_identifier"
-                        :agentName="session?.assigned_agent?.name"
-                        :canEdit="isMyChat && !isClosed && !isWaiting"
-                        :sessionUlid="session?.ulid"
-                        :viewerReactorId="layout?.user?.id"
-                        @edit-message="handleEditMessage"
-                        @open-slack-settings="onOpenSlackSettings" />
-                </div>
+                <template v-for="entry in entries" :key="entry.key">
+                    <ChatTimelineEvent v-if="entry.kind === 'event'" :event="entry.event" />
+                    <div v-else class="flex rounded-lg transition-colors"
+                        :data-message-id="entry.message.id"
+                        :class="entry.message.sender_type === 'agent' ? 'justify-end' : 'justify-start'">
+                        <BubbleChat :message="entry.message" viewerType="agent"
+                            :contactName="session?.contact_name || session?.guest_identifier"
+                            :agentName="session?.assigned_agent?.name"
+                            :canEdit="isMyChat && !isClosed && !isWaiting"
+                            :sessionUlid="session?.ulid"
+                            :viewerReactorId="layout?.user?.id"
+                            @edit-message="handleEditMessage"
+                            @jump-to-message="jumpToMessage"
+                            @open-slack-settings="onOpenSlackSettings" />
+                    </div>
+                </template>
             </template>
         </div>
         <div v-if="remoteTypingUser" class="text-xs text-gray-400 italic px-2 py-1">

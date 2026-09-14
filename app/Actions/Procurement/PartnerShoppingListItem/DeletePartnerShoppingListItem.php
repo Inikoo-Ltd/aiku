@@ -32,6 +32,7 @@ class DeletePartnerShoppingListItem extends OrgAction
     public function handle(PartnerShoppingListItem $partnerShoppingListItem): bool
     {
         abort_unless($partnerShoppingListItem->state === ShoppingListItemStateEnum::OPEN, 422, 'Only open items can be deleted');
+        abort_if($partnerShoppingListItem->pre_picked_at, 422, 'This item is already being prepared by the partner and can no longer be removed');
 
         $deleted = $partnerShoppingListItem->delete();
 

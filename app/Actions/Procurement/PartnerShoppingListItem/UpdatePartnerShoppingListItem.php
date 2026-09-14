@@ -37,6 +37,7 @@ class UpdatePartnerShoppingListItem extends OrgAction
     public function handle(PartnerShoppingListItem $partnerShoppingListItem, array $modelData): PartnerShoppingListItem
     {
         abort_unless($partnerShoppingListItem->state === ShoppingListItemStateEnum::OPEN, 422, 'Only open items can be updated');
+        abort_if($partnerShoppingListItem->pre_picked_at, 422, 'This item is already being prepared by the partner and can no longer be changed');
 
         $partnerShoppingListItem = $this->update($partnerShoppingListItem, $modelData);
         if ($partnerShoppingListItem->wasChanged('quantity')) {

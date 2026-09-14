@@ -43,6 +43,7 @@ class GetChatSessions
             'trashed'         => ['sometimes', 'boolean'],
             'limit'           => ['sometimes', 'integer', 'min:1', 'max:50'],
             'web_user_id'     => ['sometimes', 'integer', 'exists:web_users,id'],
+            'ulid'            => ['sometimes', 'string', 'max:26'],
             'search'          => ['sometimes', 'string', 'max:100'],
             'organisation_id' => ['sometimes', 'integer', 'exists:organisations,id'],
             'shop_id'         => ['sometimes', 'integer', 'exists:shops,id'],
@@ -130,28 +131,37 @@ class GetChatSessions
             if ($currentAgent) {
                 $shopIds = $currentAgent->shops()->pluck('shops.id');
 
-                if (!empty($filters['view_team'])) {
+                $requestedStatuses = (array) ($filters['statuses'] ?? ($filters['status'] ? [$filters['status']] : []));
+                $isClosed          = in_array('closed', $requestedStatuses);
+                $assignmentStatus  = $isClosed
+                    ? ChatAssignmentStatusEnum::RESOLVED->value
+                    : ChatAssignmentStatusEnum::ACTIVE->value;
+
+                if (!empty($filters['ulid'])) {
+                    // Opening one chat by link: it only has to belong to a shop this
+                    // agent handles, whoever is currently on it. Which tab and which of
+                    // my/team it belongs to is then decided from what comes back.
+                    $query->whereIn('shop_id', $shopIds);
+                } elseif (!empty($filters['view_team'])) {
                     $teamAgentIds = ChatAgent::whereHas('shops', function ($q) use ($shopIds) {
                         $q->whereIn('shops.id', $shopIds);
                     })->where('id', '!=', $currentAgent->id)->pluck('id');
-
-                    $requestedStatuses = (array) ($filters['statuses'] ?? ($filters['status'] ? [$filters['status']] : []));
-                    $isClosed          = in_array('closed', $requestedStatuses);
-                    $assignmentStatus  = $isClosed
-                        ? ChatAssignmentStatusEnum::RESOLVED->value
-                        : ChatAssignmentStatusEnum::ACTIVE->value;
 
                     $query->whereHas('assignments', function ($assignmentQ) use ($teamAgentIds, $assignmentStatus) {
                         $assignmentQ->whereIn('chat_agent_id', $teamAgentIds)
                             ->where('status', $assignmentStatus);
                     });
                 } else {
-                    $query->where(function ($q) use ($currentAgent, $shopIds) {
+                    // "Mine" means currently held by me. Matching any assignment row
+                    // regardless of status would keep threads that have since been
+                    // handed to another agent, listed under that agent's name.
+                    $query->where(function ($q) use ($currentAgent, $shopIds, $assignmentStatus) {
                         $q->where(function ($sub) use ($shopIds) {
                             $sub->whereIn('shop_id', $shopIds)
                                 ->where('status', ChatSessionStatusEnum::WAITING);
-                        })->orWhereHas('assignments', function ($assignmentQ) use ($currentAgent) {
-                            $assignmentQ->where('chat_agent_id', $currentAgent->id);
+                        })->orWhereHas('assignments', function ($assignmentQ) use ($currentAgent, $assignmentStatus) {
+                            $assignmentQ->where('chat_agent_id', $currentAgent->id)
+                                ->where('status', $assignmentStatus);
                         });
                     });
                 }
@@ -170,7 +180,13 @@ class GetChatSessions
         }
 
         if (isset($filters['web_user_id'])) {
-            $query->where('web_user_id', $filters['web_user_id']);
+            $query->whereIn('web_user_id', (array) $filters['web_user_id']);
+        }
+
+        // Opening a chat from a link has to find it wherever it sits in the list, not
+        // only within the first page.
+        if (!empty($filters['ulid'])) {
+            $query->where('ulid', $filters['ulid']);
         }
 
         if (!empty($filters['search'])) {

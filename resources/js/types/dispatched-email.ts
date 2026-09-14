@@ -30,6 +30,7 @@ export interface DispatchedEmailResource {
     customer_slug: string
     order_slug: string
     fulfilment_customer_slug: string
+    outbox_slug: string
 
 
 }
