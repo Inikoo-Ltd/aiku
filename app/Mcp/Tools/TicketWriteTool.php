@@ -21,7 +21,7 @@ use Laravel\Mcp\Response;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
 
-#[Description('Change a ticket or create a help ticket. With a reference: add a comment (public, posted as you), rewrite subject or description, change status (open, in_progress, waiting, resolved, cancelled), priority, assignee (username), kind, module or tags. Without a reference: creates a new HELP ticket with subject, and optional description, kind, module, priority. Every change is recorded as the authenticated user, or as the user named in acting_as when a help desk supervisor passes it. Only engineers, lead engineers and QA can use it.')]
+#[Description('Change a ticket or create a help ticket. With a reference: add a comment (posted as you; internal=true keeps it visible to the help desk only, for technical notes: ids repaired, commands run, root cause), rewrite subject or description, change status (open, in_progress, waiting, resolved, cancelled), priority, assignee (username), kind, module or tags. Without a reference: creates a new HELP ticket with subject, and optional description, kind, module, priority. Every change is recorded as the authenticated user, or as the user named in acting_as when a help desk supervisor passes it. Only engineers, lead engineers and QA can use it.')]
 class TicketWriteTool extends Tool
 {
     public function shouldRegister(Request $request): bool
@@ -36,6 +36,7 @@ class TicketWriteTool extends Tool
             'subject'     => ['required_without:reference', 'string', 'max:255'],
             'description' => ['sometimes', 'nullable', 'string'],
             'comment'     => ['sometimes', 'string'],
+            'internal'    => ['sometimes', 'boolean'],
             'status'      => ['sometimes', 'in:open,in_progress,waiting,resolved,pending_deploy,cancelled'],
             'priority'    => ['sometimes', 'in:low,normal,high,urgent'],
             'assignee'    => ['sometimes', 'nullable', 'string'],
@@ -121,7 +122,7 @@ class TicketWriteTool extends Tool
             if (!$ticket->assignee_id) {
                 return Response::error("$ticket->reference has no assignee. Assign it before commenting.");
             }
-            StoreTicketComment::make()->action($ticket, $user, ['body' => $request->string('comment')->toString()]);
+            StoreTicketComment::make()->action($ticket, $user, ['body' => $request->string('comment')->toString(), 'is_internal' => $request->boolean('internal')]);
         }
 
         return Response::json(['updated' => $ticket->reference, 'changes' => array_keys($changes), 'commented' => $request->filled('comment'), 'ticket' => TicketResource::make($ticket->fresh())->resolve()]);
@@ -136,7 +137,8 @@ class TicketWriteTool extends Tool
             'reference'   => $schema->string()->description('Ticket to change, e.g. HELP-3074. Omit to create a new HELP ticket'),
             'subject'     => $schema->string()->description('Subject: for a new ticket, or to rewrite it on an existing one'),
             'description' => $schema->string()->description('Description: for a new ticket, or to rewrite it on an existing one'),
-            'comment'     => $schema->string()->description('Public comment to add to the ticket, posted as you'),
+            'comment'     => $schema->string()->description('Comment to add to the ticket, posted as you'),
+            'internal'    => $schema->boolean()->description('true = internal comment, visible to the help desk only. Use it for technical notes (ids repaired, commands run, root cause) so the public thread stays readable for the reporter'),
             'status'      => $schema->string()->description('open, in_progress, waiting, resolved, pending_deploy or cancelled. pending_deploy = close after next deployment (fix already on main): the comment is held and posted when the deployment closes the ticket'),
             'priority'    => $schema->string()->description('low, normal, high or urgent'),
             'assignee'    => $schema->string()->description('Username to assign, empty string to unassign'),

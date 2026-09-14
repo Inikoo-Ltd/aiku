@@ -619,6 +619,9 @@ test('assistant raises, lists, works and closes a ticket through MCP', function 
         ->and($ticket->tags)->toBe(['data fix'])
         ->and($ticket->comments()->where('body', 'Fixed by clearing the stale lock')->value('author_id'))->toBe($this->user->id);
 
+    AikuServer::actingAs($this->user)->tool(TicketWriteTool::class, ['reference' => $reference, 'comment' => 'Merged stock 41882 into 40115', 'internal' => true])->assertOk();
+    expect($ticket->comments()->where('body', 'Merged stock 41882 into 40115')->value('is_internal'))->toBeTrue();
+
     $shown = AikuServer::actingAs($this->user)->tool(TicketsTool::class, ['reference' => strtolower($reference)]);
     $shown->assertOk()->assertSee('Fixed by clearing the stale lock');
 
