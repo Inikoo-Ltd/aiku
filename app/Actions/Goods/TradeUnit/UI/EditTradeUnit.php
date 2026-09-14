@@ -12,6 +12,10 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithGoodsAuthorisation;
 use App\Http\Resources\Goods\IngredientsResource;
 use App\Actions\Traits\UI\WithBucketNavigation;
+use App\Actions\Helpers\Language\UI\GetLanguagesOptions;
+use App\Enums\Goods\TradeUnit\TradeUnitBestBeforeEnum;
+use App\Enums\Goods\TradeUnit\TradeUnitMarketEnum;
+use App\Enums\Goods\TradeUnit\TradeUnitPackagingMaterialEnum;
 use App\Enums\Goods\TradeUnit\TradeUnitStatusEnum;
 use App\Models\Goods\TradeUnit;
 use Inertia\Inertia;
@@ -438,6 +442,98 @@ class EditTradeUnit extends OrgAction
                                     'label' => __('Serious Health Hazard'),
                                     'value' => $tradeUnit->pictogram_danger,
                                     'suffixImage' => '/hazardIcon/serious-health-hazard.png'
+                                ],
+                            ],
+                        ],
+                        [
+                            'label'  => __('Labeling & Compliance Marks'),
+                            'icon'   => 'fa-light fa-stamp',
+                            'fields' => [
+                                'markets' => [
+                                    'type'         => 'checkbox',
+                                    'label'        => __('Markets'),
+                                    'mode'         => 'inline',
+                                    'emptyWarning' => __('Markets are shown on the product page. With none selected, the product page may not show market details.'),
+                                    'value'        => TradeUnitMarketEnum::checkboxValue(data_get($tradeUnit->label_info, 'markets')),
+                                ],
+                                'languages' => [
+                                    'type'         => 'select-improved',
+                                    'label'        => __('Languages'),
+                                    'placeholder'  => __('Select languages'),
+                                    'options'      => array_values(GetLanguagesOptions::make()->all()),
+                                    'labelProp'    => 'name',
+                                    'valueProp'    => 'code',
+                                    'tagLabelProp' => 'code',
+                                    'tagUppercase' => true,
+                                    'value'        => data_get($tradeUnit->label_info, 'languages', []),
+                                ],
+                                'best_before' => [
+                                    'type'        => 'select-improved',
+                                    'label'       => __('PAO / Expiry Date / Best Before'),
+                                    'placeholder' => __('Select an option'),
+                                    'multiple'    => false,
+                                    'options'     => TradeUnitBestBeforeEnum::options(),
+                                    'labelProp'   => 'label',
+                                    'valueProp'   => 'value',
+                                    'value'       => data_get($tradeUnit->label_info, 'best_before'),
+                                ],
+                                'packaging_material_codes' => [
+                                    'type'             => 'select-improved',
+                                    'label'            => __('Packaging Material Codes'),
+                                    'placeholder'      => __('Select packaging materials'),
+                                    'options'          => TradeUnitPackagingMaterialEnum::options(),
+                                    'labelProp'        => 'label',
+                                    'valueProp'        => 'value',
+                                    'tagLabelProp'     => 'code',
+                                    'enableHideToggle' => true,
+                                    'toggle_value'     => data_get($tradeUnit->label_info, 'packaging_material_codes.show', false),
+                                    'hasOther'         => [
+                                        'name'  => 'packaging_material_codes_show',
+                                        'value' => data_get($tradeUnit->label_info, 'packaging_material_codes.show', false),
+                                    ],
+                                    'value'            => data_get($tradeUnit->label_info, 'packaging_material_codes.value', []),
+                                ],
+                                'batch_number' => [
+                                    'type'  => 'toggle',
+                                    'label' => __('Batch Number'),
+                                    'value' => data_get($tradeUnit->label_info, 'batch_number', false),
+                                    'single_description' => __("When enabled, this will be marked as 'Present'"),
+                                ],
+                                'ce_marking' => [
+                                    'type'  => 'toggle',
+                                    'label' => __('CE Markings'),
+                                    'value' => data_get($tradeUnit->label_info, 'ce_marking', false),
+                                    'single_description' => __("When enabled, this will be marked as 'Present'"),
+                                ],
+                                'ukca_marking' => [
+                                    'type'  => 'toggle',
+                                    'label' => __('UKCA Markings'),
+                                    'value' => data_get($tradeUnit->label_info, 'ukca_marking', false),
+                                    'single_description' => __("When enabled, this will be marked as 'Present'"),
+                                ],
+                                'weee_symbol' => [
+                                    'type'  => 'toggle',
+                                    'label' => __('WEEE Symbol'),
+                                    'value' => data_get($tradeUnit->label_info, 'weee_symbol', false),
+                                    'single_description' => __("When enabled, this will be marked as 'Present'"),
+                                ],
+                                'ip_rating' => [
+                                    'type'  => 'toggle',
+                                    'label' => __('IP Rating'),
+                                    'value' => data_get($tradeUnit->label_info, 'ip_rating', false),
+                                    'single_description' => __("When enabled, this will be marked as 'Present'"),
+                                ],
+                                'sorting_recycling_information' => [
+                                    'type'  => 'toggle',
+                                    'label' => __('Sorting / Recycling Information'),
+                                    'value' => data_get($tradeUnit->label_info, 'sorting_recycling_information', false),
+                                    'single_description' => __("When enabled, this will be marked as 'Present'"),
+                                ],
+                                'safety_icons' => [
+                                    'type'  => 'toggle',
+                                    'label' => __('Safety Icons'),
+                                    'value' => data_get($tradeUnit->label_info, 'safety_icons', false),
+                                    'single_description' => __('Candles only. When enabled, candle safety warning pictograms are shown on the product page'),
                                 ],
                             ],
                         ],

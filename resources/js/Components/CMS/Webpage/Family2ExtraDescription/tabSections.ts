@@ -114,6 +114,12 @@ export const aboutSectionWithoutButton = () => ({
 	replaceForm: [layoutSection()],
 })
 
+export const regulatorySection = () => ({
+	name: "Regulatory & Label Information",
+	key: ["regulatory"],
+	replaceForm: [layoutSection()],
+})
+
 export const marketingSection = () => ({
 	name: "Marketing & Materials",
 	key: ["marketing"],

@@ -37,6 +37,7 @@ import ButtonForm from '@/Components/Forms/Fields/ButtonForm.vue'
 import cropImageFull from '@/Components/Forms/Fields/CropImageFull.vue'
 import FormEditTradeUnit from '@/Components/Forms/Fields/FormEditTradeUnit.vue'
 import TagsTradeUnits from '@/Components/Forms/Fields/TagsTradeUnits.vue'
+import SelectImproved from '@/Components/Forms/Fields/SelectImproved.vue'
 import invoiceSerialReferences from '@/Components/Forms/Fields/invoiceSerialReferences.vue'
 import ListSelectorTradeUnit from "@/Components/Forms/Fields/ListSelectorTradeUnit.vue"
 
@@ -186,6 +187,7 @@ export const componentsList: { [key: string]: Component } = {
     'list-selector': ListSelectorFrom,
     'edit-trade-unit-shop': FormEditTradeUnit,
     'tags-trade-unit': TagsTradeUnits,
+    'select-improved': SelectImproved,
     'brands-trade-unit': BrandsTradeUnit,
     'multiselect-tags': MultiselectTagsInfiniteScroll,
     'input-dimension': InputDimensions,
