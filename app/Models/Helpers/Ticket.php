@@ -8,6 +8,7 @@
 
 namespace App\Models\Helpers;
 
+use App\Models\CRM\WebUser;
 use App\Enums\CRM\Livechat\ChatPriorityEnum;
 use App\Enums\Helpers\Ticket\TicketKindEnum;
 use App\Enums\Helpers\Ticket\TicketModuleEnum;
@@ -255,6 +256,20 @@ class Ticket extends Model implements Auditable, HasMedia
     public function isVisibleTo(User $user): bool
     {
         return static::query()->whereKey($this->id)->visibleTo($user)->exists();
+    }
+
+    public function hasAttachmentVisibleTo(Media $media, User|WebUser $viewer): bool
+    {
+        if (!in_array($media->collection_name, ['ticket_images', 'ticket_attachments'], true)) {
+            return false;
+        }
+
+        if ($media->model_type === $this->getMorphClass()) {
+            return (int) $media->model_id === $this->id;
+        }
+
+        return $media->model_type === (new TicketComment())->getMorphClass()
+            && $this->commentsVisibleTo($viewer)->whereKey($media->model_id)->exists();
     }
 
     public function escalations(): HasMany

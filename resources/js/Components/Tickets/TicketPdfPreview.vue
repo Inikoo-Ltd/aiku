@@ -12,7 +12,7 @@ export const isPdfAttachment = (file: TicketAttachment) => file.mime === "applic
 </script>
 
 <script setup lang="ts">
-import { computed, watch, onBeforeUnmount } from "vue"
+import { computed, ref, watch, onBeforeUnmount } from "vue"
 import { trans } from "laravel-vue-i18n"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
@@ -27,6 +27,29 @@ const props = defineProps<{
 const index = defineModel<number | null>("index", { default: null })
 
 const currentFile = computed(() => (index.value === null ? null : props.files[index.value] ?? null))
+
+const isCheckingFile = ref(false)
+const isFileMissing = ref(false)
+
+const checkFileAvailability = async (url: string) => {
+    isCheckingFile.value = true
+    isFileMissing.value = false
+    try {
+        const response = await fetch(url, { method: "HEAD" })
+        if (currentFile.value?.url === url) isFileMissing.value = !response.ok
+    } catch {
+        isFileMissing.value = false
+    } finally {
+        if (currentFile.value?.url === url) isCheckingFile.value = false
+    }
+}
+
+watch(
+    () => currentFile.value?.url,
+    (url) => {
+        if (url) checkFileAvailability(url)
+    }
+)
 
 const close = () => {
     index.value = null
@@ -77,7 +100,10 @@ onBeforeUnmount(() => window.removeEventListener("keydown", onKeydown))
             <button v-if="files.length > 1" type="button" class="absolute left-2 top-1/2 -translate-y-1/2 p-3 text-4xl text-white/80 hover:text-white" @click="previous">
                 <FontAwesomeIcon icon="fal fa-chevron-left" fixed-width />
             </button>
-            <iframe :key="currentFile.url" :src="currentFile.url" :title="currentFile.name" class="h-[85vh] w-full max-w-5xl rounded bg-white" />
+            <iframe v-if="!isCheckingFile && !isFileMissing" :key="currentFile.url" :src="currentFile.url" :title="currentFile.name" class="h-[85vh] w-full max-w-5xl rounded bg-white" />
+            <div v-else class="flex h-[85vh] w-full max-w-5xl items-center justify-center rounded bg-white text-sm text-gray-500">
+                <span v-if="isFileMissing">{{ trans("Preview for this file is unavailable") }}</span>
+            </div>
             <button v-if="files.length > 1" type="button" class="absolute right-2 top-1/2 -translate-y-1/2 p-3 text-4xl text-white/80 hover:text-white" @click="next">
                 <FontAwesomeIcon icon="fal fa-chevron-right" fixed-width />
             </button>

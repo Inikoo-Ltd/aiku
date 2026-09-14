@@ -8,7 +8,7 @@
 import { ref, watch } from "vue"
 import { trans } from "laravel-vue-i18n"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faPaperclip, faTimes, faFilePdf } from "@fortawesome/free-solid-svg-icons"
+import { faPaperclip, faTimes, faFilePdf, faFileWord, faFileExcel, faFileCsv } from "@fortawesome/free-solid-svg-icons"
 
 const props = defineProps<{
     body: string
@@ -24,16 +24,34 @@ const emit = defineEmits<{
 
 const MAX_IMAGES = 5
 const fileInput = ref<HTMLInputElement | null>(null)
-const previews = ref<{ url: string; name: string; isPdf: boolean }[]>([])
+const documentIcons = {
+    pdf: { icon: faFilePdf, class: "text-red-600" },
+    docx: { icon: faFileWord, class: "text-blue-600" },
+    xls: { icon: faFileExcel, class: "text-green-600" },
+    xlsx: { icon: faFileExcel, class: "text-green-600" },
+    csv: { icon: faFileCsv, class: "text-emerald-600" },
+}
+
+type DocumentExtension = keyof typeof documentIcons
+
+const previews = ref<{ url: string; name: string; document: (typeof documentIcons)[DocumentExtension] | null }[]>([])
 const isDragging = ref(false)
 
-const isAcceptedFile = (file: File) => file.type.startsWith("image/") || file.type === "application/pdf"
+const documentExtensionOf = (file: File): DocumentExtension | null => {
+    const extension = file.name.split(".").pop()?.toLowerCase() ?? ""
+    return extension in documentIcons ? (extension as DocumentExtension) : null
+}
+
+const isAcceptedFile = (file: File) => file.type.startsWith("image/") || documentExtensionOf(file) !== null
 
 watch(
     () => props.images,
     (images) => {
         previews.value.forEach((preview) => URL.revokeObjectURL(preview.url))
-        previews.value = images.map((file) => ({ url: URL.createObjectURL(file), name: file.name, isPdf: file.type === "application/pdf" }))
+        previews.value = images.map((file) => {
+            const extension = documentExtensionOf(file)
+            return { url: URL.createObjectURL(file), name: file.name, document: extension ? documentIcons[extension] : null }
+        })
     },
     { immediate: true }
 )
@@ -82,15 +100,15 @@ const onPick = (event: Event) => {
             @paste="onPaste"
         />
         <div class="flex items-center gap-2 px-2 py-1.5 border-t border-gray-200">
-            <button type="button" class="text-gray-500 hover:text-gray-800 text-sm flex items-center gap-1.5" :title="trans('Attach images or PDF')" @click="fileInput?.click()">
+            <button type="button" class="text-gray-500 hover:text-gray-800 text-sm flex items-center gap-1.5" :title="trans('Attach images, PDF, Word, Excel or CSV')" @click="fileInput?.click()">
                 <FontAwesomeIcon :icon="faPaperclip" /> {{ trans("Attach") }}
             </button>
             <span class="text-xs text-gray-400">{{ trans("or paste / drop") }}</span>
-            <input ref="fileInput" type="file" accept="image/*,application/pdf" multiple class="hidden" @change="onPick" />
+            <input ref="fileInput" type="file" accept="image/*,.pdf,.docx,.xls,.xlsx,.csv" multiple class="hidden" @change="onPick" />
             <div v-if="previews.length" class="ml-auto flex gap-1.5">
                 <div v-for="(preview, index) in previews" :key="preview.url" class="relative">
-                    <div v-if="preview.isPdf" class="h-12 w-12 rounded border border-gray-200 bg-gray-50 flex flex-col items-center justify-center text-red-600" :title="preview.name">
-                        <FontAwesomeIcon :icon="faFilePdf" class="text-lg" />
+                    <div v-if="preview.document" class="h-12 w-12 rounded border border-gray-200 bg-gray-50 flex flex-col items-center justify-center" :class="preview.document.class" :title="preview.name">
+                        <FontAwesomeIcon :icon="preview.document.icon" class="text-lg" />
                         <span class="w-full truncate px-0.5 text-center text-[9px] text-gray-500">{{ preview.name }}</span>
                     </div>
                     <img v-else :src="preview.url" alt="" class="h-12 w-12 rounded object-cover border border-gray-200" />

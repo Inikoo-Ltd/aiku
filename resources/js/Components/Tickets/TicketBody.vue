@@ -34,6 +34,11 @@ const html = computed(() => {
 })
 
 const previewIndex = ref<number | null>(null)
+const unavailableImageUrls = ref<string[]>([])
+
+const markImageUnavailable = (url: string) => {
+    if (!unavailableImageUrls.value.includes(url)) unavailableImageUrls.value.push(url)
+}
 
 const openPreview = (index: number) => {
     previewIndex.value = index
@@ -96,7 +101,8 @@ onBeforeUnmount(() => window.removeEventListener("keydown", onKeydown))
                 <button v-if="images.length > 1" type="button" class="absolute left-4 p-3 text-4xl text-white/80 hover:text-white" @click="prevImage">
                     <FontAwesomeIcon icon="fal fa-chevron-left" fixed-width />
                 </button>
-                <img :src="images[previewIndex].original" alt="" class="max-h-[90vh] max-w-[85vw] rounded object-contain" />
+                <img v-if="!unavailableImageUrls.includes(images[previewIndex].original)" :src="images[previewIndex].original" alt="" class="max-h-[90vh] max-w-[85vw] rounded object-contain" @error="markImageUnavailable(images[previewIndex].original)" />
+                <div v-else class="flex h-[60vh] w-[85vw] max-w-3xl items-center justify-center rounded bg-white text-sm text-gray-500">{{ trans("Preview for this file is unavailable") }}</div>
                 <button v-if="images.length > 1" type="button" class="absolute right-4 p-3 text-4xl text-white/80 hover:text-white" @click="nextImage">
                     <FontAwesomeIcon icon="fal fa-chevron-right" fixed-width />
                 </button>

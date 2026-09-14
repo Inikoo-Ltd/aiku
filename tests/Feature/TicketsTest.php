@@ -40,6 +40,7 @@ use App\Models\SysAdmin\Guest;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Notification;
 use App\Notifications\TicketNotification;
 use App\Actions\Helpers\Ticket\GetTicketBadgeData;
@@ -319,23 +320,87 @@ test('screenshots can be attached to tickets and comments', function () {
     post(route('grp.models.ticket.comment.store', $ticket->id), [])->assertSessionHasErrors('body');
 });
 
-test('pdf files can be attached to tickets and comments', function () {
+test('pdf, word, excel and csv files can be attached to tickets and comments', function () {
+    $directory = sys_get_temp_dir().'/ticket_files_'.uniqid();
+    mkdir($directory);
+
+    $spreadsheet = new PhpOffice\PhpSpreadsheet\Spreadsheet();
+    $spreadsheet->getActiveSheet()->setCellValue('A1', 'qty');
+    (new PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet))->save("$directory/stock.xlsx");
+    (new PhpOffice\PhpSpreadsheet\Writer\Xls($spreadsheet))->save("$directory/legacy.xls");
+
+    $docx = new ZipArchive();
+    $docx->open("$directory/notes.docx", ZipArchive::CREATE);
+    $docx->addFromString('[Content_Types].xml', '<?xml version="1.0" encoding="UTF-8"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"/>');
+    $docx->addFromString('word/document.xml', '<?xml version="1.0"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"/>');
+    $docx->close();
+
     $ticket = StoreTicket::make()->action($this->group, [
         'subject' => 'Invoice looks wrong',
         'images'  => [UploadedFile::fake()->createWithContent('invoice.pdf', "%PDF-1.4\n%%EOF\n")],
     ]);
     $comment = StoreTicketComment::make()->action($ticket, $this->user, [
-        'images' => [UploadedFile::fake()->createWithContent('report.pdf', "%PDF-1.4\n%%EOF\n"), UploadedFile::fake()->image('shot.png')],
+        'images' => [
+            new UploadedFile("$directory/stock.xlsx", 'stock.xlsx', null, null, true),
+            new UploadedFile("$directory/legacy.xls", 'legacy.xls', null, null, true),
+            new UploadedFile("$directory/notes.docx", 'notes.docx', null, null, true),
+            UploadedFile::fake()->createWithContent('orders.csv', "reference,qty\nA-1,2\n"),
+            UploadedFile::fake()->image('shot.png'),
+        ],
     ]);
 
     expect($ticket->getMedia('ticket_attachments'))->toHaveCount(1)
         ->and($ticket->ticketAttachments()[0])->toMatchArray(['name' => 'invoice.pdf', 'mime' => 'application/pdf'])
-        ->and($comment->getMedia('ticket_attachments'))->toHaveCount(1)
+        ->and(collect($comment->ticketAttachments())->pluck('name')->sort()->values()->all())->toBe(['legacy.xls', 'notes.docx', 'orders.csv', 'stock.xlsx'])
         ->and($comment->getMedia('ticket_images'))->toHaveCount(1);
 
-    expect(fn () => StoreTicketComment::make()->action($ticket, $this->user, [
-        'images' => [UploadedFile::fake()->create('notes.txt', 10, 'text/plain')],
-    ]))->toThrow(Illuminate\Validation\ValidationException::class);
+    foreach ([UploadedFile::fake()->createWithContent('notes.txt', "plain text\n"), UploadedFile::fake()->createWithContent('bundle.zip', "PK\x03\x04")] as $rejectedFile) {
+        expect(fn () => StoreTicketComment::make()->action($ticket, $this->user, ['images' => [$rejectedFile]]))
+            ->toThrow(Illuminate\Validation\ValidationException::class);
+    }
+});
+
+test('ticket attachments are served inline through the ticket, only to people who can see them', function () {
+    $pdf = fn (string $name) => UploadedFile::fake()->createWithContent($name, "%PDF-1.4\n%%EOF\n");
+
+    $ticket          = StoreTicket::make()->action($this->group, ['subject' => 'Attachment route', 'images' => [$pdf('ticket.pdf')]]);
+    $internalComment = StoreTicketComment::make()->action($ticket, $this->user, ['images' => [$pdf('internal.pdf')]]);
+    $internalComment->update(['is_internal' => true]);
+    $otherTicket = StoreTicket::make()->action($this->group, ['subject' => 'Someone else', 'images' => [$pdf('other.pdf')]]);
+
+    $ticketPdf   = $ticket->getMedia('ticket_attachments')->first();
+    $internalPdf = $internalComment->getMedia('ticket_attachments')->first();
+    $otherPdf    = $otherTicket->getMedia('ticket_attachments')->first();
+    $urlFor      = fn ($media) => route('grp.tickets.attachments.show', ['ticket' => $ticket->reference, 'media' => $media->ulid]);
+
+    expect($ticket->ticketAttachments()[0]['url'])->toBe($urlFor($ticketPdf));
+
+    $response = get($urlFor($ticketPdf))->assertOk()->assertHeader('Content-Type', 'application/pdf');
+    expect($response->headers->get('Content-Disposition'))->toStartWith('inline');
+    get($urlFor($internalPdf))->assertOk();
+    get($urlFor($otherPdf))->assertNotFound();
+
+    $ticket->update(['is_confidential' => true]);
+    actingAs(User::factory()->create(['group_id' => $this->group->id]));
+    get($urlFor($ticketPdf))->assertForbidden();
+    actingAs($this->user);
+
+    Storage::disk($ticketPdf->disk)->delete($ticketPdf->getPathRelativeToRoot());
+    get($urlFor($ticketPdf))->assertNotFound();
+});
+
+test('customers get attachments of their ticket through retina, never those of internal comments', function () {
+    $pdf = fn (string $name) => UploadedFile::fake()->createWithContent($name, "%PDF-1.4\n%%EOF\n");
+
+    $ticket          = StoreRetinaTicket::make()->action($this->webUser, ['subject' => 'Invoice attached']);
+    $customerComment = StoreTicketComment::make()->action($ticket, $this->webUser, ['images' => [$pdf('invoice.pdf')]]);
+    $internalComment = StoreTicketComment::make()->action($ticket, $this->user, ['images' => [$pdf('internal.pdf')]]);
+    $internalComment->update(['is_internal' => true]);
+
+    $attachmentUrl = fn ($comment) => 'http://'.$this->website->domain.'/app/dropshipping/support/'.$ticket->reference.'/attachments/'.$comment->getMedia('ticket_attachments')->first()->ulid;
+
+    $this->actingAs($this->webUser, 'retina')->get($attachmentUrl($customerComment))->assertOk()->assertHeader('Content-Type', 'application/pdf');
+    $this->actingAs($this->webUser, 'retina')->get($attachmentUrl($internalComment))->assertNotFound();
 });
 
 test('tickets dashboard counts created, done, status and assignees', function () {
