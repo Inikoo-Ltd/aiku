@@ -5,7 +5,7 @@
   -->
 
 <script setup lang="ts">
-import { ref } from "vue"
+import { computed, ref } from "vue"
 import { useForm, router } from "@inertiajs/vue3"
 import { trans } from "laravel-vue-i18n"
 import { useFormatTime } from "@/Composables/useFormatTime"
@@ -20,13 +20,29 @@ import { faSlack } from "@fortawesome/free-brands-svg-icons"
 
 library.add(faPencil, faTrashAlt, faUser)
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
     ticket: { subject: string; description: string | null; reporter: string | null; reporter_avatar?: Record<string, string> | null; is_from_slack?: boolean; created_at: string; images?: Record<string, string>[] }
     comments: { id: number; body: string; is_internal: boolean; can_toggle_visibility?: boolean; is_staff: boolean; author: string | null; created_at: string; images?: Record<string, string>[]; attachments?: { name: string; url: string }[]; can_edit?: boolean; can_delete?: boolean }[]
     commentRoute: { name: string; parameters: Record<string, unknown> }
+    commentsNewestFirst?: boolean
+}>(), { commentsNewestFirst: true })
+
+const emit = defineEmits<{
+    (e: "update:commentsNewestFirst", value: boolean): void
 }>()
 
 const form = useForm<{ body: string; images: File[] }>({ body: "", images: [] })
+
+const isNewestFirst = ref(props.commentsNewestFirst)
+
+const toggleCommentOrder = () => {
+    isNewestFirst.value = !isNewestFirst.value
+    emit("update:commentsNewestFirst", isNewestFirst.value)
+}
+
+const sortedComments = computed(() =>
+    [...props.comments].sort((a, b) => (new Date(a.created_at).getTime() - new Date(b.created_at).getTime() || a.id - b.id) * (isNewestFirst.value ? -1 : 1))
+)
 
 const editingId = ref<number | null>(null)
 const editBody = ref("")
@@ -70,6 +86,8 @@ const submit = () => {
             <p v-else class="text-sm text-gray-400">{{ trans("No description") }}</p>
         </div>
 
+        <slot name="after-description" />
+
         <form class="bg-white rounded-lg border border-gray-300 p-4 space-y-3" @submit.prevent="submit">
             <TicketComposer v-model:body="form.body" v-model:images="form.images" :rows="4" :placeholder="trans('Write a comment, paste a screenshot or drop images')" />
             <p v-if="form.errors.body || form.errors.images" class="text-xs text-red-600">{{ form.errors.body || form.errors.images }}</p>
@@ -78,9 +96,15 @@ const submit = () => {
             </div>
         </form>
 
+        <div v-if="comments.length > 1" class="ml-6 flex justify-end text-xs text-gray-500">
+            <button type="button" class="px-1 py-0.5 hover:text-gray-900" :title="trans('Sort comments')" @click="toggleCommentOrder">
+                {{ isNewestFirst ? "↓" : "↑" }} {{ isNewestFirst ? trans("Newest first") : trans("Oldest first") }}
+            </button>
+        </div>
+
         <div class="ml-6 space-y-3 border-l-2 border-gray-200 pl-4">
             <div
-                v-for="comment in comments"
+                v-for="comment in sortedComments"
                 :key="comment.id"
                 class="rounded-md border px-3 py-2 text-sm"
                 :class="comment.is_internal ? 'bg-amber-50 border-amber-200' : comment.is_staff ?'bg-gray-50 border-gray-200' : 'bg-blue-50 border-blue-200'"

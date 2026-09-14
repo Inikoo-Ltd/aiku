@@ -10,6 +10,7 @@
 
 namespace App\Actions\Helpers;
 
+use App\Actions\Helpers\Ticket\ResolveTicketsWaitingForDeployment;
 use App\Events\AppVersionWebsocketEvent;
 use App\Models\DevOps\AppDeployment;
 use Illuminate\Console\Command;
@@ -26,7 +27,9 @@ class RefreshVueAfterDeployment
 
     public function asCommand(Command $command): void
     {
+        $resolvedTickets = ResolveTicketsWaitingForDeployment::run();
         AppVersionWebsocketEvent::dispatch(AppDeployment::orderByDesc('id')->first());
         $command->info('Refresh vue.');
+        $command->info($resolvedTickets.' tickets waiting for deployment marked as done.');
     }
 }

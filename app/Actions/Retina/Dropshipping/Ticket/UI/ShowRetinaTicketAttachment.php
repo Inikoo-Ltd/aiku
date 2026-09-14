@@ -14,7 +14,7 @@ use App\Actions\RetinaAction;
 use App\Models\Helpers\Media;
 use App\Models\Helpers\Ticket;
 use Lorisleiva\Actions\ActionRequest;
-use Symfony\Component\HttpFoundation\StreamedResponse;
+use Symfony\Component\HttpFoundation\Response;
 
 class ShowRetinaTicketAttachment extends RetinaAction
 {
@@ -25,7 +25,7 @@ class ShowRetinaTicketAttachment extends RetinaAction
         return $this->ticket->customer_id === $this->customer->id;
     }
 
-    public function asController(Ticket $ticket, Media $media, ActionRequest $request): StreamedResponse
+    public function asController(Ticket $ticket, Media $media, ActionRequest $request): Response
     {
         $this->ticket = $ticket;
         $this->initialisation($request);

@@ -32,6 +32,7 @@ class TicketResource extends JsonResource
             'module_label'   => $this->module ? TicketModuleEnum::labels()[$this->module->value] : null,
             'tags'           => $this->tags ?? [],
             'is_confidential' => (bool) $this->is_confidential,
+            'is_waiting_for_deployment' => (bool) $this->is_waiting_for_deployment,
             'qa_status'      => $this->qa_status?->value,
             'qa_status_label' => $this->qa_status ? TicketQaStatusEnum::labels()[$this->qa_status->value] : null,
             'qa_status_icon' => $this->qa_status ? TicketQaStatusEnum::stateIcon()[$this->qa_status->value] : null,

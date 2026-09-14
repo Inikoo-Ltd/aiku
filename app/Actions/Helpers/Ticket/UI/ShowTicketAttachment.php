@@ -13,8 +13,9 @@ use App\Actions\OrgAction;
 use App\Models\Helpers\Media;
 use App\Models\Helpers\Ticket;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Lorisleiva\Actions\ActionRequest;
-use Symfony\Component\HttpFoundation\StreamedResponse;
+use Symfony\Component\HttpFoundation\Response;
 
 class ShowTicketAttachment extends OrgAction
 {
@@ -23,17 +24,22 @@ class ShowTicketAttachment extends OrgAction
         return $request->user() !== null;
     }
 
-    public function handle(Media $media): StreamedResponse
+    public function handle(Media $media): Response
     {
         $disk = Storage::disk($media->disk);
         $path = $media->getPathRelativeToRoot();
 
         abort_unless($disk->exists($path), 404);
 
-        return $disk->response($path, $media->name, ['Content-Type' => $media->mime_type], 'inline');
+        if (config("filesystems.disks.{$media->disk}.driver") !== 'local') {
+            return $disk->response($path, $media->name, ['Content-Type' => $media->mime_type], 'inline');
+        }
+
+        return response()->file($disk->path($path), ['Content-Type' => $media->mime_type])
+            ->setContentDisposition('inline', $media->name, str_replace('%', '', Str::ascii($media->name)) ?: 'attachment');
     }
 
-    public function asController(Ticket $ticket, Media $media, ActionRequest $request): StreamedResponse
+    public function asController(Ticket $ticket, Media $media, ActionRequest $request): Response
     {
         abort_unless($ticket->isVisibleTo($request->user()), 403);
         abort_unless($ticket->hasAttachmentVisibleTo($media, $request->user()), 404);

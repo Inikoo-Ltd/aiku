@@ -6,7 +6,7 @@
 -->
 
 <script lang="ts">
-export type TicketAttachment = { name: string; url: string; size?: number; mime?: string | null }
+export type TicketAttachment = { name: string; url: string; size?: number; mime?: string | null; created_at?: string | null; thumbnail?: Record<string, string> | null }
 
 const extensionOf = (file: TicketAttachment) => file.name.split(".").pop()?.toLowerCase() ?? ""
 
@@ -16,7 +16,11 @@ export const isWordAttachment = (file: TicketAttachment) => extensionOf(file) ==
 
 export const isSpreadsheetAttachment = (file: TicketAttachment) => ["xls", "xlsx", "csv"].includes(extensionOf(file))
 
-export const isPreviewableAttachment = (file: TicketAttachment) => isPdfAttachment(file) || isWordAttachment(file) || isSpreadsheetAttachment(file)
+export const isVideoAttachment = (file: TicketAttachment) => (file.mime ?? "").startsWith("video/") || ["mp4", "webm", "mov"].includes(extensionOf(file))
+
+export const isImageAttachment = (file: TicketAttachment) => (file.mime ?? "").startsWith("image/") || ["jpg", "jpeg", "png", "gif", "webp", "bmp", "svg"].includes(extensionOf(file))
+
+export const isPreviewableAttachment = (file: TicketAttachment) => isImageAttachment(file) || isPdfAttachment(file) || isWordAttachment(file) || isSpreadsheetAttachment(file) || isVideoAttachment(file)
 </script>
 
 <script setup lang="ts">
@@ -53,7 +57,7 @@ const loadPreview = async (file: TicketAttachment) => {
     sheetNames.value = []
 
     try {
-        if (isPdfAttachment(file)) {
+        if (isImageAttachment(file) || isPdfAttachment(file) || isVideoAttachment(file)) {
             const response = await fetch(url, { method: "HEAD" })
             if (isStillCurrent(url)) previewState.value = response.ok ? "ready" : "unavailable"
             return
@@ -149,7 +153,9 @@ onBeforeUnmount(() => window.removeEventListener("keydown", onKeydown))
             <div v-else-if="previewState === 'unavailable'" class="flex h-[85vh] w-full max-w-5xl items-center justify-center rounded bg-white text-sm text-gray-500">
                 {{ trans("Preview for this file is unavailable") }}
             </div>
+            <img v-else-if="isImageAttachment(currentFile)" :key="currentFile.url" :src="currentFile.url" :alt="currentFile.name" class="max-h-[85vh] max-w-full rounded object-contain" @error="previewState = 'unavailable'" />
             <iframe v-else-if="isPdfAttachment(currentFile)" :key="currentFile.url" :src="currentFile.url" :title="currentFile.name" class="h-[85vh] w-full max-w-5xl rounded bg-white" />
+            <video v-else-if="isVideoAttachment(currentFile)" :key="currentFile.url" :src="currentFile.url" controls playsinline preload="metadata" class="max-h-[85vh] w-full max-w-5xl rounded bg-black" @error="previewState = 'unavailable'" />
             <div v-else-if="isWordAttachment(currentFile)" ref="wordContainer" :key="currentFile.url" class="h-[85vh] w-full max-w-5xl overflow-auto rounded bg-gray-100" />
             <div v-else class="flex h-[85vh] w-full max-w-5xl flex-col overflow-hidden rounded bg-white">
                 <div v-if="sheetNames.length > 1" class="flex shrink-0 gap-1 overflow-x-auto border-b border-gray-200 bg-gray-50 px-2 pt-2">

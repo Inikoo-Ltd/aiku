@@ -360,6 +360,35 @@ test('pdf, word, excel and csv files can be attached to tickets and comments', f
     }
 });
 
+test('videos up to 50 MB can be attached, other files stay capped at 10 MB, and videos stream with range requests', function () {
+    $mp4Header       = "\x00\x00\x00\x18ftypmp42\x00\x00\x00\x00mp42isom";
+    $movHeader       = "\x00\x00\x00\x14ftypqt  \x00\x00\x00\x00qt  ";
+    $webmHeader      = "\x1A\x45\xDF\xA3\x9F\x42\x86\x81\x01\x42\xF7\x81\x01\x42\xF2\x81\x04\x42\xF3\x81\x08\x42\x82\x84webm\x42\x87\x81\x04\x42\x85\x81\x02";
+    $elevenMegabytes = 11 * 1024 * 1024;
+
+    $ticket = StoreTicket::make()->action($this->group, [
+        'subject' => 'Screen recording of the bug',
+        'images'  => [
+            UploadedFile::fake()->createWithContent('recording.mp4', str_pad($mp4Header, $elevenMegabytes, "\0")),
+            UploadedFile::fake()->createWithContent('iphone.mov', str_pad($movHeader, 2048, "\0")),
+            UploadedFile::fake()->createWithContent('capture.webm', str_pad($webmHeader, 2048, "\0")),
+        ],
+    ]);
+
+    expect(collect($ticket->ticketAttachments())->pluck('name')->sort()->values()->all())->toBe(['capture.webm', 'iphone.mov', 'recording.mp4']);
+
+    expect(fn () => StoreTicketComment::make()->action($ticket, $this->user, [
+        'images' => [UploadedFile::fake()->createWithContent('huge.pdf', str_pad("%PDF-1.4\n", $elevenMegabytes, ' ')."\n%%EOF\n")],
+    ]))->toThrow(Illuminate\Validation\ValidationException::class);
+
+    $recording = $ticket->getMedia('ticket_attachments')->firstWhere('name', 'recording.mp4');
+
+    get(route('grp.tickets.attachments.show', ['ticket' => $ticket->reference, 'media' => $recording->ulid]), ['Range' => 'bytes=0-99'])
+        ->assertStatus(206)
+        ->assertHeader('Content-Range', 'bytes 0-99/'.$elevenMegabytes)
+        ->assertHeader('Content-Type', 'video/mp4');
+});
+
 test('ticket attachments are served inline through the ticket, only to people who can see them', function () {
     $pdf = fn (string $name) => UploadedFile::fake()->createWithContent($name, "%PDF-1.4\n%%EOF\n");
 
@@ -831,7 +860,7 @@ test('only the help desk manages tickets, everyone else reports, comments and cl
     expect($other->fresh()->priority)->toBe(ChatPriorityEnum::URGENT)
         ->and($other->fresh()->assignee_id)->toBe($helper->id)
         ->and($other->comments()->where('body', 'from the page')->count())->toBe(1)
-        ->and($other->comments()->where('body', 'like', 'Passed from%')->count())->toBeGreaterThanOrEqual(1);
+        ->and($other->comments()->where('body', 'like', 'Passed from%')->exists())->toBeFalse();
 
     actingAs($boss);
     get(route('grp.tickets.reports'))->assertOk();
@@ -1134,4 +1163,139 @@ test('ticket search ranks subject over description over comments, understands ke
     expect($search('email')->pluck('reference'))->not->toContain($byInternal->reference)
         ->and(get(route('grp.search.index', ['q' => 'email marke', 'route_src' => 'grp.tickets.board']))->assertOk()->json('results.tickets.*.code'))->toContain($bySubject->reference)
         ->and(SearchTickets::run((string) $other->number)['results']['tickets'][0]['href'])->toBe(route('grp.tickets.show', $other->reference));
+});
+
+test('only the assignee and supervisors change kind and module, and no ticket is turned into or out of an escalation', function () {
+    setPermissionsTeamId($this->group->id);
+    $clerk    = User::factory()->create(['group_id' => $this->group->id]);
+    $assignee = User::factory()->create(['group_id' => $this->group->id]);
+    $clerk->assignRole('help-desk-clerk');
+    $assignee->assignRole('help-desk-clerk');
+
+    $ticket = StoreTicket::make()->action($this->group, ['subject' => 'Kind rules', 'kind' => 'bug', 'assignee_id' => $assignee->id]);
+
+    actingAs($clerk);
+    patch(route('grp.models.ticket.update', $ticket->id), ['kind' => 'feature'])->assertForbidden();
+    patch(route('grp.models.ticket.update', $ticket->id), ['module' => 'dispatching'])->assertForbidden();
+    get(route('grp.json.ticket.controls', $ticket->id))->assertOk()->assertJsonPath('can_change_kind_module', false);
+
+    actingAs($assignee);
+    patch(route('grp.models.ticket.update', $ticket->id), ['kind' => 'feature', 'module' => 'dispatching'])->assertRedirect()->assertSessionHasNoErrors();
+    get(route('grp.json.ticket.controls', $ticket->id))->assertOk()
+        ->assertJsonPath('can_change_kind_module', true)
+        ->assertJsonPath('ticket.reference', $ticket->reference)
+        ->assertJsonStructure(['ticket', 'options' => ['kinds', 'modules', 'assignees'], 'can_manage', 'can_assign', 'routes' => ['update', 'escalate']]);
+
+    actingAs($this->user);
+    patch(route('grp.models.ticket.update', $ticket->id), ['kind' => 'bug'])->assertRedirect()->assertSessionHasNoErrors();
+    patch(route('grp.models.ticket.update', $ticket->id), ['kind' => 'escalation'])->assertSessionHasErrors('kind');
+    expect($ticket->fresh()->kind?->value)->toBe('bug')
+        ->and($ticket->fresh()->module?->value)->toBe('dispatching');
+
+    $escalated = StoreTicket::make()->action($this->group, ['subject' => 'From a customer', 'kind' => 'escalation']);
+    patch(route('grp.models.ticket.update', $escalated->id), ['kind' => 'bug'])->assertSessionHasErrors('kind');
+    patch(route('grp.models.ticket.update', $escalated->id), ['kind' => 'escalation'])->assertSessionHasNoErrors();
+    expect(fn () => UpdateTicket::make()->action($escalated->fresh(), ['kind' => 'feature']))->toThrow(Illuminate\Validation\ValidationException::class)
+        ->and($escalated->fresh()->kind?->value)->toBe('escalation');
+
+    $ticket->update(['is_confidential' => true]);
+    actingAs(User::factory()->create(['group_id' => $this->group->id]));
+    get(route('grp.json.ticket.controls', $ticket->id))->assertForbidden();
+});
+
+test('ticket comment and history order are saved per user and come back on the ticket page', function () {
+    $ticket = StoreTicket::make()->action($this->group, ['subject' => 'Order settings']);
+
+    get(route('grp.tickets.show', $ticket->reference))->assertInertia(
+        fn (AssertableInertia $page) => $page->where('comments_newest_first', true)->where('history_newest_first', true)
+    );
+
+    patch(route('grp.models.profile.update'), ['ticket_comments_newest_first' => false])->assertSessionHasNoErrors();
+    patch(route('grp.models.profile.update'), ['ticket_history_newest_first' => false])->assertSessionHasNoErrors();
+
+    expect($this->user->fresh()->settings)->toMatchArray(['ticket_comments_newest_first' => false, 'ticket_history_newest_first' => false]);
+
+    get(route('grp.tickets.show', $ticket->reference))->assertInertia(
+        fn (AssertableInertia $page) => $page->where('comments_newest_first', false)->where('history_newest_first', false)
+    );
+});
+
+test('the attachment gallery lists ticket and visible comment files newest first, with thumbnails for images', function () {
+    $pdf = fn (string $name) => UploadedFile::fake()->createWithContent($name, "%PDF-1.4\n%%EOF\n");
+
+    $ticket = StoreTicket::make()->action($this->group, ['subject' => 'Gallery', 'images' => [UploadedFile::fake()->image('screen.png', 200, 100), $pdf('spec.pdf')]]);
+    StoreTicketComment::make()->action($ticket, $this->user, ['images' => [$pdf('reply.pdf')]]);
+    StoreTicketComment::make()->action($ticket, $this->user, ['images' => [$pdf('internal.pdf')]])->update(['is_internal' => true]);
+
+    $gallery = collect($ticket->attachmentGalleryFor($this->user));
+    $specPdf = $ticket->getMedia('ticket_attachments')->first();
+
+    expect($gallery->pluck('name')->all())->toBe(['internal.pdf', 'reply.pdf', 'spec.pdf', 'screen.png'])
+        ->and($gallery->firstWhere('name', 'screen.png')['thumbnail'])->toHaveKey('original')
+        ->and($gallery->firstWhere('name', 'spec.pdf')['thumbnail'])->toBeNull()
+        ->and($gallery->firstWhere('name', 'spec.pdf')['url'])->toBe(route('grp.tickets.attachments.show', ['ticket' => $ticket->reference, 'media' => $specPdf->ulid]));
+
+    setPermissionsTeamId($this->group->id);
+    $clerk = User::factory()->create(['group_id' => $this->group->id]);
+    $clerk->assignRole('help-desk-clerk');
+    expect(collect($ticket->attachmentGalleryFor($clerk))->pluck('name')->all())->toBe(['reply.pdf', 'spec.pdf', 'screen.png']);
+
+    get(route('grp.tickets.attachments.show', ['ticket' => $ticket->reference, 'media' => $ticket->getMedia('ticket_images')->first()->ulid]))->assertOk();
+    get(route('grp.json.ticket.controls', $ticket->id))->assertOk()->assertJsonCount(4, 'attachment_gallery');
+});
+
+test('done and cancel publish the closing comment together with the status change', function () {
+    $ticket = StoreTicket::make()->action($this->group, ['subject' => 'Close with a note']);
+    UpdateTicket::make()->action($ticket, ['status' => TicketStatusEnum::IN_PROGRESS->value]);
+
+    patch(route('grp.models.ticket.update', $ticket->id), ['status' => 'resolved', 'status_comment' => 'Fixed the rounding in the totals'])->assertRedirect()->assertSessionHasNoErrors();
+    expect($ticket->fresh()->status)->toBe(TicketStatusEnum::RESOLVED)
+        ->and($ticket->comments()->where('body', 'Fixed the rounding in the totals')->where('is_internal', false)->value('author_id'))->toBe($this->user->id);
+
+    $duplicate = StoreTicket::make()->action($this->group, ['subject' => 'Cancel with a note']);
+    patch(route('grp.models.ticket.update', $duplicate->id), ['status' => 'cancelled', 'status_comment' => 'Duplicate of another ticket'])->assertRedirect()->assertSessionHasNoErrors();
+    expect($duplicate->fresh()->status)->toBe(TicketStatusEnum::CANCELLED)
+        ->and($duplicate->comments()->where('body', 'Duplicate of another ticket')->exists())->toBeTrue();
+
+    $reporter = User::factory()->create(['group_id' => $this->group->id]);
+    actingAs($reporter);
+    $own = StoreTicket::make()->action($this->group, ['subject' => 'Mine to close', 'reporter_type' => 'User', 'reporter_id' => $reporter->id]);
+
+    patch(route('grp.models.ticket.update', $own->id), ['priority' => 'urgent', 'status_comment' => 'sneaky'])->assertForbidden();
+    patch(route('grp.models.ticket.update', $own->id), ['status' => 'cancelled', 'status_comment' => 'Not needed any more'])->assertRedirect()->assertSessionHasNoErrors();
+    expect($own->fresh()->status)->toBe(TicketStatusEnum::CANCELLED)
+        ->and($own->comments()->where('body', 'Not needed any more')->value('author_id'))->toBe($reporter->id);
+});
+
+test('a ticket can wait for the next deployment and is marked done when it ships', function () {
+    $ticket = StoreTicket::make()->action($this->group, ['subject' => 'Ship it']);
+    UpdateTicket::make()->action($ticket, ['status' => TicketStatusEnum::IN_PROGRESS->value]);
+    $untouched = StoreTicket::make()->action($this->group, ['subject' => 'Not shipping']);
+
+    patch(route('grp.models.ticket.update', $ticket->id), ['is_waiting_for_deployment' => true, 'status_comment' => 'Merged, goes out with the next deploy'])->assertRedirect()->assertSessionHasNoErrors();
+    expect($ticket->fresh()->is_waiting_for_deployment)->toBeTrue()
+        ->and($ticket->fresh()->status)->toBe(TicketStatusEnum::IN_PROGRESS)
+        ->and($ticket->comments()->where('body', 'Merged, goes out with the next deploy')->exists())->toBeTrue();
+
+    $reporter = User::factory()->create(['group_id' => $this->group->id]);
+    actingAs($reporter);
+    $own = StoreTicket::make()->action($this->group, ['subject' => 'Reporter ticket', 'reporter_type' => 'User', 'reporter_id' => $reporter->id]);
+    patch(route('grp.models.ticket.update', $own->id), ['is_waiting_for_deployment' => true, 'status_comment' => 'please ship'])->assertForbidden();
+    actingAs($this->user);
+
+    \App\Models\DevOps\AppDeployment::create(['commit_hash' => 'abc1234', 'semantic_version' => 'v9.9.9']);
+    Event::fake([\App\Events\AppVersionWebsocketEvent::class]);
+    $this->artisan('deploy:refresh_vue')->assertSuccessful();
+
+    expect($ticket->fresh()->status)->toBe(TicketStatusEnum::RESOLVED)
+        ->and($ticket->fresh()->is_waiting_for_deployment)->toBeFalse()
+        ->and($ticket->fresh()->resolved_at)->not->toBeNull()
+        ->and($untouched->fresh()->status)->not->toBe(TicketStatusEnum::RESOLVED)
+        ->and(\App\Actions\Helpers\Ticket\ResolveTicketsWaitingForDeployment::run())->toBe(0);
+    Event::assertDispatched(\App\Events\AppVersionWebsocketEvent::class);
+
+    UpdateTicket::make()->action($untouched, ['is_waiting_for_deployment' => true]);
+    expect($untouched->fresh()->is_waiting_for_deployment)->toBeTrue();
+    UpdateTicket::make()->action($untouched->fresh(), ['status' => TicketStatusEnum::CANCELLED->value]);
+    expect($untouched->fresh()->is_waiting_for_deployment)->toBeFalse();
 });

@@ -18,6 +18,7 @@ use App\Enums\Helpers\Ticket\TicketStatusEnum;
 use App\Enums\Helpers\Ticket\TicketStatusGroupEnum;
 use App\Models\Helpers\Ticket;
 use App\Models\SysAdmin\User;
+use Closure;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
@@ -27,14 +28,21 @@ class UpdateTicket extends OrgAction
 {
     use WithActionUpdate;
 
+    private ?Ticket $updatingTicket = null;
+
     public function handle(Ticket $ticket, array $modelData): Ticket
     {
-        $question     = trim((string) Arr::pull($modelData, 'question', ''));
+        $question      = trim((string) Arr::pull($modelData, 'question', ''));
+        $statusComment = trim((string) Arr::pull($modelData, 'status_comment', ''));
         $waitingHours = Arr::pull($modelData, 'waiting_hours');
 
         $asker = request()->user();
         if ($question !== '' && $asker instanceof User) {
             StoreTicketComment::make()->action($ticket, $asker, ['body' => $question], notifyUsers: false);
+        }
+
+        if ($statusComment !== '' && $asker instanceof User) {
+            StoreTicketComment::make()->action($ticket, $asker, ['body' => $statusComment], notifyUsers: false);
         }
 
         if (Arr::exists($modelData, 'assignee_id') && Arr::get($modelData, 'assignee_id') != $ticket->assignee_id) {
@@ -43,6 +51,10 @@ class UpdateTicket extends OrgAction
             if (!Arr::has($modelData, 'status') && in_array($ticket->status, [TicketStatusEnum::OPEN, TicketStatusEnum::ASSIGNED], true)) {
                 data_set($modelData, 'status', Arr::get($modelData, 'assignee_id') ? TicketStatusEnum::ASSIGNED->value : TicketStatusEnum::OPEN->value);
             }
+        }
+
+        if (Arr::has($modelData, 'status') && !Arr::has($modelData, 'is_waiting_for_deployment')) {
+            data_set($modelData, 'is_waiting_for_deployment', false);
         }
 
         if ($status = Arr::get($modelData, 'status')) {
@@ -113,17 +125,6 @@ class UpdateTicket extends OrgAction
 
         NotifyTicketUsers::make()->pushBadges($ticket, $asker instanceof User ? $asker : null);
 
-        if ($ticket->wasChanged('assignee_id') && ($actor = request()->user()) instanceof User) {
-            $previous = $ticket->getOriginal('assignee_id') ? User::find($ticket->getOriginal('assignee_id')) : null;
-            $ticket->comments()->create([
-                'author_type' => 'User',
-                'author_id'   => $actor->id,
-                'body'        => $ticket->assignee
-                    ? ($previous ? __('Passed from :from to :to', ['from' => $previous->contact_name ?: $previous->username, 'to' => $ticket->assignee->contact_name ?: $ticket->assignee->username]) : __('Assigned to :to', ['to' => $ticket->assignee->contact_name ?: $ticket->assignee->username]))
-                    : __('Unassigned'),
-            ]);
-        }
-
         return $ticket;
     }
 
@@ -135,11 +136,24 @@ class UpdateTicket extends OrgAction
             'status'      => ['sometimes', Rule::enum(TicketStatusEnum::class)],
             'priority'    => ['sometimes', Rule::enum(ChatPriorityEnum::class)],
             'assignee_id' => ['sometimes', 'nullable', Rule::exists('users', 'id')->where('group_id', $this->group->id)],
-            'kind'        => ['sometimes', 'nullable', Rule::enum(TicketKindEnum::class)],
+            'kind'        => [
+                'sometimes',
+                'nullable',
+                Rule::enum(TicketKindEnum::class),
+                function (string $attribute, mixed $value, Closure $fail): void {
+                    $isEscalated = $this->updatingTicket?->kind === TicketKindEnum::ESCALATION;
+
+                    if ($isEscalated !== ($value === TicketKindEnum::ESCALATION->value)) {
+                        $fail($isEscalated ? __('Escalated tickets keep their kind.') : __('Tickets cannot be changed to escalated.'));
+                    }
+                },
+            ],
             'module'      => ['sometimes', 'nullable', Rule::enum(TicketModuleEnum::class)],
             'tags'        => ['sometimes', 'array'],
             'is_confidential' => ['sometimes', 'boolean'],
             'question'      => ['sometimes', 'nullable', 'string', 'max:10000'],
+            'status_comment' => ['sometimes', 'nullable', 'string', 'max:10000'],
+            'is_waiting_for_deployment' => ['sometimes', 'boolean'],
             'qa_status'     => ['sometimes', 'nullable', Rule::enum(TicketQaStatusEnum::class)],
             'qa_note'       => ['sometimes', 'nullable', 'string', 'max:10000'],
             'waiting_hours' => ['sometimes', 'nullable', 'integer', 'min:1', 'max:720'],
@@ -162,17 +176,22 @@ class UpdateTicket extends OrgAction
         }
 
         if (Ticket::canBeManagedBy($request->user())) {
-            $onOwnPlate = $ticket instanceof Ticket && $ticket->assignee_id === $request->user()->id && $request->filled('assignee_id');
+            $onOwnPlate          = $ticket instanceof Ticket && $ticket->assignee_id === $request->user()->id && $request->filled('assignee_id');
+            $canChangeKindModule = !$request->hasAny(['kind', 'module']) || ($ticket instanceof Ticket && $ticket->canChangeKindAndModuleBy($request->user()));
 
-            return (!$request->has('assignee_id') || $onOwnPlate) && !$request->has('is_confidential');
+            return (!$request->has('assignee_id') || $onOwnPlate) && !$request->has('is_confidential') && $canChangeKindModule;
         }
 
-        return $ticket instanceof Ticket && $ticket->isReportedBy($request->user()) && array_keys($request->all()) === ['status'];
+        return $ticket instanceof Ticket
+            && $ticket->isReportedBy($request->user())
+            && $request->has('status')
+            && array_diff(array_keys($request->all()), ['status', 'status_comment']) === [];
     }
 
     public function action(Ticket $ticket, array $modelData): Ticket
     {
-        $this->asAction = true;
+        $this->asAction       = true;
+        $this->updatingTicket = $ticket;
         $this->initialisationFromGroup($ticket->group, $modelData);
 
         return $this->handle($ticket, $this->validatedData);
@@ -180,6 +199,7 @@ class UpdateTicket extends OrgAction
 
     public function asController(Ticket $ticket, ActionRequest $request): Ticket
     {
+        $this->updatingTicket = $ticket;
         $this->initialisationFromGroup($ticket->group, $request);
 
         return $this->handle($ticket, $this->validatedData);

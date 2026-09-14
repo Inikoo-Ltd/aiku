@@ -12,20 +12,34 @@ use App\Models\Helpers\TicketComment;
 use App\Actions\Helpers\Images\GetPictureSources;
 use App\Actions\Helpers\Media\StoreMediaFromFile;
 use App\Models\Helpers\Media;
+use Closure;
 use Illuminate\Http\UploadedFile;
 
 trait HasTicketImages
 {
+    public const array TICKET_VIDEO_EXTENSIONS = ['mp4', 'webm', 'mov'];
+
     /**
-     * @return array<int, string>
+     * @return array<int, string|Closure>
      */
     public static function ticketFileRules(): array
     {
         return [
             'file',
-            'extensions:jpg,jpeg,png,bmp,gif,svg,webp,pdf,docx,xls,xlsx,csv',
-            'mimes:jpg,jpeg,png,bmp,gif,svg,webp,pdf,docx,xls,xlsx,csv,txt,zip',
-            'max:10240',
+            'extensions:jpg,jpeg,png,bmp,gif,svg,webp,pdf,docx,xls,xlsx,csv,mp4,webm,mov',
+            'mimes:jpg,jpeg,png,bmp,gif,svg,webp,pdf,docx,xls,xlsx,csv,txt,zip,mp4,webm,mov',
+            'max:51200',
+            function (string $attribute, mixed $value, Closure $fail): void {
+                if (!$value instanceof UploadedFile) {
+                    return;
+                }
+
+                $isVideo = in_array(strtolower($value->getClientOriginalExtension()), self::TICKET_VIDEO_EXTENSIONS, true);
+
+                if (!$isVideo && $value->getSize() > 10 * 1024 * 1024) {
+                    $fail(__('Only videos can be larger than 10 MB.'));
+                }
+            },
         ];
     }
 

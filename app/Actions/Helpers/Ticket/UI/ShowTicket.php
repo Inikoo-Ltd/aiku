@@ -75,6 +75,7 @@ class ShowTicket extends OrgAction
                     'subject'         => __('Subject edited'),
                     'is_confidential' => $value ? __('Marked confidential') : __('No longer confidential'),
                     'qa_status'       => $value ? TicketQaStatusEnum::labels()[$value] : __('QA check withdrawn'),
+                    'is_waiting_for_deployment' => $value ? __('Waiting for deployment') : null,
                     default           => null,
                 };
                 if ($text) {
@@ -83,6 +84,7 @@ class ShowTicket extends OrgAction
                         'icon' => match ($field) {
                             'status'    => $statusIcons[$value]['icon'] ?? 'fal fa-exchange',
                             'qa_status' => TicketQaStatusEnum::stateIcon()[$value]['icon'] ?? 'fal fa-vial',
+                            'is_waiting_for_deployment' => 'fal fa-rocket',
                             default     => 'fal fa-pencil',
                         },
                         'text' => $text,
@@ -108,38 +110,54 @@ class ShowTicket extends OrgAction
                     'icon'  => ['fal', 'fa-life-ring'],
                     'wrapped_actions' => Ticket::canBeAssignedBy(request()->user()) ? [['type' => 'button', 'key' => 'delete']] : [],
                 ],
-                'ticket'      => TicketResource::make($ticket)->toArray(request()),
                 'comments'    => TicketCommentResource::collection($ticket->commentsVisibleTo(request()->user())->with('author')->orderByDesc('id')->get())->toArray(request()),
-                'options'     => [
-                    'statuses'   => collect(TicketStatusEnum::labels())->map(fn ($label, $value) => ['label' => $label, 'value' => $value])->values(),
-                    'priorities' => collect(ChatPriorityEnum::labels())->map(fn ($label, $value) => ['label' => $label, 'value' => $value])->values(),
-                    'tags'       => Ticket::knownTags($ticket->group_id),
-                    'kinds'      => collect(TicketKindEnum::labels())->map(fn ($label, $value) => ['label' => $label, 'value' => $value])->values(),
-                    'modules'    => collect(TicketModuleEnum::labels())->map(fn ($label, $value) => ['label' => $label, 'value' => $value])->values(),
-                    'assignees'  => GetTicketBadgeData::engineers($ticket->group_id)
-                        ->map(fn (User $user) => [
-                            'label'  => strtok((string) ($user->contact_name ?: $user->username), ' '),
-                            'value'  => $user->id,
-                            'avatar' => $user->imageSources(48, 48),
-                            'is_me'  => $user->id === request()->user()->id,
-                        ])->sortBy('label')->values(),
-                ],
                 'timeline'    => $this->timeline($ticket),
                 'can_rate'    => RateTicket::canRate($ticket, request()->user()),
-                'can_manage'  => Ticket::canBeManagedBy(request()->user()),
-                'can_assign'  => Ticket::canBeAssignedBy(request()->user()) || (Ticket::canBeManagedBy(request()->user()) && $ticket->assignee_id === request()->user()->id),
-                'can_flag_confidential' => Ticket::canBeAssignedBy(request()->user()),
-                'can_qa'      => Ticket::canCheckQa(request()->user()),
-                'is_reporter' => $ticket->isReportedBy(request()->user()),
-                'routes'      => [
-                    'update'  => ['name' => 'grp.models.ticket.update', 'parameters' => ['ticket' => $ticket->id]],
-                    'comment' => ['name' => 'grp.models.ticket.comment.store', 'parameters' => ['ticket' => $ticket->id]],
-                    'rate'    => ['name' => 'grp.models.ticket.rate', 'parameters' => ['ticket' => $ticket->id]],
-                    'escalate' => ['name' => 'grp.models.ticket.escalate', 'parameters' => ['ticket' => $ticket->id]],
-                    'delete'   => ['name' => 'grp.models.ticket.delete', 'parameters' => ['ticket' => $ticket->id]],
-                ],
+                'comments_newest_first' => (bool) data_get(request()->user()->settings, 'ticket_comments_newest_first', true),
+                'history_newest_first'  => (bool) data_get(request()->user()->settings, 'ticket_history_newest_first', true),
+                ...$this->controlProps($ticket),
             ]
         );
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function controlProps(Ticket $ticket): array
+    {
+        $user = request()->user();
+
+        return [
+            'ticket'  => TicketResource::make($ticket)->toArray(request()),
+            'options' => [
+                'statuses'   => collect(TicketStatusEnum::labels())->map(fn ($label, $value) => ['label' => $label, 'value' => $value])->values(),
+                'priorities' => collect(ChatPriorityEnum::labels())->map(fn ($label, $value) => ['label' => $label, 'value' => $value])->values(),
+                'tags'       => Ticket::knownTags($ticket->group_id),
+                'kinds'      => collect(TicketKindEnum::labels())->map(fn ($label, $value) => ['label' => $label, 'value' => $value])->values(),
+                'modules'    => collect(TicketModuleEnum::labels())->map(fn ($label, $value) => ['label' => $label, 'value' => $value])->values(),
+                'assignees'  => GetTicketBadgeData::engineers($ticket->group_id)
+                    ->map(fn (User $engineer) => [
+                        'label'  => strtok((string) ($engineer->contact_name ?: $engineer->username), ' '),
+                        'value'  => $engineer->id,
+                        'avatar' => $engineer->imageSources(48, 48),
+                        'is_me'  => $engineer->id === $user->id,
+                    ])->sortBy('label')->values(),
+            ],
+            'can_manage'             => Ticket::canBeManagedBy($user),
+            'can_assign'             => Ticket::canBeAssignedBy($user) || (Ticket::canBeManagedBy($user) && $ticket->assignee_id === $user->id),
+            'can_flag_confidential'  => Ticket::canBeAssignedBy($user),
+            'can_qa'                 => Ticket::canCheckQa($user),
+            'is_reporter'            => $ticket->isReportedBy($user),
+            'can_change_kind_module' => $ticket->canChangeKindAndModuleBy($user),
+            'attachment_gallery'     => $ticket->attachmentGalleryFor($user),
+            'routes'                 => [
+                'update'   => ['name' => 'grp.models.ticket.update', 'parameters' => ['ticket' => $ticket->id]],
+                'comment'  => ['name' => 'grp.models.ticket.comment.store', 'parameters' => ['ticket' => $ticket->id]],
+                'rate'     => ['name' => 'grp.models.ticket.rate', 'parameters' => ['ticket' => $ticket->id]],
+                'escalate' => ['name' => 'grp.models.ticket.escalate', 'parameters' => ['ticket' => $ticket->id]],
+                'delete'   => ['name' => 'grp.models.ticket.delete', 'parameters' => ['ticket' => $ticket->id]],
+            ],
+        ];
     }
 
     public function getBreadcrumbs(Ticket $ticket): array

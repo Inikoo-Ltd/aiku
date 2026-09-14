@@ -8,6 +8,7 @@
 
 namespace App\Models\Helpers;
 
+use App\Actions\Helpers\Images\GetPictureSources;
 use App\Models\CRM\WebUser;
 use App\Enums\CRM\Livechat\ChatPriorityEnum;
 use App\Enums\Helpers\Ticket\TicketKindEnum;
@@ -42,6 +43,7 @@ use Spatie\MediaLibrary\InteractsWithMedia;
  * @property TicketModuleEnum|null $module
  * @property array<int, string> $tags
  * @property bool $is_confidential
+ * @property bool $is_waiting_for_deployment
  * @property int $number
  * @property string $reference
  * @property TicketStatusEnum $status
@@ -113,6 +115,7 @@ class Ticket extends Model implements Auditable, HasMedia
             'waiting_until' => 'datetime',
             'tags'        => 'array',
             'is_confidential' => 'boolean',
+            'is_waiting_for_deployment' => 'boolean',
             'qa_status'   => TicketQaStatusEnum::class,
             'qa_requested_at' => 'datetime',
             'qa_checked_at' => 'datetime',
@@ -221,6 +224,11 @@ class Ticket extends Model implements Auditable, HasMedia
         return $user !== null && $user->authTo('help-desk.assign');
     }
 
+    public function canChangeKindAndModuleBy(?User $user): bool
+    {
+        return $user !== null && (self::canBeAssignedBy($user) || $this->assignee_id === $user->id);
+    }
+
     public static function canUseAssistant(?User $user): bool
     {
         return self::canBeManagedBy($user) || self::canCheckQa($user);
@@ -256,6 +264,31 @@ class Ticket extends Model implements Auditable, HasMedia
     public function isVisibleTo(User $user): bool
     {
         return static::query()->whereKey($this->id)->visibleTo($user)->exists();
+    }
+
+    /**
+     * @return array<int, array{name: string, url: string, mime: string|null, size: int, created_at: mixed, thumbnail: array<string, string>|null}>
+     */
+    public function attachmentGalleryFor(User|WebUser $viewer, string $routeName = 'grp.tickets.attachments.show'): array
+    {
+        $visibleCommentIds = $this->commentsVisibleTo($viewer)->pluck('id');
+
+        return Media::query()
+            ->whereIn('collection_name', ['ticket_images', 'ticket_attachments'])
+            ->where(fn ($query) => $query
+                ->where(fn ($ticketMedia) => $ticketMedia->where('model_type', $this->getMorphClass())->where('model_id', $this->id))
+                ->orWhere(fn ($commentMedia) => $commentMedia->where('model_type', (new TicketComment())->getMorphClass())->whereIn('model_id', $visibleCommentIds)))
+            ->orderByDesc('id')
+            ->get()
+            ->map(fn (Media $media) => [
+                'name'       => $media->name,
+                'url'        => route($routeName, ['ticket' => $this->reference, 'media' => $media->ulid]),
+                'mime'       => $media->mime_type,
+                'size'       => $media->size,
+                'created_at' => $media->created_at,
+                'thumbnail'  => $media->collection_name === 'ticket_images' ? GetPictureSources::run($media->getImage()->resize(400, 0)) : null,
+            ])
+            ->all();
     }
 
     public function hasAttachmentVisibleTo(Media $media, User|WebUser $viewer): bool
