@@ -479,7 +479,7 @@ test('tickets dashboard counts created, done, status and assignees', function ()
         ->and($me)->toHaveKeys(['longest_wait_days', 'rating'])
         ->and($stats['reporters'])->toBeArray()
         ->and($stats['assignees_total']['created'])->toBe($stats['created'])
-        ->and($stats['resolvers_total']['done'])->toBe($stats['done']);
+        ->and($stats['resolvers_total']['done'])->toBe($before['resolvers_total']['done']);
 
     $oldTicket = StoreTicket::make()->action($this->group, ['subject' => 'Old but resolved now', 'assignee_id' => $this->user->id]);
     $oldTicket->update(['created_at' => now()->subMonths(3)]);

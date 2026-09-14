@@ -50,7 +50,7 @@ class ShowTicketsReports extends OrgAction
         $byStatus = (clone $base)->selectRaw('status, count(*) as total')->groupBy('status')->pluck('total', 'status');
 
         $createdInRange  = (clone $base)->whereBetween('tickets.created_at', [$from, $to]);
-        $resolvedInRange = (clone $base)->whereBetween('tickets.resolved_at', [$from, $to]);
+        $resolvedInRange = (clone $base)->whereBetween('tickets.resolved_at', [$from, $to])->where('tickets.created_at', '<', $from);
 
         $reporters = (clone $createdInRange)
             ->whereNotNull('tickets.reporter_id')

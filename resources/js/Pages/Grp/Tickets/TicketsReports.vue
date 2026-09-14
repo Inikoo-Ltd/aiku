@@ -48,7 +48,7 @@ const props = defineProps<{
 
 type Metrics = { created: number; open: number; done: number; median_hours: number | null; longest_wait_days: number | null; rating: number | null; ratings: number }
 
-const peopleTab = ref<"assignees" | "resolvers" | "reporters">("assignees")
+const peopleTab = ref<"assignees" | "reporters">("assignees")
 
 useLiveTickets(["stats"])
 
@@ -100,14 +100,23 @@ const listRoute = (params: Record<string, any>) => ({ name: "grp.tickets.list", 
 
 const pillValue = (value: string | number | null) => (value === null ? "-" : value)
 
-const sortState = ref<{ key: string; direction: 1 | -1 }>({ key: "", direction: -1 })
+type TableMode = "assignees" | "resolvers" | "reporters"
 
-const toggleSort = (key: string) => {
-    sortState.value = sortState.value.key === key ? { key, direction: sortState.value.direction === 1 ? -1 : 1 } : { key, direction: ["name", "short_name"].includes(key) ? 1 : -1 }
+const sortStates = ref<Record<TableMode, { key: string; direction: 1 | -1 }>>({
+    assignees: { key: "", direction: -1 },
+    resolvers: { key: "", direction: -1 },
+    reporters: { key: "", direction: -1 },
+})
+
+const sortArrow = (table: TableMode, key: string) => (sortStates.value[table].key === key ? (sortStates.value[table].direction === 1 ? " ▲" : " ▼") : "")
+
+const toggleSort = (table: TableMode, key: string) => {
+    const current = sortStates.value[table]
+    sortStates.value[table] = current.key === key ? { key, direction: current.direction === 1 ? -1 : 1 } : { key, direction: ["name", "short_name"].includes(key) ? 1 : -1 }
 }
 
-const sortRows = <T extends Record<string, any>>(rows: T[]): T[] => {
-    const { key, direction } = sortState.value
+const sortRows = <T extends Record<string, any>>(rows: T[], table: TableMode): T[] => {
+    const { key, direction } = sortStates.value[table]
     if (!key) {
         return rows
     }
@@ -122,15 +131,16 @@ const sortRows = <T extends Record<string, any>>(rows: T[]): T[] => {
     })
 }
 
-const sortedReporters = computed(() => sortRows(props.stats.reporters))
-const sortedAssignees = computed(() => sortRows(peopleTab.value === "resolvers" ? props.stats.resolvers : props.stats.assignees))
-const assigneeTotal = computed(() => (peopleTab.value === "resolvers" ? props.stats.resolvers_total : props.stats.assignees_total))
+const sortedReporters = computed(() => sortRows(props.stats.reporters, "reporters"))
+
+const engineerRows = (mode: "assignees" | "resolvers") => sortRows(mode === "resolvers" ? props.stats.resolvers : props.stats.assignees, mode)
+
+const engineerTotal = (mode: "assignees" | "resolvers") => (mode === "resolvers" ? props.stats.resolvers_total : props.stats.assignees_total)
 
 const days = (value: number | null) => (value === null ? "-" : `${value} ${trans("days")}`)
 
 const peopleTabs = [
     { key: "assignees", label: trans("Engineers") },
-    { key: "resolvers", label: trans("Resolved") },
     { key: "reporters", label: trans("Reporters") },
 ]
 
@@ -154,14 +164,13 @@ const assigneeColumns = [
     { key: "rating", label: trans("Average rating") },
 ]
 
-const isResolvedTab = computed(() => peopleTab.value === "resolvers")
+const engineerColumns = (mode: "assignees" | "resolvers") =>
+    mode === "resolvers" ? assigneeColumns.filter((column) => !["created", "open", "longest_wait_days"].includes(column.key)) : assigneeColumns
 
-const visibleAssigneeColumns = computed(() =>
-    isResolvedTab.value ? assigneeColumns.filter((column) => !["created", "open", "longest_wait_days"].includes(column.key)) : assigneeColumns
-)
+const assigneeFilter = (mode: "assignees" | "resolvers", username: string) =>
+    mode === "resolvers" ? { assignee: username, resolved_since: props.stats.from } : { assignee: username, created_since: props.stats.from }
 
-const assigneeFilter = (username: string) =>
-    peopleTab.value === "resolvers" ? { assignee: username, resolved_since: props.stats.from } : { assignee: username, created_since: props.stats.from }
+const dashboardBoxes = computed(() => (props.stats.interval === "all" ? (["people"] as const) : (["people", "cleared"] as const)))
 </script>
 
 <template>
@@ -186,27 +195,24 @@ const assigneeFilter = (username: string) =>
             </Link>
         </div>
 
-        <div class="grid gap-4 lg:grid-cols-3">
-            <DashboardWidgetBox storageKey="tickets_reports_created_vs_done_collapsed" class="lg:col-span-2 self-start">
-                <template #header>
-                    <span class="flex items-center gap-2 text-sm font-semibold text-gray-600">
-                        <FontAwesomeIcon icon="fal fa-chart-line" class="text-pink-600" fixed-width aria-hidden="true" />
-                        {{ trans("Created vs Resolved") }}
-                    </span>
-                    <span class="text-xs text-gray-400">{{ stats.created }} {{ trans("created") }} · {{ stats.done }} {{ trans("resolved") }}</span>
-                </template>
-                <div class="h-72">
+        <DashboardWidgetBox storageKey="tickets_reports_created_vs_done_collapsed">
+            <template #header>
+                <span class="flex items-center gap-2 text-sm font-semibold text-gray-600">
+                    <FontAwesomeIcon icon="fal fa-chart-line" class="text-pink-600" fixed-width aria-hidden="true" />
+                    {{ trans("Created vs Resolved") }}
+                </span>
+                <span class="text-xs text-gray-400">{{ stats.created }} {{ trans("created") }} · {{ stats.done }} {{ trans("resolved") }}</span>
+            </template>
+            <div class="grid gap-6 lg:grid-cols-3">
+                <div class="h-72 lg:col-span-2">
                     <Chart type="line" :data="lineChart" :options="lineOptions" class="h-full" />
                 </div>
-            </DashboardWidgetBox>
-            <DashboardWidgetBox storageKey="tickets_reports_status_collapsed" class="self-start">
-                <template #header>
-                    <span class="flex items-center gap-2 text-sm font-semibold text-gray-600">
-                        <FontAwesomeIcon icon="fal fa-chart-pie" class="text-blue-600" fixed-width aria-hidden="true" />
-                        {{ trans("Status overview") }}
-                    </span>
-                    <span class="text-xs text-gray-400">{{ trans("All tickets") }} · <Link :href="route('grp.tickets.list')" class="hover:text-gray-600">{{ trans("View all") }}</Link></span>
-                </template>
+                <div class="lg:border-l lg:border-gray-100 lg:pl-6">
+                <p class="mb-2 flex items-center gap-2 text-sm font-semibold text-gray-600">
+                    <FontAwesomeIcon icon="fal fa-chart-pie" class="text-blue-600" fixed-width aria-hidden="true" />
+                    {{ trans("Status overview") }}
+                    <span class="text-xs font-normal text-gray-400">{{ trans("All tickets") }} · <Link :href="route('grp.tickets.list')" class="hover:text-gray-600">{{ trans("View all") }}</Link></span>
+                </p>
                 <div class="flex items-center gap-4">
                     <div class="relative h-40 w-40 shrink-0">
                         <Chart type="doughnut" :data="donutChart" :options="donutOptions" class="h-full" />
@@ -224,8 +230,9 @@ const assigneeFilter = (username: string) =>
                         </li>
                     </ul>
                 </div>
-            </DashboardWidgetBox>
-        </div>
+                </div>
+            </div>
+        </DashboardWidgetBox>
 
         <DashboardWidgetBox storageKey="tickets_reports_csat_collapsed">
             <template #header>
@@ -240,34 +247,41 @@ const assigneeFilter = (username: string) =>
             </div>
         </DashboardWidgetBox>
 
-        <DashboardWidgetBox storageKey="tickets_reports_people_collapsed">
+        <DashboardWidgetBox v-for="box in dashboardBoxes" :key="box" :storageKey="`tickets_reports_${box}_collapsed`">
             <template #header>
-                <span class="flex items-center gap-2 text-sm font-semibold text-gray-600">
-                    <FontAwesomeIcon icon="fal fa-users" class="text-violet-600" fixed-width aria-hidden="true" />
-                    {{ trans("People") }}
-                </span>
-                <span class="flex items-center gap-1.5">
-                    <button
-                        v-for="tab in peopleTabs"
-                        :key="tab.key"
-                        type="button"
-                        class="rounded-full border px-2.5 py-px text-xs"
-                        :class="peopleTab === tab.key ? 'border-indigo-500 bg-indigo-50 text-indigo-700' : 'border-gray-200 text-gray-500 hover:bg-gray-50'"
-                        @click="peopleTab = tab.key as 'assignees' | 'resolvers' | 'reporters'">
-                        {{ tab.label }}
-                    </button>
-                </span>
-                <span class="text-xs text-gray-400">
-                    {{ peopleTab === "resolvers" ? trans("Tickets resolved in this period, created at any time") : trans("Tickets created in this period") }}
-                </span>
+                <template v-if="box === 'people'">
+                    <span class="flex items-center gap-2 text-sm font-semibold text-gray-600">
+                        <FontAwesomeIcon icon="fal fa-users" class="text-violet-600" fixed-width aria-hidden="true" />
+                        {{ trans("People") }}
+                    </span>
+                    <span class="flex items-center gap-1.5">
+                        <button
+                            v-for="tab in peopleTabs"
+                            :key="tab.key"
+                            type="button"
+                            class="rounded-full border px-2.5 py-px text-xs"
+                            :class="peopleTab === tab.key ? 'border-indigo-500 bg-indigo-50 text-indigo-700' : 'border-gray-200 text-gray-500 hover:bg-gray-50'"
+                            @click="peopleTab = tab.key as 'assignees' | 'reporters'">
+                            {{ tab.label }}
+                        </button>
+                    </span>
+                    <span class="text-xs text-gray-400">{{ trans("Tickets created in this period") }}</span>
+                </template>
+                <template v-else>
+                    <span class="flex items-center gap-2 text-sm font-semibold text-gray-600">
+                        <FontAwesomeIcon icon="fal fa-check" class="text-emerald-600" fixed-width aria-hidden="true" />
+                        {{ trans("Cleared") }}
+                    </span>
+                    <span class="text-xs text-gray-400">{{ trans("Older tickets, created before this period, resolved in it") }}</span>
+                </template>
             </template>
 
-        <div v-if="peopleTab === 'reporters'" class="-mx-4 -mb-4 overflow-x-auto">
+        <div v-if="box === 'people' && peopleTab === 'reporters'" class="-mx-4 -mb-4 overflow-x-auto">
             <table class="min-w-full text-sm">
                 <thead class="text-xs text-gray-500 text-left">
                     <tr>
-                        <th v-for="(column, index) in reporterColumns" :key="column.key" class="px-4 py-2 cursor-pointer select-none hover:text-gray-700" :class="{ 'text-right': index > 0 }" @click="toggleSort(column.key)">
-                            {{ column.label }}<span v-if="sortState.key === column.key">{{ sortState.direction === 1 ? " ▲" : " ▼" }}</span>
+                        <th v-for="(column, index) in reporterColumns" :key="column.key" class="px-4 py-2 cursor-pointer select-none hover:text-gray-700" :class="{ 'text-right': index > 0 }" @click="toggleSort('reporters', column.key)">
+                            {{ column.label }}{{ sortArrow("reporters", column.key) }}
                         </th>
                     </tr>
                 </thead>
@@ -308,17 +322,17 @@ const assigneeFilter = (username: string) =>
             </table>
         </div>
 
-        <div v-else class="-mx-4 -mb-4 overflow-x-auto">
+        <div v-else v-for="mode in [box === 'cleared' ? 'resolvers' : 'assignees'] as const" :key="mode" class="-mx-4 -mb-4 overflow-x-auto">
             <table class="min-w-full text-sm">
                 <thead class="text-xs text-gray-500 text-left">
                     <tr>
-                        <th v-for="(column, index) in visibleAssigneeColumns" :key="column.key" class="px-4 py-2 cursor-pointer select-none hover:text-gray-700" :class="{ 'text-right': index > 0 }" @click="toggleSort(column.key)">
-                            {{ column.label }}<span v-if="sortState.key === column.key">{{ sortState.direction === 1 ? " ▲" : " ▼" }}</span>
+                        <th v-for="(column, index) in engineerColumns(mode)" :key="column.key" class="px-4 py-2 cursor-pointer select-none hover:text-gray-700" :class="{ 'text-right': index > 0 }" @click="toggleSort(mode, column.key)">
+                            {{ column.label }}{{ sortArrow(mode, column.key) }}
                         </th>
                     </tr>
                 </thead>
                 <tbody>
-                    <tr v-for="row in sortedAssignees" :key="row.username" class="border-t border-gray-100">
+                    <tr v-for="row in engineerRows(mode)" :key="row.username" class="border-t border-gray-100">
                         <td class="px-4 py-2 font-medium">
                             <span class="inline-flex items-center gap-2" v-tooltip="{ content: row.name, delay: 0 }">
                                 <img v-if="row.avatar?.original" :src="row.avatar.original" class="h-6 w-6 rounded-full object-cover" />
@@ -326,39 +340,39 @@ const assigneeFilter = (username: string) =>
                                 {{ row.short_name }}
                             </span>
                         </td>
-                        <td v-if="!isResolvedTab" class="px-4 py-2 text-right">
-                            <Link v-if="row.created" :href="listUrl({ filter: assigneeFilter(row.username) })" class="hover:underline">{{ row.created }}</Link>
+                        <td v-if="mode === 'assignees'" class="px-4 py-2 text-right">
+                            <Link v-if="row.created" :href="listUrl({ filter: assigneeFilter(mode, row.username) })" class="hover:underline">{{ row.created }}</Link>
                             <span v-else>{{ row.created }}</span>
                         </td>
-                        <td v-if="!isResolvedTab" class="px-4 py-2 text-right">
-                            <Link v-if="row.open" :href="listUrl({ filter: assigneeFilter(row.username), elements: { status: OPEN_STATUSES } })" class="hover:underline">{{ row.open }}</Link>
+                        <td v-if="mode === 'assignees'" class="px-4 py-2 text-right">
+                            <Link v-if="row.open" :href="listUrl({ filter: assigneeFilter(mode, row.username), elements: { status: OPEN_STATUSES } })" class="hover:underline">{{ row.open }}</Link>
                             <span v-else>{{ row.open }}</span>
                         </td>
                         <td class="px-4 py-2 text-right">
-                            <Link v-if="row.done" :href="listUrl({ filter: assigneeFilter(row.username), elements: { status: 'resolved' } })" class="hover:underline">{{ row.done }}</Link>
+                            <Link v-if="row.done" :href="listUrl({ filter: assigneeFilter(mode, row.username), elements: { status: 'resolved' } })" class="hover:underline">{{ row.done }}</Link>
                             <span v-else>{{ row.done }}</span>
                         </td>
                         <td class="px-4 py-2 text-right">{{ hours(row.median_hours) }}</td>
-                        <td v-if="!isResolvedTab" class="px-4 py-2 text-right">{{ days(row.longest_wait_days) }}</td>
+                        <td v-if="mode === 'assignees'" class="px-4 py-2 text-right">{{ days(row.longest_wait_days) }}</td>
                         <td class="px-4 py-2 text-right">
                             <template v-if="row.rating !== null">{{ row.rating }}<span class="text-gray-400">/5 ({{ row.ratings }})</span></template>
                             <span v-else>-</span>
                         </td>
                     </tr>
-                    <tr v-if="!sortedAssignees.length">
-                        <td :colspan="visibleAssigneeColumns.length" class="px-4 py-6 text-center text-gray-400">{{ trans("No tickets in this period") }}</td>
+                    <tr v-if="!engineerRows(mode).length">
+                        <td :colspan="engineerColumns(mode).length" class="px-4 py-6 text-center text-gray-400">{{ trans("No tickets in this period") }}</td>
                     </tr>
                 </tbody>
-                <tfoot v-if="sortedAssignees.length" class="border-t-2 border-gray-200 font-semibold">
+                <tfoot v-if="engineerRows(mode).length" class="border-t-2 border-gray-200 font-semibold">
                     <tr>
                         <td class="px-4 py-2">{{ trans("Total") }}</td>
-                        <td v-if="!isResolvedTab" class="px-4 py-2 text-right">{{ assigneeTotal.created }}</td>
-                        <td v-if="!isResolvedTab" class="px-4 py-2 text-right">{{ assigneeTotal.open }}</td>
-                        <td class="px-4 py-2 text-right">{{ assigneeTotal.done }}</td>
-                        <td class="px-4 py-2 text-right">{{ hours(assigneeTotal.median_hours) }}</td>
-                        <td v-if="!isResolvedTab" class="px-4 py-2 text-right">{{ days(assigneeTotal.longest_wait_days) }}</td>
+                        <td v-if="mode === 'assignees'" class="px-4 py-2 text-right">{{ engineerTotal(mode).created }}</td>
+                        <td v-if="mode === 'assignees'" class="px-4 py-2 text-right">{{ engineerTotal(mode).open }}</td>
+                        <td class="px-4 py-2 text-right">{{ engineerTotal(mode).done }}</td>
+                        <td class="px-4 py-2 text-right">{{ hours(engineerTotal(mode).median_hours) }}</td>
+                        <td v-if="mode === 'assignees'" class="px-4 py-2 text-right">{{ days(engineerTotal(mode).longest_wait_days) }}</td>
                         <td class="px-4 py-2 text-right">
-                            <template v-if="assigneeTotal.rating !== null">{{ assigneeTotal.rating }}<span class="text-gray-400">/5 ({{ assigneeTotal.ratings }})</span></template>
+                            <template v-if="engineerTotal(mode).rating !== null">{{ engineerTotal(mode).rating }}<span class="text-gray-400">/5 ({{ engineerTotal(mode).ratings }})</span></template>
                             <span v-else>-</span>
                         </td>
                     </tr>
