@@ -8,7 +8,7 @@
 import { computed, ref, watch, onBeforeUnmount } from "vue"
 import { marked } from "marked"
 import Image from "@/Common/Components/Image.vue"
-import TicketPdfPreview, { isPdfAttachment, type TicketAttachment } from "@/Components/Tickets/TicketPdfPreview.vue"
+import TicketAttachmentPreview, { isPreviewableAttachment, type TicketAttachment } from "@/Components/Tickets/TicketAttachmentPreview.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { trans } from "laravel-vue-i18n"
@@ -22,9 +22,9 @@ const props = defineProps<{
     attachments?: TicketAttachment[]
 }>()
 
-const pdfFiles = computed(() => (props.attachments ?? []).filter(isPdfAttachment))
+const previewableFiles = computed(() => (props.attachments ?? []).filter(isPreviewableAttachment))
 
-const previewPdfIndex = ref<number | null>(null)
+const previewFileIndex = ref<number | null>(null)
 
 const escapeHtml = (text: string) => text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
 
@@ -111,11 +111,11 @@ onBeforeUnmount(() => window.removeEventListener("keydown", onKeydown))
         </Teleport>
         <ul v-if="attachments?.length" class="mt-2 space-y-1 text-sm">
             <li v-for="file in attachments" :key="file.url">
-                <button v-if="isPdfAttachment(file)" type="button" class="text-left text-indigo-600 hover:underline break-all" @click="previewPdfIndex = pdfFiles.indexOf(file)"><FontAwesomeIcon icon="fal fa-paperclip" class="mr-1" />{{ file.name }}</button>
+                <button v-if="isPreviewableAttachment(file)" type="button" class="text-left text-indigo-600 hover:underline break-all" @click="previewFileIndex = previewableFiles.indexOf(file)"><FontAwesomeIcon icon="fal fa-paperclip" class="mr-1" />{{ file.name }}</button>
                 <a v-else :href="file.url" target="_blank" rel="noopener" class="text-indigo-600 hover:underline break-all"><FontAwesomeIcon icon="fal fa-paperclip" class="mr-1" />{{ file.name }}</a>
             </li>
         </ul>
-        <TicketPdfPreview v-model:index="previewPdfIndex" :files="pdfFiles" />
+        <TicketAttachmentPreview v-model:index="previewFileIndex" :files="previewableFiles" />
     </div>
 </template>
 

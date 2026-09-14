@@ -13,7 +13,7 @@ import { useFormatTime } from "@/Composables/useFormatTime"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import TicketThread from "@/Components/Tickets/TicketThread.vue"
 import TicketRating from "@/Components/Tickets/TicketRating.vue"
-import TicketPdfPreview, { isPdfAttachment } from "@/Components/Tickets/TicketPdfPreview.vue"
+import TicketAttachmentPreview, { isPreviewableAttachment } from "@/Components/Tickets/TicketAttachmentPreview.vue"
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
 import { Popover, Listbox, Dialog } from "primevue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
@@ -30,8 +30,8 @@ const kindIcons: Record<string, string> = {
     escalation: "fal fa-level-up",
 }
 
-const previewPdfIndex = ref<number | null>(null)
-const ticketPdfFiles = computed(() => (props.ticket.attachments ?? []).filter(isPdfAttachment))
+const previewFileIndex = ref<number | null>(null)
+const previewableTicketFiles = computed(() => (props.ticket.attachments ?? []).filter(isPreviewableAttachment))
 
 const kindPopover = ref()
 const modulePopover = ref()
@@ -346,11 +346,11 @@ const update = (field: string, value: unknown) => {
                 <p class="text-xs text-gray-500 mb-1">{{ trans("Attachments") }}</p>
                 <ul class="space-y-1">
                     <li v-for="file in ticket.attachments" :key="file.url">
-                        <button v-if="isPdfAttachment(file)" type="button" class="text-left text-blue-600 hover:underline break-all" @click="previewPdfIndex = ticketPdfFiles.indexOf(file)"><FontAwesomeIcon icon="fal fa-paperclip" class="mr-1" />{{ file.name }}</button>
+                        <button v-if="isPreviewableAttachment(file)" type="button" class="text-left text-blue-600 hover:underline break-all" @click="previewFileIndex = previewableTicketFiles.indexOf(file)"><FontAwesomeIcon icon="fal fa-paperclip" class="mr-1" />{{ file.name }}</button>
                         <a v-else :href="file.url" target="_blank" class="text-blue-600 hover:underline break-all"><FontAwesomeIcon icon="fal fa-paperclip" class="mr-1" />{{ file.name }}</a>
                     </li>
                 </ul>
-                <TicketPdfPreview v-model:index="previewPdfIndex" :files="ticketPdfFiles" />
+                <TicketAttachmentPreview v-model:index="previewFileIndex" :files="previewableTicketFiles" />
             </div>
             <dl class="space-y-1 text-gray-600">
                 <div v-if="ticket.parent" class="flex justify-between"><dt>{{ trans("Escalated from") }}</dt><dd><Link :href="route('grp.tickets.show', ticket.parent)" class="text-blue-600 hover:underline">{{ ticket.parent }}</Link></dd></div>
