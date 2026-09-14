@@ -43,7 +43,6 @@ const props = defineProps<{
 	can_manage: boolean
 }>()
 
-useLiveTickets(["columns", "periodOptions"])
 
 const columnClasses: Record<string, string> = {
 	gray: "bg-gray-100 border-t-4 border-gray-400",
@@ -215,6 +214,10 @@ const subCount = (column: { tickets: any[] }, status: string) =>
 const assigneeMenuOpen = ref(false)
 
 const quickLook = ref<any | null>(null)
+
+const dragging = ref(false)
+
+useLiveTickets(["columns", "periodOptions"], undefined, computed(() => dragging.value || !!quickLook.value))
 
 // ponytail: vuedraggable eats dblclick and bubbled clicks, so the board listens in capture
 let lastClick = { id: 0, at: 0 }
@@ -490,6 +493,8 @@ const onMoved = (status: string, event: { added?: { element: { id: number } } })
 					group="tickets"
 					:disabled="!can_manage"
 					class="flex-1 space-y-2 min-h-24 max-h-[70vh] overflow-y-auto pr-0.5"
+					@start="dragging = true"
+					@end="dragging = false"
 					@change="onMoved(column.status, $event)">
 					<template #item="{ element }">
 						<div

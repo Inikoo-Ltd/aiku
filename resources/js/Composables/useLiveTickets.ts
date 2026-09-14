@@ -4,7 +4,7 @@
  * Copyright (c) 2026, Raul A Perusquia Flores
  */
 
-import { onMounted, onBeforeUnmount } from "vue"
+import { onMounted, onBeforeUnmount, watch, type Ref } from "vue"
 import { usePage, router } from "@inertiajs/vue3"
 
 interface TicketChangedEvent {
@@ -15,14 +15,31 @@ interface TicketChangedEvent {
 let restoredFromHistory = false
 globalThis.window?.addEventListener("popstate", () => (restoredFromHistory = true))
 
-export const useLiveTickets = (only: string[], reference?: string) => {
+export const useLiveTickets = (only: string[], reference?: string, paused?: Ref<boolean>) => {
     const groupId = (usePage().props.layout as any)?.group?.id
     const channelName = `grp.${groupId}.general`
 
     let debounceTimer: ReturnType<typeof setTimeout> | undefined
+    let missedWhilePaused = false
+
+    const reload = () => router.reload({ only, preserveScroll: true, preserveState: true })
+
+    if (paused) {
+        watch(paused, (isPaused) => {
+            if (!isPaused && missedWhilePaused) {
+                missedWhilePaused = false
+                reload()
+            }
+        })
+    }
 
     const handler = (e: TicketChangedEvent) => {
         if (reference && e.reference !== reference) {
+            return
+        }
+
+        if (paused?.value) {
+            missedWhilePaused = true
             return
         }
 
