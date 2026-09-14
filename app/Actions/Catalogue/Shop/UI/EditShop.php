@@ -112,6 +112,10 @@ class EditShop extends OrgAction
 
         $viewContactOptionsPanel = (bool) Arr::get($shop->settings, 'chat.view_contact_options_panel', false);
         $enableWhatsapp = (bool) Arr::get($shop->settings, 'whatsapp.enabled', false);
+        $whatsappRouteParameters = [
+            'organisation' => $shop->organisation->slug,
+            'shop'         => $shop->slug,
+        ];
 
         $allowedBlueprintLabels = [
             __('Faire Settings'),
@@ -780,6 +784,18 @@ class EditShop extends OrgAction
                                         'required' => true,
                                         'value'    => Arr::get($shop->settings, 'whatsapp.phone_number', ''),
                                     ],
+                                ],
+                            ],
+                            'whatsapp_phone_status' => [
+                                'type'         => 'whatsapp_phone_status',
+                                'label'        => __('Phone Number Status'),
+                                'information'  => __('Ask Meta whether this number is live. A number that is not connected can be brought online here.'),
+                                'noSaveButton' => true,
+                                'routes'       => [
+                                    'status'       => ['name' => 'grp.org.shops.show.chat.whatsapp_phone.status', 'parameters' => $whatsappRouteParameters],
+                                    'request_code' => ['name' => 'grp.org.shops.show.chat.whatsapp_phone.request_code', 'parameters' => $whatsappRouteParameters],
+                                    'verify_code'  => ['name' => 'grp.org.shops.show.chat.whatsapp_phone.verify_code', 'parameters' => $whatsappRouteParameters],
+                                    'register'     => ['name' => 'grp.org.shops.show.chat.whatsapp_phone.register', 'parameters' => $whatsappRouteParameters],
                                 ],
                             ],
                         ] : [],
