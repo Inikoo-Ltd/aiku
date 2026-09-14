@@ -158,7 +158,7 @@ test('staff and customers comment on the same public thread', function (Ticket $
 test('grp ticket pages render', function (Ticket $ticket) {
     get(route('grp.tickets.index'))->assertInertia(fn (AssertableInertia $page) => $page->component('Tickets/TicketsDashboard')->where('can_manage', true)->has('queue')->has('stats.open'));
     get(route('grp.tickets.list'))->assertInertia(fn (AssertableInertia $page) => $page->component('Tickets/Tickets')->has('data.data', Ticket::count()));
-    get(route('grp.tickets.board'))->assertInertia(fn (AssertableInertia $page) => $page->component('Tickets/TicketsBoard')->has('columns', 5));
+    get(route('grp.tickets.board'))->assertInertia(fn (AssertableInertia $page) => $page->component('Tickets/TicketsBoard')->has('columns', 5)->where('me', $this->user->username)->has('formerAssignees'));
     actingAs(User::factory()->create(['group_id' => $this->group->id]));
     get(route('grp.tickets.create'))->assertInertia(fn (AssertableInertia $page) => $page->component('Tickets/CreateTicket'));
     actingAs($this->user);

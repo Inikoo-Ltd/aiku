@@ -13,7 +13,9 @@ use App\Enums\Helpers\Ticket\TicketStatusEnum;
 use App\Enums\Helpers\Ticket\TicketStatusGroupEnum;
 use App\Http\Resources\Helpers\TicketResource;
 use App\Models\Helpers\Ticket;
+use App\Enums\HumanResources\Employee\EmployeeStateEnum;
 use App\Models\SysAdmin\Group;
+use App\Models\SysAdmin\User;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -142,7 +144,24 @@ class ShowTicketsBoard extends OrgAction
                 'createdIntervals' => IndexTickets::make()->createdIntervalOptions(),
                 'createdInterval'  => $board['created'],
                 'updateRoute' => 'grp.models.ticket.update',
+                'me'          => request()->user()->username,
+                'formerAssignees' => $this->formerAssignees($board['columns']),
             ]
         );
+    }
+
+    /**
+     * @param  array<int, array{tickets: array<int, array<string, mixed>>}>  $columns
+     * @return array<int, string>
+     */
+    private function formerAssignees(array $columns): array
+    {
+        $assigneeIds = collect($columns)->flatMap(fn (array $column) => array_column($column['tickets'], 'assignee_id'))->filter()->unique();
+
+        return User::whereIn('id', $assigneeIds)
+            ->whereDoesntHave('employees', fn ($query) => $query->where('state', '!=', EmployeeStateEnum::LEFT))
+            ->whereDoesntHave('guests', fn ($query) => $query->where('guests.status', true))
+            ->pluck('username')
+            ->all();
     }
 }
