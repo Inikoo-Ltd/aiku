@@ -202,16 +202,22 @@ const update = (field: string, value: unknown) => {
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead">
         <template #wrapped-delete>
-            <ModalConfirmationDelete
-                :title="trans('Delete :reference?', { reference: ticket.reference })"
-                :description="trans('The ticket and its comments will be removed for good.')"
-                :noLabel="trans('Yes, delete')"
-                :routeDelete="routes.delete"
-                class="w-full">
-                <template #default="{ changeModel }">
-                    <Button type="negative" icon="fal fa-trash-alt" :label="trans('Delete ticket')" full @click="changeModel" />
-                </template>
-            </ModalConfirmationDelete>
+            <div class="flex w-80 flex-col gap-3 whitespace-nowrap">
+                <label v-if="can_flag_confidential" class="flex items-center gap-x-2 text-sm text-gray-600 cursor-pointer">
+                    <input type="checkbox" :checked="ticket.is_confidential" class="rounded border-gray-300" @change="update('is_confidential', ($event.target as HTMLInputElement).checked)" />
+                    {{ trans("Confidential") }} <span class="text-xs text-gray-400">({{ trans("only reporter and lead engineers") }})</span>
+                </label>
+                <ModalConfirmationDelete
+                    :title="trans('Delete :reference?', { reference: ticket.reference })"
+                    :description="trans('The ticket and its comments will be removed for good.')"
+                    :noLabel="trans('Yes, delete')"
+                    :routeDelete="routes.delete"
+                    class="w-full">
+                    <template #default="{ changeModel }">
+                        <Button type="negative" icon="fal fa-trash-alt" :label="trans('Delete ticket')" full @click="changeModel" />
+                    </template>
+                </ModalConfirmationDelete>
+            </div>
         </template>
     </PageHeading>
     <div class="p-4 grid gap-4 lg:grid-cols-3">
@@ -352,10 +358,6 @@ const update = (field: string, value: unknown) => {
                 </Popover>
             </div>
             <Button v-if="ticket.type === 'customer' && !ticket.escalations.length" type="secondary" icon="fal fa-level-up" :label="trans('Escalate to help desk')" full @click="escalate" />
-            <label v-if="can_flag_confidential" class="flex items-center gap-x-2 text-gray-600 cursor-pointer">
-                <input type="checkbox" :checked="ticket.is_confidential" class="rounded border-gray-300" @change="update('is_confidential', ($event.target as HTMLInputElement).checked)" />
-                {{ trans("Confidential") }} <span class="text-xs text-gray-400">({{ trans("only reporter and lead engineers") }})</span>
-            </label>
             </template>
             <div v-if="ticket.commits?.length">
                 <p class="text-xs text-gray-500 mb-1">{{ trans("Commits") }}</p>
