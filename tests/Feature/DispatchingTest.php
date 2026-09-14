@@ -1227,6 +1227,28 @@ test('UI picked bay pages', function () {
     get(route('grp.org.warehouses.show.dispatching.picked_bays.edit', [$this->organisation->slug, $this->warehouse->slug, $pickedBay->slug]))->assertOk();
 });
 
+test('dispatch clerk can view trolleys and picked bays but not create them', function () {
+    $user = $this->adminGuest->getUser();
+    setPermissionsTeamId($user->group_id);
+    $originalRoles = $user->roles->pluck('name')->toArray();
+
+    $user->syncRoles([RolesEnum::getRoleName('dispatch-clerk', $this->warehouse)]);
+    Cache::tags('auth-user:'.$user->id)->flush();
+    app(\Spatie\Permission\PermissionRegistrar::class)->forgetCachedPermissions();
+    actingAs($user->refresh());
+
+    $parameters = [$this->organisation->slug, $this->warehouse->slug];
+    get(route('grp.org.warehouses.show.dispatching.trolleys.index', $parameters))->assertOk();
+    get(route('grp.org.warehouses.show.dispatching.picked_bays.index', $parameters))->assertOk();
+    get(route('grp.org.warehouses.show.dispatching.trolleys.create', $parameters))->assertForbidden();
+    get(route('grp.org.warehouses.show.dispatching.picked_bays.create', $parameters))->assertForbidden();
+
+    setPermissionsTeamId($user->group_id);
+    $user->syncRoles($originalRoles);
+    Cache::tags('auth-user:'.$user->id)->flush();
+    actingAs($user->refresh());
+});
+
 test('batch code crud json hydrator', function () {
     $orgStock  = makeOrgStock($this);
     $batchCode = StoreBatchCode::make()->action($this->warehouse, [
