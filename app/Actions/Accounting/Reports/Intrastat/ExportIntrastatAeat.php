@@ -17,6 +17,7 @@ use App\Models\Accounting\IntrastatExportTimeSeriesRecord;
 use App\Models\SysAdmin\Organisation;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Response;
 use Lorisleiva\Actions\ActionRequest;
 use ZipArchive;
@@ -44,15 +45,15 @@ class ExportIntrastatAeat extends OrgAction
     /**
      * @return array{lines: list<string>, log: list<string>, errors: list<string>}
      */
-    public function handle(Organisation $organisation, array $filters): array
+    public function handle(Organisation $organisation, array $filters, bool $keepInvalidRows = false): array
     {
-        return $this->build($this->getRecords($organisation, $filters));
+        return $this->build($this->getRecords($organisation, $filters), $keepInvalidRows);
     }
 
     /**
      * @return array{lines: list<string>, log: list<string>, errors: list<string>}
      */
-    public function build(Collection $records): array
+    public function build(Collection $records, bool $keepInvalidRows = false): array
     {
         $lines  = [];
         $log    = [];
@@ -93,7 +94,7 @@ class ExportIntrastatAeat extends OrgAction
                 $errors[] = "$source: $rowError";
             }
 
-            if ($rowErrors === []) {
+            if ($rowErrors === [] || $keepInvalidRows) {
                 $lines[] = implode(self::SEPARATOR, $fields);
             }
 
@@ -232,7 +233,7 @@ class ExportIntrastatAeat extends OrgAction
         return number_format($value, 2, ',', '');
     }
 
-    public function asController(Organisation $organisation, ActionRequest $request): Response
+    public function asController(Organisation $organisation, ActionRequest $request): Response|JsonResponse
     {
         $this->initialisation($organisation, $request);
 
@@ -241,17 +242,10 @@ class ExportIntrastatAeat extends OrgAction
             'elements' => $request->input('elements', []),
         ];
 
-        $result = $this->handle($organisation, $filters);
+        $result = $this->handle($organisation, $filters, $request->boolean('force'));
 
-        if ($result['errors'] !== []) {
-            return response(
-                "Export stopped, fix these records first:\n\n".implode("\n", $result['errors']),
-                200,
-                [
-                    'Content-Type'        => 'text/plain; charset=UTF-8',
-                    'Content-Disposition' => 'attachment; filename="intrastat_aeat_'.$organisation->slug.'_errors.txt"',
-                ]
-            );
+        if ($request->boolean('check')) {
+            return response()->json(['errors' => $result['errors'], 'rows' => count($result['log'])]);
         }
 
         $stamp    = Carbon::now()->format('Y-m-d_His');

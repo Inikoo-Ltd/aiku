@@ -9,11 +9,16 @@ import { Head } from "@inertiajs/vue3"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import Table from "@/Components/Table/Table.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
-import { faFileExport, faFileExcel } from "@fal"
+import Modal from "@/Components/Utils/Modal.vue"
+import axios from "axios"
+import { ref } from "vue"
+import { trans } from "laravel-vue-i18n"
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { faFileExport, faFileExcel, faExclamationTriangle } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { capitalize } from "@/Composables/capitalize"
 
-library.add(faFileExport, faFileExcel)
+library.add(faFileExport, faFileExcel, faExclamationTriangle)
 
 const props = defineProps<{
     data: object
@@ -44,6 +49,34 @@ const exportExcel = () => {
 
     window.location.href = route('grp.org.reports.intrastat.exports.export-excel', exportParams)
 }
+
+const aeatErrors = ref<string[]>([])
+const aeatRows = ref(0)
+const isAeatModalOpen = ref(false)
+const isAeatChecking = ref(false)
+
+const aeatUrl = (extra: Record<string, string>) => route('grp.org.reports.intrastat.exports.export-aeat', { ...route().params, ...extra })
+
+const exportAeat = async () => {
+    isAeatChecking.value = true
+    try {
+        const { data } = await axios.get(aeatUrl({ check: '1' }))
+        aeatErrors.value = data.errors
+        aeatRows.value = data.rows
+        if (data.errors.length) {
+            isAeatModalOpen.value = true
+        } else {
+            window.location.href = aeatUrl({})
+        }
+    } finally {
+        isAeatChecking.value = false
+    }
+}
+
+const exportAeatAnyway = () => {
+    isAeatModalOpen.value = false
+    window.location.href = aeatUrl({ force: '1' })
+}
 </script>
 
 <template>
@@ -65,13 +98,13 @@ const exportExcel = () => {
                         label="Export Slovakia XML"
                     />
                 </a>
-                <a :href="route('grp.org.reports.intrastat.exports.export-aeat', route().params)" download target="_blank">
-                    <Button
-                        :style="'secondary'"
-                        icon="fal fa-file-export"
-                        label="Export Spain AEAT"
-                    />
-                </a>
+                <Button
+                    @click="exportAeat"
+                    :loading="isAeatChecking"
+                    :style="'secondary'"
+                    icon="fal fa-file-export"
+                    label="Export Spain AEAT"
+                />
                 <Button
                     @click="exportExcel"
                     :style="'secondary'"
@@ -81,6 +114,23 @@ const exportExcel = () => {
             </div>
         </template>
     </PageHeading>
+
+    <Modal :isOpen="isAeatModalOpen" @onClose="isAeatModalOpen = false" width="w-full max-w-4xl" :isClosableInBackground="false">
+        <div class="flex items-start gap-4">
+            <FontAwesomeIcon icon="fal fa-exclamation-triangle" class="text-red-600 text-4xl shrink-0" fixed-width aria-hidden="true" />
+            <div class="min-w-0 flex-1">
+                <h2 class="text-xl font-semibold text-red-700">{{ trans('AEAT file is not valid') }}</h2>
+                <p class="mt-1 text-gray-700">
+                    {{ trans(':errors problems found in :rows rows. AEAT will reject this file as it is.', { errors: aeatErrors.length, rows: aeatRows }) }}
+                </p>
+                <pre class="mt-4 max-h-96 overflow-auto rounded bg-gray-50 p-3 text-xs text-gray-800">{{ aeatErrors.join('\n') }}</pre>
+                <div class="mt-6 flex justify-end gap-3">
+                    <Button @click="isAeatModalOpen = false" :style="'secondary'" :label="trans('Fix the data first')" />
+                    <Button @click="exportAeatAnyway" :style="'red'" icon="fal fa-exclamation-triangle" :label="trans('Download anyway with the errors')" />
+                </div>
+            </div>
+        </div>
+    </Modal>
 
     <!-- Table -->
     <Table :resource="data" class="mt-5">

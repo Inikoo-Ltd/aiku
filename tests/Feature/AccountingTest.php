@@ -8,6 +8,7 @@
 
 /** @noinspection PhpUnhandledExceptionInspection */
 
+use App\Actions\Accounting\Reports\Intrastat\ExportIntrastatAeat;
 use App\Actions\Accounting\CreditTransaction\DeleteCreditTransaction;
 use App\Actions\Accounting\CreditTransaction\UpdateCreditTransaction;
 use App\Actions\Accounting\Invoice\DeleteInvoice;
@@ -3229,4 +3230,20 @@ test('UI intrastat exports page and AEAT export accept between[from] date filter
 
     get(route('grp.org.reports.intrastat.exports', [$org, 'between' => ['from' => '20250101-20250131']]))->assertOk();
     get(route('grp.org.reports.intrastat.exports.export-aeat', [$org, 'between' => ['from' => '20250101-20250131']]))->assertOk();
+    get(route('grp.org.reports.intrastat.exports.export-aeat', [$org, 'check' => 1]))->assertOk()->assertJson(['errors' => [], 'rows' => 0]);
+    get(route('grp.org.reports.intrastat.exports.export-aeat', [$org, 'force' => 1]))->assertOk()->assertHeader('Content-Type', 'application/zip');
+});
+
+test('AEAT intrastat export keeps invalid rows only when forced', function () {
+    $series = new \App\Models\Accounting\IntrastatExportTimeSeries(['tariff_code' => '3304990000', 'partner_tax_number' => 'ESB12345678']);
+    $record = new \App\Models\Accounting\IntrastatExportTimeSeriesRecord(['id' => 1, 'from' => '2026-02-01', 'weight' => 0, 'quantity' => 1, 'value_org_currency' => 0]);
+    $record->setRelation('intrastatExportTimeSeries', $series);
+
+    $strict = ExportIntrastatAeat::make()->build(new \Illuminate\Database\Eloquent\Collection([$record]));
+    $forced = ExportIntrastatAeat::make()->build(new \Illuminate\Database\Eloquent\Collection([$record]), true);
+
+    expect($strict['errors'])->not->toBeEmpty()
+        ->and($strict['lines'])->toBeEmpty()
+        ->and($forced['errors'])->toBe($strict['errors'])
+        ->and($forced['lines'])->toHaveCount(1);
 });
