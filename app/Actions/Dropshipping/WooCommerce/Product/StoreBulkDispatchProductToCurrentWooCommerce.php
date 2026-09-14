@@ -11,7 +11,6 @@ namespace App\Actions\Dropshipping\WooCommerce\Product;
 use App\Actions\OrgAction;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\WooCommerceUser;
-use Illuminate\Support\Facades\Cache;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 
@@ -25,23 +24,13 @@ class StoreBulkDispatchProductToCurrentWooCommerce extends OrgAction
     /**
      * @throws \Exception
      */
-    public function handle(CustomerSalesChannel $customerSalesChannel, $portfolios, int $totalNumber): void
+    public function handle(CustomerSalesChannel $customerSalesChannel, $portfolios, array $bulkProgress): void
     {
         /** @var WooCommerceUser $wooCommerceUser */
         $wooCommerceUser = $customerSalesChannel->user;
 
-        $cacheKey = 'upload_progress_' . $customerSalesChannel->id . '_' . uniqid();
-        Cache::put($cacheKey . '_success', 0, now()->addHour());
-        Cache::put($cacheKey . '_fail', 0, now()->addHour());
-
         $needCheckConnection = !$wooCommerceUser->checkConnection();
 
-        $bulkProgress = [
-            'cache_key' => $cacheKey,
-            'total'     => $totalNumber,
-        ];
-
-        // ponytail: counters cleaned by TTL; a hard-failed product job leaves the progress bar short of total
         foreach ($portfolios as $portfolio) {
             StoreNewProductToCurrentWooCommerce::dispatch($wooCommerceUser, $portfolio, $needCheckConnection, $bulkProgress);
         }
