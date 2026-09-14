@@ -27,16 +27,17 @@ class FetchTopWebpagesPageSpeed
     public const int WEBPAGES_PER_BUCKET = 25;
 
     /**
-     * Every live department is measured, the other buckets keep their best performing webpages
-     * only. Content covers the whole content type, so about us, returns or terms pages compete
-     * for the same slots as the plain content ones.
+     * Every live content webpage and every live department is measured. Content covers the whole
+     * content type, so about us, returns or terms pages are measured alongside the plain content
+     * ones. Sub departments and families are too many to measure in full, so they keep their best
+     * performing webpages only.
      */
     public const array UNCAPPED_BUCKETS = [
+        WebpageTypeEnum::CONTENT->value,
         WebpageSubTypeEnum::DEPARTMENT->value,
     ];
 
     public const array CAPPED_BUCKETS = [
-        WebpageTypeEnum::CONTENT->value,
         WebpageSubTypeEnum::SUB_DEPARTMENT->value,
         WebpageSubTypeEnum::FAMILY->value,
     ];
@@ -165,12 +166,12 @@ class FetchTopWebpagesPageSpeed
 
     public function getCommandSignature(): string
     {
-        return 'pagespeed:fetch_top_webpages {--webpages-per-bucket= : Content, sub department and family webpages measured per website}';
+        return 'pagespeed:fetch_top_webpages {--webpages-per-bucket= : Sub department and family webpages measured per website}';
     }
 
     public function getCommandDescription(): string
     {
-        return 'Queue PageSpeed Insights runs for every department and the best performing content, sub department and family webpages of each website';
+        return 'Queue PageSpeed Insights runs for every content and department webpage and the best performing sub department and family webpages of each website';
     }
 
     public function asCommand(Command $command): int
