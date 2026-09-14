@@ -47,7 +47,7 @@ const props = defineProps<{
     }
 }>()
 
-type Metrics = { created: number; open: number; done: number; median_hours: number | null; longest_wait_days: number | null; rating: number | null; ratings: number }
+type Metrics = { created: number; open: number; assigned: number; in_progress: number; done: number; median_hours: number | null; longest_wait_days: number | null; rating: number | null; ratings: number }
 
 const peopleTab = ref<"assignees" | "reporters">("assignees")
 
@@ -186,7 +186,8 @@ const reporterColumns = [
 
 const assigneeColumns = [
     { key: "short_name", label: trans("Engineer") },
-    { key: "created", label: trans("Landed") },
+    { key: "assigned", label: trans("To do") },
+    { key: "in_progress", label: trans("Working on") },
     { key: "open", label: trans("Still open") },
     { key: "done", label: trans("Resolved") },
     { key: "median_hours", label: trans("Median time to resolve") },
@@ -195,7 +196,7 @@ const assigneeColumns = [
 ]
 
 const engineerColumns = (mode: "assignees" | "resolvers") =>
-    mode === "resolvers" ? assigneeColumns.filter((column) => !["created", "open", "longest_wait_days"].includes(column.key)) : assigneeColumns
+    mode === "resolvers" ? assigneeColumns.filter((column) => !["assigned", "in_progress", "open", "longest_wait_days"].includes(column.key)) : assigneeColumns
 
 const assigneeFilter = (mode: "assignees" | "resolvers", username: string) =>
     mode === "resolvers" ? { assignee: username, resolved_since: props.stats.from } : { assignee: username, created_since: props.stats.from }
@@ -369,10 +370,12 @@ const dashboardBoxes = computed(() => (props.stats.interval === "all" ? (["peopl
                                 {{ row.short_name }}
                             </span>
                         </td>
-                        <td v-if="mode === 'assignees'" class="px-4 py-2 text-right">
-                            <Link v-if="row.created" :href="listUrl({ filter: assigneeFilter(mode, row.username) })" class="hover:underline">{{ row.created }}</Link>
-                            <span v-else>{{ row.created }}</span>
-                        </td>
+                        <template v-if="mode === 'assignees'">
+                            <td v-for="status in ['assigned', 'in_progress'] as const" :key="status" class="px-4 py-2 text-right">
+                                <Link v-if="row[status]" :href="listUrl({ filter: assigneeFilter(mode, row.username), elements: { status } })" class="hover:underline">{{ row[status] }}</Link>
+                                <span v-else>{{ row[status] }}</span>
+                            </td>
+                        </template>
                         <td v-if="mode === 'assignees'" class="px-4 py-2 text-right">
                             <Link v-if="row.open" :href="listUrl({ filter: assigneeFilter(mode, row.username), elements: { status: OPEN_STATUSES } })" class="hover:underline">{{ row.open }}</Link>
                             <span v-else>{{ row.open }}</span>
@@ -396,7 +399,8 @@ const dashboardBoxes = computed(() => (props.stats.interval === "all" ? (["peopl
                 <tfoot v-if="engineerRows(mode).length" class="border-t-2 border-gray-200 font-semibold">
                     <tr>
                         <td class="px-4 py-2">{{ trans("Total") }}</td>
-                        <td v-if="mode === 'assignees'" class="px-4 py-2 text-right">{{ engineerTotal(mode).created }}</td>
+                        <td v-if="mode === 'assignees'" class="px-4 py-2 text-right">{{ engineerTotal(mode).assigned }}</td>
+                        <td v-if="mode === 'assignees'" class="px-4 py-2 text-right">{{ engineerTotal(mode).in_progress }}</td>
                         <td v-if="mode === 'assignees'" class="px-4 py-2 text-right">{{ engineerTotal(mode).open }}</td>
                         <td class="px-4 py-2 text-right">{{ engineerTotal(mode).done }}<span class="inline-block w-16" /></td>
                         <td class="px-4 py-2 text-right">{{ hours(engineerTotal(mode).median_hours) }}</td>
