@@ -31,7 +31,6 @@ const kindIcons: Record<string, string> = {
 
 const kindPopover = ref()
 const modulePopover = ref()
-const moreMenu = ref()
 const assigneePopover = ref()
 
 const optionLabel = (options: { label: string; value: string }[], value: string | null) => options.find((option) => option.value === value)?.label
@@ -171,29 +170,22 @@ const update = (field: string, value: unknown) => {
 
 <template>
     <Head :title="capitalize(title)" />
-    <PageHeading :data="pageHead" />
+    <PageHeading :data="pageHead">
+        <template #wrapped-delete>
+            <ModalConfirmationDelete
+                :title="trans('Delete :reference?', { reference: ticket.reference })"
+                :description="trans('The ticket and its comments will be removed for good.')"
+                :noLabel="trans('Yes, delete')"
+                :routeDelete="routes.delete"
+                class="w-full">
+                <template #default="{ changeModel }">
+                    <Button type="negative" icon="fal fa-trash-alt" :label="trans('Delete ticket')" full @click="changeModel" />
+                </template>
+            </ModalConfirmationDelete>
+        </template>
+    </PageHeading>
     <div class="p-4 grid gap-4 lg:grid-cols-3">
         <div class="lg:col-span-2 space-y-4">
-            <div v-if="can_flag_confidential" class="flex justify-end">
-                <ModalConfirmationDelete
-                    v-if="can_flag_confidential"
-                    :title="trans('Delete :reference?', { reference: ticket.reference })"
-                    :description="trans('The ticket and its comments will be removed for good.')"
-                    :noLabel="trans('Yes, delete')"
-                    :routeDelete="routes.delete">
-                    <template #default="{ changeModel }">
-                        <button v-tooltip="trans('More')" type="button" class="rounded-md px-2 py-1 text-gray-500 hover:bg-gray-100" @click="moreMenu.toggle($event)">
-                            <FontAwesomeIcon icon="fal fa-ellipsis-v" fixed-width />
-                        </button>
-                        <Popover ref="moreMenu">
-                            <button type="button" class="flex items-center gap-2 px-2 py-1 text-sm text-red-600 hover:bg-red-50 rounded" @click="moreMenu.hide(); changeModel()">
-                                <FontAwesomeIcon icon="fal fa-trash-alt" fixed-width />
-                                {{ trans("Delete ticket") }}
-                            </button>
-                        </Popover>
-                    </template>
-                </ModalConfirmationDelete>
-            </div>
             <TicketRating :rating="ticket.rating" :rating-comment="ticket.rating_comment" :can-rate="can_rate" :rate-route="routes.rate" />
             <TicketThread :ticket="ticket" :comments="comments" :comment-route="routes.comment" />
         </div>

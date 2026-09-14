@@ -162,7 +162,7 @@ test('grp ticket pages render', function (Ticket $ticket) {
     get(route('grp.tickets.create'))->assertInertia(fn (AssertableInertia $page) => $page->component('Tickets/CreateTicket'));
     actingAs($this->user);
     get(route('grp.tickets.show', $ticket->reference))->assertInertia(
-        fn (AssertableInertia $page) => $page->component('Tickets/Ticket')->where('ticket.reference', $ticket->reference)->has('comments', 2)
+        fn (AssertableInertia $page) => $page->component('Tickets/Ticket')->where('ticket.reference', $ticket->reference)->has('comments', 2)->where('pageHead.wrapped_actions.0.key', 'delete')
             ->where('options.assignees', fn ($assignees) => collect($assignees)->pluck('value')->all() === GetTicketBadgeData::engineers($this->group->id)->sortBy(fn (User $user) => strtok((string) ($user->contact_name ?: $user->username), ' '))->pluck('id')->values()->all()
                 && collect($assignees)->firstWhere('value', $this->user->id)['is_me'] === true)
     );

@@ -106,6 +106,7 @@ class ShowTicket extends OrgAction
                     'model' => __('Ticket'),
                     'title' => $ticket->reference,
                     'icon'  => ['fal', 'fa-life-ring'],
+                    'wrapped_actions' => Ticket::canBeAssignedBy(request()->user()) ? [['type' => 'button', 'key' => 'delete']] : [],
                 ],
                 'ticket'      => TicketResource::make($ticket)->toArray(request()),
                 'comments'    => TicketCommentResource::collection($ticket->commentsVisibleTo(request()->user())->with('author')->orderByDesc('id')->get())->toArray(request()),
