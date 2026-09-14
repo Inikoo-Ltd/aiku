@@ -73,12 +73,12 @@ const bucketLabel = (date: string) => {
 }
 
 const lineChart = computed(() => {
-    const pointRadius = props.stats.daily.length > 40 ? 0 : 3
+    const pointRadius = props.stats.daily.length > 40 ? 0 : 2
     return {
         labels: props.stats.daily.map((day) => bucketLabel(day.date)),
         datasets: [
-            { label: trans("Created"), data: props.stats.daily.map((day) => day.created), borderColor: "#c0399f", backgroundColor: "#c0399f", tension: 0.3, pointRadius, borderWidth: 2 },
-            { label: trans("Resolved"), data: props.stats.daily.map((day) => day.done), borderColor: "#1f845a", backgroundColor: "#1f845a", tension: 0.3, pointRadius, borderWidth: 2 },
+            { label: trans("Created"), data: props.stats.daily.map((day) => day.created), borderColor: "#c0399f", backgroundColor: "#c0399f", tension: 0, borderWidth: 1.5, pointRadius },
+            { label: trans("Resolved"), data: props.stats.daily.map((day) => day.done), borderColor: "#1f845a", backgroundColor: "#1f845a", tension: 0, borderWidth: 1.5, pointRadius },
         ],
     }
 })
@@ -235,37 +235,37 @@ const dashboardBoxes = computed(() => (props.stats.interval === "all" ? (["peopl
                 </span>
                 <span class="text-xs text-gray-400">{{ stats.created }} {{ trans("created") }} · {{ stats.done }} {{ trans("resolved") }}</span>
             </template>
-            <div class="grid gap-6 lg:grid-cols-3">
-                <div class="h-72 lg:col-span-2">
+            <div class="grid gap-6 lg:grid-cols-5">
+                <div class="h-72 lg:col-span-3">
                     <Chart type="line" :data="lineChart" :options="lineOptions" class="h-full" />
                 </div>
-                <div class="lg:border-l lg:border-gray-100 lg:pl-6">
+                <div class="lg:col-span-2 lg:border-l lg:border-gray-100 lg:pl-6">
                     <p class="mb-2 flex items-center gap-2 text-sm font-semibold text-gray-600">
                         <FontAwesomeIcon icon="fal fa-chart-pie" class="text-blue-600" fixed-width aria-hidden="true" />
                         {{ trans("Status overview") }}
                         <span class="text-xs font-normal text-gray-400">{{ trans("Tickets created in this period") }} · <Link :href="listUrl({ filter: { created_since: stats.from } })" class="hover:text-gray-600">{{ trans("View all") }}</Link></span>
                     </p>
-                    <div class="flex flex-wrap items-center gap-4">
-                        <div class="relative h-40 w-40 shrink-0">
+                    <div class="flex flex-wrap items-center gap-6">
+                        <div class="relative h-56 w-56 shrink-0">
                             <Chart type="doughnut" :data="donutChart" :options="donutOptions" class="h-full" />
                             <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                                <span class="text-2xl font-bold">{{ totalTickets }}</span>
-                                <span class="text-[10px] text-gray-500">{{ trans("Total") }}</span>
+                                <span class="text-3xl font-bold">{{ totalTickets }}</span>
+                                <span class="text-xs text-gray-500">{{ trans("Total") }}</span>
                             </div>
                         </div>
-                        <table class="text-sm tabular-nums">
+                        <table class="text-base tabular-nums">
                             <tbody>
                                 <tr v-for="row in stats.by_status.filter((status) => status.total)" :key="row.status">
-                                    <td class="py-0.5 pr-4">
+                                    <td class="py-1 pr-5">
                                         <span class="flex items-center gap-2">
                                             <span class="h-3 w-3 shrink-0 rounded-sm" :style="{ backgroundColor: STATUS_COLORS[row.status] ?? '#9ca3af' }" />
                                             {{ row.label }}
                                         </span>
                                     </td>
-                                    <td class="py-0.5 pr-4 text-right font-medium">
+                                    <td class="py-1 pr-5 text-right font-medium">
                                         <Link :href="listUrl({ filter: { created_since: stats.from }, elements: { status: row.status } })" class="hover:underline">{{ row.total }}</Link>
                                     </td>
-                                    <td class="py-0.5 text-right text-gray-500">{{ totalTickets ? ((row.total / totalTickets) * 100).toFixed(1) : 0 }}%</td>
+                                    <td class="py-1 text-right text-gray-500">{{ totalTickets ? ((row.total / totalTickets) * 100).toFixed(1) : 0 }}%</td>
                                 </tr>
                             </tbody>
                         </table>
