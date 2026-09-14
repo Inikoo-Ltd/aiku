@@ -21,7 +21,7 @@ import { faSlack } from "@fortawesome/free-brands-svg-icons"
 library.add(faPencil, faTrashAlt, faUser)
 
 const props = defineProps<{
-    ticket: { subject: string; description: string | null; reporter: string | null; reporter_avatar?: Record<string, string> | null; is_from_slack?: boolean; created_at: string; images?: Record<string, string>[] }
+    ticket: { subject: string; description: string | null; reporter: string | null; reporter_avatar?: Record<string, string> | null; is_from_slack?: boolean; reference_url?: string | null; created_at: string; images?: Record<string, string>[] }
     comments: { id: number; body: string; is_internal: boolean; can_toggle_visibility?: boolean; is_staff: boolean; author: string | null; created_at: string; images?: Record<string, string>[]; attachments?: { name: string; url: string }[]; can_edit?: boolean; can_delete?: boolean }[]
     commentRoute: { name: string; parameters: Record<string, unknown> }
 }>()
@@ -66,6 +66,7 @@ const submit = () => {
                 <FontAwesomeIcon v-if="ticket.is_from_slack" v-tooltip="trans('Raised from Slack')" :icon="faSlack" class="text-gray-500" />
             </div>
             <h2 class="text-lg font-semibold mb-3">{{ ticket.subject }}</h2>
+            <a v-if="ticket.reference_url" :href="ticket.reference_url" target="_blank" rel="noopener" class="mb-3 block truncate text-sm text-indigo-600 hover:underline">{{ ticket.reference_url }}</a>
             <TicketBody v-if="ticket.description || ticket.images?.length" :text="ticket.description" :images="ticket.images" />
             <p v-else class="text-sm text-gray-400">{{ trans("No description") }}</p>
         </div>

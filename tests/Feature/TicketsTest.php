@@ -546,6 +546,11 @@ test('staff file a bug from anywhere without leaving the page', function () {
     expect($ticket->kind)->toBe(TicketKindEnum::BUG)
         ->and($ticket->type)->toBe(TicketTypeEnum::HELP)
         ->and($ticket->data['reference_url'])->toBe('https://app.aiku.test/org/awa/shops');
+
+    actingAs($this->user);
+    get(route('grp.tickets.show', $ticket->reference))->assertInertia(
+        fn (AssertableInertia $page) => $page->where('ticket.reference_url', 'https://app.aiku.test/org/awa/shops')
+    );
 });
 
 test('tickets take free tags and the known list grows with them', function () {
