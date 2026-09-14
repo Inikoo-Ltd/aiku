@@ -58,7 +58,7 @@ const lineChart = computed(() => ({
     labels: props.stats.daily.map((day) => day.date.slice(5)),
     datasets: [
         { label: trans("Created"), data: props.stats.daily.map((day) => day.created), borderColor: "#c0399f", backgroundColor: "#c0399f", tension: 0.2 },
-        { label: trans("Done"), data: props.stats.daily.map((day) => day.done), borderColor: "#1f845a", backgroundColor: "#1f845a", tension: 0.2 },
+        { label: trans("Resolved"), data: props.stats.daily.map((day) => day.done), borderColor: "#1f845a", backgroundColor: "#1f845a", tension: 0.2 },
     ],
 }))
 
@@ -137,8 +137,8 @@ const peopleTabs = [
 const reporterColumns = [
     { key: "name", label: trans("Reporter") },
     { key: "created", label: trans("Created") },
-    { key: "open", label: trans("Open now") },
-    { key: "done", label: trans("Done") },
+    { key: "open", label: trans("Still open") },
+    { key: "done", label: trans("Resolved") },
     { key: "median_hours", label: trans("Median time to resolve") },
     { key: "longest_wait_days", label: trans("Longest wait") },
     { key: "rating", label: trans("Average rating") },
@@ -146,9 +146,9 @@ const reporterColumns = [
 
 const assigneeColumns = [
     { key: "short_name", label: trans("Engineer") },
-    { key: "created", label: trans("Created") },
-    { key: "open", label: trans("Open") },
-    { key: "done", label: trans("Done") },
+    { key: "created", label: trans("Landed") },
+    { key: "open", label: trans("Still open") },
+    { key: "done", label: trans("Resolved") },
     { key: "median_hours", label: trans("Median time to resolve") },
     { key: "longest_wait_days", label: trans("Longest wait") },
     { key: "rating", label: trans("Average rating") },
@@ -172,7 +172,7 @@ const assigneeFilter = (username: string) =>
 
         <div class="flex flex-wrap gap-3">
             <ProcurementOverviewPill :card="{ label: trans('Created'), description: '', icon: 'fal fa-ticket-alt', value: stats.created, tone: 'violet', route: listRoute({ filter: { created_since: stats.from } }), metrics: [] }" />
-            <ProcurementOverviewPill :card="{ label: trans('Done'), description: '', icon: 'fal fa-check', value: stats.done, tone: 'emerald', route: listRoute({ filter: { resolved_since: stats.from } }), metrics: [] }" />
+            <ProcurementOverviewPill :card="{ label: trans('Resolved'), description: '', icon: 'fal fa-check', value: stats.done, tone: 'emerald', route: listRoute({ filter: { resolved_since: stats.from } }), metrics: [] }" />
             <ProcurementOverviewPill :card="{ label: trans('Open now'), description: '', icon: 'fal fa-inbox-in', value: stats.open, tone: 'amber', route: listRoute({ elements: { status: OPEN_STATUSES } }), metrics: [] }" />
             <Link v-tooltip="trans('Median time to resolve')" :href="listUrl({ filter: { resolved_since: stats.from } })" class="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-semibold text-gray-700 shadow-sm tabular-nums">
                 <FontAwesomeIcon icon="fal fa-stopwatch" class="text-indigo-600" fixed-width aria-hidden="true" />{{ hours(stats.median_hours) }}
@@ -191,9 +191,9 @@ const assigneeFilter = (username: string) =>
                 <template #header>
                     <span class="flex items-center gap-2 text-sm font-semibold text-gray-600">
                         <FontAwesomeIcon icon="fal fa-chart-line" class="text-pink-600" fixed-width aria-hidden="true" />
-                        {{ trans("Created vs Done") }}
+                        {{ trans("Created vs Resolved") }}
                     </span>
-                    <span class="text-xs text-gray-400">{{ stats.created }} {{ trans("created") }} · {{ stats.done }} {{ trans("done") }}</span>
+                    <span class="text-xs text-gray-400">{{ stats.created }} {{ trans("created") }} · {{ stats.done }} {{ trans("resolved") }}</span>
                 </template>
                 <div class="h-72">
                     <Chart type="line" :data="lineChart" :options="lineOptions" class="h-full" />
