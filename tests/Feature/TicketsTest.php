@@ -1356,17 +1356,28 @@ test('jira comment authors are repaired from the jira reporter or the jira autho
     $byColleague = TicketComment::create(['ticket_id' => $ticket->id, 'body' => 'from colleague', 'is_internal' => false, 'created_at' => '2026-09-14 12:00:00']);
     $byStranger  = TicketComment::create(['ticket_id' => $ticket->id, 'body' => 'from stranger', 'is_internal' => false, 'created_at' => '2026-09-14 13:00:00']);
 
+    $developer         = User::factory()->create(['group_id' => $this->group->id, 'username' => 'dev'.strtolower(\Illuminate\Support\Str::random(8)), 'status' => true]);
+    $byDeveloper       = TicketComment::create(['ticket_id' => $ticket->id, 'body' => 'from developer', 'is_internal' => false, 'created_at' => '2026-09-14 14:00:00']);
+    $byCustomerNamed   = TicketComment::create(['ticket_id' => $ticket->id, 'body' => 'from customer account named like a user', 'is_internal' => false, 'created_at' => '2026-09-14 15:00:00']);
+    $byJiraAutomation  = TicketComment::create(['ticket_id' => $ticket->id, 'body' => 'No reply for 14 days', 'is_internal' => false, 'created_at' => '2026-09-14 16:00:00']);
+
     Http::fake(['jira.test/rest/api/3/issue/HELP-9002*' => Http::response(['fields' => [
         'reporter' => ['accountId' => 'acc-reporter'],
         'comment'  => ['comments' => [
             ['created' => '2026-09-14T11:48:58.135+0200', 'author' => ['accountId' => 'acc-reporter', 'emailAddress' => 'shared@inbox.test']],
             ['created' => '2026-09-14T12:00:00.000+0200', 'author' => ['accountId' => 'acc-colleague', 'emailAddress' => strtoupper($colleague->email)]],
             ['created' => '2026-09-14T13:00:00.000+0200', 'author' => ['accountId' => 'acc-stranger', 'emailAddress' => 'nobody@nowhere.test']],
+            ['created' => '2026-09-14T14:00:00.000+0200', 'author' => ['accountId' => 'acc-developer', 'accountType' => 'atlassian', 'displayName' => ucfirst($developer->username).' Surname']],
+            ['created' => '2026-09-14T15:00:00.000+0200', 'author' => ['accountId' => 'acc-customer', 'accountType' => 'customer', 'displayName' => $developer->username]],
+            ['created' => '2026-09-14T16:00:00.000+0200', 'author' => ['accountId' => 'acc-automation', 'accountType' => 'app', 'displayName' => 'Automation for Jira']],
         ]],
     ]])]);
 
-    expect(\App\Actions\Helpers\Ticket\RepairJiraTicketCommentAuthors::make()->handle($ticket->fresh()))->toBe(2)
+    expect(\App\Actions\Helpers\Ticket\RepairJiraTicketCommentAuthors::make()->handle($ticket->fresh()))->toBe(3)
         ->and($byReporter->fresh()->author_id)->toBe($reporter->id)
         ->and($byColleague->fresh()->author_id)->toBe($colleague->id)
-        ->and($byStranger->fresh()->author_id)->toBeNull();
+        ->and($byStranger->fresh()->author_id)->toBeNull()
+        ->and($byDeveloper->fresh()->author_id)->toBe($developer->id)
+        ->and($byCustomerNamed->fresh()->author_id)->toBeNull()
+        ->and($byJiraAutomation->fresh()->author_id)->toBeNull();
 });

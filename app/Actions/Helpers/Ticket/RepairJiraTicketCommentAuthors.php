@@ -74,11 +74,37 @@ class RepairJiraTicketCommentAuthors
 
         $email = strtolower((string) ($jiraAuthor['emailAddress'] ?? ''));
 
-        if ($email === '') {
+        if ($email !== '') {
+            $userIds = User::where(DB::raw('lower(email)'), $email)->pluck('id');
+
+            if ($userIds->count() === 1) {
+                return ['type' => 'User', 'id' => $userIds->first()];
+            }
+        }
+
+        return $this->staffAuthorByDisplayName($jiraAuthor);
+    }
+
+    /**
+     * @param array<string, mixed> $jiraAuthor
+     * @return array{type: string, id: int}|null
+     */
+    private function staffAuthorByDisplayName(array $jiraAuthor): ?array
+    {
+        $displayName = strtolower(trim((string) ($jiraAuthor['displayName'] ?? '')));
+
+        if (($jiraAuthor['accountType'] ?? null) !== 'atlassian' || $displayName === '') {
             return null;
         }
 
-        $userIds = User::where(DB::raw('lower(email)'), $email)->pluck('id');
+        $firstName = strtok($displayName, ' ');
+
+        $userIds = User::where('status', true)
+            ->where(fn ($query) => $query
+                ->where(DB::raw('lower(username)'), $displayName)
+                ->orWhere(DB::raw('lower(contact_name)'), $displayName)
+                ->orWhere(DB::raw('lower(username)'), $firstName))
+            ->pluck('id');
 
         return $userIds->count() === 1 ? ['type' => 'User', 'id' => $userIds->first()] : null;
     }
