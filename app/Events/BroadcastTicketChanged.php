@@ -11,10 +11,10 @@ namespace App\Events;
 use App\Models\Helpers\Ticket;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Broadcasting\PrivateChannel;
-use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
+use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
 use Illuminate\Foundation\Events\Dispatchable;
 
-class BroadcastTicketChanged implements ShouldBroadcast
+class BroadcastTicketChanged implements ShouldBroadcastNow
 {
     use Dispatchable;
     use InteractsWithSockets;
