@@ -155,7 +155,8 @@ test('a ticket waiting longer than the grace period is cancelled, a fresh one is
 
     StoreTicketComment::make()->action($stale, $this->webUser, ['body' => 'here you go']);
     expect($stale->fresh()->status)->toBe(TicketStatusEnum::ANSWERED)
-        ->and($stale->fresh()->waiting_until)->toBeNull();
+        ->and($stale->fresh()->waiting_until)->toBeNull()
+        ->and($stale->fresh()->waiting_at->isAfter(now()->subMinute()))->toBeTrue();
 
     $board = get(route('grp.tickets.board'))->assertOk()->inertiaProps();
     $waiting = collect($board['columns'])->firstWhere('key', 'waiting');

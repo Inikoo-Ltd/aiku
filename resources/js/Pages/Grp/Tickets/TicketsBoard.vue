@@ -104,7 +104,7 @@ const readSorts = (): Record<string, { field: SortField; desc: boolean }> => {
 
 const columnSorts = reactive(readSorts())
 
-const sortOf = (columnKey: string) => columnSorts[columnKey] ?? { field: "created_at", desc: true }
+const sortOf = (columnKey: string) => columnSorts[columnKey] ?? { field: columnKey === "waiting" ? "in_column" : "created_at", desc: true }
 
 const sortValue = (ticket: any, columnKey: string, field: SortField) => {
 	if (field === "priority") return priorityRank[ticket.priority] ?? 0

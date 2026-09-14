@@ -65,7 +65,7 @@ class UpdateTicket extends OrgAction
             }
 
             data_set($modelData, 'assigned_at', $status === TicketStatusEnum::OPEN ? null : (Arr::get($modelData, 'assigned_at') ?? $ticket->assigned_at ?? now()));
-            data_set($modelData, 'waiting_at', $status === TicketStatusEnum::WAITING ? ($ticket->waiting_at ?? now()) : null);
+            data_set($modelData, 'waiting_at', in_array($status, [TicketStatusEnum::WAITING, TicketStatusEnum::ANSWERED], true) ? ($ticket->status === $status ? $ticket->waiting_at : now()) : null);
             data_set($modelData, 'waiting_until', $status === TicketStatusEnum::WAITING
                 ? ($waitingHours ? now()->addHours((int) $waitingHours) : ($ticket->waiting_until ?? now()->addHours($ticket->defaultWaitingHours())))
                 : null);
