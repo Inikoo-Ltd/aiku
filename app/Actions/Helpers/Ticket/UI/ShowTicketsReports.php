@@ -32,16 +32,20 @@ class ShowTicketsReports extends OrgAction
         [$from, $to] = $this->range($interval, (clone $base)->min('created_at'));
         $days        = (int) $from->copy()->startOfDay()->diffInDays($to->copy()->startOfDay()) + 1;
 
+        $bucket = $days <= 62 ? 'day' : ($days <= 400 ? 'week' : 'month');
+
         $createdByDay  = (clone $base)->whereBetween('created_at', [$from, $to])
-            ->selectRaw('date(created_at) as day, count(*) as total')->groupBy('day')->pluck('total', 'day');
+            ->selectRaw("to_char(date_trunc('$bucket', created_at), 'YYYY-MM-DD') as day, count(*) as total")->groupBy('day')->pluck('total', 'day');
         $resolvedByDay = (clone $base)->whereBetween('resolved_at', [$from, $to])
-            ->selectRaw('date(resolved_at) as day, count(*) as total')->groupBy('day')->pluck('total', 'day');
+            ->selectRaw("to_char(date_trunc('$bucket', resolved_at), 'YYYY-MM-DD') as day, count(*) as total")->groupBy('day')->pluck('total', 'day');
 
-        $daily = collect(range(0, $days - 1))->map(function (int $offset) use ($from, $createdByDay, $resolvedByDay) {
-            $day = $from->copy()->startOfDay()->addDays($offset)->toDateString();
-
-            return ['date' => $day, 'created' => (int) ($createdByDay[$day] ?? 0), 'done' => (int) ($resolvedByDay[$day] ?? 0)];
-        });
+        $daily  = collect();
+        $cursor = $from->copy()->startOf($bucket);
+        while ($cursor->lte($to)) {
+            $day = $cursor->toDateString();
+            $daily->push(['date' => $day, 'created' => (int) ($createdByDay[$day] ?? 0), 'done' => (int) ($resolvedByDay[$day] ?? 0)]);
+            $cursor->add(1, $bucket);
+        }
 
         $medianHours = (clone $base)->whereBetween('resolved_at', [$from, $to])
             ->selectRaw('percentile_cont(0.5) within group (order by extract(epoch from resolved_at - created_at) / 3600) as median')
@@ -88,6 +92,7 @@ class ShowTicketsReports extends OrgAction
         return [
             'interval'      => $interval,
             'days'          => $days,
+            'bucket'        => $bucket,
             'from'          => $from->toDateString(),
             'created'       => $daily->sum('created'),
             'done'          => $daily->sum('done'),

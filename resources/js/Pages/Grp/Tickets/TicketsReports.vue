@@ -28,6 +28,7 @@ const props = defineProps<{
     stats: {
         interval: string
         days: number
+        bucket: "day" | "week" | "month"
         from: string
         created: number
         done: number
@@ -63,20 +64,38 @@ const STATUS_COLORS: Record<string, string> = {
     cancelled: "#d1d5db",
 }
 
-const lineChart = computed(() => ({
-    labels: props.stats.daily.map((day) => day.date.slice(5)),
-    datasets: [
-        { label: trans("Created"), data: props.stats.daily.map((day) => day.created), borderColor: "#c0399f", backgroundColor: "#c0399f", tension: 0.2 },
-        { label: trans("Resolved"), data: props.stats.daily.map((day) => day.done), borderColor: "#1f845a", backgroundColor: "#1f845a", tension: 0.2 },
-    ],
-}))
+const bucketLabel = (date: string) => {
+    const parsed = new Date(`${date}T00:00:00`)
+    if (props.stats.bucket === "month") {
+        return parsed.toLocaleDateString(undefined, { month: "short", year: "2-digit" })
+    }
+    return parsed.toLocaleDateString(undefined, { day: "numeric", month: "short" })
+}
 
-const lineOptions = {
+const lineChart = computed(() => {
+    const pointRadius = props.stats.daily.length > 40 ? 0 : 3
+    return {
+        labels: props.stats.daily.map((day) => bucketLabel(day.date)),
+        datasets: [
+            { label: trans("Created"), data: props.stats.daily.map((day) => day.created), borderColor: "#c0399f", backgroundColor: "#c0399f", tension: 0.3, pointRadius, borderWidth: 2 },
+            { label: trans("Resolved"), data: props.stats.daily.map((day) => day.done), borderColor: "#1f845a", backgroundColor: "#1f845a", tension: 0.3, pointRadius, borderWidth: 2 },
+        ],
+    }
+})
+
+const lineOptions = computed(() => ({
     responsive: true,
     maintainAspectRatio: false,
-    plugins: { legend: { position: "bottom", labels: { boxWidth: 12 } } },
-    scales: { x: { grid: { display: false } }, y: { beginAtZero: true, ticks: { precision: 0 } } },
-}
+    interaction: { mode: "index", intersect: false },
+    plugins: {
+        legend: { position: "bottom", labels: { boxWidth: 12 } },
+        tooltip: { callbacks: { title: (items: any[]) => (props.stats.bucket === "day" ? items[0].label : `${trans(props.stats.bucket === "week" ? "Week of" : "Month")} ${items[0].label}`) } },
+    },
+    scales: {
+        x: { grid: { display: false }, ticks: { autoSkip: true, maxTicksLimit: 12, maxRotation: 0 } },
+        y: { beginAtZero: true, ticks: { precision: 0 } },
+    },
+}))
 
 const donutChart = computed(() => ({
     labels: props.stats.by_status.map((row) => row.label),
