@@ -47,10 +47,10 @@ class PrintDeliveryNoteLeaflet extends OrgAction
     public function afterValidator(Validator $validator): void
     {
         $user      = request()->user();
-        $printerId = Arr::get($user->settings, 'preferred_printer_id');
+        $printerId = $this->leafletPrinterId($user);
         if (!$printerId) {
             throw ValidationException::withMessages([
-                'messages' => __('You must set a preferred printer in your user settings!'),
+                'messages' => __('You must set a leaflet printer or a preferred printer in your user settings!'),
             ]);
         }
 

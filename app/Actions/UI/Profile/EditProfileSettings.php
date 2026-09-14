@@ -114,6 +114,14 @@ class EditProfileSettings
                                 'options'  => $printers,
                                 'value'    => Arr::get($user->settings, 'preferred_printer_id'),
                             ],
+                            'preferred_leaflet_printer' => [
+                                'type'        => 'select_printer',
+                                'label'       => __('Leaflet printer'),
+                                'information' => __('Printer used for inserts and leaflets. Leave empty to use your preferred printer.'),
+                                'required'    => false,
+                                'options'     => $printers,
+                                'value'       => Arr::get($user->settings, 'preferred_leaflet_printer_id'),
+                            ],
                         ],
                     ],
                     [

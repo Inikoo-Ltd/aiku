@@ -10,12 +10,21 @@ namespace App\Actions\Dispatching\DeliveryNoteLeaflet;
 
 use App\Enums\Dispatching\DeliveryNoteLeaflet\DeliveryNoteLeafletStateEnum;
 use App\Models\Dispatching\DeliveryNoteLeaflet;
+use Illuminate\Support\Arr;
+use App\Models\SysAdmin\User;
 use Illuminate\Support\Facades\Storage;
 use Mccarlosen\LaravelMpdf\Facades\LaravelMpdf as PDF;
 use Rawilk\Printing\Api\PrintNode\Resources\PrintJob;
 
 trait WithPrintDeliveryNoteLeaflet
 {
+    protected function leafletPrinterId(User $user): ?int
+    {
+        $printerId = Arr::get($user->settings, 'preferred_leaflet_printer_id') ?: Arr::get($user->settings, 'preferred_printer_id');
+
+        return $printerId ? (int) $printerId : null;
+    }
+
     /**
      * Sends the leaflet's media file to the given PrintNode printer and marks it printed.
      * Uses WithPrintNode::printPdf() (the consuming action must also use WithPrintNode).
