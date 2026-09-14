@@ -165,6 +165,8 @@ const engineerRows = (mode: "assignees" | "resolvers") => sortRows(mode === "res
 
 const engineerTotal = (mode: "assignees" | "resolvers") => (mode === "resolvers" ? props.stats.resolvers_total : props.stats.assignees_total)
 
+const sharePercent = (value: number, total: number) => (total && value ? `${((value / total) * 100).toFixed(1)}%` : "")
+
 const days = (value: number | null) => (value === null ? "-" : `${value} ${trans("days")}`)
 
 const peopleTabs = [
@@ -304,7 +306,7 @@ const dashboardBoxes = computed(() => (props.stats.interval === "all" ? (["peopl
             </template>
 
         <div v-if="box === 'people' && peopleTab === 'reporters'" class="-mx-4 -mb-4 overflow-x-auto">
-            <table class="min-w-full text-sm">
+            <table class="min-w-full text-sm tabular-nums">
                 <thead class="text-xs text-gray-500 text-left">
                     <tr>
                         <th v-for="(column, index) in reporterColumns" :key="column.key" class="px-4 py-2 cursor-pointer select-none hover:text-gray-700" :class="{ 'text-right': index > 0 }" @click="toggleSort('reporters', column.key)">
@@ -350,7 +352,7 @@ const dashboardBoxes = computed(() => (props.stats.interval === "all" ? (["peopl
         </div>
 
         <div v-else v-for="mode in [box === 'cleared' ? 'resolvers' : 'assignees'] as const" :key="mode" class="-mx-4 -mb-4 overflow-x-auto">
-            <table class="min-w-full text-sm">
+            <table class="min-w-full text-sm tabular-nums">
                 <thead class="text-xs text-gray-500 text-left">
                     <tr>
                         <th v-for="(column, index) in engineerColumns(mode)" :key="column.key" class="px-4 py-2 cursor-pointer select-none hover:text-gray-700" :class="{ 'text-right': index > 0 }" @click="toggleSort(mode, column.key)">
@@ -378,6 +380,7 @@ const dashboardBoxes = computed(() => (props.stats.interval === "all" ? (["peopl
                         <td class="px-4 py-2 text-right">
                             <Link v-if="row.done" :href="listUrl({ filter: assigneeFilter(mode, row.username), elements: { status: 'resolved' } })" class="hover:underline">{{ row.done }}</Link>
                             <span v-else>{{ row.done }}</span>
+                            <span class="inline-block w-16 text-gray-400">{{ sharePercent(row.done, engineerTotal(mode).done) }}</span>
                         </td>
                         <td class="px-4 py-2 text-right">{{ hours(row.median_hours) }}</td>
                         <td v-if="mode === 'assignees'" class="px-4 py-2 text-right">{{ days(row.longest_wait_days) }}</td>
@@ -395,7 +398,7 @@ const dashboardBoxes = computed(() => (props.stats.interval === "all" ? (["peopl
                         <td class="px-4 py-2">{{ trans("Total") }}</td>
                         <td v-if="mode === 'assignees'" class="px-4 py-2 text-right">{{ engineerTotal(mode).created }}</td>
                         <td v-if="mode === 'assignees'" class="px-4 py-2 text-right">{{ engineerTotal(mode).open }}</td>
-                        <td class="px-4 py-2 text-right">{{ engineerTotal(mode).done }}</td>
+                        <td class="px-4 py-2 text-right">{{ engineerTotal(mode).done }}<span class="inline-block w-16" /></td>
                         <td class="px-4 py-2 text-right">{{ hours(engineerTotal(mode).median_hours) }}</td>
                         <td v-if="mode === 'assignees'" class="px-4 py-2 text-right">{{ days(engineerTotal(mode).longest_wait_days) }}</td>
                         <td class="px-4 py-2 text-right">
