@@ -8,6 +8,7 @@
  *
 */
 
+use App\Actions\Retina\Dropshipping\Ticket\UI\ShowRetinaTicketAttachment;
 use App\Actions\Dropshipping\Allegro\User\AuthenticateAllegroAccount;
 use App\Actions\Dropshipping\Amazon\AuthorizeRetinaAmazonUser;
 use App\Actions\Dropshipping\Amazon\CallbackRetinaAmazonUser;
@@ -100,6 +101,7 @@ Route::prefix('support')->as('tickets.')->group(function () {
     Route::get('/', IndexRetinaTickets::class)->name('index');
     Route::get('/create', CreateRetinaTicket::class)->name('create');
     Route::get('/{ticket:reference}', ShowRetinaTicket::class)->name('show');
+    Route::get('/{ticket:reference}/attachments/{media:ulid}', ShowRetinaTicketAttachment::class)->name('attachments.show')->withoutScopedBindings();
 });
 
 Route::prefix('platform')->as('platform.')->group(function () {

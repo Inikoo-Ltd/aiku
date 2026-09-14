@@ -71,7 +71,7 @@ class StoreTicket extends OrgAction
             'model_id'        => ['sometimes', 'nullable', 'integer'],
             'data'            => ['sometimes', 'array'],
             'images'          => ['sometimes', 'array', 'max:5'],
-            'images.*'        => ['file', 'mimes:jpg,jpeg,png,bmp,gif,svg,webp,pdf', 'max:10240'],
+            'images.*'        => Ticket::ticketFileRules(),
             'stay'            => ['sometimes', 'boolean'],
             'reference_url'   => ['sometimes', 'nullable', 'url', 'max:2048'],
         ];
