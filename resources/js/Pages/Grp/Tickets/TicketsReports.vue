@@ -325,7 +325,7 @@ const dashboardBoxes = computed(() => (props.stats.interval === "all" ? (["peopl
                         <td class="px-4 py-2 text-right">{{ row.created }}<span class="inline-block w-16 text-gray-400">{{ sharePercent(row.created, stats.assignees_total.created) }}</span></td>
                         <td class="px-4 py-2 text-right">{{ row.open }}</td>
                         <td class="px-4 py-2 text-right">{{ row.resolved }}</td>
-                        <td class="px-4 py-2 text-right">{{ row.cancelled }}</td>
+                        <td class="px-4 py-2 text-right">{{ row.cancelled }}<span class="inline-block w-16 text-gray-400">{{ sharePercent(row.cancelled, row.created) }}</span></td>
                         <td class="px-4 py-2 text-right">{{ hours(row.median_hours) }}</td>
                         <td class="px-4 py-2 text-right">{{ days(row.longest_wait_days) }}</td>
                         <td class="px-4 py-2 text-right">
@@ -343,7 +343,7 @@ const dashboardBoxes = computed(() => (props.stats.interval === "all" ? (["peopl
                         <td class="px-4 py-2 text-right">{{ stats.assignees_total.created }}<span class="inline-block w-16" /></td>
                         <td class="px-4 py-2 text-right">{{ stats.assignees_total.open }}</td>
                         <td class="px-4 py-2 text-right">{{ stats.assignees_total.resolved }}</td>
-                        <td class="px-4 py-2 text-right">{{ stats.assignees_total.cancelled }}</td>
+                        <td class="px-4 py-2 text-right">{{ stats.assignees_total.cancelled }}<span class="inline-block w-16 text-gray-400">{{ sharePercent(stats.assignees_total.cancelled, stats.assignees_total.created) }}</span></td>
                         <td class="px-4 py-2 text-right">{{ hours(stats.assignees_total.median_hours) }}</td>
                         <td class="px-4 py-2 text-right">{{ days(stats.assignees_total.longest_wait_days) }}</td>
                         <td class="px-4 py-2 text-right">
