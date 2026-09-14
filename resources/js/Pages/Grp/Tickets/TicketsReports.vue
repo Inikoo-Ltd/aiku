@@ -321,7 +321,7 @@ const dashboardBoxes = computed(() => (props.stats.interval === "all" ? (["peopl
                             {{ row.name ?? "-" }}
                             <span v-if="!row.is_staff" class="ml-1 text-xs text-gray-400">{{ trans("Customer") }}</span>
                         </td>
-                        <td class="px-4 py-2 text-right">{{ row.created }}</td>
+                        <td class="px-4 py-2 text-right">{{ row.created }}<span class="inline-block w-16 text-gray-400">{{ sharePercent(row.created, stats.assignees_total.created) }}</span></td>
                         <td class="px-4 py-2 text-right">{{ row.open }}</td>
                         <td class="px-4 py-2 text-right">{{ row.done }}</td>
                         <td class="px-4 py-2 text-right">{{ hours(row.median_hours) }}</td>
@@ -338,7 +338,7 @@ const dashboardBoxes = computed(() => (props.stats.interval === "all" ? (["peopl
                 <tfoot v-if="stats.reporters.length" class="border-t-2 border-gray-200 font-semibold">
                     <tr>
                         <td class="px-4 py-2">{{ trans("Total") }}</td>
-                        <td class="px-4 py-2 text-right">{{ stats.assignees_total.created }}</td>
+                        <td class="px-4 py-2 text-right">{{ stats.assignees_total.created }}<span class="inline-block w-16" /></td>
                         <td class="px-4 py-2 text-right">{{ stats.assignees_total.open }}</td>
                         <td class="px-4 py-2 text-right">{{ stats.assignees_total.done }}</td>
                         <td class="px-4 py-2 text-right">{{ hours(stats.assignees_total.median_hours) }}</td>
