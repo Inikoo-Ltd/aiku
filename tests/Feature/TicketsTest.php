@@ -1294,15 +1294,20 @@ test('tickets sidebar link opens the board for lead engineers and the dashboard 
         ->and(\App\Actions\UI\Grp\Layout\GetGroupNavigation::run($clerk)['tickets']['route']['name'])->toBe('grp.tickets.index');
 });
 
-test('jira ticket attachments are copied into ticket media once, tagged with their jira id', function () {
-    Config::set('services.jira', ['base_url' => 'https://jira.test', 'email' => 'bot@test', 'api_token' => 'token']);
+test('jira ticket attachments missing from the ticket and comment media are copied once, tagged with their jira id', function () {
+    User::factory()->create(['group_id' => $this->group->id, 'settings' => ['jira' => ['base_url' => 'https://jira.test/', 'email' => 'bot@test', 'api_token' => 'token']]]);
 
     $ticket = StoreTicket::make()->action($this->group, ['subject' => 'Imported from Jira']);
     $ticket->update(['data' => ['jira_key' => 'HELP-9001']]);
+    $comment = TicketComment::create(['ticket_id' => $ticket->id, 'body' => 'screenshot', 'is_internal' => false]);
+    $existingFile = tempnam(sys_get_temp_dir(), 'pdf');
+    file_put_contents($existingFile, "%PDF-1.4\n%%EOF\n");
+    $comment->attachTicketFile($existingFile, 'already.pdf', 'application/pdf', ['jira_attachment_id' => '500']);
 
     Http::fake([
         'jira.test/rest/api/3/issue/HELP-9001*' => Http::response(['fields' => ['attachment' => [
-            ['id' => '501', 'filename' => 'invoice.pdf', 'mimeType' => 'application/pdf', 'content' => 'https://jira.test/rest/api/3/attachment/content/501'],
+            ['id' => '500', 'filename' => 'already.pdf', 'mimeType' => 'application/pdf', 'content' => 'https://jira.test/rest/api/3/attachment/content/500'],
+            ['id' => 501, 'filename' => 'invoice.pdf', 'mimeType' => 'application/pdf', 'content' => 'https://jira.test/rest/api/3/attachment/content/501'],
         ]]]),
         'jira.test/rest/api/3/attachment/content/501' => Http::response("%PDF-1.4\n%%EOF\n"),
     ]);
@@ -1310,19 +1315,20 @@ test('jira ticket attachments are copied into ticket media once, tagged with the
     $action = \App\Actions\Helpers\Ticket\ImportJiraTicketAttachments::make();
 
     expect($action->handle($ticket))->toBe(1)
-        ->and($action->handle($ticket->fresh()))->toBe(0);
+        ->and(\App\Actions\Helpers\Ticket\ImportJiraTicketAttachments::make()->handle($ticket->fresh()))->toBe(0);
 
     $media = $ticket->fresh()->getMedia('ticket_attachments');
 
     expect($media)->toHaveCount(1)
         ->and($media->first()->name)->toBe('invoice.pdf')
         ->and($media->first()->getCustomProperty('source'))->toBe(['jira_attachment_id' => '501'])
-        ->and($ticket->fresh()->data['jira_imported_attachment_ids'])->toBe(['501']);
+        ->and($comment->fresh()->getMedia('ticket_attachments'))->toHaveCount(1);
+    Http::assertNotSent(fn ($request) => str_contains($request->url(), 'content/500'));
     Http::assertSent(fn ($request) => $request->hasHeader('Authorization', 'Basic '.base64_encode('bot@test:token')));
 });
 
 test('jira comment authors are repaired from the jira reporter or the jira author email, leaving unknown authors empty', function () {
-    Config::set('services.jira', ['base_url' => 'https://jira.test', 'email' => 'bot@test', 'api_token' => 'token']);
+    User::factory()->create(['group_id' => $this->group->id, 'settings' => ['jira' => ['base_url' => 'https://jira.test', 'email' => 'bot@test', 'api_token' => 'token']]]);
 
     $reporter  = User::factory()->create(['group_id' => $this->group->id]);
     $colleague = User::factory()->create(['group_id' => $this->group->id, 'email' => 'colleague-'.uniqid().'@test.com']);

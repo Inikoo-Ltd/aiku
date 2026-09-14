@@ -110,12 +110,6 @@ return [
         'widget_key' => env('JSD_WIDGET_KEY'),
     ],
 
-    'jira'      => [
-        'base_url'  => env('JIRA_BASE_URL', 'https://inikoo.atlassian.net'),
-        'email'     => env('JIRA_EMAIL'),
-        'api_token' => env('JIRA_API_TOKEN'),
-    ],
-
     'geocoding' => [
         'provider' => env('GEOCODING_PROVIDER', 'nominatim'), // nominatim, google,
     ],

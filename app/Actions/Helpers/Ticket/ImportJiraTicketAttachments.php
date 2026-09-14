@@ -8,11 +8,10 @@
 
 namespace App\Actions\Helpers\Ticket;
 
+use App\Actions\Helpers\Ticket\Concerns\WithJiraApi;
+use App\Models\Helpers\Media;
 use App\Models\Helpers\Ticket;
 use Illuminate\Console\Command;
-use Illuminate\Http\Client\PendingRequest;
-use Illuminate\Support\Arr;
-use Illuminate\Support\Facades\Http;
 use Laravel\Nightwatch\Facades\Nightwatch;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Throwable;
@@ -20,9 +19,10 @@ use Throwable;
 class ImportJiraTicketAttachments
 {
     use AsAction;
+    use WithJiraApi;
 
     public string $commandSignature = 'tickets:import_jira_attachments {ticket? : Ticket reference, e.g. HELP-3121}';
-    public string $commandDescription = 'Copy the attachments of tickets imported from Jira into the ticket media, so the Jira HELP space can be archived';
+    public string $commandDescription = 'Copy the Jira attachments that are not yet in the ticket media, so the Jira HELP space can be archived';
 
     public function handle(Ticket $ticket): int
     {
@@ -31,12 +31,11 @@ class ImportJiraTicketAttachments
             ->throw()
             ->json('fields.attachment', []);
 
-        $imported = 0;
+        $alreadyImportedIds = $this->alreadyImportedJiraAttachmentIds($ticket);
+        $imported           = 0;
 
         foreach ($jiraAttachments as $jiraAttachment) {
-            $importedIds = Arr::get($ticket->data, 'jira_imported_attachment_ids', []);
-
-            if (in_array($jiraAttachment['id'], $importedIds)) {
+            if (in_array((string) $jiraAttachment['id'], $alreadyImportedIds, true)) {
                 continue;
             }
 
@@ -44,28 +43,38 @@ class ImportJiraTicketAttachments
 
             try {
                 $this->jira()->sink($path)->get($jiraAttachment['content'])->throw();
-                $ticket->attachTicketFile($path, $jiraAttachment['filename'], $jiraAttachment['mimeType'] ?? null, ['jira_attachment_id' => $jiraAttachment['id']]);
+                $ticket->attachTicketFile($path, $jiraAttachment['filename'], $jiraAttachment['mimeType'] ?? null, ['jira_attachment_id' => (string) $jiraAttachment['id']]);
             } finally {
                 @unlink($path);
             }
 
-            $ticket->data = [...$ticket->data, 'jira_imported_attachment_ids' => [...$importedIds, $jiraAttachment['id']]];
-            $ticket->save();
+            $alreadyImportedIds[] = (string) $jiraAttachment['id'];
             $imported++;
         }
 
         return $imported;
     }
 
+    /**
+     * @return array<int, string>
+     */
+    private function alreadyImportedJiraAttachmentIds(Ticket $ticket): array
+    {
+        return Media::query()
+            ->where(fn ($query) => $query
+                ->where(fn ($query) => $query->where('model_type', 'Ticket')->where('model_id', $ticket->id))
+                ->orWhere(fn ($query) => $query->where('model_type', 'TicketComment')->whereIn('model_id', $ticket->comments()->select('id'))))
+            ->get(['custom_properties'])
+            ->map(fn (Media $media) => $media->getCustomProperty('source.jira_attachment_id'))
+            ->filter()
+            ->map(fn ($id) => (string) $id)
+            ->values()
+            ->all();
+    }
+
     public function asCommand(Command $command): int
     {
         Nightwatch::dontSample();
-
-        if (!config('services.jira.email') || !config('services.jira.api_token')) {
-            $command->error('Set JIRA_EMAIL and JIRA_API_TOKEN in .env');
-
-            return 1;
-        }
 
         $imported = 0;
         $failed   = 0;
@@ -87,13 +96,5 @@ class ImportJiraTicketAttachments
         $command->info("$imported attachments imported, $failed tickets failed");
 
         return $failed ? 1 : 0;
-    }
-
-    private function jira(): PendingRequest
-    {
-        return Http::baseUrl(config('services.jira.base_url'))
-            ->withBasicAuth(config('services.jira.email'), config('services.jira.api_token'))
-            ->timeout(120)
-            ->retry(3, 5000, throw: false);
     }
 }

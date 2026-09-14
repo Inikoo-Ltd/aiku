@@ -8,12 +8,12 @@
 
 namespace App\Actions\Helpers\Ticket;
 
+use App\Actions\Helpers\Ticket\Concerns\WithJiraApi;
 use App\Models\Helpers\Ticket;
 use App\Models\Helpers\TicketComment;
 use App\Models\SysAdmin\User;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Http;
 use Laravel\Nightwatch\Facades\Nightwatch;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Throwable;
@@ -21,6 +21,7 @@ use Throwable;
 class RepairJiraTicketCommentAuthors
 {
     use AsAction;
+    use WithJiraApi;
 
     public string $commandSignature = 'tickets:repair_jira_comment_authors {ticket? : Ticket reference, e.g. HELP-3079}';
     public string $commandDescription = 'Set the author of Jira imported ticket comments that have none, from the Jira comment author';
@@ -33,12 +34,7 @@ class RepairJiraTicketCommentAuthors
             return 0;
         }
 
-        $jira = Http::baseUrl(config('services.jira.base_url'))
-            ->withBasicAuth(config('services.jira.email'), config('services.jira.api_token'))
-            ->timeout(120)
-            ->retry(3, 5000, throw: false);
-
-        $issue = $jira->get('rest/api/3/issue/'.$ticket->data['jira_key'], ['fields' => 'reporter,comment'])->throw()->json('fields');
+        $issue = $this->jira()->get('rest/api/3/issue/'.$ticket->data['jira_key'], ['fields' => 'reporter,comment'])->throw()->json('fields');
 
         $jiraAuthorsByTime = collect(data_get($issue, 'comment.comments', []))
             ->groupBy(fn (array $jiraComment) => str_replace('T', ' ', substr($jiraComment['created'], 0, 19)))
@@ -90,12 +86,6 @@ class RepairJiraTicketCommentAuthors
     public function asCommand(Command $command): int
     {
         Nightwatch::dontSample();
-
-        if (!config('services.jira.email') || !config('services.jira.api_token')) {
-            $command->error('Set JIRA_EMAIL and JIRA_API_TOKEN in .env');
-
-            return 1;
-        }
 
         $repaired = 0;
         $failed   = 0;
