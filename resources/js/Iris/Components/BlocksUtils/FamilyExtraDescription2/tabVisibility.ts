@@ -5,6 +5,7 @@ export type FamilyExtraDescriptionTabKey =
 	| "customisation"
 	| "labeling guide"
 	| "storage_and_shelf_life"
+	| "regulatory_label_information"
 
 export const AROMA_ONLY_TABS: FamilyExtraDescriptionTabKey[] = [
 	"customisation",
@@ -75,10 +76,16 @@ export const isTabVisible = (
 		case "storage_and_shelf_life":
 			return Boolean(family?.is_aroma_organisation) && hasStorageOptions(family)
 
+		case "regulatory_label_information":
+			return false
+
 		default:
 			return true
 	}
 }
+
+export const hasLabelInfoContent = (product: any): boolean =>
+	Object.values(product?.label_info ?? {}).some((item: any) => item?.show === true)
 
 /**
  * Product webpages expose the same tab data under `fieldValue.tabs`,
@@ -91,8 +98,17 @@ export const isProductTabVisible = (
 	tabKey: FamilyExtraDescriptionTabKey,
 	tabs: any,
 	product: any,
-	isLoggedIn: boolean
-): boolean =>
-	tabKey === "about"
-		? hasProductAboutContent(tabs, product)
-		: isTabVisible(tabKey, tabs, isLoggedIn)
+	isLoggedIn: boolean,
+	isWorkshop = false
+): boolean => {
+	switch (tabKey) {
+		case "about":
+			return hasProductAboutContent(tabs, product)
+
+		case "regulatory_label_information":
+			return isWorkshop || hasLabelInfoContent(product)
+
+		default:
+			return isTabVisible(tabKey, tabs, isLoggedIn)
+	}
+}

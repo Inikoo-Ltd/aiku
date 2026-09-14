@@ -49,6 +49,7 @@ const emits = defineEmits<{
         :listProducts="listProducts ?? []"
         :isLoadingFavourite="isLoadingFavourite ?? false"
         :isLoadingRemindBackInStock="isLoadingRemindBackInStock ?? false"
+        :isWorkshop="true"
         @setFavorite="value => emits('setFavorite', value)"
         @unsetFavorite="value => emits('unsetFavorite', value)"
         @setBackInStock="value => emits('setBackInStock', value)"

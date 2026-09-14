@@ -8,6 +8,7 @@ import Faq from "@/Iris/Components/BlocksUtils/FamilyExtraDescription2/Faq.vue"
 import Customisation from "@/Iris/Components/BlocksUtils/FamilyExtraDescription2/Customisation.vue"
 import Storage from "@/Iris/Components/BlocksUtils/FamilyExtraDescription2/Storage.vue"
 import LabelingGuide from "@/Iris/Components/BlocksUtils/FamilyExtraDescription2/LabelingGuide.vue"
+import RegulatoryLabelInformation from "@/Iris/Components/BlocksUtils/ProductDescription/RegulatoryLabelInformation.vue"
 import {
 	isProductTabVisible,
 	type FamilyExtraDescriptionTabKey,
@@ -19,6 +20,7 @@ const props = defineProps<{
 	fieldValue: any
 	screenType: "mobile" | "tablet" | "desktop"
 	indexBlock: number
+	isWorkshop?: boolean
 }>()
 
 const layout = inject("layout", {}) as any
@@ -36,6 +38,7 @@ const tabs = computed(() =>
 	[
 		{ key: "about", label: ctrans("About the Product") },
 		{ key: "customisation", label: ctrans("Customisation") },
+		{ key: "regulatory_label_information", label: ctrans("Regulatory & Label Information") },
 		{ key: "labeling guide", label: ctrans("Labeling Guide") },
 		{ key: "storage_and_shelf_life", label: ctrans("Storage & Shelf Life") },
 		{ key: "marketing", label: ctrans("Marketing Materials") },
@@ -45,7 +48,8 @@ const tabs = computed(() =>
 			tab.key as FamilyExtraDescriptionTabKey,
 			tabsData.value,
 			productData.value,
-			isLoggedIn.value
+			isLoggedIn.value,
+			props.isWorkshop
 		)
 	)
 )
@@ -93,6 +97,8 @@ const component = (tab: string) => {
 			return Faq
 		case "customisation":
 			return Customisation
+		case "regulatory_label_information":
+			return RegulatoryLabelInformation
 		case "labeling guide":
 			return LabelingGuide
 		case "storage_and_shelf_life":
@@ -172,6 +178,7 @@ const faqJsonLd = computed(() =>
 					:is="component(tab.key)"
 					:field-value="childFieldValue"
 					:screen-type="screenType"
+					:is-workshop="isWorkshop"
 					:faqs="tabsData?.faq" />
 				</div>
 
