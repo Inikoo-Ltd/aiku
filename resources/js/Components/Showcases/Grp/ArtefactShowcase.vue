@@ -18,8 +18,18 @@ interface ArtefactLabel {
     id: number
     name: string
     layout: Record<string, any>
+    state: "raw" | "processed" | "published"
+    state_label: string
+    published_at: string | null
+    pdf_url: string | null
     artwork: { name: string, size: number, mime_type: string, url: string } | null
     updated_at: string | null
+}
+
+const LABEL_STATE_CLASSES: Record<ArtefactLabel["state"], string> = {
+    raw: "bg-gray-100 text-gray-600",
+    processed: "bg-amber-50 text-amber-700",
+    published: "bg-emerald-50 text-emerald-700",
 }
 
 interface ArtefactShowcaseData {
@@ -236,7 +246,10 @@ const onSaveBatchSize = async () => {
                             fixed-width
                             aria-hidden="true" />
                         <div class="min-w-0 flex-1">
-                            <div class="truncate text-sm">{{ label.name }}</div>
+                            <div class="flex items-center gap-2">
+                                <span class="truncate text-sm">{{ label.name }}</span>
+                                <span class="shrink-0 rounded-full px-2 py-px text-[10px] uppercase tracking-wide" :class="LABEL_STATE_CLASSES[label.state]">{{ label.state_label }}</span>
+                            </div>
                             <div class="truncate text-xs text-gray-500">{{ describeLabel(label) }}</div>
                         </div>
                         <div @click.stop>

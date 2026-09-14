@@ -54,6 +54,10 @@ class GetArtefactShowcase
                     'name'       => 'grp.models.artefact.labels.delete',
                     'parameters' => ['artefact' => $artefact->id]
                 ],
+                'publish_route' => [
+                    'name'       => 'grp.models.artefact.labels.publish',
+                    'parameters' => ['artefact' => $artefact->id]
+                ],
                 'batch_code'  => $this->getPlaceholderBatchCode($artefact),
                 'expiry_date' => $this->getPlaceholderExpiryDate(),
                 'labels'      => ArtefactLabelResource::collection($artefact->labels()->with('artwork')->get())->resolve(),

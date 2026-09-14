@@ -71,23 +71,47 @@ class PdfArtefactLabelSheet extends OrgAction
         $mpdf = $pdf->getMpdf();
         $mpdf->AddPage();
 
-        if ($isVector) {
-            $this->drawVectorArtwork($mpdf, $artwork['path'], $cells, $labelWidth, $labelHeight, $canvasRotation);
+        $readableArtwork = $isVector ? $this->getReadableArtwork($artwork['path']) : null;
+
+        try {
+            if ($readableArtwork) {
+                $this->drawVectorArtwork($mpdf, $readableArtwork['path'], $cells, $labelWidth, $labelHeight, $canvasRotation);
+            }
+
+            $mpdf->WriteHTML(view('labels.templates.pdf.artefact_sheet', [
+                'cells'         => $cells,
+                'fields'        => $this->getFields($modelData['fields'] ?? [], $labelWidth, $labelHeight, max($page['width'], $page['height'])),
+                'labelWidth'    => $labelWidth,
+                'labelHeight'   => $labelHeight,
+                'imageSource'   => $isVector ? null : Arr::get($artwork, 'path'),
+                'imageRotation' => $this->getMpdfRotation($canvasRotation),
+                'cutGuides'     => (bool) ($modelData['cut_guides'] ?? false),
+            ])->render());
+
+            $output = $pdf->output();
+        } finally {
+            if (($readableArtwork['is_temporary'] ?? false) && is_file($readableArtwork['path'])) {
+                unlink($readableArtwork['path']);
+            }
         }
 
-        $mpdf->WriteHTML(view('labels.templates.pdf.artefact_sheet', [
-            'cells'         => $cells,
-            'fields'        => $this->getFields($modelData['fields'] ?? [], $labelWidth, $labelHeight, max($page['width'], $page['height'])),
-            'labelWidth'    => $labelWidth,
-            'labelHeight'   => $labelHeight,
-            'imageSource'   => $isVector ? null : Arr::get($artwork, 'path'),
-            'imageRotation' => $this->getMpdfRotation($canvasRotation),
-            'cutGuides'     => (bool) ($modelData['cut_guides'] ?? false),
-        ])->render());
-
-        return response($pdf->output(), 200)
+        return response($output, 200)
             ->header('Content-Type', 'application/pdf')
             ->header('Content-Disposition', 'inline; filename="'.$filename.'"');
+    }
+
+    /**
+     * @return array{path: string, is_temporary: bool}
+     */
+    private function getReadableArtwork(string $path): array
+    {
+        $readableArtwork = MakeArtworkPdfReadable::run($path);
+
+        if (!$readableArtwork) {
+            abort(422, __('The PDF artwork could not be read even after converting it, save it again as a PDF 1.4 (Acrobat 5 compatible) file.'));
+        }
+
+        return $readableArtwork;
     }
 
     /**
@@ -104,7 +128,7 @@ class PdfArtefactLabelSheet extends OrgAction
             $mpdf->setSourceFile($path);
             $template = $mpdf->importPage(1);
         } catch (Throwable) {
-            abort(422, __('The PDF artwork could not be read, export it again without a password or protection.'));
+            abort(422, __('The PDF artwork could not be read even after converting it, save it again as a PDF 1.4 (Acrobat 5 compatible) file.'));
         }
 
         $runsSideways = $rotation === 90 || $rotation === 270;

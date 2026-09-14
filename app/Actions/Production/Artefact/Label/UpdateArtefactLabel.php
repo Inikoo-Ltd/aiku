@@ -9,6 +9,7 @@
 namespace App\Actions\Production\Artefact\Label;
 
 use App\Actions\OrgAction;
+use App\Enums\Production\Artefact\ArtefactLabelStateEnum;
 use App\Http\Resources\Production\ArtefactLabelResource;
 use App\Models\Production\Artefact;
 use App\Models\Production\ArtefactLabel;
@@ -24,7 +25,10 @@ class UpdateArtefactLabel extends OrgAction
         $artwork       = Arr::pull($modelData, 'artwork');
         $removeArtwork = filter_var(Arr::pull($modelData, 'remove_artwork', false), FILTER_VALIDATE_BOOLEAN);
 
-        $changes = ['layout' => $this->packLayout($modelData)];
+        $changes = [
+            'layout' => $this->packLayout($modelData),
+            'state'  => ArtefactLabelStateEnum::PROCESSED,
+        ];
 
         if (Arr::has($modelData, 'name')) {
             $changes['name'] = Arr::get($modelData, 'name');

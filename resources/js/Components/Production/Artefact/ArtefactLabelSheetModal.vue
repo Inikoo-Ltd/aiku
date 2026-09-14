@@ -21,10 +21,16 @@ interface StoredArtwork {
     url: string
 }
 
+type LabelState = "raw" | "processed" | "published"
+
 interface SavedLabel {
     id: number
     name: string
     layout: Record<string, any>
+    state: LabelState
+    state_label: string
+    published_at: string | null
+    pdf_url: string | null
     artwork: StoredArtwork | null
     updated_at: string | null
 }
@@ -37,6 +43,7 @@ const props = defineProps<{
         store_route: routeType
         update_route: routeType
         delete_route: routeType
+        publish_route: routeType
         batch_code: string
         expiry_date: string
         labels: SavedLabel[]
@@ -729,7 +736,26 @@ const generatePdf = async () => {
     }
 }
 
-const saveLabel = async (asNewLabel: boolean) => {
+const LABEL_STATE_CLASSES: Record<LabelState, string> = {
+    raw: "bg-gray-100 text-gray-600",
+    processed: "bg-amber-50 text-amber-700",
+    published: "bg-emerald-50 text-emerald-700",
+}
+
+const currentLabel = computed(() => props.labelSheet.labels.find(label => label.id === currentLabelId.value) ?? null)
+
+const publishLabel = async (labelId: number): Promise<SavedLabel> => {
+    const response = await axios.post(
+        route(props.labelSheet.publish_route.name, {
+            ...props.labelSheet.publish_route.parameters,
+            label: labelId,
+        })
+    )
+
+    return response.data?.data ?? response.data
+}
+
+const saveLabel = async (asNewLabel: boolean, shouldPublish = false) => {
     const name = labelName.value.trim()
 
     if (!name) {
@@ -766,12 +792,16 @@ const saveLabel = async (asNewLabel: boolean) => {
             formData
         )
 
-        rememberSavedLabel(response.data?.data ?? response.data)
+        const savedLabel: SavedLabel = response.data?.data ?? response.data
+
+        rememberSavedLabel(shouldPublish ? await publishLabel(savedLabel.id) : savedLabel)
         emits("onSaved")
 
         notify({
-            title: ctrans("Saved"),
-            text: ctrans("The label can be picked up again later."),
+            title: shouldPublish ? ctrans("Published") : ctrans("Saved"),
+            text: shouldPublish
+                ? ctrans("The label can now be downloaded from the Preparing lane of the to produce board.")
+                : ctrans("The label can be picked up again later."),
             type: "success",
         })
     } catch (error: any) {
@@ -927,6 +957,21 @@ const describeFailure = async (error: any): Promise<string> => {
         <div class="flex flex-wrap items-center gap-2 mb-4">
             <FontAwesomeIcon icon="fal fa-tags" class="text-gray-400" fixed-width aria-hidden="true" />
             <h2 class="text-lg font-semibold">{{ currentLabelId ? ctrans("Edit label") : ctrans("New label") }}</h2>
+            <span
+                v-if="currentLabel"
+                class="rounded-full px-2 py-0.5 text-xs uppercase tracking-wide"
+                :class="LABEL_STATE_CLASSES[currentLabel.state]">
+                {{ currentLabel.state_label }}
+            </span>
+            <a
+                v-if="currentLabel?.pdf_url"
+                :href="currentLabel.pdf_url"
+                target="_blank"
+                rel="noopener"
+                class="text-xs text-indigo-600 hover:underline">
+                <FontAwesomeIcon icon="fal fa-file-pdf" fixed-width aria-hidden="true" />
+                {{ ctrans("Published PDF") }}
+            </a>
 
             <div class="ml-auto flex items-center gap-2">
                 <input
@@ -950,6 +995,17 @@ const describeFailure = async (error: any): Promise<string> => {
                     :loading="isSaving"
                     :disabled="!isGridValid"
                     @click="saveLabel(true)" />
+                <div class="relative">
+                    <Button
+                        :type="currentLabel?.state === 'published' ? 'tertiary' : 'green'"
+                        :key="currentLabel?.state"
+                        size="xs"
+                        :label="currentLabel?.state === 'published' ? ctrans('Publish again') : ctrans('Publish')"
+                        :loading="isSaving"
+                        :disabled="!isGridValid"
+                        @click="saveLabel(false, true)" />
+                    <PingIcon v-if="currentLabel?.state !== 'published'" class="text-[7px] text-red-500 !absolute -top-0.5 -right-0.5" />
+                </div>
             </div>
         </div>
 
@@ -975,7 +1031,7 @@ const describeFailure = async (error: any): Promise<string> => {
                 <div>
                     <div class="text-xs text-gray-500 uppercase tracking-wide mb-1">
                         {{ ctrans("Background artwork") }}
-                        <PingIcon v-if="!backgroundFile" class="text-[6px] text-orange-500" />
+                        <PingIcon v-if="!backgroundFile" class="text-[6px] text-red-500" />
                     </div>
                     <input ref="fileInput" type="file" accept="image/*,application/pdf" class="hidden" @change="onFileChange" />
                     <div class="flex gap-2">
@@ -1205,13 +1261,14 @@ const describeFailure = async (error: any): Promise<string> => {
 
                     <div class="flex gap-2">
                         <Button
-                            type="primary"
+                            type="secondary"
                             full
                             icon="fas fa-download"
                             :label="ctrans('Download PDF')"
                             :loading="isGenerating"
                             :disabled="!isGridValid"
-                            @click="generatePdf" />
+                            @click="generatePdf"
+                        />
                     </div>
                 </div>
 
