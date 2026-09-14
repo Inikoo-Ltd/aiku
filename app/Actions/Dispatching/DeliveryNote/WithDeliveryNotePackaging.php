@@ -13,6 +13,7 @@ use App\Http\Resources\Helpers\ImageResource;
 use App\Models\Billables\Packaging;
 use App\Models\Dispatching\DeliveryNote;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Str;
 
 trait WithDeliveryNotePackaging
 {
@@ -27,17 +28,6 @@ trait WithDeliveryNotePackaging
         }
 
         return $deliveryNote->packaging ?? $deliveryNote->orders()->first()?->packaging;
-    }
-
-    protected function orderedPackagingFamily(DeliveryNote $deliveryNote): ?string
-    {
-        $order = $deliveryNote->orders()->first();
-
-        $orderedPackagingId = Arr::get($order?->data ?? [], 'ordered_packaging_id');
-
-        $ordered = $orderedPackagingId ? Packaging::find($orderedPackagingId) : $order?->packaging;
-
-        return $ordered?->family_code ?? $deliveryNote->packaging?->family_code;
     }
 
     /** @return array{id: int, name: string, dimensions: string|null}|null */
@@ -75,22 +65,12 @@ trait WithDeliveryNotePackaging
     /** @return array<int, array{id: int, name: string, dimensions: string|null, price: float, is_free: bool, is_downgrade: bool, family_code: string|null, image: mixed}> */
     protected function getPackagingOptions(DeliveryNote $deliveryNote, ?string $familyCode): array
     {
-        $familyCode = $this->orderedPackagingFamily($deliveryNote) ?? $familyCode;
-
-        if (!$familyCode || !$deliveryNote->shop?->hasPackagingAndInserts()) {
+        if (!$deliveryNote->shop?->hasPackagingAndInserts()) {
             return [];
         }
 
-        $defaultPackagingId = $deliveryNote->shop->defaultPackaging()?->id;
-
         $options = Packaging::where('shop_id', $deliveryNote->shop_id)
             ->where('state', PackagingStateEnum::ACTIVE)
-            ->where(
-                fn ($query) => $query->where('family_code', $familyCode)
-                    ->orWhere('price', 0)
-                    ->when($defaultPackagingId, fn ($q) => $q->orWhere('id', $defaultPackagingId))
-                    ->when($deliveryNote->packaging_id, fn ($q) => $q->orWhere('id', $deliveryNote->packaging_id))
-            )
             ->with('image')
             ->orderBy('position')
             ->orderBy('price')
@@ -113,6 +93,7 @@ trait WithDeliveryNotePackaging
                 'is_free'      => (float) $packaging->price === 0.0,
                 'is_downgrade' => $paidPrice !== null && round((float) $packaging->price, 2) < $paidPrice,
                 'family_code'  => $packaging->family_code,
+                'family_name'  => Arr::get($packaging->data ?? [], 'family_name') ?? Str::headline((string) $packaging->family_code),
                 'image'        => $packaging->image ? ImageResource::make($packaging->image)->resolve() : null,
                 'currency_code'   => $deliveryNote->shop->currency?->code,
             ])->all();

@@ -5,7 +5,7 @@
   -->
 
 <script setup lang="ts">
-import { inject, nextTick, onBeforeUnmount, ref } from "vue"
+import { computed, inject, nextTick, onBeforeUnmount, ref } from "vue"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import { trans } from "laravel-vue-i18n"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -23,6 +23,7 @@ interface PackagingOption {
     is_free: boolean
     is_downgrade?: boolean
     family_code: string | null
+    family_name?: string | null
     currency_code?: string | null
     image?: { thumbnail?: any, source?: any } | null
 }
@@ -38,6 +39,24 @@ const emit = defineEmits<{
 }>()
 
 const locale = inject("locale", aikuLocaleStructure)
+
+const groupedOptions = computed(() => {
+    const groups: { key: string, name: string, options: PackagingOption[] }[] = []
+
+    for (const option of props.options) {
+        const key = option.family_code ?? `packaging-${option.id}`
+        let group = groups.find((existing) => existing.key === key)
+
+        if (!group) {
+            group = { key, name: option.family_name ?? option.name, options: [] }
+            groups.push(group)
+        }
+
+        group.options.push(option)
+    }
+
+    return groups
+})
 
 const MENU_WIDTH = 288
 const MENU_MAX_HEIGHT = 320
@@ -131,11 +150,15 @@ onBeforeUnmount(close)
                 </div>
 
                 <div class="min-h-0 flex-1 overflow-y-auto">
+                    <template v-for="group in groupedOptions" :key="group.key">
+                    <div class="sticky top-0 z-10 bg-gray-100 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-gray-600">
+                        {{ group.name }}
+                    </div>
                     <button
-                        v-for="option in options"
+                        v-for="option in group.options"
                         :key="option.id"
                         type="button"
-                        class="flex w-full items-start gap-3 px-3 py-2 text-left transition hover:bg-gray-50"
+                        class="flex w-full items-start gap-3 py-2 pl-6 pr-3 text-left transition hover:bg-gray-50"
                         @click="onSelect(option)"
                     >
                         <span
@@ -170,6 +193,7 @@ onBeforeUnmount(close)
                             </div>
                         </div>
                     </button>
+                    </template>
                 </div>
 
                 <div class="flex shrink-0 items-start gap-2 bg-gray-50 px-3 py-2 text-xs text-gray-500">
