@@ -114,6 +114,8 @@ use App\Models\Catalogue\Product;
 use App\Models\Dispatching\BatchCode;
 use App\Models\Dispatching\Box;
 use App\Models\Dispatching\DeliveryNote;
+use App\Actions\Dispatching\DeliveryNote\UI\ShowDeliveryNote;
+use App\Models\Ordering\Order;
 use App\Models\Dispatching\DeliveryNoteItem;
 use App\Models\Goods\TradeUnit;
 use App\Models\Dispatching\Packing;
@@ -4031,4 +4033,24 @@ test('replacing one single of a 3-pack orders a third of a pack, not a whole pac
     expect((float)$replacement->quantity_ordered)->toBe(0.333333)
         ->and((float)$replacementItem->quantity_required)->toEqualWithDelta(1.0, 0.00001)
         ->and((float)$item->refresh()->quantity_waiting_crm)->toBe(0.0);
+});
+
+test('a packed note shipped by the sales channel waits for the carrier label, then finalises and dispatches in one step (HELP-3145)', function () {
+    $order = new Order();
+    $order->setRelation('invoices', new Collection());
+
+    $deliveryNote = new DeliveryNote(['is_shipping_by_external' => true]);
+    $deliveryNote->id = 1;
+    $deliveryNote->setRelation('orders', new Collection([$order]));
+    $deliveryNote->setRelation('shipments', new Collection());
+
+    expect(ShowDeliveryNote::make()->getPackedActions($deliveryNote))->toBe([]);
+
+    $deliveryNote->setRelation('shipments', new Collection([new Shipment()]));
+    expect(ShowDeliveryNote::make()->getPackedActions($deliveryNote))
+        ->key->toBe('finalise-and-dispatch')
+        ->and(ShowDeliveryNote::make()->getPackedActions($deliveryNote)['route']['name'])->toBe('grp.models.delivery_note.state.finalise_and_dispatch');
+
+    $order->setRelation('invoices', new Collection([1]));
+    expect(ShowDeliveryNote::make()->getPackedActions($deliveryNote)['route']['name'])->toBe('grp.models.delivery_note.state.dispatched');
 });
