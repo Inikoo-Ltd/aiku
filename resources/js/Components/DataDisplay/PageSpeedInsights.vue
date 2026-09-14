@@ -217,7 +217,7 @@ const reMeasure = async () => {
 	} catch (error) {
 		notify({
 			title: trans("Something went wrong"),
-			text: trans("The PageSpeed Insights run could not be queued"),
+			text: trans("The PageSpeed Insights run could not be completed"),
 			type: "error",
 		})
 	} finally {

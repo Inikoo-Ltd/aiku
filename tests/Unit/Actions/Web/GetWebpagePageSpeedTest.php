@@ -7,12 +7,14 @@
  */
 
 use App\Actions\Web\Webpage\GetWebpagePageSpeed;
+use App\Actions\Web\Webpage\RefreshWebpagePageSpeed;
 use App\Actions\Web\Webpage\StoreWebpagePageSpeedTimeSeriesRecord;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\Web\Webpage;
 use App\Models\Web\Website;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Queue;
 
 function fakeWebpage(int $id = 1, ?string $canonicalUrl = 'https://www.example.com/shop/landing'): Webpage
 {
@@ -183,4 +185,31 @@ it('surfaces the PageSpeed Insights error message and does not cache or record i
     GetWebpagePageSpeed::run($webpage);
 
     Http::assertSentCount(2);
+});
+
+it('re-measures both strategies straight away without waiting for a queue worker', function () {
+    Queue::fake();
+
+    Http::fake([
+        'www.googleapis.com/pagespeedonline/*' => Http::response(pageSpeedPayload()),
+    ]);
+
+    StoreWebpagePageSpeedTimeSeriesRecord::shouldRun()->twice();
+
+    $webpage = fakeWebpage(6);
+
+    cache()->put(GetWebpagePageSpeed::resultKey($webpage, 'desktop'), ['strategy' => 'desktop', 'scores' => []]);
+    cache()->put(GetWebpagePageSpeed::pendingKey($webpage, 'mobile'), true);
+
+    RefreshWebpagePageSpeed::run($webpage);
+
+    Queue::assertNothingPushed();
+
+    Http::assertSentCount(2);
+    Http::assertSent(fn ($request) => $request['strategy'] === 'desktop');
+    Http::assertSent(fn ($request) => $request['strategy'] === 'mobile');
+
+    expect(cache()->get(GetWebpagePageSpeed::resultKey($webpage, 'desktop'))['scores'])->toHaveCount(4)
+        ->and(cache()->get(GetWebpagePageSpeed::resultKey($webpage, 'mobile'))['strategy'])->toBe('mobile')
+        ->and(cache()->has(GetWebpagePageSpeed::pendingKey($webpage, 'mobile')))->toBeFalse();
 });
