@@ -10,12 +10,12 @@ namespace App\Actions\Helpers\Ticket;
 
 use App\Actions\Helpers\Ticket\Concerns\WithSlack;
 use App\Enums\Helpers\Ticket\TicketQaStatusEnum;
+use App\Enums\SysAdmin\User\UserNotificationEnum;
 use App\Events\BroadcastTicketBadgeUpdate;
 use App\Events\BroadcastTicketChanged;
 use App\Models\Helpers\Ticket;
 use App\Models\SysAdmin\User;
 use App\Notifications\TicketNotification;
-use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -38,7 +38,8 @@ class NotifyTicketUsers
                 Str::limit($question, 2000),
                 __('If there is no reply by :deadline the ticket will be cancelled.', ['deadline' => $ticket->waiting_until?->format('d M Y H:i')]),
             ],
-            __('Reply on the ticket')
+            __('Reply on the ticket'),
+            UserNotificationEnum::TICKET_NEEDS_REPLY
         );
     }
 
@@ -55,13 +56,35 @@ class NotifyTicketUsers
                     : __(':reference (:subject) is done.', ['reference' => $ticket->reference, 'subject' => $ticket->subject]),
                 __('If something is still wrong, reply on the ticket to reopen it.'),
             ],
-            __('Open the ticket')
+            __('Open the ticket'),
+            UserNotificationEnum::TICKET_RESOLVED
         );
     }
 
     public function commented(Ticket $ticket, User $author, string $body): void
     {
+        $authorName = $author->contact_name ?: $author->username;
+        $mentioned  = $this->mentionedUsers($ticket, $body);
+
+        foreach ($mentioned as $user) {
+            $this->handle(
+                $ticket,
+                $author,
+                $user,
+                __(':author mentioned you on :reference', ['author' => $authorName, 'reference' => $ticket->reference]),
+                [
+                    __(':author mentioned you on :reference (:subject):', ['author' => $authorName, 'reference' => $ticket->reference, 'subject' => $ticket->subject]),
+                    Str::limit($body, 2000),
+                ],
+                __('Open the ticket'),
+                UserNotificationEnum::TICKET_MENTION
+            );
+        }
+
         $recipient = $ticket->isReportedBy($author) ? $ticket->assignee()->first() : $ticket->reporter;
+        if ($recipient instanceof User && $mentioned->contains('id', $recipient->id)) {
+            return;
+        }
 
         $this->handle(
             $ticket,
@@ -69,12 +92,32 @@ class NotifyTicketUsers
             $recipient,
             __(':reference has a new comment', ['reference' => $ticket->reference]),
             [
-                __(':author commented on :reference (:subject):', ['author' => $author->contact_name ?: $author->username, 'reference' => $ticket->reference, 'subject' => $ticket->subject]),
+                __(':author commented on :reference (:subject):', ['author' => $authorName, 'reference' => $ticket->reference, 'subject' => $ticket->subject]),
                 Str::limit($body, 2000),
             ],
             __('Open the ticket'),
-            byEmail: false
+            UserNotificationEnum::TICKET_COMMENT
         );
+    }
+
+    /**
+     * @return \Illuminate\Support\Collection<int, User>
+     */
+    public function mentionedUsers(Ticket $ticket, string $body): \Illuminate\Support\Collection
+    {
+        preg_match_all('/(?<![\pL\pN._-])@([\pL\pN._-]{2,})/u', $body, $matches);
+        $handles = collect($matches[1])->map(fn (string $handle) => mb_strtolower(rtrim($handle, '.')))->unique()->values();
+
+        if ($handles->isEmpty()) {
+            return collect();
+        }
+
+        return User::where('group_id', $ticket->group_id)
+            ->where('status', true)
+            ->where(fn ($query) => $query->whereIn(\DB::raw('lower(username)'), $handles)->orWhereIn(\DB::raw('lower(nickname)'), $handles))
+            ->get()
+            ->filter(fn (User $user) => $ticket->isVisibleTo($user))
+            ->values();
     }
 
     public function raised(Ticket $ticket): void
@@ -86,8 +129,7 @@ class NotifyTicketUsers
                 $engineer,
                 __('New ticket :reference', ['reference' => $ticket->reference]),
                 [$ticket->subject],
-                __('Open the ticket'),
-                byEmail: false
+                __('Open the ticket')
             );
         }
     }
@@ -96,7 +138,7 @@ class NotifyTicketUsers
     {
         if ($ticket->qa_status === TicketQaStatusEnum::REQUESTED) {
             foreach (GetTicketBadgeData::qaUsers($ticket->group_id) as $qaUser) {
-                $this->handle($ticket, $actor, $qaUser, __(':reference is ready for QA', ['reference' => $ticket->reference]), [$ticket->subject], __('Check the ticket'), byEmail: false);
+                $this->handle($ticket, $actor, $qaUser, __(':reference is ready for QA', ['reference' => $ticket->reference]), [$ticket->subject], __('Check the ticket'));
             }
 
             return;
@@ -104,7 +146,7 @@ class NotifyTicketUsers
 
         if ($ticket->qa_status) {
             $verdict = TicketQaStatusEnum::labels()[$ticket->qa_status->value];
-            $this->handle($ticket, $actor, $ticket->assignee()->first(), __(':reference: QA :verdict', ['reference' => $ticket->reference, 'verdict' => strtolower($verdict)]), [$ticket->subject], __('Open the ticket'), byEmail: false);
+            $this->handle($ticket, $actor, $ticket->assignee()->first(), __(':reference: QA :verdict', ['reference' => $ticket->reference, 'verdict' => strtolower($verdict)]), [$ticket->subject], __('Open the ticket'));
         }
     }
 
@@ -124,15 +166,15 @@ class NotifyTicketUsers
     /**
      * @param array<int, string> $lines
      */
-    public function handle(Ticket $ticket, ?User $actor, mixed $recipient, string $subject, array $lines, string $actionLabel, bool $byEmail = true): void
+    public function handle(Ticket $ticket, ?User $actor, mixed $recipient, string $subject, array $lines, string $actionLabel, ?UserNotificationEnum $event = null): void
     {
         if (!$recipient instanceof User || $recipient->id === $actor?->id) {
             return;
         }
 
-        $channels = Arr::get($recipient->settings, 'ticket_notifications', 'both');
+        $channels = $event?->channelsFor($recipient) ?? [];
 
-        $recipient->notify(new TicketNotification($ticket, $subject, $lines, $actionLabel, $byEmail && in_array($channels, ['both', 'email'], true) && (bool) $recipient->email));
+        $recipient->notify(new TicketNotification($ticket, $subject, $lines, $actionLabel, in_array('email', $channels, true) && (bool) $recipient->email));
 
         BroadcastTicketBadgeUpdate::dispatch($recipient, [
             'title' => $subject,
@@ -140,7 +182,7 @@ class NotifyTicketUsers
             'route' => route('grp.tickets.show', $ticket->reference),
         ]);
 
-        if ($byEmail && in_array($channels, ['both', 'slack'], true) && $recipient->slack_user_id && $client = $this->slackClient()) {
+        if (in_array('slack', $channels, true) && $recipient->slack_user_id && $client = $this->slackClient()) {
             $client->post('chat.postMessage', [
                 'channel' => $recipient->slack_user_id,
                 'text'    => '*'.$subject."*\n".implode("\n", $lines).' <'.route('grp.tickets.show', $ticket->reference).'|'.$actionLabel.'>',

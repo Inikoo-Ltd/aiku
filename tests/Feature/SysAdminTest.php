@@ -2331,3 +2331,9 @@ test('address boxes come in the order the country writes an address', function (
         ->and($order('HU'))->toBe(['locality', 'address_line_1', 'address_line_2', 'postal_code'])
         ->and(array_slice($order('US'), 0, 2))->toBe(['address_line_1', 'address_line_2']);
 });
+
+test('edit profile includes preferences sections', function (Guest $guest) {
+    $blueprint = \App\Actions\UI\Profile\EditProfile::make()->generateBlueprint($guest->getUser())['formData']['blueprint'];
+
+    expect(collect($blueprint)->pluck('label')->all())->toContain(__('Profile'), __('Notifications'), __('Log in'), __('Preferences'), __('Timezone'));
+})->depends('create guest');

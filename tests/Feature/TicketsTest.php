@@ -232,7 +232,7 @@ test('staff reporter is told of the question by email and slack as their profile
     Http::fake(['slack.com/*' => Http::response(['ok' => true])]);
 
     $reporter = StoreGuest::make()->action($this->group, Guest::factory()->definition())->getUser();
-    $reporter->update(['slack_user_id' => 'U123', 'settings' => ['ticket_notifications' => 'both']]);
+    $reporter->update(['slack_user_id' => 'U123', 'settings' => ['notifications' => ['ticket_needs_reply' => ['email', 'slack']]]]);
 
     $ticket = StoreTicket::make()->action($this->group, ['subject' => 'Ask me']);
     $ticket->update(['reporter_type' => 'User', 'reporter_id' => $reporter->id]);
@@ -243,13 +243,13 @@ test('staff reporter is told of the question by email and slack as their profile
     Notification::assertSentTo($reporter, TicketNotification::class);
     Http::assertSent(fn ($request) => str_contains($request->url(), 'chat.postMessage') && $request['channel'] === 'U123');
 
-    $reporter->update(['settings' => ['ticket_notifications' => 'none']]);
+    $reporter->update(['settings' => ['notifications' => ['ticket_needs_reply' => []]]]);
     Notification::fake();
     UpdateTicket::make()->action($ticket->fresh(), ['status' => TicketStatusEnum::IN_PROGRESS->value]);
     patch(route('grp.models.ticket.update', $ticket->id), ['status' => 'waiting', 'question' => 'Still?'])->assertRedirect();
     Notification::assertSentTo($reporter, TicketNotification::class, fn ($notification, $channels) => $channels === ['database']);
 
-    $reporter->update(['settings' => ['ticket_notifications' => 'email']]);
+    $reporter->update(['settings' => ['notifications' => ['ticket_resolved' => ['email']]]]);
     patch(route('grp.models.ticket.update', $ticket->id), ['status' => 'resolved', 'question' => 'Fixed the voucher total'])->assertRedirect();
     Notification::assertSentTo($reporter, TicketNotification::class, fn ($notification) => str_contains($notification->subject, 'is done'));
     expect($ticket->comments()->where('body', 'Fixed the voucher total')->count())->toBe(1);
@@ -1156,4 +1156,22 @@ test('done after next deployment holds the ticket, then the deployment closes it
         ->and($ticket->comments()->where('body', 'Fixed, live after the deploy')->sole()->author_type)->toBe('User')
         ->and(data_get($ticket->data, 'deploy_comment'))->toBeNull()
         ->and(CloseTicketsAfterDeployment::run())->toBe(0);
+});
+
+test('a mentioned user is notified on the channels they chose and the plain comment notice is not doubled', function () {
+    Notification::fake();
+    Config::set('services.slack.notifications.bot_user_oauth_token', 'xoxb-test');
+    Http::fake(['slack.com/*' => Http::response(['ok' => true])]);
+
+    $reporter = StoreGuest::make()->action($this->group, Guest::factory()->definition())->getUser();
+    $reporter->update(['nickname' => 'Mentionee', 'slack_user_id' => 'U999', 'settings' => ['notifications' => ['ticket_mention' => ['slack'], 'ticket_comment' => ['email']]]]);
+
+    $ticket = StoreTicket::make()->action($this->group, ['subject' => 'Mention me']);
+    $ticket->update(['reporter_type' => 'User', 'reporter_id' => $reporter->id]);
+
+    StoreTicketComment::make()->action($ticket, $this->user, ['body' => 'Can you check this @mentionee?']);
+
+    Notification::assertSentToTimes($reporter, TicketNotification::class, 1);
+    Notification::assertSentTo($reporter, TicketNotification::class, fn ($notification, $channels) => str_contains($notification->subject, 'mentioned you') && $channels === ['database']);
+    Http::assertSent(fn ($request) => str_contains($request->url(), 'chat.postMessage') && $request['channel'] === 'U999');
 });

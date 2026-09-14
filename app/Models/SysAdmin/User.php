@@ -54,7 +54,6 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $slack_user_id
  * @property string|null $nickname
  * @property string|null $email
- * @property string|null $about
  * @property int $number_models
  * @property int $number_active_models
  * @property int $number_employees
@@ -240,7 +239,6 @@ class User extends Authenticatable implements HasMedia, Auditable, PasskeyUser
         'auth_type',
         'contact_name',
         'email',
-        'about',
         'language_id'
     ];
 
