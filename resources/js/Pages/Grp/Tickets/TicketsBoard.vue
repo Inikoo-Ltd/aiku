@@ -35,6 +35,8 @@ const props = defineProps<{
 		tickets: any[]
 	}[]
 	periodOptions: string[]
+	me: string
+	formerAssignees: string[]
 	createdIntervals: Record<string, string>
 	createdInterval: string
 	updateRoute: string
@@ -131,20 +133,20 @@ watch(
 	}
 )
 
-type FilterKey = "module_label" | "kind_label" | "priority_label" | "assignee"
+type FilterKey = "module_label" | "kind_label" | "priority_label" | "assignee_username"
 
 const boardFilters = reactive<Record<FilterKey, string[]>>({
 	module_label: [],
 	kind_label: [],
 	priority_label: [],
-	assignee: [],
+	assignee_username: [],
 })
 
 const filterLabels: Record<FilterKey, string> = {
 	module_label: trans("Module"),
 	kind_label: trans("Kind"),
 	priority_label: trans("Urgency"),
-	assignee: trans("Assignee"),
+	assignee_username: trans("Assignee"),
 }
 
 const countedBy = (key: FilterKey) => {
@@ -164,8 +166,19 @@ const filterOptions = computed(() => ({
 	module_label: countedBy("module_label"),
 	kind_label: countedBy("kind_label"),
 	priority_label: countedBy("priority_label"),
-	assignee: countedBy("assignee"),
+	assignee_username: countedBy("assignee_username"),
 }))
+
+const assigneeGroups = computed(() => [
+	{ label: trans("Current"), options: filterOptions.value.assignee_username.filter((option) => !props.formerAssignees.includes(option.value)) },
+	{ label: trans("Former"), options: filterOptions.value.assignee_username.filter((option) => props.formerAssignees.includes(option.value)) },
+].filter((group) => group.options.length))
+
+const shortName = (username: string) => username.charAt(0).toUpperCase() + username.slice(1)
+
+const onlyMine = computed(() => boardFilters.assignee_username.length === 1 && boardFilters.assignee_username[0] === props.me)
+
+const toggleMine = () => (boardFilters.assignee_username = onlyMine.value ? [] : [props.me])
 
 const toggleFilter = (key: FilterKey, value: string) => {
 	const index = boardFilters[key].indexOf(value)
@@ -243,8 +256,8 @@ const ageIn = (column: { key: string; period: string | null }, ticket: any) => {
 	return hours < 48 ? `${Math.max(hours, 0)}h` : `${Math.floor(hours / 24)}d`
 }
 
-const avatarFor = (assignee: string) =>
-	props.columns.flatMap((column) => column.tickets).find((ticket) => ticket.assignee === assignee)
+const avatarFor = (username: string) =>
+	props.columns.flatMap((column) => column.tickets).find((ticket) => ticket.assignee_username === username)
 		?.assignee_avatar?.original ?? null
 
 const initials = (name: string) =>
@@ -305,30 +318,41 @@ const onMoved = (status: string, event: { added?: { element: { id: number } } })
 					>
 				</button>
 			</div>
-			<div v-if="filterOptions.assignee.length" class="relative flex items-center gap-1.5">
+			<div v-if="filterOptions.assignee_username.length" class="relative flex items-center gap-1.5">
 				<span class="mr-1 text-xs font-medium uppercase tracking-wide text-gray-400">{{
-					filterLabels.assignee
+					filterLabels.assignee_username
 				}}</span>
 				<button
 					type="button"
 					class="flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 transition"
 					:class="
-						boardFilters.assignee.length
+						onlyMine
+							? 'border-indigo-500 bg-indigo-600 text-white shadow-sm'
+							: 'border-gray-200 bg-gray-50 text-gray-600 hover:border-gray-300 hover:bg-white'
+					"
+					@click="toggleMine()">
+					{{ trans("Mine") }}
+				</button>
+				<button
+					type="button"
+					class="flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 transition"
+					:class="
+						boardFilters.assignee_username.length && !onlyMine
 							? 'border-indigo-500 bg-indigo-600 text-white shadow-sm'
 							: 'border-gray-200 bg-gray-50 text-gray-600 hover:border-gray-300 hover:bg-white'
 					"
 					@click="assigneeMenuOpen = !assigneeMenuOpen">
 					<span class="max-w-48 truncate">{{
-						boardFilters.assignee.length
-							? boardFilters.assignee.join(", ")
+						boardFilters.assignee_username.length && !onlyMine
+							? boardFilters.assignee_username.map(shortName).join(", ")
 							: trans("Everybody")
 					}}</span>
 					<span
 						class="rounded-full px-1.5 text-xs tabular-nums"
 						:class="
-							boardFilters.assignee.length ? 'bg-white/20' : 'bg-white text-gray-500'
+							boardFilters.assignee_username.length && !onlyMine ? 'bg-white/20' : 'bg-white text-gray-500'
 						"
-						>{{ boardFilters.assignee.length || filterOptions.assignee.length }}</span
+						>{{ (!onlyMine && boardFilters.assignee_username.length) || filterOptions.assignee_username.length }}</span
 					>
 				</button>
 				<div
@@ -337,33 +361,38 @@ const onMoved = (status: string, event: { added?: { element: { id: number } } })
 					@click="assigneeMenuOpen = false" />
 				<div
 					v-if="assigneeMenuOpen"
-					class="absolute left-0 top-8 z-40 max-h-72 w-64 overflow-y-auto rounded-lg border border-gray-200 bg-white p-1.5 shadow-xl">
-					<label
-						v-for="option in filterOptions.assignee"
-						:key="option.value"
-						class="flex cursor-pointer items-center gap-2 rounded px-2 py-1.5 hover:bg-gray-50">
-						<input
-							type="checkbox"
-							:checked="boardFilters.assignee.includes(option.value)"
-							@change="toggleFilter('assignee', option.value)" />
-						<img
-							v-if="avatarFor(option.value)"
-							:src="avatarFor(option.value)"
-							class="h-6 w-6 rounded-full object-cover"
-							:alt="option.value" />
-						<span
-							v-else
-							class="flex h-6 w-6 items-center justify-center rounded-full bg-gray-200 text-[10px] font-semibold text-gray-600"
-							>{{ initials(option.value) }}</span
-						>
-						<span class="truncate">{{ option.value }}</span>
-						<span class="ml-auto text-xs text-gray-400">{{ option.count }}</span>
-					</label>
+					class="absolute left-0 top-8 z-40 max-h-72 w-56 overflow-y-auto rounded-lg border border-gray-200 bg-white p-1.5 shadow-xl">
+					<template v-for="group in assigneeGroups" :key="group.label">
+						<div class="px-2 pb-1 pt-2 text-xs font-medium uppercase tracking-wide text-gray-400">
+							{{ group.label }}
+						</div>
+						<label
+							v-for="option in group.options"
+							:key="option.value"
+							class="flex cursor-pointer items-center gap-2 rounded px-2 py-1.5 hover:bg-gray-50">
+							<input
+								type="checkbox"
+								:checked="boardFilters.assignee_username.includes(option.value)"
+								@change="toggleFilter('assignee_username', option.value)" />
+							<img
+								v-if="avatarFor(option.value)"
+								:src="avatarFor(option.value)"
+								class="h-6 w-6 rounded-full object-cover"
+								:alt="option.value" />
+							<span
+								v-else
+								class="flex h-6 w-6 items-center justify-center rounded-full bg-gray-200 text-[10px] font-semibold text-gray-600"
+								>{{ initials(option.value) }}</span
+							>
+							<span class="truncate">{{ shortName(option.value) }}</span>
+							<span class="ml-auto text-xs text-gray-400">{{ option.count }}</span>
+						</label>
+					</template>
 					<button
-						v-if="boardFilters.assignee.length"
+						v-if="boardFilters.assignee_username.length"
 						type="button"
 						class="mt-1 w-full rounded px-2 py-1 text-left text-xs text-gray-400 hover:bg-gray-50"
-						@click="boardFilters.assignee = []">
+						@click="boardFilters.assignee_username = []">
 						{{ trans("Everybody") }}
 					</button>
 				</div>
