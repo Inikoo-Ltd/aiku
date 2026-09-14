@@ -86,8 +86,9 @@ const submit = () => {
                 :class="comment.is_internal ? 'bg-amber-50 border-amber-200' : comment.is_staff ?'bg-gray-50 border-gray-200' : 'bg-blue-50 border-blue-200'"
             >
                 <div class="text-xs text-gray-500 mb-1 flex items-center gap-2">
-                    <span class="font-medium text-gray-700">{{ comment.author || trans("Unknown") }}</span>
-                    · {{ useFormatTime(comment.created_at, { formatTime: "hm" }) }}
+                    <span v-if="comment.author" class="font-medium text-gray-700">{{ comment.author }} ·</span>
+                    <span v-else class="flex items-center gap-2"><img class="h-4 select-none" src="/art/invader.svg" alt="aiku" /> ·</span>
+                    {{ useFormatTime(comment.created_at, { formatTime: "hm" }) }}
                     <span v-if="comment.is_internal" class="px-1.5 py-0.5 rounded bg-amber-200 text-amber-900 text-[10px] font-medium">{{ trans("Internal") }}</span>
                     <span class="ml-auto flex gap-1">
                         <Button v-if="comment.can_toggle_visibility" type="tertiary" size="xs" :label="comment.is_internal ? trans('Make public') : trans('Hide')" @click="toggleVisibility(comment.id)" />
@@ -109,7 +110,7 @@ const submit = () => {
                     </span>
                 </div>
                 <div v-if="editingId === comment.id" class="space-y-2">
-                    <textarea v-model="editBody" rows="3" class="w-full rounded border-gray-300 text-sm" />
+                    <textarea v-model="editBody" :rows="Math.max(3, editBody.split('\n').length + 1)" class="w-full rounded border-gray-300 text-sm [field-sizing:content] min-h-[4.5rem]" />
                     <div class="flex gap-2 justify-end">
                         <Button type="tertiary" :label="trans('Cancel')" @click="editingId = null" />
                         <Button :label="trans('Save')" :disabled="!editBody.trim()" @click="saveEdit(comment.id)" />
