@@ -20,30 +20,30 @@ use Lorisleiva\Actions\ActionRequest;
 
 class ShowTicketsReports extends OrgAction
 {
-    public const PERIODS = [7, 30, 90];
-
     public function authorize(ActionRequest $request): bool
     {
         return $request->user() !== null;
     }
 
-    public function handle(Group $group, int $days, ?User $viewer = null): array
+    public function handle(Group $group, string $interval, ?User $viewer = null): array
     {
-        $from = now()->subDays($days - 1)->startOfDay();
         $base = Ticket::where('tickets.group_id', $group->id)->when($viewer, fn ($query) => $query->visibleTo($viewer));
 
-        $createdByDay  = (clone $base)->where('created_at', '>=', $from)
+        [$from, $to] = $this->range($interval, (clone $base)->min('created_at'));
+        $days        = (int) $from->copy()->startOfDay()->diffInDays($to->copy()->startOfDay()) + 1;
+
+        $createdByDay  = (clone $base)->whereBetween('created_at', [$from, $to])
             ->selectRaw('date(created_at) as day, count(*) as total')->groupBy('day')->pluck('total', 'day');
-        $resolvedByDay = (clone $base)->where('resolved_at', '>=', $from)
+        $resolvedByDay = (clone $base)->whereBetween('resolved_at', [$from, $to])
             ->selectRaw('date(resolved_at) as day, count(*) as total')->groupBy('day')->pluck('total', 'day');
 
         $daily = collect(range(0, $days - 1))->map(function (int $offset) use ($from, $createdByDay, $resolvedByDay) {
-            $day = $from->copy()->addDays($offset)->toDateString();
+            $day = $from->copy()->startOfDay()->addDays($offset)->toDateString();
 
             return ['date' => $day, 'created' => (int) ($createdByDay[$day] ?? 0), 'done' => (int) ($resolvedByDay[$day] ?? 0)];
         });
 
-        $medianHours = (clone $base)->where('resolved_at', '>=', $from)
+        $medianHours = (clone $base)->whereBetween('resolved_at', [$from, $to])
             ->selectRaw('percentile_cont(0.5) within group (order by extract(epoch from resolved_at - created_at) / 3600) as median')
             ->value('median');
 
@@ -56,10 +56,13 @@ class ShowTicketsReports extends OrgAction
                 users.username as username,
                 coalesce(users.contact_name, users.username) as name,
                 count(*) filter (where tickets.status not in ('resolved', 'cancelled')) as open,
-                count(*) filter (where tickets.resolved_at >= ?) as done,
+                count(*) filter (where tickets.resolved_at between ? and ?) as done,
                 percentile_cont(0.5) within group (order by extract(epoch from tickets.resolved_at - tickets.created_at) / 3600)
-                    filter (where tickets.resolved_at >= ?) as median_hours
-            ", [$from, $from])
+                    filter (where tickets.resolved_at between ? and ?) as median_hours,
+                max(extract(epoch from now() - tickets.created_at) / 86400) filter (where tickets.status not in ('resolved', 'cancelled')) as longest_wait_days,
+                round(avg(tickets.rating) filter (where tickets.rated_at between ? and ?), 1) as rating,
+                count(tickets.rating) filter (where tickets.rated_at between ? and ?) as ratings
+            ", [$from, $to, $from, $to, $from, $to, $from, $to])
             ->groupBy('users.id', 'users.contact_name', 'users.username')
             ->orderByDesc('open')
             ->get();
@@ -73,10 +76,45 @@ class ShowTicketsReports extends OrgAction
             'avatar'       => $assigneeUsers->get($row->id)?->imageSources(48, 48),
             'open'         => (int) $row->open,
             'done'         => (int) $row->done,
-            'median_hours' => $row->median_hours === null ? null : round((float) $row->median_hours, 1),
+            'median_hours'      => $row->median_hours === null ? null : round((float) $row->median_hours, 1),
+            'longest_wait_days' => $row->longest_wait_days === null ? null : (int) $row->longest_wait_days,
+            'rating'            => $row->rating === null ? null : (float) $row->rating,
+            'ratings'           => (int) $row->ratings,
         ]);
 
-        $csat = (clone $base)->where('rated_at', '>=', $from)->avg('rating');
+        $reporters = (clone $base)
+            ->whereNotNull('tickets.reporter_id')
+            ->leftJoin('users as reporter_users', fn ($join) => $join->where('tickets.reporter_type', 'User')->whereColumn('reporter_users.id', 'tickets.reporter_id'))
+            ->leftJoin('web_users as reporter_web_users', fn ($join) => $join->where('tickets.reporter_type', 'WebUser')->whereColumn('reporter_web_users.id', 'tickets.reporter_id'))
+            ->selectRaw("
+                tickets.reporter_type as reporter_kind,
+                tickets.reporter_id as id,
+                coalesce(reporter_users.contact_name, reporter_users.username, reporter_web_users.contact_name, reporter_web_users.username) as name,
+                count(*) filter (where tickets.created_at between ? and ?) as created,
+                count(*) filter (where tickets.status not in ('resolved', 'cancelled')) as open,
+                percentile_cont(0.5) within group (order by extract(epoch from tickets.resolved_at - tickets.created_at) / 3600)
+                    filter (where tickets.resolved_at between ? and ?) as median_hours,
+                max(extract(epoch from now() - tickets.created_at) / 86400) filter (where tickets.status not in ('resolved', 'cancelled')) as longest_wait_days,
+                round(avg(tickets.rating) filter (where tickets.rated_at between ? and ?), 1) as rating,
+                count(tickets.rating) filter (where tickets.rated_at between ? and ?) as ratings
+            ", [$from, $to, $from, $to, $from, $to, $from, $to])
+            ->groupBy('tickets.reporter_type', 'tickets.reporter_id', 'reporter_users.contact_name', 'reporter_users.username', 'reporter_web_users.contact_name', 'reporter_web_users.username')
+            ->havingRaw("count(*) filter (where tickets.created_at between ? and ?) > 0 or count(*) filter (where tickets.status not in ('resolved', 'cancelled')) > 0", [$from, $to])
+            ->orderByDesc('created')
+            ->get()
+            ->map(fn ($row) => [
+                'key'               => $row->reporter_kind.'-'.$row->id,
+                'name'              => $row->name,
+                'is_staff'          => $row->reporter_kind === 'User',
+                'created'           => (int) $row->created,
+                'open'              => (int) $row->open,
+                'median_hours'      => $row->median_hours === null ? null : round((float) $row->median_hours, 1),
+                'longest_wait_days' => $row->longest_wait_days === null ? null : (int) $row->longest_wait_days,
+                'rating'            => $row->rating === null ? null : (float) $row->rating,
+                'ratings'           => (int) $row->ratings,
+            ]);
+
+        $csat = (clone $base)->whereBetween('rated_at', [$from, $to])->avg('rating');
 
         $monthlyCsat = (clone $base)->where('rated_at', '>=', now()->subMonths(11)->startOfMonth())
             ->selectRaw("to_char(rated_at, 'YYYY-MM') as month, round(avg(rating)::numeric, 1) as average, count(*) as total")
@@ -90,6 +128,7 @@ class ShowTicketsReports extends OrgAction
         $oldestOpen = (clone $base)->whereNotIn('status', [TicketStatusEnum::RESOLVED, TicketStatusEnum::CANCELLED])->orderBy('created_at')->first();
 
         return [
+            'interval'      => $interval,
             'days'          => $days,
             'from'          => $from->toDateString(),
             'created'       => $daily->sum('created'),
@@ -107,15 +146,37 @@ class ShowTicketsReports extends OrgAction
                 'total'  => (int) ($byStatus[$status->value] ?? 0),
             ])->values()->all(),
             'assignees'     => $assignees->all(),
+            'reporters'     => $reporters->all(),
         ];
+    }
+
+    /**
+     * @return array{0: Carbon, 1: Carbon}
+     */
+    private function range(string $interval, ?string $oldestCreatedAt): array
+    {
+        return match ($interval) {
+            '1h'    => [now()->subHour(), now()],
+            '3h'    => [now()->subHours(3), now()],
+            '24h'   => [now()->subDay(), now()],
+            'tdy'   => [now()->startOfDay(), now()->endOfDay()],
+            'ld'    => [now()->subDay()->startOfDay(), now()->subDay()->endOfDay()],
+            '3d'    => [now()->subDays(3)->startOfDay(), now()->endOfDay()],
+            '1w'    => [now()->subWeek()->startOfDay(), now()->endOfDay()],
+            'lw'    => [now()->subWeek()->startOfWeek(), now()->subWeek()->endOfWeek()],
+            '1m'    => [now()->subMonth()->startOfDay(), now()->endOfDay()],
+            'lm'    => [now()->subMonth()->startOfMonth(), now()->subMonth()->endOfMonth()],
+            '1q'    => [now()->subQuarter()->startOfDay(), now()->endOfDay()],
+            '1y'    => [now()->subYear()->startOfDay(), now()->endOfDay()],
+            default => [Carbon::parse($oldestCreatedAt ?? now())->startOfDay(), now()->endOfDay()],
+        };
     }
 
     public function asController(ActionRequest $request): array
     {
         $this->initialisationFromGroup(group(), $request);
-        $days = (int) $request->input('days', 7);
 
-        return $this->handle($this->group, in_array($days, self::PERIODS) ? $days : 7, $request->user());
+        return $this->handle($this->group, IndexTickets::make()->createdInterval(), $request->user());
     }
 
     public function htmlResponse(array $stats): Response
@@ -132,8 +193,8 @@ class ShowTicketsReports extends OrgAction
                     'title' => __('Tickets reports'),
                     'icon'  => ['fal', 'fa-chart-line'],
                 ],
-                'stats'       => $stats,
-                'periods'     => self::PERIODS,
+                'stats'            => $stats,
+                'createdIntervals' => IndexTickets::make()->createdIntervalOptions(),
             ]
         );
     }

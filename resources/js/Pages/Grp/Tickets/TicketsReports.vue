@@ -5,20 +5,21 @@
   -->
 
 <script setup lang="ts">
-import { Head, Link, router } from "@inertiajs/vue3"
-import { computed } from "vue"
+import { Head, Link } from "@inertiajs/vue3"
+import { computed, ref } from "vue"
 import { trans } from "laravel-vue-i18n"
 import { capitalize } from "@/Composables/capitalize"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import Chart from "primevue/chart"
-import { Select } from "primevue"
+import TicketsCreatedInterval from "@/Components/Tickets/TicketsCreatedInterval.vue"
 import { useLiveTickets } from "@/Composables/useLiveTickets"
 
 const props = defineProps<{
     pageHead: any
     title: string
-    periods: number[]
+    createdIntervals: Record<string, string>
     stats: {
+        interval: string
         days: number
         from: string
         created: number
@@ -30,17 +31,16 @@ const props = defineProps<{
         csat_by_month: { month: string; average: number | null; total: number }[]
         daily: { date: string; created: number; done: number }[]
         by_status: { status: string; label: string; color: string; total: number }[]
-        assignees: { name: string; username: string; short_name: string; avatar: any; open: number; done: number; median_hours: number | null }[]
+        assignees: { name: string; username: string; short_name: string; avatar: any; open: number; done: number; median_hours: number | null; longest_wait_days: number | null; rating: number | null; ratings: number }[]
+        reporters: { key: string; name: string; is_staff: boolean; created: number; open: number; median_hours: number | null; longest_wait_days: number | null; rating: number | null; ratings: number }[]
     }
 }>()
+
+const peopleTab = ref<"assignees" | "reporters">("assignees")
 
 useLiveTickets(["stats"])
 
 const STATUS_COLORS: Record<string, string> = { blue: "#3b82f6", amber: "#f59e0b", gray: "#9ca3af", green: "#22c55e" }
-
-const periodOptions = computed(() => props.periods.map((days) => ({ label: trans("Past :days days", { days: String(days) }), value: days })))
-
-const changePeriod = (days: number) => router.get(route("grp.tickets.reports"), { days }, { preserveState: true, replace: true })
 
 const lineChart = computed(() => ({
     labels: props.stats.daily.map((day) => day.date.slice(5)),
@@ -89,10 +89,7 @@ const listUrl = (params: Record<string, any>) => route("grp.tickets.list", param
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead" />
     <div class="p-4 space-y-4">
-        <div class="flex items-center gap-3">
-            <span class="text-xs text-gray-500">{{ trans("Show") }}</span>
-            <Select :model-value="stats.days" :options="periodOptions" option-label="label" option-value="value" class="w-44" @update:model-value="changePeriod" />
-        </div>
+        <TicketsCreatedInterval :options="createdIntervals" :selected="stats.interval" />
 
         <div class="flex flex-wrap gap-x-10 gap-y-4">
             <div>
@@ -168,14 +165,62 @@ const listUrl = (params: Record<string, any>) => route("grp.tickets.list", param
             </div>
         </div>
 
-        <div class="bg-white rounded-lg shadow-sm border border-gray-300 overflow-x-auto">
+        <div class="flex gap-1 border-b border-gray-200">
+            <button
+                v-for="tab in [{ key: 'assignees', label: trans('Engineers') }, { key: 'reporters', label: trans('Reporters') }]"
+                :key="tab.key"
+                type="button"
+                class="-mb-px border-b-2 px-4 py-2 text-sm"
+                :class="peopleTab === tab.key ? 'border-indigo-600 font-medium text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700'"
+                @click="peopleTab = tab.key as 'assignees' | 'reporters'">
+                {{ tab.label }}
+            </button>
+        </div>
+
+        <div v-if="peopleTab === 'reporters'" class="bg-white rounded-lg shadow-sm border border-gray-300 overflow-x-auto">
             <table class="min-w-full text-sm">
                 <thead class="text-xs text-gray-500 text-left">
                     <tr>
-                        <th class="px-4 py-2">{{ trans("Assignee") }}</th>
+                        <th class="px-4 py-2">{{ trans("Reporter") }}</th>
+                        <th class="px-4 py-2 text-right">{{ trans("Created") }}</th>
+                        <th class="px-4 py-2 text-right">{{ trans("Open now") }}</th>
+                        <th class="px-4 py-2 text-right">{{ trans("Median time to resolve") }}</th>
+                        <th class="px-4 py-2 text-right">{{ trans("Longest wait") }}</th>
+                        <th class="px-4 py-2 text-right">{{ trans("Average rating") }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr v-for="row in stats.reporters" :key="row.key" class="border-t border-gray-100">
+                        <td class="px-4 py-2 font-medium">
+                            {{ row.name ?? "-" }}
+                            <span v-if="!row.is_staff" class="ml-1 text-xs text-gray-400">{{ trans("Customer") }}</span>
+                        </td>
+                        <td class="px-4 py-2 text-right">{{ row.created }}</td>
+                        <td class="px-4 py-2 text-right">{{ row.open }}</td>
+                        <td class="px-4 py-2 text-right">{{ hours(row.median_hours) }}</td>
+                        <td class="px-4 py-2 text-right">{{ row.longest_wait_days === null ? "-" : `${row.longest_wait_days} ${trans("days")}` }}</td>
+                        <td class="px-4 py-2 text-right">
+                            <template v-if="row.rating !== null">{{ row.rating }}<span class="text-gray-400">/5 ({{ row.ratings }})</span></template>
+                            <span v-else>-</span>
+                        </td>
+                    </tr>
+                    <tr v-if="!stats.reporters.length">
+                        <td colspan="6" class="px-4 py-6 text-center text-gray-400">{{ trans("No tickets in this period") }}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div v-else class="bg-white rounded-lg shadow-sm border border-gray-300 overflow-x-auto">
+            <table class="min-w-full text-sm">
+                <thead class="text-xs text-gray-500 text-left">
+                    <tr>
+                        <th class="px-4 py-2">{{ trans("Engineer") }}</th>
                         <th class="px-4 py-2 text-right">{{ trans("Open") }}</th>
                         <th class="px-4 py-2 text-right">{{ trans("Done") }}</th>
                         <th class="px-4 py-2 text-right">{{ trans("Median time to resolve") }}</th>
+                        <th class="px-4 py-2 text-right">{{ trans("Longest wait") }}</th>
+                        <th class="px-4 py-2 text-right">{{ trans("Average rating") }}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -196,9 +241,14 @@ const listUrl = (params: Record<string, any>) => route("grp.tickets.list", param
                             <span v-else>{{ row.done }}</span>
                         </td>
                         <td class="px-4 py-2 text-right">{{ hours(row.median_hours) }}</td>
+                        <td class="px-4 py-2 text-right">{{ row.longest_wait_days === null ? "-" : `${row.longest_wait_days} ${trans("days")}` }}</td>
+                        <td class="px-4 py-2 text-right">
+                            <template v-if="row.rating !== null">{{ row.rating }}<span class="text-gray-400">/5 ({{ row.ratings }})</span></template>
+                            <span v-else>-</span>
+                        </td>
                     </tr>
                     <tr v-if="!stats.assignees.length">
-                        <td colspan="4" class="px-4 py-6 text-center text-gray-400">{{ trans("No assigned tickets yet") }}</td>
+                        <td colspan="6" class="px-4 py-6 text-center text-gray-400">{{ trans("No assigned tickets yet") }}</td>
                     </tr>
                 </tbody>
             </table>

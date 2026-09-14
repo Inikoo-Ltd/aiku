@@ -447,28 +447,30 @@ test('customers get attachments of their ticket through retina, never those of i
 });
 
 test('tickets dashboard counts created, done, status and assignees', function () {
-    $before = ShowTicketsReports::make()->handle($this->group, 7);
+    $before = ShowTicketsReports::make()->handle($this->group, '1w');
 
     $ticket = StoreTicket::make()->action($this->group, ['subject' => 'Report me', 'assignee_id' => $this->user->id]);
     UpdateTicket::make()->action($ticket, ['status' => TicketStatusEnum::RESOLVED->value]);
     StoreTicket::make()->action($this->group, ['subject' => 'Still open', 'assignee_id' => $this->user->id]);
 
-    $stats = ShowTicketsReports::make()->handle($this->group, 7);
+    $stats = ShowTicketsReports::make()->handle($this->group, '1w');
     $today = collect($stats['daily'])->firstWhere('date', now()->toDateString());
     $me    = collect($stats['assignees'])->firstWhere('name', $this->user->contact_name ?: $this->user->username);
 
     expect($stats['created'])->toBe($before['created'] + 2)
         ->and($stats['done'])->toBe($before['done'] + 1)
         ->and($stats['open'])->toBe($before['open'] + 1)
-        ->and(count($stats['daily']))->toBe(7)
+        ->and(count($stats['daily']))->toBe(8)
         ->and($today['created'])->toBeGreaterThanOrEqual(2)
         ->and(collect($stats['by_status'])->firstWhere('status', 'resolved')['total'])->toBeGreaterThanOrEqual(1)
         ->and($me['done'])->toBeGreaterThanOrEqual(1)
         ->and($me['open'])->toBeGreaterThanOrEqual(1)
-        ->and($me['median_hours'])->not->toBeNull();
+        ->and($me['median_hours'])->not->toBeNull()
+        ->and($me)->toHaveKeys(['longest_wait_days', 'rating'])
+        ->and($stats['reporters'])->toBeArray();
 
-    get(route('grp.tickets.reports', ['days' => 30]))->assertInertia(
-        fn (AssertableInertia $page) => $page->component('Tickets/TicketsReports')->where('stats.days', 30)->has('stats.daily', 30)
+    get(route('grp.tickets.reports', ['created' => 'lm']))->assertInertia(
+        fn (AssertableInertia $page) => $page->component('Tickets/TicketsReports')->where('stats.interval', 'lm')->has('stats.daily', now()->subMonth()->daysInMonth)
     );
 });
 
@@ -497,7 +499,7 @@ test('reporter rates a resolved ticket once and CSAT shows on the dashboard', fu
         ->post('http://'.$this->website->domain.'/app/models/ticket/'.$ticket->id.'/rate', ['rating' => 1])
         ->assertForbidden();
 
-    $stats = ShowTicketsReports::make()->handle($this->group, 7);
+    $stats = ShowTicketsReports::make()->handle($this->group, '1w');
     expect($stats['csat'])->toBeGreaterThan(0)
         ->and(count($stats['csat_by_month']))->toBe(12)
         ->and(collect($stats['csat_by_month'])->last()['total'])->toBeGreaterThanOrEqual(1);
@@ -941,8 +943,9 @@ test('board only shows tickets closed in the last 24 hours', function () {
     $stale->update(['closed_at' => now()->subDays(7)]);
 
     get(route('grp.tickets.board', ['periods' => ['closed' => '24h']]))->assertInertia(function (AssertableInertia $page) use ($fresh, $stale) {
-        $references = collect($page->toArray()['props']['columns'])
-            ->firstWhere('key', 'closed')['tickets'];
+        $columns = collect($page->toArray()['props']['columns']);
+        expect($columns->firstWhere('key', 'open')['period'])->toBeNull();
+        $references = $columns->firstWhere('key', 'closed')['tickets'];
         $references = collect($references)->pluck('reference');
 
         expect($references)->toContain($fresh->reference)
@@ -1112,7 +1115,7 @@ test('tickets reports link to filtered lists by assignee and dates', function ()
     get(route('grp.tickets.list', ['filter' => ['resolved_since' => $from]]))
         ->assertInertia(fn (AssertableInertia $page) => $page->has('data.data', Ticket::where('resolved_at', '>=', $from)->count()));
 
-    $stats = ShowTicketsReports::make()->handle($this->group, 7);
+    $stats = ShowTicketsReports::make()->handle($this->group, '1w');
     expect($stats)->toHaveKey('from');
     foreach ($stats['assignees'] as $row) {
         expect($row)->toHaveKeys(['username', 'short_name']);
