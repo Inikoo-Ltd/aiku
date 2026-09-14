@@ -19,6 +19,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 
 class UpdatePackaging extends OrgAction
@@ -29,6 +30,18 @@ class UpdatePackaging extends OrgAction
 
     public function handle(Packaging $packaging, array $modelData): Packaging
     {
+        if (Arr::has($modelData, 'state')) {
+            $state = $modelData['state'] instanceof PackagingStateEnum
+                ? $modelData['state']
+                : PackagingStateEnum::tryFrom((string) $modelData['state']);
+
+            if ($state !== PackagingStateEnum::ACTIVE && $packaging->shop->defaultPackaging()?->id === $packaging->id) {
+                throw ValidationException::withMessages([
+                    'state' => __('The default packaging must stay active. Set another packaging as default first.'),
+                ]);
+            }
+        }
+
         $image = Arr::pull($modelData, 'image');
 
         $packaging = $this->update($packaging, $modelData);

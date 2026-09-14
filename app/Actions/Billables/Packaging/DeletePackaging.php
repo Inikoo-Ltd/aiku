@@ -12,12 +12,19 @@ use App\Actions\OrgAction;
 use App\Models\Billables\Packaging;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Redirect;
+use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 
 class DeletePackaging extends OrgAction
 {
     public function handle(Packaging $packaging): Packaging
     {
+        if ($packaging->shop->defaultPackaging()?->id === $packaging->id) {
+            throw ValidationException::withMessages([
+                'packaging' => __('The default packaging cannot be deleted. Set another packaging as default first.'),
+            ]);
+        }
+
         $packaging->delete();
 
         return $packaging;

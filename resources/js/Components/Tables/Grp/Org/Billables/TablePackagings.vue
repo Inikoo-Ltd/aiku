@@ -134,12 +134,18 @@ const packagingEditRoute = (packaging: { slug: string }) => {
         </template>
         <template #cell(actions)="{ item: packaging }">
             <div class="flex items-center gap-3 justify-end">
-                <ToggleSwitch
-                    :modelValue="packaging.state === 'active'"
-                    :disabled="togglingStateId === packaging.id || packaging.state === 'discontinued'"
-                    v-tooltip="packaging.state === 'active' ? trans('Deactivate') : trans('Activate')"
-                    @update:modelValue="(value: boolean) => toggleState(packaging, value)"
-                />
+                <span
+                    class="inline-flex"
+                    v-tooltip="packaging.is_default
+                        ? trans('The default packaging stays active as the fallback')
+                        : packaging.state === 'active' ? trans('Deactivate') : trans('Activate')"
+                >
+                    <ToggleSwitch
+                        :modelValue="packaging.state === 'active'"
+                        :disabled="togglingStateId === packaging.id || packaging.state === 'discontinued' || packaging.is_default"
+                        @update:modelValue="(value: boolean) => toggleState(packaging, value)"
+                    />
+                </span>
                 <Link
                     :href="packagingEditRoute(packaging)"
                     class="text-gray-400 hover:text-gray-600"
@@ -158,8 +164,9 @@ const packagingEditRoute = (packaging: { slug: string }) => {
                 >
                     <template #default="{ changeModel }">
                         <button
-                            class="text-red-400 hover:text-red-600"
-                            v-tooltip="trans('Delete')"
+                            class="text-red-400 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:text-red-400"
+                            :disabled="packaging.is_default"
+                            v-tooltip="packaging.is_default ? trans('The default packaging cannot be deleted') : trans('Delete')"
                             @click="changeModel"
                         >
                             <FontAwesomeIcon :icon="faTrashAlt" fixed-width aria-hidden="true" />
