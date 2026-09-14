@@ -30,7 +30,7 @@ class ShowTicketsBoard extends OrgAction
     private const array PERIODS = ['24h', 'today', '1w', 'all'];
 
     /**
-     * Done and Cancelled share one column, each keeping its own count in its header.
+     * Done and Cancelled share one column, as do Waiting and Reporter replied, each keeping its own count in its header.
      *
      * @var array<string, array<int, string>>
      */
@@ -38,7 +38,7 @@ class ShowTicketsBoard extends OrgAction
         'open'        => ['open'],
         'assigned'    => ['assigned'],
         'in_progress' => ['in_progress', 'pending_deploy'],
-        'waiting'     => ['waiting'],
+        'waiting'     => ['waiting', 'answered'],
         'closed'      => ['resolved', 'cancelled'],
     ];
 
@@ -76,18 +76,20 @@ class ShowTicketsBoard extends OrgAction
             $cases = array_map(fn (string $status) => TicketStatusEnum::from($status), $statuses);
             $group = $cases[0]->group();
             $columnTickets = collect($statuses)->flatMap(fn (string $status) => $tickets->get($status, collect()));
+            $labelledByGroup = $key === 'closed';
 
             return [
                 'key'      => $key,
                 'status'   => $statuses[0],
                 'group'    => $group->value,
-                'label'    => count($cases) > 1 ? TicketStatusGroupEnum::labels()[$group->value] : TicketStatusEnum::labels()[$statuses[0]],
+                'label'    => $labelledByGroup ? TicketStatusGroupEnum::labels()[$group->value] : TicketStatusEnum::labels()[$statuses[0]],
                 'color'    => TicketStatusGroupEnum::stateIcon()[$group->value]['color'],
-                'icon'     => count($cases) > 1 ? TicketStatusGroupEnum::stateIcon()[$group->value] : TicketStatusEnum::stateIcon()[$statuses[0]],
+                'icon'     => $labelledByGroup ? TicketStatusGroupEnum::stateIcon()[$group->value] : TicketStatusEnum::stateIcon()[$statuses[0]],
                 'period'   => $periods[$key] ?? null,
                 'statuses' => collect($cases)->map(fn (TicketStatusEnum $status) => [
                     'status' => $status->value,
                     'label'  => TicketStatusEnum::labels()[$status->value],
+                    'color'  => TicketStatusEnum::stateIcon()[$status->value]['color'],
                     'count'  => $tickets->get($status->value, collect())->count(),
                 ])->all(),
                 'tickets'  => TicketResource::collection($columnTickets)->toArray(request()),

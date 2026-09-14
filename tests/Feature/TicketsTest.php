@@ -152,6 +152,15 @@ test('a ticket waiting longer than the grace period is cancelled, a fresh one is
     UpdateTicket::make()->action($stale, ['status' => TicketStatusEnum::WAITING->value]);
     StoreTicketComment::make()->action($stale, $this->user, ['body' => 'any news?']);
     expect($stale->fresh()->status)->toBe(TicketStatusEnum::WAITING);
+
+    StoreTicketComment::make()->action($stale, $this->webUser, ['body' => 'here you go']);
+    expect($stale->fresh()->status)->toBe(TicketStatusEnum::ANSWERED)
+        ->and($stale->fresh()->waiting_until)->toBeNull();
+
+    $board = get(route('grp.tickets.board'))->assertOk()->inertiaProps();
+    $waiting = collect($board['columns'])->firstWhere('key', 'waiting');
+    expect($waiting['label'])->toBe('Waiting')
+        ->and(collect($waiting['statuses'])->pluck('count', 'status')->all())->toBe(['waiting' => 2, 'answered' => 1]);
 });
 
 test('staff and customers comment on the same public thread', function (Ticket $ticket) {

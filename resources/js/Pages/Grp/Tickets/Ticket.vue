@@ -61,6 +61,12 @@ const statusActions: Record<string, { status: string; label: string; icon: strin
         cancel,
     ],
     waiting: [{ ...start, label: trans("Resume") }, done, cancel],
+    answered: [
+        { ...start, label: trans("Resume") },
+        { status: "waiting", label: trans("Ask again"), icon: "fal fa-question-circle", class: "text-blue-500" },
+        done,
+        cancel,
+    ],
     pending_deploy: [{ ...start, label: trans("Back to in progress") }, done, cancel],
     resolved: [{ status: "open", label: trans("Reopen"), icon: "fal fa-undo", class: "text-gray-600" }],
     cancelled: [{ status: "open", label: trans("Reopen"), icon: "fal fa-undo", class: "text-gray-600" }],

@@ -31,7 +31,7 @@ const props = defineProps<{
 		color: string
 		icon: any
 		period: string | null
-		statuses: { status: string; label: string; count: number }[]
+		statuses: { status: string; label: string; color: string; count: number }[]
 		tickets: any[]
 	}[]
 	periodOptions: string[]
@@ -43,6 +43,13 @@ const props = defineProps<{
 	can_manage: boolean
 }>()
 
+
+const subActiveClasses: Record<string, string> = {
+	blue: "bg-blue-500 text-white",
+	amber: "bg-amber-500 text-white",
+	green: "bg-green-600 text-white",
+	red: "bg-red-500 text-white",
+}
 
 const columnClasses: Record<string, string> = {
 	gray: "bg-gray-100 border-t-4 border-gray-400",
@@ -438,9 +445,7 @@ const onMoved = (status: string, event: { added?: { element: { id: number } } })
 								:title="sub.label"
 								:class="
 									subFilter[column.key] === sub.status
-										? sub.status === 'cancelled'
-											? 'bg-red-500 text-white'
-											: 'bg-green-600 text-white'
+										? subActiveClasses[sub.color]
 										: subFilter[column.key]
 											? 'text-gray-400 hover:text-gray-600'
 											: 'text-gray-600 hover:text-gray-900'
