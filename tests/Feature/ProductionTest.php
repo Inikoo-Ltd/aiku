@@ -3417,6 +3417,14 @@ test('breaks belong to the artisan, are capped at their planned length and only 
     $task = $jobOrderItem->tasks()->first();
     $user = $this->guest->getUser();
 
+    \App\Models\Production\ManufactureTaskSession::where('user_id', $user->id)->where('state', \App\Enums\Production\ManufactureTaskSession\ManufactureTaskSessionStateEnum::OPEN)
+        ->update(['state' => \App\Enums\Production\ManufactureTaskSession\ManufactureTaskSessionStateEnum::CLOSED, 'ended_at' => now()]);
+    \App\Models\Production\ManufactureBreak::where('user_id', $user->id)->open()->update(['ended_at' => now()]);
+    \App\Models\Production\ManufacturePayBand::query()->firstOrCreate(
+        ['production_id' => $this->production->id, 'code' => '0'],
+        ['name' => 'Band 0', 'hourly_rate' => 12.71, 'group_id' => $this->production->group_id, 'organisation_id' => $this->production->organisation_id, 'effective_from' => now()->subYear()]
+    );
+
     expect(fn () => \App\Actions\Production\ManufactureBreak\StartManufactureBreak::make()->action($user, $this->production, ['planned_minutes' => 7]))
         ->toThrow(ValidationException::class);
 
