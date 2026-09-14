@@ -237,7 +237,13 @@ const closeQuickLook = () => {
 let lastClick = { id: 0, at: 0 }
 
 const onBoardClick = (event: MouseEvent) => {
-	const card = (event.target as HTMLElement)?.closest?.("[data-ticket-id]") as HTMLElement | null
+	const target = event.target as HTMLElement
+	if (!target?.closest?.("[data-picker]")) {
+		openPicker.value = null
+		openSortPicker.value = null
+	}
+
+	const card = target?.closest?.("[data-ticket-id]") as HTMLElement | null
 	if (!card) return
 
 	const id = Number(card.dataset.ticketId)
@@ -482,7 +488,7 @@ const cancelAssign = () => {
 						</template>
 					</span>
 					<span class="ml-auto flex items-center text-xs text-gray-500 bg-white/70 rounded">
-						<div class="relative">
+						<div class="relative" data-picker>
 							<button
 								type="button"
 								class="px-1 py-0.5 hover:text-gray-900"
@@ -512,7 +518,7 @@ const cancelAssign = () => {
 							{{ sortOf(column.key).desc ? "↓" : "↑" }}
 						</button>
 					</span>
-					<div v-if="column.period" class="relative">
+					<div v-if="column.period" class="relative" data-picker>
 						<button
 							type="button"
 							class="text-xs text-gray-600 hover:text-gray-900 border border-gray-300 rounded px-1.5 py-0.5 bg-white"
