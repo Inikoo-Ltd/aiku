@@ -387,26 +387,6 @@ test('staff reporter rates their own resolved help ticket from grp', function ()
     get(route('grp.tickets.show', $ticket->reference))->assertInertia(fn (AssertableInertia $page) => $page->where('can_rate', false)->where('ticket.rating', 5));
 });
 
-test('help ticket raised by staff opens a staff conversation that follows the assignee', function () {
-    $ticket = StoreTicket::make()->action($this->group, [
-        'subject'       => 'Board loads slowly',
-        'kind'          => TicketKindEnum::BUG->value,
-        'reporter_type' => 'User',
-        'reporter_id'   => $this->user->id,
-    ]);
-
-    $conversation = $ticket->staffConversation;
-    expect($ticket->kind)->toBe(TicketKindEnum::BUG)
-        ->and($conversation)->not->toBeNull()
-        ->and($conversation->name)->toBe($ticket->reference.' · Board loads slowly')
-        ->and($conversation->participants->pluck('id')->all())->toBe([$this->user->id]);
-
-    $assignee = StoreGuest::make()->action($this->group, array_merge(Guest::factory()->definition(), ['positions' => [['slug' => 'group-admin', 'scopes' => []]]]))->getUser();
-    UpdateTicket::make()->action($ticket, ['assignee_id' => $assignee->id]);
-
-    expect($conversation->fresh()->participants->pluck('id')->sort()->values()->all())->toBe(collect([$this->user->id, $assignee->id])->sort()->values()->all());
-});
-
 test('customer ticket escalates to a help ticket that keeps the customer and points back', function () {
     $customerTicket = StoreRetinaTicket::make()->action($this->webUser, ['subject' => 'Feed is empty', 'priority' => 'high']);
 
@@ -421,7 +401,6 @@ test('customer ticket escalates to a help ticket that keeps the customer and poi
         ->and($helpTicket->priority)->toBe(ChatPriorityEnum::HIGH)
         ->and($helpTicket->customer_id)->toBe($this->customer->id)
         ->and($helpTicket->reporter_id)->toBe($this->user->id)
-        ->and($helpTicket->staffConversation)->not->toBeNull()
         ->and($customerTicket->escalations()->pluck('reference')->all())->toBe([$helpTicket->reference]);
 
     post(route('grp.models.ticket.escalate', $helpTicket->id))->assertStatus(422);
@@ -440,8 +419,7 @@ test('staff file a bug from anywhere without leaving the page', function () {
     $response->assertRedirect('https://app.aiku.test/org/awa/shops')->assertSessionHas('notification.title', $ticket->reference);
     expect($ticket->kind)->toBe(TicketKindEnum::BUG)
         ->and($ticket->type)->toBe(TicketTypeEnum::HELP)
-        ->and($ticket->data['reference_url'])->toBe('https://app.aiku.test/org/awa/shops')
-        ->and($ticket->staffConversation)->not->toBeNull();
+        ->and($ticket->data['reference_url'])->toBe('https://app.aiku.test/org/awa/shops');
 });
 
 test('tickets take free tags and the known list grows with them', function () {

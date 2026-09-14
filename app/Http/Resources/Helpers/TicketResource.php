@@ -41,7 +41,6 @@ class TicketResource extends JsonResource
             'kind_label'     => $this->kind ? TicketKindEnum::labels()[$this->kind->value] : null,
             'parent'         => $this->model_type === 'Ticket' ? $this->model?->reference : null,
             'escalations'    => $this->escalations()->pluck('reference'),
-            'staff_conversation_ulid' => $this->staffConversation?->ulid,
             'status'         => $this->status->value,
             'status_label'   => TicketStatusEnum::labels()[$this->status->value],
             'status_icon'    => TicketStatusEnum::stateIcon()[$this->status->value],

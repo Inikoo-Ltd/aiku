@@ -14,7 +14,6 @@ use App\Enums\Helpers\Ticket\TicketModuleEnum;
 use App\Enums\Helpers\Ticket\TicketQaStatusEnum;
 use App\Enums\Helpers\Ticket\TicketStatusEnum;
 use App\Enums\Helpers\Ticket\TicketTypeEnum;
-use App\Models\Chat\StaffConversation;
 use App\Models\CRM\Customer;
 use App\Models\SysAdmin\User;
 use App\Models\Traits\HasHistory;
@@ -24,7 +23,6 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\DB;
@@ -262,10 +260,5 @@ class Ticket extends Model implements Auditable, HasMedia
     public function escalations(): HasMany
     {
         return $this->hasMany(Ticket::class, 'model_id')->where('model_type', 'Ticket');
-    }
-
-    public function staffConversation(): MorphOne
-    {
-        return $this->morphOne(StaffConversation::class, 'context');
     }
 }

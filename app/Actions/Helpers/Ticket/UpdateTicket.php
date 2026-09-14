@@ -124,10 +124,6 @@ class UpdateTicket extends OrgAction
             ]);
         }
 
-        if ($ticket->wasChanged('assignee_id') && $ticket->assignee_id && $conversation = $ticket->staffConversation) {
-            $conversation->participants()->syncWithoutDetaching([$ticket->assignee_id]);
-        }
-
         return $ticket;
     }
 
