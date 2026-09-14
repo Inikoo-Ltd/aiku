@@ -12,6 +12,9 @@ interface TicketChangedEvent {
     reference: string
 }
 
+let restoredFromHistory = false
+globalThis.window?.addEventListener("popstate", () => (restoredFromHistory = true))
+
 export const useLiveTickets = (only: string[], reference?: string) => {
     const groupId = (usePage().props.layout as any)?.group?.id
     const channelName = `grp.${groupId}.general`
@@ -30,6 +33,11 @@ export const useLiveTickets = (only: string[], reference?: string) => {
     }
 
     onMounted(() => {
+        if (restoredFromHistory) {
+            restoredFromHistory = false
+            router.reload({ only, preserveScroll: true, preserveState: true })
+        }
+
         if (!groupId) {
             return
         }

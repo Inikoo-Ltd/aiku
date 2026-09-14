@@ -201,7 +201,7 @@ const update = (field: string, value: unknown) => {
                     <span v-else class="flex h-7 w-7 items-center justify-center rounded-full bg-gray-200 text-gray-500">
                         <FontAwesomeIcon icon="fal fa-user" fixed-width />
                     </span>
-                    <span :class="ticket.assignee ? 'text-gray-800' : 'text-gray-400'">{{ ticket.assignee || trans("Unassigned") }}</span>
+                    <span :class="ticket.assignee ? 'text-gray-800' : 'text-gray-400'">{{ ticket.assignee_short || trans("Unassigned") }}</span>
                 </component>
                 <Popover v-if="can_assign" ref="assigneePopover">
                     <button
