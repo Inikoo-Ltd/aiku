@@ -37,6 +37,7 @@ const props = defineProps<{
 	periodOptions: string[]
 	me: string
 	formerAssignees: string[]
+	assignees: { label: string; value: number; avatar: any; is_me: boolean }[]
 	createdIntervals: Record<string, string>
 	createdInterval: string
 	updateRoute: string
@@ -284,13 +285,37 @@ const initials = (name: string) =>
 		.map((part) => part[0].toUpperCase())
 		.join("")
 
-const onMoved = (status: string, event: { added?: { element: { id: number } } }) => {
+const assigning = ref<any | null>(null)
+const assignPosition = ref({ x: 0, y: 0 })
+
+const onDragEnd = (event: { originalEvent?: MouseEvent }) => {
+	dragging.value = false
+	assignPosition.value = {
+		x: Math.max(8, Math.min((event.originalEvent?.clientX ?? 0) - 40, window.innerWidth - 330)),
+		y: Math.max(8, Math.min((event.originalEvent?.clientY ?? 0) + 8, window.innerHeight - 360)),
+	}
+}
+
+const patchTicket = (ticketId: number, data: Record<string, unknown>) =>
+	router.patch(route(props.updateRoute, { ticket: ticketId }), data, { preserveScroll: true, preserveState: true })
+
+const onMoved = (status: string, event: { added?: { element: any } }) => {
 	if (!event.added) return
-	router.patch(
-		route(props.updateRoute, { ticket: event.added.element.id }),
-		{ status },
-		{ preserveScroll: true, preserveState: true }
-	)
+	if (status === "assigned" && !event.added.element.assignee_id) {
+		assigning.value = event.added.element
+		return
+	}
+	patchTicket(event.added.element.id, { status })
+}
+
+const assignTo = (assigneeId: number) => {
+	patchTicket(assigning.value.id, { status: "assigned", assignee_id: assigneeId })
+	assigning.value = null
+}
+
+const cancelAssign = () => {
+	assigning.value = null
+	router.reload({ only: ["columns"] })
 }
 </script>
 
@@ -520,7 +545,7 @@ const onMoved = (status: string, event: { added?: { element: { id: number } } })
 					:disabled="!can_manage"
 					class="flex-1 space-y-2 min-h-24 max-h-[70vh] overflow-y-auto pr-0.5"
 					@start="dragging = true"
-					@end="dragging = false"
+					@end="onDragEnd"
 					@change="onMoved(column.status, $event)">
 					<template #item="{ element }">
 						<div
@@ -576,6 +601,29 @@ const onMoved = (status: string, event: { added?: { element: { id: number } } })
 			</div>
 		</div>
 	</div>
+	<Teleport to="body">
+		<div v-if="assigning" class="fixed inset-0 z-40" @click="cancelAssign" />
+		<div
+			v-if="assigning"
+			class="fixed z-50 w-80 rounded-lg border border-indigo-300 bg-white p-3 text-xs shadow-xl"
+			:style="{ left: assignPosition.x + 'px', top: assignPosition.y + 'px' }">
+			<div class="mb-1.5 font-medium">{{ assigning.reference }} <span class="font-normal text-gray-500">{{ assigning.subject }}</span></div>
+			<div class="mb-1 text-gray-500">{{ trans("Assign to") }}</div>
+			<div class="flex max-h-64 flex-col gap-0.5 overflow-y-auto">
+				<button
+					v-for="engineer in assignees"
+					:key="engineer.value"
+					type="button"
+					class="flex w-full items-center gap-2 rounded px-1.5 py-1 text-left hover:bg-indigo-50"
+					@click="assignTo(engineer.value)">
+					<img v-if="engineer.avatar?.original" :src="engineer.avatar.original" class="h-5 w-5 rounded-full object-cover" alt="" />
+					<span v-else class="flex h-5 w-5 items-center justify-center rounded-full bg-gray-200 text-[10px] text-gray-600">{{ initials(engineer.label) }}</span>
+					<span :class="engineer.is_me && 'font-medium'">{{ engineer.label }}</span>
+					<span v-if="engineer.is_me" class="text-gray-400">{{ trans("me") }}</span>
+				</button>
+			</div>
+		</div>
+	</Teleport>
 	<div
 		v-if="quickLook"
 		class="fixed inset-0 z-50 flex items-stretch justify-center bg-black/40 p-4"

@@ -8,6 +8,7 @@
 
 namespace App\Actions\Helpers\Ticket\UI;
 
+use App\Actions\Helpers\Ticket\GetTicketBadgeData;
 use App\Actions\OrgAction;
 use App\Enums\Helpers\Ticket\TicketStatusEnum;
 use App\Enums\Helpers\Ticket\TicketStatusGroupEnum;
@@ -148,6 +149,13 @@ class ShowTicketsBoard extends OrgAction
                 'updateRoute' => 'grp.models.ticket.update',
                 'me'          => request()->user()->username,
                 'formerAssignees' => $this->formerAssignees($board['columns']),
+                'assignees'       => GetTicketBadgeData::engineers(request()->user()->group_id)
+                    ->map(fn (User $user) => [
+                        'label'  => strtok((string) ($user->contact_name ?: $user->username), ' '),
+                        'value'  => $user->id,
+                        'avatar' => $user->imageSources(48, 48),
+                        'is_me'  => $user->id === request()->user()->id,
+                    ])->sortBy('label')->values(),
             ]
         );
     }
