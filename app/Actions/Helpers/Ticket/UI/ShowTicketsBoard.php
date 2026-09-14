@@ -45,7 +45,7 @@ class ShowTicketsBoard extends OrgAction
     /**
      * Todo is aged on when the ticket was raised, the closed column on when it was closed.
      */
-    private const array DEFAULT_PERIODS = ['open' => 'all', 'closed' => '24h'];
+    private const array DEFAULT_PERIODS = ['closed' => '24h'];
 
     /**
      * @param  array<string, string>  $periods
