@@ -40,7 +40,7 @@ class StoreRetinaTicket extends RetinaAction
             'description' => ['sometimes', 'nullable', 'string'],
             'priority'    => ['sometimes', Rule::enum(ChatPriorityEnum::class)],
             'images'      => ['sometimes', 'array', 'max:5'],
-            'images.*'    => ['image', 'max:10240'],
+            'images.*'    => ['file', 'mimes:jpg,jpeg,png,bmp,gif,svg,webp,pdf', 'max:10240'],
         ];
     }
 

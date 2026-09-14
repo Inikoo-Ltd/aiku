@@ -319,6 +319,25 @@ test('screenshots can be attached to tickets and comments', function () {
     post(route('grp.models.ticket.comment.store', $ticket->id), [])->assertSessionHasErrors('body');
 });
 
+test('pdf files can be attached to tickets and comments', function () {
+    $ticket = StoreTicket::make()->action($this->group, [
+        'subject' => 'Invoice looks wrong',
+        'images'  => [UploadedFile::fake()->createWithContent('invoice.pdf', "%PDF-1.4\n%%EOF\n")],
+    ]);
+    $comment = StoreTicketComment::make()->action($ticket, $this->user, [
+        'images' => [UploadedFile::fake()->createWithContent('report.pdf', "%PDF-1.4\n%%EOF\n"), UploadedFile::fake()->image('shot.png')],
+    ]);
+
+    expect($ticket->getMedia('ticket_attachments'))->toHaveCount(1)
+        ->and($ticket->ticketAttachments()[0])->toMatchArray(['name' => 'invoice.pdf', 'mime' => 'application/pdf'])
+        ->and($comment->getMedia('ticket_attachments'))->toHaveCount(1)
+        ->and($comment->getMedia('ticket_images'))->toHaveCount(1);
+
+    expect(fn () => StoreTicketComment::make()->action($ticket, $this->user, [
+        'images' => [UploadedFile::fake()->create('notes.txt', 10, 'text/plain')],
+    ]))->toThrow(Illuminate\Validation\ValidationException::class);
+});
+
 test('tickets dashboard counts created, done, status and assignees', function () {
     $before = ShowTicketsReports::make()->handle($this->group, 7);
 
