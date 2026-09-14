@@ -34,6 +34,10 @@ function auroraStockGuardHarness(): object
     };
 }
 
+beforeAll(function () {
+    loadDB();
+});
+
 beforeEach(function () {
     $this->organisation = createOrganisation();
 });
