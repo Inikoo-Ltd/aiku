@@ -16,6 +16,9 @@ import { faHandsHelping, faBan, faCheckCircle, faList, faCheck, faPersonCarry, f
 import { library } from "@fortawesome/fontawesome-svg-core"
 import DispatchDashboard from "@/Components/Warehouse/DispatchDashboard.vue"
 import Table from "@/Components/Table/Table.vue"
+import InputNumber from "primevue/inputnumber"
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { faPlus, faMinus, faSpinnerThird } from "@far"
 import { PageHeadingTypes } from "@/types/PageHeading"
 
 library.add(faHandsHelping, faBan, faCheckCircle, faList, faCheck, faPersonCarry, faChartLine, faDolly, faIndustry)
@@ -80,14 +83,31 @@ function putAway(trip: NonNullable<typeof props.production_output>[number]) {
     }, { preserveScroll: true })
 }
 
-function stage(task: { org_partner_id: number, quantity_to_move: number, from_locations: { location_org_stock_id: number, quantity: number }[] }) {
-    const source = task.from_locations[0]
-    if (!source || !props.stage_route) return
+const stagingKey = (task: { org_partner_id: number, org_stock_id: number }) => task.org_partner_id + '-' + task.org_stock_id
+const stagingSource = reactive<Record<string, number>>({})
+const stagingQuantity = reactive<Record<string, number>>({})
+const stagingInProgress = ref<string | null>(null)
+watch(() => props.partner_staging, tasks => {
+    tasks?.forEach(task => {
+        const key = stagingKey(task)
+        const source = task.from_locations[0]
+        stagingSource[key] = source?.location_org_stock_id
+        stagingQuantity[key] = source ? Math.min(task.quantity_to_move, source.quantity) : 0
+    })
+}, { immediate: true })
+
+function stage(task: NonNullable<typeof props.partner_staging>[number]) {
+    const key = stagingKey(task)
+    if (!stagingSource[key] || !(stagingQuantity[key] > 0) || !props.stage_route) return
     router.post(route(props.stage_route.name, props.stage_route.parameters), {
-        location_org_stock_id: source.location_org_stock_id,
+        location_org_stock_id: stagingSource[key],
         org_partner_id: task.org_partner_id,
-        quantity: Math.min(task.quantity_to_move, source.quantity),
-    }, { preserveScroll: true })
+        quantity: stagingQuantity[key],
+    }, {
+        preserveScroll: true,
+        onStart: () => { stagingInProgress.value = key },
+        onFinish: () => { stagingInProgress.value = null },
+    })
 }
 const currentWorkData = computed(() => currentTab.value === "pickers" ? props.pickers_current : props.packers_current)
 
@@ -122,28 +142,48 @@ const trolleyRoute = (trolley: { slug: string }) =>
                     <th class="px-4 py-2">{{ trans("SKO") }}</th>
                     <th class="px-4 py-2">{{ trans("From") }}</th>
                     <th class="px-4 py-2">{{ trans("To") }}</th>
-                    <th class="px-4 py-2 text-right">{{ trans("Staged") }}</th>
+                    <th class="px-4 py-2 text-right">{{ trans("Moved") }}</th>
                     <th class="px-4 py-2 text-right">{{ trans("To move") }}</th>
                     <th class="px-4 py-2"></th>
                 </tr>
             </thead>
             <tbody>
-                <tr v-for="task in partner_staging" :key="task.org_partner_id + '-' + task.org_stock_id" class="border-t border-gray-100 dark:border-gray-800">
+                <tr v-for="task in partner_staging" :key="stagingKey(task)" class="border-t border-gray-100 dark:border-gray-800">
                     <td class="px-4 py-2 font-medium">{{ task.partner_code }}</td>
                     <td class="px-4 py-2">
                         <div class="font-medium">{{ task.stock_code }}</div>
                         <div class="text-gray-500">{{ task.stock_name }}</div>
                     </td>
                     <td class="px-4 py-2">
-                        <span v-if="task.from_locations.length" class="font-mono">{{ task.from_locations[0].code }}</span>
+                        <select v-if="task.from_locations.length" v-model="stagingSource[stagingKey(task)]" class="rounded border-gray-300 py-1 font-mono text-sm">
+                            <option v-for="location in task.from_locations" :key="location.location_org_stock_id" :value="location.location_org_stock_id">
+                                {{ location.code }} ({{ location.quantity }})
+                            </option>
+                        </select>
                         <span v-else class="text-red-600">{{ trans("Nowhere to take it from") }}</span>
                     </td>
                     <td class="px-4 py-2 font-mono">{{ task.to_location }}</td>
                     <td class="px-4 py-2 text-right tabular-nums text-gray-500">{{ task.quantity_staged }}</td>
                     <td class="px-4 py-2 text-right font-semibold tabular-nums">{{ task.quantity_to_move }}</td>
-                    <td class="px-4 py-2 text-right">
-                        <button v-if="can_edit && task.from_locations.length" type="button" class="rounded bg-indigo-600 px-3 py-1 text-white hover:bg-indigo-700" @click="stage(task)">
-                            {{ trans("Moved") }}
+                    <td class="px-4 py-2 text-right whitespace-nowrap">
+                        <template v-if="can_edit && task.from_locations.length">
+                            <span class="mr-2 inline-block w-12 text-right font-medium tabular-nums" :class="stagingQuantity[stagingKey(task)] > task.quantity_to_move ? 'text-amber-600' : 'text-red-600'">
+                                <template v-if="stagingQuantity[stagingKey(task)] !== task.quantity_to_move">
+                                    {{ stagingQuantity[stagingKey(task)] > task.quantity_to_move ? '+' : '' }}{{ Math.round((stagingQuantity[stagingKey(task)] - task.quantity_to_move) * 1000) / 1000 }}
+                                </template>
+                            </span>
+                            <InputNumber v-model="stagingQuantity[stagingKey(task)]" :min="0" :maxFractionDigits="3" showButtons buttonLayout="horizontal" inputClass="w-16 text-center" class="mr-2">
+                                <template #incrementbuttonicon>
+                                    <FontAwesomeIcon :icon="faPlus" />
+                                </template>
+                                <template #decrementbuttonicon>
+                                    <FontAwesomeIcon :icon="faMinus" />
+                                </template>
+                            </InputNumber>
+                        </template>
+                        <button v-if="can_edit && task.from_locations.length" type="button" class="relative rounded bg-indigo-600 px-3 py-1 text-white hover:bg-indigo-700 disabled:cursor-wait disabled:opacity-80" :disabled="stagingInProgress !== null" @click="stage(task)">
+                            <span :class="{ invisible: stagingInProgress === stagingKey(task) }">{{ trans("Set as Moved") }}</span>
+                            <FontAwesomeIcon v-if="stagingInProgress === stagingKey(task)" :icon="faSpinnerThird" spin class="absolute inset-0 m-auto" />
                         </button>
                     </td>
                 </tr>
