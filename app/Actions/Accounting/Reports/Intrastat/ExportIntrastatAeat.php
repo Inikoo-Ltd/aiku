@@ -246,8 +246,11 @@ class ExportIntrastatAeat extends OrgAction
         if ($result['errors'] !== []) {
             return response(
                 "Export stopped, fix these records first:\n\n".implode("\n", $result['errors']),
-                422,
-                ['Content-Type' => 'text/plain; charset=UTF-8']
+                200,
+                [
+                    'Content-Type'        => 'text/plain; charset=UTF-8',
+                    'Content-Disposition' => 'attachment; filename="intrastat_aeat_'.$organisation->slug.'_errors.txt"',
+                ]
             );
         }
 
