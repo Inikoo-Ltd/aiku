@@ -24,12 +24,7 @@ trait HasTicketImages
             if (!$image instanceof UploadedFile) {
                 continue;
             }
-            StoreMediaFromFile::run($this, [
-                'path'         => $image->getPathName(),
-                'originalName' => $image->getClientOriginalName(),
-                'extension'    => $image->getClientOriginalExtension(),
-                'checksum'     => md5_file($image->getPathName()),
-            ], 'ticket_images');
+            $this->attachTicketFile($image->getPathName(), $image->getClientOriginalName(), $image->getMimeType());
         }
     }
 
@@ -65,7 +60,7 @@ trait HasTicketImages
     public function ticketImageSources(): array
     {
         return $this->getMedia('ticket_images')
-            ->map(fn (Media $media) => GetPictureSources::run($media->getImage()->resize(0, 0)))
+            ->map(fn (Media $media) => [...GetPictureSources::run($media->getImage()->resize(0, 0)), 'name' => $media->name])
             ->all();
     }
 }
