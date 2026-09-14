@@ -14,6 +14,7 @@ import DateIntervalTabs from "@/Components/Navigation/DateIntervalTabs.vue"
 import GoogleAdsCampaignTrend from "@/Components/DataDisplay/Dashboard/Widget/GoogleAdsCampaignTrend.vue"
 import GoogleAdsCampaignControls from "@/Components/DataDisplay/Dashboard/Widget/GoogleAdsCampaignControls.vue"
 import GoogleAdsElementToggle from "@/Components/DataDisplay/Dashboard/Widget/GoogleAdsElementToggle.vue"
+import GoogleAdsDuplicateAd from "@/Components/DataDisplay/Dashboard/Widget/GoogleAdsDuplicateAd.vue"
 import GoogleAdsNegativeKeywords from "@/Components/DataDisplay/Dashboard/Widget/GoogleAdsNegativeKeywords.vue"
 import GoogleAdsSearchTerms from "@/Components/DataDisplay/Dashboard/Widget/GoogleAdsSearchTerms.vue"
 import GoogleAdsAddKeyword from "@/Components/DataDisplay/Dashboard/Widget/GoogleAdsAddKeyword.vue"
@@ -47,6 +48,7 @@ const props = defineProps<{
     }
     update_route: { name: string; parameters: Record<string, unknown> }
     element_route: { name: string; parameters: Record<string, unknown> }
+    ad_route: { name: string; parameters: Record<string, unknown> }
     negative_keywords_route: { name: string; parameters: Record<string, unknown> }
     keyword_route: { name: string; parameters: Record<string, unknown> }
     periods: Record<string, string>
@@ -91,6 +93,8 @@ const props = defineProps<{
             final_urls: string[]
             headlines: string[]
             descriptions: string[]
+            strength: string | null
+            approval_status: string | null
         }[]
         keywords: { id?: string; text: string | null; match_type: string | null; status: string | null }[]
     }[]
@@ -110,6 +114,19 @@ const roasClass = (roas: number | null) =>
     roas === null ? "text-gray-400" : roas >= 1 ? "text-[#006300]" : "text-[#d03b3b]"
 
 const enumLabel = (value: string | null) => (value ? value.replace(/_/g, " ").toLowerCase() : null)
+
+/* Google's own rating, shown in Google's own words. Only Poor is coloured as a problem: Average is a
+   fair description of a working ad, and colouring it red would send people rewriting ads that earn. */
+const strengthClass = (strength: string | null) => {
+    if (strength === "POOR") return "bg-[#fdeaea] text-[#d03b3b]"
+    if (strength === "EXCELLENT" || strength === "GOOD") return "bg-[#eaf5ea] text-[#006300]"
+    if (strength === "AVERAGE") return "bg-amber-50 text-[#a15c00]"
+    return "bg-gray-100 text-gray-500"
+}
+
+const adsNeedingVariants = computed(
+    () => props.ad_groups.filter((group) => group.ads.filter((ad) => ad.status === "ENABLED").length === 1).length
+)
 
 const keywordCount = computed(() =>
     props.ad_groups.reduce((total, group) => total + group.keywords.length, 0)
@@ -344,6 +361,15 @@ const notServingReasons = computed(() =>
                 <span v-if="adCount" class="font-normal text-gray-500">· {{ adCount }}</span>
             </h2>
 
+            <!-- Says plainly why there is no button to write an ad here, because a section that offers
+                 pausing and copying but not creating otherwise reads as unfinished rather than decided. -->
+            <p class="mt-1 max-w-3xl text-xs text-gray-600">
+                {{ trans("You can pause an ad here, add headlines to it, and copy it into a variant to test. Writing a brand new ad from scratch is done in Google Ads, because that is where you get its strength scored as you type, headlines pinned to positions, and a preview of how it looks before it runs. Aiku would give you text boxes and no feedback.") }}
+                <span v-if="adsNeedingVariants" class="mt-1 block text-[#a15c00]">
+                    {{ trans(":count ad group(s) here run a single ad, so Google has nothing to rotate it against.", { count: String(adsNeedingVariants) }) }}
+                </span>
+            </p>
+
             <div v-if="adCount" class="mt-3 space-y-4">
                 <div v-for="group in ad_groups" :key="group.id" class="rounded-lg p-3 ring-1 ring-gray-100">
                     <div class="flex flex-wrap items-center justify-between gap-2">
@@ -363,7 +389,17 @@ const notServingReasons = computed(() =>
                         :key="ad.id"
                         class="mt-2 border-l border-gray-100 pl-3 text-xs">
                         <div class="flex flex-wrap items-center justify-between gap-2">
-                            <span class="capitalize text-gray-500">{{ enumLabel(ad.type) }} · {{ enumLabel(ad.status) }}</span>
+                            <span class="flex flex-wrap items-center gap-2">
+                                <span class="capitalize text-gray-500">{{ enumLabel(ad.type) }} · {{ enumLabel(ad.status) }}</span>
+                                <span class="rounded px-1.5 py-0.5 text-[11px] capitalize" :class="strengthClass(ad.strength)">
+                                    {{ ad.strength ? enumLabel(ad.strength) : trans("not rated yet") }}
+                                </span>
+                                <span
+                                    v-if="ad.approval_status && ad.approval_status !== 'APPROVED'"
+                                    class="rounded bg-amber-50 px-1.5 py-0.5 text-[11px] capitalize text-[#a15c00]">
+                                    {{ enumLabel(ad.approval_status) }}
+                                </span>
+                            </span>
                             <GoogleAdsElementToggle
                                 type="ad"
                                 :ad-group-id="String(group.id)"
@@ -392,6 +428,13 @@ const notServingReasons = computed(() =>
                             class="primaryLink mt-1 block truncate">
                             {{ url }}
                         </a>
+
+                        <GoogleAdsDuplicateAd
+                            v-if="ad.status === 'ENABLED'"
+                            class="mt-2"
+                            :ad-group-id="String(group.id)"
+                            :ad="ad"
+                            :store-route="ad_route" />
                     </div>
 
                     <GoogleAdsAddKeyword

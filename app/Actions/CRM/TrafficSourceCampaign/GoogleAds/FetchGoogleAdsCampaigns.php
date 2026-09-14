@@ -50,7 +50,16 @@ class FetchGoogleAdsCampaigns
      */
     private const string CAMPAIGN_QUERY = "SELECT campaign.id, campaign.name, campaign.status, campaign.primary_status, campaign.primary_status_reasons, campaign.advertising_channel_type, campaign.bidding_strategy_type, campaign.start_date_time, campaign.end_date_time, campaign_budget.id, campaign_budget.amount_micros, campaign_budget.explicitly_shared, customer.currency_code FROM campaign WHERE campaign.status != 'REMOVED'";
 
-    private const string ADS_QUERY = "SELECT campaign.id, ad_group.id, ad_group.name, ad_group.status, ad_group_ad.status, ad_group_ad.ad.id, ad_group_ad.ad.type, ad_group_ad.ad.final_urls, ad_group_ad.ad.responsive_search_ad.headlines, ad_group_ad.ad.responsive_search_ad.descriptions FROM ad_group_ad WHERE campaign.status != 'REMOVED' AND ad_group_ad.status != 'REMOVED'";
+    /**
+     * `ad_strength` is Google's own verdict on how much an ad gives it to work with, the same Poor to
+     * Excellent rating its interface shows. It is read rather than recomputed: the rules behind it are
+     * Google's and change without notice, and a second opinion invented here would disagree with the
+     * one the marketing team already trusts.
+     *
+     * `policy_summary.approval_status` says whether the ad is allowed to run at all, which is the other
+     * thing an ad can be silently wrong about.
+     */
+    private const string ADS_QUERY = "SELECT campaign.id, ad_group.id, ad_group.name, ad_group.status, ad_group_ad.status, ad_group_ad.ad_strength, ad_group_ad.policy_summary.approval_status, ad_group_ad.ad.id, ad_group_ad.ad.type, ad_group_ad.ad.final_urls, ad_group_ad.ad.responsive_search_ad.headlines, ad_group_ad.ad.responsive_search_ad.descriptions FROM ad_group_ad WHERE campaign.status != 'REMOVED' AND ad_group_ad.status != 'REMOVED'";
 
     private const string KEYWORDS_QUERY = "SELECT campaign.id, ad_group.id, ad_group_criterion.criterion_id, ad_group_criterion.keyword.text, ad_group_criterion.keyword.match_type, ad_group_criterion.status FROM keyword_view WHERE campaign.status != 'REMOVED'";
 
@@ -170,9 +179,11 @@ class FetchGoogleAdsCampaigns
             $adGroups[$campaignId][$adGroupId] ??= $this->emptyAdGroup($adGroupId, data_get($row, 'adGroup.name'), data_get($row, 'adGroup.status'));
 
             $adGroups[$campaignId][$adGroupId]['ads'][] = [
-                'id'           => data_get($row, 'adGroupAd.ad.id'),
-                'type'         => data_get($row, 'adGroupAd.ad.type'),
-                'status'       => data_get($row, 'adGroupAd.status'),
+                'id'              => data_get($row, 'adGroupAd.ad.id'),
+                'type'            => data_get($row, 'adGroupAd.ad.type'),
+                'status'          => data_get($row, 'adGroupAd.status'),
+                'strength'        => data_get($row, 'adGroupAd.adStrength'),
+                'approval_status' => data_get($row, 'adGroupAd.policySummary.approvalStatus'),
                 'final_urls'   => data_get($row, 'adGroupAd.ad.finalUrls', []),
                 'headlines'    => collect(data_get($row, 'adGroupAd.ad.responsiveSearchAd.headlines', []))->pluck('text')->all(),
                 'descriptions' => collect(data_get($row, 'adGroupAd.ad.responsiveSearchAd.descriptions', []))->pluck('text')->all(),

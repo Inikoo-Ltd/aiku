@@ -73,6 +73,7 @@ use App\Actions\Catalogue\Shop\StoreShop;
 use App\Actions\Catalogue\Shop\UpdateShop;
 use App\Actions\CRM\TrafficSource\AdProposals\ApplyAdProposal;
 use App\Actions\CRM\TrafficSource\AdProposals\DismissAdProposal;
+use App\Actions\CRM\TrafficSourceCampaign\GoogleAds\StoreGoogleAdsAd;
 use App\Actions\CRM\TrafficSourceCampaign\GoogleAds\StoreGoogleAdsCampaign;
 use App\Actions\CRM\TrafficSourceCampaign\GoogleAds\StoreGoogleAdsKeyword;
 use App\Actions\CRM\TrafficSourceCampaign\GoogleAds\UpdateGoogleAdsCampaign;
@@ -823,6 +824,8 @@ Route::name('org.')->prefix('org/{organisation:id}')->group(function () {
         ->name('shop.ad_proposal.dismiss')->withoutScopedBindings();
     Route::post('shop/{shop:id}/google-ads/campaign/{trafficSourceCampaign:id}/keyword', StoreGoogleAdsKeyword::class)
         ->name('shop.google_ads.campaign.keyword.store')->withoutScopedBindings();
+    Route::post('shop/{shop:id}/google-ads/campaign/{trafficSourceCampaign:id}/ad', StoreGoogleAdsAd::class)
+        ->name('shop.google_ads.campaign.ad.store')->withoutScopedBindings();
     Route::patch('shop/{shop:id}/google-ads/campaign/{trafficSourceCampaign:id}/negative-keywords', UpdateGoogleAdsNegativeKeywords::class)
         ->name('shop.google_ads.campaign.negative_keywords.update')->withoutScopedBindings();
     Route::post('fulfilment', StoreFulfilmentFromUI::class)->name('fulfilment.store');

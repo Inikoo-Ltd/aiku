@@ -87,6 +87,14 @@ class ShowGoogleAdsCampaign extends OrgAction
                         'trafficSourceCampaign' => $trafficSourceCampaign->id,
                     ],
                 ],
+                'ad_route' => [
+                    'name'       => 'grp.models.org.shop.google_ads.campaign.ad.store',
+                    'parameters' => [
+                        'organisation'          => $this->organisation->id,
+                        'shop'                  => $this->shop->id,
+                        'trafficSourceCampaign' => $trafficSourceCampaign->id,
+                    ],
+                ],
                 'keyword_route' => [
                     'name'       => 'grp.models.org.shop.google_ads.campaign.keyword.store',
                     'parameters' => [
