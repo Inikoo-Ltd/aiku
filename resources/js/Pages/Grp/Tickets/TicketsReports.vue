@@ -185,6 +185,49 @@ const dashboardBoxes = computed(() => (props.stats.interval === "all" ? (["peopl
             </Link>
         </div>
 
+        <div class="grid gap-4 lg:grid-cols-3">
+            <DashboardWidgetBox storageKey="tickets_reports_status_collapsed" class="self-start">
+                <template #header>
+                    <span class="flex items-center gap-2 text-sm font-semibold text-gray-600">
+                        <FontAwesomeIcon icon="fal fa-chart-pie" class="text-blue-600" fixed-width aria-hidden="true" />
+                        {{ trans("Status overview") }}
+                    </span>
+                    <span class="text-xs text-gray-400">{{ trans("All tickets") }} · <Link :href="route('grp.tickets.list')" class="hover:text-gray-600">{{ trans("View all") }}</Link></span>
+                </template>
+                <div class="flex items-center gap-4">
+                    <div class="relative h-40 w-40 shrink-0">
+                        <Chart type="doughnut" :data="donutChart" :options="donutOptions" class="h-full" />
+                        <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                            <span class="text-2xl font-bold">{{ totalTickets }}</span>
+                            <span class="text-[10px] text-gray-500">{{ trans("Total") }}</span>
+                        </div>
+                    </div>
+                    <ul class="space-y-1.5 text-sm">
+                        <li v-for="row in stats.by_status" :key="row.status" class="flex items-center gap-2">
+                            <span class="h-3 w-3 rounded-sm" :style="{ backgroundColor: STATUS_COLORS[row.color] ?? '#9ca3af' }" />
+                            {{ row.label }}:
+                            <Link v-if="row.total" :href="listUrl({ elements: { status: row.status } })" class="hover:underline font-medium">{{ row.total }}</Link>
+                            <span v-else class="font-medium">{{ row.total }}</span>
+                        </li>
+                    </ul>
+                </div>
+            </DashboardWidgetBox>
+
+            <DashboardWidgetBox storageKey="tickets_reports_csat_collapsed" class="self-start lg:col-span-2">
+                <template #header>
+                    <span class="flex items-center gap-2 text-sm font-semibold text-gray-600">
+                        <FontAwesomeIcon icon="fal fa-star" class="text-sky-600" fixed-width aria-hidden="true" />
+                        {{ trans("Customer satisfaction") }}
+                    </span>
+                    <span class="text-xs text-gray-400">{{ trans("Average rating per month, last 12 months") }}</span>
+                </template>
+                <div class="h-40">
+                    <Chart type="bar" :data="csatChart" :options="csatOptions" class="h-full" />
+                </div>
+            </DashboardWidgetBox>
+        </div>
+
+        <div class="space-y-4 rounded-xl border border-gray-200 bg-gray-50 p-3">
         <TicketsCreatedInterval :options="createdIntervals" :selected="stats.interval" />
 
         <div class="flex flex-wrap gap-3">
@@ -206,47 +249,8 @@ const dashboardBoxes = computed(() => (props.stats.interval === "all" ? (["peopl
                 </span>
                 <span class="text-xs text-gray-400">{{ stats.created }} {{ trans("created") }} · {{ stats.done }} {{ trans("resolved") }}</span>
             </template>
-            <div class="grid gap-6 lg:grid-cols-3">
-                <div class="h-72 lg:col-span-2">
-                    <Chart type="line" :data="lineChart" :options="lineOptions" class="h-full" />
-                </div>
-                <div class="lg:border-l lg:border-gray-100 lg:pl-6">
-                <p class="mb-2 flex items-center gap-2 text-sm font-semibold text-gray-600">
-                    <FontAwesomeIcon icon="fal fa-chart-pie" class="text-blue-600" fixed-width aria-hidden="true" />
-                    {{ trans("Status overview") }}
-                    <span class="text-xs font-normal text-gray-400">{{ trans("All tickets") }} · <Link :href="route('grp.tickets.list')" class="hover:text-gray-600">{{ trans("View all") }}</Link></span>
-                </p>
-                <div class="flex items-center gap-4">
-                    <div class="relative h-40 w-40 shrink-0">
-                        <Chart type="doughnut" :data="donutChart" :options="donutOptions" class="h-full" />
-                        <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                            <span class="text-2xl font-bold">{{ totalTickets }}</span>
-                            <span class="text-[10px] text-gray-500">{{ trans("Total") }}</span>
-                        </div>
-                    </div>
-                    <ul class="space-y-1.5 text-sm">
-                        <li v-for="row in stats.by_status" :key="row.status" class="flex items-center gap-2">
-                            <span class="h-3 w-3 rounded-sm" :style="{ backgroundColor: STATUS_COLORS[row.color] ?? '#9ca3af' }" />
-                            {{ row.label }}:
-                            <Link v-if="row.total" :href="listUrl({ elements: { status: row.status } })" class="hover:underline font-medium">{{ row.total }}</Link>
-                            <span v-else class="font-medium">{{ row.total }}</span>
-                        </li>
-                    </ul>
-                </div>
-                </div>
-            </div>
-        </DashboardWidgetBox>
-
-        <DashboardWidgetBox storageKey="tickets_reports_csat_collapsed">
-            <template #header>
-                <span class="flex items-center gap-2 text-sm font-semibold text-gray-600">
-                    <FontAwesomeIcon icon="fal fa-star" class="text-sky-600" fixed-width aria-hidden="true" />
-                    {{ trans("Customer satisfaction") }}
-                </span>
-                <span class="text-xs text-gray-400">{{ trans("Average rating per month, last 12 months") }}</span>
-            </template>
-            <div class="h-56">
-                <Chart type="bar" :data="csatChart" :options="csatOptions" class="h-full" />
+            <div class="h-72">
+                <Chart type="line" :data="lineChart" :options="lineOptions" class="h-full" />
             </div>
         </DashboardWidgetBox>
 
@@ -383,5 +387,6 @@ const dashboardBoxes = computed(() => (props.stats.interval === "all" ? (["peopl
             </table>
         </div>
         </DashboardWidgetBox>
+        </div>
     </div>
 </template>
