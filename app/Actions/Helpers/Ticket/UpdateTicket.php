@@ -113,17 +113,6 @@ class UpdateTicket extends OrgAction
 
         NotifyTicketUsers::make()->pushBadges($ticket, $asker instanceof User ? $asker : null);
 
-        if ($ticket->wasChanged('assignee_id') && ($actor = request()->user()) instanceof User) {
-            $previous = $ticket->getOriginal('assignee_id') ? User::find($ticket->getOriginal('assignee_id')) : null;
-            $ticket->comments()->create([
-                'author_type' => 'User',
-                'author_id'   => $actor->id,
-                'body'        => $ticket->assignee
-                    ? ($previous ? __('Passed from :from to :to', ['from' => $previous->contact_name ?: $previous->username, 'to' => $ticket->assignee->contact_name ?: $ticket->assignee->username]) : __('Assigned to :to', ['to' => $ticket->assignee->contact_name ?: $ticket->assignee->username]))
-                    : __('Unassigned'),
-            ]);
-        }
-
         return $ticket;
     }
 

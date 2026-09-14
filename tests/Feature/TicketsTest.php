@@ -831,7 +831,7 @@ test('only the help desk manages tickets, everyone else reports, comments and cl
     expect($other->fresh()->priority)->toBe(ChatPriorityEnum::URGENT)
         ->and($other->fresh()->assignee_id)->toBe($helper->id)
         ->and($other->comments()->where('body', 'from the page')->count())->toBe(1)
-        ->and($other->comments()->where('body', 'like', 'Passed from%')->count())->toBeGreaterThanOrEqual(1);
+        ->and($other->comments()->where('body', 'like', 'Passed from%')->count())->toBe(0);
 
     actingAs($boss);
     get(route('grp.tickets.reports'))->assertOk();
