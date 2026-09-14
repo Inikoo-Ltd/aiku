@@ -138,6 +138,12 @@ class MergeDuplicateStock
             return Command::FAILURE;
         }
 
+        if ($from->state === StockStateEnum::DISCONTINUED) {
+            $command->error("Refusing: $from->code is already retired.");
+
+            return Command::FAILURE;
+        }
+
         $plan     = $this->plan($from, $to);
         $fromHeld = $from->orgStocks()->withSum('locationOrgStocks as held', 'quantity')->get()->sum('held');
         $toHeld   = $to->orgStocks()->withSum('locationOrgStocks as held', 'quantity')->get()->sum('held');
