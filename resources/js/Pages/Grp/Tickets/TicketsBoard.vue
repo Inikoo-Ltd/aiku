@@ -117,11 +117,12 @@ const sortColumn = (column: { key: string; tickets: any[] }) => {
 	column.tickets.sort((a, b) => (sortValue(a, column.key, field) - sortValue(b, column.key, field)) * (desc ? -1 : 1))
 }
 
-const changeSort = (column: { key: string; tickets: any[] }, change: "field" | "direction") => {
+const openSortPicker = ref<string | null>(null)
+
+const changeSort = (column: { key: string; tickets: any[] }, change: SortField | "direction") => {
+	openSortPicker.value = null
 	const current = sortOf(column.key)
-	columnSorts[column.key] = change === "direction"
-		? { ...current, desc: !current.desc }
-		: { field: sortFields[(sortFields.findIndex((option) => option.key === current.field) + 1) % sortFields.length].key, desc: current.desc }
+	columnSorts[column.key] = change === "direction" ? { ...current, desc: !current.desc } : { field: change, desc: current.desc }
 	try {
 		localStorage.setItem("tickets-board-sorts", JSON.stringify(columnSorts))
 	} catch {}
@@ -456,13 +457,28 @@ const onMoved = (status: string, event: { added?: { element: { id: number } } })
 						</template>
 					</span>
 					<span class="ml-auto flex items-center text-xs text-gray-500 bg-white/70 rounded">
-						<button
-							type="button"
-							class="px-1 py-0.5 hover:text-gray-900"
-							:title="trans('Sort by')"
-							@click="changeSort(column, 'field')">
-							{{ sortFields.find((option) => option.key === sortOf(column.key).field)?.label }}
-						</button>
+						<div class="relative">
+							<button
+								type="button"
+								class="px-1 py-0.5 hover:text-gray-900"
+								:title="trans('Sort by')"
+								@click="openSortPicker = openSortPicker === column.key ? null : column.key">
+								{{ sortFields.find((option) => option.key === sortOf(column.key).field)?.label }}
+							</button>
+							<div
+								v-if="openSortPicker === column.key"
+								class="absolute left-0 z-20 mt-1 w-28 bg-white border border-gray-200 rounded shadow-lg py-1">
+								<button
+									v-for="option in sortFields"
+									:key="option.key"
+									type="button"
+									class="block w-full text-left text-xs px-2 py-1 hover:bg-gray-100"
+									:class="option.key === sortOf(column.key).field ? 'font-semibold text-gray-900' : 'text-gray-600'"
+									@click="changeSort(column, option.key)">
+									{{ option.label }}
+								</button>
+							</div>
+						</div>
 						<button
 							type="button"
 							class="px-1 py-0.5 hover:text-gray-900"
