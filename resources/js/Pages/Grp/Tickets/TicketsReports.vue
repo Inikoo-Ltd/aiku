@@ -167,7 +167,7 @@ const engineerTotal = (mode: "assignees" | "resolvers") => (mode === "resolvers"
 
 const sharePercent = (value: number, total: number) => (total && value ? `${((value / total) * 100).toFixed(1)}%` : "")
 
-const days = (value: number | null) => (value === null ? "-" : `${value} ${trans("days")}`)
+const inDays = (hoursValue: number | null) => (hoursValue === null ? "-" : (hoursValue / 24).toFixed(1))
 
 const peopleTabs = [
     { key: "assignees", label: trans("Engineers") },
@@ -180,8 +180,8 @@ const reporterColumns = [
     { key: "open", label: trans("Still open") },
     { key: "resolved", label: trans("Resolved") },
     { key: "cancelled", label: trans("Cancelled") },
-    { key: "median_hours", label: trans("Median time to resolve") },
-    { key: "longest_wait_days", label: trans("Longest wait") },
+    { key: "median_hours", label: trans("Median time to resolve (days)") },
+    { key: "longest_wait_days", label: trans("Longest wait (days)") },
     { key: "rating", label: trans("Average rating") },
 ]
 
@@ -191,8 +191,8 @@ const assigneeColumns = [
     { key: "in_progress", label: trans("Working on") },
     { key: "open", label: trans("Still open") },
     { key: "done", label: trans("Resolved") },
-    { key: "median_hours", label: trans("Median time to resolve") },
-    { key: "longest_wait_days", label: trans("Longest wait") },
+    { key: "median_hours", label: trans("Median time to resolve (days)") },
+    { key: "longest_wait_days", label: trans("Longest wait (days)") },
     { key: "rating", label: trans("Average rating") },
 ]
 
@@ -326,8 +326,8 @@ const dashboardBoxes = computed(() => (props.stats.interval === "all" ? (["peopl
                         <td class="px-4 py-2 text-right">{{ row.open }}</td>
                         <td class="px-4 py-2 text-right">{{ row.resolved }}</td>
                         <td class="px-4 py-2 text-right"><span class="inline-block w-12 pr-2 text-[9px] text-gray-400">{{ sharePercent(row.cancelled, row.created) }}</span>{{ row.cancelled }}</td>
-                        <td class="px-4 py-2 text-right">{{ hours(row.median_hours) }}</td>
-                        <td class="px-4 py-2 text-right">{{ days(row.longest_wait_days) }}</td>
+                        <td class="px-4 py-2 text-right">{{ inDays(row.median_hours) }}</td>
+                        <td class="px-4 py-2 text-right">{{ row.longest_wait_days ?? "-" }}</td>
                         <td class="px-4 py-2 text-right">
                             <template v-if="row.rating !== null">{{ row.rating }}<span class="text-gray-400">/5 ({{ row.ratings }})</span></template>
                             <span v-else>-</span>
@@ -344,8 +344,8 @@ const dashboardBoxes = computed(() => (props.stats.interval === "all" ? (["peopl
                         <td class="px-4 py-2 text-right">{{ stats.assignees_total.open }}</td>
                         <td class="px-4 py-2 text-right">{{ stats.assignees_total.resolved }}</td>
                         <td class="px-4 py-2 text-right"><span class="inline-block w-12 pr-2 text-[9px] text-gray-400">{{ sharePercent(stats.assignees_total.cancelled, stats.assignees_total.created) }}</span>{{ stats.assignees_total.cancelled }}</td>
-                        <td class="px-4 py-2 text-right">{{ hours(stats.assignees_total.median_hours) }}</td>
-                        <td class="px-4 py-2 text-right">{{ days(stats.assignees_total.longest_wait_days) }}</td>
+                        <td class="px-4 py-2 text-right">{{ inDays(stats.assignees_total.median_hours) }}</td>
+                        <td class="px-4 py-2 text-right">{{ stats.assignees_total.longest_wait_days ?? "-" }}</td>
                         <td class="px-4 py-2 text-right">
                             <template v-if="stats.assignees_total.rating !== null">{{ stats.assignees_total.rating }}<span class="text-gray-400">/5 ({{ stats.assignees_total.ratings }})</span></template>
                             <span v-else>-</span>
@@ -388,8 +388,8 @@ const dashboardBoxes = computed(() => (props.stats.interval === "all" ? (["peopl
                             <span v-else>{{ row.done }}</span>
                             <span class="inline-block w-16 text-gray-400">{{ sharePercent(row.done, engineerTotal(mode).done) }}</span>
                         </td>
-                        <td class="px-4 py-2 text-right">{{ hours(row.median_hours) }}</td>
-                        <td v-if="mode === 'assignees'" class="px-4 py-2 text-right">{{ days(row.longest_wait_days) }}</td>
+                        <td class="px-4 py-2 text-right">{{ inDays(row.median_hours) }}</td>
+                        <td v-if="mode === 'assignees'" class="px-4 py-2 text-right">{{ row.longest_wait_days ?? "-" }}</td>
                         <td class="px-4 py-2 text-right">
                             <template v-if="row.rating !== null">{{ row.rating }}<span class="text-gray-400">/5 ({{ row.ratings }})</span></template>
                             <span v-else>-</span>
@@ -406,8 +406,8 @@ const dashboardBoxes = computed(() => (props.stats.interval === "all" ? (["peopl
                         <td v-if="mode === 'assignees'" class="px-4 py-2 text-right">{{ engineerTotal(mode).in_progress }}</td>
                         <td v-if="mode === 'assignees'" class="px-4 py-2 text-right">{{ engineerTotal(mode).open }}</td>
                         <td class="px-4 py-2 text-right">{{ engineerTotal(mode).done }}<span class="inline-block w-16" /></td>
-                        <td class="px-4 py-2 text-right">{{ hours(engineerTotal(mode).median_hours) }}</td>
-                        <td v-if="mode === 'assignees'" class="px-4 py-2 text-right">{{ days(engineerTotal(mode).longest_wait_days) }}</td>
+                        <td class="px-4 py-2 text-right">{{ inDays(engineerTotal(mode).median_hours) }}</td>
+                        <td v-if="mode === 'assignees'" class="px-4 py-2 text-right">{{ engineerTotal(mode).longest_wait_days ?? "-" }}</td>
                         <td class="px-4 py-2 text-right">
                             <template v-if="engineerTotal(mode).rating !== null">{{ engineerTotal(mode).rating }}<span class="text-gray-400">/5 ({{ engineerTotal(mode).ratings }})</span></template>
                             <span v-else>-</span>
