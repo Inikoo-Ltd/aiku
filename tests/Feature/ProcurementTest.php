@@ -858,6 +858,20 @@ test('change state to submitted purchase order', function ($purchaseOrder) {
     return $purchaseOrder;
 })->depends('add item to purchase order');
 
+test('stale orders age a re-submitted purchase order from its creation date', function (PurchaseOrder $purchaseOrder) {
+    $purchaseOrder->update(['created_at' => now()->subDays(400), 'submitted_at' => now()->subDays(3), 'date' => now()->subDays(3)]);
+
+    $response = $this->get(route('grp.supply-chain.dashboard', ['stale_days' => 360]), [
+        'X-Inertia'                   => 'true',
+        'X-Inertia-Version'           => Inertia::getVersion(),
+        'X-Inertia-Partial-Component' => 'SupplyChain/SupplyChainDashboard',
+        'X-Inertia-Partial-Data'      => 'staleOrders',
+    ]);
+
+    $references = collect($response->json('props.staleOrders.purchase_orders'))->pluck('reference');
+    expect($references)->toContain($purchaseOrder->reference);
+})->depends('change state to submitted purchase order');
+
 test('change state to creating purchase order', function ($purchaseOrder) {
     $purchaseOrder->refresh();
 
