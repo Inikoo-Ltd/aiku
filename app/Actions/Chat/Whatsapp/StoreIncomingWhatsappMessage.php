@@ -11,6 +11,7 @@ use App\Actions\Chat\MetaChatSession\ReopenMetaChatSession;
 use App\Actions\Chat\MetaChatSession\SetMetaChatMessageReaction;
 use App\Actions\Chat\MetaChatSession\StoreMetaChatMessage;
 use App\Actions\Chat\MetaChatSession\StoreMetaChatSession;
+use App\Actions\Chat\Whatsapp\Concerns\WithWhatsappCredentials;
 use App\Enums\CRM\Livechat\ChatMessageTypeEnum;
 use App\Enums\CRM\Livechat\ChatSenderTypeEnum;
 use App\Enums\CRM\Livechat\ChatSessionStatusEnum;
@@ -21,13 +22,17 @@ use App\Models\Catalogue\Shop;
 use App\Models\Chat\MetaChannel;
 use App\Models\Chat\MetaChatMessage;
 use App\Models\Chat\MetaChatSession;
+use App\Models\HumanResources\Employee;
+use App\Models\SysAdmin\User;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class StoreIncomingWhatsappMessage
 {
     use AsAction;
+    use WithWhatsappCredentials;
 
     public string $jobQueue = 'urgent';
 
@@ -147,6 +152,10 @@ class StoreIncomingWhatsappMessage
 
         $metaChatMessage = $metaChatMessage->fresh(['attachment', 'metaChatSession']);
 
+        if ($type === 'text') {
+            $this->raiseTicketIfCommand($shop, $metaChatMessage, $digits);
+        }
+
         BroadcastRealtimeMetaChat::dispatch($metaChatMessage);
         BroadcastMetaChatListEvent::dispatch($metaChatMessage, $metaChatSession->fresh());
     }
@@ -265,6 +274,115 @@ class StoreIncomingWhatsappMessage
             (string) Arr::get($reaction, 'emoji', ''),
             $waMessageId
         );
+    }
+
+    /**
+     * Staff can raise a ticket from their phone by opening a message with `/ticket`.
+     * A number that belongs to no staff user is ignored in silence: answering it would
+     * turn the shop's public number into an oracle for whether a phone is staff.
+     */
+    protected function raiseTicketIfCommand(Shop $shop, MetaChatMessage $metaChatMessage, string $digits): void
+    {
+        $body = $this->ticketCommandBody((string) $metaChatMessage->message_text);
+
+        if ($body === null) {
+            return;
+        }
+
+        $reporter = $this->staffReporter($shop, $digits);
+
+        if (!$reporter) {
+            return;
+        }
+
+        // A ticket that cannot be raised must not fail the queued webhook job: Meta would
+        // redeliver the whole payload and the customer's message would be stored twice.
+        try {
+            StoreTicketFromWhatsapp::run($shop, $metaChatMessage, $reporter, $body);
+            $this->acknowledgeTicketCommand($shop, $metaChatMessage);
+        } catch (\Throwable $e) {
+            Log::error('WhatsApp ticket command failed', [
+                'meta_message_id' => $metaChatMessage->meta_message_id,
+                'shop_id'         => $shop->id,
+                'error'           => $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * The sender is staff when their phone is on an Employee record that is still employed and
+     * whose login is active. `employees.phone` is stored as typed - conventionally E.164, but one
+     * row carries spaces - so both sides are compared on stripped digits.
+     *
+     * The user is reached through `getUser()` rather than `employees.user_id`: that column is a
+     * partial mirror that was never backfilled, and a quarter of the employees with an active
+     * login have it empty.
+     */
+    protected function staffReporter(Shop $shop, string $digits): ?User
+    {
+        if ($digits === '') {
+            return null;
+        }
+
+        // ponytail: `employees.phone` has no index and the digit-stripping scan cannot use one; at
+        // the current table size, and only for messages already starting with `/ticket`, that is
+        // free. Add a functional index on the normalised expression if the table grows.
+        $employee = Employee::where('group_id', $shop->group_id)
+            ->whereIn('state', ['working', 'leaving'])
+            ->whereRaw("regexp_replace(phone, '\\D', '', 'g') = ?", [$digits])
+            ->orderByRaw('organisation_id = ? DESC', [$shop->organisation_id])
+            ->orderByDesc('id')
+            ->first();
+
+        // getUser() applies no ordering, and an employee can carry more than one active login
+        // (a mistyped duplicate username), so the oldest is pinned rather than an arbitrary row.
+        $reporter = $employee?->users()
+            ->wherePivot('status', true)
+            ->where('users.status', true)
+            ->orderBy('users.id')
+            ->first();
+
+        return $reporter;
+    }
+
+    /**
+     * Returns the text after the `/ticket` prefix, or null when this is not the command.
+     * `/ticketing` must not trigger, so the prefix has to end the word.
+     */
+    protected function ticketCommandBody(string $messageText): ?string
+    {
+        if (!preg_match('/^\s*\/ticket(?:\s+(.*))?$/is', $messageText, $match)) {
+            return null;
+        }
+
+        $body = trim($match[1] ?? '');
+
+        return $body === '' ? null : $body;
+    }
+
+    protected function acknowledgeTicketCommand(Shop $shop, MetaChatMessage $metaChatMessage): void
+    {
+        // SendWhatsappReaction needs a ChatAgent and the authenticated user behind it to
+        // toggle the reaction; neither exists in a queued webhook, so the tick is posted here.
+        [
+            'phone_number_id' => $phoneNumberId,
+            'access_token'    => $accessToken,
+        ] = $this->whatsappCredentials($shop);
+
+        if ($phoneNumberId === '' || $accessToken === '') {
+            return;
+        }
+
+        Http::withToken($accessToken)->post($this->whatsappEndpoint($phoneNumberId.'/messages'), [
+            'messaging_product' => 'whatsapp',
+            'recipient_type'    => 'individual',
+            'to'                => preg_replace('/\D/', '', (string) $metaChatMessage->metaChatSession?->phone_number),
+            'type'              => 'reaction',
+            'reaction'          => [
+                'message_id' => $metaChatMessage->meta_message_id,
+                'emoji'      => '✅',
+            ],
+        ]);
     }
 
     protected function findCustomer(Shop $shop, string $digits): ?Customer
