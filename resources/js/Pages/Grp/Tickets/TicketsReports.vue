@@ -245,7 +245,7 @@ const dashboardBoxes = computed(() => (props.stats.interval === "all" ? (["peopl
                         {{ trans("Status overview") }}
                         <span class="text-xs font-normal text-gray-400">{{ trans("Tickets created in this period") }} · <Link :href="listUrl({ filter: { created_since: stats.from } })" class="hover:text-gray-600">{{ trans("View all") }}</Link></span>
                     </p>
-                    <div class="flex items-center gap-4">
+                    <div class="flex flex-wrap items-center gap-4">
                         <div class="relative h-40 w-40 shrink-0">
                             <Chart type="doughnut" :data="donutChart" :options="donutOptions" class="h-full" />
                             <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
@@ -253,14 +253,22 @@ const dashboardBoxes = computed(() => (props.stats.interval === "all" ? (["peopl
                                 <span class="text-[10px] text-gray-500">{{ trans("Total") }}</span>
                             </div>
                         </div>
-                        <ul class="space-y-1.5 text-sm">
-                            <li v-for="row in stats.by_status.filter((status) => status.total)" :key="row.status" class="flex items-center gap-2">
-                                <span class="h-3 w-3 rounded-sm" :style="{ backgroundColor: STATUS_COLORS[row.status] ?? '#9ca3af' }" />
-                                {{ row.label }}:
-                                <Link v-if="row.total" :href="listUrl({ filter: { created_since: stats.from }, elements: { status: row.status } })" class="hover:underline font-medium">{{ row.total }}</Link>
-                                <span v-else class="font-medium">{{ row.total }}</span>
-                            </li>
-                        </ul>
+                        <table class="text-sm tabular-nums">
+                            <tbody>
+                                <tr v-for="row in stats.by_status.filter((status) => status.total)" :key="row.status">
+                                    <td class="py-0.5 pr-4">
+                                        <span class="flex items-center gap-2">
+                                            <span class="h-3 w-3 shrink-0 rounded-sm" :style="{ backgroundColor: STATUS_COLORS[row.status] ?? '#9ca3af' }" />
+                                            {{ row.label }}
+                                        </span>
+                                    </td>
+                                    <td class="py-0.5 pr-4 text-right font-medium">
+                                        <Link :href="listUrl({ filter: { created_since: stats.from }, elements: { status: row.status } })" class="hover:underline">{{ row.total }}</Link>
+                                    </td>
+                                    <td class="py-0.5 text-right text-gray-500">{{ totalTickets ? ((row.total / totalTickets) * 100).toFixed(1) : 0 }}%</td>
+                                </tr>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>
