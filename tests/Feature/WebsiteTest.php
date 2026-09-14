@@ -33,6 +33,7 @@ use App\Actions\Web\ModelHasWebBlocks\StoreModelHasWebBlock;
 use App\Actions\Web\ModelHasWebBlocks\UpdateModelHasWebBlocks;
 use App\Actions\Web\Redirect\StoreRedirect;
 use App\Actions\Web\Redirect\StoreRedirectFromWebpage;
+use App\Actions\Web\Webpage\FetchTopWebpagesPageSpeed;
 use App\Actions\Web\Webpage\HydrateWebpage;
 use App\Actions\Web\Webpage\Iris\ShowIrisRobotsTxt;
 use App\Actions\CRM\WebUser\Retina\UI\ShowRetinaLogin;
@@ -1657,6 +1658,61 @@ test('webpage performance adds a cached pagespeed result that is not in the hist
         ->and($performance['pagespeed'][0]['desktop']['performance'])->toBeNull()
         ->and(StoreWebpagePageSpeedTimeSeriesRecord::isRecorded($webpage, $result))->toBeTrue();
 })->depends('create webpage');
+
+test('the daily pagespeed crawl queues every department and the best performing capped webpages', function (Website $website) {
+    config()->set('app.analytics.google.pagespeed_api_key', 'test-key');
+
+    $storePageSpeedWebpage = function (WebpageTypeEnum $type, WebpageSubTypeEnum $subType, ?int $performance) use ($website) {
+        $webpage = StoreWebpage::make()->action($website->storefront, Webpage::factory()->definition());
+
+        $webpage->update([
+            'type'          => $type,
+            'sub_type'      => $subType,
+            'state'         => WebpageStateEnum::LIVE,
+            'canonical_url' => 'https://www.example.com/'.$webpage->slug,
+        ]);
+
+        if ($performance !== null) {
+            StoreWebpagePageSpeedTimeSeriesRecord::run($webpage, [
+                'strategy'   => 'mobile',
+                'fetched_at' => '2026-08-01T08:00:00.000Z',
+                'scores'     => [
+                    ['key' => 'performance', 'label' => 'Performance', 'score' => $performance, 'rating' => 'average'],
+                ],
+            ]);
+        }
+
+        return $webpage->refresh();
+    };
+
+    $fastFamily    = $storePageSpeedWebpage(WebpageTypeEnum::CATALOGUE, WebpageSubTypeEnum::FAMILY, 95);
+    $slowFamily    = $storePageSpeedWebpage(WebpageTypeEnum::CATALOGUE, WebpageSubTypeEnum::FAMILY, 20);
+    $department    = $storePageSpeedWebpage(WebpageTypeEnum::CATALOGUE, WebpageSubTypeEnum::DEPARTMENT, null);
+    $productPage   = $storePageSpeedWebpage(WebpageTypeEnum::CATALOGUE, WebpageSubTypeEnum::PRODUCT, 99);
+    $closedFamily  = $storePageSpeedWebpage(WebpageTypeEnum::CATALOGUE, WebpageSubTypeEnum::FAMILY, 99);
+    $closedFamily->update(['state' => WebpageStateEnum::CLOSED]);
+
+    Queue::fake();
+
+    $summary = FetchTopWebpagesPageSpeed::run(1);
+
+    $queuedWebpageIds = collect();
+
+    Queue::assertPushed(JobDecorator::class, function (JobDecorator $job) use ($queuedWebpageIds) {
+        if ($job->decorates(GetWebpagePageSpeed::class)) {
+            $queuedWebpageIds->push($job->getParameters()[0]->id);
+        }
+
+        return true;
+    });
+
+    expect($summary['queued_runs'])->toBe($queuedWebpageIds->count())
+        ->and($queuedWebpageIds->countBy()->get($fastFamily->id))->toBe(count(GetWebpagePageSpeed::STRATEGIES))
+        ->and($queuedWebpageIds)->toContain($department->id)
+        ->and($queuedWebpageIds)->not->toContain($slowFamily->id)
+        ->and($queuedWebpageIds)->not->toContain($productPage->id)
+        ->and($queuedWebpageIds)->not->toContain($closedFamily->id);
+})->depends('launch website');
 
 test('publish announcement', function (Website $website) {
     $announcement = StoreAnnouncement::make()->action($website, ['name' => 'to publish']);
