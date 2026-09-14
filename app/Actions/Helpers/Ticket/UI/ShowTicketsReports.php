@@ -49,69 +49,26 @@ class ShowTicketsReports extends OrgAction
 
         $byStatus = (clone $base)->selectRaw('status, count(*) as total')->groupBy('status')->pluck('total', 'status');
 
-        $assigneeRows = (clone $base)
-            ->join('users', 'users.id', '=', 'tickets.assignee_id')
-            ->selectRaw("
-                users.id as id,
-                users.username as username,
-                coalesce(users.contact_name, users.username) as name,
-                count(*) filter (where tickets.status not in ('resolved', 'cancelled')) as open,
-                count(*) filter (where tickets.resolved_at between ? and ?) as done,
-                percentile_cont(0.5) within group (order by extract(epoch from tickets.resolved_at - tickets.created_at) / 3600)
-                    filter (where tickets.resolved_at between ? and ?) as median_hours,
-                max(extract(epoch from now() - tickets.created_at) / 86400) filter (where tickets.status not in ('resolved', 'cancelled')) as longest_wait_days,
-                round(avg(tickets.rating) filter (where tickets.rated_at between ? and ?), 1) as rating,
-                count(tickets.rating) filter (where tickets.rated_at between ? and ?) as ratings
-            ", [$from, $to, $from, $to, $from, $to, $from, $to])
-            ->groupBy('users.id', 'users.contact_name', 'users.username')
-            ->orderByDesc('open')
-            ->get();
+        $createdInRange  = (clone $base)->whereBetween('tickets.created_at', [$from, $to]);
+        $resolvedInRange = (clone $base)->whereBetween('tickets.resolved_at', [$from, $to]);
 
-        $assigneeUsers = User::whereIn('id', $assigneeRows->pluck('id'))->get()->keyBy('id');
-
-        $assignees = $assigneeRows->map(fn ($row) => [
-            'name'         => $row->name,
-            'username'     => $row->username,
-            'short_name'   => strtok((string) $row->name, ' '),
-            'avatar'       => $assigneeUsers->get($row->id)?->imageSources(48, 48),
-            'open'         => (int) $row->open,
-            'done'         => (int) $row->done,
-            'median_hours'      => $row->median_hours === null ? null : round((float) $row->median_hours, 1),
-            'longest_wait_days' => $row->longest_wait_days === null ? null : (int) $row->longest_wait_days,
-            'rating'            => $row->rating === null ? null : (float) $row->rating,
-            'ratings'           => (int) $row->ratings,
-        ]);
-
-        $reporters = (clone $base)
+        $reporters = (clone $createdInRange)
             ->whereNotNull('tickets.reporter_id')
             ->leftJoin('users as reporter_users', fn ($join) => $join->where('tickets.reporter_type', 'User')->whereColumn('reporter_users.id', 'tickets.reporter_id'))
             ->leftJoin('web_users as reporter_web_users', fn ($join) => $join->where('tickets.reporter_type', 'WebUser')->whereColumn('reporter_web_users.id', 'tickets.reporter_id'))
-            ->selectRaw("
+            ->selectRaw('
                 tickets.reporter_type as reporter_kind,
                 tickets.reporter_id as id,
                 coalesce(reporter_users.contact_name, reporter_users.username, reporter_web_users.contact_name, reporter_web_users.username) as name,
-                count(*) filter (where tickets.created_at between ? and ?) as created,
-                count(*) filter (where tickets.status not in ('resolved', 'cancelled')) as open,
-                percentile_cont(0.5) within group (order by extract(epoch from tickets.resolved_at - tickets.created_at) / 3600)
-                    filter (where tickets.resolved_at between ? and ?) as median_hours,
-                max(extract(epoch from now() - tickets.created_at) / 86400) filter (where tickets.status not in ('resolved', 'cancelled')) as longest_wait_days,
-                round(avg(tickets.rating) filter (where tickets.rated_at between ? and ?), 1) as rating,
-                count(tickets.rating) filter (where tickets.rated_at between ? and ?) as ratings
-            ", [$from, $to, $from, $to, $from, $to, $from, $to])
+                '.self::METRICS_SQL)
             ->groupBy('tickets.reporter_type', 'tickets.reporter_id', 'reporter_users.contact_name', 'reporter_users.username', 'reporter_web_users.contact_name', 'reporter_web_users.username')
-            ->havingRaw("count(*) filter (where tickets.created_at between ? and ?) > 0 or count(*) filter (where tickets.status not in ('resolved', 'cancelled')) > 0", [$from, $to])
             ->orderByDesc('created')
             ->get()
             ->map(fn ($row) => [
-                'key'               => $row->reporter_kind.'-'.$row->id,
-                'name'              => $row->name,
-                'is_staff'          => $row->reporter_kind === 'User',
-                'created'           => (int) $row->created,
-                'open'              => (int) $row->open,
-                'median_hours'      => $row->median_hours === null ? null : round((float) $row->median_hours, 1),
-                'longest_wait_days' => $row->longest_wait_days === null ? null : (int) $row->longest_wait_days,
-                'rating'            => $row->rating === null ? null : (float) $row->rating,
-                'ratings'           => (int) $row->ratings,
+                'key'      => $row->reporter_kind.'-'.$row->id,
+                'name'     => $row->name,
+                'is_staff' => $row->reporter_kind === 'User',
+                ...$this->metrics($row),
             ]);
 
         $csat = (clone $base)->whereBetween('rated_at', [$from, $to])->avg('rating');
@@ -145,8 +102,56 @@ class ShowTicketsReports extends OrgAction
                 'color'  => TicketStatusEnum::stateIcon()[$status->value]['color'],
                 'total'  => (int) ($byStatus[$status->value] ?? 0),
             ])->values()->all(),
-            'assignees'     => $assignees->all(),
-            'reporters'     => $reporters->all(),
+            'assignees'       => $this->assigneeRows($createdInRange),
+            'assignees_total' => $this->metrics((clone $createdInRange)->selectRaw(self::METRICS_SQL)->first()),
+            'reporters'       => $reporters->all(),
+            'resolvers'       => $this->assigneeRows($resolvedInRange),
+            'resolvers_total' => $this->metrics((clone $resolvedInRange)->selectRaw(self::METRICS_SQL)->first()),
+        ];
+    }
+
+    private const string METRICS_SQL = "
+        count(*) as created,
+        count(*) filter (where tickets.status not in ('resolved', 'cancelled')) as open,
+        count(*) filter (where tickets.resolved_at is not null) as done,
+        percentile_cont(0.5) within group (order by extract(epoch from tickets.resolved_at - tickets.created_at) / 3600)
+            filter (where tickets.resolved_at is not null) as median_hours,
+        max(extract(epoch from now() - tickets.created_at) / 86400) filter (where tickets.status not in ('resolved', 'cancelled')) as longest_wait_days,
+        round(avg(tickets.rating), 1) as rating,
+        count(tickets.rating) as ratings
+    ";
+
+    private function assigneeRows($query): array
+    {
+        $rows = (clone $query)
+            ->join('users', 'users.id', '=', 'tickets.assignee_id')
+            ->selectRaw('users.id as id, users.username as username, coalesce(users.contact_name, users.username) as name, '.self::METRICS_SQL)
+            ->groupBy('users.id', 'users.contact_name', 'users.username')
+            ->orderByDesc('open')
+            ->orderByDesc('done')
+            ->get();
+
+        $users = User::whereIn('id', $rows->pluck('id'))->get()->keyBy('id');
+
+        return $rows->map(fn ($row) => [
+            'name'       => $row->name,
+            'username'   => $row->username,
+            'short_name' => strtok((string) $row->name, ' '),
+            'avatar'     => $users->get($row->id)?->imageSources(48, 48),
+            ...$this->metrics($row),
+        ])->all();
+    }
+
+    private function metrics(object $row): array
+    {
+        return [
+            'created'           => (int) $row->created,
+            'open'              => (int) $row->open,
+            'done'              => (int) $row->done,
+            'median_hours'      => $row->median_hours === null ? null : round((float) $row->median_hours, 1),
+            'longest_wait_days' => $row->longest_wait_days === null ? null : (int) $row->longest_wait_days,
+            'rating'            => $row->rating === null ? null : (float) $row->rating,
+            'ratings'           => (int) $row->ratings,
         ];
     }
 

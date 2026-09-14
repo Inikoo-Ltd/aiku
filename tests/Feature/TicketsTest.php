@@ -477,7 +477,18 @@ test('tickets dashboard counts created, done, status and assignees', function ()
         ->and($me['open'])->toBeGreaterThanOrEqual(1)
         ->and($me['median_hours'])->not->toBeNull()
         ->and($me)->toHaveKeys(['longest_wait_days', 'rating'])
-        ->and($stats['reporters'])->toBeArray();
+        ->and($stats['reporters'])->toBeArray()
+        ->and($stats['assignees_total']['created'])->toBe($stats['created'])
+        ->and($stats['resolvers_total']['done'])->toBe($stats['done']);
+
+    $oldTicket = StoreTicket::make()->action($this->group, ['subject' => 'Old but resolved now', 'assignee_id' => $this->user->id]);
+    $oldTicket->update(['created_at' => now()->subMonths(3)]);
+    UpdateTicket::make()->action($oldTicket, ['status' => TicketStatusEnum::RESOLVED->value]);
+
+    $after = ShowTicketsReports::make()->handle($this->group, '1w');
+
+    expect($after['assignees_total']['done'])->toBe($stats['assignees_total']['done'])
+        ->and($after['resolvers_total']['done'])->toBe($stats['resolvers_total']['done'] + 1);
 
     get(route('grp.tickets.reports', ['created' => 'lm']))->assertInertia(
         fn (AssertableInertia $page) => $page->component('Tickets/TicketsReports')->where('stats.interval', 'lm')->has('stats.daily', now()->subMonth()->daysInMonth)
