@@ -8,7 +8,6 @@
 
 namespace App\Actions\Helpers\Ticket;
 
-use App\Actions\Helpers\Ticket\Concerns\WithSlack;
 use App\Enums\Helpers\Ticket\TicketQaStatusEnum;
 use App\Enums\SysAdmin\User\UserNotificationEnum;
 use App\Events\BroadcastTicketBadgeUpdate;
@@ -22,7 +21,6 @@ use Lorisleiva\Actions\Concerns\AsAction;
 class NotifyTicketUsers
 {
     use AsAction;
-    use WithSlack;
 
     public function asked(Ticket $ticket, User $asker, string $question): void
     {
@@ -182,11 +180,8 @@ class NotifyTicketUsers
             'route' => route('grp.tickets.show', $ticket->reference),
         ]);
 
-        if (in_array('slack', $channels, true) && $recipient->slack_user_id && $client = $this->slackClient()) {
-            $client->post('chat.postMessage', [
-                'channel' => $recipient->slack_user_id,
-                'text'    => '*'.$subject."*\n".implode("\n", $lines).' <'.route('grp.tickets.show', $ticket->reference).'|'.$actionLabel.'>',
-            ]);
+        if (in_array('slack', $channels, true) && $recipient->slack_user_id) {
+            SendTicketSlackDirectMessage::dispatch($recipient, '*'.$subject."*\n".implode("\n", $lines).' <'.route('grp.tickets.show', $ticket->reference).'|'.$actionLabel.'>');
         }
     }
 }

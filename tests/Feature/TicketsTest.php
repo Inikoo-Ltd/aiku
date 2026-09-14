@@ -1175,3 +1175,16 @@ test('a mentioned user is notified on the channels they chose and the plain comm
     Notification::assertSentTo($reporter, TicketNotification::class, fn ($notification, $channels) => str_contains($notification->subject, 'mentioned you') && $channels === ['database']);
     Http::assertSent(fn ($request) => str_contains($request->url(), 'chat.postMessage') && $request['channel'] === 'U999');
 });
+
+test('slack ticket direct message logs a refused delivery without failing and retries when slack is rate limited', function () {
+    Config::set('services.slack.notifications.bot_user_oauth_token', 'xoxb-test');
+    $user = StoreGuest::make()->action($this->group, Guest::factory()->definition())->getUser();
+    $user->update(['slack_user_id' => 'U404']);
+
+    Http::fake(['slack.com/*' => Http::sequence()->push(['ok' => false, 'error' => 'user_not_found'])->push(['ok' => false, 'error' => 'ratelimited'], 429)]);
+    \Illuminate\Support\Facades\Log::spy();
+    \App\Actions\Helpers\Ticket\SendTicketSlackDirectMessage::run($user, 'Hello');
+    \Illuminate\Support\Facades\Log::shouldHaveReceived('warning')->withArgs(fn ($message, $context) => $context['error'] === 'user_not_found' && $context['permanent'] === true)->once();
+
+    expect(fn () => \App\Actions\Helpers\Ticket\SendTicketSlackDirectMessage::run($user, 'Hello'))->toThrow(RuntimeException::class);
+});
