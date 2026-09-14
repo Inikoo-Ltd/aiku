@@ -147,7 +147,7 @@ const incompleteRow = computed(() => (props.data as any)?.data?.find((row: any) 
             <span v-if="item.origin" class="inline-flex items-center gap-1.5">
                 <img :src="`/flags/${item.origin.toLowerCase()}.png`" :alt="item.origin"
                     v-tooltip="item.origin_name || item.origin"
-                    class="h-3.5 w-5 object-cover rounded-sm" />
+                    class="h-3.5 w-5 object-cover rounded-sm" loading="lazy" decoding="async" />
                 {{ item.origin }}
             </span>
         </template>

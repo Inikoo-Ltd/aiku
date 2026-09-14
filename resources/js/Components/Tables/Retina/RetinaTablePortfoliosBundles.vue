@@ -1093,7 +1093,7 @@ onBeforeUnmount(() => {
 							" class="min-h-5 h-auto max-h-9 min-w-9 w-auto max-w-9 shadow border border-gray-300 rounded">
 								<img :src="item.platform_possible_matches?.raw_data?.[0]?.images?.[0]
 									?.src
-									" />
+									" loading="lazy" decoding="async" />
 							</div>
 							<div>
 								<span class="mr-1">{{
@@ -1161,7 +1161,7 @@ onBeforeUnmount(() => {
 						<div class="flex gap-x-2 items-center">
 							<div v-if="item.platform_product_data?.images?.[0]?.src"
 								class="min-h-5 h-auto max-h-9 min-w-9 w-auto max-w-9 shadow border border-gray-300 rounded">
-								<img :src="item.platform_product_data?.images?.[0]?.src" />
+								<img :src="item.platform_product_data?.images?.[0]?.src" loading="lazy" decoding="async" />
 							</div>
 
 							<div>
@@ -1320,7 +1320,7 @@ onBeforeUnmount(() => {
                                                :alt="item.name"/>-->
 										<div
 											class="min-h-3 h-auto max-h-9 min-w-9 w-auto max-w-9 border border-gray-300 rounded">
-											<img :src="item.images?.[0]?.src" class="shadow" />
+											<img :src="item.images?.[0]?.src" class="shadow" loading="lazy" decoding="async" />
 										</div>
 										<div class="flex flex-col justify-between">
 											<div class="w-fit" xclick="() => selectProduct(item)">
@@ -1492,7 +1492,7 @@ onBeforeUnmount(() => {
 					<div v-for="item in bundleItems" :key="item.id"
 						class="flex items-center gap-3 p-2 border rounded-lg bg-white">
 						<!-- IMAGE -->
-						<img :src="item.image" class="w-12 h-12 object-cover rounded bg-gray-100" />
+						<img :src="item.image" class="w-12 h-12 object-cover rounded bg-gray-100" loading="lazy" decoding="async" />
 
 						<!-- INFO -->
 						<div class="flex-1 text-sm font-medium line-clamp-2">

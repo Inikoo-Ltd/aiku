@@ -281,7 +281,7 @@ const setNewMarkerDate = (newVal: Date) => {
                     {{ order["reference"] }}
                 </Link>
 
-                <img v-if="order?.platform" :src="order?.platform" class="w-4" alt="platform" />
+                <img v-if="order?.platform" :src="order?.platform" class="w-4" alt="platform" loading="lazy" decoding="async" />
 
                 <span v-if="order.sales_channel_type === 'api'"
                     v-tooltip="trans('Placed automatically through the customer API')"
@@ -393,6 +393,7 @@ const setNewMarkerDate = (newVal: Date) => {
                                 class="ml-1 h-4 w-4 object-contain inline-block"
                                 :title="order.shipping_data?.[0].shipper_label"
                                 v-tooltip="order.shipping_data?.[0].shipper_label"
+                                loading="lazy" decoding="async"
                             />
                             {{ order.shipping_data?.[0].shipper_slug }}:
                         </span>
