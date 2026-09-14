@@ -217,7 +217,12 @@ const quickLook = ref<any | null>(null)
 
 const dragging = ref(false)
 
-useLiveTickets(["columns", "periodOptions"], undefined, computed(() => dragging.value || !!quickLook.value))
+useLiveTickets(["columns", "periodOptions"], undefined, computed(() => dragging.value))
+
+const closeQuickLook = () => {
+	quickLook.value = null
+	router.reload({ only: ["columns"] })
+}
 
 // ponytail: vuedraggable eats dblclick and bubbled clicks, so the board listens in capture
 let lastClick = { id: 0, at: 0 }
@@ -552,80 +557,18 @@ const onMoved = (status: string, event: { added?: { element: { id: number } } })
 	</div>
 	<div
 		v-if="quickLook"
-		class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
-		@click.self="quickLook = null">
-		<div class="relative w-3/5 rounded-2xl bg-white p-6 shadow-xl">
+		class="fixed inset-0 z-50 flex items-stretch justify-center bg-black/40 p-4"
+		@click.self="closeQuickLook">
+		<div class="relative flex w-4/5 flex-col rounded-2xl bg-white shadow-xl">
 			<button
 				type="button"
-				class="absolute right-4 top-3 text-gray-400 hover:text-gray-700"
-				@click="quickLook = null">
+				class="absolute -right-3 -top-3 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-white text-gray-500 shadow hover:text-gray-800"
+				@click="closeQuickLook">
 				<FontAwesomeIcon icon="fal fa-times" fixed-width />
 			</button>
-			<div class="max-h-[75vh] overflow-y-auto pr-1">
-				<div class="flex items-center gap-2 text-xs mb-2">
-					<Link
-						:href="route('grp.tickets.show', quickLook.reference)"
-						class="primaryLink font-medium"
-						>{{ quickLook.reference }}</Link
-					>
-					<Icon :data="quickLook.status_icon" />
-					<span class="text-gray-600">{{ quickLook.status_label }}</span>
-					<Icon :data="quickLook.priority_icon" />
-					<span class="text-gray-600">{{ quickLook.priority_label }}</span>
-					<span v-if="quickLook.kind_label" class="text-gray-400"
-						>· {{ quickLook.kind_label }}</span
-					>
-					<span v-if="quickLook.module_label" class="text-gray-400"
-						>· {{ quickLook.module_label }}</span
-					>
-				</div>
-				<h2 class="text-lg font-semibold leading-snug mb-3">{{ quickLook.subject }}</h2>
-				<div class="grid grid-cols-2 gap-x-6 gap-y-1 text-xs text-gray-600 mb-4">
-					<span
-						>{{ trans("Raised") }}: {{ shortDate(quickLook.created_at) }}
-						{{ quickLook.reporter ? "· " + quickLook.reporter : "" }}</span
-					>
-					<span v-if="quickLook.assignee"
-						>{{ trans("Assignee") }}: {{ quickLook.assignee }}</span
-					>
-					<span v-if="quickLook.assigned_at"
-						>{{ trans("Assigned") }}: {{ shortDate(quickLook.assigned_at) }}</span
-					>
-					<span v-if="quickLook.started_at"
-						>{{ trans("Started") }}: {{ shortDate(quickLook.started_at) }}</span
-					>
-					<span v-if="quickLook.waiting_at"
-						>{{ trans("Waiting since") }}: {{ shortDate(quickLook.waiting_at) }}</span
-					>
-					<span v-if="quickLook.closed_at"
-						>{{ trans("Closed") }}: {{ shortDate(quickLook.closed_at) }}</span
-					>
-					<span v-if="quickLook.customer"
-						>{{ trans("Customer") }}: {{ quickLook.customer }}</span
-					>
-					<span v-if="quickLook.shop">{{ trans("Shop") }}: {{ quickLook.shop }}</span>
-				</div>
-				<p class="text-sm whitespace-pre-wrap break-words">{{ quickLook.description }}</p>
-				<div v-if="quickLook.images?.length" class="mt-4 grid grid-cols-2 gap-2">
-					<a
-						v-for="(image, index) in quickLook.images"
-						:key="index"
-						:href="image.original"
-						target="_blank">
-						<img :src="image.original" class="rounded border border-gray-200" />
-					</a>
-				</div>
-				<ul v-if="quickLook.attachments?.length" class="mt-4 space-y-1 text-sm">
-					<li v-for="file in quickLook.attachments" :key="file.url">
-						<a
-							:href="file.url"
-							target="_blank"
-							class="text-blue-600 hover:underline break-all">
-							<FontAwesomeIcon icon="fal fa-paperclip" class="mr-1" />{{ file.name }}
-						</a>
-					</li>
-				</ul>
-			</div>
+			<iframe
+				:src="route('grp.tickets.show', quickLook.reference) + '?embed=1'"
+				class="h-full w-full flex-1 rounded-2xl border-0" />
 		</div>
 	</div>
 </template>
