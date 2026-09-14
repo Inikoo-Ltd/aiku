@@ -8,9 +8,11 @@ library.add(faChevronDown, faChevronRight)
 
 const props = defineProps<{
     storageKey: string
+    defaultCollapsed?: boolean
 }>()
 
-const collapsed = ref(localStorage.getItem(props.storageKey) === "1")
+const storedState = localStorage.getItem(props.storageKey)
+const collapsed = ref(storedState === null ? props.defaultCollapsed === true : storedState === "1")
 const toggle = () => {
     collapsed.value = !collapsed.value
     localStorage.setItem(props.storageKey, collapsed.value ? "1" : "0")

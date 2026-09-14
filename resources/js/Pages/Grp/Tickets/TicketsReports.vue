@@ -212,19 +212,6 @@ const dashboardBoxes = computed(() => (props.stats.interval === "all" ? (["peopl
                     </ul>
                 </div>
             </DashboardWidgetBox>
-
-            <DashboardWidgetBox storageKey="tickets_reports_csat_collapsed" class="self-start lg:col-span-2">
-                <template #header>
-                    <span class="flex items-center gap-2 text-sm font-semibold text-gray-600">
-                        <FontAwesomeIcon icon="fal fa-star" class="text-sky-600" fixed-width aria-hidden="true" />
-                        {{ trans("Customer satisfaction") }}
-                    </span>
-                    <span class="text-xs text-gray-400">{{ trans("Average rating per month, last 12 months") }}</span>
-                </template>
-                <div class="h-40">
-                    <Chart type="bar" :data="csatChart" :options="csatOptions" class="h-full" />
-                </div>
-            </DashboardWidgetBox>
         </div>
 
         <div class="space-y-4 rounded-xl border border-gray-200 bg-gray-50 p-3">
@@ -388,5 +375,18 @@ const dashboardBoxes = computed(() => (props.stats.interval === "all" ? (["peopl
         </div>
         </DashboardWidgetBox>
         </div>
+
+        <DashboardWidgetBox storageKey="tickets_reports_csat_collapsed" default-collapsed>
+            <template #header>
+                <span class="flex items-center gap-2 text-sm font-semibold text-gray-600">
+                    <FontAwesomeIcon icon="fal fa-star" class="text-sky-600" fixed-width aria-hidden="true" />
+                    {{ trans("Customer satisfaction") }}
+                </span>
+                <span class="text-xs text-gray-400">{{ trans("Average rating per month, last 12 months") }}</span>
+            </template>
+            <div class="h-56">
+                <Chart type="bar" :data="csatChart" :options="csatOptions" class="h-full" />
+            </div>
+        </DashboardWidgetBox>
     </div>
 </template>
