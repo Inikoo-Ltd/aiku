@@ -106,7 +106,7 @@ export const isProductTabVisible = (
 			return hasProductAboutContent(tabs, product)
 
 		case "regulatory_label_information":
-			return isWorkshop || hasLabelInfoContent(product)
+			return isWorkshop || (isLoggedIn && hasLabelInfoContent(product))
 
 		default:
 			return isTabVisible(tabKey, tabs, isLoggedIn)

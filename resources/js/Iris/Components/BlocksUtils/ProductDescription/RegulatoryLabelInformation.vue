@@ -22,7 +22,6 @@ import {
 	faDewpoint,
 	faChevronDown,
 	faCheckCircle,
-	faBan,
 } from "@fal"
 import { ctrans } from "@/Composables/useTrans"
 import { getStyles } from "@/Composables/styles"
@@ -247,25 +246,6 @@ const toggleRow = (key: string) => {
 									:alt="ctrans(safetyIcon.label)"
 									loading="lazy"
 									class="h-11 w-11 object-contain" />
-								<span class="text-[9px] leading-tight text-[#64748b]">
-									{{ ctrans(safetyIcon.label) }}
-								</span>
-							</div>
-						</div>
-
-						<div
-							class="mt-4 grid grid-cols-3 gap-3 border-t panel-divider pt-4 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8">
-							<div
-								v-for="safetyIcon in candleSafetyIcons"
-								:key="safetyIcon.key"
-								class="flex flex-col items-center gap-1 text-center">
-								<span class="relative flex h-11 w-11 items-center justify-center">
-									<FontAwesomeIcon :icon="safetyIcon.icon" class="accent-text text-[18px]" />
-									<FontAwesomeIcon
-										v-if="safetyIcon.prohibited"
-										:icon="faBan"
-										class="absolute text-[32px] text-red-500 opacity-60" />
-								</span>
 								<span class="text-[9px] leading-tight text-[#64748b]">
 									{{ ctrans(safetyIcon.label) }}
 								</span>

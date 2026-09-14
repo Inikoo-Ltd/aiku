@@ -29,6 +29,13 @@ test("reports label info content when at least one item is shown", () => {
 	assert.equal(hasLabelInfoContent({ label_info: labelInfoWith(["markets", "barcode"]) }), true)
 })
 
+test("hides the regulatory product tab from logged out visitors", () => {
+	const product = { label_info: labelInfoWith(["ce_marking"]) }
+
+	assert.equal(isProductTabVisible("regulatory_label_information", {}, product, false), false)
+	assert.equal(isProductTabVisible("regulatory_label_information", {}, product, true), true)
+})
+
 test("shows the regulatory product tab only when the product has label info", () => {
 	assert.equal(
 		isProductTabVisible("regulatory_label_information", {}, { label_info: labelInfoWith(["ce_marking"]) }, true),
@@ -55,6 +62,7 @@ test("always shows the regulatory tab in the workshop preview", () => {
 		true
 	)
 	assert.equal(isProductTabVisible("regulatory_label_information", {}, {}, true, true), true)
+	assert.equal(isProductTabVisible("regulatory_label_information", {}, {}, false, true), true)
 })
 
 test("does not let the workshop override affect the other tabs", () => {
