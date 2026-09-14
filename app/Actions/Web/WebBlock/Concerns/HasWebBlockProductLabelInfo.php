@@ -36,7 +36,7 @@ trait HasWebBlockProductLabelInfo
             'barcode'                       => $this->textItem(__('Barcode / EAN'), $product->barcode),
             'manufacturer'                  => $this->textItem(__('Manufacturer Details'), $product->gpsr_manufacturer),
             'uk_responsible_person'         => $this->getResponsiblePerson(__('UK Responsible Person'), 'aw', in_array(TradeUnitMarketEnum::UK->value, $markets, true)),
-            'eu_responsible_person'         => $this->getResponsiblePerson(__('EU Responsible Person'), 'eu', in_array(TradeUnitMarketEnum::EU->value, $markets, true)),
+            'eu_responsible_person'         => $this->getResponsiblePerson(__('EU Responsible Person'), 'sk', in_array(TradeUnitMarketEnum::EU->value, $markets, true)),
             'languages'                     => $this->labelInfoItem(__('Languages'), $languagesData['show'], $languagesData['value']),
             'best_before'                   => $this->labelInfoItem(__('PAO / Expiry Date / Best Before'), $bestBeforeData['show'], $bestBeforeData['value']),
             'ingredients'                   => $this->textItem(__('Ingredients'), $product->marketing_ingredients),
