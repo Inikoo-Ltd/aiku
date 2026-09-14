@@ -1304,13 +1304,25 @@ test('jira ticket attachments missing from the ticket and comment media are copi
     file_put_contents($existingFile, "%PDF-1.4\n%%EOF\n");
     $comment->attachTicketFile($existingFile, 'already.pdf', 'application/pdf', ['jira_attachment_id' => '500']);
 
+    $resolvedLongAgo = StoreTicket::make()->action($this->group, ['subject' => 'Resolved three weeks ago']);
+    $resolvedLongAgo->update(['data' => ['jira_key' => 'HELP-9003'], 'status' => TicketStatusEnum::RESOLVED, 'resolved_at' => now()->subWeeks(3)]);
+
+    Config::set('media-library.max_file_size', 10);
+
     Http::fake([
         'jira.test/rest/api/3/issue/HELP-9001*' => Http::response(['fields' => ['attachment' => [
-            ['id' => '500', 'filename' => 'already.pdf', 'mimeType' => 'application/pdf', 'content' => 'https://jira.test/rest/api/3/attachment/content/500'],
-            ['id' => 501, 'filename' => 'invoice.pdf', 'mimeType' => 'application/pdf', 'content' => 'https://jira.test/rest/api/3/attachment/content/501'],
+            ['id' => '500', 'filename' => 'already.pdf', 'mimeType' => 'application/pdf', 'size' => 15, 'content' => 'https://jira.test/rest/api/3/attachment/content/500'],
+            ['id' => 501, 'filename' => 'invoice.pdf', 'mimeType' => 'application/pdf', 'size' => 15, 'content' => 'https://jira.test/rest/api/3/attachment/content/501'],
+        ]]]),
+        'jira.test/rest/api/3/issue/HELP-9003*' => Http::response(['fields' => ['attachment' => [
+            ['id' => '601', 'filename' => 'recording.mp4', 'mimeType' => 'video/mp4', 'size' => 15, 'content' => 'https://jira.test/rest/api/3/attachment/content/601'],
         ]]]),
         'jira.test/rest/api/3/attachment/content/501' => Http::response("%PDF-1.4\n%%EOF\n"),
     ]);
+
+    expect(\App\Actions\Helpers\Ticket\ImportJiraTicketAttachments::make()->handle($resolvedLongAgo->fresh()))->toBe(0)
+        ->and($resolvedLongAgo->fresh()->getMedia('ticket_attachments'))->toHaveCount(0);
+    Http::assertNotSent(fn ($request) => str_contains($request->url(), 'content/601'));
 
     $action = \App\Actions\Helpers\Ticket\ImportJiraTicketAttachments::make();
 
@@ -1322,7 +1334,8 @@ test('jira ticket attachments missing from the ticket and comment media are copi
     expect($media)->toHaveCount(1)
         ->and($media->first()->name)->toBe('invoice.pdf')
         ->and($media->first()->getCustomProperty('source'))->toBe(['jira_attachment_id' => '501'])
-        ->and($comment->fresh()->getMedia('ticket_attachments'))->toHaveCount(1);
+        ->and($comment->fresh()->getMedia('ticket_attachments'))->toHaveCount(1)
+        ->and(config('media-library.max_file_size'))->toBe(10);
     Http::assertNotSent(fn ($request) => str_contains($request->url(), 'content/500'));
     Http::assertSent(fn ($request) => $request->hasHeader('Authorization', 'Basic '.base64_encode('bot@test:token')));
 });

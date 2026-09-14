@@ -9,6 +9,7 @@
 namespace App\Actions\Helpers\Ticket;
 
 use App\Actions\Helpers\Ticket\Concerns\WithJiraApi;
+use App\Enums\Helpers\Ticket\TicketStatusEnum;
 use App\Models\Helpers\Media;
 use App\Models\Helpers\Ticket;
 use Illuminate\Console\Command;
@@ -24,7 +25,9 @@ class ImportJiraTicketAttachments
     public string $commandSignature = 'tickets:import_jira_attachments {ticket? : Ticket reference, e.g. HELP-3121}';
     public string $commandDescription = 'Copy the Jira attachments that are not yet in the ticket media, so the Jira HELP space can be archived';
 
-    public function handle(Ticket $ticket): int
+    public const int KEEP_OVERSIZED_FILES_IN_JIRA_AFTER_RESOLVED_DAYS = 14;
+
+    public function handle(Ticket $ticket, ?Command $command = null): int
     {
         $jiraAttachments = $this->jira()
             ->get('rest/api/3/issue/'.$ticket->data['jira_key'], ['fields' => 'attachment'])
@@ -32,6 +35,7 @@ class ImportJiraTicketAttachments
             ->json('fields.attachment', []);
 
         $alreadyImportedIds = $this->alreadyImportedJiraAttachmentIds($ticket);
+        $mediaSizeLimit     = config('media-library.max_file_size');
         $imported           = 0;
 
         foreach ($jiraAttachments as $jiraAttachment) {
@@ -39,12 +43,22 @@ class ImportJiraTicketAttachments
                 continue;
             }
 
+            $size = (int) ($jiraAttachment['size'] ?? 0);
+
+            if ($size > $mediaSizeLimit && $this->isResolvedLongAgo($ticket)) {
+                $command?->warn("$ticket->reference: left in Jira {$jiraAttachment['filename']} (".round($size / 1024 / 1024).' MB)');
+
+                continue;
+            }
+
             $path = tempnam(sys_get_temp_dir(), 'jira');
 
             try {
                 $this->jira()->sink($path)->get($jiraAttachment['content'])->throw();
+                config(['media-library.max_file_size' => max($mediaSizeLimit, $size, filesize($path))]);
                 $ticket->attachTicketFile($path, $jiraAttachment['filename'], $jiraAttachment['mimeType'] ?? null, ['jira_attachment_id' => (string) $jiraAttachment['id']]);
             } finally {
+                config(['media-library.max_file_size' => $mediaSizeLimit]);
                 @unlink($path);
             }
 
@@ -53,6 +67,12 @@ class ImportJiraTicketAttachments
         }
 
         return $imported;
+    }
+
+    private function isResolvedLongAgo(Ticket $ticket): bool
+    {
+        return $ticket->status === TicketStatusEnum::RESOLVED
+            && $ticket->resolved_at?->lt(now()->subDays(self::KEEP_OVERSIZED_FILES_IN_JIRA_AFTER_RESOLVED_DAYS));
     }
 
     /**
@@ -85,7 +105,7 @@ class ImportJiraTicketAttachments
             ->chunkById(100, function ($tickets) use ($command, &$imported, &$failed) {
                 foreach ($tickets as $ticket) {
                     try {
-                        $imported += $this->handle($ticket);
+                        $imported += $this->handle($ticket, $command);
                     } catch (Throwable $e) {
                         $failed++;
                         $command->error("$ticket->reference: ".$e->getMessage());
