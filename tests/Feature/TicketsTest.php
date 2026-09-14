@@ -781,7 +781,7 @@ test('slack ticket reaction raises a ticket from the message and mirrors replies
     expect($fromModal->comments()->pluck('body')->all())->toBe(['reply under the alert card']);
     StoreTicketComment::make()->action($fromModal, $this->user, ['body' => 'answer from aiku']);
     Http::assertSent(fn ($request) => str_contains($request->url(), 'chat.postMessage') && ($request['thread_ts'] ?? null) === '55.1' && str_contains($request['text'], 'answer from aiku'));
-    expect($ticket->fresh()->status)->toBe(TicketStatusEnum::OPEN)
+    expect($ticket->fresh()->status)->toBe(TicketStatusEnum::ANSWERED)
         ->and($ticket->comments()->pluck('body')->all())->toBe(['Fixed, please check', 'It is FPGB-123']);
     Http::assertNotSent(fn ($request) => str_contains($request->url(), 'chat.postMessage') && str_contains($request['text'], 'It is FPGB-123'));
     UpdateTicket::make()->action($ticket, ['status' => TicketStatusEnum::RESOLVED->value]);
