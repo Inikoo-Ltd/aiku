@@ -3240,10 +3240,14 @@ test('AEAT intrastat export keeps invalid rows only when forced', function () {
     $record->setRelation('intrastatExportTimeSeries', $series);
 
     $strict = ExportIntrastatAeat::make()->build(new \Illuminate\Database\Eloquent\Collection([$record]));
-    $forced = ExportIntrastatAeat::make()->build(new \Illuminate\Database\Eloquent\Collection([$record]), true);
+    $forced = ExportIntrastatAeat::make()->build(new \Illuminate\Database\Eloquent\Collection([$record]), ['weight_kg' => '1', 'origin' => 'es']);
 
     expect($strict['errors'])->not->toBeEmpty()
         ->and($strict['lines'])->toBeEmpty()
-        ->and($forced['errors'])->toBe($strict['errors'])
-        ->and($forced['lines'])->toHaveCount(1);
+        ->and($forced['lines'])->toHaveCount(1)
+        ->and($strict['summary'])->toHaveKey('net mass is zero', 1)
+        ->and($forced['errors'])->not->toContain('record 1 2026-02-01 3304990000 : net mass is zero')
+        ->and($forced['lines'][0])->toContain(';1;')
+        ->and($forced['lines'][0])->toContain(';ES;')
+        ->and($forced['errors'])->not->toContain('record 1 2026-02-01 3304990000 : country of origin missing on the product');
 });

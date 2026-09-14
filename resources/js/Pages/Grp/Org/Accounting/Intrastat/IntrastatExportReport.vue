@@ -52,6 +52,8 @@ const exportExcel = () => {
 
 const aeatErrors = ref<string[]>([])
 const aeatRows = ref(0)
+const aeatSummary = ref<Record<string, number>>({})
+const aeatFallback = ref({ weight_kg: '1', tariff_code: '', origin: '' })
 const isAeatModalOpen = ref(false)
 const isAeatChecking = ref(false)
 
@@ -63,6 +65,7 @@ const exportAeat = async () => {
         const { data } = await axios.get(aeatUrl({ check: '1' }))
         aeatErrors.value = data.errors
         aeatRows.value = data.rows
+        aeatSummary.value = data.summary
         if (data.errors.length) {
             isAeatModalOpen.value = true
         } else {
@@ -75,7 +78,12 @@ const exportAeat = async () => {
 
 const exportAeatAnyway = () => {
     isAeatModalOpen.value = false
-    window.location.href = aeatUrl({ force: '1' })
+    window.location.href = aeatUrl({
+        force: '1',
+        'fallback[weight_kg]': aeatFallback.value.weight_kg,
+        'fallback[tariff_code]': aeatFallback.value.tariff_code,
+        'fallback[origin]': aeatFallback.value.origin,
+    })
 }
 </script>
 
@@ -123,7 +131,30 @@ const exportAeatAnyway = () => {
                 <p class="mt-1 text-gray-700">
                     {{ trans(':errors problems found in :rows rows. AEAT will reject this file as it is.', { errors: aeatErrors.length, rows: aeatRows }) }}
                 </p>
-                <pre class="mt-4 max-h-96 overflow-auto rounded bg-gray-50 p-3 text-xs text-gray-800">{{ aeatErrors.join('\n') }}</pre>
+                <table class="mt-4 w-full text-sm">
+                    <tr v-for="(count, reason) in aeatSummary" :key="reason" class="border-b border-gray-100">
+                        <td class="py-1 pr-4 text-right font-semibold tabular-nums text-red-700">{{ count }}</td>
+                        <td class="py-1 text-gray-800">{{ reason }}</td>
+                    </tr>
+                </table>
+                <p class="mt-3 text-sm text-gray-700">
+                    {{ trans('Downloading anyway keeps every row and fills the missing values with these. Zero invoiced amounts are left as they are.') }}
+                </p>
+                <div class="mt-2 grid grid-cols-3 gap-3 text-sm">
+                    <label class="flex flex-col gap-1">
+                        <span class="text-gray-600">{{ trans('Weight for rows without weight (kg)') }}</span>
+                        <input v-model="aeatFallback.weight_kg" type="number" min="0" step="0.001" class="rounded border-gray-300" />
+                    </label>
+                    <label class="flex flex-col gap-1">
+                        <span class="text-gray-600">{{ trans('Tariff code for rows without one') }}</span>
+                        <input v-model="aeatFallback.tariff_code" type="text" inputmode="numeric" maxlength="10" placeholder="33049900" class="rounded border-gray-300 font-mono" />
+                    </label>
+                    <label class="flex flex-col gap-1">
+                        <span class="text-gray-600">{{ trans('Origin country for rows without one') }}</span>
+                        <input v-model="aeatFallback.origin" type="text" maxlength="2" placeholder="ES" class="rounded border-gray-300 uppercase" />
+                    </label>
+                </div>
+                <pre class="mt-4 max-h-64 overflow-auto rounded bg-gray-50 p-3 text-xs text-gray-800">{{ aeatErrors.join('\n') }}</pre>
                 <div class="mt-6 flex justify-end gap-3">
                     <Button @click="isAeatModalOpen = false" :style="'secondary'" :label="trans('Fix the data first')" />
                     <Button @click="exportAeatAnyway" :style="'red'" icon="fal fa-exclamation-triangle" :label="trans('Download anyway with the errors')" />

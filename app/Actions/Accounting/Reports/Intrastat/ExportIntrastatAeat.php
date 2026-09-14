@@ -45,27 +45,39 @@ class ExportIntrastatAeat extends OrgAction
     /**
      * @return array{lines: list<string>, log: list<string>, errors: list<string>}
      */
-    public function handle(Organisation $organisation, array $filters, bool $keepInvalidRows = false): array
+    /**
+     * @param  array{weight_kg?: string, tariff_code?: string, origin?: string}|null  $fallback  when set every row is kept and missing values are replaced
+     */
+    public function handle(Organisation $organisation, array $filters, ?array $fallback = null): array
     {
-        return $this->build($this->getRecords($organisation, $filters), $keepInvalidRows);
+        return $this->build($this->getRecords($organisation, $filters), $fallback);
     }
 
     /**
-     * @return array{lines: list<string>, log: list<string>, errors: list<string>}
+     * @param  array{weight_kg?: string, tariff_code?: string, origin?: string}|null  $fallback  when set every row is kept and missing values are replaced
+     * @return array{lines: list<string>, log: list<string>, errors: list<string>, summary: array<string, int>}
      */
-    public function build(Collection $records, bool $keepInvalidRows = false): array
+    public function build(Collection $records, ?array $fallback = null): array
     {
-        $lines  = [];
-        $log    = [];
-        $errors = [];
+        $lines   = [];
+        $log     = [];
+        $errors  = [];
+        $summary = [];
 
         foreach ($records as $record) {
             $series      = $record->intrastatExportTimeSeries;
             $destination = $series->country?->code ?? '';
             $origin      = $series->originCountry?->code ?? '';
             $commodity   = $this->commodityCode($series->tariff_code);
+            if ($fallback !== null) {
+                $origin    = $origin !== '' ? $origin : strtoupper((string) ($fallback['origin'] ?? ''));
+                $commodity = $commodity !== '' ? $commodity : $this->commodityCode($fallback['tariff_code'] ?? null);
+            }
             $vat         = $series->partner_tax_number ?? IntrastatVatNumber::UNKNOWN;
             $weightKg    = (float) ($record->weight ?? 0) / 1000;
+            if ($fallback !== null && $weightKg <= 0) {
+                $weightKg = (float) ($fallback['weight_kg'] ?? 0);
+            }
             $quantity    = (float) ($record->quantity ?? 0);
             $unit        = $this->supplementaryUnit($commodity);
             $value       = (float) ($record->value_org_currency ?? 0);
@@ -82,7 +94,7 @@ class ExportIntrastatAeat extends OrgAction
                 $origin,
                 self::STATISTICAL_PROCEDURE,
                 $this->decimal($weightKg, 3),
-                $this->supplementaryUnits($unit, $quantity, (float) ($record->weight ?? 0)),
+                $this->supplementaryUnits($unit, $quantity, $weightKg * 1000),
                 $this->amount($value),
                 $this->amount($value),
                 $vat,
@@ -92,9 +104,11 @@ class ExportIntrastatAeat extends OrgAction
 
             foreach ($rowErrors as $rowError) {
                 $errors[] = "$source: $rowError";
+                $reason   = preg_replace("/ '[^']*'/", '', $rowError);
+                $summary[$reason] = ($summary[$reason] ?? 0) + 1;
             }
 
-            if ($rowErrors === [] || $keepInvalidRows) {
+            if ($rowErrors === [] || $fallback !== null) {
                 $lines[] = implode(self::SEPARATOR, $fields);
             }
 
@@ -102,7 +116,9 @@ class ExportIntrastatAeat extends OrgAction
             $log[]        = implode("\t", [$source, $originalVats, $vat, $vat === IntrastatVatNumber::UNKNOWN ? 'QV: VAT charged, category not intra-EU, or VAT failed validation' : 'retained intra-EU VAT', $series->tariff_code, $commodity]);
         }
 
-        return ['lines' => $lines, 'log' => $log, 'errors' => $errors];
+        arsort($summary);
+
+        return ['lines' => $lines, 'log' => $log, 'errors' => $errors, 'summary' => $summary];
     }
 
     /**
@@ -242,10 +258,10 @@ class ExportIntrastatAeat extends OrgAction
             'elements' => $request->input('elements', []),
         ];
 
-        $result = $this->handle($organisation, $filters, $request->boolean('force'));
+        $result = $this->handle($organisation, $filters, $request->boolean('force') ? $request->input('fallback', []) : null);
 
         if ($request->boolean('check')) {
-            return response()->json(['errors' => $result['errors'], 'rows' => count($result['log'])]);
+            return response()->json(['errors' => $result['errors'], 'summary' => $result['summary'], 'rows' => count($result['log'])]);
         }
 
         $stamp    = Carbon::now()->format('Y-m-d_His');
