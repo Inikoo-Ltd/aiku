@@ -13,7 +13,7 @@ import axios from "axios"
 import Dialog from "primevue/dialog"
 import InputText from "primevue/inputtext"
 import Tag from "@/Components/Tag.vue"
-import { capitalize } from "lodash"
+import { capitalize } from "lodash-es"
 import { resolveImageDropAction } from "@/Composables/useImageDropAction"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 // Types
@@ -562,7 +562,6 @@ function onDeleteFilesInList(categoryBox: any) {
                                         :title="item?.name">
                                         {{ item?.name || trans("Unnamed product") }}
                                     </p>
-
                                     <!-- Tag PrimeVue untuk sub_scope -->
                                     <Tag v-if="item?.sub_scope"
                                         :label="capitalize(item.sub_scope + (item.sub_scope != 'main' ? ' side' : ''))"

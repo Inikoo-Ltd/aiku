@@ -9,6 +9,7 @@
 namespace App\Actions\Web\WebBlock\Iris;
 
 use App\Actions\Web\WebBlock\Concerns\HasWebBlockLayoutData;
+use App\Actions\Web\WebBlock\Concerns\HasWebBlockProductLabelInfo;
 use App\Enums\Goods\TradeUnit\TradeAttachmentScopeEnum;
 use App\Http\Resources\Helpers\Attachment\IrisAttachmentsResource;
 use App\Http\Resources\Web\WebBlockFamilyResource;
@@ -24,6 +25,7 @@ class GetWebBlockProduct
 {
     use AsObject;
     use HasWebBlockLayoutData;
+    use HasWebBlockProductLabelInfo;
 
     public function handle(Webpage $webpage, array $webBlock): array
     {
@@ -73,6 +75,7 @@ class GetWebBlockProduct
         data_set($webBlock, 'web_block.layout.data.fieldValue.tabs_style', $this->getFamilyExtraDescriptionLayoutData($webPublishedLayout));
         data_set($webBlock, 'web_block.layout.data.fieldValue.product', $resourceWebBlockProduct);
         data_set($webBlock, 'web_block.layout.data.fieldValue.product.attachments', IrisAttachmentsResource::collection($attachments)->resolve());
+        data_set($webBlock, 'web_block.layout.data.fieldValue.product.label_info', $this->getProductLabelInfo($product));
 
         if ($variant) {
             $variant = $variant->only(['id', 'data']);

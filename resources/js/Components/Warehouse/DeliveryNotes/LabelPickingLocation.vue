@@ -6,7 +6,6 @@ import { faInventory, faListOl } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import FractionDisplay from "@/Components/DataDisplay/FractionDisplay.vue"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
-import { String } from "lodash"
 
 library.add(faInventory, faListOl)
 

@@ -34,7 +34,6 @@ import { faOctopusDeploy } from "@fortawesome/free-brands-svg-icons"
 import TableFamilies from "@/Components/Tables/Grp/Org/Catalogue/TableFamilies.vue"
 import ImagesManagement from "@/Components/Goods/ImagesManagement.vue"
 import Breadcrumb from 'primevue/breadcrumb'
-import { create } from "lodash"
 import UploadExcel from "@/Components/Upload/UploadExcel.vue"
 import TableMasterVariants from "@/Components/Tables/Grp/Goods/TableMasterVariants.vue"
 import ProductCategoryTimeSeriesTable from "@/Components/Product/ProductCategoryTimeSeriesTable.vue"
@@ -157,7 +156,7 @@ const showDialog = ref(false);
 			<Button
                 v-if="layout?.app?.environment === 'local'"
 				@click="() => (isModalUploadOpen = true)"
-				:style="create"
+				:style="'create'"
 				:icon="faUpload"
 				v-tooltip="'upload excel'"
                 label="Upload Excel"

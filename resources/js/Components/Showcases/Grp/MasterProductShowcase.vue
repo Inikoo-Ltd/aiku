@@ -455,6 +455,7 @@ const isModalProductForSale = ref(false)
 					:gpsr="data.gpsr"
 					:properties="data.properties"
 					:attachments="data.attachment_box"
+					:labelInfo="data.label_info"
 				/>
 			</div>
 		</div>
