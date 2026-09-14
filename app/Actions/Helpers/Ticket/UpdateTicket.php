@@ -8,14 +8,16 @@
 
 namespace App\Actions\Helpers\Ticket;
 
-use App\Actions\Helpers\Ticket\Concerns\WithTicketsWriteGuard;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\CRM\Livechat\ChatPriorityEnum;
 use App\Enums\Helpers\Ticket\TicketKindEnum;
 use App\Enums\Helpers\Ticket\TicketModuleEnum;
+use App\Enums\Helpers\Ticket\TicketQaStatusEnum;
 use App\Enums\Helpers\Ticket\TicketStatusEnum;
+use App\Enums\Helpers\Ticket\TicketStatusGroupEnum;
 use App\Models\Helpers\Ticket;
+use App\Models\SysAdmin\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
@@ -23,21 +25,104 @@ use Lorisleiva\Actions\ActionRequest;
 
 class UpdateTicket extends OrgAction
 {
-    use WithTicketsWriteGuard;
-
     use WithActionUpdate;
 
     public function handle(Ticket $ticket, array $modelData): Ticket
     {
-        $this->guardTicketsWritable();
+        $question     = trim((string) Arr::pull($modelData, 'question', ''));
+        $waitingHours = Arr::pull($modelData, 'waiting_hours');
+
+        $asker = request()->user();
+        if ($question !== '' && $asker instanceof User) {
+            StoreTicketComment::make()->action($ticket, $asker, ['body' => $question], notifyUsers: false);
+        }
+
+        if (Arr::exists($modelData, 'assignee_id') && Arr::get($modelData, 'assignee_id') != $ticket->assignee_id) {
+            data_set($modelData, 'assigned_at', Arr::get($modelData, 'assignee_id') ? now() : null);
+
+            if (!Arr::has($modelData, 'status') && in_array($ticket->status, [TicketStatusEnum::OPEN, TicketStatusEnum::ASSIGNED], true)) {
+                data_set($modelData, 'status', Arr::get($modelData, 'assignee_id') ? TicketStatusEnum::ASSIGNED->value : TicketStatusEnum::OPEN->value);
+            }
+        }
 
         if ($status = Arr::get($modelData, 'status')) {
             $status = TicketStatusEnum::from($status);
+
+            $assignee = Arr::exists($modelData, 'assignee_id') ? Arr::get($modelData, 'assignee_id') : $ticket->assignee_id;
+
+            if ($status === TicketStatusEnum::ASSIGNED && !$assignee) {
+                $status = TicketStatusEnum::OPEN;
+                data_set($modelData, 'status', $status->value);
+            }
+
+            if ($status === TicketStatusEnum::OPEN && $assignee) {
+                $status = TicketStatusEnum::ASSIGNED;
+                data_set($modelData, 'status', $status->value);
+            }
+
+            data_set($modelData, 'assigned_at', $status === TicketStatusEnum::OPEN ? null : (Arr::get($modelData, 'assigned_at') ?? $ticket->assigned_at ?? now()));
+            data_set($modelData, 'waiting_at', $status === TicketStatusEnum::WAITING ? ($ticket->waiting_at ?? now()) : null);
+            data_set($modelData, 'waiting_until', $status === TicketStatusEnum::WAITING
+                ? ($waitingHours ? now()->addHours((int) $waitingHours) : ($ticket->waiting_until ?? now()->addHours($ticket->defaultWaitingHours())))
+                : null);
+            data_set($modelData, 'started_at', $status->group() === TicketStatusGroupEnum::TODO ? null : ($ticket->started_at ?? now()));
             data_set($modelData, 'resolved_at', $status === TicketStatusEnum::RESOLVED ? now() : ($status->isOpen() ? null : $ticket->resolved_at));
-            data_set($modelData, 'closed_at', $status === TicketStatusEnum::CLOSED ? now() : null);
+            data_set($modelData, 'closed_at', $status->isOpen() ? null : now());
+        }
+
+        $qaNote = trim((string) Arr::pull($modelData, 'qa_note', ''));
+        if (Arr::exists($modelData, 'qa_status')) {
+            $qaStatus = Arr::get($modelData, 'qa_status') ? TicketQaStatusEnum::from(Arr::get($modelData, 'qa_status')) : null;
+            $isVerdict = in_array($qaStatus, [TicketQaStatusEnum::PASSED, TicketQaStatusEnum::FAILED], true);
+            data_set($modelData, 'qa_requested_at', $qaStatus === TicketQaStatusEnum::REQUESTED ? now() : ($qaStatus ? $ticket->qa_requested_at : null));
+            data_set($modelData, 'qa_checked_at', $isVerdict ? now() : null);
+            data_set($modelData, 'qa_user_id', $isVerdict && $asker instanceof User ? $asker->id : null);
         }
 
         $ticket = $this->update($ticket, $modelData);
+
+        if ($ticket->wasChanged('qa_status') && $asker instanceof User) {
+            $verdict = $ticket->qa_status ? TicketQaStatusEnum::labels()[$ticket->qa_status->value] : __('QA check withdrawn');
+            $ticket->comments()->create([
+                'author_type' => 'User',
+                'author_id'   => $asker->id,
+                'body'        => $qaNote !== '' ? $verdict.': '.$qaNote : $verdict,
+            ]);
+            PostTicketSlackThreadReply::run($ticket, $ticket->reference.' · '.$verdict);
+        }
+
+        if ($question !== '' && $asker instanceof User && $ticket->status === TicketStatusEnum::WAITING) {
+            NotifyTicketUsers::make()->asked($ticket, $asker, $question);
+        }
+
+        if ($ticket->wasChanged('qa_status') && $asker instanceof User) {
+            NotifyTicketUsers::make()->qaChanged($ticket, $asker);
+        }
+
+        if ($ticket->wasChanged('status') && $ticket->status === TicketStatusEnum::RESOLVED) {
+            NotifyTicketUsers::make()->done($ticket, $asker instanceof User ? $asker : null);
+        }
+
+        if ($ticket->wasChanged('status')) {
+            PostTicketSlackThreadReply::run($ticket, $ticket->reference.' is now '.TicketStatusEnum::labels()[$ticket->status->value]);
+        }
+
+        if ($ticket->wasChanged(['status', 'assignee_id'])) {
+            SyncTicketSlackAlert::run($ticket);
+        }
+
+        NotifyTicketUsers::make()->pushBadges($ticket, $asker instanceof User ? $asker : null);
+
+        if ($ticket->wasChanged('assignee_id') && ($actor = request()->user()) instanceof User) {
+            $previous = $ticket->getOriginal('assignee_id') ? User::find($ticket->getOriginal('assignee_id')) : null;
+            $ticket->comments()->create([
+                'author_type' => 'User',
+                'author_id'   => $actor->id,
+                'body'        => $ticket->assignee
+                    ? ($previous ? __('Passed from :from to :to', ['from' => $previous->contact_name ?: $previous->username, 'to' => $ticket->assignee->contact_name ?: $ticket->assignee->username]) : __('Assigned to :to', ['to' => $ticket->assignee->contact_name ?: $ticket->assignee->username]))
+                    : __('Unassigned'),
+            ]);
+        }
 
         if ($ticket->wasChanged('assignee_id') && $ticket->assignee_id && $conversation = $ticket->staffConversation) {
             $conversation->participants()->syncWithoutDetaching([$ticket->assignee_id]);
@@ -58,13 +143,35 @@ class UpdateTicket extends OrgAction
             'module'      => ['sometimes', 'nullable', Rule::enum(TicketModuleEnum::class)],
             'tags'        => ['sometimes', 'array'],
             'is_confidential' => ['sometimes', 'boolean'],
+            'question'      => ['sometimes', 'nullable', 'string', 'max:10000'],
+            'qa_status'     => ['sometimes', 'nullable', Rule::enum(TicketQaStatusEnum::class)],
+            'qa_note'       => ['sometimes', 'nullable', 'string', 'max:10000'],
+            'waiting_hours' => ['sometimes', 'nullable', 'integer', 'min:1', 'max:720'],
             'tags.*'        => ['string', 'max:64'],
         ];
     }
 
     public function authorize(ActionRequest $request): bool
     {
-        return $this->asAction || $request->user() !== null;
+        if ($this->asAction || Ticket::canBeAssignedBy($request->user())) {
+            return true;
+        }
+
+        $ticket = $request->route('ticket');
+        if ($request->has('qa_status')) {
+            $isVerdict = in_array($request->input('qa_status'), [TicketQaStatusEnum::PASSED->value, TicketQaStatusEnum::FAILED->value], true);
+
+            return array_diff(array_keys($request->all()), ['qa_status', 'qa_note']) === []
+                && ($isVerdict ? Ticket::canCheckQa($request->user()) : Ticket::canBeManagedBy($request->user()));
+        }
+
+        if (Ticket::canBeManagedBy($request->user())) {
+            $onOwnPlate = $ticket instanceof Ticket && $ticket->assignee_id === $request->user()->id && $request->filled('assignee_id');
+
+            return (!$request->has('assignee_id') || $onOwnPlate) && !$request->has('is_confidential');
+        }
+
+        return $ticket instanceof Ticket && $ticket->isReportedBy($request->user()) && array_keys($request->all()) === ['status'];
     }
 
     public function action(Ticket $ticket, array $modelData): Ticket

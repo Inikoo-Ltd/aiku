@@ -171,6 +171,8 @@ use App\Actions\Retina\Media\DownloadRetinaAttachment;
 use App\Actions\Retina\Ordering\AddRetinaProductToBasket;
 use App\Actions\Retina\Ordering\StoreRetinaTransaction;
 use App\Actions\Retina\Ordering\UpdateRetinaOrderDeliveryAddress;
+use App\Actions\Retina\Ordering\ConfirmRetinaOrderDeliveryAddress;
+use App\Actions\Retina\Ordering\UseRetinaOrderPreviousDeliveryAddress;
 use App\Actions\Retina\Ordering\UpdateRetinaTransaction;
 use App\Actions\Retina\Shopify\CreateRetinaNewAllPortfoliosToShopify;
 use App\Actions\Retina\Shopify\CreateRetinaNewBulkPortfoliosToShopify;
@@ -316,6 +318,8 @@ Route::name('order.')->prefix('order/{order:id}')->whereNumber('order')->group(f
     Route::post('pay-with-balance-after-submitted', PayRetinaOrderWithBalanceAfterSubmitted::class)->name('pay_with_balance_after_submitted');
 
     Route::patch('delivery-address-update', UpdateRetinaOrderDeliveryAddress::class)->name('delivery_address_update');
+    Route::patch('delivery-address-confirm', ConfirmRetinaOrderDeliveryAddress::class)->name('delivery_address_confirm');
+    Route::patch('delivery-address-use-previous', UseRetinaOrderPreviousDeliveryAddress::class)->name('delivery_address_use_previous');
 
     Route::post('add-collection', StoreOrderAddressCollection::class)->name('basket.collection.store');
     Route::delete('delete-collection', DeleteOrderAddressCollection::class)->name('basket.collection.delete');

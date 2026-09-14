@@ -44,7 +44,7 @@ class RecipeStepRawMaterial extends Model
 
     public function rawMaterial(): BelongsTo
     {
-        return $this->belongsTo(RawMaterial::class);
+        return $this->belongsTo(RawMaterial::class)->withTrashed();
     }
 
     public function organisation(): BelongsTo

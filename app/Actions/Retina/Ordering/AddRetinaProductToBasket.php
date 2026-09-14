@@ -31,7 +31,7 @@ class AddRetinaProductToBasket extends RetinaAction
     {
         $historicAssetId = $modelData['historic_asset_id'];
 
-        $this->ensureHistoricAssetIsPurchasableByCustomer(HistoricAsset::find($historicAssetId));
+        $this->ensureHistoricAssetIsPurchasableByCustomer(HistoricAsset::find($historicAssetId), $this->customer);
 
         $existingTransaction = $order->transactions()->where('historic_asset_id', $historicAssetId)->first();
 

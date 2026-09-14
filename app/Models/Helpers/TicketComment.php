@@ -35,6 +35,13 @@ class TicketComment extends Model implements HasMedia
 
     protected $guarded = [];
 
+    protected static function booted(): void
+    {
+        $refresh = fn (TicketComment $comment) => Ticket::refreshSearchVectors($comment->ticket_id);
+        static::saved($refresh);
+        static::deleted($refresh);
+    }
+
     protected function casts(): array
     {
         return [
@@ -50,5 +57,10 @@ class TicketComment extends Model implements HasMedia
     public function author(): MorphTo
     {
         return $this->morphTo();
+    }
+
+    public function isAuthoredBy(?Model $user): bool
+    {
+        return $user !== null && $this->author_type === class_basename($user) && (int) $this->author_id === (int) $user->id;
     }
 }

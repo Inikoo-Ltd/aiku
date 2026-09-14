@@ -108,6 +108,7 @@ const getStylesRemoveFontSize = (properties, screenType) => {
 
                 <!-- Search Bar -->
                 <IrisSearchMobile
+                    v-if="screenType === 'mobile'"
                     id="iris_search_mobile"
                     :style="{
                         ...getStyles(headerData?.mobile?.profile?.container?.properties, screenType),

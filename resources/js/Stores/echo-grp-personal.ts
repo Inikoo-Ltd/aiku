@@ -4,6 +4,7 @@
  * Copyright (c) 2023, Raul A Perusquia Flores
  */
 
+import type { TicketBadges } from '@/types/TicketBadges'
 import { useMilisecondToTime } from "@/Composables/useFormatTime"
 import { differenceInMilliseconds } from 'date-fns'
 import { defineStore } from "pinia";
@@ -115,6 +116,13 @@ export const useEchoGrpPersonal = defineStore("echo-grp-personal", {
                 const layout = useLayoutStore()
                 layout.dispatching_waiting_count = eventData.dispatching_waiting_count
                 layout.crm_waiting_count = eventData.crm_waiting_count
+            })
+            .listen('.ticket-badges-update', (eventData: { ticket_badges: TicketBadges; notification: { title: string; body: string; route: string } | null }) => {
+                const layout = useLayoutStore()
+                layout.ticket_badges = eventData.ticket_badges
+                if (eventData.notification) {
+                    layout.notifications.unshift({ id: '', read: false, href: '', created_at: new Date(), ...eventData.notification })
+                }
             })
             .listen('.clone-family-progress', (eventData: CloneFamilyProgressEvent) => {
                 const masterFamilyId = eventData.family_progress?.action_id

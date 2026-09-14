@@ -1189,3 +1189,13 @@ test('iris only creates portfolios on manual channels and channels that can conn
 
     expect($unconnected->refresh()->portfolios()->count())->toBe(1);
 });
+
+test('a customer client arriving from a channel is accepted with only a country', function () {
+    $customerSalesChannel = $this->customer->customerSalesChannels()->first();
+    expect($customerSalesChannel)->not->toBeNull();
+
+    $definition            = CustomerClient::factory()->definition();
+    $definition['address'] = array_merge($definition['address'], ['address_line_1' => '', 'address_line_2' => '', 'locality' => '', 'postal_code' => '', 'administrative_area' => '']);
+
+    expect(StoreCustomerClient::make()->action($customerSalesChannel, $definition))->toBeInstanceOf(CustomerClient::class);
+});

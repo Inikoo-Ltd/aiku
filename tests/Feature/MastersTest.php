@@ -2673,6 +2673,23 @@ test('master product creation seeds minor prices from the official exchange, not
         ->and(data_get($data, 'currencies.GBP.is_major'))->toBeTrue();
 });
 
+test('master product creation data refuses a trade unit quantity of zero instead of dividing by it', function () {
+    $masterShop       = createFreshMasterShop();
+    $masterDepartment = StoreMasterDepartment::make()->action($masterShop, [
+        'code' => 'ZQDEP-'.uniqid(),
+        'name' => 'Zero quantity dept',
+    ]);
+    $masterFamily = StoreMasterFamily::make()->action($masterDepartment, [
+        'code' => 'ZQFAM-'.uniqid(),
+        'name' => 'Zero quantity family',
+    ]);
+    $tradeUnit = StoreTradeUnit::make()->action(group(), TradeUnit::factory()->definition());
+
+    post(route('grp.models.master_product_category.product_creation_data', [$masterFamily->id]), [
+        'trade_units' => [['id' => $tradeUnit->id, 'quantity' => 0]],
+    ])->assertSessionHasErrors('trade_units.0.quantity');
+});
+
 test('minor currency recalculation includes variant master assets', function () {
     $masterShop = createFreshMasterShop();
     $masterShop->update(['price_exchanges' => [

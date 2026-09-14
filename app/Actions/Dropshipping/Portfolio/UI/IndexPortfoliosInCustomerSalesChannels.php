@@ -197,6 +197,17 @@ class IndexPortfoliosInCustomerSalesChannels extends OrgAction
                             'type'                 => 'portfolio_csv_extended_properties'
                         ]
                     ],
+                    ...$this->customerSalesChannel->platform->type == PlatformTypeEnum::SHOPIFY ? [
+                        'reconciliation' => [
+                            'name'       => 'grp.org.shops.show.crm.customers.show.customer_sales_channels.show.portfolios.reconciliation',
+                            'parameters' => [
+                                'organisation'         => $this->organisation->slug,
+                                'shop'                 => $this->shop->slug,
+                                'customer'             => $this->customerSalesChannel->customer->slug,
+                                'customerSalesChannel' => $this->customerSalesChannel->slug
+                            ]
+                        ]
+                    ] : [],
                 ],
 
                 'routes'         => [

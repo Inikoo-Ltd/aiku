@@ -68,6 +68,11 @@ onBeforeUnmount(() => {
     clearDragHintTimer()
 })
 
+const isMounted = ref(false)
+onMounted(() => {
+    isMounted.value = true
+})
+
 // The floating button can be dragged vertically to uncover content beneath it;
 // the position sticks per device
 const FAB_POSITION_KEY = 'iris-search-fab-bottom'
@@ -288,7 +293,7 @@ const visitSearchPage = () => {
             <FontAwesomeIcon icon="far fa-search" class="text-3xl" fixed-width aria-hidden="true" />
         </button>
 
-    <Teleport to="body">
+    <Teleport v-if="isMounted" to="body">
         <!-- Always-present floating search button in the thumb zone; drag it up or down -->
         <div
             v-if="!isOverlayOpen"

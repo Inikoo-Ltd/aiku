@@ -47,6 +47,7 @@ const scopeComponents: Record<string, ReturnType<typeof defineAsyncComponent>> =
     trade_units: SearchResultGeneric,
     hr: SearchResultGeneric,
     chat: SearchResultGeneric,
+    tickets: SearchResultGeneric,
     procurement: SearchResultProcurement,
     production: SearchResultGeneric,
 }

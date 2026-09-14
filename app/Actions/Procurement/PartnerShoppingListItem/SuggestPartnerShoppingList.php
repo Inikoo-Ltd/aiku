@@ -64,13 +64,15 @@ class SuggestPartnerShoppingList extends OrgAction
             $lines = $this->greedyFill($candidates, $budget);
         }
 
-        $lines = $this->respectPartnerCap($orgPartner, $candidates, $lines);
+        $lines    = $this->respectPartnerCap($orgPartner, $candidates, $lines);
+        $capacity = GetPartnerOrderCapacity::run($orgPartner);
 
         return [
-            'currency' => $orgPartner->organisation->currency->code,
-            'budget'   => $budget,
-            'total'    => round(array_sum(array_column($lines, 'cost')), 2),
-            'lines'    => $lines,
+            'currency'    => $orgPartner->organisation->currency->code,
+            'budget'      => $budget,
+            'total'       => round(array_sum(array_column($lines, 'cost')), 2),
+            'lines'       => $lines,
+            'budget_left' => $this->budgetLeft($capacity['partner_capacity']['delivers_to_us_per_30d'], $capacity['list']['value']),
         ];
     }
 
@@ -93,6 +95,11 @@ class SuggestPartnerShoppingList extends OrgAction
             'Z' => 5,
             default => 3,
         };
+    }
+
+    protected function budgetLeft(?float $cap, float $listValue): ?float
+    {
+        return $cap === null ? null : round(max(0, $cap - $listValue), 2);
     }
 
     protected function respectPartnerCap(OrgPartner $orgPartner, array $candidates, array $lines): array

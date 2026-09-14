@@ -46,8 +46,7 @@ class LinkTicketsToAppDeployment
                 ]);
                 $ticket->update(['data' => array_merge($ticket->data, ['commits' => $known->values()->all()])]);
                 $ticket->comments()->create([
-                    'body'        => __('Deployed to production').' ('.($appDeployment->semantic_version ?: Str::limit($appDeployment->commit_hash, 10, '')).'): '.Str::substr($commit['hash'], 0, 10).' '.$commit['subject'],
-                    'is_internal' => true,
+                    'body' => __('Deployed to production').' ('.($appDeployment->semantic_version ?: Str::limit($appDeployment->commit_hash, 10, '')).'): '.Str::substr($commit['hash'], 0, 10).' '.$commit['subject'],
                 ]);
                 $linked[$reference] = ($linked[$reference] ?? 0) + 1;
             }

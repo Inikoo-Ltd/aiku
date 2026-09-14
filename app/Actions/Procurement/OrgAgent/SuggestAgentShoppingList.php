@@ -89,6 +89,7 @@ class SuggestAgentShoppingList extends OrgAction
             'lines'    => $lines,
             'budget'   => round($budget, 2),
             'currency' => $organisationCurrency->code,
+            'budget_left' => $ceiling === null ? null : round(max(0, $ceiling - $capacity['list']['value']), 2),
         ];
     }
 

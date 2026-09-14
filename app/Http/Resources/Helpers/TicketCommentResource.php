@@ -22,10 +22,14 @@ class TicketCommentResource extends JsonResource
             'id'          => $this->id,
             'body'        => $this->body,
             'is_internal' => $this->is_internal,
+            'can_toggle_visibility' => $request->user() instanceof \App\Models\SysAdmin\User && \App\Models\Helpers\Ticket::canBeAssignedBy($request->user()),
             'is_staff'    => $this->author_type === 'User',
             'author'      => $this->author?->contact_name ?: $this->author?->username,
             'created_at'  => $this->created_at,
             'images'      => $this->ticketImageSources(),
+            'attachments' => $this->ticketAttachments(),
+            'can_edit'    => $request->user() instanceof \App\Models\SysAdmin\User && $this->isAuthoredBy($request->user()),
+            'can_delete'  => $request->user() instanceof \App\Models\SysAdmin\User && $this->isAuthoredBy($request->user()),
         ];
     }
 }

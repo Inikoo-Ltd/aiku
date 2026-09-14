@@ -40,12 +40,14 @@ class SuggestSupplierShoppingList extends OrgAction
     {
         $candidates = $this->candidates($orgSupplier, $bucket, $rank);
         $lines      = $this->respectSupplierCap($orgSupplier, $this->greedyFill($candidates, $budget));
+        $capacity   = GetSupplierOrderCapacity::run($orgSupplier);
 
         return [
-            'currency' => $orgSupplier->supplier->currency->code,
-            'budget'   => $budget,
-            'total'    => round(array_sum(array_column($lines, 'cost')), 2),
-            'lines'    => $lines,
+            'currency'    => $orgSupplier->supplier->currency->code,
+            'budget'      => $budget,
+            'total'       => round(array_sum(array_column($lines, 'cost')), 2),
+            'lines'       => $lines,
+            'budget_left' => $this->budgetLeft($capacity['supplier_capacity']['delivers_to_us_per_30d'], $capacity['list']['value']),
         ];
     }
 
@@ -220,6 +222,11 @@ class SuggestSupplierShoppingList extends OrgAction
      *
      * @return array<int, array<string, mixed>>
      */
+    protected function budgetLeft(?float $cap, float $listValue): ?float
+    {
+        return $cap === null ? null : round(max(0, $cap - $listValue), 2);
+    }
+
     protected function respectSupplierCap(OrgSupplier $orgSupplier, array $lines): array
     {
         $capacity  = GetSupplierOrderCapacity::run($orgSupplier);

@@ -11,6 +11,7 @@ namespace App\Models\Helpers;
 use App\Enums\CRM\Livechat\ChatPriorityEnum;
 use App\Enums\Helpers\Ticket\TicketKindEnum;
 use App\Enums\Helpers\Ticket\TicketModuleEnum;
+use App\Enums\Helpers\Ticket\TicketQaStatusEnum;
 use App\Enums\Helpers\Ticket\TicketStatusEnum;
 use App\Enums\Helpers\Ticket\TicketTypeEnum;
 use App\Models\Chat\StaffConversation;
@@ -51,6 +52,7 @@ use Spatie\MediaLibrary\InteractsWithMedia;
  * @property string|null $reporter_type
  * @property int|null $reporter_id
  * @property int|null $assignee_id
+ * @property \Illuminate\Support\Carbon|null $waiting_until
  * @property string|null $model_type
  * @property int|null $model_id
  * @property array<array-key, mixed> $data
@@ -58,6 +60,9 @@ use Spatie\MediaLibrary\InteractsWithMedia;
  * @property string|null $rating_comment
  * @property \Illuminate\Support\Carbon|null $rated_at
  * @property \Illuminate\Support\Carbon|null $resolved_at
+ * @property \Illuminate\Support\Carbon|null $assigned_at
+ * @property \Illuminate\Support\Carbon|null $started_at
+ * @property \Illuminate\Support\Carbon|null $waiting_at
  * @property \Illuminate\Support\Carbon|null $closed_at
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
@@ -94,6 +99,7 @@ class Ticket extends Model implements Auditable, HasMedia
         'module',
         'tags',
         'is_confidential',
+        'qa_status',
     ];
 
     protected function casts(): array
@@ -105,12 +111,51 @@ class Ticket extends Model implements Auditable, HasMedia
             'status'      => TicketStatusEnum::class,
             'priority'    => ChatPriorityEnum::class,
             'data'        => 'array',
+            'waiting_until' => 'datetime',
             'tags'        => 'array',
             'is_confidential' => 'boolean',
+            'qa_status'   => TicketQaStatusEnum::class,
+            'qa_requested_at' => 'datetime',
+            'qa_checked_at' => 'datetime',
             'rated_at'    => 'datetime',
+            'assigned_at' => 'datetime',
+            'started_at'  => 'datetime',
+            'waiting_at'  => 'datetime',
             'resolved_at' => 'datetime',
             'closed_at'   => 'datetime',
         ];
+    }
+
+    protected static function booted(): void
+    {
+        static::saved(function (Ticket $ticket) {
+            if ($ticket->wasRecentlyCreated || $ticket->wasChanged(['reference', 'subject', 'description', 'tags', 'reporter_id', 'assignee_id', 'customer_id'])) {
+                self::refreshSearchVectors($ticket->id);
+            }
+        });
+    }
+
+    /**
+     * Weighted Postgres full text index, rebuilt at the point of change for one ticket or for all of them:
+     * A reference and subject, B description and tags, C comments, D the people on the ticket.
+     * Internal comments live in their own vector so only lead engineers search them.
+     */
+    public static function refreshSearchVectors(?int $ticketId = null): void
+    {
+        DB::update(
+            "UPDATE tickets t SET
+                search_vector = setweight(to_tsvector('english', concat_ws(' ', t.reference, replace(t.reference, '-', ' '), t.subject)), 'A')
+                    || setweight(to_tsvector('english', concat_ws(' ', t.description, (SELECT string_agg(tag, ' ') FROM jsonb_array_elements_text(t.tags) tag))), 'B')
+                    || setweight(to_tsvector('english', coalesce((SELECT string_agg(c.body, ' ') FROM ticket_comments c WHERE c.ticket_id = t.id AND NOT c.is_internal), '')), 'C')
+                    || setweight(to_tsvector('simple', concat_ws(' ', ru.username, ru.contact_name, au.username, au.contact_name, cu.name, cu.contact_name)), 'D'),
+                internal_search_vector = setweight(to_tsvector('english', coalesce((SELECT string_agg(c.body, ' ') FROM ticket_comments c WHERE c.ticket_id = t.id AND c.is_internal), '')), 'C')
+            FROM tickets s
+                LEFT JOIN users ru ON s.reporter_type = 'User' AND ru.id = s.reporter_id
+                LEFT JOIN users au ON au.id = s.assignee_id
+                LEFT JOIN customers cu ON cu.id = s.customer_id
+            WHERE s.id = t.id".($ticketId ? ' AND t.id = ?' : ''),
+            $ticketId ? [$ticketId] : []
+        );
     }
 
     public function getRouteKeyName(): string
@@ -133,6 +178,11 @@ class Ticket extends Model implements Auditable, HasMedia
         return $this->belongsTo(User::class, 'assignee_id');
     }
 
+    public function qaUser(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'qa_user_id');
+    }
+
     public function customer(): BelongsTo
     {
         return $this->belongsTo(Customer::class);
@@ -152,9 +202,49 @@ class Ticket extends Model implements Auditable, HasMedia
         return array_values(array_unique(array_merge(self::PRESET_TAGS, $used)));
     }
 
+    public static function canBeManagedBy(?User $user): bool
+    {
+        return $user !== null && $user->authTo('help-desk.resolve');
+    }
+
+    public static function canCheckQa(?User $user): bool
+    {
+        return $user !== null && ($user->authTo('help-desk.qa') || $user->authTo('help-desk.assign'));
+    }
+
+    public static function canBeRaisedBy(?User $user): bool
+    {
+        return $user !== null;
+    }
+
+    public static function canBeAssignedBy(?User $user): bool
+    {
+        return $user !== null && $user->authTo('help-desk.assign');
+    }
+
+    public static function canUseAssistant(?User $user): bool
+    {
+        return self::canBeManagedBy($user) || self::canCheckQa($user);
+    }
+
+    public function commentsVisibleTo(mixed $viewer): HasMany
+    {
+        return $this->comments()->when(!($viewer instanceof User && self::canBeAssignedBy($viewer)), fn ($query) => $query->where('is_internal', false));
+    }
+
+    public function defaultWaitingHours(): int
+    {
+        return $this->reporter_type === 'User' && !in_array($this->kind?->value, TicketKindEnum::internalValues(), true) ? 72 : 14 * 24;
+    }
+
+    public function isReportedBy(?User $user): bool
+    {
+        return $user !== null && $this->reporter_type === 'User' && $this->reporter_id === $user->id;
+    }
+
     public function scopeVisibleTo(Builder $query, User $user): Builder
     {
-        if ($user->hasRole('group-admin')) {
+        if (self::canBeAssignedBy($user)) {
             return $query;
         }
 

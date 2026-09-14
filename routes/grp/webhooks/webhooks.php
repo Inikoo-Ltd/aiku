@@ -29,13 +29,16 @@ use App\Actions\Dropshipping\Tiktok\Webhooks\HandleOrderIncomingTiktok;
 use App\Actions\Dropshipping\WooCommerce\CallbackRetinaWooCommerceUser;
 use App\Actions\Dropshipping\WooCommerce\Orders\CallbackFetchWooUserOrders;
 use App\Actions\Dropshipping\WooCommerce\Webhook\DeleteProductWebhooksWooCommerce;
-use App\Actions\Helpers\Jira\Webhook\HandleJiraWebhook;
+use App\Actions\Helpers\Ticket\ReceiveSlackInteraction;
 use App\Actions\Helpers\Ticket\ReceiveSlackTicketCommand;
+use App\Actions\Helpers\Ticket\ReceiveSlackTicketReaction;
 use Laravel\Nightwatch\Http\Middleware\Sample;
 
 Route::name('webhooks.')->group(function () {
     Route::post('sns', GetSnsNotification::class)->name('sns')->middleware(Sample::never());
     Route::post('slack-ticket', ReceiveSlackTicketCommand::class)->name('slack_ticket');
+    Route::post('slack-events', ReceiveSlackTicketReaction::class)->name('slack_events');
+    Route::post('slack-interactivity', ReceiveSlackInteraction::class)->name('slack_interactivity');
     Route::any('checkout-com-payment', ReceiveCheckoutComPaymentWebhook::class)->name('checkout_com_payment');
     Route::post('traffic-source-costs', ReceiveTrafficSourceCostWebhook::class)->name('traffic_source_costs');
 
@@ -97,8 +100,4 @@ Route::prefix('wix')->as('webhooks.wix.')->group(function () {
         Route::post('approved', HandleWixOrderApproved::class)->name('approved');
         Route::post('canceled', HandleWixOrderCanceled::class)->name('canceled');
     });
-});
-
-Route::prefix('jira/{group:id}')->as('webhooks.jira.')->group(function () {
-    Route::post('updated', HandleJiraWebhook::class)->name('updated');
 });

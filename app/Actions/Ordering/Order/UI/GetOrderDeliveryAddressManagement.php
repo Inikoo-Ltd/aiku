@@ -78,6 +78,7 @@ class GetOrderDeliveryAddressManagement
                 'current_selected_address_id'    => $order->delivery_address_id,
                 'collection_address_id'          => $order->collection_address_id,
                 'is_shipping_by_external'        => $order->is_shipping_by_external,
+                'earlier_delivery_address'       => GetEarlierDeliveryAddressWarning::run($order, withCustomerActions: $isRetina),
                 'selected_delivery_addresses_id' => $orderDeliveryAddressIds,
                 'routes_list'                    => [
                     'switch_route' => [

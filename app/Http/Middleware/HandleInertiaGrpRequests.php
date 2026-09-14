@@ -21,10 +21,33 @@ class HandleInertiaGrpRequests extends Middleware
 {
     protected $rootView = 'app-grp';
 
+    /**
+     * JSON endpoints outside grp.json.* polled from every open tab: the full layout is never read from their response.
+     */
+    private const array JSON_ONLY_ROUTES = [
+        'grp.chat.staff.coworkers.index',
+        'grp.chat.staff.conversations.index',
+        'grp.chat.presence.track',
+        'grp.chat.staff.gifs.search',
+        'grp.chat.staff.conversations.messages.index',
+        'grp.search.index',
+        'grp.org.productions.show.queue_counts',
+        'grp.org.shops.show.dashboard.widgets',
+        'grp.org.chat.dashboard-visitors',
+        'grp.org.shops.show.chat.dashboard-visitors',
+        'grp.org.fulfilments.show.chat.dashboard-visitors',
+        'grp.models.work-schedule.index',
+        'grp.models.clocking-machine.qr.validate',
+        'grp.models.clocking-machine.clocking.notes.update',
+        'grp.models.translate',
+        'grp.models.delivery_note.state.packed',
+        'grp.models.printing.shipment.label',
+    ];
+
     public function share(Request $request): array
     {
         $routeName = $request->route()->getName();
-        if (str_starts_with($routeName, 'grp.json.')) {
+        if (str_starts_with($routeName, 'grp.json.') || in_array($routeName, self::JSON_ONLY_ROUTES, true)) {
             return [];
         }
 
@@ -51,7 +74,6 @@ class HandleInertiaGrpRequests extends Middleware
                 'auth'  => [
                     'user' => $request->user() ? GetLoggedUser::run($request->user()) : null,
                 ],
-                'tickets_read_only' => (bool) config('tickets.read_only'),
                 'flash' => [
                     'notification' => fn () => $request->session()->get('notification'),
                     'modal'        => fn () => $request->session()->get('modal')

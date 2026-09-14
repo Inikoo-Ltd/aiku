@@ -100,6 +100,19 @@ class SubmitOrder extends OrgAction
         $this->processVoucherGiftOffers($order);
         $this->processUpComingTransactions($order);
 
+        /**
+         * A product line at zero quantity with no bonus is nothing to pick: it was zeroed while out
+         * of stock, or the customer typed 0. It leaves with the basket rather than reaching the
+         * warehouse as an empty pick line.
+         */
+        $order->transactions()
+            ->where('state', TransactionStateEnum::CREATING)
+            ->where('model_type', 'Product')
+            ->where('quantity_ordered', '<=', 0)
+            ->where('quantity_bonus', '<=', 0)
+            ->get()
+            ->each(fn (Transaction $emptyLine) => DeleteTransaction::make()->action($emptyLine));
+
         $transactions = $order->transactions()->where('state', TransactionStateEnum::CREATING)->get();
         /** @var Transaction $transaction */
         if ($transactions->isNotEmpty()) {
@@ -519,7 +532,7 @@ class SubmitOrder extends OrgAction
     {
         if ($this->order->state == OrderStateEnum::CREATING && !$this->order->transactions->count() && !$this->asAction) {
             $validator->errors()->add('state', __('Can not submit an order without any transactions'));
-        } elseif (!$this->asAction && in_array($this->order->billingAddress?->address_line_1, [null, '', '0'], true)) {
+        } elseif (!$this->asAction && !$this->order->billingAddress?->hasAnyLine()) {
             /** Staff only: a customer paying in retina, the API or a channel submits through run() and must
              * never be refused here, the payment is already taken (HELP-3102) */
             $validator->errors()->add('billing_address', __('Can not submit an order without a billing address'));

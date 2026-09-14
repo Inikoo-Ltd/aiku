@@ -1,14 +1,14 @@
 ---
 title: Why aiku asks for a full address
 summary: What counts as a complete address, why an order without one waits before the warehouse, how to release it, and what to do when the customer cannot be reached.
-date: 2026-09-10
+date: 2026-09-11
 tags: orders, crm, invoices, addresses, accounting
 category: orders
 help_routes: grp.org.shops.show.crm.customers, grp.org.accounting.invoices
 ---
 
 <aside class="tldr">
-Everywhere a person types an address, aiku now asks for the parts that country actually uses. If a customer has no address on their account, their order still takes payment normally but <b>waits before the warehouse</b> instead of being picked: nothing ships, and no invoice goes out with a blank address on it. Put the address on the customer and the order carries on by itself. If the customer cannot be reached, there is a button to send it anyway.
+Everywhere a person types an address, aiku now asks for the parts that country actually uses. If a customer has no address on their account, their order still takes payment normally but <b>waits before the warehouse</b> instead of being picked: nothing ships, and no invoice goes out with a blank address on it. Put the missing address back and the order carries on by itself. If the customer cannot be reached, there is a button to send it anyway.
 </aside>
 
 ## What counts as a complete address
@@ -20,7 +20,7 @@ An address is not the same thing in every country, so aiku asks for what that co
 - **Spain and Italy** — street, town, province and postcode.
 - **United Arab Emirates** — street and emirate. No town.
 
-This comes from the same country list that decides which boxes appear on the form, so the boxes you see are the boxes you need to fill. A single **0** does not count as an address; it used to be accepted and it is what printed as zeros on paperwork.
+This comes from the same country list that decides which boxes appear on the form, so the boxes you see are the boxes you need to fill. The boxes also come in the order that country writes an address — for the UK, street first, then town, then postcode. A single **0** does not count as an address; it used to be accepted and it is what printed as zeros on paperwork.
 
 You will be asked for a complete address anywhere a person types one: signing up on a shop website, a customer editing their own details, adding a delivery address, editing a customer or an order or an invoice in the office, and on the shop, supplier, agent, warehouse and company screens.
 
@@ -33,15 +33,17 @@ Some accounts were created before this was asked for, so they have no address at
 1. The customer pays as normal. Payment is never refused for a missing address.
 2. The order is submitted as normal.
 3. It **stops before the warehouse**. No delivery note is created, so there is nothing to pick and nothing to pack.
-4. It stays in the **submitted** list with a warning on its warehouse note, saying the customer has no address.
+4. It stays in the **submitted** list with a warning on its warehouse note that names the missing address — nearly always the **billing** address.
+
+A held order can still show a perfectly good **delivery** address. On most shops the two are separate: the delivery address is where the parcel goes, the billing address belongs to the customer's account. If the warning says the billing address is missing, that is the one to fix, whatever the delivery box shows.
 
 Nothing is lost and nobody is charged for something they will not receive — the order simply waits for somebody to sort the address out.
 
 ## Releasing a held order
 
-**The good way: put the address on the customer.** Open the customer, add their address, and the order picks it up and carries on to the warehouse by itself. This is the one to prefer, because it also fixes every future order that account places.
+**When the billing address is missing: put it on the customer.** Open the customer, add their address, and every order of theirs held for a missing billing address picks it up and carries on to the warehouse by itself. Prefer this, because it also fixes every future order that account places.
 
-**The other way: put the address on the order.** Open the order and edit its billing address, and its delivery address if that is the missing one. As soon as the order has what it needs, it goes to the warehouse on its own. This fixes the one order, not the account.
+**When the delivery address is missing, or for one order only: put it on the order.** Open the order and edit the address the warning names. On a dropshipping order the delivery address is the end customer's, so it can only be fixed on the order. As soon as the order has what it needs, it goes to the warehouse on its own.
 
 If you press **Send to warehouse** while an address is still missing, aiku tells you so rather than doing nothing.
 
@@ -60,8 +62,8 @@ Before this, an account with no address produced an invoice with zeros where the
 ### Where to click in aiku
 
 - **See orders that are waiting** — the organisation's orders list, **Submitted**. A held one carries a warning in its warehouse note.
-- **Add an address to a customer** — **CRM → Customers**, open the customer, edit the address. This releases any of their held orders.
-- **Fix one order only** — open the order, edit the billing address, and the delivery address if that is the empty one.
+- **Add an address to a customer** — **CRM → Customers**, open the customer, edit the address. This releases their orders held for a missing billing address.
+- **Fix one order, or a missing delivery address** — open the order and edit the address the warning names.
 - **Send it without an address** — open the held order and use **Send anyway, no address**.
 - **Correct an invoice's address** — open the invoice and click the pencil on its address box.
 

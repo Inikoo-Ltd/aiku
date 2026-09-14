@@ -18,14 +18,14 @@ import { routeType } from "@/types/route"
 import axios from "axios"
 import { debounce } from "lodash-es"
 import { faSearch, faSpinner } from "@fal"
-import { faMinus, faPlus } from "@fas"
+import { faExclamationTriangle, faMinus, faPlus } from "@fas"
 import { notify } from "@kyvg/vue3-notification"
 import { trans } from "laravel-vue-i18n"
 import Image from "@common/Components/Image.vue"
 import NumberWithButtonSave from "@/Components/NumberWithButtonSave.vue"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 
-library.add(faSearch, faPlus, faMinus, faSpinner)
+library.add(faSearch, faPlus, faMinus, faSpinner, faExclamationTriangle)
 
 const props = defineProps<{
     fetchRoute: routeType
@@ -37,6 +37,7 @@ const optionsLinks = ref<any>(null)
 const isLoading = ref(false)
 const isRowLoading = ref<number | null>(null)
 const searchQuery = ref("")
+const overBudgetMessage = ref<string | null>(null)
 
 const closeModal = () => {
     model.value = false
@@ -56,6 +57,7 @@ const fetchRows = async (url?: string, append = false) => {
     try {
         const response = await axios.get(urlToFetch)
         rows.value = append ? [...rows.value, ...response.data.data] : response.data.data
+        overBudgetMessage.value = response.data.over_budget_message ?? null
         optionsLinks.value = { next: response.data.links?.next ?? response.data.next_page_url }
     } catch (error) {
         console.error("Error fetching partner stock list:", error)
@@ -70,6 +72,7 @@ const debouncedFetch = debounce(async (query: string) => {
 
 const refreshSingleRow = async (rowData: any) => {
     const response = await axios.get(getUrlFetch({ "filter[global]": rowData.code }))
+    overBudgetMessage.value = response.data.over_budget_message ?? null
     const updated = response.data.data.find((r: any) => r.id === rowData.id)
     if (updated) {
         const idx = rows.value.findIndex((r: any) => r.id === rowData.id)
@@ -182,6 +185,14 @@ watch(() => model.value, async (newValue) => {
                 <div>
                     <div class="flex justify-center py-2 text-gray-600 font-medium mb-3">
                         <h2>{{ trans("Partner stocks") }}</h2>
+                    </div>
+
+                    <div v-if="overBudgetMessage" class="mb-3 flex items-start gap-2 rounded-lg border border-red-300 bg-red-50 px-4 py-2 text-sm text-red-800">
+                        <FontAwesomeIcon icon="fas fa-exclamation-triangle" class="mt-0.5 text-red-600" fixed-width aria-hidden="true" />
+                        <div>
+                            <span class="font-semibold">{{ trans("Over the recommended budget.") }}</span>
+                            {{ overBudgetMessage }}
+                        </div>
                     </div>
 
                     <div class="card w-full">

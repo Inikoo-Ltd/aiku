@@ -10,13 +10,13 @@ import axios from "axios"
 import { trans } from "laravel-vue-i18n"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faEye, faEyeSlash, faCircleInfo, faChevronDown, faArrowUpRightFromSquare, faCircleCheck, faXmark, faPlus, faHashtag, faUser } from "@fortawesome/free-solid-svg-icons"
-import { faJira, faSlack } from "@fortawesome/free-brands-svg-icons"
+import { faSlack } from "@fortawesome/free-brands-svg-icons"
 import { playNotificationSoundFile, buildStorageUrl } from "@/Composables/useNotificationSound"
 import { useChatLanguages } from "@/Composables/useLanguages"
 
 const props = defineProps<{
     contact?: any
-    initialTab?: "general" | "jira" | "slack"
+    initialTab?: "general" | "slack"
     sessionUlid?: string | null
 }>()
 
@@ -29,7 +29,7 @@ const userId = layout?.user?.id
 const isEditMode = ref(false)
 const agent = ref<any>(null)
 
-const activeTab = ref<"general" | "jira" | "slack">(props.initialTab ?? "general")
+const activeTab = ref<"general" | "slack">(props.initialTab ?? "general")
 
 const form = ref({
     max_concurrent_chats: 100,
@@ -145,72 +145,7 @@ const enableBrowserNotification = async () => {
     }
 }
 
-const jiraForm = ref({
-    base_url: "",
-    email: "",
-    api_token: "",
-})
-const jiraConfigured = ref(false)
-const jiraHasToken = ref(false)
-const showToken = ref(false)
-const isSavingJira = ref(false)
-const showTutorial = ref(false)
-
 const currentOrganisation = String((route().params as Record<string, any>)?.organisation ?? "aw")
-
-const fetchJiraSettings = async () => {
-    try {
-        const { data } = await axios.get(
-            route("grp.org.chat.agents.jira.settings.show", [currentOrganisation]),
-            { withCredentials: true }
-        )
-        const jira = data.data
-        jiraConfigured.value = jira.configured
-        jiraHasToken.value = jira.has_token
-        jiraForm.value.base_url = jira.base_url ?? ""
-        jiraForm.value.email = jira.email ?? ""
-        jiraForm.value.api_token = ""
-    } catch (e) {
-        console.error("Failed to fetch Jira settings", e)
-    }
-}
-
-const saveJiraSettings = async () => {
-    if (!jiraForm.value.base_url.trim() || !jiraForm.value.email.trim()) {
-        notify({ title: trans("Error"), text: trans("Base URL and email are required"), type: "error" })
-        return
-    }
-    if (!jiraHasToken.value && !jiraForm.value.api_token.trim()) {
-        notify({ title: trans("Error"), text: trans("Jira API token is required"), type: "error" })
-        return
-    }
-
-    isSavingJira.value = true
-    try {
-        const { data } = await axios.put(
-            route("grp.org.chat.agents.jira.settings.update", [currentOrganisation]),
-            {
-                base_url: jiraForm.value.base_url.trim(),
-                email: jiraForm.value.email.trim(),
-                api_token: jiraForm.value.api_token.trim() || undefined,
-            },
-            { withCredentials: true }
-        )
-        jiraConfigured.value = data.data.configured
-        jiraHasToken.value = data.data.has_token
-        jiraForm.value.api_token = ""
-        showToken.value = false
-        notify({ title: trans("Success"), text: trans("Jira settings saved"), type: "success" })
-    } catch (e: any) {
-        notify({
-            title: trans("Error"),
-            text: e?.response?.data?.message ?? trans("Failed to save Jira settings"),
-            type: "error",
-        })
-    } finally {
-        isSavingJira.value = false
-    }
-}
 
 interface SlackDestination {
     type: "channel" | "user"
@@ -334,7 +269,6 @@ onMounted(async () => {
     await fetchSpecializations()
     await fetchLanguages()
     await fetchAgentSetting()
-    await fetchJiraSettings()
     await fetchSlackSettings()
 })
 </script>
@@ -357,15 +291,6 @@ onMounted(async () => {
                 @click="activeTab = 'general'"
             >
                 {{ trans("General") }}
-            </button>
-            <button
-                class="px-3 py-2 text-sm font-medium -mb-px border-b-2 transition-colors flex items-center gap-1.5"
-                :class="activeTab === 'jira' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'"
-                @click="activeTab = 'jira'"
-            >
-                <FontAwesomeIcon :icon="faJira" />
-                {{ trans("Jira Setting") }}
-                <FontAwesomeIcon v-if="jiraConfigured" :icon="faCircleCheck" class="text-emerald-500 text-xs" />
             </button>
             <button
                 class="px-3 py-2 text-sm font-medium -mb-px border-b-2 transition-colors flex items-center gap-1.5"
@@ -419,94 +344,6 @@ onMounted(async () => {
                     <Button label="Cancel" type="cancel" @click="isEditMode = false" />
                     <Button label="Save" type="save" @click="saveSettings" />
                 </template>
-            </div>
-        </div>
-
-        <div v-show="activeTab === 'jira'" class="flex flex-col gap-4">
-            <p class="text-xs text-gray-500">
-                {{ trans("Use your own Jira account so that tickets you create are reported under your name.") }}
-            </p>
-
-            <div class="flex flex-col gap-1">
-                <label class="text-xs text-gray-500">{{ trans("Jira Base URL") }}</label>
-                <InputText v-model="jiraForm.base_url" placeholder="https://your-domain.atlassian.net/" class="w-full" />
-            </div>
-
-            <div class="flex flex-col gap-1">
-                <label class="text-xs text-gray-500">{{ trans("Jira Email") }}</label>
-                <InputText v-model="jiraForm.email" type="email" placeholder="you@example.com" class="w-full" />
-            </div>
-
-            <div class="flex flex-col gap-1">
-                <label class="text-xs text-gray-500">{{ trans("Jira API Token") }}</label>
-                <div class="relative">
-                    <InputText
-                        v-model="jiraForm.api_token"
-                        :type="showToken ? 'text' : 'password'"
-                        :placeholder="jiraHasToken ? '••••••••••••••••' : trans('Paste your API token')"
-                        class="w-full pr-9"
-                    />
-                    <button
-                        type="button"
-                        class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                        @click="showToken = !showToken"
-                    >
-                        <FontAwesomeIcon :icon="showToken ? faEyeSlash : faEye" />
-                    </button>
-                </div>
-                <span v-if="jiraHasToken" class="text-[11px] text-gray-400">
-                    {{ trans("Leave blank to keep your current token.") }}
-                </span>
-            </div>
-
-            <div class="flex justify-end">
-                <Button :label="trans('Save Jira Settings')" :loading="isSavingJira" type="save" @click="saveJiraSettings" />
-            </div>
-
-            <div class="rounded-lg border border-gray-200 overflow-hidden">
-                <button
-                    type="button"
-                    class="w-full flex items-center justify-between px-3 py-2 bg-gray-50 text-gray-700"
-                    @click="showTutorial = !showTutorial"
-                >
-                    <span class="flex items-center gap-2 text-sm font-medium">
-                        <FontAwesomeIcon :icon="faCircleInfo" class="text-blue-500" />
-                        {{ trans("How to get a Jira API token") }}
-                    </span>
-                    <FontAwesomeIcon :icon="faChevronDown" class="text-xs transition-transform" :class="showTutorial ? 'rotate-180' : ''" />
-                </button>
-
-                <ol v-show="showTutorial" class="px-4 py-3 text-xs text-gray-600 space-y-2 list-decimal list-inside">
-                    <li>{{ trans("Log in to your Jira account.") }}</li>
-                    <li>
-                        {{ trans("Open your profile and choose Account settings") }}
-                        <a href="https://id.atlassian.com/manage-profile/profile-and-visibility" target="_blank" rel="noopener"
-                            class="text-blue-600 hover:underline inline-flex items-center gap-1">
-                            {{ trans("Profile & visibility") }}
-                            <FontAwesomeIcon :icon="faArrowUpRightFromSquare" class="text-[9px]" />
-                        </a>
-                    </li>
-                    <li>
-                        {{ trans("Open the Security tab") }}
-                        <a href="https://id.atlassian.com/manage-profile/security" target="_blank" rel="noopener"
-                            class="text-blue-600 hover:underline inline-flex items-center gap-1">
-                            {{ trans("Security") }}
-                            <FontAwesomeIcon :icon="faArrowUpRightFromSquare" class="text-[9px]" />
-                        </a>
-                    </li>
-                    <li>
-                        {{ trans("Choose Create and manage API tokens") }}
-                        <a href="https://id.atlassian.com/manage-profile/security/api-tokens" target="_blank" rel="noopener"
-                            class="text-blue-600 hover:underline inline-flex items-center gap-1">
-                            {{ trans("API tokens") }}
-                            <FontAwesomeIcon :icon="faArrowUpRightFromSquare" class="text-[9px]" />
-                        </a>
-                        {{ trans("— a verification code may be emailed to you, enter it to continue.") }}
-                    </li>
-                    <li>{{ trans("Click Create API token, give it a name (e.g. APITokenJira), set an expiry (max 1 year), then create.") }}</li>
-                    <li>{{ trans("Copy the generated token and paste it above, together with your Jira Base URL (e.g. https://inikoo.atlassian.net/) and the email registered on Jira.") }}</li>
-                    <li>{{ trans("Done — you can now create Jira tickets from Aiku chat.") }}</li>
-                </ol>
             </div>
         </div>
 

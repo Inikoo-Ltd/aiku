@@ -3939,10 +3939,12 @@ test('Store Whatsapp Campaign redirects into the workshop with defaults', functi
 test('Store Whatsapp Campaign twice does not collide on the default name', function () {
     $route = route('grp.org.shops.show.marketing.whatsapp_campaigns.store', [$this->organisation->slug, $this->shop->slug]);
 
+    $campaignsBefore = WhatsappCampaign::where('shop_id', $this->shop->id)->count();
+
     $this->post($route);
     $this->post($route);
 
-    expect(WhatsappCampaign::where('shop_id', $this->shop->id)->count())->toBe(2);
+    expect(WhatsappCampaign::where('shop_id', $this->shop->id)->count())->toBe($campaignsBefore + 2);
 });
 
 test('Update Whatsapp Campaign sets the template and completes the compose step', function () {

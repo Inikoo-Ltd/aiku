@@ -297,8 +297,8 @@ class StoreCustomer extends OrgAction
             ],
             'identity_document_number' => ['sometimes', 'nullable', 'string'],
             'contact_website'          => ['sometimes', 'nullable', 'string', 'max:255'],
-            'contact_address'          => ['sometimes', 'required', new ValidAddress()],
-            'delivery_address'         => ['sometimes', 'required', new ValidAddress()],
+            'contact_address'          => ['sometimes', 'required', new ValidAddress(requireFullAddress: !$this->asAction)],
+            'delivery_address'         => ['sometimes', 'required', new ValidAddress(requireFullAddress: !$this->asAction)],
 
 
             'timezone_id'                                           => ['nullable', 'exists:timezones,id'],

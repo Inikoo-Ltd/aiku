@@ -1,8 +1,8 @@
 ---
 title: Objednávky na osobný odber
 summary: Čo sa mení, keď si zákazník objednávku vyzdvihne sám namiesto doručenia, čo sa objaví na faktúre a kde opraviť adresu, ktorá chýba alebo je nesprávna.
-date: 2026-09-10
-source_date: 2026-09-10
+date: 2026-09-11
+source_date: 2026-09-11
 tags: orders, invoices, collection, accounting, crm
 category: orders
 help_routes: grp.org.accounting.invoices
@@ -35,7 +35,7 @@ Faktúra je pevný doklad. Adresa odberu sa na ňu uloží v okamihu vystavenia,
 
 Účet môže skončiť úplne bez adresy. Vtedy sa objednávka **zastaví pred skladom**: nevytvorí sa dodací list, objednávka zostane v zozname odoslaných a do skladovej poznámky pribudne upozornenie, že treba adresu. Nič sa nevychystá a nič sa nevyfakturuje, kým sa to nevyrieši.
 
-Riešením je doplniť adresu k **zákazníkovi**, nie k objednávke. Otvorte zákazníka, doplňte adresu a objednávka pokračuje do skladu sama. Doplnenie k zákazníkovi zároveň znamená, že jeho ďalšia objednávka bude v poriadku bez toho, aby na to niekto musel myslieť.
+Keď chýba fakturačná adresa, doplňte ju k **zákazníkovi**: otvorte zákazníka, doplňte adresu a objednávka pokračuje do skladu sama a aj jeho ďalšia objednávka bude v poriadku. Keď upozornenie uvádza doručovaciu adresu, doplňte ju na objednávku. Podrobnosti sú v [Prečo aiku pýta úplnú adresu](/docs/why-aiku-asks-for-a-full-address-sk).
 
 Zamestnanec, ktorý vytvára objednávku v systéme, ju bez fakturačnej adresy vôbec neodošle. Zákazník objednávajúci na webe sa do pokladne bez adresy dostať môže — jeho platba prebehne normálne a zachytí to až zastavenie pred skladom, takže nikomu nie sú peniaze najprv strhnuté a objednávka potom odmietnutá.
 

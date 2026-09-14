@@ -52,7 +52,7 @@ class RetinaEcomUpdateTransaction extends RetinaAction
     public function rules(): array
     {
         return [
-            'quantity_ordered' => ['sometimes', 'numeric', 'min:0'],
+            'quantity_ordered' => ['sometimes', 'numeric', 'min:0', 'max:999999'],
         ];
     }
 
@@ -65,10 +65,6 @@ class RetinaEcomUpdateTransaction extends RetinaAction
             throw ValidationException::withMessages([
                 'message' => __('This order has been submitted and cannot be updated'),
             ]);
-        }
-        if (isset($request['quantity_ordered'])) {
-            $availableQuantity = $this->transaction->asset?->product?->available_quantity ?? PHP_INT_MAX;
-            $this->set('quantity_ordered', min($request['quantity_ordered'], $availableQuantity));
         }
     }
 

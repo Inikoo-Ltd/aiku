@@ -30,9 +30,6 @@ class PdfTimesheets extends OrgAction
      */
     public function handle(Organisation $parent): string
     {
-        ini_set("pcre.backtrack_limit", "5000000");
-        ini_set("pcre.recursion_limit", "5000000");
-
         $filename = __('Timesheets') . ' - ' .$parent->name.'.pdf';
         $config   = [
             'title'                  => $filename,

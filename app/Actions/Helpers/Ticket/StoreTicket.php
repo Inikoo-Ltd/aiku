@@ -8,7 +8,6 @@
 
 namespace App\Actions\Helpers\Ticket;
 
-use App\Actions\Helpers\Ticket\Concerns\WithTicketsWriteGuard;
 use App\Actions\Chat\Staff\StoreStaffConversation;
 use App\Actions\OrgAction;
 use App\Enums\CRM\Livechat\ChatPriorityEnum;
@@ -17,13 +16,7 @@ use App\Enums\Helpers\Ticket\TicketModuleEnum;
 use App\Enums\Helpers\Ticket\TicketTypeEnum;
 use App\Models\Helpers\Ticket;
 use App\Models\SysAdmin\Group;
-use App\Helpers\SlackNotification;
 use App\Models\SysAdmin\User;
-use Illuminate\Notifications\AnonymousNotifiable;
-use Illuminate\Notifications\Slack\BlockKit\Blocks\ActionsBlock;
-use Illuminate\Notifications\Slack\BlockKit\Blocks\SectionBlock;
-use Illuminate\Notifications\Slack\SlackMessage;
-use Illuminate\Support\Str;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
@@ -32,12 +25,8 @@ use Lorisleiva\Actions\ActionRequest;
 
 class StoreTicket extends OrgAction
 {
-    use WithTicketsWriteGuard;
-
     public function handle(Group $group, array $modelData): Ticket
     {
-        $this->guardTicketsWritable();
-
         $type = TicketTypeEnum::from(Arr::get($modelData, 'type', TicketTypeEnum::HELP->value));
 
         $number = DB::selectOne('SELECT nextval(?) AS number', [$type->sequence()])->number;
@@ -56,34 +45,11 @@ class StoreTicket extends OrgAction
         $ticket = Ticket::create($modelData);
         $ticket->attachTicketImages($images);
         $this->openStaffConversation($ticket);
-        $this->notifySlack($ticket);
+        SyncTicketSlackAlert::run($ticket);
+        NotifyTicketUsers::make()->raised($ticket);
+        NotifyTicketUsers::make()->pushBadges($ticket);
 
         return $ticket;
-    }
-
-    private function notifySlack(Ticket $ticket): void
-    {
-        $channel = config('services.slack.notifications.tickets_channel');
-        if (!$channel || !config('services.slack.notifications.bot_user_oauth_token')) {
-            return;
-        }
-
-        $message = (new SlackMessage())
-            ->text($ticket->reference.' '.$ticket->subject)
-            ->headerBlock($ticket->reference.' · '.Str::limit($ticket->subject, 120))
-            ->sectionBlock(function (SectionBlock $block) use ($ticket) {
-                $block->field('*Type:* '.TicketTypeEnum::labels()[$ticket->type->value].($ticket->kind ? ' / '.TicketKindEnum::labels()[$ticket->kind->value] : ''))->markdown();
-                $block->field('*Priority:* '.ChatPriorityEnum::labels()[$ticket->priority->value])->markdown();
-                if ($ticket->shop) {
-                    $block->field('*Shop:* '.$ticket->shop->name)->markdown();
-                }
-                if ($ticket->module) {
-                    $block->field('*Module:* '.TicketModuleEnum::labels()[$ticket->module->value])->markdown();
-                }
-            })
-            ->actionsBlock(fn (ActionsBlock $block) => $block->button('Open ticket')->primary()->url(route('grp.tickets.show', $ticket->reference)));
-
-        (new AnonymousNotifiable())->route('slack', $channel)->notify(new SlackNotification($message));
     }
 
     private function openStaffConversation(Ticket $ticket): void
@@ -106,7 +72,7 @@ class StoreTicket extends OrgAction
             'subject'         => ['required', 'string', 'max:255'],
             'description'     => ['sometimes', 'nullable', 'string'],
             'type'            => ['sometimes', Rule::enum(TicketTypeEnum::class)],
-            'kind'            => ['sometimes', 'nullable', Rule::enum(TicketKindEnum::class)],
+            'kind'            => ['sometimes', 'nullable', Rule::enum(TicketKindEnum::class), Rule::when(!$this->asAction && !Ticket::canBeManagedBy(request()->user()), Rule::notIn(TicketKindEnum::internalValues()))],
             'module'          => ['sometimes', 'nullable', Rule::enum(TicketModuleEnum::class)],
             'tags'            => ['sometimes', 'array'],
             'is_confidential' => ['sometimes', 'boolean'],
@@ -130,7 +96,7 @@ class StoreTicket extends OrgAction
 
     public function authorize(ActionRequest $request): bool
     {
-        return $this->asAction || $request->user() !== null;
+        return $this->asAction || Ticket::canBeRaisedBy($request->user());
     }
 
     public function action(Group $group, array $modelData): Ticket

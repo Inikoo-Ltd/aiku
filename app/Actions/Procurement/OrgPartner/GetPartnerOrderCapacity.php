@@ -8,7 +8,6 @@
 
 namespace App\Actions\Procurement\OrgPartner;
 
-use App\Enums\Catalogue\HealthRankEnum;
 use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderDeliveryStateEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
@@ -24,7 +23,6 @@ class GetPartnerOrderCapacity
 {
     use AsObject;
 
-    public const MIN_MONTHS = 3;
     // ponytail: 20% fair share is a guess, upgrade path is an org-level setting
     public const PARTNER_SHARE_OF_EMPTY_LOCATIONS = 0.2;
     public const WAREHOUSE_FULL_FREE_RATIO = 0.05;
@@ -69,27 +67,28 @@ class GetPartnerOrderCapacity
      */
     protected function partnerCapacity(OrgPartner $orgPartner): array
     {
-        $measured = DB::table('stock_deliveries')
+        $months = DB::table('stock_deliveries')
             ->where('organisation_id', $orgPartner->organisation_id)
             ->where('partner_id', $orgPartner->partner_id)
             ->whereNull('deleted_at')
             ->whereRaw('coalesce(booked_in_at, placed_at, date) >= ?', [now()->subMonths(6)])
-            ->selectRaw("count(*) as samples,
-                count(distinct date_trunc('month', coalesce(booked_in_at, placed_at, date))) as months,
-                sum(cost_total) as total")
-            ->first();
+            ->selectRaw("count(*) as samples, coalesce(sum(cost_total), 0) as total")
+            ->groupByRaw("date_trunc('month', coalesce(booked_in_at, placed_at, date))")
+            ->get();
+        $peakMonth = (float) $months->max('total');
+        $samples   = (int) $months->sum('samples');
 
         $cycleShare = $this->orderCycleShare($orgPartner);
 
-        if ((int) $measured->months >= self::MIN_MONTHS) {
+        if ($peakMonth > 0) {
             return [
-                'delivers_to_us_per_30d' => round((float) $measured->total / (int) $measured->months * $cycleShare, 2),
+                'delivers_to_us_per_30d' => round($peakMonth * $cycleShare, 2),
                 'source'        => 'measured',
-                'samples'       => (int) $measured->samples,
+                'samples' => $samples,
             ];
         }
 
-        return $this->bootstrapCapacity($orgPartner, (int) $measured->samples, $cycleShare);
+        return $this->bootstrapCapacity($orgPartner, $samples, $cycleShare);
     }
 
     /**
@@ -221,18 +220,22 @@ class GetPartnerOrderCapacity
             ->count();
     }
 
-    public static function isExemptFromCap(OrgPartner $orgPartner, OrgStock $sellerOrgStock): bool
+    public static function overBudgetMessage(OrgPartner $orgPartner): ?string
     {
-        $buyerOrgStock = OrgStock::where('organisation_id', $orgPartner->organisation_id)
-            ->where('stock_id', $sellerOrgStock->stock_id)
-            ->first();
+        $capacity = static::run($orgPartner);
 
-        if (!$buyerOrgStock) {
-            return false;
+        if (!$capacity['blocked']['at_capacity']) {
+            return null;
         }
 
-        return (float) $buyerOrgStock->quantity_available <= 0
-            || $buyerOrgStock->health_rank === HealthRankEnum::A;
+        return __(
+            'Shopping list is already at the level :partner historically delivers to us in one order cycle (:cap :currency). More than this is unlikely to arrive any sooner.',
+            [
+                'partner'  => $orgPartner->partner->name,
+                'cap'      => number_format((float) $capacity['partner_capacity']['delivers_to_us_per_30d'] * $orgPartner->exchangeToOrgCurrency(), 2),
+                'currency' => $orgPartner->organisation->currency->code,
+            ]
+        );
     }
 
     public static function isNeverStocked(OrgPartner $orgPartner, OrgStock $sellerOrgStock): bool
@@ -246,16 +249,6 @@ class GetPartnerOrderCapacity
     {
         $capacity = static::run($orgPartner);
 
-        if ($capacity['blocked']['at_capacity'] && !static::isExemptFromCap($orgPartner, $sellerOrgStock)) {
-            abort(422, __(
-                'Shopping list is at the level :partner historically delivers to us monthly (:cap :currency). Remove or deprioritize items first — only A-rank or out-of-stock items can be added past the cap.',
-                [
-                    'partner'  => $orgPartner->partner->name,
-                    'cap'      => number_format((float) $capacity['partner_capacity']['delivers_to_us_per_30d'] * $orgPartner->exchangeToOrgCurrency(), 2),
-                    'currency' => $orgPartner->organisation->currency->code,
-                ]
-            ));
-        }
 
         if ($capacity['warehouse']['total_locations'] > 0 && static::isNeverStocked($orgPartner, $sellerOrgStock)) {
             if ($capacity['blocked']['warehouse_full']) {

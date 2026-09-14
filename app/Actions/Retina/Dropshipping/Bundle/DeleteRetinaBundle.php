@@ -22,14 +22,23 @@ class DeleteRetinaBundle extends RetinaAction
 
     private CustomerSalesChannel $customerSalesChannel;
 
+    private Bundle $bundle;
+
     public function handle(Bundle $bundle): void
     {
         DeleteBundle::run($bundle);
     }
 
+    public function authorize(ActionRequest $request): bool
+    {
+        return $this->customerSalesChannel->customer_id == $this->customer?->id
+            && $this->bundle->customer_sales_channel_id == $this->customerSalesChannel->id;
+    }
+
     public function asController(CustomerSalesChannel $customerSalesChannel, Bundle $bundle, ActionRequest $request): void
     {
         $this->customerSalesChannel = $customerSalesChannel;
+        $this->bundle               = $bundle;
         $this->initialisation($request);
 
         $this->handle($bundle);

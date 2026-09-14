@@ -11,8 +11,12 @@ namespace App\Actions\Chat\Staff\Json;
 use App\Http\Resources\Chat\StaffConversationResource;
 use App\Models\Chat\StaffConversation;
 use App\Models\Chat\StaffMessage;
+use App\Models\Dispatching\DeliveryNote;
+use App\Models\Inventory\PickingSession;
+use App\Models\Ordering\Order;
 use App\Models\SysAdmin\User;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -49,7 +53,14 @@ class GetStaffConversations
                     ->whereRaw('staff_messages.created_at > coalesce(me.last_read_at, ?)', ['1970-01-01'])
                     ->whereRaw('mentions @> ?', [json_encode([$user->id])]),
             ])
-            ->with('participants')
+            ->with([
+                'participants.image',
+                'context' => fn (MorphTo $morphTo) => $morphTo->morphWith([
+                    DeliveryNote::class   => ['organisation', 'warehouse'],
+                    Order::class          => ['organisation', 'shop'],
+                    PickingSession::class => ['organisation', 'warehouse'],
+                ]),
+            ])
             ->orderByRaw('staff_conversations.last_message_at desc nulls last')
             ->limit(100)
             ->get();

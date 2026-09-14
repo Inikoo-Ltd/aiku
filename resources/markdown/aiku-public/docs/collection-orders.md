@@ -1,7 +1,7 @@
 ---
 title: Collection orders
 summary: What changes when a customer collects an order instead of having it shipped, what appears on the invoice, and where to correct an address when one is missing or wrong.
-date: 2026-09-10
+date: 2026-09-11
 tags: orders, invoices, collection, accounting, crm
 category: orders
 help_routes: grp.org.accounting.invoices
@@ -34,7 +34,7 @@ An invoice is a fixed document. The collection address is stored on it at the mo
 
 An account can end up with no address at all. When that happens the order is **held before it reaches the warehouse**: no delivery note is created, the order stays in the submitted list, and a warning is added to its warehouse note asking for the address. Nothing is picked and nothing is invoiced until it is sorted out.
 
-The fix is to put the address on the **customer**, not on the order. Open the customer, add their address, and the order carries on to the warehouse by itself. Adding it to the customer also means their next order is right without anyone having to think about it.
+When it is the billing address that is missing, put it on the **customer**: open the customer, add their address, and the order carries on to the warehouse by itself, and their next order is right too. When the warning names the delivery address, put it on the order. [Why aiku asks for a full address](/docs/why-aiku-asks-for-a-full-address) has the details.
 
 Staff creating an order in the back office cannot submit one without a billing address in the first place. A customer ordering on the website can still reach checkout without one — their payment goes through as normal and it is the warehouse hold that catches it, so no one is ever charged and then refused.
 

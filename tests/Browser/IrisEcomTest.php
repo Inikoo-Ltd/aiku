@@ -33,6 +33,7 @@ beforeEach(function () {
     DB::table('webpages')->update(['canonical_url' => null]);
 
     [, $product] = createProduct($shop);
+    $product->update(['status' => \App\Enums\Catalogue\Product\ProductStatusEnum::FOR_SALE]);
     $this->product = $product;
 
     $this->customer = createCustomer($shop);

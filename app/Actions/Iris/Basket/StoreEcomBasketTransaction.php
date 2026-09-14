@@ -30,7 +30,7 @@ class StoreEcomBasketTransaction extends IrisAction
      */
     public function handle(Customer $customer, Product $product, array $modelData): Transaction
     {
-        $this->ensureProductIsPurchasableByCustomer($product);
+        $this->ensureProductIsPurchasableByCustomer($product, $customer);
 
         $order = $this->getOrderInBasket($customer);
 

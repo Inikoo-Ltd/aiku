@@ -33,6 +33,8 @@ class StaffMessage extends Model implements HasMedia
 
     protected $guarded = [];
 
+    protected $dateFormat = StaffConversation::PRECISE_DATE_FORMAT;
+
     protected function casts(): array
     {
         return [

@@ -53,7 +53,6 @@ use App\Rules\IUnique;
 use App\Rules\Phone;
 use App\Rules\ValidAddress;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Validation\Rule;
@@ -104,19 +103,16 @@ class UpdateCustomer extends OrgAction
                 $customer->refresh();
 
                 /**
-                 * Baskets follow the customer's address as they always have. A submitted order is history and
-                 * must not, with one exception: one held back because it never had an address at all, which
-                 * is exactly what fixing the customer is meant to release (HELP-3102).
+                 * Baskets follow the customer's address as they always have. A submitted order is history and must
+                 * not, with one exception: one with no billing address at all, judged exactly as the warehouse hold
+                 * judges it, which is what fixing the customer is meant to release (HELP-3102). A submitted order
+                 * whose street merely sits in the town box is left alone.
                  */
                 $ordersToFollowTheCustomer = $customer->orders()
-                    ->where(function ($query) {
-                        $query->where('state', OrderStateEnum::CREATING)
-                            ->orWhere(
-                                fn ($query) => $query->where('state', OrderStateEnum::SUBMITTED)
-                                    ->whereHas('billingAddress', fn ($query) => $query->whereIn(DB::raw("coalesce(address_line_1,'')"), ['', '0']))
-                            );
-                    })
-                    ->get();
+                    ->with('billingAddress')
+                    ->whereIn('state', [OrderStateEnum::CREATING, OrderStateEnum::SUBMITTED])
+                    ->get()
+                    ->filter(fn (Order $order) => $order->state == OrderStateEnum::CREATING || !$order->billingAddress?->hasAnyLine());
 
                 /** @var Order $order */
                 foreach ($ordersToFollowTheCustomer as $order) {

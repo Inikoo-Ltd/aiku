@@ -30,6 +30,11 @@ class StoreOrUpdateRetinaBundle extends RetinaAction
         return StoreOrUpdateBundle::make()->action($customerSalesChannel, $modelData);
     }
 
+    public function authorize(ActionRequest $request): bool
+    {
+        return $this->customerSalesChannel->customer_id == $this->customer?->id;
+    }
+
     public function rules(): array
     {
         return StoreOrUpdateBundle::make()->rules();

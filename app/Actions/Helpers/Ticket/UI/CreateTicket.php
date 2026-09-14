@@ -14,13 +14,14 @@ use App\Enums\Helpers\Ticket\TicketKindEnum;
 use App\Enums\Helpers\Ticket\TicketModuleEnum;
 use Inertia\Inertia;
 use Inertia\Response;
+use App\Models\Helpers\Ticket;
 use Lorisleiva\Actions\ActionRequest;
 
 class CreateTicket extends OrgAction
 {
     public function authorize(ActionRequest $request): bool
     {
-        return $request->user() !== null;
+        return Ticket::canBeRaisedBy($request->user());
     }
 
     public function asController(ActionRequest $request): Response
@@ -31,7 +32,7 @@ class CreateTicket extends OrgAction
             'Tickets/CreateTicket',
             [
                 'breadcrumbs' => array_merge(
-                    IndexTickets::make()->getBreadcrumbs(),
+                    ShowTicketsDashboard::make()->getBreadcrumbs(),
                     [['type' => 'creatingModel', 'creatingModel' => ['label' => __('Creating ticket')]]]
                 ),
                 'title'       => __('New ticket'),
@@ -50,7 +51,7 @@ class CreateTicket extends OrgAction
                 'storeRoute'  => ['name' => 'grp.models.ticket.store'],
                 'priorities'  => collect(ChatPriorityEnum::labels())->map(fn ($label, $value) => ['label' => $label, 'value' => $value])->values(),
                 'modules'     => collect(TicketModuleEnum::labels())->map(fn ($label, $value) => ['label' => $label, 'value' => $value])->values(),
-                'kinds'       => collect(TicketKindEnum::labels())->except('escalation')->map(fn ($label, $value) => ['label' => $label, 'value' => $value])->values(),
+                'kinds'       => TicketKindEnum::raisableBy($request->user()),
             ]
         );
     }

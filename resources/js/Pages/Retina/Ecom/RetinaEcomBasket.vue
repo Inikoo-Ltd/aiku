@@ -15,6 +15,7 @@ import { debounce } from 'lodash-es'
 import PureTextarea from "@/Components/Pure/PureTextarea.vue"
 import PureInput from "@/Components/Pure/PureInput.vue"
 import TableEcomBasket from "@/Components/Retina/Ecom/Order/TableEcomBasket.vue"
+import BasketStockIssues, { StockIssues } from "@/Components/Retina/Basket/BasketStockIssues.vue"
 import { Image as ImageTS } from "@/types/Image"
 import { PageHeadingTypes } from "@/types/PageHeading"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
@@ -143,6 +144,7 @@ const props = defineProps<{
         }
     }
     missed_offers: Record<string, { label: string }>
+    stock_issues?: StockIssues
     voucher: {
         id: number
         voucher_code: string
@@ -859,6 +861,10 @@ const onChangeInsurance = async (val: boolean) => {
                 </div>
             </div>
             
+            <div v-if="stock_issues?.out_of_stock?.length || stock_issues?.low_stock?.length" class="px-4 md:px-8 pb-4 space-y-3">
+                <BasketStockIssues :stock_issues />
+            </div>
+
             <div class="border-t flex justify-end py-5 px-4 md:px-8">
                 <!-- Section: button Place Order & button Checkout -->
                 <div v-if="(!is_forbidden_delivery && !is_forbidden_billing) || order.is_collection" class="w-full md:w-72">

@@ -14,6 +14,7 @@ use App\Models\Goods\TradeUnit;
 use App\Models\Helpers\Tag;
 use App\Models\HumanResources\Employee;
 use App\Models\Inventory\OrgStock;
+use App\Models\Traits\HasAttachments;
 use App\Models\Traits\HasHistory;
 use App\Models\Traits\HasSearch;
 use App\Models\Traits\InProduction;
@@ -24,6 +25,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use OwenIt\Auditing\Contracts\Auditable;
+use Spatie\MediaLibrary\HasMedia;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
 
@@ -53,6 +55,8 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Tag> $tags
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Production\ArtefactComplianceItem> $complianceItems
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Production\ArtefactLabel> $labels
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Media> $attachments
  * @property-read \App\Models\SysAdmin\Group|null $group
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Production\ManufactureTask> $manufactureTasks
  * @property-read OrgStock|null $orgStock
@@ -69,13 +73,14 @@ use Spatie\Sluggable\SlugOptions;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Artefact withoutTrashed()
  * @mixin \Eloquent
  */
-class Artefact extends Model implements Auditable
+class Artefact extends Model implements Auditable, HasMedia
 {
     use SoftDeletes;
     use HasSlug;
     use HasSearch;
     use InProduction;
     use HasHistory;
+    use HasAttachments;
 
     protected $casts = [
         'data'                   => 'array',
@@ -185,6 +190,11 @@ class Artefact extends Model implements Auditable
     public function complianceItems(): HasMany
     {
         return $this->hasMany(ArtefactComplianceItem::class);
+    }
+
+    public function labels(): HasMany
+    {
+        return $this->hasMany(ArtefactLabel::class)->orderBy('name');
     }
 
 

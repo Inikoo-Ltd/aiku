@@ -18,6 +18,7 @@ use App\Models\Production\JobOrder;
 use App\Models\Production\JobOrderItem;
 use App\Models\Production\JobOrderItemTask;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class SettleShortJobOrderItemTask
@@ -36,6 +37,15 @@ class SettleShortJobOrderItemTask
 
             $madeArtefacts      = (int) floor($jobOrderItemTask->quantity_made / $unitsPerArtefact);
             $remainingArtefacts = max(0, $item->quantity - $madeArtefacts);
+
+            if ($madeArtefacts < 1) {
+                if ($carryOver) {
+                    return null;
+                }
+                throw ValidationException::withMessages([
+                    'quantity_made' => __('Nothing has been finished on this job yet, it cannot be closed as finished'),
+                ]);
+            }
 
             $excessUnitsByTask = [];
             $item->update(['quantity' => $madeArtefacts]);

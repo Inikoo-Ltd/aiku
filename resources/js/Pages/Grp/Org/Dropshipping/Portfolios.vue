@@ -255,6 +255,11 @@ const submitPortfolioAction = async (action: any) => {
             <div class="flex items-center gap-x-3">
                 <Button v-if="bulk_import_product" @click="isOpenModalImport = true" :icon="faUpload"
                     :label="trans('Bulk Import')" type="tertiary" class="h-9" />
+                <a v-if="download_route?.reconciliation" :href="downloadUrl('reconciliation')" target="_blank"
+                    rel="noopener"
+                    v-tooltip="trans('Check every portfolio against the real Shopify catalogue and download the result')">
+                    <Button :icon="faDownload" :label="trans('Audit Portfolios')" type="tertiary" class="h-9" />
+                </a>
                 <div v-if="download_route"
                     class="inline-flex items-center rounded-md border overflow-hidden">
                     <a :href="csvDownloadUrl" target="_blank" rel="noopener">

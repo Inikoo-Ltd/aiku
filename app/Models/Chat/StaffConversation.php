@@ -26,7 +26,11 @@ use Illuminate\Support\Str;
  */
 class StaffConversation extends Model
 {
+    public const string PRECISE_DATE_FORMAT = 'Y-m-d H:i:s.uP';
+
     protected $guarded = [];
+
+    protected $dateFormat = self::PRECISE_DATE_FORMAT;
 
     protected $casts = [
         'last_message_at' => 'datetime',

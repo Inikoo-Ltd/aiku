@@ -45,6 +45,36 @@ return [
             ],
             'organisation_types' => []
         ],
+        'gp-hd'       => [
+            'code'               => 'gp-hd',
+            'name'               => 'Engineer',
+            'scope'              => JobPositionScopeEnum::GROUP,
+            'department'         => 'help-desk',
+            'roles'              => [
+                RolesEnum::HELP_DESK_CLERK
+            ],
+            'organisation_types' => []
+        ],
+        'gp-hd-m'     => [
+            'code'               => 'gp-hd-m',
+            'name'               => 'Lead engineer',
+            'scope'              => JobPositionScopeEnum::GROUP,
+            'department'         => 'help-desk',
+            'roles'              => [
+                RolesEnum::HELP_DESK_SUPERVISOR
+            ],
+            'organisation_types' => []
+        ],
+        'gp-qa'       => [
+            'code'               => 'gp-qa',
+            'name'               => 'QA',
+            'scope'              => JobPositionScopeEnum::GROUP,
+            'department'         => 'help-desk',
+            'roles'              => [
+                RolesEnum::QA
+            ],
+            'organisation_types' => []
+        ],
         'gp-sc'       => [
             'code'               => 'gp-sc',
             'name'               => 'Supply Chain Manager',

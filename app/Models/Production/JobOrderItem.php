@@ -105,8 +105,7 @@ class JobOrderItem extends Model
 
     public function artefact(): BelongsTo
     {
-        return $this->belongsTo(Artefact::class);
-
+        return $this->belongsTo(Artefact::class)->withTrashed();
     }
 
     public function tasks(): HasMany

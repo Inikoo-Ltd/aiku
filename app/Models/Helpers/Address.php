@@ -58,6 +58,17 @@ class Address extends Model
 
     protected $guarded = [];
 
+    /**
+     * The one meaning of "this address is there", used by the warehouse hold, the invoice, the back-office submit
+     * and the repairs alike: any line filled. A street typed into the town box is still a street; only a wholly
+     * empty address, or the Aurora "0" placeholder, counts as none (HELP-3110).
+     */
+    public function hasAnyLine(): bool
+    {
+        return collect([$this->address_line_1, $this->address_line_2, $this->locality, $this->postal_code, $this->administrative_area])
+            ->contains(fn ($line) => filled($line) && trim((string)$line) !== '0');
+    }
+
     protected static function booted(): void
     {
         static::created(

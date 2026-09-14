@@ -8,20 +8,19 @@
 
 namespace App\Actions\Helpers\Ticket;
 
-use App\Actions\Helpers\Ticket\Concerns\WithTicketsWriteGuard;
+use App\Actions\Helpers\Ticket\Concerns\WithSlack;
 use App\Enums\Helpers\Ticket\TicketKindEnum;
 use App\Enums\Helpers\Ticket\TicketTypeEnum;
 use App\Models\Helpers\Ticket;
 use App\Models\SysAdmin\Group;
-use App\Models\SysAdmin\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Http;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class ReceiveSlackTicketCommand
 {
     use AsAction;
+    use WithSlack;
 
     public function handle(Group $group, array $payload): Ticket
     {
@@ -46,27 +45,17 @@ class ReceiveSlackTicketCommand
         ]);
     }
 
-    private function slackUserToAikuUser(?string $slackUserId): ?User
-    {
-        $token = config('services.slack.notifications.bot_user_oauth_token');
-        if (!$slackUserId || !$token) {
-            return null;
-        }
-
-        $email = Http::withToken($token)->get('https://slack.com/api/users.info', ['user' => $slackUserId])->json('user.profile.email');
-
-        return $email ? User::whereRaw('lower(email) = ?', [strtolower($email)])->first() : null;
-    }
-
     public function asController(Request $request): JsonResponse
     {
-        abort_unless($this->signatureIsValid($request), 401);
-        if (WithTicketsWriteGuard::ticketsAreReadOnly()) {
-            return response()->json(['response_type' => 'ephemeral', 'text' => WithTicketsWriteGuard::readOnlyMessage()]);
-        }
-
+        abort_unless($this->slackSignatureIsValid($request), 401);
         if (trim((string) $request->input('text')) === '') {
-            return response()->json(['response_type' => 'ephemeral', 'text' => 'Usage: /ticket what is broken. Add a second line for details.']);
+            ReceiveSlackInteraction::make()->openTicketModal([
+                'trigger_id' => $request->input('trigger_id'),
+                'user_id'    => $request->input('user_id'),
+                'channel_id' => $request->input('channel_id'),
+            ]);
+
+            return response()->json([]);
         }
 
         $ticket = $this->handle(Group::firstOrFail(), $request->all());
@@ -75,17 +64,5 @@ class ReceiveSlackTicketCommand
             'response_type' => 'ephemeral',
             'text'          => $ticket->reference.' raised: '.$ticket->subject."\n".route('grp.tickets.show', $ticket->reference),
         ]);
-    }
-
-    private function signatureIsValid(Request $request): bool
-    {
-        $secret    = config('services.slack.signing_secret');
-        $timestamp = $request->header('X-Slack-Request-Timestamp');
-        if (!$secret || !$timestamp || abs(time() - (int) $timestamp) > 300) {
-            return false;
-        }
-        $expected = 'v0='.hash_hmac('sha256', 'v0:'.$timestamp.':'.$request->getContent(), $secret);
-
-        return hash_equals($expected, (string) $request->header('X-Slack-Signature'));
     }
 }

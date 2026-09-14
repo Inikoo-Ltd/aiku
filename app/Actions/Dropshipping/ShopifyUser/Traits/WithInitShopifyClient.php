@@ -12,7 +12,9 @@ use App\Actions\Dropshipping\PlatformOutboundGuard;
 use App\Actions\Dropshipping\Shopify\ShopifyThrottleRetryMiddleware;
 use Gnikyt\BasicShopifyAPI\Contracts\GraphRequester;
 use Gnikyt\BasicShopifyAPI\Contracts\RestRequester;
+use Illuminate\Support\Facades\Cache;
 use Sentry;
+use Sentry\State\Scope;
 
 trait WithInitShopifyClient
 {
@@ -36,7 +38,12 @@ trait WithInitShopifyClient
 
             return $graphQl ? $api->getGraphClient() : $api->getRestClient();
         } catch (\Exception $e) {
-            Sentry::captureMessage($e->getMessage());
+            if (Cache::add('shopify-client-failure:'.$this->id, true, now()->addDay())) {
+                Sentry::withScope(function (Scope $scope) use ($e) {
+                    $scope->setTag('shopify_shop', (string) $this->name);
+                    Sentry::captureMessage($e->getMessage());
+                });
+            }
 
             return null;
         }

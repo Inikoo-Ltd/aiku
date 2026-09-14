@@ -8,21 +8,27 @@
 
 namespace App\Mcp\Tools;
 
-use App\Actions\Helpers\Ticket\Concerns\WithTicketsWriteGuard;
 use App\Actions\Helpers\Ticket\StoreTicket;
 use App\Actions\Helpers\Ticket\StoreTicketComment;
 use App\Actions\Helpers\Ticket\UpdateTicket;
 use App\Http\Resources\Helpers\TicketResource;
+use App\Enums\Helpers\Ticket\TicketKindEnum;
 use App\Models\Helpers\Ticket;
+use Illuminate\Validation\Rule;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
 
-#[Description('Change a ticket or create a help ticket. With a reference: add a comment (internal by default, public reaches the customer on AD tickets), change status (open, in_progress, waiting, resolved, closed), priority, assignee (username), kind, module or tags. Without a reference: creates a new HELP ticket with subject, and optional description, kind, module, priority. Every change is recorded as the authenticated user.')]
+#[Description('Change a ticket or create a help ticket. With a reference: add a comment (public, posted as you, only on a ticket assigned to you), rewrite subject or description, change status (open, in_progress, waiting, resolved, cancelled), priority, assignee (username), kind, module or tags. Without a reference: creates a new HELP ticket with subject, and optional description, kind, module, priority. Every change is recorded as the authenticated user. Only engineers, lead engineers and QA can use it.')]
 class TicketWriteTool extends Tool
 {
+    public function shouldRegister(Request $request): bool
+    {
+        return Ticket::canUseAssistant($request->user());
+    }
+
     public function handle(Request $request): Response
     {
         $request->validate([
@@ -30,19 +36,14 @@ class TicketWriteTool extends Tool
             'subject'     => ['required_without:reference', 'string', 'max:255'],
             'description' => ['sometimes', 'nullable', 'string'],
             'comment'     => ['sometimes', 'string'],
-            'public'      => ['sometimes', 'boolean'],
-            'status'      => ['sometimes', 'in:open,in_progress,waiting,resolved,closed'],
+            'status'      => ['sometimes', 'in:open,in_progress,waiting,resolved,cancelled'],
             'priority'    => ['sometimes', 'in:low,normal,high,urgent'],
             'assignee'    => ['sometimes', 'nullable', 'string'],
-            'kind'        => ['sometimes', 'nullable', 'in:escalation,bug,feature'],
+            'kind'        => ['sometimes', 'nullable', Rule::enum(TicketKindEnum::class)],
             'module'      => ['sometimes', 'nullable', 'string'],
             'tags'        => ['sometimes', 'array'],
             'tags.*'      => ['string', 'max:64'],
         ]);
-
-        if (WithTicketsWriteGuard::ticketsAreReadOnly()) {
-            return Response::error(WithTicketsWriteGuard::readOnlyMessage());
-        }
 
         $user = $request->user();
 
@@ -65,8 +66,19 @@ class TicketWriteTool extends Tool
         if (!$ticket) {
             return Response::error('Ticket not found or not visible to you.');
         }
+        if (!Ticket::canBeManagedBy($user) && !$ticket->isReportedBy($user) && $request->hasAny(['subject', 'description', 'status', 'priority', 'kind', 'module', 'tags', 'assignee'])) {
+            return Response::error('Only the help desk can change tickets. You can comment on it.');
+        }
+        if (!Ticket::canBeManagedBy($user) && $request->hasAny(['priority', 'kind', 'module', 'tags', 'assignee'])) {
+            return Response::error('Only the help desk can change priority, kind, module, tags or assignee. You can change the status of your own ticket and comment.');
+        }
+        if (!Ticket::canBeAssignedBy($user) && $request->has('assignee') && !($ticket->assignee_id === $user->id && $request->filled('assignee'))) {
+            return Response::error('Only a help desk supervisor hands out unassigned tickets. You can pass a ticket assigned to you on to a colleague.');
+        }
 
         $changes = array_filter([
+            'subject'     => $request->get('subject'),
+            'description' => $request->get('description'),
             'status'   => $request->get('status'),
             'priority' => $request->get('priority'),
             'kind'     => $request->get('kind'),
@@ -84,14 +96,17 @@ class TicketWriteTool extends Tool
         }
 
         if ($changes) {
-            UpdateTicket::make()->action($ticket, $changes);
+            $ticket = UpdateTicket::make()->action($ticket, $changes);
         }
 
         if ($request->filled('comment')) {
-            StoreTicketComment::make()->action($ticket, $user, [
-                'body'        => $request->string('comment')->toString(),
-                'is_internal' => !$request->boolean('public'),
-            ]);
+            if (!$ticket->assignee_id) {
+                return Response::error("$ticket->reference has no assignee. Assign it before commenting.");
+            }
+            if ($ticket->assignee_id !== $user->id) {
+                return Response::error("Only the assignee of $ticket->reference can comment on it through the assistant.");
+            }
+            StoreTicketComment::make()->action($ticket, $user, ['body' => $request->string('comment')->toString()]);
         }
 
         return Response::json(['updated' => $ticket->reference, 'changes' => array_keys($changes), 'commented' => $request->filled('comment'), 'ticket' => TicketResource::make($ticket->fresh())->resolve()]);
@@ -104,14 +119,13 @@ class TicketWriteTool extends Tool
     {
         return [
             'reference'   => $schema->string()->description('Ticket to change, e.g. HELP-3074. Omit to create a new HELP ticket'),
-            'subject'     => $schema->string()->description('Subject for a new ticket'),
-            'description' => $schema->string()->description('Description for a new ticket'),
-            'comment'     => $schema->string()->description('Comment to add to the ticket'),
-            'public'      => $schema->boolean()->description('Make the comment visible to the customer (AD tickets). Default false: internal note'),
-            'status'      => $schema->string()->description('open, in_progress, waiting, resolved or closed'),
+            'subject'     => $schema->string()->description('Subject: for a new ticket, or to rewrite it on an existing one'),
+            'description' => $schema->string()->description('Description: for a new ticket, or to rewrite it on an existing one'),
+            'comment'     => $schema->string()->description('Public comment to add to the ticket, posted as you; you must be its assignee'),
+            'status'      => $schema->string()->description('open, in_progress, waiting, resolved or cancelled'),
             'priority'    => $schema->string()->description('low, normal, high or urgent'),
             'assignee'    => $schema->string()->description('Username to assign, empty string to unassign'),
-            'kind'        => $schema->string()->description('escalation, bug or feature'),
+            'kind'        => $schema->string()->description('escalation, bug, feature, task (engineer to engineer) or qa (engineer to QA)'),
             'module'      => $schema->string()->description('Aiku module slug, e.g. dispatching'),
             'tags'        => $schema->array()->description('Full tag list to set, e.g. ["not a bug"]')->items($schema->string()),
         ];

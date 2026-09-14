@@ -11,10 +11,12 @@ use App\Actions\Helpers\Ticket\UI\IndexTickets;
 use App\Actions\Helpers\Ticket\UI\ShowTicket;
 use App\Actions\Helpers\Ticket\UI\ShowTicketsBoard;
 use App\Actions\Helpers\Ticket\UI\ShowTicketsDashboard;
+use App\Actions\Helpers\Ticket\UI\ShowTicketsReports;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', IndexTickets::class)->name('index');
+Route::get('/', ShowTicketsDashboard::class)->name('index');
+Route::get('/list', IndexTickets::class)->name('list');
 Route::get('/board', ShowTicketsBoard::class)->name('board');
-Route::get('/reports', ShowTicketsDashboard::class)->name('dashboard');
+Route::get('/reports', ShowTicketsReports::class)->name('reports');
 Route::get('/create', CreateTicket::class)->name('create');
 Route::get('/{ticket:reference}', ShowTicket::class)->name('show');

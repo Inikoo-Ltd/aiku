@@ -1,8 +1,8 @@
 ---
 title: Pedidos para recoger
 summary: Qué cambia cuando un cliente recoge el pedido en lugar de recibirlo por transporte, qué aparece en la factura y dónde corregir una dirección que falta o es incorrecta.
-date: 2026-09-10
-source_date: 2026-09-10
+date: 2026-09-11
+source_date: 2026-09-11
 tags: orders, invoices, collection, accounting, crm
 category: orders
 help_routes: grp.org.accounting.invoices
@@ -35,7 +35,7 @@ Una factura es un documento fijo. La dirección de recogida se guarda en ella en
 
 Una cuenta puede quedarse sin ninguna dirección. Cuando pasa eso, el pedido **se detiene antes de llegar al almacén**: no se crea albarán, el pedido se queda en la lista de enviados y se añade un aviso a su nota de almacén pidiendo la dirección. No se prepara nada ni se factura nada hasta que se resuelve.
 
-La solución es poner la dirección en el **cliente**, no en el pedido. Abra el cliente, añada su dirección y el pedido continúa al almacén por sí solo. Añadirla al cliente además hace que su próximo pedido salga bien sin que nadie tenga que acordarse.
+Cuando falta la dirección de facturación, póngala en el **cliente**: abra el cliente, añada su dirección y el pedido continúa al almacén por sí solo, y su próximo pedido también saldrá bien. Cuando el aviso indica la dirección de entrega, póngala en el pedido. Los detalles están en [Por qué aiku pide una dirección completa](/docs/why-aiku-asks-for-a-full-address-es).
 
 Quien crea un pedido desde la oficina no puede enviarlo sin dirección de facturación. Un cliente que pide desde la web sí puede llegar a la pasarela de pago sin ella: su pago se procesa con normalidad y es la retención antes del almacén la que lo detecta, de modo que a nadie se le cobra y después se le rechaza el pedido.
 

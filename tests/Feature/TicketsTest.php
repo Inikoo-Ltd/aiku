@@ -8,39 +8,48 @@
 
 use App\Actions\Chat\ChatSession\StoreChatSession;
 use App\Actions\Chat\ChatSession\StoreTicketFromChatSession;
-use App\Actions\Helpers\Ticket\ImportJiraTickets;
+use App\Actions\Helpers\Ticket\CancelStaleTickets;
 use App\Actions\Helpers\Ticket\LinkTicketsToAppDeployment;
 use App\Models\DevOps\AppDeployment;
 use App\Actions\Helpers\Ticket\RateTicket;
+use App\Actions\Helpers\Ticket\RepairSlackTicketReporters;
 use App\Actions\Helpers\Ticket\StoreTicket;
 use App\Actions\Helpers\Ticket\StoreTicketComment;
-use App\Actions\Helpers\Ticket\UI\ShowTicketsDashboard;
+use App\Actions\Helpers\Ticket\StoreTicketFromSlack;
+use App\Actions\Helpers\Ticket\UI\ShowTicketsReports;
 use App\Actions\Helpers\Ticket\UpdateTicket;
+use App\Actions\Search\SearchTickets;
 use App\Actions\Retina\Dropshipping\Ticket\StoreRetinaTicket;
 use App\Enums\CRM\Livechat\ChatEventTypeEnum;
 use App\Enums\CRM\Livechat\ChatPriorityEnum;
 use App\Enums\Helpers\Ticket\TicketKindEnum;
 use App\Enums\Helpers\Ticket\TicketModuleEnum;
+use App\Enums\Helpers\Ticket\TicketQaStatusEnum;
 use App\Enums\Helpers\Ticket\TicketStatusEnum;
 use App\Enums\Helpers\Ticket\TicketTypeEnum;
 use App\Models\Chat\ChatAgent;
 use App\Actions\SysAdmin\Guest\StoreGuest;
 use App\Mcp\Servers\AikuServer;
+use App\Models\SysAdmin\User;
 use App\Mcp\Tools\TicketsTool;
 use App\Mcp\Tools\TicketWriteTool;
 use App\Http\Resources\Helpers\TicketResource;
 use App\Models\Helpers\Ticket;
+use App\Models\Helpers\TicketComment;
 use App\Models\SysAdmin\Guest;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Notification;
+use App\Notifications\TicketNotification;
+use App\Actions\Helpers\Ticket\GetTicketBadgeData;
+use App\Events\BroadcastTicketBadgeUpdate;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Auth;
-use App\Helpers\SlackNotification;
 use Inertia\Testing\AssertableInertia;
-use Symfony\Component\HttpKernel\Exception\HttpException;
 
 use function Pest\Laravel\actingAs;
+use function Pest\Laravel\delete;
 use function Pest\Laravel\get;
 use function Pest\Laravel\patch;
 use function Pest\Laravel\post;
@@ -59,6 +68,8 @@ beforeEach(function () {
 
     app()->instance('group', $this->group);
     setPermissionsTeamId($this->group->id);
+    $this->user->assignRole('help-desk-supervisor');
+    $this->user->forgetWildcardPermissionIndex();
     Config::set('inertia.testing.page_paths', [resource_path('js/Pages/Grp')]);
     actingAs($this->user);
 });
@@ -92,9 +103,9 @@ test('customer ticket from retina gets an AD reference and the customer attached
 
 test('status changes stamp resolved and closed dates', function (Ticket $ticket) {
     $ticket = UpdateTicket::make()->action($ticket, ['status' => TicketStatusEnum::RESOLVED->value]);
-    expect($ticket->resolved_at)->not->toBeNull()->and($ticket->closed_at)->toBeNull();
+    expect($ticket->resolved_at)->not->toBeNull()->and($ticket->closed_at)->not->toBeNull();
 
-    $ticket = UpdateTicket::make()->action($ticket, ['status' => TicketStatusEnum::CLOSED->value]);
+    $ticket = UpdateTicket::make()->action($ticket, ['status' => TicketStatusEnum::CANCELLED->value]);
     expect($ticket->closed_at)->not->toBeNull();
 
     $ticket = UpdateTicket::make()->action($ticket, ['status' => TicketStatusEnum::OPEN->value, 'assignee_id' => $this->user->id]);
@@ -103,21 +114,53 @@ test('status changes stamp resolved and closed dates', function (Ticket $ticket)
         ->and($ticket->assignee_id)->toBe($this->user->id);
 })->depends('help ticket gets a HELP reference and defaults');
 
-test('staff can leave internal notes but customers never can', function (Ticket $ticket) {
-    $staffNote = StoreTicketComment::make()->action($ticket, $this->user, ['body' => 'Looking into it', 'is_internal' => true]);
-    $customerNote = StoreTicketComment::make()->action($ticket, $this->webUser, ['body' => 'Any news?', 'is_internal' => true]);
+test('a ticket waiting longer than the grace period is cancelled, a fresh one is left alone', function () {
+    $stale = StoreTicket::make()->action($this->group, ['subject' => 'Waited forever']);
+    $fresh = StoreTicket::make()->action($this->group, ['subject' => 'Just asked']);
+    $answered = StoreTicket::make()->action($this->group, ['subject' => 'Old but answered']);
+    Ticket::whereIn('id', [$stale->id, $fresh->id, $answered->id])->update(['status' => TicketStatusEnum::WAITING]);
+    Ticket::whereIn('id', [$stale->id, $answered->id])->update(['created_at' => now()->subDays(20), 'updated_at' => now()]);
+    $answered->comments()->create(['body' => 'asked 20 days ago', 'created_at' => now()->subDays(20)]);
+    $answered->comments()->create(['body' => 'here is the info', 'created_at' => now()->subDays(2)]);
+    $stale->comments()->create(['body' => 'tagged it', 'created_at' => now()->subDays(20)]);
 
-    expect($staffNote->is_internal)->toBeTrue()
-        ->and($staffNote->author_type)->toBe('User')
-        ->and($customerNote->is_internal)->toBeFalse()
+    expect(CancelStaleTickets::run(14))->toBe(1)
+        ->and($stale->fresh()->status)->toBe(TicketStatusEnum::CANCELLED)
+        ->and($stale->fresh()->closed_at)->not->toBeNull()
+        ->and($stale->comments()->count())->toBe(2)
+        ->and($fresh->fresh()->status)->toBe(TicketStatusEnum::WAITING)
+        ->and($answered->fresh()->status)->toBe(TicketStatusEnum::WAITING);
+
+    $stale = $stale->fresh();
+    StoreTicketComment::make()->action($stale, $this->webUser, ['body' => 'sorry, was on holiday']);
+    expect($stale->fresh()->status)->toBe(TicketStatusEnum::OPEN)
+        ->and($stale->fresh()->closed_at)->toBeNull();
+
+    UpdateTicket::make()->action($stale, ['status' => TicketStatusEnum::RESOLVED->value]);
+    StoreTicketComment::make()->action($stale, $this->webUser, ['body' => 'thanks!']);
+    expect($stale->fresh()->status)->toBe(TicketStatusEnum::RESOLVED);
+
+    UpdateTicket::make()->action($stale, ['status' => TicketStatusEnum::WAITING->value]);
+    StoreTicketComment::make()->action($stale, $this->user, ['body' => 'any news?']);
+    expect($stale->fresh()->status)->toBe(TicketStatusEnum::WAITING);
+});
+
+test('staff and customers comment on the same public thread', function (Ticket $ticket) {
+    $staffNote = StoreTicketComment::make()->action($ticket, $this->user, ['body' => 'Looking into it']);
+    $customerNote = StoreTicketComment::make()->action($ticket, $this->webUser, ['body' => 'Any news?']);
+
+    expect($staffNote->author_type)->toBe('User')
         ->and($customerNote->author_type)->toBe('WebUser')
         ->and($ticket->comments()->count())->toBe(2);
 })->depends('customer ticket from retina gets an AD reference and the customer attached');
 
 test('grp ticket pages render', function (Ticket $ticket) {
-    get(route('grp.tickets.index'))->assertInertia(fn (AssertableInertia $page) => $page->component('Tickets/Tickets')->has('data.data', Ticket::count()));
-    get(route('grp.tickets.board'))->assertInertia(fn (AssertableInertia $page) => $page->component('Tickets/TicketsBoard')->has('columns', count(TicketStatusEnum::cases())));
+    get(route('grp.tickets.index'))->assertInertia(fn (AssertableInertia $page) => $page->component('Tickets/TicketsDashboard')->where('can_manage', true)->has('queue')->has('stats.open'));
+    get(route('grp.tickets.list'))->assertInertia(fn (AssertableInertia $page) => $page->component('Tickets/Tickets')->has('data.data', Ticket::count()));
+    get(route('grp.tickets.board'))->assertInertia(fn (AssertableInertia $page) => $page->component('Tickets/TicketsBoard')->has('columns', 5));
+    actingAs(User::factory()->create(['group_id' => $this->group->id]));
     get(route('grp.tickets.create'))->assertInertia(fn (AssertableInertia $page) => $page->component('Tickets/CreateTicket'));
+    actingAs($this->user);
     get(route('grp.tickets.show', $ticket->reference))->assertInertia(
         fn (AssertableInertia $page) => $page->component('Tickets/Ticket')->where('ticket.reference', $ticket->reference)->has('comments', 2)
     );
@@ -125,11 +168,14 @@ test('grp ticket pages render', function (Ticket $ticket) {
 
 test('grp form endpoints create, update and comment', function () {
     $countBefore = Ticket::count();
+    $reporter    = User::factory()->create(['group_id' => $this->group->id]);
 
+    actingAs($reporter);
     post(route('grp.models.ticket.store'), ['subject' => 'From the form', 'priority' => 'urgent'])->assertRedirect();
+    actingAs($this->user);
     $ticket = Ticket::latest('id')->first();
     expect(Ticket::count())->toBe($countBefore + 1)
-        ->and($ticket->reporter_id)->toBe($this->user->id)
+        ->and($ticket->reporter_id)->toBe($reporter->id)
         ->and($ticket->priority)->toBe(ChatPriorityEnum::URGENT);
 
     patch(route('grp.models.ticket.update', $ticket->id), ['status' => 'in_progress'])->assertRedirect();
@@ -138,6 +184,79 @@ test('grp form endpoints create, update and comment', function () {
     $ticket->refresh();
     expect($ticket->status)->toBe(TicketStatusEnum::IN_PROGRESS)
         ->and($ticket->comments()->count())->toBe(1);
+});
+
+test('comment author edits and deletes their own comment', function () {
+    $ticket = StoreTicket::make()->action($this->group, ['subject' => 'Comment edit']);
+    $comment = StoreTicketComment::make()->action($ticket, $this->user, ['body' => 'Typo'], false);
+
+    patch(route('grp.models.ticket.comment.update', $comment->id), ['body' => 'Fixed'])->assertRedirect();
+    expect($comment->refresh()->body)->toBe('Fixed');
+
+    $admin = StoreGuest::make()->action($this->group, array_merge(Guest::factory()->definition(), ['positions' => [['slug' => 'group-admin', 'scopes' => []]]]))->getUser();
+    actingAs($admin);
+    patch(route('grp.models.ticket.comment.update', $comment->id), ['body' => 'Hijacked'])->assertForbidden();
+    delete(route('grp.models.ticket.comment.delete', $comment->id))->assertForbidden();
+    actingAs($this->user);
+
+    delete(route('grp.models.ticket.comment.delete', $comment->id))->assertRedirect();
+    expect(TicketComment::find($comment->id))->toBeNull();
+});
+
+test('asking the reporter posts the question and cancels the ticket when its own deadline passes', function () {
+    $ticket = StoreTicket::make()->action($this->group, ['subject' => 'Need info']);
+    UpdateTicket::make()->action($ticket, ['status' => TicketStatusEnum::IN_PROGRESS->value]);
+
+    patch(route('grp.models.ticket.update', $ticket->id), ['status' => 'waiting', 'question' => 'Which order?', 'waiting_hours' => 2])->assertRedirect();
+
+    $ticket->refresh();
+    expect($ticket->status)->toBe(TicketStatusEnum::WAITING)
+        ->and($ticket->waiting_until->between(now()->addMinutes(119), now()->addMinutes(121)))->toBeTrue()
+        ->and($ticket->comments()->where('is_internal', false)->where('body', 'Which order?')->exists())->toBeTrue();
+
+    expect(CancelStaleTickets::run())->toBe(0);
+
+    $this->travel(3)->hours();
+    expect(CancelStaleTickets::run())->toBe(1)
+        ->and($ticket->fresh()->status)->toBe(TicketStatusEnum::CANCELLED)
+        ->and($ticket->fresh()->waiting_until)->toBeNull();
+});
+
+test('staff reporter is told of the question by email and slack as their profile prefers', function () {
+    Notification::fake();
+    Config::set('services.slack.notifications.bot_user_oauth_token', 'xoxb-test');
+    Http::fake(['slack.com/*' => Http::response(['ok' => true])]);
+
+    $reporter = StoreGuest::make()->action($this->group, Guest::factory()->definition())->getUser();
+    $reporter->update(['slack_user_id' => 'U123', 'settings' => ['ticket_notifications' => 'both']]);
+
+    $ticket = StoreTicket::make()->action($this->group, ['subject' => 'Ask me']);
+    $ticket->update(['reporter_type' => 'User', 'reporter_id' => $reporter->id]);
+    UpdateTicket::make()->action($ticket, ['status' => TicketStatusEnum::IN_PROGRESS->value]);
+
+    patch(route('grp.models.ticket.update', $ticket->id), ['status' => 'waiting', 'question' => 'Which order?', 'waiting_hours' => 24])->assertRedirect();
+
+    Notification::assertSentTo($reporter, TicketNotification::class);
+    Http::assertSent(fn ($request) => str_contains($request->url(), 'chat.postMessage') && $request['channel'] === 'U123');
+
+    $reporter->update(['settings' => ['ticket_notifications' => 'none']]);
+    Notification::fake();
+    UpdateTicket::make()->action($ticket->fresh(), ['status' => TicketStatusEnum::IN_PROGRESS->value]);
+    patch(route('grp.models.ticket.update', $ticket->id), ['status' => 'waiting', 'question' => 'Still?'])->assertRedirect();
+    Notification::assertSentTo($reporter, TicketNotification::class, fn ($notification, $channels) => $channels === ['database']);
+
+    $reporter->update(['settings' => ['ticket_notifications' => 'email']]);
+    patch(route('grp.models.ticket.update', $ticket->id), ['status' => 'resolved'])->assertRedirect();
+    Notification::assertSentTo($reporter, TicketNotification::class, fn ($notification) => str_contains($notification->subject, 'is done'));
+});
+
+test('ticket page shows a history from opened to its status changes, newest first', function () {
+    $ticket = StoreTicket::make()->action($this->group, ['subject' => 'Timeline']);
+    UpdateTicket::make()->action($ticket, ['status' => TicketStatusEnum::IN_PROGRESS->value]);
+
+    get(route('grp.tickets.show', $ticket->reference))->assertInertia(
+        fn (AssertableInertia $page) => $page->where('timeline.0.text', 'Status: Todo → In progress')->where('timeline.1.text', 'Ticket opened')
+    );
 });
 
 test('chat agent raises a ticket linked to the session', function () {
@@ -199,13 +318,13 @@ test('screenshots can be attached to tickets and comments', function () {
 });
 
 test('tickets dashboard counts created, done, status and assignees', function () {
-    $before = ShowTicketsDashboard::make()->handle($this->group, 7);
+    $before = ShowTicketsReports::make()->handle($this->group, 7);
 
     $ticket = StoreTicket::make()->action($this->group, ['subject' => 'Report me', 'assignee_id' => $this->user->id]);
     UpdateTicket::make()->action($ticket, ['status' => TicketStatusEnum::RESOLVED->value]);
     StoreTicket::make()->action($this->group, ['subject' => 'Still open', 'assignee_id' => $this->user->id]);
 
-    $stats = ShowTicketsDashboard::make()->handle($this->group, 7);
+    $stats = ShowTicketsReports::make()->handle($this->group, 7);
     $today = collect($stats['daily'])->firstWhere('date', now()->toDateString());
     $me    = collect($stats['assignees'])->firstWhere('name', $this->user->contact_name ?: $this->user->username);
 
@@ -219,8 +338,8 @@ test('tickets dashboard counts created, done, status and assignees', function ()
         ->and($me['open'])->toBeGreaterThanOrEqual(1)
         ->and($me['median_hours'])->not->toBeNull();
 
-    get(route('grp.tickets.dashboard', ['days' => 30]))->assertInertia(
-        fn (AssertableInertia $page) => $page->component('Tickets/TicketsDashboard')->where('stats.days', 30)->has('stats.daily', 30)
+    get(route('grp.tickets.reports', ['days' => 30]))->assertInertia(
+        fn (AssertableInertia $page) => $page->component('Tickets/TicketsReports')->where('stats.days', 30)->has('stats.daily', 30)
     );
 });
 
@@ -249,7 +368,7 @@ test('reporter rates a resolved ticket once and CSAT shows on the dashboard', fu
         ->post('http://'.$this->website->domain.'/app/models/ticket/'.$ticket->id.'/rate', ['rating' => 1])
         ->assertForbidden();
 
-    $stats = ShowTicketsDashboard::make()->handle($this->group, 7);
+    $stats = ShowTicketsReports::make()->handle($this->group, 7);
     expect($stats['csat'])->toBeGreaterThan(0)
         ->and(count($stats['csat_by_month']))->toBe(12)
         ->and(collect($stats['csat_by_month'])->last()['total'])->toBeGreaterThanOrEqual(1);
@@ -257,7 +376,7 @@ test('reporter rates a resolved ticket once and CSAT shows on the dashboard', fu
 
 test('staff reporter rates their own resolved help ticket from grp', function () {
     $ticket = StoreTicket::make()->action($this->group, ['subject' => 'Rate from grp', 'reporter_type' => 'User', 'reporter_id' => $this->user->id]);
-    UpdateTicket::make()->action($ticket, ['status' => TicketStatusEnum::CLOSED->value]);
+    UpdateTicket::make()->action($ticket, ['status' => TicketStatusEnum::CANCELLED->value]);
 
     get(route('grp.tickets.show', $ticket->reference))->assertInertia(fn (AssertableInertia $page) => $page->where('can_rate', true));
     post(route('grp.models.ticket.rate', $ticket->id), ['rating' => 5])->assertRedirect();
@@ -306,90 +425,8 @@ test('customer ticket escalates to a help ticket that keeps the customer and poi
     post(route('grp.models.ticket.escalate', $helpTicket->id))->assertStatus(422);
 });
 
-test('jira import keeps keys, maps fields, resolves customer by email and bumps the sequence', function () {
-    $this->webUser->update(['email' => 'shopper@example.com']);
-    $this->shop->update(['slug' => 'awd']);
-    $this->website->update(['domain' => 'aw-dropship.com']);
-
-    $adf = fn (string $text) => ['type' => 'doc', 'content' => [['type' => 'paragraph', 'content' => [['type' => 'text', 'text' => $text]]]]];
-
-    Http::fake([
-        'jira.test/rest/api/3/attachment/content/77' => Http::response('%PDF', 200, ['Content-Type' => 'application/pdf']),
-        'jira.test/rest/api/3/attachment/content/78' => Http::response(UploadedFile::fake()->image('shot.png', 10, 10)->getContent(), 200, ['Content-Type' => 'image/png']),
-        'jira.test/rest/api/3/search/jql' => Http::response(['issues' => [
-            [
-                'id'     => '1',
-                'key'    => 'AD-500',
-                'fields' => [
-                    'summary'           => 'eBay listing missing',
-                    'description'       => $adf('Line one'),
-                    'status'            => ['name' => 'Waiting for customer'],
-                    'issuetype'         => ['name' => 'Ebay Channel'],
-                    'priority'          => ['name' => 'High'],
-                    'reporter'          => ['displayName' => 'Shopper', 'emailAddress' => 'SHOPPER@example.com'],
-                    'assignee'          => ['displayName' => $this->user->contact_name, 'emailAddress' => null],
-                    'created'           => '2026-01-02T10:00:00.000+0100',
-                    'updated'           => '2026-01-03T10:00:00.000+0100',
-                    'resolutiondate'    => null,
-                    'customfield_10227' => ['value' => 'Dropship UK'],
-                    'customfield_10294' => 'Shopper Ltd',
-                    'attachment'        => [
-                        ['id' => '77', 'filename' => 'invoice.pdf', 'mimeType' => 'application/pdf', 'size' => 4, 'content' => 'https://jira.test/rest/api/3/attachment/content/77'],
-                        ['id' => '78', 'filename' => 'shot.png', 'mimeType' => 'image/png', 'size' => 100, 'content' => 'https://jira.test/rest/api/3/attachment/content/78'],
-                    ],
-                    'comment'           => ['comments' => [
-                        ['author' => ['displayName' => $this->user->contact_name], 'body' => $adf('Looking into it'), 'jsdPublic' => false, 'created' => '2026-01-02T11:00:00.000+0100'],
-                    ]],
-                ],
-            ],
-            [
-                'id'     => '2',
-                'key'    => 'AD-7',
-                'fields' => [
-                    'summary'           => 'Old one',
-                    'description'       => null,
-                    'status'            => ['name' => 'Done'],
-                    'issuetype'         => ['name' => 'Shopify Channel'],
-                    'priority'          => ['name' => 'Medium'],
-                    'reporter'          => ['displayName' => 'Ghost', 'emailAddress' => 'nobody@example.com'],
-                    'created'           => '2025-01-02T10:00:00.000+0100',
-                    'updated'           => '2025-01-03T10:00:00.000+0100',
-                    'resolutiondate'    => '2025-01-03T10:00:00.000+0100',
-                    'customfield_10227' => ['value' => 'Dropship UK'],
-                ],
-            ],
-        ]]),
-    ]);
-
-    $imported = ImportJiraTickets::make()->setJiraCredentials(['base_url' => 'https://jira.test', 'email' => 'x', 'api_token' => 'y'])->handle($this->group, 'AD');
-
-    $ticket = Ticket::where('reference', 'AD-500')->first();
-    expect($imported)->toBe(2)
-        ->and($ticket->type)->toBe(TicketTypeEnum::CUSTOMER)
-        ->and($ticket->number)->toBe(500)
-        ->and($ticket->status)->toBe(TicketStatusEnum::WAITING)
-        ->and($ticket->priority)->toBe(ChatPriorityEnum::HIGH)
-        ->and($ticket->description)->toBe("Line one\n")
-        ->and($ticket->shop_id)->toBe($this->shop->id)
-        ->and($ticket->customer_id)->toBe($this->customer->id)
-        ->and($ticket->reporter_type)->toBe('WebUser')
-        ->and($ticket->assignee_id)->toBe($this->user->id)
-        ->and($ticket->created_at->year)->toBe(2026)
-        ->and($ticket->comments()->count())->toBe(1)
-        ->and($ticket->comments()->first()->is_internal)->toBeTrue()
-        ->and(Ticket::where('reference', 'AD-7')->first()->resolved_at)->not->toBeNull()
-        ->and($ticket->getMedia('ticket_attachments')->pluck('name')->all())->toBe(['invoice.pdf'])
-        ->and($ticket->getMedia('ticket_images'))->toHaveCount(1)
-        ->and($ticket->ticketAttachments()[0]['url'])->toBeString();
-
-    ImportJiraTickets::make()->setJiraCredentials(['base_url' => 'https://jira.test', 'email' => 'x', 'api_token' => 'y'])->handle($this->group, 'AD');
-    expect($ticket->fresh()->media()->count())->toBe(2);
-
-    $next = StoreRetinaTicket::make()->action($this->webUser, ['subject' => 'After import']);
-    expect($next->number)->toBe(501);
-});
-
 test('staff file a bug from anywhere without leaving the page', function () {
+    actingAs(User::factory()->create(['group_id' => $this->group->id]));
     $response = post(route('grp.models.ticket.store'), [
         'subject' => 'Button dead',
         'kind'    => 'bug',
@@ -414,7 +451,7 @@ test('tickets take free tags and the known list grows with them', function () {
         ->and(Ticket::knownTags($this->group->id))->toContain('printer voodoo', 'lack of training');
 });
 
-test('confidential tickets are only visible to reporter, assignee and admins', function () {
+test('confidential tickets are only visible to reporter, assignee and lead engineers', function () {
     $outsider = StoreGuest::make()->action($this->group, array_merge(Guest::factory()->definition(), ['positions' => [['slug' => 'group-admin', 'scopes' => []]]]))->getUser();
     $outsider->removeRole('group-admin');
     $ticket = StoreTicket::make()->action($this->group, ['subject' => 'HR matter', 'is_confidential' => true, 'reporter_type' => 'User', 'reporter_id' => $this->user->id]);
@@ -424,10 +461,13 @@ test('confidential tickets are only visible to reporter, assignee and admins', f
 
     actingAs($outsider);
     get(route('grp.tickets.show', $ticket->reference))->assertForbidden();
-    get(route('grp.tickets.index', ['elements' => ['mine' => 'reported']]))->assertOk();
+    get(route('grp.tickets.list', ['elements' => ['mine' => 'reported']]))->assertOk();
+    post(route('grp.models.ticket.comment.store', $ticket->id), ['body' => 'peek'])->assertForbidden();
+    get(route('grp.tickets.reports'))->assertInertia(fn (AssertableInertia $page) => $page->where('stats.open', Ticket::visibleTo($outsider)->whereNotIn('status', ['resolved', 'cancelled'])->count()));
 
     UpdateTicket::make()->action($ticket, ['assignee_id' => $outsider->id]);
     expect(Ticket::visibleTo($outsider)->whereKey($ticket->id)->exists())->toBeTrue();
+    post(route('grp.models.ticket.comment.store', $ticket->id), ['body' => 'on it'])->assertRedirect();
 });
 
 test('assistant raises, lists, works and closes a ticket through MCP', function () {
@@ -454,27 +494,40 @@ test('assistant raises, lists, works and closes a ticket through MCP', function 
     expect($ticket->status)->toBe(TicketStatusEnum::RESOLVED)
         ->and($ticket->assignee_id)->toBe($this->user->id)
         ->and($ticket->tags)->toBe(['data fix'])
-        ->and($ticket->comments()->first()->is_internal)->toBeTrue();
+        ->and($ticket->comments()->where('body', 'Fixed by clearing the stale lock')->value('author_id'))->toBe($this->user->id);
 
     $shown = AikuServer::actingAs($this->user)->tool(TicketsTool::class, ['reference' => strtolower($reference)]);
     $shown->assertOk()->assertSee('Fixed by clearing the stale lock');
 
+    AikuServer::actingAs($this->user)->tool(TicketWriteTool::class, ['reference' => $reference, 'subject' => 'Stale lock on picking', 'description' => 'Rewritten'])->assertOk();
+    expect($ticket->fresh()->subject)->toBe('Stale lock on picking')
+        ->and($ticket->fresh()->description)->toBe('Rewritten');
+
     AikuServer::actingAs($this->user)->tool(TicketWriteTool::class, ['reference' => $reference, 'assignee' => 'nobody-here'])->assertHasErrors();
 });
 
-test('new tickets ping the Slack tickets channel when one is configured', function () {
-    Notification::fake();
+test('new tickets post one alert in the Slack tickets channel and edit it as status and assignee change', function () {
     Config::set('services.slack.notifications.tickets_channel', '#tickets');
     Config::set('services.slack.notifications.bot_user_oauth_token', 'xoxb-test');
+    Http::fake(['slack.com/api/chat.postMessage' => Http::response(['ok' => true, 'channel' => 'C9', 'ts' => '42.1']), 'slack.com/api/chat.update' => Http::response(['ok' => true])]);
 
     $ticket = StoreTicket::make()->action($this->group, ['subject' => 'Ping me']);
+    expect($ticket->fresh()->data['slack_alert'])->toEqualCanonicalizing(['channel' => 'C9', 'ts' => '42.1']);
+    Http::assertSent(fn ($request) => str_contains($request->url(), 'chat.postMessage') && $request['channel'] === '#tickets' && str_contains(json_encode($request['blocks']), 'Status:* Todo'));
 
-    Notification::assertSentOnDemand(SlackNotification::class, fn ($notification, $channels, $notifiable) => $notifiable->routes['slack'] === '#tickets');
+    UpdateTicket::make()->action($ticket, ['assignee_id' => $this->user->id, 'status' => TicketStatusEnum::IN_PROGRESS->value]);
+    Http::assertSent(fn ($request) => str_contains($request->url(), 'chat.update') && $request['ts'] === '42.1' && $request['channel'] === 'C9' && str_contains(json_encode($request['blocks']), 'Status:* In progress') && str_contains(json_encode($request['blocks']), $this->user->username));
+
+    Http::assertSent(fn ($request) => str_contains($request->url(), 'chat.postMessage') && ($request['thread_ts'] ?? null) === '42.1' && str_ends_with($request['text'], 'In progress'));
+
+    UpdateTicket::make()->action($ticket, ['priority' => 'urgent']);
+    Http::assertSentCount(3);
 
     Config::set('services.slack.notifications.tickets_channel', null);
     StoreTicket::make()->action($this->group, ['subject' => 'Silent']);
-    Notification::assertSentOnDemandTimes(SlackNotification::class, 1);
+    Http::assertSentCount(3);
 });
+
 
 test('slack slash command raises a bug ticket for the matching aiku user', function () {
     Config::set('services.slack.signing_secret', 'shh');
@@ -526,24 +579,490 @@ test('deployed commits that name a ticket are recorded on it once', function () 
         ->and(TicketResource::make($ticket)->resolve()['commits'][0]['hash'])->toBe('deadbeef0001');
 });
 
-test('read-only mirror mode blocks every write but still lets everyone read', function () {
-    $ticket         = StoreTicket::make()->action($this->group, ['subject' => 'Before freeze']);
-    $customerTicket = StoreRetinaTicket::make()->action($this->webUser, ['subject' => 'Customer before freeze']);
-    Config::set('tickets.read_only', true);
+test('slack ticket reaction raises a ticket from the message and mirrors replies into its thread', function () {
+    Config::set('services.slack.signing_secret', 'shh');
+    Config::set('services.slack.notifications.bot_user_oauth_token', 'xoxb-test');
+    $this->user->update(['email' => 'raul@example.com']);
+    Http::fake([
+        'slack.com/api/users.info*'            => Http::response(['ok' => true, 'user' => ['name' => $this->user->username, 'real_name' => 'Somebody Else', 'profile' => ['email' => 'raul-on-slack@example.com']]]),
+        'slack.com/api/conversations.history*' => Http::response(['ok' => true, 'messages' => [[
+            'user'  => 'U1',
+            'text'  => "Picking shows 1 instead of 3\nFaire FPGB",
+            'files' => [['id' => 'F1', 'name' => 'shot.png', 'mimetype' => 'image/png', 'size' => 100, 'url_private_download' => 'https://files.slack.com/shot.png']],
+        ]]]),
+        'files.slack.com/*'                    => Http::response(UploadedFile::fake()->image('shot.png', 10, 10)->getContent(), 200, ['Content-Type' => 'image/png']),
+        'slack.com/api/chat.postMessage'       => Http::response(['ok' => true]),
+    ]);
+    Auth::logout();
 
-    get(route('grp.tickets.index'))->assertOk()->assertInertia(fn (AssertableInertia $page) => $page->where('tickets_read_only', true));
-    get(route('grp.tickets.show', $ticket->reference))->assertOk();
+    $post = function (array $payload, string $signature = null) {
+        $body      = json_encode($payload);
+        $timestamp = (string) time();
+        $headers   = [
+            'X-Slack-Request-Timestamp' => $timestamp,
+            'X-Slack-Signature'         => $signature ?? 'v0='.hash_hmac('sha256', "v0:$timestamp:$body", 'shh'),
+            'Content-Type'              => 'application/json',
+        ];
 
-    post(route('grp.models.ticket.store'), ['subject' => 'During freeze'])->assertStatus(423);
-    patch(route('grp.models.ticket.update', $ticket->id), ['status' => 'resolved'])->assertStatus(423);
-    post(route('grp.models.ticket.comment.store', $ticket->id), ['body' => 'nope'])->assertStatus(423);
-    post(route('grp.models.ticket.escalate', $customerTicket->id))->assertStatus(423);
-    expect(fn () => StoreRetinaTicket::make()->action($this->webUser, ['subject' => 'retina during freeze']))->toThrow(HttpException::class);
+        return $this->call('POST', route('webhooks.slack_events'), [], [], [], $this->transformHeadersToServerVars($headers), $body);
+    };
 
-    AikuServer::actingAs($this->user)->tool(TicketWriteTool::class, ['reference' => $ticket->reference, 'comment' => 'x'])->assertHasErrors();
-    AikuServer::actingAs($this->user)->tool(TicketsTool::class, ['reference' => $ticket->reference])->assertOk();
+    $post(['type' => 'url_verification', 'challenge' => 'abc'])->assertOk()->assertJson(['challenge' => 'abc']);
+    $post(['type' => 'event_callback', 'event' => []], 'v0=bad')->assertStatus(401);
 
-    expect(Ticket::where('subject', 'During freeze')->exists())->toBeFalse()
-        ->and($ticket->fresh()->status)->toBe(TicketStatusEnum::OPEN)
-        ->and($ticket->comments()->count())->toBe(0);
+    $event = ['type' => 'event_callback', 'event' => ['type' => 'reaction_added', 'reaction' => 'ticket', 'user' => 'U2', 'item' => ['type' => 'message', 'channel' => 'C1', 'ts' => '1789138198.657369']]];
+    $post($event)->assertOk();
+    $post($event)->assertOk();
+    $post(['type' => 'event_callback', 'event' => ['type' => 'reaction_added', 'reaction' => 'eyes', 'item' => ['type' => 'message', 'channel' => 'C1', 'ts' => '2']]])->assertOk();
+
+    $ticket = Ticket::where('subject', 'Picking shows 1 instead of 3')->sole();
+    expect($ticket->description)->toBe('Faire FPGB')
+        ->and($ticket->reporter_id)->toBe($this->user->id)
+        ->and($this->user->fresh()->slack_user_id)->toBe('U1')
+        ->and($ticket->data['slack']['ts'])->toBe('1789138198.657369')
+        ->and($ticket->getMedia('ticket_images')->count())->toBe(1);
+    Http::assertSent(fn ($request) => str_contains($request->url(), 'conversations.history'));
+    Http::assertSent(fn ($request) => str_contains($request->url(), 'files.slack.com'));
+    Http::assertSent(fn ($request) => str_contains($request->url(), 'chat.postMessage') && ($request['thread_ts'] ?? null) === '1789138198.657369' && str_contains($request['text'], $ticket->reference));
+
+    StoreTicketComment::make()->action($ticket, $this->user, ['body' => 'Fixed, please check']);
+    UpdateTicket::make()->action($ticket, ['status' => TicketStatusEnum::WAITING->value]);
+    $post(['type' => 'event_callback', 'event' => ['type' => 'message', 'channel' => 'C1', 'user' => 'U1', 'ts' => '1789138199.1', 'thread_ts' => '1789138198.657369', 'text' => 'It is FPGB-123']])->assertOk();
+    $post(['type' => 'event_callback', 'event' => ['type' => 'message', 'channel' => 'C1', 'bot_id' => 'B1', 'ts' => '1789138199.2', 'thread_ts' => '1789138198.657369', 'text' => 'HELP-1 is now Waiting']])->assertOk();
+    $post(['type' => 'event_callback', 'event' => ['type' => 'message', 'channel' => 'C1', 'user' => 'U1', 'ts' => '1789138199.3', 'text' => 'unrelated top level message']])->assertOk();
+    $fromModal = StoreTicket::make()->action($this->group, ['subject' => 'Born in aiku', 'data' => ['slack_alert' => ['channel' => 'C9', 'ts' => '55.1']]]);
+    $post(['type' => 'event_callback', 'event' => ['type' => 'message', 'channel' => 'C9', 'user' => 'U1', 'ts' => '55.2', 'thread_ts' => '55.1', 'text' => 'reply under the alert card']])->assertOk();
+    expect($fromModal->comments()->pluck('body')->all())->toBe(['reply under the alert card']);
+    StoreTicketComment::make()->action($fromModal, $this->user, ['body' => 'answer from aiku']);
+    Http::assertSent(fn ($request) => str_contains($request->url(), 'chat.postMessage') && ($request['thread_ts'] ?? null) === '55.1' && str_contains($request['text'], 'answer from aiku'));
+    expect($ticket->fresh()->status)->toBe(TicketStatusEnum::OPEN)
+        ->and($ticket->comments()->pluck('body')->all())->toBe(['Fixed, please check', 'It is FPGB-123']);
+    Http::assertNotSent(fn ($request) => str_contains($request->url(), 'chat.postMessage') && str_contains($request['text'], 'It is FPGB-123'));
+    UpdateTicket::make()->action($ticket, ['status' => TicketStatusEnum::RESOLVED->value]);
+    Http::assertSent(fn ($request) => str_contains($request->url(), 'chat.postMessage') && str_contains($request['text'], 'Fixed, please check'));
+    Http::assertSent(fn ($request) => str_contains($request->url(), 'chat.postMessage') && str_ends_with($request['text'], 'Done'));
+
+    $bare = StoreTicketFromSlack::run($this->group, ['user_id' => 'U1', 'channel_id' => 'C1', 'ts' => '7', 'subject' => 'No clue where <https://app.aiku.io/org/aw/shops/uk|here>']);
+    expect($bare->data['reference_url'])->toBe('https://app.aiku.io/org/aw/shops/uk');
+    $bare = StoreTicketFromSlack::run($this->group, ['user_id' => 'U1', 'channel_id' => 'C1', 'ts' => '8', 'subject' => 'Nothing to go on']);
+    Http::assertSent(fn ($request) => str_contains($request->url(), 'chat.postMessage') && ($request['thread_ts'] ?? null) === '8' && str_contains($request['text'], 'screenshot'));
+    Http::assertNotSent(fn ($request) => str_contains($request->url(), 'chat.postMessage') && ($request['thread_ts'] ?? null) === '7' && str_contains($request['text'], 'screenshot'));
+
+    $orphan = StoreTicket::make()->action($this->group, ['subject' => 'Unknown reporter', 'data' => ['slack' => ['user_id' => 'U1', 'channel_id' => 'C1', 'ts' => '9']]]);
+    expect($orphan->reporter_id)->toBeNull()
+        ->and(RepairSlackTicketReporters::run())->toBe(1)
+        ->and($orphan->fresh()->reporter_id)->toBe($this->user->id);
+});
+
+test('slack shortcut opens the ticket modal and only its submit creates the ticket', function () {
+    Config::set('services.slack.signing_secret', 'shh');
+    Config::set('services.slack.notifications.bot_user_oauth_token', 'xoxb-test');
+    Http::fake([
+        'slack.com/api/users.info*'      => Http::response(['ok' => true, 'user' => ['name' => $this->user->username, 'profile' => ['email' => 'nobody@example.com']]]),
+        'slack.com/api/views.open'       => Http::response(['ok' => true]),
+        'slack.com/api/chat.postMessage' => Http::response(['ok' => true]),
+        'files.slack.com/*'              => Http::response(UploadedFile::fake()->image('modal.png', 10, 10)->getContent(), 200, ['Content-Type' => 'image/png']),
+    ]);
+    Auth::logout();
+
+    $post = function (array $payload) {
+        $body      = http_build_query(['payload' => json_encode($payload)]);
+        $timestamp = (string) time();
+        $headers   = [
+            'X-Slack-Request-Timestamp' => $timestamp,
+            'X-Slack-Signature'         => 'v0='.hash_hmac('sha256', "v0:$timestamp:$body", 'shh'),
+            'Content-Type'              => 'application/x-www-form-urlencoded',
+        ];
+
+        return $this->call('POST', route('webhooks.slack_interactivity'), ['payload' => json_encode($payload)], [], [], $this->transformHeadersToServerVars($headers), $body);
+    };
+
+    $post(['type' => 'message_action', 'callback_id' => 'raise_ticket', 'trigger_id' => 'T1', 'user' => ['id' => 'U1'], 'channel' => ['id' => 'C1'], 'message' => ['ts' => '55.1', 'text' => "Shortcut labels blank\nSK printer only"]])->assertOk();
+    Http::assertSent(function ($request) {
+        $view = $request['view'] ?? null;
+
+        return str_contains($request->url(), 'views.open')
+            && $request['trigger_id'] === 'T1'
+            && $view['blocks'][0]['element']['initial_value'] === 'Shortcut labels blank'
+            && $view['blocks'][1]['element']['initial_value'] === 'SK printer only'
+            && $view['blocks'][2]['optional'] === false
+            && json_decode($view['private_metadata'], true) === ['user_id' => 'U1', 'channel_id' => 'C1', 'ts' => '55.1'];
+    });
+    expect(Ticket::where('subject', 'Shortcut labels blank')->exists())->toBeFalse();
+
+    $post([
+        'type' => 'view_submission',
+        'user' => ['id' => 'U1'],
+        'view' => [
+            'callback_id'      => 'raise_ticket',
+            'private_metadata' => json_encode(['user_id' => 'U1', 'channel_id' => 'C1', 'ts' => '55.1']),
+            'state'            => ['values' => [
+                'subject'       => ['value' => ['value' => 'Shortcut labels blank']],
+                'description'   => ['value' => ['value' => 'SK printer only']],
+                'reference_url' => ['value' => ['value' => 'https://app.aiku.io/org/aw/warehouses/ac']],
+                'files'         => ['value' => ['files' => [['id' => 'F9', 'name' => 'modal.png', 'mimetype' => 'image/png', 'size' => 100, 'url_private_download' => 'https://files.slack.com/modal.png']]]],
+            ]],
+        ],
+    ])->assertOk();
+
+    $ticket = Ticket::where('subject', 'Shortcut labels blank')->sole();
+    expect($ticket->description)->toBe('SK printer only')
+        ->and($ticket->reporter_id)->toBe($this->user->id)
+        ->and($ticket->data['reference_url'])->toBe('https://app.aiku.io/org/aw/warehouses/ac')
+        ->and($ticket->data['slack']['ts'])->toBe('55.1')
+        ->and($ticket->getMedia('ticket_images')->count())->toBe(1);
+    Http::assertSent(fn ($request) => str_contains($request->url(), 'chat.postMessage') && ($request['thread_ts'] ?? null) === '55.1' && str_contains($request['text'], $ticket->reference));
+});
+
+test('only the help desk manages tickets, everyone else reports, comments and closes their own', function () {
+    $reporter = User::factory()->create(['group_id' => $this->group->id]);
+    $helper   = User::factory()->create(['group_id' => $this->group->id]);
+    setPermissionsTeamId($this->group->id);
+    $helper->assignRole('help-desk-clerk');
+    $boss = User::factory()->create(['group_id' => $this->group->id]);
+    $boss->assignRole('help-desk-supervisor');
+
+    actingAs($reporter);
+    $ticket = StoreTicket::make()->action($this->group, ['subject' => 'Mine', 'reporter_type' => 'User', 'reporter_id' => $reporter->id]);
+    $other  = StoreTicket::make()->action($this->group, ['subject' => 'Not mine']);
+
+    get(route('grp.tickets.show', $ticket->reference))->assertOk()->assertInertia(fn (AssertableInertia $page) => $page->where('can_manage', false)->where('is_reporter', true));
+    get(route('grp.tickets.index'))->assertOk()->assertInertia(fn (AssertableInertia $page) => $page->component('Tickets/TicketsDashboard')->where('can_manage', false)->has('mine', 1)->missing('queue'));
+    get(route('grp.tickets.reports'))->assertOk();
+    get(route('grp.tickets.board'))->assertOk()->assertInertia(fn (AssertableInertia $page) => $page->where('can_manage', false));
+    patch(route('grp.models.ticket.update', $other->id), ['status' => 'resolved'])->assertForbidden();
+    patch(route('grp.models.ticket.update', $ticket->id), ['priority' => 'urgent'])->assertForbidden();
+    patch(route('grp.models.ticket.update', $ticket->id), ['status' => 'resolved'])->assertRedirect();
+    post(route('grp.models.ticket.comment.store', $other->id), ['body' => 'secret?'])->assertRedirect();
+    expect($ticket->fresh()->status)->toBe(TicketStatusEnum::RESOLVED)
+        ->and($other->comments()->sole()->body)->toBe('secret?');
+
+    $manager = User::factory()->create(['group_id' => $this->group->id]);
+    $manager->assignRole('group-admin');
+    actingAs($manager);
+    get(route('grp.tickets.show', $other->reference))->assertOk()->assertInertia(fn (AssertableInertia $page) => $page->where('can_manage', false));
+    get(route('grp.tickets.board'))->assertOk();
+    patch(route('grp.models.ticket.update', $other->id), ['status' => 'resolved'])->assertForbidden();
+
+    actingAs($helper);
+    get(route('grp.tickets.create'))->assertOk();
+    post(route('grp.models.ticket.store'), ['subject' => 'Engineers report too'])->assertRedirect();
+    get(route('grp.tickets.show', $other->reference))->assertOk()->assertInertia(fn (AssertableInertia $page) => $page->where('can_manage', true));
+    get(route('grp.tickets.reports'))->assertOk();
+    get(route('grp.tickets.board'))->assertOk()->assertInertia(fn (AssertableInertia $page) => $page->where('can_manage', true));
+    patch(route('grp.models.ticket.update', $other->id), ['is_confidential' => true])->assertForbidden();
+    patch(route('grp.models.ticket.update', $other->id), ['assignee_id' => $helper->id])->assertForbidden();
+    patch(route('grp.models.ticket.update', $other->id), ['priority' => 'urgent'])->assertRedirect();
+    UpdateTicket::make()->action($other, ['assignee_id' => $helper->id]);
+    patch(route('grp.models.ticket.update', $other->id), ['assignee_id' => null])->assertForbidden();
+    patch(route('grp.models.ticket.update', $other->id), ['assignee_id' => $boss->id])->assertRedirect();
+    patch(route('grp.models.ticket.update', $other->id), ['assignee_id' => $helper->id])->assertForbidden();
+    UpdateTicket::make()->action($other->refresh(), ['assignee_id' => $helper->id]);
+    post(route('grp.models.ticket.comment.store', $other->id), ['body' => 'from the page'])->assertRedirect();
+    expect($other->fresh()->priority)->toBe(ChatPriorityEnum::URGENT)
+        ->and($other->fresh()->assignee_id)->toBe($helper->id)
+        ->and($other->comments()->where('body', 'from the page')->count())->toBe(1)
+        ->and($other->comments()->where('body', 'like', 'Passed from%')->count())->toBeGreaterThanOrEqual(1);
+
+    actingAs($boss);
+    get(route('grp.tickets.reports'))->assertOk();
+    patch(route('grp.models.ticket.update', $other->id), ['assignee_id' => $boss->id])->assertRedirect();
+    expect($other->fresh()->assignee_id)->toBe($boss->id);
+
+    AikuServer::actingAs($reporter)->tool(TicketWriteTool::class, ['reference' => $other->reference, 'priority' => 'low'])->assertHasErrors();
+    AikuServer::actingAs($reporter)->tool(TicketWriteTool::class, ['reference' => $ticket->reference, 'status' => 'cancelled'])->assertHasErrors();
+    AikuServer::actingAs($reporter)->tool(TicketsTool::class, ['reference' => $ticket->reference])->assertHasErrors();
+    AikuServer::actingAs($helper)->tool(TicketWriteTool::class, ['reference' => $other->reference, 'priority' => 'low'])->assertOk();
+    AikuServer::actingAs($helper)->tool(TicketWriteTool::class, ['reference' => $other->reference, 'assignee' => $reporter->username])->assertHasErrors();
+    AikuServer::actingAs($boss)->tool(TicketWriteTool::class, ['reference' => $other->reference, 'assignee' => $helper->username])->assertOk();
+    AikuServer::actingAs($helper)->tool(TicketWriteTool::class, ['reference' => $other->reference, 'assignee' => $boss->username])->assertOk();
+    AikuServer::actingAs($reporter)->tool(TicketWriteTool::class, ['reference' => $other->reference, 'comment' => 'reporters use the page'])->assertHasErrors();
+    AikuServer::actingAs($helper)->tool(TicketWriteTool::class, ['reference' => $other->reference, 'comment' => 'not my ticket any more'])->assertHasErrors();
+    AikuServer::actingAs($boss)->tool(TicketWriteTool::class, ['reference' => $other->reference, 'comment' => 'on it'])->assertOk();
+    $unassigned = StoreTicket::make()->action($this->group, ['subject' => 'Nobody owns me']);
+    AikuServer::actingAs($boss)->tool(TicketWriteTool::class, ['reference' => $unassigned->reference, 'comment' => 'too early'])->assertHasErrors();
+    expect($other->comments()->where('body', 'on it')->value('author_id'))->toBe($boss->id)
+        ->and($other->comments()->whereIn('body', ['reporters use the page', 'not my ticket any more'])->exists())->toBeFalse()
+        ->and($unassigned->comments()->exists())->toBeFalse();
+
+    $oldNote = $other->comments()->create(['body' => 'old internal note', 'is_internal' => true]);
+    expect($other->commentsVisibleTo($helper)->whereKey($oldNote->id)->exists())->toBeFalse()
+        ->and($other->commentsVisibleTo($boss)->whereKey($oldNote->id)->exists())->toBeTrue();
+    actingAs($helper);
+    patch(route('grp.models.ticket.comment.toggle_visibility', $oldNote->id))->assertForbidden();
+    actingAs($boss);
+    patch(route('grp.models.ticket.comment.toggle_visibility', $oldNote->id))->assertRedirect();
+    expect($oldNote->fresh()->is_internal)->toBeFalse();
+    patch(route('grp.models.ticket.comment.toggle_visibility', $oldNote->id))->assertRedirect();
+    expect($oldNote->fresh()->is_internal)->toBeTrue();
+
+    actingAs($helper);
+    delete(route('grp.models.ticket.delete', $other->id))->assertForbidden();
+    actingAs($boss);
+    patch(route('grp.models.ticket.update', $other->id), ['assignee_id' => $boss->id, 'is_confidential' => true])->assertRedirect();
+    expect($other->fresh()->is_confidential)->toBeTrue();
+    AikuServer::actingAs($helper)->tool(TicketWriteTool::class, ['reference' => $other->reference, 'priority' => 'low'])->assertHasErrors();
+
+    actingAs($boss);
+    delete(route('grp.models.ticket.delete', $other->id))->assertRedirect(route('grp.tickets.index'));
+    expect(Ticket::find($other->id))->toBeNull()
+        ->and(Ticket::withTrashed()->find($other->id))->not->toBeNull();
+});
+
+test('board only shows tickets closed in the last 24 hours', function () {
+    $fresh = StoreTicket::make()->action($this->group, ['subject' => 'Closed today']);
+    $stale = StoreTicket::make()->action($this->group, ['subject' => 'Closed last week']);
+    UpdateTicket::make()->action($fresh, ['status' => TicketStatusEnum::RESOLVED->value]);
+    UpdateTicket::make()->action($stale, ['status' => TicketStatusEnum::RESOLVED->value]);
+    $stale->update(['closed_at' => now()->subDays(7)]);
+
+    get(route('grp.tickets.board', ['periods' => ['closed' => '24h']]))->assertInertia(function (AssertableInertia $page) use ($fresh, $stale) {
+        $references = collect($page->toArray()['props']['columns'])
+            ->firstWhere('key', 'closed')['tickets'];
+        $references = collect($references)->pluck('reference');
+
+        expect($references)->toContain($fresh->reference)
+            ->and($references)->not->toContain($stale->reference);
+    });
+});
+
+test('list and board show only tickets created in the chosen interval', function () {
+    $fresh = StoreTicket::make()->action($this->group, ['subject' => 'Raised today']);
+    $old   = StoreTicket::make()->action($this->group, ['subject' => 'Raised last year']);
+    $old->update(['created_at' => now()->subYear()->subMonth()]);
+
+    get(route('grp.tickets.list', ['created' => 'tdy']))->assertInertia(function (AssertableInertia $page) use ($fresh, $old) {
+        $references = collect($page->toArray()['props']['data']['data'])->pluck('reference');
+        expect($references)->toContain($fresh->reference)->and($references)->not->toContain($old->reference)
+            ->and($page->toArray()['props']['createdInterval'])->toBe('tdy');
+    });
+
+    $old->update(['created_at' => now(), 'priority' => 'urgent']);
+    get(route('grp.tickets.list', ['elements' => ['priority' => 'urgent']]))->assertInertia(function (AssertableInertia $page) use ($fresh, $old) {
+        $references = collect($page->toArray()['props']['data']['data'])->pluck('reference');
+        expect($references)->toContain($old->reference)->and($references)->not->toContain($fresh->reference);
+    });
+    $old->update(['created_at' => now()->subYear()->subMonth()]);
+
+    $fresh->update(['created_at' => now()->subHours(2)]);
+    get(route('grp.tickets.list', ['created' => '1h']))->assertInertia(fn (AssertableInertia $page) => expect(collect($page->toArray()['props']['data']['data'])->pluck('reference'))->not->toContain($fresh->reference));
+    get(route('grp.tickets.list', ['created' => '3h']))->assertInertia(fn (AssertableInertia $page) => expect(collect($page->toArray()['props']['data']['data'])->pluck('reference'))->toContain($fresh->reference));
+
+    get(route('grp.tickets.board', ['created' => '24h']))->assertInertia(function (AssertableInertia $page) use ($fresh, $old) {
+        $references = collect($page->toArray()['props']['columns'])->flatMap(fn ($column) => $column['tickets'])->pluck('reference');
+        expect($references)->toContain($fresh->reference)->and($references)->not->toContain($old->reference);
+    });
+});
+
+test('assigning and starting a ticket stamps its lifecycle dates', function () {
+    $ticket = StoreTicket::make()->action($this->group, ['subject' => 'Lifecycle']);
+    expect($ticket->status)->toBe(TicketStatusEnum::OPEN)
+        ->and($ticket->assigned_at)->toBeNull()
+        ->and($ticket->started_at)->toBeNull();
+
+    $ticket = UpdateTicket::make()->action($ticket, ['assignee_id' => $this->user->id]);
+    expect($ticket->status)->toBe(TicketStatusEnum::ASSIGNED)
+        ->and($ticket->assigned_at)->not->toBeNull()
+        ->and($ticket->started_at)->toBeNull();
+
+    $ticket = UpdateTicket::make()->action($ticket, ['status' => TicketStatusEnum::IN_PROGRESS->value]);
+    $startedAt = $ticket->started_at;
+    expect($startedAt)->not->toBeNull();
+
+    $ticket = UpdateTicket::make()->action($ticket, ['status' => TicketStatusEnum::WAITING->value]);
+    expect($ticket->started_at->eq($startedAt))->toBeTrue()
+        ->and($ticket->closed_at)->toBeNull();
+
+    $ticket = UpdateTicket::make()->action($ticket, ['status' => TicketStatusEnum::RESOLVED->value]);
+    expect($ticket->resolved_at)->not->toBeNull()->and($ticket->closed_at)->not->toBeNull();
+
+    $ticket = UpdateTicket::make()->action($ticket, ['status' => TicketStatusEnum::OPEN->value]);
+    expect($ticket->status)->toBe(TicketStatusEnum::ASSIGNED)
+        ->and($ticket->started_at)->toBeNull()
+        ->and($ticket->resolved_at)->toBeNull()
+        ->and($ticket->closed_at)->toBeNull();
+
+    $ticket = UpdateTicket::make()->action($ticket, ['assignee_id' => null]);
+    expect($ticket->status)->toBe(TicketStatusEnum::OPEN)
+        ->and($ticket->assigned_at)->toBeNull();
+});
+
+test('an engineer asks QA to check, QA answers with a verdict and the engineer still decides when it is done', function () {
+    Mail::fake();
+    Notification::fake();
+    $engineer = User::factory()->create(['group_id' => $this->group->id]);
+    $qa       = User::factory()->create(['group_id' => $this->group->id]);
+    $reporter = User::factory()->create(['group_id' => $this->group->id]);
+    setPermissionsTeamId($this->group->id);
+    $engineer->assignRole('help-desk-clerk');
+    $qa->assignRole('qa');
+
+    $ticket = StoreTicket::make()->action($this->group, ['subject' => 'Totals wrong', 'reporter_type' => 'User', 'reporter_id' => $reporter->id]);
+    UpdateTicket::make()->action($ticket, ['assignee_id' => $engineer->id, 'status' => TicketStatusEnum::IN_PROGRESS->value]);
+
+    actingAs($qa);
+    get(route('grp.tickets.index'))->assertOk()->assertInertia(fn (AssertableInertia $page) => $page->where('can_manage', false)->where('can_qa', true)->has('qa_queue', 0));
+    patch(route('grp.models.ticket.update', $ticket->id), ['qa_status' => 'requested'])->assertForbidden();
+    patch(route('grp.models.ticket.update', $ticket->id), ['status' => 'resolved'])->assertForbidden();
+    get(route('grp.tickets.create'))->assertOk();
+
+    actingAs($engineer);
+    patch(route('grp.models.ticket.update', $ticket->id), ['qa_status' => 'passed'])->assertForbidden();
+    patch(route('grp.models.ticket.update', $ticket->id), ['qa_status' => 'requested'])->assertRedirect();
+    expect($ticket->refresh()->qa_status)->toBe(TicketQaStatusEnum::REQUESTED)
+        ->and($ticket->qa_requested_at)->not->toBeNull()
+        ->and($ticket->status)->toBe(TicketStatusEnum::IN_PROGRESS);
+
+    actingAs($qa);
+    get(route('grp.tickets.index'))->assertInertia(fn (AssertableInertia $page) => $page->has('qa_queue', 1));
+    get(route('grp.tickets.show', $ticket->reference))->assertInertia(fn (AssertableInertia $page) => $page->where('can_qa', true)->where('ticket.qa_status', 'requested'));
+    patch(route('grp.models.ticket.update', $ticket->id), ['qa_status' => 'failed', 'qa_note' => 'Still wrong with a voucher'])->assertRedirect();
+    expect($ticket->refresh()->qa_status)->toBe(TicketQaStatusEnum::FAILED)
+        ->and($ticket->qa_user_id)->toBe($qa->id)
+        ->and($ticket->qa_checked_at)->not->toBeNull()
+        ->and($ticket->comments()->latest('id')->value('body'))->toBe('QA failed: Still wrong with a voucher');
+
+    actingAs($engineer);
+    patch(route('grp.models.ticket.update', $ticket->id), ['qa_status' => 'requested'])->assertRedirect();
+    actingAs($qa);
+    patch(route('grp.models.ticket.update', $ticket->id), ['qa_status' => 'passed'])->assertRedirect();
+    actingAs($engineer);
+    patch(route('grp.models.ticket.update', $ticket->id), ['status' => 'resolved'])->assertRedirect();
+    expect($ticket->refresh()->qa_status)->toBe(TicketQaStatusEnum::PASSED)
+        ->and($ticket->status)->toBe(TicketStatusEnum::RESOLVED)
+        ->and($ticket->comments()->where('body', 'QA passed')->exists())->toBeTrue();
+});
+
+test('ticket badges count my tickets and the engineer queue, and engineers hear of new tickets in-app', function () {
+    Notification::fake();
+    Event::fake([BroadcastTicketBadgeUpdate::class]);
+
+    $count    = fn (User $user, string $slot, string $key) => GetTicketBadgeData::run($user)[$slot][$key]['count'];
+    $baseline = GetTicketBadgeData::run($this->user)['queue'];
+
+    $reporter = StoreGuest::make()->action($this->group, Guest::factory()->definition())->getUser();
+    $ticket   = StoreTicket::make()->action($this->group, ['subject' => 'Badge me', 'reporter_type' => 'User', 'reporter_id' => $reporter->id]);
+
+    Notification::assertSentTo($this->user, TicketNotification::class, fn ($notification, $channels) => $channels === ['database'] && str_contains($notification->subject, $ticket->reference));
+    Notification::assertNotSentTo($reporter, TicketNotification::class);
+    Event::assertDispatched(BroadcastTicketBadgeUpdate::class, fn (BroadcastTicketBadgeUpdate $event) => $event->user->id === $this->user->id && $event->notification !== null);
+
+    expect(GetTicketBadgeData::run($reporter)['queue'])->toBeNull()
+        ->and($count($reporter, 'mine', 'in_progress'))->toBe(1)
+        ->and($count($reporter, 'mine', 'waiting'))->toBe(0)
+        ->and($count($this->user, 'queue', 'new_unassigned'))->toBe($baseline['new_unassigned']['count'] + 1)
+        ->and($count($this->user, 'queue', 'todo_week'))->toBe($baseline['todo_week']['count'] + 1)
+        ->and($count($this->user, 'queue', 'overdue'))->toBe($baseline['overdue']['count'])
+        ->and($count($this->user, 'queue', 'assigned_to_me'))->toBe($baseline['assigned_to_me']['count']);
+
+    UpdateTicket::make()->action($ticket, ['assignee_id' => $this->user->id, 'status' => TicketStatusEnum::WAITING->value, 'question' => 'Which printer?']);
+    $ticket->update(['created_at' => now()->subDays(2)]);
+
+    expect($count($reporter, 'mine', 'waiting'))->toBe(1)
+        ->and($count($this->user, 'queue', 'assigned_to_me'))->toBe($baseline['assigned_to_me']['count']);
+
+    StoreTicketComment::make()->action($ticket, $reporter, ['body' => 'The red one']);
+    Notification::assertSentTo($this->user, TicketNotification::class, fn ($notification) => str_contains($notification->subject, 'new comment'));
+
+    expect($count($this->user, 'queue', 'assigned_to_me'))->toBe($baseline['assigned_to_me']['count'] + 1)
+        ->and($count($this->user, 'queue', 'overdue'))->toBe($baseline['overdue']['count'] + 1);
+
+    UpdateTicket::make()->action($ticket, ['status' => TicketStatusEnum::RESOLVED->value]);
+    expect($count($reporter, 'mine', 'done_24h'))->toBe(1)
+        ->and($count($this->user, 'queue', 'overdue'))->toBe($baseline['overdue']['count']);
+});
+
+test('tickets reports link to filtered lists by assignee and dates', function () {
+    $mine = StoreTicket::make()->action($this->group, ['subject' => 'Assigned to me', 'assignee_id' => $this->user->id]);
+    UpdateTicket::make()->action($mine, ['status' => TicketStatusEnum::RESOLVED->value]);
+    StoreTicket::make()->action($this->group, ['subject' => 'Not assigned to me']);
+
+    $from = $mine->fresh()->created_at->toDateString();
+
+    get(route('grp.tickets.list', ['filter' => ['assignee' => $this->user->username]]))
+        ->assertInertia(fn (AssertableInertia $page) => $page->has('data.data', Ticket::where('assignee_id', $this->user->id)->count()));
+
+    get(route('grp.tickets.list', ['filter' => ['created_since' => $from]]))
+        ->assertInertia(fn (AssertableInertia $page) => $page->has('data.data', Ticket::where('created_at', '>=', $from)->count()));
+
+    get(route('grp.tickets.list', ['filter' => ['resolved_since' => $from]]))
+        ->assertInertia(fn (AssertableInertia $page) => $page->has('data.data', Ticket::where('resolved_at', '>=', $from)->count()));
+
+    $stats = ShowTicketsReports::make()->handle($this->group, 7);
+    expect($stats)->toHaveKey('from');
+    foreach ($stats['assignees'] as $row) {
+        expect($row)->toHaveKeys(['username', 'short_name']);
+    }
+});
+
+test('engineers raise task and qa tickets, staff cannot, and internal tickets stay out of the to-do rail count', function () {
+    Mail::fake();
+    Notification::fake();
+    $engineer = User::factory()->create(['group_id' => $this->group->id]);
+    $staff    = User::factory()->create(['group_id' => $this->group->id]);
+    setPermissionsTeamId($this->group->id);
+    $engineer->assignRole('help-desk-clerk');
+
+    expect(collect(TicketKindEnum::raisableBy($engineer))->pluck('value')->all())->toBe(['bug', 'feature', 'task', 'qa'])
+        ->and(collect(TicketKindEnum::raisableBy($staff))->pluck('value')->all())->toBe(['bug', 'feature']);
+
+    $todoBefore = GetTicketBadgeData::run($engineer)['queue']['todo_week']['count'];
+
+    actingAs($staff);
+    post(route('grp.models.ticket.store'), ['subject' => 'Do it for me', 'kind' => 'task'])->assertSessionHasErrors('kind');
+
+    actingAs($engineer);
+    post(route('grp.models.ticket.store'), ['subject' => 'Please test totals', 'kind' => 'qa'])->assertSessionHasNoErrors();
+    post(route('grp.models.ticket.store'), ['subject' => 'Printer blank', 'kind' => 'bug'])->assertSessionHasNoErrors();
+
+    $qaTicket = Ticket::where('subject', 'Please test totals')->first();
+    expect($qaTicket->kind)->toBe(TicketKindEnum::QA)
+        ->and($qaTicket->defaultWaitingHours())->toBe(14 * 24)
+        ->and(GetTicketBadgeData::run($engineer)['queue']['todo_week']['count'])->toBe($todoBefore + 1);
+});
+
+test('ticket search ranks subject over description over comments, understands key:value tokens and jumps to a reference', function () {
+    $bySubject     = StoreTicket::make()->action($this->group, ['subject' => 'Email marketing broken', 'description' => 'nothing here', 'reporter_type' => 'User', 'reporter_id' => $this->user->id]);
+    $byDescription = StoreTicket::make()->action($this->group, ['subject' => 'Something else', 'description' => 'The email marketing tool times out']);
+    $byComment     = StoreTicket::make()->action($this->group, ['subject' => 'Unrelated', 'description' => 'unrelated']);
+    StoreTicketComment::make()->handle($byComment, $this->user, ['body' => 'Same as the email marketing bug'], mirrorToSlack: false, notifyUsers: false);
+    $byInternal    = StoreTicket::make()->action($this->group, ['subject' => 'Quiet', 'description' => 'quiet']);
+    StoreTicketComment::make()->handle($byInternal, $this->user, ['body' => 'email marketing note'], mirrorToSlack: false, notifyUsers: false)->update(['is_internal' => true]);
+    $other         = StoreTicket::make()->action($this->group, ['subject' => 'Invoice PDF export', 'description' => 'nothing']);
+
+    $search = function (string $q) {
+        $hits = collect();
+        get(route('grp.tickets.list', ['filter' => ['global' => $q]]))->assertInertia(function (AssertableInertia $page) use (&$hits) {
+            $hits = collect($page->toArray()['props']['data']['data']);
+        });
+
+        return $hits;
+    };
+
+    $hits = $search('email marke');
+    expect($hits->pluck('reference')->all())->toBe([$bySubject->reference, $byDescription->reference, $byComment->reference, $byInternal->reference])
+        ->and($hits->first()['search_snippet'])->toContain('<mark>Email</mark>')
+        ->and($search('email -tool')->pluck('reference'))->not->toContain($byDescription->reference)
+        ->and($search('"marketing tool"')->pluck('reference')->all())->toBe([$byDescription->reference])
+        ->and($search('email status:open reporter:me')->pluck('reference'))->toContain($bySubject->reference)
+        ->and($search('email status:resolved'))->toBeEmpty()
+        ->and($search('email is:unassigned after:'.now()->toDateString())->count())->toBe(4)
+        ->and($search('email before:'.now()->toDateString()))->toBeEmpty()
+        ->and($search('email assignee:'.$this->user->username))->toBeEmpty();
+
+    foreach ([(string) $other->number, 'help-'.$other->number, 'HELP'.$other->number, 'https://app.aiku.io/tickets/'.$other->reference.'?tab=comments'] as $reference) {
+        expect($search($reference)->pluck('reference')->all())->toBe([$other->reference], $reference);
+    }
+
+    $other->update(['subject' => 'Renamed to email digest']);
+    expect($search('digest')->pluck('reference')->all())->toBe([$other->reference])
+        ->and($search('emial digest')->pluck('reference')->all())->toBe([$other->reference])
+        ->and($search('email marketting')->pluck('reference')->first())->toBe($bySubject->reference);
+
+    $staff = StoreGuest::make()->action($this->group, array_merge(Guest::factory()->definition(), ['positions' => [['slug' => 'group-admin', 'scopes' => []]]]))->getUser();
+    $staff->removeRole('group-admin');
+    actingAs($staff);
+    expect($search('email')->pluck('reference'))->not->toContain($byInternal->reference)
+        ->and(get(route('grp.search.index', ['q' => 'email marke', 'route_src' => 'grp.tickets.board']))->assertOk()->json('results.tickets.*.code'))->toContain($bySubject->reference)
+        ->and(SearchTickets::run((string) $other->number)['results']['tickets'][0]['href'])->toBe(route('grp.tickets.show', $other->reference));
 });

@@ -1,3 +1,4 @@
+import type { TicketBadges } from '@/types/TicketBadges'
 import { useColorTheme } from '@/Composables/useStockList'
 
 import { OrganisationsData, Group, OrganisationState, StackedComponent, Shop } from '@/types/LayoutRules'
@@ -79,6 +80,7 @@ export const layoutStructure = {
     isShopPage: false as boolean,
     isFulfilmentPage: false as boolean,
 
+    ticket_badges: null as TicketBadges | null,
     dispatching_waiting_count: 0 as number,
     crm_waiting_count: 0 as number,
     crm_return_count: 0 as number,

@@ -126,7 +126,13 @@ class IndexPartnerShippingList extends OrgAction
                             ->where('partner_shopping_list_items.organisation_id', $seller->id);
                     });
             })
-            ->whereNull('partner_shopping_list_items.pre_picked_at');
+            ->where('partner_shopping_list_items.state', ShoppingListItemStateEnum::OPEN)
+            ->whereNull('partner_shopping_list_items.pre_picked_at')
+            ->where(function ($query) {
+                $query->whereNotNull('partner_shopping_list_items.job_order_id')
+                    ->orWhereNull('partner_shopping_list_items.partner_organisation_id')
+                    ->orWhereRaw('coalesce(org_stocks.quantity_available, 0) <= 0');
+            });
 
         if ($this->groupBy) {
             $queryBuilder->whereNotNull('artefacts.id');
@@ -201,6 +207,7 @@ class IndexPartnerShippingList extends OrgAction
     {
         $counts = PartnerShoppingListItem::query()
             ->selectRaw("case when partner_organisation_id is null then 'local' else 'partners' end as source, count(*) as total")
+            ->where('state', ShoppingListItemStateEnum::OPEN)
             ->where(function ($query) {
                 $query->where('partner_organisation_id', $this->organisation->id)
                     ->orWhere(function ($query) {
