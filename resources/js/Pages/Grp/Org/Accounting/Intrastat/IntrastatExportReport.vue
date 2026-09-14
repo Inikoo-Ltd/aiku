@@ -34,8 +34,8 @@ const exportExcel = () => {
 
     const exportParams: Record<string, string> = { ...params, type: 'xlsx' }
 
-    if (queryString.has('between[date]')) {
-        exportParams['between[date]'] = queryString.get('between[date]') as string
+    if (queryString.has('between[from]')) {
+        exportParams['between[from]'] = queryString.get('between[from]') as string
     }
 
     if (queryString.has('elements[vat_status]')) {

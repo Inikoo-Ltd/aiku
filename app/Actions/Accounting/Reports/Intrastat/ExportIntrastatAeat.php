@@ -182,8 +182,8 @@ class ExportIntrastatAeat extends OrgAction
             ->join('intrastat_export_time_series', 'intrastat_export_time_series_records.intrastat_export_time_series_id', '=', 'intrastat_export_time_series.id')
             ->with(['intrastatExportTimeSeries.country', 'intrastatExportTimeSeries.originCountry', 'intrastatExportTimeSeries.taxCategory']);
 
-        if (!empty($filters['between']['date'])) {
-            [$start, $end] = explode('-', $filters['between']['date']);
+        if (!empty($filters['between']['from'])) {
+            [$start, $end] = explode('-', $filters['between']['from']);
 
             $start = Carbon::createFromFormat('Ymd', $start)->format('Y-m-d');
             $end   = Carbon::createFromFormat('Ymd', $end)->format('Y-m-d');

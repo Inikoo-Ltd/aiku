@@ -3223,3 +3223,10 @@ test('a pdf whose html is larger than the default pcre backtrack limit still ren
     expect(strlen($html))->toBeGreaterThan(1_000_000)
         ->and($mpdf->AdjustHTML($html))->toContain('aaaa');
 });
+
+test('UI intrastat exports page and AEAT export accept between[from] date filter', function () {
+    $org = $this->organisation->slug;
+
+    get(route('grp.org.reports.intrastat.exports', [$org, 'between' => ['from' => '20250101-20250131']]))->assertOk();
+    get(route('grp.org.reports.intrastat.exports.export-aeat', [$org, 'between' => ['from' => '20250101-20250131']]))->assertOk();
+});
