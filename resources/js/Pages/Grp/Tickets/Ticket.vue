@@ -182,8 +182,7 @@ const update = (field: string, value: unknown) => {
     <PageHeading :data="pageHead" />
     <div class="p-4 grid gap-4 lg:grid-cols-3">
         <div class="lg:col-span-2 space-y-4">
-            <div class="flex items-start justify-between gap-2">
-                <h2 class="text-lg font-semibold">{{ ticket.subject }}</h2>
+            <div v-if="can_flag_confidential" class="flex justify-end">
                 <ModalConfirmationDelete
                     v-if="can_flag_confidential"
                     :title="trans('Delete :reference?', { reference: ticket.reference })"
@@ -209,18 +208,36 @@ const update = (field: string, value: unknown) => {
         <div class="space-y-4 self-start">
         <aside class="bg-white rounded-lg border border-gray-300 p-4 space-y-4 text-sm">
             <div>
-                <div class="flex items-center gap-2">
+                <component :is="can_assign ? 'button' : 'div'" type="button" class="flex items-center gap-2 rounded" :class="can_assign && 'hover:bg-gray-100 pr-2'" @click="can_assign && assigneePopover.toggle($event)">
                     <img v-if="ticket.assignee_avatar?.original" :src="ticket.assignee_avatar.original" class="h-7 w-7 rounded-full object-cover" alt="" />
                     <span v-else class="flex h-7 w-7 items-center justify-center rounded-full bg-gray-200 text-gray-500">
                         <FontAwesomeIcon icon="fal fa-user" fixed-width />
                     </span>
                     <span :class="ticket.assignee ? 'text-gray-800' : 'text-gray-400'">{{ ticket.assignee || trans("Unassigned") }}</span>
-                    <button v-if="can_assign" v-tooltip="trans('Change assignee')" type="button" class="rounded p-1 text-gray-400 hover:text-gray-700" @click="assigneePopover.toggle($event)">
-                        <FontAwesomeIcon icon="fal fa-pencil" fixed-width />
-                    </button>
-                </div>
+                </component>
                 <Popover v-if="can_assign" ref="assigneePopover">
-                    <Listbox :model-value="ticket.assignee_id" :options="options.assignees" option-label="label" option-value="value" filter scroll-height="16rem" class="border-0" @update:model-value="update('assignee_id', $event); assigneePopover.hide()" />
+                    <button
+                        v-if="options.assignees.some((engineer) => engineer.is_me && engineer.value !== ticket.assignee_id)"
+                        type="button"
+                        class="mb-2 w-full rounded bg-indigo-50 px-2 py-1 text-sm font-medium text-indigo-700 hover:bg-indigo-100"
+                        @click="update('assignee_id', options.assignees.find((engineer) => engineer.is_me)!.value); assigneePopover.hide()">
+                        {{ trans("Assign to me") }}
+                    </button>
+                    <div class="grid grid-cols-4 gap-2">
+                        <button
+                            v-for="engineer in options.assignees"
+                            :key="engineer.value"
+                            type="button"
+                            class="flex w-16 flex-col items-center gap-1 rounded p-1 text-xs hover:bg-gray-100"
+                            :class="engineer.value === ticket.assignee_id && 'bg-indigo-50 text-indigo-700'"
+                            @click="update('assignee_id', engineer.value); assigneePopover.hide()">
+                            <img v-if="engineer.avatar?.original" :src="engineer.avatar.original" class="h-9 w-9 rounded-full object-cover" alt="" />
+                            <span v-else class="flex h-9 w-9 items-center justify-center rounded-full bg-gray-200 text-gray-500">
+                                <FontAwesomeIcon icon="fal fa-user" fixed-width />
+                            </span>
+                            <span class="w-full truncate text-center">{{ engineer.label }}</span>
+                        </button>
+                    </div>
                     <button v-if="can_flag_confidential && ticket.assignee_id" type="button" class="mt-2 w-full rounded px-2 py-1 text-sm text-gray-500 hover:bg-gray-100" @click="update('assignee_id', null); assigneePopover.hide()">
                         {{ trans("Unassign") }}
                     </button>

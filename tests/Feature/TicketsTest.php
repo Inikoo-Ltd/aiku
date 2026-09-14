@@ -163,6 +163,8 @@ test('grp ticket pages render', function (Ticket $ticket) {
     actingAs($this->user);
     get(route('grp.tickets.show', $ticket->reference))->assertInertia(
         fn (AssertableInertia $page) => $page->component('Tickets/Ticket')->where('ticket.reference', $ticket->reference)->has('comments', 2)
+            ->where('options.assignees', fn ($assignees) => collect($assignees)->pluck('value')->all() === GetTicketBadgeData::engineers($this->group->id)->sortBy(fn (User $user) => strtok((string) ($user->contact_name ?: $user->username), ' '))->pluck('id')->values()->all()
+                && collect($assignees)->firstWhere('value', $this->user->id)['is_me'] === true)
     );
 })->depends('customer ticket from retina gets an AD reference and the customer attached');
 
@@ -554,6 +556,11 @@ test('slack slash command raises a bug ticket for the matching aiku user', funct
         ->and($ticket->reporter_id)->toBe($this->user->id)
         ->and($ticket->data['slack']['channel'])->toBe('bugs')
         ->and($response->json('text'))->toContain($ticket->reference);
+
+    actingAs($this->user);
+    get(route('grp.tickets.show', $ticket->reference))->assertInertia(
+        fn (AssertableInertia $page) => $page->where('ticket.is_from_slack', true)->has('ticket.reporter_avatar')
+    );
 
     $this->call('POST', route('webhooks.slack_ticket'), $params, [], [], $this->transformHeadersToServerVars(['X-Slack-Request-Timestamp' => $timestamp, 'X-Slack-Signature' => 'v0=bad']), $body)->assertStatus(401);
 });

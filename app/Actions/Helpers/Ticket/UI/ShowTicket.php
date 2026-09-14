@@ -8,6 +8,7 @@
 
 namespace App\Actions\Helpers\Ticket\UI;
 
+use App\Actions\Helpers\Ticket\GetTicketBadgeData;
 use App\Actions\Helpers\Ticket\RateTicket;
 use App\Actions\OrgAction;
 use App\Enums\CRM\Livechat\ChatPriorityEnum;
@@ -114,8 +115,13 @@ class ShowTicket extends OrgAction
                     'tags'       => Ticket::knownTags($ticket->group_id),
                     'kinds'      => collect(TicketKindEnum::labels())->map(fn ($label, $value) => ['label' => $label, 'value' => $value])->values(),
                     'modules'    => collect(TicketModuleEnum::labels())->map(fn ($label, $value) => ['label' => $label, 'value' => $value])->values(),
-                    'assignees'  => User::where('group_id', $ticket->group_id)->where('status', true)->orderBy('username')->get(['id', 'username', 'contact_name'])
-                        ->map(fn (User $user) => ['label' => $user->contact_name ?: $user->username, 'value' => $user->id])->values(),
+                    'assignees'  => GetTicketBadgeData::engineers($ticket->group_id)
+                        ->map(fn (User $user) => [
+                            'label'  => strtok((string) ($user->contact_name ?: $user->username), ' '),
+                            'value'  => $user->id,
+                            'avatar' => $user->imageSources(48, 48),
+                            'is_me'  => $user->id === request()->user()->id,
+                        ])->sortBy('label')->values(),
                 ],
                 'timeline'    => $this->timeline($ticket),
                 'can_rate'    => RateTicket::canRate($ticket, request()->user()),
