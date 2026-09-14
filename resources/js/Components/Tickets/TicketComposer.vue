@@ -5,7 +5,7 @@
   -->
 
 <script setup lang="ts">
-import { ref, watch } from "vue"
+import { computed, nextTick, ref, watch } from "vue"
 import { trans } from "laravel-vue-i18n"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faPaperclip, faTimes, faFilePdf, faFileWord, faFileExcel, faFileCsv } from "@fortawesome/free-solid-svg-icons"
@@ -15,6 +15,7 @@ const props = defineProps<{
     images: File[]
     placeholder?: string
     rows?: number
+    mentionable?: { username: string; name: string | null }[]
 }>()
 
 const emit = defineEmits<{
@@ -77,6 +78,59 @@ const onDrop = (event: DragEvent) => {
     addFiles(event.dataTransfer?.files ?? [])
 }
 
+const textarea = ref<HTMLTextAreaElement | null>(null)
+const mentionQuery = ref<string | null>(null)
+const mentionIndex = ref(0)
+
+const mentionSuggestions = computed(() => {
+    if (mentionQuery.value === null || !props.mentionable?.length) return []
+    const query = mentionQuery.value.toLowerCase()
+    return props.mentionable
+        .filter((user) => user.username.toLowerCase().startsWith(query) || (user.name ?? "").toLowerCase().split(" ").some((part) => part.startsWith(query)))
+        .slice(0, 8)
+})
+
+const detectMention = () => {
+    const element = textarea.value
+    if (!element) return
+    const match = element.value.slice(0, element.selectionStart).match(/(?:^|[^\p{L}\p{N}._-])@([\p{L}\p{N}._-]*)$/u)
+    mentionQuery.value = match ? match[1] : null
+    mentionIndex.value = 0
+}
+
+const onInput = (event: Event) => {
+    emit("update:body", (event.target as HTMLTextAreaElement).value)
+    detectMention()
+}
+
+const insertMention = (username: string) => {
+    const element = textarea.value
+    if (!element || mentionQuery.value === null) return
+    const caret = element.selectionStart
+    const start = caret - mentionQuery.value.length
+    const value = element.value.slice(0, start) + username + " " + element.value.slice(caret)
+    emit("update:body", value)
+    mentionQuery.value = null
+    nextTick(() => {
+        element.focus()
+        element.selectionStart = element.selectionEnd = start + username.length + 1
+    })
+}
+
+const onKeydown = (event: KeyboardEvent) => {
+    if (!mentionSuggestions.value.length) return
+    if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+        event.preventDefault()
+        const count = mentionSuggestions.value.length
+        mentionIndex.value = (mentionIndex.value + (event.key === "ArrowDown" ? 1 : count - 1)) % count
+    } else if (event.key === "Enter" || event.key === "Tab") {
+        event.preventDefault()
+        insertMention(mentionSuggestions.value[mentionIndex.value].username)
+    } else if (event.key === "Escape") {
+        mentionQuery.value = null
+    }
+}
+
 const onPick = (event: Event) => {
     addFiles((event.target as HTMLInputElement).files ?? [])
     if (fileInput.value) fileInput.value.value = ""
@@ -91,14 +145,33 @@ const onPick = (event: Event) => {
         @dragleave="isDragging = false"
         @drop.prevent="onDrop"
     >
-        <textarea
-            :value="body"
-            :rows="rows ?? 5"
-            class="w-full border-0 rounded-t-md text-sm focus:ring-0 resize-y"
-            :placeholder="placeholder ?? trans('Describe it. Paste a screenshot or drop images here, links are fine.')"
-            @input="emit('update:body', ($event.target as HTMLTextAreaElement).value)"
-            @paste="onPaste"
-        />
+        <div class="relative">
+            <textarea
+                ref="textarea"
+                :value="body"
+                :rows="rows ?? 5"
+                class="w-full border-0 rounded-t-md text-sm focus:ring-0 resize-y"
+                :placeholder="placeholder ?? trans('Describe it. Paste a screenshot or drop images here, links are fine.')"
+                @input="onInput"
+                @keydown="onKeydown"
+                @click="detectMention"
+                @blur="mentionQuery = null"
+                @paste="onPaste"
+            />
+            <ul v-if="mentionSuggestions.length" class="absolute left-2 top-full z-20 -mt-2 w-64 rounded-md border border-gray-200 bg-white py-1 text-sm shadow-lg">
+                <li
+                    v-for="(user, index) in mentionSuggestions"
+                    :key="user.username"
+                    class="flex cursor-pointer gap-2 px-3 py-1.5"
+                    :class="index === mentionIndex ? 'bg-indigo-50 text-indigo-700' : 'text-gray-700'"
+                    @mousedown.prevent="insertMention(user.username)"
+                    @mouseenter="mentionIndex = index"
+                >
+                    <span class="font-medium">@{{ user.username }}</span>
+                    <span v-if="user.name" class="truncate text-gray-500">{{ user.name }}</span>
+                </li>
+            </ul>
+        </div>
         <div class="flex items-center gap-2 px-2 py-1.5 border-t border-gray-200">
             <button type="button" class="text-gray-500 hover:text-gray-800 text-sm flex items-center gap-1.5" :title="trans('Attach images, PDF, Word, Excel or CSV')" @click="fileInput?.click()">
                 <FontAwesomeIcon :icon="faPaperclip" /> {{ trans("Attach") }}

@@ -24,6 +24,7 @@ const props = defineProps<{
     ticket: { subject: string; description: string | null; reporter: string | null; reporter_avatar?: Record<string, string> | null; is_from_slack?: boolean; reference_url?: string | null; created_at: string; images?: Record<string, string>[] }
     comments: { id: number; body: string; is_internal: boolean; can_toggle_visibility?: boolean; is_staff: boolean; author: string | null; created_at: string; images?: Record<string, string>[]; attachments?: { name: string; url: string }[]; can_edit?: boolean; can_delete?: boolean }[]
     commentRoute: { name: string; parameters: Record<string, unknown> }
+    mentionable?: { username: string; name: string | null }[]
 }>()
 
 const form = useForm<{ body: string; images: File[] }>({ body: "", images: [] })
@@ -72,7 +73,7 @@ const submit = () => {
         </div>
 
         <form class="bg-white rounded-lg border border-gray-300 p-4 space-y-3" @submit.prevent="submit">
-            <TicketComposer v-model:body="form.body" v-model:images="form.images" :rows="4" :placeholder="trans('Write a comment, paste a screenshot or drop images')" />
+            <TicketComposer v-model:body="form.body" v-model:images="form.images" :rows="4" :mentionable="mentionable" :placeholder="trans('Write a comment, paste a screenshot or drop images')" />
             <p v-if="form.errors.body || form.errors.images" class="text-xs text-red-600">{{ form.errors.body || form.errors.images }}</p>
             <div class="flex items-center justify-end">
                 <Button :label="trans('Comment')" :loading="form.processing" :disabled="!form.body.trim() && !form.images.length" @click="submit" />

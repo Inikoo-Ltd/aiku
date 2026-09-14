@@ -82,6 +82,7 @@ const props = defineProps<{
         statuses: { label: string; value: string }[]
         priorities: { label: string; value: string }[]
         assignees: { label: string; value: number }[]
+        mentionable: { username: string; name: string | null }[]
         tags: string[]
         kinds: { label: string; value: string }[]
         modules: { label: string; value: string }[]
@@ -216,7 +217,7 @@ const update = (field: string, value: unknown) => {
     <div class="p-4 grid gap-4 lg:grid-cols-3">
         <div class="lg:col-span-2 space-y-4">
             <TicketRating :rating="ticket.rating" :rating-comment="ticket.rating_comment" :can-rate="can_rate" :rate-route="routes.rate" />
-            <TicketThread :ticket="ticket" :comments="comments" :comment-route="routes.comment" />
+            <TicketThread :ticket="ticket" :comments="comments" :comment-route="routes.comment" :mentionable="options.mentionable" />
         </div>
         <div class="space-y-4 self-start">
         <aside class="bg-white rounded-lg border border-gray-300 p-4 space-y-4 text-sm">

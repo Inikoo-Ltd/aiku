@@ -123,6 +123,13 @@ class ShowTicket extends OrgAction
                             'avatar' => $user->imageSources(48, 48),
                             'is_me'  => $user->id === request()->user()->id,
                         ])->sortBy('label')->values(),
+                    'mentionable' => User::where('group_id', $ticket->group_id)
+                        ->where('status', true)
+                        ->orderBy('username')
+                        ->get(['id', 'username', 'contact_name', 'group_id'])
+                        ->when($ticket->is_confidential, fn ($users) => $users->filter(fn (User $user) => $ticket->isVisibleTo($user)))
+                        ->map(fn (User $user) => ['username' => $user->username, 'name' => $user->contact_name])
+                        ->values(),
                 ],
                 'timeline'    => $this->timeline($ticket),
                 'can_rate'    => RateTicket::canRate($ticket, request()->user()),

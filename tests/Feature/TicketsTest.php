@@ -174,6 +174,7 @@ test('grp ticket pages render', function (Ticket $ticket) {
         fn (AssertableInertia $page) => $page->component('Tickets/Ticket')->where('ticket.reference', $ticket->reference)->has('comments', 2)->where('pageHead.wrapped_actions.0.key', 'delete')
             ->where('options.assignees', fn ($assignees) => collect($assignees)->pluck('value')->all() === GetTicketBadgeData::engineers($this->group->id)->sortBy(fn (User $user) => strtok((string) ($user->contact_name ?: $user->username), ' '))->pluck('id')->values()->all()
                 && collect($assignees)->firstWhere('value', $this->user->id)['is_me'] === true)
+            ->where('options.mentionable', fn ($mentionable) => collect($mentionable)->pluck('username')->contains($this->user->username))
     );
 })->depends('customer ticket from retina gets an AD reference and the customer attached');
 
