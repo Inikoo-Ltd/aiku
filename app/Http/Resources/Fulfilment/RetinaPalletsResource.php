@@ -43,6 +43,7 @@ class RetinaPalletsResource extends JsonResource
             'slug'               => $this->slug,
             'reference'          => $this->reference,
             'customer_reference' => $this->customer_reference,
+            'is_virtual'         => (bool)$this->is_virtual,
             'notes'              => (string)$this->notes,
             'type_icon'          => $this->type->typeIcon()[$this->type->value],
             'type'               => $this->type,

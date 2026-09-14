@@ -10,6 +10,7 @@ use App\Actions\Accounting\StandaloneFulfilmentInvoice\StoreStandaloneFulfilment
 use App\Actions\CRM\WebUser\StoreWebUser;
 use App\Actions\Fulfilment\FulfilmentCustomer\UpdateFulfilmentCustomer;
 use App\Actions\Fulfilment\Pallet\DeletePalletInDelivery;
+use App\Actions\Fulfilment\Pallet\StoreVirtualPallet;
 use App\Actions\Fulfilment\PalletDelivery\Pdf\PdfPalletDelivery;
 use App\Actions\Fulfilment\PalletDelivery\StorePalletDelivery;
 use App\Actions\Fulfilment\PalletReturn\ConfirmPalletReturn;
@@ -30,6 +31,7 @@ Route::name('fulfilment-customer.')->prefix('fulfilment-customer/{fulfilmentCust
     Route::post('stored-items', StoreStoredItem::class)->name('stored-items.store');
     Route::post('stored-items/bulk-edit-import', ImportStoredItems::class)->name('stored-items.bulk_edit.import');
     Route::patch('', UpdateFulfilmentCustomer::class)->name('update');
+    Route::post('virtual-pallet', StoreVirtualPallet::class)->name('virtual-pallet.store');
     Route::post('pallet-delivery', StorePalletDelivery::class)->name('pallet-delivery.store');
     Route::delete('pallet-delivery/{palletDelivery:id}/pallet/{pallet:id}', DeletePalletInDelivery::class)->name('pallet-delivery.pallet.delete');
     Route::get('pallet-delivery/{palletDelivery:id}/export', PdfPalletDelivery::class)->name('pallet-delivery.export');

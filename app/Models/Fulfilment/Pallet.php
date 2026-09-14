@@ -23,6 +23,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Facades\DB;
 use OwenIt\Auditing\Contracts\Auditable;
@@ -62,6 +63,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $notes
  * @property array<array-key, mixed> $data
  * @property object $incident_report
+ * @property bool $is_virtual
  * @property bool $with_stored_items
  * @property int $number_stored_items
  * @property int $number_stored_items_state_submitted
@@ -102,6 +104,7 @@ use Spatie\Sluggable\SlugOptions;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Pallet newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Pallet newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Pallet onlyTrashed()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Pallet physical()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Pallet query()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Pallet withTrashed(bool $withTrashed = true)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Pallet withoutTrashed()
@@ -132,6 +135,7 @@ class Pallet extends Model implements Auditable
         'picked_at'               => 'datetime',
         'set_as_incident_at'      => 'datetime',
         'dispatched_at'           => 'datetime',
+        'is_virtual'              => 'boolean',
 
     ];
 
@@ -152,7 +156,8 @@ class Pallet extends Model implements Auditable
         'status',
         'state',
         'type',
-        'notes'
+        'notes',
+        'is_virtual'
     ];
 
     public function getRouteKeyName(): string
@@ -177,6 +182,21 @@ class Pallet extends Model implements Auditable
         }
 
         return $query->whereNull('location_id');
+    }
+
+    public function scopePhysical(EloquentBuilder $query): EloquentBuilder
+    {
+        return $query->where('pallets.is_virtual', false);
+    }
+
+    public function isVirtual(): bool
+    {
+        return $this->is_virtual;
+    }
+
+    public function hasStoredItemsInStock(): bool
+    {
+        return $this->palletStoredItems()->where('quantity', '>', 0)->exists();
     }
 
     public function storedItemAudits()

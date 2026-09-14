@@ -24,6 +24,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $storedItems
  * @property mixed $rental_id
  * @property mixed $status
+ * @property mixed $is_virtual
  * @property mixed $location_slug
  * @property mixed $location_code
  * @property mixed $location_id
@@ -65,6 +66,7 @@ class PalletsResource extends JsonResource
                 ? ($this->state->stateIcon()[$this->state->value] ?? null)
                 : null,
             'status'                   => $this->status,
+            'is_virtual'               => (bool)$this->is_virtual,
             'status_label'             => is_object($this->status) && method_exists($this->status, 'labels') && isset($this->status->value)
                 ? ($this->status->labels()[$this->status->value] ?? null)
                 : null,

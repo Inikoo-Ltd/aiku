@@ -160,6 +160,10 @@ class StorePallet extends OrgAction
 
         ];
 
+        if ($this->asAction) {
+            $rules['is_virtual'] = ['sometimes', 'boolean'];
+        }
+
         if (!$this->strict) {
             $rules['received_at']  = ['sometimes', 'nullable', 'date'];
             $rules['booked_in_at'] = ['sometimes', 'nullable', 'date'];

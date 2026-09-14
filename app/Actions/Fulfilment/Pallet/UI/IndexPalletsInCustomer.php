@@ -83,6 +83,7 @@ class IndexPalletsInCustomer extends OrgAction
                 'pallets.notes',
                 'pallets.state',
                 'pallets.status',
+                'pallets.is_virtual',
                 'pallets.rental_id',
                 'pallets.type',
                 'pallets.received_at',
@@ -223,6 +224,21 @@ class IndexPalletsInCustomer extends OrgAction
             ];
         }
         if ($this->parent->items_storage) {
+            foreach ($this->fulfilment->warehouses as $warehouse) {
+                $actions[] = [
+                    'type'    => 'button',
+                    'style'   => 'secondary',
+                    'tooltip' => __('Create a virtual pallet'),
+                    'label'   => $this->fulfilment->warehouses->count() > 1
+                        ? __('New virtual pallet').' ('.$warehouse->code.')'
+                        : __('New virtual pallet'),
+                    'route'   => [
+                        'name'       => 'grp.org.fulfilments.show.crm.customers.show.pallets.virtual.create',
+                        'parameters' => array_merge($request->route()->originalParameters(), ['warehouse' => $warehouse->slug])
+                    ]
+                ];
+            }
+
             $actions[] = [
                 'type'        => 'button',
                 'style'       => 'create',

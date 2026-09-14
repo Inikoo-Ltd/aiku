@@ -20,12 +20,18 @@ use OwenIt\Auditing\Events\AuditCustom;
 class UpdatePalletLocation extends OrgAction
 {
     use WithActionUpdate;
+    use WithVirtualPalletGuard;
 
     private Pallet $pallet;
     private mixed $scope;
 
+    /**
+     * @throws \Illuminate\Validation\ValidationException
+     */
     public function handle(Location $location, Pallet $pallet): Pallet
     {
+        $this->assertVirtualPalletCanMoveLocation($pallet, $location->id);
+
         $oldLocation = $pallet->location;
         $pallet = $this->update($pallet, ['location_id' => $location->id]);
 

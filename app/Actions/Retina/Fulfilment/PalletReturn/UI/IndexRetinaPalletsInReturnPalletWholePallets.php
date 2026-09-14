@@ -67,6 +67,7 @@ class IndexRetinaPalletsInReturnPalletWholePallets extends OrgAction
 
 
         $query->where('fulfilment_customer_id', $palletReturn->fulfilment_customer_id);
+        $query->physical();
 
         $query->where(function ($query) use ($palletReturn) {
             $query->where('pallets.pallet_return_id', $palletReturn->id)
