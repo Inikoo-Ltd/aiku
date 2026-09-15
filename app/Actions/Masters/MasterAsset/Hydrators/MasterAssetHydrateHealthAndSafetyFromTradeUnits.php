@@ -9,6 +9,7 @@
 
 namespace App\Actions\Masters\MasterAsset\Hydrators;
 
+use App\Actions\Catalogue\Product\TranslateProductGpsrText;
 use App\Models\Masters\MasterAsset;
 use App\Models\Goods\TradeUnit;
 use App\Stubs\Migrations\HasDangerousGoodsFields;
@@ -35,6 +36,8 @@ class MasterAssetHydrateHealthAndSafetyFromTradeUnits implements ShouldBeUnique
         } else {
             $this->updateFromMultipleTradeUnits($tradeUnits, $masterAsset);
         }
+
+        TranslateProductGpsrText::make()->recordMasterSource($masterAsset, array_keys($masterAsset->getChanges()));
     }
 
     public function updateFromASingleTradeUnit(TradeUnit $tradeUnit, MasterAsset $masterAsset): void

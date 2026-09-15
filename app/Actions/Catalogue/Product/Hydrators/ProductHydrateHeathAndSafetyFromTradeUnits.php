@@ -8,6 +8,7 @@
 
 namespace App\Actions\Catalogue\Product\Hydrators;
 
+use App\Actions\Catalogue\Product\TranslateProductGpsrText;
 use App\Actions\Web\Webpage\BreakWebpageCache;
 use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Models\Catalogue\Product;
@@ -15,6 +16,7 @@ use App\Models\Goods\TradeUnit;
 use App\Stubs\Migrations\HasDangerousGoodsFields;
 use App\Stubs\Migrations\HasProductInformation;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
+use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class ProductHydrateHeathAndSafetyFromTradeUnits implements ShouldBeUnique
@@ -49,7 +51,15 @@ class ProductHydrateHeathAndSafetyFromTradeUnits implements ShouldBeUnique
             $dataToUpdate = array_intersect_key($dataToUpdate, array_flip($onlyFields));
         }
 
-        $product->update($dataToUpdate);
+        $gpsrFields               = array_keys(TranslateProductGpsrText::REVIEW_FLAGS);
+        $translateProductGpsrText = TranslateProductGpsrText::make();
+
+        [$gpsrAttributes, $gpsrFieldsToTranslate] = $translateProductGpsrText->fromSource($product, Arr::only($dataToUpdate, $gpsrFields));
+
+        $product->update(array_merge(Arr::except($dataToUpdate, $gpsrFields), $gpsrAttributes));
+
+        $translateProductGpsrText->recordShopTranslation($product, array_keys($product->getChanges()));
+        $translateProductGpsrText->dispatchTranslations($product, $gpsrFieldsToTranslate);
 
         if ($product->wasChanged() && $product->webpage && $product->webpage->state == WebpageStateEnum::LIVE) {
             BreakWebpageCache::dispatch($product->webpage)->delay(5);

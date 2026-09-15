@@ -40,8 +40,8 @@ trait HasWebBlockProductLabelInfo
             'languages'                     => $this->labelInfoItem(__('Languages'), $languagesData['show'], $languagesData['value']),
             'best_before'                   => $this->getBestBefore($bestBeforeData),
             'ingredients'                   => $this->textItem(__('Ingredients'), $product->marketing_ingredients),
-            'direction_for_use'             => $this->textItem(__('Direction For Use'), $product->gpsr_manual),
-            'warnings_and_precautions'      => $this->textItem(__('Warning & Precautions'), $product->gpsr_warnings),
+            'direction_for_use'             => $this->textItem(__('Direction For Use'), $this->getGpsrText($product, 'gpsr_manual')),
+            'warnings_and_precautions'      => $this->textItem(__('Warning & Precautions'), $this->getGpsrText($product, 'gpsr_warnings')),
             'clp_ghs_pictograms'            => $this->getPictograms($product),
             'ufi_number'                    => $this->textItem(__('UFI Number'), $product->ufi_number),
             'safety_icons'                  => $this->presenceItem(__('Safety Icons'), $labelInfo, 'safety_icons'),
@@ -90,6 +90,11 @@ trait HasWebBlockProductLabelInfo
         }
 
         return $this->labelInfoItem(__('PAO / Expiry Date / Best Before'), $bestBeforeData['show'], $bestBeforeData['value']);
+    }
+
+    private function getGpsrText(Product $product, string $field): ?string
+    {
+        return $product->getTranslation($field.'_i8n', $product->shop->language->code, false) ?: $product->$field;
     }
 
     private function getCountryOfOrigin(Product $product): array

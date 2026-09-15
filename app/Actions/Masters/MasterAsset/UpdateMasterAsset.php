@@ -17,6 +17,7 @@ use App\Actions\Catalogue\Product\Traits\WithCustomTradeUnitAudits;
 use App\Actions\Catalogue\Product\UpdateProduct;
 use App\Actions\Catalogue\Product\UpdateProductFamily;
 use App\Actions\Helpers\Translations\Translate;
+use App\Actions\Catalogue\Product\TranslateProductGpsrText;
 use App\Actions\Masters\MasterAsset\Hydrators\MasterAssetHydrateAssets;
 use App\Actions\Masters\MasterAsset\Hydrators\MasterAssetHydrateMasterPricesRRPtoChild;
 use App\Actions\Masters\MasterProductCategory\Hydrators\MasterDepartmentHydrateMasterAssets;
@@ -248,6 +249,20 @@ class UpdateMasterAsset extends OrgAction
             }
         }
 
+        $changedGpsrTexts = array_filter(
+            array_keys(TranslateProductGpsrText::REVIEW_FLAGS),
+            fn (string $field) => $masterAsset->wasChanged($field)
+        );
+
+        if ($changedGpsrTexts) {
+            $translateProductGpsrText = TranslateProductGpsrText::make();
+            $translateProductGpsrText->recordMasterSource($masterAsset, $changedGpsrTexts);
+
+            foreach ($masterAsset->products()->with('shop.language')->get() as $product) {
+                $translateProductGpsrText->applyTo($product, $masterAsset->only($changedGpsrTexts));
+            }
+        }
+
         if ($masterAsset->wasChanged('units')) {
             foreach ($masterAsset->products()->where('has_independent_units', false)->get() as $product) {
                 UpdateProduct::run($product, [
@@ -437,7 +452,9 @@ class UpdateMasterAsset extends OrgAction
             'description_title_i8n'        => ['sometimes', 'array'],
             'description_i8n'              => ['sometimes', 'array'],
             'description_extra_i8n'        => ['sometimes', 'array'],
-            'is_for_sale'                  => ['sometimes', 'boolean'],
+            'gpsr_warnings'                => ['sometimes', 'nullable', 'string'],
+            'gpsr_manual'                  => ['sometimes', 'nullable', 'string'],
+            'is_for_sale'                => ['sometimes', 'boolean'],
             'not_for_sale_from_trade_unit' => ['sometimes', 'boolean'],
             'follow_trade_unit_media'      => ['sometimes', 'boolean'],
             'tax_category'                 => ['sometimes', 'array'],
