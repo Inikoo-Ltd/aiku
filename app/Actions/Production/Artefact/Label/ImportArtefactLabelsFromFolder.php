@@ -68,7 +68,7 @@ class ImportArtefactLabelsFromFolder
         return $importedLabels;
     }
 
-    private function storeLabel(Artefact $artefact, string $labelName, string $pdfPath): void
+    public function storeLabel(Artefact $artefact, string $labelName, string $pdfPath): void
     {
         $workingCopyPath = sys_get_temp_dir().'/'.Str::uuid().'.pdf';
         copy($pdfPath, $workingCopyPath);
