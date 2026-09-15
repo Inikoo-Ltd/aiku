@@ -20,9 +20,9 @@ import Button from "@/Components/Elements/Buttons/Button.vue"
 import { useLiveTickets } from "@/Composables/useLiveTickets"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faPaperclip, faCircle, faUserCheck, faSpinner, faClock, faCheckCircle, faBan, faPlay, faPause, faStop, faCheck, faUndo, faBug, faLightbulb, faLevelUp, faCube, faQuestionCircle, faEllipsisV, faTrashAlt, faUser, faPencil, faTimes, faPlus, faPlusCircle, faExchange, faHourglassHalf, faVial, faShieldCheck, faShield, faRocket } from "@fal"
+import { faPaperclip, faCircle, faUserCheck, faSpinner, faClock, faCheckCircle, faBan, faPlay, faPause, faStop, faCheck, faUndo, faBug, faLightbulb, faLevelUp, faCube, faQuestionCircle, faEllipsisV, faTrashAlt, faUser, faPencil, faTimes, faPlus, faPlusCircle, faExchange, faHourglassHalf, faVial, faShieldCheck, faShield, faRocket, faLink } from "@fal"
 
-library.add(faVial, faShieldCheck, faShield, faRocket, faHourglassHalf, faPlusCircle, faExchange, faEllipsisV, faTrashAlt, faUser, faPencil, faTimes, faPlus,faPaperclip, faCircle, faUserCheck, faSpinner, faClock, faCheckCircle, faBan, faPlay, faPause, faStop, faCheck, faUndo, faBug, faLightbulb, faLevelUp, faCube, faQuestionCircle)
+library.add(faLink, faVial, faShieldCheck, faShield, faRocket, faHourglassHalf, faPlusCircle, faExchange, faEllipsisV, faTrashAlt, faUser, faPencil, faTimes, faPlus,faPaperclip, faCircle, faUserCheck, faSpinner, faClock, faCheckCircle, faBan, faPlay, faPause, faStop, faCheck, faUndo, faBug, faLightbulb, faLevelUp, faCube, faQuestionCircle)
 
 const kindIcons: Record<string, string> = {
     bug: "fal fa-bug",
@@ -32,6 +32,13 @@ const kindIcons: Record<string, string> = {
 
 const previewFileIndex = ref<number | null>(null)
 const previewableTicketFiles = computed(() => (props.ticket.attachments ?? []).filter(isPreviewableAttachment))
+
+const isLinkCopied = ref(false)
+const copyTicketLink = async () => {
+    await navigator.clipboard.writeText(route("grp.tickets.show", props.ticket.reference))
+    isLinkCopied.value = true
+    setTimeout(() => { isLinkCopied.value = false }, 2000)
+}
 
 const kindPopover = ref()
 const modulePopover = ref()
@@ -214,6 +221,11 @@ const update = (field: string, value: unknown) => {
 <template>
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead">
+        <template #afterTitle>
+            <button type="button" v-tooltip="isLinkCopied ? trans('Copied') : trans('Copy link')" class="text-gray-400 hover:text-gray-600" @click="copyTicketLink">
+                <FontAwesomeIcon :icon="isLinkCopied ? ['fal', 'fa-check'] : ['fal', 'fa-link']" :class="{ 'text-green-500': isLinkCopied }" fixed-width aria-hidden="true" />
+            </button>
+        </template>
         <template #wrapped-delete>
             <div class="flex w-80 flex-col gap-3 whitespace-nowrap">
                 <label v-if="can_flag_confidential" class="flex items-center gap-x-2 text-sm text-gray-600 cursor-pointer">
