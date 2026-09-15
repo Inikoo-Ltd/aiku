@@ -114,6 +114,8 @@ use App\Models\Catalogue\Product;
 use App\Models\Dispatching\BatchCode;
 use App\Models\Dispatching\Box;
 use App\Models\Dispatching\DeliveryNote;
+use App\Actions\Dispatching\DeliveryNote\UI\ShowDeliveryNote;
+use App\Models\Ordering\Order;
 use App\Models\Dispatching\DeliveryNoteItem;
 use App\Models\Goods\TradeUnit;
 use App\Models\Dispatching\Packing;
@@ -1225,6 +1227,28 @@ test('UI picked bay pages', function () {
     get(route('grp.org.warehouses.show.dispatching.picked_bays.create', [$this->organisation->slug, $this->warehouse->slug]))->assertOk();
     get(route('grp.org.warehouses.show.dispatching.picked_bays.show', [$this->organisation->slug, $this->warehouse->slug, $pickedBay->slug]))->assertOk();
     get(route('grp.org.warehouses.show.dispatching.picked_bays.edit', [$this->organisation->slug, $this->warehouse->slug, $pickedBay->slug]))->assertOk();
+});
+
+test('dispatch clerk can view trolleys and picked bays but not create them', function () {
+    $user = $this->adminGuest->getUser();
+    setPermissionsTeamId($user->group_id);
+    $originalRoles = $user->roles->pluck('name')->toArray();
+
+    $user->syncRoles([RolesEnum::getRoleName('dispatch-clerk', $this->warehouse)]);
+    Cache::tags('auth-user:'.$user->id)->flush();
+    app(\Spatie\Permission\PermissionRegistrar::class)->forgetCachedPermissions();
+    actingAs($user->refresh());
+
+    $parameters = [$this->organisation->slug, $this->warehouse->slug];
+    get(route('grp.org.warehouses.show.dispatching.trolleys.index', $parameters))->assertOk();
+    get(route('grp.org.warehouses.show.dispatching.picked_bays.index', $parameters))->assertOk();
+    get(route('grp.org.warehouses.show.dispatching.trolleys.create', $parameters))->assertForbidden();
+    get(route('grp.org.warehouses.show.dispatching.picked_bays.create', $parameters))->assertForbidden();
+
+    setPermissionsTeamId($user->group_id);
+    $user->syncRoles($originalRoles);
+    Cache::tags('auth-user:'.$user->id)->flush();
+    actingAs($user->refresh());
 });
 
 test('batch code crud json hydrator', function () {
@@ -4009,4 +4033,24 @@ test('replacing one single of a 3-pack orders a third of a pack, not a whole pac
     expect((float)$replacement->quantity_ordered)->toBe(0.333333)
         ->and((float)$replacementItem->quantity_required)->toEqualWithDelta(1.0, 0.00001)
         ->and((float)$item->refresh()->quantity_waiting_crm)->toBe(0.0);
+});
+
+test('a packed note shipped by the sales channel waits for the carrier label, then finalises and dispatches in one step (HELP-3145)', function () {
+    $order = new Order();
+    $order->setRelation('invoices', new Collection());
+
+    $deliveryNote = new DeliveryNote(['is_shipping_by_external' => true]);
+    $deliveryNote->id = 1;
+    $deliveryNote->setRelation('orders', new Collection([$order]));
+    $deliveryNote->setRelation('shipments', new Collection());
+
+    expect(ShowDeliveryNote::make()->getPackedActions($deliveryNote))->toBe([]);
+
+    $deliveryNote->setRelation('shipments', new Collection([new Shipment()]));
+    expect(ShowDeliveryNote::make()->getPackedActions($deliveryNote))
+        ->key->toBe('finalise-and-dispatch')
+        ->and(ShowDeliveryNote::make()->getPackedActions($deliveryNote)['route']['name'])->toBe('grp.models.delivery_note.state.finalise_and_dispatch');
+
+    $order->setRelation('invoices', new Collection([1]));
+    expect(ShowDeliveryNote::make()->getPackedActions($deliveryNote)['route']['name'])->toBe('grp.models.delivery_note.state.dispatched');
 });

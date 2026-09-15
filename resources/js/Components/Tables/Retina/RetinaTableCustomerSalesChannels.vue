@@ -84,7 +84,7 @@ async function checkCustomerSalesChannel(customerSalesChannel: CustomerSalesChan
         <template #cell(platform_name)="{ item: customerSalesChannel }">
             <div class="flex items-center gap-2 w-7">
                 <img v-tooltip="customerSalesChannel.platform_name" :src="customerSalesChannel.platform_image" :alt="customerSalesChannel.platform_name"
-                     class="w-6 h-6" />
+                     class="w-6 h-6" loading="lazy" decoding="async" />
             </div>
         </template>
 

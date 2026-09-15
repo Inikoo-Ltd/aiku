@@ -8,7 +8,6 @@
 
 namespace App\Actions\Helpers\Ticket;
 
-use App\Actions\Chat\Staff\StoreStaffConversation;
 use App\Actions\OrgAction;
 use App\Enums\CRM\Livechat\ChatPriorityEnum;
 use App\Enums\Helpers\Ticket\TicketKindEnum;
@@ -16,7 +15,6 @@ use App\Enums\Helpers\Ticket\TicketModuleEnum;
 use App\Enums\Helpers\Ticket\TicketTypeEnum;
 use App\Models\Helpers\Ticket;
 use App\Models\SysAdmin\Group;
-use App\Models\SysAdmin\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
@@ -44,26 +42,11 @@ class StoreTicket extends OrgAction
 
         $ticket = Ticket::create($modelData);
         $ticket->attachTicketImages($images);
-        $this->openStaffConversation($ticket);
         SyncTicketSlackAlert::run($ticket);
         NotifyTicketUsers::make()->raised($ticket);
         NotifyTicketUsers::make()->pushBadges($ticket);
 
         return $ticket;
-    }
-
-    private function openStaffConversation(Ticket $ticket): void
-    {
-        if ($ticket->type !== TicketTypeEnum::HELP || !$ticket->reporter instanceof User) {
-            return;
-        }
-
-        StoreStaffConversation::make()->handle($ticket->reporter, [
-            'user_ids'     => array_filter([$ticket->assignee_id]),
-            'name'         => $ticket->reference.' · '.$ticket->subject,
-            'context_type' => 'Ticket',
-            'context_id'   => $ticket->id,
-        ]);
     }
 
     public function rules(): array
@@ -88,7 +71,7 @@ class StoreTicket extends OrgAction
             'model_id'        => ['sometimes', 'nullable', 'integer'],
             'data'            => ['sometimes', 'array'],
             'images'          => ['sometimes', 'array', 'max:5'],
-            'images.*'        => ['image', 'max:10240'],
+            'images.*'        => Ticket::ticketFileRules(),
             'stay'            => ['sometimes', 'boolean'],
             'reference_url'   => ['sometimes', 'nullable', 'url', 'max:2048'],
         ];

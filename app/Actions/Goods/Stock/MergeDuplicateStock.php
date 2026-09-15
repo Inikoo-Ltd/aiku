@@ -7,6 +7,7 @@
 
 namespace App\Actions\Goods\Stock;
 
+use App\Actions\Catalogue\Product\Hydrators\ProductHydrateAvailableQuantity;
 use App\Actions\Catalogue\Product\SyncProductOrgStocksFromTradeUnits;
 use App\Enums\Goods\Stock\StockStateEnum;
 use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
@@ -33,8 +34,8 @@ class MergeDuplicateStock
     use AsAction;
 
     public string $commandSignature = 'stocks:merge-duplicate
-        {--from= : Code of the empty stock being retired}
-        {--to= : Code of the stock holding the goods, which survives}
+        {--from= : Code or id of the empty stock being retired}
+        {--to= : Code or id of the stock holding the goods, which survives}
         {--rename= : Code to give the surviving stock, freed by renaming the retired one}
         {--dry-run : Show the plan without writing}';
 
@@ -67,12 +68,24 @@ class MergeDuplicateStock
         $plan = $this->plan($from, $to);
 
         DB::transaction(function () use ($from, $to, $plan, $rename) {
-            /* Trade unit and master links move first: the product re-sync below reads them. */
+            /*
+             * Trade unit and master links move first: the product re-sync below reads them.
+             * A trade unit or master already pointing at both twins keeps its survivor link.
+             */
+            DB::table('model_has_trade_units')
+                ->where('model_type', 'Stock')
+                ->where('model_id', $from->id)
+                ->whereIn('trade_unit_id', DB::table('model_has_trade_units')->where('model_type', 'Stock')->where('model_id', $to->id)->select('trade_unit_id'))
+                ->delete();
             DB::table('model_has_trade_units')
                 ->where('model_type', 'Stock')
                 ->where('model_id', $from->id)
                 ->update(['model_id' => $to->id]);
 
+            DB::table('master_asset_has_stocks')
+                ->where('stock_id', $from->id)
+                ->whereIn('master_asset_id', DB::table('master_asset_has_stocks')->where('stock_id', $to->id)->select('master_asset_id'))
+                ->delete();
             DB::table('master_asset_has_stocks')
                 ->where('stock_id', $from->id)
                 ->update(['stock_id' => $to->id]);
@@ -99,7 +112,7 @@ class MergeDuplicateStock
         });
 
         foreach ($plan['products'] as $product) {
-            SyncProductOrgStocksFromTradeUnits::run($product->refresh());
+            ProductHydrateAvailableQuantity::run(SyncProductOrgStocksFromTradeUnits::run($product->refresh()));
         }
 
         return $plan;
@@ -110,8 +123,8 @@ class MergeDuplicateStock
      */
     public function asCommand(Command $command): int
     {
-        $from = Stock::where('code', $command->option('from'))->first();
-        $to   = Stock::where('code', $command->option('to'))->first();
+        $from = $this->resolveStock($command->option('from'));
+        $to   = $this->resolveStock($command->option('to'));
 
         if (!$from || !$to) {
             $command->error('Both --from and --to must name an existing stock.');
@@ -121,6 +134,12 @@ class MergeDuplicateStock
 
         if ($from->id === $to->id) {
             $command->error('--from and --to are the same stock.');
+
+            return Command::FAILURE;
+        }
+
+        if ($from->state === StockStateEnum::DISCONTINUED) {
+            $command->error("Refusing: $from->code is already retired.");
 
             return Command::FAILURE;
         }
@@ -159,5 +178,14 @@ class MergeDuplicateStock
         $command->info('Merged.');
 
         return Command::SUCCESS;
+    }
+
+    private function resolveStock(?string $identifier): ?Stock
+    {
+        if ($identifier === null || $identifier === '') {
+            return null;
+        }
+
+        return is_numeric($identifier) ? Stock::find((int) $identifier) : Stock::where('code', $identifier)->first();
     }
 }

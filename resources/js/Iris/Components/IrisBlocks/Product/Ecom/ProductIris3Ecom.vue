@@ -159,6 +159,7 @@ const props = withDefaults(
         videoSetup: { url: string }
         listProducts: ProductResource[]
         indexBlock?: number
+        isWorkshop?: boolean
     }>(),
     {
         indexBlock: 0
@@ -910,7 +911,8 @@ onMounted(async () => {
     <ProductDescriptionUseTab
         :fieldValue
         :screenType
-        :indexBlock 
+        :indexBlock
+        :isWorkshop
     />
 </template>
 

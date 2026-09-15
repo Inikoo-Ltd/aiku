@@ -17,6 +17,8 @@ use App\Enums\Production\ManufactureTaskSession\ManufactureTaskSessionStateEnum;
 use App\Models\HumanResources\Employee;
 use App\Models\Production\JobOrderItemTask;
 use App\Models\Production\ManufacturePayBand;
+use App\Actions\Production\ManufactureBreak\StartManufactureBreak;
+use App\Models\Production\ManufactureBreak;
 use App\Models\Production\ManufactureTaskSession;
 use App\Models\Production\Production;
 use App\Models\SysAdmin\User;
@@ -65,6 +67,8 @@ class ShowManufactureFloor extends OrgAction
     {
         $user           = $request->user();
         $this->employee = GetUserCurrentEmployee::run($user, $production->organisation_id);
+
+        $openBreak = ManufactureBreak::where('user_id', $user->id)->open()->first();
 
         $openSession = ManufactureTaskSession::where('user_id', $user->id)
             ->where('state', ManufactureTaskSessionStateEnum::OPEN)
@@ -139,6 +143,22 @@ class ShowManufactureFloor extends OrgAction
                     'title' => __('My tasks'),
                 ],
                 'production_id' => $this->production->id,
+                'break_options' => StartManufactureBreak::ALLOWED_MINUTES,
+                'break_route'   => [
+                    'name'       => 'grp.models.production.break.store',
+                    'parameters' => ['production' => $this->production->id],
+                    'method'     => 'post',
+                ],
+                'open_break'    => $openBreak ? [
+                    'id'              => $openBreak->id,
+                    'planned_minutes' => $openBreak->planned_minutes,
+                    'started_at'      => $openBreak->started_at,
+                    'end_route'       => [
+                        'name'       => 'grp.models.manufacture-break.end',
+                        'parameters' => ['manufactureBreak' => $openBreak->id],
+                        'method'     => 'patch',
+                    ],
+                ] : null,
                 'open_session' => $openSession ? [
                     'id'         => $openSession->id,
                     'can_reject' => $canPickOpenJobs,
@@ -150,6 +170,7 @@ class ShowManufactureFloor extends OrgAction
                         'method'     => 'patch',
                     ],
                     'band_feedback' => $this->bandFeedback($openSession),
+                    'break_minutes' => (int) $openSession->break_minutes,
                 ] : null,
                 'artisan'      => $this->employee?->contact_name,
                 'can_pick_open_jobs' => $canPickOpenJobs,

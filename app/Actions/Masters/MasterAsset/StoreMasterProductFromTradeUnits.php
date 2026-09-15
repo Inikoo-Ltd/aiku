@@ -9,6 +9,7 @@
 namespace App\Actions\Masters\MasterAsset;
 
 use App\Actions\OrgAction;
+use App\Actions\Masters\MasterAsset\Hydrators\MasterAssetHydrateLabelInfoFromTradeUnits;
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateMasterAssets;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateMasterAssets;
 use App\Actions\Traits\Authorisations\WithMastersEditAuthorisation;
@@ -103,6 +104,8 @@ class StoreMasterProductFromTradeUnits extends OrgAction
 
             return $masterAsset;
         });
+
+        MasterAssetHydrateLabelInfoFromTradeUnits::run($masterAsset);
 
         MasterShopHydrateMasterAssets::dispatch($masterAsset->masterShop)->delay($this->hydratorsDelay);
         GroupHydrateMasterAssets::dispatch($parent->group)->delay($this->hydratorsDelay);

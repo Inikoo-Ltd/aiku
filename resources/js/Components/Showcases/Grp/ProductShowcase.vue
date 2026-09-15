@@ -252,6 +252,7 @@ const getTooltips = () => {
 				:public-attachment="data.attachment_box.public"
 				:gpsr="data.gpsr"
 				:attachments="data.attachment_box"
+				:labelInfo="data.label_info"
 			/>
 		</div>
 		</div>

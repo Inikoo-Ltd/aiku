@@ -23,6 +23,7 @@ const props = defineProps<{
             quantity_required: number
         }
         close_route: { name: string, parameters: object }
+        break_minutes: number
         band_feedback: null | {
             currency_symbol: string
             band0_hourly_rate: number
@@ -57,8 +58,7 @@ const elapsed = computed(() => {
 })
 
 const elapsedHours = computed(() => {
-    const bandFeedback = props.session.band_feedback
-    const breakMinutes = bandFeedback?.session.break_minutes ?? 0
+    const breakMinutes = props.session.break_minutes
     const seconds = Math.max(0, Math.floor((now.value - new Date(props.session.started_at).getTime()) / 1000) - breakMinutes * 60)
     return seconds / 3600
 })
@@ -145,7 +145,10 @@ function closeSession(outcome: 'complete' | 'carry_over' | null = null) {
                     <span class="ml-3 text-xl text-gray-500">{{ trans('to do') }} · {{ session.task.quantity_made }} / {{ session.task.quantity_required }}</span>
                 </button>
             </div>
-            <div class="text-7xl font-mono tabular-nums text-indigo-700">{{ elapsed }}</div>
+            <div class="text-right">
+                <div class="text-7xl font-mono tabular-nums text-indigo-700">{{ elapsed }}</div>
+                <div v-if="session.break_minutes" class="text-sm text-gray-500">{{ session.break_minutes }} {{ trans('min on break') }}</div>
+            </div>
         </div>
 
         <div v-if="closeError" class="mt-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-lg text-red-700">{{ closeError }}</div>

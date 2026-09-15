@@ -251,7 +251,7 @@ defineOptions({
                         <h2 class="!text-base font-bold">{{ trans("Secure Payments") }}:</h2>
                         <div class="flex flex-wrap items-center gap-6 border-gray-400 font-bold text-gray-800 py-2">
                             <img v-for="logo in modelValue?.paymentData" :key="logo.code" v-tooltip="logo.code"
-                                :src="logo.image" :alt="logo.code" class="h-4 px-1" />
+                                :src="logo.image" :alt="logo.code" class="h-4 px-1" loading="lazy" decoding="async" />
                         </div>
                     </div>
                 </div>
@@ -345,7 +345,7 @@ defineOptions({
             <h2 class="!text-sm !font-semibold mb-2">{{ trans("Secure Payments") }}:</h2>
             <div class="flex flex-wrap gap-4">
                 <img v-for="logo in modelValue?.paymentData" :key="logo.code" v-tooltip="logo.code" :src="logo.image"
-                    :alt="logo.code" class="h-4 px-1" />
+                    :alt="logo.code" class="h-4 px-1" loading="lazy" decoding="async" />
             </div>
         </div>
     </div>

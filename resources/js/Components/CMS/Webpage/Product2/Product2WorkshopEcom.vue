@@ -429,7 +429,7 @@ defineOptions({
                 <div v-if="modelValue.setting?.payments_and_policy && modelValue.paymentData" class="my-2">
                     <div class="flex flex-wrap items-center gap-6 py-2">
                         <img v-for="logo in modelValue.paymentData" :key="logo.code" :src="logo.image" :alt="logo.code"
-                            class="h-4 px-1" />
+                            class="h-4 px-1" loading="lazy" decoding="async" />
                     </div>
                 </div>
 
@@ -482,7 +482,7 @@ defineOptions({
                                     <div v-for="country in countriesOfOrigin" :key="country.code"
                                         class="flex items-center gap-2">
                                         <img :src="'/flags/' + country.code.toLowerCase() + '.png'" :alt="country.name"
-                                            :title="country.name" class="h-4 w-auto" />
+                                            :title="country.name" class="h-4 w-auto" loading="lazy" decoding="async" />
                                         <span>{{ country.name }}</span>
                                     </div>
                                 </div>
@@ -650,7 +650,7 @@ defineOptions({
 
             <div v-if="modelValue?.setting?.payments_and_policy && modelValue.paymentData">
                 <div class="flex flex-wrap gap-4">
-                    <img v-for="logo in modelValue.paymentData" :key="logo.code" :src="logo.image" class="h-4" />
+                    <img v-for="logo in modelValue.paymentData" :key="logo.code" :src="logo.image" class="h-4" loading="lazy" decoding="async" />
                 </div>
             </div>
 
@@ -703,7 +703,7 @@ defineOptions({
                                 <div v-for="country in countriesOfOrigin" :key="country.code"
                                     class="flex items-center gap-2">
                                     <img :src="'/flags/' + country.code.toLowerCase() + '.png'" :alt="country.name"
-                                        :title="country.name" class="h-4 w-auto" />
+                                        :title="country.name" class="h-4 w-auto" loading="lazy" decoding="async" />
                                     <span>{{ country.name }}</span>
                                 </div>
                             </div>

@@ -8,6 +8,7 @@
 
 namespace App\Actions\Catalogue\Product;
 
+use App\Actions\Catalogue\Product\Hydrators\ProductHydrateLabelInfoFromTradeUnits;
 use App\Actions\Catalogue\Variant\StoreVariantFromMaster;
 use App\Actions\OrgAction;
 use App\Actions\Helpers\Translations\TranslateModel;
@@ -96,6 +97,7 @@ class StoreProductFromMasterProduct extends OrgAction
                     }
                     $product = StoreProduct::run($productCategory, $data);
                     $product->refresh();
+                    ProductHydrateLabelInfoFromTradeUnits::run($product);
                     CloneProductImagesFromTradeUnits::run($product);
                     $product->refresh();
 
@@ -168,6 +170,7 @@ class StoreProductFromMasterProduct extends OrgAction
     public function updateFoundProduct(Product $product, array $modelData, bool $createWebpage, bool $generateVariant = true): void
     {
         $product = UpdateProduct::run($product, $modelData);
+        ProductHydrateLabelInfoFromTradeUnits::run($product);
         CloneProductImagesFromTradeUnits::run($product);
         $product->refresh();
         if ($product->masterProduct && $generateVariant) {

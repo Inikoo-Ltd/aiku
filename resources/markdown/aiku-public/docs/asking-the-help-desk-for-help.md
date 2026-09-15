@@ -45,7 +45,7 @@ A ticket moves through these statuses:
 - <b>Done</b>: fixed or delivered.
 - <b>Cancelled</b>: closed without a fix.
 
-You are told when an engineer asks you something, when your ticket is done, and when someone comments. Comments show up in the ticket's badge and, depending on your settings, by email, Slack or both.
+You are told when an engineer asks you something, when your ticket is done, and when someone comments. Comments show up in the ticket's badge and, depending on your settings, by email, in Slack, or as a browser notification on your computer or phone. See [Getting notifications on your computer and phone](/docs/getting-notifications-on-your-computer-and-phone).
 
 ## When the engineer asks you something
 

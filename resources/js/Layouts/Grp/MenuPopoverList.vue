@@ -66,7 +66,6 @@ watch(() => layout.value?.organisationsState, () => {
 
 // Section: Dropdown Shops/Fulfilments/Warehouses
 const navigateToShoware = (showare: typeof sortedShowareList.value[number]) => {
-    console.log('menu popover list', showare)
     const visitNormally = () => {
         router.visit(route(showare.route?.name, showare.route?.parameters))
     }

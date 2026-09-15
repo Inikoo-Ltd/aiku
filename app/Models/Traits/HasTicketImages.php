@@ -8,6 +8,7 @@
 
 namespace App\Models\Traits;
 
+use App\Models\Helpers\TicketComment;
 use App\Actions\Helpers\Images\GetPictureSources;
 use App\Actions\Helpers\Media\StoreMediaFromFile;
 use App\Models\Helpers\Media;
@@ -15,6 +16,19 @@ use Illuminate\Http\UploadedFile;
 
 trait HasTicketImages
 {
+    /**
+     * @return array<int, string>
+     */
+    public static function ticketFileRules(): array
+    {
+        return [
+            'file',
+            'extensions:jpg,jpeg,png,bmp,gif,svg,webp,pdf,docx,xls,xlsx,csv',
+            'mimes:jpg,jpeg,png,bmp,gif,svg,webp,pdf,docx,xls,xlsx,csv,txt,zip',
+            'max:10240',
+        ];
+    }
+
     /**
      * @param array<int, UploadedFile> $images
      */
@@ -24,12 +38,7 @@ trait HasTicketImages
             if (!$image instanceof UploadedFile) {
                 continue;
             }
-            StoreMediaFromFile::run($this, [
-                'path'         => $image->getPathName(),
-                'originalName' => $image->getClientOriginalName(),
-                'extension'    => $image->getClientOriginalExtension(),
-                'checksum'     => md5_file($image->getPathName()),
-            ], 'ticket_images');
+            $this->attachTicketFile($image->getPathName(), $image->getClientOriginalName(), $image->getMimeType());
         }
     }
 
@@ -55,17 +64,25 @@ trait HasTicketImages
         return $media;
     }
 
-    public function ticketAttachments(): array
+    public function ticketAttachments(?string $routeName = null): array
     {
+        $routeName       ??= request()->routeIs('retina.*') ? 'retina.dropshipping.tickets.attachments.show' : 'grp.tickets.attachments.show';
+        $ticketReference = $this instanceof TicketComment ? $this->ticket->reference : $this->reference;
+
         return $this->getMedia('ticket_attachments')
-            ->map(fn (Media $media) => ['name' => $media->name, 'url' => $media->getUrl(), 'size' => $media->size, 'mime' => $media->mime_type])
+            ->map(fn (Media $media) => [
+                'name' => $media->name,
+                'url'  => route($routeName, ['ticket' => $ticketReference, 'media' => $media->ulid]),
+                'size' => $media->size,
+                'mime' => $media->mime_type,
+            ])
             ->all();
     }
 
     public function ticketImageSources(): array
     {
         return $this->getMedia('ticket_images')
-            ->map(fn (Media $media) => GetPictureSources::run($media->getImage()->resize(0, 0)))
+            ->map(fn (Media $media) => [...GetPictureSources::run($media->getImage()->resize(0, 0)), 'name' => $media->name])
             ->all();
     }
 }

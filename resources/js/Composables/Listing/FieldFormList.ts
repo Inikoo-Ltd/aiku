@@ -24,6 +24,7 @@ import ColorMode from '@/Components/Forms/Fields/ColorMode.vue'
 import Checkbox from '@/Components/Forms/Fields/Checkbox.vue'
 import AppTheme from '@/Components/Forms/Fields/AppTheme.vue'
 import ChatTheme from '@/Components/Forms/Fields/ChatTheme.vue'
+import NotificationChannels from '@/Components/Forms/Fields/NotificationChannels.vue'
 import Action from '@/Components/Forms/Fields/Action.vue'
 import AppLogin from '@/Components/Forms/Fields/AppLogin.vue'
 import Pin from '@/Components/Forms/Fields/Pin.vue'
@@ -37,6 +38,7 @@ import ButtonForm from '@/Components/Forms/Fields/ButtonForm.vue'
 import cropImageFull from '@/Components/Forms/Fields/CropImageFull.vue'
 import FormEditTradeUnit from '@/Components/Forms/Fields/FormEditTradeUnit.vue'
 import TagsTradeUnits from '@/Components/Forms/Fields/TagsTradeUnits.vue'
+import SelectImproved from '@/Components/Forms/Fields/SelectImproved.vue'
 import invoiceSerialReferences from '@/Components/Forms/Fields/invoiceSerialReferences.vue'
 import ListSelectorTradeUnit from "@/Components/Forms/Fields/ListSelectorTradeUnit.vue"
 
@@ -160,6 +162,7 @@ export const componentsList: { [key: string]: Component } = {
     'app_login': AppLogin,
     'app_theme': AppTheme,
     'chat_theme': ChatTheme,
+    'notification_channels': NotificationChannels,
     'product_parts': ProductParts,
     'employeeState': EmployeeState,
     'pin': Pin,
@@ -186,6 +189,7 @@ export const componentsList: { [key: string]: Component } = {
     'list-selector': ListSelectorFrom,
     'edit-trade-unit-shop': FormEditTradeUnit,
     'tags-trade-unit': TagsTradeUnits,
+    'select-improved': SelectImproved,
     'brands-trade-unit': BrandsTradeUnit,
     'multiselect-tags': MultiselectTagsInfiniteScroll,
     'input-dimension': InputDimensions,

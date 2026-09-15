@@ -28,6 +28,7 @@ class StoreTicketComment extends OrgAction
             'author_type' => $author instanceof User ? 'User' : 'WebUser',
             'author_id'   => $author->id,
             'body'        => (string) Arr::get($modelData, 'body', ''),
+            'is_internal' => (bool) Arr::get($modelData, 'is_internal', false),
         ]);
 
         $comment->attachTicketImages(Arr::get($modelData, 'images', []));
@@ -35,15 +36,16 @@ class StoreTicketComment extends OrgAction
 
         NotifyTicketUsers::make()->pushBadges($ticket, $author instanceof User ? $author : null);
 
-        if ($mirrorToSlack) {
+        if ($mirrorToSlack && !$comment->is_internal) {
             PostTicketSlackThreadReply::run($ticket, ($author->contact_name ?? $author->email).': '.Str::limit($comment->body, 2000));
         }
 
         if ($this->replyReopens($ticket, $author)) {
-            UpdateTicket::make()->action($ticket, ['status' => TicketStatusEnum::OPEN->value]);
+            $status = $ticket->status === TicketStatusEnum::WAITING ? TicketStatusEnum::ANSWERED : TicketStatusEnum::OPEN;
+            UpdateTicket::make()->action($ticket, ['status' => $status->value]);
         }
 
-        if ($author instanceof User && $notifyUsers) {
+        if ($author instanceof User && $notifyUsers && !$comment->is_internal) {
             NotifyTicketUsers::make()->commented($ticket, $author, $comment->body);
         }
 
@@ -62,9 +64,10 @@ class StoreTicketComment extends OrgAction
     public function rules(): array
     {
         return [
-            'body'     => ['required_without:images', 'nullable', 'string', 'max:10000'],
+            'body'        => ['required_without:images', 'nullable', 'string', 'max:10000'],
+            'is_internal' => ['sometimes', 'boolean'],
             'images'   => ['sometimes', 'array', 'max:5'],
-            'images.*' => ['image', 'max:10240'],
+            'images.*' => Ticket::ticketFileRules(),
         ];
     }
 

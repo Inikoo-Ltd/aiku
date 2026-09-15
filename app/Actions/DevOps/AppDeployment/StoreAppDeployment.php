@@ -10,6 +10,7 @@
 
 namespace App\Actions\DevOps\AppDeployment;
 
+use App\Actions\Helpers\Ticket\CloseTicketsAfterDeployment;
 use App\Models\DevOps\AppDeployment;
 use Illuminate\Console\Command;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -47,6 +48,12 @@ class StoreAppDeployment
             } catch (Throwable $e) {
                 Sentry::captureException($e);
             }
+        }
+
+        try {
+            CloseTicketsAfterDeployment::run();
+        } catch (Throwable $e) {
+            Sentry::captureException($e);
         }
 
         $command->info('Deployment recorded successfully'.($commit ? " for commit $commit" : '').'.');

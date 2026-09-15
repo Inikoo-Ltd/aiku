@@ -417,7 +417,7 @@ provide("goNext", goNext)
 					<img
 						src="https://aiku.io/art/aurora.png"
 						alt=""
-						class="h-9 sm:h-12" />
+						class="h-9 sm:h-12" loading="lazy" decoding="async" />
 					<div class="flex flex-col">
 						<div class="font-semibold text-base sm:text-xl text-center sm:text-left">
 							{{ trans("Manual") }}/API
@@ -442,7 +442,7 @@ provide("goNext", goNext)
 						src="/assets/channel_logo/shopify.svg"
 						class="h-9 sm:h-12"
 						alt="Shopify"
-						v-tooltip="'Shopify'" />
+						v-tooltip="'Shopify'" loading="lazy" decoding="async" />
 					<div class="flex flex-col">
 						<div class="font-semibold text-base sm:text-xl text-center sm:text-left">
 							Shopify
@@ -471,6 +471,7 @@ provide("goNext", goNext)
                         class="h-9 sm:h-12"
                         alt="Tiktok"
                         v-tooltip="'Tiktok'"
+                        loading="lazy" decoding="async"
                     />
                     <div class="flex flex-col">
                         <div class="font-semibold text-base sm:text-xl text-center sm:text-left">Tiktok</div>
@@ -497,7 +498,7 @@ provide("goNext", goNext)
 						src="/assets/channel_logo/woocommerce.svg"
 						class="h-9 sm:h-12 min-w-6"
 						alt="Woocommerce"
-						v-tooltip="'Woocommerce'" />
+						v-tooltip="'Woocommerce'" loading="lazy" decoding="async" />
 
 					<div class="flex flex-col">
 						<div class="font-semibold text-base sm:text-xl text-center sm:text-left">
@@ -525,7 +526,7 @@ provide("goNext", goNext)
 					<img
 						src="https://cdn-icons-png.flaticon.com/512/888/888848.png"
 						alt=""
-						class="h-9 sm:h-12" />
+						class="h-9 sm:h-12" loading="lazy" decoding="async" />
 
 					<div class="flex flex-col">
 						<div class="font-semibold text-base sm:text-xl text-center sm:text-left">
@@ -564,7 +565,7 @@ provide("goNext", goNext)
 							layout?.app?.environment === 'production' ? 'grayscale opacity-40' : ''
 						"
 						alt="Amazon"
-						v-tooltip="'Amazon'" />
+						v-tooltip="'Amazon'" loading="lazy" decoding="async" />
 
 					<div class="flex flex-col">
 						<div class="font-semibold text-base sm:text-xl text-center sm:text-left">
@@ -606,7 +607,7 @@ provide("goNext", goNext)
 					<img
 						src="https://cdn-icons-png.flaticon.com/512/825/825535.png"
 						alt=""
-						class="h-12 filter" />
+						class="h-12 filter" loading="lazy" decoding="async" />
 
 					<div class="flex flex-col">
 						<div class="font-semibold text-base sm:text-xl text-center sm:text-left">
@@ -638,7 +639,7 @@ provide("goNext", goNext)
 					<img
 						src="https://assets.allegrostatic.com/opbox/allegro.pl/homepage/Main%20Page/6lJEwSSohvBIIWNlJUU9sx-w1200-h1200.png"
 						alt=""
-						class="h-12 filter" />
+						class="h-12 filter" loading="lazy" decoding="async" />
 
 					<div class="flex flex-col">
 						<div class="font-semibold text-base sm:text-xl text-center sm:text-left">
@@ -671,7 +672,7 @@ provide("goNext", goNext)
 					<img
 						src="/assets/channel_logo/wix.svg"
 						alt=""
-						class="h-4 filter" />
+						class="h-4 filter" loading="lazy" decoding="async" />
 
 					<div class="flex flex-col">
 						<div class="font-semibold text-base sm:text-xl text-center sm:text-left">

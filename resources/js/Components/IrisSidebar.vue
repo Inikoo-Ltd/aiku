@@ -5,7 +5,7 @@ import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 import { faBars } from '@fal';
 import { getStyles } from '@/Composables/styles';
 import { isNull } from 'lodash-es';
-import IrisSidebarDesktop from '@iris/Components/Layout/IrisSidebarDesktop.vue';
+const IrisSidebarDesktop = defineAsyncComponent(() => import('@iris/Components/Layout/IrisSidebarDesktop.vue'));
 const IrisSidebarMobile = defineAsyncComponent(() => import('@iris/Components/Layout/IrisSidebarMobile.vue'));
 import { Image as ImageTS } from '@/types/Image';
 import { trans } from 'laravel-vue-i18n';
