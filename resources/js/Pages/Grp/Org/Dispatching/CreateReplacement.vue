@@ -164,6 +164,7 @@ const handleQuantityToResendUpdate = (itemId: string | number, value: number) =>
 };
 
 const reasonData = ref<{ [key: string]: string }>({});
+const warehouseNote = ref("");
 
 const handleReasonUpdate = (itemId: string | number, value: string) => {
     reasonData.value[itemId] = value;
@@ -222,7 +223,7 @@ const onCreateReplacement = (action: any) => {
         return;
     }
 
-    const payload = { delivery_note_items };
+    const payload = { delivery_note_items, private_warehouse_note: warehouseNote.value };
 
     console.log('Creating replacement with payload:', payload);
 
@@ -317,6 +318,11 @@ const onCreateReplacement = (action: any) => {
         :updateRoute="routes.update" :shipments @replace-all="onReplaceAll"
         isShowButtonReplaceAll
     />
+
+    <div class="px-4 pt-3">
+        <label class="text-sm font-medium text-gray-700">{{ trans("Note to warehouse") }}</label>
+        <textarea v-model="warehouseNote" rows="2" maxlength="4000" class="mt-1 w-full rounded-md border-gray-300 text-sm" :placeholder="trans('Leave empty to keep the order note')" />
+    </div>
 
     <Tabs :current="currentTab" :navigation="tabs?.navigation" @update:tab="handleTabUpdate" />
 

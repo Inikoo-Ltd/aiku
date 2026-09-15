@@ -2429,7 +2429,10 @@ test('store replacement delivery note action', function () {
         'delivery_note_items' => [
             ['id' => $item->id, 'quantity' => 2, 'reason' => 'damaged_in_transit'],
         ],
+        'private_warehouse_note' => 'Double bubble wrap',
     ])->assertRedirect();
+
+    expect($order->deliveryNotes()->latest('id')->first()->private_warehouse_note)->toBe('Double bubble wrap');
 
     $replacementItem = \App\Models\Dispatching\DeliveryNoteItem::where('transaction_id', $item->transaction_id)->where('id', '!=', $item->id)->latest('id')->first();
 
