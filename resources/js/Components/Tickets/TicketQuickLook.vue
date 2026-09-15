@@ -14,6 +14,7 @@ import Icon from "@/Components/Icon.vue"
 import TicketControls from "@/Components/Tickets/TicketControls.vue"
 import TicketAttachmentList from "@/Components/Tickets/TicketAttachmentList.vue"
 import TicketThread from "@/Components/Tickets/TicketThread.vue"
+import { useModalFocusTrap } from "@/Composables/useModalFocusTrap"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faTimes, faSpinner, faChevronDown } from "@fal"
@@ -27,6 +28,9 @@ const emit = defineEmits<{
 const ticket = defineModel<any | null>("ticket", { default: null })
 
 const controls = ref<any | null>(null)
+const overlay = ref<HTMLElement | null>(null)
+
+useModalFocusTrap(computed(() => ticket.value !== null), overlay)
 let stopReloadingAfterSaves: (() => void) | null = null
 const isControlsUnavailable = ref(false)
 const displayTicket = computed(() => controls.value?.ticket ?? ticket.value)
@@ -71,7 +75,9 @@ const close = () => {
     <Teleport to="#grp_app">
         <div
             v-if="ticket"
-            class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+            ref="overlay"
+            tabindex="-1"
+            class="fixed inset-0 z-50 flex items-center justify-center overscroll-contain bg-black/40 p-4 outline-none"
             @click.self="close">
             <div class="relative w-full max-w-6xl rounded-2xl bg-white p-6 shadow-xl">
                 <button

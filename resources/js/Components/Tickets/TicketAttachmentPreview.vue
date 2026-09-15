@@ -26,6 +26,7 @@ export const isPreviewableAttachment = (file: TicketAttachment) => isImageAttach
 <script setup lang="ts">
 import { computed, nextTick, ref, shallowRef, watch, onBeforeUnmount } from "vue"
 import { trans } from "laravel-vue-i18n"
+import { useModalFocusTrap } from "@/Composables/useModalFocusTrap"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faTimes, faChevronLeft, faChevronRight, faExternalLink, faSpinner } from "@fal"
@@ -39,6 +40,10 @@ const props = defineProps<{
 const index = defineModel<number | null>("index", { default: null })
 
 const currentFile = computed(() => (index.value === null ? null : props.files[index.value] ?? null))
+
+const overlay = ref<HTMLElement | null>(null)
+
+useModalFocusTrap(computed(() => currentFile.value !== null), overlay)
 
 const previewState = ref<"loading" | "ready" | "unavailable">("loading")
 const wordContainer = ref<HTMLElement | null>(null)
@@ -131,7 +136,7 @@ onBeforeUnmount(() => window.removeEventListener("keydown", onKeydown))
 
 <template>
     <Teleport to="body">
-        <div v-if="currentFile" class="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-black/80 px-16 py-4" @click.self="close">
+        <div v-if="currentFile" ref="overlay" tabindex="-1" class="fixed inset-0 z-[9999] flex flex-col items-center justify-center overscroll-contain bg-black/80 px-16 py-4 outline-none" @click.self="close">
             <div class="mb-2 flex w-full max-w-5xl items-center justify-between gap-4 text-white">
                 <span class="truncate text-sm">{{ currentFile.name }}</span>
                 <div class="flex shrink-0 items-center gap-4">

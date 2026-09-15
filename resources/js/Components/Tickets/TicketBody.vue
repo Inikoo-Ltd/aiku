@@ -12,6 +12,7 @@ import TicketAttachmentPreview, { isPreviewableAttachment, type TicketAttachment
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { trans } from "laravel-vue-i18n"
+import { useModalFocusTrap } from "@/Composables/useModalFocusTrap"
 import { faPaperclip, faTimes, faChevronLeft, faChevronRight, faExternalLink, faImage } from "@fal"
 
 library.add(faPaperclip, faTimes, faChevronLeft, faChevronRight, faExternalLink, faImage)
@@ -34,6 +35,9 @@ const html = computed(() => {
 })
 
 const previewIndex = ref<number | null>(null)
+const lightbox = ref<HTMLElement | null>(null)
+
+useModalFocusTrap(computed(() => previewIndex.value !== null), lightbox)
 const loadedImageUrls = ref<string[]>([])
 
 const markImageLoaded = (url: string) => {
@@ -100,7 +104,7 @@ onBeforeUnmount(() => window.removeEventListener("keydown", onKeydown))
             </button>
         </div>
         <Teleport to="body">
-            <div v-if="previewIndex !== null && images?.length" class="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80" @click.self="closePreview">
+            <div v-if="previewIndex !== null && images?.length" ref="lightbox" tabindex="-1" class="fixed inset-0 z-[9999] flex items-center justify-center overscroll-contain bg-black/80 outline-none" @click.self="closePreview">
                 <div class="absolute inset-x-0 top-0 flex items-center justify-between gap-4 px-4 py-3 text-white">
                     <span class="truncate text-sm">{{ images[previewIndex].name }}</span>
                     <div class="flex shrink-0 items-center gap-4">
