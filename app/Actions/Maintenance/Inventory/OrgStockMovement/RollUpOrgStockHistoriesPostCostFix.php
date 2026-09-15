@@ -10,7 +10,6 @@ namespace App\Actions\Maintenance\Inventory\OrgStockMovement;
 
 use App\Actions\Inventory\OrganisationStockHistory\Hydrators\OrganisationStockHistoryHydrateFromOrgStockHistories;
 use App\Actions\Traits\WithStockHistoryArchiveWrite;
-use App\Enums\Inventory\OrgStockMovement\OrgStockMovementCostStatusEnum;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
@@ -32,10 +31,7 @@ class RollUpOrgStockHistoriesPostCostFix
     {
         $earliestRepaired = DB::table('org_stock_movements')
             ->where('organisation_id', $organisation->id)
-            ->whereIn('cost_status', [
-                OrgStockMovementCostStatusEnum::DELIVERY->value,
-                OrgStockMovementCostStatusEnum::PROVISIONAL->value,
-            ])
+            ->whereIn('cost_status', RecalculateOrgStockHistoriesPostCostFix::REPAIRED_COST_STATUSES)
             ->min('date');
 
         if (!$earliestRepaired) {

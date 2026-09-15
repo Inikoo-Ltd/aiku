@@ -37,6 +37,12 @@ class RecalculateOrgStockHistoriesPostCostFix
      */
     public const string LPP_AUDIT_CUTOFF = '2026-06-01';
 
+    public const array REPAIRED_COST_STATUSES = [
+        OrgStockMovementCostStatusEnum::DELIVERY->value,
+        OrgStockMovementCostStatusEnum::PROVISIONAL->value,
+        OrgStockMovementCostStatusEnum::COSTED->value,
+    ];
+
     private array $exchangeRates = [];
 
     public function getJobUniqueId(int $orgStockId, bool $fullWalk = false): int
@@ -84,7 +90,7 @@ class RecalculateOrgStockHistoriesPostCostFix
         }
 
         $firstRepaired = OrgStockMovement::where('org_stock_id', $orgStock->id)
-            ->whereIn('cost_status', [OrgStockMovementCostStatusEnum::DELIVERY->value, OrgStockMovementCostStatusEnum::PROVISIONAL->value])
+            ->whereIn('cost_status', self::REPAIRED_COST_STATUSES)
             ->min('date');
 
         if (!$firstRepaired) {
@@ -197,7 +203,7 @@ class RecalculateOrgStockHistoriesPostCostFix
         $orgStockIds = DB::table('org_stock_movements')
             ->where('organisation_id', $organisation->id)
             ->where('type', OrgStockMovementTypeEnum::PURCHASE->value)
-            ->whereIn('cost_status', [OrgStockMovementCostStatusEnum::DELIVERY->value, OrgStockMovementCostStatusEnum::PROVISIONAL->value])
+            ->whereIn('cost_status', self::REPAIRED_COST_STATUSES)
             ->distinct()
             ->pluck('org_stock_id');
 

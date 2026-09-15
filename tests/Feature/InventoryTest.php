@@ -2633,6 +2633,30 @@ describe('aurora provisional cost fix', function () {
             ->and((float) $postRow->lpp_per_sku)->toBe(5.5);
     });
 
+    test('recompute picks up purchases costed from aurora', function () {
+        [$orgStock, $location] = costFixStockInLocation($this->group, $this->organisation, 'CFCOSTED');
+
+        $this->organisation->update(['wac_calculations_start_date' => '2025-08-01']);
+        $orgStock->refresh()->unsetRelation('organisation');
+
+        $purchase = StoreOrgStockMovement::make()->action($orgStock, $location, [
+            'type'     => OrgStockMovementTypeEnum::PURCHASE->value,
+            'quantity' => 10,
+        ]);
+        $purchase->update(['cost_per_sku' => 20.44, 'org_amount' => 204.4, 'date' => '2026-06-10 10:00:00']);
+
+        \App\Actions\Inventory\OrgStock\Stock\CalculateOrgStockHistoricStockHistories::run($orgStock, \Illuminate\Support\Carbon::parse('2026-06-17'));
+
+        $purchase->update(['cost_per_sku' => 0.11, 'org_amount' => 1.1, 'cost_status' => 'costed']);
+
+        $this->artisan('org_stock_movement:recalculate_histories_post_costfix', ['organisation' => $this->organisation->slug, '--sync' => true])->assertExitCode(0);
+
+        $row = DB::table('org_stock_histories')->where('org_stock_id', $orgStock->id)->where('date', '2026-06-17')->first();
+
+        expect((float) $row->lpp_per_sku)->toBe(0.11)
+            ->and((float) $row->wac_per_sku)->toBe(0.11);
+    });
+
     test('update does not clobber a supplied org_amount', function () {
         [$orgStock, $location] = costFixStockInLocation($this->group, $this->organisation, 'CFE');
 
