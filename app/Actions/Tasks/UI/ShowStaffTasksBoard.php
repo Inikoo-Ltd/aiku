@@ -8,6 +8,7 @@
 
 namespace App\Actions\Tasks\UI;
 
+use App\Actions\Helpers\Ticket\UI\IndexTickets;
 use App\Actions\OrgAction;
 use App\Enums\Tasks\StaffTaskStatusEnum;
 use App\Http\Resources\Tasks\StaffTaskResource;
@@ -19,11 +20,9 @@ use Lorisleiva\Actions\ActionRequest;
 
 class ShowStaffTasksBoard extends OrgAction
 {
-    public function handle(Group $group): array
+    public function handle(Group $group, string $interval): array
     {
-        $tasks = StaffTask::query()
-            ->where('group_id', $group->id)
-            ->where(fn ($query) => $query->open()->orWhere('closed_at', '>=', now()->subDays(7)))
+        $tasks = IndexTickets::make()->whereCreatedIn(StaffTask::query()->where('group_id', $group->id), $interval, 'staff_tasks.created_at')
             ->with(['requester.image', 'assignee.image', 'conversation', 'model'])
             ->orderByRaw('due_at asc nulls last, id desc')
             ->get()
@@ -41,7 +40,12 @@ class ShowStaffTasksBoard extends OrgAction
     {
         $this->initialisationFromGroup(app('group'), $request);
 
-        return $this->handle($this->group);
+        return $this->handle($this->group, $this->createdInterval());
+    }
+
+    private function createdInterval(): string
+    {
+        return request()->has('created') ? IndexTickets::make()->createdInterval() : '1w';
     }
 
     public function htmlResponse(array $columns, ActionRequest $request): Response
@@ -56,6 +60,8 @@ class ShowStaffTasksBoard extends OrgAction
             'title'       => $title,
             'pageHead'    => ['title' => $title, 'icon' => ['icon' => ['fal', 'fa-columns'], 'title' => $title]],
             'columns'     => $columns,
+            'createdIntervals' => IndexTickets::make()->createdIntervalOptions(),
+            'createdInterval'  => $this->createdInterval(),
             'can_manage'  => StaffTask::isSupervisor($request->user()),
             'me'          => $request->user()->id,
         ]);

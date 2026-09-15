@@ -5,7 +5,8 @@
   -->
 
 <script setup lang="ts">
-import { ref } from "vue"
+import { computed, reactive, ref } from "vue"
+import TicketsCreatedInterval from "@/Components/Tickets/TicketsCreatedInterval.vue"
 import { Head } from "@inertiajs/vue3"
 import axios from "axios"
 import draggable from "vuedraggable"
@@ -28,9 +29,35 @@ const props = defineProps<{
     columns: { status: string; label: string; color: string; tasks: any[] }[]
     can_manage: boolean
     me: number
+    createdIntervals: Record<string, string>
+    createdInterval: string
 }>()
 
 const columns = ref(props.columns)
+
+type FilterKey = "department_label" | "priority" | "assignee"
+const filters = reactive<Record<FilterKey, string[]>>({ department_label: [], priority: [], assignee: [] })
+const filterLabels: Record<FilterKey, string> = { department_label: trans("Department"), priority: trans("Urgency"), assignee: trans("Assignee") }
+const assigneeOf = (task: any) => (task.assignee ? (task.assignee.id === props.me ? "me" : "others") : "unassigned")
+const assigneeLabels: Record<string, string> = { me: trans("Me"), others: trans("Everybody else"), unassigned: trans("Nobody yet") }
+const valueOf = (task: any, key: FilterKey) => (key === "assignee" ? assigneeOf(task) : task[key])
+const allTasks = computed(() => columns.value.flatMap((c) => c.tasks))
+const filterOptions = computed(() =>
+    (Object.keys(filters) as FilterKey[]).map((key) => {
+        const counts: Record<string, number> = {}
+        allTasks.value.forEach((task) => {
+            const value = valueOf(task, key)
+            if (value) counts[value] = (counts[value] ?? 0) + 1
+        })
+        return { key, label: filterLabels[key], options: Object.entries(counts).map(([value, count]) => ({ value, count, label: key === "assignee" ? assigneeLabels[value] : value })) }
+    }).filter((group) => group.options.length > 1 || group.key === "assignee")
+)
+const toggleFilter = (key: FilterKey, value: string) => {
+    const index = filters[key].indexOf(value)
+    index === -1 ? filters[key].push(value) : filters[key].splice(index, 1)
+}
+const matches = (task: any) => (Object.keys(filters) as FilterKey[]).every((key) => !filters[key].length || filters[key].includes(valueOf(task, key)))
+const visibleCount = (column: { tasks: any[] }) => column.tasks.filter(matches).length
 const store = useStaffMessaging()
 const cancelFor = ref<{ task: any; from: string } | null>(null)
 const cancelNote = ref("")
@@ -103,11 +130,30 @@ const openThread = async (task: any) => {
         </template>
     </PageHeading>
 
+    <div class="px-4 pt-4 space-y-3">
+        <TicketsCreatedInterval :options="createdIntervals" :selected="createdInterval" />
+        <div class="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm">
+            <div v-for="group in filterOptions" :key="group.key" class="flex flex-wrap items-center gap-1.5">
+                <span class="mr-1 text-xs font-medium uppercase tracking-wide text-gray-400">{{ group.label }}</span>
+                <button
+                    v-for="option in group.options"
+                    :key="option.value"
+                    type="button"
+                    class="flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 transition"
+                    :class="filters[group.key].includes(option.value) ? 'border-indigo-500 bg-indigo-600 text-white shadow-sm' : option.value === 'urgent' ? 'border-red-200 bg-red-50 text-red-700 hover:bg-red-100' : 'border-gray-200 bg-gray-50 text-gray-600 hover:border-gray-300 hover:bg-white'"
+                    @click="toggleFilter(group.key, option.value)">
+                    <span class="capitalize">{{ option.label }}</span>
+                    <span class="rounded-full px-1.5 text-xs tabular-nums" :class="filters[group.key].includes(option.value) ? 'bg-white/20' : 'bg-white text-gray-500'">{{ option.count }}</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
     <div class="p-4 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 items-start">
         <div v-for="column in columns" :key="column.status" class="rounded-lg p-2 min-h-[12rem]" :class="columnClasses[column.color] ?? columnClasses.gray">
             <div class="flex items-center justify-between px-1 pb-2 text-sm font-semibold text-gray-700">
                 <span>{{ column.label }}</span>
-                <span class="text-xs font-normal text-gray-500">{{ column.tasks.length }}</span>
+                <span class="text-xs font-normal text-gray-500">{{ visibleCount(column) }}</span>
             </div>
             <draggable
                 v-model="column.tasks"
@@ -118,7 +164,7 @@ const openThread = async (task: any) => {
                 ghost-class="opacity-40"
                 @change="onMoved(column, $event)">
                 <template #item="{ element: task }">
-                    <div class="bg-white rounded-md border border-gray-200 shadow-sm p-2.5 text-sm" :class="can_manage ? 'cursor-grab' : ''">
+                    <div v-show="matches(task)" class="bg-white rounded-md border border-gray-200 shadow-sm p-2.5 text-sm" :class="can_manage ? 'cursor-grab' : ''">
                         <div class="flex items-center justify-between text-xxs text-gray-400">
                             <span class="font-mono">{{ task.reference }}</span>
                             <span v-if="task.priority !== 'normal'" class="px-1.5 rounded-full" :class="task.priority === 'low' ? 'bg-gray-100 text-gray-500' : 'bg-orange-100 text-orange-700'">{{ task.priority }}</span>
