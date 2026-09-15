@@ -9,6 +9,7 @@
 
 namespace App\Http\Resources\Procurement;
 
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Http\Resources\HasSelfCall;
 use App\Models\GoodsIn\ReturnDeliveryNoteItem;
 use App\Models\GoodsIn\Sowing;
@@ -46,6 +47,11 @@ class ReturnDeliveryNoteItemsResource extends JsonResource
                     AND pickings.type = ? AND pickings.delivery_note_item_id = ?
                 ) as pickings_data',
                 ['pick', $this->id]
+            )
+            ->orderByRaw(
+                $returnDeliveryNoteItem->returnDeliveryNote?->shop?->type == ShopTypeEnum::B2B
+                    ? 'location_org_stocks.default_wholesale_picking_location::int desc'
+                    : 'location_org_stocks.default_dropshipping_picking_location::int desc'
             )
             ->orderBy('picking_priority')
             ->get();
