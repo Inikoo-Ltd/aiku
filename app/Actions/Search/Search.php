@@ -13,6 +13,7 @@ use App\Models\Catalogue\Shop;
 use App\Models\Inventory\Warehouse;
 use App\Models\Masters\MasterShop;
 use App\Models\Production\Production;
+use App\Enums\Helpers\Ticket\TicketTypeEnum;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
@@ -104,7 +105,7 @@ class Search extends OrgAction
     public function asController(ActionRequest $request): array
     {
         $route = $request->string('route_src')->toString();
-        $scope = $this->getRouteScope($route);
+        $scope = $this->isTicketReference($request->string('q')->toString()) ? 'tickets' : $this->getRouteScope($route);
 
         $options = [];
         if (in_array($scope, self::GROUP_SCOPES, true)) {
@@ -204,6 +205,16 @@ class Search extends OrgAction
     private function authoriseScope(ActionRequest $request, array $permissions): void
     {
         abort_unless($request->user()->authTo($permissions), 403);
+    }
+
+    /**
+     * A ticket reference (HELP-2015, ad-45, help2015) finds the ticket from any page, not only from the tickets section.
+     */
+    private function isTicketReference(string $query): bool
+    {
+        $prefixes = implode('|', array_map(fn (TicketTypeEnum $type) => $type->prefix(), TicketTypeEnum::cases()));
+
+        return (bool) preg_match("~^($prefixes)-?\\d+$~i", trim($query));
     }
 
     public function getRouteScope(string $route): ?string

@@ -25,7 +25,7 @@ class StoreSearchLog
             return $refined;
         }
 
-        return SearchLog::create($modelData);
+        return SearchLog::firstOrCreate(Arr::only($modelData, ['ulid']), $modelData);
     }
 
     protected function refinedLog(array $modelData): ?SearchLog

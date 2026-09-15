@@ -1267,7 +1267,8 @@ test('ticket search ranks subject over description over comments, understands ke
     actingAs($staff);
     expect($search('email')->pluck('reference'))->not->toContain($byInternal->reference)
         ->and(get(route('grp.search.index', ['q' => 'email marke', 'route_src' => 'grp.tickets.board']))->assertOk()->json('results.tickets.*.code'))->toContain($bySubject->reference)
-        ->and(SearchTickets::run((string) $other->number)['results']['tickets'][0]['href'])->toBe(route('grp.tickets.show', $other->reference));
+        ->and(SearchTickets::run((string) $other->number)['results']['tickets'][0]['href'])->toBe(route('grp.tickets.show', $other->reference))
+        ->and(get(route('grp.search.index', ['q' => strtolower($other->reference), 'route_src' => 'grp.dashboard.show']))->assertOk()->json('results.tickets.*.code'))->toBe([$other->reference]);
 });
 
 test('only the assignee and supervisors change kind and module, and no ticket is turned into or out of an escalation', function () {
