@@ -28,6 +28,7 @@ class GetWebpageLock
 
         return [
             'is_locked'    => $webpage->isLocked(),
+            'scope'        => $webpage->isLocked() ? Arr::get($webpage->lock_data, 'scope', 'webpage') : null,
             'owner'        => $webpage->lockedBy?->contact_name ?? $webpage->lockedBy?->username,
             'is_owner'     => $webpage->locked_by_user_id && $user && $webpage->locked_by_user_id == $user->id,
             'locked_at'    => $webpage->locked_at,

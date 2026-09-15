@@ -13,6 +13,7 @@ use App\Actions\Traits\WithActionUpdate;
 use App\Models\SysAdmin\User;
 use App\Models\Web\Webpage;
 use Illuminate\Support\Arr;
+use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 
 /**
@@ -42,6 +43,8 @@ class LockWebpage extends OrgAction
                 'note'    => Arr::get($modelData, 'note'),
                 'editors'  => $editors,
                 'requests' => $webpage->isLocked() ? Arr::get($webpage->lock_data, 'requests', []) : [],
+                'scope'    => Arr::get($modelData, 'scope', $webpage->isLocked() ? Arr::get($webpage->lock_data, 'scope', 'webpage') : 'webpage'),
+                'master_product_category_id' => Arr::get($modelData, 'master_product_category_id', $webpage->isLocked() ? Arr::get($webpage->lock_data, 'master_product_category_id') : null),
             ],
         ]);
     }
@@ -64,6 +67,8 @@ class LockWebpage extends OrgAction
             'editors.*.user_id'       => ['required', 'integer', 'exists:users,id'],
             'editors.*.until'         => ['sometimes', 'nullable', 'date'],
             'editors.*.until_publish' => ['sometimes', 'boolean'],
+            'scope'                   => ['sometimes', Rule::in(['webpage', 'master_family'])],
+            'master_product_category_id' => ['sometimes', 'nullable', 'integer'],
         ];
     }
 

@@ -7,6 +7,7 @@ export interface WebpageEditAccessRequest { user_id: number, name?: string, note
 
 export interface WebpageLock {
     is_locked: boolean
+    scope?: 'webpage' | 'master_family' | null
     owner?: string
     is_owner: boolean
     locked_at?: string
@@ -57,6 +58,10 @@ const grantLabel = (grant: WebpageLockGrant) => grant.until_publish
             <span>{{ trans('Reason') }}: {{ lock.reason }}</span>
             <span class="mx-2">·</span>
             <span>{{ trans('Locked') }}: {{ useFormatTime(lock.locked_at) }}</span>
+            <template v-if="lock.scope === 'master_family'">
+                <span class="mx-2">·</span>
+                <span>{{ trans('Family lock across selected websites') }}</span>
+            </template>
         </div>
         <WebpageEditAccessRequestButton :lock="lock" size="xs" class="ml-auto" />
     </div>

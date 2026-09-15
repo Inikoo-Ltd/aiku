@@ -537,6 +537,8 @@ use App\Actions\Web\Webpage\UnlockWebpage;
 use App\Actions\Web\Webpage\RequestWebpageEditAccess;
 use App\Actions\Web\Webpage\ApproveWebpageEditAccess;
 use App\Actions\Web\Webpage\DeclineWebpageEditAccess;
+use App\Actions\Web\Webpage\LockMasterFamilyWebpages;
+use App\Actions\Web\Webpage\UnlockMasterFamilyWebpages;
 use App\Http\Middleware\EnsureWebpageIsNotLocked;
 use App\Actions\Web\Webpage\WebpageWorkshopCheckWebBlock;
 use App\Actions\Web\Website\AutosaveWebsiteMarginal;
@@ -703,6 +705,8 @@ Route::prefix('master-shops/{masterShop:id}')->as('master_shops.')->group(functi
 
 Route::prefix('master-product-category/{masterProductCategory:id}')->name('master_product_category.')->group(function () {
     Route::post('upload-images', UploadImagesToMasterProductCategory::class)->name('upload_images');
+    Route::post('lock-webpages', LockMasterFamilyWebpages::class)->name('lock_webpages');
+    Route::post('unlock-webpages', UnlockMasterFamilyWebpages::class)->name('unlock_webpages');
     Route::post('attach-images', [AttachImagesToModel::class, 'inMasterProductCategory'])->name('attach_images');
     Route::patch('update-images', UpdateMasterProductCategoryImages::class)->name('update_images');
     Route::delete('delete-images/{media:id}', DeleteImageFromMasterProductCategory::class)->name('delete_images')->withoutScopedBindings();
