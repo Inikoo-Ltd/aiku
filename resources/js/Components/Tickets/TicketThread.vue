@@ -49,6 +49,11 @@ const sortedComments = computed(() =>
     [...props.comments].sort((a, b) => (new Date(a.created_at).getTime() - new Date(b.created_at).getTime() || a.id - b.id) * (isNewestFirst.value ? -1 : 1))
 )
 
+const daysAgo = (date: string) => {
+    const days = Math.floor((Date.now() - new Date(date).getTime()) / 86_400_000)
+    return days === 0 ? trans("today") : days === 1 ? trans("1 day ago") : trans(":days days ago", { days: String(days) })
+}
+
 const editingId = ref<number | null>(null)
 const editBody = ref("")
 
@@ -82,6 +87,7 @@ const submit = () => {
                 <TicketUserAvatar :name="ticket.reporter" :avatar="ticket.reporter_avatar" size="sm" />
                 <span class="font-semibold text-gray-800">{{ ticket.reporter || trans("Unknown") }}</span>
                 <span>· {{ useFormatTime(ticket.created_at, { formatTime: "PP, HH:mm:ss zzz" }) }}</span>
+                <span class="text-gray-400">({{ daysAgo(ticket.created_at) }})</span>
                 <FontAwesomeIcon v-if="ticket.is_from_slack" v-tooltip="trans('Raised from Slack')" :icon="faSlack" class="text-gray-500" />
             </div>
             <h2 class="text-lg font-semibold mb-3">{{ ticket.subject }}</h2>
