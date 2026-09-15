@@ -28,10 +28,13 @@ use Exception;
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
+use Sentry;
 use Throwable;
 
 class GetFaireProducts extends OrgAction
 {
+    public const float MIN_LIVE_RATIO = 0.75;
+
     public string $commandSignature = 'faire:products {shop} {min_hours?}';
 
     public $jobQueue = 'long-running';
@@ -57,6 +60,8 @@ class GetFaireProducts extends OrgAction
             'last_external_shop_products_fetched_at' => now()
         ]);
 
+        $fetchFailed = false;
+
         do {
             $response = $shop->getFaireProducts([
                 ...$filters,
@@ -64,10 +69,15 @@ class GetFaireProducts extends OrgAction
                 'page'  => $page
             ]);
 
+            if (Arr::get($response, 'success') === false) {
+                $fetchFailed = true;
+                $command?->error("Faire products fetch failed on page $page");
+                break;
+            }
 
-            $fetchedProducts = Arr::get($response, 'products');
+            $fetchedProducts = Arr::get($response, 'products') ?? [];
 
-            $faireProducts = array_merge($faireProducts, $fetchedProducts ?? []);
+            $faireProducts = array_merge($faireProducts, $fetchedProducts);
             $command?->info("Fetched  ($page) ".count($fetchedProducts)." products, total: ".count($faireProducts));
 
 
@@ -78,6 +88,107 @@ class GetFaireProducts extends OrgAction
         foreach ($faireProducts as $faireProduct) {
             $this->upsertFaireProduct($shop, $faireProduct, $command);
         }
+
+        if (!$filters && !$fetchFailed && $faireProducts) {
+            $discontinued = $this->discontinueProductsGoneFromFaire($shop, $this->getLiveFaireVariantIds($faireProducts), $command);
+            $command?->info("Discontinued $discontinued products no longer on Faire");
+        }
+    }
+
+    /**
+     * A product coming back from Faire goes where a new one would: active only once its trade units are set,
+     * otherwise back to in process. Status is reset too, because discontinuing set it and the stock hydrator
+     * never lifts a discontinued status on its own.
+     *
+     * @return array<string, ProductStateEnum|ProductStatusEnum>
+     */
+    public function getRepublishedStateData(Product $product): array
+    {
+        if (!$product->tradeUnits()->exists()) {
+            return [
+                'state'  => ProductStateEnum::IN_PROCESS,
+                'status' => ProductStatusEnum::IN_PROCESS,
+            ];
+        }
+
+        return [
+            'state'  => ProductStateEnum::ACTIVE,
+            'status' => ProductStatusEnum::FOR_SALE,
+        ];
+    }
+
+    /**
+     * Faire does not report a deleted product, it just stops returning it. Only a complete, successful fetch
+     * of the whole catalogue can say a product is gone, so this never runs on a partial or failed sync.
+     *
+     * @param array<int, array<string, mixed>> $faireProducts
+     *
+     * @return array<string, true>
+     */
+    public function getLiveFaireVariantIds(array $faireProducts): array
+    {
+        $liveVariantIds = [];
+
+        foreach ($faireProducts as $faireProduct) {
+            if (!in_array(Arr::get($faireProduct, 'lifecycle_state'), ['PUBLISHED', 'UNPUBLISHED'])) {
+                continue;
+            }
+
+            foreach (Arr::get($faireProduct, 'variants', []) as $variant) {
+                if (in_array(Arr::get($variant, 'lifecycle_state'), ['PUBLISHED', 'UNPUBLISHED'])) {
+                    $liveVariantIds[$variant['id']] = true;
+                }
+            }
+        }
+
+        return $liveVariantIds;
+    }
+
+    /**
+     * A product deleted on Faire used to stay active in Aiku for ever, so every re-upload left a duplicate
+     * behind (HELP-2040). Discontinued, never deleted: past orders and invoices still point at it.
+     *
+     * @param array<string, true> $liveVariantIds
+     */
+    public function discontinueProductsGoneFromFaire(Shop $shop, array $liveVariantIds, ?Command $command = null): int
+    {
+        $candidates = Product::where('shop_id', $shop->id)
+            ->whereNotNull('marketplace_id')
+            ->where('state', '!=', ProductStateEnum::DISCONTINUED);
+
+        /**
+         * A 2xx page that silently comes back short ends the fetch as if the catalogue were complete. Faire
+         * losing more than a quarter of a shop's live products at once is far likelier to be that than a real
+         * clear-out, so it is reported and nothing is touched.
+         */
+        $activeCount    = (clone $candidates)->count();
+        $survivingCount = (clone $candidates)->whereIn('marketplace_id', array_keys($liveVariantIds))->count();
+        if ($activeCount > 0 && $survivingCount < $activeCount * self::MIN_LIVE_RATIO) {
+            Sentry::captureMessage("Faire products discontinue skipped, only $survivingCount live of $activeCount ({$shop->slug})");
+            $command?->error("Discontinue skipped: only $survivingCount of $activeCount products are still live on Faire");
+
+            return 0;
+        }
+
+        $discontinued = 0;
+
+        $candidates->chunkById(200, function ($products) use ($liveVariantIds, &$discontinued, $command) {
+            foreach ($products as $product) {
+                if (isset($liveVariantIds[$product->marketplace_id])) {
+                    continue;
+                }
+
+                try {
+                    UpdateProduct::make()->action($product, ['state' => ProductStateEnum::DISCONTINUED], hydratorsDelay: 120, strict: false);
+                    $discontinued++;
+                } catch (Throwable $e) {
+                    $command?->error("Discontinue failed: $product->slug ".$e->getMessage());
+                    Sentry::captureException($e);
+                }
+            }
+        });
+
+        return $discontinued;
     }
 
     public function upsertFaireProduct(Shop $shop, array $faireProduct, ?Command $command = null): void
@@ -103,7 +214,9 @@ class GetFaireProducts extends OrgAction
                 if ($product) {
                     try {
                         $caseSizeChanged = (float) $product->units != (float) $faireProduct['unit_multiplier'];
+                        $republished     = $product->state === ProductStateEnum::DISCONTINUED ? $this->getRepublishedStateData($product) : [];
                         UpdateProduct::make()->action($product, [
+                            ...$republished,
                             'code'                  => $faireSKU,
                             'name'                  => $faireProduct['name'].' - '.$variant['name'],
                             'description'           => $faireProduct['description'],
