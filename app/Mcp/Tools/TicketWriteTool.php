@@ -21,7 +21,7 @@ use Laravel\Mcp\Response;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
 
-#[Description('Change a ticket or create a help ticket. With a reference: add a comment (posted as you; internal=true keeps it visible to the help desk only, for technical notes: ids repaired, commands run, root cause), rewrite subject or description, change status (open, in_progress, waiting, resolved, cancelled), priority, assignee (username), kind, module or tags. Without a reference: creates a new HELP ticket with subject, and optional description, kind, module, priority. Every change is recorded as the authenticated user, or as the user named in acting_as when a help desk supervisor passes it. Only engineers, lead engineers and QA can use it.')]
+#[Description('Change a ticket or create a help ticket. With a reference: add a comment (posted as you; internal=true keeps it visible to the help desk only, for technical notes: ids repaired, commands run, root cause), rewrite subject or description, change status (open, in_progress, waiting with optional waiting_hours, resolved, cancelled), priority, assignee (username), kind, module or tags. Without a reference: creates a new HELP ticket with subject, and optional description, kind, module, priority. Every change is recorded as the authenticated user, or as the user named in acting_as when a help desk supervisor passes it. Only engineers, lead engineers and QA can use it.')]
 class TicketWriteTool extends Tool
 {
     public function shouldRegister(Request $request): bool
@@ -45,6 +45,7 @@ class TicketWriteTool extends Tool
             'tags'        => ['sometimes', 'array'],
             'tags.*'      => ['string', 'max:64'],
             'acting_as'   => ['sometimes', 'nullable', 'string'],
+            'waiting_hours' => ['sometimes', 'nullable', 'integer', 'min:1', 'max:720'],
         ]);
 
         $user = $request->user();
@@ -104,6 +105,7 @@ class TicketWriteTool extends Tool
             'kind'     => $request->get('kind'),
             'module'   => $request->get('module'),
             'tags'     => $request->get('tags'),
+            'waiting_hours' => $request->get('waiting_hours'),
         ], fn ($value) => $value !== null);
 
         if ($request->has('assignee')) {
@@ -152,6 +154,7 @@ class TicketWriteTool extends Tool
             'module'      => $schema->string()->description('Aiku module slug, e.g. dispatching'),
             'tags'        => $schema->array()->description('Full tag list to set, e.g. ["not a bug"]')->items($schema->string()),
             'acting_as'   => $schema->string()->description('Username to act as: the comment, assignment or status change is recorded as that user. Help desk supervisors only'),
+            'waiting_hours' => $schema->integer()->description('With status waiting: hours before the ticket resurfaces (1-720). Defaults to the ticket kind\'s waiting period'),
         ];
     }
 }

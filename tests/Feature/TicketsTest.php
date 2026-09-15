@@ -678,6 +678,9 @@ test('assistant raises, lists, works and closes a ticket through MCP', function 
     AikuServer::actingAs($this->user)->tool(TicketWriteTool::class, ['reference' => $reference, 'comment' => 'Merged stock 41882 into 40115', 'internal' => true])->assertOk();
     expect($ticket->comments()->where('body', 'Merged stock 41882 into 40115')->value('is_internal'))->toBeTrue();
 
+    AikuServer::actingAs($this->user)->tool(TicketWriteTool::class, ['reference' => $reference, 'status' => 'waiting', 'waiting_hours' => 24])->assertOk();
+    expect($ticket->refresh()->waiting_until->diffInHours(now(), true))->toBeGreaterThan(23)->toBeLessThan(25);
+
     $shown = AikuServer::actingAs($this->user)->tool(TicketsTool::class, ['reference' => strtolower($reference)]);
     $shown->assertOk()->assertSee('Fixed by clearing the stale lock');
 
