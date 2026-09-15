@@ -214,7 +214,6 @@ const getInputClasses = computed(() => {
                     <option v-for="reason in reasons" :key="reason.value" :value="reason.value">{{ reason.label }}</option>
                 </select>
             </div>
-            </div>
         </template>
 
     </Table>
