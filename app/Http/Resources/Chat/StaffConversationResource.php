@@ -29,6 +29,7 @@ class StaffConversationResource extends JsonResource
         return match ($this->context_type) {
             'DeliveryNote' => route('grp.org.warehouses.show.dispatching.delivery_notes.show', [$context->organisation->slug, $context->warehouse->slug, $context->slug]),
             'Order'        => route('grp.org.shops.show.ordering.orders.show', [$context->organisation->slug, $context->shop->slug, $context->slug]),
+            'StaffTask'    => route('grp.chat.staff.tasks.index', ['task' => $context->reference]),
             'PickingSession' => route('grp.org.warehouses.show.dispatching.picking_sessions.show', [$context->organisation->slug, $context->warehouse->slug, $context->slug]),
             default        => null,
         };

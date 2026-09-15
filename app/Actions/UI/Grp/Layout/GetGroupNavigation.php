@@ -157,6 +157,15 @@ class GetGroupNavigation
                         ],
                     ],
                     [
+                        'label'   => __('Tasks'),
+                        'tooltip' => __('Tasks'),
+                        'icon'    => ['fal', 'fa-tasks'],
+                        'root'    => 'grp.chat.staff.tasks.',
+                        'route'   => [
+                            'name' => 'grp.chat.staff.tasks.index',
+                        ],
+                    ],
+                    [
                         'label'   => __('Dashboard'),
                         'tooltip' => __('Dashboard'),
                         'icon'    => ['fal', 'fa-comment-alt'],

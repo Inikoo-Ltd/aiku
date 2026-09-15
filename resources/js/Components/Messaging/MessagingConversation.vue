@@ -21,6 +21,7 @@ library.add(faTimes, faChevronDown, faPaperPlane, faChevronLeft, faQuoteLeft, fa
 
 const GifPicker = defineAsyncComponent(() => import("./GifPicker.vue"))
 const EmojiPicker = defineAsyncComponent(() => import("./EmojiPicker.vue"))
+const StaffTaskDialog = defineAsyncComponent(() => import("./StaffTaskDialog.vue"))
 
 const props = defineProps<{
     conversation: StaffConversation
@@ -344,6 +345,13 @@ const toggleReaction = async (message: StaffMessage, emoji: string) => {
     await store.toggleReaction(message.id, emoji)
 }
 
+const taskDialogOpen = ref(false)
+const taskSource = ref<StaffMessage | null>(null)
+const taskFromMessage = (message: StaffMessage) => {
+    taskSource.value = message
+    taskDialogOpen.value = true
+}
+
 const reactionEntries = (message: StaffMessage) => Object.entries(message.reactions ?? {})
 const hasMyReaction = (message: StaffMessage, emoji: string) =>
     (message.reactions?.[emoji] ?? []).includes(myId.value)
@@ -425,6 +433,9 @@ const hasMyReaction = (message: StaffMessage, emoji: string) =>
 
                     <button class="opacity-0 group-hover:opacity-100 text-xxs text-gray-400 px-1" @click="setReply(message)">
                         {{ trans('reply') }}
+                    </button>
+                    <button v-if="!message.gif_url && messageText(message)" class="opacity-0 group-hover:opacity-100 text-xxs text-gray-400 px-1" @click="taskFromMessage(message)">
+                        {{ trans('task') }}
                     </button>
                 </div>
 
@@ -549,5 +560,11 @@ const hasMyReaction = (message: StaffMessage, emoji: string) =>
                 </button>
             </div>
         </div>
+
+        <StaffTaskDialog
+            :is-open="taskDialogOpen"
+            :subject="taskSource ? messageText(taskSource).slice(0, 255) : ''"
+            :source-message-id="taskSource?.id ?? null"
+            @close="taskDialogOpen = false" />
     </div>
 </template>

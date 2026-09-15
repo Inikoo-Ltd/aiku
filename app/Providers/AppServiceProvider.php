@@ -397,6 +397,8 @@ class AppServiceProvider extends ServiceProvider
                 'Banner'                           => 'App\Models\Web\Banner',
                 'Announcement'                     => 'App\Models\Web\Announcement',
 
+                'StaffTask'                        => 'App\Models\Chat\StaffTask',
+
                 //Production
                 'Production'                       => 'App\Models\Production\Production',
                 'RawMaterial'                      => 'App\Models\Production\RawMaterial',
