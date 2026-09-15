@@ -81,7 +81,7 @@ class RecordTrafficSourceClick
      * analytics needs the landing page; both need the bot verdict. Runs queued so the storefront
      * first hit pays nothing beyond the dispatch.
      *
-     * @param array{shop_id: int, website_id: int|null, type: string, campaign_ref: string|null, click_id: string|null, ip: string|null, country_code: string|null, user_agent: string|null, url: string|null, is_repeat: bool} $click
+     * @param array{shop_id: int, website_id: int|null, type: string, campaign_ref: string|null, click_id: string|null, session_id?: string|null, web_user_id?: int|null, ip: string|null, country_code: string|null, user_agent: string|null, url: string|null, is_repeat: bool} $click
      */
     public function handle(array $click): void
     {
@@ -97,6 +97,7 @@ class RecordTrafficSourceClick
 
         TrafficSourceClick::create([
             ...$click,
+            ...$this->identify(Arr::get($click, 'web_user_id')),
             'webpage_id'  => $this->resolveWebpage(Arr::get($click, 'website_id'), Arr::get($click, 'url')),
             'device_type' => $userAgent !== '' ? Arr::get(GetBrowserInfo::run($userAgent), 'device') : null,
             'is_bot'      => $scanner || ($userAgent !== '' && IsBot::run($userAgent)),
@@ -111,6 +112,35 @@ class RecordTrafficSourceClick
                 RecordTrafficSourceVisit::run(Arr::get($click, 'shop_id'), $type);
             }
         }
+    }
+
+    /**
+     * Who this click reached, frozen as it was when we paid for it.
+     *
+     * Read from the web user the storefront already had rather than looked up from the session,
+     * because the visitor row is written by a separate job on a five second delay and would often
+     * not exist yet. A null customer here is the honest answer for an arrival nobody was signed in
+     * for, and it is the answer that later turns into an acquisition if they go on to register.
+     *
+     * @return array{web_user_id: int|null, customer_id: int|null, customer_state: string|null}
+     */
+    private function identify(?int $webUserId): array
+    {
+        if (!$webUserId) {
+            return ['web_user_id' => null, 'customer_id' => null, 'customer_state' => null];
+        }
+
+        $customer = DB::table('web_users')
+            ->join('customers', 'customers.id', '=', 'web_users.customer_id')
+            ->where('web_users.id', $webUserId)
+            ->select('customers.id', 'customers.state')
+            ->first();
+
+        return [
+            'web_user_id'    => $webUserId,
+            'customer_id'    => $customer?->id,
+            'customer_state' => $customer?->state,
+        ];
     }
 
     /**

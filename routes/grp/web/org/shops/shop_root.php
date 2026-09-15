@@ -88,6 +88,9 @@ Route::prefix('{shop}')->name('show.')
                 Route::prefix("google-ads")
                     ->name("google_ads.")
                     ->group(__DIR__ . "/google_ads.php");
+                Route::prefix("suggestions")
+                    ->name("ad_proposals.")
+                    ->group(__DIR__ . "/ad_proposals.php");
 
                 Route::prefix("whatsapp-campaigns")
                     ->name("whatsapp_campaigns.")
