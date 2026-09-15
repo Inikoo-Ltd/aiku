@@ -1,7 +1,7 @@
 <script setup lang='ts'>
 import { trans } from 'laravel-vue-i18n'
 import { ref, onMounted, onUnmounted, inject, computed, defineAsyncComponent } from 'vue'
-import SearchBar from "@/Components/SearchBar.vue"
+const SearchBar = defineAsyncComponent(() => import("@/Components/SearchBar.vue"))
 import Image from "@common/Components/Image.vue";
 import Popover from '@/Components/Popover.vue'
 import NotificationList from '@/Components/NotificationList/NotificationList.vue'

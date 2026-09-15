@@ -426,6 +426,7 @@ const dateColumnOptions = computed(() => [
 					class="h-5 w-5 object-contain"
 					:title="deliveryNote.shipping_data?.[0]?.shipper_label"
 					v-tooltip="deliveryNote.shipping_data?.[0]?.shipper_label"
+					loading="lazy" decoding="async"
 				/>
 				<div class="group w-fit whitespace-nowrap max-w-96 truncate group-hover:max-w-max">
 					<template v-if="deliveryNote.shipping_data?.[0].trackings?.[0]">

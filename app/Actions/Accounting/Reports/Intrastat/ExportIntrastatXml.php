@@ -33,8 +33,8 @@ class ExportIntrastatXml extends OrgAction
             ->join('intrastat_export_time_series', 'intrastat_export_time_series_records.intrastat_export_time_series_id', '=', 'intrastat_export_time_series.id')
             ->with(['intrastatExportTimeSeries.country', 'intrastatExportTimeSeries.taxCategory']);
 
-        if (!empty($filters['between']['date'])) {
-            $raw = $filters['between']['date'];
+        if (!empty($filters['between']['from'])) {
+            $raw = $filters['between']['from'];
             [$start, $end] = explode('-', $raw);
 
             $start = Carbon::createFromFormat('Ymd', $start)->format('Y-m-d');
@@ -68,8 +68,8 @@ class ExportIntrastatXml extends OrgAction
             ->orderBy('intrastat_export_time_series_records.from')
             ->get();
 
-        if (!empty($filters['between']['date'])) {
-            [$start, $end] = explode('-', $filters['between']['date']);
+        if (!empty($filters['between']['from'])) {
+            [$start, $end] = explode('-', $filters['between']['from']);
             $period = Carbon::createFromFormat('Ymd', $start)->format('Y-m')
                 . '_' .
                 Carbon::createFromFormat('Ymd', $end)->format('Y-m');

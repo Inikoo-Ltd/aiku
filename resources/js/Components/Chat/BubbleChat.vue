@@ -950,7 +950,7 @@ watch(selectedLanguage, async (val) => {
                     <div v-if="showTranslation && !shouldHideTranslationBlock"
                         class="flex items-center gap-1 mt-0.5 opacity-70 text-[10px] not-italic">
                         <img v-if="latestTranslation!.language_flag" :src="latestTranslation!.language_flag"
-                            class="w-3 h-3 rounded-sm" />
+                            class="w-3 h-3 rounded-sm" loading="lazy" decoding="async" />
                         <FontAwesomeIcon :icon="faLanguage" />
                         <span>{{ latestTranslation!.language_name }}</span>
 

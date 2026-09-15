@@ -44,7 +44,6 @@ const layout = useLayoutStore()
 const sidebarOpen = ref(false)
 
 watch(() => usePage().props?.flash?.notification, (notif) => {
-    console.log("notif ret", notif)
     if (!notif) return
 
     notify({

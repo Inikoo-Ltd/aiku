@@ -17,7 +17,6 @@ use JsonSerializable;
  * @property int $id
  * @property string $username
  * @property string $email
- * @property string|null $about
  * @property bool $status
  * @property string $parent_type
  * @property string|null $contact_name
@@ -43,7 +42,6 @@ class UsersResource extends JsonResource
             'username'                  => $this->username,
             'image'                     => $user->imageSources(48, 48),
             'email'                     => $this->email,
-            'about'                     => $user->about,
             'status'                    => match ($this->status) {
                 true => [
                     'tooltip' => __('active'),

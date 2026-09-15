@@ -27,7 +27,6 @@ class UserResource extends JsonResource
             'username'      => $user->username,
             'image'         => $user->imageSources(320, 320),
             'email'         => $user->email,
-            'about'         => $user->about,
             'status'        => match ($user->status) {
                 true => [
                     'tooltip' => __('active'),

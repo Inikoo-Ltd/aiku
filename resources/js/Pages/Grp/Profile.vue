@@ -19,7 +19,6 @@ import ProfileTodo from "@/Components/Profile/ProfileTodo.vue"
 import ProfileNotifications from "@/Components/Profile/ProfileNotifications.vue"
 import ProfileApiTokens from "@/Components/Profile/ProfileApiTokens.vue"
 import EditProfile from "@/Pages/Grp/EditProfile.vue"
-import SettingProfile from "@/Pages/Grp/SettingProfile.vue"
 
 import axios from 'axios'
 import { trans } from 'laravel-vue-i18n'
@@ -193,13 +192,6 @@ onMounted(async () => {
                 @click="() => layout.stackedComponents.push({ component: EditProfile })"
                 :label="action.label"
                 type="edit"
-            />
-            <Button
-                @click="() => layout.stackedComponents.push({ component: SettingProfile })"
-                :label="trans('Preferences')"
-                icon="fal fa-sliders-v"
-                type="edit"
-                class="-ml-2"
             />
 
             <Button

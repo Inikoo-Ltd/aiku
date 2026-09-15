@@ -9,7 +9,7 @@
 namespace App\Actions\Dispatching\PickedBay\UI;
 
 use App\Actions\OrgAction;
-use App\Actions\Traits\Authorisations\Inventory\WithWarehouseEditAuthorisation;
+use App\Actions\Traits\Authorisations\Inventory\WithWarehouseAuthorisation;
 use App\Actions\UI\Dispatch\ShowDispatchHub;
 use App\Enums\UI\Inventory\PickedBaysTabsEnum;
 use App\Http\Resources\Inventory\PickedBayResource;
@@ -28,7 +28,7 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexPickedBays extends OrgAction
 {
-    use WithWarehouseEditAuthorisation;
+    use WithWarehouseAuthorisation;
 
     public function handle(Warehouse $warehouse, $prefix = null): LengthAwarePaginator
     {

@@ -46,7 +46,7 @@ Ticket prechádza týmito stavmi:
 - <b>Done</b>: opravené alebo dodané.
 - <b>Cancelled</b>: uzavreté bez opravy.
 
-Dostanete upozornenie, keď sa vás inžinier niečo spýta, keď je ticket hotový a keď niekto pridá komentár. Komentáre sa zobrazia v odznaku ticketu a podľa vašich nastavení aj e-mailom, v Slacku alebo oboma spôsobmi.
+Dostanete upozornenie, keď sa vás inžinier niečo spýta, keď je ticket hotový a keď niekto pridá komentár. Komentáre sa zobrazia v odznaku ticketu a podľa vašich nastavení aj e-mailom, v Slacku alebo ako notifikácia v prehliadači na počítači či telefóne, v ľubovoľnej kombinácii.
 
 ## Keď sa vás inžinier niečo spýta
 

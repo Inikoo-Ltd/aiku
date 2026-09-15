@@ -61,8 +61,8 @@ class IndexIntrastatExportReport extends OrgAction
                   ->orWhereNull('intrastat_export_time_series.tax_category_id');
             });
 
-        if ($dateFilter && !empty($dateFilter['date'])) {
-            $raw = $dateFilter['date'];
+        if ($dateFilter && !empty($dateFilter['from'])) {
+            $raw = $dateFilter['from'];
             [$start, $end] = explode('-', $raw);
             $start = \Carbon\Carbon::createFromFormat('Ymd', $start)->format('Y-m-d');
             $end   = \Carbon\Carbon::createFromFormat('Ymd', $end)->format('Y-m-d');

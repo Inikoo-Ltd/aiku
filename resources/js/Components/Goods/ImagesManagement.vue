@@ -240,9 +240,9 @@ async function uploadFiles(files: FileList | File[], loadingKey: string = "uploa
 
         notifySuccess(trans("Image(s) uploaded successfully"))
         router.reload({ only: ["images"] })
-    } catch (e) {
+    } catch (e: any) {
         console.error(e)
-        notifyError(trans("Failed to upload image(s)"))
+        notifyError(e?.response?.status === 422 ? trans("Only JPG, PNG or GIF images are allowed") : trans("Failed to upload image(s)"))
     } finally {
         loadingSubmit.value = null
     }

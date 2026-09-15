@@ -649,6 +649,23 @@ class ShowDeliveryNote extends OrgAction
                     ]
                 ];
             }
+
+            if ($deliveryNote->shipments->isNotEmpty()) {
+                return [
+                    'type'    => 'button',
+                    'style'   => 'save',
+                    'tooltip' => __('Finalise'),
+                    'label'   => __('Finalise and Dispatch'),
+                    'key'     => 'finalise-and-dispatch',
+                    'route'   => [
+                        'method'     => 'patch',
+                        'name'       => 'grp.models.delivery_note.state.finalise_and_dispatch',
+                        'parameters' => [
+                            'deliveryNote' => $deliveryNote->id
+                        ]
+                    ]
+                ];
+            }
         } elseif (count($deliveryNote->parcels ?? [])) {
             return [
                 'type'    => 'button',
@@ -1010,6 +1027,12 @@ class ShowDeliveryNote extends OrgAction
             $warning = [
                 'text'             => __('Someone is already picking this, so the picker is set on the picking session, not here. To give it to somebody else, open the picking session and change the picker there.'),
                 'picking_sessions' => $pickingSessions,
+            ];
+        }
+
+        if ($deliveryNote->state == DeliveryNoteStateEnum::PACKED && $deliveryNote->is_shipping_by_external && $deliveryNote->shipments->isEmpty()) {
+            $warning = [
+                'text' => __('Shipped by the sales channel: waiting for customer service to add the carrier label before this can be dispatched.'),
             ];
         }
 

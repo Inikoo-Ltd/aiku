@@ -22,7 +22,6 @@ The profile page itself is a small dashboard about *you*: tabs for your **To do*
 **Edit profile** is the "this is me" page:
 
 - **Photo** - upload a picture and crop it square. This becomes the avatar your colleagues see in the corner, in chat, and anywhere your name appears. A real face beats a grey circle.
-- **About** - a short line about yourself, up to around fifty characters.
 - **Chat nickname** - the short name shown in staff chat. If your username is long or formal, set something people actually call you.
 - **Email** and **password** - change either here whenever you need to. Pick a password of at least eight characters that you use nowhere else.
 

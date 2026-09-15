@@ -9,7 +9,7 @@
 namespace App\Actions\Dispatching\Trolley\UI;
 
 use App\Actions\OrgAction;
-use App\Actions\Traits\Authorisations\Inventory\WithWarehouseEditAuthorisation;
+use App\Actions\Traits\Authorisations\Inventory\WithWarehouseAuthorisation;
 use App\Actions\UI\Dispatch\ShowDispatchHub;
 use App\Enums\UI\Dispatch\TrolleysTabsEnum;
 use App\Http\Resources\Dispatching\TrolleysResource;
@@ -28,7 +28,7 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexTrolleys extends OrgAction
 {
-    use WithWarehouseEditAuthorisation;
+    use WithWarehouseAuthorisation;
 
     public function handle(Warehouse $warehouse, $prefix = null): LengthAwarePaginator
     {

@@ -9,6 +9,7 @@
 namespace App\Actions\Dropshipping\Shopify\Product;
 
 use App\Actions\Dropshipping\Portfolio\UpdatePortfolio;
+use App\Actions\Dropshipping\Shopify\CheckShopifyChannel;
 use App\Actions\Dropshipping\WithPortfolioErrorResponse;
 use App\Actions\Dropshipping\WooCommerce\Product\UpdateWooCustomerSalesChannelPortfolio;
 use App\Actions\RetinaAction;
@@ -66,6 +67,21 @@ class StoreShopifyProductVariant extends RetinaAction
             return [false, 'Invalid Shopify product ID'];
         }
 
+        if (!$shopifyUser->shopify_location_id) {
+            CheckShopifyChannel::run($customerSalesChannel);
+            $shopifyUser->refresh();
+        }
+
+        if (!$shopifyUser->shopify_location_id) {
+            $errorMessage = 'No Shopify location, the AW fulfilment service is not installed on this store so stock can not be sent';
+
+            UpdatePortfolio::run($portfolio, [
+                'errors_response' => $this->portfolioErrorResponse($errorMessage)
+            ]);
+
+            return [false, $errorMessage];
+        }
+
 
         try {
             // GraphQL mutation to update product variants
@@ -85,9 +101,12 @@ class StoreShopifyProductVariant extends RetinaAction
             MUTATION;
 
 
+            $quantityToSend = UpdateWooCustomerSalesChannelPortfolio::quantityToSend($product, $customerSalesChannel);
+
             $inventoryItem = [
-                'cost' => $product->price,
-                'sku'  => $portfolio->sku,
+                'cost'    => $product->price,
+                'sku'     => $portfolio->sku,
+                'tracked' => true,
 
             ];
 
@@ -107,7 +126,7 @@ class StoreShopifyProductVariant extends RetinaAction
                     'barcode'             => $portfolio->barcode,
                     'inventoryItem'       => $inventoryItem,
                     'inventoryQuantities' => [
-                        'availableQuantity' => UpdateWooCustomerSalesChannelPortfolio::quantityToSend($product, $customerSalesChannel),
+                        'availableQuantity' => $quantityToSend,
                         'locationId'        => $shopifyUser->shopify_location_id
                     ]
                 ]
@@ -171,7 +190,12 @@ class StoreShopifyProductVariant extends RetinaAction
 
             $variantId = Arr::get($body, 'data.productVariantsBulkCreate.productVariants.0.id');
             if ($variantId) {
-                UpdatePortfolio::run($portfolio, ['platform_product_variant_id' => $variantId]);
+                UpdatePortfolio::run($portfolio, [
+                    'platform_product_variant_id' => $variantId,
+                    'last_stock_value'            => $quantityToSend,
+                    'stock_last_updated_at'       => now(),
+                    'errors_response'             => null
+                ]);
             }
 
             SaveShopifyProductData::run($portfolio);

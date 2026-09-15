@@ -12,11 +12,11 @@ use App\Actions\Helpers\Ticket\GetTicketBadgeData;
 use App\Models\SysAdmin\User;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Broadcasting\PrivateChannel;
-use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
+use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
-class BroadcastTicketBadgeUpdate implements ShouldBroadcast
+class BroadcastTicketBadgeUpdate implements ShouldBroadcastNow
 {
     use Dispatchable;
     use InteractsWithSockets;

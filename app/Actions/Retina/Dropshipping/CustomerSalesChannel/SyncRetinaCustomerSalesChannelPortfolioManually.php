@@ -8,15 +8,10 @@
 
 namespace App\Actions\Retina\Dropshipping\CustomerSalesChannel;
 
-use App\Actions\Dropshipping\Shopify\Product\UpdateInventoryInShopifyCustomerSalesChannel;
-use App\Actions\Dropshipping\Tiktok\Product\UpdateInventoryTiktokProducts;
-use App\Actions\Dropshipping\Wix\Product\UpdateInventoryInWixPortfolio;
-use App\Actions\Dropshipping\WooCommerce\Product\UpdateInventoryInEbayPortfolio;
-use App\Actions\Dropshipping\WooCommerce\Product\UpdateInventoryInWooPortfolio;
+use App\Actions\Dropshipping\CustomerSalesChannel\SyncCustomerSalesChannelPortfolios;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Dropshipping\CustomerSalesChannel;
-use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Redirect;
 use Lorisleiva\Actions\ActionRequest;
@@ -35,33 +30,7 @@ class SyncRetinaCustomerSalesChannelPortfolioManually extends RetinaAction
 
     public function handle(CustomerSalesChannel $customerSalesChannel): ?CustomerSalesChannel
     {
-        $platformUser = $customerSalesChannel->user;
-
-        if (! $platformUser) {
-            return null;
-        }
-
-        switch ($customerSalesChannel->platform->type) {
-            case PlatformTypeEnum::SHOPIFY:
-                UpdateInventoryInShopifyCustomerSalesChannel::run($customerSalesChannel);
-                break;
-            case PlatformTypeEnum::WOOCOMMERCE:
-                UpdateInventoryInWooPortfolio::run($customerSalesChannel, true);
-                break;
-            case PlatformTypeEnum::EBAY:
-                UpdateInventoryInEbayPortfolio::run($customerSalesChannel, true);
-                break;
-            case PlatformTypeEnum::TIKTOK:
-                UpdateInventoryTiktokProducts::run($customerSalesChannel, true);
-                break;
-            case PlatformTypeEnum::WIX:
-                UpdateInventoryInWixPortfolio::run($customerSalesChannel);
-                break;
-            default:
-                return null;
-        }
-
-        return $customerSalesChannel;
+        return SyncCustomerSalesChannelPortfolios::run($customerSalesChannel);
     }
 
     public function asController(CustomerSalesChannel $customerSalesChannel, ActionRequest $request): ?CustomerSalesChannel

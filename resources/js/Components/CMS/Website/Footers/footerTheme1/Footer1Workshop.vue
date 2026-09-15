@@ -499,7 +499,7 @@ const layout = inject("layout", {})
                         <div class="flex flex-col items-center gap-y-6 mt-4"
                              @click="() => sendMessageToParent('panelOpen', 'payments')">
                             <div v-for="payment of modelValue.paymentData.data" :key="payment.key">
-                                <img :src="payment.image" :alt="payment.alt" class="h-auto max-h-6 md:max-h-8 max-w-full w-full object-contain">
+                                <img :src="payment.image" :alt="payment.alt" class="h-auto max-h-6 md:max-h-8 max-w-full w-full object-contain" loading="lazy" decoding="async">
                             </div>
                         </div>
                     </div>

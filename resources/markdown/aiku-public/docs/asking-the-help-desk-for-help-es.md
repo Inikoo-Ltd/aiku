@@ -46,7 +46,7 @@ Un ticket pasa por estos estados:
 - <b>Done</b>: arreglado o entregado.
 - <b>Cancelled</b>: cerrado sin solución.
 
-Se te avisa cuando un ingeniero te pregunta algo, cuando tu ticket está hecho y cuando alguien comenta. Los comentarios aparecen en el indicador del ticket y, según tu configuración, por email, por Slack o por los dos.
+Se te avisa cuando un ingeniero te pregunta algo, cuando tu ticket está hecho y cuando alguien comenta. Los comentarios aparecen en el indicador del ticket y, según tu configuración, por email, por Slack o como notificación del navegador en tu ordenador o tu móvil, en cualquier combinación.
 
 ## Cuando el ingeniero te pregunta algo
 

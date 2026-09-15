@@ -26,6 +26,7 @@ import TableSnapshots from "@/Components/Tables/TableSnapshots.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { layoutStructure } from '@/Composables/useLayoutStructure'
 import TableRedirects from '@/Components/Tables/Grp/Org/Web/TableRedirects.vue'
+import WebpageLockBanner from '@/Components/CMS/Webpage/WebpageLockBanner.vue'
 import { faHome, faSignIn, faHammer, faCheckCircle, faBroadcastTower, faSkull } from '@fal'
 import { trans } from 'laravel-vue-i18n'
 library.add(faHome, faSignIn, faHammer, faCheckCircle, faBroadcastTower, faSkull, faChartLine, faClock, faUsersClass, faAnalytics, faDraftingCompass, faSlidersH, faRoad, faLayerGroup, faBrowser, faLevelDown, faShapes, faSortAmountDownAlt, faExternalLink,faObjectGroup,faDirections)
@@ -46,8 +47,10 @@ const props = defineProps<{
     external_links?: {}
     labeled_snapshots?: {}
     analytics?:any
+    pagespeed?: any
     webpage_canonical_url?: string
     redirected_to?: {}
+    lock: any
 }>()
 
 
@@ -91,6 +94,7 @@ onUnmounted(() => {
             </a>
         </template>
     </PageHeading>
+    <WebpageLockBanner :lock="lock" />
     <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
-    <component :is="component" :tab="currentTab" :data="props[currentTab]" :redirected_to="redirected_to"></component>
+    <component :is="component" :tab="currentTab" :data="props[currentTab]" :pagespeed="pagespeed" :redirected_to="redirected_to"></component>
 </template>

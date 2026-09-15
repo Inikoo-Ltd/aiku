@@ -8,7 +8,7 @@
 import { computed, ref, watch, onBeforeUnmount } from "vue"
 import { marked } from "marked"
 import Image from "@/Common/Components/Image.vue"
-import TicketPdfPreview, { isPdfAttachment, type TicketAttachment } from "@/Components/Tickets/TicketPdfPreview.vue"
+import TicketAttachmentPreview, { isPreviewableAttachment, type TicketAttachment } from "@/Components/Tickets/TicketAttachmentPreview.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { trans } from "laravel-vue-i18n"
@@ -22,9 +22,9 @@ const props = defineProps<{
     attachments?: TicketAttachment[]
 }>()
 
-const pdfFiles = computed(() => (props.attachments ?? []).filter(isPdfAttachment))
+const previewableFiles = computed(() => (props.attachments ?? []).filter(isPreviewableAttachment))
 
-const previewPdfIndex = ref<number | null>(null)
+const previewFileIndex = ref<number | null>(null)
 
 const escapeHtml = (text: string) => text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
 
@@ -34,6 +34,11 @@ const html = computed(() => {
 })
 
 const previewIndex = ref<number | null>(null)
+const unavailableImageUrls = ref<string[]>([])
+
+const markImageUnavailable = (url: string) => {
+    if (!unavailableImageUrls.value.includes(url)) unavailableImageUrls.value.push(url)
+}
 
 const openPreview = (index: number) => {
     previewIndex.value = index
@@ -96,7 +101,8 @@ onBeforeUnmount(() => window.removeEventListener("keydown", onKeydown))
                 <button v-if="images.length > 1" type="button" class="absolute left-4 p-3 text-4xl text-white/80 hover:text-white" @click="prevImage">
                     <FontAwesomeIcon icon="fal fa-chevron-left" fixed-width />
                 </button>
-                <img :src="images[previewIndex].original" alt="" class="max-h-[90vh] max-w-[85vw] rounded object-contain" />
+                <img v-if="!unavailableImageUrls.includes(images[previewIndex].original)" :src="images[previewIndex].original" alt="" class="max-h-[90vh] max-w-[85vw] rounded object-contain" @error="markImageUnavailable(images[previewIndex].original)" />
+                <div v-else class="flex h-[60vh] w-[85vw] max-w-3xl items-center justify-center rounded bg-white text-sm text-gray-500">{{ trans("Preview for this file is unavailable") }}</div>
                 <button v-if="images.length > 1" type="button" class="absolute right-4 p-3 text-4xl text-white/80 hover:text-white" @click="nextImage">
                     <FontAwesomeIcon icon="fal fa-chevron-right" fixed-width />
                 </button>
@@ -105,11 +111,11 @@ onBeforeUnmount(() => window.removeEventListener("keydown", onKeydown))
         </Teleport>
         <ul v-if="attachments?.length" class="mt-2 space-y-1 text-sm">
             <li v-for="file in attachments" :key="file.url">
-                <button v-if="isPdfAttachment(file)" type="button" class="text-left text-indigo-600 hover:underline break-all" @click="previewPdfIndex = pdfFiles.indexOf(file)"><FontAwesomeIcon icon="fal fa-paperclip" class="mr-1" />{{ file.name }}</button>
+                <button v-if="isPreviewableAttachment(file)" type="button" class="text-left text-indigo-600 hover:underline break-all" @click="previewFileIndex = previewableFiles.indexOf(file)"><FontAwesomeIcon icon="fal fa-paperclip" class="mr-1" />{{ file.name }}</button>
                 <a v-else :href="file.url" target="_blank" rel="noopener" class="text-indigo-600 hover:underline break-all"><FontAwesomeIcon icon="fal fa-paperclip" class="mr-1" />{{ file.name }}</a>
             </li>
         </ul>
-        <TicketPdfPreview v-model:index="previewPdfIndex" :files="pdfFiles" />
+        <TicketAttachmentPreview v-model:index="previewFileIndex" :files="previewableFiles" />
     </div>
 </template>
 
