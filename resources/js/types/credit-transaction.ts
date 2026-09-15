@@ -20,4 +20,8 @@ export interface CreditTransaction {
   customer_ref: string | null // Maybe null
   shop_slug: string | null // Maybe null
   org_slug: string | null // Maybe null
+  credit_note_slug: string | null
+  credit_note_reference: string | null
+  requested_by: string | null
+  applied_by: string | null
 }

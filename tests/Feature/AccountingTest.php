@@ -10,6 +10,7 @@
 
 use App\Actions\Accounting\Reports\Intrastat\ExportIntrastatAeat;
 use App\Actions\Accounting\CreditTransaction\DeleteCreditTransaction;
+use App\Actions\Accounting\CreditTransaction\IncreaseCreditTransactionCustomer;
 use App\Actions\Accounting\CreditTransaction\UpdateCreditTransaction;
 use App\Actions\Accounting\Invoice\DeleteInvoice;
 use App\Actions\Accounting\Invoice\ISDocInvoice;
@@ -62,6 +63,7 @@ use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Actions\CRM\Customer\StoreCustomer;
 use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
 use App\Actions\SysAdmin\GetSectionRoute;
+use App\Enums\Accounting\CreditTransaction\CreditTransactionReasonEnum;
 use App\Enums\Accounting\CreditTransaction\CreditTransactionTypeEnum;
 use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
 use App\Models\Helpers\TaxCategory;
@@ -3282,4 +3284,42 @@ test('AEAT intrastat export forced with an empty origin falls back to the organi
     $result = $action->handle($this->organisation, [], ['weight_kg' => '1', 'origin' => '']);
 
     expect($result['lines'][0])->toContain(';'.$this->organisation->country->code.';');
+});
+
+test('balance increase for compensation issues a settled credit note', function () {
+    $customer = createCustomer($this->shop);
+
+    $creditTransaction = IncreaseCreditTransactionCustomer::make()->action($customer, [
+        'amount'            => 12,
+        'reason'            => CreditTransactionReasonEnum::COMPENSATE_CUSTOMER->value,
+        'notes'             => 'Broken jar in parcel',
+        'issue_credit_note' => true,
+        'requested_by'      => 'Aimee',
+    ]);
+
+    $creditNote = Invoice::where('customer_id', $customer->id)->where('type', InvoiceTypeEnum::REFUND)->first();
+    $rate       = (float)$creditNote->taxCategory->rate;
+
+    expect($creditNote)->not->toBeNull()
+        ->and($creditNote->original_invoice_id)->toBeNull()
+        ->and($creditNote->in_process)->toBeFalse()
+        ->and($creditNote->reference)->not->toContain('-refund-')
+        ->and((float)$creditNote->total_amount)->toBe(-12.0)
+        ->and(round((float)$creditNote->net_amount * $rate, 2))->toBe((float)$creditNote->tax_amount)
+        ->and($creditNote->pay_status)->toBe(InvoicePayStatusEnum::PAID)
+        ->and($creditNote->footer)->toBe(CreditTransactionReasonEnum::COMPENSATE_CUSTOMER->label())
+        ->and($creditTransaction->type)->toBe(CreditTransactionTypeEnum::COMPENSATION)
+        ->and((float)$creditTransaction->amount)->toBe(12.0)
+        ->and($creditTransaction->data['requested_by'])->toBe('Aimee')
+        ->and($creditNote->payments()->pluck('payments.id')->all())->toBe([$creditTransaction->payment_id])
+        ->and((float)$customer->refresh()->balance)->toBe(12.0);
+
+    $plain = IncreaseCreditTransactionCustomer::make()->action($customer, [
+        'amount' => 5,
+        'reason' => CreditTransactionReasonEnum::OTHER->value,
+        'notes'  => 'no paperwork',
+    ]);
+
+    expect($plain->payment_id)->toBeNull()
+        ->and(Invoice::where('customer_id', $customer->id)->where('type', InvoiceTypeEnum::REFUND)->count())->toBe(1);
 });
