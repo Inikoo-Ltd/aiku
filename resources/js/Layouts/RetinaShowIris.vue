@@ -38,7 +38,6 @@ const navigation =  usePage().props?.iris?.menu
 const theme =  usePage().props?.iris?.theme ? usePage().props?.iris?.theme :  {color : [...useColorTheme[2]]}
 const useChat = usePage().props?.use_chat
 
-console.log('irisTheme', usePage().props.iris)
 
 const isFirstVisit = () => {
     if (typeof window !== "undefined") {

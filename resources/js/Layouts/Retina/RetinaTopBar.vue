@@ -31,9 +31,7 @@ const layout = inject('layout')
 
 const layoutStore = inject("layout", layoutStructure);
 const logo = layout?.iris?.header?.header?.data?.fieldValue?.logo
-console.log(layout,layoutStore)
 const isStaging = layout.app.environment === 'staging'
-console.log('environment', isStaging)
 
 </script>
 

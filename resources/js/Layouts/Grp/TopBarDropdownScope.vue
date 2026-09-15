@@ -199,7 +199,6 @@ const keepFlyout = () => {
 
 // Method: on click side popover (shops/fulfilments/warehouses)
 const navigateToSubOrg = (sub: typeof sortedShowareList.value[number], typeSub: string) => {
-    console.log('topbar dropdown scope', sub)
 
     const visitNormally = () => {
         router.visit(route(sub.route?.name, sub.route?.parameters))

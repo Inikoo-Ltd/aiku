@@ -25,7 +25,6 @@ const layout = useLayoutStore()
 const publicSiteUrl = typeof window !== 'undefined' ? `${window.location.protocol}//${window.location.hostname.replace(/^app\./, '')}` : '/'
 
 
-console.log('environment:', useLayoutStore().app.environment)
 
 
 </script>
@@ -37,7 +36,7 @@ console.log('environment:', useLayoutStore().app.environment)
         <Head><link rel="stylesheet" href="https://fonts.bunny.net/css?family=caveat:400&display=swap" /></Head>
         <AuthQuote :public-site-url="publicSiteUrl" />
         <a :href="publicSiteUrl" class="absolute top-8 left-10 flex items-center gap-x-3 select-none hover:opacity-80" title="About aiku">
-            <img class="h-14 w-auto" src="/art/invader-sketch.svg" alt="aiku" />
+            <img class="h-14 w-auto" src="/art/invader-sketch.svg" alt="aiku" fetchpriority="high" decoding="async" />
             <span style="font-family: Georgia, 'Times New Roman', serif" class="text-4xl font-semibold text-[#1c1b22] leading-none tracking-tight">aiku</span>
         </a>
 

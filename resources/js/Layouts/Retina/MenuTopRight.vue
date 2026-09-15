@@ -27,7 +27,6 @@ onUnmounted(() => {
     document.removeEventListener('keydown', () => false)
 })
 const isUserMac = navigator.platform.includes('Mac')  // To check the user's Operating System
-console.log(layout)
 </script>
 
 <template>
