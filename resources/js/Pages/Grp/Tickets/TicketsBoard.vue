@@ -17,9 +17,8 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { faVial, faShieldCheck, faShield, faRocket } from "@fal"
 import { useLiveTickets } from "@/Composables/useLiveTickets"
 import TicketsCreatedInterval from "@/Components/Tickets/TicketsCreatedInterval.vue"
-import TicketControls from "@/Components/Tickets/TicketControls.vue"
-import TicketAttachmentList from "@/Components/Tickets/TicketAttachmentList.vue"
-import axios from "axios"
+import TicketQuickLook from "@/Components/Tickets/TicketQuickLook.vue"
+import TicketUserAvatar from "@/Components/Tickets/TicketUserAvatar.vue"
 
 library.add(faVial, faShieldCheck, faShield, faRocket)
 
@@ -226,25 +225,6 @@ const subCount = (column: { tickets: any[] }, status: string) =>
 const assigneeMenuOpen = ref(false)
 
 const quickLook = ref<any | null>(null)
-const quickLookControls = ref<any | null>(null)
-const isQuickLookControlsUnavailable = ref(false)
-const quickLookTicket = computed(() => quickLookControls.value?.ticket ?? quickLook.value)
-
-const loadQuickLookControls = async (ticketId: number) => {
-	isQuickLookControlsUnavailable.value = false
-	try {
-		const { data } = await axios.get(route("grp.json.ticket.controls", { ticket: ticketId }))
-		if (quickLook.value?.id === ticketId) quickLookControls.value = data
-	} catch {
-		if (quickLook.value?.id === ticketId) isQuickLookControlsUnavailable.value = true
-	}
-}
-
-watch(quickLook, (ticket, previousTicket) => {
-	if (ticket?.id === previousTicket?.id) return
-	quickLookControls.value = null
-	if (ticket) loadQuickLookControls(ticket.id)
-})
 
 const dragging = ref(false)
 
@@ -256,7 +236,7 @@ const closeQuickLook = () => {
 }
 
 // ponytail: vuedraggable eats dblclick and bubbled clicks, so the board listens in capture
-let lastClick = { id: 0, at: 0 }
+let lastDragEndedAt = 0
 
 const onBoardClick = (event: MouseEvent) => {
 	const target = event.target as HTMLElement
@@ -268,14 +248,10 @@ const onBoardClick = (event: MouseEvent) => {
 	const card = target?.closest?.("[data-ticket-id]") as HTMLElement | null
 	if (!card) return
 
+	if (target.closest("a, button") || Date.now() - lastDragEndedAt < 300) return
+
 	const id = Number(card.dataset.ticketId)
-	const now = Date.now()
-
-	if (lastClick.id === id && now - lastClick.at < 600) {
-		quickLook.value = props.columns.flatMap((column) => column.tickets).find((t) => t.id === id)
-	}
-
-	lastClick = { id, at: now }
+	quickLook.value = props.columns.flatMap((column) => column.tickets).find((t) => t.id === id)
 }
 
 onMounted(() => window.addEventListener("click", onBoardClick, true))
@@ -318,6 +294,7 @@ const assignPosition = ref({ x: 0, y: 0 })
 
 const onDragEnd = (event: { originalEvent?: MouseEvent }) => {
 	dragging.value = false
+	lastDragEndedAt = Date.now()
 	assignPosition.value = {
 		x: Math.max(8, Math.min((event.originalEvent?.clientX ?? 0) - 40, window.innerWidth - 330)),
 		y: Math.max(8, Math.min((event.originalEvent?.clientY ?? 0) + 8, window.innerHeight - 360)),
@@ -443,17 +420,7 @@ const cancelAssign = () => {
 								type="checkbox"
 								:checked="boardFilters.assignee_username.includes(option.value)"
 								@change="toggleFilter('assignee_username', option.value)" />
-							<img
-								v-if="avatarFor(option.value)"
-								:src="avatarFor(option.value)"
-								class="h-6 w-6 rounded-full object-cover"
-								:alt="option.value" />
-							<span
-								v-else
-								class="flex h-6 w-6 items-center justify-center rounded-full bg-gray-200 text-[10px] font-semibold text-gray-600"
-								>{{ initials(option.value) }}</span
-							>
-							<span class="truncate">{{ shortName(option.value) }}</span>
+							<TicketUserAvatar :name="option.label ?? option.value" :avatar="avatarFor(option.value) ? { original: avatarFor(option.value) } : null" size="xs" />
 							<span class="ml-auto text-xs text-gray-400">{{ option.count }}</span>
 						</label>
 					</template>
@@ -610,17 +577,9 @@ const cancelAssign = () => {
 								<span
 									v-if="element.assignee"
 									v-tooltip="{ content: element.assignee, delay: 0 }"
-									class="ml-auto">
-									<img
-										v-if="element.assignee_avatar?.original"
-										:src="element.assignee_avatar.original"
-										class="w-6 h-6 rounded-full object-cover"
-										:alt="element.assignee" />
-									<span
-										v-else
-										class="w-6 h-6 rounded-full bg-gray-200 text-gray-600 flex items-center justify-center text-[10px] font-medium">
-										{{ (element.assignee_short || "?").slice(0, 2) }}
-									</span>
+									class="ml-auto flex min-w-0 items-center gap-1 rounded-full bg-gray-100 py-0.5 pl-0.5 pr-2">
+									<TicketUserAvatar :name="element.assignee" :avatar="element.assignee_avatar" size="xs" />
+									<span class="max-w-[5rem] truncate text-[10px] font-medium leading-none text-gray-600">{{ element.assignee_short }}</span>
 								</span>
 							</div>
 						</div>
@@ -644,81 +603,12 @@ const cancelAssign = () => {
 					type="button"
 					class="flex w-full items-center gap-2 rounded px-1.5 py-1 text-left hover:bg-indigo-50"
 					@click="assignTo(engineer.value)">
-					<img v-if="engineer.avatar?.original" :src="engineer.avatar.original" class="h-5 w-5 rounded-full object-cover" alt="" />
-					<span v-else class="flex h-5 w-5 items-center justify-center rounded-full bg-gray-200 text-[10px] text-gray-600">{{ initials(engineer.label) }}</span>
+					<TicketUserAvatar :name="engineer.label" :avatar="engineer.avatar" size="xs" />
 					<span :class="engineer.is_me && 'font-medium'">{{ engineer.label }}</span>
 					<span v-if="engineer.is_me" class="text-gray-400">{{ trans("me") }}</span>
 				</button>
 			</div>
 		</div>
 	</Teleport>
-	<div
-		v-if="quickLook"
-		class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
-		@click.self="closeQuickLook">
-		<div class="relative w-full max-w-6xl rounded-2xl bg-white p-6 shadow-xl">
-			<button
-				type="button"
-				class="absolute -right-3 -top-3 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-white text-gray-500 shadow hover:text-gray-800"
-				@click="closeQuickLook">
-				<FontAwesomeIcon icon="fal fa-times" fixed-width />
-			</button>
-			<div class="grid max-h-[80vh] gap-6 overflow-y-auto pr-1 lg:grid-cols-3">
-				<div class="flex flex-col lg:col-span-2">
-				<div class="flex items-center gap-2 text-xs mb-2">
-					<Link
-						:href="route('grp.tickets.show', quickLookTicket.reference)"
-						class="primaryLink font-medium"
-						>{{ quickLookTicket.reference }}</Link
-					>
-					<Icon :data="quickLookTicket.status_icon" />
-					<span class="text-gray-600">{{ quickLookTicket.status_label }}</span>
-					<Icon :data="quickLookTicket.priority_icon" />
-					<span class="text-gray-600">{{ quickLookTicket.priority_label }}</span>
-					<span v-if="quickLookTicket.kind_label" class="text-gray-400"
-						>· {{ quickLookTicket.kind_label }}</span
-					>
-					<span v-if="quickLookTicket.module_label" class="text-gray-400"
-						>· {{ quickLookTicket.module_label }}</span
-					>
-				</div>
-				<h2 class="text-lg font-semibold leading-snug mb-3">{{ quickLookTicket.subject }}</h2>
-				<div class="grid grid-cols-2 gap-x-6 gap-y-1 text-xs text-gray-600 mb-4">
-					<span
-						>{{ trans("Raised") }}: {{ shortDate(quickLookTicket.created_at) }}
-						{{ quickLookTicket.reporter ? "· " + quickLookTicket.reporter : "" }}</span
-					>
-					<span v-if="quickLookTicket.assignee"
-						>{{ trans("Assignee") }}: {{ quickLookTicket.assignee }}</span
-					>
-					<span v-if="quickLookTicket.assigned_at"
-						>{{ trans("Assigned") }}: {{ shortDate(quickLookTicket.assigned_at) }}</span
-					>
-					<span v-if="quickLookTicket.started_at"
-						>{{ trans("Started") }}: {{ shortDate(quickLookTicket.started_at) }}</span
-					>
-					<span v-if="quickLookTicket.waiting_at"
-						>{{ trans("Waiting since") }}: {{ shortDate(quickLookTicket.waiting_at) }}</span
-					>
-					<span v-if="quickLookTicket.closed_at"
-						>{{ trans("Closed") }}: {{ shortDate(quickLookTicket.closed_at) }}</span
-					>
-					<span v-if="quickLookTicket.customer"
-						>{{ trans("Customer") }}: {{ quickLookTicket.customer }}</span
-					>
-					<span v-if="quickLookTicket.shop">{{ trans("Shop") }}: {{ quickLookTicket.shop }}</span>
-				</div>
-				<p class="text-sm whitespace-pre-wrap break-words">{{ quickLookTicket.description }}</p>
-				<div v-if="quickLookControls?.attachment_gallery?.length" class="mt-auto pt-4">
-					<TicketAttachmentList :files="quickLookControls.attachment_gallery" compact />
-				</div>
-				</div>
-				<aside class="text-sm lg:border-l lg:border-gray-200 lg:pl-6">
-					<TicketControls v-if="quickLookControls" v-bind="quickLookControls" @updated="loadQuickLookControls(quickLook.id)" />
-					<p v-else-if="isQuickLookControlsUnavailable" class="text-gray-500">{{ trans("Controls are unavailable") }}</p>
-					<p v-else class="text-gray-400"><FontAwesomeIcon icon="fal fa-spinner" spin class="mr-1" />{{ trans("Loading") }}</p>
-				</aside>
-			</div>
-		</div>
-	</div>
+	<TicketQuickLook v-model:ticket="quickLook" @closed="closeQuickLook" />
 </template>

@@ -13,9 +13,9 @@ import TicketAttachmentPreview, { isImageAttachment, isPdfAttachment, isPreviewa
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faChevronDown, faFile, faFilePdf, faFileWord, faFileExcel, faFileCsv, faFileVideo } from "@fal"
+import { faChevronDown, faFile, faFileImage, faFilePdf, faFileWord, faFileExcel, faFileCsv, faFileVideo } from "@fal"
 
-library.add(faChevronDown, faFile, faFilePdf, faFileWord, faFileExcel, faFileCsv, faFileVideo)
+library.add(faChevronDown, faFile, faFileImage, faFilePdf, faFileWord, faFileExcel, faFileCsv, faFileVideo)
 
 const props = defineProps<{
     files: TicketAttachment[]
@@ -23,6 +23,11 @@ const props = defineProps<{
 }>()
 
 const isExpanded = ref(true)
+const loadedThumbnailUrls = ref<string[]>([])
+
+const markThumbnailLoaded = (url: string) => {
+    if (!loadedThumbnailUrls.value.includes(url)) loadedThumbnailUrls.value.push(url)
+}
 const previewIndex = ref<number | null>(null)
 
 type AttachmentType = "image" | "pdf" | "word" | "excel" | "csv" | "video" | "other"
@@ -75,6 +80,13 @@ const fileIcons: Record<string, { icon: string; class: string }> = {
     mp4: { icon: "fal fa-file-video", class: "text-purple-600" },
     webm: { icon: "fal fa-file-video", class: "text-purple-600" },
     mov: { icon: "fal fa-file-video", class: "text-purple-600" },
+    jpg: { icon: "fal fa-file-image", class: "text-sky-500" },
+    jpeg: { icon: "fal fa-file-image", class: "text-sky-500" },
+    png: { icon: "fal fa-file-image", class: "text-sky-500" },
+    gif: { icon: "fal fa-file-image", class: "text-sky-500" },
+    webp: { icon: "fal fa-file-image", class: "text-sky-500" },
+    bmp: { icon: "fal fa-file-image", class: "text-sky-500" },
+    svg: { icon: "fal fa-file-image", class: "text-sky-500" },
 }
 
 const iconFor = (file: TicketAttachment) => fileIcons[file.name.split(".").pop()?.toLowerCase() ?? ""] ?? { icon: "fal fa-file", class: "text-gray-400" }
@@ -113,9 +125,16 @@ const openFile = (file: TicketAttachment) => {
                 class="overflow-hidden rounded-lg border border-gray-200 text-left transition hover:border-indigo-300 hover:shadow-sm"
                 :title="file.name"
                 @click="openFile(file)">
-                <div class="flex items-center justify-center overflow-hidden bg-gray-50" :class="compact ? 'h-20' : 'h-24'">
-                    <Image v-if="file.thumbnail" :src="file.thumbnail" alt="" image-cover class="w-full" :class="compact ? 'h-20' : 'h-24'" />
-                    <FontAwesomeIcon v-else :icon="iconFor(file).icon" :class="[iconFor(file).class, compact ? 'text-3xl' : 'text-4xl']" />
+                <div class="relative flex items-center justify-center overflow-hidden bg-gray-50" :class="compact ? 'h-20' : 'h-24'">
+                    <FontAwesomeIcon v-show="!loadedThumbnailUrls.includes(file.url)" :icon="iconFor(file).icon" :class="[iconFor(file).class, compact ? 'text-3xl' : 'text-4xl']" />
+                    <Image
+                        v-if="file.thumbnail"
+                        :src="file.thumbnail"
+                        alt=""
+                        image-cover
+                        class="absolute inset-0 h-full w-full transition-opacity duration-200"
+                        :class="loadedThumbnailUrls.includes(file.url) ? 'opacity-100' : 'opacity-0'"
+                        @onLoadImage="markThumbnailLoaded(file.url)" />
                 </div>
                 <div class="px-2 py-1.5">
                     <p class="truncate text-xs font-semibold text-gray-800">{{ shortName(file.name) }}</p>

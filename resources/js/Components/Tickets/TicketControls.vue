@@ -11,7 +11,11 @@ import { router } from "@inertiajs/vue3"
 import { trans } from "laravel-vue-i18n"
 import { Popover, Listbox, Dialog } from "primevue"
 import { useFormatTime } from "@/Composables/useFormatTime"
+import { useTicketStatusActions } from "@/Composables/useTicketStatusActions"
 import Button from "@/Components/Elements/Buttons/Button.vue"
+import TicketAskReporterDialog from "@/Components/Tickets/TicketAskReporterDialog.vue"
+import TicketStatusNoteDialog from "@/Components/Tickets/TicketStatusNoteDialog.vue"
+import TicketUserAvatar from "@/Components/Tickets/TicketUserAvatar.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faPaperclip, faCircle, faUserCheck, faSpinner, faClock, faCheckCircle, faBan, faPlay, faPause, faStop, faCheck, faUndo, faBug, faLightbulb, faLevelUp, faCube, faQuestionCircle, faEllipsisV, faTrashAlt, faUser, faPencil, faTimes, faPlus, faPlusCircle, faExchange, faHourglassHalf, faVial, faShieldCheck, faShield, faRocket } from "@fal"
@@ -71,30 +75,7 @@ const statusBadgeClasses: Record<string, string> = {
     red: "bg-red-100 text-red-700",
 }
 
-const done = { status: "resolved", label: trans("Done"), icon: "fal fa-check", class: "text-green-600" }
-const cancel = { status: "cancelled", label: trans("Cancel"), icon: "fal fa-ban", class: "text-red-500" }
-const start = { status: "in_progress", label: trans("Start"), icon: "fal fa-play", class: "text-blue-600" }
-
-const statusActions: Record<string, { status: string; label: string; icon: string; class: string }[]> = {
-    open: [],
-    assigned: [start, done, cancel],
-    in_progress: [
-        { status: "waiting", label: trans("Ask reporter"), icon: "fal fa-question-circle", class: "text-blue-500" },
-        { status: "assigned", label: trans("Stop, back to assigned"), icon: "fal fa-stop", class: "text-gray-600" },
-        done,
-        cancel,
-    ],
-    waiting: [{ ...start, label: trans("Resume") }, done, cancel],
-    answered: [
-        { ...start, label: trans("Resume") },
-        { status: "waiting", label: trans("Ask again"), icon: "fal fa-question-circle", class: "text-blue-500" },
-        done,
-        cancel,
-    ],
-    pending_deploy: [{ ...start, label: trans("Back to in progress") }, done, cancel],
-    resolved: [{ status: "open", label: trans("Reopen"), icon: "fal fa-undo", class: "text-gray-600" }],
-    cancelled: [{ status: "open", label: trans("Reopen"), icon: "fal fa-undo", class: "text-gray-600" }],
-}
+const { statusActions } = useTicketStatusActions()
 
 const selectableKinds = computed(() => props.options.kinds.filter((kind) => kind.value !== "escalation"))
 const canChangeKind = computed(() => props.can_change_kind_module && props.ticket.kind !== "escalation")
@@ -112,68 +93,17 @@ const addTypedTag = () => {
 
 const escalate = () => router.post(route(props.routes.escalate.name, props.routes.escalate.parameters))
 
-const waitingPresets = [
-    { label: trans("2 hours"), hours: 2 },
-    { label: trans("1 day"), hours: 24 },
-    { label: trans("2 days"), hours: 48 },
-    { label: trans("3 days"), hours: 72 },
-    { label: trans("14 days"), hours: 336 },
-]
-
 const isAskReporterOpen = ref(false)
-const question = ref("")
-const waitingHours = ref(72)
-const isAsking = ref(false)
+const isStatusNoteOpen = ref(false)
+const statusNoteAction = ref<"resolved" | "cancelled">("resolved")
 
 const openAskReporter = () => {
-    question.value = ""
-    waitingHours.value = props.ticket.default_waiting_hours
     isAskReporterOpen.value = true
 }
 
-const askReporter = () => {
-    router.patch(
-        route(props.routes.update.name, props.routes.update.parameters),
-        { status: "waiting", question: question.value, waiting_hours: waitingHours.value },
-        {
-            preserveScroll: true,
-            onStart: () => (isAsking.value = true),
-            onFinish: () => (isAsking.value = false),
-            onSuccess: () => {
-                isAskReporterOpen.value = false
-                emit("updated")
-            },
-        }
-    )
-}
-
-const isStatusNoteOpen = ref(false)
-const statusNoteAction = ref<"resolved" | "cancelled">("resolved")
-const statusNote = ref("")
-const isSendingStatusNote = ref(false)
-
 const openStatusNote = (status: "resolved" | "cancelled") => {
     statusNoteAction.value = status
-    statusNote.value = ""
     isStatusNoteOpen.value = true
-}
-
-const sendStatusNote = (isWaitingForDeployment = false) => {
-    router.patch(
-        route(props.routes.update.name, props.routes.update.parameters),
-        isWaitingForDeployment
-            ? { status: "pending_deploy", question: statusNote.value }
-            : { status: statusNoteAction.value, status_comment: statusNote.value },
-        {
-            preserveScroll: true,
-            onStart: () => (isSendingStatusNote.value = true),
-            onFinish: () => (isSendingStatusNote.value = false),
-            onSuccess: () => {
-                isStatusNoteOpen.value = false
-                emit("updated")
-            },
-        }
-    )
 }
 
 const runStatusAction = (status: string) => {
@@ -220,7 +150,7 @@ const update = (field: string, value: unknown) => {
     <div class="space-y-4">
             <div>
                 <component :is="can_assign ? 'button' : 'div'" type="button" class="flex items-center gap-2 rounded p-2 transition duration-200" :class="[can_assign && 'hover:bg-gray-100 active:!bg-gray-200', isAssigneePickerOpen && '!bg-gray-200']" @click="can_assign && assigneePopover.toggle($event)">
-                    <img v-if="ticket.assignee_avatar?.original" :src="ticket.assignee_avatar.original" class="h-7 w-7 rounded-full object-cover" alt="" />
+                    <TicketUserAvatar v-if="ticket.assignee" :name="ticket.assignee" :avatar="ticket.assignee_avatar" />
                     <span v-else class="flex h-7 w-7 items-center justify-center rounded-full bg-gray-200 text-gray-500">
                         <FontAwesomeIcon icon="fal fa-user" fixed-width />
                     </span>
@@ -242,10 +172,7 @@ const update = (field: string, value: unknown) => {
                             class="flex w-16 flex-col items-center gap-1 rounded p-1 text-xs hover:bg-gray-100 active:!bg-gray-200 transition duration-200"
                             :class="engineer.value === ticket.assignee_id && 'bg-indigo-50 text-indigo-700'"
                             @click="update('assignee_id', engineer.value); assigneePopover.hide()">
-                            <img v-if="engineer.avatar?.original" :src="engineer.avatar.original" class="h-9 w-9 rounded-full object-cover" alt="" />
-                            <span v-else class="flex h-9 w-9 items-center justify-center rounded-full bg-gray-200 text-gray-500">
-                                <FontAwesomeIcon icon="fal fa-user" fixed-width />
-                            </span>
+                            <TicketUserAvatar :name="engineer.label" :avatar="engineer.avatar" size="lg" />
                             <span class="w-full truncate text-center">{{ engineer.label }}</span>
                         </button>
                     </div>
@@ -372,59 +299,12 @@ const update = (field: string, value: unknown) => {
             </div>
         </div>
     </Dialog>
-    <Dialog v-model:visible="isAskReporterOpen" modal :header="trans('Ask reporter')" :style="{ width: '32rem' }">
-        <div class="space-y-4 text-sm">
-            <div>
-                <p class="text-xs text-gray-500 mb-1">{{ trans("What do we need to continue?") }}</p>
-                <textarea v-model="question" rows="5" class="w-full rounded border-gray-300 text-sm" :placeholder="trans('e.g. please send the order number and a screenshot of the error')" />
-            </div>
-            <div>
-                <p class="text-xs text-gray-500 mb-1">{{ trans("Cancel the ticket if there is no reply in") }}</p>
-                <div class="flex flex-wrap gap-2">
-                    <button
-                        v-for="preset in waitingPresets"
-                        :key="preset.hours"
-                        type="button"
-                        class="rounded-full border px-3 py-1 transition duration-200"
-                        :class="waitingHours === preset.hours ? 'border-indigo-500 bg-indigo-50 text-indigo-700' : 'border-gray-300 text-gray-600 hover:bg-gray-50 active:!bg-gray-100'"
-                        @click="waitingHours = preset.hours">
-                        {{ preset.label }}
-                    </button>
-                </div>
-            </div>
-            <div class="flex justify-end gap-2">
-                <Button type="tertiary" :label="trans('Cancel')" @click="isAskReporterOpen = false" />
-                <Button :label="trans('Send and wait')" icon="fal fa-question-circle" :loading="isAsking" :disabled="!question.trim()" @click="askReporter" />
-            </div>
-        </div>
-    </Dialog>
-    <Dialog v-model:visible="isStatusNoteOpen" modal :header="statusNoteAction === 'cancelled' ? trans('Cancel ticket') : trans('Mark as done')" :style="{ width: '32rem' }">
-        <div class="space-y-4 text-sm">
-            <div>
-                <p class="mb-1 text-xs text-gray-500">{{ statusNoteAction === "cancelled" ? trans("Why is this ticket being cancelled?") : trans("What was done?") }}</p>
-                <textarea v-model="statusNote" rows="5" class="w-full rounded border-gray-300 text-sm" :placeholder="statusNoteAction === 'cancelled' ? trans('e.g. duplicate of HELP-12, following up there') : trans('e.g. fixed the rounding in the invoice totals')" />
-                <p class="mt-1 text-xs text-gray-400">{{ trans("This is published as a comment on the ticket.") }}</p>
-                <p v-if="statusNoteAction === 'resolved' && can_manage && ticket.status !== 'pending_deploy'" class="mt-1 text-xs text-gray-400">{{ trans("Use Set as Done on Next Deployment only when the fix is already on main: the ticket closes and this comment is posted after the next deployment.") }}</p>
-            </div>
-            <div class="flex justify-end gap-2">
-                <Button type="tertiary" :label="trans('Back')" @click="isStatusNoteOpen = false" />
-                <Button
-                    v-if="statusNoteAction === 'resolved' && can_manage && ticket.status !== 'pending_deploy'"
-                    type="secondary"
-                    icon="fal fa-rocket"
-                    :label="trans('Set as Done on Next Deployment')"
-                    :loading="isSendingStatusNote"
-                    :disabled="!statusNote.trim()"
-                    @click="sendStatusNote(true)" />
-                <Button
-                    :type="statusNoteAction === 'cancelled' ? 'negative' : 'primary'"
-                    :label="statusNoteAction === 'cancelled' ? trans('Cancel ticket') : trans('Done')"
-                    :icon="statusNoteAction === 'cancelled' ? 'fal fa-ban' : 'fal fa-check'"
-                    :loading="isSendingStatusNote"
-                    :disabled="!statusNote.trim()"
-                    @click="sendStatusNote()" />
-            </div>
-        </div>
-    </Dialog>
+    <TicketAskReporterDialog v-model:visible="isAskReporterOpen" :update-route="routes.update" :default-waiting-hours="ticket.default_waiting_hours" @updated="emit('updated')" />
+    <TicketStatusNoteDialog
+        v-model:visible="isStatusNoteOpen"
+        :status="statusNoteAction"
+        :update-route="routes.update"
+        :can-wait-for-deployment="can_manage && ticket.status !== 'pending_deploy'"
+        @updated="emit('updated')" />
     </div>
 </template>

@@ -9,6 +9,7 @@
 namespace App\Actions\Helpers\Ticket\UI;
 
 use App\Actions\Helpers\Ticket\ApplyTicketSearch;
+use App\Actions\Helpers\Ticket\GetTicketBadgeData;
 use App\Actions\OrgAction;
 use App\Enums\CRM\Livechat\ChatPriorityEnum;
 use App\Enums\DateIntervals\DateIntervalEnum;
@@ -20,6 +21,7 @@ use App\Http\Resources\Helpers\TicketResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Helpers\Ticket;
 use App\Models\SysAdmin\Group;
+use App\Models\SysAdmin\User;
 use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -141,7 +143,7 @@ class IndexTickets extends OrgAction
             ->where('tickets.group_id', $group->id)
             ->visibleTo(request()->user())
             ->leftJoin('users', 'users.id', '=', 'tickets.assignee_id')
-            ->with(['reporter', 'customer']);
+            ->with(['reporter', 'customer', 'assignee']);
 
         $this->whereCreatedIn($queryBuilder, $this->createdInterval(), 'tickets.created_at');
 
@@ -150,17 +152,25 @@ class IndexTickets extends OrgAction
                 key: $key,
                 allowedElements: array_keys($elementGroup['elements']),
                 engine: $elementGroup['engine'],
-                prefix: $prefix
+                prefix: $prefix,
+                default: $key === 'mine' ? $this->savedMineFilter() : null
             );
         }
 
         return $queryBuilder
             ->select(['tickets.*', 'users.username as assignee_username'])
             ->allowedFilters([$globalSearch, $assigneeFilter, $createdSinceFilter, $resolvedSinceFilter, $ratedSinceFilter])
-            ->defaultSort('-tickets.updated_at')
+            ->defaultSort('-tickets.created_at')
             ->allowedSorts(['reference', 'subject', 'status', 'priority', 'created_at', 'updated_at'])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
+    }
+
+    public function savedMineFilter(): ?string
+    {
+        $savedFilter = data_get(request()->user()?->settings, 'tickets_list_mine');
+
+        return is_string($savedFilter) && $savedFilter !== '' ? $savedFilter : null;
     }
 
     public function tableStructure(Group $group, $prefix = null): Closure
@@ -171,7 +181,7 @@ class IndexTickets extends OrgAction
             }
 
             foreach ($this->getElementGroups($group) as $key => $elementGroup) {
-                $table->elementGroup(key: $key, label: $elementGroup['label'], elements: $elementGroup['elements']);
+                $table->elementGroup(key: $key, label: $elementGroup['label'], elements: $elementGroup['elements'], default: $key === 'mine' ? $this->savedMineFilter() : null);
             }
 
             $table
@@ -181,10 +191,13 @@ class IndexTickets extends OrgAction
                 ->column(key: 'subject', label: __('Subject'), canBeHidden: false, sortable: true, searchable: true, className: 'w-full max-w-0')
                 ->column(key: 'status', label: __('Status'), canBeHidden: false, sortable: true, className: 'whitespace-nowrap w-px')
                 ->column(key: 'priority', label: __('Priority'), icon: 'fal fa-flag', canBeHidden: false, sortable: true, className: 'w-px text-center')
-                ->column(key: 'reporter', label: __('Reporter'), canBeHidden: false, className: 'whitespace-nowrap w-px')
-                ->column(key: 'assignee', label: __('Assignee'), canBeHidden: false, className: 'whitespace-nowrap w-px')
+                ->column(key: 'kind', label: __('Kind'), canBeHidden: false, className: 'whitespace-nowrap w-px')
+                ->column(key: 'module', label: __('Module'), canBeHidden: false, className: 'whitespace-nowrap w-px')
+                ->column(key: 'reporter', label: __('Reporter'), canBeHidden: false, type: 'avatar', className: 'whitespace-nowrap w-px')
+                ->column(key: 'assignee', label: __('Assignee'), canBeHidden: false, type: 'avatar', className: 'whitespace-nowrap w-px')
+                ->column(key: 'created_at', label: __('Created'), canBeHidden: false, sortable: true, type: 'date', className: 'whitespace-nowrap w-px')
                 ->column(key: 'updated_at', label: __('Updated'), canBeHidden: false, sortable: true, type: 'date', className: 'whitespace-nowrap w-px')
-                ->defaultSort('-updated_at');
+                ->defaultSort('-created_at');
         };
     }
 
@@ -213,6 +226,20 @@ class IndexTickets extends OrgAction
                     ] : [],
                 ],
                 'data'        => TicketResource::collection($tickets),
+                'updateRoute' => 'grp.models.ticket.update',
+                'can_assign'  => Ticket::canBeAssignedBy(request()->user()),
+                'mineFilter'  => $this->savedMineFilter(),
+                'options'     => [
+                    'priorities' => collect(ChatPriorityEnum::labels())->map(fn ($label, $value) => ['label' => $label, 'value' => $value, 'icon' => ChatPriorityEnum::stateIcon()[$value]])->values(),
+                    'kinds'      => collect(TicketKindEnum::labels())->map(fn ($label, $value) => ['label' => $label, 'value' => $value])->values(),
+                    'modules'    => collect(TicketModuleEnum::labels())->map(fn ($label, $value) => ['label' => $label, 'value' => $value])->values(),
+                    'assignees'  => GetTicketBadgeData::engineers($this->group->id)
+                        ->map(fn (User $engineer) => [
+                            'label'  => strtok((string) ($engineer->contact_name ?: $engineer->username), ' '),
+                            'value'  => $engineer->id,
+                            'avatar' => $engineer->imageSources(48, 48),
+                        ])->sortBy('label')->values(),
+                ],
                 'createdIntervals' => $this->createdIntervalOptions(),
                 'createdInterval'  => $this->createdInterval(),
             ]

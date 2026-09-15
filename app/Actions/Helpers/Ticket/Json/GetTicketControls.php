@@ -11,6 +11,7 @@ namespace App\Actions\Helpers\Ticket\Json;
 
 use App\Actions\Helpers\Ticket\UI\ShowTicket;
 use App\Actions\OrgAction;
+use App\Http\Resources\Helpers\TicketCommentResource;
 use App\Models\Helpers\Ticket;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -26,7 +27,11 @@ class GetTicketControls extends OrgAction
      */
     public function handle(Ticket $ticket): array
     {
-        return ShowTicket::make()->controlProps($ticket);
+        return [
+            ...ShowTicket::make()->controlProps($ticket),
+            'comments'              => TicketCommentResource::collection($ticket->commentsVisibleTo(request()->user())->with('author')->orderByDesc('id')->get())->toArray(request()),
+            'comments_newest_first' => (bool) data_get(request()->user()->settings, 'ticket_comments_newest_first', true),
+        ];
     }
 
     /**

@@ -10,6 +10,7 @@ import { computed, ref } from "vue"
 import { trans } from "laravel-vue-i18n"
 import { capitalize } from "@/Composables/capitalize"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
+import TicketUserAvatar from "@/Components/Tickets/TicketUserAvatar.vue"
 import Chart from "primevue/chart"
 import TicketsCreatedInterval from "@/Components/Tickets/TicketsCreatedInterval.vue"
 import { useLiveTickets } from "@/Composables/useLiveTickets"
@@ -368,8 +369,7 @@ const dashboardBoxes = computed(() => (props.stats.interval === "all" ? (["peopl
                     <tr v-for="row in engineerRows(mode)" :key="row.username" class="border-t border-gray-100">
                         <td class="px-4 py-2 font-medium">
                             <span class="inline-flex items-center gap-2" v-tooltip="{ content: row.name, delay: 0 }">
-                                <img v-if="row.avatar?.original" :src="row.avatar.original" class="h-6 w-6 rounded-full object-cover" />
-                                <span v-else class="h-6 w-6 rounded-full bg-gray-300 inline-block" />
+                                <TicketUserAvatar :name="row.name" :avatar="row.avatar" size="sm" />
                                 {{ row.short_name }}
                             </span>
                         </td>

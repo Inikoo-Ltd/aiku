@@ -1517,3 +1517,96 @@ test('assigning a ticket pushes fresh badge counts to every engineer and QA user
     StoreTicketComment::make()->action($ticket->fresh(), $this->user, ['body' => 'on it']);
     Event::assertNotDispatched(BroadcastTicketBadgeUpdate::class, fn (BroadcastTicketBadgeUpdate $event) => $event->userId === $otherEngineer->id);
 });
+
+test('the assignee edits status, priority, assignee, kind and module of their ticket from the list', function () {
+    setPermissionsTeamId($this->group->id);
+    $assignee  = User::factory()->create(['group_id' => $this->group->id]);
+    $colleague = User::factory()->create(['group_id' => $this->group->id]);
+    $assignee->assignRole('help-desk-clerk');
+    $colleague->assignRole('help-desk-clerk');
+
+    $ticket = StoreTicket::make()->action($this->group, ['subject' => 'Edit from the list', 'kind' => 'bug', 'assignee_id' => $assignee->id]);
+
+    actingAs($assignee);
+    get(route('grp.tickets.list'))->assertOk()->assertInertia(
+        fn (AssertableInertia $page) => $page->component('Tickets/Tickets')
+            ->where('updateRoute', 'grp.models.ticket.update')
+            ->has('options.priorities')
+            ->has('options.kinds')
+            ->has('options.modules')
+            ->where('options.assignees', fn ($assignees) => collect($assignees)->pluck('value')->contains($colleague->id))
+    );
+
+    $update = fn (array $data) => patch(route('grp.models.ticket.update', $ticket->id), $data)->assertRedirect()->assertSessionHasNoErrors();
+
+    $update(['status' => TicketStatusEnum::IN_PROGRESS->value]);
+    $update(['priority' => 'urgent']);
+    $update(['kind' => 'feature']);
+    $update(['module' => 'dispatching']);
+    $update(['status' => TicketStatusEnum::WAITING->value, 'question' => 'Which order?', 'waiting_hours' => 24]);
+    $update(['status' => TicketStatusEnum::IN_PROGRESS->value]);
+    $update(['assignee_id' => $colleague->id]);
+
+    $ticket->refresh();
+    expect($ticket->status)->toBe(TicketStatusEnum::IN_PROGRESS)
+        ->and($ticket->priority->value)->toBe('urgent')
+        ->and($ticket->kind?->value)->toBe('feature')
+        ->and($ticket->module?->value)->toBe('dispatching')
+        ->and($ticket->assignee_id)->toBe($colleague->id)
+        ->and($ticket->comments()->where('body', 'Which order?')->exists())->toBeTrue();
+});
+
+test('ticket list sorts by creation, remembers the Mine filter and lets lead engineers edit any row', function () {
+    $olderAssignedToMe = StoreTicket::make()->action($this->group, ['subject' => 'Created first, updated later', 'assignee_id' => $this->user->id]);
+    $olderAssignedToMe->forceFill(['created_at' => now()->subDay()])->saveQuietly();
+    $newest = StoreTicket::make()->action($this->group, ['subject' => 'Created last']);
+    UpdateTicket::make()->action($olderAssignedToMe->fresh(), ['priority' => 'urgent']);
+
+    get(route('grp.tickets.list'))->assertInertia(
+        fn (AssertableInertia $page) => $page->component('Tickets/Tickets')
+            ->where('data.data.0.reference', $newest->reference)
+            ->where('can_assign', true)
+            ->where('mineFilter', null)
+    );
+
+    patch(route('grp.models.profile.update'), ['tickets_list_mine' => 'assigned'])->assertSessionHasNoErrors();
+    expect($this->user->fresh()->settings['tickets_list_mine'] ?? null)->toBe('assigned');
+
+    get(route('grp.tickets.list'))->assertInertia(
+        fn (AssertableInertia $page) => $page->where('mineFilter', 'assigned')
+            ->where('data.data', fn ($rows) => collect($rows)->isNotEmpty() && collect($rows)->every(fn ($row) => $row['assignee_id'] === $this->user->id))
+    );
+
+    get(route('grp.tickets.list', ['elements' => ['mine' => 'reported,assigned']]))->assertInertia(
+        fn (AssertableInertia $page) => $page->where('data.data', fn ($rows) => collect($rows)->pluck('reference')->contains($newest->reference))
+    );
+
+    patch(route('grp.models.profile.update'), ['tickets_list_mine' => ''])->assertSessionHasNoErrors();
+
+    setPermissionsTeamId($this->group->id);
+    $someoneElse = User::factory()->create(['group_id' => $this->group->id]);
+    $someoneElse->assignRole('help-desk-clerk');
+    UpdateTicket::make()->action($newest->fresh(), ['assignee_id' => $someoneElse->id]);
+
+    patch(route('grp.models.ticket.update', $newest->id), ['priority' => 'high'])->assertRedirect()->assertSessionHasNoErrors();
+    patch(route('grp.models.ticket.update', $newest->id), ['assignee_id' => null])->assertRedirect()->assertSessionHasNoErrors();
+    expect($newest->fresh()->priority->value)->toBe('high')
+        ->and($newest->fresh()->assignee_id)->toBeNull();
+});
+
+test('the quick look controls include the comments the viewer can see', function () {
+    $ticket = StoreTicket::make()->action($this->group, ['subject' => 'Quick look comments']);
+    StoreTicketComment::make()->action($ticket, $this->user, ['body' => 'public note']);
+    StoreTicketComment::make()->action($ticket, $this->user, ['body' => 'internal note'])->update(['is_internal' => true]);
+
+    get(route('grp.json.ticket.controls', $ticket->id))->assertOk()
+        ->assertJsonCount(2, 'comments')
+        ->assertJsonPath('comments.0.body', 'internal note')
+        ->assertJsonPath('comments_newest_first', (bool) data_get($this->user->fresh()->settings, 'ticket_comments_newest_first', true));
+
+    setPermissionsTeamId($this->group->id);
+    $clerk = User::factory()->create(['group_id' => $this->group->id]);
+    $clerk->assignRole('help-desk-clerk');
+    actingAs($clerk);
+    get(route('grp.json.ticket.controls', $ticket->id))->assertOk()->assertJsonCount(1, 'comments')->assertJsonPath('comments.0.body', 'public note');
+});

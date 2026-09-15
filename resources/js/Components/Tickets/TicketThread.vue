@@ -12,6 +12,7 @@ import { useFormatTime } from "@/Composables/useFormatTime"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import TicketComposer from "@/Components/Tickets/TicketComposer.vue"
 import TicketBody from "@/Components/Tickets/TicketBody.vue"
+import TicketUserAvatar from "@/Components/Tickets/TicketUserAvatar.vue"
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
@@ -26,7 +27,8 @@ const props = withDefaults(defineProps<{
     commentRoute: { name: string; parameters: Record<string, unknown> }
     mentionable?: { username: string; name: string | null }[]
     commentsNewestFirst?: boolean
-}>(), { commentsNewestFirst: true })
+    showDescription?: boolean
+}>(), { commentsNewestFirst: true, showDescription: true })
 
 const emit = defineEmits<{
     (e: "update:commentsNewestFirst", value: boolean): void
@@ -72,12 +74,9 @@ const submit = () => {
 
 <template>
     <div class="space-y-4">
-        <div class="bg-white rounded-lg border-2 border-indigo-300 p-5 shadow-sm">
+        <div v-if="showDescription" class="bg-white rounded-lg border-2 border-indigo-300 p-5 shadow-sm">
             <div class="text-xs text-gray-500 mb-3 pb-2 border-b border-gray-200 flex items-center gap-2">
-                <img v-if="ticket.reporter_avatar?.original" :src="ticket.reporter_avatar.original" class="h-6 w-6 rounded-full object-cover" alt="" />
-                <span v-else class="flex h-6 w-6 items-center justify-center rounded-full bg-gray-200 text-gray-500">
-                    <FontAwesomeIcon icon="fal fa-user" fixed-width />
-                </span>
+                <TicketUserAvatar :name="ticket.reporter" :avatar="ticket.reporter_avatar" size="sm" />
                 <span class="font-semibold text-gray-800">{{ ticket.reporter || trans("Unknown") }}</span>
                 <span>· {{ useFormatTime(ticket.created_at, { formatTime: "PP, HH:mm:ss zzz" }) }}</span>
                 <FontAwesomeIcon v-if="ticket.is_from_slack" v-tooltip="trans('Raised from Slack')" :icon="faSlack" class="text-gray-500" />

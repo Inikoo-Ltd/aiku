@@ -12,9 +12,9 @@ import TicketAttachmentPreview, { isPreviewableAttachment, type TicketAttachment
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { trans } from "laravel-vue-i18n"
-import { faPaperclip, faTimes, faChevronLeft, faChevronRight, faExternalLink } from "@fal"
+import { faPaperclip, faTimes, faChevronLeft, faChevronRight, faExternalLink, faImage } from "@fal"
 
-library.add(faPaperclip, faTimes, faChevronLeft, faChevronRight, faExternalLink)
+library.add(faPaperclip, faTimes, faChevronLeft, faChevronRight, faExternalLink, faImage)
 
 const props = defineProps<{
     text: string | null
@@ -34,6 +34,11 @@ const html = computed(() => {
 })
 
 const previewIndex = ref<number | null>(null)
+const loadedImageUrls = ref<string[]>([])
+
+const markImageLoaded = (url: string) => {
+    if (!loadedImageUrls.value.includes(url)) loadedImageUrls.value.push(url)
+}
 const unavailableImageUrls = ref<string[]>([])
 
 const markImageUnavailable = (url: string) => {
@@ -82,7 +87,16 @@ onBeforeUnmount(() => window.removeEventListener("keydown", onKeydown))
         <div v-if="text" class="ticket-body text-sm break-words" v-html="html" />
         <div v-if="images?.length" class="mt-2 flex flex-wrap gap-2">
             <button v-for="(image, index) in images" :key="index" type="button" class="block cursor-zoom-in" @click="openPreview(index)">
-                <Image :src="image" alt="" image-cover class="h-32 w-32 rounded border border-gray-200 hover:opacity-90" />
+                <span class="relative flex h-32 w-32 items-center justify-center overflow-hidden rounded border border-gray-200 bg-gray-50">
+                    <FontAwesomeIcon v-show="!loadedImageUrls.includes(image.original)" icon="fal fa-image" class="text-3xl text-gray-300" />
+                    <Image
+                        :src="image"
+                        alt=""
+                        image-cover
+                        class="absolute inset-0 h-full w-full transition-opacity duration-200 hover:opacity-90"
+                        :class="loadedImageUrls.includes(image.original) ? 'opacity-100' : 'opacity-0'"
+                        @onLoadImage="markImageLoaded(image.original)" />
+                </span>
             </button>
         </div>
         <Teleport to="body">
