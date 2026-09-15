@@ -270,12 +270,11 @@ class Ticket extends Model implements Auditable, HasMedia
 
     public function commentsVisibleTo(mixed $viewer): HasMany
     {
-        $isLead           = $viewer instanceof User && self::canBeAssignedBy($viewer);
-        $seesInternalNote = $isLead || ($viewer instanceof User && (self::canBeManagedBy($viewer) || $this->canContributeBy($viewer)));
+        $isLead = $viewer instanceof User && self::canBeAssignedBy($viewer);
 
         return $this->comments()
             ->when(!$isLead, fn ($query) => $query->where('is_lead_only', false))
-            ->when(!$seesInternalNote, fn ($query) => $query->where('is_internal', false));
+            ->when(!$viewer instanceof User, fn ($query) => $query->where('is_internal', false));
     }
 
     public function defaultWaitingHours(): int

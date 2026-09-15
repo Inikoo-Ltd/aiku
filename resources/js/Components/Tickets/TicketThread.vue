@@ -66,6 +66,14 @@ const saveEdit = (id: number) => {
     router.patch(route("grp.models.ticket.comment.update", id), { body: editBody.value }, { preserveScroll: true, onSuccess: () => (editingId.value = null) })
 }
 
+const expandedInternalIds = ref<number[]>([])
+
+const toggleInternalExpanded = (id: number) => {
+    expandedInternalIds.value = expandedInternalIds.value.includes(id) ? expandedInternalIds.value.filter((expandedId) => expandedId !== id) : [...expandedInternalIds.value, id]
+}
+
+const isCollapsed = (comment: { id: number; is_internal: boolean }) => comment.is_internal && !expandedInternalIds.value.includes(comment.id)
+
 const toggleVisibility = (id: number) => {
     router.patch(route("grp.models.ticket.comment.toggle_visibility", id), {}, { preserveScroll: true })
 }
@@ -105,7 +113,7 @@ const submit = () => {
                 <label v-if="canCommentInternally" class="mr-auto flex cursor-pointer select-none items-center gap-2 text-sm transition duration-200" :class="form.is_internal ? 'font-semibold text-amber-700' : 'text-gray-500 hover:text-gray-700'">
                     <input v-model="form.is_internal" type="checkbox" class="cursor-pointer rounded border-gray-300 text-amber-500 focus:ring-amber-400" />
                     {{ trans("Internal note") }}
-                    <span class="text-xs font-normal text-gray-400">{{ trans("hidden from the reporter") }}</span>
+                    <span class="text-xs font-normal text-gray-400">{{ trans("staff only, shown collapsed") }}</span>
                 </label>
                 <Button :label="form.is_internal ? trans('Add internal note') : trans('Comment')" :loading="form.processing" :disabled="!form.body.trim() && !form.images.length" @click="submit" />
             </div>
@@ -156,7 +164,14 @@ const submit = () => {
                         <Button :label="trans('Save')" :disabled="!editBody.trim()" @click="saveEdit(comment.id)" />
                     </div>
                 </div>
-                <TicketBody v-else :text="comment.body" :images="comment.images" :attachments="comment.attachments" />
+                <button v-else-if="isCollapsed(comment)" type="button" class="flex w-full items-center gap-2 text-left text-gray-600 hover:text-gray-900" @click="toggleInternalExpanded(comment.id)">
+                    <span class="truncate">{{ comment.body.trim().split("\n")[0] || trans("Attachments") }}</span>
+                    <span class="shrink-0 text-xs text-amber-700">{{ trans("Show more") }}</span>
+                </button>
+                <template v-else>
+                    <TicketBody :text="comment.body" :images="comment.images" :attachments="comment.attachments" />
+                    <button v-if="comment.is_internal" type="button" class="mt-1 text-xs text-amber-700 hover:text-amber-900" @click="toggleInternalExpanded(comment.id)">{{ trans("Show less") }}</button>
+                </template>
             </div>
         </div>
     </div>

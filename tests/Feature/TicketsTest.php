@@ -1358,6 +1358,20 @@ test('the attachment gallery lists ticket and visible comment files newest first
     get(route('grp.json.ticket.controls', $ticket->id))->assertOk()->assertJsonCount(4, 'attachment_gallery');
 });
 
+test('internal notes are visible to any staff member including the reporter, lead only notes stay with leads and customers see neither', function () {
+    $ticket = StoreTicket::make()->action($this->group, ['subject' => 'Visibility']);
+    StoreTicketComment::make()->action($ticket, $this->user, ['body' => 'public reply']);
+    StoreTicketComment::make()->action($ticket, $this->user, ['body' => 'internal note'])->update(['is_internal' => true]);
+    StoreTicketComment::make()->action($ticket, $this->user, ['body' => 'lead note'])->update(['is_internal' => true, 'is_lead_only' => true]);
+
+    $reporter = User::factory()->create(['group_id' => $this->group->id]);
+    $ticket->update(['reporter_type' => 'User', 'reporter_id' => $reporter->id]);
+
+    expect($ticket->commentsVisibleTo($reporter)->pluck('body')->sort()->values()->all())->toBe(['internal note', 'public reply'])
+        ->and($ticket->commentsVisibleTo($this->user)->count())->toBe(3)
+        ->and($ticket->commentsVisibleTo($this->webUser)->pluck('body')->all())->toBe(['public reply']);
+});
+
 test('done and cancel publish the closing comment together with the status change', function () {
     $ticket = StoreTicket::make()->action($this->group, ['subject' => 'Close with a note']);
     UpdateTicket::make()->action($ticket, ['status' => TicketStatusEnum::IN_PROGRESS->value]);
@@ -1896,7 +1910,7 @@ test('reporters follow progress from their badge, cannot move their ticket, and 
 
     actingAs($reporter);
     get(route('grp.tickets.show', $ticket->reference))->assertOk()->assertInertia(
-        fn (AssertableInertia $page) => $page->where('comments', fn ($comments) => !collect($comments)->pluck('body')->contains('Driver is broken, not telling yet'))
+        fn (AssertableInertia $page) => $page->where('comments', fn ($comments) => collect($comments)->pluck('body')->contains('Driver is broken, not telling yet'))
     );
     expect(collect(GetTicketBadgeData::run($reporter->fresh())['recent'])->where('read', false)->count())->toBe(0);
 
