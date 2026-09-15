@@ -37,10 +37,37 @@ trait HasTicketImages
                 $isVideo = in_array(strtolower($value->getClientOriginalExtension()), self::TICKET_VIDEO_EXTENSIONS, true);
 
                 if (!$isVideo && $value->getSize() > 10 * 1024 * 1024) {
-                    $fail(__('Only videos can be larger than 10 MB.'));
+                    $fail(__(':attribute is too big. Videos can be up to 50 MB, other files up to 10 MB.'));
                 }
             },
         ];
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public static function ticketFileValidationMessages(): array
+    {
+        return [
+            'images.max'          => __('You can attach up to 5 files at a time.'),
+            'images.*.file'       => __(':attribute could not be uploaded. Please try again.'),
+            'images.*.uploaded'   => __(':attribute could not be uploaded. Please try again.'),
+            'images.*.extensions' => __(':attribute cannot be attached. You can attach pictures, PDF, Word, Excel, CSV and ZIP files, and MP4, WebM or MOV videos.'),
+            'images.*.mimes'      => __(':attribute cannot be attached. You can attach pictures, PDF, Word, Excel, CSV and ZIP files, and MP4, WebM or MOV videos.'),
+            'images.*.max'        => __(':attribute is too big. Videos can be up to 50 MB, other files up to 10 MB.'),
+        ];
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public static function ticketFileValidationAttributes(mixed $images): array
+    {
+        return collect(is_array($images) ? $images : [])
+            ->mapWithKeys(fn (mixed $image, int|string $index) => [
+                "images.$index" => $image instanceof UploadedFile ? '"'.$image->getClientOriginalName().'"' : __('File :number', ['number' => (int) $index + 1]),
+            ])
+            ->all();
     }
 
     /**

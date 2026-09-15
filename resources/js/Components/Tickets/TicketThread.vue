@@ -8,6 +8,7 @@
 import { computed, ref } from "vue"
 import { useForm, router } from "@inertiajs/vue3"
 import { trans } from "laravel-vue-i18n"
+import { notify } from "@kyvg/vue3-notification"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import TicketComposer from "@/Components/Tickets/TicketComposer.vue"
@@ -65,6 +66,7 @@ const toggleVisibility = (id: number) => {
 
 const submit = () => {
     form.post(route(props.commentRoute.name, props.commentRoute.parameters), {
+        onError: (errors) => notify({ title: trans("Comment not posted"), text: [...new Set(Object.values(errors))].join("<br>"), type: "error" }),
         preserveScroll: true,
         forceFormData: true,
         onSuccess: () => form.reset(),

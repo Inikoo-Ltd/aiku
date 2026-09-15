@@ -1716,3 +1716,49 @@ test('reports stay unfiltered by default and narrow to one assignee when picked'
         fn (AssertableInertia $page) => $page->where('stats.assignee', null)
     );
 });
+
+test('zip attachments list their contents for the preview and still download on a plain open', function () {
+    $directory = sys_get_temp_dir().'/ticket_zip_'.uniqid();
+    mkdir($directory);
+    $zip = new ZipArchive();
+    $zip->open("$directory/logs.zip", ZipArchive::CREATE);
+    $zip->addEmptyDir('logs');
+    $zip->addFromString('logs/error.log', "boom\n");
+    $zip->addFromString('readme.txt', 'hi');
+    $zip->close();
+
+    $ticket = StoreTicket::make()->action($this->group, [
+        'subject' => 'Logs attached',
+        'images'  => [new UploadedFile("$directory/logs.zip", 'logs.zip', null, null, true)],
+    ]);
+    $url = $ticket->ticketAttachments('grp.tickets.attachments.show')[0]['url'];
+
+    get($url.'?contents=1')->assertOk()
+        ->assertJsonPath('total', 3)
+        ->assertJsonFragment(['name' => 'logs/', 'is_directory' => true])
+        ->assertJsonFragment(['name' => 'logs/error.log', 'size' => 5, 'is_directory' => false]);
+
+    expect(get($url)->assertOk()->headers->get('content-disposition'))->toStartWith('attachment');
+});
+
+test('rejected ticket files get readable messages that name the file', function () {
+    $ticket = StoreTicket::make()->action($this->group, ['subject' => 'Readable upload errors']);
+
+    $messageFor = function (array $files) use ($ticket): string {
+        try {
+            StoreTicketComment::make()->action($ticket, $this->user, ['images' => $files]);
+        } catch (Illuminate\Validation\ValidationException $exception) {
+            return collect($exception->errors())->flatten()->implode(' ');
+        }
+
+        return '';
+    };
+
+    expect($messageFor([UploadedFile::fake()->create('huge.pdf', 11 * 1024, 'application/pdf')]))
+        ->toContain('"huge.pdf" is too big')
+        ->not->toContain('images.0')
+        ->and($messageFor([UploadedFile::fake()->createWithContent('notes.txt', "plain text\n")]))
+        ->toContain('"notes.txt" cannot be attached')
+        ->and($messageFor(array_map(fn (int $number) => UploadedFile::fake()->image("shot$number.png"), range(1, 6))))
+        ->toContain('You can attach up to 5 files at a time.');
+});

@@ -154,7 +154,7 @@ You can add files to a comment by pasting, dropping or pressing <b>Attach</b>:
 - short videos (MP4, WebM or MOV), up to 50 MB each,
 - ZIP files, up to 10 MB each, for example a folder of log files.
 
-All files on a ticket are shown together under <b>Attachments</b>. Click one to see it without downloading, and use the arrows to go to the next file. ZIP files cannot be previewed, so clicking one downloads it straight away. Use the menu next to the title to show only one type, for example only PDFs.
+All files on a ticket are shown together under <b>Attachments</b>. Click one to see it without downloading, and use the arrows to go to the next file. Clicking a ZIP file shows the list of files and folders inside it, with a <b>Download</b> button. If a file cannot be shown, aiku tells you why, for example because it was deleted or you do not have permission. Use the menu next to the title to show only one type, for example only PDFs.
 
 ## The ticket counter in the right-hand bar
 

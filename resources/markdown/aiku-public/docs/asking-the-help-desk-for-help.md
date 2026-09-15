@@ -57,7 +57,7 @@ Replying to a waiting or cancelled ticket brings it back to the engineer, so a l
 
 ## Files on your ticket
 
-All the files on your ticket are shown together under <b>Attachments</b>. Click one to look at it without downloading it. ZIP files cannot be previewed, so clicking one downloads it. You can also choose to see the comments newest first or oldest first, and aiku remembers your choice.
+All the files on your ticket are shown together under <b>Attachments</b>. Click one to look at it without downloading it. Clicking a ZIP file shows which files are inside it, with a button to download it. You can also choose to see the comments newest first or oldest first, and aiku remembers your choice.
 
 ## Closing and rating
 

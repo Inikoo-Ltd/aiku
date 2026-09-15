@@ -71,6 +71,16 @@ class StoreTicketComment extends OrgAction
         ];
     }
 
+    public function getValidationMessages(): array
+    {
+        return Ticket::ticketFileValidationMessages();
+    }
+
+    public function getValidationAttributes(): array
+    {
+        return Ticket::ticketFileValidationAttributes($this->get('images', []));
+    }
+
     public function authorize(ActionRequest $request): bool
     {
         if ($this->asAction) {

@@ -31,6 +31,6 @@ class ShowRetinaTicketAttachment extends RetinaAction
         $this->initialisation($request);
         abort_unless($ticket->hasAttachmentVisibleTo($media, $this->webUser), 404);
 
-        return ShowTicketAttachment::make()->handle($media);
+        return ShowTicketAttachment::make()->handle($media, $request->boolean('contents'));
     }
 }

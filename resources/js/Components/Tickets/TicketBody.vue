@@ -8,7 +8,7 @@
 import { computed, ref, watch, onBeforeUnmount } from "vue"
 import { marked } from "marked"
 import Image from "@/Common/Components/Image.vue"
-import TicketAttachmentPreview, { isPreviewableAttachment, type TicketAttachment } from "@/Components/Tickets/TicketAttachmentPreview.vue"
+import TicketAttachmentPreview, { isPreviewableAttachment, reasonFileIsUnavailable, type TicketAttachment } from "@/Components/Tickets/TicketAttachmentPreview.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { trans } from "laravel-vue-i18n"
@@ -45,8 +45,11 @@ const markImageLoaded = (url: string) => {
 }
 const unavailableImageUrls = ref<string[]>([])
 
-const markImageUnavailable = (url: string) => {
+const unavailableImageReasons = ref<Record<string, string>>({})
+
+const markImageUnavailable = async (url: string) => {
     if (!unavailableImageUrls.value.includes(url)) unavailableImageUrls.value.push(url)
+    unavailableImageReasons.value[url] ??= await reasonFileIsUnavailable(url)
 }
 
 const openPreview = (index: number) => {
@@ -120,7 +123,12 @@ onBeforeUnmount(() => window.removeEventListener("keydown", onKeydown))
                     <FontAwesomeIcon icon="fal fa-chevron-left" fixed-width />
                 </button>
                 <img v-if="!unavailableImageUrls.includes(images[previewIndex].original)" :src="images[previewIndex].original" alt="" class="max-h-[90vh] max-w-[85vw] rounded object-contain" @error="markImageUnavailable(images[previewIndex].original)" />
-                <div v-else class="flex h-[60vh] w-[85vw] max-w-3xl items-center justify-center rounded bg-white text-sm text-gray-500">{{ trans("Preview for this file is unavailable") }}</div>
+                <div v-else class="flex h-[60vh] w-[85vw] max-w-3xl items-center justify-center rounded bg-white text-sm text-gray-500">
+                    <div class="max-w-md px-6 text-center">
+                        <p class="font-medium text-gray-700">{{ trans("Preview for this file is unavailable") }}</p>
+                        <p v-if="unavailableImageReasons[images[previewIndex].original]" class="mt-1 text-gray-500">{{ unavailableImageReasons[images[previewIndex].original] }}</p>
+                    </div>
+                </div>
                 <button v-if="images.length > 1" type="button" class="absolute right-4 p-3 text-4xl text-white/80 hover:text-white" @click="nextImage">
                     <FontAwesomeIcon icon="fal fa-chevron-right" fixed-width />
                 </button>
