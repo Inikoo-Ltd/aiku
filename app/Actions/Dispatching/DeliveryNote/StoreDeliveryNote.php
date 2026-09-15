@@ -10,6 +10,7 @@ namespace App\Actions\Dispatching\DeliveryNote;
 
 use App\Actions\Catalogue\Shop\Hydrators\HasDeliveryNoteHydrators;
 use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydrateShipments;
+use App\Actions\Dispatching\DeliveryNoteLeaflet\StoreDeliveryNoteLeafletsFromOrder;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithFixedAddressActions;
 use App\Actions\Traits\WithModelAddressActions;
@@ -80,8 +81,11 @@ class StoreDeliveryNote extends OrgAction
             if ($deliveryNote->type === DeliveryNoteTypeEnum::ORDER) {
                 $deliveryNote->update([
                     'is_premium_dispatch' => $order->is_premium_dispatch,
-                    'has_extra_packing'   => $order->has_extra_packing
+                    'has_extra_packing'   => $order->has_extra_packing,
+                    'packaging_id'        => $order->packaging_id,
                 ]);
+
+                StoreDeliveryNoteLeafletsFromOrder::run($deliveryNote, $order);
             } else {
                 $order->update(
                     [

@@ -10,6 +10,7 @@ namespace App\Actions\Dispatching\DeliveryNote\UI;
 
 use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\CRM\Customer\UI\ShowCustomer;
+use App\Actions\Ordering\Order\AssignDefaultPackagingToOrderWithoutPackaging;
 use App\Actions\Dispatching\DeliveryNote\GetDeliveryNoteConsumables;
 use App\Actions\Catalogue\PreferredShipping\WithPreferredShipperResolver;
 use App\Actions\Dispatching\DeliveryNoteItem\UI\IndexDeliveryNoteItems;
@@ -21,6 +22,8 @@ use App\Actions\Helpers\Country\UI\GetAddressData;
 use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\Inventory\Warehouse\UI\ShowWarehouse;
 use App\Actions\Ordering\Order\UI\ShowOrder;
+use App\Actions\Dispatching\DeliveryNote\WithDeliveryNoteLeaflets;
+use App\Actions\Dispatching\DeliveryNote\WithDeliveryNotePackaging;
 use App\Actions\Ordering\Order\WithOrderForbiddenCountryCheck;
 use App\Actions\Dispatching\DeliveryNote\SetScanToPickDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\WithDeliveryNoteHandler;
@@ -74,6 +77,8 @@ class ShowDeliveryNote extends OrgAction
     use GetPlatformLogo;
     use WithBucketNavigation;
     use WithOrderForbiddenCountryCheck;
+    use WithDeliveryNotePackaging;
+    use WithDeliveryNoteLeaflets;
     use WithDeliveryNoteHandler;
     use WithPreferredShipperResolver;
     use WithDeliveryNoteItemPickingCounts;
@@ -88,6 +93,10 @@ class ShowDeliveryNote extends OrgAction
 
     public function handle(DeliveryNote $deliveryNote): DeliveryNote
     {
+        if (AssignDefaultPackagingToOrderWithoutPackaging::make()->forDeliveryNote($deliveryNote)) {
+            $deliveryNote->refresh();
+        }
+
         return $deliveryNote;
     }
 
@@ -462,7 +471,7 @@ class ShowDeliveryNote extends OrgAction
         $startPickingLabel    = __('Start picking');
         $generateInvoiceLabel = __('Generate Invoice');
 
-        return match ($deliveryNote->state) {
+        return $this->disableActionsBlockedByInserts($deliveryNote, match ($deliveryNote->state) {
             DeliveryNoteStateEnum::UNASSIGNED => [
 
                 [
@@ -627,7 +636,35 @@ class ShowDeliveryNote extends OrgAction
                 ],
             ],
             default => []
-        };
+        });
+    }
+
+    /**
+     * @param  array<int, mixed>  $actions
+     *
+     * @return array<int, mixed>
+     */
+    private function disableActionsBlockedByInserts(DeliveryNote $deliveryNote, array $actions): array
+    {
+        if (!$deliveryNote->hasUnprintedLeaflets()) {
+            return $actions;
+        }
+
+        $blocked = [
+            'grp.models.delivery_note.state.packing',
+            'grp.models.delivery_note.state.packed',
+            'grp.models.delivery_note.state.dispatched',
+            'grp.models.delivery_note.state.finalise_and_dispatch',
+        ];
+        $reason = __('Print every insert before continuing');
+
+        return array_map(function ($action) use ($blocked, $reason) {
+            if (!is_array($action) || !in_array(Arr::get($action, 'route.name'), $blocked, true)) {
+                return $action;
+            }
+
+            return array_merge($action, ['disabled' => true, 'tooltip' => $reason]);
+        }, $actions);
     }
 
     public function getPackedActions(DeliveryNote $deliveryNote): array
@@ -911,6 +948,38 @@ class ShowDeliveryNote extends OrgAction
         ];
     }
 
+    /** @return array{current: array|null, options: array, update_route: array} */
+    public function getDeliveryNotePackagingProp(DeliveryNote $deliveryNote): array
+    {
+        $packaging = $this->effectivePackaging($deliveryNote);
+
+        return [
+            'current'      => $this->getPackaging($packaging),
+            'options'      => $this->getPackagingOptions($deliveryNote, $packaging?->family_code),
+            'update_route' => [
+                'name'       => 'grp.models.delivery_note.update_packaging',
+                'parameters' => [
+                    'deliveryNote' => $deliveryNote->id
+                ]
+            ],
+        ];
+    }
+
+    /** @return array{leaflets: array, print_status: array, print_all_route: array} */
+    public function getDeliveryNoteInsertsProp(DeliveryNote $deliveryNote): array
+    {
+        return [
+            'leaflets'        => $this->getLeaflets($deliveryNote),
+            'print_status'    => $this->getPrintStatus($deliveryNote),
+            'print_all_route' => [
+                'name'       => 'grp.models.delivery_note.leaflets.print',
+                'parameters' => [
+                    'deliveryNote' => $deliveryNote->id
+                ]
+            ],
+        ];
+    }
+
     public function getTimeline(DeliveryNote $deliveryNote): array
     {
         $timeline = [];
@@ -1181,6 +1250,8 @@ class ShowDeliveryNote extends OrgAction
             ],
             'warning'       => $warning,
             'is_editable'   => $isEditable,
+            'packaging'     => $this->getDeliveryNotePackagingProp($deliveryNote),
+            'inserts'       => $this->getDeliveryNoteInsertsProp($deliveryNote),
             'tabs'          => [
                 'current'    => $this->tab,
                 'navigation' => $navigation

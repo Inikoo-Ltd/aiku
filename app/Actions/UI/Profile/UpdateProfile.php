@@ -59,6 +59,10 @@ class UpdateProfile extends OrgAction
             $modelData['settings']['preferred_printer_id'] = $printerId;
         }
 
+        if (Arr::exists($modelData, 'preferred_leaflet_printer')) {
+            $modelData['settings']['preferred_leaflet_printer_id'] = Arr::pull($modelData, 'preferred_leaflet_printer');
+        }
+
         if ($twoFa = Arr::pull($modelData, 'enable_2fa')) {
             if (data_get($twoFa, 'has_2fa')) {
                 data_set($modelData, 'google2fa_secret', data_get($twoFa, 'secretKey'));
@@ -156,6 +160,7 @@ class UpdateProfile extends OrgAction
             'notifications.*.*' => [Rule::in(UserNotificationEnum::CHANNELS)],
             'slack_user_id'     => ['sometimes', 'nullable', 'string', 'regex:/^[UW][A-Z0-9]{6,}$/', Rule::unique('users', 'slack_user_id')->ignore(request()->user()->id)],
             'preferred_printer' => ['sometimes', 'integer'],
+            'preferred_leaflet_printer' => ['sometimes', 'nullable', 'integer'],
             'image'             => [
                 'sometimes',
                 'nullable',

@@ -21,12 +21,14 @@ use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemStateEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Models\Dispatching\DeliveryNote;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Http\RedirectResponse;
 use Lorisleiva\Actions\ActionRequest;
 
 class DispatchDeliveryNote extends OrgAction
 {
     use WithActionUpdate;
     use HasDeliveryNoteHydrators;
+    use WithUnprintedLeafletsGuard;
 
     /**
      * @throws \Throwable
@@ -35,6 +37,11 @@ class DispatchDeliveryNote extends OrgAction
     {
         $oldState     = $deliveryNote->state;
         $dispatchedAt = $dispatchedAt ?? now();
+
+
+        if (!$repair && $deliveryNote->hasUnprintedLeaflets()) {
+            abort(422, __('Cannot dispatch: every insert must be printed first'));
+        }
 
         $deliveryNote = DB::transaction(function () use ($deliveryNote, $dispatchedAt, $repair) {
             data_set($modelData, 'dispatched_at', $dispatchedAt);
@@ -78,8 +85,12 @@ class DispatchDeliveryNote extends OrgAction
     /**
      * @throws \Throwable
      */
-    public function asController(DeliveryNote $deliveryNote, ActionRequest $request): DeliveryNote
+    public function asController(DeliveryNote $deliveryNote, ActionRequest $request): DeliveryNote|RedirectResponse
     {
+        if ($notification = $this->unprintedLeafletsNotification($deliveryNote, __('Every insert must be printed before dispatching.'))) {
+            return $notification;
+        }
+
         $this->initialisationFromShop($deliveryNote->shop, $request);
 
         return $this->handle($deliveryNote);

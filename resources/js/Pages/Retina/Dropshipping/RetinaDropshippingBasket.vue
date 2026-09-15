@@ -42,6 +42,7 @@ import TableProductList from '@/Components/Tables/Grp/Helpers/TableProductList.v
 import {faSpinnerThird, faCheck} from '@far'
 import ProductsSelectorAutoSelect from '@/Components/Dropshipping/ProductsSelectorAutoSelect.vue'
 import DropshippingSummaryBasket from '@/Components/Retina/Dropshipping/DropshippingSummaryBasket.vue'
+import OrderPackagingPanel from '@/Components/Retina/Dropshipping/OrderPackagingPanel.vue'
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import { ToggleSwitch } from 'primevue'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
@@ -136,6 +137,25 @@ const props = defineProps<{
     }
     is_forbidden_delivery: boolean
     is_forbidden_billing?: boolean
+    packaging_panel: {
+        packagingOptions: { value: number, label: string, price: number, price_max: number, sizes: string | null, family_code: string | null }[]
+        selectedPackaging: number | null
+        leafletOptions: { id: number, label: string, type: string, price: number, family_codes: string[] }[]
+        defaultLeafletsByFamily: Record<string, number[]>
+        insertsWithoutArtwork?: string[]
+        personalisedMessageLeafletIds?: number[]
+        personalisedMessage: string
+        customerLeaflets: {
+            id: number
+            leaflet_id: number
+            family_code: string | null
+            name: string
+            mime_type: string | null
+            meta: string | null
+            state: string
+            state_label: string
+        }[]
+    }
 }>()
 const layout = inject('layout', retinaLayoutStructure)
 
@@ -155,6 +175,16 @@ onUnmounted(() => {
     }
 })
 const locale = inject('locale', aikuLocaleStructure)
+
+// Packaging & inserts is a per-shop setting. With it off the panel has nothing to show, so the
+// items table takes the whole row instead of leaving an empty column beside it.
+const hasPackagingPanel = computed<boolean>(
+    () => (props.packaging_panel?.packagingOptions?.length ?? 0) > 0
+)
+
+const insertsWithoutArtwork = computed<string[]>(
+    () => props.packaging_panel?.insertsWithoutArtwork ?? []
+)
 
 const isModalUploadOpen = ref(false)
 const isModalProductListOpen = ref(false)
@@ -445,7 +475,8 @@ const onChangeInsurance = async (val: boolean) => {
     <Tabs v-if="currentTab != 'products'" :current="currentTab" :navigation="tabs?.navigation"
           @update:tab="handleTabUpdate"/>
 
-    <div class="mb-4 mx-4 mt-4 overflow-x-auto rounded-md border border-gray-200">
+    <div class="mx-4 mt-4 grid grid-cols-1 gap-4 items-start" :class="hasPackagingPanel ? 'xl:grid-cols-3' : 'xl:grid-cols-1'">
+      <div class="min-w-0 mb-4 overflow-x-auto rounded-md border border-gray-200" :class="hasPackagingPanel ? 'xl:col-span-2' : 'xl:col-span-1'">
         <component :is="component"
                    :data="props[currentTab as keyof typeof props]" :tab="currentTab"
                    :updateRoute="routes?.updateOrderRoute" :state="data?.data?.state"
@@ -527,6 +558,24 @@ const onChangeInsurance = async (val: boolean) => {
                 </div>
             </div>
         </template>
+      </div>
+
+      <!-- Packaging & Personalisation panel (frontend only, no order logic) -->
+      <div v-if="hasPackagingPanel" class="xl:col-span-1">
+        <OrderPackagingPanel
+          :accentColor="layout?.app?.theme?.[4]"
+          :currencyCode="currency?.code"
+          :packagingOptions="packaging_panel.packagingOptions"
+          :selectedPackaging="packaging_panel.selectedPackaging"
+          :leafletOptions="packaging_panel.leafletOptions"
+          :defaultLeafletsByFamily="packaging_panel.defaultLeafletsByFamily"
+          :personalisedMessage="packaging_panel.personalisedMessage"
+          :personalisedMessageLeafletIds="packaging_panel.personalisedMessageLeafletIds"
+          :customerLeaflets="packaging_panel.customerLeaflets"
+          :packagingPreferencesHref="route('retina.sysadmin.packaging-preferences.show')"
+          :updateRoute="{ name: 'retina.models.order.update_packaging', parameters: { order: data.data.id } }"
+        />
+      </div>
     </div>
 
     <div v-if="total_products > 0" class="flex flex-col md:flex-row justify-end px-4 md:px-6 gap-4">        
@@ -622,8 +671,20 @@ const onChangeInsurance = async (val: boolean) => {
                 }"
                 class="w-full"
                 full
-                :disabled="!!Object.values(listLoadingProducts || {}).filter(status => status === 'loading')?.length"
+                :tooltip="insertsWithoutArtwork.length
+                    ? trans('Upload the file for :inserts before checking out', { inserts: insertsWithoutArtwork.join(', ') })
+                    : undefined"
+                :disabled="!!Object.values(listLoadingProducts || {}).filter(status => status === 'loading')?.length
+                    || insertsWithoutArtwork.length > 0"
             />
+
+            
+            <div v-if="insertsWithoutArtwork.length" class="mt-2 flex items-start gap-x-1 text-xs text-amber-600">
+                <FontAwesomeIcon icon="fal fa-exclamation-circle" class="mt-[3px]" fixed-width aria-hidden="true" />
+                <div class="leading-5">
+                    {{ trans("Upload the file for :inserts before checking out.", { inserts: insertsWithoutArtwork.join(', ') }) }}
+                </div>
+            </div>
         </div>
         <div v-else class="w-full md:w-72 pt-5 text-sm">
             <div v-if="is_forbidden_billing" class="text-red-500">*{{ trans("Your current billing address (:_country) is marked as forbidden, please update the address or contact support.", { _country: box_stats?.customer?.addresses?.billing?.country?.name }) }}</div>
