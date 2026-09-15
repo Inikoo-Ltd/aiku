@@ -623,6 +623,14 @@ class EditProduct extends OrgAction
                     'fields' => array_filter($nameFields)
                 ],
                 [
+                    'label'  => __('GPSR'),
+                    'icon'   => 'fa-light fa-biohazard',
+                    'fields' => [
+                        'gpsr_warnings' => $this->getGpsrTextField($product, 'gpsr_warnings', __('Warnings'), $languages),
+                        'gpsr_manual'   => $this->getGpsrTextField($product, 'gpsr_manual', __('How To Use'), $languages),
+                    ]
+                ],
+                [
                     'label'  => __('Pricing'),
                     'icon'   => 'fa-light fa-money-bill',
                     'fields' => $pricingFields
@@ -765,6 +773,31 @@ class EditProduct extends OrgAction
                 ],
             ]
         );
+    }
+
+    private function getGpsrTextField(Product $product, string $field, string $label, array $languages): array
+    {
+        $englishText = $product->getTranslation($field.'_i8n', 'en', false) ?: $product->masterProduct?->$field;
+
+        if (!$englishText) {
+            return [
+                'type'  => 'input',
+                'label' => $label,
+                'value' => $product->$field,
+            ];
+        }
+
+        return [
+            'type'          => 'input_translation',
+            'label'         => $label,
+            'language_from' => 'en',
+            'full'          => true,
+            'main'          => $englishText,
+            'languages'     => $languages,
+            'mode'          => 'single',
+            'value'         => $product->$field,
+            'reviewed'      => $product->{'is_'.$field.'_reviewed'},
+        ];
     }
 
     private function getTradeUnitsWithPackingData(Product $product)

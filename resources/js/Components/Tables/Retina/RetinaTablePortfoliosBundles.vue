@@ -43,6 +43,7 @@ import {
 	faDollarSign,
 	faCube,
 	faUnlink,
+	faPlus,
 } from "@fal"
 import { faStar, faFilter, faImages, faSparkles } from "@fas"
 import { faExclamationTriangle as fadExclamationTriangle } from "@fad"
@@ -56,14 +57,17 @@ import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import PureInput from "@/Components/Pure/PureInput.vue"
 import axios from "axios"
 import { routeType } from "@/types/route"
-import { InputText, Message, Dialog, Textarea, Checkbox } from "primevue"
+import { InputText, InputNumber, Message, Dialog, Textarea, Checkbox } from "primevue"
 import QuantitySelector from "@/Components/Dropshipping/QuantitySelector.vue"
 import { EditorContent } from "@tiptap/vue-3"
 import Editor2 from "@/Components/Forms/Fields/BubleTextEditor/EditorV2.vue"
 import { useBundle } from "@/Composables/useBundle"
 import { useGenerateAIImages } from "@/Composables/useGenerateAIImages"
+import BundlesSelector from "@/Components/Dropshipping/BundlesSelector.vue"
+import { useFormatTime } from "@/Composables/useFormatTime"
 
 library.add(
+	faPlus,
 	faUnlink,
 	faSparkles,
 	faImages,
@@ -119,10 +123,12 @@ const props = defineProps<{
 		fetch_products: routeType
 		single_create_new: routeType
 		single_match: routeType
+		itemRoute: routeType
 	}
 	bundle_routes: {
 		update: routeType
 		delete: routeType
+		calculate: routeType
 		images: routeType
 		ai: any
 	}
@@ -504,6 +510,13 @@ const openEditModal = (item: any) => {
 	}
 	submitError.value = null
 	bundleSnapshotOnLoad.value = null
+	selectedMedia.value = []
+	selectedMediaIds.value = []
+	selectedMediaForAI.value = []
+	selectedMediaAIIds.value = []
+	bundleItems.value = []
+	bundleRrp.value = null
+	resetBundleSummary()
 	fetchEditMediaGallery()
 }
 
@@ -519,6 +532,25 @@ const aiPrompt = ref('')
 const selectedMediaForAI = ref<any[]>([])
 const selectedMediaAIIds = ref<any[]>([])
 const bundleItems = ref<any[]>([])
+const bundleRrp = ref<number | null>(null)
+const isSummaryLoading = ref(false)
+const showProductSelector = ref(false)
+const productSelectorPreselected = ref<any[]>([])
+const pendingSyncBundleIds = ref<number[]>([])
+
+const emptyBundleSummary = () => ({
+	total_price: 0,
+	total_bundle_price: 0,
+	total_rrp: 0,
+	profit: 0,
+	profit_percentage: 0,
+})
+
+const bundleSummary = ref(emptyBundleSummary())
+
+const resetBundleSummary = () => {
+	bundleSummary.value = emptyBundleSummary()
+}
 
 const fetchEditMediaGallery = async () => {
 	try {
@@ -558,14 +590,24 @@ const fetchEditMediaGallery = async () => {
 		}
 		if (data.items) {
 			bundleItems.value = data.items.map((i: any) => ({
-				id: i.bundle_item_id,
+				id: i.item.id,
+				bundle_item_id: i.bundle_item_id,
 				quantity: i.quantity,
+				quantity_selected: i.quantity,
 				product_id: i.item.id,
 				name: i.item.name,
-				image: i.item.images?.[0]?.source?.original || null,
+				code: i.item.code,
+				price: Number(i.item.price ?? 0),
+				rrp: Number(i.item.rrp ?? 0),
+				currency_code: i.item.currency_code,
+				image: i.item.image_thumbnail || i.item.images?.[0]?.thumbnail || null,
 				raw: i
 			}))
 		}
+
+		bundleRrp.value = data.rrp === null || data.rrp === undefined ? null : Number(data.rrp)
+
+		await recalculateBundle()
 
 		bundleSnapshotOnLoad.value = JSON.stringify(bundlePayload.value)
 	} catch (e) {
@@ -584,10 +626,72 @@ const fetchEditMediaGallery = async () => {
 const updateItemQty = (id: number, qty: number) => {
 	bundleItems.value = bundleItems.value.map(item =>
 		item.id === id
-			? { ...item, quantity: qty }
+			? { ...item, quantity: qty, quantity_selected: qty }
 			: item
 	)
+	debouncedRecalculateBundle()
 }
+
+const removeBundleItem = (id: number) => {
+	bundleItems.value = bundleItems.value.filter(item => item.id !== id)
+	debouncedRecalculateBundle()
+}
+
+const openProductSelector = () => {
+	productSelectorPreselected.value = bundleItems.value.map(item => ({
+		...item,
+		quantity_selected: item.quantity,
+	}))
+	showProductSelector.value = true
+}
+
+const onUpdateBundleProducts = (products: any[]) => {
+	bundleItems.value = products.map(product => {
+		const existing = bundleItems.value.find(item => item.id === product.id)
+		const quantity = product.quantity_selected ?? existing?.quantity ?? 1
+
+		return {
+			...existing,
+			...product,
+			id: product.id,
+			product_id: product.id,
+			bundle_item_id: existing?.bundle_item_id ?? null,
+			image: product.image ?? existing?.image ?? null,
+			quantity,
+			quantity_selected: quantity,
+		}
+	})
+	debouncedRecalculateBundle()
+}
+
+const recalculateBundle = async () => {
+	if (!bundleItems.value.length) {
+		resetBundleSummary()
+		return
+	}
+
+	try {
+		isSummaryLoading.value = true
+
+		const { data } = await axios.post(
+			route(props.bundle_routes.calculate.name, props.bundle_routes.calculate.parameters),
+			{
+				products: bundleItems.value.map(item => ({
+					product_id: item.product_id,
+					quantity: item.quantity || 1,
+				})),
+			}
+		)
+
+		bundleSummary.value = data
+	} catch (e) {
+		console.error('[RetinaTablePortfoliosBundles] recalculateBundle failed', e)
+	} finally {
+		isSummaryLoading.value = false
+	}
+}
+
+const debouncedRecalculateBundle = debounce(recalculateBundle, 400)
 
 const fetchMediaGallery = async () => {
 	try {
@@ -822,6 +926,7 @@ const isBundleFilled = computed(
 	() => !!bundlePayload.value.name
 		&& !!bundlePayload.value.description.length
 		&& !!bundlePayload.value.images.length
+		&& !!bundlePayload.value.products.length
 )
 
 const canSubmitBundle = computed(
@@ -837,23 +942,110 @@ const submitError = ref<string | null>(null)
 const bundlePayload = computed(() => ({
 	name: selectedEditProduct.value?.name?.trim() ?? '',
 	description: selectedEditProduct.value?.description ?? '',
+	rrp: bundleRrp.value,
 	images: selectedMedia.value
 		.map(img => ({ id: img.image_id, is_main: !!img.is_main }))
 		.sort((a, b) => a.id - b.id),
-	payloadItems: bundleItems.value
-		.map(item => ({ bundle_item_id: item.id, quantity: item.quantity }))
-		.sort((a, b) => a.bundle_item_id - b.bundle_item_id),
+	products: bundleItems.value
+		.map(item => ({ product_id: item.product_id, quantity: item.quantity }))
+		.sort((a, b) => a.product_id - b.product_id),
 }))
 
-const submitBundle = () => {
+const isPlatformLinked = computed(
+	() => !props.isPlatformManual
+		&& !!selectedEditProduct.value?.customer_sales_channel_platform_status
+		&& !!selectedEditProduct.value?.platform_status
+		&& !!selectedEditProduct.value?.has_valid_platform_product_id
+)
+
+const syncStatusLabel = computed(() => {
+	if (props.isPlatformManual) {
+		return trans('Not connected to an external sales channel')
+	}
+
+	if (!selectedEditProduct.value?.customer_sales_channel_platform_status) {
+		return trans('Sales channel disconnected')
+	}
+
+	return isPlatformLinked.value
+		? trans('Synchronised with :platform', { platform: props.platform_data?.name })
+		: trans('Not synchronised yet')
+})
+
+const isPendingSync = computed(
+	() => isPlatformLinked.value
+		&& pendingSyncBundleIds.value.includes(selectedEditProduct.value?.bundle_id)
+)
+
+const hasUnsyncedChanges = computed(
+	() => isPlatformLinked.value && (hasBundleChanges.value || isPendingSync.value)
+)
+
+const markPendingSync = (bundleId: number) => {
+	if (!pendingSyncBundleIds.value.includes(bundleId)) {
+		pendingSyncBundleIds.value.push(bundleId)
+	}
+}
+
+const clearPendingSync = (bundleId: number) => {
+	pendingSyncBundleIds.value = pendingSyncBundleIds.value.filter(id => id !== bundleId)
+}
+
+const syncBundleToPlatform = (payload: any) => {
+	const portfolioId = selectedEditProduct.value?.id
+	const bundleId = selectedEditProduct.value?.bundle_id
+
+	router.post(
+		route('retina.models.portfolio.update_new_product.publish', { portfolio: portfolioId }),
+		{
+			title: payload.name,
+			description: payload.description,
+		},
+		{
+			preserveScroll: true,
+			preserveState: true,
+			onStart: () => {
+				isSubmitBundle.value = true
+			},
+			onSuccess: () => {
+				clearPendingSync(bundleId)
+				notify({
+					title: trans('Success'),
+					text: trans('Bundle saved and synchronised with :platform', { platform: props.platform_data?.name }),
+					type: 'success'
+				})
+				isOpenModalEditProduct.value = false
+				bundle.resetBundle()
+			},
+			onError: errors => {
+				markPendingSync(bundleId)
+				submitError.value =
+					Object.values(errors)[0] ||
+					trans("Failed to synchronise the bundle, please try again")
+
+				notify({
+					title: trans("Something went wrong"),
+					text: submitError.value,
+					type: "error"
+				})
+			},
+			onFinish: () => {
+				isSubmitBundle.value = false
+			},
+		}
+	)
+}
+
+const submitBundle = (withSync = false) => {
 	if (!canSubmitBundle.value) {
 		return
 	}
 
 	const payload = bundlePayload.value
+	const bundleId = selectedEditProduct.value?.bundle_id
 	const routeParams = {
 		...props.bundle_routes.update.parameters,
-		bundle: selectedEditProduct.value?.bundle_id
+		bundle: bundleId
 	}
 
 	router.patch(
@@ -868,6 +1060,16 @@ const submitBundle = () => {
 			},
 			onSuccess: () => {
 				bundleSnapshotOnLoad.value = JSON.stringify(payload)
+
+				if (withSync) {
+					syncBundleToPlatform(payload)
+					return
+				}
+
+				if (isPlatformLinked.value) {
+					markPendingSync(bundleId)
+				}
+
 				notify({
 					title: trans('Success'),
 					text: trans('Success edit bundle'),
@@ -880,7 +1082,9 @@ const submitBundle = () => {
 				submitError.value =
 					errors.name ||
 					errors.description ||
+					errors.rrp ||
 					errors.images ||
+					errors.products ||
 					Object.values(errors)[0] ||
 					trans("Failed to submit the data, please try again")
 
@@ -1052,6 +1256,9 @@ onBeforeUnmount(() => {
 					class="text-green-500" fixed-width aria-hidden="true" />
 				<FontAwesomeIcon v-else v-tooltip="trans('Platform status')" icon="fal fa-times" class="text-red-500"
 					fixed-width aria-hidden="true" />
+				<FontAwesomeIcon v-if="pendingSyncBundleIds.includes(item.bundle_id)"
+					v-tooltip="trans('Saved changes have not been pushed to :platform yet', { platform: platform_data?.name })"
+					icon="fal fa-exclamation-triangle" class="text-amber-500" fixed-width aria-hidden="true" />
 			</div>
 		</template>
 
@@ -1385,6 +1592,35 @@ onBeforeUnmount(() => {
 				{{ trans("Edit Bundle") }}
 			</div>
 
+			<div class="my-3 rounded-lg border bg-gray-50 px-3 py-2 text-sm">
+				<div class="flex flex-wrap gap-x-6 gap-y-1">
+					<div>
+						<span class="text-gray-500">{{ trans("Last modified") }}:</span>
+						{{ useFormatTime(selectedEditProduct?.updated_at, { formatTime: "hm" }) }}
+					</div>
+					<div class="flex items-center gap-2">
+						<span class="text-gray-500">{{ trans("Synchronisation") }}:</span>
+						<FontAwesomeIcon
+							:icon="isPlatformLinked ? 'fal fa-check' : 'fal fa-times'"
+							:class="isPlatformLinked ? 'text-green-500' : 'text-red-500'"
+							fixed-width
+							aria-hidden="true" />
+						{{ syncStatusLabel }}
+					</div>
+				</div>
+			</div>
+
+			<div
+				v-if="hasUnsyncedChanges"
+				class="mb-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+				<FontAwesomeIcon icon="fal fa-exclamation-triangle" class="mr-1" fixed-width aria-hidden="true" />
+				{{
+					trans("This bundle has changes that have not been pushed to :platform yet. Use Save & Sync to update the external product.", {
+						platform: platform_data?.name,
+					})
+				}}
+			</div>
+
 			<div class="mb-3 relative">
 				<label for="edit-product-title" class="block text-sm font-semibold">{{
 					trans("Title")
@@ -1484,15 +1720,24 @@ onBeforeUnmount(() => {
 			</div>
 
 			<div class="mb-5">
-				<label class="text-sm font-semibold">
-					Bundle Items
-				</label>
+				<div class="flex items-center justify-between">
+					<label class="text-sm font-semibold">
+						{{ trans("Bundle Items") }}
+					</label>
+
+					<Button
+						@click="openProductSelector"
+						type="secondary"
+						size="xs"
+						icon="fal fa-plus"
+						:label="trans('Add or remove products')" />
+				</div>
 
 				<div class="mt-2 space-y-2">
 					<div v-for="item in bundleItems" :key="item.id"
 						class="flex items-center gap-3 p-2 border rounded-lg bg-white">
 						<!-- IMAGE -->
-						<img :src="item.image" class="w-12 h-12 object-cover rounded bg-gray-100" loading="lazy" decoding="async" />
+						<Image :src="item.image" class="w-12 h-12 rounded bg-gray-100" imageCover />
 
 						<!-- INFO -->
 						<div class="flex-1 text-sm font-medium line-clamp-2">
@@ -1502,6 +1747,63 @@ onBeforeUnmount(() => {
 						<!-- QUANTITY -->
 						<QuantitySelector :modelValue="item.quantity"
 							@update:modelValue="(val) => updateItemQty(item.id, val)" />
+
+						<button
+							v-tooltip="trans('Remove from bundle')"
+							class="text-red-500 hover:text-red-600"
+							@click="removeBundleItem(item.id)">
+							<FontAwesomeIcon icon="fal fa-trash-alt" fixed-width aria-hidden="true" />
+						</button>
+					</div>
+
+					<div v-if="!bundleItems.length" class="text-center text-sm text-gray-400 py-6 border rounded-lg">
+						{{ trans("A bundle needs at least one product") }}
+					</div>
+				</div>
+			</div>
+
+			<div class="mb-5">
+				<label for="edit-bundle-rrp" class="block text-sm font-semibold">
+					{{ trans("RRP") }}
+				</label>
+
+				<InputNumber
+					v-model="bundleRrp"
+					inputId="edit-bundle-rrp"
+					fluid
+					size="small"
+					mode="currency"
+					:currency="selectedEditProduct?.currency_code?.toUpperCase() ?? 'USD'"
+					:minFractionDigits="2"
+					:min="0" />
+
+				<div class="mt-2 space-y-1 text-sm">
+					<div class="flex justify-between">
+						<span class="text-gray-500">{{ trans("Cost Price (Individual Purchase)") }}</span>
+						<span v-if="isSummaryLoading" class="text-gray-400">…</span>
+						<span v-else>
+							{{ locale.currencyFormat(selectedEditProduct?.currency_code ?? "usd", bundleSummary.total_price ?? 0) }}
+						</span>
+					</div>
+					<div class="flex justify-between">
+						<span class="text-gray-500">{{ trans("Bundle Price") }}</span>
+						<span v-if="isSummaryLoading" class="text-gray-400">…</span>
+						<span v-else>
+							{{ locale.currencyFormat(selectedEditProduct?.currency_code ?? "usd", bundleSummary.total_bundle_price ?? 0) }}
+						</span>
+					</div>
+					<div class="flex justify-between">
+						<span class="text-gray-500">{{ trans("Suggested RRP") }}</span>
+						<span v-if="isSummaryLoading" class="text-gray-400">…</span>
+						<span class="flex items-center gap-2" v-else>
+							{{ locale.currencyFormat(selectedEditProduct?.currency_code ?? "usd", bundleSummary.total_rrp ?? 0) }}
+							<button
+								v-if="bundleSummary.total_rrp"
+								class="text-xs text-indigo-600 hover:underline"
+								@click="bundleRrp = Number(bundleSummary.total_rrp)">
+								{{ trans("Use") }}
+							</button>
+						</span>
 					</div>
 				</div>
 			</div>
@@ -1524,17 +1826,47 @@ onBeforeUnmount(() => {
             </div>
 			<div class="mt-3 flex gap-2">
 				<Button
-					@click="submitBundle"
+					@click="submitBundle(false)"
 					:label="isSubmitBundle ? trans('Loading') : trans('Save')"
 					full
 					icon="fad fa-save"
+					:type="isPlatformLinked ? 'tertiary' : 'primary'"
 					:loading="isSubmitBundle"
 					:disabled="!canSubmitBundle"
 					v-tooltip="isBundleFilled && !hasBundleChanges ? trans('No changes to save') : ''"
 				/>
+				<Button
+					v-if="isPlatformLinked"
+					@click="submitBundle(true)"
+					:label="trans('Save & Sync')"
+					full
+					icon="fal fa-sync-alt"
+					type="primary"
+					:loading="isSubmitBundle"
+					:disabled="!canSubmitBundle"
+					v-tooltip="trans('Save and update the product on :platform', { platform: platform_data?.name })"
+				/>
 			</div>
 		</div>
 	</Modal>
+
+	<Dialog
+		v-model:visible="showProductSelector"
+		modal
+		:header="trans('Bundle products')"
+		:style="{ width: '900px' }"
+		:breakpoints="{ '1024px': '90vw', '576px': '95vw' }">
+		<BundlesSelector
+			:route-fetch="props.routes.itemRoute"
+			:preselected="productSelectorPreselected"
+			:label_result="trans('Products')"
+			withQuantity
+			@update:selected="onUpdateBundleProducts" />
+
+		<template #footer>
+			<Button @click="showProductSelector = false" type="primary" :label="trans('Done')" />
+		</template>
+	</Dialog>
 
 	<Dialog v-model:visible="showMediaModal" modal header="Select Images" :style="{ width: '600px' }">
 		<div v-if="isLoadingMedia" class="py-10 text-center">

@@ -5,7 +5,7 @@
   -->
 
 <script setup lang="ts">
-import { Head } from "@inertiajs/vue3";
+import { Deferred, Head } from "@inertiajs/vue3";
 import PageHeading from "@/Components/Headings/PageHeading.vue";
 import { capitalize } from "@/Composables/capitalize";
 import { useTabChange } from "@/Composables/tab-change";
@@ -32,6 +32,7 @@ import { AddressManagement } from "@/types/PureComponent/Address";
 import TableCreditTransactions from "@/Components/Tables/Grp/Org/Accounting/TableCreditTransactions.vue";
 import TableCustomers from '@/Components/Tables/Grp/Org/CRM/TableCustomers.vue';
 import TrafficSourceShowcase from "@/Components/Showcases/Grp/TrafficSourceShowcase.vue";
+import TrafficSourceAudienceMix from "@/Components/DataDisplay/Dashboard/Widget/TrafficSourceAudienceMix.vue";
 import TableMailshots from "@/Components/Tables/TableMailshots.vue";
 
 library.add(faUsers);
@@ -48,6 +49,22 @@ const props = defineProps<{
   customers?: {}
   orders?: {}
   newsletters?: {}
+  audience?: {
+    buckets: {
+      key: string
+      label: string
+      description: string
+      colour: string
+      count: number
+      share: number
+      is_acquisition: boolean
+    }[]
+    total: number
+    identified: number
+    acquisition: number
+    window_days: number
+    measured_from: string | null
+  }
 }>();
 
 let currentTab = ref(props.tabs.current);
@@ -79,4 +96,19 @@ const component = computed(() => {
     :tab="currentTab"
     :handleTabUpdate
     />
+
+  <!-- Overview only: it describes the channel as a whole, which is the question that tab asks. -->
+  <div v-if="currentTab === 'overview'" class="mx-4 mt-4 rounded-xl bg-white p-5 ring-1 ring-gray-200">
+    <Deferred data="audience">
+      <template #fallback>
+        <div class="space-y-3">
+          <div class="h-4 w-1/3 animate-pulse rounded bg-gray-100" />
+          <div class="h-2.5 w-full animate-pulse rounded-full bg-gray-100" />
+          <div v-for="row in 4" :key="row" class="h-6 animate-pulse rounded bg-gray-100" />
+        </div>
+      </template>
+
+      <TrafficSourceAudienceMix :mix="audience ?? null" />
+    </Deferred>
+  </div>
 </template>

@@ -71,6 +71,14 @@ use App\Actions\Catalogue\ShippingCountry\UpdateShippingCountry;
 use App\Actions\Catalogue\Shop\StoreExternalShop;
 use App\Actions\Catalogue\Shop\StoreShop;
 use App\Actions\Catalogue\Shop\UpdateShop;
+use App\Actions\CRM\TrafficSource\AdProposals\ApplyAdProposal;
+use App\Actions\CRM\TrafficSource\AdProposals\DismissAdProposal;
+use App\Actions\CRM\TrafficSourceCampaign\GoogleAds\StoreGoogleAdsAd;
+use App\Actions\CRM\TrafficSourceCampaign\GoogleAds\StoreGoogleAdsCampaign;
+use App\Actions\CRM\TrafficSourceCampaign\GoogleAds\StoreGoogleAdsKeyword;
+use App\Actions\CRM\TrafficSourceCampaign\GoogleAds\UpdateGoogleAdsCampaign;
+use App\Actions\CRM\TrafficSourceCampaign\GoogleAds\UpdateGoogleAdsCampaignElement;
+use App\Actions\CRM\TrafficSourceCampaign\GoogleAds\UpdateGoogleAdsNegativeKeywords;
 use App\Actions\Catalogue\Variant\UpdateVariant;
 use App\Actions\Comms\Email\SendTestEmail;
 use App\Actions\Comms\Email\UpdateEmailUnpublishedSnapshot;
@@ -822,6 +830,22 @@ Route::name('org.')->prefix('org/{organisation:id}')->group(function () {
     Route::post('shop', StoreShop::class)->name('shop.store');
     Route::post('shop-external/{engine}', StoreExternalShop::class)->name('shop.external.store');
     Route::patch('shop/{shop:id}', UpdateShop::class)->name('shop.update')->withoutScopedBindings();
+    Route::patch('shop/{shop:id}/google-ads/campaign/{trafficSourceCampaign:id}', UpdateGoogleAdsCampaign::class)
+        ->name('shop.google_ads.campaign.update')->withoutScopedBindings();
+    Route::patch('shop/{shop:id}/google-ads/campaign/{trafficSourceCampaign:id}/element', UpdateGoogleAdsCampaignElement::class)
+        ->name('shop.google_ads.campaign.element.update')->withoutScopedBindings();
+    Route::post('shop/{shop:id}/google-ads/campaign', StoreGoogleAdsCampaign::class)
+        ->name('shop.google_ads.campaign.store');
+    Route::post('shop/{shop:id}/ad-proposal/{trafficSourceAdProposal:id}/apply', ApplyAdProposal::class)
+        ->name('shop.ad_proposal.apply')->withoutScopedBindings();
+    Route::post('shop/{shop:id}/ad-proposal/{trafficSourceAdProposal:id}/dismiss', DismissAdProposal::class)
+        ->name('shop.ad_proposal.dismiss')->withoutScopedBindings();
+    Route::post('shop/{shop:id}/google-ads/campaign/{trafficSourceCampaign:id}/keyword', StoreGoogleAdsKeyword::class)
+        ->name('shop.google_ads.campaign.keyword.store')->withoutScopedBindings();
+    Route::post('shop/{shop:id}/google-ads/campaign/{trafficSourceCampaign:id}/ad', StoreGoogleAdsAd::class)
+        ->name('shop.google_ads.campaign.ad.store')->withoutScopedBindings();
+    Route::patch('shop/{shop:id}/google-ads/campaign/{trafficSourceCampaign:id}/negative-keywords', UpdateGoogleAdsNegativeKeywords::class)
+        ->name('shop.google_ads.campaign.negative_keywords.update')->withoutScopedBindings();
     Route::post('fulfilment', StoreFulfilmentFromUI::class)->name('fulfilment.store');
 
     Route::prefix('boxes')->name('boxes.')->group(function () {
