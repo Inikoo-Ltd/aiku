@@ -10,6 +10,7 @@ namespace App\Actions\Dropshipping\Shopify\Product;
 
 use App\Actions\Dropshipping\Portfolio\Logs\StorePlatformPortfolioLog;
 use App\Actions\Dropshipping\Portfolio\Logs\UpdatePlatformPortfolioLog;
+use App\Actions\Dropshipping\Shopify\CheckShopifyChannel;
 use App\Actions\Dropshipping\Shopify\WithShopifyApi;
 use App\Actions\Dropshipping\WooCommerce\Product\UpdateWooCustomerSalesChannelPortfolio;
 use App\Enums\Ordering\PlatformLogs\PlatformPortfolioLogsStatusEnum;
@@ -20,6 +21,7 @@ use App\Models\Dropshipping\ShopifyUser;
 use Illuminate\Console\Command;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Sentry;
@@ -53,6 +55,18 @@ class BulkUpdateShopifyPortfolio implements ShouldBeUnique
         $shopifyUser = $customerSalesChannel->user;
         if (!$shopifyUser instanceof ShopifyUser) {
             $command?->error('Shopify user not found');
+
+            return;
+        }
+
+        if (!$shopifyUser->shopify_location_id) {
+            CheckShopifyChannel::run($customerSalesChannel);
+            $shopifyUser->refresh();
+        }
+
+        if (!$shopifyUser->shopify_location_id) {
+            $command?->error('No Shopify location for this channel, stock can not be sent');
+            Log::error('Shopify stock update skipped, no location', ['customer_sales_channel_id' => $customerSalesChannel->id]);
 
             return;
         }
