@@ -3300,3 +3300,50 @@ test('the post costfix rollup window reaches back to the oldest provisional purc
     expect($earlyDay)->toBeTrue()
         ->and($rolledUp)->toBeGreaterThanOrEqual(2);
 });
+
+test('merging a duplicate stock keeps the links its twin already has', function () {
+    $group  = $this->organisation->group;
+    $stocks = createStocks($group);
+    $empty  = $stocks[0];
+    $held   = $stocks[1];
+    createOrgStocks($this->organisation, [$empty, $held]);
+    DB::table('location_org_stocks')->whereIn('org_stock_id', $this->organisation->orgStocks()->where('stock_id', $empty->id)->pluck('id'))->update(['quantity' => 0]);
+
+    $tradeUnit = StoreTradeUnit::make()->action($group, TradeUnit::factory()->definition());
+    foreach ([$empty, $held] as $stock) {
+        DB::table('model_has_trade_units')->insert([
+            'model_type' => 'Stock', 'model_id' => $stock->id, 'trade_unit_id' => $tradeUnit->id,
+            'quantity' => 1, 'created_at' => now(), 'updated_at' => now(),
+        ]);
+    }
+
+    \App\Actions\Goods\Stock\MergeDuplicateStock::make()->handle($empty->refresh(), $held->refresh());
+
+    expect(DB::table('model_has_trade_units')->where('model_type', 'Stock')->where('model_id', $empty->id)->count())->toBe(0)
+        ->and(DB::table('model_has_trade_units')->where('model_type', 'Stock')->where('model_id', $held->id)->where('trade_unit_id', $tradeUnit->id)->count())->toBe(1)
+        ->and($empty->refresh()->state)->toBe(\App\Enums\Goods\Stock\StockStateEnum::DISCONTINUED);
+});
+
+test('merging a duplicate trade unit hands its stock to the twin so the product finds its org stock again', function () {
+    list(, , $shop) = createShop();
+    list(, $product) = createProduct($shop);
+    $tradeUnit = $product->tradeUnits()->first();
+    $duplicate = StoreTradeUnit::make()->action($shop->group, TradeUnit::factory()->definition());
+    // Aurora fetches bypass the unique code validation, so the twin is renamed in place
+    DB::table('trade_units')->where('id', $duplicate->id)->update(['code' => $tradeUnit->code]);
+
+    $stock = createStocks($shop->group)[2];
+    [$orgStock] = createOrgStocks($shop->organisation, [$stock]);
+    foreach ([['Stock', $stock->id], ['OrgStock', $orgStock->id]] as [$type, $id]) {
+        DB::table('model_has_trade_units')->insert([
+            'model_type' => $type, 'model_id' => $id, 'trade_unit_id' => $duplicate->id,
+            'quantity' => 1, 'created_at' => now(), 'updated_at' => now(),
+        ]);
+    }
+
+    \App\Actions\Goods\TradeUnit\MergeDuplicateTradeUnit::make()->handle($duplicate, $tradeUnit);
+
+    expect($duplicate->fresh()->trashed())->toBeTrue()
+        ->and(DB::table('model_has_trade_units')->where('trade_unit_id', $tradeUnit->id)->where('model_type', 'Stock')->where('model_id', $stock->id)->exists())->toBeTrue()
+        ->and($product->refresh()->orgStocks()->where('org_stocks.id', $orgStock->id)->exists())->toBeTrue();
+});

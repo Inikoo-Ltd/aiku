@@ -24,6 +24,7 @@ import ColorMode from '@/Components/Forms/Fields/ColorMode.vue'
 import Checkbox from '@/Components/Forms/Fields/Checkbox.vue'
 import AppTheme from '@/Components/Forms/Fields/AppTheme.vue'
 import ChatTheme from '@/Components/Forms/Fields/ChatTheme.vue'
+import NotificationChannels from '@/Components/Forms/Fields/NotificationChannels.vue'
 import Action from '@/Components/Forms/Fields/Action.vue'
 import AppLogin from '@/Components/Forms/Fields/AppLogin.vue'
 import Pin from '@/Components/Forms/Fields/Pin.vue'
@@ -109,6 +110,7 @@ import FieldGroup from '@/Components/Forms/Fields/FieldGroup.vue'
 import MultiplePriceCurrency from '@/Components/Forms/Fields/MultiplePriceCurrency.vue'
 import MasterShopPriceExchanges from '@/Components/Forms/Fields/MasterShopPriceExchanges.vue'
 import ContactOptionsPanel from '@/Components/Forms/Fields/ContactOptionPanel.vue'
+import WhatsappPhoneStatus from '@/Components/Forms/Fields/WhatsappPhoneStatus.vue'
 import IngredientsField from '@/Components/Forms/Fields/IngredientsField.vue'
 import TradeUnitsForStock from '@/Components/Forms/Fields/TradeUnitsForStock.vue'
 import FamilyCustomize from '@/Components/Forms/Fields/FamilyCustomize.vue'
@@ -161,6 +163,7 @@ export const componentsList: { [key: string]: Component } = {
     'app_login': AppLogin,
     'app_theme': AppTheme,
     'chat_theme': ChatTheme,
+    'notification_channels': NotificationChannels,
     'product_parts': ProductParts,
     'employeeState': EmployeeState,
     'pin': Pin,
@@ -228,6 +231,7 @@ export const componentsList: { [key: string]: Component } = {
     'multiple_price_currency' : MultiplePriceCurrency,
     'master_shop_price_exchanges' : MasterShopPriceExchanges,
     'contact_options_panel' : ContactOptionsPanel,
+    'whatsapp_phone_status' : WhatsappPhoneStatus,
     'category-comparison' : CategoryComparison
 }
 

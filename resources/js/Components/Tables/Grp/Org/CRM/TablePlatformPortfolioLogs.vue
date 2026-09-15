@@ -48,6 +48,15 @@ const statusLabels: Record<string, string> = {
             </div>
         </template>
 
+        <template #cell(updated_at)="{ item: log }">
+            <div class="text-gray-500">
+                <template v-if="log.updated_at && log.updated_at !== log.created_at">
+                    {{ useFormatTime(log.updated_at, { localeCode: locale.language.code, formatTime: "hm" }) }}
+                </template>
+                <span v-else v-tooltip="trans('Never retried')">—</span>
+            </div>
+        </template>
+
         <template #cell(status)="{ item: log }">
             <div class="whitespace-nowrap">
                 <FontAwesomeIcon v-if="log.status === 'ok'" icon="fal fa-check" class="text-green-500"

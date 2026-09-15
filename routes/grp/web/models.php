@@ -150,6 +150,7 @@ use App\Actions\Dropshipping\CustomerClient\StoreCustomerClient;
 use App\Actions\Dropshipping\CustomerClient\UpdateCustomerClient;
 use App\Actions\Dropshipping\CustomerSalesChannel\CheckCustomerSalesChannel;
 use App\Actions\Dropshipping\CustomerSalesChannel\CloseCustomerSalesChannel;
+use App\Actions\Dropshipping\CustomerSalesChannel\ForceSyncCustomerSalesChannelPortfolios;
 use App\Actions\Dropshipping\Ebay\Product\MatchBulkNewProductToCurrentEbay;
 use App\Actions\Dropshipping\Portfolio\MatchBulkPortfoliosToPlatform;
 use App\Actions\Dropshipping\Ebay\Product\MatchPortfolioToCurrentEbayProduct;
@@ -422,7 +423,9 @@ use App\Actions\Production\Artefact\DetachManufactureTaskFromArtefact;
 use App\Actions\Production\Artefact\DetachRawMaterialFromRecipeStep;
 use App\Actions\Production\Artefact\ImportArtefact;
 use App\Actions\Production\Artefact\Label\DeleteArtefactLabel;
+use App\Actions\Production\Artefact\Label\DownloadArtefactLabelPdf;
 use App\Actions\Production\Artefact\Label\PdfArtefactLabelSheet;
+use App\Actions\Production\Artefact\Label\PublishArtefactLabel;
 use App\Actions\Production\Artefact\Label\StoreArtefactLabel;
 use App\Actions\Production\Artefact\Label\UpdateArtefactLabel;
 use App\Actions\Production\Artefact\MoveArtefactsToDepartment;
@@ -446,6 +449,8 @@ use App\Actions\Production\JobOrder\StoreJobOrder;
 use App\Actions\Production\JobOrderItem\StoreJobOrderItem;
 use App\Actions\Production\ManufactureTaskSession\VoidManufactureTaskSession;
 use App\Actions\Production\ManufactureTaskSession\CloseManufactureTaskSession;
+use App\Actions\Production\ManufactureBreak\StartManufactureBreak;
+use App\Actions\Production\ManufactureBreak\EndManufactureBreak;
 use App\Actions\Production\ManufactureTaskSession\StartManufactureTaskSession;
 use App\Actions\Production\JobOrder\UpdateJobOrder;
 use App\Actions\Production\ManufactureTask\StoreManufactureTask;
@@ -519,6 +524,7 @@ use App\Actions\Web\WebLayoutTemplate\ApplyWebLayoutTemplate;
 use App\Actions\Web\WebLayoutTemplate\DeleteWebLayoutTemplate;
 use App\Actions\Web\WebLayoutTemplate\StoreWebLayoutTemplate;
 use App\Actions\Web\Webpage\BreakWebpageCache;
+use App\Actions\Web\Webpage\RefreshWebpagePageSpeed;
 use App\Actions\Web\Webpage\DeleteWebpage;
 use App\Actions\Web\Webpage\PublishWebpage;
 use App\Actions\Web\Webpage\ReorderWebBlocks;
@@ -526,6 +532,12 @@ use App\Actions\Web\Webpage\SetBlogWebpagesCategoryBulk;
 use App\Actions\Web\Webpage\SetWebpageOfflineBulk;
 use App\Actions\Web\Webpage\StoreWebpage;
 use App\Actions\Web\Webpage\UpdateWebpage;
+use App\Actions\Web\Webpage\LockWebpage;
+use App\Actions\Web\Webpage\UnlockWebpage;
+use App\Actions\Web\Webpage\RequestWebpageEditAccess;
+use App\Actions\Web\Webpage\ApproveWebpageEditAccess;
+use App\Actions\Web\Webpage\DeclineWebpageEditAccess;
+use App\Http\Middleware\EnsureWebpageIsNotLocked;
 use App\Actions\Web\Webpage\WebpageWorkshopCheckWebBlock;
 use App\Actions\Web\Website\AutosaveWebsiteMarginal;
 use App\Actions\Web\Website\BreakWebsiteCache;
@@ -1202,6 +1214,14 @@ Route::patch('set-snapshot-website/{snapshot:id}/published', ApplyWebsiteMenuSna
 Route::patch('set-snapshot-website/{snapshot:id}/unpublished', [ApplyWebsiteMenuSnapshot::class, 'asUnpublished'])->name('website.set-snapshot-as-unpublished')->withoutScopedBindings();
 
 Route::name('webpage.')->prefix('webpage/{webpage:id}')->group(function () {
+    Route::post('lock', LockWebpage::class)->name('lock')->withoutScopedBindings();
+    Route::post('unlock', UnlockWebpage::class)->name('unlock')->withoutScopedBindings();
+    Route::post('request-edit-access', RequestWebpageEditAccess::class)->name('edit_access.request')->withoutScopedBindings();
+    Route::post('approve-edit-access', ApproveWebpageEditAccess::class)->name('edit_access.approve')->withoutScopedBindings();
+    Route::post('decline-edit-access', DeclineWebpageEditAccess::class)->name('edit_access.decline')->withoutScopedBindings();
+});
+
+Route::name('webpage.')->prefix('webpage/{webpage:id}')->middleware(EnsureWebpageIsNotLocked::class)->group(function () {
     Route::patch('', UpdateWebpage::class)->name('update')->withoutScopedBindings();
     Route::patch('web-block-check', WebpageWorkshopCheckWebBlock::class)->name('web_block_check');
     Route::patch('delete', DeleteWebpage::class)->name('delete');
@@ -1225,7 +1245,7 @@ Route::name('redirect.')->prefix('redirect/{redirect:id}')->group(function () {
     Route::delete('', DeleteRedirect::class)->name('delete');
 });
 
-Route::name('model_has_web_block.')->prefix('model-has-web-block')->group(function () {
+Route::name('model_has_web_block.')->prefix('model-has-web-block')->middleware(EnsureWebpageIsNotLocked::class)->group(function () {
     Route::patch('bulk', BulkUpdateModelHasWebBlocks::class)->name('bulk.update');
     Route::prefix('{modelHasWebBlocks:id}')->group(function () {
         Route::patch('', UpdateModelHasWebBlocks::class)->name('update');
@@ -1260,6 +1280,7 @@ Route::name('customer_sales_channel.')->prefix('customer-sales-channel/{customer
     Route::post('client', StoreCustomerClient::class)->name('client.store');
     Route::delete('delete', CloseCustomerSalesChannel::class)->name('delete');
     Route::patch('reset-shopify', ResetShopifyChannel::class)->name('shopify_reset');
+    Route::patch('force-sync-portfolios', ForceSyncCustomerSalesChannelPortfolios::class)->name('force_sync_portfolios');
 });
 
 Route::post('{shop:id}/purge', StorePurge::class)->name('purge.store');
@@ -1328,6 +1349,8 @@ Route::patch('/compliance-item/{artefactComplianceItem:id}', UpdateArtefactCompl
 Route::delete('/compliance-item/{artefactComplianceItem:id}', DeleteArtefactComplianceItem::class)->name('artefact.compliance-item.delete')->withoutScopedBindings();
 Route::post('/job-order-item-task/{jobOrderItemTask:id}/session', StartManufactureTaskSession::class)->name('job-order-item-task.session.store')->withoutScopedBindings();
 Route::patch('/manufacture-task-session/{manufactureTaskSession:id}/close', CloseManufactureTaskSession::class)->name('manufacture-task-session.close')->withoutScopedBindings();
+Route::post('/production/{production:id}/break', StartManufactureBreak::class)->name('production.break.store')->withoutScopedBindings();
+Route::patch('/manufacture-break/{manufactureBreak:id}/end', EndManufactureBreak::class)->name('manufacture-break.end')->withoutScopedBindings();
 
 Route::patch('stored-items/{storedItem:id}', UpdateStoredItem::class)->name('stored-items.update');
 
@@ -1475,6 +1498,8 @@ Route::name('artefact.')->prefix('artefact/{artefact:id}')->group(function () {
     Route::post('label-sheet', PdfArtefactLabelSheet::class)->name('label_sheet');
     Route::post('labels', StoreArtefactLabel::class)->name('labels.store');
     Route::post('labels/{label:id}', UpdateArtefactLabel::class)->name('labels.update');
+    Route::post('labels/{label:id}/publish', PublishArtefactLabel::class)->name('labels.publish');
+    Route::get('labels/{label:id}/pdf', DownloadArtefactLabelPdf::class)->name('labels.pdf');
     Route::delete('labels/{label:id}', DeleteArtefactLabel::class)->name('labels.delete');
     Route::post('tags/store', [StoreTag::class, 'inArtefact'])->name('tags.store');
     Route::patch('tags/{tag:id}/update', [UpdateTag::class, 'inArtefact'])->name('tags.update');
@@ -1511,6 +1536,7 @@ Route::name('poll.')->prefix('poll')->group(function () {
 });
 
 Route::post('webpage/{webpage:id}/break-cache', BreakWebpageCache::class)->name('webpage.break_cache')->withoutScopedBindings();
+Route::post('webpage/{webpage:id}/pagespeed/refresh', RefreshWebpagePageSpeed::class)->name('webpage.pagespeed.refresh')->withoutScopedBindings();
 Route::post('webpage/{webpage:id}/redirect', StoreRedirectFromWebpage::class)->name('webpage.redirect.store')->withoutScopedBindings();
 
 Route::post('website/{website:id}/break-cache', BreakWebsiteCache::class)->name('website.break_cache')->withoutScopedBindings();

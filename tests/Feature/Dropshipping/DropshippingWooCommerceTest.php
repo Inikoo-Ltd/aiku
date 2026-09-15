@@ -30,7 +30,11 @@ use App\Actions\Dropshipping\WooCommerce\Product\CheckWooPortfolio;
 use App\Actions\Dropshipping\WooCommerce\Product\GetProductForWooCommerce;
 use App\Actions\Dropshipping\WooCommerce\Product\GetWooListedSkus;
 use App\Actions\Dropshipping\WooCommerce\Product\MatchBulkNewProductToCurrentWooCommerce;
+use App\Actions\Dropshipping\WooCommerce\Product\StoreBulkDispatchProductToCurrentWooCommerce;
+use App\Actions\Dropshipping\WooCommerce\Product\StoreBulkNewProductToCurrentWooCommerce;
 use App\Actions\Dropshipping\WooCommerce\Product\StoreNewProductToCurrentWooCommerce;
+use App\Actions\Dropshipping\WooCommerce\Product\StoreWooCommerceProduct;
+use App\Events\UploadProductToSalesChannelProgressEvent;
 use App\Actions\Dropshipping\WooCommerce\Product\UpdateInventoryInWooPortfolio;
 use App\Actions\Dropshipping\WooCommerce\Product\UpdateWooCustomerSalesChannelPortfolio;
 use App\Actions\Dropshipping\WooCommerce\Product\UpdateWooProduct;
@@ -66,6 +70,7 @@ use Illuminate\Http\Client\Request;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Str;
@@ -1255,4 +1260,41 @@ test('the one-off repair clears the parked label only on channels whose store an
         ->and($dead->fresh()->ping_error_count)->toBe(PingActiveWooChannel::PARKED_AFTER_FAILURES)
         ->and($dead->fresh()->platform_status)->toBeTrue()
         ->and($dark->fresh()->ping_error_count)->toBe(PingActiveWooChannel::PARKED_AFTER_FAILURES);
+});
+
+test('a product upload is given a long timeout because the store fetches the images while creating it', function () {
+    $wooCommerceUser = wooConnect(wooCustomer($this->shop));
+    $portfolio       = wooPortfolio($wooCommerceUser->customerSalesChannel, $this->product, null, 'aw-slow-host');
+
+    wooFake([
+        'POST products'    => Http::response(wooProduct(801, ['sku' => 'aw-slow-host']), 201),
+        'GET products/801' => Http::response(wooProduct(801, ['sku' => 'aw-slow-host'])),
+    ]);
+
+    StoreNewProductToCurrentWooCommerce::run($wooCommerceUser, $portfolio);
+
+    expect($wooCommerceUser->timeOut)->toBe(StoreWooCommerceProduct::CREATE_TIMEOUT_SECONDS)
+        ->and($portfolio->refresh()->platform_status)->toBeTrue();
+});
+
+test('a bulk upload shares one progress counter across its chunks and a killed product job still counts', function () {
+    Queue::fake();
+    Event::fake([UploadProductToSalesChannelProgressEvent::class]);
+
+    $wooCommerceUser = wooConnect(wooCustomer($this->shop));
+    $channel         = $wooCommerceUser->customerSalesChannel;
+    $portfolio       = wooPortfolio($channel, $this->product, null, 'aw-bulk-1');
+
+    StoreBulkNewProductToCurrentWooCommerce::run($channel, ['portfolios' => [$portfolio->id]]);
+
+    $bulkProgress = null;
+    StoreBulkDispatchProductToCurrentWooCommerce::assertPushed(function ($action, array $parameters) use (&$bulkProgress) {
+        $bulkProgress = $parameters[2];
+
+        return is_string(Arr::get($bulkProgress, 'cache_key')) && Arr::get($bulkProgress, 'total') === 1;
+    });
+
+    StoreNewProductToCurrentWooCommerce::make()->jobFailed(new RuntimeException('killed'), $wooCommerceUser, $portfolio, false, $bulkProgress);
+
+    Event::assertDispatched(UploadProductToSalesChannelProgressEvent::class, fn ($event) => $event->statistics === ['total' => 1, 'success' => 0, 'fail' => 1]);
 });

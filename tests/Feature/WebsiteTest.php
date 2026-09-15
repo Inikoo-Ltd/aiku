@@ -33,13 +33,24 @@ use App\Actions\Web\ModelHasWebBlocks\StoreModelHasWebBlock;
 use App\Actions\Web\ModelHasWebBlocks\UpdateModelHasWebBlocks;
 use App\Actions\Web\Redirect\StoreRedirect;
 use App\Actions\Web\Redirect\StoreRedirectFromWebpage;
+use App\Actions\Web\Webpage\FetchTopWebpagesPageSpeed;
 use App\Actions\Web\Webpage\HydrateWebpage;
 use App\Actions\Web\Webpage\Iris\ShowIrisRobotsTxt;
 use App\Actions\CRM\WebUser\Retina\UI\ShowRetinaLogin;
 use App\Actions\Web\Webpage\Iris\ShowIrisWebpage;
 use App\Actions\Web\Webpage\ProcessWebpageTimeSeriesRecords;
 use App\Actions\Web\Webpage\StoreWebpage;
+use App\Actions\Web\Webpage\StoreWebpagePageSpeedTimeSeriesRecord;
 use App\Actions\Web\Webpage\UpdateWebpage;
+use App\Actions\Web\Webpage\LockWebpage;
+use App\Actions\Web\Webpage\UnlockWebpage;
+use App\Actions\Web\Webpage\RequestWebpageEditAccess;
+use App\Actions\Web\Webpage\ApproveWebpageEditAccess;
+use App\Actions\Web\Webpage\DeclineWebpageEditAccess;
+use App\Notifications\WebpageEditAccessNotification;
+use Illuminate\Support\Facades\Notification;
+use App\Actions\SysAdmin\Guest\StoreGuest;
+use App\Models\SysAdmin\Guest;
 use App\Actions\Web\Webpage\UpdateWebpageCanonicalUrl;
 use App\Actions\Web\Website\AutosaveWebsiteMarginal;
 use App\Actions\Web\Website\Cloudflare\BlockCountriesInCloudflare;
@@ -47,6 +58,7 @@ use App\Actions\Web\Website\HydrateWebsite;
 use App\Actions\Web\Website\LaunchWebsite;
 use App\Actions\Web\Website\ProcessWebsiteTimeSeriesRecords;
 use App\Actions\Web\Website\PublishWebsiteMarginal;
+use App\Actions\Web\Webpage\GetWebpagePageSpeed;
 use App\Actions\Web\Webpage\GetWebpagePerformance;
 use App\Actions\Web\Webpage\PublishWebpage;
 use App\Enums\Helpers\Audit\AuditEventEnum;
@@ -1561,6 +1573,156 @@ test('process webpage time series records', function (Webpage $webpage) {
     expect($webpage->timeSeries()->where('frequency', TimeSeriesFrequencyEnum::DAILY->value)->exists())->toBeTrue();
 })->depends('create webpage');
 
+test('pagespeed runs are kept in the webpage time series, averaged per week and plotted in the webpage performance', function (Webpage $webpage) {
+    $pageSpeedResult = fn (string $strategy, string $fetchedAt, int $performance) => [
+        'url'            => 'https://www.example.com/landing',
+        'strategy'       => $strategy,
+        'fetched_at'     => $fetchedAt,
+        'scores'         => [
+            ['key' => 'performance', 'label' => 'Performance', 'score' => $performance, 'rating' => 'average'],
+            ['key' => 'accessibility', 'label' => 'Accessibility', 'score' => 97, 'rating' => 'fast'],
+            ['key' => 'best-practices', 'label' => 'Best practices', 'score' => 96, 'rating' => 'fast'],
+            ['key' => 'seo', 'label' => 'SEO', 'score' => 85, 'rating' => 'average'],
+        ],
+        'lab'            => [],
+        'field'          => [],
+        'overall_rating' => 'AVERAGE',
+    ];
+
+    StoreWebpagePageSpeedTimeSeriesRecord::run($webpage, $pageSpeedResult('desktop', '2026-06-01T08:00:00.000Z', 80));
+    StoreWebpagePageSpeedTimeSeriesRecord::run($webpage, $pageSpeedResult('desktop', '2026-06-02T08:00:00.000Z', 90));
+    StoreWebpagePageSpeedTimeSeriesRecord::run($webpage, $pageSpeedResult('mobile', '2026-06-02T08:10:00.000Z', 40));
+
+    ProcessWebpageTimeSeriesRecords::run($webpage->id, TimeSeriesFrequencyEnum::DAILY, '2026-06-01', '2026-06-07');
+
+    $dailyRecord = $webpage->timeSeries()->where('frequency', TimeSeriesFrequencyEnum::DAILY->value)->first()
+        ->records()->where('period', '2026-06-02')->first();
+
+    expect($dailyRecord->pagespeed_desktop_performance)->toBe(90)
+        ->and($dailyRecord->pagespeed_mobile_performance)->toBe(40)
+        ->and($dailyRecord->pagespeed_desktop_accessibility)->toBe(97)
+        ->and($dailyRecord->pagespeed_desktop_best_practices)->toBe(96)
+        ->and($dailyRecord->pagespeed_desktop_seo)->toBe(85);
+
+    $weeklyRecord = $webpage->timeSeries()->where('frequency', TimeSeriesFrequencyEnum::WEEKLY->value)->first()
+        ->records()->where('period', '2026 W23')->first();
+
+    expect($weeklyRecord->pagespeed_desktop_performance)->toBe(85)
+        ->and($weeklyRecord->pagespeed_mobile_performance)->toBe(40)
+        ->and($weeklyRecord->pagespeed_desktop_accessibility)->toBe(97);
+
+    $dailyPerformance = GetWebpagePerformance::run($webpage, ['startDate' => '2026-06-01', 'endDate' => '2026-06-07']);
+
+    expect($dailyPerformance['pagespeed_frequency'])->toBe('daily')
+        ->and($dailyPerformance['pagespeed'])->toHaveCount(2)
+        ->and($dailyPerformance['pagespeed'][0]['date'])->toBe('2026-06-01')
+        ->and($dailyPerformance['pagespeed'][0]['desktop']['performance'])->toBe(80)
+        ->and($dailyPerformance['pagespeed'][0]['mobile']['performance'])->toBeNull()
+        ->and($dailyPerformance['pagespeed'][1]['mobile']['performance'])->toBe(40)
+        ->and($dailyPerformance['pagespeed'][1]['desktop'])->toBe([
+            'performance'    => 90,
+            'accessibility'  => 97,
+            'best_practices' => 96,
+            'seo'            => 85,
+        ]);
+
+    $weeklyPerformance = GetWebpagePerformance::run($webpage, ['startDate' => '2026-03-01', 'endDate' => '2026-06-30']);
+
+    expect($weeklyPerformance['pagespeed_frequency'])->toBe('weekly')
+        ->and($weeklyPerformance['pagespeed'])->toHaveCount(1)
+        ->and($weeklyPerformance['pagespeed'][0]['date'])->toBe('2026-06-01')
+        ->and($weeklyPerformance['pagespeed'][0]['desktop']['performance'])->toBe(85);
+})->depends('create webpage');
+
+test('webpage performance adds a cached pagespeed result that is not in the history yet', function (Webpage $webpage) {
+    $result = [
+        'url'            => 'https://www.example.com/landing',
+        'strategy'       => 'mobile',
+        'fetched_at'     => '2026-07-14T09:30:00.000Z',
+        'scores'         => [
+            ['key' => 'performance', 'label' => 'Performance', 'score' => 52, 'rating' => 'average'],
+            ['key' => 'accessibility', 'label' => 'Accessibility', 'score' => 90, 'rating' => 'fast'],
+            ['key' => 'best-practices', 'label' => 'Best practices', 'score' => 78, 'rating' => 'average'],
+            ['key' => 'seo', 'label' => 'SEO', 'score' => 92, 'rating' => 'fast'],
+        ],
+        'lab'            => [],
+        'field'          => [],
+        'overall_rating' => null,
+    ];
+
+    cache()->put(GetWebpagePageSpeed::resultKey($webpage, 'mobile'), $result, now()->addHour());
+
+    expect(StoreWebpagePageSpeedTimeSeriesRecord::isRecorded($webpage, $result))->toBeFalse();
+
+    $performance = GetWebpagePerformance::run($webpage, ['startDate' => '2026-07-13', 'endDate' => '2026-07-19']);
+
+    expect($performance['pagespeed'])->toHaveCount(1)
+        ->and($performance['pagespeed'][0]['date'])->toBe('2026-07-14')
+        ->and($performance['pagespeed'][0]['mobile'])->toBe([
+            'performance'    => 52,
+            'accessibility'  => 90,
+            'best_practices' => 78,
+            'seo'            => 92,
+        ])
+        ->and($performance['pagespeed'][0]['desktop']['performance'])->toBeNull()
+        ->and(StoreWebpagePageSpeedTimeSeriesRecord::isRecorded($webpage, $result))->toBeTrue();
+})->depends('create webpage');
+
+test('the daily pagespeed crawl queues every department and the best performing capped webpages', function (Website $website) {
+    config()->set('app.analytics.google.pagespeed_api_key', 'test-key');
+
+    $storePageSpeedWebpage = function (WebpageTypeEnum $type, WebpageSubTypeEnum $subType, ?int $performance) use ($website) {
+        $webpage = StoreWebpage::make()->action($website->storefront, Webpage::factory()->definition());
+
+        $webpage->update([
+            'type'          => $type,
+            'sub_type'      => $subType,
+            'state'         => WebpageStateEnum::LIVE,
+            'canonical_url' => 'https://www.example.com/'.$webpage->slug,
+        ]);
+
+        if ($performance !== null) {
+            StoreWebpagePageSpeedTimeSeriesRecord::run($webpage, [
+                'strategy'   => 'mobile',
+                'fetched_at' => '2026-08-01T08:00:00.000Z',
+                'scores'     => [
+                    ['key' => 'performance', 'label' => 'Performance', 'score' => $performance, 'rating' => 'average'],
+                ],
+            ]);
+        }
+
+        return $webpage->refresh();
+    };
+
+    $fastFamily    = $storePageSpeedWebpage(WebpageTypeEnum::CATALOGUE, WebpageSubTypeEnum::FAMILY, 95);
+    $slowFamily    = $storePageSpeedWebpage(WebpageTypeEnum::CATALOGUE, WebpageSubTypeEnum::FAMILY, 20);
+    $department    = $storePageSpeedWebpage(WebpageTypeEnum::CATALOGUE, WebpageSubTypeEnum::DEPARTMENT, null);
+    $productPage   = $storePageSpeedWebpage(WebpageTypeEnum::CATALOGUE, WebpageSubTypeEnum::PRODUCT, 99);
+    $closedFamily  = $storePageSpeedWebpage(WebpageTypeEnum::CATALOGUE, WebpageSubTypeEnum::FAMILY, 99);
+    $closedFamily->update(['state' => WebpageStateEnum::CLOSED]);
+
+    Queue::fake();
+
+    $summary = FetchTopWebpagesPageSpeed::run(1);
+
+    $queuedWebpageIds = collect();
+
+    Queue::assertPushed(JobDecorator::class, function (JobDecorator $job) use ($queuedWebpageIds) {
+        if ($job->decorates(GetWebpagePageSpeed::class)) {
+            $queuedWebpageIds->push($job->getParameters()[0]->id);
+        }
+
+        return true;
+    });
+
+    expect($summary['queued_runs'])->toBe($queuedWebpageIds->count())
+        ->and($queuedWebpageIds->countBy()->get($fastFamily->id))->toBe(count(GetWebpagePageSpeed::STRATEGIES))
+        ->and($queuedWebpageIds)->toContain($department->id)
+        ->and($queuedWebpageIds)->not->toContain($slowFamily->id)
+        ->and($queuedWebpageIds)->not->toContain($productPage->id)
+        ->and($queuedWebpageIds)->not->toContain($closedFamily->id);
+})->depends('launch website');
+
 test('publish announcement', function (Website $website) {
     $announcement = StoreAnnouncement::make()->action($website, ['name' => 'to publish']);
     UpdateAnnouncement::make()->handle($announcement, ['fields' => ['title' => 'hi']]);
@@ -2182,3 +2344,128 @@ test('retina login renders the iris login block only when that page is live', fu
     expect($liveResponse)->toBeInstanceOf(Illuminate\Http\Response::class)
         ->and($liveResponse->headers->get('X-AIKU-WEBSITE'))->toBe((string) $website->id);
 })->depends('launch website');
+
+test('locked webpage rejects writes from other users, accepts owner and granted editor, and relocks after publish', function (Webpage $webpage) {
+    $owner = $this->user;
+    $other = StoreGuest::make()->action($this->organisation->group, array_merge(Guest::factory()->definition(), ['positions' => []]))->getUser();
+
+    $webpage = LockWebpage::make()->action($webpage, $owner, [
+        'reason'  => 'Optimisation completed',
+        'editors' => [['user_id' => $other->id, 'until_publish' => true]],
+    ]);
+    expect($webpage->isLocked())->toBeTrue()
+        ->and($webpage->locked_by_user_id)->toBe($owner->id)
+        ->and($webpage->canBeEditedBy($other))->toBeTrue();
+
+    PublishWebpage::make()->action($webpage, ['publisher_id' => $other->id, 'publisher_type' => 'User'], strict: false);
+    $webpage->refresh();
+    expect($webpage->canBeEditedBy($other))->toBeFalse();
+
+    actingAs($other);
+    $this->patchJson(route('grp.models.webpage.update', $webpage->id), ['title' => 'nope'])->assertStatus(422)->assertJsonValidationErrors('message');
+    $this->postJson(route('grp.models.webpage.unlock', $webpage->id), ['reason' => 'x'])->assertStatus(403);
+    expect($webpage->fresh()->title)->not->toBe('nope');
+
+    actingAs($owner);
+    $this->patchJson(route('grp.models.webpage.update', $webpage->id), ['title' => 'owner edit'])->assertSuccessful();
+    expect($webpage->fresh()->title)->toBe('owner edit');
+
+    $webpage = LockWebpage::make()->action($webpage->fresh(), $owner, [
+        'reason'  => 'Optimisation completed',
+        'editors' => [['user_id' => $other->id, 'until' => now()->subMinute()->toIso8601String()]],
+    ]);
+    expect($webpage->canBeEditedBy($other))->toBeFalse();
+
+    $webpage = UnlockWebpage::make()->action($webpage, $owner, []);
+    expect($webpage->isLocked())->toBeFalse()
+        ->and($webpage->lock_data['previous_lock']['reason'])->toBe('Optimisation completed')
+        ->and($webpage->canBeEditedBy($other))->toBeTrue();
+})->depends('create webpage');
+
+test('locked webpage stays editable for group admins and read only for other users', function (Webpage $webpage) {
+    $owner    = StoreGuest::make()->action($this->organisation->group, array_merge(Guest::factory()->definition(), ['positions' => []]))->getUser();
+    $outsider = StoreGuest::make()->action($this->organisation->group, array_merge(Guest::factory()->definition(), ['positions' => []]))->getUser();
+
+    $webpage = LockWebpage::make()->action($webpage->fresh(), $owner, ['reason' => 'Protected by owner']);
+
+    expect($this->user->hasRole('group-admin'))->toBeTrue()
+        ->and($webpage->canBeEditedBy($this->user))->toBeTrue()
+        ->and($webpage->canBeEditedBy($outsider))->toBeFalse();
+
+    actingAs($this->user);
+
+    $workshopParameters = [$this->organisation->slug, $this->shop->slug, $webpage->website->slug, $webpage->slug];
+
+    get(route('grp.org.shops.show.web.webpages.workshop', $workshopParameters))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->component('Org/Web/WebpageWorkshop')
+            ->where('editable', true)
+            ->where('lock.can_edit', true));
+
+    get(route('grp.websites.webpage.preview', [$webpage->website->slug, $webpage->slug, 'organisation' => $this->organisation->slug, 'shop' => $this->shop->slug]))
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('editable', true));
+
+    get(route('grp.org.shops.show.web.webpages.edit', $workshopParameters))->assertOk();
+
+    get(route('grp.org.shops.show.web.webpages.show', $workshopParameters))
+        ->assertInertia(fn (AssertableInertia $page) => $page->where(
+            'pageHead.actions',
+            fn ($actions) => collect($actions)->contains(fn ($action) => str_ends_with($action['route']['name'] ?? '', '.edit'))
+        ));
+
+    actingAs($outsider);
+    $this->postJson(route('grp.models.webpage.publish', $webpage->id), [])->assertStatus(422)->assertJsonValidationErrors('message');
+
+    UnlockWebpage::make()->action($webpage, $owner, []);
+})->depends('create webpage');
+
+test('locked webpage edit access can be requested, allowed temporarily and declined', function (Webpage $webpage) {
+    Notification::fake();
+
+    $owner     = $this->user;
+    $requester = StoreGuest::make()->action($this->organisation->group, array_merge(Guest::factory()->definition(), ['positions' => []]))->getUser();
+
+    $webpage = LockWebpage::make()->action($webpage->fresh(), $owner, ['reason' => 'Final copy approved']);
+
+    actingAs($requester);
+    $this->postJson(route('grp.models.webpage.edit_access.request', $webpage->id), ['note' => 'Fix a typo'])->assertSuccessful();
+    $webpage->refresh();
+    expect($webpage->lock_data['requests'])->toHaveCount(1)
+        ->and($webpage->lock_data['requests'][0]['user_id'])->toBe($requester->id)
+        ->and($webpage->lock_data['requests'][0]['note'])->toBe('Fix a typo');
+    Notification::assertSentTo($owner, WebpageEditAccessNotification::class);
+
+    $this->postJson(route('grp.models.webpage.edit_access.approve', $webpage->id), ['user_id' => $requester->id, 'mode' => 'one_hour'])->assertForbidden();
+
+    actingAs($owner);
+    $this->postJson(route('grp.models.webpage.edit_access.approve', $webpage->id), ['user_id' => $requester->id, 'mode' => 'until_date'])
+        ->assertStatus(422)->assertJsonValidationErrors('until');
+    $this->postJson(route('grp.models.webpage.edit_access.approve', $webpage->id), ['user_id' => $requester->id, 'mode' => 'until_publish'])->assertSuccessful();
+    $webpage->refresh();
+    expect($webpage->lock_data['requests'])->toBeEmpty()
+        ->and($webpage->canBeEditedBy($requester))->toBeTrue();
+    Notification::assertSentTo($requester, WebpageEditAccessNotification::class);
+
+    PublishWebpage::make()->action($webpage, ['publisher_id' => $requester->id, 'publisher_type' => 'User'], strict: false);
+    expect($webpage->refresh()->canBeEditedBy($requester))->toBeFalse();
+
+    $webpage = RequestWebpageEditAccess::make()->action($webpage, $requester, []);
+    $webpage = ApproveWebpageEditAccess::make()->action($webpage, $owner, ['user_id' => $requester->id, 'mode' => 'one_hour']);
+    expect($webpage->canBeEditedBy($requester))->toBeTrue();
+    $this->travel(61)->minutes();
+    expect($webpage->fresh()->canBeEditedBy($requester))->toBeFalse();
+    $this->travelBack();
+
+    $webpage = RequestWebpageEditAccess::make()->action($webpage->fresh(), $requester, []);
+    $webpage = LockWebpage::make()->action($webpage, $owner, ['reason' => 'Final copy approved']);
+    expect($webpage->lock_data['requests'])->toHaveCount(1);
+
+    $webpage = DeclineWebpageEditAccess::make()->action($webpage, $owner, ['user_id' => $requester->id]);
+    expect($webpage->lock_data['requests'])->toBeEmpty()
+        ->and($webpage->canBeEditedBy($requester))->toBeFalse();
+
+    UnlockWebpage::make()->action($webpage, $owner, []);
+
+    get(route('grp.org.shops.show.web.webpages.workshop', $workshopParameters))
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('editable', true));
+})->depends('create webpage');

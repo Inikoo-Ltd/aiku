@@ -603,6 +603,11 @@ class Order extends Model implements HasMedia, Auditable
             && $this->platform->type !== PlatformTypeEnum::MANUAL;
     }
 
+    public function isDropshipping(): bool
+    {
+        return $this->customer_sales_channel_id !== null;
+    }
+
     public function scopePaySettled(Builder $query): Builder
     {
         return $query->whereIn('orders.pay_status', self::PAY_SETTLED_STATUSES);

@@ -111,8 +111,25 @@ class PublishWebpage extends OrgAction
         }
         UpdateWebpageIsDifferentWhenLoggedIn::run($webpage);
         BreakWebpageCache::run($webpage);
+        $this->expireUntilPublishGrant($webpage, Arr::get($modelData, 'publisher_id'));
 
         return $webpage;
+    }
+
+    /**
+     * An edit grant given "until next publish" is spent by the publisher's own publish, so the page
+     * locks itself again for that editor.
+     */
+    protected function expireUntilPublishGrant(Webpage $webpage, ?int $publisherId): void
+    {
+        if (!$webpage->isLocked() || !$publisherId) {
+            return;
+        }
+        $lockData            = $webpage->lock_data;
+        $lockData['editors'] = collect(Arr::get($lockData, 'editors', []))
+            ->reject(fn (array $grant) => $grant['user_id'] == $publisherId && Arr::get($grant, 'until_publish'))
+            ->values()->all();
+        $webpage->update(['lock_data' => $lockData]);
     }
 
     public function rules(): array

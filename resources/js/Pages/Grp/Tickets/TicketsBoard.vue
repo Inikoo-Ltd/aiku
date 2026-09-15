@@ -14,11 +14,11 @@ import PageHeading from "@/Components/Headings/PageHeading.vue"
 import Icon from "@/Components/Icon.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faVial, faShieldCheck, faShield } from "@fal"
+import { faVial, faShieldCheck, faShield, faRocket } from "@fal"
 import { useLiveTickets } from "@/Composables/useLiveTickets"
 import TicketsCreatedInterval from "@/Components/Tickets/TicketsCreatedInterval.vue"
 
-library.add(faVial, faShieldCheck, faShield)
+library.add(faVial, faShieldCheck, faShield, faRocket)
 
 const props = defineProps<{
 	pageHead: any
@@ -31,17 +31,26 @@ const props = defineProps<{
 		color: string
 		icon: any
 		period: string | null
-		statuses: { status: string; label: string; count: number }[]
+		statuses: { status: string; label: string; color: string; count: number }[]
 		tickets: any[]
 	}[]
 	periodOptions: string[]
+	me: string
+	formerAssignees: string[]
+	assignees: { label: string; value: number; avatar: any; is_me: boolean }[]
 	createdIntervals: Record<string, string>
 	createdInterval: string
 	updateRoute: string
 	can_manage: boolean
 }>()
 
-useLiveTickets(["columns", "periodOptions"])
+
+const subActiveClasses: Record<string, string> = {
+	blue: "bg-blue-500 text-white",
+	amber: "bg-amber-500 text-white",
+	green: "bg-green-600 text-white",
+	red: "bg-red-500 text-white",
+}
 
 const columnClasses: Record<string, string> = {
 	gray: "bg-gray-100 border-t-4 border-gray-400",
@@ -96,7 +105,7 @@ const readSorts = (): Record<string, { field: SortField; desc: boolean }> => {
 
 const columnSorts = reactive(readSorts())
 
-const sortOf = (columnKey: string) => columnSorts[columnKey] ?? { field: "created_at", desc: true }
+const sortOf = (columnKey: string) => columnSorts[columnKey] ?? { field: "in_column", desc: true }
 
 const sortValue = (ticket: any, columnKey: string, field: SortField) => {
 	if (field === "priority") return priorityRank[ticket.priority] ?? 0
@@ -109,11 +118,12 @@ const sortColumn = (column: { key: string; tickets: any[] }) => {
 	column.tickets.sort((a, b) => (sortValue(a, column.key, field) - sortValue(b, column.key, field)) * (desc ? -1 : 1))
 }
 
-const changeSort = (column: { key: string; tickets: any[] }, change: "field" | "direction") => {
+const openSortPicker = ref<string | null>(null)
+
+const changeSort = (column: { key: string; tickets: any[] }, change: SortField | "direction") => {
+	openSortPicker.value = null
 	const current = sortOf(column.key)
-	columnSorts[column.key] = change === "direction"
-		? { ...current, desc: !current.desc }
-		: { field: sortFields[(sortFields.findIndex((option) => option.key === current.field) + 1) % sortFields.length].key, desc: current.desc }
+	columnSorts[column.key] = change === "direction" ? { ...current, desc: !current.desc } : { field: change, desc: current.desc }
 	try {
 		localStorage.setItem("tickets-board-sorts", JSON.stringify(columnSorts))
 	} catch {}
@@ -131,20 +141,20 @@ watch(
 	}
 )
 
-type FilterKey = "module_label" | "kind_label" | "priority_label" | "assignee"
+type FilterKey = "module_label" | "kind_label" | "priority_label" | "assignee_username"
 
 const boardFilters = reactive<Record<FilterKey, string[]>>({
 	module_label: [],
 	kind_label: [],
 	priority_label: [],
-	assignee: [],
+	assignee_username: [],
 })
 
 const filterLabels: Record<FilterKey, string> = {
 	module_label: trans("Module"),
 	kind_label: trans("Kind"),
 	priority_label: trans("Urgency"),
-	assignee: trans("Assignee"),
+	assignee_username: trans("Assignee"),
 }
 
 const countedBy = (key: FilterKey) => {
@@ -164,8 +174,19 @@ const filterOptions = computed(() => ({
 	module_label: countedBy("module_label"),
 	kind_label: countedBy("kind_label"),
 	priority_label: countedBy("priority_label"),
-	assignee: countedBy("assignee"),
+	assignee_username: countedBy("assignee_username"),
 }))
+
+const assigneeGroups = computed(() => [
+	{ label: trans("Current"), options: filterOptions.value.assignee_username.filter((option) => !props.formerAssignees.includes(option.value)) },
+	{ label: trans("Former"), options: filterOptions.value.assignee_username.filter((option) => props.formerAssignees.includes(option.value)) },
+].filter((group) => group.options.length))
+
+const shortName = (username: string) => username.charAt(0).toUpperCase() + username.slice(1)
+
+const onlyMine = computed(() => boardFilters.assignee_username.length === 1 && boardFilters.assignee_username[0] === props.me)
+
+const toggleMine = () => (boardFilters.assignee_username = onlyMine.value ? [] : [props.me])
 
 const toggleFilter = (key: FilterKey, value: string) => {
 	const index = boardFilters[key].indexOf(value)
@@ -184,30 +205,50 @@ const subFilter = reactive<Record<string, string | null>>({})
 const toggleSubFilter = (columnKey: string, status: string) =>
 	(subFilter[columnKey] = subFilter[columnKey] === status ? null : status)
 
-const matchesBoardFilters = (ticket: any) =>
+const matchesBoardFilters = (ticket: any, columnKey: string) =>
 	(Object.keys(boardFilters) as FilterKey[]).every(
-		(key) => !boardFilters[key].length || boardFilters[key].includes(ticket[key])
+		(key) =>
+			!boardFilters[key].length ||
+			(key === "assignee_username" && columnKey === "open") ||
+			boardFilters[key].includes(ticket[key])
 	)
 
 const matchesFilters = (ticket: any, columnKey: string) =>
-	(!subFilter[columnKey] || subFilter[columnKey] === ticket.status) && matchesBoardFilters(ticket)
+	(!subFilter[columnKey] || subFilter[columnKey] === ticket.status) && matchesBoardFilters(ticket, columnKey)
 
 const visibleCount = (column: { key: string; tickets: any[] }) =>
 	column.tickets.filter((ticket) => matchesFilters(ticket, column.key)).length
 
-const subCount = (column: { tickets: any[] }, status: string) =>
-	column.tickets.filter((ticket) => ticket.status === status && matchesBoardFilters(ticket))
+const subCount = (column: { key: string; tickets: any[] }, status: string) =>
+	column.tickets.filter((ticket) => ticket.status === status && matchesBoardFilters(ticket, column.key))
 		.length
+
+const myAvatar = computed(() => props.assignees.find((assignee) => assignee.is_me)?.avatar?.original ?? null)
 
 const assigneeMenuOpen = ref(false)
 
 const quickLook = ref<any | null>(null)
 
+const dragging = ref(false)
+
+useLiveTickets(["columns", "periodOptions"], undefined, computed(() => dragging.value))
+
+const closeQuickLook = () => {
+	quickLook.value = null
+	router.reload({ only: ["columns"] })
+}
+
 // ponytail: vuedraggable eats dblclick and bubbled clicks, so the board listens in capture
 let lastClick = { id: 0, at: 0 }
 
 const onBoardClick = (event: MouseEvent) => {
-	const card = (event.target as HTMLElement)?.closest?.("[data-ticket-id]") as HTMLElement | null
+	const target = event.target as HTMLElement
+	if (!target?.closest?.("[data-picker]")) {
+		openPicker.value = null
+		openSortPicker.value = null
+	}
+
+	const card = target?.closest?.("[data-ticket-id]") as HTMLElement | null
 	if (!card) return
 
 	const id = Number(card.dataset.ticketId)
@@ -243,8 +284,8 @@ const ageIn = (column: { key: string; period: string | null }, ticket: any) => {
 	return hours < 48 ? `${Math.max(hours, 0)}h` : `${Math.floor(hours / 24)}d`
 }
 
-const avatarFor = (assignee: string) =>
-	props.columns.flatMap((column) => column.tickets).find((ticket) => ticket.assignee === assignee)
+const avatarFor = (username: string) =>
+	props.columns.flatMap((column) => column.tickets).find((ticket) => ticket.assignee_username === username)
 		?.assignee_avatar?.original ?? null
 
 const initials = (name: string) =>
@@ -255,13 +296,37 @@ const initials = (name: string) =>
 		.map((part) => part[0].toUpperCase())
 		.join("")
 
-const onMoved = (status: string, event: { added?: { element: { id: number } } }) => {
+const assigning = ref<any | null>(null)
+const assignPosition = ref({ x: 0, y: 0 })
+
+const onDragEnd = (event: { originalEvent?: MouseEvent }) => {
+	dragging.value = false
+	assignPosition.value = {
+		x: Math.max(8, Math.min((event.originalEvent?.clientX ?? 0) - 40, window.innerWidth - 330)),
+		y: Math.max(8, Math.min((event.originalEvent?.clientY ?? 0) + 8, window.innerHeight - 360)),
+	}
+}
+
+const patchTicket = (ticketId: number, data: Record<string, unknown>) =>
+	router.patch(route(props.updateRoute, { ticket: ticketId }), data, { preserveScroll: true, preserveState: true })
+
+const onMoved = (status: string, event: { added?: { element: any } }) => {
 	if (!event.added) return
-	router.patch(
-		route(props.updateRoute, { ticket: event.added.element.id }),
-		{ status },
-		{ preserveScroll: true, preserveState: true }
-	)
+	if (status === "assigned" && !event.added.element.assignee_id) {
+		assigning.value = event.added.element
+		return
+	}
+	patchTicket(event.added.element.id, { status })
+}
+
+const assignTo = (assigneeId: number) => {
+	patchTicket(assigning.value.id, { status: "assigned", assignee_id: assigneeId })
+	assigning.value = null
+}
+
+const cancelAssign = () => {
+	assigning.value = null
+	router.reload({ only: ["columns"] })
 }
 </script>
 
@@ -305,30 +370,42 @@ const onMoved = (status: string, event: { added?: { element: { id: number } } })
 					>
 				</button>
 			</div>
-			<div v-if="filterOptions.assignee.length" class="relative flex items-center gap-1.5">
+			<div v-if="filterOptions.assignee_username.length" class="relative flex items-center gap-1.5">
 				<span class="mr-1 text-xs font-medium uppercase tracking-wide text-gray-400">{{
-					filterLabels.assignee
+					filterLabels.assignee_username
 				}}</span>
 				<button
 					type="button"
 					class="flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 transition"
 					:class="
-						boardFilters.assignee.length
+						onlyMine
+							? 'border-indigo-500 bg-indigo-600 text-white shadow-sm'
+							: 'border-gray-200 bg-gray-50 text-gray-600 hover:border-gray-300 hover:bg-white'
+					"
+					@click="toggleMine()">
+					<img v-if="myAvatar" :src="myAvatar" class="h-5 w-5 rounded-full object-cover" alt="" />
+					{{ trans("Me") }}
+				</button>
+				<button
+					type="button"
+					class="flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 transition"
+					:class="
+						boardFilters.assignee_username.length && !onlyMine
 							? 'border-indigo-500 bg-indigo-600 text-white shadow-sm'
 							: 'border-gray-200 bg-gray-50 text-gray-600 hover:border-gray-300 hover:bg-white'
 					"
 					@click="assigneeMenuOpen = !assigneeMenuOpen">
 					<span class="max-w-48 truncate">{{
-						boardFilters.assignee.length
-							? boardFilters.assignee.join(", ")
+						boardFilters.assignee_username.length && !onlyMine
+							? boardFilters.assignee_username.map(shortName).join(", ")
 							: trans("Everybody")
 					}}</span>
 					<span
 						class="rounded-full px-1.5 text-xs tabular-nums"
 						:class="
-							boardFilters.assignee.length ? 'bg-white/20' : 'bg-white text-gray-500'
+							boardFilters.assignee_username.length && !onlyMine ? 'bg-white/20' : 'bg-white text-gray-500'
 						"
-						>{{ boardFilters.assignee.length || filterOptions.assignee.length }}</span
+						>{{ (!onlyMine && boardFilters.assignee_username.length) || filterOptions.assignee_username.length }}</span
 					>
 				</button>
 				<div
@@ -337,33 +414,38 @@ const onMoved = (status: string, event: { added?: { element: { id: number } } })
 					@click="assigneeMenuOpen = false" />
 				<div
 					v-if="assigneeMenuOpen"
-					class="absolute left-0 top-8 z-40 max-h-72 w-64 overflow-y-auto rounded-lg border border-gray-200 bg-white p-1.5 shadow-xl">
-					<label
-						v-for="option in filterOptions.assignee"
-						:key="option.value"
-						class="flex cursor-pointer items-center gap-2 rounded px-2 py-1.5 hover:bg-gray-50">
-						<input
-							type="checkbox"
-							:checked="boardFilters.assignee.includes(option.value)"
-							@change="toggleFilter('assignee', option.value)" />
-						<img
-							v-if="avatarFor(option.value)"
-							:src="avatarFor(option.value)"
-							class="h-6 w-6 rounded-full object-cover"
-							:alt="option.value" />
-						<span
-							v-else
-							class="flex h-6 w-6 items-center justify-center rounded-full bg-gray-200 text-[10px] font-semibold text-gray-600"
-							>{{ initials(option.value) }}</span
-						>
-						<span class="truncate">{{ option.value }}</span>
-						<span class="ml-auto text-xs text-gray-400">{{ option.count }}</span>
-					</label>
+					class="absolute left-0 top-8 z-40 max-h-72 w-56 overflow-y-auto rounded-lg border border-gray-200 bg-white p-1.5 shadow-xl">
+					<template v-for="group in assigneeGroups" :key="group.label">
+						<div class="px-2 pb-1 pt-2 text-xs font-medium uppercase tracking-wide text-gray-400">
+							{{ group.label }}
+						</div>
+						<label
+							v-for="option in group.options"
+							:key="option.value"
+							class="flex cursor-pointer items-center gap-2 rounded px-2 py-1.5 hover:bg-gray-50">
+							<input
+								type="checkbox"
+								:checked="boardFilters.assignee_username.includes(option.value)"
+								@change="toggleFilter('assignee_username', option.value)" />
+							<img
+								v-if="avatarFor(option.value)"
+								:src="avatarFor(option.value)"
+								class="h-6 w-6 rounded-full object-cover"
+								:alt="option.value" />
+							<span
+								v-else
+								class="flex h-6 w-6 items-center justify-center rounded-full bg-gray-200 text-[10px] font-semibold text-gray-600"
+								>{{ initials(option.value) }}</span
+							>
+							<span class="truncate">{{ shortName(option.value) }}</span>
+							<span class="ml-auto text-xs text-gray-400">{{ option.count }}</span>
+						</label>
+					</template>
 					<button
-						v-if="boardFilters.assignee.length"
+						v-if="boardFilters.assignee_username.length"
 						type="button"
 						class="mt-1 w-full rounded px-2 py-1 text-left text-xs text-gray-400 hover:bg-gray-50"
-						@click="boardFilters.assignee = []">
+						@click="boardFilters.assignee_username = []">
 						{{ trans("Everybody") }}
 					</button>
 				</div>
@@ -401,9 +483,7 @@ const onMoved = (status: string, event: { added?: { element: { id: number } } })
 								:title="sub.label"
 								:class="
 									subFilter[column.key] === sub.status
-										? sub.status === 'cancelled'
-											? 'bg-red-500 text-white'
-											: 'bg-green-600 text-white'
+										? subActiveClasses[sub.color]
 										: subFilter[column.key]
 											? 'text-gray-400 hover:text-gray-600'
 											: 'text-gray-600 hover:text-gray-900'
@@ -414,13 +494,28 @@ const onMoved = (status: string, event: { added?: { element: { id: number } } })
 						</template>
 					</span>
 					<span class="ml-auto flex items-center text-xs text-gray-500 bg-white/70 rounded">
-						<button
-							type="button"
-							class="px-1 py-0.5 hover:text-gray-900"
-							:title="trans('Sort by')"
-							@click="changeSort(column, 'field')">
-							{{ sortFields.find((option) => option.key === sortOf(column.key).field)?.label }}
-						</button>
+						<div class="relative" data-picker>
+							<button
+								type="button"
+								class="px-1 py-0.5 hover:text-gray-900"
+								:title="trans('Sort by')"
+								@click="openSortPicker = openSortPicker === column.key ? null : column.key">
+								{{ sortFields.find((option) => option.key === sortOf(column.key).field)?.label }}
+							</button>
+							<div
+								v-if="openSortPicker === column.key"
+								class="absolute left-0 z-20 mt-1 w-28 bg-white border border-gray-200 rounded shadow-lg py-1">
+								<button
+									v-for="option in sortFields"
+									:key="option.key"
+									type="button"
+									class="block w-full text-left text-xs px-2 py-1 hover:bg-gray-100"
+									:class="option.key === sortOf(column.key).field ? 'font-semibold text-gray-900' : 'text-gray-600'"
+									@click="changeSort(column, option.key)">
+									{{ option.label }}
+								</button>
+							</div>
+						</div>
 						<button
 							type="button"
 							class="px-1 py-0.5 hover:text-gray-900"
@@ -429,7 +524,7 @@ const onMoved = (status: string, event: { added?: { element: { id: number } } })
 							{{ sortOf(column.key).desc ? "↓" : "↑" }}
 						</button>
 					</span>
-					<div v-if="column.period" class="relative">
+					<div v-if="column.period" class="relative" data-picker>
 						<button
 							type="button"
 							class="text-xs text-gray-600 hover:text-gray-900 border border-gray-300 rounded px-1.5 py-0.5 bg-white"
@@ -461,6 +556,8 @@ const onMoved = (status: string, event: { added?: { element: { id: number } } })
 					group="tickets"
 					:disabled="!can_manage"
 					class="flex-1 space-y-2 min-h-24 max-h-[70vh] overflow-y-auto pr-0.5"
+					@start="dragging = true"
+					@end="onDragEnd"
 					@change="onMoved(column.status, $event)">
 					<template #item="{ element }">
 						<div
@@ -479,7 +576,7 @@ const onMoved = (status: string, event: { added?: { element: { id: number } } })
 									>{{ element.reference }}</Link
 								>
 								<Icon
-									v-if="column.group === 'closed'"
+									v-if="column.statuses.length > 1"
 									:data="element.status_icon" />
 								<Icon
 									v-if="element.qa_status_icon"
@@ -516,82 +613,43 @@ const onMoved = (status: string, event: { added?: { element: { id: number } } })
 			</div>
 		</div>
 	</div>
+	<Teleport to="body">
+		<div v-if="assigning" class="fixed inset-0 z-40" @click="cancelAssign" />
+		<div
+			v-if="assigning"
+			class="fixed z-50 w-80 rounded-lg border border-indigo-300 bg-white p-3 text-xs shadow-xl"
+			:style="{ left: assignPosition.x + 'px', top: assignPosition.y + 'px' }">
+			<div class="mb-1.5 font-medium">{{ assigning.reference }} <span class="font-normal text-gray-500">{{ assigning.subject }}</span></div>
+			<div class="mb-1 text-gray-500">{{ trans("Assign to") }}</div>
+			<div class="flex max-h-64 flex-col gap-0.5 overflow-y-auto">
+				<button
+					v-for="engineer in assignees"
+					:key="engineer.value"
+					type="button"
+					class="flex w-full items-center gap-2 rounded px-1.5 py-1 text-left hover:bg-indigo-50"
+					@click="assignTo(engineer.value)">
+					<img v-if="engineer.avatar?.original" :src="engineer.avatar.original" class="h-5 w-5 rounded-full object-cover" alt="" />
+					<span v-else class="flex h-5 w-5 items-center justify-center rounded-full bg-gray-200 text-[10px] text-gray-600">{{ initials(engineer.label) }}</span>
+					<span :class="engineer.is_me && 'font-medium'">{{ engineer.label }}</span>
+					<span v-if="engineer.is_me" class="text-gray-400">{{ trans("me") }}</span>
+				</button>
+			</div>
+		</div>
+	</Teleport>
 	<div
 		v-if="quickLook"
-		class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
-		@click.self="quickLook = null">
-		<div class="relative w-3/5 rounded-2xl bg-white p-6 shadow-xl">
+		class="fixed inset-0 z-50 flex items-stretch justify-center bg-black/40 p-4"
+		@click.self="closeQuickLook">
+		<div class="relative flex w-4/5 flex-col rounded-2xl bg-white shadow-xl">
 			<button
 				type="button"
-				class="absolute right-4 top-3 text-gray-400 hover:text-gray-700"
-				@click="quickLook = null">
+				class="absolute -right-3 -top-3 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-white text-gray-500 shadow hover:text-gray-800"
+				@click="closeQuickLook">
 				<FontAwesomeIcon icon="fal fa-times" fixed-width />
 			</button>
-			<div class="max-h-[75vh] overflow-y-auto pr-1">
-				<div class="flex items-center gap-2 text-xs mb-2">
-					<Link
-						:href="route('grp.tickets.show', quickLook.reference)"
-						class="primaryLink font-medium"
-						>{{ quickLook.reference }}</Link
-					>
-					<Icon :data="quickLook.status_icon" />
-					<span class="text-gray-600">{{ quickLook.status_label }}</span>
-					<Icon :data="quickLook.priority_icon" />
-					<span class="text-gray-600">{{ quickLook.priority_label }}</span>
-					<span v-if="quickLook.kind_label" class="text-gray-400"
-						>· {{ quickLook.kind_label }}</span
-					>
-					<span v-if="quickLook.module_label" class="text-gray-400"
-						>· {{ quickLook.module_label }}</span
-					>
-				</div>
-				<h2 class="text-lg font-semibold leading-snug mb-3">{{ quickLook.subject }}</h2>
-				<div class="grid grid-cols-2 gap-x-6 gap-y-1 text-xs text-gray-600 mb-4">
-					<span
-						>{{ trans("Raised") }}: {{ shortDate(quickLook.created_at) }}
-						{{ quickLook.reporter ? "· " + quickLook.reporter : "" }}</span
-					>
-					<span v-if="quickLook.assignee"
-						>{{ trans("Assignee") }}: {{ quickLook.assignee }}</span
-					>
-					<span v-if="quickLook.assigned_at"
-						>{{ trans("Assigned") }}: {{ shortDate(quickLook.assigned_at) }}</span
-					>
-					<span v-if="quickLook.started_at"
-						>{{ trans("Started") }}: {{ shortDate(quickLook.started_at) }}</span
-					>
-					<span v-if="quickLook.waiting_at"
-						>{{ trans("Waiting since") }}: {{ shortDate(quickLook.waiting_at) }}</span
-					>
-					<span v-if="quickLook.closed_at"
-						>{{ trans("Closed") }}: {{ shortDate(quickLook.closed_at) }}</span
-					>
-					<span v-if="quickLook.customer"
-						>{{ trans("Customer") }}: {{ quickLook.customer }}</span
-					>
-					<span v-if="quickLook.shop">{{ trans("Shop") }}: {{ quickLook.shop }}</span>
-				</div>
-				<p class="text-sm whitespace-pre-wrap break-words">{{ quickLook.description }}</p>
-				<div v-if="quickLook.images?.length" class="mt-4 grid grid-cols-2 gap-2">
-					<a
-						v-for="(image, index) in quickLook.images"
-						:key="index"
-						:href="image.original"
-						target="_blank">
-						<img :src="image.original" class="rounded border border-gray-200" />
-					</a>
-				</div>
-				<ul v-if="quickLook.attachments?.length" class="mt-4 space-y-1 text-sm">
-					<li v-for="file in quickLook.attachments" :key="file.url">
-						<a
-							:href="file.url"
-							target="_blank"
-							class="text-blue-600 hover:underline break-all">
-							<FontAwesomeIcon icon="fal fa-paperclip" class="mr-1" />{{ file.name }}
-						</a>
-					</li>
-				</ul>
-			</div>
+			<iframe
+				:src="route('grp.tickets.show', quickLook.reference) + '?embed=1'"
+				class="h-full w-full flex-1 rounded-2xl border-0" />
 		</div>
 	</div>
 </template>

@@ -2507,8 +2507,13 @@ test('to produce queue only shows lines with an artefact in this factory', funct
     expect($hubOutput())->toContain($jobOrder->reference)
         ->and($hubProps()['tabs']['navigation']['production_output']['number'])->toBe(count($hubProps()['production_output']));
 
-    \App\Actions\Dispatching\ProductionOutput\PutAwayFinishedJobOrder::make()->action($warehouse, [$jobOrder->id], 'L-BRD');
-    expect($jobOrder->refresh()->state)->toBe(JobOrderStateEnum::RECEIVED)
+    $stockItem = collect($hubProps()['production_output'])->where('destination.type', 'stock')->pluck('jobs')->flatten(1)->firstWhere('reference', $jobOrder->reference)['items'][0];
+    expect(fn () => \App\Actions\Dispatching\ProductionOutput\PutAwayFinishedJobOrder::make()->action($warehouse, [$jobOrder->id], [$stockItem['id'] => 'L-BRD']))
+        ->toThrow(ValidationException::class, 'is not kept in L-BRD yet');
+
+    \App\Actions\Dispatching\ProductionOutput\PutAwayFinishedJobOrder::make()->action($warehouse, [$jobOrder->id], [$stockItem['id'] => 'l-brd'], true);
+    expect(\App\Models\Inventory\LocationOrgStock::where('location_id', $location->id)->exists())->toBeTrue()
+        ->and($jobOrder->refresh()->state)->toBe(JobOrderStateEnum::RECEIVED)
         ->and($hubOutput())->not->toContain($jobOrder->reference)
         ->and($laneOf()->flatten()->all())->not->toContain($stocks[0]->code);
 
@@ -3400,4 +3405,52 @@ test('artefact labels cannot be changed with view only production access', funct
         ->assertForbidden();
 
     expect($label->refresh()->deleted_at)->toBeNull();
+});
+
+test('breaks belong to the artisan, are capped at their planned length and only their overlap is deducted from a session', function () {
+    $this->artefact->manufactureTasks()->sync([
+        $this->manufactureTask->id => ['position' => 1, 'units_per_artefact' => 1],
+    ]);
+    $jobOrder     = StoreJobOrder::make()->action($this->production, []);
+    $jobOrderItem = StoreJobOrderItem::make()->action($jobOrder, ['artefact_id' => $this->artefact->id, 'quantity' => 10]);
+    ConfirmJobOrder::make()->action($jobOrder);
+    $task = $jobOrderItem->tasks()->first();
+    $user = $this->guest->getUser();
+
+    \App\Models\Production\ManufactureTaskSession::where('user_id', $user->id)->where('state', \App\Enums\Production\ManufactureTaskSession\ManufactureTaskSessionStateEnum::OPEN)
+        ->update(['state' => \App\Enums\Production\ManufactureTaskSession\ManufactureTaskSessionStateEnum::CLOSED, 'ended_at' => now()]);
+    \App\Models\Production\ManufactureBreak::where('user_id', $user->id)->open()->update(['ended_at' => now()]);
+    \App\Models\Production\ManufacturePayBand::query()->firstOrCreate(
+        ['production_id' => $this->production->id, 'code' => '0'],
+        ['name' => 'Band 0', 'hourly_rate' => 12.71, 'group_id' => $this->production->group_id, 'organisation_id' => $this->production->organisation_id, 'effective_from' => now()->subYear()]
+    );
+
+    expect(fn () => \App\Actions\Production\ManufactureBreak\StartManufactureBreak::make()->action($user, $this->production, ['planned_minutes' => 7]))
+        ->toThrow(ValidationException::class);
+
+    $breakBetweenJobs = \App\Actions\Production\ManufactureBreak\StartManufactureBreak::make()->action($user, $this->production, ['planned_minutes' => 15]);
+    expect($breakBetweenJobs->ended_at)->toBeNull();
+    expect(fn () => \App\Actions\Production\ManufactureBreak\StartManufactureBreak::make()->action($user, $this->production, ['planned_minutes' => 5]))
+        ->toThrow(ValidationException::class);
+
+    $this->travel(4)->minutes();
+    $breakBetweenJobs = \App\Actions\Production\ManufactureBreak\EndManufactureBreak::make()->action($breakBetweenJobs);
+    expect($breakBetweenJobs->minutes)->toBe(4);
+
+    $session = StartManufactureTaskSession::make()->action($user, $task);
+    $this->travel(10)->minutes();
+    $breakInJob = \App\Actions\Production\ManufactureBreak\StartManufactureBreak::make()->action($user, $this->production, ['planned_minutes' => 5]);
+    $this->travel(3)->minutes();
+    \App\Actions\Production\ManufactureBreak\EndManufactureBreak::make()->action($breakInJob);
+    expect($session->refresh()->break_minutes)->toBe(3);
+
+    \App\Actions\Production\ManufactureBreak\StartManufactureBreak::make()->action($user, $this->production, ['planned_minutes' => 5]);
+    $this->travel(47)->minutes();
+    $session = CloseManufactureTaskSession::make()->action($session, ['quantity_made' => 10]);
+
+    expect(\App\Models\Production\ManufactureBreak::where('user_id', $user->id)->open()->count())->toBe(0)
+        ->and(\App\Models\Production\ManufactureBreak::where('user_id', $user->id)->latest('id')->first()->minutes)->toBe(5)
+        ->and($session->break_minutes)->toBe(8)
+        ->and((float) $session->hours)->toBe(round(52 / 60, 4));
+    $this->travelBack();
 });

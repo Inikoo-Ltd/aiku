@@ -87,7 +87,7 @@ const compFilterLanguageOptions = computed(() => {
                 >
                     <template #label>
                         {{ Object.values(layout.iris.website_i18n?.language_options || {})?.find(language => language.code === layout.iris.website_i18n.current_language?.code)?.name }}
-                        <img class="inline pr-5 pl-1 h-[1em]" :src="`/flags/${layout.iris.website_i18n.current_language?.flag}`" xalt="language.code"   xtitle='capitalize(countryName)'  />
+                        <img class="inline pr-5 pl-1 h-[1em]" :src="`/flags/${layout.iris.website_i18n.current_language?.flag}`" xalt="language.code"   xtitle='capitalize(countryName)' loading="lazy" decoding="async"  />
                     </template>
                 </Button>
             </slot>
@@ -109,7 +109,7 @@ const compFilterLanguageOptions = computed(() => {
                     >
                         {{ layout.iris.website_i18n?.shop_language?.name }}
                         <FontAwesomeIcon v-tooltip="trans('Default language by system')" icon="fas fa-laptop-code" class="text-gray-400" fixed-width aria-hidden="true" />
-                        <img class="inline pr-1 pl-1 h-[1em]" :src="`/flags/${layout.iris.website_i18n.current_language?.flag}`" xalt="language.code"   xtitle='capitalize(countryName)'  />
+                        <img class="inline pr-1 pl-1 h-[1em]" :src="`/flags/${layout.iris.website_i18n.current_language?.flag}`" xalt="language.code"   xtitle='capitalize(countryName)' loading="lazy" decoding="async"  />
                         <LoadingIcon v-if="isLoadingChangeLanguage == `system${layout.iris.website_i18n?.shop_language?.code}`" />
                     </button>
 
@@ -127,7 +127,7 @@ const compFilterLanguageOptions = computed(() => {
                         : 'hover:bg-gray-100 text-gray-700'
                     ]">
                         {{ language.name }}
-                        <img class="inline pr-1 pl-1 h-[1em]" :src="`/flags/${language.flag}`" xalt="language.code"   xtitle='capitalize(countryName)'  />
+                        <img class="inline pr-1 pl-1 h-[1em]" :src="`/flags/${language.flag}`" xalt="language.code"   xtitle='capitalize(countryName)' loading="lazy" decoding="async"  />
                         <LoadingIcon v-if="isLoadingChangeLanguage == `option${language.code}`" />
                     </button>
                 </div>

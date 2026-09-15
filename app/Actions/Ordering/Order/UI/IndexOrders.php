@@ -116,6 +116,7 @@ class IndexOrders extends OrgAction
                 'orders.updated_at',
                 'orders.is_premium_dispatch',
                 'orders.has_extra_packing',
+                'orders.customer_sales_channel_id',
                 'orders.has_insurance',
                 'orders.is_export',
                 'orders.slug',

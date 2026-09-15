@@ -9,11 +9,16 @@ import { Head } from "@inertiajs/vue3"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import Table from "@/Components/Table/Table.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
-import { faFileExport, faFileExcel } from "@fal"
+import Modal from "@/Components/Utils/Modal.vue"
+import axios from "axios"
+import { ref } from "vue"
+import { trans } from "laravel-vue-i18n"
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { faFileExport, faFileExcel, faExclamationTriangle } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { capitalize } from "@/Composables/capitalize"
 
-library.add(faFileExport, faFileExcel)
+library.add(faFileExport, faFileExcel, faExclamationTriangle)
 
 const props = defineProps<{
     data: object
@@ -34,8 +39,8 @@ const exportExcel = () => {
 
     const exportParams: Record<string, string> = { ...params, type: 'xlsx' }
 
-    if (queryString.has('between[date]')) {
-        exportParams['between[date]'] = queryString.get('between[date]') as string
+    if (queryString.has('between[from]')) {
+        exportParams['between[from]'] = queryString.get('between[from]') as string
     }
 
     if (queryString.has('elements[vat_status]')) {
@@ -43,6 +48,42 @@ const exportExcel = () => {
     }
 
     window.location.href = route('grp.org.reports.intrastat.exports.export-excel', exportParams)
+}
+
+const aeatErrors = ref<string[]>([])
+const aeatRows = ref(0)
+const aeatSummary = ref<Record<string, number>>({})
+const aeatFallback = ref({ weight_kg: '1', tariff_code: '33049900', origin: 'ES' })
+const isAeatModalOpen = ref(false)
+const isAeatChecking = ref(false)
+
+const aeatUrl = (extra: Record<string, string>) => route('grp.org.reports.intrastat.exports.export-aeat', { ...route().params, ...extra })
+
+const exportAeat = async () => {
+    isAeatChecking.value = true
+    try {
+        const { data } = await axios.get(aeatUrl({ check: '1' }))
+        aeatErrors.value = data.errors
+        aeatRows.value = data.rows
+        aeatSummary.value = data.summary
+        if (data.errors.length) {
+            isAeatModalOpen.value = true
+        } else {
+            window.location.href = aeatUrl({})
+        }
+    } finally {
+        isAeatChecking.value = false
+    }
+}
+
+const exportAeatAnyway = () => {
+    isAeatModalOpen.value = false
+    window.location.href = aeatUrl({
+        force: '1',
+        'fallback[weight_kg]': aeatFallback.value.weight_kg,
+        'fallback[tariff_code]': aeatFallback.value.tariff_code,
+        'fallback[origin]': aeatFallback.value.origin,
+    })
 }
 </script>
 
@@ -65,13 +106,13 @@ const exportExcel = () => {
                         label="Export Slovakia XML"
                     />
                 </a>
-                <a :href="route('grp.org.reports.intrastat.exports.export-aeat', route().params)" download target="_blank">
-                    <Button
-                        :style="'secondary'"
-                        icon="fal fa-file-export"
-                        label="Export Spain AEAT"
-                    />
-                </a>
+                <Button
+                    @click="exportAeat"
+                    :loading="isAeatChecking"
+                    :style="'secondary'"
+                    icon="fal fa-file-export"
+                    label="Export Spain AEAT"
+                />
                 <Button
                     @click="exportExcel"
                     :style="'secondary'"
@@ -81,6 +122,46 @@ const exportExcel = () => {
             </div>
         </template>
     </PageHeading>
+
+    <Modal :isOpen="isAeatModalOpen" @onClose="isAeatModalOpen = false" width="w-full max-w-4xl" :isClosableInBackground="false">
+        <div class="flex items-start gap-4">
+            <FontAwesomeIcon icon="fal fa-exclamation-triangle" class="text-red-600 text-4xl shrink-0" fixed-width aria-hidden="true" />
+            <div class="min-w-0 flex-1">
+                <h2 class="text-xl font-semibold text-red-700">{{ trans('AEAT file is not valid') }}</h2>
+                <p class="mt-1 text-gray-700">
+                    {{ trans(':errors problems found in :rows rows. AEAT will reject this file as it is.', { errors: aeatErrors.length, rows: aeatRows }) }}
+                </p>
+                <table class="mt-4 w-full text-sm">
+                    <tr v-for="(count, reason) in aeatSummary" :key="reason" class="border-b border-gray-100">
+                        <td class="py-1 pr-4 text-right font-semibold tabular-nums text-red-700">{{ count }}</td>
+                        <td class="py-1 text-gray-800">{{ reason }}</td>
+                    </tr>
+                </table>
+                <p class="mt-3 text-sm text-gray-700">
+                    {{ trans('Downloading anyway keeps every row and fills the missing values with these. Zero invoiced amounts are left as they are.') }}
+                </p>
+                <div class="mt-2 grid grid-cols-3 gap-3 text-sm">
+                    <label class="flex flex-col gap-1">
+                        <span class="text-gray-600">{{ trans('Weight for rows without weight (kg)') }}</span>
+                        <input v-model="aeatFallback.weight_kg" type="number" min="0" step="0.001" class="rounded border-gray-300" />
+                    </label>
+                    <label class="flex flex-col gap-1">
+                        <span class="text-gray-600">{{ trans('Tariff code for rows without one') }}</span>
+                        <input v-model="aeatFallback.tariff_code" type="text" inputmode="numeric" maxlength="10" class="rounded border-gray-300 font-mono" />
+                    </label>
+                    <label class="flex flex-col gap-1">
+                        <span class="text-gray-600">{{ trans('Origin country for rows without one') }}</span>
+                        <input v-model="aeatFallback.origin" type="text" maxlength="2" class="rounded border-gray-300 uppercase" />
+                    </label>
+                </div>
+                <pre class="mt-4 max-h-64 overflow-auto rounded bg-gray-50 p-3 text-xs text-gray-800">{{ aeatErrors.join('\n') }}</pre>
+                <div class="mt-6 flex justify-end gap-3">
+                    <Button @click="isAeatModalOpen = false" :style="'secondary'" :label="trans('Fix the data first')" />
+                    <Button @click="exportAeatAnyway" :style="'red'" icon="fal fa-exclamation-triangle" :label="trans('Download anyway with the errors')" />
+                </div>
+            </div>
+        </div>
+    </Modal>
 
     <!-- Table -->
     <Table :resource="data" class="mt-5">

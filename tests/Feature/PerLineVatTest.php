@@ -547,10 +547,10 @@ test('the repair rewrites the header from the lines and mirrors it onto the orde
 })->depends('tax rows that do not add up to the stored header give way to the header');
 
 /**
- * HELP-2768: Aurora charged UK VAT when either address was in the UK; the port required both, so
- * a customer billed abroad and delivered in the UK was invoiced without VAT.
+ * HELP-2768: a customer billed abroad and delivered in the UK was invoiced without VAT.
+ * HELP-3146: goods we ship out of the UK are a zero-rated direct export (VATA 1994 s30(6)), even when billed in the UK.
  */
-test('a uk delivery is standard rated whatever the billing country, and a uk billing whatever the delivery', function (string $billing, string $delivery, float $rate) {
+test('a uk delivery is standard rated whatever the billing country, and a delivery outside the uk is not', function (string $billing, string $delivery, float $rate) {
     $address = fn (string $code) => new Address(array_merge(Address::factory()->definition(), [
         'country_id'   => Country::where('code', $code)->firstOrFail()->id,
         'country_code' => $code,
@@ -561,7 +561,9 @@ test('a uk delivery is standard rated whatever the billing country, and a uk bil
     expect((float)$taxCategory->rate)->toBe($rate);
 })->with([
     'billed in Ukraine, delivered in the UK' => ['UA', 'GB', 0.2],
-    'billed in the UK, delivered in France'  => ['GB', 'FR', 0.2],
+    'billed in the UK, delivered in France'  => ['GB', 'FR', 0.0],
+    'billed in the UK, delivered in Switzerland' => ['GB', 'CH', 0.0],
+    'billed in the UK, delivered in the Isle of Man' => ['GB', 'IM', 0.2],
     'both in the UK'                          => ['GB', 'GB', 0.2],
     'billed in Ukraine, delivered in France'  => ['UA', 'FR', 0.0],
 ]);

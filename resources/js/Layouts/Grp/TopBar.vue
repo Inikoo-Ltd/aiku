@@ -7,7 +7,7 @@
 <script setup lang="ts">
 import { faGoogle } from "@fortawesome/free-brands-svg-icons"
 import { Link, router } from "@inertiajs/vue3"
-import { reactive, inject } from "vue"
+import { defineAsyncComponent, reactive, inject } from "vue"
 import MenuPopoverList from "@/Layouts/Grp/MenuPopoverList.vue"
 import TopBarSelectButton from "@/Layouts/Grp/TopBarSelectButton.vue"
 import { Menu, MenuButton, MenuItems, Disclosure, MenuItem } from "@headlessui/vue"
@@ -64,7 +64,7 @@ import {
 } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import MenuTopRight from "@/Layouts/Grp/MenuTopRight.vue"
-import TopBarDropdownScope from "@/Layouts/Grp/TopBarDropdownScope.vue"
+const TopBarDropdownScope = defineAsyncComponent(() => import("@/Layouts/Grp/TopBarDropdownScope.vue"))
 import { layoutStructure } from "@/Composables/useLayoutStructure"
 import { faBallot } from "@fas"
 import ScreenWarning from "@/Components/Utils/ScreenWarning.vue"

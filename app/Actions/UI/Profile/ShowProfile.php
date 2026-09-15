@@ -64,7 +64,7 @@ class ShowProfile extends OrgAction
                         [
                             'type'  => 'button',
                             'style' => 'edit',
-                            'label' => __('Edit profile'),
+                            'label' => __('Personal settings'),
                             'route' => [
                                 'name'       => 'grp.profile.edit',
                                 'parameters' => array_values(request()->route()->originalParameters())

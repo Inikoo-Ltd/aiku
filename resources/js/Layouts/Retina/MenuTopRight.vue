@@ -1,8 +1,8 @@
 <script setup lang='ts'>
 import { trans } from 'laravel-vue-i18n'
 import { Link } from '@inertiajs/vue3'
-import { inject, onMounted, onUnmounted, ref } from 'vue'
-import SearchBar from "@/Components/SearchBar.vue"
+import { defineAsyncComponent, inject, onMounted, onUnmounted, ref } from 'vue'
+const SearchBar = defineAsyncComponent(() => import("@/Components/SearchBar.vue"))
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import Image from "@common/Components/Image.vue"
 
@@ -27,7 +27,6 @@ onUnmounted(() => {
     document.removeEventListener('keydown', () => false)
 })
 const isUserMac = navigator.platform.includes('Mac')  // To check the user's Operating System
-console.log(layout)
 </script>
 
 <template>

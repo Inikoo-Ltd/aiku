@@ -165,7 +165,7 @@ trait WithWooCommerceApiRequest
                     'Content-Type' => 'application/json',
                     'User-Agent'   => 'WooCommerce AW Connect API Client-PHP/1.0',
                 ])
-                ->connectTimeout($this->timeOut)
+                ->connectTimeout(min($this->timeOut, 30))
                 ->withBasicAuth(
                     $this->woocommerceConsumerKey,
                     $this->woocommerceConsumerSecret

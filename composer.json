@@ -64,6 +64,7 @@
     "maennchen/zipstream-php": "^3.1",
     "masbug/flysystem-google-drive-ext": "^2.3",
     "matomo/device-detector": "^6.5",
+    "minishlink/web-push": "^11.0",
     "monicahq/laravel-cloudflare": "^4",
     "mpdf/psr-http-message-shim": "^2.0",
     "mpdf/qrcode": "^1.2",

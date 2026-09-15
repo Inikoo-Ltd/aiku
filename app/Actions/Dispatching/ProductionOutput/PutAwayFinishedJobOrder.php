@@ -12,6 +12,7 @@ use App\Actions\OrgAction;
 use App\Actions\Production\JobOrder\GetJobOrderDestinationAllocation;
 use App\Actions\Production\JobOrder\ReceiveJobOrderIntoStock;
 use App\Models\Inventory\Location;
+use App\Models\Inventory\LocationOrgStock;
 use App\Models\Inventory\Warehouse;
 use App\Models\Production\JobOrder;
 use App\Models\SysAdmin\Organisation;
@@ -25,16 +26,23 @@ use Lorisleiva\Actions\ActionRequest;
 class PutAwayFinishedJobOrder extends OrgAction
 {
     /**
-     * One walk to one location, carrying every job order's share of it.
+     * A partner bay takes the whole trip; stock goes item by item, each to its own location.
      *
      * @param  array<int, int>  $jobOrderIds
+     * @param  string|array<int, string>  $locations  one code for everything, or job order item id => code
      * @return array<int, JobOrder>
      */
-    public function handle(Warehouse $warehouse, array $jobOrderIds, string $locationCode): array
+    public function handle(Warehouse $warehouse, array $jobOrderIds, string|array $locations, bool $allowNewLocations = false): array
     {
-        $location = $warehouse->locations()->where('code', $locationCode)->first();
-        if (!$location) {
-            throw ValidationException::withMessages(['location_code' => __('No location :code in this warehouse', ['code' => $locationCode])]);
+        $itemIdsByCode = is_string($locations)
+            ? [$locations => null]
+            : collect($locations)->map(fn ($code, $itemId) => ['code' => strtoupper(trim($code)), 'item_id' => (int) $itemId])
+                ->groupBy('code')->map(fn ($rows) => $rows->pluck('item_id')->all())->all();
+
+        $locationsByCode = [];
+        foreach (array_keys($itemIdsByCode) as $code) {
+            $locationsByCode[$code] = $warehouse->locations()->where('code', $code)->first()
+                ?? throw ValidationException::withMessages(['location_code' => __('No location :code in this warehouse', ['code' => $code])]);
         }
 
         $jobOrders = JobOrder::whereIn('id', $jobOrderIds)->get();
@@ -45,11 +53,32 @@ class PutAwayFinishedJobOrder extends OrgAction
             }
         }
 
-        return DB::transaction(fn () => $jobOrders->map(fn (JobOrder $jobOrder) => ReceiveJobOrderIntoStock::make()->action($jobOrder, [
-            'location_id' => $location->id,
-            'allocations' => $this->allocationsFor($jobOrder, $location),
-            'user_id'     => $this->userId,
-        ]))->all());
+        return DB::transaction(function () use ($jobOrders, $itemIdsByCode, $locationsByCode, $allowNewLocations) {
+            $received = [];
+
+            foreach ($itemIdsByCode as $code => $itemIds) {
+                $location = $locationsByCode[$code];
+
+                foreach ($jobOrders as $jobOrder) {
+                    $allocations = $this->allocationsFor($jobOrder, $location, $itemIds, $allowNewLocations);
+                    if (!$allocations) {
+                        continue;
+                    }
+
+                    $received[] = ReceiveJobOrderIntoStock::make()->action($jobOrder->refresh(), [
+                        'location_id' => $location->id,
+                        'allocations' => $allocations,
+                        'user_id'     => $this->userId,
+                    ]);
+                }
+            }
+
+            if (!$received) {
+                throw ValidationException::withMessages(['location_id' => __('Nothing from this job order goes to :code', ['code' => implode(', ', array_keys($itemIdsByCode))])]);
+            }
+
+            return $received;
+        });
     }
 
     private ?int $userId = null;
@@ -57,9 +86,10 @@ class PutAwayFinishedJobOrder extends OrgAction
     /**
      * What this job order owes this location, minus whatever earlier walks already put away.
      *
+     * @param  array<int, int>|null  $itemIds
      * @return array<int, float>
      */
-    private function allocationsFor(JobOrder $jobOrder, Location $location): array
+    private function allocationsFor(JobOrder $jobOrder, Location $location, ?array $itemIds, bool $allowNewLocations): array
     {
         $partnerLocationIds = $jobOrder->organisation->orgPartners()->whereNotNull('goods_out_location_id')->pluck('goods_out_location_id');
         $isPartnerBay       = $partnerLocationIds->contains($location->id);
@@ -77,11 +107,19 @@ class PutAwayFinishedJobOrder extends OrgAction
 
             $goesHere = $isPartnerBay
                 ? $allocation['location_id'] === $location->id
-                : $allocation['location_id'] === null;
+                : $allocation['location_id'] === null && ($itemIds === null || in_array($item->id, $itemIds, true));
 
-            if ($quantity > 0 && $goesHere) {
-                $allocations[$item->id] = ($allocations[$item->id] ?? 0) + $quantity;
+            if ($quantity <= 0 || !$goesHere) {
+                continue;
             }
+
+            $orgStockId = $item->artefact->org_stock_id;
+            if (!$isPartnerBay && !$allowNewLocations && $orgStockId
+                && !LocationOrgStock::where('location_id', $location->id)->where('org_stock_id', $orgStockId)->exists()) {
+                throw ValidationException::withMessages(['new_location' => __(':stock is not kept in :code yet', ['stock' => $item->artefact->code, 'code' => $location->code])]);
+            }
+
+            $allocations[$item->id] = ($allocations[$item->id] ?? 0) + $quantity;
         }
 
         return $allocations;
@@ -90,9 +128,12 @@ class PutAwayFinishedJobOrder extends OrgAction
     public function rules(): array
     {
         return [
-            'location_code'   => ['required', 'string'],
-            'job_order_ids'   => ['required', 'array', 'min:1'],
-            'job_order_ids.*' => ['integer', Rule::exists('job_orders', 'id')->where('organisation_id', $this->organisation->id)],
+            'location_code'       => ['required_without:item_locations', 'nullable', 'string'],
+            'item_locations'      => ['required_without:location_code', 'nullable', 'array', 'min:1'],
+            'item_locations.*'    => ['required', 'string'],
+            'allow_new_locations' => ['sometimes', 'boolean'],
+            'job_order_ids'       => ['required', 'array', 'min:1'],
+            'job_order_ids.*'     => ['integer', Rule::exists('job_orders', 'id')->where('organisation_id', $this->organisation->id)],
         ];
     }
 
@@ -107,14 +148,18 @@ class PutAwayFinishedJobOrder extends OrgAction
 
     /**
      * @param  array<int, int>  $jobOrderIds
+     * @param  string|array<int, string>  $locations
      * @return array<int, JobOrder>
      */
-    public function action(Warehouse $warehouse, array $jobOrderIds, string $locationCode): array
+    public function action(Warehouse $warehouse, array $jobOrderIds, string|array $locations, bool $allowNewLocations = false): array
     {
         $this->asAction = true;
-        $this->initialisationFromWarehouse($warehouse, ['location_code' => $locationCode, 'job_order_ids' => $jobOrderIds]);
+        $this->initialisationFromWarehouse($warehouse, [
+            'job_order_ids'  => $jobOrderIds,
+            ...(is_string($locations) ? ['location_code' => $locations] : ['item_locations' => $locations]),
+        ]);
 
-        return $this->handle($warehouse, $jobOrderIds, $locationCode);
+        return $this->handle($warehouse, $jobOrderIds, $locations, $allowNewLocations);
     }
 
     /**
@@ -125,7 +170,12 @@ class PutAwayFinishedJobOrder extends OrgAction
         $this->userId = $request->user()->id;
         $this->initialisationFromWarehouse($warehouse, $request);
 
-        return $this->handle($warehouse, $this->validatedData['job_order_ids'], $this->validatedData['location_code']);
+        return $this->handle(
+            $warehouse,
+            $this->validatedData['job_order_ids'],
+            $this->validatedData['item_locations'] ?? $this->validatedData['location_code'],
+            (bool) ($this->validatedData['allow_new_locations'] ?? false),
+        );
     }
 
     public function htmlResponse(): RedirectResponse

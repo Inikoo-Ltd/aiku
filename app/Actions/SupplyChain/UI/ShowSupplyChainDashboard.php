@@ -136,6 +136,7 @@ class ShowSupplyChainDashboard extends OrgAction
         return $rate !== null ? round((float) $amount * $rate, 2) : null;
     }
 
+    // ponytail: Aurora resets the submitted date on every re-submit, so age from the creation date too
     private function getStaleOrders(): array
     {
         $staleDate = now()->subDays($this->staleDays);
@@ -154,7 +155,7 @@ class ShowSupplyChainDashboard extends OrgAction
                 $query->where('aspo.deposit_paid_at', '<=', $staleDate)
                     ->orWhere(function ($subQuery) use ($staleDate) {
                         $subQuery->whereNull('aspo.deposit_paid_at')
-                            ->where(DB::raw('coalesce(aspo.submitted_at, aspo.date)'), '<=', $staleDate);
+                            ->where(DB::raw('least(aspo.created_at, coalesce(aspo.submitted_at, aspo.date))'), '<=', $staleDate);
                     });
             })
             ->where('aspo.number_stock_deliveries_state_received', 0)
@@ -170,7 +171,7 @@ class ShowSupplyChainDashboard extends OrgAction
                 'aspo.deposit_amount',
                 'aspo.deposit_paid_at',
                 'aspo.number_stock_deliveries',
-                DB::raw('coalesce(aspo.submitted_at, aspo.date) as ordered_at'),
+                DB::raw('least(aspo.created_at, coalesce(aspo.submitted_at, aspo.date)) as ordered_at'),
                 'currencies.code as currency_code',
                 'suppliers.name as supplier_name',
                 'suppliers.code as supplier_code',
@@ -211,7 +212,7 @@ class ShowSupplyChainDashboard extends OrgAction
                 PurchaseOrderStateEnum::SUBMITTED->value,
                 PurchaseOrderStateEnum::CONFIRMED->value,
             ])
-            ->where(DB::raw('coalesce(po.submitted_at, po.date)'), '<=', $staleDate)
+            ->where(DB::raw('least(po.created_at, coalesce(po.submitted_at, po.date))'), '<=', $staleDate)
             ->where('po.number_stock_deliveries_state_received', 0)
             ->where('po.number_stock_deliveries_state_checked', 0)
             ->where('po.number_stock_deliveries_state_placed', 0)
@@ -225,7 +226,7 @@ class ShowSupplyChainDashboard extends OrgAction
                 'po.parent_name',
                 'po.parent_code',
                 'po.number_stock_deliveries',
-                DB::raw('coalesce(po.submitted_at, po.date) as ordered_at'),
+                DB::raw('least(po.created_at, coalesce(po.submitted_at, po.date)) as ordered_at'),
                 'currencies.code as currency_code',
                 'organisations.slug as organisation_slug',
                 'organisations.code as organisation_code',
