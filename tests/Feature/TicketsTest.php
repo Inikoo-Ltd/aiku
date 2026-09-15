@@ -1128,7 +1128,7 @@ test('ticket badges count my tickets and the engineer queue, and engineers hear 
 
     Notification::assertSentTo($this->user, TicketNotification::class, fn ($notification, $channels) => $channels === ['database'] && str_contains($notification->subject, $ticket->reference));
     Notification::assertNotSentTo($reporter, TicketNotification::class);
-    Event::assertDispatched(BroadcastTicketBadgeUpdate::class, fn (BroadcastTicketBadgeUpdate $event) => $event->user->id === $this->user->id && $event->notification !== null);
+    Event::assertDispatched(BroadcastTicketBadgeUpdate::class, fn (BroadcastTicketBadgeUpdate $event) => $event->userId === $this->user->id && $event->notification !== null);
 
     expect(GetTicketBadgeData::run($reporter)['queue'])->toBeNull()
         ->and($count($reporter, 'mine', 'in_progress'))->toBe(1)
@@ -1491,4 +1491,29 @@ test('jira comment authors are repaired from the jira reporter or the jira autho
         ->and($byDeveloper->fresh()->author_id)->toBe($developer->id)
         ->and($byCustomerNamed->fresh()->author_id)->toBeNull()
         ->and($byJiraAutomation->fresh()->author_id)->toBeNull();
+});
+
+test('assigning a ticket pushes fresh badge counts to every engineer and QA user and the previous assignee', function () {
+    setPermissionsTeamId($this->group->id);
+    $otherEngineer = User::factory()->create(['group_id' => $this->group->id]);
+    $otherEngineer->assignRole('help-desk-clerk');
+    $qaUser = User::factory()->create(['group_id' => $this->group->id]);
+    $qaUser->assignRole(\App\Enums\SysAdmin\Authorisation\RolesEnum::QA->value);
+    $previousAssignee = User::factory()->create(['group_id' => $this->group->id]);
+    $previousAssignee->assignRole('help-desk-clerk');
+    $outsider = User::factory()->create(['group_id' => $this->group->id]);
+
+    $ticket = StoreTicket::make()->action($this->group, ['subject' => 'Queue push', 'assignee_id' => $previousAssignee->id]);
+
+    Event::fake([BroadcastTicketBadgeUpdate::class]);
+    UpdateTicket::make()->action($ticket, ['assignee_id' => $this->user->id]);
+
+    foreach ([$this->user, $otherEngineer, $qaUser, $previousAssignee] as $expectedUser) {
+        Event::assertDispatched(BroadcastTicketBadgeUpdate::class, fn (BroadcastTicketBadgeUpdate $event) => $event->userId === $expectedUser->id);
+    }
+    Event::assertNotDispatched(BroadcastTicketBadgeUpdate::class, fn (BroadcastTicketBadgeUpdate $event) => $event->userId === $outsider->id);
+
+    Event::fake([BroadcastTicketBadgeUpdate::class]);
+    StoreTicketComment::make()->action($ticket->fresh(), $this->user, ['body' => 'on it']);
+    Event::assertNotDispatched(BroadcastTicketBadgeUpdate::class, fn (BroadcastTicketBadgeUpdate $event) => $event->userId === $otherEngineer->id);
 });

@@ -11,7 +11,6 @@ namespace App\Actions\Helpers\Ticket;
 use App\Actions\SysAdmin\User\SendUserPushNotification;
 use App\Enums\Helpers\Ticket\TicketQaStatusEnum;
 use App\Enums\SysAdmin\User\UserNotificationEnum;
-use App\Events\BroadcastTicketBadgeUpdate;
 use App\Events\BroadcastTicketChanged;
 use App\Models\Helpers\Ticket;
 use App\Models\SysAdmin\User;
@@ -153,13 +152,17 @@ class NotifyTicketUsers
     {
         BroadcastTicketChanged::dispatch($ticket);
 
-        $users = collect([$ticket->reporter, $ticket->assignee()->first(), $actor])
+        $previousAssigneeId  = $ticket->wasChanged('assignee_id') ? ($ticket->getPrevious()['assignee_id'] ?? null) : null;
+        $changesQueueCounts  = $ticket->wasRecentlyCreated || $ticket->wasChanged(['status', 'assignee_id', 'qa_status', 'kind', 'is_confidential']);
+
+        $users = collect([$ticket->reporter, $ticket->assignee()->first(), $previousAssigneeId ? User::find($previousAssigneeId) : null, $actor])
+            ->when($changesQueueCounts, fn ($users) => $users
+                ->merge(GetTicketBadgeData::engineers($ticket->group_id))
+                ->merge(GetTicketBadgeData::qaUsers($ticket->group_id)))
             ->filter(fn ($user) => $user instanceof User)
             ->unique('id');
 
-        foreach ($users as $user) {
-            BroadcastTicketBadgeUpdate::dispatch($user);
-        }
+        SendTicketBadgeUpdateToUsers::run($users->pluck('id')->values()->all());
     }
 
     /**
@@ -175,7 +178,7 @@ class NotifyTicketUsers
 
         $recipient->notify(new TicketNotification($ticket, $subject, $lines, $actionLabel, in_array('email', $channels, true) && (bool) $recipient->email));
 
-        BroadcastTicketBadgeUpdate::dispatch($recipient, [
+        SendTicketBadgeUpdateToUsers::run([$recipient->id], [
             'title' => $subject,
             'body'  => $lines[0] ?? '',
             'route' => route('grp.tickets.show', $ticket->reference),

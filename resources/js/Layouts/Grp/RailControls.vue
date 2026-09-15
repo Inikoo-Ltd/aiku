@@ -27,7 +27,7 @@ const sumCounts = (rows: Record<string, { count: number }> | null | undefined, k
 
 const myTicketsCount = computed(() => sumCounts(layout.ticket_badges?.mine, ['waiting', 'done_24h']))
 const myTicketsWaiting = computed(() => layout.ticket_badges?.mine?.waiting?.count ?? 0)
-const queueCount = computed(() => layout.ticket_badges?.queue?.todo_week?.count ?? 0)
+const queueCount = computed(() => layout.ticket_badges?.queue?.assigned_to_me?.count ?? 0)
 const queueOverdue = computed(() => layout.ticket_badges?.queue?.overdue?.count ?? 0)
 
 // ponytail: only ever mounted inside MessagingSideBar, so read the expand state straight off layout instead of threading a prop
@@ -51,7 +51,7 @@ const queueOverdue = computed(() => layout.ticket_badges?.queue?.overdue?.count 
         <div v-if="layout.ticket_badges?.queue" class="relative flex items-center justify-center shrink-0">
             <Popover width="w-72" position="right-full mr-2 top-0">
                 <template #button="{ open }">
-                    <div :title="trans('Tickets to fix')" class="relative w-8 h-8 flex items-center justify-center opacity-80 hover:opacity-100 cursor-pointer font-medium tabular-nums bg-lime-300 text-lime-900" :class="layout.ticket_badges?.mine && myTicketsCount > 0 ? 'rounded-t-xl' : 'rounded-xl'">
+                    <div :title="trans('Tickets assigned to me')" class="relative w-8 h-8 flex items-center justify-center opacity-80 hover:opacity-100 cursor-pointer font-medium tabular-nums bg-lime-300 text-lime-900" :class="layout.ticket_badges?.mine && myTicketsCount > 0 ? 'rounded-t-xl' : 'rounded-xl'">
                         <Transition name="spin-to-right"><span :key="queueCount"><span :class="queueCount > 99 ? 'text-xxs' : 'text-xs'">{{ queueCount > 99 ? '99+' : queueCount }}</span></span></Transition>
                         <FontAwesomeIcon v-if="queueOverdue" icon="fas fa-circle" class="absolute top-0 -right-0.5 text-fuchsia-500 text-[5px] animate-ping" fixed-width aria-hidden="true" />
                     </div>
