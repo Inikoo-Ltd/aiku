@@ -2435,6 +2435,10 @@ test('store replacement delivery note action', function () {
 
     expect($order->deliveryNotes()->count())->toBeGreaterThan(1)
         ->and($replacementItem->replacement_reason)->toBe(\App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemReplacementReasonEnum::DAMAGED_IN_TRANSIT);
+
+    get(route('grp.org.shops.show.ordering.delivery-notes.show', [
+        $this->organisation->slug, $this->shop->slug, $replacementItem->deliveryNote->slug,
+    ]))->assertOk()->assertInertia(fn ($page) => $page->where('items.data.0.replacement_reason_label', 'Damaged by courier'));
 });
 
 test('store replacement delivery note requires a reason per item', function () {

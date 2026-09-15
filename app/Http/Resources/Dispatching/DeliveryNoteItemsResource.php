@@ -141,6 +141,7 @@ class DeliveryNoteItemsResource extends JsonResource
             'quantity_not_picked'                      => $this->quantity_not_picked,
             'org_stock_code'                           => $this->org_stock_code,
             'org_stock_name'                           => $this->org_stock_name,
+            'replacement_reason_label'                 => $this->replacement_reason?->label(),
             'barcode'                                  => $this->barcode,
             'org_stock_slug'                           => $this->org_stock_slug,
             'org_stock_id'                             => $this->org_stock_id,
