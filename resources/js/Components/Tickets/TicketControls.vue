@@ -6,7 +6,7 @@
 -->
 
 <script setup lang="ts">
-import { computed, ref } from "vue"
+import { computed, onBeforeUnmount, ref } from "vue"
 import { router } from "@inertiajs/vue3"
 import { trans } from "laravel-vue-i18n"
 import { Popover, Listbox, Dialog } from "primevue"
@@ -18,9 +18,9 @@ import TicketStatusNoteDialog from "@/Components/Tickets/TicketStatusNoteDialog.
 import TicketUserAvatar from "@/Components/Tickets/TicketUserAvatar.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faPaperclip, faCircle, faUserCheck, faSpinner, faClock, faCheckCircle, faBan, faPlay, faPause, faStop, faCheck, faUndo, faBug, faLightbulb, faLevelUp, faCube, faQuestionCircle, faEllipsisV, faTrashAlt, faUser, faPencil, faTimes, faPlus, faPlusCircle, faExchange, faHourglassHalf, faVial, faShieldCheck, faShield, faRocket } from "@fal"
+import { faPaperclip, faCircle, faUserCheck, faSpinner, faClock, faCheckCircle, faBan, faPlay, faPause, faStop, faCheck, faUndo, faBug, faLightbulb, faLevelUp, faCube, faQuestionCircle, faEllipsisV, faTrashAlt, faUser, faPencil, faTimes, faPlus, faPlusCircle, faExchange, faHourglassHalf, faVial, faShieldCheck, faShield, faRocket, faUserPlus, faCheckSquare, faSquare } from "@fal"
 
-library.add(faRocket, faVial, faShieldCheck, faShield, faHourglassHalf, faPlusCircle, faExchange, faEllipsisV, faTrashAlt, faUser, faPencil, faTimes, faPlus,faPaperclip, faCircle, faUserCheck, faSpinner, faClock, faCheckCircle, faBan, faPlay, faPause, faStop, faCheck, faUndo, faBug, faLightbulb, faLevelUp, faCube, faQuestionCircle)
+library.add(faUserPlus, faCheckSquare, faSquare, faRocket, faVial, faShieldCheck, faShield, faHourglassHalf, faPlusCircle, faExchange, faEllipsisV, faTrashAlt, faUser, faPencil, faTimes, faPlus,faPaperclip, faCircle, faUserCheck, faSpinner, faClock, faCheckCircle, faBan, faPlay, faPause, faStop, faCheck, faUndo, faBug, faLightbulb, faLevelUp, faCube, faQuestionCircle)
 
 type Option<Value> = { label: string; value: Value }
 
@@ -33,6 +33,7 @@ const props = defineProps<{
         tags: string[]
         kinds: Option<string>[]
         modules: Option<string>[]
+        collaborators?: (Option<number> & { avatar?: Record<string, string> | null })[]
     }
     can_manage: boolean
     can_assign: boolean
@@ -40,10 +41,14 @@ const props = defineProps<{
     can_qa: boolean
     is_reporter: boolean
     can_change_kind_module: boolean
+    can_update?: boolean
+    can_contribute?: boolean
+    can_manage_collaborators?: boolean
     hideConfidential?: boolean
     routes: {
         update: { name: string; parameters: Record<string, unknown> }
         escalate: { name: string; parameters: Record<string, unknown> }
+        collaborators?: { name: string; parameters: Record<string, unknown> }
     }
 }>()
 
@@ -149,7 +154,53 @@ const sendQaVerdict = () => {
     )
 }
 
-const canAskQa = computed(() => props.can_manage && ["in_progress", "waiting", "resolved"].includes(props.ticket.status) && props.ticket.qa_status !== "requested")
+const canAskQa = computed(() => props.can_contribute && ["in_progress", "waiting", "resolved"].includes(props.ticket.status) && props.ticket.qa_status !== "requested")
+
+const collaboratorPopover = ref()
+const isCollaboratorPickerOpen = ref(false)
+
+const collaboratorCandidates = computed(() => (props.options.collaborators ?? []).filter((person) => person.value !== props.ticket.assignee_id))
+
+const savedCollaboratorIds = computed<number[]>(() => (props.ticket.collaborators ?? []).map((collaborator: { id: number }) => collaborator.id))
+const draftCollaboratorIds = ref<number[] | null>(null)
+const collaboratorIds = computed<number[]>(() => draftCollaboratorIds.value ?? savedCollaboratorIds.value)
+let collaboratorSaveTimer: ReturnType<typeof setTimeout> | null = null
+
+const saveCollaborators = () => {
+    if (collaboratorSaveTimer) clearTimeout(collaboratorSaveTimer)
+    collaboratorSaveTimer = null
+    const nextIds = draftCollaboratorIds.value
+    if (!nextIds || !props.routes.collaborators) return
+    const isUnchanged = nextIds.length === savedCollaboratorIds.value.length && nextIds.every((id) => savedCollaboratorIds.value.includes(id))
+    if (isUnchanged) {
+        draftCollaboratorIds.value = null
+        return
+    }
+    router.patch(route(props.routes.collaborators.name, props.routes.collaborators.parameters), { collaborator_ids: nextIds }, {
+        preserveScroll: true,
+        onStart: () => (pendingAction.value = "collaborators"),
+        onFinish: () => {
+            pendingAction.value = null
+            draftCollaboratorIds.value = null
+        },
+        onSuccess: () => emit("updated"),
+    })
+}
+
+const toggleCollaborator = (userId: number) => {
+    if (isPending("collaborators")) return
+    const currentIds = collaboratorIds.value
+    draftCollaboratorIds.value = currentIds.includes(userId) ? currentIds.filter((id) => id !== userId) : [...currentIds, userId]
+    if (collaboratorSaveTimer) clearTimeout(collaboratorSaveTimer)
+    collaboratorSaveTimer = setTimeout(saveCollaborators, 800)
+}
+
+const onCollaboratorPickerHide = () => {
+    isCollaboratorPickerOpen.value = false
+    saveCollaborators()
+}
+
+onBeforeUnmount(saveCollaborators)
 
 const update = (field: string, value: unknown, action: string = field) => {
     if (isBusy.value) return
@@ -198,6 +249,39 @@ const update = (field: string, value: unknown, action: string = field) => {
                     </button>
                 </Popover>
             </div>
+            <div v-if="ticket.collaborators?.length || can_manage_collaborators">
+                <p class="mb-1 text-xs text-gray-500">{{ trans("Collaborators") }}</p>
+                <div class="flex flex-wrap items-center gap-2">
+                    <span v-for="collaborator in ticket.collaborators" :key="collaborator.id" v-tooltip="collaborator.name" class="inline-flex items-center gap-1.5 rounded-full bg-gray-100 py-1 pl-1 pr-2.5 text-xs text-gray-700">
+                        <TicketUserAvatar :name="collaborator.name" :avatar="collaborator.avatar" size="xs" />
+                        {{ collaborator.short }}
+                    </span>
+                    <button
+                        v-if="can_manage_collaborators"
+                        v-tooltip="trans('Add or remove collaborators')"
+                        type="button"
+                        class="flex h-8 w-8 items-center justify-center rounded-full border border-dashed text-sm border-gray-300 text-gray-500 transition duration-200 hover:border-indigo-400 hover:text-indigo-600 active:!border-indigo-400 active:!text-indigo-600"
+                        :class="isCollaboratorPickerOpen && '!border-indigo-400 !bg-indigo-50 !text-indigo-600'"
+                        @click="collaboratorPopover.toggle($event)">
+                        <FontAwesomeIcon :icon="isPending('collaborators') ? 'fal fa-spinner' : 'fal fa-user-plus'" :spin="isPending('collaborators')" fixed-width />
+                    </button>
+                </div>
+                <Popover v-if="can_manage_collaborators" ref="collaboratorPopover" @show="isCollaboratorPickerOpen = true" @hide="onCollaboratorPickerHide">
+                    <div class="flex max-h-72 w-60 flex-col overflow-y-auto text-sm">
+                        <button
+                            v-for="person in collaboratorCandidates"
+                            :key="person.value"
+                            type="button"
+                            class="flex items-center gap-2 rounded p-2 text-left transition duration-200 hover:bg-gray-100 active:!bg-gray-200"
+                            @click="toggleCollaborator(person.value)">
+                            <FontAwesomeIcon :icon="collaboratorIds.includes(person.value) ? 'fal fa-check-square' : 'fal fa-square'" fixed-width :class="collaboratorIds.includes(person.value) ? 'text-indigo-600' : 'text-gray-400'" />
+                            <TicketUserAvatar :name="person.label" :avatar="person.avatar" size="sm" />
+                            <span class="truncate">{{ person.label }}</span>
+                        </button>
+                        <p v-if="!collaboratorCandidates.length" class="p-2 text-gray-400">{{ trans("Nobody to add") }}</p>
+                    </div>
+                </Popover>
+            </div>
             <div v-if="can_manage || is_reporter">
                 <div class="flex items-center gap-2">
                     <span class="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-sm font-medium" :class="statusBadgeClasses[ticket.status_icon.color]">
@@ -209,7 +293,7 @@ const update = (field: string, value: unknown, action: string = field) => {
                         {{ useFormatTime(ticket.waiting_until, { formatTime: "hm" }) }}
                     </span>
                     <button
-                        v-for="action in statusActions[ticket.status]"
+                        v-for="action in can_update || is_reporter ? statusActions[ticket.status] : []"
                         :key="action.status"
                         v-tooltip="action.label"
                         type="button"
@@ -230,9 +314,9 @@ const update = (field: string, value: unknown, action: string = field) => {
                     <button v-tooltip="trans('QA failed')" type="button" class="rounded-md p-1.5 text-red-500 hover:bg-gray-100 active:!bg-gray-200 transition duration-200" @click="openQaVerdict('failed')"><FontAwesomeIcon icon="fal fa-shield" fixed-width /></button>
                 </template>
                 <button v-if="canAskQa" v-tooltip="ticket.qa_status ? trans('Ask QA to check again') : trans('Ask QA to check')" type="button" class="rounded-md p-1.5 text-amber-600 hover:bg-gray-100 active:!bg-gray-200 transition duration-200" @click="update('qa_status', 'requested', 'qa:request')"><FontAwesomeIcon :icon="isPending('qa:request') ? 'fal fa-spinner' : 'fal fa-vial'" :spin="isPending('qa:request')" fixed-width /></button>
-                <button v-if="can_manage && ticket.qa_status === 'requested'" v-tooltip="trans('Withdraw QA request')" type="button" class="rounded-md p-1.5 text-gray-400 hover:bg-gray-100 active:!bg-gray-200 transition duration-200" @click="update('qa_status', null, 'qa:withdraw')"><FontAwesomeIcon :icon="isPending('qa:withdraw') ? 'fal fa-spinner' : 'fal fa-times'" :spin="isPending('qa:withdraw')" fixed-width /></button>
+                <button v-if="can_contribute && ticket.qa_status === 'requested'" v-tooltip="trans('Withdraw QA request')" type="button" class="rounded-md p-1.5 text-gray-400 hover:bg-gray-100 active:!bg-gray-200 transition duration-200" @click="update('qa_status', null, 'qa:withdraw')"><FontAwesomeIcon :icon="isPending('qa:withdraw') ? 'fal fa-spinner' : 'fal fa-times'" :spin="isPending('qa:withdraw')" fixed-width /></button>
             </div>
-            <template v-if="can_manage">
+            <template v-if="can_manage || can_contribute">
             <div v-if="ticket.type === 'help'" class="flex flex-wrap gap-2">
                 <span
                     v-tooltip="canChangeKind ? trans('Kind · click to change') : trans('Kind')"
@@ -270,11 +354,11 @@ const update = (field: string, value: unknown, action: string = field) => {
                 <div class="flex flex-wrap items-center gap-1.5">
                     <span v-for="tag in ticket.tags" :key="tag" class="inline-flex items-center gap-1 rounded-full bg-indigo-50 px-2.5 py-0.5 text-xs text-indigo-700">
                         {{ tag }}
-                        <button v-tooltip="trans('Remove')" type="button" class="text-indigo-400 hover:text-indigo-700 active:!text-indigo-700 transition duration-200" @click="update('tags', ticket.tags.filter((t: string) => t !== tag), `tags:remove:${tag}`)">
+                        <button v-if="can_contribute" v-tooltip="trans('Remove')" type="button" class="text-indigo-400 hover:text-indigo-700 active:!text-indigo-700 transition duration-200" @click="update('tags', ticket.tags.filter((t: string) => t !== tag), `tags:remove:${tag}`)">
                             <FontAwesomeIcon :icon="isPending(`tags:remove:${tag}`) ? 'fal fa-spinner' : 'fal fa-times'" :spin="isPending(`tags:remove:${tag}`)" fixed-width />
                         </button>
                     </span>
-                    <button v-tooltip="trans('Add tag')" type="button" class="flex h-6 w-6 items-center justify-center rounded-full border border-dashed border-gray-300 text-gray-500 hover:border-indigo-400 active:!border-indigo-400 hover:text-indigo-600 active:!text-indigo-600 transition duration-200" :class="isTagPickerOpen && '!border-indigo-400 !text-indigo-600 !bg-indigo-50'" @click="tagPopover.toggle($event)">
+                    <button v-if="can_contribute" v-tooltip="trans('Add tag')" type="button" class="flex h-6 w-6 items-center justify-center rounded-full border border-dashed border-gray-300 text-gray-500 hover:border-indigo-400 active:!border-indigo-400 hover:text-indigo-600 active:!text-indigo-600 transition duration-200" :class="isTagPickerOpen && '!border-indigo-400 !text-indigo-600 !bg-indigo-50'" @click="tagPopover.toggle($event)">
                         <FontAwesomeIcon :icon="isPending('tags:add') ? 'fal fa-spinner' : 'fal fa-plus'" :spin="isPending('tags:add')" fixed-width />
                     </button>
                 </div>
@@ -298,7 +382,7 @@ const update = (field: string, value: unknown, action: string = field) => {
                     </div>
                 </Popover>
             </div>
-            <Button v-if="ticket.type === 'customer' && !ticket.escalations.length" type="secondary" icon="fal fa-level-up" :label="trans('Escalate to help desk')" full :loading="isPending('escalate')" @click="escalate" />
+            <Button v-if="can_update && ticket.type === 'customer' && !ticket.escalations.length" type="secondary" icon="fal fa-level-up" :label="trans('Escalate to help desk')" full :loading="isPending('escalate')" @click="escalate" />
             <label v-if="can_flag_confidential && !hideConfidential" class="flex items-center gap-x-2 text-gray-600 cursor-pointer">
                 <input type="checkbox" :checked="ticket.is_confidential" :disabled="isBusy" class="rounded border-gray-300 cursor-pointer disabled:cursor-wait" @change="update('is_confidential', ($event.target as HTMLInputElement).checked, 'confidential')" />
                 {{ trans("Confidential") }} <span class="text-xs text-gray-400">({{ trans("only reporter and lead engineers") }})</span>
@@ -322,7 +406,7 @@ const update = (field: string, value: unknown, action: string = field) => {
         v-model:visible="isStatusNoteOpen"
         :status="statusNoteAction"
         :update-route="routes.update"
-        :can-wait-for-deployment="can_manage && ticket.status !== 'pending_deploy'"
+        :can-wait-for-deployment="can_update && ticket.status !== 'pending_deploy'"
         @updated="emit('updated')" />
     </div>
 </template>

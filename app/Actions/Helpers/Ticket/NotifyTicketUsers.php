@@ -148,6 +148,18 @@ class NotifyTicketUsers
         }
     }
 
+    public function collaboratorAdded(Ticket $ticket, User $collaborator, ?User $actor): void
+    {
+        $this->handle(
+            $ticket,
+            $actor,
+            $collaborator,
+            __('You were added to :reference', ['reference' => $ticket->reference]),
+            [$ticket->subject],
+            __('Open the ticket')
+        );
+    }
+
     public function pushBadges(Ticket $ticket, ?User $actor = null): void
     {
         BroadcastTicketChanged::dispatch($ticket);
@@ -156,6 +168,7 @@ class NotifyTicketUsers
         $changesQueueCounts  = $ticket->wasRecentlyCreated || $ticket->wasChanged(['status', 'assignee_id', 'qa_status', 'kind', 'is_confidential']);
 
         $users = collect([$ticket->reporter, $ticket->assignee()->first(), $previousAssigneeId ? User::find($previousAssigneeId) : null, $actor])
+            ->merge($ticket->collaborators()->get())
             ->when($changesQueueCounts, fn ($users) => $users
                 ->merge(GetTicketBadgeData::engineers($ticket->group_id))
                 ->merge(GetTicketBadgeData::qaUsers($ticket->group_id)))

@@ -24,6 +24,7 @@ use App\Models\Traits\InShop;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -178,6 +179,11 @@ class Ticket extends Model implements Auditable, HasMedia
         return $this->belongsTo(User::class, 'assignee_id');
     }
 
+    public function collaborators(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'ticket_collaborators')->withPivot('added_by_id')->withTimestamps();
+    }
+
     public function qaUser(): BelongsTo
     {
         return $this->belongsTo(User::class, 'qa_user_id');
@@ -227,6 +233,31 @@ class Ticket extends Model implements Auditable, HasMedia
         return $user !== null && (self::canBeAssignedBy($user) || $this->assignee_id === $user->id);
     }
 
+    public function isAssignedTo(?User $user): bool
+    {
+        return $user !== null && $this->assignee_id === $user->id;
+    }
+
+    public function hasCollaborator(?User $user): bool
+    {
+        return $user !== null && $this->collaborators()->whereKey($user->id)->exists();
+    }
+
+    public function canBeUpdatedBy(?User $user): bool
+    {
+        return self::canBeAssignedBy($user) || (self::canBeManagedBy($user) && $this->isAssignedTo($user));
+    }
+
+    public function canContributeBy(?User $user): bool
+    {
+        return $this->canBeUpdatedBy($user) || $this->hasCollaborator($user);
+    }
+
+    public function canManageCollaboratorsBy(?User $user): bool
+    {
+        return $this->canBeUpdatedBy($user);
+    }
+
     public static function canUseAssistant(?User $user): bool
     {
         return self::canBeManagedBy($user) || self::canCheckQa($user);
@@ -256,6 +287,7 @@ class Ticket extends Model implements Auditable, HasMedia
         return $query->where(fn (Builder $query) => $query
             ->where('tickets.is_confidential', false)
             ->orWhere('tickets.assignee_id', $user->id)
+            ->orWhereExists(fn ($collaborators) => $collaborators->selectRaw('1')->from('ticket_collaborators')->whereColumn('ticket_collaborators.ticket_id', 'tickets.id')->where('ticket_collaborators.user_id', $user->id))
             ->orWhere(fn (Builder $query) => $query->where('tickets.reporter_type', 'User')->where('tickets.reporter_id', $user->id)));
     }
 

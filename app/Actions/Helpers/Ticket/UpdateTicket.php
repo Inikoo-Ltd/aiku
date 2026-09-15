@@ -123,6 +123,10 @@ class UpdateTicket extends OrgAction
             SyncTicketSlackAlert::run($ticket);
         }
 
+        if ($ticket->wasChanged('assignee_id') && $ticket->assignee_id) {
+            $ticket->collaborators()->detach($ticket->assignee_id);
+        }
+
         NotifyTicketUsers::make()->pushBadges($ticket, $asker instanceof User ? $asker : null);
 
         return $ticket;
@@ -166,25 +170,35 @@ class UpdateTicket extends OrgAction
             return true;
         }
 
+        $user   = $request->user();
         $ticket = $request->route('ticket');
+        if (!$ticket instanceof Ticket) {
+            return false;
+        }
+
+        $fields = array_keys($request->all());
+
         if ($request->has('qa_status')) {
+            if (array_diff($fields, ['qa_status', 'qa_note']) !== []) {
+                return false;
+            }
+
             $isVerdict = in_array($request->input('qa_status'), [TicketQaStatusEnum::PASSED->value, TicketQaStatusEnum::FAILED->value], true);
 
-            return array_diff(array_keys($request->all()), ['qa_status', 'qa_note']) === []
-                && ($isVerdict ? Ticket::canCheckQa($request->user()) : Ticket::canBeManagedBy($request->user()));
+            return $isVerdict ? Ticket::canCheckQa($user) : $ticket->canContributeBy($user);
         }
 
-        if (Ticket::canBeManagedBy($request->user())) {
-            $onOwnPlate          = $ticket instanceof Ticket && $ticket->assignee_id === $request->user()->id && $request->filled('assignee_id');
-            $canChangeKindModule = !$request->hasAny(['kind', 'module']) || ($ticket instanceof Ticket && $ticket->canChangeKindAndModuleBy($request->user()));
-
-            return (!$request->has('assignee_id') || $onOwnPlate) && !$request->has('is_confidential') && $canChangeKindModule;
+        if ($ticket->canBeUpdatedBy($user)) {
+            return (!$request->has('assignee_id') || $request->filled('assignee_id')) && !$request->has('is_confidential');
         }
 
-        return $ticket instanceof Ticket
-            && $ticket->isReportedBy($request->user())
+        if ($request->has('tags') && array_diff($fields, ['tags']) === [] && $ticket->hasCollaborator($user)) {
+            return true;
+        }
+
+        return $ticket->isReportedBy($user)
             && $request->has('status')
-            && array_diff(array_keys($request->all()), ['status', 'status_comment']) === [];
+            && array_diff($fields, ['status', 'status_comment']) === [];
     }
 
     public function action(Ticket $ticket, array $modelData): Ticket

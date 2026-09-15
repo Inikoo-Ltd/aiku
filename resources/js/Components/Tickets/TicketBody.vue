@@ -130,7 +130,7 @@ onBeforeUnmount(() => window.removeEventListener("keydown", onKeydown))
         <ul v-if="attachments?.length" class="mt-2 space-y-1 text-sm">
             <li v-for="file in attachments" :key="file.url">
                 <button v-if="isPreviewableAttachment(file)" type="button" class="text-left text-indigo-600 hover:underline break-all" @click="previewFileIndex = previewableFiles.indexOf(file)"><FontAwesomeIcon icon="fal fa-paperclip" class="mr-1" />{{ file.name }}</button>
-                <a v-else :href="file.url" target="_blank" rel="noopener" class="text-indigo-600 hover:underline break-all"><FontAwesomeIcon icon="fal fa-paperclip" class="mr-1" />{{ file.name }}</a>
+                <a v-else :href="file.url" :download="file.name" class="text-indigo-600 hover:underline break-all"><FontAwesomeIcon icon="fal fa-paperclip" class="mr-1" />{{ file.name }}</a>
             </li>
         </ul>
         <TicketAttachmentPreview v-model:index="previewFileIndex" :files="previewableFiles" />

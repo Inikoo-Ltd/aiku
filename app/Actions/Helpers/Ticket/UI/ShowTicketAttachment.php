@@ -32,11 +32,11 @@ class ShowTicketAttachment extends OrgAction
         abort_unless($disk->exists($path), 404);
 
         if (config("filesystems.disks.{$media->disk}.driver") !== 'local') {
-            return $disk->response($path, $media->name, ['Content-Type' => $media->mime_type], 'inline');
+            return $disk->response($path, $media->name, ['Content-Type' => $media->mime_type], $this->dispositionFor($media->name));
         }
 
         return response()->file($disk->path($path), ['Content-Type' => $media->mime_type])
-            ->setContentDisposition('inline', $media->name, str_replace('%', '', Str::ascii($media->name)) ?: 'attachment');
+            ->setContentDisposition($this->dispositionFor($media->name), $media->name, str_replace('%', '', Str::ascii($media->name)) ?: 'attachment');
     }
 
     public function asController(Ticket $ticket, Media $media, ActionRequest $request): Response
@@ -46,5 +46,10 @@ class ShowTicketAttachment extends OrgAction
         $this->initialisationFromGroup($ticket->group, $request);
 
         return $this->handle($media);
+    }
+
+    private function dispositionFor(string $fileName): string
+    {
+        return strtolower(pathinfo($fileName, PATHINFO_EXTENSION)) === 'zip' ? 'attachment' : 'inline';
     }
 }

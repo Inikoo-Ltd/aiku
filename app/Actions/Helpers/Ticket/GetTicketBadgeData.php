@@ -50,6 +50,7 @@ class GetTicketBadgeData
             'new_unassigned' => $this->row(__('New, nobody on it'), (clone $all)->where('status', TicketStatusEnum::OPEN), ['status' => 'open']),
             'overdue'        => $this->row(__('Open for more than 24h'), $open()->where('created_at', '<', now()->subDay()), ['status' => 'open,assigned,in_progress,answered']),
             'assigned_to_me' => $this->row(__('Assigned to me'), $open()->where('assignee_id', $user->id), ['mine' => 'assigned', 'status' => 'open,assigned,in_progress']),
+            'collaborating'  => $this->row(__('Collaborating on'), $open()->where(fn (Builder $query) => $query->whereNull('assignee_id')->orWhere('assignee_id', '!=', $user->id))->whereHas('collaborators', fn (Builder $query) => $query->whereKey($user->id)), ['mine' => 'collaborating', 'status' => 'open,assigned,in_progress']),
             'qa_failed'      => $this->row(__('Failed QA'), (clone $all)->where('assignee_id', $user->id)->where('qa_status', TicketQaStatusEnum::FAILED), ['mine' => 'assigned']),
             'qa_requested'   => $this->row(__('Awaiting QA check'), (clone $all)->where('qa_status', TicketQaStatusEnum::REQUESTED), []),
         ];

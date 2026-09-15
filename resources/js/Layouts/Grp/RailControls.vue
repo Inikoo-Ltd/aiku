@@ -27,7 +27,7 @@ const sumCounts = (rows: Record<string, { count: number }> | null | undefined, k
 
 const myTicketsCount = computed(() => sumCounts(layout.ticket_badges?.mine, ['waiting', 'done_24h']))
 const myTicketsWaiting = computed(() => layout.ticket_badges?.mine?.waiting?.count ?? 0)
-const queueCount = computed(() => layout.ticket_badges?.queue?.assigned_to_me?.count ?? 0)
+const queueCount = computed(() => (layout.ticket_badges?.queue?.assigned_to_me?.count ?? 0) + (layout.ticket_badges?.queue?.collaborating?.count ?? 0))
 const queueOverdue = computed(() => layout.ticket_badges?.queue?.overdue?.count ?? 0)
 
 // ponytail: only ever mounted inside MessagingSideBar, so read the expand state straight off layout instead of threading a prop

@@ -13,9 +13,9 @@ import TicketAttachmentPreview, { isImageAttachment, isPdfAttachment, isPreviewa
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faChevronDown, faFile, faFileImage, faFilePdf, faFileWord, faFileExcel, faFileCsv, faFileVideo } from "@fal"
+import { faChevronDown, faFile, faFileImage, faFilePdf, faFileWord, faFileExcel, faFileCsv, faFileVideo, faFileArchive } from "@fal"
 
-library.add(faChevronDown, faFile, faFileImage, faFilePdf, faFileWord, faFileExcel, faFileCsv, faFileVideo)
+library.add(faChevronDown, faFile, faFileImage, faFilePdf, faFileWord, faFileExcel, faFileCsv, faFileVideo, faFileArchive)
 
 const props = defineProps<{
     files: TicketAttachment[]
@@ -77,6 +77,7 @@ const fileIcons: Record<string, { icon: string; class: string }> = {
     xls: { icon: "fal fa-file-excel", class: "text-green-600" },
     xlsx: { icon: "fal fa-file-excel", class: "text-green-600" },
     csv: { icon: "fal fa-file-csv", class: "text-emerald-600" },
+    zip: { icon: "fal fa-file-archive", class: "text-amber-600" },
     mp4: { icon: "fal fa-file-video", class: "text-purple-600" },
     webm: { icon: "fal fa-file-video", class: "text-purple-600" },
     mov: { icon: "fal fa-file-video", class: "text-purple-600" },
@@ -95,8 +96,14 @@ const shortName = (name: string) => (name.length <= 26 ? name : `${name.slice(0,
 
 const openFile = (file: TicketAttachment) => {
     const index = previewableFiles.value.indexOf(file)
-    if (index >= 0) previewIndex.value = index
-    else window.open(file.url, "_blank", "noopener")
+    if (index >= 0) {
+        previewIndex.value = index
+        return
+    }
+    const link = document.createElement("a")
+    link.href = file.url
+    link.download = file.name
+    link.click()
 }
 </script>
 

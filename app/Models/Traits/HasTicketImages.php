@@ -26,7 +26,7 @@ trait HasTicketImages
     {
         return [
             'file',
-            'extensions:jpg,jpeg,png,bmp,gif,svg,webp,pdf,docx,xls,xlsx,csv,mp4,webm,mov',
+            'extensions:jpg,jpeg,png,bmp,gif,svg,webp,pdf,docx,xls,xlsx,csv,zip,mp4,webm,mov',
             'mimes:jpg,jpeg,png,bmp,gif,svg,webp,pdf,docx,xls,xlsx,csv,txt,zip,mp4,webm,mov',
             'max:51200',
             function (string $attribute, mixed $value, Closure $fail): void {

@@ -373,7 +373,7 @@ test('screenshots can be attached to tickets and comments', function () {
     post(route('grp.models.ticket.comment.store', $ticket->id), [])->assertSessionHasErrors('body');
 });
 
-test('pdf, word, excel and csv files can be attached to tickets and comments', function () {
+test('pdf, word, excel, csv and zip files can be attached to tickets and comments', function () {
     $directory = sys_get_temp_dir().'/ticket_files_'.uniqid();
     mkdir($directory);
 
@@ -388,6 +388,11 @@ test('pdf, word, excel and csv files can be attached to tickets and comments', f
     $docx->addFromString('word/document.xml', '<?xml version="1.0"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"/>');
     $docx->close();
 
+    $bundle = new ZipArchive();
+    $bundle->open("$directory/bundle.zip", ZipArchive::CREATE);
+    $bundle->addFromString('logs/error.log', "boom\n");
+    $bundle->close();
+
     $ticket = StoreTicket::make()->action($this->group, [
         'subject' => 'Invoice looks wrong',
         'images'  => [UploadedFile::fake()->createWithContent('invoice.pdf', "%PDF-1.4\n%%EOF\n")],
@@ -401,13 +406,17 @@ test('pdf, word, excel and csv files can be attached to tickets and comments', f
             UploadedFile::fake()->image('shot.png'),
         ],
     ]);
+    $zipComment = StoreTicketComment::make()->action($ticket, $this->user, [
+        'images' => [new UploadedFile("$directory/bundle.zip", 'bundle.zip', null, null, true)],
+    ]);
 
     expect($ticket->getMedia('ticket_attachments'))->toHaveCount(1)
         ->and($ticket->ticketAttachments()[0])->toMatchArray(['name' => 'invoice.pdf', 'mime' => 'application/pdf'])
         ->and(collect($comment->ticketAttachments())->pluck('name')->sort()->values()->all())->toBe(['legacy.xls', 'notes.docx', 'orders.csv', 'stock.xlsx'])
-        ->and($comment->getMedia('ticket_images'))->toHaveCount(1);
+        ->and($comment->getMedia('ticket_images'))->toHaveCount(1)
+        ->and($zipComment->ticketAttachments()[0]['name'])->toBe('bundle.zip');
 
-    foreach ([UploadedFile::fake()->createWithContent('notes.txt', "plain text\n"), UploadedFile::fake()->createWithContent('bundle.zip', "PK\x03\x04")] as $rejectedFile) {
+    foreach ([UploadedFile::fake()->createWithContent('notes.txt', "plain text\n")] as $rejectedFile) {
         expect(fn () => StoreTicketComment::make()->action($ticket, $this->user, ['images' => [$rejectedFile]]))
             ->toThrow(Illuminate\Validation\ValidationException::class);
     }
@@ -927,8 +936,9 @@ test('only the help desk manages tickets, everyone else reports, comments and cl
     get(route('grp.tickets.board'))->assertOk()->assertInertia(fn (AssertableInertia $page) => $page->where('can_manage', true));
     patch(route('grp.models.ticket.update', $other->id), ['is_confidential' => true])->assertForbidden();
     patch(route('grp.models.ticket.update', $other->id), ['assignee_id' => $helper->id])->assertForbidden();
-    patch(route('grp.models.ticket.update', $other->id), ['priority' => 'urgent'])->assertRedirect();
+    patch(route('grp.models.ticket.update', $other->id), ['priority' => 'urgent'])->assertForbidden();
     UpdateTicket::make()->action($other, ['assignee_id' => $helper->id]);
+    patch(route('grp.models.ticket.update', $other->id), ['priority' => 'urgent'])->assertRedirect();
     patch(route('grp.models.ticket.update', $other->id), ['assignee_id' => null])->assertForbidden();
     patch(route('grp.models.ticket.update', $other->id), ['assignee_id' => $boss->id])->assertRedirect();
     patch(route('grp.models.ticket.update', $other->id), ['assignee_id' => $helper->id])->assertForbidden();
@@ -1577,7 +1587,7 @@ test('ticket list sorts by creation, remembers the Mine filter and lets lead eng
             ->where('data.data', fn ($rows) => collect($rows)->isNotEmpty() && collect($rows)->every(fn ($row) => $row['assignee_id'] === $this->user->id))
     );
 
-    get(route('grp.tickets.list', ['elements' => ['mine' => 'reported,assigned']]))->assertInertia(
+    get(route('grp.tickets.list', ['elements' => ['mine' => 'reported,assigned,collaborating']]))->assertInertia(
         fn (AssertableInertia $page) => $page->where('data.data', fn ($rows) => collect($rows)->pluck('reference')->contains($newest->reference))
     );
 
@@ -1620,4 +1630,62 @@ test('the board tells lead engineers apart so only they can drag any ticket', fu
     actingAs($clerk);
 
     get(route('grp.tickets.board'))->assertInertia(fn (AssertableInertia $page) => $page->where('can_manage', true)->where('can_assign', false));
+});
+
+test('the assignee adds collaborators who can see the ticket, tag it and ask QA, while only the assignee moves it', function () {
+    Mail::fake();
+    Notification::fake();
+    setPermissionsTeamId($this->group->id);
+    $assignee  = User::factory()->create(['group_id' => $this->group->id]);
+    $helper    = User::factory()->create(['group_id' => $this->group->id]);
+    $qa        = User::factory()->create(['group_id' => $this->group->id]);
+    $bystander = User::factory()->create(['group_id' => $this->group->id]);
+    $outsider  = User::factory()->create(['group_id' => $this->group->id]);
+    $assignee->assignRole('help-desk-clerk');
+    $helper->assignRole('help-desk-clerk');
+    $bystander->assignRole('help-desk-clerk');
+    $qa->assignRole('qa');
+
+    $ticket = StoreTicket::make()->action($this->group, ['subject' => 'Needs three people', 'assignee_id' => $assignee->id, 'is_confidential' => true]);
+    UpdateTicket::make()->action($ticket, ['status' => TicketStatusEnum::IN_PROGRESS->value]);
+    $collaborators = route('grp.models.ticket.collaborators.update', $ticket->id);
+    $update        = route('grp.models.ticket.update', $ticket->id);
+
+    actingAs($bystander);
+    expect($ticket->fresh()->isVisibleTo($bystander))->toBeFalse();
+    patch($collaborators, ['collaborator_ids' => [$bystander->id]])->assertForbidden();
+    patch($update, ['tags' => ['sneaky']])->assertForbidden();
+
+    actingAs($assignee);
+    patch($collaborators, ['collaborator_ids' => [$helper->id, $qa->id, $outsider->id]])->assertSessionHasErrors('collaborator_ids.2');
+    patch($collaborators, ['collaborator_ids' => [$helper->id, $qa->id]])->assertRedirect()->assertSessionHasNoErrors();
+
+    expect($ticket->collaborators()->pluck('users.id')->sort()->values()->all())->toBe(collect([$helper->id, $qa->id])->sort()->values()->all())
+        ->and($ticket->collaborators()->whereKey($helper->id)->first()->pivot->added_by_id)->toBe($assignee->id);
+    Notification::assertSentTo($helper, TicketNotification::class, fn ($notification) => str_contains($notification->subject, $ticket->reference));
+    get(route('grp.tickets.show', $ticket->reference))->assertInertia(
+        fn (AssertableInertia $page) => $page->where('can_manage_collaborators', true)
+            ->where('timeline', fn ($timeline) => collect($timeline)->contains(fn ($event) => str_starts_with($event['text'], 'Collaborators:')))
+    );
+
+    actingAs($helper);
+    expect($ticket->fresh()->isVisibleTo($helper))->toBeTrue();
+    get(route('grp.tickets.show', $ticket->reference))->assertOk()->assertInertia(
+        fn (AssertableInertia $page) => $page->where('can_update', false)->where('can_contribute', true)->where('can_manage_collaborators', false)
+    );
+    patch($update, ['tags' => ['data fix']])->assertRedirect()->assertSessionHasNoErrors();
+    patch($update, ['qa_status' => 'requested'])->assertRedirect()->assertSessionHasNoErrors();
+    patch($update, ['status' => 'resolved'])->assertForbidden();
+    patch($update, ['priority' => 'urgent'])->assertForbidden();
+    patch($collaborators, ['collaborator_ids' => []])->assertForbidden();
+    expect($ticket->fresh()->tags)->toContain('data fix')
+        ->and(GetTicketBadgeData::run($helper)['queue']['collaborating']['count'])->toBeGreaterThanOrEqual(1);
+    get(route('grp.tickets.list', ['elements' => ['mine' => 'collaborating']]))->assertInertia(
+        fn (AssertableInertia $page) => $page->where('data.data', fn ($rows) => collect($rows)->pluck('reference')->contains($ticket->reference))
+    );
+
+    actingAs($assignee);
+    patch($update, ['assignee_id' => $helper->id])->assertRedirect();
+    expect($ticket->fresh()->assignee_id)->toBe($helper->id)
+        ->and($ticket->collaborators()->pluck('users.id')->all())->toBe([$qa->id]);
 });

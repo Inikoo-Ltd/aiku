@@ -653,6 +653,24 @@ const cancelAssign = () => {
 									<TicketUserAvatar :name="element.assignee" :avatar="element.assignee_avatar" size="xs" />
 									<span class="max-w-[5rem] truncate text-[10px] font-medium leading-none text-gray-600">{{ element.assignee_short }}</span>
 								</span>
+								<span
+									v-if="element.collaborators?.length"
+									v-tooltip="{ content: element.collaborators.map((collaborator) => collaborator.name).join(', '), delay: 0 }"
+									class="flex shrink-0 -space-x-1.5"
+									:class="!element.assignee && 'ml-auto'">
+									<TicketUserAvatar
+										v-for="collaborator in element.collaborators.slice(0, 3)"
+										:key="collaborator.id"
+										:name="collaborator.name"
+										:avatar="collaborator.avatar"
+										size="xs"
+										class="ring-2 ring-white" />
+									<span
+										v-if="element.collaborators.length > 3"
+										class="flex h-5 w-5 items-center justify-center rounded-full bg-gray-200 text-[8px] font-medium text-gray-600 ring-2 ring-white"
+										>+{{ element.collaborators.length - 3 }}</span
+									>
+								</span>
 							</div>
 						</div>
 					</template>

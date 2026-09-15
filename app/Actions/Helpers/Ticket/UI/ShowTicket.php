@@ -75,6 +75,7 @@ class ShowTicket extends OrgAction
                     'subject'         => __('Subject edited'),
                     'is_confidential' => $value ? __('Marked confidential') : __('No longer confidential'),
                     'qa_status'       => $value ? TicketQaStatusEnum::labels()[$value] : __('QA check withdrawn'),
+                    'collaborators' => $value ? __('Collaborators: :names', ['names' => $value]) : __('Collaborators removed'),
                     default           => null,
                 };
                 if ($text) {
@@ -83,6 +84,7 @@ class ShowTicket extends OrgAction
                         'icon' => match ($field) {
                             'status'    => $statusIcons[$value]['icon'] ?? 'fal fa-exchange',
                             'qa_status' => TicketQaStatusEnum::stateIcon()[$value]['icon'] ?? 'fal fa-vial',
+                            'collaborators' => 'fal fa-users',
                             default     => 'fal fa-pencil',
                         },
                         'text' => $text,
@@ -133,6 +135,14 @@ class ShowTicket extends OrgAction
                 'tags'       => Ticket::knownTags($ticket->group_id),
                 'kinds'      => collect(TicketKindEnum::labels())->map(fn ($label, $value) => ['label' => $label, 'value' => $value])->values(),
                 'modules'    => collect(TicketModuleEnum::labels())->map(fn ($label, $value) => ['label' => $label, 'value' => $value])->values(),
+                'collaborators' => GetTicketBadgeData::engineers($ticket->group_id)
+                    ->merge(GetTicketBadgeData::qaUsers($ticket->group_id))
+                    ->unique('id')
+                    ->map(fn (User $person) => [
+                        'label'  => $person->contact_name ?: $person->username,
+                        'value'  => $person->id,
+                        'avatar' => $person->imageSources(48, 48),
+                    ])->sortBy('label')->values(),
                 'assignees'  => GetTicketBadgeData::engineers($ticket->group_id)
                     ->map(fn (User $engineer) => [
                         'label'  => strtok((string) ($engineer->contact_name ?: $engineer->username), ' '),
@@ -154,9 +164,13 @@ class ShowTicket extends OrgAction
             'can_qa'                 => Ticket::canCheckQa($user),
             'is_reporter'            => $ticket->isReportedBy($user),
             'can_change_kind_module' => $ticket->canChangeKindAndModuleBy($user),
+            'can_update'               => $ticket->canBeUpdatedBy($user),
+            'can_contribute'           => $ticket->canContributeBy($user),
+            'can_manage_collaborators' => $ticket->canManageCollaboratorsBy($user),
             'attachment_gallery'     => $ticket->attachmentGalleryFor($user),
             'routes'                 => [
                 'update'   => ['name' => 'grp.models.ticket.update', 'parameters' => ['ticket' => $ticket->id]],
+                'collaborators' => ['name' => 'grp.models.ticket.collaborators.update', 'parameters' => ['ticket' => $ticket->id]],
                 'comment'  => ['name' => 'grp.models.ticket.comment.store', 'parameters' => ['ticket' => $ticket->id]],
                 'rate'     => ['name' => 'grp.models.ticket.rate', 'parameters' => ['ticket' => $ticket->id]],
                 'escalate' => ['name' => 'grp.models.ticket.escalate', 'parameters' => ['ticket' => $ticket->id]],

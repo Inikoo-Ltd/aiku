@@ -60,6 +60,12 @@ class TicketResource extends JsonResource
             'assignee_username' => $this->assignee?->username,
             'assignee_short' => $this->assignee ? strtok((string) ($this->assignee->contact_name ?: $this->assignee->username), ' ') : null,
             'assignee_avatar' => $this->assignee?->imageSources(48, 48),
+            'collaborators'  => $this->collaborators->map(fn ($collaborator) => [
+                'id'     => $collaborator->id,
+                'name'   => $collaborator->contact_name ?: $collaborator->username,
+                'short'  => strtok((string) ($collaborator->contact_name ?: $collaborator->username), ' '),
+                'avatar' => $collaborator->imageSources(48, 48),
+            ])->values()->all(),
             'customer'       => $this->customer?->name,
             'shop'           => $this->shop?->name,
             'model_type'     => $this->model_type,

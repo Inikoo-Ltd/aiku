@@ -24,11 +24,11 @@ import TicketQuickLook from "@/Components/Tickets/TicketQuickLook.vue"
 import TicketUserAvatar from "@/Components/Tickets/TicketUserAvatar.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faPlay, faQuestionCircle, faCheck, faBan, faChevronDown, faUser, faStop, faUndo, faSpinner } from "@fal"
+import { faPlay, faQuestionCircle, faCheck, faBan, faChevronDown, faUser, faStop, faUndo, faSpinner, faUsers } from "@fal"
 
 import { faArrowDown as faSolidArrowDown, faArrowUp as faSolidArrowUp, faMinus as faSolidMinus, faExclamationTriangle as faSolidExclamationTriangle } from "@fas"
 
-library.add(faPlay, faQuestionCircle, faCheck, faBan, faChevronDown, faUser, faStop, faUndo, faSpinner, faSolidArrowDown, faSolidArrowUp, faSolidMinus, faSolidExclamationTriangle)
+library.add(faPlay, faQuestionCircle, faCheck, faBan, faChevronDown, faUser, faStop, faUndo, faSpinner, faUsers, faSolidArrowDown, faSolidArrowUp, faSolidMinus, faSolidExclamationTriangle)
 
 type Option<Value> = { label: string; value: Value }
 
@@ -269,6 +269,9 @@ watch(
                     <TicketUserAvatar v-if="item.assignee" :name="item.assignee" :avatar="item.assignee_avatar" />
                     <span v-else class="flex h-7 w-7 items-center justify-center rounded-full border border-dashed border-gray-300 text-gray-400"><FontAwesomeIcon icon="fal fa-user" fixed-width /></span>
                     <span class="w-full truncate text-[10px] leading-tight" :class="item.assignee ? 'text-gray-600' : 'text-gray-400'">{{ item.assignee_short || trans("Unassigned") }}</span>
+                    <span v-if="item.collaborators?.length" class="text-[10px] leading-tight text-indigo-600" :title="item.collaborators.map((collaborator) => collaborator.name).join(', ')">
+                        <FontAwesomeIcon icon="fal fa-users" class="mr-0.5" fixed-width />{{ item.collaborators.length }}
+                    </span>
                     <FontAwesomeIcon v-if="isSaving(item, 'assignee_id')" icon="fal fa-spinner" spin class="absolute right-1 top-1 text-[10px] text-gray-400" fixed-width />
                 </component>
             </template>

@@ -49,6 +49,7 @@ class IndexTickets extends OrgAction
                 'elements' => [
                     'reported' => [__('Reported by me'), (clone $base)->where('reporter_type', 'User')->where('reporter_id', $user->id)->count()],
                     'assigned' => [__('Assigned to me'), (clone $base)->where('assignee_id', $user->id)->count()],
+                    'collaborating' => [__('Collaborating on'), (clone $base)->whereHas('collaborators', fn ($query) => $query->whereKey($user->id))->count()],
                 ],
                 'engine'   => function ($query, $elements) use ($user) {
                     $query->where(function ($query) use ($elements, $user) {
@@ -57,6 +58,9 @@ class IndexTickets extends OrgAction
                         }
                         if (in_array('assigned', $elements)) {
                             $query->orWhere('tickets.assignee_id', $user->id);
+                        }
+                        if (in_array('collaborating', $elements)) {
+                            $query->orWhereExists(fn ($collaborators) => $collaborators->selectRaw('1')->from('ticket_collaborators')->whereColumn('ticket_collaborators.ticket_id', 'tickets.id')->where('ticket_collaborators.user_id', $user->id));
                         }
                     });
                 },
@@ -143,7 +147,7 @@ class IndexTickets extends OrgAction
             ->where('tickets.group_id', $group->id)
             ->visibleTo(request()->user())
             ->leftJoin('users', 'users.id', '=', 'tickets.assignee_id')
-            ->with(['reporter', 'customer', 'assignee']);
+            ->with(['reporter', 'customer', 'assignee', 'collaborators']);
 
         $this->whereCreatedIn($queryBuilder, $this->createdInterval(), 'tickets.created_at');
 
