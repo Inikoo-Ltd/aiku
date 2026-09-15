@@ -15,12 +15,13 @@ import TicketBody from "@/Components/Tickets/TicketBody.vue"
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faPencil, faTrashAlt } from "@fal"
+import { faPencil, faTrashAlt, faUser } from "@fal"
+import { faSlack } from "@fortawesome/free-brands-svg-icons"
 
-library.add(faPencil, faTrashAlt)
+library.add(faPencil, faTrashAlt, faUser)
 
 const props = defineProps<{
-    ticket: { description: string | null; reporter: string | null; created_at: string; images?: Record<string, string>[] }
+    ticket: { subject: string; description: string | null; reporter: string | null; reporter_avatar?: Record<string, string> | null; is_from_slack?: boolean; created_at: string; images?: Record<string, string>[] }
     comments: { id: number; body: string; is_internal: boolean; can_toggle_visibility?: boolean; is_staff: boolean; author: string | null; created_at: string; images?: Record<string, string>[]; attachments?: { name: string; url: string }[]; can_edit?: boolean; can_delete?: boolean }[]
     commentRoute: { name: string; parameters: Record<string, unknown> }
 }>()
@@ -55,10 +56,16 @@ const submit = () => {
 <template>
     <div class="space-y-4">
         <div class="bg-white rounded-lg border-2 border-indigo-300 p-5 shadow-sm">
-            <div class="text-xs text-gray-500 mb-3 pb-2 border-b border-gray-200">
+            <div class="text-xs text-gray-500 mb-3 pb-2 border-b border-gray-200 flex items-center gap-2">
+                <img v-if="ticket.reporter_avatar?.original" :src="ticket.reporter_avatar.original" class="h-6 w-6 rounded-full object-cover" alt="" />
+                <span v-else class="flex h-6 w-6 items-center justify-center rounded-full bg-gray-200 text-gray-500">
+                    <FontAwesomeIcon icon="fal fa-user" fixed-width />
+                </span>
                 <span class="font-semibold text-gray-800">{{ ticket.reporter || trans("Unknown") }}</span>
-                · {{ useFormatTime(ticket.created_at, { formatTime: "hm" }) }}
+                <span>· {{ useFormatTime(ticket.created_at, { formatTime: "PP, HH:mm:ss zzz" }) }}</span>
+                <FontAwesomeIcon v-if="ticket.is_from_slack" v-tooltip="trans('Raised from Slack')" :icon="faSlack" class="text-gray-500" />
             </div>
+            <h2 class="text-lg font-semibold mb-3">{{ ticket.subject }}</h2>
             <TicketBody v-if="ticket.description || ticket.images?.length" :text="ticket.description" :images="ticket.images" />
             <p v-else class="text-sm text-gray-400">{{ trans("No description") }}</p>
         </div>

@@ -5,6 +5,7 @@ import {
 	faqSection,
 	labelingGuideSection,
 	marketingSection,
+	regulatorySection,
 	showsAromaSections,
 	storageSection,
 } from "@/Components/CMS/Webpage/Family2ExtraDescription/tabSections"
@@ -17,6 +18,7 @@ export default (data?: any) => ({
 		customisationSection(),
 		labelingGuideSection(),
 		storageSection(),
+		regulatorySection(),
 		{
 			name: "Layout",
 			key: ["container", "properties"],

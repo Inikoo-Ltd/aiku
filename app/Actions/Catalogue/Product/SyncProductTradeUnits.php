@@ -13,6 +13,7 @@ use App\Actions\Dispatching\DeliveryNoteItem\SyncDeliveryNoteItemsRequiredPickQu
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateBarcodeFromTradeUnit;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateGrossWeightFromTradeUnits;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateHeathAndSafetyFromTradeUnits;
+use App\Actions\Catalogue\Product\Hydrators\ProductHydrateLabelInfoFromTradeUnits;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateMarketingDimensionFromTradeUnits;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateMarketingIngredientsFromTradeUnits;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateMarketingWeightFromTradeUnits;
@@ -51,6 +52,7 @@ class SyncProductTradeUnits
         ProductHydrateMarketingDimensionFromTradeUnits::dispatch($product);
         ProductHydrateMarketingIngredientsFromTradeUnits::dispatch($product);
         ProductHydrateHeathAndSafetyFromTradeUnits::dispatch($product);
+        ProductHydrateLabelInfoFromTradeUnits::run($product);
 
         foreach ($product->tradeUnits as $tradeUnitData) {
             $tradeUnit = TradeUnit::find($tradeUnitData->id);

@@ -67,11 +67,68 @@ const setPeriod = (columnKey: string, period: string) => {
 	router.get(route("grp.tickets.board"), { periods }, { preserveScroll: true })
 }
 
+const bucketStamps: Record<string, string> = {
+	open: "created_at",
+	assigned: "assigned_at",
+	in_progress: "started_at",
+	waiting: "waiting_at",
+	closed: "closed_at",
+}
+
+type SortField = "created_at" | "updated_at" | "priority" | "in_column"
+
+const sortFields: { key: SortField; label: string }[] = [
+	{ key: "created_at", label: trans("Created") },
+	{ key: "updated_at", label: trans("Updated") },
+	{ key: "priority", label: trans("Urgency") },
+	{ key: "in_column", label: trans("In column") },
+]
+
+const priorityRank: Record<string, number> = { urgent: 3, high: 2, normal: 1, low: 0 }
+
+const readSorts = (): Record<string, { field: SortField; desc: boolean }> => {
+	try {
+		return JSON.parse(localStorage.getItem("tickets-board-sorts") ?? "{}")
+	} catch {
+		return {}
+	}
+}
+
+const columnSorts = reactive(readSorts())
+
+const sortOf = (columnKey: string) => columnSorts[columnKey] ?? { field: "created_at", desc: true }
+
+const sortValue = (ticket: any, columnKey: string, field: SortField) => {
+	if (field === "priority") return priorityRank[ticket.priority] ?? 0
+	const stamp = field === "in_column" ? ticket[bucketStamps[columnKey]] ?? ticket.updated_at : ticket[field]
+	return stamp ? new Date(stamp).getTime() : 0
+}
+
+const sortColumn = (column: { key: string; tickets: any[] }) => {
+	const { field, desc } = sortOf(column.key)
+	column.tickets.sort((a, b) => (sortValue(a, column.key, field) - sortValue(b, column.key, field)) * (desc ? -1 : 1))
+}
+
+const changeSort = (column: { key: string; tickets: any[] }, change: "field" | "direction") => {
+	const current = sortOf(column.key)
+	columnSorts[column.key] = change === "direction"
+		? { ...current, desc: !current.desc }
+		: { field: sortFields[(sortFields.findIndex((option) => option.key === current.field) + 1) % sortFields.length].key, desc: current.desc }
+	try {
+		localStorage.setItem("tickets-board-sorts", JSON.stringify(columnSorts))
+	} catch {}
+	sortColumn(column)
+}
+
 const columns = ref(props.columns)
+props.columns.forEach(sortColumn)
 
 watch(
 	() => props.columns,
-	(value) => (columns.value = value)
+	(value) => {
+		value.forEach(sortColumn)
+		columns.value = value
+	}
 )
 
 type FilterKey = "module_label" | "kind_label" | "priority_label" | "assignee"
@@ -165,14 +222,6 @@ const onBoardClick = (event: MouseEvent) => {
 
 onMounted(() => window.addEventListener("click", onBoardClick, true))
 onBeforeUnmount(() => window.removeEventListener("click", onBoardClick, true))
-
-const bucketStamps: Record<string, string> = {
-	open: "created_at",
-	assigned: "assigned_at",
-	in_progress: "started_at",
-	waiting: "waiting_at",
-	closed: "closed_at",
-}
 
 const shortDate = (value: string | null) =>
 	value ? new Date(value).toLocaleDateString([], { day: "numeric", month: "short" }) : ""
@@ -364,7 +413,23 @@ const onMoved = (status: string, event: { added?: { element: { id: number } } })
 							</button>
 						</template>
 					</span>
-					<div v-if="column.period" class="ml-auto relative">
+					<span class="ml-auto flex items-center text-xs text-gray-500 bg-white/70 rounded">
+						<button
+							type="button"
+							class="px-1 py-0.5 hover:text-gray-900"
+							:title="trans('Sort by')"
+							@click="changeSort(column, 'field')">
+							{{ sortFields.find((option) => option.key === sortOf(column.key).field)?.label }}
+						</button>
+						<button
+							type="button"
+							class="px-1 py-0.5 hover:text-gray-900"
+							:title="sortOf(column.key).desc ? trans('Newest or highest first') : trans('Oldest or lowest first')"
+							@click="changeSort(column, 'direction')">
+							{{ sortOf(column.key).desc ? "↓" : "↑" }}
+						</button>
+					</span>
+					<div v-if="column.period" class="relative">
 						<button
 							type="button"
 							class="text-xs text-gray-600 hover:text-gray-900 border border-gray-300 rounded px-1.5 py-0.5 bg-white"

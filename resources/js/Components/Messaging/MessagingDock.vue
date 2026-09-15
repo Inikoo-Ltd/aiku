@@ -15,7 +15,7 @@ import { faComments, faSearch, faUser, faChevronLeft } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import Image from "@/Common/Components/Image.vue"
 import { useLiveUsers } from "@/Stores/active-users"
-import { useStaffMessaging, type StaffCoworker } from "@/Stores/staff-messaging"
+import { useStaffMessaging, type StaffConversation, type StaffCoworker } from "@/Stores/staff-messaging"
 import { useTruncate } from "@/Composables/useTruncate"
 import MessagingConversation from "@/Components/Messaging/MessagingConversation.vue"
 
@@ -24,6 +24,11 @@ library.add(faComments, faSearch, faUser, faChevronLeft)
 const layout = inject("layout", layoutStructure)
 const store = useStaffMessaging()
 const desktopAnchor = computed(() => (layout.messagingSidebar.show ? "right-60" : (layout.messagingSidebar.micro ? "right-8" : "right-16")))
+const visibleConversationWindows = computed(() =>
+    store.openWindowsVisible
+        .map((openWindow) => ({ ulid: openWindow.ulid, conversation: store.conversationByUlid(openWindow.ulid) }))
+        .filter((entry): entry is { ulid: string; conversation: StaffConversation } => !!entry.conversation)
+)
 // Two thresholds on purpose: the floating button only makes sense where the rail is hidden,
 // while a conversation is a full-screen sheet on anything tablet-sized or smaller.
 const isMobile = ref(window.innerWidth < 768)
@@ -50,7 +55,7 @@ const syncSheetToViewport = () => {
         ? { top: `${vv.offsetTop}px`, height: `${vv.height}px` }
         : { top: "0px", height: `${window.innerHeight}px` }
 }
-const hasMobileOverlay = computed(() => (isMobile.value && mobilePanelOpen.value) || (isCompact.value && store.openWindowsVisible.length > 0))
+const hasMobileOverlay = computed(() => (isMobile.value && mobilePanelOpen.value) || (isCompact.value && visibleConversationWindows.value.length > 0))
 watch(hasMobileOverlay, (open) => {
     document.documentElement.style.overflow = open ? "hidden" : ""
     document.body.style.overflow = open ? "hidden" : ""
@@ -94,8 +99,8 @@ const openCoworker = async (userId: number) => {
 }
 
 const myId = computed(() => usePage().props?.auth?.user?.id)
-const others = (conversation: any) => conversation.participants.filter((p: any) => p.id !== myId.value)
-const otherName = (conversation: any) => conversation.name || others(conversation).map((p: any) => p.name).join(", ")
+const others = (conversation: any) => (conversation?.participants ?? []).filter((p: any) => p.id !== myId.value)
+const otherName = (conversation: any) => conversation?.name || others(conversation).map((p: any) => p.name).join(", ")
 const otherAvatar = (conversation: any) => others(conversation)[0]?.avatar ?? null
 const otherOnline = (conversation: any) => isCoworkerOnline(others(conversation)[0]?.id)
 
@@ -165,7 +170,7 @@ onUnmounted(() => {
         <!-- Mobile: floating button + full-screen panel sheet -->
         <template v-if="isMobile">
             <button
-                v-if="!mobilePanelOpen && !store.openWindowsVisible.length"
+                v-if="!mobilePanelOpen && !visibleConversationWindows.length"
                 class="fixed bottom-12 right-3 z-40 h-14 w-14 rounded-full bg-indigo-600 text-white shadow-lg flex items-center justify-center"
                 @click="mobilePanelOpen = true"
             >
@@ -216,12 +221,12 @@ onUnmounted(() => {
         <Teleport to="body">
         <!-- Mobile + tablet: single full-screen sheet -->
         <template v-if="isCompact">
-            <div v-if="store.openWindowsVisible[0]" class="fixed left-0 right-0 z-[60] bg-white" :style="sheetStyle">
+            <div v-if="visibleConversationWindows[0]" class="fixed left-0 right-0 z-[60] bg-white" :style="sheetStyle">
                 <MessagingConversation
-                    :conversation="store.conversationByUlid(store.openWindowsVisible[0].ulid)!"
+                    :conversation="visibleConversationWindows[0].conversation"
                     full-screen
-                    @close="store.dismissWindow(store.openWindowsVisible[0].ulid)"
-                    @minimise="store.minimiseConversation(store.openWindowsVisible[0].ulid, true)"
+                    @close="store.dismissWindow(visibleConversationWindows[0].ulid)"
+                    @minimise="store.minimiseConversation(visibleConversationWindows[0].ulid, true)"
                 />
             </div>
         </template>
@@ -229,9 +234,9 @@ onUnmounted(() => {
         <!-- Desktop: mini windows stacked right-to-left -->
         <template v-else>
             <div class="fixed bottom-6 z-[30] flex flex-row-reverse items-end gap-x-3 text-gray-900" :class="desktopAnchor">
-                <div v-for="(w, index) in store.openWindowsVisible" :key="w.ulid" class="w-[22rem] lg:w-[28rem] h-[26rem] lg:h-[38rem] max-h-[calc(100dvh-6rem)]">
+                <div v-for="w in visibleConversationWindows" :key="w.ulid" class="w-[22rem] lg:w-[28rem] h-[26rem] lg:h-[38rem] max-h-[calc(100dvh-6rem)]">
                     <MessagingConversation
-                        :conversation="store.conversationByUlid(w.ulid)!"
+                        :conversation="w.conversation"
                         @close="store.dismissWindow(w.ulid)"
                         @minimise="store.minimiseConversation(w.ulid, true)"
                     />

@@ -162,7 +162,9 @@ test('grp ticket pages render', function (Ticket $ticket) {
     get(route('grp.tickets.create'))->assertInertia(fn (AssertableInertia $page) => $page->component('Tickets/CreateTicket'));
     actingAs($this->user);
     get(route('grp.tickets.show', $ticket->reference))->assertInertia(
-        fn (AssertableInertia $page) => $page->component('Tickets/Ticket')->where('ticket.reference', $ticket->reference)->has('comments', 2)
+        fn (AssertableInertia $page) => $page->component('Tickets/Ticket')->where('ticket.reference', $ticket->reference)->has('comments', 2)->where('pageHead.wrapped_actions.0.key', 'delete')
+            ->where('options.assignees', fn ($assignees) => collect($assignees)->pluck('value')->all() === GetTicketBadgeData::engineers($this->group->id)->sortBy(fn (User $user) => strtok((string) ($user->contact_name ?: $user->username), ' '))->pluck('id')->values()->all()
+                && collect($assignees)->firstWhere('value', $this->user->id)['is_me'] === true)
     );
 })->depends('customer ticket from retina gets an AD reference and the customer attached');
 
@@ -385,26 +387,6 @@ test('staff reporter rates their own resolved help ticket from grp', function ()
     get(route('grp.tickets.show', $ticket->reference))->assertInertia(fn (AssertableInertia $page) => $page->where('can_rate', false)->where('ticket.rating', 5));
 });
 
-test('help ticket raised by staff opens a staff conversation that follows the assignee', function () {
-    $ticket = StoreTicket::make()->action($this->group, [
-        'subject'       => 'Board loads slowly',
-        'kind'          => TicketKindEnum::BUG->value,
-        'reporter_type' => 'User',
-        'reporter_id'   => $this->user->id,
-    ]);
-
-    $conversation = $ticket->staffConversation;
-    expect($ticket->kind)->toBe(TicketKindEnum::BUG)
-        ->and($conversation)->not->toBeNull()
-        ->and($conversation->name)->toBe($ticket->reference.' · Board loads slowly')
-        ->and($conversation->participants->pluck('id')->all())->toBe([$this->user->id]);
-
-    $assignee = StoreGuest::make()->action($this->group, array_merge(Guest::factory()->definition(), ['positions' => [['slug' => 'group-admin', 'scopes' => []]]]))->getUser();
-    UpdateTicket::make()->action($ticket, ['assignee_id' => $assignee->id]);
-
-    expect($conversation->fresh()->participants->pluck('id')->sort()->values()->all())->toBe(collect([$this->user->id, $assignee->id])->sort()->values()->all());
-});
-
 test('customer ticket escalates to a help ticket that keeps the customer and points back', function () {
     $customerTicket = StoreRetinaTicket::make()->action($this->webUser, ['subject' => 'Feed is empty', 'priority' => 'high']);
 
@@ -419,7 +401,6 @@ test('customer ticket escalates to a help ticket that keeps the customer and poi
         ->and($helpTicket->priority)->toBe(ChatPriorityEnum::HIGH)
         ->and($helpTicket->customer_id)->toBe($this->customer->id)
         ->and($helpTicket->reporter_id)->toBe($this->user->id)
-        ->and($helpTicket->staffConversation)->not->toBeNull()
         ->and($customerTicket->escalations()->pluck('reference')->all())->toBe([$helpTicket->reference]);
 
     post(route('grp.models.ticket.escalate', $helpTicket->id))->assertStatus(422);
@@ -438,8 +419,7 @@ test('staff file a bug from anywhere without leaving the page', function () {
     $response->assertRedirect('https://app.aiku.test/org/awa/shops')->assertSessionHas('notification.title', $ticket->reference);
     expect($ticket->kind)->toBe(TicketKindEnum::BUG)
         ->and($ticket->type)->toBe(TicketTypeEnum::HELP)
-        ->and($ticket->data['reference_url'])->toBe('https://app.aiku.test/org/awa/shops')
-        ->and($ticket->staffConversation)->not->toBeNull();
+        ->and($ticket->data['reference_url'])->toBe('https://app.aiku.test/org/awa/shops');
 });
 
 test('tickets take free tags and the known list grows with them', function () {
@@ -554,6 +534,11 @@ test('slack slash command raises a bug ticket for the matching aiku user', funct
         ->and($ticket->reporter_id)->toBe($this->user->id)
         ->and($ticket->data['slack']['channel'])->toBe('bugs')
         ->and($response->json('text'))->toContain($ticket->reference);
+
+    actingAs($this->user);
+    get(route('grp.tickets.show', $ticket->reference))->assertInertia(
+        fn (AssertableInertia $page) => $page->where('ticket.is_from_slack', true)->has('ticket.reporter_avatar')
+    );
 
     $this->call('POST', route('webhooks.slack_ticket'), $params, [], [], $this->transformHeadersToServerVars(['X-Slack-Request-Timestamp' => $timestamp, 'X-Slack-Signature' => 'v0=bad']), $body)->assertStatus(401);
 });

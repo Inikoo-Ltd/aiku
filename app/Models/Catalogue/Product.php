@@ -296,6 +296,7 @@ class Product extends Model implements Auditable, HasMedia
         'price'                         => 'decimal:2',
         'rrp'                           => 'decimal:2',
         'data'                          => 'array',
+        'label_info'                    => 'array',
         'settings'                      => 'array',
         'web_images'                    => 'array',
         'marketing_dimensions'          => 'array',
@@ -327,6 +328,7 @@ class Product extends Model implements Auditable, HasMedia
 
     protected $attributes = [
         'data'                 => '{}',
+        'label_info'           => '{}',
         'settings'             => '{}',
         'web_images'           => '{}',
         'marketing_dimensions' => '{}',
