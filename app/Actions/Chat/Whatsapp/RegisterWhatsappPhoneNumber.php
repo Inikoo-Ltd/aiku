@@ -76,6 +76,6 @@ class RegisterWhatsappPhoneNumber extends OrgAction
     {
         $this->initialisationFromShop($shop, $request);
 
-        return $this->handle($shop, $request->validated('pin'));
+        return $this->handle($shop, $this->validatedData['pin']);
     }
 }

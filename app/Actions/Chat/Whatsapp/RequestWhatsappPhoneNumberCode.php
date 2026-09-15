@@ -12,6 +12,7 @@ use App\Actions\Chat\Whatsapp\Concerns\WithWhatsappPhoneNumberResponse;
 use App\Actions\OrgAction;
 use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Organisation;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Http;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -75,8 +76,8 @@ class RequestWhatsappPhoneNumberCode extends OrgAction
 
         return $this->handle(
             $shop,
-            $request->validated('code_method', 'SMS'),
-            $request->validated('language', 'en')
+            Arr::get($this->validatedData, 'code_method', 'SMS'),
+            Arr::get($this->validatedData, 'language', 'en')
         );
     }
 }

@@ -69,6 +69,6 @@ class VerifyWhatsappPhoneNumberCode extends OrgAction
     {
         $this->initialisationFromShop($shop, $request);
 
-        return $this->handle($shop, $request->validated('code'));
+        return $this->handle($shop, $this->validatedData['code']);
     }
 }

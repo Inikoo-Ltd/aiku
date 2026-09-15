@@ -31,17 +31,21 @@ trait WithWhatsappPhoneNumberResponse
     }
 
     /**
-     * Meta puts the part worth showing an admin in error.message: "Phone number is already
-     * registered", "Invalid verification code". Passing it straight through beats a generic
-     * failure, because the next step depends on which one it was.
+     * Meta puts the part worth showing an admin in error.error_user_msg: "You have already
+     * verified ownership of this phone number". Its error.message is the terse internal
+     * label for the same failure ("Request code error"), so it only serves as a fallback.
+     * Passing Meta's own wording through beats a generic failure, because the next step
+     * depends on which one it was.
      *
      * @return array{ok: bool, message: string, code: int}
      */
     protected function graphFailure(Response $response, string $fallback): array
     {
+        $error = Arr::get($response->json(), 'error', []);
+
         return [
             'ok'      => false,
-            'message' => Arr::get($response->json(), 'error.message') ?: $fallback,
+            'message' => Arr::get($error, 'error_user_msg') ?: Arr::get($error, 'message') ?: $fallback,
             'code'    => 422,
         ];
     }

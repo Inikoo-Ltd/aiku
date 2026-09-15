@@ -49,6 +49,11 @@ const pin = ref("")
 
 const isConnected = computed(() => status.value?.status === "CONNECTED")
 
+// Verification and connection are independent axes at Meta: a number can be verified but not yet
+// registered, and Meta rejects request_code for it forever. The strict compare also keeps a status
+// read that returned no payload on the full flow, rather than a register call Meta would reject.
+const isVerified = computed(() => status.value?.code_verification_status === "VERIFIED")
+
 const badge = computed(() => {
     if (!status.value) {
         return { label: trans("Not checked yet"), class: "bg-gray-100 text-gray-600 ring-gray-300" }
@@ -83,7 +88,7 @@ const checkStatus = async () => {
 }
 
 const openModal = () => {
-    step.value = 1
+    step.value = isVerified.value ? 3 : 1
     stepError.value = ""
     code.value = ""
     pin.value = ""
@@ -171,12 +176,13 @@ const register = () =>
             <div class="text-left">
                 <h3 class="text-base font-semibold text-gray-900">{{ trans("Verify WhatsApp number") }}</h3>
 
-                <ol class="mt-3 flex gap-4 text-xs">
+                <ol v-if="!isVerified" class="mt-3 flex gap-4 text-xs">
                     <li v-for="(stepLabel, index) in [trans('Send code'), trans('Verify'), trans('Register')]" :key="stepLabel"
                         :class="step === index + 1 ? 'font-semibold text-gray-900' : 'text-gray-400'">
                         {{ index + 1 }}. {{ stepLabel }}
                     </li>
                 </ol>
+                <p v-else class="mt-3 text-xs font-semibold text-gray-900">{{ trans("Register") }}</p>
 
                 <div v-if="stepError" class="mt-3 rounded-sm border border-red-300 bg-red-50 px-2 py-1 text-xs text-red-700">
                     <FontAwesomeIcon icon="fal fa-exclamation-triangle" class="mr-1" fixed-width aria-hidden="true" />
@@ -224,8 +230,8 @@ const register = () =>
                         <FontAwesomeIcon icon="fal fa-info-circle" class="mr-1" fixed-width aria-hidden="true" />
                         {{ trans("This PIN is not stored by Aiku. Meta asks for it again if the number is ever registered anew, so keep a record of it.") }}
                     </p>
-                    <div class="flex justify-between">
-                        <Button :style="'tertiary'" :label="trans('Back')" @click="step = 2" />
+                    <div class="flex" :class="isVerified ? 'justify-end' : 'justify-between'">
+                        <Button v-if="!isVerified" :style="'tertiary'" :label="trans('Back')" @click="step = 2" />
                         <Button :style="'save'" :label="trans('Register')" :loading="isProcessing" @click="register" />
                     </div>
                 </div>
