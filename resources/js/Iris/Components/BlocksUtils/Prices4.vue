@@ -17,6 +17,7 @@ import MemberPriceLabel from "@/Iris/Components/Offer/MemberPriceLabel.vue"
 import ProfitCalculationList from "@/Components/Utils/Iris/ProfitCalculationList.vue"
 import DiscountByType from "@/Components/Utils/Label/DiscountByType.vue"
 import { getBestOffer as getBestOfferfromComposable } from "@/Composables/useOffers"
+import { isRedOfferType } from "@/Composables/offerColors"
 import LabelComingSoon from '@/Components/Iris/Products/LabelComingSoon.vue'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 import { faCheck, faBadgePercent } from "@far"
@@ -235,17 +236,7 @@ const showLeftBlock = computed(() => {
     return showMemberPrice.value || showDiscount.value
 })
 
-const redOfferTypes = [
-    'Category Ordered',
-    'Category Quantity Ordered',
-    'Category Amount Ordered',
-    'Department Ordered',
-    'Department Quantity Ordered',
-    'Subdepartment Ordered',
-    'Subdepartment Quantity Ordered',
-]
-
-const isRedOffer = computed(() => redOfferTypes.includes(bestOffer?.value?.type))
+const isRedOffer = computed(() => isRedOfferType(bestOffer?.value?.type))
 
 const isDiscountedPriceActive = computed(() => {
     if (displayStep.value) {
