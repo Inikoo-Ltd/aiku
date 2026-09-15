@@ -44,6 +44,7 @@ import SelectableCardGrid from "@/Components/Utils/SelectableCardGrid.vue"
 import { useForm } from "@inertiajs/vue3"
 import LoadingOverlay from "@/Components/Utils/LoadingOverlay.vue"
 import UpcomingTransactionsPanel from "@/Components/CRM/UpcomingTransactionsPanel.vue"
+import StaffTaskPanel from "@/Components/Messaging/StaffTaskPanel.vue"
 
 library.add(faStickyNote, faUsers, faGlobe, faMoneyBill, faGraduationCap, faTags, faCodeCommit, faPaperclip, faPaperPlane, faCube, faCodeBranch, faShoppingCart, faHeart, faQuestionCircle, faLightbulbOn, faRoute)
 
@@ -51,6 +52,7 @@ library.add(faStickyNote, faUsers, faGlobe, faMoneyBill, faGraduationCap, faTags
 const props = defineProps<{
     title: string
     pageHead: PageHeadingTypes
+    staff_task?: { model_type: 'Product' | 'Customer' | 'Order' | 'DeliveryNote'; model_id: number }
     tabs: {
         current: string
         navigation: {}
@@ -162,6 +164,7 @@ const layout = inject('layout')
             </ModalConfirmationDelete>
         </template>
         <template #other>
+            <StaffTaskPanel v-if="staff_task" :model-type="staff_task.model_type" :model-id="staff_task.model_id" class="mr-2" />
             <ModalCreateCustomerOffers v-if="currentTab === 'offers'" :shop_data="props.shop_data" :customer_id="props.shop_data.customer_id" />
             <Button v-if="currentTab === 'attachments'" @click="() => isModalUploadOpen = true" label="Attach"
                 icon="upload" />

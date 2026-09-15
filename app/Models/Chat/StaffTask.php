@@ -13,6 +13,7 @@ use App\Enums\CRM\Livechat\ChatPriorityEnum;
 use App\Models\SysAdmin\User;
 use App\Models\Traits\HasHistory;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
@@ -139,5 +140,37 @@ class StaffTask extends Model implements Auditable
             ->distinct()
             ->pluck('department')
             ->all();
+    }
+
+    /**
+     * Supervisors of a department in the requester's organisations, job position codes ending in -m.
+     * Scoped to the requester's organisations so a warehouse task in one country does not wake every warehouse in the group.
+     */
+    public static function departmentSupervisors(User $requester, string $department): Collection
+    {
+        $organisationIds = DB::table('user_has_models')
+            ->join('employees', 'employees.id', '=', 'user_has_models.model_id')
+            ->where('user_has_models.model_type', 'Employee')
+            ->where('user_has_models.user_id', $requester->id)
+            ->pluck('employees.organisation_id')
+            ->merge(DB::table('user_has_authorised_models')->where('model_type', 'Organisation')->where('user_id', $requester->id)->pluck('model_id'))
+            ->filter()->unique()->values()->all();
+
+        $jobPositionIds = DB::table('job_positions')
+            ->where('group_id', $requester->group_id)
+            ->where('department', $department)
+            ->where('code', 'like', '%-m')
+            ->where(fn ($query) => $query->whereNull('organisation_id')->orWhereIn('organisation_id', $organisationIds))
+            ->select('id');
+
+        return User::query()
+            ->where('group_id', $requester->group_id)
+            ->where('status', true)
+            ->where(fn ($query) => $query
+                ->whereIn('id', DB::table('user_has_pseudo_job_positions')->whereIn('job_position_id', $jobPositionIds)->select('user_id'))
+                ->orWhereIn('id', DB::table('user_has_models')->where('model_type', 'Employee')
+                    ->whereIn('model_id', DB::table('employee_has_job_positions')->whereIn('job_position_id', $jobPositionIds)->select('employee_id'))
+                    ->select('user_id')))
+            ->get();
     }
 }

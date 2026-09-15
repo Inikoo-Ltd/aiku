@@ -363,6 +363,7 @@ class ShowOrder extends OrgAction
                     'previous' => $this->getPrevious($order, $request),
                     'next'     => $this->getNext($order, $request),
                 ],
+                'staff_task'  => ['model_type' => 'Order', 'model_id' => $order->id],
                 'staff_chat'  => [
                     'context_type' => 'Order',
                     'context_id'   => $order->id,

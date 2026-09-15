@@ -3148,3 +3148,19 @@ test('staff tasks page and options respond', function () {
     getJson(route('grp.chat.staff.tasks.options'))->assertOk()->assertJsonStructure(['departments', 'my_departments', 'priorities', 'statuses']);
     getJson(route('grp.chat.staff.tasks.list', ['view' => 'department']))->assertOk();
 });
+
+test('stale staff task nudges its assignee once per window', function () {
+    $requester = $this->user;
+    $assignee  = \App\Actions\SysAdmin\Guest\StoreGuest::make()->action($this->organisation->group, array_merge(\App\Models\SysAdmin\Guest::factory()->definition(), ['positions' => [['slug' => 'group-admin', 'scopes' => []]]]))->getUser();
+
+    $task = \App\Actions\Chat\StaffTask\StoreStaffTask::run($requester, ['subject' => 'Quiet task', 'assignee_id' => $assignee->id]);
+
+    expect(\App\Actions\Chat\StaffTask\NudgeStaleStaffTasks::run(48))->toBe(0);
+
+    $task->conversation->update(['last_message_at' => now()->subHours(50)]);
+
+    expect(\App\Actions\Chat\StaffTask\NudgeStaleStaffTasks::run(48))->toBe(1)
+        ->and(\App\Actions\Chat\StaffTask\NudgeStaleStaffTasks::run(48))->toBe(0)
+        ->and($assignee->notifications()->count())->toBe(1)
+        ->and($task->fresh()->data['nudged_at'])->not->toBeNull();
+});

@@ -79,6 +79,7 @@ class Kernel extends ConsoleKernel
     {
         $schedule->command('horizon:snapshot')->everyFiveMinutes()->onOneServer();
         $schedule->command('tickets:cancel_stale')->everyFifteenMinutes()->onOneServer();
+        $schedule->command('staff-tasks:nudge')->hourly()->onOneServer();
         $schedule->command('cloudflare:reload')->daily()->onOneServer();
         /* Every five minutes: the run reads a counter per shop channel and writes only the ones that
            moved, so it is cheap, and the alternative is a dashboard whose visit column is an hour

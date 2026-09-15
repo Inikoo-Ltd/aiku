@@ -136,6 +136,7 @@ class ShowCustomer extends OrgAction
                 'sales_channels'   => GetSalesChannelOptions::make()->getOptions($customer->shop),
                 'can_add_order'    => $this->shop->type == ShopTypeEnum::B2B,
                 'gr_data'          => $grData,
+                'staff_task'       => ['model_type' => 'Customer', 'model_id' => $customer->id],
                 'pageHead'         => [
                     'title'         => $customer->name,
                     'icon'          => [

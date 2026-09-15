@@ -51,6 +51,7 @@ import { notify } from '@kyvg/vue3-notification'
 import axios from 'axios'
 import ModalCreateGiftOffers from '@/Components/Offers/ModalCreateGiftOffers.vue'
 import ModalCreateStepDiscountProduct from '@/Components/Offers/ModalCreateStepDiscountProduct.vue'
+import StaffTaskPanel from "@/Components/Messaging/StaffTaskPanel.vue"
 
 library.add(
     faFolder,
@@ -81,6 +82,7 @@ library.add(
 const props = defineProps<{
     title: string
     pageHead: PageHeadingTypes
+    staff_task?: { model_type: 'Product' | 'Customer' | 'Order' | 'DeliveryNote'; model_id: number }
     tabs: {
         current: string
         navigation: {}
@@ -302,6 +304,7 @@ const saveProductReview = async () => {
             </div>
         </template>        
         <template #other>
+            <StaffTaskPanel v-if="staff_task" :model-type="staff_task.model_type" :model-id="staff_task.model_id" class="mr-2" />
         </template>
         <template #otherBefore>
             <Action
