@@ -15,6 +15,8 @@ When something in aiku is broken, or you need something it does not do yet, rais
 
 Open <b>Tickets</b> in the left menu. The <b>Dashboard</b> shows <b>Mine</b>, the tickets you raised that are still open, and the ones closed recently. <b>List</b> shows every ticket you can see, with filters for the ones you reported, their status and type.
 
+<b>Tip:</b> the ticket counter on the right of the screen shows your tickets that are <b>To do</b>, <b>In progress</b> or <b>Waiting for my reply</b>. Click it to open them. Under <b>Recent</b> you see the latest changes on your tickets, such as a new status or a new comment. A dot marks the ones you have not opened yet, and it disappears when you open the ticket.
+
 ## Raising a ticket in aiku
 
 The fastest way is the red <b>Bug</b> button on every page, or <b>Alt+Shift+B</b>. It fills in the page you are on for you. You can also press <b>New ticket</b> on the Tickets pages.
@@ -24,7 +26,7 @@ The fastest way is the red <b>Bug</b> button on every page, or <b>Alt+Shift+B</b
 - <b>Page where it happens</b>: the link to the page.
 - <b>Kind</b>: <b>Bug</b> when something is broken, <b>Feature request</b> when you need something new.
 - <b>Module</b> and <b>Priority</b>: pick them if you know; leave the priority at normal unless work is stopped.
-- Screenshots and files: paste them, drop them into the details box or press <b>Attach</b>. You can add up to five at a time: pictures, PDF, Word, Excel, CSV and ZIP files up to 10 MB each, and short videos up to 50 MB. A short screen recording showing the problem helps a lot.
+- Screenshots and files: paste them, drop them into the details box or press <b>Attach</b>. You can add up to five at a time: pictures, PDF, Word, Excel, CSV, ZIP, RAR and 7z files up to 10 MB each, and short videos up to 50 MB. A short screen recording showing the problem helps a lot.
 
 ## Raising a ticket from Slack
 
@@ -57,7 +59,7 @@ Replying to a waiting or cancelled ticket brings it back to the engineer, so a l
 
 ## Files on your ticket
 
-All the files on your ticket are shown together under <b>Attachments</b>. Click one to look at it without downloading it. Clicking a ZIP file shows which files are inside it, with a button to download it. You can also choose to see the comments newest first or oldest first, and aiku remembers your choice.
+All the files on your ticket are shown together under <b>Attachments</b>. Click one to look at it without downloading it. Clicking a ZIP, RAR or 7z file shows which files are inside it, with a button to download it. You can also choose to see the comments newest first or oldest first, and aiku remembers your choice.
 
 ## Closing and rating
 
@@ -74,5 +76,5 @@ If the problem went away or you no longer need the feature, you can cancel your 
 </aside>
 
 <aside class="permissions"><strong>Permissions you need</strong>
-Anyone who can log in to aiku can raise tickets, comment on them and follow them. You can change the status of your own ticket but not its priority, module, tags or assignee; those belong to the help desk. Sometimes more than one engineer works on your ticket: the engineer it is assigned to leads, and can add colleagues as collaborators to help. Confidential tickets are only visible to the person who raised them, the engineer working on them, their collaborators and lead engineers.
+Anyone who can log in to aiku can raise tickets, comment on them and follow them. The help desk moves your ticket along: you cannot change its status, priority, module, tags or assignee yourself, but you can follow every step and reply in the comments. Sometimes more than one engineer works on your ticket: the engineer it is assigned to leads, and can add colleagues as collaborators to help. Confidential tickets are only visible to the person who raised them, the engineer working on them, their collaborators and lead engineers.
 </aside>

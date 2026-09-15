@@ -23,7 +23,7 @@ class GetTicketBadgeData
     use AsObject;
 
     /**
-     * @return array{mine: array<string, array{label: string, count: int, elements: array<string, string>}>, queue: array<string, array{label: string, count: int, elements: array<string, string>}>|null}
+     * @return array{mine: array<string, array{label: string, count: int, elements: array<string, string>}>, recent: array<int, array<string, mixed>>, queue: array<string, array{label: string, count: int, elements: array<string, string>}>|null}
      */
     public function handle(User $user): array
     {
@@ -31,11 +31,12 @@ class GetTicketBadgeData
 
         $badges = [
             'mine'  => [
-                'in_progress' => $this->row(__('In progress'), (clone $mine)->whereIn('status', [TicketStatusEnum::OPEN, TicketStatusEnum::ASSIGNED, TicketStatusEnum::IN_PROGRESS]), ['mine' => 'reported', 'status' => 'open,assigned,in_progress']),
+                'to_do'       => $this->row(__('To do'), (clone $mine)->whereIn('status', [TicketStatusEnum::OPEN, TicketStatusEnum::ASSIGNED]), ['mine' => 'reported', 'status' => 'open,assigned']),
+                'in_progress' => $this->row(__('In progress'), (clone $mine)->whereIn('status', [TicketStatusEnum::IN_PROGRESS, TicketStatusEnum::ANSWERED, TicketStatusEnum::PENDING_DEPLOY]), ['mine' => 'reported', 'status' => 'in_progress,answered,pending_deploy']),
                 'waiting'     => $this->row(__('Waiting for my reply'), (clone $mine)->where('status', TicketStatusEnum::WAITING), ['mine' => 'reported', 'status' => 'waiting']),
-                'done_24h'    => $this->row(__('Done in last 24h'), (clone $mine)->where('status', TicketStatusEnum::RESOLVED)->where('resolved_at', '>=', now()->subDay()), ['mine' => 'reported', 'status' => 'resolved']),
             ],
-            'queue' => null,
+            'recent' => $this->recentUpdates($user),
+            'queue'  => null,
         ];
 
         if (!Ticket::canBeManagedBy($user) && !Ticket::canCheckQa($user)) {
@@ -70,6 +71,28 @@ class GetTicketBadgeData
     private function row(string $label, Builder $query, array $elements): array
     {
         return ['label' => $label, 'count' => $query->count(), 'elements' => $elements];
+    }
+
+    /**
+     * @return array<int, array{id: string, title: string, body: string, route: string, read: bool, created_at: mixed}>
+     */
+    private function recentUpdates(User $user): array
+    {
+        return $user->notifications()
+            ->whereRaw("(data::jsonb)->>'type' = 'ticket'")
+            ->latest()
+            ->limit(8)
+            ->get()
+            ->map(fn ($notification) => [
+                'id'         => (string) $notification->id,
+                'title'      => (string) data_get($notification->data, 'title', ''),
+                'body'       => (string) data_get($notification->data, 'body', ''),
+                'route'      => (string) data_get($notification->data, 'route', ''),
+                'read'       => $notification->read_at !== null,
+                'created_at' => $notification->created_at,
+            ])
+            ->values()
+            ->all();
     }
 
     /** @return Collection<int, User> */

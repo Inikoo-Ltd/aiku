@@ -9,6 +9,7 @@
 
 namespace App\Actions\Helpers\Ticket\Json;
 
+use App\Actions\Helpers\Ticket\MarkTicketNotificationsAsRead;
 use App\Actions\Helpers\Ticket\UI\ShowTicket;
 use App\Actions\OrgAction;
 use App\Http\Resources\Helpers\TicketCommentResource;
@@ -41,6 +42,7 @@ class GetTicketControls extends OrgAction
     {
         abort_unless($ticket->isVisibleTo($request->user()), 403);
         $this->initialisationFromGroup($ticket->group, $request);
+        MarkTicketNotificationsAsRead::run($ticket, $request->user());
 
         return $this->handle($ticket);
     }

@@ -79,6 +79,8 @@ const fileIcons: Record<string, { icon: string; class: string }> = {
     xlsx: { icon: "fal fa-file-excel", class: "text-green-600" },
     csv: { icon: "fal fa-file-csv", class: "text-emerald-600" },
     zip: { icon: "fal fa-file-archive", class: "text-amber-600" },
+    rar: { icon: "fal fa-file-archive", class: "text-amber-600" },
+    "7z": { icon: "fal fa-file-archive", class: "text-amber-600" },
     mp4: { icon: "fal fa-file-video", class: "text-purple-600" },
     webm: { icon: "fal fa-file-video", class: "text-purple-600" },
     mov: { icon: "fal fa-file-video", class: "text-purple-600" },

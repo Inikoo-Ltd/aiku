@@ -6,6 +6,7 @@
  * Copyright (c) 2026, Raul A Perusquia Flores
  */
 
+use Illuminate\Support\Facades\Process;
 use App\Actions\Chat\ChatSession\StoreChatSession;
 use App\Actions\Chat\ChatSession\StoreTicketFromChatSession;
 use App\Actions\Helpers\Ticket\CancelStaleTickets;
@@ -984,9 +985,9 @@ test('only the help desk manages tickets, everyone else reports, comments and cl
     patch(route('grp.models.ticket.comment.toggle_visibility', $oldNote->id))->assertForbidden();
     actingAs($boss);
     patch(route('grp.models.ticket.comment.toggle_visibility', $oldNote->id))->assertRedirect();
-    expect($oldNote->fresh()->is_internal)->toBeFalse();
+    expect($oldNote->fresh()->is_lead_only)->toBeTrue();
     patch(route('grp.models.ticket.comment.toggle_visibility', $oldNote->id))->assertRedirect();
-    expect($oldNote->fresh()->is_internal)->toBeTrue();
+    expect($oldNote->fresh()->is_lead_only)->toBeFalse();
 
     actingAs($helper);
     delete(route('grp.models.ticket.delete', $other->id))->assertForbidden();
@@ -1143,7 +1144,8 @@ test('ticket badges count my tickets and the engineer queue, and engineers hear 
     Event::assertDispatched(BroadcastTicketBadgeUpdate::class, fn (BroadcastTicketBadgeUpdate $event) => $event->userId === $this->user->id && $event->notification !== null);
 
     expect(GetTicketBadgeData::run($reporter)['queue'])->toBeNull()
-        ->and($count($reporter, 'mine', 'in_progress'))->toBe(1)
+        ->and($count($reporter, 'mine', 'to_do'))->toBe(1)
+        ->and($count($reporter, 'mine', 'in_progress'))->toBe(0)
         ->and($count($reporter, 'mine', 'waiting'))->toBe(0)
         ->and($count($this->user, 'queue', 'new_unassigned'))->toBe($baseline['new_unassigned']['count'] + 1)
         ->and($count($this->user, 'queue', 'todo_week'))->toBe($baseline['todo_week']['count'] + 1)
@@ -1163,7 +1165,7 @@ test('ticket badges count my tickets and the engineer queue, and engineers hear 
         ->and($count($this->user, 'queue', 'overdue'))->toBe($baseline['overdue']['count'] + 1);
 
     UpdateTicket::make()->action($ticket, ['status' => TicketStatusEnum::RESOLVED->value]);
-    expect($count($reporter, 'mine', 'done_24h'))->toBe(1)
+    expect($count($reporter, 'mine', 'to_do') + $count($reporter, 'mine', 'in_progress') + $count($reporter, 'mine', 'waiting'))->toBe(0)
         ->and($count($this->user, 'queue', 'overdue'))->toBe($baseline['overdue']['count']);
 });
 
@@ -1793,4 +1795,103 @@ test('attachment previews are open to engineers, QA, lead engineers and the repo
         fn (AssertableInertia $page) => $page->where('can_preview_attachments', false)
     );
     get($url)->assertForbidden();
+});
+
+test('rar and 7z attachments are accepted and list their contents through bsdtar', function () {
+    Process::fake([
+        'bsdtar --version' => Process::result('bsdtar 3.7.2 - libarchive 3.7.2'),
+        'bsdtar -tvf *'    => Process::result("drwxr-xr-x  0 1000   1000        0 Sep 15 10:00 logs/\n-rw-r--r--  0 1000   1000        5 Sep 15 10:00 logs/error log.txt\n"),
+    ]);
+
+    $ticket = StoreTicket::make()->action($this->group, [
+        'subject' => 'Archives attached',
+        'images'  => [
+            UploadedFile::fake()->createWithContent('logs.rar', "Rar!\x1A\x07\x01\x00".str_repeat("\0", 64)),
+            UploadedFile::fake()->createWithContent('logs.7z', "7z\xBC\xAF\x27\x1C\x00\x04".str_repeat("\0", 64)),
+        ],
+    ]);
+    $urls = collect($ticket->ticketAttachments('grp.tickets.attachments.show'))->pluck('url', 'name');
+
+    foreach (['logs.rar', 'logs.7z'] as $name) {
+        get($urls[$name].'?contents=1')->assertOk()
+            ->assertJsonPath('total', 2)
+            ->assertJsonFragment(['name' => 'logs/', 'size' => 0, 'is_directory' => true])
+            ->assertJsonFragment(['name' => 'logs/error log.txt', 'size' => 5, 'is_directory' => false]);
+        expect(get($urls[$name])->assertOk()->headers->get('content-disposition'))->toStartWith('attachment');
+    }
+
+    Process::fake(['bsdtar --version' => Process::result(exitCode: 127)]);
+
+    get($urls['logs.rar'].'?contents=1')->assertStatus(422)
+        ->assertJsonPath('message', 'This server cannot read RAR files yet. Ask an administrator to install libarchive-tools.');
+});
+
+test('reporters follow progress from their badge, cannot move their ticket, and internal notes stay with the people working on it', function () {
+    Mail::fake();
+    setPermissionsTeamId($this->group->id);
+    $reporter  = User::factory()->create(['group_id' => $this->group->id]);
+    $engineer  = User::factory()->create(['group_id' => $this->group->id]);
+    $bystander = User::factory()->create(['group_id' => $this->group->id]);
+    $engineer->assignRole('help-desk-clerk');
+    $bystander->assignRole('help-desk-clerk');
+
+    $ticket = StoreTicket::make()->action($this->group, [
+        'subject'       => 'My printer',
+        'reporter_type' => 'User',
+        'reporter_id'   => $reporter->id,
+        'assignee_id'   => $engineer->id,
+    ]);
+    $update  = route('grp.models.ticket.update', $ticket->id);
+    $comment = route('grp.models.ticket.comment.store', $ticket->id);
+
+    expect(GetTicketBadgeData::run($reporter)['mine']['to_do']['count'])->toBe(1);
+
+    actingAs($reporter);
+    patch($update, ['status' => 'cancelled', 'status_comment' => 'never mind'])->assertForbidden();
+    patch($update, ['status' => 'in_progress'])->assertForbidden();
+    post($comment, ['body' => 'secret from the reporter', 'is_internal' => true])->assertSessionHasErrors('is_internal');
+    get(route('grp.tickets.show', $ticket->reference))->assertInertia(
+        fn (AssertableInertia $page) => $page->where('can_update', false)->where('can_comment_internally', false)
+    );
+
+    actingAs($bystander);
+    post($comment, ['body' => 'secret from a bystander', 'is_internal' => true])->assertSessionHasErrors('is_internal');
+
+    actingAs($engineer);
+    patch($update, ['status' => 'in_progress'])->assertRedirect()->assertSessionHasNoErrors();
+    post($comment, ['body' => 'Looking into it'])->assertRedirect()->assertSessionHasNoErrors();
+    post($comment, ['body' => 'Driver is broken, not telling yet', 'is_internal' => true])->assertRedirect()->assertSessionHasNoErrors();
+    get(route('grp.tickets.show', $ticket->reference))->assertInertia(
+        fn (AssertableInertia $page) => $page->where('can_comment_internally', true)
+            ->where('comments', fn ($comments) => collect($comments)->pluck('body')->contains('Driver is broken, not telling yet'))
+    );
+
+    $badges = GetTicketBadgeData::run($reporter->fresh());
+    $titles = collect($badges['recent'])->pluck('title');
+    expect($badges['mine']['in_progress']['count'])->toBe(1)
+        ->and($badges['mine']['to_do']['count'])->toBe(0)
+        ->and($titles->all())->toContain(__(':reference is now :status', ['reference' => $ticket->reference, 'status' => TicketStatusEnum::labels()['in_progress']]))
+        ->and($titles->all())->toContain(__(':reference has a new comment', ['reference' => $ticket->reference]))
+        ->and(collect($badges['recent'])->where('read', false)->count())->toBeGreaterThanOrEqual(2)
+        ->and($ticket->comments()->where('body', 'like', 'secret%')->count())->toBe(0);
+
+    actingAs($reporter);
+    get(route('grp.tickets.show', $ticket->reference))->assertOk()->assertInertia(
+        fn (AssertableInertia $page) => $page->where('comments', fn ($comments) => !collect($comments)->pluck('body')->contains('Driver is broken, not telling yet'))
+    );
+    expect(collect(GetTicketBadgeData::run($reporter->fresh())['recent'])->where('read', false)->count())->toBe(0);
+
+    $note      = $ticket->comments()->where('body', 'Driver is broken, not telling yet')->first();
+    $showsNote = fn () => get(route('grp.tickets.show', $ticket->reference))->assertOk()->viewData('page')['props']['comments'];
+
+    actingAs($bystander);
+    expect(collect($showsNote())->pluck('body')->all())->toContain('Driver is broken, not telling yet');
+
+    actingAs($this->user);
+    patch(route('grp.models.ticket.comment.toggle_visibility', $note->id))->assertRedirect();
+    expect($note->fresh()->is_lead_only)->toBeTrue()
+        ->and(collect($showsNote())->pluck('body')->all())->toContain('Driver is broken, not telling yet');
+
+    actingAs($engineer);
+    expect(collect($showsNote())->pluck('body')->all())->not->toContain('Driver is broken, not telling yet');
 });

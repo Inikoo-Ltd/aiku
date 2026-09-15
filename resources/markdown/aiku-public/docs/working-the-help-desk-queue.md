@@ -89,6 +89,7 @@ What collaborators can do:
 - see the ticket, even when it is confidential,
 - read and write comments,
 - add and remove tags,
+- write internal notes,
 - ask QA to check, or withdraw that request.
 
 What stays with the lead:
@@ -144,7 +145,9 @@ A ticket that came from a customer and was escalated keeps the kind <b>Escalated
 
 ## Comments and files
 
-Every comment can be read by the reporter, and by the customer on customer tickets. Write clearly and politely. You can edit or delete your own comments.
+Every comment can be read by the reporter, and by the customer on customer tickets. Write clearly and politely.
+
+If a comment is only for the people working on the ticket, tick <b>Internal note</b> under the comment box before posting. Internal notes are shown in yellow. Every engineer and lead engineer can read them, and so can QA colleagues working on the ticket, but the reporter cannot and is not told about them. Only the assignee, the collaborators and lead engineers can write them. You can edit or delete your own comments.
 
 Comments and <b>History</b> each have a button to show the <b>newest first</b> or the <b>oldest first</b>. aiku remembers your choice.
 
@@ -152,9 +155,9 @@ You can add files to a comment by pasting, dropping or pressing <b>Attach</b>:
 
 - screenshots and pictures, PDF, Word, Excel and CSV files, up to 10 MB each,
 - short videos (MP4, WebM or MOV), up to 50 MB each,
-- ZIP files, up to 10 MB each, for example a folder of log files.
+- ZIP, RAR and 7z files, up to 10 MB each, for example a folder of log files.
 
-All files on a ticket are shown together under <b>Attachments</b>. Click one to see it without downloading, and use the arrows to go to the next file. Clicking a ZIP file shows the list of files and folders inside it, with a <b>Download</b> button. If a file cannot be shown, aiku tells you why, for example because it was deleted or you do not have permission. Use the menu next to the title to show only one type, for example only PDFs.
+All files on a ticket are shown together under <b>Attachments</b>. Click one to see it without downloading, and use the arrows to go to the next file. Clicking a ZIP, RAR or 7z file shows the list of files and folders inside it, with a <b>Download</b> button. If a file cannot be shown, aiku tells you why, for example because it was deleted or you do not have permission. Use the menu next to the title to show only one type, for example only PDFs.
 
 Engineers, QA, lead engineers and the person who reported the ticket can open its files. Other colleagues who can see the ticket get a yellow note above the files saying they cannot preview them.
 
@@ -186,7 +189,7 @@ As a lead engineer you can also:
 - change any ticket from the List, not only your own,
 - mark a ticket <b>Confidential</b>, from the menu at the top of the ticket,
 - delete a ticket,
-- hide a comment, or make a hidden comment visible again,
+- hide a comment: it is shown in red with <b>Lead engineers only</b>, and only lead engineers can see it until you press <b>Unhide</b>,
 - change any ticket, including tickets nobody has taken yet,
 - add and remove collaborators on any ticket,
 - see <b>Tickets → Reports</b>: how many tickets were raised and closed, how long they took and how each engineer is doing. Use <b>Filter by</b> at the top right to see the numbers for one engineer only, or <b>All assignees</b> to see everyone again.

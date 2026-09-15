@@ -18,11 +18,15 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 use Lorisleiva\Actions\ActionRequest;
+use Illuminate\Validation\ValidationException;
 
 class StoreTicketComment extends OrgAction
 {
     public function handle(Ticket $ticket, User|WebUser $author, array $modelData, bool $mirrorToSlack = true, bool $notifyUsers = true): TicketComment
     {
+        if (Arr::get($modelData, 'is_internal') && !($author instanceof User && $ticket->canContributeBy($author))) {
+            throw ValidationException::withMessages(['is_internal' => __('Only the assignee, collaborators and lead engineers can write internal notes.')]);
+        }
 
         $comment = $ticket->comments()->create([
             'author_type' => $author instanceof User ? 'User' : 'WebUser',
@@ -33,8 +37,6 @@ class StoreTicketComment extends OrgAction
 
         $comment->attachTicketImages(Arr::get($modelData, 'images', []));
         $ticket->touch();
-
-        NotifyTicketUsers::make()->pushBadges($ticket, $author instanceof User ? $author : null);
 
         if ($mirrorToSlack && !$comment->is_internal) {
             PostTicketSlackThreadReply::run($ticket, ($author->contact_name ?? $author->email).': '.Str::limit($comment->body, 2000));
@@ -48,6 +50,8 @@ class StoreTicketComment extends OrgAction
         if ($author instanceof User && $notifyUsers && !$comment->is_internal) {
             NotifyTicketUsers::make()->commented($ticket, $author, $comment->body);
         }
+
+        NotifyTicketUsers::make()->pushBadges($ticket, $author instanceof User ? $author : null);
 
         return $comment;
     }

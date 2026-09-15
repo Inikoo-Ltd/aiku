@@ -119,6 +119,10 @@ class UpdateTicket extends OrgAction
             NotifyTicketUsers::make()->done($ticket, $asker instanceof User ? $asker : null);
         }
 
+        if ($ticket->wasChanged('status') && $this->reporterHearsAboutStatus($ticket, $asker instanceof User ? $asker : null)) {
+            NotifyTicketUsers::make()->statusChanged($ticket, $asker instanceof User ? $asker : null);
+        }
+
         if ($ticket->wasChanged('status')) {
             PostTicketSlackThreadReply::run($ticket, $ticket->reference.' is now '.TicketStatusEnum::labels()[$ticket->status->value]);
         }
@@ -201,9 +205,16 @@ class UpdateTicket extends OrgAction
             return true;
         }
 
-        return $ticket->isReportedBy($user)
-            && $request->has('status')
-            && array_diff($fields, ['status', 'status_comment']) === [];
+        return false;
+    }
+
+    private function reporterHearsAboutStatus(Ticket $ticket, ?User $actor): bool
+    {
+        if (in_array($ticket->status, [TicketStatusEnum::RESOLVED, TicketStatusEnum::WAITING, TicketStatusEnum::ANSWERED], true)) {
+            return false;
+        }
+
+        return $actor !== null || $ticket->status !== TicketStatusEnum::OPEN;
     }
 
     public function action(Ticket $ticket, array $modelData): Ticket

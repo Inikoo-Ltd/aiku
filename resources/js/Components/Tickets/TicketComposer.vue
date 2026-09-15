@@ -32,6 +32,8 @@ const attachmentIcons = {
     xlsx: { icon: faFileExcel, class: "text-green-600" },
     csv: { icon: faFileCsv, class: "text-emerald-600" },
     zip: { icon: faFileZipper, class: "text-amber-600" },
+    rar: { icon: faFileZipper, class: "text-amber-600" },
+    "7z": { icon: faFileZipper, class: "text-amber-600" },
     mp4: { icon: faFileVideo, class: "text-purple-600" },
     webm: { icon: faFileVideo, class: "text-purple-600" },
     mov: { icon: faFileVideo, class: "text-purple-600" },
@@ -181,7 +183,7 @@ const onPick = (event: Event) => {
                 <FontAwesomeIcon :icon="faPaperclip" /> {{ trans("Attach") }}
             </button>
             <span class="text-xs text-gray-400">{{ trans("or paste / drop") }}</span>
-            <input ref="fileInput" type="file" accept="image/*,.mp4,.webm,.mov,.pdf,.docx,.xls,.xlsx,.csv,.zip" multiple class="hidden" @change="onPick" />
+            <input ref="fileInput" type="file" accept="image/*,.mp4,.webm,.mov,.pdf,.docx,.xls,.xlsx,.csv,.zip,.rar,.7z" multiple class="hidden" @change="onPick" />
             <div v-if="previews.length" class="ml-auto flex gap-1.5">
                 <div v-for="(preview, index) in previews" :key="preview.url" class="relative">
                     <div v-if="preview.attachment" class="h-12 w-12 rounded border border-gray-200 bg-gray-50 flex flex-col items-center justify-center" :class="preview.attachment.class" :title="preview.name">

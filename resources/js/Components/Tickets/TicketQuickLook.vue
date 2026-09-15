@@ -147,6 +147,7 @@ const close = () => {
                                     :ticket="controls.ticket"
                                     :comments="controls.comments ?? []"
                                     :comment-route="controls.routes.comment"
+                                    :can-comment-internally="controls.can_comment_internally ?? false"
                                     :mentionable="controls.options?.mentionable"
                                     :comments-newest-first="controls.comments_newest_first ?? true"
                                     :show-description="false" />

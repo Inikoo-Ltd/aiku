@@ -8,6 +8,7 @@
 
 namespace App\Actions\Helpers\Ticket\UI;
 
+use App\Actions\Helpers\Ticket\MarkTicketNotificationsAsRead;
 use App\Actions\Helpers\Ticket\GetTicketBadgeData;
 use App\Actions\Helpers\Ticket\RateTicket;
 use App\Actions\OrgAction;
@@ -40,6 +41,7 @@ class ShowTicket extends OrgAction
     {
         abort_unless($ticket->isVisibleTo($request->user()), 403);
         $this->initialisationFromGroup($ticket->group, $request);
+        MarkTicketNotificationsAsRead::run($ticket, $request->user());
 
         return $this->handle($ticket);
     }
@@ -174,6 +176,7 @@ class ShowTicket extends OrgAction
             'can_contribute'           => $ticket->canContributeBy($user),
             'can_manage_collaborators' => $ticket->canManageCollaboratorsBy($user),
             'can_preview_attachments' => $ticket->canPreviewAttachmentsBy($user),
+            'can_comment_internally' => $ticket->canContributeBy($user),
             'attachment_gallery'     => $ticket->attachmentGalleryFor($user),
             'routes'                 => [
                 'update'   => ['name' => 'grp.models.ticket.update', 'parameters' => ['ticket' => $ticket->id]],

@@ -13,6 +13,8 @@ use App\Actions\OrgAction;
 use App\Models\Helpers\Media;
 use App\Models\Helpers\Ticket;
 use Illuminate\Contracts\Filesystem\Filesystem;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Process;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Lorisleiva\Actions\ActionRequest;
@@ -21,24 +23,24 @@ use ZipArchive;
 
 class ShowTicketAttachment extends OrgAction
 {
+    private const int MAX_ARCHIVE_ENTRIES = 1000;
+
+    private const array ARCHIVE_EXTENSIONS = ['zip', 'rar', '7z'];
+
     public function authorize(ActionRequest $request): bool
     {
         return $request->user() !== null;
     }
 
-    private const int MAX_ZIP_ENTRIES = 1000;
-
-    public function handle(Media $media, bool $withZipContents = false): Response
+    public function handle(Media $media, bool $withArchiveContents = false): Response
     {
         $disk = Storage::disk($media->disk);
         $path = $media->getPathRelativeToRoot();
 
         abort_unless($disk->exists($path), 404);
 
-        if ($withZipContents && $this->isZip($media->name)) {
-            $contents = $this->zipContents($disk, $path, config("filesystems.disks.{$media->disk}.driver") === 'local');
-
-            return $contents === null ? response()->json(['message' => __('This zip file cannot be read')], 422) : response()->json($contents);
+        if ($withArchiveContents && $this->isArchive($media->name)) {
+            return $this->archiveContentsResponse($disk, $path, config("filesystems.disks.{$media->disk}.driver") === 'local', $this->extensionOf($media->name));
         }
 
         if (config("filesystems.disks.{$media->disk}.driver") !== 'local') {
@@ -61,25 +63,31 @@ class ShowTicketAttachment extends OrgAction
 
     private function dispositionFor(string $fileName): string
     {
-        return $this->isZip($fileName) ? 'attachment' : 'inline';
+        return $this->isArchive($fileName) ? 'attachment' : 'inline';
     }
 
-    private function isZip(string $fileName): bool
+    private function extensionOf(string $fileName): string
     {
-        return strtolower(pathinfo($fileName, PATHINFO_EXTENSION)) === 'zip';
+        return strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
     }
 
-    /**
-     * @return array{total: int, entries: array<int, array{name: string, size: int, is_directory: bool}>}|null
-     */
-    private function zipContents(Filesystem $disk, string $path, bool $isLocalDisk): ?array
+    private function isArchive(string $fileName): bool
     {
+        return in_array($this->extensionOf($fileName), self::ARCHIVE_EXTENSIONS, true);
+    }
+
+    private function archiveContentsResponse(Filesystem $disk, string $path, bool $isLocalDisk, string $extension): JsonResponse
+    {
+        if ($extension !== 'zip' && !Process::run('bsdtar --version')->successful()) {
+            return response()->json(['message' => __('This server cannot read :type files yet. Ask an administrator to install libarchive-tools.', ['type' => strtoupper($extension)])], 422);
+        }
+
         $temporaryPath = null;
 
         if ($isLocalDisk) {
-            $zipPath = $disk->path($path);
+            $archivePath = $disk->path($path);
         } else {
-            $temporaryPath = tempnam(sys_get_temp_dir(), 'ticket_zip_');
+            $temporaryPath = tempnam(sys_get_temp_dir(), 'ticket_archive_');
             $source        = $disk->readStream($path);
             $target        = fopen($temporaryPath, 'wb');
             stream_copy_to_stream($source, $target);
@@ -87,36 +95,81 @@ class ShowTicketAttachment extends OrgAction
             if (is_resource($source)) {
                 fclose($source);
             }
-            $zipPath = $temporaryPath;
+            $archivePath = $temporaryPath;
         }
 
         try {
-            $zip = new ZipArchive();
-            if ($zip->open($zipPath, ZipArchive::RDONLY) !== true) {
-                return null;
-            }
+            $contents = $extension === 'zip' ? $this->zipContents($archivePath) : $this->bsdtarContents($archivePath);
 
-            $entries = [];
-            for ($entryIndex = 0; $entryIndex < min($zip->numFiles, self::MAX_ZIP_ENTRIES); $entryIndex++) {
-                $stat = $zip->statIndex($entryIndex);
-                if ($stat === false) {
-                    continue;
-                }
-                $entries[] = [
-                    'name'         => $stat['name'],
-                    'size'         => (int) $stat['size'],
-                    'is_directory' => str_ends_with($stat['name'], '/'),
-                ];
-            }
-
-            $total = $zip->numFiles;
-            $zip->close();
-
-            return ['total' => $total, 'entries' => $entries];
+            return $contents === null
+                ? response()->json(['message' => __('This archive file cannot be read')], 422)
+                : response()->json($contents);
         } finally {
             if ($temporaryPath !== null) {
                 @unlink($temporaryPath);
             }
         }
+    }
+
+    /**
+     * @return array{total: int, entries: array<int, array{name: string, size: int, is_directory: bool}>}|null
+     */
+    private function zipContents(string $archivePath): ?array
+    {
+        $zip = new ZipArchive();
+        if ($zip->open($archivePath, ZipArchive::RDONLY) !== true) {
+            return null;
+        }
+
+        $entries = [];
+        for ($entryIndex = 0; $entryIndex < min($zip->numFiles, self::MAX_ARCHIVE_ENTRIES); $entryIndex++) {
+            $stat = $zip->statIndex($entryIndex);
+            if ($stat === false) {
+                continue;
+            }
+            $entries[] = [
+                'name'         => $stat['name'],
+                'size'         => (int) $stat['size'],
+                'is_directory' => str_ends_with($stat['name'], '/'),
+            ];
+        }
+
+        $total = $zip->numFiles;
+        $zip->close();
+
+        return ['total' => $total, 'entries' => $entries];
+    }
+
+    /**
+     * @return array{total: int, entries: array<int, array{name: string, size: int, is_directory: bool}>}|null
+     */
+    private function bsdtarContents(string $archivePath): ?array
+    {
+        $result = Process::timeout(20)->run('bsdtar -tvf '.escapeshellarg($archivePath));
+        if ($result->failed()) {
+            return null;
+        }
+
+        $lines = array_values(array_filter(explode("\n", trim($result->output())), fn (string $line) => trim($line) !== ''));
+
+        $entries = collect($lines)
+            ->take(self::MAX_ARCHIVE_ENTRIES)
+            ->map(function (string $line) {
+                if (!preg_match('/^(\S)\S*\s+\d+\s+\S+\s+\S+\s+(\d+)\s+\S+\s+\S+\s+\S+\s+(.+)$/', rtrim($line), $matches)) {
+                    return null;
+                }
+                $isDirectory = $matches[1] === 'd' || str_ends_with($matches[3], '/');
+
+                return [
+                    'name'         => $isDirectory ? rtrim($matches[3], '/').'/' : $matches[3],
+                    'size'         => $isDirectory ? 0 : (int) $matches[2],
+                    'is_directory' => $isDirectory,
+                ];
+            })
+            ->filter()
+            ->values()
+            ->all();
+
+        return ['total' => count($lines), 'entries' => $entries];
     }
 }

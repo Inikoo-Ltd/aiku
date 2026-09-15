@@ -306,7 +306,7 @@ const update = (field: string, value: unknown, action: string = field) => {
                         {{ useFormatTime(ticket.waiting_until, { formatTime: "hm" }) }}
                     </span>
                     <button
-                        v-for="action in can_update || is_reporter ? statusActions[ticket.status] : []"
+                        v-for="action in can_update ? statusActions[ticket.status] : []"
                         :key="action.status"
                         v-tooltip="action.label"
                         type="button"

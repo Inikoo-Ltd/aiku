@@ -41,11 +41,11 @@ export const isSpreadsheetAttachment = (file: TicketAttachment) => ["xls", "xlsx
 
 export const isVideoAttachment = (file: TicketAttachment) => (file.mime ?? "").startsWith("video/") || ["mp4", "webm", "mov"].includes(extensionOf(file))
 
-export const isZipAttachment = (file: TicketAttachment) => extensionOf(file) === "zip"
+export const isArchiveAttachment = (file: TicketAttachment) => ["zip", "rar", "7z"].includes(extensionOf(file))
 
 export const isImageAttachment = (file: TicketAttachment) => (file.mime ?? "").startsWith("image/") || ["jpg", "jpeg", "png", "gif", "webp", "bmp", "svg"].includes(extensionOf(file))
 
-export const isPreviewableAttachment = (file: TicketAttachment) => isImageAttachment(file) || isPdfAttachment(file) || isWordAttachment(file) || isSpreadsheetAttachment(file) || isVideoAttachment(file) || isZipAttachment(file)
+export const isPreviewableAttachment = (file: TicketAttachment) => isImageAttachment(file) || isPdfAttachment(file) || isWordAttachment(file) || isSpreadsheetAttachment(file) || isVideoAttachment(file) || isArchiveAttachment(file)
 </script>
 
 <script setup lang="ts">
@@ -125,7 +125,7 @@ const loadPreview = async (file: TicketAttachment) => {
             return
         }
 
-        if (isZipAttachment(file)) {
+        if (isArchiveAttachment(file)) {
             const contentsUrl = new URL(url, window.location.origin)
             contentsUrl.searchParams.set("contents", "1")
             const contentsResponse = await fetch(contentsUrl, { headers: { Accept: "application/json" } })
@@ -237,7 +237,7 @@ onBeforeUnmount(() => window.removeEventListener("keydown", onKeydown))
             <iframe v-else-if="isPdfAttachment(currentFile)" :key="currentFile.url" :src="currentFile.url" :title="currentFile.name" class="h-[85vh] w-full max-w-5xl rounded bg-white" />
             <video v-else-if="isVideoAttachment(currentFile)" :key="currentFile.url" :src="currentFile.url" controls playsinline preload="metadata" class="max-h-[85vh] w-full max-w-5xl rounded bg-black" @error="markUndisplayable" />
             <div v-else-if="isWordAttachment(currentFile)" ref="wordContainer" :key="currentFile.url" class="h-[85vh] w-full max-w-5xl overflow-auto rounded bg-gray-100" />
-            <div v-else-if="isZipAttachment(currentFile)" :key="currentFile.url" class="flex h-[85vh] w-full max-w-5xl flex-col overflow-hidden rounded bg-white">
+            <div v-else-if="isArchiveAttachment(currentFile)" :key="currentFile.url" class="flex h-[85vh] w-full max-w-5xl flex-col overflow-hidden rounded bg-white">
                 <div class="flex shrink-0 items-center justify-between gap-4 border-b border-gray-200 bg-gray-50 px-4 py-2 text-xs text-gray-500">
                     <span class="tabular-nums">{{ trans(":count files", { count: String(zipFileCount) }) }} · {{ formatSize(zipTotalSize) }}</span>
                     <a :href="currentFile.url" :download="currentFile.name" class="inline-flex items-center gap-1.5 rounded-md bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white transition duration-200 hover:bg-indigo-700 focus:!bg-indigo-800">
@@ -254,7 +254,7 @@ onBeforeUnmount(() => window.removeEventListener("keydown", onKeydown))
                         <span class="min-w-0 flex-1 truncate" :title="entry.name">{{ baseNameOf(entry.name) }}</span>
                         <span v-if="!entry.is_directory" class="shrink-0 text-xs tabular-nums text-gray-400">{{ formatSize(entry.size) }}</span>
                     </li>
-                    <li v-if="!sortedZipEntries.length" class="px-4 py-6 text-center text-gray-400">{{ trans("This zip file is empty") }}</li>
+                    <li v-if="!sortedZipEntries.length" class="px-4 py-6 text-center text-gray-400">{{ trans("This archive is empty") }}</li>
                 </ul>
                 <p v-if="zipContents && zipContents.total > zipContents.entries.length" class="shrink-0 border-t border-gray-200 bg-gray-50 px-4 py-2 text-xs text-gray-500">
                     {{ trans("Showing the first :count of :total entries", { count: String(zipContents.entries.length), total: String(zipContents.total) }) }}

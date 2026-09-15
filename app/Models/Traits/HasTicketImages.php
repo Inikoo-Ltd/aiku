@@ -26,8 +26,8 @@ trait HasTicketImages
     {
         return [
             'file',
-            'extensions:jpg,jpeg,png,bmp,gif,svg,webp,pdf,docx,xls,xlsx,csv,zip,mp4,webm,mov',
-            'mimes:jpg,jpeg,png,bmp,gif,svg,webp,pdf,docx,xls,xlsx,csv,txt,zip,mp4,webm,mov',
+            'extensions:jpg,jpeg,png,bmp,gif,svg,webp,pdf,docx,xls,xlsx,csv,zip,rar,7z,mp4,webm,mov',
+            'mimes:jpg,jpeg,png,bmp,gif,svg,webp,pdf,docx,xls,xlsx,csv,txt,zip,rar,7z,mp4,webm,mov',
             'max:51200',
             function (string $attribute, mixed $value, Closure $fail): void {
                 if (!$value instanceof UploadedFile) {
@@ -52,8 +52,8 @@ trait HasTicketImages
             'images.max'          => __('You can attach up to 5 files at a time.'),
             'images.*.file'       => __(':attribute could not be uploaded. Please try again.'),
             'images.*.uploaded'   => __(':attribute could not be uploaded. Please try again.'),
-            'images.*.extensions' => __(':attribute cannot be attached. You can attach pictures, PDF, Word, Excel, CSV and ZIP files, and MP4, WebM or MOV videos.'),
-            'images.*.mimes'      => __(':attribute cannot be attached. You can attach pictures, PDF, Word, Excel, CSV and ZIP files, and MP4, WebM or MOV videos.'),
+            'images.*.extensions' => __(':attribute cannot be attached. You can attach pictures, PDF, Word, Excel, CSV, ZIP, RAR and 7z files, and MP4, WebM or MOV videos.'),
+            'images.*.mimes'      => __(':attribute cannot be attached. You can attach pictures, PDF, Word, Excel, CSV, ZIP, RAR and 7z files, and MP4, WebM or MOV videos.'),
             'images.*.max'        => __(':attribute is too big. Videos can be up to 50 MB, other files up to 10 MB.'),
         ];
     }

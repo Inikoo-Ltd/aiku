@@ -10,6 +10,7 @@ namespace App\Actions\Helpers\Ticket;
 
 use App\Actions\SysAdmin\User\SendUserPushNotification;
 use App\Enums\Helpers\Ticket\TicketQaStatusEnum;
+use App\Enums\Helpers\Ticket\TicketStatusEnum;
 use App\Enums\SysAdmin\User\UserNotificationEnum;
 use App\Events\BroadcastTicketChanged;
 use App\Models\Helpers\Ticket;
@@ -146,6 +147,24 @@ class NotifyTicketUsers
             $verdict = TicketQaStatusEnum::labels()[$ticket->qa_status->value];
             $this->handle($ticket, $actor, $ticket->assignee()->first(), __(':reference: QA :verdict', ['reference' => $ticket->reference, 'verdict' => strtolower($verdict)]), [$ticket->subject], __('Open the ticket'));
         }
+    }
+
+    public function statusChanged(Ticket $ticket, ?User $actor): void
+    {
+        $statusLabel = TicketStatusEnum::labels()[$ticket->status->value];
+
+        $this->handle(
+            $ticket,
+            $actor,
+            $ticket->reporter,
+            __(':reference is now :status', ['reference' => $ticket->reference, 'status' => $statusLabel]),
+            [
+                $actor
+                    ? __(':actor moved :reference (:subject) to :status.', ['actor' => $actor->contact_name ?: $actor->username, 'reference' => $ticket->reference, 'subject' => $ticket->subject, 'status' => $statusLabel])
+                    : __(':reference (:subject) is now :status.', ['reference' => $ticket->reference, 'subject' => $ticket->subject, 'status' => $statusLabel]),
+            ],
+            __('Open the ticket')
+        );
     }
 
     public function collaboratorAdded(Ticket $ticket, User $collaborator, ?User $actor): void
