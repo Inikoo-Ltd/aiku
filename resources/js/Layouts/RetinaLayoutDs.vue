@@ -73,7 +73,6 @@ const sidebarOpen = ref(false)
 
 const screenType = inject('screenType', ref<'mobile' | 'tablet' | 'desktop'>('desktop'))
 
-console.log("asd ")
 </script>
 
 <template>

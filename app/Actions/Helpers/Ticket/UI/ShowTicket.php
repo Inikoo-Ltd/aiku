@@ -135,6 +135,12 @@ class ShowTicket extends OrgAction
                 'tags'       => Ticket::knownTags($ticket->group_id),
                 'kinds'      => collect(TicketKindEnum::labels())->map(fn ($label, $value) => ['label' => $label, 'value' => $value])->values(),
                 'modules'    => collect(TicketModuleEnum::labels())->map(fn ($label, $value) => ['label' => $label, 'value' => $value])->values(),
+                'qa_users'      => GetTicketBadgeData::qaUsers($ticket->group_id)
+                    ->map(fn (User $person) => [
+                        'label'  => strtok((string) ($person->contact_name ?: $person->username), ' '),
+                        'value'  => $person->id,
+                        'avatar' => $person->imageSources(48, 48),
+                    ])->sortBy('label')->values(),
                 'collaborators' => GetTicketBadgeData::engineers($ticket->group_id)
                     ->merge(GetTicketBadgeData::qaUsers($ticket->group_id))
                     ->unique('id')

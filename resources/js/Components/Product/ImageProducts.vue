@@ -109,7 +109,7 @@ const enableLoop = computed(() => mediaItems.value.length > 1)
         <SwiperSlide v-for="item in mediaItems" :key="item.type === 'video' ? 'video' : `img-${item.imageIndex}`"
           class="flex justify-center items-center">
           <div v-if="item.type === 'image'"
-            class="relative w-full aspect-square flex items-center justify-center overflow-hidden rounded-lg cursor-zoom-in"
+            class="relative w-full aspect-square flex items-center justify-center overflow-hidden rounded-lg cursor-pointer"
             @click="openImageModal(item.imageIndex)">
             <Image :src="item.image.source" :alt="item.image.alt" class="w-full h-full flex items-center justify-center"
               :style="{ width: '100%', height: '100%', maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }" />

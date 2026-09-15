@@ -210,20 +210,25 @@ const subFilter = reactive<Record<string, string | null>>({})
 const toggleSubFilter = (columnKey: string, status: string) =>
 	(subFilter[columnKey] = subFilter[columnKey] === status ? null : status)
 
-const matchesBoardFilters = (ticket: any) =>
+const matchesBoardFilters = (ticket: any, columnKey: string) =>
 	(Object.keys(boardFilters) as FilterKey[]).every(
-		(key) => !boardFilters[key].length || boardFilters[key].includes(ticket[key])
+		(key) =>
+			!boardFilters[key].length ||
+			(key === "assignee_username" && columnKey === "open") ||
+			boardFilters[key].includes(ticket[key])
 	)
 
 const matchesFilters = (ticket: any, columnKey: string) =>
-	(!subFilter[columnKey] || subFilter[columnKey] === ticket.status) && matchesBoardFilters(ticket)
+	(!subFilter[columnKey] || subFilter[columnKey] === ticket.status) && matchesBoardFilters(ticket, columnKey)
 
 const visibleCount = (column: { key: string; tickets: any[] }) =>
 	column.tickets.filter((ticket) => matchesFilters(ticket, column.key)).length
 
-const subCount = (column: { tickets: any[] }, status: string) =>
-	column.tickets.filter((ticket) => ticket.status === status && matchesBoardFilters(ticket))
+const subCount = (column: { key: string; tickets: any[] }, status: string) =>
+	column.tickets.filter((ticket) => ticket.status === status && matchesBoardFilters(ticket, column.key))
 		.length
+
+const myAvatar = computed(() => props.assignees.find((assignee) => assignee.is_me)?.avatar?.original ?? null)
 
 const assigneeMenuOpen = ref(false)
 
@@ -440,7 +445,8 @@ const cancelAssign = () => {
 							: 'border-gray-200 bg-gray-50 text-gray-600 hover:border-gray-300 hover:bg-white'
 					"
 					@click="toggleMine()">
-					{{ trans("Mine") }}
+					<img v-if="myAvatar" :src="myAvatar" class="h-5 w-5 rounded-full object-cover" alt="" />
+					{{ trans("Me") }}
 				</button>
 				<button
 					type="button"

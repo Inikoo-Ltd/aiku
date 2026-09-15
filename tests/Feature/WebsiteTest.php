@@ -42,6 +42,10 @@ use App\Actions\Web\Webpage\ProcessWebpageTimeSeriesRecords;
 use App\Actions\Web\Webpage\StoreWebpage;
 use App\Actions\Web\Webpage\StoreWebpagePageSpeedTimeSeriesRecord;
 use App\Actions\Web\Webpage\UpdateWebpage;
+use App\Actions\Web\Webpage\LockWebpage;
+use App\Actions\Web\Webpage\UnlockWebpage;
+use App\Actions\SysAdmin\Guest\StoreGuest;
+use App\Models\SysAdmin\Guest;
 use App\Actions\Web\Webpage\UpdateWebpageCanonicalUrl;
 use App\Actions\Web\Website\AutosaveWebsiteMarginal;
 use App\Actions\Web\Website\Cloudflare\BlockCountriesInCloudflare;
@@ -2335,3 +2339,40 @@ test('retina login renders the iris login block only when that page is live', fu
     expect($liveResponse)->toBeInstanceOf(Illuminate\Http\Response::class)
         ->and($liveResponse->headers->get('X-AIKU-WEBSITE'))->toBe((string) $website->id);
 })->depends('launch website');
+
+test('locked webpage rejects writes from other users, accepts owner and granted editor, and relocks after publish', function (Webpage $webpage) {
+    $owner = $this->user;
+    $other = StoreGuest::make()->action($this->organisation->group, array_merge(Guest::factory()->definition(), ['positions' => []]))->getUser();
+
+    $webpage = LockWebpage::make()->action($webpage, $owner, [
+        'reason'  => 'Optimisation completed',
+        'editors' => [['user_id' => $other->id, 'until_publish' => true]],
+    ]);
+    expect($webpage->isLocked())->toBeTrue()
+        ->and($webpage->locked_by_user_id)->toBe($owner->id)
+        ->and($webpage->canBeEditedBy($other))->toBeTrue();
+
+    PublishWebpage::make()->action($webpage, ['publisher_id' => $other->id, 'publisher_type' => 'User'], strict: false);
+    $webpage->refresh();
+    expect($webpage->canBeEditedBy($other))->toBeFalse();
+
+    actingAs($other);
+    $this->patchJson(route('grp.models.webpage.update', $webpage->id), ['title' => 'nope'])->assertStatus(422)->assertJsonValidationErrors('message');
+    $this->postJson(route('grp.models.webpage.unlock', $webpage->id), ['reason' => 'x'])->assertStatus(403);
+    expect($webpage->fresh()->title)->not->toBe('nope');
+
+    actingAs($owner);
+    $this->patchJson(route('grp.models.webpage.update', $webpage->id), ['title' => 'owner edit'])->assertSuccessful();
+    expect($webpage->fresh()->title)->toBe('owner edit');
+
+    $webpage = LockWebpage::make()->action($webpage->fresh(), $owner, [
+        'reason'  => 'Optimisation completed',
+        'editors' => [['user_id' => $other->id, 'until' => now()->subMinute()->toIso8601String()]],
+    ]);
+    expect($webpage->canBeEditedBy($other))->toBeFalse();
+
+    $webpage = UnlockWebpage::make()->action($webpage, $owner, []);
+    expect($webpage->isLocked())->toBeFalse()
+        ->and($webpage->lock_data['previous_lock']['reason'])->toBe('Optimisation completed')
+        ->and($webpage->canBeEditedBy($other))->toBeTrue();
+})->depends('create webpage');

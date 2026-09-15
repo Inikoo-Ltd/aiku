@@ -318,6 +318,7 @@ class ShowWebpage extends OrgAction
                 'webpage_url'           => $webpage->getUrl(),
                 'webpage_canonical_url' => $webpage->canonical_url,
                 'redirected_to'         => $webpage->redirectedTo?->redirectTo?->only(['id', 'slug', 'code', 'url']),
+                'lock' => GetWebpageLock::run($webpage, $request->user()),
                 WebpageTabsEnum::SHOWCASE->value => $this->tab == WebpageTabsEnum::SHOWCASE->value ?
                     fn () => WebpageResource::make($webpage)->getArray()
                     : Inertia::optional(fn () => WebpageResource::make($webpage)->getArray()),

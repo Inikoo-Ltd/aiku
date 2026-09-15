@@ -30,6 +30,7 @@ const props = defineProps<{
         statuses: Option<string>[]
         priorities: Option<string>[]
         assignees: (Option<number> & { avatar?: Record<string, string> | null; is_me?: boolean })[]
+        qa_users?: (Option<number> & { avatar?: Record<string, string> | null })[]
         tags: string[]
         kinds: Option<string>[]
         modules: Option<string>[]
@@ -155,6 +156,18 @@ const sendQaVerdict = () => {
 }
 
 const canAskQa = computed(() => props.can_contribute && ["in_progress", "waiting", "resolved"].includes(props.ticket.status) && props.ticket.qa_status !== "requested")
+
+const qaPopover = ref()
+
+const askQa = (qaUserId: number | null) => {
+    qaPopover.value?.hide()
+    router.patch(route(props.routes.update.name, props.routes.update.parameters), { qa_status: "requested", qa_user_id: qaUserId }, {
+        preserveScroll: true,
+        onStart: () => (pendingAction.value = "qa:request"),
+        onFinish: () => (pendingAction.value = null),
+        onSuccess: () => emit("updated"),
+    })
+}
 
 const collaboratorPopover = ref()
 const isCollaboratorPickerOpen = ref(false)
@@ -313,7 +326,23 @@ const update = (field: string, value: unknown, action: string = field) => {
                     <button v-tooltip="trans('QA passed')" type="button" class="rounded-md p-1.5 text-green-600 hover:bg-gray-100 active:!bg-gray-200 transition duration-200" @click="openQaVerdict('passed')"><FontAwesomeIcon icon="fal fa-shield-check" fixed-width /></button>
                     <button v-tooltip="trans('QA failed')" type="button" class="rounded-md p-1.5 text-red-500 hover:bg-gray-100 active:!bg-gray-200 transition duration-200" @click="openQaVerdict('failed')"><FontAwesomeIcon icon="fal fa-shield" fixed-width /></button>
                 </template>
-                <button v-if="canAskQa" v-tooltip="ticket.qa_status ? trans('Ask QA to check again') : trans('Ask QA to check')" type="button" class="rounded-md p-1.5 text-amber-600 hover:bg-gray-100 active:!bg-gray-200 transition duration-200" @click="update('qa_status', 'requested', 'qa:request')"><FontAwesomeIcon :icon="isPending('qa:request') ? 'fal fa-spinner' : 'fal fa-vial'" :spin="isPending('qa:request')" fixed-width /></button>
+                <button v-if="canAskQa" v-tooltip="ticket.qa_status ? trans('Ask QA to check again') : trans('Ask QA to check')" type="button" class="rounded-md p-1.5 text-amber-600 hover:bg-gray-100 active:!bg-gray-200 transition duration-200" @click="qaPopover.toggle($event)"><FontAwesomeIcon :icon="isPending('qa:request') ? 'fal fa-spinner' : 'fal fa-vial'" :spin="isPending('qa:request')" fixed-width /></button>
+                <Popover v-if="canAskQa" ref="qaPopover">
+                    <div class="flex w-60 flex-col text-sm">
+                        <button type="button" class="mb-1 rounded bg-amber-50 p-2 text-left font-medium text-amber-700 transition duration-200 hover:bg-amber-100 active:!bg-amber-200" @click="askQa(null)">
+                            {{ trans("Anyone in QA") }}
+                        </button>
+                        <button
+                            v-for="qaUser in options.qa_users ?? []"
+                            :key="qaUser.value"
+                            type="button"
+                            class="flex items-center gap-2 rounded p-2 text-left transition duration-200 hover:bg-gray-100 active:!bg-gray-200"
+                            @click="askQa(qaUser.value)">
+                            <TicketUserAvatar :name="qaUser.label" :avatar="qaUser.avatar" size="sm" />
+                            <span class="truncate">{{ qaUser.label }}</span>
+                        </button>
+                    </div>
+                </Popover>
                 <button v-if="can_contribute && ticket.qa_status === 'requested'" v-tooltip="trans('Withdraw QA request')" type="button" class="rounded-md p-1.5 text-gray-400 hover:bg-gray-100 active:!bg-gray-200 transition duration-200" @click="update('qa_status', null, 'qa:withdraw')"><FontAwesomeIcon :icon="isPending('qa:withdraw') ? 'fal fa-spinner' : 'fal fa-times'" :spin="isPending('qa:withdraw')" fixed-width /></button>
             </div>
             <template v-if="can_manage || can_contribute">
