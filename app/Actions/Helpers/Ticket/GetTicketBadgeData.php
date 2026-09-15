@@ -13,6 +13,7 @@ use App\Enums\Helpers\Ticket\TicketQaStatusEnum;
 use App\Enums\Helpers\Ticket\TicketStatusEnum;
 use App\Enums\SysAdmin\Authorisation\RolesEnum;
 use App\Models\Helpers\Ticket;
+use App\Models\CRM\WebUser;
 use App\Models\SysAdmin\User;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
@@ -76,7 +77,7 @@ class GetTicketBadgeData
     /**
      * @return array<int, array{id: string, title: string, body: string, route: string, read: bool, created_at: mixed}>
      */
-    private function recentUpdates(User $user): array
+    public function recentUpdates(User|WebUser $user): array
     {
         return $user->notifications()
             ->whereRaw("(data::jsonb)->>'type' = 'ticket'")
@@ -99,6 +100,12 @@ class GetTicketBadgeData
     public static function engineers(int $groupId): Collection
     {
         return self::usersWithRoles($groupId, [RolesEnum::HELP_DESK_CLERK, RolesEnum::HELP_DESK_SUPERVISOR]);
+    }
+
+    /** @return Collection<int, User> */
+    public static function leadEngineers(int $groupId): Collection
+    {
+        return self::usersWithRoles($groupId, [RolesEnum::HELP_DESK_SUPERVISOR]);
     }
 
     /** @return Collection<int, User> */
