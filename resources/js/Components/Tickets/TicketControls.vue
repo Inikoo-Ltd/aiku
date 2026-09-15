@@ -156,8 +156,8 @@ const sendQaVerdict = () => {
 }
 
 const isClosed = computed(() => ["resolved", "cancelled"].includes(props.ticket.status))
-const isResolvedToday = computed(() => props.ticket.status === "resolved" && !!props.ticket.resolved_at && new Date(props.ticket.resolved_at).toDateString() === new Date().toDateString())
-const canAskQa = computed(() => props.can_contribute && (["in_progress", "waiting"].includes(props.ticket.status) || isResolvedToday.value) && props.ticket.qa_status !== "requested")
+const isResolvedWithinADay = computed(() => props.ticket.status === "resolved" && !!props.ticket.resolved_at && Date.now() - new Date(props.ticket.resolved_at).getTime() < 24 * 60 * 60 * 1000)
+const canAskQa = computed(() => props.can_contribute && (["in_progress", "waiting"].includes(props.ticket.status) || isResolvedWithinADay.value) && props.ticket.qa_status !== "requested")
 
 const qaPopover = ref()
 
