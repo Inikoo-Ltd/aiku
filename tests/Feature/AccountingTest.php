@@ -3215,6 +3215,18 @@ describe('invoice pdf tax number display', function () {
             ->toContain('Collection address')
             ->and($renderInvoiceTemplate($invoice->refresh(), null, true))->not->toContain('Delivery address');
     });
+
+    test('invoice dates print the month in the shop language', function () use ($renderInvoiceTemplate) {
+        $customer = createCustomer($this->shop);
+        $invoice  = StoreInvoice::make()->action($customer, Invoice::factory()->definition());
+        $invoice->update(['date' => '2026-07-29 10:00:00']);
+
+        app()->setLocale('pl');
+        $html = $renderInvoiceTemplate($invoice->refresh());
+        app()->setLocale('en');
+
+        expect($html)->toContain('29 lipca 2026')->not->toContain('29 July 2026');
+    });
 });
 
 test('a pdf whose html is larger than the default pcre backtrack limit still renders', function () {
