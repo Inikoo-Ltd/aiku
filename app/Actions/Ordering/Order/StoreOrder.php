@@ -293,6 +293,7 @@ class StoreOrder extends OrgAction
             'customer_reference'        => ['sometimes', 'string', 'max:255'],
             'external_id'               => ['sometimes', 'string'],
             'state'                     => ['sometimes', Rule::enum(OrderStateEnum::class)],
+            'cancelled_at'              => ['sometimes', 'nullable', 'date'],
             'status'                    => ['sometimes', Rule::enum(OrderStatusEnum::class)],
             'handing_type'              => ['sometimes', 'required', Rule::enum(OrderHandingTypeEnum::class)],
             'tax_category_id'           => ['sometimes', 'required', 'exists:tax_categories,id'],
@@ -321,7 +322,6 @@ class StoreOrder extends OrgAction
 
             'customer_notes'          => ['sometimes', 'nullable', 'string', 'max:4000'],
             'public_notes'            => ['sometimes', 'nullable', 'string', 'max:4000'],
-            'internal_notes'          => ['sometimes', 'nullable', 'string', 'max:4000'],
 
         ];
 

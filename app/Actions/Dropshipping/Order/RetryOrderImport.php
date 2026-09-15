@@ -57,7 +57,8 @@ class RetryOrderImport
             );
         }
 
-        if ($existingOrder = $this->findExistingOrder($customerSalesChannel, $platformOrderId)) {
+        $existingOrder = $this->findExistingOrder($customerSalesChannel, $platformOrderId);
+        if ($existingOrder && !$existingOrder->isDeclinedPlatformRequest()) {
             return $this->result(
                 OrderImportRetryStatusEnum::ALREADY_IMPORTED,
                 __('Already in AW as :reference, nothing was imported.', ['reference' => $existingOrder->reference]),
