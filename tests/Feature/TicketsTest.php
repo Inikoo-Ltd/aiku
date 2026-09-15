@@ -1077,7 +1077,9 @@ test('an engineer asks QA to check, QA answers with a verdict and the engineer s
         ->and($ticket->comments()->latest('id')->value('body'))->toBe('QA failed: Still wrong with a voucher');
 
     actingAs($engineer);
-    patch(route('grp.models.ticket.update', $ticket->id), ['qa_status' => 'requested'])->assertRedirect();
+    patch(route('grp.models.ticket.update', $ticket->id), ['qa_status' => 'requested', 'qa_user_id' => $reporter->id])->assertSessionHasErrors('qa_user_id');
+    patch(route('grp.models.ticket.update', $ticket->id), ['qa_status' => 'requested', 'qa_user_id' => $qa->id])->assertRedirect();
+    expect($ticket->refresh()->qa_user_id)->toBe($qa->id);
     actingAs($qa);
     patch(route('grp.models.ticket.update', $ticket->id), ['qa_status' => 'passed'])->assertRedirect();
     actingAs($engineer);

@@ -123,6 +123,12 @@ class ShowTicket extends OrgAction
                             'avatar' => $user->imageSources(48, 48),
                             'is_me'  => $user->id === request()->user()->id,
                         ])->sortBy('label')->values(),
+                    'qa_users'   => GetTicketBadgeData::qaUsers($ticket->group_id)
+                        ->map(fn (User $user) => [
+                            'label'  => strtok((string) ($user->contact_name ?: $user->username), ' '),
+                            'value'  => $user->id,
+                            'avatar' => $user->imageSources(48, 48),
+                        ])->sortBy('label')->values(),
                     'mentionable' => User::where('group_id', $ticket->group_id)
                         ->where('status', true)
                         ->orderBy('username')

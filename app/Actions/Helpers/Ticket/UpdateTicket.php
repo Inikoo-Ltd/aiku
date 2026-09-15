@@ -80,7 +80,11 @@ class UpdateTicket extends OrgAction
             $isVerdict = in_array($qaStatus, [TicketQaStatusEnum::PASSED, TicketQaStatusEnum::FAILED], true);
             data_set($modelData, 'qa_requested_at', $qaStatus === TicketQaStatusEnum::REQUESTED ? now() : ($qaStatus ? $ticket->qa_requested_at : null));
             data_set($modelData, 'qa_checked_at', $isVerdict ? now() : null);
-            data_set($modelData, 'qa_user_id', $isVerdict && $asker instanceof User ? $asker->id : null);
+            data_set($modelData, 'qa_user_id', match (true) {
+                $isVerdict && $asker instanceof User => $asker->id,
+                $qaStatus === TicketQaStatusEnum::REQUESTED => Arr::get($modelData, 'qa_user_id'),
+                default => null,
+            });
         }
 
         $ticket = $this->update($ticket, $modelData);
@@ -135,6 +139,7 @@ class UpdateTicket extends OrgAction
             'question'      => ['sometimes', 'nullable', 'string', 'max:10000'],
             'qa_status'     => ['sometimes', 'nullable', Rule::enum(TicketQaStatusEnum::class)],
             'qa_note'       => ['sometimes', 'nullable', 'string', 'max:10000'],
+            'qa_user_id'    => ['sometimes', 'nullable', Rule::in(GetTicketBadgeData::qaUsers($this->group->id)->pluck('id'))],
             'waiting_hours' => ['sometimes', 'nullable', 'integer', 'min:1', 'max:720'],
             'tags.*'        => ['string', 'max:64'],
         ];
@@ -150,7 +155,7 @@ class UpdateTicket extends OrgAction
         if ($request->has('qa_status')) {
             $isVerdict = in_array($request->input('qa_status'), [TicketQaStatusEnum::PASSED->value, TicketQaStatusEnum::FAILED->value], true);
 
-            return array_diff(array_keys($request->all()), ['qa_status', 'qa_note']) === []
+            return array_diff(array_keys($request->all()), ['qa_status', 'qa_note', 'qa_user_id']) === []
                 && ($isVerdict ? Ticket::canCheckQa($request->user()) : Ticket::canBeManagedBy($request->user()));
         }
 
