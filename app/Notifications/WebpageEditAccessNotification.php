@@ -8,14 +8,10 @@
 
 namespace App\Notifications;
 
-use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Notification;
 
-class WebpageEditAccessNotification extends Notification implements ShouldQueue
+class WebpageEditAccessNotification extends Notification
 {
-    use Queueable;
-
     public function __construct(public string $title, public string $body, public string $url)
     {
     }

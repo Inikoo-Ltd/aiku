@@ -320,6 +320,8 @@ class StoreOrder extends OrgAction
             'commission_amount'         => ['sometimes', 'numeric'],
 
             'customer_notes'          => ['sometimes', 'nullable', 'string', 'max:4000'],
+            'public_notes'            => ['sometimes', 'nullable', 'string', 'max:4000'],
+            'internal_notes'          => ['sometimes', 'nullable', 'string', 'max:4000'],
 
         ];
 

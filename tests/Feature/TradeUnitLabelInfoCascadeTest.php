@@ -513,6 +513,33 @@ test('best before is saved on the trade unit and flows down only when every trad
     expect($this->bottle->refresh()->label_info['best_before'])->toBeNull();
 });
 
+test('no expiry date stays on the showcase but is hidden from the product web block', function () {
+    UpdateTradeUnit::make()->action($this->bottle, ['best_before' => 'no_expiry_date']);
+    UpdateTradeUnit::make()->action($this->plug, ['best_before' => 'no_expiry_date']);
+
+    expect($this->product->refresh()->label_info['best_before'])->toBe('no_expiry_date');
+
+    get(route('grp.trade_units.units.show', [$this->bottle->slug]))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('showcase.label_info.best_before', ['show' => true, 'value' => ['value' => 'no_expiry_date', 'label' => 'No Expiry Date']])
+            ->etc());
+
+    $labelInfo = (new class () {
+        use HasWebBlockProductLabelInfo;
+
+        public function build($product): array
+        {
+            return $this->getProductLabelInfo($product);
+        }
+    })->build($this->product);
+
+    expect($labelInfo['best_before'])->toBe([
+        'show'  => false,
+        'label' => 'PAO / Expiry Date / Best Before',
+        'value' => null,
+    ]);
+});
+
 test('an unknown best before option is rejected', function () {
     UpdateTradeUnit::make()->action($this->bottle, ['best_before' => 'pao_36m']);
 })->throws(Illuminate\Validation\ValidationException::class);

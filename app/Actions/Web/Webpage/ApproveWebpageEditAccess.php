@@ -53,6 +53,10 @@ class ApproveWebpageEditAccess extends OrgAction
             ])
             ->values()->all();
 
+        $lockData['declined_requests'] = collect(Arr::get($lockData, 'declined_requests', []))
+            ->reject(fn (array $declinedRequest) => $declinedRequest['user_id'] == $editorId)
+            ->values()->all();
+
         $webpage = $this->update($webpage, ['lock_data' => $lockData]);
 
         $expiry = match ($mode) {

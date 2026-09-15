@@ -21,6 +21,7 @@ export interface WebpageLock {
     users: { value: number, label: string }[]
     requests: WebpageEditAccessRequest[]
     has_requested_access: boolean
+    declined_request?: { declined_at: string, declined_by?: string | null, message?: string | null } | null
     lock_route: routeType
     unlock_route: routeType
     request_access_route: routeType
@@ -32,7 +33,7 @@ export interface WebpageLock {
 <script setup lang="ts">
 import { trans } from 'laravel-vue-i18n'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { faLock } from '@fal'
+import { faLock, faTimesCircle } from '@fal'
 import { useFormatTime } from '@/Composables/useFormatTime'
 import WebpageEditAccessRequests from '@/Components/CMS/Webpage/WebpageEditAccessRequests.vue'
 import WebpageEditAccessRequestButton from '@/Components/CMS/Webpage/WebpageEditAccessRequestButton.vue'
@@ -72,6 +73,11 @@ const grantLabel = (grant: WebpageLockGrant) => grant.until_publish
         <span v-for="grant in lock.editors" :key="grant.user_id" class="mr-2">{{ grant.name }} ({{ grantLabel(grant) }})</span>
     </div>
     <div v-if="!lock.can_edit" class="mt-1 text-sm font-semibold">{{ lock.message }}</div>
+    <div v-if="lock.declined_request && !lock.has_requested_access && !lock.can_edit" class="mt-2 rounded border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-800">
+        <FontAwesomeIcon :icon="faTimesCircle" fixed-width aria-hidden="true" />
+        {{ trans('Your edit access request was declined by :name on :date.', { name: lock.declined_request.declined_by ?? '', date: useFormatTime(lock.declined_request.declined_at) }) }}
+        <div v-if="lock.declined_request.message" class="mt-1 italic">“{{ lock.declined_request.message }}”</div>
+    </div>
     <WebpageEditAccessRequests v-if="lock.can_manage && lock.requests?.length" :lock="lock" />
 </div>
 </template>
