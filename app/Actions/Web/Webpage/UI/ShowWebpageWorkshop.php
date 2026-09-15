@@ -123,6 +123,7 @@ class ShowWebpageWorkshop extends OrgAction
                 ],
                 'url'           => $url,
                 'webpage'       => WebpageWorkshopResource::make($webpage)->getArray(),
+                'lock' => GetWebpageLock::run($webpage, $request->user()),
                 'webBlockTypes' => WebBlockTypesResource::collection($webBlockTypes),
                 'editable'      => true // INI-927 need passing permission
             ]

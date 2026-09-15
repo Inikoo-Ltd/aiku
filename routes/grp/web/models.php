@@ -530,6 +530,9 @@ use App\Actions\Web\Webpage\SetBlogWebpagesCategoryBulk;
 use App\Actions\Web\Webpage\SetWebpageOfflineBulk;
 use App\Actions\Web\Webpage\StoreWebpage;
 use App\Actions\Web\Webpage\UpdateWebpage;
+use App\Actions\Web\Webpage\LockWebpage;
+use App\Actions\Web\Webpage\UnlockWebpage;
+use App\Http\Middleware\EnsureWebpageIsNotLocked;
 use App\Actions\Web\Webpage\WebpageWorkshopCheckWebBlock;
 use App\Actions\Web\Website\AutosaveWebsiteMarginal;
 use App\Actions\Web\Website\BreakWebsiteCache;
@@ -1206,6 +1209,11 @@ Route::patch('set-snapshot-website/{snapshot:id}/published', ApplyWebsiteMenuSna
 Route::patch('set-snapshot-website/{snapshot:id}/unpublished', [ApplyWebsiteMenuSnapshot::class, 'asUnpublished'])->name('website.set-snapshot-as-unpublished')->withoutScopedBindings();
 
 Route::name('webpage.')->prefix('webpage/{webpage:id}')->group(function () {
+    Route::post('lock', LockWebpage::class)->name('lock')->withoutScopedBindings();
+    Route::post('unlock', UnlockWebpage::class)->name('unlock')->withoutScopedBindings();
+});
+
+Route::name('webpage.')->prefix('webpage/{webpage:id}')->middleware(EnsureWebpageIsNotLocked::class)->group(function () {
     Route::patch('', UpdateWebpage::class)->name('update')->withoutScopedBindings();
     Route::patch('web-block-check', WebpageWorkshopCheckWebBlock::class)->name('web_block_check');
     Route::patch('delete', DeleteWebpage::class)->name('delete');
@@ -1229,7 +1237,7 @@ Route::name('redirect.')->prefix('redirect/{redirect:id}')->group(function () {
     Route::delete('', DeleteRedirect::class)->name('delete');
 });
 
-Route::name('model_has_web_block.')->prefix('model-has-web-block')->group(function () {
+Route::name('model_has_web_block.')->prefix('model-has-web-block')->middleware(EnsureWebpageIsNotLocked::class)->group(function () {
     Route::patch('bulk', BulkUpdateModelHasWebBlocks::class)->name('bulk.update');
     Route::prefix('{modelHasWebBlocks:id}')->group(function () {
         Route::patch('', UpdateModelHasWebBlocks::class)->name('update');
