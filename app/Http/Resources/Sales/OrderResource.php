@@ -69,6 +69,7 @@ class OrderResource extends JsonResource
             'is_premium_dispatch' => $order->is_premium_dispatch,
             'has_extra_packing'   => $order->has_extra_packing,
             'has_insurance'       => $order->has_insurance,
+            'is_dropshipping'     => $order->isDropshipping(),
             'cancelled_at'        => $order->cancelled_at,
             'cancellation'        => $this->getCancellation(data_get($order->data, 'cancellation')),
             'is_collection'       => (bool) $order->collection_address_id,

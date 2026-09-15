@@ -174,13 +174,11 @@ const hideSuperchatWidget = () => {
         if (_superchatWidget) {
             _superchatWidget.style.display = 'none'
             clearInterval(xxInterval)
-            console.log('Cleared interval')
         }
 
         // To safety if GTM exist but don't have superchat
         if (time.value > 7000) {
             clearInterval(xxInterval)
-            console.log('Cleared interval due to timeout')
         }
     }, 900)
 }

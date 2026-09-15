@@ -100,7 +100,7 @@ onMounted(() => {
 </script>
 
 <template>
-    <div data-block-type="luigi-trends-1-iris" class="w-full pb-6 px-4" :id="fieldValue?.id ? fieldValue?.id  : 'luigi-trends-1-iris'+indexBlock" component="luigi-trends-1-iris"
+    <div data-block-type="internal-trends-1-iris" class="w-full pb-6 px-4" :id="fieldValue?.id ? fieldValue?.id  : 'internal-trends-1-iris'+indexBlock" component="internal-trends-1-iris"
     :style="{
         ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
         ...getStyles(fieldValue.container?.properties, screenType),

@@ -44,6 +44,7 @@ function customersUrl(countryCode: string, extra: Record<string, string> = {}): 
                     :src="`/flags/${item.country_code.toLowerCase()}.png`"
                     :alt="item.country_code"
                     :title="capitalize(item.country_name)"
+                    loading="lazy" decoding="async"
                 />
                 <Link :href="countryUrl(item.country_code)" class="primaryLink">
                     {{ capitalize(item.country_name) }}

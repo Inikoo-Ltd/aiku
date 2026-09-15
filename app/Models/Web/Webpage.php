@@ -10,6 +10,7 @@ namespace App\Models\Web;
 
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
+use App\Enums\SysAdmin\Authorisation\RolesEnum;
 use App\Enums\Web\Webpage\WebpageSubTypeEnum;
 use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Enums\Web\Webpage\WebpageTypeEnum;
@@ -22,10 +23,13 @@ use App\Models\Helpers\Deployment;
 use App\Models\Helpers\Snapshot;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
+use App\Models\SysAdmin\User;
 use App\Models\Traits\HasHistory;
 use App\Models\Traits\HasImage;
 use App\Models\Traits\InWebsite;
 use Eloquent;
+use Illuminate\Support\Arr;
+use Illuminate\Support\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -63,6 +67,9 @@ use App\Models\Traits\HasSearch;
  * @property string|null $description
  * @property int $level
  * @property bool $is_fixed
+ * @property \Illuminate\Support\Carbon|null $locked_at
+ * @property int|null $locked_by_user_id
+ * @property array<array-key, mixed>|null $lock_data
  * @property WebpageStateEnum $state
  * @property WebpageTypeEnum $type
  * @property WebpageSubTypeEnum $sub_type
@@ -177,6 +184,8 @@ class Webpage extends Model implements Auditable, HasMedia
         'last_fetched_at'             => 'datetime',
         'last_published_at'           => 'datetime',
         'is_different_when_logged_in' => 'boolean',
+        'locked_at'                   => 'datetime',
+        'lock_data'                   => 'array',
     ];
 
     protected $attributes = [
@@ -222,8 +231,82 @@ class Webpage extends Model implements Auditable, HasMedia
         'live_at',
         'closed_at',
         'sub_type',
-        'type'
+        'type',
+        'locked_at',
+        'locked_by_user_id',
+        'lock_data',
     ];
+
+    public function lockedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'locked_by_user_id');
+    }
+
+    public function isLocked(): bool
+    {
+        return $this->locked_at !== null;
+    }
+
+    public function canBeEditedBy(?User $user): bool
+    {
+        if (!$this->isLocked()) {
+            return true;
+        }
+        if (!$user) {
+            return false;
+        }
+        if ($user->id == $this->locked_by_user_id || $user->hasRole(RolesEnum::GROUP_ADMIN->value)) {
+            return true;
+        }
+
+        return $this->lockGrantFor($user) !== null;
+    }
+
+    /**
+     * @return array{user_id: int, until: string|null, until_publish: bool}|null
+     */
+    public function lockGrantFor(User $user): ?array
+    {
+        foreach (Arr::get($this->lock_data, 'editors', []) as $grant) {
+            $expired = !empty($grant['until']) && Carbon::parse($grant['until'])->isPast();
+            if ($grant['user_id'] == $user->id && !$expired) {
+                return $grant;
+            }
+        }
+
+        return null;
+    }
+
+    public function canManageLockBy(?User $user): bool
+    {
+        if (!$user) {
+            return false;
+        }
+        if (!$this->isLocked()) {
+            return true;
+        }
+
+        return $user->id == $this->locked_by_user_id;
+    }
+
+    public function canEditLockBy(?User $user): bool
+    {
+        if (!$user) {
+            return false;
+        }
+        if (!$this->isLocked()) {
+            return true;
+        }
+
+        return $user->id == $this->locked_by_user_id;
+    }
+
+    public function lockMessage(): string
+    {
+        $owner = $this->lockedBy?->contact_name ?: $this->lockedBy?->username;
+
+        return __('🔒 This page is protected. Changes require approval from :owner.', ['owner' => $owner ?? __('the page owner')]);
+    }
 
     public function stats(): HasOne
     {

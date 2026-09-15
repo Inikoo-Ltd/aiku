@@ -23,6 +23,7 @@ use App\Actions\Masters\MasterShop\GetMasterShopCurrenciesRate;
 use App\Actions\Masters\MasterShop\UI\ShowMasterShop;
 use App\Actions\Masters\MasterVariant\IndexMasterVariant;
 use App\Actions\Traits\Authorisations\WithMastersAuthorisation;
+use App\Actions\Web\Webpage\UI\GetMasterFamilyWebpageLocks;
 use App\Enums\UI\Catalogue\MasterProductsTabsEnum;
 use App\Enums\UI\SupplyChain\MasterFamilyTabsEnum;
 use App\Http\Resources\Api\Dropshipping\OpenShopsInMasterShopResource;
@@ -296,6 +297,7 @@ class ShowMasterFamily extends OrgAction
                 ],
                 'isPerfectFamily'         => true,
                 'masterProductCategoryId' => $masterFamily->id,
+                'webpage_locks'           => $this->canEdit ? GetMasterFamilyWebpageLocks::run($masterFamily, $request->user()) : null,
                 'shopsData'               => OpenShopsInMasterShopResource::collection(IndexOpenShopsInMasterShop::run($masterFamily->masterShop, 'shops')),
                 'vol_gr_reward'           => [
                     'show_gr_vol'                   => $masterFamily->masterShop->gold_reward_eligible && $masterFamily->has_gr_vol_discount,

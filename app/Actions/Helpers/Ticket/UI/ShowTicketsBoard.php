@@ -8,12 +8,15 @@
 
 namespace App\Actions\Helpers\Ticket\UI;
 
+use App\Actions\Helpers\Ticket\GetTicketBadgeData;
 use App\Actions\OrgAction;
 use App\Enums\Helpers\Ticket\TicketStatusEnum;
 use App\Enums\Helpers\Ticket\TicketStatusGroupEnum;
 use App\Http\Resources\Helpers\TicketResource;
 use App\Models\Helpers\Ticket;
+use App\Enums\HumanResources\Employee\EmployeeStateEnum;
 use App\Models\SysAdmin\Group;
+use App\Models\SysAdmin\User;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -28,22 +31,22 @@ class ShowTicketsBoard extends OrgAction
     private const array PERIODS = ['24h', 'today', '1w', 'all'];
 
     /**
-     * Done and Cancelled share one column, each keeping its own count in its header.
+     * Done and Cancelled share one column, as do Waiting and Reporter replied, each keeping its own count in its header.
      *
      * @var array<string, array<int, string>>
      */
     private const array COLUMNS = [
         'open'        => ['open'],
         'assigned'    => ['assigned'],
-        'in_progress' => ['in_progress'],
-        'waiting'     => ['waiting'],
+        'in_progress' => ['in_progress', 'pending_deploy'],
+        'waiting'     => ['waiting', 'answered'],
         'closed'      => ['resolved', 'cancelled'],
     ];
 
     /**
      * Todo is aged on when the ticket was raised, the closed column on when it was closed.
      */
-    private const array DEFAULT_PERIODS = ['open' => 'all', 'closed' => '24h'];
+    private const array DEFAULT_PERIODS = ['closed' => '24h'];
 
     /**
      * @param  array<string, string>  $periods
@@ -64,7 +67,7 @@ class ShowTicketsBoard extends OrgAction
                     });
                 }
             })
-            ->with(['reporter', 'assignee', 'customer'])
+            ->with(['reporter', 'assignee', 'customer', 'collaborators'])
             ->orderByRaw("CASE priority WHEN 'urgent' THEN 0 WHEN 'high' THEN 1 WHEN 'normal' THEN 2 ELSE 3 END")
             ->orderByDesc('updated_at')
             ->get()
@@ -74,18 +77,20 @@ class ShowTicketsBoard extends OrgAction
             $cases = array_map(fn (string $status) => TicketStatusEnum::from($status), $statuses);
             $group = $cases[0]->group();
             $columnTickets = collect($statuses)->flatMap(fn (string $status) => $tickets->get($status, collect()));
+            $labelledByGroup = $key === 'closed';
 
             return [
                 'key'      => $key,
                 'status'   => $statuses[0],
                 'group'    => $group->value,
-                'label'    => count($cases) > 1 ? TicketStatusGroupEnum::labels()[$group->value] : TicketStatusEnum::labels()[$statuses[0]],
+                'label'    => $labelledByGroup ? TicketStatusGroupEnum::labels()[$group->value] : TicketStatusEnum::labels()[$statuses[0]],
                 'color'    => TicketStatusGroupEnum::stateIcon()[$group->value]['color'],
-                'icon'     => count($cases) > 1 ? TicketStatusGroupEnum::stateIcon()[$group->value] : TicketStatusEnum::stateIcon()[$statuses[0]],
+                'icon'     => $labelledByGroup ? TicketStatusGroupEnum::stateIcon()[$group->value] : TicketStatusEnum::stateIcon()[$statuses[0]],
                 'period'   => $periods[$key] ?? null,
                 'statuses' => collect($cases)->map(fn (TicketStatusEnum $status) => [
                     'status' => $status->value,
                     'label'  => TicketStatusEnum::labels()[$status->value],
+                    'color'  => TicketStatusEnum::stateIcon()[$status->value]['color'],
                     'count'  => $tickets->get($status->value, collect())->count(),
                 ])->all(),
                 'tickets'  => TicketResource::collection($columnTickets)->toArray(request()),
@@ -137,12 +142,37 @@ class ShowTicketsBoard extends OrgAction
                     ] : [],
                 ],
                 'can_manage'    => Ticket::canBeManagedBy(request()->user()),
+                'can_assign'    => Ticket::canBeAssignedBy(request()->user()),
                 'columns'       => $board['columns'],
                 'periodOptions' => $board['periodOptions'],
                 'createdIntervals' => IndexTickets::make()->createdIntervalOptions(),
                 'createdInterval'  => $board['created'],
                 'updateRoute' => 'grp.models.ticket.update',
+                'me'          => request()->user()->username,
+                'formerAssignees' => $this->formerAssignees($board['columns']),
+                'assignees'       => GetTicketBadgeData::engineers(request()->user()->group_id)
+                    ->map(fn (User $user) => [
+                        'label'  => strtok((string) ($user->contact_name ?: $user->username), ' '),
+                        'value'  => $user->id,
+                        'avatar' => $user->imageSources(48, 48),
+                        'is_me'  => $user->id === request()->user()->id,
+                    ])->sortBy('label')->values(),
             ]
         );
+    }
+
+    /**
+     * @param  array<int, array{tickets: array<int, array<string, mixed>>}>  $columns
+     * @return array<int, string>
+     */
+    private function formerAssignees(array $columns): array
+    {
+        $assigneeIds = collect($columns)->flatMap(fn (array $column) => array_column($column['tickets'], 'assignee_id'))->filter()->unique();
+
+        return User::whereIn('id', $assigneeIds)
+            ->whereDoesntHave('employees', fn ($query) => $query->where('state', '!=', EmployeeStateEnum::LEFT))
+            ->whereDoesntHave('guests', fn ($query) => $query->where('guests.status', true))
+            ->pluck('username')
+            ->all();
     }
 }

@@ -12,6 +12,7 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\UI\WithProfile;
 use App\Actions\Traits\WithActionUpdate;
 use App\Actions\UI\Grp\BreakUserUiProps;
+use App\Enums\SysAdmin\User\UserNotificationEnum;
 use App\Models\Helpers\Language;
 use App\Models\Helpers\Timezone;
 use App\Models\SysAdmin\User;
@@ -40,8 +41,12 @@ class UpdateProfile extends OrgAction
             $modelData['settings']['hide_logo'] = $hideLogo;
         }
 
-        if (Arr::exists($modelData, 'ticket_notifications')) {
-            $modelData['settings']['ticket_notifications'] = Arr::pull($modelData, 'ticket_notifications');
+        if (Arr::exists($modelData, 'notifications')) {
+            $modelData['settings']['notifications'] = collect(UserNotificationEnum::cases())
+                ->mapWithKeys(fn (UserNotificationEnum $event) => [
+                    $event->value => array_values(array_intersect(Arr::get($modelData, 'notifications.'.$event->value, []), UserNotificationEnum::CHANNELS)),
+                ])->all();
+            data_forget($modelData, 'notifications');
         }
 
         if (Arr::exists($modelData, 'timezone')) {
@@ -78,6 +83,16 @@ class UpdateProfile extends OrgAction
 
         if (Arr::exists($modelData, 'stale_orders_filters')) {
             $modelData['settings']['stale_orders_filters'] = Arr::pull($modelData, 'stale_orders_filters');
+        }
+
+        if (Arr::exists($modelData, 'tickets_list_mine')) {
+            $modelData['settings']['tickets_list_mine'] = (string) Arr::pull($modelData, 'tickets_list_mine');
+        }
+
+        foreach (['ticket_comments_newest_first', 'ticket_history_newest_first'] as $ticketOrderSetting) {
+            if (Arr::exists($modelData, $ticketOrderSetting)) {
+                $modelData['settings'][$ticketOrderSetting] = (bool) Arr::pull($modelData, $ticketOrderSetting);
+            }
         }
 
         if (Arr::exists($modelData, 'chat_theme')) {
@@ -131,13 +146,15 @@ class UpdateProfile extends OrgAction
         return [
             'password'          => ['sometimes', 'required', app()->isLocal() || app()->environment('testing') ? null : Password::min(8)],
             'email'             => 'sometimes|required|email|unique:App\Models\SysAdmin\User,email,'.request()->user()->id,
-            'about'             => ['sometimes', 'nullable', 'string', 'max:255'],
             'nickname'          => ['sometimes', 'nullable', 'string', 'min:2', 'max:24', 'regex:/^[\pL\pN ._-]+$/u', Rule::unique('users', 'nickname')->ignore(request()->user()->id)],
             'language_id'       => ['sometimes', 'required', 'exists:languages,id'],
             'app_theme'         => ['sometimes', 'required'],
             'chat_theme'        => ['sometimes', 'nullable', Rule::in(['light', 'sky', 'blush', 'sand', 'mint', 'dracula', 'nord', 'gruvbox', 'monokai', 'onedark', 'solarized'])],
             'hide_logo'         => ['sometimes', 'boolean'],
-            'ticket_notifications' => ['sometimes', 'in:both,email,slack,none'],
+            'notifications'     => ['sometimes', 'array'],
+            'notifications.*'   => ['array'],
+            'notifications.*.*' => [Rule::in(UserNotificationEnum::CHANNELS)],
+            'slack_user_id'     => ['sometimes', 'nullable', 'string', 'regex:/^[UW][A-Z0-9]{6,}$/', Rule::unique('users', 'slack_user_id')->ignore(request()->user()->id)],
             'preferred_printer' => ['sometimes', 'integer'],
             'image'             => [
                 'sometimes',
@@ -154,6 +171,9 @@ class UpdateProfile extends OrgAction
             'stale_orders_filters.show_pos'       => ['sometimes', 'boolean'],
             'stale_orders_filters.agents'         => ['sometimes', 'array'],
             'stale_orders_filters.agents.*'       => ['string'],
+            'ticket_comments_newest_first'        => ['sometimes', 'boolean'],
+            'ticket_history_newest_first'         => ['sometimes', 'boolean'],
+            'tickets_list_mine'                   => ['sometimes', 'nullable', 'string', 'max:100'],
         ];
     }
 

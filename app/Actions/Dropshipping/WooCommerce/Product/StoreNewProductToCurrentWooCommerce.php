@@ -64,6 +64,17 @@ class StoreNewProductToCurrentWooCommerce extends OrgAction implements ShouldBeU
         return $portfolio;
     }
 
+    /**
+     * A job the queue kills (timeout, lost worker) never reaches the broadcast in handle, and the
+     * page would wait for ever; count it as a failure so the progress can still complete.
+     */
+    public function jobFailed(\Throwable $e, WooCommerceUser $wooCommerceUser, Portfolio $portfolio, bool $checkConnection = true, ?array $bulkProgress = null): void
+    {
+        if ($bulkProgress) {
+            $this->broadcastBulkProgress($wooCommerceUser, $portfolio->fresh() ?? $portfolio, $bulkProgress);
+        }
+    }
+
     public function broadcastBulkProgress(WooCommerceUser $wooCommerceUser, Portfolio $portfolio, array $bulkProgress): void
     {
         $cacheKey = $bulkProgress['cache_key'];

@@ -849,7 +849,7 @@ onMounted(() => {
                         <div class="flex gap-x-2 items-center border border-gray-300 rounded p-1">
                             <div v-if="item.platform_possible_matches?.raw_data?.[0].images?.[0]?.src"
                                  class="min-h-5 h-auto max-h-9 min-w-9 w-auto max-w-9 shadow border border-gray-300 rounded">
-                                <img :src="item.platform_possible_matches?.raw_data?.[0]?.images?.[0]?.src"/>
+                                <img :src="item.platform_possible_matches?.raw_data?.[0]?.images?.[0]?.src" loading="lazy" decoding="async"/>
                             </div>
                             <div>
                                 <span class="mr-1">{{ item.platform_possible_matches?.matches_labels[0] }}</span>
@@ -902,7 +902,7 @@ onMounted(() => {
                         <div class="flex gap-x-2 items-center">
                             <div v-if="item.shopify_product_data?.images?.edges?.[0]?.node?.src"
                                  class="min-h-5 h-auto max-h-9 min-w-9 w-auto max-w-9 shadow border border-gray-300 rounded">
-                                <img :src="item.shopify_product_data?.images?.edges?.[0]?.node?.src"/>
+                                <img :src="item.shopify_product_data?.images?.edges?.[0]?.node?.src" loading="lazy" decoding="async"/>
                             </div>
 
                             <div>
@@ -1043,7 +1043,7 @@ onMounted(() => {
                                             :alt="item.name"/> -->
                                         <div
                                             class="min-h-3 h-auto max-h-9 min-w-9 w-auto max-w-9 border border-gray-300 rounded">
-                                            <img :src="item.images?.[0]?.src" class="shadow"/>
+                                            <img :src="item.images?.[0]?.src" class="shadow" loading="lazy" decoding="async"/>
                                         </div>
                                         <div class="flex flex-col justify-between">
                                             <div class="w-fit" xclick="() => selectProduct(item)">

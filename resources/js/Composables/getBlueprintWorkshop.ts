@@ -1,5 +1,4 @@
 
-import { blueprint } from './../Components/CMS/Webpage/LuigiLastSeen1/Blueprint';
 import Footer1Blueprint from "@/Components/CMS/Website/Footers/footerTheme1/bluprint"
 import Topbar1Blueprint from "@/Components/CMS/Website/TopBars/Template/Topbar1/Blueprint"
 import Topbar2Blueprint from "@/Components/CMS/Website/TopBars/Template/Topbar2/Blueprint"
@@ -70,9 +69,9 @@ import Product1DSBlueprint from '@/Components/CMS/Webpage/Product1/Dropshipping/
 
 import Cta4Blueprint from "@/Components/CMS/Webpage/Cta4/Blueprint"
 import { blueprint as SeeAlso1Blueprint  } from "@/Components/CMS/Webpage/SeeAlso1/Blueprint"
-import { blueprint as LuigiTrends1Blueprint  } from "@/Components/CMS/Webpage/LuigiTrends1/Blueprint"
-import { blueprint as LuigiLastSeen1  } from "@/Components/CMS/Webpage/LuigiLastSeen1/Blueprint"
-import { blueprint as LuigiItemAlternatives1  } from "@/Components/CMS/Webpage/LuigiItemAlternatives1/Blueprint"
+import { blueprint as InternalTrends1Blueprint  } from "@/Components/CMS/Webpage/InternalTrends1/Blueprint"
+import { blueprint as InternalLastSeen1  } from "@/Components/CMS/Webpage/InternalLastSeen1/Blueprint"
+import { blueprint as InternalItemAlternatives1  } from "@/Components/CMS/Webpage/InternalItemAlternatives1/Blueprint"
 import { blueprint as RecommendersCustomerRecentlyBought  } from "@/Components/CMS/Webpage/RecomendationRecentlyBought1/Blueprint"
 import SliderBlueprint  from "@/Components/CMS/Webpage/Slider-1/Blueprint"
 import Families1Overview from '@/Components/CMS/Webpage/Families1Overview/Blueprint'
@@ -148,10 +147,10 @@ export const getBlueprint = (componentName: string, data?: object, id? : number)
 		// see also — accepts dynamic data
 		"see-also-1": () => SeeAlso1Blueprint(data).blueprint,
 
-		// Luigi
-		"luigi-trends-1": () => LuigiTrends1Blueprint(data).blueprint,
-		"luigi-last-seen-1": () => LuigiLastSeen1(data).blueprint,
-		"luigi-item-alternatives-1": () => LuigiItemAlternatives1(data).blueprint,
+		// Internal recommendations
+		"luigi-trends-1": () => InternalTrends1Blueprint(data).blueprint,
+		"luigi-last-seen-1": () => InternalLastSeen1(data).blueprint,
+		"luigi-item-alternatives-1": () => InternalItemAlternatives1(data).blueprint,
 		'recommendation-customer-recently-bought-1': () => RecommendersCustomerRecentlyBought(data).blueprint,
 
 		// misc

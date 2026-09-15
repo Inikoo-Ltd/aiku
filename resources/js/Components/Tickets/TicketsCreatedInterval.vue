@@ -1,14 +1,37 @@
 <script setup lang="ts">
+import { onMounted } from "vue"
 import { router } from "@inertiajs/vue3"
 import { trans } from "laravel-vue-i18n"
 
-defineProps<{
+const props = defineProps<{
 	options: Record<string, string>
 	selected: string
 }>()
 
-const select = (interval: string) =>
+const storageKey = "tickets-created-interval"
+
+const select = (interval: string) => {
+	try {
+		localStorage.setItem(storageKey, interval)
+	} catch {}
 	router.reload({ data: { created: interval, page: 1 }, preserveScroll: true })
+}
+
+onMounted(() => {
+	if (new URLSearchParams(window.location.search).has("created")) {
+		try {
+			localStorage.setItem(storageKey, props.selected)
+		} catch {}
+		return
+	}
+	let remembered: string | null = null
+	try {
+		remembered = localStorage.getItem(storageKey)
+	} catch {}
+	if (remembered && remembered !== props.selected && remembered in props.options) {
+		router.reload({ data: { created: remembered, page: 1 }, preserveScroll: true })
+	}
+})
 </script>
 
 <template>

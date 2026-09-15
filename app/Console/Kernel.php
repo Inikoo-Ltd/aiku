@@ -62,6 +62,7 @@ use App\Actions\Web\Crawl\PurgeStaleCrawls;
 use App\Actions\Web\Website\Analytics\RecordVarnishHitRatio;
 use App\Actions\Web\Website\Analytics\RecordVarnishMemoryUsage;
 use App\Actions\Web\Website\PruneWebsiteConversionEvents;
+use App\Actions\Web\Webpage\FetchTopWebpagesPageSpeed;
 use App\Actions\Web\Website\PruneWebsitePageViews;
 use App\Actions\Web\Website\PruneWebsiteVisitors;
 use App\Actions\Web\Website\SaveWebsitesSitemap;
@@ -99,6 +100,11 @@ class Kernel extends ConsoleKernel
         $schedule->command('google-ads:fetch-campaigns')
             ->dailyAt('05:00')->timezone('UTC')->onOneServer()->withoutOverlapping()
             ->then(fn () => Artisan::call('google-ads:propose'));
+        /* Three days rather than one: an account's own time zone can still be on the previous day at
+           05:15 UTC, and Google keeps adjusting a day's cost after it closes. Re-fetching a day
+           replaces its figure, and takes precedence over the same day posted by an account's script,
+           so a shop on both paths lands on one row carrying the later, better number. */
+        $schedule->command('traffic-source:fetch-google-ads-costs --days=3')->dailyAt('05:15')->timezone('UTC')->onOneServer()->withoutOverlapping();
         /* Click rows carry IPs, kept only as long as fraud prevention justifies - the attribution
            window, 90 days. */
         $schedule->call(fn () => \Illuminate\Support\Facades\DB::table('traffic_source_clicks')->where('created_at', '<', now()->subDays(90))->delete())
@@ -910,6 +916,15 @@ class Kernel extends ConsoleKernel
                 name: 'PruneWebsitePageViews',
                 type: 'job',
                 scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
+                $schedule->job(FetchTopWebpagesPageSpeed::makeJob())->dailyAt('00:00')->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
+                    monitorSlug: 'FetchTopWebpagesPageSpeed',
+                ),
+                name: 'FetchTopWebpagesPageSpeed',
+                type: 'job',
+                scheduledAt: '00:00'
             );
 
             $this->logSchedule(

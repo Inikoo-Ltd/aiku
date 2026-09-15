@@ -30,8 +30,18 @@ class StoreRetinaTicketComment extends RetinaAction
         return [
             'body'     => ['required_without:images', 'nullable', 'string', 'max:10000'],
             'images'   => ['sometimes', 'array', 'max:5'],
-            'images.*' => ['image', 'max:10240'],
+            'images.*' => Ticket::ticketFileRules(),
         ];
+    }
+
+    public function getValidationMessages(): array
+    {
+        return Ticket::ticketFileValidationMessages();
+    }
+
+    public function getValidationAttributes(): array
+    {
+        return Ticket::ticketFileValidationAttributes($this->get('images', []));
     }
 
     public function authorize(ActionRequest $request): bool

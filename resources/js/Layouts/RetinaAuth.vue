@@ -30,7 +30,7 @@ const isStaging = useLayoutStore().app.environment === 'staging'
     <div class="relative h-screen w-screen bg-gradient-to-tr from-slate-950 to-slate-800 flex items-center justify-center sm:px-6 lg:px-8">
         <div class="w-full -mt-12">
             <div v-if="!usePage().props?.iris?.website?.logo" class="flex items-center justify-center gap-x-2">
-                <img class="h-12 w-auto" src="/art/logo-yellow.svg" :alt="usePage().props.iris?.website?.name || 'App'" />
+                <img class="h-12 w-auto" src="/art/logo-yellow.svg" :alt="usePage().props.iris?.website?.name || 'App'" fetchpriority="high" decoding="async" />
                 <span style="font-family: Fira" class="text-4xl text-white leading-none">{{ usePage().props.iris?.website?.name }}</span>
             </div>
             <div v-else class="flex items-center justify-center gap-x-2">

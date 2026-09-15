@@ -6,6 +6,7 @@
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
+use App\Actions\Helpers\Ticket\Json\GetTicketControls;
 use App\Actions\Inventory\LocationOrgStock\HandleLowStockAuditLock;
 use App\Actions\Accounting\OrgPaymentServiceProvider\Json\GetOrgPaymentServiceProviders;
 use App\Actions\Catalogue\Product\Json\GetProductsIncludingNotForSaleInShop;
@@ -29,6 +30,8 @@ use App\Actions\Catalogue\Product\Json\GetProductsForVolGrGift;
 use App\Actions\Catalogue\Product\Json\GetProductsInCollection;
 use App\Actions\Catalogue\Product\Json\GetProductsInProductCategory;
 use App\Actions\Catalogue\Product\Json\GetProductsInShop;
+use App\Actions\Catalogue\Product\Json\GetProductAlternativesInWorkshop;
+use App\Actions\Catalogue\Product\Json\GetProductTrendsInWorkshop;
 use App\Actions\Catalogue\Product\Json\GetProductsInWorkshop;
 use App\Actions\Catalogue\Product\Json\GetProductsNotAttachedToACollection;
 use App\Actions\Catalogue\Product\Json\GetProductsWithNoWebpage;
@@ -333,6 +336,9 @@ Route::get('webpage/{webpage:id}/web-block-histories', GetWebBlockHistories::cla
 Route::get('webpage/{webpage:id}/web-block/{webBlock:id}/web-block-histories', [GetWebBlockHistories::class, 'inWebBlock'])->name('web-block.web_block_histories.index')->withoutScopedBindings();
 Route::get('webpage/{webpage:id}/web-block-type/{webBlockType:id}/web-block-histories', [GetWebBlockHistories::class, 'inWebBlockType'])->name('web-block-type.web_block_histories.index')->withoutScopedBindings();
 
+Route::get('webpage/{webpage:id}/product-trends', GetProductTrendsInWorkshop::class)->name('webpage.product_trends.index')->withoutScopedBindings();
+Route::get('webpage/{webpage:id}/product-alternatives', GetProductAlternativesInWorkshop::class)->name('webpage.product_alternatives.index')->withoutScopedBindings();
+
 
 Route::get('master-product-category/{masterProductCategory:id}/recommended-trade-units', GetRecommendedTradeUnits::class)->name('master-product-category.recommended-trade-units')->withoutScopedBindings();
 Route::get('master-product-category/{masterProductCategory:id}/taken-trade-units', GetTakenTradeUnits::class)->name('master-product-category.taken-trade-units')->withoutScopedBindings();
@@ -410,3 +416,5 @@ Route::get('{webpage:id}/web-layout-templates/list', IndexWebLayoutTemplates::cl
 Route::get('{webpage:id}/web-layout-templates/{layoutTemplate:id}', FetchWebLayoutTemplateDetail::class)->name('template_layouts.detail')->withoutScopedBindings();
 
 Route::post('warehouse/{warehouse}/low-stock-audit-lock', HandleLowStockAuditLock::class)->name('warehouse.low_stock_audit_lock')->withoutScopedBindings();
+
+Route::get('tickets/{ticket:id}/controls', GetTicketControls::class)->name('ticket.controls')->whereNumber('ticket');

@@ -36,7 +36,7 @@ class ShowTicketsDashboard extends OrgAction
     public function handle(Group $group, User $user): array
     {
         $base       = Ticket::where('tickets.group_id', $group->id);
-        $open       = fn (): Builder => (clone $base)->whereIn('status', [TicketStatusEnum::OPEN, TicketStatusEnum::ASSIGNED, TicketStatusEnum::IN_PROGRESS, TicketStatusEnum::WAITING]);
+        $open       = fn (): Builder => (clone $base)->whereIn('status', [TicketStatusEnum::OPEN, TicketStatusEnum::ASSIGNED, TicketStatusEnum::IN_PROGRESS, TicketStatusEnum::WAITING, TicketStatusEnum::ANSWERED, TicketStatusEnum::PENDING_DEPLOY]);
         $reportedBy = fn (Builder $query): Builder => $query->where('reporter_type', 'User')->where('reporter_id', $user->id);
         $weekAgo    = now()->subWeek();
         $monthAgo   = now()->subMonth();
@@ -70,8 +70,9 @@ class ShowTicketsDashboard extends OrgAction
 
             $data['queue']       = $this->tickets((clone $base)->where('status', TicketStatusEnum::OPEN)->visibleTo($user)->orderByRaw(self::PRIORITY_ORDER)->orderBy('created_at')->limit(15));
             $data['assigned']    = $this->tickets($open()->where('assignee_id', $user->id)->orderByRaw(self::PRIORITY_ORDER)->orderByDesc('updated_at'));
+            $data['collaborating'] = $this->tickets($open()->whereHas('collaborators', fn ($query) => $query->whereKey($user->id))->orderByRaw(self::PRIORITY_ORDER)->orderByDesc('updated_at'));
             $data['waiting_due'] = $this->tickets((clone $base)->where('status', TicketStatusEnum::WAITING)->visibleTo($user)->where('waiting_until', '<=', now()->addDay())->orderBy('waiting_until'));
-            $data['by_status']   = collect([TicketStatusEnum::OPEN, TicketStatusEnum::ASSIGNED, TicketStatusEnum::IN_PROGRESS, TicketStatusEnum::WAITING])->map(fn (TicketStatusEnum $status) => [
+            $data['by_status']   = collect([TicketStatusEnum::OPEN, TicketStatusEnum::ASSIGNED, TicketStatusEnum::IN_PROGRESS, TicketStatusEnum::WAITING, TicketStatusEnum::ANSWERED, TicketStatusEnum::PENDING_DEPLOY])->map(fn (TicketStatusEnum $status) => [
                 'status' => $status->value,
                 'label'  => TicketStatusEnum::labels()[$status->value],
                 'icon'   => TicketStatusEnum::stateIcon()[$status->value],
@@ -84,7 +85,7 @@ class ShowTicketsDashboard extends OrgAction
 
     private function tickets(Builder $query): array
     {
-        return TicketResource::collection($query->with(['reporter', 'assignee', 'customer'])->get())->toArray(request());
+        return TicketResource::collection($query->with(['reporter', 'assignee', 'customer', 'collaborators'])->get())->toArray(request());
     }
 
     public function asController(ActionRequest $request): array

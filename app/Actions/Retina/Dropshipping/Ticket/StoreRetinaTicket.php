@@ -40,8 +40,18 @@ class StoreRetinaTicket extends RetinaAction
             'description' => ['sometimes', 'nullable', 'string'],
             'priority'    => ['sometimes', Rule::enum(ChatPriorityEnum::class)],
             'images'      => ['sometimes', 'array', 'max:5'],
-            'images.*'    => ['image', 'max:10240'],
+            'images.*'    => Ticket::ticketFileRules(),
         ];
+    }
+
+    public function getValidationMessages(): array
+    {
+        return Ticket::ticketFileValidationMessages();
+    }
+
+    public function getValidationAttributes(): array
+    {
+        return Ticket::ticketFileValidationAttributes($this->get('images', []));
     }
 
     public function action(WebUser $webUser, array $modelData): Ticket

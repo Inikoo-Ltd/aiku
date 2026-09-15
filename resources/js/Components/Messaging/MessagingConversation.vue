@@ -14,7 +14,7 @@ import { faTimes, faChevronDown, faPaperPlane, faChevronLeft, faQuoteLeft, faPap
 import { library } from "@fortawesome/fontawesome-svg-core"
 import Image from "@/Common/Components/Image.vue"
 import { useLiveUsers } from "@/Stores/active-users"
-import { useStaffMessaging, type StaffConversation, type StaffMessage } from "@/Stores/staff-messaging"
+import { useStaffMessaging, type StaffConversation, type StaffMessage, type StaffParticipant } from "@/Stores/staff-messaging"
 import { useFormatTime } from "@/Composables/useFormatTime"
 
 library.add(faTimes, faChevronDown, faPaperPlane, faChevronLeft, faQuoteLeft, faPaperclip, faSmile, faExpandAlt)
@@ -36,13 +36,15 @@ const store = useStaffMessaging()
 const myId = computed(() => usePage().props?.auth?.user?.id)
 const myLanguageId = computed(() => usePage().props?.auth?.user?.language_id ?? null)
 
+const participants = computed<StaffParticipant[]>(() => props.conversation?.participants ?? [])
+
 const messages = computed(() => store.messagesByUlid[props.conversation.ulid] ?? [])
 const isOnline = computed(() =>
-    props.conversation.participants.some((p) => p.id !== myId.value && !!useLiveUsers().liveUsers[p.id])
+    participants.value.some((p) => p.id !== myId.value && !!useLiveUsers().liveUsers[p.id])
 )
 const typingUser = computed(() => store.typingByUlid[props.conversation.ulid]?.user_name ?? null)
 
-const otherParticipants = computed(() => props.conversation.participants.filter((p) => p.id !== myId.value))
+const otherParticipants = computed(() => participants.value.filter((p) => p.id !== myId.value))
 const displayName = computed(() => props.conversation.name || otherParticipants.value.map((p) => p.name).join(", "))
 const displayAvatar = computed(() => otherParticipants.value[0]?.avatar ?? null)
 const lastSeenAt = computed(() => props.conversation.type === "dm" && otherParticipants.value[0]?.last_seen_at ? otherParticipants.value[0].last_seen_at : null)
@@ -53,7 +55,7 @@ const mentionActiveIndex = ref(0)
 const mentionMatches = computed(() => {
     if (mentionQuery.value === null) return []
     const q = mentionQuery.value.toLowerCase()
-    return props.conversation.participants
+    return participants.value
         .filter((p) => p.id !== myId.value && (p.name?.toLowerCase().startsWith(q) || p.handle?.toLowerCase().startsWith(q)))
         .slice(0, 6)
 })
@@ -117,7 +119,7 @@ const escapeHtml = (text: string) =>
 
 const renderBody = (message: StaffMessage, text: string) => {
     const handles = new Set(
-        props.conversation.participants.map((p) => p.handle).filter((h): h is string => !!h)
+        participants.value.map((p) => p.handle).filter((h): h is string => !!h)
     )
     const own = message.user_id === myId.value
     const cls = own ? "text-yellow-200" : "text-indigo-600"

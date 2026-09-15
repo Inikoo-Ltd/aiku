@@ -9,6 +9,7 @@ namespace App\Actions\CRM\TrafficSourceCampaign\GoogleAds;
 
 use App\Actions\CRM\TrafficSource\GetTrafficSourceCampaign;
 use App\Actions\CRM\TrafficSource\StoreTrafficSourceCost;
+use App\Enums\CRM\TrafficSource\TrafficSourceCostFetchedViaEnum;
 use App\Enums\CRM\TrafficSource\TrafficSourcesTypeEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\TrafficSource;
@@ -336,6 +337,7 @@ class FetchGoogleAdsCampaigns
                     'date'                       => Carbon::parse($date),
                     'source_amount'              => $figures['source_cost'],
                     'source_currency_id'         => $currency->id,
+                    'fetched_via'                => TrafficSourceCostFetchedViaEnum::API->value,
                     'traffic_source_campaign_id' => $campaign->id,
                 ]);
             }

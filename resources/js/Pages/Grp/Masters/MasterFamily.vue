@@ -34,13 +34,13 @@ import { faOctopusDeploy } from "@fortawesome/free-brands-svg-icons"
 import TableFamilies from "@/Components/Tables/Grp/Org/Catalogue/TableFamilies.vue"
 import ImagesManagement from "@/Components/Goods/ImagesManagement.vue"
 import Breadcrumb from 'primevue/breadcrumb'
-import { create } from "lodash"
 import UploadExcel from "@/Components/Upload/UploadExcel.vue"
 import TableMasterVariants from "@/Components/Tables/Grp/Goods/TableMasterVariants.vue"
 import ProductCategoryTimeSeriesTable from "@/Components/Product/ProductCategoryTimeSeriesTable.vue"
 import { faWarning } from "@fortawesome/free-solid-svg-icons"
 import ProductCategoryRecomendation from "@/Components/Master/ProductCategoryRecomendation.vue"
 import RelatedProductCategory from "@/Components/Master/RelatedProductCategory.vue"
+import MasterFamilyWebpageLockButton from "@/Components/CMS/Webpage/MasterFamilyWebpageLockButton.vue"
 
 library.add(
     faFolder,
@@ -83,6 +83,7 @@ const props = defineProps<{
     variants?:object
     isPerfectFamily: boolean
     mismatch_detected?: boolean
+    webpage_locks?: any
     related_products? : object
     related_product_category? : object
     vol_gr_reward?: {
@@ -154,10 +155,11 @@ const showDialog = ref(false);
         </template>
 
         <template #other>
+            <MasterFamilyWebpageLockButton v-if="webpage_locks" :locks="webpage_locks" />
 			<Button
                 v-if="layout?.app?.environment === 'local'"
 				@click="() => (isModalUploadOpen = true)"
-				:style="create"
+				:style="'create'"
 				:icon="faUpload"
 				v-tooltip="'upload excel'"
                 label="Upload Excel"

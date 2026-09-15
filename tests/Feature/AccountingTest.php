@@ -8,6 +8,7 @@
 
 /** @noinspection PhpUnhandledExceptionInspection */
 
+use App\Actions\Accounting\Reports\Intrastat\ExportIntrastatAeat;
 use App\Actions\Accounting\CreditTransaction\DeleteCreditTransaction;
 use App\Actions\Accounting\CreditTransaction\UpdateCreditTransaction;
 use App\Actions\Accounting\Invoice\DeleteInvoice;
@@ -3214,6 +3215,18 @@ describe('invoice pdf tax number display', function () {
             ->toContain('Collection address')
             ->and($renderInvoiceTemplate($invoice->refresh(), null, true))->not->toContain('Delivery address');
     });
+
+    test('invoice dates print the month in the shop language', function () use ($renderInvoiceTemplate) {
+        $customer = createCustomer($this->shop);
+        $invoice  = StoreInvoice::make()->action($customer, Invoice::factory()->definition());
+        $invoice->update(['date' => '2026-07-29 10:00:00']);
+
+        app()->setLocale('pl');
+        $html = $renderInvoiceTemplate($invoice->refresh());
+        app()->setLocale('en');
+
+        expect($html)->toContain('29 lipca 2026')->not->toContain('29 July 2026');
+    });
 });
 
 test('a pdf whose html is larger than the default pcre backtrack limit still renders', function () {
@@ -3222,4 +3235,51 @@ test('a pdf whose html is larger than the default pcre backtrack limit still ren
 
     expect(strlen($html))->toBeGreaterThan(1_000_000)
         ->and($mpdf->AdjustHTML($html))->toContain('aaaa');
+});
+
+test('UI intrastat exports page and AEAT export accept between[from] date filter', function () {
+    $org = $this->organisation->slug;
+
+    get(route('grp.org.reports.intrastat.exports', [$org, 'between' => ['from' => '20250101-20250131']]))->assertOk();
+    get(route('grp.org.reports.intrastat.exports.export-aeat', [$org, 'between' => ['from' => '20250101-20250131']]))->assertOk();
+    get(route('grp.org.reports.intrastat.exports.export-aeat', [$org, 'check' => 1]))->assertOk()->assertJson(['errors' => [], 'rows' => 0]);
+    get(route('grp.org.reports.intrastat.exports.export-aeat', [$org, 'force' => 1]))->assertOk()->assertHeader('Content-Type', 'application/zip');
+});
+
+test('AEAT intrastat export keeps invalid rows only when forced', function () {
+    $series = new \App\Models\Accounting\IntrastatExportTimeSeries(['tariff_code' => '3304990000', 'partner_tax_number' => 'ESB12345678']);
+    $record = new \App\Models\Accounting\IntrastatExportTimeSeriesRecord(['id' => 1, 'from' => '2026-02-01', 'weight' => 0, 'quantity' => 1, 'value_org_currency' => 0]);
+    $record->setRelation('intrastatExportTimeSeries', $series);
+
+    $strict = ExportIntrastatAeat::make()->build(new \Illuminate\Database\Eloquent\Collection([$record]));
+    $forced = ExportIntrastatAeat::make()->build(new \Illuminate\Database\Eloquent\Collection([$record]), ['weight_kg' => '1', 'origin' => 'es']);
+
+    expect($strict['errors'])->not->toBeEmpty()
+        ->and($strict['lines'])->toBeEmpty()
+        ->and($forced['lines'])->toHaveCount(1)
+        ->and($strict['summary'])->toHaveKey('net mass is zero', 1)
+        ->and($forced['errors'])->not->toContain('record 1 2026-02-01 3304990000 : net mass is zero')
+        ->and($forced['lines'][0])->toContain(';1;')
+        ->and($forced['lines'][0])->toContain(';ES;')
+        ->and($forced['errors'])->not->toContain('record 1 2026-02-01 3304990000 : country of origin missing on the product');
+});
+
+test('AEAT intrastat export forced with an empty origin falls back to the organisation country', function () {
+    $series = new \App\Models\Accounting\IntrastatExportTimeSeries(['tariff_code' => '3304990000', 'partner_tax_number' => 'ESB12345678']);
+    $record = new \App\Models\Accounting\IntrastatExportTimeSeriesRecord(['id' => 1, 'from' => '2026-02-01', 'weight' => 0, 'quantity' => 1, 'value_org_currency' => 0]);
+    $record->setRelation('intrastatExportTimeSeries', $series);
+
+    $action = new class () extends ExportIntrastatAeat {
+        public static \Illuminate\Database\Eloquent\Collection $records;
+
+        protected function getRecords(\App\Models\SysAdmin\Organisation $organisation, array $filters): \Illuminate\Database\Eloquent\Collection
+        {
+            return static::$records;
+        }
+    };
+    $action::$records = new \Illuminate\Database\Eloquent\Collection([$record]);
+
+    $result = $action->handle($this->organisation, [], ['weight_kg' => '1', 'origin' => '']);
+
+    expect($result['lines'][0])->toContain(';'.$this->organisation->country->code.';');
 });

@@ -13,6 +13,12 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 use Throwable;
 
+/**
+ * Pulls every connected shop's Google Ads account into traffic_source_campaigns: campaigns with their
+ * ad groups, ads, keywords and negatives, plus a row per campaign per day of impressions, clicks,
+ * conversions and spend. The spend rows are the ones the marketing figures read; FetchGoogleAdsCosts
+ * writes the same rows over a shorter window, so a ROAS number that looks wrong can come from either.
+ */
 class FetchGoogleAdsCampaigns extends Command
 {
     protected $signature = 'google-ads:fetch-campaigns
