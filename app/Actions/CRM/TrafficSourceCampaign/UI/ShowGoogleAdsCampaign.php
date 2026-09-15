@@ -8,6 +8,7 @@
 
 namespace App\Actions\CRM\TrafficSourceCampaign\UI;
 
+use App\Actions\CRM\TrafficSource\GetTrafficSourceAudienceMix;
 use App\Actions\CRM\TrafficSourceCampaign\GoogleAds\GetGoogleAdsSearchTerms;
 use App\Actions\OrgAction;
 use App\Enums\CRM\TrafficSource\TrafficSourcesTypeEnum;
@@ -61,6 +62,14 @@ class ShowGoogleAdsCampaign extends OrgAction
                     ],
                     'model' => __('Google Ads campaign'),
                 ],
+
+                /* Deferred: the page is about the campaign's own figures and those are already stored,
+                   whereas this walks the click table and the visitor history behind it. */
+                'audience' => Inertia::defer(fn () => GetTrafficSourceAudienceMix::run(
+                    $trafficSourceCampaign->trafficSource->shop,
+                    $trafficSourceCampaign->trafficSource->type,
+                    $trafficSourceCampaign->reference
+                )),
 
                 'campaign' => [
                     'reference'             => $trafficSourceCampaign->reference,

@@ -10,6 +10,7 @@
 
 namespace App\Actions\CRM\TrafficSource\UI;
 
+use App\Actions\CRM\TrafficSource\GetTrafficSourceAudienceMix;
 use App\Actions\Comms\Mailshot\UI\IndexNewsletterMailshots;
 use App\Actions\CRM\Customer\UI\IndexCustomers;
 use App\Actions\Ordering\Order\UI\IndexOrdersInTrafficSource;
@@ -84,6 +85,14 @@ class ShowTrafficSource extends OrgAction
             TrafficSourceTabsEnum::OVERVIEW->value => $this->tab == TrafficSourceTabsEnum::OVERVIEW->value
                 ? fn () => GetTrafficSourceShowcase::run($trafficSource)
                 : Inertia::optional(fn () => GetTrafficSourceShowcase::run($trafficSource)),
+
+            /* Deferred rather than folded into the showcase beside it: the showcase reads pre-computed
+               stat columns, this walks the click table and every session its visitors ever had, and on
+               the busiest shop that is the difference between instant and a tenth of a second. */
+            'audience'    => Inertia::defer(fn () => GetTrafficSourceAudienceMix::run(
+                $trafficSource->shop,
+                $trafficSource->type
+            )),
 
             TrafficSourceTabsEnum::CUSTOMERS->value => $this->tab == TrafficSourceTabsEnum::CUSTOMERS->value
                 ? fn () => CustomersResource::collection(IndexCustomers::run($trafficSource, TrafficSourceTabsEnum::CUSTOMERS->value))

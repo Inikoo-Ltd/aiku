@@ -22,6 +22,7 @@ use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Facades\DB;
+use App\Actions\CRM\TrafficSource\GetTrafficSourceAudienceMix;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -186,6 +187,13 @@ class IndexGoogleAdsCampaigns extends OrgAction
             [
                 'breadcrumbs' => $this->getBreadcrumbs($request->route()->originalParameters()),
                 'title'       => __('Google Ads'),
+
+                /* The account-wide split, above the per-campaign table so the first question the page
+                   answers is who the money reached rather than how many campaigns there are. */
+                'audience'    => Inertia::defer(fn () => GetTrafficSourceAudienceMix::run(
+                    $this->shop,
+                    TrafficSourcesTypeEnum::GOOGLE_ADS->value
+                )),
                 'pageHead'    => [
                     'title' => $this->shop->name,
                     'icon'  => [

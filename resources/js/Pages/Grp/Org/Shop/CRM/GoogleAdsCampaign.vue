@@ -6,6 +6,7 @@
 
 <script setup lang="ts">
 import { Deferred, Head } from "@inertiajs/vue3"
+import TrafficSourceAudienceMix from "@/Components/DataDisplay/Dashboard/Widget/TrafficSourceAudienceMix.vue"
 import { computed } from "vue"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import { library } from "@fortawesome/fontawesome-svg-core"
@@ -100,6 +101,22 @@ const props = defineProps<{
     }[]
     negative_keywords: { id: string; text: string; match_type: string }[]
     search_terms?: { terms: any[]; error: string | null }
+    audience?: {
+        buckets: {
+            key: string
+            label: string
+            description: string
+            colour: string
+            count: number
+            share: number
+            is_acquisition: boolean
+        }[]
+        total: number
+        identified: number
+        acquisition: number
+        window_days: number
+        measured_from: string | null
+    }
 }>()
 
 const locale = useLocaleStore()
@@ -495,6 +512,20 @@ const notServingReasons = computed(() =>
             <p v-else class="mt-3 text-xs text-gray-500">
                 {{ trans("No keywords. Only Search campaigns have them.") }}
             </p>
+        </section>
+
+        <section class="rounded-xl bg-white p-5 ring-1 ring-gray-200 lg:col-span-3">
+            <Deferred data="audience">
+                <template #fallback>
+                    <div class="space-y-3">
+                        <div class="h-4 w-1/3 animate-pulse rounded bg-gray-100" />
+                        <div class="h-2.5 w-full animate-pulse rounded-full bg-gray-100" />
+                        <div v-for="row in 4" :key="row" class="h-6 animate-pulse rounded bg-gray-100" />
+                    </div>
+                </template>
+
+                <TrafficSourceAudienceMix :mix="audience ?? null" />
+            </Deferred>
         </section>
 
         <section class="rounded-xl bg-white p-5 ring-1 ring-gray-200 lg:col-span-3">
