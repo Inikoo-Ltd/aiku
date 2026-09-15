@@ -176,7 +176,7 @@ class ShowTicket extends OrgAction
             'can_contribute'           => $ticket->canContributeBy($user),
             'can_manage_collaborators' => $ticket->canManageCollaboratorsBy($user),
             'can_preview_attachments' => $ticket->canPreviewAttachmentsBy($user),
-            'can_comment_internally' => $ticket->canContributeBy($user),
+            'can_comment_internally' => $ticket->canWriteEngineeringNotesBy($user),
             'attachment_gallery'     => $ticket->attachmentGalleryFor($user),
             'routes'                 => [
                 'update'   => ['name' => 'grp.models.ticket.update', 'parameters' => ['ticket' => $ticket->id]],

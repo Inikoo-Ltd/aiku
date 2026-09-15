@@ -253,6 +253,11 @@ class Ticket extends Model implements Auditable, HasMedia
         return $this->canBeUpdatedBy($user) || $this->hasCollaborator($user);
     }
 
+    public function canWriteEngineeringNotesBy(?User $user): bool
+    {
+        return self::canBeManagedBy($user) || $this->canContributeBy($user);
+    }
+
     public function canManageCollaboratorsBy(?User $user): bool
     {
         return $this->canBeUpdatedBy($user);

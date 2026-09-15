@@ -1888,7 +1888,7 @@ test('reporters follow progress from their badge, cannot move their ticket, and 
     );
 
     actingAs($bystander);
-    post($comment, ['body' => 'secret from a bystander', 'is_internal' => true])->assertSessionHasErrors('is_internal');
+    post($comment, ['body' => 'Engineering note from another engineer', 'is_internal' => true])->assertRedirect()->assertSessionHasNoErrors();
 
     actingAs($engineer);
     patch($update, ['status' => 'in_progress'])->assertRedirect()->assertSessionHasNoErrors();

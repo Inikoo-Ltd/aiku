@@ -112,10 +112,10 @@ const submit = () => {
             <div class="flex flex-wrap items-center justify-end gap-3">
                 <label v-if="canCommentInternally" class="mr-auto flex cursor-pointer select-none items-center gap-2 text-sm transition duration-200" :class="form.is_internal ? 'font-semibold text-amber-700' : 'text-gray-500 hover:text-gray-700'">
                     <input v-model="form.is_internal" type="checkbox" class="cursor-pointer rounded border-gray-300 text-amber-500 focus:ring-amber-400" />
-                    {{ trans("Internal note") }}
+                    {{ trans("Engineering note") }}
                     <span class="text-xs font-normal text-gray-400">{{ trans("staff only, shown collapsed") }}</span>
                 </label>
-                <Button :label="form.is_internal ? trans('Add internal note') : trans('Comment')" :loading="form.processing" :disabled="!form.body.trim() && !form.images.length" @click="submit" />
+                <Button :label="form.is_internal ? trans('Add engineering note') : trans('Comment')" :loading="form.processing" :disabled="!form.body.trim() && !form.images.length" @click="submit" />
             </div>
         </form>
 
@@ -136,7 +136,7 @@ const submit = () => {
                     <span v-if="comment.author" class="font-medium text-gray-700">{{ comment.author }} ·</span>
                     <span v-else class="flex items-center gap-2"><img class="h-4 select-none" src="/art/invader.svg" alt="aiku" /> ·</span>
                     {{ useFormatTime(comment.created_at, { formatTime: "hm" }) }}
-                    <span v-if="comment.is_internal" class="px-1.5 py-0.5 rounded bg-amber-200 text-amber-900 text-[10px] font-medium">{{ trans("Internal") }}</span>
+                    <span v-if="comment.is_internal" class="px-1.5 py-0.5 rounded bg-amber-200 text-amber-900 text-[10px] font-medium">{{ trans("Engineering note") }}</span>
                     <span v-if="comment.is_lead_only" class="px-1.5 py-0.5 rounded bg-rose-200 text-rose-900 text-[10px] font-medium">{{ trans("Lead engineers only") }}</span>
                     <span class="ml-auto flex gap-1">
                         <Button v-if="comment.can_toggle_visibility" type="tertiary" size="xs" :label="comment.is_lead_only ? trans('Unhide') : trans('Hide')" @click="toggleVisibility(comment.id)" />

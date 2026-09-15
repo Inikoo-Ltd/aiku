@@ -6835,7 +6835,7 @@
     "Only submitted orders can be send to warehouse": "Only submitted orders can be send to warehouse",
     "Only submitted purchase orders can be reverted to in process": "Only submitted purchase orders can be reverted to in process",
     "Only text messages can be edited": "Only text messages can be edited",
-    "Only the assignee, collaborators and lead engineers can write internal notes.": "Only the assignee, collaborators and lead engineers can write internal notes.",
+    "Only engineers and collaborators can write engineering notes.": "Only engineers and collaborators can write engineering notes.",
     "Only the blocks visible on the page": "Only the blocks visible on the page",
     "Only the person who created this lock can change it": "Only the person who created this lock can change it",
     "Only the prefix, the system appends a random number to keep each order number unique": "Only the prefix, the system appends a random number to keep each order number unique",

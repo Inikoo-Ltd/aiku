@@ -24,8 +24,8 @@ class StoreTicketComment extends OrgAction
 {
     public function handle(Ticket $ticket, User|WebUser $author, array $modelData, bool $mirrorToSlack = true, bool $notifyUsers = true): TicketComment
     {
-        if (Arr::get($modelData, 'is_internal') && !($author instanceof User && $ticket->canContributeBy($author))) {
-            throw ValidationException::withMessages(['is_internal' => __('Only the assignee, collaborators and lead engineers can write internal notes.')]);
+        if (Arr::get($modelData, 'is_internal') && !($author instanceof User && $ticket->canWriteEngineeringNotesBy($author))) {
+            throw ValidationException::withMessages(['is_internal' => __('Only engineers and collaborators can write engineering notes.')]);
         }
 
         $comment = $ticket->comments()->create([
