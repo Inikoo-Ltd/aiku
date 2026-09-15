@@ -43,6 +43,14 @@ const submitLock = () => {
         })
 }
 
+const onProtectedPageClick = () => {
+    if (props.lock.can_edit_lock) {
+        isLockModalOpen.value = true
+    } else if (props.lock.can_manage) {
+        isUnlockModalOpen.value = true
+    }
+}
+
 const openUnlockModal = () => {
     isLockModalOpen.value = false
     isUnlockModalOpen.value = true
@@ -64,9 +72,9 @@ const submitUnlock = () => {
         type="warning"
         :icon="faLock"
         :label="trans('PROTECTED PAGE')"
-        v-tooltip="lock.can_manage ? trans('Edit lock') : lock.message"
-        :class="lock.can_manage ? '' : 'cursor-default'"
-        @click="lock.can_manage && (isLockModalOpen = true)"
+        v-tooltip="lock.can_edit_lock ? trans('Edit lock') : lock.can_manage ? trans('Unlock page') : lock.message"
+        :class="lock.can_edit_lock || lock.can_manage ? '' : 'cursor-default'"
+        @click="onProtectedPageClick"
     />
     <Button
         v-else

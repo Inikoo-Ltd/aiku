@@ -38,6 +38,10 @@ class RequestWebpageEditAccess extends OrgAction
             ])
             ->values()->all();
 
+        $lockData['declined_requests'] = collect(Arr::get($lockData, 'declined_requests', []))
+            ->reject(fn (array $declinedRequest) => $declinedRequest['user_id'] == $user->id)
+            ->values()->all();
+
         $webpage = $this->update($webpage, ['lock_data' => $lockData]);
 
         $requesterName = $user->contact_name ?: $user->username;

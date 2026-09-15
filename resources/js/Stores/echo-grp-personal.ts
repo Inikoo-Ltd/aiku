@@ -124,6 +124,10 @@ export const useEchoGrpPersonal = defineStore("echo-grp-personal", {
                     layout.notifications.unshift({ id: '', read: false, href: '', created_at: new Date(), ...eventData.notification })
                 }
             })
+            .listen('.personal-notification', (eventData: { notification: { id: string | null; title: string; body: string; route: string } }) => {
+                const layout = useLayoutStore()
+                layout.notifications.unshift({ read: false, href: '', created_at: new Date(), ...eventData.notification, id: eventData.notification.id ?? '' })
+            })
             .listen('.clone-family-progress', (eventData: CloneFamilyProgressEvent) => {
                 const masterFamilyId = eventData.family_progress?.action_id
                 if (!masterFamilyId) return

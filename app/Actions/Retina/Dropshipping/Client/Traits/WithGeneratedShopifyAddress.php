@@ -30,7 +30,7 @@ trait WithGeneratedShopifyAddress
                     'locality'            => Arr::get($address, 'city'),
                     'administrative_area' => Arr::get($address, 'province'),
                     'country_code'        => Arr::get($address, 'countryCode'),
-                    'country_id'          => $country->id
+                    'country_id'          => $country?->id
                 ]
             ];
         }

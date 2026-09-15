@@ -12,7 +12,6 @@ use App\Actions\Dropshipping\Shopify\WithShopifyApi;
 use App\Actions\OrgAction;
 use App\Models\Dropshipping\ShopifyUser;
 use Illuminate\Console\Command;
-use Illuminate\Support\Arr;
 
 class RetrieveShopifyAssignedOrders extends OrgAction
 {
@@ -28,7 +27,10 @@ class RetrieveShopifyAssignedOrders extends OrgAction
     }
 
     /**
-     * Process the fulfillment orders
+     * Every fulfilment request is accepted and imported, whatever is wrong with it. An order we
+     * refused left nothing behind in AW, so the customer saw no order at all and had to go digging
+     * through Shopify to find out why (HELP-3151). The problems are written onto the imported order
+     * as notes instead, and the office decides whether to cancel it.
      */
     protected function processFulfillmentOrders(ShopifyUser $shopifyUser, array $fulfillmentOrders): array
     {
@@ -39,11 +41,7 @@ class RetrieveShopifyAssignedOrders extends OrgAction
                 'data' => $fulfillmentOrder
             ]);
 
-            $fulfillmentOrderRequested = SplitShopifyFulfillmentRequest::run($shopifyUser, $fulfillmentOrder);
-
-            if (Arr::has($fulfillmentOrderRequested, 'id')) {
-                AcceptShopifyFulfillmentRequest::run($shopifyUser, $fulfillmentOrderRequested);
-            }
+            AcceptShopifyFulfillmentRequest::run($shopifyUser, $fulfillmentOrder);
         }
 
         return [true, 'Retrieved assigned fulfillment orders'];

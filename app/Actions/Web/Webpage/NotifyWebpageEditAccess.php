@@ -9,6 +9,7 @@
 namespace App\Actions\Web\Webpage;
 
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
+use App\Events\BroadcastPersonalNotification;
 use App\Models\SysAdmin\User;
 use App\Models\Web\Webpage;
 use App\Notifications\WebpageEditAccessNotification;
@@ -24,7 +25,16 @@ class NotifyWebpageEditAccess
             return;
         }
 
-        $recipient->notify(new WebpageEditAccessNotification($title, $body, $this->webpageUrl($webpage)));
+        $url          = $this->webpageUrl($webpage);
+        $notification = new WebpageEditAccessNotification($title, $body, $url);
+        $recipient->notify($notification);
+
+        BroadcastPersonalNotification::dispatch($recipient->id, [
+            'id'    => $notification->id,
+            'title' => $title,
+            'body'  => $body,
+            'route' => $url,
+        ]);
     }
 
     public function webpageUrl(Webpage $webpage): string

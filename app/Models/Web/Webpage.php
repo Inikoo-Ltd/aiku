@@ -286,7 +286,19 @@ class Webpage extends Model implements Auditable, HasMedia
             return true;
         }
 
-        return $user->id == $this->locked_by_user_id || $user->authTo('sysadmin.edit');
+        return $user->id == $this->locked_by_user_id;
+    }
+
+    public function canEditLockBy(?User $user): bool
+    {
+        if (!$user) {
+            return false;
+        }
+        if (!$this->isLocked()) {
+            return true;
+        }
+
+        return $user->id == $this->locked_by_user_id;
     }
 
     public function lockMessage(): string

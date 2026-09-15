@@ -13,6 +13,7 @@ use App\Actions\Dropshipping\Shopify\Order\StoreOrderFromShopify;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Dropshipping\ShopifyUser;
+use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 
@@ -23,14 +24,19 @@ class CreateFulfilmentOrderFromShopify extends OrgAction
     use WithActionUpdate;
 
     /**
+     * A line item with no product, and an order with no usable line item at all, are both carried
+     * through rather than dropped (HELP-3151): the store action turns them into notes on the order
+     * so the office can see what Shopify sent. Only a line item with nothing left to fulfil is
+     * skipped, since that quantity has already been shipped.
+     *
      * @throws \Throwable
      */
     public function handle(ShopifyUser $shopifyUser, array $fulfillmentOrder): void
     {
         $assignedLineItems = [];
 
-        $destination = $fulfillmentOrder['destination'];
-        $lineItems = $fulfillmentOrder['lineItems']['edges'];
+        $destination = Arr::get($fulfillmentOrder, 'destination', []);
+        $lineItems = Arr::get($fulfillmentOrder, 'lineItems.edges', []);
 
         data_set($fulfillmentOrder, 'shipping_address', $destination);
         data_set($fulfillmentOrder, 'customer', $fulfillmentOrder['order']['customer']);
@@ -40,28 +46,14 @@ class CreateFulfilmentOrderFromShopify extends OrgAction
         foreach ($lineItems as $lineItemEdge) {
             $lineItem = $lineItemEdge['node'];
 
-            $productId = data_get($lineItem, 'lineItem.product.id');
-            $productVariantId = data_get($lineItem, 'lineItem.variant.id');
-
-            if (empty($productId)) {
-                continue;
-            }
-
-            if ($lineItem['remainingQuantity'] <= 0) {
-                continue;
-            }
-
             $assignedLineItems[] = [
                 'id' => $lineItem['id'],
                 'quantity' => $lineItem['remainingQuantity'],
-                'sku' => $lineItem['sku'],
-                'product_id' => $productId,
-                'product_variant_id' => $productVariantId
+                'sku' => Arr::get($lineItem, 'sku'),
+                'title' => Arr::get($lineItem, 'productTitle'),
+                'product_id' => data_get($lineItem, 'lineItem.product.id'),
+                'product_variant_id' => data_get($lineItem, 'lineItem.variant.id')
             ];
-        }
-
-        if (empty($assignedLineItems)) {
-            return;
         }
 
         data_set($fulfillmentOrder, 'line_items', $assignedLineItems);
