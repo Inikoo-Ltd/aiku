@@ -5,6 +5,7 @@
   -->
 
 <script setup lang="ts">
+import WebpageLockBanner from '@/Components/CMS/Webpage/WebpageLockBanner.vue'
 import {
   ref, onMounted, provide, watch, computed, inject,
   IframeHTMLAttributes, onUnmounted,
@@ -72,6 +73,7 @@ const props = defineProps<{
   webBlockTypes: Root
   url: string
   editable : boolean
+  lock: any
 }>();
 
 console.log('props',props)
@@ -945,6 +947,7 @@ console.log('props_workshop',props)
       </div>
     </template>
   </PageHeading>
+  <WebpageLockBanner v-show="!isFullScreen" :lock="lock" />
 
   <ConfirmDialog group="alert-publish">
     <template #icon>

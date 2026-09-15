@@ -88,6 +88,7 @@ const props = defineProps<{
         statuses: { label: string; value: string }[]
         priorities: { label: string; value: string }[]
         assignees: { label: string; value: number }[]
+        qa_users: { label: string; value: number; avatar: any }[]
         mentionable: { username: string; name: string | null }[]
         tags: string[]
         kinds: { label: string; value: string }[]
@@ -199,6 +200,12 @@ const sendQaVerdict = () => {
 
 const canAskQa = computed(() => props.can_manage && ["in_progress", "waiting", "resolved"].includes(props.ticket.status) && props.ticket.qa_status !== "requested")
 
+const qaPopover = ref()
+const askQa = (qaUserId: number | null) => {
+    router.patch(route(props.routes.update.name, props.routes.update.parameters), { qa_status: "requested", qa_user_id: qaUserId }, { preserveScroll: true })
+    qaPopover.value.hide()
+}
+
 const update = (field: string, value: unknown) => {
     router.patch(route(props.routes.update.name, props.routes.update.parameters), { [field]: value }, { preserveScroll: true })
 }
@@ -300,7 +307,21 @@ const update = (field: string, value: unknown) => {
                     <button v-tooltip="trans('QA passed')" type="button" class="rounded-md p-1.5 text-green-600 hover:bg-gray-100" @click="openQaVerdict('passed')"><FontAwesomeIcon icon="fal fa-shield-check" fixed-width /></button>
                     <button v-tooltip="trans('QA failed')" type="button" class="rounded-md p-1.5 text-red-500 hover:bg-gray-100" @click="openQaVerdict('failed')"><FontAwesomeIcon icon="fal fa-shield" fixed-width /></button>
                 </template>
-                <button v-if="canAskQa" v-tooltip="ticket.qa_status ? trans('Ask QA to check again') : trans('Ask QA to check')" type="button" class="rounded-md p-1.5 text-amber-600 hover:bg-gray-100" @click="update('qa_status', 'requested')"><FontAwesomeIcon icon="fal fa-vial" fixed-width /></button>
+                <button v-if="canAskQa" v-tooltip="ticket.qa_status ? trans('Ask QA to check again') : trans('Ask QA to check')" type="button" class="rounded-md p-1.5 text-amber-600 hover:bg-gray-100" @click="qaPopover.toggle($event)"><FontAwesomeIcon icon="fal fa-vial" fixed-width /></button>
+                <Popover ref="qaPopover">
+                    <button type="button" class="mb-2 w-full rounded bg-amber-50 px-2 py-1 text-sm font-medium text-amber-700 hover:bg-amber-100" @click="askQa(null)">
+                        {{ trans("Anyone in QA") }}
+                    </button>
+                    <div class="grid grid-cols-4 gap-2">
+                        <button v-for="qaUser in options.qa_users" :key="qaUser.value" type="button" class="flex w-16 flex-col items-center gap-1 rounded p-1 text-xs hover:bg-gray-100" @click="askQa(qaUser.value)">
+                            <img v-if="qaUser.avatar?.original" :src="qaUser.avatar.original" class="h-9 w-9 rounded-full object-cover" alt="" />
+                            <span v-else class="flex h-9 w-9 items-center justify-center rounded-full bg-gray-200 text-gray-500">
+                                <FontAwesomeIcon icon="fal fa-user" fixed-width />
+                            </span>
+                            <span class="w-full truncate text-center">{{ qaUser.label }}</span>
+                        </button>
+                    </div>
+                </Popover>
                 <button v-if="can_manage && ticket.qa_status === 'requested'" v-tooltip="trans('Withdraw QA request')" type="button" class="rounded-md p-1.5 text-gray-400 hover:bg-gray-100" @click="update('qa_status', null)"><FontAwesomeIcon icon="fal fa-times" fixed-width /></button>
             </div>
             <template v-if="can_manage">

@@ -4,6 +4,7 @@ import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import {
   faChevronCircleLeft,
   faChevronCircleRight,
+  faTimes,
 } from '@fal'
 import Image from '@common/Components/Image.vue'
 import Dialog from 'primevue/dialog'
@@ -43,6 +44,13 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
   <Dialog v-model:visible="visible" modal dismissable-mask close-on-escape :closable="false"
     class="w-[calc(100vw-3rem)] max-w-6xl !bg-transparent !shadow-none !border-0 !border-transparent">    
     <div class="relative w-full flex flex-col items-center justify-center">
+      <div class="w-full flex justify-end mb-2">
+        <button class="text-white text-3xl hover:text-gray-300 z-50" aria-label="Close viewer"
+          @click="visible = false">
+          <FontAwesomeIcon :icon="faTimes" />
+        </button>
+      </div>
+
       <!-- Image Viewer -->
       <div v-if="!showVideo" class="relative w-full h-[75vh] overflow-hidden rounded select-none">
         <Image :src="currentImage?.zoom || currentImage?.source"
