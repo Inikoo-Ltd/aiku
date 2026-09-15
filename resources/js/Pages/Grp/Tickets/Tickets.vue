@@ -24,11 +24,11 @@ import TicketQuickLook from "@/Components/Tickets/TicketQuickLook.vue"
 import TicketUserAvatar from "@/Components/Tickets/TicketUserAvatar.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faPlay, faQuestionCircle, faCheck, faBan, faChevronDown, faUser, faStop, faUndo } from "@fal"
+import { faPlay, faQuestionCircle, faCheck, faBan, faChevronDown, faUser, faStop, faUndo, faSpinner } from "@fal"
 
 import { faArrowDown as faSolidArrowDown, faArrowUp as faSolidArrowUp, faMinus as faSolidMinus, faExclamationTriangle as faSolidExclamationTriangle } from "@fas"
 
-library.add(faPlay, faQuestionCircle, faCheck, faBan, faChevronDown, faUser, faStop, faUndo, faSolidArrowDown, faSolidArrowUp, faSolidMinus, faSolidExclamationTriangle)
+library.add(faPlay, faQuestionCircle, faCheck, faBan, faChevronDown, faUser, faStop, faUndo, faSpinner, faSolidArrowDown, faSolidArrowUp, faSolidMinus, faSolidExclamationTriangle)
 
 type Option<Value> = { label: string; value: Value }
 
@@ -73,8 +73,20 @@ const selectableKinds = computed(() => props.options.kinds.filter((kind) => kind
 
 const updateRouteFor = (item: { id: number }) => ({ name: props.updateRoute, parameters: { ticket: item.id } })
 
+const pendingEdit = ref<string | null>(null)
+
+const isSaving = (item: { id: number }, field: string) => pendingEdit.value === `${item.id}:${field}`
+
+const isRowSaving = (item: { id: number }) => pendingEdit.value?.startsWith(`${item.id}:`) ?? false
+
 const update = (item: { id: number }, field: string, value: unknown) => {
-    router.patch(route(props.updateRoute, { ticket: item.id }), { [field]: value }, { preserveScroll: true, preserveState: true })
+    if (pendingEdit.value) return
+    router.patch(route(props.updateRoute, { ticket: item.id }), { [field]: value }, {
+        preserveScroll: true,
+        preserveState: true,
+        onStart: () => (pendingEdit.value = `${item.id}:${field}`),
+        onFinish: () => (pendingEdit.value = null),
+    })
 }
 
 const activeItem = ref<any | null>(null)
@@ -96,6 +108,7 @@ const popovers: Record<string, typeof statusPopover> = {
 const isEditing = (field: string, item: { id: number }) => activeField.value === field && activeItem.value?.id === item.id
 
 const openEditor = (field: string, item: any, event: Event) => {
+    if (isRowSaving(item)) return
     activeItem.value = item
     popovers[field].value?.toggle(event)
 }
@@ -114,7 +127,7 @@ const chooseValue = (field: string, value: unknown) => {
     if (item && value !== undefined && value !== item[field]) update(item, field, value)
 }
 
-const editableCellClass = "inline-flex items-center gap-1 rounded p-2 transition duration-200 hover:bg-gray-100 active:!bg-gray-200"
+const editableCellClass = "inline-flex items-center gap-1 rounded p-2 transition duration-200 hover:bg-gray-100 active:!bg-gray-200 disabled:cursor-wait disabled:opacity-60"
 const readOnlyCellClass = "inline-flex items-center gap-1 p-2"
 
 const askReporterItem = ref<any | null>(null)
@@ -188,9 +201,10 @@ watch(
                     type="button"
                     :class="[editableCellClass, isEditing('status', item) && '!bg-gray-200']"
                     :title="trans('Change status')"
+                    :disabled="isRowSaving(item)"
                     @click="openEditor('status', item, $event)">
                     <Icon :data="item.status_icon" /> {{ item.status_label }}
-                    <FontAwesomeIcon icon="fal fa-chevron-down" class="text-[10px] text-gray-400" fixed-width />
+                    <FontAwesomeIcon :icon="isSaving(item, 'status') ? 'fal fa-spinner' : 'fal fa-chevron-down'" :spin="isSaving(item, 'status')" class="text-[10px] text-gray-400" fixed-width />
                 </button>
                 <span v-else :class="readOnlyCellClass"><Icon :data="item.status_icon" /> {{ item.status_label }}</span>
             </template>
@@ -204,8 +218,10 @@ watch(
                     type="button"
                     :class="[editableCellClass, 'min-w-9 justify-center', isEditing('priority', item) && '!bg-gray-200']"
                     :title="trans('Change priority')"
+                    :disabled="isRowSaving(item)"
                     @click="openEditor('priority', item, $event)">
-                    <Icon :data="item.priority_icon" />
+                    <FontAwesomeIcon v-if="isSaving(item, 'priority')" icon="fal fa-spinner" spin class="text-gray-400" fixed-width />
+                    <Icon v-else :data="item.priority_icon" />
                 </button>
                 <span v-else :class="[readOnlyCellClass, 'min-w-9 justify-center']"><Icon :data="item.priority_icon" /></span>
             </template>
@@ -215,9 +231,10 @@ watch(
                     type="button"
                     :class="[editableCellClass, 'text-gray-700', isEditing('kind', item) && '!bg-gray-200']"
                     :title="trans('Change kind')"
+                    :disabled="isRowSaving(item)"
                     @click="openEditor('kind', item, $event)">
                     {{ item.kind_label || trans("No kind") }}
-                    <FontAwesomeIcon icon="fal fa-chevron-down" class="text-[10px] text-gray-400" fixed-width />
+                    <FontAwesomeIcon :icon="isSaving(item, 'kind') ? 'fal fa-spinner' : 'fal fa-chevron-down'" :spin="isSaving(item, 'kind')" class="text-[10px] text-gray-400" fixed-width />
                 </button>
                 <span v-else :class="[readOnlyCellClass, 'text-gray-600']">{{ item.kind_label || "-" }}</span>
             </template>
@@ -227,9 +244,10 @@ watch(
                     type="button"
                     :class="[editableCellClass, 'text-gray-700', isEditing('module', item) && '!bg-gray-200']"
                     :title="trans('Change module')"
+                    :disabled="isRowSaving(item)"
                     @click="openEditor('module', item, $event)">
                     {{ item.module_label || trans("No module") }}
-                    <FontAwesomeIcon icon="fal fa-chevron-down" class="text-[10px] text-gray-400" fixed-width />
+                    <FontAwesomeIcon :icon="isSaving(item, 'module') ? 'fal fa-spinner' : 'fal fa-chevron-down'" :spin="isSaving(item, 'module')" class="text-[10px] text-gray-400" fixed-width />
                 </button>
                 <span v-else :class="[readOnlyCellClass, 'text-gray-600']">{{ item.module_label || "-" }}</span>
             </template>
@@ -244,12 +262,14 @@ watch(
                     :is="canEditRow(item) ? 'button' : 'div'"
                     :type="canEditRow(item) ? 'button' : undefined"
                     class="mx-auto flex w-20 flex-col items-center gap-0.5 rounded p-2 text-center"
-                    :class="canEditRow(item) && ['transition duration-200 hover:bg-gray-100 active:!bg-gray-200', isEditing('assignee_id', item) && '!bg-gray-200']"
+                    :class="canEditRow(item) && ['relative transition duration-200 hover:bg-gray-100 active:!bg-gray-200 disabled:cursor-wait disabled:opacity-60', isEditing('assignee_id', item) && '!bg-gray-200']"
+                    :disabled="canEditRow(item) ? isRowSaving(item) : undefined"
                     :title="canEditRow(item) ? trans('Change assignee') : item.assignee"
                     @click="canEditRow(item) && openEditor('assignee_id', item, $event)">
                     <TicketUserAvatar v-if="item.assignee" :name="item.assignee" :avatar="item.assignee_avatar" />
                     <span v-else class="flex h-7 w-7 items-center justify-center rounded-full border border-dashed border-gray-300 text-gray-400"><FontAwesomeIcon icon="fal fa-user" fixed-width /></span>
                     <span class="w-full truncate text-[10px] leading-tight" :class="item.assignee ? 'text-gray-600' : 'text-gray-400'">{{ item.assignee_short || trans("Unassigned") }}</span>
+                    <FontAwesomeIcon v-if="isSaving(item, 'assignee_id')" icon="fal fa-spinner" spin class="absolute right-1 top-1 text-[10px] text-gray-400" fixed-width />
                 </component>
             </template>
             <template #cell(created_at)="{ item }">

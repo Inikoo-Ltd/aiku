@@ -14,13 +14,13 @@ import PageHeading from "@/Components/Headings/PageHeading.vue"
 import Icon from "@/Components/Icon.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faVial, faShieldCheck, faShield, faRocket } from "@fal"
+import { faVial, faShieldCheck, faShield, faRocket, faSpinner } from "@fal"
 import { useLiveTickets } from "@/Composables/useLiveTickets"
 import TicketsCreatedInterval from "@/Components/Tickets/TicketsCreatedInterval.vue"
 import TicketQuickLook from "@/Components/Tickets/TicketQuickLook.vue"
 import TicketUserAvatar from "@/Components/Tickets/TicketUserAvatar.vue"
 
-library.add(faVial, faShieldCheck, faShield, faRocket)
+library.add(faVial, faShieldCheck, faShield, faRocket, faSpinner)
 
 const props = defineProps<{
 	pageHead: any
@@ -301,8 +301,15 @@ const onDragEnd = (event: { originalEvent?: MouseEvent }) => {
 	}
 }
 
+const savingTicketIds = ref<number[]>([])
+
 const patchTicket = (ticketId: number, data: Record<string, unknown>) =>
-	router.patch(route(props.updateRoute, { ticket: ticketId }), data, { preserveScroll: true, preserveState: true })
+	router.patch(route(props.updateRoute, { ticket: ticketId }), data, {
+		preserveScroll: true,
+		preserveState: true,
+		onStart: () => savingTicketIds.value.push(ticketId),
+		onFinish: () => (savingTicketIds.value = savingTicketIds.value.filter((id) => id !== ticketId)),
+	})
 
 const onMoved = (status: string, event: { added?: { element: any } }) => {
 	if (!event.added) return
@@ -545,9 +552,11 @@ const cancelAssign = () => {
 					<template #item="{ element }">
 						<div
 							v-show="matchesFilters(element, column.key)"
-							class="bg-white rounded-md border border-gray-200 shadow-sm p-2.5 hover:border-gray-400"
+							class="relative bg-white rounded-md border border-gray-200 shadow-sm p-2.5 hover:border-gray-400"
+							:aria-busy="savingTicketIds.includes(element.id)"
 							:class="can_manage ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'"
 							:data-ticket-id="element.id">
+							<FontAwesomeIcon v-if="savingTicketIds.includes(element.id)" icon="fal fa-spinner" spin fixed-width class="absolute right-1.5 top-1.5 text-xs text-gray-400" />
 							<p class="text-sm leading-snug break-words line-clamp-3">
 								{{ element.subject }}
 							</p>

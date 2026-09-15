@@ -87,11 +87,21 @@ const availableTags = computed(() => tagOptions.value.filter((tag) => !props.tic
 const addTypedTag = () => {
     const tag = newTag.value.trim().toLowerCase()
     if (!tag || props.ticket.tags.includes(tag)) return
-    update("tags", [...props.ticket.tags, tag])
+    update("tags", [...props.ticket.tags, tag], "tags:add")
     newTag.value = ""
 }
 
-const escalate = () => router.post(route(props.routes.escalate.name, props.routes.escalate.parameters))
+const pendingAction = ref<string | null>(null)
+const isBusy = computed(() => pendingAction.value !== null)
+const isPending = (action: string) => pendingAction.value === action
+
+const escalate = () => {
+    if (isBusy.value) return
+    router.post(route(props.routes.escalate.name, props.routes.escalate.parameters), {}, {
+        onStart: () => (pendingAction.value = "escalate"),
+        onFinish: () => (pendingAction.value = null),
+    })
+}
 
 const isAskReporterOpen = ref(false)
 const isStatusNoteOpen = ref(false)
@@ -109,7 +119,7 @@ const openStatusNote = (status: "resolved" | "cancelled") => {
 const runStatusAction = (status: string) => {
     if (status === "waiting") openAskReporter()
     else if (status === "resolved" || status === "cancelled") openStatusNote(status)
-    else update("status", status)
+    else update("status", status, `status:${status}`)
 }
 
 const isQaVerdictOpen = ref(false)
@@ -141,13 +151,19 @@ const sendQaVerdict = () => {
 
 const canAskQa = computed(() => props.can_manage && ["in_progress", "waiting", "resolved"].includes(props.ticket.status) && props.ticket.qa_status !== "requested")
 
-const update = (field: string, value: unknown) => {
-    router.patch(route(props.routes.update.name, props.routes.update.parameters), { [field]: value }, { preserveScroll: true, onSuccess: () => emit("updated") })
+const update = (field: string, value: unknown, action: string = field) => {
+    if (isBusy.value) return
+    router.patch(route(props.routes.update.name, props.routes.update.parameters), { [field]: value }, {
+        preserveScroll: true,
+        onStart: () => (pendingAction.value = action),
+        onFinish: () => (pendingAction.value = null),
+        onSuccess: () => emit("updated"),
+    })
 }
 </script>
 
 <template>
-    <div class="space-y-4">
+    <div class="space-y-4" :class="isBusy && 'pointer-events-none'" :aria-busy="isBusy">
             <div>
                 <component :is="can_assign ? 'button' : 'div'" type="button" class="flex items-center gap-2 rounded p-2 transition duration-200" :class="[can_assign && 'hover:bg-gray-100 active:!bg-gray-200', isAssigneePickerOpen && '!bg-gray-200']" @click="can_assign && assigneePopover.toggle($event)">
                     <TicketUserAvatar v-if="ticket.assignee" :name="ticket.assignee" :avatar="ticket.assignee_avatar" />
@@ -155,6 +171,7 @@ const update = (field: string, value: unknown) => {
                         <FontAwesomeIcon icon="fal fa-user" fixed-width />
                     </span>
                     <span :class="ticket.assignee ? 'text-gray-800' : 'text-gray-400'">{{ ticket.assignee_short || trans("Unassigned") }}</span>
+                    <FontAwesomeIcon v-if="isPending('assignee_id')" :icon="'fal fa-spinner'" spin fixed-width class="text-gray-400" />
                 </component>
                 <Popover v-if="can_assign" ref="assigneePopover" @show="isAssigneePickerOpen = true" @hide="isAssigneePickerOpen = false">
                     <button
@@ -199,7 +216,7 @@ const update = (field: string, value: unknown) => {
                         class="rounded-md p-1.5 hover:bg-gray-100 active:!bg-gray-200 transition duration-200"
                         :class="action.class"
                         @click="runStatusAction(action.status)">
-                        <FontAwesomeIcon :icon="action.icon" fixed-width />
+                        <FontAwesomeIcon :icon="isPending(`status:${action.status}`) ? 'fal fa-spinner' : action.icon" :spin="isPending(`status:${action.status}`)" fixed-width />
                     </button>
                 </div>
             </div>
@@ -212,8 +229,8 @@ const update = (field: string, value: unknown) => {
                     <button v-tooltip="trans('QA passed')" type="button" class="rounded-md p-1.5 text-green-600 hover:bg-gray-100 active:!bg-gray-200 transition duration-200" @click="openQaVerdict('passed')"><FontAwesomeIcon icon="fal fa-shield-check" fixed-width /></button>
                     <button v-tooltip="trans('QA failed')" type="button" class="rounded-md p-1.5 text-red-500 hover:bg-gray-100 active:!bg-gray-200 transition duration-200" @click="openQaVerdict('failed')"><FontAwesomeIcon icon="fal fa-shield" fixed-width /></button>
                 </template>
-                <button v-if="canAskQa" v-tooltip="ticket.qa_status ? trans('Ask QA to check again') : trans('Ask QA to check')" type="button" class="rounded-md p-1.5 text-amber-600 hover:bg-gray-100 active:!bg-gray-200 transition duration-200" @click="update('qa_status', 'requested')"><FontAwesomeIcon icon="fal fa-vial" fixed-width /></button>
-                <button v-if="can_manage && ticket.qa_status === 'requested'" v-tooltip="trans('Withdraw QA request')" type="button" class="rounded-md p-1.5 text-gray-400 hover:bg-gray-100 active:!bg-gray-200 transition duration-200" @click="update('qa_status', null)"><FontAwesomeIcon icon="fal fa-times" fixed-width /></button>
+                <button v-if="canAskQa" v-tooltip="ticket.qa_status ? trans('Ask QA to check again') : trans('Ask QA to check')" type="button" class="rounded-md p-1.5 text-amber-600 hover:bg-gray-100 active:!bg-gray-200 transition duration-200" @click="update('qa_status', 'requested', 'qa:request')"><FontAwesomeIcon :icon="isPending('qa:request') ? 'fal fa-spinner' : 'fal fa-vial'" :spin="isPending('qa:request')" fixed-width /></button>
+                <button v-if="can_manage && ticket.qa_status === 'requested'" v-tooltip="trans('Withdraw QA request')" type="button" class="rounded-md p-1.5 text-gray-400 hover:bg-gray-100 active:!bg-gray-200 transition duration-200" @click="update('qa_status', null, 'qa:withdraw')"><FontAwesomeIcon :icon="isPending('qa:withdraw') ? 'fal fa-spinner' : 'fal fa-times'" :spin="isPending('qa:withdraw')" fixed-width /></button>
             </div>
             <template v-if="can_manage">
             <div v-if="ticket.type === 'help'" class="flex flex-wrap gap-2">
@@ -224,7 +241,7 @@ const update = (field: string, value: unknown) => {
                     @dblclick="canChangeKind && kindPopover.toggle($event)"
                     :tabindex="canChangeKind ? 0 : undefined"
                     @keydown.enter.prevent="canChangeKind && kindPopover.toggle($event)">
-                    <FontAwesomeIcon :icon="kindIcons[ticket.kind] ?? 'fal fa-question-circle'" fixed-width />
+                    <FontAwesomeIcon :icon="isPending('kind') ? 'fal fa-spinner' : kindIcons[ticket.kind] ?? 'fal fa-question-circle'" :spin="isPending('kind')" fixed-width />
                     {{ optionLabel(options.kinds, ticket.kind) ?? trans("No kind") }}
                 </span>
                 <span
@@ -234,7 +251,7 @@ const update = (field: string, value: unknown) => {
                     @dblclick="can_change_kind_module && modulePopover.toggle($event)"
                     :tabindex="can_change_kind_module ? 0 : undefined"
                     @keydown.enter.prevent="can_change_kind_module && modulePopover.toggle($event)">
-                    <FontAwesomeIcon icon="fal fa-cube" fixed-width />
+                    <FontAwesomeIcon :icon="isPending('module') ? 'fal fa-spinner' : 'fal fa-cube'" :spin="isPending('module')" fixed-width />
                     {{ optionLabel(options.modules, ticket.module) ?? trans("No module") }}
                 </span>
                 <Popover v-if="canChangeKind" ref="kindPopover" @show="isKindPickerOpen = true" @hide="isKindPickerOpen = false">
@@ -253,12 +270,12 @@ const update = (field: string, value: unknown) => {
                 <div class="flex flex-wrap items-center gap-1.5">
                     <span v-for="tag in ticket.tags" :key="tag" class="inline-flex items-center gap-1 rounded-full bg-indigo-50 px-2.5 py-0.5 text-xs text-indigo-700">
                         {{ tag }}
-                        <button v-tooltip="trans('Remove')" type="button" class="text-indigo-400 hover:text-indigo-700 active:!text-indigo-700 transition duration-200" @click="update('tags', ticket.tags.filter((t: string) => t !== tag))">
-                            <FontAwesomeIcon icon="fal fa-times" fixed-width />
+                        <button v-tooltip="trans('Remove')" type="button" class="text-indigo-400 hover:text-indigo-700 active:!text-indigo-700 transition duration-200" @click="update('tags', ticket.tags.filter((t: string) => t !== tag), `tags:remove:${tag}`)">
+                            <FontAwesomeIcon :icon="isPending(`tags:remove:${tag}`) ? 'fal fa-spinner' : 'fal fa-times'" :spin="isPending(`tags:remove:${tag}`)" fixed-width />
                         </button>
                     </span>
                     <button v-tooltip="trans('Add tag')" type="button" class="flex h-6 w-6 items-center justify-center rounded-full border border-dashed border-gray-300 text-gray-500 hover:border-indigo-400 active:!border-indigo-400 hover:text-indigo-600 active:!text-indigo-600 transition duration-200" :class="isTagPickerOpen && '!border-indigo-400 !text-indigo-600 !bg-indigo-50'" @click="tagPopover.toggle($event)">
-                        <FontAwesomeIcon icon="fal fa-plus" fixed-width />
+                        <FontAwesomeIcon :icon="isPending('tags:add') ? 'fal fa-spinner' : 'fal fa-plus'" :spin="isPending('tags:add')" fixed-width />
                     </button>
                 </div>
                 <Popover ref="tagPopover" @show="isTagPickerOpen = true" @hide="isTagPickerOpen = false">
@@ -270,7 +287,7 @@ const update = (field: string, value: unknown) => {
                                 :key="tag"
                                 type="button"
                                 class="block w-full rounded px-2 py-1 text-left text-sm hover:bg-gray-100 active:!bg-gray-200 transition duration-200"
-                                @click="update('tags', [...ticket.tags, tag]); newTag = ''">
+                                @click="update('tags', [...ticket.tags, tag], 'tags:add'); newTag = ''">
                                 {{ tag }}
                             </button>
                             <button v-if="newTag.trim() && !tagOptions.includes(newTag.trim().toLowerCase())" type="button" class="block w-full rounded px-2 py-1 text-left text-sm text-indigo-600 hover:bg-indigo-50 active:!bg-indigo-100 transition duration-200" @click="addTypedTag">
@@ -281,10 +298,11 @@ const update = (field: string, value: unknown) => {
                     </div>
                 </Popover>
             </div>
-            <Button v-if="ticket.type === 'customer' && !ticket.escalations.length" type="secondary" icon="fal fa-level-up" :label="trans('Escalate to help desk')" full @click="escalate" />
+            <Button v-if="ticket.type === 'customer' && !ticket.escalations.length" type="secondary" icon="fal fa-level-up" :label="trans('Escalate to help desk')" full :loading="isPending('escalate')" @click="escalate" />
             <label v-if="can_flag_confidential && !hideConfidential" class="flex items-center gap-x-2 text-gray-600 cursor-pointer">
-                <input type="checkbox" :checked="ticket.is_confidential" class="rounded border-gray-300 cursor-pointer" @change="update('is_confidential', ($event.target as HTMLInputElement).checked)" />
+                <input type="checkbox" :checked="ticket.is_confidential" :disabled="isBusy" class="rounded border-gray-300 cursor-pointer disabled:cursor-wait" @change="update('is_confidential', ($event.target as HTMLInputElement).checked, 'confidential')" />
                 {{ trans("Confidential") }} <span class="text-xs text-gray-400">({{ trans("only reporter and lead engineers") }})</span>
+                <FontAwesomeIcon v-if="isPending('confidential')" :icon="'fal fa-spinner'" spin fixed-width class="text-gray-400" />
             </label>
             </template>
     <Dialog v-model:visible="isQaVerdictOpen" modal :header="qaVerdict === 'passed' ? trans('QA passed') : trans('QA failed')" :style="{ width: '32rem' }">
