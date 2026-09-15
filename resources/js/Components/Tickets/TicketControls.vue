@@ -235,20 +235,20 @@ const update = (field: string, value: unknown, action: string = field) => {
             <template v-if="can_manage">
             <div v-if="ticket.type === 'help'" class="flex flex-wrap gap-2">
                 <span
-                    v-tooltip="canChangeKind ? trans('Kind · double click to change') : trans('Kind')"
+                    v-tooltip="canChangeKind ? trans('Kind · click to change') : trans('Kind')"
                     class="inline-flex items-center gap-1.5 rounded-md bg-gray-100 px-2 py-1 select-none transition duration-200"
                     :class="[canChangeKind && 'cursor-pointer hover:bg-gray-200 active:!bg-gray-300', isKindPickerOpen && '!bg-gray-300']"
-                    @dblclick="canChangeKind && kindPopover.toggle($event)"
+                    @click="canChangeKind && kindPopover.toggle($event)"
                     :tabindex="canChangeKind ? 0 : undefined"
                     @keydown.enter.prevent="canChangeKind && kindPopover.toggle($event)">
                     <FontAwesomeIcon :icon="isPending('kind') ? 'fal fa-spinner' : kindIcons[ticket.kind] ?? 'fal fa-question-circle'" :spin="isPending('kind')" fixed-width />
                     {{ optionLabel(options.kinds, ticket.kind) ?? trans("No kind") }}
                 </span>
                 <span
-                    v-tooltip="can_change_kind_module ? trans('Module · double click to change') : trans('Module')"
+                    v-tooltip="can_change_kind_module ? trans('Module · click to change') : trans('Module')"
                     class="inline-flex items-center gap-1.5 rounded-md bg-gray-100 px-2 py-1 select-none transition duration-200"
                     :class="[can_change_kind_module && 'cursor-pointer hover:bg-gray-200 active:!bg-gray-300', isModulePickerOpen && '!bg-gray-300']"
-                    @dblclick="can_change_kind_module && modulePopover.toggle($event)"
+                    @click="can_change_kind_module && modulePopover.toggle($event)"
                     :tabindex="can_change_kind_module ? 0 : undefined"
                     @keydown.enter.prevent="can_change_kind_module && modulePopover.toggle($event)">
                     <FontAwesomeIcon :icon="isPending('module') ? 'fal fa-spinner' : 'fal fa-cube'" :spin="isPending('module')" fixed-width />

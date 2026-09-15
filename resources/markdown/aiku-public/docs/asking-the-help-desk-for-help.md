@@ -1,7 +1,7 @@
 ---
 title: Asking the help desk for help
 summary: Report a bug or ask for a feature from aiku or Slack, follow what happens to it, answer the engineers' questions in time, and rate the fix when it is done.
-date: 2026-09-14
+date: 2026-09-15
 tags: help desk, tickets, bugs
 category: help-desk
 help_routes: grp.tickets
@@ -24,7 +24,7 @@ The fastest way is the red <b>Bug</b> button on every page, or <b>Alt+Shift+B</b
 - <b>Page where it happens</b>: the link to the page.
 - <b>Kind</b>: <b>Bug</b> when something is broken, <b>Feature request</b> when you need something new.
 - <b>Module</b> and <b>Priority</b>: pick them if you know; leave the priority at normal unless work is stopped.
-- Screenshots: paste them or drop them into the details box, up to five.
+- Screenshots and files: paste them, drop them into the details box or press <b>Attach</b>. You can add up to five at a time: pictures, PDF, Word, Excel and CSV files up to 10 MB each, and short videos up to 50 MB. A short screen recording showing the problem helps a lot.
 
 ## Raising a ticket from Slack
 
@@ -42,6 +42,8 @@ A ticket moves through these statuses:
 - <b>Assigned</b>: an engineer has it on their list.
 - <b>In progress</b>: someone is working on it.
 - <b>Waiting</b>: the engineer needs an answer from you.
+- <b>Reporter replied</b>: you answered and it is the engineer's turn again.
+- <b>Waiting for deployment</b>: the fix is finished and will be in aiku with the next update. The ticket closes by itself then.
 - <b>Done</b>: fixed or delivered.
 - <b>Cancelled</b>: closed without a fix.
 
@@ -51,11 +53,15 @@ You are told when an engineer asks you something, when your ticket is done, and 
 
 If the engineer needs more information, the ticket goes to <b>Waiting</b> and you get their question. Reply with a comment on the ticket or in its Slack thread. By default you have <b>72 hours</b>; if nobody replies in time the ticket is cancelled with the note "No reply for … days".
 
-Replying to a waiting or cancelled ticket moves it back to <b>Todo</b>, so a late answer is never lost.
+Replying to a waiting or cancelled ticket brings it back to the engineer, so a late answer is never lost.
+
+## Files on your ticket
+
+All the files on your ticket are shown together under <b>Attachments</b>. Click one to look at it without downloading it. You can also choose to see the comments newest first or oldest first, and aiku remembers your choice.
 
 ## Closing and rating
 
-If the problem went away or you no longer need the feature, you can cancel your own ticket. When a ticket is closed you are asked <b>How did we do?</b>: give it stars and, if you like, a comment, then press <b>Send rating</b>. You can rate each ticket once.
+If the problem went away or you no longer need the feature, you can cancel your own ticket. aiku asks you for a short note first, so the engineer knows why it is no longer needed. When an engineer closes your ticket, they leave a note too, telling you what they did. When a ticket is closed you are asked <b>How did we do?</b>: give it stars and, if you like, a comment, then press <b>Send rating</b>. You can rate each ticket once.
 
 <aside class="wayfinder"><strong>Where to click in aiku</strong>
 <ul>
