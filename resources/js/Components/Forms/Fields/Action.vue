@@ -58,6 +58,7 @@ const handleClick = (action: Action|any) => {
                     title: trans('Something went wrong.'),
                     text: typeof error === 'string' ? error : Object.values(error || {}).join(', '),
                     type: 'error',
+                    duration: 15000,
                 })
             }
         })
