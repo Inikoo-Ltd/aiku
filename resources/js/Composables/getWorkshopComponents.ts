@@ -86,10 +86,10 @@ const workshopLoaders: Record<string, AsyncComponentLoader> = {
     //see-also
     'see-also-1': () => import('@/Components/CMS/Webpage/SeeAlso1/SeeAlso1Workshop.vue'),
 
-    // Luigi
-    'luigi-trends-1': () => import('@/Components/CMS/Webpage/LuigiTrends1/LuigiTrends1Workshop.vue'),
-    'luigi-last-seen-1': () => import('@/Components/CMS/Webpage/LuigiLastSeen1/LuigiLastSeen1Workshop.vue'),
-    'luigi-item-alternatives-1': () => import('@/Components/CMS/Webpage/LuigiItemAlternatives1/LuigiItemAlternatives1Workshop.vue'),
+    // Internal recommendations
+    'luigi-trends-1': () => import('@/Components/CMS/Webpage/InternalTrends1/InternalTrends1Workshop.vue'),
+    'luigi-last-seen-1': () => import('@/Components/CMS/Webpage/InternalLastSeen1/InternalLastSeen1Workshop.vue'),
+    'luigi-item-alternatives-1': () => import('@/Components/CMS/Webpage/InternalItemAlternatives1/InternalItemAlternatives1Workshop.vue'),
     'recommendation-customer-recently-bought-1': () => import('@/Components/CMS/Webpage/RecomendationRecentlyBought1/RecommendationCRB1Workshop.vue'),
 
     'cta-image-background': () => import('@/Components/CMS/Webpage/CtaImageBackround/CtaImageBackroundWorkshop.vue'),
