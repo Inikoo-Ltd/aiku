@@ -1238,13 +1238,28 @@ const describeFailure = async (error: any): Promise<string> => {
                 </label>
 
                 <div class="space-y-2" role="group" aria-labelledby="artefact-label-texts-title">
-                    <div id="artefact-label-texts-title" class="flex items-center gap-2 text-xs text-gray-500 uppercase tracking-wide">
-                        {{ ctrans("Texts") }}
-                        <span
-                            class="rounded-full bg-gray-200 px-1.5 py-0.5 text-[10px] font-semibold tabular-nums text-gray-600"
-                            :aria-label="ctrans(':count texts on the label', { count: String(items.length) })">
-                            {{ items.length }}
-                        </span>
+                    <div class="flex justify-between">
+                        <div id="artefact-label-texts-title" class="flex items-center gap-2 text-xs text-gray-500 uppercase tracking-wide">
+                            {{ ctrans("Texts") }}
+                            <span
+                                class="rounded-full bg-gray-200 px-1.5 py-0.5 text-[10px] font-semibold tabular-nums text-gray-600"
+                                :aria-label="ctrans(':count texts on the label', { count: String(items.length) })">
+                                {{ items.length }}
+                            </span>
+                        </div>
+
+                        
+                        <button
+                            v-tooltip="ctrans('Highlights batch code and expiry date in the preview PDF, so can find it easier.')"
+                            type="button"
+                            :disabled="items.length === 0"
+                            class="rounded border px-2 py-0.5 text-xs border-amber-500 disabled:border-gray-300 disabled:text-gray-400"
+                            :class="isHighlightingTexts ? ' bg-amber-100 text-amber-700' : 'text-gray-600 hover:bg-gray-50'"
+                            :title="ctrans('Fades the artwork and puts the texts on a contrasting patch, only here in the preview.')"
+                            :aria-pressed="isHighlightingTexts"
+                            @click="isHighlightingTexts = !isHighlightingTexts">
+                            {{ ctrans("Highlight texts") }}
+                        </button>
                     </div>
                     <div class="flex gap-2" role="toolbar" :aria-label="ctrans('Add text')">
                         <Button type="tertiary" size="xs" icon="fal fa-plus"
@@ -1458,15 +1473,6 @@ const describeFailure = async (error: any): Promise<string> => {
                             class="rounded border border-gray-300 px-2 py-0.5 text-xs text-gray-600 hover:bg-gray-50"
                             :aria-label="ctrans('Zoom to the edited label')"
                             @click="showEditedLabel">{{ ctrans("Edited label") }}</button>
-                        <button
-                            type="button"
-                            class="rounded border px-2 py-0.5 text-xs"
-                            :class="isHighlightingTexts ? 'border-amber-500 bg-amber-100 text-amber-700' : 'border-gray-300 text-gray-600 hover:bg-gray-50'"
-                            :title="ctrans('Fades the artwork and puts the texts on a contrasting patch, only here in the preview.')"
-                            :aria-pressed="isHighlightingTexts"
-                            @click="isHighlightingTexts = !isHighlightingTexts">
-                            {{ ctrans("Highlight texts") }}
-                        </button>
                     </div>
 
 
