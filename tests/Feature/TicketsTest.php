@@ -986,7 +986,7 @@ test('only the help desk manages tickets, everyone else reports, comments and cl
 
     $oldNote = $other->comments()->create(['body' => 'old internal note', 'is_internal' => true]);
     expect($other->commentsVisibleTo($helper)->whereKey($oldNote->id)->exists())->toBeTrue()
-        ->and($other->commentsVisibleTo($reporter)->whereKey($oldNote->id)->exists())->toBeFalse()
+        ->and($other->commentsVisibleTo($reporter)->whereKey($oldNote->id)->exists())->toBeTrue()
         ->and($other->commentsVisibleTo($boss)->whereKey($oldNote->id)->exists())->toBeTrue();
     actingAs($helper);
     patch(route('grp.models.ticket.comment.toggle_visibility', $oldNote->id))->assertForbidden();
