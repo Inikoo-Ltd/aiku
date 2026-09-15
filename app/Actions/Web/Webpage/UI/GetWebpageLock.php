@@ -39,6 +39,7 @@ class GetWebpageLock
             ]))->values()->all(),
             'can_edit'     => $webpage->canBeEditedBy($user),
             'can_manage'   => $canManage,
+            'can_edit_lock' => $webpage->canEditLockBy($user),
             'message'      => $webpage->isLocked() ? $webpage->lockMessage() : null,
             'users'        => $canManage ? $users->map(fn (User $candidate) => [
                 'value' => $candidate->id,

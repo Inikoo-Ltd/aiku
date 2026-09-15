@@ -2394,6 +2394,18 @@ test('locked webpage stays editable for group admins and read only for other use
 
     actingAs($this->user);
 
+    $this->postJson(route('grp.models.webpage.lock', $webpage->id), ['reason' => 'Taking over the lock'])->assertForbidden();
+    expect($webpage->fresh()->lock_data['reason'])->toBe('Protected by owner')
+        ->and($webpage->canEditLockBy($this->user))->toBeFalse()
+        ->and($webpage->canEditLockBy($owner))->toBeTrue()
+        ->and($webpage->canEditLockBy($outsider))->toBeFalse();
+
+    $this->postJson(route('grp.models.webpage.unlock', $webpage->id), ['reason' => 'Admin override'])->assertForbidden();
+    $this->postJson(route('grp.models.webpage.edit_access.approve', $webpage->id), ['user_id' => $outsider->id, 'mode' => 'one_hour'])->assertForbidden();
+    expect($webpage->fresh()->isLocked())->toBeTrue()
+        ->and($webpage->canManageLockBy($this->user))->toBeFalse()
+        ->and($webpage->canManageLockBy($owner))->toBeTrue();
+
     $workshopParameters = [$this->organisation->slug, $this->shop->slug, $webpage->website->slug, $webpage->slug];
 
     get(route('grp.org.shops.show.web.webpages.workshop', $workshopParameters))

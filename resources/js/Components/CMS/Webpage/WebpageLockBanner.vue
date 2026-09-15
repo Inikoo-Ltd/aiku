@@ -16,6 +16,7 @@ export interface WebpageLock {
     editors: WebpageLockGrant[]
     can_edit: boolean
     can_manage: boolean
+    can_edit_lock: boolean
     message?: string
     users: { value: number, label: string }[]
     requests: WebpageEditAccessRequest[]

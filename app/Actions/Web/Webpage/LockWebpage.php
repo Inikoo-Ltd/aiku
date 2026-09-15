@@ -55,7 +55,7 @@ class LockWebpage extends OrgAction
             return true;
         }
 
-        return $this->webpage->canManageLockBy($this->user);
+        return $this->webpage->canEditLockBy($this->user);
     }
 
     public function rules(): array

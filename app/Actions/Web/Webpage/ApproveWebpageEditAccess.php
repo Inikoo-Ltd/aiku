@@ -18,7 +18,7 @@ use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 
 /**
- * The lock owner (or a sysadmin) turns an edit access request into a temporary edit grant.
+ * The lock owner turns an edit access request into a temporary edit grant.
  * The grant lasts until the editor's next publish, one hour, or a chosen date; after that the
  * existing lock rules lock the page again for that editor.
  */

@@ -35,7 +35,7 @@ class LockMasterFamilyWebpages extends OrgAction
 
         $lockedWebpages = [];
         foreach ($webpages as $webpage) {
-            if (!$webpage->canManageLockBy($user)) {
+            if (!$webpage->canEditLockBy($user)) {
                 continue;
             }
 

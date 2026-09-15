@@ -18,6 +18,7 @@ interface FamilyWebpageLock {
     locked_by?: string | null
     lock_scope?: string | null
     can_manage: boolean
+    can_edit_lock: boolean
 }
 
 type Mode = 'lock' | 'unlock'
@@ -41,6 +42,8 @@ const form = useForm({
 const hasWebpages = computed(() => props.locks.webpages.length > 0)
 const lockedWebpages = computed(() => props.locks.webpages.filter(webpage => webpage.is_locked))
 const listedWebpages = computed(() => mode.value === 'unlock' ? lockedWebpages.value : props.locks.webpages)
+
+const canSelect = (webpage: FamilyWebpageLock) => mode.value === 'unlock' ? webpage.can_manage : webpage.can_edit_lock
 
 const openModal = (selectedMode: Mode) => {
     form.reset()
@@ -98,13 +101,13 @@ const submit = () => {
                     v-for="webpage in listedWebpages"
                     :key="webpage.id"
                     class="flex items-center gap-3 px-3 py-2 text-sm"
-                    :class="webpage.can_manage ? 'cursor-pointer hover:bg-gray-50' : 'cursor-not-allowed opacity-60'"
+                    :class="canSelect(webpage) ? 'cursor-pointer hover:bg-gray-50' : 'cursor-not-allowed opacity-60'"
                 >
                     <input
                         type="checkbox"
                         :value="webpage.id"
                         v-model="form.webpage_ids"
-                        :disabled="!webpage.can_manage"
+                        :disabled="!canSelect(webpage)"
                         class="rounded border-gray-300"
                     />
                     <span class="w-12 shrink-0 font-semibold">{{ webpage.shop_code }}</span>
@@ -116,9 +119,9 @@ const submit = () => {
                     <span
                         v-if="webpage.is_locked"
                         class="shrink-0 rounded bg-amber-100 px-1.5 py-0.5 text-xs text-amber-800"
-                        v-tooltip="webpage.can_manage
+                        v-tooltip="canSelect(webpage)
                             ? (webpage.lock_scope === 'master_family' ? trans('Family lock') : trans('This webpage only'))
-                            : trans('Locked by someone else')"
+                            : trans('Only the person who created this lock can change it')"
                     >
                         <FontAwesomeIcon :icon="faLock" fixed-width aria-hidden="true" /> {{ webpage.locked_by }}
                     </span>

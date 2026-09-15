@@ -38,6 +38,7 @@ class GetMasterFamilyWebpageLocks
                 'locked_by'      => $family->webpage->lockedBy?->contact_name ?: $family->webpage->lockedBy?->username,
                 'lock_scope'     => $family->webpage->isLocked() ? Arr::get($family->webpage->lock_data, 'scope', 'webpage') : null,
                 'can_manage'     => $family->webpage->canManageLockBy($user),
+                'can_edit_lock'  => $family->webpage->canEditLockBy($user),
             ])
             ->sortBy('shop_code')
             ->values()
