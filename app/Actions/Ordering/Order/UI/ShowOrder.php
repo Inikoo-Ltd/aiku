@@ -12,6 +12,7 @@ use App\Actions\Accounting\Invoice\UI\IndexInvoicesInOrder;
 use App\Actions\Accounting\Payment\UI\IndexPayments;
 use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\CRM\Customer\UI\ShowCustomer;
+use App\Actions\Ordering\Order\AssignDefaultPackagingToOrderWithoutPackaging;
 use App\Actions\CRM\Customer\UI\ShowCustomerClient;
 use App\Actions\Dispatching\DeliveryNote\UI\IndexDeliveryNotes;
 use App\Actions\Dropshipping\CustomerSalesChannel\UI\ShowCustomerSalesChannel;
@@ -86,6 +87,10 @@ class ShowOrder extends OrgAction
 
     public function handle(Order $order): Order
     {
+        if (AssignDefaultPackagingToOrderWithoutPackaging::run($order)) {
+            $order->refresh();
+        }
+
         return $order;
     }
 
