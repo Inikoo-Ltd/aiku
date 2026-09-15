@@ -6,7 +6,7 @@
 
 <script setup lang="ts">
 import { ref, computed } from "vue"
-import { Head, Link } from "@inertiajs/vue3"
+import { Head, Link, router } from "@inertiajs/vue3"
 import axios from "axios"
 import { trans } from "laravel-vue-i18n"
 import { capitalize } from "@/Composables/capitalize"
@@ -45,6 +45,7 @@ const props = defineProps<{
         statuses: { label: string; value: string }[]
         priorities: { label: string; value: string }[]
         assignees: { label: string; value: number }[]
+        mentionable: { username: string; name: string | null }[]
         tags: string[]
         kinds: { label: string; value: string }[]
         modules: { label: string; value: string }[]
@@ -73,28 +74,38 @@ const sortedTimeline = computed(() => (isHistoryNewestFirst.value ? props.timeli
 
 
 
+
+const update = (field: string, value: unknown) => {
+    router.patch(route(props.routes.update.name, props.routes.update.parameters), { [field]: value }, { preserveScroll: true })
+}
 </script>
 
 <template>
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead">
         <template #wrapped-delete>
-            <ModalConfirmationDelete
-                :title="trans('Delete :reference?', { reference: ticket.reference })"
-                :description="trans('The ticket and its comments will be removed for good.')"
-                :noLabel="trans('Yes, delete')"
-                :routeDelete="routes.delete"
-                class="w-full">
-                <template #default="{ changeModel }">
-                    <Button type="negative" icon="fal fa-trash-alt" :label="trans('Delete ticket')" full @click="changeModel" />
-                </template>
-            </ModalConfirmationDelete>
+            <div class="flex w-80 flex-col gap-3 whitespace-nowrap">
+                <label v-if="can_flag_confidential" class="flex items-center gap-x-2 text-sm text-gray-600 cursor-pointer">
+                    <input type="checkbox" :checked="ticket.is_confidential" class="rounded border-gray-300" @change="update('is_confidential', ($event.target as HTMLInputElement).checked)" />
+                    {{ trans("Confidential") }} <span class="text-xs text-gray-400">({{ trans("only reporter and lead engineers") }})</span>
+                </label>
+                <ModalConfirmationDelete
+                    :title="trans('Delete :reference?', { reference: ticket.reference })"
+                    :description="trans('The ticket and its comments will be removed for good.')"
+                    :noLabel="trans('Yes, delete')"
+                    :routeDelete="routes.delete"
+                    class="w-full">
+                    <template #default="{ changeModel }">
+                        <Button type="negative" icon="fal fa-trash-alt" :label="trans('Delete ticket')" full @click="changeModel" />
+                    </template>
+                </ModalConfirmationDelete>
+            </div>
         </template>
     </PageHeading>
     <div class="p-4 grid gap-4 lg:grid-cols-3">
         <div class="lg:col-span-2 space-y-4">
             <TicketRating :rating="ticket.rating" :rating-comment="ticket.rating_comment" :can-rate="can_rate" :rate-route="routes.rate" />
-            <TicketThread :ticket="ticket" :comments="comments" :comment-route="routes.comment" :comments-newest-first="comments_newest_first" @update:comments-newest-first="saveTicketOrderSetting('ticket_comments_newest_first', $event)">
+            <TicketThread :ticket="ticket" :comments="comments" :comment-route="routes.comment" :mentionable="options.mentionable" :comments-newest-first="comments_newest_first" @update:comments-newest-first="saveTicketOrderSetting('ticket_comments_newest_first', $event)">
                 <template #after-description>
                     <TicketAttachmentList :files="attachment_gallery" />
                 </template>
@@ -102,7 +113,7 @@ const sortedTimeline = computed(() => (isHistoryNewestFirst.value ? props.timeli
         </div>
         <div class="space-y-4 self-start">
         <aside class="bg-white rounded-lg border border-gray-300 p-4 space-y-4 text-sm">
-            <TicketControls :ticket="ticket" :options="options" :can_manage="can_manage" :can_assign="can_assign" :can_flag_confidential="can_flag_confidential" :can_qa="can_qa" :is_reporter="is_reporter" :can_change_kind_module="can_change_kind_module" :routes="routes" />
+            <TicketControls :ticket="ticket" :options="options" :can_manage="can_manage" :can_assign="can_assign" :can_flag_confidential="can_flag_confidential" :can_qa="can_qa" :is_reporter="is_reporter" :can_change_kind_module="can_change_kind_module" :routes="routes" hide-confidential />
             <div v-if="ticket.commits?.length">
                 <p class="text-xs text-gray-500 mb-1">{{ trans("Commits") }}</p>
                 <ul class="space-y-1 text-xs">

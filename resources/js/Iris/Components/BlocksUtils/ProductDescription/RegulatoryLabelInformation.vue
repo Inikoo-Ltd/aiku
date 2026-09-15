@@ -26,6 +26,7 @@ import {
 import { ctrans } from "@/Composables/useTrans"
 import { getStyles } from "@/Composables/styles"
 import { candleSafetyIcons } from "@/Composables/useSafetyIcons"
+import { hasRegulatoryRowContent } from "@/Iris/Components/BlocksUtils/ProductDescription/regulatoryRows"
 
 interface LabelInfoItem {
 	show: boolean
@@ -110,7 +111,7 @@ const cards = computed(() =>
 
 const rows = computed(() =>
 	Object.keys(ROW_ICONS)
-		.filter(key => props.isWorkshop || labelInfo.value[key])
+		.filter(key => props.isWorkshop || hasRegulatoryRowContent(labelInfo.value[key]))
 		.map(key => ({
 			key,
 			icon: ROW_ICONS[key],

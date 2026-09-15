@@ -175,7 +175,7 @@ const selectImage = (code: string) => {
         <!-- Column: Logo -->
         <template #cell(logo)="{ item: paymentServiceProvider }">
             <div class="w-20">
-                <img v-if="selectImage(paymentServiceProvider.code)" :src="selectImage(paymentServiceProvider.code)" :alt="paymentServiceProvider.name" :title="paymentServiceProvider.name" class="mx-auto aspect-auto h-auto max-h-7 w-auto max-w-20">
+                <img v-if="selectImage(paymentServiceProvider.code)" :src="selectImage(paymentServiceProvider.code)" :alt="paymentServiceProvider.name" :title="paymentServiceProvider.name" class="mx-auto aspect-auto h-auto max-h-7 w-auto max-w-20" loading="lazy" decoding="async">
                 <div v-else class="h-12 w-20 text-gray-400 flex items-center justify-center">
                     {{ trans('No image') }}
                 </div>

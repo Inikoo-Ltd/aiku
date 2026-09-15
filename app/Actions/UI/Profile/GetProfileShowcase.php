@@ -22,7 +22,6 @@ class GetProfileShowcase
             'username'    => $user->username,
             'avatar'      => $user->imageSources(48, 48),
             'email'       => $user->email,
-            'about'       => $user->about,
             'status'      => match ($user->status) {
                 true => [
                     'tooltip' => __('active'),

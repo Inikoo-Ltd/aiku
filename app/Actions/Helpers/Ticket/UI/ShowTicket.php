@@ -75,7 +75,6 @@ class ShowTicket extends OrgAction
                     'subject'         => __('Subject edited'),
                     'is_confidential' => $value ? __('Marked confidential') : __('No longer confidential'),
                     'qa_status'       => $value ? TicketQaStatusEnum::labels()[$value] : __('QA check withdrawn'),
-                    'is_waiting_for_deployment' => $value ? __('Waiting for deployment') : null,
                     default           => null,
                 };
                 if ($text) {
@@ -84,7 +83,6 @@ class ShowTicket extends OrgAction
                         'icon' => match ($field) {
                             'status'    => $statusIcons[$value]['icon'] ?? 'fal fa-exchange',
                             'qa_status' => TicketQaStatusEnum::stateIcon()[$value]['icon'] ?? 'fal fa-vial',
-                            'is_waiting_for_deployment' => 'fal fa-rocket',
                             default     => 'fal fa-pencil',
                         },
                         'text' => $text,
@@ -142,6 +140,13 @@ class ShowTicket extends OrgAction
                         'avatar' => $engineer->imageSources(48, 48),
                         'is_me'  => $engineer->id === $user->id,
                     ])->sortBy('label')->values(),
+                'mentionable' => User::where('group_id', $ticket->group_id)
+                    ->where('status', true)
+                    ->orderBy('username')
+                    ->get(['id', 'username', 'contact_name', 'group_id'])
+                    ->when($ticket->is_confidential, fn ($users) => $users->filter(fn (User $mentionableUser) => $ticket->isVisibleTo($mentionableUser)))
+                    ->map(fn (User $mentionableUser) => ['username' => $mentionableUser->username, 'name' => $mentionableUser->contact_name])
+                    ->values(),
             ],
             'can_manage'             => Ticket::canBeManagedBy($user),
             'can_assign'             => Ticket::canBeAssignedBy($user) || (Ticket::canBeManagedBy($user) && $ticket->assignee_id === $user->id),

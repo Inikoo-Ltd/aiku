@@ -19,7 +19,7 @@ class RefreshWebpagePageSpeed extends OrgAction
     public function handle(Webpage $webpage): void
     {
         foreach (GetWebpagePageSpeed::STRATEGIES as $strategy) {
-            QueueWebpagePageSpeed::run($webpage, $strategy);
+            GetWebpagePageSpeed::run($webpage, $strategy, true);
         }
     }
 

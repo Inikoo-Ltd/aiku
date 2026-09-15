@@ -43,7 +43,6 @@ use Spatie\MediaLibrary\InteractsWithMedia;
  * @property TicketModuleEnum|null $module
  * @property array<int, string> $tags
  * @property bool $is_confidential
- * @property bool $is_waiting_for_deployment
  * @property int $number
  * @property string $reference
  * @property TicketStatusEnum $status
@@ -115,7 +114,6 @@ class Ticket extends Model implements Auditable, HasMedia
             'waiting_until' => 'datetime',
             'tags'        => 'array',
             'is_confidential' => 'boolean',
-            'is_waiting_for_deployment' => 'boolean',
             'qa_status'   => TicketQaStatusEnum::class,
             'qa_requested_at' => 'datetime',
             'qa_checked_at' => 'datetime',

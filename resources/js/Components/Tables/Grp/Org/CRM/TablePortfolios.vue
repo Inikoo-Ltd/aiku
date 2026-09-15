@@ -333,7 +333,7 @@ if (props.customerSalesChannel?.platform?.name === 'Ebay') {
                         <div class="flex gap-x-2 items-center border border-gray-300 rounded p-1">
                             <div v-if="item.platform_possible_matches?.raw_data?.[0]?.images?.[0]?.src"
                                 class="min-h-5 h-auto max-h-9 min-w-9 w-auto max-w-9 shadow border border-gray-300 rounded">
-                                <img :src="item.platform_possible_matches?.raw_data?.[0]?.images?.[0]?.src" />
+                                <img :src="item.platform_possible_matches?.raw_data?.[0]?.images?.[0]?.src" loading="lazy" decoding="async" />
                             </div>
                             <div>
                                 <span class="mr-1">{{ item.platform_possible_matches?.matches_labels[0] }}</span>
@@ -369,7 +369,7 @@ if (props.customerSalesChannel?.platform?.name === 'Ebay') {
                         <div class="flex gap-x-2 items-center">
                             <div v-if="item.platform_product_data?.images?.[0]?.src"
                                 class="min-h-5 h-auto max-h-9 min-w-9 w-auto max-w-9 shadow border border-gray-300 rounded">
-                                <img :src="item.platform_product_data?.images?.[0]?.src" />
+                                <img :src="item.platform_product_data?.images?.[0]?.src" loading="lazy" decoding="async" />
                             </div>
 
                             <div>

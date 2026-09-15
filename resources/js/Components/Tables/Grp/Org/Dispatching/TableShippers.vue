@@ -42,7 +42,7 @@ function shipperRoute(shipper: Shipper) {
 				<img
 					:src="`/assets/shipper_logo/${shipper.slug}.png?${Date.now()}`"
 					:alt="shipper.name"
-					class="h-5 w-5 object-contain" />
+					class="h-5 w-5 object-contain" loading="lazy" decoding="async" />
 				<Link :href="shipperRoute(shipper)" class="primaryLink">
 					{{ shipper.name }}
 				</Link>

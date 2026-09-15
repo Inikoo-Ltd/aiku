@@ -36,6 +36,7 @@ const props = defineProps<{
     can_qa: boolean
     is_reporter: boolean
     can_change_kind_module: boolean
+    hideConfidential?: boolean
     routes: {
         update: { name: string; parameters: Record<string, unknown> }
         escalate: { name: string; parameters: Record<string, unknown> }
@@ -84,6 +85,13 @@ const statusActions: Record<string, { status: string; label: string; icon: strin
         cancel,
     ],
     waiting: [{ ...start, label: trans("Resume") }, done, cancel],
+    answered: [
+        { ...start, label: trans("Resume") },
+        { status: "waiting", label: trans("Ask again"), icon: "fal fa-question-circle", class: "text-blue-500" },
+        done,
+        cancel,
+    ],
+    pending_deploy: [{ ...start, label: trans("Back to in progress") }, done, cancel],
     resolved: [{ status: "open", label: trans("Reopen"), icon: "fal fa-undo", class: "text-gray-600" }],
     cancelled: [{ status: "open", label: trans("Reopen"), icon: "fal fa-undo", class: "text-gray-600" }],
 }
@@ -154,7 +162,7 @@ const sendStatusNote = (isWaitingForDeployment = false) => {
     router.patch(
         route(props.routes.update.name, props.routes.update.parameters),
         isWaitingForDeployment
-            ? { is_waiting_for_deployment: true, status_comment: statusNote.value }
+            ? { status: "pending_deploy", question: statusNote.value }
             : { status: statusNoteAction.value, status_comment: statusNote.value },
         {
             preserveScroll: true,
@@ -216,7 +224,7 @@ const update = (field: string, value: unknown) => {
                     <span v-else class="flex h-7 w-7 items-center justify-center rounded-full bg-gray-200 text-gray-500">
                         <FontAwesomeIcon icon="fal fa-user" fixed-width />
                     </span>
-                    <span :class="ticket.assignee ? 'text-gray-800' : 'text-gray-400'">{{ ticket.assignee || trans("Unassigned") }}</span>
+                    <span :class="ticket.assignee ? 'text-gray-800' : 'text-gray-400'">{{ ticket.assignee_short || trans("Unassigned") }}</span>
                 </component>
                 <Popover v-if="can_assign" ref="assigneePopover" @show="isAssigneePickerOpen = true" @hide="isAssigneePickerOpen = false">
                     <button
@@ -267,15 +275,6 @@ const update = (field: string, value: unknown) => {
                         <FontAwesomeIcon :icon="action.icon" fixed-width />
                     </button>
                 </div>
-            </div>
-            <div v-if="ticket.is_waiting_for_deployment" class="flex items-center gap-2">
-                <span v-tooltip="trans('Marked as done automatically on the next deployment')" class="inline-flex items-center gap-1.5 rounded-md bg-purple-50 px-2 py-1 text-sm font-medium text-purple-700">
-                    <FontAwesomeIcon icon="fal fa-rocket" fixed-width />
-                    {{ trans("Waiting for deployment") }}
-                </span>
-                <button v-if="can_manage" v-tooltip="trans('Withdraw')" type="button" class="rounded-md p-1.5 text-gray-400 transition duration-200 hover:bg-gray-100 active:!bg-gray-200" @click="update('is_waiting_for_deployment', false)">
-                    <FontAwesomeIcon icon="fal fa-times" fixed-width />
-                </button>
             </div>
             <div v-if="ticket.qa_status || canAskQa" class="flex items-center gap-2">
                 <span v-if="ticket.qa_status" v-tooltip="ticket.qa_user ? `${ticket.qa_status_label} · ${ticket.qa_user}` : ticket.qa_status_label" class="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-sm font-medium" :class="statusBadgeClasses[ticket.qa_status_icon.color]">
@@ -356,7 +355,7 @@ const update = (field: string, value: unknown) => {
                 </Popover>
             </div>
             <Button v-if="ticket.type === 'customer' && !ticket.escalations.length" type="secondary" icon="fal fa-level-up" :label="trans('Escalate to help desk')" full @click="escalate" />
-            <label v-if="can_flag_confidential" class="flex items-center gap-x-2 text-gray-600 cursor-pointer">
+            <label v-if="can_flag_confidential && !hideConfidential" class="flex items-center gap-x-2 text-gray-600 cursor-pointer">
                 <input type="checkbox" :checked="ticket.is_confidential" class="rounded border-gray-300 cursor-pointer" @change="update('is_confidential', ($event.target as HTMLInputElement).checked)" />
                 {{ trans("Confidential") }} <span class="text-xs text-gray-400">({{ trans("only reporter and lead engineers") }})</span>
             </label>
@@ -405,11 +404,12 @@ const update = (field: string, value: unknown) => {
                 <p class="mb-1 text-xs text-gray-500">{{ statusNoteAction === "cancelled" ? trans("Why is this ticket being cancelled?") : trans("What was done?") }}</p>
                 <textarea v-model="statusNote" rows="5" class="w-full rounded border-gray-300 text-sm" :placeholder="statusNoteAction === 'cancelled' ? trans('e.g. duplicate of HELP-12, following up there') : trans('e.g. fixed the rounding in the invoice totals')" />
                 <p class="mt-1 text-xs text-gray-400">{{ trans("This is published as a comment on the ticket.") }}</p>
+                <p v-if="statusNoteAction === 'resolved' && can_manage && ticket.status !== 'pending_deploy'" class="mt-1 text-xs text-gray-400">{{ trans("Use Set as Done on Next Deployment only when the fix is already on main: the ticket closes and this comment is posted after the next deployment.") }}</p>
             </div>
             <div class="flex justify-end gap-2">
                 <Button type="tertiary" :label="trans('Back')" @click="isStatusNoteOpen = false" />
                 <Button
-                    v-if="statusNoteAction === 'resolved' && can_manage && !ticket.is_waiting_for_deployment"
+                    v-if="statusNoteAction === 'resolved' && can_manage && ticket.status !== 'pending_deploy'"
                     type="secondary"
                     icon="fal fa-rocket"
                     :label="trans('Set as Done on Next Deployment')"

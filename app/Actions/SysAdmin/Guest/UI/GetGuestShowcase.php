@@ -38,7 +38,6 @@ class GetGuestShowcase
                 'id'                    => $guest->id,
                 'username'              => $user->username,
                 'email'                 => $guest->email,
-                'about'                 => $user->about,
                 'contact_name'          => $guest->contact_name,
                 'permissions_pictogram' => $this->getPermissionsPictogram($user, $permissionsGroupData, $jobPositionsOrganisationsData),
                 'last_active_at'        => $user->stats->last_active_at,

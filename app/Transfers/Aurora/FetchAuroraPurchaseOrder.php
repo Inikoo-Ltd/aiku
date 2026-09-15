@@ -8,6 +8,7 @@
 
 namespace App\Transfers\Aurora;
 
+use Illuminate\Support\Carbon;
 use App\Actions\Helpers\CurrencyExchange\GetHistoricCurrencyExchange;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderDeliveryStateEnum;
@@ -58,7 +59,7 @@ class FetchAuroraPurchaseOrder extends FetchAurora
 
         $cancelledAt = null;
         $createdAt   = $this->parseDatetime($this->auroraModelData->{'Purchase Order Creation Date'});
-        $submittedAt = $this->parseDatetime($this->auroraModelData->{'Purchase Order Submitted Date'});
+        $submittedAt = $this->parseFirstSubmittedAt() ?? $this->parseDatetime($this->auroraModelData->{'Purchase Order Submitted Date'});
         $confirmedAt = $this->parseDatetime($this->auroraModelData->{'Purchase Order Confirmed Date'});
 
         $date = $createdAt;
@@ -173,6 +174,22 @@ class FetchAuroraPurchaseOrder extends FetchAurora
             'fetched_at'      => now(),
             'last_fetched_at' => now()
         ];
+    }
+
+    /**
+     * Aurora overwrites the submitted date every time an order is sent back to planning and
+     * re-submitted, so the first submit event in its history is the real submission date.
+     */
+    private function parseFirstSubmittedAt(): ?Carbon
+    {
+        $firstSubmit = DB::connection('aurora')
+            ->table('History Dimension')
+            ->join('Purchase Order History Bridge', 'Purchase Order History Bridge.History Key', '=', 'History Dimension.History Key')
+            ->where('Purchase Order History Bridge.Purchase Order Key', $this->auroraModelData->{'Purchase Order Key'})
+            ->where('History Dimension.History Abstract', 'Purchase order submitted')
+            ->min('History Dimension.History Date');
+
+        return $this->parseDatetime($firstSubmit);
     }
 
     protected function fetchData($id): object|null

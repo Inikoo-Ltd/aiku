@@ -36,9 +36,13 @@ class UpdateTicket extends OrgAction
         $statusComment = trim((string) Arr::pull($modelData, 'status_comment', ''));
         $waitingHours = Arr::pull($modelData, 'waiting_hours');
 
-        $asker = request()->user();
+        $asker = auth()->user();
         if ($question !== '' && $asker instanceof User) {
-            StoreTicketComment::make()->action($ticket, $asker, ['body' => $question], notifyUsers: false);
+            if (Arr::get($modelData, 'status') === TicketStatusEnum::PENDING_DEPLOY->value) {
+                data_set($modelData, 'data', array_merge($ticket->data ?? [], ['deploy_comment' => ['body' => $question, 'user_id' => $asker->id]]));
+            } else {
+                StoreTicketComment::make()->action($ticket, $asker, ['body' => $question], notifyUsers: false);
+            }
         }
 
         if ($statusComment !== '' && $asker instanceof User) {
@@ -51,10 +55,6 @@ class UpdateTicket extends OrgAction
             if (!Arr::has($modelData, 'status') && in_array($ticket->status, [TicketStatusEnum::OPEN, TicketStatusEnum::ASSIGNED], true)) {
                 data_set($modelData, 'status', Arr::get($modelData, 'assignee_id') ? TicketStatusEnum::ASSIGNED->value : TicketStatusEnum::OPEN->value);
             }
-        }
-
-        if (Arr::has($modelData, 'status') && !Arr::has($modelData, 'is_waiting_for_deployment')) {
-            data_set($modelData, 'is_waiting_for_deployment', false);
         }
 
         if ($status = Arr::get($modelData, 'status')) {
@@ -73,7 +73,7 @@ class UpdateTicket extends OrgAction
             }
 
             data_set($modelData, 'assigned_at', $status === TicketStatusEnum::OPEN ? null : (Arr::get($modelData, 'assigned_at') ?? $ticket->assigned_at ?? now()));
-            data_set($modelData, 'waiting_at', $status === TicketStatusEnum::WAITING ? ($ticket->waiting_at ?? now()) : null);
+            data_set($modelData, 'waiting_at', in_array($status, [TicketStatusEnum::WAITING, TicketStatusEnum::ANSWERED], true) ? ($ticket->status === $status ? $ticket->waiting_at : now()) : null);
             data_set($modelData, 'waiting_until', $status === TicketStatusEnum::WAITING
                 ? ($waitingHours ? now()->addHours((int) $waitingHours) : ($ticket->waiting_until ?? now()->addHours($ticket->defaultWaitingHours())))
                 : null);
@@ -153,7 +153,6 @@ class UpdateTicket extends OrgAction
             'is_confidential' => ['sometimes', 'boolean'],
             'question'      => ['sometimes', 'nullable', 'string', 'max:10000'],
             'status_comment' => ['sometimes', 'nullable', 'string', 'max:10000'],
-            'is_waiting_for_deployment' => ['sometimes', 'boolean'],
             'qa_status'     => ['sometimes', 'nullable', Rule::enum(TicketQaStatusEnum::class)],
             'qa_note'       => ['sometimes', 'nullable', 'string', 'max:10000'],
             'waiting_hours' => ['sometimes', 'nullable', 'integer', 'min:1', 'max:720'],

@@ -14,6 +14,10 @@ use Lorisleiva\Actions\Decorators\JobDecorator;
 
 use function Pest\Laravel\post;
 
+beforeAll(function () {
+    loadDB();
+});
+
 beforeEach(function () {
     list($this->organisation, $this->user, $this->shop) = createShop();
     $this->website = Website::factory()->create([
