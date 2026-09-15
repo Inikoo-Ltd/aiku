@@ -52,7 +52,7 @@ function ordersRoute(customerSalesChannel: CustomerSalesChannel) {
       <Table :resource="data" >
         <template #cell(platform_name)="{ item: customerSalesChannel }">
             <div class="flex items-center gap-2">
-                <img :src="customerSalesChannel.platform_image" :alt="customerSalesChannel.platform_name" class="w-6 h-6" />
+                <img :src="customerSalesChannel.platform_image" :alt="customerSalesChannel.platform_name" class="w-6 h-6" loading="lazy" decoding="async" />
                 {{ customerSalesChannel.platform_name }}
             </div>
         </template>

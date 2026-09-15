@@ -15,6 +15,8 @@ use App\Actions\Production\JobOrderItemTask\SettleShortJobOrderItemTask;
 use App\Enums\Production\JobOrderItemTask\JobOrderItemTaskStateEnum;
 use App\Enums\Production\ManufactureTaskSession\ManufactureTaskSessionActivityTypeEnum;
 use App\Enums\Production\ManufactureTaskSession\ManufactureTaskSessionStateEnum;
+use App\Actions\Production\ManufactureBreak\EndManufactureBreak;
+use App\Models\Production\ManufactureBreak;
 use App\Models\Production\ManufactureTaskSession;
 use Illuminate\Http\RedirectResponse;
 use App\Models\Production\JobOrderItemTask;
@@ -36,6 +38,12 @@ class CloseManufactureTaskSession extends OrgAction
                 ]);
             }
 
+            $openBreak = ManufactureBreak::where('user_id', $session->user_id)->open()->first();
+            if ($openBreak) {
+                EndManufactureBreak::make()->action($openBreak);
+            }
+            CalculateManufactureTaskSessionBreakMinutes::run($session, now());
+
             $manufactureTask = $session->manufactureTask;
 
             $task = JobOrderItemTask::lockForUpdate()->find($session->job_order_item_task_id);
@@ -55,7 +63,6 @@ class CloseManufactureTaskSession extends OrgAction
             'operative_reward_terms'          => $manufactureTask->operative_reward_terms,
             'operative_reward_allowance_type' => $manufactureTask->operative_reward_allowance_type,
             'operative_reward_amount'         => $manufactureTask->is_piece_rate ? $manufactureTask->operative_reward_amount : 0,
-            'break_minutes'                   => $modelData['break_minutes'] ?? $session->break_minutes ?? 0,
             'activity_type'                   => $modelData['activity_type'] ?? $session->activity_type ?? ManufactureTaskSessionActivityTypeEnum::PRODUCTION,
             'non_productive_reason'           => $modelData['non_productive_reason'] ?? null,
         ]);
@@ -77,7 +84,6 @@ class CloseManufactureTaskSession extends OrgAction
         return [
             'quantity_made'          => ['required', 'numeric', 'min:0'],
             'quantity_rejected'      => ['sometimes', 'numeric', 'min:0'],
-            'break_minutes'          => ['sometimes', 'integer', 'min:0'],
             'outcome'                => ['sometimes', 'nullable', Rule::in(['complete', 'carry_over'])],
             'activity_type'          => ['sometimes', Rule::enum(ManufactureTaskSessionActivityTypeEnum::class)],
             'non_productive_reason'  => [

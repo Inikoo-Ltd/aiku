@@ -13,21 +13,25 @@ import { useFormatTime } from "@/Composables/useFormatTime"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import TicketThread from "@/Components/Tickets/TicketThread.vue"
 import TicketRating from "@/Components/Tickets/TicketRating.vue"
+import TicketAttachmentPreview, { isPreviewableAttachment } from "@/Components/Tickets/TicketAttachmentPreview.vue"
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
 import { Popover, Listbox, Dialog } from "primevue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { useLiveTickets } from "@/Composables/useLiveTickets"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faPaperclip, faCircle, faUserCheck, faSpinner, faClock, faCheckCircle, faBan, faPlay, faPause, faStop, faCheck, faUndo, faBug, faLightbulb, faLevelUp, faCube, faQuestionCircle, faEllipsisV, faTrashAlt, faUser, faPencil, faTimes, faPlus, faPlusCircle, faExchange, faHourglassHalf, faVial, faShieldCheck, faShield } from "@fal"
+import { faPaperclip, faCircle, faUserCheck, faSpinner, faClock, faCheckCircle, faBan, faPlay, faPause, faStop, faCheck, faUndo, faBug, faLightbulb, faLevelUp, faCube, faQuestionCircle, faEllipsisV, faTrashAlt, faUser, faPencil, faTimes, faPlus, faPlusCircle, faExchange, faHourglassHalf, faVial, faShieldCheck, faShield, faRocket } from "@fal"
 
-library.add(faVial, faShieldCheck, faShield, faHourglassHalf, faPlusCircle, faExchange, faEllipsisV, faTrashAlt, faUser, faPencil, faTimes, faPlus,faPaperclip, faCircle, faUserCheck, faSpinner, faClock, faCheckCircle, faBan, faPlay, faPause, faStop, faCheck, faUndo, faBug, faLightbulb, faLevelUp, faCube, faQuestionCircle)
+library.add(faVial, faShieldCheck, faShield, faRocket, faHourglassHalf, faPlusCircle, faExchange, faEllipsisV, faTrashAlt, faUser, faPencil, faTimes, faPlus,faPaperclip, faCircle, faUserCheck, faSpinner, faClock, faCheckCircle, faBan, faPlay, faPause, faStop, faCheck, faUndo, faBug, faLightbulb, faLevelUp, faCube, faQuestionCircle)
 
 const kindIcons: Record<string, string> = {
     bug: "fal fa-bug",
     feature: "fal fa-lightbulb",
     escalation: "fal fa-level-up",
 }
+
+const previewFileIndex = ref<number | null>(null)
+const previewableTicketFiles = computed(() => (props.ticket.attachments ?? []).filter(isPreviewableAttachment))
 
 const kindPopover = ref()
 const modulePopover = ref()
@@ -57,6 +61,13 @@ const statusActions: Record<string, { status: string; label: string; icon: strin
         cancel,
     ],
     waiting: [{ ...start, label: trans("Resume") }, done, cancel],
+    answered: [
+        { ...start, label: trans("Resume") },
+        { status: "waiting", label: trans("Ask again"), icon: "fal fa-question-circle", class: "text-blue-500" },
+        done,
+        cancel,
+    ],
+    pending_deploy: [{ ...start, label: trans("Back to in progress") }, done, cancel],
     resolved: [{ status: "open", label: trans("Reopen"), icon: "fal fa-undo", class: "text-gray-600" }],
     cancelled: [{ status: "open", label: trans("Reopen"), icon: "fal fa-undo", class: "text-gray-600" }],
 }
@@ -77,6 +88,8 @@ const props = defineProps<{
         statuses: { label: string; value: string }[]
         priorities: { label: string; value: string }[]
         assignees: { label: string; value: number }[]
+        qa_users: { label: string; value: number; avatar: any }[]
+        mentionable: { username: string; name: string | null }[]
         tags: string[]
         kinds: { label: string; value: string }[]
         modules: { label: string; value: string }[]
@@ -137,6 +150,30 @@ const askReporter = () => {
     )
 }
 
+const closingStatus = ref<"resolved" | "cancelled" | null>(null)
+const closingComment = ref("")
+const closeAfterDeployment = ref(false)
+const isClosing = ref(false)
+
+const openClosing = (status: "resolved" | "cancelled") => {
+    closingComment.value = ""
+    closeAfterDeployment.value = false
+    closingStatus.value = status
+}
+
+const closeTicket = () => {
+    router.patch(
+        route(props.routes.update.name, props.routes.update.parameters),
+        { status: closingStatus.value === "resolved" && closeAfterDeployment.value ? "pending_deploy" : closingStatus.value, question: closingComment.value },
+        {
+            preserveScroll: true,
+            onStart: () => (isClosing.value = true),
+            onFinish: () => (isClosing.value = false),
+            onSuccess: () => (closingStatus.value = null),
+        }
+    )
+}
+
 const isQaVerdictOpen = ref(false)
 const qaVerdict = ref<"passed" | "failed">("passed")
 const qaNote = ref("")
@@ -163,6 +200,12 @@ const sendQaVerdict = () => {
 
 const canAskQa = computed(() => props.can_manage && ["in_progress", "waiting", "resolved"].includes(props.ticket.status) && props.ticket.qa_status !== "requested")
 
+const qaPopover = ref()
+const askQa = (qaUserId: number | null) => {
+    router.patch(route(props.routes.update.name, props.routes.update.parameters), { qa_status: "requested", qa_user_id: qaUserId }, { preserveScroll: true })
+    qaPopover.value.hide()
+}
+
 const update = (field: string, value: unknown) => {
     router.patch(route(props.routes.update.name, props.routes.update.parameters), { [field]: value }, { preserveScroll: true })
 }
@@ -172,22 +215,28 @@ const update = (field: string, value: unknown) => {
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead">
         <template #wrapped-delete>
-            <ModalConfirmationDelete
-                :title="trans('Delete :reference?', { reference: ticket.reference })"
-                :description="trans('The ticket and its comments will be removed for good.')"
-                :noLabel="trans('Yes, delete')"
-                :routeDelete="routes.delete"
-                class="w-full">
-                <template #default="{ changeModel }">
-                    <Button type="negative" icon="fal fa-trash-alt" :label="trans('Delete ticket')" full @click="changeModel" />
-                </template>
-            </ModalConfirmationDelete>
+            <div class="flex w-80 flex-col gap-3 whitespace-nowrap">
+                <label v-if="can_flag_confidential" class="flex items-center gap-x-2 text-sm text-gray-600 cursor-pointer">
+                    <input type="checkbox" :checked="ticket.is_confidential" class="rounded border-gray-300" @change="update('is_confidential', ($event.target as HTMLInputElement).checked)" />
+                    {{ trans("Confidential") }} <span class="text-xs text-gray-400">({{ trans("only reporter and lead engineers") }})</span>
+                </label>
+                <ModalConfirmationDelete
+                    :title="trans('Delete :reference?', { reference: ticket.reference })"
+                    :description="trans('The ticket and its comments will be removed for good.')"
+                    :noLabel="trans('Yes, delete')"
+                    :routeDelete="routes.delete"
+                    class="w-full">
+                    <template #default="{ changeModel }">
+                        <Button type="negative" icon="fal fa-trash-alt" :label="trans('Delete ticket')" full @click="changeModel" />
+                    </template>
+                </ModalConfirmationDelete>
+            </div>
         </template>
     </PageHeading>
     <div class="p-4 grid gap-4 lg:grid-cols-3">
         <div class="lg:col-span-2 space-y-4">
             <TicketRating :rating="ticket.rating" :rating-comment="ticket.rating_comment" :can-rate="can_rate" :rate-route="routes.rate" />
-            <TicketThread :ticket="ticket" :comments="comments" :comment-route="routes.comment" />
+            <TicketThread :ticket="ticket" :comments="comments" :comment-route="routes.comment" :mentionable="options.mentionable" />
         </div>
         <div class="space-y-4 self-start">
         <aside class="bg-white rounded-lg border border-gray-300 p-4 space-y-4 text-sm">
@@ -197,7 +246,7 @@ const update = (field: string, value: unknown) => {
                     <span v-else class="flex h-7 w-7 items-center justify-center rounded-full bg-gray-200 text-gray-500">
                         <FontAwesomeIcon icon="fal fa-user" fixed-width />
                     </span>
-                    <span :class="ticket.assignee ? 'text-gray-800' : 'text-gray-400'">{{ ticket.assignee || trans("Unassigned") }}</span>
+                    <span :class="ticket.assignee ? 'text-gray-800' : 'text-gray-400'">{{ ticket.assignee_short || trans("Unassigned") }}</span>
                 </component>
                 <Popover v-if="can_assign" ref="assigneePopover">
                     <button
@@ -244,7 +293,7 @@ const update = (field: string, value: unknown) => {
                         type="button"
                         class="rounded-md p-1.5 hover:bg-gray-100"
                         :class="action.class"
-                        @click="action.status === 'waiting' ? openAskReporter() : update('status', action.status)">
+                        @click="action.status === 'waiting' ? openAskReporter() : action.status === 'resolved' || action.status === 'cancelled' ? openClosing(action.status) : update('status', action.status)">
                         <FontAwesomeIcon :icon="action.icon" fixed-width />
                     </button>
                 </div>
@@ -258,7 +307,21 @@ const update = (field: string, value: unknown) => {
                     <button v-tooltip="trans('QA passed')" type="button" class="rounded-md p-1.5 text-green-600 hover:bg-gray-100" @click="openQaVerdict('passed')"><FontAwesomeIcon icon="fal fa-shield-check" fixed-width /></button>
                     <button v-tooltip="trans('QA failed')" type="button" class="rounded-md p-1.5 text-red-500 hover:bg-gray-100" @click="openQaVerdict('failed')"><FontAwesomeIcon icon="fal fa-shield" fixed-width /></button>
                 </template>
-                <button v-if="canAskQa" v-tooltip="ticket.qa_status ? trans('Ask QA to check again') : trans('Ask QA to check')" type="button" class="rounded-md p-1.5 text-amber-600 hover:bg-gray-100" @click="update('qa_status', 'requested')"><FontAwesomeIcon icon="fal fa-vial" fixed-width /></button>
+                <button v-if="canAskQa" v-tooltip="ticket.qa_status ? trans('Ask QA to check again') : trans('Ask QA to check')" type="button" class="rounded-md p-1.5 text-amber-600 hover:bg-gray-100" @click="qaPopover.toggle($event)"><FontAwesomeIcon icon="fal fa-vial" fixed-width /></button>
+                <Popover ref="qaPopover">
+                    <button type="button" class="mb-2 w-full rounded bg-amber-50 px-2 py-1 text-sm font-medium text-amber-700 hover:bg-amber-100" @click="askQa(null)">
+                        {{ trans("Anyone in QA") }}
+                    </button>
+                    <div class="grid grid-cols-4 gap-2">
+                        <button v-for="qaUser in options.qa_users" :key="qaUser.value" type="button" class="flex w-16 flex-col items-center gap-1 rounded p-1 text-xs hover:bg-gray-100" @click="askQa(qaUser.value)">
+                            <img v-if="qaUser.avatar?.original" :src="qaUser.avatar.original" class="h-9 w-9 rounded-full object-cover" alt="" />
+                            <span v-else class="flex h-9 w-9 items-center justify-center rounded-full bg-gray-200 text-gray-500">
+                                <FontAwesomeIcon icon="fal fa-user" fixed-width />
+                            </span>
+                            <span class="w-full truncate text-center">{{ qaUser.label }}</span>
+                        </button>
+                    </div>
+                </Popover>
                 <button v-if="can_manage && ticket.qa_status === 'requested'" v-tooltip="trans('Withdraw QA request')" type="button" class="rounded-md p-1.5 text-gray-400 hover:bg-gray-100" @click="update('qa_status', null)"><FontAwesomeIcon icon="fal fa-times" fixed-width /></button>
             </div>
             <template v-if="can_manage">
@@ -322,10 +385,6 @@ const update = (field: string, value: unknown) => {
                 </Popover>
             </div>
             <Button v-if="ticket.type === 'customer' && !ticket.escalations.length" type="secondary" icon="fal fa-level-up" :label="trans('Escalate to help desk')" full @click="escalate" />
-            <label v-if="can_flag_confidential" class="flex items-center gap-x-2 text-gray-600 cursor-pointer">
-                <input type="checkbox" :checked="ticket.is_confidential" class="rounded border-gray-300" @change="update('is_confidential', ($event.target as HTMLInputElement).checked)" />
-                {{ trans("Confidential") }} <span class="text-xs text-gray-400">({{ trans("only reporter and lead engineers") }})</span>
-            </label>
             </template>
             <div v-if="ticket.commits?.length">
                 <p class="text-xs text-gray-500 mb-1">{{ trans("Commits") }}</p>
@@ -341,8 +400,12 @@ const update = (field: string, value: unknown) => {
             <div v-if="ticket.attachments?.length">
                 <p class="text-xs text-gray-500 mb-1">{{ trans("Attachments") }}</p>
                 <ul class="space-y-1">
-                    <li v-for="file in ticket.attachments" :key="file.url"><a :href="file.url" target="_blank" class="text-blue-600 hover:underline break-all"><FontAwesomeIcon icon="fal fa-paperclip" class="mr-1" />{{ file.name }}</a></li>
+                    <li v-for="file in ticket.attachments" :key="file.url">
+                        <button v-if="isPreviewableAttachment(file)" type="button" class="text-left text-blue-600 hover:underline break-all" @click="previewFileIndex = previewableTicketFiles.indexOf(file)"><FontAwesomeIcon icon="fal fa-paperclip" class="mr-1" />{{ file.name }}</button>
+                        <a v-else :href="file.url" target="_blank" class="text-blue-600 hover:underline break-all"><FontAwesomeIcon icon="fal fa-paperclip" class="mr-1" />{{ file.name }}</a>
+                    </li>
                 </ul>
+                <TicketAttachmentPreview v-model:index="previewFileIndex" :files="previewableTicketFiles" />
             </div>
             <dl class="space-y-1 text-gray-600">
                 <div v-if="ticket.parent" class="flex justify-between"><dt>{{ trans("Escalated from") }}</dt><dd><Link :href="route('grp.tickets.show', ticket.parent)" class="text-blue-600 hover:underline">{{ ticket.parent }}</Link></dd></div>
@@ -376,6 +439,25 @@ const update = (field: string, value: unknown) => {
             <div class="flex justify-end gap-2">
                 <Button type="tertiary" :label="trans('Cancel')" @click="isQaVerdictOpen = false" />
                 <Button :type="qaVerdict === 'passed' ? 'primary' : 'negative'" :label="qaVerdict === 'passed' ? trans('Pass') : trans('Fail')" :icon="qaVerdict === 'passed' ? 'fal fa-shield-check' : 'fal fa-shield'" :loading="isSendingVerdict" :disabled="qaVerdict === 'failed' && !qaNote.trim()" @click="sendQaVerdict" />
+            </div>
+        </div>
+    </Dialog>
+    <Dialog :visible="closingStatus !== null" @update:visible="(visible) => !visible && (closingStatus = null)" modal :header="closingStatus === 'resolved' ? trans('Done') : trans('Cancel ticket')" :style="{ width: '32rem' }">
+        <div class="space-y-4 text-sm">
+            <div>
+                <p class="text-xs text-gray-500 mb-1">{{ closingStatus === 'resolved' ? trans("What was done?") : trans("Why is it cancelled?") }}</p>
+                <textarea v-model="closingComment" rows="5" class="w-full rounded border-gray-300 text-sm" :placeholder="closingStatus === 'resolved' ? trans('e.g. fixed the voucher total, deployed today') : trans('e.g. duplicate of HELP-1234')" />
+            </div>
+            <label v-if="closingStatus === 'resolved'" class="flex items-center gap-2 text-gray-700">
+                <input v-model="closeAfterDeployment" type="checkbox" class="rounded border-gray-300 text-indigo-600" />
+                {{ trans("Close after next deployment") }}
+            </label>
+            <p v-if="closingStatus === 'resolved' && closeAfterDeployment" class="text-xs text-gray-500">
+                {{ trans("Only tick when the fix is already on main. The ticket closes and posts this comment after the next deployment") }}
+            </p>
+            <div class="flex justify-end gap-2">
+                <Button type="tertiary" :label="trans('Back')" @click="closingStatus = null" />
+                <Button :type="closingStatus === 'resolved' ? 'primary' : 'negative'" :label="closingStatus === 'resolved' ? (closeAfterDeployment ? trans('Wait for deployment') : trans('Mark as done')) : trans('Cancel ticket')" :icon="closingStatus === 'resolved' ? 'fal fa-check' : 'fal fa-ban'" :loading="isClosing" :disabled="!closingComment.trim()" @click="closeTicket" />
             </div>
         </div>
     </Dialog>

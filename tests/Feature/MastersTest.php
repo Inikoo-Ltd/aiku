@@ -3190,6 +3190,22 @@ test('upload and delete sound sample on master asset', function () {
         ->and($masterAsset->images()->count())->toBe(0);
 });
 
+test('master product category image upload accepts jpg and rejects webp', function () {
+    $rules = \App\Actions\Masters\MasterProductCategory\UploadImagesToMasterProductCategory::make()->rules();
+
+    $jpg = \Illuminate\Support\Facades\Validator::make(
+        ['images' => [\Illuminate\Http\UploadedFile::fake()->image('candle.jpg')]],
+        $rules
+    );
+    $webp = \Illuminate\Support\Facades\Validator::make(
+        ['images' => [\Illuminate\Http\UploadedFile::fake()->image('candle.webp')]],
+        $rules
+    );
+
+    expect($jpg->passes())->toBeTrue()
+        ->and($webp->passes())->toBeFalse();
+});
+
 test('master collection from origin country keeps only assets made there', function (MasterCollection $masterCollection, MasterAsset $nepalMasterAsset) {
     $nepal = \App\Models\Helpers\Country::where('code', 'NP')->first();
     $india = \App\Models\Helpers\Country::where('code', 'IN')->first();

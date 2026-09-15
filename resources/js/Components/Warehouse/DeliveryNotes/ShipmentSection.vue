@@ -618,6 +618,7 @@ const onClickButtonShipmentPlatform = () => {
 								class="h-4 w-4 object-contain"
 								:title="shipment.name"
 								v-tooltip="shipment.name"
+								loading="lazy" decoding="async"
 							/>
 							<span v-tooltip="shipment.name" class="max-w-52 truncate">{{ shipment.name }}</span>
 							
@@ -922,6 +923,7 @@ const onClickButtonShipmentPlatform = () => {
 									v-tooltip="shipper.name"
 									class="h-4 w-4 object-contain"
 									@error="(e) => ((e.target as HTMLImageElement).style.display = 'none')"
+									loading="lazy" decoding="async"
 								/>
 							</span>
 						</span>

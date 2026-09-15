@@ -7,6 +7,10 @@ use App\Actions\Chat\ChatSession\UI\ShowOrgChatConversation;
 use App\Actions\Chat\ChatSession\UI\ShowOrgChatInbox;
 use App\Actions\Chat\ChatSession\UI\ShowShopChatConversations;
 use App\Actions\Chat\ChatSession\UI\ShowShopChatDashboard;
+use App\Actions\Chat\Whatsapp\GetWhatsappPhoneNumberStatus;
+use App\Actions\Chat\Whatsapp\RegisterWhatsappPhoneNumber;
+use App\Actions\Chat\Whatsapp\RequestWhatsappPhoneNumberCode;
+use App\Actions\Chat\Whatsapp\VerifyWhatsappPhoneNumberCode;
 use App\Actions\Chat\Whatsapp\Templates\DeleteWhatsappMessageTemplate;
 use App\Actions\Chat\Whatsapp\Templates\RefreshWhatsappMessageTemplate;
 use App\Actions\Chat\Whatsapp\Templates\StoreWhatsappMessageTemplate;
@@ -43,3 +47,8 @@ Route::patch('/whatsapp-templates/{metaMessageTemplate}/variables', UpdateWhatsa
 Route::delete('/whatsapp-templates/{metaMessageTemplate}', DeleteWhatsappMessageTemplate::class)->name('whatsapp_templates.delete');
 Route::post('/whatsapp-templates/{metaMessageTemplate}/refresh', RefreshWhatsappMessageTemplate::class)->name('whatsapp_templates.refresh');
 Route::post('/whatsapp-templates/sync', SyncWhatsappMessageTemplates::class)->name('whatsapp_templates.sync');
+
+Route::post('/whatsapp-phone/status', GetWhatsappPhoneNumberStatus::class)->name('whatsapp_phone.status');
+Route::post('/whatsapp-phone/request-code', RequestWhatsappPhoneNumberCode::class)->name('whatsapp_phone.request_code');
+Route::post('/whatsapp-phone/verify-code', VerifyWhatsappPhoneNumberCode::class)->name('whatsapp_phone.verify_code');
+Route::post('/whatsapp-phone/register', RegisterWhatsappPhoneNumber::class)->name('whatsapp_phone.register');

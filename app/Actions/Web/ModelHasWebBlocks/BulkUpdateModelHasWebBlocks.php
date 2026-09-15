@@ -13,6 +13,7 @@ use App\Actions\Traits\Authorisations\WithWebAuthorisation;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Dropshipping\ModelHasWebBlocks;
 use Illuminate\Support\Arr;
+use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 
 class BulkUpdateModelHasWebBlocks extends OrgAction
@@ -32,6 +33,12 @@ class BulkUpdateModelHasWebBlocks extends OrgAction
 
     public function asController(ActionRequest $request): void
     {
+        foreach (Arr::get($request->all(), 'web_blocks', []) as $modelHasWebBlock) {
+            $webpage = ModelHasWebBlocks::find(Arr::get($modelHasWebBlock, 'id'))?->webpage;
+            if ($webpage && !$webpage->canBeEditedBy($request->user())) {
+                throw ValidationException::withMessages(['message' => $webpage->lockMessage()]);
+            }
+        }
         $this->handle($request->all());
     }
 

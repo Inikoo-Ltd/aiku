@@ -28,7 +28,6 @@ class ProfileApiResource extends JsonResource
             'avatar'       => $user->imageSources(320, 320),
             'contact_name' => $user->contact_name,
             'email'        => $user->email,
-            'about'        => $user->about,
             'status'       => $user->status,
             'employee'     => EmployeeResource::collection($user->employees),
             'guest'        => GuestResource::collection($user->guests),

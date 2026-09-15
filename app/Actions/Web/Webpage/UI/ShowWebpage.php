@@ -16,6 +16,7 @@ use App\Actions\UI\WithInertia;
 use App\Actions\Web\ExternalLink\UI\IndexExternalLinks;
 use App\Actions\Web\HasWorkshopAction;
 use App\Actions\Web\Redirect\UI\IndexRedirects;
+use App\Actions\Web\Webpage\GetWebpagePageSpeedReport;
 use App\Actions\Web\Webpage\GetWebpagePerformance;
 use App\Actions\Web\Webpage\WithWebpageSubNavigation;
 use App\Actions\Web\Website\UI\ShowWebsite;
@@ -317,6 +318,7 @@ class ShowWebpage extends OrgAction
                 'webpage_url'           => $webpage->getUrl(),
                 'webpage_canonical_url' => $webpage->canonical_url,
                 'redirected_to'         => $webpage->redirectedTo?->redirectTo?->only(['id', 'slug', 'code', 'url']),
+                'lock' => GetWebpageLock::run($webpage, $request->user()),
                 WebpageTabsEnum::SHOWCASE->value => $this->tab == WebpageTabsEnum::SHOWCASE->value ?
                     fn () => WebpageResource::make($webpage)->getArray()
                     : Inertia::optional(fn () => WebpageResource::make($webpage)->getArray()),
@@ -346,6 +348,10 @@ class ShowWebpage extends OrgAction
                 WebpageTabsEnum::ANALYTICS->value => $this->tab == WebpageTabsEnum::ANALYTICS->value ?
                     fn () => GetWebpagePerformance::run($webpage, $request->only(['startDate', 'endDate']))
                     : Inertia::optional(fn () => GetWebpagePerformance::run($webpage, $request->only(['startDate', 'endDate']))),
+
+                'pagespeed' => $this->tab == WebpageTabsEnum::ANALYTICS->value
+                    ? Inertia::defer(fn () => GetWebpagePageSpeedReport::run($webpage), 'pagespeed')
+                    : Inertia::optional(fn () => GetWebpagePageSpeedReport::run($webpage)),
 
                 WebpageTabsEnum::CHANGELOG->value => $this->tab == WebpageTabsEnum::CHANGELOG->value ?
                     fn () => HistoryResource::collection(IndexHistory::run($webpage, WebpageTabsEnum::CHANGELOG->value))

@@ -22,7 +22,6 @@ Samotná stránka profilu je malý prehľad *o vás*: karty pre vaše **To do**,
 **Edit profile** je stránka "toto som ja":
 
 - **Photo** - nahrajte fotku a orežte ju do štvorca. Táto fotka sa stane vaším avatarom, ktorý kolegovia vidia v rohu, v chate a všade, kde sa objaví vaše meno. Skutočná tvár je lepšia ako sivý kruh.
-- **About** - krátka veta o sebe, približne do päťdesiat znakov.
 - **Chat nickname** - krátke meno zobrazované v internom chate. Ak je vaše používateľské meno dlhé alebo formálne, nastavte si niečo, ako vás ľudia naozaj volajú.
 - **Email** a **password** - zmeňte ktorýkoľvek z nich kedykoľvek potrebujete. Zvoľte si heslo s aspoň ôsmimi znakmi, ktoré nepoužívate nikde inde.
 

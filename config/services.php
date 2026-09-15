@@ -91,6 +91,11 @@ return [
         'access_token' => env('META_ADS_ACCESS_TOKEN'),
         'api_version'  => env('META_ADS_API_VERSION', 'v21.0'),
     ],
+    'webpush'   => [
+        'subject'     => env('VAPID_SUBJECT', 'mailto:dev@aw-advantage.com'),
+        'public_key'  => env('VAPID_PUBLIC_KEY'),
+        'private_key' => env('VAPID_PRIVATE_KEY'),
+    ],
     'slack'     => [
         'signing_secret'  => env('SLACK_SIGNING_SECRET'),
         'ticket_reaction' => env('SLACK_TICKET_REACTION', 'ticket'),

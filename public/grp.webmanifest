@@ -1,0 +1,13 @@
+{
+    "name": "Aiku",
+    "short_name": "Aiku",
+    "start_url": "/",
+    "scope": "/",
+    "display": "standalone",
+    "background_color": "#ffffff",
+    "theme_color": "#4f46e5",
+    "icons": [
+        { "src": "/favicon-180.png", "sizes": "180x180", "type": "image/png" },
+        { "src": "/favicon.png", "sizes": "512x512", "type": "image/png" }
+    ]
+}

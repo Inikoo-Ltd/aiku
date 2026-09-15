@@ -377,7 +377,7 @@ const markAsValid = () => {
                     </div>
                 </div>
             </div>
-            <div v-if="validationStatus.status == 'invalid' && fieldData.mark_as_valid_button?.show" class="flex items-start pt-2">
+            <div v-if="validationStatus.status !== 'valid' && fieldData.mark_as_valid_button?.show" class="flex items-start pt-2">
                 <ModalConfirmation
                     :title="ctrans('Are you sure you want to proceed?')"
                     :description="ctrans(`Please make sure you've checked the VAT Details with upmost detail first before proceeding`)"

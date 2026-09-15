@@ -48,13 +48,13 @@ initialiseApp()
 
 
 const layout = useLayoutStore()
+const isEmbedded = usePage().url.includes("embed=1")
 const sidebarOpen = ref(false)
 
 // Section: Notification
 watch(
     () => usePage().props?.flash?.notification,
     (notif) => {
-        console.log("notif ret", notif)
         if (!notif) return
 
         notify({
@@ -98,7 +98,6 @@ const isModalOpen = ref(false)
 watch(
     () => usePage().props?.flash?.modal,
     (modal: Modal) => {
-        console.log("modal ret", modal)
         if (!modal) return
 
         selectedModal.value = modal
@@ -131,7 +130,6 @@ const onCheckAppVersion = () => {
         } else {
             isModalNeedToRefresh.value = true
         }
-        console.log("---------- App version check:", eventData)
     })
 
     // console.log('Websocket subscription:', xxx.subscription.subscribed)
@@ -186,10 +184,13 @@ const safeTheme = computed(() => {
 
     return (t && t.length >= 8) ? t : fallbackTheme
 })
-console.log(Object.values(layout.rightSidebar).some((value) => value.show))
 </script>
 
 <template>
+    <div v-if="isEmbedded" class="min-h-screen bg-gray-50">
+        <slot />
+    </div>
+    <template v-else>
     <Teleport v-if="layout.app.newVersionAvailable" to="#topbar_grp">
         <ScreenWarning
             class="fixed z-[100] top-0 left-0 cursor-pointer"
@@ -410,6 +411,7 @@ console.log(Object.values(layout.rightSidebar).some((value) => value.show))
             <Notification :notification="props" />
         </template>
     </notifications>
+    </template>
 </template>
 
 <style lang="scss">

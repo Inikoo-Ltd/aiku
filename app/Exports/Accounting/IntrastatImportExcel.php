@@ -51,8 +51,8 @@ class IntrastatImportExcel implements FromQuery, WithMapping, WithHeadings, Shou
             ])
             ->orderBy('intrastat_import_time_series_records.from');
 
-        if (!empty($this->filters['between']['date'])) {
-            $raw = $this->filters['between']['date'];
+        if (!empty($this->filters['between']['from'])) {
+            $raw = $this->filters['between']['from'];
             [$start, $end] = explode('-', $raw);
 
             $startDate = Carbon::createFromFormat('Ymd', $start)->format('Y-m-d');
