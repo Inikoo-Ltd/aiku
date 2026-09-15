@@ -47,6 +47,7 @@ use App\Models\Ordering\SalesChannel;
 use Closure;
 use App\Actions\Web\Webpage\BreakWebpageCache;
 use App\Actions\Web\Website\BreakWebsiteCache;
+use App\Actions\Web\Website\BreakWebsiteIrisCache;
 use App\Enums\Web\Crawl\CrawlTriggerEnum;
 use App\Enums\Web\Webpage\WebpageStateEnum;
 use Illuminate\Support\Facades\Event;
@@ -86,6 +87,8 @@ class UpdateShop extends OrgAction
         $originalViewContactOptionsPanel = Arr::get($shop->settings ?? [], 'chat.view_contact_options_panel');
         $originalDataContactOptionsPanel = Arr::get($shop->settings ?? [], 'chat.data_contact_options_panel');
         $originalEnableChat              = Arr::get($shop->settings ?? [], 'chat.enable_chat');
+
+        $originalPackagingAndInsertsEnabled = (bool) Arr::get($shop->settings ?? [], 'packaging_and_inserts.enabled', false);
 
         /* Read off the shop rather than the payload because the two callers name these
            differently: the shop screen sends them flat and they are nested below, while
@@ -585,6 +588,10 @@ class UpdateShop extends OrgAction
 
         if ($shop->website && ($reviewRatingLabelsTouched || Arr::get($shop->settings ?? [], 'reviews') != $originalReviewSettings || $chatSettingsChanged)) {
             BreakWebsiteCache::run($shop->website, CrawlTriggerEnum::WEBSITE_UPDATE);
+        }
+
+        if ($shop->website && (bool) Arr::get($shop->settings ?? [], 'packaging_and_inserts.enabled', false) !== $originalPackagingAndInsertsEnabled) {
+            BreakWebsiteIrisCache::run($shop->website);
         }
 
         /* Compared by value rather than read off getChanges(), which reports the whole settings
