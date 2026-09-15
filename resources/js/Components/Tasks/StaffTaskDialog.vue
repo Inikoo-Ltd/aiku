@@ -36,7 +36,7 @@ let searchTimeout: ReturnType<typeof setTimeout> | null = null
 
 const loadOptions = async () => {
     if (departments.value.length) return
-    const { data } = await axios.get(route("grp.chat.staff.tasks.options"))
+    const { data } = await axios.get(route("grp.tasks.options"))
     departments.value = data.departments
     priorities.value = data.priorities
 }
@@ -74,7 +74,7 @@ const submit = async () => {
     saving.value = true
     errors.value = {}
     try {
-        const { data } = await axios.post(route("grp.chat.staff.tasks.store"), {
+        const { data } = await axios.post(route("grp.tasks.store"), {
             subject: form.value.subject,
             description: form.value.description || null,
             department: form.value.assignee ? null : form.value.department || null,

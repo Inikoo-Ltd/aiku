@@ -6,13 +6,13 @@
  * Copyright (c) 2026, Raul A Perusquia Flores
  */
 
-namespace App\Actions\Chat\StaffTask;
+namespace App\Actions\Tasks;
 
 use App\Actions\Chat\Staff\SendStaffMessage;
-use App\Enums\Chat\StaffTaskStatusEnum;
+use App\Enums\Tasks\StaffTaskStatusEnum;
 use App\Enums\CRM\Livechat\ChatPriorityEnum;
-use App\Http\Resources\Chat\StaffTaskResource;
-use App\Models\Chat\StaffTask;
+use App\Http\Resources\Tasks\StaffTaskResource;
+use App\Models\Tasks\StaffTask;
 use App\Models\SysAdmin\User;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;

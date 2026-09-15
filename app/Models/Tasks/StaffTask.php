@@ -6,9 +6,11 @@
  * Copyright (c) 2026, Raul A Perusquia Flores
  */
 
-namespace App\Models\Chat;
+namespace App\Models\Tasks;
 
-use App\Enums\Chat\StaffTaskStatusEnum;
+use App\Models\Chat\StaffConversation;
+
+use App\Enums\Tasks\StaffTaskStatusEnum;
 use App\Enums\CRM\Livechat\ChatPriorityEnum;
 use App\Models\SysAdmin\User;
 use App\Models\Traits\HasHistory;
@@ -172,5 +174,18 @@ class StaffTask extends Model implements Auditable
                     ->whereIn('model_id', DB::table('employee_has_job_positions')->whereIn('job_position_id', $jobPositionIds)->select('employee_id'))
                     ->select('user_id')))
             ->get();
+    }
+
+    /**
+     * Anyone holding a supervisor job position, code ending in -m, in any department.
+     */
+    public static function isSupervisor(User $user): bool
+    {
+        $supervisorPositions = DB::table('job_positions')->where('group_id', $user->group_id)->where('code', 'like', '%-m')->select('id');
+
+        return DB::table('user_has_pseudo_job_positions')->where('user_id', $user->id)->whereIn('job_position_id', $supervisorPositions)->exists()
+            || DB::table('employee_has_job_positions')
+                ->whereIn('employee_id', DB::table('user_has_models')->where('user_id', $user->id)->where('model_type', 'Employee')->select('model_id'))
+                ->whereIn('job_position_id', $supervisorPositions)->exists();
     }
 }

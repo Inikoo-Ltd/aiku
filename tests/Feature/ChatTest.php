@@ -3091,32 +3091,32 @@ test('staff task to a department is queued with a thread and the claimer joins i
     $requester = $this->user;
     $worker    = \App\Actions\SysAdmin\Guest\StoreGuest::make()->action($this->organisation->group, array_merge(\App\Models\SysAdmin\Guest::factory()->definition(), ['positions' => [['slug' => 'group-admin', 'scopes' => []]]]))->getUser();
 
-    $task = \App\Actions\Chat\StaffTask\StoreStaffTask::run($requester, ['subject' => 'Check the product looks like the picture', 'department' => 'warehouse']);
+    $task = \App\Actions\Tasks\StoreStaffTask::run($requester, ['subject' => 'Check the product looks like the picture', 'department' => 'warehouse']);
 
     expect($task->reference)->toStartWith('TASK-')
-        ->and($task->status)->toBe(\App\Enums\Chat\StaffTaskStatusEnum::TODO)
+        ->and($task->status)->toBe(\App\Enums\Tasks\StaffTaskStatusEnum::TODO)
         ->and($task->assignee_id)->toBeNull()
         ->and($task->conversation->context_type)->toBe('StaffTask')
         ->and($task->conversation->participants()->count())->toBe(1)
         ->and($task->conversation->messages()->count())->toBe(1);
 
-    expect(\App\Actions\Chat\StaffTask\Json\GetStaffTasks::run($requester, 'requested')->pluck('id')->all())->toBe([$task->id])
-        ->and(\App\Actions\Chat\StaffTask\Json\GetStaffTasks::run($worker, 'mine'))->toBeEmpty();
+    expect(\App\Actions\Tasks\Json\GetStaffTasks::run($requester, 'requested')->pluck('id')->all())->toBe([$task->id])
+        ->and(\App\Actions\Tasks\Json\GetStaffTasks::run($worker, 'mine'))->toBeEmpty();
 
-    $task = \App\Actions\Chat\StaffTask\UpdateStaffTask::run($task, $worker, ['status' => 'in_progress']);
+    $task = \App\Actions\Tasks\UpdateStaffTask::run($task, $worker, ['status' => 'in_progress']);
 
     expect($task->assignee_id)->toBe($worker->id)
         ->and($task->started_at)->not->toBeNull()
         ->and($task->conversation->hasParticipant($worker))->toBeTrue()
         ->and($task->conversation->messages()->count())->toBe(2)
-        ->and(\App\Actions\Chat\StaffTask\Json\GetStaffTasks::run($worker, 'mine')->pluck('id')->all())->toBe([$task->id]);
+        ->and(\App\Actions\Tasks\Json\GetStaffTasks::run($worker, 'mine')->pluck('id')->all())->toBe([$task->id]);
 
-    $task = \App\Actions\Chat\StaffTask\UpdateStaffTask::run($task, $worker, ['status' => 'done']);
+    $task = \App\Actions\Tasks\UpdateStaffTask::run($task, $worker, ['status' => 'done']);
 
-    expect($task->status)->toBe(\App\Enums\Chat\StaffTaskStatusEnum::DONE)
+    expect($task->status)->toBe(\App\Enums\Tasks\StaffTaskStatusEnum::DONE)
         ->and($task->closed_at)->not->toBeNull()
-        ->and(\App\Actions\Chat\StaffTask\Json\GetStaffTasks::run($worker, 'mine'))->toBeEmpty()
-        ->and(\App\Actions\Chat\StaffTask\Json\GetStaffTasks::run($worker, 'mine', true)->pluck('id')->all())->toBe([$task->id]);
+        ->and(\App\Actions\Tasks\Json\GetStaffTasks::run($worker, 'mine'))->toBeEmpty()
+        ->and(\App\Actions\Tasks\Json\GetStaffTasks::run($worker, 'mine', true)->pluck('id')->all())->toBe([$task->id]);
 });
 
 test('staff task raised from a chat message links back to the source thread', function () {
@@ -3126,7 +3126,7 @@ test('staff task raised from a chat message links back to the source thread', fu
     $conversation = \App\Actions\Chat\Staff\StoreStaffConversation::run($requester, ['user_ids' => [$colleague->id]]);
     $message      = \App\Actions\Chat\Staff\SendStaffMessage::run($conversation, $colleague, ['body' => 'please update the homepage banners']);
 
-    $task = \App\Actions\Chat\StaffTask\StoreStaffTask::run($requester, ['subject' => $message->body, 'assignee_id' => $colleague->id, 'source_message_id' => $message->id]);
+    $task = \App\Actions\Tasks\StoreStaffTask::run($requester, ['subject' => $message->body, 'assignee_id' => $colleague->id, 'source_message_id' => $message->id]);
 
     expect($task->assignee_id)->toBe($colleague->id)
         ->and($task->assigned_at)->not->toBeNull()
@@ -3135,32 +3135,36 @@ test('staff task raised from a chat message links back to the source thread', fu
         ->and($conversation->messages()->count())->toBe(2)
         ->and($conversation->messages()->latest('id')->first()->body)->toContain($task->reference);
 
-    $cancelled = \App\Actions\Chat\StaffTask\UpdateStaffTask::run($task, $colleague, ['status' => 'cancelled', 'note' => 'banner already updated']);
+    $cancelled = \App\Actions\Tasks\UpdateStaffTask::run($task, $colleague, ['status' => 'cancelled', 'note' => 'banner already updated']);
 
-    expect($cancelled->status)->toBe(\App\Enums\Chat\StaffTaskStatusEnum::CANCELLED)
+    expect($cancelled->status)->toBe(\App\Enums\Tasks\StaffTaskStatusEnum::CANCELLED)
         ->and($cancelled->conversation->messages()->latest('id')->first()->body)->toContain('banner already updated');
 });
 
 test('staff tasks page and options respond', function () {
     actingAs($this->user);
 
-    get(route('grp.chat.staff.tasks.index'))->assertOk();
-    getJson(route('grp.chat.staff.tasks.options'))->assertOk()->assertJsonStructure(['departments', 'my_departments', 'priorities', 'statuses']);
-    getJson(route('grp.chat.staff.tasks.list', ['view' => 'department']))->assertOk();
+    get(route('grp.tasks.index'))->assertOk();
+    get(route('grp.tasks.list_all'))->assertOk();
+    get(route('grp.tasks.board'))->assertOk();
+    get(route('grp.tasks.reports'))->assertOk();
+    get(route('grp.tasks.reports', ['created' => '1w']))->assertOk();
+    getJson(route('grp.tasks.options'))->assertOk()->assertJsonStructure(['departments', 'my_departments', 'priorities', 'statuses']);
+    getJson(route('grp.tasks.list', ['view' => 'department']))->assertOk();
 });
 
 test('stale staff task nudges its assignee once per window', function () {
     $requester = $this->user;
     $assignee  = \App\Actions\SysAdmin\Guest\StoreGuest::make()->action($this->organisation->group, array_merge(\App\Models\SysAdmin\Guest::factory()->definition(), ['positions' => [['slug' => 'group-admin', 'scopes' => []]]]))->getUser();
 
-    $task = \App\Actions\Chat\StaffTask\StoreStaffTask::run($requester, ['subject' => 'Quiet task', 'assignee_id' => $assignee->id]);
+    $task = \App\Actions\Tasks\StoreStaffTask::run($requester, ['subject' => 'Quiet task', 'assignee_id' => $assignee->id]);
 
-    expect(\App\Actions\Chat\StaffTask\NudgeStaleStaffTasks::run(48))->toBe(0);
+    expect(\App\Actions\Tasks\NudgeStaleStaffTasks::run(48))->toBe(0);
 
     $task->conversation->update(['last_message_at' => now()->subHours(50)]);
 
-    expect(\App\Actions\Chat\StaffTask\NudgeStaleStaffTasks::run(48))->toBe(1)
-        ->and(\App\Actions\Chat\StaffTask\NudgeStaleStaffTasks::run(48))->toBe(0)
+    expect(\App\Actions\Tasks\NudgeStaleStaffTasks::run(48))->toBe(1)
+        ->and(\App\Actions\Tasks\NudgeStaleStaffTasks::run(48))->toBe(0)
         ->and($assignee->notifications()->count())->toBe(1)
         ->and($task->fresh()->data['nudged_at'])->not->toBeNull();
 });

@@ -6,7 +6,7 @@
  * Copyright (c) 2026, Raul A Perusquia Flores
  */
 
-namespace App\Actions\Chat\StaffTask\UI;
+namespace App\Actions\Tasks\UI;
 
 use App\Actions\OrgAction;
 use App\Actions\UI\Dashboards\ShowGroupDashboard;
@@ -33,7 +33,7 @@ class ShowStaffTasks extends OrgAction
     {
         $title = __('Tasks');
 
-        return Inertia::render('Chat/StaffTasks', [
+        return Inertia::render('Tasks/StaffTasks', [
             'breadcrumbs'   => $this->getBreadcrumbs(),
             'title'         => $title,
             'pageHead'      => [
@@ -52,7 +52,7 @@ class ShowStaffTasks extends OrgAction
                 'type'   => 'simple',
                 'simple' => [
                     'icon'  => 'fal fa-tasks',
-                    'route' => ['name' => 'grp.chat.staff.tasks.index'],
+                    'route' => ['name' => 'grp.tasks.index'],
                     'label' => __('Tasks'),
                 ],
             ]]

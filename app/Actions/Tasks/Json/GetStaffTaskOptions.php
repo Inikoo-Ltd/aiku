@@ -6,11 +6,11 @@
  * Copyright (c) 2026, Raul A Perusquia Flores
  */
 
-namespace App\Actions\Chat\StaffTask\Json;
+namespace App\Actions\Tasks\Json;
 
-use App\Enums\Chat\StaffTaskStatusEnum;
+use App\Enums\Tasks\StaffTaskStatusEnum;
 use App\Enums\CRM\Livechat\ChatPriorityEnum;
-use App\Models\Chat\StaffTask;
+use App\Models\Tasks\StaffTask;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 

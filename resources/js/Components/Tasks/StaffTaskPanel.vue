@@ -11,7 +11,7 @@ import { trans } from "laravel-vue-i18n"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faTasks, faPlus, faComments } from "@fal"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import StaffTaskDialog from "@/Components/Messaging/StaffTaskDialog.vue"
+import StaffTaskDialog from "@/Components/Tasks/StaffTaskDialog.vue"
 import { useStaffMessaging } from "@/Stores/staff-messaging"
 
 const props = defineProps<{
@@ -24,7 +24,7 @@ const tasks = ref<any[]>([])
 const dialogOpen = ref(false)
 
 const load = async () => {
-    const { data } = await axios.get(route("grp.chat.staff.tasks.list"), { params: { view: "model", model_type: props.modelType, model_id: props.modelId } })
+    const { data } = await axios.get(route("grp.tasks.list"), { params: { view: "model", model_type: props.modelType, model_id: props.modelId } })
     tasks.value = data.data
 }
 

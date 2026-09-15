@@ -6,7 +6,7 @@
  * Copyright (c) 2026, Raul A Perusquia Flores
  */
 
-namespace App\Enums\Chat;
+namespace App\Enums\Tasks;
 
 use App\Enums\EnumHelperTrait;
 

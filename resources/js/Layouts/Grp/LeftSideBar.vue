@@ -39,7 +39,7 @@ const logoutData = computed(() => ({
 }))
 
 const bottomLinks = computed(() => [
-    { route: "grp.chat.staff.tasks.index", label: trans("Tasks"), tooltip: trans("Tasks: ask a colleague or a department for something"), icon: "fal fa-tasks" },
+    { route: "grp.tasks.index", label: trans("Tasks"), tooltip: trans("Tasks: ask a colleague or a department for something"), icon: "fal fa-tasks" },
     { route: "grp.tickets.index", label: trans("Tickets"), tooltip: trans("Tickets: report a problem or ask for help"), icon: "fal fa-life-ring" },
 ])
 

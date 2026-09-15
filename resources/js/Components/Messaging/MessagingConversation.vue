@@ -21,7 +21,7 @@ library.add(faTimes, faChevronDown, faPaperPlane, faChevronLeft, faQuoteLeft, fa
 
 const GifPicker = defineAsyncComponent(() => import("./GifPicker.vue"))
 const EmojiPicker = defineAsyncComponent(() => import("./EmojiPicker.vue"))
-const StaffTaskDialog = defineAsyncComponent(() => import("./StaffTaskDialog.vue"))
+const StaffTaskDialog = defineAsyncComponent(() => import("@/Components/Tasks/StaffTaskDialog.vue"))
 
 const props = defineProps<{
     conversation: StaffConversation

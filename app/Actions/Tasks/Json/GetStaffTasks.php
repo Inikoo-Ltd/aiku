@@ -6,10 +6,10 @@
  * Copyright (c) 2026, Raul A Perusquia Flores
  */
 
-namespace App\Actions\Chat\StaffTask\Json;
+namespace App\Actions\Tasks\Json;
 
-use App\Http\Resources\Chat\StaffTaskResource;
-use App\Models\Chat\StaffTask;
+use App\Http\Resources\Tasks\StaffTaskResource;
+use App\Models\Tasks\StaffTask;
 use App\Models\SysAdmin\User;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;

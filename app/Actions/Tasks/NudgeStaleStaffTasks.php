@@ -6,9 +6,9 @@
  * Copyright (c) 2026, Raul A Perusquia Flores
  */
 
-namespace App\Actions\Chat\StaffTask;
+namespace App\Actions\Tasks;
 
-use App\Models\Chat\StaffTask;
+use App\Models\Tasks\StaffTask;
 use App\Notifications\StaffTaskNotification;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Notification;

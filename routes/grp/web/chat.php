@@ -32,10 +32,5 @@ Route::prefix('staff')->name('staff.')->middleware('throttle:240,1')->group(func
     Route::post('/context', \App\Actions\Chat\Staff\OpenStaffContextConversation::class)->name('context.open');
     Route::post('/team/toggle', \App\Actions\Chat\Staff\ToggleStaffTeamMember::class)->name('team.toggle');
     Route::get('/coworkers', \App\Actions\Chat\Staff\Json\GetStaffCoworkers::class)->name('coworkers.index');
-    Route::get('/tasks', \App\Actions\Chat\StaffTask\UI\ShowStaffTasks::class)->name('tasks.index');
-    Route::get('/tasks/list', \App\Actions\Chat\StaffTask\Json\GetStaffTasks::class)->name('tasks.list');
-    Route::get('/tasks/options', \App\Actions\Chat\StaffTask\Json\GetStaffTaskOptions::class)->name('tasks.options');
-    Route::post('/tasks', \App\Actions\Chat\StaffTask\StoreStaffTask::class)->name('tasks.store');
-    Route::patch('/tasks/{staffTask}', \App\Actions\Chat\StaffTask\UpdateStaffTask::class)->name('tasks.update');
     Route::get('/gifs', \App\Actions\Chat\Staff\Json\SearchGifs::class)->name('gifs.search');
 });

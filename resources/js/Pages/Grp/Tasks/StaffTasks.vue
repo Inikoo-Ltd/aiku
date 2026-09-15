@@ -16,7 +16,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import { PageHeadingTypes } from "@/types/PageHeading"
 import Image from "@/Common/Components/Image.vue"
-import StaffTaskDialog from "@/Components/Messaging/StaffTaskDialog.vue"
+import StaffTaskDialog from "@/Components/Tasks/StaffTaskDialog.vue"
 import { useStaffMessaging } from "@/Stores/staff-messaging"
 import { useFormatTime } from "@/Composables/useFormatTime"
 
@@ -46,7 +46,7 @@ const cancelNote = ref("")
 
 const load = async () => {
     loading.value = true
-    const { data } = await axios.get(route("grp.chat.staff.tasks.list"), { params: { view: view.value, closed: showClosed.value ? 1 : 0 } })
+    const { data } = await axios.get(route("grp.tasks.list"), { params: { view: view.value, closed: showClosed.value ? 1 : 0 } })
     tasks.value = data.data
     loading.value = false
 }
@@ -55,7 +55,7 @@ watch([view, showClosed], load)
 
 const update = async (task: any, payload: Record<string, unknown>) => {
     try {
-        const { data } = await axios.patch(route("grp.chat.staff.tasks.update", task.reference), payload)
+        const { data } = await axios.patch(route("grp.tasks.update", task.reference), payload)
         const index = tasks.value.findIndex((t) => t.id === task.id)
         if (index !== -1) tasks.value[index] = data.data
         if (!showClosed.value && ["done", "cancelled"].includes(data.data.status)) {
