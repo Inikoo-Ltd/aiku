@@ -29,6 +29,8 @@
         <link rel="apple-touch-icon" sizes="180x180" href="{{ url('favicon-180.png?v=3') }}">
     @endif
 
+    <link rel="manifest" href="{{ url('grp.webmanifest') }}">
+
     @if (config('app.env') === 'staging')
         <!-- == -->
         <meta name="robots" content="noindex">

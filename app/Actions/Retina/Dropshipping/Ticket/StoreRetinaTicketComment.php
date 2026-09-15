@@ -30,7 +30,7 @@ class StoreRetinaTicketComment extends RetinaAction
         return [
             'body'     => ['required_without:images', 'nullable', 'string', 'max:10000'],
             'images'   => ['sometimes', 'array', 'max:5'],
-            'images.*' => ['image', 'max:10240'],
+            'images.*' => Ticket::ticketFileRules(),
         ];
     }
 

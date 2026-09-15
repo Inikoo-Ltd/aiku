@@ -18,7 +18,6 @@ const props = defineProps<{
             username: string
             avatar?: ImageTS
             email: string
-            about: string
             status: {
                 tooltip: string
                 icon: string
@@ -49,17 +48,6 @@ const props = defineProps<{
                             #{{ data?.data?.id }} {{ data?.data?.username }}
                         </div>
                     </div>
-                    <!-- <div class="mt-4">
-                        <div class="font-medium">
-                            Description
-                        </div>
-                        <div v-if="data?.data?.about" class="text-gray-500">
-                            {{ data?.data?.about }}
-                        </div>
-                        <div v-else class="text-gray-400 italic">
-                            {{ 'No description yet' }}
-                        </div>
-                    </div> -->
                 </div>
             </div>
 

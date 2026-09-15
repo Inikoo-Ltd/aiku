@@ -9,6 +9,7 @@
 use App\Actions\Helpers\Ticket\UI\CreateTicket;
 use App\Actions\Helpers\Ticket\UI\IndexTickets;
 use App\Actions\Helpers\Ticket\UI\ShowTicket;
+use App\Actions\Helpers\Ticket\UI\ShowTicketAttachment;
 use App\Actions\Helpers\Ticket\UI\ShowTicketsBoard;
 use App\Actions\Helpers\Ticket\UI\ShowTicketsDashboard;
 use App\Actions\Helpers\Ticket\UI\ShowTicketsReports;
@@ -20,3 +21,4 @@ Route::get('/board', ShowTicketsBoard::class)->name('board');
 Route::get('/reports', ShowTicketsReports::class)->name('reports');
 Route::get('/create', CreateTicket::class)->name('create');
 Route::get('/{ticket:reference}', ShowTicket::class)->name('show');
+Route::get('/{ticket:reference}/attachments/{media:ulid}', ShowTicketAttachment::class)->name('attachments.show')->withoutScopedBindings();

@@ -46,6 +46,7 @@ const props = defineProps<{
     external_links?: {}
     labeled_snapshots?: {}
     analytics?:any
+    pagespeed?: any
     webpage_canonical_url?: string
     redirected_to?: {}
 }>()
@@ -92,5 +93,5 @@ onUnmounted(() => {
         </template>
     </PageHeading>
     <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
-    <component :is="component" :tab="currentTab" :data="props[currentTab]" :redirected_to="redirected_to"></component>
+    <component :is="component" :tab="currentTab" :data="props[currentTab]" :pagespeed="pagespeed" :redirected_to="redirected_to"></component>
 </template>

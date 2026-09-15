@@ -9,8 +9,9 @@
 use App\Actions\UI\Notification\IndexNotification;
 use App\Actions\UI\Profile\CanVisit;
 use App\Actions\UI\Profile\DeleteProfileApiToken;
+use App\Actions\UI\Profile\DeleteProfilePushSubscription;
+use App\Actions\UI\Profile\StoreProfilePushSubscription;
 use App\Actions\UI\Profile\EditProfile;
-use App\Actions\UI\Profile\EditProfileSettings;
 use App\Actions\UI\Profile\ShowProfile;
 use App\Actions\UI\Profile\ShowProfileIndexHistory;
 use App\Actions\UI\Profile\ShowProfileIndexKpi;
@@ -26,7 +27,6 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/', ShowProfile::class)->name('show');
 Route::get('/edit', EditProfile::class)->name('edit');
-Route::get('/settings', EditProfileSettings::class)->name('settings');
 
 Route::post('/', UpdateProfile::class)->name('update');
 Route::patch('/bookmarks', UpdateUserBookmarks::class)->name('bookmarks.update');
@@ -44,3 +44,5 @@ Route::get('/todo', ShowProfileIndexTodo::class)->name('todo.index');
 Route::get('/api-tokens', ShowProfileIndexApiTokens::class)->name('api-tokens.index');
 Route::post('/api-tokens', StoreProfileApiToken::class)->name('api-tokens.store');
 Route::delete('/api-tokens/{tokenId}', DeleteProfileApiToken::class)->name('api-tokens.delete');
+Route::post('/push-subscriptions', StoreProfilePushSubscription::class)->name('push-subscriptions.store');
+Route::delete('/push-subscriptions', DeleteProfilePushSubscription::class)->name('push-subscriptions.delete');

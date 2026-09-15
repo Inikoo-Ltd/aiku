@@ -34,6 +34,12 @@ class StoreWooCommerceProduct extends RetinaAction
     use WithPortfolioErrorResponse;
 
     /**
+     * The store downloads every product image while it creates the product, so a slow host
+     * needs far longer than the 30 seconds the probes and stock pushes are allowed.
+     */
+    public const int CREATE_TIMEOUT_SECONDS = 120;
+
+    /**
      * @throws \Exception
      */
     public function handle(WooCommerceUser $wooCommerceUser, Portfolio $portfolio): Portfolio
@@ -174,6 +180,7 @@ class StoreWooCommerceProduct extends RetinaAction
                 data_set($wooCommerceProduct, 'backorders', 'yes');
             }
 
+            $wooCommerceUser->setTimeout(self::CREATE_TIMEOUT_SECONDS);
             $result = $wooCommerceUser->createWooCommerceProduct($wooCommerceProduct);
 
             if (is_string(Arr::get($result, '0'))) {

@@ -82,6 +82,7 @@ const props = withDefaults(
 	defineProps<{
 		data: PropsData
 		gpsr?: Gpsr
+		labelInfo?: Record<string, { show: boolean }>
 		hide?: string[]
 		// publicAttachment: array<any>
 		// privateAttachment: {}[]
@@ -181,11 +182,11 @@ library.add(
 					</div>
 				</div>
 
-
 				<ProductResource 
 					:attachments
 					:data
 					:gpsr
+					:labelInfo
 					:properties
 				/>
 			</dl>

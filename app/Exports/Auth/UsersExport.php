@@ -31,7 +31,6 @@ class UsersExport implements FromQuery, WithMapping, ShouldAutoSize, WithHeading
             $row->username,
             $row->email,
             $row->contact_name,
-            $row->about,
             $row->status
         ];
     }
@@ -43,7 +42,6 @@ class UsersExport implements FromQuery, WithMapping, ShouldAutoSize, WithHeading
             'Username',
             'Email',
             'Contact Name',
-            'About',
             'Status',
         ];
     }

@@ -36,6 +36,14 @@ const props = defineProps<{
     title: string
     production_id: number
     pageHead: PageHeadingTypes
+    break_options: number[]
+    break_route: { name: string, parameters: object }
+    open_break: null | {
+        id: number
+        planned_minutes: number
+        started_at: string
+        end_route: { name: string, parameters: object }
+    }
     open_session: null | {
         id: number
         started_at: string
@@ -46,6 +54,7 @@ const props = defineProps<{
             bands: { code: string, name: string | null, hourly_rate: number, target_units_per_hour: number }[]
             session: { started_at: string, break_minutes: number, quantity_made: number }
         }
+        break_minutes: number
     }
     artisan: string | null
     can_pick_open_jobs: boolean
@@ -71,6 +80,50 @@ const props = defineProps<{
 const processing = ref(false)
 const page = usePage()
 const startError = computed(() => (page.props.errors as Record<string, string> | undefined)?.job_order_item_task_id)
+const breakError = computed(() => (page.props.errors as Record<string, string> | undefined)?.break)
+
+const now = ref(Date.now())
+let clock: ReturnType<typeof setInterval>
+onMounted(() => clock = setInterval(() => now.value = Date.now(), 1000))
+onUnmounted(() => clearInterval(clock))
+
+const breakSecondsLeft = computed(() => {
+    if (!props.open_break) return 0
+    const elapsed = Math.floor((now.value - new Date(props.open_break.started_at).getTime()) / 1000)
+    return Math.max(0, props.open_break.planned_minutes * 60 - elapsed)
+})
+const breakCountdown = computed(() => {
+    const m = Math.floor(breakSecondsLeft.value / 60)
+    const s = breakSecondsLeft.value % 60
+    return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
+})
+
+const pendingBreak = ref<number | null>(null)
+const breakProcessing = ref(false)
+
+function startBreak() {
+    if (pendingBreak.value === null) return
+    breakProcessing.value = true
+    router.post(
+        route(props.break_route.name, props.break_route.parameters),
+        { planned_minutes: pendingBreak.value },
+        { preserveScroll: true, onFinish: () => { breakProcessing.value = false; pendingBreak.value = null } }
+    )
+}
+
+function endBreak() {
+    if (!props.open_break || breakProcessing.value) return
+    breakProcessing.value = true
+    router.patch(
+        route(props.open_break.end_route.name, props.open_break.end_route.parameters),
+        {},
+        { preserveScroll: true, onFinish: () => breakProcessing.value = false }
+    )
+}
+
+watch(breakSecondsLeft, left => {
+    if (props.open_break && left <= 0) endBreak()
+})
 
 const selectedTaskId = ref<number | null>(props.open_session?.task.id ?? props.tasks.find(task => task.is_mine)?.id ?? props.tasks[0]?.id ?? null)
 const selectedTask = computed(() => props.tasks.find(task => task.id == selectedTaskId.value) ?? null)
@@ -184,10 +237,49 @@ function startTask(task: FloorTask) {
             </div>
         </aside>
 
-        <main class="flex-1 min-w-0 overflow-y-auto p-6 flex items-center justify-center">
-            <ManufactureWorkingCard v-if="open_session" :session="open_session" class="w-full max-w-5xl" />
+        <main class="flex-1 min-w-0 overflow-y-auto p-6 flex flex-col items-center gap-6">
+            <div v-if="breakError" class="w-full max-w-5xl rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-red-700">{{ breakError }}</div>
 
-            <div v-else-if="selectedTask" class="w-full max-w-2xl text-center">
+            <div v-if="open_break" class="w-full max-w-5xl rounded-2xl border-2 border-amber-400 bg-amber-50 p-8 flex items-center justify-between gap-6">
+                <div>
+                    <div class="text-xs uppercase tracking-wide text-amber-700">{{ trans('On break') }} · {{ open_break.planned_minutes }} {{ trans('min') }}</div>
+                    <div class="text-7xl font-mono tabular-nums text-amber-700">{{ breakCountdown }}</div>
+                </div>
+                <button type="button"
+                    class="rounded-xl bg-amber-600 text-white text-2xl font-semibold px-10 py-5 disabled:opacity-40"
+                    :disabled="breakProcessing" @click="endBreak">
+                    {{ trans('Finish break now') }}
+                </button>
+            </div>
+
+            <div v-else-if="pendingBreak !== null" class="w-full max-w-5xl rounded-lg border border-amber-300 bg-amber-50 p-4 flex items-center justify-between gap-4">
+                <div class="text-2xl">{{ trans('Start a :minutes minute break?', { minutes: pendingBreak }) }}</div>
+                <div class="flex gap-3">
+                    <button type="button" class="rounded-lg bg-amber-600 text-white text-xl font-semibold px-8 py-4 disabled:opacity-40"
+                        :disabled="breakProcessing" @click="startBreak">
+                        {{ trans('Yes, start break') }}
+                    </button>
+                    <button type="button" class="rounded-lg border border-gray-300 bg-white text-gray-700 text-xl font-semibold px-6 py-4"
+                        @click="pendingBreak = null">
+                        {{ trans('Cancel') }}
+                    </button>
+                </div>
+            </div>
+
+            <div v-else class="w-full max-w-5xl flex items-center gap-3">
+                <span class="text-lg text-gray-600">{{ trans('Break') }}:</span>
+                <button v-for="minutes in break_options" :key="minutes" type="button"
+                    class="rounded-lg border-2 border-amber-300 bg-white text-amber-800 text-xl font-semibold px-6 py-3 hover:bg-amber-50"
+                    @click="pendingBreak = minutes">
+                    {{ minutes }}m
+                </button>
+            </div>
+
+            <div v-if="open_break" class="flex-1 flex items-center text-gray-400 text-lg">{{ trans('Finish your break to continue working') }}</div>
+
+            <ManufactureWorkingCard v-else-if="open_session" :session="open_session" class="w-full max-w-5xl" />
+
+            <div v-else-if="selectedTask" class="flex-1 flex flex-col justify-center w-full max-w-2xl text-center">
                 <div v-if="startError" class="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-red-700">{{ startError }}</div>
                 <div class="text-sm text-gray-500">{{ selectedTask.task_name }} · {{ trans('Job order') }} {{ selectedTask.job_order_reference }}</div>
                 <div class="text-3xl font-semibold mt-2">{{ selectedTask.artefact_code }}</div>
@@ -206,7 +298,7 @@ function startTask(task: FloorTask) {
                 </button>
             </div>
 
-            <div v-else class="text-gray-400 text-lg">
+            <div v-else class="flex-1 flex items-center text-gray-400 text-lg">
                 {{ tasks.length ? trans('Pick a job from the list') : trans('No tasks to do right now') }}
             </div>
         </main>

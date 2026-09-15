@@ -27,7 +27,6 @@ const props = defineProps<{
             username: string
             avatar: ImageTS
             email?: string
-            about?: string
             parent_type: string
             contact_name: string
             authorizedOrganisations: {

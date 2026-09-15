@@ -24,6 +24,9 @@ use Illuminate\Support\Arr;
  * @property mixed $portfolio_id
  * @property mixed $item_code
  * @property mixed $platform_name
+ * @property mixed $updated_at
+ * @property mixed $sku
+ * @property mixed $platform_product_id
  */
 class PlatformPortfolioLogsResource extends JsonResource
 {
@@ -36,6 +39,7 @@ class PlatformPortfolioLogsResource extends JsonResource
         return [
             'id'              => $this->id,
             'created_at'      => $this->created_at,
+            'updated_at'      => $this->updated_at,
             'type'            => $this->type,
             'status'          => $this->status,
             'response'        => Arr::get($response, 'message'),
@@ -47,6 +51,8 @@ class PlatformPortfolioLogsResource extends JsonResource
             'platform_name'   => $this->platform_name,
             'portfolio_id'    => $this->portfolio_id,
             'item_code'       => $this->item_code,
+            'sku'             => $this->sku,
+            'platform_product_id' => $this->platform_product_id,
         ];
     }
 }

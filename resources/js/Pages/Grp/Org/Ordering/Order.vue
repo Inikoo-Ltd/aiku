@@ -1770,6 +1770,10 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                 icon="fas fa-box-heart" class="text-yellow-500 animate-bounce" fixed-width aria-hidden="true" />
             <FontAwesomeIcon v-if="data?.data.has_insurance" v-tooltip="ctrans('Insurance')" icon="fas fa-shield-alt"
                 class="text-yellow-500" fixed-width aria-hidden="true" />
+
+            <span v-if="data?.data.is_dropshipping"
+                v-tooltip="ctrans('Dropshipping order, came in through a customer sales channel')"
+                class="rounded bg-fuchsia-100 border border-fuchsia-300 px-1 text-xs font-semibold text-fuchsia-700 leading-tight">DS</span>
         </template>
     </PageHeading>
 

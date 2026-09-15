@@ -125,6 +125,20 @@ class IndexPortfoliosInCustomerSalesChannels extends OrgAction
                     ),
                     'actions' => [
                         [
+                            'type'    => 'button',
+                            'style'   => 'tertiary',
+                            'tooltip' => __('Send these products to the channel again without waiting for the next automatic run'),
+                            'label'   => __('Force Sync'),
+                            'icon'    => ['fas', 'fa-sync-alt'],
+                            'route'   => [
+                                'method'     => 'patch',
+                                'name'       => 'grp.models.customer_sales_channel.force_sync_portfolios',
+                                'parameters' => [
+                                    'customerSalesChannel' => $this->customerSalesChannel->id,
+                                ]
+                            ]
+                        ],
+                        [
                             'type'  => 'button',
                             'style' => 'create',
                             'label' => __('Match With Existing Product'),
@@ -323,7 +337,7 @@ class IndexPortfoliosInCustomerSalesChannels extends OrgAction
                 ],
             ]
         )->table($this->tableStructure())
-            ->table(IndexPlatformPortfolioLogs::make()->tableStructure(null, PortfoliosInCustomerSalesChannelTabsEnum::LOGS->value));
+            ->table(IndexPlatformPortfolioLogs::make()->tableStructure(null, PortfoliosInCustomerSalesChannelTabsEnum::LOGS->value, withTechnicalDetails: true));
     }
 
 

@@ -102,6 +102,7 @@ const props = withDefaults(
 
 		}
 		noTradeUnit?: boolean
+		labelInfo?: Record<string, { show: boolean }>
 		publicAttachment: array<any>
 		properties?: {
 			countries_of_origin?: { code: string; name: string }[]
@@ -240,7 +241,7 @@ library.add(
 						</dd>
 					</div>
 				</div>
-				<ProductResource :attachments="attachments" :publicAttachment :data :gpsr :properties v-if="!noTradeUnit"/>
+				<ProductResource :attachments="attachments" :publicAttachment :data :gpsr :labelInfo :properties v-if="!noTradeUnit"/>
 			</dl>
 		</div>
 	</div>

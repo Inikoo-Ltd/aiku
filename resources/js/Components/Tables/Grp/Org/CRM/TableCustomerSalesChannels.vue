@@ -166,7 +166,7 @@ function confirmDelete(event: MouseEvent, customerSalesChannel: CustomerSalesCha
     <Table :resource="data" :name="tab" class="mt-5">
         <template #cell(name)="{ item: customerSalesChannel }">
             <div class="flex items-center gap-2">
-                <img v-tooltip="customerSalesChannel.platform_name" :src="customerSalesChannel.platform_image" :alt="customerSalesChannel.platform_name" class="w-6 h-6"/>
+                <img v-tooltip="customerSalesChannel.platform_name" :src="customerSalesChannel.platform_image" :alt="customerSalesChannel.platform_name" class="w-6 h-6" loading="lazy" decoding="async"/>
                 <Link v-if="!isPlatformShow" :href="(customerSalesChannelRoute(customerSalesChannel) as string)" class="primaryLink">
                     {{ customerSalesChannel.name || customerSalesChannel.reference }}
                 </Link>

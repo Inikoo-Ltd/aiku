@@ -19,6 +19,14 @@ use Illuminate\Database\Eloquent\Model;
  * @property int|null $add_to_baskets
  * @property numeric|null $conversion_rate
  * @property int|null $avg_time_on_page
+ * @property int|null $pagespeed_desktop_performance
+ * @property int|null $pagespeed_desktop_accessibility
+ * @property int|null $pagespeed_desktop_best_practices
+ * @property int|null $pagespeed_desktop_seo
+ * @property int|null $pagespeed_mobile_performance
+ * @property int|null $pagespeed_mobile_accessibility
+ * @property int|null $pagespeed_mobile_best_practices
+ * @property int|null $pagespeed_mobile_seo
  * @property \Illuminate\Support\Carbon|null $from
  * @property \Illuminate\Support\Carbon|null $to
  * @property string|null $period
