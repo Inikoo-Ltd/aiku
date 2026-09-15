@@ -1472,6 +1472,76 @@ test('delivery note finalise and dispatch', function () {
     expect($deliveryNote->state)->toBe(DeliveryNoteStateEnum::DISPATCHED);
 });
 
+function finalisedDeliveryNote($ctx): array
+{
+    [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($ctx);
+    $deliveryNote = \App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStateToPicked::run($deliveryNote);
+    $deliveryNote = \App\Actions\Dispatching\DeliveryNote\UpdateState\StartPackingDeliveryNote::make()->action($deliveryNote, $ctx->user);
+    StorePacking::make()->action($item->refresh(), $ctx->user, []);
+    $deliveryNote = UpdateDeliveryNoteStatePacked::make()->action($deliveryNote->refresh(), $ctx->user);
+
+    $shipper = StoreShipper::make()->action($ctx->organisation, ['code' => 'SH'.Str::random(4), 'name' => 'Sh', 'trade_as' => 'sh']);
+    StoreShipment::make()->action($deliveryNote, $shipper, ['tracking' => 'TRK'.Str::random(4)]);
+
+    $deliveryNote = \App\Actions\Dispatching\DeliveryNote\UpdateState\FinaliseDeliveryNote::make()->action($deliveryNote->refresh());
+
+    return [$deliveryNote->refresh(), $item->refresh()];
+}
+
+test('repacking a finalised delivery note returns it and its order to finalised without a second invoice', function () {
+    [$deliveryNote] = finalisedDeliveryNote($this);
+    $order          = $deliveryNote->orders()->first();
+    $netAmount      = (float) $order->net_amount;
+    $shipmentCount  = $deliveryNote->shipments()->count();
+    expect($order->invoices()->count())->toBe(1);
+
+    $deliveryNote = \App\Actions\Dispatching\DeliveryNote\UpdateState\UnpackDeliveryNote::make()->action($deliveryNote, $this->user);
+    expect($deliveryNote->state)->toBe(DeliveryNoteStateEnum::PACKING)
+        ->and($order->refresh()->state)->toBe(\App\Enums\Ordering\Order\OrderStateEnum::PACKING);
+
+    $deliveryNote = UpdateDeliveryNoteStatePacked::make()->action($deliveryNote->refresh(), $this->user);
+    $order->refresh();
+
+    expect($deliveryNote->state)->toBe(DeliveryNoteStateEnum::FINALISED)
+        ->and($order->state)->toBe(\App\Enums\Ordering\Order\OrderStateEnum::FINALISED)
+        ->and($order->invoices()->count())->toBe(1)
+        ->and((float) $order->net_amount)->toBe($netAmount)
+        ->and($deliveryNote->shipments()->count())->toBe($shipmentCount);
+
+    $deliveryNote = \App\Actions\Dispatching\DeliveryNote\UpdateState\DispatchDeliveryNote::make()->action($deliveryNote);
+    expect($deliveryNote->state)->toBe(DeliveryNoteStateEnum::DISPATCHED)
+        ->and($order->refresh()->state)->toBe(\App\Enums\Ordering\Order\OrderStateEnum::DISPATCHED);
+});
+
+test('repacking a finalised delivery note is refused when the picks no longer match the invoice', function () {
+    [$deliveryNote, $item] = finalisedDeliveryNote($this);
+    $order                 = $deliveryNote->orders()->first();
+
+    $deliveryNote = \App\Actions\Dispatching\DeliveryNote\UpdateState\UnpackDeliveryNote::make()->action($deliveryNote, $this->user);
+    $item->refresh()->update(['quantity_picked' => 5]);
+
+    expect(fn () => UpdateDeliveryNoteStatePacked::make()->action($deliveryNote->refresh(), $this->user))
+        ->toThrow(\Illuminate\Validation\ValidationException::class, 'repacking-a-finalised-delivery-note');
+
+    expect($deliveryNote->refresh()->state)->toBe(DeliveryNoteStateEnum::PACKING)
+        ->and($order->refresh()->invoices()->count())->toBe(1);
+});
+
+test('tax only and in process refund lines do not block repacking a finalised delivery note', function () {
+    [$deliveryNote, $item] = finalisedDeliveryNote($this);
+    $order                 = $deliveryNote->orders()->first();
+    $invoiceLine           = \App\Models\Accounting\InvoiceTransaction::where('transaction_id', $item->transaction_id)->firstOrFail();
+
+    $invoiceLine->replicate()->fill(['original_invoice_transaction_id' => $invoiceLine->id, 'transaction_id' => null, 'quantity' => 1, 'net_amount' => 0, 'is_tax_only' => true])->save();
+    $invoiceLine->replicate()->fill(['original_invoice_transaction_id' => $invoiceLine->id, 'transaction_id' => null, 'quantity' => -2, 'in_process' => true])->save();
+
+    $deliveryNote = \App\Actions\Dispatching\DeliveryNote\UpdateState\UnpackDeliveryNote::make()->action($deliveryNote, $this->user);
+    $deliveryNote = UpdateDeliveryNoteStatePacked::make()->action($deliveryNote->refresh(), $this->user);
+
+    expect($deliveryNote->state)->toBe(DeliveryNoteStateEnum::FINALISED)
+        ->and($order->refresh()->state)->toBe(\App\Enums\Ordering\Order\OrderStateEnum::FINALISED);
+});
+
 test('mixed order with service picks and invoices', function () {
     $service = \App\Actions\Billables\Service\StoreService::make()->action($this->shop, [
         'code'  => 'SVC'.Str::random(6),

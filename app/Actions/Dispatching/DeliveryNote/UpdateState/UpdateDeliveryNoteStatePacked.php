@@ -15,16 +15,23 @@ use App\Actions\Dispatching\Packing\StorePacking;
 use App\Actions\Dispatching\PickingSession\AutoFinishPackingPickingSession;
 use App\Actions\Dispatching\Shipment\StoreShipmentFromFaire;
 use App\Actions\Dropshipping\Tiktok\Order\ProcessTiktokOrderShipment;
+use App\Actions\Ordering\Order\GenerateInvoiceFromOrder;
+use App\Actions\Ordering\Order\UpdateState\UpdateOrderStateBackToFinalised;
 use App\Actions\Ordering\Order\UpdateState\UpdateOrderStateToPacked;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
+use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
 use App\Enums\Catalogue\Shop\ShopEngineEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteTypeEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
+use App\Models\Accounting\Invoice;
+use App\Models\Accounting\InvoiceTransaction;
 use App\Models\Dispatching\DeliveryNote;
+use App\Models\Ordering\Order;
 use App\Models\SysAdmin\User;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 
 class UpdateDeliveryNoteStatePacked extends OrgAction
@@ -51,12 +58,15 @@ class UpdateDeliveryNoteStatePacked extends OrgAction
 
         $oldState = $deliveryNote->state;
 
+        $returnsToFinalised = $this->returnsToFinalised($deliveryNote);
+        $newState           = $returnsToFinalised ? DeliveryNoteStateEnum::FINALISED : DeliveryNoteStateEnum::PACKED;
+
         data_set($modelData, 'packed_at', now());
         data_set($modelData, 'packer_user_id', $this->user->id);
-        data_set($modelData, 'state', DeliveryNoteStateEnum::PACKED->value);
+        data_set($modelData, 'state', $newState->value);
 
 
-        $deliveryNote = DB::transaction(function () use ($deliveryNote, $modelData) {
+        $deliveryNote = DB::transaction(function () use ($deliveryNote, $modelData, $returnsToFinalised) {
             $notFullyPacked = $deliveryNote->deliveryNoteItems->reject(
                 fn ($item) => UpdateDeliveryNoteItemPacking::isFullyPacked($item)
             );
@@ -90,7 +100,11 @@ class UpdateDeliveryNoteStatePacked extends OrgAction
             }
 
             if ($deliveryNote->type != DeliveryNoteTypeEnum::REPLACEMENT) {
-                UpdateOrderStateToPacked::make()->action($deliveryNote->orders->first(), $deliveryNote);
+                if ($returnsToFinalised) {
+                    UpdateOrderStateBackToFinalised::make()->action($deliveryNote->orders->first());
+                } else {
+                    UpdateOrderStateToPacked::make()->action($deliveryNote->orders->first(), $deliveryNote);
+                }
             }
 
 
@@ -124,10 +138,69 @@ class UpdateDeliveryNoteStatePacked extends OrgAction
         });
 
         $this->deliveryNoteHandlingHydrators($deliveryNote, $oldState);
-        $this->deliveryNoteHandlingHydrators($deliveryNote, DeliveryNoteStateEnum::PACKED);
+        $this->deliveryNoteHandlingHydrators($deliveryNote, $newState);
         DeliveryNoteHydrateTrolleys::dispatch($deliveryNote->id);
 
         return $deliveryNote;
+    }
+
+    /**
+     * A note that was finalised, unpacked and packed again goes straight back to finalised: its order
+     * already carries the invoice, so finalising again is impossible and packed is a dead end (HELP-3153).
+     *
+     * @throws \Illuminate\Validation\ValidationException
+     */
+    protected function returnsToFinalised(DeliveryNote $deliveryNote): bool
+    {
+        if (!$deliveryNote->finalised_at) {
+            return false;
+        }
+
+        if ($deliveryNote->type == DeliveryNoteTypeEnum::REPLACEMENT) {
+            return true;
+        }
+
+        $order   = $deliveryNote->orders->first();
+        $invoice = $order?->invoices()->where('type', InvoiceTypeEnum::INVOICE)->first();
+
+        if (!$invoice) {
+            return false;
+        }
+
+        $this->ensurePicksMatchInvoice($deliveryNote, $order, $invoice);
+
+        return true;
+    }
+
+    /**
+     * The invoice was made from the picks at finalisation. If they changed while the note was unpacked,
+     * going back to finalised would ship something different from what was invoiced.
+     *
+     * @throws \Illuminate\Validation\ValidationException
+     */
+    protected function ensurePicksMatchInvoice(DeliveryNote $deliveryNote, Order $order, Invoice $invoice): void
+    {
+        $transactions = $order->transactions()->where('model_type', 'Product')->where('is_follow_on', false)->get();
+
+        foreach ($transactions as $transaction) {
+            $invoiceTransactionIds = InvoiceTransaction::where('invoice_id', $invoice->id)
+                ->where('transaction_id', $transaction->id)
+                ->pluck('id');
+
+            $invoicedQuantity = (float)InvoiceTransaction::whereIn('id', $invoiceTransactionIds)->sum('quantity')
+                + (float)InvoiceTransaction::whereIn('original_invoice_transaction_id', $invoiceTransactionIds)->where('is_tax_only', false)->where('in_process', false)->whereHas('invoice')->sum('quantity');
+
+            $pickedQuantity = (float)GenerateInvoiceFromOrder::make()->recalculateTransactionTotals($transaction, $deliveryNote)['quantity'];
+
+            if (abs($pickedQuantity - $invoicedQuantity) > 0.001) {
+                throw ValidationException::withMessages([
+                    'state' => __('The picked quantities no longer match invoice :invoice. Put the picks back to what was invoiced, or ask accounts to refund the difference first. How: :url', [
+                        'invoice' => $invoice->reference,
+                        'url'     => route('aiku-public.docs.show', 'repacking-a-finalised-delivery-note'),
+                    ])
+                ]);
+            }
+        }
     }
 
 
