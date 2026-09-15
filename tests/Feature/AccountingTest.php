@@ -3251,3 +3251,23 @@ test('AEAT intrastat export keeps invalid rows only when forced', function () {
         ->and($forced['lines'][0])->toContain(';ES;')
         ->and($forced['errors'])->not->toContain('record 1 2026-02-01 3304990000 : country of origin missing on the product');
 });
+
+test('AEAT intrastat export forced with an empty origin falls back to the organisation country', function () {
+    $series = new \App\Models\Accounting\IntrastatExportTimeSeries(['tariff_code' => '3304990000', 'partner_tax_number' => 'ESB12345678']);
+    $record = new \App\Models\Accounting\IntrastatExportTimeSeriesRecord(['id' => 1, 'from' => '2026-02-01', 'weight' => 0, 'quantity' => 1, 'value_org_currency' => 0]);
+    $record->setRelation('intrastatExportTimeSeries', $series);
+
+    $action = new class () extends ExportIntrastatAeat {
+        public static \Illuminate\Database\Eloquent\Collection $records;
+
+        protected function getRecords(\App\Models\SysAdmin\Organisation $organisation, array $filters): \Illuminate\Database\Eloquent\Collection
+        {
+            return static::$records;
+        }
+    };
+    $action::$records = new \Illuminate\Database\Eloquent\Collection([$record]);
+
+    $result = $action->handle($this->organisation, [], ['weight_kg' => '1', 'origin' => '']);
+
+    expect($result['lines'][0])->toContain(';'.$this->organisation->country->code.';');
+});

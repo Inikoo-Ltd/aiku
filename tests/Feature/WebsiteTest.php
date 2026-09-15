@@ -44,6 +44,11 @@ use App\Actions\Web\Webpage\StoreWebpagePageSpeedTimeSeriesRecord;
 use App\Actions\Web\Webpage\UpdateWebpage;
 use App\Actions\Web\Webpage\LockWebpage;
 use App\Actions\Web\Webpage\UnlockWebpage;
+use App\Actions\Web\Webpage\RequestWebpageEditAccess;
+use App\Actions\Web\Webpage\ApproveWebpageEditAccess;
+use App\Actions\Web\Webpage\DeclineWebpageEditAccess;
+use App\Notifications\WebpageEditAccessNotification;
+use Illuminate\Support\Facades\Notification;
 use App\Actions\SysAdmin\Guest\StoreGuest;
 use App\Models\SysAdmin\Guest;
 use App\Actions\Web\Webpage\UpdateWebpageCanonicalUrl;
@@ -2375,4 +2380,92 @@ test('locked webpage rejects writes from other users, accepts owner and granted 
     expect($webpage->isLocked())->toBeFalse()
         ->and($webpage->lock_data['previous_lock']['reason'])->toBe('Optimisation completed')
         ->and($webpage->canBeEditedBy($other))->toBeTrue();
+})->depends('create webpage');
+
+test('locked webpage stays editable for group admins and read only for other users', function (Webpage $webpage) {
+    $owner    = StoreGuest::make()->action($this->organisation->group, array_merge(Guest::factory()->definition(), ['positions' => []]))->getUser();
+    $outsider = StoreGuest::make()->action($this->organisation->group, array_merge(Guest::factory()->definition(), ['positions' => []]))->getUser();
+
+    $webpage = LockWebpage::make()->action($webpage->fresh(), $owner, ['reason' => 'Protected by owner']);
+
+    expect($this->user->hasRole('group-admin'))->toBeTrue()
+        ->and($webpage->canBeEditedBy($this->user))->toBeTrue()
+        ->and($webpage->canBeEditedBy($outsider))->toBeFalse();
+
+    actingAs($this->user);
+
+    $workshopParameters = [$this->organisation->slug, $this->shop->slug, $webpage->website->slug, $webpage->slug];
+
+    get(route('grp.org.shops.show.web.webpages.workshop', $workshopParameters))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->component('Org/Web/WebpageWorkshop')
+            ->where('editable', true)
+            ->where('lock.can_edit', true));
+
+    get(route('grp.websites.webpage.preview', [$webpage->website->slug, $webpage->slug, 'organisation' => $this->organisation->slug, 'shop' => $this->shop->slug]))
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('editable', true));
+
+    get(route('grp.org.shops.show.web.webpages.edit', $workshopParameters))->assertOk();
+
+    get(route('grp.org.shops.show.web.webpages.show', $workshopParameters))
+        ->assertInertia(fn (AssertableInertia $page) => $page->where(
+            'pageHead.actions',
+            fn ($actions) => collect($actions)->contains(fn ($action) => str_ends_with($action['route']['name'] ?? '', '.edit'))
+        ));
+
+    actingAs($outsider);
+    $this->postJson(route('grp.models.webpage.publish', $webpage->id), [])->assertStatus(422)->assertJsonValidationErrors('message');
+
+    UnlockWebpage::make()->action($webpage, $owner, []);
+})->depends('create webpage');
+
+test('locked webpage edit access can be requested, allowed temporarily and declined', function (Webpage $webpage) {
+    Notification::fake();
+
+    $owner     = $this->user;
+    $requester = StoreGuest::make()->action($this->organisation->group, array_merge(Guest::factory()->definition(), ['positions' => []]))->getUser();
+
+    $webpage = LockWebpage::make()->action($webpage->fresh(), $owner, ['reason' => 'Final copy approved']);
+
+    actingAs($requester);
+    $this->postJson(route('grp.models.webpage.edit_access.request', $webpage->id), ['note' => 'Fix a typo'])->assertSuccessful();
+    $webpage->refresh();
+    expect($webpage->lock_data['requests'])->toHaveCount(1)
+        ->and($webpage->lock_data['requests'][0]['user_id'])->toBe($requester->id)
+        ->and($webpage->lock_data['requests'][0]['note'])->toBe('Fix a typo');
+    Notification::assertSentTo($owner, WebpageEditAccessNotification::class);
+
+    $this->postJson(route('grp.models.webpage.edit_access.approve', $webpage->id), ['user_id' => $requester->id, 'mode' => 'one_hour'])->assertForbidden();
+
+    actingAs($owner);
+    $this->postJson(route('grp.models.webpage.edit_access.approve', $webpage->id), ['user_id' => $requester->id, 'mode' => 'until_date'])
+        ->assertStatus(422)->assertJsonValidationErrors('until');
+    $this->postJson(route('grp.models.webpage.edit_access.approve', $webpage->id), ['user_id' => $requester->id, 'mode' => 'until_publish'])->assertSuccessful();
+    $webpage->refresh();
+    expect($webpage->lock_data['requests'])->toBeEmpty()
+        ->and($webpage->canBeEditedBy($requester))->toBeTrue();
+    Notification::assertSentTo($requester, WebpageEditAccessNotification::class);
+
+    PublishWebpage::make()->action($webpage, ['publisher_id' => $requester->id, 'publisher_type' => 'User'], strict: false);
+    expect($webpage->refresh()->canBeEditedBy($requester))->toBeFalse();
+
+    $webpage = RequestWebpageEditAccess::make()->action($webpage, $requester, []);
+    $webpage = ApproveWebpageEditAccess::make()->action($webpage, $owner, ['user_id' => $requester->id, 'mode' => 'one_hour']);
+    expect($webpage->canBeEditedBy($requester))->toBeTrue();
+    $this->travel(61)->minutes();
+    expect($webpage->fresh()->canBeEditedBy($requester))->toBeFalse();
+    $this->travelBack();
+
+    $webpage = RequestWebpageEditAccess::make()->action($webpage->fresh(), $requester, []);
+    $webpage = LockWebpage::make()->action($webpage, $owner, ['reason' => 'Final copy approved']);
+    expect($webpage->lock_data['requests'])->toHaveCount(1);
+
+    $webpage = DeclineWebpageEditAccess::make()->action($webpage, $owner, ['user_id' => $requester->id]);
+    expect($webpage->lock_data['requests'])->toBeEmpty()
+        ->and($webpage->canBeEditedBy($requester))->toBeFalse();
+
+    UnlockWebpage::make()->action($webpage, $owner, []);
+
+    get(route('grp.org.shops.show.web.webpages.workshop', $workshopParameters))
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('editable', true));
 })->depends('create webpage');

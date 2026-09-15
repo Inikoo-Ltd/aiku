@@ -96,7 +96,7 @@ onMounted(() => {
 </script>
 
 <template>
-    <div data-block-type="luigi-item-alternatives-1-iris" class="w-full pb-6 px-4" :id="fieldValue?.id ? fieldValue?.id  : 'luigi-item-alternatives-1-iris'"  component="luigi-item-alternatives-1-iris"
+    <div data-block-type="internal-item-alternatives-1-iris" class="w-full pb-6 px-4" :id="fieldValue?.id ? fieldValue?.id  : 'internal-item-alternatives-1-iris'"  component="internal-item-alternatives-1-iris"
     :style="{
         ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
         ...getStyles(fieldValue.container?.properties, screenType),
@@ -107,7 +107,7 @@ onMounted(() => {
         <div v-if="!isFetched || (isFetched && listProducts?.length)" class="px-3 py-6 pb-2">
             <div class="text-2xl md:text-3xl font-semibold">
                 <div>
-                    <p style="text-align: center">{{ trans("You may also like") }}<span v-if="layout.app.environment === 'local'" class="ml-2 bg-red-500">(Internal)</span></p>
+                    <p style="text-align: center">{{ ctrans("You may also like") }}<span v-if="layout.app.environment === 'local'" class="ml-2 bg-red-500">(Internal)</span></p>
                 </div>
             </div>
         </div>
