@@ -186,6 +186,7 @@ class AppServiceProvider extends ServiceProvider
                 'Customer'                         => 'App\Models\CRM\Customer',
                 'CustomerNote'                     => 'App\Models\CRM\CustomerNote',
                 'Favourite'                        => 'App\Models\CRM\Favourite',
+                'TrafficSourceCampaign'            => 'App\Models\CRM\TrafficSourceCampaign',
                 'Poll'                             => 'App\Models\CRM\Poll',
                 'PollOption'                       => 'App\Models\CRM\PollOption',
                 'PollReply'                        => 'App\Models\CRM\PollReply',

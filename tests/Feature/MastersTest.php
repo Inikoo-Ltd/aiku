@@ -1427,7 +1427,7 @@ test('UI Edit Master Product', function (MasterAsset $masterAsset) {
                     ->has('args.updateRoute')
                     ->where('args.updateRoute.name', 'grp.models.master_asset.update')
                     ->where('args.updateRoute.parameters.masterAsset', $masterAsset->id)
-                    ->has('blueprint.5.fields.composition.route')
+                    ->has('blueprint.6.fields.composition.route')
                     ->etc()
             );
     });

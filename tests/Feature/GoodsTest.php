@@ -452,7 +452,7 @@ test("UI Edit Trade Unit", function () {
                     ->and($languagesField['options'])->not->toBeEmpty();
 
                 foreach ($languagesField['options'] as $language) {
-                    expect($language['label'])->toBe('{'.strtoupper($language['code']).'} '.$language['name']);
+                    expect($language['label'])->toBe('('.strtoupper($language['code']).') '.$language['name']);
                 }
 
                 return true;
