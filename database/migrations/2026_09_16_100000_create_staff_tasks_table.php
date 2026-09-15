@@ -6,7 +6,7 @@
  * Copyright (c) 2026, Raul A Perusquia Flores
  */
 
-use App\Enums\Chat\StaffTaskStatusEnum;
+use App\Enums\Tasks\StaffTaskStatusEnum;
 use App\Enums\CRM\Livechat\ChatPriorityEnum;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
