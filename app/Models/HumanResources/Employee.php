@@ -15,7 +15,6 @@ use App\Enums\HumanResources\Employee\EmploymentTypeEnum;
 use App\Enums\Miscellaneous\GenderEnum;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
-use App\Models\SysAdmin\Task;
 use App\Models\SysAdmin\User;
 use App\Models\Traits\HasAddress;
 use App\Models\Traits\HasAddresses;
@@ -114,7 +113,6 @@ use App\Models\Traits\HasSearch;
  * @property-read Organisation $organisation
  * @property-read \App\Models\Helpers\Media|null $seoImage
  * @property-read \App\Models\HumanResources\EmployeeStats|null $stats
- * @property-read Collection<int, Task> $tasks
  * @property-read Collection<int, \App\Models\HumanResources\TimeTracker> $timeTrackers
  * @property-read Collection<int, \App\Models\HumanResources\Timesheet> $timesheets
  * @property-read User|null $user
@@ -330,11 +328,6 @@ class Employee extends Model implements HasMedia, Auditable
     public function getDefaultWorkSchedule(): ?WorkSchedule
     {
         return $this->workSchedules()->where('type', 'default')->where('is_active', true)->first();
-    }
-
-    public function tasks(): MorphMany
-    {
-        return $this->morphMany(Task::class, 'assigner');
     }
 
     public function hrAnnouncements(): MorphMany

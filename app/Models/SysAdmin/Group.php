@@ -250,7 +250,6 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read LaravelCollection<int, Supplier> $suppliers
  * @property-read \App\Models\SysAdmin\GroupSupplyChainStats|null $supplyChainStats
  * @property-read \App\Models\SysAdmin\GroupSysAdminStats|null $sysadminStats
- * @property-read LaravelCollection<int, \App\Models\SysAdmin\Task> $tasks
  * @property-read LaravelCollection<int, \App\Models\SysAdmin\GroupTimeSeries> $timeSeries
  * @property-read LaravelCollection<int, \Laravel\Sanctum\PersonalAccessToken> $tokens
  * @property-read LaravelCollection<int, TopUp> $topUps
@@ -387,11 +386,6 @@ class Group extends Authenticatable implements Auditable, HasMedia
     public function supplierProducts(): HasMany
     {
         return $this->hasMany(SupplierProduct::class);
-    }
-
-    public function tasks(): HasMany
-    {
-        return $this->hasMany(Task::class);
     }
 
     public function stats(): HasOne

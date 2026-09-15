@@ -248,7 +248,6 @@ use App\Models\HumanResources\WorkSchedule;
  * @property-read LaravelCollection<int, Space> $spaces
  * @property-read \App\Models\SysAdmin\OrganisationStats|null $stats
  * @property-read LaravelCollection<int, Subscription> $subscriptions
- * @property-read LaravelCollection<int, \App\Models\SysAdmin\Task> $tasks
  * @property-read LaravelCollection<int, \App\Models\SysAdmin\OrganisationTimeSeries> $timeSeries
  * @property-read Timezone $timezone
  * @property-read LaravelCollection<int, TopUp> $topUps
@@ -713,11 +712,6 @@ class Organisation extends Model implements HasMedia, Auditable
     public function assets(): HasMany
     {
         return $this->hasMany(Asset::class);
-    }
-
-    public function tasks(): MorphMany
-    {
-        return $this->morphMany(Task::class, 'assigner');
     }
 
     public function dropshippingStats(): HasOne
