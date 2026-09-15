@@ -8,6 +8,7 @@
 
 namespace App\Actions\Dispatching\DeliveryNote\UI;
 
+use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemReplacementReasonEnum;
 use App\Actions\Dispatching\DeliveryNoteItem\UI\IndexDeliveryNoteItems;
 use App\Actions\Helpers\Country\UI\GetAddressData;
 use App\Actions\Ordering\Order\UI\ShowOrder;
@@ -243,6 +244,7 @@ class CreateReplacementDeliveryNote extends OrgAction
                 ]
             ],
 
+            'replacement_reasons' => DeliveryNoteItemReplacementReasonEnum::valuesWithLabels(),
             'box_stats' => $this->getBoxStats($deliveryNote),
             'notes'     => ShowDeliveryNote::make()->getDeliveryNoteNotes($deliveryNote),
             'routes'    => [

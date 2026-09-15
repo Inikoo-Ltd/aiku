@@ -2427,11 +2427,27 @@ test('store replacement delivery note action', function () {
         'reference'           => 'R'.Str::random(6),
         'warehouse_id'        => $this->warehouse->id,
         'delivery_note_items' => [
-            ['id' => $item->id, 'quantity' => 2],
+            ['id' => $item->id, 'quantity' => 2, 'reason' => 'damaged_in_transit'],
         ],
     ])->assertRedirect();
 
-    expect($order->deliveryNotes()->count())->toBeGreaterThan(1);
+    $replacementItem = \App\Models\Dispatching\DeliveryNoteItem::where('transaction_id', $item->transaction_id)->where('id', '!=', $item->id)->latest('id')->first();
+
+    expect($order->deliveryNotes()->count())->toBeGreaterThan(1)
+        ->and($replacementItem->replacement_reason)->toBe(\App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemReplacementReasonEnum::DAMAGED_IN_TRANSIT);
+});
+
+test('store replacement delivery note requires a reason per item', function () {
+    [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($this);
+    $order = $deliveryNote->orders()->first();
+
+    post(route('grp.models.order.replacement_delivery_note.store', [$order->id]), [
+        'reference'           => 'R'.Str::random(6),
+        'warehouse_id'        => $this->warehouse->id,
+        'delivery_note_items' => [
+            ['id' => $item->id, 'quantity' => 2],
+        ],
+    ])->assertSessionHasErrors('delivery_note_items.0.reason');
 });
 
 test('UI show delivery note in ordering and customer scopes', function () {

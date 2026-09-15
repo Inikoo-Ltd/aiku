@@ -103,7 +103,8 @@ class StoreReplacementDeliveryNote extends OrgAction
                     $deliveryNoteItemData = [
                         'org_stock_id'      => $deliveryNoteItems->org_stock_id,
                         'transaction_id'    => $deliveryNoteItems->transaction_id,
-                        'quantity_required' => $itemData['quantity']
+                        'quantity_required' => $itemData['quantity'],
+                        'replacement_reason' => Arr::get($itemData, 'reason'),
                     ];
 
                     StoreDeliveryNoteItem::make()->action($replacement, $deliveryNoteItemData);
@@ -138,6 +139,9 @@ class StoreReplacementDeliveryNote extends OrgAction
     {
         return [
             'delivery_note_items' => ['required', 'array'],
+            'delivery_note_items.*.id'       => ['required', 'integer'],
+            'delivery_note_items.*.quantity' => ['required', 'numeric', 'min:0'],
+            'delivery_note_items.*.reason' => [$this->strict ? 'required' : 'nullable', \Illuminate\Validation\Rule::enum(\App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemReplacementReasonEnum::class)],
             'warehouse_id'        => ['required', 'integer'],
             'reference'           => ['required', 'max:64', 'string']
         ];

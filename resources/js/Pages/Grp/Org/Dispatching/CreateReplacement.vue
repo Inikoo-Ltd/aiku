@@ -66,6 +66,7 @@ const props = defineProps<{
     }
     delivery_note: DeliveryNote
     is_collection: boolean
+    replacement_reasons: { value: string; label: string }[]
     notes?: {
         note_list: {
             label: string
@@ -162,6 +163,16 @@ const handleQuantityToResendUpdate = (itemId: string | number, value: number) =>
     quantityToResendData.value[itemId] = value;
 };
 
+const reasonData = ref<{ [key: string]: string }>({});
+
+const handleReasonUpdate = (itemId: string | number, value: string) => {
+    reasonData.value[itemId] = value;
+};
+
+const isReasonMissing = computed(() =>
+    Object.entries(quantityToResendData.value).some(([itemId, quantity]) => quantity > 0 && !reasonData.value[itemId])
+);
+
 const handleValidationError = (itemId: string | number, hasError: boolean) => {
     if (hasError) {
         validationErrorsData.value[itemId] = true;
@@ -198,7 +209,8 @@ const onCreateReplacement = (action: any) => {
         .filter(([itemId, quantity]) => quantity > 0)
         .map(([itemId, quantity]) => ({
             id: parseInt(itemId),
-            quantity: quantity
+            quantity: quantity,
+            reason: reasonData.value[itemId]
         }));
 
     if (delivery_note_items.length === 0) {
@@ -253,8 +265,8 @@ const onCreateReplacement = (action: any) => {
 
     <PageHeading :data="pageHead" isButtonGroupWithBorder>
         <template #button-action-replacement="{action}">
-            <Button v-tooltip="isReplacementDisabled ? ctrans('Unable to save, some quantity is invalid') : ''" @click="() => onCreateReplacement(action)" :label="action.label" :icon="action.icon"
-                :type="action.type" :disabled="isReplacementDisabled" :loading="loadingCreateReplacement" />
+            <Button v-tooltip="isReplacementDisabled ? ctrans('Unable to save, some quantity is invalid') : isReasonMissing ? ctrans('Select a reason for each item') : ''" @click="() => onCreateReplacement(action)" :label="action.label" :icon="action.icon"
+                :type="action.type" :disabled="isReplacementDisabled || isReasonMissing" :loading="loadingCreateReplacement" />
         </template>
     </PageHeading>
 
@@ -311,7 +323,8 @@ const onCreateReplacement = (action: any) => {
     <div class="pb-12">
         <component :is="component" 
             :data="props[currentTab as keyof typeof props]" :tab="currentTab" :routes
-            :state="delivery_note.state" :triggerReplaceAll="replaceAllTrigger"
+            :state="delivery_note.state" :triggerReplaceAll="replaceAllTrigger" :reasons="replacement_reasons"
+            @update:reason="handleReasonUpdate"
             @update:quantity-to-resend="handleQuantityToResendUpdate" 
             @validation-error="handleValidationError" />
     </div>

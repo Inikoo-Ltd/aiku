@@ -22,10 +22,12 @@ const props = defineProps<{
     tab?: string
     state: string
     triggerReplaceAll?: number
+    reasons?: { value: string; label: string }[]
 }>();
 
 const emit = defineEmits<{
     'update:quantity-to-resend': [itemId: string | number, value: number]
+    'update:reason': [itemId: string | number, value: string]
     'validation-error': [itemId: string | number, hasError: boolean]
 }>();
 
@@ -204,9 +206,14 @@ const getInputClasses = computed(() => {
                         :class="getInputClasses(item)" 
                         class="rounded-md !w-28"
                         @input="onQuantityToResendInput(item, $event)" 
-                        placeholder="0" 
+                        placeholder="0"
                     />
                 </div>
+                <select class="w-full rounded-md border-gray-300 py-1 text-sm" @change="emit('update:reason', item.id, ($event.target as HTMLSelectElement).value)">
+                    <option value="">{{ trans("Reason") }}</option>
+                    <option v-for="reason in reasons" :key="reason.value" :value="reason.value">{{ reason.label }}</option>
+                </select>
+            </div>
             </div>
         </template>
 
