@@ -16,6 +16,6 @@
     </div>
 
     @foreach ($fields as $field)
-        <div style="position: absolute; left: {{ $mm($cell['left'] + $field['left']) }}; top: {{ $mm($cell['top'] + $field['top']) }}; width: {{ $mm($field['width']) }}; height: {{ $mm($field['height']) }}; margin: 0; padding: 0; font-family: Arial, sans-serif; font-size: {{ $field['font_size'] }}pt; font-weight: {{ $field['weight'] }}; line-height: 1.1; color: {{ $field['color'] }};@if ($field['rotation']) rotate: {{ $field['rotation'] }};@endif">{{ $field['text'] }}</div>
+        <div style="position: absolute; left: {{ $mm($cell['left'] + $field['left']) }}; top: {{ $mm($cell['top'] + $field['top']) }}; width: {{ $mm($field['width']) }}; height: {{ $mm($field['height']) }}; margin: 0; padding: 0; font-family: Arial, sans-serif; font-size: {{ $field['font_size'] }}pt; font-weight: {{ $field['weight'] }}; line-height: 1.1; color: {{ $field['color'] }};@if ($field['rotation']) rotate: {{ $field['rotation'] }};@endif">@if ($field['background_color'])<span style="background-color: {{ $field['background_color'] }};">{{ $field['text'] }}</span>@else{{ $field['text'] }}@endif</div>
     @endforeach
 @endforeach

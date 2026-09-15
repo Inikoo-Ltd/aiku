@@ -277,7 +277,14 @@ class ShowWebpage extends OrgAction
 
 
         $actions = array_merge($actions, $this->createRedirectAction($webpage));
-        $actions = array_merge($actions, $this->workshopActions($request));
+        $workshopActions = $this->workshopActions($request);
+        if (!$webpage->canBeEditedBy($request->user())) {
+            $workshopActions = array_values(array_filter(
+                $workshopActions,
+                fn (array $action) => !str_ends_with($action['route']['name'] ?? '', '.edit')
+            ));
+        }
+        $actions = array_merge($actions, $workshopActions);
         $actions = array_merge($actions, $this->getTypeSpecificActions($webpage));
 
         $subNavigationRoot = '';

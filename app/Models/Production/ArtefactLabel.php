@@ -8,6 +8,7 @@
 
 namespace App\Models\Production;
 
+use App\Enums\Production\Artefact\ArtefactLabelStateEnum;
 use App\Models\Helpers\Media;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
@@ -23,6 +24,8 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property string $name
  * @property int|null $artwork_id
  * @property array<array-key, mixed> $layout
+ * @property ArtefactLabelStateEnum $state
+ * @property \Illuminate\Support\Carbon|null $published_at
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property \Illuminate\Support\Carbon|null $deleted_at
@@ -45,12 +48,15 @@ class ArtefactLabel extends Model
 
     protected $attributes = [
         'layout' => '{}',
+        'state'  => 'raw',
     ];
 
     protected function casts(): array
     {
         return [
-            'layout' => 'array',
+            'layout'       => 'array',
+            'state'        => ArtefactLabelStateEnum::class,
+            'published_at' => 'datetime',
         ];
     }
 

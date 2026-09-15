@@ -9,6 +9,7 @@
 namespace App\Console\Commands;
 
 use App\Actions\CRM\TrafficSource\StoreTrafficSourceCost;
+use App\Enums\CRM\TrafficSource\TrafficSourceCostFetchedViaEnum;
 use App\Enums\CRM\TrafficSource\TrafficSourcesTypeEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\TrafficSource;
@@ -162,6 +163,7 @@ class ImportTrafficSourceCosts extends Command
             'date'                       => trim((string) $row['date']),
             'source_amount'              => (float) $row['amount'],
             'source_currency_id'         => $currency->id,
+            'fetched_via'                => TrafficSourceCostFetchedViaEnum::IMPORT->value,
             'traffic_source_campaign_id' => $campaignId,
         ]);
     }

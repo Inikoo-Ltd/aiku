@@ -20,10 +20,11 @@ use Illuminate\Support\Facades\Log;
 
 /**
  * Pulls the shop's Google Ads campaign inventory (name, status, channel type, budget, ad groups,
- * ads, keywords and the last 30 days of metrics) into traffic_source_campaigns. Spend is not pulled
- * here: Google Ads Scripts push it to us instead (see docs/google-ads-cost-ingestion), because a
- * script running inside Google's platform can do what a REST pull cannot for the free daily quota
- * this uses.
+ * ads, keywords and the last 30 days of metrics) into traffic_source_campaigns.
+ *
+ * The metrics stored here are a 30-day picture hung on the campaign for the campaign page to read.
+ * They are not the spend the marketing figures are built from: that is a cost row per campaign per
+ * day, written by FetchGoogleAdsCosts, which is the command to change if a ROAS number looks wrong.
  */
 class FetchGoogleAdsCampaigns extends Command
 {
@@ -157,7 +158,10 @@ class FetchGoogleAdsCampaigns extends Command
      */
     private function search(array $headers, string $url, string $query): array
     {
-        $body      = ['query' => $query, 'pageSize' => 1000];
+        /* No page size: the search endpoint fixes it at 10,000 rows and rejects the whole request for
+           naming one at all, which is how every fetch here started failing. Paging still happens,
+           through the page token below. */
+        $body      = ['query' => $query];
         $results   = [];
         $pageToken = null;
 
@@ -169,9 +173,7 @@ class FetchGoogleAdsCampaigns extends Command
             $response = Http::withHeaders($headers)->post($url, $body);
 
             if ($response->failed()) {
-                throw new \RuntimeException(
-                    'Google Ads returned '.$response->status().': '.data_get($response->json(), 'error.message', $response->body())
-                );
+                throw new \RuntimeException('Google Ads returned '.$response->status().': '.$this->errorMessage($response));
             }
 
             array_push($results, ...$response->json('results', []));
@@ -180,6 +182,19 @@ class FetchGoogleAdsCampaigns extends Command
         } while ($pageToken);
 
         return $results;
+    }
+
+    /**
+     * Google's top-level message for a rejected request is 'Request contains an invalid argument',
+     * which names neither the argument nor the reason. The detail underneath does both.
+     */
+    private function errorMessage(\Illuminate\Http\Client\Response $response): string
+    {
+        $detail = data_get($response->json(), 'error.details.0.errors.0.message');
+
+        return $detail
+            ? $detail.' ('.data_get($response->json(), 'error.message').')'
+            : (string) data_get($response->json(), 'error.message', $response->body());
     }
 
     /**

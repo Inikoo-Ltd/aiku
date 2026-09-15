@@ -80,11 +80,17 @@ class TicketWriteTool extends Tool
         if (!$ticket) {
             return Response::error('Ticket not found or not visible to you.');
         }
-        if (!Ticket::canBeManagedBy($user) && !$ticket->isReportedBy($user) && $request->hasAny(['subject', 'description', 'status', 'priority', 'kind', 'module', 'tags', 'assignee'])) {
-            return Response::error('Only the help desk can change tickets. You can comment on it.');
+        if (!Ticket::canBeManagedBy($user) && !$ticket->isReportedBy($user) && $request->hasAny(['subject', 'description'])) {
+            return Response::error('Only the help desk or the reporter can change the subject or description. You can comment on it.');
         }
-        if (!Ticket::canBeManagedBy($user) && $request->hasAny(['priority', 'kind', 'module', 'tags', 'assignee'])) {
-            return Response::error('Only the help desk can change priority, kind, module, tags or assignee. You can change the status of your own ticket and comment.');
+        if ($request->hasAny(['status', 'priority', 'kind', 'module', 'assignee']) && !$ticket->canBeUpdatedBy($user)) {
+            return Response::error('Only the engineer assigned to the ticket or a lead engineer can change its status, priority, kind, module or assignee. You can comment on it.');
+        }
+        if ($request->has('tags') && !$ticket->canContributeBy($user)) {
+            return Response::error('Only the people working on the ticket can change its tags. You can comment on it.');
+        }
+        if ($request->boolean('internal') && !$ticket->canContributeBy($user)) {
+            return Response::error('Only the assignee, collaborators and lead engineers can write internal notes.');
         }
         if (!Ticket::canBeAssignedBy($user) && $request->has('assignee') && !($ticket->assignee_id === $user->id && $request->filled('assignee'))) {
             return Response::error('Only a help desk supervisor hands out unassigned tickets. You can pass a ticket assigned to you on to a colleague.');

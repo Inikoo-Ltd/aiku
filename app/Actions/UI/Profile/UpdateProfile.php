@@ -85,6 +85,16 @@ class UpdateProfile extends OrgAction
             $modelData['settings']['stale_orders_filters'] = Arr::pull($modelData, 'stale_orders_filters');
         }
 
+        if (Arr::exists($modelData, 'tickets_list_mine')) {
+            $modelData['settings']['tickets_list_mine'] = (string) Arr::pull($modelData, 'tickets_list_mine');
+        }
+
+        foreach (['ticket_comments_newest_first', 'ticket_history_newest_first'] as $ticketOrderSetting) {
+            if (Arr::exists($modelData, $ticketOrderSetting)) {
+                $modelData['settings'][$ticketOrderSetting] = (bool) Arr::pull($modelData, $ticketOrderSetting);
+            }
+        }
+
         if (Arr::exists($modelData, 'chat_theme')) {
             $chatTheme                           = Arr::pull($modelData, 'chat_theme');
             $modelData['settings']['chat_theme'] = $chatTheme;
@@ -161,6 +171,9 @@ class UpdateProfile extends OrgAction
             'stale_orders_filters.show_pos'       => ['sometimes', 'boolean'],
             'stale_orders_filters.agents'         => ['sometimes', 'array'],
             'stale_orders_filters.agents.*'       => ['string'],
+            'ticket_comments_newest_first'        => ['sometimes', 'boolean'],
+            'ticket_history_newest_first'         => ['sometimes', 'boolean'],
+            'tickets_list_mine'                   => ['sometimes', 'nullable', 'string', 'max:100'],
         ];
     }
 

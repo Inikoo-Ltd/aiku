@@ -56,6 +56,8 @@ class EditWebpage extends OrgAction
      */
     public function htmlResponse(Webpage $webpage, ActionRequest $request): Response
     {
+        abort_unless($webpage->canBeEditedBy($request->user()), 403, $webpage->lockMessage());
+
         $isBlog = $webpage->type == WebpageTypeEnum::BLOG;
         $isSystemPage = $webpage->type == WebpageTypeEnum::SYSTEM_PAGE;
 

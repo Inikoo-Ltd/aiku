@@ -8,6 +8,7 @@
 
 namespace App\Actions\Helpers\Ticket\UI;
 
+use App\Actions\Helpers\Ticket\GetTicketBadgeData;
 use App\Actions\OrgAction;
 use App\Enums\Helpers\Ticket\TicketStatusEnum;
 use App\Models\Helpers\Ticket;
@@ -25,9 +26,14 @@ class ShowTicketsReports extends OrgAction
         return $request->user() !== null;
     }
 
-    public function handle(Group $group, string $interval, ?User $viewer = null): array
+    public function handle(Group $group, string $interval, ?User $viewer = null, ?User $assignee = null): array
     {
-        $base = Ticket::where('tickets.group_id', $group->id)->when($viewer, fn ($query) => $query->visibleTo($viewer));
+        $base = Ticket::where('tickets.group_id', $group->id)
+            ->when($viewer, fn ($query) => $query->visibleTo($viewer))
+            ->when($assignee, fn ($query) => $query->where(
+                fn ($involved) => $involved->where('tickets.assignee_id', $assignee->id)
+                    ->orWhereExists(fn ($collaborators) => $collaborators->selectRaw('1')->from('ticket_collaborators')->whereColumn('ticket_collaborators.ticket_id', 'tickets.id')->where('ticket_collaborators.user_id', $assignee->id))
+            ));
 
         [$from, $to] = $this->range($interval, (clone $base)->min('created_at'));
         $days        = (int) $from->copy()->startOfDay()->diffInDays($to->copy()->startOfDay()) + 1;
@@ -68,13 +74,17 @@ class ShowTicketsReports extends OrgAction
                 '.self::METRICS_SQL)
             ->groupBy('tickets.reporter_type', 'tickets.reporter_id', 'reporter_users.contact_name', 'reporter_users.username', 'reporter_web_users.contact_name', 'reporter_web_users.username')
             ->orderByDesc('created')
-            ->get()
-            ->map(fn ($row) => [
-                'key'      => $row->reporter_kind.'-'.$row->id,
-                'name'     => $row->name,
-                'is_staff' => $row->reporter_kind === 'User',
-                ...$this->metrics($row),
-            ]);
+            ->get();
+
+        $reporterUsers = User::whereIn('id', $reporters->where('reporter_kind', 'User')->pluck('id'))->get()->keyBy('id');
+
+        $reporters = $reporters->map(fn ($row) => [
+            'key'      => $row->reporter_kind.'-'.$row->id,
+            'name'     => $row->name,
+            'is_staff' => $row->reporter_kind === 'User',
+            'avatar'   => $row->reporter_kind === 'User' ? $reporterUsers->get($row->id)?->imageSources(48, 48) : null,
+            ...$this->metrics($row),
+        ]);
 
         $csat = (clone $base)->whereBetween('rated_at', [$from, $to])->avg('rating');
 
@@ -91,6 +101,7 @@ class ShowTicketsReports extends OrgAction
 
         return [
             'interval'      => $interval,
+            'assignee'      => $assignee?->username,
             'days'          => $days,
             'bucket'        => $bucket,
             'from'          => $from->toDateString(),
@@ -131,25 +142,72 @@ class ShowTicketsReports extends OrgAction
         count(tickets.rating) as ratings
     ";
 
+    private const array EMPTY_METRICS = [
+        'created'           => 0,
+        'open'              => 0,
+        'assigned'          => 0,
+        'in_progress'       => 0,
+        'resolved'          => 0,
+        'cancelled'         => 0,
+        'done'              => 0,
+        'median_hours'      => null,
+        'longest_wait_days' => null,
+        'rating'            => null,
+        'ratings'           => 0,
+    ];
+
     private function assigneeRows($query): array
     {
-        $rows = (clone $query)
+        $assignedRows = (clone $query)
             ->join('users', 'users.id', '=', 'tickets.assignee_id')
             ->selectRaw('users.id as id, users.username as username, coalesce(users.contact_name, users.username) as name, '.self::METRICS_SQL)
             ->groupBy('users.id', 'users.contact_name', 'users.username')
-            ->orderByDesc('open')
-            ->orderByDesc('done')
-            ->get();
+            ->get()
+            ->keyBy('id');
 
-        $users = User::whereIn('id', $rows->pluck('id'))->get()->keyBy('id');
+        $collaboratingRows = (clone $query)
+            ->join('ticket_collaborators', 'ticket_collaborators.ticket_id', '=', 'tickets.id')
+            ->join('users', 'users.id', '=', 'ticket_collaborators.user_id')
+            ->where(fn ($notAssignee) => $notAssignee->whereNull('tickets.assignee_id')->orWhereColumn('tickets.assignee_id', '!=', 'ticket_collaborators.user_id'))
+            ->selectRaw("
+                users.id as id,
+                users.username as username,
+                coalesce(users.contact_name, users.username) as name,
+                count(*) filter (where tickets.status = 'assigned') as assigned,
+                count(*) filter (where tickets.status = 'in_progress') as in_progress,
+                count(*) filter (where tickets.status not in ('resolved', 'cancelled')) as open,
+                count(*) filter (where tickets.resolved_at is not null) as done
+            ")
+            ->groupBy('users.id', 'users.contact_name', 'users.username')
+            ->get()
+            ->keyBy('id');
 
-        return $rows->map(fn ($row) => [
-            'name'       => $row->name,
-            'username'   => $row->username,
-            'short_name' => strtok((string) $row->name, ' '),
-            'avatar'     => $users->get($row->id)?->imageSources(48, 48),
-            ...$this->metrics($row),
-        ])->all();
+        $userIds = $assignedRows->keys()->merge($collaboratingRows->keys())->unique()->values();
+        $users   = User::whereIn('id', $userIds)->get()->keyBy('id');
+
+        return $userIds
+            ->map(function ($userId) use ($assignedRows, $collaboratingRows, $users) {
+                $assignedRow      = $assignedRows->get($userId);
+                $collaboratingRow = $collaboratingRows->get($userId);
+                $name             = $assignedRow->name ?? $collaboratingRow->name;
+
+                return [
+                    'name'          => $name,
+                    'username'      => $assignedRow->username ?? $collaboratingRow->username,
+                    'short_name'    => strtok((string) $name, ' '),
+                    'avatar'        => $users->get($userId)?->imageSources(48, 48),
+                    ...($assignedRow ? $this->metrics($assignedRow) : self::EMPTY_METRICS),
+                    'collaborating' => [
+                        'assigned'    => (int) ($collaboratingRow->assigned ?? 0),
+                        'in_progress' => (int) ($collaboratingRow->in_progress ?? 0),
+                        'open'        => (int) ($collaboratingRow->open ?? 0),
+                        'done'        => (int) ($collaboratingRow->done ?? 0),
+                    ],
+                ];
+            })
+            ->sortBy(fn (array $row) => [-($row['open'] + $row['collaborating']['open']), -($row['done'] + $row['collaborating']['done'])])
+            ->values()
+            ->all();
     }
 
     private function metrics(object $row): array
@@ -195,7 +253,11 @@ class ShowTicketsReports extends OrgAction
     {
         $this->initialisationFromGroup(group(), $request);
 
-        return $this->handle($this->group, IndexTickets::make()->createdInterval(), $request->user());
+        $assignee = $request->filled('assignee')
+            ? GetTicketBadgeData::engineers($this->group->id)->firstWhere('username', $request->query('assignee'))
+            : null;
+
+        return $this->handle($this->group, IndexTickets::make()->createdInterval(), $request->user(), $assignee);
     }
 
     public function htmlResponse(array $stats): Response
@@ -214,6 +276,10 @@ class ShowTicketsReports extends OrgAction
                 ],
                 'stats'            => $stats,
                 'createdIntervals' => IndexTickets::make()->createdIntervalOptions(),
+                'assigneeOptions'  => GetTicketBadgeData::engineers($this->group->id)
+                    ->map(fn (User $engineer) => ['label' => $engineer->contact_name ?: $engineer->username, 'value' => $engineer->username])
+                    ->sortBy('label')
+                    ->values(),
             ]
         );
     }

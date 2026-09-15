@@ -22,6 +22,7 @@ class TicketCommentResource extends JsonResource
             'id'          => $this->id,
             'body'        => $this->body,
             'is_internal' => $this->is_internal,
+            'is_lead_only' => $this->is_lead_only,
             'can_toggle_visibility' => $request->user() instanceof \App\Models\SysAdmin\User && \App\Models\Helpers\Ticket::canBeAssignedBy($request->user()),
             'is_staff'    => $this->author_type === 'User',
             'author'      => $this->author?->contact_name ?: $this->author?->username,

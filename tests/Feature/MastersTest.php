@@ -36,6 +36,12 @@ use App\Actions\Masters\MasterProductCategory\DeleteMasterProductCategory;
 use App\Actions\Masters\MasterProductCategory\DetachFamilyToMasterSubDepartment;
 use App\Actions\Masters\MasterProductCategory\StoreMasterDepartment;
 use App\Actions\Masters\MasterProductCategory\StoreMasterFamily;
+use App\Actions\Catalogue\ProductCategory\StoreProductCategory;
+use App\Actions\Catalogue\ProductCategory\StoreProductCategoryWebpage;
+use App\Actions\Web\Webpage\LockWebpage;
+use App\Actions\Web\Webpage\UI\GetMasterFamilyWebpageLocks;
+use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
+use App\Models\Catalogue\ProductCategory;
 use App\Actions\Masters\MasterProductCategory\StoreMasterProductCategory;
 use App\Actions\Masters\MasterProductCategory\StoreMasterSubDepartment;
 use App\Actions\Masters\MasterProductCategory\UpdateMasterFamilyMasterDepartment;
@@ -2032,6 +2038,72 @@ test('DetachMasterCollectionFromModel detaches a master collection from a depart
     DetachMasterCollectionFromModel::make()->handle($masterDepartment, $masterCollection, false);
 
     expect($masterDepartment->masterCollections()->where('master_collections.id', $masterCollection->id)->exists())->toBeFalse();
+});
+
+test('master family locks only the webpages of the selected websites', function () {
+    $masterShop       = createFreshMasterShop();
+    $masterDepartment = StoreMasterDepartment::make()->action($masterShop, ['code' => 'LOCKDEP-'.uniqid(), 'name' => 'Lock Dept']);
+    $masterFamily     = StoreMasterFamily::make()->action($masterDepartment, ['code' => 'LOCKFAM-'.uniqid(), 'name' => 'Lock Family']);
+
+    createProduct($this->shop);
+    createWebsite($this->shop);
+    $department = $this->shop->productCategories()->where('type', ProductCategoryTypeEnum::DEPARTMENT)->first();
+
+    $makeFamily = fn () => StoreProductCategory::make()->action($department, array_merge(
+        ProductCategory::factory()->definition(),
+        ['type' => ProductCategoryTypeEnum::FAMILY->value]
+    ));
+
+    $selectedFamily   = $makeFamily();
+    $translatedFamily = $makeFamily();
+    $unrelatedFamily  = $makeFamily();
+
+    $selectedWebpage   = StoreProductCategoryWebpage::make()->action($selectedFamily);
+    $translatedWebpage = StoreProductCategoryWebpage::make()->action($translatedFamily);
+    $unrelatedWebpage  = StoreProductCategoryWebpage::make()->action($unrelatedFamily);
+
+    $selectedFamily->updateQuietly(['master_product_category_id' => $masterFamily->id]);
+    $translatedFamily->updateQuietly(['master_product_category_id' => $masterFamily->id]);
+
+    $user = $this->adminGuest->getUser();
+
+    $webpageLocks = GetMasterFamilyWebpageLocks::run($masterFamily, $user);
+    expect(collect($webpageLocks['webpages'])->pluck('id')->all())->toEqualCanonicalizing([$selectedWebpage->id, $translatedWebpage->id])
+        ->and(collect($webpageLocks['webpages'])->every(fn (array $webpage) => !$webpage['is_locked']))->toBeTrue();
+
+    $this->postJson(route('grp.models.master_product_category.lock_webpages', $masterFamily->id), [
+        'webpage_ids' => [$selectedWebpage->id, $unrelatedWebpage->id],
+        'reason'      => 'Final copy approved',
+    ])->assertSuccessful();
+
+    $selectedWebpage->refresh();
+    expect($selectedWebpage->isLocked())->toBeTrue()
+        ->and($selectedWebpage->locked_by_user_id)->toBe($user->id)
+        ->and($selectedWebpage->lock_data['scope'])->toBe('master_family')
+        ->and($selectedWebpage->lock_data['master_product_category_id'])->toBe($masterFamily->id)
+        ->and($translatedWebpage->fresh()->isLocked())->toBeFalse()
+        ->and($unrelatedWebpage->fresh()->isLocked())->toBeFalse();
+
+    $selectedWebpage = LockWebpage::make()->action($selectedWebpage, $user, ['reason' => 'Reason updated on the webpage']);
+    expect($selectedWebpage->lock_data['scope'])->toBe('master_family');
+
+    $this->postJson(route('grp.models.master_product_category.lock_webpages', $masterFamily->id), ['reason' => 'Nothing picked'])
+        ->assertStatus(422)->assertJsonValidationErrors('webpage_ids');
+
+    $singleWebpage = LockWebpage::make()->action($translatedWebpage->fresh(), $user, ['reason' => 'This page only']);
+    expect($singleWebpage->lock_data['scope'])->toBe('webpage');
+
+    $this->postJson(route('grp.models.master_product_category.unlock_webpages', $masterFamily->id), ['webpage_ids' => [$selectedWebpage->id]])
+        ->assertStatus(422)->assertJsonValidationErrors('reason');
+
+    $this->postJson(route('grp.models.master_product_category.unlock_webpages', $masterFamily->id), [
+        'webpage_ids' => [$selectedWebpage->id, $unrelatedWebpage->id],
+        'reason'      => 'Copy needs updating',
+    ])->assertSuccessful();
+
+    expect($selectedWebpage->fresh()->isLocked())->toBeFalse()
+        ->and($selectedWebpage->fresh()->lock_data['unlock_reason'])->toBe('Copy needs updating')
+        ->and($translatedWebpage->fresh()->isLocked())->toBeTrue();
 });
 
 test('DetachMasterModelFromMasterCollection detaches a master family from a master collection', function () {
