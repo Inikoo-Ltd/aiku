@@ -7,6 +7,8 @@
 <script setup lang="ts">
 import { Head, Link, router } from "@inertiajs/vue3"
 import { computed, reactive, ref, watch } from "vue"
+import axios from "axios"
+import { notify } from "@kyvg/vue3-notification"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import Table from "@/Components/Table/Table.vue"
 import { capitalize } from "@/Composables/capitalize"
@@ -16,9 +18,50 @@ import { trans } from "laravel-vue-i18n"
 import { PageHeadingTypes } from "@/types/PageHeading"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faUserHardHat, faPencil } from "@fal"
+import { faUserHardHat, faPencil, faFilePdf, faPrint } from "@fal"
+import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 
-library.add(faUserHardHat, faPencil)
+library.add(faUserHardHat, faPencil, faFilePdf, faPrint)
+
+type PublishedLabel = { id: number, name: string, pdf_url: string }
+
+const PRINT_FRAME_LIFETIME_MS = 60000
+
+const printingLabelId = ref<number | null>(null)
+
+async function printLabel(label: PublishedLabel) {
+    if (printingLabelId.value) return
+
+    printingLabelId.value = label.id
+
+    try {
+        const response = await axios.get(label.pdf_url, { responseType: "blob" })
+        const pdfUrl = URL.createObjectURL(new Blob([response.data], { type: "application/pdf" }))
+        const printFrame = document.createElement("iframe")
+
+        Object.assign(printFrame.style, { position: "fixed", right: "0", bottom: "0", width: "0", height: "0", border: "0" })
+        printFrame.src = pdfUrl
+        printFrame.onload = () => {
+            printFrame.contentWindow?.focus()
+            printFrame.contentWindow?.print()
+
+            setTimeout(() => {
+                printFrame.remove()
+                URL.revokeObjectURL(pdfUrl)
+            }, PRINT_FRAME_LIFETIME_MS)
+        }
+
+        document.body.appendChild(printFrame)
+    } catch {
+        notify({
+            title: trans("Something went wrong"),
+            text: trans("The label :name could not be printed", { name: label.name }),
+            type: "error",
+        })
+    } finally {
+        printingLabelId.value = null
+    }
+}
 
 const props = defineProps<{
     pageHead: PageHeadingTypes
@@ -29,7 +72,7 @@ const props = defineProps<{
     artisanWorkload: { id: number, name: string, open_job_orders: number, hidden: boolean }[] | null
     mixJobOrders: { id: number, artefact_id: number, code: string, name: string, quantity: number, job_order_id: number, job_order_reference: string, job_order_slug: string, job_order_state: string, job_order_artisan: string | null }[] | null
     hitchhikers?: { count: number, showing: boolean }
-    groups: { label: string, items: { id: number, quantity: number, state: string, stock_code: string, stock_name: string, family: string | null, maker: string | null, buyer_code: string | null, customer_name: string | null, order_reference: string | null, job_order_reference: string | null, job_order_slug: string | null, priority: string, needed_by: string | null }[] }[] | null
+    groups: { label: string, items: { id: number, quantity: number, state: string, stock_code: string, stock_name: string, family: string | null, maker: string | null, buyer_code: string | null, customer_name: string | null, order_reference: string | null, job_order_reference: string | null, job_order_slug: string | null, priority: string, needed_by: string | null, published_labels?: PublishedLabel[] }[] }[] | null
 }>()
 
 const selected = reactive<Record<number, number>>({})
@@ -59,7 +102,7 @@ function createJobOrders(ids: number[] = Object.keys(selected).map(Number), empl
     )
 }
 
-type BoardItem = { id: number, batch_size?: number | null, packed_in?: number | null, order_quantum?: number | null, is_hitchhiker?: boolean, stock_code: string, stock_name: string, state: string, quantity: number, quantity_to_produce: number | null, maker: string | null, maker_id: number | null, preparing_at: string | null, kind?: "item" | "mix", artefact_id?: number, job_order_id?: number | null, job_order_state?: string | null, job_order_reference?: string | null, job_order_artisan?: string | null, stock_available?: number | null, buyer_code?: string | null }
+type BoardItem = { id: number, batch_size?: number | null, packed_in?: number | null, order_quantum?: number | null, is_hitchhiker?: boolean, stock_code: string, stock_name: string, state: string, quantity: number, quantity_to_produce: number | null, maker: string | null, maker_id: number | null, preparing_at: string | null, kind?: "item" | "mix", artefact_id?: number, job_order_id?: number | null, job_order_state?: string | null, job_order_reference?: string | null, job_order_artisan?: string | null, stock_available?: number | null, buyer_code?: string | null, published_labels?: { id: number, name: string, pdf_url: string }[] }
 
 function isReassignable(item: BoardItem): boolean {
     return !!item.job_order_id && ["in_process", "submitted"].includes(item.job_order_state ?? "")
@@ -631,6 +674,33 @@ function jobOrderHref(item: { job_order_slug: string }) {
                     <div v-if="laneIndex <= LANE_PREPARING" class="text-gray-400">
                         <span v-if="Number(item.stock_available) >= Number(item.quantity)" class="text-emerald-600">{{ trans("In stock") }}: {{ useLocaleStore().number(Number(item.stock_available)) }}</span>
                         <span v-else>{{ trans("In stock") }}: {{ useLocaleStore().number(Number(item.stock_available ?? 0)) }}</span>
+                    </div>
+                    <div v-if="laneIndex === LANE_PREPARING && item.published_labels?.length" class="mt-1 flex flex-col gap-1">
+                        <div v-for="label in item.published_labels" :key="label.id" class="flex max-w-full items-center gap-1">
+                            <a
+                                :href="label.pdf_url"
+                                target="_blank"
+                                rel="noopener"
+                                class="flex min-w-0 flex-1 items-center gap-1 rounded border border-indigo-200 bg-indigo-50 px-1.5 py-px text-indigo-700 hover:bg-indigo-100"
+                                :title="trans('Open label :name', { name: label.name })"
+                                draggable="false"
+                                @click.stop
+                                @mousedown.stop>
+                                <FontAwesomeIcon icon="fal fa-file-pdf" fixed-width />
+                                <span class="truncate">{{ label.name }}</span>
+                            </a>
+                            <button
+                                type="button"
+                                class="flex shrink-0 items-center gap-1 rounded border border-indigo-200 bg-white px-1.5 py-px text-indigo-700 hover:bg-indigo-50 disabled:cursor-wait disabled:opacity-60"
+                                :title="trans('Print label :name', { name: label.name })"
+                                :disabled="printingLabelId === label.id"
+                                @click.stop="printLabel(label)"
+                                @mousedown.stop>
+                                <LoadingIcon v-if="printingLabelId === label.id" />
+                                <FontAwesomeIcon v-else icon="fal fa-print" fixed-width />
+                                {{ ctrans("Print") }}
+                            </button>
+                        </div>
                     </div>
                     <button v-if="item.job_order_id && isReassignable(item)" type="button" class="flex items-center gap-1 rounded text-gray-600 hover:bg-indigo-50 hover:text-indigo-700" :title="trans('Change artisan')" @click.stop="openReassign(item, $event)">
                         <FontAwesomeIcon icon="fal fa-user-hard-hat" class="text-gray-400" fixed-width />

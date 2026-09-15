@@ -14,16 +14,19 @@ use App\Actions\Production\PartnerShippingList\GetMixesToPrepare;
 use App\Actions\Production\PartnerShippingList\GetMixJobOrders;
 use App\Actions\Production\Production\UI\ShowProduction;
 use App\Enums\HumanResources\Employee\EmployeeStateEnum;
+use App\Enums\Production\Artefact\ArtefactLabelStateEnum;
 use App\Enums\Production\JobOrder\JobOrderStateEnum;
 use App\Models\HumanResources\Employee;
 use App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum;
 use App\InertiaTable\InertiaTable;
 use App\Models\Procurement\PartnerShoppingListItem;
+use App\Models\Production\ArtefactLabel;
 use App\Models\Production\Production;
 use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Inertia\Inertia;
@@ -352,10 +355,41 @@ class IndexPartnerShippingList extends OrgAction
 
         $this->hitchhikerCount = $byLane->get('hitchhiking', collect())->count();
 
+        $preparingItems  = $byLane->get('preparing', collect());
+        $publishedLabels = $this->getPublishedLabelsByArtefact($preparingItems->pluck('artefact_id')->filter()->unique()->values()->all());
+
+        $preparingItems->each(function ($item) use ($publishedLabels) {
+            $item->published_labels = $publishedLabels->get($item->artefact_id, collect())->values()->all();
+        });
+
         return collect($lanes)
             ->map(fn ($label, $key) => ['label' => $label, 'items' => $byLane->get($key, collect())->values()->all()])
             ->values()
             ->all();
+    }
+
+    /**
+     * @param  array<int, int>  $artefactIds
+     * @return Collection<int, Collection<int, array{id: int, artefact_id: int, name: string, pdf_url: string}>>
+     */
+    public function getPublishedLabelsByArtefact(array $artefactIds): Collection
+    {
+        if (!$artefactIds) {
+            return collect();
+        }
+
+        return ArtefactLabel::query()
+            ->whereIn('artefact_id', $artefactIds)
+            ->where('state', ArtefactLabelStateEnum::PUBLISHED)
+            ->orderBy('name')
+            ->get(['id', 'artefact_id', 'name'])
+            ->map(fn (ArtefactLabel $label) => [
+                'id'          => $label->id,
+                'artefact_id' => $label->artefact_id,
+                'name'        => $label->name,
+                'pdf_url'     => route('grp.models.artefact.labels.pdf', ['artefact' => $label->artefact_id, 'label' => $label->id]),
+            ])
+            ->groupBy('artefact_id');
     }
 
     /** @return array<int, array{id: int, name: string, open_job_orders: int, hidden: bool}> */
