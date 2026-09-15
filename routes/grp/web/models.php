@@ -534,6 +534,9 @@ use App\Actions\Web\Webpage\StoreWebpage;
 use App\Actions\Web\Webpage\UpdateWebpage;
 use App\Actions\Web\Webpage\LockWebpage;
 use App\Actions\Web\Webpage\UnlockWebpage;
+use App\Actions\Web\Webpage\RequestWebpageEditAccess;
+use App\Actions\Web\Webpage\ApproveWebpageEditAccess;
+use App\Actions\Web\Webpage\DeclineWebpageEditAccess;
 use App\Http\Middleware\EnsureWebpageIsNotLocked;
 use App\Actions\Web\Webpage\WebpageWorkshopCheckWebBlock;
 use App\Actions\Web\Website\AutosaveWebsiteMarginal;
@@ -555,6 +558,7 @@ use App\Actions\Helpers\Ticket\UpdateTicketComment;
 use App\Actions\Helpers\Ticket\ToggleTicketCommentVisibility;
 use App\Actions\Helpers\Ticket\DeleteTicketComment;
 use App\Actions\Helpers\Ticket\UpdateTicket;
+use App\Actions\Helpers\Ticket\SyncTicketCollaborators;
 use Illuminate\Support\Facades\Route;
 
 Route::patch('/profile', UpdateProfile::class)->name('profile.update');
@@ -569,6 +573,7 @@ Route::patch('notifications', MarkAllNotificationAsRead::class)->name('notificat
 Route::prefix('ticket')->name('ticket.')->group(function () {
     Route::post('/', StoreTicket::class)->name('store');
     Route::patch('{ticket:id}', UpdateTicket::class)->name('update')->whereNumber('ticket');
+    Route::patch('{ticket:id}/collaborators', SyncTicketCollaborators::class)->name('collaborators.update')->whereNumber('ticket');
     Route::post('{ticket:id}/comment', StoreTicketComment::class)->name('comment.store')->whereNumber('ticket');
     Route::patch('comment/{ticketComment:id}', UpdateTicketComment::class)->name('comment.update')->whereNumber('ticketComment');
     Route::patch('comment/{ticketComment:id}/visibility', ToggleTicketCommentVisibility::class)->name('comment.toggle_visibility')->whereNumber('ticketComment');
@@ -1213,6 +1218,9 @@ Route::patch('set-snapshot-website/{snapshot:id}/unpublished', [ApplyWebsiteMenu
 Route::name('webpage.')->prefix('webpage/{webpage:id}')->group(function () {
     Route::post('lock', LockWebpage::class)->name('lock')->withoutScopedBindings();
     Route::post('unlock', UnlockWebpage::class)->name('unlock')->withoutScopedBindings();
+    Route::post('request-edit-access', RequestWebpageEditAccess::class)->name('edit_access.request')->withoutScopedBindings();
+    Route::post('approve-edit-access', ApproveWebpageEditAccess::class)->name('edit_access.approve')->withoutScopedBindings();
+    Route::post('decline-edit-access', DeclineWebpageEditAccess::class)->name('edit_access.decline')->withoutScopedBindings();
 });
 
 Route::name('webpage.')->prefix('webpage/{webpage:id}')->middleware(EnsureWebpageIsNotLocked::class)->group(function () {

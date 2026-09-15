@@ -10,8 +10,8 @@ namespace App\Actions\Helpers\Ticket;
 
 use App\Actions\SysAdmin\User\SendUserPushNotification;
 use App\Enums\Helpers\Ticket\TicketQaStatusEnum;
+use App\Enums\Helpers\Ticket\TicketStatusEnum;
 use App\Enums\SysAdmin\User\UserNotificationEnum;
-use App\Events\BroadcastTicketBadgeUpdate;
 use App\Events\BroadcastTicketChanged;
 use App\Models\Helpers\Ticket;
 use App\Models\SysAdmin\User;
@@ -149,17 +149,52 @@ class NotifyTicketUsers
         }
     }
 
+    public function statusChanged(Ticket $ticket, ?User $actor): void
+    {
+        $statusLabel = TicketStatusEnum::labels()[$ticket->status->value];
+
+        $this->handle(
+            $ticket,
+            $actor,
+            $ticket->reporter,
+            __(':reference is now :status', ['reference' => $ticket->reference, 'status' => $statusLabel]),
+            [
+                $actor
+                    ? __(':actor moved :reference (:subject) to :status.', ['actor' => $actor->contact_name ?: $actor->username, 'reference' => $ticket->reference, 'subject' => $ticket->subject, 'status' => $statusLabel])
+                    : __(':reference (:subject) is now :status.', ['reference' => $ticket->reference, 'subject' => $ticket->subject, 'status' => $statusLabel]),
+            ],
+            __('Open the ticket')
+        );
+    }
+
+    public function collaboratorAdded(Ticket $ticket, User $collaborator, ?User $actor): void
+    {
+        $this->handle(
+            $ticket,
+            $actor,
+            $collaborator,
+            __('You were added to :reference', ['reference' => $ticket->reference]),
+            [$ticket->subject],
+            __('Open the ticket')
+        );
+    }
+
     public function pushBadges(Ticket $ticket, ?User $actor = null): void
     {
         BroadcastTicketChanged::dispatch($ticket);
 
-        $users = collect([$ticket->reporter, $ticket->assignee()->first(), $actor])
+        $previousAssigneeId  = $ticket->wasChanged('assignee_id') ? ($ticket->getPrevious()['assignee_id'] ?? null) : null;
+        $changesQueueCounts  = $ticket->wasRecentlyCreated || $ticket->wasChanged(['status', 'assignee_id', 'qa_status', 'kind', 'is_confidential']);
+
+        $users = collect([$ticket->reporter, $ticket->assignee()->first(), $previousAssigneeId ? User::find($previousAssigneeId) : null, $actor])
+            ->merge($ticket->collaborators()->get())
+            ->when($changesQueueCounts, fn ($users) => $users
+                ->merge(GetTicketBadgeData::engineers($ticket->group_id))
+                ->merge(GetTicketBadgeData::qaUsers($ticket->group_id)))
             ->filter(fn ($user) => $user instanceof User)
             ->unique('id');
 
-        foreach ($users as $user) {
-            BroadcastTicketBadgeUpdate::dispatch($user);
-        }
+        SendTicketBadgeUpdateToUsers::run($users->pluck('id')->values()->all());
     }
 
     /**
@@ -175,7 +210,7 @@ class NotifyTicketUsers
 
         $recipient->notify(new TicketNotification($ticket, $subject, $lines, $actionLabel, in_array('email', $channels, true) && (bool) $recipient->email));
 
-        BroadcastTicketBadgeUpdate::dispatch($recipient, [
+        SendTicketBadgeUpdateToUsers::run([$recipient->id], [
             'title' => $subject,
             'body'  => $lines[0] ?? '',
             'route' => route('grp.tickets.show', $ticket->reference),

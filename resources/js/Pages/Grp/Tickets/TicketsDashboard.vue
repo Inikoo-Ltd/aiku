@@ -29,11 +29,12 @@ defineProps<{
     queue?: any[]
     qa_queue?: any[]
     assigned?: any[]
+    collaborating?: any[]
     waiting_due?: any[]
     by_status?: { status: string; label: string; icon: any; total: number }[]
 }>()
 
-useLiveTickets(["can_manage", "can_qa", "mine", "recently_closed", "stats", "queue", "qa_queue", "assigned", "waiting_due", "by_status"])
+useLiveTickets(["can_manage", "can_qa", "mine", "recently_closed", "stats", "queue", "qa_queue", "assigned", "collaborating", "waiting_due", "by_status"])
 
 const hours = (value: number | null) => (value === null ? "-" : value >= 48 ? `${(value / 24).toFixed(1)} ${trans("days")}` : `${value} ${trans("h")}`)
 </script>
@@ -71,6 +72,7 @@ const hours = (value: number | null) => (value === null ? "-" : value >= 48 ? `$
 
         <div v-if="can_manage" class="grid gap-4 lg:grid-cols-2">
             <TicketMiniList :title="trans('Assigned to me')" :tickets="assigned ?? []" :empty="trans('Nothing on your plate')" />
+            <TicketMiniList v-if="collaborating?.length" :title="trans('Collaborating on')" :tickets="collaborating" :empty="trans('Not collaborating on anything')" show-assignee />
             <TicketMiniList :title="trans('Waiting for a QA check')" :tickets="qa_queue ?? []" :empty="trans('Nothing to check')" date-key="qa_requested_at" show-assignee />
             <TicketMiniList :title="trans('Waiting, due now')" :tickets="waiting_due ?? []" :empty="trans('Nothing due')" date-key="waiting_until" show-assignee />
             <div class="lg:col-span-2">

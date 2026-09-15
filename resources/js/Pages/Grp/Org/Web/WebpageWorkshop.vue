@@ -6,6 +6,7 @@
 
 <script setup lang="ts">
 import WebpageLockBanner from '@/Components/CMS/Webpage/WebpageLockBanner.vue'
+import WebpageLockButton from '@/Components/CMS/Webpage/WebpageLockButton.vue'
 import {
   ref, onMounted, provide, watch, computed, inject,
   IframeHTMLAttributes, onUnmounted,
@@ -24,6 +25,7 @@ import { getRevealSetting, setIframeView } from "@/Composables/Workshop";
 
 import PageHeading from "@/Components/Headings/PageHeading.vue";
 import Publish from "@/Components/Publish.vue";
+import Button from "@/Components/Elements/Buttons/Button.vue";
 import ScreenView from "@/Components/ScreenView.vue";
 import WebpageSideEditor from "@/Components/Workshop/WebpageSideEditor.vue";
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue";
@@ -169,6 +171,7 @@ const sendToIframe = (data: any) => {
 
 // Block Handlers
 const addNewBlock = async ({ block, type }) => {
+  if (!props.editable) return;
   if (addBlockCancelToken.value) addBlockCancelToken.value();
   let position = data.value.layout.web_blocks.length
   if (type == 'before') {
@@ -231,6 +234,7 @@ const renameDuplicatedRevealKeys = () => {
 };
 
 const duplicateBlock = async (modelHasWebBlock = Number) => {
+  if (!props.editable) return;
   router.post(
     route('grp.models.webpage.web_block.duplicate', {
       webpage: data.value.id,
@@ -372,9 +376,13 @@ const debouncedSaveSiteSettings = debounce(block => {
   );
 }, 1500);
 
-const onSaveSiteSettings = block => debouncedSaveSiteSettings(block);
+const onSaveSiteSettings = block => {
+  if (!props.editable) return;
+  debouncedSaveSiteSettings(block);
+};
 
 const onSaveWorkshop = (block, isFromSideEditor = true, reload = false) => {
+  if (!props.editable) return;
   if (cancelTokens.value[block.id]) cancelTokens.value[block.id]();
   if (isFromSideEditor) {
     sendToIframe({
@@ -387,7 +395,7 @@ const onSaveWorkshop = (block, isFromSideEditor = true, reload = false) => {
 
 const onSaveWorkshopFromId = (blockId, from) => {
   if (from) console.log('onSaveWorkshopFromId from:', from);
-  if (!blockId) return;
+  if (!blockId || !props.editable) return;
   if (cancelTokens.value[blockId]) cancelTokens.value[blockId]();
 
   const block = data.value.layout.web_blocks.find(block => block.id === blockId);
@@ -403,6 +411,7 @@ provide('onSaveWorkshop', onSaveWorkshop);
 
 
 const sendOrderBlock = async block => {
+  if (!props.editable) return;
   if (orderBlockCancelToken.value) orderBlockCancelToken.value();
   router.post(
     route(props.webpage.reorder_web_blocks_route.name, props.webpage.reorder_web_blocks_route.parameters),
@@ -428,6 +437,7 @@ const sendOrderBlock = async block => {
 };
 
 const sendDeleteBlock = async (block: Daum) => {
+  if (!props.editable) return;
   if (deleteBlockCancelToken.value) deleteBlockCancelToken.value();
   router.delete(
     route(props.webpage.delete_model_has_web_blocks_route.name, { modelHasWebBlocks: block.id }),
@@ -490,6 +500,7 @@ const onPublish = async (action: routeType, popover) => {
 };
 
 const beforePublish = (route, popover) => {
+  if (!props.editable) return;
   const validation = JSON.stringify(data.value.layout);
   if (props.webpage.type == "catalogue") onPublish(route, popover)
   else {
@@ -565,6 +576,7 @@ const exitFullScreen = async () => {
 const toggleFullScreen = () => isFullScreen.value ? exitFullScreen() : enterFullScreen();
 
 const setHideBlock = (block: Daum) => {
+  if (!props.editable) return;
   block.show = !block.show;
   onSaveWorkshop(block);
 };
@@ -583,6 +595,7 @@ const onCreateTemplate = (payload: {
     fieldValue: any
   }>
 }) => {
+  if (!props.editable) return;
   isCreatingTemplate.value = true;
 
   axios.post(
@@ -656,6 +669,7 @@ const onFilterTemplates = (value: WebLayoutTemplateFilter) => {
 };
 
 const applyTemplate = async (template: WebLayoutTemplate) => {
+  if (!props.editable) return;
   applyingTemplateId.value = template.id;
 
   try {
@@ -716,6 +730,7 @@ const onApplyTemplate = (payload: {
     position: number
   }>
 }) => {
+  if (!props.editable) return;
   isApplyingTemplate.value = true;
 
   console.log(payload)
@@ -766,7 +781,7 @@ const saveState = () => {
 };
 
 const undo = async () => {
-  if (history.value.length > 1) {
+  if (props.editable && history.value.length > 1) {
     const prevState = history.value[history.value.length - 2]; // the one before last
     const current = history.value.pop()!; // remove current
     future.value.unshift(current);
@@ -779,7 +794,7 @@ const undo = async () => {
 };
 
 const redo = async () => {
-  if (future.value.length > 0) {
+  if (props.editable && future.value.length > 0) {
     const nextState = future.value.shift()!;
     history.value.push(nextState);
 
@@ -857,26 +872,26 @@ onMounted(() => {
         openedBlockSideEditor.value = value;
         return;
       case 'activeChildBlock':
-        selectedTab.value = 2;
+        if (props.editable) selectedTab.value = 2;
         openedChildSideEditor.value = value;
         return;
       case 'activeChildBlockArray':
-        selectedTab.value = 2;
+        if (props.editable) selectedTab.value = 2;
         activeChildBlockArray.value = value;
         return;
       case 'activeChildBlockArrayBlock':
-        selectedTab.value = 2;
+        if (props.editable) selectedTab.value = 2;
         activeChildBlockArrayBlock.value = value;
         return;
       case 'addBlock':
-        if (_WebpageSideEditor.value) {
+        if (_WebpageSideEditor.value && props.editable) {
           isModalBlockList.value = true;
           addBlockParentIndex.value = value;
           _WebpageSideEditor.value.addType = value.type;
         }
         return;
       case 'uploadImage':
-        if (value) {
+        if (value && props.editable) {
           dialogUploadImageVisible.value = true;
           imageUploadSetting.value = value
         }
@@ -929,8 +944,17 @@ console.log('props_workshop',props)
   <Head :title="capitalize(title)" />
   <PageHeading v-show="!isFullScreen" :data="pageHead" ignoreIsolate>
     <template #button-publish="{ action }">
-      <Publish 
-        :isLoading="isLoadingPublish" 
+      <Button
+        v-if="!editable"
+        :label="trans('Publish')"
+        icon="far fa-rocket-launch"
+        type="tertiary"
+        disabled
+        v-tooltip="lock?.message"
+      />
+      <Publish
+        v-else
+        :isLoading="isLoadingPublish"
         :is_dirty="data.is_dirty" 
         v-model="comment"
         @onPublish="(popover) => beforePublish(action.route, popover)" 
@@ -939,6 +963,10 @@ console.log('props_workshop',props)
 
     <template #afterTitle v-if="isSavingBlock">
       <LoadingIcon v-tooltip="trans('Saving..')" />
+    </template>
+
+    <template #otherBefore>
+      <WebpageLockButton :lock="lock" />
     </template>
 
     <template #other>
@@ -1028,14 +1056,14 @@ console.log('props_workshop',props)
           <span class="mx-0.5 h-4 w-px bg-slate-200" aria-hidden="true" />
 
           <!-- Undo -->
-          <button type="button" v-tooltip.bottom="trans('Undo')" :disabled="!canUndo" @click="undo"
+          <button type="button" v-tooltip.bottom="trans('Undo')" :disabled="!editable || !canUndo" @click="undo"
             class="h-7 w-7 flex items-center justify-center rounded text-slate-500 transition-colors
                    enabled:hover:bg-slate-100 enabled:hover:text-slate-900 disabled:opacity-30 disabled:cursor-not-allowed">
             <FontAwesomeIcon :icon="faUndo" fixed-width aria-hidden="true" />
           </button>
 
           <!-- Redo -->
-          <button type="button" v-tooltip.bottom="trans('Redo')" :disabled="!canRedo" @click="redo"
+          <button type="button" v-tooltip.bottom="trans('Redo')" :disabled="!editable || !canRedo" @click="redo"
             class="h-7 w-7 flex items-center justify-center rounded text-slate-500 transition-colors
                    enabled:hover:bg-slate-100 enabled:hover:text-slate-900 disabled:opacity-30 disabled:cursor-not-allowed">
             <FontAwesomeIcon :icon="faRedo" fixed-width aria-hidden="true" />
@@ -1062,7 +1090,7 @@ console.log('props_workshop',props)
           </span>
 
           <!-- Create as template -->
-          <template v-if="canUseTemplate">
+          <template v-if="canUseTemplate && editable">
             <button type="button" v-tooltip.bottom="trans('Pick the blocks to keep and save this page as a template')"
               @click="isCreateTemplateDialogVisible = true"
               class="h-7 flex items-center gap-1.5 px-2 rounded border border-slate-200 text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-colors">

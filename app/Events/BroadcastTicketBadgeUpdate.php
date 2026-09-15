@@ -8,8 +8,6 @@
 
 namespace App\Events;
 
-use App\Actions\Helpers\Ticket\GetTicketBadgeData;
-use App\Models\SysAdmin\User;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
@@ -23,15 +21,21 @@ class BroadcastTicketBadgeUpdate implements ShouldBroadcastNow
     use SerializesModels;
 
     /**
+     * @param array<string, mixed> $ticketBadges
      * @param array{title: string, body: string, route: string}|null $notification
      */
-    public function __construct(public User $user, public ?array $notification = null)
-    {
+    public function __construct(
+        public int $userId,
+        public array $ticketBadges,
+        public ?array $notification = null
+    ) {
     }
 
     public function broadcastOn(): array
     {
-        return [new PrivateChannel('grp.personal.'.$this->user->id)];
+        return [
+            new PrivateChannel('grp.personal.'.$this->userId),
+        ];
     }
 
     public function broadcastAs(): string
@@ -42,7 +46,7 @@ class BroadcastTicketBadgeUpdate implements ShouldBroadcastNow
     public function broadcastWith(): array
     {
         return [
-            'ticket_badges' => GetTicketBadgeData::run($this->user),
+            'ticket_badges' => $this->ticketBadges,
             'notification'  => $this->notification,
         ];
     }

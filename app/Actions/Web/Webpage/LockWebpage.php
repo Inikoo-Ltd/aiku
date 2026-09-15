@@ -40,7 +40,8 @@ class LockWebpage extends OrgAction
             'lock_data'         => [
                 'reason'  => Arr::get($modelData, 'reason'),
                 'note'    => Arr::get($modelData, 'note'),
-                'editors' => $editors,
+                'editors'  => $editors,
+                'requests' => $webpage->isLocked() ? Arr::get($webpage->lock_data, 'requests', []) : [],
             ],
         ]);
     }

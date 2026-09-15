@@ -22,6 +22,7 @@ use Spatie\MediaLibrary\InteractsWithMedia;
  * @property int|null $author_id
  * @property string $body
  * @property bool $is_internal
+ * @property bool $is_lead_only
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read Model|\Eloquent|null $author
@@ -46,6 +47,7 @@ class TicketComment extends Model implements HasMedia
     {
         return [
             'is_internal' => 'boolean',
+            'is_lead_only' => 'boolean',
         ];
     }
 

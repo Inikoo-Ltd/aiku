@@ -12,21 +12,62 @@ use App\Models\Helpers\TicketComment;
 use App\Actions\Helpers\Images\GetPictureSources;
 use App\Actions\Helpers\Media\StoreMediaFromFile;
 use App\Models\Helpers\Media;
+use Closure;
 use Illuminate\Http\UploadedFile;
 
 trait HasTicketImages
 {
+    public const array TICKET_VIDEO_EXTENSIONS = ['mp4', 'webm', 'mov'];
+
     /**
-     * @return array<int, string>
+     * @return array<int, string|Closure>
      */
     public static function ticketFileRules(): array
     {
         return [
             'file',
-            'extensions:jpg,jpeg,png,bmp,gif,svg,webp,pdf,docx,xls,xlsx,csv',
-            'mimes:jpg,jpeg,png,bmp,gif,svg,webp,pdf,docx,xls,xlsx,csv,txt,zip',
-            'max:10240',
+            'extensions:jpg,jpeg,png,bmp,gif,svg,webp,pdf,docx,xls,xlsx,csv,zip,rar,7z,mp4,webm,mov',
+            'mimes:jpg,jpeg,png,bmp,gif,svg,webp,pdf,docx,xls,xlsx,csv,txt,zip,rar,7z,mp4,webm,mov',
+            'max:51200',
+            function (string $attribute, mixed $value, Closure $fail): void {
+                if (!$value instanceof UploadedFile) {
+                    return;
+                }
+
+                $isVideo = in_array(strtolower($value->getClientOriginalExtension()), self::TICKET_VIDEO_EXTENSIONS, true);
+
+                if (!$isVideo && $value->getSize() > 10 * 1024 * 1024) {
+                    $fail(__(':attribute is too big. Videos can be up to 50 MB, other files up to 10 MB.'));
+                }
+            },
         ];
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public static function ticketFileValidationMessages(): array
+    {
+        return [
+            'images.max'          => __('You can attach up to 5 files at a time.'),
+            'images.*.file'       => __(':attribute could not be uploaded. Please try again.'),
+            'images.*.uploaded'   => __(':attribute could not be uploaded. Please try again.'),
+            'images.*.extensions' => __(':attribute cannot be attached. You can attach pictures, PDF, Word, Excel, CSV, ZIP, RAR and 7z files, and MP4, WebM or MOV videos.'),
+            'images.*.mimes'      => __(':attribute cannot be attached. You can attach pictures, PDF, Word, Excel, CSV, ZIP, RAR and 7z files, and MP4, WebM or MOV videos.'),
+            'images.*.max'        => __(':attribute is too big. Videos can be up to 50 MB, other files up to 10 MB.'),
+        ];
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public static function ticketFileValidationAttributes(mixed $images): array
+    {
+        return collect(is_array($images) ? $images : [])
+            ->mapWithKeys(fn (mixed $image, int|string $index) => [
+                "images.$index" => $image instanceof UploadedFile ? '"'.$image->getClientOriginalName().'"' : __('File :number', ['number' => (int) $index + 1]),
+            ])
+            ->all();
     }
 
     /**

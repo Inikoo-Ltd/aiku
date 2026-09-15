@@ -50,6 +50,10 @@ class ExportIntrastatAeat extends OrgAction
      */
     public function handle(Organisation $organisation, array $filters, ?array $fallback = null): array
     {
+        if ($fallback !== null && empty($fallback['origin'])) {
+            $fallback['origin'] = $organisation->country?->code ?? '';
+        }
+
         return $this->build($this->getRecords($organisation, $filters), $fallback);
     }
 

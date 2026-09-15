@@ -44,6 +44,16 @@ class StoreRetinaTicket extends RetinaAction
         ];
     }
 
+    public function getValidationMessages(): array
+    {
+        return Ticket::ticketFileValidationMessages();
+    }
+
+    public function getValidationAttributes(): array
+    {
+        return Ticket::ticketFileValidationAttributes($this->get('images', []));
+    }
+
     public function action(WebUser $webUser, array $modelData): Ticket
     {
         $this->asAction = true;

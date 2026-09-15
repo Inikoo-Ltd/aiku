@@ -77,6 +77,16 @@ class StoreTicket extends OrgAction
         ];
     }
 
+    public function getValidationMessages(): array
+    {
+        return Ticket::ticketFileValidationMessages();
+    }
+
+    public function getValidationAttributes(): array
+    {
+        return Ticket::ticketFileValidationAttributes($this->get('images', []));
+    }
+
     public function authorize(ActionRequest $request): bool
     {
         return $this->asAction || Ticket::canBeRaisedBy($request->user());
