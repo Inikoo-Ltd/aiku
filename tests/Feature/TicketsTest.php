@@ -917,9 +917,9 @@ test('only the help desk manages tickets, everyone else reports, comments and cl
     get(route('grp.tickets.board'))->assertOk()->assertInertia(fn (AssertableInertia $page) => $page->where('can_manage', false));
     patch(route('grp.models.ticket.update', $other->id), ['status' => 'resolved'])->assertForbidden();
     patch(route('grp.models.ticket.update', $ticket->id), ['priority' => 'urgent'])->assertForbidden();
-    patch(route('grp.models.ticket.update', $ticket->id), ['status' => 'resolved'])->assertRedirect();
+    patch(route('grp.models.ticket.update', $ticket->id), ['status' => 'resolved'])->assertForbidden();
     post(route('grp.models.ticket.comment.store', $other->id), ['body' => 'secret?'])->assertRedirect();
-    expect($ticket->fresh()->status)->toBe(TicketStatusEnum::RESOLVED)
+    expect($ticket->fresh()->status)->toBe(TicketStatusEnum::OPEN)
         ->and($other->comments()->sole()->body)->toBe('secret?');
 
     $manager = User::factory()->create(['group_id' => $this->group->id]);
@@ -958,7 +958,8 @@ test('only the help desk manages tickets, everyone else reports, comments and cl
     AikuServer::actingAs($reporter)->tool(TicketWriteTool::class, ['reference' => $other->reference, 'priority' => 'low'])->assertHasErrors();
     AikuServer::actingAs($reporter)->tool(TicketWriteTool::class, ['reference' => $ticket->reference, 'status' => 'cancelled'])->assertHasErrors();
     AikuServer::actingAs($reporter)->tool(TicketsTool::class, ['reference' => $ticket->reference])->assertHasErrors();
-    AikuServer::actingAs($helper)->tool(TicketWriteTool::class, ['reference' => $other->reference, 'priority' => 'low'])->assertOk();
+    AikuServer::actingAs($helper)->tool(TicketWriteTool::class, ['reference' => $other->reference, 'priority' => 'low'])->assertHasErrors();
+    AikuServer::actingAs($boss)->tool(TicketWriteTool::class, ['reference' => $other->reference, 'priority' => 'low'])->assertOk();
     AikuServer::actingAs($helper)->tool(TicketWriteTool::class, ['reference' => $other->reference, 'assignee' => $reporter->username])->assertHasErrors();
     AikuServer::actingAs($boss)->tool(TicketWriteTool::class, ['reference' => $other->reference, 'assignee' => $helper->username])->assertOk();
     AikuServer::actingAs($helper)->tool(TicketWriteTool::class, ['reference' => $other->reference, 'assignee' => $boss->username])->assertOk();
@@ -979,13 +980,16 @@ test('only the help desk manages tickets, everyone else reports, comments and cl
         ->and($other->comments()->whereIn('body', ['ghost', 'impersonating the boss'])->exists())->toBeFalse();
 
     $oldNote = $other->comments()->create(['body' => 'old internal note', 'is_internal' => true]);
-    expect($other->commentsVisibleTo($helper)->whereKey($oldNote->id)->exists())->toBeFalse()
+    expect($other->commentsVisibleTo($helper)->whereKey($oldNote->id)->exists())->toBeTrue()
+        ->and($other->commentsVisibleTo($reporter)->whereKey($oldNote->id)->exists())->toBeFalse()
         ->and($other->commentsVisibleTo($boss)->whereKey($oldNote->id)->exists())->toBeTrue();
     actingAs($helper);
     patch(route('grp.models.ticket.comment.toggle_visibility', $oldNote->id))->assertForbidden();
     actingAs($boss);
     patch(route('grp.models.ticket.comment.toggle_visibility', $oldNote->id))->assertRedirect();
-    expect($oldNote->fresh()->is_lead_only)->toBeTrue();
+    expect($oldNote->fresh()->is_lead_only)->toBeTrue()
+        ->and($other->commentsVisibleTo($helper)->whereKey($oldNote->id)->exists())->toBeFalse()
+        ->and($other->commentsVisibleTo($boss)->whereKey($oldNote->id)->exists())->toBeTrue();
     patch(route('grp.models.ticket.comment.toggle_visibility', $oldNote->id))->assertRedirect();
     expect($oldNote->fresh()->is_lead_only)->toBeFalse();
 
@@ -1338,7 +1342,11 @@ test('the attachment gallery lists ticket and visible comment files newest first
     setPermissionsTeamId($this->group->id);
     $clerk = User::factory()->create(['group_id' => $this->group->id]);
     $clerk->assignRole('help-desk-clerk');
-    expect(collect($ticket->attachmentGalleryFor($clerk))->pluck('name')->all())->toBe(['reply.pdf', 'spec.pdf', 'screen.png']);
+    expect(collect($ticket->attachmentGalleryFor($clerk))->pluck('name')->all())->toBe(['internal.pdf', 'reply.pdf', 'spec.pdf', 'screen.png']);
+
+    $ticket->comments()->where('is_internal', true)->update(['is_lead_only' => true]);
+    expect(collect($ticket->attachmentGalleryFor($clerk))->pluck('name')->all())->toBe(['reply.pdf', 'spec.pdf', 'screen.png'])
+        ->and(collect($ticket->attachmentGalleryFor($this->user))->pluck('name')->all())->toContain('internal.pdf');
 
     get(route('grp.tickets.attachments.show', ['ticket' => $ticket->reference, 'media' => $ticket->getMedia('ticket_images')->first()->ulid]))->assertOk();
     get(route('grp.json.ticket.controls', $ticket->id))->assertOk()->assertJsonCount(4, 'attachment_gallery');
@@ -1362,9 +1370,9 @@ test('done and cancel publish the closing comment together with the status chang
     $own = StoreTicket::make()->action($this->group, ['subject' => 'Mine to close', 'reporter_type' => 'User', 'reporter_id' => $reporter->id]);
 
     patch(route('grp.models.ticket.update', $own->id), ['priority' => 'urgent', 'status_comment' => 'sneaky'])->assertForbidden();
-    patch(route('grp.models.ticket.update', $own->id), ['status' => 'cancelled', 'status_comment' => 'Not needed any more'])->assertRedirect()->assertSessionHasNoErrors();
-    expect($own->fresh()->status)->toBe(TicketStatusEnum::CANCELLED)
-        ->and($own->comments()->where('body', 'Not needed any more')->value('author_id'))->toBe($reporter->id);
+    patch(route('grp.models.ticket.update', $own->id), ['status' => 'cancelled', 'status_comment' => 'Not needed any more'])->assertForbidden();
+    expect($own->fresh()->status)->toBe(TicketStatusEnum::OPEN)
+        ->and($own->comments()->where('body', 'Not needed any more')->exists())->toBeFalse();
 });
 
 test('the ticket write tool closes after next deployment and holds the comment until then', function () {
@@ -1622,6 +1630,9 @@ test('the quick look controls include the comments the viewer can see', function
     $clerk = User::factory()->create(['group_id' => $this->group->id]);
     $clerk->assignRole('help-desk-clerk');
     actingAs($clerk);
+    get(route('grp.json.ticket.controls', $ticket->id))->assertOk()->assertJsonCount(2, 'comments');
+
+    $ticket->comments()->where('body', 'internal note')->update(['is_lead_only' => true]);
     get(route('grp.json.ticket.controls', $ticket->id))->assertOk()->assertJsonCount(1, 'comments')->assertJsonPath('comments.0.body', 'public note');
 });
 
