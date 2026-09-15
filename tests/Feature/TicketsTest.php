@@ -1385,6 +1385,8 @@ test('the ticket write tool closes after next deployment and holds the comment u
         ->and($ticket->comments()->count())->toBe(0)
         ->and(data_get($ticket->fresh()->data, 'deploy_comment.user_id'))->toBe($this->user->id);
 
+    get(route('grp.tickets.show', $ticket->reference))->assertInertia(fn (AssertableInertia $page) => $page->where('ticket.deploy_comment', 'Fixed, live after the deploy'));
+
     CloseTicketsAfterDeployment::run();
 
     expect($ticket->fresh()->status)->toBe(TicketStatusEnum::RESOLVED)
