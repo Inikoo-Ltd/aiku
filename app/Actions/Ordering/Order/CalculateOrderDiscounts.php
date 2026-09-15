@@ -714,6 +714,7 @@ class CalculateOrderDiscounts implements ShouldBeUnique
         }
 
         $numberOrders = DB::table('orders')->where('customer_id', $order->customer_id)
+            ->where('id', '!=', $order->id)
             ->whereNotIn('state', [
                 OrderStateEnum::CANCELLED->value,
                 OrderStateEnum::CREATING->value,
