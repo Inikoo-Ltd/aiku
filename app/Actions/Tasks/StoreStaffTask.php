@@ -79,7 +79,7 @@ class StoreStaffTask
         return [
             'subject'           => ['required', 'string', 'max:255'],
             'description'       => ['sometimes', 'nullable', 'string', 'max:5000'],
-            'assignee_id'       => ['required_without:department', 'nullable', 'integer', Rule::exists('users', 'id')->where('group_id', $groupId)->where('status', true)],
+            'assignee_id'       => ['required_without:department', 'nullable', 'integer', Rule::exists('users', 'id')->where('group_id', $groupId)->where('status', true), fn ($attribute, $value, $fail) => $value && !StaffTask::canBeAssigned(User::find($value)) ? $fail(__('Engineers and QA get tickets, not tasks')) : null],
             'department'        => ['required_without:assignee_id', 'nullable', 'string', Rule::in(array_column(StaffTask::departments($groupId), 'value'))],
             'priority'          => ['sometimes', Rule::enum(ChatPriorityEnum::class)],
             'due_at'            => ['sometimes', 'nullable', 'date'],

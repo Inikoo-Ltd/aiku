@@ -77,7 +77,7 @@ class UpdateStaffTask
             'description' => ['sometimes', 'nullable', 'string', 'max:5000'],
             'status'      => ['sometimes', Rule::enum(StaffTaskStatusEnum::class)],
             'note'        => ['required_if:status,cancelled', 'nullable', 'string', 'max:1000'],
-            'assignee_id' => ['sometimes', 'nullable', 'integer', Rule::exists('users', 'id')->where('group_id', $groupId)->where('status', true)],
+            'assignee_id' => ['sometimes', 'nullable', 'integer', Rule::exists('users', 'id')->where('group_id', $groupId)->where('status', true), fn ($attribute, $value, $fail) => $value && !StaffTask::canBeAssigned(User::find($value)) ? $fail(__('Engineers and QA get tickets, not tasks')) : null],
             'department'  => ['sometimes', 'nullable', 'string', Rule::in(array_column(StaffTask::departments($groupId), 'value'))],
             'priority'    => ['sometimes', Rule::enum(ChatPriorityEnum::class)],
             'due_at'      => ['sometimes', 'nullable', 'date'],

@@ -3168,3 +3168,18 @@ test('stale staff task nudges its assignee once per window', function () {
         ->and($assignee->notifications()->count())->toBe(1)
         ->and($task->fresh()->data['nudged_at'])->not->toBeNull();
 });
+
+test('engineers and qa see staff tasks but cannot be assigned one', function () {
+    $engineer = \App\Actions\SysAdmin\Guest\StoreGuest::make()->action($this->organisation->group, array_merge(\App\Models\SysAdmin\Guest::factory()->definition(), ['positions' => [['slug' => 'gp-hd', 'scopes' => []]]]))->getUser();
+
+    expect(\App\Models\Tasks\StaffTask::canBeAssigned($engineer))->toBeFalse()
+        ->and(\App\Models\Tasks\StaffTask::canBeAssigned($this->user))->toBeTrue()
+        ->and(collect(\App\Models\Tasks\StaffTask::departments($this->organisation->group_id))->pluck('value'))->not->toContain('help-desk');
+
+    actingAs($engineer);
+    get(route('grp.tasks.index'))->assertOk();
+    get(route('grp.tasks.board'))->assertOk();
+
+    actingAs($this->user);
+    \Pest\Laravel\postJson(route('grp.tasks.store'), ['subject' => 'Fix the bug', 'assignee_id' => $engineer->id])->assertUnprocessable();
+});
