@@ -67,7 +67,7 @@ class ShowTicketsBoard extends OrgAction
                     });
                 }
             })
-            ->with(['reporter', 'assignee', 'customer'])
+            ->with(['reporter', 'assignee', 'customer', 'collaborators'])
             ->orderByRaw("CASE priority WHEN 'urgent' THEN 0 WHEN 'high' THEN 1 WHEN 'normal' THEN 2 ELSE 3 END")
             ->orderByDesc('updated_at')
             ->get()
@@ -142,6 +142,7 @@ class ShowTicketsBoard extends OrgAction
                     ] : [],
                 ],
                 'can_manage'    => Ticket::canBeManagedBy(request()->user()),
+                'can_assign'    => Ticket::canBeAssignedBy(request()->user()),
                 'columns'       => $board['columns'],
                 'periodOptions' => $board['periodOptions'],
                 'createdIntervals' => IndexTickets::make()->createdIntervalOptions(),

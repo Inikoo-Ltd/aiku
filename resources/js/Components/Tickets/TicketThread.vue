@@ -5,13 +5,15 @@
   -->
 
 <script setup lang="ts">
-import { ref } from "vue"
+import { computed, ref } from "vue"
 import { useForm, router } from "@inertiajs/vue3"
 import { trans } from "laravel-vue-i18n"
+import { notify } from "@kyvg/vue3-notification"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import TicketComposer from "@/Components/Tickets/TicketComposer.vue"
 import TicketBody from "@/Components/Tickets/TicketBody.vue"
+import TicketUserAvatar from "@/Components/Tickets/TicketUserAvatar.vue"
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
@@ -20,14 +22,32 @@ import { faSlack } from "@fortawesome/free-brands-svg-icons"
 
 library.add(faPencil, faTrashAlt, faUser)
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
     ticket: { subject: string; description: string | null; reporter: string | null; reporter_avatar?: Record<string, string> | null; is_from_slack?: boolean; reference_url?: string | null; created_at: string; images?: Record<string, string>[] }
-    comments: { id: number; body: string; is_internal: boolean; can_toggle_visibility?: boolean; is_staff: boolean; author: string | null; created_at: string; images?: Record<string, string>[]; attachments?: { name: string; url: string }[]; can_edit?: boolean; can_delete?: boolean }[]
+    comments: { id: number; body: string; is_internal: boolean; is_lead_only?: boolean; can_toggle_visibility?: boolean; is_staff: boolean; author: string | null; created_at: string; images?: Record<string, string>[]; attachments?: { name: string; url: string }[]; can_edit?: boolean; can_delete?: boolean }[]
     commentRoute: { name: string; parameters: Record<string, unknown> }
     mentionable?: { username: string; name: string | null }[]
+    commentsNewestFirst?: boolean
+    showDescription?: boolean
+    canCommentInternally?: boolean
+}>(), { commentsNewestFirst: true, showDescription: true, canCommentInternally: false })
+
+const emit = defineEmits<{
+    (e: "update:commentsNewestFirst", value: boolean): void
 }>()
 
-const form = useForm<{ body: string; images: File[] }>({ body: "", images: [] })
+const form = useForm<{ body: string; images: File[]; is_internal: boolean }>({ body: "", images: [], is_internal: false })
+
+const isNewestFirst = ref(props.commentsNewestFirst)
+
+const toggleCommentOrder = () => {
+    isNewestFirst.value = !isNewestFirst.value
+    emit("update:commentsNewestFirst", isNewestFirst.value)
+}
+
+const sortedComments = computed(() =>
+    [...props.comments].sort((a, b) => (new Date(a.created_at).getTime() - new Date(b.created_at).getTime() || a.id - b.id) * (isNewestFirst.value ? -1 : 1))
+)
 
 const editingId = ref<number | null>(null)
 const editBody = ref("")
@@ -47,6 +67,7 @@ const toggleVisibility = (id: number) => {
 
 const submit = () => {
     form.post(route(props.commentRoute.name, props.commentRoute.parameters), {
+        onError: (errors) => notify({ title: trans("Comment not posted"), text: [...new Set(Object.values(errors))].join("<br>"), type: "error" }),
         preserveScroll: true,
         forceFormData: true,
         onSuccess: () => form.reset(),
@@ -56,12 +77,9 @@ const submit = () => {
 
 <template>
     <div class="space-y-4">
-        <div class="bg-white rounded-lg border-2 border-indigo-300 p-5 shadow-sm">
+        <div v-if="showDescription" class="bg-white rounded-lg border-2 border-indigo-300 p-5 shadow-sm">
             <div class="text-xs text-gray-500 mb-3 pb-2 border-b border-gray-200 flex items-center gap-2">
-                <img v-if="ticket.reporter_avatar?.original" :src="ticket.reporter_avatar.original" class="h-6 w-6 rounded-full object-cover" alt="" />
-                <span v-else class="flex h-6 w-6 items-center justify-center rounded-full bg-gray-200 text-gray-500">
-                    <FontAwesomeIcon icon="fal fa-user" fixed-width />
-                </span>
+                <TicketUserAvatar :name="ticket.reporter" :avatar="ticket.reporter_avatar" size="sm" />
                 <span class="font-semibold text-gray-800">{{ ticket.reporter || trans("Unknown") }}</span>
                 <span>· {{ useFormatTime(ticket.created_at, { formatTime: "PP, HH:mm:ss zzz" }) }}</span>
                 <FontAwesomeIcon v-if="ticket.is_from_slack" v-tooltip="trans('Raised from Slack')" :icon="faSlack" class="text-gray-500" />
@@ -72,28 +90,42 @@ const submit = () => {
             <p v-else class="text-sm text-gray-400">{{ trans("No description") }}</p>
         </div>
 
-        <form class="bg-white rounded-lg border border-gray-300 p-4 space-y-3" @submit.prevent="submit">
+        <slot name="after-description" />
+
+        <form class="space-y-3 rounded-lg border p-4 transition duration-200" :class="form.is_internal ? 'border-amber-300 bg-amber-50' : 'border-gray-300 bg-white'" @submit.prevent="submit">
             <TicketComposer v-model:body="form.body" v-model:images="form.images" :rows="4" :mentionable="mentionable" :placeholder="trans('Write a comment, paste a screenshot or drop images')" />
             <p v-if="form.errors.body || form.errors.images" class="text-xs text-red-600">{{ form.errors.body || form.errors.images }}</p>
-            <div class="flex items-center justify-end">
-                <Button :label="trans('Comment')" :loading="form.processing" :disabled="!form.body.trim() && !form.images.length" @click="submit" />
+            <div class="flex flex-wrap items-center justify-end gap-3">
+                <label v-if="canCommentInternally" class="mr-auto flex cursor-pointer select-none items-center gap-2 text-sm transition duration-200" :class="form.is_internal ? 'font-semibold text-amber-700' : 'text-gray-500 hover:text-gray-700'">
+                    <input v-model="form.is_internal" type="checkbox" class="cursor-pointer rounded border-gray-300 text-amber-500 focus:ring-amber-400" />
+                    {{ trans("Internal note") }}
+                    <span class="text-xs font-normal text-gray-400">{{ trans("hidden from the reporter") }}</span>
+                </label>
+                <Button :label="form.is_internal ? trans('Add internal note') : trans('Comment')" :loading="form.processing" :disabled="!form.body.trim() && !form.images.length" @click="submit" />
             </div>
         </form>
 
+        <div v-if="comments.length > 1" class="ml-6 flex justify-end text-xs text-gray-500">
+            <button type="button" class="px-1 py-0.5 hover:text-gray-900" :title="trans('Sort comments')" @click="toggleCommentOrder">
+                {{ isNewestFirst ? "↓" : "↑" }} {{ isNewestFirst ? trans("Newest first") : trans("Oldest first") }}
+            </button>
+        </div>
+
         <div class="ml-6 space-y-3 border-l-2 border-gray-200 pl-4">
             <div
-                v-for="comment in comments"
+                v-for="comment in sortedComments"
                 :key="comment.id"
                 class="rounded-md border px-3 py-2 text-sm"
-                :class="comment.is_internal ? 'bg-amber-50 border-amber-200' : comment.is_staff ?'bg-gray-50 border-gray-200' : 'bg-blue-50 border-blue-200'"
+                :class="comment.is_lead_only ? 'bg-rose-50 border-rose-200' : comment.is_internal ? 'bg-amber-50 border-amber-200' : comment.is_staff ?'bg-gray-50 border-gray-200' : 'bg-blue-50 border-blue-200'"
             >
                 <div class="text-xs text-gray-500 mb-1 flex items-center gap-2">
                     <span v-if="comment.author" class="font-medium text-gray-700">{{ comment.author }} ·</span>
                     <span v-else class="flex items-center gap-2"><img class="h-4 select-none" src="/art/invader.svg" alt="aiku" /> ·</span>
                     {{ useFormatTime(comment.created_at, { formatTime: "hm" }) }}
                     <span v-if="comment.is_internal" class="px-1.5 py-0.5 rounded bg-amber-200 text-amber-900 text-[10px] font-medium">{{ trans("Internal") }}</span>
+                    <span v-if="comment.is_lead_only" class="px-1.5 py-0.5 rounded bg-rose-200 text-rose-900 text-[10px] font-medium">{{ trans("Lead engineers only") }}</span>
                     <span class="ml-auto flex gap-1">
-                        <Button v-if="comment.can_toggle_visibility" type="tertiary" size="xs" :label="comment.is_internal ? trans('Make public') : trans('Hide')" @click="toggleVisibility(comment.id)" />
+                        <Button v-if="comment.can_toggle_visibility" type="tertiary" size="xs" :label="comment.is_lead_only ? trans('Unhide') : trans('Hide')" @click="toggleVisibility(comment.id)" />
                         <button v-if="comment.can_edit" v-tooltip="trans('Edit')" type="button" class="p-1 text-gray-500 hover:text-gray-800" @click="startEdit(comment)">
                             <FontAwesomeIcon icon="fal fa-pencil" fixed-width />
                         </button>

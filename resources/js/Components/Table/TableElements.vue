@@ -396,7 +396,7 @@ onMounted(() => {
 										'group flex w-full items-center pl-4 py-2',
 									]">
 									<!-- <EditIcon :active="active" class="mr-2 h-5 w-5 text-orange-400" aria-hidden="true" /> -->
-									{{ element.key }}
+									{{ typeof element.label === 'string' && element.label ? element.label : element.key.charAt(0).toUpperCase() + element.key.slice(1) }}
 								</button>
 							</MenuItem>
 						</div>
