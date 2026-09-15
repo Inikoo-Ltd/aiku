@@ -155,7 +155,9 @@ const sendQaVerdict = () => {
     )
 }
 
-const canAskQa = computed(() => props.can_contribute && ["in_progress", "waiting", "resolved"].includes(props.ticket.status) && props.ticket.qa_status !== "requested")
+const isClosed = computed(() => ["resolved", "cancelled"].includes(props.ticket.status))
+const isResolvedWithinADay = computed(() => props.ticket.status === "resolved" && !!props.ticket.resolved_at && Date.now() - new Date(props.ticket.resolved_at).getTime() < 24 * 60 * 60 * 1000)
+const canAskQa = computed(() => props.can_contribute && (["in_progress", "waiting"].includes(props.ticket.status) || isResolvedWithinADay.value) && props.ticket.qa_status !== "requested")
 
 const qaPopover = ref()
 
@@ -262,7 +264,7 @@ const update = (field: string, value: unknown, action: string = field) => {
                     </button>
                 </Popover>
             </div>
-            <div v-if="ticket.collaborators?.length || can_manage_collaborators">
+            <div v-if="ticket.collaborators?.length || (can_manage_collaborators && !isClosed)">
                 <p class="mb-1 text-xs text-gray-500">{{ trans("Collaborators") }}</p>
                 <div class="flex flex-wrap items-center gap-2">
                     <span v-for="collaborator in ticket.collaborators" :key="collaborator.id" v-tooltip="collaborator.name" class="inline-flex items-center gap-1.5 rounded-full bg-gray-100 py-1 pl-1 pr-2.5 text-xs text-gray-700">
@@ -270,7 +272,7 @@ const update = (field: string, value: unknown, action: string = field) => {
                         {{ collaborator.short }}
                     </span>
                     <button
-                        v-if="can_manage_collaborators"
+                        v-if="can_manage_collaborators && !isClosed"
                         v-tooltip="trans('Add or remove collaborators')"
                         type="button"
                         class="flex h-8 w-8 items-center justify-center rounded-full border border-dashed text-sm border-gray-300 text-gray-500 transition duration-200 hover:border-indigo-400 hover:text-indigo-600 active:!border-indigo-400 active:!text-indigo-600"
@@ -279,7 +281,7 @@ const update = (field: string, value: unknown, action: string = field) => {
                         <FontAwesomeIcon :icon="isPending('collaborators') ? 'fal fa-spinner' : 'fal fa-user-plus'" :spin="isPending('collaborators')" fixed-width />
                     </button>
                 </div>
-                <Popover v-if="can_manage_collaborators" ref="collaboratorPopover" @show="isCollaboratorPickerOpen = true" @hide="onCollaboratorPickerHide">
+                <Popover v-if="can_manage_collaborators && !isClosed" ref="collaboratorPopover" @show="isCollaboratorPickerOpen = true" @hide="onCollaboratorPickerHide">
                     <div class="flex max-h-72 w-60 flex-col overflow-y-auto text-sm">
                         <button
                             v-for="person in collaboratorCandidates"
@@ -295,59 +297,61 @@ const update = (field: string, value: unknown, action: string = field) => {
                     </div>
                 </Popover>
             </div>
-            <div v-if="can_manage || is_reporter">
-                <div class="flex items-center gap-2">
-                    <span class="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-sm font-medium" :class="statusBadgeClasses[ticket.status_icon.color]">
-                        <FontAwesomeIcon :icon="ticket.status_icon.icon" fixed-width />
-                        {{ ticket.status_label }}
-                    </span>
-                    <span v-if="ticket.status === 'waiting' && ticket.waiting_until" v-tooltip="trans('Cancelled if no reply by then')" class="text-xs text-gray-500">
-                        <FontAwesomeIcon icon="fal fa-hourglass-half" fixed-width />
-                        {{ useFormatTime(ticket.waiting_until, { formatTime: "hm" }) }}
-                    </span>
-                    <button
-                        v-for="action in can_update ? statusActions[ticket.status] : []"
-                        :key="action.status"
-                        v-tooltip="action.label"
-                        type="button"
-                        class="rounded-md p-1.5 hover:bg-gray-100 active:!bg-gray-200 transition duration-200"
-                        :class="action.class"
-                        @click="runStatusAction(action.status)">
-                        <FontAwesomeIcon :icon="isPending(`status:${action.status}`) ? 'fal fa-spinner' : action.icon" :spin="isPending(`status:${action.status}`)" fixed-width />
-                    </button>
+            <div v-if="can_manage || is_reporter || ticket.qa_status || canAskQa">
+                <div class="flex flex-wrap items-center gap-2">
+                    <template v-if="can_manage || is_reporter">
+                        <span class="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-sm font-medium" :class="statusBadgeClasses[ticket.status_icon.color]">
+                            <FontAwesomeIcon :icon="ticket.status_icon.icon" fixed-width />
+                            {{ ticket.status_label }}
+                        </span>
+                        <span v-if="ticket.status === 'waiting' && ticket.waiting_until" v-tooltip="trans('Cancelled if no reply by then')" class="text-xs text-gray-500">
+                            <FontAwesomeIcon icon="fal fa-hourglass-half" fixed-width />
+                            {{ useFormatTime(ticket.waiting_until, { formatTime: "hm" }) }}
+                        </span>
+                        <button
+                            v-for="action in can_update ? statusActions[ticket.status] : []"
+                            :key="action.status"
+                            v-tooltip="action.label"
+                            type="button"
+                            class="rounded-md p-1.5 hover:bg-gray-100 active:!bg-gray-200 transition duration-200"
+                            :class="action.class"
+                            @click="runStatusAction(action.status)">
+                            <FontAwesomeIcon :icon="isPending(`status:${action.status}`) ? 'fal fa-spinner' : action.icon" :spin="isPending(`status:${action.status}`)" fixed-width />
+                        </button>
+                    </template>
+                    <template v-if="ticket.qa_status || canAskQa">
+                        <span v-if="ticket.qa_status" v-tooltip="ticket.qa_user ? `${ticket.qa_status_label} · ${ticket.qa_user}` : ticket.qa_status_label" class="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-sm font-medium" :class="statusBadgeClasses[ticket.qa_status_icon.color]">
+                            <FontAwesomeIcon :icon="ticket.qa_status_icon.icon" fixed-width />
+                            {{ ticket.qa_status_label }}
+                        </span>
+                        <template v-if="can_qa && ticket.qa_status === 'requested'">
+                            <button v-tooltip="trans('QA passed')" type="button" class="rounded-md p-1.5 text-green-600 hover:bg-gray-100 active:!bg-gray-200 transition duration-200" @click="openQaVerdict('passed')"><FontAwesomeIcon icon="fal fa-shield-check" fixed-width /></button>
+                            <button v-tooltip="trans('QA failed')" type="button" class="rounded-md p-1.5 text-red-500 hover:bg-gray-100 active:!bg-gray-200 transition duration-200" @click="openQaVerdict('failed')"><FontAwesomeIcon icon="fal fa-shield" fixed-width /></button>
+                        </template>
+                        <button v-if="canAskQa" v-tooltip="ticket.qa_status ? trans('Ask QA to check again') : trans('Ask QA to check')" type="button" class="rounded-md p-1.5 text-amber-600 hover:bg-gray-100 active:!bg-gray-200 transition duration-200" @click="qaPopover.toggle($event)"><FontAwesomeIcon :icon="isPending('qa:request') ? 'fal fa-spinner' : 'fal fa-vial'" :spin="isPending('qa:request')" fixed-width /></button>
+                        <Popover v-if="canAskQa" ref="qaPopover">
+                            <div class="flex w-60 flex-col text-sm">
+                                <button type="button" class="mb-1 rounded bg-amber-50 p-2 text-left font-medium text-amber-700 transition duration-200 hover:bg-amber-100 active:!bg-amber-200" @click="askQa(null)">
+                                    {{ trans("Anyone in QA") }}
+                                </button>
+                                <button
+                                    v-for="qaUser in options.qa_users ?? []"
+                                    :key="qaUser.value"
+                                    type="button"
+                                    class="flex items-center gap-2 rounded p-2 text-left transition duration-200 hover:bg-gray-100 active:!bg-gray-200"
+                                    @click="askQa(qaUser.value)">
+                                    <TicketUserAvatar :name="qaUser.label" :avatar="qaUser.avatar" size="sm" />
+                                    <span class="truncate">{{ qaUser.label }}</span>
+                                </button>
+                            </div>
+                        </Popover>
+                        <button v-if="can_contribute && ticket.qa_status === 'requested'" v-tooltip="trans('Withdraw QA request')" type="button" class="rounded-md p-1.5 text-gray-400 hover:bg-gray-100 active:!bg-gray-200 transition duration-200" @click="update('qa_status', null, 'qa:withdraw')"><FontAwesomeIcon :icon="isPending('qa:withdraw') ? 'fal fa-spinner' : 'fal fa-times'" :spin="isPending('qa:withdraw')" fixed-width /></button>
+                    </template>
                 </div>
                 <div v-if="ticket.status === 'pending_deploy' && ticket.deploy_comment" class="mt-2 rounded-md border border-green-200 bg-green-50 px-3 py-2 text-sm text-gray-700">
                     <div class="mb-1 text-xs font-medium text-green-700">{{ trans("Posted to the reporter when the deployment lands") }}</div>
                     <div class="whitespace-pre-wrap">{{ ticket.deploy_comment }}</div>
                 </div>
-            </div>
-            <div v-if="ticket.qa_status || canAskQa" class="flex items-center gap-2">
-                <span v-if="ticket.qa_status" v-tooltip="ticket.qa_user ? `${ticket.qa_status_label} · ${ticket.qa_user}` : ticket.qa_status_label" class="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-sm font-medium" :class="statusBadgeClasses[ticket.qa_status_icon.color]">
-                    <FontAwesomeIcon :icon="ticket.qa_status_icon.icon" fixed-width />
-                    {{ ticket.qa_status_label }}
-                </span>
-                <template v-if="can_qa && ticket.qa_status === 'requested'">
-                    <button v-tooltip="trans('QA passed')" type="button" class="rounded-md p-1.5 text-green-600 hover:bg-gray-100 active:!bg-gray-200 transition duration-200" @click="openQaVerdict('passed')"><FontAwesomeIcon icon="fal fa-shield-check" fixed-width /></button>
-                    <button v-tooltip="trans('QA failed')" type="button" class="rounded-md p-1.5 text-red-500 hover:bg-gray-100 active:!bg-gray-200 transition duration-200" @click="openQaVerdict('failed')"><FontAwesomeIcon icon="fal fa-shield" fixed-width /></button>
-                </template>
-                <button v-if="canAskQa" v-tooltip="ticket.qa_status ? trans('Ask QA to check again') : trans('Ask QA to check')" type="button" class="rounded-md p-1.5 text-amber-600 hover:bg-gray-100 active:!bg-gray-200 transition duration-200" @click="qaPopover.toggle($event)"><FontAwesomeIcon :icon="isPending('qa:request') ? 'fal fa-spinner' : 'fal fa-vial'" :spin="isPending('qa:request')" fixed-width /></button>
-                <Popover v-if="canAskQa" ref="qaPopover">
-                    <div class="flex w-60 flex-col text-sm">
-                        <button type="button" class="mb-1 rounded bg-amber-50 p-2 text-left font-medium text-amber-700 transition duration-200 hover:bg-amber-100 active:!bg-amber-200" @click="askQa(null)">
-                            {{ trans("Anyone in QA") }}
-                        </button>
-                        <button
-                            v-for="qaUser in options.qa_users ?? []"
-                            :key="qaUser.value"
-                            type="button"
-                            class="flex items-center gap-2 rounded p-2 text-left transition duration-200 hover:bg-gray-100 active:!bg-gray-200"
-                            @click="askQa(qaUser.value)">
-                            <TicketUserAvatar :name="qaUser.label" :avatar="qaUser.avatar" size="sm" />
-                            <span class="truncate">{{ qaUser.label }}</span>
-                        </button>
-                    </div>
-                </Popover>
-                <button v-if="can_contribute && ticket.qa_status === 'requested'" v-tooltip="trans('Withdraw QA request')" type="button" class="rounded-md p-1.5 text-gray-400 hover:bg-gray-100 active:!bg-gray-200 transition duration-200" @click="update('qa_status', null, 'qa:withdraw')"><FontAwesomeIcon :icon="isPending('qa:withdraw') ? 'fal fa-spinner' : 'fal fa-times'" :spin="isPending('qa:withdraw')" fixed-width /></button>
             </div>
             <template v-if="can_manage || can_contribute">
             <div v-if="ticket.type === 'help'" class="flex flex-wrap gap-2">

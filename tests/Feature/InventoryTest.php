@@ -3347,3 +3347,33 @@ test('merging a duplicate trade unit hands its stock to the twin so the product 
         ->and(DB::table('model_has_trade_units')->where('trade_unit_id', $tradeUnit->id)->where('model_type', 'Stock')->where('model_id', $stock->id)->exists())->toBeTrue()
         ->and($product->refresh()->orgStocks()->where('org_stocks.id', $orgStock->id)->exists())->toBeTrue();
 });
+
+test('UI low stock audits sorts locations ascending and descending', function () {
+    $warehouse = createWarehouse();
+    $stock     = StoreStock::make()->action($this->group, array_merge(Stock::factory()->definition(), ['state' => StockStateEnum::ACTIVE]));
+    $orgStock  = StoreOrgStock::make()->action($this->organisation, $stock);
+
+    foreach (['LSA-A1', 'LSA-Z9'] as $locationCode) {
+        $location         = StoreLocation::make()->action($warehouse, array_merge(Location::factory()->definition(), ['code' => $locationCode]));
+        $locationOrgStock = StoreLocationOrgStock::make()->action($orgStock, $location, []);
+        UpdateLocationOrgStock::make()->action($locationOrgStock, ['quantity' => 1]);
+    }
+    OrgStockHydrateQuantityInLocations::run($orgStock->id);
+
+    $this->withoutExceptionHandling();
+
+    $locationCodesFor = function (string $sort) use ($warehouse, $orgStock) {
+        $response = get(route('grp.org.warehouses.show.inventory.org_stocks.low_stock_audits.index', [
+            $this->organisation->slug,
+            $warehouse->slug,
+            'low_stock_audits_sort' => $sort,
+        ]));
+
+        $row = collect($response->viewData('page')['props']['lowStockAudits']['data'])->firstWhere('id', $orgStock->id);
+
+        return collect($row['locations'])->pluck('code')->all();
+    };
+
+    expect($locationCodesFor('locations'))->toBe(['LSA-A1', 'LSA-Z9'])
+        ->and($locationCodesFor('-locations'))->toBe(['LSA-Z9', 'LSA-A1']);
+});

@@ -5,7 +5,7 @@ import { notify } from "@kyvg/vue3-notification"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faCopy, faEyeDropper, faFilePdf, faImage, faPlus, faTags, faTrashAlt } from "@fal"
-import pdfWorkerUrl from "pdfjs-dist/build/pdf.worker.min.mjs?url"
+import pdfWorkerUrl from "pdfjs-dist/legacy/build/pdf.worker.min.mjs?url"
 import Modal from "@/Components/Utils/Modal.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { ctrans } from "@/Composables/useTrans"
@@ -455,11 +455,11 @@ const detectSheetArtwork = (width: number, height: number) => {
 
 const isPdf = (file: File) => file.type === PDF_MIME_TYPE || /\.pdf$/i.test(file.name)
 
-let pdfjs: typeof import("pdfjs-dist") | null = null
+let pdfjs: typeof import("pdfjs-dist/legacy/build/pdf.mjs") | null = null
 
 const loadPdfjs = async () => {
     if (!pdfjs) {
-        pdfjs = await import("pdfjs-dist")
+        pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs")
         pdfjs.GlobalWorkerOptions.workerSrc = pdfWorkerUrl
     }
 
@@ -676,9 +676,14 @@ const applyArtworkFile = async (file: File, isFromDisk: boolean) => {
             }
         }
     } catch (error: any) {
+        console.error('error applyArtworkFile', error)
+
+        const summary = isPdf(file) ? ctrans("The PDF could not be read") : ctrans("The image could not be read")
+        const detail = [error?.name, error?.message].filter(Boolean).join(": ")
+
         notify({
             title: ctrans("Something went wrong"),
-            text: isPdf(file) ? ctrans("The PDF could not be read") : ctrans("The image could not be read"),
+            text: detail ? `${summary} (${detail})` : summary,
             type: "error",
         })
     } finally {
