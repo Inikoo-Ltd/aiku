@@ -110,7 +110,7 @@ onMounted(async () => {
       >
         <div
           v-if="item.type === 'image'"
-          class="relative w-full aspect-square overflow-hidden rounded-lg cursor-zoom-in"
+          class="relative w-full aspect-square overflow-hidden rounded-lg cursor-pointer"
           @click="openImageModal(item.imageIndex)"
         >
           <Image
