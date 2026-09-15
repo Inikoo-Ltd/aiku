@@ -3454,7 +3454,7 @@ describe('unique job lock bounds', function () {
 });
 
 test('a line added to a submitted first order keeps the first order bonus (HELP-3157)', function () {
-    $offer = Offer::where('shop_id', $this->shop->id)->where('type', 'Amount AND Order Number')->first()
+    $offer = Offer::where('shop_id', $this->shop->id)->where('type', 'Amount AND Order Number')->where('status', true)->first()
         ?? StoreFirstOrderBonus::make()->action($this->shop, ['trigger_data_min_amount' => 150.0, 'percentage_off' => 0.10]);
     expect($offer->status)->toBeTrue();
 

@@ -2493,6 +2493,6 @@ test('locked webpage edit access can be requested, allowed temporarily and decli
 
     UnlockWebpage::make()->action($webpage, $owner, []);
 
-    get(route('grp.org.shops.show.web.webpages.workshop', $workshopParameters))
+    get(route('grp.org.shops.show.web.webpages.workshop', [$this->organisation->slug, $this->shop->slug, $webpage->website->slug, $webpage->slug]))
         ->assertInertia(fn (AssertableInertia $page) => $page->where('editable', true));
 })->depends('create webpage');

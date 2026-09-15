@@ -3287,7 +3287,7 @@ test('AEAT intrastat export forced with an empty origin falls back to the organi
 });
 
 test('balance increase for compensation issues a settled credit note', function () {
-    $customer = createCustomer($this->shop);
+    $customer = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
 
     $creditTransaction = IncreaseCreditTransactionCustomer::make()->action($customer, [
         'amount'            => 12,
