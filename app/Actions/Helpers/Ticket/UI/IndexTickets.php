@@ -95,6 +95,23 @@ class IndexTickets extends OrgAction
                     $query->whereIn('users.username', $elements);
                 },
             ],
+            'collaborator' => [
+                'label'    => __('Collaborator'),
+                'elements' => (clone $base)
+                    ->join('ticket_collaborators', 'ticket_collaborators.ticket_id', '=', 'tickets.id')
+                    ->join('users as collaborator_users', 'collaborator_users.id', '=', 'ticket_collaborators.user_id')
+                    ->selectRaw('collaborator_users.username, count(*) as total')->groupBy('collaborator_users.username')->orderByDesc('total')
+                    ->pluck('total', 'username')->map(fn ($total, $username) => [$username, $total])->all(),
+                'engine'   => function ($query, $elements) {
+                    $query->whereExists(
+                        fn ($collaborators) => $collaborators->selectRaw('1')
+                            ->from('ticket_collaborators')
+                            ->join('users as collaborator_users', 'collaborator_users.id', '=', 'ticket_collaborators.user_id')
+                            ->whereColumn('ticket_collaborators.ticket_id', 'tickets.id')
+                            ->whereIn('collaborator_users.username', $elements)
+                    );
+                },
+            ],
         ];
     }
 
@@ -139,6 +156,50 @@ class IndexTickets extends OrgAction
             $query->where('tickets.rated_at', '>=', $value);
         });
 
+        $ratedFilter = AllowedFilter::callback('rated', function ($query, $value) {
+            if (filter_var($value, FILTER_VALIDATE_BOOLEAN)) {
+                $query->whereNotNull('tickets.rating');
+            }
+        });
+
+        $hasAssigneeFilter = AllowedFilter::callback('has_assignee', function ($query, $value) {
+            if (filter_var($value, FILTER_VALIDATE_BOOLEAN)) {
+                $query->whereNotNull('tickets.assignee_id');
+            }
+        });
+
+        $collaboratesOn = fn ($query, string $username) => $query->whereExists(
+            fn ($collaborators) => $collaborators->selectRaw('1')
+                ->from('ticket_collaborators')
+                ->join('users as collaborator_users', 'collaborator_users.id', '=', 'ticket_collaborators.user_id')
+                ->whereColumn('ticket_collaborators.ticket_id', 'tickets.id')
+                ->where('collaborator_users.username', $username)
+        );
+
+        $collaboratorFilter = AllowedFilter::callback('collaborator', function ($query, $value) use ($collaboratesOn) {
+            $collaboratesOn($query, (string) $value)->where(fn ($notAssignee) => $notAssignee->whereNull('users.username')->orWhere('users.username', '!=', (string) $value));
+        });
+
+        $involvedFilter = AllowedFilter::callback('involved', function ($query, $value) {
+            $query->where(fn ($involved) => $involved->where('users.username', (string) $value)->orWhereExists(
+                fn ($collaborators) => $collaborators->selectRaw('1')
+                    ->from('ticket_collaborators')
+                    ->join('users as collaborator_users', 'collaborator_users.id', '=', 'ticket_collaborators.user_id')
+                    ->whereColumn('ticket_collaborators.ticket_id', 'tickets.id')
+                    ->where('collaborator_users.username', (string) $value)
+            ));
+        });
+
+        $reporterFilter = AllowedFilter::callback('reporter', function ($query, $value) {
+            [$reporterType, $reporterId] = array_pad(explode('-', (string) $value, 2), 2, null);
+            if (!in_array($reporterType, ['User', 'WebUser'], true) || !ctype_digit((string) $reporterId)) {
+                $query->whereRaw('false');
+
+                return;
+            }
+            $query->where('tickets.reporter_type', $reporterType)->where('tickets.reporter_id', (int) $reporterId);
+        });
+
         if ($prefix) {
             InertiaTable::updateQueryBuilderParameters($prefix);
         }
@@ -163,7 +224,7 @@ class IndexTickets extends OrgAction
 
         return $queryBuilder
             ->select(['tickets.*', 'users.username as assignee_username'])
-            ->allowedFilters([$globalSearch, $assigneeFilter, $createdSinceFilter, $resolvedSinceFilter, $ratedSinceFilter])
+            ->allowedFilters([$globalSearch, $assigneeFilter, $createdSinceFilter, $resolvedSinceFilter, $ratedSinceFilter, $ratedFilter, $hasAssigneeFilter, $reporterFilter, $collaboratorFilter, $involvedFilter])
             ->defaultSort('-tickets.created_at')
             ->allowedSorts(['reference', 'subject', 'status', 'priority', 'created_at', 'updated_at'])
             ->withPaginator($prefix, tableName: request()->route()->getName())

@@ -6,6 +6,7 @@
  * Copyright (c) 2026, Raul A Perusquia Flores
  */
 
+use App\Actions\Helpers\Ticket\SyncTicketCollaborators;
 use Illuminate\Support\Facades\Process;
 use App\Actions\Chat\ChatSession\StoreChatSession;
 use App\Actions\Chat\ChatSession\StoreTicketFromChatSession;
@@ -1905,4 +1906,64 @@ test('reporters follow progress from their badge, cannot move their ticket, and 
 
     actingAs($engineer);
     expect(collect($showsNote())->pluck('body')->all())->not->toContain('Driver is broken, not telling yet');
+});
+
+test('report totals, ratings and reporters link to matching ticket lists', function () {
+    setPermissionsTeamId($this->group->id);
+    $reporter = User::factory()->create(['group_id' => $this->group->id]);
+
+    $rated    = StoreTicket::make()->action($this->group, ['subject' => 'Rated one', 'reporter_type' => 'User', 'reporter_id' => $reporter->id, 'assignee_id' => $this->user->id]);
+    $unrated  = StoreTicket::make()->action($this->group, ['subject' => 'Not rated', 'reporter_type' => 'User', 'reporter_id' => $reporter->id]);
+    $someone  = StoreTicket::make()->action($this->group, ['subject' => 'Someone else', 'assignee_id' => $this->user->id]);
+    $rated->forceFill(['rating' => 4, 'rated_at' => now()])->saveQuietly();
+
+    $references = fn (array $filter) => collect(get(route('grp.tickets.list', ['filter' => $filter]))->assertOk()->viewData('page')['props']['data']['data'])->pluck('reference');
+
+    expect($references(['reporter' => 'User-'.$reporter->id])->sort()->values()->all())->toBe(collect([$rated->reference, $unrated->reference])->sort()->values()->all())
+        ->and($references(['reporter' => 'User-'.$reporter->id, 'rated' => 1])->all())->toBe([$rated->reference])
+        ->and($references(['has_assignee' => 1])->all())->toContain($rated->reference, $someone->reference)
+        ->and($references(['has_assignee' => 1])->all())->not->toContain($unrated->reference)
+        ->and($references(['reporter' => 'WebUser-'.$reporter->id])->all())->toBe([]);
+
+    $reporterRow = collect(ShowTicketsReports::make()->handle($this->group, 'all')['reporters'])->firstWhere('key', 'User-'.$reporter->id);
+    expect($reporterRow)->toHaveKey('avatar')
+        ->and($reporterRow['created'])->toBe(2);
+});
+
+test('engineer report rows split assigned and collaborating tickets and link to matching lists', function () {
+    setPermissionsTeamId($this->group->id);
+    $engineer = User::factory()->create(['group_id' => $this->group->id]);
+    $engineer->assignRole('help-desk-clerk');
+
+    $own     = StoreTicket::make()->action($this->group, ['subject' => 'Own work', 'assignee_id' => $engineer->id]);
+    $helping = StoreTicket::make()->action($this->group, ['subject' => 'Helping out', 'assignee_id' => $this->user->id]);
+    SyncTicketCollaborators::make()->action($helping, [$engineer->id]);
+
+    $row = collect(ShowTicketsReports::make()->handle($this->group, 'all')['assignees'])->firstWhere('username', $engineer->username);
+    expect($row['open'])->toBe(1)
+        ->and($row['collaborating']['open'])->toBe(1)
+        ->and($row['collaborating']['done'])->toBe(0);
+
+    $references = fn (array $filter) => collect(get(route('grp.tickets.list', ['filter' => $filter]))->assertOk()->viewData('page')['props']['data']['data'])->pluck('reference')->sort()->values()->all();
+
+    expect($references(['assignee' => $engineer->username]))->toBe([$own->reference])
+        ->and($references(['collaborator' => $engineer->username]))->toBe([$helping->reference])
+        ->and($references(['involved' => $engineer->username]))->toBe(collect([$own->reference, $helping->reference])->sort()->values()->all())
+        ->and(ShowTicketsReports::make()->handle($this->group, 'all', null, $engineer)['created'])->toBe(2);
+});
+
+test('the ticket list can be narrowed to the tickets someone collaborates on', function () {
+    setPermissionsTeamId($this->group->id);
+    $engineer = User::factory()->create(['group_id' => $this->group->id]);
+    $engineer->assignRole('help-desk-clerk');
+
+    $helping = StoreTicket::make()->action($this->group, ['subject' => 'Helping out', 'assignee_id' => $this->user->id]);
+    StoreTicket::make()->action($this->group, ['subject' => 'Not involved', 'assignee_id' => $this->user->id]);
+    SyncTicketCollaborators::make()->action($helping, [$engineer->id]);
+
+    get(route('grp.tickets.list'))->assertInertia(
+        fn (AssertableInertia $page) => $page->where('data.data', fn ($rows) => count($rows) >= 2)
+    );
+    $response = get(route('grp.tickets.list', ['elements' => ['collaborator' => $engineer->username]]))->assertOk();
+    expect(collect($response->viewData('page')['props']['data']['data'])->pluck('reference')->all())->toBe([$helping->reference]);
 });
