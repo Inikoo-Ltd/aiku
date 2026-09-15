@@ -20,6 +20,7 @@ library.add(faChevronDown, faFile, faFileImage, faFilePdf, faFileWord, faFileExc
 const props = defineProps<{
     files: TicketAttachment[]
     compact?: boolean
+    previewBlocked?: boolean
 }>()
 
 const isExpanded = ref(true)
@@ -95,6 +96,7 @@ const iconFor = (file: TicketAttachment) => fileIcons[file.name.split(".").pop()
 const shortName = (name: string) => (name.length <= 26 ? name : `${name.slice(0, 14)} … ${name.slice(-8)}`)
 
 const openFile = (file: TicketAttachment) => {
+    if (props.previewBlocked) return
     const index = previewableFiles.value.indexOf(file)
     if (index >= 0) {
         previewIndex.value = index
@@ -115,6 +117,7 @@ const openFile = (file: TicketAttachment) => {
             <span class="font-semibold text-gray-800" :class="compact && 'text-sm'">{{ trans("Attachments") }}</span>
             <span class="rounded bg-gray-100 px-1.5 font-medium tabular-nums text-gray-600" :class="compact ? 'text-[11px]' : 'text-xs'">{{ filteredFiles.length === files.length ? files.length : `${filteredFiles.length}/${files.length}` }}</span>
         </button>
+            <span v-if="previewBlocked" class="text-xs font-semibold text-amber-600">{{ trans("You can't preview these files because of your permissions.") }}</span>
             <select
                 v-if="typeOptions.length > 1"
                 v-model="selectedType"
@@ -131,6 +134,8 @@ const openFile = (file: TicketAttachment) => {
                 type="button"
                 class="overflow-hidden rounded-lg border border-gray-200 text-left transition hover:border-indigo-300 hover:shadow-sm"
                 :title="file.name"
+                :disabled="previewBlocked"
+                :class="previewBlocked && 'cursor-not-allowed opacity-70 hover:!border-gray-200 hover:!shadow-none'"
                 @click="openFile(file)">
                 <div class="relative flex items-center justify-center overflow-hidden bg-gray-50" :class="compact ? 'h-20' : 'h-24'">
                     <FontAwesomeIcon v-show="!loadedThumbnailUrls.includes(file.url)" :icon="iconFor(file).icon" :class="[iconFor(file).class, compact ? 'text-3xl' : 'text-4xl']" />

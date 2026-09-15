@@ -258,6 +258,11 @@ class Ticket extends Model implements Auditable, HasMedia
         return $this->canBeUpdatedBy($user);
     }
 
+    public function canPreviewAttachmentsBy(?User $user): bool
+    {
+        return $user !== null && (self::canBeManagedBy($user) || self::canCheckQa($user) || $this->isReportedBy($user));
+    }
+
     public static function canUseAssistant(?User $user): bool
     {
         return self::canBeManagedBy($user) || self::canCheckQa($user);

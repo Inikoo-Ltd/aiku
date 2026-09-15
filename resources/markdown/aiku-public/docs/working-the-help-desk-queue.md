@@ -156,6 +156,8 @@ You can add files to a comment by pasting, dropping or pressing <b>Attach</b>:
 
 All files on a ticket are shown together under <b>Attachments</b>. Click one to see it without downloading, and use the arrows to go to the next file. Clicking a ZIP file shows the list of files and folders inside it, with a <b>Download</b> button. If a file cannot be shown, aiku tells you why, for example because it was deleted or you do not have permission. Use the menu next to the title to show only one type, for example only PDFs.
 
+Engineers, QA, lead engineers and the person who reported the ticket can open its files. Other colleagues who can see the ticket get a yellow note above the files saying they cannot preview them.
+
 ## The ticket counter in the right-hand bar
 
 The green ticket counter on the right of the screen shows how many open tickets you are working on: the ones assigned to you plus the ones you are collaborating on. Click it to see the two counted separately. It updates on its own when a ticket is given to you, when you are added as a collaborator, or when either is taken away, so you do not need to reload the page.

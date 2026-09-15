@@ -136,7 +136,7 @@ const close = () => {
                             <div class="flex min-h-full flex-col">
                                 <p class="text-sm whitespace-pre-wrap break-words">{{ displayTicket.description }}</p>
                     <div v-if="controls" class="mt-auto space-y-3 pb-2.5 pt-4">
-                        <TicketAttachmentList v-if="controls.attachment_gallery?.length" :files="controls.attachment_gallery" compact />
+                        <TicketAttachmentList v-if="controls.attachment_gallery?.length" :files="controls.attachment_gallery" :preview-blocked="controls.can_preview_attachments === false" compact />
                         <div class="rounded-lg border border-gray-200 bg-white p-3">
                             <div class="flex items-center gap-2">
                                 <span class="text-sm font-semibold text-gray-800">{{ trans("Comments") }}</span>

@@ -52,6 +52,7 @@ class ShowTicketAttachment extends OrgAction
     public function asController(Ticket $ticket, Media $media, ActionRequest $request): Response
     {
         abort_unless($ticket->isVisibleTo($request->user()), 403);
+        abort_unless($ticket->canPreviewAttachmentsBy($request->user()), 403);
         abort_unless($ticket->hasAttachmentVisibleTo($media, $request->user()), 404);
         $this->initialisationFromGroup($ticket->group, $request);
 

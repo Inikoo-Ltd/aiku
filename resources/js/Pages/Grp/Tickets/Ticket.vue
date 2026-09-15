@@ -41,6 +41,7 @@ const props = defineProps<{
     can_update: boolean
     can_contribute: boolean
     can_manage_collaborators: boolean
+    can_preview_attachments: boolean
     comments_newest_first: boolean
     history_newest_first: boolean
     attachment_gallery: any[]
@@ -61,7 +62,7 @@ const props = defineProps<{
     }
 }>()
 
-useLiveTickets(["ticket", "comments", "timeline", "can_rate", "can_manage", "can_assign", "can_flag_confidential", "can_qa", "is_reporter", "can_change_kind_module", "can_update", "can_contribute", "can_manage_collaborators", "attachment_gallery"], props.ticket.reference)
+useLiveTickets(["ticket", "comments", "timeline", "can_rate", "can_manage", "can_assign", "can_flag_confidential", "can_qa", "is_reporter", "can_change_kind_module", "can_update", "can_contribute", "can_manage_collaborators", "can_preview_attachments", "attachment_gallery"], props.ticket.reference)
 
 const saveTicketOrderSetting = (setting: "ticket_comments_newest_first" | "ticket_history_newest_first", isNewestFirst: boolean) => {
     axios.patch(route("grp.models.profile.update"), { [setting]: isNewestFirst })
@@ -110,7 +111,7 @@ const update = (field: string, value: unknown) => {
             <TicketRating :rating="ticket.rating" :rating-comment="ticket.rating_comment" :can-rate="can_rate" :rate-route="routes.rate" />
             <TicketThread :ticket="ticket" :comments="comments" :comment-route="routes.comment" :mentionable="options.mentionable" :comments-newest-first="comments_newest_first" @update:comments-newest-first="saveTicketOrderSetting('ticket_comments_newest_first', $event)">
                 <template #after-description>
-                    <TicketAttachmentList :files="attachment_gallery" />
+                    <TicketAttachmentList :files="attachment_gallery" :preview-blocked="can_preview_attachments === false" />
                 </template>
             </TicketThread>
         </div>

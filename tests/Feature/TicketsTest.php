@@ -1762,3 +1762,33 @@ test('rejected ticket files get readable messages that name the file', function 
         ->and($messageFor(array_map(fn (int $number) => UploadedFile::fake()->image("shot$number.png"), range(1, 6))))
         ->toContain('You can attach up to 5 files at a time.');
 });
+
+test('attachment previews are open to engineers, QA, lead engineers and the reporter only', function () {
+    setPermissionsTeamId($this->group->id);
+    $reporter  = User::factory()->create(['group_id' => $this->group->id]);
+    $engineer  = User::factory()->create(['group_id' => $this->group->id]);
+    $qa        = User::factory()->create(['group_id' => $this->group->id]);
+    $colleague = User::factory()->create(['group_id' => $this->group->id]);
+    $engineer->assignRole('help-desk-clerk');
+    $qa->assignRole('qa');
+
+    $ticket = StoreTicket::make()->action($this->group, [
+        'subject'       => 'Screenshots inside',
+        'reporter_type' => 'User',
+        'reporter_id'   => $reporter->id,
+        'images'        => [UploadedFile::fake()->createWithContent('proof.pdf', "%PDF-1.4\n%%EOF\n")],
+    ]);
+    $url = route('grp.tickets.attachments.show', ['ticket' => $ticket->reference, 'media' => $ticket->getMedia('ticket_attachments')->first()->ulid]);
+
+    foreach ([$reporter, $engineer, $qa, $this->user] as $allowedViewer) {
+        actingAs($allowedViewer);
+        get($url)->assertOk();
+        get(route('grp.json.ticket.controls', $ticket->id))->assertOk()->assertJsonPath('can_preview_attachments', true);
+    }
+
+    actingAs($colleague);
+    get(route('grp.tickets.show', $ticket->reference))->assertOk()->assertInertia(
+        fn (AssertableInertia $page) => $page->where('can_preview_attachments', false)
+    );
+    get($url)->assertForbidden();
+});
