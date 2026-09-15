@@ -40,7 +40,7 @@ const props = defineProps<{
         oldest_open: { reference: string; age_days: number } | null
         csat: number | null
         csat_by_month: { month: string; average: number | null; total: number }[]
-        daily: { date: string; created: number; done: number }[]
+        daily: { date: string; created: number; done: number; open: number }[]
         by_status: { status: string; label: string; color: string; total: number }[]
         assignees: (Metrics & { name: string; username: string; short_name: string; avatar: any; collaborating?: Record<"assigned" | "in_progress" | "open" | "done", number> })[]
         assignees_total: Metrics
@@ -84,6 +84,7 @@ const lineChart = computed(() => {
         datasets: [
             { label: trans("Created"), data: props.stats.daily.map((day) => day.created), borderColor: "#c0399f", backgroundColor: "#c0399f", tension: 0, borderWidth: 1.5, pointRadius },
             { label: trans("Resolved"), data: props.stats.daily.map((day) => day.done), borderColor: "#1f845a", backgroundColor: "#1f845a", tension: 0, borderWidth: 1.5, pointRadius },
+            { label: trans("Open"), data: props.stats.daily.map((day) => day.open), borderColor: "#f59e0b", backgroundColor: "#f59e0b", tension: 0, borderWidth: 1.5, pointRadius },
         ],
     }
 })
@@ -335,15 +336,15 @@ const dashboardBoxes = computed(() => (props.stats.interval === "all" ? (["peopl
                         {{ trans("Status overview") }}
                         <span class="text-xs font-normal text-gray-400">{{ trans("Tickets created in this period") }} · <Link :href="listUrl({ filter: { created_since: stats.from } })" class="hover:text-gray-600">{{ trans("View all") }}</Link></span>
                     </p>
-                    <div class="flex flex-wrap items-center gap-6">
-                        <div class="relative h-56 w-56 shrink-0">
+                    <div class="flex items-center gap-4">
+                        <div class="relative h-44 w-44 shrink-0">
                             <Chart type="doughnut" :data="donutChart" :options="donutOptions" class="h-full" />
                             <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
                                 <span class="text-3xl font-bold">{{ totalTickets }}</span>
                                 <span class="text-xs text-gray-500">{{ trans("Total") }}</span>
                             </div>
                         </div>
-                        <table class="text-base tabular-nums">
+                        <table class="text-sm tabular-nums">
                             <tbody>
                                 <tr
                                     v-for="row in stats.by_status.filter((status) => status.total)"
