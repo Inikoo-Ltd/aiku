@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { router, useForm } from '@inertiajs/vue3'
+import { useForm } from '@inertiajs/vue3'
 import { trans } from 'laravel-vue-i18n'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faKey } from '@fal'
@@ -16,7 +16,6 @@ const props = defineProps<{
 type GrantMode = 'until_publish' | 'one_hour' | 'until_date'
 
 const approvingRequest = ref<WebpageEditAccessRequest | null>(null)
-const decliningUserId = ref<number | null>(null)
 const grantMode = ref<GrantMode>('until_publish')
 const grantUntil = ref('')
 
@@ -50,16 +49,26 @@ const submitApprove = () => {
         })
 }
 
-const declineRequest = (accessRequest: WebpageEditAccessRequest) => {
-    router.post(
-        route(props.lock.decline_access_route.name, props.lock.decline_access_route.parameters),
-        { user_id: accessRequest.user_id },
-        {
+const decliningRequest = ref<WebpageEditAccessRequest | null>(null)
+const declineForm = useForm({ message: '' })
+
+const openDeclineModal = (accessRequest: WebpageEditAccessRequest) => {
+    declineForm.reset()
+    declineForm.clearErrors()
+    decliningRequest.value = accessRequest
+}
+
+const submitDecline = () => {
+    if (!decliningRequest.value) {
+        return
+    }
+
+    declineForm
+        .transform(data => ({ user_id: decliningRequest.value?.user_id, message: data.message }))
+        .post(route(props.lock.decline_access_route.name, props.lock.decline_access_route.parameters), {
             preserveScroll: true,
-            onStart: () => decliningUserId.value = accessRequest.user_id,
-            onFinish: () => decliningUserId.value = null,
-        }
-    )
+            onSuccess: () => decliningRequest.value = null,
+        })
 }
 </script>
 
@@ -76,7 +85,7 @@ const declineRequest = (accessRequest: WebpageEditAccessRequest) => {
             <span v-if="accessRequest.note" class="italic">“{{ accessRequest.note }}”</span>
             <div class="ml-auto flex gap-2">
                 <Button type="positive" size="xs" :label="trans('Allow editing')" @click="openApproveModal(accessRequest)" />
-                <Button type="negative" size="xs" :label="trans('Decline')" :loading="decliningUserId === accessRequest.user_id" @click="declineRequest(accessRequest)" />
+                <Button type="negative" size="xs" :label="trans('Decline')" @click="openDeclineModal(accessRequest)" />
             </div>
         </li>
     </ul>
@@ -101,6 +110,25 @@ const declineRequest = (accessRequest: WebpageEditAccessRequest) => {
             <div class="flex justify-end gap-2 pt-2">
                 <Button type="tertiary" :label="trans('Cancel')" @click="approvingRequest = null" />
                 <Button type="positive" :label="trans('Allow editing')" :loading="approveForm.processing" @click="submitApprove" />
+            </div>
+        </form>
+    </Modal>
+
+    <Modal :isOpen="!!decliningRequest" @onClose="decliningRequest = null" width="w-full max-w-lg">
+        <form class="space-y-3" @submit.prevent="submitDecline">
+            <div class="text-lg font-semibold">
+                <FontAwesomeIcon :icon="faKey" fixed-width aria-hidden="true" />
+                {{ trans('Decline edit access for :name', { name: decliningRequest?.name ?? '' }) }}
+            </div>
+            <div v-if="decliningRequest?.note" class="text-sm italic text-gray-600">“{{ decliningRequest.note }}”</div>
+            <label class="block text-sm">
+                {{ trans('Message to :name', { name: decliningRequest?.name ?? '' }) }} ({{ trans('optional') }})
+                <textarea v-model="declineForm.message" rows="3" maxlength="1000" class="mt-1 w-full rounded border-gray-300 text-sm" :placeholder="trans('Tell them why, or what to do instead')" />
+                <span v-if="declineForm.errors.message" class="text-xs text-red-500">{{ declineForm.errors.message }}</span>
+            </label>
+            <div class="flex justify-end gap-2 pt-2">
+                <Button type="tertiary" :label="trans('Cancel')" @click="decliningRequest = null" />
+                <Button type="negative" :label="trans('Decline')" :loading="declineForm.processing" @click="submitDecline" />
             </div>
         </form>
     </Modal>
