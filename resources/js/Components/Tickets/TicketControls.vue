@@ -316,6 +316,10 @@ const update = (field: string, value: unknown, action: string = field) => {
                         <FontAwesomeIcon :icon="isPending(`status:${action.status}`) ? 'fal fa-spinner' : action.icon" :spin="isPending(`status:${action.status}`)" fixed-width />
                     </button>
                 </div>
+                <div v-if="ticket.status === 'pending_deploy' && ticket.deploy_comment" class="mt-2 rounded-md border border-green-200 bg-green-50 px-3 py-2 text-sm text-gray-700">
+                    <div class="mb-1 text-xs font-medium text-green-700">{{ trans("Posted to the reporter when the deployment lands") }}</div>
+                    <div class="whitespace-pre-wrap">{{ ticket.deploy_comment }}</div>
+                </div>
             </div>
             <div v-if="ticket.qa_status || canAskQa" class="flex items-center gap-2">
                 <span v-if="ticket.qa_status" v-tooltip="ticket.qa_user ? `${ticket.qa_status_label} · ${ticket.qa_user}` : ticket.qa_status_label" class="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-sm font-medium" :class="statusBadgeClasses[ticket.qa_status_icon.color]">
