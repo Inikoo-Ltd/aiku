@@ -43,8 +43,15 @@ class GetWebpageLock
                 'value' => $candidate->id,
                 'label' => $candidate->contact_name ?: $candidate->username,
             ])->values()->all() : [],
+            'requests'     => $canManage && $webpage->isLocked() ? collect(Arr::get($webpage->lock_data, 'requests', []))->map(fn (array $accessRequest) => array_merge($accessRequest, [
+                'name' => $names->get($accessRequest['user_id'])?->contact_name ?: $names->get($accessRequest['user_id'])?->username,
+            ]))->values()->all() : [],
+            'has_requested_access' => $user && $webpage->isLocked() && collect(Arr::get($webpage->lock_data, 'requests', []))->contains('user_id', $user->id),
             'lock_route'   => ['name' => 'grp.models.webpage.lock', 'parameters' => ['webpage' => $webpage->id]],
             'unlock_route' => ['name' => 'grp.models.webpage.unlock', 'parameters' => ['webpage' => $webpage->id]],
+            'request_access_route' => ['name' => 'grp.models.webpage.edit_access.request', 'parameters' => ['webpage' => $webpage->id]],
+            'approve_access_route' => ['name' => 'grp.models.webpage.edit_access.approve', 'parameters' => ['webpage' => $webpage->id]],
+            'decline_access_route' => ['name' => 'grp.models.webpage.edit_access.decline', 'parameters' => ['webpage' => $webpage->id]],
         ];
     }
 }

@@ -73,6 +73,7 @@ const checkScreenType = () => {
 }
 
 const updateData = (val: any) => {
+  if (!props.editable) return
   sendMessageToParent("autosave", val)
 }
 

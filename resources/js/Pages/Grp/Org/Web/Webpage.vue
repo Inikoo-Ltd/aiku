@@ -27,6 +27,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { layoutStructure } from '@/Composables/useLayoutStructure'
 import TableRedirects from '@/Components/Tables/Grp/Org/Web/TableRedirects.vue'
 import WebpageLockBanner from '@/Components/CMS/Webpage/WebpageLockBanner.vue'
+import WebpageLockButton from '@/Components/CMS/Webpage/WebpageLockButton.vue'
 import { faHome, faSignIn, faHammer, faCheckCircle, faBroadcastTower, faSkull } from '@fal'
 import { trans } from 'laravel-vue-i18n'
 library.add(faHome, faSignIn, faHammer, faCheckCircle, faBroadcastTower, faSkull, faChartLine, faClock, faUsersClass, faAnalytics, faDraftingCompass, faSlidersH, faRoad, faLayerGroup, faBrowser, faLevelDown, faShapes, faSortAmountDownAlt, faExternalLink,faObjectGroup,faDirections)
@@ -88,13 +89,16 @@ onUnmounted(() => {
 <template>
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead">
+        <template #otherBefore>
+            <WebpageLockButton :lock="lock" />
+        </template>
         <template #other>
             <a v-if="webpage_canonical_url" :href="webpage_canonical_url" target="_blank" class="text-gray-400 hover:text-gray-700 px-2 cursor-pointer" v-tooltip="trans('Open website in new tab')" aclick="openWebsite" >
                 <FontAwesomeIcon :icon="faExternalLink" aria-hidden="true" size="xl" />
             </a>
         </template>
     </PageHeading>
-    <WebpageLockBanner :lock="lock" />
     <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
-    <component :is="component" :tab="currentTab" :data="props[currentTab]" :pagespeed="pagespeed" :redirected_to="redirected_to"></component>
+    <WebpageLockBanner :lock="lock" />
+    <component :is="component" :tab="currentTab" :data="props[currentTab]" :pagespeed="pagespeed" :redirected_to="redirected_to" :editable="lock?.can_edit ?? true"></component>
 </template>

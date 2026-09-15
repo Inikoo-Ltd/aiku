@@ -131,7 +131,7 @@ const TEMPLATE_TAB_INDEX = 3
 const hasRequestedTemplates = ref(false)
 
 const isOpenedBlockEditable = computed(() => {
-	if (openedBlockSideEditor.value === null) {
+	if (!props.editable || openedBlockSideEditor.value === null) {
 		return false
 	}
 
@@ -141,7 +141,7 @@ const isOpenedBlockEditable = computed(() => {
 })
 
 const tabs = computed(() => [
-	{ label: 'Settings', icon: faCogs, tooltip: 'Page Setting', hidden: false },
+	{ label: 'Settings', icon: faCogs, tooltip: 'Page Setting', hidden: !props.editable },
 	{ label: 'Layer', icon: faLayerGroup, tooltip: 'Blocks', hidden: false },
 	{
 		label: 'Style',
@@ -253,6 +253,7 @@ const CONTEXT_MENU_MARGIN = 8
 const openContextMenu = async (event: MouseEvent, block: Daum | null = null) => {
 	event.preventDefault()
 	event.stopPropagation()
+	if (!props.editable) return
 	contextMenu.value = {
 		visible: true,
 		top: event.clientY,
@@ -309,7 +310,7 @@ const onClickBlock = (index: number) => {
 const onDoubleClickBlock = (index: number) => {
 	openedBlockSideEditor.value = index
 
-	if (getEditPermissions(props.webpage.layout.web_blocks[index]?.web_block.layout.data)) {
+	if (isOpenedBlockEditable.value) {
 		changeTab(STYLE_TAB_INDEX)
 	}
 }
@@ -325,6 +326,16 @@ watch(
 	(tabIndex) => {
 		if (tabIndex === TEMPLATE_TAB_INDEX && props.canUseTemplate && !hasRequestedTemplates.value) {
 			requestTemplates()
+		}
+	},
+	{ immediate: true }
+)
+
+watch(
+	() => props.editable,
+	(editable) => {
+		if (!editable && props.selectedTab === 0) {
+			changeTab(1)
 		}
 	},
 	{ immediate: true }
@@ -373,7 +384,7 @@ const MAX_RENAME_LENGTH = 35
 
 const startRename = (index: number) => {
 	const block = props.webpage.layout.web_blocks[index]
-	if (!block || !getRenamePermision(block.web_block.layout.data)) return
+	if (!props.editable || !block || !getRenamePermision(block.web_block.layout.data)) return
 
 	editingIndex.value = index
 	renameValue.value = block.web_block.layout.data.fieldValue?.blocks?.name || ""
@@ -492,6 +503,7 @@ const showBlockVisibilityOptions = computed(
 						<SiteSettings
 							:webpage="webpage"
 							:webBlockTypes="webBlockTypes"
+							:editable="editable"
 							@onSaveSiteSettings="(v: any) => emits('onSaveSiteSettings', v)" />
 					</div>
 				</TabPanel>
@@ -504,6 +516,7 @@ const showBlockVisibilityOptions = computed(
 						<!-- Header Controls -->
 						<div class="shrink-0 mb-1.5 flex items-center gap-1.5">
 							<Button
+								v-if="editable"
 								type="dashed"
 								@click="openModalBlockList"
 								:icon="faPlus"
@@ -558,7 +571,9 @@ const showBlockVisibilityOptions = computed(
 										<div
 											class="flex justify-between items-center gap-1 pl-1.5 pr-1 py-1"
 											v-tooltip="
-												getEditPermissions(element.web_block.layout.data)
+												!editable
+													? ''
+													: getEditPermissions(element.web_block.layout.data)
 													? trans('Double-click to open Style')
 													: trans(
 															'This block is reserved by system. Not editable.'
@@ -668,7 +683,7 @@ const showBlockVisibilityOptions = computed(
 												<LoadingIcon v-if="isLoadingBlock === element.id" class="shrink-0" />
 											</button>
 
-											<div class="flex shrink-0 items-center gap-0.5">
+											<div v-if="editable" class="flex shrink-0 items-center gap-0.5">
 												<!-- Duplicate Block Button -->
 												<button
 													type="button"
@@ -891,7 +906,7 @@ const showBlockVisibilityOptions = computed(
 			</TabPanels>
 		</TabGroup>
 
-		<Modal :isOpen="modelModalBlocklist" @onClose="openModalBlockList">
+		<Modal :isOpen="editable && modelModalBlocklist" @onClose="openModalBlockList">
 			<WeblockList :onPickBlock="onPickBlock" :webBlockTypes="webBlockTypes" scope="all" />
 		</Modal>
 

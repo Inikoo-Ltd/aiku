@@ -24,11 +24,14 @@ const locale = useLocaleStore()
 
 
 library.add(faSeedling, faGhost, faBroadcastTower, faRecycle, faPoo);
-const props = defineProps<{
+const props = withDefaults(defineProps<{
     data: object,
     tab?: string
     display_apply_button?: boolean
-}>()
+    editable?: boolean
+}>(), {
+    editable: true,
+})
 
 function snapshotRoute(data: {}) {
 
@@ -150,7 +153,7 @@ const recycleUnpublished = async (id) => {
         </template>
 
         <template #cell(action)="{ item }">
-            <div class="flex items-center gap-2">
+            <div v-if="editable" class="flex items-center gap-2">
                 <Button :type="'positive'" :icon="faRecycle"
                     v-tooltip="trans('Recycle the live version to this version')" @click="() => recycleLive(item.id)"
                     :loading="loadingLive.includes(item.id)" />

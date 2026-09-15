@@ -534,6 +534,9 @@ use App\Actions\Web\Webpage\StoreWebpage;
 use App\Actions\Web\Webpage\UpdateWebpage;
 use App\Actions\Web\Webpage\LockWebpage;
 use App\Actions\Web\Webpage\UnlockWebpage;
+use App\Actions\Web\Webpage\RequestWebpageEditAccess;
+use App\Actions\Web\Webpage\ApproveWebpageEditAccess;
+use App\Actions\Web\Webpage\DeclineWebpageEditAccess;
 use App\Http\Middleware\EnsureWebpageIsNotLocked;
 use App\Actions\Web\Webpage\WebpageWorkshopCheckWebBlock;
 use App\Actions\Web\Website\AutosaveWebsiteMarginal;
@@ -1213,6 +1216,9 @@ Route::patch('set-snapshot-website/{snapshot:id}/unpublished', [ApplyWebsiteMenu
 Route::name('webpage.')->prefix('webpage/{webpage:id}')->group(function () {
     Route::post('lock', LockWebpage::class)->name('lock')->withoutScopedBindings();
     Route::post('unlock', UnlockWebpage::class)->name('unlock')->withoutScopedBindings();
+    Route::post('request-edit-access', RequestWebpageEditAccess::class)->name('edit_access.request')->withoutScopedBindings();
+    Route::post('approve-edit-access', ApproveWebpageEditAccess::class)->name('edit_access.approve')->withoutScopedBindings();
+    Route::post('decline-edit-access', DeclineWebpageEditAccess::class)->name('edit_access.decline')->withoutScopedBindings();
 });
 
 Route::name('webpage.')->prefix('webpage/{webpage:id}')->middleware(EnsureWebpageIsNotLocked::class)->group(function () {
