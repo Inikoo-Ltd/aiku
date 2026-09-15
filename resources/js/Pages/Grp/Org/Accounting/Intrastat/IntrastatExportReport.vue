@@ -53,7 +53,7 @@ const exportExcel = () => {
 const aeatErrors = ref<string[]>([])
 const aeatRows = ref(0)
 const aeatSummary = ref<Record<string, number>>({})
-const aeatFallback = ref({ weight_kg: '1', tariff_code: '', origin: '' })
+const aeatFallback = ref({ weight_kg: '1', tariff_code: '33049900', origin: 'ES' })
 const isAeatModalOpen = ref(false)
 const isAeatChecking = ref(false)
 
@@ -147,11 +147,11 @@ const exportAeatAnyway = () => {
                     </label>
                     <label class="flex flex-col gap-1">
                         <span class="text-gray-600">{{ trans('Tariff code for rows without one') }}</span>
-                        <input v-model="aeatFallback.tariff_code" type="text" inputmode="numeric" maxlength="10" placeholder="33049900" class="rounded border-gray-300 font-mono" />
+                        <input v-model="aeatFallback.tariff_code" type="text" inputmode="numeric" maxlength="10" class="rounded border-gray-300 font-mono" />
                     </label>
                     <label class="flex flex-col gap-1">
                         <span class="text-gray-600">{{ trans('Origin country for rows without one') }}</span>
-                        <input v-model="aeatFallback.origin" type="text" maxlength="2" placeholder="ES" class="rounded border-gray-300 uppercase" />
+                        <input v-model="aeatFallback.origin" type="text" maxlength="2" class="rounded border-gray-300 uppercase" />
                     </label>
                 </div>
                 <pre class="mt-4 max-h-64 overflow-auto rounded bg-gray-50 p-3 text-xs text-gray-800">{{ aeatErrors.join('\n') }}</pre>
