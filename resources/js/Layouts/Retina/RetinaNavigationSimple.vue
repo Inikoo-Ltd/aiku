@@ -7,7 +7,8 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import { Link } from "@inertiajs/vue3";
 import { capitalize } from "@/Composables/capitalize";
 import { isNavigationActive } from "@/Composables/useUrl";
-import { onMounted, ref, onUnmounted, inject } from "vue";
+import { onMounted, ref, onUnmounted, inject, computed } from "vue";
+import { useEchoRetinaPersonal } from "@/Stores/echo-retina-personal.js";
 import RetinaTopBarSubsections from "@/Layouts/Retina/RetinaTopBarSubsections.vue";
 import { faRoute, faTachometerAlt, faFileInvoiceDollar, faHandHoldingBox, faPallet } from "@fal";
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
@@ -21,6 +22,10 @@ const props = defineProps<{
 
 const locale = inject('locale', {})
 const layout = useLayoutStore()
+const echoPersonal = useEchoRetinaPersonal()
+const isSupportNav = computed(() => props.nav?.root === "retina.dropshipping.tickets.")
+const supportOpenCount = computed(() => (isSupportNav.value ? Object.values(echoPersonal.ticketBadges?.mine ?? {}).reduce((total, row) => total + (row.count ?? 0), 0) : 0))
+const hasUnreadSupportUpdates = computed(() => isSupportNav.value && (echoPersonal.ticketBadges?.recent ?? []).some((update) => !update.read))
 const isTopMenuActive = ref(false)
 const isLoading = ref(false)
 
@@ -72,12 +77,17 @@ const inactiveClass = `bg-[${layout.app?.theme[4]}] text-[${layout.app?.theme[1]
                 <span v-if="layout.leftSidebar.show" class="capitalize leading-none whitespace-nowrap truncate">
                     {{ nav.label }}
                     <FontAwesomeIcon v-if="nav.indicator" icon="fas fa-circle" class="align-middle text-red-600 text-[0.5rem] animate-pulse" fixed-width aria-hidden="true" />
+                    <FontAwesomeIcon v-if="hasUnreadSupportUpdates" icon="fas fa-circle" class="align-middle text-indigo-500 text-[0.5rem] animate-pulse" fixed-width aria-hidden="true" />
                 </span>
                 <span v-else class="capitalize leading-none whitespace-nowrap block md:hidden truncate">
                     {{ nav.label }}
                     <FontAwesomeIcon v-if="nav.indicator" icon="fas fa-circle" class="align-middle text-red-600 text-[0.5rem] animate-pulse" fixed-width aria-hidden="true" />
+                    <FontAwesomeIcon v-if="hasUnreadSupportUpdates" icon="fas fa-circle" class="align-middle text-indigo-500 text-[0.5rem] animate-pulse" fixed-width aria-hidden="true" />
                 </span>
             </Transition>
+
+
+            <div v-if="layout.leftSidebar.show && supportOpenCount" class="mr-2 rounded-full px-1.5 py-0.5 text-xs leading-none tabular-nums transition duration-200" :style="{ 'background-color': layout.app?.theme[4], color: layout.app?.theme[1] }">{{ supportOpenCount }}</div>
 
 
             <Transition name="spin-to-right">

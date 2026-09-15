@@ -26,7 +26,7 @@ const props = withDefaults(defineProps<{
     ticket: { subject: string; description: string | null; reporter: string | null; reporter_avatar?: Record<string, string> | null; is_from_slack?: boolean; reference_url?: string | null; created_at: string; images?: Record<string, string>[] }
     comments: { id: number; body: string; is_internal: boolean; is_lead_only?: boolean; can_toggle_visibility?: boolean; is_staff: boolean; author: string | null; created_at: string; images?: Record<string, string>[]; attachments?: { name: string; url: string }[]; can_edit?: boolean; can_delete?: boolean }[]
     commentRoute: { name: string; parameters: Record<string, unknown> }
-    mentionable?: { username: string; name: string | null }[]
+    mentionable?: { username: string; name: string | null; suggested?: boolean; is_customer?: boolean }[]
     commentsNewestFirst?: boolean
     showDescription?: boolean
     canCommentInternally?: boolean
@@ -93,7 +93,7 @@ const submit = () => {
         <slot name="after-description" />
 
         <form class="space-y-3 rounded-lg border p-4 transition duration-200" :class="form.is_internal ? 'border-amber-300 bg-amber-50' : 'border-gray-300 bg-white'" @submit.prevent="submit">
-            <TicketComposer v-model:body="form.body" v-model:images="form.images" :rows="4" :mentionable="mentionable" :placeholder="trans('Write a comment, paste a screenshot or drop images')" />
+            <TicketComposer v-model:body="form.body" v-model:images="form.images" :rows="4" :mentionable="form.is_internal ? mentionable?.filter((person) => !person.is_customer) : mentionable" :placeholder="trans('Write a comment, paste a screenshot or drop images')" />
             <p v-if="form.errors.body || form.errors.images" class="text-xs text-red-600">{{ form.errors.body || form.errors.images }}</p>
             <div class="flex flex-wrap items-center justify-end gap-3">
                 <label v-if="canCommentInternally" class="mr-auto flex cursor-pointer select-none items-center gap-2 text-sm transition duration-200" :class="form.is_internal ? 'font-semibold text-amber-700' : 'text-gray-500 hover:text-gray-700'">
