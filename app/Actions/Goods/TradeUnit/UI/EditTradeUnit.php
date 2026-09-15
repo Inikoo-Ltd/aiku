@@ -460,8 +460,11 @@ class EditTradeUnit extends OrgAction
                                     'type'         => 'select-improved',
                                     'label'        => __('Languages'),
                                     'placeholder'  => __('Select languages'),
-                                    'options'      => array_values(GetLanguagesOptions::make()->all()),
-                                    'labelProp'    => 'name',
+                                    'options'      => array_values(array_map(
+                                        fn (array $language) => $language + ['label' => '('.strtoupper($language['code']).') '.$language['name']],
+                                        GetLanguagesOptions::make()->all()
+                                    )),
+                                    'labelProp'    => 'label',
                                     'valueProp'    => 'code',
                                     'tagLabelProp' => 'code',
                                     'tagUppercase' => true,

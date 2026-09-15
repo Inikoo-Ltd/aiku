@@ -38,7 +38,7 @@ trait HasWebBlockProductLabelInfo
             'uk_responsible_person'         => $this->getResponsiblePerson(__('UK Responsible Person'), 'aw', in_array(TradeUnitMarketEnum::UK->value, $markets, true)),
             'eu_responsible_person'         => $this->getResponsiblePerson(__('EU Responsible Person'), 'sk', in_array(TradeUnitMarketEnum::EU->value, $markets, true)),
             'languages'                     => $this->labelInfoItem(__('Languages'), $languagesData['show'], $languagesData['value']),
-            'best_before'                   => $this->labelInfoItem(__('PAO / Expiry Date / Best Before'), $bestBeforeData['show'], $bestBeforeData['value']),
+            'best_before'                   => $this->getBestBefore($bestBeforeData),
             'ingredients'                   => $this->textItem(__('Ingredients'), $product->marketing_ingredients),
             'direction_for_use'             => $this->textItem(__('Direction For Use'), $product->gpsr_manual),
             'warnings_and_precautions'      => $this->textItem(__('Warning & Precautions'), $product->gpsr_warnings),
@@ -76,6 +76,20 @@ trait HasWebBlockProductLabelInfo
         $value = blank($value) ? null : trim($value);
 
         return $this->labelInfoItem($label, $value !== null, $value);
+    }
+
+    /**
+     * @param  array{show: bool, value: array{value: string, label: string}|null}  $bestBeforeData
+     */
+    private function getBestBefore(array $bestBeforeData): array
+    {
+        $hasNoExpiryDate = data_get($bestBeforeData, 'value.value') === TradeUnitBestBeforeEnum::NO_EXPIRY_DATE->value;
+
+        if ($hasNoExpiryDate) {
+            return $this->labelInfoItem(__('PAO / Expiry Date / Best Before'), false, null);
+        }
+
+        return $this->labelInfoItem(__('PAO / Expiry Date / Best Before'), $bestBeforeData['show'], $bestBeforeData['value']);
     }
 
     private function getCountryOfOrigin(Product $product): array
