@@ -55,7 +55,6 @@ const sidebarOpen = ref(false)
 watch(
     () => usePage().props?.flash?.notification,
     (notif) => {
-        console.log("notif ret", notif)
         if (!notif) return
 
         notify({
@@ -99,7 +98,6 @@ const isModalOpen = ref(false)
 watch(
     () => usePage().props?.flash?.modal,
     (modal: Modal) => {
-        console.log("modal ret", modal)
         if (!modal) return
 
         selectedModal.value = modal
@@ -132,7 +130,6 @@ const onCheckAppVersion = () => {
         } else {
             isModalNeedToRefresh.value = true
         }
-        console.log("---------- App version check:", eventData)
     })
 
     // console.log('Websocket subscription:', xxx.subscription.subscribed)
@@ -187,7 +184,6 @@ const safeTheme = computed(() => {
 
     return (t && t.length >= 8) ? t : fallbackTheme
 })
-console.log(Object.values(layout.rightSidebar).some((value) => value.show))
 </script>
 
 <template>

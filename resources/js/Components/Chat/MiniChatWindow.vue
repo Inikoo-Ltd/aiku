@@ -1248,7 +1248,7 @@ onUnmounted(() => {
                                     <img v-if="message.message_type === 'image' && message.media_url"
                                         :src="message.media_url.webp ?? message.media_url.original" :alt="trans('Attachment')"
                                         class="mt-1 rounded max-w-full max-h-28 object-contain cursor-pointer bg-gray-50"
-                                        @click="openAttachment(message)" />
+                                        @click="openAttachment(message)" loading="lazy" decoding="async" />
 
                                     <!-- Played in place, the way the recipient sees it on WhatsApp. -->
                                     <video v-else-if="isVideoMessage(message) && inlineUrl(message)"

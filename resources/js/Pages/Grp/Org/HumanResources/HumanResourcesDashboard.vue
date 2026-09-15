@@ -378,7 +378,7 @@ const iconColors: Record<string, { icon: string; bg: string }> = {
 						<tr v-for="row in people" :key="row.id" class="hover:bg-gray-50">
 							<td class="py-2 pr-3">
 								<div class="flex items-center gap-3">
-									<img v-if="showAvatar(row.avatar)" :src="row.avatar" :alt="row.name" class="h-9 w-9 rounded-full object-cover bg-gray-100" @error="brokenAvatars.add(row.avatar)" />
+									<img v-if="showAvatar(row.avatar)" :src="row.avatar" :alt="row.name" class="h-9 w-9 rounded-full object-cover bg-gray-100" @error="brokenAvatars.add(row.avatar)" loading="lazy" decoding="async" />
 <div v-else class="flex h-9 w-9 items-center justify-center rounded-full bg-indigo-100 text-xs font-semibold text-indigo-700">{{ initials(row.name) }}</div>
 									<div class="min-w-0">
 										<Link
@@ -418,7 +418,7 @@ const iconColors: Record<string, { icon: string; bg: string }> = {
 						<tr v-for="row in visibleAttendance" :key="row.id" class="hover:bg-gray-50">
 							<td class="py-2 pr-3">
 								<div class="flex items-center gap-3">
-									<img v-if="showAvatar(row.avatar)" :src="row.avatar" :alt="row.employee_name" class="h-9 w-9 rounded-full object-cover bg-gray-100" @error="brokenAvatars.add(row.avatar)" />
+									<img v-if="showAvatar(row.avatar)" :src="row.avatar" :alt="row.employee_name" class="h-9 w-9 rounded-full object-cover bg-gray-100" @error="brokenAvatars.add(row.avatar)" loading="lazy" decoding="async" />
 <div v-else class="flex h-9 w-9 items-center justify-center rounded-full bg-indigo-100 text-xs font-semibold text-indigo-700">{{ initials(row.employee_name) }}</div>
 									<div class="min-w-0">
 										<Link
@@ -482,7 +482,7 @@ const iconColors: Record<string, { icon: string; bg: string }> = {
 			<h2 class="text-lg font-bold text-gray-800 mb-3">{{ trans("Employee leaves") }}</h2>
 			<ul v-if="employeeLeaves.length" class="divide-y divide-gray-100 max-h-64 overflow-y-auto pr-1">
 				<li v-for="leave in employeeLeaves" :key="leave.id" class="flex items-center gap-3 py-2.5">
-					<img v-if="showAvatar(leave.avatar)" :src="leave.avatar" :alt="leave.name" class="h-8 w-8 rounded-full object-cover bg-gray-100" @error="brokenAvatars.add(leave.avatar)" />
+					<img v-if="showAvatar(leave.avatar)" :src="leave.avatar" :alt="leave.name" class="h-8 w-8 rounded-full object-cover bg-gray-100" @error="brokenAvatars.add(leave.avatar)" loading="lazy" decoding="async" />
 <div v-else class="flex h-8 w-8 items-center justify-center rounded-full bg-indigo-100 text-xs font-semibold text-indigo-700">{{ initials(leave.name) }}</div>
 					<div class="min-w-0 flex-1">
 						<div class="font-medium text-gray-900 truncate">{{ leave.name }}</div>
@@ -541,7 +541,7 @@ const iconColors: Record<string, { icon: string; bg: string }> = {
 					:key="person.id"
 					class="flex items-center gap-3 py-2.5"
 					:class="{ 'bg-pink-50 -mx-2 px-2 rounded': person.is_today }">
-					<img v-if="showAvatar(person.avatar)" :src="person.avatar" :alt="person.name" class="h-8 w-8 rounded-full object-cover bg-gray-100" @error="brokenAvatars.add(person.avatar)" />
+					<img v-if="showAvatar(person.avatar)" :src="person.avatar" :alt="person.name" class="h-8 w-8 rounded-full object-cover bg-gray-100" @error="brokenAvatars.add(person.avatar)" loading="lazy" decoding="async" />
 <div v-else class="flex h-8 w-8 items-center justify-center rounded-full bg-indigo-100 text-xs font-semibold text-indigo-700">{{ initials(person.name) }}</div>
 					<div class="min-w-0 flex-1">
 						<div class="font-medium text-gray-900 truncate">{{ person.name }}</div>
