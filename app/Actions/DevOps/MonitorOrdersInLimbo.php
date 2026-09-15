@@ -26,8 +26,6 @@ class MonitorOrdersInLimbo
 {
     use AsAction;
 
-    public const int STALE_SUBMITTED_DAYS = 60;
-
     public string $commandSignature = 'monitor:orders_in_limbo';
     public string $commandDescription = 'Alert Discord about orders that no backlog queue shows';
 
@@ -39,7 +37,6 @@ class MonitorOrdersInLimbo
         $issues = array_merge(
             $this->statesNoTabShows(),
             $this->submittedOrdersInNeitherPayQueue(),
-            $this->submittedOrdersNobodyHasTouched(),
         );
 
         foreach ($issues as $issue) {
@@ -90,29 +87,6 @@ class MonitorOrdersInLimbo
         return $missing === 0
             ? []
             : ["$missing of $total submitted orders are in neither the paid nor the unpaid queue"];
-    }
-
-    /**
-     * Visible but never acted on is the symptom the queues exist to prevent, and the one that would
-     * have caught HELP-3116 a year before anyone noticed.
-     *
-     * Only orders that went stale in the last day, never the whole standing pile: an alert that
-     * repeats the same hundreds of orders every morning is one everybody learns to ignore inside a
-     * week, and it would drown the checks above it. Each order raises its hand exactly once.
-     */
-    protected function submittedOrdersNobodyHasTouched(): array
-    {
-        $wentStaleAfter  = now()->subDays(self::STALE_SUBMITTED_DAYS + 1);
-        $wentStaleBefore = now()->subDays(self::STALE_SUBMITTED_DAYS);
-
-        return Order::where('state', OrderStateEnum::SUBMITTED)
-            ->whereBetween('submitted_at', [$wentStaleAfter, $wentStaleBefore])
-            ->selectRaw('shop_id, count(*) as total')
-            ->groupBy('shop_id')
-            ->with('shop:id,code')
-            ->get()
-            ->map(fn ($row) => "Shop `{$row->shop?->code}` has {$row->total} orders that passed ".self::STALE_SUBMITTED_DAYS.' days submitted today without being dispatched')
-            ->all();
     }
 
     public function asCommand(Command $command): int
