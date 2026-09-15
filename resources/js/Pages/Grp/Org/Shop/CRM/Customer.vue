@@ -44,7 +44,7 @@ import SelectableCardGrid from "@/Components/Utils/SelectableCardGrid.vue"
 import { useForm } from "@inertiajs/vue3"
 import LoadingOverlay from "@/Components/Utils/LoadingOverlay.vue"
 import UpcomingTransactionsPanel from "@/Components/CRM/UpcomingTransactionsPanel.vue"
-import StaffTaskPanel from "@/Components/Messaging/StaffTaskPanel.vue"
+import StaffTaskPanel from "@/Components/Tasks/StaffTaskPanel.vue"
 
 library.add(faStickyNote, faUsers, faGlobe, faMoneyBill, faGraduationCap, faTags, faCodeCommit, faPaperclip, faPaperPlane, faCube, faCodeBranch, faShoppingCart, faHeart, faQuestionCircle, faLightbulbOn, faRoute)
 

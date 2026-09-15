@@ -50,7 +50,7 @@ import Tabs from "@/Components/Navigation/Tabs.vue";
 import type { DeliveryNote } from "@/types/warehouse";
 import Button from "@/Components/Elements/Buttons/Button.vue";
 import StaffChatContextButtons from "@/Components/Messaging/StaffChatContextButtons.vue";
-import StaffTaskPanel from "@/Components/Messaging/StaffTaskPanel.vue"
+import StaffTaskPanel from "@/Components/Tasks/StaffTaskPanel.vue"
 import Modal from "@/Components/Utils/Modal.vue";
 import { trans } from "laravel-vue-i18n";
 import PureMultiselectInfiniteScroll from "@/Components/Pure/PureMultiselectInfiniteScroll.vue";

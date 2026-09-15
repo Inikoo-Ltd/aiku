@@ -18,7 +18,7 @@ import Popover from "@/Components/Popover.vue"
 import { Checkbox, InputNumber, Popover as PopoverPrimevue, RadioButton, Select, InputText, Column, DataTable, Dialog } from 'primevue';
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import StaffChatContextButtons from "@/Components/Messaging/StaffChatContextButtons.vue"
-import StaffTaskPanel from "@/Components/Messaging/StaffTaskPanel.vue"
+import StaffTaskPanel from "@/Components/Tasks/StaffTaskPanel.vue"
 import PureInput from "@/Components/Pure/PureInput.vue"
 import BoxNote from "@/Components/Pallet/BoxNote.vue"
 import { trans } from "laravel-vue-i18n"

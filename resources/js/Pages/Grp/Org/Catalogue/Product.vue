@@ -51,7 +51,7 @@ import { notify } from '@kyvg/vue3-notification'
 import axios from 'axios'
 import ModalCreateGiftOffers from '@/Components/Offers/ModalCreateGiftOffers.vue'
 import ModalCreateStepDiscountProduct from '@/Components/Offers/ModalCreateStepDiscountProduct.vue'
-import StaffTaskPanel from "@/Components/Messaging/StaffTaskPanel.vue"
+import StaffTaskPanel from "@/Components/Tasks/StaffTaskPanel.vue"
 
 library.add(
     faFolder,
