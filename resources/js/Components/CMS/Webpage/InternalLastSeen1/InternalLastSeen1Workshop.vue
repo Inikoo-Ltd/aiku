@@ -27,8 +27,13 @@ const layout = inject('layout', retinaLayoutStructure)
         width: 'auto'
     }">
         <!-- Title -->
-        <div class="px-4 py-6 pb-2 text-3xl font-semibold">
-            <p style="text-align: center">{{ ctrans("Last seen") }}</p>
+        <div class="px-3 py-6 pb-2">
+            <div class="text-3xl font-semibold">
+                <!-- <div v-html="fieldValue.title"></div> -->
+                <div>
+                    <p style="text-align: center">{{ ctrans("Last seen") }}<span v-if="layout.app.environment === 'local'" class="ml-2 bg-red-500">(Internal)</span></p>
+                </div>
+            </div>
         </div>
 
         <div class="py-4">

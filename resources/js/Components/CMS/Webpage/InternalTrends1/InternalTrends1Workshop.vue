@@ -79,8 +79,12 @@ onMounted(() => {
         width: 'auto'
     }">
         <!-- Title -->
-        <div class="px-4 py-6 pb-2 text-3xl font-semibold">
-            <p style="text-align: center" :class="isFamilyPage ? 'opacity-40' : ''">{{ ctrans("Trending") }}</p>
+        <div class="px-3 pt-6 md:pb-6">
+            <div class="text-2xl md:text-3xl font-semibold">
+                <div>
+                    <p style="text-align: center">{{ ctrans("Trending") }}<span v-if="layout.app.environment === 'local'" class="ml-2 bg-red-500">(Internal)</span></p>
+                </div>
+            </div>
         </div>
 
         <div class="py-4">
