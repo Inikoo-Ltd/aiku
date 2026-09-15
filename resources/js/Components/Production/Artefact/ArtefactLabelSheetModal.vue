@@ -1004,12 +1004,15 @@ const describeFailure = async (error: any): Promise<string> => {
 
 <template>
     <Modal :isOpen="isOpen" closeButton :isClosableInBackground="false" @onClose="emits('onClose')" width="w-full max-w-6xl">
-        <div class="flex flex-wrap items-center gap-2 mb-4">
+        <header class="flex flex-wrap items-center gap-2 mb-4" :aria-label="ctrans('Label editor toolbar')">
             <FontAwesomeIcon icon="fal fa-tags" class="text-gray-400" fixed-width aria-hidden="true" />
-            <h2 class="text-lg font-semibold">{{ currentLabelId ? ctrans("Edit label") : ctrans("New label") }}</h2>
+            <h2 id="artefact-label-sheet-title" class="text-lg font-semibold">{{ currentLabelId ? ctrans("Edit label") : ctrans("New label") }}</h2>
             <span
                 v-if="currentLabel"
                 class="rounded-full px-2 py-0.5 text-xs uppercase tracking-wide"
+                role="status"
+                :aria-label="ctrans('Label state: :state', { state: currentLabel.state_label })"
+                :data-label-state="currentLabel.state"
                 :class="LABEL_STATE_CLASSES[currentLabel.state]">
                 {{ currentLabel.state_label }}
             </span>
@@ -1018,21 +1021,28 @@ const describeFailure = async (error: any): Promise<string> => {
                 :href="currentLabel.pdf_url"
                 target="_blank"
                 rel="noopener"
+                :aria-label="ctrans('Open published PDF of :name in a new tab', { name: currentLabel.name })"
                 class="text-xs text-indigo-600 hover:underline">
                 <FontAwesomeIcon icon="fal fa-file-pdf" fixed-width aria-hidden="true" />
                 {{ ctrans("Published PDF") }}
             </a>
 
-            <div class="ml-auto flex items-center gap-2">
+            <div class="ml-auto flex items-center gap-2" role="toolbar" :aria-label="ctrans('Save and publish actions')">
                 <input
                     v-model="labelName"
                     type="text"
+                    name="label_name"
                     class="w-56 rounded border border-gray-300 px-2 py-1 text-sm"
+                    :aria-label="ctrans('Label name')"
+                    aria-required="true"
+                    :aria-invalid="!labelName.trim()"
                     :placeholder="ctrans('Label name')" />
                 <Button
                     type="save"
                     size="xs"
                     :label="currentLabelId ? ctrans('Save') : ctrans('Save label')"
+                    :aria-label="currentLabelId ? ctrans('Save changes to this label') : ctrans('Save as a new label')"
+                    :aria-busy="isSaving"
                     :loading="isSaving"
                     :disabled="!isGridValid"
                     @click="saveLabel(false)" />
@@ -1042,6 +1052,8 @@ const describeFailure = async (error: any): Promise<string> => {
                     size="xs"
                     icon="fal fa-copy"
                     :label="ctrans('Save as new')"
+                    :aria-label="ctrans('Save a copy as a new label')"
+                    :aria-busy="isSaving"
                     :loading="isSaving"
                     :disabled="!isGridValid"
                     @click="saveLabel(true)" />
@@ -1051,22 +1063,27 @@ const describeFailure = async (error: any): Promise<string> => {
                         :key="currentLabel?.state"
                         size="xs"
                         :label="currentLabel?.state === 'published' ? ctrans('Publish again') : ctrans('Publish')"
+                        :aria-label="currentLabel?.state === 'published' ? ctrans('Save and publish the label again') : ctrans('Save and publish the label')"
+                        :aria-busy="isSaving"
                         :loading="isSaving"
                         :disabled="!isGridValid"
                         @click="saveLabel(false, true)" />
-                    <PingIcon v-if="currentLabel?.state !== 'published'" class="text-[7px] text-red-500 !absolute -top-0.5 -right-0.5" />
+                    <PingIcon v-if="currentLabel?.state !== 'published'" class="text-[7px] text-red-500 !absolute -top-0.5 -right-0.5" aria-hidden="true" />
                 </div>
             </div>
-        </div>
+        </header>
 
         <div class="flex flex-col lg:flex-row gap-6">
-            <div class="w-full lg:w-80 shrink-0 space-y-4">
-                <div>
-                    <div class="text-xs text-gray-500 uppercase tracking-wide mb-1">{{ ctrans("Orientation") }}</div>
-                    <div class="flex gap-2">
+            <aside class="w-full lg:w-80 shrink-0 space-y-4" :aria-label="ctrans('Label settings')">
+                <div role="group" aria-labelledby="artefact-label-orientation-title">
+                    <div id="artefact-label-orientation-title" class="text-xs text-gray-500 uppercase tracking-wide mb-1">{{ ctrans("Orientation") }}</div>
+                    <div class="flex gap-2" role="radiogroup" aria-labelledby="artefact-label-orientation-title">
                         <button
                             v-for="option in (['portrait', 'landscape'] as const)"
                             :key="option"
+                            type="button"
+                            role="radio"
+                            :aria-checked="orientation === option"
                             class="flex-1 rounded border px-2 py-1.5 text-sm"
                             :class="orientation === option ? 'border-indigo-500 bg-indigo-50 text-indigo-700' : 'border-gray-300 text-gray-600 hover:bg-gray-50'"
                             @click="orientation = option">
@@ -1075,15 +1092,22 @@ const describeFailure = async (error: any): Promise<string> => {
                     </div>
                 </div>
 
-                <hr class="border-t border-gray-400 border-dashed" />
+                <hr class="border-t border-gray-400 border-dashed" aria-hidden="true" />
 
                 <!-- Field: Background artwork -->
-                <div>
-                    <div class="text-xs text-gray-500 uppercase tracking-wide mb-1">
+                <div role="group" aria-labelledby="artefact-label-artwork-title">
+                    <div id="artefact-label-artwork-title" class="text-xs text-gray-500 uppercase tracking-wide mb-1">
                         {{ ctrans("Background artwork") }}
-                        <PingIcon v-if="!backgroundFile" class="text-[6px] text-red-500" />
+                        <PingIcon v-if="!backgroundFile" class="text-[6px] text-red-500" aria-hidden="true" />
                     </div>
-                    <input ref="fileInput" type="file" accept="image/*,application/pdf" class="hidden" @change="onFileChange" />
+                    <input
+                        ref="fileInput"
+                        type="file"
+                        name="background_artwork"
+                        accept="image/*,application/pdf"
+                        class="hidden"
+                        :aria-label="ctrans('Background artwork file, image or PDF')"
+                        @change="onFileChange" />
                     <div class="flex gap-2">
                         <Button
                             type="tertiary"
@@ -1091,33 +1115,44 @@ const describeFailure = async (error: any): Promise<string> => {
                             :icon="isVectorArtwork ? 'fal fa-file-pdf' : 'fal fa-image'"
                             :loading="isPreparingArtwork || isLoadingLabel"
                             :label="backgroundFile ? ctrans('Replace artwork') : ctrans('Upload image or PDF')"
+                            :aria-label="backgroundFile ? ctrans('Replace background artwork') : ctrans('Upload background artwork, image or PDF')"
+                            :aria-busy="isPreparingArtwork || isLoadingLabel"
+                            aria-describedby="artefact-label-artwork-status"
                             @click="() => fileInput?.click()" />
                         <Button
                             v-if="backgroundFile"
                             type="negative"
                             size="xs"
                             icon="fal fa-trash-alt"
+                            :aria-label="ctrans('Remove background artwork')"
+                            :tooltip="ctrans('Remove background artwork')"
                             @click="() => (removeBackground(), isArtworkRemovedByUser = true)" />
                     </div>
-                    <div v-if="backgroundFile" class="mt-1 truncate text-xs text-gray-500">
-                        {{ backgroundFile.name }} • {{ formatBytes(backgroundFile.size) }}
-                    </div>
-                    <div v-if="storedArtwork" class="mt-1 text-xs text-gray-500">
-                        {{ ctrans("Kept with this label, it does not have to be uploaded again.") }}
-                    </div>
-                    <div v-if="isVectorArtwork" class="mt-1 text-xs text-emerald-600">
-                        {{ ctrans("Placed as vector, the text inside the PDF stays selectable.") }}
+                    <div id="artefact-label-artwork-status" aria-live="polite">
+                        <div v-if="backgroundFile" class="mt-1 truncate text-xs text-gray-500">
+                            {{ backgroundFile.name }} • {{ formatBytes(backgroundFile.size) }}
+                        </div>
+                        <div v-if="storedArtwork" class="mt-1 text-xs text-gray-500">
+                            {{ ctrans("Kept with this label, it does not have to be uploaded again.") }}
+                        </div>
+                        <div v-if="isVectorArtwork" class="mt-1 text-xs text-emerald-600">
+                            {{ ctrans("Placed as vector, the text inside the PDF stays selectable.") }}
+                        </div>
                     </div>
                 </div>
 
                 <!-- <hr class="border-t border-gray-400 border-dashed" /> -->
 
-                <div>
-                    <div class="text-xs text-gray-500 uppercase tracking-wide mb-1">{{ ctrans("Canvas rotation") }}</div>
-                    <div class="flex gap-1">
+                <div role="group" aria-labelledby="artefact-label-canvas-rotation-title">
+                    <div id="artefact-label-canvas-rotation-title" class="text-xs text-gray-500 uppercase tracking-wide mb-1">{{ ctrans("Canvas rotation") }}</div>
+                    <div class="flex gap-1" role="radiogroup" aria-labelledby="artefact-label-canvas-rotation-title">
                         <button
                             v-for="angle in ROTATIONS"
                             :key="angle"
+                            type="button"
+                            role="radio"
+                            :aria-checked="canvasRotation === angle"
+                            :aria-label="ctrans('Rotate artwork :angle degrees', { angle: String(angle) })"
                             class="flex-1 rounded border px-2 py-1.5 text-sm"
                             :class="canvasRotation === angle ? 'border-indigo-500 bg-indigo-50 text-indigo-700' : 'border-gray-300 text-gray-600 hover:bg-gray-50'"
                             @click="canvasRotation = angle">
@@ -1126,46 +1161,61 @@ const describeFailure = async (error: any): Promise<string> => {
                     </div>
                 </div>
 
-                <hr class="border-t border-gray-400 border-dashed" />
+                <hr class="border-t border-gray-400 border-dashed" aria-hidden="true" />
 
                 <label class="flex items-start gap-2 rounded border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-700">
                     <input
                         type="checkbox"
+                        name="is_sheet_artwork"
                         class="mt-0.5 rounded border-gray-300"
+                        aria-describedby="artefact-label-sheet-artwork-hint"
                         :checked="isSheetArtwork"
                         @change="toggleSheetArtwork(($event.target as HTMLInputElement).checked)" />
                     <span>
                         {{ ctrans("Artwork already contains the grid") }}
-                        <span class="block text-xs text-gray-500">
+                        <span id="artefact-label-sheet-artwork-hint" class="block text-xs text-gray-500">
                             {{ ctrans("The whole A4 is one label, drop the texts straight onto the artwork.") }}
                         </span>
                     </span>
                 </label>
 
-                <div class="grid grid-cols-2 gap-3" :class="isSheetArtwork ? 'opacity-50' : ''">
+                <fieldset
+                    class="grid grid-cols-2 gap-3"
+                    :class="isSheetArtwork ? 'opacity-50' : ''"
+                    :aria-label="ctrans('Label grid')"
+                    :aria-disabled="isSheetArtwork"
+                    aria-describedby="artefact-label-grid-summary">
                     <label class="block">
                         <span class="text-xs text-gray-500 uppercase tracking-wide">{{ ctrans("Columns") }}</span>
-                        <input v-model.number="columns" type="number" min="1" max="20" :disabled="isSheetArtwork"
+                        <input v-model.number="columns" type="number" name="columns" min="1" max="20" :disabled="isSheetArtwork"
+                            :aria-invalid="!isGridValid"
                             class="mt-1 w-full rounded border border-gray-300 px-2 py-1 text-sm" />
                     </label>
                     <label class="block">
                         <span class="text-xs text-gray-500 uppercase tracking-wide">{{ ctrans("Rows") }}</span>
-                        <input v-model.number="rows" type="number" min="1" max="30" :disabled="isSheetArtwork"
+                        <input v-model.number="rows" type="number" name="rows" min="1" max="30" :disabled="isSheetArtwork"
+                            :aria-invalid="!isGridValid"
                             class="mt-1 w-full rounded border border-gray-300 px-2 py-1 text-sm" />
                     </label>
                     <label class="block">
                         <span class="text-xs text-gray-500 uppercase tracking-wide">{{ ctrans("Page margin (mm)") }}</span>
-                        <input v-model.number="pageMargin" type="number" min="0" max="40" step="0.5" :disabled="isSheetArtwork"
+                        <input v-model.number="pageMargin" type="number" name="page_margin" min="0" max="40" step="0.5" :disabled="isSheetArtwork"
+                            :aria-invalid="!isGridValid"
                             class="mt-1 w-full rounded border border-gray-300 px-2 py-1 text-sm" />
                     </label>
                     <label class="block">
                         <span class="text-xs text-gray-500 uppercase tracking-wide">{{ ctrans("Gap (mm)") }}</span>
-                        <input v-model.number="gap" type="number" min="0" max="30" step="0.5" :disabled="isSheetArtwork"
+                        <input v-model.number="gap" type="number" name="gap" min="0" max="30" step="0.5" :disabled="isSheetArtwork"
+                            :aria-invalid="!isGridValid"
                             class="mt-1 w-full rounded border border-gray-300 px-2 py-1 text-sm" />
                     </label>
-                </div>
+                </fieldset>
 
-                <div class="rounded border border-gray-200 bg-gray-50 px-3 py-2 text-xs text-gray-600">
+                <div
+                    id="artefact-label-grid-summary"
+                    class="rounded border border-gray-200 bg-gray-50 px-3 py-2 text-xs text-gray-600"
+                    :role="isGridValid ? 'status' : 'alert'"
+                    aria-live="polite">
                     <span v-if="isGridValid">
                         {{ columns * rows }} {{ ctrans("labels") }} ·
                         {{ labelWidth.toFixed(1) }} × {{ labelHeight.toFixed(1) }} mm
@@ -1175,80 +1225,119 @@ const describeFailure = async (error: any): Promise<string> => {
                     </span>
                 </div>
 
-                <hr class="border-t border-gray-400 border-dashed" />
+                <hr class="border-t border-gray-400 border-dashed" aria-hidden="true" />
 
                 <label v-if="!isSheetArtwork" class="flex items-center gap-2 text-sm text-gray-700">
-                    <input v-model="cutGuides" type="checkbox" class="rounded border-gray-300" />
+                    <input v-model="cutGuides" type="checkbox" name="cut_guides" class="rounded border-gray-300" />
                     {{ ctrans("Show cutting guides") }}
                 </label>
 
-                <div class="space-y-2">
-                    <div class="flex items-center gap-2 text-xs text-gray-500 uppercase tracking-wide">
+                <div class="space-y-2" role="group" aria-labelledby="artefact-label-texts-title">
+                    <div id="artefact-label-texts-title" class="flex items-center gap-2 text-xs text-gray-500 uppercase tracking-wide">
                         {{ ctrans("Texts") }}
-                        <span class="rounded-full bg-gray-200 px-1.5 py-0.5 text-[10px] font-semibold tabular-nums text-gray-600">
+                        <span
+                            class="rounded-full bg-gray-200 px-1.5 py-0.5 text-[10px] font-semibold tabular-nums text-gray-600"
+                            :aria-label="ctrans(':count texts on the label', { count: String(items.length) })">
                             {{ items.length }}
                         </span>
                     </div>
-                    <div class="flex gap-2">
+                    <div class="flex gap-2" role="toolbar" :aria-label="ctrans('Add text')">
                         <Button type="tertiary" size="xs" icon="fal fa-plus"
-                            :label="sourceLabels.batch_code" @click="addItem('batch_code')" />
+                            :label="sourceLabels.batch_code"
+                            :aria-label="ctrans('Add :field text', { field: sourceLabels.batch_code })"
+                            @click="addItem('batch_code')" />
                         <Button type="tertiary" size="xs" icon="fal fa-plus"
-                            :label="sourceLabels.expiry_date" @click="addItem('expiry_date')" />
+                            :label="sourceLabels.expiry_date"
+                            :aria-label="ctrans('Add :field text', { field: sourceLabels.expiry_date })"
+                            @click="addItem('expiry_date')" />
                     </div>
 
-                    <div v-if="!items.length" class="rounded border border-dashed border-gray-300 px-3 py-2 text-xs text-gray-500">
+                    <div v-if="!items.length" class="rounded border border-dashed border-gray-300 px-3 py-2 text-xs text-gray-500" role="status">
                         {{ ctrans("No text on the label yet.") }}
                     </div>
 
-                    <div v-if="items.length" class="max-h-56 space-y-2 overflow-y-auto pr-1">
-                        <div
+                    <ul v-if="items.length" class="max-h-56 space-y-2 overflow-y-auto pr-1" role="listbox" :aria-label="ctrans('Texts on the label')">
+                        <li
                             v-for="(item, index) in items"
                             :key="item.id"
+                            role="option"
+                            tabindex="0"
+                            :aria-selected="item.id === selectedItemId"
+                            :aria-label="ctrans('Text :number, :field: :text, :size pt, rotated :angle degrees', {
+                                number: String(index + 1),
+                                field: sourceLabels[item.source],
+                                text: item.text,
+                                size: String(item.fontSize),
+                                angle: String(item.rotation),
+                            })"
+                            :data-item-source="item.source"
                             class="flex items-center gap-2 rounded border px-2 py-1.5 cursor-pointer"
                             :class="item.id === selectedItemId ? 'border-indigo-500 bg-indigo-50' : 'border-gray-200 hover:bg-gray-50'"
-                            @click="selectedItemId = item.id">
-                            <span class="w-4 shrink-0 text-xs tabular-nums text-gray-400">{{ index + 1 }}</span>
+                            @click="selectedItemId = item.id"
+                            @keydown.enter.self.prevent="selectedItemId = item.id"
+                            @keydown.space.self.prevent="selectedItemId = item.id">
+                            <span class="w-4 shrink-0 text-xs tabular-nums text-gray-400" aria-hidden="true">{{ index + 1 }}</span>
                             <span class="min-w-0 flex-1 truncate text-sm">
                                 <span class="rounded-sm px-0.5" :style="{ color: item.color, backgroundColor: item.backgroundColor ?? 'transparent' }">{{ item.text || sourceLabels[item.source] }}</span>
                             </span>
-                            <span class="text-xs text-gray-400">{{ item.fontSize }}pt</span>
-                            <span v-if="item.rotation" class="text-xs text-gray-400">{{ item.rotation }}°</span>
-                            <button class="text-gray-400 hover:text-indigo-600" @click.stop="duplicateItem(item)">
+                            <span class="text-xs text-gray-400" aria-hidden="true">{{ item.fontSize }}pt</span>
+                            <span v-if="item.rotation" class="text-xs text-gray-400" aria-hidden="true">{{ item.rotation }}°</span>
+                            <button
+                                type="button"
+                                class="text-gray-400 hover:text-indigo-600"
+                                :aria-label="ctrans('Duplicate text :number', { number: String(index + 1) })"
+                                :title="ctrans('Duplicate')"
+                                @click.stop="duplicateItem(item)"
+                                @keydown.stop>
                                 <FontAwesomeIcon icon="fal fa-copy" fixed-width aria-hidden="true" />
                             </button>
-                            <button class="text-gray-400 hover:text-red-600" @click.stop="removeItem(item)">
+                            <button
+                                type="button"
+                                class="text-gray-400 hover:text-red-600"
+                                :aria-label="ctrans('Remove text :number', { number: String(index + 1) })"
+                                :title="ctrans('Remove')"
+                                @click.stop="removeItem(item)"
+                                @keydown.stop>
                                 <FontAwesomeIcon icon="fal fa-trash-alt" fixed-width aria-hidden="true" />
                             </button>
-                        </div>
-                    </div>
+                        </li>
+                    </ul>
                 </div>
 
-                <div v-if="selectedItem" class="rounded border border-gray-200 p-3 space-y-2">
-                    <div class="text-xs text-gray-500 uppercase tracking-wide">{{ sourceLabels[selectedItem.source] }}</div>
+                <div
+                    v-if="selectedItem"
+                    class="rounded border border-gray-200 p-3 space-y-2"
+                    role="group"
+                    aria-labelledby="artefact-label-selected-text-title">
+                    <div id="artefact-label-selected-text-title" class="text-xs text-gray-500 uppercase tracking-wide">{{ sourceLabels[selectedItem.source] }}</div>
 
-                    <input v-model="selectedItem.text" type="text"
+                    <input v-model="selectedItem.text" type="text" name="text"
+                        :aria-label="ctrans(':field text content', { field: sourceLabels[selectedItem.source] })"
                         class="w-full rounded border border-gray-300 px-2 py-1 text-sm" />
 
                     <div class="flex items-center gap-2">
                         <label class="flex items-center gap-1 text-xs text-gray-500">
                             {{ ctrans("Size") }}
-                            <input v-model.number="selectedItem.fontSize" type="number" min="3" max="72" step="0.5"
+                            <input v-model.number="selectedItem.fontSize" type="number" name="font_size" min="3" max="72" step="0.5"
+                                :aria-label="ctrans('Font size in points')"
                                 class="w-16 rounded border border-gray-300 px-1.5 py-1 text-sm" />
                         </label>
                         <label class="flex items-center gap-1 text-xs text-gray-500" :title="ctrans('Text color')">
                             {{ ctrans("Text") }}
-                            <input v-model="selectedItem.color" type="color" class="h-7 w-8 rounded border border-gray-300" />
+                            <input v-model="selectedItem.color" type="color" name="color" :aria-label="ctrans('Text color')" class="h-7 w-8 rounded border border-gray-300" />
                         </label>
                         <button
                             type="button"
                             class="rounded border border-gray-300 px-1.5 py-1 text-xs text-gray-600 hover:bg-gray-50 disabled:cursor-wait disabled:opacity-60"
                             :title="ctrans('Pick text color from the screen')"
+                            :aria-label="ctrans('Pick text color from the screen')"
+                            :aria-pressed="pickingColorTarget === 'color'"
                             :disabled="!!pickingColorTarget"
                             @click="pickColorFromScreen(selectedItem, 'color')">
                             <FontAwesomeIcon icon="fal fa-eye-dropper" fixed-width aria-hidden="true" />
                         </button>
                         <label class="flex items-center gap-1 text-xs text-gray-500">
-                            <input v-model="selectedItem.bold" type="checkbox" class="rounded border-gray-300" />
+                            <input v-model="selectedItem.bold" type="checkbox" name="bold" class="rounded border-gray-300" />
                             {{ ctrans("Bold") }}
                         </label>
                     </div>
@@ -1257,7 +1346,9 @@ const describeFailure = async (error: any): Promise<string> => {
                         <label class="flex items-center gap-1 text-xs text-gray-500">
                             <input
                                 type="checkbox"
+                                name="has_background_color"
                                 class="rounded border-gray-300"
+                                :aria-label="ctrans('Use a background color behind the text')"
                                 :checked="!!selectedItem.backgroundColor"
                                 @change="selectedItem.backgroundColor = ($event.target as HTMLInputElement).checked ? '#ffffff' : null" />
                             {{ ctrans("Background") }}
@@ -1266,13 +1357,17 @@ const describeFailure = async (error: any): Promise<string> => {
                             v-if="selectedItem.backgroundColor"
                             v-model="selectedItem.backgroundColor"
                             type="color"
+                            name="background_color"
                             class="h-7 w-8 rounded border border-gray-300"
+                            :aria-label="ctrans('Background color')"
                             :title="ctrans('Background color')" />
                         <span v-else class="text-xs text-gray-400">{{ ctrans("Transparent") }}</span>
                         <button
                             type="button"
                             class="rounded border border-gray-300 px-1.5 py-1 text-xs text-gray-600 hover:bg-gray-50 disabled:cursor-wait disabled:opacity-60"
                             :title="ctrans('Pick background color from the screen')"
+                            :aria-label="ctrans('Pick background color from the screen')"
+                            :aria-pressed="pickingColorTarget === 'backgroundColor'"
                             :disabled="!!pickingColorTarget"
                             @click="pickColorFromScreen(selectedItem, 'backgroundColor')">
                             <FontAwesomeIcon icon="fal fa-eye-dropper" fixed-width aria-hidden="true" />
@@ -1280,11 +1375,15 @@ const describeFailure = async (error: any): Promise<string> => {
                     </div>
 
                     <div class="flex items-center gap-2">
-                        <span class="text-xs text-gray-400">{{ ctrans("Rotation") }}</span>
-                        <div class="flex gap-1">
+                        <span id="artefact-label-text-rotation-title" class="text-xs text-gray-400">{{ ctrans("Rotation") }}</span>
+                        <div class="flex gap-1" role="radiogroup" aria-labelledby="artefact-label-text-rotation-title">
                             <button
                                 v-for="angle in ROTATIONS"
                                 :key="angle"
+                                type="button"
+                                role="radio"
+                                :aria-checked="selectedItem.rotation === angle"
+                                :aria-label="ctrans('Rotate text :angle degrees', { angle: String(angle) })"
                                 class="rounded border px-1.5 py-0.5 text-xs"
                                 :class="selectedItem.rotation === angle ? 'border-indigo-500 bg-indigo-50 text-indigo-700' : 'border-gray-300 text-gray-600 hover:bg-gray-50'"
                                 @click="selectedItem.rotation = angle">
@@ -1294,25 +1393,28 @@ const describeFailure = async (error: any): Promise<string> => {
                     </div>
 
                     <div class="flex items-center gap-2">
-                        <span class="text-xs text-gray-400">{{ ctrans("Snap to") }}</span>
-                        <div class="grid grid-cols-3 gap-0.5">
+                        <span id="artefact-label-snap-title" class="text-xs text-gray-400">{{ ctrans("Snap to") }}</span>
+                        <div class="grid grid-cols-3 gap-0.5" role="group" aria-labelledby="artefact-label-snap-title">
                             <button
                                 v-for="anchor in [
-                                    { h: 0, v: 0 }, { h: 0.5, v: 0 }, { h: 1, v: 0 },
-                                    { h: 0, v: 0.5 }, { h: 0.5, v: 0.5 }, { h: 1, v: 0.5 },
-                                    { h: 0, v: 1 }, { h: 0.5, v: 1 }, { h: 1, v: 1 },
+                                    { h: 0, v: 0, name: 'top left' }, { h: 0.5, v: 0, name: 'top center' }, { h: 1, v: 0, name: 'top right' },
+                                    { h: 0, v: 0.5, name: 'middle left' }, { h: 0.5, v: 0.5, name: 'center' }, { h: 1, v: 0.5, name: 'middle right' },
+                                    { h: 0, v: 1, name: 'bottom left' }, { h: 0.5, v: 1, name: 'bottom center' }, { h: 1, v: 1, name: 'bottom right' },
                                 ]"
                                 :key="`${anchor.h}-${anchor.v}`"
+                                type="button"
+                                :aria-label="ctrans('Snap text to :position', { position: ctrans(anchor.name) })"
+                                :title="ctrans(anchor.name)"
                                 class="h-5 w-5 rounded-sm border border-gray-300 hover:bg-indigo-100"
                                 @click="anchorTo(selectedItem, anchor.h, anchor.v)" />
                         </div>
                     </div>
                 </div>
-            </div>
+            </aside>
 
-            <div class="flex-1 min-w-0">
+            <section class="flex-1 min-w-0" :aria-label="ctrans('Label sheet preview')">
                 <div class="mb-2 flex flex-wrap items-center justify-between gap-2">
-                    <p class="text-xs text-gray-500">
+                    <p id="artefact-label-preview-hint" class="text-xs text-gray-500">
                         <template v-if="isSheetArtwork">
                             {{ ctrans("Drag each text onto the artwork, duplicate it to cover every label the image already has.") }}
                         </template>
@@ -1321,32 +1423,48 @@ const describeFailure = async (error: any): Promise<string> => {
                         </template>
                     </p>
 
-                    <div class="flex items-center gap-1">
+                    <div class="flex items-center gap-1" role="toolbar" :aria-label="ctrans('Preview zoom')">
                         <button
+                            type="button"
                             class="h-6 w-6 rounded border border-gray-300 text-gray-600 hover:bg-gray-50"
                             :title="ctrans('Zoom out')"
-                            @click="zoomBy(1 / ZOOM_STEP)">−</button>
-                        <span class="w-12 text-center text-xs tabular-nums text-gray-500">{{ Math.round(zoom * 100) }}%</span>
+                            :aria-label="ctrans('Zoom out')"
+                            :disabled="zoom <= ZOOM_LIMITS.min"
+                            @click="zoomBy(1 / ZOOM_STEP)"><span aria-hidden="true">−</span></button>
+                        <span
+                            class="w-12 text-center text-xs tabular-nums text-gray-500"
+                            role="status"
+                            aria-live="polite"
+                            :aria-label="ctrans('Zoom :percent percent', { percent: String(Math.round(zoom * 100)) })">{{ Math.round(zoom * 100) }}%</span>
                         <button
+                            type="button"
                             class="h-6 w-6 rounded border border-gray-300 text-gray-600 hover:bg-gray-50"
                             :title="ctrans('Zoom in')"
-                            @click="zoomBy(ZOOM_STEP)">+</button>
+                            :aria-label="ctrans('Zoom in')"
+                            :disabled="zoom >= ZOOM_LIMITS.max"
+                            @click="zoomBy(ZOOM_STEP)"><span aria-hidden="true">+</span></button>
                         <button
+                            type="button"
                             class="rounded border border-gray-300 px-2 py-0.5 text-xs text-gray-600 hover:bg-gray-50"
+                            :aria-label="ctrans('Zoom to show the whole page')"
                             @click="showWholePage">{{ ctrans("Whole page") }}</button>
                         <button
+                            type="button"
                             class="rounded border border-gray-300 px-2 py-0.5 text-xs text-gray-600 hover:bg-gray-50"
+                            :aria-label="ctrans('Zoom to the edited label')"
                             @click="showEditedLabel">{{ ctrans("Edited label") }}</button>
                         <button
+                            type="button"
                             class="rounded border px-2 py-0.5 text-xs"
                             :class="isHighlightingTexts ? 'border-amber-500 bg-amber-100 text-amber-700' : 'border-gray-300 text-gray-600 hover:bg-gray-50'"
                             :title="ctrans('Fades the artwork and puts the texts on a contrasting patch, only here in the preview.')"
+                            :aria-pressed="isHighlightingTexts"
                             @click="isHighlightingTexts = !isHighlightingTexts">
                             {{ ctrans("Highlight texts") }}
                         </button>
                     </div>
 
-                    
+
 
                     <div class="flex gap-2">
                         <Button
@@ -1354,6 +1472,8 @@ const describeFailure = async (error: any): Promise<string> => {
                             full
                             icon="fas fa-download"
                             :label="ctrans('Download PDF')"
+                            :aria-label="ctrans('Generate and download the label sheet as PDF')"
+                            :aria-busy="isGenerating"
                             :loading="isGenerating"
                             :disabled="!isGridValid"
                             @click="generatePdf"
@@ -1364,9 +1484,20 @@ const describeFailure = async (error: any): Promise<string> => {
                 <div
                     ref="previewViewport"
                     class="max-h-[70vh] overflow-auto rounded border border-gray-200 bg-gray-100 p-4"
+                    role="region"
+                    tabindex="0"
+                    :aria-label="ctrans('Label sheet preview canvas')"
+                    aria-describedby="artefact-label-preview-hint"
                     @wheel="onPreviewWheel">
                     <div
                         class="relative mx-auto bg-white shadow-sm"
+                        role="group"
+                        :aria-label="ctrans(':orientation A4 sheet, :count labels of :width × :height mm', {
+                            orientation: orientation === 'portrait' ? ctrans('Vertical') : ctrans('Horizontal'),
+                            count: String(cells.length),
+                            width: labelWidth.toFixed(1),
+                            height: labelHeight.toFixed(1),
+                        })"
                         :style="{ width: `${toPx(pageWidth)}px`, height: `${toPx(pageHeight)}px` }">
                         <div
                             v-for="cell in cells"
@@ -1374,6 +1505,8 @@ const describeFailure = async (error: any): Promise<string> => {
                             :ref="element => { if (cell.index === 0) editorCell = element as HTMLElement }"
                             class="absolute overflow-hidden"
                             :class="cell.index === 0 ? 'ring-1 ring-indigo-500' : cutGuides ? 'border border-dashed border-gray-300' : ''"
+                            :aria-hidden="cell.index === 0 ? undefined : 'true'"
+                            :data-label-cell="cell.index"
                             :style="{
                                 left: `${toPx(cell.left)}px`,
                                 top: `${toPx(cell.top)}px`,
@@ -1386,7 +1519,8 @@ const describeFailure = async (error: any): Promise<string> => {
                                 class="absolute max-w-none"
                                 :style="backgroundStyle"
                                 draggable="false"
-                                alt="" />
+                                alt=""
+                                aria-hidden="true" />
 
                             <template v-if="cell.index === 0">
                                 <div
@@ -1396,6 +1530,10 @@ const describeFailure = async (error: any): Promise<string> => {
                                     class="absolute cursor-move whitespace-nowrap select-none outline outline-1 outline-dashed"
                                     :class="item.id === selectedItemId ? 'outline-indigo-500' : 'outline-indigo-300/60'"
                                     :style="itemStyle(item)"
+                                    :aria-label="ctrans('Draggable :field text: :text', { field: sourceLabels[item.source], text: item.text })"
+                                    aria-roledescription="draggable text"
+                                    :aria-current="item.id === selectedItemId ? 'true' : undefined"
+                                    :data-item-source="item.source"
                                     @pointerdown="startDrag(item, $event)"
                                     @pointermove="onDrag(item, $event)"
                                     @pointerup="stopDrag"
@@ -1404,6 +1542,11 @@ const describeFailure = async (error: any): Promise<string> => {
                                     <span
                                         v-if="item.id === selectedItemId"
                                         class="absolute -bottom-1 -right-1 h-2.5 w-2.5 cursor-nwse-resize rounded-sm border border-white bg-indigo-500"
+                                        role="separator"
+                                        :aria-label="ctrans('Resize handle, drag to change the font size')"
+                                        :aria-valuenow="item.fontSize"
+                                        aria-valuemin="3"
+                                        aria-valuemax="72"
                                         @pointerdown="startResize(item, $event)"
                                         @pointermove="onResize(item, $event)"
                                         @pointerup="stopResize"
@@ -1423,7 +1566,7 @@ const describeFailure = async (error: any): Promise<string> => {
                         </div>
                     </div>
                 </div>
-            </div>
+            </section>
         </div>
     </Modal>
 </template>
