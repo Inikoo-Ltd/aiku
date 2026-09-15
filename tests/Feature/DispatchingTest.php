@@ -2475,6 +2475,7 @@ test('UI show delivery note in ordering and customer scopes', function () {
 test('UI show picking session with active items', function () {
     [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($this);
     $deliveryNote->update(['state' => DeliveryNoteStateEnum::UNASSIGNED]);
+    $item->update(['replacement_reason' => 'faulty_product']);
     $pickingSession = StorePickingSession::make()->handle($this->warehouse, [
         'delivery_notes' => [$deliveryNote->id],
         'user_id'        => $this->user->id,
@@ -2485,6 +2486,10 @@ test('UI show picking session with active items', function () {
     get(route('grp.org.warehouses.show.dispatching.picking_sessions.show', [
         $this->organisation->slug, $this->warehouse->slug, $pickingSession->slug,
     ]))->assertOk();
+
+    get(route('grp.org.warehouses.show.dispatching.picking_sessions.show', [
+        $this->organisation->slug, $this->warehouse->slug, $pickingSession->slug, 'tab' => 'itemized',
+    ]))->assertOk()->assertInertia(fn ($page) => $page->where('itemized.data.0.replacement_reason_label', 'Faulty product'));
 });
 
 test('UI show unassigned delivery note with items', function () {

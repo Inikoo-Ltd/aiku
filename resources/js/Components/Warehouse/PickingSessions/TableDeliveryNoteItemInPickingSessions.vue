@@ -423,7 +423,9 @@ onUnmounted(() => {
         </template>
 
         <template #cell(org_stock_name)="{ item: deliveryNoteItem }">
-            <div>{{ deliveryNoteItem.org_stock_name }} <span class="italic opacity-80">{{deliveryNoteItem.packed_in_message}}</span></div>
+            <div>{{ deliveryNoteItem.org_stock_name }} <span class="italic opacity-80">{{deliveryNoteItem.packed_in_message}}</span>
+                <span v-if="deliveryNoteItem.replacement_reason_label" class="ml-2 rounded bg-amber-100 px-1.5 py-0.5 text-xs text-amber-800">{{ deliveryNoteItem.replacement_reason_label }}</span>
+            </div>
             <OrgStockHandlingNotes :noteToPickers="deliveryNoteItem.note_to_pickers" :noteToPackers="deliveryNoteItem.note_to_packers" />
             <div class="mb-2">
                 <!-- Helper to make the row's height consistent -->
