@@ -1,6 +1,6 @@
 ---
 title: Working the help desk queue
-summary: For engineers and lead engineers - how to pick up tickets, keep them moving, ask the reporter a question, close them with a note, and ask QA to check your fix.
+summary: For engineers and lead engineers - how to pick up tickets, keep them moving, work on them together with collaborators, ask the reporter a question, close them with a note, and ask QA to check your fix.
 date: 2026-09-15
 tags: help desk, tickets, engineers
 category: help-desk
@@ -16,11 +16,11 @@ A ticket is a request for help from a colleague or a customer. Your job is to ta
 
 Open <b>Tickets</b> in the left menu. There are three ways to see tickets:
 
-- <b>Dashboard</b>: what needs attention now. New tickets nobody has taken yet, the tickets assigned to you, tickets waiting for a reply, and tickets waiting for QA.
+- <b>Dashboard</b>: what needs attention now. New tickets nobody has taken yet, the tickets assigned to you, the tickets you are collaborating on, tickets waiting for a reply, and tickets waiting for QA.
 - <b>Board</b>: every ticket as a card, in columns from left to right: <b>Todo</b>, <b>Assigned</b>, <b>In progress</b>, <b>Waiting</b> and <b>Closed</b>. It is the easiest way to see what is happening at a glance.
 - <b>List</b>: every ticket as a row in a table, newest first. Use it when you want to search, filter or change several tickets quickly.
 
-<b>Tip:</b> on the List, tick <b>Mine</b> to see only your own tickets. aiku remembers this, so the List opens the same way next time.
+<b>Tip:</b> on the List, use <b>Mine</b> to see only your own tickets: the ones you reported, the ones assigned to you, or the ones you are collaborating on. aiku remembers this, so the List opens the same way next time.
 
 ## Looking at a ticket quickly
 
@@ -30,7 +30,7 @@ In that window you can:
 
 - read the description and look at the attached files,
 - read the comments and write a reply,
-- change the status, the person working on it, the kind, the module and the tags on the right.
+- change the status, the person working on it, the collaborators, the kind, the module and the tags on the right, if the ticket is yours.
 
 Changes are saved as soon as you make them. Close the window with the <b>×</b> in the corner or by clicking outside it.
 
@@ -70,9 +70,36 @@ You can change:
 - <b>Kind</b>: bug or feature request.
 - <b>Module</b>: which part of aiku it is about.
 
-Rows for tickets assigned to other people cannot be changed. Lead engineers can change every row.
+Rows for tickets assigned to other people, and tickets nobody has taken yet, cannot be changed. Lead engineers can change every row.
 
 <b>Tip:</b> while a change is saving you will see a small spinning icon. Wait for it to finish before changing the same ticket again.
+
+## Working on a ticket together
+
+Some tickets need more than one person. The person the ticket is assigned to is the <b>lead</b> on it, and can add colleagues as <b>collaborators</b>.
+
+1. Open the ticket.
+2. Under <b>Collaborators</b>, press the <b>+</b> button.
+3. Tick the engineers or QA colleagues you want to add. You can tick several people in a row, aiku saves them together a moment after your last click.
+
+Each collaborator is told they were added, and the change is shown in the ticket's <b>History</b>. To remove someone, press <b>+</b> again and untick them.
+
+What collaborators can do:
+
+- see the ticket, even when it is confidential,
+- read and write comments,
+- add and remove tags,
+- ask QA to check, or withdraw that request.
+
+What stays with the lead:
+
+- changing the status, for example starting, pausing or closing the ticket, and moving it on the Board,
+- changing the priority, the kind and the module,
+- passing the ticket on and choosing the collaborators.
+
+If you pass the ticket to one of its collaborators, they become the lead and are taken off the collaborator list.
+
+<b>Tip:</b> tickets you collaborate on are shown under <b>Collaborating on</b> on the Dashboard, and as small pictures next to the assignee on the Board.
 
 ## Asking the reporter a question
 
@@ -105,6 +132,8 @@ The ticket moves to <b>Waiting for deployment</b> and your note is kept aside. A
 
 Open the ticket, click the name of the person it is assigned to, and pick your colleague. You can only pass on tickets assigned to you. Only lead engineers can take a ticket off someone without giving it to someone else.
 
+If you only need a hand and want to stay in charge, add your colleague as a collaborator instead.
+
 aiku does not add a comment when a ticket changes hands. You can always see who had it and when in the ticket's <b>History</b>.
 
 ## Kind and module
@@ -122,13 +151,14 @@ Comments and <b>History</b> each have a button to show the <b>newest first</b> o
 You can add files to a comment by pasting, dropping or pressing <b>Attach</b>:
 
 - screenshots and pictures, PDF, Word, Excel and CSV files, up to 10 MB each,
-- short videos (MP4, WebM or MOV), up to 50 MB each.
+- short videos (MP4, WebM or MOV), up to 50 MB each,
+- ZIP files, up to 10 MB each, for example a folder of log files.
 
-All files on a ticket are shown together under <b>Attachments</b>. Click one to see it without downloading, and use the arrows to go to the next file. Use the menu next to the title to show only one type, for example only PDFs.
+All files on a ticket are shown together under <b>Attachments</b>. Click one to see it without downloading, and use the arrows to go to the next file. ZIP files cannot be previewed, so clicking one downloads it straight away. Use the menu next to the title to show only one type, for example only PDFs.
 
 ## The ticket counter in the right-hand bar
 
-The green ticket counter on the right of the screen shows how many open tickets are assigned to you. It updates on its own when a ticket is given to you or taken off you, so you do not need to reload the page.
+The green ticket counter on the right of the screen shows how many open tickets you are working on: the ones assigned to you plus the ones you are collaborating on. Click it to see the two counted separately. It updates on its own when a ticket is given to you, when you are added as a collaborator, or when either is taken away, so you do not need to reload the page.
 
 ## Asking QA to check
 
@@ -140,7 +170,7 @@ Tickets that start with <b>AD</b> come from customers. If one needs work from th
 
 ## Confidential tickets
 
-A confidential ticket can only be seen by the person who raised it and by lead engineers. Being assigned to it is not enough to see it.
+A confidential ticket can only be seen by the person who raised it, the person it is assigned to, its collaborators and lead engineers.
 
 ## Using the AI assistant
 
@@ -155,7 +185,9 @@ As a lead engineer you can also:
 - mark a ticket <b>Confidential</b>, from the menu at the top of the ticket,
 - delete a ticket,
 - hide a comment, or make a hidden comment visible again,
-- see <b>Tickets → Reports</b>: how many tickets were raised and closed, how long they took and how each engineer is doing.
+- change any ticket, including tickets nobody has taken yet,
+- add and remove collaborators on any ticket,
+- see <b>Tickets → Reports</b>: how many tickets were raised and closed, how long they took and how each engineer is doing. Use <b>Filter by</b> at the top right to see the numbers for one engineer only, or <b>All assignees</b> to see everyone again.
 
 <aside class="wayfinder"><strong>Where to click in aiku</strong>
 <ul>
@@ -166,11 +198,13 @@ As a lead engineer you can also:
 <li><b>Close a ticket:</b> open the ticket → <b>Done</b> or <b>Cancel</b> → write a note.</li>
 <li><b>Close when the next update is live:</b> open the ticket → <b>Done</b> → <b>Set as Done on Next Deployment</b>.</li>
 <li><b>Pass a ticket on:</b> open the ticket → click the assignee → pick a colleague.</li>
+<li><b>Add a collaborator:</b> open the ticket → <b>Collaborators</b> → <b>+</b> → tick your colleagues.</li>
+<li><b>See tickets I help on:</b> <b>Tickets</b> → <b>Dashboard</b> → <b>Collaborating on</b>.</li>
 <li><b>Ask QA:</b> open the ticket → <b>Ask QA to check</b>.</li>
-<li><b>Reports (lead engineers):</b> <b>Tickets</b> → <b>Reports</b>.</li>
+<li><b>Reports (lead engineers):</b> <b>Tickets</b> → <b>Reports</b> → <b>Filter by</b> to pick one engineer.</li>
 </ul>
 </aside>
 
 <aside class="permissions"><strong>Permissions you need</strong>
-The <b>Engineer</b> role lets you work on and close tickets, pass on your own tickets, change the kind and module of your tickets, change your own tickets from the List and ask QA to check. The <b>Lead engineer</b> role also lets you give out and take back any ticket, change any ticket from the List, mark tickets confidential, see reports, delete tickets and hide or show comments. Your role comes from your job position.
+The <b>Engineer</b> role lets you work on and close tickets assigned to you, pass them on, add collaborators to them, change their kind and module, change them from the List and ask QA to check. On tickets where you are a collaborator you can comment, change tags and ask QA to check. You cannot change tickets assigned to someone else, or tickets nobody has taken yet. The <b>Lead engineer</b> role also lets you give out and take back any ticket, change any ticket, add collaborators to any ticket, mark tickets confidential, see reports, delete tickets and hide or show comments. Your role comes from your job position.
 </aside>

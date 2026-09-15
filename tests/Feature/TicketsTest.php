@@ -1689,3 +1689,30 @@ test('the assignee adds collaborators who can see the ticket, tag it and ask QA,
     expect($ticket->fresh()->assignee_id)->toBe($helper->id)
         ->and($ticket->collaborators()->pluck('users.id')->all())->toBe([$qa->id]);
 });
+
+test('reports stay unfiltered by default and narrow to one assignee when picked', function () {
+    setPermissionsTeamId($this->group->id);
+    $engineer = User::factory()->create(['group_id' => $this->group->id]);
+    $engineer->assignRole('help-desk-clerk');
+    StoreTicket::make()->action($this->group, ['subject' => 'Theirs', 'assignee_id' => $engineer->id]);
+    StoreTicket::make()->action($this->group, ['subject' => 'Nobody on it']);
+
+    $everyone = ShowTicketsReports::make()->handle($this->group, 'all');
+    $theirs   = ShowTicketsReports::make()->handle($this->group, 'all', null, $engineer);
+
+    expect($everyone['assignee'])->toBeNull()
+        ->and($theirs['assignee'])->toBe($engineer->username)
+        ->and($theirs['created'])->toBe(Ticket::where('group_id', $this->group->id)->where('assignee_id', $engineer->id)->count())
+        ->and($everyone['created'])->toBeGreaterThan($theirs['created']);
+
+    get(route('grp.tickets.reports', ['created' => 'all']))->assertInertia(
+        fn (AssertableInertia $page) => $page->where('stats.assignee', null)
+            ->where('assigneeOptions', fn ($options) => collect($options)->pluck('value')->contains($engineer->username))
+    );
+    get(route('grp.tickets.reports', ['created' => 'all', 'assignee' => $engineer->username]))->assertInertia(
+        fn (AssertableInertia $page) => $page->where('stats.assignee', $engineer->username)->where('stats.created', $theirs['created'])
+    );
+    get(route('grp.tickets.reports', ['created' => 'all', 'assignee' => 'not-an-engineer']))->assertInertia(
+        fn (AssertableInertia $page) => $page->where('stats.assignee', null)
+    );
+});

@@ -8,6 +8,7 @@
 
 namespace App\Actions\Helpers\Ticket\UI;
 
+use App\Actions\Helpers\Ticket\GetTicketBadgeData;
 use App\Actions\OrgAction;
 use App\Enums\Helpers\Ticket\TicketStatusEnum;
 use App\Models\Helpers\Ticket;
@@ -25,9 +26,11 @@ class ShowTicketsReports extends OrgAction
         return $request->user() !== null;
     }
 
-    public function handle(Group $group, string $interval, ?User $viewer = null): array
+    public function handle(Group $group, string $interval, ?User $viewer = null, ?User $assignee = null): array
     {
-        $base = Ticket::where('tickets.group_id', $group->id)->when($viewer, fn ($query) => $query->visibleTo($viewer));
+        $base = Ticket::where('tickets.group_id', $group->id)
+            ->when($viewer, fn ($query) => $query->visibleTo($viewer))
+            ->when($assignee, fn ($query) => $query->where('tickets.assignee_id', $assignee->id));
 
         [$from, $to] = $this->range($interval, (clone $base)->min('created_at'));
         $days        = (int) $from->copy()->startOfDay()->diffInDays($to->copy()->startOfDay()) + 1;
@@ -91,6 +94,7 @@ class ShowTicketsReports extends OrgAction
 
         return [
             'interval'      => $interval,
+            'assignee'      => $assignee?->username,
             'days'          => $days,
             'bucket'        => $bucket,
             'from'          => $from->toDateString(),
@@ -195,7 +199,11 @@ class ShowTicketsReports extends OrgAction
     {
         $this->initialisationFromGroup(group(), $request);
 
-        return $this->handle($this->group, IndexTickets::make()->createdInterval(), $request->user());
+        $assignee = $request->filled('assignee')
+            ? GetTicketBadgeData::engineers($this->group->id)->firstWhere('username', $request->query('assignee'))
+            : null;
+
+        return $this->handle($this->group, IndexTickets::make()->createdInterval(), $request->user(), $assignee);
     }
 
     public function htmlResponse(array $stats): Response
@@ -214,6 +222,10 @@ class ShowTicketsReports extends OrgAction
                 ],
                 'stats'            => $stats,
                 'createdIntervals' => IndexTickets::make()->createdIntervalOptions(),
+                'assigneeOptions'  => GetTicketBadgeData::engineers($this->group->id)
+                    ->map(fn (User $engineer) => ['label' => $engineer->contact_name ?: $engineer->username, 'value' => $engineer->username])
+                    ->sortBy('label')
+                    ->values(),
             ]
         );
     }

@@ -5,7 +5,7 @@
   -->
 
 <script setup lang="ts">
-import { Head, Link } from "@inertiajs/vue3"
+import { Head, Link, router } from "@inertiajs/vue3"
 import { computed, ref } from "vue"
 import { trans } from "laravel-vue-i18n"
 import { capitalize } from "@/Composables/capitalize"
@@ -26,8 +26,10 @@ const props = defineProps<{
     pageHead: any
     title: string
     createdIntervals: Record<string, string>
+    assigneeOptions: { label: string; value: string }[]
     stats: {
         interval: string
+        assignee: string | null
         days: number
         bucket: "day" | "week" | "month"
         from: string
@@ -51,6 +53,8 @@ const props = defineProps<{
 type Metrics = { created: number; open: number; assigned: number; in_progress: number; resolved: number; cancelled: number; done: number; median_hours: number | null; longest_wait_days: number | null; rating: number | null; ratings: number }
 
 const peopleTab = ref<"assignees" | "reporters">("assignees")
+
+const filterByAssignee = (username: string) => router.reload({ data: { assignee: username || undefined }, preserveScroll: true })
 
 useLiveTickets(["stats"])
 
@@ -219,7 +223,21 @@ const dashboardBoxes = computed(() => (props.stats.interval === "all" ? (["peopl
         </div>
 
         <div class="space-y-4 rounded-xl border border-gray-200 bg-gray-50 p-3">
-        <TicketsCreatedInterval :options="createdIntervals" :selected="stats.interval" />
+        <div class="flex flex-wrap items-center gap-3">
+            <TicketsCreatedInterval :options="createdIntervals" :selected="stats.interval" class="min-w-0 flex-1" />
+            <label class="ml-auto flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-gray-400">
+                {{ trans("Filter by") }}
+                <select
+                    :value="stats.assignee ?? ''"
+                    class="cursor-pointer rounded-md border-gray-300 py-1.5 pl-2 pr-8 text-sm normal-case tracking-normal text-gray-700 transition duration-200 focus:border-indigo-400 focus:ring-indigo-400"
+                    :class="stats.assignee && '!border-indigo-400 !bg-indigo-50 !text-indigo-700'"
+                    :aria-label="trans('Filter by assignee')"
+                    @change="filterByAssignee(($event.target as HTMLSelectElement).value)">
+                    <option value="">{{ trans("All assignees") }}</option>
+                    <option v-for="option in assigneeOptions" :key="option.value" :value="option.value">{{ option.label }}</option>
+                </select>
+            </label>
+        </div>
 
         <div class="flex flex-wrap gap-3">
             <ProcurementOverviewPill :card="{ label: trans('Created'), description: '', icon: 'fal fa-ticket-alt', value: stats.created, tone: 'violet', route: listRoute({ filter: { created_since: stats.from } }), metrics: [] }" />
