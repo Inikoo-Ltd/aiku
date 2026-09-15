@@ -142,6 +142,7 @@ class ShowTicketsBoard extends OrgAction
                     ] : [],
                 ],
                 'can_manage'    => Ticket::canBeManagedBy(request()->user()),
+                'can_assign'    => Ticket::canBeAssignedBy(request()->user()),
                 'columns'       => $board['columns'],
                 'periodOptions' => $board['periodOptions'],
                 'createdIntervals' => IndexTickets::make()->createdIntervalOptions(),

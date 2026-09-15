@@ -1610,3 +1610,14 @@ test('the quick look controls include the comments the viewer can see', function
     actingAs($clerk);
     get(route('grp.json.ticket.controls', $ticket->id))->assertOk()->assertJsonCount(1, 'comments')->assertJsonPath('comments.0.body', 'public note');
 });
+
+test('the board tells lead engineers apart so only they can drag any ticket', function () {
+    get(route('grp.tickets.board'))->assertInertia(fn (AssertableInertia $page) => $page->where('can_manage', true)->where('can_assign', true));
+
+    setPermissionsTeamId($this->group->id);
+    $clerk = User::factory()->create(['group_id' => $this->group->id]);
+    $clerk->assignRole('help-desk-clerk');
+    actingAs($clerk);
+
+    get(route('grp.tickets.board'))->assertInertia(fn (AssertableInertia $page) => $page->where('can_manage', true)->where('can_assign', false));
+});

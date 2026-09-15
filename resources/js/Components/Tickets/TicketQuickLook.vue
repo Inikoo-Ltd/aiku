@@ -30,7 +30,7 @@ const ticket = defineModel<any | null>("ticket", { default: null })
 const controls = ref<any | null>(null)
 const overlay = ref<HTMLElement | null>(null)
 
-useModalFocusTrap(computed(() => ticket.value !== null), overlay)
+useModalFocusTrap(computed(() => Boolean(ticket.value)), overlay)
 let stopReloadingAfterSaves: (() => void) | null = null
 const isControlsUnavailable = ref(false)
 const displayTicket = computed(() => controls.value?.ticket ?? ticket.value)
@@ -72,7 +72,6 @@ const close = () => {
 </script>
 
 <template>
-    <Teleport to="#grp_app">
         <div
             v-if="ticket"
             ref="overlay"
@@ -165,5 +164,4 @@ const close = () => {
                 </div>
             </div>
         </div>
-    </Teleport>
 </template>
