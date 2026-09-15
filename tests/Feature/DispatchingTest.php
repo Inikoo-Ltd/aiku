@@ -1499,6 +1499,18 @@ test('delivery note finalise and dispatch', function () {
     expect($deliveryNote->state)->toBe(DeliveryNoteStateEnum::DISPATCHED);
 });
 
+test('dispatching an intra-EU delivery note queues the intrastat export time series', function () {
+    [$deliveryNote] = finalisedDeliveryNote($this);
+    $france = \App\Models\Helpers\Country::where('code', 'FR')->first();
+    $deliveryNote->update(['delivery_country_id' => $france->id]);
+
+    Queue::fake();
+    $deliveryNote = \App\Actions\Dispatching\DeliveryNote\UpdateState\DispatchDeliveryNote::make()->action($deliveryNote->refresh());
+
+    expect($deliveryNote->state)->toBe(DeliveryNoteStateEnum::DISPATCHED);
+    Queue::assertPushed(\App\Jobs\BoundedUniqueJobDecorator::class, fn ($job) => $job->getAction() instanceof \App\Actions\Accounting\Reports\IntrastatExportTimeSeries\ProcessIntrastatExportTimeSeriesRecords);
+});
+
 function finalisedDeliveryNote($ctx): array
 {
     [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($ctx);
