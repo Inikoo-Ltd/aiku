@@ -19,6 +19,8 @@ trait HasTicketImages
 {
     public const array TICKET_VIDEO_EXTENSIONS = ['mp4', 'webm', 'mov'];
 
+    public const array TICKET_CONTENT_EXTENSIONS = ['jpg', 'jpeg', 'png', 'bmp', 'gif', 'svg', 'webp', 'pdf', 'docx', 'xls', 'xlsx', 'csv', 'txt', 'zip', 'rar', '7z'];
+
     /**
      * @return array<int, string|Closure>
      */
@@ -27,17 +29,31 @@ trait HasTicketImages
         return [
             'file',
             'extensions:jpg,jpeg,png,bmp,gif,svg,webp,pdf,docx,xls,xlsx,csv,zip,rar,7z,mp4,webm,mov',
-            'mimes:jpg,jpeg,png,bmp,gif,svg,webp,pdf,docx,xls,xlsx,csv,txt,zip,rar,7z,mp4,webm,mov',
             'max:51200',
             function (string $attribute, mixed $value, Closure $fail): void {
                 if (!$value instanceof UploadedFile) {
                     return;
                 }
 
-                $isVideo = in_array(strtolower($value->getClientOriginalExtension()), self::TICKET_VIDEO_EXTENSIONS, true);
+                $extension = strtolower($value->getClientOriginalExtension());
+                $mime      = (string) $value->getMimeType();
 
-                if (!$isVideo && $value->getSize() > 10 * 1024 * 1024) {
+                if (in_array($extension, self::TICKET_VIDEO_EXTENSIONS, true)) {
+                    if (!str_starts_with($mime, 'video/') && !in_array($mime, ['application/mp4', 'application/octet-stream'], true)) {
+                        $fail(__(':attribute does not look like a video.'));
+                    }
+
+                    return;
+                }
+
+                if ($value->getSize() > 10 * 1024 * 1024) {
                     $fail(__(':attribute is too big. Videos can be up to 50 MB, other files up to 10 MB.'));
+
+                    return;
+                }
+
+                if (!in_array($value->guessExtension(), self::TICKET_CONTENT_EXTENSIONS, true)) {
+                    $fail(__(':attribute cannot be attached. You can attach pictures, PDF, Word, Excel, CSV, ZIP, RAR and 7z files, and MP4, WebM or MOV videos.'));
                 }
             },
         ];
