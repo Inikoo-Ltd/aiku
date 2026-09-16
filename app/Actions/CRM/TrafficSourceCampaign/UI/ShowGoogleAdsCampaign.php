@@ -139,6 +139,9 @@ class ShowGoogleAdsCampaign extends OrgAction
                 'daily'                 => $this->daily($trafficSourceCampaign),
                 'attribution'           => $this->attribution($trafficSourceCampaign),
                 'ad_groups'             => $data['ad_groups'] ?? [],
+                'asset_groups'          => $data['asset_groups'] ?? [],
+                'exclusions'            => $data['exclusions'] ?? [],
+                'structure_window'      => $data['structure_window'] ?? null,
                 'negative_keywords'     => $data['negative_keywords'] ?? [],
 
                 /* Deferred: this one goes out to Google rather than to Postgres, and the rest of the

@@ -21,7 +21,11 @@ import GoogleAdsSearchTerms from "@/Components/DataDisplay/Dashboard/Widget/Goog
 import GoogleAdsAddKeyword from "@/Components/DataDisplay/Dashboard/Widget/GoogleAdsAddKeyword.vue"
 import ConfirmDialog from "primevue/confirmdialog"
 import GoogleAdsMetric from "@/Components/DataDisplay/Dashboard/Widget/GoogleAdsMetric.vue"
+import GoogleAdsAdCreative from "@/Components/DataDisplay/Dashboard/Widget/GoogleAdsAdCreative.vue"
+import GoogleAdsTargeting from "@/Components/DataDisplay/Dashboard/Widget/GoogleAdsTargeting.vue"
+import GoogleAdsAssetGroups from "@/Components/DataDisplay/Dashboard/Widget/GoogleAdsAssetGroups.vue"
 import HelpTip from "@/Components/Utils/HelpTip.vue"
+import { criterionLabel, criterionTypeLabel, type Criterion } from "@/Composables/googleAdsCriteria"
 import { capitalize } from "@/Composables/capitalize"
 import { campaignTypeLabel } from "@/Composables/googleAdsCampaignType"
 import { impressionShareLabel } from "@/Composables/googleAdsFormat"
@@ -113,18 +117,46 @@ const props = defineProps<{
         id: string
         name: string | null
         status: string | null
+        type?: string | null
         ads: {
             id: string
             type: string | null
+            name?: string | null
             status: string | null
             final_urls: string[]
             headlines: string[]
+            long_headlines?: string[]
             descriptions: string[]
+            business_name?: string | null
+            call_to_action?: string | null
+            images?: { url: string | null; name: string | null; width: number | null; height: number | null }[]
+            logos?: { url: string | null; name: string | null }[]
+            videos?: { video_id: string | null; video_title: string | null; name: string | null }[]
+            carousel_cards?: { headline: string | null; description: string | null; image: { url: string | null } | null }[]
             strength: string | null
             approval_status: string | null
         }[]
-        keywords: { id?: string; text: string | null; match_type: string | null; status: string | null }[]
+        keywords: {
+            id?: string
+            text: string | null
+            match_type: string | null
+            status: string | null
+            quality_score?: number | null
+            metrics?: {
+                impressions: number
+                clicks: number
+                cost: number
+                avg_cpc: number | null
+                conversions: number
+                conversions_value: number
+            } | null
+        }[]
+        negative_keywords?: { id: string | null; text: string | null; match_type: string | null }[]
+        targeting?: Criterion[]
     }[]
+    asset_groups: any[]
+    exclusions: Criterion[]
+    structure_window: { from: string; to: string } | null
     negative_keywords: { id: string; text: string; match_type: string }[]
     search_terms?: { terms: any[]; error: string | null }
     audience?: {
@@ -161,6 +193,45 @@ const enumLabel = (value: string | null) => (value ? value.replace(/_/g, " ").to
 const percent = (value: number | null, decimals = 2) => (value === null ? "—" : value.toFixed(decimals) + "%")
 
 const moneyOrDash = (value: number | null) => (value === null ? "—" : money(value))
+
+const isSearch = computed(() => props.campaign.channel_type === "SEARCH")
+
+/* Keyword and asset group figures are read with the nightly fetch for its own window, not for the
+   period chosen at the top of the page, and the label says so beside them. */
+const structureWindowLabel = computed(() => {
+    if (!props.structure_window) return null
+
+    return (
+        trans("Figures for") +
+        " " +
+        useFormatTime(props.structure_window.from, { formatTime: "mdy" }) +
+        " " +
+        trans("to") +
+        " " +
+        useFormatTime(props.structure_window.to, { formatTime: "mdy" })
+    )
+})
+
+const hasKeywordMetrics = computed(() =>
+    props.ad_groups.some((group) => group.keywords.some((keyword) => keyword.metrics))
+)
+
+const hasTargeting = computed(() => props.ad_groups.some((group) => (group.targeting ?? []).length > 0))
+
+const groupsWithNegatives = computed(() => props.ad_groups.filter((group) => (group.negative_keywords ?? []).length > 0))
+
+const exclusionsByType = computed(() => {
+    const byType = new Map<string, Criterion[]>()
+
+    props.exclusions.forEach((exclusion) => {
+        const type = exclusion.type ?? "OTHER"
+
+        if (!byType.has(type)) byType.set(type, [])
+        byType.get(type)?.push(exclusion)
+    })
+
+    return Array.from(byType.entries())
+})
 
 /* Undefined rather than null when not comparing, which is how the metric tile tells "no comparison
    asked for" from "compared, and the period before had no figure". */
@@ -557,6 +628,7 @@ const notServingReasons = computed(() =>
                         <div class="text-xs font-medium text-gray-700">
                             {{ group.name ?? group.id }}
                             <span class="font-normal capitalize text-gray-500">{{ enumLabel(group.status) }}</span>
+                            <span v-if="group.type && !isSearch" class="font-normal capitalize text-gray-500">· {{ enumLabel(group.type) }}</span>
                         </div>
                         <GoogleAdsElementToggle
                             type="ad_group"
@@ -589,29 +661,12 @@ const notServingReasons = computed(() =>
                                 :label="trans('ad')"
                                 :update-route="element_route" />
                         </div>
-                        <div class="mt-1 flex flex-wrap gap-1">
-                            <span
-                                v-for="(headline, i) in ad.headlines"
-                                :key="i"
-                                class="rounded bg-gray-100 px-2 py-0.5 text-gray-700">
-                                {{ headline }}
-                            </span>
-                        </div>
-                        <p v-for="(description, i) in ad.descriptions" :key="i" class="mt-1 text-gray-600">
-                            {{ description }}
-                        </p>
-                        <a
-                            v-for="(url, i) in ad.final_urls"
-                            :key="i"
-                            :href="url"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            class="primaryLink mt-1 block truncate">
-                            {{ url }}
-                        </a>
+                        <p v-if="ad.name" class="mt-1 text-gray-500">{{ ad.name }}</p>
+
+                        <GoogleAdsAdCreative :ad="ad" />
 
                         <GoogleAdsDuplicateAd
-                            v-if="ad.status === 'ENABLED'"
+                            v-if="ad.status === 'ENABLED' && ad.type === 'RESPONSIVE_SEARCH_AD'"
                             class="mt-2"
                             :ad-group-id="String(group.id)"
                             :ad="ad"
@@ -619,14 +674,19 @@ const notServingReasons = computed(() =>
                     </div>
 
                     <GoogleAdsAddKeyword
+                        v-if="isSearch"
                         :ad-group-id="String(group.id)"
                         :ad-group-name="group.name"
                         :update-route="keyword_route" />
                 </div>
             </div>
 
+            <p v-else-if="asset_groups.length" class="mt-3 text-xs text-gray-500">
+                {{ trans("Performance Max campaigns have no ad groups or ads of their own. Google assembles the ads from the asset groups shown further down.") }}
+            </p>
+
             <p v-else class="mt-3 text-xs text-gray-500">
-                {{ trans("No ads read for this campaign. Performance Max and Shopping campaigns hold their creative in asset groups, which the Google Ads API does not return here.") }}
+                {{ trans("No ads read for this campaign yet. They appear after the nightly fetch has run.") }}
             </p>
         </section>
 
@@ -634,16 +694,25 @@ const notServingReasons = computed(() =>
             <h2 class="text-sm font-medium text-gray-800">
                 {{ trans("Keywords") }}
                 <span v-if="keywordCount" class="font-normal text-gray-500">· {{ keywordCount }}</span>
-                <HelpTip :text="trans('The searches this campaign bids on, by ad group, with match type and status. Pausing a keyword stops bids on it without deleting it. Only Search campaigns have keywords.')" />
+                <HelpTip :text="trans('The searches this campaign bids on, by ad group, with match type, status and Google\'s quality score from 1 to 10. The figures are for the window the nightly fetch read, named under the table, not for the period chosen at the top. Pausing a keyword stops bids on it without deleting it. Only Search campaigns have keywords.')" />
             </h2>
 
             <div v-if="keywordCount" class="mt-3 overflow-x-auto">
-                <table class="w-full text-xs">
+                <table class="w-full text-xs" :class="hasKeywordMetrics ? 'min-w-[48rem]' : ''">
                     <thead>
                         <tr class="border-b border-gray-100 text-gray-500">
                             <th scope="col" class="py-1.5 pr-2 text-left font-normal">{{ trans("Text") }}</th>
                             <th scope="col" class="px-2 py-1.5 text-left font-normal">{{ trans("Match") }}</th>
                             <th scope="col" class="px-2 py-1.5 text-left font-normal">{{ trans("Status") }}</th>
+                            <th scope="col" class="px-2 py-1.5 text-right font-normal">{{ trans("Quality") }}</th>
+                            <template v-if="hasKeywordMetrics">
+                                <th scope="col" class="px-2 py-1.5 text-right font-normal">{{ trans("Impr.") }}</th>
+                                <th scope="col" class="px-2 py-1.5 text-right font-normal">{{ trans("Clicks") }}</th>
+                                <th scope="col" class="px-2 py-1.5 text-right font-normal">{{ trans("CPC") }}</th>
+                                <th scope="col" class="px-2 py-1.5 text-right font-normal">{{ trans("Cost") }}</th>
+                                <th scope="col" class="px-2 py-1.5 text-right font-normal">{{ trans("Conv.") }}</th>
+                                <th scope="col" class="px-2 py-1.5 text-right font-normal">{{ trans("Conv. value") }}</th>
+                            </template>
                             <th scope="col" class="py-1.5 pl-2 text-right font-normal">
                                 <span class="sr-only">{{ trans("Actions") }}</span>
                             </th>
@@ -658,6 +727,17 @@ const notServingReasons = computed(() =>
                                 <td class="py-2 pr-2">{{ keyword.text }}</td>
                                 <td class="px-2 capitalize">{{ enumLabel(keyword.match_type) }}</td>
                                 <td class="px-2 capitalize">{{ enumLabel(keyword.status) }}</td>
+                                <td class="px-2 text-right tabular-nums" :class="keyword.quality_score === null || keyword.quality_score === undefined ? 'text-gray-400' : keyword.quality_score <= 4 ? 'text-[#d03b3b]' : 'text-gray-600'">
+                                    {{ keyword.quality_score ?? "—" }}
+                                </td>
+                                <template v-if="hasKeywordMetrics">
+                                    <td class="px-2 text-right tabular-nums">{{ keyword.metrics ? locale.number(keyword.metrics.impressions) : "—" }}</td>
+                                    <td class="px-2 text-right tabular-nums">{{ keyword.metrics ? locale.number(keyword.metrics.clicks) : "—" }}</td>
+                                    <td class="px-2 text-right tabular-nums">{{ keyword.metrics ? moneyOrDash(keyword.metrics.avg_cpc) : "—" }}</td>
+                                    <td class="px-2 text-right tabular-nums">{{ keyword.metrics ? money(keyword.metrics.cost) : "—" }}</td>
+                                    <td class="px-2 text-right tabular-nums" :class="keyword.metrics && keyword.metrics.conversions > 0 ? 'text-[#006300]' : ''">{{ keyword.metrics ? locale.number(keyword.metrics.conversions) : "—" }}</td>
+                                    <td class="px-2 text-right tabular-nums">{{ keyword.metrics ? money(keyword.metrics.conversions_value) : "—" }}</td>
+                                </template>
                                 <td class="pl-2 text-right">
                                     <GoogleAdsElementToggle
                                         v-if="keyword.id"
@@ -672,11 +752,75 @@ const notServingReasons = computed(() =>
                         </template>
                     </tbody>
                 </table>
+                <p v-if="hasKeywordMetrics && structureWindowLabel" class="mt-1 text-[11px] text-gray-400">{{ structureWindowLabel }}</p>
             </div>
 
-            <p v-else class="mt-3 text-xs text-gray-500">
-                {{ trans("No keywords. Only Search campaigns have them.") }}
+            <p v-else-if="isSearch" class="mt-3 text-xs text-gray-500">
+                {{ trans("No keywords read for this campaign yet.") }}
             </p>
+
+            <p v-else class="mt-3 text-xs text-gray-500">
+                {{ trans("No keywords. Only Search campaigns bid on keywords; this one chooses audiences and placements instead, shown under Targeting.") }}
+            </p>
+
+            <div v-if="groupsWithNegatives.length" class="mt-4 space-y-1 text-xs">
+                <p class="text-gray-500">{{ trans("Excluded within an ad group, on top of the campaign's own exclusions") }}</p>
+                <div v-for="group in groupsWithNegatives" :key="'neg' + group.id" class="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+                    <span class="text-gray-700">{{ group.name ?? group.id }}:</span>
+                    <span
+                        v-for="(keyword, i) in group.negative_keywords"
+                        :key="keyword.id ?? i"
+                        class="rounded bg-[#fdeaea] px-2 py-0.5 text-[#d03b3b] line-through"
+                        :title="enumLabel(keyword.match_type) ?? ''">
+                        {{ keyword.text }}
+                    </span>
+                </div>
+            </div>
+        </section>
+
+        <section v-if="hasTargeting" class="rounded-xl bg-white p-5 ring-1 ring-gray-200 lg:col-span-3">
+            <h2 class="text-sm font-medium text-gray-800">
+                {{ trans("Targeting") }}
+                <HelpTip :text="trans('Who each ad group is aimed at and where its ads may appear, as set in Google Ads: audiences, demographics, topics, placements and channels. Struck-through entries are excluded. Changing targeting is done in Google Ads.')" />
+            </h2>
+
+            <div class="mt-3">
+                <GoogleAdsTargeting :ad-groups="ad_groups.map((group) => ({ id: String(group.id), name: group.name, status: group.status, targeting: group.targeting ?? [] }))" />
+            </div>
+        </section>
+
+        <section v-if="asset_groups.length" class="rounded-xl bg-white p-5 ring-1 ring-gray-200 lg:col-span-3">
+            <h2 class="text-sm font-medium text-gray-800">
+                {{ trans("Asset groups") }}
+                <span class="font-normal text-gray-500">· {{ asset_groups.length }}</span>
+                <HelpTip :text="trans('The creative Google builds this campaign\'s ads from, one group per theme. Search themes and audience signals are hints that steer Google\'s targeting; they do not restrict it, which is why they are shown but cannot be edited here. Struck-through assets are not currently eligible to run. Figures are for the window the nightly fetch read.')" />
+            </h2>
+
+            <div class="mt-3">
+                <GoogleAdsAssetGroups :asset-groups="asset_groups" :currency="campaign.currency" :window-label="structureWindowLabel" />
+            </div>
+        </section>
+
+        <section v-if="exclusions.length" class="rounded-xl bg-white p-5 ring-1 ring-gray-200 lg:col-span-3">
+            <h2 class="text-sm font-medium text-gray-800">
+                {{ trans("Campaign exclusions") }}
+                <span class="font-normal text-gray-500">· {{ exclusions.length }}</span>
+                <HelpTip :text="trans('Places and audiences this whole campaign never shows on: blocked websites and apps, YouTube channels, topics, audience lists and content categories. Excluded search terms have their own panel below. Changing these is done in Google Ads.')" />
+            </h2>
+
+            <dl class="mt-3 space-y-1.5 text-xs">
+                <div v-for="[type, typeExclusions] in exclusionsByType" :key="type" class="flex flex-wrap gap-x-3 gap-y-1">
+                    <dt class="w-36 shrink-0 text-gray-500">{{ criterionTypeLabel(type) }}</dt>
+                    <dd class="flex flex-wrap gap-1">
+                        <span
+                            v-for="exclusion in typeExclusions"
+                            :key="exclusion.id ?? exclusion.label ?? ''"
+                            class="rounded bg-[#fdeaea] px-2 py-0.5 text-[#d03b3b] line-through">
+                            {{ criterionLabel(exclusion) }}
+                        </span>
+                    </dd>
+                </div>
+            </dl>
         </section>
 
         <section class="rounded-xl bg-white p-5 ring-1 ring-gray-200 lg:col-span-3">

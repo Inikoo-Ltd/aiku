@@ -55,19 +55,6 @@ class FetchGoogleAdsCampaigns
     private const string CAMPAIGN_QUERY = "SELECT campaign.id, campaign.name, campaign.status, campaign.primary_status, campaign.primary_status_reasons, campaign.advertising_channel_type, campaign.bidding_strategy_type, campaign.start_date_time, campaign.end_date_time, campaign_budget.id, campaign_budget.amount_micros, campaign_budget.explicitly_shared, customer.currency_code FROM campaign WHERE campaign.status != 'REMOVED'";
 
     /**
-     * `ad_strength` is Google's own verdict on how much an ad gives it to work with, the same Poor to
-     * Excellent rating its interface shows. It is read rather than recomputed: the rules behind it are
-     * Google's and change without notice, and a second opinion invented here would disagree with the
-     * one the marketing team already trusts.
-     *
-     * `policy_summary.approval_status` says whether the ad is allowed to run at all, which is the other
-     * thing an ad can be silently wrong about.
-     */
-    private const string ADS_QUERY = "SELECT campaign.id, ad_group.id, ad_group.name, ad_group.status, ad_group_ad.status, ad_group_ad.ad_strength, ad_group_ad.policy_summary.approval_status, ad_group_ad.ad.id, ad_group_ad.ad.type, ad_group_ad.ad.final_urls, ad_group_ad.ad.responsive_search_ad.headlines, ad_group_ad.ad.responsive_search_ad.descriptions FROM ad_group_ad WHERE campaign.status != 'REMOVED' AND ad_group_ad.status != 'REMOVED'";
-
-    private const string KEYWORDS_QUERY = "SELECT campaign.id, ad_group.id, ad_group_criterion.criterion_id, ad_group_criterion.keyword.text, ad_group_criterion.keyword.match_type, ad_group_criterion.status FROM keyword_view WHERE campaign.status != 'REMOVED'";
-
-    /**
      * Campaign level negatives only. A negative sitting on an ad group is a different resource that
      * excludes a different scope, and showing the two in one list would misstate what a campaign is
      * actually blocking.
@@ -75,7 +62,7 @@ class FetchGoogleAdsCampaigns
     private const string NEGATIVES_QUERY = "SELECT campaign.id, campaign_criterion.criterion_id, campaign_criterion.keyword.text, campaign_criterion.keyword.match_type FROM campaign_criterion WHERE campaign_criterion.negative = true AND campaign_criterion.type = 'KEYWORD' AND campaign.status != 'REMOVED'";
 
     /**
-     * @return array{campaigns: int, skipped: int, metric_days: int, conversion_rows: int, dry_run: bool}
+     * @return array{campaigns: int, skipped: int, metric_days: int, conversion_rows: int, asset_groups: int, dry_run: bool}
      * @throws GoogleAdsException
      */
     public function handle(Shop $shop, int $days = 30, bool $dryRun = false): array
@@ -100,29 +87,28 @@ class FetchGoogleAdsCampaigns
         [$from, $to] = $this->window($days);
 
         $campaignRows = $client->search(self::CAMPAIGN_QUERY);
-        $adGroups     = $this->groupAdGroups(
-            $this->searchOptional($client, self::ADS_QUERY, $shop, 'ads') ?? [],
-            $this->searchOptional($client, self::KEYWORDS_QUERY, $shop, 'keywords') ?? [],
-        );
-        $metrics   = $this->groupMetrics($this->searchOptional($client, $this->metricsQuery($from, $to), $shop, 'metrics') ?? []);
-        $negatives = $this->groupNegatives($this->searchOptional($client, self::NEGATIVES_QUERY, $shop, 'negative keywords') ?? []);
+        $structure    = ReadGoogleAdsCampaignStructure::run($client, $shop, $from, $to);
+        $metrics      = $this->groupMetrics($this->searchOptional($client, $this->metricsQuery($from, $to), $shop, 'metrics') ?? []);
+        $negatives    = $this->groupNegatives($this->searchOptional($client, self::NEGATIVES_QUERY, $shop, 'negative keywords') ?? []);
 
         $conversionRows = $this->searchOptional($client, $this->conversionsQuery($from, $to), $shop, 'conversion actions');
         $conversions    = $conversionRows === null ? null : $this->groupConversions($conversionRows);
 
-        $summary = ['campaigns' => 0, 'skipped' => 0, 'metric_days' => 0, 'conversion_rows' => 0, 'dry_run' => $dryRun];
+        $summary = ['campaigns' => 0, 'skipped' => 0, 'metric_days' => 0, 'conversion_rows' => 0, 'asset_groups' => 0, 'dry_run' => $dryRun];
 
         foreach ($campaignRows as $result) {
             $campaignId   = (string) data_get($result, 'campaign.id');
             $campaignDays = $metrics[$campaignId] ?? [];
 
-            $campaign = $this->storeCampaign(
-                $trafficSource,
-                $result,
-                array_values($adGroups[$campaignId] ?? []),
-                array_values($negatives[$campaignId] ?? []),
-                $dryRun
-            );
+            $campaignStructure = [
+                'ad_groups'         => $structure['ad_groups'][$campaignId] ?? [],
+                'asset_groups'      => $structure['asset_groups'][$campaignId] ?? [],
+                'exclusions'        => $structure['exclusions'][$campaignId] ?? [],
+                'negative_keywords' => array_values($negatives[$campaignId] ?? []),
+                'structure_window'  => $structure['window'],
+            ];
+
+            $campaign = $this->storeCampaign($trafficSource, $result, $campaignStructure, $dryRun);
 
             if (!$campaign) {
                 $summary['skipped']++;
@@ -132,6 +118,7 @@ class FetchGoogleAdsCampaigns
 
             $summary['campaigns']++;
             $summary['metric_days'] += count($campaignDays);
+            $summary['asset_groups'] += count($campaignStructure['asset_groups']);
 
             $campaignConversions = $conversions[$campaignId] ?? [];
             $summary['conversion_rows'] += count($campaignConversions);
@@ -211,61 +198,6 @@ class FetchGoogleAdsCampaigns
     }
 
     /**
-     * @param array<int, array> $adRows
-     * @param array<int, array> $keywordRows
-     * @return array<string, array<string, array>>
-     */
-    private function groupAdGroups(array $adRows, array $keywordRows): array
-    {
-        $adGroups = [];
-
-        foreach ($adRows as $row) {
-            $campaignId = (string) data_get($row, 'campaign.id');
-            $adGroupId  = (string) data_get($row, 'adGroup.id');
-
-            $adGroups[$campaignId][$adGroupId] ??= $this->emptyAdGroup($adGroupId, data_get($row, 'adGroup.name'), data_get($row, 'adGroup.status'));
-
-            $adGroups[$campaignId][$adGroupId]['ads'][] = [
-                'id'              => data_get($row, 'adGroupAd.ad.id'),
-                'type'            => data_get($row, 'adGroupAd.ad.type'),
-                'status'          => data_get($row, 'adGroupAd.status'),
-                'strength'        => data_get($row, 'adGroupAd.adStrength'),
-                'approval_status' => data_get($row, 'adGroupAd.policySummary.approvalStatus'),
-                'final_urls'   => data_get($row, 'adGroupAd.ad.finalUrls', []),
-                'headlines'    => collect(data_get($row, 'adGroupAd.ad.responsiveSearchAd.headlines', []))->pluck('text')->all(),
-                'descriptions' => collect(data_get($row, 'adGroupAd.ad.responsiveSearchAd.descriptions', []))->pluck('text')->all(),
-            ];
-        }
-
-        foreach ($keywordRows as $row) {
-            $campaignId = (string) data_get($row, 'campaign.id');
-            $adGroupId  = (string) data_get($row, 'adGroup.id');
-
-            $adGroups[$campaignId][$adGroupId] ??= $this->emptyAdGroup($adGroupId);
-
-            $adGroups[$campaignId][$adGroupId]['keywords'][] = [
-                'id'         => data_get($row, 'adGroupCriterion.criterionId'),
-                'text'       => data_get($row, 'adGroupCriterion.keyword.text'),
-                'match_type' => data_get($row, 'adGroupCriterion.keyword.matchType'),
-                'status'     => data_get($row, 'adGroupCriterion.status'),
-            ];
-        }
-
-        return $adGroups;
-    }
-
-    private function emptyAdGroup(string $id, ?string $name = null, ?string $status = null): array
-    {
-        return [
-            'id'       => $id,
-            'name'     => $name,
-            'status'   => $status,
-            'ads'      => [],
-            'keywords' => [],
-        ];
-    }
-
-    /**
      * @param array<int, array> $metricRows
      * @return array<string, array<string, array>> campaign id => date => figures
      */
@@ -340,7 +272,10 @@ class FetchGoogleAdsCampaigns
         return $negatives;
     }
 
-    private function storeCampaign(TrafficSource $trafficSource, array $result, array $adGroups, array $negatives, bool $dryRun): ?TrafficSourceCampaign
+    /**
+     * @param array{ad_groups: array<int, array>, asset_groups: array<int, array>, exclusions: array<int, array>, negative_keywords: array<int, array>, structure_window: array{from: string, to: string}} $structure
+     */
+    private function storeCampaign(TrafficSource $trafficSource, array $result, array $structure, bool $dryRun): ?TrafficSourceCampaign
     {
         $reference   = (string) data_get($result, 'campaign.id');
         $name        = (string) data_get($result, 'campaign.name');
@@ -379,10 +314,8 @@ class FetchGoogleAdsCampaigns
                     ? ((float) data_get($result, 'campaignBudget.amountMicros')) / 1_000_000
                     : null,
                 'currency'   => data_get($result, 'customer.currencyCode'),
-                'fetched_at'        => now()->toIso8601String(),
-                'ad_groups'         => $adGroups,
-                'negative_keywords' => $negatives,
-            ]),
+                'fetched_at' => now()->toIso8601String(),
+            ], $structure),
         ]);
 
         return $campaign->refresh();
