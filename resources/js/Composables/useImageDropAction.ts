@@ -21,12 +21,17 @@ function parseDraggedImage(raw: string | undefined | null): DraggedImage | null 
 
 /**
  * Browsers may expose an internally dragged image as a file as well, so the
- * dragged payload always takes precedence over the dropped files.
+ * dragged payload always takes precedence over the dropped files. Not every
+ * browser hands the custom payload back on drop, so the image being dragged
+ * inside the page is used as a fallback.
  */
 export function resolveImageDropAction(
-	dataTransfer: DataTransfer | null | undefined
+	dataTransfer: DataTransfer | null | undefined,
+	imageBeingDragged?: DraggedImage | null
 ): ImageDropAction {
 	const image = parseDraggedImage(dataTransfer?.getData("application/json"))
+		?? parseDraggedImage(dataTransfer?.getData("text/plain"))
+		?? (imageBeingDragged?.id ? imageBeingDragged : null)
 
 	if (image) {
 		return { type: "attach", image }
