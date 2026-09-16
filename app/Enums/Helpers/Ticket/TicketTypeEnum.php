@@ -41,7 +41,16 @@ enum TicketTypeEnum: string
         return match ($this) {
             self::HELP     => 'HELP',
             self::ENGINEER => 'INI',
-            self::CUSTOMER => 'AD',
+            self::CUSTOMER => 'CUS',
+        };
+    }
+
+    public function numberPadding(): int
+    {
+        return match ($this) {
+            self::HELP     => 0,
+            self::ENGINEER => 3,
+            self::CUSTOMER => 3,
         };
     }
 

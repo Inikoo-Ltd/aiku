@@ -104,7 +104,7 @@ test('help ticket gets a HELP reference and defaults', function () {
 test('customer ticket from retina gets an AD reference and the customer attached', function () {
     $ticket = StoreRetinaTicket::make()->action($this->webUser, ['subject' => 'API returns 500', 'priority' => 'high']);
 
-    expect($ticket->reference)->toStartWith('AD-')
+    expect($ticket->reference)->toStartWith('CUS-')
         ->and($ticket->type)->toBe(TicketTypeEnum::CUSTOMER)
         ->and($ticket->customer_id)->toBe($this->customer->id)
         ->and($ticket->shop_id)->toBe($this->shop->id)

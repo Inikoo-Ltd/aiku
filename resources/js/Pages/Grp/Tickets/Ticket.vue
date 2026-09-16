@@ -98,7 +98,6 @@ const update = (field: string, value: unknown) => {
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead">
         <template #afterTitle>
-            <Icon v-if="ticket.type_icon" :data="ticket.type_icon" class="text-gray-400" />
             <button type="button" v-tooltip="isLinkCopied ? trans('Copied') : trans('Copy link')" class="text-sm text-gray-400 hover:text-gray-600" @click="copyTicketLink">
                 <FontAwesomeIcon :icon="isLinkCopied ? ['fal', 'fa-check'] : ['fal', 'fa-link']" :class="{ 'text-green-500': isLinkCopied }" fixed-width aria-hidden="true" />
             </button>
