@@ -22,6 +22,7 @@ interface PackagingOption {
     price: number
     is_free: boolean
     is_downgrade?: boolean
+    is_fallback?: boolean
     family_code: string | null
     family_name?: string | null
     currency_code?: string | null
@@ -187,6 +188,9 @@ onBeforeUnmount(close)
                                         ? trans("No extra charge")
                                         : locale.currencyFormat(option.currency_code ?? "", option.price) }}
                                 </span>
+                            </div>
+                            <div v-if="option.is_fallback" class="text-xs text-gray-500">
+                                {{ trans("Fallback when the items do not fit") }}
                             </div>
                             <div v-if="option.is_downgrade" class="text-xs text-amber-600">
                                 {{ trans("Cheaper than the customer paid") }}
