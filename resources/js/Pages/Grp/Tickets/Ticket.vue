@@ -58,7 +58,7 @@ const props = defineProps<{
         priorities: { label: string; value: string }[]
         assignees: { label: string; value: number }[]
         qa_users: { label: string; value: number; avatar: any }[]
-        mentionable: { username: string; name: string | null }[]
+        mentionable: { username: string; name: string | null; suggested?: boolean; is_customer?: boolean }[]
         tags: string[]
         kinds: { label: string; value: string }[]
         modules: { label: string; value: string }[]

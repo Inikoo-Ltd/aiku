@@ -53,7 +53,7 @@ class TicketsTool extends Tool
 
             return Response::json([
                 'ticket'   => TicketResource::make($ticket)->resolve(),
-                'comments' => TicketCommentResource::collection($ticket->commentsVisibleTo($user)->with('author')->orderBy('id')->get())->resolve(),
+                'comments' => TicketCommentResource::collection($ticket->commentsVisibleTo($user)->with('author', 'ticket')->orderBy('id')->get())->resolve(),
             ]);
         }
 

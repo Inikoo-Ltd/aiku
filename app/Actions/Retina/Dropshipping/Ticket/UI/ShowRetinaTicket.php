@@ -8,6 +8,7 @@
 
 namespace App\Actions\Retina\Dropshipping\Ticket\UI;
 
+use App\Actions\Helpers\Ticket\MarkTicketNotificationsAsRead;
 use App\Actions\Helpers\Ticket\RateTicket;
 use App\Actions\RetinaAction;
 use App\Http\Resources\Helpers\TicketCommentResource;
@@ -36,6 +37,8 @@ class ShowRetinaTicket extends RetinaAction
 
     public function htmlResponse(Ticket $ticket): Response
     {
+        MarkTicketNotificationsAsRead::run($ticket, $this->webUser);
+
         return Inertia::render(
             'Dropshipping/RetinaTicket',
             [

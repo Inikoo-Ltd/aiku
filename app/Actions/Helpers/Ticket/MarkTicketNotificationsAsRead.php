@@ -9,6 +9,8 @@
 
 namespace App\Actions\Helpers\Ticket;
 
+use App\Events\BroadcastRetinaTicketBadgeUpdate;
+use App\Models\CRM\WebUser;
 use App\Models\Helpers\Ticket;
 use App\Models\SysAdmin\User;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -17,14 +19,20 @@ class MarkTicketNotificationsAsRead
 {
     use AsAction;
 
-    public function handle(Ticket $ticket, User $user): int
+    public function handle(Ticket $ticket, User|WebUser $viewer): int
     {
-        $markedCount = $user->unreadNotifications()
-            ->whereRaw("(data::jsonb)->>'route' = ?", [route('grp.tickets.show', $ticket->reference)])
+        $markedCount = $viewer->unreadNotifications()
+            ->where(fn ($notifications) => $notifications
+                ->whereRaw("(data::jsonb)->>'ticket_id' = ?", [(string) $ticket->id])
+                ->orWhereRaw("(data::jsonb)->>'route' = ?", [route('grp.tickets.show', $ticket->reference)]))
             ->update(['read_at' => now()]);
 
         if ($markedCount > 0) {
-            SendTicketBadgeUpdateToUsers::run([$user->id]);
+            if ($viewer instanceof WebUser) {
+                BroadcastRetinaTicketBadgeUpdate::dispatch($viewer->id, GetRetinaTicketBadgeData::run($viewer));
+            } else {
+                SendTicketBadgeUpdateToUsers::run([$viewer->id]);
+            }
         }
 
         return $markedCount;

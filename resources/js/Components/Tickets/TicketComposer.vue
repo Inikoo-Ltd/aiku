@@ -15,7 +15,7 @@ const props = defineProps<{
     images: File[]
     placeholder?: string
     rows?: number
-    mentionable?: { username: string; name: string | null }[]
+    mentionable?: { username: string; name: string | null; suggested?: boolean; is_customer?: boolean }[]
 }>()
 
 const emit = defineEmits<{
@@ -91,9 +91,9 @@ const mentionIndex = ref(0)
 const mentionSuggestions = computed(() => {
     if (mentionQuery.value === null || !props.mentionable?.length) return []
     const query = mentionQuery.value.toLowerCase()
-    return props.mentionable
-        .filter((user) => user.username.toLowerCase().startsWith(query) || (user.name ?? "").toLowerCase().split(" ").some((part) => part.startsWith(query)))
-        .slice(0, 8)
+    const matchesQuery = (user: { username: string; name: string | null }) => user.username.toLowerCase().startsWith(query) || (user.name ?? "").toLowerCase().split(" ").some((part) => part.startsWith(query))
+    const candidates = query === "" ? props.mentionable.filter((user) => user.suggested ?? true) : props.mentionable.filter(matchesQuery)
+    return [...candidates].sort((first, second) => Number(second.suggested ?? false) - Number(first.suggested ?? false)).slice(0, 8)
 })
 
 const detectMention = () => {
@@ -175,6 +175,7 @@ const onPick = (event: Event) => {
                 >
                     <span class="font-medium">@{{ user.username }}</span>
                     <span v-if="user.name" class="truncate text-gray-500">{{ user.name }}</span>
+                    <span v-if="user.is_customer" class="ml-auto shrink-0 rounded bg-blue-50 px-1.5 text-[10px] font-medium text-blue-700">{{ trans("Customer") }}</span>
                 </li>
             </ul>
         </div>
