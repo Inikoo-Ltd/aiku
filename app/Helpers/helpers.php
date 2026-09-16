@@ -1035,6 +1035,21 @@ if (!function_exists('soldPackUnits')) {
     }
 }
 
+if (!function_exists('packQuantityLabel')) {
+    /**
+     * Quantity as the customer should read it: "10 × 3" for ten packs of three, plain "10" for singles.
+     */
+    function packQuantityLabel(int|float|string|null $quantity, int|float|string|null $packUnits): string
+    {
+        $label = trimDecimalZeros($quantity);
+        if ($packUnits > 1) {
+            $label .= ' × '.trimDecimalZeros($packUnits);
+        }
+
+        return $label;
+    }
+}
+
 if (!function_exists('refundQuantityLabel')) {
     /**
      * Label for a refund line's quantity, or null when the quantity is an artifact.

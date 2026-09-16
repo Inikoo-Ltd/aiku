@@ -271,9 +271,6 @@
                     <td style="text-align:left" colspan="2">{{ $transaction->historicAsset?->name }}</td>
                 @else
                     <td style="text-align:left" colspan="2">
-                        @if($transaction->historicAsset?->units > 1)
-                            {{ trimDecimalZeros($transaction->historicAsset?->units) . 'x' }}
-                        @endif
                         {{ $transaction->historicAsset?->name }}
 
                         @if($transaction->historicAsset)
@@ -312,10 +309,10 @@
                             {{ $order->currency->symbol . ' ' . number_format((float) $transaction->net_amount / $transaction->quantity_ordered, 2) }}
                         @endif
                     </td>
-                    <td style="text-align:right">{{  trimDecimalZeros($transaction->quantity_ordered) }}</td>
+                    <td style="text-align:right">{{ packQuantityLabel($transaction->quantity_ordered, soldPackUnits($transaction->historicAsset?->units, $transaction->model?->units)) }}</td>
                 @else
                     <td style="text-align:right">{{ $discountFactor > 0 ? percentage($discountFactor, 1) : '-' }}</td>
-                    <td style="text-align:right">{{ trimDecimalZeros($transaction->quantity_ordered)  }}</td>
+                    <td style="text-align:right">{{ packQuantityLabel($transaction->quantity_ordered, soldPackUnits($transaction->historicAsset?->units, $transaction->model?->units)) }}</td>
                 @endif
 
                 <td style="text-align:right">{{ $order->currency->symbol }}{{ number_format($netAmount, 2) }}</td>

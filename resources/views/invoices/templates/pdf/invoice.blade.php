@@ -379,10 +379,6 @@
 
                     <td style="text-align:left" colspan="2">
                         @if($transaction->historicAsset)
-                            @php($packUnits = soldPackUnits($transaction->historicAsset->units, $transaction->model?->units))
-                            @if(!$pro_mode && $packUnits > 1)
-                                {{ trimDecimalZeros($packUnits) }}x
-                            @endif
                             {{ $transaction->historicAsset->name }}
                             @if(isset($transaction->pallet))
                                 <br>
@@ -449,7 +445,7 @@
                             @endif
                         </td>
                         @if(!$isTaxOnlyRefund)
-                            <td style="text-align:right">{{ $transaction->is_refund ? ($refundQtyDisplay ?? '') : trimDecimalZeros($transaction->quantity) }}</td>
+                            <td style="text-align:right">{{ $transaction->is_refund ? ($refundQtyDisplay ?? '') : packQuantityLabel($transaction->quantity, soldPackUnits($transaction->historicAsset?->units, $transaction->model?->units)) }}</td>
                         @endif
                     @else
                         <td style="text-align:left">
@@ -468,7 +464,7 @@
                             @endif
                         </td>
                         @if(!$isTaxOnlyRefund)
-                            <td style="text-align:right">{{ $transaction->is_refund ? ($refundQtyDisplay ?? '') : trimDecimalZeros($transaction->quantity) }}</td>
+                            <td style="text-align:right">{{ $transaction->is_refund ? ($refundQtyDisplay ?? '') : packQuantityLabel($transaction->quantity, soldPackUnits($transaction->historicAsset?->units, $transaction->model?->units)) }}</td>
                         @endif
                     @endif
                     @if($showDiscountColumn)
