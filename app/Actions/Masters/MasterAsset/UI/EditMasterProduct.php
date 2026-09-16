@@ -327,12 +327,12 @@ class EditMasterProduct extends OrgAction
                 'icon'   => 'fa-light fa-biohazard',
                 'fields' => [
                     'gpsr_warnings' => [
-                        'type'  => 'input',
+                        'type'  => 'textarea',
                         'label' => __('Warnings'),
                         'value' => $masterProduct->gpsr_warnings,
                     ],
                     'gpsr_manual'   => [
-                        'type'  => 'input',
+                        'type'  => 'textarea',
                         'label' => __('How To Use'),
                         'value' => $masterProduct->gpsr_manual,
                     ],

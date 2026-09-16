@@ -26,6 +26,7 @@ const props = defineProps<{
     disable?: boolean
     show_follow_master?: boolean
     follow_master?: boolean
+    textarea?: boolean
     language_from?: string
     language_to?: string
     languages: Record<string, Language>
@@ -56,6 +57,13 @@ const isDisabled = computed(() =>
   // props.fieldData.disable || !props.fieldData.main || loading.value
   props.fieldData.disable || loading.value
 )
+
+const isTextarea = computed(() => !!props.fieldData.textarea)
+
+const controlClass = computed(() => [
+  get(props.form, ['errors', props.fieldName]) ? 'border-red-500' : '',
+  isTextarea.value ? 'min-h-20 py-1.5 resize-y' : 'h-8',
+])
 
 
 const langLabel = computed(() => languagesTo.value.code)
@@ -164,19 +172,32 @@ const changeValue = (async () => {
       </div>
 
       <!-- TRANSLATION INPUT -->
-      <div class="rounded-md border p-2 bg-white flex items-center gap-2">
-        <p class="w-fit text-[11px] font-medium text-gray-500 uppercase tracking-wide"  v-tooltip="languagesTo?.name">
+      <div class="rounded-md border p-2 bg-white flex gap-2" :class="isTextarea ? 'items-start' : 'items-center'">
+        <p class="w-fit text-[11px] font-medium text-gray-500 uppercase tracking-wide" :class="isTextarea ? 'mt-2' : ''"  v-tooltip="languagesTo?.name">
           {{ langLabel }}
         </p>
 
         <div class="relative flex-1">
-          <input
+          <textarea
+            v-if="isTextarea"
             v-model="props.form[props.fieldName]"
-            :class="get(form, ['errors', `${fieldName}`]) ? 'border-red-500' : ''"
+            :class="controlClass"
+            :disabled="isDisabled"
+            rows="3"
+            placeholder="Translation..."
+            class="w-full pr-16 text-sm bg-gray-50 border border-gray-200 rounded-md
+                   focus:outline-none focus:bg-white focus:border-primary-500
+                   disabled:opacity-60"
+          />
+
+          <input
+            v-else
+            v-model="props.form[props.fieldName]"
+            :class="controlClass"
             :disabled="isDisabled"
             type="text"
             placeholder="Translation..."
-            class="h-8 w-full pr-16 text-sm bg-gray-50 border border-gray-200 rounded-md
+            class="w-full pr-16 text-sm bg-gray-50 border border-gray-200 rounded-md
                    focus:outline-none focus:bg-white focus:border-primary-500
                    disabled:opacity-60"
           />
@@ -184,7 +205,8 @@ const changeValue = (async () => {
           <button
             v-if="props.fieldData.reviewed"
             type="button"
-            class="absolute right-8 top-1/2 -translate-y-1/2 h-6 w-6 flex items-center justify-center bg-white text-gray-600"
+            class="absolute right-8 h-6 w-6 flex items-center justify-center bg-white text-gray-600"
+            :class="isTextarea ? 'top-2' : 'top-1/2 -translate-y-1/2'"
             v-tooltip="ctrans('Already reviewed by user')"
           >
             <FontAwesomeIcon :icon="faMale" class="h-3.5 w-3.5 button-primary" />
@@ -194,7 +216,8 @@ const changeValue = (async () => {
             type="button"
             :disabled="loading"
             @click="generateTranslateAI"
-            class="absolute right-1 top-1/2 -translate-y-1/2 h-6 w-6 flex items-center justify-center rounded-md border bg-white text-gray-600 hover:bg-gray-100 disabled:opacity-50"
+            class="absolute right-1 h-6 w-6 flex items-center justify-center rounded-md border bg-white text-gray-600 hover:bg-gray-100 disabled:opacity-50"
+            :class="isTextarea ? 'top-2' : 'top-1/2 -translate-y-1/2'"
             v-tooltip="trans('get translation from AI')"
             v-if="fieldData.main"
           >
