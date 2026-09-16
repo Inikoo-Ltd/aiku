@@ -46,7 +46,7 @@ class GoogleAdsCampaignsResource extends JsonResource
                     ['trafficSourceCampaign' => $campaign->slug]
                 ),
             ],
-            'status'        => $campaign->status,
+            'status'        => $this->statusIcon($campaign->status),
             'channel_type'  => $campaign->channel_type,
             'budget_amount' => $campaign->budget_amount,
 
@@ -99,6 +99,29 @@ class GoogleAdsCampaignsResource extends JsonResource
         }
 
         return $values;
+    }
+
+    /**
+     * Google's serving status as an icon, because the listing shows it for forty campaigns at once and
+     * the only two worth stopping on are the ones that waste money: LIMITED, where the budget is
+     * capping delivery, and NOT_ELIGIBLE, where nothing is being shown despite the campaign being
+     * switched on. Colour finds them, the tooltip names them.
+     *
+     * @return array{icon: string, class: string, tooltip: string}
+     */
+    private function statusIcon(?string $status): array
+    {
+        return match ($status) {
+            'ELIGIBLE', 'ENABLED' => ['icon' => 'fal fa-play', 'class' => 'text-green-500', 'tooltip' => __('Serving')],
+            'LIMITED'             => ['icon' => 'fal fa-exclamation-triangle', 'class' => 'text-amber-500', 'tooltip' => __('Budget limited, the budget is capping delivery')],
+            'NOT_ELIGIBLE'        => ['icon' => 'fal fa-ban', 'class' => 'text-red-500', 'tooltip' => __('Not serving, nobody is being shown this campaign')],
+            'PENDING'             => ['icon' => 'fal fa-clock', 'class' => 'text-gray-400', 'tooltip' => __('Pending, it has not started yet')],
+            'PAUSED'              => ['icon' => 'fal fa-pause', 'class' => 'text-gray-400', 'tooltip' => __('Paused')],
+            'ENDED'               => ['icon' => 'fal fa-flag-checkered', 'class' => 'text-gray-400', 'tooltip' => __('Ended')],
+            'REMOVED'             => ['icon' => 'fal fa-trash', 'class' => 'text-gray-400', 'tooltip' => __('Removed')],
+            null                  => ['icon' => 'fal fa-question-circle', 'class' => 'text-gray-300', 'tooltip' => __('Not read from Google yet')],
+            default               => ['icon' => 'fal fa-question-circle', 'class' => 'text-gray-400', 'tooltip' => __('Google reports this as :status', ['status' => $status])],
+        };
     }
 
     /**
