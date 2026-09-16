@@ -11,6 +11,7 @@ const CustomLink = Link.extend({
 
       workshop: {
         default: null,
+        rendered: false,
       },
 
       id: {
