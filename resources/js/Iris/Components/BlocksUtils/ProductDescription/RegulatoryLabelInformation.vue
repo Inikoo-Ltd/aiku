@@ -170,7 +170,8 @@ const toggleRow = (key: string) => {
 							<span
 								v-for="market in card.value"
 								:key="market.value"
-								class="rounded border accent-chip px-1.5 py-0.5 text-[10px]">
+								class="inline-flex items-center gap-1 rounded border accent-chip px-1.5 py-0.5 text-[10px]">
+								<FontAwesomeIcon v-if="market.value === 'other'" :icon="faGlobe" class="text-[10px]" />
 								{{ market.label }}
 							</span>
 						</div>

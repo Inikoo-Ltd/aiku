@@ -9,7 +9,7 @@ import { useStringToHex } from "@/Composables/useStringToHex"
 import { routeType } from "@/types/route"
 import { Accordion, AccordionPanel, AccordionHeader, AccordionContent } from "primevue"
 import { faTag } from "@far"
-import { faFileCheck, faFilePdf, faFileWord, faTrash as falTrash, faEdit, faExternalLink, faPuzzlePiece, faShieldAlt, faInfoCircle, faChevronDown, faChevronUp, faBox, faVideo, faStamp, faTimesCircle } from "@fal"
+import { faFileCheck, faFilePdf, faFileWord, faTrash as falTrash, faEdit, faExternalLink, faPuzzlePiece, faShieldAlt, faInfoCircle, faChevronDown, faChevronUp, faBox, faVideo, faStamp, faTimesCircle, faGlobe } from "@fal"
 
 interface TariffCodeByOrganisation {
     organisation_code: string
@@ -638,7 +638,8 @@ const getIcon = (type?: string) => {
                             <dt class="text-gray-500 whitespace-nowrap">{{ trans("Markets") }}</dt>
                             <dd v-if="labelInfo.markets?.show" class="font-medium flex flex-wrap gap-1 justify-end">
                                 <span v-for="market in labelInfo.markets.value" :key="market.value"
-                                    class="px-2 py-0.5 rounded-full text-xs bg-emerald-50 text-emerald-700 border border-emerald-100">
+                                    class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-emerald-50 text-emerald-700 border border-emerald-100">
+                                    <FontAwesomeIcon v-if="market.value === 'other'" :icon="faGlobe" class="text-[10px]" aria-hidden="true" />
                                     {{ market.label }}
                                 </span>
                             </dd>

@@ -16,6 +16,7 @@ use App\Models\Helpers\Country;
 use App\Actions\Goods\TradeUnit\StoreTradeUnit;
 use App\Actions\Goods\TradeUnit\UpdateTradeUnit;
 use App\Enums\Goods\TradeUnit\TradeUnitLabelPresenceEnum;
+use App\Enums\Goods\TradeUnit\TradeUnitMarketEnum;
 use App\Actions\Masters\MasterAsset\StoreMasterAsset;
 use App\Actions\Masters\MasterAsset\StoreMasterProductFromTradeUnits;
 use App\Actions\Masters\MasterAsset\UpdateMasterAsset;
@@ -194,28 +195,36 @@ test('markets and languages are saved into the trade unit label info and shown o
         'markets'   => [
             ['label' => 'UK', 'key' => 'uk', 'value' => false],
             ['label' => 'EU', 'key' => 'eu', 'value' => true],
-            ['label' => 'ES', 'key' => 'es', 'value' => 'true'],
+            ['label' => 'Other International Markets', 'key' => 'other', 'value' => 'true'],
         ],
         'languages' => ['en', 'fr'],
     ]);
 
     expect($this->bottle->refresh()->label_info)->toMatchArray([
-        'markets'   => ['eu', 'es'],
+        'markets'   => ['eu', 'other'],
         'languages' => ['en', 'fr'],
     ]);
 
     get(route('grp.trade_units.units.show', [$this->bottle->slug]))
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->where('showcase.label_info.markets.show', true)
-            ->where('showcase.label_info.markets.value', [['value' => 'eu', 'label' => 'EU'], ['value' => 'es', 'label' => 'ES']])
+            ->where('showcase.label_info.markets.value', [['value' => 'eu', 'label' => 'EU'], ['value' => 'other', 'label' => 'Other International Markets']])
             ->where('showcase.label_info.languages.show', true)
             ->where('showcase.label_info.languages.value', fn ($languages) => collect($languages)->pluck('code')->sort()->values()->all() === ['en', 'fr'])
             ->etc());
 });
 
-test('an unknown market is rejected', function () {
-    UpdateTradeUnit::make()->action($this->bottle, ['markets' => ['us']]);
-})->throws(Illuminate\Validation\ValidationException::class);
+test('an unknown market is rejected', function (string $market) {
+    UpdateTradeUnit::make()->action($this->bottle, ['markets' => [$market]]);
+})->with(['us', 'es'])->throws(Illuminate\Validation\ValidationException::class);
+
+test('the market checkboxes offer uk, eu and other international markets', function () {
+    expect(TradeUnitMarketEnum::checkboxValue(['other']))->toBe([
+        ['label' => 'UK', 'key' => 'uk', 'value' => false],
+        ['label' => 'EU', 'key' => 'eu', 'value' => false],
+        ['label' => 'Other International Markets', 'key' => 'other', 'value' => true],
+    ]);
+});
 
 test('a master product created from trade units starts with their label presence', function () {
     UpdateTradeUnit::make()->action($this->plug, ['ip_rating' => true]);
@@ -241,7 +250,7 @@ test('a master product created from trade units starts with their label presence
 
 test('a master keeps only the markets every trade unit shares and unions their languages', function () {
     UpdateTradeUnit::make()->action($this->bottle, ['markets' => ['uk', 'eu'], 'languages' => ['fr', 'en']]);
-    UpdateTradeUnit::make()->action($this->plug, ['markets' => ['eu', 'es', 'uk'], 'languages' => ['en', 'es']]);
+    UpdateTradeUnit::make()->action($this->plug, ['markets' => ['eu', 'other', 'uk'], 'languages' => ['en', 'es']]);
 
     expect($this->masterAsset->refresh()->label_info)->toMatchArray([
         'markets'   => ['uk', 'eu'],
@@ -252,7 +261,7 @@ test('a master keeps only the markets every trade unit shares and unions their l
             'languages' => ['en', 'es', 'fr'],
         ]);
 
-    UpdateTradeUnit::make()->action($this->plug, ['markets' => ['es']]);
+    UpdateTradeUnit::make()->action($this->plug, ['markets' => ['other']]);
 
     expect($this->masterAsset->refresh()->label_info['markets'])->toBe([])
         ->and($this->product->refresh()->label_info['markets'])->toBe([]);
