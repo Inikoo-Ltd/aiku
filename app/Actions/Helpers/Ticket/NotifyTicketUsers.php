@@ -148,18 +148,18 @@ class NotifyTicketUsers
         }
     }
 
-    public function mentionedInInternalNote(Ticket $ticket, User $author, string $body): void
+    public function mentionedInEngineeringNote(Ticket $ticket, User $author, string $body): void
     {
         $authorName = $author->contact_name ?: $author->username;
 
-        foreach ($this->mentionedUsers($ticket, $body)->filter(fn (User $user) => $ticket->canSeeInternalNotesBy($user)) as $user) {
+        foreach ($this->mentionedUsers($ticket, $body) as $user) {
             $this->handle(
                 $ticket,
                 $author,
                 $user,
-                __(':author mentioned you in an internal note on :reference', ['author' => $authorName, 'reference' => $ticket->reference]),
+                __(':author mentioned you in an engineering note on :reference', ['author' => $authorName, 'reference' => $ticket->reference]),
                 [
-                    __(':author mentioned you in an internal note on :reference (:subject):', ['author' => $authorName, 'reference' => $ticket->reference, 'subject' => $ticket->subject]),
+                    __(':author mentioned you in an engineering note on :reference (:subject):', ['author' => $authorName, 'reference' => $ticket->reference, 'subject' => $ticket->subject]),
                     Str::limit($body, 2000),
                 ],
                 __('Open the ticket'),

@@ -52,7 +52,7 @@ class StoreTicketComment extends OrgAction
         }
 
         if ($author instanceof User && $notifyUsers && $comment->is_internal) {
-            NotifyTicketUsers::make()->mentionedInInternalNote($ticket, $author, $comment->body);
+            NotifyTicketUsers::make()->mentionedInEngineeringNote($ticket, $author, $comment->body);
         }
 
         NotifyTicketUsers::make()->pushBadges($ticket, $author instanceof User ? $author : null);

@@ -1861,7 +1861,7 @@ test('rar and 7z attachments are accepted and list their contents through bsdtar
         ->assertJsonPath('message', 'This server cannot read RAR files yet. Ask an administrator to install libarchive-tools.');
 });
 
-test('reporters follow progress from their badge, cannot move their ticket, and internal notes stay with the people working on it', function () {
+test('reporters follow progress from their badge, cannot move their ticket, and engineering notes stay with staff', function () {
     Mail::fake();
     setPermissionsTeamId($this->group->id);
     $reporter  = User::factory()->create(['group_id' => $this->group->id]);
@@ -1991,7 +1991,7 @@ test('the ticket list can be narrowed to the tickets someone collaborates on', f
     expect(collect($response->viewData('page')['props']['data']['data'])->pluck('reference')->all())->toBe([$helping->reference]);
 });
 
-test('people mentioned in an internal note are told only when they can read internal notes', function () {
+test('people mentioned in an engineering note are told, customers never are', function () {
     Notification::fake();
     setPermissionsTeamId($this->group->id);
     $reporter  = User::factory()->create(['group_id' => $this->group->id]);
@@ -2009,8 +2009,13 @@ test('people mentioned in an internal note are told only when they can read inte
 
     StoreTicketComment::make()->action($ticket, $engineer, ['body' => "@{$colleague->username} and @{$reporter->username} please check the logs", 'is_internal' => true]);
 
-    Notification::assertSentTo($colleague, TicketNotification::class, fn ($notification) => str_contains($notification->subject, 'internal note'));
-    Notification::assertNotSentTo($reporter, TicketNotification::class, fn ($notification) => str_contains($notification->subject, 'mentioned') || str_contains($notification->subject, 'new comment'));
+    foreach ([$colleague, $reporter] as $mentioned) {
+        Notification::assertSentTo($mentioned, TicketNotification::class, fn ($notification) => str_contains($notification->subject, 'engineering note'));
+    }
+
+    $customerTicket = StoreRetinaTicket::make()->action($this->webUser, ['subject' => 'Parcel lost']);
+    StoreTicketComment::make()->action($customerTicket, $this->user, ['body' => '@'.$this->customer->fresh()->slug.' internal only', 'is_internal' => true]);
+    Notification::assertNotSentTo($this->webUser, TicketNotification::class);
 });
 
 test('the mention list suggests the people on the ticket first, including the customer who raised it', function () {
