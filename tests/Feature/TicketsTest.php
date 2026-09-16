@@ -2132,11 +2132,12 @@ test('comments show who wrote them with their role, but never in the customer po
     StoreTicketComment::make()->action($ticket, $qa, ['body' => 'from qa']);
     StoreTicketComment::make()->action($ticket, $this->user, ['body' => 'from the lead']);
 
-    $roles = collect(get(route('grp.json.ticket.controls', $ticket->id))->assertOk()->json('comments'))->pluck('author_role', 'body');
-    expect($roles['from the reporter'])->toBe('Reporter')
-        ->and($roles['from the engineer'])->toBe('Engineer')
-        ->and($roles['from qa'])->toBe('QA')
-        ->and($roles['from the lead'])->toBe('Lead engineer')
+    $roles = collect(get(route('grp.json.ticket.controls', $ticket->id))->assertOk()->json('comments'))
+        ->mapWithKeys(fn (array $comment) => [$comment['body'] => collect($comment['author_roles'])->pluck('key')->all()]);
+    expect($roles['from the reporter'])->toBe(['reporter'])
+        ->and($roles['from the engineer'])->toBe(['engineer'])
+        ->and($roles['from qa'])->toBe(['qa'])
+        ->and($roles['from the lead'])->toBe(['lead_engineer'])
         ->and(collect(get(route('grp.json.ticket.controls', $ticket->id))->json('comments'))->every(fn ($comment) => array_key_exists('author_avatar', $comment)))->toBeTrue();
 
     $customerTicket = StoreRetinaTicket::make()->action($this->webUser, ['subject' => 'Customer thread']);
@@ -2146,5 +2147,5 @@ test('comments show who wrote them with their role, but never in the customer po
         ->get('http://'.$this->website->domain.'/app/dropshipping/support/'.$customerTicket->reference)
         ->assertOk()
         ->viewData('page')['props']['comments'];
-    expect(collect($customerComments)->pluck('author_role')->filter()->all())->toBe([]);
+    expect(collect($customerComments)->pluck('author_roles')->flatten()->all())->toBe([]);
 });

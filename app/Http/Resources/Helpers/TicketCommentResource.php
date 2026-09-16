@@ -29,7 +29,7 @@ class TicketCommentResource extends JsonResource
             'is_staff'    => $this->author_type === 'User',
             'author'        => $this->author?->contact_name ?: $this->author?->username,
             'author_avatar' => $this->author?->imageSources(48, 48),
-            'author_role'   => $request->routeIs('retina.*') ? null : $this->authorRole(),
+            'author_roles'  => $request->routeIs('retina.*') ? [] : $this->authorRoles(),
             'created_at'  => $this->created_at,
             'images'      => $this->ticketImageSources(),
             'attachments' => $this->ticketAttachments(),
@@ -38,28 +38,31 @@ class TicketCommentResource extends JsonResource
         ];
     }
 
-    private function authorRole(): ?string
+    /**
+     * @return array<int, array{key: string, label: string}>
+     */
+    private function authorRoles(): array
     {
         $author = $this->author;
 
         if (!$author instanceof User) {
-            return $author ? __('Customer') : null;
+            return $author ? [['key' => 'customer', 'label' => __('Customer')]] : [];
         }
 
         $roles = [];
 
         if (Ticket::canBeAssignedBy($author)) {
-            $roles[] = __('Lead engineer');
+            $roles[] = ['key' => 'lead_engineer', 'label' => __('Lead engineer')];
         } elseif (Ticket::canBeManagedBy($author)) {
-            $roles[] = __('Engineer');
+            $roles[] = ['key' => 'engineer', 'label' => __('Engineer')];
         } elseif (Ticket::canCheckQa($author)) {
-            $roles[] = __('QA');
+            $roles[] = ['key' => 'qa', 'label' => __('QA')];
         }
 
         if ($this->relationLoaded('ticket') && $this->ticket?->isReportedBy($author)) {
-            $roles[] = __('Reporter');
+            $roles[] = ['key' => 'reporter', 'label' => __('Reporter')];
         }
 
-        return $roles === [] ? null : implode(' · ', $roles);
+        return $roles;
     }
 }

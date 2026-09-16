@@ -24,7 +24,7 @@ library.add(faPencil, faTrashAlt, faUser)
 
 const props = withDefaults(defineProps<{
     ticket: { subject: string; description: string | null; reporter: string | null; reporter_avatar?: Record<string, string> | null; is_from_slack?: boolean; reference_url?: string | null; created_at: string; images?: Record<string, string>[] }
-    comments: { id: number; body: string; is_internal: boolean; is_lead_only?: boolean; author_avatar?: Record<string, string> | null; author_role?: string | null; can_toggle_visibility?: boolean; is_staff: boolean; author: string | null; created_at: string; images?: Record<string, string>[]; attachments?: { name: string; url: string }[]; can_edit?: boolean; can_delete?: boolean }[]
+    comments: { id: number; body: string; is_internal: boolean; is_lead_only?: boolean; author_avatar?: Record<string, string> | null; author_roles?: { key: string; label: string }[]; can_toggle_visibility?: boolean; is_staff: boolean; author: string | null; created_at: string; images?: Record<string, string>[]; attachments?: { name: string; url: string }[]; can_edit?: boolean; can_delete?: boolean }[]
     commentRoute: { name: string; parameters: Record<string, unknown> }
     mentionable?: { username: string; name: string | null; suggested?: boolean; is_customer?: boolean }[]
     commentsNewestFirst?: boolean
@@ -35,6 +35,14 @@ const props = withDefaults(defineProps<{
 const emit = defineEmits<{
     (e: "update:commentsNewestFirst", value: boolean): void
 }>()
+
+const roleClasses: Record<string, string> = {
+    lead_engineer: "bg-red-100 text-red-700",
+    engineer: "bg-blue-100 text-blue-700",
+    qa: "bg-purple-100 text-purple-700",
+    reporter: "bg-orange-100 text-orange-700",
+    customer: "bg-slate-200 text-slate-700",
+}
 
 const form = useForm<{ body: string; images: File[]; is_internal: boolean }>({ body: "", images: [], is_internal: false })
 
@@ -136,7 +144,13 @@ const submit = () => {
                     <span v-if="comment.author" class="flex items-center gap-1.5 font-medium text-gray-700">
                         <TicketUserAvatar :name="comment.author" :avatar="comment.author_avatar" size="xs" />
                         {{ comment.author }}
-                        <span v-if="comment.author_role" class="rounded bg-gray-200 px-1.5 py-0.5 text-[10px] font-medium text-gray-600">{{ comment.author_role }}</span>
+                        <span
+                            v-for="role in comment.author_roles ?? []"
+                            :key="role.key"
+                            class="rounded px-1.5 py-0.5 text-[10px] font-medium"
+                            :class="roleClasses[role.key] ?? 'bg-gray-100 text-gray-600'"
+                            >{{ role.label }}</span
+                        >
                         ·
                     </span>
                     <span v-else class="flex items-center gap-2"><img class="h-4 select-none" src="/art/invader.svg" alt="aiku" /> ·</span>
