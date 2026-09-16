@@ -27,6 +27,15 @@ enum TicketTypeEnum: string
         ];
     }
 
+    public function icon(): array
+    {
+        return match ($this) {
+            self::HELP     => ['icon' => 'fal fa-life-ring', 'tooltip' => self::labels()['help']],
+            self::ENGINEER => ['icon' => 'fal fa-code', 'tooltip' => self::labels()['engineer']],
+            self::CUSTOMER => ['icon' => 'fal fa-user-headset', 'tooltip' => self::labels()['customer']],
+        };
+    }
+
     public function prefix(): string
     {
         return match ($this) {

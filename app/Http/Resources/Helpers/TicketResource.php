@@ -26,6 +26,7 @@ class TicketResource extends JsonResource
         return [
             'id'             => $this->id,
             'reference'      => $this->reference,
+            'type_icon'      => $this->type?->icon(),
             'type'           => $this->type->value,
             'kind'           => $this->kind?->value,
             'module'         => $this->module?->value,

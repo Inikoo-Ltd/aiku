@@ -24,7 +24,7 @@ defineProps<{
 <template>
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead" />
-    <div class="p-4">
+    <div class="p-4 -mb-6 md:-mb-24">
         <TicketForm :store-route="storeRoute" :priorities="priorities" :kinds="kinds" :types="types" :modules="modules" />
     </div>
 </template>

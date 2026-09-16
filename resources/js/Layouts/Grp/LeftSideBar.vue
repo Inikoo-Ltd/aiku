@@ -19,6 +19,7 @@ import Button from "@/Components/Elements/Buttons/Button.vue"
 import { trans } from "laravel-vue-i18n"
 import { isNavigationActive } from "@/Composables/useUrl"
 import { Link } from "@inertiajs/vue3"
+import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 
 library.add(faTasks, faChevronLeft, faSignOutAlt, faSensor, faLifeRing, faHeadset, faCommentAlt, faSignOut, faServer)
 
@@ -44,6 +45,8 @@ const bottomLinks = computed(() => [
     { route: "grp.chat.dashboard", root: "grp.chat.", label: trans("Chat"), tooltip: trans("Chat with customers and colleagues"), icon: "fal fa-comment-alt" },
 ])
 
+const loadingRoute = ref<string | null>(null)
+
 const isLoadingLogout = ref(false)
 const onLogoutAuth = () => {
     useLogoutAuth(layout.user, {
@@ -55,7 +58,7 @@ const onLogoutAuth = () => {
 
 <template>
     <div
-        class="pb-56 fixed md:flex md:flex-col md:inset-y-0 h-full transition-all duration-300 ease-in-out"
+        class="pb-[240px] fixed md:flex md:flex-col md:inset-y-0 h-full transition-all duration-300 ease-in-out"
         :style="{
 			'background-color': layout.app.theme[0],
 			color: layout.app.theme[2],
@@ -89,8 +92,8 @@ const onLogoutAuth = () => {
             <LeftSidebarNavigation />
         </div>
 
-        <div class="absolute bottom-20 w-full px-3 pt-3">
-            <div class="flex flex-col justify-center">
+        <div class="absolute bottom-20 w-full px-2 pt-3">
+            <div class="flex flex-col justify-center gap-y-1.5">
                 <Link
                     v-for="link in bottomLinks"
                     :key="link.route"
@@ -101,8 +104,11 @@ const onLogoutAuth = () => {
 						content: link.tooltip,
 						delay: { show: layout.leftSidebar.show ? 500 : 100, hide: 100 },
 					}"
-                    >
+                    @start="() => (loadingRoute = link.route)"
+                    @finish="() => (loadingRoute = null)">
+                    <LoadingIcon v-if="loadingRoute === link.route" class="flex-shrink-0 h-4 w-4" />
                     <FontAwesomeIcon
+                        v-else
                         aria-hidden="true"
                         class="flex-shrink-0 h-4 w-4"
                         fixed-width

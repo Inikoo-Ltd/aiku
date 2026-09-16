@@ -2160,7 +2160,7 @@ test('help desk staff and QA can raise engineering tickets with an INI reference
 
     actingAs($engineer);
     get(route('grp.tickets.create'))->assertOk()->assertInertia(
-        fn (AssertableInertia $page) => $page->where('types', fn ($types) => collect($types)->pluck('value')->all() === ['help', 'engineer'])
+        fn (AssertableInertia $page) => $page->where('types', fn ($types) => collect($types)->pluck('value')->all() === ['help', 'engineer', 'customer'])
     );
     post(route('grp.models.ticket.store'), ['subject' => 'Refactor the queue', 'type' => 'engineer'])->assertRedirect()->assertSessionHasNoErrors();
     expect(Ticket::where('subject', 'Refactor the queue')->value('reference'))->toStartWith('INI-');
@@ -2172,7 +2172,9 @@ test('help desk staff and QA can raise engineering tickets with an INI reference
     get(route('grp.tickets.create'))->assertOk()->assertInertia(fn (AssertableInertia $page) => $page->where('types', []));
     post(route('grp.models.ticket.store'), ['subject' => 'Not for me', 'type' => 'engineer'])->assertSessionHasErrors('type');
     post(route('grp.models.ticket.store'), ['subject' => 'Plain help'])->assertRedirect()->assertSessionHasNoErrors();
-    expect(Ticket::where('subject', 'Plain help')->value('reference'))->toStartWith('HELP-');
+    post(route('grp.models.ticket.store'), ['subject' => 'Empty type', 'type' => null])->assertRedirect()->assertSessionHasNoErrors();
+    expect(Ticket::where('subject', 'Plain help')->value('reference'))->toStartWith('HELP-')
+        ->and(Ticket::where('subject', 'Empty type')->value('reference'))->toStartWith('HELP-');
 });
 
 test('engineers claim unassigned tickets, then only the assignee or a lead engineer hands them over', function () {

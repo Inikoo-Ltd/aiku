@@ -17,9 +17,9 @@ import TicketThread from "@/Components/Tickets/TicketThread.vue"
 import { useModalFocusTrap } from "@/Composables/useModalFocusTrap"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faTimes, faSpinner, faChevronDown, faLink, faCheck } from "@fal"
+import { faTimes, faSpinner, faChevronDown, faLink, faCheck, faLifeRing, faCode, faUserHeadset } from "@fal"
 
-library.add(faTimes, faSpinner, faChevronDown, faLink, faCheck)
+library.add(faLifeRing, faCode, faUserHeadset, faTimes, faSpinner, faChevronDown, faLink, faCheck)
 
 const emit = defineEmits<{
     (e: "closed"): void
@@ -99,6 +99,7 @@ const close = () => {
                     <div class="flex flex-col lg:col-span-2 lg:min-h-0">
                         <div class="shrink-0 border-b border-gray-100 pb-3">
                             <div class="flex items-center gap-2 text-xs mb-2">
+                        <Icon v-if="displayTicket.type_icon" :data="displayTicket.type_icon" class="text-gray-400" />
                         <Link
                             :href="route('grp.tickets.show', displayTicket.reference)"
                             class="primaryLink font-medium"

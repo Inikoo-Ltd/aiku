@@ -24,11 +24,11 @@ import TicketQuickLook from "@/Components/Tickets/TicketQuickLook.vue"
 import TicketUserAvatar from "@/Components/Tickets/TicketUserAvatar.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faPlay, faQuestionCircle, faCheck, faBan, faChevronDown, faUser, faStop, faUndo, faSpinner, faUsers } from "@fal"
+import { faPlay, faQuestionCircle, faCheck, faBan, faChevronDown, faUser, faStop, faUndo, faSpinner, faUsers, faLifeRing, faCode, faUserHeadset } from "@fal"
 
 import { faArrowDown as faSolidArrowDown, faArrowUp as faSolidArrowUp, faMinus as faSolidMinus, faExclamationTriangle as faSolidExclamationTriangle } from "@fas"
 
-library.add(faPlay, faQuestionCircle, faCheck, faBan, faChevronDown, faUser, faStop, faUndo, faSpinner, faUsers, faSolidArrowDown, faSolidArrowUp, faSolidMinus, faSolidExclamationTriangle)
+library.add(faLifeRing, faCode, faUserHeadset, faPlay, faQuestionCircle, faCheck, faBan, faChevronDown, faUser, faStop, faUndo, faSpinner, faUsers, faSolidArrowDown, faSolidArrowUp, faSolidMinus, faSolidExclamationTriangle)
 
 type Option<Value> = { label: string; value: Value }
 
@@ -194,7 +194,7 @@ watch(
     <div class="[&_tbody_tr]:cursor-pointer" @click="onTableClick">
         <Table :resource="data" class="mt-2">
             <template #cell(reference)="{ item }">
-                <Link :href="route('grp.tickets.show', item.reference)" class="primaryLink" :data-ticket-id="item.id">{{ item.reference }}</Link>
+                <span class="inline-flex items-center"><Icon v-if="item.type_icon" :data="item.type_icon" class="mr-1 text-gray-400" /><Link :href="route('grp.tickets.show', item.reference)" class="primaryLink" :data-ticket-id="item.id">{{ item.reference }}</Link></span>
             </template>
             <template #cell(status)="{ item }">
                 <button

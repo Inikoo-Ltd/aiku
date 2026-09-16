@@ -14,7 +14,7 @@ import PageHeading from "@/Components/Headings/PageHeading.vue"
 import Icon from "@/Components/Icon.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faVial, faShieldCheck, faShield, faRocket, faSpinner } from "@fal"
+import { faVial, faShieldCheck, faShield, faRocket, faSpinner, faLifeRing, faCode, faUserHeadset } from "@fal"
 import { useLiveTickets } from "@/Composables/useLiveTickets"
 import TicketsCreatedInterval from "@/Components/Tickets/TicketsCreatedInterval.vue"
 import TicketQuickLook from "@/Components/Tickets/TicketQuickLook.vue"
@@ -22,7 +22,7 @@ import TicketUserAvatar from "@/Components/Tickets/TicketUserAvatar.vue"
 import TicketAskReporterDialog from "@/Components/Tickets/TicketAskReporterDialog.vue"
 import TicketStatusNoteDialog from "@/Components/Tickets/TicketStatusNoteDialog.vue"
 
-library.add(faVial, faShieldCheck, faShield, faRocket, faSpinner)
+library.add(faLifeRing, faCode, faUserHeadset, faVial, faShieldCheck, faShield, faRocket, faSpinner)
 
 const props = defineProps<{
 	pageHead: any
@@ -632,6 +632,7 @@ const cancelAssign = () => {
 								{{ element.subject }}
 							</p>
 							<div class="flex items-center gap-2 text-xs mt-2">
+								<Icon v-if="element.type_icon" :data="element.type_icon" class="text-gray-400" />
 								<Link
 									:href="route('grp.tickets.show', element.reference)"
 									class="primaryLink font-medium"

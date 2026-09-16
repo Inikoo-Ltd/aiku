@@ -25,7 +25,7 @@ class StoreTicket extends OrgAction
 {
     public function handle(Group $group, array $modelData): Ticket
     {
-        $type = TicketTypeEnum::from(Arr::get($modelData, 'type', TicketTypeEnum::HELP->value));
+        $type = TicketTypeEnum::from(Arr::get($modelData, 'type') ?: TicketTypeEnum::HELP->value);
 
         $number = DB::selectOne('SELECT nextval(?) AS number', [$type->sequence()])->number;
 
@@ -54,7 +54,7 @@ class StoreTicket extends OrgAction
         return [
             'subject'         => ['required', 'string', 'max:255'],
             'description'     => ['sometimes', 'nullable', 'string'],
-            'type'            => ['sometimes', Rule::enum(TicketTypeEnum::class), Rule::when(!$this->asAction && !Ticket::canChooseType(request()->user()), Rule::in([TicketTypeEnum::HELP->value, TicketTypeEnum::CUSTOMER->value]))],
+            'type'            => ['sometimes', 'nullable', Rule::enum(TicketTypeEnum::class), Rule::when(!$this->asAction && !Ticket::canChooseType(request()->user()), Rule::in([TicketTypeEnum::HELP->value]))],
             'kind'            => ['sometimes', 'nullable', Rule::enum(TicketKindEnum::class), Rule::when(!$this->asAction && !Ticket::canBeManagedBy(request()->user()), Rule::notIn(TicketKindEnum::internalValues()))],
             'module'          => ['sometimes', 'nullable', Rule::enum(TicketModuleEnum::class)],
             'tags'            => ['sometimes', 'array'],

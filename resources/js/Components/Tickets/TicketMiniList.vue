@@ -11,9 +11,9 @@ import { trans } from "laravel-vue-i18n"
 import Icon from "@/Components/Icon.vue"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faVial, faShieldCheck, faShield } from "@fal"
+import { faVial, faShieldCheck, faShield, faLifeRing, faCode, faUserHeadset } from "@fal"
 
-library.add(faVial, faShieldCheck, faShield)
+library.add(faLifeRing, faCode, faUserHeadset, faVial, faShieldCheck, faShield)
 
 const props = defineProps<{
     title: string
@@ -57,7 +57,7 @@ const sortedTickets = computed(() =>
         <ul v-if="tickets.length" class="divide-y divide-gray-100 text-sm">
             <li v-for="ticket in sortedTickets" :key="ticket.id" class="flex items-center gap-3 px-4 py-2">
                 <Icon :data="ticket.status_icon" />
-                <Link :href="route('grp.tickets.show', ticket.reference)" class="primaryLink whitespace-nowrap">{{ ticket.reference }}</Link>
+                <span class="inline-flex items-center whitespace-nowrap"><Icon v-if="ticket.type_icon" :data="ticket.type_icon" class="mr-1 text-gray-400" /><Link :href="route('grp.tickets.show', ticket.reference)" class="primaryLink whitespace-nowrap">{{ ticket.reference }}</Link></span>
                 <span class="truncate flex-1" :title="ticket.subject">{{ ticket.subject }}</span>
                 <Icon v-if="ticket.qa_status_icon" :data="ticket.qa_status_icon" />
                 <span v-if="showAssignee" class="text-xs text-gray-500 whitespace-nowrap">{{ ticket.assignee_username || "-" }}</span>
