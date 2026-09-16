@@ -20,7 +20,9 @@ import GoogleAdsNegativeKeywords from "@/Components/DataDisplay/Dashboard/Widget
 import GoogleAdsSearchTerms from "@/Components/DataDisplay/Dashboard/Widget/GoogleAdsSearchTerms.vue"
 import GoogleAdsAddKeyword from "@/Components/DataDisplay/Dashboard/Widget/GoogleAdsAddKeyword.vue"
 import ConfirmDialog from "primevue/confirmdialog"
+import HelpTip from "@/Components/Utils/HelpTip.vue"
 import { capitalize } from "@/Composables/capitalize"
+import { campaignTypeLabel } from "@/Composables/googleAdsCampaignType"
 import { useLocaleStore } from "@/Stores/locale"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { PageHeadingTypes } from "@/types/PageHeading"
@@ -170,7 +172,10 @@ const notServingReasons = computed(() =>
     <div class="grid grid-cols-1 gap-4 px-4 pb-6 lg:grid-cols-3">
         <!-- Identity: the settings that decide what the figures below were ever going to look like. -->
         <section class="rounded-xl bg-white p-5 ring-1 ring-gray-200">
-            <h2 class="text-sm font-medium text-gray-800">{{ trans("Campaign") }}</h2>
+            <h2 class="text-sm font-medium text-gray-800">
+                {{ trans("Campaign") }}
+                <HelpTip :text="trans('How Google is set to run this campaign: whether it is serving and why not if it is not, the campaign type, the bidding strategy, the daily budget and the start date. Pausing, resuming and budget changes below are written to Google straight away.')" />
+            </h2>
             <p class="mt-1 text-xs text-gray-500">{{ campaign.reference }}</p>
 
             <dl class="mt-5 space-y-3 text-xs">
@@ -186,8 +191,8 @@ const notServingReasons = computed(() =>
                     </dd>
                 </div>
                 <div class="flex justify-between gap-3">
-                    <dt class="text-gray-500">{{ trans("Channel") }}</dt>
-                    <dd class="capitalize text-gray-700">{{ enumLabel(campaign.channel_type) ?? "—" }}</dd>
+                    <dt class="text-gray-500">{{ trans("Campaign type") }}</dt>
+                    <dd class="text-gray-700">{{ campaignTypeLabel(campaign.channel_type) ?? "—" }}</dd>
                 </div>
                 <div class="flex justify-between gap-3">
                     <dt class="text-gray-500">{{ trans("Bidding") }}</dt>
@@ -228,6 +233,7 @@ const notServingReasons = computed(() =>
                 <h2 class="text-sm font-medium text-gray-800">
                     {{ trans("Reported by Google") }}
                     <span class="font-normal text-gray-500">· {{ period_label }}</span>
+                    <HelpTip :text="trans('Google\'s own totals for the period chosen above, in the ad account\'s currency and under Google\'s attribution. Conversions are whatever the account\'s conversion actions recorded. ROAS is conversion value divided by cost.')" />
                 </h2>
                 <span class="text-xs text-gray-500">
                     {{ trans("Google's attribution, in") }} {{ campaign.currency }}
@@ -289,7 +295,10 @@ const notServingReasons = computed(() =>
         <!-- Aiku's own attribution, on purpose in its own block and on its own time base. -->
         <section class="rounded-xl bg-white p-5 ring-1 ring-gray-200 lg:col-span-3">
             <div class="flex flex-wrap items-baseline justify-between gap-2">
-                <h2 class="text-sm font-medium text-gray-800">{{ trans("Attributed by Aiku") }}</h2>
+                <h2 class="text-sm font-medium text-gray-800">
+                    {{ trans("Attributed by Aiku") }}
+                    <HelpTip :text="trans('Customers and orders Aiku traced back to a click on this campaign, with their revenue in the shop\'s currency. Counted since attribution started recording, not for the period above, so it will not match Google\'s figures.')" />
+                </h2>
                 <span class="text-xs text-gray-500">
                     {{ trans("Since attribution started recording, not the period above, in") }} {{ campaign.shop_currency }}
                 </span>
@@ -329,6 +338,7 @@ const notServingReasons = computed(() =>
             <h2 class="text-sm font-medium text-gray-800">
                 {{ trans("Is the spend still buying clicks?") }}
                 <span class="font-normal text-gray-500">· {{ period_label }}</span>
+                <HelpTip :text="trans('Daily cost and daily clicks on one chart, each with its own axis. When the cost line climbs while the clicks line flattens, the campaign is paying more for the same traffic.')" />
             </h2>
             <div class="mt-4">
                 <GoogleAdsCampaignTrend :daily="daily" :currency="campaign.currency" />
@@ -336,7 +346,10 @@ const notServingReasons = computed(() =>
         </section>
 
         <section class="rounded-xl bg-white p-5 ring-1 ring-gray-200 lg:col-span-3">
-            <h2 class="text-sm font-medium text-gray-800">{{ trans("Day by day") }}</h2>
+            <h2 class="text-sm font-medium text-gray-800">
+                {{ trans("Day by day") }}
+                <HelpTip :text="trans('One row per day Google reported, newest first. Cost is what Google billed in the account\'s currency. Spend is the same money converted to the shop\'s currency at that day\'s rate, which is the figure the marketing dashboard uses.')" />
+            </h2>
 
             <div v-if="daily.length" class="mt-3 overflow-x-auto">
                 <table class="w-full min-w-[40rem] text-xs">
@@ -376,6 +389,7 @@ const notServingReasons = computed(() =>
             <h2 class="text-sm font-medium text-gray-800">
                 {{ trans("Ads") }}
                 <span v-if="adCount" class="font-normal text-gray-500">· {{ adCount }}</span>
+                <HelpTip :text="trans('Ad groups and their ads as Google returned them, with Google\'s strength rating and review status for each ad. Pause or resume an ad group or an ad, add headlines, or copy an ad into a variant to test against it.')" />
             </h2>
 
             <!-- Says plainly why there is no button to write an ad here, because a section that offers
@@ -470,6 +484,7 @@ const notServingReasons = computed(() =>
             <h2 class="text-sm font-medium text-gray-800">
                 {{ trans("Keywords") }}
                 <span v-if="keywordCount" class="font-normal text-gray-500">· {{ keywordCount }}</span>
+                <HelpTip :text="trans('The searches this campaign bids on, by ad group, with match type and status. Pausing a keyword stops bids on it without deleting it. Only Search campaigns have keywords.')" />
             </h2>
 
             <div v-if="keywordCount" class="mt-3 overflow-x-auto">

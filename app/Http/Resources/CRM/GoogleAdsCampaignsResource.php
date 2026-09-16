@@ -20,6 +20,8 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $ctr
  * @property mixed $avg_cpc
  * @property mixed $conversions
+ * @property mixed $cost_per_conversion
+ * @property mixed $conversions_value
  * @property mixed $spend
  * @property mixed $roas
  */
@@ -54,9 +56,11 @@ class GoogleAdsCampaignsResource extends JsonResource
             'clicks'      => (int) $campaign->clicks,
             'ctr'         => $campaign->ctr !== null ? (float) $campaign->ctr : null,
             'avg_cpc'     => $campaign->avg_cpc !== null ? (float) $campaign->avg_cpc : null,
-            'conversions' => (float) $campaign->conversions,
-            'spend'       => (float) $campaign->spend,
-            'roas'        => $campaign->roas !== null ? (float) $campaign->roas : null,
+            'conversions'         => (float) $campaign->conversions,
+            'cost_per_conversion' => $campaign->cost_per_conversion !== null ? (float) $campaign->cost_per_conversion : null,
+            'conversions_value'   => (float) $campaign->conversions_value,
+            'spend'               => (float) $campaign->spend,
+            'roas'                => $campaign->roas !== null ? (float) $campaign->roas : null,
         ];
     }
 }

@@ -8,6 +8,7 @@
 import { Link } from "@inertiajs/vue3"
 import Table from "@/Components/Table/Table.vue"
 import { useLocaleStore } from "@/Stores/locale"
+import { campaignTypeLabel } from "@/Composables/googleAdsCampaignType"
 import { trans } from "laravel-vue-i18n"
 
 defineProps<{
@@ -40,9 +41,6 @@ const statusClass = (status: string | null) => {
     if (status === "ELIGIBLE" || status === "ENABLED") return "text-[#006300]"
     return "text-gray-500"
 }
-
-const channelLabel = (channel: string | null) =>
-    channel ? channel.replace(/_/g, " ").toLowerCase() : null
 </script>
 
 <template>
@@ -61,7 +59,7 @@ const channelLabel = (channel: string | null) =>
         </template>
 
         <template #cell(channel_type)="{ item }">
-            <div class="capitalize text-gray-600">{{ channelLabel(item.channel_type) ?? "—" }}</div>
+            <div class="text-gray-600">{{ campaignTypeLabel(item.channel_type) ?? "—" }}</div>
         </template>
 
         <template #cell(impressions)="{ item }">
@@ -99,6 +97,19 @@ const channelLabel = (channel: string | null) =>
 
         <template #cell(conversions)="{ item }">
             <div class="tabular-nums text-gray-600">{{ locale.number(item.conversions) }}</div>
+        </template>
+
+        <template #cell(cost_per_conversion)="{ item }">
+            <div v-if="item.cost_per_conversion === null" class="text-gray-400">—</div>
+            <div v-else class="tabular-nums text-gray-600">
+                {{ locale.currencyFormat(item.currency_code ?? currency, item.cost_per_conversion) }}
+            </div>
+        </template>
+
+        <template #cell(conversions_value)="{ item }">
+            <div class="tabular-nums text-gray-600">
+                {{ locale.currencyFormat(item.currency_code ?? currency, item.conversions_value) }}
+            </div>
         </template>
 
         <!-- Green above break-even, red below, so the row that is losing money is findable by colour

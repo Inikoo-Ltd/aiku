@@ -93,21 +93,25 @@ class GetGoogleAdsSearchTerms
                the term, not about which keyword happened to catch it. */
             ->groupBy('term')
             ->map(function ($group) {
-                $first = $group->first();
+                $first       = $group->first();
+                $impressions = (int) $group->sum('impressions');
+                $clicks      = (int) $group->sum('clicks');
+                $cost        = (float) $group->sum('cost');
+                $conversions = (float) $group->sum('conversions');
 
                 return [
                     'term'              => $first['term'],
                     'status'            => $group->pluck('status')->contains('EXCLUDED') ? 'EXCLUDED'
                         : ($group->pluck('status')->contains('ADDED') ? 'ADDED' : $first['status']),
                     'matched_keyword'   => $first['matched_keyword'],
-                    'impressions'       => $group->sum('impressions'),
-                    'clicks'            => $group->sum('clicks'),
-                    'cost'              => round($group->sum('cost'), 2),
-                    'conversions'       => $group->sum('conversions'),
+                    'impressions'       => $impressions,
+                    'clicks'            => $clicks,
+                    'cost'              => round($cost, 2),
+                    'conversions'       => $conversions,
                     'conversions_value' => round($group->sum('conversions_value'), 2),
-                    'cost_per_click'    => $group->sum('clicks') > 0
-                        ? round($group->sum('cost') / $group->sum('clicks'), 2)
-                        : null,
+                    'cost_per_click'    => $clicks > 0 ? round($cost / $clicks, 2) : null,
+                    'cpm'               => $impressions > 0 ? round($cost * 1000 / $impressions, 2) : null,
+                    'conversion_rate'   => $clicks > 0 ? round($conversions * 100 / $clicks, 2) : null,
                 ];
             })
             ->sortByDesc('cost')

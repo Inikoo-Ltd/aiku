@@ -87,6 +87,10 @@ class IndexGoogleAdsCampaigns extends OrgAction
             DB::raw('CASE WHEN COALESCE(metrics.clicks, 0) > 0
                         THEN ROUND(metrics.source_cost / metrics.clicks, 2)
                     END as avg_cpc'),
+            DB::raw('CASE WHEN COALESCE(metrics.conversions, 0) > 0
+                        THEN ROUND(metrics.source_cost / metrics.conversions, 2)
+                    END as cost_per_conversion'),
+            DB::raw('COALESCE(metrics.source_conversions_value, 0) as conversions_value'),
 
             /* Both halves are Google's own, in the account's own currency, so the ratio is internally
                consistent. It is Google's attribution and not Aiku's; the campaign page puts the two
@@ -109,6 +113,8 @@ class IndexGoogleAdsCampaigns extends OrgAction
                 'ctr',
                 'avg_cpc',
                 'conversions',
+                'cost_per_conversion',
+                'conversions_value',
                 'spend',
                 'roas',
             ])
@@ -161,15 +167,17 @@ class IndexGoogleAdsCampaigns extends OrgAction
             $table
                 ->column(key: 'name', label: __('Campaign'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'status', label: __('Status'), canBeHidden: false, sortable: true)
-                ->column(key: 'channel_type', label: __('Channel'), canBeHidden: true, sortable: true)
+                ->column(key: 'channel_type', label: __('Campaign type'), canBeHidden: true, sortable: true)
                 ->column(key: 'impressions', label: __('Impressions'), canBeHidden: true, sortable: true, align: 'right')
-                ->column(key: 'clicks', label: __('Clicks'), canBeHidden: false, sortable: true, align: 'right')
-                ->column(key: 'ctr', label: __('CTR'), canBeHidden: false, sortable: true, align: 'right')
+                ->column(key: 'clicks', label: __('Clicks'), canBeHidden: true, sortable: true, align: 'right')
+                ->column(key: 'ctr', label: __('CTR'), canBeHidden: true, sortable: true, align: 'right')
                 ->column(key: 'avg_cpc', label: __('Avg. CPC'), canBeHidden: true, sortable: true, align: 'right')
                 ->column(key: 'budget_amount', label: __('Daily budget'), canBeHidden: true, sortable: true, align: 'right')
-                ->column(key: 'spend', label: __('Spend'), canBeHidden: false, sortable: true, align: 'right')
+                ->column(key: 'spend', label: __('Spend'), canBeHidden: true, sortable: true, align: 'right')
                 ->column(key: 'conversions', label: __('Conversions'), canBeHidden: true, sortable: true, align: 'right')
-                ->column(key: 'roas', label: __('ROAS'), canBeHidden: false, sortable: true, align: 'right');
+                ->column(key: 'cost_per_conversion', label: __('Cost per conv.'), canBeHidden: true, sortable: true, align: 'right')
+                ->column(key: 'conversions_value', label: __('Conv. value'), canBeHidden: true, sortable: true, align: 'right')
+                ->column(key: 'roas', label: __('ROAS'), canBeHidden: true, sortable: true, align: 'right');
         };
     }
 

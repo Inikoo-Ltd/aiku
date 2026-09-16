@@ -31,6 +31,7 @@ trait WithGoogleAdsInterval
             'tdy' => $labels['tdy'],
             'ld'  => $labels['ld'],
             '1w'  => $labels['1w'],
+            'mtd' => $labels['mtd'],
             '1m'  => $labels['1m'],
             'lm'  => $labels['lm'],
             '1q'  => $labels['1q'],

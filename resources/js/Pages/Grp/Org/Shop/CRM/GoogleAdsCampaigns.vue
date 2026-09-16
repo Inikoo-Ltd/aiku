@@ -104,8 +104,8 @@ const lastFetched = computed(() => {
     </div>
 
     <div class="mx-4 mt-2 text-xs text-gray-500">
-        {{ trans("Impressions, clicks, conversions and ROAS are Google's own figures for the period. Spend is shown in") }}
-        {{ shop_currency }}; {{ trans("budgets and cost per click are in the ad account's currency.") }}
+        {{ trans("Impressions, clicks, conversions, conversion value and ROAS are Google's own figures for the period. Spend is shown in") }}
+        {{ shop_currency }}; {{ trans("budgets, cost per click, cost per conversion and conversion value are in the ad account's currency.") }}
     </div>
 
     <TableGoogleAdsCampaigns :data="data" :currency="shop_currency" />
