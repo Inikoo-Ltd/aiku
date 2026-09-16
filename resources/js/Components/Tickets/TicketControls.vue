@@ -18,9 +18,9 @@ import TicketStatusNoteDialog from "@/Components/Tickets/TicketStatusNoteDialog.
 import TicketUserAvatar from "@/Components/Tickets/TicketUserAvatar.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faPaperclip, faCircle, faUserCheck, faSpinner, faClock, faCheckCircle, faBan, faPlay, faPause, faStop, faCheck, faUndo, faBug, faLightbulb, faLevelUp, faCube, faQuestionCircle, faEllipsisV, faTrashAlt, faUser, faPencil, faTimes, faPlus, faPlusCircle, faExchange, faHourglassHalf, faVial, faShieldCheck, faShield, faRocket, faUserPlus, faCheckSquare, faSquare } from "@fal"
+import { faPaperclip, faCircle, faUserCheck, faSpinner, faClock, faCheckCircle, faBan, faPlay, faPause, faStop, faCheck, faUndo, faBug, faLightbulb, faLevelUp, faCube, faQuestionCircle, faEllipsisV, faTrashAlt, faUser, faPencil, faTimes, faPlus, faPlusCircle, faExchange, faHourglassHalf, faVial, faShieldCheck, faShield, faRocket, faUserPlus, faCheckSquare, faSquare, faBooks, faDatabase, faTasks } from "@fal"
 
-library.add(faUserPlus, faCheckSquare, faSquare, faRocket, faVial, faShieldCheck, faShield, faHourglassHalf, faPlusCircle, faExchange, faEllipsisV, faTrashAlt, faUser, faPencil, faTimes, faPlus,faPaperclip, faCircle, faUserCheck, faSpinner, faClock, faCheckCircle, faBan, faPlay, faPause, faStop, faCheck, faUndo, faBug, faLightbulb, faLevelUp, faCube, faQuestionCircle)
+library.add(faBooks, faDatabase, faTasks, faUserPlus, faCheckSquare, faSquare, faRocket, faVial, faShieldCheck, faShield, faHourglassHalf, faPlusCircle, faExchange, faEllipsisV, faTrashAlt, faUser, faPencil, faTimes, faPlus,faPaperclip, faCircle, faUserCheck, faSpinner, faClock, faCheckCircle, faBan, faPlay, faPause, faStop, faCheck, faUndo, faBug, faLightbulb, faLevelUp, faCube, faQuestionCircle)
 
 type Option<Value> = { label: string; value: Value }
 
@@ -61,6 +61,10 @@ const kindIcons: Record<string, string> = {
     bug: "fal fa-bug",
     feature: "fal fa-lightbulb",
     escalation: "fal fa-level-up",
+    task: "fal fa-tasks",
+    qa: "fal fa-vial",
+    documentation: "fal fa-books",
+    data_integrity: "fal fa-database",
 }
 
 const kindPopover = ref()
