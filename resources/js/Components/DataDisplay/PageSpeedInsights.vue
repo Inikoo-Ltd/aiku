@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, ref, watch } from "vue"
+import { computed, ref } from "vue"
 import axios from "axios"
 import Chart from "primevue/chart"
 import { router } from "@inertiajs/vue3"
@@ -20,7 +20,6 @@ type StrategyReport = {
 	strategy: string
 	fetched_at: string
 	overall_rating: string | null
-	measuring?: boolean
 	error?: string
 	scores: Array<{ key: string; label: string; score: number; rating: Rating }>
 	lab: Array<{ key: string; label: string; value: number | null; display: string | null; rating: Rating }>
@@ -29,7 +28,7 @@ type StrategyReport = {
 
 const props = defineProps<{
 	pagespeed?: {
-		status: "ready" | "measuring" | "unavailable"
+		status: "ready" | "unavailable"
 		message?: string
 		refresh_route?: { name: string; parameters: Record<string, string | number> }
 		mobile?: StrategyReport | null
@@ -39,14 +38,11 @@ const props = defineProps<{
 	historyFrequency?: "daily" | "weekly"
 }>()
 
-const POLL_INTERVAL_MS = 15000
-const MAX_POLLS = 12
 const HISTORY_COLOR = "#E8710A"
+const MEASURING_NOTICE = trans("Google is measuring this page, it usually takes a while")
 
 const strategy = ref<Strategy>("desktop")
-const polls = ref(0)
 const isRefreshing = ref(false)
-let pollTimer: ReturnType<typeof setTimeout> | null = null
 
 const markColor = {
 	fast: "#0CCE6B",
@@ -113,7 +109,6 @@ const isLoading = computed(() => props.pagespeed === undefined)
 const isUnavailable = computed(() => props.pagespeed?.status === "unavailable")
 const report = computed<StrategyReport | null>(() => props.pagespeed?.[strategy.value] ?? null)
 const hasScores = computed(() => !!report.value?.scores?.length)
-const isStalled = computed(() => props.pagespeed?.status === "measuring" && polls.value >= MAX_POLLS)
 const hasHistory = computed(() => (props.history ?? []).length > 0)
 
 const fieldChartData = computed(() => ({
@@ -181,26 +176,6 @@ const historyChartOptions = computed(() => ({
 
 const circumference = 2 * Math.PI * 20
 
-const stopPolling = () => {
-	if (pollTimer) {
-		clearTimeout(pollTimer)
-		pollTimer = null
-	}
-}
-
-const pollUntilMeasured = () => {
-	stopPolling()
-
-	if (polls.value >= MAX_POLLS) {
-		return
-	}
-
-	pollTimer = setTimeout(() => {
-		polls.value++
-		router.reload({ only: ["pagespeed"] })
-	}, POLL_INTERVAL_MS)
-}
-
 const reMeasure = async () => {
 	const refreshRoute = props.pagespeed?.refresh_route
 
@@ -212,7 +187,6 @@ const reMeasure = async () => {
 
 	try {
 		await axios.post(route(refreshRoute.name, refreshRoute.parameters))
-		polls.value = 0
 		router.reload({ only: ["pagespeed"] })
 	} catch (error) {
 		notify({
@@ -224,22 +198,6 @@ const reMeasure = async () => {
 		isRefreshing.value = false
 	}
 }
-
-watch(
-	() => props.pagespeed,
-	(pagespeed) => {
-		stopPolling()
-
-		if (pagespeed?.status === "measuring") {
-			pollUntilMeasured()
-		} else {
-			polls.value = 0
-		}
-	},
-	{ immediate: true }
-)
-
-onBeforeUnmount(stopPolling)
 </script>
 
 <template>
@@ -261,11 +219,11 @@ onBeforeUnmount(stopPolling)
 				</button>
 			</div>
 
-			<span v-if="report?.fetched_at" class="text-xs text-gray-600">
+			<span v-if="isRefreshing" class="text-xs text-gray-600">{{ MEASURING_NOTICE }}</span>
+
+			<span v-else-if="report?.fetched_at" class="text-xs text-gray-600">
 				{{ trans("Measured") }} {{ useFormatTime(report.fetched_at, { formatTime: "PPp" }) }}
 			</span>
-
-			<span v-if="report?.measuring" class="text-xs text-gray-600">{{ trans("Re-measuring now") }}</span>
 
 			<Button
 				v-if="pagespeed?.refresh_route"
@@ -279,11 +237,14 @@ onBeforeUnmount(stopPolling)
 				@click="reMeasure" />
 		</div>
 
-		<div v-if="isLoading" class="grid grid-cols-2 gap-6 p-6 sm:grid-cols-4">
-			<div v-for="placeholder in 4" :key="placeholder" class="flex animate-pulse flex-col items-center gap-2">
-				<div class="h-24 w-24 rounded-full bg-gray-200" />
-				<div class="h-3 w-20 rounded bg-gray-200" />
+		<div v-if="isLoading" class="space-y-4 p-6">
+			<div class="grid grid-cols-2 gap-6 sm:grid-cols-4">
+				<div v-for="placeholder in 4" :key="placeholder" class="flex animate-pulse flex-col items-center gap-2">
+					<div class="h-24 w-24 rounded-full bg-gray-200" />
+					<div class="h-3 w-20 rounded bg-gray-200" />
+				</div>
 			</div>
+			<div class="text-sm text-gray-600">{{ MEASURING_NOTICE }}</div>
 		</div>
 
 		<div v-else-if="isUnavailable" class="px-6 py-6 text-sm text-gray-600">
@@ -293,20 +254,6 @@ onBeforeUnmount(stopPolling)
 		<div v-else-if="report?.error" class="space-y-1 px-6 py-6 text-sm">
 			<div class="text-gray-800">{{ trans("Google could not measure this page") }}</div>
 			<div class="text-gray-600">{{ report.error }}</div>
-		</div>
-
-		<div v-else-if="!report" class="space-y-4 p-6">
-			<div class="grid grid-cols-2 gap-6 sm:grid-cols-4">
-				<div v-for="placeholder in 4" :key="placeholder" class="flex animate-pulse flex-col items-center gap-2">
-					<div class="h-24 w-24 rounded-full bg-gray-200" />
-					<div class="h-3 w-20 rounded bg-gray-200" />
-				</div>
-			</div>
-			<div class="text-sm text-gray-600">
-				{{ isStalled
-					? trans("Google is still measuring this page. Use Re-measure to check again.")
-					: trans("Google is measuring this page, results usually arrive within a minute.") }}
-			</div>
 		</div>
 
 		<div v-else-if="!hasScores" class="px-6 py-6 text-sm text-gray-600">

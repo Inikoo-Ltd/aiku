@@ -56,7 +56,10 @@ const props = defineProps<{
 
 
 const currentTab = ref(props.tabs.current)
-const handleTabUpdate = (tabSlug) => useTabChange(tabSlug, currentTab)
+const deferredPropsOfTab = {
+    analytics: ['pagespeed'],
+}
+const handleTabUpdate = (tabSlug) => useTabChange(tabSlug, currentTab, deferredPropsOfTab[tabSlug] ?? [])
 
 const component = computed(() => {
     const components = {
