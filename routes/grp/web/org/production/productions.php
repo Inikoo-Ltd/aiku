@@ -28,6 +28,7 @@ use App\Actions\Production\ArtefactFamily\UI\ShowArtefactFamily;
 use App\Actions\Production\ArtefactDepartment\UI\ShowArtefactDepartment;
 use App\Actions\Production\Artefact\SetArtefactAsMix;
 use App\Actions\Production\Artefact\UI\EditArtefact;
+use App\Actions\Production\Artefact\Label\UI\IndexArtefactLabels;
 use App\Actions\Production\Artefact\UI\IndexArtefacts;
 use App\Actions\Production\Artefact\UI\ShowArtefact;
 use App\Actions\Production\JobOrder\UI\IndexJobOrders;
@@ -123,6 +124,8 @@ Route::prefix('{production}')
                         Route::get('raw-materials/create', CreateRawMaterial::class)->name('raw_materials.create');
                         Route::get('raw-materials/{rawMaterial}', ShowRawMaterial::class)->name('raw_materials.show');
                         Route::get('raw-materials/{rawMaterial}/edit', EditRawMaterial::class)->name('raw_materials.edit');
+
+                        Route::get('labels', IndexArtefactLabels::class)->name('labels.index');
 
                         Route::get('artefacts', IndexArtefacts::class)->name('artefacts.index');
                         Route::get('artefacts/create', CreateArtefact::class)->name('artefacts.create');

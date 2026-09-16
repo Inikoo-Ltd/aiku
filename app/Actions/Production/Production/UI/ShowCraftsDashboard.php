@@ -12,7 +12,9 @@ use App\Actions\Dashboard\ShowOrganisationDashboard;
 use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Actions\WithActionButtons;
+use App\Enums\Production\Artefact\ArtefactLabelStateEnum;
 use App\Enums\Production\Artefact\ArtefactStateEnum;
+use App\Models\Production\ArtefactLabel;
 use App\Enums\UI\Production\ProductionTabsEnum;
 use App\Http\Resources\History\HistoryResource;
 use App\Http\Resources\Production\ProductionResource;
@@ -185,6 +187,17 @@ class ShowCraftsDashboard extends OrgAction
             'route'   => $familiesByState($state),
         ];
 
+        $labelCounts = ArtefactLabel::join('artefacts', 'artefact_labels.artefact_id', 'artefacts.id')
+            ->where('artefacts.production_id', $production->id)
+            ->selectRaw('count(*) as total')
+            ->selectRaw('count(*) filter (where artefact_labels.state = ?) as published', [ArtefactLabelStateEnum::PUBLISHED->value])
+            ->first();
+
+        $labelsRoute = fn (array $elements = []) => [
+            'name'       => 'grp.org.productions.show.crafts.labels.index',
+            'parameters' => array_merge($routeParameters, $elements)
+        ];
+
         $batchesWithPack = $production->artefacts()
             ->join('org_stocks', 'artefacts.org_stock_id', 'org_stocks.id')
             ->whereNotNull('artefacts.recommended_batch_size')
@@ -285,6 +298,21 @@ class ShowCraftsDashboard extends OrgAction
                         'icon'    => ['icon' => 'fas fa-times-circle', 'class' => 'text-red-500'],
                         'count'   => $artefactCounts[ArtefactStateEnum::DISCONTINUED->value],
                         'route'   => $byState(ArtefactStateEnum::DISCONTINUED),
+                    ],
+                ],
+            ],
+            [
+                'label' => __('Labels'),
+                'icon'  => 'fal fa-tags',
+                'color' => '#fb923c',
+                'value' => (int) $labelCounts->total,
+                'route' => $labelsRoute(),
+                'metas' => [
+                    [
+                        'tooltip' => __('Published, ready to print from the to produce board'),
+                        'icon'    => ['icon' => 'fas fa-check-circle', 'class' => 'text-green-500'],
+                        'count'   => (int) $labelCounts->published,
+                        'route'   => $labelsRoute(['elements[state]' => ArtefactLabelStateEnum::PUBLISHED->value]),
                     ],
                 ],
             ],
