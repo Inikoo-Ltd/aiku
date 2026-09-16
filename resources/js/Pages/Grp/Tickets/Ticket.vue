@@ -10,6 +10,7 @@ import { Head, Link, router } from "@inertiajs/vue3"
 import axios from "axios"
 import { trans } from "laravel-vue-i18n"
 import Icon from "@/Components/Icon.vue"
+import TicketUserAvatar from "@/Components/Tickets/TicketUserAvatar.vue"
 import { capitalize } from "@/Composables/capitalize"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
@@ -22,9 +23,9 @@ import Button from "@/Components/Elements/Buttons/Button.vue"
 import { useLiveTickets } from "@/Composables/useLiveTickets"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faPaperclip, faCircle, faUserCheck, faSpinner, faClock, faCheckCircle, faBan, faPlay, faPause, faStop, faCheck, faUndo, faBug, faLightbulb, faLevelUp, faCube, faQuestionCircle, faEllipsisV, faTrashAlt, faUser, faPencil, faTimes, faPlus, faPlusCircle, faExchange, faHourglassHalf, faVial, faShieldCheck, faShield, faRocket, faUsers, faLink, faLifeRing, faCode, faUserHeadset } from "@fal"
+import { faPaperclip, faCircle, faUserCheck, faSpinner, faClock, faCheckCircle, faBan, faPlay, faPause, faStop, faCheck, faUndo, faBug, faLightbulb, faLevelUp, faCube, faQuestionCircle, faEllipsisV, faTrashAlt, faUser, faPencil, faTimes, faPlus, faPlusCircle, faExchange, faHourglassHalf, faVial, faShieldCheck, faShield, faRocket, faUsers, faLink, faLifeRing, faCode, faUserHeadset, faBooks, faDatabase, faTasks, faChevronDown } from "@fal"
 
-library.add(faLifeRing, faCode, faUserHeadset, faLink, faUsers, faRocket, faVial, faShieldCheck, faShield, faHourglassHalf, faPlusCircle, faExchange, faEllipsisV, faTrashAlt, faUser, faPencil, faTimes, faPlus,faPaperclip, faCircle, faUserCheck, faSpinner, faClock, faCheckCircle, faBan, faPlay, faPause, faStop, faCheck, faUndo, faBug, faLightbulb, faLevelUp, faCube, faQuestionCircle)
+library.add(faBooks, faDatabase, faTasks, faChevronDown, faLifeRing, faCode, faUserHeadset, faLink, faUsers, faRocket, faVial, faShieldCheck, faShield, faHourglassHalf, faPlusCircle, faExchange, faEllipsisV, faTrashAlt, faUser, faPencil, faTimes, faPlus,faPaperclip, faCircle, faUserCheck, faSpinner, faClock, faCheckCircle, faBan, faPlay, faPause, faStop, faCheck, faUndo, faBug, faLightbulb, faLevelUp, faCube, faQuestionCircle)
 
 const isLinkCopied = ref(false)
 const copyTicketLink = async () => {
@@ -78,6 +79,45 @@ const saveTicketOrderSetting = (setting: "ticket_comments_newest_first" | "ticke
     axios.patch(route("grp.models.profile.update"), { [setting]: isNewestFirst })
 }
 
+const kindIcons: Record<string, string> = {
+    bug: "fal fa-bug",
+    feature: "fal fa-lightbulb",
+    escalation: "fal fa-level-up",
+    task: "fal fa-tasks",
+    qa: "fal fa-vial",
+    documentation: "fal fa-books",
+    data_integrity: "fal fa-database",
+}
+
+const readPanelState = (key: string) => {
+    try {
+        return localStorage.getItem(key) !== "closed"
+    } catch {
+        return true
+    }
+}
+
+const isControlsOpen = ref(readPanelState("ticket_controls_open"))
+const isHistoryOpen = ref(readPanelState("ticket_history_open"))
+
+const rememberPanelState = (key: string, isOpen: boolean) => {
+    try {
+        localStorage.setItem(key, isOpen ? "open" : "closed")
+    } catch {}
+}
+
+const toggleControls = () => {
+    isControlsOpen.value = !isControlsOpen.value
+    rememberPanelState("ticket_controls_open", isControlsOpen.value)
+}
+
+const toggleHistory = () => {
+    isHistoryOpen.value = !isHistoryOpen.value
+    rememberPanelState("ticket_history_open", isHistoryOpen.value)
+}
+
+const summaryPeople = computed(() => (props.ticket.collaborators ?? []) as { id: number; name: string; short: string; avatar?: any }[])
+
 const isHistoryNewestFirst = ref(props.history_newest_first)
 
 const toggleHistoryOrder = () => {
@@ -130,8 +170,52 @@ const update = (field: string, value: unknown) => {
                 </template>
             </TicketThread>
         </div>
-        <div class="space-y-4 self-start">
-        <aside class="bg-white rounded-lg border border-gray-300 p-4 space-y-4 text-sm">
+        <div class="space-y-4 self-start lg:sticky lg:top-[60px] lg:max-h-[calc(100vh-60px-2rem)] lg:overflow-y-auto">
+        <aside class="bg-white rounded-lg border border-gray-300 text-sm">
+            <button type="button" class="flex w-full items-start justify-between gap-3 p-4 text-left transition duration-200 hover:bg-gray-50" @click="toggleControls">
+                <span v-if="isControlsOpen" class="text-xs font-medium uppercase tracking-wide text-gray-400">{{ trans("Control panel") }}</span>
+                <span v-if="!isControlsOpen" class="flex min-w-0 flex-col gap-1.5">
+                    <span class="flex items-center gap-2">
+                        <TicketUserAvatar v-if="ticket.assignee" :name="ticket.assignee" :avatar="ticket.assignee_avatar" size="sm" />
+                        <span v-else class="flex h-6 w-6 items-center justify-center rounded-full bg-gray-200 text-gray-500">
+                            <FontAwesomeIcon icon="fal fa-user" fixed-width class="text-xs" />
+                        </span>
+                        <span :class="ticket.assignee ? 'font-medium text-gray-800' : 'text-gray-400'">{{ ticket.assignee_short || trans("Unassigned") }}</span>
+                    </span>
+                    <span
+                        v-if="summaryPeople.length"
+                        v-tooltip="{ content: summaryPeople.map((person) => person.name).join(', '), delay: 0 }"
+                        class="flex items-center gap-1.5">
+                        <FontAwesomeIcon icon="fal fa-users" fixed-width class="text-xs text-gray-400" />
+                        <span class="flex -space-x-1.5">
+                            <TicketUserAvatar v-for="person in summaryPeople.slice(0, 3)" :key="person.id" :name="person.name" :avatar="person.avatar" size="xs" class="ring-2 ring-white" />
+                        </span>
+                        <span v-if="summaryPeople.length > 3" class="text-xs text-gray-500">{{ trans("+:count others", { count: String(summaryPeople.length - 3) }) }}</span>
+                    </span>
+                </span>
+                <span class="flex shrink-0 items-center gap-3">
+                    <span v-if="!isControlsOpen" class="flex flex-col items-end gap-1.5">
+                        <span class="flex items-center gap-1.5">
+                            <span class="inline-flex items-center gap-1.5 rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-700">
+                                <Icon :data="ticket.status_icon" />{{ ticket.status_label }}
+                            </span>
+                            <span v-if="ticket.qa_status" class="inline-flex items-center gap-1.5 rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-700">
+                                <Icon :data="ticket.qa_status_icon" />{{ ticket.qa_status_label }}
+                            </span>
+                        </span>
+                        <span v-if="ticket.kind || ticket.module_label" class="flex items-center gap-1.5">
+                            <span v-if="ticket.kind" v-tooltip="ticket.kind_label" class="inline-flex items-center gap-1.5 rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-700">
+                                <FontAwesomeIcon :icon="kindIcons[ticket.kind] ?? 'fal fa-question-circle'" fixed-width />
+                            </span>
+                            <span v-if="ticket.module_label" v-tooltip="ticket.module_label" class="inline-flex items-center gap-1.5 rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-700">
+                                <FontAwesomeIcon icon="fal fa-cube" fixed-width />
+                            </span>
+                        </span>
+                    </span>
+                    <FontAwesomeIcon icon="fal fa-chevron-down" fixed-width class="text-gray-400 transition-transform duration-200" :class="!isControlsOpen && '-rotate-90'" />
+                </span>
+            </button>
+            <div v-show="isControlsOpen" class="space-y-4 border-t border-gray-200 p-4">
             <TicketControls :ticket="ticket" :options="options" :can_manage="can_manage" :can_assign="can_assign" :can_flag_confidential="can_flag_confidential" :can_qa="can_qa" :is_reporter="is_reporter" :can_change_kind_module="can_change_kind_module" :can_update="can_update" :can_contribute="can_contribute" :can_manage_collaborators="can_manage_collaborators" :routes="routes" hide-confidential />
             <div v-if="ticket.commits?.length">
                 <p class="text-xs text-gray-500 mb-1">{{ trans("Commits") }}</p>
@@ -150,15 +234,19 @@ const update = (field: string, value: unknown) => {
                 <div v-if="ticket.customer" class="flex justify-between"><dt>{{ trans("Customer") }}</dt><dd>{{ ticket.customer }}</dd></div>
                 <div v-if="ticket.shop" class="flex justify-between"><dt>{{ trans("Shop") }}</dt><dd>{{ ticket.shop }}</dd></div>
             </dl>
-        </aside>
-        <div class="bg-white rounded-lg border border-gray-300 p-4 text-sm">
-            <div class="mb-3 flex items-center justify-between text-xs text-gray-500">
-                <p>{{ trans("History") }}</p>
-                <button v-if="timeline.length > 1" type="button" class="px-1 py-0.5 hover:text-gray-900" :title="trans('Sort history')" @click="toggleHistoryOrder">
-                    {{ isHistoryNewestFirst ? "↓" : "↑" }} {{ isHistoryNewestFirst ? trans("Newest first") : trans("Oldest first") }}
-                </button>
             </div>
-            <ol class="relative ml-2 border-l border-gray-200">
+        </aside>
+        <div class="bg-white rounded-lg border border-gray-300 text-sm">
+            <button type="button" class="flex w-full items-center justify-between gap-3 p-4 text-left text-xs text-gray-500 transition duration-200 hover:bg-gray-50" @click="toggleHistory">
+                <span class="font-medium uppercase tracking-wide text-gray-400">{{ trans("History") }}</span>
+                <span class="flex shrink-0 items-center gap-3">
+                    <span v-if="isHistoryOpen && timeline.length > 1" class="px-1 py-0.5 hover:text-gray-900" :title="trans('Sort history')" @click.stop="toggleHistoryOrder">
+                        {{ isHistoryNewestFirst ? "↓" : "↑" }} {{ isHistoryNewestFirst ? trans("Newest first") : trans("Oldest first") }}
+                    </span>
+                    <FontAwesomeIcon icon="fal fa-chevron-down" fixed-width class="text-gray-400 transition-transform duration-200" :class="!isHistoryOpen && '-rotate-90'" />
+                </span>
+            </button>
+            <ol v-show="isHistoryOpen" class="relative ml-6 mr-4 mb-4 border-l border-gray-200">
                 <li v-for="(event, index) in sortedTimeline" :key="index" class="mb-4 ml-5 last:mb-0">
                     <span class="absolute -left-2.5 flex h-5 w-5 items-center justify-center rounded-full bg-white text-gray-500 ring-1 ring-gray-200">
                         <FontAwesomeIcon :icon="event.icon" fixed-width class="text-[10px]" />
