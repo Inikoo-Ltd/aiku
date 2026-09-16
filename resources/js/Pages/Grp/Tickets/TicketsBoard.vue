@@ -14,7 +14,7 @@ import PageHeading from "@/Components/Headings/PageHeading.vue"
 import Icon from "@/Components/Icon.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faVial, faShieldCheck, faShield, faRocket, faSpinner, faLifeRing, faCode, faUserHeadset } from "@fal"
+import { faVial, faShieldCheck, faShield, faRocket, faSpinner, faLifeRing, faCode, faUserHeadset, faBug, faLightbulb, faTasks, faLevelUp, faBooks, faDatabase, faCube } from "@fal"
 import { useLiveTickets } from "@/Composables/useLiveTickets"
 import TicketsCreatedInterval from "@/Components/Tickets/TicketsCreatedInterval.vue"
 import TicketQuickLook from "@/Components/Tickets/TicketQuickLook.vue"
@@ -22,7 +22,22 @@ import TicketUserAvatar from "@/Components/Tickets/TicketUserAvatar.vue"
 import TicketAskReporterDialog from "@/Components/Tickets/TicketAskReporterDialog.vue"
 import TicketStatusNoteDialog from "@/Components/Tickets/TicketStatusNoteDialog.vue"
 
-library.add(faLifeRing, faCode, faUserHeadset, faVial, faShieldCheck, faShield, faRocket, faSpinner)
+library.add(faLifeRing, faCode, faUserHeadset, faVial, faShieldCheck, faShield, faRocket, faSpinner, faBug, faLightbulb, faTasks, faLevelUp, faBooks, faDatabase, faCube)
+
+const kindIcons: Record<string, string> = {
+	bug: "fal fa-bug",
+	feature: "fal fa-lightbulb",
+	escalation: "fal fa-level-up",
+	task: "fal fa-tasks",
+	qa: "fal fa-vial",
+	documentation: "fal fa-books",
+	data_integrity: "fal fa-database",
+}
+
+const cardPeople = (ticket: { assignee?: string | null; assignee_avatar?: any; collaborators?: { id: number; name: string; avatar?: any }[] }) => [
+	...(ticket.assignee ? [{ key: "assignee", name: ticket.assignee, avatar: ticket.assignee_avatar }] : []),
+	...(ticket.collaborators ?? []).map((collaborator) => ({ key: `collaborator-${collaborator.id}`, name: collaborator.name, avatar: collaborator.avatar })),
+]
 
 const props = defineProps<{
 	pageHead: any
@@ -628,56 +643,61 @@ const cancelAssign = () => {
 							:data-ticket-id="element.id"
 							@click="openQuickLook(element, $event)">
 							<FontAwesomeIcon v-if="savingTicketIds.includes(element.id)" icon="fal fa-spinner" spin fixed-width class="absolute right-1.5 top-1.5 text-xs text-gray-400" />
-							<p class="text-sm leading-snug break-words line-clamp-3">
+
+							<div class="flex items-start justify-between gap-2 text-xs">
+								<span class="flex min-w-0 flex-col gap-0.5">
+									<span class="flex items-center gap-1.5">
+										<Icon v-if="element.type_icon" :data="element.type_icon" class="text-gray-400" />
+										<Link
+											:href="route('grp.tickets.show', element.reference)"
+											class="primaryLink font-medium"
+											@click.stop
+											>{{ element.reference }}</Link
+										>
+									</span>
+									<span class="flex items-center gap-1.5 text-[11px]">
+										<span class="text-gray-400" v-tooltip="{ content: trans('Raised'), delay: 0 }">{{ shortDate(element.created_at) }}</span>
+										<span class="text-gray-500" v-tooltip="{ content: column.label, delay: 0 }">{{ ageIn(column, element) }}</span>
+									</span>
+								</span>
+								<span v-if="(column.statuses.length > 1 && element.status_icon) || element.qa_status_icon" class="flex shrink-0 items-center gap-1 rounded-full bg-gray-100 px-1.5 py-0.5">
+									<Icon
+										v-if="column.statuses.length > 1"
+										:data="element.status_icon" />
+									<Icon
+										v-if="element.qa_status_icon"
+										:data="element.qa_status_icon" />
+								</span>
+							</div>
+
+							<p class="mt-1.5 text-sm leading-snug break-words line-clamp-3">
 								{{ element.subject }}
 							</p>
-							<div class="flex items-center gap-2 text-xs mt-2">
-								<Icon v-if="element.type_icon" :data="element.type_icon" class="text-gray-400" />
-								<Link
-									:href="route('grp.tickets.show', element.reference)"
-									class="primaryLink font-medium"
-									@click.stop
-									>{{ element.reference }}</Link
-								>
-								<Icon
-									v-if="column.statuses.length > 1"
-									:data="element.status_icon" />
-								<Icon
-									v-if="element.qa_status_icon"
-									:data="element.qa_status_icon" />
-								<span
-									class="text-gray-400"
-									v-tooltip="{ content: trans('Raised'), delay: 0 }"
-									>{{ shortDate(element.created_at) }}</span
-								>
-								<span
-									class="text-gray-500"
-									v-tooltip="{ content: column.label, delay: 0 }"
-									>{{ ageIn(column, element) }}</span
-								>
-								<span
-									v-if="element.assignee"
-									v-tooltip="{ content: element.assignee, delay: 0 }"
-									class="ml-auto flex min-w-0 items-center gap-1 rounded-full bg-gray-100 py-0.5 pl-0.5 pr-2">
-									<TicketUserAvatar :name="element.assignee" :avatar="element.assignee_avatar" size="xs" />
-									<span class="max-w-[5rem] truncate text-[10px] font-medium leading-none text-gray-600">{{ element.assignee_short }}</span>
+
+							<div class="mt-2 flex items-end justify-between gap-2 text-xs">
+								<span class="flex min-w-0 items-center gap-1.5 text-gray-500">
+									<FontAwesomeIcon
+										v-if="element.kind"
+										v-tooltip="{ content: element.kind_label, delay: 0 }"
+										:icon="kindIcons[element.kind] ?? 'fal fa-question-circle'"
+										fixed-width />
+									<span v-if="element.module_label" class="truncate">{{ element.module_label }}</span>
 								</span>
 								<span
-									v-if="element.collaborators?.length"
-									v-tooltip="{ content: element.collaborators.map((collaborator) => collaborator.name).join(', '), delay: 0 }"
-									class="flex shrink-0 -space-x-1.5"
-									:class="!element.assignee && 'ml-auto'">
+									v-if="cardPeople(element).length"
+									v-tooltip="{ content: cardPeople(element).map((person) => person.name).join(', '), delay: 0 }"
+									class="flex shrink-0 -space-x-1.5">
 									<TicketUserAvatar
-										v-for="collaborator in element.collaborators.slice(0, 3)"
-										:key="collaborator.id"
-										:name="collaborator.name"
-										:avatar="collaborator.avatar"
+										v-for="person in cardPeople(element).slice(0, 3)"
+										:key="person.key"
+										:name="person.name"
+										:avatar="person.avatar"
 										size="xs"
 										class="ring-2 ring-white" />
 									<span
-										v-if="element.collaborators.length > 3"
+										v-if="cardPeople(element).length > 3"
 										class="flex h-5 w-5 items-center justify-center rounded-full bg-gray-200 text-[8px] font-medium text-gray-600 ring-2 ring-white"
-										>+{{ element.collaborators.length - 3 }}</span
+										>+{{ cardPeople(element).length - 3 }}</span
 									>
 								</span>
 							</div>
