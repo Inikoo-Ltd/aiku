@@ -24,11 +24,11 @@ import TicketQuickLook from "@/Components/Tickets/TicketQuickLook.vue"
 import TicketUserAvatar from "@/Components/Tickets/TicketUserAvatar.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faPlay, faQuestionCircle, faCheck, faBan, faChevronDown, faUser, faStop, faUndo, faSpinner, faUsers } from "@fal"
+import { faPlay, faQuestionCircle, faCheck, faBan, faChevronDown, faUser, faStop, faUndo, faSpinner, faUsers, faLifeRing, faCode, faUserHeadset } from "@fal"
 
 import { faArrowDown as faSolidArrowDown, faArrowUp as faSolidArrowUp, faMinus as faSolidMinus, faExclamationTriangle as faSolidExclamationTriangle } from "@fas"
 
-library.add(faPlay, faQuestionCircle, faCheck, faBan, faChevronDown, faUser, faStop, faUndo, faSpinner, faUsers, faSolidArrowDown, faSolidArrowUp, faSolidMinus, faSolidExclamationTriangle)
+library.add(faLifeRing, faCode, faUserHeadset, faPlay, faQuestionCircle, faCheck, faBan, faChevronDown, faUser, faStop, faUndo, faSpinner, faUsers, faSolidArrowDown, faSolidArrowUp, faSolidMinus, faSolidExclamationTriangle)
 
 type Option<Value> = { label: string; value: Value }
 
@@ -43,6 +43,8 @@ const props = defineProps<{
     can_assign: boolean
     can_manage?: boolean
     mineFilter: string | null
+    typeFilter?: string | null
+    typeOptions?: { label: string; value: string; icon: any }[]
     options: {
         priorities: (Option<string> & { icon: any })[]
         kinds: Option<string>[]
@@ -170,6 +172,9 @@ const closeQuickLook = () => {
     router.reload({ only: ["data"] })
 }
 
+const filterByType = (type: string | null) =>
+    router.reload({ data: { "elements[type]": type ?? undefined, page: 1 }, preserveScroll: true })
+
 const savedMineFilter = ref(props.mineFilter)
 
 watch(
@@ -187,6 +192,26 @@ watch(
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead" />
     <TicketsCreatedInterval :options="createdIntervals" :selected="createdInterval" class="mx-4 mt-2" />
+    <div v-if="typeOptions?.length" class="mx-4 mt-2 flex flex-wrap items-center gap-1 rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-sm">
+        <span class="mr-2 text-xs font-medium uppercase tracking-wide text-gray-400">{{ trans("Type") }}</span>
+        <button
+            type="button"
+            class="rounded-md px-3 py-1 transition duration-200"
+            :class="!typeFilter ? 'bg-indigo-600 text-white shadow-sm' : 'text-gray-600 hover:bg-gray-100'"
+            @click="filterByType(null)">
+            {{ trans("All") }}
+        </button>
+        <button
+            v-for="option in typeOptions"
+            :key="option.value"
+            type="button"
+            class="flex items-center gap-1.5 rounded-md px-3 py-1 transition duration-200"
+            :class="typeFilter === option.value ? 'bg-indigo-600 text-white shadow-sm' : 'text-gray-600 hover:bg-gray-100'"
+            @click="filterByType(option.value)">
+            <Icon v-if="option.icon" :data="option.icon" />
+            {{ option.label }}
+        </button>
+    </div>
     <div class="mx-4 mt-1 flex flex-wrap items-center gap-1 text-xs text-gray-400">
         <span class="mr-1">{{ trans("Search tips") }}:</span>
         <code v-for="tip in searchHelp" :key="tip" class="rounded bg-gray-100 px-1.5 py-0.5 text-gray-500">{{ tip }}</code>
@@ -194,7 +219,7 @@ watch(
     <div class="[&_tbody_tr]:cursor-pointer" @click="onTableClick">
         <Table :resource="data" class="mt-2">
             <template #cell(reference)="{ item }">
-                <Link :href="route('grp.tickets.show', item.reference)" class="primaryLink" :data-ticket-id="item.id">{{ item.reference }}</Link>
+                <span class="inline-flex items-center"><Icon v-if="item.type_icon" :data="item.type_icon" class="mr-1 text-gray-400" /><Link :href="route('grp.tickets.show', item.reference)" class="primaryLink" :data-ticket-id="item.id">{{ item.reference }}</Link></span>
             </template>
             <template #cell(status)="{ item }">
                 <button

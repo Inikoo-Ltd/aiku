@@ -23,7 +23,7 @@ import { faSlack } from "@fortawesome/free-brands-svg-icons"
 library.add(faPencil, faTrashAlt, faUser)
 
 const props = withDefaults(defineProps<{
-    ticket: { subject: string; description: string | null; reporter: string | null; reporter_avatar?: Record<string, string> | null; is_from_slack?: boolean; reference_url?: string | null; created_at: string; images?: Record<string, string>[] }
+    ticket: { subject: string; description: string | null; reporter: string | null; reporter_roles?: { key: string; label: string }[]; reporter_avatar?: Record<string, string> | null; is_from_slack?: boolean; reference_url?: string | null; created_at: string; images?: Record<string, string>[] }
     comments: { id: number; body: string; is_internal: boolean; is_lead_only?: boolean; author_avatar?: Record<string, string> | null; author_roles?: { key: string; label: string }[]; can_toggle_visibility?: boolean; is_staff: boolean; author: string | null; created_at: string; images?: Record<string, string>[]; attachments?: { name: string; url: string }[]; can_edit?: boolean; can_delete?: boolean }[]
     commentRoute: { name: string; parameters: Record<string, unknown> }
     mentionable?: { username: string; name: string | null; suggested?: boolean; is_customer?: boolean }[]
@@ -41,6 +41,7 @@ const roleClasses: Record<string, string> = {
     engineer: "bg-blue-100 text-blue-700",
     qa: "bg-purple-100 text-purple-700",
     reporter: "bg-orange-100 text-orange-700",
+    staff: "bg-gray-100 text-gray-600",
     customer: "bg-slate-200 text-slate-700",
 }
 
@@ -102,6 +103,13 @@ const submit = () => {
             <div class="text-xs text-gray-500 mb-3 pb-2 border-b border-gray-200 flex items-center gap-2">
                 <TicketUserAvatar :name="ticket.reporter" :avatar="ticket.reporter_avatar" size="sm" />
                 <span class="font-semibold text-gray-800">{{ ticket.reporter || trans("Unknown") }}</span>
+                <span
+                    v-for="role in ticket.reporter_roles ?? []"
+                    :key="role.key"
+                    class="rounded px-1.5 py-0.5 text-[10px] font-medium"
+                    :class="roleClasses[role.key] ?? 'bg-gray-100 text-gray-600'"
+                    >{{ role.label }}</span
+                >
                 <span>· {{ useFormatTime(ticket.created_at, { formatTime: "PP, HH:mm:ss zzz" }) }}</span>
                 <span class="text-gray-400">({{ daysAgo(ticket.created_at) }})</span>
                 <FontAwesomeIcon v-if="ticket.is_from_slack" v-tooltip="trans('Raised from Slack')" :icon="faSlack" class="text-gray-500" />

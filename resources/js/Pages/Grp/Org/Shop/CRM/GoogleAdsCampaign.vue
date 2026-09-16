@@ -7,7 +7,7 @@
 <script setup lang="ts">
 import { Deferred, Head } from "@inertiajs/vue3"
 import TrafficSourceAudienceMix from "@/Components/DataDisplay/Dashboard/Widget/TrafficSourceAudienceMix.vue"
-import { computed } from "vue"
+import { computed, ref, watch } from "vue"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faGoogle } from "@fortawesome/free-brands-svg-icons"
@@ -23,10 +23,13 @@ import ConfirmDialog from "primevue/confirmdialog"
 import GoogleAdsMetric from "@/Components/DataDisplay/Dashboard/Widget/GoogleAdsMetric.vue"
 import GoogleAdsAdCreative from "@/Components/DataDisplay/Dashboard/Widget/GoogleAdsAdCreative.vue"
 import GoogleAdsDailyTable from "@/Components/DataDisplay/Dashboard/Widget/GoogleAdsDailyTable.vue"
+import GoogleAdsKeywordsTable from "@/Components/DataDisplay/Dashboard/Widget/GoogleAdsKeywordsTable.vue"
+import GoogleAdsPager from "@/Components/DataDisplay/Dashboard/Widget/GoogleAdsPager.vue"
 import GoogleAdsTargeting from "@/Components/DataDisplay/Dashboard/Widget/GoogleAdsTargeting.vue"
 import GoogleAdsAssetGroups from "@/Components/DataDisplay/Dashboard/Widget/GoogleAdsAssetGroups.vue"
 import HelpTip from "@/Components/Utils/HelpTip.vue"
 import { criterionLabel, criterionTypeLabel, type Criterion } from "@/Composables/googleAdsCriteria"
+import { useLocalPagination } from "@/Composables/useLocalPagination"
 import { capitalize } from "@/Composables/capitalize"
 import { campaignTypeLabel } from "@/Composables/googleAdsCampaignType"
 import { impressionShareLabel } from "@/Composables/googleAdsFormat"
@@ -213,13 +216,29 @@ const structureWindowLabel = computed(() => {
     )
 })
 
-const hasKeywordMetrics = computed(() =>
-    props.ad_groups.some((group) => group.keywords.some((keyword) => keyword.metrics))
-)
-
 const hasTargeting = computed(() => props.ad_groups.some((group) => (group.targeting ?? []).length > 0))
 
 const groupsWithNegatives = computed(() => props.ad_groups.filter((group) => (group.negative_keywords ?? []).length > 0))
+
+/* A Search campaign here arrives with sixty ad groups and six hundred headlines between them. Only
+   the groups that actually hold an ad are worth a card; the rest exist to carry keywords and are
+   already listed in the keyword table. */
+const adGroupFilter = ref("")
+
+const adGroupsWithAds = computed(() => props.ad_groups.filter((group) => group.ads.length > 0))
+
+const filteredAdGroups = computed(() => {
+    const needle = adGroupFilter.value.trim().toLowerCase()
+
+    if (!needle) return adGroupsWithAds.value
+
+    return adGroupsWithAds.value.filter((group) => (group.name ?? String(group.id)).toLowerCase().includes(needle))
+})
+
+const adGroupPager = useLocalPagination(filteredAdGroups, [5, 10, 25])
+const pagedAdGroups = adGroupPager.paged
+
+watch(adGroupFilter, adGroupPager.toFirstPage)
 
 const exclusionsByType = computed(() => {
     const byType = new Map<string, Criterion[]>()
@@ -585,7 +604,7 @@ const notServingReasons = computed(() =>
             </p>
         </section>
 
-        <section class="rounded-xl bg-white p-5 ring-1 ring-gray-200 lg:col-span-2">
+        <section class="rounded-xl bg-white p-5 ring-1 ring-gray-200 lg:col-span-3">
             <h2 class="text-sm font-medium text-gray-800">
                 {{ trans("Ads") }}
                 <span v-if="adCount" class="font-normal text-gray-500">· {{ adCount }}</span>
@@ -601,8 +620,18 @@ const notServingReasons = computed(() =>
                 </span>
             </p>
 
+            <div v-if="adCount && adGroupsWithAds.length > 1" class="mt-3">
+                <label for="gads-ad-group-filter" class="sr-only">{{ trans("Search ad groups") }}</label>
+                <input
+                    id="gads-ad-group-filter"
+                    v-model="adGroupFilter"
+                    type="search"
+                    :placeholder="trans('Search ad groups')"
+                    class="w-full rounded-md border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500 sm:w-72" />
+            </div>
+
             <div v-if="adCount" class="mt-3 space-y-4">
-                <div v-for="group in ad_groups" :key="group.id" class="rounded-lg p-3 ring-1 ring-gray-100">
+                <div v-for="group in pagedAdGroups" :key="group.id" class="rounded-lg p-3 ring-1 ring-gray-100">
                     <div class="flex flex-wrap items-center justify-between gap-2">
                         <div class="text-xs font-medium text-gray-700">
                             {{ group.name ?? group.id }}
@@ -658,6 +687,23 @@ const notServingReasons = computed(() =>
                         :ad-group-name="group.name"
                         :update-route="keyword_route" />
                 </div>
+
+                <p v-if="!pagedAdGroups.length" class="py-4 text-center text-xs text-gray-500">
+                    {{ trans("No ad group matches that search.") }}
+                </p>
+
+                <GoogleAdsPager
+                    v-if="adGroupPager.isPaged.value"
+                    :first-row="adGroupPager.firstRow.value"
+                    :last-row="adGroupPager.lastRow.value"
+                    :total="adGroupPager.total.value"
+                    :page="adGroupPager.page.value"
+                    :page-count="adGroupPager.pageCount.value"
+                    :per-page="adGroupPager.perPage.value"
+                    :per-page-options="adGroupPager.perPageOptions"
+                    :unit="trans('ad groups')"
+                    @update:page="adGroupPager.page.value = $event"
+                    @update:per-page="((adGroupPager.perPage.value = $event), adGroupPager.toFirstPage())" />
             </div>
 
             <p v-else-if="asset_groups.length" class="mt-3 text-xs text-gray-500">
@@ -669,70 +715,19 @@ const notServingReasons = computed(() =>
             </p>
         </section>
 
-        <section class="rounded-xl bg-white p-5 ring-1 ring-gray-200">
+        <section class="rounded-xl bg-white p-5 ring-1 ring-gray-200 lg:col-span-3">
             <h2 class="text-sm font-medium text-gray-800">
                 {{ trans("Keywords") }}
                 <span v-if="keywordCount" class="font-normal text-gray-500">· {{ keywordCount }}</span>
                 <HelpTip :text="trans('The searches this campaign bids on, by ad group, with match type, status and Google\'s quality score from 1 to 10. The figures are for the window the nightly fetch read, named under the table, not for the period chosen at the top. Pausing a keyword stops bids on it without deleting it. Only Search campaigns have keywords.')" />
             </h2>
 
-            <div v-if="keywordCount" class="mt-3 overflow-x-auto">
-                <table class="w-full text-xs" :class="hasKeywordMetrics ? 'min-w-[48rem]' : ''">
-                    <thead>
-                        <tr class="border-b border-gray-100 text-gray-500">
-                            <th scope="col" class="py-1.5 pr-2 text-left font-normal">{{ trans("Text") }}</th>
-                            <th scope="col" class="px-2 py-1.5 text-left font-normal">{{ trans("Match") }}</th>
-                            <th scope="col" class="px-2 py-1.5 text-left font-normal">{{ trans("Status") }}</th>
-                            <th scope="col" class="px-2 py-1.5 text-right font-normal">{{ trans("Quality") }}</th>
-                            <template v-if="hasKeywordMetrics">
-                                <th scope="col" class="px-2 py-1.5 text-right font-normal">{{ trans("Impr.") }}</th>
-                                <th scope="col" class="px-2 py-1.5 text-right font-normal">{{ trans("Clicks") }}</th>
-                                <th scope="col" class="px-2 py-1.5 text-right font-normal">{{ trans("CPC") }}</th>
-                                <th scope="col" class="px-2 py-1.5 text-right font-normal">{{ trans("Cost") }}</th>
-                                <th scope="col" class="px-2 py-1.5 text-right font-normal">{{ trans("Conv.") }}</th>
-                                <th scope="col" class="px-2 py-1.5 text-right font-normal">{{ trans("Conv. value") }}</th>
-                            </template>
-                            <th scope="col" class="py-1.5 pl-2 text-right font-normal">
-                                <span class="sr-only">{{ trans("Actions") }}</span>
-                            </th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <template v-for="group in ad_groups" :key="group.id">
-                            <tr
-                                v-for="(keyword, i) in group.keywords"
-                                :key="keyword.id ?? i"
-                                class="border-b border-gray-50 text-gray-600">
-                                <td class="py-2 pr-2">{{ keyword.text }}</td>
-                                <td class="px-2 capitalize">{{ enumLabel(keyword.match_type) }}</td>
-                                <td class="px-2 capitalize">{{ enumLabel(keyword.status) }}</td>
-                                <td class="px-2 text-right tabular-nums" :class="keyword.quality_score === null || keyword.quality_score === undefined ? 'text-gray-400' : keyword.quality_score <= 4 ? 'text-[#d03b3b]' : 'text-gray-600'">
-                                    {{ keyword.quality_score ?? "—" }}
-                                </td>
-                                <template v-if="hasKeywordMetrics">
-                                    <td class="px-2 text-right tabular-nums">{{ keyword.metrics ? locale.number(keyword.metrics.impressions) : "—" }}</td>
-                                    <td class="px-2 text-right tabular-nums">{{ keyword.metrics ? locale.number(keyword.metrics.clicks) : "—" }}</td>
-                                    <td class="px-2 text-right tabular-nums">{{ keyword.metrics ? moneyOrDash(keyword.metrics.avg_cpc) : "—" }}</td>
-                                    <td class="px-2 text-right tabular-nums">{{ keyword.metrics ? money(keyword.metrics.cost) : "—" }}</td>
-                                    <td class="px-2 text-right tabular-nums" :class="keyword.metrics && keyword.metrics.conversions > 0 ? 'text-[#006300]' : ''">{{ keyword.metrics ? locale.number(keyword.metrics.conversions) : "—" }}</td>
-                                    <td class="px-2 text-right tabular-nums">{{ keyword.metrics ? money(keyword.metrics.conversions_value) : "—" }}</td>
-                                </template>
-                                <td class="pl-2 text-right">
-                                    <GoogleAdsElementToggle
-                                        v-if="keyword.id"
-                                        type="keyword"
-                                        :ad-group-id="String(group.id)"
-                                        :element-id="String(keyword.id)"
-                                        :status="keyword.status"
-                                        :label="trans('keyword')"
-                                        :update-route="element_route" />
-                                </td>
-                            </tr>
-                        </template>
-                    </tbody>
-                </table>
-                <p v-if="hasKeywordMetrics && structureWindowLabel" class="mt-1 text-[11px] text-gray-400">{{ structureWindowLabel }}</p>
-            </div>
+            <GoogleAdsKeywordsTable
+                v-if="keywordCount"
+                :ad-groups="ad_groups.map((group) => ({ id: String(group.id), name: group.name, keywords: group.keywords }))"
+                :currency="campaign.currency"
+                :element-route="element_route"
+                :window-label="structureWindowLabel" />
 
             <p v-else-if="isSearch" class="mt-3 text-xs text-gray-500">
                 {{ trans("No keywords read for this campaign yet.") }}

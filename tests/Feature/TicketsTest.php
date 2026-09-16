@@ -104,7 +104,7 @@ test('help ticket gets a HELP reference and defaults', function () {
 test('customer ticket from retina gets an AD reference and the customer attached', function () {
     $ticket = StoreRetinaTicket::make()->action($this->webUser, ['subject' => 'API returns 500', 'priority' => 'high']);
 
-    expect($ticket->reference)->toStartWith('AD-')
+    expect($ticket->reference)->toStartWith('CUS-')
         ->and($ticket->type)->toBe(TicketTypeEnum::CUSTOMER)
         ->and($ticket->customer_id)->toBe($this->customer->id)
         ->and($ticket->shop_id)->toBe($this->shop->id)
@@ -2160,7 +2160,7 @@ test('help desk staff and QA can raise engineering tickets with an INI reference
 
     actingAs($engineer);
     get(route('grp.tickets.create'))->assertOk()->assertInertia(
-        fn (AssertableInertia $page) => $page->where('types', fn ($types) => collect($types)->pluck('value')->all() === ['help', 'engineer'])
+        fn (AssertableInertia $page) => $page->where('types', fn ($types) => collect($types)->pluck('value')->all() === ['help', 'engineer', 'customer'])
     );
     post(route('grp.models.ticket.store'), ['subject' => 'Refactor the queue', 'type' => 'engineer'])->assertRedirect()->assertSessionHasNoErrors();
     expect(Ticket::where('subject', 'Refactor the queue')->value('reference'))->toStartWith('INI-');
@@ -2172,7 +2172,9 @@ test('help desk staff and QA can raise engineering tickets with an INI reference
     get(route('grp.tickets.create'))->assertOk()->assertInertia(fn (AssertableInertia $page) => $page->where('types', []));
     post(route('grp.models.ticket.store'), ['subject' => 'Not for me', 'type' => 'engineer'])->assertSessionHasErrors('type');
     post(route('grp.models.ticket.store'), ['subject' => 'Plain help'])->assertRedirect()->assertSessionHasNoErrors();
-    expect(Ticket::where('subject', 'Plain help')->value('reference'))->toStartWith('HELP-');
+    post(route('grp.models.ticket.store'), ['subject' => 'Empty type', 'type' => null])->assertRedirect()->assertSessionHasNoErrors();
+    expect(Ticket::where('subject', 'Plain help')->value('reference'))->toStartWith('HELP-')
+        ->and(Ticket::where('subject', 'Empty type')->value('reference'))->toStartWith('HELP-');
 });
 
 test('engineers claim unassigned tickets, then only the assignee or a lead engineer hands them over', function () {
@@ -2206,4 +2208,20 @@ test('engineers claim unassigned tickets, then only the assignee or a lead engin
     actingAs($engineer);
     patch(route('grp.models.ticket.update', $other->id), ['assignee_id' => $colleague->id])->assertRedirect()->assertSessionHasNoErrors();
     expect($other->fresh()->assignee_id)->toBe($colleague->id);
+});
+
+test('old AD references and padded numbers are still found by search', function () {
+    $customerTicket = StoreRetinaTicket::make()->action($this->webUser, ['subject' => 'Padded customer ticket']);
+    $legacy         = StoreTicket::make()->action($this->group, ['subject' => 'Raised before the rename']);
+    $legacy->forceFill(['reference' => 'AD-1697'])->saveQuietly();
+
+    $found = fn (string $search) => collect(get(route('grp.tickets.list', ['filter' => ['global' => $search]]))->assertOk()->viewData('page')['props']['data']['data'])->pluck('reference')->all();
+
+    $number = (int) Str::afterLast($customerTicket->reference, '-');
+
+    expect($customerTicket->reference)->toMatch('/^CUS-\d{3,}$/')
+        ->and($found('AD-1697'))->toContain('AD-1697')
+        ->and($found('1697'))->toContain('AD-1697')
+        ->and($found($customerTicket->reference))->toContain($customerTicket->reference)
+        ->and($found((string) $number))->toContain($customerTicket->reference);
 });

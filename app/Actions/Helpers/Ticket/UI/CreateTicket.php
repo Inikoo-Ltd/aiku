@@ -36,9 +36,9 @@ class CreateTicket extends OrgAction
                     ShowTicketsDashboard::make()->getBreadcrumbs(),
                     [['type' => 'creatingModel', 'creatingModel' => ['label' => __('Creating ticket')]]]
                 ),
-                'title'       => __('New ticket'),
+                'title'       => __('Create New Ticket'),
                 'pageHead'    => [
-                    'title'   => __('New ticket'),
+                    'title'   => __('Create New Ticket'),
                     'icon'    => ['fal', 'fa-life-ring'],
                     'actions' => [
                         [
@@ -54,7 +54,7 @@ class CreateTicket extends OrgAction
                 'modules'     => collect(TicketModuleEnum::labels())->map(fn ($label, $value) => ['label' => $label, 'value' => $value])->values(),
                 'kinds'       => TicketKindEnum::raisableBy($request->user()),
                 'types'       => Ticket::canChooseType($request->user())
-                    ? collect([TicketTypeEnum::HELP, TicketTypeEnum::ENGINEER])->map(fn (TicketTypeEnum $type) => ['label' => TicketTypeEnum::labels()[$type->value], 'value' => $type->value])->values()
+                    ? collect(TicketTypeEnum::cases())->map(fn (TicketTypeEnum $type) => ['label' => TicketTypeEnum::labels()[$type->value], 'value' => $type->value])->values()
                     : [],
             ]
         );

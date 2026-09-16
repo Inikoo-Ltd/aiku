@@ -209,7 +209,7 @@ class Search extends OrgAction
 
     private function isTicketReference(string $query): bool
     {
-        $prefixes = implode('|', array_map(fn (TicketTypeEnum $type) => $type->prefix(), TicketTypeEnum::cases()));
+        $prefixes = implode('|', TicketTypeEnum::searchPrefixes());
 
         return (bool) preg_match("~^($prefixes)-?\\d+$~i", trim($query));
     }

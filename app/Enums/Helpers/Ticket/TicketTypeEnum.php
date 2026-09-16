@@ -27,12 +27,40 @@ enum TicketTypeEnum: string
         ];
     }
 
+    public function icon(): array
+    {
+        return match ($this) {
+            self::HELP     => ['icon' => 'fal fa-life-ring', 'tooltip' => self::labels()['help']],
+            self::ENGINEER => ['icon' => 'fal fa-code', 'tooltip' => self::labels()['engineer']],
+            self::CUSTOMER => ['icon' => 'fal fa-user-headset', 'tooltip' => self::labels()['customer']],
+        };
+    }
+
     public function prefix(): string
     {
         return match ($this) {
             self::HELP     => 'HELP',
             self::ENGINEER => 'INI',
-            self::CUSTOMER => 'AD',
+            self::CUSTOMER => 'CUS',
+        };
+    }
+
+    /**
+     * Customer tickets were raised as AD before the prefix became CUS, so old references stay searchable.
+     *
+     * @return array<int, string>
+     */
+    public static function searchPrefixes(): array
+    {
+        return [...array_map(fn (self $type) => $type->prefix(), self::cases()), 'AD'];
+    }
+
+    public function numberPadding(): int
+    {
+        return match ($this) {
+            self::HELP     => 0,
+            self::ENGINEER => 3,
+            self::CUSTOMER => 3,
         };
     }
 

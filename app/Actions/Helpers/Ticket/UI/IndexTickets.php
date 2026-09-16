@@ -17,6 +17,7 @@ use App\Enums\Helpers\Ticket\TicketKindEnum;
 use App\Enums\Helpers\Ticket\TicketModuleEnum;
 use App\Enums\Helpers\Ticket\TicketStatusEnum;
 use App\Enums\Helpers\Ticket\TicketTypeEnum;
+use Illuminate\Support\Arr;
 use App\Http\Resources\Helpers\TicketResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Helpers\Ticket;
@@ -295,6 +296,12 @@ class IndexTickets extends OrgAction
                 'can_assign'  => Ticket::canBeAssignedBy(request()->user()),
                 'can_manage'  => Ticket::canBeManagedBy(request()->user()),
                 'mineFilter'  => $this->savedMineFilter(),
+                'typeFilter'  => Arr::get(request()->input('elements', []), 'type'),
+                'typeOptions' => collect(TicketTypeEnum::cases())->map(fn (TicketTypeEnum $type) => [
+                    'label' => $type->prefix(),
+                    'value' => $type->value,
+                    'icon'  => $type->icon(),
+                ])->values(),
                 'options'     => [
                     'priorities' => collect(ChatPriorityEnum::labels())->map(fn ($label, $value) => ['label' => $label, 'value' => $value, 'icon' => ChatPriorityEnum::stateIcon()[$value]])->values(),
                     'kinds'      => collect(TicketKindEnum::labels())->map(fn ($label, $value) => ['label' => $label, 'value' => $value])->values(),

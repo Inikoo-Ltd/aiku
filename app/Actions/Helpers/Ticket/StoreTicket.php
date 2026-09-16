@@ -25,14 +25,14 @@ class StoreTicket extends OrgAction
 {
     public function handle(Group $group, array $modelData): Ticket
     {
-        $type = TicketTypeEnum::from(Arr::get($modelData, 'type', TicketTypeEnum::HELP->value));
+        $type = TicketTypeEnum::from(Arr::get($modelData, 'type') ?: TicketTypeEnum::HELP->value);
 
         $number = DB::selectOne('SELECT nextval(?) AS number', [$type->sequence()])->number;
 
         data_set($modelData, 'group_id', $group->id);
         data_set($modelData, 'type', $type);
         data_set($modelData, 'number', $number);
-        data_set($modelData, 'reference', $type->prefix().'-'.$number);
+        data_set($modelData, 'reference', $type->prefix().'-'.str_pad((string) $number, $type->numberPadding(), '0', STR_PAD_LEFT));
 
         $images = Arr::pull($modelData, 'images', []);
         Arr::forget($modelData, 'stay');
@@ -54,7 +54,7 @@ class StoreTicket extends OrgAction
         return [
             'subject'         => ['required', 'string', 'max:255'],
             'description'     => ['sometimes', 'nullable', 'string'],
-            'type'            => ['sometimes', Rule::enum(TicketTypeEnum::class), Rule::when(!$this->asAction && !Ticket::canChooseType(request()->user()), Rule::in([TicketTypeEnum::HELP->value, TicketTypeEnum::CUSTOMER->value]))],
+            'type'            => ['sometimes', 'nullable', Rule::enum(TicketTypeEnum::class), Rule::when(!$this->asAction && !Ticket::canChooseType(request()->user()), Rule::in([TicketTypeEnum::HELP->value]))],
             'kind'            => ['sometimes', 'nullable', Rule::enum(TicketKindEnum::class), Rule::when(!$this->asAction && !Ticket::canBeManagedBy(request()->user()), Rule::notIn(TicketKindEnum::internalValues()))],
             'module'          => ['sometimes', 'nullable', Rule::enum(TicketModuleEnum::class)],
             'tags'            => ['sometimes', 'array'],

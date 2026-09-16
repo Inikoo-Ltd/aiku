@@ -18,9 +18,9 @@ import TicketStatusNoteDialog from "@/Components/Tickets/TicketStatusNoteDialog.
 import TicketUserAvatar from "@/Components/Tickets/TicketUserAvatar.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faPaperclip, faCircle, faUserCheck, faSpinner, faClock, faCheckCircle, faBan, faPlay, faPause, faStop, faCheck, faUndo, faBug, faLightbulb, faLevelUp, faCube, faQuestionCircle, faEllipsisV, faTrashAlt, faUser, faPencil, faTimes, faPlus, faPlusCircle, faExchange, faHourglassHalf, faVial, faShieldCheck, faShield, faRocket, faUserPlus, faCheckSquare, faSquare } from "@fal"
+import { faPaperclip, faCircle, faUserCheck, faSpinner, faClock, faCheckCircle, faBan, faPlay, faPause, faStop, faCheck, faUndo, faBug, faLightbulb, faLevelUp, faCube, faQuestionCircle, faEllipsisV, faTrashAlt, faUser, faPencil, faTimes, faPlus, faPlusCircle, faExchange, faHourglassHalf, faVial, faShieldCheck, faShield, faRocket, faUserPlus, faCheckSquare, faSquare, faBooks, faDatabase, faTasks } from "@fal"
 
-library.add(faUserPlus, faCheckSquare, faSquare, faRocket, faVial, faShieldCheck, faShield, faHourglassHalf, faPlusCircle, faExchange, faEllipsisV, faTrashAlt, faUser, faPencil, faTimes, faPlus,faPaperclip, faCircle, faUserCheck, faSpinner, faClock, faCheckCircle, faBan, faPlay, faPause, faStop, faCheck, faUndo, faBug, faLightbulb, faLevelUp, faCube, faQuestionCircle)
+library.add(faBooks, faDatabase, faTasks, faUserPlus, faCheckSquare, faSquare, faRocket, faVial, faShieldCheck, faShield, faHourglassHalf, faPlusCircle, faExchange, faEllipsisV, faTrashAlt, faUser, faPencil, faTimes, faPlus,faPaperclip, faCircle, faUserCheck, faSpinner, faClock, faCheckCircle, faBan, faPlay, faPause, faStop, faCheck, faUndo, faBug, faLightbulb, faLevelUp, faCube, faQuestionCircle)
 
 type Option<Value> = { label: string; value: Value }
 
@@ -61,6 +61,10 @@ const kindIcons: Record<string, string> = {
     bug: "fal fa-bug",
     feature: "fal fa-lightbulb",
     escalation: "fal fa-level-up",
+    task: "fal fa-tasks",
+    qa: "fal fa-vial",
+    documentation: "fal fa-books",
+    data_integrity: "fal fa-database",
 }
 
 const kindPopover = ref()
@@ -301,9 +305,8 @@ const update = (field: string, value: unknown, action: string = field) => {
                     </div>
                 </Popover>
             </div>
-            <div v-if="can_manage || is_reporter || ticket.qa_status || canAskQa">
-                <div class="flex flex-wrap items-center gap-2">
-                    <template v-if="can_manage || is_reporter">
+            <div v-if="can_manage || is_reporter || ticket.qa_status || canAskQa" class="space-y-2">
+                <div v-if="can_manage || is_reporter" class="flex flex-wrap items-center gap-2">
                         <span class="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-sm font-medium" :class="statusBadgeClasses[ticket.status_icon.color]">
                             <FontAwesomeIcon :icon="ticket.status_icon.icon" fixed-width />
                             {{ ticket.status_label }}
@@ -322,8 +325,8 @@ const update = (field: string, value: unknown, action: string = field) => {
                             @click="runStatusAction(action.status)">
                             <FontAwesomeIcon :icon="isPending(`status:${action.status}`) ? 'fal fa-spinner' : action.icon" :spin="isPending(`status:${action.status}`)" fixed-width />
                         </button>
-                    </template>
-                    <template v-if="ticket.qa_status || canAskQa">
+                </div>
+                <div v-if="ticket.qa_status || canAskQa" class="flex flex-wrap items-center gap-2">
                         <span v-if="ticket.qa_status" v-tooltip="ticket.qa_user ? `${ticket.qa_status_label} · ${ticket.qa_user}` : ticket.qa_status_label" class="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-sm font-medium" :class="statusBadgeClasses[ticket.qa_status_icon.color]">
                             <FontAwesomeIcon :icon="ticket.qa_status_icon.icon" fixed-width />
                             {{ ticket.qa_status_label }}
@@ -350,7 +353,6 @@ const update = (field: string, value: unknown, action: string = field) => {
                             </div>
                         </Popover>
                         <button v-if="can_contribute && ticket.qa_status === 'requested'" v-tooltip="trans('Withdraw QA request')" type="button" class="rounded-md p-1.5 text-gray-400 hover:bg-gray-100 active:!bg-gray-200 transition duration-200" @click="update('qa_status', null, 'qa:withdraw')"><FontAwesomeIcon :icon="isPending('qa:withdraw') ? 'fal fa-spinner' : 'fal fa-times'" :spin="isPending('qa:withdraw')" fixed-width /></button>
-                    </template>
                 </div>
                 <div v-if="ticket.status === 'pending_deploy' && ticket.deploy_comment" class="mt-2 rounded-md border border-green-200 bg-green-50 px-3 py-2 text-sm text-gray-700">
                     <div class="mb-1 text-xs font-medium text-green-700">{{ trans("Posted to the reporter when the deployment lands") }}</div>
