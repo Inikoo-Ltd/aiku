@@ -33,7 +33,7 @@ class StoreTicket extends OrgAction
         data_set($modelData, 'group_id', $group->id);
         data_set($modelData, 'type', $type);
         data_set($modelData, 'number', $number);
-        data_set($modelData, 'reference', $type->prefix().'-'.$number);
+        data_set($modelData, 'reference', $type->prefix().'-'.str_pad((string) $number, $type->numberPadding(), '0', STR_PAD_LEFT));
 
         $images = Arr::pull($modelData, 'images', []);
         Arr::forget($modelData, 'stay');

@@ -18,24 +18,48 @@ import { trans } from "laravel-vue-i18n"
 import { PageHeadingTypes } from "@/types/PageHeading"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faUserHardHat, faPencil, faFilePdf, faPrint } from "@fal"
+import { faUserHardHat, faPencil, faFilePdf, faPrint, faHashtag } from "@fal"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
+import CopyButton from "@/Components/Utils/CopyButton.vue"
 
-library.add(faUserHardHat, faPencil, faFilePdf, faPrint)
+library.add(faUserHardHat, faPencil, faFilePdf, faPrint, faHashtag)
 
-type PublishedLabel = { id: number, name: string, pdf_url: string }
+type PublishedLabel = { id: number, name: string, batch_code: string | null, pdf_url: string }
 
 const PRINT_FRAME_LIFETIME_MS = 60000
 
 const printingLabelId = ref<number | null>(null)
 
-async function printLabel(label: PublishedLabel) {
+/**
+ * A run prints its own batch code and expiry date, so the sheet coming out of the printer says the
+ * same thing as the card on the board rather than whatever the design was saved with.
+ */
+function labelUrl(label: PublishedLabel, item: BoardItem) {
+    const runTexts = new URLSearchParams()
+    const expiry = formatExpiryForLabel(item.run_expiry)
+
+    if (item.batch_code) runTexts.set("batch_code", item.batch_code)
+    if (expiry) runTexts.set("expiry_date", expiry)
+
+    return runTexts.size ? `${label.pdf_url}?${runTexts}` : label.pdf_url
+}
+
+/**
+ * Labels print d/m/Y. Only the date part is read, so a full timestamp cannot leak onto a sheet.
+ */
+function formatExpiryForLabel(date: string | null | undefined) {
+    const match = date?.match(/^(\d{4})-(\d{2})-(\d{2})/)
+
+    return match ? `${match[3]}/${match[2]}/${match[1]}` : null
+}
+
+async function printLabel(label: PublishedLabel, item: BoardItem) {
     if (printingLabelId.value) return
 
     printingLabelId.value = label.id
 
     try {
-        const response = await axios.get(label.pdf_url, { responseType: "blob" })
+        const response = await axios.get(labelUrl(label, item), { responseType: "blob" })
         const pdfUrl = URL.createObjectURL(new Blob([response.data], { type: "application/pdf" }))
         const printFrame = document.createElement("iframe")
 
@@ -102,7 +126,7 @@ function createJobOrders(ids: number[] = Object.keys(selected).map(Number), empl
     )
 }
 
-type BoardItem = { id: number, batch_size?: number | null, packed_in?: number | null, order_quantum?: number | null, is_hitchhiker?: boolean, stock_code: string, stock_name: string, state: string, quantity: number, quantity_to_produce: number | null, maker: string | null, maker_id: number | null, preparing_at: string | null, kind?: "item" | "mix", artefact_id?: number, job_order_id?: number | null, job_order_state?: string | null, job_order_reference?: string | null, job_order_artisan?: string | null, stock_available?: number | null, buyer_code?: string | null, published_labels?: { id: number, name: string, pdf_url: string }[] }
+type BoardItem = { id: number, batch_size?: number | null, packed_in?: number | null, order_quantum?: number | null, is_hitchhiker?: boolean, stock_code: string, stock_name: string, state: string, quantity: number, quantity_to_produce: number | null, maker: string | null, maker_id: number | null, preparing_at: string | null, kind?: "item" | "mix", artefact_id?: number, job_order_id?: number | null, job_order_state?: string | null, job_order_reference?: string | null, job_order_artisan?: string | null, stock_available?: number | null, buyer_code?: string | null, published_labels?: PublishedLabel[], batch_code?: string | null, run_batch_code?: string | null, run_expiry?: string | null, label_expiry_date?: string | null }
 
 function isReassignable(item: BoardItem): boolean {
     return !!item.job_order_id && ["in_process", "submitted"].includes(item.job_order_state ?? "")
@@ -168,7 +192,9 @@ function unassign(items: BoardItem[]) {
     )
 }
 
-function setPreparing(lines: { id: number, quantity?: number | null }[], preparing: boolean) {
+type PreparingLine = { id: number, quantity?: number | null, batch_code?: string | null, expiry_date?: string | null, expiry_applies_to_label?: boolean }
+
+function setPreparing(lines: PreparingLine[], preparing: boolean) {
     router.post(
         route("grp.org.productions.show.to_produce.items.preparing", [route().params["organisation"], route().params["production"]]),
         { preparing, lines },
@@ -212,6 +238,14 @@ function startDrag(item: BoardItem, laneItems: BoardItem[]) {
 const dragging = ref<BoardItem[]>([])
 const pendingItems = ref<BoardItem[]>([])
 const pendingQuantities = reactive<Record<number, number>>({})
+const pendingBatchCodes = reactive<Record<number, string>>({})
+const pendingExpiryDates = reactive<Record<number, string>>({})
+const originalExpiryDates = reactive<Record<number, string>>({})
+const expiryAppliesToLabel = ref(false)
+
+const changedExpiryItems = computed(() =>
+    pendingItems.value.filter(item => (pendingExpiryDates[item.id] ?? "") !== (originalExpiryDates[item.id] ?? ""))
+)
 const pickerMode = ref<"prepare" | "assign" | "assign-mix" | "reassign">("prepare")
 const pickerPosition = ref({ x: 0, y: 0 })
 
@@ -235,7 +269,16 @@ function openPicker(mode: "prepare" | "assign" | "assign-mix", event: DragEvent)
     artisanSearch.value = ""
     pendingItems.value = dragging.value
     for (const key in pendingQuantities) delete pendingQuantities[key]
-    dragging.value.forEach(item => pendingQuantities[item.id] = Math.ceil(Number(item.quantity_to_produce ?? item.quantity)))
+    for (const key in pendingBatchCodes) delete pendingBatchCodes[key]
+    for (const key in pendingExpiryDates) delete pendingExpiryDates[key]
+    for (const key in originalExpiryDates) delete originalExpiryDates[key]
+    dragging.value.forEach(item => {
+        pendingQuantities[item.id] = Math.ceil(Number(item.quantity_to_produce ?? item.quantity))
+        pendingBatchCodes[item.id] = item.run_batch_code ?? ""
+        pendingExpiryDates[item.id] = item.run_expiry ?? item.label_expiry_date ?? ""
+        originalExpiryDates[item.id] = pendingExpiryDates[item.id]
+    })
+    expiryAppliesToLabel.value = false
     const laneLeft = (event.currentTarget as HTMLElement).getBoundingClientRect().left
     pickerPosition.value = {
         x: Math.max(8, laneLeft - 160),
@@ -252,10 +295,17 @@ function updatePreparingQuantity(item: BoardItem, event: Event) {
 }
 
 function confirmPrepare() {
-    if (pendingItems.value.length) {
-        setPreparing(pendingItems.value.map(item => ({ id: item.id, quantity: pendingQuantities[item.id] })), true)
-        pendingItems.value = []
-    }
+    if (!pendingItems.value.length) return
+
+    setPreparing(pendingItems.value.map(item => ({
+        id: item.id,
+        quantity: pendingQuantities[item.id],
+        batch_code: pendingBatchCodes[item.id]?.trim() || null,
+        expiry_date: pendingExpiryDates[item.id] || null,
+        expiry_applies_to_label: expiryAppliesToLabel.value
+            && (pendingExpiryDates[item.id] ?? "") !== (originalExpiryDates[item.id] ?? ""),
+    })), true)
+    pendingItems.value = []
 }
 
 function assign(employeeId: number) {
@@ -530,6 +580,51 @@ function jobOrderHref(item: { job_order_slug: string }) {
                             </span>
                         </label>
                     </div>
+                    <div class="mt-2 space-y-2 border-t border-gray-100 pt-2">
+                        <div class="text-gray-500">
+                            {{ trans("What the labels print") }}
+                            <span class="block text-gray-400">{{ trans("An empty batch code is named after the job order once it is made.") }}</span>
+                        </div>
+                        <div v-for="item in pendingItems" :key="`texts-${item.id}`" class="space-y-1">
+                            <div v-if="pendingItems.length > 1" class="truncate font-medium" :title="item.stock_name">{{ item.stock_code }}</div>
+                            <div class="grid grid-cols-2 gap-1.5">
+                                <label class="flex min-w-0 flex-col gap-0.5">
+                                    <span class="text-gray-500">{{ trans("Batch code") }}</span>
+                                    <input
+                                        v-model="pendingBatchCodes[item.id]"
+                                        type="text"
+                                        maxlength="64"
+                                        :placeholder="trans('From job order')"
+                                        :title="trans('Leave empty and the job order reference names the batch')"
+                                        class="w-full min-w-0 rounded border-gray-300 py-0.5 text-xs" />
+                                </label>
+                                <label class="flex min-w-0 flex-col gap-0.5">
+                                    <span class="text-gray-500">{{ trans("Expiry date") }}</span>
+                                    <input
+                                        v-model="pendingExpiryDates[item.id]"
+                                        type="date"
+                                        class="w-full min-w-0 rounded border-gray-300 py-0.5 text-xs" />
+                                </label>
+                            </div>
+                        </div>
+
+                        <div v-if="changedExpiryItems.length" class="rounded border border-amber-200 bg-amber-50 p-1.5" role="group" :aria-label="trans('Keep the new expiry date?')">
+                            <div class="mb-1 text-amber-800">
+                                {{ changedExpiryItems.length > 1
+                                    ? trans("Expiry date changed on :count labels. Keep it for?", { count: changedExpiryItems.length })
+                                    : trans("Expiry date changed. Keep it for?") }}
+                            </div>
+                            <label class="flex items-start gap-1.5 text-amber-900">
+                                <input v-model="expiryAppliesToLabel" type="radio" :value="false" class="mt-0.5" />
+                                <span>{{ ctrans("This run only") }} (1x) <span class="block text-amber-700">{{ trans("the label design keeps its own date") }}</span></span>
+                            </label>
+                            <label class="mt-1 flex items-start gap-1.5 text-amber-900">
+                                <input v-model="expiryAppliesToLabel" type="radio" :value="true" class="mt-0.5" />
+                                <span>{{ ctrans("Save on the label") }} <span class="block text-amber-700">{{ trans("every future run starts from this date") }}</span></span>
+                            </label>
+                        </div>
+                    </div>
+
                     <button type="submit" class="mt-2 w-full rounded bg-indigo-600 px-3 py-1 font-medium text-white hover:bg-indigo-500">{{ pendingItems.length > 1 ? trans("Prepare :count", { count: pendingItems.length }) : trans("Prepare") }}</button>
                 </form>
             </template>
@@ -675,10 +770,20 @@ function jobOrderHref(item: { job_order_slug: string }) {
                         <span v-if="Number(item.stock_available) >= Number(item.quantity)" class="text-emerald-600">{{ trans("In stock") }}: {{ useLocaleStore().number(Number(item.stock_available)) }}</span>
                         <span v-else>{{ trans("In stock") }}: {{ useLocaleStore().number(Number(item.stock_available ?? 0)) }}</span>
                     </div>
-                    <div v-if="laneIndex === LANE_PREPARING && item.published_labels?.length" class="mt-1 flex flex-col gap-1">
+                    <div
+                        v-if="laneIndex === LANE_PREPARING && item.batch_code"
+                        class="mt-1 flex max-w-full items-center gap-1 text-gray-500"
+                        :title="trans('Batch code for this run')"
+                        @click.stop
+                        @mousedown.stop>
+                        <FontAwesomeIcon icon="fal fa-hashtag" class="text-gray-400" fixed-width />
+                        <span class="truncate font-medium tabular-nums">{{ item.batch_code }}</span>
+                        <CopyButton :text="item.batch_code" />
+                    </div>
+                    <div v-if="laneIndex <= LANE_PREPARING && item.published_labels?.length" class="mt-1 flex flex-col gap-1">
                         <div v-for="label in item.published_labels" :key="label.id" class="flex max-w-full items-center gap-1">
                             <a
-                                :href="label.pdf_url"
+                                :href="labelUrl(label, item)"
                                 target="_blank"
                                 rel="noopener"
                                 class="flex min-w-0 flex-1 items-center gap-1 rounded border border-indigo-200 bg-indigo-50 px-1.5 py-px text-indigo-700 hover:bg-indigo-100"
@@ -694,7 +799,7 @@ function jobOrderHref(item: { job_order_slug: string }) {
                                 class="flex shrink-0 items-center gap-1 rounded border border-indigo-200 bg-white px-1.5 py-px text-indigo-700 hover:bg-indigo-50 disabled:cursor-wait disabled:opacity-60"
                                 :title="trans('Print label :name', { name: label.name })"
                                 :disabled="printingLabelId === label.id"
-                                @click.stop="printLabel(label)"
+                                @click.stop="printLabel(label, item)"
                                 @mousedown.stop>
                                 <LoadingIcon v-if="printingLabelId === label.id" />
                                 <FontAwesomeIcon v-else icon="fal fa-print" fixed-width />

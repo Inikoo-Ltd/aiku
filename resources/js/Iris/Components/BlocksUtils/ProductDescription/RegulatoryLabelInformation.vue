@@ -134,7 +134,7 @@ const toggleRow = (key: string) => {
 </script>
 
 <template>
-	<div class="py-5 md:py-6 lg:py-12">
+	<div class="py-5 md:py-6 lg:py-12" :style="{ paddingTop:'3rem', paddingBottom:'3rem' }">
 	<div v-if="cards.length || rows.length" class="regulatory-panel" :style="containerStyle">
 		<div class="flex items-start gap-3">
 			<FontAwesomeIcon :icon="faShieldCheck" class="mt-1  text-primary " style="font-size: 40px;" />

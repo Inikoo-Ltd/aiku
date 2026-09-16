@@ -46,6 +46,14 @@ const copyTicketLink = async () => {
     setTimeout(() => (isLinkCopied.value = false), 2000)
 }
 
+const roleClasses: Record<string, string> = {
+    lead_engineer: "bg-red-100 text-red-700",
+    engineer: "bg-blue-100 text-blue-700",
+    qa: "bg-purple-100 text-purple-700",
+    staff: "bg-gray-100 text-gray-600",
+    customer: "bg-slate-200 text-slate-700",
+}
+
 const isTicketClosed = computed(() => ["resolved", "cancelled"].includes(displayTicket.value?.status))
 
 const loadControls = async (ticketId: number) => {
@@ -125,9 +133,16 @@ const close = () => {
                     </div>
                     <h2 class="text-lg font-semibold leading-snug mb-3">{{ displayTicket.subject }}</h2>
                     <div class="grid grid-cols-2 gap-x-6 gap-y-1 text-xs text-gray-600 mb-4">
-                        <span
+                        <span class="flex flex-wrap items-center gap-1"
                             >{{ trans("Raised") }}: {{ shortDate(displayTicket.created_at) }}
-                            {{ displayTicket.reporter ? "· " + displayTicket.reporter : "" }}</span
+                            {{ displayTicket.reporter ? "· " + displayTicket.reporter : "" }}
+                            <span
+                                v-for="role in displayTicket.reporter_roles ?? []"
+                                :key="role.key"
+                                class="rounded px-1.5 py-0.5 text-[10px] font-medium"
+                                :class="roleClasses[role.key] ?? 'bg-gray-100 text-gray-600'"
+                                >{{ role.label }}</span
+                            ></span
                         >
                         <span v-if="displayTicket.assignee"
                             >{{ trans("Assignee") }}: {{ displayTicket.assignee }}</span

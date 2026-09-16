@@ -54,6 +54,7 @@ class TicketResource extends JsonResource
             'search_snippet' => $this->search_snippet ? str_replace(['[[', ']]', '~~'], ['<mark>', '</mark>', ' … '], e($this->search_snippet)) : null,
             'description'    => $this->description,
             'reporter'       => $this->reporter?->contact_name ?: $this->reporter?->username,
+            'reporter_roles' => $request->routeIs('retina.*') ? [] : $this->reporterRoles(),
             'reporter_short' => $this->reporter_type === 'User' ? $this->reporter?->username : ($this->reporter?->contact_name ?: $this->reporter?->username),
             'reporter_avatar' => $this->reporter_type === 'User' ? $this->reporter?->imageSources(48, 48) : null,
             'is_from_slack'  => (bool) data_get($this->data, 'slack'),
@@ -133,5 +134,31 @@ class TicketResource extends JsonResource
             'organisation' => $organisationSlug,
             'chatSession'  => $session->ulid,
         ]);
+    }
+
+    /**
+     * @return array<int, array{key: string, label: string}>
+     */
+    private function reporterRoles(): array
+    {
+        $reporter = $this->reporter;
+
+        if (!$reporter instanceof \App\Models\SysAdmin\User) {
+            return $reporter ? [['key' => 'customer', 'label' => __('Customer')]] : [];
+        }
+
+        if (\App\Models\Helpers\Ticket::canBeAssignedBy($reporter)) {
+            return [['key' => 'lead_engineer', 'label' => __('Lead engineer')]];
+        }
+
+        if (\App\Models\Helpers\Ticket::canBeManagedBy($reporter)) {
+            return [['key' => 'engineer', 'label' => __('Engineer')]];
+        }
+
+        if (\App\Models\Helpers\Ticket::canCheckQa($reporter)) {
+            return [['key' => 'qa', 'label' => __('QA')]];
+        }
+
+        return [['key' => 'staff', 'label' => __('Staff')]];
     }
 }

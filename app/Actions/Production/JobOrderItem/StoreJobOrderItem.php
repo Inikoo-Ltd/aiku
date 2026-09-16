@@ -90,6 +90,9 @@ class StoreJobOrderItem extends OrgAction
             'created_at'         => ['sometimes', 'date'],
             'received_at'        => ['sometimes', 'nullable', 'date'],
             'source_id'          => ['sometimes', 'nullable', 'string'],
+            'data'               => ['sometimes', 'array'],
+            'data.batch_code'    => ['sometimes', 'nullable', 'string', 'max:255'],
+            'data.expiry_date'   => ['sometimes', 'nullable', 'date'],
         ];
     }
 

@@ -19,7 +19,7 @@ class StoreJobOrdersGroupedByArtisan
     use AsObject;
 
     /**
-     * @param  array<int, array{artefact: Artefact, quantity: float|int, after?: callable(JobOrder): void}>  $lines  quantity in SKOs, as the boards ask for it
+     * @param  array<int, array{artefact: Artefact, quantity: float|int, batch_code?: string|null, expiry_date?: string|null, after?: callable(JobOrder): void}>  $lines  quantity in SKOs, as the boards ask for it
      * @return array<int, JobOrder>
      */
     public function handle(Production $production, array $lines, ?int $employeeId = null): array
@@ -47,6 +47,7 @@ class StoreJobOrdersGroupedByArtisan
                         $line['artefact']->orgStock?->packed_in,
                         $line['artefact']->recommended_batch_size
                     ),
+                    'data'        => $this->getRunData($jobOrder, $line),
                 ]);
                 if (isset($line['after'])) {
                     $line['after']($jobOrder);
@@ -57,5 +58,21 @@ class StoreJobOrdersGroupedByArtisan
         }
 
         return $jobOrders;
+    }
+
+    /**
+     * What this making of the artefact is called and how long it keeps. A batch code typed while the
+     * run was prepared wins; otherwise the job order's own reference names the batch, which is the
+     * only name guaranteed to be unique. Both travel with the item to the shelf when it is received.
+     *
+     * @param  array{artefact: Artefact, batch_code?: string|null, expiry_date?: string|null}  $line
+     * @return array<string, string|null>
+     */
+    private function getRunData(JobOrder $jobOrder, array $line): array
+    {
+        return [
+            'batch_code'  => $line['batch_code'] ?: $jobOrder->reference.'-'.$line['artefact']->code,
+            'expiry_date' => $line['expiry_date'] ?: null,
+        ];
     }
 }

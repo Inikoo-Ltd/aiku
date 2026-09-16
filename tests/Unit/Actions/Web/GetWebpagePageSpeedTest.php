@@ -7,6 +7,7 @@
  */
 
 use App\Actions\Web\Webpage\GetWebpagePageSpeed;
+use App\Actions\Web\Webpage\GetWebpagePageSpeedReport;
 use App\Actions\Web\Webpage\RefreshWebpagePageSpeed;
 use App\Actions\Web\Webpage\StoreWebpagePageSpeedTimeSeriesRecord;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
@@ -212,4 +213,70 @@ it('re-measures both strategies straight away without waiting for a queue worker
     expect(cache()->get(GetWebpagePageSpeed::resultKey($webpage, 'desktop'))['scores'])->toHaveCount(4)
         ->and(cache()->get(GetWebpagePageSpeed::resultKey($webpage, 'mobile'))['strategy'])->toBe('mobile')
         ->and(cache()->has(GetWebpagePageSpeed::pendingKey($webpage, 'mobile')))->toBeFalse();
+});
+
+it('measures both strategies while the request is served instead of queueing them', function () {
+    Queue::fake();
+
+    Http::fake([
+        'www.googleapis.com/pagespeedonline/*' => Http::response(pageSpeedPayload()),
+    ]);
+
+    StoreWebpagePageSpeedTimeSeriesRecord::shouldRun()->twice();
+
+    $report = GetWebpagePageSpeedReport::run(fakeWebpage(7));
+
+    Queue::assertNothingPushed();
+    Http::assertSentCount(2);
+
+    expect($report['status'])->toBe('ready')
+        ->and($report['refresh_route']['name'])->toBe('grp.models.webpage.pagespeed.refresh')
+        ->and($report['desktop']['scores'])->toHaveCount(4)
+        ->and($report['mobile']['strategy'])->toBe('mobile');
+});
+
+it('serves a measurement already in the cache without asking Google again', function () {
+    Http::fake();
+
+    StoreWebpagePageSpeedTimeSeriesRecord::shouldNotRun();
+
+    $webpage = fakeWebpage(8);
+
+    foreach (GetWebpagePageSpeed::STRATEGIES as $strategy) {
+        cache()->put(GetWebpagePageSpeed::resultKey($webpage, $strategy), ['strategy' => $strategy, 'scores' => []]);
+    }
+
+    expect(GetWebpagePageSpeedReport::run($webpage)['desktop']['strategy'])->toBe('desktop');
+
+    Http::assertNothingSent();
+});
+
+it('repeats a remembered failure instead of measuring the page on every load', function () {
+    Http::fake();
+
+    StoreWebpagePageSpeedTimeSeriesRecord::shouldNotRun();
+
+    $webpage = fakeWebpage(9);
+
+    cache()->put(GetWebpagePageSpeed::errorKey($webpage, 'desktop'), 'Lighthouse returned error: ERRORED_DOCUMENT_REQUEST');
+    cache()->put(GetWebpagePageSpeed::resultKey($webpage, 'mobile'), ['strategy' => 'mobile', 'scores' => []]);
+
+    $report = GetWebpagePageSpeedReport::run($webpage);
+
+    expect($report['status'])->toBe('ready')
+        ->and($report['desktop']['error'])->toBe('Lighthouse returned error: ERRORED_DOCUMENT_REQUEST');
+
+    Http::assertNothingSent();
+});
+
+it('says a page with no public url cannot be measured instead of calling Google', function () {
+    Http::fake();
+
+    $report = GetWebpagePageSpeedReport::run(fakeWebpage(10, null));
+
+    expect($report['status'])->toBe('unavailable')
+        ->and($report)->toHaveKey('message')
+        ->and($report)->not->toHaveKey('desktop');
+
+    Http::assertNothingSent();
 });

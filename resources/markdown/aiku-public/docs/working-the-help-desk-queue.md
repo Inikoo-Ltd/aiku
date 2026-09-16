@@ -171,7 +171,7 @@ When your fix is live, press <b>Ask QA to check</b>. The ticket goes to the QA t
 
 ## Customer tickets
 
-Tickets that start with <b>AD</b> come from customers. If one needs work from the engineers, open it and press <b>Escalate to help desk</b>. aiku creates a linked <b>HELP</b> ticket with the same details.
+Tickets that start with <b>CUS</b> come from customers. If one needs work from the engineers, open it and press <b>Escalate to help desk</b>. aiku creates a linked <b>HELP</b> ticket with the same details.
 
 ## Confidential tickets
 

@@ -43,6 +43,8 @@ const props = defineProps<{
     can_assign: boolean
     can_manage?: boolean
     mineFilter: string | null
+    typeFilter?: string | null
+    typeOptions?: { label: string; value: string; icon: any }[]
     options: {
         priorities: (Option<string> & { icon: any })[]
         kinds: Option<string>[]
@@ -170,6 +172,9 @@ const closeQuickLook = () => {
     router.reload({ only: ["data"] })
 }
 
+const filterByType = (type: string | null) =>
+    router.reload({ data: { "elements[type]": type ?? undefined, page: 1 }, preserveScroll: true })
+
 const savedMineFilter = ref(props.mineFilter)
 
 watch(
@@ -187,6 +192,26 @@ watch(
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead" />
     <TicketsCreatedInterval :options="createdIntervals" :selected="createdInterval" class="mx-4 mt-2" />
+    <div v-if="typeOptions?.length" class="mx-4 mt-2 flex flex-wrap items-center gap-1 rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-sm">
+        <span class="mr-2 text-xs font-medium uppercase tracking-wide text-gray-400">{{ trans("Type") }}</span>
+        <button
+            type="button"
+            class="rounded-md px-3 py-1 transition duration-200"
+            :class="!typeFilter ? 'bg-indigo-600 text-white shadow-sm' : 'text-gray-600 hover:bg-gray-100'"
+            @click="filterByType(null)">
+            {{ trans("All") }}
+        </button>
+        <button
+            v-for="option in typeOptions"
+            :key="option.value"
+            type="button"
+            class="flex items-center gap-1.5 rounded-md px-3 py-1 transition duration-200"
+            :class="typeFilter === option.value ? 'bg-indigo-600 text-white shadow-sm' : 'text-gray-600 hover:bg-gray-100'"
+            @click="filterByType(option.value)">
+            <Icon v-if="option.icon" :data="option.icon" />
+            {{ option.label }}
+        </button>
+    </div>
     <div class="mx-4 mt-1 flex flex-wrap items-center gap-1 text-xs text-gray-400">
         <span class="mr-1">{{ trans("Search tips") }}:</span>
         <code v-for="tip in searchHelp" :key="tip" class="rounded bg-gray-100 px-1.5 py-0.5 text-gray-500">{{ tip }}</code>

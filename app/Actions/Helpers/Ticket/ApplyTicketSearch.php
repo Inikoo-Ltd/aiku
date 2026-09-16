@@ -105,10 +105,16 @@ class ApplyTicketSearch
     {
         $search = trim(preg_replace('/[?#].*$/', '', trim($search)), " /\t");
         if (preg_match('~(?:^|/)([a-z]+)-?(\d+)$~i', $search, $match)) {
-            return [strtoupper($match[1]).'-'.$match[2]];
+            $prefix = strtoupper($match[1]);
+
+            return array_values(array_unique([$prefix.'-'.$match[2], $prefix.'-'.str_pad($match[2], 3, '0', STR_PAD_LEFT)]));
         }
         if (preg_match('/^\d+$/', $search)) {
-            return array_map(fn (TicketTypeEnum $type) => $type->prefix().'-'.$search, TicketTypeEnum::cases());
+            return collect(TicketTypeEnum::searchPrefixes())
+                ->flatMap(fn (string $prefix) => [$prefix.'-'.$search, $prefix.'-'.str_pad($search, 3, '0', STR_PAD_LEFT)])
+                ->unique()
+                ->values()
+                ->all();
         }
 
         return [];

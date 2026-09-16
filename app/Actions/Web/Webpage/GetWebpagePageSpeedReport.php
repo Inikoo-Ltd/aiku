@@ -15,7 +15,7 @@ class GetWebpagePageSpeedReport
     use AsAction;
 
     /**
-     * @return array{status: string, message?: string, refresh_route?: array, mobile?: array|null, desktop?: array|null}
+     * @return array{status: string, message?: string, refresh_route?: array, mobile?: array, desktop?: array}
      */
     public function handle(Webpage $webpage): array
     {
@@ -36,33 +36,19 @@ class GetWebpagePageSpeedReport
         ];
 
         foreach (GetWebpagePageSpeed::STRATEGIES as $strategy) {
-            $strategyReport = $this->strategyReport($webpage, $strategy);
-            $isMeasuring    = cache()->has(GetWebpagePageSpeed::pendingKey($webpage, $strategy));
-
-            if (!$strategyReport && !$isMeasuring) {
-                $isMeasuring = QueueWebpagePageSpeed::run($webpage, $strategy);
-            }
-
-            if ($isMeasuring) {
-                $report['status'] = 'measuring';
-            }
-
-            $report[$strategy] = $strategyReport
-                ? $strategyReport + ['measuring' => $isMeasuring]
-                : null;
+            $report[$strategy] = $this->strategyReport($webpage, $strategy);
         }
 
         return $report;
     }
 
-    private function strategyReport(Webpage $webpage, string $strategy): ?array
+    /**
+     * A failed run is remembered for a few minutes, so a page Google cannot measure is not asked
+     * about again on every load. Anything else is measured in the request: the report is served to
+     * a deferred prop, and a cached result comes back without touching Google at all.
+     */
+    private function strategyReport(Webpage $webpage, string $strategy): array
     {
-        $result = cache()->get(GetWebpagePageSpeed::resultKey($webpage, $strategy));
-
-        if ($result) {
-            return $result;
-        }
-
         $error = cache()->get(GetWebpagePageSpeed::errorKey($webpage, $strategy));
 
         if ($error) {
@@ -72,6 +58,6 @@ class GetWebpagePageSpeedReport
             ];
         }
 
-        return null;
+        return ['strategy' => $strategy] + GetWebpagePageSpeed::run($webpage, $strategy);
     }
 }
