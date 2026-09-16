@@ -99,6 +99,39 @@ class ShowTicket extends OrgAction
         return array_reverse($events);
     }
 
+    /**
+     * @return array<int, array{username: string, name: string|null, suggested: bool, is_customer: bool}>
+     */
+    public function mentionableFor(Ticket $ticket): array
+    {
+        $involvedStaffIds = collect([$ticket->reporter_type === 'User' ? $ticket->reporter : null, $ticket->assignee()->first()])
+            ->merge($ticket->collaborators()->get())
+            ->merge(GetTicketBadgeData::leadEngineers($ticket->group_id))
+            ->filter(fn ($person) => $person instanceof User)
+            ->pluck('id')
+            ->unique()
+            ->all();
+
+        $customer = $ticket->reporter_type === 'WebUser' && $ticket->customer?->slug
+            ? [['username' => $ticket->customer->slug, 'name' => $ticket->customer->name, 'suggested' => true, 'is_customer' => true]]
+            : [];
+
+        $staff = User::where('group_id', $ticket->group_id)
+            ->where('status', true)
+            ->orderBy('username')
+            ->get(['id', 'username', 'contact_name', 'group_id'])
+            ->when($ticket->is_confidential, fn ($users) => $users->filter(fn (User $mentionableUser) => $ticket->isVisibleTo($mentionableUser)))
+            ->map(fn (User $mentionableUser) => [
+                'username'    => $mentionableUser->username,
+                'name'        => $mentionableUser->contact_name,
+                'suggested'   => in_array($mentionableUser->id, $involvedStaffIds, true),
+                'is_customer' => false,
+            ])
+            ->sortByDesc('suggested');
+
+        return collect($customer)->merge($staff)->values()->all();
+    }
+
     public function htmlResponse(Ticket $ticket): Response
     {
         return Inertia::render(
@@ -112,7 +145,7 @@ class ShowTicket extends OrgAction
                     'icon'  => ['fal', 'fa-life-ring'],
                     'wrapped_actions' => Ticket::canBeAssignedBy(request()->user()) ? [['type' => 'button', 'key' => 'delete']] : [],
                 ],
-                'comments'    => TicketCommentResource::collection($ticket->commentsVisibleTo(request()->user())->with('author')->orderByDesc('id')->get())->toArray(request()),
+                'comments'    => TicketCommentResource::collection($ticket->commentsVisibleTo(request()->user())->with('author', 'ticket')->orderByDesc('id')->get())->toArray(request()),
                 'timeline'    => $this->timeline($ticket),
                 'can_rate'    => RateTicket::canRate($ticket, request()->user()),
                 'comments_newest_first' => (bool) data_get(request()->user()->settings, 'ticket_comments_newest_first', true),
@@ -158,13 +191,7 @@ class ShowTicket extends OrgAction
                         'avatar' => $engineer->imageSources(48, 48),
                         'is_me'  => $engineer->id === $user->id,
                     ])->sortBy('label')->values(),
-                'mentionable' => User::where('group_id', $ticket->group_id)
-                    ->where('status', true)
-                    ->orderBy('username')
-                    ->get(['id', 'username', 'contact_name', 'group_id'])
-                    ->when($ticket->is_confidential, fn ($users) => $users->filter(fn (User $mentionableUser) => $ticket->isVisibleTo($mentionableUser)))
-                    ->map(fn (User $mentionableUser) => ['username' => $mentionableUser->username, 'name' => $mentionableUser->contact_name])
-                    ->values(),
+                'mentionable' => $this->mentionableFor($ticket),
             ],
             'can_manage'             => Ticket::canBeManagedBy($user),
             'can_assign'             => Ticket::canBeAssignedBy($user) || (Ticket::canBeManagedBy($user) && $ticket->assignee_id === $user->id),

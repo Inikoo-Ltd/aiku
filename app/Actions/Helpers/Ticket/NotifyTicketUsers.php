@@ -8,6 +8,8 @@
 
 namespace App\Actions\Helpers\Ticket;
 
+use App\Events\BroadcastRetinaTicketBadgeUpdate;
+use App\Models\CRM\WebUser;
 use App\Actions\SysAdmin\User\SendUserPushNotification;
 use App\Enums\Helpers\Ticket\TicketQaStatusEnum;
 use App\Enums\Helpers\Ticket\TicketStatusEnum;
@@ -80,6 +82,20 @@ class NotifyTicketUsers
             );
         }
 
+        if ($this->mentionsCustomer($ticket, $body)) {
+            $this->notifyCustomer(
+                $ticket,
+                __(':author mentioned you on :reference', ['author' => $authorName, 'reference' => $ticket->reference]),
+                [
+                    __(':author mentioned you on :reference (:subject):', ['author' => $authorName, 'reference' => $ticket->reference, 'subject' => $ticket->subject]),
+                    Str::limit($body, 2000),
+                ],
+                __('Open the ticket')
+            );
+
+            return;
+        }
+
         $recipient = $ticket->isReportedBy($author) ? $ticket->assignee()->first() : $ticket->reporter;
         if ($recipient instanceof User && $mentioned->contains('id', $recipient->id)) {
             return;
@@ -97,6 +113,59 @@ class NotifyTicketUsers
             __('Open the ticket'),
             UserNotificationEnum::TICKET_COMMENT
         );
+    }
+
+    public function mentionsCustomer(Ticket $ticket, string $body): bool
+    {
+        $customerHandle = $ticket->reporter_type === 'WebUser' ? $ticket->customer?->slug : null;
+        if (!$customerHandle) {
+            return false;
+        }
+
+        preg_match_all('/(?<![\pL\pN._-])@([\pL\pN._-]{2,})/u', $body, $matches);
+
+        return collect($matches[1])->map(fn (string $handle) => mb_strtolower(rtrim($handle, '.')))->contains(mb_strtolower($customerHandle));
+    }
+
+    /**
+     * @param array<int, string> $lines
+     */
+    private function notifyCustomer(Ticket $ticket, string $subject, array $lines, string $actionLabel): void
+    {
+        // ponytail: customer-facing ticket notifications stay off in production until the team is ready to answer AD tickets in retina;
+        // drop this guard together with the app()->isLocal() guards in GetRetinaDropshippingNavigation and GetRetinaLayout to launch it
+        if (!app()->environment(['local', 'testing'])) {
+            return;
+        }
+
+        if ($ticket->reporter_type !== 'WebUser' || !$ticket->customer_id) {
+            return;
+        }
+
+        foreach (WebUser::where('customer_id', $ticket->customer_id)->where('status', true)->get() as $webUser) {
+            $webUser->notify(new TicketNotification($ticket, $subject, $lines, $actionLabel, false));
+            BroadcastRetinaTicketBadgeUpdate::dispatch($webUser->id, GetRetinaTicketBadgeData::run($webUser));
+        }
+    }
+
+    public function mentionedInEngineeringNote(Ticket $ticket, User $author, string $body): void
+    {
+        $authorName = $author->contact_name ?: $author->username;
+
+        foreach ($this->mentionedUsers($ticket, $body) as $user) {
+            $this->handle(
+                $ticket,
+                $author,
+                $user,
+                __(':author mentioned you in an engineering note on :reference', ['author' => $authorName, 'reference' => $ticket->reference]),
+                [
+                    __(':author mentioned you in an engineering note on :reference (:subject):', ['author' => $authorName, 'reference' => $ticket->reference, 'subject' => $ticket->subject]),
+                    Str::limit($body, 2000),
+                ],
+                __('Open the ticket'),
+                UserNotificationEnum::TICKET_MENTION
+            );
+        }
     }
 
     /**
@@ -202,6 +271,12 @@ class NotifyTicketUsers
      */
     public function handle(Ticket $ticket, ?User $actor, mixed $recipient, string $subject, array $lines, string $actionLabel, ?UserNotificationEnum $event = null): void
     {
+        if ($recipient instanceof WebUser) {
+            $this->notifyCustomer($ticket, $subject, $lines, $actionLabel);
+
+            return;
+        }
+
         if (!$recipient instanceof User || $recipient->id === $actor?->id) {
             return;
         }

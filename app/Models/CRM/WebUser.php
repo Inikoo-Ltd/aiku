@@ -34,6 +34,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\Sluggable\SlugOptions;
+use Illuminate\Notifications\Notifiable;
 
 /**
  * App\Models\CRM\WebUser
@@ -111,6 +112,7 @@ class WebUser extends Authenticatable implements HasMedia, Auditable
     use InCustomer;
     use HasRoles;
     use HasHistory;
+    use Notifiable;
 
     protected $casts = [
 

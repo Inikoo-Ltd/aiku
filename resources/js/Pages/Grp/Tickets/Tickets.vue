@@ -52,7 +52,7 @@ const props = defineProps<{
 
 useLiveTickets(["data"])
 
-const { statusActions, assigneeStatusActions } = useTicketStatusActions()
+const { statusActions, assigneeStatusActions, actionsFor } = useTicketStatusActions()
 
 const myUserId = computed(() => (usePage().props.auth as { user?: { id: number } } | undefined)?.user?.id ?? null)
 
@@ -61,8 +61,8 @@ const isAssignedToMe = (item: { assignee_id: number | null }) => myUserId.value 
 const canEditRow = (item: { assignee_id: number | null }) => props.can_assign || isAssignedToMe(item)
 
 const statusActionsFor = (item: { status: string; assignee_id: number | null }): TicketStatusAction[] => {
-    if (props.can_assign) return statusActions[item.status] ?? []
-    return isAssignedToMe(item) ? assigneeStatusActions[item.status] ?? [] : []
+    if (props.can_assign) return actionsFor(statusActions, item)
+    return isAssignedToMe(item) ? actionsFor(assigneeStatusActions, item) : []
 }
 
 const canEditKind = (item: any) => canEditRow(item) && item.type === "help" && item.kind !== "escalation"

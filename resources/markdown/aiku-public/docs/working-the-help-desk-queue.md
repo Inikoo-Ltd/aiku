@@ -89,7 +89,7 @@ What collaborators can do:
 - see the ticket, even when it is confidential,
 - read and write comments,
 - add and remove tags,
-- write internal notes,
+- write engineering notes,
 - ask QA to check, or withdraw that request.
 
 What stays with the lead:
@@ -147,7 +147,7 @@ A ticket that came from a customer and was escalated keeps the kind <b>Escalated
 
 Every comment can be read by the reporter, and by the customer on customer tickets. Write clearly and politely.
 
-If a comment is only for the people working on the ticket, tick <b>Internal note</b> under the comment box before posting. Internal notes are shown in yellow. Every engineer and lead engineer can read them, and so can QA colleagues working on the ticket, but the reporter cannot and is not told about them. Only the assignee, the collaborators and lead engineers can write them. You can edit or delete your own comments.
+If a comment is only for staff, tick <b>Engineering note</b> under the comment box before posting. Engineering notes are shown in yellow and collapsed to their first line, and any colleague who can log in to aiku can open them, but customers never see them. Any engineer, or anyone collaborating on the ticket, can write one. You can edit or delete your own comments.
 
 Comments and <b>History</b> each have a button to show the <b>newest first</b> or the <b>oldest first</b>. aiku remembers your choice.
 
