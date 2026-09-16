@@ -36,6 +36,7 @@ export const initialiseRetinaApp = () => {
         layout.user = usePage().props?.auth?.user
         echoCustomer.subscribe(usePage().props?.auth?.user?.customer_id)
         // Echo: Personal
+        echoPersonal.ticketBadges = usePage().props?.layout?.ticket_badges ?? null
         echoPersonal.subscribe(usePage().props?.auth?.user?.id)
 
     }

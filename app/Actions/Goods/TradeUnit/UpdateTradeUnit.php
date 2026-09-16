@@ -150,6 +150,10 @@ class UpdateTradeUnit extends OrgAction
             }
         }
 
+        if (Arr::has($modelData, 'label_info_approved')) {
+            data_set($modelData, 'label_info.label_info_approved', (bool) Arr::pull($modelData, 'label_info_approved'));
+        }
+
         if (Arr::has($modelData, 'packaging_material_codes')) {
             data_set($modelData, 'label_info.packaging_material_codes.value', Arr::pull($modelData, 'packaging_material_codes') ?? []);
         }
@@ -367,6 +371,7 @@ class UpdateTradeUnit extends OrgAction
             'packaging_material_codes'      => ['sometimes', 'nullable', 'array'],
             'packaging_material_codes.*'    => ['string', Rule::enum(TradeUnitPackagingMaterialEnum::class)],
             'packaging_material_codes_show' => ['sometimes', 'boolean'],
+            'label_info_approved'           => ['sometimes', 'boolean'],
 
 
             'cpnp_number'           => ['sometimes', 'nullable', 'string'],

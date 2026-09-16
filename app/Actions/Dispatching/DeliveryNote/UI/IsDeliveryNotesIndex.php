@@ -52,17 +52,19 @@ trait IsDeliveryNotesIndex
         // Ensure all / dispatched bucket order is not disturbed, otherwise would be hard to navigate
         $forceSortByPremiumDispatch = !in_array($bucket, ['all', 'dispatched']);
 
-        if ($currentSort && $forceSortByPremiumDispatch) {
-            $modifiedSort = is_array($currentSort) ? [
-                '-is_premium_dispatch',
-                ...$currentSort,
-            ] : [
-                '-is_premium_dispatch',
-                $currentSort,
-            ];
+        // Returns are the ones needing attention, so they head every bucket whatever the sort asked for
+        $forcedSorts = ['-is_returned'];
 
+        if ($forceSortByPremiumDispatch) {
+            $forcedSorts[] = '-is_premium_dispatch';
+        }
+
+        if ($currentSort) {
             request()->merge([
-                'sort'  => $modifiedSort
+                'sort'  => [
+                    ...$forcedSorts,
+                    ...(is_array($currentSort) ? $currentSort : [$currentSort]),
+                ]
             ]);
         }
 
@@ -257,9 +259,11 @@ trait IsDeliveryNotesIndex
             ->defaultSort(
                 // Ensure all / dispatched bucket order is not disturbed, otherwise would be hard to navigate
                 $forceSortByPremiumDispatch ? [
+                    '-delivery_notes.is_returned',
                     '-delivery_notes.is_premium_dispatch',
                     "$dateColumn",
                 ] : [
+                    '-delivery_notes.is_returned',
                     "-$dateColumn",
                 ]
             )
@@ -290,6 +294,7 @@ trait IsDeliveryNotesIndex
                 'sort_packer',
                 'sort_trolleys',
                 'is_premium_dispatch',
+                'is_returned',
                 'sort_picked_bays',
                 'parcels'
             ])

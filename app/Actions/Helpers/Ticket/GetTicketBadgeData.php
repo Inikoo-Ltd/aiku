@@ -13,6 +13,7 @@ use App\Enums\Helpers\Ticket\TicketQaStatusEnum;
 use App\Enums\Helpers\Ticket\TicketStatusEnum;
 use App\Enums\SysAdmin\Authorisation\RolesEnum;
 use App\Models\Helpers\Ticket;
+use App\Models\CRM\WebUser;
 use App\Models\SysAdmin\User;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
@@ -76,7 +77,7 @@ class GetTicketBadgeData
     /**
      * @return array<int, array{id: string, title: string, body: string, route: string, read: bool, created_at: mixed}>
      */
-    private function recentUpdates(User $user): array
+    public function recentUpdates(User|WebUser $user): array
     {
         return $user->notifications()
             ->whereRaw("(data::jsonb)->>'type' = 'ticket'")
@@ -102,6 +103,12 @@ class GetTicketBadgeData
     }
 
     /** @return Collection<int, User> */
+    public static function leadEngineers(int $groupId): Collection
+    {
+        return self::usersWithRoles($groupId, [RolesEnum::HELP_DESK_SUPERVISOR]);
+    }
+
+    /** @return Collection<int, User> */
     public static function qaUsers(int $groupId): Collection
     {
         return self::usersWithRoles($groupId, [RolesEnum::QA, RolesEnum::HELP_DESK_SUPERVISOR]);
@@ -114,7 +121,7 @@ class GetTicketBadgeData
      */
     private static function usersWithRoles(int $groupId, array $roles): Collection
     {
-        return User::where('group_id', $groupId)->where('status', true)
+        return User::where('group_id', $groupId)->where('status', true)->where('is_bot', false)
             ->whereHas('roles', fn ($query) => $query->whereIn('name', array_map(fn (RolesEnum $role) => $role->value, $roles)))
             ->get();
     }

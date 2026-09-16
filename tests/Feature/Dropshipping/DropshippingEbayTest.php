@@ -162,7 +162,7 @@ function fakeEbay($ctx, array $routes): void
 
 function ebayChannel($ctx, array $overrides = []): EbayUser
 {
-    $customer = StoreCustomer::make()->action($ctx->shop, Customer::factory()->definition());
+    $customer = StoreCustomer::make()->action($ctx->shop, array_merge(Customer::factory()->definition(), ['email' => 'ebay-'.Str::random(8).'@test.example']));
     $ebayUser = StoreEbayUser::make()->handle($customer, ['name' => 'ebay-'.Str::random(6)]);
 
     $ebayUser->update(array_merge([

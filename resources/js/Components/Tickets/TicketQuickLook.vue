@@ -17,9 +17,9 @@ import TicketThread from "@/Components/Tickets/TicketThread.vue"
 import { useModalFocusTrap } from "@/Composables/useModalFocusTrap"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faTimes, faSpinner, faChevronDown } from "@fal"
+import { faTimes, faSpinner, faChevronDown, faLink, faCheck } from "@fal"
 
-library.add(faTimes, faSpinner, faChevronDown)
+library.add(faTimes, faSpinner, faChevronDown, faLink, faCheck)
 
 const emit = defineEmits<{
     (e: "closed"): void
@@ -37,6 +37,16 @@ const displayTicket = computed(() => controls.value?.ticket ?? ticket.value)
 
 const shortDate = (value: string | null) =>
     value ? new Date(value).toLocaleDateString([], { day: "numeric", month: "short" }) : ""
+
+const isLinkCopied = ref(false)
+
+const copyTicketLink = async () => {
+    await navigator.clipboard.writeText(route("grp.tickets.show", displayTicket.value.reference))
+    isLinkCopied.value = true
+    setTimeout(() => (isLinkCopied.value = false), 2000)
+}
+
+const isTicketClosed = computed(() => ["resolved", "cancelled"].includes(displayTicket.value?.status))
 
 const loadControls = async (ticketId: number) => {
     isControlsUnavailable.value = false
@@ -94,6 +104,13 @@ const close = () => {
                             class="primaryLink font-medium"
                             >{{ displayTicket.reference }}</Link
                         >
+                        <button
+                            v-tooltip="isLinkCopied ? trans('Copied') : trans('Copy link')"
+                            type="button"
+                            class="text-gray-400 transition duration-200 hover:text-gray-600 focus:!text-gray-700"
+                            @click="copyTicketLink">
+                            <FontAwesomeIcon :icon="isLinkCopied ? 'fal fa-check' : 'fal fa-link'" :class="isLinkCopied && 'text-green-500'" fixed-width aria-hidden="true" />
+                        </button>
                         <Icon :data="displayTicket.status_icon" />
                         <span class="text-gray-600">{{ displayTicket.status_label }}</span>
                         <Icon :data="displayTicket.priority_icon" />
@@ -123,7 +140,7 @@ const close = () => {
                         <span v-if="displayTicket.waiting_at"
                             >{{ trans("Waiting since") }}: {{ shortDate(displayTicket.waiting_at) }}</span
                         >
-                        <span v-if="displayTicket.closed_at"
+                        <span v-if="isTicketClosed && displayTicket.closed_at"
                             >{{ trans("Closed") }}: {{ shortDate(displayTicket.closed_at) }}</span
                         >
                         <span v-if="displayTicket.customer"

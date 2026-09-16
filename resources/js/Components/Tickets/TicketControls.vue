@@ -81,7 +81,7 @@ const statusBadgeClasses: Record<string, string> = {
     red: "bg-red-100 text-red-700",
 }
 
-const { statusActions } = useTicketStatusActions()
+const { statusActions, actionsFor } = useTicketStatusActions()
 
 const selectableKinds = computed(() => props.options.kinds.filter((kind) => kind.value !== "escalation"))
 const canChangeKind = computed(() => props.can_change_kind_module && props.ticket.kind !== "escalation")
@@ -217,6 +217,9 @@ const onCollaboratorPickerHide = () => {
 
 onBeforeUnmount(saveCollaborators)
 
+const me = computed(() => props.options.assignees.find((engineer: any) => engineer.is_me))
+const otherAssignees = computed(() => props.options.assignees.filter((engineer: any) => !engineer.is_me))
+
 const update = (field: string, value: unknown, action: string = field) => {
     if (isBusy.value) return
     router.patch(route(props.routes.update.name, props.routes.update.parameters), { [field]: value }, {
@@ -241,15 +244,16 @@ const update = (field: string, value: unknown, action: string = field) => {
                 </component>
                 <Popover v-if="can_assign" ref="assigneePopover" @show="isAssigneePickerOpen = true" @hide="isAssigneePickerOpen = false">
                     <button
-                        v-if="options.assignees.some((engineer) => engineer.is_me && engineer.value !== ticket.assignee_id)"
+                        v-if="me && me.value !== ticket.assignee_id"
                         type="button"
-                        class="mb-2 w-full rounded bg-indigo-50 px-2 py-1 text-sm font-medium text-indigo-700 hover:bg-indigo-100 active:!bg-indigo-200 transition duration-200"
-                        @click="update('assignee_id', options.assignees.find((engineer) => engineer.is_me)!.value); assigneePopover.hide()">
+                        class="mb-2 flex w-full items-center gap-2 rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-sm font-medium text-gray-700 hover:border-indigo-300 hover:text-indigo-700 active:!bg-gray-50 transition duration-200"
+                        @click="update('assignee_id', me.value); assigneePopover.hide()">
+                        <TicketUserAvatar :name="me.label" :avatar="me.avatar" />
                         {{ trans("Assign to me") }}
                     </button>
                     <div class="grid grid-cols-4 gap-2">
                         <button
-                            v-for="engineer in options.assignees"
+                            v-for="engineer in otherAssignees"
                             :key="engineer.value"
                             type="button"
                             class="flex w-16 flex-col items-center gap-1 rounded p-1 text-xs hover:bg-gray-100 active:!bg-gray-200 transition duration-200"
@@ -309,7 +313,7 @@ const update = (field: string, value: unknown, action: string = field) => {
                             {{ useFormatTime(ticket.waiting_until, { formatTime: "hm" }) }}
                         </span>
                         <button
-                            v-for="action in can_update ? statusActions[ticket.status] : []"
+                            v-for="action in can_update ? actionsFor(statusActions, ticket) : []"
                             :key="action.status"
                             v-tooltip="action.label"
                             type="button"

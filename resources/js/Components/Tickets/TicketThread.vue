@@ -24,9 +24,9 @@ library.add(faPencil, faTrashAlt, faUser)
 
 const props = withDefaults(defineProps<{
     ticket: { subject: string; description: string | null; reporter: string | null; reporter_avatar?: Record<string, string> | null; is_from_slack?: boolean; reference_url?: string | null; created_at: string; images?: Record<string, string>[] }
-    comments: { id: number; body: string; is_internal: boolean; is_lead_only?: boolean; can_toggle_visibility?: boolean; is_staff: boolean; author: string | null; created_at: string; images?: Record<string, string>[]; attachments?: { name: string; url: string }[]; can_edit?: boolean; can_delete?: boolean }[]
+    comments: { id: number; body: string; is_internal: boolean; is_lead_only?: boolean; author_avatar?: Record<string, string> | null; author_roles?: { key: string; label: string }[]; can_toggle_visibility?: boolean; is_staff: boolean; author: string | null; created_at: string; images?: Record<string, string>[]; attachments?: { name: string; url: string }[]; can_edit?: boolean; can_delete?: boolean }[]
     commentRoute: { name: string; parameters: Record<string, unknown> }
-    mentionable?: { username: string; name: string | null }[]
+    mentionable?: { username: string; name: string | null; suggested?: boolean; is_customer?: boolean }[]
     commentsNewestFirst?: boolean
     showDescription?: boolean
     canCommentInternally?: boolean
@@ -35,6 +35,14 @@ const props = withDefaults(defineProps<{
 const emit = defineEmits<{
     (e: "update:commentsNewestFirst", value: boolean): void
 }>()
+
+const roleClasses: Record<string, string> = {
+    lead_engineer: "bg-red-100 text-red-700",
+    engineer: "bg-blue-100 text-blue-700",
+    qa: "bg-purple-100 text-purple-700",
+    reporter: "bg-orange-100 text-orange-700",
+    customer: "bg-slate-200 text-slate-700",
+}
 
 const form = useForm<{ body: string; images: File[]; is_internal: boolean }>({ body: "", images: [], is_internal: false })
 
@@ -107,7 +115,7 @@ const submit = () => {
         <slot name="after-description" />
 
         <form class="space-y-3 rounded-lg border p-4 transition duration-200" :class="form.is_internal ? 'border-amber-300 bg-amber-50' : 'border-gray-300 bg-white'" @submit.prevent="submit">
-            <TicketComposer v-model:body="form.body" v-model:images="form.images" :rows="4" :mentionable="mentionable" :placeholder="trans('Write a comment, paste a screenshot or drop images')" />
+            <TicketComposer v-model:body="form.body" v-model:images="form.images" :rows="4" :mentionable="form.is_internal ? mentionable?.filter((person) => !person.is_customer) : mentionable" :placeholder="trans('Write a comment, paste a screenshot or drop images')" />
             <p v-if="form.errors.body || form.errors.images" class="text-xs text-red-600">{{ form.errors.body || form.errors.images }}</p>
             <div class="flex flex-wrap items-center justify-end gap-3">
                 <label v-if="canCommentInternally" class="mr-auto flex cursor-pointer select-none items-center gap-2 text-sm transition duration-200" :class="form.is_internal ? 'font-semibold text-amber-700' : 'text-gray-500 hover:text-gray-700'">
@@ -133,7 +141,18 @@ const submit = () => {
                 :class="comment.is_lead_only ? 'bg-rose-50 border-rose-200' : comment.is_internal ? 'bg-amber-50 border-amber-200' : comment.is_staff ?'bg-gray-50 border-gray-200' : 'bg-blue-50 border-blue-200'"
             >
                 <div class="text-xs text-gray-500 mb-1 flex items-center gap-2">
-                    <span v-if="comment.author" class="font-medium text-gray-700">{{ comment.author }} ·</span>
+                    <span v-if="comment.author" class="flex items-center gap-1.5 font-medium text-gray-700">
+                        <TicketUserAvatar :name="comment.author" :avatar="comment.author_avatar" size="xs" />
+                        {{ comment.author }}
+                        <span
+                            v-for="role in comment.author_roles ?? []"
+                            :key="role.key"
+                            class="rounded px-1.5 py-0.5 text-[10px] font-medium"
+                            :class="roleClasses[role.key] ?? 'bg-gray-100 text-gray-600'"
+                            >{{ role.label }}</span
+                        >
+                        ·
+                    </span>
                     <span v-else class="flex items-center gap-2"><img class="h-4 select-none" src="/art/invader.svg" alt="aiku" /> ·</span>
                     {{ useFormatTime(comment.created_at, { formatTime: "hm" }) }}
                     <span v-if="comment.is_internal" class="px-1.5 py-0.5 rounded bg-amber-200 text-amber-900 text-[10px] font-medium">{{ trans("Engineering note") }}</span>

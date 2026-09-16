@@ -84,6 +84,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property bool $is_two_factor_required
  * @property array<array-key, mixed> $bookmarks
  * @property int|null $employed_in_organisation_id
+ * @property bool $is_bot
  * @property bool $can_use_mcp
  * @property bool $can_use_mcp_sql
  * @property int|null $timezone_id

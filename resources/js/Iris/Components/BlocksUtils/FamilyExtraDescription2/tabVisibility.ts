@@ -87,6 +87,9 @@ export const isTabVisible = (
 export const hasLabelInfoContent = (product: any): boolean =>
 	Object.values(product?.label_info ?? {}).some((item: any) => item?.show === true)
 
+export const isLabelInfoApproved = (product: any): boolean =>
+	product?.is_label_info_approved === true
+
 /**
  * Product webpages expose the same tab data under `fieldValue.tabs`,
  * where the about tab is driven by the product description and its extra description.
@@ -106,7 +109,10 @@ export const isProductTabVisible = (
 			return hasProductAboutContent(tabs, product)
 
 		case "regulatory_label_information":
-			return isWorkshop || (isLoggedIn && hasLabelInfoContent(product))
+			return (
+				isWorkshop ||
+				(isLoggedIn && isLabelInfoApproved(product) && hasLabelInfoContent(product))
+			)
 
 		default:
 			return isTabVisible(tabKey, tabs, isLoggedIn)

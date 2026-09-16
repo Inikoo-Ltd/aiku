@@ -30,7 +30,7 @@ class GetTicketControls extends OrgAction
     {
         return [
             ...ShowTicket::make()->controlProps($ticket),
-            'comments'              => TicketCommentResource::collection($ticket->commentsVisibleTo(request()->user())->with('author')->orderByDesc('id')->get())->toArray(request()),
+            'comments'              => TicketCommentResource::collection($ticket->commentsVisibleTo(request()->user())->with('author', 'ticket')->orderByDesc('id')->get())->toArray(request()),
             'comments_newest_first' => (bool) data_get(request()->user()->settings, 'ticket_comments_newest_first', true),
         ];
     }
