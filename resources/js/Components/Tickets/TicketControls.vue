@@ -305,9 +305,8 @@ const update = (field: string, value: unknown, action: string = field) => {
                     </div>
                 </Popover>
             </div>
-            <div v-if="can_manage || is_reporter || ticket.qa_status || canAskQa">
-                <div class="flex flex-wrap items-center gap-2">
-                    <template v-if="can_manage || is_reporter">
+            <div v-if="can_manage || is_reporter || ticket.qa_status || canAskQa" class="space-y-2">
+                <div v-if="can_manage || is_reporter" class="flex flex-wrap items-center gap-2">
                         <span class="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-sm font-medium" :class="statusBadgeClasses[ticket.status_icon.color]">
                             <FontAwesomeIcon :icon="ticket.status_icon.icon" fixed-width />
                             {{ ticket.status_label }}
@@ -326,8 +325,8 @@ const update = (field: string, value: unknown, action: string = field) => {
                             @click="runStatusAction(action.status)">
                             <FontAwesomeIcon :icon="isPending(`status:${action.status}`) ? 'fal fa-spinner' : action.icon" :spin="isPending(`status:${action.status}`)" fixed-width />
                         </button>
-                    </template>
-                    <template v-if="ticket.qa_status || canAskQa">
+                </div>
+                <div v-if="ticket.qa_status || canAskQa" class="flex flex-wrap items-center gap-2">
                         <span v-if="ticket.qa_status" v-tooltip="ticket.qa_user ? `${ticket.qa_status_label} · ${ticket.qa_user}` : ticket.qa_status_label" class="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-sm font-medium" :class="statusBadgeClasses[ticket.qa_status_icon.color]">
                             <FontAwesomeIcon :icon="ticket.qa_status_icon.icon" fixed-width />
                             {{ ticket.qa_status_label }}
@@ -354,7 +353,6 @@ const update = (field: string, value: unknown, action: string = field) => {
                             </div>
                         </Popover>
                         <button v-if="can_contribute && ticket.qa_status === 'requested'" v-tooltip="trans('Withdraw QA request')" type="button" class="rounded-md p-1.5 text-gray-400 hover:bg-gray-100 active:!bg-gray-200 transition duration-200" @click="update('qa_status', null, 'qa:withdraw')"><FontAwesomeIcon :icon="isPending('qa:withdraw') ? 'fal fa-spinner' : 'fal fa-times'" :spin="isPending('qa:withdraw')" fixed-width /></button>
-                    </template>
                 </div>
                 <div v-if="ticket.status === 'pending_deploy' && ticket.deploy_comment" class="mt-2 rounded-md border border-green-200 bg-green-50 px-3 py-2 text-sm text-gray-700">
                     <div class="mb-1 text-xs font-medium text-green-700">{{ trans("Posted to the reporter when the deployment lands") }}</div>
