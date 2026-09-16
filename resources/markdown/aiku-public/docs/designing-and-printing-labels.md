@@ -23,9 +23,13 @@ A label is in one of three states, and the chip on each row tells you which.
 
 | State | What it means |
 | --- | --- |
-| **Raw** | Created, nothing designed yet. |
-| **Processed** | Designed and saved. Yours to work on, invisible to the floor. |
+| **Raw** | Not touched in the editor yet. Usually a label that arrived from an import. |
+| **Processed** | Opened and edited. Yours to work on, invisible to the floor. |
 | **Published** | Live. It can be printed from the To produce board. |
+
+**Raw almost always means imported.** Most labels in aiku were not designed here at all — they were brought over in bulk from folders of artwork PDFs held elsewhere, one file per label, matched to artefacts by code. An imported label arrives as the whole A4 being one label, carrying its artwork and nothing else: no grid, no batch code, no expiry date, no barcode. That is a faithful record of what the old file was, not a half-finished design.
+
+So a Raw label is usually a perfectly good artwork waiting for someone to decide whether it needs anything printed on it. Open it, add whatever the run needs, and saving moves it to Processed. A label you create yourself is also Raw until you open and save it a second time, so do not read Raw as "broken".
 
 Only a published label can be printed outside the editor. That is the whole point of publishing, and it is why the **Publish** button carries a small red dot until you press it.
 
@@ -95,6 +99,7 @@ Once the label is published, the floor prints it from the **Preparing** lane of 
 - **PDF artwork shows its real size in centimetres.** If a label looks wrong on the page, the size on the row usually explains it: the artwork is not the size you thought.
 - **Editing a published label goes live on save.** There is no draft copy sitting in front of it.
 - **Deleting a label cannot be undone.** The layout and its link to the artwork go with it. The artwork file itself stays on the artefact.
+- **An imported label has no variable text by design.** It prints exactly the artwork it came with. If a run needs a batch number on it, that is a decision someone makes in the editor, not something the import got wrong.
 - **The batch code and expiry date are stand-ins, not live data.** They do not update themselves between runs. Check them before each print until artefacts carry real ones.
 
 <aside class="wayfinder"><strong>Where to click in aiku</strong>
