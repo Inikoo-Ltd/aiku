@@ -42,6 +42,7 @@ const roleClasses: Record<string, string> = {
     qa: "bg-purple-100 text-purple-700",
     reporter: "bg-orange-100 text-orange-700",
     staff: "bg-gray-100 text-gray-600",
+    bot: "bg-indigo-100 text-indigo-700",
     customer: "bg-slate-200 text-slate-700",
 }
 

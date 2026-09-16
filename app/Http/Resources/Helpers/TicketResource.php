@@ -101,6 +101,10 @@ class TicketResource extends JsonResource
             return $reporter ? [['key' => 'customer', 'label' => __('Customer')]] : [];
         }
 
+        if ($reporter->is_bot) {
+            return [['key' => 'bot', 'label' => __('Bot')]];
+        }
+
         if (\App\Models\Helpers\Ticket::canBeAssignedBy($reporter)) {
             return [['key' => 'lead_engineer', 'label' => __('Lead engineer')]];
         }

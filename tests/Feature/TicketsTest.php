@@ -2131,6 +2131,9 @@ test('comments show who wrote them with their role, but never in the customer po
     StoreTicketComment::make()->action($ticket, $engineer, ['body' => 'from the engineer']);
     StoreTicketComment::make()->action($ticket, $qa, ['body' => 'from qa']);
     StoreTicketComment::make()->action($ticket, $this->user, ['body' => 'from the lead']);
+    $bot = User::factory()->create(['group_id' => $this->group->id, 'is_bot' => true]);
+    $bot->assignRole('help-desk-clerk');
+    StoreTicketComment::make()->action($ticket, $bot, ['body' => 'from the bot']);
 
     $roles = collect(get(route('grp.json.ticket.controls', $ticket->id))->assertOk()->json('comments'))
         ->mapWithKeys(fn (array $comment) => [$comment['body'] => collect($comment['author_roles'])->pluck('key')->all()]);
@@ -2138,6 +2141,7 @@ test('comments show who wrote them with their role, but never in the customer po
         ->and($roles['from the engineer'])->toBe(['engineer'])
         ->and($roles['from qa'])->toBe(['qa'])
         ->and($roles['from the lead'])->toBe(['lead_engineer'])
+        ->and($roles['from the bot'])->toBe(['bot'])
         ->and(collect(get(route('grp.json.ticket.controls', $ticket->id))->json('comments'))->every(fn ($comment) => array_key_exists('author_avatar', $comment)))->toBeTrue();
 
     $customerTicket = StoreRetinaTicket::make()->action($this->webUser, ['subject' => 'Customer thread']);
