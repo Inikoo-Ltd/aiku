@@ -27,12 +27,14 @@ use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
+use Throwable;
 use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexPartnerShippingList extends OrgAction
@@ -157,6 +159,8 @@ class IndexPartnerShippingList extends OrgAction
                 'partner_shopping_list_items.job_order_id',
                 'partner_shopping_list_items.preparing_at',
                 'partner_shopping_list_items.quantity_to_produce',
+                'partner_shopping_list_items.batch_code as run_batch_code',
+                'partner_shopping_list_items.expiry_date as run_expiry_date',
                 'partner_shopping_list_items.quantity',
                 'partner_shopping_list_items.priority',
                 'partner_shopping_list_items.state',
@@ -365,12 +369,17 @@ class IndexPartnerShippingList extends OrgAction
         );
 
         $backlogItems->each(function ($item) use ($publishedLabels) {
-            $item->published_labels = $publishedLabels->get($item->artefact_id, collect())->values()->all();
+            $item->published_labels   = $publishedLabels->get($item->artefact_id, collect())->values()->all();
+            $item->batch_code         = $this->getBatchCode($item);
+            $item->label_expiry_date  = $this->getLabelExpiryDate($item);
+            $item->expiry_date        = $this->getRunExpiryDate($item);
         });
 
         $preparingItems->each(function ($item) use ($publishedLabels) {
-            $item->published_labels = $publishedLabels->get($item->artefact_id, collect())->values()->all();
-            $item->batch_code       = $this->getBatchCode($item);
+            $item->published_labels   = $publishedLabels->get($item->artefact_id, collect())->values()->all();
+            $item->batch_code         = $this->getBatchCode($item);
+            $item->label_expiry_date  = $this->getLabelExpiryDate($item);
+            $item->expiry_date        = $this->getRunExpiryDate($item);
         });
 
         return collect($lanes)
@@ -381,7 +390,7 @@ class IndexPartnerShippingList extends OrgAction
 
     /**
      * @param  array<int, int>  $artefactIds
-     * @return Collection<int, Collection<int, array{id: int, artefact_id: int, name: string, batch_code: string|null, pdf_url: string}>>
+     * @return Collection<int, Collection<int, array{id: int, artefact_id: int, name: string, batch_code: string|null, expiry_date: string|null, pdf_url: string}>>
      */
     public function getPublishedLabelsByArtefact(array $artefactIds): Collection
     {
@@ -398,19 +407,24 @@ class IndexPartnerShippingList extends OrgAction
                 'id'          => $label->id,
                 'artefact_id' => $label->artefact_id,
                 'name'        => $label->name,
-                'batch_code'  => $this->getPrintedBatchCode($label),
+                'batch_code'  => $this->getPrintedText($label, 'batch_code'),
+                'expiry_date' => $this->getPrintedText($label, 'expiry_date'),
                 'pdf_url'     => route('grp.models.artefact.labels.pdf', ['artefact' => $label->artefact_id, 'label' => $label->id]),
             ])
             ->groupBy('artefact_id');
     }
 
     /**
-     * The batch code the artisan should mark the run with. A published label that prints one wins,
-     * because the board must never contradict the sheet coming out of the printer; when no label
-     * carries one, the stand in the label editor would have offered is shown instead.
+     * The batch code the artisan should mark the run with. What was typed when the run was prepared
+     * wins, then a published label that prints one, because the board must never contradict the
+     * sheet coming out of the printer; failing both, the stand in the label editor offers.
      */
     private function getBatchCode(object $item): ?string
     {
+        if ($item->run_batch_code) {
+            return $item->run_batch_code;
+        }
+
         $printed = collect($item->published_labels)->pluck('batch_code')->filter()->first();
 
         if ($printed) {
@@ -422,15 +436,39 @@ class IndexPartnerShippingList extends OrgAction
             : null;
     }
 
-    private function getPrintedBatchCode(ArtefactLabel $label): ?string
+    private function getPrintedText(ArtefactLabel $label, string $source): ?string
     {
         foreach (Arr::get($label->layout, 'fields', []) ?? [] as $field) {
-            if (Arr::get($field, 'source') === 'batch_code' && trim((string) Arr::get($field, 'text', '')) !== '') {
+            if (Arr::get($field, 'source') === $source && trim((string) Arr::get($field, 'text', '')) !== '') {
                 return trim(Arr::get($field, 'text'));
             }
         }
 
         return null;
+    }
+
+    /**
+     * The date the label design currently holds, so the popup opens on it rather than on nothing.
+     * Labels keep it as printed text, which is not always a date anyone can parse.
+     */
+    private function getLabelExpiryDate(object $item): ?string
+    {
+        $printed = collect($item->published_labels)->pluck('expiry_date')->filter()->first();
+
+        if (!$printed) {
+            return null;
+        }
+
+        try {
+            return Carbon::createFromFormat('d/m/Y', $printed)->format('Y-m-d');
+        } catch (Throwable) {
+            return null;
+        }
+    }
+
+    private function getRunExpiryDate(object $item): ?string
+    {
+        return $item->run_expiry_date ? Carbon::parse($item->run_expiry_date)->format('Y-m-d') : null;
     }
 
     /** @return array<int, array{id: int, name: string, open_job_orders: int, hidden: bool}> */
