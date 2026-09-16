@@ -293,6 +293,7 @@ class IndexTickets extends OrgAction
                 'data'        => TicketResource::collection($tickets),
                 'updateRoute' => 'grp.models.ticket.update',
                 'can_assign'  => Ticket::canBeAssignedBy(request()->user()),
+                'can_manage'  => Ticket::canBeManagedBy(request()->user()),
                 'mineFilter'  => $this->savedMineFilter(),
                 'options'     => [
                     'priorities' => collect(ChatPriorityEnum::labels())->map(fn ($label, $value) => ['label' => $label, 'value' => $value, 'icon' => ChatPriorityEnum::stateIcon()[$value]])->values(),

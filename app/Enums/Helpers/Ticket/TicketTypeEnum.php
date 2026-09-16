@@ -15,12 +15,14 @@ enum TicketTypeEnum: string
     use EnumHelperTrait;
 
     case HELP     = 'help';
+    case ENGINEER = 'engineer';
     case CUSTOMER = 'customer';
 
     public static function labels(): array
     {
         return [
             'help'     => __('Help desk'),
+            'engineer' => __('Engineering'),
             'customer' => __('Customer support'),
         ];
     }
@@ -29,6 +31,7 @@ enum TicketTypeEnum: string
     {
         return match ($this) {
             self::HELP     => 'HELP',
+            self::ENGINEER => 'INI',
             self::CUSTOMER => 'AD',
         };
     }

@@ -194,7 +194,7 @@ class ShowTicket extends OrgAction
                 'mentionable' => $this->mentionableFor($ticket),
             ],
             'can_manage'             => Ticket::canBeManagedBy($user),
-            'can_assign'             => Ticket::canBeAssignedBy($user) || (Ticket::canBeManagedBy($user) && $ticket->assignee_id === $user->id),
+            'can_assign'             => $ticket->canChangeAssigneeBy($user),
             'can_flag_confidential'  => Ticket::canBeAssignedBy($user),
             'can_qa'                 => Ticket::canCheckQa($user),
             'is_reporter'            => $ticket->isReportedBy($user),

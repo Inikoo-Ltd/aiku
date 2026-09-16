@@ -264,7 +264,7 @@ const openQuickLook = (ticket: any, event: MouseEvent) => {
 const myUserId = computed(() => (usePage().props.auth as { user?: { id: number } } | undefined)?.user?.id ?? null)
 
 const canDragTicket = (ticket: { assignee_id: number | null }) =>
-	props.can_assign || (props.can_manage && myUserId.value !== null && ticket.assignee_id === myUserId.value)
+	props.can_assign || (props.can_manage && (ticket.assignee_id === null || (myUserId.value !== null && ticket.assignee_id === myUserId.value)))
 
 const engineerMoves: Record<string, string[]> = {
 	open: ["assigned", "in_progress", "closed"],

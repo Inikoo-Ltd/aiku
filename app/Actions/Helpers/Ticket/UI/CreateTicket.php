@@ -11,6 +11,7 @@ namespace App\Actions\Helpers\Ticket\UI;
 use App\Actions\OrgAction;
 use App\Enums\CRM\Livechat\ChatPriorityEnum;
 use App\Enums\Helpers\Ticket\TicketKindEnum;
+use App\Enums\Helpers\Ticket\TicketTypeEnum;
 use App\Enums\Helpers\Ticket\TicketModuleEnum;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -52,6 +53,9 @@ class CreateTicket extends OrgAction
                 'priorities'  => collect(ChatPriorityEnum::labels())->map(fn ($label, $value) => ['label' => $label, 'value' => $value])->values(),
                 'modules'     => collect(TicketModuleEnum::labels())->map(fn ($label, $value) => ['label' => $label, 'value' => $value])->values(),
                 'kinds'       => TicketKindEnum::raisableBy($request->user()),
+                'types'       => Ticket::canChooseType($request->user())
+                    ? collect([TicketTypeEnum::HELP, TicketTypeEnum::ENGINEER])->map(fn (TicketTypeEnum $type) => ['label' => TicketTypeEnum::labels()[$type->value], 'value' => $type->value])->values()
+                    : [],
             ]
         );
     }

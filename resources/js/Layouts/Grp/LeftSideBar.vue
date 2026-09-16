@@ -8,7 +8,6 @@
 import LeftSidebarNavigation from "@/Layouts/Grp/LeftSidebarNavigation.vue"
 import LeftSidebarBottomNav from "@/Layouts/Grp/LeftSidebarBottomNav.vue"
 import { Popover, PopoverButton, PopoverPanel } from "@headlessui/vue"
-import NavigationSimple from "@/Layouts/Grp/NavigationSimple.vue"
 import { useLogoutAuth } from "@/Composables/useAppMethod"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faChevronLeft } from "@far"
@@ -18,6 +17,7 @@ import { computed, inject, ref } from "vue"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { trans } from "laravel-vue-i18n"
+import { isNavigationActive } from "@/Composables/useUrl"
 import { Link } from "@inertiajs/vue3"
 
 library.add(faTasks, faChevronLeft, faSignOutAlt, faSensor, faLifeRing, faHeadset, faCommentAlt, faSignOut, faServer)
@@ -39,8 +39,9 @@ const logoutData = computed(() => ({
 }))
 
 const bottomLinks = computed(() => [
-    { route: "grp.tasks.index", label: trans("Tasks"), tooltip: trans("Tasks: ask a colleague or a department for something"), icon: "fal fa-tasks" },
-    { route: "grp.tickets.index", label: trans("Tickets"), tooltip: trans("Tickets: report a problem or ask for help"), icon: "fal fa-life-ring" },
+    { route: "grp.tasks.index", root: "grp.tasks.", label: trans("Tasks"), tooltip: trans("Tasks: ask a colleague or a department for something"), icon: "fal fa-tasks" },
+    { route: "grp.tickets.index", root: "grp.tickets.", label: trans("Tickets"), tooltip: trans("Tickets: report a problem or ask for help"), icon: "fal fa-life-ring" },
+    { route: "grp.chat.dashboard", root: "grp.chat.", label: trans("Chat"), tooltip: trans("Chat with customers and colleagues"), icon: "fal fa-comment-alt" },
 ])
 
 const isLoadingLogout = ref(false)
@@ -54,7 +55,7 @@ const onLogoutAuth = () => {
 
 <template>
     <div
-        class="pb-32 lg:pb-40 fixed md:flex md:flex-col md:inset-y-0 h-full transition-all duration-300 ease-in-out"
+        class="pb-56 fixed md:flex md:flex-col md:inset-y-0 h-full transition-all duration-300 ease-in-out"
         :style="{
 			'background-color': layout.app.theme[0],
 			color: layout.app.theme[2],
@@ -84,25 +85,23 @@ const onLogoutAuth = () => {
             </div>
         </div>
 
-        <div class="flex flex-grow flex-col h-full overflow-y-auto custom-hide-scrollbar pb-3">
+        <div class="flex flex-grow flex-col h-full overflow-hidden">
             <LeftSidebarNavigation />
         </div>
 
-        <div class="absolute bottom-20 w-full">
+        <div class="absolute bottom-20 w-full px-3 pt-3">
             <div class="flex flex-col justify-center">
                 <Link
                     v-for="link in bottomLinks"
                     :key="link.route"
                     :href="route(link.route)"
-                    class="relative group hover:underline px-4 rounded-md py-2 w-full group flex items-center text-sm gap-x-2"
-                    xclass="[open ? 'bg-black/25' : '']"
+                    class="relative w-full group flex items-center px-2 text-sm gap-x-2"
+                    :class="isNavigationActive(layout.currentRoute, link.root) ? 'navigationActive' : 'navigation'"
                     v-tooltip="{
 						content: link.tooltip,
 						delay: { show: layout.leftSidebar.show ? 500 : 100, hide: 100 },
 					}"
-                    :style="{
-						color: layout?.app?.theme[1],
-					}">
+                    >
                     <FontAwesomeIcon
                         aria-hidden="true"
                         class="flex-shrink-0 h-4 w-4"
@@ -128,9 +127,12 @@ const onLogoutAuth = () => {
 
                 <Popover class="relative w-full" v-slot="{ open }">
                     <PopoverButton
-                        class="flex w-full focus:outline-none focus:ring-0 focus:border-none px-2">
-                        <div class="w-full rounded-md" :class="[open ? 'bg-black/25' : '']">
-                            <NavigationSimple :nav="logoutData" />
+                        class="flex w-full focus:outline-none focus:ring-0 focus:border-none">
+                        <div
+                            class="w-full group flex items-center px-2 text-sm gap-x-2"
+                            :class="open ? 'navigationActive' : 'navigation'">
+                            <FontAwesomeIcon aria-hidden="true" class="flex-shrink-0 h-4 w-4" fixed-width icon="fal fa-sign-out-alt" />
+                            <span v-if="layout.leftSidebar.show" class="truncate py-0.5 leading-none whitespace-nowrap">{{ logoutData.label }}</span>
                         </div>
                     </PopoverButton>
 
@@ -168,6 +170,10 @@ const onLogoutAuth = () => {
 </template>
 
 <style>
+
+
+
+
 /* Hide scrollbar for Chrome, Safari and Opera */
 .custom-hide-scrollbar::-webkit-scrollbar {
     display: none;

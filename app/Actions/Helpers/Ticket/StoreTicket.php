@@ -54,7 +54,7 @@ class StoreTicket extends OrgAction
         return [
             'subject'         => ['required', 'string', 'max:255'],
             'description'     => ['sometimes', 'nullable', 'string'],
-            'type'            => ['sometimes', Rule::enum(TicketTypeEnum::class)],
+            'type'            => ['sometimes', Rule::enum(TicketTypeEnum::class), Rule::when(!$this->asAction && !Ticket::canChooseType(request()->user()), Rule::in([TicketTypeEnum::HELP->value, TicketTypeEnum::CUSTOMER->value]))],
             'kind'            => ['sometimes', 'nullable', Rule::enum(TicketKindEnum::class), Rule::when(!$this->asAction && !Ticket::canBeManagedBy(request()->user()), Rule::notIn(TicketKindEnum::internalValues()))],
             'module'          => ['sometimes', 'nullable', Rule::enum(TicketModuleEnum::class)],
             'tags'            => ['sometimes', 'array'],
