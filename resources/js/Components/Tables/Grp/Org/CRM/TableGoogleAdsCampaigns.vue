@@ -9,6 +9,7 @@ import { Link } from "@inertiajs/vue3"
 import Table from "@/Components/Table/Table.vue"
 import { useLocaleStore } from "@/Stores/locale"
 import { campaignTypeLabel } from "@/Composables/googleAdsCampaignType"
+import { impressionShareLabel } from "@/Composables/googleAdsFormat"
 import { trans } from "laravel-vue-i18n"
 
 defineProps<{
@@ -41,6 +42,26 @@ const statusClass = (status: string | null) => {
     if (status === "ELIGIBLE" || status === "ENABLED") return "text-[#006300]"
     return "text-gray-500"
 }
+
+const cellSlot = (key: string) => `cell(${key})`
+
+const countColumns = ["all_conversions", "purchases", "registrations"]
+
+const accountMoneyColumns = ["all_conversions_value", "cost_per_purchase", "cost_per_registration"]
+
+const rateColumns = ["purchase_rate", "registration_rate"]
+
+const impressionShareColumns = [
+    "search_impression_share",
+    "search_rank_lost_impression_share",
+    "search_budget_lost_impression_share",
+    "search_top_impression_share",
+    "search_rank_lost_top_impression_share",
+    "search_budget_lost_top_impression_share",
+    "search_absolute_top_impression_share",
+    "search_rank_lost_absolute_top_impression_share",
+    "search_budget_lost_absolute_top_impression_share",
+]
 </script>
 
 <template>
@@ -109,6 +130,29 @@ const statusClass = (status: string | null) => {
         <template #cell(conversions_value)="{ item }">
             <div class="tabular-nums text-gray-600">
                 {{ locale.currencyFormat(item.currency_code ?? currency, item.conversions_value) }}
+            </div>
+        </template>
+
+        <template v-for="key in countColumns" :key="key" #[cellSlot(key)]="{ item }">
+            <div v-if="item[key] === null" class="text-gray-400">—</div>
+            <div v-else class="tabular-nums text-gray-600">{{ locale.number(item[key]) }}</div>
+        </template>
+
+        <template v-for="key in accountMoneyColumns" :key="key" #[cellSlot(key)]="{ item }">
+            <div v-if="item[key] === null" class="text-gray-400">—</div>
+            <div v-else class="tabular-nums text-gray-600">
+                {{ locale.currencyFormat(item.currency_code ?? currency, item[key]) }}
+            </div>
+        </template>
+
+        <template v-for="key in rateColumns" :key="key" #[cellSlot(key)]="{ item }">
+            <div v-if="item[key] === null" class="text-gray-400">—</div>
+            <div v-else class="tabular-nums text-gray-600">{{ item[key].toFixed(2) }}%</div>
+        </template>
+
+        <template v-for="key in impressionShareColumns" :key="key" #[cellSlot(key)]="{ item }">
+            <div class="tabular-nums" :class="item[key] === null ? 'text-gray-400' : 'text-gray-600'">
+                {{ impressionShareLabel(item[key]) }}
             </div>
         </template>
 

@@ -8,6 +8,7 @@
 
 namespace App\Http\Resources\CRM;
 
+use App\Models\CRM\TrafficSourceCampaignMetric;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
@@ -52,15 +53,41 @@ class GoogleAdsCampaignsResource extends JsonResource
                Spend is the shop's currency instead, so the two are never formatted from one code. */
             'currency_code' => $campaign->currency_code,
 
-            'impressions' => (int) $campaign->impressions,
-            'clicks'      => (int) $campaign->clicks,
-            'ctr'         => $campaign->ctr !== null ? (float) $campaign->ctr : null,
-            'avg_cpc'     => $campaign->avg_cpc !== null ? (float) $campaign->avg_cpc : null,
-            'conversions'         => (float) $campaign->conversions,
-            'cost_per_conversion' => $campaign->cost_per_conversion !== null ? (float) $campaign->cost_per_conversion : null,
-            'conversions_value'   => (float) $campaign->conversions_value,
-            'spend'               => (float) $campaign->spend,
-            'roas'                => $campaign->roas !== null ? (float) $campaign->roas : null,
+            'impressions'           => (int) $campaign->impressions,
+            'clicks'                => (int) $campaign->clicks,
+            'ctr'                   => $campaign->ctr !== null ? (float) $campaign->ctr : null,
+            'avg_cpc'               => $campaign->avg_cpc !== null ? (float) $campaign->avg_cpc : null,
+            'conversions'           => (float) $campaign->conversions,
+            'cost_per_conversion'   => $campaign->cost_per_conversion !== null ? (float) $campaign->cost_per_conversion : null,
+            'conversions_value'     => (float) $campaign->conversions_value,
+            'spend'                 => (float) $campaign->spend,
+            'roas'                  => $campaign->roas !== null ? (float) $campaign->roas : null,
+            'all_conversions'       => (float) $campaign->all_conversions,
+            'all_conversions_value' => (float) $campaign->all_conversions_value,
+            ...$this->nullableFloats([
+                'purchases',
+                'cost_per_purchase',
+                'purchase_rate',
+                'registrations',
+                'cost_per_registration',
+                'registration_rate',
+                ...TrafficSourceCampaignMetric::IMPRESSION_SHARE_COLUMNS,
+            ]),
         ];
+    }
+
+    /**
+     * @param array<int, string> $keys
+     * @return array<string, float|null>
+     */
+    private function nullableFloats(array $keys): array
+    {
+        $values = [];
+
+        foreach ($keys as $key) {
+            $values[$key] = $this->resource->{$key} !== null ? (float) $this->resource->{$key} : null;
+        }
+
+        return $values;
     }
 }

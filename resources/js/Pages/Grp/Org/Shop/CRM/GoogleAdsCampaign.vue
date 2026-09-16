@@ -23,6 +23,7 @@ import ConfirmDialog from "primevue/confirmdialog"
 import HelpTip from "@/Components/Utils/HelpTip.vue"
 import { capitalize } from "@/Composables/capitalize"
 import { campaignTypeLabel } from "@/Composables/googleAdsCampaignType"
+import { impressionShareLabel } from "@/Composables/googleAdsFormat"
 import { useLocaleStore } from "@/Stores/locale"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { PageHeadingTypes } from "@/types/PageHeading"
@@ -68,7 +69,25 @@ const props = defineProps<{
         avg_cpc: number | null
         cost_per_conversion: number | null
         roas: number | null
+        all_conversions: number
+        all_conversions_value: number
+        has_breakdown: boolean
+        purchases: number | null
+        cost_per_purchase: number | null
+        purchase_rate: number | null
+        registrations: number | null
+        cost_per_registration: number | null
+        registration_rate: number | null
     }
+    impression_share: Record<string, number | null> | null
+    conversions_by_action: {
+        category: string
+        action_name: string
+        conversions: number
+        all_conversions: number
+        conversions_value: number
+        all_conversions_value: number
+    }[]
     daily: {
         date: string
         impressions: number
@@ -133,6 +152,39 @@ const roasClass = (roas: number | null) =>
     roas === null ? "text-gray-400" : roas >= 1 ? "text-[#006300]" : "text-[#d03b3b]"
 
 const enumLabel = (value: string | null) => (value ? value.replace(/_/g, " ").toLowerCase() : null)
+
+const percent = (value: number | null, decimals = 2) => (value === null ? "—" : value.toFixed(decimals) + "%")
+
+const moneyOrDash = (value: number | null) => (value === null ? "—" : money(value))
+
+/* Three rows for the three places an ad can appear, each with what was received and the two reasons
+   Google gives for the rest: outbid on Ad Rank, or the budget was already spent. */
+const impressionShareRows = computed(() => {
+    const share = props.impression_share
+
+    if (!share) return []
+
+    return [
+        {
+            label: trans("Anywhere on the results page"),
+            received: share.search_impression_share,
+            lostRank: share.search_rank_lost_impression_share,
+            lostBudget: share.search_budget_lost_impression_share,
+        },
+        {
+            label: trans("Above the organic results"),
+            received: share.search_top_impression_share,
+            lostRank: share.search_rank_lost_top_impression_share,
+            lostBudget: share.search_budget_lost_top_impression_share,
+        },
+        {
+            label: trans("In the first position"),
+            received: share.search_absolute_top_impression_share,
+            lostRank: share.search_rank_lost_absolute_top_impression_share,
+            lostBudget: share.search_budget_lost_absolute_top_impression_share,
+        },
+    ]
+})
 
 /* Google's own rating, shown in Google's own words. Only Poor is coloured as a problem: Average is a
    fair description of a working ad, and colouring it red would send people rewriting ads that earn. */
@@ -281,6 +333,29 @@ const notServingReasons = computed(() =>
                         {{ google.roas !== null ? google.roas.toFixed(2) + "×" : "—" }}
                     </div>
                 </div>
+                <div>
+                    <div class="text-xs text-gray-500">{{ trans("All conversions") }}</div>
+                    <div class="text-lg tabular-nums text-gray-900">{{ locale.number(google.all_conversions) }}</div>
+                    <div class="text-xs text-gray-500">{{ trans("worth") }} {{ money(google.all_conversions_value) }}</div>
+                </div>
+                <div>
+                    <div class="text-xs text-gray-500">{{ trans("Purchases") }}</div>
+                    <div class="text-lg tabular-nums" :class="google.purchases === null ? 'text-gray-400' : 'text-gray-900'">
+                        {{ google.purchases === null ? "—" : locale.number(google.purchases) }}
+                    </div>
+                    <div v-if="google.purchases !== null" class="text-xs text-gray-500">
+                        {{ moneyOrDash(google.cost_per_purchase) }} {{ trans("each") }} · {{ percent(google.purchase_rate, 2) }} {{ trans("of clicks") }}
+                    </div>
+                </div>
+                <div>
+                    <div class="text-xs text-gray-500">{{ trans("Registrations") }}</div>
+                    <div class="text-lg tabular-nums" :class="google.registrations === null ? 'text-gray-400' : 'text-gray-900'">
+                        {{ google.registrations === null ? "—" : locale.number(google.registrations) }}
+                    </div>
+                    <div v-if="google.registrations !== null" class="text-xs text-gray-500">
+                        {{ moneyOrDash(google.cost_per_registration) }} {{ trans("each") }} · {{ percent(google.registration_rate, 2) }} {{ trans("of clicks") }}
+                    </div>
+                </div>
             </div>
 
             <p v-else class="mt-5 text-xs text-gray-500">
@@ -289,6 +364,76 @@ const notServingReasons = computed(() =>
 
             <div v-if="google.roas === 0 && google.cost > 0" class="mt-4 rounded-md bg-amber-50 px-3 py-2 text-xs text-amber-900">
                 {{ trans("This campaign spent money but Google recorded no conversion value, which usually means the conversion actions in this account have no value attached.") }}
+            </div>
+
+            <div v-if="google.days" class="mt-5">
+                <h3 class="text-xs font-medium text-gray-700">
+                    {{ trans("By conversion action") }}
+                    <HelpTip :text="trans('Which conversion actions in the account recorded these conversions, under the names Google uses. Conversions counts primary actions only; All conv. counts secondary ones too, such as a GA4 import of the same sales. Purchases and registrations above are the primary actions in the Purchase and Sign-up categories, so a sale recorded twice is counted once.')" />
+                </h3>
+
+                <div v-if="conversions_by_action.length" class="mt-2 overflow-x-auto">
+                    <table class="w-full min-w-[32rem] text-xs">
+                        <thead>
+                            <tr class="border-b border-gray-100 text-gray-500">
+                                <th scope="col" class="py-1.5 pr-2 text-left font-normal">{{ trans("Action") }}</th>
+                                <th scope="col" class="px-2 py-1.5 text-left font-normal">{{ trans("Category") }}</th>
+                                <th scope="col" class="px-2 py-1.5 text-right font-normal">{{ trans("Conversions") }}</th>
+                                <th scope="col" class="px-2 py-1.5 text-right font-normal">{{ trans("All conv.") }}</th>
+                                <th scope="col" class="py-1.5 pl-2 text-right font-normal">{{ trans("Value") }}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr
+                                v-for="action in conversions_by_action"
+                                :key="action.category + action.action_name"
+                                class="border-b border-gray-50 text-gray-600">
+                                <td class="py-2 pr-2 text-gray-700">{{ action.action_name }}</td>
+                                <td class="px-2 capitalize">{{ enumLabel(action.category) }}</td>
+                                <td class="px-2 text-right tabular-nums">{{ locale.number(action.conversions) }}</td>
+                                <td class="px-2 text-right tabular-nums">{{ locale.number(action.all_conversions) }}</td>
+                                <td class="pl-2 text-right tabular-nums">{{ money(action.all_conversions_value) }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <p v-else class="mt-2 text-xs text-gray-500">
+                    <template v-if="google.has_breakdown">{{ trans("No conversion action recorded anything in this period.") }}</template>
+                    <template v-else>{{ trans("The split by conversion action has not been read for these days yet. The nightly fetch records it from now on; to fill earlier days, run the Google Ads fetch with more days.") }}</template>
+                </p>
+            </div>
+        </section>
+
+        <section v-if="impression_share" class="rounded-xl bg-white p-5 ring-1 ring-gray-200 lg:col-span-3">
+            <div class="flex flex-wrap items-baseline justify-between gap-2">
+                <h2 class="text-sm font-medium text-gray-800">
+                    {{ trans("Share of Google Search impressions") }}
+                    <span class="font-normal text-gray-500">· {{ period_label }}</span>
+                    <HelpTip :text="trans('How often the ads were shown out of the times Google judged them eligible to show on Google Search, and why the rest were missed: Ad Rank is bid times quality, budget is the daily cap. Google reports anything under 10% as 9.99% and anything over 90% as 90.01%, so those read as under 10% and over 90% here.')" />
+                </h2>
+                <span class="text-xs text-gray-500">{{ trans("Weighted by eligible impressions, not averaged by day") }}</span>
+            </div>
+
+            <div class="mt-4 overflow-x-auto">
+                <table class="w-full max-w-2xl min-w-[28rem] text-xs">
+                    <thead>
+                        <tr class="border-b border-gray-100 text-gray-500">
+                            <th scope="col" class="py-1.5 pr-2 text-left font-normal">{{ trans("Where") }}</th>
+                            <th scope="col" class="px-2 py-1.5 text-right font-normal">{{ trans("Received") }}</th>
+                            <th scope="col" class="px-2 py-1.5 text-right font-normal">{{ trans("Lost to Ad Rank") }}</th>
+                            <th scope="col" class="py-1.5 pl-2 text-right font-normal">{{ trans("Lost to budget") }}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="row in impressionShareRows" :key="row.label" class="border-b border-gray-50 text-gray-600">
+                            <td class="py-2 pr-2 text-gray-700">{{ row.label }}</td>
+                            <td class="px-2 text-right tabular-nums text-gray-900">{{ impressionShareLabel(row.received) }}</td>
+                            <td class="px-2 text-right tabular-nums">{{ impressionShareLabel(row.lostRank) }}</td>
+                            <td class="pl-2 text-right tabular-nums">{{ impressionShareLabel(row.lostBudget) }}</td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
         </section>
 
