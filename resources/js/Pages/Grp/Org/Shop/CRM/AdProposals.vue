@@ -9,6 +9,7 @@ import { computed } from "vue"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import ConfirmDialog from "primevue/confirmdialog"
 import AdProposalCard from "@/Components/DataDisplay/Dashboard/Widget/AdProposalCard.vue"
+import HelpTip from "@/Components/Utils/HelpTip.vue"
 import { capitalize } from "@/Composables/capitalize"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { PageHeadingTypes } from "@/types/PageHeading"
@@ -41,17 +42,38 @@ const props = defineProps<{
 /* Grouped by kind so a marketer reads one kind of decision at a time, rather than switching between
    "should we bid on this" and "is this the right ad group" every card. */
 const groups = computed(() => {
-    const byType = new Map<string, { label: string; items: Proposal[] }>()
+    const byType = new Map<string, { type: string; label: string; items: Proposal[] }>()
 
     props.proposals.forEach((proposal) => {
         if (!byType.has(proposal.type)) {
-            byType.set(proposal.type, { label: proposal.type_label, items: [] })
+            byType.set(proposal.type, { type: proposal.type, label: proposal.type_label, items: [] })
         }
         byType.get(proposal.type)?.items.push(proposal)
     })
 
     return Array.from(byType.values())
 })
+
+const explanations: Record<string, string> = {
+    add_search_term_keyword: trans(
+        "Searches from Google's search terms report that led to a sale while no keyword in the campaign bid on them directly. Google reached them through a broad or phrase keyword and may stop at any time. Approving adds the search itself as a keyword in the ad group you pick. Cost so far is what the search has already spent, not a forecast."
+    ),
+    add_demand_keyword: trans(
+        "Words visitors typed into the shop's own search box that no campaign bids on yet. A language model drops phrases that do not read like a buyer, and the rest are listed here. Approving adds the term as a keyword in the ad group you pick."
+    ),
+    strengthen_ad: trans(
+        "Ads running with fewer headlines than Google allows. The drafted headlines are suggestions. Untick any you do not want; approving adds the rest to the live ad, and Google reviews them before showing them."
+    ),
+    new_campaign: trans(
+        "Departments you sell whose products visitors search for on your site, while nothing in the account advertises their words. Approving opens the new campaign form with what is known filled in. Nothing is created until you finish and submit that form."
+    ),
+    exclude_search_term: trans(
+        "Searches that were clicked and bought nothing. Approving adds the search as a campaign negative so the ad stops showing for it. It can be removed again on the campaign page."
+    ),
+    pause_keyword: trans(
+        "Keywords that were clicked repeatedly without a sale. Approving pauses the keyword. It can be resumed on the campaign page."
+    ),
+}
 </script>
 
 <template>
@@ -78,6 +100,7 @@ const groups = computed(() => {
             <h2 class="text-sm font-medium text-gray-800">
                 {{ group.label }}
                 <span class="font-normal text-gray-500">· {{ group.items.length }}</span>
+                <HelpTip v-if="explanations[group.type]" :text="explanations[group.type]" />
             </h2>
 
             <div class="mt-3 grid grid-cols-1 gap-3 lg:grid-cols-2 xl:grid-cols-3">

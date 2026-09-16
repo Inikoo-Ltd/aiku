@@ -14,6 +14,8 @@ use App\Actions\OrgAction;
 use App\Enums\CRM\TrafficSource\TrafficSourcesTypeEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\TrafficSourceCampaign;
+use App\Models\CRM\TrafficSourceCampaignConversion;
+use App\Models\CRM\TrafficSourceCampaignMetric;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
@@ -129,14 +131,18 @@ class ShowGoogleAdsCampaign extends OrgAction
                     ],
                 ],
 
-                'periods'       => $this->intervalOptions(),
-                'period'        => $this->interval()->value,
-                'period_label'  => $this->intervalOptions()[$this->interval()->value],
-                'google'        => $this->googleFigures($trafficSourceCampaign),
-                'daily'         => $this->daily($trafficSourceCampaign),
-                'attribution'   => $this->attribution($trafficSourceCampaign),
-                'ad_groups'         => $data['ad_groups'] ?? [],
-                'negative_keywords' => $data['negative_keywords'] ?? [],
+                ...$this->periodProps(),
+                'google'                => $this->googleFigures($trafficSourceCampaign),
+                'google_previous'       => $this->isComparing() ? $this->googleFigures($trafficSourceCampaign, true) : null,
+                'impression_share'      => $this->impressionShare($trafficSourceCampaign),
+                'conversions_by_action' => $this->conversionsByAction($trafficSourceCampaign),
+                'daily'                 => $this->daily($trafficSourceCampaign),
+                'attribution'           => $this->attribution($trafficSourceCampaign),
+                'ad_groups'             => $data['ad_groups'] ?? [],
+                'asset_groups'          => $data['asset_groups'] ?? [],
+                'exclusions'            => $data['exclusions'] ?? [],
+                'structure_window'      => $data['structure_window'] ?? null,
+                'negative_keywords'     => $data['negative_keywords'] ?? [],
 
                 /* Deferred: this one goes out to Google rather than to Postgres, and the rest of the
                    page has no reason to wait behind it. A slow or refusing account then costs this
@@ -154,32 +160,60 @@ class ShowGoogleAdsCampaign extends OrgAction
      * What Google reports for the chosen period, in the account's own currency throughout, so the
      * ROAS below is a ratio between two figures Google produced under one attribution model.
      *
-     * @return array{impressions: int, clicks: int, conversions: float, cost: float, conversions_value: float, ctr: float|null, avg_cpc: float|null, cost_per_conversion: float|null, roas: float|null, days: int}
+     * Purchases and registrations count primary conversion actions only, as Google's own Conversions
+     * column does: an account that records the same sale through its website tag and again through a
+     * GA4 import would otherwise count it twice. They are null rather than zero when the campaign
+     * converted on days the split by conversion action has not been read for, because zero would
+     * answer a question the data cannot.
+     *
+     * @return array{impressions: int, clicks: int, conversions: float, cost: float, conversions_value: float, ctr: float|null, avg_cpc: float|null, cost_per_conversion: float|null, roas: float|null, days: int, all_conversions: float, all_conversions_value: float, has_breakdown: bool, purchases: float|null, cost_per_purchase: float|null, purchase_rate: float|null, registrations: float|null, cost_per_registration: float|null, registration_rate: float|null}
      */
-    private function googleFigures(TrafficSourceCampaign $campaign): array
+    private function googleFigures(TrafficSourceCampaign $campaign, bool $previous = false): array
     {
         $query = DB::table('traffic_source_campaign_metrics')
             ->where('traffic_source_campaign_id', $campaign->id);
 
-        $row = $this->interval()->wherePeriod($query, 'date')
+        $row = $this->wherePeriodOrPrevious($query, 'date', $previous)
             ->selectRaw('COUNT(*) as days, COALESCE(SUM(impressions),0) as impressions, COALESCE(SUM(clicks),0) as clicks,
                          COALESCE(SUM(conversions),0) as conversions, COALESCE(SUM(source_cost),0) as cost,
-                         COALESCE(SUM(source_conversions_value),0) as conversions_value')
+                         COALESCE(SUM(source_conversions_value),0) as conversions_value,
+                         COALESCE(SUM(all_conversions),0) as all_conversions,
+                         COALESCE(SUM(source_all_conversions_value),0) as all_conversions_value')
             ->first();
 
-        $impressions = (int) $row->impressions;
-        $clicks      = (int) $row->clicks;
-        $cost        = (float) $row->cost;
-        $conversions = (float) $row->conversions;
-        $value       = (float) $row->conversions_value;
+        $impressions    = (int) $row->impressions;
+        $clicks         = (int) $row->clicks;
+        $cost           = (float) $row->cost;
+        $conversions    = (float) $row->conversions;
+        $value          = (float) $row->conversions_value;
+        $allConversions = (float) $row->all_conversions;
+
+        $breakdown = $this->wherePeriodOrPrevious(
+            DB::table('traffic_source_campaign_conversions')->where('traffic_source_campaign_id', $campaign->id),
+            'date',
+            $previous
+        )
+            ->selectRaw(
+                'COUNT(*) as rows_count,
+                 COALESCE(SUM(CASE WHEN category = ? THEN conversions ELSE 0 END), 0) as purchases,
+                 COALESCE(SUM(CASE WHEN category = ? THEN conversions ELSE 0 END), 0) as registrations',
+                [TrafficSourceCampaignConversion::CATEGORY_PURCHASE, TrafficSourceCampaignConversion::CATEGORY_SIGNUP]
+            )
+            ->first();
+
+        $hasBreakdown  = (int) $breakdown->rows_count > 0 || $conversions == 0;
+        $purchases     = $hasBreakdown ? (float) $breakdown->purchases : null;
+        $registrations = $hasBreakdown ? (float) $breakdown->registrations : null;
 
         return [
-            'days'              => (int) $row->days,
-            'impressions'       => $impressions,
-            'clicks'            => $clicks,
-            'conversions'       => $conversions,
-            'cost'              => $cost,
-            'conversions_value' => $value,
+            'days'                  => (int) $row->days,
+            'impressions'           => $impressions,
+            'clicks'                => $clicks,
+            'conversions'           => $conversions,
+            'cost'                  => $cost,
+            'conversions_value'     => $value,
+            'all_conversions'       => $allConversions,
+            'all_conversions_value' => (float) $row->all_conversions_value,
 
             /* Null wherever the denominator is zero, so the page prints a dash. A zero here would
                claim an answer the data does not contain: "nobody clicked" is not the same fact as
@@ -188,7 +222,80 @@ class ShowGoogleAdsCampaign extends OrgAction
             'avg_cpc'             => $clicks > 0 ? round($cost / $clicks, 2) : null,
             'cost_per_conversion' => $conversions > 0 ? round($cost / $conversions, 2) : null,
             'roas'                => $cost > 0 ? round($value / $cost, 2) : null,
+
+            'has_breakdown'         => $hasBreakdown,
+            'purchases'             => $purchases,
+            'cost_per_purchase'     => $purchases > 0 ? round($cost / $purchases, 2) : null,
+            'purchase_rate'         => $purchases !== null && $clicks > 0 ? round($purchases * 100 / $clicks, 2) : null,
+            'registrations'         => $registrations,
+            'cost_per_registration' => $registrations > 0 ? round($cost / $registrations, 2) : null,
+            'registration_rate'     => $registrations !== null && $clicks > 0 ? round($registrations * 100 / $clicks, 2) : null,
         ];
+    }
+
+    /**
+     * Google's search impression share for the period, weighted by eligible impressions rather than
+     * averaged by day. Null for campaigns that never ran on Google Search in the period, so the page
+     * can leave the block out instead of printing a row of dashes.
+     *
+     * @return array<string, float|null>|null
+     */
+    private function impressionShare(TrafficSourceCampaign $campaign): ?array
+    {
+        $selects = ['SUM(CASE WHEN search_impression_share > 0 THEN impressions / search_impression_share END) as eligible_impressions'];
+
+        foreach (TrafficSourceCampaignMetric::IMPRESSION_SHARE_COLUMNS as $column) {
+            $selects[] = "SUM(CASE WHEN search_impression_share > 0 THEN impressions / search_impression_share * {$column} END) as {$column}";
+        }
+
+        $query = DB::table('traffic_source_campaign_metrics')
+            ->where('traffic_source_campaign_id', $campaign->id);
+
+        $row      = $this->wherePeriod($query, 'date')->selectRaw(implode(', ', $selects))->first();
+        $eligible = (float) ($row->eligible_impressions ?? 0);
+
+        if ($eligible <= 0) {
+            return null;
+        }
+
+        $shares = [];
+
+        foreach (TrafficSourceCampaignMetric::IMPRESSION_SHARE_COLUMNS as $column) {
+            $shares[$column] = $row->{$column} !== null ? round((float) $row->{$column} * 100 / $eligible, 2) : null;
+        }
+
+        return $shares;
+    }
+
+    /**
+     * @return array<int, array{category: string, action_name: string, conversions: float, all_conversions: float, conversions_value: float, all_conversions_value: float}>
+     */
+    private function conversionsByAction(TrafficSourceCampaign $campaign): array
+    {
+        $query = DB::table('traffic_source_campaign_conversions')
+            ->where('traffic_source_campaign_id', $campaign->id);
+
+        return $this->wherePeriod($query, 'date')
+            ->select(
+                'category',
+                'action_name',
+                DB::raw('SUM(conversions) as conversions'),
+                DB::raw('SUM(all_conversions) as all_conversions'),
+                DB::raw('SUM(source_conversions_value) as conversions_value'),
+                DB::raw('SUM(source_all_conversions_value) as all_conversions_value'),
+            )
+            ->groupBy('category', 'action_name')
+            ->orderByDesc('all_conversions')
+            ->get()
+            ->map(fn ($row) => [
+                'category'              => $row->category,
+                'action_name'           => $row->action_name,
+                'conversions'           => (float) $row->conversions,
+                'all_conversions'       => (float) $row->all_conversions,
+                'conversions_value'     => (float) $row->conversions_value,
+                'all_conversions_value' => (float) $row->all_conversions_value,
+            ])
+            ->all();
     }
 
     /**
@@ -208,7 +315,7 @@ class ShowGoogleAdsCampaign extends OrgAction
             })
             ->where('m.traffic_source_campaign_id', $campaign->id);
 
-        return $this->interval()->wherePeriod($query, 'm.date')
+        return $this->wherePeriod($query, 'm.date')
             ->orderByDesc('m.date')
             ->get([
                 'm.date',

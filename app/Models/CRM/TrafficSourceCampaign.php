@@ -27,6 +27,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property array|null $data
  * @property-read \App\Models\CRM\TrafficSourceCampaignStat|null $stats
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\CRM\TrafficSourceCampaignMetric> $metrics
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\CRM\TrafficSourceCampaignConversion> $conversions
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\CRM\TrafficSourceCost> $costs
  * @property-read \App\Models\CRM\TrafficSource $trafficSource
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TrafficSourceCampaign newModelQuery()
@@ -87,6 +88,11 @@ class TrafficSourceCampaign extends Model implements Auditable
     public function metrics(): HasMany
     {
         return $this->hasMany(TrafficSourceCampaignMetric::class);
+    }
+
+    public function conversions(): HasMany
+    {
+        return $this->hasMany(TrafficSourceCampaignConversion::class);
     }
 
     public function costs(): HasMany

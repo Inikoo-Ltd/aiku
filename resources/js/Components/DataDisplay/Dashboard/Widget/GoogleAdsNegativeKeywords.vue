@@ -8,6 +8,7 @@ import { computed, ref } from "vue"
 import { router } from "@inertiajs/vue3"
 import { useConfirm } from "primevue/useconfirm"
 import Button from "@/Components/Elements/Buttons/Button.vue"
+import HelpTip from "@/Components/Utils/HelpTip.vue"
 import { ctrans } from "@/Composables/useTrans"
 import { trans } from "laravel-vue-i18n"
 
@@ -83,6 +84,7 @@ const remove = (keyword: { id: string; text: string }) =>
                 <span v-if="negativeKeywords.length" class="font-normal text-gray-500">
                     · {{ negativeKeywords.length }}
                 </span>
+                <HelpTip :text="trans('Searches this campaign never bids on. Adding one takes effect at Google straight away and applies to the whole campaign. Removing one lets the ad show for that search again.')" />
             </h2>
             <span class="text-xs text-gray-500">{{ trans("Searches this campaign will not bid on") }}</span>
         </div>

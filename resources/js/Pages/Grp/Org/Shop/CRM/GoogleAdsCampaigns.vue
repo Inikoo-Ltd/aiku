@@ -30,6 +30,10 @@ const props = defineProps<{
     settings_route: { name: string; parameters: object }
     periods: Record<string, string>
     period: string
+    period_label: string
+    custom_range: { from: string; to: string } | null
+    compare: boolean
+    comparison_label: string | null
     audience?: {
         buckets: {
             key: string
@@ -95,7 +99,13 @@ const lastFetched = computed(() => {
     </div>
 
     <div class="mx-4 mt-4 flex flex-wrap items-center justify-between gap-3">
-        <DateIntervalTabs :options="periods" :selected="period" :label="trans('Period')" />
+        <DateIntervalTabs
+            :options="periods"
+            :selected="period"
+            :label="trans('Period')"
+            :custom-range="custom_range"
+            :compare="compare"
+            :comparison-label="comparison_label" />
 
         <div v-if="lastFetched" class="text-xs" :class="lastFetched.isStale ? 'text-[#a15c00]' : 'text-gray-500'">
             {{ trans("Read from Google") }}: {{ lastFetched.label }}
@@ -104,8 +114,8 @@ const lastFetched = computed(() => {
     </div>
 
     <div class="mx-4 mt-2 text-xs text-gray-500">
-        {{ trans("Impressions, clicks, conversions and ROAS are Google's own figures for the period. Spend is shown in") }}
-        {{ shop_currency }}; {{ trans("budgets and cost per click are in the ad account's currency.") }}
+        {{ trans("Impressions, clicks, conversions, conversion value and ROAS are Google's own figures for the period. Spend is shown in") }}
+        {{ shop_currency }}; {{ trans("budgets, cost per click, cost per conversion and conversion value are in the ad account's currency.") }}
     </div>
 
     <TableGoogleAdsCampaigns :data="data" :currency="shop_currency" />

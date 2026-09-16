@@ -10,6 +10,36 @@ import { useConfirm } from "primevue/useconfirm"
 import { useLocaleStore } from "@/Stores/locale"
 import { ctrans } from "@/Composables/useTrans"
 import { trans } from "laravel-vue-i18n"
+import HelpTip from "@/Components/Utils/HelpTip.vue"
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { faSort, faSortUp, faSortDown } from "@fal"
+import { library } from "@fortawesome/fontawesome-svg-core"
+
+library.add(faSort, faSortUp, faSortDown)
+
+type SearchTerm = {
+    term: string
+    status: string
+    matched_keyword: string | null
+    impressions: number
+    clicks: number
+    cost: number
+    conversions: number
+    conversions_value: number
+    cost_per_click: number | null
+    cpm: number | null
+    conversion_rate: number | null
+}
+
+type MetricKey =
+    | "impressions"
+    | "clicks"
+    | "cost_per_click"
+    | "cpm"
+    | "cost"
+    | "conversions"
+    | "conversion_rate"
+    | "conversions_value"
 
 /**
  * What people actually typed, and the two things worth doing about a row: bid on it deliberately, or
@@ -19,17 +49,7 @@ import { trans } from "laravel-vue-i18n"
  * keyword would only earn a refusal, and offering "exclude" on one already excluded would do nothing.
  */
 const props = defineProps<{
-    searchTerms: {
-        term: string
-        status: string
-        matched_keyword: string | null
-        impressions: number
-        clicks: number
-        cost: number
-        conversions: number
-        conversions_value: number
-        cost_per_click: number | null
-    }[]
+    searchTerms: SearchTerm[]
     error: string | null
     currency: string
     adGroups: { id: string; name: string | null }[]
@@ -50,15 +70,75 @@ const error = ref<string | null>(null)
 // A campaign usually has one ad group; when it has several, a new keyword has to be told where to go.
 const targetAdGroup = ref<string>(props.adGroups[0]?.id ?? "")
 
+const sortKey = ref<MetricKey>("cost")
+const sortDescending = ref(true)
+
+const sortBy = (key: MetricKey) => {
+    if (sortKey.value === key) {
+        sortDescending.value = !sortDescending.value
+        return
+    }
+
+    sortKey.value = key
+    sortDescending.value = true
+}
+
+const sortIcon = (key: MetricKey) => {
+    if (sortKey.value !== key) return "fal fa-sort"
+
+    return sortDescending.value ? "fal fa-sort-down" : "fal fa-sort-up"
+}
+
+const ariaSort = (key: MetricKey) => {
+    if (sortKey.value !== key) return "none"
+
+    return sortDescending.value ? "descending" : "ascending"
+}
+
+const percent = (value: number | null) => (value === null ? "—" : value.toFixed(2) + "%")
+const moneyOrDash = (value: number | null) => (value === null ? "—" : money(value))
+
+const metricColumns: { key: MetricKey; label: string; format: (row: SearchTerm) => string }[] = [
+    { key: "impressions", label: trans("Impr."), format: (row) => locale.number(row.impressions) },
+    { key: "clicks", label: trans("Clicks"), format: (row) => locale.number(row.clicks) },
+    { key: "cost_per_click", label: trans("CPC"), format: (row) => moneyOrDash(row.cost_per_click) },
+    { key: "cpm", label: trans("CPM"), format: (row) => moneyOrDash(row.cpm) },
+    { key: "cost", label: trans("Cost"), format: (row) => money(row.cost) },
+    { key: "conversions", label: trans("Conv."), format: (row) => locale.number(row.conversions) },
+    { key: "conversion_rate", label: trans("Conv. rate"), format: (row) => percent(row.conversion_rate) },
+    { key: "conversions_value", label: trans("Conv. value"), format: (row) => money(row.conversions_value) },
+]
+
+const metricClass = (key: MetricKey, row: SearchTerm) => {
+    if (key === "conversions" || key === "conversion_rate" || key === "conversions_value") {
+        return row.conversions > 0 ? "text-[#006300]" : "text-gray-500"
+    }
+
+    return ""
+}
+
 const rows = computed(() => {
     const needle = filter.value.trim().toLowerCase()
+    const key = sortKey.value
+    const direction = sortDescending.value ? -1 : 1
 
-    return props.searchTerms.filter((row) => {
-        if (needle && !row.term.toLowerCase().includes(needle)) return false
-        if (onlyUnconverted.value && !(row.conversions === 0 && row.cost > 0)) return false
+    return props.searchTerms
+        .filter((row) => {
+            if (needle && !row.term.toLowerCase().includes(needle)) return false
+            if (onlyUnconverted.value && !(row.conversions === 0 && row.cost > 0)) return false
 
-        return true
-    })
+            return true
+        })
+        .sort((a, b) => {
+            const left = a[key]
+            const right = b[key]
+
+            if (left === null && right === null) return 0
+            if (left === null) return 1
+            if (right === null) return -1
+
+            return (left - right) * direction
+        })
 })
 
 const spent = computed(() => rows.value.reduce((total, row) => total + row.cost, 0))
@@ -127,8 +207,9 @@ const exclude = (row: { term: string }) =>
             <h2 class="text-sm font-medium text-gray-800">
                 {{ trans("What people actually searched") }}
                 <span v-if="searchTerms.length" class="font-normal text-gray-500">· {{ searchTerms.length }}</span>
+                <HelpTip :text="trans('What people typed into Google before this campaign\'s ad was shown, read live from Google for the period above and limited to the 200 highest spending terms. Bid on it adds the term as a phrase keyword. Exclude it adds it as a campaign negative, so the ad stops showing for that search.')" />
             </h2>
-            <span class="text-xs text-gray-500">{{ trans("Read from Google for the period above, highest spend first") }}</span>
+            <span class="text-xs text-gray-500">{{ trans("Read from Google for the period above. Click a column heading to sort.") }}</span>
         </div>
 
         <p v-if="error" class="mt-3 rounded-md bg-red-50 px-3 py-2 text-xs text-[#d03b3b]">{{ error }}</p>
@@ -179,14 +260,26 @@ const exclude = (row: { term: string }) =>
             </p>
 
             <div class="mt-3 overflow-x-auto">
-                <table class="w-full min-w-[46rem] text-xs">
+                <table class="w-full min-w-[72rem] text-xs">
                     <thead>
                         <tr class="border-b border-gray-100 text-gray-500">
                             <th scope="col" class="py-1.5 pr-2 text-left font-normal">{{ trans("Search term") }}</th>
                             <th scope="col" class="px-2 py-1.5 text-left font-normal">{{ trans("Matched") }}</th>
-                            <th scope="col" class="px-2 py-1.5 text-right font-normal">{{ trans("Clicks") }}</th>
-                            <th scope="col" class="px-2 py-1.5 text-right font-normal">{{ trans("Cost") }}</th>
-                            <th scope="col" class="px-2 py-1.5 text-right font-normal">{{ trans("Conv.") }}</th>
+                            <th
+                                v-for="column in metricColumns"
+                                :key="column.key"
+                                scope="col"
+                                :aria-sort="ariaSort(column.key)"
+                                class="px-1 py-0.5 text-right font-normal">
+                                <button
+                                    type="button"
+                                    class="inline-flex items-center gap-1 rounded px-1 py-1 whitespace-nowrap transition hover:text-gray-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+                                    :class="sortKey === column.key ? 'text-gray-800' : ''"
+                                    @click="sortBy(column.key)">
+                                    {{ column.label }}
+                                    <FontAwesomeIcon :icon="sortIcon(column.key)" fixed-width aria-hidden="true" />
+                                </button>
+                            </th>
                             <th scope="col" class="py-1.5 pl-2 text-right font-normal">
                                 <span class="sr-only">{{ trans("Actions") }}</span>
                             </th>
@@ -202,12 +295,12 @@ const exclude = (row: { term: string }) =>
                             <td class="max-w-[12rem] truncate px-2" :title="row.matched_keyword ?? ''">
                                 {{ row.matched_keyword ?? "—" }}
                             </td>
-                            <td class="px-2 text-right tabular-nums">{{ locale.number(row.clicks) }}</td>
-                            <td class="px-2 text-right tabular-nums">{{ money(row.cost) }}</td>
                             <td
+                                v-for="column in metricColumns"
+                                :key="column.key"
                                 class="px-2 text-right tabular-nums"
-                                :class="row.conversions > 0 ? 'text-[#006300]' : 'text-gray-500'">
-                                {{ locale.number(row.conversions) }}
+                                :class="metricClass(column.key, row)">
+                                {{ column.format(row) }}
                             </td>
                             <td class="whitespace-nowrap py-2 pl-2 text-right">
                                 <span v-if="busyTerm === row.term" class="text-gray-500">{{ trans("Saving") }}</span>
@@ -231,7 +324,7 @@ const exclude = (row: { term: string }) =>
                             </td>
                         </tr>
                         <tr v-if="!rows.length">
-                            <td colspan="6" class="py-4 text-center text-gray-500">
+                            <td :colspan="metricColumns.length + 3" class="py-4 text-center text-gray-500">
                                 {{ trans("Nothing matches those filters.") }}
                             </td>
                         </tr>

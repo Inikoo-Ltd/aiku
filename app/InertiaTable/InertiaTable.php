@@ -38,6 +38,12 @@ class InertiaTable
     private ?DateIntervalEnum $dateInterval;
     private bool $withFrequency = false;
 
+    /**
+     * Whether the table offers a chooser to hide, show and reorder its columns. Off unless asked for,
+     * so a table with a few fixed columns does not grow a control nobody needs.
+     */
+    private bool $columnChooser = false;
+
     private Collection $emptyState;
     private Collection $modelOperations;
     private Collection $exportLinks;
@@ -204,6 +210,8 @@ class InertiaTable
                 })
                 ->sort()
                 ->values(),
+            'defaultColumnOrder'              => $this->columns->map(fn (Column $item) => $item->key)->values(),
+            'columnChooser'                   => $this->columnChooser,
             'columns'                         => $this->transformColumns(),
             'hasHiddenColumns'                => $this->columns->filter(function (Column $item) {
                 return $item->hidden;
@@ -253,13 +261,18 @@ class InertiaTable
     protected function transformColumns(): Collection
     {
         $columns = $this->query('columns', []);
-        $sort = $this->query('sort', $this->defaultSort);
+        $order   = $this->query('column_order', []);
+        $sort    = $this->query('sort', $this->defaultSort);
 
         if (is_string($columns)) {
             $columns = $columns === '' ? [] : explode(',', $columns);
         }
 
-        return $this->columns->map(function (Column $column) use ($columns, $sort) {
+        if (is_string($order)) {
+            $order = $order === '' ? [] : explode(',', $order);
+        }
+
+        $transformed = $this->columns->map(function (Column $column) use ($columns, $sort) {
             $key = $column->key;
 
             if (!empty($columns) && is_array($columns)) {
@@ -274,6 +287,18 @@ class InertiaTable
 
             return $column;
         });
+
+        if (empty($order) || !is_array($order)) {
+            return $transformed;
+        }
+
+        /* Columns named in the requested order come first in that order; any the request does not
+           mention keep their declared order after them, so a column added later still shows up. */
+        $rank = array_flip(array_values($order));
+
+        return $transformed
+            ->sortBy(fn (Column $column, int $index) => sprintf('%09d-%05d', $rank[$column->key] ?? 999999999, $index))
+            ->values();
     }
 
 
@@ -515,6 +540,13 @@ class InertiaTable
     public function withGlobalSearch(?string $label = null): self
     {
         return $this->searchInput('global', $label ?: __('Search on table...'));
+    }
+
+    public function withColumnChooser(bool $columnChooser = true): self
+    {
+        $this->columnChooser = $columnChooser;
+
+        return $this;
     }
 
     public function withModelOperations(?array $modelOperations = null): self

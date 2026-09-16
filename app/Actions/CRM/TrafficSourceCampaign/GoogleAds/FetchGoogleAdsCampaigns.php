@@ -14,13 +14,16 @@ use App\Enums\CRM\TrafficSource\TrafficSourcesTypeEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\TrafficSource;
 use App\Models\CRM\TrafficSourceCampaign;
+use App\Models\CRM\TrafficSourceCampaignConversion;
 use App\Models\CRM\TrafficSourceCampaignMetric;
 use App\Models\Helpers\Currency;
 use App\Services\GoogleAds\GoogleAdsClient;
 use App\Services\GoogleAds\GoogleAdsException;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 use Lorisleiva\Actions\Concerns\AsAction;
 use RuntimeException;
 
@@ -52,19 +55,6 @@ class FetchGoogleAdsCampaigns
     private const string CAMPAIGN_QUERY = "SELECT campaign.id, campaign.name, campaign.status, campaign.primary_status, campaign.primary_status_reasons, campaign.advertising_channel_type, campaign.bidding_strategy_type, campaign.start_date_time, campaign.end_date_time, campaign_budget.id, campaign_budget.amount_micros, campaign_budget.explicitly_shared, customer.currency_code FROM campaign WHERE campaign.status != 'REMOVED'";
 
     /**
-     * `ad_strength` is Google's own verdict on how much an ad gives it to work with, the same Poor to
-     * Excellent rating its interface shows. It is read rather than recomputed: the rules behind it are
-     * Google's and change without notice, and a second opinion invented here would disagree with the
-     * one the marketing team already trusts.
-     *
-     * `policy_summary.approval_status` says whether the ad is allowed to run at all, which is the other
-     * thing an ad can be silently wrong about.
-     */
-    private const string ADS_QUERY = "SELECT campaign.id, ad_group.id, ad_group.name, ad_group.status, ad_group_ad.status, ad_group_ad.ad_strength, ad_group_ad.policy_summary.approval_status, ad_group_ad.ad.id, ad_group_ad.ad.type, ad_group_ad.ad.final_urls, ad_group_ad.ad.responsive_search_ad.headlines, ad_group_ad.ad.responsive_search_ad.descriptions FROM ad_group_ad WHERE campaign.status != 'REMOVED' AND ad_group_ad.status != 'REMOVED'";
-
-    private const string KEYWORDS_QUERY = "SELECT campaign.id, ad_group.id, ad_group_criterion.criterion_id, ad_group_criterion.keyword.text, ad_group_criterion.keyword.match_type, ad_group_criterion.status FROM keyword_view WHERE campaign.status != 'REMOVED'";
-
-    /**
      * Campaign level negatives only. A negative sitting on an ad group is a different resource that
      * excludes a different scope, and showing the two in one list would misstate what a campaign is
      * actually blocking.
@@ -72,7 +62,7 @@ class FetchGoogleAdsCampaigns
     private const string NEGATIVES_QUERY = "SELECT campaign.id, campaign_criterion.criterion_id, campaign_criterion.keyword.text, campaign_criterion.keyword.match_type FROM campaign_criterion WHERE campaign_criterion.negative = true AND campaign_criterion.type = 'KEYWORD' AND campaign.status != 'REMOVED'";
 
     /**
-     * @return array{campaigns: int, skipped: int, metric_days: int, dry_run: bool}
+     * @return array{campaigns: int, skipped: int, metric_days: int, conversion_rows: int, asset_groups: int, dry_run: bool}
      * @throws GoogleAdsException
      */
     public function handle(Shop $shop, int $days = 30, bool $dryRun = false): array
@@ -94,27 +84,31 @@ class FetchGoogleAdsCampaigns
             throw new RuntimeException("shop {$shop->slug} has no google-ads traffic source; run SeedTrafficSources on it");
         }
 
-        $campaignRows = $client->search(self::CAMPAIGN_QUERY);
-        $adGroups     = $this->groupAdGroups(
-            $this->searchOptional($client, self::ADS_QUERY, $shop, 'ads'),
-            $this->searchOptional($client, self::KEYWORDS_QUERY, $shop, 'keywords'),
-        );
-        $metrics   = $this->groupMetrics($this->searchOptional($client, $this->metricsQuery($days), $shop, 'metrics'));
-        $negatives = $this->groupNegatives($this->searchOptional($client, self::NEGATIVES_QUERY, $shop, 'negative keywords'));
+        [$from, $to] = $this->window($days);
 
-        $summary = ['campaigns' => 0, 'skipped' => 0, 'metric_days' => 0, 'dry_run' => $dryRun];
+        $campaignRows = $client->search(self::CAMPAIGN_QUERY);
+        $structure    = ReadGoogleAdsCampaignStructure::run($client, $shop, $from, $to);
+        $metrics      = $this->groupMetrics($this->searchOptional($client, $this->metricsQuery($from, $to), $shop, 'metrics') ?? []);
+        $negatives    = $this->groupNegatives($this->searchOptional($client, self::NEGATIVES_QUERY, $shop, 'negative keywords') ?? []);
+
+        $conversionRows = $this->searchOptional($client, $this->conversionsQuery($from, $to), $shop, 'conversion actions');
+        $conversions    = $conversionRows === null ? null : $this->groupConversions($conversionRows);
+
+        $summary = ['campaigns' => 0, 'skipped' => 0, 'metric_days' => 0, 'conversion_rows' => 0, 'asset_groups' => 0, 'dry_run' => $dryRun];
 
         foreach ($campaignRows as $result) {
             $campaignId   = (string) data_get($result, 'campaign.id');
             $campaignDays = $metrics[$campaignId] ?? [];
 
-            $campaign = $this->storeCampaign(
-                $trafficSource,
-                $result,
-                array_values($adGroups[$campaignId] ?? []),
-                array_values($negatives[$campaignId] ?? []),
-                $dryRun
-            );
+            $campaignStructure = [
+                'ad_groups'         => $structure['ad_groups'][$campaignId] ?? [],
+                'asset_groups'      => $structure['asset_groups'][$campaignId] ?? [],
+                'exclusions'        => $structure['exclusions'][$campaignId] ?? [],
+                'negative_keywords' => array_values($negatives[$campaignId] ?? []),
+                'structure_window'  => $structure['window'],
+            ];
+
+            $campaign = $this->storeCampaign($trafficSource, $result, $campaignStructure, $dryRun);
 
             if (!$campaign) {
                 $summary['skipped']++;
@@ -124,9 +118,19 @@ class FetchGoogleAdsCampaigns
 
             $summary['campaigns']++;
             $summary['metric_days'] += count($campaignDays);
+            $summary['asset_groups'] += count($campaignStructure['asset_groups']);
+
+            $campaignConversions = $conversions[$campaignId] ?? [];
+            $summary['conversion_rows'] += count($campaignConversions);
 
             if (!$dryRun) {
-                $this->storeMetrics($trafficSource, $campaign, $campaignDays, (string) data_get($result, 'customer.currencyCode'));
+                $currencyCode = (string) data_get($result, 'customer.currencyCode');
+
+                $this->storeMetrics($trafficSource, $campaign, $campaignDays, $currencyCode);
+
+                if ($conversions !== null) {
+                    $this->storeConversions($campaign, $campaignConversions, $from, $to, $currencyCode);
+                }
             }
         }
 
@@ -137,13 +141,39 @@ class FetchGoogleAdsCampaigns
      * Google closes a day in the account's own time zone, not ours, and keeps revising it afterwards.
      * Today is included so the page is not a day behind by lunchtime; it reads low until the day ends
      * and is corrected by the next run, which is what every ads report does.
+     *
+     * @return array{0: string, 1: string}
      */
-    private function metricsQuery(int $days): string
+    private function window(int $days): array
     {
-        $from = now()->subDays(max($days - 1, 0))->toDateString();
-        $to   = now()->toDateString();
+        return [
+            now()->subDays(max($days - 1, 0))->toDateString(),
+            now()->toDateString(),
+        ];
+    }
 
-        return "SELECT campaign.id, segments.date, metrics.impressions, metrics.clicks, metrics.cost_micros, metrics.conversions, metrics.conversions_value FROM campaign WHERE segments.date BETWEEN '{$from}' AND '{$to}' AND campaign.status != 'REMOVED'";
+    /**
+     * The impression share fields come back empty for campaign types that do not run on Google
+     * Search, and Google reports anything under 10% as 0.0999 and anything over 90% as 0.9001.
+     */
+    private function metricsQuery(string $from, string $to): string
+    {
+        $impressionShareFields = implode(', ', array_map(
+            fn (string $column) => "metrics.{$column}",
+            TrafficSourceCampaignMetric::IMPRESSION_SHARE_COLUMNS
+        ));
+
+        return "SELECT campaign.id, segments.date, metrics.impressions, metrics.clicks, metrics.cost_micros, metrics.conversions, metrics.conversions_value, metrics.all_conversions, metrics.all_conversions_value, {$impressionShareFields} FROM campaign WHERE segments.date BETWEEN '{$from}' AND '{$to}' AND campaign.status != 'REMOVED'";
+    }
+
+    /**
+     * Segmenting by conversion action is what separates a purchase from a sign-up; Google only allows
+     * conversion metrics alongside that segment, which is why this is a query of its own rather than
+     * more columns on the metrics one.
+     */
+    private function conversionsQuery(string $from, string $to): string
+    {
+        return "SELECT campaign.id, segments.date, segments.conversion_action_category, segments.conversion_action_name, metrics.conversions, metrics.conversions_value, metrics.all_conversions, metrics.all_conversions_value FROM campaign WHERE segments.date BETWEEN '{$from}' AND '{$to}' AND campaign.status != 'REMOVED'";
     }
 
     /**
@@ -151,72 +181,20 @@ class FetchGoogleAdsCampaigns
      * as Performance Max, makes those queries return nothing useful, and the campaign figures are the
      * part anyone is waiting for.
      *
-     * @return array<int, array>
+     * Null on failure rather than an empty list, so a caller that replaces stored rows for the window
+     * can tell "Google refused the question" from "Google answered that there is nothing".
+     *
+     * @return array<int, array>|null
      */
-    private function searchOptional(GoogleAdsClient $client, string $query, Shop $shop, string $label): array
+    private function searchOptional(GoogleAdsClient $client, string $query, Shop $shop, string $label): ?array
     {
         try {
             return $client->search($query);
         } catch (GoogleAdsException $e) {
             Log::warning('Google Ads optional fetch failed', ['shop' => $shop->slug, 'label' => $label, 'error' => $e->describe()]);
 
-            return [];
+            return null;
         }
-    }
-
-    /**
-     * @param array<int, array> $adRows
-     * @param array<int, array> $keywordRows
-     * @return array<string, array<string, array>>
-     */
-    private function groupAdGroups(array $adRows, array $keywordRows): array
-    {
-        $adGroups = [];
-
-        foreach ($adRows as $row) {
-            $campaignId = (string) data_get($row, 'campaign.id');
-            $adGroupId  = (string) data_get($row, 'adGroup.id');
-
-            $adGroups[$campaignId][$adGroupId] ??= $this->emptyAdGroup($adGroupId, data_get($row, 'adGroup.name'), data_get($row, 'adGroup.status'));
-
-            $adGroups[$campaignId][$adGroupId]['ads'][] = [
-                'id'              => data_get($row, 'adGroupAd.ad.id'),
-                'type'            => data_get($row, 'adGroupAd.ad.type'),
-                'status'          => data_get($row, 'adGroupAd.status'),
-                'strength'        => data_get($row, 'adGroupAd.adStrength'),
-                'approval_status' => data_get($row, 'adGroupAd.policySummary.approvalStatus'),
-                'final_urls'   => data_get($row, 'adGroupAd.ad.finalUrls', []),
-                'headlines'    => collect(data_get($row, 'adGroupAd.ad.responsiveSearchAd.headlines', []))->pluck('text')->all(),
-                'descriptions' => collect(data_get($row, 'adGroupAd.ad.responsiveSearchAd.descriptions', []))->pluck('text')->all(),
-            ];
-        }
-
-        foreach ($keywordRows as $row) {
-            $campaignId = (string) data_get($row, 'campaign.id');
-            $adGroupId  = (string) data_get($row, 'adGroup.id');
-
-            $adGroups[$campaignId][$adGroupId] ??= $this->emptyAdGroup($adGroupId);
-
-            $adGroups[$campaignId][$adGroupId]['keywords'][] = [
-                'id'         => data_get($row, 'adGroupCriterion.criterionId'),
-                'text'       => data_get($row, 'adGroupCriterion.keyword.text'),
-                'match_type' => data_get($row, 'adGroupCriterion.keyword.matchType'),
-                'status'     => data_get($row, 'adGroupCriterion.status'),
-            ];
-        }
-
-        return $adGroups;
-    }
-
-    private function emptyAdGroup(string $id, ?string $name = null, ?string $status = null): array
-    {
-        return [
-            'id'       => $id,
-            'name'     => $name,
-            'status'   => $status,
-            'ads'      => [],
-            'keywords' => [],
-        ];
     }
 
     /**
@@ -231,16 +209,49 @@ class FetchGoogleAdsCampaigns
             $campaignId = (string) data_get($row, 'campaign.id');
             $date       = (string) data_get($row, 'segments.date');
 
-            $metrics[$campaignId][$date] = [
-                'impressions'              => (int) data_get($row, 'metrics.impressions', 0),
-                'clicks'                   => (int) data_get($row, 'metrics.clicks', 0),
-                'conversions'              => (float) data_get($row, 'metrics.conversions', 0),
-                'source_cost'              => ((float) data_get($row, 'metrics.costMicros', 0)) / 1_000_000,
-                'source_conversions_value' => (float) data_get($row, 'metrics.conversionsValue', 0),
+            $figures = [
+                'impressions'                  => (int) data_get($row, 'metrics.impressions', 0),
+                'clicks'                       => (int) data_get($row, 'metrics.clicks', 0),
+                'conversions'                  => (float) data_get($row, 'metrics.conversions', 0),
+                'source_cost'                  => ((float) data_get($row, 'metrics.costMicros', 0)) / 1_000_000,
+                'source_conversions_value'     => (float) data_get($row, 'metrics.conversionsValue', 0),
+                'all_conversions'              => (float) data_get($row, 'metrics.allConversions', 0),
+                'source_all_conversions_value' => (float) data_get($row, 'metrics.allConversionsValue', 0),
             ];
+
+            foreach (TrafficSourceCampaignMetric::IMPRESSION_SHARE_COLUMNS as $column) {
+                $share = data_get($row, 'metrics.'.Str::camel($column));
+
+                $figures[$column] = $share === null ? null : (float) $share;
+            }
+
+            $metrics[$campaignId][$date] = $figures;
         }
 
         return $metrics;
+    }
+
+    /**
+     * @param array<int, array> $rows
+     * @return array<string, array<int, array>> campaign id => rows of one day and one conversion action
+     */
+    private function groupConversions(array $rows): array
+    {
+        $conversions = [];
+
+        foreach ($rows as $row) {
+            $conversions[(string) data_get($row, 'campaign.id')][] = [
+                'date'                         => (string) data_get($row, 'segments.date'),
+                'category'                     => (string) data_get($row, 'segments.conversionActionCategory', 'UNSPECIFIED'),
+                'action_name'                  => (string) data_get($row, 'segments.conversionActionName', ''),
+                'conversions'                  => (float) data_get($row, 'metrics.conversions', 0),
+                'source_conversions_value'     => (float) data_get($row, 'metrics.conversionsValue', 0),
+                'all_conversions'              => (float) data_get($row, 'metrics.allConversions', 0),
+                'source_all_conversions_value' => (float) data_get($row, 'metrics.allConversionsValue', 0),
+            ];
+        }
+
+        return $conversions;
     }
 
     /**
@@ -261,7 +272,10 @@ class FetchGoogleAdsCampaigns
         return $negatives;
     }
 
-    private function storeCampaign(TrafficSource $trafficSource, array $result, array $adGroups, array $negatives, bool $dryRun): ?TrafficSourceCampaign
+    /**
+     * @param array{ad_groups: array<int, array>, asset_groups: array<int, array>, exclusions: array<int, array>, negative_keywords: array<int, array>, structure_window: array{from: string, to: string}} $structure
+     */
+    private function storeCampaign(TrafficSource $trafficSource, array $result, array $structure, bool $dryRun): ?TrafficSourceCampaign
     {
         $reference   = (string) data_get($result, 'campaign.id');
         $name        = (string) data_get($result, 'campaign.name');
@@ -300,10 +314,8 @@ class FetchGoogleAdsCampaigns
                     ? ((float) data_get($result, 'campaignBudget.amountMicros')) / 1_000_000
                     : null,
                 'currency'   => data_get($result, 'customer.currencyCode'),
-                'fetched_at'        => now()->toIso8601String(),
-                'ad_groups'         => $adGroups,
-                'negative_keywords' => $negatives,
-            ]),
+                'fetched_at' => now()->toIso8601String(),
+            ], $structure),
         ]);
 
         return $campaign->refresh();
@@ -352,6 +364,39 @@ class FetchGoogleAdsCampaigns
         }
 
         return count($days);
+    }
+
+    /**
+     * The window is replaced rather than merged: Google leaves out an action that recorded nothing,
+     * so a row that has vanished from the answer is a row that has been corrected away, and keeping
+     * it would count a conversion Google no longer does.
+     *
+     * @param array<int, array> $rows
+     */
+    private function storeConversions(TrafficSourceCampaign $campaign, array $rows, string $from, string $to, string $currencyCode): void
+    {
+        $currencyId = Currency::where('code', $currencyCode)->value('id');
+        $now        = now();
+
+        DB::transaction(function () use ($campaign, $rows, $from, $to, $currencyId, $now) {
+            TrafficSourceCampaignConversion::where('traffic_source_campaign_id', $campaign->id)
+                ->whereBetween('date', [$from, $to])
+                ->delete();
+
+            if ($rows === []) {
+                return;
+            }
+
+            TrafficSourceCampaignConversion::insert(array_map(
+                fn (array $row) => array_merge($row, [
+                    'traffic_source_campaign_id' => $campaign->id,
+                    'source_currency_id'         => $currencyId,
+                    'created_at'                 => $now,
+                    'updated_at'                 => $now,
+                ]),
+                $rows
+            ));
+        });
     }
 
     /**

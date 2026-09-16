@@ -133,7 +133,6 @@ watch([allItems, () => props.fieldValue?.chip, () => props.fieldValue?.container
   await computeMaxHeight()
 }, { deep: true })
 
-console.log(props)
 </script>
 
 <template>
