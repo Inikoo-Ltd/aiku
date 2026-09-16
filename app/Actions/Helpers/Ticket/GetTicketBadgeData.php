@@ -121,7 +121,7 @@ class GetTicketBadgeData
      */
     private static function usersWithRoles(int $groupId, array $roles): Collection
     {
-        return User::where('group_id', $groupId)->where('status', true)
+        return User::where('group_id', $groupId)->where('status', true)->where('is_bot', false)
             ->whereHas('roles', fn ($query) => $query->whereIn('name', array_map(fn (RolesEnum $role) => $role->value, $roles)))
             ->get();
     }
