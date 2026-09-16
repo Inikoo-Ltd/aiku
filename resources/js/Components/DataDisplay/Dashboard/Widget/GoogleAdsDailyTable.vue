@@ -5,6 +5,8 @@
 
 <script setup lang="ts">
 import { computed, ref, watch } from "vue"
+import GoogleAdsPager from "@/Components/DataDisplay/Dashboard/Widget/GoogleAdsPager.vue"
+import { useLocalPagination } from "@/Composables/useLocalPagination"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faSort, faSortUp, faSortDown } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
@@ -59,12 +61,11 @@ const sortDescending = ref(true)
 const sortBy = (key: SortKey) => {
     if (sortKey.value === key) {
         sortDescending.value = !sortDescending.value
-    } else {
-        sortKey.value = key
-        sortDescending.value = true
+        return
     }
 
-    page.value = 1
+    sortKey.value = key
+    sortDescending.value = true
 }
 
 const sortIcon = (key: SortKey) => {
@@ -79,13 +80,6 @@ const ariaSort = (key: SortKey) => {
     return sortDescending.value ? "descending" : "ascending"
 }
 
-/* Fifty rather than thirty so a month, the default period, never spills its last day or two onto a
-   second page and the controls stay out of the way until a quarter or a year is asked for. */
-const PER_PAGE_OPTIONS = [50, 100, 365]
-
-const perPage = ref(PER_PAGE_OPTIONS[0])
-const page = ref(1)
-
 const sorted = computed(() => {
     const key = sortKey.value
     const direction = sortDescending.value ? -1 : 1
@@ -97,19 +91,12 @@ const sorted = computed(() => {
     })
 })
 
-const pageCount = computed(() => Math.max(1, Math.ceil(sorted.value.length / perPage.value)))
+/* Fifty rather than twenty-five so a month, the default period, never spills its last day or two onto
+   a second page and the controls stay out of the way until a quarter or a year is asked for. */
+const { perPage, perPageOptions, page, pageCount, total, firstRow, lastRow, paged, isPaged, toFirstPage } =
+    useLocalPagination<Day>(sorted, [50, 100, 365])
 
-/* A shorter period, or more rows per page, can leave the reader on a page that no longer exists. */
-watch([pageCount], () => {
-    if (page.value > pageCount.value) page.value = pageCount.value
-})
-
-const firstRow = computed(() => (sorted.value.length ? (page.value - 1) * perPage.value + 1 : 0))
-const lastRow = computed(() => Math.min(page.value * perPage.value, sorted.value.length))
-
-const rows = computed(() => sorted.value.slice(firstRow.value - 1, lastRow.value))
-
-const isPaged = computed(() => sorted.value.length > PER_PAGE_OPTIONS[0])
+watch([sortKey, sortDescending], toFirstPage)
 </script>
 
 <template>
@@ -137,7 +124,7 @@ const isPaged = computed(() => sorted.value.length > PER_PAGE_OPTIONS[0])
                     </tr>
                 </thead>
                 <tbody>
-                    <tr v-for="day in rows" :key="day.date" class="border-b border-gray-50 text-gray-600">
+                    <tr v-for="day in paged" :key="day.date" class="border-b border-gray-50 text-gray-600">
                         <td
                             v-for="column in columns"
                             :key="column.key"
@@ -150,41 +137,17 @@ const isPaged = computed(() => sorted.value.length > PER_PAGE_OPTIONS[0])
             </table>
         </div>
 
-        <div v-if="isPaged" class="mt-3 flex flex-wrap items-center justify-between gap-3 text-xs text-gray-500">
-            <span aria-live="polite">
-                {{ trans("Showing") }} {{ locale.number(firstRow) }} {{ trans("to") }} {{ locale.number(lastRow) }}
-                {{ trans("of") }} {{ locale.number(sorted.length) }} {{ trans("days") }}
-            </span>
-
-            <div class="flex flex-wrap items-center gap-3">
-                <label class="flex items-center gap-1.5">
-                    {{ trans("Days per page") }}
-                    <select
-                        v-model.number="perPage"
-                        class="rounded-md border-gray-300 py-0.5 text-xs focus:border-indigo-500 focus:ring-indigo-500"
-                        @change="page = 1">
-                        <option v-for="option in PER_PAGE_OPTIONS" :key="option" :value="option">{{ option }}</option>
-                    </select>
-                </label>
-
-                <div class="flex items-center gap-1">
-                    <button
-                        type="button"
-                        :disabled="page === 1"
-                        class="rounded px-2 py-1 transition hover:bg-gray-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 disabled:opacity-40 disabled:hover:bg-transparent"
-                        @click="page = page - 1">
-                        {{ trans("Previous") }}
-                    </button>
-                    <span class="tabular-nums">{{ page }} / {{ pageCount }}</span>
-                    <button
-                        type="button"
-                        :disabled="page === pageCount"
-                        class="rounded px-2 py-1 transition hover:bg-gray-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 disabled:opacity-40 disabled:hover:bg-transparent"
-                        @click="page = page + 1">
-                        {{ trans("Next") }}
-                    </button>
-                </div>
-            </div>
-        </div>
+        <GoogleAdsPager
+            v-if="isPaged"
+            :first-row="firstRow"
+            :last-row="lastRow"
+            :total="total"
+            :page="page"
+            :page-count="pageCount"
+            :per-page="perPage"
+            :per-page-options="perPageOptions"
+            :unit="trans('days')"
+            @update:page="page = $event"
+            @update:per-page="((perPage = $event), toFirstPage())" />
     </div>
 </template>
