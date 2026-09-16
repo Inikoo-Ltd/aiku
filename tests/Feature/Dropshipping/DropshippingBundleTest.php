@@ -401,3 +401,19 @@ test('a bundle holding several of a component made of several trade units multip
 
     expect((float) $bundle->bundleable->tradeUnits->first()->pivot->quantity)->toEqual(6.0);
 });
+
+test('a customer bundle stays out of the public shop data feed', function () {
+    $bundle = StoreBundle::make()->action(
+        $this->customerSalesChannel,
+        [
+            'products' => [
+                ['product_id' => $this->product->id, 'quantity' => 1],
+            ],
+        ]
+    );
+    $bundle->bundleable->update(['state' => ProductStateEnum::ACTIVE]);
+
+    $feedProductIds = (new \App\Exports\Marketing\ProductsInShopExport($this->shop))->query()->pluck('id');
+
+    expect($feedProductIds)->not->toContain($bundle->bundleable_id);
+});

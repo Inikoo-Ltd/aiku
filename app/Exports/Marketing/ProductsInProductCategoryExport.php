@@ -41,6 +41,7 @@ class ProductsInProductCategoryExport implements FromQuery, WithMapping, ShouldA
             ->leftJoin('product_categories as families', 'products.family_id', '=', 'families.id')
             ->leftJoin('product_categories as departments', 'products.department_id', '=', 'departments.id')
             ->leftJoin('product_categories as sub_departments', 'products.sub_department_id', '=', 'sub_departments.id')
+            ->whereNull('products.exclusive_for_customer_id')
             ->whereIn('products.state', [ProductStateEnum::ACTIVE->value, ProductStateEnum::DISCONTINUING->value]);
 
 
