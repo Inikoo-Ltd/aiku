@@ -7,7 +7,7 @@
 
 namespace App\Actions\CRM\TrafficSourceCampaign\UI;
 
-use App\Actions\Helpers\Country\UI\GetCountriesOptions;
+use App\Actions\CRM\TrafficSourceCampaign\GoogleAds\StoreGoogleAdsCampaign;
 use App\Actions\OrgAction;
 use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Organisation;
@@ -16,6 +16,13 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 
+/**
+ * Starting a campaign asks two questions: what it is called, and what kind it is.
+ *
+ * Everything else depends on the answer to the second, and is asked on the campaign's own page. A
+ * campaign is not something anybody fills in correctly in one sitting, and a form that demands
+ * keywords, images and search themes before anything exists gives you nothing to come back to.
+ */
 class CreateGoogleAdsCampaign extends OrgAction
 {
     public function handle(Shop $shop): Shop
@@ -38,50 +45,30 @@ class CreateGoogleAdsCampaign extends OrgAction
                 'breadcrumbs' => array_merge(
                     IndexGoogleAdsCampaigns::make()->getBreadcrumbs($request->route()->originalParameters()),
                     [[
-                        'type'   => 'creatingModel',
+                        'type'          => 'creatingModel',
                         'creatingModel' => ['label' => __('New campaign')],
                     ]],
                 ),
                 'title'    => __('New Google Ads campaign'),
                 'pageHead' => [
-                    'title' => __('New Search campaign'),
-                    'icon'  => [
-                        'icon'  => ['fab', 'fa-google'],
-                        'title' => __('Google Ads'),
-                    ],
+                    'title' => __('New campaign'),
+                    'icon'  => ['icon' => ['fab', 'fa-google'], 'title' => __('Google Ads')],
                     'model' => __('Google Ads'),
                 ],
 
                 'unreachable_reason' => GoogleAdsClient::unreachableReason($shop),
-                'currency'           => $shop->currency->code,
+                'campaign_types'     => $this->campaignTypes(),
 
-                /* A suggestion can open this form with what it already knows filled in: the department
-                   it found, and the site searches behind it as starting keywords. Everything stays
-                   editable, and nothing is created until the form is submitted, so a weak suggestion
-                   costs a glance rather than a campaign. */
+                /* A suggestion arrives asking for a Search campaign, which is the only type its rules
+                   can propose, and brings the name it worked out. */
                 'prefill' => [
-                    'name'     => $request->query('name'),
-                    'keywords' => array_filter(explode("\n", (string) $request->query('keywords'))),
+                    'name'         => $request->query('name'),
+                    'channel_type' => $request->query('channel_type', 'SEARCH'),
                 ],
-
-                /* Keyed by ISO code rather than by Aiku's country id, because that is what Google
-                   translates into its own geo target constants at submit time.
-                   The shop's own country is where it almost certainly wants to advertise, so the form
-                   opens with it chosen rather than empty. */
-                'countries' => collect(GetCountriesOptions::run())
-                    ->map(fn (array $country) => ['value' => $country['code'], 'label' => $country['label']])
-                    ->sortBy('label')
-                    ->values()
-                    ->all(),
-                'default_country' => $shop->country?->code,
-                'default_url'     => $shop->website?->domain ? 'https://'.$shop->website->domain : null,
 
                 'store_route' => [
                     'name'       => 'grp.models.org.shop.google_ads.campaign.store',
-                    'parameters' => [
-                        'organisation' => $this->organisation->id,
-                        'shop'         => $shop->id,
-                    ],
+                    'parameters' => ['organisation' => $this->organisation->id, 'shop' => $shop->id],
                 ],
                 'index_route' => [
                     'name'       => 'grp.org.shops.show.marketing.google_ads.index',
@@ -89,5 +76,40 @@ class CreateGoogleAdsCampaign extends OrgAction
                 ],
             ]
         );
+    }
+
+    /**
+     * The types Google's API will create, and what each is for in one line.
+     *
+     * Video and Shopping are absent and stay absent: Google refuses to create a video campaign through
+     * the API whatever is sent, and a Shopping campaign needs a Merchant Center feed to sell from.
+     *
+     * @return array<int, array{value: string, label: string, description: string}>
+     */
+    private function campaignTypes(): array
+    {
+        $types = [
+            'SEARCH' => [
+                'label'       => __('Search'),
+                'description' => __('Text ads against what people type into Google. The only type that bids on keywords.'),
+            ],
+            'PERFORMANCE_MAX' => [
+                'label'       => __('Performance Max'),
+                'description' => __('Google assembles its own ads from what you give it and shows them everywhere. Needs images and a logo.'),
+            ],
+            'DISPLAY' => [
+                'label'       => __('Display'),
+                'description' => __('Image ads on the websites and apps in Google\'s display network.'),
+            ],
+            'DEMAND_GEN' => [
+                'label'       => __('Demand Gen'),
+                'description' => __('Image ads on YouTube, Discover and Gmail, aimed at people not yet looking for you.'),
+            ],
+        ];
+
+        return collect(StoreGoogleAdsCampaign::CHANNEL_TYPES)
+            ->map(fn (string $type) => array_merge(['value' => $type], $types[$type]))
+            ->values()
+            ->all();
     }
 }

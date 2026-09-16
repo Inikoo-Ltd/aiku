@@ -21,6 +21,7 @@ import GoogleAdsSearchTerms from "@/Components/DataDisplay/Dashboard/Widget/Goog
 import GoogleAdsAddKeyword from "@/Components/DataDisplay/Dashboard/Widget/GoogleAdsAddKeyword.vue"
 import ConfirmDialog from "primevue/confirmdialog"
 import GoogleAdsMetric from "@/Components/DataDisplay/Dashboard/Widget/GoogleAdsMetric.vue"
+import GoogleAdsCampaignTimeline from "@/Components/DataDisplay/Dashboard/Widget/GoogleAdsCampaignTimeline.vue"
 import GoogleAdsAdCreative from "@/Components/DataDisplay/Dashboard/Widget/GoogleAdsAdCreative.vue"
 import GoogleAdsDailyTable from "@/Components/DataDisplay/Dashboard/Widget/GoogleAdsDailyTable.vue"
 import GoogleAdsKeywordsTable from "@/Components/DataDisplay/Dashboard/Widget/GoogleAdsKeywordsTable.vue"
@@ -67,6 +68,13 @@ const props = defineProps<{
     periods: Record<string, string>
     period: string
     period_label: string
+    state: {
+        current: string
+        label: string
+        description: string
+        last_error: string | null
+        timeline: { key: string; label: string; tooltip: string; icon: string; timestamp: string | null }[]
+    }
     custom_range: { from: string; to: string } | null
     compare: boolean
     comparison_label: string | null
@@ -330,6 +338,13 @@ const notServingReasons = computed(() =>
     </div>
 
     <div class="grid grid-cols-1 gap-4 px-4 pb-6 lg:grid-cols-3">
+        <section class="rounded-xl bg-white p-5 ring-1 ring-gray-200 lg:col-span-3">
+            <h2 class="text-sm font-medium text-gray-800">{{ trans("Where this campaign stands") }}</h2>
+            <div class="mt-4">
+                <GoogleAdsCampaignTimeline :state="state" />
+            </div>
+        </section>
+
         <!-- Identity: the settings that decide what the figures below were ever going to look like. -->
         <section class="rounded-xl bg-white p-5 ring-1 ring-gray-200">
             <h2 class="text-sm font-medium text-gray-800">

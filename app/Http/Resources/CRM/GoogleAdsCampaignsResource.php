@@ -9,6 +9,7 @@
 namespace App\Http\Resources\CRM;
 
 use App\Actions\CRM\TrafficSourceCampaign\UI\IndexGoogleAdsCampaigns;
+use App\Enums\CRM\TrafficSource\GoogleAdsCampaignStateEnum;
 use App\Models\CRM\TrafficSourceCampaignMetric;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -46,7 +47,7 @@ class GoogleAdsCampaignsResource extends JsonResource
                     ['trafficSourceCampaign' => $campaign->slug]
                 ),
             ],
-            'status'        => $this->statusIcon($campaign->status),
+            'status'        => $this->statusIcon($campaign),
             'channel_type'  => $campaign->channel_type,
             'budget_amount' => $campaign->budget_amount,
 
@@ -109,9 +110,16 @@ class GoogleAdsCampaignsResource extends JsonResource
      *
      * @return array{icon: string, class: string, tooltip: string}
      */
-    private function statusIcon(?string $status): array
+    private function statusIcon(mixed $campaign): array
     {
-        return match ($status) {
+        /* A campaign still being written in Aiku has no Google status to report, and saying "not read
+           yet" about one that was never sent would be wrong in a way that matters: it reads as a
+           fetch problem rather than as unfinished work. */
+        if (($campaign->state ?? null) === GoogleAdsCampaignStateEnum::IN_PROCESS->value) {
+            return GoogleAdsCampaignStateEnum::stateIcon()[GoogleAdsCampaignStateEnum::IN_PROCESS->value];
+        }
+
+        return match ($campaign->status) {
             'ELIGIBLE', 'ENABLED' => ['icon' => 'fal fa-play', 'class' => 'text-green-500', 'tooltip' => __('Serving')],
             'LIMITED'             => ['icon' => 'fal fa-exclamation-triangle', 'class' => 'text-amber-500', 'tooltip' => __('Budget limited, the budget is capping delivery')],
             'NOT_ELIGIBLE'        => ['icon' => 'fal fa-ban', 'class' => 'text-red-500', 'tooltip' => __('Not serving, nobody is being shown this campaign')],
@@ -120,7 +128,7 @@ class GoogleAdsCampaignsResource extends JsonResource
             'ENDED'               => ['icon' => 'fal fa-flag-checkered', 'class' => 'text-gray-400', 'tooltip' => __('Ended')],
             'REMOVED'             => ['icon' => 'fal fa-trash', 'class' => 'text-gray-400', 'tooltip' => __('Removed')],
             null                  => ['icon' => 'fal fa-question-circle', 'class' => 'text-gray-300', 'tooltip' => __('Not read from Google yet')],
-            default               => ['icon' => 'fal fa-question-circle', 'class' => 'text-gray-400', 'tooltip' => __('Google reports this as :status', ['status' => $status])],
+            default               => ['icon' => 'fal fa-question-circle', 'class' => 'text-gray-400', 'tooltip' => __('Google reports this as :status', ['status' => $campaign->status])],
         };
     }
 

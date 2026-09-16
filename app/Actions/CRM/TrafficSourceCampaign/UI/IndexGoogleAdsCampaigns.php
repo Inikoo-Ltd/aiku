@@ -61,6 +61,7 @@ class IndexGoogleAdsCampaigns extends OrgAction
             'traffic_source_campaigns.reference',
             'traffic_source_campaigns.name',
             'traffic_source_campaigns.channel_type',
+            'traffic_source_campaigns.state',
             DB::raw("traffic_source_campaigns.data->>'currency' as currency_code"),
             DB::raw("(traffic_source_campaigns.data->>'budget_amount')::numeric as budget_amount"),
 

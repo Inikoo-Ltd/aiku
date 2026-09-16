@@ -837,6 +837,16 @@ Route::name('org.')->prefix('org/{organisation:id}')->group(function () {
         ->name('shop.google_ads.campaign.element.update')->withoutScopedBindings();
     Route::post('shop/{shop:id}/google-ads/campaign', StoreGoogleAdsCampaign::class)
         ->name('shop.google_ads.campaign.store');
+    Route::post('shop/{shop:id}/google-ads/image', App\Actions\CRM\TrafficSourceCampaign\GoogleAds\StoreGoogleAdsImage::class)
+        ->name('shop.google_ads.image.store');
+    Route::post('shop/{shop:id}/google-ads/campaign/{trafficSourceCampaign:id}/publish', App\Actions\CRM\TrafficSourceCampaign\GoogleAds\PublishGoogleAdsCampaign::class)
+        ->name('shop.google_ads.campaign.publish')->withoutScopedBindings();
+    Route::patch('shop/{shop:id}/google-ads/campaign/{trafficSourceCampaign:id}/in-process', App\Actions\CRM\TrafficSourceCampaign\GoogleAds\UpdateInProcessGoogleAdsCampaign::class)
+        ->name('shop.google_ads.campaign.in_process.update')->withoutScopedBindings();
+    Route::post('shop/{shop:id}/google-ads/campaign/{trafficSourceCampaign:id}/pause', App\Actions\CRM\TrafficSourceCampaign\GoogleAds\PauseGoogleAdsCampaign::class)
+        ->name('shop.google_ads.campaign.pause')->withoutScopedBindings();
+    Route::post('shop/{shop:id}/google-ads/campaign/{trafficSourceCampaign:id}/resume', App\Actions\CRM\TrafficSourceCampaign\GoogleAds\ResumeGoogleAdsCampaign::class)
+        ->name('shop.google_ads.campaign.resume')->withoutScopedBindings();
     Route::post('shop/{shop:id}/ad-proposal/{trafficSourceAdProposal:id}/apply', ApplyAdProposal::class)
         ->name('shop.ad_proposal.apply')->withoutScopedBindings();
     Route::post('shop/{shop:id}/ad-proposal/{trafficSourceAdProposal:id}/dismiss', DismissAdProposal::class)
