@@ -1696,7 +1696,8 @@ test('the assignee adds collaborators who can see the ticket, tag it and ask QA,
     patch($update, ['tags' => ['sneaky']])->assertForbidden();
 
     actingAs($assignee);
-    patch($collaborators, ['collaborator_ids' => [$helper->id, $qa->id, $outsider->id]])->assertSessionHasErrors('collaborator_ids.2');
+    patch($collaborators, ['collaborator_ids' => [$helper->id, $qa->id, $outsider->id]])->assertRedirect()->assertSessionHasNoErrors();
+    expect($ticket->collaborators()->pluck('users.id')->all())->not->toContain($outsider->id);
     patch($collaborators, ['collaborator_ids' => [$helper->id, $qa->id]])->assertRedirect()->assertSessionHasNoErrors();
 
     expect($ticket->collaborators()->pluck('users.id')->sort()->values()->all())->toBe(collect([$helper->id, $qa->id])->sort()->values()->all())
@@ -2228,4 +2229,32 @@ test('old AD references and padded numbers are still found by search', function 
         ->and($found('1697'))->toContain('AD-1697')
         ->and($found($customerTicket->reference))->toContain($customerTicket->reference)
         ->and($found((string) $number))->toContain($customerTicket->reference);
+});
+
+test('collaborators who lose their role drop off and tickets held by former staff can be taken over', function () {
+    setPermissionsTeamId($this->group->id);
+    $assignee    = User::factory()->create(['group_id' => $this->group->id]);
+    $leaver      = User::factory()->create(['group_id' => $this->group->id]);
+    $engineer    = User::factory()->create(['group_id' => $this->group->id]);
+    $assignee->assignRole('help-desk-clerk');
+    $leaver->assignRole('help-desk-clerk');
+    $engineer->assignRole('help-desk-clerk');
+
+    $ticket = StoreTicket::make()->action($this->group, ['subject' => 'Handover', 'assignee_id' => $assignee->id]);
+    SyncTicketCollaborators::make()->action($ticket, [$leaver->id, $engineer->id]);
+    expect($ticket->collaborators()->pluck('users.id')->sort()->values()->all())->toBe(collect([$leaver->id, $engineer->id])->sort()->values()->all());
+
+    $leaver->removeRole('help-desk-clerk');
+    $leaver->forgetWildcardPermissionIndex();
+
+    actingAs($assignee);
+    patch(route('grp.models.ticket.collaborators.update', $ticket->id), ['collaborator_ids' => [$leaver->id, $engineer->id]])->assertRedirect()->assertSessionHasNoErrors();
+    expect($ticket->collaborators()->pluck('users.id')->all())->toBe([$engineer->id]);
+
+    $assignee->removeRole('help-desk-clerk');
+    $assignee->forgetWildcardPermissionIndex();
+
+    actingAs($engineer);
+    patch(route('grp.models.ticket.update', $ticket->id), ['assignee_id' => $engineer->id])->assertRedirect()->assertSessionHasNoErrors();
+    expect($ticket->fresh()->assignee_id)->toBe($engineer->id);
 });

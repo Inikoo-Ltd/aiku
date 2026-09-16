@@ -14,7 +14,6 @@ use App\Models\Helpers\Ticket;
 use App\Models\SysAdmin\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Event;
-use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 use OwenIt\Auditing\Events\AuditCustom;
 
@@ -27,10 +26,12 @@ class SyncTicketCollaborators extends OrgAction
      */
     public function handle(Ticket $ticket, array $collaboratorIds, ?User $actor = null): Ticket
     {
-        $previousIds = $ticket->collaborators()->pluck('users.id')->map(fn ($id) => (int) $id)->all();
-        $wantedIds   = collect($collaboratorIds)
+        $previousIds  = $ticket->collaborators()->pluck('users.id')->map(fn ($id) => (int) $id)->all();
+        $candidateIds = self::candidateIds($ticket->group_id);
+        $wantedIds    = collect($collaboratorIds)
             ->map(fn ($id) => (int) $id)
             ->reject(fn (int $id) => $id === $ticket->assignee_id)
+            ->filter(fn (int $id) => in_array($id, $candidateIds, true))
             ->unique()
             ->values()
             ->all();
@@ -102,7 +103,7 @@ class SyncTicketCollaborators extends OrgAction
     {
         return [
             'collaborator_ids'   => ['present', 'array'],
-            'collaborator_ids.*' => ['integer', Rule::in($this->syncingTicket ? self::candidateIds($this->syncingTicket->group_id) : [])],
+            'collaborator_ids.*' => ['integer'],
         ];
     }
 

@@ -23,9 +23,9 @@ import Button from "@/Components/Elements/Buttons/Button.vue"
 import { useLiveTickets } from "@/Composables/useLiveTickets"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faPaperclip, faCircle, faUserCheck, faSpinner, faClock, faCheckCircle, faBan, faPlay, faPause, faStop, faCheck, faUndo, faBug, faLightbulb, faLevelUp, faCube, faQuestionCircle, faEllipsisV, faTrashAlt, faUser, faPencil, faTimes, faPlus, faPlusCircle, faExchange, faHourglassHalf, faVial, faShieldCheck, faShield, faRocket, faUsers, faLink, faLifeRing, faCode, faUserHeadset, faBooks, faDatabase, faTasks, faChevronDown } from "@fal"
+import { faPaperclip, faCircle, faUserCheck, faSpinner, faClock, faCheckCircle, faBan, faPlay, faPause, faStop, faCheck, faUndo, faBug, faLightbulb, faLevelUp, faCube, faQuestionCircle, faEllipsisV, faTrashAlt, faUser, faPencil, faTimes, faPlus, faPlusCircle, faExchange, faHourglassHalf, faVial, faShieldCheck, faShield, faRocket, faUsers, faLink, faLifeRing, faToolbox, faUserHeadset, faBooks, faDatabase, faTasks, faChevronDown } from "@fal"
 
-library.add(faBooks, faDatabase, faTasks, faChevronDown, faLifeRing, faCode, faUserHeadset, faLink, faUsers, faRocket, faVial, faShieldCheck, faShield, faHourglassHalf, faPlusCircle, faExchange, faEllipsisV, faTrashAlt, faUser, faPencil, faTimes, faPlus,faPaperclip, faCircle, faUserCheck, faSpinner, faClock, faCheckCircle, faBan, faPlay, faPause, faStop, faCheck, faUndo, faBug, faLightbulb, faLevelUp, faCube, faQuestionCircle)
+library.add(faBooks, faDatabase, faTasks, faChevronDown, faLifeRing, faToolbox, faUserHeadset, faLink, faUsers, faRocket, faVial, faShieldCheck, faShield, faHourglassHalf, faPlusCircle, faExchange, faEllipsisV, faTrashAlt, faUser, faPencil, faTimes, faPlus,faPaperclip, faCircle, faUserCheck, faSpinner, faClock, faCheckCircle, faBan, faPlay, faPause, faStop, faCheck, faUndo, faBug, faLightbulb, faLevelUp, faCube, faQuestionCircle)
 
 const isLinkCopied = ref(false)
 const copyTicketLink = async () => {

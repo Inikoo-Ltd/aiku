@@ -11,9 +11,9 @@ import { trans } from "laravel-vue-i18n"
 import Icon from "@/Components/Icon.vue"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faVial, faShieldCheck, faShield, faLifeRing, faCode, faUserHeadset } from "@fal"
+import { faVial, faShieldCheck, faShield, faLifeRing, faToolbox, faUserHeadset } from "@fal"
 
-library.add(faLifeRing, faCode, faUserHeadset, faVial, faShieldCheck, faShield)
+library.add(faLifeRing, faToolbox, faUserHeadset, faVial, faShieldCheck, faShield)
 
 const props = defineProps<{
     title: string
