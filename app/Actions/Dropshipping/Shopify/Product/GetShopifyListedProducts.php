@@ -134,19 +134,22 @@ class GetShopifyListedProducts
 
     private function transformToStandardFormat(array $product): array
     {
+        $skuList = array_values(array_filter(array_map(
+            fn ($variantEdge) => Arr::get($variantEdge, 'node.sku'),
+            Arr::get($product, 'variants.edges', [])
+        )));
+
         return [
             'id'       => Arr::get($product, 'id'),
-            'title'    => Arr::get($product, 'title'),
-            'handle'   => Arr::get($product, 'handle'),
+            'name'     => Arr::get($product, 'title'),
+            'slug'     => Arr::get($product, 'handle'),
+            'code'     => Arr::first($skuList),
             'vendor'   => Arr::get($product, 'vendor'),
             'images'   => array_map(
                 fn ($imageEdge) => Arr::get($imageEdge, 'node'),
                 Arr::get($product, 'images.edges', [])
             ),
-            'sku_list' => array_values(array_filter(array_map(
-                fn ($variantEdge) => Arr::get($variantEdge, 'node.sku'),
-                Arr::get($product, 'variants.edges', [])
-            )))
+            'sku_list' => $skuList
         ];
     }
 }
