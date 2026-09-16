@@ -65,6 +65,7 @@ class GetArtefactShowcase
                 ],
                 'batch_code'  => $this->getPlaceholderBatchCode($artefact),
                 'expiry_date' => $this->getPlaceholderExpiryDate(),
+                'barcode'     => $this->getBarcode($artefact),
                 'labels'      => ArtefactLabelResource::collection($artefact->labels()->with('artwork')->get())->resolve(),
             ],
             'trade_unit' => $artefact->tradeUnit ? [
@@ -152,6 +153,21 @@ class GetArtefactShowcase
                 ? max($packedIn, (int) round($artefact->recommended_batch_size / $packedIn) * $packedIn)
                 : null,
         ];
+    }
+
+    /**
+     * The outer CODE 128 printed on the packing, falling back to the unit EAN13 for the org stocks
+     * that only carry that one.
+     */
+    private function getBarcode(Artefact $artefact): string
+    {
+        $orgStock = $artefact->orgStock;
+
+        if (!$orgStock) {
+            return '';
+        }
+
+        return $orgStock->barcode ?: ($orgStock->unit_barcode ?: '');
     }
 
     /**

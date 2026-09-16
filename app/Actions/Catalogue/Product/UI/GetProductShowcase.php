@@ -105,6 +105,7 @@ class GetProductShowcase
             'gpsr'                         => $gpsr,
             'label_info'                   => [
                 ...TradeUnitLabelPresenceEnum::presenceFromLabelInfo($product->label_info),
+                'label_info_approved' => ['show' => data_get($product->label_info, 'label_info_approved', false) === true],
                 'markets'   => TradeUnitMarketEnum::marketsFromLabelInfo($product->label_info),
                 'languages' => GetLabelInfoLanguages::run($product->label_info),
                 'best_before' => TradeUnitBestBeforeEnum::bestBeforeFromLabelInfo($product->label_info),

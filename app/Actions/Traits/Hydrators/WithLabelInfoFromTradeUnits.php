@@ -29,6 +29,10 @@ trait WithLabelInfoFromTradeUnits
             );
         }
 
+        $labelInfo['label_info_approved'] = $tradeUnits->isNotEmpty() && $tradeUnits->every(
+            fn ($tradeUnit) => data_get($tradeUnit->label_info, 'label_info_approved', false) === true
+        );
+
         $labelInfo['markets'] = $tradeUnits->isEmpty()
             ? []
             : array_values(array_filter(
@@ -74,6 +78,8 @@ trait WithLabelInfoFromTradeUnits
         foreach (TradeUnitLabelPresenceEnum::values() as $field) {
             $labelInfo[$field] = (bool) data_get($masterLabelInfo, $field, false);
         }
+
+        $labelInfo['label_info_approved'] = data_get($masterLabelInfo, 'label_info_approved', false) === true;
 
         $labelInfo['markets']   = (array) data_get($masterLabelInfo, 'markets', []);
         $labelInfo['languages'] = (array) data_get($masterLabelInfo, 'languages', []);

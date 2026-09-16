@@ -80,6 +80,7 @@ interface LabelInfoPresence {
 }
 
 interface LabelInfo extends LabelInfoPresence {
+    label_info_approved?: { show: boolean }
     safety_icons?: { show: boolean }
     markets?: { show: boolean, value: { value: string, label: string }[] }
     languages?: { show: boolean, value: { code: string, name: string, flag?: string }[] }
@@ -611,6 +612,18 @@ const getIcon = (type?: string) => {
                 </AccordionHeader>
                 <AccordionContent>
                     <div class="space-y-3 py-2">
+                        <div class="flex justify-between items-center gap-3">
+                            <dt class="text-gray-500">{{ trans("Regulatory & Label Information tab") }}</dt>
+                            <dd v-if="labelInfo.label_info_approved?.show" class="font-medium text-green-600 flex items-center gap-1">
+                                <FontAwesomeIcon :icon="faCheckCircle" class="text-xs" fixed-width aria-hidden="true" />
+                                {{ trans("Published on the website") }}
+                            </dd>
+                            <dd v-else class="text-gray-400 flex items-center gap-1">
+                                <FontAwesomeIcon :icon="faTimesCircle" class="text-xs" fixed-width aria-hidden="true" />
+                                {{ trans("Hidden on the website") }}
+                            </dd>
+                        </div>
+
                         <div v-for="(label, key) in labelInfoLabels" :key="key" class="flex justify-between items-center gap-3">
                             <dt class="text-gray-500">{{ label }}</dt>
                             <dd v-if="labelInfo[key]?.show" class="font-medium text-green-600 flex items-center gap-1">

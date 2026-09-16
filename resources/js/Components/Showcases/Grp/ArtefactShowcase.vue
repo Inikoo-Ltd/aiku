@@ -51,6 +51,7 @@ interface ArtefactShowcaseData {
         unpublish_route: { name: string, parameters: any }
         batch_code: string
         expiry_date: string
+        barcode: string
         labels: ArtefactLabel[]
     }
     artefact_department: { slug: string, name: string } | null
