@@ -2,7 +2,7 @@
 import { trans } from "laravel-vue-i18n"
 import { ref } from "vue"
 import axios from "axios"
-import { router } from "@inertiajs/vue3"
+import { Link, router } from "@inertiajs/vue3"
 import { notify } from "@kyvg/vue3-notification"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -54,7 +54,12 @@ interface ArtefactShowcaseData {
     artefact_department: { slug: string, name: string } | null
     tags: string[]
     trade_unit: { id: number, code: string, name: string } | null
-    org_stock: { id: number, code: string, quantity_in_locations: number | string } | null
+    org_stock: {
+        id: number
+        code: string
+        quantity_in_locations: number | string
+        route: { name: string, parameters: any } | null
+    } | null
     manufacture_tasks: {
         id: number
         code: string
@@ -227,7 +232,16 @@ const onSaveBatchSize = async () => {
                 </div>
                 <div>
                     <dt class="text-xs text-gray-500 uppercase tracking-wide">{{ trans('Stock (SKU)') }}</dt>
-                    <dd class="text-sm">{{ data.org_stock ? data.org_stock.code : '-' }}</dd>
+                    <dd class="text-sm">
+                        <Link
+                            v-if="data.org_stock?.route"
+                            :href="route(data.org_stock.route.name, data.org_stock.route.parameters)"
+                            class="primaryLink"
+                            :aria-label="ctrans('Open stock :code in the warehouse', { code: data.org_stock.code })">
+                            {{ data.org_stock.code }}
+                        </Link>
+                        <span v-else>{{ data.org_stock ? data.org_stock.code : '-' }}</span>
+                    </dd>
                 </div>
                 <div>
                     <dt class="text-xs text-gray-500 uppercase tracking-wide">{{ trans('Quantity in locations') }}</dt>
