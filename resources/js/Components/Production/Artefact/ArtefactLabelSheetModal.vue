@@ -1003,6 +1003,19 @@ const startNewLabel = () => {
 }
 
 /**
+ * Highlighting needs a text to highlight, so the button turns itself off once the last one is gone,
+ * otherwise it would stay disabled while the artwork keeps being faded.
+ */
+watch(
+    () => items.value.length,
+    count => {
+        if (!count) {
+            isHighlightingTexts.value = false
+        }
+    }
+)
+
+/**
  * The modal is opened either on a saved label or on a blank one, so the design it shows is decided
  * on the way in rather than being whatever the last visit left behind.
  */
@@ -1116,7 +1129,7 @@ const describeFailure = async (error: any): Promise<string> => {
                 </div>
                 <Button
                     v-if="currentLabel?.state === 'published'"
-                    type="tertiary"
+                    type="negative"
                     size="xs"
                     icon="fal fa-eye-slash"
                     :label="ctrans('Unpublish')"
