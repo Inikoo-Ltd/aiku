@@ -17,9 +17,10 @@ import TicketThread from "@/Components/Tickets/TicketThread.vue"
 import { useModalFocusTrap } from "@/Composables/useModalFocusTrap"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faTimes, faSpinner, faChevronDown, faLink, faCheck, faLifeRing, faToolbox, faUserHeadset } from "@fal"
+import { faTimes, faSpinner, faChevronDown, faLink, faCheck, faLifeRing, faToolbox, faUserHeadset, faComment, faComments, faEnvelope } from "@fal"
+import { faWhatsapp } from "@fortawesome/free-brands-svg-icons"
 
-library.add(faLifeRing, faToolbox, faUserHeadset, faTimes, faSpinner, faChevronDown, faLink, faCheck)
+library.add(faLifeRing, faToolbox, faUserHeadset, faTimes, faSpinner, faChevronDown, faLink, faCheck, faWhatsapp, faComment, faComments, faEnvelope)
 
 const emit = defineEmits<{
     (e: "closed"): void
@@ -194,6 +195,20 @@ const close = () => {
                         <TicketControls v-if="controls" v-bind="controls" @updated="loadControls(ticket.id)" />
                         <p v-else-if="isControlsUnavailable" class="text-gray-500">{{ trans("Controls are unavailable") }}</p>
                         <p v-else class="text-gray-400"><FontAwesomeIcon icon="fal fa-spinner" spin class="mr-1" />{{ trans("Loading") }}</p>
+                        <div v-if="displayTicket.source" class="mt-4 rounded-md border border-gray-200 bg-gray-50 p-3">
+                            <div class="flex items-center gap-2">
+                                <FontAwesomeIcon v-if="displayTicket.source.channel_icon" :icon="displayTicket.source.channel_icon.icon" :class="displayTicket.source.channel_icon.class" fixed-width aria-hidden="true" />
+                                <span class="font-medium text-gray-800">{{ displayTicket.source.channel_label }}</span>
+                            </div>
+                            <dl class="mt-2 space-y-1 text-gray-600">
+                                <div v-if="displayTicket.source.contact" class="flex justify-between gap-2"><dt>{{ trans("Contact") }}</dt><dd class="truncate">{{ displayTicket.source.contact }}</dd></div>
+                                <div v-if="displayTicket.source.reference" class="flex justify-between gap-2"><dt>{{ trans("Reference") }}</dt><dd class="font-mono text-xs">{{ displayTicket.source.reference }}</dd></div>
+                            </dl>
+                            <a v-if="displayTicket.source.url" :href="displayTicket.source.url" class="mt-2 inline-flex items-center gap-1 text-blue-600 hover:underline">
+                                <FontAwesomeIcon :icon="['fal', 'comments']" fixed-width aria-hidden="true" />
+                                {{ trans("Open conversation") }}
+                            </a>
+                        </div>
                     </aside>
                 </div>
             </div>

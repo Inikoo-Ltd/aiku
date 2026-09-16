@@ -43,6 +43,24 @@ enum TicketKindEnum: string
         return [self::TASK->value, self::QA->value];
     }
 
+    /**
+     * @return array<int, string>
+     */
+    public static function chatValues(): array
+    {
+        return [self::BUG->value, self::DOCUMENTATION->value, self::DATA_INTEGRITY->value];
+    }
+
+    /** @return array<int, array{label: string, value: string}> */
+    public static function raisableFromChat(): array
+    {
+        return collect(self::labels())
+            ->only(self::chatValues())
+            ->map(fn ($label, $value) => ['label' => $label, 'value' => $value])
+            ->values()
+            ->all();
+    }
+
     /** @return array<int, array{label: string, value: string}> */
     public static function raisableBy(User $user): array
     {

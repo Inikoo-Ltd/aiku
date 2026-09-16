@@ -327,6 +327,7 @@ class AppServiceProvider extends ServiceProvider
                 'TestEmailRecipient'               => 'App\Models\Comms\TestEmailRecipient',
                 'WhatsappSubscriber'               => 'App\Models\Comms\WhatsappSubscriber',
                 'MetaChatSession'                  => 'App\Models\Chat\MetaChatSession',
+                'ChatSession'                      => 'App\Models\Chat\ChatSession',
 
                 // Catalogue
                 'Subscription'                     => 'App\Models\Catalogue\Subscription',

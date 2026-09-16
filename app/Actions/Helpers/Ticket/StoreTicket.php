@@ -12,6 +12,7 @@ use App\Actions\OrgAction;
 use App\Enums\CRM\Livechat\ChatPriorityEnum;
 use App\Enums\Helpers\Ticket\TicketKindEnum;
 use App\Enums\Helpers\Ticket\TicketModuleEnum;
+use App\Enums\Helpers\Ticket\TicketSourceChannelEnum;
 use App\Enums\Helpers\Ticket\TicketTypeEnum;
 use App\Models\Helpers\Ticket;
 use App\Models\SysAdmin\Group;
@@ -69,6 +70,9 @@ class StoreTicket extends OrgAction
             'reporter_id'     => ['sometimes', 'nullable', 'integer'],
             'model_type'      => ['sometimes', 'nullable', 'string'],
             'model_id'        => ['sometimes', 'nullable', 'integer'],
+            'source_type'     => ['sometimes', 'nullable', 'string'],
+            'source_id'       => ['sometimes', 'nullable', 'integer'],
+            'source_channel'  => ['sometimes', 'nullable', Rule::enum(TicketSourceChannelEnum::class)],
             'data'            => ['sometimes', 'array'],
             'images'          => ['sometimes', 'array', 'max:5'],
             'images.*'        => Ticket::ticketFileRules(),
