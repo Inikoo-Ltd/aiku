@@ -1,19 +1,20 @@
 <script setup lang="ts">
 import { trans } from "laravel-vue-i18n"
-import { ref } from "vue"
+import { onMounted, reactive, ref, watch } from "vue"
 import axios from "axios"
 import { router } from "@inertiajs/vue3"
 import { notify } from "@kyvg/vue3-notification"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faFilePdf, faImage, faPlus, faTags, faTrashAlt } from "@fal"
+import { faBarcode, faCalendarAlt, faFilePdf, faHashtag, faImage, faPlus, faTags, faTrashAlt } from "@fal"
+import pdfWorkerUrl from "pdfjs-dist/legacy/build/pdf.worker.min.mjs?url"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import ArtefactLabelSheetModal from "@/Components/Production/Artefact/ArtefactLabelSheetModal.vue"
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { ctrans } from "@/Composables/useTrans"
 
-library.add(faFilePdf, faImage, faPlus, faTags, faTrashAlt)
+library.add(faBarcode, faCalendarAlt, faFilePdf, faHashtag, faImage, faPlus, faTags, faTrashAlt)
 
 interface ArtefactLabel {
     id: number
@@ -50,9 +51,112 @@ const props = defineProps<{
     data: ArtefactLabelSheet
 }>()
 
+const PDF_MIME_TYPE = "application/pdf"
+const THUMBNAIL_EDGE = 120
+const POINTS_TO_CENTIMETRES = 2.54 / 72
+
+const SOURCE_BADGES = [
+    { source: "batch_code", icon: "fal fa-hashtag", label: trans("Batch code") },
+    { source: "expiry_date", icon: "fal fa-calendar-alt", label: trans("Expiry date") },
+    { source: "barcode", icon: "fal fa-barcode", label: trans("Barcode") },
+] as const
+
+interface ArtworkPreview {
+    thumbnail: string | null
+    width: number | null
+    height: number | null
+}
+
 const isOpenLabelSheet = ref(false)
 const labelToEdit = ref<ArtefactLabel | null>(null)
 const deletingLabelId = ref<number | null>(null)
+
+/**
+ * Keyed by artwork url, so the same file shared by several labels is only fetched and drawn once.
+ */
+const artworkPreviews = reactive<Record<string, ArtworkPreview>>({})
+
+let pdfjs: typeof import("pdfjs-dist/legacy/build/pdf.mjs") | null = null
+
+const loadPdfjs = async () => {
+    if (!pdfjs) {
+        pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs")
+        pdfjs.GlobalWorkerOptions.workerSrc = pdfWorkerUrl
+    }
+
+    return pdfjs
+}
+
+/**
+ * Nothing on the server can rasterise a PDF, so the first page is drawn here to show what the label
+ * is made of, and its page box is read in the same pass to say how big the artwork prints. The
+ * artworks run to several megabytes, so only the ranges the first page needs are pulled over.
+ */
+const loadPdfArtwork = async (url: string) => {
+    if (url in artworkPreviews) return
+
+    artworkPreviews[url] = { thumbnail: null, width: null, height: null }
+
+    try {
+        const { getDocument } = await loadPdfjs()
+        const loadingTask = getDocument({ url, disableAutoFetch: true })
+
+        try {
+            const page = await (await loadingTask.promise).getPage(1)
+            const { width, height } = page.getViewport({ scale: 1 })
+            const viewport = page.getViewport({ scale: Math.min(THUMBNAIL_EDGE / Math.max(width, height), 4) })
+
+            const canvas = document.createElement("canvas")
+            canvas.width = Math.round(viewport.width)
+            canvas.height = Math.round(viewport.height)
+
+            await page.render({ canvas, viewport }).promise
+
+            artworkPreviews[url] = { thumbnail: canvas.toDataURL("image/png"), width, height }
+        } finally {
+            loadingTask.destroy()
+        }
+    } catch {
+        artworkPreviews[url] = { thumbnail: null, width: null, height: null }
+    }
+}
+
+const loadArtworkPreviews = async () => {
+    for (const label of props.data.labels) {
+        if (label.artwork?.mime_type === PDF_MIME_TYPE) {
+            await loadPdfArtwork(label.artwork.url)
+        }
+    }
+}
+
+onMounted(loadArtworkPreviews)
+watch(() => props.data.labels, loadArtworkPreviews)
+
+const thumbnailOf = (label: ArtefactLabel) => {
+    if (!label.artwork) return null
+
+    return label.artwork.mime_type === PDF_MIME_TYPE
+        ? artworkPreviews[label.artwork.url]?.thumbnail ?? null
+        : label.artwork.url
+}
+
+const artworkSizeOf = (label: ArtefactLabel) => {
+    if (label.artwork?.mime_type !== PDF_MIME_TYPE) return null
+
+    const preview = artworkPreviews[label.artwork.url]
+
+    if (!preview?.width || !preview?.height) return null
+
+    const centimetres = (points: number) => (points * POINTS_TO_CENTIMETRES).toFixed(1)
+
+    return `${centimetres(preview.width)} × ${centimetres(preview.height)} cm`
+}
+
+const usedSourcesOf = (label: ArtefactLabel) => {
+    const sources = new Set((label.layout.fields ?? []).map((field: Record<string, any>) => field.source ?? "batch_code"))
+
+    return SOURCE_BADGES.filter(badge => sources.has(badge.source))
+}
 
 const openLabel = (label: ArtefactLabel | null) => {
     labelToEdit.value = label
@@ -135,13 +239,23 @@ const describeLabel = (label: ArtefactLabel) => {
                     @click="openLabel(label)"
                     @keydown.enter.self.prevent="openLabel(label)"
                     @keydown.space.self.prevent="openLabel(label)">
-                    <FontAwesomeIcon
-                        :icon="label.artwork
-                            ? (label.artwork.mime_type === 'application/pdf' ? 'fal fa-file-pdf' : 'fal fa-image')
-                            : 'fal fa-tags'"
-                        class="text-gray-400"
-                        fixed-width
-                        aria-hidden="true" />
+                    <div
+                        class="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded border border-gray-200 bg-gray-50"
+                        aria-hidden="true">
+                        <img
+                            v-if="thumbnailOf(label)"
+                            :src="thumbnailOf(label) ?? undefined"
+                            class="h-full w-full object-contain"
+                            draggable="false"
+                            alt="" />
+                        <FontAwesomeIcon
+                            v-else
+                            :icon="label.artwork
+                                ? (label.artwork.mime_type === 'application/pdf' ? 'fal fa-file-pdf' : 'fal fa-image')
+                                : 'fal fa-tags'"
+                            class="text-gray-400"
+                            fixed-width />
+                    </div>
                     <div class="min-w-0 flex-1">
                         <div class="flex items-center gap-2">
                             <span class="truncate text-sm">{{ label.name }}</span>
@@ -150,7 +264,23 @@ const describeLabel = (label: ArtefactLabel) => {
                                 :class="LABEL_STATE_CLASSES[label.state]"
                                 :aria-label="ctrans('State: :state', { state: label.state_label })">{{ label.state_label }}</span>
                         </div>
-                        <div class="truncate text-xs text-gray-500">{{ describeLabel(label) }}</div>
+                        <div class="truncate text-xs text-gray-500">
+                            {{ describeLabel(label) }}
+                            <template v-if="artworkSizeOf(label)"> &middot; {{ artworkSizeOf(label) }}</template>
+                        </div>
+                        <ul
+                            v-if="usedSourcesOf(label).length"
+                            class="mt-1 flex items-center gap-1.5"
+                            :aria-label="ctrans('Texts printed on this label')">
+                            <li
+                                v-for="badge in usedSourcesOf(label)"
+                                :key="badge.source"
+                                class="flex h-5 w-5 items-center justify-center rounded bg-indigo-50 text-[10px] text-indigo-600"
+                                :title="badge.label"
+                                :aria-label="badge.label">
+                                <FontAwesomeIcon :icon="badge.icon" fixed-width aria-hidden="true" />
+                            </li>
+                        </ul>
                     </div>
                     <div @click.stop @keydown.stop>
                         <ModalConfirmationDelete
