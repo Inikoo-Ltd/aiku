@@ -1958,6 +1958,42 @@ describe('calculate order discounts', function () {
         $giftTransaction->forceDelete();
     });
 
+    test('SubmitOrder: a gift for a product already bought in the basket is its own line and leaves the paid line alone', function () {
+        $order       = Order::latest('id')->first();
+        $giftProduct = Product::where('shop_id', $this->shop->id)->where('code', 'GIFT-PROD')->first();
+
+        $paidTransaction = StoreTransaction::make()->action($order, $giftProduct->currentHistoricProduct, ['quantity_ordered' => 1]);
+
+        $offer = StoreBuyXGetCheapestFree::make()->actionForProduct(
+            $this->product,
+            [
+                'trigger_data_item_quantity' => 3,
+                'free_quantity'              => 1,
+                'free_product_id'            => $giftProduct->id,
+                'duration'                   => 'interval',
+                'start_at'                   => now(),
+                'end_at'                     => now()->addDays(14)->toDateTimeString(),
+            ]
+        );
+
+        SubmitOrder::make()->processGiftOffers($order->refresh());
+
+        $paidTransaction->refresh();
+        $giftTransaction = Transaction::where('order_id', $order->id)->where('is_gift', true)->where('model_id', $giftProduct->id)->first();
+
+        expect($paidTransaction->trashed())->toBeFalse()
+            ->and($paidTransaction->is_gift)->toBeFalse()
+            ->and((float)$paidTransaction->quantity_ordered)->toBe(1.0)
+            ->and(Arr::get($paidTransaction->offers_data, 'o.t'))->not->toBe('gift')
+            ->and($giftTransaction)->not->toBeNull()
+            ->and($giftTransaction->id)->not->toBe($paidTransaction->id)
+            ->and((float)$giftTransaction->quantity_bonus)->toBe(1.0);
+
+        $giftTransaction->forceDelete();
+        $paidTransaction->forceDelete();
+        SuspendOffer::run($offer);
+    });
+
     test('CalculateOrderDiscounts: mix and match cheapest free across different family products', function () {
         $order       = Order::latest('id')->first();
         $transaction = Transaction::where('order_id', $order->id)->first();

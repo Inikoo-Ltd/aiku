@@ -45,7 +45,7 @@ class StoreTransaction extends OrgAction
 
     public function handle(Order $order, HistoricAsset $historicAsset, array $modelData, $calculateShipping = true): Transaction
     {
-        if ($this->strict && $historicAsset->asset->model_type == 'Product') {
+        if ($this->strict && $historicAsset->asset->model_type == 'Product' && !Arr::get($modelData, 'is_gift')) {
             if (in_array($order->state, [
                 OrderStateEnum::CREATING,
                 OrderStateEnum::SUBMITTED
