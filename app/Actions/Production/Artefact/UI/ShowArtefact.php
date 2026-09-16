@@ -146,6 +146,10 @@ class ShowArtefact extends OrgAction
                     ? fn () => GetArtefactManufactureTasks::run($artefact)
                     : Inertia::optional(fn () => GetArtefactManufactureTasks::run($artefact)),
 
+                ArtefactTabsEnum::LABELS->value => $this->tab == ArtefactTabsEnum::LABELS->value
+                    ? fn () => GetArtefactLabels::run($artefact)
+                    : Inertia::optional(fn () => GetArtefactLabels::run($artefact)),
+
                 ArtefactTabsEnum::COMPLIANCE->value => $this->tab == ArtefactTabsEnum::COMPLIANCE->value
                     ? fn () => GetArtefactCompliance::run($artefact)
                     : Inertia::optional(fn () => GetArtefactCompliance::run($artefact)),
