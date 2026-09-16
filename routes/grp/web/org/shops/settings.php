@@ -7,8 +7,12 @@
  */
 
 use App\Actions\Catalogue\Shop\UI\EditShop;
+use App\Actions\Comms\Mailbox\ConnectShopMailbox;
+use App\Actions\Comms\Mailbox\DisconnectShopMailbox;
 use App\Actions\CRM\Customer\GoogleAds\ConnectShopGoogleAds;
 use Illuminate\Support\Facades\Route;
 
 Route::get('', EditShop::class)->name('edit');
 Route::get('google-ads/connect', ConnectShopGoogleAds::class)->name('google_ads.connect');
+Route::get('mailbox/connect', ConnectShopMailbox::class)->name('mailbox.connect');
+Route::post('mailbox/disconnect', DisconnectShopMailbox::class)->name('mailbox.disconnect');

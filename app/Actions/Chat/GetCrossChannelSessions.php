@@ -65,7 +65,7 @@ class GetCrossChannelSessions
         $meta    = GetMetaChatSessions::make()->handle($sourceFilters);
 
         $rows = collect($website->items())
-            ->map(fn ($session) => ['channel' => 'website', 'session' => $session])
+            ->map(fn ($session) => ['channel' => $session->channel?->value ?? 'website', 'session' => $session])
             ->concat(
                 collect($meta->items())->map(fn ($session) => ['channel' => 'whatsapp', 'session' => $session])
             )

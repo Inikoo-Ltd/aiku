@@ -16,7 +16,7 @@ import Image from "@common/Components/Image.vue"
 import Dialog from "primevue/dialog"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faUser, faSearch, faTimes } from "@far"
-import { faCog, faStar, faAngleLeft, faAngleRight, faAngleDown, faFilter, faStoreAlt, faGlobe, faPlus } from "@fal"
+import { faCog, faStar, faAngleLeft, faAngleRight, faAngleDown, faFilter, faStoreAlt, faGlobe, faPlus, faEnvelope } from "@fal"
 import { faEllipsisVertical, faBan, faRotateLeft, faTrash, faTrashArrowUp, faAnglesUp, faAngleUp, faEquals, faChevronRight, faStar as faStarSolid } from "@fortawesome/free-solid-svg-icons"
 import { faWhatsapp } from "@fortawesome/free-brands-svg-icons"
 import {
@@ -1128,9 +1128,9 @@ onUnmounted(() => {
                                 ? 'font-medium text-gray-800'
                                 : 'text-gray-600 hover:bg-gray-100'"
                             :style="selectedShopId === inbox.id && selectedChannel === channel.key ? selectedItemStyle : {}">
-                            <FontAwesomeIcon :icon="channel.key === 'whatsapp' ? faWhatsapp : faGlobe"
+                            <FontAwesomeIcon :icon="channel.key === 'whatsapp' ? faWhatsapp : channel.key === 'email' ? faEnvelope : faGlobe"
                                 class="text-xs shrink-0"
-                                :class="channel.key === 'whatsapp' ? 'text-green-600' : 'text-gray-400'" />
+                                :class="channel.key === 'whatsapp' ? 'text-green-600' : channel.key === 'email' ? 'text-blue-500' : 'text-gray-400'" />
                             <span class="truncate flex-1 text-left">{{ channel.name }}</span>
                             <span v-if="channelUnread(inbox, channel)"
                                 class="min-w-[16px] h-4 px-1 text-[9px] font-semibold leading-4 text-white rounded-full text-center bg-red-500">
@@ -1343,11 +1343,11 @@ onUnmounted(() => {
                                     <FontAwesomeIcon v-else :icon="faUser" class="text-sm" />
                                 </div>
                                 <span v-if="isMergedView"
-                                    v-tooltip="c.channel === 'whatsapp' ? 'WhatsApp' : trans('Website chat')"
+                                    v-tooltip="c.channel === 'whatsapp' ? 'WhatsApp' : c.channel === 'email' ? trans('Email') : trans('Website chat')"
                                     class="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full bg-white ring-1 ring-gray-200 flex items-center justify-center">
-                                    <FontAwesomeIcon :icon="c.channel === 'whatsapp' ? faWhatsapp : faGlobe"
+                                    <FontAwesomeIcon :icon="c.channel === 'whatsapp' ? faWhatsapp : c.channel === 'email' ? faEnvelope : faGlobe"
                                         class="text-[9px]"
-                                        :class="c.channel === 'whatsapp' ? 'text-green-600' : 'text-gray-400'" />
+                                        :class="c.channel === 'whatsapp' ? 'text-green-600' : c.channel === 'email' ? 'text-blue-500' : 'text-gray-400'" />
                                 </span>
                             </div>
 
