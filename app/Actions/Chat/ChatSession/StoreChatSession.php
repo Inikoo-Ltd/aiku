@@ -9,6 +9,7 @@
 namespace App\Actions\Chat\ChatSession;
 
 use App\Enums\CRM\Livechat\ChatActorTypeEnum;
+use App\Enums\CRM\Livechat\ChatChannelEnum;
 use App\Enums\CRM\Livechat\ChatPriorityEnum;
 use App\Enums\CRM\Livechat\ChatSessionStatusEnum;
 use App\Http\Resources\CRM\Livechat\ChatSessionResource;
@@ -37,6 +38,7 @@ class StoreChatSession
             'ai_model_version' => ['nullable', 'string', 'max:50'],
             'shop_id'          => ['required', 'exists:shops,id'],
             'priority'         => ['required', Rule::enum(ChatPriorityEnum::class)],
+            'channel'          => ['sometimes', Rule::enum(ChatChannelEnum::class)],
             'ulid'             => ['sometimes', 'string', 'size:26', 'unique:chat_sessions,ulid'],
         ];
     }
@@ -62,7 +64,7 @@ class StoreChatSession
         DB::beginTransaction();
 
         try {
-            $modelData['web_user_id'] = $this->trustedWebUserId($modelData['web_user_id'] ?? null);
+            $modelData['web_user_id'] = $modelData['trusted_web_user_id'] ?? $this->trustedWebUserId($modelData['web_user_id'] ?? null);
 
             $isGuest = empty($modelData['web_user_id']);
 
@@ -79,6 +81,7 @@ class StoreChatSession
                 'priority'         => $modelData['priority'],
                 'ai_model_version' => $modelData['ai_model_version'] ?? 'default',
                 'shop_id'          => $modelData['shop_id'] ?? null,
+                'channel'          => $modelData['channel'] ?? ChatChannelEnum::WEBSITE,
                 'geo_country_code'      => $this->resolveCountryCode(request()->header('CF-IPCountry')),
                 'website_visitor_id'   => $this->resolveWebsiteVisitorId($modelData['shop_id'] ?? null),
                 'created_at'       => now(),

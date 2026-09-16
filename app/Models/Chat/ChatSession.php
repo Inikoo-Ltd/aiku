@@ -8,6 +8,7 @@
 
 namespace App\Models\Chat;
 
+use App\Enums\CRM\Livechat\ChatChannelEnum;
 use App\Enums\CRM\Livechat\ChatPriorityEnum;
 use App\Enums\CRM\Livechat\ChatSessionClosedByTypeEnum;
 use App\Enums\CRM\Livechat\ChatSessionStatusEnum;
@@ -69,6 +70,7 @@ class ChatSession extends Model
 
     protected $casts = [
         'status' => ChatSessionStatusEnum::class,
+        'channel' => ChatChannelEnum::class,
         'priority' => ChatPriorityEnum::class,
         'closed_by' => ChatSessionClosedByTypeEnum::class,
         'closed_at' => 'datetime',

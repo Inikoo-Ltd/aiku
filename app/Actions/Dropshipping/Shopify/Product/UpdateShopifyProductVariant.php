@@ -31,7 +31,11 @@ class UpdateShopifyProductVariant extends RetinaAction
         $customerSalesChannel = $portfolio->customerSalesChannel;
 
         /** @var ShopifyUser $shopifyUser */
-        $shopifyUser = $customerSalesChannel->user;
+        $shopifyUser = $customerSalesChannel?->user;
+
+        if (!$shopifyUser) {
+            return [false, 'Shopify user not found for this customer sales channel'];
+        }
 
         $client = $shopifyUser->getShopifyClient(true);
 

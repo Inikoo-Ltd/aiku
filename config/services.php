@@ -84,6 +84,10 @@ return [
         'client_id'       => env('GOOGLE_CLIENT_ID'),
         'client_secret'   => env('GOOGLE_CLIENT_SECRET'),
     ],
+    'gmail' => [
+        'client_id'     => env('GMAIL_CLIENT_ID'),
+        'client_secret' => env('GMAIL_CLIENT_SECRET'),
+    ],
     'meta_ads'  => [
         /* A Business Manager system user token, which does not expire and normally covers every ad
            account in the business. A shop may override it in settings.meta_ads.access_token when its

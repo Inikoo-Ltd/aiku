@@ -3183,3 +3183,74 @@ test('engineers and qa see staff tasks but cannot be assigned one', function () 
     actingAs($this->user);
     \Pest\Laravel\postJson(route('grp.tasks.store'), ['subject' => 'Fix the bug', 'assignee_id' => $engineer->id])->assertUnprocessable();
 });
+
+test('inbound gmail message becomes an email chat session and the agent reply goes back through gmail', function () {
+    Bus::fake([\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class, \App\Actions\Comms\Mailbox\SendChatMessageByGmail::class]);
+
+    $webUser = StoreWebUser::make()->action($this->customer, array_merge(WebUser::factory()->definition(), ['email' => 'buyer@example.com']));
+
+    $settings = $this->shop->settings ?? [];
+    $settings['gmail'] = [
+        'email'         => 'care@shop.test',
+        'refresh_token' => \Illuminate\Support\Facades\Crypt::encryptString('rt'),
+        'history_id'    => '1',
+    ];
+    $this->shop->update(['settings' => $settings]);
+
+    \Illuminate\Support\Facades\Http::fake([
+        'oauth2.googleapis.com/token'                           => \Illuminate\Support\Facades\Http::response(['access_token' => 'at']),
+        'gmail.googleapis.com/gmail/v1/users/me/messages/m1*'   => \Illuminate\Support\Facades\Http::response([
+            'id'       => 'm1',
+            'threadId' => 't1',
+            'payload'  => [
+                'mimeType' => 'text/plain',
+                'headers'  => [
+                    ['name' => 'From', 'value' => 'Buyer Person <buyer@example.com>'],
+                    ['name' => 'Subject', 'value' => 'Where is my order?'],
+                    ['name' => 'Message-ID', 'value' => '<abc@example.com>'],
+                ],
+                'body'     => ['data' => rtrim(strtr(base64_encode("Hello, any news?\n\nOn Mon, Bob wrote:\n> old stuff"), '+/', '-_'), '=')],
+            ],
+        ]),
+        'gmail.googleapis.com/gmail/v1/users/me/labels'         => \Illuminate\Support\Facades\Http::response(['labels' => [['id' => 'L1', 'name' => 'aiku/imported']]]),
+        'gmail.googleapis.com/gmail/v1/users/me/messages/send'  => \Illuminate\Support\Facades\Http::response(['id' => 'sent1']),
+        'gmail.googleapis.com/*'                                => \Illuminate\Support\Facades\Http::response([]),
+    ]);
+
+    $message = \App\Actions\Comms\Mailbox\ProcessInboundEmail::run($this->shop, 'm1');
+
+    expect($message)->toBeInstanceOf(ChatMessage::class)
+        ->and($message->message_text)->toBe('Hello, any news?')
+        ->and($message->sender_type)->toBe(ChatSenderTypeEnum::USER)
+        ->and($message->sender_id)->toBe($webUser->id)
+        ->and(Arr::get($message->metadata, 'gmail_message_id'))->toBe('m1');
+
+    $session = $message->chatSession->fresh();
+    expect($session->channel)->toBe(\App\Enums\CRM\Livechat\ChatChannelEnum::EMAIL)
+        ->and($session->web_user_id)->toBe($webUser->id)
+        ->and(Arr::get($session->metadata, 'gmail_thread_id'))->toBe('t1')
+        ->and(Arr::get($session->metadata, 'gmail_last_header_message_id'))->toBe('<abc@example.com>');
+
+    expect(\App\Actions\Comms\Mailbox\ProcessInboundEmail::run($this->shop, 'm1'))->toBeNull();
+
+    $reply = $session->messages()->create([
+        'message_text' => 'Shipped today',
+        'message_type' => ChatMessageTypeEnum::TEXT,
+        'sender_type'  => ChatSenderTypeEnum::AGENT,
+    ]);
+
+    \App\Actions\Comms\Mailbox\SendChatMessageByGmail::run($reply);
+
+    \Illuminate\Support\Facades\Http::assertSent(function (\Illuminate\Http\Client\Request $request) {
+        if (!str_ends_with($request->url(), 'users/me/messages/send')) {
+            return false;
+        }
+        $raw = base64_decode(strtr($request['raw'], '-_', '+/'));
+
+        return $request['threadId'] === 't1'
+            && str_contains($raw, 'To: Buyer Person <buyer@example.com>')
+            && str_contains($raw, 'In-Reply-To: <abc@example.com>')
+            && str_contains($raw, 'Subject: Re: Where is my order?');
+    });
+    expect(Arr::get($reply->fresh()->metadata, 'gmail_message_id'))->toBe('sent1');
+});

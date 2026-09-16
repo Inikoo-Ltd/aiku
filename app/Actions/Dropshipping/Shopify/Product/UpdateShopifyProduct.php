@@ -32,8 +32,12 @@ class UpdateShopifyProduct extends RetinaAction
     public function handle(Portfolio $portfolio): array
     {
         /** @var ShopifyUser $shopifyUser */
-        $shopifyUser = $portfolio->customerSalesChannel->user;
+        $shopifyUser = $portfolio->customerSalesChannel?->user;
         $website = $portfolio->customerSalesChannel?->shop?->website;
+
+        if (!$shopifyUser) {
+            return [false, 'Shopify user not found for this customer sales channel'];
+        }
 
         $client = $shopifyUser->getShopifyClient(true); // Get GraphQL client
 

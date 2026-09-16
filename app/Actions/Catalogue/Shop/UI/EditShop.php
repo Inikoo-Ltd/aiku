@@ -101,6 +101,10 @@ class EditShop extends OrgAction
 
         $isGoogleAdsConnected = filled(Arr::get($shop->settings, 'google_ads.refresh_token'));
 
+        $isMailboxConnected = filled(Arr::get($shop->settings, 'gmail.email'));
+        $mailboxEmail       = Arr::get($shop->settings, 'gmail.email');
+        $mailboxConnectedAt = Arr::get($shop->settings, 'gmail.connected_at');
+
         $googleAdsLastSyncInformation = '';
         if ($lastSync = Arr::get($shop->settings, 'google_ads.last_sync')) {
             $googleAdsLastSyncInformation = ' ' . __('Last sync: :at, uploaded :uploaded, removed :removed.', [
@@ -879,6 +883,40 @@ class EditShop extends OrgAction
                             'label'       => __('Campaign Name Prefix'),
                             'placeholder' => __('Only when the ad account also advertises another shop'),
                             'value'       => Arr::get($shop->settings, 'meta_ads.campaign_name_prefix', ''),
+                        ],
+                    ],
+                ],
+                [
+                    'label'       => __('Customer mailbox'),
+                    'icon'        => 'fa-light fa-envelope',
+                    'information' => $isMailboxConnected
+                        ? __('Connected to :email.', ['email' => $mailboxEmail]) . ($mailboxConnectedAt ? ' '.__('Since :date.', ['date' => $mailboxConnectedAt]) : '')
+                        : __('Connect a Google mailbox to send and receive customer emails from Aiku.'),
+                    'fields'      => [
+                        'mailbox__connect' => [
+                            'type'        => 'action',
+                            'label'       => __('Google mailbox'),
+                            'information' => $isMailboxConnected ? __('Connected.') : __('Not connected yet.'),
+                            'action'      => $isMailboxConnected ? [
+                                'type'   => 'button',
+                                'style'  => 'negative',
+                                'icon'   => ['fal', 'fa-envelope'],
+                                'label'  => __('Disconnect'),
+                                'route'  => [
+                                    'name'       => 'grp.org.shops.show.settings.mailbox.disconnect',
+                                    'parameters' => [$shop->organisation->slug, $shop->slug],
+                                    'method'     => 'post',
+                                ],
+                            ] : [
+                                'type'  => 'button',
+                                'style' => 'save',
+                                'icon'  => ['fal', 'fa-envelope'],
+                                'label' => __('Connect Google mailbox'),
+                                'route' => [
+                                    'name'       => 'grp.org.shops.show.settings.mailbox.connect',
+                                    'parameters' => [$shop->organisation->slug, $shop->slug],
+                                ],
+                            ],
                         ],
                     ],
                 ],

@@ -11,9 +11,11 @@ namespace App\Actions\Chat\ChatSession;
 use App\Actions\Comms\ChatEmailRecipient\StoreChatEmailRecipient;
 use App\Actions\Comms\Email\SendChatNotificationToCustomer;
 use App\Actions\Comms\Email\SendChatNotificationToExternal;
+use App\Actions\Comms\Mailbox\SendChatMessageByGmail;
 use App\Actions\Helpers\Media\StoreMediaFromFile;
 use App\Enums\CRM\Livechat\ChatActorTypeEnum;
 use App\Enums\CRM\Livechat\ChatAssignmentStatusEnum;
+use App\Enums\CRM\Livechat\ChatChannelEnum;
 use App\Enums\CRM\Livechat\ChatMessageTypeEnum;
 use App\Enums\CRM\Livechat\ChatSenderTypeEnum;
 use App\Events\BroadcastChatListEvent;
@@ -91,6 +93,10 @@ class SendChatMessage
         TranslateChatMessage::dispatch(messageId: $chatMessage->id);
         BroadcastRealtimeChat::dispatch($chatMessage);
         BroadcastChatListEvent::dispatch($chatMessage);
+
+        if ($chatSession->channel === ChatChannelEnum::EMAIL && $modelData['sender_type'] === ChatSenderTypeEnum::AGENT->value) {
+            SendChatMessageByGmail::dispatch($chatMessage);
+        }
 
         $shouldNotifyByEmail = $modelData['is_email_notif'] ?? false;
 

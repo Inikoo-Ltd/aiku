@@ -223,6 +223,6 @@ test('the GPSR texts can be edited on the product and on the master product', fu
         'value' => 'Keep away from children',
     ])
         ->and($productFields)->toHaveKey('gpsr_manual')
-        ->and($masterFields['gpsr_warnings'])->toMatchArray(['type' => 'input', 'value' => 'Keep away from children'])
+        ->and($masterFields['gpsr_warnings'])->toMatchArray(['type' => 'textarea', 'value' => 'Keep away from children'])
         ->and($masterFields)->toHaveKey('gpsr_manual');
 });
