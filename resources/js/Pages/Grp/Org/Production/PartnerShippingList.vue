@@ -18,12 +18,13 @@ import { trans } from "laravel-vue-i18n"
 import { PageHeadingTypes } from "@/types/PageHeading"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faUserHardHat, faPencil, faFilePdf, faPrint } from "@fal"
+import { faUserHardHat, faPencil, faFilePdf, faPrint, faHashtag } from "@fal"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
+import CopyButton from "@/Components/Utils/CopyButton.vue"
 
-library.add(faUserHardHat, faPencil, faFilePdf, faPrint)
+library.add(faUserHardHat, faPencil, faFilePdf, faPrint, faHashtag)
 
-type PublishedLabel = { id: number, name: string, pdf_url: string }
+type PublishedLabel = { id: number, name: string, batch_code: string | null, pdf_url: string }
 
 const PRINT_FRAME_LIFETIME_MS = 60000
 
@@ -102,7 +103,7 @@ function createJobOrders(ids: number[] = Object.keys(selected).map(Number), empl
     )
 }
 
-type BoardItem = { id: number, batch_size?: number | null, packed_in?: number | null, order_quantum?: number | null, is_hitchhiker?: boolean, stock_code: string, stock_name: string, state: string, quantity: number, quantity_to_produce: number | null, maker: string | null, maker_id: number | null, preparing_at: string | null, kind?: "item" | "mix", artefact_id?: number, job_order_id?: number | null, job_order_state?: string | null, job_order_reference?: string | null, job_order_artisan?: string | null, stock_available?: number | null, buyer_code?: string | null, published_labels?: { id: number, name: string, pdf_url: string }[] }
+type BoardItem = { id: number, batch_size?: number | null, packed_in?: number | null, order_quantum?: number | null, is_hitchhiker?: boolean, stock_code: string, stock_name: string, state: string, quantity: number, quantity_to_produce: number | null, maker: string | null, maker_id: number | null, preparing_at: string | null, kind?: "item" | "mix", artefact_id?: number, job_order_id?: number | null, job_order_state?: string | null, job_order_reference?: string | null, job_order_artisan?: string | null, stock_available?: number | null, buyer_code?: string | null, published_labels?: PublishedLabel[], batch_code?: string | null }
 
 function isReassignable(item: BoardItem): boolean {
     return !!item.job_order_id && ["in_process", "submitted"].includes(item.job_order_state ?? "")
@@ -675,7 +676,17 @@ function jobOrderHref(item: { job_order_slug: string }) {
                         <span v-if="Number(item.stock_available) >= Number(item.quantity)" class="text-emerald-600">{{ trans("In stock") }}: {{ useLocaleStore().number(Number(item.stock_available)) }}</span>
                         <span v-else>{{ trans("In stock") }}: {{ useLocaleStore().number(Number(item.stock_available ?? 0)) }}</span>
                     </div>
-                    <div v-if="laneIndex === LANE_PREPARING && item.published_labels?.length" class="mt-1 flex flex-col gap-1">
+                    <div
+                        v-if="laneIndex === LANE_PREPARING && item.batch_code"
+                        class="mt-1 flex max-w-full items-center gap-1 text-gray-500"
+                        :title="trans('Batch code for this run')"
+                        @click.stop
+                        @mousedown.stop>
+                        <FontAwesomeIcon icon="fal fa-hashtag" class="text-gray-400" fixed-width />
+                        <span class="truncate font-medium tabular-nums">{{ item.batch_code }}</span>
+                        <CopyButton :text="item.batch_code" />
+                    </div>
+                    <div v-if="laneIndex <= LANE_PREPARING && item.published_labels?.length" class="mt-1 flex flex-col gap-1">
                         <div v-for="label in item.published_labels" :key="label.id" class="flex max-w-full items-center gap-1">
                             <a
                                 :href="label.pdf_url"

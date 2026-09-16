@@ -14,6 +14,7 @@ use App\Actions\Production\PartnerShippingList\GetMixesToPrepare;
 use App\Actions\Production\PartnerShippingList\GetMixJobOrders;
 use App\Actions\Production\Production\UI\ShowProduction;
 use App\Enums\HumanResources\Employee\EmployeeStateEnum;
+use App\Actions\Production\Artefact\UI\GetArtefactLabels;
 use App\Enums\Production\Artefact\ArtefactLabelStateEnum;
 use App\Enums\Production\JobOrder\JobOrderStateEnum;
 use App\Models\HumanResources\Employee;
@@ -163,6 +164,7 @@ class IndexPartnerShippingList extends OrgAction
                 'partner_shopping_list_items.notes',
                 'partner_shopping_list_items.created_at',
                 'artefacts.id as artefact_id',
+                'artefacts.code as artefact_code',
                 'artefacts.recommended_batch_size as batch_size',
                 'org_stocks.packed_in',
                 'org_stocks.quantity_available as stock_available',
@@ -355,11 +357,20 @@ class IndexPartnerShippingList extends OrgAction
 
         $this->hitchhikerCount = $byLane->get('hitchhiking', collect())->count();
 
-        $preparingItems  = $byLane->get('preparing', collect());
-        $publishedLabels = $this->getPublishedLabelsByArtefact($preparingItems->pluck('artefact_id')->filter()->unique()->values()->all());
+        $preparingItems = $byLane->get('preparing', collect());
+        $backlogItems   = $byLane->get('backlog', collect());
+
+        $publishedLabels = $this->getPublishedLabelsByArtefact(
+            $preparingItems->concat($backlogItems)->pluck('artefact_id')->filter()->unique()->values()->all()
+        );
+
+        $backlogItems->each(function ($item) use ($publishedLabels) {
+            $item->published_labels = $publishedLabels->get($item->artefact_id, collect())->values()->all();
+        });
 
         $preparingItems->each(function ($item) use ($publishedLabels) {
             $item->published_labels = $publishedLabels->get($item->artefact_id, collect())->values()->all();
+            $item->batch_code       = $this->getBatchCode($item);
         });
 
         return collect($lanes)
@@ -370,7 +381,7 @@ class IndexPartnerShippingList extends OrgAction
 
     /**
      * @param  array<int, int>  $artefactIds
-     * @return Collection<int, Collection<int, array{id: int, artefact_id: int, name: string, pdf_url: string}>>
+     * @return Collection<int, Collection<int, array{id: int, artefact_id: int, name: string, batch_code: string|null, pdf_url: string}>>
      */
     public function getPublishedLabelsByArtefact(array $artefactIds): Collection
     {
@@ -382,14 +393,44 @@ class IndexPartnerShippingList extends OrgAction
             ->whereIn('artefact_id', $artefactIds)
             ->where('state', ArtefactLabelStateEnum::PUBLISHED)
             ->orderBy('name')
-            ->get(['id', 'artefact_id', 'name'])
+            ->get(['id', 'artefact_id', 'name', 'layout'])
             ->map(fn (ArtefactLabel $label) => [
                 'id'          => $label->id,
                 'artefact_id' => $label->artefact_id,
                 'name'        => $label->name,
+                'batch_code'  => $this->getPrintedBatchCode($label),
                 'pdf_url'     => route('grp.models.artefact.labels.pdf', ['artefact' => $label->artefact_id, 'label' => $label->id]),
             ])
             ->groupBy('artefact_id');
+    }
+
+    /**
+     * The batch code the artisan should mark the run with. A published label that prints one wins,
+     * because the board must never contradict the sheet coming out of the printer; when no label
+     * carries one, the stand in the label editor would have offered is shown instead.
+     */
+    private function getBatchCode(object $item): ?string
+    {
+        $printed = collect($item->published_labels)->pluck('batch_code')->filter()->first();
+
+        if ($printed) {
+            return $printed;
+        }
+
+        return $item->artefact_code
+            ? GetArtefactLabels::make()->getPlaceholderBatchCodeFor($item->artefact_code)
+            : null;
+    }
+
+    private function getPrintedBatchCode(ArtefactLabel $label): ?string
+    {
+        foreach (Arr::get($label->layout, 'fields', []) ?? [] as $field) {
+            if (Arr::get($field, 'source') === 'batch_code' && trim((string) Arr::get($field, 'text', '')) !== '') {
+                return trim(Arr::get($field, 'text'));
+            }
+        }
+
+        return null;
     }
 
     /** @return array<int, array{id: int, name: string, open_job_orders: int, hidden: bool}> */
