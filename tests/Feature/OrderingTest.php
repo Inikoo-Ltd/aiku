@@ -78,6 +78,7 @@ use App\Actions\Ordering\Purge\StorePurge;
 use App\Actions\Ordering\Purge\UpdatePurge;
 use App\Actions\Ordering\PurgedOrder\UpdatePurgedOrder;
 use App\Actions\Ordering\Transaction\DeleteTransaction;
+use App\Actions\Ordering\Transaction\UpdateTransactionChargeAmount;
 use App\Actions\Ordering\Order\GenerateInvoiceFromOrder;
 use App\Actions\Iris\Basket\StoreEcomBasketTransaction;
 use App\Actions\Ordering\Transaction\StoreTransaction;
@@ -541,6 +542,13 @@ test('small order charge configured through the UI applies to an order', functio
 
     expect($chargeTransactions()->count())->toBe(1)
         ->and((int) $chargeTransactions()->first()->net_amount)->toBe(255);
+
+    UpdateTransactionChargeAmount::make()->handle($chargeTransactions()->first(), ['amount' => 0]);
+    $order->goods_amount = 1000;
+    CalculateOrderHangingCharges::run($order);
+
+    expect((float) $chargeTransactions()->first()->net_amount)->toBe(0.0)
+        ->and((int) $chargeTransactions()->first()->gross_amount)->toBe(255);
 
     $order->goods_amount = 3000;
     CalculateOrderHangingCharges::run($order);

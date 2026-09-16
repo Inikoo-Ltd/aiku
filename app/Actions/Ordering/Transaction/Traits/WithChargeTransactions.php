@@ -41,14 +41,19 @@ trait WithChargeTransactions
      */
     private function updateChargeTransaction(Transaction $transaction, Charge $charge, $chargeAmount): Transaction
     {
+        $grossAmount    = (float) ($chargeAmount ?? 0);
+        $staffSetFactor = data_get($transaction->offers_data, 'o.t') === 'percentage_off'
+            ? (float) data_get($transaction->offers_data, 'o.pf', 1)
+            : 1.0;
+
         return UpdateTransaction::run(
             $transaction,
             [
                 'model_id'          => $charge->id,
                 'asset_id'          => $charge->asset_id,
                 'historic_asset_id' => $charge->historicAsset->id,
-                'gross_amount'      => $chargeAmount ?? 0,
-                'net_amount'        => $chargeAmount ?? 0,
+                'gross_amount'      => $grossAmount,
+                'net_amount'        => round($grossAmount - discountAmountOffGross($grossAmount, $staffSetFactor), 2),
             ],
             false
         );
