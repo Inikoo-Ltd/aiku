@@ -781,7 +781,7 @@ class EditProduct extends OrgAction
 
         if (!$englishText) {
             return [
-                'type'  => 'input',
+                'type'  => 'textarea',
                 'label' => $label,
                 'value' => $product->$field,
             ];
@@ -795,6 +795,7 @@ class EditProduct extends OrgAction
             'main'          => $englishText,
             'languages'     => $languages,
             'mode'          => 'single',
+            'textarea'      => true,
             'value'         => $product->$field,
             'reviewed'      => $product->{'is_'.$field.'_reviewed'},
         ];

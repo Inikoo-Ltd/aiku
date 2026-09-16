@@ -14,7 +14,7 @@ import Dialog from "primevue/dialog"
 import InputText from "primevue/inputtext"
 import Tag from "@/Components/Tag.vue"
 import { capitalize } from "lodash-es"
-import { resolveImageDropAction } from "@/Composables/useImageDropAction"
+import { resolveImageDropAction, type DraggedImage } from "@/Composables/useImageDropAction"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 // Types
 import { Image as ImageTS } from "@/types/Image"
@@ -26,7 +26,7 @@ const props = defineProps<{
         editable?: boolean
         video_editable?: boolean
         id: {}
-        images: {}
+        images: any[]
         bucket_images?: boolean
         images_update_route: routeType
         upload_images_route: routeType
@@ -52,7 +52,8 @@ const props = defineProps<{
 // State
 const editable = ref(props?.data?.editable ?? true)
 const video_editable = ref(props?.data?.video_editable ?? true)
-const selectedDragImage = ref<ImageTS | null>(null)
+const selectedDragImage = ref<DraggedImage | null>(null)
+const selectedImageToPlace = ref<DraggedImage | null>(null)
 const loadingSubmit = ref<null | number | string>(null)
 const isModalEditVideo = ref(false)
 const selectedVideoToUpdate = ref<any>(null)
@@ -167,7 +168,7 @@ function onDropImage(event: DragEvent, categoryBox: any) {
         return;
     }
 
-    const dropAction = resolveImageDropAction(event.dataTransfer);
+    const dropAction = resolveImageDropAction(event.dataTransfer, selectedDragImage.value);
 
     if (dropAction.type !== "attach") {
         if (dropAction.type === "upload") {
@@ -178,45 +179,77 @@ function onDropImage(event: DragEvent, categoryBox: any) {
         return;
     }
 
-    const dataRowImage = dropAction.image;
+    attachImageToCategory(dropAction.image, categoryBox);
 
+    activeCategory.value = null;
+}
+
+function attachImageToCategory(dataRowImage: any, categoryBox: any) {
     let payload: Record<string, any> = {
         [categoryBox.column_in_db]: dataRowImage.id
     };
 
     // Case 1: No sub_scope → clear old category if dragging from another
-    if (!dataRowImage.sub_scope && selectedDragImage.value?.id === dataRowImage.id) {
-        if (selectedDragImage.value?.column_in_db) {
-            payload[selectedDragImage.value.column_in_db] = null;
-        }
+    if (!dataRowImage.sub_scope && dataRowImage.column_in_db) {
+        payload[dataRowImage.column_in_db] = null;
     }
 
     // Case 2: Has sub_scope → clear category from found item
     if (dataRowImage.sub_scope) {
         const foundItem = props.data.images_category_box.find(item => item.id === dataRowImage.id);
-        console.log("foundItem", foundItem);
 
         if (foundItem?.column_in_db) {
             payload[foundItem.column_in_db] = null;
         }
     }
 
-    console.log("payload", payload);
+    selectedImageToPlace.value = null;
     onSubmitImage(payload, categoryBox);
+}
 
-    activeCategory.value = null;
+/**
+ * Touch devices never fire drag events, so an image can also be picked in the
+ * list and then placed by tapping the media box it belongs to.
+ */
+function onToggleImageToPlace(item: any) {
+    if (!editable.value) {
+        return;
+    }
+
+    selectedImageToPlace.value = selectedImageToPlace.value?.id === item.id ? null : item;
+}
+
+function onPlaceSelectedImage(categoryBox: any) {
+    if (!selectedImageToPlace.value || categoryBox.type !== "image") {
+        return;
+    }
+
+    if (!editable.value || loadingSubmit.value === categoryBox.column_in_db) {
+        return;
+    }
+
+    attachImageToCategory(selectedImageToPlace.value, categoryBox);
 }
 
 
 function onStartDrag(event: DragEvent, img: any, fromCategory?: any) {
-    console.log("onStartDrag", img, fromCategory)
     selectedDragImage.value = { ...img, fromCategory }
-    event.dataTransfer?.setData("application/json", JSON.stringify(img))
-        ; (event.target as HTMLElement).classList.add("dragging")
+
+    const payload = JSON.stringify(img)
+    event.dataTransfer?.setData("application/json", payload)
+    event.dataTransfer?.setData("text/plain", payload)
+
+    const dragSource = event.currentTarget as HTMLElement
+    requestAnimationFrame(() => {
+        if (selectedDragImage.value) {
+            dragSource.classList.add("dragging")
+        }
+    })
 }
 
 function onEndDrag(event: DragEvent) {
-    ; (event.target as HTMLElement).classList.remove("dragging")
+    ; (event.currentTarget as HTMLElement).classList.remove("dragging")
+    selectedDragImage.value = null
     activeCategory.value = null
 }
 
@@ -394,8 +427,9 @@ function onDeleteFilesInList(categoryBox: any) {
                     class="relative flex flex-col overflow-hidden rounded-xl border bg-gray-50 transition duration-300 ease-in-out"
                     :class="{
                         'border-blue-500 ring-2 ring-blue-300 bg-blue-50 shadow-md': activeCategory === categoryBox.column_in_db,
-                        ' cursor-not-allowed': !editable
-                    }" v-bind="editable && categoryBox.type === 'image'
+                        ' cursor-not-allowed': !editable,
+                        'border-dashed border-blue-400 cursor-pointer': selectedImageToPlace && categoryBox.type === 'image'
+                    }" @click="onPlaceSelectedImage(categoryBox)" v-bind="editable && categoryBox.type === 'image'
                         ? {
                             onDragover: (e) => e.preventDefault(),
                             onDragenter: (e) => {
@@ -425,10 +459,10 @@ function onDeleteFilesInList(categoryBox: any) {
                                     @change="uploadAudioFile($event)" />
                             </label>
                             <FontAwesomeIcon v-if="categoryBox.type == 'audio' && categoryBox.audio && editable"
-                                :icon="faUnlink" @click="() => onDeleteFilesInList(categoryBox)" class="text-xs"
+                                :icon="faUnlink" @click.stop="() => onDeleteFilesInList(categoryBox)" class="text-xs"
                                 :class="loadingSubmit !== null ? 'text-gray-300 pointer-events-none' : 'text-red-600 cursor-pointer'" v-tooltip="trans('Delete audio')" />
                             <FontAwesomeIcon v-if="(categoryBox.images || categoryBox.url) && editable" :icon="faUnlink"
-                                @click="() => onDeletefilesInBox(categoryBox)" class="text-xs"
+                                @click.stop="() => onDeletefilesInBox(categoryBox)" class="text-xs"
                                 :class="loadingSubmit !== null ? 'text-gray-300 pointer-events-none' : 'text-red-600 cursor-pointer'" v-tooltip="trans('Delete image')" />
                         </div>
                     </div>
@@ -515,6 +549,13 @@ function onDeleteFilesInList(categoryBox: any) {
                 </div>
             </div>
 
+            <div v-if="editable" class="mb-2 rounded px-2 py-1 text-[11px]"
+                :class="selectedImageToPlace ? 'bg-blue-50 text-blue-700' : 'text-gray-400'">
+                {{ selectedImageToPlace
+                    ? trans("Now pick the media box for this image, or click it again to cancel")
+                    : trans("Drag an image to a media box, or click it to place it without dragging") }}
+            </div>
+
             <!-- Drop Zone -->
             <div class="relative flex-1 overflow-y-auto rounded-lg  transition scrollbar-thin scrollbar-thumb-gray-300 hover:scrollbar-thumb-gray-400"
                 :class="isDragOver ? 'border-blue-400 bg-blue-50 shadow-md' : 'border-gray-200'"
@@ -542,7 +583,10 @@ function onDeleteFilesInList(categoryBox: any) {
 
                     <!-- if has gambar -->
                     <article v-else v-for="item in props.data.images" :key="item.id" class="group flex items-center justify-between gap-3 p-1 bg-white mb-1 border
-              hover:shadow-md hover:border-blue-400 transition" :draggable="editable"
+              hover:shadow-md hover:border-blue-400 transition" :draggable="editable" :class="{
+                            'border-blue-500 ring-2 ring-blue-300 bg-blue-50': selectedImageToPlace?.id === item?.id,
+                            'cursor-pointer': editable
+                        }" @click="onToggleImageToPlace(item)"
                         @dragstart="(e) => editable ? onStartDrag(e, item) : null"
                         @dragend="(e)=> editable ? onEndDrag(e) : null">
                         <!-- Image + Info -->
@@ -577,7 +621,7 @@ function onDeleteFilesInList(categoryBox: any) {
                                         <span v-else class="not-italic">- {{ trans('not set') }}</span>
                                     </span>                                    
                                     <button v-if="data?.update_image_alt_route" type="button"
-                                        @click="openEditAlt(item)"
+                                        @click.stop="openEditAlt(item)"
                                         class="text-gray-400 hover:text-blue-600 transition"
                                         v-tooltip="trans('Edit alt text')">
                                         <FontAwesomeIcon :icon="faPencil" class="text-[10px]" />
@@ -600,7 +644,7 @@ function onDeleteFilesInList(categoryBox: any) {
                         </div>
 
                         <!-- Delete -->
-                        <button v-if="editable" @click="onDeleteFilesInList(item)" :disabled="loadingSubmit !== null" class="ml-2 flex-shrink-0 rounded-full p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 transition disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent" v-tooltip="trans('Delete')">
+                        <button v-if="editable" @click.stop="onDeleteFilesInList(item)" :disabled="loadingSubmit !== null" class="ml-2 flex-shrink-0 rounded-full p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 transition disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent" v-tooltip="trans('Delete')">
                             <FontAwesomeIcon icon="fal fa-trash-alt" class="text-sm text-red-400" />
                         </button>
                     </article>
@@ -679,5 +723,11 @@ function onDeleteFilesInList(categoryBox: any) {
 .dragging {
     opacity: 0.6;
     transform: scale(0.96);
+}
+
+/* Keep the draggable row as the drag source instead of the image inside it */
+article :deep(img),
+[draggable="true"] :deep(img) {
+    -webkit-user-drag: none;
 }
 </style>

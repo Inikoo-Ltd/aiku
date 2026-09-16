@@ -452,7 +452,7 @@ onMounted(async () => {
                             <span :class="product.stock > 0 ? 'text-gray-700' : 'text-red-600'">
                                 {{
                                     product.stock > 0
-                                        ? `${trans("In stock")} (${customerData?.stock})`
+                                        ? `${trans("In stock")}`
                                         : trans("Out Of Stock")
                                 }}
                             </span>
@@ -701,7 +701,7 @@ onMounted(async () => {
                         <span :class="product.stock > 0 ? 'text-gray-700' : 'text-red-600'">
                             {{
                                 product.stock > 0
-                                    ? `${trans('In stock')} (${customerData?.stock})`
+                                    ? `${trans('In stock')}`
                                     : trans('Out Of Stock')
                             }}
                         </span>
