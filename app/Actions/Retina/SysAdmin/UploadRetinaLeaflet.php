@@ -16,6 +16,7 @@ use App\Models\Billables\Leaflet;
 use App\Models\Billables\ModelHasLeaflet;
 use App\Models\Billables\Packaging;
 use App\Models\CRM\Customer;
+use App\Rules\PdfPageSize;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Arr;
@@ -112,7 +113,7 @@ class UploadRetinaLeaflet extends RetinaAction
                     ->where('shop_id', $this->shop->id)
                     ->where('state', PackagingStateEnum::ACTIVE->value),
             ],
-            'file'        => ['required', 'file', 'mimes:pdf', 'max:20480'],
+            'file'        => ['required', 'file', 'mimes:pdf', 'max:20480', new PdfPageSize(105, 148, 'A6')],
             'active'      => ['sometimes', 'boolean'],
         ];
     }

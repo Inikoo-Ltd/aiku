@@ -567,6 +567,7 @@ const saveSettings = () => {
                                 </span>
                                 <input type="file" accept="application/pdf,.pdf" class="hidden" @change="onUploadFileSelected" />
                             </label>
+                            <p class="mt-1 text-xs text-gray-500">{{ trans("Inserts are printed at A6, 105 × 148 mm.") }}</p>
                         </div>
                     </div>
                     <div class="mt-3 flex justify-end gap-2">
@@ -658,6 +659,7 @@ const saveSettings = () => {
                                                         </span>
                                                         <input type="file" accept="application/pdf,.pdf" class="hidden" @change="onEditFileSelected" />
                                                     </label>
+                                                    <p class="mt-1 text-xs text-gray-500">{{ trans("Inserts are printed at A6, 105 × 148 mm.") }}</p>
                                                 </div>
                                             </div>
                                             <div class="mt-3 flex justify-end gap-2">
