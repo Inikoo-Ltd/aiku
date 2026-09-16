@@ -267,6 +267,7 @@ const canDragTicket = (ticket: { assignee_id: number | null }) =>
 	props.can_assign || (props.can_manage && myUserId.value !== null && ticket.assignee_id === myUserId.value)
 
 const engineerMoves: Record<string, string[]> = {
+	open: ["assigned", "in_progress", "closed"],
 	assigned: ["in_progress", "closed"],
 	in_progress: ["waiting", "closed"],
 	waiting: ["in_progress", "closed"],

@@ -18,7 +18,7 @@ export const useTicketStatusActions = () => {
     const reopen: TicketStatusAction = { status: "open", label: trans("Reopen"), icon: "fal fa-undo", class: "text-gray-600" }
 
     const statusActions: Record<string, TicketStatusAction[]> = {
-        open: [],
+        open: [start, done, cancel],
         assigned: [start, done, cancel],
         in_progress: [
             askReporter,
@@ -34,11 +34,17 @@ export const useTicketStatusActions = () => {
     }
 
     const assigneeStatusActions: Record<string, TicketStatusAction[]> = {
+        open: [start, done, cancel],
         assigned: [start, done, cancel],
         in_progress: [askReporter, done, cancel],
         waiting: [resume, done, cancel],
         answered: [resume, done, cancel],
     }
 
-    return { start, done, cancel, statusActions, assigneeStatusActions }
+    const actionsFor = (
+        actions: Record<string, TicketStatusAction[]>,
+        ticket: { status: string; assignee_id: number | null }
+    ): TicketStatusAction[] => (ticket.status === "open" && !ticket.assignee_id ? [] : (actions[ticket.status] ?? []))
+
+    return { start, done, cancel, statusActions, assigneeStatusActions, actionsFor }
 }

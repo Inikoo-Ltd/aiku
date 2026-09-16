@@ -54,7 +54,8 @@ class GetRetinaLayout
             'customer'  => CustomersResource::make($webUser->customer)->getArray(),
             'app_theme' => Arr::get($website->published_layout, 'theme.color', []),
 
-            'ticket_badges' => $website->type->value === 'dropshipping' ? GetRetinaTicketBadgeData::run($webUser) : null,
+            // ponytail: customer support badge is local only until the customer Support section launches; drop the environment guard here and in GetRetinaDropshippingNavigation and NotifyTicketUsers::notifyCustomer
+            'ticket_badges' => $website->type->value === 'dropshipping' && app()->environment(['local', 'testing']) ? GetRetinaTicketBadgeData::run($webUser) : null,
 
             'navigation' => $isPreRegistration ? null : match ($request->input('website')->type->value) {
                 'fulfilment' => GetRetinaFulfilmentNavigation::run($webUser),

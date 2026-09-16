@@ -145,7 +145,7 @@ class ShowTicket extends OrgAction
                     'icon'  => ['fal', 'fa-life-ring'],
                     'wrapped_actions' => Ticket::canBeAssignedBy(request()->user()) ? [['type' => 'button', 'key' => 'delete']] : [],
                 ],
-                'comments'    => TicketCommentResource::collection($ticket->commentsVisibleTo(request()->user())->with('author')->orderByDesc('id')->get())->toArray(request()),
+                'comments'    => TicketCommentResource::collection($ticket->commentsVisibleTo(request()->user())->with('author', 'ticket')->orderByDesc('id')->get())->toArray(request()),
                 'timeline'    => $this->timeline($ticket),
                 'can_rate'    => RateTicket::canRate($ticket, request()->user()),
                 'comments_newest_first' => (bool) data_get(request()->user()->settings, 'ticket_comments_newest_first', true),

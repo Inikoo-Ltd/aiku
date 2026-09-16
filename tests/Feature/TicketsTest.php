@@ -2062,3 +2062,65 @@ test('customers hear about progress on their tickets, never about internal notes
     $this->actingAs($this->webUser, 'retina')->get('http://'.$this->website->domain.'/app/dropshipping/support/'.$ticket->reference)->assertOk();
     expect(collect(GetRetinaTicketBadgeData::run($this->webUser->fresh())['recent'])->where('route', $ticketUrl)->where('read', false)->count())->toBe(0);
 });
+
+test('a ticket left in todo with an assignee can still be started and closed', function () {
+    $ticket = StoreTicket::make()->action($this->group, ['subject' => 'Reopened and stuck', 'assignee_id' => $this->user->id]);
+    $ticket->forceFill([
+        'status'      => TicketStatusEnum::OPEN->value,
+        'resolved_at' => now()->subDay(),
+        'closed_at'   => now()->subDay(),
+    ])->saveQuietly();
+
+    patch(route('grp.models.ticket.update', $ticket->id), ['status' => 'in_progress'])->assertRedirect()->assertSessionHasNoErrors();
+    expect($ticket->fresh()->status)->toBe(TicketStatusEnum::IN_PROGRESS)
+        ->and($ticket->fresh()->closed_at)->toBeNull()
+        ->and($ticket->fresh()->resolved_at)->toBeNull();
+
+    patch(route('grp.models.ticket.update', $ticket->id), ['status' => 'resolved', 'status_comment' => 'Done at last'])->assertRedirect()->assertSessionHasNoErrors();
+    expect($ticket->fresh()->status)->toBe(TicketStatusEnum::RESOLVED);
+
+    patch(route('grp.models.ticket.update', $ticket->id), ['status' => 'open'])->assertRedirect()->assertSessionHasNoErrors();
+    expect($ticket->fresh()->status)->toBe(TicketStatusEnum::ASSIGNED)
+        ->and($ticket->fresh()->assignee_id)->toBe($this->user->id);
+
+    UpdateTicket::make()->action($ticket->fresh(), ['assignee_id' => null]);
+    patch(route('grp.models.ticket.update', $ticket->id), ['status' => 'resolved', 'status_comment' => 'Nobody on it'])->assertRedirect()->assertSessionHasNoErrors();
+    patch(route('grp.models.ticket.update', $ticket->id), ['status' => 'open'])->assertRedirect()->assertSessionHasNoErrors();
+    expect($ticket->fresh()->status)->toBe(TicketStatusEnum::OPEN);
+});
+
+test('comments show who wrote them with their role, but never in the customer portal', function () {
+    setPermissionsTeamId($this->group->id);
+    $reporter = User::factory()->create(['group_id' => $this->group->id]);
+    $engineer = User::factory()->create(['group_id' => $this->group->id]);
+    $qa       = User::factory()->create(['group_id' => $this->group->id]);
+    $engineer->assignRole('help-desk-clerk');
+    $qa->assignRole('qa');
+
+    $ticket = StoreTicket::make()->action($this->group, [
+        'subject'       => 'Who said what',
+        'reporter_type' => 'User',
+        'reporter_id'   => $reporter->id,
+        'assignee_id'   => $engineer->id,
+    ]);
+    StoreTicketComment::make()->action($ticket, $reporter, ['body' => 'from the reporter']);
+    StoreTicketComment::make()->action($ticket, $engineer, ['body' => 'from the engineer']);
+    StoreTicketComment::make()->action($ticket, $qa, ['body' => 'from qa']);
+    StoreTicketComment::make()->action($ticket, $this->user, ['body' => 'from the lead']);
+
+    $roles = collect(get(route('grp.json.ticket.controls', $ticket->id))->assertOk()->json('comments'))->pluck('author_role', 'body');
+    expect($roles['from the reporter'])->toBe('Reporter')
+        ->and($roles['from the engineer'])->toBe('Engineer')
+        ->and($roles['from qa'])->toBe('QA')
+        ->and($roles['from the lead'])->toBe('Lead engineer')
+        ->and(collect(get(route('grp.json.ticket.controls', $ticket->id))->json('comments'))->every(fn ($comment) => array_key_exists('author_avatar', $comment)))->toBeTrue();
+
+    $customerTicket = StoreRetinaTicket::make()->action($this->webUser, ['subject' => 'Customer thread']);
+    StoreTicketComment::make()->action($customerTicket, $this->user, ['body' => 'we are on it']);
+
+    $customerComments = $this->actingAs($this->webUser, 'retina')
+        ->get('http://'.$this->website->domain.'/app/dropshipping/support/'.$customerTicket->reference)
+        ->assertOk()
+        ->viewData('page')['props']['comments'];
+    expect(collect($customerComments)->pluck('author_role')->filter()->all())->toBe([]);
+});

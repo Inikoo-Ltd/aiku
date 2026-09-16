@@ -24,7 +24,7 @@ library.add(faPencil, faTrashAlt, faUser)
 
 const props = withDefaults(defineProps<{
     ticket: { subject: string; description: string | null; reporter: string | null; reporter_avatar?: Record<string, string> | null; is_from_slack?: boolean; reference_url?: string | null; created_at: string; images?: Record<string, string>[] }
-    comments: { id: number; body: string; is_internal: boolean; is_lead_only?: boolean; can_toggle_visibility?: boolean; is_staff: boolean; author: string | null; created_at: string; images?: Record<string, string>[]; attachments?: { name: string; url: string }[]; can_edit?: boolean; can_delete?: boolean }[]
+    comments: { id: number; body: string; is_internal: boolean; is_lead_only?: boolean; author_avatar?: Record<string, string> | null; author_role?: string | null; can_toggle_visibility?: boolean; is_staff: boolean; author: string | null; created_at: string; images?: Record<string, string>[]; attachments?: { name: string; url: string }[]; can_edit?: boolean; can_delete?: boolean }[]
     commentRoute: { name: string; parameters: Record<string, unknown> }
     mentionable?: { username: string; name: string | null; suggested?: boolean; is_customer?: boolean }[]
     commentsNewestFirst?: boolean
@@ -119,7 +119,12 @@ const submit = () => {
                 :class="comment.is_lead_only ? 'bg-rose-50 border-rose-200' : comment.is_internal ? 'bg-amber-50 border-amber-200' : comment.is_staff ?'bg-gray-50 border-gray-200' : 'bg-blue-50 border-blue-200'"
             >
                 <div class="text-xs text-gray-500 mb-1 flex items-center gap-2">
-                    <span v-if="comment.author" class="font-medium text-gray-700">{{ comment.author }} ·</span>
+                    <span v-if="comment.author" class="flex items-center gap-1.5 font-medium text-gray-700">
+                        <TicketUserAvatar :name="comment.author" :avatar="comment.author_avatar" size="xs" />
+                        {{ comment.author }}
+                        <span v-if="comment.author_role" class="rounded bg-gray-200 px-1.5 py-0.5 text-[10px] font-medium text-gray-600">{{ comment.author_role }}</span>
+                        ·
+                    </span>
                     <span v-else class="flex items-center gap-2"><img class="h-4 select-none" src="/art/invader.svg" alt="aiku" /> ·</span>
                     {{ useFormatTime(comment.created_at, { formatTime: "hm" }) }}
                     <span v-if="comment.is_internal" class="px-1.5 py-0.5 rounded bg-amber-200 text-amber-900 text-[10px] font-medium">{{ trans("Internal") }}</span>

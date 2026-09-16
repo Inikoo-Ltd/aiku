@@ -23,6 +23,16 @@ const props = defineProps<{
     attachments?: TicketAttachment[]
 }>()
 
+const highlightMentions = (html: string) =>
+    html
+        .split(/(<[^>]*>)/)
+        .map((part) =>
+            part.startsWith("<")
+                ? part
+                : part.replace(/(^|[^\p{L}\p{N}._-])@([\p{L}\p{N}._-]{2,})/gu, '$1<span class="ticket-mention">@$2</span>')
+        )
+        .join("")
+
 const previewableFiles = computed(() => (props.attachments ?? []).filter(isPreviewableAttachment))
 
 const previewFileIndex = ref<number | null>(null)
@@ -31,7 +41,7 @@ const escapeHtml = (text: string) => text.replace(/&/g, "&amp;").replace(/</g, "
 
 const html = computed(() => {
     const rendered = marked.parse(escapeHtml(props.text ?? ""), { breaks: true, gfm: true, async: false }) as string
-    return rendered.replace(/<a /g, '<a target="_blank" rel="noopener" ')
+    return highlightMentions(rendered.replace(/<a /g, '<a target="_blank" rel="noopener" '))
 })
 
 const previewIndex = ref<number | null>(null)
@@ -149,6 +159,7 @@ onBeforeUnmount(() => window.removeEventListener("keydown", onKeydown))
 .ticket-body :deep(p) { margin: 0 0 0.75em; }
 .ticket-body :deep(p:last-child) { margin-bottom: 0; }
 .ticket-body :deep(a) { color: rgb(79 70 229); text-decoration: underline; word-break: break-all; }
+.ticket-body :deep(.ticket-mention) { background: rgb(219 234 254); color: rgb(29 78 216); border-radius: 0.25rem; padding: 0 0.25rem; font-weight: 500; white-space: nowrap; }
 .ticket-body :deep(ul) { list-style: disc; padding-left: 1.5em; margin: 0 0 0.75em; }
 .ticket-body :deep(ol) { list-style: decimal; padding-left: 1.5em; margin: 0 0 0.75em; }
 .ticket-body :deep(h1), .ticket-body :deep(h2), .ticket-body :deep(h3) { font-weight: 600; margin: 0.5em 0; }

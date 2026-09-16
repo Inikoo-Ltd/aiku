@@ -81,7 +81,7 @@ const statusBadgeClasses: Record<string, string> = {
     red: "bg-red-100 text-red-700",
 }
 
-const { statusActions } = useTicketStatusActions()
+const { statusActions, actionsFor } = useTicketStatusActions()
 
 const selectableKinds = computed(() => props.options.kinds.filter((kind) => kind.value !== "escalation"))
 const canChangeKind = computed(() => props.can_change_kind_module && props.ticket.kind !== "escalation")
@@ -306,7 +306,7 @@ const update = (field: string, value: unknown, action: string = field) => {
                         {{ useFormatTime(ticket.waiting_until, { formatTime: "hm" }) }}
                     </span>
                     <button
-                        v-for="action in can_update ? statusActions[ticket.status] : []"
+                        v-for="action in can_update ? actionsFor(statusActions, ticket) : []"
                         :key="action.status"
                         v-tooltip="action.label"
                         type="button"

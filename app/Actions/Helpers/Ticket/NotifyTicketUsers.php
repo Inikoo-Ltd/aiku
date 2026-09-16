@@ -132,6 +132,12 @@ class NotifyTicketUsers
      */
     private function notifyCustomer(Ticket $ticket, string $subject, array $lines, string $actionLabel): void
     {
+        // ponytail: customer-facing ticket notifications stay off in production until the team is ready to answer AD tickets in retina;
+        // drop this guard together with the app()->isLocal() guards in GetRetinaDropshippingNavigation and GetRetinaLayout to launch it
+        if (!app()->environment(['local', 'testing'])) {
+            return;
+        }
+
         if ($ticket->reporter_type !== 'WebUser' || !$ticket->customer_id) {
             return;
         }
