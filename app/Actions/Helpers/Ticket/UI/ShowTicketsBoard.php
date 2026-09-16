@@ -12,6 +12,7 @@ use App\Actions\Helpers\Ticket\GetTicketBadgeData;
 use App\Actions\OrgAction;
 use App\Enums\Helpers\Ticket\TicketStatusEnum;
 use App\Enums\Helpers\Ticket\TicketStatusGroupEnum;
+use App\Enums\Helpers\Ticket\TicketTypeEnum;
 use App\Http\Resources\Helpers\TicketResource;
 use App\Models\Helpers\Ticket;
 use App\Enums\HumanResources\Employee\EmployeeStateEnum;
@@ -51,11 +52,11 @@ class ShowTicketsBoard extends OrgAction
     /**
      * @param  array<string, string>  $periods
      */
-    public function handle(Group $group, array $periods = [], string $created = 'all'): array
+    public function handle(Group $group, array $periods = [], string $created = 'all', ?string $type = null): array
     {
         $periods = array_merge(self::DEFAULT_PERIODS, array_intersect_key($periods, self::DEFAULT_PERIODS));
 
-        $tickets = IndexTickets::make()->whereCreatedIn(Ticket::where('group_id', $group->id)->visibleTo(request()->user()), $created, 'created_at')
+        $tickets = IndexTickets::make()->whereCreatedIn(Ticket::where('group_id', $group->id)->visibleTo(request()->user())->when($type, fn ($query) => $query->where('type', $type)), $created, 'created_at')
             ->where(function ($query) use ($periods) {
                 foreach (self::COLUMNS as $key => $statuses) {
                     $query->orWhere(function ($columnQuery) use ($key, $statuses, $periods) {
@@ -97,7 +98,7 @@ class ShowTicketsBoard extends OrgAction
             ];
         })->values()->all();
 
-        return ['columns' => $columns, 'periods' => $periods, 'periodOptions' => self::PERIODS, 'created' => $created];
+        return ['columns' => $columns, 'periods' => $periods, 'periodOptions' => self::PERIODS, 'created' => $created, 'type' => $type];
     }
 
     private function since(string $period): ?\Illuminate\Support\Carbon
@@ -116,7 +117,9 @@ class ShowTicketsBoard extends OrgAction
 
         $periods = array_filter((array) $request->input('periods', []), fn ($period) => in_array($period, self::PERIODS, true));
 
-        return $this->handle($this->group, $periods, IndexTickets::make()->createdInterval());
+        $type = in_array($request->input('type'), array_column(TicketTypeEnum::cases(), 'value'), true) ? $request->input('type') : null;
+
+        return $this->handle($this->group, $periods, IndexTickets::make()->createdInterval(), $type);
     }
 
     public function htmlResponse(array $board): Response
@@ -147,6 +150,12 @@ class ShowTicketsBoard extends OrgAction
                 'periodOptions' => $board['periodOptions'],
                 'createdIntervals' => IndexTickets::make()->createdIntervalOptions(),
                 'createdInterval'  => $board['created'],
+                'typeFilter'  => $board['type'],
+                'typeOptions' => collect(TicketTypeEnum::cases())->map(fn (TicketTypeEnum $type) => [
+                    'label' => $type->prefix(),
+                    'value' => $type->value,
+                    'icon'  => $type->icon(),
+                ])->values(),
                 'updateRoute' => 'grp.models.ticket.update',
                 'me'          => request()->user()->username,
                 'formerAssignees' => $this->formerAssignees($board['columns']),

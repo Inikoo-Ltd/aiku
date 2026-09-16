@@ -224,6 +224,12 @@ watch(
 onMounted(() => {
   effectiveScreenType.value = detectScreenType();
 });
+
+const containerStyle = computed(() => ({
+  ...getStyles(layout?.app?.webpage_layout?.container?.properties, effectiveScreenType.value),
+  ...getStyles(props.fieldValue.container?.properties, effectiveScreenType.value),
+}))
+
 </script>
 
 <template>  
@@ -239,10 +245,7 @@ onMounted(() => {
     </div>
 
     <section v-else-if="data" class="banner-box relative mx-auto" :style="bannerBoxVars">
-      <div class="w-full h-full" :style="{
-        ...getStyles(layout?.app?.webpage_layout?.container?.properties, effectiveScreenType),
-        ...getStyles(fieldValue.container?.properties, effectiveScreenType),
-      }">
+      <div class="w-full h-full" :style="containerStyle">
 
         <div v-if="data?.compiled_layout?.type === 'landscape'" class="mx-auto w-full h-full"
           :class="bannerRatio !== '4/1' && 'max-w-full sm:max-w-2xl md:max-w-4xl lg:max-w-6xl xl:max-w-[1600px]'">

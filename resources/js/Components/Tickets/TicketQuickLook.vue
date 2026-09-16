@@ -17,10 +17,10 @@ import TicketThread from "@/Components/Tickets/TicketThread.vue"
 import { useModalFocusTrap } from "@/Composables/useModalFocusTrap"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faTimes, faSpinner, faChevronDown, faLink, faCheck, faLifeRing, faCode, faUserHeadset, faComment, faComments, faEnvelope } from "@fal"
+import { faTimes, faSpinner, faChevronDown, faLink, faCheck, faLifeRing, faToolbox, faUserHeadset, faComment, faComments, faEnvelope } from "@fal"
 import { faWhatsapp } from "@fortawesome/free-brands-svg-icons"
 
-library.add(faLifeRing, faCode, faUserHeadset, faTimes, faSpinner, faChevronDown, faLink, faCheck, faWhatsapp, faComment, faComments, faEnvelope)
+library.add(faLifeRing, faToolbox, faUserHeadset, faTimes, faSpinner, faChevronDown, faLink, faCheck, faWhatsapp, faComment, faComments, faEnvelope)
 
 const emit = defineEmits<{
     (e: "closed"): void

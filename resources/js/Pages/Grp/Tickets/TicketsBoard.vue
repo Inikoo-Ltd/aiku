@@ -14,7 +14,7 @@ import PageHeading from "@/Components/Headings/PageHeading.vue"
 import Icon from "@/Components/Icon.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faVial, faShieldCheck, faShield, faRocket, faSpinner, faLifeRing, faCode, faUserHeadset, faBug, faLightbulb, faTasks, faLevelUp, faBooks, faDatabase, faCube } from "@fal"
+import { faVial, faShieldCheck, faShield, faRocket, faSpinner, faLifeRing, faToolbox, faUserHeadset, faBug, faLightbulb, faTasks, faLevelUp, faBooks, faDatabase, faCube } from "@fal"
 import { useLiveTickets } from "@/Composables/useLiveTickets"
 import TicketsCreatedInterval from "@/Components/Tickets/TicketsCreatedInterval.vue"
 import TicketQuickLook from "@/Components/Tickets/TicketQuickLook.vue"
@@ -22,7 +22,7 @@ import TicketUserAvatar from "@/Components/Tickets/TicketUserAvatar.vue"
 import TicketAskReporterDialog from "@/Components/Tickets/TicketAskReporterDialog.vue"
 import TicketStatusNoteDialog from "@/Components/Tickets/TicketStatusNoteDialog.vue"
 
-library.add(faLifeRing, faCode, faUserHeadset, faVial, faShieldCheck, faShield, faRocket, faSpinner, faBug, faLightbulb, faTasks, faLevelUp, faBooks, faDatabase, faCube)
+library.add(faLifeRing, faToolbox, faUserHeadset, faVial, faShieldCheck, faShield, faRocket, faSpinner, faBug, faLightbulb, faTasks, faLevelUp, faBooks, faDatabase, faCube)
 
 const kindIcons: Record<string, string> = {
 	bug: "fal fa-bug",
@@ -59,6 +59,8 @@ const props = defineProps<{
 	assignees: { label: string; value: number; avatar: any; is_me: boolean }[]
 	createdIntervals: Record<string, string>
 	createdInterval: string
+	typeFilter?: string | null
+	typeOptions?: { label: string; value: string; icon: any }[]
 	updateRoute: string
 	can_manage: boolean
 	can_assign: boolean
@@ -276,6 +278,9 @@ const openQuickLook = (ticket: any, event: MouseEvent) => {
 	quickLook.value = ticket
 }
 
+const filterByType = (type: string | null) =>
+	router.reload({ data: { type: type ?? undefined }, preserveScroll: true })
+
 const myUserId = computed(() => (usePage().props.auth as { user?: { id: number } } | undefined)?.user?.id ?? null)
 
 const canDragTicket = (ticket: { assignee_id: number | null }) =>
@@ -413,6 +418,26 @@ const cancelAssign = () => {
 	<PageHeading :data="pageHead" />
 	<div class="p-4 overflow-x-auto">
 		<TicketsCreatedInterval :options="createdIntervals" :selected="createdInterval" class="mb-3" />
+		<div v-if="typeOptions?.length" class="mb-3 flex flex-wrap items-center gap-1 rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-sm">
+			<span class="mr-2 text-xs font-medium uppercase tracking-wide text-gray-400">{{ trans("Type") }}</span>
+			<button
+				type="button"
+				class="rounded-md px-3 py-1 transition duration-200"
+				:class="!typeFilter ? 'bg-indigo-600 text-white shadow-sm' : 'text-gray-600 hover:bg-gray-100'"
+				@click="filterByType(null)">
+				{{ trans("All") }}
+			</button>
+			<button
+				v-for="option in typeOptions"
+				:key="option.value"
+				type="button"
+				class="flex items-center gap-1.5 rounded-md px-3 py-1 transition duration-200"
+				:class="typeFilter === option.value ? 'bg-indigo-600 text-white shadow-sm' : 'text-gray-600 hover:bg-gray-100'"
+				@click="filterByType(option.value)">
+				<Icon v-if="option.icon" :data="option.icon" />
+				{{ option.label }}
+			</button>
+		</div>
 		<div
 			class="mb-3 flex flex-wrap items-center gap-x-6 gap-y-2 rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm">
 			<div

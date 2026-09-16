@@ -1696,7 +1696,8 @@ test('the assignee adds collaborators who can see the ticket, tag it and ask QA,
     patch($update, ['tags' => ['sneaky']])->assertForbidden();
 
     actingAs($assignee);
-    patch($collaborators, ['collaborator_ids' => [$helper->id, $qa->id, $outsider->id]])->assertSessionHasErrors('collaborator_ids.2');
+    patch($collaborators, ['collaborator_ids' => [$helper->id, $qa->id, $outsider->id]])->assertRedirect()->assertSessionHasNoErrors();
+    expect($ticket->collaborators()->pluck('users.id')->all())->not->toContain($outsider->id);
     patch($collaborators, ['collaborator_ids' => [$helper->id, $qa->id]])->assertRedirect()->assertSessionHasNoErrors();
 
     expect($ticket->collaborators()->pluck('users.id')->sort()->values()->all())->toBe(collect([$helper->id, $qa->id])->sort()->values()->all())
@@ -2131,6 +2132,9 @@ test('comments show who wrote them with their role, but never in the customer po
     StoreTicketComment::make()->action($ticket, $engineer, ['body' => 'from the engineer']);
     StoreTicketComment::make()->action($ticket, $qa, ['body' => 'from qa']);
     StoreTicketComment::make()->action($ticket, $this->user, ['body' => 'from the lead']);
+    $bot = User::factory()->create(['group_id' => $this->group->id, 'is_bot' => true]);
+    $bot->assignRole('help-desk-clerk');
+    StoreTicketComment::make()->action($ticket, $bot, ['body' => 'from the bot']);
 
     $roles = collect(get(route('grp.json.ticket.controls', $ticket->id))->assertOk()->json('comments'))
         ->mapWithKeys(fn (array $comment) => [$comment['body'] => collect($comment['author_roles'])->pluck('key')->all()]);
@@ -2138,6 +2142,7 @@ test('comments show who wrote them with their role, but never in the customer po
         ->and($roles['from the engineer'])->toBe(['engineer'])
         ->and($roles['from qa'])->toBe(['qa'])
         ->and($roles['from the lead'])->toBe(['lead_engineer'])
+        ->and($roles['from the bot'])->toBe(['bot'])
         ->and(collect(get(route('grp.json.ticket.controls', $ticket->id))->json('comments'))->every(fn ($comment) => array_key_exists('author_avatar', $comment)))->toBeTrue();
 
     $customerTicket = StoreRetinaTicket::make()->action($this->webUser, ['subject' => 'Customer thread']);
@@ -2224,4 +2229,32 @@ test('old AD references and padded numbers are still found by search', function 
         ->and($found('1697'))->toContain('AD-1697')
         ->and($found($customerTicket->reference))->toContain($customerTicket->reference)
         ->and($found((string) $number))->toContain($customerTicket->reference);
+});
+
+test('collaborators who lose their role drop off and tickets held by former staff can be taken over', function () {
+    setPermissionsTeamId($this->group->id);
+    $assignee    = User::factory()->create(['group_id' => $this->group->id]);
+    $leaver      = User::factory()->create(['group_id' => $this->group->id]);
+    $engineer    = User::factory()->create(['group_id' => $this->group->id]);
+    $assignee->assignRole('help-desk-clerk');
+    $leaver->assignRole('help-desk-clerk');
+    $engineer->assignRole('help-desk-clerk');
+
+    $ticket = StoreTicket::make()->action($this->group, ['subject' => 'Handover', 'assignee_id' => $assignee->id]);
+    SyncTicketCollaborators::make()->action($ticket, [$leaver->id, $engineer->id]);
+    expect($ticket->collaborators()->pluck('users.id')->sort()->values()->all())->toBe(collect([$leaver->id, $engineer->id])->sort()->values()->all());
+
+    $leaver->removeRole('help-desk-clerk');
+    $leaver->forgetWildcardPermissionIndex();
+
+    actingAs($assignee);
+    patch(route('grp.models.ticket.collaborators.update', $ticket->id), ['collaborator_ids' => [$leaver->id, $engineer->id]])->assertRedirect()->assertSessionHasNoErrors();
+    expect($ticket->collaborators()->pluck('users.id')->all())->toBe([$engineer->id]);
+
+    $assignee->removeRole('help-desk-clerk');
+    $assignee->forgetWildcardPermissionIndex();
+
+    actingAs($engineer);
+    patch(route('grp.models.ticket.update', $ticket->id), ['assignee_id' => $engineer->id])->assertRedirect()->assertSessionHasNoErrors();
+    expect($ticket->fresh()->assignee_id)->toBe($engineer->id);
 });

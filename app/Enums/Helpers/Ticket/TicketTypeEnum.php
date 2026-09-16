@@ -31,7 +31,7 @@ enum TicketTypeEnum: string
     {
         return match ($this) {
             self::HELP     => ['icon' => 'fal fa-life-ring', 'tooltip' => self::labels()['help']],
-            self::ENGINEER => ['icon' => 'fal fa-code', 'tooltip' => self::labels()['engineer']],
+            self::ENGINEER => ['icon' => 'fal fa-toolbox', 'tooltip' => self::labels()['engineer']],
             self::CUSTOMER => ['icon' => 'fal fa-user-headset', 'tooltip' => self::labels()['customer']],
         };
     }

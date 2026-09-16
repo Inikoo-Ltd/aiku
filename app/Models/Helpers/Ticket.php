@@ -241,7 +241,13 @@ class Ticket extends Model implements Auditable, HasMedia
             return true;
         }
 
-        return self::canBeManagedBy($user) && ($this->assignee_id === null || $this->assignee_id === $user->id);
+        if (!self::canBeManagedBy($user)) {
+            return false;
+        }
+
+        return $this->assignee_id === null
+            || $this->assignee_id === $user->id
+            || !self::canBeManagedBy($this->assignee()->first());
     }
 
     public static function canBeAssignedBy(?User $user): bool

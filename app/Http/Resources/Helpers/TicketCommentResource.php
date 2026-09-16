@@ -49,6 +49,10 @@ class TicketCommentResource extends JsonResource
             return $author ? [['key' => 'customer', 'label' => __('Customer')]] : [];
         }
 
+        if ($author->is_bot) {
+            return [['key' => 'bot', 'label' => __('Bot')]];
+        }
+
         $roles = [];
 
         if (Ticket::canBeAssignedBy($author)) {

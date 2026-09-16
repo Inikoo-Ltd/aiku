@@ -10,10 +10,10 @@ import { trans } from "laravel-vue-i18n"
 import { capitalize } from "@/Composables/capitalize"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faLifeRing, faCode, faUserHeadset, faBug, faLightbulb, faTasks, faVial, faLevelUp, faBooks, faDatabase } from "@fal"
+import { faLifeRing, faToolbox, faUserHeadset, faBug, faLightbulb, faTasks, faVial, faLevelUp, faBooks, faDatabase } from "@fal"
 import { faExclamationTriangle, faArrowUp, faMinus, faArrowDown } from "@fas"
 
-library.add(faLifeRing, faCode, faUserHeadset, faBug, faLightbulb, faTasks, faVial, faLevelUp, faBooks, faDatabase, faExclamationTriangle, faArrowUp, faMinus, faArrowDown)
+library.add(faLifeRing, faToolbox, faUserHeadset, faBug, faLightbulb, faTasks, faVial, faLevelUp, faBooks, faDatabase, faExclamationTriangle, faArrowUp, faMinus, faArrowDown)
 import { Select } from "primevue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import TicketComposer from "@/Components/Tickets/TicketComposer.vue"
@@ -40,7 +40,7 @@ const form = useForm<{ subject: string; description: string; reference_url: stri
 
 const optionIcons: Record<string, string> = {
     help: "fal fa-life-ring",
-    engineer: "fal fa-code",
+    engineer: "fal fa-toolbox",
     customer: "fal fa-user-headset",
     bug: "fal fa-bug",
     feature: "fal fa-lightbulb",
