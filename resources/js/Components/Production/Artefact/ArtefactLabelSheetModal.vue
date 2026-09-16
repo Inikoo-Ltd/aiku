@@ -4,7 +4,7 @@ import axios from "axios"
 import { notify } from "@kyvg/vue3-notification"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faCopy, faEyeDropper, faFilePdf, faImage, faPlus, faTags, faTimes, faTrashAlt } from "@fal"
+import { faCopy, faEyeDropper, faEyeSlash, faFilePdf, faImage, faPlus, faTags, faTimes, faTrashAlt } from "@fal"
 import pdfWorkerUrl from "pdfjs-dist/legacy/build/pdf.worker.min.mjs?url"
 import Modal from "@/Components/Utils/Modal.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
@@ -12,7 +12,7 @@ import { ctrans } from "@/Composables/useTrans"
 import { routeType } from "@/types/route"
 import PingIcon from "@/Components/Utils/PingIcon.vue"
 
-library.add(faCopy, faEyeDropper, faFilePdf, faImage, faPlus, faTags, faTimes, faTrashAlt)
+library.add(faCopy, faEyeDropper, faEyeSlash, faFilePdf, faImage, faPlus, faTags, faTimes, faTrashAlt)
 
 interface StoredArtwork {
     name: string
@@ -44,6 +44,7 @@ const props = defineProps<{
         update_route: routeType
         delete_route: routeType
         publish_route: routeType
+        unpublish_route: routeType
         batch_code: string
         expiry_date: string
         labels: SavedLabel[]
@@ -809,6 +810,40 @@ const publishLabel = async (labelId: number): Promise<SavedLabel> => {
     return response.data?.data ?? response.data
 }
 
+const unpublishLabel = async () => {
+    if (!currentLabelId.value) {
+        return
+    }
+
+    isSaving.value = true
+
+    try {
+        const response = await axios.post(
+            route(props.labelSheet.unpublish_route.name, {
+                ...props.labelSheet.unpublish_route.parameters,
+                label: currentLabelId.value,
+            })
+        )
+
+        rememberSavedLabel(response.data?.data ?? response.data)
+        emits("onSaved")
+
+        notify({
+            title: ctrans("Unpublished"),
+            text: ctrans("The label is back to processed, it can no longer be downloaded from the to produce board."),
+            type: "success",
+        })
+    } catch (error: any) {
+        notify({
+            title: ctrans("Something went wrong"),
+            text: error?.response?.data?.message ?? ctrans("The label could not be unpublished"),
+            type: "error",
+        })
+    } finally {
+        isSaving.value = false
+    }
+}
+
 const saveLabel = async (asNewLabel: boolean, shouldPublish = false) => {
     const name = labelName.value.trim()
 
@@ -851,11 +886,15 @@ const saveLabel = async (asNewLabel: boolean, shouldPublish = false) => {
         rememberSavedLabel(shouldPublish ? await publishLabel(savedLabel.id) : savedLabel)
         emits("onSaved")
 
+        const staysPublished = !shouldPublish && savedLabel.state === "published"
+
         notify({
             title: shouldPublish ? ctrans("Published") : ctrans("Saved"),
             text: shouldPublish
                 ? ctrans("The label can now be downloaded from the Preparing lane of the to produce board.")
-                : ctrans("The label can be picked up again later."),
+                : staysPublished
+                    ? ctrans("The changes are live, the label stays published.")
+                    : ctrans("The label can be picked up again later."),
             type: "success",
         })
     } catch (error: any) {
@@ -1075,6 +1114,17 @@ const describeFailure = async (error: any): Promise<string> => {
                         @click="saveLabel(false, true)" />
                     <PingIcon v-if="currentLabel?.state !== 'published'" class="text-[7px] text-red-500 !absolute -top-0.5 -right-0.5" aria-hidden="true" />
                 </div>
+                <Button
+                    v-if="currentLabel?.state === 'published'"
+                    type="tertiary"
+                    size="xs"
+                    icon="fal fa-eye-slash"
+                    :label="ctrans('Unpublish')"
+                    :aria-label="ctrans('Take the label back to processed, it stops being downloadable')"
+                    :tooltip="ctrans('Take the label back to processed, it stops being downloadable from the to produce board')"
+                    :aria-busy="isSaving"
+                    :loading="isSaving"
+                    @click="unpublishLabel" />
                 <div class="ml-1 border-l border-gray-200 pl-3">
                     <Button
                         type="tertiary"

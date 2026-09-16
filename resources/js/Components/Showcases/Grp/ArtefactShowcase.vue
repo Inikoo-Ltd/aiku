@@ -47,6 +47,8 @@ interface ArtefactShowcaseData {
         store_route: { name: string, parameters: any }
         update_route: { name: string, parameters: any }
         delete_route: { name: string, parameters: any }
+        publish_route: { name: string, parameters: any }
+        unpublish_route: { name: string, parameters: any }
         batch_code: string
         expiry_date: string
         labels: ArtefactLabel[]

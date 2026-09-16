@@ -435,6 +435,7 @@ use App\Actions\Production\Artefact\Label\DownloadArtefactLabelPdf;
 use App\Actions\Production\Artefact\Label\PdfArtefactLabelSheet;
 use App\Actions\Production\Artefact\Label\PublishArtefactLabel;
 use App\Actions\Production\Artefact\Label\StoreArtefactLabel;
+use App\Actions\Production\Artefact\Label\UnpublishArtefactLabel;
 use App\Actions\Production\Artefact\Label\UpdateArtefactLabel;
 use App\Actions\Production\Artefact\MoveArtefactsToDepartment;
 use App\Actions\Production\Artefact\MoveArtefactsToFamily;
@@ -1529,6 +1530,7 @@ Route::name('artefact.')->prefix('artefact/{artefact:id}')->group(function () {
     Route::post('labels', StoreArtefactLabel::class)->name('labels.store');
     Route::post('labels/{label:id}', UpdateArtefactLabel::class)->name('labels.update');
     Route::post('labels/{label:id}/publish', PublishArtefactLabel::class)->name('labels.publish');
+    Route::post('labels/{label:id}/unpublish', UnpublishArtefactLabel::class)->name('labels.unpublish');
     Route::get('labels/{label:id}/pdf', DownloadArtefactLabelPdf::class)->name('labels.pdf');
     Route::delete('labels/{label:id}', DeleteArtefactLabel::class)->name('labels.delete');
     Route::post('tags/store', [StoreTag::class, 'inArtefact'])->name('tags.store');

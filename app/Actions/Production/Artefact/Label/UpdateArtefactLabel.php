@@ -27,8 +27,11 @@ class UpdateArtefactLabel extends OrgAction
 
         $changes = [
             'layout' => $this->packLayout($modelData),
-            'state'  => ArtefactLabelStateEnum::PROCESSED,
         ];
+
+        if ($artefactLabel->state !== ArtefactLabelStateEnum::PUBLISHED) {
+            $changes['state'] = ArtefactLabelStateEnum::PROCESSED;
+        }
 
         if (Arr::has($modelData, 'name')) {
             $changes['name'] = Arr::get($modelData, 'name');
