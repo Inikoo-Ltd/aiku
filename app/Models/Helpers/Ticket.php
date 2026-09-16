@@ -320,6 +320,11 @@ class Ticket extends Model implements Auditable, HasMedia
         return $user !== null && $this->reporter_type === 'User' && $this->reporter_id === $user->id;
     }
 
+    public function canBeCancelledByReporter(?User $user): bool
+    {
+        return $this->isReportedBy($user) && $this->status->isOpen();
+    }
+
     public function scopeVisibleTo(Builder $query, User $user): Builder
     {
         if (self::canBeAssignedBy($user)) {

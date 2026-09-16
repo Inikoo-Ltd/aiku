@@ -43,6 +43,7 @@ const props = defineProps<{
     is_reporter: boolean
     can_change_kind_module: boolean
     can_update?: boolean
+    can_cancel_as_reporter?: boolean
     can_contribute?: boolean
     can_manage_collaborators?: boolean
     hideConfidential?: boolean
@@ -85,7 +86,7 @@ const statusBadgeClasses: Record<string, string> = {
     red: "bg-red-100 text-red-700",
 }
 
-const { statusActions, actionsFor } = useTicketStatusActions()
+const { statusActions, actionsFor, cancel } = useTicketStatusActions()
 
 const selectableKinds = computed(() => props.options.kinds.filter((kind) => kind.value !== "escalation"))
 const canChangeKind = computed(() => props.can_change_kind_module && props.ticket.kind !== "escalation")
@@ -319,7 +320,7 @@ const update = (field: string, value: unknown, action: string = field) => {
                             {{ useFormatTime(ticket.waiting_until, { formatTime: "hm" }) }}
                         </span>
                         <button
-                            v-for="action in can_update ? actionsFor(statusActions, ticket) : []"
+                            v-for="action in can_update ? actionsFor(statusActions, ticket) : (can_cancel_as_reporter ? [cancel] : [])"
                             :key="action.status"
                             v-tooltip="action.label"
                             type="button"

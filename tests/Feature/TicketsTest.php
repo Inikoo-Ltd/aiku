@@ -212,6 +212,26 @@ test('grp form endpoints create, update and comment', function () {
         ->and($ticket->comments()->count())->toBe(1);
 });
 
+test('reporter cancels their own ticket but cannot change anything else', function () {
+    $reporter = User::factory()->create(['group_id' => $this->group->id]);
+    $ticket   = StoreTicket::make()->action($this->group, ['subject' => 'Reporter cancel']);
+    $ticket->update(['reporter_type' => 'User', 'reporter_id' => $reporter->id]);
+
+    actingAs($reporter);
+    patch(route('grp.models.ticket.update', $ticket->id), ['status' => 'in_progress'])->assertForbidden();
+    patch(route('grp.models.ticket.update', $ticket->id), ['status' => 'cancelled', 'priority' => 'urgent'])->assertForbidden();
+    patch(route('grp.models.ticket.update', $ticket->id), ['status' => 'cancelled', 'status_comment' => 'Not needed'])->assertRedirect();
+    expect($ticket->refresh()->status)->toBe(TicketStatusEnum::CANCELLED);
+
+    patch(route('grp.models.ticket.update', $ticket->id), ['status' => 'cancelled'])->assertForbidden();
+
+    actingAs(User::factory()->create(['group_id' => $this->group->id]));
+    $other = StoreTicket::make()->action($this->group, ['subject' => 'Not mine']);
+    $other->update(['reporter_type' => 'User', 'reporter_id' => $reporter->id]);
+    patch(route('grp.models.ticket.update', $other->id), ['status' => 'cancelled'])->assertForbidden();
+    actingAs($this->user);
+});
+
 test('comment author edits and deletes their own comment', function () {
     $ticket = StoreTicket::make()->action($this->group, ['subject' => 'Comment edit']);
     $comment = StoreTicketComment::make()->action($ticket, $this->user, ['body' => 'Typo'], false);

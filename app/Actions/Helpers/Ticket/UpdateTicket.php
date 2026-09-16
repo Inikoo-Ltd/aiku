@@ -197,6 +197,10 @@ class UpdateTicket extends OrgAction
             return $isVerdict ? Ticket::canCheckQa($user) : $ticket->canContributeBy($user);
         }
 
+        if ($request->input('status') === TicketStatusEnum::CANCELLED->value && array_diff($fields, ['status', 'status_comment']) === []) {
+            return $ticket->canBeCancelledByReporter($user);
+        }
+
         if ($request->has('assignee_id')) {
             $canHandOver = $ticket->canChangeAssigneeBy($user) && ($request->filled('assignee_id') || Ticket::canBeAssignedBy($user));
 
