@@ -18,12 +18,13 @@ trait WithWhatsappCredentials
      * config fallback: every organisation connects its own WhatsApp account, so a shared
      * default would quietly send through the wrong one.
      *
-     * @return array{phone_number_id: string, access_token: string}
+     * @return array{phone_number_id: string, waba_id: string, access_token: string}
      */
     protected function whatsappCredentials(?Shop $shop): array
     {
         return [
             'phone_number_id' => (string) Arr::get($shop?->settings, 'whatsapp.phone_number_id'),
+            'waba_id'         => (string) Arr::get($shop?->settings, 'whatsapp.waba_id'),
             'access_token'    => (string) Arr::get($shop?->organisation?->settings, 'meta.access_key'),
         ];
     }
