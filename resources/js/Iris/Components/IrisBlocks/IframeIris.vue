@@ -40,14 +40,17 @@ const iframeStyles = computed(() => {
 		width: "auto"
 	};
 });
+
+const containerStyle = computed(() => ({
+	...getStyles(layout?.app?.webpage_layout?.container?.properties, props.screenType),
+	...getStyles(props.fieldValue.container?.properties, props.screenType),
+}))
+
 </script>
 <template>
 	<div id="iframe" :style="iframeStyles" :id="fieldValue?.id ? fieldValue?.id  : 'iframe'+indexBlock"  component="iframe" >
 		<iframe
-		:style="{
-			...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
-			...getStyles(fieldValue.container?.properties, screenType)
-		}"
+		:style="containerStyle"
 			:title="props.fieldValue?.title || `iframe-${uuidv4()}`"
 			:src="props.fieldValue?.link"
 			class="w-full max-w-full h-auto block border-0"

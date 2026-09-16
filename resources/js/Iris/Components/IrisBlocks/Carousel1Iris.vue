@@ -169,15 +169,25 @@ const onArrowKeyRight = (e: KeyboardEvent) => {
 
 const idxSlideLoading = ref<number | null>(null)
 
+const containerStyle = computed(() => ({
+  ...getStyles(layout?.app?.webpage_layout?.container?.properties, props.screenType),
+  ...getStyles(props.fieldValue?.container?.properties, props.screenType),
+}))
+
+const cardImageContainerStyle = computed(
+  () => getStyles(props.fieldValue?.carousel_data?.card_container?.container_image, props.screenType)
+)
+
+const cardImagePropertiesStyle = computed(
+  () => getStyles(props.fieldValue?.carousel_data?.card_container?.image_properties, props.screenType)
+)
+
 </script>
 
 <template>
   <div :id="blockDomId" component="carousel" class="relative overflow-hidden">
     <component :is="'style'">{{ preInitSlideCss }}</component>
-    <div :data-refresh="refreshTrigger" :key="keySwiper" :style="{
-      ...getStyles(layout?.app?.webpage_layout?.container?.properties, props.screenType),
-      ...getStyles(fieldValue?.container?.properties, props.screenType)
-    }">
+    <div :data-refresh="refreshTrigger" :key="keySwiper" :style="containerStyle">
       <button v-if="swiperInstance?.allowSlidePrev && isLooping" ref="prevEl"
         class="absolute left-2 lg:left-6 top-1/2 -translate-y-1/2 z-20 flex h-[44px] w-[44px] items-center justify-center rounded-full cursor-pointer text-gray-500"
         @click.stop="scrollLeft" @keydown="onArrowKeyLeft" aria-label="Scroll left" type="button">
@@ -193,14 +203,14 @@ const idxSlideLoading = ref<number | null>(null)
               :type="data?.link?.type" @start="() => idxSlideLoading = index" @finish="() => idxSlideLoading = null">
               <!-- Image Container -->
               <div class="flex justify-center overflow-visible"
-                :style="getStyles(fieldValue.carousel_data.card_container?.container_image, screenType)">
+                :style="cardImageContainerStyle">
                 <div class="overflow-hidden w-full flex items-center justify-center "
-                  :style="{ ...getStyles(fieldValue.carousel_data.card_container?.image_properties, screenType) }">
+                  :style="cardImagePropertiesStyle">
                   <Image v-if="data?.image?.source" :src="data.image.source" :srcset="data.image.srcset"
                     :sizes="imageSizes" :alt="data.image.alt || `image-${index}`" :class="'image-container'"
                     class="w-full h-full flex justify-center items-center"
-                    :height="getStyles(fieldValue.carousel_data.card_container?.container_image, screenType)?.height"
-                    :width="getStyles(fieldValue.carousel_data.card_container?.container_image, screenType)?.width"
+                    :height="cardImageContainerStyle?.height"
+                    :width="cardImageContainerStyle?.width"
                     :preload="Number(indexBlock) === 0 && index === 0" />
                   <div v-else class="flex items-center justify-center w-full h-full bg-gray-100">
                     <FontAwesomeIcon :icon="faImage" class="text-gray-400 text-4xl" />
