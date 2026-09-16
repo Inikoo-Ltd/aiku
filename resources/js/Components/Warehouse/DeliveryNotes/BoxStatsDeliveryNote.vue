@@ -9,7 +9,7 @@ import { faIdCardAlt, faEnvelope, faPhone, faGift, faBoxFull, faWeight, faCube, 
 import { faCubes } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { Link, router } from "@inertiajs/vue3"
-import { inject, ref, toRaw } from "vue"
+import { computed, inject, ref, toRaw } from "vue"
 import { routeType } from "@/types/route"
 import { set } from 'lodash-es'
 import { notify } from "@kyvg/vue3-notification"
@@ -274,6 +274,18 @@ const parcelsCopy = ref([...toRaw(props.boxStats?.parcels || [])])
 const onDeleteParcel = (index: number) => {
     parcelsCopy.value.splice(index, 1)
 }
+const newParcel = () => (props.boxStats?.shop_type === 'dropshipping'
+    ? { weight: 1, dimensions: [5, 5, 5] }
+    : { weight: 1, dimensions: [null, null, null] })
+
+const isDimensionsRequired = computed(() => props.boxStats?.shop_type !== 'dropshipping')
+const isDimensionMissing = (dimension) => isDimensionsRequired.value && !(Number(dimension) > 0)
+const isParcelMissingDimensions = (parcel) => [0, 1, 2].some(index => isDimensionMissing(parcel.dimensions?.[index]))
+const hasMissingDimensions = computed(() => parcelsCopy.value.some(isParcelMissingDimensions))
+const isParcelsMissingForPacking = computed(() => isDimensionsRequired.value
+    && ['handling', 'packing'].includes(props.deliveryNote?.state)
+    && !(props.boxStats?.parcels?.length))
+
 const onSubmitParcels = () => {
     router.patch(route(props.updateRoute.name, props.updateRoute.parameters),
         {
@@ -735,7 +747,7 @@ function returnNoteRoute(returnDeliveryNote) {
                                                 fixed-width aria-hidden="true" />
                                         </div>
                                         <div v-else-if="!isLoadingSubmitParcels"
-                                            @click="async () => (parcelsCopy = [{ weight: 1, dimensions: [5, 5, 5] }], onSubmitParcels())"
+                                            @click="async () => boxStats?.shop_type === 'dropshipping' ? (parcelsCopy = [newParcel()], onSubmitParcels()) : (parcelsCopy = [newParcel()], isModalParcels = true)"
                                             class="cursor-pointer text-gray-400 hover:text-gray-600">
                                             {{ trans("Add") }}
                                             <FontAwesomeIcon icon="fas fa-plus" size="sm" class="text-gray-400" fixed-width
@@ -758,7 +770,10 @@ function returnNoteRoute(returnDeliveryNote) {
                                         {{ parcel.weight }} kg
                                     </span>
 
-                                    <span class="text-gray-500 truncate">
+                                    <span v-if="isParcelMissingDimensions(parcel)" class="text-red-500">
+                                        ({{ trans("dimensions missing") }})
+                                    </span>
+                                    <span v-else class="text-gray-500 truncate">
                                         ({{ parcel.dimensions?.[0] }}x{{
                                         parcel.dimensions?.[1]
                                         }}x{{ parcel.dimensions?.[2] }}
@@ -766,6 +781,9 @@ function returnNoteRoute(returnDeliveryNote) {
                                     </span>
                                 </li>
                             </ul>
+                            <div v-else-if="isParcelsMissingForPacking" class="text-xs text-red-500">
+                                {{ trans("Add parcels with their dimensions before setting as packed") }}
+                            </div>
                         </div>
                     </div>
 
@@ -865,6 +883,7 @@ function returnNoteRoute(returnDeliveryNote) {
                                     <InputNumber
                                         :min="0.001"
                                         v-model="parcel.dimensions[0]"
+                                        :invalid="isDimensionMissing(parcel.dimensions[0])"
                                         class="!w-14 !text-xs sm:!text-sm [&_.p-inputnumber-input]:text-center"
                                         size="small"
                                         placeholder="0"
@@ -876,6 +895,7 @@ function returnNoteRoute(returnDeliveryNote) {
                                     <InputNumber
                                         :min="0.001"
                                         v-model="parcel.dimensions[1]"
+                                        :invalid="isDimensionMissing(parcel.dimensions[1])"
                                         class="!w-14 !text-xs sm:!text-sm [&_.p-inputnumber-input]:text-center"
                                         size="small"
                                         placeholder="0"
@@ -887,6 +907,7 @@ function returnNoteRoute(returnDeliveryNote) {
                                     <InputNumber
                                         :min="0.001"
                                         v-model="parcel.dimensions[2]"
+                                        :invalid="isDimensionMissing(parcel.dimensions[2])"
                                         class="!w-14 !text-xs sm:!text-sm [&_.p-inputnumber-input]:text-center"
                                         size="small"
                                         placeholder="0"
@@ -937,7 +958,7 @@ function returnNoteRoute(returnDeliveryNote) {
                     <!-- Repeat for more rows -->
                     <div class=" grid grid-cols-12 mt-2">
                         <div></div>
-                        <div @click="() => parcelsCopy.push({ weight: 1, dimensions: [5, 5, 5] })"
+                        <div @click="() => parcelsCopy.push(newParcel())"
                             class="hover:bg-gray-200 cursor-pointer border border-dashed border-gray-400 col-span-11 text-center py-1.5 text-xs rounded">
                             <FontAwesomeIcon icon="fas fa-plus" class="text-gray-500" fixed-width aria-hidden="true" />
                             {{ trans("Add another parcel") }}
@@ -945,6 +966,9 @@ function returnNoteRoute(returnDeliveryNote) {
                     </div>
                 </Fieldset>
 
+                <div v-if="hasMissingDimensions" class="mt-3 text-xs text-red-500">
+                    {{ trans("Enter length, width and height of every parcel, they are needed to set as packed") }}
+                </div>
                 <div class="flex justify-end mt-3">
                     <Button :style="'save'" :loading="isLoadingSubmitParcels" :label="'save'" xdisabled="
 							!formTrackingNumber.shipping_id || !(formTrackingNumber.shipping_id.api_shipper ? true : formTrackingNumber.tracking_number)

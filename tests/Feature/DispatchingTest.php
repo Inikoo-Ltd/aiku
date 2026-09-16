@@ -607,6 +607,7 @@ test('Set Delivery Note state to Packed', function (Picking $picking) {
 
     $deliveryNoteItem = $picking->deliveryNoteItem;
 
+    giveParcelDimensions($deliveryNote);
     $packedDeliveryNote = UpdateDeliveryNoteStatePacked::make()->action($deliveryNote, $this->user);
 
     $packedDeliveryNote->refresh();
@@ -1374,6 +1375,11 @@ function freshSubmittedOrder($ctx)
     return SubmitOrder::make()->action($order);
 }
 
+function giveParcelDimensions(DeliveryNote $deliveryNote): void
+{
+    $deliveryNote->update(['parcels' => [['weight' => 1, 'dimensions' => [30, 20, 10]]]]);
+}
+
 function handlingDeliveryNoteWithPicking($ctx, int $pickedQuantity = 10): array
 {
     $order        = freshSubmittedOrder($ctx);
@@ -1433,6 +1439,7 @@ test('delivery note undo picked and undo packing', function () {
 
     $deliveryNote = \App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStateToPicked::run($deliveryNote);
     $deliveryNote = \App\Actions\Dispatching\DeliveryNote\UpdateState\StartPackingDeliveryNote::make()->action($deliveryNote, $this->user);
+    giveParcelDimensions($item->deliveryNote);
     StorePacking::make()->action($item->refresh(), $this->user, []);
     $deliveryNote = \App\Actions\Dispatching\DeliveryNote\UpdateState\UndoPackingDeliveryNote::make()->action($deliveryNote->refresh(), $this->user);
     expect($deliveryNote->state)->toBe(DeliveryNoteStateEnum::PICKED);
@@ -1486,6 +1493,7 @@ test('delivery note finalise and dispatch', function () {
     [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($this);
     $deliveryNote = \App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStateToPicked::run($deliveryNote);
     $deliveryNote = \App\Actions\Dispatching\DeliveryNote\UpdateState\StartPackingDeliveryNote::make()->action($deliveryNote, $this->user);
+    giveParcelDimensions($item->deliveryNote);
     StorePacking::make()->action($item->refresh(), $this->user, []);
     $deliveryNote = UpdateDeliveryNoteStatePacked::make()->action($deliveryNote->refresh(), $this->user);
 
@@ -1516,6 +1524,7 @@ function finalisedDeliveryNote($ctx): array
     [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($ctx);
     $deliveryNote = \App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStateToPicked::run($deliveryNote);
     $deliveryNote = \App\Actions\Dispatching\DeliveryNote\UpdateState\StartPackingDeliveryNote::make()->action($deliveryNote, $ctx->user);
+    giveParcelDimensions($item->deliveryNote);
     StorePacking::make()->action($item->refresh(), $ctx->user, []);
     $deliveryNote = UpdateDeliveryNoteStatePacked::make()->action($deliveryNote->refresh(), $ctx->user);
 
@@ -1636,6 +1645,7 @@ test('mixed order with service picks and invoices', function () {
     $deliveryNote = $deliveryNote->refresh();
     $deliveryNote = \App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStateToPicked::run($deliveryNote);
     $deliveryNote = \App\Actions\Dispatching\DeliveryNote\UpdateState\StartPackingDeliveryNote::make()->action($deliveryNote, $this->user);
+    giveParcelDimensions($deliveryNoteItem->deliveryNote);
     StorePacking::make()->action($deliveryNoteItem->refresh(), $this->user, []);
     $deliveryNote = UpdateDeliveryNoteStatePacked::make()->action($deliveryNote->refresh(), $this->user);
 
@@ -1707,6 +1717,7 @@ test('delivery note finalise and dispatch combined and pick as employee', functi
 
     $deliveryNote = \App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStateToPicked::run($deliveryNote->refresh());
     $deliveryNote = \App\Actions\Dispatching\DeliveryNote\UpdateState\StartPackingDeliveryNote::make()->action($deliveryNote, $this->user);
+    giveParcelDimensions($item->deliveryNote);
     StorePacking::make()->action($item->refresh(), $this->user, []);
     $deliveryNote = UpdateDeliveryNoteStatePacked::make()->action($deliveryNote->refresh(), $this->user);
 
@@ -2363,6 +2374,7 @@ test('UI show delivery note richer states and tabs', function () {
     [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($this);
     $deliveryNote = \App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStateToPicked::run($deliveryNote);
     $deliveryNote = \App\Actions\Dispatching\DeliveryNote\UpdateState\StartPackingDeliveryNote::make()->action($deliveryNote, $this->user);
+    giveParcelDimensions($item->deliveryNote);
     StorePacking::make()->action($item->refresh(), $this->user, []);
     $deliveryNote = UpdateDeliveryNoteStatePacked::make()->action($deliveryNote->refresh(), $this->user);
     $shipper = StoreShipper::make()->action($this->organisation, ['code' => 'SD'.Str::random(4), 'name' => 'Sd', 'trade_as' => 'sd']);
@@ -3736,6 +3748,7 @@ test('a short picked line still has to be packed before the note is done', funct
     $deliveryNote = \App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStateToPicked::run($deliveryNote);
     $deliveryNote = \App\Actions\Dispatching\DeliveryNote\UpdateState\StartPackingDeliveryNote::make()->action($deliveryNote, $this->user);
 
+    giveParcelDimensions($item->deliveryNote);
     \App\Actions\Dispatching\DeliveryNoteItem\UpdateDeliveryNoteItemPacking::make()->action($item->refresh(), $this->user);
 
     expect($deliveryNote->fresh()->state)->not->toBe(DeliveryNoteStateEnum::PACKED)
@@ -3747,6 +3760,7 @@ test('repair stuck finalised delivery note dispatches it backdated without touch
 
     $deliveryNote = \App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStateToPicked::run($deliveryNote->refresh());
     $deliveryNote = \App\Actions\Dispatching\DeliveryNote\UpdateState\StartPackingDeliveryNote::make()->action($deliveryNote, $this->user);
+    giveParcelDimensions($item->deliveryNote);
     StorePacking::make()->action($item->refresh(), $this->user, []);
     $deliveryNote = UpdateDeliveryNoteStatePacked::make()->action($deliveryNote->refresh(), $this->user);
 
@@ -3813,6 +3827,7 @@ test('repair dispatches an order left stuck in finalised, backdated and silent',
 
     $deliveryNote = \App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStateToPicked::run($deliveryNote->refresh());
     $deliveryNote = \App\Actions\Dispatching\DeliveryNote\UpdateState\StartPackingDeliveryNote::make()->action($deliveryNote, $this->user);
+    giveParcelDimensions($item->deliveryNote);
     StorePacking::make()->action($item->refresh(), $this->user, []);
     $deliveryNote = UpdateDeliveryNoteStatePacked::make()->action($deliveryNote->refresh(), $this->user);
 
@@ -3841,6 +3856,7 @@ test('repair cancel leaves the old pickings and their stock alone', function () 
 
     $deliveryNote = \App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStateToPicked::run($deliveryNote->refresh());
     $deliveryNote = \App\Actions\Dispatching\DeliveryNote\UpdateState\StartPackingDeliveryNote::make()->action($deliveryNote, $this->user);
+    giveParcelDimensions($item->deliveryNote);
     StorePacking::make()->action($item->refresh(), $this->user, []);
     $deliveryNote = UpdateDeliveryNoteStatePacked::make()->action($deliveryNote->refresh(), $this->user);
 
@@ -4222,4 +4238,23 @@ test('returned delivery notes are listed first whatever the sort asked for (HELP
             ->and($plainPosition)->not->toBeFalse()
             ->and($returnedPosition)->toBeLessThan($plainPosition);
     }
+});
+
+test('non dropshipping delivery note needs parcel dimensions before it can be packed', function () {
+    [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($this);
+    expect($this->shop->type)->not->toBe(\App\Enums\Catalogue\Shop\ShopTypeEnum::DROPSHIPPING);
+    $deliveryNote = \App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStateToPicked::run($deliveryNote);
+    $deliveryNote = \App\Actions\Dispatching\DeliveryNote\UpdateState\StartPackingDeliveryNote::make()->action($deliveryNote, $this->user);
+    $deliveryNote->update(['parcels' => [['weight' => 1, 'dimensions' => [null, null, null]]]]);
+
+    patch(route('grp.models.delivery_note.state.packed', $deliveryNote->id))
+        ->assertSessionHasErrors('parcels');
+
+    StorePacking::make()->action($item->refresh(), $this->user, []);
+    expect($deliveryNote->refresh()->state)->toBe(DeliveryNoteStateEnum::PACKING);
+
+    $deliveryNote->update(['parcels' => [['weight' => 1, 'dimensions' => [30, 20, 10]]]]);
+    patch(route('grp.models.delivery_note.state.packed', $deliveryNote->id))
+        ->assertSessionHasNoErrors();
+    expect($deliveryNote->refresh()->state)->toBe(DeliveryNoteStateEnum::PACKED);
 });

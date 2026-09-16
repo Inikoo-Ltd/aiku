@@ -191,7 +191,7 @@ const handleSetAsPacked = async () => {
         notify({
             type: "error",
             title: trans("Failed"),
-            text: trans("Unable to set delivery note as packed."),
+            text: error?.response?.data?.message ?? trans("Unable to set delivery note as packed."),
         })
     } finally {
         loadingFinal.value = false
@@ -408,7 +408,7 @@ onMounted(() => {
                 <!-- Repeat for more rows -->
                 <div class=" grid grid-cols-12 mt-2">
                     <div></div>
-                    <div @click="() => parcelsCopy.push({ weight: 1, dimensions: [5, 5, 5] })"
+                    <div @click="() => parcelsCopy.push({ weight: 1, dimensions: [null, null, null] })"
                         class="hover:bg-gray-200 cursor-pointer border border-dashed border-gray-400 col-span-11 text-center py-1.5 text-xs rounded">
                         <FontAwesomeIcon icon="fas fa-plus" class="text-gray-500" fixed-width aria-hidden="true" />
                         {{ trans("Add another parcel") }}
@@ -416,6 +416,9 @@ onMounted(() => {
                 </div>
             </Fieldset>
 
+            <div v-if="parcelsCopy?.some(parcel => !parcel.dimensions?.every(dimension => Number(dimension) > 0))" class="mt-3 text-xs text-red-500">
+                {{ trans("Enter length, width and height of every parcel, they are needed to set as packed") }}
+            </div>
             <div class="flex justify-end mt-3">
                 <Button :style="'save'" :loading="isLoadingSubmitParcels" :label="'save'" xdisabled="
 							!formTrackingNumber.shipping_id || !(formTrackingNumber.shipping_id.api_shipper ? true : formTrackingNumber.tracking_number)

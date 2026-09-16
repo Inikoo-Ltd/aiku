@@ -89,7 +89,7 @@ class UpdateDeliveryNoteItemPacking extends OrgAction
          */
         $hasWaitingItems = $deliveryNote->hasBlockingItems();
 
-        if ($hasUnfinishedPackings->count() == 0 && !$hasWaitingItems) {
+        if ($hasUnfinishedPackings->count() == 0 && !$hasWaitingItems && !UpdateDeliveryNoteStatePacked::hasMissingParcelDimensions($deliveryNote)) {
             UpdateDeliveryNoteStatePacked::make()->action($deliveryNote, $user);
         }
 
