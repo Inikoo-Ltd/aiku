@@ -375,17 +375,17 @@ class EditTradeUnit extends OrgAction
                                     'value' => $tradeUnit->gpsr_eu_responsible
                                 ],
                                 'gpsr_warnings' => [
-                                    'type'  => 'input',
+                                    'type'  => 'textarea',
                                     'label' => __('Warnings'),
                                     'value' => $tradeUnit->gpsr_warnings
                                 ],
                                 'gpsr_manual' => [
-                                    'type'  => 'input',
+                                    'type'  => 'textarea',
                                     'label' => __('How To Use'),
                                     'value' => $tradeUnit->gpsr_manual
                                 ],
                                 'gpsr_class_category_danger' => [
-                                    'type'  => 'input',
+                                    'type'  => 'textarea',
                                     'label' => __('Class & category of danger'),
                                     'value' => $tradeUnit->gpsr_class_category_danger,
                                 ],
@@ -460,8 +460,11 @@ class EditTradeUnit extends OrgAction
                                     'type'         => 'select-improved',
                                     'label'        => __('Languages'),
                                     'placeholder'  => __('Select languages'),
-                                    'options'      => array_values(GetLanguagesOptions::make()->all()),
-                                    'labelProp'    => 'name',
+                                    'options'      => array_values(array_map(
+                                        fn (array $language) => $language + ['label' => '('.strtoupper($language['code']).') '.$language['name']],
+                                        GetLanguagesOptions::make()->all()
+                                    )),
+                                    'labelProp'    => 'label',
                                     'valueProp'    => 'code',
                                     'tagLabelProp' => 'code',
                                     'tagUppercase' => true,

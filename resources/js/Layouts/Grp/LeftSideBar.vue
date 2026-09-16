@@ -12,7 +12,7 @@ import NavigationSimple from "@/Layouts/Grp/NavigationSimple.vue"
 import { useLogoutAuth } from "@/Composables/useAppMethod"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faChevronLeft } from "@far"
-import { faSignOutAlt, faSensor, faLifeRing, faHeadset, faCommentAlt, faSignOut, faServer } from "@fal"
+import { faSignOutAlt, faSensor, faLifeRing, faHeadset, faCommentAlt, faSignOut, faServer, faTasks } from "@fal"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { computed, inject, ref } from "vue"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
@@ -20,7 +20,7 @@ import Button from "@/Components/Elements/Buttons/Button.vue"
 import { trans } from "laravel-vue-i18n"
 import { Link } from "@inertiajs/vue3"
 
-library.add(faChevronLeft, faSignOutAlt, faSensor, faLifeRing, faHeadset, faCommentAlt, faSignOut, faServer)
+library.add(faTasks, faChevronLeft, faSignOutAlt, faSensor, faLifeRing, faHeadset, faCommentAlt, faSignOut, faServer)
 
 const layout = inject("layout", layoutStructure)
 
@@ -38,11 +38,10 @@ const logoutData = computed(() => ({
     icon: "fal fa-sign-out-alt"
 }))
 
-const helpData = computed(() => ({
-    label: trans("Tickets"),
-    tooltip: trans("Tickets: report a problem or ask for help"),
-    icon: "fal fa-life-ring"
-}))
+const bottomLinks = computed(() => [
+    { route: "grp.tasks.index", label: trans("Tasks"), tooltip: trans("Tasks: ask a colleague or a department for something"), icon: "fal fa-tasks" },
+    { route: "grp.tickets.index", label: trans("Tickets"), tooltip: trans("Tickets: report a problem or ask for help"), icon: "fal fa-life-ring" },
+])
 
 const isLoadingLogout = ref(false)
 const onLogoutAuth = () => {
@@ -92,11 +91,13 @@ const onLogoutAuth = () => {
         <div class="absolute bottom-20 w-full">
             <div class="flex flex-col justify-center">
                 <Link
-                    :href="route('grp.tickets.index')"
+                    v-for="link in bottomLinks"
+                    :key="link.route"
+                    :href="route(link.route)"
                     class="relative group hover:underline px-4 rounded-md py-2 w-full group flex items-center text-sm gap-x-2"
                     xclass="[open ? 'bg-black/25' : '']"
                     v-tooltip="{
-						content: helpData.tooltip,
+						content: link.tooltip,
 						delay: { show: layout.leftSidebar.show ? 500 : 100, hide: 100 },
 					}"
                     :style="{
@@ -106,7 +107,7 @@ const onLogoutAuth = () => {
                         aria-hidden="true"
                         class="flex-shrink-0 h-4 w-4"
                         fixed-width
-                        :icon="helpData.icon" />
+                        :icon="link.icon" />
 
                     <Transition name="slide-to-left">
 						<span
@@ -117,10 +118,10 @@ const onLogoutAuth = () => {
 									? 'truncate block md:block'
 									: 'block md:hidden',
 							]">
-							{{ helpData.label }}
+							{{ link.label }}
 						</span>
                         <span v-else class="leading-none whitespace-nowrap block md:hidden">
-							{{ helpData.label }}
+							{{ link.label }}
 						</span>
                     </Transition>
                 </Link>

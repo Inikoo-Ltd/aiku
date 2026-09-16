@@ -92,10 +92,12 @@ test('neither master nor slave schedules register when both flags are disabled',
                 'prune-product-image-zips',
                 'prune-traffic-source-clicks',
                 'search:propose-synonyms',
+                'staff-tasks:nudge',
                 'sync:customers-to-google-ads --all',
                 'tickets:cancel_stale',
                 'traffic-source:collect-visits',
-                'traffic-source:fetch-meta-costs --days=2'
+                'traffic-source:fetch-meta-costs --days=2',
+                'traffic-source:fetch-google-ads-costs --days=3'
             ]
         );
 });

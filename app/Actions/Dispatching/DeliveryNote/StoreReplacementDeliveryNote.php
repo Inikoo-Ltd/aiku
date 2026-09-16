@@ -66,7 +66,7 @@ class StoreReplacementDeliveryNote extends OrgAction
         data_set($modelData, 'contact_name', SendOrderToWarehouse::make()->getContactName($order));
 
         data_set($modelData, 'customer_notes', $order->customer_notes);
-        data_set($modelData, 'private_warehouse_note', $order->private_warehouse_note);
+        data_set($modelData, 'private_warehouse_note', Arr::get($modelData, 'private_warehouse_note') ?: $order->private_warehouse_note);
         data_set($modelData, 'public_notes', $order->public_notes);
         data_set($modelData, 'shipping_notes', $order->shipping_notes);
 
@@ -103,7 +103,8 @@ class StoreReplacementDeliveryNote extends OrgAction
                     $deliveryNoteItemData = [
                         'org_stock_id'      => $deliveryNoteItems->org_stock_id,
                         'transaction_id'    => $deliveryNoteItems->transaction_id,
-                        'quantity_required' => $itemData['quantity']
+                        'quantity_required' => $itemData['quantity'],
+                        'replacement_reason' => Arr::get($itemData, 'reason'),
                     ];
 
                     StoreDeliveryNoteItem::make()->action($replacement, $deliveryNoteItemData);
@@ -138,6 +139,10 @@ class StoreReplacementDeliveryNote extends OrgAction
     {
         return [
             'delivery_note_items' => ['required', 'array'],
+            'private_warehouse_note'         => ['sometimes', 'nullable', 'string', 'max:4000'],
+            'delivery_note_items.*.id'       => ['required', 'integer'],
+            'delivery_note_items.*.quantity' => ['required', 'numeric', 'min:0'],
+            'delivery_note_items.*.reason' => [$this->strict ? 'required' : 'nullable', \Illuminate\Validation\Rule::enum(\App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemReplacementReasonEnum::class)],
             'warehouse_id'        => ['required', 'integer'],
             'reference'           => ['required', 'max:64', 'string']
         ];

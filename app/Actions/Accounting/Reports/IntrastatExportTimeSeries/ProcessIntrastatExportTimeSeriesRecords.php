@@ -103,7 +103,7 @@ class ProcessIntrastatExportTimeSeriesRecords implements ShouldBeUnique
                 'inv.tax_number',
                 'inv.tax_number_valid',
                 'dni.quantity_dispatched',
-                'dni.org_revenue_amount',
+                DB::raw('COALESCE(NULLIF(dni.org_revenue_amount, 0), t.org_net_amount, 0) as org_revenue_amount'),
                 DB::raw('COALESCE(dni.estimated_picked_weight, 0) as item_weight'),
                 'stock_products.product_id'
             )

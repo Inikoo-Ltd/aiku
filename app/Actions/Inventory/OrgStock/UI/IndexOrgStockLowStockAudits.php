@@ -25,6 +25,7 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
+use Spatie\QueryBuilder\AllowedSort;
 
 class IndexOrgStockLowStockAudits extends OrgAction
 {
@@ -65,6 +66,21 @@ class IndexOrgStockLowStockAudits extends OrgAction
                 ->where('location_org_stocks.is_low_stock_checked', false);
         });
 
+        $isLocationsSortedDescending = request()->input(config('query-builder.parameters.sort')) === '-locations';
+
+        $sortByLocationCode = AllowedSort::callback('locations', function ($query, bool $descending) use ($warehouse) {
+            $query->orderBy(
+                function ($query) use ($warehouse, $descending) {
+                    $query->selectRaw($descending ? 'max(locations.code)' : 'min(locations.code)')
+                        ->from('location_org_stocks')
+                        ->join('locations', 'location_org_stocks.location_id', 'locations.id')
+                        ->whereColumn('location_org_stocks.org_stock_id', 'org_stocks.id')
+                        ->where('location_org_stocks.warehouse_id', $warehouse->id);
+                },
+                $descending ? 'desc' : 'asc'
+            )->orderBy('org_stocks.code');
+        });
+
         return $queryBuilder
             ->defaultSort('org_stocks.code')
             ->select([
@@ -77,7 +93,7 @@ class IndexOrgStockLowStockAudits extends OrgAction
                 'org_stock_families.slug as family_slug',
             ])
             ->leftJoin('org_stock_families', 'org_stocks.org_stock_family_id', 'org_stock_families.id')
-            ->with(['locationOrgStocks' => function ($query) use ($warehouse) {
+            ->with(['locationOrgStocks' => function ($query) use ($warehouse, $isLocationsSortedDescending) {
                 $query->where('location_org_stocks.warehouse_id', $warehouse->id)
                     ->join('locations', 'location_org_stocks.location_id', 'locations.id')
                     ->select([
@@ -88,9 +104,9 @@ class IndexOrgStockLowStockAudits extends OrgAction
                         'location_org_stocks.is_low_stock_checked',
                         'locations.code as location_code',
                     ])
-                    ->orderBy('locations.code');
+                    ->orderBy('locations.code', $isLocationsSortedDescending ? 'desc' : 'asc');
             }])
-            ->allowedSorts(['code', 'name', 'family_code', 'stock'])
+            ->allowedSorts(['code', 'name', 'family_code', 'stock', $sortByLocationCode])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -114,7 +130,7 @@ class IndexOrgStockLowStockAudits extends OrgAction
                 ->column(key: 'family_code', label: __('Family'), sortable: true, searchable: true)
                 ->column(key: 'name', label: __('Name'), sortable: true, searchable: true)
                 ->column(key: 'stock', label: __('Stock'), sortable: true, align: 'right')
-                ->column(key: 'locations', label: __('Locations'));
+                ->column(key: 'locations', label: __('Locations'), sortable: true);
         };
     }
 

@@ -310,8 +310,7 @@ onMounted(async () => {
                                 <span>
                                     {{ product?.stock >= 250
                                         ? trans("Unlimited quantity available")
-                                        : (product.stock > 0 ? trans("In stock") + ` (${product.stock} ` +
-                                            trans("available") + `)` : trans("Out Of Stock"))
+                                        : (product.stock > 0 ? trans("In stock") : trans("Out Of Stock"))
                                     }}
                                 </span>
                             </div>

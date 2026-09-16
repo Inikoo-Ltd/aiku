@@ -8,6 +8,7 @@
 
 namespace App\Http\Resources\Dispatching;
 
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Http\Resources\Inventory\LocationOrgStocksForPickingActionsResource;
 use App\Models\Dispatching\DeliveryNoteItem;
 use App\Models\Dispatching\Picking;
@@ -82,6 +83,11 @@ class WaitingDNItemsTabsItemizedResource extends JsonResource
         AND pickings.type = ? AND pickings.delivery_note_item_id = ?
     ) as pickings_data',
                 ['pick', $this->id]
+            )
+            ->orderByRaw(
+                $this->shop_type == ShopTypeEnum::B2B->value
+                    ? 'location_org_stocks.default_wholesale_picking_location::int desc'
+                    : 'location_org_stocks.default_dropshipping_picking_location::int desc'
             )
             ->orderBy('picking_priority')
             ->get();

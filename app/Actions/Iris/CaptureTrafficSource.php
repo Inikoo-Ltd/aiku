@@ -14,6 +14,7 @@ use App\Actions\CRM\TrafficSource\RecordTrafficSourceVisit;
 use App\Actions\CRM\TrafficSource\GetTrafficSourceFromUrl;
 use App\Enums\CRM\TrafficSource\TrafficSourcesTypeEnum;
 use App\Enums\Web\Website\WebsiteTypeEnum;
+use App\Models\CRM\WebUser;
 use Illuminate\Support\Facades\Cache;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -249,12 +250,20 @@ class CaptureTrafficSource
                 })
                 ->first(fn ($value) => filled($value));
 
+            /* Both halves of "who did this ad reach". The session id joins the click to the visitor
+               record the storefront writes for the same person, and the web user is who they were
+               logged in as at that moment, read here rather than in the job because the job has no
+               request to read it from. */
+            $webUser = request()->user('retina');
+
             RecordTrafficSourceClick::dispatch([
                 'shop_id'      => $website->shop_id,
                 'website_id'   => $website->id ?? null,
                 'type'         => $type->value,
                 'campaign_ref' => substr($trafficSourceData, 1) ?: null,
                 'click_id'     => $clickId,
+                'session_id'   => $this->sessionId(),
+                'web_user_id'  => $webUser instanceof WebUser ? $webUser->id : null,
                 'ip'           => request()->ip(),
                 'country_code' => request()->headers->get('CF-IPCountry'),
                 'user_agent'   => request()->userAgent(),
@@ -263,6 +272,20 @@ class CaptureTrafficSource
             ]);
         } catch (\Throwable $e) {
             report($e);
+        }
+    }
+
+    /**
+     * Capture also runs from contexts without a started session, and asking an unstarted session for
+     * its id throws. An unattributable click is still worth recording, so this returns null rather
+     * than letting the whole capture fall into the catch above.
+     */
+    private function sessionId(): ?string
+    {
+        try {
+            return request()->hasSession() ? request()->session()->getId() : null;
+        } catch (\Throwable) {
+            return null;
         }
     }
 

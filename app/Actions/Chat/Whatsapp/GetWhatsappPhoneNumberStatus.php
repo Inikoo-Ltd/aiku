@@ -17,8 +17,11 @@ use Illuminate\Support\Facades\Http;
 use Lorisleiva\Actions\ActionRequest;
 
 /**
- * Reads the number's live state from Meta rather than a stored copy: a number can go
- * offline on Meta's side at any time, so a cached badge would be reassuring and wrong.
+ * Meta stays the source of truth: a number can go offline on Meta's side at any time, so
+ * every read goes to Graph. The successful read is also kept on the shop so the edit page
+ * can open with the last known state and the time it was read, rather than with nothing.
+ * A failed read leaves the stored copy alone, since the last good state plus its age says
+ * more than a blank badge.
  */
 class GetWhatsappPhoneNumberStatus extends OrgAction
 {
@@ -50,9 +53,18 @@ class GetWhatsappPhoneNumberStatus extends OrgAction
             return $this->graphFailure($response, __('Meta did not return the status of this number.'));
         }
 
+        $data = Arr::only($response->json() ?? [], explode(',', self::FIELDS));
+
+        $settings = $shop->settings;
+        Arr::set($settings, 'whatsapp.last_status_check', [
+            'at'     => now()->toIso8601String(),
+            'status' => $data,
+        ]);
+        $shop->update(['settings' => $settings]);
+
         return [
             'ok'   => true,
-            'data' => Arr::only($response->json() ?? [], explode(',', self::FIELDS)),
+            'data' => $data,
         ];
     }
 

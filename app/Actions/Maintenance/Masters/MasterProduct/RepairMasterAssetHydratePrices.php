@@ -3,6 +3,7 @@
 namespace App\Actions\Maintenance\Masters\MasterProduct;
 
 use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
+use App\Actions\Masters\MasterAsset\UpdateMasterAssetPrices;
 use App\Actions\Masters\MasterShop\GetMasterShopCurrenciesRate;
 use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Models\Catalogue\Shop;
@@ -10,7 +11,9 @@ use App\Models\Masters\MasterAsset;
 use App\Models\Masters\MasterShop;
 use Illuminate\Console\Command;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Event;
 use Lorisleiva\Actions\Concerns\AsAction;
+use OwenIt\Auditing\Events\AuditCustom;
 use Laravel\Nightwatch\Facades\Nightwatch;
 
 class RepairMasterAssetHydratePrices
@@ -107,7 +110,24 @@ class RepairMasterAssetHydratePrices
         }
 
         if (!$dryRun) {
+            $oldPrices = is_array($masterAsset->master_prices) ? $masterAsset->master_prices : [];
+            $oldRrps   = is_array($masterAsset->master_rrps) ? $masterAsset->master_rrps : [];
+
             $masterAsset->updateQuietly($modelData);
+
+            if ($masterAsset->wasChanged(['master_prices', 'master_rrps'])) {
+                $masterAsset->auditEvent      = 'updated_master_prices';
+                $masterAsset->isCustomEvent   = true;
+                $masterAsset->auditCustomOld  = array_merge(
+                    UpdateMasterAssetPrices::getMasterPricesAudit($oldPrices),
+                    UpdateMasterAssetPrices::getMasterPricesAudit($oldRrps, 'RRP')
+                );
+                $masterAsset->auditCustomNew  = array_merge(
+                    UpdateMasterAssetPrices::getMasterPricesAudit($prices),
+                    UpdateMasterAssetPrices::getMasterPricesAudit($rrps, 'RRP')
+                );
+                Event::dispatch(new AuditCustom($masterAsset));
+            }
         }
 
         $expected       = count($priceExchanges);

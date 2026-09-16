@@ -30,6 +30,15 @@ class DeclineWebpageEditAccess extends OrgAction
         $lockData['requests'] = collect(Arr::get($lockData, 'requests', []))
             ->reject(fn (array $accessRequest) => $accessRequest['user_id'] == $requesterId)
             ->values()->all();
+        $lockData['declined_requests'] = collect(Arr::get($lockData, 'declined_requests', []))
+            ->reject(fn (array $declinedRequest) => $declinedRequest['user_id'] == $requesterId)
+            ->push([
+                'user_id'             => $requesterId,
+                'declined_by_user_id' => $approver->id,
+                'declined_at'         => now()->toIso8601String(),
+                'message'             => Arr::get($modelData, 'message'),
+            ])
+            ->values()->all();
 
         $webpage = $this->update($webpage, ['lock_data' => $lockData]);
 
@@ -38,7 +47,7 @@ class DeclineWebpageEditAccess extends OrgAction
             User::find($requesterId),
             $approver,
             __('Edit access to :webpage declined', ['webpage' => $webpage->code]),
-            $webpage->lockMessage()
+            Arr::get($modelData, 'message') ?: $webpage->lockMessage()
         );
 
         return $webpage;
@@ -57,6 +66,7 @@ class DeclineWebpageEditAccess extends OrgAction
     {
         return [
             'user_id' => ['required', 'integer', 'exists:users,id'],
+            'message' => ['sometimes', 'nullable', 'string', 'max:1000'],
         ];
     }
 

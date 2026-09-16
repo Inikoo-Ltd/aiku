@@ -40,7 +40,6 @@ import Highlight from '@tiptap/extension-highlight'
 import UtilsColorPicker from '@/Components/Utils/ColorPicker.vue'
 import EditorColorPicker from '@/Components/Forms/Fields/BubleTextEditor/EditorColorPicker.vue'
 import {CustomImage} from './CustomResizeImage/CustomImageSetting'
-import Dialog from 'primevue/dialog';
 import Placeholder from "@tiptap/extension-placeholder"
 import Link from "@tiptap/extension-link"
 import Iframe from "@/Components/Forms/Fields/BubleTextEditor/Iframe/IframeExtension.js"
@@ -67,8 +66,6 @@ import {
     faFileVideo,
     faPaintBrushAlt,
     faTextSize,
-    faDraftingCompass,
-    faExternalLink,
 } from "@far"
 import { faTable, faPalette, faUnlink, faTimes, faEllipsisH, faChevronDown, faFont, faHeading, faBracketsCurly } from "@fal"
 import { faEraser, faTint, faTable as fasTable, } from "@fas"
@@ -125,8 +122,6 @@ const showAddTableDialog = ref<boolean>(false)
 const showAddImageDialog = ref<boolean>(false)
 const showAddVariableDialog = ref<boolean>(false)
 const showLinkDialog = ref<boolean>()
-const CustomLinkConfirm = ref(false)
-const attrsCustomLink = ref<Object>(null)
 const tippyOptions = {
     theme: 'tiptap-bubble',
     placement: 'bottom',
@@ -1211,31 +1206,6 @@ onMounted(async () => {
         />
 
 
-        <Dialog
-            v-model:visible="CustomLinkConfirm"
-            :style="{ width: '25rem' }"
-            modal
-            :closable="false"
-            :dismissableMask="true"
-            :showHeader="false"
-        >
-            <div class="pt-5">
-                <ul class="list-none p-0">
-                    <li class="mb-2">
-                        <a :href="attrsCustomLink?.workshop" target="_blank"
-                            class="block px-4 py-2 bg-blue-500 text-white rounded-lg text-center hover:bg-blue-600 transition">
-                            <FontAwesomeIcon :icon="faDraftingCompass" /> Go to Workshop
-                        </a>
-                    </li>
-                    <li>
-                        <a :href="attrsCustomLink?.href" target="_blank"
-                            class="block px-4 py-2 bg-blue-500 text-white rounded-lg text-center hover:bg-blue-600 transition">
-                            <FontAwesomeIcon :icon="faExternalLink" /> Go to Page
-                        </a>
-                    </li>
-                </ul>
-            </div>
-        </Dialog>
     </div>
 </template>
 

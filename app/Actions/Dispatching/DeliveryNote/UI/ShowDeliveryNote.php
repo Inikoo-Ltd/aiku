@@ -1161,6 +1161,7 @@ class ShowDeliveryNote extends OrgAction
                 'previous' => $this->getPrevious($deliveryNote, $request),
                 'next'     => $this->getNext($deliveryNote, $request),
             ],
+            'staff_task'    => ['model_type' => 'DeliveryNote', 'model_id' => $deliveryNote->id],
             'staff_chat'    => [
                 'context_type' => 'DeliveryNote',
                 'context_id'   => $deliveryNote->id,

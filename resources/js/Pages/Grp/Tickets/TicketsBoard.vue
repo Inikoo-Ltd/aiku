@@ -491,6 +491,7 @@ const cancelAssign = () => {
 								:checked="boardFilters.assignee_username.includes(option.value)"
 								@change="toggleFilter('assignee_username', option.value)" />
 							<TicketUserAvatar :name="option.label ?? option.value" :avatar="avatarFor(option.value) ? { original: avatarFor(option.value) } : null" size="xs" />
+							<span class="truncate text-sm text-gray-700">{{ shortName(option.value) }}</span>
 							<span class="ml-auto text-xs text-gray-400">{{ option.count }}</span>
 						</label>
 					</template>

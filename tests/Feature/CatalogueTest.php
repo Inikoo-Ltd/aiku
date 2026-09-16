@@ -1457,3 +1457,63 @@ test('faire case size change flags the product for units review until its trade 
         ->and((float) $product->tradeUnits->first()->pivot->quantity)->toBe(3.0)
         ->and(\App\Actions\Maintenance\Catalogue\FlagFaireCaseSizeMismatch::make()->handle())->toBe(0);
 });
+
+test('a product faire no longer returns is discontinued and comes back when republished', function () {
+    $faireShop = StoreShop::make()->action($this->organisation, array_merge(Shop::factory()->definition(), [
+        'type'   => ShopTypeEnum::EXTERNAL->value,
+        'engine' => \App\Enums\Catalogue\Shop\ShopEngineEnum::FAIRE->value,
+    ]));
+    $live = StoreProduct::make()->action($faireShop, array_merge(Product::factory()->definition(), ['price' => 10, 'marketplace_id' => 'variant_live']));
+    $gone = StoreProduct::make()->action($faireShop, array_merge(Product::factory()->definition(), ['price' => 10, 'marketplace_id' => 'variant_gone']));
+    $live->updateQuietly(['state' => \App\Enums\Catalogue\Product\ProductStateEnum::ACTIVE]);
+    $gone->updateQuietly(['state' => \App\Enums\Catalogue\Product\ProductStateEnum::ACTIVE]);
+    foreach (range(1, 3) as $i) {
+        StoreProduct::make()->action($faireShop, array_merge(Product::factory()->definition(), ['price' => 10, 'marketplace_id' => "variant_live_$i"]));
+    }
+
+    $prices       = [['retail_price' => ['currency' => $faireShop->currency->code, 'amount_minor' => 3000], 'wholesale_price' => ['currency' => $faireShop->currency->code, 'amount_minor' => 1000]]];
+    $faireProduct = ['id' => 'product_1', 'name' => 'Gift box', 'description' => 'Red', 'lifecycle_state' => 'PUBLISHED', 'unit_multiplier' => 1, 'variants' => [
+        ['id' => 'variant_live', 'sku' => $live->code, 'name' => 'default', 'lifecycle_state' => 'PUBLISHED', 'prices' => $prices],
+        ['id' => 'variant_draft', 'sku' => 'DRAFT-1', 'name' => 'draft', 'lifecycle_state' => 'DRAFT', 'prices' => $prices],
+    ]];
+
+    $action         = \App\Actions\Catalogue\Shop\External\Faire\GetFaireProducts::make();
+    $liveVariantIds = $action->getLiveFaireVariantIds([$faireProduct]);
+
+    expect($liveVariantIds)->toBe(['variant_live' => true]);
+
+    $liveVariantIds += ['variant_live_1' => true, 'variant_live_2' => true, 'variant_live_3' => true];
+
+    expect($action->discontinueProductsGoneFromFaire($faireShop, $liveVariantIds))->toBe(1)
+        ->and($live->refresh()->state)->toBe(\App\Enums\Catalogue\Product\ProductStateEnum::ACTIVE)
+        ->and($gone->refresh()->state)->toBe(\App\Enums\Catalogue\Product\ProductStateEnum::DISCONTINUED)
+        ->and($action->discontinueProductsGoneFromFaire($faireShop, $liveVariantIds))->toBe(0);
+
+    $faireProduct['variants'][] = ['id' => 'variant_gone', 'sku' => $gone->code, 'name' => 'back', 'lifecycle_state' => 'PUBLISHED', 'prices' => $prices];
+    $action->upsertFaireProduct($faireShop, $faireProduct);
+    $gone->refresh();
+
+    expect($gone->state)->toBe(\App\Enums\Catalogue\Product\ProductStateEnum::IN_PROCESS)
+        ->and($gone->status)->not->toBe(\App\Enums\Catalogue\Product\ProductStatusEnum::DISCONTINUED);
+
+    SyncProductTradeUnits::run($gone, [['id' => $this->tradeUnit1->id, 'quantity' => 1]]);
+    $gone->updateQuietly(['state' => \App\Enums\Catalogue\Product\ProductStateEnum::DISCONTINUED, 'status' => \App\Enums\Catalogue\Product\ProductStatusEnum::DISCONTINUED]);
+    $action->upsertFaireProduct($faireShop, $faireProduct);
+    $gone->refresh();
+
+    expect($gone->state)->toBe(\App\Enums\Catalogue\Product\ProductStateEnum::ACTIVE)
+        ->and($gone->status)->not->toBe(\App\Enums\Catalogue\Product\ProductStatusEnum::DISCONTINUED);
+});
+
+test('faire discontinue is skipped when faire returns far fewer live products than aiku has', function () {
+    $faireShop = StoreShop::make()->action($this->organisation, array_merge(Shop::factory()->definition(), [
+        'type'   => ShopTypeEnum::EXTERNAL->value,
+        'engine' => \App\Enums\Catalogue\Shop\ShopEngineEnum::FAIRE->value,
+    ]));
+    $products = collect(range(1, 4))->map(fn ($i) => StoreProduct::make()->action($faireShop, array_merge(Product::factory()->definition(), ['price' => 10, 'marketplace_id' => "short_fetch_$i"])));
+
+    $discontinued = \App\Actions\Catalogue\Shop\External\Faire\GetFaireProducts::make()->discontinueProductsGoneFromFaire($faireShop, ['short_fetch_1' => true, 'short_fetch_2' => true]);
+
+    expect($discontinued)->toBe(0)
+        ->and($products->every(fn ($product) => $product->refresh()->state !== \App\Enums\Catalogue\Product\ProductStateEnum::DISCONTINUED))->toBeTrue();
+});

@@ -15,8 +15,13 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $channel_type
  * @property mixed $budget_amount
  * @property mixed $currency_code
- * @property mixed $spend_30d
- * @property mixed $spend_total
+ * @property mixed $impressions
+ * @property mixed $clicks
+ * @property mixed $ctr
+ * @property mixed $avg_cpc
+ * @property mixed $conversions
+ * @property mixed $spend
+ * @property mixed $roas
  */
 class GoogleAdsCampaignsResource extends JsonResource
 {
@@ -26,11 +31,11 @@ class GoogleAdsCampaignsResource extends JsonResource
         $campaign = $this->resource;
 
         return [
-            'id'            => $campaign->id,
-            'slug'          => $campaign->slug,
-            'reference'     => $campaign->reference,
-            'name'          => $campaign->name,
-            'route'         => [
+            'id'        => $campaign->id,
+            'slug'      => $campaign->slug,
+            'reference' => $campaign->reference,
+            'name'      => $campaign->name,
+            'route'     => [
                 'name'       => 'grp.org.shops.show.marketing.google_ads.show',
                 'parameters' => array_merge(
                     request()->route()->originalParameters(),
@@ -40,9 +45,18 @@ class GoogleAdsCampaignsResource extends JsonResource
             'status'        => $campaign->status,
             'channel_type'  => $campaign->channel_type,
             'budget_amount' => $campaign->budget_amount,
+
+            /* The account's currency, which is what the budget and Google's own figures are quoted in.
+               Spend is the shop's currency instead, so the two are never formatted from one code. */
             'currency_code' => $campaign->currency_code,
-            'spend_30d'     => $campaign->spend_30d,
-            'spend_total'   => $campaign->spend_total,
+
+            'impressions' => (int) $campaign->impressions,
+            'clicks'      => (int) $campaign->clicks,
+            'ctr'         => $campaign->ctr !== null ? (float) $campaign->ctr : null,
+            'avg_cpc'     => $campaign->avg_cpc !== null ? (float) $campaign->avg_cpc : null,
+            'conversions' => (float) $campaign->conversions,
+            'spend'       => (float) $campaign->spend,
+            'roas'        => $campaign->roas !== null ? (float) $campaign->roas : null,
         ];
     }
 }

@@ -113,6 +113,14 @@ const props = defineProps<{
   recurring_bill_route: routeType
   invoice_refund: InvoiceResource
   original_invoice: InvoiceResource
+  credit_transaction?: {
+    requested_by?: string
+    applied_by?: string
+    notes?: string
+    amount: string
+    date: string
+    route: routeType
+  }
   invoice_pay: {
     routes: {
       fetch_payment_accounts: routeType
@@ -482,8 +490,18 @@ const getInvoiceRoute = () => {
             </dd>
         </dl>
 
+        <!-- Credit transaction (standalone credit note settled on the customer balance) -->
+        <dl v-if="credit_transaction" class="flex flex-col w-fit gap-y-1 my-2 text-base text-gray-500">
+            <Link class="primaryLink w-fit" :href="route(credit_transaction.route.name, credit_transaction.route.parameters)">
+                {{ trans('Settled on customer balance') }} {{ useFormatTime(credit_transaction.date) }}
+            </Link>
+            <div v-if="credit_transaction.requested_by">{{ trans('Requested by') }}: {{ credit_transaction.requested_by }}</div>
+            <div v-if="credit_transaction.applied_by">{{ trans('Applied by') }}: {{ credit_transaction.applied_by }}</div>
+            <div v-if="credit_transaction.notes" class="italic">{{ credit_transaction.notes }}</div>
+        </dl>
+
         <!-- Invoice -->
-        <dl v-tooltip="trans('Invoice')" class="flex items-center w-fit flex-none gap-x-2 my-2">
+        <dl v-if="original_invoice" v-tooltip="trans('Invoice')" class="flex items-center w-fit flex-none gap-x-2 my-2">
             <dt class="flex-none">
                 <FontAwesomeIcon :icon="faFileInvoiceDollar" fixed-width aria-hidden="true" class="text-gray-500" />
             </dt>

@@ -112,6 +112,7 @@ class EditShop extends OrgAction
 
         $viewContactOptionsPanel = (bool) Arr::get($shop->settings, 'chat.view_contact_options_panel', false);
         $enableWhatsapp = (bool) Arr::get($shop->settings, 'whatsapp.enabled', false);
+        $whatsappLastStatusCheck = Arr::get($shop->settings, 'whatsapp.last_status_check');
         $whatsappRouteParameters = [
             'organisation' => $shop->organisation->slug,
             'shop'         => $shop->slug,
@@ -791,11 +792,14 @@ class EditShop extends OrgAction
                                 'label'        => __('Phone Number Status'),
                                 'information'  => __('Ask Meta whether this number is live. A number that is not connected can be brought online here.'),
                                 'noSaveButton' => true,
+                                'value'        => $whatsappLastStatusCheck,
                                 'routes'       => [
                                     'status'       => ['name' => 'grp.org.shops.show.chat.whatsapp_phone.status', 'parameters' => $whatsappRouteParameters],
                                     'request_code' => ['name' => 'grp.org.shops.show.chat.whatsapp_phone.request_code', 'parameters' => $whatsappRouteParameters],
                                     'verify_code'  => ['name' => 'grp.org.shops.show.chat.whatsapp_phone.verify_code', 'parameters' => $whatsappRouteParameters],
                                     'register'     => ['name' => 'grp.org.shops.show.chat.whatsapp_phone.register', 'parameters' => $whatsappRouteParameters],
+                                    'subscribed_apps' => ['name' => 'grp.org.shops.show.chat.whatsapp_app.subscribed', 'parameters' => $whatsappRouteParameters],
+                                    'subscribe_app'   => ['name' => 'grp.org.shops.show.chat.whatsapp_app.subscribe', 'parameters' => $whatsappRouteParameters],
                                 ],
                             ],
                         ] : [],

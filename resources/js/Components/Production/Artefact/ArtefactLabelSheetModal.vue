@@ -1,18 +1,19 @@
 <script setup lang="ts">
 import { computed, nextTick, reactive, ref, watch } from "vue"
+import JsBarcode from "jsbarcode"
 import axios from "axios"
 import { notify } from "@kyvg/vue3-notification"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faCopy, faEyeDropper, faFilePdf, faImage, faPlus, faTags, faTrashAlt } from "@fal"
-import pdfWorkerUrl from "pdfjs-dist/build/pdf.worker.min.mjs?url"
+import { faCopy, faEyeDropper, faEyeSlash, faFilePdf, faImage, faPlus, faTags, faTimes, faTrashAlt } from "@fal"
+import pdfWorkerUrl from "pdfjs-dist/legacy/build/pdf.worker.min.mjs?url"
 import Modal from "@/Components/Utils/Modal.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { ctrans } from "@/Composables/useTrans"
 import { routeType } from "@/types/route"
 import PingIcon from "@/Components/Utils/PingIcon.vue"
 
-library.add(faCopy, faEyeDropper, faFilePdf, faImage, faPlus, faTags, faTrashAlt)
+library.add(faCopy, faEyeDropper, faEyeSlash, faFilePdf, faImage, faPlus, faTags, faTimes, faTrashAlt)
 
 interface StoredArtwork {
     name: string
@@ -44,15 +45,21 @@ const props = defineProps<{
         update_route: routeType
         delete_route: routeType
         publish_route: routeType
+        unpublish_route: routeType
         batch_code: string
         expiry_date: string
+        barcode: string
         labels: SavedLabel[]
     }
 }>()
 
 const emits = defineEmits<{ (e: "onClose"): void; (e: "onSaved"): void }>()
 
-type ItemSource = "batch_code" | "expiry_date"
+const ITEM_SOURCES = ["batch_code", "expiry_date", "barcode"] as const
+
+type ItemSource = typeof ITEM_SOURCES[number]
+
+type BarcodeType = "ean13" | "code128"
 
 interface LabelItem {
     id: number
@@ -65,6 +72,10 @@ interface LabelItem {
     backgroundColor: string | null
     bold: boolean
     rotation: Rotation
+    barcodeType: BarcodeType
+    barcodeWidth: number
+    barcodeHeight: number
+    barcodeShowValue: boolean
 }
 
 type Rotation = 0 | 90 | 180 | 270
@@ -81,6 +92,14 @@ const HIGHLIGHTED_ARTWORK_OPACITY = 0.15
 const HIGHLIGHT_ON_DARK_TEXT = { backgroundColor: "#fde047", boxShadow: "0 0 0 2px #b45309" }
 const HIGHLIGHT_ON_LIGHT_TEXT = { backgroundColor: "#111827", boxShadow: "0 0 0 2px #fbbf24" }
 const LINE_HEIGHT = 1.1
+const BARCODE_FORMATS: Record<BarcodeType, string> = { ean13: "EAN13", code128: "CODE128" }
+const DEFAULT_BARCODE_SIZE = { width: 0.6, height: 0.3 }
+
+/**
+ * Under this the modules print too narrow for a hand scanner to separate them, so the panel says so
+ * rather than letting a sheet go out that cannot be read at the bench.
+ */
+const MIN_SCANNABLE_WIDTH_MM = 20
 const ZOOM_LIMITS = { min: 0.5, max: 8 }
 const ZOOM_STEP = 1.25
 
@@ -151,19 +170,39 @@ const gridBeforeSheetArtwork = {
 
 let nextItemId = 1
 
-const createItem = (source: ItemSource, overrides: Partial<LabelItem> = {}): LabelItem => ({
-    id: nextItemId++,
-    source,
-    text: source === "batch_code" ? props.labelSheet.batch_code : props.labelSheet.expiry_date,
-    x: 0.06,
-    y: source === "batch_code" ? 0.08 : 0.28,
-    fontSize: 8,
-    color: "#111827",
-    backgroundColor: null,
-    bold: true,
-    rotation: 0,
-    ...overrides,
-})
+const SOURCE_DEFAULT_Y: Record<ItemSource, number> = {
+    batch_code: 0.08,
+    expiry_date: 0.28,
+    barcode: 0.48,
+}
+
+/**
+ * EAN13 only reads back the 13 digit codes, so anything else, the outer CODE 128 with its letter
+ * included, is drawn as a CODE 128.
+ */
+const detectBarcodeType = (text: string): BarcodeType => (/^\d{13}$/.test(text.trim()) ? "ean13" : "code128")
+
+const createItem = (source: ItemSource, overrides: Partial<LabelItem> = {}): LabelItem => {
+    const text = props.labelSheet[source] ?? ""
+
+    return {
+        id: nextItemId++,
+        source,
+        text,
+        x: 0.06,
+        y: SOURCE_DEFAULT_Y[source],
+        fontSize: 8,
+        color: "#111827",
+        backgroundColor: null,
+        bold: true,
+        rotation: 0,
+        barcodeType: detectBarcodeType(text),
+        barcodeWidth: DEFAULT_BARCODE_SIZE.width,
+        barcodeHeight: DEFAULT_BARCODE_SIZE.height,
+        barcodeShowValue: true,
+        ...overrides,
+    }
+}
 
 const items = ref<LabelItem[]>([createItem("batch_code"), createItem("expiry_date")])
 const selectedItemId = ref<number | null>(items.value[0]?.id ?? null)
@@ -173,6 +212,7 @@ const selectedItem = computed(() => items.value.find(item => item.id === selecte
 const sourceLabels: Record<ItemSource, string> = {
     batch_code: ctrans("Batch code"),
     expiry_date: ctrans("Expiry date"),
+    barcode: ctrans("Barcode"),
 }
 
 const addItem = (source: ItemSource) => {
@@ -191,6 +231,10 @@ const duplicateItem = (item: LabelItem) => {
         backgroundColor: item.backgroundColor,
         bold: item.bold,
         rotation: item.rotation,
+        barcodeType: item.barcodeType,
+        barcodeWidth: item.barcodeWidth,
+        barcodeHeight: item.barcodeHeight,
+        barcodeShowValue: item.barcodeShowValue,
     })
     items.value.push(copy)
     selectedItemId.value = copy.id
@@ -291,6 +335,75 @@ const cells = computed(() => {
 
 const printableItems = computed(() => items.value.filter(item => item.text.trim()))
 
+/**
+ * The bars are drawn once per text and handed to every cell as a picture, the same way the sheet
+ * places them, so what is dragged here is what comes out of the PDF.
+ */
+const isValidEan13 = (text: string) => {
+    if (!/^\d{13}$/.test(text)) return false
+
+    const digits = text.split("").map(Number)
+    const check = digits.pop() as number
+    const sum = digits.reduce((total, digit, index) => total + digit * (index % 2 === 0 ? 1 : 3), 0)
+
+    return (10 - (sum % 10)) % 10 === check
+}
+
+const renderBarcodeUri = (item: LabelItem): string | null => {
+    const text = item.text.trim()
+
+    if (!text) return null
+
+    if (item.barcodeType === "ean13" && !isValidEan13(text)) return null
+
+    const element = document.createElementNS("http://www.w3.org/2000/svg", "svg")
+    let isValid = true
+
+    try {
+        JsBarcode(element, text, {
+            format: BARCODE_FORMATS[item.barcodeType],
+            displayValue: false,
+            margin: 0,
+            width: 2,
+            height: 60,
+            lineColor: item.color,
+            background: "transparent",
+            valid: (valid: boolean) => { isValid = valid },
+        })
+    } catch {
+        return null
+    }
+
+    if (!isValid) return null
+
+    const width = element.getAttribute("width")
+    const height = element.getAttribute("height")
+
+    element.setAttribute("viewBox", `0 0 ${width} ${height}`)
+    element.setAttribute("preserveAspectRatio", "none")
+    element.removeAttribute("width")
+    element.removeAttribute("height")
+
+    return `data:image/svg+xml;base64,${window.btoa(new XMLSerializer().serializeToString(element))}`
+}
+
+const barcodeUris = computed(() => {
+    const uris: Record<number, string | null> = {}
+
+    items.value.forEach(item => {
+        if (item.source === "barcode") {
+            uris[item.id] = renderBarcodeUri(item)
+        }
+    })
+
+    return uris
+})
+
+const barcodeWidthInMillimeters = (item: LabelItem) => item.barcodeWidth * labelWidth.value
+
+const isBarcodeReadable = (item: LabelItem) =>
+    Boolean(barcodeUris.value[item.id]) && barcodeWidthInMillimeters(item) >= MIN_SCANNABLE_WIDTH_MM
+
 const fontSizePx = (item: LabelItem) => item.fontSize * (25.4 / 72) * scale.value
 
 const backgroundStyle = computed(() => {
@@ -341,6 +454,12 @@ const previewOnlyHighlightStyle = (item: LabelItem) => {
 
     return isLightText(item.color) ? HIGHLIGHT_ON_LIGHT_TEXT : HIGHLIGHT_ON_DARK_TEXT
 }
+
+const barsStyle = (item: LabelItem) => ({
+    display: "block",
+    width: `${item.barcodeWidth * toPx(labelWidth.value)}px`,
+    height: `${item.barcodeHeight * toPx(labelHeight.value)}px`,
+})
 
 const itemStyle = (item: LabelItem) => ({
     left: `${item.x * toPx(labelWidth.value)}px`,
@@ -455,11 +574,11 @@ const detectSheetArtwork = (width: number, height: number) => {
 
 const isPdf = (file: File) => file.type === PDF_MIME_TYPE || /\.pdf$/i.test(file.name)
 
-let pdfjs: typeof import("pdfjs-dist") | null = null
+let pdfjs: typeof import("pdfjs-dist/legacy/build/pdf.mjs") | null = null
 
 const loadPdfjs = async () => {
     if (!pdfjs) {
-        pdfjs = await import("pdfjs-dist")
+        pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs")
         pdfjs.GlobalWorkerOptions.workerSrc = pdfWorkerUrl
     }
 
@@ -546,7 +665,7 @@ const chipElements = reactive<Record<number, HTMLElement | null>>({})
 const editorCell = ref<HTMLElement | null>(null)
 const draggingId = ref<number | null>(null)
 const dragOffset = reactive({ x: 0, y: 0 })
-const resizing = ref<{ id: number; startX: number; startY: number; startLength: number; startFontSize: number } | null>(null)
+const resizing = ref<{ id: number; startX: number; startY: number; startLength: number; startFontSize: number; startBarcodeWidth: number; startBarcodeHeight: number } | null>(null)
 
 const clamp = (value: number, min: number, max: number) => Math.min(Math.max(value, min), max)
 
@@ -596,6 +715,8 @@ const startResize = (item: LabelItem, event: PointerEvent) => {
         startY: event.clientY,
         startLength: chip.offsetWidth,
         startFontSize: item.fontSize,
+        startBarcodeWidth: item.barcodeWidth,
+        startBarcodeHeight: item.barcodeHeight,
     }
 
     const handle = event.currentTarget as HTMLElement
@@ -605,7 +726,18 @@ const startResize = (item: LabelItem, event: PointerEvent) => {
 const onResize = (item: LabelItem, event: PointerEvent) => {
     if (resizing.value?.id !== item.id) return
 
-    const { startX, startY, startLength, startFontSize } = resizing.value
+    const { startX, startY, startLength, startFontSize, startBarcodeWidth, startBarcodeHeight } = resizing.value
+
+    if (item.source === "barcode") {
+        item.barcodeWidth = clamp(
+            Number((startBarcodeWidth + (event.clientX - startX) / toPx(labelWidth.value)).toFixed(4)), 0.02, 1
+        )
+        item.barcodeHeight = clamp(
+            Number((startBarcodeHeight + (event.clientY - startY) / toPx(labelHeight.value)).toFixed(4)), 0.02, 1
+        )
+        return
+    }
+
     const alongText = {
         0: event.clientX - startX,
         90: event.clientY - startY,
@@ -676,9 +808,14 @@ const applyArtworkFile = async (file: File, isFromDisk: boolean) => {
             }
         }
     } catch (error: any) {
+        console.error('error applyArtworkFile', error)
+
+        const summary = isPdf(file) ? ctrans("The PDF could not be read") : ctrans("The image could not be read")
+        const detail = [error?.name, error?.message].filter(Boolean).join(": ")
+
         notify({
             title: ctrans("Something went wrong"),
-            text: isPdf(file) ? ctrans("The PDF could not be read") : ctrans("The image could not be read"),
+            text: detail ? `${summary} (${detail})` : summary,
             type: "error",
         })
     } finally {
@@ -744,6 +881,13 @@ const appendLayout = (formData: FormData) => {
         formData.append(`fields[${index}][bold]`, item.bold ? "1" : "0")
         formData.append(`fields[${index}][rotation]`, String(item.rotation))
 
+        if (item.source === "barcode") {
+            formData.append(`fields[${index}][barcode_type]`, item.barcodeType)
+            formData.append(`fields[${index}][barcode_width]`, String(item.barcodeWidth))
+            formData.append(`fields[${index}][barcode_height]`, String(item.barcodeHeight))
+            formData.append(`fields[${index}][barcode_show_value]`, item.barcodeShowValue ? "1" : "0")
+        }
+
         const length = textLengthInMillimeters(item)
         if (length) {
             formData.append(`fields[${index}][length]`, length.toFixed(3))
@@ -804,6 +948,40 @@ const publishLabel = async (labelId: number): Promise<SavedLabel> => {
     return response.data?.data ?? response.data
 }
 
+const unpublishLabel = async () => {
+    if (!currentLabelId.value) {
+        return
+    }
+
+    isSaving.value = true
+
+    try {
+        const response = await axios.post(
+            route(props.labelSheet.unpublish_route.name, {
+                ...props.labelSheet.unpublish_route.parameters,
+                label: currentLabelId.value,
+            })
+        )
+
+        rememberSavedLabel(response.data?.data ?? response.data)
+        emits("onSaved")
+
+        notify({
+            title: ctrans("Unpublished"),
+            text: ctrans("The label is back to processed, it can no longer be downloaded from the to produce board."),
+            type: "success",
+        })
+    } catch (error: any) {
+        notify({
+            title: ctrans("Something went wrong"),
+            text: error?.response?.data?.message ?? ctrans("The label could not be unpublished"),
+            type: "error",
+        })
+    } finally {
+        isSaving.value = false
+    }
+}
+
 const saveLabel = async (asNewLabel: boolean, shouldPublish = false) => {
     const name = labelName.value.trim()
 
@@ -846,11 +1024,15 @@ const saveLabel = async (asNewLabel: boolean, shouldPublish = false) => {
         rememberSavedLabel(shouldPublish ? await publishLabel(savedLabel.id) : savedLabel)
         emits("onSaved")
 
+        const staysPublished = !shouldPublish && savedLabel.state === "published"
+
         notify({
             title: shouldPublish ? ctrans("Published") : ctrans("Saved"),
             text: shouldPublish
                 ? ctrans("The label can now be downloaded from the Preparing lane of the to produce board.")
-                : ctrans("The label can be picked up again later."),
+                : staysPublished
+                    ? ctrans("The changes are live, the label stays published.")
+                    : ctrans("The label can be picked up again later."),
             type: "success",
         })
     } catch (error: any) {
@@ -892,7 +1074,7 @@ const loadLabel = async (label: SavedLabel) => {
         canvasRotation.value = (Number(layout.canvas_rotation ?? 0) as Rotation)
 
         items.value = (layout.fields ?? []).map((field: Record<string, any>) =>
-            createItem(field.source === "expiry_date" ? "expiry_date" : "batch_code", {
+            createItem((ITEM_SOURCES as readonly string[]).includes(field.source) ? field.source as ItemSource : "batch_code", {
                 text: String(field.text ?? ""),
                 x: Number(field.x ?? 0),
                 y: Number(field.y ?? 0),
@@ -901,6 +1083,10 @@ const loadLabel = async (label: SavedLabel) => {
                 backgroundColor: field.background_color ? String(field.background_color) : null,
                 bold: Boolean(field.bold),
                 rotation: (Number(field.rotation ?? 0) as Rotation),
+                barcodeType: field.barcode_type === "ean13" ? "ean13" : "code128",
+                barcodeWidth: Number(field.barcode_width ?? DEFAULT_BARCODE_SIZE.width),
+                barcodeHeight: Number(field.barcode_height ?? DEFAULT_BARCODE_SIZE.height),
+                barcodeShowValue: field.barcode_show_value === undefined ? true : Boolean(field.barcode_show_value),
             })
         )
         selectedItemId.value = items.value[0]?.id ?? null
@@ -957,6 +1143,19 @@ const startNewLabel = () => {
     items.value = [createItem("batch_code"), createItem("expiry_date")]
     selectedItemId.value = items.value[0]?.id ?? null
 }
+
+/**
+ * Highlighting needs a text to highlight, so the button turns itself off once the last one is gone,
+ * otherwise it would stay disabled while the artwork keeps being faded.
+ */
+watch(
+    () => items.value.length,
+    count => {
+        if (!count) {
+            isHighlightingTexts.value = false
+        }
+    }
+)
 
 /**
  * The modal is opened either on a saved label or on a blank one, so the design it shows is decided
@@ -1070,30 +1269,31 @@ const describeFailure = async (error: any): Promise<string> => {
                         @click="saveLabel(false, true)" />
                     <PingIcon v-if="currentLabel?.state !== 'published'" class="text-[7px] text-red-500 !absolute -top-0.5 -right-0.5" aria-hidden="true" />
                 </div>
+                <Button
+                    v-if="currentLabel?.state === 'published'"
+                    type="negative"
+                    size="xs"
+                    icon="fal fa-eye-slash"
+                    :label="ctrans('Unpublish')"
+                    :aria-label="ctrans('Take the label back to processed, it stops being downloadable')"
+                    :tooltip="ctrans('Take the label back to processed, it stops being downloadable from the to produce board')"
+                    :aria-busy="isSaving"
+                    :loading="isSaving"
+                    @click="unpublishLabel" />
+                <div class="ml-1 border-l border-gray-200 pl-3">
+                    <Button
+                        type="tertiary"
+                        size="xs"
+                        icon="fal fa-times"
+                        :label="ctrans('Close')"
+                        :aria-label="ctrans('Close the label editor')"
+                        @click="emits('onClose')" />
+                </div>
             </div>
         </header>
 
         <div class="flex flex-col lg:flex-row gap-6">
             <aside class="w-full lg:w-80 shrink-0 space-y-4" :aria-label="ctrans('Label settings')">
-                <div role="group" aria-labelledby="artefact-label-orientation-title">
-                    <div id="artefact-label-orientation-title" class="text-xs text-gray-500 uppercase tracking-wide mb-1">{{ ctrans("Orientation") }}</div>
-                    <div class="flex gap-2" role="radiogroup" aria-labelledby="artefact-label-orientation-title">
-                        <button
-                            v-for="option in (['portrait', 'landscape'] as const)"
-                            :key="option"
-                            type="button"
-                            role="radio"
-                            :aria-checked="orientation === option"
-                            class="flex-1 rounded border px-2 py-1.5 text-sm"
-                            :class="orientation === option ? 'border-indigo-500 bg-indigo-50 text-indigo-700' : 'border-gray-300 text-gray-600 hover:bg-gray-50'"
-                            @click="orientation = option">
-                            {{ option === 'portrait' ? ctrans("Vertical") : ctrans("Horizontal") }}
-                        </button>
-                    </div>
-                </div>
-
-                <hr class="border-t border-gray-400 border-dashed" aria-hidden="true" />
-
                 <!-- Field: Background artwork -->
                 <div role="group" aria-labelledby="artefact-label-artwork-title">
                     <div id="artefact-label-artwork-title" class="text-xs text-gray-500 uppercase tracking-wide mb-1">
@@ -1138,26 +1338,6 @@ const describeFailure = async (error: any): Promise<string> => {
                         <div v-if="isVectorArtwork" class="mt-1 text-xs text-emerald-600">
                             {{ ctrans("Placed as vector, the text inside the PDF stays selectable.") }}
                         </div>
-                    </div>
-                </div>
-
-                <!-- <hr class="border-t border-gray-400 border-dashed" /> -->
-
-                <div role="group" aria-labelledby="artefact-label-canvas-rotation-title">
-                    <div id="artefact-label-canvas-rotation-title" class="text-xs text-gray-500 uppercase tracking-wide mb-1">{{ ctrans("Canvas rotation") }}</div>
-                    <div class="flex gap-1" role="radiogroup" aria-labelledby="artefact-label-canvas-rotation-title">
-                        <button
-                            v-for="angle in ROTATIONS"
-                            :key="angle"
-                            type="button"
-                            role="radio"
-                            :aria-checked="canvasRotation === angle"
-                            :aria-label="ctrans('Rotate artwork :angle degrees', { angle: String(angle) })"
-                            class="flex-1 rounded border px-2 py-1.5 text-sm"
-                            :class="canvasRotation === angle ? 'border-indigo-500 bg-indigo-50 text-indigo-700' : 'border-gray-300 text-gray-600 hover:bg-gray-50'"
-                            @click="canvasRotation = angle">
-                            {{ angle }}°
-                        </button>
                     </div>
                 </div>
 
@@ -1233,15 +1413,30 @@ const describeFailure = async (error: any): Promise<string> => {
                 </label>
 
                 <div class="space-y-2" role="group" aria-labelledby="artefact-label-texts-title">
-                    <div id="artefact-label-texts-title" class="flex items-center gap-2 text-xs text-gray-500 uppercase tracking-wide">
-                        {{ ctrans("Texts") }}
-                        <span
-                            class="rounded-full bg-gray-200 px-1.5 py-0.5 text-[10px] font-semibold tabular-nums text-gray-600"
-                            :aria-label="ctrans(':count texts on the label', { count: String(items.length) })">
-                            {{ items.length }}
-                        </span>
+                    <div class="flex justify-between">
+                        <div id="artefact-label-texts-title" class="flex items-center gap-2 text-xs text-gray-500 uppercase tracking-wide">
+                            {{ ctrans("Texts") }}
+                            <span
+                                class="rounded-full bg-gray-200 px-1.5 py-0.5 text-[10px] font-semibold tabular-nums text-gray-600"
+                                :aria-label="ctrans(':count texts on the label', { count: String(items.length) })">
+                                {{ items.length }}
+                            </span>
+                        </div>
+
+                        
+                        <button
+                            v-tooltip="ctrans('Highlights batch code and expiry date in the preview PDF, so can find it easier.')"
+                            type="button"
+                            :disabled="items.length === 0"
+                            class="rounded border px-2 py-0.5 text-xs border-amber-500 disabled:border-gray-300 disabled:text-gray-400"
+                            :class="isHighlightingTexts ? ' bg-amber-100 text-amber-700' : 'text-gray-600 hover:bg-gray-50'"
+                            :title="ctrans('Fades the artwork and puts the texts on a contrasting patch, only here in the preview.')"
+                            :aria-pressed="isHighlightingTexts"
+                            @click="isHighlightingTexts = !isHighlightingTexts">
+                            {{ ctrans("Highlight texts") }}
+                        </button>
                     </div>
-                    <div class="flex gap-2" role="toolbar" :aria-label="ctrans('Add text')">
+                    <div class="flex flex-wrap gap-2" role="toolbar" :aria-label="ctrans('Add text')">
                         <Button type="tertiary" size="xs" icon="fal fa-plus"
                             :label="sourceLabels.batch_code"
                             :aria-label="ctrans('Add :field text', { field: sourceLabels.batch_code })"
@@ -1250,6 +1445,13 @@ const describeFailure = async (error: any): Promise<string> => {
                             :label="sourceLabels.expiry_date"
                             :aria-label="ctrans('Add :field text', { field: sourceLabels.expiry_date })"
                             @click="addItem('expiry_date')" />
+                        <Button type="tertiary" size="xs" icon="fal fa-plus"
+                            :label="sourceLabels.barcode"
+                            :aria-label="ctrans('Add :field text', { field: sourceLabels.barcode })"
+                            :tooltip="labelSheet.barcode
+                                ? ctrans('The barcode kept on the stock (SKU), :barcode', { barcode: labelSheet.barcode })
+                                : ctrans('The stock (SKU) has no barcode yet, type it in after adding it')"
+                            @click="addItem('barcode')" />
                     </div>
 
                     <div v-if="!items.length" class="rounded border border-dashed border-gray-300 px-3 py-2 text-xs text-gray-500" role="status">
@@ -1314,6 +1516,60 @@ const describeFailure = async (error: any): Promise<string> => {
                     <input v-model="selectedItem.text" type="text" name="text"
                         :aria-label="ctrans(':field text content', { field: sourceLabels[selectedItem.source] })"
                         class="w-full rounded border border-gray-300 px-2 py-1 text-sm" />
+
+                    <template v-if="selectedItem.source === 'barcode'">
+                        <div class="flex flex-wrap items-center gap-2">
+                            <label class="flex items-center gap-1 text-xs text-gray-500">
+                                {{ ctrans("Symbology") }}
+                                <select v-model="selectedItem.barcodeType" name="barcode_type"
+                                    :aria-label="ctrans('Barcode symbology')"
+                                    class="rounded border border-gray-300 px-1.5 py-1 text-sm">
+                                    <option value="code128">{{ ctrans("CODE 128") }}</option>
+                                    <option value="ean13">{{ ctrans("EAN13") }}</option>
+                                </select>
+                            </label>
+                            <label class="flex items-center gap-1 text-xs text-gray-500">
+                                <input v-model="selectedItem.barcodeShowValue" type="checkbox" name="barcode_show_value" class="rounded border-gray-300" />
+                                {{ ctrans("Digits below") }}
+                            </label>
+                        </div>
+
+                        <div class="flex items-center gap-2">
+                            <label class="flex items-center gap-1 text-xs text-gray-500">
+                                {{ ctrans("Width") }}
+                                <input v-model.number="selectedItem.barcodeWidth" type="number" name="barcode_width" min="0.02" max="1" step="0.02"
+                                    :aria-label="ctrans('Barcode width as a part of the label')"
+                                    class="w-16 rounded border border-gray-300 px-1.5 py-1 text-sm" />
+                            </label>
+                            <label class="flex items-center gap-1 text-xs text-gray-500">
+                                {{ ctrans("Height") }}
+                                <input v-model.number="selectedItem.barcodeHeight" type="number" name="barcode_height" min="0.02" max="1" step="0.02"
+                                    :aria-label="ctrans('Barcode height as a part of the label')"
+                                    class="w-16 rounded border border-gray-300 px-1.5 py-1 text-sm" />
+                            </label>
+                            <span class="text-xs tabular-nums text-gray-400" aria-hidden="true">
+                                {{ (selectedItem.barcodeWidth * labelWidth).toFixed(1) }} × {{ (selectedItem.barcodeHeight * labelHeight).toFixed(1) }} mm
+                            </span>
+                        </div>
+
+                        <div
+                            v-if="!barcodeUris[selectedItem.id]"
+                            class="rounded border border-red-200 bg-red-50 px-2 py-1 text-xs text-red-700"
+                            role="alert">
+                            {{ selectedItem.barcodeType === 'ean13'
+                                ? ctrans("EAN13 needs exactly 13 digits, switch to CODE 128 to print this one.")
+                                : ctrans("This text cannot be drawn as a CODE 128 barcode.") }}
+                        </div>
+                        <div
+                            v-else-if="!isBarcodeReadable(selectedItem)"
+                            class="rounded border border-amber-200 bg-amber-50 px-2 py-1 text-xs text-amber-700"
+                            role="status">
+                            {{ ctrans("At :width mm the bars print too narrow to scan reliably, widen it to at least :minimum mm.", {
+                                width: (selectedItem.barcodeWidth * labelWidth).toFixed(1),
+                                minimum: String(MIN_SCANNABLE_WIDTH_MM),
+                            }) }}
+                        </div>
+                    </template>
 
                     <div class="flex items-center gap-2">
                         <label class="flex items-center gap-1 text-xs text-gray-500">
@@ -1413,15 +1669,50 @@ const describeFailure = async (error: any): Promise<string> => {
             </aside>
 
             <section class="flex-1 min-w-0" :aria-label="ctrans('Label sheet preview')">
-                <div class="mb-2 flex flex-wrap items-center justify-between gap-2">
-                    <p id="artefact-label-preview-hint" class="text-xs text-gray-500">
-                        <template v-if="isSheetArtwork">
-                            {{ ctrans("Drag each text onto the artwork, duplicate it to cover every label the image already has.") }}
-                        </template>
-                        <template v-else>
-                            {{ ctrans("Drag the texts inside the highlighted label, the positions are applied to every label on the sheet.") }}
-                        </template>
-                    </p>
+                <p id="artefact-label-preview-hint" class="mb-2 text-xs text-gray-500">
+                    <template v-if="isSheetArtwork">
+                        {{ ctrans("Drag each text onto the artwork, duplicate it to cover every label the image already has.") }}
+                    </template>
+                    <template v-else>
+                        {{ ctrans("Drag the texts inside the highlighted label, the positions are applied to every label on the sheet.") }}
+                    </template>
+                </p>
+
+                <div class="mb-2 flex flex-wrap items-center gap-x-4 gap-y-2 rounded border border-gray-200 bg-gray-50 px-2 py-1.5">
+                    <div class="flex items-center gap-1" role="group" aria-labelledby="artefact-label-orientation-title">
+                        <span id="artefact-label-orientation-title" class="text-xs text-gray-400">{{ ctrans("Sheet") }}</span>
+                        <div class="flex gap-1" role="radiogroup" aria-labelledby="artefact-label-orientation-title">
+                            <button
+                                v-for="option in (['portrait', 'landscape'] as const)"
+                                :key="option"
+                                type="button"
+                                role="radio"
+                                :aria-checked="orientation === option"
+                                class="rounded border px-2 py-0.5 text-xs"
+                                :class="orientation === option ? 'border-indigo-500 bg-indigo-50 text-indigo-700' : 'border-gray-300 text-gray-600 hover:bg-gray-50'"
+                                @click="orientation = option">
+                                {{ option === 'portrait' ? ctrans("Vertical") : ctrans("Horizontal") }}
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center gap-1" role="group" aria-labelledby="artefact-label-canvas-rotation-title">
+                        <span id="artefact-label-canvas-rotation-title" class="text-xs text-gray-400">{{ ctrans("Canvas rotation") }}</span>
+                        <div class="flex gap-1" role="radiogroup" aria-labelledby="artefact-label-canvas-rotation-title">
+                            <button
+                                v-for="angle in ROTATIONS"
+                                :key="angle"
+                                type="button"
+                                role="radio"
+                                :aria-checked="canvasRotation === angle"
+                                :aria-label="ctrans('Rotate artwork :angle degrees', { angle: String(angle) })"
+                                class="rounded border px-2 py-0.5 text-xs tabular-nums"
+                                :class="canvasRotation === angle ? 'border-indigo-500 bg-indigo-50 text-indigo-700' : 'border-gray-300 text-gray-600 hover:bg-gray-50'"
+                                @click="canvasRotation = angle">
+                                {{ angle }}°
+                            </button>
+                        </div>
+                    </div>
 
                     <div class="flex items-center gap-1" role="toolbar" :aria-label="ctrans('Preview zoom')">
                         <button
@@ -1453,23 +1744,12 @@ const describeFailure = async (error: any): Promise<string> => {
                             class="rounded border border-gray-300 px-2 py-0.5 text-xs text-gray-600 hover:bg-gray-50"
                             :aria-label="ctrans('Zoom to the edited label')"
                             @click="showEditedLabel">{{ ctrans("Edited label") }}</button>
-                        <button
-                            type="button"
-                            class="rounded border px-2 py-0.5 text-xs"
-                            :class="isHighlightingTexts ? 'border-amber-500 bg-amber-100 text-amber-700' : 'border-gray-300 text-gray-600 hover:bg-gray-50'"
-                            :title="ctrans('Fades the artwork and puts the texts on a contrasting patch, only here in the preview.')"
-                            :aria-pressed="isHighlightingTexts"
-                            @click="isHighlightingTexts = !isHighlightingTexts">
-                            {{ ctrans("Highlight texts") }}
-                        </button>
                     </div>
 
-
-
-                    <div class="flex gap-2">
+                    <div class="ml-auto flex gap-2">
                         <Button
                             type="secondary"
-                            full
+                            size="xs"
                             icon="fas fa-download"
                             :label="ctrans('Download PDF')"
                             :aria-label="ctrans('Generate and download the label sheet as PDF')"
@@ -1538,12 +1818,31 @@ const describeFailure = async (error: any): Promise<string> => {
                                     @pointermove="onDrag(item, $event)"
                                     @pointerup="stopDrag"
                                     @pointercancel="stopDrag">
-                                    {{ item.text }}
+                                    <template v-if="item.source === 'barcode'">
+                                        <img
+                                            v-if="barcodeUris[item.id]"
+                                            :src="barcodeUris[item.id] ?? undefined"
+                                            :style="barsStyle(item)"
+                                            draggable="false"
+                                            alt=""
+                                            aria-hidden="true" />
+                                        <div
+                                            v-else
+                                            class="flex items-center justify-center bg-red-50 text-center text-red-600"
+                                            :style="barsStyle(item)"
+                                            role="alert">
+                                            {{ ctrans("Not a :type barcode", { type: item.barcodeType === 'ean13' ? 'EAN13' : 'CODE 128' }) }}
+                                        </div>
+                                        <div v-if="item.barcodeShowValue" class="text-center">{{ item.text }}</div>
+                                    </template>
+                                    <template v-else>{{ item.text }}</template>
                                     <span
                                         v-if="item.id === selectedItemId"
                                         class="absolute -bottom-1 -right-1 h-2.5 w-2.5 cursor-nwse-resize rounded-sm border border-white bg-indigo-500"
                                         role="separator"
-                                        :aria-label="ctrans('Resize handle, drag to change the font size')"
+                                        :aria-label="item.source === 'barcode'
+                                            ? ctrans('Resize handle, drag to change the size of the bars')
+                                            : ctrans('Resize handle, drag to change the font size')"
                                         :aria-valuenow="item.fontSize"
                                         aria-valuemin="3"
                                         aria-valuemax="72"
@@ -1560,7 +1859,17 @@ const describeFailure = async (error: any): Promise<string> => {
                                     :key="item.id"
                                     class="absolute whitespace-nowrap select-none"
                                     :style="itemStyle(item)">
-                                    {{ item.text }}
+                                    <template v-if="item.source === 'barcode'">
+                                        <img
+                                            v-if="barcodeUris[item.id]"
+                                            :src="barcodeUris[item.id] ?? undefined"
+                                            :style="barsStyle(item)"
+                                            draggable="false"
+                                            alt=""
+                                            aria-hidden="true" />
+                                        <div v-if="item.barcodeShowValue" class="text-center">{{ item.text }}</div>
+                                    </template>
+                                    <template v-else>{{ item.text }}</template>
                                 </div>
                             </template>
                         </div>

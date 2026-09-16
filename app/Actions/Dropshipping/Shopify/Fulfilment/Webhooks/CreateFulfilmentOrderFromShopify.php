@@ -13,6 +13,7 @@ use App\Actions\Dropshipping\Shopify\Order\StoreOrderFromShopify;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Dropshipping\ShopifyUser;
+use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 
@@ -60,7 +61,7 @@ class CreateFulfilmentOrderFromShopify extends OrgAction
             ];
         }
 
-        if (empty($assignedLineItems)) {
+        if (empty($assignedLineItems) && !Arr::has($fulfillmentOrder, 'declined_reason')) {
             return;
         }
 

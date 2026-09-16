@@ -45,11 +45,16 @@ class ShowTicketsReports extends OrgAction
         $resolvedByDay = (clone $base)->whereBetween('resolved_at', [$from, $to])
             ->selectRaw("to_char(date_trunc('$bucket', resolved_at), 'YYYY-MM-DD') as day, count(*) as total")->groupBy('day')->pluck('total', 'day');
 
+        $closedByDay = (clone $base)->whereBetween('closed_at', [$from, $to])
+            ->selectRaw("to_char(date_trunc('$bucket', closed_at), 'YYYY-MM-DD') as day, count(*) as total")->groupBy('day')->pluck('total', 'day');
+        $openTickets = (clone $base)->where('created_at', '<', $from)->count() - (clone $base)->where('closed_at', '<', $from)->count();
+
         $daily  = collect();
         $cursor = $from->copy()->startOf($bucket);
         while ($cursor->lte($to)) {
-            $day = $cursor->toDateString();
-            $daily->push(['date' => $day, 'created' => (int) ($createdByDay[$day] ?? 0), 'done' => (int) ($resolvedByDay[$day] ?? 0)]);
+            $day         = $cursor->toDateString();
+            $openTickets += (int) ($createdByDay[$day] ?? 0) - (int) ($closedByDay[$day] ?? 0);
+            $daily->push(['date' => $day, 'created' => (int) ($createdByDay[$day] ?? 0), 'done' => (int) ($resolvedByDay[$day] ?? 0), 'open' => $openTickets]);
             $cursor->add(1, $bucket);
         }
 

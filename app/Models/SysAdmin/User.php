@@ -118,7 +118,6 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \App\Models\Helpers\Media|null $seoImage
  * @property-read \App\Models\SysAdmin\UserStats|null $stats
  * @property-read \Illuminate\Database\Eloquent\Collection<int, OutBoxHasSubscriber> $subscribedOutboxes
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\SysAdmin\Task> $tasks
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\SysAdmin\UserTimeSeries> $timeSeries
  * @property-read Timezone|null $timezone
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \Laravel\Sanctum\PersonalAccessToken> $tokens
@@ -395,11 +394,6 @@ class User extends Authenticatable implements HasMedia, Auditable, PasskeyUser
     public function authorisedProductions(): MorphToMany
     {
         return $this->morphedByMany(Production::class, 'model', 'user_has_authorised_models')->withTimestamps();
-    }
-
-    public function tasks(): MorphToMany
-    {
-        return $this->morphToMany(Task::class, 'taskable', 'users_has_tasks');
     }
 
     public function pseudoJobPositions(): BelongsToMany

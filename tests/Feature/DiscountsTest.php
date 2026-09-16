@@ -3452,3 +3452,34 @@ describe('unique job lock bounds', function () {
             ->and($onLongQueue->uniqueFor)->toBeGreaterThan(config('horizon.defaults.long-low-priority.timeout'));
     });
 });
+
+test('a line added to a submitted first order keeps the first order bonus (HELP-3157)', function () {
+    $offer = Offer::where('shop_id', $this->shop->id)->where('type', 'Amount AND Order Number')->where('state', '!=', OfferStateEnum::FINISHED)->first()
+        ?? StoreFirstOrderBonus::make()->action($this->shop, ['trigger_data_min_amount' => 150.0, 'percentage_off' => 0.10]);
+    $offer->update(['state' => OfferStateEnum::ACTIVE, 'status' => true]);
+    expect($offer->status)->toBeTrue();
+
+    $customer = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+    $order    = StoreOrder::make()->action($customer, []);
+    StoreTransaction::make()->action($order, $this->product->currentHistoricProduct, ['quantity_ordered' => 2]);
+    SubmitOrder::make()->action($order->refresh());
+
+    $replacementData = array_merge(
+        Product::factory()->definition(),
+        [
+            'code'        => 'FOB-SUB',
+            'price'       => 100,
+            'trade_units' => [
+                [
+                    'id'       => $this->tradeUnit[0]->id ?? $this->tradeUnit->id,
+                    'quantity' => 1,
+                ],
+            ],
+        ]
+    );
+    $replacement = StoreProduct::make()->action($this->product->family, $replacementData);
+
+    $replacementTransaction = StoreTransaction::make()->action($order->refresh(), $replacement->currentHistoricProduct, ['quantity_ordered' => 1]);
+
+    expect((float)$replacementTransaction->refresh()->net_amount)->toBe(90.0);
+});

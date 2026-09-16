@@ -49,6 +49,11 @@ const sortedComments = computed(() =>
     [...props.comments].sort((a, b) => (new Date(a.created_at).getTime() - new Date(b.created_at).getTime() || a.id - b.id) * (isNewestFirst.value ? -1 : 1))
 )
 
+const daysAgo = (date: string) => {
+    const days = Math.floor((Date.now() - new Date(date).getTime()) / 86_400_000)
+    return days === 0 ? trans("today") : days === 1 ? trans("1 day ago") : trans(":days days ago", { days: String(days) })
+}
+
 const editingId = ref<number | null>(null)
 const editBody = ref("")
 
@@ -60,6 +65,14 @@ const startEdit = (comment: { id: number; body: string }) => {
 const saveEdit = (id: number) => {
     router.patch(route("grp.models.ticket.comment.update", id), { body: editBody.value }, { preserveScroll: true, onSuccess: () => (editingId.value = null) })
 }
+
+const expandedInternalIds = ref<number[]>([])
+
+const toggleInternalExpanded = (id: number) => {
+    expandedInternalIds.value = expandedInternalIds.value.includes(id) ? expandedInternalIds.value.filter((expandedId) => expandedId !== id) : [...expandedInternalIds.value, id]
+}
+
+const isCollapsed = (comment: { id: number; is_internal: boolean }) => comment.is_internal && !expandedInternalIds.value.includes(comment.id)
 
 const toggleVisibility = (id: number) => {
     router.patch(route("grp.models.ticket.comment.toggle_visibility", id), {}, { preserveScroll: true })
@@ -82,6 +95,7 @@ const submit = () => {
                 <TicketUserAvatar :name="ticket.reporter" :avatar="ticket.reporter_avatar" size="sm" />
                 <span class="font-semibold text-gray-800">{{ ticket.reporter || trans("Unknown") }}</span>
                 <span>· {{ useFormatTime(ticket.created_at, { formatTime: "PP, HH:mm:ss zzz" }) }}</span>
+                <span class="text-gray-400">({{ daysAgo(ticket.created_at) }})</span>
                 <FontAwesomeIcon v-if="ticket.is_from_slack" v-tooltip="trans('Raised from Slack')" :icon="faSlack" class="text-gray-500" />
             </div>
             <h2 class="text-lg font-semibold mb-3">{{ ticket.subject }}</h2>
@@ -98,10 +112,10 @@ const submit = () => {
             <div class="flex flex-wrap items-center justify-end gap-3">
                 <label v-if="canCommentInternally" class="mr-auto flex cursor-pointer select-none items-center gap-2 text-sm transition duration-200" :class="form.is_internal ? 'font-semibold text-amber-700' : 'text-gray-500 hover:text-gray-700'">
                     <input v-model="form.is_internal" type="checkbox" class="cursor-pointer rounded border-gray-300 text-amber-500 focus:ring-amber-400" />
-                    {{ trans("Internal note") }}
-                    <span class="text-xs font-normal text-gray-400">{{ trans("hidden from the reporter") }}</span>
+                    {{ trans("Engineering note") }}
+                    <span class="text-xs font-normal text-gray-400">{{ trans("staff only, shown collapsed") }}</span>
                 </label>
-                <Button :label="form.is_internal ? trans('Add internal note') : trans('Comment')" :loading="form.processing" :disabled="!form.body.trim() && !form.images.length" @click="submit" />
+                <Button :label="form.is_internal ? trans('Add engineering note') : trans('Comment')" :loading="form.processing" :disabled="!form.body.trim() && !form.images.length" @click="submit" />
             </div>
         </form>
 
@@ -127,7 +141,7 @@ const submit = () => {
                     </span>
                     <span v-else class="flex items-center gap-2"><img class="h-4 select-none" src="/art/invader.svg" alt="aiku" /> ·</span>
                     {{ useFormatTime(comment.created_at, { formatTime: "hm" }) }}
-                    <span v-if="comment.is_internal" class="px-1.5 py-0.5 rounded bg-amber-200 text-amber-900 text-[10px] font-medium">{{ trans("Internal") }}</span>
+                    <span v-if="comment.is_internal" class="px-1.5 py-0.5 rounded bg-amber-200 text-amber-900 text-[10px] font-medium">{{ trans("Engineering note") }}</span>
                     <span v-if="comment.is_lead_only" class="px-1.5 py-0.5 rounded bg-rose-200 text-rose-900 text-[10px] font-medium">{{ trans("Lead engineers only") }}</span>
                     <span class="ml-auto flex gap-1">
                         <Button v-if="comment.can_toggle_visibility" type="tertiary" size="xs" :label="comment.is_lead_only ? trans('Unhide') : trans('Hide')" @click="toggleVisibility(comment.id)" />
@@ -155,7 +169,14 @@ const submit = () => {
                         <Button :label="trans('Save')" :disabled="!editBody.trim()" @click="saveEdit(comment.id)" />
                     </div>
                 </div>
-                <TicketBody v-else :text="comment.body" :images="comment.images" :attachments="comment.attachments" />
+                <button v-else-if="isCollapsed(comment)" type="button" class="flex w-full items-center gap-2 text-left text-gray-600 hover:text-gray-900" @click="toggleInternalExpanded(comment.id)">
+                    <span class="truncate">{{ comment.body.trim().split("\n")[0] || trans("Attachments") }}</span>
+                    <span class="shrink-0 text-xs text-amber-700">{{ trans("Show more") }}</span>
+                </button>
+                <template v-else>
+                    <TicketBody :text="comment.body" :images="comment.images" :attachments="comment.attachments" />
+                    <button v-if="comment.is_internal" type="button" class="mt-1 text-xs text-amber-700 hover:text-amber-900" @click="toggleInternalExpanded(comment.id)">{{ trans("Show less") }}</button>
+                </template>
             </div>
         </div>
     </div>

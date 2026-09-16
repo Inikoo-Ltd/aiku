@@ -48,6 +48,8 @@ use App\Actions\Web\Webpage\RequestWebpageEditAccess;
 use App\Actions\Web\Webpage\ApproveWebpageEditAccess;
 use App\Actions\Web\Webpage\DeclineWebpageEditAccess;
 use App\Notifications\WebpageEditAccessNotification;
+use App\Actions\Web\Webpage\UI\GetWebpageLock;
+use App\Events\BroadcastPersonalNotification;
 use Illuminate\Support\Facades\Notification;
 use App\Actions\SysAdmin\Guest\StoreGuest;
 use App\Models\SysAdmin\Guest;
@@ -2433,6 +2435,7 @@ test('locked webpage stays editable for group admins and read only for other use
 
 test('locked webpage edit access can be requested, allowed temporarily and declined', function (Webpage $webpage) {
     Notification::fake();
+    Event::fake([BroadcastPersonalNotification::class]);
 
     $owner     = $this->user;
     $requester = StoreGuest::make()->action($this->organisation->group, array_merge(Guest::factory()->definition(), ['positions' => []]))->getUser();
@@ -2446,6 +2449,7 @@ test('locked webpage edit access can be requested, allowed temporarily and decli
         ->and($webpage->lock_data['requests'][0]['user_id'])->toBe($requester->id)
         ->and($webpage->lock_data['requests'][0]['note'])->toBe('Fix a typo');
     Notification::assertSentTo($owner, WebpageEditAccessNotification::class);
+    Event::assertDispatched(BroadcastPersonalNotification::class, fn (BroadcastPersonalNotification $event) => $event->userId === $owner->id);
 
     $this->postJson(route('grp.models.webpage.edit_access.approve', $webpage->id), ['user_id' => $requester->id, 'mode' => 'one_hour'])->assertForbidden();
 
@@ -2472,12 +2476,23 @@ test('locked webpage edit access can be requested, allowed temporarily and decli
     $webpage = LockWebpage::make()->action($webpage, $owner, ['reason' => 'Final copy approved']);
     expect($webpage->lock_data['requests'])->toHaveCount(1);
 
-    $webpage = DeclineWebpageEditAccess::make()->action($webpage, $owner, ['user_id' => $requester->id]);
+    $webpage = DeclineWebpageEditAccess::make()->action($webpage, $owner, ['user_id' => $requester->id, 'message' => 'Copy is final, raise a ticket instead']);
+    $requesterLock = GetWebpageLock::run($webpage, $requester);
     expect($webpage->lock_data['requests'])->toBeEmpty()
-        ->and($webpage->canBeEditedBy($requester))->toBeFalse();
+        ->and($webpage->canBeEditedBy($requester))->toBeFalse()
+        ->and($requesterLock['has_requested_access'])->toBeFalse()
+        ->and($requesterLock['declined_request']['message'])->toBe('Copy is final, raise a ticket instead')
+        ->and($requesterLock['declined_request']['declined_by'])->toBe($owner->contact_name ?: $owner->username)
+        ->and(GetWebpageLock::run($webpage, $owner)['declined_request'])->toBeNull();
+
+    $webpage = RequestWebpageEditAccess::make()->action($webpage, $requester, []);
+    expect(GetWebpageLock::run($webpage, $requester)['declined_request'])->toBeNull()
+        ->and($webpage->lock_data['requests'])->toHaveCount(1);
+
+    $webpage = DeclineWebpageEditAccess::make()->action($webpage, $owner, ['user_id' => $requester->id]);
 
     UnlockWebpage::make()->action($webpage, $owner, []);
 
-    get(route('grp.org.shops.show.web.webpages.workshop', $workshopParameters))
+    get(route('grp.org.shops.show.web.webpages.workshop', [$this->organisation->slug, $this->shop->slug, $webpage->website->slug, $webpage->slug]))
         ->assertInertia(fn (AssertableInertia $page) => $page->where('editable', true));
 })->depends('create webpage');

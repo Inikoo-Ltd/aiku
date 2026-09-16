@@ -43,6 +43,7 @@ class LockWebpage extends OrgAction
                 'note'    => Arr::get($modelData, 'note'),
                 'editors'  => $editors,
                 'requests' => $webpage->isLocked() ? Arr::get($webpage->lock_data, 'requests', []) : [],
+                'declined_requests' => $webpage->isLocked() ? Arr::get($webpage->lock_data, 'declined_requests', []) : [],
                 'scope'    => Arr::get($modelData, 'scope', $webpage->isLocked() ? Arr::get($webpage->lock_data, 'scope', 'webpage') : 'webpage'),
                 'master_product_category_id' => Arr::get($modelData, 'master_product_category_id', $webpage->isLocked() ? Arr::get($webpage->lock_data, 'master_product_category_id') : null),
             ],

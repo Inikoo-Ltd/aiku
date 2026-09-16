@@ -68,6 +68,7 @@ use App\Actions\Web\Website\PruneWebsiteVisitors;
 use App\Actions\Web\Website\SaveWebsitesSitemap;
 use App\Traits\LoggableSchedule;
 use Illuminate\Console\Scheduling\Schedule;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Foundation\Console\Kernel as ConsoleKernel;
 
 class Kernel extends ConsoleKernel
@@ -78,6 +79,7 @@ class Kernel extends ConsoleKernel
     {
         $schedule->command('horizon:snapshot')->everyFiveMinutes()->onOneServer();
         $schedule->command('tickets:cancel_stale')->everyFifteenMinutes()->onOneServer();
+        $schedule->command('staff-tasks:nudge')->hourly()->onOneServer();
         $schedule->command('cloudflare:reload')->daily()->onOneServer();
         /* Every five minutes: the run reads a counter per shop channel and writes only the ones that
            moved, so it is cheap, and the alternative is a dashboard whose visit column is an hour
@@ -88,7 +90,22 @@ class Kernel extends ConsoleKernel
            number wins and a missed night repairs itself. */
         $schedule->command('traffic-source:fetch-meta-costs --days=2')->dailyAt('06:00')->timezone('UTC')->onOneServer()->withoutOverlapping();
         $schedule->command('sync:customers-to-google-ads --all')->dailyAt('04:45')->timezone('UTC')->onOneServer()->withoutOverlapping(120);
-        $schedule->command('google-ads:fetch-campaigns')->dailyAt('05:00')->timezone('UTC')->onOneServer()->withoutOverlapping();
+        /* Proposing is chained to the fetch rather than scheduled after it. The suggestions read the ad
+           groups, ads and keywords the fetch has just written, and two entries half an hour apart only
+           held while the fetch stayed under half an hour: it runs per shop, so it grows with every
+           account connected, and the day it overran the proposals would quietly be built on yesterday.
+
+           `then` and not `onSuccess`: the fetch reports failure if any single shop failed, and one
+           unreachable account should not cost every other shop its suggestions. The withoutOverlapping
+           lock is still held while this callback runs, so the pair cannot overlap with itself either. */
+        $schedule->command('google-ads:fetch-campaigns')
+            ->dailyAt('05:00')->timezone('UTC')->onOneServer()->withoutOverlapping()
+            ->then(fn () => Artisan::call('google-ads:propose'));
+        /* Three days rather than one: an account's own time zone can still be on the previous day at
+           05:15 UTC, and Google keeps adjusting a day's cost after it closes. Re-fetching a day
+           replaces its figure, and takes precedence over the same day posted by an account's script,
+           so a shop on both paths lands on one row carrying the later, better number. */
+        $schedule->command('traffic-source:fetch-google-ads-costs --days=3')->dailyAt('05:15')->timezone('UTC')->onOneServer()->withoutOverlapping();
         /* Click rows carry IPs, kept only as long as fraud prevention justifies - the attribution
            window, 90 days. */
         $schedule->call(fn () => \Illuminate\Support\Facades\DB::table('traffic_source_clicks')->where('created_at', '<', now()->subDays(90))->delete())

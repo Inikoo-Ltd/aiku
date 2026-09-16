@@ -513,6 +513,7 @@ test('tickets dashboard counts created, done, status and assignees', function ()
         ->and($stats['done'])->toBe($before['done'] + 1)
         ->and($stats['open'])->toBe($before['open'] + 1)
         ->and(count($stats['daily']))->toBe(8)
+        ->and(collect($stats['daily'])->last()['open'])->toBe($stats['open'])
         ->and($stats['bucket'])->toBe('day')
         ->and(ShowTicketsReports::make()->handle($this->group, '1y')['bucket'])->toBe('week')
         ->and($today['created'])->toBeGreaterThanOrEqual(2)
@@ -678,6 +679,9 @@ test('assistant raises, lists, works and closes a ticket through MCP', function 
 
     AikuServer::actingAs($this->user)->tool(TicketWriteTool::class, ['reference' => $reference, 'comment' => 'Merged stock 41882 into 40115', 'internal' => true])->assertOk();
     expect($ticket->comments()->where('body', 'Merged stock 41882 into 40115')->value('is_internal'))->toBeTrue();
+
+    AikuServer::actingAs($this->user)->tool(TicketWriteTool::class, ['reference' => $reference, 'status' => 'waiting', 'waiting_hours' => 24])->assertOk();
+    expect($ticket->refresh()->waiting_until->diffInHours(now(), true))->toBeGreaterThan(23)->toBeLessThan(25);
 
     $shown = AikuServer::actingAs($this->user)->tool(TicketsTool::class, ['reference' => strtolower($reference)]);
     $shown->assertOk()->assertSee('Fixed by clearing the stale lock');
@@ -984,7 +988,7 @@ test('only the help desk manages tickets, everyone else reports, comments and cl
 
     $oldNote = $other->comments()->create(['body' => 'old internal note', 'is_internal' => true]);
     expect($other->commentsVisibleTo($helper)->whereKey($oldNote->id)->exists())->toBeTrue()
-        ->and($other->commentsVisibleTo($reporter)->whereKey($oldNote->id)->exists())->toBeFalse()
+        ->and($other->commentsVisibleTo($reporter)->whereKey($oldNote->id)->exists())->toBeTrue()
         ->and($other->commentsVisibleTo($boss)->whereKey($oldNote->id)->exists())->toBeTrue();
     actingAs($helper);
     patch(route('grp.models.ticket.comment.toggle_visibility', $oldNote->id))->assertForbidden();
@@ -1269,7 +1273,8 @@ test('ticket search ranks subject over description over comments, understands ke
     actingAs($staff);
     expect($search('email')->pluck('reference'))->not->toContain($byInternal->reference)
         ->and(get(route('grp.search.index', ['q' => 'email marke', 'route_src' => 'grp.tickets.board']))->assertOk()->json('results.tickets.*.code'))->toContain($bySubject->reference)
-        ->and(SearchTickets::run((string) $other->number)['results']['tickets'][0]['href'])->toBe(route('grp.tickets.show', $other->reference));
+        ->and(SearchTickets::run((string) $other->number)['results']['tickets'][0]['href'])->toBe(route('grp.tickets.show', $other->reference))
+        ->and(get(route('grp.search.index', ['q' => strtolower($other->reference), 'route_src' => 'grp.dashboard.show']))->assertOk()->json('results.tickets.*.code'))->toBe([$other->reference]);
 });
 
 test('only the assignee and supervisors change kind and module, and no ticket is turned into or out of an escalation', function () {
@@ -1353,6 +1358,20 @@ test('the attachment gallery lists ticket and visible comment files newest first
 
     get(route('grp.tickets.attachments.show', ['ticket' => $ticket->reference, 'media' => $ticket->getMedia('ticket_images')->first()->ulid]))->assertOk();
     get(route('grp.json.ticket.controls', $ticket->id))->assertOk()->assertJsonCount(4, 'attachment_gallery');
+});
+
+test('internal notes are visible to any staff member including the reporter, lead only notes stay with leads and customers see neither', function () {
+    $ticket = StoreTicket::make()->action($this->group, ['subject' => 'Visibility']);
+    StoreTicketComment::make()->action($ticket, $this->user, ['body' => 'public reply']);
+    StoreTicketComment::make()->action($ticket, $this->user, ['body' => 'internal note'])->update(['is_internal' => true]);
+    StoreTicketComment::make()->action($ticket, $this->user, ['body' => 'lead note'])->update(['is_internal' => true, 'is_lead_only' => true]);
+
+    $reporter = User::factory()->create(['group_id' => $this->group->id]);
+    $ticket->update(['reporter_type' => 'User', 'reporter_id' => $reporter->id]);
+
+    expect($ticket->commentsVisibleTo($reporter)->pluck('body')->sort()->values()->all())->toBe(['internal note', 'public reply'])
+        ->and($ticket->commentsVisibleTo($this->user)->count())->toBe(3)
+        ->and($ticket->commentsVisibleTo($this->webUser)->pluck('body')->all())->toBe(['public reply']);
 });
 
 test('done and cancel publish the closing comment together with the status change', function () {
@@ -1871,7 +1890,7 @@ test('reporters follow progress from their badge, cannot move their ticket, and 
     );
 
     actingAs($bystander);
-    post($comment, ['body' => 'secret from a bystander', 'is_internal' => true])->assertSessionHasErrors('is_internal');
+    post($comment, ['body' => 'Engineering note from another engineer', 'is_internal' => true])->assertRedirect()->assertSessionHasNoErrors();
 
     actingAs($engineer);
     patch($update, ['status' => 'in_progress'])->assertRedirect()->assertSessionHasNoErrors();
@@ -1893,7 +1912,7 @@ test('reporters follow progress from their badge, cannot move their ticket, and 
 
     actingAs($reporter);
     get(route('grp.tickets.show', $ticket->reference))->assertOk()->assertInertia(
-        fn (AssertableInertia $page) => $page->where('comments', fn ($comments) => !collect($comments)->pluck('body')->contains('Driver is broken, not telling yet'))
+        fn (AssertableInertia $page) => $page->where('comments', fn ($comments) => collect($comments)->pluck('body')->contains('Driver is broken, not telling yet'))
     );
     expect(collect(GetTicketBadgeData::run($reporter->fresh())['recent'])->where('read', false)->count())->toBe(0);
 

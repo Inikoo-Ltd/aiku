@@ -7,9 +7,17 @@ Once spend is arriving, the marketing dashboard can show ROAS — return on ad s
 divided by cost. Until then ROAS shows a dash, because dividing by a cost nobody has entered is
 not possible.
 
-The old way was to export a CSV from Google Ads every month and hand it to a developer. The new
-way is a small script that lives inside your Google Ads account and sends yesterday's spend to
-Aiku every night, on its own, forever. Setting it up takes about ten minutes, once.
+There are two ways spend reaches Aiku, and Google Ads is moving from the first to the second:
+
+1. **A script inside your Google Ads account** that posts yesterday's spend to Aiku every night.
+   This is what most accounts still run, and it keeps working. The rest of this page is about it.
+2. **Aiku fetching the spend itself** from the Google Ads API, for any shop connected under
+   **Google Ads** on its settings page. Nothing is installed in the Ads account and there is no
+   token for anyone to hold. See [Aiku fetching Google Ads spend itself](#aiku-fetching-google-ads-spend-itself).
+
+An account can be on both at once, which is what a migration looks like while it is happening. It
+does not double-count: spend is stored per campaign per day, so the same day arriving twice is one
+figure, not two, and the fetched one is the one kept.
 
 **Who this is for:** anyone who manages a Google Ads account for one of our shops — our own
 marketing staff, or an outside agency. You do not need to understand any code. You will copy
@@ -377,6 +385,35 @@ Bing has its own pair of scripts against the same endpoint (see
 [Microsoft Advertising (Bing) ads](#microsoft-advertising-bing-ads)); any other platform can post the
 same shape with `pinterest-ads` and so on in `source`. The one-off CSV route
 (`traffic-source:import-costs`) still exists for backfilling history.
+
+### Aiku fetching Google Ads spend itself
+
+A shop connected under **Google Ads** on its settings page — the same connection used for the
+Customer Match sync, holding an OAuth refresh token and the account's customer id — needs no script.
+Aiku pulls its spend nightly at 05:15 UTC:
+
+```
+php artisan traffic-source:fetch-google-ads-costs                      # every connected shop
+php artisan traffic-source:fetch-google-ads-costs afr --days=30 --dry-run
+```
+
+Three days are re-read on every run, not one. Google keeps adjusting a day's cost after it closes,
+an account's own time zone can still be on the previous day at 05:15 UTC, and re-reading a day
+replaces its figure rather than adding to it, so a missed night repairs itself.
+
+The pull takes precedence over a script post for the same campaign and day. A script has one go at
+yesterday and never revisits it; the pull re-reads a window and carries Google's later corrections.
+So an account can keep its script running throughout the move, and switch off only once the shop's
+costs read the same either way. Every cost row records which path it came from.
+
+A shop whose settings hold a refresh token but no customer id is half-connected: it is named in the
+command's output every run and stays on its script until the account id is filled in.
+
+**Two shops on one Google Ads account** — a retail brand and its dropship arm sharing an account —
+split it with `settings.google_ads.campaign_name_prefix` per shop, exactly as Meta does. Campaigns
+whose name does not start with the shop's prefix are left to the other shop and reported in the
+output. A campaign that already belongs to another shop is never counted twice, prefix or not; with
+no prefix on either shop, one shop takes the account and the other is told how much it left behind.
 
 ### Meta (Facebook/Instagram) ads
 

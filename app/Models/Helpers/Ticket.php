@@ -253,6 +253,11 @@ class Ticket extends Model implements Auditable, HasMedia
         return $this->canBeUpdatedBy($user) || $this->hasCollaborator($user);
     }
 
+    public function canWriteEngineeringNotesBy(?User $user): bool
+    {
+        return self::canBeManagedBy($user) || $this->canContributeBy($user);
+    }
+
     public function canManageCollaboratorsBy(?User $user): bool
     {
         return $this->canBeUpdatedBy($user);
@@ -263,10 +268,6 @@ class Ticket extends Model implements Auditable, HasMedia
         return $user !== null && (self::canBeManagedBy($user) || self::canCheckQa($user) || $this->isReportedBy($user));
     }
 
-    public function canSeeInternalNotesBy(?User $user): bool
-    {
-        return $user !== null && (self::canBeAssignedBy($user) || self::canBeManagedBy($user) || $this->canContributeBy($user));
-    }
 
     public static function canUseAssistant(?User $user): bool
     {
@@ -275,12 +276,11 @@ class Ticket extends Model implements Auditable, HasMedia
 
     public function commentsVisibleTo(mixed $viewer): HasMany
     {
-        $isLead           = $viewer instanceof User && self::canBeAssignedBy($viewer);
-        $seesInternalNote = $viewer instanceof User && $this->canSeeInternalNotesBy($viewer);
+        $isLead = $viewer instanceof User && self::canBeAssignedBy($viewer);
 
         return $this->comments()
             ->when(!$isLead, fn ($query) => $query->where('is_lead_only', false))
-            ->when(!$seesInternalNote, fn ($query) => $query->where('is_internal', false));
+            ->when(!$viewer instanceof User, fn ($query) => $query->where('is_internal', false));
     }
 
     public function defaultWaitingHours(): int
