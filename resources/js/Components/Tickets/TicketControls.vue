@@ -162,7 +162,7 @@ const sendQaVerdict = () => {
 
 const isClosed = computed(() => ["resolved", "cancelled"].includes(props.ticket.status))
 const isResolvedWithinADay = computed(() => props.ticket.status === "resolved" && !!props.ticket.resolved_at && Date.now() - new Date(props.ticket.resolved_at).getTime() < 24 * 60 * 60 * 1000)
-const canAskQa = computed(() => props.can_contribute && (["in_progress", "waiting"].includes(props.ticket.status) || isResolvedWithinADay.value) && props.ticket.qa_status !== "requested")
+const canAskQa = computed(() => props.can_contribute && (["in_progress", "waiting", "pending_deploy"].includes(props.ticket.status) || isResolvedWithinADay.value) && props.ticket.qa_status !== "requested")
 
 const qaPopover = ref()
 
@@ -274,7 +274,7 @@ const update = (field: string, value: unknown, action: string = field) => {
                     </button>
                 </Popover>
             </div>
-            <div v-if="ticket.collaborators?.length || (can_manage_collaborators && !isClosed)">
+            <div v-if="ticket.collaborators?.length || (can_manage_collaborators && !isClosed && ticket.status !== 'pending_deploy')">
                 <p class="mb-1 text-xs font-medium uppercase tracking-wide text-gray-400">{{ trans("Collaborators") }}</p>
                 <div class="flex flex-wrap items-center gap-2">
                     <span v-for="collaborator in ticket.collaborators" :key="collaborator.id" v-tooltip="collaborator.name" class="inline-flex items-center gap-1.5 rounded-full bg-gray-100 py-1 pl-1 pr-2.5 text-xs text-gray-700">
@@ -282,7 +282,7 @@ const update = (field: string, value: unknown, action: string = field) => {
                         {{ collaborator.short }}
                     </span>
                     <button
-                        v-if="can_manage_collaborators && !isClosed"
+                        v-if="can_manage_collaborators && !isClosed && ticket.status !== 'pending_deploy'"
                         v-tooltip="trans('Add or remove collaborators')"
                         type="button"
                         class="flex h-8 w-8 items-center justify-center rounded-full border border-dashed text-sm border-gray-300 text-gray-500 transition duration-200 hover:border-indigo-400 hover:text-indigo-600 active:!border-indigo-400 active:!text-indigo-600"
@@ -291,7 +291,7 @@ const update = (field: string, value: unknown, action: string = field) => {
                         <FontAwesomeIcon :icon="isPending('collaborators') ? 'fal fa-spinner' : 'fal fa-user-plus'" :spin="isPending('collaborators')" fixed-width />
                     </button>
                 </div>
-                <Popover v-if="can_manage_collaborators && !isClosed" ref="collaboratorPopover" @show="isCollaboratorPickerOpen = true" @hide="onCollaboratorPickerHide">
+                <Popover v-if="can_manage_collaborators && !isClosed && ticket.status !== 'pending_deploy'" ref="collaboratorPopover" @show="isCollaboratorPickerOpen = true" @hide="onCollaboratorPickerHide">
                     <div class="flex max-h-72 w-60 flex-col overflow-y-auto text-sm">
                         <button
                             v-for="person in collaboratorCandidates"
