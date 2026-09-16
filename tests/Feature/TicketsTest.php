@@ -1465,7 +1465,7 @@ test('jira ticket attachments missing from the ticket and comment media are copi
     $comment->attachTicketFile($existingFile, 'already.pdf', 'application/pdf', ['jira_attachment_id' => '500']);
 
     $resolvedLongAgo = StoreTicket::make()->action($this->group, ['subject' => 'Resolved three weeks ago']);
-    $resolvedLongAgo->update(['data' => ['jira_key' => 'HELP-9003'], 'status' => TicketStatusEnum::RESOLVED, 'resolved_at' => now()->subWeeks(3)]);
+    $resolvedLongAgo->update(['data' => ['jira_key' => 'HELP-9003'], 'status' => TicketStatusEnum::RESOLVED, 'resolved_at' => now()->subWeeks(3), 'closed_at' => now()->subWeeks(3)]);
 
     Config::set('media-library.max_file_size', 10);
 
