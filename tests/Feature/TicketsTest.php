@@ -6,6 +6,8 @@
  * Copyright (c) 2026, Raul A Perusquia Flores
  */
 
+use App\Actions\CRM\WebUser\StoreWebUser;
+use App\Actions\Helpers\Ticket\GetRetinaTicketBadgeData;
 use App\Actions\Helpers\Ticket\SyncTicketCollaborators;
 use Illuminate\Support\Facades\Process;
 use App\Actions\Chat\ChatSession\StoreChatSession;
@@ -1463,7 +1465,7 @@ test('jira ticket attachments missing from the ticket and comment media are copi
     $comment->attachTicketFile($existingFile, 'already.pdf', 'application/pdf', ['jira_attachment_id' => '500']);
 
     $resolvedLongAgo = StoreTicket::make()->action($this->group, ['subject' => 'Resolved three weeks ago']);
-    $resolvedLongAgo->update(['data' => ['jira_key' => 'HELP-9003'], 'status' => TicketStatusEnum::RESOLVED, 'resolved_at' => now()->subWeeks(3)]);
+    $resolvedLongAgo->update(['data' => ['jira_key' => 'HELP-9003'], 'status' => TicketStatusEnum::RESOLVED, 'resolved_at' => now()->subWeeks(3), 'closed_at' => now()->subWeeks(3)]);
 
     Config::set('media-library.max_file_size', 10);
 
@@ -1859,7 +1861,7 @@ test('rar and 7z attachments are accepted and list their contents through bsdtar
         ->assertJsonPath('message', 'This server cannot read RAR files yet. Ask an administrator to install libarchive-tools.');
 });
 
-test('reporters follow progress from their badge, cannot move their ticket, and internal notes stay with the people working on it', function () {
+test('reporters follow progress from their badge, cannot move their ticket, and engineering notes stay with staff', function () {
     Mail::fake();
     setPermissionsTeamId($this->group->id);
     $reporter  = User::factory()->create(['group_id' => $this->group->id]);
@@ -1987,4 +1989,163 @@ test('the ticket list can be narrowed to the tickets someone collaborates on', f
     );
     $response = get(route('grp.tickets.list', ['elements' => ['collaborator' => $engineer->username]]))->assertOk();
     expect(collect($response->viewData('page')['props']['data']['data'])->pluck('reference')->all())->toBe([$helping->reference]);
+});
+
+test('people mentioned in an engineering note are told, customers never are', function () {
+    Notification::fake();
+    setPermissionsTeamId($this->group->id);
+    $reporter  = User::factory()->create(['group_id' => $this->group->id]);
+    $engineer  = User::factory()->create(['group_id' => $this->group->id]);
+    $colleague = User::factory()->create(['group_id' => $this->group->id]);
+    $engineer->assignRole('help-desk-clerk');
+    $colleague->assignRole('help-desk-clerk');
+
+    $ticket = StoreTicket::make()->action($this->group, [
+        'subject'       => 'Needs a second look',
+        'reporter_type' => 'User',
+        'reporter_id'   => $reporter->id,
+        'assignee_id'   => $engineer->id,
+    ]);
+
+    StoreTicketComment::make()->action($ticket, $engineer, ['body' => "@{$colleague->username} and @{$reporter->username} please check the logs", 'is_internal' => true]);
+
+    foreach ([$colleague, $reporter] as $mentioned) {
+        Notification::assertSentTo($mentioned, TicketNotification::class, fn ($notification) => str_contains($notification->subject, 'engineering note'));
+    }
+
+    $customerTicket = StoreRetinaTicket::make()->action($this->webUser, ['subject' => 'Parcel lost']);
+    StoreTicketComment::make()->action($customerTicket, $this->user, ['body' => '@'.$this->customer->fresh()->slug.' internal only', 'is_internal' => true]);
+    Notification::assertNotSentTo($this->webUser, TicketNotification::class);
+});
+
+test('the mention list suggests the people on the ticket first, including the customer who raised it', function () {
+    setPermissionsTeamId($this->group->id);
+    $reporter     = User::factory()->create(['group_id' => $this->group->id]);
+    $engineer     = User::factory()->create(['group_id' => $this->group->id]);
+    $collaborator = User::factory()->create(['group_id' => $this->group->id]);
+    $lead         = User::factory()->create(['group_id' => $this->group->id]);
+    $stranger     = User::factory()->create(['group_id' => $this->group->id]);
+    $engineer->assignRole('help-desk-clerk');
+    $collaborator->assignRole('help-desk-clerk');
+    $lead->assignRole('help-desk-supervisor');
+
+    $ticket = StoreTicket::make()->action($this->group, [
+        'subject'       => 'Who should look at this',
+        'reporter_type' => 'User',
+        'reporter_id'   => $reporter->id,
+        'assignee_id'   => $engineer->id,
+    ]);
+    SyncTicketCollaborators::make()->action($ticket, [$collaborator->id]);
+
+    $mentionable = collect(get(route('grp.json.ticket.controls', $ticket->id))->assertOk()->json('options.mentionable'))->keyBy('username');
+    foreach ([$reporter, $engineer, $collaborator, $lead] as $involved) {
+        expect($mentionable[$involved->username]['suggested'])->toBeTrue();
+    }
+    expect($mentionable[$stranger->username]['suggested'])->toBeFalse()
+        ->and($mentionable->where('is_customer', true)->count())->toBe(0);
+
+    $customerTicket = StoreRetinaTicket::make()->action($this->webUser, ['subject' => 'Parcel damaged']);
+    expect(collect(get(route('grp.json.ticket.controls', $customerTicket->id))->json('options.mentionable'))->firstWhere('is_customer', true))
+        ->toMatchArray(['username' => $this->customer->fresh()->slug, 'suggested' => true]);
+});
+
+test('customers hear about progress on their tickets, never about internal notes, and opening the ticket marks updates read', function () {
+    Mail::fake();
+    setPermissionsTeamId($this->group->id);
+    $engineer = User::factory()->create(['group_id' => $this->group->id]);
+    $engineer->assignRole('help-desk-clerk');
+
+    $ticket    = StoreRetinaTicket::make()->action($this->webUser, ['subject' => 'Order never arrived']);
+    $colleague = StoreWebUser::make()->action($this->customer, ['username' => 'colleague'.uniqid(), 'email' => 'colleague'.uniqid().'@testmail.com', 'password' => 'test']);
+    UpdateTicket::make()->action($ticket, ['assignee_id' => $engineer->id]);
+
+    actingAs($engineer);
+    patch(route('grp.models.ticket.update', $ticket->id), ['status' => 'in_progress'])->assertRedirect()->assertSessionHasNoErrors();
+    post(route('grp.models.ticket.comment.store', $ticket->id), ['body' => 'Checking with the courier'])->assertRedirect()->assertSessionHasNoErrors();
+    post(route('grp.models.ticket.comment.store', $ticket->id), ['body' => 'Courier lost it, refund needed', 'is_internal' => true])->assertRedirect()->assertSessionHasNoErrors();
+
+    $ticketUrl     = route('retina.dropshipping.tickets.show', $ticket->reference, false);
+    $badges        = GetRetinaTicketBadgeData::run($this->webUser->fresh());
+    $ticketUpdates = collect($badges['recent'])->where('route', $ticketUrl);
+    $titles        = $ticketUpdates->pluck('title')->all();
+    expect($badges['mine']['in_progress']['count'])->toBeGreaterThanOrEqual(1)
+        ->and($titles)->toContain(__(':reference is now :status', ['reference' => $ticket->reference, 'status' => TicketStatusEnum::labels()['in_progress']]))
+        ->and($titles)->toContain(__(':reference has a new comment', ['reference' => $ticket->reference]))
+        ->and($ticketUpdates->filter(fn ($update) => str_contains($update['title'].' '.$update['body'], 'refund') || str_contains($update['title'], 'internal'))->count())->toBe(0)
+        ->and($ticketUpdates->where('read', false)->count())->toBeGreaterThanOrEqual(2);
+
+    expect(collect(GetRetinaTicketBadgeData::run($colleague->fresh())['recent'])->where('route', $ticketUrl)->pluck('title')->all())
+        ->toContain(__(':reference has a new comment', ['reference' => $ticket->reference]));
+
+    post(route('grp.models.ticket.comment.store', $ticket->id), ['body' => '@'.$this->customer->fresh()->slug.' can you confirm the address?'])->assertRedirect()->assertSessionHasNoErrors();
+    foreach ([$this->webUser, $colleague] as $customerWebUser) {
+        expect(collect(GetRetinaTicketBadgeData::run($customerWebUser->fresh())['recent'])->where('route', $ticketUrl)->pluck('title')->all())
+            ->toContain(__(':author mentioned you on :reference', ['author' => $engineer->contact_name ?: $engineer->username, 'reference' => $ticket->reference]));
+    }
+
+    $this->actingAs($this->webUser, 'retina')->get('http://'.$this->website->domain.'/app/dropshipping/support/'.$ticket->reference)->assertOk();
+    expect(collect(GetRetinaTicketBadgeData::run($this->webUser->fresh())['recent'])->where('route', $ticketUrl)->where('read', false)->count())->toBe(0);
+});
+
+test('a ticket left in todo with an assignee can still be started and closed', function () {
+    $ticket = StoreTicket::make()->action($this->group, ['subject' => 'Reopened and stuck', 'assignee_id' => $this->user->id]);
+    $ticket->forceFill([
+        'status'      => TicketStatusEnum::OPEN->value,
+        'resolved_at' => now()->subDay(),
+        'closed_at'   => now()->subDay(),
+    ])->saveQuietly();
+
+    patch(route('grp.models.ticket.update', $ticket->id), ['status' => 'in_progress'])->assertRedirect()->assertSessionHasNoErrors();
+    expect($ticket->fresh()->status)->toBe(TicketStatusEnum::IN_PROGRESS)
+        ->and($ticket->fresh()->closed_at)->toBeNull()
+        ->and($ticket->fresh()->resolved_at)->toBeNull();
+
+    patch(route('grp.models.ticket.update', $ticket->id), ['status' => 'resolved', 'status_comment' => 'Done at last'])->assertRedirect()->assertSessionHasNoErrors();
+    expect($ticket->fresh()->status)->toBe(TicketStatusEnum::RESOLVED);
+
+    patch(route('grp.models.ticket.update', $ticket->id), ['status' => 'open'])->assertRedirect()->assertSessionHasNoErrors();
+    expect($ticket->fresh()->status)->toBe(TicketStatusEnum::ASSIGNED)
+        ->and($ticket->fresh()->assignee_id)->toBe($this->user->id);
+
+    UpdateTicket::make()->action($ticket->fresh(), ['assignee_id' => null]);
+    patch(route('grp.models.ticket.update', $ticket->id), ['status' => 'resolved', 'status_comment' => 'Nobody on it'])->assertRedirect()->assertSessionHasNoErrors();
+    patch(route('grp.models.ticket.update', $ticket->id), ['status' => 'open'])->assertRedirect()->assertSessionHasNoErrors();
+    expect($ticket->fresh()->status)->toBe(TicketStatusEnum::OPEN);
+});
+
+test('comments show who wrote them with their role, but never in the customer portal', function () {
+    setPermissionsTeamId($this->group->id);
+    $reporter = User::factory()->create(['group_id' => $this->group->id]);
+    $engineer = User::factory()->create(['group_id' => $this->group->id]);
+    $qa       = User::factory()->create(['group_id' => $this->group->id]);
+    $engineer->assignRole('help-desk-clerk');
+    $qa->assignRole('qa');
+
+    $ticket = StoreTicket::make()->action($this->group, [
+        'subject'       => 'Who said what',
+        'reporter_type' => 'User',
+        'reporter_id'   => $reporter->id,
+        'assignee_id'   => $engineer->id,
+    ]);
+    StoreTicketComment::make()->action($ticket, $reporter, ['body' => 'from the reporter']);
+    StoreTicketComment::make()->action($ticket, $engineer, ['body' => 'from the engineer']);
+    StoreTicketComment::make()->action($ticket, $qa, ['body' => 'from qa']);
+    StoreTicketComment::make()->action($ticket, $this->user, ['body' => 'from the lead']);
+
+    $roles = collect(get(route('grp.json.ticket.controls', $ticket->id))->assertOk()->json('comments'))
+        ->mapWithKeys(fn (array $comment) => [$comment['body'] => collect($comment['author_roles'])->pluck('key')->all()]);
+    expect($roles['from the reporter'])->toBe(['reporter'])
+        ->and($roles['from the engineer'])->toBe(['engineer'])
+        ->and($roles['from qa'])->toBe(['qa'])
+        ->and($roles['from the lead'])->toBe(['lead_engineer'])
+        ->and(collect(get(route('grp.json.ticket.controls', $ticket->id))->json('comments'))->every(fn ($comment) => array_key_exists('author_avatar', $comment)))->toBeTrue();
+
+    $customerTicket = StoreRetinaTicket::make()->action($this->webUser, ['subject' => 'Customer thread']);
+    StoreTicketComment::make()->action($customerTicket, $this->user, ['body' => 'we are on it']);
+
+    $customerComments = $this->actingAs($this->webUser, 'retina')
+        ->get('http://'.$this->website->domain.'/app/dropshipping/support/'.$customerTicket->reference)
+        ->assertOk()
+        ->viewData('page')['props']['comments'];
+    expect(collect($customerComments)->pluck('author_roles')->flatten()->all())->toBe([]);
 });

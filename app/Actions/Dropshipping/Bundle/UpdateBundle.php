@@ -13,6 +13,7 @@ use App\Actions\Catalogue\Product\UpdateProductImages;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateBundles;
 use App\Actions\Dropshipping\Portfolio\UpdatePortfolio;
 use App\Actions\OrgAction;
+use App\Actions\Retina\Dropshipping\Portfolio\UpdateAndUploadRetinaPortfolioToCurrentChannel;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Traits\WithAttachMediaToModel;
@@ -186,6 +187,7 @@ class UpdateBundle extends OrgAction
 
             if ($portfolio && $portfolioData) {
                 UpdatePortfolio::make()->action($portfolio, $portfolioData);
+                UpdateAndUploadRetinaPortfolioToCurrentChannel::run($portfolio, []);
             }
 
             $bundle->refresh();

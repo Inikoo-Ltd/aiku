@@ -449,6 +449,15 @@ class EditTradeUnit extends OrgAction
                             'label'  => __('Labeling & Compliance Marks'),
                             'icon'   => 'fa-light fa-stamp',
                             'fields' => [
+                                'label_info_approved' => [
+                                    'type'               => 'toggle',
+                                    'label'              => __('Publish Regulatory & Label Information'),
+                                    'value'              => data_get($tradeUnit->label_info, 'label_info_approved', false),
+                                    'single_description' => __('Switch on only once all the regulatory and label information below has been checked and completed. While off, the Regulatory & Label Information tab stays hidden on the website.'),
+                                    'saveConfirmation'   => [
+                                        'description' => __('The Regulatory & Label Information tab is only published on the website when every trade unit of a product has been approved.'),
+                                    ],
+                                ],
                                 'markets' => [
                                     'type'         => 'checkbox',
                                     'label'        => __('Markets'),

@@ -8,6 +8,7 @@
 
 namespace App\Actions\Retina\Dropshipping\Ticket\UI;
 
+use App\Actions\Helpers\Ticket\GetRetinaTicketBadgeData;
 use App\Actions\Retina\UI\Dashboard\ShowRetinaDashboard;
 use App\Actions\RetinaAction;
 use App\Http\Resources\Helpers\TicketResource;
@@ -91,6 +92,7 @@ class IndexRetinaTickets extends RetinaAction
                     ],
                 ],
                 'data'        => TicketResource::collection($tickets),
+                'ticket_badges' => GetRetinaTicketBadgeData::run($this->webUser),
             ]
         )->table($this->tableStructure());
     }

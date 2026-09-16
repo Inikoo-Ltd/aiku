@@ -8,6 +8,7 @@
 
 namespace App\Notifications;
 
+use App\Models\CRM\WebUser;
 use App\Models\Helpers\Ticket;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -35,8 +36,9 @@ class TicketNotification extends Notification implements ShouldQueue
         return [
             'title' => $this->subject,
             'body'  => $this->lines[0] ?? '',
-            'type'  => 'ticket',
-            'route' => route('grp.tickets.show', $this->ticket->reference),
+            'type'      => 'ticket',
+            'ticket_id' => $this->ticket->id,
+            'route'     => $this->ticketUrl($notifiable),
         ];
     }
 
@@ -51,6 +53,13 @@ class TicketNotification extends Notification implements ShouldQueue
             $message->line($line);
         }
 
-        return $message->action($this->actionLabel, route('grp.tickets.show', $this->ticket->reference));
+        return $message->action($this->actionLabel, $this->ticketUrl($notifiable));
+    }
+
+    private function ticketUrl($notifiable): string
+    {
+        return $notifiable instanceof WebUser
+            ? route('retina.dropshipping.tickets.show', $this->ticket->reference, false)
+            : route('grp.tickets.show', $this->ticket->reference);
     }
 }

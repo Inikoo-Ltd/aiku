@@ -55,6 +55,11 @@ trait HasWebBlockProductLabelInfo
         ];
     }
 
+    protected function isProductLabelInfoApproved(Product $product): bool
+    {
+        return data_get($product->label_info, 'label_info_approved', false) === true;
+    }
+
     private function labelInfoItem(string $label, bool $show, mixed $value): array
     {
         return [

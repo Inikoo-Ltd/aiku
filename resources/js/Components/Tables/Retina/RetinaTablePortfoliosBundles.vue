@@ -1535,9 +1535,9 @@ onBeforeUnmount(() => {
 													class="w-fit font-semibold leading-none mb-1">
 													{{ item.name || "no name" }}
 												</div>
-												<div v-if="!item.no_code" v-tooltip="trans('Code')"
+												<div v-if="item.code" v-tooltip="trans('Code')"
 													class="w-fit text-xs text-gray-400 italic">
-													{{ item.code || "no code" }}
+													{{ item.code }}
 												</div>
 												<div v-if="item.reference" v-tooltip="trans('Reference')"
 													class="w-fit text-xs text-gray-400 italic">

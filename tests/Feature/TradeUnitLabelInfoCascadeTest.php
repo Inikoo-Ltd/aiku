@@ -552,3 +552,89 @@ test('no expiry date stays on the showcase but is hidden from the product web bl
 test('an unknown best before option is rejected', function () {
     UpdateTradeUnit::make()->action($this->bottle, ['best_before' => 'pao_36m']);
 })->throws(Illuminate\Validation\ValidationException::class);
+
+test('the label info approval is saved on the trade unit and shown on its showcase', function () {
+    expect(data_get($this->bottle->label_info, 'label_info_approved', false))->toBeFalse();
+
+    UpdateTradeUnit::make()->action($this->bottle, ['label_info_approved' => true]);
+
+    expect($this->bottle->refresh()->label_info['label_info_approved'])->toBeTrue();
+
+    get(route('grp.trade_units.units.show', [$this->bottle->slug]))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('showcase.label_info.label_info_approved.show', true)
+            ->etc());
+});
+
+test('the regulatory tab is only published when every trade unit of the product is approved', function () {
+    UpdateTradeUnit::make()->action($this->bottle, ['label_info_approved' => true]);
+
+    expect($this->masterAsset->refresh()->label_info['label_info_approved'])->toBeFalse()
+        ->and($this->product->refresh()->label_info['label_info_approved'])->toBeFalse();
+
+    UpdateTradeUnit::make()->action($this->plug, ['label_info_approved' => true]);
+
+    expect($this->masterAsset->refresh()->label_info['label_info_approved'])->toBeTrue()
+        ->and($this->product->refresh()->label_info['label_info_approved'])->toBeTrue();
+
+    get(route('grp.org.shops.show.catalogue.products.all_products.show', [
+        $this->organisation->slug,
+        $this->product->shop->slug,
+        $this->product->slug,
+    ]))->assertInertia(fn (AssertableInertia $page) => $page
+        ->where('showcase.label_info.label_info_approved.show', true)
+        ->etc());
+
+    UpdateTradeUnit::make()->action($this->plug, ['label_info_approved' => false]);
+
+    expect($this->masterAsset->refresh()->label_info['label_info_approved'])->toBeFalse()
+        ->and($this->product->refresh()->label_info['label_info_approved'])->toBeFalse();
+});
+
+test('an independent product takes the approval from its own trade units', function () {
+    $this->product->updateQuietly(['not_follow_master_trade_units' => true]);
+    $this->product->tradeUnits()->sync([$this->plug->id => ['quantity' => 1]]);
+
+    UpdateTradeUnit::make()->action($this->plug, ['label_info_approved' => true]);
+
+    expect($this->product->refresh()->label_info['label_info_approved'])->toBeTrue()
+        ->and($this->masterAsset->refresh()->label_info['label_info_approved'])->toBeFalse();
+});
+
+test('the product web block tells the website whether the label info is approved', function () {
+    $buildApproval = fn ($product) => (new class () {
+        use HasWebBlockProductLabelInfo;
+
+        public function build($product): bool
+        {
+            return $this->isProductLabelInfoApproved($product);
+        }
+    })->build($product);
+
+    expect($buildApproval($this->product->refresh()))->toBeFalse();
+
+    UpdateTradeUnit::make()->action($this->bottle, ['label_info_approved' => true]);
+    UpdateTradeUnit::make()->action($this->plug, ['label_info_approved' => true]);
+
+    expect($buildApproval($this->product->refresh()))->toBeTrue();
+});
+
+test('the trade unit edit form offers the publish toggle switched off by default', function () {
+    $publishToggle = fn ($blueprint) => data_get(
+        collect($blueprint)->firstWhere('label', 'Labeling & Compliance Marks'),
+        'fields.label_info_approved'
+    );
+
+    get(route('grp.trade_units.units.edit', [$this->bottle->slug]))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('formData.blueprint', fn ($blueprint) => data_get($publishToggle($blueprint), 'type') === 'toggle'
+                && data_get($publishToggle($blueprint), 'value') === false)
+            ->etc());
+
+    UpdateTradeUnit::make()->action($this->bottle, ['label_info_approved' => true]);
+
+    get(route('grp.trade_units.units.edit', [$this->bottle->refresh()->slug]))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('formData.blueprint', fn ($blueprint) => data_get($publishToggle($blueprint), 'value') === true)
+            ->etc());
+});
