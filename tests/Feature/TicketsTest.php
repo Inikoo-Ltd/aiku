@@ -2209,3 +2209,19 @@ test('engineers claim unassigned tickets, then only the assignee or a lead engin
     patch(route('grp.models.ticket.update', $other->id), ['assignee_id' => $colleague->id])->assertRedirect()->assertSessionHasNoErrors();
     expect($other->fresh()->assignee_id)->toBe($colleague->id);
 });
+
+test('old AD references and padded numbers are still found by search', function () {
+    $customerTicket = StoreRetinaTicket::make()->action($this->webUser, ['subject' => 'Padded customer ticket']);
+    $legacy         = StoreTicket::make()->action($this->group, ['subject' => 'Raised before the rename']);
+    $legacy->forceFill(['reference' => 'AD-1697'])->saveQuietly();
+
+    $found = fn (string $search) => collect(get(route('grp.tickets.list', ['filter' => ['global' => $search]]))->assertOk()->viewData('page')['props']['data']['data'])->pluck('reference')->all();
+
+    $number = (int) Str::afterLast($customerTicket->reference, '-');
+
+    expect($customerTicket->reference)->toMatch('/^CUS-\d{3,}$/')
+        ->and($found('AD-1697'))->toContain('AD-1697')
+        ->and($found('1697'))->toContain('AD-1697')
+        ->and($found($customerTicket->reference))->toContain($customerTicket->reference)
+        ->and($found((string) $number))->toContain($customerTicket->reference);
+});

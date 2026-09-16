@@ -45,6 +45,16 @@ enum TicketTypeEnum: string
         };
     }
 
+    /**
+     * Customer tickets were raised as AD before the prefix became CUS, so old references stay searchable.
+     *
+     * @return array<int, string>
+     */
+    public static function searchPrefixes(): array
+    {
+        return [...array_map(fn (self $type) => $type->prefix(), self::cases()), 'AD'];
+    }
+
     public function numberPadding(): int
     {
         return match ($this) {
