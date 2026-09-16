@@ -7,9 +7,8 @@
 <script setup lang="ts">
 import { Link } from "@inertiajs/vue3"
 import Table from "@/Components/Table/Table.vue"
-import { useLocaleStore } from "@/Stores/locale"
+import GoogleAdsMetric from "@/Components/DataDisplay/Dashboard/Widget/GoogleAdsMetric.vue"
 import { campaignTypeLabel } from "@/Composables/googleAdsCampaignType"
-import { impressionShareLabel } from "@/Composables/googleAdsFormat"
 import { trans } from "laravel-vue-i18n"
 
 defineProps<{
@@ -17,8 +16,6 @@ defineProps<{
     currency: string
     tab?: string
 }>()
-
-const locale = useLocaleStore()
 
 /**
  * Google's own labels, which are shouted enums. PAUSED and ENDED are settled states and stay quiet;
@@ -43,25 +40,43 @@ const statusClass = (status: string | null) => {
     return "text-gray-500"
 }
 
+type Kind = "count" | "money" | "shop_money" | "percent" | "share" | "roas"
+type Better = "up" | "down" | "none"
+
+/* Spend is the one figure in the shop's currency; everything else with a currency is in the ad
+   account's. `better` says which direction the comparison colours green: a cost per click going up
+   is bad news, spend going up is just news. */
+const metricCells: Record<string, { kind: Kind; better?: Better; strong?: boolean }> = {
+    impressions: { kind: "count" },
+    clicks: { kind: "count" },
+    ctr: { kind: "percent" },
+    avg_cpc: { kind: "money", better: "down" },
+    budget_amount: { kind: "money", better: "none" },
+    spend: { kind: "shop_money", better: "none", strong: true },
+    conversions: { kind: "count" },
+    cost_per_conversion: { kind: "money", better: "down" },
+    conversions_value: { kind: "money" },
+    roas: { kind: "roas" },
+    all_conversions: { kind: "count" },
+    all_conversions_value: { kind: "money" },
+    purchases: { kind: "count" },
+    cost_per_purchase: { kind: "money", better: "down" },
+    purchase_rate: { kind: "percent" },
+    registrations: { kind: "count" },
+    cost_per_registration: { kind: "money", better: "down" },
+    registration_rate: { kind: "percent" },
+    search_impression_share: { kind: "share" },
+    search_rank_lost_impression_share: { kind: "share", better: "down" },
+    search_budget_lost_impression_share: { kind: "share", better: "down" },
+    search_top_impression_share: { kind: "share" },
+    search_rank_lost_top_impression_share: { kind: "share", better: "down" },
+    search_budget_lost_top_impression_share: { kind: "share", better: "down" },
+    search_absolute_top_impression_share: { kind: "share" },
+    search_rank_lost_absolute_top_impression_share: { kind: "share", better: "down" },
+    search_budget_lost_absolute_top_impression_share: { kind: "share", better: "down" },
+}
+
 const cellSlot = (key: string) => `cell(${key})`
-
-const countColumns = ["all_conversions", "purchases", "registrations"]
-
-const accountMoneyColumns = ["all_conversions_value", "cost_per_purchase", "cost_per_registration"]
-
-const rateColumns = ["purchase_rate", "registration_rate"]
-
-const impressionShareColumns = [
-    "search_impression_share",
-    "search_rank_lost_impression_share",
-    "search_budget_lost_impression_share",
-    "search_top_impression_share",
-    "search_rank_lost_top_impression_share",
-    "search_budget_lost_top_impression_share",
-    "search_absolute_top_impression_share",
-    "search_rank_lost_absolute_top_impression_share",
-    "search_budget_lost_absolute_top_impression_share",
-]
 </script>
 
 <template>
@@ -83,86 +98,14 @@ const impressionShareColumns = [
             <div class="text-gray-600">{{ campaignTypeLabel(item.channel_type) ?? "—" }}</div>
         </template>
 
-        <template #cell(impressions)="{ item }">
-            <div class="tabular-nums text-gray-600">{{ locale.number(item.impressions) }}</div>
-        </template>
-
-        <template #cell(clicks)="{ item }">
-            <div class="tabular-nums text-gray-600">{{ locale.number(item.clicks) }}</div>
-        </template>
-
-        <!-- A dash, not 0%, where there were no impressions: the question has no answer, and a zero
-             would read as the answer "nobody clicked". -->
-        <template #cell(ctr)="{ item }">
-            <div v-if="item.ctr === null" class="text-gray-400">—</div>
-            <div v-else class="tabular-nums text-gray-600">{{ item.ctr.toFixed(2) }}%</div>
-        </template>
-
-        <template #cell(avg_cpc)="{ item }">
-            <div v-if="item.avg_cpc === null" class="text-gray-400">—</div>
-            <div v-else class="tabular-nums text-gray-600">
-                {{ locale.currencyFormat(item.currency_code ?? currency, item.avg_cpc) }}
-            </div>
-        </template>
-
-        <template #cell(budget_amount)="{ item }">
-            <div v-if="item.budget_amount === null" class="text-gray-400">—</div>
-            <div v-else class="tabular-nums text-gray-600">
-                {{ locale.currencyFormat(item.currency_code ?? currency, item.budget_amount) }}
-            </div>
-        </template>
-
-        <template #cell(spend)="{ item }">
-            <div class="tabular-nums text-gray-900">{{ locale.currencyFormat(currency, item.spend) }}</div>
-        </template>
-
-        <template #cell(conversions)="{ item }">
-            <div class="tabular-nums text-gray-600">{{ locale.number(item.conversions) }}</div>
-        </template>
-
-        <template #cell(cost_per_conversion)="{ item }">
-            <div v-if="item.cost_per_conversion === null" class="text-gray-400">—</div>
-            <div v-else class="tabular-nums text-gray-600">
-                {{ locale.currencyFormat(item.currency_code ?? currency, item.cost_per_conversion) }}
-            </div>
-        </template>
-
-        <template #cell(conversions_value)="{ item }">
-            <div class="tabular-nums text-gray-600">
-                {{ locale.currencyFormat(item.currency_code ?? currency, item.conversions_value) }}
-            </div>
-        </template>
-
-        <template v-for="key in countColumns" :key="key" #[cellSlot(key)]="{ item }">
-            <div v-if="item[key] === null" class="text-gray-400">—</div>
-            <div v-else class="tabular-nums text-gray-600">{{ locale.number(item[key]) }}</div>
-        </template>
-
-        <template v-for="key in accountMoneyColumns" :key="key" #[cellSlot(key)]="{ item }">
-            <div v-if="item[key] === null" class="text-gray-400">—</div>
-            <div v-else class="tabular-nums text-gray-600">
-                {{ locale.currencyFormat(item.currency_code ?? currency, item[key]) }}
-            </div>
-        </template>
-
-        <template v-for="key in rateColumns" :key="key" #[cellSlot(key)]="{ item }">
-            <div v-if="item[key] === null" class="text-gray-400">—</div>
-            <div v-else class="tabular-nums text-gray-600">{{ item[key].toFixed(2) }}%</div>
-        </template>
-
-        <template v-for="key in impressionShareColumns" :key="key" #[cellSlot(key)]="{ item }">
-            <div class="tabular-nums" :class="item[key] === null ? 'text-gray-400' : 'text-gray-600'">
-                {{ impressionShareLabel(item[key]) }}
-            </div>
-        </template>
-
-        <!-- Green above break-even, red below, so the row that is losing money is findable by colour
-             in a list of fifty. Never both an arrow and a colour; the colour carries it alone. -->
-        <template #cell(roas)="{ item }">
-            <div v-if="item.roas === null" class="text-gray-400">—</div>
-            <div v-else class="tabular-nums" :class="item.roas >= 1 ? 'text-[#006300]' : 'text-[#d03b3b]'">
-                {{ item.roas.toFixed(2) }}×
-            </div>
+        <template v-for="(cell, key) in metricCells" :key="key" #[cellSlot(key)]="{ item }">
+            <GoogleAdsMetric
+                :value="item[key]"
+                :kind="cell.kind === 'shop_money' ? 'money' : cell.kind"
+                :currency="cell.kind === 'shop_money' ? currency : item.currency_code ?? currency"
+                :previous="item.previous ? item.previous[key] : undefined"
+                :better="cell.better ?? 'up'"
+                :strong="cell.strong ?? false" />
         </template>
     </Table>
 </template>

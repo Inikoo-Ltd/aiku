@@ -20,6 +20,7 @@ import GoogleAdsNegativeKeywords from "@/Components/DataDisplay/Dashboard/Widget
 import GoogleAdsSearchTerms from "@/Components/DataDisplay/Dashboard/Widget/GoogleAdsSearchTerms.vue"
 import GoogleAdsAddKeyword from "@/Components/DataDisplay/Dashboard/Widget/GoogleAdsAddKeyword.vue"
 import ConfirmDialog from "primevue/confirmdialog"
+import GoogleAdsMetric from "@/Components/DataDisplay/Dashboard/Widget/GoogleAdsMetric.vue"
 import HelpTip from "@/Components/Utils/HelpTip.vue"
 import { capitalize } from "@/Composables/capitalize"
 import { campaignTypeLabel } from "@/Composables/googleAdsCampaignType"
@@ -58,6 +59,10 @@ const props = defineProps<{
     periods: Record<string, string>
     period: string
     period_label: string
+    custom_range: { from: string; to: string } | null
+    compare: boolean
+    comparison_label: string | null
+    google_previous: Record<string, number | null> | null
     google: {
         days: number
         impressions: number
@@ -157,6 +162,11 @@ const percent = (value: number | null, decimals = 2) => (value === null ? "—" 
 
 const moneyOrDash = (value: number | null) => (value === null ? "—" : money(value))
 
+/* Undefined rather than null when not comparing, which is how the metric tile tells "no comparison
+   asked for" from "compared, and the period before had no figure". */
+const previous = (key: string): number | null | undefined =>
+    props.google_previous ? (props.google_previous[key] ?? null) : undefined
+
 /* Three rows for the three places an ad can appear, each with what was received and the two reasons
    Google gives for the rest: outbid on Ad Rank, or the budget was already spent. */
 const impressionShareRows = computed(() => {
@@ -218,7 +228,14 @@ const notServingReasons = computed(() =>
     <PageHeading :data="pageHead" />
 
     <div class="px-4 py-4">
-        <DateIntervalTabs :options="periods" :selected="period" :label="trans('Period')" class="w-fit" />
+        <DateIntervalTabs
+            :options="periods"
+            :selected="period"
+            :label="trans('Period')"
+            :custom-range="custom_range"
+            :compare="compare"
+            :comparison-label="comparison_label"
+            class="w-fit" />
     </div>
 
     <div class="grid grid-cols-1 gap-4 px-4 pb-6 lg:grid-cols-3">
@@ -295,63 +312,51 @@ const notServingReasons = computed(() =>
             <div v-if="google.days" class="mt-5 grid grid-cols-2 gap-4 sm:grid-cols-4">
                 <div>
                     <div class="text-xs text-gray-500">{{ trans("Impressions") }}</div>
-                    <div class="text-lg tabular-nums text-gray-900">{{ locale.number(google.impressions) }}</div>
+                    <GoogleAdsMetric :value="google.impressions" kind="count" size="lg" :previous="previous('impressions')" />
                 </div>
                 <div>
                     <div class="text-xs text-gray-500">{{ trans("Clicks") }}</div>
-                    <div class="text-lg tabular-nums text-gray-900">{{ locale.number(google.clicks) }}</div>
+                    <GoogleAdsMetric :value="google.clicks" kind="count" size="lg" :previous="previous('clicks')" />
                 </div>
                 <div>
                     <div class="text-xs text-gray-500">{{ trans("CTR") }}</div>
-                    <div class="text-lg tabular-nums text-gray-900">
-                        {{ google.ctr !== null ? google.ctr.toFixed(2) + "%" : "—" }}
-                    </div>
+                    <GoogleAdsMetric :value="google.ctr" kind="percent" size="lg" :previous="previous('ctr')" />
                 </div>
                 <div>
                     <div class="text-xs text-gray-500">{{ trans("Avg. CPC") }}</div>
-                    <div class="text-lg tabular-nums text-gray-900">
-                        {{ google.avg_cpc !== null ? money(google.avg_cpc) : "—" }}
-                    </div>
+                    <GoogleAdsMetric :value="google.avg_cpc" kind="money" :currency="campaign.currency" size="lg" better="down" :previous="previous('avg_cpc')" />
                 </div>
                 <div>
                     <div class="text-xs text-gray-500">{{ trans("Cost") }}</div>
-                    <div class="text-lg tabular-nums text-gray-900">{{ money(google.cost) }}</div>
+                    <GoogleAdsMetric :value="google.cost" kind="money" :currency="campaign.currency" size="lg" better="none" :previous="previous('cost')" />
                 </div>
                 <div>
                     <div class="text-xs text-gray-500">{{ trans("Conversions") }}</div>
-                    <div class="text-lg tabular-nums text-gray-900">{{ locale.number(google.conversions) }}</div>
+                    <GoogleAdsMetric :value="google.conversions" kind="count" size="lg" :previous="previous('conversions')" />
                 </div>
                 <div>
                     <div class="text-xs text-gray-500">{{ trans("Cost per conversion") }}</div>
-                    <div class="text-lg tabular-nums text-gray-900">
-                        {{ google.cost_per_conversion !== null ? money(google.cost_per_conversion) : "—" }}
-                    </div>
+                    <GoogleAdsMetric :value="google.cost_per_conversion" kind="money" :currency="campaign.currency" size="lg" better="down" :previous="previous('cost_per_conversion')" />
                 </div>
                 <div>
                     <div class="text-xs text-gray-500">{{ trans("ROAS") }}</div>
-                    <div class="text-lg tabular-nums" :class="roasClass(google.roas)">
-                        {{ google.roas !== null ? google.roas.toFixed(2) + "×" : "—" }}
-                    </div>
+                    <GoogleAdsMetric :value="google.roas" kind="roas" size="lg" :previous="previous('roas')" />
                 </div>
                 <div>
                     <div class="text-xs text-gray-500">{{ trans("All conversions") }}</div>
-                    <div class="text-lg tabular-nums text-gray-900">{{ locale.number(google.all_conversions) }}</div>
+                    <GoogleAdsMetric :value="google.all_conversions" kind="count" size="lg" :previous="previous('all_conversions')" />
                     <div class="text-xs text-gray-500">{{ trans("worth") }} {{ money(google.all_conversions_value) }}</div>
                 </div>
                 <div>
                     <div class="text-xs text-gray-500">{{ trans("Purchases") }}</div>
-                    <div class="text-lg tabular-nums" :class="google.purchases === null ? 'text-gray-400' : 'text-gray-900'">
-                        {{ google.purchases === null ? "—" : locale.number(google.purchases) }}
-                    </div>
+                    <GoogleAdsMetric :value="google.purchases" kind="count" size="lg" :previous="previous('purchases')" />
                     <div v-if="google.purchases !== null" class="text-xs text-gray-500">
                         {{ moneyOrDash(google.cost_per_purchase) }} {{ trans("each") }} · {{ percent(google.purchase_rate, 2) }} {{ trans("of clicks") }}
                     </div>
                 </div>
                 <div>
                     <div class="text-xs text-gray-500">{{ trans("Registrations") }}</div>
-                    <div class="text-lg tabular-nums" :class="google.registrations === null ? 'text-gray-400' : 'text-gray-900'">
-                        {{ google.registrations === null ? "—" : locale.number(google.registrations) }}
-                    </div>
+                    <GoogleAdsMetric :value="google.registrations" kind="count" size="lg" :previous="previous('registrations')" />
                     <div v-if="google.registrations !== null" class="text-xs text-gray-500">
                         {{ moneyOrDash(google.cost_per_registration) }} {{ trans("each") }} · {{ percent(google.registration_rate, 2) }} {{ trans("of clicks") }}
                     </div>

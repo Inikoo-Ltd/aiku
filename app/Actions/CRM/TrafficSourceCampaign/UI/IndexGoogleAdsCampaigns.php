@@ -70,40 +70,20 @@ class IndexGoogleAdsCampaigns extends OrgAction
                somebody opening this page needs to see. Falls back for rows fetched before Google
                started reporting it. */
             DB::raw("COALESCE(traffic_source_campaigns.data->>'primary_status', traffic_source_campaigns.data->>'status') as status"),
-
-            DB::raw('COALESCE(metrics.impressions, 0) as impressions'),
-            DB::raw('COALESCE(metrics.clicks, 0) as clicks'),
-            DB::raw('COALESCE(metrics.conversions, 0) as conversions'),
-
-            /* Spend is read from traffic_source_costs rather than from the metrics rows, because that
-               is the table the rest of the marketing dashboard totals and it is already converted into
-               the shop's currency. The metrics copy stays in the account's currency, for reconciling
-               against, never for showing beside shop-currency figures. */
-            DB::raw('COALESCE(costs.spend, 0) as spend'),
-
-            /* Null, never zero, wherever the denominator is missing: with no impressions the question
-               "what share were clicked" has no answer, and a zero would read as the answer "none".
-               The table prints a dash for null. */
-            DB::raw('CASE WHEN COALESCE(metrics.impressions, 0) > 0
-                        THEN ROUND(metrics.clicks::numeric * 100 / metrics.impressions, 2)
-                    END as ctr'),
-            DB::raw('CASE WHEN COALESCE(metrics.clicks, 0) > 0
-                        THEN ROUND(metrics.source_cost / metrics.clicks, 2)
-                    END as avg_cpc'),
-            DB::raw('CASE WHEN COALESCE(metrics.conversions, 0) > 0
-                        THEN ROUND(metrics.source_cost / metrics.conversions, 2)
-                    END as cost_per_conversion'),
-            DB::raw('COALESCE(metrics.source_conversions_value, 0) as conversions_value'),
-
-            /* Both halves are Google's own, in the account's own currency, so the ratio is internally
-               consistent. It is Google's attribution and not Aiku's; the campaign page puts the two
-               next to each other and labels which is which. */
-            DB::raw('CASE WHEN COALESCE(metrics.source_cost, 0) > 0
-                        THEN ROUND(metrics.source_conversions_value / metrics.source_cost, 2)
-                    END as roas'),
         ];
 
-        $selectFields = array_merge($selectFields, $this->breakdownFields(), $this->impressionShareFields());
+        $selectFields = array_merge($selectFields, $this->metricFields());
+
+        /* The same three subqueries again over the period before, every figure suffixed _previous,
+           so a row carries both sides of the comparison and the resource works out the change. */
+        if ($this->isComparing()) {
+            $queryBuilder
+                ->leftJoinSub($this->periodMetrics(true), 'metrics_previous', 'metrics_previous.traffic_source_campaign_id', '=', 'traffic_source_campaigns.id')
+                ->leftJoinSub($this->periodCosts(true), 'costs_previous', 'costs_previous.traffic_source_campaign_id', '=', 'traffic_source_campaigns.id')
+                ->leftJoinSub($this->periodConversions(true), 'conversions_previous', 'conversions_previous.traffic_source_campaign_id', '=', 'traffic_source_campaigns.id');
+
+            $selectFields = array_merge($selectFields, $this->metricFields(self::PREVIOUS_SUFFIX));
+        }
 
         return $queryBuilder
             ->select($selectFields)
@@ -134,12 +114,85 @@ class IndexGoogleAdsCampaigns extends OrgAction
             ->withQueryString();
     }
 
+    public const string PREVIOUS_SUFFIX = '_previous';
+
+    /**
+     * Every figure the table can show, in the order the resource emits them.
+     */
+    public const array METRIC_KEYS = [
+        'impressions',
+        'clicks',
+        'ctr',
+        'avg_cpc',
+        'spend',
+        'conversions',
+        'cost_per_conversion',
+        'conversions_value',
+        'roas',
+        'all_conversions',
+        'all_conversions_value',
+        'purchases',
+        'cost_per_purchase',
+        'purchase_rate',
+        'registrations',
+        'cost_per_registration',
+        'registration_rate',
+        ...TrafficSourceCampaignMetric::IMPRESSION_SHARE_COLUMNS,
+    ];
+
+    /**
+     * The metric columns, read from the subqueries whose aliases carry the same suffix, so one list
+     * of formulas serves both the chosen period and the one before it.
+     *
+     * @return array<int, \Illuminate\Database\Query\Expression>
+     */
+    private function metricFields(string $suffix = ''): array
+    {
+        $metrics = 'metrics'.$suffix;
+        $costs   = 'costs'.$suffix;
+
+        $fields = [
+            DB::raw("COALESCE({$metrics}.impressions, 0) as impressions{$suffix}"),
+            DB::raw("COALESCE({$metrics}.clicks, 0) as clicks{$suffix}"),
+            DB::raw("COALESCE({$metrics}.conversions, 0) as conversions{$suffix}"),
+
+            /* Spend is read from traffic_source_costs rather than from the metrics rows, because that
+               is the table the rest of the marketing dashboard totals and it is already converted into
+               the shop's currency. The metrics copy stays in the account's currency, for reconciling
+               against, never for showing beside shop-currency figures. */
+            DB::raw("COALESCE({$costs}.spend, 0) as spend{$suffix}"),
+
+            /* Null, never zero, wherever the denominator is missing: with no impressions the question
+               "what share were clicked" has no answer, and a zero would read as the answer "none".
+               The table prints a dash for null. */
+            DB::raw("CASE WHEN COALESCE({$metrics}.impressions, 0) > 0
+                        THEN ROUND({$metrics}.clicks::numeric * 100 / {$metrics}.impressions, 2)
+                    END as ctr{$suffix}"),
+            DB::raw("CASE WHEN COALESCE({$metrics}.clicks, 0) > 0
+                        THEN ROUND({$metrics}.source_cost / {$metrics}.clicks, 2)
+                    END as avg_cpc{$suffix}"),
+            DB::raw("CASE WHEN COALESCE({$metrics}.conversions, 0) > 0
+                        THEN ROUND({$metrics}.source_cost / {$metrics}.conversions, 2)
+                    END as cost_per_conversion{$suffix}"),
+            DB::raw("COALESCE({$metrics}.source_conversions_value, 0) as conversions_value{$suffix}"),
+
+            /* Both halves are Google's own, in the account's own currency, so the ratio is internally
+               consistent. It is Google's attribution and not Aiku's; the campaign page puts the two
+               next to each other and labels which is which. */
+            DB::raw("CASE WHEN COALESCE({$metrics}.source_cost, 0) > 0
+                        THEN ROUND({$metrics}.source_conversions_value / {$metrics}.source_cost, 2)
+                    END as roas{$suffix}"),
+        ];
+
+        return array_merge($fields, $this->breakdownFields($suffix), $this->impressionShareFields($suffix));
+    }
+
     /**
      * Impression share is a ratio per day, so the period figure is weighted by the day's eligible
      * impressions, which Google does not send but which is impressions divided by the share received.
      * Days without a share, every campaign type outside Search and Shopping, weigh nothing.
      */
-    private function periodMetrics(): Builder
+    private function periodMetrics(bool $previous = false): Builder
     {
         $columns = [
             'traffic_source_campaign_id',
@@ -161,10 +214,10 @@ class IndexGoogleAdsCampaigns extends OrgAction
             ->select($columns)
             ->groupBy('traffic_source_campaign_id');
 
-        return $this->interval()->wherePeriod($metrics, 'date');
+        return $this->wherePeriodOrPrevious($metrics, 'date', $previous);
     }
 
-    private function periodConversions(): Builder
+    private function periodConversions(bool $previous = false): Builder
     {
         $purchase = TrafficSourceCampaignConversion::CATEGORY_PURCHASE;
         $signup   = TrafficSourceCampaignConversion::CATEGORY_SIGNUP;
@@ -177,7 +230,7 @@ class IndexGoogleAdsCampaigns extends OrgAction
             )
             ->groupBy('traffic_source_campaign_id');
 
-        return $this->interval()->wherePeriod($conversions, 'date');
+        return $this->wherePeriodOrPrevious($conversions, 'date', $previous);
     }
 
     /**
@@ -200,20 +253,22 @@ class IndexGoogleAdsCampaigns extends OrgAction
      *
      * @return array<int, \Illuminate\Database\Query\Expression>
      */
-    private function breakdownFields(): array
+    private function breakdownFields(string $suffix = ''): array
     {
-        $known = '(conversions.traffic_source_campaign_id IS NOT NULL OR COALESCE(metrics.conversions, 0) = 0)';
+        $metrics     = 'metrics'.$suffix;
+        $conversions = 'conversions'.$suffix;
+        $known       = "({$conversions}.traffic_source_campaign_id IS NOT NULL OR COALESCE({$metrics}.conversions, 0) = 0)";
 
         $fields = [
-            DB::raw('COALESCE(metrics.all_conversions, 0) as all_conversions'),
-            DB::raw('COALESCE(metrics.source_all_conversions_value, 0) as all_conversions_value'),
+            DB::raw("COALESCE({$metrics}.all_conversions, 0) as all_conversions{$suffix}"),
+            DB::raw("COALESCE({$metrics}.source_all_conversions_value, 0) as all_conversions_value{$suffix}"),
         ];
 
         foreach (self::BREAKDOWN_COLUMNS as $key => [$count, $kind]) {
             $fields[] = DB::raw(match ($kind) {
-                'count' => "CASE WHEN {$known} THEN COALESCE(conversions.{$count}, 0) END as {$key}",
-                'cost'  => "CASE WHEN COALESCE(conversions.{$count}, 0) > 0 THEN ROUND(metrics.source_cost / conversions.{$count}, 2) END as {$key}",
-                'rate'  => "CASE WHEN {$known} AND COALESCE(metrics.clicks, 0) > 0 THEN ROUND(COALESCE(conversions.{$count}, 0) * 100 / metrics.clicks, 2) END as {$key}",
+                'count' => "CASE WHEN {$known} THEN COALESCE({$conversions}.{$count}, 0) END as {$key}{$suffix}",
+                'cost'  => "CASE WHEN COALESCE({$conversions}.{$count}, 0) > 0 THEN ROUND({$metrics}.source_cost / {$conversions}.{$count}, 2) END as {$key}{$suffix}",
+                'rate'  => "CASE WHEN {$known} AND COALESCE({$metrics}.clicks, 0) > 0 THEN ROUND(COALESCE({$conversions}.{$count}, 0) * 100 / {$metrics}.clicks, 2) END as {$key}{$suffix}",
             });
         }
 
@@ -223,22 +278,24 @@ class IndexGoogleAdsCampaigns extends OrgAction
     /**
      * @return array<int, \Illuminate\Database\Query\Expression>
      */
-    private function impressionShareFields(): array
+    private function impressionShareFields(string $suffix = ''): array
     {
+        $metrics = 'metrics'.$suffix;
+
         return array_map(
-            fn (string $column) => DB::raw("CASE WHEN COALESCE(metrics.eligible_impressions, 0) > 0 THEN ROUND(metrics.weighted_{$column} * 100 / metrics.eligible_impressions, 2) END as {$column}"),
+            fn (string $column) => DB::raw("CASE WHEN COALESCE({$metrics}.eligible_impressions, 0) > 0 THEN ROUND({$metrics}.weighted_{$column} * 100 / {$metrics}.eligible_impressions, 2) END as {$column}{$suffix}"),
             TrafficSourceCampaignMetric::IMPRESSION_SHARE_COLUMNS
         );
     }
 
-    private function periodCosts(): Builder
+    private function periodCosts(bool $previous = false): Builder
     {
         $costs = DB::table('traffic_source_costs')
             ->select('traffic_source_campaign_id', DB::raw('SUM(amount) as spend'))
             ->whereNotNull('traffic_source_campaign_id')
             ->groupBy('traffic_source_campaign_id');
 
-        return $this->interval()->wherePeriod($costs, 'date');
+        return $this->wherePeriodOrPrevious($costs, 'date', $previous);
     }
 
     public function tableStructure(?array $modelOperations = null, $prefix = null): Closure
@@ -250,6 +307,7 @@ class IndexGoogleAdsCampaigns extends OrgAction
 
             $table
                 ->withGlobalSearch()
+                ->withColumnChooser()
                 ->withModelOperations($modelOperations)
                 ->withEmptyState([
                     'title'       => __('No campaigns read from Google Ads yet'),
@@ -362,9 +420,8 @@ class IndexGoogleAdsCampaigns extends OrgAction
                     'name'       => 'grp.org.shops.show.settings.edit',
                     'parameters' => $request->route()->originalParameters(),
                 ],
-                'periods' => $this->intervalOptions(),
-                'period'  => $this->interval()->value,
-                'data'    => GoogleAdsCampaignsResource::collection($campaigns),
+                ...$this->periodProps(),
+                'data' => GoogleAdsCampaignsResource::collection($campaigns),
             ]
         )->table($this->tableStructure());
     }

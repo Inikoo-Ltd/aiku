@@ -8,6 +8,7 @@
 
 namespace App\Http\Resources\CRM;
 
+use App\Actions\CRM\TrafficSourceCampaign\UI\IndexGoogleAdsCampaigns;
 use App\Models\CRM\TrafficSourceCampaignMetric;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -73,7 +74,31 @@ class GoogleAdsCampaignsResource extends JsonResource
                 'registration_rate',
                 ...TrafficSourceCampaignMetric::IMPRESSION_SHARE_COLUMNS,
             ]),
+
+            /* Only present when the listing was asked to compare, so the table knows to draw the
+               change under each figure rather than guessing from a row of nulls. */
+            'previous' => $this->when($this->hasPreviousPeriod(), fn () => $this->previousValues()),
         ];
+    }
+
+    private function hasPreviousPeriod(): bool
+    {
+        return array_key_exists('impressions'.IndexGoogleAdsCampaigns::PREVIOUS_SUFFIX, $this->resource->getAttributes());
+    }
+
+    /**
+     * @return array<string, float|null>
+     */
+    private function previousValues(): array
+    {
+        $values = [];
+
+        foreach (IndexGoogleAdsCampaigns::METRIC_KEYS as $key) {
+            $previous     = $this->resource->{$key.IndexGoogleAdsCampaigns::PREVIOUS_SUFFIX};
+            $values[$key] = $previous !== null ? (float) $previous : null;
+        }
+
+        return $values;
     }
 
     /**

@@ -131,10 +131,9 @@ class ShowGoogleAdsCampaign extends OrgAction
                     ],
                 ],
 
-                'periods'               => $this->intervalOptions(),
-                'period'                => $this->interval()->value,
-                'period_label'          => $this->intervalOptions()[$this->interval()->value],
+                ...$this->periodProps(),
                 'google'                => $this->googleFigures($trafficSourceCampaign),
+                'google_previous'       => $this->isComparing() ? $this->googleFigures($trafficSourceCampaign, true) : null,
                 'impression_share'      => $this->impressionShare($trafficSourceCampaign),
                 'conversions_by_action' => $this->conversionsByAction($trafficSourceCampaign),
                 'daily'                 => $this->daily($trafficSourceCampaign),
@@ -166,12 +165,12 @@ class ShowGoogleAdsCampaign extends OrgAction
      *
      * @return array{impressions: int, clicks: int, conversions: float, cost: float, conversions_value: float, ctr: float|null, avg_cpc: float|null, cost_per_conversion: float|null, roas: float|null, days: int, all_conversions: float, all_conversions_value: float, has_breakdown: bool, purchases: float|null, cost_per_purchase: float|null, purchase_rate: float|null, registrations: float|null, cost_per_registration: float|null, registration_rate: float|null}
      */
-    private function googleFigures(TrafficSourceCampaign $campaign): array
+    private function googleFigures(TrafficSourceCampaign $campaign, bool $previous = false): array
     {
         $query = DB::table('traffic_source_campaign_metrics')
             ->where('traffic_source_campaign_id', $campaign->id);
 
-        $row = $this->interval()->wherePeriod($query, 'date')
+        $row = $this->wherePeriodOrPrevious($query, 'date', $previous)
             ->selectRaw('COUNT(*) as days, COALESCE(SUM(impressions),0) as impressions, COALESCE(SUM(clicks),0) as clicks,
                          COALESCE(SUM(conversions),0) as conversions, COALESCE(SUM(source_cost),0) as cost,
                          COALESCE(SUM(source_conversions_value),0) as conversions_value,
@@ -186,9 +185,10 @@ class ShowGoogleAdsCampaign extends OrgAction
         $value          = (float) $row->conversions_value;
         $allConversions = (float) $row->all_conversions;
 
-        $breakdown = $this->interval()->wherePeriod(
+        $breakdown = $this->wherePeriodOrPrevious(
             DB::table('traffic_source_campaign_conversions')->where('traffic_source_campaign_id', $campaign->id),
-            'date'
+            'date',
+            $previous
         )
             ->selectRaw(
                 'COUNT(*) as rows_count,
@@ -248,7 +248,7 @@ class ShowGoogleAdsCampaign extends OrgAction
         $query = DB::table('traffic_source_campaign_metrics')
             ->where('traffic_source_campaign_id', $campaign->id);
 
-        $row      = $this->interval()->wherePeriod($query, 'date')->selectRaw(implode(', ', $selects))->first();
+        $row      = $this->wherePeriod($query, 'date')->selectRaw(implode(', ', $selects))->first();
         $eligible = (float) ($row->eligible_impressions ?? 0);
 
         if ($eligible <= 0) {
@@ -272,7 +272,7 @@ class ShowGoogleAdsCampaign extends OrgAction
         $query = DB::table('traffic_source_campaign_conversions')
             ->where('traffic_source_campaign_id', $campaign->id);
 
-        return $this->interval()->wherePeriod($query, 'date')
+        return $this->wherePeriod($query, 'date')
             ->select(
                 'category',
                 'action_name',
@@ -312,7 +312,7 @@ class ShowGoogleAdsCampaign extends OrgAction
             })
             ->where('m.traffic_source_campaign_id', $campaign->id);
 
-        return $this->interval()->wherePeriod($query, 'm.date')
+        return $this->wherePeriod($query, 'm.date')
             ->orderByDesc('m.date')
             ->get([
                 'm.date',
