@@ -8,6 +8,7 @@ import WaitingWarehouseList from "@/Layouts/Grp/WaitingWarehouseList.vue"
 import WaitingCrmList from "@/Layouts/Grp/WaitingCrmList.vue"
 
 import { layoutStructure } from "@/Composables/useLayoutStructure"
+import { capitalize } from "@/Composables/capitalize"
 
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faCircle } from '@fas'
@@ -50,7 +51,7 @@ const hasCatalogueBadges = computed(() => (layout?.master_updated_count ?? 0) + 
             <span class="sr-only">{{ trans("Open user menu") }}</span>
             <Image class="h-8 w-8 rounded-full" :src="layout.avatar_thumbnail" alt="" />
         </div>
-        <span v-if="layout.messagingSidebar.show" class="truncate text-sm text-[var(--chat-muted)]">{{ layout.user?.username }}</span>
+        <span v-if="layout.messagingSidebar.show" v-tooltip="capitalize(layout.user?.contact_name || layout.user?.username)" class="min-w-0 flex-1 truncate text-sm text-[var(--chat-muted)]">{{ capitalize(layout.user?.contact_name || layout.user?.username) }}</span>
         </div>
 
         <div v-if="layout.messagingSidebar.show" class="border-t border-[var(--chat-line)]" aria-hidden="true" />
