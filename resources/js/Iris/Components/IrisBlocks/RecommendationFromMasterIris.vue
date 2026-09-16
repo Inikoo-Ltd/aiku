@@ -83,7 +83,6 @@ onMounted(()=>{
   key.value ++
 })
 
-console.log('related product :', props)
 </script>
 
 <template>
