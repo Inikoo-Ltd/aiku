@@ -14,7 +14,6 @@ use App\Actions\Production\PartnerShippingList\GetMixesToPrepare;
 use App\Actions\Production\PartnerShippingList\GetMixJobOrders;
 use App\Actions\Production\Production\UI\ShowProduction;
 use App\Enums\HumanResources\Employee\EmployeeStateEnum;
-use App\Actions\Production\Artefact\UI\GetArtefactLabels;
 use App\Enums\Production\Artefact\ArtefactLabelStateEnum;
 use App\Enums\Production\JobOrder\JobOrderStateEnum;
 use App\Models\HumanResources\Employee;
@@ -372,14 +371,14 @@ class IndexPartnerShippingList extends OrgAction
             $item->published_labels   = $publishedLabels->get($item->artefact_id, collect())->values()->all();
             $item->batch_code         = $this->getBatchCode($item);
             $item->label_expiry_date  = $this->getLabelExpiryDate($item);
-            $item->expiry_date        = $this->getRunExpiryDate($item);
+            $item->run_expiry         = $this->getRunExpiryDate($item);
         });
 
         $preparingItems->each(function ($item) use ($publishedLabels) {
             $item->published_labels   = $publishedLabels->get($item->artefact_id, collect())->values()->all();
             $item->batch_code         = $this->getBatchCode($item);
             $item->label_expiry_date  = $this->getLabelExpiryDate($item);
-            $item->expiry_date        = $this->getRunExpiryDate($item);
+            $item->run_expiry         = $this->getRunExpiryDate($item);
         });
 
         return collect($lanes)
@@ -417,7 +416,8 @@ class IndexPartnerShippingList extends OrgAction
     /**
      * The batch code the artisan should mark the run with. What was typed when the run was prepared
      * wins, then a published label that prints one, because the board must never contradict the
-     * sheet coming out of the printer; failing both, the stand in the label editor offers.
+     * sheet coming out of the printer. Nothing is invented when neither exists: the batch is named
+     * after the job order once it is made, and showing a guess here would name it twice.
      */
     private function getBatchCode(object $item): ?string
     {
@@ -425,15 +425,7 @@ class IndexPartnerShippingList extends OrgAction
             return $item->run_batch_code;
         }
 
-        $printed = collect($item->published_labels)->pluck('batch_code')->filter()->first();
-
-        if ($printed) {
-            return $printed;
-        }
-
-        return $item->artefact_code
-            ? GetArtefactLabels::make()->getPlaceholderBatchCodeFor($item->artefact_code)
-            : null;
+        return collect($item->published_labels)->pluck('batch_code')->filter()->first();
     }
 
     private function getPrintedText(ArtefactLabel $label, string $source): ?string
@@ -466,6 +458,10 @@ class IndexPartnerShippingList extends OrgAction
         }
     }
 
+    /**
+     * Plain Y-m-d, never the model's own cast attribute: that one reads back as a Carbon and leaves
+     * the page as a full ISO timestamp, which is neither what a date input nor a label wants.
+     */
     private function getRunExpiryDate(object $item): ?string
     {
         return $item->run_expiry_date ? Carbon::parse($item->run_expiry_date)->format('Y-m-d') : null;

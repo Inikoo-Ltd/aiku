@@ -70,16 +70,7 @@ class GetArtefactLabels
      */
     private function getPlaceholderBatchCode(Artefact $artefact): string
     {
-        return $this->getPlaceholderBatchCodeFor($artefact->code);
-    }
-
-    /**
-     * The same stand in, reachable from the production board, which works on rows rather than
-     * models and must show the code a label would be printed with.
-     */
-    public function getPlaceholderBatchCodeFor(string $artefactCode): string
-    {
-        return strtoupper($artefactCode).'-'.now()->format('ymd');
+        return strtoupper($artefact->code).'-'.now()->format('ymd');
     }
 
     /**

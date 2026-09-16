@@ -13,11 +13,13 @@ use App\Enums\Production\Artefact\ArtefactLabelStateEnum;
 use App\Models\Production\Artefact;
 use App\Models\Production\ArtefactLabel;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 use Lorisleiva\Actions\ActionRequest;
 use Symfony\Component\HttpFoundation\HeaderUtils;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\HttpException;
+use Throwable;
 
 class DownloadArtefactLabelPdf extends OrgAction
 {
@@ -84,8 +86,36 @@ class DownloadArtefactLabelPdf extends OrgAction
     {
         return array_filter([
             'batch_code'  => trim((string) $request->query('batch_code')),
-            'expiry_date' => trim((string) $request->query('expiry_date')),
+            'expiry_date' => $this->getRunExpiryDate($request->query('expiry_date')),
         ], fn (string $text) => $text !== '');
+    }
+
+    /**
+     * Only a date reaches the sheet. Anything else, a timestamp that slipped through a caller or a
+     * hand edited link, is dropped rather than printed, because a label is read by people who
+     * cannot tell a formatting accident from a real date.
+     */
+    private function getRunExpiryDate(mixed $expiryDate): string
+    {
+        $expiryDate = trim((string) $expiryDate);
+
+        if ($expiryDate === '') {
+            return '';
+        }
+
+        foreach (['d/m/Y', 'Y-m-d'] as $format) {
+            try {
+                $date = Carbon::createFromFormat($format, $expiryDate);
+            } catch (Throwable) {
+                continue;
+            }
+
+            if ($date && $date->format($format) === $expiryDate) {
+                return $date->format('d/m/Y');
+            }
+        }
+
+        return '';
     }
 
     /**

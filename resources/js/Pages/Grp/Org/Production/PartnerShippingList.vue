@@ -36,17 +36,21 @@ const printingLabelId = ref<number | null>(null)
  */
 function labelUrl(label: PublishedLabel, item: BoardItem) {
     const runTexts = new URLSearchParams()
+    const expiry = formatExpiryForLabel(item.run_expiry)
 
     if (item.batch_code) runTexts.set("batch_code", item.batch_code)
-    if (item.expiry_date) runTexts.set("expiry_date", formatExpiryForLabel(item.expiry_date))
+    if (expiry) runTexts.set("expiry_date", expiry)
 
     return runTexts.size ? `${label.pdf_url}?${runTexts}` : label.pdf_url
 }
 
-function formatExpiryForLabel(isoDate: string) {
-    const [year, month, day] = isoDate.split("-")
+/**
+ * Labels print d/m/Y. Only the date part is read, so a full timestamp cannot leak onto a sheet.
+ */
+function formatExpiryForLabel(date: string | null | undefined) {
+    const match = date?.match(/^(\d{4})-(\d{2})-(\d{2})/)
 
-    return `${day}/${month}/${year}`
+    return match ? `${match[3]}/${match[2]}/${match[1]}` : null
 }
 
 async function printLabel(label: PublishedLabel, item: BoardItem) {
@@ -122,7 +126,7 @@ function createJobOrders(ids: number[] = Object.keys(selected).map(Number), empl
     )
 }
 
-type BoardItem = { id: number, batch_size?: number | null, packed_in?: number | null, order_quantum?: number | null, is_hitchhiker?: boolean, stock_code: string, stock_name: string, state: string, quantity: number, quantity_to_produce: number | null, maker: string | null, maker_id: number | null, preparing_at: string | null, kind?: "item" | "mix", artefact_id?: number, job_order_id?: number | null, job_order_state?: string | null, job_order_reference?: string | null, job_order_artisan?: string | null, stock_available?: number | null, buyer_code?: string | null, published_labels?: PublishedLabel[], batch_code?: string | null, expiry_date?: string | null, label_expiry_date?: string | null }
+type BoardItem = { id: number, batch_size?: number | null, packed_in?: number | null, order_quantum?: number | null, is_hitchhiker?: boolean, stock_code: string, stock_name: string, state: string, quantity: number, quantity_to_produce: number | null, maker: string | null, maker_id: number | null, preparing_at: string | null, kind?: "item" | "mix", artefact_id?: number, job_order_id?: number | null, job_order_state?: string | null, job_order_reference?: string | null, job_order_artisan?: string | null, stock_available?: number | null, buyer_code?: string | null, published_labels?: PublishedLabel[], batch_code?: string | null, run_batch_code?: string | null, run_expiry?: string | null, label_expiry_date?: string | null }
 
 function isReassignable(item: BoardItem): boolean {
     return !!item.job_order_id && ["in_process", "submitted"].includes(item.job_order_state ?? "")
@@ -270,8 +274,8 @@ function openPicker(mode: "prepare" | "assign" | "assign-mix", event: DragEvent)
     for (const key in originalExpiryDates) delete originalExpiryDates[key]
     dragging.value.forEach(item => {
         pendingQuantities[item.id] = Math.ceil(Number(item.quantity_to_produce ?? item.quantity))
-        pendingBatchCodes[item.id] = item.batch_code ?? ""
-        pendingExpiryDates[item.id] = item.expiry_date ?? item.label_expiry_date ?? ""
+        pendingBatchCodes[item.id] = item.run_batch_code ?? ""
+        pendingExpiryDates[item.id] = item.run_expiry ?? item.label_expiry_date ?? ""
         originalExpiryDates[item.id] = pendingExpiryDates[item.id]
     })
     expiryAppliesToLabel.value = false
@@ -577,7 +581,10 @@ function jobOrderHref(item: { job_order_slug: string }) {
                         </label>
                     </div>
                     <div class="mt-2 space-y-2 border-t border-gray-100 pt-2">
-                        <div class="text-gray-500">{{ trans("What the labels print") }}</div>
+                        <div class="text-gray-500">
+                            {{ trans("What the labels print") }}
+                            <span class="block text-gray-400">{{ trans("An empty batch code is named after the job order once it is made.") }}</span>
+                        </div>
                         <div v-for="item in pendingItems" :key="`texts-${item.id}`" class="space-y-1">
                             <div v-if="pendingItems.length > 1" class="truncate font-medium" :title="item.stock_name">{{ item.stock_code }}</div>
                             <div class="grid grid-cols-2 gap-1.5">
@@ -587,6 +594,8 @@ function jobOrderHref(item: { job_order_slug: string }) {
                                         v-model="pendingBatchCodes[item.id]"
                                         type="text"
                                         maxlength="64"
+                                        :placeholder="trans('From job order')"
+                                        :title="trans('Leave empty and the job order reference names the batch')"
                                         class="w-full min-w-0 rounded border-gray-300 py-0.5 text-xs" />
                                 </label>
                                 <label class="flex min-w-0 flex-col gap-0.5">
