@@ -14,6 +14,7 @@ import {
     faTimesCircle,
     faRotateRight,
     faFaceSmile,
+    faLifeRing,
 } from "@fortawesome/free-solid-svg-icons"
 import { faWhatsapp } from "@fortawesome/free-brands-svg-icons"
 import type { ChatMessage, SessionAPI } from "@/types/Chat/chat"
@@ -28,6 +29,7 @@ import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.
 const EmojiPicker = defineAsyncComponent(() => import("@/Components/Messaging/EmojiPicker.vue"))
 import { notify } from "@kyvg/vue3-notification"
 import WhatsappTemplatePicker from "@/Components/Chat/WhatsappTemplatePicker.vue"
+import TicketModal from "@/Components/Chat/Agent/TicketModal.vue"
 
 type LocalMessageStatus = "sending" | "sent" | "failed"
 
@@ -70,6 +72,8 @@ const emit = defineEmits(["back", "messages-read", "assign-self-success", "close
 
 const layout: any = inject("layout", {})
 const baseUrl = layout?.appUrl ?? ""
+
+const isTicketModalOpen = ref(false)
 
 const chatSession = computed(() => props.session)
 const isClosed = computed(() => chatSession.value?.status === "closed")
@@ -1028,6 +1032,10 @@ onUnmounted(() => {
                             class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-green-50 text-gray-500 hover:text-green-600 transition-colors" :title="trans('Send template message')">
                             <FontAwesomeIcon :icon="faFileLines" class="text-sm" />
                         </button>
+                        <button @click="isTicketModalOpen = true"
+                            class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-blue-50 text-gray-500 hover:text-blue-600 transition-colors" :title="trans('Create ticket from this chat')" :aria-label="trans('Create ticket from this chat')">
+                            <FontAwesomeIcon :icon="faLifeRing" class="text-sm" />
+                        </button>
                     </div>
                     <Button @click="sendMessage" :loading="isSending"
                         :disabled="hasTemplate ? !canSendTemplate : templateOnly"
@@ -1045,6 +1053,13 @@ onUnmounted(() => {
             :organisation-slug="organisationSlug"
             :shop-slug="session?.shop?.slug"
             @select="selectTemplate" />
+
+        <TicketModal
+            :is-open="isTicketModalOpen"
+            :session="session"
+            :organisation="organisationSlug"
+            channel="whatsapp"
+            @close="isTicketModalOpen = false" />
     </div>
 </template>
 

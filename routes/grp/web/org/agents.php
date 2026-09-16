@@ -93,6 +93,8 @@ Route::name('agents.')->prefix('agents')->group(function () {
     Route::patch('/sessions/{chatSession:ulid}/restore', RestoreChatSession::class)->name('sessions.restore')->withTrashed();
     Route::delete('/sessions/{chatSession:ulid}/force', DeleteChatSessionPermanently::class)->name('sessions.force_delete')->withTrashed();
     Route::post('/sessions/{chatSession:ulid}/ticket', StoreTicketFromChatSession::class)->name('sessions.ticket');
+    Route::post('/whatsapp/{metaChatSession:ulid}/ticket', [StoreTicketFromChatSession::class, 'inMetaChatSession'])
+        ->name('whatsapp.sessions.ticket');
     Route::name('sessions.slack.')->prefix('sessions/{chatSession:ulid}/slack')->group(function () {
         Route::get('/', GetChatSessionSlackSettings::class)->name('show');
         Route::put('/', UpdateChatSessionSlackSettings::class)->name('update');

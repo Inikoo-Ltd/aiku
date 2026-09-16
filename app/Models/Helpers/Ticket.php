@@ -14,6 +14,7 @@ use App\Enums\CRM\Livechat\ChatPriorityEnum;
 use App\Enums\Helpers\Ticket\TicketKindEnum;
 use App\Enums\Helpers\Ticket\TicketModuleEnum;
 use App\Enums\Helpers\Ticket\TicketQaStatusEnum;
+use App\Enums\Helpers\Ticket\TicketSourceChannelEnum;
 use App\Enums\Helpers\Ticket\TicketStatusEnum;
 use App\Enums\Helpers\Ticket\TicketTypeEnum;
 use App\Models\CRM\Customer;
@@ -116,6 +117,7 @@ class Ticket extends Model implements Auditable, HasMedia
             'tags'        => 'array',
             'is_confidential' => 'boolean',
             'qa_status'   => TicketQaStatusEnum::class,
+            'source_channel' => TicketSourceChannelEnum::class,
             'qa_requested_at' => 'datetime',
             'qa_checked_at' => 'datetime',
             'rated_at'    => 'datetime',
@@ -170,6 +172,11 @@ class Ticket extends Model implements Auditable, HasMedia
     }
 
     public function model(): MorphTo
+    {
+        return $this->morphTo();
+    }
+
+    public function source(): MorphTo
     {
         return $this->morphTo();
     }

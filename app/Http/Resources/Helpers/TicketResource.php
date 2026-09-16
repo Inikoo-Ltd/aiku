@@ -10,6 +10,8 @@ namespace App\Http\Resources\Helpers;
 
 use App\Enums\CRM\Livechat\ChatPriorityEnum;
 use App\Enums\Helpers\Ticket\TicketKindEnum;
+use App\Enums\Helpers\Ticket\TicketSourceChannelEnum;
+use App\Models\Chat\MetaChatSession;
 use App\Enums\Helpers\Ticket\TicketModuleEnum;
 use App\Enums\Helpers\Ticket\TicketQaStatusEnum;
 use App\Enums\Helpers\Ticket\TicketStatusEnum;
@@ -71,6 +73,7 @@ class TicketResource extends JsonResource
             'shop'           => $this->shop?->name,
             'model_type'     => $this->model_type,
             'model_id'       => $this->model_id,
+            'source'         => $this->sourceData(),
             'created_at'     => $this->created_at,
             'updated_at'     => $this->updated_at,
             'resolved_at'    => $this->resolved_at,
@@ -87,5 +90,48 @@ class TicketResource extends JsonResource
             'attachments'    => $this->ticketAttachments(),
             'commits'        => collect(data_get($this->data, 'commits', []))->map(fn ($commit) => $commit + ['url' => config('services.github.repo') ? 'https://github.com/'.config('services.github.repo').'/commit/'.$commit['hash'] : null])->all(),
         ];
+    }
+
+    /** @return array{channel: string|null, channel_label: string|null, channel_icon: array|null, contact: string|null, reference: string|null, url: string|null}|null */
+    private function sourceData(): ?array
+    {
+        if (!$this->source_type || !$this->source_id) {
+            return null;
+        }
+
+        $session  = $this->source;
+        $channel  = $this->source_channel;
+        $customer = $session instanceof MetaChatSession ? $session->customer : $session?->webUser?->customer;
+
+        return [
+            'channel'       => $channel?->value,
+            'channel_label' => $channel ? TicketSourceChannelEnum::labels()[$channel->value] : null,
+            'channel_icon'  => $channel ? TicketSourceChannelEnum::stateIcon()[$channel->value] : null,
+            'contact'       => $customer?->name
+                ?: ($session instanceof MetaChatSession
+                    ? ($session->phone_number ?: $session->guest_identifier)
+                    : ($session?->webUser?->contact_name ?: $session?->guest_identifier)),
+            'reference'     => $customer?->reference,
+            'url'           => $this->sourceUrl($session),
+        ];
+    }
+
+    private function sourceUrl(mixed $session): ?string
+    {
+        $organisationSlug = $this->organisation?->slug ?? $session?->shop?->organisation?->slug;
+
+        if (!$organisationSlug || !$session?->ulid) {
+            return null;
+        }
+
+        if ($session instanceof MetaChatSession) {
+            return route('grp.org.chat.inbox', ['organisation' => $organisationSlug])
+                .'?channel=whatsapp&session='.$session->ulid;
+        }
+
+        return route('grp.org.chat.inbox.conversation', [
+            'organisation' => $organisationSlug,
+            'chatSession'  => $session->ulid,
+        ]);
     }
 }
