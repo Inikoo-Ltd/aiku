@@ -4191,3 +4191,35 @@ test('a packed note shipped by the sales channel waits for the carrier label, th
     $order->setRelation('invoices', new Collection([1]));
     expect(ShowDeliveryNote::make()->getPackedActions($deliveryNote)['route']['name'])->toBe('grp.models.delivery_note.state.dispatched');
 });
+
+test('returned delivery notes are listed first whatever the sort asked for (HELP-2763)', function () {
+    $this->shop->update(['is_aiku' => true]);
+
+    $returned = SendOrderToWarehouse::make()->action(freshSubmittedOrder($this), ['warehouse_id' => $this->warehouse->id]);
+    $plain    = SendOrderToWarehouse::make()->action(freshSubmittedOrder($this), ['warehouse_id' => $this->warehouse->id]);
+
+    // The return is the older note and its reference sorts last, so only the forced sort can lift it
+    $returned->update(['is_returned' => true, 'date' => now()->subWeek(), 'reference' => 'ZZ-RETURNED']);
+    $plain->update(['is_returned' => false, 'date' => now(), 'reference' => 'AA-PLAIN']);
+
+    $positions = function (array $query) use ($returned, $plain) {
+        $response = get(route('grp.org.warehouses.show.dispatching.delivery-notes', [
+            $this->organisation->slug,
+            $this->warehouse->slug,
+            ...$query,
+        ]));
+        $response->assertOk();
+
+        $ids = collect($response->viewData('page')['props']['data']['data'])->pluck('id');
+
+        return [$ids->search($returned->id), $ids->search($plain->id)];
+    };
+
+    foreach ([[], ['sort' => 'reference'], ['sort' => '-date'], ['sort' => 'customer_name']] as $query) {
+        [$returnedPosition, $plainPosition] = $positions($query);
+
+        expect($returnedPosition)->not->toBeFalse()
+            ->and($plainPosition)->not->toBeFalse()
+            ->and($returnedPosition)->toBeLessThan($plainPosition);
+    }
+});
