@@ -152,7 +152,7 @@ class TicketResource extends JsonResource
         }
 
         if (\App\Models\Helpers\Ticket::canBeAssignedBy($reporter)) {
-            return [['key' => 'lead_engineer', 'label' => __('Lead engineer')]];
+            return [['key' => 'lead_engineer', 'label' => __('Engineer')]];
         }
 
         if (\App\Models\Helpers\Ticket::canBeManagedBy($reporter)) {

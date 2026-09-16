@@ -56,7 +56,7 @@ class TicketCommentResource extends JsonResource
         $roles = [];
 
         if (Ticket::canBeAssignedBy($author)) {
-            $roles[] = ['key' => 'lead_engineer', 'label' => __('Lead engineer')];
+            $roles[] = ['key' => 'lead_engineer', 'label' => __('Engineer')];
         } elseif (Ticket::canBeManagedBy($author)) {
             $roles[] = ['key' => 'engineer', 'label' => __('Engineer')];
         } elseif (Ticket::canCheckQa($author)) {

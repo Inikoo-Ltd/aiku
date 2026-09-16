@@ -37,7 +37,7 @@ const emit = defineEmits<{
 }>()
 
 const roleClasses: Record<string, string> = {
-    lead_engineer: "bg-red-100 text-red-700",
+    lead_engineer: "bg-teal-100 text-teal-700",
     engineer: "bg-blue-100 text-blue-700",
     qa: "bg-purple-100 text-purple-700",
     reporter: "bg-orange-100 text-orange-700",
