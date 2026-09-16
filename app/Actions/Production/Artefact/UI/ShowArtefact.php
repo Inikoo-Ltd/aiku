@@ -62,7 +62,7 @@ class ShowArtefact extends OrgAction
         return Inertia::render(
             'Org/Production/Artefact',
             [
-                'title'                                => __('warehouse area'),
+                'title'                                => __('Artefact') . ' ' . $artefact->code,
                 'breadcrumbs'                          => $this->getBreadcrumbs(
                     $request->route()->originalParameters()
                 ),
