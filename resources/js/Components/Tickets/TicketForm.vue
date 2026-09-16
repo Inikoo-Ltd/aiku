@@ -15,14 +15,16 @@ const props = defineProps<{
     storeRoute: { name: string; parameters?: Record<string, unknown> }
     priorities?: { label: string; value: string }[]
     kinds?: { label: string; value: string }[]
+    types?: { label: string; value: string }[]
     modules?: { label: string; value: string }[]
 }>()
 
-const form = useForm<{ subject: string; description: string; reference_url: string; priority: string; kind: string | null; module: string | null; images: File[] }>({
+const form = useForm<{ subject: string; description: string; reference_url: string; priority: string; type: string | null; kind: string | null; module: string | null; images: File[] }>({
     subject: "",
     description: "",
     reference_url: "",
     priority: "normal",
+    type: props.types?.[0]?.value ?? null,
     kind: props.kinds?.[0]?.value ?? null,
     module: null,
     images: [],
@@ -47,6 +49,12 @@ const submit = () => form.post(route(props.storeRoute.name, props.storeRoute.par
             <label class="block text-xs text-gray-500 mb-1">{{ trans("Page where it happens") }}</label>
             <input v-model="form.reference_url" type="url" maxlength="2048" class="w-full rounded-md border-gray-300 text-sm focus:border-gray-500 focus:ring-0" placeholder="https://app.aiku.io/..." />
             <p v-if="form.errors.reference_url" class="text-xs text-red-600 mt-1">{{ form.errors.reference_url }}</p>
+        </div>
+        <div v-if="types?.length" class="grid grid-cols-2 gap-4">
+            <div>
+                <label class="mb-1 block text-sm text-gray-600">{{ trans("Type") }}</label>
+                <Select v-model="form.type" :options="types" option-label="label" option-value="value" class="w-full" />
+            </div>
         </div>
         <div v-if="kinds?.length" class="grid grid-cols-2 gap-4">
             <div>

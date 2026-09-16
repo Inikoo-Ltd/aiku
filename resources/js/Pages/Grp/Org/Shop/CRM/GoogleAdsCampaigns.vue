@@ -5,8 +5,7 @@
   -->
 
 <script setup lang="ts">
-import TrafficSourceAudienceMix from "@/Components/DataDisplay/Dashboard/Widget/TrafficSourceAudienceMix.vue"
-import { Deferred, Head, Link } from "@inertiajs/vue3"
+import { Head, Link } from "@inertiajs/vue3"
 import { computed } from "vue"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import { library } from "@fortawesome/fontawesome-svg-core"
@@ -34,22 +33,6 @@ const props = defineProps<{
     custom_range: { from: string; to: string } | null
     compare: boolean
     comparison_label: string | null
-    audience?: {
-        buckets: {
-            key: string
-            label: string
-            description: string
-            colour: string
-            count: number
-            share: number
-            is_acquisition: boolean
-        }[]
-        total: number
-        identified: number
-        acquisition: number
-        window_days: number
-        measured_from: string | null
-    }
 }>()
 
 /**
@@ -82,20 +65,6 @@ const lastFetched = computed(() => {
         <Link :href="route(settings_route.name, settings_route.parameters)" class="primaryLink ml-1">
             {{ trans("Open shop settings") }}
         </Link>
-    </div>
-
-    <div class="mx-4 mt-4 rounded-xl bg-white p-5 ring-1 ring-gray-200">
-        <Deferred data="audience">
-            <template #fallback>
-                <div class="space-y-3">
-                    <div class="h-4 w-1/3 animate-pulse rounded bg-gray-100" />
-                    <div class="h-2.5 w-full animate-pulse rounded-full bg-gray-100" />
-                    <div v-for="row in 4" :key="row" class="h-6 animate-pulse rounded bg-gray-100" />
-                </div>
-            </template>
-
-            <TrafficSourceAudienceMix :mix="audience ?? null" />
-        </Deferred>
     </div>
 
     <div class="mx-4 mt-4 flex flex-wrap items-center justify-between gap-3">

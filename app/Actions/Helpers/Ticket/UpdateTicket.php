@@ -197,8 +197,20 @@ class UpdateTicket extends OrgAction
             return $isVerdict ? Ticket::canCheckQa($user) : $ticket->canContributeBy($user);
         }
 
+        if ($request->has('assignee_id')) {
+            $canHandOver = $ticket->canChangeAssigneeBy($user) && ($request->filled('assignee_id') || Ticket::canBeAssignedBy($user));
+
+            if (!$canHandOver) {
+                return false;
+            }
+
+            if (array_diff($fields, ['assignee_id']) === []) {
+                return true;
+            }
+        }
+
         if ($ticket->canBeUpdatedBy($user)) {
-            return (!$request->has('assignee_id') || $request->filled('assignee_id')) && !$request->has('is_confidential');
+            return !$request->has('is_confidential');
         }
 
         if ($request->has('tags') && array_diff($fields, ['tags']) === [] && $ticket->hasCollaborator($user)) {

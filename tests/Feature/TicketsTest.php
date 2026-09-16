@@ -943,9 +943,9 @@ test('only the help desk manages tickets, everyone else reports, comments and cl
     get(route('grp.tickets.reports'))->assertOk();
     get(route('grp.tickets.board'))->assertOk()->assertInertia(fn (AssertableInertia $page) => $page->where('can_manage', true));
     patch(route('grp.models.ticket.update', $other->id), ['is_confidential' => true])->assertForbidden();
-    patch(route('grp.models.ticket.update', $other->id), ['assignee_id' => $helper->id])->assertForbidden();
     patch(route('grp.models.ticket.update', $other->id), ['priority' => 'urgent'])->assertForbidden();
-    UpdateTicket::make()->action($other, ['assignee_id' => $helper->id]);
+    patch(route('grp.models.ticket.update', $other->id), ['assignee_id' => $helper->id])->assertRedirect()->assertSessionHasNoErrors();
+    expect($other->fresh()->assignee_id)->toBe($helper->id);
     patch(route('grp.models.ticket.update', $other->id), ['priority' => 'urgent'])->assertRedirect();
     patch(route('grp.models.ticket.update', $other->id), ['assignee_id' => null])->assertForbidden();
     patch(route('grp.models.ticket.update', $other->id), ['assignee_id' => $boss->id])->assertRedirect();
@@ -2148,4 +2148,62 @@ test('comments show who wrote them with their role, but never in the customer po
         ->assertOk()
         ->viewData('page')['props']['comments'];
     expect(collect($customerComments)->pluck('author_roles')->flatten()->all())->toBe([]);
+});
+
+test('help desk staff and QA can raise engineering tickets with an INI reference', function () {
+    setPermissionsTeamId($this->group->id);
+    $engineer = User::factory()->create(['group_id' => $this->group->id]);
+    $qa       = User::factory()->create(['group_id' => $this->group->id]);
+    $colleague = User::factory()->create(['group_id' => $this->group->id]);
+    $engineer->assignRole('help-desk-clerk');
+    $qa->assignRole('qa');
+
+    actingAs($engineer);
+    get(route('grp.tickets.create'))->assertOk()->assertInertia(
+        fn (AssertableInertia $page) => $page->where('types', fn ($types) => collect($types)->pluck('value')->all() === ['help', 'engineer'])
+    );
+    post(route('grp.models.ticket.store'), ['subject' => 'Refactor the queue', 'type' => 'engineer'])->assertRedirect()->assertSessionHasNoErrors();
+    expect(Ticket::where('subject', 'Refactor the queue')->value('reference'))->toStartWith('INI-');
+
+    actingAs($qa);
+    post(route('grp.models.ticket.store'), ['subject' => 'Test plan', 'type' => 'engineer'])->assertRedirect()->assertSessionHasNoErrors();
+
+    actingAs($colleague);
+    get(route('grp.tickets.create'))->assertOk()->assertInertia(fn (AssertableInertia $page) => $page->where('types', []));
+    post(route('grp.models.ticket.store'), ['subject' => 'Not for me', 'type' => 'engineer'])->assertSessionHasErrors('type');
+    post(route('grp.models.ticket.store'), ['subject' => 'Plain help'])->assertRedirect()->assertSessionHasNoErrors();
+    expect(Ticket::where('subject', 'Plain help')->value('reference'))->toStartWith('HELP-');
+});
+
+test('engineers claim unassigned tickets, then only the assignee or a lead engineer hands them over', function () {
+    setPermissionsTeamId($this->group->id);
+    $engineer  = User::factory()->create(['group_id' => $this->group->id]);
+    $colleague = User::factory()->create(['group_id' => $this->group->id]);
+    $engineer->assignRole('help-desk-clerk');
+    $colleague->assignRole('help-desk-clerk');
+
+    $ticket = StoreTicket::make()->action($this->group, ['subject' => 'Up for grabs']);
+    $update = route('grp.models.ticket.update', $ticket->id);
+
+    actingAs($engineer);
+    patch($update, ['assignee_id' => $engineer->id])->assertRedirect()->assertSessionHasNoErrors();
+    expect($ticket->fresh()->assignee_id)->toBe($engineer->id);
+
+    actingAs($colleague);
+    patch($update, ['assignee_id' => $colleague->id])->assertForbidden();
+
+    actingAs($engineer);
+    patch($update, ['assignee_id' => $colleague->id])->assertRedirect()->assertSessionHasNoErrors();
+    expect($ticket->fresh()->assignee_id)->toBe($colleague->id);
+
+    patch($update, ['assignee_id' => null])->assertForbidden();
+
+    actingAs($this->user);
+    patch($update, ['assignee_id' => null])->assertRedirect()->assertSessionHasNoErrors();
+    expect($ticket->fresh()->assignee_id)->toBeNull();
+
+    $other = StoreTicket::make()->action($this->group, ['subject' => 'Also free']);
+    actingAs($engineer);
+    patch(route('grp.models.ticket.update', $other->id), ['assignee_id' => $colleague->id])->assertRedirect()->assertSessionHasNoErrors();
+    expect($other->fresh()->assignee_id)->toBe($colleague->id);
 });

@@ -41,6 +41,7 @@ const props = defineProps<{
     searchHelp: string[]
     updateRoute: string
     can_assign: boolean
+    can_manage?: boolean
     mineFilter: string | null
     options: {
         priorities: (Option<string> & { icon: any })[]
@@ -58,7 +59,7 @@ const myUserId = computed(() => (usePage().props.auth as { user?: { id: number }
 
 const isAssignedToMe = (item: { assignee_id: number | null }) => myUserId.value !== null && item.assignee_id === myUserId.value
 
-const canEditRow = (item: { assignee_id: number | null }) => props.can_assign || isAssignedToMe(item)
+const canEditRow = (item: { assignee_id: number | null }) => props.can_assign || isAssignedToMe(item) || (props.can_manage === true && item.assignee_id === null)
 
 const statusActionsFor = (item: { status: string; assignee_id: number | null }): TicketStatusAction[] => {
     if (props.can_assign) return actionsFor(statusActions, item)

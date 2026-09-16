@@ -24,7 +24,6 @@ use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Facades\DB;
-use App\Actions\CRM\TrafficSource\GetTrafficSourceAudienceMix;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -314,54 +313,80 @@ class IndexGoogleAdsCampaigns extends OrgAction
                     'description' => __('The nightly fetch reads this shop\'s account at 05:00 UTC. Campaigns and their daily figures appear here after it has run once.'),
                 ]);
 
+            /* Status leads, as an icon: in a list of forty campaigns the first question is which ones
+               are not serving, and a column of words that mostly read "Eligible" answers it slower
+               than a column of shapes. The tooltip carries Google's own wording. */
             $table
+                ->column(key: 'status', label: '', icon: 'fal fa-signal-stream', tooltip: __('Whether Google is showing this campaign'), type: 'icon', canBeHidden: false, sortable: true)
                 ->column(key: 'name', label: __('Campaign'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'status', label: __('Status'), canBeHidden: false, sortable: true)
-                ->column(key: 'channel_type', label: __('Campaign type'), canBeHidden: true, sortable: true)
-                ->column(key: 'impressions', label: __('Impressions'), canBeHidden: true, sortable: true, align: 'right')
-                ->column(key: 'clicks', label: __('Clicks'), canBeHidden: true, sortable: true, align: 'right')
-                ->column(key: 'ctr', label: __('CTR'), canBeHidden: true, sortable: true, align: 'right')
-                ->column(key: 'avg_cpc', label: __('Avg. CPC'), canBeHidden: true, sortable: true, align: 'right')
-                ->column(key: 'budget_amount', label: __('Daily budget'), canBeHidden: true, sortable: true, align: 'right')
-                ->column(key: 'spend', label: __('Spend'), canBeHidden: true, sortable: true, align: 'right')
-                ->column(key: 'conversions', label: __('Conversions'), canBeHidden: true, sortable: true, align: 'right')
-                ->column(key: 'cost_per_conversion', label: __('Cost per conv.'), canBeHidden: true, sortable: true, align: 'right')
-                ->column(key: 'conversions_value', label: __('Conv. value'), canBeHidden: true, sortable: true, align: 'right')
-                ->column(key: 'roas', label: __('ROAS'), canBeHidden: true, sortable: true, align: 'right');
+                ->column(key: 'channel_type', label: __('Type'), tooltip: __('Campaign type: Search, Performance Max, Demand Gen, Display, Shopping or Video'), canBeHidden: true, sortable: true, tooltipIcon: true);
 
-            foreach ($this->metricColumns() as $key => [$label, $tooltip, $hidden]) {
-                $table->column(key: $key, label: $label, tooltip: $tooltip, canBeHidden: true, hidden: $hidden, sortable: true, align: 'right', tooltipIcon: true);
+            /* Every figure is a number, so every one of these is right aligned; the two columns above
+               hold words and stay left. */
+            foreach ($this->metricColumns() as $key => $column) {
+                $table->column(
+                    key: $key,
+                    label: $column['label'] ?? '',
+                    icon: $column['icon'] ?? null,
+                    tooltip: $column['tooltip'],
+                    canBeHidden: true,
+                    hidden: $column['hidden'] ?? false,
+                    sortable: true,
+                    align: 'right',
+
+                    /* The question mark only earns its place beside a word. Beside an icon it would be
+                       a second glyph explaining the first, and the tooltip already covers the cell. */
+                    tooltipIcon: !isset($column['icon']),
+                );
             }
         };
     }
 
     /**
-     * The long tail of metrics starts hidden: the column chooser is where a marketer switches on the
-     * ones they read, and a table forty columns wide answers nothing at a glance.
+     * Every figure the table can show, in column order.
      *
-     * @return array<string, array{0: string, 1: string, 2: bool}> key => [label, tooltip, hidden]
+     * An icon replaces the label only where the icon is unmistakable and the words were long enough
+     * to widen the column past the number under it. Rates, ratios and the impression share family keep
+     * their words: nine share metrics drawn as nine icons would be a rebus, and the wording is the
+     * marketing team's own.
+     *
+     * The long tail starts hidden. The column chooser is where a marketer switches on what they read,
+     * and a table thirty columns wide answers nothing at a glance.
+     *
+     * @return array<string, array{label?: string, icon?: string, tooltip: string, hidden?: bool}>
      */
     private function metricColumns(): array
     {
         return [
-            'all_conversions'       => [__('All conv.'), __('Every conversion action in the account, primary and secondary. Conversions counts only the primary ones.'), true],
-            'all_conversions_value' => [__('All conv. value'), __('Value Google recorded across every conversion action, in the ad account\'s currency.'), true],
-            'purchases'             => [__('Purchases'), __('Conversions from primary actions Google categorises as Purchase, the same ones its Conversions column counts. Secondary actions such as a GA4 import of the same sales are left out so a sale is not counted twice. A dash means the split by action has not been read for these days yet.'), false],
-            'cost_per_purchase'     => [__('Cost per purchase'), __('Cost divided by purchases, in the ad account\'s currency.'), true],
-            'purchase_rate'         => [__('Purchase rate'), __('Purchases as a share of clicks.'), true],
-            'registrations'         => [__('Registrations'), __('Conversions from primary actions Google categorises as Sign-up, the same ones its Conversions column counts. A dash means the split by action has not been read for these days yet.'), false],
-            'cost_per_registration' => [__('Cost per reg.'), __('Cost divided by registrations, in the ad account\'s currency.'), true],
-            'registration_rate'     => [__('Reg. rate'), __('Registrations as a share of clicks.'), true],
+            'impressions'           => ['icon' => 'fal fa-eye', 'tooltip' => __('Impressions')],
+            'clicks'                => ['icon' => 'fal fa-hand-pointer', 'tooltip' => __('Clicks')],
+            'ctr'                   => ['label' => __('CTR'), 'tooltip' => __('Clicks as a share of impressions')],
+            'avg_cpc'               => ['label' => __('CPC'), 'tooltip' => __('Average cost per click, in the ad account\'s currency')],
+            'budget_amount'         => ['icon' => 'fal fa-wallet', 'tooltip' => __('Daily budget, in the ad account\'s currency')],
+            'spend'                 => ['label' => __('Spend'), 'tooltip' => __('What this campaign cost, converted to the shop\'s currency at each day\'s rate')],
+            'conversions'           => ['icon' => 'fal fa-bullseye-arrow', 'tooltip' => __('Conversions from the account\'s primary conversion actions, as Google counts them')],
+            'cost_per_conversion'   => ['label' => __('Cost/conv.'), 'tooltip' => __('Cost divided by conversions, in the ad account\'s currency')],
+            'conversions_value'     => ['icon' => 'fal fa-sack-dollar', 'tooltip' => __('Conversion value Google recorded, in the ad account\'s currency')],
+            'roas'                  => ['label' => __('ROAS'), 'tooltip' => __('Conversion value divided by cost, both Google\'s own figures')],
 
-            'search_impression_share'                          => [__('Search IS'), __('Impressions received as a share of those the campaign was eligible for on Google Search, weighted across the period by eligible impressions. Reported only for campaigns that run on Google Search. Google reports anything under 10% as 9.99% and anything over 90% as 90.01%, shown here as under 10% and over 90%.'), false],
-            'search_rank_lost_impression_share'                => [__('Lost IS (rank)'), __('Share of eligible Search impressions missed because the Ad Rank was too low.'), true],
-            'search_budget_lost_impression_share'              => [__('Lost IS (budget)'), __('Share of eligible Search impressions missed because the budget had run out.'), true],
-            'search_top_impression_share'                      => [__('Top IS'), __('Share of eligible impressions shown anywhere above the organic results.'), true],
-            'search_rank_lost_top_impression_share'            => [__('Lost top IS (rank)'), __('Share of eligible impressions above the organic results missed because the Ad Rank was too low.'), true],
-            'search_budget_lost_top_impression_share'          => [__('Lost top IS (budget)'), __('Share of eligible impressions above the organic results missed because the budget had run out.'), true],
-            'search_absolute_top_impression_share'             => [__('Abs. top IS'), __('Share of eligible impressions shown in the very first position.'), true],
-            'search_rank_lost_absolute_top_impression_share'   => [__('Lost abs. top IS (rank)'), __('Share of eligible first-position impressions missed because the Ad Rank was too low.'), true],
-            'search_budget_lost_absolute_top_impression_share' => [__('Lost abs. top IS (budget)'), __('Share of eligible first-position impressions missed because the budget had run out.'), true],
+            'all_conversions'       => ['icon' => 'fal fa-bullseye', 'tooltip' => __('Every conversion action in the account, primary and secondary. Conversions counts only the primary ones.'), 'hidden' => true],
+            'all_conversions_value' => ['label' => __('All value'), 'tooltip' => __('Value Google recorded across every conversion action, in the ad account\'s currency.'), 'hidden' => true],
+            'purchases'             => ['icon' => 'fal fa-shopping-cart', 'tooltip' => __('Conversions from primary actions Google categorises as Purchase, the same ones its Conversions column counts. Secondary actions such as a GA4 import of the same sales are left out so a sale is not counted twice. A dash means the split by action has not been read for these days yet.')],
+            'cost_per_purchase'     => ['label' => __('Cost/purch.'), 'tooltip' => __('Cost divided by purchases, in the ad account\'s currency.'), 'hidden' => true],
+            'purchase_rate'         => ['label' => __('Purch. rate'), 'tooltip' => __('Purchases as a share of clicks.'), 'hidden' => true],
+            'registrations'         => ['icon' => 'fal fa-user-plus', 'tooltip' => __('Conversions from primary actions Google categorises as Sign-up, the same ones its Conversions column counts. A dash means the split by action has not been read for these days yet.')],
+            'cost_per_registration' => ['label' => __('Cost/reg.'), 'tooltip' => __('Cost divided by registrations, in the ad account\'s currency.'), 'hidden' => true],
+            'registration_rate'     => ['label' => __('Reg. rate'), 'tooltip' => __('Registrations as a share of clicks.'), 'hidden' => true],
+
+            'search_impression_share'                          => ['label' => __('Search IS'), 'tooltip' => __('Impressions received as a share of those the campaign was eligible for on Google Search, weighted across the period by eligible impressions. Reported only for campaigns that run on Google Search. Google reports anything under 10% as 9.99% and anything over 90% as 90.01%, shown here as under 10% and over 90%.')],
+            'search_rank_lost_impression_share'                => ['label' => __('Lost IS (rank)'), 'tooltip' => __('Share of eligible Search impressions missed because the Ad Rank was too low.'), 'hidden' => true],
+            'search_budget_lost_impression_share'              => ['label' => __('Lost IS (budget)'), 'tooltip' => __('Share of eligible Search impressions missed because the budget had run out.'), 'hidden' => true],
+            'search_top_impression_share'                      => ['label' => __('Top IS'), 'tooltip' => __('Share of eligible impressions shown anywhere above the organic results.'), 'hidden' => true],
+            'search_rank_lost_top_impression_share'            => ['label' => __('Lost top IS (rank)'), 'tooltip' => __('Share of eligible impressions above the organic results missed because the Ad Rank was too low.'), 'hidden' => true],
+            'search_budget_lost_top_impression_share'          => ['label' => __('Lost top IS (budget)'), 'tooltip' => __('Share of eligible impressions above the organic results missed because the budget had run out.'), 'hidden' => true],
+            'search_absolute_top_impression_share'             => ['label' => __('Abs. top IS'), 'tooltip' => __('Share of eligible impressions shown in the very first position.'), 'hidden' => true],
+            'search_rank_lost_absolute_top_impression_share'   => ['label' => __('Lost abs. top IS (rank)'), 'tooltip' => __('Share of eligible first-position impressions missed because the Ad Rank was too low.'), 'hidden' => true],
+            'search_budget_lost_absolute_top_impression_share' => ['label' => __('Lost abs. top IS (budget)'), 'tooltip' => __('Share of eligible first-position impressions missed because the budget had run out.'), 'hidden' => true],
         ];
     }
 
@@ -379,13 +404,6 @@ class IndexGoogleAdsCampaigns extends OrgAction
             [
                 'breadcrumbs' => $this->getBreadcrumbs($request->route()->originalParameters()),
                 'title'       => __('Google Ads'),
-
-                /* The account-wide split, above the per-campaign table so the first question the page
-                   answers is who the money reached rather than how many campaigns there are. */
-                'audience'    => Inertia::defer(fn () => GetTrafficSourceAudienceMix::run(
-                    $this->shop,
-                    TrafficSourcesTypeEnum::GOOGLE_ADS->value
-                )),
                 'pageHead'    => [
                     'title' => $this->shop->name,
                     'icon'  => [

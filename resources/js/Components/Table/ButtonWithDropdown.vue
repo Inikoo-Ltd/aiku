@@ -29,6 +29,14 @@ const props = defineProps({
         default: false,
         required: false,
     },
+
+    // Size and corner of the trigger, so a toolbar holding a single icon can ask for something
+    // smaller than the roomy default a menu of labelled options wants.
+    buttonClass: {
+        type: String,
+        default: "px-4 py-2 rounded-md",
+        required: false,
+    },
 });
 
 const opened = ref(false);
@@ -63,8 +71,8 @@ defineExpose({ hide });
     <OnClickOutside :do="hide">
         <div class="relative">
             <button ref="button" type="button" :dusk="dusk" :disabled="disabled"
-                class="w-full bg-white border rounded-md shadow-sm px-4 py-2 inline-flex justify-center text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
-                :class="{ 'border-green-300': active, 'border-gray-300': !active, 'cursor-not-allowed': disabled }"
+                class="w-full bg-white border shadow-sm inline-flex items-center justify-center text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+                :class="[buttonClass, { 'border-green-300': active, 'border-gray-300': !active, 'cursor-not-allowed': disabled }]"
                 aria-haspopup="true" @click.prevent="toggle">
                 <slot name="button" />
             </button>

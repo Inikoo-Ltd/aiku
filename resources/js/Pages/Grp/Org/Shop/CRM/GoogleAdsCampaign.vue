@@ -22,6 +22,7 @@ import GoogleAdsAddKeyword from "@/Components/DataDisplay/Dashboard/Widget/Googl
 import ConfirmDialog from "primevue/confirmdialog"
 import GoogleAdsMetric from "@/Components/DataDisplay/Dashboard/Widget/GoogleAdsMetric.vue"
 import GoogleAdsAdCreative from "@/Components/DataDisplay/Dashboard/Widget/GoogleAdsAdCreative.vue"
+import GoogleAdsDailyTable from "@/Components/DataDisplay/Dashboard/Widget/GoogleAdsDailyTable.vue"
 import GoogleAdsTargeting from "@/Components/DataDisplay/Dashboard/Widget/GoogleAdsTargeting.vue"
 import GoogleAdsAssetGroups from "@/Components/DataDisplay/Dashboard/Widget/GoogleAdsAssetGroups.vue"
 import HelpTip from "@/Components/Utils/HelpTip.vue"
@@ -569,40 +570,18 @@ const notServingReasons = computed(() =>
         <section class="rounded-xl bg-white p-5 ring-1 ring-gray-200 lg:col-span-3">
             <h2 class="text-sm font-medium text-gray-800">
                 {{ trans("Day by day") }}
-                <HelpTip :text="trans('One row per day Google reported, newest first. Cost is what Google billed in the account\'s currency. Spend is the same money converted to the shop\'s currency at that day\'s rate, which is the figure the marketing dashboard uses.')" />
+                <span v-if="daily.length" class="font-normal text-gray-500">· {{ daily.length }}</span>
+                <HelpTip :text="trans('One row per day Google reported, newest first until you sort by another column. Cost is what Google billed in the account\'s currency. Spend is the same money converted to the shop\'s currency at that day\'s rate, which is the figure the marketing dashboard uses.')" />
             </h2>
 
-            <div v-if="daily.length" class="mt-3 overflow-x-auto">
-                <table class="w-full min-w-[40rem] text-xs">
-                    <thead>
-                        <tr class="border-b border-gray-100 text-gray-500">
-                            <th scope="col" class="py-1.5 pr-2 text-left font-normal">{{ trans("Date") }}</th>
-                            <th scope="col" class="px-2 py-1.5 text-right font-normal">{{ trans("Impressions") }}</th>
-                            <th scope="col" class="px-2 py-1.5 text-right font-normal">{{ trans("Clicks") }}</th>
-                            <th scope="col" class="px-2 py-1.5 text-right font-normal">{{ trans("Conversions") }}</th>
-                            <th scope="col" class="px-2 py-1.5 text-right font-normal">
-                                {{ trans("Cost") }} ({{ campaign.currency }})
-                            </th>
-                            <th scope="col" class="py-1.5 pl-2 text-right font-normal">
-                                {{ trans("Spend") }} ({{ campaign.shop_currency }})
-                            </th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr v-for="day in daily" :key="day.date" class="border-b border-gray-50 text-gray-600">
-                            <td class="py-2 pr-2">{{ useFormatTime(day.date, { formatTime: "mdy" }) }}</td>
-                            <td class="px-2 text-right tabular-nums">{{ locale.number(day.impressions) }}</td>
-                            <td class="px-2 text-right tabular-nums">{{ locale.number(day.clicks) }}</td>
-                            <td class="px-2 text-right tabular-nums">{{ locale.number(day.conversions) }}</td>
-                            <td class="px-2 text-right tabular-nums">{{ money(day.cost) }}</td>
-                            <td class="pl-2 text-right tabular-nums">{{ money(day.shop_cost, campaign.shop_currency) }}</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
+            <GoogleAdsDailyTable
+                v-if="daily.length"
+                :daily="daily"
+                :currency="campaign.currency"
+                :shop-currency="campaign.shop_currency" />
 
             <p v-else class="mt-3 text-xs text-gray-500">
-                {{ trans("No days recorded in this period.") }}
+                {{ trans("No days recorded in this period. Try a longer one, or check that the nightly fetch has run.") }}
             </p>
         </section>
 
