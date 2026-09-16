@@ -86,6 +86,8 @@ use App\Models\CRM\PollOption;
 use App\Models\CRM\PollReply;
 use App\Models\CRM\Prospect;
 use App\Models\CRM\WebUser;
+use App\Models\CRM\WebUserLogin;
+use App\Models\CRM\WebUserFailedLogin;
 use App\Models\Helpers\Address;
 use App\Models\Helpers\Country;
 use App\Models\Ordering\Order;
@@ -951,6 +953,54 @@ test('UI show customer web users', function () {
                     ->etc()
             )
             ->has('data');
+    });
+});
+
+test('UI show customer web users logins tab', function () {
+    $webUser = WebUser::first();
+
+    WebUserLogin::create([
+        'date'        => now(),
+        'web_user_id' => $webUser->id,
+        'source'      => 'A',
+    ]);
+
+    $response = $this->get(route('grp.org.shops.show.crm.customers.show.web_users.show', [
+        $this->organisation->slug,
+        $this->shop->slug,
+        $webUser->customer->slug,
+        $webUser->slug
+    ]).'?tab=logins');
+
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('Org/Shop/CRM/WebUser')
+            ->has('logins.data', 1);
+    });
+});
+
+test('UI show customer web users failed logins tab', function () {
+    $webUser = WebUser::first();
+
+    WebUserFailedLogin::create([
+        'failed_at'   => now(),
+        'website_id'  => $webUser->website_id,
+        'username'    => $webUser->username,
+        'web_user_id' => $webUser->id,
+        'source'      => 'A',
+    ]);
+
+    $response = $this->get(route('grp.org.shops.show.crm.customers.show.web_users.show', [
+        $this->organisation->slug,
+        $this->shop->slug,
+        $webUser->customer->slug,
+        $webUser->slug
+    ]).'?tab=failed_logins');
+
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('Org/Shop/CRM/WebUser')
+            ->has('failed_logins.data', 1);
     });
 });
 

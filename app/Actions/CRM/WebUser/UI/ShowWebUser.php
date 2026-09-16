@@ -11,9 +11,14 @@ namespace App\Actions\CRM\WebUser\UI;
 use App\Actions\CRM\Customer\UI\ShowCustomer;
 use App\Actions\Fulfilment\FulfilmentCustomer\ShowFulfilmentCustomer;
 use App\Actions\Fulfilment\WithFulfilmentCustomerSubNavigation;
+use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCRMAuthorisation;
+use App\Enums\UI\CRM\WebUserTabsEnum;
+use App\Http\Resources\CRM\WebUserFailedLoginsResource;
+use App\Http\Resources\CRM\WebUserLoginsResource;
 use App\Http\Resources\CRM\WebUserResource;
+use App\Http\Resources\History\HistoryResource;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
 use App\Models\CRM\WebUser;
@@ -42,7 +47,8 @@ class ShowWebUser extends OrgAction
     public function asController(Organisation $organisation, Shop $shop, Customer $customer, WebUser $webUser, ActionRequest $request): WebUser
     {
         $this->parent = $customer;
-        $this->initialisationFromShop($shop, $request);
+        $this->initialisationFromShop($shop, $request)
+            ->withTab(WebUserTabsEnum::values());
 
         return $this->handle($webUser);
     }
@@ -51,7 +57,8 @@ class ShowWebUser extends OrgAction
     public function inFulfilmentCustomer(Organisation $organisation, Fulfilment $fulfilment, FulfilmentCustomer $fulfilmentCustomer, WebUser $webUser, ActionRequest $request): WebUser
     {
         $this->parent = $fulfilmentCustomer;
-        $this->initialisationFromFulfilment($fulfilment, $request);
+        $this->initialisationFromFulfilment($fulfilment, $request)
+            ->withTab(WebUserTabsEnum::values());
 
         return $this->handle($webUser);
     }
@@ -110,9 +117,28 @@ class ShowWebUser extends OrgAction
                     ],
 
                 ],
-                'data'     => new WebUserResource($webUser)
+                'tabs'        => [
+                    'current'    => $this->tab,
+                    'navigation' => WebUserTabsEnum::navigation(),
+                ],
+                'data'     => new WebUserResource($webUser),
+
+                WebUserTabsEnum::LOGINS->value => $this->tab == WebUserTabsEnum::LOGINS->value ?
+                    fn () => WebUserLoginsResource::collection(IndexWebUserLogins::run($webUser, WebUserTabsEnum::LOGINS->value))
+                    : Inertia::optional(fn () => WebUserLoginsResource::collection(IndexWebUserLogins::run($webUser, WebUserTabsEnum::LOGINS->value))),
+
+                WebUserTabsEnum::FAILED_LOGINS->value => $this->tab == WebUserTabsEnum::FAILED_LOGINS->value ?
+                    fn () => WebUserFailedLoginsResource::collection(IndexWebUserFailedLogins::run($webUser, WebUserTabsEnum::FAILED_LOGINS->value))
+                    : Inertia::optional(fn () => WebUserFailedLoginsResource::collection(IndexWebUserFailedLogins::run($webUser, WebUserTabsEnum::FAILED_LOGINS->value))),
+
+                WebUserTabsEnum::HISTORY->value => $this->tab == WebUserTabsEnum::HISTORY->value ?
+                    fn () => HistoryResource::collection(IndexHistory::run($webUser, WebUserTabsEnum::HISTORY->value))
+                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($webUser, WebUserTabsEnum::HISTORY->value))),
             ]
-        );
+        )
+        ->table(IndexWebUserLogins::make()->tableStructure(WebUserTabsEnum::LOGINS->value))
+        ->table(IndexWebUserFailedLogins::make()->tableStructure(WebUserTabsEnum::FAILED_LOGINS->value))
+        ->table(IndexHistory::make()->tableStructure(WebUserTabsEnum::HISTORY->value, model: $webUser));
     }
 
 
