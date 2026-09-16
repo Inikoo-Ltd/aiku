@@ -4,7 +4,7 @@ import axios from "axios"
 import { notify } from "@kyvg/vue3-notification"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faCopy, faEyeDropper, faFilePdf, faImage, faPlus, faTags, faTrashAlt } from "@fal"
+import { faCopy, faEyeDropper, faFilePdf, faImage, faPlus, faTags, faTimes, faTrashAlt } from "@fal"
 import pdfWorkerUrl from "pdfjs-dist/legacy/build/pdf.worker.min.mjs?url"
 import Modal from "@/Components/Utils/Modal.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
@@ -12,7 +12,7 @@ import { ctrans } from "@/Composables/useTrans"
 import { routeType } from "@/types/route"
 import PingIcon from "@/Components/Utils/PingIcon.vue"
 
-library.add(faCopy, faEyeDropper, faFilePdf, faImage, faPlus, faTags, faTrashAlt)
+library.add(faCopy, faEyeDropper, faFilePdf, faImage, faPlus, faTags, faTimes, faTrashAlt)
 
 interface StoredArtwork {
     name: string
@@ -1075,30 +1075,20 @@ const describeFailure = async (error: any): Promise<string> => {
                         @click="saveLabel(false, true)" />
                     <PingIcon v-if="currentLabel?.state !== 'published'" class="text-[7px] text-red-500 !absolute -top-0.5 -right-0.5" aria-hidden="true" />
                 </div>
+                <div class="ml-1 border-l border-gray-200 pl-3">
+                    <Button
+                        type="tertiary"
+                        size="xs"
+                        icon="fal fa-times"
+                        :label="ctrans('Close')"
+                        :aria-label="ctrans('Close the label editor')"
+                        @click="emits('onClose')" />
+                </div>
             </div>
         </header>
 
         <div class="flex flex-col lg:flex-row gap-6">
             <aside class="w-full lg:w-80 shrink-0 space-y-4" :aria-label="ctrans('Label settings')">
-                <div role="group" aria-labelledby="artefact-label-orientation-title">
-                    <div id="artefact-label-orientation-title" class="text-xs text-gray-500 uppercase tracking-wide mb-1">{{ ctrans("Orientation") }}</div>
-                    <div class="flex gap-2" role="radiogroup" aria-labelledby="artefact-label-orientation-title">
-                        <button
-                            v-for="option in (['portrait', 'landscape'] as const)"
-                            :key="option"
-                            type="button"
-                            role="radio"
-                            :aria-checked="orientation === option"
-                            class="flex-1 rounded border px-2 py-1.5 text-sm"
-                            :class="orientation === option ? 'border-indigo-500 bg-indigo-50 text-indigo-700' : 'border-gray-300 text-gray-600 hover:bg-gray-50'"
-                            @click="orientation = option">
-                            {{ option === 'portrait' ? ctrans("Vertical") : ctrans("Horizontal") }}
-                        </button>
-                    </div>
-                </div>
-
-                <hr class="border-t border-gray-400 border-dashed" aria-hidden="true" />
-
                 <!-- Field: Background artwork -->
                 <div role="group" aria-labelledby="artefact-label-artwork-title">
                     <div id="artefact-label-artwork-title" class="text-xs text-gray-500 uppercase tracking-wide mb-1">
@@ -1143,26 +1133,6 @@ const describeFailure = async (error: any): Promise<string> => {
                         <div v-if="isVectorArtwork" class="mt-1 text-xs text-emerald-600">
                             {{ ctrans("Placed as vector, the text inside the PDF stays selectable.") }}
                         </div>
-                    </div>
-                </div>
-
-                <!-- <hr class="border-t border-gray-400 border-dashed" /> -->
-
-                <div role="group" aria-labelledby="artefact-label-canvas-rotation-title">
-                    <div id="artefact-label-canvas-rotation-title" class="text-xs text-gray-500 uppercase tracking-wide mb-1">{{ ctrans("Canvas rotation") }}</div>
-                    <div class="flex gap-1" role="radiogroup" aria-labelledby="artefact-label-canvas-rotation-title">
-                        <button
-                            v-for="angle in ROTATIONS"
-                            :key="angle"
-                            type="button"
-                            role="radio"
-                            :aria-checked="canvasRotation === angle"
-                            :aria-label="ctrans('Rotate artwork :angle degrees', { angle: String(angle) })"
-                            class="flex-1 rounded border px-2 py-1.5 text-sm"
-                            :class="canvasRotation === angle ? 'border-indigo-500 bg-indigo-50 text-indigo-700' : 'border-gray-300 text-gray-600 hover:bg-gray-50'"
-                            @click="canvasRotation = angle">
-                            {{ angle }}°
-                        </button>
                     </div>
                 </div>
 
@@ -1433,15 +1403,50 @@ const describeFailure = async (error: any): Promise<string> => {
             </aside>
 
             <section class="flex-1 min-w-0" :aria-label="ctrans('Label sheet preview')">
-                <div class="mb-2 flex flex-wrap items-center justify-between gap-2">
-                    <p id="artefact-label-preview-hint" class="text-xs text-gray-500">
-                        <template v-if="isSheetArtwork">
-                            {{ ctrans("Drag each text onto the artwork, duplicate it to cover every label the image already has.") }}
-                        </template>
-                        <template v-else>
-                            {{ ctrans("Drag the texts inside the highlighted label, the positions are applied to every label on the sheet.") }}
-                        </template>
-                    </p>
+                <p id="artefact-label-preview-hint" class="mb-2 text-xs text-gray-500">
+                    <template v-if="isSheetArtwork">
+                        {{ ctrans("Drag each text onto the artwork, duplicate it to cover every label the image already has.") }}
+                    </template>
+                    <template v-else>
+                        {{ ctrans("Drag the texts inside the highlighted label, the positions are applied to every label on the sheet.") }}
+                    </template>
+                </p>
+
+                <div class="mb-2 flex flex-wrap items-center gap-x-4 gap-y-2 rounded border border-gray-200 bg-gray-50 px-2 py-1.5">
+                    <div class="flex items-center gap-1" role="group" aria-labelledby="artefact-label-orientation-title">
+                        <span id="artefact-label-orientation-title" class="text-xs text-gray-400">{{ ctrans("Sheet") }}</span>
+                        <div class="flex gap-1" role="radiogroup" aria-labelledby="artefact-label-orientation-title">
+                            <button
+                                v-for="option in (['portrait', 'landscape'] as const)"
+                                :key="option"
+                                type="button"
+                                role="radio"
+                                :aria-checked="orientation === option"
+                                class="rounded border px-2 py-0.5 text-xs"
+                                :class="orientation === option ? 'border-indigo-500 bg-indigo-50 text-indigo-700' : 'border-gray-300 text-gray-600 hover:bg-gray-50'"
+                                @click="orientation = option">
+                                {{ option === 'portrait' ? ctrans("Vertical") : ctrans("Horizontal") }}
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center gap-1" role="group" aria-labelledby="artefact-label-canvas-rotation-title">
+                        <span id="artefact-label-canvas-rotation-title" class="text-xs text-gray-400">{{ ctrans("Canvas rotation") }}</span>
+                        <div class="flex gap-1" role="radiogroup" aria-labelledby="artefact-label-canvas-rotation-title">
+                            <button
+                                v-for="angle in ROTATIONS"
+                                :key="angle"
+                                type="button"
+                                role="radio"
+                                :aria-checked="canvasRotation === angle"
+                                :aria-label="ctrans('Rotate artwork :angle degrees', { angle: String(angle) })"
+                                class="rounded border px-2 py-0.5 text-xs tabular-nums"
+                                :class="canvasRotation === angle ? 'border-indigo-500 bg-indigo-50 text-indigo-700' : 'border-gray-300 text-gray-600 hover:bg-gray-50'"
+                                @click="canvasRotation = angle">
+                                {{ angle }}°
+                            </button>
+                        </div>
+                    </div>
 
                     <div class="flex items-center gap-1" role="toolbar" :aria-label="ctrans('Preview zoom')">
                         <button
@@ -1475,12 +1480,10 @@ const describeFailure = async (error: any): Promise<string> => {
                             @click="showEditedLabel">{{ ctrans("Edited label") }}</button>
                     </div>
 
-
-
-                    <div class="flex gap-2">
+                    <div class="ml-auto flex gap-2">
                         <Button
                             type="secondary"
-                            full
+                            size="xs"
                             icon="fas fa-download"
                             :label="ctrans('Download PDF')"
                             :aria-label="ctrans('Generate and download the label sheet as PDF')"
