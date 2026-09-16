@@ -8,10 +8,12 @@
 
 namespace App\Actions\Helpers\Ticket;
 
+use App\Events\BroadcastRetinaTicketBadgeUpdate;
+use App\Models\CRM\WebUser;
 use App\Actions\SysAdmin\User\SendUserPushNotification;
 use App\Enums\Helpers\Ticket\TicketQaStatusEnum;
+use App\Enums\Helpers\Ticket\TicketStatusEnum;
 use App\Enums\SysAdmin\User\UserNotificationEnum;
-use App\Events\BroadcastTicketBadgeUpdate;
 use App\Events\BroadcastTicketChanged;
 use App\Models\Helpers\Ticket;
 use App\Models\SysAdmin\User;
@@ -80,6 +82,20 @@ class NotifyTicketUsers
             );
         }
 
+        if ($this->mentionsCustomer($ticket, $body)) {
+            $this->notifyCustomer(
+                $ticket,
+                __(':author mentioned you on :reference', ['author' => $authorName, 'reference' => $ticket->reference]),
+                [
+                    __(':author mentioned you on :reference (:subject):', ['author' => $authorName, 'reference' => $ticket->reference, 'subject' => $ticket->subject]),
+                    Str::limit($body, 2000),
+                ],
+                __('Open the ticket')
+            );
+
+            return;
+        }
+
         $recipient = $ticket->isReportedBy($author) ? $ticket->assignee()->first() : $ticket->reporter;
         if ($recipient instanceof User && $mentioned->contains('id', $recipient->id)) {
             return;
@@ -97,6 +113,59 @@ class NotifyTicketUsers
             __('Open the ticket'),
             UserNotificationEnum::TICKET_COMMENT
         );
+    }
+
+    public function mentionsCustomer(Ticket $ticket, string $body): bool
+    {
+        $customerHandle = $ticket->reporter_type === 'WebUser' ? $ticket->customer?->slug : null;
+        if (!$customerHandle) {
+            return false;
+        }
+
+        preg_match_all('/(?<![\pL\pN._-])@([\pL\pN._-]{2,})/u', $body, $matches);
+
+        return collect($matches[1])->map(fn (string $handle) => mb_strtolower(rtrim($handle, '.')))->contains(mb_strtolower($customerHandle));
+    }
+
+    /**
+     * @param array<int, string> $lines
+     */
+    private function notifyCustomer(Ticket $ticket, string $subject, array $lines, string $actionLabel): void
+    {
+        // ponytail: customer-facing ticket notifications stay off in production until the team is ready to answer AD tickets in retina;
+        // drop this guard together with the app()->isLocal() guards in GetRetinaDropshippingNavigation and GetRetinaLayout to launch it
+        if (!app()->environment(['local', 'testing'])) {
+            return;
+        }
+
+        if ($ticket->reporter_type !== 'WebUser' || !$ticket->customer_id) {
+            return;
+        }
+
+        foreach (WebUser::where('customer_id', $ticket->customer_id)->where('status', true)->get() as $webUser) {
+            $webUser->notify(new TicketNotification($ticket, $subject, $lines, $actionLabel, false));
+            BroadcastRetinaTicketBadgeUpdate::dispatch($webUser->id, GetRetinaTicketBadgeData::run($webUser));
+        }
+    }
+
+    public function mentionedInEngineeringNote(Ticket $ticket, User $author, string $body): void
+    {
+        $authorName = $author->contact_name ?: $author->username;
+
+        foreach ($this->mentionedUsers($ticket, $body) as $user) {
+            $this->handle(
+                $ticket,
+                $author,
+                $user,
+                __(':author mentioned you in an engineering note on :reference', ['author' => $authorName, 'reference' => $ticket->reference]),
+                [
+                    __(':author mentioned you in an engineering note on :reference (:subject):', ['author' => $authorName, 'reference' => $ticket->reference, 'subject' => $ticket->subject]),
+                    Str::limit($body, 2000),
+                ],
+                __('Open the ticket'),
+                UserNotificationEnum::TICKET_MENTION
+            );
+        }
     }
 
     /**
@@ -149,17 +218,52 @@ class NotifyTicketUsers
         }
     }
 
+    public function statusChanged(Ticket $ticket, ?User $actor): void
+    {
+        $statusLabel = TicketStatusEnum::labels()[$ticket->status->value];
+
+        $this->handle(
+            $ticket,
+            $actor,
+            $ticket->reporter,
+            __(':reference is now :status', ['reference' => $ticket->reference, 'status' => $statusLabel]),
+            [
+                $actor
+                    ? __(':actor moved :reference (:subject) to :status.', ['actor' => $actor->contact_name ?: $actor->username, 'reference' => $ticket->reference, 'subject' => $ticket->subject, 'status' => $statusLabel])
+                    : __(':reference (:subject) is now :status.', ['reference' => $ticket->reference, 'subject' => $ticket->subject, 'status' => $statusLabel]),
+            ],
+            __('Open the ticket')
+        );
+    }
+
+    public function collaboratorAdded(Ticket $ticket, User $collaborator, ?User $actor): void
+    {
+        $this->handle(
+            $ticket,
+            $actor,
+            $collaborator,
+            __('You were added to :reference', ['reference' => $ticket->reference]),
+            [$ticket->subject],
+            __('Open the ticket')
+        );
+    }
+
     public function pushBadges(Ticket $ticket, ?User $actor = null): void
     {
         BroadcastTicketChanged::dispatch($ticket);
 
-        $users = collect([$ticket->reporter, $ticket->assignee()->first(), $actor])
+        $previousAssigneeId  = $ticket->wasChanged('assignee_id') ? ($ticket->getPrevious()['assignee_id'] ?? null) : null;
+        $changesQueueCounts  = $ticket->wasRecentlyCreated || $ticket->wasChanged(['status', 'assignee_id', 'qa_status', 'kind', 'is_confidential']);
+
+        $users = collect([$ticket->reporter, $ticket->assignee()->first(), $previousAssigneeId ? User::find($previousAssigneeId) : null, $actor])
+            ->merge($ticket->collaborators()->get())
+            ->when($changesQueueCounts, fn ($users) => $users
+                ->merge(GetTicketBadgeData::engineers($ticket->group_id))
+                ->merge(GetTicketBadgeData::qaUsers($ticket->group_id)))
             ->filter(fn ($user) => $user instanceof User)
             ->unique('id');
 
-        foreach ($users as $user) {
-            BroadcastTicketBadgeUpdate::dispatch($user);
-        }
+        SendTicketBadgeUpdateToUsers::run($users->pluck('id')->values()->all());
     }
 
     /**
@@ -167,6 +271,12 @@ class NotifyTicketUsers
      */
     public function handle(Ticket $ticket, ?User $actor, mixed $recipient, string $subject, array $lines, string $actionLabel, ?UserNotificationEnum $event = null): void
     {
+        if ($recipient instanceof WebUser) {
+            $this->notifyCustomer($ticket, $subject, $lines, $actionLabel);
+
+            return;
+        }
+
         if (!$recipient instanceof User || $recipient->id === $actor?->id) {
             return;
         }
@@ -175,7 +285,7 @@ class NotifyTicketUsers
 
         $recipient->notify(new TicketNotification($ticket, $subject, $lines, $actionLabel, in_array('email', $channels, true) && (bool) $recipient->email));
 
-        BroadcastTicketBadgeUpdate::dispatch($recipient, [
+        SendTicketBadgeUpdateToUsers::run([$recipient->id], [
             'title' => $subject,
             'body'  => $lines[0] ?? '',
             'route' => route('grp.tickets.show', $ticket->reference),

@@ -56,6 +56,7 @@ class IndexDeliveryNoteItemsInPickingSessionStateActive extends OrgAction
                 'delivery_note_items.id',
                 'delivery_note_items.state',
                 'delivery_note_items.quantity_required',
+                'delivery_note_items.replacement_reason',
                 'delivery_note_items.quantity_picked',
                 'delivery_note_items.quantity_not_picked',
                 'delivery_note_items.quantity_packed',

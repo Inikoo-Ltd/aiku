@@ -61,6 +61,7 @@ use App\Models\CRM\Customer;
 use App\Models\CRM\Prospect;
 use App\Models\CRM\TrafficSource;
 use App\Models\CRM\TrafficSourceCampaign;
+use App\Models\CRM\TrafficSourceCampaignMetric;
 use App\Models\CRM\TrafficSourceCost;
 use App\Models\Catalogue\Shop;
 use App\Models\Comms\DispatchedEmail;
@@ -2091,8 +2092,7 @@ describe('traffic source costs', function () {
 
         expect($row->name)->toBe('Spring Sale');
         expect($row->status)->toBe('ENABLED');
-        expect((float) $row->spend_30d)->toBe(10.0);
-        expect((float) $row->spend_total)->toBe(10.0);
+        expect((float) $row->spend)->toBe(10.0);
     });
 
     it('shows a Google Ads campaign with its spend', function () {
@@ -2654,7 +2654,7 @@ describe('fetching google ads campaigns', function () {
         expect((float) $campaigns['111']->data['budget_amount'])->toBe(10.0);
         expect($campaigns['222']->data['status'])->toBe('PENDING_REVIEW');
         expect($campaigns['111']->data['ad_groups'][0]['ads'][0]['headlines'])->toBe(['Great deal', 'Buy now']);
-        expect($campaigns['111']->data['metrics_30d']['clicks'])->toBe(8);
+        expect((int) TrafficSourceCampaignMetric::where('traffic_source_campaign_id', $campaigns['111']->id)->sum('clicks'))->toBe(8);
 
         Http::assertSent(fn ($request) => str_contains($request->url(), 'googleads.googleapis.com')
             && $request->hasHeader('developer-token', 'developer-token')

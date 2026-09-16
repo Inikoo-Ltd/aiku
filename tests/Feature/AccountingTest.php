@@ -10,6 +10,7 @@
 
 use App\Actions\Accounting\Reports\Intrastat\ExportIntrastatAeat;
 use App\Actions\Accounting\CreditTransaction\DeleteCreditTransaction;
+use App\Actions\Accounting\CreditTransaction\IncreaseCreditTransactionCustomer;
 use App\Actions\Accounting\CreditTransaction\UpdateCreditTransaction;
 use App\Actions\Accounting\Invoice\DeleteInvoice;
 use App\Actions\Accounting\Invoice\ISDocInvoice;
@@ -62,6 +63,7 @@ use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Actions\CRM\Customer\StoreCustomer;
 use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
 use App\Actions\SysAdmin\GetSectionRoute;
+use App\Enums\Accounting\CreditTransaction\CreditTransactionReasonEnum;
 use App\Enums\Accounting\CreditTransaction\CreditTransactionTypeEnum;
 use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
 use App\Models\Helpers\TaxCategory;
@@ -3215,6 +3217,18 @@ describe('invoice pdf tax number display', function () {
             ->toContain('Collection address')
             ->and($renderInvoiceTemplate($invoice->refresh(), null, true))->not->toContain('Delivery address');
     });
+
+    test('invoice dates print the month in the shop language', function () use ($renderInvoiceTemplate) {
+        $customer = createCustomer($this->shop);
+        $invoice  = StoreInvoice::make()->action($customer, Invoice::factory()->definition());
+        $invoice->update(['date' => '2026-07-29 10:00:00']);
+
+        app()->setLocale('pl');
+        $html = $renderInvoiceTemplate($invoice->refresh());
+        app()->setLocale('en');
+
+        expect($html)->toContain('29 lipca 2026')->not->toContain('29 July 2026');
+    });
 });
 
 test('a pdf whose html is larger than the default pcre backtrack limit still renders', function () {
@@ -3250,4 +3264,62 @@ test('AEAT intrastat export keeps invalid rows only when forced', function () {
         ->and($forced['lines'][0])->toContain(';1;')
         ->and($forced['lines'][0])->toContain(';ES;')
         ->and($forced['errors'])->not->toContain('record 1 2026-02-01 3304990000 : country of origin missing on the product');
+});
+
+test('AEAT intrastat export forced with an empty origin falls back to the organisation country', function () {
+    $series = new \App\Models\Accounting\IntrastatExportTimeSeries(['tariff_code' => '3304990000', 'partner_tax_number' => 'ESB12345678']);
+    $record = new \App\Models\Accounting\IntrastatExportTimeSeriesRecord(['id' => 1, 'from' => '2026-02-01', 'weight' => 0, 'quantity' => 1, 'value_org_currency' => 0]);
+    $record->setRelation('intrastatExportTimeSeries', $series);
+
+    $action = new class () extends ExportIntrastatAeat {
+        public static \Illuminate\Database\Eloquent\Collection $records;
+
+        protected function getRecords(\App\Models\SysAdmin\Organisation $organisation, array $filters): \Illuminate\Database\Eloquent\Collection
+        {
+            return static::$records;
+        }
+    };
+    $action::$records = new \Illuminate\Database\Eloquent\Collection([$record]);
+
+    $result = $action->handle($this->organisation, [], ['weight_kg' => '1', 'origin' => '']);
+
+    expect($result['lines'][0])->toContain(';'.$this->organisation->country->code.';');
+});
+
+test('balance increase for compensation issues a settled credit note', function () {
+    $customer = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+
+    $creditTransaction = IncreaseCreditTransactionCustomer::make()->action($customer, [
+        'amount'            => 12,
+        'reason'            => CreditTransactionReasonEnum::COMPENSATE_CUSTOMER->value,
+        'notes'             => 'Broken jar in parcel',
+        'issue_credit_note' => true,
+        'requested_by'      => 'Aimee',
+    ]);
+
+    $creditNote = Invoice::where('customer_id', $customer->id)->where('type', InvoiceTypeEnum::REFUND)->first();
+    $rate       = (float)$creditNote->taxCategory->rate;
+
+    expect($creditNote)->not->toBeNull()
+        ->and($creditNote->original_invoice_id)->toBeNull()
+        ->and($creditNote->in_process)->toBeFalse()
+        ->and($creditNote->reference)->not->toContain('-refund-')
+        ->and((float)$creditNote->total_amount)->toBe(-12.0)
+        ->and(round((float)$creditNote->net_amount * $rate, 2))->toBe((float)$creditNote->tax_amount)
+        ->and($creditNote->pay_status)->toBe(InvoicePayStatusEnum::PAID)
+        ->and($creditNote->footer)->toBe(CreditTransactionReasonEnum::COMPENSATE_CUSTOMER->label())
+        ->and($creditTransaction->type)->toBe(CreditTransactionTypeEnum::COMPENSATION)
+        ->and((float)$creditTransaction->amount)->toBe(12.0)
+        ->and($creditTransaction->data['requested_by'])->toBe('Aimee')
+        ->and($creditNote->payments()->pluck('payments.id')->all())->toBe([$creditTransaction->payment_id])
+        ->and((float)$customer->refresh()->balance)->toBe(12.0);
+
+    $plain = IncreaseCreditTransactionCustomer::make()->action($customer, [
+        'amount' => 5,
+        'reason' => CreditTransactionReasonEnum::OTHER->value,
+        'notes'  => 'no paperwork',
+    ]);
+
+    expect($plain->payment_id)->toBeNull()
+        ->and(Invoice::where('customer_id', $customer->id)->where('type', InvoiceTypeEnum::REFUND)->count())->toBe(1);
 });

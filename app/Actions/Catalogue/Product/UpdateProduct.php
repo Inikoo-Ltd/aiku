@@ -198,6 +198,8 @@ class UpdateProduct extends OrgAction
         $product = $this->update($product, $modelData);
         $changed = Arr::except($product->getChanges(), ['updated_at', 'last_fetched_at']);
 
+        TranslateProductGpsrText::make()->recordShopTranslation($product, array_keys($changed));
+
 
         if ($product->webpage && !empty($webpageData)) {
             UpdateWebpage::make()->action($product->webpage, $webpageData);
@@ -439,6 +441,8 @@ class UpdateProduct extends OrgAction
             'is_description_title_reviewed' => ['sometimes', 'boolean'],
             'is_description_reviewed'       => ['sometimes', 'boolean'],
             'is_description_extra_reviewed' => ['sometimes', 'boolean'],
+            'is_gpsr_warnings_reviewed'     => ['sometimes', 'boolean'],
+            'is_gpsr_manual_reviewed'       => ['sometimes', 'boolean'],
             'rrp'                       => ['sometimes', 'nullable', 'numeric', 'min:0.01'],
             'rrp_per_unit'              => ['sometimes', 'nullable', 'numeric', 'min:0.01'],
             'data'                      => ['sometimes', 'array'],
@@ -571,7 +575,7 @@ class UpdateProduct extends OrgAction
      */
     private function markWrittenTextAsReviewed(array $modelData): array
     {
-        foreach (PropagateMasterContentToProducts::REVIEW_FLAGS as $field => $reviewFlag) {
+        foreach (array_merge(PropagateMasterContentToProducts::REVIEW_FLAGS, TranslateProductGpsrText::REVIEW_FLAGS) as $field => $reviewFlag) {
             if (Arr::has($modelData, $field)) {
                 data_set($modelData, $reviewFlag, true, false);
             }

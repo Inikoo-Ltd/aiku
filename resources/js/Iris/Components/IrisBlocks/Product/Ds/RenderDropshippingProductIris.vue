@@ -69,7 +69,6 @@ const props = defineProps<{
 
 const layout: any = inject("layout", {})
 const injectedWebpageData = inject<any>("webpage_data", null)
-console.log(layout)
 
 const customerData = ref<Record<number, any>>({})
 const product = ref<any>(props.fieldValue?.product ?? null)

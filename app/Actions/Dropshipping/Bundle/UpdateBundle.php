@@ -13,6 +13,7 @@ use App\Actions\Catalogue\Product\UpdateProductImages;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateBundles;
 use App\Actions\Dropshipping\Portfolio\UpdatePortfolio;
 use App\Actions\OrgAction;
+use App\Actions\Retina\Dropshipping\Portfolio\UpdateAndUploadRetinaPortfolioToCurrentChannel;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Traits\WithAttachMediaToModel;
@@ -121,6 +122,7 @@ class UpdateBundle extends OrgAction
                     return $bundleItem->item->rrp * $selectedBundleItem['quantity'];
                 });
                 $productRrp = $productRrp * (1 - ($shopBundleDiscount / 100));
+                $productRrp = Arr::get($modelData, 'rrp') ?? $productRrp;
 
                 UpdateProduct::run($product, [
                     'trade_units' => $tradeUnits,
@@ -171,16 +173,21 @@ class UpdateBundle extends OrgAction
                 }
 
                 $calculatedPrice = CalculateBundleItemPriceDetails::run($bundle->customerSalesChannel, $modelData);
+                $productRrp = Arr::get($modelData, 'rrp') ?? Arr::get($calculatedPrice, 'total_rrp');
 
                 UpdateProduct::make()->action($product, [
                     'trade_units' => $tradeUnits,
                     'price' => Arr::get($calculatedPrice, 'total_price'),
-                    'rrp' => Arr::get($calculatedPrice, 'total_rrp')
+                    'rrp' => $productRrp
                 ]);
+
+                data_set($portfolioData, 'selling_price', $productRrp);
+                data_set($portfolioData, 'customer_price', $productRrp);
             }
 
             if ($portfolio && $portfolioData) {
                 UpdatePortfolio::make()->action($portfolio, $portfolioData);
+                UpdateAndUploadRetinaPortfolioToCurrentChannel::run($portfolio, []);
             }
 
             $bundle->refresh();

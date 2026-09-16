@@ -12,6 +12,7 @@ use App\Actions\CRM\TrafficSource\Hydrator\TrafficSourceCampaignHydrateStats;
 use App\Actions\CRM\TrafficSource\Hydrator\TrafficSourceHydrateCosts;
 use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
 use App\Actions\Helpers\CurrencyExchange\GetHistoricCurrencyExchange;
+use App\Enums\CRM\TrafficSource\TrafficSourceCostFetchedViaEnum;
 use App\Models\CRM\TrafficSource;
 use App\Models\CRM\TrafficSourceCost;
 use App\Models\Helpers\Currency;
@@ -31,7 +32,13 @@ class StoreTrafficSourceCost
      * more accurate one. Keyed on source + campaign + date, so a campaign-level row and the
      * campaign-less total for the same source and day stay separate rows.
      *
-     * @param array{date: Carbon|string, source_amount: float|string, source_currency_id: int, traffic_source_campaign_id?: int|null} $modelData
+     * A source can be on both paths at once while a shop moves from the platform's own script to our
+     * API pull, and both then offer the same campaign-day. That is still one row, never two, and the
+     * API figure is the one kept: a script posts yesterday once and never revises it, while the pull
+     * runs again over a window and carries the platform's late corrections. A script post over a day
+     * already fetched is therefore left alone rather than writing a staler number back.
+     *
+     * @param array{date: Carbon|string, source_amount: float|string, source_currency_id: int, traffic_source_campaign_id?: int|null, fetched_via?: string|null} $modelData
      */
     public function handle(TrafficSource $trafficSource, array $modelData): TrafficSourceCost
     {
@@ -43,18 +50,29 @@ class StoreTrafficSourceCost
         $orgCurrency  = $trafficSource->organisation->currency;
         $grpCurrency  = $trafficSource->group->currency;
 
+        $fetchedVia = Arr::get($modelData, 'fetched_via') ?: TrafficSourceCostFetchedViaEnum::IMPORT->value;
+
+        $key = [
+            'traffic_source_id'          => $trafficSource->id,
+            'traffic_source_campaign_id' => Arr::get($modelData, 'traffic_source_campaign_id'),
+            'date'                       => $date,
+        ];
+
+        $existing = TrafficSourceCost::where($key)->first();
+
+        if ($existing && $this->isSupersededBy($existing, $fetchedVia)) {
+            return $existing;
+        }
+
         $trafficSourceCost = TrafficSourceCost::updateOrCreate(
-            [
-                'traffic_source_id'          => $trafficSource->id,
-                'traffic_source_campaign_id' => Arr::get($modelData, 'traffic_source_campaign_id'),
-                'date'                       => $date,
-            ],
+            $key,
             [
                 'group_id'           => $trafficSource->group_id,
                 'organisation_id'    => $trafficSource->organisation_id,
                 'shop_id'            => $trafficSource->shop_id,
                 'source_amount'      => $sourceAmount,
                 'source_currency_id' => $sourceCurrency->id,
+                'fetched_via'        => $fetchedVia,
                 'amount'             => $sourceAmount * $this->rate($sourceCurrency, $shopCurrency, $date),
                 'org_amount'         => $sourceAmount * $this->rate($sourceCurrency, $orgCurrency, $date),
                 'grp_amount'         => $sourceAmount * $this->rate($sourceCurrency, $grpCurrency, $date),
@@ -68,6 +86,18 @@ class StoreTrafficSourceCost
         }
 
         return $trafficSourceCost;
+    }
+
+    /**
+     * Whether an arriving figure must give way to the one already stored.
+     *
+     * Only the script-over-API case gives way. An API pull replacing an earlier script post is the
+     * migration working as intended, and a re-run of either path over its own row is a correction.
+     */
+    private function isSupersededBy(TrafficSourceCost $existing, string $fetchedVia): bool
+    {
+        return $fetchedVia === TrafficSourceCostFetchedViaEnum::WEBHOOK->value
+            && $existing->fetched_via === TrafficSourceCostFetchedViaEnum::API->value;
     }
 
     /**

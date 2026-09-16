@@ -71,6 +71,14 @@ use App\Actions\Catalogue\ShippingCountry\UpdateShippingCountry;
 use App\Actions\Catalogue\Shop\StoreExternalShop;
 use App\Actions\Catalogue\Shop\StoreShop;
 use App\Actions\Catalogue\Shop\UpdateShop;
+use App\Actions\CRM\TrafficSource\AdProposals\ApplyAdProposal;
+use App\Actions\CRM\TrafficSource\AdProposals\DismissAdProposal;
+use App\Actions\CRM\TrafficSourceCampaign\GoogleAds\StoreGoogleAdsAd;
+use App\Actions\CRM\TrafficSourceCampaign\GoogleAds\StoreGoogleAdsCampaign;
+use App\Actions\CRM\TrafficSourceCampaign\GoogleAds\StoreGoogleAdsKeyword;
+use App\Actions\CRM\TrafficSourceCampaign\GoogleAds\UpdateGoogleAdsCampaign;
+use App\Actions\CRM\TrafficSourceCampaign\GoogleAds\UpdateGoogleAdsCampaignElement;
+use App\Actions\CRM\TrafficSourceCampaign\GoogleAds\UpdateGoogleAdsNegativeKeywords;
 use App\Actions\Catalogue\Variant\UpdateVariant;
 use App\Actions\Comms\Email\SendTestEmail;
 use App\Actions\Comms\Email\UpdateEmailUnpublishedSnapshot;
@@ -423,8 +431,11 @@ use App\Actions\Production\Artefact\DetachManufactureTaskFromArtefact;
 use App\Actions\Production\Artefact\DetachRawMaterialFromRecipeStep;
 use App\Actions\Production\Artefact\ImportArtefact;
 use App\Actions\Production\Artefact\Label\DeleteArtefactLabel;
+use App\Actions\Production\Artefact\Label\DownloadArtefactLabelPdf;
 use App\Actions\Production\Artefact\Label\PdfArtefactLabelSheet;
+use App\Actions\Production\Artefact\Label\PublishArtefactLabel;
 use App\Actions\Production\Artefact\Label\StoreArtefactLabel;
+use App\Actions\Production\Artefact\Label\UnpublishArtefactLabel;
 use App\Actions\Production\Artefact\Label\UpdateArtefactLabel;
 use App\Actions\Production\Artefact\MoveArtefactsToDepartment;
 use App\Actions\Production\Artefact\MoveArtefactsToFamily;
@@ -532,6 +543,11 @@ use App\Actions\Web\Webpage\StoreWebpage;
 use App\Actions\Web\Webpage\UpdateWebpage;
 use App\Actions\Web\Webpage\LockWebpage;
 use App\Actions\Web\Webpage\UnlockWebpage;
+use App\Actions\Web\Webpage\RequestWebpageEditAccess;
+use App\Actions\Web\Webpage\ApproveWebpageEditAccess;
+use App\Actions\Web\Webpage\DeclineWebpageEditAccess;
+use App\Actions\Web\Webpage\LockMasterFamilyWebpages;
+use App\Actions\Web\Webpage\UnlockMasterFamilyWebpages;
 use App\Http\Middleware\EnsureWebpageIsNotLocked;
 use App\Actions\Web\Webpage\WebpageWorkshopCheckWebBlock;
 use App\Actions\Web\Website\AutosaveWebsiteMarginal;
@@ -553,6 +569,7 @@ use App\Actions\Helpers\Ticket\UpdateTicketComment;
 use App\Actions\Helpers\Ticket\ToggleTicketCommentVisibility;
 use App\Actions\Helpers\Ticket\DeleteTicketComment;
 use App\Actions\Helpers\Ticket\UpdateTicket;
+use App\Actions\Helpers\Ticket\SyncTicketCollaborators;
 use Illuminate\Support\Facades\Route;
 
 Route::patch('/profile', UpdateProfile::class)->name('profile.update');
@@ -567,6 +584,7 @@ Route::patch('notifications', MarkAllNotificationAsRead::class)->name('notificat
 Route::prefix('ticket')->name('ticket.')->group(function () {
     Route::post('/', StoreTicket::class)->name('store');
     Route::patch('{ticket:id}', UpdateTicket::class)->name('update')->whereNumber('ticket');
+    Route::patch('{ticket:id}/collaborators', SyncTicketCollaborators::class)->name('collaborators.update')->whereNumber('ticket');
     Route::post('{ticket:id}/comment', StoreTicketComment::class)->name('comment.store')->whereNumber('ticket');
     Route::patch('comment/{ticketComment:id}', UpdateTicketComment::class)->name('comment.update')->whereNumber('ticketComment');
     Route::patch('comment/{ticketComment:id}/visibility', ToggleTicketCommentVisibility::class)->name('comment.toggle_visibility')->whereNumber('ticketComment');
@@ -696,6 +714,8 @@ Route::prefix('master-shops/{masterShop:id}')->as('master_shops.')->group(functi
 
 Route::prefix('master-product-category/{masterProductCategory:id}')->name('master_product_category.')->group(function () {
     Route::post('upload-images', UploadImagesToMasterProductCategory::class)->name('upload_images');
+    Route::post('lock-webpages', LockMasterFamilyWebpages::class)->name('lock_webpages');
+    Route::post('unlock-webpages', UnlockMasterFamilyWebpages::class)->name('unlock_webpages');
     Route::post('attach-images', [AttachImagesToModel::class, 'inMasterProductCategory'])->name('attach_images');
     Route::patch('update-images', UpdateMasterProductCategoryImages::class)->name('update_images');
     Route::delete('delete-images/{media:id}', DeleteImageFromMasterProductCategory::class)->name('delete_images')->withoutScopedBindings();
@@ -811,6 +831,22 @@ Route::name('org.')->prefix('org/{organisation:id}')->group(function () {
     Route::post('shop', StoreShop::class)->name('shop.store');
     Route::post('shop-external/{engine}', StoreExternalShop::class)->name('shop.external.store');
     Route::patch('shop/{shop:id}', UpdateShop::class)->name('shop.update')->withoutScopedBindings();
+    Route::patch('shop/{shop:id}/google-ads/campaign/{trafficSourceCampaign:id}', UpdateGoogleAdsCampaign::class)
+        ->name('shop.google_ads.campaign.update')->withoutScopedBindings();
+    Route::patch('shop/{shop:id}/google-ads/campaign/{trafficSourceCampaign:id}/element', UpdateGoogleAdsCampaignElement::class)
+        ->name('shop.google_ads.campaign.element.update')->withoutScopedBindings();
+    Route::post('shop/{shop:id}/google-ads/campaign', StoreGoogleAdsCampaign::class)
+        ->name('shop.google_ads.campaign.store');
+    Route::post('shop/{shop:id}/ad-proposal/{trafficSourceAdProposal:id}/apply', ApplyAdProposal::class)
+        ->name('shop.ad_proposal.apply')->withoutScopedBindings();
+    Route::post('shop/{shop:id}/ad-proposal/{trafficSourceAdProposal:id}/dismiss', DismissAdProposal::class)
+        ->name('shop.ad_proposal.dismiss')->withoutScopedBindings();
+    Route::post('shop/{shop:id}/google-ads/campaign/{trafficSourceCampaign:id}/keyword', StoreGoogleAdsKeyword::class)
+        ->name('shop.google_ads.campaign.keyword.store')->withoutScopedBindings();
+    Route::post('shop/{shop:id}/google-ads/campaign/{trafficSourceCampaign:id}/ad', StoreGoogleAdsAd::class)
+        ->name('shop.google_ads.campaign.ad.store')->withoutScopedBindings();
+    Route::patch('shop/{shop:id}/google-ads/campaign/{trafficSourceCampaign:id}/negative-keywords', UpdateGoogleAdsNegativeKeywords::class)
+        ->name('shop.google_ads.campaign.negative_keywords.update')->withoutScopedBindings();
     Route::post('fulfilment', StoreFulfilmentFromUI::class)->name('fulfilment.store');
 
     Route::prefix('boxes')->name('boxes.')->group(function () {
@@ -1211,6 +1247,9 @@ Route::patch('set-snapshot-website/{snapshot:id}/unpublished', [ApplyWebsiteMenu
 Route::name('webpage.')->prefix('webpage/{webpage:id}')->group(function () {
     Route::post('lock', LockWebpage::class)->name('lock')->withoutScopedBindings();
     Route::post('unlock', UnlockWebpage::class)->name('unlock')->withoutScopedBindings();
+    Route::post('request-edit-access', RequestWebpageEditAccess::class)->name('edit_access.request')->withoutScopedBindings();
+    Route::post('approve-edit-access', ApproveWebpageEditAccess::class)->name('edit_access.approve')->withoutScopedBindings();
+    Route::post('decline-edit-access', DeclineWebpageEditAccess::class)->name('edit_access.decline')->withoutScopedBindings();
 });
 
 Route::name('webpage.')->prefix('webpage/{webpage:id}')->middleware(EnsureWebpageIsNotLocked::class)->group(function () {
@@ -1490,6 +1529,9 @@ Route::name('artefact.')->prefix('artefact/{artefact:id}')->group(function () {
     Route::post('label-sheet', PdfArtefactLabelSheet::class)->name('label_sheet');
     Route::post('labels', StoreArtefactLabel::class)->name('labels.store');
     Route::post('labels/{label:id}', UpdateArtefactLabel::class)->name('labels.update');
+    Route::post('labels/{label:id}/publish', PublishArtefactLabel::class)->name('labels.publish');
+    Route::post('labels/{label:id}/unpublish', UnpublishArtefactLabel::class)->name('labels.unpublish');
+    Route::get('labels/{label:id}/pdf', DownloadArtefactLabelPdf::class)->name('labels.pdf');
     Route::delete('labels/{label:id}', DeleteArtefactLabel::class)->name('labels.delete');
     Route::post('tags/store', [StoreTag::class, 'inArtefact'])->name('tags.store');
     Route::patch('tags/{tag:id}/update', [UpdateTag::class, 'inArtefact'])->name('tags.update');

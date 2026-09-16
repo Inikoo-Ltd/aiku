@@ -84,6 +84,15 @@ test('hydrates master prices from major shop product and derives minors from off
         ->and((float) $masterAsset->price)->toBe(100.0)
         ->and((float) $masterAsset->rrp)->toBe(200.0);
 
+    $audit = $masterAsset->audits()->where('event', 'updated_master_prices')->latest('id')->first();
+    expect($audit)->not->toBeNull()
+        ->and($audit->old_values)->toBe([])
+        ->and(data_get($audit->new_values, "Price $majorCode"))->toBe('100')
+        ->and(data_get($audit->new_values, 'RRP USD'))->toBe('400');
+
+    Artisan::call('repair:master_asset_hydrate_prices', ['master_shop' => $masterShop->slug]);
+    expect($masterAsset->audits()->where('event', 'updated_master_prices')->count())->toBe(1);
+
     $masterAsset->updateQuietly([
         'master_prices' => array_merge($masterAsset->master_prices, [
             'USD' => ['value' => 555, 'independent' => true],

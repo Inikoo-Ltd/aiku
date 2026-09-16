@@ -14,6 +14,8 @@ import Tabs from "@/Components/Navigation/Tabs.vue";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faChair, faHandPaper, faBoxCheck} from "@fal";
 import { computed, ref, watch } from "vue";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { trans } from "laravel-vue-i18n";
 import type { Tabs as TSTabs } from "@/types/Tabs";
 
 library.add(faChair, faHandPaper, faBoxCheck);
@@ -84,6 +86,10 @@ function referenceRoute(item: any) {
       <Link v-if="item.reference" :href="referenceRoute(item)" class="secondaryLink">
         {{ item.reference }}
       </Link>
+      <span v-if="item.number_delivery_notes_waiting_ready" v-tooltip="trans('Waiting items picked, ready to pack')" class="ml-2 inline-flex items-center gap-1 rounded bg-green-100 px-1.5 py-0.5 text-xs font-semibold text-green-700 animate-pulse">
+        <FontAwesomeIcon icon="fal fa-box-check" fixed-width aria-hidden="true" />
+        {{ item.number_delivery_notes_waiting_ready }}
+      </span>
     </template>
   </Table>
 </template>

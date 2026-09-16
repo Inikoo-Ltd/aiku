@@ -1,9 +1,11 @@
 <script setup lang='ts'>
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { faTimesCircle, faCheckCircle, faExclamationCircle, faInfoCircle } from '@fal'
+import { faTimesCircle, faCheckCircle, faExclamationCircle, faInfoCircle, faTimes } from '@fal'
 import { library } from '@fortawesome/fontawesome-svg-core'
+import { computed } from 'vue'
+import { trans } from 'laravel-vue-i18n'
 
-library.add(faTimesCircle, faCheckCircle, faExclamationCircle, faInfoCircle)
+library.add(faTimesCircle, faCheckCircle, faExclamationCircle, faInfoCircle, faTimes)
 
 
 const props = defineProps<{
@@ -28,6 +30,13 @@ const props = defineProps<{
     }
 }>()
 
+const textParts = computed(() =>
+    String(props.notification.item.text ?? '')
+        .split(/(https?:\/\/[^\s]+)/)
+        .filter((value) => value !== '')
+        .map((value) => ({ value, isLink: /^https?:\/\//.test(value) }))
+)
+
 </script>
 
 <template>
@@ -48,11 +57,17 @@ const props = defineProps<{
             </p>
 
             <p v-if="props.notification.item.text" class="text-sm  mb-0 max-w-full">
-                {{ props.notification.item.text }}
+                <template v-for="(part, index) in textParts" :key="index">
+                    <a v-if="part.isLink" :href="part.value" target="_blank" rel="noopener" class="underline font-semibold break-all" @click.stop>{{ part.value }}</a>
+                    <template v-else>{{ part.value }}</template>
+                </template>
             </p>
             <div @click.stop="(e) => (props.notification.item.data?.function ? props.notification.item.data?.function() : false)" v-html="props.notification.item.data?.html">
-                
+
             </div>
         </div>
+        <button type="button" class="ml-auto self-start opacity-70 hover:opacity-100" :aria-label="trans('Close')" @click.stop="props.notification.close">
+            <FontAwesomeIcon icon="fal fa-times" fixed-width aria-hidden="true" />
+        </button>
     </div>
 </template>

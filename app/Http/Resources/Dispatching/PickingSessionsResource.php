@@ -32,7 +32,8 @@ class PickingSessionsResource extends JsonResource
             'quantity_picked'       => $this->quantity_picked,
             'quantity_packed'       => $this->quantity_packed,
             'picking_percentage'       => $this->picking_percentage. '%',
-            'packing_percentage'       => $this->packing_percentage. '%'
+            'packing_percentage'       => $this->packing_percentage. '%',
+            'number_delivery_notes_waiting_ready' => (int)$this->number_delivery_notes_waiting_ready,
 
 
         ];

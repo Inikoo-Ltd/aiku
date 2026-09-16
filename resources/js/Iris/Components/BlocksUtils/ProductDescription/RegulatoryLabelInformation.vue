@@ -134,7 +134,8 @@ const toggleRow = (key: string) => {
 </script>
 
 <template>
-	<div v-if="cards.length || rows.length" class="regulatory-panel py-5 md:py-6 lg:py-8" :style="containerStyle">
+	<div class="py-5 md:py-6 lg:py-12">
+	<div v-if="cards.length || rows.length" class="regulatory-panel" :style="containerStyle">
 		<div class="flex items-start gap-3">
 			<FontAwesomeIcon :icon="faShieldCheck" class="mt-1  text-primary " style="font-size: 40px;" />
 			<div>
@@ -169,7 +170,8 @@ const toggleRow = (key: string) => {
 							<span
 								v-for="market in card.value"
 								:key="market.value"
-								class="rounded border accent-chip px-1.5 py-0.5 text-[10px]">
+								class="inline-flex items-center gap-1 rounded border accent-chip px-1.5 py-0.5 text-[10px]">
+								<FontAwesomeIcon v-if="market.value === 'other'" :icon="faGlobe" class="text-[10px]" />
 								{{ market.label }}
 							</span>
 						</div>
@@ -305,6 +307,7 @@ const toggleRow = (key: string) => {
 				</div>
 			</div>
 		</div>
+	</div>	
 	</div>
 </template>
 

@@ -18,6 +18,7 @@ import Popover from "@/Components/Popover.vue"
 import { Checkbox, InputNumber, Popover as PopoverPrimevue, RadioButton, Select, InputText, Column, DataTable, Dialog } from 'primevue';
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import StaffChatContextButtons from "@/Components/Messaging/StaffChatContextButtons.vue"
+import StaffTaskPanel from "@/Components/Tasks/StaffTaskPanel.vue"
 import PureInput from "@/Components/Pure/PureInput.vue"
 import BoxNote from "@/Components/Pallet/BoxNote.vue"
 import { trans } from "laravel-vue-i18n"
@@ -150,6 +151,7 @@ const props = defineProps<{
 
     pageHead: PageHeadingTypes
     staff_chat?: { context_type: string; context_id: number; audiences: { key: string; label: string }[] }
+    staff_task?: { model_type: 'Product' | 'Customer' | 'Order' | 'DeliveryNote'; model_id: number }
     alert?: {
         status: string
         title?: string
@@ -1599,6 +1601,7 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
 
 
         <template #other>
+            <StaffTaskPanel v-if="staff_task" :model-type="staff_task.model_type" :model-id="staff_task.model_id" class="mr-2" />
             <StaffChatContextButtons v-if="staff_chat" :context="staff_chat" class="mr-2" />
             <div v-if="(!props.readonly || isShowProforma) && !is_shop_external" class="flex">
                 <Button v-if="currentTab === 'attachments'" @click="() => isModalUploadOpen = true" label="Attach"

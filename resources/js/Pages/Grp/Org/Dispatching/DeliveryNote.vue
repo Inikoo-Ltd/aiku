@@ -50,6 +50,7 @@ import Tabs from "@/Components/Navigation/Tabs.vue";
 import type { DeliveryNote } from "@/types/warehouse";
 import Button from "@/Components/Elements/Buttons/Button.vue";
 import StaffChatContextButtons from "@/Components/Messaging/StaffChatContextButtons.vue";
+import StaffTaskPanel from "@/Components/Tasks/StaffTaskPanel.vue"
 import Modal from "@/Components/Utils/Modal.vue";
 import { trans } from "laravel-vue-i18n";
 import PureMultiselectInfiniteScroll from "@/Components/Pure/PureMultiselectInfiniteScroll.vue";
@@ -79,6 +80,7 @@ const props = defineProps<{
     title: string,
     pageHead: PageHeadingTypes
     staff_chat?: { context_type: string; context_id: number; audiences: { key: string; label: string }[] }
+    staff_task?: { model_type: 'Product' | 'Customer' | 'Order' | 'DeliveryNote'; model_id: number }
     tabs: TSTabs
     items?: {}
     picking_todo_items?: {}
@@ -852,6 +854,7 @@ const stopSocketListener = () => {
 		</template>
 
 		<template #otherBefore v-if="!box_stats.is_replacement">
+			<StaffTaskPanel v-if="staff_task" :model-type="staff_task.model_type" :model-id="staff_task.model_id" class="mr-2" />
 			<StaffChatContextButtons v-if="staff_chat" :context="staff_chat" />
 			<!-- toggle picking view -->
 			<div

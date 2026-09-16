@@ -74,6 +74,13 @@ export default ({ mode }) => {
         devSourcemap : true,
         rollupOptions: {
           output: {
+            assetFileNames(assetInfo) {
+              const assetName = assetInfo.names?.[0] ?? assetInfo.name ?? "";
+
+              return assetName.endsWith(".mjs")
+                ? "assets/[name]-[hash].js"
+                : "assets/[name]-[hash][extname]";
+            },
             manualChunks(id) {
               if (id.includes("node_modules") &&
                 !id.includes("sentry")) {

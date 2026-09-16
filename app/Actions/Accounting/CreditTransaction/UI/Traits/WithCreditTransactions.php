@@ -2,6 +2,7 @@
 
 namespace App\Actions\Accounting\CreditTransaction\UI\Traits;
 
+use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
 use App\InertiaTable\InertiaTable;
 use App\Services\QueryBuilder;
 use Spatie\QueryBuilder\AllowedFilter;
@@ -30,6 +31,14 @@ trait WithCreditTransactions
             })
             ->leftJoin('orders', function ($join) {
                 $join->on('model_has_payments.model_id', '=', 'orders.id');
+            })
+            ->leftJoin('model_has_payments as invoice_has_payments', function ($join) {
+                $join->on('invoice_has_payments.payment_id', '=', 'payments.id')
+                    ->where('invoice_has_payments.model_type', '=', 'Invoice');
+            })
+            ->leftJoin('invoices as credit_notes', function ($join) {
+                $join->on('invoice_has_payments.model_id', '=', 'credit_notes.id')
+                    ->where('credit_notes.type', '=', InvoiceTypeEnum::REFUND->value);
             });
     }
 
@@ -48,6 +57,9 @@ trait WithCreditTransactions
             'orders.slug as order_slug',
             'orders.reference as order_reference',
             'credit_transactions.notes',
+            'credit_transactions.data',
+            'credit_notes.slug as credit_note_slug',
+            'credit_notes.reference as credit_note_reference',
         ];
     }
 
@@ -57,6 +69,7 @@ trait WithCreditTransactions
         $table->column(key: 'type', label: __('Type'), canBeHidden: false, sortable: true, searchable: true);
         $table->column(key: 'payment_reference', label: __('Payment'), canBeHidden: false, sortable: true, searchable: true);
         $table->column(key: 'order_reference', label: __('Order'), canBeHidden: false, sortable: true, searchable: true);
+        $table->column(key: 'credit_note_reference', label: __('Credit note'), canBeHidden: false);
         $table->column(key: 'amount', label: __('Amount'), canBeHidden: false, sortable: true, searchable: true, type: 'currency');
         $table->column(key: 'running_amount', label: __('Running amount'), canBeHidden: false, sortable: true, searchable: true, type: 'currency');
     }

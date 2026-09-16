@@ -6,7 +6,7 @@ import { blueprint } from '@/Components/Workshop/BlueprintSiteSettings'
 import SideEditor from '@/Components/Workshop/SideEditor/SideEditor.vue'
 import { Root as RootWebpage } from '@/types/webpageTypes'
 
-const props = defineProps<{ webpage: RootWebpage }>();
+const props = withDefaults(defineProps<{ webpage: RootWebpage, editable?: boolean }>(), { editable: true });
 
 const value = ref({
     button: {
@@ -135,7 +135,7 @@ const debounceSaveWorkshop = () => {
 </script>
 
 <template>
-    <SideEditor v-model="value" :blueprint="blueprint" @update:model-value="e=>{value = e, onSaveWorkshopFromId()}"/>
+    <SideEditor v-model="value" :blueprint="blueprint" :editable="editable"@update:model-value="e=>{value = e, onSaveWorkshopFromId()}"/>
 </template>
 
 <style scoped></style>

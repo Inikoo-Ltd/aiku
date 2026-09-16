@@ -178,6 +178,7 @@ class DeliveryNoteItemsStateHandlingResource extends JsonResource
             'org_stock_code'                           => $this->org_stock_code,
             'org_stock_slug'                           => $this->org_stock_slug,
             'org_stock_name'                           => $this->org_stock_name,
+            'replacement_reason_label'                 => $this->replacement_reason?->label(),
             'barcode'                                  => $this->barcode,
             'org_stock_image_thumbnail'                => null,
             'locations'                                => LocationOrgStocksForPickingActionsResource::collectionForPicking($pickingLocations, $this->organisation_id),

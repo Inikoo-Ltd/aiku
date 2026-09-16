@@ -31,6 +31,7 @@ use App\Http\Resources\Accounting\RefundTransactionsResource;
 use App\Http\Resources\History\HistoryResource;
 use App\Http\Resources\Sales\OrderResource;
 use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
+use App\Models\Accounting\CreditTransaction;
 use App\Models\Accounting\Invoice;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
@@ -347,6 +348,7 @@ class ShowRefund extends OrgAction
             ] : null,
             'invoice_refund'   => RefundResource::make($refund),
             'is_tax_only'      => $refund->is_tax_only,
+            'credit_transaction' => $this->getCreditTransactionData($refund),
         ];
 
         if ($refund->in_process) {
@@ -423,6 +425,37 @@ class ShowRefund extends OrgAction
     public function jsonResponse(Invoice $invoice): RefundResource
     {
         return new RefundResource($invoice);
+    }
+
+    /**
+     * A credit note issued from a balance increase is settled by that credit transaction; staff see who
+     * asked for it and who applied it, the customer never does (HELP-3025)
+     *
+     * @return array{requested_by: string|null, applied_by: string|null, notes: string|null, amount: string, date: \Illuminate\Support\Carbon, route: array{name: string, parameters: array<string, string>}}|null
+     */
+    private function getCreditTransactionData(Invoice $refund): ?array
+    {
+        $creditTransaction = CreditTransaction::whereIn('payment_id', $refund->payments()->pluck('payments.id'))->first();
+        if (!$creditTransaction) {
+            return null;
+        }
+
+        return [
+            'requested_by' => Arr::get($creditTransaction->data, 'requested_by'),
+            'applied_by'   => Arr::get($creditTransaction->data, 'applied_by'),
+            'notes'        => $creditTransaction->notes,
+            'amount'       => $creditTransaction->amount,
+            'date'         => $creditTransaction->date,
+            'route'        => [
+                'name'       => 'grp.org.shops.show.crm.customers.show',
+                'parameters' => [
+                    'organisation' => $refund->organisation->slug,
+                    'shop'         => $refund->shop->slug,
+                    'customer'     => $refund->customer->slug,
+                    'tab'          => 'credit_transactions',
+                ],
+            ],
+        ];
     }
 
     public function getBreadcrumbs(Invoice $refund, string $routeName, array $routeParameters, string $suffix = ''): array

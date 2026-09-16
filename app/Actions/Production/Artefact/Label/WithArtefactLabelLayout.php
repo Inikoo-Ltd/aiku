@@ -20,6 +20,12 @@ trait WithArtefactLabelLayout
 
     private const ARTWORK_MIME_TYPES = 'image/jpeg,image/png,image/gif,image/webp,application/pdf';
 
+    private const DEFAULT_BARCODE_TYPE = 'code128';
+
+    private const DEFAULT_BARCODE_WIDTH = 0.6;
+
+    private const DEFAULT_BARCODE_HEIGHT = 0.3;
+
     private const LAYOUT_KEYS = [
         'orientation',
         'columns',
@@ -52,10 +58,15 @@ trait WithArtefactLabelLayout
             'fields.*.y'         => ['required', 'numeric', 'min:0', 'max:1'],
             'fields.*.font_size' => ['required', 'numeric', 'min:3', 'max:72'],
             'fields.*.color'     => ['required', 'string', 'regex:/^#[0-9a-fA-F]{6}$/'],
+            'fields.*.background_color' => ['sometimes', 'nullable', 'string', 'regex:/^#[0-9a-fA-F]{6}$/'],
             'fields.*.bold'      => ['sometimes', 'boolean'],
             'fields.*.rotation'  => ['sometimes', 'integer', 'in:0,90,180,270'],
             'fields.*.length'    => ['sometimes', 'numeric', 'min:0.1', 'max:1000'],
-            'fields.*.source'    => ['sometimes', 'string', 'in:batch_code,expiry_date'],
+            'fields.*.source'    => ['sometimes', 'string', 'in:batch_code,expiry_date,barcode'],
+            'fields.*.barcode_type'       => ['sometimes', 'string', 'in:ean13,code128'],
+            'fields.*.barcode_width'      => ['sometimes', 'numeric', 'min:0.02', 'max:1'],
+            'fields.*.barcode_height'     => ['sometimes', 'numeric', 'min:0.02', 'max:1'],
+            'fields.*.barcode_show_value' => ['sometimes', 'boolean'],
         ];
     }
 
@@ -96,8 +107,13 @@ trait WithArtefactLabelLayout
                     'y'         => (float) Arr::get($field, 'y'),
                     'font_size' => (float) Arr::get($field, 'font_size'),
                     'color'     => Arr::get($field, 'color'),
+                    'background_color' => Arr::get($field, 'background_color') ?: null,
                     'bold'      => filter_var(Arr::get($field, 'bold', false), FILTER_VALIDATE_BOOLEAN),
                     'rotation'  => (int) Arr::get($field, 'rotation', 0),
+                    'barcode_type'       => Arr::get($field, 'barcode_type', self::DEFAULT_BARCODE_TYPE),
+                    'barcode_width'      => (float) Arr::get($field, 'barcode_width', self::DEFAULT_BARCODE_WIDTH),
+                    'barcode_height'     => (float) Arr::get($field, 'barcode_height', self::DEFAULT_BARCODE_HEIGHT),
+                    'barcode_show_value' => filter_var(Arr::get($field, 'barcode_show_value', true), FILTER_VALIDATE_BOOLEAN),
                 ],
                 Arr::get($layout, 'fields', [])
             )),

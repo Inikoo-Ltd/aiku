@@ -16,6 +16,7 @@ use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Enums\Ordering\Order\OrderPayStatusEnum;
 use App\Enums\Ordering\Order\OrderShippingEngineEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
+use Illuminate\Support\Arr;
 use App\Enums\Ordering\Order\OrderStatusEnum;
 use App\Enums\Ordering\Order\OrderToBePaidByEnum;
 use App\Models\Accounting\Invoice;
@@ -587,6 +588,11 @@ class Order extends Model implements HasMedia, Auditable
      * Placed on a platform without the customer watching, so nobody was at a checkout to see a
      * payment fail. These get the on-hold notice instead of a confirmation when unpaid (HELP-3116).
      */
+    public function isDeclinedPlatformRequest(): bool
+    {
+        return $this->state === OrderStateEnum::CANCELLED && filled(Arr::get($this->data, 'declined_reason'));
+    }
+
     public function isPlacedOnAChannel(): bool
     {
         return $this->shop->type === ShopTypeEnum::DROPSHIPPING

@@ -18,7 +18,7 @@ class ToggleTicketCommentVisibility extends OrgAction
 {
     public function handle(TicketComment $ticketComment): TicketComment
     {
-        $ticketComment->update(['is_internal' => !$ticketComment->is_internal]);
+        $ticketComment->update(['is_lead_only' => !$ticketComment->is_lead_only]);
 
         $actor = request()->user();
         NotifyTicketUsers::make()->pushBadges($ticketComment->ticket, $actor instanceof User ? $actor : null);

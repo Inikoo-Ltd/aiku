@@ -132,6 +132,7 @@ trait WithDeliveryNoteItemUI
             'delivery_note_items.state',
             'delivery_note_items.quantity_required',
             'delivery_note_items.original_quantity_required',
+            'delivery_note_items.replacement_reason',
             'delivery_note_items.composition_dirty_at',
             'delivery_note_items.composition_dirty_quantity_required',
             'delivery_note_items.quantity_picked',

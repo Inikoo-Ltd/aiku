@@ -9,7 +9,7 @@ import { useStringToHex } from "@/Composables/useStringToHex"
 import { routeType } from "@/types/route"
 import { Accordion, AccordionPanel, AccordionHeader, AccordionContent } from "primevue"
 import { faTag } from "@far"
-import { faFileCheck, faFilePdf, faFileWord, faTrash as falTrash, faEdit, faExternalLink, faPuzzlePiece, faShieldAlt, faInfoCircle, faChevronDown, faChevronUp, faBox, faVideo, faStamp, faTimesCircle } from "@fal"
+import { faFileCheck, faFilePdf, faFileWord, faTrash as falTrash, faEdit, faExternalLink, faPuzzlePiece, faShieldAlt, faInfoCircle, faChevronDown, faChevronUp, faBox, faVideo, faStamp, faTimesCircle, faGlobe } from "@fal"
 
 interface TariffCodeByOrganisation {
     organisation_code: string
@@ -80,6 +80,7 @@ interface LabelInfoPresence {
 }
 
 interface LabelInfo extends LabelInfoPresence {
+    label_info_approved?: { show: boolean }
     safety_icons?: { show: boolean }
     markets?: { show: boolean, value: { value: string, label: string }[] }
     languages?: { show: boolean, value: { code: string, name: string, flag?: string }[] }
@@ -611,6 +612,18 @@ const getIcon = (type?: string) => {
                 </AccordionHeader>
                 <AccordionContent>
                     <div class="space-y-3 py-2">
+                        <div class="flex justify-between items-center gap-3">
+                            <dt class="text-gray-500">{{ trans("Regulatory & Label Information tab") }}</dt>
+                            <dd v-if="labelInfo.label_info_approved?.show" class="font-medium text-green-600 flex items-center gap-1">
+                                <FontAwesomeIcon :icon="faCheckCircle" class="text-xs" fixed-width aria-hidden="true" />
+                                {{ trans("Published on the website") }}
+                            </dd>
+                            <dd v-else class="text-gray-400 flex items-center gap-1">
+                                <FontAwesomeIcon :icon="faTimesCircle" class="text-xs" fixed-width aria-hidden="true" />
+                                {{ trans("Hidden on the website") }}
+                            </dd>
+                        </div>
+
                         <div v-for="(label, key) in labelInfoLabels" :key="key" class="flex justify-between items-center gap-3">
                             <dt class="text-gray-500">{{ label }}</dt>
                             <dd v-if="labelInfo[key]?.show" class="font-medium text-green-600 flex items-center gap-1">
@@ -638,7 +651,8 @@ const getIcon = (type?: string) => {
                             <dt class="text-gray-500 whitespace-nowrap">{{ trans("Markets") }}</dt>
                             <dd v-if="labelInfo.markets?.show" class="font-medium flex flex-wrap gap-1 justify-end">
                                 <span v-for="market in labelInfo.markets.value" :key="market.value"
-                                    class="px-2 py-0.5 rounded-full text-xs bg-emerald-50 text-emerald-700 border border-emerald-100">
+                                    class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-emerald-50 text-emerald-700 border border-emerald-100">
+                                    <FontAwesomeIcon v-if="market.value === 'other'" :icon="faGlobe" class="text-[10px]" aria-hidden="true" />
                                     {{ market.label }}
                                 </span>
                             </dd>

@@ -57,6 +57,7 @@ import GRAmnestyPriceLabel from "@/Components/Utils/Iris/Family/GRAmnestyPriceLa
 import ProfitCalculationList from "@/Components/Utils/Iris/ProfitCalculationList.vue"
 import StepDiscountOffer from "@/Components/CMS/Webpage/Product1/StepDiscountOffer.vue"
 import { getBestOffer } from "@/Composables/useOffers"
+import { getOfferTextColorClass } from "@/Composables/offerColors"
 import { Popover } from "primevue"
 import ProductDescriptionUseTab from "@/Iris/Components/BlocksUtils/ProductDescription/ProductDescriptionUseTab.vue"
 
@@ -279,6 +280,12 @@ const displayedMargin = computed(() =>
         : product.value?.margin
 )
 
+const discountColorClass = computed(() => getOfferTextColorClass(bestOffer.value))
+
+const priceColorClass = computed(() => discountColorClass.value ?? "text-black")
+
+const profitColorClass = computed(() => discountColorClass.value ?? "text-gray-500")
+
 const displayedPrice = computed(() => (bestOffer.value ? product.value?.discounted_price : product.value?.price) || 0)
 
 const displayedPricePerUnit = computed(() =>
@@ -445,7 +452,7 @@ onMounted(async () => {
                             <span :class="product.stock > 0 ? 'text-gray-700' : 'text-red-600'">
                                 {{
                                     product.stock > 0
-                                        ? `${trans("In stock")} (${customerData?.stock})`
+                                        ? `${trans("In stock")}`
                                         : trans("Out Of Stock")
                                 }}
                             </span>
@@ -492,7 +499,7 @@ onMounted(async () => {
                             <span v-if="bestOffer" class="text-sm font-medium text-gray-400 line-through">
                                 {{ locale.currencyFormat(currency?.code, product.price || 0) }}
                             </span>
-                            <span class="text-lg font-bold text-black">
+                            <span class="text-lg font-bold" :class="priceColorClass">
                                 {{ locale.currencyFormat(currency?.code, displayedPrice) }}
                             </span>
                             <span class="text-xs text-gray-500">
@@ -509,7 +516,7 @@ onMounted(async () => {
                     </div>
                 </div>
 
-                <div v-if="layout?.iris?.is_logged_in" class="mt-2 flex items-baseline gap-1 text-xs text-rose-500">
+                <div v-if="layout?.iris?.is_logged_in" class="mt-2 flex items-baseline gap-1 text-xs" :class="profitColorClass">
                     <span>{{ trans("Profit") }}:</span>
                     <span class="font-semibold">{{ locale.currencyFormat(currency?.code, displayedProfit || 0) }}</span>
                     <span>({{ displayedMargin }})</span>
@@ -694,7 +701,7 @@ onMounted(async () => {
                         <span :class="product.stock > 0 ? 'text-gray-700' : 'text-red-600'">
                             {{
                                 product.stock > 0
-                                    ? `${trans('In stock')} (${customerData?.stock})`
+                                    ? `${trans('In stock')}`
                                     : trans('Out Of Stock')
                             }}
                         </span>
@@ -723,7 +730,7 @@ onMounted(async () => {
                         <span v-if="bestOffer" class="text-sm font-medium text-gray-400 line-through">
                             {{ locale.currencyFormat(currency?.code, product.price || 0) }}
                         </span>
-                        <span class="text-lg font-bold text-black">
+                        <span class="text-lg font-bold" :class="priceColorClass">
                             {{ locale.currencyFormat(currency?.code, displayedPrice) }}
                         </span>
                         <span class="text-xs text-gray-500">
@@ -740,7 +747,7 @@ onMounted(async () => {
                 </div>
             </div>
 
-            <div v-if="layout?.iris?.is_logged_in" class="flex items-baseline gap-1 text-xs text-rose-500">
+            <div v-if="layout?.iris?.is_logged_in" class="flex items-baseline gap-1 text-xs" :class="profitColorClass">
                 <span>{{ trans("Profit") }}:</span>
                 <span class="font-semibold">{{ locale.currencyFormat(currency?.code, displayedProfit || 0) }}</span>
                 <span>({{ displayedMargin }})</span>

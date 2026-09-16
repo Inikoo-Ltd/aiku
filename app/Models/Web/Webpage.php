@@ -10,6 +10,7 @@ namespace App\Models\Web;
 
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
+use App\Enums\SysAdmin\Authorisation\RolesEnum;
 use App\Enums\Web\Webpage\WebpageSubTypeEnum;
 use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Enums\Web\Webpage\WebpageTypeEnum;
@@ -254,7 +255,7 @@ class Webpage extends Model implements Auditable, HasMedia
         if (!$user) {
             return false;
         }
-        if ($user->id == $this->locked_by_user_id) {
+        if ($user->id == $this->locked_by_user_id || $user->hasRole(RolesEnum::GROUP_ADMIN->value)) {
             return true;
         }
 
@@ -285,7 +286,19 @@ class Webpage extends Model implements Auditable, HasMedia
             return true;
         }
 
-        return $user->id == $this->locked_by_user_id || $user->authTo('sysadmin.edit');
+        return $user->id == $this->locked_by_user_id;
+    }
+
+    public function canEditLockBy(?User $user): bool
+    {
+        if (!$user) {
+            return false;
+        }
+        if (!$this->isLocked()) {
+            return true;
+        }
+
+        return $user->id == $this->locked_by_user_id;
     }
 
     public function lockMessage(): string

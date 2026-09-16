@@ -427,6 +427,7 @@ class ShowProduct extends OrgAction
                     'next'     => $this->getNextModel($product, $request),
                 ],
                 'mini_breadcrumbs'      => $miniBreadcrumbs,
+                'staff_task'            => ['model_type' => 'Product', 'model_id' => $product->id],
                 'pageHead'              => [
                     'title'      => $product->code,
                     'model'      => __('Product'),

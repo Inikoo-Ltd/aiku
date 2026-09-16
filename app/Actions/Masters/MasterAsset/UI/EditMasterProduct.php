@@ -323,6 +323,22 @@ class EditMasterProduct extends OrgAction
                 ]
             ],
             [
+                'label'  => __('GPSR'),
+                'icon'   => 'fa-light fa-biohazard',
+                'fields' => [
+                    'gpsr_warnings' => [
+                        'type'  => 'textarea',
+                        'label' => __('Warnings'),
+                        'value' => $masterProduct->gpsr_warnings,
+                    ],
+                    'gpsr_manual'   => [
+                        'type'  => 'textarea',
+                        'label' => __('How To Use'),
+                        'value' => $masterProduct->gpsr_manual,
+                    ],
+                ]
+            ],
+            [
                 'label'  => __('Pricing'),
                 'icon'   => 'fa-light fa-money-bill',
                 'fields' => [

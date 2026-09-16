@@ -92,7 +92,7 @@ onMounted(() => {
 </script>
 
 <template>    
-    <div data-block-type="luigi-last-seen-1-iris" class="w-full pb-6 px-4"  :id="fieldValue?.id ? fieldValue?.id  : 'luigi-last-seen-1-iris'+indexBlock"  component="luigi-last-seen-1-iris"
+    <div data-block-type="internal-last-seen-1-iris" class="w-full pb-6 px-4"  :id="fieldValue?.id ? fieldValue?.id  : 'internal-last-seen-1-iris'+indexBlock"  component="internal-last-seen-1-iris"
     :style="{
         ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
         ...getStyles(fieldValue.container?.properties, screenType),
@@ -104,7 +104,7 @@ onMounted(() => {
                 <div class="text-3xl font-semibold">
                     <!-- <div v-html="fieldValue.title"></div> -->
                     <div>
-                        <p style="text-align: center">{{ trans("Last seen") }}<span v-if="layout.app.environment === 'local'" class="ml-2 bg-red-500">(Internal)</span></p>
+                        <p style="text-align: center">{{ ctrans("Last seen") }}<span v-if="layout.app.environment === 'local'" class="ml-2 bg-red-500">(Internal)</span></p>
                     </div>
                 </div>
             </div>

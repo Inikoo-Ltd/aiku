@@ -2633,6 +2633,30 @@ describe('aurora provisional cost fix', function () {
             ->and((float) $postRow->lpp_per_sku)->toBe(5.5);
     });
 
+    test('recompute picks up purchases costed from aurora', function () {
+        [$orgStock, $location] = costFixStockInLocation($this->group, $this->organisation, 'CFCOSTED');
+
+        $this->organisation->update(['wac_calculations_start_date' => '2025-08-01']);
+        $orgStock->refresh()->unsetRelation('organisation');
+
+        $purchase = StoreOrgStockMovement::make()->action($orgStock, $location, [
+            'type'     => OrgStockMovementTypeEnum::PURCHASE->value,
+            'quantity' => 10,
+        ]);
+        $purchase->update(['cost_per_sku' => 20.44, 'org_amount' => 204.4, 'date' => '2026-06-10 10:00:00']);
+
+        \App\Actions\Inventory\OrgStock\Stock\CalculateOrgStockHistoricStockHistories::run($orgStock, \Illuminate\Support\Carbon::parse('2026-06-17'));
+
+        $purchase->update(['cost_per_sku' => 0.11, 'org_amount' => 1.1, 'cost_status' => 'costed']);
+
+        $this->artisan('org_stock_movement:recalculate_histories_post_costfix', ['organisation' => $this->organisation->slug, '--sync' => true])->assertExitCode(0);
+
+        $row = DB::table('org_stock_histories')->where('org_stock_id', $orgStock->id)->where('date', '2026-06-17')->first();
+
+        expect((float) $row->lpp_per_sku)->toBe(0.11)
+            ->and((float) $row->wac_per_sku)->toBe(0.11);
+    });
+
     test('update does not clobber a supplied org_amount', function () {
         [$orgStock, $location] = costFixStockInLocation($this->group, $this->organisation, 'CFE');
 
@@ -3346,4 +3370,34 @@ test('merging a duplicate trade unit hands its stock to the twin so the product 
     expect($duplicate->fresh()->trashed())->toBeTrue()
         ->and(DB::table('model_has_trade_units')->where('trade_unit_id', $tradeUnit->id)->where('model_type', 'Stock')->where('model_id', $stock->id)->exists())->toBeTrue()
         ->and($product->refresh()->orgStocks()->where('org_stocks.id', $orgStock->id)->exists())->toBeTrue();
+});
+
+test('UI low stock audits sorts locations ascending and descending', function () {
+    $warehouse = createWarehouse();
+    $stock     = StoreStock::make()->action($this->group, array_merge(Stock::factory()->definition(), ['state' => StockStateEnum::ACTIVE]));
+    $orgStock  = StoreOrgStock::make()->action($this->organisation, $stock);
+
+    foreach (['LSA-A1', 'LSA-Z9'] as $locationCode) {
+        $location         = StoreLocation::make()->action($warehouse, array_merge(Location::factory()->definition(), ['code' => $locationCode]));
+        $locationOrgStock = StoreLocationOrgStock::make()->action($orgStock, $location, []);
+        UpdateLocationOrgStock::make()->action($locationOrgStock, ['quantity' => 1]);
+    }
+    OrgStockHydrateQuantityInLocations::run($orgStock->id);
+
+    $this->withoutExceptionHandling();
+
+    $locationCodesFor = function (string $sort) use ($warehouse, $orgStock) {
+        $response = get(route('grp.org.warehouses.show.inventory.org_stocks.low_stock_audits.index', [
+            $this->organisation->slug,
+            $warehouse->slug,
+            'low_stock_audits_sort' => $sort,
+        ]));
+
+        $row = collect($response->viewData('page')['props']['lowStockAudits']['data'])->firstWhere('id', $orgStock->id);
+
+        return collect($row['locations'])->pluck('code')->all();
+    };
+
+    expect($locationCodesFor('locations'))->toBe(['LSA-A1', 'LSA-Z9'])
+        ->and($locationCodesFor('-locations'))->toBe(['LSA-Z9', 'LSA-A1']);
 });

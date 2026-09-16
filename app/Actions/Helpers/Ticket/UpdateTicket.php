@@ -18,6 +18,7 @@ use App\Enums\Helpers\Ticket\TicketStatusEnum;
 use App\Enums\Helpers\Ticket\TicketStatusGroupEnum;
 use App\Models\Helpers\Ticket;
 use App\Models\SysAdmin\User;
+use Closure;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
@@ -27,9 +28,12 @@ class UpdateTicket extends OrgAction
 {
     use WithActionUpdate;
 
+    private ?Ticket $updatingTicket = null;
+
     public function handle(Ticket $ticket, array $modelData): Ticket
     {
-        $question     = trim((string) Arr::pull($modelData, 'question', ''));
+        $question      = trim((string) Arr::pull($modelData, 'question', ''));
+        $statusComment = trim((string) Arr::pull($modelData, 'status_comment', ''));
         $waitingHours = Arr::pull($modelData, 'waiting_hours');
 
         $asker = auth()->user();
@@ -39,6 +43,10 @@ class UpdateTicket extends OrgAction
             } else {
                 StoreTicketComment::make()->action($ticket, $asker, ['body' => $question], notifyUsers: false);
             }
+        }
+
+        if ($statusComment !== '' && $asker instanceof User) {
+            StoreTicketComment::make()->action($ticket, $asker, ['body' => $statusComment], notifyUsers: false);
         }
 
         if (Arr::exists($modelData, 'assignee_id') && Arr::get($modelData, 'assignee_id') != $ticket->assignee_id) {
@@ -111,12 +119,20 @@ class UpdateTicket extends OrgAction
             NotifyTicketUsers::make()->done($ticket, $asker instanceof User ? $asker : null);
         }
 
+        if ($ticket->wasChanged('status') && $this->reporterHearsAboutStatus($ticket, $asker instanceof User ? $asker : null)) {
+            NotifyTicketUsers::make()->statusChanged($ticket, $asker instanceof User ? $asker : null);
+        }
+
         if ($ticket->wasChanged('status')) {
             PostTicketSlackThreadReply::run($ticket, $ticket->reference.' is now '.TicketStatusEnum::labels()[$ticket->status->value]);
         }
 
         if ($ticket->wasChanged(['status', 'assignee_id'])) {
             SyncTicketSlackAlert::run($ticket);
+        }
+
+        if ($ticket->wasChanged('assignee_id') && $ticket->assignee_id) {
+            $ticket->collaborators()->detach($ticket->assignee_id);
         }
 
         NotifyTicketUsers::make()->pushBadges($ticket, $asker instanceof User ? $asker : null);
@@ -132,11 +148,23 @@ class UpdateTicket extends OrgAction
             'status'      => ['sometimes', Rule::enum(TicketStatusEnum::class)],
             'priority'    => ['sometimes', Rule::enum(ChatPriorityEnum::class)],
             'assignee_id' => ['sometimes', 'nullable', Rule::exists('users', 'id')->where('group_id', $this->group->id)],
-            'kind'        => ['sometimes', 'nullable', Rule::enum(TicketKindEnum::class)],
+            'kind'        => [
+                'sometimes',
+                'nullable',
+                Rule::enum(TicketKindEnum::class),
+                function (string $attribute, mixed $value, Closure $fail): void {
+                    $isEscalated = $this->updatingTicket?->kind === TicketKindEnum::ESCALATION;
+
+                    if ($isEscalated !== ($value === TicketKindEnum::ESCALATION->value)) {
+                        $fail($isEscalated ? __('Escalated tickets keep their kind.') : __('Tickets cannot be changed to escalated.'));
+                    }
+                },
+            ],
             'module'      => ['sometimes', 'nullable', Rule::enum(TicketModuleEnum::class)],
             'tags'        => ['sometimes', 'array'],
             'is_confidential' => ['sometimes', 'boolean'],
             'question'      => ['sometimes', 'nullable', 'string', 'max:10000'],
+            'status_comment' => ['sometimes', 'nullable', 'string', 'max:10000'],
             'qa_status'     => ['sometimes', 'nullable', Rule::enum(TicketQaStatusEnum::class)],
             'qa_note'       => ['sometimes', 'nullable', 'string', 'max:10000'],
             'qa_user_id'    => ['sometimes', 'nullable', Rule::in(GetTicketBadgeData::qaUsers($this->group->id)->pluck('id'))],
@@ -151,26 +179,48 @@ class UpdateTicket extends OrgAction
             return true;
         }
 
+        $user   = $request->user();
         $ticket = $request->route('ticket');
+        if (!$ticket instanceof Ticket) {
+            return false;
+        }
+
+        $fields = array_keys($request->all());
+
         if ($request->has('qa_status')) {
+            if (array_diff($fields, ['qa_status', 'qa_note', 'qa_user_id']) !== []) {
+                return false;
+            }
+
             $isVerdict = in_array($request->input('qa_status'), [TicketQaStatusEnum::PASSED->value, TicketQaStatusEnum::FAILED->value], true);
 
-            return array_diff(array_keys($request->all()), ['qa_status', 'qa_note', 'qa_user_id']) === []
-                && ($isVerdict ? Ticket::canCheckQa($request->user()) : Ticket::canBeManagedBy($request->user()));
+            return $isVerdict ? Ticket::canCheckQa($user) : $ticket->canContributeBy($user);
         }
 
-        if (Ticket::canBeManagedBy($request->user())) {
-            $onOwnPlate = $ticket instanceof Ticket && $ticket->assignee_id === $request->user()->id && $request->filled('assignee_id');
-
-            return (!$request->has('assignee_id') || $onOwnPlate) && !$request->has('is_confidential');
+        if ($ticket->canBeUpdatedBy($user)) {
+            return (!$request->has('assignee_id') || $request->filled('assignee_id')) && !$request->has('is_confidential');
         }
 
-        return $ticket instanceof Ticket && $ticket->isReportedBy($request->user()) && array_keys($request->all()) === ['status'];
+        if ($request->has('tags') && array_diff($fields, ['tags']) === [] && $ticket->hasCollaborator($user)) {
+            return true;
+        }
+
+        return false;
+    }
+
+    private function reporterHearsAboutStatus(Ticket $ticket, ?User $actor): bool
+    {
+        if (in_array($ticket->status, [TicketStatusEnum::RESOLVED, TicketStatusEnum::WAITING, TicketStatusEnum::ANSWERED], true)) {
+            return false;
+        }
+
+        return $actor !== null || $ticket->status !== TicketStatusEnum::OPEN;
     }
 
     public function action(Ticket $ticket, array $modelData): Ticket
     {
-        $this->asAction = true;
+        $this->asAction       = true;
+        $this->updatingTicket = $ticket;
         $this->initialisationFromGroup($ticket->group, $modelData);
 
         return $this->handle($ticket, $this->validatedData);
@@ -178,6 +228,7 @@ class UpdateTicket extends OrgAction
 
     public function asController(Ticket $ticket, ActionRequest $request): Ticket
     {
+        $this->updatingTicket = $ticket;
         $this->initialisationFromGroup($ticket->group, $request);
 
         return $this->handle($ticket, $this->validatedData);

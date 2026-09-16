@@ -5,7 +5,7 @@
   -->
 
 <script setup lang="ts">
-import { Head, Link, router } from "@inertiajs/vue3"
+import { Head, Link, router, usePage } from "@inertiajs/vue3"
 import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from "vue"
 import draggable from "vuedraggable"
 import { trans } from "laravel-vue-i18n"
@@ -14,11 +14,15 @@ import PageHeading from "@/Components/Headings/PageHeading.vue"
 import Icon from "@/Components/Icon.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faVial, faShieldCheck, faShield, faRocket } from "@fal"
+import { faVial, faShieldCheck, faShield, faRocket, faSpinner } from "@fal"
 import { useLiveTickets } from "@/Composables/useLiveTickets"
 import TicketsCreatedInterval from "@/Components/Tickets/TicketsCreatedInterval.vue"
+import TicketQuickLook from "@/Components/Tickets/TicketQuickLook.vue"
+import TicketUserAvatar from "@/Components/Tickets/TicketUserAvatar.vue"
+import TicketAskReporterDialog from "@/Components/Tickets/TicketAskReporterDialog.vue"
+import TicketStatusNoteDialog from "@/Components/Tickets/TicketStatusNoteDialog.vue"
 
-library.add(faVial, faShieldCheck, faShield, faRocket)
+library.add(faVial, faShieldCheck, faShield, faRocket, faSpinner)
 
 const props = defineProps<{
 	pageHead: any
@@ -42,6 +46,7 @@ const props = defineProps<{
 	createdInterval: string
 	updateRoute: string
 	can_manage: boolean
+	can_assign: boolean
 }>()
 
 
@@ -239,7 +244,7 @@ const closeQuickLook = () => {
 }
 
 // ponytail: vuedraggable eats dblclick and bubbled clicks, so the board listens in capture
-let lastClick = { id: 0, at: 0 }
+let lastDragEndedAt = 0
 
 const onBoardClick = (event: MouseEvent) => {
 	const target = event.target as HTMLElement
@@ -248,18 +253,36 @@ const onBoardClick = (event: MouseEvent) => {
 		openSortPicker.value = null
 	}
 
-	const card = target?.closest?.("[data-ticket-id]") as HTMLElement | null
-	if (!card) return
-
-	const id = Number(card.dataset.ticketId)
-	const now = Date.now()
-
-	if (lastClick.id === id && now - lastClick.at < 600) {
-		quickLook.value = props.columns.flatMap((column) => column.tickets).find((t) => t.id === id)
-	}
-
-	lastClick = { id, at: now }
 }
+
+const openQuickLook = (ticket: any, event: MouseEvent) => {
+	const target = event.target as HTMLElement | null
+	if (target?.closest("a, button") || Date.now() - lastDragEndedAt < 300) return
+	quickLook.value = ticket
+}
+
+const myUserId = computed(() => (usePage().props.auth as { user?: { id: number } } | undefined)?.user?.id ?? null)
+
+const canDragTicket = (ticket: { assignee_id: number | null }) =>
+	props.can_assign || (props.can_manage && myUserId.value !== null && ticket.assignee_id === myUserId.value)
+
+const engineerMoves: Record<string, string[]> = {
+	open: ["assigned", "in_progress", "closed"],
+	assigned: ["in_progress", "closed"],
+	in_progress: ["waiting", "closed"],
+	waiting: ["in_progress", "closed"],
+}
+
+const canDropTicket = (ticket: { assignee_id: number | null }, fromColumn: string, toColumn: string) => {
+	if (fromColumn === toColumn) return true
+	if (!canDragTicket(ticket)) return false
+	if (!ticket.assignee_id) return toColumn === "assigned"
+	if (props.can_assign) return true
+	return engineerMoves[fromColumn]?.includes(toColumn) ?? false
+}
+
+const onMoveCheck = (event: { draggedContext: { element: any }; from: HTMLElement; to: HTMLElement }) =>
+	canDropTicket(event.draggedContext.element, event.from.dataset.column ?? "", event.to.dataset.column ?? "")
 
 onMounted(() => window.addEventListener("click", onBoardClick, true))
 onBeforeUnmount(() => window.removeEventListener("click", onBoardClick, true))
@@ -301,22 +324,62 @@ const assignPosition = ref({ x: 0, y: 0 })
 
 const onDragEnd = (event: { originalEvent?: MouseEvent }) => {
 	dragging.value = false
+	lastDragEndedAt = Date.now()
 	assignPosition.value = {
 		x: Math.max(8, Math.min((event.originalEvent?.clientX ?? 0) - 40, window.innerWidth - 330)),
 		y: Math.max(8, Math.min((event.originalEvent?.clientY ?? 0) + 8, window.innerHeight - 360)),
 	}
 }
 
-const patchTicket = (ticketId: number, data: Record<string, unknown>) =>
-	router.patch(route(props.updateRoute, { ticket: ticketId }), data, { preserveScroll: true, preserveState: true })
+const savingTicketIds = ref<number[]>([])
 
-const onMoved = (status: string, event: { added?: { element: any } }) => {
+const patchTicket = (ticketId: number, data: Record<string, unknown>) =>
+	router.patch(route(props.updateRoute, { ticket: ticketId }), data, {
+		preserveScroll: true,
+		preserveState: true,
+		onStart: () => savingTicketIds.value.push(ticketId),
+		onFinish: () => (savingTicketIds.value = savingTicketIds.value.filter((id) => id !== ticketId)),
+	})
+
+const dropDialogTicket = ref<any | null>(null)
+const isDropAskReporterOpen = ref(false)
+const isDropStatusNoteOpen = ref(false)
+let isDropDialogSaved = false
+
+const openDropDialog = (ticket: any, dialog: "ask" | "note") => {
+	dropDialogTicket.value = ticket
+	isDropDialogSaved = false
+	if (dialog === "ask") isDropAskReporterOpen.value = true
+	else isDropStatusNoteOpen.value = true
+}
+
+watch([isDropAskReporterOpen, isDropStatusNoteOpen], ([isAskOpen, isNoteOpen]) => {
+	if (isAskOpen || isNoteOpen || !dropDialogTicket.value) return
+	if (!isDropDialogSaved) router.reload({ only: ["columns"] })
+	dropDialogTicket.value = null
+})
+
+const onMoved = (column: { key: string; status: string }, event: { added?: { element: any } }) => {
 	if (!event.added) return
-	if (status === "assigned" && !event.added.element.assignee_id) {
-		assigning.value = event.added.element
+	const ticket = event.added.element
+
+	if (!canDragTicket(ticket) || (!ticket.assignee_id && column.key !== "assigned")) {
+		router.reload({ only: ["columns"] })
 		return
 	}
-	patchTicket(event.added.element.id, { status })
+	if (column.key === "assigned" && !ticket.assignee_id) {
+		assigning.value = ticket
+		return
+	}
+	if (column.key === "waiting") {
+		openDropDialog(ticket, "ask")
+		return
+	}
+	if (column.key === "closed") {
+		openDropDialog(ticket, "note")
+		return
+	}
+	patchTicket(ticket.id, { status: column.status })
 }
 
 const assignTo = (assigneeId: number) => {
@@ -427,17 +490,8 @@ const cancelAssign = () => {
 								type="checkbox"
 								:checked="boardFilters.assignee_username.includes(option.value)"
 								@change="toggleFilter('assignee_username', option.value)" />
-							<img
-								v-if="avatarFor(option.value)"
-								:src="avatarFor(option.value)"
-								class="h-6 w-6 rounded-full object-cover"
-								:alt="option.value" />
-							<span
-								v-else
-								class="flex h-6 w-6 items-center justify-center rounded-full bg-gray-200 text-[10px] font-semibold text-gray-600"
-								>{{ initials(option.value) }}</span
-							>
-							<span class="truncate">{{ shortName(option.value) }}</span>
+							<TicketUserAvatar :name="option.label ?? option.value" :avatar="avatarFor(option.value) ? { original: avatarFor(option.value) } : null" size="xs" />
+							<span class="truncate text-sm text-gray-700">{{ shortName(option.value) }}</span>
 							<span class="ml-auto text-xs text-gray-400">{{ option.count }}</span>
 						</label>
 					</template>
@@ -554,17 +608,26 @@ const cancelAssign = () => {
 					v-model="column.tickets"
 					item-key="id"
 					group="tickets"
+					:data-column="column.key"
+					:move="onMoveCheck"
+					filter=".ticket-card-locked"
+					:prevent-on-filter="false"
+					:force-fallback="true"
+					:fallback-tolerance="4"
 					:disabled="!can_manage"
 					class="flex-1 space-y-2 min-h-24 max-h-[70vh] overflow-y-auto pr-0.5"
 					@start="dragging = true"
 					@end="onDragEnd"
-					@change="onMoved(column.status, $event)">
+					@change="onMoved(column, $event)">
 					<template #item="{ element }">
 						<div
 							v-show="matchesFilters(element, column.key)"
-							class="bg-white rounded-md border border-gray-200 shadow-sm p-2.5 hover:border-gray-400"
-							:class="can_manage ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'"
-							:data-ticket-id="element.id">
+							class="relative bg-white rounded-md border border-gray-200 shadow-sm p-2.5 hover:border-gray-400"
+							:aria-busy="savingTicketIds.includes(element.id)"
+							:class="canDragTicket(element) ? 'cursor-grab active:cursor-grabbing' : 'ticket-card-locked cursor-pointer'"
+							:data-ticket-id="element.id"
+							@click="openQuickLook(element, $event)">
+							<FontAwesomeIcon v-if="savingTicketIds.includes(element.id)" icon="fal fa-spinner" spin fixed-width class="absolute right-1.5 top-1.5 text-xs text-gray-400" />
 							<p class="text-sm leading-snug break-words line-clamp-3">
 								{{ element.subject }}
 							</p>
@@ -594,17 +657,27 @@ const cancelAssign = () => {
 								<span
 									v-if="element.assignee"
 									v-tooltip="{ content: element.assignee, delay: 0 }"
-									class="ml-auto">
-									<img
-										v-if="element.assignee_avatar?.original"
-										:src="element.assignee_avatar.original"
-										class="w-6 h-6 rounded-full object-cover"
-										:alt="element.assignee" />
+									class="ml-auto flex min-w-0 items-center gap-1 rounded-full bg-gray-100 py-0.5 pl-0.5 pr-2">
+									<TicketUserAvatar :name="element.assignee" :avatar="element.assignee_avatar" size="xs" />
+									<span class="max-w-[5rem] truncate text-[10px] font-medium leading-none text-gray-600">{{ element.assignee_short }}</span>
+								</span>
+								<span
+									v-if="element.collaborators?.length"
+									v-tooltip="{ content: element.collaborators.map((collaborator) => collaborator.name).join(', '), delay: 0 }"
+									class="flex shrink-0 -space-x-1.5"
+									:class="!element.assignee && 'ml-auto'">
+									<TicketUserAvatar
+										v-for="collaborator in element.collaborators.slice(0, 3)"
+										:key="collaborator.id"
+										:name="collaborator.name"
+										:avatar="collaborator.avatar"
+										size="xs"
+										class="ring-2 ring-white" />
 									<span
-										v-else
-										class="w-6 h-6 rounded-full bg-gray-200 text-gray-600 flex items-center justify-center text-[10px] font-medium">
-										{{ (element.assignee_short || "?").slice(0, 2) }}
-									</span>
+										v-if="element.collaborators.length > 3"
+										class="flex h-5 w-5 items-center justify-center rounded-full bg-gray-200 text-[8px] font-medium text-gray-600 ring-2 ring-white"
+										>+{{ element.collaborators.length - 3 }}</span
+									>
 								</span>
 							</div>
 						</div>
@@ -628,28 +701,25 @@ const cancelAssign = () => {
 					type="button"
 					class="flex w-full items-center gap-2 rounded px-1.5 py-1 text-left hover:bg-indigo-50"
 					@click="assignTo(engineer.value)">
-					<img v-if="engineer.avatar?.original" :src="engineer.avatar.original" class="h-5 w-5 rounded-full object-cover" alt="" />
-					<span v-else class="flex h-5 w-5 items-center justify-center rounded-full bg-gray-200 text-[10px] text-gray-600">{{ initials(engineer.label) }}</span>
+					<TicketUserAvatar :name="engineer.label" :avatar="engineer.avatar" size="xs" />
 					<span :class="engineer.is_me && 'font-medium'">{{ engineer.label }}</span>
 					<span v-if="engineer.is_me" class="text-gray-400">{{ trans("me") }}</span>
 				</button>
 			</div>
 		</div>
 	</Teleport>
-	<div
-		v-if="quickLook"
-		class="fixed inset-0 z-50 flex items-stretch justify-center bg-black/40 p-4"
-		@click.self="closeQuickLook">
-		<div class="relative flex w-4/5 flex-col rounded-2xl bg-white shadow-xl">
-			<button
-				type="button"
-				class="absolute -right-3 -top-3 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-white text-gray-500 shadow hover:text-gray-800"
-				@click="closeQuickLook">
-				<FontAwesomeIcon icon="fal fa-times" fixed-width />
-			</button>
-			<iframe
-				:src="route('grp.tickets.show', quickLook.reference) + '?embed=1'"
-				class="h-full w-full flex-1 rounded-2xl border-0" />
-		</div>
-	</div>
+	<TicketAskReporterDialog
+		v-if="dropDialogTicket"
+		v-model:visible="isDropAskReporterOpen"
+		:update-route="{ name: updateRoute, parameters: { ticket: dropDialogTicket.id } }"
+		:default-waiting-hours="dropDialogTicket.default_waiting_hours"
+		@updated="isDropDialogSaved = true" />
+	<TicketStatusNoteDialog
+		v-if="dropDialogTicket"
+		v-model:visible="isDropStatusNoteOpen"
+		status="resolved"
+		:update-route="{ name: updateRoute, parameters: { ticket: dropDialogTicket.id } }"
+		:can-wait-for-deployment="dropDialogTicket.status !== 'pending_deploy'"
+		@updated="isDropDialogSaved = true" />
+	<TicketQuickLook v-model:ticket="quickLook" @closed="closeQuickLook" />
 </template>

@@ -68,6 +68,7 @@ export const layoutStructure = {
         id: number,
         email: string,
         username: string,
+        contact_name?: string,
         timezone: string | null,
         timezone_place: string | null,
         settings: {

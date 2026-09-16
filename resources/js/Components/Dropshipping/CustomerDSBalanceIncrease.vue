@@ -10,6 +10,7 @@ import { inject } from "vue"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faAsterisk } from "@fas"
+import { computed } from "vue"
 import { library } from "@fortawesome/fontawesome-svg-core"
 library.add(faAsterisk)
 
@@ -30,6 +31,11 @@ const amount = ref<number>(0)
 const privateNote = ref<string>("")
 const increaseReason = ref(null)
 const increaseType = ref(null)
+const issueCreditNote = ref(false)
+const requestedBy = ref<string>("")
+
+const creditNoteReasons = ['pay_for_shipping', 'pay_for_product', 'compensate_customer']
+const canIssueCreditNote = computed(() => creditNoteReasons.includes(increaseReason.value ?? ''))
 
 // const increase = ref([
 // 	{ name: "Pay for the shipping of a return", type: "pay_return" },
@@ -43,6 +49,8 @@ const resetForm = () => {
     privateNote.value = ""
     increaseReason.value = null
     increaseType.value = null
+    issueCreditNote.value = false
+    requestedBy.value = ""
 }
 
 const closeModal = () => {
@@ -60,6 +68,8 @@ const onSubmitIncrease = () => {
             notes: privateNote.value,
             reason: increaseReason.value,
             type: increaseType.value,
+            issue_credit_note: canIssueCreditNote.value && issueCreditNote.value,
+            requested_by: requestedBy.value || null,
         },
         {
             onStart: () => {
@@ -136,6 +146,25 @@ const onSubmitIncrease = () => {
                     xprefix="-"
                     fluid
                 />
+            </div>
+
+            <!-- Credit note -->
+            <div v-if="canIssueCreditNote" class="space-y-3">
+                <label class="flex items-center gap-2 text-gray-700 font-medium cursor-pointer">
+                    <input type="checkbox" v-model="issueCreditNote" class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
+                    {{ trans("Issue a credit note for this amount") }}
+                </label>
+                <div v-if="issueCreditNote">
+                    <label for="requestedBy" class="block text-gray-700 font-medium mb-2">
+                        {{ trans("Requested by") }}
+                    </label>
+                    <input
+                        v-model="requestedBy"
+                        id="requestedBy"
+                        type="text"
+                        :placeholder="trans('Name of the person who asked for this credit')"
+                        class="w-full border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                </div>
             </div>
 
             <!-- Note -->

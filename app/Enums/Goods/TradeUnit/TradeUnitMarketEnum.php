@@ -17,14 +17,16 @@ enum TradeUnitMarketEnum: string
 
     case UK = 'uk';
     case EU = 'eu';
-    case ES = 'es';
+    // case ES = 'es';
+    case OTHER = 'other';
 
     public static function labels(): array
     {
         return [
-            'uk' => __('UK'),
-            'eu' => __('EU'),
-            'es' => __('ES'),
+            'uk'    => __('UK'),
+            'eu'    => __('EU'),
+            // 'es' => __('ES'),
+            'other' => __('Other International Markets'),
         ];
     }
 

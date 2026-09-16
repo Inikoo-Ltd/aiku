@@ -165,6 +165,8 @@ use Spatie\Translatable\HasTranslations;
  * @property bool|null $is_description_title_reviewed
  * @property bool|null $is_description_reviewed
  * @property bool|null $is_description_extra_reviewed
+ * @property bool|null $is_gpsr_warnings_reviewed
+ * @property bool|null $is_gpsr_manual_reviewed
  * @property string|null $out_of_stock_since
  * @property string|null $back_in_stock_since
  * @property string|null $estimated_back_in_stock_at
@@ -287,7 +289,7 @@ class Product extends Model implements Auditable, HasMedia
 
     protected $guarded = [];
 
-    public array $translatable = ['name_i8n', 'description_i8n', 'description_title_i8n', 'description_extra_i8n'];
+    public array $translatable = ['name_i8n', 'description_i8n', 'description_title_i8n', 'description_extra_i8n', 'gpsr_warnings_i8n', 'gpsr_manual_i8n'];
 
 
     protected $casts = [

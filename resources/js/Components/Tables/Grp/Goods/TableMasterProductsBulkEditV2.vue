@@ -101,7 +101,7 @@ const EditorV2 = defineAsyncComponent(() => import("@/Components/Forms/Fields/Bu
 const RICH_TEXT_FIELDS: EditableField[] = ['description', 'description_extra']
 const RICH_TEXT_TOOLBAR = [
     'heading1', 'heading2', 'heading3',
-    'bold', 'italic', 'underline', 'fontSize', 'bulletList', 'fontFamily', 'blockquote', 'divider', 'orderedList', 'customLink', 'color', 'highlight', 'link', 'alignLeft', 'alignCenter', 'alignRight', 'clear', 'undo', 'redo',
+    'bold', 'italic', 'underline', 'fontSize', 'bulletList', 'fontFamily', 'blockquote', 'divider', 'orderedList', 'color', 'highlight', 'link', 'alignLeft', 'alignCenter', 'alignRight', 'clear', 'undo', 'redo',
 ]
 
 const activeEditorCell = ref<string | null>(null)

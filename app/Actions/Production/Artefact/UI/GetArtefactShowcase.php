@@ -10,6 +10,7 @@ namespace App\Actions\Production\Artefact\UI;
 
 use App\Actions\Production\Artefact\GetArtefactComplianceStatus;
 use App\Http\Resources\Production\ArtefactLabelResource;
+use App\Models\Inventory\OrgStock;
 use App\Models\Production\Artefact;
 use Lorisleiva\Actions\Concerns\AsObject;
 
@@ -54,8 +55,17 @@ class GetArtefactShowcase
                     'name'       => 'grp.models.artefact.labels.delete',
                     'parameters' => ['artefact' => $artefact->id]
                 ],
+                'publish_route' => [
+                    'name'       => 'grp.models.artefact.labels.publish',
+                    'parameters' => ['artefact' => $artefact->id]
+                ],
+                'unpublish_route' => [
+                    'name'       => 'grp.models.artefact.labels.unpublish',
+                    'parameters' => ['artefact' => $artefact->id]
+                ],
                 'batch_code'  => $this->getPlaceholderBatchCode($artefact),
                 'expiry_date' => $this->getPlaceholderExpiryDate(),
+                'barcode'     => $this->getBarcode($artefact),
                 'labels'      => ArtefactLabelResource::collection($artefact->labels()->with('artwork')->get())->resolve(),
             ],
             'trade_unit' => $artefact->tradeUnit ? [
@@ -67,6 +77,7 @@ class GetArtefactShowcase
                 'id'                     => $artefact->orgStock->id,
                 'code'                   => $artefact->orgStock->code,
                 'quantity_in_locations'  => (float) $artefact->orgStock->quantity_in_locations,
+                'route'                  => $this->getOrgStockRoute($artefact->orgStock),
             ] : null,
             'manufacture_tasks' => $artefact->manufactureTasks->map(fn ($task) => [
                 'id'                 => $task->id,
@@ -76,6 +87,47 @@ class GetArtefactShowcase
                 'units_per_artefact' => $task->pivot->units_per_artefact,
                 'task_work_cost'     => $task->task_work_cost,
             ]),
+        ];
+    }
+
+    /**
+     * The org stock lives in the warehouse section, only link to it for users allowed in there.
+     *
+     * @return array{name: string, parameters: array<string, int>}|null
+     */
+    private function getOrgStockRoute(OrgStock $orgStock): ?array
+    {
+        $user = request()->user();
+
+        if (!$user) {
+            return null;
+        }
+
+        $organisation  = $orgStock->organisation;
+        $warehouseIds  = $organisation->warehouses()->pluck('id')->toArray();
+
+        if (!$warehouseIds) {
+            return null;
+        }
+
+        $permissions = [
+            "inventory.{$organisation->id}.view",
+            "accounting.{$organisation->id}.view",
+        ];
+
+        foreach ($warehouseIds as $warehouseId) {
+            $permissions[] = "supervisor-stocks.$warehouseId.view";
+            $permissions[] = "stocks.$warehouseId.view";
+            $permissions[] = "fulfilment.view.$warehouseId.view";
+        }
+
+        if (!$user->authTo($permissions)) {
+            return null;
+        }
+
+        return [
+            'name'       => 'grp.majordomo.redirect_org_stock',
+            'parameters' => ['orgStock' => $orgStock->id],
         ];
     }
 
@@ -101,6 +153,21 @@ class GetArtefactShowcase
                 ? max($packedIn, (int) round($artefact->recommended_batch_size / $packedIn) * $packedIn)
                 : null,
         ];
+    }
+
+    /**
+     * The outer CODE 128 printed on the packing, falling back to the unit EAN13 for the org stocks
+     * that only carry that one.
+     */
+    private function getBarcode(Artefact $artefact): string
+    {
+        $orgStock = $artefact->orgStock;
+
+        if (!$orgStock) {
+            return '';
+        }
+
+        return $orgStock->barcode ?: ($orgStock->unit_barcode ?: '');
     }
 
     /**

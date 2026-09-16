@@ -66,6 +66,7 @@ class PickingSessionDeliveryNoteItemsStateUnassignedResource extends JsonResourc
             'org_stock_slug'                    => $this->org_stock_slug,
             'org_stock_code'                    => $this->org_stock_code,
             'org_stock_name'                    => $this->org_stock_name,
+            'replacement_reason_label'          => $this->replacement_reason?->label(),
             'barcode'                           => $this->barcode,
             'delivery_note_reference'           => $this->delivery_note_reference,
             'delivery_note_slug'                => $this->delivery_note_slug,

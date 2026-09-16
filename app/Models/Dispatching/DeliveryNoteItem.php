@@ -8,6 +8,7 @@
 
 namespace App\Models\Dispatching;
 
+use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemReplacementReasonEnum;
 use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemCancelStateEnum;
 use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemSalesTypeEnum;
 use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemStateEnum;
@@ -120,6 +121,7 @@ class DeliveryNoteItem extends Model
         'state'        => DeliveryNoteItemStateEnum::class,
         'sales_type'   => DeliveryNoteItemSalesTypeEnum::class,
         'cancel_state' => DeliveryNoteItemCancelStateEnum::class,
+        'replacement_reason' => DeliveryNoteItemReplacementReasonEnum::class,
 
         'date'                       => 'datetime',
         'composition_dirty_at'       => 'datetime',

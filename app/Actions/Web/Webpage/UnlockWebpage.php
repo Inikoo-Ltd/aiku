@@ -17,7 +17,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 /**
  * Unlocks a webpage. The previous lock and the unlock reason stay in lock_data so the audit
- * trail shows who unlocked it and why; a sysadmin override must give a reason.
+ * trail shows who unlocked it and why. Only the lock owner can unlock.
  */
 class UnlockWebpage extends OrgAction
 {

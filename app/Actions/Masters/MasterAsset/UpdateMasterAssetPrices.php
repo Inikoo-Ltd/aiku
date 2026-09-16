@@ -147,7 +147,7 @@ class UpdateMasterAssetPrices extends OrgAction
         return formatPrice((float)$value, 1, $fractionDigits, $increment);
     }
 
-    private function getMasterPricesAudit(array $masterPrices, string $type = 'Price'): array
+    public static function getMasterPricesAudit(array $masterPrices, string $type = 'Price'): array
     {
         $result = [];
 

@@ -16,6 +16,7 @@ use App\Models\Helpers\Country;
 use App\Actions\Goods\TradeUnit\StoreTradeUnit;
 use App\Actions\Goods\TradeUnit\UpdateTradeUnit;
 use App\Enums\Goods\TradeUnit\TradeUnitLabelPresenceEnum;
+use App\Enums\Goods\TradeUnit\TradeUnitMarketEnum;
 use App\Actions\Masters\MasterAsset\StoreMasterAsset;
 use App\Actions\Masters\MasterAsset\StoreMasterProductFromTradeUnits;
 use App\Actions\Masters\MasterAsset\UpdateMasterAsset;
@@ -194,28 +195,36 @@ test('markets and languages are saved into the trade unit label info and shown o
         'markets'   => [
             ['label' => 'UK', 'key' => 'uk', 'value' => false],
             ['label' => 'EU', 'key' => 'eu', 'value' => true],
-            ['label' => 'ES', 'key' => 'es', 'value' => 'true'],
+            ['label' => 'Other International Markets', 'key' => 'other', 'value' => 'true'],
         ],
         'languages' => ['en', 'fr'],
     ]);
 
     expect($this->bottle->refresh()->label_info)->toMatchArray([
-        'markets'   => ['eu', 'es'],
+        'markets'   => ['eu', 'other'],
         'languages' => ['en', 'fr'],
     ]);
 
     get(route('grp.trade_units.units.show', [$this->bottle->slug]))
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->where('showcase.label_info.markets.show', true)
-            ->where('showcase.label_info.markets.value', [['value' => 'eu', 'label' => 'EU'], ['value' => 'es', 'label' => 'ES']])
+            ->where('showcase.label_info.markets.value', [['value' => 'eu', 'label' => 'EU'], ['value' => 'other', 'label' => 'Other International Markets']])
             ->where('showcase.label_info.languages.show', true)
             ->where('showcase.label_info.languages.value', fn ($languages) => collect($languages)->pluck('code')->sort()->values()->all() === ['en', 'fr'])
             ->etc());
 });
 
-test('an unknown market is rejected', function () {
-    UpdateTradeUnit::make()->action($this->bottle, ['markets' => ['us']]);
-})->throws(Illuminate\Validation\ValidationException::class);
+test('an unknown market is rejected', function (string $market) {
+    UpdateTradeUnit::make()->action($this->bottle, ['markets' => [$market]]);
+})->with(['us', 'es'])->throws(Illuminate\Validation\ValidationException::class);
+
+test('the market checkboxes offer uk, eu and other international markets', function () {
+    expect(TradeUnitMarketEnum::checkboxValue(['other']))->toBe([
+        ['label' => 'UK', 'key' => 'uk', 'value' => false],
+        ['label' => 'EU', 'key' => 'eu', 'value' => false],
+        ['label' => 'Other International Markets', 'key' => 'other', 'value' => true],
+    ]);
+});
 
 test('a master product created from trade units starts with their label presence', function () {
     UpdateTradeUnit::make()->action($this->plug, ['ip_rating' => true]);
@@ -241,7 +250,7 @@ test('a master product created from trade units starts with their label presence
 
 test('a master keeps only the markets every trade unit shares and unions their languages', function () {
     UpdateTradeUnit::make()->action($this->bottle, ['markets' => ['uk', 'eu'], 'languages' => ['fr', 'en']]);
-    UpdateTradeUnit::make()->action($this->plug, ['markets' => ['eu', 'es', 'uk'], 'languages' => ['en', 'es']]);
+    UpdateTradeUnit::make()->action($this->plug, ['markets' => ['eu', 'other', 'uk'], 'languages' => ['en', 'es']]);
 
     expect($this->masterAsset->refresh()->label_info)->toMatchArray([
         'markets'   => ['uk', 'eu'],
@@ -252,7 +261,7 @@ test('a master keeps only the markets every trade unit shares and unions their l
             'languages' => ['en', 'es', 'fr'],
         ]);
 
-    UpdateTradeUnit::make()->action($this->plug, ['markets' => ['es']]);
+    UpdateTradeUnit::make()->action($this->plug, ['markets' => ['other']]);
 
     expect($this->masterAsset->refresh()->label_info['markets'])->toBe([])
         ->and($this->product->refresh()->label_info['markets'])->toBe([]);
@@ -513,6 +522,119 @@ test('best before is saved on the trade unit and flows down only when every trad
     expect($this->bottle->refresh()->label_info['best_before'])->toBeNull();
 });
 
+test('no expiry date stays on the showcase but is hidden from the product web block', function () {
+    UpdateTradeUnit::make()->action($this->bottle, ['best_before' => 'no_expiry_date']);
+    UpdateTradeUnit::make()->action($this->plug, ['best_before' => 'no_expiry_date']);
+
+    expect($this->product->refresh()->label_info['best_before'])->toBe('no_expiry_date');
+
+    get(route('grp.trade_units.units.show', [$this->bottle->slug]))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('showcase.label_info.best_before', ['show' => true, 'value' => ['value' => 'no_expiry_date', 'label' => 'No Expiry Date']])
+            ->etc());
+
+    $labelInfo = (new class () {
+        use HasWebBlockProductLabelInfo;
+
+        public function build($product): array
+        {
+            return $this->getProductLabelInfo($product);
+        }
+    })->build($this->product);
+
+    expect($labelInfo['best_before'])->toBe([
+        'show'  => false,
+        'label' => 'PAO / Expiry Date / Best Before',
+        'value' => null,
+    ]);
+});
+
 test('an unknown best before option is rejected', function () {
     UpdateTradeUnit::make()->action($this->bottle, ['best_before' => 'pao_36m']);
 })->throws(Illuminate\Validation\ValidationException::class);
+
+test('the label info approval is saved on the trade unit and shown on its showcase', function () {
+    expect(data_get($this->bottle->label_info, 'label_info_approved', false))->toBeFalse();
+
+    UpdateTradeUnit::make()->action($this->bottle, ['label_info_approved' => true]);
+
+    expect($this->bottle->refresh()->label_info['label_info_approved'])->toBeTrue();
+
+    get(route('grp.trade_units.units.show', [$this->bottle->slug]))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('showcase.label_info.label_info_approved.show', true)
+            ->etc());
+});
+
+test('the regulatory tab is only published when every trade unit of the product is approved', function () {
+    UpdateTradeUnit::make()->action($this->bottle, ['label_info_approved' => true]);
+
+    expect($this->masterAsset->refresh()->label_info['label_info_approved'])->toBeFalse()
+        ->and($this->product->refresh()->label_info['label_info_approved'])->toBeFalse();
+
+    UpdateTradeUnit::make()->action($this->plug, ['label_info_approved' => true]);
+
+    expect($this->masterAsset->refresh()->label_info['label_info_approved'])->toBeTrue()
+        ->and($this->product->refresh()->label_info['label_info_approved'])->toBeTrue();
+
+    get(route('grp.org.shops.show.catalogue.products.all_products.show', [
+        $this->organisation->slug,
+        $this->product->shop->slug,
+        $this->product->slug,
+    ]))->assertInertia(fn (AssertableInertia $page) => $page
+        ->where('showcase.label_info.label_info_approved.show', true)
+        ->etc());
+
+    UpdateTradeUnit::make()->action($this->plug, ['label_info_approved' => false]);
+
+    expect($this->masterAsset->refresh()->label_info['label_info_approved'])->toBeFalse()
+        ->and($this->product->refresh()->label_info['label_info_approved'])->toBeFalse();
+});
+
+test('an independent product takes the approval from its own trade units', function () {
+    $this->product->updateQuietly(['not_follow_master_trade_units' => true]);
+    $this->product->tradeUnits()->sync([$this->plug->id => ['quantity' => 1]]);
+
+    UpdateTradeUnit::make()->action($this->plug, ['label_info_approved' => true]);
+
+    expect($this->product->refresh()->label_info['label_info_approved'])->toBeTrue()
+        ->and($this->masterAsset->refresh()->label_info['label_info_approved'])->toBeFalse();
+});
+
+test('the product web block tells the website whether the label info is approved', function () {
+    $buildApproval = fn ($product) => (new class () {
+        use HasWebBlockProductLabelInfo;
+
+        public function build($product): bool
+        {
+            return $this->isProductLabelInfoApproved($product);
+        }
+    })->build($product);
+
+    expect($buildApproval($this->product->refresh()))->toBeFalse();
+
+    UpdateTradeUnit::make()->action($this->bottle, ['label_info_approved' => true]);
+    UpdateTradeUnit::make()->action($this->plug, ['label_info_approved' => true]);
+
+    expect($buildApproval($this->product->refresh()))->toBeTrue();
+});
+
+test('the trade unit edit form offers the publish toggle switched off by default', function () {
+    $publishToggle = fn ($blueprint) => data_get(
+        collect($blueprint)->firstWhere('label', 'Labeling & Compliance Marks'),
+        'fields.label_info_approved'
+    );
+
+    get(route('grp.trade_units.units.edit', [$this->bottle->slug]))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('formData.blueprint', fn ($blueprint) => data_get($publishToggle($blueprint), 'type') === 'toggle'
+                && data_get($publishToggle($blueprint), 'value') === false)
+            ->etc());
+
+    UpdateTradeUnit::make()->action($this->bottle, ['label_info_approved' => true]);
+
+    get(route('grp.trade_units.units.edit', [$this->bottle->refresh()->slug]))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('formData.blueprint', fn ($blueprint) => data_get($publishToggle($blueprint), 'value') === true)
+            ->etc());
+});

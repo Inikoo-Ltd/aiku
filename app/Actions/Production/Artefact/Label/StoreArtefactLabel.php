@@ -9,6 +9,7 @@
 namespace App\Actions\Production\Artefact\Label;
 
 use App\Actions\OrgAction;
+use App\Enums\Production\Artefact\ArtefactLabelStateEnum;
 use App\Http\Resources\Production\ArtefactLabelResource;
 use App\Models\Production\Artefact;
 use App\Models\Production\ArtefactLabel;
@@ -28,6 +29,7 @@ class StoreArtefactLabel extends OrgAction
             'organisation_id' => $artefact->organisation_id,
             'name'            => Arr::get($modelData, 'name'),
             'layout'          => $this->packLayout($modelData),
+            'state'           => ArtefactLabelStateEnum::RAW,
         ]);
 
         if ($artwork) {
