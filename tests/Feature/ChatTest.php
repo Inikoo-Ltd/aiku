@@ -57,6 +57,7 @@ use App\Actions\Chat\GetCustomerChatHistory;
 use App\Actions\Chat\MetaChatSession\AssignMetaChatToAgent;
 use App\Actions\Chat\MetaChatSession\StoreMetaChatSession;
 use App\Actions\Chat\MetaChatSession\UI\GetMetaChatSessions;
+use App\Actions\Comms\WhatsappCampaign\SendWhatsappDeliveryChannel;
 use App\Actions\Chat\MetaChatSession\UpdateMetaChatSession;
 use App\Actions\Catalogue\Shop\Seeders\SeedShopPermissions;
 use App\Actions\CRM\WebUser\StoreWebUser;
@@ -64,6 +65,7 @@ use App\Enums\CRM\Livechat\ChatActorTypeEnum;
 use App\Enums\CRM\Livechat\ChatAgentPresenceStatusEnum;
 use App\Enums\CRM\Livechat\ChatAssignmentAssignedByEnum;
 use App\Enums\CRM\Livechat\ChatAssignmentStatusEnum;
+use App\Enums\CRM\Livechat\ChatSessionClosedByTypeEnum;
 use App\Enums\CRM\Livechat\ChatEventTypeEnum;
 use App\Enums\CRM\Livechat\ChatMessageTypeEnum;
 use App\Enums\CRM\Livechat\ChatPriorityEnum;
@@ -3253,4 +3255,38 @@ test('inbound gmail message becomes an email chat session and the agent reply go
             && str_contains($raw, 'Subject: Re: Where is my order?');
     });
     expect(Arr::get($reply->fresh()->metadata, 'gmail_message_id'))->toBe('sent1');
+});
+
+test('a campaign send closes the promo-only session but leaves one an agent is handling open', function () {
+    $channel = MetaChannel::firstOrCreate(['code' => 'whatsapp'], ['name' => 'WhatsApp']);
+    $agent   = ChatAgent::where('user_id', $this->user->id)->first()
+        ?? StoreChatAgent::make()->handle(['user_id' => $this->user->id]);
+
+    $makeSession = fn (string $phone) => MetaChatSession::create([
+        'ulid'            => (string)Str::ulid(),
+        'meta_channel_id' => $channel->id,
+        'shop_id'         => $this->shop->id,
+        'phone_number'    => $phone,
+        'status'          => ChatSessionStatusEnum::ACTIVE,
+        'language_id'     => 68,
+        'priority'        => ChatPriorityEnum::NORMAL,
+    ]);
+
+    $promoOnly = $makeSession('+628444555777');
+    $handled   = $makeSession('+628444555778');
+    $handled->assignments()->create([
+        'meta_channel_id' => $channel->id,
+        'chat_agent_id'   => $agent->id,
+        'status'          => ChatAssignmentStatusEnum::ACTIVE->value,
+        'assigned_by'     => ChatAssignmentAssignedByEnum::AGENT->value,
+        'assigned_at'     => now(),
+    ]);
+
+    $sender = SendWhatsappDeliveryChannel::make();
+    $sender->parkSession($promoOnly);
+    $sender->parkSession($handled);
+
+    expect($promoOnly->fresh()->status)->toBe(ChatSessionStatusEnum::CLOSED)
+        ->and($promoOnly->fresh()->closed_by)->toBe(ChatSessionClosedByTypeEnum::SYSTEM)
+        ->and($handled->fresh()->status)->toBe(ChatSessionStatusEnum::ACTIVE);
 });

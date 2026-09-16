@@ -253,6 +253,15 @@ const senderLabel = computed(() => {
 // so it renders as the same chip the event stream uses.
 const isSystemNotice = computed(() => props.message.sender_type === "system")
 
+// To an agent a promotion is a footnote in the conversation, not part of it: it starts folded
+// to one line so the customer's own messages stand out, and opens on click.
+const isPromotionFolded = ref(props.viewerType === "agent" && props.message.sender_type === "system_campaign")
+const promotionLabel = computed(() =>
+    props.message.metadata?.template
+        ? `${trans("Promotion")}: ${props.message.metadata.template}`
+        : trans("Promotion")
+)
+
 // Quoting is opt-in: only channels that can carry a reply upstream ask for the button.
 const canReplyToMessage = computed(() => props.canReply === true && !!props.message.id)
 
@@ -708,6 +717,16 @@ watch(selectedLanguage, async (val) => {
 <template>
     <div v-if="isSystemNotice" class="w-full flex justify-center">
         <ChatTimelineEvent :event="{ description: displayText, created_at: message.created_at }" />
+    </div>
+
+    <div v-else-if="isPromotionFolded" class="w-full flex justify-end">
+        <button type="button"
+            class="flex items-center gap-1.5 rounded-full border border-gray-200 bg-gray-50 px-3 py-1 text-[11px] text-gray-500 hover:bg-gray-100"
+            @click="isPromotionFolded = false">
+            <FontAwesomeIcon :icon="faBullhorn" class="text-[10px]" />
+            <span class="max-w-[260px] truncate">{{ promotionLabel }}</span>
+            <span class="opacity-60">{{ time }}</span>
+        </button>
     </div>
 
     <div v-else class="flex flex-col w-full group/msg" :class="isFromViewer ? 'items-end' : 'items-start'">
