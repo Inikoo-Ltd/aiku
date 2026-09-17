@@ -53,11 +53,13 @@ class UpdateInProcessGoogleAdsCampaign extends OrgAction
             ]);
         }
 
-        $name = Arr::pull($modelData, 'name');
+        $name        = Arr::pull($modelData, 'name');
+        $channelType = Arr::pull($modelData, 'channel_type');
 
         $campaign->update(array_filter([
-            'name' => $name ? trim($name) : null,
-            'data' => array_merge($campaign->data ?? [], $modelData),
+            'name'         => $name ? trim($name) : null,
+            'channel_type' => $channelType,
+            'data'         => array_merge($campaign->data ?? [], $modelData),
         ]));
 
         return $campaign->refresh();
@@ -129,7 +131,13 @@ class UpdateInProcessGoogleAdsCampaign extends OrgAction
     public function rules(): array
     {
         return [
-            'name'          => ['sometimes', 'string', 'max:255'],
+            'name' => ['sometimes', 'string', 'max:255'],
+
+            /* Changeable for as long as the campaign is only in Aiku. Google will not turn a Search
+               campaign into a Performance Max one once it exists, which is why this is here and not on
+               the page a published campaign gets. */
+            'channel_type' => ['sometimes', Rule::in(StoreGoogleAdsCampaign::CHANNEL_TYPES)],
+
             'budget_amount' => ['sometimes', 'nullable', 'numeric', 'min:0.01', 'max:1000000'],
             'max_cpc'       => ['sometimes', 'nullable', 'numeric', 'min:0.01', 'max:1000000'],
             'target_cpa'    => ['sometimes', 'nullable', 'numeric', 'min:0.01', 'max:1000000'],

@@ -24,10 +24,9 @@ library.add(faGoogle)
 /**
  * A campaign that exists only in Aiku, and the page where it gets written.
  *
- * Everything is editable here rather than on the form that created it, because a campaign is not
- * something anybody fills in correctly in one sitting: the ad text gets rewritten, the images get
- * swapped, somebody else reads it before it goes live. The create form asks only for a name and a
- * type; this is where the campaign is actually built.
+ * Everything is editable here, the type included, because a campaign is not something anybody fills
+ * in correctly in one sitting: the ad text gets rewritten, the images get swapped, somebody else
+ * reads it before it goes live. The button that made it asked nothing at all.
  *
  * No figures, because nothing is running to have any. Those arrive with the metrics page once this
  * has been published and switched on.
@@ -44,6 +43,7 @@ const props = defineProps<{
     }
     campaign: { slug: string; name: string; channel_type: string; data: Record<string, any> }
     currency: string
+    campaign_types: { value: string; label: string; description: string }[]
     missing: string[]
     countries: { value: string; label: string }[]
     images?: { id: number; name: string; thumbnail: string }[]
@@ -55,14 +55,9 @@ const props = defineProps<{
 
 const data = props.campaign.data ?? {}
 
-const isSearch = computed(() => props.campaign.channel_type === "SEARCH")
-const isPmax = computed(() => props.campaign.channel_type === "PERFORMANCE_MAX")
-const isDisplay = computed(() => props.campaign.channel_type === "DISPLAY")
-const isDemandGen = computed(() => props.campaign.channel_type === "DEMAND_GEN")
-const needsLongHeadline = computed(() => isPmax.value || isDisplay.value)
-
 const form = useForm({
     name: props.campaign.name,
+    channel_type: props.campaign.channel_type,
     budget_amount: data.budget_amount ?? null,
     max_cpc: data.max_cpc ?? null,
     target_cpa: data.target_cpa ?? null,
@@ -81,6 +76,14 @@ const form = useForm({
     square_marketing_images: (data.square_marketing_images ?? []) as number[],
     logos: (data.logos ?? []) as number[],
 })
+
+/* Read from the form rather than from the campaign, so choosing a different type reshapes the page
+   under the cursor instead of after a save and a reload. */
+const isSearch = computed(() => form.channel_type === "SEARCH")
+const isPmax = computed(() => form.channel_type === "PERFORMANCE_MAX")
+const isDisplay = computed(() => form.channel_type === "DISPLAY")
+const isDemandGen = computed(() => form.channel_type === "DEMAND_GEN")
+const needsLongHeadline = computed(() => isPmax.value || isDisplay.value)
 
 const lines = (value: string): string[] => value.split("\n").map((line) => line.trim()).filter(Boolean)
 
@@ -187,7 +190,7 @@ const toggleImage = (role: string, id: number) => {
         <section class="rounded-xl bg-white p-5 ring-1 ring-gray-200 lg:col-span-3">
             <h2 class="text-sm font-medium text-gray-800">
                 {{ trans("Where this campaign stands") }}
-                <span class="font-normal text-gray-500">· {{ campaignTypeLabel(campaign.channel_type) }}</span>
+                <span class="font-normal text-gray-500">· {{ campaignTypeLabel(form.channel_type) }}</span>
             </h2>
 
             <div class="mt-4">
@@ -210,6 +213,31 @@ const toggleImage = (role: string, id: number) => {
             <h2 class="text-sm font-medium text-gray-800">{{ trans("The campaign") }}</h2>
 
             <div class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <fieldset class="sm:col-span-2">
+                    <legend class="text-xs text-gray-500">
+                        {{ trans("What kind of campaign") }}
+                        <HelpTip :text="trans('It decides everything asked below, so the page changes with it. Changeable until the campaign is published; after that Google will not turn one type into another.')" />
+                    </legend>
+
+                    <div class="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4">
+                        <button
+                            v-for="type in campaign_types"
+                            :key="type.value"
+                            type="button"
+                            :aria-pressed="form.channel_type === type.value"
+                            class="rounded-lg p-3 text-left transition focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+                            :class="form.channel_type === type.value ? 'bg-indigo-50 ring-1 ring-indigo-400' : 'ring-1 ring-gray-200 hover:bg-gray-50'"
+                            @click="form.channel_type = type.value">
+                            <span class="block text-sm font-medium text-gray-800">{{ type.label }}</span>
+                            <span class="mt-1 block text-xs text-gray-600">{{ type.description }}</span>
+                        </button>
+                    </div>
+
+                    <p class="mt-2 text-xs text-gray-500">
+                        {{ trans("Video and Shopping are missing on purpose. Google's API refuses to create a Video campaign, and a Shopping campaign needs a Merchant Center feed, so both are still built in Google Ads itself.") }}
+                    </p>
+                </fieldset>
+
                 <div class="sm:col-span-2">
                     <label for="c-name" class="block text-xs text-gray-500">{{ trans("Campaign name") }}</label>
                     <input id="c-name" v-model="form.name" type="text" class="mt-1 w-full rounded-md border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500" />

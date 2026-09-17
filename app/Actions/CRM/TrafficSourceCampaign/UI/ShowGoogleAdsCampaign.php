@@ -10,6 +10,7 @@ namespace App\Actions\CRM\TrafficSourceCampaign\UI;
 
 use App\Actions\CRM\TrafficSource\GetTrafficSourceAudienceMix;
 use App\Actions\CRM\TrafficSourceCampaign\GoogleAds\GetGoogleAdsSearchTerms;
+use App\Actions\CRM\TrafficSourceCampaign\GoogleAds\StoreGoogleAdsCampaign;
 use App\Actions\CRM\TrafficSourceCampaign\GoogleAds\StoreGoogleAdsImage;
 use App\Actions\CRM\TrafficSourceCampaign\GoogleAds\UpdateInProcessGoogleAdsCampaign;
 use App\Actions\Helpers\Country\UI\GetCountriesOptions;
@@ -209,6 +210,10 @@ class ShowGoogleAdsCampaign extends OrgAction
                     'data'         => $campaign->data ?? [],
                 ],
                 'currency'      => $this->shop->currency->code,
+
+                /* The type is picked here rather than before the campaign existed, and stays a choice
+                   for as long as nothing has been published: every field below it depends on it. */
+                'campaign_types' => StoreGoogleAdsCampaign::campaignTypes(),
 
                 /* What Google still needs before it would create this, so the page can say why the
                    publish button will refuse rather than leaving somebody to guess which box is

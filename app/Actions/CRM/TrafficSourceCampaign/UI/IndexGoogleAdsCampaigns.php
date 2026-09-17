@@ -70,6 +70,13 @@ class IndexGoogleAdsCampaigns extends OrgAction
                somebody opening this page needs to see. Falls back for rows fetched before Google
                started reporting it. */
             DB::raw("COALESCE(traffic_source_campaigns.data->>'primary_status', traffic_source_campaigns.data->>'status') as status"),
+
+            /* The day Google started running it, falling back to the day it was written in Aiku for one
+               that has never been sent. It belongs to the campaign rather than to the chosen period, so
+               it carries no suffix and is read once. Compared as text rather than cast to a timestamp:
+               the format already sorts end to end, and a cast would take the listing down over a single
+               odd value from some account. */
+            DB::raw("COALESCE(traffic_source_campaigns.data->>'start_date', to_char(traffic_source_campaigns.created_at, 'YYYY-MM-DD HH24:MI:SS')) as started_at"),
         ];
 
         $selectFields = array_merge($selectFields, $this->metricFields());
@@ -87,11 +94,15 @@ class IndexGoogleAdsCampaigns extends OrgAction
 
         return $queryBuilder
             ->select($selectFields)
-            ->defaultSort('-spend')
+            /* Newest first, the order every other marketing listing opens in. Sorting by spend put the
+               campaign somebody has just written, which has spent nothing, at the very bottom of the
+               page they were sent to it from. */
+            ->defaultSort('-started_at')
             ->allowedSorts(array_merge(
                 [
                     'name',
                     'status',
+                    'started_at',
                     'channel_type',
                     'budget_amount',
                     'impressions',
@@ -316,13 +327,18 @@ class IndexGoogleAdsCampaigns extends OrgAction
 
             /* Status leads, as an icon: in a list of forty campaigns the first question is which ones
                are not serving, and a column of words that mostly read "Eligible" answers it slower
-               than a column of shapes. The tooltip carries Google's own wording. */
+               than a column of shapes. The tooltip names it in words. */
             $table
-                ->column(key: 'status', label: '', icon: 'fal fa-signal-stream', tooltip: __('Whether Google is showing this campaign'), type: 'icon', canBeHidden: false, sortable: true)
+                ->column(key: 'status', label: '', icon: 'fal fa-signal-stream', tooltip: __('Where the campaign stands: still being written in Aiku, or what Google is doing with it'), type: 'icon', canBeHidden: false, sortable: true)
                 ->column(key: 'name', label: __('Campaign'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'channel_type', label: __('Type'), tooltip: __('Campaign type: Search, Performance Max, Demand Gen, Display, Shopping or Video'), canBeHidden: true, sortable: true, tooltipIcon: true);
+                ->column(key: 'channel_type', label: __('Type'), tooltip: __('Campaign type: Search, Performance Max, Demand Gen, Display, Shopping or Video'), canBeHidden: true, sortable: true, tooltipIcon: true)
 
-            /* Every figure is a number, so every one of these is right aligned; the two columns above
+                /* The table opens newest first, which only reads as an order if the date it is ordered
+                   by is on screen. A campaign still being written has no start at Google, so it shows
+                   the day it was written here, which is the day it belongs at the top for. */
+                ->column(key: 'started_at', label: __('Started'), tooltip: __('When Google started running this campaign. One still being written in Aiku shows when it was created.'), canBeHidden: true, sortable: true, align: 'right', tooltipIcon: true);
+
+            /* Every figure is a number, so every one of these is right aligned; the columns above
                hold words and stay left. */
             foreach ($this->metricColumns() as $key => $column) {
                 $table->column(
@@ -413,16 +429,18 @@ class IndexGoogleAdsCampaigns extends OrgAction
                     ],
                     'model' => __('Google Ads'),
 
-                    /* Offered only once the account can actually be reached: a create form that can
-                       only fail wastes the time of whoever fills it in. */
+                    /* Makes the campaign and opens it, with nothing asked first. Offered only once the
+                       account can actually be reached, because a campaign that can never be published
+                       is a row nobody wanted. */
                     'actions' => GoogleAdsClient::unreachableReason($this->shop) ? [] : [
                         [
                             'type'  => 'button',
                             'style' => 'create',
-                            'label' => __('New campaign'),
+                            'label' => __('Campaign'),
                             'route' => [
-                                'name'       => 'grp.org.shops.show.marketing.google_ads.create',
-                                'parameters' => $request->route()->originalParameters(),
+                                'method'     => 'post',
+                                'name'       => 'grp.models.org.shop.google_ads.campaign.store',
+                                'parameters' => ['organisation' => $this->organisation->id, 'shop' => $this->shop->id],
                             ],
                         ],
                     ],

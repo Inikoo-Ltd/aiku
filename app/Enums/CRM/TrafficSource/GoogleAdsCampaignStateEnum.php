@@ -41,9 +41,9 @@ enum GoogleAdsCampaignStateEnum: string
     public static function stateIcon(): array
     {
         return [
-            self::IN_PROCESS->value        => ['icon' => 'fal fa-pencil', 'class' => 'text-gray-400', 'tooltip' => __('Being written in Aiku, not at Google yet')],
+            self::IN_PROCESS->value        => ['icon' => 'fal fa-seedling', 'class' => 'text-indigo-500', 'tooltip' => __('In process, being written in Aiku and not at Google yet')],
             self::PUBLISHED_PAUSED->value  => ['icon' => 'fal fa-pause', 'class' => 'text-indigo-500', 'tooltip' => __('Created at Google and paused, spending nothing')],
-            self::PUBLISHED_SERVING->value => ['icon' => 'fal fa-play', 'class' => 'text-green-500', 'tooltip' => __('Running at Google')],
+            self::PUBLISHED_SERVING->value => ['icon' => 'fal fa-paper-plane', 'class' => 'text-green-600', 'tooltip' => __('Running at Google')],
         ];
     }
 

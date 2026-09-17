@@ -6,12 +6,12 @@
 <script setup lang="ts">
 import { computed } from "vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faPencil, faPause, faPlay } from "@fal"
+import { faSeedling, faPause, faPaperPlane } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { trans } from "laravel-vue-i18n"
 
-library.add(faPencil, faPause, faPlay)
+library.add(faSeedling, faPause, faPaperPlane)
 
 type Step = {
     key: string
