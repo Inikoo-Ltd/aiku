@@ -291,6 +291,10 @@ const setNewMarkerDate = (newVal: Date) => {
                     v-tooltip="trans('Dropshipping order, came in through a customer sales channel')"
                     class="rounded bg-fuchsia-100 border border-fuchsia-300 px-1 text-xs font-semibold text-fuchsia-700 leading-tight">DS</span>
 
+                <span v-if="order.handled_in_aurora"
+                    v-tooltip="trans('Submitted in Aurora: process it in Aurora, not here')"
+                    class="rounded bg-red-600 px-1.5 py-0.5 text-xs font-semibold text-white">Aurora</span>
+
                 <FontAwesomeIcon v-if="order.is_premium_dispatch" v-tooltip="trans('Premium dispatch')" icon="fas fa-star"
                                  class="text-yellow-500" fixed-width aria-hidden="true" />
                 <FontAwesomeIcon

@@ -99,6 +99,14 @@ class UpdateProfile extends OrgAction
             $chatTheme                           = Arr::pull($modelData, 'chat_theme');
             $modelData['settings']['chat_theme'] = $chatTheme;
         }
+
+        if (Arr::exists($modelData, 'chat_signature')) {
+            $signature = Arr::pull($modelData, 'chat_signature');
+            if ($user->chatAgent) {
+                $user->chatAgent->update(['signature' => $signature]);
+            }
+        }
+
         data_forget($modelData, 'image');
 
         $languageWasSubmitted = Arr::has($modelData, 'language_id');
@@ -150,6 +158,7 @@ class UpdateProfile extends OrgAction
             'language_id'       => ['sometimes', 'required', 'exists:languages,id'],
             'app_theme'         => ['sometimes', 'required'],
             'chat_theme'        => ['sometimes', 'nullable', Rule::in(['light', 'sky', 'blush', 'sand', 'mint', 'dracula', 'nord', 'gruvbox', 'monokai', 'onedark', 'solarized'])],
+            'chat_signature'    => ['sometimes', 'nullable', 'string', 'max:2000'],
             'hide_logo'         => ['sometimes', 'boolean'],
             'notifications'     => ['sometimes', 'array'],
             'notifications.*'   => ['array'],

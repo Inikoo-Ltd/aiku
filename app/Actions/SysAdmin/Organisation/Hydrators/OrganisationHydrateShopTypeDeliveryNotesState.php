@@ -96,6 +96,7 @@ class OrganisationHydrateShopTypeDeliveryNotesState implements ShouldBeUnique
             ->where('delivery_notes.organisation_id', $organisation->id)
             ->where('shops.type', $shopTypeEnum->value) // Use shops.type instead of delivery_notes.shop_type
             ->where('shops.is_aiku', true) // Todo: this hacks has to be deleted after we migrate from aurora
+            ->where('delivery_notes.handled_in_aurora', false)
             ->whereNull('delivery_notes.deleted_at');
 
         // Count for specific state

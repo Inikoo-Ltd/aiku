@@ -54,7 +54,7 @@ class GetMigrationOrgStockMovementAuditFromAurora
 
         $orgStockAuroraKey        = null;
         $auroraOrgStockSourceData = $locationOrgStock->orgStock->source_id;
-        if ($auroraLocationSourceData) {
+        if ($auroraOrgStockSourceData) {
             $sourceData        = explode(':', $auroraOrgStockSourceData);
             $orgStockAuroraKey = $sourceData[1];
         }
@@ -97,7 +97,7 @@ class GetMigrationOrgStockMovementAuditFromAurora
                         } elseif ($movement->{'Inventory Transaction Type'} == 'Associate' || $movement->{'Inventory Transaction Type'} == 'No Dispatched' || $movement->{'Inventory Transaction Type'} == 'FailSale' ||  $movement->{'Inventory Transaction Type'} == 'Order In Process' || $movement->{'Inventory Transaction Type'} == 'Audit') {
                             //
                         } else {
-                            dd($movement);
+                            $delta -= $movement->{'Inventory Transaction Quantity'};
                         }
                     }
                     //    $command->info(" >>> Stock    {$locationOrgStock->orgStock->slug} {$locationOrgStock->location->code}  : ".$delta);
@@ -181,6 +181,8 @@ class GetMigrationOrgStockMovementAuditFromAurora
                                 $date = '2026-07-10 10:50:00';
                             } elseif ($organisation->slug == 'aw') {
                                 $date = '2026-07-16 01:00:00';
+                            } elseif ($organisation->slug == 'aroma') {
+                                $date = '2026-09-17 02:30:00';
                             } else {
                                 abort('422');
                             }

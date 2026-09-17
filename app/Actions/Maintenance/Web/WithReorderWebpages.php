@@ -70,7 +70,7 @@ trait WithReorderWebpages
         $familiesBlock                  = $this->getWebpageBlocksByType($webpage, WebBlockTemplateEnum::FAMILIES->templateCodes())->first()?->model_has_web_blocks_id;
 
         $relatedProductCategoryBlock    = $this->getWebpageBlocksByType($webpage, 'recommendation-product-category-from-master')->first()?->model_has_web_blocks_id;
-        $luigiTrends                    = $this->getWebpageBlocksByType($webpage, 'luigi-trends-1')->first()?->model_has_web_blocks_id;
+        $trendsWebBlock                    = $this->getWebpageBlocksByType($webpage, 'luigi-trends-1')->first()?->model_has_web_blocks_id;
         $faqBlock                       = $this->getWebpageBlocksByType($webpage, 'faq-department')->first()?->model_has_web_blocks_id;
         $webBlocks                      = $webpage->webBlocks()->pluck('position', 'model_has_web_blocks.id')->toArray();
 
@@ -85,7 +85,7 @@ trait WithReorderWebpages
                 $webBlocks[$key] = 1;
             } elseif ($key == $topFamiliesBlock) {
                 $webBlocks[$key] = 2;
-            } elseif ($key == $luigiTrends) {
+            } elseif ($key == $trendsWebBlock) {
                 $webBlocks[$key] = 3;
             } elseif ($key == $subDepartmentBlock) {
                 $webBlocks[$key] = 4;

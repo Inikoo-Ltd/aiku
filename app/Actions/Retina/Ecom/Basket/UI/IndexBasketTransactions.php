@@ -80,10 +80,6 @@ class IndexBasketTransactions extends OrgAction
 
                 'webpages.id as webpage_id',
                 'webpages.canonical_url as webpage_canonical_url',
-                'webpages.website_id as webpage_website_id',
-                'webpages.group_id as webpage_group_id',
-                'webpages.organisation_id as webpage_organisation_id',
-                'webpages.shop_id as webpage_shop_id',
             ])
             ->selectRaw("'{$order->currency->code}'  as currency_code")
             ->selectRaw("'{$order->shop->type->value}'  as shop_type")

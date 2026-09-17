@@ -9,9 +9,13 @@
 namespace App\Actions\Dispatching\DeliveryNoteItem;
 
 use App\Actions\Dispatching\DeliveryNote\CalculateDeliveryNotePercentage;
+use App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStateToHandlingBlocked;
+use App\Actions\Dispatching\DeliveryNote\UpdateState\UndoSetAsPickedDeliveryNote;
+use App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStateToPicked;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
+use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemStateEnum;
 use App\Enums\Dispatching\Picking\PickingTypeEnum;
 use App\Models\Dispatching\DeliveryNoteItem;
@@ -21,6 +25,7 @@ class CalculateDeliveryNoteItemTotalPicked extends OrgAction
     use WithActionUpdate;
     use WithNoStrictRules;
     use WithDeliveryNoteItemNoStrictRules;
+    use WithScannedDeliveryNoteItemPicking;
 
     /**
      * Quantities are held to six decimals and a cut of a pack lands on a repeating decimal, so the
@@ -92,8 +97,59 @@ class CalculateDeliveryNoteItemTotalPicked extends OrgAction
             $dataToUpdate['state'] = DeliveryNoteItemStateEnum::HANDLING;
         }
 
+        /*
+         * Nobody sets a note as picked inside a picking session, so a line there is picked as soon
+         * as it is done: all of it picked or written off, nothing waiting.
+         */
+        $state          = $dataToUpdate['state'] ?? $deliveryNoteItem->state;
+        $isDoneInSession = $isCompleted && $totalWaiting == 0;
+        $isPickUndone    = false;
+        if ($deliveryNoteItem->picking_session_id && $state == DeliveryNoteItemStateEnum::HANDLING && $isDoneInSession) {
+            $dataToUpdate['state'] = DeliveryNoteItemStateEnum::PICKED;
+        } elseif ($deliveryNoteItem->picking_session_id && $state == DeliveryNoteItemStateEnum::PICKED && !$isDoneInSession) {
+            // A pick undone on a picked line puts it back to be picked.
+            $dataToUpdate['state'] = DeliveryNoteItemStateEnum::HANDLING;
+            $isPickUndone          = true;
+        }
+
         $deliveryNoteItem = $this->update($deliveryNoteItem, $dataToUpdate);
         $deliveryNoteItem->refresh();
+
+        /*
+         * Inside a picking session nobody sets the note as picked, so this is where it learns it is
+         * waiting: nothing left to pick on any line, but a line is parked as waiting. Done before
+         * the percentages so the picking session sees the note as blocked.
+         */
+        $deliveryNote = $deliveryNoteItem->deliveryNote;
+
+        // ...and takes its picked note back with it.
+        if ($isPickUndone && $deliveryNote->state == DeliveryNoteStateEnum::PICKED) {
+            UndoSetAsPickedDeliveryNote::make()->action($deliveryNote, null);
+            $deliveryNote->refresh();
+        }
+
+        if ($deliveryNote->state == DeliveryNoteStateEnum::HANDLING
+            && $deliveryNote->deliveryNoteItems()->where('state', DeliveryNoteItemStateEnum::HANDLING_BLOCKED)->exists()
+        ) {
+            $hasItemsLeftToPick = $deliveryNote->deliveryNoteItems()
+                ->where('state', '!=', DeliveryNoteItemStateEnum::CANCELLED)
+                ->get()
+                ->contains(fn (DeliveryNoteItem $item) => static::quantityLeftToPick($item) > 0);
+
+            if (!$hasItemsLeftToPick) {
+                UpdateDeliveryNoteStateToHandlingBlocked::make()->action($deliveryNote);
+            }
+        }
+
+        // ...and the note is picked once every line of it is.
+        if ($deliveryNoteItem->picking_session_id
+            && $deliveryNote->refresh()->state == DeliveryNoteStateEnum::HANDLING
+            && !$deliveryNote->deliveryNoteItems()
+                ->whereNotIn('state', [DeliveryNoteItemStateEnum::CANCELLED, DeliveryNoteItemStateEnum::PICKED])
+                ->exists()
+        ) {
+            UpdateDeliveryNoteStateToPicked::run($deliveryNote);
+        }
 
         CalculateDeliveryNotePercentage::make()->action($deliveryNoteItem->deliveryNote);
 

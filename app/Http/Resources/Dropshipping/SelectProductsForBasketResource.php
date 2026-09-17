@@ -32,15 +32,12 @@ class SelectProductsForBasketResource extends JsonResource
 {
     public function toArray($request): array
     {
-        $oldLuigiIdentity = $this->group_id.':'.$this->organisation_id.':'.$this->shop_id.':'.$this->website_id.':'.$this->webpage_id;
-
         return [
             'id'                 => $this->id,
             'slug'               => $this->slug,
             'code'               => $this->code,
             'name'               => $this->name,
             'image'              => Arr::get($this->web_images, 'main.gallery'),
-            'luigi_identity'     => $oldLuigiIdentity,
             'price'              => $this->price,
             'available_quantity' => $this->available_quantity,
             'transaction_id'     => $this->transaction_id,

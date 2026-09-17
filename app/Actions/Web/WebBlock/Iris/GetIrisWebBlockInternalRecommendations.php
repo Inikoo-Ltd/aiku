@@ -15,7 +15,7 @@ use App\Models\Web\Webpage;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsObject;
 
-class GetIrisWebBlockLuigiRecommendations
+class GetIrisWebBlockInternalRecommendations
 {
     use AsObject;
     use WithProductRecommendationScope;
@@ -28,7 +28,6 @@ class GetIrisWebBlockLuigiRecommendations
 
         if ($webpage->model instanceof Product) {
             data_set($webBlock, 'web_block.layout.data.fieldValue.product.id', $webpage->model->id);
-            data_set($webBlock, 'web_block.layout.data.fieldValue.product.luigi_identity', $webpage->model->getLuigiIdentity());
         }
 
         data_set($webBlock, 'web_block.layout.data.fieldValue.recommendation_scope', $this->getRecommendationScope($webpage));

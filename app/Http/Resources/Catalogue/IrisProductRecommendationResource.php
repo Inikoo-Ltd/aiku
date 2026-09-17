@@ -14,7 +14,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
 use App\Http\Resources\Traits\HasPriceMetrics;
 use Illuminate\Support\Arr;
 
-class IrisLuigiBoxRecommendationResource extends JsonResource
+class IrisProductRecommendationResource extends JsonResource
 {
     use HasSelfCall;
     use HasPriceMetrics;

@@ -9,6 +9,8 @@
 namespace App\Actions\Comms\Mailbox;
 
 use App\Enums\CRM\Livechat\ChatChannelEnum;
+use App\Enums\CRM\Livechat\ChatSenderTypeEnum;
+use App\Models\Chat\ChatAgent;
 use App\Models\Chat\ChatMessage;
 use App\Services\Gmail\GmailClient;
 use Illuminate\Support\Arr;
@@ -80,7 +82,16 @@ class SendChatMessageByGmail
         $headers[] = 'Content-Type: text/plain; charset=utf-8';
         $headers[] = 'Content-Transfer-Encoding: base64';
 
-        $body = chunk_split(base64_encode($chatMessage->message_text ?? ''));
+        $messageBody = $chatMessage->message_text ?? '';
+
+        if ($chatMessage->sender_type === ChatSenderTypeEnum::AGENT && $chatMessage->sender_id) {
+            $agent = ChatAgent::find($chatMessage->sender_id);
+            if ($agent && $agent->signature) {
+                $messageBody .= "\n\n".$agent->signature;
+            }
+        }
+
+        $body = chunk_split(base64_encode($messageBody));
 
         return implode("\r\n", $headers)."\r\n\r\n".$body;
     }

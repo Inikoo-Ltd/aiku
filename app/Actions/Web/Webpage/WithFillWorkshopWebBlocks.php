@@ -22,7 +22,7 @@ use App\Actions\Web\WebBlock\Workshop\GetWebBlockBlogList;
 use App\Actions\Web\WebBlock\Workshop\GetWebBlockDepartmentDescription;
 use App\Actions\Web\WebBlock\Workshop\GetWebBlockRecommendationsFromMaster;
 use App\Actions\Web\WebBlock\Workshop\GetWebBlockRecommendationsProductCategoriesFromMaster;
-use App\Actions\Web\WebBlock\Workshop\GetWebBlockLuigiRecommendations;
+use App\Actions\Web\WebBlock\Workshop\GetWebBlockInternalRecommendations;
 use App\Actions\Web\WebBlock\Workshop\GetWebBlockProduct;
 use App\Actions\Web\WebBlock\Workshop\GetWebBlockProducts;
 use App\Actions\Web\WebBlock\Workshop\GetWebBlockFamiliesFour;
@@ -106,7 +106,7 @@ trait WithFillWorkshopWebBlocks
                 unset($parsedWebBlocks[$key]);
             }
         } elseif (in_array($webBlockType, ['luigi-last-seen-1', 'luigi-item-alternatives-1'])) {
-            $parsedWebBlocks[$key] = GetWebBlockLuigiRecommendations::run($webpage, $webBlock);
+            $parsedWebBlocks[$key] = GetWebBlockInternalRecommendations::run($webpage, $webBlock);
         } elseif ($webBlockType == 'faq-department') {
             $webBlockData = GetFaqDepartment::run($webpage, $webBlock);
             if ($webBlockData) {

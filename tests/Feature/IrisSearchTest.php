@@ -226,12 +226,21 @@ test('changing the search engine breaks the cached storefront layout props', fun
     $this->website->update(['settings' => array_merge($this->website->settings, ['iris_search_model' => 'internal'])]);
 });
 
-test('luigi actions skip websites on internal search', function () {
+test('legacy search settings still use internal search', function () {
     $this->website->update(['settings' => array_merge($this->website->settings, ['iris_search_model' => 'luigi'])]);
-    expect($this->website->refresh()->usesLuigiSearch())->toBeTrue();
+    Http::preventStrayRequests();
+    Search::shouldRun()->once()->andReturn(irisSearchResults());
 
-    $this->website->update(['settings' => array_merge($this->website->settings, ['iris_search_model' => 'internal'])]);
-    expect($this->website->refresh()->usesLuigiSearch())->toBeFalse();
+    $this->getJson('http://'.$this->website->domain.'/json/search/catalogue?q=candles')
+        ->assertOk()
+        ->assertJsonPath('results.products', []);
+
+    $middleware = new class () {
+        use \App\Http\Middleware\WithIrisInertia;
+    };
+
+    Cache::flush();
+    expect($middleware->getIrisData($this->website->refresh())['iris_search_model'])->toBe('internal');
 });
 
 test('iris search only returns hits flagged is_in_website', function () {

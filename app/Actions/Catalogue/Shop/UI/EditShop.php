@@ -911,10 +911,10 @@ class EditShop extends OrgAction
                                 'type'  => 'button',
                                 'style' => 'save',
                                 'icon'  => ['fal', 'fa-envelope'],
-                                'label' => __('Connect Google mailbox'),
-                                'route' => [
-                                    'name'       => 'grp.org.shops.show.settings.mailbox.connect',
-                                    'parameters' => [$shop->organisation->slug, $shop->slug],
+                                'label'  => __('Connect Google mailbox'),
+                                'target' => '_self',
+                                'route'  => [
+                                    'url' => route('grp.org.shops.show.settings.mailbox.connect', [$shop->organisation->slug, $shop->slug]),
                                 ],
                             ],
                         ],

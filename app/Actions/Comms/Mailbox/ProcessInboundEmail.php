@@ -53,22 +53,22 @@ class ProcessInboundEmail
             return null;
         }
 
-        $webUser = $this->matchWebUser($shop, $from['address']);
-
-        if (! $webUser) {
-            // ponytail: unmatched senders stay in Gmail, classification comes with the AI phase
-            $client->addLabel($gmailMessageId, 'aiku/unmatched');
+        $blocked = Arr::get($shop->settings, 'gmail.blocked_senders', []);
+        if ($from['address'] && in_array(strtolower($from['address']), array_map('strtolower', $blocked), true)) {
+            $client->addLabel($gmailMessageId, 'aiku/spam');
 
             return null;
         }
+
+        $webUser = $this->matchWebUser($shop, $from['address']);
 
         $session = $this->findOrCreateSession($shop, $webUser, $threadId, $subject, $from);
 
         $message = SendChatMessage::run($session, [
             'message_text' => $body,
             'message_type' => ChatMessageTypeEnum::TEXT->value,
-            'sender_type'  => ChatSenderTypeEnum::USER->value,
-            'sender_id'    => $webUser->id,
+            'sender_type'  => $webUser ? ChatSenderTypeEnum::USER->value : ChatSenderTypeEnum::GUEST->value,
+            'sender_id'    => $webUser?->id,
         ]);
 
         $message->update([
@@ -82,10 +82,13 @@ class ProcessInboundEmail
         $session->update([
             'metadata' => array_merge($session->metadata ?? [], [
                 'gmail_last_header_message_id' => $headerMessageId,
+                'name' => $from['name'] ?? $from['address'],
+                'email' => $from['address'],
             ]),
         ]);
 
-        $client->addLabel($gmailMessageId, 'aiku/imported');
+        $label = $webUser ? 'aiku/imported' : 'aiku/unmatched';
+        $client->addLabel($gmailMessageId, $label);
 
         return $message;
     }
@@ -106,7 +109,7 @@ class ProcessInboundEmail
             ->first();
     }
 
-    private function findOrCreateSession(Shop $shop, WebUser $webUser, string $threadId, ?string $subject, array $from): ChatSession
+    private function findOrCreateSession(Shop $shop, ?WebUser $webUser, string $threadId, ?string $subject, array $from): ChatSession
     {
         $session = ChatSession::where('shop_id', $shop->id)
             ->where('channel', ChatChannelEnum::EMAIL)
@@ -121,12 +124,19 @@ class ProcessInboundEmail
                 ]);
             }
 
+            $session->update([
+                'metadata' => array_merge($session->metadata ?? [], [
+                    'name' => $from['name'] ?? $from['address'],
+                    'email' => $from['address'],
+                ]),
+            ]);
+
             return $session;
         }
 
         $session = StoreChatSession::run([
             'shop_id'             => $shop->id,
-            'trusted_web_user_id' => $webUser->id,
+            'trusted_web_user_id' => $webUser?->id,
             'language_id' => $shop->language_id,
             'priority'    => ChatPriorityEnum::NORMAL,
             'channel'     => ChatChannelEnum::EMAIL,
@@ -138,6 +148,8 @@ class ProcessInboundEmail
                 'email_subject'   => $subject,
                 'email_from'      => $from['address'],
                 'email_from_name' => $from['name'],
+                'name' => $from['name'] ?? $from['address'],
+                'email' => $from['address'],
             ]),
         ]);
 

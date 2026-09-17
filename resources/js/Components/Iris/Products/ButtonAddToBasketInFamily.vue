@@ -4,7 +4,7 @@ import { notify } from '@kyvg/vue3-notification'
 import { trans } from 'laravel-vue-i18n'
 import { InputNumber } from 'primevue'
 import { router } from '@inertiajs/vue3'
-import { inject, ref, watch, computed } from 'vue'
+import { ref, watch, computed } from 'vue'
 import { debounce, get, set } from 'lodash-es'
 import { ProductResource } from '@/types/Iris/Products'
 import axios from 'axios'
@@ -13,14 +13,12 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faTrashAlt, faShoppingCart, faTimes, faCartArrowDown } from "@fal"
 import { faCartPlus } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import ConditionIcon from '@/Components/Utils/ConditionIcon.vue'
 library.add(faTrashAlt, faShoppingCart, faTimes, faCartArrowDown, faCartPlus)
 
 const props = defineProps<{
     product: ProductResource
 }>()
-const layout = inject('layout', retinaLayoutStructure)
 
 const status = ref<null | 'loading' | 'success' | 'error'>(null)
 let statusTimeout: ReturnType<typeof setTimeout> | null = null
@@ -60,20 +58,6 @@ const onAddToBasket = async (product: ProductResource) => {
         product.quantity_ordered = response.data?.quantity_ordered
         setStatus('success')
 
-        // Luigi: event add to cart
-        const addToCartEcommerce = {
-            currency: layout?.iris?.currency?.code,
-            value: product.price,
-            items: [
-                {
-                    item_id: product?.luigi_identity,
-                }
-            ]
-        }
-        window?.dataLayer?.push({
-            event: "add_to_cart",
-            ecommerce: addToCartEcommerce,
-        })
 
     } catch (error: any) {
         setStatus('error')

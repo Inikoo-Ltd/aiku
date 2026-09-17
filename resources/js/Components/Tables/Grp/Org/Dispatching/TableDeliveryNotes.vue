@@ -316,6 +316,12 @@ const dateColumnOptions = computed(() => [
 					<Link :href="deliveryNoteHref(deliveryNote)" class="primaryLink">
 						{{ deliveryNote["reference"] }}
 					</Link>
+					<span
+						v-if="deliveryNote.handled_in_aurora"
+						v-tooltip="trans('Submitted in Aurora: process it in Aurora, not here')"
+						class="rounded bg-red-600 px-1.5 py-0.5 text-xs font-semibold text-white">
+						Aurora
+					</span>
 					<FontAwesomeIcon
 						v-if="deliveryNote.is_collection"
 						v-tooltip="ctrans('Collection')"
@@ -409,6 +415,7 @@ const dateColumnOptions = computed(() => [
 
 		<template #cell(action)="{ item: deliveryNote }">
 			<Button
+				v-if="!deliveryNote.handled_in_aurora"
 				@click="() => (isModalPick = deliveryNote)"
 				type="secondary"
 				:label="trans('Pick')"

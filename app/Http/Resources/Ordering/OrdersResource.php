@@ -125,6 +125,7 @@ class OrdersResource extends JsonResource
             'shop_slug'                   => $this->shop_slug,
             'created_at'                  => $this->created_at,
             'is_premium_dispatch'         => $this->is_premium_dispatch,
+            'handled_in_aurora'           => (bool)$this->handled_in_aurora,
             'has_extra_packing'           => $this->has_extra_packing,
             'has_insurance'               => $this->has_insurance,
             'is_dropshipping'             => $this->customer_sales_channel_id !== null,

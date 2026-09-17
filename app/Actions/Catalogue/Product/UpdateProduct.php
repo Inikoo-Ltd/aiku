@@ -308,7 +308,7 @@ class UpdateProduct extends OrgAction
         $isInStock = $product->available_quantity > 0;
 
 
-        $fieldsUsedInLuigi = [
+        $productContentFields = [
             'code',
             'name',
             'description',
@@ -320,7 +320,7 @@ class UpdateProduct extends OrgAction
 
 
         $fieldsUsedInWebpages = array_merge(
-            $fieldsUsedInLuigi,
+            $productContentFields,
             ['rrp', 'units', 'unit'],
             $this->getDangerousGoodsFieldNames(),
             $this->getProductInformationFieldNames()

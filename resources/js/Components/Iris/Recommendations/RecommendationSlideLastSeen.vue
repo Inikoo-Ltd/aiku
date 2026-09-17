@@ -2,7 +2,7 @@
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
-import { ProductHit } from '@/types/Luigi/LuigiTypes'
+import { RecommendationProduct } from '@/types/RecommendationProduct'
 /* import { faCircle } from '@fas'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { trans } from 'laravel-vue-i18n' */
@@ -15,7 +15,7 @@ import Image from "@common/Components/Image.vue"
 import NewAddToCartButton from '@/Components/CMS/Webpage/Products/NewAddToCartButton.vue' */
 
 const props = defineProps<{
-  product: ProductHit
+  product: RecommendationProduct
   isProductLoading: (productId: string) => boolean
 }>()
 

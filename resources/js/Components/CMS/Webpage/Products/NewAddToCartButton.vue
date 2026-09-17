@@ -209,20 +209,6 @@ const onAddToBasket = async (product: ProductResource, basket: any) => {
         basket.quantity_ordered = response.data?.quantity_ordered
         setStatus('success')
 
-        // Luigi: event add to cart
-        const addToCartEcommerce = {
-            currency: layout?.iris?.currency?.code,
-            value: product.price,
-            items: [
-                {
-                    item_id: product?.luigi_identity,
-                }
-            ]
-        }
-        window?.dataLayer?.push({
-            event: "add_to_cart",
-            ecommerce: addToCartEcommerce,
-        })
 
         pushAddToCart(response.data?.quantity_ordered ?? get(basket, ['quantity_ordered_new'], 0))
 

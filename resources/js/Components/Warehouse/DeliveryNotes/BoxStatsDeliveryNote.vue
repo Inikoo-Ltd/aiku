@@ -283,7 +283,7 @@ const isDimensionMissing = (dimension) => isDimensionsRequired.value && !(Number
 const isParcelMissingDimensions = (parcel) => [0, 1, 2].some(index => isDimensionMissing(parcel.dimensions?.[index]))
 const hasMissingDimensions = computed(() => parcelsCopy.value.some(isParcelMissingDimensions))
 const isParcelsMissingForPacking = computed(() => isDimensionsRequired.value
-    && ['handling', 'packing'].includes(props.deliveryNote?.state)
+    && ['handling', 'picked', 'packing'].includes(props.deliveryNote?.state)
     && !(props.boxStats?.parcels?.length))
 
 const onSubmitParcels = () => {

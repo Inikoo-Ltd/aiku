@@ -29,6 +29,7 @@ use Illuminate\Support\Carbon;
  * @property int $current_chat_count
  * @property array<array-key, mixed>|null $specialization
  * @property bool $auto_accept
+ * @property string|null $signature
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property Carbon|null $deleted_at

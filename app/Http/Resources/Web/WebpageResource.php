@@ -47,7 +47,6 @@ class WebpageResource extends JsonResource
                 'slug'           => $product->slug,
                 'code'           => $product->code,
                 'name'           => $product->name,
-                'luigi_identity' => $product->getLuigiIdentity(),
             ];
             $department = [
                 'webpage_title' => $webpage->model?->family?->department?->webpage?->title,

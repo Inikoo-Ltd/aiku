@@ -321,7 +321,7 @@ const onHideStepsPopover = () => {
                     <FontAwesomeIcon icon="fal fa-plus-circle" fixed-width />
                 </span>
 
-                <span class="text-[8px] sm:text-[9px] md:text-[10px] text-[#E87928] border-[#E87928] font-bold">
+                <span class="text-[8px] sm:text-[9px] md:text-[10px] text-primary border-primaryfont-bold">
                     {{ trans('RRP') }}:
                     <span class="font-bold">
                         {{ locale.currencyFormatRrp(currency?.code, product?.rrp_per_unit) }}

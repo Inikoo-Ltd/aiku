@@ -139,6 +139,19 @@ class EditProfile
                             ],
                         ],
                     ],
+                    ...$user->chatAgent ? [
+                        [
+                            'label'  => __('Email signature'),
+                            'icon'   => 'fal fa-envelope',
+                            'fields' => [
+                                'chat_signature' => [
+                                    'type'  => 'textarea',
+                                    'label' => __('Signature used on email replies'),
+                                    'value' => $user->chatAgent->signature,
+                                ],
+                            ],
+                        ],
+                    ] : [],
                     ...EditProfileSettings::make()->generateBlueprint($user)['formData']['blueprint'],
                 ],
                 "args"      => [
