@@ -686,7 +686,7 @@ onUnmounted(() => {
 
                     <Button
                         v-if="
-                            pickingSession.state === 'picking_finished'
+                            (pickingSession.state === 'picking_finished' || (pickingSession.state === 'handling_blocked'))
                             && ['handling', 'picked'].includes(deliveryItem.delivery_note_state)
                             && !deliveryItem.delivery_note_has_waiting_items
                         "
@@ -927,7 +927,7 @@ onUnmounted(() => {
 
             <Button
                 v-if="
-                    pickingSession.state === 'picking_finished'
+                    (pickingSession.state === 'picking_finished' || (pickingSession.state === 'handling_blocked'))
                     && (
                         itemValue.delivery_note_state === 'handling'
                         || itemValue.delivery_note_state === 'picked'

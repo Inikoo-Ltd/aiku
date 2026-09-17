@@ -8,6 +8,7 @@
 
 namespace App\Actions\Web\WebBlock\Iris;
 
+use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Http\Resources\Web\WebBlockCollectionResource;
@@ -46,6 +47,10 @@ class GetIrisWebBlockSubDepartments
                 ]
             )
             ->where('product_categories.type', ProductCategoryTypeEnum::SUB_DEPARTMENT)
+            ->whereIn('product_categories.state', [
+                ProductCategoryStateEnum::ACTIVE,
+                ProductCategoryStateEnum::DISCONTINUING
+            ])
             ->where('product_categories.show_in_website', true)
             ->whereNotNull('webpages.id')
             ->where('webpages.state', WebpageStateEnum::LIVE->value)
