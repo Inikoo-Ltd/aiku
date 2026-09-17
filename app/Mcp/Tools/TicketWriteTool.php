@@ -13,6 +13,7 @@ use App\Actions\Helpers\Ticket\StoreTicketComment;
 use App\Actions\Helpers\Ticket\UpdateTicket;
 use App\Http\Resources\Helpers\TicketResource;
 use App\Enums\Helpers\Ticket\TicketKindEnum;
+use App\Enums\Helpers\Ticket\TicketTypeEnum;
 use App\Models\Helpers\Ticket;
 use Illuminate\Validation\Rule;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
@@ -21,7 +22,7 @@ use Laravel\Mcp\Response;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
 
-#[Description('Change a ticket or create a help ticket. With a reference: add a comment (posted as you; internal=true keeps it visible to the help desk only, for technical notes: ids repaired, commands run, root cause), rewrite subject or description, change status (open, in_progress, waiting with optional waiting_hours, resolved, cancelled), priority, assignee (username), kind, module or tags. Without a reference: creates a new HELP ticket with subject, and optional description, kind, module, priority. Every change is recorded as the authenticated user, or as the user named in acting_as when a help desk supervisor passes it. Only engineers, lead engineers and QA can use it.')]
+#[Description('Change a ticket or create a help ticket. With a reference: add a comment (posted as you; internal=true keeps it visible to the help desk only, for technical notes: ids repaired, commands run, root cause), rewrite subject or description, change status (open, in_progress, waiting with optional waiting_hours, resolved, cancelled), priority, assignee (username), kind, module or tags. Without a reference: creates a new HELP ticket (or an INI engineer ticket with type=engineer) with subject, and optional description, kind, module, priority. Every change is recorded as the authenticated user, or as the user named in acting_as when a help desk supervisor passes it. Only engineers, lead engineers and QA can use it.')]
 class TicketWriteTool extends Tool
 {
     public function shouldRegister(Request $request): bool
@@ -41,6 +42,7 @@ class TicketWriteTool extends Tool
             'priority'    => ['sometimes', 'in:low,normal,high,urgent'],
             'assignee'    => ['sometimes', 'nullable', 'string'],
             'kind'        => ['sometimes', 'nullable', Rule::enum(TicketKindEnum::class)],
+            'type'        => ['sometimes', 'nullable', 'in:help,engineer'],
             'module'      => ['sometimes', 'nullable', 'string'],
             'tags'        => ['sometimes', 'array'],
             'tags.*'      => ['string', 'max:64'],
@@ -63,9 +65,14 @@ class TicketWriteTool extends Tool
         }
 
         if (!$request->filled('reference')) {
+            if ($request->get('type') === TicketTypeEnum::ENGINEER->value && !Ticket::canChooseType($user)) {
+                return Response::error('Only the help desk and QA can raise engineer (INI) tickets.');
+            }
+
             $ticket = StoreTicket::make()->action($user->group, array_filter([
                 'subject'       => $request->string('subject')->toString(),
                 'description'   => $request->get('description'),
+                'type'          => $request->get('type'),
                 'kind'          => $request->get('kind', 'bug'),
                 'module'        => $request->get('module'),
                 'priority'      => $request->get('priority'),
@@ -150,6 +157,7 @@ class TicketWriteTool extends Tool
             'status'      => $schema->string()->description('open, in_progress, waiting, resolved, pending_deploy or cancelled. pending_deploy = close after next deployment (fix already on main): the comment is held and posted when the deployment closes the ticket'),
             'priority'    => $schema->string()->description('low, normal, high or urgent'),
             'assignee'    => $schema->string()->description('Username to assign, empty string to unassign'),
+            'type'        => $schema->string()->description('New tickets only: help (HELP-n, default) or engineer (INI-n, engineering work such as upgrades, refactors and tech debt)'),
             'kind'        => $schema->string()->description('escalation, bug, feature, task (engineer to engineer) or qa (engineer to QA)'),
             'module'      => $schema->string()->description('Aiku module slug, e.g. dispatching'),
             'tags'        => $schema->array()->description('Full tag list to set, e.g. ["not a bug"]')->items($schema->string()),

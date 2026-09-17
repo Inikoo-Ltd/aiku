@@ -698,6 +698,13 @@ test('confidential tickets are only visible to reporter, assignee and lead engin
     post(route('grp.models.ticket.comment.store', $ticket->id), ['body' => 'on it'])->assertRedirect();
 });
 
+test('assistant raises an engineer ticket with the INI prefix through MCP', function () {
+    AikuServer::actingAs($this->user)->tool(TicketWriteTool::class, ['subject' => 'Bump Shopify API version', 'type' => 'engineer', 'kind' => 'task'])->assertOk();
+    $ticket = Ticket::where('subject', 'Bump Shopify API version')->firstOrFail();
+    expect($ticket->type)->toBe(TicketTypeEnum::ENGINEER)
+        ->and($ticket->reference)->toStartWith('INI-');
+});
+
 test('assistant raises, lists, works and closes a ticket through MCP', function () {
     $created = AikuServer::actingAs($this->user)->tool(TicketWriteTool::class, ['subject' => 'Picking screen freezes', 'module' => 'dispatching', 'priority' => 'high']);
     $created->assertOk();
