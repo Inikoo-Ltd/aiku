@@ -687,7 +687,7 @@ onUnmounted(() => {
                     <Button
                         v-if="
                             pickingSession.state === 'picking_finished'
-                            && deliveryItem.delivery_note_state === 'handling'
+                            && ['handling', 'picked'].includes(deliveryItem.delivery_note_state)
                             && !deliveryItem.delivery_note_has_waiting_items
                         "
                         type="save"
@@ -930,6 +930,7 @@ onUnmounted(() => {
                     pickingSession.state === 'picking_finished'
                     && (
                         itemValue.delivery_note_state === 'handling'
+                        || itemValue.delivery_note_state === 'picked'
                         || itemValue.delivery_note_state === 'packing'
                     )
                     && !itemValue.delivery_note_has_waiting_items

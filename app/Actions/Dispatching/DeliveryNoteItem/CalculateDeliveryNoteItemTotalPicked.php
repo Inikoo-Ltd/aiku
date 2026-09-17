@@ -10,6 +10,7 @@ namespace App\Actions\Dispatching\DeliveryNoteItem;
 
 use App\Actions\Dispatching\DeliveryNote\CalculateDeliveryNotePercentage;
 use App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStateToHandlingBlocked;
+use App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStateToPicked;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
@@ -95,6 +96,15 @@ class CalculateDeliveryNoteItemTotalPicked extends OrgAction
             $dataToUpdate['state'] = DeliveryNoteItemStateEnum::HANDLING;
         }
 
+        /*
+         * Nobody sets a note as picked inside a picking session, so a line there is picked as soon
+         * as it is done: all of it picked or written off, nothing waiting.
+         */
+        $state = $dataToUpdate['state'] ?? $deliveryNoteItem->state;
+        if ($deliveryNoteItem->picking_session_id && $state == DeliveryNoteItemStateEnum::HANDLING && $isCompleted && $totalWaiting == 0) {
+            $dataToUpdate['state'] = DeliveryNoteItemStateEnum::PICKED;
+        }
+
         $deliveryNoteItem = $this->update($deliveryNoteItem, $dataToUpdate);
         $deliveryNoteItem->refresh();
 
@@ -115,6 +125,16 @@ class CalculateDeliveryNoteItemTotalPicked extends OrgAction
             if (!$hasItemsLeftToPick) {
                 UpdateDeliveryNoteStateToHandlingBlocked::make()->action($deliveryNote);
             }
+        }
+
+        // ...and the note is picked once every line of it is.
+        if ($deliveryNoteItem->picking_session_id
+            && $deliveryNote->refresh()->state == DeliveryNoteStateEnum::HANDLING
+            && !$deliveryNote->deliveryNoteItems()
+                ->whereNotIn('state', [DeliveryNoteItemStateEnum::CANCELLED, DeliveryNoteItemStateEnum::PICKED])
+                ->exists()
+        ) {
+            UpdateDeliveryNoteStateToPicked::run($deliveryNote);
         }
 
         CalculateDeliveryNotePercentage::make()->action($deliveryNoteItem->deliveryNote);

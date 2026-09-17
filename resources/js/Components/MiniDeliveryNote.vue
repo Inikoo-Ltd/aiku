@@ -223,7 +223,7 @@ onMounted(() => {
             <Button v-if="props.deliveryNote?.delivery_note_id && props.deliveryNote.delivery_note_state === 'packed'"
                 type="save" label="Finalise and Dispatch" :loading="loadingFinal" @click="handleFinaliseAndDispatch" />
 
-            <Button v-if="props.deliveryNote?.delivery_note_id && (props.deliveryNote.delivery_note_state === 'handling' || props.deliveryNote.delivery_note_state === 'packing')"
+            <Button v-if="props.deliveryNote?.delivery_note_id && (props.deliveryNote.delivery_note_state === 'handling' || props.deliveryNote.delivery_note_state === 'picked' || props.deliveryNote.delivery_note_state === 'packing')"
                 type="save" label="Set as packed" size="sm" class="mx-3" :loading="loadingFinal"
                 @click="handleSetAsPacked" />
         </template>

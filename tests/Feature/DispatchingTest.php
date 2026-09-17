@@ -2039,6 +2039,41 @@ test('picking waiting warehouse and crm flow', function () {
     expect($sentBack->has_waiting_crm)->toBeFalse();
 });
 
+test('picking the last of a line in a picking session sets the line and its note as picked', function () {
+    [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($this, 6);
+    $deliveryNote->update(['state' => DeliveryNoteStateEnum::UNASSIGNED]);
+
+    $pickingSession = StorePickingSession::make()->handle($this->warehouse, [
+        'delivery_notes' => [$deliveryNote->id],
+        'user_id'        => $this->user->id,
+    ]);
+    $pickingSession = StartPickPickingSession::run($pickingSession, []);
+
+    // The shared order can bring lines of its own; this is about the one line being picked.
+    $deliveryNote->deliveryNoteItems()->where('id', '!=', $item->id)->update(['state' => DeliveryNoteItemStateEnum::CANCELLED]);
+
+    StorePicking::make()->action($item->refresh(), $this->user, [
+        'picker_user_id'        => $this->user->id,
+        'location_org_stock_id' => $item->orgStock->locationOrgStocks()->first()->id,
+        'quantity'              => 3,
+    ]);
+
+    // Still one to go: nothing moves yet.
+    expect($item->refresh()->state)->toBe(DeliveryNoteItemStateEnum::HANDLING)
+        ->and($deliveryNote->refresh()->state)->toBe(DeliveryNoteStateEnum::HANDLING);
+
+    StorePicking::make()->action($item->refresh(), $this->user, [
+        'picker_user_id'        => $this->user->id,
+        'location_org_stock_id' => $item->orgStock->locationOrgStocks()->first()->id,
+        'quantity'              => 1,
+    ]);
+
+    expect($item->refresh()->state)->toBe(DeliveryNoteItemStateEnum::PICKED)
+        ->and($deliveryNote->refresh()->state)->toBe(DeliveryNoteStateEnum::PICKED)
+        ->and($pickingSession->refresh()->state)->toBe(PickingSessionStateEnum::PICKING_FINISHED)
+        ->and($pickingSession->is_waiting_ready)->toBeFalse();
+});
+
 test('picking session waits on a waiting note and is flagged once the wait is picked', function () {
     $settings = $this->organisation->settings;
     data_set($settings, 'orders.allow_waiting', true);
@@ -2076,6 +2111,7 @@ test('picking session waits on a waiting note and is flagged once the wait is pi
     );
 
     expect($deliveryNote->refresh()->state)->toBe(DeliveryNoteStateEnum::PICKED)
+        ->and($item->refresh()->state)->toBe(DeliveryNoteItemStateEnum::PICKED)
         ->and($pickingSession->refresh()->state)->toBe(PickingSessionStateEnum::PICKING_FINISHED)
         ->and($pickingSession->is_waiting_ready)->toBeTrue();
 
