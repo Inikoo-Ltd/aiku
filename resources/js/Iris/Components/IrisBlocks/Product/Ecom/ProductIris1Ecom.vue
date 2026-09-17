@@ -681,7 +681,7 @@ onMounted(async () => {
                     {{ product.code }}
                 </span>
 
-                <span v-if="!layout?.iris?.is_logged_in" class="text-primary font-semibold">
+                <span v-if="!layout?.iris?.is_logged_in && product.rrp_per_unit > 0" class="text-primary font-semibold">
                     RRP : {{ locale.currencyFormatRrp(layout?.iris?.currency?.code, product?.rrp_per_unit) }} / {{
                     product.unit }}
                 </span>

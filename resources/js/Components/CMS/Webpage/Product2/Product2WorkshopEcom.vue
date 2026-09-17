@@ -322,10 +322,12 @@ defineOptions({
                     </div>
 
                     <div class="text-right">
-                        <p class="text-xs text-black leading-tight">{{ trans("Retail Price") }}:</p>
-                        <p class="text-xs text-black leading-tight line-through">
-                            {{ locale.currencyFormatRrp(currency?.code, product.rrp_per_unit || 0) }}/{{ product.unit }}
-                        </p>
+                        <template v-if="product.rrp_per_unit > 0">
+                            <p class="text-xs text-black leading-tight">{{ trans("Retail Price") }}:</p>
+                            <p class="text-xs text-black leading-tight line-through">
+                                {{ locale.currencyFormatRrp(currency?.code, product.rrp_per_unit || 0) }}/{{ product.unit }}
+                            </p>
+                        </template>
 
                         <p class="mt-2 text-xs text-black leading-tight">{{ trans("Profit") }}:</p>
                         <div class="flex items-baseline justify-end gap-1 text-black">
@@ -568,10 +570,12 @@ defineOptions({
                 </div>
 
                 <div class="text-right">
-                    <p class="text-xs text-black leading-tight">{{ trans("Retail Price") }}:</p>
-                    <p class="text-xs text-black leading-tight line-through">
-                        {{ locale.currencyFormatRrp(currency?.code, product.rrp_per_unit || 0) }}/{{ product.unit }}
-                    </p>
+                    <template v-if="product.rrp_per_unit > 0">
+                        <p class="text-xs text-black leading-tight">{{ trans("Retail Price") }}:</p>
+                        <p class="text-xs text-black leading-tight line-through">
+                            {{ locale.currencyFormatRrp(currency?.code, product.rrp_per_unit || 0) }}/{{ product.unit }}
+                        </p>
+                    </template>
 
                     <p class="mt-2 text-xs text-black leading-tight">{{ trans("Profit") }}:</p>
                     <div class="flex items-baseline justify-end gap-1 text-black">

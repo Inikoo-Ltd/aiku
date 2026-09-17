@@ -32,7 +32,7 @@ const bestOffer = computed(() => {
 
         </div>
 
-        <div class="col-span-2 text-right space-y-1.5">
+        <div v-if="product?.rrp_per_unit > 0" class="col-span-2 text-right space-y-1.5">
             <div class="border-b border-gray-300 pb-1">
                 <span v-tooltip="trans('Recommended Retail Price')" class="inline-block">{{ trans("RRP") }}
 
@@ -63,7 +63,7 @@ const bestOffer = computed(() => {
         </div>
 
         <!-- Section: RRP (Excl. Tax) -->
-        <div class="col-span-2 text-right space-y-1.5">
+        <div v-if="product?.rrp_per_unit > 0" class="col-span-2 text-right space-y-1.5">
             <div class="">
                 <span class="">
                     {{ locale.currencyFormatRrp(currency?.code, product.rrp_per_unit || 0) }}

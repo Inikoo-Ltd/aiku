@@ -141,7 +141,7 @@ const _popoverProfit = ref(null)
 
         <!-- HEADER -->
         <div class="border-b pb-2 mb-2 flex flex-col sm:flex-row sm:items-center justify-between gap-1 whitespace-nowrap text-[9px] sm:text-[10px] md:text-[11px]"
-            v-if="product?.rrp_per_unit ?? 0 > 0">
+            v-if="(product?.rrp_per_unit ?? 0) > 0">
 
             <div class="flex items-baseline gap-1 leading-none">
                 <span class="text-xs">

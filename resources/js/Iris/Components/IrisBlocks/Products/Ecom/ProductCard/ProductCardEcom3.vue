@@ -365,7 +365,7 @@ defineExpose({
             <section v-else class="text-xs leading-tight space-y-1">
 
                 <!-- CODE + RRP + V2-->
-                <div class="flex items-center text-gray-600 text-[10px] 2xl:text-xs py-1 min-w-0">
+                <div v-if="product.rrp_per_unit > 0" class="flex items-center text-gray-600 text-[10px] 2xl:text-xs py-1 min-w-0">
                     <!-- RRP + UNIT  -->
                     <span class="truncate min-w-0 overflow-hidden text-primary">
                      {{ trans(screenType === 'mobile' ? 'RRP' : 'Recommended retail price') }} : {{ locale.currencyFormatRrp(currency?.code, product.rrp_per_unit) }}/{{ product.unit }}

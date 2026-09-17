@@ -95,6 +95,11 @@ class GetWebBlockFamiliesOverview
 
         $permissions = [];
 
+     
+
+        if ($webpage->sub_type == WebpageSubTypeEnum::COLLECTION) {
+            $permissions = ['hidden'];
+        }
         data_set($webBlock, 'web_block.layout.data.permissions', $permissions);
         data_set($webBlock, 'web_block.layout.data.fieldValue', $webpage->website->published_layout['families_overview']['data']['fieldValue'] ?? []);
         data_set($webBlock, 'web_block.layout.data.fieldValue.products_route', $productRoute);
