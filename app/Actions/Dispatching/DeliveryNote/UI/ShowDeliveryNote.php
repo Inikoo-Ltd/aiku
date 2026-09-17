@@ -986,7 +986,7 @@ class ShowDeliveryNote extends OrgAction
     public function htmlResponse(DeliveryNote $deliveryNote, ActionRequest $request): Response
     {
         $isEditable = false;
-        if ($this->parent instanceof Warehouse) {
+        if ($this->parent instanceof Warehouse && !$deliveryNote->isLockedInAurora()) {
             $isEditable = true;
         }
         $this->countriesAddressData ??= GetAddressData::run();
@@ -995,7 +995,8 @@ class ShowDeliveryNote extends OrgAction
 
         $this->allowAction = $allowAction;
 
-        $actions = $this->getActions($deliveryNote, $request);
+        $lockedInAurora = $deliveryNote->isLockedInAurora();
+        $actions        = $lockedInAurora ? [] : $this->getActions($deliveryNote, $request);
 
         $warning = null;
 
@@ -1178,9 +1179,10 @@ class ShowDeliveryNote extends OrgAction
                     'label' => $deliveryNote->state->labels()[$deliveryNote->state->value],
                 ],
                 'actions'         => $actions,
-                'wrapped_actions' => $this->wrappedActions($deliveryNote),
+                'wrapped_actions' => $lockedInAurora ? [] : $this->wrappedActions($deliveryNote),
             ],
             'warning'       => $warning,
+            'aurora_notice' => $lockedInAurora ? __('This delivery note belongs to an order submitted in Aurora. Pick, pack and dispatch it in Aurora, not here.') : null,
             'is_editable'   => $isEditable,
             'tabs'          => [
                 'current'    => $this->tab,
