@@ -9,9 +9,11 @@
 namespace App\Actions\Dispatching\DeliveryNoteItem;
 
 use App\Actions\Dispatching\DeliveryNote\CalculateDeliveryNotePercentage;
+use App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStateToHandlingBlocked;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
+use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemStateEnum;
 use App\Enums\Dispatching\Picking\PickingTypeEnum;
 use App\Models\Dispatching\DeliveryNoteItem;
@@ -21,6 +23,7 @@ class CalculateDeliveryNoteItemTotalPicked extends OrgAction
     use WithActionUpdate;
     use WithNoStrictRules;
     use WithDeliveryNoteItemNoStrictRules;
+    use WithScannedDeliveryNoteItemPicking;
 
     /**
      * Quantities are held to six decimals and a cut of a pack lands on a repeating decimal, so the
@@ -94,6 +97,25 @@ class CalculateDeliveryNoteItemTotalPicked extends OrgAction
 
         $deliveryNoteItem = $this->update($deliveryNoteItem, $dataToUpdate);
         $deliveryNoteItem->refresh();
+
+        /*
+         * Inside a picking session nobody sets the note as picked, so this is where it learns it is
+         * waiting: nothing left to pick on any line, but a line is parked as waiting. Done before
+         * the percentages so the picking session sees the note as blocked.
+         */
+        $deliveryNote = $deliveryNoteItem->deliveryNote;
+        if ($deliveryNote->state == DeliveryNoteStateEnum::HANDLING
+            && $deliveryNote->deliveryNoteItems()->where('state', DeliveryNoteItemStateEnum::HANDLING_BLOCKED)->exists()
+        ) {
+            $hasItemsLeftToPick = $deliveryNote->deliveryNoteItems()
+                ->where('state', '!=', DeliveryNoteItemStateEnum::CANCELLED)
+                ->get()
+                ->contains(fn (DeliveryNoteItem $item) => static::quantityLeftToPick($item) > 0);
+
+            if (!$hasItemsLeftToPick) {
+                UpdateDeliveryNoteStateToHandlingBlocked::make()->action($deliveryNote);
+            }
+        }
 
         CalculateDeliveryNotePercentage::make()->action($deliveryNoteItem->deliveryNote);
 

@@ -2039,6 +2039,53 @@ test('picking waiting warehouse and crm flow', function () {
     expect($sentBack->has_waiting_crm)->toBeFalse();
 });
 
+test('picking session waits on a waiting note and is flagged once the wait is picked', function () {
+    $settings = $this->organisation->settings;
+    data_set($settings, 'orders.allow_waiting', true);
+    $this->organisation->update(['settings' => $settings]);
+
+    // 6 of the 10 go in the tote, so there is something left for the warehouse to wait on.
+    [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($this, 6);
+    $deliveryNote->update(['state' => DeliveryNoteStateEnum::UNASSIGNED]);
+
+    $pickingSession = StorePickingSession::make()->handle($this->warehouse, [
+        'delivery_notes' => [$deliveryNote->id],
+        'user_id'        => $this->user->id,
+    ]);
+    $pickingSession = StartPickPickingSession::run($pickingSession, []);
+
+    // The shared order can bring lines of its own; this is about the one line that waits.
+    $deliveryNote->deliveryNoteItems()->where('id', '!=', $item->id)->update(['state' => DeliveryNoteItemStateEnum::CANCELLED]);
+
+    // Nobody sets a note as picked inside a session: parking the rest as waiting blocks it on its own.
+    \App\Actions\Dispatching\Picking\SetAsWaitingWarehouse::make()->action($item->refresh(), $this->user, ['quantity' => 4]);
+
+    expect($deliveryNote->refresh()->state)->toBe(DeliveryNoteStateEnum::HANDLING_BLOCKED)
+        ->and($deliveryNote->handling_blocked_at)->not->toBeNull()
+        ->and($pickingSession->refresh()->state)->toBe(PickingSessionStateEnum::HANDLING_BLOCKED)
+        ->and($pickingSession->is_waiting_ready)->toBeFalse();
+
+    // The stock turns up and the wait is picked: the note is released and the session goes to packing, flagged.
+    // PickAllItem stores the pick as the request user.
+    request()->setUserResolver(fn () => $this->user);
+    $item->refresh()->update(['locked_at' => null]);
+    \App\Actions\Dispatching\Picking\PickAllItemFromWaitingWarehouse::run(
+        $item->refresh(),
+        $this->user,
+        ['location_org_stock_id' => $item->orgStock->locationOrgStocks()->first()->id]
+    );
+
+    expect($deliveryNote->refresh()->state)->toBe(DeliveryNoteStateEnum::PICKED)
+        ->and($pickingSession->refresh()->state)->toBe(PickingSessionStateEnum::PICKING_FINISHED)
+        ->and($pickingSession->is_waiting_ready)->toBeTrue();
+
+    // The next action in the session clears the flag.
+    CalculatePickingSessionPicks::run($pickingSession->refresh());
+
+    expect($pickingSession->refresh()->is_waiting_ready)->toBeFalse()
+        ->and($pickingSession->state)->toBe(PickingSessionStateEnum::PICKING_FINISHED);
+});
+
 test('delete picking on blocked line partly waiting with crm does not abort', function () {
     $settings = $this->organisation->settings;
     data_set($settings, 'orders.allow_waiting', true);

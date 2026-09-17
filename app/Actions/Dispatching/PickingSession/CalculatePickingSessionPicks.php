@@ -21,7 +21,18 @@ class CalculatePickingSessionPicks extends OrgAction
 
     public function handle(PickingSession $pickingSession): PickingSession
     {
-        $pickingSession = $this->update($pickingSession, $this->getDispatchingPercentages($pickingSession->deliveryNotesItems()));
+        $modelData = $this->getDispatchingPercentages($pickingSession->deliveryNotesItems());
+
+        /*
+         * Every pick, not pick and pack in the session lands here, so this is where someone has
+         * acted on a session flagged as ready after waiting. Releasing a waiting note sets the
+         * flag after this has run, so it survives the pick that released it.
+         */
+        if ($pickingSession->is_waiting_ready) {
+            $modelData['is_waiting_ready'] = false;
+        }
+
+        $pickingSession = $this->update($pickingSession, $modelData);
 
         AutoFinishPickingPickingSession::run($pickingSession);
 
