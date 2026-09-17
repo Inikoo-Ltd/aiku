@@ -4364,3 +4364,35 @@ test('non dropshipping delivery note needs parcel dimensions before it can be pa
         ->assertSessionHasNoErrors();
     expect($deliveryNote->refresh()->state)->toBe(DeliveryNoteStateEnum::PACKED);
 });
+
+test('orders still in process in Aurora are locked against staff routes until Aurora dispatches or cancels them', function () {
+    [$deliveryNote] = handlingDeliveryNoteWithPicking($this);
+    $order          = $deliveryNote->orders()->first();
+    $untouched      = freshSubmittedOrder($this);
+
+    $order->update(['source_id' => '4:990001']);
+    $deliveryNote->update(['source_id' => '4:990001']);
+
+    expect(\App\Actions\Maintenance\Ordering\LockAromaOrdersInProcessInAurora::run($this->shop, false))->toBe([1, 1])
+        ->and($order->refresh()->handled_in_aurora)->toBeFalse();
+
+    expect(\App\Actions\Maintenance\Ordering\LockAromaOrdersInProcessInAurora::run($this->shop, true))->toBe([1, 1])
+        ->and($order->refresh()->handled_in_aurora)->toBeTrue()
+        ->and($deliveryNote->refresh()->handled_in_aurora)->toBeTrue()
+        ->and($untouched->refresh()->handled_in_aurora)->toBeFalse();
+
+    patch(route('grp.models.delivery_note.state.cancel', $deliveryNote->id))->assertSessionHasErrors('message');
+    patch(route('grp.models.order.state.cancelled', $order->id))->assertSessionHasErrors('message');
+    post(route('grp.models.warehouse.picking_session.store', $this->warehouse->id), ['delivery_notes' => [$deliveryNote->id]])
+        ->assertSessionHasErrors('message');
+    expect($deliveryNote->refresh()->state)->toBe(DeliveryNoteStateEnum::HANDLING)
+        ->and($order->refresh()->state)->not->toBe(OrderStateEnum::CANCELLED);
+
+    patch(route('grp.models.order.state.cancelled', $untouched->id))->assertSessionDoesntHaveErrors('message');
+
+    $deliveryNote->update(['state' => DeliveryNoteStateEnum::DISPATCHED]);
+    $order->update(['state' => OrderStateEnum::DISPATCHED]);
+    expect($deliveryNote->refresh()->isLockedInAurora())->toBeFalse()
+        ->and($order->refresh()->isLockedInAurora())->toBeFalse();
+    patch(route('grp.models.order.rollback_dispatch', $order->id))->assertSessionDoesntHaveErrors('message');
+});

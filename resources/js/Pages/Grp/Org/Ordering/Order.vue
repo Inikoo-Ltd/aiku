@@ -128,6 +128,7 @@ interface UploadSection {
 }
 
 const props = defineProps<{
+    aurora_notice?: string | null
     title: string
     tabs: TSTabs
     products?: TableTS
@@ -1779,6 +1780,14 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                 class="rounded bg-fuchsia-100 border border-fuchsia-300 px-1 text-xs font-semibold text-fuchsia-700 leading-tight">DS</span>
         </template>
     </PageHeading>
+
+    <div v-if="aurora_notice" class="m-3 flex items-center gap-4 rounded-lg border-4 border-red-600 bg-red-50 p-4 text-red-800">
+        <FontAwesomeIcon :icon="fadExclamationTriangle" class="text-4xl text-red-600" fixed-width aria-hidden="true" />
+        <div>
+            <div class="text-xl font-bold uppercase">{{ trans("Process in Aurora") }}</div>
+            <div class="text-base">{{ aurora_notice }}</div>
+        </div>
+    </div>
 
     <!-- Section: Pallet Warning -->
     <div v-if="alert?.status" class="p-2 pb-0">

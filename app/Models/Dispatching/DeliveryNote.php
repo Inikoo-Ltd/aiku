@@ -64,6 +64,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property string $reference
  * @property DeliveryNoteTypeEnum $type
  * @property DeliveryNoteStateEnum $state
+ * @property bool $handled_in_aurora
  * @property bool|null $can_dispatch
  * @property bool|null $restocking
  * @property string|null $email
@@ -209,6 +210,7 @@ class DeliveryNote extends Model implements Auditable
     use HasSearch;
 
     protected $casts = [
+        'handled_in_aurora'       => 'boolean',
         'data'                    => 'array',
         'parcels'                 => 'array',
         'state'                   => DeliveryNoteStateEnum::class,
@@ -501,4 +503,9 @@ class DeliveryNote extends Model implements Auditable
         return $this->hasMany(ReturnDeliveryNote::class);
     }
 
+
+    public function isLockedInAurora(): bool
+    {
+        return $this->handled_in_aurora && !in_array($this->state, [DeliveryNoteStateEnum::DISPATCHED, DeliveryNoteStateEnum::CANCELLED]);
+    }
 }

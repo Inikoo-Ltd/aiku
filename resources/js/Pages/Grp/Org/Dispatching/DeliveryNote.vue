@@ -77,6 +77,7 @@ import { ctrans } from "@/Composables/useTrans"
 library.add(faSmileWink, faEye, faRecycle, faTired, faFilePdf, faFolder, faBoxCheck, faPrint, faExchangeAlt, faUserSlash, faCube, faChair, faHandPaper, faExternalLink, faArrowRight, faCheck, faStar, faTimes, faClipboardCheck, faClipboardListCheck, faBarcodeRead);
 
 const props = defineProps<{
+	aurora_notice?: string | null
     title: string,
     pageHead: PageHeadingTypes
     staff_chat?: { context_type: string; context_id: number; audiences: { key: string; label: string }[] }
@@ -967,6 +968,14 @@ const stopSocketListener = () => {
 		</template>
 
 	</PageHeading>
+
+    <div v-if="aurora_notice" class="m-3 flex items-center gap-4 rounded-lg border-4 border-red-600 bg-red-50 p-4 text-red-800">
+        <FontAwesomeIcon :icon="faExclamationTriangle" class="text-4xl text-red-600" fixed-width aria-hidden="true" />
+        <div>
+            <div class="text-xl font-bold uppercase">{{ trans("Process in Aurora") }}</div>
+            <div class="text-base">{{ aurora_notice }}</div>
+        </div>
+    </div>
 
 	<!-- Section: Consumables the packer must add to the box -->
 	<div v-if="consumables?.length" class="p-2 pb-0">

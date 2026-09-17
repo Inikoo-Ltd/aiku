@@ -245,18 +245,21 @@ class ShowOrder extends OrgAction
 
         $orderBanStatus = $this->isForbiddenDetailed($order);
 
-        $actions = $order->shop->type == ShopTypeEnum::DROPSHIPPING
-            ?
-            GetDropshippingOrderActions::run($order, $this->canEdit)
-            :
-            GetEcomOrderActions::run($order, $this->canEdit);
+        $lockedInAurora = $order->isLockedInAurora();
+        $canEdit        = $this->canEdit && !$lockedInAurora;
 
-        $allowOrderModification = $this->canEdit
+        $actions = match (true) {
+            $lockedInAurora => [],
+            $order->shop->type == ShopTypeEnum::DROPSHIPPING => GetDropshippingOrderActions::run($order, $canEdit),
+            default => GetEcomOrderActions::run($order, $canEdit),
+        };
+
+        $allowOrderModification = $canEdit
             && $order->shop->type != ShopTypeEnum::EXTERNAL
             && (!$order->platform || $order->platform->type == PlatformTypeEnum::MANUAL)
             && !in_array($order->state, [OrderStateEnum::CANCELLED, OrderStateEnum::FINALISED, OrderStateEnum::DISPATCHED]);
 
-        if ($order->state != OrderStateEnum::CANCELLED) {
+        if ($order->state != OrderStateEnum::CANCELLED && !$lockedInAurora) {
             $wrapped_actions = [
                 [
                     'type'  => 'button',
@@ -363,6 +366,7 @@ class ShowOrder extends OrgAction
                     'previous' => $this->getPrevious($order, $request),
                     'next'     => $this->getNext($order, $request),
                 ],
+                'aurora_notice' => $lockedInAurora ? __('This order was submitted in Aurora. Process it in Aurora, not here: it will update here once Aurora dispatches or cancels it.') : null,
                 'staff_task'  => ['model_type' => 'Order', 'model_id' => $order->id],
                 'staff_chat'  => [
                     'context_type' => 'Order',

@@ -216,6 +216,7 @@ trait IsDeliveryNotesIndex
             "$dateColumn as last_modified_date",
             'delivery_notes.data',
             'delivery_notes.state',
+            'delivery_notes.handled_in_aurora',
             'delivery_notes.is_premium_dispatch',
             'delivery_notes.has_extra_packing',
             'delivery_notes.created_at',

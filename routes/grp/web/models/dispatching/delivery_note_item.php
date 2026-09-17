@@ -7,6 +7,7 @@
  */
 
 use App\Actions\Dispatching\Picking\PickAllItem;
+use App\Http\Middleware\EnsureNotHandledInAurora;
 use App\Actions\Dispatching\Picking\PickAllItemFromWaitingWarehouse;
 use App\Actions\Dispatching\Picking\PickFromMagicPlace;
 use App\Actions\Dispatching\Picking\SendBackWaitingWarehouse;
@@ -22,7 +23,7 @@ use App\Actions\Dispatching\Picking\UpsertPickingFromWaitingWarehouse;
 use App\Actions\Ordering\WaitingCrmItem\ReplaceWaitingCrmItemProduct;
 use Illuminate\Support\Facades\Route;
 
-Route::name('delivery_note_item.')->prefix('delivery-note-item/{deliveryNoteItem:id}')->group(function () {
+Route::name('delivery_note_item.')->prefix('delivery-note-item/{deliveryNoteItem:id}')->middleware(EnsureNotHandledInAurora::class)->group(function () {
 
     Route::post('replace-product', ReplaceWaitingCrmItemProduct::class)->name('waiting_items_replace_product');
 

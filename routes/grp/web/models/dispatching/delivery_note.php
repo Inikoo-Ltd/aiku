@@ -7,6 +7,7 @@
  */
 
 use App\Actions\Dispatching\DeliveryNote\SaveDeliveryNoteShippingFieldsAndRetryStoreShipping;
+use App\Http\Middleware\EnsureNotHandledInAurora;
 use App\Actions\Dispatching\DeliveryNote\UI\ExportDeliveryNoteTariffCodes;
 use App\Actions\Dispatching\DeliveryNote\UndispatchDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\UpdateDeliveryNote;
@@ -39,7 +40,7 @@ use App\Actions\Dropshipping\Tiktok\Order\ProcessTiktokOrderShipment;
 use App\Actions\GoodsIn\ReturnDeliveryNote\ProcessReturnDeliveryNote;
 use Illuminate\Support\Facades\Route;
 
-Route::name('delivery_note.')->prefix('delivery-note/{deliveryNote:id}')->group(function () {
+Route::name('delivery_note.')->prefix('delivery-note/{deliveryNote:id}')->middleware(EnsureNotHandledInAurora::class)->group(function () {
     Route::name('return.')->prefix('return')->group(function () {
         Route::patch('process', ProcessReturnDeliveryNote::class)->name('process');
     });
