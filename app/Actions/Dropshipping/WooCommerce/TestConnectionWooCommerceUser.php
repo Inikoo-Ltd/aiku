@@ -8,6 +8,7 @@
 
 namespace App\Actions\Dropshipping\WooCommerce;
 
+use App\Actions\Traits\WithRetinaRouteModelOwnershipCheck;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\CRM\WebUser;
@@ -21,6 +22,7 @@ use Lorisleiva\Actions\Concerns\WithAttributes;
 
 class TestConnectionWooCommerceUser extends RetinaAction
 {
+    use WithRetinaRouteModelOwnershipCheck;
     use AsAction;
     use WithAttributes;
     use WithActionUpdate;
@@ -54,8 +56,12 @@ class TestConnectionWooCommerceUser extends RetinaAction
 
     public function authorize(ActionRequest $request): bool
     {
-        if ($this->asAction || $request->user() instanceof WebUser) {
+        if ($this->asAction) {
             return true;
+        }
+
+        if ($request->user() instanceof WebUser) {
+            return $this->retinaCustomerOwnsRouteModels($request);
         }
 
         return $request->user()->authTo("crm.{$this->shop->id}.edit");

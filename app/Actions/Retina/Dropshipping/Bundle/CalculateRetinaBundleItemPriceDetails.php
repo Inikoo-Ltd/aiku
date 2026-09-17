@@ -12,12 +12,14 @@ namespace App\Actions\Retina\Dropshipping\Bundle;
 use App\Actions\Dropshipping\Bundle\CalculateBundleItemPriceDetails;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
+use App\Actions\Traits\WithRetinaCustomerOwnedRouteModels;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Traits\SanitizeInputs;
 use Lorisleiva\Actions\ActionRequest;
 
 class CalculateRetinaBundleItemPriceDetails extends RetinaAction
 {
+    use WithRetinaCustomerOwnedRouteModels;
     use WithActionUpdate;
     use SanitizeInputs;
 
