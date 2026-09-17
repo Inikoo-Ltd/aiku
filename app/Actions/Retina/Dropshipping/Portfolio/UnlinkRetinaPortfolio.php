@@ -10,6 +10,7 @@
 namespace App\Actions\Retina\Dropshipping\Portfolio;
 
 use App\Actions\Dropshipping\Portfolio\UpdatePortfolio;
+use App\Actions\Dropshipping\Shopify\Product\DeactivateShopifyProduct;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Dropshipping\Portfolio;
@@ -24,6 +25,11 @@ class UnlinkRetinaPortfolio extends RetinaAction
 
     public function handle(Portfolio $portfolio): void
     {
+        if ($portfolio->isShopifyVariantAdopted()) {
+            DeactivateShopifyProduct::run($portfolio);
+            $portfolio->markShopifyVariantAdopted(false);
+        }
+
         UpdatePortfolio::run($portfolio, [
             'platform_status'               => false,
             'platform_product_variant_id'   => null,

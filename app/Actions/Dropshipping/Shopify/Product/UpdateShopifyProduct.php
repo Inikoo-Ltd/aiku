@@ -31,6 +31,10 @@ class UpdateShopifyProduct extends RetinaAction
 
     public function handle(Portfolio $portfolio): array
     {
+        if ($portfolio->isShopifyVariantAdopted()) {
+            return [true, 'The merchant owns this listing, nothing is sent'];
+        }
+
         /** @var ShopifyUser $shopifyUser */
         $shopifyUser = $portfolio->customerSalesChannel?->user;
         $website = $portfolio->customerSalesChannel?->shop?->website;

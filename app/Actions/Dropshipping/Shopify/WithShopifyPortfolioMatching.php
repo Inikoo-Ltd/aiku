@@ -44,7 +44,10 @@ trait WithShopifyPortfolioMatching
             return null;
         }
 
-        return $customerSalesChannel->portfolios()->whereIn($column, $candidates)->first();
+        return $customerSalesChannel->portfolios()
+            ->whereIn($column, $candidates)
+            ->when($column === 'platform_product_id', fn ($query) => $query->whereRaw("coalesce(settings->>'shopify_variant_adopted', 'false') <> 'true'"))
+            ->first();
     }
 
     private function findPortfolioBySku(CustomerSalesChannel $customerSalesChannel, ?string $sku): ?Portfolio

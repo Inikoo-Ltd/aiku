@@ -21,6 +21,7 @@ use Illuminate\Support\Facades\Log;
 class SaveShopifyProductData extends RetinaAction
 {
     use WithActionUpdate;
+    use WithShopifyPortfolioVariant;
 
 
     public function handle(Portfolio $portfolio, array $productData = []): ?array
@@ -154,7 +155,8 @@ class SaveShopifyProductData extends RetinaAction
                 $productData = $body['data']['product'];
             }
 
-            $sku = Arr::get($productData, 'variants.edges.0.node.sku');
+            $variantNode = $this->portfolioVariantNode($portfolio, Arr::get($productData, 'variants.edges', []));
+            $sku         = Arr::get($variantNode, 'sku');
 
 
 
@@ -168,7 +170,7 @@ class SaveShopifyProductData extends RetinaAction
                 data_set($dataToUpdate, 'sku', $sku);
             }
 
-            $inventoryQuantity = Arr::get($productData, 'variants.edges.0.node.inventoryQuantity');
+            $inventoryQuantity = Arr::get($variantNode, 'inventoryQuantity');
             if ($portfolio->last_stock_value === null && $inventoryQuantity !== null) {
                 data_set($dataToUpdate, 'last_stock_value', (int) $inventoryQuantity);
                 data_set($dataToUpdate, 'stock_last_updated_at', now());
