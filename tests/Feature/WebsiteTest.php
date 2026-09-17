@@ -37,6 +37,7 @@ use App\Actions\Web\Webpage\FetchTopWebpagesPageSpeed;
 use App\Actions\Web\Webpage\HydrateWebpage;
 use App\Actions\Web\Webpage\Iris\ShowIrisRobotsTxt;
 use App\Actions\CRM\WebUser\Retina\UI\ShowRetinaLogin;
+use App\Actions\CRM\WebUser\Retina\UI\ShowRetinaRegisterChooseMethod;
 use App\Actions\Web\Webpage\Iris\ShowIrisWebpage;
 use App\Actions\Web\Webpage\ProcessWebpageTimeSeriesRecords;
 use App\Actions\Web\Webpage\StoreWebpage;
@@ -2316,8 +2317,23 @@ test('storing a system page wires it to the website', function (Website $website
 
         expect($website->refresh()->{$systemPage['website_field']})->toBe($webpage->id)
             ->and($webpage->webBlocks()->count())->toBeGreaterThan(0)
+            ->and($webpage->webBlocks()->first()->webBlockType->code)->toBe($systemPage['web_block'])
             ->and(WebpageSubTypeEnum::labels())->toHaveKey($subTypeValue);
     }
+})->depends('launch website');
+
+test('repair create system pages puts back a missing system web block', function (Website $website) {
+    $registerDashboard = $website->refresh()->registerDashboardPage;
+    $registerDashboard->modelHasWebBlocks()->delete();
+    expect($registerDashboard->webBlocks()->count())->toBe(0);
+
+    $this->artisan('repair:create_system_pages', ['--website_id' => $website->id])->assertSuccessful();
+
+    $registerDashboard->refresh();
+    expect($registerDashboard->webBlocks()->count())->toBe(1)
+        ->and($registerDashboard->webBlocks()->first()->webBlockType->code)->toBe('register-dashboard')
+        ->and($registerDashboard->state)->not->toBe(WebpageStateEnum::LIVE)
+        ->and($website->refresh()->register_dashboard_page_id)->toBe($registerDashboard->id);
 })->depends('launch website');
 
 test('retina login renders the iris login block only when that page is live', function (Website $website) {
@@ -2345,6 +2361,39 @@ test('retina login renders the iris login block only when that page is live', fu
     $liveResponse = (new ShowRetinaLogin())->handle($request);
     expect($liveResponse)->toBeInstanceOf(Illuminate\Http\Response::class)
         ->and($liveResponse->headers->get('X-AIKU-WEBSITE'))->toBe((string) $website->id);
+})->depends('launch website');
+
+test('retina register renders the iris register dashboard block only when that page is live', function (Website $website) {
+    config()->set('iris.cache.webpage_path.ttl', 0);
+    config()->set('iris.cache.webpage.ttl', 0);
+
+    $request = ActionRequest::createFrom(Request::create('https://'.$website->domain.'/app/register'));
+    $request->merge(['website' => $website]);
+    app()->instance('request', $request);
+    Inertia\Inertia::setRootView('app-retina');
+
+    $registerDashboard = $website->refresh()->registerDashboardPage;
+    expect($registerDashboard)->not->toBeNull()
+        ->and($registerDashboard->state)->not->toBe(WebpageStateEnum::LIVE);
+
+    $inertiaResponse = (new ShowRetinaRegisterChooseMethod())->handle($request);
+    $component       = new ReflectionProperty($inertiaResponse, 'component');
+    $component->setAccessible(true);
+
+    expect($inertiaResponse)->toBeInstanceOf(Inertia\Response::class)
+        ->and($component->getValue($inertiaResponse))->toBe('Auth/RegisterSelectMethod');
+
+    $registerDashboard->update(['state' => WebpageStateEnum::LIVE]);
+
+    $liveResponse = (new ShowRetinaRegisterChooseMethod())->handle($request);
+    expect($liveResponse)->toBeInstanceOf(Illuminate\Http\Response::class)
+        ->and($liveResponse->headers->get('X-AIKU-WEBSITE'))->toBe((string) $website->id)
+        ->and($liveResponse->headers->get('X-AIKU-WEBPAGE'))->toBe((string) $registerDashboard->id);
+
+    $irisPath = ShowIrisWebpage::make()->handle('register-dashboard', [], $request);
+    $redirect = ShowIrisWebpage::make()->htmlResponse($irisPath);
+    expect($irisPath)->toBe('register-dashboard')
+        ->and($redirect->getTargetUrl())->toEndWith('/app/register');
 })->depends('launch website');
 
 test('locked webpage rejects writes from other users, accepts owner and granted editor, and relocks after publish', function (Webpage $webpage) {

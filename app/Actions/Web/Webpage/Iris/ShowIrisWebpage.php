@@ -126,7 +126,7 @@ class ShowIrisWebpage
     {
         if ($path == 'robots.txt') {
             return 'robots';
-        } elseif (in_array($path, ['login.sys', 'register.sys', 'index.php', 'asset_label.php', 'home.sys', 'login', 'register', 'forgot-password'])) {
+        } elseif (in_array($path, ['login.sys', 'register.sys', 'index.php', 'asset_label.php', 'home.sys', 'login', 'register', 'register-dashboard', 'forgot-password'])) {
             return $path;
         }
 
@@ -271,10 +271,11 @@ class ShowIrisWebpage
         if (is_string($webpageData)) {
 
             // Depends on the visitor, so it must never reach Varnish or the browser cache.
-            if (in_array($webpageData, ['login', 'register', 'forgot-password'])) {
+            if (in_array($webpageData, ['login', 'register', 'register-dashboard', 'forgot-password'])) {
                 $redirect = match($webpageData) {
                     'login'             => '/app/login',
                     'register'          => '/app/register',
+                    'register-dashboard' => '/app/register',
                     'forgot-password'   => '/app/reset-password-send',
                     default             => null,
                 };

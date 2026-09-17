@@ -32,6 +32,7 @@ use App\Actions\Web\WebBlock\Workshop\GetTopFamilies;
 use App\Actions\Web\WebBlock\Workshop\GetWebBlockForgotPassword;
 use App\Actions\Web\WebBlock\Workshop\GetWebBlockLogin;
 use App\Actions\Web\WebBlock\Workshop\GetWebBlockRegister;
+use App\Actions\Web\WebBlock\Workshop\GetWebBlockRegisterDashboard;
 use Illuminate\Support\Arr;
 
 trait WithFillWorkshopWebBlocks
@@ -92,6 +93,8 @@ trait WithFillWorkshopWebBlocks
             $parsedWebBlocks[$key] = GetWebBlockLogin::run($webpage, $webBlock);
         } elseif ($webBlockType == 'register') {
             $parsedWebBlocks[$key] = GetWebBlockRegister::run($webpage, $webBlock);
+        } elseif ($webBlockType == 'register-dashboard') {
+            $parsedWebBlocks[$key] = GetWebBlockRegisterDashboard::run($webpage, $webBlock);
         } elseif ($webBlockType == 'forgot-password') {
             $parsedWebBlocks[$key] = GetWebBlockForgotPassword::run($webpage, $webBlock);
         } elseif ($webBlockType == 'recommendation-customer-recently-bought-1') {

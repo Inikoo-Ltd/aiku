@@ -104,6 +104,7 @@ enum WebBlockTemplateEnum: string
             self::SYSTEM_EXCLUSIVES => [
                 'login',
                 'register',
+                'register-dashboard',
                 'blog-categories',
                 'forgot-password',
             ]

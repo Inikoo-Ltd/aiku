@@ -457,6 +457,7 @@ const blockNotEditableVisible = [
 const blockWithoutVisibilityOptions = [
 	"login",
 	"register",
+	"register-dashboard",
 	"forgot-password",
 	"blog-categories",
 ]

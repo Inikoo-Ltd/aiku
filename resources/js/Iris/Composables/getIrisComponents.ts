@@ -105,6 +105,7 @@ const Video1Iris = async(() => import("@/Iris/Components/IrisBlocks/Video1Iris.v
 const UserSubscribeIris = async(() => import("@/Iris/Components/IrisBlocks/UserSubscribeIris.vue"))
 const LoginIris = async(() => import("@/Iris/Components/IrisBlocks/LoginIris.vue"))
 const RegisterIris = async(() => import("@/Iris/Components/IrisBlocks/RegisterIris.vue"))
+const RegisterDashboardIris = async(() => import("@/Iris/Components/IrisBlocks/RegisterDashboardIris.vue"))
 const ForgetPasswordIris = async(() => import("@/Iris/Components/IrisBlocks/ForgetPasswordIris.vue"))
 const Cta4Iris = async(() => import("@/Iris/Components/IrisBlocks/Cta4Iris.vue"))
 const BlogIris = async(() => import("@/Iris/Components/IrisBlocks/BlogIris.vue"))
@@ -230,6 +231,7 @@ const components = (shop_type?: string): Record<string, Component> => {
 		"user-subscribe": UserSubscribeIris,
 		login: LoginIris,
 		register: RegisterIris,
+		"register-dashboard": RegisterDashboardIris,
 		"forgot-password": ForgetPasswordIris,
 		cta4: Cta4Iris,
 		blog: BlogIris,
