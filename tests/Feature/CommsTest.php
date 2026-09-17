@@ -2700,6 +2700,26 @@ test('process credit balance notification does nothing when no credit transactio
     expect(true)->toBeTrue();
 });
 
+test('credit balance email to customer is only sent when the credit explains itself', function (array $explanation, bool $isSent) {
+    Queue::fake();
+
+    \App\Actions\Accounting\CreditTransaction\StoreCreditTransaction::make()->action($this->customer, [
+        'amount' => 10,
+        'type'   => \App\Enums\Accounting\CreditTransaction\CreditTransactionTypeEnum::FROM_EXCESS,
+        ...$explanation,
+    ]);
+
+    if ($isSent) {
+        \App\Actions\Comms\Email\SendCreditBalanceEmailToCustomer::assertPushed();
+    } else {
+        \App\Actions\Comms\Email\SendCreditBalanceEmailToCustomer::assertNotPushed();
+    }
+    \App\Actions\Comms\Email\SendCreditBalanceEmailToUser::assertPushed();
+})->with([
+    'unexplained' => [[], false],
+    'with notes'  => [['notes' => 'Refund for items not shipped in order X1'], true],
+]);
+
 test('delete outbox has subscriber again is idempotent at handle level', function () {
     $outbox = createOutboxDirectly($this->shop, OutboxCode::REORDER_REMINDER);
     $outboxHasSubscriber = StoreOutboxHasSubscriber::make()->action($outbox, [

@@ -112,7 +112,9 @@ class ProcessCreditBalanceNotification extends OrgAction
             'preview_amount' => $previewAmountHtml ?? 'N/A',
         ];
 
-        SendCreditBalanceEmailToCustomer::dispatch($customer, $additionalDataForCustomer);
+        if ($currentCreditBalance->reason || $currentCreditBalance->notes) {
+            SendCreditBalanceEmailToCustomer::dispatch($customer, $additionalDataForCustomer);
+        }
         SendCreditBalanceEmailToUser::dispatch($customer, $additionalDataForUser);
     }
 }
