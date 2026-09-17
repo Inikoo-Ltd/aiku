@@ -4,6 +4,7 @@ import { set } from "lodash-es"
 import EditorV2 from "@/Components/Forms/Fields/BubleTextEditor/EditorV2.vue"
 import RegisterDashboardIris from "@/Iris/Components/IrisBlocks/RegisterDashboardIris.vue"
 import { sendMessageToParent } from "@/Composables/Workshop"
+import { panelKeys } from "@/Components/CMS/Webpage/RegisterDashboard/Blueprint"
 
 const props = defineProps<{
 	modelValue: any
@@ -34,11 +35,31 @@ const onEdit = (path: string | string[], value: string) => {
 const onActive = () => sendMessageToParent("activeBlock", props.indexBlock)
 
 /**
+ * Opens the side editor panel of the part that was clicked. Every part of the block names its panel
+ * in data-rd-panel, and a benefit or FAQ question adds its position so its row opens as well.
+ */
+const openPanelOf = (target: HTMLElement | null) => {
+	const part = target?.closest?.("[data-rd-panel]") as HTMLElement | null
+	const panelKey = part?.dataset.rdPanel ? panelKeys[part.dataset.rdPanel] : null
+
+	if (!panelKey) {
+		return
+	}
+
+	sendMessageToParent("activeChildBlock", panelKey)
+
+	if (part?.dataset.rdIndex !== undefined) {
+		sendMessageToParent("activeChildBlockArray", Number(part.dataset.rdIndex))
+	}
+}
+
+/**
  * The preview renders the live block, links included. Following one would leave the workshop,
  * so every anchor is neutralised here instead of rendering the block without its links.
  */
 const onPreviewClick = (event: MouseEvent) => {
-	const anchor = (event.target as HTMLElement)?.closest?.("a[href]")
+	const target = event.target as HTMLElement | null
+	const anchor = target?.closest?.("a[href]")
 
 	if (anchor) {
 		event.preventDefault()
@@ -46,6 +67,7 @@ const onPreviewClick = (event: MouseEvent) => {
 	}
 
 	onActive()
+	openPanelOf(target)
 }
 </script>
 
@@ -56,40 +78,16 @@ const onPreviewClick = (event: MouseEvent) => {
 			:screenType="screenType"
 			:indexBlock="indexBlock"
 			:isWorkshop="true">
-			<template #hero-intro>
-				<EditorV2
-					:modelValue="modelValue?.hero?.intro"
-					:toggle="textToggle"
-					:uploadImageRoute="uploadImageRoute"
-					@focus="onActive"
-					@update:modelValue="value => onEdit(['hero', 'intro'], value)" />
-			</template>
-
-			<template #login-note>
-				<EditorV2
-					:modelValue="modelValue?.signup?.login_note"
-					:toggle="textToggle"
-					:uploadImageRoute="uploadImageRoute"
-					@focus="onActive"
-					@update:modelValue="value => onEdit(['signup', 'login_note'], value)" />
-			</template>
-
-			<template #faq-answer="{ item, index }">
-				<EditorV2
-					:modelValue="item.answer"
-					:toggle="textToggle"
-					:uploadImageRoute="uploadImageRoute"
-					@focus="onActive"
-					@update:modelValue="value => onEdit(['faq', 'items', index, 'answer'], value)" />
-			</template>
-
-			<template #footer-text>
-				<EditorV2
-					:modelValue="modelValue?.footer?.text"
-					:toggle="textToggle"
-					:uploadImageRoute="uploadImageRoute"
-					@focus="onActive"
-					@update:modelValue="value => onEdit(['footer', 'text'], value)" />
+			<template #editable="{ path, value, placeholder }">
+				<div class="rd-editable">
+					<EditorV2
+						:modelValue="value"
+						:toggle="textToggle"
+						:placeholder="placeholder"
+						:uploadImageRoute="uploadImageRoute"
+						@focus="onActive"
+						@update:modelValue="newValue => onEdit(path, newValue)" />
+				</div>
 			</template>
 		</RegisterDashboardIris>
 	</div>

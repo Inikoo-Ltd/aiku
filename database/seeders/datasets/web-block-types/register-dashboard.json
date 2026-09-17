@@ -20,34 +20,6 @@
 	"data": {
 		"fieldValue": {
 			"accent_color": "#c94f00",
-			"header": {
-				"show": true,
-				"logo": null,
-				"logo_url": "https://media.aiku.io/B_VJifVFVqsSDuKrzMbsP8pAMO1FjrdehUZuI2NNOC8/rs::160:160::/bG9jYWw6Ly9tZWRpYS9TUy9FQy82MFIzMEMxSjZHVEtFQ1NTL2VlZDUyZTY0LnBuZw.avif",
-				"logo_alt": "Ancient Wisdom Wholesale Giftware",
-				"home": {
-					"label": "Back to shop",
-					"link": {
-						"type": "internal",
-						"href": "/",
-						"url": null,
-						"canonical_url": null,
-						"id": null,
-						"target": "_self"
-					}
-				},
-				"login": {
-					"label": "Log in",
-					"link": {
-						"type": "internal",
-						"href": "/app/login",
-						"url": null,
-						"canonical_url": null,
-						"id": null,
-						"target": "_self"
-					}
-				}
-			},
 			"hero": {
 				"image": null,
 				"image_url": "/art/register-dashboard-hero.webp",
@@ -122,7 +94,9 @@
 					"show": true,
 					"title": "Prefer WhatsApp?",
 					"text": "Add your number during registration.",
-					"note": "WhatsApp offers are optional."
+					"note": "WhatsApp offers are optional.",
+					"number": null,
+					"message": null
 				},
 				"audience": {
 					"show": true,
@@ -144,46 +118,6 @@
 					{
 						"question": "Is there a minimum order?",
 						"answer": "<p>There is no minimum order value. Check individual product pages for pack sizes and quantities.</p>"
-					}
-				]
-			},
-			"footer": {
-				"show": true,
-				"text": "<p>Ancient Wisdom Marketing Ltd.<br>Wholesale giftware since 1995</p>",
-				"email": "care@ancientwisdom.biz",
-				"links": [
-					{
-						"label": "Contact us",
-						"link": {
-							"type": "internal",
-							"href": "/contact",
-							"url": null,
-							"canonical_url": null,
-							"id": null,
-							"target": "_self"
-						}
-					},
-					{
-						"label": "Terms",
-						"link": {
-							"type": "internal",
-							"href": "/terms-and-conditions",
-							"url": null,
-							"canonical_url": null,
-							"id": null,
-							"target": "_self"
-						}
-					},
-					{
-						"label": "Privacy",
-						"link": {
-							"type": "internal",
-							"href": "/privacy",
-							"url": null,
-							"canonical_url": null,
-							"id": null,
-							"target": "_self"
-						}
 					}
 				]
 			},

@@ -41,6 +41,35 @@ const benefits = computed(() =>
 	props.fieldValue?.hero?.show_benefits === false ? [] : (props.fieldValue?.hero?.benefits ?? [])
 )
 
+const showWhatsappNote = computed(() => {
+	const whatsapp = props.fieldValue?.signup?.whatsapp
+
+	return whatsapp?.show !== false && (props.isWorkshop || !!(whatsapp?.title || whatsapp?.text || whatsapp?.note))
+})
+
+/**
+ * The WhatsApp note opens a chat with the number the shop gives, the same wa.me link the website
+ * footer builds, so a visitor can ask before registering. Without a number the note stays plain text.
+ */
+const whatsappHref = computed(() => {
+	const whatsapp = props.fieldValue?.signup?.whatsapp
+	const number = String(whatsapp?.number ?? "").replace(/[^0-9]/g, "")
+
+	if (!number) {
+		return null
+	}
+
+	const message = String(whatsapp?.message ?? "").trim()
+
+	return `https://wa.me/${number}${message ? `?text=${encodeURIComponent(message)}` : ""}`
+})
+
+const showAudienceNote = computed(() => {
+	const audience = props.fieldValue?.signup?.audience
+
+	return audience?.show !== false && (props.isWorkshop || !!audience?.text)
+})
+
 const faqItems = computed(() =>
 	props.fieldValue?.faq?.show === false ? [] : (props.fieldValue?.faq?.items ?? [])
 )
@@ -59,7 +88,6 @@ const resolveImage = (image: any, url?: string | null) => {
 	return address ? { original: address } : null
 }
 
-const logoImage = computed(() => resolveImage(props.fieldValue?.header?.logo, props.fieldValue?.header?.logo_url))
 const heroImage = computed(() => resolveImage(props.fieldValue?.hero?.image, props.fieldValue?.hero?.image_url))
 
 const resolveLink = (link: any, fallbackHref: string) => ({
@@ -69,16 +97,7 @@ const resolveLink = (link: any, fallbackHref: string) => ({
 	canonical_url: link?.canonical_url,
 })
 
-const footerLinks = computed(() =>
-	(props.fieldValue?.footer?.links ?? []).map((item: any) => ({
-		label: item?.label,
-		...resolveLink(item?.link, "/"),
-	}))
-)
-
 const registerLink = computed(() => resolveLink(props.fieldValue?.signup?.button?.link, "/app/register"))
-const homeLink = computed(() => resolveLink(props.fieldValue?.header?.home?.link, "/"))
-const headerLoginLink = computed(() => resolveLink(props.fieldValue?.header?.login?.link, "/app/login"))
 
 /**
  * Registration with Google follows the retina register page: the Google token is posted to the
@@ -145,32 +164,40 @@ const onCallbackGoogleLogin = async (e: GoogleLoginResponse) => {
 
 <template>
 	<div :id="fieldValue?.id ? fieldValue.id : 'register-dashboard' + indexBlock" component="register-dashboard"
-		class="rd-root" :style="{
+		class="rd-root" :class="{ 'rd-workshop': isWorkshop }" data-rd-panel="layout" :style="{
 			...accentStyle,
 			...getStyles(fieldValue?.container?.properties, screenType),
 		}">
 		<div class="rd-main">
-			<section class="rd-hero">
+			<section class="rd-hero" data-rd-panel="hero">
 				<Image v-if="heroImage" :src="heroImage" :alt="fieldValue?.hero?.image_alt ?? ''" :imageCover="true"
 					class="rd-photo" />
 
 				<div class="rd-copy">
-					<h1 v-if="fieldValue?.hero?.title" v-html="fieldValue.hero.title"
-						style="font-size: 2.9rem; font-weight: bold;" />
+					<h1 v-if="fieldValue?.hero?.title || isWorkshop"
+						style="font-size: 2.9rem; font-weight: bold;">
+						<slot name="editable" :path="['hero', 'title']" :value="fieldValue?.hero?.title" placeholder="Title">
+							<span v-html="fieldValue?.hero?.title" />
+						</slot>
+					</h1>
 
 					<div class="rd-intro editor-class">
-						<slot name="hero-intro">
+						<slot name="editable" :path="['hero', 'intro']" :value="fieldValue?.hero?.intro" placeholder="Intro">
 							<div v-html="fieldValue?.hero?.intro" />
 						</slot>
 					</div>
 
 					<div class="mt-8">
 						<div v-if="benefits.length" class="rd-benefits">
-							<div v-for="(benefit, index) in benefits" :key="index" class="rd-benefit">
+							<div v-for="(benefit, index) in benefits" :key="index" class="rd-benefit" data-rd-panel="benefits" :data-rd-index="index">
 								<span v-if="benefit.icon" class="rd-benefit-icon" aria-hidden="true">
 									<FontAwesomeIcon :icon="benefit.icon" fixed-width />
 								</span>
-								<span class="rd-benefit-text" v-html="benefit.text" />
+								<span class="rd-benefit-text">
+									<slot name="editable" :path="['hero', 'benefits', index, 'text']" :value="benefit.text" placeholder="Benefit">
+										<span v-html="benefit.text" />
+									</slot>
+								</span>
 							</div>
 						</div>
 					</div>
@@ -178,30 +205,45 @@ const onCallbackGoogleLogin = async (e: GoogleLoginResponse) => {
 				</div>
 			</section>
 
-			<section class="rd-signup">
+			<section class="rd-signup" data-rd-panel="signup">
 				<div v-if="isLoadingGoogle" class="rd-signup-loading">
 					<LoadingIcon class="text-4xl" />
 				</div>
 
 				<div class="py-3">
-					<h2 v-if="fieldValue?.signup?.title" v-html="fieldValue.signup.title"
-						style="font-size: 2.7rem; font-weight: bold;" />
-					<div v-if="fieldValue?.signup?.subtitle" class="rd-subtitle mt-2">{{ fieldValue.signup.subtitle }}
+					<h2 v-if="fieldValue?.signup?.title || isWorkshop"
+						style="font-size: 2.7rem; font-weight: bold;">
+						<slot name="editable" :path="['signup', 'title']" :value="fieldValue?.signup?.title" placeholder="Title">
+							<span v-html="fieldValue?.signup?.title" />
+						</slot>
+					</h2>
+					<div v-if="fieldValue?.signup?.subtitle || isWorkshop" class="rd-subtitle mt-2">
+						<slot name="editable" :path="['signup', 'subtitle']" :value="fieldValue?.signup?.subtitle" placeholder="Subtitle">
+							<span v-html="fieldValue?.signup?.subtitle" />
+						</slot>
 					</div>
 				</div>
 
 
-				<LinkIris v-if="fieldValue?.signup?.button?.show !== false" :href="registerLink.href"
-					:type="registerLink.type" :target="registerLink.target" :canonical_url="registerLink.canonical_url"
-					class="rd-primary mt-4">
-					<FontAwesomeIcon v-if="fieldValue?.signup?.button?.icon" :icon="fieldValue.signup.button.icon"
-						fixed-width aria-hidden="true" />
-					{{ fieldValue?.signup?.button?.label || trans("Register with email") }}
-				</LinkIris>
+				<div v-if="fieldValue?.signup?.button?.show !== false" data-rd-panel="register-button">
+					<LinkIris :href="registerLink.href"
+						:type="registerLink.type" :target="registerLink.target" :canonical_url="registerLink.canonical_url"
+						class="rd-primary mt-4">
+						<FontAwesomeIcon v-if="fieldValue?.signup?.button?.icon" :icon="fieldValue.signup.button.icon"
+							fixed-width aria-hidden="true" />
+						<span class="rd-inline-text">
+							<slot name="editable" :path="['signup', 'button', 'label']" :value="fieldValue?.signup?.button?.label" placeholder="Register with email">
+								<span v-html="fieldValue?.signup?.button?.label || trans('Register with email')" />
+							</slot>
+						</span>
+					</LinkIris>
+				</div>
 
-				<div v-if="isGoogleVisible" class="rd-google">
-					<div v-if="fieldValue?.signup?.google?.note" class="rd-google-note">
-						{{ fieldValue.signup.google.note }}
+				<div v-if="isGoogleVisible" class="rd-google" data-rd-panel="google">
+					<div v-if="fieldValue?.signup?.google?.note || isWorkshop" class="rd-google-note">
+						<slot name="editable" :path="['signup', 'google', 'note']" :value="fieldValue?.signup?.google?.note" placeholder="Google note (optional)">
+							<span v-html="fieldValue?.signup?.google?.note" />
+						</slot>
 					</div>
 
 					<button v-if="isWorkshop" type="button" class="rd-google-button">
@@ -216,7 +258,11 @@ const onCallbackGoogleLogin = async (e: GoogleLoginResponse) => {
 							<path fill="#34A853"
 								d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z" />
 						</svg>
-						{{ fieldValue?.signup?.google?.label || trans("Register with Google") }}
+						<span class="rd-inline-text">
+							<slot name="editable" :path="['signup', 'google', 'label']" :value="fieldValue?.signup?.google?.label" placeholder="Register with Google">
+								<span v-html="fieldValue?.signup?.google?.label || trans('Register with Google')" />
+							</slot>
+						</span>
 					</button>
 
 					<GoogleLogin v-else :clientId="googleClientId" popup-type="TOKEN"
@@ -234,44 +280,86 @@ const onCallbackGoogleLogin = async (e: GoogleLoginResponse) => {
 									<path fill="#34A853"
 										d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z" />
 								</svg>
-								{{ fieldValue?.signup?.google?.label || trans("Register with Google") }}
+								<span v-html="fieldValue?.signup?.google?.label || trans('Register with Google')" />
 							</div>
 						</template>
 					</GoogleLogin>
 				</div>
 
-				<div class="rd-existing editor-class">
-					<slot name="login-note">
+				<div class="rd-existing editor-class" data-rd-panel="login-note">
+					<slot name="editable" :path="['signup', 'login_note']" :value="fieldValue?.signup?.login_note" placeholder="Login note">
 						<div v-html="fieldValue?.signup?.login_note" />
 					</slot>
 				</div>
 
-				<div v-if="fieldValue?.signup?.whatsapp?.show !== false" class="rd-whatsapp">
-					<FontAwesomeIcon :icon="faWhatsapp" class="rd-icon rd-icon-whatsapp" fixed-width
-						aria-hidden="true" />
-					<div>
-						<strong>{{ fieldValue?.signup?.whatsapp?.title }}</strong>
-						{{ fieldValue?.signup?.whatsapp?.text }}
-						<small v-if="fieldValue?.signup?.whatsapp?.note">{{ fieldValue.signup.whatsapp.note }}</small>
+				<div v-if="showWhatsappNote || showAudienceNote" class="rd-notes">
+					<component
+						:is="whatsappHref ? 'a' : 'div'"
+						v-if="showWhatsappNote"
+						class="rd-note rd-note-whatsapp"
+						data-rd-panel="whatsapp"
+						:class="{ 'rd-note-link': whatsappHref }"
+						:href="whatsappHref ?? undefined"
+						:target="whatsappHref ? '_blank' : undefined"
+						:rel="whatsappHref ? 'noopener noreferrer' : undefined">
+						<span class="rd-note-icon rd-note-icon-whatsapp" aria-hidden="true">
+							<FontAwesomeIcon :icon="faWhatsapp" fixed-width />
+						</span>
+						<div class="rd-note-body">
+							<div v-if="fieldValue?.signup?.whatsapp?.title || isWorkshop" class="rd-note-title">
+								<slot name="editable" :path="['signup', 'whatsapp', 'title']" :value="fieldValue?.signup?.whatsapp?.title" placeholder="WhatsApp title">
+									<span v-html="fieldValue?.signup?.whatsapp?.title" />
+								</slot>
+							</div>
+							<div v-if="fieldValue?.signup?.whatsapp?.text || isWorkshop" class="rd-note-text">
+								<slot name="editable" :path="['signup', 'whatsapp', 'text']" :value="fieldValue?.signup?.whatsapp?.text" placeholder="WhatsApp text">
+									<span v-html="fieldValue?.signup?.whatsapp?.text" />
+								</slot>
+							</div>
+							<div v-if="fieldValue?.signup?.whatsapp?.note || isWorkshop" class="rd-note-small">
+								<slot name="editable" :path="['signup', 'whatsapp', 'note']" :value="fieldValue?.signup?.whatsapp?.note" placeholder="WhatsApp small print">
+									<span v-html="fieldValue?.signup?.whatsapp?.note" />
+								</slot>
+							</div>
+						</div>
+					</component>
+
+					<div v-if="showAudienceNote" class="rd-note rd-note-audience" data-rd-panel="audience">
+						<span v-if="fieldValue?.signup?.audience?.icon" class="rd-note-icon" aria-hidden="true">
+							<FontAwesomeIcon :icon="fieldValue.signup.audience.icon" fixed-width />
+						</span>
+						<div class="rd-note-body">
+							<div class="rd-note-text">
+								<slot name="editable" :path="['signup', 'audience', 'text']" :value="fieldValue?.signup?.audience?.text" placeholder="Audience">
+									<span v-html="fieldValue?.signup?.audience?.text" />
+								</slot>
+							</div>
+						</div>
 					</div>
 				</div>
-
-				<p v-if="fieldValue?.signup?.audience?.show !== false" class="rd-audience">
-					<FontAwesomeIcon v-if="fieldValue?.signup?.audience?.icon" :icon="fieldValue.signup.audience.icon"
-						class="rd-icon" fixed-width aria-hidden="true" />
-					<span>{{ fieldValue?.signup?.audience?.text }}</span>
-				</p>
 			</section>
 		</div>
 
-		<section v-if="faqItems.length" class="rd-faq">
-			<h2 v-if="fieldValue?.faq?.title">{{ fieldValue.faq.title }}</h2>
+		<section v-if="faqItems.length || (isWorkshop && fieldValue?.faq?.show !== false)" class="rd-faq" data-rd-panel="faq">
+			<h2 v-if="fieldValue?.faq?.title || isWorkshop">
+				<slot name="editable" :path="['faq', 'title']" :value="fieldValue?.faq?.title" placeholder="FAQ title">
+					<span v-html="fieldValue?.faq?.title" />
+				</slot>
+			</h2>
 
-			<div class="rd-faq-grid">
-				<details v-for="(item, index) in faqItems" :key="index" open>
-					<summary>{{ item.question }}</summary>
+			<div v-if="isWorkshop && !faqItems.length" class="rd-faq-empty" data-rd-panel="faq-items">
+				{{ trans("No questions yet. Add them in FAQ questions.") }}
+			</div>
+
+			<div v-if="faqItems.length" class="rd-faq-grid">
+				<details v-for="(item, index) in faqItems" :key="index" open data-rd-panel="faq-items" :data-rd-index="index">
+					<summary @click.capture="isWorkshop && $event.preventDefault()">
+						<slot name="editable" :path="['faq', 'items', index, 'question']" :value="item.question" placeholder="Question">
+							<span v-html="item.question" />
+						</slot>
+					</summary>
 					<div class="rd-faq-answer editor-class">
-						<slot name="faq-answer" :item="item" :index="index">
+						<slot name="editable" :path="['faq', 'items', index, 'answer']" :value="item.answer" placeholder="Answer">
 							<div v-html="item.answer" />
 						</slot>
 					</div>
@@ -312,12 +400,33 @@ const onCallbackGoogleLogin = async (e: GoogleLoginResponse) => {
 .rd-root .editor-class,
 .rd-root .editor-class p,
 .rd-root .editor-class li,
-.rd-benefit-text,
-.rd-whatsapp strong,
-.rd-footer nav,
-.rd-footer a {
+.rd-benefit-text {
 	line-height: inherit;
 	font-size: 0.8rem;
+}
+
+.rd-root h1 p,
+.rd-root h2 p,
+.rd-subtitle p,
+.rd-inline-text p,
+.rd-google-note p,
+.rd-benefit-text p,
+.rd-note-body p,
+.rd-root summary p {
+	display: inline;
+}
+
+.rd-root .rd-editable,
+.rd-root .rd-editable .editor-class,
+.rd-root .rd-editable .editor-class p {
+	font-size: inherit;
+	font-weight: inherit;
+	font-family: inherit;
+	line-height: inherit;
+	letter-spacing: inherit;
+	color: inherit;
+	text-align: inherit;
+	text-shadow: none;
 }
 
 .rd-root a:focus-visible,
@@ -326,42 +435,10 @@ const onCallbackGoogleLogin = async (e: GoogleLoginResponse) => {
 	outline-offset: 5px;
 }
 
-.rd-header {
-	height: 82px;
-	padding: 8px 5%;
-	display: flex;
-	justify-content: space-between;
-	align-items: center;
-	border-bottom: 1px solid #eee;
-}
 
-.rd-logo {
-	width: 160px;
-	height: 66px;
-	display: block;
-}
 
-.rd-logo img {
-	width: 100%;
-	height: 100%;
-	object-fit: contain;
-}
 
-.rd-nav {
-	display: flex;
-	gap: 32px;
-	align-items: center;
-	font-size: 15px;
-	line-height: 1.5;
-}
 
-.rd-login-top {
-	border: 1px solid var(--rd-accent);
-	padding: 10px 22px;
-	border-radius: 5px;
-	color: var(--rd-accent);
-	line-height: 1.5;
-}
 
 .rd-main {
 	display: grid;
@@ -449,18 +526,6 @@ const onCallbackGoogleLogin = async (e: GoogleLoginResponse) => {
 	min-width: 0;
 }
 
-.rd-icon {
-	width: 37px;
-	height: 37px;
-	flex: 0 0 37px;
-	font-size: 28px;
-	color: var(--rd-accent);
-}
-
-.rd-icon-whatsapp {
-	color: #21b95b;
-}
-
 .rd-signup {
 	position: relative;
 	padding: 65px 12% 32px;
@@ -503,7 +568,6 @@ const onCallbackGoogleLogin = async (e: GoogleLoginResponse) => {
 	filter: brightness(0.86);
 }
 
-.rd-primary .rd-icon,
 .rd-primary svg {
 	width: 22px;
 	height: 22px;
@@ -586,39 +650,84 @@ const onCallbackGoogleLogin = async (e: GoogleLoginResponse) => {
 	text-underline-offset: 3px;
 }
 
-.rd-whatsapp {
-	border-top: 1px solid #ddd;
-	padding-top: 25px;
+.rd-notes {
 	display: flex;
-	gap: 18px;
-	align-items: flex-start;
-	margin-top: 16px;
-	font-size: 16px;
-	line-height: 1.5;
-}
-
-.rd-whatsapp small {
-	display: block;
-	margin-top: 7px;
-	font-size: 14px;
-	line-height: 1.5;
-}
-
-.rd-audience {
-	display: flex;
+	flex-direction: column;
 	gap: 16px;
-	align-items: center;
-	font-size: 14px;
-	margin-top: 28px;
-	line-height: 1.5;
+	margin-top: 8px;
+	padding-top: 22px;
+	border-top: 1px solid #e5e2dd;
 }
 
-.rd-audience .rd-icon {
+.rd-note {
+	display: flex;
+	align-items: flex-start;
+	gap: 18px;
+}
+
+.rd-note-link {
+	cursor: pointer;
+}
+
+.rd-note-link:hover .rd-note-title,
+.rd-note-link:focus-visible .rd-note-title {
+	color: #21b95b;
+	text-decoration: underline;
+	text-underline-offset: 3px;
+}
+
+.rd-note-audience {
+	align-items: center;
+	gap: 16px;
+}
+
+.rd-note-icon {
+	flex: 0 0 37px;
+	width: 37px;
+	height: 37px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	color: var(--rd-accent);
+	font-size: 28px;
+}
+
+.rd-note-audience .rd-note-icon {
+	flex-basis: 28px;
 	width: 28px;
 	height: 28px;
-	flex-basis: 28px;
 	font-size: 22px;
 	filter: grayscale(1);
+}
+
+.rd-note-icon-whatsapp {
+	color: #21b95b;
+}
+
+.rd-note-body {
+	min-width: 0;
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+}
+
+.rd-note-title {
+	font-size: 15px;
+	font-weight: 600;
+	line-height: 1.35;
+	color: var(--rd-ink);
+}
+
+.rd-note-text {
+	font-size: 14px;
+	line-height: 1.45;
+	color: #3f4a55;
+}
+
+.rd-note-small {
+	font-size: 13px;
+	line-height: 1.45;
+	color: #6b7280;
 }
 
 .rd-faq {
@@ -655,26 +764,26 @@ const onCallbackGoogleLogin = async (e: GoogleLoginResponse) => {
 	color: #444e58;
 }
 
-.rd-footer {
-	background: #202429;
-	color: #eee;
-	padding: 25px 5%;
-	display: flex;
-	gap: 25px;
-	align-items: center;
-	justify-content: space-between;
-	font-size: 13px;
-	line-height: 1.5;
+.rd-workshop summary .rd-editable,
+.rd-workshop summary .rd-editable div,
+.rd-workshop summary .rd-editable p {
+	display: inline;
 }
 
-.rd-footer nav {
-	display: flex;
-	gap: 23px;
+.rd-faq-empty {
+	max-width: 1000px;
+	margin: 0 auto;
+	padding: 18px;
+	border: 1px dashed #d6d3cd;
+	border-radius: 8px;
+	text-align: center;
+	font-size: 14px;
+	color: #6b7280;
+	cursor: pointer;
 }
 
-.rd-footer a:hover {
-	text-decoration: underline;
-}
+
+
 
 @media (min-width: 1600px) {
 	.rd-main {
@@ -694,13 +803,6 @@ const onCallbackGoogleLogin = async (e: GoogleLoginResponse) => {
 		grid-template-columns: repeat(2, minmax(0, 1fr));
 	}
 
-	.rd-icon {
-		width: 28px;
-		height: 28px;
-		flex-basis: 28px;
-		font-size: 22px;
-	}
-
 	.rd-signup {
 		padding: 45px 8%;
 	}
@@ -711,24 +813,9 @@ const onCallbackGoogleLogin = async (e: GoogleLoginResponse) => {
 }
 
 @media (max-width: 760px) {
-	.rd-header {
-		height: 74px;
-		padding: 8px 20px;
-	}
 
-	.rd-logo {
-		width: 135px;
-		height: 56px;
-	}
 
-	.rd-nav {
-		gap: 15px;
-		font-size: 13px;
-	}
 
-	.rd-nav>a:first-child {
-		display: none;
-	}
 
 	.rd-main {
 		display: flex;
@@ -810,14 +897,20 @@ const onCallbackGoogleLogin = async (e: GoogleLoginResponse) => {
 		gap: 12px;
 	}
 
-	.rd-footer {
-		flex-direction: column;
-		align-items: flex-start;
-		padding: 25px 24px;
+	.rd-notes {
+		gap: 12px;
+		padding-top: 18px;
 	}
 
-	.rd-whatsapp {
-		margin-top: 0;
+	.rd-note {
+		gap: 14px;
+	}
+
+	.rd-note-icon {
+		flex-basis: 28px;
+		width: 28px;
+		height: 28px;
+		font-size: 22px;
 	}
 }
 

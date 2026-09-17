@@ -1,4 +1,7 @@
-import { faBox, faEnvelope, faPercent, faStore, faTag, faTruck, faUsers } from "@fal"
+import { library } from "@fortawesome/fontawesome-svg-core"
+import { faAward, faBadgeCheck, faBox, faBoxOpen, faEnvelope, faPercent, faShippingFast, faStore, faTag, faTruck, faUsers } from "@fal"
+
+library.add(faAward, faBadgeCheck, faBox, faBoxOpen, faEnvelope, faPercent, faShippingFast, faStore, faTag, faTruck, faUsers)
 
 const iconPickerProps = {
 	iconList: [faBox, faTag, faUsers, faPercent, faTruck, faStore, faEnvelope],
@@ -9,7 +12,7 @@ const benefitBlueprint = [
 	{
 		key: ["text"],
 		label: "Text",
-		type: "text",
+		type: "editorhtml",
 	},
 	{
 		key: ["icon"],
@@ -23,7 +26,7 @@ const faqBlueprint = [
 	{
 		key: ["question"],
 		label: "Question",
-		type: "text",
+		type: "editorhtml",
 	},
 	{
 		key: ["answer"],
@@ -32,85 +35,15 @@ const faqBlueprint = [
 	},
 ]
 
-const footerLinkBlueprint = [
-	{
-		key: ["label"],
-		label: "Label",
-		type: "text",
-	},
-	{
-		key: ["link"],
-		label: "Link",
-		type: "link",
-	},
-]
-
-const headerGroup = {
-	name: "Header",
-	key: ["header"],
-	information: "A slim header for the registration page. Hide it when the website already shows its own header above the block.",
-	replaceForm: [
-		{
-			key: ["show"],
-			label: "Show header",
-			type: "switch",
-			props_data: {},
-		},
-		{
-			key: ["logo"],
-			label: "Logo",
-			type: "image-cropped",
-			props_data: {
-				stencilProps: {
-					aspectRatio: [16 / 9],
-					movable: true,
-					scalable: true,
-					resizable: true,
-				},
-			},
-		},
-		{
-			key: ["logo_url"],
-			label: "Logo address",
-			type: "text",
-			information: "Address of an image already hosted elsewhere. Used when no logo is uploaded.",
-		},
-		{
-			key: ["logo_alt"],
-			label: "Logo alternate text",
-			type: "text",
-		},
-		{
-			key: ["home", "label"],
-			label: "Back to shop label",
-			type: "text",
-		},
-		{
-			key: ["home", "link"],
-			label: "Back to shop link",
-			type: "link",
-		},
-		{
-			key: ["login", "label"],
-			label: "Log in label",
-			type: "text",
-		},
-		{
-			key: ["login", "link"],
-			label: "Log in link",
-			type: "link",
-		},
-	],
-}
-
 const heroGroup = {
+	panel: "hero",
 	name: "Hero",
 	key: ["hero"],
 	replaceForm: [
 		{
 			key: ["title"],
 			label: "Title",
-			type: "text",
+			type: "editorhtml",
 		},
 		{
 			key: ["intro"],
@@ -147,118 +80,168 @@ const heroGroup = {
 			type: "switch",
 			props_data: {},
 		},
-		{
-			key: ["benefits"],
-			name: "Benefits",
-			type: "array-data",
-			props_data: {
-				blueprint: benefitBlueprint,
-				order_name: "benefit",
-				can_drag: true,
-				can_delete: true,
-				can_add: true,
-				new_value_data: {
-					text: "New benefit",
-					icon: ["fal", "box"],
-				},
-			},
-		},
 	],
 }
 
+const benefitsGroup = {
+	panel: "benefits",
+	name: "Benefits",
+	key: ["hero", "benefits"],
+	type: "array-data",
+	props_data: {
+		blueprint: benefitBlueprint,
+		order_name: "benefit",
+		can_drag: true,
+		can_delete: true,
+		can_add: true,
+		new_value_data: {
+			text: "New benefit",
+			icon: ["fal", "box"],
+		},
+	},
+}
+
 const signupGroup = {
+	panel: "signup",
 	name: "Sign up",
 	key: ["signup"],
 	replaceForm: [
 		{
 			key: ["title"],
 			label: "Title",
-			type: "text",
+			type: "editorhtml",
 		},
 		{
 			key: ["subtitle"],
 			label: "Subtitle",
-			type: "text",
+			type: "editorhtml",
 		},
+	],
+}
+
+const registerButtonGroup = {
+	panel: "register-button",
+	name: "Register button",
+	key: ["signup", "button"],
+	replaceForm: [
 		{
-			key: ["button", "show"],
+			key: ["show"],
 			label: "Show register button",
 			type: "switch",
 			props_data: {},
 		},
 		{
-			key: ["button", "label"],
-			label: "Register button label",
-			type: "text",
+			key: ["label"],
+			label: "Label",
+			type: "editorhtml",
 		},
 		{
-			key: ["button", "icon"],
-			label: "Register button icon",
+			key: ["icon"],
+			label: "Icon",
 			type: "icon-picker",
 			props_data: iconPickerProps,
 		},
 		{
-			key: ["button", "link"],
-			label: "Register button link",
+			key: ["link"],
+			label: "Link",
 			type: "link",
 		},
+	],
+}
+
+const googleGroup = {
+	panel: "google",
+	name: "Register with Google",
+	key: ["signup", "google"],
+	information: "Shown only when the website is served with a Google client id.",
+	replaceForm: [
 		{
-			key: ["google", "show"],
+			key: ["show"],
 			label: "Show register with Google",
 			type: "switch",
 			props_data: {},
-			information: "Shown only when the website is served with a Google client id.",
 		},
 		{
-			key: ["google", "note"],
-			label: "Google note",
-			type: "text",
-		},
-		{
-			key: ["google", "label"],
-			label: "Google button label",
-			type: "text",
-		},
-		{
-			key: ["login_note"],
-			label: "Login note",
+			key: ["note"],
+			label: "Note",
 			type: "editorhtml",
 		},
 		{
-			key: ["whatsapp", "show"],
+			key: ["label"],
+			label: "Button label",
+			type: "editorhtml",
+		},
+	],
+}
+
+const loginNoteGroup = {
+	panel: "login-note",
+	name: "Login note",
+	key: ["signup", "login_note"],
+	label: "Note",
+	type: "editorhtml",
+}
+
+const whatsappGroup = {
+	panel: "whatsapp",
+	name: "WhatsApp",
+	key: ["signup", "whatsapp"],
+	replaceForm: [
+		{
+			key: ["show"],
 			label: "Show WhatsApp note",
 			type: "switch",
 			props_data: {},
 		},
 		{
-			key: ["whatsapp", "title"],
-			label: "WhatsApp title",
-			type: "text",
+			key: ["title"],
+			label: "Title",
+			type: "editorhtml",
 		},
 		{
-			key: ["whatsapp", "text"],
-			label: "WhatsApp text",
-			type: "text",
+			key: ["text"],
+			label: "Text",
+			type: "editorhtml",
 		},
 		{
-			key: ["whatsapp", "note"],
-			label: "WhatsApp small print",
-			type: "text",
+			key: ["note"],
+			label: "Small print",
+			type: "editorhtml",
 		},
 		{
-			key: ["audience", "show"],
+			key: ["number"],
+			label: "WhatsApp number",
+			type: "text",
+			information: "Number with country code, e.g. +44 7700 900123. The note opens a WhatsApp chat with it; leave empty to show the note without a link.",
+		},
+		{
+			key: ["message"],
+			label: "WhatsApp message",
+			type: "text",
+			information: "Optional text already typed in the chat when it opens.",
+		},
+	],
+}
+
+const audienceGroup = {
+	panel: "audience",
+	name: "Audience",
+	key: ["signup", "audience"],
+	replaceForm: [
+		{
+			key: ["show"],
 			label: "Show audience line",
 			type: "switch",
 			props_data: {},
 		},
 		{
-			key: ["audience", "text"],
-			label: "Audience text",
-			type: "text",
+			key: ["text"],
+			label: "Text",
+			type: "editorhtml",
 		},
 		{
-			key: ["audience", "icon"],
-			label: "Audience icon",
+			key: ["icon"],
+			label: "Icon",
 			type: "icon-picker",
 			props_data: iconPickerProps,
 		},
@@ -266,6 +249,7 @@ const signupGroup = {
 }
 
 const faqGroup = {
+	panel: "faq",
 	name: "FAQ",
 	key: ["faq"],
 	replaceForm: [
@@ -278,111 +262,89 @@ const faqGroup = {
 		{
 			key: ["title"],
 			label: "Title",
-			type: "text",
-		},
-		{
-			key: ["items"],
-			name: "Questions",
-			type: "array-data",
-			props_data: {
-				blueprint: faqBlueprint,
-				order_name: "question",
-				can_drag: true,
-				can_delete: true,
-				can_add: true,
-				new_value_data: {
-					question: "New question",
-					answer: null,
-				},
-			},
-		},
-	],
-}
-
-const footerGroup = {
-	name: "Footer",
-	key: ["footer"],
-	information: "A slim footer for the registration page. Hide it when the website already shows its own footer under the block.",
-	replaceForm: [
-		{
-			key: ["show"],
-			label: "Show footer",
-			type: "switch",
-			props_data: {},
-		},
-		{
-			key: ["text"],
-			label: "Text",
 			type: "editorhtml",
 		},
-		{
-			key: ["email"],
-			label: "Email",
-			type: "text",
-		},
-		{
-			key: ["links"],
-			name: "Links",
-			type: "array-data",
-			props_data: {
-				blueprint: footerLinkBlueprint,
-				order_name: "link",
-				can_drag: true,
-				can_delete: true,
-				can_add: true,
-				new_value_data: {
-					label: "New link",
-					link: null,
-				},
-			},
-		},
 	],
 }
 
+const faqItemsGroup = {
+	panel: "faq-items",
+	name: "FAQ questions",
+	key: ["faq", "items"],
+	type: "array-data",
+	props_data: {
+		blueprint: faqBlueprint,
+		order_name: "question",
+		can_drag: true,
+		can_delete: true,
+		can_add: true,
+		new_value_data: {
+			question: "New question",
+			answer: null,
+		},
+	},
+}
+
+const blueprint = [
+	{
+		label: "# Id ",
+		key: ["id"],
+		type: "text",
+		information: "id selector is used to select one unique element!",
+	},
+	{
+		label: "Accent colour",
+		key: ["accent_color"],
+		type: "color",
+		information: "Used by the register button, the outlined log in button and the links. Leave empty to use the website theme colour.",
+	},
+	heroGroup,
+	benefitsGroup,
+	signupGroup,
+	registerButtonGroup,
+	googleGroup,
+	loginNoteGroup,
+	whatsappGroup,
+	audienceGroup,
+	faqGroup,
+	faqItemsGroup,
+	{
+		panel: "layout",
+		name: "Layout",
+		key: ["container", "properties"],
+		replaceForm: [
+			{
+				key: ["background"],
+				label: "Background",
+				type: "background",
+				useIn: ["desktop", "tablet", "mobile"],
+			},
+			{
+				key: ["padding"],
+				label: "Padding",
+				type: "padding",
+				props_data: {},
+				useIn: ["desktop", "tablet", "mobile"],
+			},
+			{
+				key: ["margin"],
+				label: "Margin",
+				type: "margin",
+				props_data: {},
+				useIn: ["desktop", "tablet", "mobile"],
+			},
+		],
+	},
+]
+
+/**
+ * Side editor panel opened for each part of the block, keyed by the data-rd-panel name the block
+ * puts on that part. The value is the accordion key the side editor gives the panel.
+ */
+export const panelKeys: Record<string, string> = Object.fromEntries(
+	blueprint.filter(group => "panel" in group).map(group => [group.panel, group.key.join("-")])
+)
+
 export default {
-	blueprint: [
-		{
-			label: "# Id ",
-			key: ["id"],
-			type: "text",
-			information: "id selector is used to select one unique element!",
-		},
-		{
-			label: "Accent colour",
-			key: ["accent_color"],
-			type: "color",
-			information: "Used by the register button, the outlined log in button and the links. Leave empty to use the website theme colour.",
-		},
-		heroGroup,
-		signupGroup,
-		faqGroup,
-		headerGroup,
-		footerGroup,
-		{
-			name: "Layout",
-			key: ["container", "properties"],
-			replaceForm: [
-				{
-					key: ["background"],
-					label: "Background",
-					type: "background",
-					useIn: ["desktop", "tablet", "mobile"],
-				},
-				{
-					key: ["padding"],
-					label: "Padding",
-					type: "padding",
-					props_data: {},
-					useIn: ["desktop", "tablet", "mobile"],
-				},
-				{
-					key: ["margin"],
-					label: "Margin",
-					type: "margin",
-					props_data: {},
-					useIn: ["desktop", "tablet", "mobile"],
-				},
-			],
-		},
-	],
+	blueprint,
 }
