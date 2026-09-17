@@ -2173,6 +2173,32 @@ test('DeleteMasterProductCategory force deletes a master sub department without 
     expect(MasterProductCategory::find($masterSubDepartmentId))->toBeNull();
 });
 
+test('DeleteMasterProductCategory deletes empty shop categories and keeps the ones with products', function () {
+    $masterShop       = createFreshMasterShop();
+    $masterDepartment = StoreMasterDepartment::make()->action($masterShop, ['code' => 'DMC-DEPT-'.uniqid(), 'name' => 'Delete Cascade Department']);
+    $masterFamily     = StoreMasterFamily::make()->action($masterDepartment, ['code' => 'DMC-FAM-'.uniqid(), 'name' => 'Delete Cascade Family']);
+
+    [, $product] = createProduct($this->shop);
+    $department  = $this->shop->productCategories()->where('type', ProductCategoryTypeEnum::DEPARTMENT)->first();
+    $emptyFamily = StoreProductCategory::make()->action($department, array_merge(
+        ProductCategory::factory()->definition(),
+        ['type' => ProductCategoryTypeEnum::FAMILY->value]
+    ));
+    $familyWithProducts = $product->family;
+
+    $emptyFamily->updateQuietly(['master_product_category_id' => $masterFamily->id]);
+    $familyWithProducts->updateQuietly(['master_product_category_id' => $masterFamily->id]);
+
+    expect(fn () => DeleteMasterProductCategory::make()->action($masterFamily))->toThrow(\Illuminate\Validation\ValidationException::class);
+
+    DeleteMasterProductCategory::make()->handle($masterFamily);
+
+    expect(ProductCategory::find($emptyFamily->id))->toBeNull()
+        ->and(ProductCategory::find($familyWithProducts->id))->not->toBeNull()
+        ->and(MasterProductCategory::find($masterFamily->id))->toBeNull()
+        ->and($familyWithProducts->fresh()->master_product_category_id)->toBeNull();
+});
+
 test('AttachMasterFamiliesToMasterDepartment moves families under a department', function () {
     $masterShop       = createFreshMasterShop();
     $masterDepartment = StoreMasterDepartment::make()->action($masterShop, [
