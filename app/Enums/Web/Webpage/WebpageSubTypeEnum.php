@@ -47,6 +47,7 @@ enum WebpageSubTypeEnum: string
     /** System Sub Type */
     case LOGIN_PAGE = "login_page";
     case REGISTER_PAGE = "register_page";
+    case REGISTER_DASHBOARD_PAGE = "register_dashboard_page";
     case FORGOT_PASSWORD_PAGE = "forgot_password_page";
     case BLOG_DASHBOARD_PAGE = "blog_dashboard_page";
 
@@ -68,6 +69,7 @@ enum WebpageSubTypeEnum: string
         return [
             self::LOGIN_PAGE->value           => ['web_block' => 'login', 'website_field' => 'login_page_id', 'url' => 'login', 'title' => 'Login'],
             self::REGISTER_PAGE->value        => ['web_block' => 'register', 'website_field' => 'register_page_id', 'url' => 'register', 'title' => 'Register'],
+            self::REGISTER_DASHBOARD_PAGE->value => ['web_block' => 'register-dashboard', 'website_field' => 'register_dashboard_page_id', 'url' => 'register-dashboard', 'title' => 'Register Dashboard'],
             self::FORGOT_PASSWORD_PAGE->value => ['web_block' => 'forgot-password', 'website_field' => 'forgot_password_page_id', 'url' => 'forgot-password', 'title' => 'Forgot Password'],
             self::BLOG_DASHBOARD_PAGE->value  => ['web_block' => 'blog-categories', 'website_field' => 'blog_dashboard_page_id', 'url' => 'blog', 'title' => 'Our Blog'],
         ];
@@ -93,6 +95,7 @@ enum WebpageSubTypeEnum: string
 
             'login_page'            => __('Login'),
             'register_page'         => __('Register'),
+            'register_dashboard_page' => __('Register Dashboard'),
             'forgot_password_page'  => __('Forgot Password'),
             'blog_dashboard_page'   => __('Blog Dashboard'),
         ];

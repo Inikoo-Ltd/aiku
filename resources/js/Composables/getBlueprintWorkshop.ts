@@ -46,6 +46,7 @@ import CTAVideo1Blueprint from '@/Components/CMS/Webpage/CtaVideo1/Blueprint'
 import UserSubscribe from "@/Components/CMS/Webpage/UserSubscribe/Blueprint"
 import LoginBlueprint from "@/Components/CMS/Webpage/Login/Blueprint"
 import RegisterBlueprint from "@/Components/CMS/Webpage/Register/Blueprint"
+import RegisterDashboardBlueprint from "@/Components/CMS/Webpage/RegisterDashboard/Blueprint"
 import ForgetPasswordBlueprint from "@/Components/CMS/Webpage/ForgetPassword/Blueprint"
 import Families1Blueprint from '@/Components/CMS/Webpage/Families1/Blueprint'
 import Families2Blueprint from '@/Components/CMS/Webpage/Families2/Blueprint'
@@ -184,6 +185,7 @@ export const getBlueprint = (componentName: string, data?: object, id? : number)
 		"user-subscribe": UserSubscribe.blueprint,
 		"login": LoginBlueprint.blueprint,
 		"register": RegisterBlueprint.blueprint,
+		"register-dashboard": RegisterDashboardBlueprint.blueprint,
 		"forgot-password": ForgetPasswordBlueprint.blueprint,
 		"cta4": Cta4Blueprint.blueprint,
 		'carousel-cta' : CtaCarousel.blueprint,

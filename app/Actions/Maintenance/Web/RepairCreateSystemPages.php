@@ -10,7 +10,9 @@
 namespace App\Actions\Maintenance\Web;
 
 use App\Actions\Traits\WithActionUpdate;
+use App\Actions\Web\Webpage\PublishWebpage;
 use App\Actions\Web\Webpage\StoreWebpage;
+use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Enums\Web\Webpage\WebpageSubTypeEnum;
 use App\Enums\Web\Webpage\WebpageTypeEnum;
 use App\Models\Web\Webpage;
@@ -41,11 +43,35 @@ class RepairCreateSystemPages
                     'type'     => WebpageTypeEnum::SYSTEM_PAGE,
                     'sub_type' => $subType,
                 ]);
+            } elseif (count($this->getWebpageBlocksByType($webpage, $systemPage['web_block'])) == 0) {
+                $this->restoreSystemWebBlock($webpage, $systemPage['web_block'], $command);
             }
 
             $website->update([$systemPage['website_field'] => $webpage->id]);
 
             $command?->info("{$systemPage['title']}: {$webpage->canonical_url}");
+        }
+    }
+
+    protected function restoreSystemWebBlock(Webpage $webpage, string $webBlockCode, ?Command $command = null): void
+    {
+        if (!$this->createWebBlock($webpage, $webBlockCode)) {
+            $command?->error("{$webpage->code}: web block type {$webBlockCode} not found, run group:seed_web_block_types");
+
+            return;
+        }
+
+        $command?->line("{$webpage->code}: {$webBlockCode} web block was missing, added it back");
+
+        $webpage->refresh();
+
+        if ($webpage->is_dirty && $webpage->state == WebpageStateEnum::LIVE) {
+            PublishWebpage::make()->action(
+                $webpage,
+                [
+                    'comment' => 'publish after restoring system web block',
+                ]
+            );
         }
     }
 
