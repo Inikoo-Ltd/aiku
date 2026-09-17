@@ -325,6 +325,11 @@ class Ticket extends Model implements Auditable, HasMedia
         return $this->isReportedBy($user) && $this->status->isOpen();
     }
 
+    public function canBeReopenedByReporter(?User $user): bool
+    {
+        return $this->isReportedBy($user) && $this->status === TicketStatusEnum::RESOLVED;
+    }
+
     public function scopeVisibleTo(Builder $query, User $user): Builder
     {
         if (self::canBeAssignedBy($user)) {

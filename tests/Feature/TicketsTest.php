@@ -212,6 +212,33 @@ test('grp form endpoints create, update and comment', function () {
         ->and($ticket->comments()->count())->toBe(1);
 });
 
+test('reporter reopens their own done ticket into reporter replied, nobody else can', function () {
+    $reporter = User::factory()->create(['group_id' => $this->group->id]);
+    $ticket   = StoreTicket::make()->action($this->group, ['subject' => 'Reporter reopen']);
+    $ticket->update(['reporter_type' => 'User', 'reporter_id' => $reporter->id]);
+    UpdateTicket::make()->action($ticket, ['status' => TicketStatusEnum::RESOLVED->value, 'assignee_id' => $this->user->id]);
+
+    actingAs(User::factory()->create(['group_id' => $this->group->id]));
+    patch(route('grp.models.ticket.update', $ticket->id), ['status' => 'answered', 'status_comment' => 'Let me in'])->assertForbidden();
+
+    actingAs($reporter);
+    post(route('grp.models.ticket.comment.store', $ticket->id), ['body' => 'A reply does not reopen'])->assertRedirect();
+    expect($ticket->refresh()->status)->toBe(TicketStatusEnum::RESOLVED);
+
+    patch(route('grp.models.ticket.update', $ticket->id), ['status' => 'answered'])->assertForbidden();
+    patch(route('grp.models.ticket.update', $ticket->id), ['status' => 'open', 'status_comment' => 'Still wrong'])->assertForbidden();
+    patch(route('grp.models.ticket.update', $ticket->id), ['status' => 'answered', 'status_comment' => 'Still wrong'])->assertRedirect()->assertSessionHasNoErrors();
+
+    $ticket->refresh();
+    expect($ticket->status)->toBe(TicketStatusEnum::ANSWERED)
+        ->and($ticket->assignee_id)->toBe($this->user->id)
+        ->and($ticket->resolved_at)->toBeNull()
+        ->and($ticket->comments()->where('body', 'Still wrong')->value('author_id'))->toBe($reporter->id);
+
+    patch(route('grp.models.ticket.update', $ticket->id), ['status' => 'answered', 'status_comment' => 'Again'])->assertForbidden();
+    actingAs($this->user);
+});
+
 test('reporter cancels their own ticket but cannot change anything else', function () {
     $reporter = User::factory()->create(['group_id' => $this->group->id]);
     $ticket   = StoreTicket::make()->action($this->group, ['subject' => 'Reporter cancel']);
@@ -1412,9 +1439,10 @@ test('done and cancel publish the closing comment together with the status chang
     $own = StoreTicket::make()->action($this->group, ['subject' => 'Mine to close', 'reporter_type' => 'User', 'reporter_id' => $reporter->id]);
 
     patch(route('grp.models.ticket.update', $own->id), ['priority' => 'urgent', 'status_comment' => 'sneaky'])->assertForbidden();
-    patch(route('grp.models.ticket.update', $own->id), ['status' => 'cancelled', 'status_comment' => 'Not needed any more'])->assertForbidden();
-    expect($own->fresh()->status)->toBe(TicketStatusEnum::OPEN)
-        ->and($own->comments()->where('body', 'Not needed any more')->exists())->toBeFalse();
+    patch(route('grp.models.ticket.update', $own->id), ['status' => 'cancelled', 'status_comment' => 'Not needed any more'])->assertRedirect()->assertSessionHasNoErrors();
+    expect($own->fresh()->status)->toBe(TicketStatusEnum::CANCELLED)
+        ->and($own->comments()->where('body', 'Not needed any more')->exists())->toBeTrue()
+        ->and($own->comments()->where('body', 'sneaky')->exists())->toBeFalse();
 });
 
 test('the ticket write tool closes after next deployment and holds the comment until then', function () {

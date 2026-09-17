@@ -44,6 +44,7 @@ const props = defineProps<{
     can_change_kind_module: boolean
     can_update?: boolean
     can_cancel_as_reporter?: boolean
+    can_reopen_as_reporter?: boolean
     can_contribute?: boolean
     can_manage_collaborators?: boolean
     hideConfidential?: boolean
@@ -86,7 +87,7 @@ const statusBadgeClasses: Record<string, string> = {
     red: "bg-red-100 text-red-700",
 }
 
-const { statusActions, actionsFor, cancel } = useTicketStatusActions()
+const { statusActions, actionsFor, cancel, reopenAsReporter } = useTicketStatusActions()
 
 const selectableKinds = computed(() => props.options.kinds.filter((kind) => kind.value !== "escalation"))
 const canChangeKind = computed(() => props.can_change_kind_module && props.ticket.kind !== "escalation")
@@ -116,20 +117,20 @@ const escalate = () => {
 
 const isAskReporterOpen = ref(false)
 const isStatusNoteOpen = ref(false)
-const statusNoteAction = ref<"resolved" | "cancelled">("resolved")
+const statusNoteAction = ref<"resolved" | "cancelled" | "answered">("resolved")
 
 const openAskReporter = () => {
     isAskReporterOpen.value = true
 }
 
-const openStatusNote = (status: "resolved" | "cancelled") => {
+const openStatusNote = (status: "resolved" | "cancelled" | "answered") => {
     statusNoteAction.value = status
     isStatusNoteOpen.value = true
 }
 
 const runStatusAction = (status: string) => {
     if (status === "waiting") openAskReporter()
-    else if (status === "resolved" || status === "cancelled") openStatusNote(status)
+    else if (status === "resolved" || status === "cancelled" || status === "answered") openStatusNote(status)
     else update("status", status, `status:${status}`)
 }
 
@@ -320,7 +321,7 @@ const update = (field: string, value: unknown, action: string = field) => {
                             {{ useFormatTime(ticket.waiting_until, { formatTime: "hm" }) }}
                         </span>
                         <button
-                            v-for="action in can_update ? actionsFor(statusActions, ticket) : (can_cancel_as_reporter ? [cancel] : [])"
+                            v-for="action in can_update ? actionsFor(statusActions, ticket) : (can_cancel_as_reporter ? [cancel] : (can_reopen_as_reporter ? [reopenAsReporter] : []))"
                             :key="action.status"
                             v-tooltip="action.label"
                             type="button"

@@ -46,7 +46,7 @@ class UpdateTicket extends OrgAction
         }
 
         if ($statusComment !== '' && $asker instanceof User) {
-            StoreTicketComment::make()->action($ticket, $asker, ['body' => $statusComment], notifyUsers: false);
+            StoreTicketComment::make()->action($ticket, $asker, ['body' => $statusComment], notifyUsers: Arr::get($modelData, 'status') === TicketStatusEnum::ANSWERED->value);
         }
 
         if (Arr::exists($modelData, 'assignee_id') && Arr::get($modelData, 'assignee_id') != $ticket->assignee_id) {
@@ -199,6 +199,10 @@ class UpdateTicket extends OrgAction
 
         if ($request->input('status') === TicketStatusEnum::CANCELLED->value && array_diff($fields, ['status', 'status_comment']) === []) {
             return $ticket->canBeCancelledByReporter($user);
+        }
+
+        if ($request->input('status') === TicketStatusEnum::ANSWERED->value && $request->filled('status_comment') && array_diff($fields, ['status', 'status_comment']) === []) {
+            return $ticket->canBeReopenedByReporter($user);
         }
 
         if ($request->has('assignee_id')) {

@@ -55,7 +55,7 @@ class NotifyTicketUsers
                 $actor
                     ? __(':actor marked :reference (:subject) as done.', ['actor' => $actor->contact_name ?: $actor->username, 'reference' => $ticket->reference, 'subject' => $ticket->subject])
                     : __(':reference (:subject) is done.', ['reference' => $ticket->reference, 'subject' => $ticket->subject]),
-                __('If something is still wrong, reply on the ticket to reopen it.'),
+                __('If something is still wrong, use the Reopen button on the ticket.'),
             ],
             __('Open the ticket'),
             UserNotificationEnum::TICKET_RESOLVED
