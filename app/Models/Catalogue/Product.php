@@ -649,15 +649,6 @@ class Product extends Model implements Auditable, HasMedia
         return $this->belongsTo(MasterAsset::class, 'master_product_id');
     }
 
-    public function getLuigiIdentity(): string
-    {
-        if ($this->webpage) {
-            return $this->webpage->luigiIdentity();
-        }
-
-        return 'unknown';
-    }
-
     public function frontImage(): HasOne
     {
         return $this->hasOne(Media::class, 'id', 'front_image_id');
