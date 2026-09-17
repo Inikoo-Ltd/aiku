@@ -38,6 +38,10 @@ const cycleSortField = () => {
 const sortedTickets = computed(() =>
     [...props.tickets].sort((a, b) => (new Date(a[sortField.value] ?? 0).getTime() - new Date(b[sortField.value] ?? 0).getTime()) * (sortDesc.value ? -1 : 1))
 )
+const daysAgo = (date?: string) => {
+    const days = date ? Math.floor((Date.now() - new Date(date).getTime()) / 86400000) : -1
+    return days >= 0 ? days : null
+}
 </script>
 
 <template>
@@ -63,6 +67,7 @@ const sortedTickets = computed(() =>
                 <span v-if="showAssignee" class="text-xs text-gray-500 whitespace-nowrap">{{ ticket.assignee_username || "-" }}</span>
                 <span class="text-xs text-gray-500 whitespace-nowrap" :title="useFormatTime(ticket[dateKey ?? sortField], { formatTime: 'hm' })">
                     {{ useFormatTime(ticket[dateKey ?? sortField], { formatTime: "d MMM" }) }}
+                    <span v-if="daysAgo(ticket[dateKey ?? sortField]) !== null" class="text-gray-400 tabular-nums">· {{ daysAgo(ticket[dateKey ?? sortField]) }}d</span>
                 </span>
             </li>
         </ul>
