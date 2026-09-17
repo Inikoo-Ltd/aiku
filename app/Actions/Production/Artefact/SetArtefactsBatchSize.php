@@ -26,8 +26,7 @@ class SetArtefactsBatchSize extends OrgAction
             ->whereIn('id', $modelData['artefacts'])
             ->get();
 
-        Artefact::whereIn('id', $artefacts->pluck('id'))
-            ->update(['recommended_batch_size' => $modelData['recommended_batch_size']]);
+        $artefacts->each(fn (Artefact $artefact) => $artefact->update(['recommended_batch_size' => $modelData['recommended_batch_size']]));
 
         /* The families and departments carry a count of artefacts still missing a batch size. */
         ArtefactFamily::whereIn('id', $artefacts->pluck('artefact_family_id')->filter()->unique())

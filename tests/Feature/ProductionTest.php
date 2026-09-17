@@ -2977,7 +2977,8 @@ test('set artefacts batch size in bulk and rehydrate the family', function () {
     expect($changed)->toBe(2)
         ->and($one->refresh()->recommended_batch_size)->toBe(200)
         ->and($two->refresh()->recommended_batch_size)->toBe(200)
-        ->and($family->refresh()->number_artefacts_without_batch_size)->toBe(0);
+        ->and($family->refresh()->number_artefacts_without_batch_size)->toBe(0)
+        ->and($one->audits()->where('event', 'updated')->latest('id')->first()->new_values)->toBe(['recommended_batch_size' => 200]);
 });
 
 test('bulk batch size leaves artefacts of another production alone', function () {
