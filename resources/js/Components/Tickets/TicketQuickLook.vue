@@ -14,6 +14,7 @@ import Icon from "@/Components/Icon.vue"
 import TicketControls from "@/Components/Tickets/TicketControls.vue"
 import TicketAttachmentList from "@/Components/Tickets/TicketAttachmentList.vue"
 import TicketThread from "@/Components/Tickets/TicketThread.vue"
+import TicketRecommendations from "@/Components/Tickets/TicketRecommendations.vue"
 import { useModalFocusTrap } from "@/Composables/useModalFocusTrap"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
@@ -195,6 +196,9 @@ const close = () => {
                         <TicketControls v-if="controls" v-bind="controls" @updated="loadControls(ticket.id)" />
                         <p v-else-if="isControlsUnavailable" class="text-gray-500">{{ trans("Controls are unavailable") }}</p>
                         <p v-else class="text-gray-400"><FontAwesomeIcon icon="fal fa-spinner" spin class="mr-1" />{{ trans("Loading") }}</p>
+                        <div class="mt-4 border-t border-gray-200 pt-4">
+                            <TicketRecommendations :ticket-id="displayTicket.id" compact />
+                        </div>
                         <div v-if="displayTicket.source" class="mt-4 rounded-md border border-gray-200 bg-gray-50 p-3">
                             <div class="flex items-center gap-2">
                                 <FontAwesomeIcon v-if="displayTicket.source.channel_icon" :icon="displayTicket.source.channel_icon.icon" :class="displayTicket.source.channel_icon.class" fixed-width aria-hidden="true" />

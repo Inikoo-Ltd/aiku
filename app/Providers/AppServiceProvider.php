@@ -39,6 +39,7 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->bind(\Inertia\Ssr\Gateway::class, \App\Services\ReportingSsrGateway::class);
+        $this->app->bind(\App\Actions\Helpers\Ticket\Recommendations\RelatedTicketFinder::class, \App\Actions\Helpers\Ticket\Recommendations\TextRelatedTicketFinder::class);
 
         /**
          * ListenerDesignPattern is deliberately excluded: laravel-actions v2.10.2 backtrace

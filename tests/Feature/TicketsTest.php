@@ -2278,3 +2278,44 @@ test('collaborators who lose their role drop off and tickets held by former staf
     patch(route('grp.models.ticket.update', $ticket->id), ['assignee_id' => $engineer->id])->assertRedirect()->assertSessionHasNoErrors();
     expect($ticket->fresh()->assignee_id)->toBe($engineer->id);
 });
+
+test('ticket recommendations suggest similar tickets and matching knowledge base articles', function () {
+    setPermissionsTeamId($this->group->id);
+    $outsider = User::factory()->create(['group_id' => $this->group->id]);
+
+    $ticket  = StoreTicket::make()->action($this->group, ['subject' => 'Shopify orders stuck in processing', 'description' => 'Orders from the Shopify sales channel never leave processing']);
+    $similar = StoreTicket::make()->action($this->group, ['subject' => 'Shopify order processing delayed', 'description' => 'Shopify sales channel orders stay in processing']);
+    $other   = StoreTicket::make()->action($this->group, ['subject' => 'Printer out of toner']);
+    $hidden  = StoreTicket::make()->action($this->group, ['subject' => 'Shopify processing confidential', 'is_confidential' => true]);
+
+    $response = get(route('grp.json.ticket.recommendations', $ticket->id))->assertOk();
+    $related  = collect($response->json('related_tickets'))->pluck('reference');
+
+    expect($related->all())->toContain($similar->reference)
+        ->and($related->all())->not->toContain($ticket->reference)
+        ->and($related->all())->not->toContain($other->reference)
+        ->and($response->json('related_tickets.0'))->toHaveKeys(['id', 'reference', 'subject', 'status_label', 'status_icon', 'type_icon']);
+
+    actingAs($outsider);
+    expect(collect(get(route('grp.json.ticket.recommendations', $ticket->id))->assertOk()->json('related_tickets'))->pluck('reference')->all())
+        ->not->toContain($hidden->reference);
+    get(route('grp.json.ticket.recommendations', $hidden->id))->assertForbidden();
+
+    $customerTicket = StoreRetinaTicket::make()->action($this->webUser, ['subject' => 'Where is the tracking number for my order?']);
+    $articles       = App\Actions\Helpers\Ticket\SuggestTicketArticles::run($customerTicket);
+
+    expect($articles)->not->toBeEmpty()
+        ->and(collect($articles)->pluck('source')->unique()->all())->toBe(['customer'])
+        ->and(collect($articles)->pluck('url')->filter()->every(fn (string $url) => str_starts_with($url, 'https://aw-dropship.info/')))->toBeTrue()
+        ->and(collect($articles)->pluck('title')->implode(' '))->toContain('Tracking');
+
+    $helpTicket = StoreTicket::make()->action($this->group, ['subject' => 'How do I close a ticket with a note']);
+    expect(collect(App\Actions\Helpers\Ticket\SuggestTicketArticles::run($helpTicket))->pluck('source')->unique()->all())->toBe(['help']);
+});
+
+test('every customer knowledge base article has a title, summary and source link', function () {
+    $articles = App\Actions\Helpers\Ticket\SuggestTicketArticles::make()->customerArticles();
+
+    expect($articles)->not->toBeEmpty()
+        ->and($articles->every(fn (array $article) => $article['title'] !== '' && $article['summary'] !== '' && str_starts_with($article['url'], 'https://')))->toBeTrue();
+});

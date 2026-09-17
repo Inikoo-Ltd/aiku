@@ -11,6 +11,7 @@ import axios from "axios"
 import { trans } from "laravel-vue-i18n"
 import Icon from "@/Components/Icon.vue"
 import TicketUserAvatar from "@/Components/Tickets/TicketUserAvatar.vue"
+import TicketRecommendations from "@/Components/Tickets/TicketRecommendations.vue"
 import { capitalize } from "@/Composables/capitalize"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
@@ -101,6 +102,7 @@ const readPanelState = (key: string) => {
 
 const isControlsOpen = ref(readPanelState("ticket_controls_open"))
 const isHistoryOpen = ref(readPanelState("ticket_history_open"))
+const isRelatedOpen = ref(readPanelState("ticket_related_open"))
 
 const rememberPanelState = (key: string, isOpen: boolean) => {
     try {
@@ -116,6 +118,11 @@ const toggleControls = () => {
 const toggleHistory = () => {
     isHistoryOpen.value = !isHistoryOpen.value
     rememberPanelState("ticket_history_open", isHistoryOpen.value)
+}
+
+const toggleRelated = () => {
+    isRelatedOpen.value = !isRelatedOpen.value
+    rememberPanelState("ticket_related_open", isRelatedOpen.value)
 }
 
 const summaryPeople = computed(() => (props.ticket.collaborators ?? []) as { id: number; name: string; short: string; avatar?: any }[])
@@ -273,6 +280,15 @@ const update = (field: string, value: unknown) => {
                     </p>
                 </li>
             </ol>
+        </div>
+        <div class="bg-white rounded-lg border border-gray-300 text-sm">
+            <button type="button" class="flex w-full items-center justify-between gap-3 p-4 text-left text-xs text-gray-500 transition duration-200 hover:bg-gray-50" @click="toggleRelated">
+                <span class="font-medium uppercase tracking-wide text-gray-400">{{ trans("Related") }}</span>
+                <FontAwesomeIcon icon="fal fa-chevron-down" fixed-width class="text-gray-400 transition-transform duration-200" :class="!isRelatedOpen && '-rotate-90'" />
+            </button>
+            <div v-show="isRelatedOpen" class="px-4 pb-4">
+                <TicketRecommendations :ticket-id="ticket.id" />
+            </div>
         </div>
         </div>
     </div>
