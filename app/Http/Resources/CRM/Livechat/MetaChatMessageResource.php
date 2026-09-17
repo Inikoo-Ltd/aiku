@@ -51,6 +51,7 @@ class MetaChatMessageResource extends JsonResource
             ]),
             'message_type'   => $metaChatMessage->message_type->value,
             'sender_type'    => $metaChatMessage->sender_type->value,
+            'sender_name'    => $metaChatMessage->sender_name,
             'is_agent'       => $metaChatMessage->sender_type->value === ChatSenderTypeEnum::AGENT->value,
             'is_read'        => $metaChatMessage->is_read,
             'media_url'      => $metaChatMessage->imageSources(0, 0, 'attachment'),

@@ -102,4 +102,20 @@ class MetaChatMessage extends Model implements HasMedia
     {
         return $this->hasMany(MetaChatMessageTranslation::class);
     }
+
+    public function senderAgent(): BelongsTo
+    {
+        return $this->belongsTo(ChatAgent::class, 'sender_id');
+    }
+
+    public function getSenderNameAttribute(): ?string
+    {
+        if ($this->sender_type !== ChatSenderTypeEnum::AGENT || !$this->sender_id) {
+            return null;
+        }
+
+        $user = $this->senderAgent?->user;
+
+        return $user?->contact_name ?: $user?->username;
+    }
 }
