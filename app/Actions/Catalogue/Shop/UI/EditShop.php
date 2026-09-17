@@ -887,38 +887,21 @@ class EditShop extends OrgAction
                     ],
                 ],
                 [
-                    'label'       => __('Customer mailbox'),
-                    'icon'        => 'fa-light fa-envelope',
-                    'title'       => $isMailboxConnected ? __('Connected to :email', ['email' => $mailboxEmail]) : __('Connect this shop\'s customer service mailbox'),
-                    'subtitle'    => $isMailboxConnected
-                        ? __('Customer emails arriving in this mailbox appear as conversations in the CRM inbox and replies are sent from it. Disconnect to stop.')
-                        : __('Press the button and sign in with the mailbox customers write to, for example info@ or care@ of this shop. Do not sign in with your own account: the account you choose is the inbox that gets connected.'),
-                    'information' => $isMailboxConnected
-                        ? __('Connected to :email.', ['email' => $mailboxEmail]) . ($mailboxConnectedAt ? ' '.__('Since :date.', ['date' => $mailboxConnectedAt]) : '')
-                        : __('Connect a Google mailbox to send and receive customer emails from Aiku.'),
-                    'fields'      => [
-                        'mailbox__connect' => [
-                            'type'        => 'action',
-                            'label'       => __('Google mailbox'),
-                            'information' => $isMailboxConnected ? __('Connected.') : __('Not connected yet.'),
-                            'action'      => $isMailboxConnected ? [
-                                'type'   => 'button',
-                                'style'  => 'negative',
-                                'icon'   => ['fal', 'fa-envelope'],
-                                'label'  => __('Disconnect :email', ['email' => $mailboxEmail]),
-                                'route'  => [
+                    'label'  => __('Customer mailbox'),
+                    'icon'   => 'fa-light fa-envelope',
+                    'fields' => [
+                        'mailbox' => [
+                            'type'    => 'mailbox_connect',
+                            'noTitle'      => true,
+                            'noSaveButton' => true,
+                            'value'   => [
+                                'connected'        => $isMailboxConnected,
+                                'email'            => $mailboxEmail,
+                                'connected_at'     => $mailboxConnectedAt,
+                                'connect_url'      => route('grp.org.shops.show.settings.mailbox.connect', [$shop->organisation->slug, $shop->slug]),
+                                'disconnect_route' => [
                                     'name'       => 'grp.org.shops.show.settings.mailbox.disconnect',
                                     'parameters' => [$shop->organisation->slug, $shop->slug],
-                                    'method'     => 'post',
-                                ],
-                            ] : [
-                                'type'  => 'button',
-                                'style' => 'save',
-                                'icon'  => ['fal', 'fa-envelope'],
-                                'label'  => __('Connect Google mailbox'),
-                                'target' => '_self',
-                                'route'  => [
-                                    'url' => route('grp.org.shops.show.settings.mailbox.connect', [$shop->organisation->slug, $shop->slug]),
                                 ],
                             ],
                         ],

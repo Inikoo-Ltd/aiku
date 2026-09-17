@@ -26,6 +26,7 @@ import AppTheme from '@/Components/Forms/Fields/AppTheme.vue'
 import ChatTheme from '@/Components/Forms/Fields/ChatTheme.vue'
 import NotificationChannels from '@/Components/Forms/Fields/NotificationChannels.vue'
 import Action from '@/Components/Forms/Fields/Action.vue'
+import MailboxConnect from '@/Components/Forms/Fields/MailboxConnect.vue'
 import AppLogin from '@/Components/Forms/Fields/AppLogin.vue'
 import Pin from '@/Components/Forms/Fields/Pin.vue'
 import GeneratePassword from '@/Components/Forms/Fields/GeneratePassword.vue'
@@ -154,6 +155,7 @@ export const componentsList: { [key: string]: Component } = {
     'preferred_shipping': PreferredShippingModal,
 
     'action': Action,
+    'mailbox_connect': MailboxConnect,
     'theme': Theme,
     'colorMode': ColorMode,
     'avatar': Avatar,
