@@ -64,7 +64,8 @@ class GetWebBlockFamilies
 
         $permissions = [];
 
-        if ($webpage->sub_type == WebpageSubTypeEnum::DEPARTMENT) {
+
+        if ($webpage->sub_type == WebpageSubTypeEnum::DEPARTMENT || $webpage->sub_type == WebpageSubTypeEnum::COLLECTION) {
             $permissions = ['hidden'];
         }
 

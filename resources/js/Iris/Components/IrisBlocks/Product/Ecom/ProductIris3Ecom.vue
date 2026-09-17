@@ -508,7 +508,7 @@ onMounted(async () => {
                         </div>
                     </div>
 
-                    <div class="text-right">
+                    <div v-if="product.rrp_per_unit > 0" class="text-right">
                         <div class="text-[11px] uppercase tracking-wide text-gray-400">{{ trans("RRP") }}</div>
                         <div class="mt-1 text-sm text-gray-600">
                             {{ locale.currencyFormatRrp(currency?.code, product.rrp_per_unit || 0) }}/{{ product.unit }}
@@ -739,7 +739,7 @@ onMounted(async () => {
                     </div>
                 </div>
 
-                <div class="text-right">
+                <div v-if="product.rrp_per_unit > 0" class="text-right">
                     <div class="text-[11px] uppercase tracking-wide text-gray-400">{{ trans("RRP") }}</div>
                     <div class="mt-1 text-sm text-gray-600">
                         {{ locale.currencyFormatRrp(currency?.code, product.rrp_per_unit || 0) }}/{{ product.unit }}

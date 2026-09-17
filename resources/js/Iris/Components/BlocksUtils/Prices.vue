@@ -53,7 +53,7 @@ defineProps<{
     flex flex-col gap-1 text-gray-800 tabular-nums text-xs">
     <!-- <Discount v-if="Object.keys(product.offers_data || {})?.length" :offers_data="product.offers_data" class="text-xxs w-full justify-center" /> -->
     
-    <div class="flex flex-col md:flex-row md:items-center md:justify-between">
+    <div v-if="product?.rrp_per_unit > 0" class="flex flex-col md:flex-row md:items-center md:justify-between">
       <span class="font-medium">
         {{ trans("Retail") }} :
       </span>

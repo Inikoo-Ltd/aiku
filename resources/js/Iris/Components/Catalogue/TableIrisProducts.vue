@@ -94,7 +94,7 @@ const parentInfo = computed(() => {
         </template>
 
         <template #cell(rrp)="{ item }">
-            <div class="!text-right w-full">
+            <div v-if="item.rrp > 0" class="!text-right w-full">
                 {{ locale.currencyFormatRrp(layout.iris.currency.code, item.rrp) }}
             </div>
         </template>

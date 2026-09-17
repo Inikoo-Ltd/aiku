@@ -204,7 +204,7 @@ defineExpose({
                             {{ product?.code }}
                         </span>
 
-                        <span  class="text-left md:text-right text-xs break-words">
+                        <span v-if="product.rrp_per_unit > 0" class="text-left md:text-right text-xs break-words">
                             {{ trans("RRP") }}:
                             {{ locale.currencyFormatRrp(currency?.code, product.rrp_per_unit) }} / {{ product.unit }}
                         </span>
