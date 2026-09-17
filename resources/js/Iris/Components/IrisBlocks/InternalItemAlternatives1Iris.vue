@@ -14,7 +14,7 @@ import 'swiper/css/pagination'
 import { faChevronLeft, faChevronRight } from '@fortawesome/free-solid-svg-icons'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { trans } from "laravel-vue-i18n"
-import { ProductHit } from "@/types/Luigi/LuigiTypes"
+import { RecommendationProduct } from "@/types/RecommendationProduct"
 import RecommendationSlideLastSeen from "@/Components/Iris/Recommendations/RecommendationSlideLastSeen.vue"
 
 library.add(faChevronLeft, faChevronRight)
@@ -54,7 +54,7 @@ const slidesPerView = computed(() => {
 
 const layout = inject('layout', retinaLayoutStructure)
 
-const listProducts = ref<ProductHit[]>([])
+const listProducts = ref<RecommendationProduct[]>([])
 const isLoadingFetch = ref(false)
 const isFetched = ref(false)
 

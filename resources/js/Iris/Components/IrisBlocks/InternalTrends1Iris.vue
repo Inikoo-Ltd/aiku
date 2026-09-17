@@ -13,7 +13,7 @@ import 'swiper/css/pagination'
 
 import { faChevronLeft, faChevronRight } from '@fortawesome/free-solid-svg-icons'
 import { library } from '@fortawesome/fontawesome-svg-core'
-import { ProductHit } from "@/types/Luigi/LuigiTypes"
+import { RecommendationProduct } from "@/types/RecommendationProduct"
 import { ctrans } from "@/Composables/useTrans"
 import RecommendationSlideLastSeen from "@/Components/Iris/Recommendations/RecommendationSlideLastSeen.vue"
 
@@ -59,7 +59,7 @@ const slidesPerView = computed(() => {
 
 const layout = inject('layout', retinaLayoutStructure)
 
-const listProducts = ref<ProductHit[]>([])
+const listProducts = ref<RecommendationProduct[]>([])
 const isLoadingFetch = ref(false)
 const isFetched = ref(false)
 
@@ -81,7 +81,7 @@ const fetchProductTrends = async () => {
 
         const currentProductId = props.fieldValue?.product?.id
         listProducts.value = response.data.data.filter(
-            (product: ProductHit) => product.id !== currentProductId
+            (product: RecommendationProduct) => product.id !== currentProductId
         )
 
         console.log(`LTrends Internal (${response.data.data?.length}): `, response.data.data)

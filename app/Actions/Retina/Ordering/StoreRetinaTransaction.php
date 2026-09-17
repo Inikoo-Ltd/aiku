@@ -49,7 +49,6 @@ class StoreRetinaTransaction extends RetinaAction
 
         /** @var Product $product */
         $product = $historicAsset->model;
-        // Luigi: emit event 'add_to_cart' basket
         $gtm = [
             'ecommerce' => [
                 'transaction_id' => $order->id,
@@ -57,7 +56,7 @@ class StoreRetinaTransaction extends RetinaAction
                 'currency'       => $order->shop->currency->code,
                 'items'          => [
                     [
-                        'item_id' => $product->getLuigiIdentity()
+                        'item_id' => $product->slug
                     ]
                 ]
             ]
