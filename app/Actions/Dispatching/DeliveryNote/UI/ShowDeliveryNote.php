@@ -1671,15 +1671,15 @@ class ShowDeliveryNote extends OrgAction
             defaultSort: $this->deliveryNoteDefaultSort($bucket),
             forward: $forward,
             sortValues: [
-                'customers.name'                            => $deliveryNote->customer?->name,
-                'NOT delivery_notes.is_premium_dispatch'    => !$deliveryNote->is_premium_dispatch,
+                'customers.name' => $deliveryNote->customer?->name,
+                "NOT (delivery_notes.is_premium_dispatch OR delivery_notes.type = 'replacement')" => !($deliveryNote->is_premium_dispatch || $deliveryNote->type == DeliveryNoteTypeEnum::REPLACEMENT),
             ]
         );
     }
 
     /**
-     * Outside the dispatched bucket the index puts premium dispatch first, then oldest first,
-     * which is the ascending order of (not premium, date).
+     * Outside the dispatched bucket the index puts premium dispatch and replacements first, then oldest first,
+     * which is the ascending order of (not priority, date).
      *
      * @return array{0: string|array<string>, 1: bool}
      */
@@ -1689,7 +1689,7 @@ class ShowDeliveryNote extends OrgAction
             return ['delivery_notes.date', true];
         }
 
-        return [['NOT delivery_notes.is_premium_dispatch', 'delivery_notes.date'], false];
+        return [["NOT (delivery_notes.is_premium_dispatch OR delivery_notes.type = 'replacement')", 'delivery_notes.date'], false];
     }
 
     private function getNextPrevCommon($query, DeliveryNote $deliveryNote, ActionRequest $request)

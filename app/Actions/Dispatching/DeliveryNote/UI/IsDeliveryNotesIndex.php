@@ -56,7 +56,7 @@ trait IsDeliveryNotesIndex
         $forcedSorts = ['-is_returned'];
 
         if ($forceSortByPremiumDispatch) {
-            $forcedSorts[] = '-is_premium_dispatch';
+            $forcedSorts[] = '-is_priority';
         }
 
         if ($currentSort) {
@@ -261,7 +261,7 @@ trait IsDeliveryNotesIndex
                 // Ensure all / dispatched bucket order is not disturbed, otherwise would be hard to navigate
                 $forceSortByPremiumDispatch ? [
                     '-delivery_notes.is_returned',
-                    '-delivery_notes.is_premium_dispatch',
+                    '-is_priority',
                     "$dateColumn",
                 ] : [
                     '-delivery_notes.is_returned',
@@ -278,6 +278,7 @@ trait IsDeliveryNotesIndex
                 ) as number_of_days_in_warehouse
             "
             )
+            ->selectRaw("(delivery_notes.is_premium_dispatch OR delivery_notes.type = 'replacement') as is_priority")
             ->selectSub($pickingSessionsCountSubquery, 'picking_sessions_count')
             ->selectSub($pickingSessionIdsSubquery, 'picking_session_ids')
             ->selectRaw("(SELECT count(*) FROM delivery_note_items dni_w WHERE dni_w.delivery_note_id = delivery_notes.id AND dni_w.has_waiting_warehouse = true) as waiting_warehouse_count")
@@ -295,6 +296,7 @@ trait IsDeliveryNotesIndex
                 'sort_packer',
                 'sort_trolleys',
                 'is_premium_dispatch',
+                'is_priority',
                 'is_returned',
                 'sort_picked_bays',
                 'parcels'

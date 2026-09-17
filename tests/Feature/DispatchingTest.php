@@ -97,6 +97,7 @@ use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\CRM\Customer\CustomerStateEnum;
 use App\Enums\CRM\Customer\CustomerStatusEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
+use App\Enums\Dispatching\DeliveryNote\DeliveryNoteTypeEnum;
 use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemStateEnum;
 use App\Enums\Dispatching\Picking\PickingTypeEnum;
 use App\Enums\Dispatching\PickingSession\PickingSessionStateEnum;
@@ -4398,4 +4399,28 @@ test('orders still in process in Aurora are locked against staff routes until Au
     expect($deliveryNote->refresh()->isLockedInAurora())->toBeFalse()
         ->and($order->refresh()->isLockedInAurora())->toBeFalse();
     patch(route('grp.models.order.rollback_dispatch', $order->id))->assertSessionDoesntHaveErrors('message');
+});
+
+test('replacement delivery notes are listed first like premium dispatch (HELP-3184)', function () {
+    $this->shop->update(['is_aiku' => true]);
+
+    $replacement = SendOrderToWarehouse::make()->action(freshSubmittedOrder($this), ['warehouse_id' => $this->warehouse->id]);
+    $plain       = SendOrderToWarehouse::make()->action(freshSubmittedOrder($this), ['warehouse_id' => $this->warehouse->id]);
+
+    $replacement->update(['type' => DeliveryNoteTypeEnum::REPLACEMENT, 'is_premium_dispatch' => false, 'is_returned' => false, 'date' => now(), 'reference' => 'ZZ-REPLACEMENT']);
+    $plain->update(['type' => DeliveryNoteTypeEnum::ORDER, 'is_premium_dispatch' => false, 'is_returned' => false, 'date' => now()->subWeek(), 'reference' => 'AA-PLAIN']);
+
+    foreach ([[], ['sort' => 'reference'], ['sort' => 'date'], ['sort' => 'customer_name']] as $query) {
+        $response = get(route('grp.org.warehouses.show.dispatching.unassigned.delivery-notes', [
+            $this->organisation->slug,
+            $this->warehouse->slug,
+            ...$query,
+        ]));
+        $response->assertOk();
+
+        $ids = collect($response->viewData('page')['props']['data']['data'])->pluck('id');
+
+        expect($ids->search($replacement->id))->not->toBeFalse()
+            ->and($ids->search($replacement->id))->toBeLessThan($ids->search($plain->id));
+    }
 });
