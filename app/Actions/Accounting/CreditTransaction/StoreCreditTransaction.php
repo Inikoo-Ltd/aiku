@@ -29,6 +29,8 @@ class StoreCreditTransaction extends OrgAction
     use WithNoStrictRules;
 
 
+    private bool $notifyCustomer = true;
+
     public function handle(Customer $customer, array $modelData): CreditTransaction
     {
         data_set($modelData, 'group_id', $customer->group_id);
@@ -45,7 +47,7 @@ class StoreCreditTransaction extends OrgAction
 
         CustomerHydrateCreditTransactions::run($customer->id);
 
-        ProcessCreditBalanceNotification::run($customer);
+        ProcessCreditBalanceNotification::run($customer, $this->notifyCustomer);
 
         ShopHydrateCreditTransactions::dispatch($creditTransaction->shop)->delay($this->hydratorsDelay);
         OrganisationHydrateCreditTransactions::dispatch($creditTransaction->organisation)->delay($this->hydratorsDelay);
@@ -84,9 +86,9 @@ class StoreCreditTransaction extends OrgAction
         return $rules;
     }
 
-    public function action(Customer $customer, $modelData, int $hydratorsDelay = 0, bool $strict = true): CreditTransaction
+    public function action(Customer $customer, $modelData, int $hydratorsDelay = 0, bool $strict = true, bool $notifyCustomer = true): CreditTransaction
     {
-
+        $this->notifyCustomer = $notifyCustomer;
         $this->asAction       = true;
         $this->strict         = $strict;
         $this->hydratorsDelay = $hydratorsDelay;

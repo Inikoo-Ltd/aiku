@@ -2720,6 +2720,20 @@ test('credit balance email to customer is only sent when the credit explains its
     'with notes'  => [['notes' => 'Refund for items not shipped in order X1'], true],
 ]);
 
+test('credit balance email to customer is not sent when the money is refunded to the original payment', function () {
+    Queue::fake();
+
+    \App\Actions\Accounting\CreditTransaction\StoreCreditTransaction::make()->action($this->customer, [
+        'amount' => 10,
+        'type'   => \App\Enums\Accounting\CreditTransaction\CreditTransactionTypeEnum::MONEY_BACK,
+        'reason' => \App\Enums\Accounting\CreditTransaction\CreditTransactionReasonEnum::ORDER_CANCELLED,
+        'notes'  => 'Order #X1 cancelled. Money to be refunded to the original payment method.',
+    ], notifyCustomer: false);
+
+    \App\Actions\Comms\Email\SendCreditBalanceEmailToCustomer::assertNotPushed();
+    \App\Actions\Comms\Email\SendCreditBalanceEmailToUser::assertPushed();
+});
+
 test('delete outbox has subscriber again is idempotent at handle level', function () {
     $outbox = createOutboxDirectly($this->shop, OutboxCode::REORDER_REMINDER);
     $outboxHasSubscriber = StoreOutboxHasSubscriber::make()->action($outbox, [
