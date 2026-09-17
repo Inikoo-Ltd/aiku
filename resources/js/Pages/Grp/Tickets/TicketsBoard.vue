@@ -227,6 +227,42 @@ const subFilter = reactive<Record<string, string | null>>({})
 const toggleSubFilter = (columnKey: string, status: string) =>
 	(subFilter[columnKey] = subFilter[columnKey] === status ? null : status)
 
+const WAITING_COLUMN = "waiting"
+
+const hasChosenWaitingFilter = ref(false)
+
+const chooseWaitingFilter = (status: string) => {
+	hasChosenWaitingFilter.value = true
+	subFilter[WAITING_COLUMN] = status
+}
+
+const subDotClasses: Record<string, string> = {
+	blue: "bg-blue-500",
+	amber: "bg-amber-500",
+	green: "bg-green-600",
+	red: "bg-red-500",
+}
+
+const waitingToggleLabels: Record<string, string> = {
+	answered: trans("Replied"),
+	waiting: trans("Waiting"),
+}
+
+const waitingToggleOptions = (column: { statuses: { status: string; label: string; color: string }[] }) =>
+	[...column.statuses].sort((first, second) => Number(second.status === "answered") - Number(first.status === "answered"))
+
+watch(
+	() => props.columns,
+	(columns) => {
+		if (hasChosenWaitingFilter.value) return
+		const waitingColumn = columns.find((column) => column.key === WAITING_COLUMN)
+		if (!waitingColumn) return
+		const answeredCount = waitingColumn.statuses.find((sub) => sub.status === "answered")?.count ?? 0
+		subFilter[WAITING_COLUMN] = answeredCount > 0 ? "answered" : "waiting"
+	},
+	{ immediate: true }
+)
+
 const matchesBoardFilters = (ticket: any, columnKey: string) =>
 	(Object.keys(boardFilters) as FilterKey[]).every(
 		(key) =>
@@ -562,9 +598,9 @@ const cancelAssign = () => {
 					<Icon :data="column.icon" />
 					<span class="text-sm font-semibold">{{ column.label }}</span>
 					<span
-						v-if="column.statuses.length === 1"
+						v-if="column.statuses.length === 1 || column.key === WAITING_COLUMN"
 						class="text-xs text-gray-600 bg-white/70 rounded px-1.5 py-0.5 tabular-nums"
-						>{{ visibleCount(column) }}</span
+						>{{ column.key === WAITING_COLUMN ? column.tickets.filter((ticket) => matchesBoardFilters(ticket, column.key)).length : visibleCount(column) }}</span
 					>
 					<span
 						v-else
@@ -643,6 +679,19 @@ const cancelAssign = () => {
 							</button>
 						</div>
 					</div>
+				</div>
+				<div v-if="column.key === WAITING_COLUMN" class="mb-2 flex gap-0.5 rounded-md bg-white/70 p-0.5 text-xs">
+					<button
+						v-for="sub in waitingToggleOptions(column)"
+						:key="sub.status"
+						type="button"
+						class="flex flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded px-2 py-1 transition duration-200"
+						:class="subFilter[column.key] === sub.status ? [subActiveClasses[sub.color], 'font-medium shadow-sm'] : 'text-gray-500 hover:bg-white hover:text-gray-800'"
+						@click="chooseWaitingFilter(sub.status)">
+						<span class="h-2 w-2 shrink-0 rounded-full" :class="subFilter[column.key] === sub.status ? 'bg-white/80' : subDotClasses[sub.color]" />
+						{{ waitingToggleLabels[sub.status] ?? sub.label }}
+						<span class="tabular-nums" :class="subFilter[column.key] === sub.status ? 'text-white/80' : 'text-gray-400'">{{ subCount(column, sub.status) }}</span>
+					</button>
 				</div>
 				<draggable
 					v-model="column.tickets"
