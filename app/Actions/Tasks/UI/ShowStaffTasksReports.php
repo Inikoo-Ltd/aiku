@@ -17,6 +17,7 @@ use App\Models\Tasks\StaffTask;
 use Illuminate\Support\Carbon;
 use Inertia\Inertia;
 use Inertia\Response;
+use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 
 /**
@@ -71,14 +72,21 @@ class ShowStaffTasksReports extends OrgAction
             ->map(fn ($row) => ['department' => $row->department, 'label' => $row->department ? StaffTask::departmentLabel($row->department) : __('To a person'), ...$this->metrics($row)])
             ->all();
 
+        $workers = DB::query()->fromSub(
+            DB::table('staff_tasks')->whereNotNull('assignee_id')->select('id as staff_task_id', 'assignee_id as user_id')
+                ->union(DB::table('staff_task_collaborators')->select('staff_task_id', 'user_id')),
+            'task_workers'
+        )->selectRaw('staff_task_id, user_id, 1.0 / count(*) over (partition by staff_task_id) as share');
+
         $byAssignee = (clone $inRange)
-            ->join('users', 'users.id', '=', 'staff_tasks.assignee_id')
-            ->selectRaw('users.id as id, coalesce(users.contact_name, users.username) as name, '.self::METRICS_SQL)
+            ->joinSub($workers, 'workers', 'workers.staff_task_id', '=', 'staff_tasks.id')
+            ->join('users', 'users.id', '=', 'workers.user_id')
+            ->selectRaw('users.id as id, coalesce(users.contact_name, users.username) as name, '.str_replace('count(*)', 'sum(workers.share)', self::METRICS_SQL))
             ->groupBy('users.id', 'users.contact_name', 'users.username')
             ->orderByDesc('created')
             ->get();
         $assigneeUsers = User::whereIn('id', $byAssignee->pluck('id'))->get()->keyBy('id');
-        $byAssignee    = $byAssignee->map(fn ($row) => ['name' => $row->name, 'avatar' => $assigneeUsers->get($row->id)?->imageSources(48, 48), ...$this->metrics($row)])->all();
+        $byAssignee    = $byAssignee->map(fn ($row) => ['name' => $row->name, 'avatar' => $assigneeUsers->get($row->id)?->imageSources(48, 48), ...$this->metrics($row, 2)])->all();
 
         $byRequester = (clone $inRange)
             ->join('users', 'users.id', '=', 'staff_tasks.requester_id')
@@ -113,14 +121,19 @@ class ShowStaffTasksReports extends OrgAction
         ];
     }
 
-    private function metrics(?object $row): array
+    /**
+     * Per person counts are shared between the assignee and collaborators, so they carry a decimal.
+     */
+    private function metrics(?object $row, int $precision = 0): array
     {
+        $count = fn (string $key) => $precision ? round((float) ($row->$key ?? 0), $precision) : (int) ($row->$key ?? 0);
+
         return [
-            'created'           => (int) ($row->created ?? 0),
-            'open'              => (int) ($row->open ?? 0),
-            'done'              => (int) ($row->done ?? 0),
-            'cancelled'         => (int) ($row->cancelled ?? 0),
-            'stale'             => (int) ($row->stale ?? 0),
+            'created'           => $count('created'),
+            'open'              => $count('open'),
+            'done'              => $count('done'),
+            'cancelled'         => $count('cancelled'),
+            'stale'             => $count('stale'),
             'median_hours'      => isset($row->median_hours) ? round((float) $row->median_hours, 1) : null,
             'longest_wait_days' => isset($row->longest_wait_days) ? (int) $row->longest_wait_days : null,
         ];

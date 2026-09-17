@@ -23,7 +23,7 @@ class ShowStaffTasksBoard extends OrgAction
     public function handle(Group $group, string $interval): array
     {
         $tasks = IndexTickets::make()->whereCreatedIn(StaffTask::query()->where('group_id', $group->id), $interval, 'staff_tasks.created_at')
-            ->with(['requester.image', 'assignee.image', 'conversation', 'model'])
+            ->with(['requester.image', 'assignee.image', 'collaborators.image', 'conversation.participants', 'model'])
             ->orderByRaw('due_at asc nulls last, id desc')
             ->get()
             ->groupBy(fn (StaffTask $task) => $task->status->value);

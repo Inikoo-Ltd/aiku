@@ -3360,3 +3360,74 @@ test('a campaign send closes the promo-only session but leaves one an agent is h
         ->and($promoOnly->fresh()->closed_by)->toBe(ChatSessionClosedByTypeEnum::SYSTEM)
         ->and($handled->fresh()->status)->toBe(ChatSessionStatusEnum::ACTIVE);
 });
+
+test('supervisor writes in any staff task thread without joining and can subscribe', function () {
+    $requester  = $this->user;
+    $colleague  = \App\Actions\SysAdmin\Guest\StoreGuest::make()->action($this->organisation->group, array_merge(\App\Models\SysAdmin\Guest::factory()->definition(), ['positions' => [['slug' => 'group-admin', 'scopes' => []]]]))->getUser();
+    $supervisor = \App\Actions\SysAdmin\Guest\StoreGuest::make()->action($this->organisation->group, array_merge(\App\Models\SysAdmin\Guest::factory()->definition(), ['positions' => [['slug' => 'group-admin', 'scopes' => []]]]))->getUser();
+
+    $supervisorPosition = \Illuminate\Support\Facades\DB::table('job_positions')->where('group_id', $supervisor->group_id)->where('code', 'like', '%-m')->where('department', '!=', \App\Models\Tasks\StaffTask::EXCLUDED_DEPARTMENT)->value('id');
+    \Illuminate\Support\Facades\DB::table('user_has_pseudo_job_positions')->insert(['user_id' => $supervisor->id, 'job_position_id' => $supervisorPosition, 'group_id' => $supervisor->group_id, 'scopes' => '{}']);
+
+    $task         = \App\Actions\Tasks\StoreStaffTask::run($requester, ['subject' => 'Supervised task', 'assignee_id' => $requester->id]);
+    $conversation = $task->conversation;
+
+    actingAs($colleague);
+    \Pest\Laravel\postJson(route('grp.chat.staff.conversations.messages.store', $conversation->ulid), ['body' => 'hi'])->assertForbidden();
+    getJson(route('grp.tasks.conversation', $task->reference))->assertForbidden();
+
+    actingAs($supervisor);
+    getJson(route('grp.tasks.conversation', $task->reference))->assertOk()->assertJsonPath('data.ulid', $conversation->ulid);
+    getJson(route('grp.chat.staff.conversations.messages.index', $conversation->ulid))->assertOk();
+    \Pest\Laravel\postJson(route('grp.chat.staff.conversations.messages.store', $conversation->ulid), ['body' => 'please prioritise'])->assertCreated();
+
+    expect($conversation->hasParticipant($supervisor))->toBeFalse();
+
+    \Pest\Laravel\postJson(route('grp.tasks.subscription.toggle', $task->reference))->assertOk()->assertJsonPath('data.is_subscribed', true);
+    expect($conversation->hasParticipant($supervisor))->toBeTrue();
+
+    \Pest\Laravel\postJson(route('grp.tasks.subscription.toggle', $task->reference))->assertOk()->assertJsonPath('data.is_subscribed', false);
+    expect($conversation->hasParticipant($supervisor))->toBeFalse();
+
+    actingAs($requester);
+    \Pest\Laravel\postJson(route('grp.tasks.subscription.toggle', $task->reference))->assertOk();
+    expect($conversation->hasParticipant($requester))->toBeTrue();
+});
+
+test('staff task collaborators join the thread and see the task as theirs', function () {
+    $requester = $this->user;
+    $owner     = \App\Actions\SysAdmin\Guest\StoreGuest::make()->action($this->organisation->group, array_merge(\App\Models\SysAdmin\Guest::factory()->definition(), ['positions' => [['slug' => 'group-admin', 'scopes' => []]]]))->getUser();
+    $helper    = \App\Actions\SysAdmin\Guest\StoreGuest::make()->action($this->organisation->group, array_merge(\App\Models\SysAdmin\Guest::factory()->definition(), ['positions' => [['slug' => 'group-admin', 'scopes' => []]]]))->getUser();
+
+    $task = \App\Actions\Tasks\StoreStaffTask::run($requester, ['subject' => 'Two person job', 'assignee_id' => $owner->id, 'collaborator_ids' => [$helper->id, $owner->id]]);
+
+    expect($task->collaborators()->pluck('users.id')->all())->toBe([$helper->id])
+        ->and($task->conversation->hasParticipant($helper))->toBeTrue()
+        ->and(\App\Actions\Tasks\Json\GetStaffTasks::run($helper, 'mine')->pluck('id')->all())->toBe([$task->id]);
+
+    actingAs($requester);
+    \Pest\Laravel\patchJson(route('grp.tasks.collaborators.update', $task->reference), ['collaborator_ids' => []])
+        ->assertOk()
+        ->assertJsonPath('data.collaborators', []);
+
+    expect($task->conversation->hasParticipant($helper))->toBeFalse()
+        ->and(\App\Actions\Tasks\Json\GetStaffTasks::run($helper, 'mine'))->toBeEmpty();
+
+    \App\Actions\Tasks\SyncStaffTaskCollaborators::run($task, [$helper->id], $requester);
+    \App\Actions\Tasks\UpdateStaffTask::run($task->fresh(), $requester, ['assignee_id' => $helper->id]);
+
+    expect($task->collaborators()->count())->toBe(0);
+});
+
+test('staff task reports share a task between its assignee and collaborators', function () {
+    $requester = $this->user;
+    $people    = collect(range(1, 3))->map(fn () => \App\Actions\SysAdmin\Guest\StoreGuest::make()->action($this->organisation->group, array_merge(\App\Models\SysAdmin\Guest::factory()->definition(), ['positions' => [['slug' => 'group-admin', 'scopes' => []]]]))->getUser());
+
+    $task = \App\Actions\Tasks\StoreStaffTask::run($requester, ['subject' => 'Three person job', 'assignee_id' => $people[0]->id, 'collaborator_ids' => [$people[1]->id, $people[2]->id]]);
+
+    $rows = collect(\App\Actions\Tasks\UI\ShowStaffTasksReports::make()->handle($this->organisation->group, '1w')['by_assignee'])->keyBy('name');
+
+    foreach ($people as $person) {
+        expect($rows[$person->contact_name ?: $person->username]['created'])->toBe(0.33);
+    }
+});

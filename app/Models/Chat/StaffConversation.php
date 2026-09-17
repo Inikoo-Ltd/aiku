@@ -9,6 +9,7 @@
 namespace App\Models\Chat;
 
 use App\Models\SysAdmin\User;
+use App\Models\Tasks\StaffTask;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -68,6 +69,15 @@ class StaffConversation extends Model
     public function hasParticipant(User $user): bool
     {
         return $this->participants()->where('users.id', $user->id)->exists();
+    }
+
+    /**
+     * Supervisors read and write in any task thread without joining it, so they are not notified unless they subscribe.
+     */
+    public function canBeAccessedBy(User $user): bool
+    {
+        return $this->hasParticipant($user)
+            || ($this->context_type === 'StaffTask' && $this->group_id === $user->group_id && StaffTask::isSupervisor($user));
     }
 
     public static function dmKey(array $userIds): string

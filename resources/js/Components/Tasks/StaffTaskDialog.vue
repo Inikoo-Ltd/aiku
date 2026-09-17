@@ -10,6 +10,7 @@ import axios from "axios"
 import { trans } from "laravel-vue-i18n"
 import { notify } from "@kyvg/vue3-notification"
 import Image from "@/Common/Components/Image.vue"
+import StaffTaskCollaborators from "@/Components/Tasks/StaffTaskCollaborators.vue"
 import type { StaffCoworker } from "@/Stores/staff-messaging"
 
 const props = defineProps<{
@@ -27,7 +28,7 @@ const emit = defineEmits<{
 
 const departments = ref<{ value: string; label: string }[]>([])
 const priorities = ref<{ value: string; label: string }[]>([])
-const form = ref({ subject: "", description: "", department: "", assignee: null as StaffCoworker | null, priority: "normal", due_at: "" })
+const form = ref({ subject: "", description: "", department: "", assignee: null as StaffCoworker | null, collaborators: [] as any[], priority: "normal", due_at: "" })
 const assigneeQuery = ref("")
 const assigneeResults = ref<StaffCoworker[]>([])
 const saving = ref(false)
@@ -43,7 +44,7 @@ const loadOptions = async () => {
 
 watch(() => props.isOpen, (open) => {
     if (!open) return
-    form.value = { subject: props.subject ?? "", description: "", department: "", assignee: null, priority: "normal", due_at: "" }
+    form.value = { subject: props.subject ?? "", description: "", department: "", assignee: null, collaborators: [], priority: "normal", due_at: "" }
     errors.value = {}
     assigneeQuery.value = ""
     assigneeResults.value = []
@@ -79,6 +80,7 @@ const submit = async () => {
             description: form.value.description || null,
             department: form.value.assignee ? null : form.value.department || null,
             assignee_id: form.value.assignee?.id ?? null,
+            collaborator_ids: form.value.collaborators.map((person) => person.id),
             priority: form.value.priority,
             due_at: form.value.due_at || null,
             model_type: props.modelType ?? null,
@@ -142,6 +144,11 @@ const submit = async () => {
                 </div>
             </div>
             <p v-if="errors.assignee_id || errors.department" class="text-xs text-red-600 -mt-2">{{ trans('Pick a person or a department') }}</p>
+
+            <div>
+                <label class="block text-xs text-gray-500 mb-1">{{ trans('Working on it too') }}</label>
+                <StaffTaskCollaborators v-model="form.collaborators" :exclude-ids="form.assignee ? [form.assignee.id] : []" />
+            </div>
 
             <textarea
                 v-model="form.description"

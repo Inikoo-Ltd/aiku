@@ -28,12 +28,12 @@ class GetStaffTasks
     {
         return StaffTask::query()
             ->where('group_id', $user->group_id)
-            ->when($view === 'mine', fn (Builder $query) => $query->where('assignee_id', $user->id))
+            ->when($view === 'mine', fn (Builder $query) => $query->where(fn (Builder $mine) => $mine->where('assignee_id', $user->id)->orWhereHas('collaborators', fn (Builder $collaborators) => $collaborators->where('users.id', $user->id))))
             ->when($view === 'department', fn (Builder $query) => $query->whereIn('department', StaffTask::departmentsOf($user)))
             ->when($view === 'requested', fn (Builder $query) => $query->where('requester_id', $user->id))
             ->when($view === 'model', fn (Builder $query) => $query->where('model_type', $modelType)->where('model_id', $modelId))
             ->when($closed, fn (Builder $query) => $query->whereNotNull('closed_at')->orderByDesc('closed_at'), fn (Builder $query) => $query->open()->orderByRaw('due_at asc nulls last, id asc'))
-            ->with(['requester.image', 'assignee.image', 'conversation', 'model'])
+            ->with(['requester.image', 'assignee.image', 'collaborators.image', 'conversation.participants', 'model'])
             ->limit(200)
             ->get();
     }

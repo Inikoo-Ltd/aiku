@@ -111,7 +111,7 @@ const hours = (value: number | null) => (value === null ? "—" : value < 48 ? `
 
         <DashboardWidgetBox v-for="table in [
             { key: 'department', icon: 'fal fa-building', title: trans('By department'), rows: stats.by_department.map((r) => ({ ...r, name: r.label })) },
-            { key: 'assignee', icon: 'fal fa-users', title: trans('By assignee'), rows: stats.by_assignee },
+            { key: 'assignee', icon: 'fal fa-users', title: trans('By person, shared between collaborators'), rows: stats.by_assignee },
             { key: 'requester', icon: 'fal fa-user', title: trans('By requester'), rows: stats.by_requester },
         ]" :key="table.key" :storageKey="`tasks_reports_${table.key}_collapsed`">
             <template #header>

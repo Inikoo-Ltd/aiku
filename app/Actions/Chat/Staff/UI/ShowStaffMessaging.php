@@ -40,7 +40,7 @@ class ShowStaffMessaging extends OrgAction
 
     public function inConversation(StaffConversation $staffConversation, ActionRequest $request): Group
     {
-        abort_unless($staffConversation->hasParticipant($request->user()), 403);
+        abort_unless($staffConversation->canBeAccessedBy($request->user()), 403);
 
         $this->conversation = $staffConversation;
         $this->initialisationFromGroup(app('group'), $request);

@@ -28,11 +28,7 @@ const load = async () => {
     tasks.value = data.data
 }
 
-const openThread = async (task: any) => {
-    if (!task.conversation_ulid) return
-    if (!store.conversations.length) await store.fetchConversations()
-    store.openConversation(task.conversation_ulid)
-}
+const openThread = (task: any) => store.openTaskThread(task)
 
 onMounted(load)
 </script>

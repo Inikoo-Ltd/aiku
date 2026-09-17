@@ -52,6 +52,10 @@ class UpdateStaffTask
 
         $task->update($modelData);
 
+        if ($task->wasChanged('assignee_id') && $task->assignee_id) {
+            $task->collaborators()->detach($task->assignee_id);
+        }
+
         if ($note) {
             $lines[] = $note;
         }
@@ -88,6 +92,6 @@ class UpdateStaffTask
     {
         $task = $this->handle($staffTask, $request->user(), $request->validated());
 
-        return new StaffTaskResource($task->load(['requester', 'assignee', 'conversation', 'model']));
+        return new StaffTaskResource($task->load(['requester', 'assignee', 'collaborators.image', 'conversation.participants', 'model']));
     }
 }
