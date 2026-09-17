@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { trans } from "laravel-vue-i18n"
-import { computed } from 'vue'
+import { computed, inject } from 'vue'
 import { faFileCheck, faFilePdf, faFileWord } from "@fal"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 const props = defineProps<{
     product: {
+        slug?: string
         specifications: {
             gross_weight?: number
             marketing_weight?: number
@@ -40,6 +41,20 @@ const getIcon = (type: string) => {
             return faFileCheck
     }
 }
+
+const resolveRoute = inject<((name: string, params?: object) => string) | null>("route", null)
+
+const ingredientsLabelUrl = computed(() => {
+    if (!props.product?.slug || !resolveRoute) {
+        return null
+    }
+
+    try {
+        return resolveRoute("iris.catalogue.product.ingredients_label", { product: props.product.slug })
+    } catch {
+        return null
+    }
+})
 
 const countriesOfOrigin = computed(() =>
     (props.product?.specifications?.countries_of_origin || []).filter(country => country?.code)
@@ -89,7 +104,13 @@ const groupedAttachments = computed(() => {
 
         <div v-if="product?.specifications?.ingredients" class="grid grid-cols-2 border-b border-gray-300">
             <div class="p-2 font-medium text-sm bg-gray-50">{{ trans('Materials/Ingredients') }}</div>
-            <div class="p-2 text-sm"> {{ product.specifications.ingredients }}</div>
+            <div class="p-2 text-sm">
+                {{ product.specifications.ingredients }}
+                <a v-if="ingredientsLabelUrl" :href="ingredientsLabelUrl" target="_blank" rel="nofollow" class="mt-1 flex items-center text-xs text-blue-600 underline">
+                    <FontAwesomeIcon :icon="faFilePdf" class="mr-1" />
+                    {{ trans('Download') }} PDF
+                </a>
+            </div>
         </div>
 
         <div v-if="product?.specifications?.barcode" class="grid grid-cols-2 border-b border-gray-300">
