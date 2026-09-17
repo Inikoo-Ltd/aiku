@@ -14,6 +14,8 @@ use Lorisleiva\Actions\ActionRequest;
 
 class GetWixProducts extends OrgAction
 {
+    use WithRetinaOwnedCustomerSalesChannel;
+
     public function handle(CustomerSalesChannel $customerSalesChannel, array $modelData): ?array
     {
         return SearchWixProducts::run(
