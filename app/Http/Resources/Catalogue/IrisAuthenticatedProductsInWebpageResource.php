@@ -122,8 +122,6 @@ class IrisAuthenticatedProductsInWebpageResource extends JsonResource
                 }
             }
         }
-
-        $oldLuigiIdentity = $this->group_id.':'.$this->organisation_id.':'.$this->shop_id.':'.$this->website_id.':'.$this->webpage_id;
         [$margin, $rrpPerUnit, $profit, $profitPerUnit, $units, $pricePerUnit] = $this->getPriceMetrics($this->rrp, $this->price, $this->units);
 
         $productOffersData = json_decode($this->product_offers_data, true);
@@ -141,7 +139,6 @@ class IrisAuthenticatedProductsInWebpageResource extends JsonResource
             'code'                       => $this->code,
             'slug'                       => $this->slug,
             'family_code'                => $this->family_code,
-            'luigi_identity'             => $oldLuigiIdentity,
             'name'                       => $this->name,
             'stock'                      => $this->available_quantity,
             'price'                      => $this->price,

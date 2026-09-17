@@ -53,8 +53,6 @@ class IrisProductsInWebpageResource extends JsonResource
 
     public function toArray($request): array
     {
-        $oldLuigiIdentity = $this->group_id.':'.$this->organisation_id.':'.$this->shop_id.':'.$this->website_id.':'.$this->webpage_id;
-
         $url = $this->canonical_url;
         if (!app()->environment('production')) {
             $url = ShowIrisWebpage::make()->getEnvironmentUrl($url);
@@ -66,7 +64,6 @@ class IrisProductsInWebpageResource extends JsonResource
         return [
             'id'              => $this->id,
             'code'            => $this->code,
-            'luigi_identity'  => $oldLuigiIdentity,
             'name'            => $this->name,
             'stock'           => $this->available_quantity,
             'price'           => $this->price,
