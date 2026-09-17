@@ -45,6 +45,10 @@ use App\Enums\Catalogue\Charge\ChargeStateEnum;
 use App\Enums\Catalogue\Charge\ChargeTriggerEnum;
 use App\Enums\Catalogue\Charge\ChargeTypeEnum;
 use App\Enums\Catalogue\Product\ProductStateEnum;
+use App\Enums\Web\Webpage\WebpageStateEnum;
+use App\Actions\Web\Webpage\CloseWebpage;
+use App\Actions\Catalogue\Product\RetireProductIntoReplacement;
+use App\Actions\Catalogue\Product\KeepRetiredProductAsSeparate;
 use App\Enums\Catalogue\Product\ProductStatusEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
@@ -1517,3 +1521,56 @@ test('faire discontinue is skipped when faire returns far fewer live products th
     expect($discontinued)->toBe(0)
         ->and($products->every(fn ($product) => $product->refresh()->state !== \App\Enums\Catalogue\Product\ProductStateEnum::DISCONTINUED))->toBeTrue();
 });
+
+function createRetiredProductSharingReplacementWebpage(Shop $shop, array $tradeUnits): array
+{
+    $storeProduct = fn (string $code) => StoreProduct::make()->action($shop, array_merge(
+        Product::factory()->definition(),
+        ['code' => $code, 'trade_units' => $tradeUnits, 'price' => 45, 'unit' => 'bottle']
+    ));
+
+    $retired     = $storeProduct(fake()->unique()->lexify('ret????'));
+    $replacement = $storeProduct($retired->code.'-10ml');
+
+    $replacementOwnPage = StoreProductWebpage::make()->action($replacement);
+    $sharedPage         = StoreProductWebpage::make()->action($retired);
+
+    $sharedPage->update(['state' => WebpageStateEnum::LIVE]);
+    CloseWebpage::make()->action($replacementOwnPage, ['redirect_type' => \App\Enums\Web\Redirect\RedirectTypeEnum::PERMANENT->value, 'to_webpage_id' => $sharedPage->id]);
+    $sharedPage->update(['model_id' => $replacement->id]);
+    $replacement->update(['webpage_id' => $sharedPage->id, 'is_for_sale' => true]);
+    $retired->update([
+        'is_for_sale' => true,
+        'data'        => array_merge($retired->data, ['retire_at_cutover' => true, 'replaced_by_product_id' => $replacement->id]),
+    ]);
+
+    return [$retired->refresh(), $replacement->refresh(), $sharedPage->refresh(), $replacementOwnPage->refresh()];
+}
+
+test('retire product into its replacement takes it off sale and discontinues it', function (Shop $shop) {
+    [$retired, $replacement, $sharedPage] = createRetiredProductSharingReplacementWebpage($shop, [['id' => $this->tradeUnit1->id, 'quantity' => 1]]);
+
+    $retired = RetireProductIntoReplacement::make()->action($retired);
+
+    expect($retired->is_main)->toBeFalse()
+        ->and($retired->is_for_sale)->toBeFalse()
+        ->and($retired->state)->toBe(ProductStateEnum::DISCONTINUED)
+        ->and($sharedPage->refresh()->model_id)->toBe($replacement->id)
+        ->and($replacement->refresh()->is_for_sale)->toBeTrue();
+})->depends('create shop');
+
+test('keep retired product as separate gives both products their own webpage', function (Shop $shop) {
+    [$retired, $replacement, $sharedPage, $replacementOwnPage] = createRetiredProductSharingReplacementWebpage($shop, [['id' => $this->tradeUnit1->id, 'quantity' => 1]]);
+
+    $retired = KeepRetiredProductAsSeparate::make()->action($retired);
+    $replacement->refresh();
+
+    expect($retired->webpage_id)->toBe($sharedPage->id)
+        ->and($sharedPage->refresh()->model_id)->toBe($retired->id)
+        ->and($replacement->webpage_id)->toBe($replacementOwnPage->id)
+        ->and($replacementOwnPage->refresh()->state)->toBe(WebpageStateEnum::LIVE)
+        ->and($replacementOwnPage->redirect_webpage_id)->toBeNull()
+        ->and($retired->is_for_sale)->toBeTrue()
+        ->and($retired->data)->not->toHaveKey('retire_at_cutover')
+        ->and($retired->data)->not->toHaveKey('replaced_by_product_id');
+})->depends('create shop');
