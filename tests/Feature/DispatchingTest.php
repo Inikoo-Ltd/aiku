@@ -3376,6 +3376,28 @@ test('waiting quantities never exceed what is still unpicked', function () {
         ->toThrow(\Symfony\Component\HttpKernel\Exception\HttpException::class);
 });
 
+test('lines waiting for customer service carry the product order line net and tax inclusive amounts', function () {
+    [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($this);
+
+    $item->update(['quantity_picked' => 0, 'quantity_waiting_crm' => 1]);
+    $deliveryNote->update(['number_items_waiting_crm' => 1]);
+    $transaction = $item->transaction;
+    $transaction->update(['net_amount' => 10]);
+
+    $rows = get(route('grp.org.shops.show.ordering.backlog.waiting_items', [$this->organisation->slug, $deliveryNote->shop->slug]))
+        ->assertOk()
+        ->viewData('page')['props']['waiting_crm_items']['data'];
+
+    $line = collect($rows)->pluck('items')->flatten(1)->firstWhere('id', $item->id);
+
+    $rate = (float) ($transaction->taxCategory?->rate ?? 0);
+
+    expect((float) $line['net_amount'])->toBe(10.0)
+        ->and((float) $line['net_amount_with_tax'])->toBe(round(10 * (1 + $rate), 2))
+        ->and($line['product_code'])->toBe($transaction->historicAsset->code)
+        ->and($line['number_skos_in_product'])->toBeGreaterThanOrEqual(1);
+});
+
 test('a redefined pack does not change what an already sold box means', function () {
     [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($this);
 

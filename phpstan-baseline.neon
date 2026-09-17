@@ -31,12 +31,6 @@ parameters:
 			path: app/Actions/Accounting/PaymentAccountShop/UpdatePaymentAccountShop.php
 
 		-
-			message: '#^Access to an undefined property App\\Actions\\Accounting\\Payment\\PastPay\\StorePastpayPaymentApi\:\:\$shop\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Actions/Accounting/PaymentGateway/Pastpay/StorePastpayPaymentApi.php
-
-		-
 			message: '#^Call to an undefined method App\\Actions\\Accounting\\PaymentGateway\\Paypal\\Orders\\AuthorizePaymentOrderPaypal\:\:headers\(\)\.$#'
 			identifier: method.notFound
 			count: 1
@@ -697,12 +691,6 @@ parameters:
 			path: app/Actions/Catalogue/Collection/EnableCollection.php
 
 		-
-			message: '#^Variable \$collections in empty\(\) always exists and is not falsy\.$#'
-			identifier: empty.variable
-			count: 1
-			path: app/Actions/Catalogue/Collection/Hydrators/CollectionHydrateOrderingIntervals.php
-
-		-
 			message: '#^Access to an undefined property App\\Actions\\Catalogue\\Collection\\Json\\GetWebpagesInCollection\:\:\$scope\.$#'
 			identifier: property.notFound
 			count: 2
@@ -1109,12 +1097,6 @@ parameters:
 			identifier: closure.unusedUse
 			count: 1
 			path: app/Actions/Comms/Outbox/OutOfStockInOrder/ProcessOutOfStockInOrderPerOutbox.php
-
-		-
-			message: '#^Anonymous function has an unused use \$parent\.$#'
-			identifier: closure.unusedUse
-			count: 1
-			path: app/Actions/Comms/Outbox/ReorderRemainder/UI/IndexReorderEmailBulkRuns.php
 
 		-
 			message: '#^Access to an undefined property App\\Actions\\Comms\\OutboxHasSubscribers\\DeleteOutboxHasSubscriber\:\:\$outbox\.$#'
@@ -1915,30 +1897,6 @@ parameters:
 			path: app/Actions/GoodsIn/ReturnDeliveryNoteItem/IndexReturnDeliveryNoteItems.php
 
 		-
-			message: '#^Access to an undefined property App\\Actions\\GoodsIn\\StockDelivery\\UpdateStateToCheckedStockDelivery\:\:\$hydratorsDelay\.$#'
-			identifier: property.notFound
-			count: 2
-			path: app/Actions/GoodsIn/StockDelivery/UpdateStateToCheckedStockDelivery.php
-
-		-
-			message: '#^Access to an undefined property App\\Actions\\GoodsIn\\StockDelivery\\UpdateStateToCreatingStockDelivery\:\:\$hydratorsDelay\.$#'
-			identifier: property.notFound
-			count: 2
-			path: app/Actions/GoodsIn/StockDelivery/UpdateStateToCreatingStockDelivery.php
-
-		-
-			message: '#^Access to an undefined property App\\Actions\\GoodsIn\\StockDelivery\\UpdateStateToDispatchStockDelivery\:\:\$hydratorsDelay\.$#'
-			identifier: property.notFound
-			count: 2
-			path: app/Actions/GoodsIn/StockDelivery/UpdateStateToDispatchStockDelivery.php
-
-		-
-			message: '#^Access to an undefined property App\\Actions\\GoodsIn\\StockDelivery\\UpdateStateToSettledStockDelivery\:\:\$hydratorsDelay\.$#'
-			identifier: property.notFound
-			count: 2
-			path: app/Actions/GoodsIn/StockDelivery/UpdateStateToSettledStockDelivery.php
-
-		-
 			message: '#^Access to an undefined property App\\Actions\\GoodsIn\\StockDeliveryItem\\UpdateStateToCheckedStockDeliveryItem\:\:\$hydratorsDelay\.$#'
 			identifier: property.notFound
 			count: 2
@@ -2083,12 +2041,6 @@ parameters:
 			path: app/Actions/Iris/Catalogue/IndexIrisCatalogue.php
 
 		-
-			message: '#^Called ''pluck'' on Laravel collection, but could have been retrieved as a query\.$#'
-			identifier: larastan.noUnnecessaryCollectionCall
-			count: 6
-			path: app/Actions/Maintenance/Aurora/DeleteAuroraWebProductCategories.php
-
-		-
 			message: '#^Access to an undefined property App\\Actions\\Maintenance\\CRM\\UpdateEmailSubscriptionsFromAurora\:\:\$organisationSource\.$#'
 			identifier: property.notFound
 			count: 1
@@ -2183,84 +2135,6 @@ parameters:
 			identifier: variable.undefined
 			count: 1
 			path: app/Actions/Maintenance/Catalogue/Shop/UpdateShopReviewsSettingsFromAurora.php
-
-		-
-			message: '#^Access to an undefined property App\\Actions\\Maintenance\\Catalogue\\UpdateFamilyDescriptionAndNameFromAurora\:\:\$organisationSource\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Actions/Maintenance/Catalogue/UpdateFamilyDescriptionAndNameFromAurora.php
-
-		-
-			message: '#^Access to an undefined property App\\Actions\\Maintenance\\Catalogue\\UpdateProductDescriptionAndNameFromAurora\:\:\$organisationSource\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Actions/Maintenance/Catalogue/UpdateProductDescriptionAndNameFromAurora.php
-
-		-
-			message: '#^Access to an undefined property App\\Actions\\Maintenance\\Catalogue\\UpdateProductIsForSaleFromAurora\:\:\$auroraModelData\.$#'
-			identifier: property.notFound
-			count: 16
-			path: app/Actions/Maintenance/Catalogue/UpdateProductIsForSaleFromAurora.php
-
-		-
-			message: '#^Access to an undefined property App\\Actions\\Maintenance\\Catalogue\\UpdateProductIsForSaleFromAurora\:\:\$organisation\.$#'
-			identifier: property.notFound
-			count: 18
-			path: app/Actions/Maintenance/Catalogue/UpdateProductIsForSaleFromAurora.php
-
-		-
-			message: '#^Access to an undefined property App\\Actions\\Maintenance\\Catalogue\\UpdateProductIsForSaleFromAurora\:\:\$organisationSource\.$#'
-			identifier: property.notFound
-			count: 59
-			path: app/Actions/Maintenance/Catalogue/UpdateProductIsForSaleFromAurora.php
-
-		-
-			message: '#^Array has 2 duplicate keys with value ''Â'' \(''Â'', ''Â''\)\.$#'
-			identifier: array.duplicateKey
-			count: 2
-			path: app/Actions/Maintenance/Catalogue/UpdateProductIsForSaleFromAurora.php
-
-		-
-			message: '#^Array has 2 duplicate keys with value ''Î'' \(''Î'', ''Î''\)\.$#'
-			identifier: array.duplicateKey
-			count: 2
-			path: app/Actions/Maintenance/Catalogue/UpdateProductIsForSaleFromAurora.php
-
-		-
-			message: '#^Array has 2 duplicate keys with value ''â'' \(''â'', ''â''\)\.$#'
-			identifier: array.duplicateKey
-			count: 2
-			path: app/Actions/Maintenance/Catalogue/UpdateProductIsForSaleFromAurora.php
-
-		-
-			message: '#^Array has 2 duplicate keys with value ''î'' \(''î'', ''î''\)\.$#'
-			identifier: array.duplicateKey
-			count: 2
-			path: app/Actions/Maintenance/Catalogue/UpdateProductIsForSaleFromAurora.php
-
-		-
-			message: '#^Array has 2 duplicate keys with value ''ý'' \(''ý'', ''ý''\)\.$#'
-			identifier: array.duplicateKey
-			count: 2
-			path: app/Actions/Maintenance/Catalogue/UpdateProductIsForSaleFromAurora.php
-
-		-
-			message: '#^Call to an undefined method App\\Actions\\Maintenance\\Catalogue\\UpdateProductIsForSaleFromAurora\:\:fetchImage\(\)\.$#'
-			identifier: method.notFound
-			count: 1
-			path: app/Actions/Maintenance/Catalogue/UpdateProductIsForSaleFromAurora.php
-
-		-
-			message: '#^Call to an undefined method App\\Actions\\Maintenance\\Catalogue\\UpdateProductIsForSaleFromAurora\:\:getModelImagesCollection\(\)\.$#'
-			identifier: method.notFound
-			count: 1
-			path: app/Actions/Maintenance/Catalogue/UpdateProductIsForSaleFromAurora.php
-
-		-
-			message: '#^Variable \$sourceData might not be defined\.$#'
-			identifier: variable.undefined
-			count: 1
-			path: app/Actions/Maintenance/Catalogue/UpdateProductIsForSaleFromAurora.php
 
 		-
 			message: '#^Access to an undefined property App\\Actions\\Maintenance\\Catalogue\\UpdateProductIsMainFromAurora\:\:\$auroraModelData\.$#'
@@ -2431,18 +2305,6 @@ parameters:
 			path: app/Actions/Maintenance/Goods/AddMissingStatsToTradeUnits.php
 
 		-
-			message: '#^Access to an undefined property App\\Actions\\Maintenance\\Goods\\RepairTradeUnitVideosToChildren\:\:\$organisation\.$#'
-			identifier: property.notFound
-			count: 3
-			path: app/Actions/Maintenance/Goods/RepairTradeUnitVideosToChildren.php
-
-		-
-			message: '#^Anonymous function has an unused use \$command\.$#'
-			identifier: closure.unusedUse
-			count: 1
-			path: app/Actions/Maintenance/Goods/RepairTradeUnitVideosToChildren.php
-
-		-
 			message: '#^Access to undefined constant App\\Enums\\Dispatching\\Picking\\PickingTypeEnum\:\:RETURN\.$#'
 			identifier: classConstant.notFound
 			count: 2
@@ -2569,18 +2431,6 @@ parameters:
 			path: app/Actions/Maintenance/Web/GetAuroraCanonicalAndCreateRedirect.php
 
 		-
-			message: '#^Access to an undefined property App\\Actions\\Maintenance\\Web\\GetRelatedFamiliesFromAurora\:\:\$organisationSource\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Actions/Maintenance/Web/GetRelatedFamiliesFromAurora.php
-
-		-
-			message: '#^Access to an undefined property App\\Actions\\Maintenance\\Web\\GetRelatedProductsFromAurora\:\:\$organisationSource\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Actions/Maintenance/Web/GetRelatedProductsFromAurora.php
-
-		-
 			message: '#^Access to an undefined property App\\Actions\\Maintenance\\Web\\RepairWebpageSeoData\:\:\$organisationSource\.$#'
 			identifier: property.notFound
 			count: 1
@@ -2645,12 +2495,6 @@ parameters:
 			identifier: closure.unusedUse
 			count: 1
 			path: app/Actions/Masters/MasterCollection/GetMasterCollectionsInMasterCollection.php
-
-		-
-			message: '#^Variable \$masterCollections in empty\(\) always exists and is not falsy\.$#'
-			identifier: empty.variable
-			count: 1
-			path: app/Actions/Masters/MasterCollection/Hydrators/MasterCollectionHydrateOrderingIntervals.php
 
 		-
 			message: '#^Access to an undefined property App\\Actions\\Masters\\MasterCollection\\UI\\EditMasterCollection\:\:\$parent\.$#'
@@ -2803,22 +2647,10 @@ parameters:
 			path: app/Actions/Ordering/Transaction/StoreTransaction.php
 
 		-
-			message: '#^Variable \$return_stat on left side of \?\? always exists and is not nullable\.$#'
-			identifier: nullCoalesce.variable
-			count: 1
-			path: app/Actions/Ordering/UI/ShowOrdersBacklog.php
-
-		-
 			message: '#^Anonymous function has an unused use \$parent\.$#'
 			identifier: closure.unusedUse
 			count: 1
 			path: app/Actions/Ordering/UpcomingTransaction/UI/IndexUpcomingTransactions.php
-
-		-
-			message: '#^Array has 2 duplicate keys with value ''showcase'' \(\\App\\Enums\\UI\\Procurement\\MarketplaceSupplierTabsEnum\:\:SHOWCASE\-\>value, \\App\\Enums\\UI\\Procurement\\MarketplaceSupplierTabsEnum\:\:SHOWCASE\-\>value\)\.$#'
-			identifier: array.duplicateKey
-			count: 1
-			path: app/Actions/Procurement/Marketplace/Supplier/UI/ShowMarketplaceSupplier.php
 
 		-
 			message: '#^Anonymous function has an unused use \$canEdit\.$#'
@@ -2951,12 +2783,6 @@ parameters:
 			identifier: arguments.count
 			count: 1
 			path: app/Actions/Retina/Dropshipping/Orders/SubmitRetinaOrder.php
-
-		-
-			message: '#^Method App\\Actions\\Accounting\\Payment\\PastPay\\SuccessOrderWithPastpay\:\:handle\(\) invoked with 2 parameters, 1 required\.$#'
-			identifier: arguments.count
-			count: 1
-			path: app/Actions/Retina/Dropshipping/Orders/SuccessOrderWithPastpay.php
 
 		-
 			message: '#^Called ''env'' outside of the config directory which returns null when the config is cached, use ''config''\.$#'
@@ -3257,12 +3083,6 @@ parameters:
 			identifier: closure.unusedUse
 			count: 2
 			path: app/Actions/SysAdmin/Organisation/Seeders/SeedOrganisationPermissions.php
-
-		-
-			message: '#^Access to an undefined property App\\Actions\\SysAdmin\\Task\\UpdateTask\:\:\$validatedData\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Actions/SysAdmin/Task/UpdateTask.php
 
 		-
 			message: '#^Anonymous function has an unused use \$jobPosition\.$#'
@@ -6361,78 +6181,6 @@ parameters:
 			path: app/Http/Resources/Catalogue/IrisEcomLoggedOutProductsInWebpageResource.php
 
 		-
-			message: '#^Access to an undefined property App\\Http\\Resources\\Catalogue\\IrisLuigiBoxRecommendationResource\:\:\$available_quantity\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/Catalogue/IrisLuigiBoxRecommendationResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Http\\Resources\\Catalogue\\IrisLuigiBoxRecommendationResource\:\:\$code\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/Catalogue/IrisLuigiBoxRecommendationResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Http\\Resources\\Catalogue\\IrisLuigiBoxRecommendationResource\:\:\$id\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/Catalogue/IrisLuigiBoxRecommendationResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Http\\Resources\\Catalogue\\IrisLuigiBoxRecommendationResource\:\:\$name\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/Catalogue/IrisLuigiBoxRecommendationResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Http\\Resources\\Catalogue\\IrisLuigiBoxRecommendationResource\:\:\$offers_data\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/Catalogue/IrisLuigiBoxRecommendationResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Http\\Resources\\Catalogue\\IrisLuigiBoxRecommendationResource\:\:\$price\.$#'
-			identifier: property.notFound
-			count: 4
-			path: app/Http/Resources/Catalogue/IrisLuigiBoxRecommendationResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Http\\Resources\\Catalogue\\IrisLuigiBoxRecommendationResource\:\:\$product_offers_data\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/Catalogue/IrisLuigiBoxRecommendationResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Http\\Resources\\Catalogue\\IrisLuigiBoxRecommendationResource\:\:\$rrp\.$#'
-			identifier: property.notFound
-			count: 3
-			path: app/Http/Resources/Catalogue/IrisLuigiBoxRecommendationResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Http\\Resources\\Catalogue\\IrisLuigiBoxRecommendationResource\:\:\$unit\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/Catalogue/IrisLuigiBoxRecommendationResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Http\\Resources\\Catalogue\\IrisLuigiBoxRecommendationResource\:\:\$units\.$#'
-			identifier: property.notFound
-			count: 2
-			path: app/Http/Resources/Catalogue/IrisLuigiBoxRecommendationResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Http\\Resources\\Catalogue\\IrisLuigiBoxRecommendationResource\:\:\$url\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/Catalogue/IrisLuigiBoxRecommendationResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Http\\Resources\\Catalogue\\IrisLuigiBoxRecommendationResource\:\:\$web_images\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/Catalogue/IrisLuigiBoxRecommendationResource.php
-
-		-
 			message: '#^Access to an undefined property App\\Http\\Resources\\Catalogue\\MasterProductCategoryResource\:\:\$description_extra\.$#'
 			identifier: property.notFound
 			count: 1
@@ -8623,114 +8371,6 @@ parameters:
 			path: app/Http/Resources/Fulfilment/FulfilmentsResource.php
 
 		-
-			message: '#^Access to an undefined property App\\Http\\Resources\\Fulfilment\\MayaPalletResource\:\:\$rental_id\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/Fulfilment/MayaPalletResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Http\\Resources\\Fulfilment\\MayaPalletReturnItemUIResource\:\:\$pallet\.$#'
-			identifier: property.notFound
-			count: 21
-			path: app/Http/Resources/Fulfilment/MayaPalletReturnItemUIResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Http\\Resources\\Fulfilment\\MayaPalletReturnItemUIResource\:\:\$palletReturn\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/Fulfilment/MayaPalletReturnItemUIResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Http\\Resources\\Fulfilment\\MayaPalletStoredItemAuditResource\:\:\$number_associated_stored_items\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/Fulfilment/MayaPalletStoredItemAuditResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Http\\Resources\\Fulfilment\\MayaPalletStoredItemAuditResource\:\:\$number_audited_pallets\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/Fulfilment/MayaPalletStoredItemAuditResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Http\\Resources\\Fulfilment\\MayaPalletStoredItemAuditResource\:\:\$number_audited_stored_items\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/Fulfilment/MayaPalletStoredItemAuditResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Http\\Resources\\Fulfilment\\MayaPalletStoredItemAuditResource\:\:\$number_audited_stored_items_with_additions\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/Fulfilment/MayaPalletStoredItemAuditResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Http\\Resources\\Fulfilment\\MayaPalletStoredItemAuditResource\:\:\$number_audited_stored_items_with_with_stock_checked\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/Fulfilment/MayaPalletStoredItemAuditResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Http\\Resources\\Fulfilment\\MayaPalletStoredItemAuditResource\:\:\$number_audited_stored_items_with_with_subtractions\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/Fulfilment/MayaPalletStoredItemAuditResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Http\\Resources\\Fulfilment\\MayaPalletStoredItemAuditResource\:\:\$number_created_stored_items\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/Fulfilment/MayaPalletStoredItemAuditResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Http\\Resources\\Fulfilment\\MayaPalletStoredItemAuditResource\:\:\$scope\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/Fulfilment/MayaPalletStoredItemAuditResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Http\\Resources\\Fulfilment\\MayaPalletsResource\:\:\$customer_reference\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/Fulfilment/MayaPalletsResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Http\\Resources\\Fulfilment\\MayaPalletsResource\:\:\$fulfilment_customer_name\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/Fulfilment/MayaPalletsResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Http\\Resources\\Fulfilment\\MayaPalletsResource\:\:\$id\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/Fulfilment/MayaPalletsResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Http\\Resources\\Fulfilment\\MayaPalletsResource\:\:\$reference\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/Fulfilment/MayaPalletsResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Http\\Resources\\Fulfilment\\MayaPalletsResource\:\:\$rental_id\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/Fulfilment/MayaPalletsResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Http\\Resources\\Fulfilment\\MayaPalletsResource\:\:\$state\.$#'
-			identifier: property.notFound
-			count: 3
-			path: app/Http/Resources/Fulfilment/MayaPalletsResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Http\\Resources\\Fulfilment\\MayaPalletsResource\:\:\$status\.$#'
-			identifier: property.notFound
-			count: 5
-			path: app/Http/Resources/Fulfilment/MayaPalletsResource.php
-
-		-
 			message: '#^Access to an undefined property App\\Http\\Resources\\Fulfilment\\NewStoredItemDeltasInProcessForPalletResource\:\:\$audit_notes\.$#'
 			identifier: property.notFound
 			count: 1
@@ -10675,72 +10315,6 @@ parameters:
 			path: app/Http/Resources/Mail/ProspectMailshotsResource.php
 
 		-
-			message: '#^Access to an undefined property App\\Http\\Resources\\Mail\\ReorderRemainderEmailBulkRunsResource\:\:\$id\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/Mail/ReorderRemainderEmailBulkRunsResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Http\\Resources\\Mail\\ReorderRemainderEmailBulkRunsResource\:\:\$number_dispatched_emails\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/Mail/ReorderRemainderEmailBulkRunsResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Http\\Resources\\Mail\\ReorderRemainderEmailBulkRunsResource\:\:\$number_dispatched_emails_state_clicked\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/Mail/ReorderRemainderEmailBulkRunsResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Http\\Resources\\Mail\\ReorderRemainderEmailBulkRunsResource\:\:\$number_dispatched_emails_state_delivered\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/Mail/ReorderRemainderEmailBulkRunsResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Http\\Resources\\Mail\\ReorderRemainderEmailBulkRunsResource\:\:\$number_dispatched_emails_state_hard_bounce\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/Mail/ReorderRemainderEmailBulkRunsResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Http\\Resources\\Mail\\ReorderRemainderEmailBulkRunsResource\:\:\$number_dispatched_emails_state_opened\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/Mail/ReorderRemainderEmailBulkRunsResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Http\\Resources\\Mail\\ReorderRemainderEmailBulkRunsResource\:\:\$number_dispatched_emails_state_sent\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/Mail/ReorderRemainderEmailBulkRunsResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Http\\Resources\\Mail\\ReorderRemainderEmailBulkRunsResource\:\:\$number_dispatched_emails_state_soft_bounce\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/Mail/ReorderRemainderEmailBulkRunsResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Http\\Resources\\Mail\\ReorderRemainderEmailBulkRunsResource\:\:\$number_dispatched_emails_state_spam\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/Mail/ReorderRemainderEmailBulkRunsResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Http\\Resources\\Mail\\ReorderRemainderEmailBulkRunsResource\:\:\$state\.$#'
-			identifier: property.notFound
-			count: 2
-			path: app/Http/Resources/Mail/ReorderRemainderEmailBulkRunsResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Http\\Resources\\Mail\\ReorderRemainderEmailBulkRunsResource\:\:\$subject\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/Mail/ReorderRemainderEmailBulkRunsResource.php
-
-		-
 			message: '#^Access to an undefined property App\\Http\\Resources\\Masters\\MasterAssetTimeSeriesResource\:\:\$customers_invoiced\.$#'
 			identifier: property.notFound
 			count: 1
@@ -11521,54 +11095,6 @@ parameters:
 			path: app/Http/Resources/Ordering/TransactionsResource.php
 
 		-
-			message: '#^Access to an undefined property App\\Http\\Resources\\Ordering\\WaitingCrmItemsResource\:\:\$net_amount\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/Ordering/WaitingCrmItemsResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Http\\Resources\\Ordering\\WaitingCrmItemsResource\:\:\$order_id\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/Ordering/WaitingCrmItemsResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Http\\Resources\\Ordering\\WaitingCrmItemsResource\:\:\$order_slug\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/Ordering/WaitingCrmItemsResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Http\\Resources\\Ordering\\WaitingCrmItemsResource\:\:\$org_stock_slug\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/Ordering/WaitingCrmItemsResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Http\\Resources\\Ordering\\WaitingCrmItemsResource\:\:\$organisation_slug\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/Ordering/WaitingCrmItemsResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Http\\Resources\\Ordering\\WaitingCrmItemsResource\:\:\$shop_engine\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/Ordering/WaitingCrmItemsResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Http\\Resources\\Ordering\\WaitingCrmItemsResource\:\:\$shop_slug\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/Ordering/WaitingCrmItemsResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Http\\Resources\\Ordering\\WaitingCrmItemsResource\:\:\$shop_type\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/Ordering/WaitingCrmItemsResource.php
-
-		-
 			message: '#^Access to an undefined property App\\Http\\Resources\\Platform\\PlatformsResource\:\:\$slug\.$#'
 			identifier: property.notFound
 			count: 1
@@ -11957,54 +11483,6 @@ parameters:
 			identifier: property.notFound
 			count: 1
 			path: app/Http/Resources/SysAdmin/ScheduledTaskResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Http\\Resources\\SysAdmin\\User\\MayaUserResource\:\:\$contact_name\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/SysAdmin/User/MayaUserResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Http\\Resources\\SysAdmin\\User\\MayaUserResource\:\:\$email\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/SysAdmin/User/MayaUserResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Http\\Resources\\SysAdmin\\User\\MayaUserResource\:\:\$id\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/SysAdmin/User/MayaUserResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Http\\Resources\\SysAdmin\\User\\MayaUserResource\:\:\$number_current_api_tokens\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/SysAdmin/User/MayaUserResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Http\\Resources\\SysAdmin\\User\\MayaUserResource\:\:\$number_expired_api_tokens\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/SysAdmin/User/MayaUserResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Http\\Resources\\SysAdmin\\User\\MayaUserResource\:\:\$parent_type\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/SysAdmin/User/MayaUserResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Http\\Resources\\SysAdmin\\User\\MayaUserResource\:\:\$status\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/SysAdmin/User/MayaUserResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Http\\Resources\\SysAdmin\\User\\MayaUserResource\:\:\$username\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/SysAdmin/User/MayaUserResource.php
 
 		-
 			message: '#^Access to an undefined property App\\Http\\Resources\\SysAdmin\\User\\UsersResource\:\:\$has_2fa\.$#'
