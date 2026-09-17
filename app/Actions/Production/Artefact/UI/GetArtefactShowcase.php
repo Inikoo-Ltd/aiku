@@ -8,6 +8,7 @@
 
 namespace App\Actions\Production\Artefact\UI;
 
+use App\Actions\Production\JobOrderItem\GetOpenJobOrderItemsOffBatch;
 use App\Actions\Production\Artefact\GetArtefactComplianceStatus;
 use App\Models\Inventory\OrgStock;
 use App\Models\Production\Artefact;
@@ -32,6 +33,12 @@ class GetArtefactShowcase
             'compliance_label'  => $compliance['label'],
             'recommended_batch_size' => $artefact->recommended_batch_size,
             'batch_pack'        => $this->getBatchPack($artefact),
+            'jobs_off_batch'    => GetOpenJobOrderItemsOffBatch::run([$artefact->id])->map(fn (array $item) => array_merge($item, [
+                'route' => [
+                    'name'       => 'grp.org.productions.show.operations.job-orders.show',
+                    'parameters' => [$artefact->organisation->slug, $artefact->production->slug, $item['job_order_slug']],
+                ],
+            ]))->all(),
             'shelf_life_days'   => $artefact->shelf_life_days,
             'update_route'      => [
                 'name'       => 'grp.models.production.artefacts.update',

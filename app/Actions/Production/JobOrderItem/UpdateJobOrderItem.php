@@ -9,12 +9,17 @@
 namespace App\Actions\Production\JobOrderItem;
 
 use App\Actions\OrgAction;
+use App\Actions\Production\JobOrderItemTask\CalculateJobOrderItemTaskQuantities;
 use App\Actions\Traits\WithActionUpdate;
+use App\Enums\Production\JobOrder\JobOrderStateEnum;
 use App\Enums\Production\JobOrderItem\JobOrderItemStateEnum;
 use App\Enums\Production\JobOrderItem\JobOrderItemStatusEnum;
 use App\Models\CRM\WebUser;
 use App\Models\Production\JobOrderItem;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\Redirect;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 use Lorisleiva\Actions\ActionRequest;
 
 class UpdateJobOrderItem extends OrgAction
@@ -26,8 +31,40 @@ class UpdateJobOrderItem extends OrgAction
 
     public function handle(JobOrderItem $jobOrderItem, array $modelData): JobOrderItem
     {
+        $jobOrderItem = $this->update($jobOrderItem, $modelData, ['data']);
+
+        if ($jobOrderItem->wasChanged('quantity')) {
+            $unitsPerArtefact = $jobOrderItem->artefact->manufactureTasks()->get()->pluck('pivot.units_per_artefact', 'id');
+
+            foreach ($jobOrderItem->tasks as $task) {
+                $task->update(['quantity_required' => $jobOrderItem->quantity * ($unitsPerArtefact[$task->manufacture_task_id] ?? 1)]);
+                CalculateJobOrderItemTaskQuantities::run($task);
+            }
+        }
 
         return $jobOrderItem;
+    }
+
+    public function afterValidator(Validator $validator): void
+    {
+        if ($this->asAction || !$this->has('quantity')) {
+            return;
+        }
+
+        if (!in_array($this->jobOrderItem->jobOrder->state, JobOrderStateEnum::open()) || $this->jobOrderItem->quantity_received > 0) {
+            $validator->errors()->add('quantity', __('This job is already being received, its quantity can no longer change.'));
+
+            return;
+        }
+
+        $unitsPerArtefact = $this->jobOrderItem->artefact->manufactureTasks()->get()->pluck('pivot.units_per_artefact', 'id');
+        foreach ($this->jobOrderItem->tasks as $task) {
+            if ($this->get('quantity') * ($unitsPerArtefact[$task->manufacture_task_id] ?? 1) < $task->quantity_made) {
+                $validator->errors()->add('quantity', __('More than that is already made, the quantity cannot go below it.'));
+
+                return;
+            }
+        }
     }
 
     public function authorize(ActionRequest $request): bool
@@ -40,7 +77,10 @@ class UpdateJobOrderItem extends OrgAction
             return true;
         }
 
-        return $request->user()->authTo("productions-view.{$this->organisation->id}");
+        return $request->user()->authTo([
+            'org-supervisor.'.$this->organisation->id,
+            "productions_operations.{$this->jobOrderItem->jobOrder->production_id}.orchestrate",
+        ]);
     }
 
     public function rules(): array
@@ -67,6 +107,11 @@ class UpdateJobOrderItem extends OrgAction
         $this->initialisation($jobOrderItem->organisation, $request);
 
         return $this->handle($jobOrderItem, $this->validatedData);
+    }
+
+    public function htmlResponse(): RedirectResponse
+    {
+        return Redirect::back();
     }
 
 

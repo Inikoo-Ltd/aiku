@@ -3455,3 +3455,53 @@ test('breaks belong to the artisan, are capped at their planned length and only 
         ->and((float) $session->hours)->toBe(round(52 / 60, 4));
     $this->travelBack();
 });
+
+test('a batch size change flags open jobs raised with the old one and their quantity can be corrected', function () {
+    $stocks   = createStocks($this->group);
+    $orgStock = createOrgStocks($this->organisation, [$stocks[0]])[0];
+
+    \App\Models\Production\Artefact::where('production_id', $this->production->id)
+        ->where('org_stock_id', $orgStock->id)
+        ->update(['org_stock_id' => null]);
+    $orgStock->update(['packed_in' => 12]);
+
+    $artefact = StoreArtefact::make()->action($this->production, [
+        'code'                   => 'OFFBATCH-01',
+        'name'                   => 'Raised at three hundred and sixty',
+        'recommended_batch_size' => 360,
+    ]);
+    $artefact->update(['org_stock_id' => $orgStock->id]);
+
+    $jobOrder = \App\Actions\Production\JobOrder\StoreJobOrdersGroupedByArtisan::run($this->production, [
+        ['artefact' => $artefact, 'quantity' => 40, 'batch_code' => null, 'expiry_date' => null],
+    ])[0];
+    $item = $jobOrder->jobOrderItems()->first();
+
+    expect($item->quantity)->toBe(720)
+        ->and((float) $item->data['demand_skos'])->toBe(40.0)
+        ->and(\App\Actions\Production\JobOrderItem\GetOpenJobOrderItemsOffBatch::run([$artefact->id]))->toBeEmpty();
+
+    SetArtefactsBatchSize::make()->action($this->production, [
+        'artefacts'              => [$artefact->id],
+        'recommended_batch_size' => 480,
+    ]);
+
+    $offBatch = \App\Actions\Production\JobOrderItem\GetOpenJobOrderItemsOffBatch::run([$artefact->id]);
+
+    expect($offBatch)->toHaveCount(1)
+        ->and($offBatch[0]['id'])->toBe($item->id)
+        ->and($offBatch[0]['suggested_quantity'])->toBe(480);
+
+    actingAs($this->guest->getUser());
+    $this->patch(route('grp.models.job-order-item.update', [$item->id]), ['quantity' => 480])->assertSessionHasNoErrors();
+
+    expect($item->refresh()->quantity)->toBe(480)
+        ->and((float) $item->tasks()->first()->quantity_required)->toBe(480.0)
+        ->and(\App\Actions\Production\JobOrderItem\GetOpenJobOrderItemsOffBatch::run([$artefact->id]))->toBeEmpty();
+
+    $item->tasks()->first()->update(['quantity_made' => 100]);
+
+    $this->patch(route('grp.models.job-order-item.update', [$item->id]), ['quantity' => 50])->assertSessionHasErrors('quantity');
+
+    expect($item->refresh()->quantity)->toBe(480);
+});

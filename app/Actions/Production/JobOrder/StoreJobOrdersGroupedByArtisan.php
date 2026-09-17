@@ -65,12 +65,13 @@ class StoreJobOrdersGroupedByArtisan
      * run was prepared wins; otherwise the job order's own reference names the batch, which is the
      * only name guaranteed to be unique. Both travel with the item to the shelf when it is received.
      *
-     * @param  array{artefact: Artefact, batch_code?: string|null, expiry_date?: string|null}  $line
-     * @return array<string, string|null>
+     * @param  array{artefact: Artefact, quantity: float|int, batch_code?: string|null, expiry_date?: string|null}  $line
+     * @return array<string, string|float|null>
      */
     private function getRunData(JobOrder $jobOrder, array $line): array
     {
         return [
+            'demand_skos' => (float) $line['quantity'],
             'batch_code'  => $line['batch_code'] ?: $jobOrder->reference.'-'.$line['artefact']->code,
             'expiry_date' => $line['expiry_date'] ?: null,
         ];

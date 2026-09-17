@@ -8,6 +8,7 @@
 
 namespace App\Actions\Production\Artefact;
 
+use App\Actions\Production\JobOrderItem\GetOpenJobOrderItemsOffBatch;
 use App\Actions\OrgAction;
 use App\Actions\Production\ArtefactDepartment\Hydrators\ArtefactDepartmentHydrateArtefacts;
 use App\Actions\Production\ArtefactFamily\Hydrators\ArtefactFamilyHydrateArtefacts;
@@ -16,10 +17,14 @@ use App\Models\Production\ArtefactDepartment;
 use App\Models\Production\ArtefactFamily;
 use App\Models\Production\Production;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Collection;
 use Lorisleiva\Actions\ActionRequest;
 
 class SetArtefactsBatchSize extends OrgAction
 {
+    /** @var Collection<int, array<string, mixed>> */
+    private Collection $jobsOffBatch;
+
     public function handle(Production $production, array $modelData): int
     {
         $artefacts = Artefact::where('production_id', $production->id)
@@ -33,6 +38,8 @@ class SetArtefactsBatchSize extends OrgAction
             ->each(fn (ArtefactFamily $family) => ArtefactFamilyHydrateArtefacts::run($family));
         ArtefactDepartment::whereIn('id', $artefacts->pluck('artefact_department_id')->filter()->unique())
             ->each(fn (ArtefactDepartment $department) => ArtefactDepartmentHydrateArtefacts::run($department));
+
+        $this->jobsOffBatch = GetOpenJobOrderItemsOffBatch::run($artefacts->pluck('id')->all());
 
         return $artefacts->count();
     }
@@ -72,6 +79,16 @@ class SetArtefactsBatchSize extends OrgAction
 
     public function htmlResponse(): RedirectResponse
     {
-        return back();
+        if ($this->jobsOffBatch->isEmpty()) {
+            return back();
+        }
+
+        return back()->with('notification', [
+            'status'      => 'warning',
+            'title'       => __('Open jobs keep their old quantity'),
+            'description' => __('Raised with the previous batch size and not started yet, change them on the job order if needed: :jobs', [
+                'jobs' => $this->jobsOffBatch->map(fn (array $item) => $item['job_order_reference'].' '.$item['artefact_code'].' × '.$item['quantity'])->implode(', '),
+            ]),
+        ]);
     }
 }

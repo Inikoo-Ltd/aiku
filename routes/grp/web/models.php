@@ -457,6 +457,7 @@ use App\Actions\Production\JobOrder\ConfirmJobOrder;
 use App\Actions\Production\JobOrder\ReceiveJobOrderIntoStock;
 use App\Actions\Production\JobOrder\StoreJobOrder;
 use App\Actions\Production\JobOrderItem\StoreJobOrderItem;
+use App\Actions\Production\JobOrderItem\UpdateJobOrderItem;
 use App\Actions\Production\ManufactureTaskSession\VoidManufactureTaskSession;
 use App\Actions\Production\ManufactureTaskSession\CloseManufactureTaskSession;
 use App\Actions\Production\ManufactureBreak\StartManufactureBreak;
@@ -1365,6 +1366,7 @@ Route::name('production.')->prefix('production/{production:id}')->group(function
 
 Route::patch('/job-order/{jobOrder:id}', UpdateJobOrder::class)->name('job-order.update');
 Route::post('/job-order/{jobOrder:id}/item', StoreJobOrderItem::class)->name('job-order.item.store')->withoutScopedBindings();
+Route::patch('/job-order-item/{jobOrderItem:id}', UpdateJobOrderItem::class)->name('job-order-item.update')->withoutScopedBindings();
 Route::patch('/job-order/{jobOrder:id}/confirm', ConfirmJobOrder::class)->name('job-order.confirm')->withoutScopedBindings();
 Route::patch('/job-order/{jobOrder:id}/receive', ReceiveJobOrderIntoStock::class)->name('job-order.receive')->withoutScopedBindings();
 Route::patch('/manufacture-task-session/{manufactureTaskSession:id}/void', VoidManufactureTaskSession::class)->name('manufacture-task-session.void')->withoutScopedBindings();
