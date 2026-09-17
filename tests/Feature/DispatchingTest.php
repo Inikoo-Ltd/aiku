@@ -47,7 +47,6 @@ use App\Actions\Maintenance\Catalogue\RemoveIal01FromBillsOfMaterials;
 use App\Actions\Inventory\OrgStock\UpdateOrgStock;
 use Illuminate\Routing\Route;
 use App\Http\Resources\Dispatching\DeliveryNoteItemsStateHandlingResource;
-use App\Http\Resources\Dispatching\PickingSessionDeliveryNoteItemsGroupedResource;
 use App\Actions\Dispatching\Packing\StorePacking;
 use App\Actions\Dispatching\PickedBay\AttachDeliveryNoteToPickedBay;
 use App\Actions\Dispatching\PickedBay\Hydrators\PickedBayHydrateNumberDeliveryNotes;
@@ -837,32 +836,6 @@ test('start picking a picking session', function () {
     $pickingSession = StartPickPickingSession::run($pickingSession, []);
 
     expect($pickingSession->state)->toBe(PickingSessionStateEnum::HANDLING);
-});
-
-test('picking session flags delivery notes whose waiting items are ready to pack', function () {
-    $pickingSession = PickingSession::first();
-    $deliveryNote   = $pickingSession->deliveryNotes()->first();
-    $originalData   = $deliveryNote->only(['state', 'handling_blocked_at']);
-
-    $sessionRow = fn () => collect(
-        get(route('grp.org.warehouses.show.dispatching.picking_sessions.index', [$this->organisation->slug, $this->warehouse->slug]))
-            ->assertOk()
-            ->viewData('page')['props']['data']['data']
-    )->firstWhere('id', $pickingSession->id);
-
-    expect($sessionRow()['number_delivery_notes_waiting_ready'])->toBe(0);
-
-    $deliveryNote->update(['state' => DeliveryNoteStateEnum::PICKED, 'handling_blocked_at' => now()]);
-
-    $groupedRow = (object)array_merge(array_fill_keys([
-        'delivery_note_reference', 'delivery_note_slug', 'delivery_note_customer_notes', 'delivery_note_public_notes',
-        'delivery_note_internal_notes', 'delivery_note_shipping_notes', 'delivery_note_is_premium_dispatch', 'delivery_note_has_extra_packing',
-    ], null), ['delivery_note_id' => $deliveryNote->id]);
-
-    expect($sessionRow()['number_delivery_notes_waiting_ready'])->toBe(1)
-        ->and((new PickingSessionDeliveryNoteItemsGroupedResource($groupedRow))->resolve()['delivery_note_is_waiting_ready'])->toBeTrue();
-
-    $deliveryNote->update($originalData);
 });
 
 test('picking session calculate picks', function (PickingSession $pickingSession) {

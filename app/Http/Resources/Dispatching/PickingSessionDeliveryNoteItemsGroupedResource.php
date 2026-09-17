@@ -9,7 +9,6 @@
 namespace App\Http\Resources\Dispatching;
 
 use App\Actions\Dispatching\DeliveryNoteItem\UI\IndexDeliveryNoteItemsStateHandling;
-use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Models\Dispatching\DeliveryNote;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -46,8 +45,6 @@ class PickingSessionDeliveryNoteItemsGroupedResource extends JsonResource
                         ->orWhere('has_waiting_crm', true);
                 })
                 ->exists(),
-            'delivery_note_is_waiting_ready'  => $deliveryNote->handling_blocked_at
-                && in_array($deliveryNote->state, [DeliveryNoteStateEnum::PICKED, DeliveryNoteStateEnum::PACKING]),
 
             'delivery_note_customer_notes' => $this->delivery_note_customer_notes,
             'delivery_note_public_notes'   => $this->delivery_note_public_notes,

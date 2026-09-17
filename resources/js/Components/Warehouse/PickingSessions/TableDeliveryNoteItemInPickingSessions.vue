@@ -439,10 +439,6 @@ onUnmounted(() => {
                 </Link>
                 <FontAwesomeIcon v-if="item.delivery_note_is_premium_dispatch" v-tooltip="trans('Priority dispatch')" icon="fas fa-star" class="text-yellow-500 animate-bounce" fixed-width aria-hidden="true" />
                 <FontAwesomeIcon v-if="item.delivery_note_has_extra_packing" v-tooltip="trans('Extra packing')" icon="fas fa-box-heart" class="text-yellow-500 animate-bounce" fixed-width aria-hidden="true" />
-                <span v-if="item.delivery_note_is_waiting_ready" v-tooltip="trans('Waiting item picked, ready to pack')" class="inline-flex items-center gap-1 rounded bg-green-100 px-1.5 py-0.5 text-xs font-semibold text-green-700 animate-pulse">
-                    <FontAwesomeIcon icon="fal fa-hourglass-half" fixed-width aria-hidden="true" />
-                    {{ trans('Ready to pack') }}
-                </span>
                 <FontAwesomeIcon v-if="item.delivery_note_is_for_collection" v-tooltip="trans('For Collection')" icon="fas fa-people-arrows" class="text-purple-500 animate-bounce" fixed-width aria-hidden="true" />
 
 
