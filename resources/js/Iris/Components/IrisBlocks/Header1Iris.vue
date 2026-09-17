@@ -84,6 +84,7 @@ const props = defineProps<{
 const layout = inject('layout', layoutStructure)
 const isLoggedIn = computed(() => layout?.iris?.is_logged_in || false)
 const displayUsername = computed(() => layout?.user?.username?.split('@')[0] || '')
+const loginUrl = computed(() => urlLoginWithRedirect())
 const loadingRedirect = ref(false)
 const isLoadingLogout = ref(false)
 let restoreIrisSession: (() => void) | null = null
@@ -271,10 +272,9 @@ const onClickLogout = () => {
 				<template v-else>
 					<div class="flex items-center gap-3">
 						<!-- Login -->
-						<LinkIris :href="urlLoginWithRedirect()" :type="'internal'"
+						<LinkIris :href="loginUrl" :type="'internal'"
 							v-slot="{ isLoading } = { isLoading: false }">
-							<Button @click="() => urlLoginWithRedirect()" :label="ctrans('Login')"
-								:icon="faSignInAlt"></Button>
+							<Button :label="ctrans('Login')" :icon="faSignInAlt" :loading="isLoading"></Button>
 						</LinkIris>
 
 						<!-- Register -->
