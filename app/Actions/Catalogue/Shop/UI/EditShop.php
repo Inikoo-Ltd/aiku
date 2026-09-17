@@ -905,7 +905,7 @@ class EditShop extends OrgAction
                                 'type'   => 'button',
                                 'style'  => 'negative',
                                 'icon'   => ['fal', 'fa-envelope'],
-                                'label'  => __('Disconnect'),
+                                'label'  => __('Disconnect :email', ['email' => $mailboxEmail]),
                                 'route'  => [
                                     'name'       => 'grp.org.shops.show.settings.mailbox.disconnect',
                                     'parameters' => [$shop->organisation->slug, $shop->slug],
