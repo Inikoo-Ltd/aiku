@@ -258,7 +258,7 @@ const onClickReconnect = async (customerSalesChannel: CustomerSalesChannel) => {
 		if (response.status !== 200) {
 			throw new Error("Something went wrong. Try again later.")
 		} else {
-			window.open(response.data, "_blank")
+			window.location.href = response.data
 		}
 	} catch (error: any) {
 		notify({
