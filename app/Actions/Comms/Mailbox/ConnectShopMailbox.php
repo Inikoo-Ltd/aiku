@@ -23,12 +23,24 @@ class ConnectShopMailbox extends OrgAction
         return $request->user()->authTo(['org-admin.'.$this->organisation->id, 'shop-admin.'.$this->shop->id]);
     }
 
-    public function handle(Shop $shop, int $userId): RedirectResponse
+    public function handle(Shop $shop, int $userId, ?string $section = null): RedirectResponse
     {
+        $returnUrl = route('grp.org.shops.show.settings.edit', [$shop->organisation->slug, $shop->slug]);
+        $queryParams = [];
+
+        if ($section) {
+            $queryParams['section'] = $section;
+        }
+        $queryParams['mailbox_connected'] = 1;
+
+        if ($queryParams) {
+            $returnUrl .= '?'.http_build_query($queryParams);
+        }
+
         $state = Crypt::encryptString(json_encode([
             'shop_id' => $shop->id,
             'user_id' => $userId,
-            'return'  => route('grp.org.shops.show.settings.edit', [$shop->organisation->slug, $shop->slug]),
+            'return'  => $returnUrl,
         ]));
 
         return Redirect::away(GmailClient::authorizationUrl($state, route('grp.gmail.callback')));
@@ -38,6 +50,6 @@ class ConnectShopMailbox extends OrgAction
     {
         $this->initialisationFromShop($shop, $request);
 
-        return $this->handle($shop, $request->user()->id);
+        return $this->handle($shop, $request->user()->id, $request->query('section'));
     }
 }

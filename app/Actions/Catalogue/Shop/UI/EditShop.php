@@ -898,11 +898,12 @@ class EditShop extends OrgAction
                                 'connected'        => $isMailboxConnected,
                                 'email'            => $mailboxEmail,
                                 'connected_at'     => $mailboxConnectedAt,
-                                'connect_url'      => route('grp.org.shops.show.settings.mailbox.connect', [$shop->organisation->slug, $shop->slug]),
+                                'connect_url'      => route('grp.org.shops.show.settings.mailbox.connect', [$shop->organisation->slug, $shop->slug]).($request->query('section') ? '?section='.$request->query('section') : ''),
                                 'disconnect_route' => [
                                     'name'       => 'grp.org.shops.show.settings.mailbox.disconnect',
                                     'parameters' => [$shop->organisation->slug, $shop->slug],
                                 ],
+                                'inbox_url'        => route('grp.org.shops.show.chat.inbox', [$shop->organisation->slug, $shop->slug]),
                             ],
                         ],
                     ],

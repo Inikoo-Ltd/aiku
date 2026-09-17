@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { ref } from "vue"
+import { ref, onMounted } from "vue"
 import { router } from "@inertiajs/vue3"
 import { trans } from "laravel-vue-i18n"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faEnvelope, faCheckCircle } from "@fal"
+import Dialog from "primevue/dialog"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { useFormatTime } from "@/Composables/useFormatTime"
 
@@ -15,11 +16,26 @@ const props = defineProps<{
             connected_at: string | null
             connect_url: string
             disconnect_route: { name: string; parameters: any }
+            inbox_url: string
         }
     }
 }>()
 
 const isDisconnecting = ref(false)
+const showSuccessDialog = ref(false)
+
+onMounted(() => {
+    if (new URLSearchParams(window.location.search).get("mailbox_connected") === "1") {
+        showSuccessDialog.value = true
+    }
+})
+
+const closeSuccessDialog = () => {
+    showSuccessDialog.value = false
+    const url = new URL(window.location.href)
+    url.searchParams.delete("mailbox_connected")
+    history.replaceState(null, "", url.toString())
+}
 
 const disconnect = () => {
     if (!confirm(trans("Disconnect this mailbox? Emails will stop arriving in the CRM."))) {
@@ -33,6 +49,20 @@ const disconnect = () => {
 </script>
 
 <template>
+    <Dialog v-model:visible="showSuccessDialog" :header="trans('Mailbox connected')" modal :style="{ width: '32rem' }">
+        <div class="space-y-4">
+            <p class="text-sm text-gray-700">
+                {{ trans("Emails sent to") }} <span class="font-medium">{{ fieldData.value.email }}</span> {{ trans("now arrive as conversations in the chat inbox, next to website chat and WhatsApp. Reply from there and the answer is sent by email from this address.") }}
+            </p>
+            <div class="flex justify-end gap-3">
+                <Button :label="trans('Close')" type="tertiary" size="sm" @click="closeSuccessDialog" />
+                <a :href="fieldData.value.inbox_url">
+                    <Button :label="trans('Open chat inbox')" type="primary" size="sm" />
+                </a>
+            </div>
+        </div>
+    </Dialog>
+
     <div class="w-full max-w-2xl rounded-md border border-gray-200 bg-white p-4">
         <template v-if="fieldData.value.connected">
             <div class="flex items-start gap-3">
