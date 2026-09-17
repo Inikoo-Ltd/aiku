@@ -14,6 +14,7 @@ use App\Actions\Ordering\Order\StoreOrder;
 use App\Actions\Ordering\Transaction\StoreTransaction;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
+use App\Actions\Traits\WithRetinaCustomerOwnedRouteModels;
 use App\Models\Catalogue\HistoricAsset;
 use App\Models\CRM\Customer;
 use App\Models\Dropshipping\Platform;
@@ -26,6 +27,7 @@ use Lorisleiva\Actions\Concerns\WithAttributes;
 
 class StoreRetinaPlatformOrder extends RetinaAction
 {
+    use WithRetinaCustomerOwnedRouteModels;
     use AsAction;
     use WithAttributes;
     use WithActionUpdate;
@@ -60,11 +62,6 @@ class StoreRetinaPlatformOrder extends RetinaAction
         return [
             'products' => ['required', 'array']
         ];
-    }
-
-    public function authorize(ActionRequest $request): bool
-    {
-        return true;
     }
 
     public function htmlResponse(Order $order)
