@@ -1321,8 +1321,11 @@ test('json badges and picker packer lists', function () {
 
 test('json mini delivery note and valid for return', function () {
     $deliveryNote = makeDeliveryNote($this);
-    get(route('grp.json.mini_delivery_note', [$deliveryNote->id]))->assertOk();
+    getJson(route('grp.json.mini_delivery_note', [$deliveryNote->id]))->assertOk()->assertJsonPath('delivery_note.is_collection', false);
     get(route('grp.json.mini_delivery_note_shipments', [$deliveryNote->id]))->assertOk();
+
+    $deliveryNote->updateQuietly(['collection_address_id' => $deliveryNote->shop->address_id]);
+    getJson(route('grp.json.mini_delivery_note', [$deliveryNote->id]))->assertOk()->assertJsonPath('delivery_note.is_collection', true);
     get(route('grp.json.delivery_note_valid_for_return', [$this->warehouse->slug]))->assertOk();
 });
 

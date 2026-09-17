@@ -93,6 +93,7 @@ class GetMiniDeliveryNote extends OrgAction
                 'packer'           => $deliveryNote->packerUser,
                 'parcels'          => $deliveryNote->parcels,
                 'shop_type'        => $deliveryNote->shop->type,
+                'is_collection'    => (bool)$deliveryNote->collection_address_id,
             ],
         ];
     }

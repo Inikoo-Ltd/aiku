@@ -17,7 +17,7 @@ import { trans } from "laravel-vue-i18n"
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faIdCardAlt, faEnvelope, faPhone, faGift, faBoxFull, faWeight, faCube, faBarcodeRead, faPrint } from "@fal"
-import { faCubes } from "@fas"
+import { faCubes, faPeopleArrows } from "@fas"
 import { router, usePage } from "@inertiajs/vue3"
 import { computed, inject, ref, toRaw } from "vue"
 import { set } from 'lodash-es'
@@ -34,7 +34,7 @@ import PageHeading from "./Headings/PageHeading.vue";
 library.add(
     faIdCardAlt, faEnvelope, faPhone, faGift, faBoxFull, faWeight, faCube, faCubes,
     faPrint, faBarcodeRead, faSkull, faArrowDown, faDebug, faClipboardListCheck,
-    faUndoAlt, faHandHoldingBox, faListOl
+    faUndoAlt, faHandHoldingBox, faListOl, faPeopleArrows
 );
 
 const props = defineProps<{
@@ -75,6 +75,7 @@ const onDeleteParcel = (index: number) => {
 // Parcel dimensions are needed to pack anything but dropshipping (HELP-3169), so they can be entered before packing too
 const statesWithParcels = ['handling', 'picked', 'packing', 'packed', 'dispatched', 'finalised']
 const statesWithEditableParcels = ['handling', 'picked', 'packing', 'packed']
+const isCollection = computed(() => Boolean(data.value?.delivery_note?.is_collection))
 const isDropshipping = computed(() => data.value?.delivery_note?.shop_type === 'dropshipping')
 const newParcel = () => isDropshipping.value
     ? { weight: 1, dimensions: [5, 5, 5] }
@@ -240,7 +241,7 @@ onMounted(() => {
             />
 
             <Button v-if="props.deliveryNote?.delivery_note_id && props.deliveryNote.delivery_note_state === 'packed'"
-                type="save" label="Finalise and Dispatch" :loading="loadingFinal" @click="handleFinaliseAndDispatch" />
+                type="save" :label="isCollection ? trans('Finalise and set as Collected') : trans('Finalise and Dispatch')" :loading="loadingFinal" @click="handleFinaliseAndDispatch" />
 
             <Button v-if="props.deliveryNote?.delivery_note_id && (props.deliveryNote.delivery_note_state === 'handling' || props.deliveryNote.delivery_note_state === 'picked' || props.deliveryNote.delivery_note_state === 'packing')"
                 type="save" label="Set as packed" size="sm" class="mx-3" :loading="loadingFinal"
@@ -262,7 +263,12 @@ onMounted(() => {
         <BoxStatPallet class="p-4 space-y-2 border rounded-lg shadow-sm bg-white">
             <h3 class="text-base font-semibold text-gray-800 mb-2">{{ trans("Shipping") }}</h3>
 
-            <div v-if="data.delivery_note?.delivery_address">
+            <div v-if="isCollection" class="border border-purple-300 p-4 rounded-lg bg-purple-50 text-sm font-semibold text-purple-700 flex items-center gap-2">
+                <FontAwesomeIcon icon="fas fa-people-arrows" fixed-width aria-hidden="true" />
+                {{ trans("For Collection, do not ship") }}
+            </div>
+
+            <div v-else-if="data.delivery_note?.delivery_address">
                 <div class="border border-gray-300 p-4 rounded-lg bg-gray-50 space-y-2 text-sm text-gray-700">
                     <div v-if="data.delivery_note.customer_client">
                         <p><strong>{{ trans("Name") }}:</strong> {{ data.delivery_note.customer_client.contact_name || data.delivery_note.customer_client.name }}</p>
@@ -345,7 +351,7 @@ onMounted(() => {
                     </div>
                 </div>
 
-                <div v-if="['packed', 'dispatched', 'finalised'].includes(data.delivery_note?.state) && props.deliveryNote">
+                <div v-if="!isCollection && ['packed', 'dispatched', 'finalised'].includes(data.delivery_note?.state) && props.deliveryNote">
                     <div :class="usePage()?.props?.errors?.shipment ? 'errorShake' : ''">
                         <ShipmentSection
                             :shipments="shipments?.shipment?.shipments ?? []"
