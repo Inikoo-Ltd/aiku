@@ -414,17 +414,17 @@ class IndexGoogleAdsCampaigns extends OrgAction
 
                     /* Offered only once the account can actually be reached: a create form that can
                        only fail wastes the time of whoever fills it in. */
-                    'actions' => GoogleAdsClient::unreachableReason($this->shop) ? [] : [
-                        [
-                            'type'  => 'button',
-                            'style' => 'create',
-                            'label' => __('New campaign'),
-                            'route' => [
-                                'name'       => 'grp.org.shops.show.marketing.google_ads.create',
-                                'parameters' => $request->route()->originalParameters(),
-                            ],
-                        ],
-                    ],
+                    // 'actions' => GoogleAdsClient::unreachableReason($this->shop) ? [] : [
+                    //     [
+                    //         'type'  => 'button',
+                    //         'style' => 'create',
+                    //         'label' => __('New campaign'),
+                    //         'route' => [
+                    //             'name'       => 'grp.org.shops.show.marketing.google_ads.create',
+                    //             'parameters' => $request->route()->originalParameters(),
+                    //         ],
+                    //     ],
+                    // ],
                 ],
 
                 /* A sentence rather than a boolean: "not connected to a Google account", "no Customer
