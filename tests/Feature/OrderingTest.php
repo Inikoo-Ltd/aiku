@@ -81,6 +81,7 @@ use App\Actions\Ordering\Transaction\DeleteTransaction;
 use App\Actions\Ordering\Transaction\UpdateTransactionChargeAmount;
 use App\Actions\Ordering\Order\GenerateInvoiceFromOrder;
 use App\Actions\Iris\Basket\StoreEcomBasketTransaction;
+use App\Actions\Maintenance\Ordering\RemoveDiscontinuedProductsFromBaskets;
 use App\Actions\Ordering\Transaction\StoreTransaction;
 use App\Actions\Ordering\Transaction\SyncBasketLinesWithProductStock;
 use Illuminate\Support\Str;
@@ -4137,4 +4138,39 @@ test('an exclusive product can be added only by its own customer, and only while
     $line = StoreEcomBasketTransaction::make()->handle($owner->fresh(), $exclusive->fresh(), ['quantity' => 4]);
     SyncBasketLinesWithProductStock::run($exclusive->fresh());
     expect((float) $line->fresh()->quantity_ordered)->toBe(4.0);
+});
+
+test('discontinued products are removed from baskets only when run live, submitted orders keep them', function () {
+    [, $bulk]     = createProduct($this->shop);
+    $discontinued = StoreProduct::make()->action($bulk->family, array_merge(
+        Product::factory()->definition(),
+        ['trade_units' => [['id' => $bulk->tradeUnits->first()->id, 'quantity' => 1]], 'price' => 2]
+    ));
+
+    $addLine = function (Order $order, Product $product) {
+        $data             = Transaction::factory()->definition();
+        $data['order_id'] = $order->id;
+
+        return StoreTransaction::make()->action($order, $product->currentHistoricProduct, $data);
+    };
+
+    $basket = StoreOrder::make()->action($this->customer, Order::factory()->definition());
+    $basket->update(['shipping_engine' => \App\Enums\Ordering\Order\OrderShippingEngineEnum::MANUAL]);
+    $discontinuedLine = $addLine($basket, $discontinued);
+    $keptLine         = $addLine($basket, $this->product);
+
+    $submitted = StoreOrder::make()->action($this->customer, Order::factory()->definition());
+    $submittedLine = $addLine($submitted, $discontinued);
+    $submitted->update(['state' => OrderStateEnum::SUBMITTED]);
+
+    $discontinued->update(['state' => ProductStateEnum::DISCONTINUED]);
+
+    expect(RemoveDiscontinuedProductsFromBaskets::run($this->shop, false))->toBe(1)
+        ->and(Transaction::find($discontinuedLine->id))->not->toBeNull();
+
+    expect(RemoveDiscontinuedProductsFromBaskets::run($this->shop, true))->toBe(1)
+        ->and(Transaction::find($discontinuedLine->id))->toBeNull()
+        ->and(Transaction::find($keptLine->id))->not->toBeNull()
+        ->and(Transaction::find($submittedLine->id))->not->toBeNull()
+        ->and(RemoveDiscontinuedProductsFromBaskets::run($this->shop, false))->toBe(0);
 });
