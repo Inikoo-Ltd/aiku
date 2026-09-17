@@ -430,7 +430,7 @@ const getSeverity = (type?: string) => {
                                     class="text-lg leading-6 font-medium text-gray-700 capitalize">
                                     {{ sectionData.title }}
                                 </h3>
-                                <p v-if="!sectionData.subtitle" class="max-w-2xl text-sm text-gray-500">
+                                <p v-if="sectionData.subtitle" class="max-w-2xl text-sm text-gray-500">
                                     {{ sectionData.subtitle }}
                                 </p>
                             </div>
