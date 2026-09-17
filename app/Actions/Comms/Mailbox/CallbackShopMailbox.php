@@ -11,6 +11,7 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Catalogue\Shop;
 use App\Services\Gmail\GmailClient;
+use Illuminate\Http\Client\RequestException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Crypt;
@@ -77,6 +78,14 @@ class CallbackShopMailbox extends OrgAction
 
         $this->initialisationFromShop($shop, $request);
 
-        return $this->handle((string) $request->query('code'), $state);
+        try {
+            return $this->handle((string) $request->query('code'), $state);
+        } catch (RequestException $exception) {
+            return Redirect::to($state['return'])->with('notification', [
+                'status'      => 'error',
+                'title'       => __('Gmail not connected'),
+                'description' => Arr::get($exception->response->json(), 'error.message') ?? Arr::get($exception->response->json(), 'error_description') ?? $exception->getMessage(),
+            ]);
+        }
     }
 }
