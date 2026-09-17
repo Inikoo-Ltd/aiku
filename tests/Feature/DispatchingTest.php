@@ -2152,7 +2152,8 @@ test('picking session waits on a waiting note and is flagged once the wait is pi
     expect($deliveryNote->refresh()->state)->toBe(DeliveryNoteStateEnum::HANDLING_BLOCKED)
         ->and($deliveryNote->handling_blocked_at)->not->toBeNull()
         ->and($pickingSession->refresh()->state)->toBe(PickingSessionStateEnum::HANDLING_BLOCKED)
-        ->and($pickingSession->is_waiting_ready)->toBeFalse();
+        ->and($pickingSession->is_waiting_ready)->toBeFalse()
+        ->and($deliveryNote->orders->first()->refresh()->state)->toBe(\App\Enums\Ordering\Order\OrderStateEnum::HANDLING_BLOCKED);
 
     // The stock turns up and the wait is picked: the note is released and the session goes to packing, flagged.
     // PickAllItem stores the pick as the request user.
