@@ -13,7 +13,15 @@ library.add(faEye, faEyeSlash, faChevronUp, faChevronDown)
  * the ones the table allows to be hidden get a switch, the rest say so instead of offering a control
  * that would refuse.
  */
-type Column = { key: string; label: any; hidden: boolean; can_be_hidden: boolean }
+type Column = {
+    key: string
+    label: any
+    shortLabel?: string | null
+    icon?: string | null
+    tooltip?: string | null
+    hidden: boolean
+    can_be_hidden: boolean
+}
 
 const props = defineProps<{
     columns: Column[]
@@ -22,12 +30,18 @@ const props = defineProps<{
 }>()
 
 /* A label is usually a string, sometimes `{ type: 'text', data }`, and for icon headings an icon
-   array; the key stands in for an icon so the row still reads as something. */
+   array. A column headed by an icon alone has no label at all, and a switch with nothing beside it
+   is a switch for nothing, so its short label, failing that its tooltip, failing that its key names
+   it here. */
 const labelOf = (column: Column): string => {
-    if (typeof column.label === "string") return trans(column.label)
-    if (column.label && !Array.isArray(column.label) && typeof column.label.data === "string") return trans(column.label.data)
+    const written =
+        typeof column.label === "string"
+            ? trans(column.label)
+            : column.label && !Array.isArray(column.label) && typeof column.label.data === "string"
+              ? trans(column.label.data)
+              : ""
 
-    return column.key
+    return written || column.shortLabel || column.tooltip || column.key
 }
 
 const hiddenCount = computed(() => props.columns.filter((column) => column.hidden).length)
@@ -77,7 +91,13 @@ const buttonTooltip = computed(() =>
                             @click.prevent="onMove(column.key, 1)">
                             <FontAwesomeIcon icon="fal fa-chevron-down" fixed-width aria-hidden="true" />
                         </button>
-                        <p :id="`toggle-column-${column.key}`" class="text-sm text-gray-800">
+                        <FontAwesomeIcon
+                            v-if="column.icon"
+                            :icon="column.icon"
+                            fixed-width
+                            aria-hidden="true"
+                            class="text-gray-500" />
+                        <p :id="`toggle-column-${column.key}`" :title="labelOf(column)" class="max-w-[18rem] truncate text-sm text-gray-800">
                             {{ labelOf(column) }}
                             <FontAwesomeIcon v-if="Array.isArray(column.label)" class="text-gray-700" :icon="column.label" aria-hidden="true" />
                         </p>
