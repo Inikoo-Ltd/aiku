@@ -79,8 +79,6 @@ class SendChatMessageByGmail
         }
 
         $headers[] = 'MIME-Version: 1.0';
-        $headers[] = 'Content-Type: text/plain; charset=utf-8';
-        $headers[] = 'Content-Transfer-Encoding: base64';
 
         $messageBody = $chatMessage->message_text ?? '';
 
@@ -91,9 +89,36 @@ class SendChatMessageByGmail
             }
         }
 
-        $body = chunk_split(base64_encode($messageBody));
+        $textPart = [
+            'Content-Type: text/plain; charset=utf-8',
+            'Content-Transfer-Encoding: base64',
+            '',
+            chunk_split(base64_encode($messageBody)),
+        ];
 
-        return implode("\r\n", $headers)."\r\n\r\n".$body;
+        $attachment = $chatMessage->attachment;
+
+        if (! $attachment) {
+            return implode("\r\n", [...$headers, ...$textPart]);
+        }
+
+        $boundary = 'aiku-'.bin2hex(random_bytes(12));
+        $fileName = $this->encodeHeader(str_replace(['"', "\r", "\n"], '', $attachment->name ?: $attachment->file_name));
+
+        return implode("\r\n", [
+            ...$headers,
+            "Content-Type: multipart/mixed; boundary=\"{$boundary}\"",
+            '',
+            "--{$boundary}",
+            ...$textPart,
+            "--{$boundary}",
+            "Content-Type: {$attachment->mime_type}; name=\"{$fileName}\"",
+            "Content-Disposition: attachment; filename=\"{$fileName}\"",
+            'Content-Transfer-Encoding: base64',
+            '',
+            chunk_split(base64_encode(stream_get_contents($attachment->stream()))),
+            "--{$boundary}--",
+        ]);
     }
 
     private function encodeHeader(string $value): string

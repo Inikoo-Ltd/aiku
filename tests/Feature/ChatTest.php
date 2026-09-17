@@ -3259,6 +3259,35 @@ test('inbound gmail message becomes an email chat session and the agent reply go
             && str_contains(base64_decode(substr($raw, strpos($raw, "\r\n\r\n") + 4)), "Shipped today\n\nKind regards,\nSig Agent");
     });
     expect(Arr::get($reply->fresh()->metadata, 'gmail_message_id'))->toBe('sent1');
+
+    $fileReply = $session->messages()->create([
+        'message_text' => 'Invoice attached',
+        'message_type' => ChatMessageTypeEnum::FILE,
+        'sender_type'  => ChatSenderTypeEnum::AGENT,
+        'sender_id'    => $agent->id,
+    ]);
+    $invoicePath = tempnam(sys_get_temp_dir(), 'chat').'.txt';
+    file_put_contents($invoicePath, 'invoice body');
+    $media = \App\Actions\Helpers\Media\StoreMediaFromFile::run($fileReply, [
+        'path'         => $invoicePath,
+        'originalName' => 'invoice.txt',
+        'extension'    => 'txt',
+        'checksum'     => md5_file($invoicePath),
+    ], 'chat_attachments', 'file');
+    $fileReply->update(['media_id' => $media->id]);
+
+    \App\Actions\Comms\Mailbox\SendChatMessageByGmail::run($fileReply->fresh());
+
+    \Illuminate\Support\Facades\Http::assertSent(function (\Illuminate\Http\Client\Request $request) {
+        if (!str_ends_with($request->url(), 'users/me/messages/send')) {
+            return false;
+        }
+        $raw = base64_decode(strtr($request['raw'], '-_', '+/'));
+
+        return str_contains($raw, 'Content-Type: multipart/mixed')
+            && str_contains($raw, 'Content-Disposition: attachment; filename="invoice.txt"')
+            && str_contains($raw, trim(chunk_split(base64_encode('invoice body'))));
+    });
 });
 
 test('inbound gmail from an unknown sender becomes a guest email session and a spammed sender is skipped next time', function () {
