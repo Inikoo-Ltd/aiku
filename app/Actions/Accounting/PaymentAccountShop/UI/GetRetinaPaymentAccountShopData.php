@@ -54,6 +54,11 @@ class GetRetinaPaymentAccountShopData
                 'iban'           => Arr::get($paymentAccountShop->paymentAccount->data, 'bank.iban'),
             ];
 
+            $sortCode = Arr::get($paymentAccountShop->paymentAccount->data, 'bank.sort_code');
+            if ($sortCode && str_starts_with(strtoupper((string) $bankData['iban']), 'GB')) {
+                $bankData['sort_code'] = $sortCode;
+            }
+
             $note = Arr::get($paymentAccountShop->data, 'note');
             if ($note) {
                 $bankData['note']      = $note;

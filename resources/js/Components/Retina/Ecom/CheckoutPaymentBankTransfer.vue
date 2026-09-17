@@ -13,7 +13,7 @@ defineProps<{
     data: {
         data: {
             bank_name: string
-            bank_code: string
+            sort_code?: string
             iban: string
             account_number: string
             swift?: string
@@ -43,7 +43,6 @@ const onSubmitPlaceOrder = () => {
                 <div class="flex flex-col md:flex-row md:items-center justify-between w-full">
                     <h3 class="font-semibold">{{ data?.data?.bank_name }}</h3>
                     <div class="font-normal text-gray-400 text-sm">
-                        {{ data?.data?.bank_code }}
                         <span>
                             {{ data?.data?.iban }}
                             <CopyButton :text="data?.data?.iban" class="ml-0.5 inline" />
@@ -51,6 +50,7 @@ const onSubmitPlaceOrder = () => {
                     </div>
                 </div>
                 <p class="text-gray-400 italic text-sm">{{ data?.data?.account_number }}</p>
+                <p v-if="data?.data?.sort_code" class="text-sm">{{ trans("Sort code") }}: {{ data.data.sort_code }} <CopyButton :text="data.data.sort_code" class="ml-0.5 inline" /></p>
                 <p v-if="data?.data?.recipient" class="text-sm">{{ trans("Recipient") }}: {{ data.data.recipient }}</p>
                 <p v-if="data?.data?.swift" class="text-sm">SWIFT/BIC: {{ data.data.swift }} <CopyButton :text="data.data.swift" class="ml-0.5 inline" /></p>
             </div>
