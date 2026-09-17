@@ -50,6 +50,12 @@ class AutoFinishPickingPickingSession extends OrgAction
                 'state' => $hasBlockedDeliveryNotes ? PickingSessionStateEnum::HANDLING_BLOCKED : PickingSessionStateEnum::PICKING_FINISHED
             ]);
             WarehouseHydratePickingSessions::dispatch($pickingSession->warehouse);
+        } elseif ($pickingSession->state == PickingSessionStateEnum::PICKING_FINISHED) {
+            // A pick undone after picking finished: the session is being picked again.
+            $this->update($pickingSession, [
+                'state' => PickingSessionStateEnum::HANDLING
+            ]);
+            WarehouseHydratePickingSessions::dispatch($pickingSession->warehouse);
         }
 
         return $pickingSession;

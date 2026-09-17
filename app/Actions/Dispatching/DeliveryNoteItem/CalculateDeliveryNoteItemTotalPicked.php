@@ -10,6 +10,7 @@ namespace App\Actions\Dispatching\DeliveryNoteItem;
 
 use App\Actions\Dispatching\DeliveryNote\CalculateDeliveryNotePercentage;
 use App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStateToHandlingBlocked;
+use App\Actions\Dispatching\DeliveryNote\UpdateState\UndoSetAsPickedDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStateToPicked;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
@@ -100,9 +101,15 @@ class CalculateDeliveryNoteItemTotalPicked extends OrgAction
          * Nobody sets a note as picked inside a picking session, so a line there is picked as soon
          * as it is done: all of it picked or written off, nothing waiting.
          */
-        $state = $dataToUpdate['state'] ?? $deliveryNoteItem->state;
-        if ($deliveryNoteItem->picking_session_id && $state == DeliveryNoteItemStateEnum::HANDLING && $isCompleted && $totalWaiting == 0) {
+        $state          = $dataToUpdate['state'] ?? $deliveryNoteItem->state;
+        $isDoneInSession = $isCompleted && $totalWaiting == 0;
+        $isPickUndone    = false;
+        if ($deliveryNoteItem->picking_session_id && $state == DeliveryNoteItemStateEnum::HANDLING && $isDoneInSession) {
             $dataToUpdate['state'] = DeliveryNoteItemStateEnum::PICKED;
+        } elseif ($deliveryNoteItem->picking_session_id && $state == DeliveryNoteItemStateEnum::PICKED && !$isDoneInSession) {
+            // A pick undone on a picked line puts it back to be picked.
+            $dataToUpdate['state'] = DeliveryNoteItemStateEnum::HANDLING;
+            $isPickUndone          = true;
         }
 
         $deliveryNoteItem = $this->update($deliveryNoteItem, $dataToUpdate);
@@ -114,6 +121,13 @@ class CalculateDeliveryNoteItemTotalPicked extends OrgAction
          * the percentages so the picking session sees the note as blocked.
          */
         $deliveryNote = $deliveryNoteItem->deliveryNote;
+
+        // ...and takes its picked note back with it.
+        if ($isPickUndone && $deliveryNote->state == DeliveryNoteStateEnum::PICKED) {
+            UndoSetAsPickedDeliveryNote::make()->action($deliveryNote, null);
+            $deliveryNote->refresh();
+        }
+
         if ($deliveryNote->state == DeliveryNoteStateEnum::HANDLING
             && $deliveryNote->deliveryNoteItems()->where('state', DeliveryNoteItemStateEnum::HANDLING_BLOCKED)->exists()
         ) {

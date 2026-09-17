@@ -2072,6 +2072,13 @@ test('picking the last of a line in a picking session sets the line and its note
         ->and($deliveryNote->refresh()->state)->toBe(DeliveryNoteStateEnum::PICKED)
         ->and($pickingSession->refresh()->state)->toBe(PickingSessionStateEnum::PICKING_FINISHED)
         ->and($pickingSession->is_waiting_ready)->toBeFalse();
+
+    // Undoing that pick puts the line, the note and the session back to picking.
+    \App\Actions\Dispatching\Picking\DeletePicking::make()->action($item->refresh()->pickings()->latest('id')->first(), $this->user);
+
+    expect($item->refresh()->state)->toBe(DeliveryNoteItemStateEnum::HANDLING)
+        ->and($deliveryNote->refresh()->state)->toBe(DeliveryNoteStateEnum::HANDLING)
+        ->and($pickingSession->refresh()->state)->toBe(PickingSessionStateEnum::HANDLING);
 });
 
 test('picking session waits on a waiting note and is flagged once the wait is picked', function () {

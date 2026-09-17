@@ -696,7 +696,7 @@ onUnmounted(() => {
                         @click="onOpenModalDetail(deliveryItem)"
                     />
 
-                    <div v-if="deliveryItem.pickings?.length && deliveryItem.state == 'handling'" class="space-y-1">
+                    <div v-if="deliveryItem.pickings?.length && ['handling', 'picked'].includes(deliveryItem.state)" class="space-y-1">
                         <div v-for="picking in deliveryItem.pickings" :key="picking.id" class="flex gap-x-2 w-fit">
                             <!-- {{ picking.location_code }} -->
                             <div v-if="picking.type === 'pick'" class="flex gap-x-2 items-center">
@@ -727,7 +727,7 @@ onUnmounted(() => {
                             </div>
 
                             <ButtonWithLink
-                                v-if="!deliveryItem.is_packed && deliveryItem.state == 'handling'"
+                                v-if="!deliveryItem.is_packed && ['handling', 'picked'].includes(deliveryItem.state)"
                                 v-tooltip="ctrans('Undo')"
                                 type="negative"
                                 size="xxs"
