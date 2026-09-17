@@ -8,6 +8,7 @@
 
 namespace App\Actions\Dropshipping\Tiktok\Order;
 
+use App\Actions\Traits\WithRetinaRouteModelOwnershipCheck;
 use App\Actions\Dispatching\Shipment\StoreShipment;
 use App\Actions\Dispatching\Shipper\StoreShipper;
 use App\Actions\OrgAction;
@@ -27,6 +28,7 @@ use Lorisleiva\Actions\Concerns\WithAttributes;
 
 class ProcessTiktokOrderShipment extends OrgAction
 {
+    use WithRetinaRouteModelOwnershipCheck;
     use AsAction;
     use WithAttributes;
 
@@ -138,6 +140,13 @@ class ProcessTiktokOrderShipment extends OrgAction
         $this->initialisation($deliveryNote->organisation, $request);
 
         $this->handle($deliveryNote->orders->firstOrFail());
+    }
+
+    public function inRetinaFulfilment(ActionRequest $request, PalletReturn $palletReturn)
+    {
+        abort_unless($this->retinaCustomerOwnsRouteModels($request), 403);
+
+        $this->inFulfilment($request, $palletReturn);
     }
 
     public function inFulfilment(ActionRequest $request, PalletReturn $palletReturn)
