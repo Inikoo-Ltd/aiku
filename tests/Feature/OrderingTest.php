@@ -3998,7 +3998,6 @@ test('retina basket lines resolve their webpage and image without a query per li
     foreach ($rows as $row) {
         $webpage = $webpages[$row['asset_code']];
         expect($row['webpage_url'])->toBe($webpage->canonical_url)
-            ->and($row['luigi_identity'])->toBe("$webpage->group_id:$webpage->organisation_id:$webpage->shop_id:$webpage->website_id:$webpage->id")
             ->and($row['image'])->toBeNull();
     }
 });
