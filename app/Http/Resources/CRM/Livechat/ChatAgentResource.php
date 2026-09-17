@@ -24,6 +24,7 @@ class ChatAgentResource extends JsonResource
             'max_concurrent_chats' => $this->max_concurrent_chats,
             'auto_accept'          => $this->auto_accept,
             'specialization'       => $this->specialization,
+            'signature'            => $this->signature,
             'created_at'           => $this->created_at,
             'is_deleted_in_org'    => $isDeletedInOrg,
         ];

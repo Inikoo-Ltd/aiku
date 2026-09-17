@@ -3235,10 +3235,13 @@ test('inbound gmail message becomes an email chat session and the agent reply go
 
     expect(\App\Actions\Comms\Mailbox\ProcessInboundEmail::run($this->shop, 'm1'))->toBeNull();
 
+    $agentUser = createAdminGuest($this->organisation->group)->getUser();
+    $agent     = ChatAgent::create(['user_id' => $agentUser->id, 'max_concurrent_chats' => 5, 'language_id' => 68, 'is_online' => false, 'is_available' => false, 'current_chat_count' => 0, 'signature' => "Kind regards,\nSig Agent"]);
     $reply = $session->messages()->create([
         'message_text' => 'Shipped today',
         'message_type' => ChatMessageTypeEnum::TEXT,
         'sender_type'  => ChatSenderTypeEnum::AGENT,
+        'sender_id'    => $agent->id,
     ]);
 
     \App\Actions\Comms\Mailbox\SendChatMessageByGmail::run($reply);
@@ -3252,9 +3255,47 @@ test('inbound gmail message becomes an email chat session and the agent reply go
         return $request['threadId'] === 't1'
             && str_contains($raw, 'To: Buyer Person <buyer@example.com>')
             && str_contains($raw, 'In-Reply-To: <abc@example.com>')
-            && str_contains($raw, 'Subject: Re: Where is my order?');
+            && str_contains($raw, 'Subject: Re: Where is my order?')
+            && str_contains(base64_decode(substr($raw, strpos($raw, "\r\n\r\n") + 4)), "Shipped today\n\nKind regards,\nSig Agent");
     });
     expect(Arr::get($reply->fresh()->metadata, 'gmail_message_id'))->toBe('sent1');
+});
+
+test('inbound gmail from an unknown sender becomes a guest email session and a spammed sender is skipped next time', function () {
+    Bus::fake([\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class]);
+
+    $settings = $this->shop->settings ?? [];
+    $settings['gmail'] = ['email' => 'care@shop.test', 'refresh_token' => \Illuminate\Support\Facades\Crypt::encryptString('rt'), 'history_id' => '1'];
+    $this->shop->update(['settings' => $settings]);
+
+    $gmailMessage = fn (string $id) => \Illuminate\Support\Facades\Http::response([
+        'id' => $id, 'threadId' => 't-'.$id,
+        'payload' => ['mimeType' => 'text/plain', 'headers' => [['name' => 'From', 'value' => 'Stranger <stranger@example.com>'], ['name' => 'Subject', 'value' => 'How do I register?'], ['name' => 'Message-ID', 'value' => '<'.$id.'@example.com>']], 'body' => ['data' => rtrim(strtr(base64_encode('I would like to open an account'), '+/', '-_'), '=')]],
+    ]);
+    \Illuminate\Support\Facades\Http::fake([
+        'oauth2.googleapis.com/token'                          => \Illuminate\Support\Facades\Http::response(['access_token' => 'at']),
+        'gmail.googleapis.com/gmail/v1/users/me/messages/g1*'  => $gmailMessage('g1'),
+        'gmail.googleapis.com/gmail/v1/users/me/messages/g2*'  => $gmailMessage('g2'),
+        'gmail.googleapis.com/gmail/v1/users/me/labels'        => \Illuminate\Support\Facades\Http::response(['labels' => [['id' => 'L1', 'name' => 'aiku/unmatched'], ['id' => 'L2', 'name' => 'aiku/spam']]]),
+        'gmail.googleapis.com/*'                               => \Illuminate\Support\Facades\Http::response([]),
+    ]);
+
+    $message = \App\Actions\Comms\Mailbox\ProcessInboundEmail::run($this->shop, 'g1');
+    $session = $message->chatSession->fresh();
+
+    expect($message->sender_type)->toBe(ChatSenderTypeEnum::GUEST)
+        ->and($session->web_user_id)->toBeNull()
+        ->and($session->channel)->toBe(\App\Enums\CRM\Livechat\ChatChannelEnum::EMAIL)
+        ->and(Arr::get($session->metadata, 'email'))->toBe('stranger@example.com')
+        ->and(Arr::get($session->metadata, 'name'))->toBe('Stranger');
+
+    $agentUser = createAdminGuest($this->organisation->group)->getUser();
+    $agent     = ChatAgent::firstOrCreate(['user_id' => $agentUser->id], ['max_concurrent_chats' => 5, 'language_id' => 68, 'is_online' => false, 'is_available' => false, 'current_chat_count' => 0]);
+    \App\Actions\Chat\ChatSession\MarkChatSessionAsSpam::run($session, $agent);
+
+    expect(Arr::get($this->shop->fresh()->settings, 'gmail.blocked_senders'))->toBe(['stranger@example.com'])
+        ->and(\App\Actions\Comms\Mailbox\ProcessInboundEmail::run($this->shop->fresh(), 'g2'))->toBeNull();
+    \Illuminate\Support\Facades\Http::assertSent(fn ($request) => str_ends_with($request->url(), 'messages/g2/modify') && $request['addLabelIds'] === ['L2']);
 });
 
 test('a campaign send closes the promo-only session but leaves one an agent is handling open', function () {

@@ -8,12 +8,14 @@
 namespace App\Actions\Chat\ChatSession;
 
 use App\Enums\CRM\Livechat\ChatActorTypeEnum;
+use App\Enums\CRM\Livechat\ChatChannelEnum;
 use App\Enums\CRM\Livechat\ChatEventTypeEnum;
 use App\Events\BroadcastChatListEvent;
 use App\Models\Chat\ChatAgent;
 use App\Models\Chat\ChatSession;
 use Exception;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -36,6 +38,20 @@ class MarkChatSessionAsSpam
                 'spam_at'             => now(),
                 'spammed_by_agent_id' => $agent->id,
             ]);
+
+            if ($chatSession->channel === ChatChannelEnum::EMAIL) {
+                $email = Arr::get($chatSession->metadata, 'email');
+                if ($email) {
+                    $shop = $chatSession->shop;
+                    if ($shop) {
+                        $settings = $shop->settings ?? [];
+                        $blocked = Arr::get($settings, 'gmail.blocked_senders', []);
+                        $blocked[] = strtolower($email);
+                        Arr::set($settings, 'gmail.blocked_senders', array_values(array_unique($blocked)));
+                        $shop->update(['settings' => $settings]);
+                    }
+                }
+            }
 
             StoreChatEvent::make()->handle(
                 chatSession: $chatSession,
