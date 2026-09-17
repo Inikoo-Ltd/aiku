@@ -434,7 +434,6 @@
                                 {{ __('VAT refund') }}
                             @elseif($discretionaryRefundLine)
                             @elseif($transaction->quantity==0 || $transaction->quantity==null)
-                                {{ $invoice->currency->symbol . optional($transaction->historicAsset)->price }}
                             @elseif($transaction->historicAsset)
                                 @if($sameGrossNet)
                                     {{ $invoice->currency->symbol . number_format($transaction->net_amount / $transaction->quantity, 2) }}
@@ -453,7 +452,6 @@
                                 {{ __('VAT refund') }}
                             @elseif($discretionaryRefundLine)
                             @elseif($transaction->quantity==0 || $transaction->quantity==null)
-                                {{ $invoice->currency->symbol . optional($transaction->historicAsset)->price }}
                             @elseif($transaction->historicAsset)
                                 @if($sameGrossNet)
                                     {{ $invoice->currency->symbol . number_format($transaction->net_amount / $transaction->quantity, 2) }}
