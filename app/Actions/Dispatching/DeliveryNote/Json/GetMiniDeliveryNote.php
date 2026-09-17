@@ -92,6 +92,7 @@ class GetMiniDeliveryNote extends OrgAction
                 'picker'           => $deliveryNote->pickerUser,
                 'packer'           => $deliveryNote->packerUser,
                 'parcels'          => $deliveryNote->parcels,
+                'shop_type'        => $deliveryNote->shop->type,
             ],
         ];
     }

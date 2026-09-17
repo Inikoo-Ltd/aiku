@@ -2081,6 +2081,49 @@ test('picking the last of a line in a picking session sets the line and its note
         ->and($pickingSession->refresh()->state)->toBe(PickingSessionStateEnum::HANDLING);
 });
 
+test('a wholesale note packed by scan in a picking session asks for parcel dimensions before it is packed', function () {
+    [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($this, 6);
+    $deliveryNote->update(['state' => DeliveryNoteStateEnum::UNASSIGNED, 'parcels' => null]);
+
+    $pickingSession = StorePickingSession::make()->handle($this->warehouse, [
+        'delivery_notes' => [$deliveryNote->id],
+        'user_id'        => $this->user->id,
+    ]);
+    $pickingSession = StartPickPickingSession::run($pickingSession, []);
+
+    // The shared order can bring lines of its own; this is about the one line being packed.
+    $deliveryNote->deliveryNoteItems()->where('id', '!=', $item->id)->update(['state' => DeliveryNoteItemStateEnum::CANCELLED]);
+
+    StorePicking::make()->action($item->refresh(), $this->user, [
+        'picker_user_id'        => $this->user->id,
+        'location_org_stock_id' => $item->orgStock->locationOrgStocks()->first()->id,
+        'quantity'              => 4,
+    ]);
+
+    expect($deliveryNote->refresh()->state)->toBe(DeliveryNoteStateEnum::PICKED)
+        ->and($pickingSession->refresh()->state)->toBe(PickingSessionStateEnum::PICKING_FINISHED);
+
+    // Every line is in the box, but without parcel dimensions the note cannot be packed, and the scan says so.
+    // The scan answers with the table row, which is named after the current route.
+    request()->setRouteResolver(fn () => (new \Illuminate\Routing\Route('GET', 'picking-session', []))->name('grp.org.warehouses.show.dispatching.picking_sessions.show'));
+    $outcome = \App\Actions\Dispatching\PickingSession\PackPickingSessionItemByScan::make()->handle(
+        $pickingSession,
+        $this->user,
+        ['barcode' => $item->orgStock->code]
+    );
+
+    expect($outcome['status'])->toBe('packed')
+        ->and($outcome['message'])->toContain('Add the parcel dimensions of '.$deliveryNote->reference)
+        ->and($deliveryNote->refresh()->state)->not->toBe(DeliveryNoteStateEnum::PACKED);
+
+    // With the dimensions entered, 'Set as packed' goes through and the session finishes packing.
+    giveParcelDimensions($deliveryNote);
+    UpdateDeliveryNoteStatePacked::make()->action($deliveryNote->refresh(), $this->user);
+
+    expect($deliveryNote->refresh()->state)->toBe(DeliveryNoteStateEnum::PACKED)
+        ->and($pickingSession->refresh()->state)->toBe(PickingSessionStateEnum::PACKING_FINISHED);
+});
+
 test('picking session waits on a waiting note and is flagged once the wait is picked', function () {
     $settings = $this->organisation->settings;
     data_set($settings, 'orders.allow_waiting', true);
