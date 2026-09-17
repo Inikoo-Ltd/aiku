@@ -227,13 +227,19 @@ const subFilter = reactive<Record<string, string | null>>({})
 const toggleSubFilter = (columnKey: string, status: string) =>
 	(subFilter[columnKey] = subFilter[columnKey] === status ? null : status)
 
-const WAITING_COLUMN = "waiting"
+const columnToggles: Record<string, { order: string[]; labels: Record<string, string> }> = {
+	in_progress: { order: ["in_progress", "pending_deploy"], labels: { in_progress: trans("Working"), pending_deploy: trans("Deploying") } },
+	waiting: { order: ["answered", "waiting"], labels: { answered: trans("Replied"), waiting: trans("Waiting") } },
+	closed: { order: ["resolved", "cancelled"], labels: { resolved: trans("Done"), cancelled: trans("Cancelled") } },
+}
 
-const hasChosenWaitingFilter = ref(false)
+const hasColumnToggle = (columnKey: string) => Boolean(columnToggles[columnKey])
 
-const chooseWaitingFilter = (status: string) => {
-	hasChosenWaitingFilter.value = true
-	subFilter[WAITING_COLUMN] = status
+const chosenColumnToggles = reactive<Record<string, boolean>>({})
+
+const chooseColumnToggle = (columnKey: string, status: string) => {
+	chosenColumnToggles[columnKey] = true
+	subFilter[columnKey] = status
 }
 
 const subDotClasses: Record<string, string> = {
@@ -243,22 +249,22 @@ const subDotClasses: Record<string, string> = {
 	red: "bg-red-500",
 }
 
-const waitingToggleLabels: Record<string, string> = {
-	answered: trans("Replied"),
-	waiting: trans("Waiting"),
+const columnToggleOptions = (column: { key: string; statuses: { status: string; label: string; color: string }[] }) => {
+	const order = columnToggles[column.key]?.order ?? []
+	return [...column.statuses].sort((first, second) => order.indexOf(first.status) - order.indexOf(second.status))
 }
 
-const waitingToggleOptions = (column: { statuses: { status: string; label: string; color: string }[] }) =>
-	[...column.statuses].sort((first, second) => Number(second.status === "answered") - Number(first.status === "answered"))
+const columnTotal = (column: { key: string; tickets: any[] }) =>
+	column.tickets.filter((ticket) => matchesBoardFilters(ticket, column.key)).length
 
 watch(
 	() => props.columns,
 	(columns) => {
-		if (hasChosenWaitingFilter.value) return
-		const waitingColumn = columns.find((column) => column.key === WAITING_COLUMN)
-		if (!waitingColumn) return
-		const answeredCount = waitingColumn.statuses.find((sub) => sub.status === "answered")?.count ?? 0
-		subFilter[WAITING_COLUMN] = answeredCount > 0 ? "answered" : "waiting"
+		columns.forEach((column) => {
+			const toggle = columnToggles[column.key]
+			if (!toggle || chosenColumnToggles[column.key]) return
+			subFilter[column.key] = toggle.order.find((status) => (column.statuses.find((sub) => sub.status === status)?.count ?? 0) > 0) ?? toggle.order[0]
+		})
 	},
 	{ immediate: true }
 )
@@ -598,9 +604,9 @@ const cancelAssign = () => {
 					<Icon :data="column.icon" />
 					<span class="text-sm font-semibold">{{ column.label }}</span>
 					<span
-						v-if="column.statuses.length === 1 || column.key === WAITING_COLUMN"
+						v-if="column.statuses.length === 1 || hasColumnToggle(column.key)"
 						class="text-xs text-gray-600 bg-white/70 rounded px-1.5 py-0.5 tabular-nums"
-						>{{ column.key === WAITING_COLUMN ? column.tickets.filter((ticket) => matchesBoardFilters(ticket, column.key)).length : visibleCount(column) }}</span
+						>{{ hasColumnToggle(column.key) ? columnTotal(column) : visibleCount(column) }}</span
 					>
 					<span
 						v-else
@@ -680,16 +686,16 @@ const cancelAssign = () => {
 						</div>
 					</div>
 				</div>
-				<div v-if="column.key === WAITING_COLUMN" class="mb-2 flex gap-0.5 rounded-md bg-white/70 p-0.5 text-xs">
+				<div v-if="hasColumnToggle(column.key)" class="mb-2 flex gap-0.5 rounded-md bg-white/70 p-0.5 text-xs">
 					<button
-						v-for="sub in waitingToggleOptions(column)"
+						v-for="sub in columnToggleOptions(column)"
 						:key="sub.status"
 						type="button"
 						class="flex flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded px-2 py-1 transition duration-200"
 						:class="subFilter[column.key] === sub.status ? [subActiveClasses[sub.color], 'font-medium shadow-sm'] : 'text-gray-500 hover:bg-white hover:text-gray-800'"
-						@click="chooseWaitingFilter(sub.status)">
+						@click="chooseColumnToggle(column.key, sub.status)">
 						<span class="h-2 w-2 shrink-0 rounded-full" :class="subFilter[column.key] === sub.status ? 'bg-white/80' : subDotClasses[sub.color]" />
-						{{ waitingToggleLabels[sub.status] ?? sub.label }}
+						{{ columnToggles[column.key].labels[sub.status] ?? sub.label }}
 						<span class="tabular-nums" :class="subFilter[column.key] === sub.status ? 'text-white/80' : 'text-gray-400'">{{ subCount(column, sub.status) }}</span>
 					</button>
 				</div>
