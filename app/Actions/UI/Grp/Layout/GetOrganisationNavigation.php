@@ -8,6 +8,7 @@
 
 namespace App\Actions\UI\Grp\Layout;
 
+use App\Actions\Chat\GetChatCapabilities;
 use App\Models\SysAdmin\Organisation;
 use App\Models\SysAdmin\User;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -247,6 +248,62 @@ class GetOrganisationNavigation
 
 
         $canSeeShops = $user->authTo(['accounting.'.$organisation->id.'.view', 'org-supervisor.'.$organisation->id, 'shops-view.'.$organisation->id]);
+
+        $chat = GetChatCapabilities::run($user);
+
+        if ($chat['can_view']) {
+            $navigation['chat'] = [
+                'label'   => __('Chat'),
+                'icon'    => ['fal', 'fa-comment-alt'],
+                'root'    => 'grp.org.chat.',
+                'route'   => [
+                    'name'       => 'grp.org.chat.dashboard',
+                    'parameters' => [$organisation->slug],
+                ],
+                'topMenu' => [
+                    'subSections' => [
+                        [
+                            'label' => __('Dashboard'),
+                            'icon'  => ['fal', 'fa-comment-alt'],
+                            'root'  => 'grp.org.chat.dashboard',
+                            'route' => [
+                                'name'       => 'grp.org.chat.dashboard',
+                                'parameters' => [$organisation->slug],
+                            ],
+                        ],
+                        [
+                            'label' => __('Agents'),
+                            'icon'  => ['fal', 'fa-headset'],
+                            'root'  => 'grp.org.chat.agents.',
+                            'route' => [
+                                'name'       => 'grp.org.chat.agents.show',
+                                'parameters' => [$organisation->slug],
+                            ],
+                        ],
+                        [
+                            'label' => __('Conversations'),
+                            'icon'  => ['fal', 'fa-comments'],
+                            'root'  => 'grp.org.chat.conversations.',
+                            'route' => [
+                                'name'       => 'grp.org.chat.conversations.show',
+                                'parameters' => [$organisation->slug],
+                            ],
+                        ],
+                        ...($chat['is_agent'] ? [
+                            [
+                                'label' => __('Inbox'),
+                                'icon'  => ['fal', 'fa-inbox'],
+                                'root'  => 'grp.org.chat.inbox',
+                                'route' => [
+                                    'name'       => 'grp.org.chat.inbox',
+                                    'parameters' => [$organisation->slug],
+                                ],
+                            ],
+                        ] : []),
+                    ],
+                ],
+            ];
+        }
 
         if ($canSeeShops) {
             $navigation['calendar_offers'] = [

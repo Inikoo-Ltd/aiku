@@ -8,6 +8,7 @@
 
 namespace App\Actions\UI\Grp\Layout;
 
+use App\Actions\Chat\GetChatCapabilities;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Models\SysAdmin\User;
 use App\Models\Catalogue\Shop;
@@ -572,6 +573,71 @@ class GetShopNavigation
                             "root"    => "grp.org.shops.show.crm.prospects.",
                             "route"   => [
                                 "name"       => "grp.org.shops.show.crm.prospects.index",
+                                "parameters" => [$shop->organisation->slug, $shop->slug],
+                            ],
+                        ],
+                    ],
+                ],
+            ];
+        }
+
+        $chat = GetChatCapabilities::run($user);
+
+        if ($chat["can_view"]) {
+            $navigation["chat"] = [
+                "root"    => "grp.org.shops.show.chat.",
+                "label"   => __("Chat"),
+                "icon"    => ["fal", "fa-comment-alt"],
+                "route"   => [
+                    "name"       => "grp.org.shops.show.chat.dashboard",
+                    "parameters" => [$shop->organisation->slug, $shop->slug],
+                ],
+                "topMenu" => [
+                    "subSections" => [
+                        [
+                            "label" => __("Dashboard"),
+                            "icon"  => ["fal", "fa-comment-alt"],
+                            "root"  => "grp.org.shops.show.chat.dashboard",
+                            "route" => [
+                                "name"       => "grp.org.shops.show.chat.dashboard",
+                                "parameters" => [$shop->organisation->slug, $shop->slug],
+                            ],
+                        ],
+                        [
+                            "label" => __("Agents"),
+                            "icon"  => ["fal", "fa-headset"],
+                            "root"  => "grp.org.shops.show.chat.agents.show",
+                            "route" => [
+                                "name"       => "grp.org.shops.show.chat.agents.show",
+                                "parameters" => [$shop->organisation->slug, $shop->slug],
+                            ],
+                        ],
+                        [
+                            "label" => __("Conversations"),
+                            "icon"  => ["fal", "fa-comments"],
+                            "root"  => "grp.org.shops.show.chat.conversations.",
+                            "route" => [
+                                "name"       => "grp.org.shops.show.chat.conversations.show",
+                                "parameters" => [$shop->organisation->slug, $shop->slug],
+                            ],
+                        ],
+                        ...($chat["is_agent"] ? [
+                            [
+                                "label" => __("Inbox"),
+                                "icon"  => ["fal", "fa-inbox"],
+                                "root"  => "grp.org.shops.show.chat.inbox",
+                                "route" => [
+                                    "name"       => "grp.org.shops.show.chat.inbox",
+                                    "parameters" => [$shop->organisation->slug, $shop->slug],
+                                ],
+                            ],
+                        ] : []),
+                        [
+                            "label" => __("Whatsapp Template"),
+                            "icon"  => ["fab", "fa-whatsapp"],
+                            "root"  => "grp.org.shops.show.chat.whatsapp_templates.",
+                            "route" => [
+                                "name"       => "grp.org.shops.show.chat.whatsapp_templates.index",
                                 "parameters" => [$shop->organisation->slug, $shop->slug],
                             ],
                         ],
