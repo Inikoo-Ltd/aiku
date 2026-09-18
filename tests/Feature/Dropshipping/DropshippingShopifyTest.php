@@ -956,15 +956,25 @@ test('repairing a channel re-points portfolios whose product is gone onto the on
         ]]]),
     ]);
 
+    $borrower = $gone->replicate();
+    $borrower->fill(['item_id' => 990001, 'item_code' => 'BORROWER-1', 'sku' => 'other', 'platform_product_id' => 'gid://shopify/Product/6002', 'platform_product_variant_id' => null]);
+    $borrower->save();
+    $gone->update(['item_code' => 'REPAIR-1']);
+    $owner = $gone->replicate();
+    $owner->fill(['item_id' => 990002, 'item_code' => 'OTHER', 'sku' => 'other-x', 'platform_product_id' => 'gid://shopify/Product/6003', 'platform_product_variant_id' => null]);
+    $owner->save();
+
     $dryRun = RepairShopifyPortfolioConnections::run($channel, null, true);
 
-    expect($dryRun['repaired'])->toBe(1)
+    expect($dryRun['repaired'])->toBe(2)
         ->and($gone->refresh()->platform_product_id)->toBe('gid://shopify/Product/6001');
 
     $result = RepairShopifyPortfolioConnections::run($channel);
     $gone->refresh();
 
-    expect($result)->toMatchArray(['complete' => true, 'repaired' => 1, 'connected' => 0, 'not_at_location' => 1, 'portfolio_ids' => [$gone->id]])
+    expect($result)->toMatchArray(['complete' => true, 'repaired' => 2, 'connected' => 1, 'not_at_location' => 1, 'skipped_sku_of_another_product' => 1, 'portfolio_ids' => [$gone->id, $owner->id]])
+        ->and($borrower->refresh()->platform_product_id)->toBe('gid://shopify/Product/6002')
+        ->and($owner->refresh()->platform_product_variant_id)->toBe('gid://shopify/ProductVariant/9201')
         ->and($gone->platform_product_id)->toBe('gid://shopify/Product/9100')
         ->and($gone->platform_product_variant_id)->toBe('gid://shopify/ProductVariant/9101')
         ->and($gone->platform_status)->toBeFalse()

@@ -119,6 +119,7 @@ class ReconcileShopifyPortfolioConnections
             'misreported'         => (bool) $portfolio->platform_status && !$status->isConnected(),
             'repair'              => $repair['repair'],
             'repair_product_id'   => $repair['repair_product_id'],
+            'repair_sku'          => $repair['repair_sku'],
             'repair_variant_id'   => $repair['repair_variant_id'],
             'repair_at_location'  => $repair['repair_at_location']
         ];
@@ -178,11 +179,11 @@ class ReconcileShopifyPortfolioConnections
     }
 
     /**
-     * @return array{repair: string, repair_product_id: string|null, repair_variant_id: string|null, repair_at_location: bool}
+     * @return array{repair: string, repair_product_id: string|null, repair_sku: string|null, repair_variant_id: string|null, repair_at_location: bool}
      */
     private function resolveRepair(PortfolioConnectionAuditEnum $status, array $candidateSkus, array $snapshot): array
     {
-        $noRepair = ['repair_product_id' => null, 'repair_variant_id' => null, 'repair_at_location' => false];
+        $noRepair = ['repair_product_id' => null, 'repair_sku' => null, 'repair_variant_id' => null, 'repair_at_location' => false];
 
         if ($status->isConnected()) {
             return ['repair' => 'none', ...$noRepair];
@@ -213,6 +214,7 @@ class ReconcileShopifyPortfolioConnections
                 return [
                     'repair'             => $isActiveByProductId[$productId] ? 'repairable' : 'match_not_active',
                     'repair_product_id'  => $productId,
+                    'repair_sku'         => $candidateSku,
                     'repair_variant_id'  => $variantsCarryingSku[0]['id'],
                     'repair_at_location' => $variantsCarryingSku[0]['at_location']
                 ];

@@ -12,6 +12,7 @@ use App\Actions\Dropshipping\Portfolio\UpdatePortfolio;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Portfolio;
 use Illuminate\Console\Command;
+use Illuminate\Support\Str;
 use Laravel\Nightwatch\Facades\Nightwatch;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -23,6 +24,9 @@ use Lorisleiva\Actions\Concerns\AsAction;
  * the merchant's own listing, so the portfolio is marked as an adopted variant: title, description,
  * price and dimension pushes stay away from it and removing the portfolio never deletes the listing.
  * It shows as connected only when the variant is already stocked at our fulfilment location.
+ *
+ * A portfolio can carry the sku of another product of the same channel. The listing with that sku
+ * belongs to the portfolio whose product code it is, so the one that merely borrows the sku is skipped.
  */
 class RepairShopifyPortfolioConnections
 {
@@ -31,7 +35,7 @@ class RepairShopifyPortfolioConnections
     public string $commandSignature = 'shopify:repair-portfolios {customerSalesChannel} {--limit= : Repair at most this many portfolios, for a test batch} {--dry-run : Report what would be repaired without writing}';
 
     /**
-     * @return array{complete: bool, reason: string|null, repaired: int, connected: int, not_at_location: int, skipped_variant_taken: int, portfolio_ids: array<int, int>}
+     * @return array{complete: bool, reason: string|null, repaired: int, connected: int, not_at_location: int, skipped_variant_taken: int, skipped_sku_of_another_product: int, portfolio_ids: array<int, int>}
      */
     public function handle(CustomerSalesChannel $customerSalesChannel, ?int $limit = null, bool $dryRun = false): array
     {
@@ -43,8 +47,9 @@ class RepairShopifyPortfolioConnections
             'repaired'              => 0,
             'connected'             => 0,
             'not_at_location'       => 0,
-            'skipped_variant_taken' => 0,
-            'portfolio_ids'         => []
+            'skipped_variant_taken'          => 0,
+            'skipped_sku_of_another_product' => 0,
+            'portfolio_ids'                  => []
         ];
 
         if (!$report['complete']) {
@@ -56,6 +61,12 @@ class RepairShopifyPortfolioConnections
             ->pluck('id', 'platform_product_variant_id')
             ->all();
 
+        $portfolioIdByProductCode = $customerSalesChannel->portfolios()
+            ->whereNotNull('item_code')
+            ->pluck('id', 'item_code')
+            ->mapWithKeys(fn (int $portfolioId, string $productCode) => [Str::lower($productCode) => $portfolioId])
+            ->all();
+
         foreach ($report['rows'] as $row) {
             if ($row['repair'] !== 'repairable') {
                 continue;
@@ -63,6 +74,14 @@ class RepairShopifyPortfolioConnections
 
             if ($limit !== null && $result['repaired'] >= $limit) {
                 break;
+            }
+
+            $skuOwnerId = $portfolioIdByProductCode[$row['repair_sku']] ?? null;
+
+            if ($skuOwnerId !== null && $skuOwnerId !== $row['portfolio_id']) {
+                $result['skipped_sku_of_another_product']++;
+
+                continue;
             }
 
             $variantOwnerId = $takenVariantIds[$row['repair_variant_id']] ?? null;
@@ -123,8 +142,8 @@ class RepairShopifyPortfolioConnections
         }
 
         $command->table(
-            [$dryRun ? 'Would repair' : 'Repaired', 'Already stocked at our location', 'Not yet stocked at our location', 'Skipped, variant linked to another portfolio'],
-            [[$result['repaired'], $result['connected'], $result['not_at_location'], $result['skipped_variant_taken']]]
+            [$dryRun ? 'Would repair' : 'Repaired', 'Already stocked at our location', 'Not yet stocked at our location', 'Skipped, variant linked to another portfolio', 'Skipped, sku is the code of another product'],
+            [[$result['repaired'], $result['connected'], $result['not_at_location'], $result['skipped_variant_taken'], $result['skipped_sku_of_another_product']]]
         );
 
         $command->line('Portfolio ids: '.implode(',', array_slice($result['portfolio_ids'], 0, 50)).(count($result['portfolio_ids']) > 50 ? ' ...' : ''));
