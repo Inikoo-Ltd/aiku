@@ -1,5 +1,5 @@
 <script setup lang='ts'>
-import { inject, ref } from "vue"
+import { inject, onBeforeUnmount, onMounted } from "vue"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
 
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
@@ -8,6 +8,30 @@ import { library } from '@fortawesome/fontawesome-svg-core'
 library.add(faTimes)
 
 const layout = inject('layout', layoutStructure)
+
+let previousRootOverflow = ''
+let previousBodyPaddingRight = ''
+
+const lockPageScroll = () => {
+    const root = document.documentElement
+    const scrollbarWidth = window.innerWidth - root.clientWidth
+
+    previousRootOverflow = root.style.overflow
+    previousBodyPaddingRight = document.body.style.paddingRight
+
+    root.style.overflow = 'hidden'
+    if (scrollbarWidth > 0) {
+        document.body.style.paddingRight = `${scrollbarWidth}px`
+    }
+}
+
+const unlockPageScroll = () => {
+    document.documentElement.style.overflow = previousRootOverflow
+    document.body.style.paddingRight = previousBodyPaddingRight
+}
+
+onMounted(lockPageScroll)
+onBeforeUnmount(unlockPageScroll)
 
 const getTranslateX = (listLength: number, idxComponent: number) => {
     if (listLength === 1) return 0
@@ -27,13 +51,13 @@ const getTranslateX = (listLength: number, idxComponent: number) => {
                     <div @click="layout.stackedComponents.pop()" class="fixed inset-0 z-10 cursor-pointer" />
 
                     <!-- Panel -->
-                    <div class="py-6 z-20 absolute h-screen w-10/12 transition-all overflow-y-auto" :style="{
+                    <div class="py-6 z-20 absolute h-screen w-10/12 transition-all overflow-y-auto overscroll-contain" :style="{
                         backgroundColor: '#fff',
                         transform: `translateX(${getTranslateX(layout.stackedComponents.length, idxComponent)}px)`
                     }">
                         <!-- Button: close -->
                         <div @click="layout.stackedComponents.pop()"
-                            class="absolute right-4 top-1 text-gray-400 hover:text-gray-600 cursor-pointer">
+                            class="absolute right-5 top-5 z-10 flex h-7 w-7 items-center justify-center rounded-full bg-white/80 text-gray-500 shadow-sm hover:bg-white hover:text-gray-700 cursor-pointer">
                             <FontAwesomeIcon icon="fal fa-times" class="lg" fixed-width aria-hidden="true" />
                         </div>
 

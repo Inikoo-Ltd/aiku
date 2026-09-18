@@ -43,28 +43,9 @@ class EditProfile
             "formData" => [
                 "blueprint" => [
                     [
-                        "label"   => __("Profile"),
-                        "icon"    => "fa-light fa-user-circle",
+                        "label"   => __("Notifications"),
+                        "icon"    => "fal fa-bell",
                         "current" => true,
-                        "fields"  => [
-                            "nickname" => [
-                                "type"        => "input",
-                                "label"       => __("Chat nickname"),
-                                "value"       => $user->nickname,
-                                "maxLength"   => 24,
-                                "counter"     => true,
-                                "placeholder" => __("Short name shown in staff chat, e.g. Raul")
-                            ],
-                            "image"    => [
-                                "type"  => "image_crop_square",
-                                "label" => __("Logo"),
-                                "value" => $user->imageSources(320, 320)
-                            ],
-                        ],
-                    ],
-                    [
-                        "label"  => __("Notifications"),
-                        "icon"   => "fal fa-bell",
                         "fields" => [
                             "email"                => [
                                 "type"  => "input",
