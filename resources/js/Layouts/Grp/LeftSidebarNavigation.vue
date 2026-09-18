@@ -199,6 +199,7 @@ const iconList: { [key: string]: string } = {
                     <NavigationSimple
                         :nav="orgNav"
                         :navKey="itemKey"
+                        :class="{ hidden: ['tasks', 'tickets'].includes(String(itemKey)) }"
                     />
                 </template>
             </template>

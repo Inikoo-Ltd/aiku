@@ -13,6 +13,8 @@ use App\Enums\CRM\Livechat\ChatPriorityEnum;
 use App\Enums\Helpers\Ticket\TicketKindEnum;
 use App\Enums\Helpers\Ticket\TicketTypeEnum;
 use App\Enums\Helpers\Ticket\TicketModuleEnum;
+use App\Models\Catalogue\Shop;
+use App\Models\SysAdmin\Organisation;
 use Inertia\Inertia;
 use Inertia\Response;
 use App\Models\Helpers\Ticket;
@@ -20,6 +22,8 @@ use Lorisleiva\Actions\ActionRequest;
 
 class CreateTicket extends OrgAction
 {
+    use WithTicketsScope;
+
     public function authorize(ActionRequest $request): bool
     {
         return Ticket::canBeRaisedBy($request->user());
@@ -27,13 +31,32 @@ class CreateTicket extends OrgAction
 
     public function asController(ActionRequest $request): Response
     {
-        $this->initialisationFromGroup(group(), $request);
+        $this->initialisationFromTicketsScope($request);
 
+        return $this->renderCreateTicket($request);
+    }
+
+    public function inOrganisation(Organisation $organisation, ActionRequest $request): Response
+    {
+        $this->initialisationFromTicketsScope($request, $organisation);
+
+        return $this->renderCreateTicket($request);
+    }
+
+    public function inShop(Organisation $organisation, Shop $shop, ActionRequest $request): Response
+    {
+        $this->initialisationFromTicketsScope($request, $organisation, $shop);
+
+        return $this->renderCreateTicket($request);
+    }
+
+    private function renderCreateTicket(ActionRequest $request): Response
+    {
         return Inertia::render(
             'Tickets/CreateTicket',
             [
                 'breadcrumbs' => array_merge(
-                    ShowTicketsDashboard::make()->getBreadcrumbs(),
+                    $this->ticketsBreadcrumbs(),
                     [['type' => 'creatingModel', 'creatingModel' => ['label' => __('Creating ticket')]]]
                 ),
                 'title'       => __('Create New Ticket'),
@@ -45,7 +68,7 @@ class CreateTicket extends OrgAction
                             'type'  => 'button',
                             'style' => 'cancel',
                             'label' => __('Cancel'),
-                            'route' => ['name' => 'grp.tickets.index'],
+                            'route' => $this->ticketsRoute('index'),
                         ],
                     ],
                 ],
