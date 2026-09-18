@@ -39,13 +39,29 @@ const logoutData = computed(() => ({
     icon: "fal fa-sign-out-alt"
 }))
 
+const chatRoute = computed(() => {
+    const organisation = layout.currentParams?.organisation
+    const shop = organisation ? layout.organisationsState?.[organisation]?.currentShop : null
+
+    if (organisation && shop) {
+        return { name: "grp.org.shops.show.chat.dashboard", parameters: { organisation, shop }, root: "grp.org.shops.show.chat." }
+    }
+
+    if (organisation) {
+        return { name: "grp.org.chat.dashboard", parameters: { organisation }, root: "grp.org.chat." }
+    }
+
+    return { name: layout.user.chat.is_agent ? "grp.chat.inbox" : "grp.chat.reports", parameters: {}, root: "grp.chat." }
+})
+
 const bottomLinks = computed(() => [
-    { route: "grp.tasks.index", root: "grp.tasks.", label: trans("Tasks"), tooltip: trans("Tasks: ask a colleague or a department for something"), icon: "fal fa-tasks" },
-    { route: "grp.tickets.index", root: "grp.tickets.", label: trans("Tickets"), tooltip: trans("Tickets: report a problem or ask for help"), icon: "fal fa-life-ring" },
+    { route: "grp.tasks.index", parameters: {}, root: "grp.tasks.", label: trans("Tasks"), tooltip: trans("Tasks: ask a colleague or a department for something"), icon: "fal fa-tasks" },
+    { route: "grp.tickets.index", parameters: {}, root: "grp.tickets.", label: trans("Tickets"), tooltip: trans("Tickets: report a problem or ask for help"), icon: "fal fa-life-ring" },
     ...(layout?.user?.chat?.can_view
         ? [{
-            route: layout.user.chat.is_agent ? "grp.chat.inbox" : "grp.chat.reports",
-            root: "grp.chat.",
+            route: chatRoute.value.name,
+            parameters: chatRoute.value.parameters,
+            root: chatRoute.value.root,
             label: trans("Chat"),
             tooltip: trans("Chat with customers and colleagues"),
             icon: "fal fa-comment-alt",
@@ -105,7 +121,7 @@ const onLogoutAuth = () => {
                 <Link
                     v-for="link in bottomLinks"
                     :key="link.route"
-                    :href="route(link.route)"
+                    :href="route(link.route, link.parameters)"
                     class="relative w-full group flex items-center px-2 text-sm gap-x-2"
                     :class="isNavigationActive(layout.currentRoute, link.root) ? 'navigationActive' : 'navigation'"
                     v-tooltip="{
