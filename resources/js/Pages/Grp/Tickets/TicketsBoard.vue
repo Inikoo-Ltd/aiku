@@ -458,7 +458,7 @@ const cancelAssign = () => {
 <template>
 	<Head :title="capitalize(title)" />
 	<PageHeading :data="pageHead" />
-	<div class="p-4 overflow-x-auto">
+	<div class="p-4 min-w-0">
 		<TicketsCreatedInterval :options="createdIntervals" :selected="createdInterval" class="mb-3" />
 		<div v-if="typeOptions?.length" class="mb-3 flex flex-wrap items-center gap-1 rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-sm">
 			<span class="mr-2 text-xs font-medium uppercase tracking-wide text-gray-400">{{ trans("Type") }}</span>
@@ -594,6 +594,7 @@ const cancelAssign = () => {
 				× {{ trans("Clear") }}
 			</button>
 		</div>
+		<div class="-mx-4 overflow-x-auto px-4 pb-2">
 		<div class="flex gap-3 min-w-max">
 			<div
 				v-for="column in columns"
@@ -785,6 +786,7 @@ const cancelAssign = () => {
 					</template>
 				</draggable>
 			</div>
+		</div>
 		</div>
 	</div>
 	<Teleport to="body">

@@ -13,7 +13,8 @@ import PageHeading from "@/Components/Headings/PageHeading.vue"
 import TicketForm from "@/Components/Tickets/TicketForm.vue"
 import TicketMiniList from "@/Components/Tickets/TicketMiniList.vue"
 import TicketQaQueue from "@/Components/Tickets/TicketQaQueue.vue"
-import TicketTodoTabs from "@/Components/Tickets/TicketTodoTabs.vue"
+import TicketTabsCard from "@/Components/Tickets/TicketTabsCard.vue"
+import TicketRecentUpdates from "@/Components/Tickets/TicketRecentUpdates.vue"
 import TicketQuickLook from "@/Components/Tickets/TicketQuickLook.vue"
 import Icon from "@/Components/Icon.vue"
 import { useLiveTickets } from "@/Composables/useLiveTickets"
@@ -51,33 +52,12 @@ const closeQuickLook = () => {
     router.reload({ only: liveProps, preserveScroll: true })
 }
 
-type WorkTab = "tickets" | "qa"
-
 const workTabs = computed(() => [
-    ...(props.can_manage ? [{ key: "tickets" as WorkTab, label: trans("Tickets"), total: (props.assigned?.length ?? 0) + (props.collaborating?.length ?? 0) + (props.waiting_due?.length ?? 0) }] : []),
-    ...(props.can_qa ? [{ key: "qa" as WorkTab, label: trans("QA"), total: props.qa_queue?.length ?? 0 }] : []),
+    ...(props.can_manage ? [{ key: "tickets", label: trans("Tickets"), count: (props.assigned?.length ?? 0) + (props.collaborating?.length ?? 0) + (props.waiting_due?.length ?? 0) }] : []),
+    ...(props.can_qa ? [{ key: "qa", label: trans("QA"), count: props.qa_queue?.length ?? 0 }] : []),
 ])
 
-const readWorkTab = (): WorkTab | null => {
-    try {
-        return localStorage.getItem("tickets_dashboard_tab") as WorkTab | null
-    } catch {
-        return null
-    }
-}
-
-const chosenWorkTab = ref<WorkTab | null>(readWorkTab())
-
-const activeWorkTab = computed(() => workTabs.value.find((tab) => tab.key === chosenWorkTab.value)?.key ?? workTabs.value[0]?.key ?? null)
-
-const chooseWorkTab = (tab: WorkTab) => {
-    chosenWorkTab.value = tab
-    try {
-        localStorage.setItem("tickets_dashboard_tab", tab)
-    } catch {
-        return
-    }
-}
+const unreadUpdates = ref(0)
 
 const hours = (value: number | null) => (value === null ? "-" : value >= 48 ? `${(value / 24).toFixed(1)} ${trans("days")}` : `${value} ${trans("h")}`)
 </script>
@@ -111,35 +91,52 @@ const hours = (value: number | null) => (value === null ? "-" : value >= 48 ? `$
             </template>
         </div>
 
-        <div v-if="workTabs.length" class="bg-white rounded-lg shadow-sm border border-gray-300 overflow-hidden">
-            <div class="flex gap-1 border-b border-gray-200 px-2">
-                <button
-                    v-for="tab in workTabs"
-                    :key="tab.key"
-                    type="button"
-                    class="-mb-px flex items-center gap-2 border-b-2 px-3 py-2.5 text-sm font-semibold transition duration-200"
-                    :class="activeWorkTab === tab.key ? 'border-indigo-600 text-indigo-700' : 'border-transparent text-gray-500 hover:text-gray-800'"
-                    @click="chooseWorkTab(tab.key)"
-                >
-                    {{ tab.label }}
-                    <span class="rounded-full px-2 py-0.5 text-xs font-normal tabular-nums" :class="activeWorkTab === tab.key ? 'bg-indigo-50 text-indigo-700' : 'bg-gray-100 text-gray-600'">{{ tab.total }}</span>
-                </button>
-            </div>
-            <div v-if="activeWorkTab === 'tickets'" class="grid divide-y divide-gray-200 lg:divide-x lg:divide-y-0" :class="collaborating?.length ? 'lg:grid-cols-3' : 'lg:grid-cols-2'">
-                <TicketMiniList flat :title="trans('Assigned to me')" :tickets="assigned ?? []" :empty="trans('Nothing on your plate')" />
-                <TicketMiniList v-if="collaborating?.length" flat :title="trans('Collaborating on')" :tickets="collaborating" :empty="trans('Not collaborating on anything')" show-assignee />
-                <TicketMiniList flat :title="trans('Waiting, due now')" :tickets="waiting_due ?? []" :empty="trans('Nothing due')" date-key="waiting_until" show-assignee />
-            </div>
-            <TicketQaQueue v-else-if="activeWorkTab === 'qa'" flat :title="trans('QA queue')" :tickets="qa_queue ?? []" />
-        </div>
+        <TicketTabsCard v-if="workTabs.length" :tabs="workTabs" storage-key="tickets_dashboard_tab">
+            <template #tickets>
+                <div class="grid divide-y divide-gray-200 lg:divide-x lg:divide-y-0" :class="collaborating?.length ? 'lg:grid-cols-3' : 'lg:grid-cols-2'">
+                    <TicketMiniList flat :title="trans('Assigned to me')" :tickets="assigned ?? []" :empty="trans('Nothing on your plate')" />
+                    <TicketMiniList v-if="collaborating?.length" flat :title="trans('Collaborating on')" :tickets="collaborating" :empty="trans('Not collaborating on anything')" show-assignee />
+                    <TicketMiniList flat :title="trans('Waiting, due now')" :tickets="waiting_due ?? []" :empty="trans('Nothing due')" date-key="waiting_until" show-assignee />
+                </div>
+            </template>
+            <template #qa>
+                <TicketQaQueue flat :title="trans('QA queue')" :tickets="qa_queue ?? []" />
+            </template>
+        </TicketTabsCard>
 
         <div v-if="can_manage" class="grid gap-4 lg:grid-cols-2">
             <div class="lg:col-span-2">
-                <TicketTodoTabs :queue="queue ?? []" />
+                <TicketTabsCard
+                    :tabs="[
+                        { key: 'unassigned', label: trans('Up for grabs'), count: queue?.length ?? 0 },
+                        { key: 'recent', label: trans('Recently Updated'), count: unreadUpdates, highlight: true },
+                    ]"
+                    storage-key="tickets_dashboard_todo_tab"
+                >
+                    <template #unassigned>
+                        <TicketMiniList flat :title="trans('Oldest and most urgent first')" :tickets="queue ?? []" :empty="trans('Queue is empty')" date-key="created_at" :per-page="10" />
+                    </template>
+                    <template #recent>
+                        <TicketRecentUpdates :refresh-on="queue" @unread="unreadUpdates = $event" />
+                    </template>
+                </TicketTabsCard>
                 <p class="text-xs text-gray-500 text-right mt-1"><Link :href="route('grp.tickets.board')" class="primaryLink">{{ trans("Whole board") }}</Link></p>
             </div>
-            <TicketMiniList :title="trans('Raised by me')" :tickets="mine" :empty="trans('You have no open tickets')" show-assignee />
-            <TicketMiniList :title="trans('Recently closed, raised by me')" :tickets="recently_closed" :empty="trans('Nothing closed in the last month')" date-key="closed_at" />
+            <TicketTabsCard
+                class="lg:col-span-2"
+                :tabs="[
+                    { key: 'raised', label: trans('Raised by me'), count: mine.length },
+                    { key: 'closed', label: trans('Recently closed'), count: recently_closed.length },
+                ]"
+                storage-key="tickets_dashboard_mine_tab"
+            >
+                <template #raised>
+                    <TicketMiniList flat :title="trans('Still open')" :tickets="mine" :empty="trans('You have no open tickets')" show-assignee :per-page="10" />
+                </template>
+                <template #closed>
+                    <TicketMiniList flat :title="trans('Closed in the last month')" :tickets="recently_closed" :empty="trans('Nothing closed in the last month')" date-key="closed_at" :per-page="10" />
+                </template>
+            </TicketTabsCard>
         </div>
 
         <div v-else class="grid gap-4 lg:grid-cols-5">
@@ -150,8 +147,24 @@ const hours = (value: number | null) => (value === null ? "-" : value >= 48 ? `$
                 </div>
             </div>
             <div class="lg:col-span-2 space-y-4">
-                <TicketMiniList :title="trans('My open tickets')" :tickets="mine" :empty="trans('You have no open tickets')" show-assignee />
-                <TicketMiniList :title="trans('Recently closed')" :tickets="recently_closed" :empty="trans('Nothing closed in the last month')" date-key="closed_at" />
+                <TicketTabsCard
+                    :tabs="[
+                        { key: 'raised', label: trans('My open tickets'), count: mine.length },
+                        { key: 'closed', label: trans('Recently closed'), count: recently_closed.length },
+                        { key: 'recent', label: trans('Recently Updated'), count: unreadUpdates, highlight: true },
+                    ]"
+                    storage-key="tickets_dashboard_reporter_tab"
+                >
+                    <template #raised>
+                        <TicketMiniList flat :title="trans('Still open')" :tickets="mine" :empty="trans('You have no open tickets')" show-assignee :per-page="10" />
+                    </template>
+                    <template #closed>
+                        <TicketMiniList flat :title="trans('Closed in the last month')" :tickets="recently_closed" :empty="trans('Nothing closed in the last month')" date-key="closed_at" :per-page="10" />
+                    </template>
+                    <template #recent>
+                        <TicketRecentUpdates :refresh-on="mine" @unread="unreadUpdates = $event" />
+                    </template>
+                </TicketTabsCard>
                 <p class="text-xs text-gray-500 text-right"><Link :href="route('grp.tickets.list', { elements: { mine: 'reported' } })" class="primaryLink">{{ trans("All my tickets") }}</Link></p>
             </div>
         </div>

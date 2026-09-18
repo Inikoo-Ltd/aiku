@@ -6,7 +6,7 @@
 -->
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, ref, watch } from "vue"
+import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue"
 import { Link, router } from "@inertiajs/vue3"
 import { trans } from "laravel-vue-i18n"
 import axios from "axios"
@@ -14,6 +14,8 @@ import Icon from "@/Components/Icon.vue"
 import TicketControls from "@/Components/Tickets/TicketControls.vue"
 import TicketAttachmentList from "@/Components/Tickets/TicketAttachmentList.vue"
 import TicketThread from "@/Components/Tickets/TicketThread.vue"
+import TicketControlPanel from "@/Components/Tickets/TicketControlPanel.vue"
+import TicketSourceCard from "@/Components/Tickets/TicketSourceCard.vue"
 import { useModalFocusTrap } from "@/Composables/useModalFocusTrap"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
@@ -82,7 +84,16 @@ watch(
     { immediate: true }
 )
 
-onBeforeUnmount(() => stopReloadingAfterSaves?.())
+const desktopQuery = globalThis.window?.matchMedia?.("(min-width: 1024px)")
+const isDesktop = ref(desktopQuery?.matches ?? true)
+const onDesktopQueryChange = (event: MediaQueryListEvent) => (isDesktop.value = event.matches)
+
+onMounted(() => desktopQuery?.addEventListener("change", onDesktopQueryChange))
+
+onBeforeUnmount(() => {
+    stopReloadingAfterSaves?.()
+    desktopQuery?.removeEventListener("change", onDesktopQueryChange)
+})
 
 const close = () => {
     ticket.value = null
@@ -165,6 +176,14 @@ const close = () => {
                         >
                         <span v-if="displayTicket.shop">{{ trans("Shop") }}: {{ displayTicket.shop }}</span>
                     </div>
+                    <template v-if="!isDesktop">
+                        <TicketControlPanel v-if="controls" :ticket="displayTicket" storage-key="ticket_quick_look_controls_open" :default-open="false">
+                            <TicketControls v-bind="controls" @updated="loadControls(ticket.id)" />
+                            <TicketSourceCard v-if="displayTicket.source" :source="displayTicket.source" />
+                        </TicketControlPanel>
+                        <p v-else-if="isControlsUnavailable" class="text-sm text-gray-500">{{ trans("Controls are unavailable") }}</p>
+                        <p v-else class="text-sm text-gray-400"><FontAwesomeIcon icon="fal fa-spinner" spin class="mr-1" />{{ trans("Loading") }}</p>
+                    </template>
                         </div>
                         <div class="lg:min-h-0 lg:flex-1 lg:overflow-y-auto pr-1 pt-3">
                             <div class="flex min-h-full flex-col">
@@ -191,24 +210,11 @@ const close = () => {
                             </div>
                         </div>
                     </div>
-                    <aside class="text-sm lg:min-h-0 lg:overflow-y-auto lg:border-l lg:border-gray-200 lg:pl-6 lg:pr-1">
+                    <aside v-if="isDesktop" class="text-sm lg:min-h-0 lg:overflow-y-auto lg:border-l lg:border-gray-200 lg:pl-6 lg:pr-1">
                         <TicketControls v-if="controls" v-bind="controls" @updated="loadControls(ticket.id)" />
                         <p v-else-if="isControlsUnavailable" class="text-gray-500">{{ trans("Controls are unavailable") }}</p>
                         <p v-else class="text-gray-400"><FontAwesomeIcon icon="fal fa-spinner" spin class="mr-1" />{{ trans("Loading") }}</p>
-                        <div v-if="displayTicket.source" class="mt-4 rounded-md border border-gray-200 bg-gray-50 p-3">
-                            <div class="flex items-center gap-2">
-                                <FontAwesomeIcon v-if="displayTicket.source.channel_icon" :icon="displayTicket.source.channel_icon.icon" :class="displayTicket.source.channel_icon.class" fixed-width aria-hidden="true" />
-                                <span class="font-medium text-gray-800">{{ displayTicket.source.channel_label }}</span>
-                            </div>
-                            <dl class="mt-2 space-y-1 text-gray-600">
-                                <div v-if="displayTicket.source.contact" class="flex justify-between gap-2"><dt>{{ trans("Contact") }}</dt><dd class="truncate">{{ displayTicket.source.contact }}</dd></div>
-                                <div v-if="displayTicket.source.reference" class="flex justify-between gap-2"><dt>{{ trans("Reference") }}</dt><dd class="font-mono text-xs">{{ displayTicket.source.reference }}</dd></div>
-                            </dl>
-                            <a v-if="displayTicket.source.url" :href="displayTicket.source.url" class="mt-2 inline-flex items-center gap-1 text-blue-600 hover:underline">
-                                <FontAwesomeIcon :icon="['fal', 'comments']" fixed-width aria-hidden="true" />
-                                {{ trans("Open conversation") }}
-                            </a>
-                        </div>
+                        <TicketSourceCard v-if="displayTicket.source" :source="displayTicket.source" class="mt-4" />
                     </aside>
                 </div>
             </div>

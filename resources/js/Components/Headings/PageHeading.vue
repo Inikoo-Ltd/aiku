@@ -114,7 +114,7 @@ const setError = (e) => {
 	<slot name="afterSubNav"></slot>
 
 	<div
-		class="relative  px-4 py-2 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-y-2"
+		class="relative  px-4 py-2 flex flex-wrap justify-between items-center gap-x-3 gap-y-2"
 		:class="[
 			props.ignoreIsolate ? '' : 'isolate z-10',
 		]"
@@ -333,7 +333,7 @@ const setError = (e) => {
 		<!-- Section: Button and/or ButtonGroup -->
 		<slot name="button" :dataPageHead="{ ...props }">
 			<div
-				class="self-end w-full md:w-auto flex sm:flex-row flex-wrap justify-end sm:items-center gap-y-3 md:gap-y-1 gap-x-2 rounded-md">
+				class="ml-auto flex flex-wrap justify-end items-center gap-y-3 md:gap-y-1 gap-x-2 rounded-md">
 				<slot name="otherBefore" :dataPageHead="{ ...props }" />
 
 				<template v-for="(action, actIndex) in data.actions">
