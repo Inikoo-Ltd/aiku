@@ -2505,13 +2505,22 @@ test('to produce queue only shows lines with an artefact in this factory', funct
     $location  = \App\Actions\Inventory\Location\StoreLocation::make()->action($area, ['code' => 'L-BRD', 'name' => 'Board loc'] + \App\Models\Inventory\Location::factory()->definition());
     $hubProps  = fn () => get(route('grp.org.warehouses.show.dispatching.backlog', [$this->organisation->slug, $warehouse->slug]))
         ->assertOk()->viewData('page')['props'];
-    $hubOutput = fn () => collect($hubProps()['production_output'])->pluck('jobs')->flatten(1)->pluck('reference')->all();
+    $hubRows   = fn () => collect($hubProps()['production_output']['data']);
+    $hubOutput = fn () => $hubRows()->pluck('job_order_reference')->all();
     expect($hubOutput())->toContain($jobOrder->reference)
-        ->and($hubProps()['tabs']['navigation']['production_output']['number'])->toBe(count($hubProps()['production_output']));
+        ->and($hubProps()['tabs']['navigation']['production_output']['number'])->toBe(count(\App\Actions\Dispatching\ProductionOutput\GetFinishedProductionJobOrders::run($warehouse)));
 
-    $stockItem = collect($hubProps()['production_output'])->where('destination.type', 'stock')->pluck('jobs')->flatten(1)->firstWhere('reference', $jobOrder->reference)['items'][0];
+    $stockItem        = $hubRows()->firstWhere('job_order_reference', $jobOrder->reference);
+    $stockDestination = collect($stockItem['destinations'])->firstWhere('type', 'stock');
+    expect($stockItem['job_order_id'])->toBe($jobOrder->id)
+        ->and(array_column($stockDestination['locations'], 'code'))->toBe(array_filter([$stockDestination['location_code']]));
     expect(fn () => \App\Actions\Dispatching\ProductionOutput\PutAwayFinishedJobOrder::make()->action($warehouse, [$jobOrder->id], [$stockItem['id'] => 'L-BRD']))
         ->toThrow(ValidationException::class, 'is not kept in L-BRD yet');
+
+    \App\Actions\Dispatching\ProductionOutput\PutAwayFinishedJobOrder::make()->action($warehouse, [$jobOrder->id], [$stockItem['id'] => 'L-BRD'], true, [$stockItem['id'] => 1]);
+    $stillWaiting = collect($hubRows()->firstWhere('id', $stockItem['id'])['destinations'])->firstWhere('type', 'stock');
+    expect($stillWaiting['quantity'])->toEqual(round($stockDestination['quantity'] - 1, 3))
+        ->and($jobOrder->refresh()->state)->toBe(JobOrderStateEnum::CONFIRMED);
 
     \App\Actions\Dispatching\ProductionOutput\PutAwayFinishedJobOrder::make()->action($warehouse, [$jobOrder->id], [$stockItem['id'] => 'l-brd'], true);
     expect(\App\Models\Inventory\LocationOrgStock::where('location_id', $location->id)->exists())->toBeTrue()

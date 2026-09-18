@@ -21,6 +21,7 @@ use App\Enums\Dispatching\PickingSession\PickingSessionStateEnum;
 use App\Enums\UI\Dispatch\DispatchHubTabsEnum;
 use App\Actions\Dispatching\PartnerStaging\GetPartnerStagingTasks;
 use App\Actions\Dispatching\ProductionOutput\GetFinishedProductionJobOrders;
+use App\Actions\Dispatching\ProductionOutput\IndexProductionOutputItems;
 use App\Models\Procurement\OrgPartner;
 use App\Http\Resources\Dispatching\DashboardDispatchHubDashboardResource;
 use App\Http\Resources\Dispatching\DispatchPersonnelCurrentWorkResource;
@@ -31,6 +32,7 @@ use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -49,9 +51,9 @@ class ShowDispatchHub extends OrgAction
         return $warehouse;
     }
 
-    public function asController(Organisation $organisation, Warehouse $warehouse): Warehouse
+    public function asController(Organisation $organisation, Warehouse $warehouse, ActionRequest $request): Warehouse
     {
-        $this->initialisationFromWarehouse($warehouse, [])->withTab(DispatchHubTabsEnum::values());
+        $this->initialisationFromWarehouse($warehouse, $request)->withTab(DispatchHubTabsEnum::values());
 
         return $this->handle($warehouse);
     }
@@ -87,7 +89,7 @@ class ShowDispatchHub extends OrgAction
             $navigation[DispatchHubTabsEnum::PRODUCTION_OUTPUT->value]['number'] = count($productionOutput);
         }
 
-        return Inertia::render(
+        $response = Inertia::render(
             'Org/Dispatching/DispatchHub',
             [
                 'breadcrumbs' => $this->getBreadcrumbs($request->route()->originalParameters()),
@@ -117,7 +119,7 @@ class ShowDispatchHub extends OrgAction
                 'pickers_current' => DispatchPersonnelCurrentWorkResource::collection($this->currentWork($warehouse, 'picker_user_id', ['handling', 'handling_blocked'], 'pickers_current')),
                 'packers_current' => DispatchPersonnelCurrentWorkResource::collection($this->currentWork($warehouse, 'packer_user_id', ['packing'], 'packers_current')),
                 'partner_staging' => $partnerStaging,
-                'production_output' => $productionOutput,
+                'production_output' => $productionOutput === null ? null : JsonResource::collection(IndexProductionOutputItems::run($productionOutput, 'production_output')),
                 'can_edit'          => $request->user()->authTo("dispatching.{$this->organisation->id}.edit"),
                 'put_away_route'    => $hasProduction ? [
                     'name'       => 'grp.org.warehouses.show.dispatching.production_output.put_away',
@@ -143,6 +145,8 @@ class ShowDispatchHub extends OrgAction
         )
             ->table($this->currentWorkTableStructure('pickers_current', __('Picker')))
             ->table($this->currentWorkTableStructure('packers_current', __('Packer')));
+
+        return $hasProduction ? $response->table(IndexProductionOutputItems::make()->tableStructure('production_output')) : $response;
     }
 
     private function getPickingSessionStats(Warehouse $warehouse): array
