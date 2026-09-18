@@ -19,6 +19,7 @@ use App\Models\SysAdmin\Organisation;
 use Inertia\Inertia;
 use Inertia\Response;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Collection;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -31,6 +32,26 @@ class ShowOrgChatInbox extends OrgAction
 
     private ?int $preselectShopId = null;
 
+    public function authorize(ActionRequest $request): bool
+    {
+        if ($request->user()->chatAgent) {
+            return true;
+        }
+
+        if (isset($this->shop)) {
+            return $request->user()->authTo([
+                "crm.{$this->shop->id}.view",
+                "accounting.{$this->shop->organisation_id}.view",
+            ]);
+        }
+
+        return $request->user()->authTo([
+            'accounting.'.$this->organisation->id.'.view',
+            'org-supervisor.'.$this->organisation->id,
+            'shops-view.'.$this->organisation->id,
+        ]);
+    }
+
     public function handle(Organisation $organisation): Organisation
     {
         return $organisation;
@@ -38,8 +59,6 @@ class ShowOrgChatInbox extends OrgAction
 
     public function asController(Organisation $organisation, ActionRequest $request): Organisation
     {
-        abort_unless((bool) $request->user()?->chatAgent, 403, __('Only chat agents can access the inbox'));
-
         $this->initialisation($organisation, $request);
 
         return $this->handle($organisation);
@@ -47,8 +66,6 @@ class ShowOrgChatInbox extends OrgAction
 
     public function inConversation(Organisation $organisation, ChatSession $chatSession, ActionRequest $request): Organisation
     {
-        abort_unless((bool) $request->user()?->chatAgent, 403, __('Only chat agents can access the inbox'));
-
         $this->selectedSession = $chatSession;
         $this->initialisation($organisation, $request);
 
@@ -57,8 +74,6 @@ class ShowOrgChatInbox extends OrgAction
 
     public function inShop(Organisation $organisation, Shop $shop, ActionRequest $request): Organisation
     {
-        abort_unless((bool) $request->user()?->chatAgent, 403, __('Only chat agents can access the inbox'));
-
         $this->preselectShopId = $shop->id;
         $this->initialisationFromShop($shop, $request);
 
@@ -67,6 +82,8 @@ class ShowOrgChatInbox extends OrgAction
 
     public function htmlResponse(Organisation $organisation, ActionRequest $request): Response
     {
+        $isReadOnly = !$request->user()->chatAgent?->shopAssignments()->exists();
+
         return Inertia::render(
             'Org/Chat/Inbox',
             [
@@ -84,7 +101,10 @@ class ShowOrgChatInbox extends OrgAction
                     'slug' => $organisation->slug,
                     'name' => $organisation->name,
                 ],
-                'inboxes'              => $this->getAgentInboxes($organisation, $request),
+                'is_read_only'         => $isReadOnly,
+                'inboxes'              => $isReadOnly
+                    ? $this->getReadOnlyInboxes($organisation, $request)
+                    : $this->getAgentInboxes($organisation, $request),
                 'selectedSessionUlid'  => $this->selectedSession ? (string) $this->selectedSession->ulid : null,
                 'initialSession'       => $this->resolveSelectedSession(),
                 'preselectShopId'      => $this->preselectShopId,
@@ -141,7 +161,28 @@ class ShowOrgChatInbox extends OrgAction
             $shopsQuery->whereIn('id', $assignments->pluck('shop_id')->filter());
         }
 
-        return $shopsQuery->get()->map(function ($shop) {
+        return $this->mapInboxes($shopsQuery->get());
+    }
+
+    /**
+     * @return array<int, array{id: int, name: string, slug: string, type: string|null, channels: array<int, array{key: string, name: string, unread: int}>}>
+     */
+    private function getReadOnlyInboxes(Organisation $organisation, ActionRequest $request): array
+    {
+        $shopsQuery = $request->user()->authorisedShops()
+            ->where('shops.organisation_id', $organisation->id)
+            ->where('shops.state', ShopStateEnum::OPEN)
+            ->orderBy('shops.name');
+
+        return $this->mapInboxes($shopsQuery->get());
+    }
+
+    /**
+     * @return array<int, array{id: int, name: string, slug: string, type: string|null, channels: array<int, array{key: string, name: string, unread: int}>}>
+     */
+    private function mapInboxes(Collection $shops): array
+    {
+        return $shops->map(function ($shop) {
             $channels = [
                 ['key' => 'website', 'name' => __('Website'), 'unread' => 0],
             ];

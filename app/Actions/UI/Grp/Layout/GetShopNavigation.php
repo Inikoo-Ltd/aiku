@@ -581,64 +581,46 @@ class GetShopNavigation
             ];
         }
 
-        $navigation["chat"] = [
-            "root"  => "grp.org.shops.show.chat.",
-            "label" => __("Chat"),
-            "icon"  => ["fal", "comment-alt"],
+        $chatParameters = [$shop->organisation->slug, $shop->slug];
+        $isChatAgent    = (bool) $user->chatAgent?->shopAssignments()->exists();
+
+        $chatDashboard = [
+            "label" => __("Dashboard"),
+            "icon"  => ["fal", "fa-comment-alt"],
+            "root"  => "grp.org.shops.show.chat.dashboard",
             "route" => [
                 "name"       => "grp.org.shops.show.chat.dashboard",
-                "parameters" => [$shop->organisation->slug, $shop->slug],
+                "parameters" => $chatParameters,
             ],
+        ];
+        $chatInbox = [
+            "label" => __("Inbox"),
+            "icon"  => ["fal", "fa-inbox"],
+            "root"  => "grp.org.shops.show.chat.inbox",
+            "route" => [
+                "name"       => "grp.org.shops.show.chat.inbox",
+                "parameters" => $chatParameters,
+            ],
+        ];
+        $chatSettings = [
+            "label" => __("Settings"),
+            "icon"  => ["fal", "fa-sliders-h"],
+            "root"  => "grp.org.shops.show.chat.settings",
+            "route" => [
+                "name"       => "grp.org.shops.show.chat.settings",
+                "parameters" => $chatParameters,
+            ],
+        ];
+
+        $navigation["chat"] = [
+            "root"    => "grp.org.shops.show.chat.",
+            "label"   => __("Chat"),
+            "icon"    => ["fal", "fa-comment-alt"],
+            "route"   => $isChatAgent ? $chatInbox["route"] : $chatDashboard["route"],
             "topMenu" => [
-                "subSections" => [
-                    [
-                        "label" => __("Dashboard"),
-                        "icon"  => ["fal", "comment-alt"],
-                        "root"  => "grp.org.shops.show.chat.dashboard",
-                        "route" => [
-                            "name"       => "grp.org.shops.show.chat.dashboard",
-                            "parameters" => [$shop->organisation->slug, $shop->slug],
-                        ],
-                    ],
-                    [
-                        "label" => __("Agents"),
-                        "icon"  => ["fal", "fa-headset"],
-                        "root"  => "grp.org.shops.show.chat.agents.show",
-                        "route" => [
-                            "name"       => "grp.org.shops.show.chat.agents.show",
-                            "parameters" => [$shop->organisation->slug, $shop->slug],
-                        ],
-                    ],
-                    [
-                        "label" => __("Conversations"),
-                        "icon"  => ["fal", "fa-comments"],
-                        "root"  => "grp.org.shops.show.chat.conversations.show",
-                        "route" => [
-                            "name"       => "grp.org.shops.show.chat.conversations.show",
-                            "parameters" => [$shop->organisation->slug, $shop->slug],
-                        ],
-                    ],
-                    ...($user->chatAgent ? [
-                        [
-                            "label" => __("Inbox"),
-                            "icon"  => ["fal", "fa-inbox"],
-                            "root"  => "grp.org.shops.show.chat.inbox",
-                            "route" => [
-                                "name"       => "grp.org.shops.show.chat.inbox",
-                                "parameters" => [$shop->organisation->slug, $shop->slug],
-                            ],
-                        ],
-                    ] : []),
-                    [
-                        "label" => __("Whatsapp Template"),
-                        "icon"  => ["fab", "fa-whatsapp"],
-                        "root"  => "grp.org.shops.show.chat.whatsapp_templates.",
-                        "route" => [
-                            "name"       => "grp.org.shops.show.chat.whatsapp_templates.index",
-                            "parameters" => [$shop->organisation->slug, $shop->slug],
-                        ],
-                    ],
-                ],
+                "subSections" => $isChatAgent
+                    ? [$chatInbox, $chatDashboard, $chatSettings]
+                    : [$chatDashboard, $chatInbox, $chatSettings],
             ],
         ];
 

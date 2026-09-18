@@ -39,6 +39,39 @@ const logoutData = computed(() => ({
     icon: "fal fa-sign-out-alt"
 }))
 
+const chatRoute = computed(() => {
+    const organisation = layout.currentParams?.organisation
+    const shop = layout.currentParams?.shop
+    const fulfilment = layout.currentParams?.fulfilment
+    const isChatAgent = !!layout.user?.is_agent
+
+    if (organisation && shop) {
+        return {
+            name: isChatAgent ? "grp.org.shops.show.chat.inbox" : "grp.org.shops.show.chat.dashboard",
+            parameters: { organisation, shop },
+            root: "grp.org.shops.show.chat.",
+        }
+    }
+
+    if (organisation && fulfilment) {
+        return {
+            name: "grp.org.fulfilments.show.chat.dashboard",
+            parameters: { organisation, fulfilment },
+            root: "grp.org.fulfilments.show.chat.",
+        }
+    }
+
+    if (organisation) {
+        return {
+            name: isChatAgent ? "grp.org.chat.inbox" : "grp.org.chat.dashboard",
+            parameters: { organisation },
+            root: "grp.org.chat.",
+        }
+    }
+
+    return { name: isChatAgent ? "grp.chat.inbox" : "grp.chat.dashboard", parameters: {}, root: "grp.chat." }
+})
+
 const scopedModuleRoute = (module: string) => {
     const organisation = layout.currentParams?.organisation
     const shop = layout.currentParams?.shop
@@ -61,7 +94,7 @@ const ticketsRoute = computed(() => scopedModuleRoute("tickets"))
 const bottomLinks = computed(() => [
     { route: tasksRoute.value.name, parameters: tasksRoute.value.parameters, root: tasksRoute.value.root, label: ctrans("Tasks"), tooltip: ctrans("Tasks: ask a colleague or a department for something"), icon: "fal fa-tasks" },
     { route: ticketsRoute.value.name, parameters: ticketsRoute.value.parameters, root: ticketsRoute.value.root, label: ctrans("Tickets"), tooltip: ctrans("Tickets: report a problem or ask for help"), icon: "fal fa-life-ring" },
-    { route: "grp.chat.dashboard", parameters: {}, root: "grp.chat.", label: ctrans("Chat"), tooltip: ctrans("Chat with customers and colleagues"), icon: "fal fa-comment-alt" },
+    { route: chatRoute.value.name, parameters: chatRoute.value.parameters, root: chatRoute.value.root, label: ctrans("Chat"), tooltip: ctrans("Chat with customers and colleagues"), icon: "fal fa-comment-alt" },
 ])
 
 const loadingRoute = ref<string | null>(null)

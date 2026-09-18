@@ -3,7 +3,7 @@ import { ref, computed, inject, onMounted, onUnmounted, watch, nextTick } from "
 import { Head } from "@inertiajs/vue3"
 import { useDebounceFn, watchDebounced } from "@vueuse/core"
 import axios from "axios"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { capitalize } from "@/Composables/capitalize"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import MessageAreaAgent from "@/Components/Chat/Agent/MessageAreaAgent.vue"
@@ -40,12 +40,15 @@ const props = defineProps<{
     selectedSessionUlid?: string | null
     initialSession?: any | null
     preselectShopId?: number | null
+    is_read_only?: boolean
 }>()
 
 const layout: any = inject("layout", {})
 const baseUrl = layout?.appUrl ?? ""
 const myAgentId = layout.user?.id
 const myAgentShop = layout.user?.agent_shops ?? []
+
+const isReadOnly = computed(() => props.is_read_only === true)
 
 const PLUS_8_HOURS = layout.app?.environment === "local" ? 8 * 60 * 60 * 1000 : 0
 
@@ -177,13 +180,13 @@ const buildParams = (page: number) => ({
             : highlightView.value
                 ? { highlighted: 1, statuses: [activeTab.value] }
                 : { statuses: [activeTab.value] }),
-    assigned_to_me: myAgentId,
+    ...(isReadOnly.value ? {} : { assigned_to_me: myAgentId }),
     organisation_id: props.organisation.id,
     page,
     ...(selectedShopId.value && !highlightView.value ? { shop_id: selectedShopId.value } : {}),
     // ponytail: the API ignores `channel` until chat sessions carry one; sent so the intent is visible.
     ...(selectedChannel.value ? { channel: selectedChannel.value } : {}),
-    ...(viewMode.value === "team" ? { view_team: 1 } : {}),
+    ...(viewMode.value === "team" && !isReadOnly.value ? { view_team: 1 } : {}),
     ...(searchQuery.value.trim() ? { search: searchQuery.value.trim() } : {}),
 })
 
@@ -240,6 +243,7 @@ const closeRowMenu = () => {
 }
 
 const toggleRowMenu = (ulid: string, ev?: MouseEvent) => {
+    if (isReadOnly.value) return
     confirmDeleteUlid.value = null
     if (openMenuUlid.value === ulid) {
         openMenuUlid.value = null
@@ -636,7 +640,7 @@ const openPendingSession = async () => {
         const { data } = await axios.get(url, {
             params: {
                 ulid,
-                assigned_to_me: myAgentId,
+                ...(isReadOnly.value ? {} : { assigned_to_me: myAgentId }),
                 organisation_id: props.organisation.id,
                 page: 1,
                 limit: 1,
@@ -675,7 +679,7 @@ const openPendingSession = async () => {
 }
 
 const fetchInboxNotifications = async () => {
-    if (!myAgentId) return
+    if (!myAgentId || isReadOnly.value) return
     try {
         const { data } = await axios.get(`${baseUrl}/app/api/chats/users/${myAgentId}/agent-notifications`)
         notifWaiting.value = data?.data?.waiting ?? []
@@ -1061,14 +1065,14 @@ onUnmounted(() => {
 
     <PageHeading :data="pageHead">
         <template #other>
-            <button type="button" v-tooltip="trans('Chat settings')" @click="openChatSettings"
+            <button v-if="!isReadOnly" type="button" v-tooltip="ctrans('Chat settings')" @click="openChatSettings"
                 class="p-2 rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition-colors">
                 <FontAwesomeIcon :icon="faCog" class="text-base" />
             </button>
         </template>
     </PageHeading>
 
-    <Dialog v-model:visible="chatSettingVisible" modal :header="trans('Chat Settings')"
+    <Dialog v-model:visible="chatSettingVisible" modal :header="ctrans('Chat Settings')"
         :style="{ width: '90vw', maxWidth: '560px' }" :breakpoints="{ '640px': '95vw' }">
         <SettingChat :initial-tab="settingInitialTab" :session-ulid="selectedSession?.ulid" @close="chatSettingVisible = false" />
     </Dialog>
@@ -1085,10 +1089,10 @@ onUnmounted(() => {
                 :class="inboxRailCollapsed ? 'justify-center' : 'justify-between px-3'">
                 <span v-if="!inboxRailCollapsed"
                     class="text-[11px] font-semibold text-gray-500 uppercase tracking-wide">
-                    {{ trans("Inboxes") }}
+                    {{ ctrans("Inboxes") }}
                 </span>
                 <button type="button" @click="inboxRailCollapsed = !inboxRailCollapsed"
-                    v-tooltip="inboxRailCollapsed ? trans('Expand') : trans('Collapse')"
+                    v-tooltip="inboxRailCollapsed ? ctrans('Expand') : ctrans('Collapse')"
                     class="p-1 rounded hover:bg-gray-200 text-gray-400">
                     <FontAwesomeIcon :icon="inboxRailCollapsed ? faAngleRight : faAngleLeft" class="text-xs" />
                 </button>
@@ -1140,14 +1144,14 @@ onUnmounted(() => {
                     </div>
                 </div>
                 <div v-if="!inboxes.length && !inboxRailCollapsed" class="px-3 py-6 text-xs text-gray-400 text-center">
-                    {{ trans("No inboxes assigned") }}
+                    {{ ctrans("No inboxes assigned") }}
                 </div>
             </div>
 
             <!-- Spam -->
-            <div class="border-t border-gray-200 py-1">
+            <div v-if="!isReadOnly" class="border-t border-gray-200 py-1">
                 <button type="button" @click="selectSpam"
-                    v-tooltip="inboxRailCollapsed ? trans('Spam') : undefined"
+                    v-tooltip="inboxRailCollapsed ? ctrans('Spam') : undefined"
                     class="w-full flex items-center text-sm transition-colors"
                     :class="[
                         inboxRailCollapsed ? 'justify-center py-2.5' : 'gap-2.5 px-3 py-2',
@@ -1155,10 +1159,10 @@ onUnmounted(() => {
                     ]"
                     :style="spamView ? selectedItemStyle : {}">
                     <FontAwesomeIcon :icon="faBan" class="text-sm shrink-0" :class="spamView ? 'text-red-500' : ''" />
-                    <span v-if="!inboxRailCollapsed">{{ trans("Spam") }}</span>
+                    <span v-if="!inboxRailCollapsed">{{ ctrans("Spam") }}</span>
                 </button>
                 <button type="button" @click="selectTrash"
-                    v-tooltip="inboxRailCollapsed ? trans('Trash') : undefined"
+                    v-tooltip="inboxRailCollapsed ? ctrans('Trash') : undefined"
                     class="w-full flex items-center text-sm transition-colors"
                     :class="[
                         inboxRailCollapsed ? 'justify-center py-2.5' : 'gap-2.5 px-3 py-2',
@@ -1166,14 +1170,14 @@ onUnmounted(() => {
                     ]"
                     :style="trashView ? selectedItemStyle : {}">
                     <FontAwesomeIcon :icon="faTrash" class="text-sm shrink-0" :class="trashView ? 'text-red-500' : ''" />
-                    <span v-if="!inboxRailCollapsed">{{ trans("Trash") }}</span>
+                    <span v-if="!inboxRailCollapsed">{{ ctrans("Trash") }}</span>
                 </button>
             </div>
 
             <!-- Highlighted -->
-            <div class="border-t border-gray-200 py-1">
+            <div v-if="!isReadOnly" class="border-t border-gray-200 py-1">
                 <button type="button" @click="selectHighlight"
-                    v-tooltip="inboxRailCollapsed ? trans('Highlighted') : undefined"
+                    v-tooltip="inboxRailCollapsed ? ctrans('Highlighted') : undefined"
                     class="w-full flex items-center text-sm transition-colors"
                     :class="[
                         inboxRailCollapsed ? 'justify-center py-2.5' : 'gap-2.5 px-3 py-2',
@@ -1181,7 +1185,7 @@ onUnmounted(() => {
                     ]"
                     :style="highlightView ? selectedItemStyle : {}">
                     <FontAwesomeIcon :icon="faStar" class="text-sm shrink-0" :class="highlightView ? 'text-amber-400' : ''" />
-                    <span v-if="!inboxRailCollapsed">{{ trans("Highlighted") }}</span>
+                    <span v-if="!inboxRailCollapsed">{{ ctrans("Highlighted") }}</span>
                 </button>
             </div>
         </div>
@@ -1192,20 +1196,20 @@ onUnmounted(() => {
             <div class="px-3 py-2.5 border-b flex items-center justify-between gap-2">
                 <div class="min-w-0 flex-1">
                     <div class="text-sm font-semibold text-gray-800 truncate mb-1.5">
-                        {{ trashView ? trans("Trash") : spamView ? trans("Spam") : highlightView ? trans("Highlighted") : (selectedInbox?.name ?? trans("Inbox")) }}
+                        {{ trashView ? ctrans("Trash") : spamView ? ctrans("Spam") : highlightView ? ctrans("Highlighted") : (selectedInbox?.name ?? ctrans("Inbox")) }}
                     </div>
-                    <div v-if="!spamView && !trashView" class="inline-flex items-center bg-gray-100 rounded-lg p-0.5 text-[11px]">
+                    <div v-if="!spamView && !trashView && !isReadOnly" class="inline-flex items-center bg-gray-100 rounded-lg p-0.5 text-[11px]">
                         <button type="button" class="px-2.5 py-1 rounded-md transition-all whitespace-nowrap shrink-0"
                             :class="viewMode === 'my' ? 'bg-white shadow-sm text-gray-800 font-semibold' : 'text-gray-500 hover:text-gray-700'"
                             @click="viewMode = 'my'">
-                            {{ trans("My Chats") }}
+                            {{ ctrans("My Chats") }}
                         </button>
                         <button type="button" class="px-2.5 py-1 rounded-md transition-all whitespace-nowrap shrink-0 inline-flex items-center gap-1"
                             :class="viewMode === 'team' ? 'bg-white shadow-sm text-gray-800 font-semibold' : 'text-gray-500 hover:text-gray-700'"
                             @click="viewMode = 'team'">
-                            {{ trans("Team Chats") }}
+                            {{ ctrans("Team Chats") }}
                             <span v-if="teamUnreadForShop"
-                                v-tooltip="trans('Unread team chats in this inbox — take over to reply')"
+                                v-tooltip="ctrans('Unread team chats in this inbox — take over to reply')"
                                 class="min-w-[15px] px-1 text-[9px] leading-[15px] text-white rounded-full text-center bg-amber-500">
                                 {{ teamUnreadForShop }}
                             </span>
@@ -1213,17 +1217,17 @@ onUnmounted(() => {
                     </div>
                 </div>
                 <div class="flex items-center gap-0.5 shrink-0 self-start">
-                    <button v-if="selectedChannel === 'whatsapp'" type="button"
-                        v-tooltip="trans('New WhatsApp chat')"
+                    <button v-if="selectedChannel === 'whatsapp' && !isReadOnly" type="button"
+                        v-tooltip="ctrans('New WhatsApp chat')"
                         class="inline-flex items-center gap-1 px-2 py-1.5 rounded-lg hover:bg-gray-100 text-green-600 text-[11px] font-medium"
                         @click="newChatVisible = true">
                         <FontAwesomeIcon :icon="faPlus" class="text-xs" />
-                        {{ trans("New chat") }}
+                        {{ ctrans("New chat") }}
                     </button>
 
                     <!-- Filter by agent -->
                     <div class="relative">
-                        <button type="button" v-tooltip="trans('Filter by agent')"
+                        <button type="button" v-tooltip="ctrans('Filter by agent')"
                             class="relative p-1.5 rounded-lg hover:bg-gray-100 text-gray-500"
                             @click="showAgentFilter = !showAgentFilter">
                             <FontAwesomeIcon :icon="faFilter" class="text-xs" />
@@ -1240,12 +1244,12 @@ onUnmounted(() => {
                             class="absolute right-0 top-full mt-1 z-[50] w-56 bg-white border border-gray-200 rounded-lg shadow-lg py-1">
                             <div class="px-3 py-1.5 flex items-center justify-between">
                                 <span class="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">
-                                    {{ trans("Filter by agent") }}
+                                    {{ ctrans("Filter by agent") }}
                                 </span>
                                 <button v-if="selectedAgentIds.length" type="button"
                                     class="text-[10px] text-gray-500 underline hover:text-gray-700"
                                     @click="clearAgentFilter">
-                                    {{ trans("Clear") }}
+                                    {{ ctrans("Clear") }}
                                 </button>
                             </div>
                             <label v-for="a in availableAgents" :key="a.id"
@@ -1257,7 +1261,7 @@ onUnmounted(() => {
                                 <span class="truncate">{{ a.name }}</span>
                             </label>
                             <div v-if="!availableAgents.length" class="px-3 py-3 text-xs text-gray-400 text-center">
-                                {{ trans("No agents in this list") }}
+                                {{ ctrans("No agents in this list") }}
                             </div>
                         </div>
                     </div>
@@ -1270,7 +1274,7 @@ onUnmounted(() => {
 
             <!-- Search -->
             <div v-if="showSearch" class="px-3 py-2 border-b">
-                <input v-model="searchQuery" type="text" :placeholder="trans('Search…')"
+                <input v-model="searchQuery" type="text" :placeholder="ctrans('Search…')"
                     class="w-full text-sm border rounded-lg px-3 py-1.5 focus:outline-none focus:ring-1" />
             </div>
 
@@ -1282,7 +1286,7 @@ onUnmounted(() => {
                         :class="activeTab === 'waiting' ? 'bg-white shadow-sm font-semibold' : 'text-gray-500 hover:text-gray-700'"
                         :style="activeTab === 'waiting' ? { color: 'var(--theme-color-4)' } : {}"
                         @click="activeTab = 'waiting'">
-                        {{ trans("Waiting") }}
+                        {{ ctrans("Waiting") }}
                         <span v-if="viewMode === 'my' && !highlightView && tabUnread.waiting"
                             class="min-w-[15px] px-1 text-[9px] leading-[15px] text-white rounded-full text-center"
                             :style="{ backgroundColor: 'var(--theme-color-4)' }">{{ tabUnread.waiting }}</span>
@@ -1292,7 +1296,7 @@ onUnmounted(() => {
                         :class="activeTab === 'active' ? 'bg-white shadow-sm font-semibold' : 'text-gray-500 hover:text-gray-700'"
                         :style="activeTab === 'active' ? { color: 'var(--theme-color-4)' } : {}"
                         @click="activeTab = 'active'">
-                        {{ trans("Active") }}
+                        {{ ctrans("Active") }}
                         <span v-if="viewMode === 'my' && !highlightView && tabUnread.active"
                             class="min-w-[15px] px-1 text-[9px] leading-[15px] text-white rounded-full text-center"
                             :style="{ backgroundColor: 'var(--theme-color-4)' }">{{ tabUnread.active }}</span>
@@ -1302,7 +1306,7 @@ onUnmounted(() => {
                         :class="activeTab === 'closed' ? 'bg-white shadow-sm font-semibold' : 'text-gray-500 hover:text-gray-700'"
                         :style="activeTab === 'closed' ? { color: 'var(--theme-color-4)' } : {}"
                         @click="activeTab = 'closed'">
-                        {{ trans("Closed") }}
+                        {{ ctrans("Closed") }}
                         <span v-if="viewMode === 'my' && !highlightView && tabUnread.closed"
                             class="min-w-[15px] px-1 text-[9px] leading-[15px] text-white rounded-full text-center"
                             :style="{ backgroundColor: 'var(--theme-color-4)' }">{{ tabUnread.closed }}</span>
@@ -1315,7 +1319,7 @@ onUnmounted(() => {
                 <div v-if="filteredContacts.length === 0"
                     class="h-full flex flex-col items-center justify-center gap-2 text-center px-4">
                     <div class="text-2xl">💬</div>
-                    <div class="text-sm font-medium text-gray-700">{{ trans("No conversations") }}</div>
+                    <div class="text-sm font-medium text-gray-700">{{ ctrans("No conversations") }}</div>
                 </div>
 
                 <div v-else>
@@ -1330,7 +1334,7 @@ onUnmounted(() => {
                                 <LoadingIcon class="w-8 h-8 text-white" />
                             </div>
 
-                            <button type="button"
+                            <button v-if="!isReadOnly" type="button"
                                 class="absolute top-1/2 right-2 -translate-y-1/2 z-30 w-7 h-7 flex items-center justify-center rounded-full bg-white text-gray-500 shadow-md ring-1 ring-gray-200 hover:bg-gray-100 hover:text-gray-800 opacity-0 group-hover:opacity-100 transition-opacity"
                                 :class="{ '!opacity-100': openMenuUlid === c.ulid }"
                                 @click.stop="toggleRowMenu(c.ulid, $event)">
@@ -1343,7 +1347,7 @@ onUnmounted(() => {
                                     <FontAwesomeIcon v-else :icon="faUser" class="text-sm" />
                                 </div>
                                 <span v-if="isMergedView"
-                                    v-tooltip="c.channel === 'whatsapp' ? 'WhatsApp' : c.channel === 'email' ? trans('Email') : trans('Website chat')"
+                                    v-tooltip="c.channel === 'whatsapp' ? 'WhatsApp' : c.channel === 'email' ? ctrans('Email') : ctrans('Website chat')"
                                     class="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full bg-white ring-1 ring-gray-200 flex items-center justify-center">
                                     <FontAwesomeIcon :icon="c.channel === 'whatsapp' ? faWhatsapp : c.channel === 'email' ? faEnvelope : faGlobe"
                                         class="text-[9px]"
@@ -1372,8 +1376,8 @@ onUnmounted(() => {
                                 </div>
                                 <div class="flex items-center gap-1.5">
                                     <span class="text-xs text-gray-500 truncate flex-1 leading-snug">{{ c.lastMessage }}</span>
-                                    <button v-if="!trashView" type="button"
-                                        v-tooltip="c.is_highlighted ? trans('Remove highlight') : trans('Highlight')"
+                                    <button v-if="!trashView && !isReadOnly" type="button"
+                                        v-tooltip="c.is_highlighted ? ctrans('Remove highlight') : ctrans('Highlight')"
                                         class="shrink-0 flex items-center justify-center transition-opacity"
                                         :class="c.is_highlighted ? 'text-amber-400 opacity-100' : 'text-gray-300 opacity-0 group-hover:opacity-100 hover:text-amber-400'"
                                         @click.stop="toggleHighlight(c)">
@@ -1405,18 +1409,20 @@ onUnmounted(() => {
             <div v-if="!selectedSession"
                 class="h-full flex flex-col items-center justify-center gap-2 text-gray-400">
                 <div class="text-4xl">💬</div>
-                <div class="text-sm">{{ trans("Select a conversation") }}</div>
+                <div class="text-sm">{{ ctrans("Select a conversation") }}</div>
             </div>
 
             <div v-else class="h-full">
                 <WhatsappMessageAreaAgent v-if="activeChannel === 'whatsapp'"
                     :messages="messages" :session="selectedSession"
                     :organisation-slug="organisation.slug"
+                    :read-only="isReadOnly"
                     @back="selectedSession = null" @messages-read="onMessagesRead"
                     @assign-self-success="onAssignSelfSuccess"
                     @close-session="closeSession"
                     @view-profile="showProfilePanel" />
                 <MessageAreaAgent v-else :messages="messages" :session="selectedSession"
+                    :read-only="isReadOnly"
                     @back="selectedSession = null" @send-message="handleSendMessage"
                     @close-session="closeSession" @view-history="showHistoryPanel"
                     @view-user-profile="showProfilePanel" @view-message-details="showMessageDetailsPanel"
@@ -1443,17 +1449,17 @@ onUnmounted(() => {
                         <button type="button"
                             class="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-gray-700 hover:bg-gray-100"
                             @click="restoreChat(menuContact)">
-                            <FontAwesomeIcon :icon="faTrashArrowUp" class="text-[10px]" /> {{ trans("Restore") }}
+                            <FontAwesomeIcon :icon="faTrashArrowUp" class="text-[10px]" /> {{ ctrans("Restore") }}
                         </button>
                         <button v-if="confirmDeleteUlid !== menuContact.ulid" type="button"
                             class="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-red-600 hover:bg-red-50"
                             @click.stop="confirmDeleteUlid = menuContact.ulid">
-                            <FontAwesomeIcon :icon="faTrash" class="text-[10px]" /> {{ trans("Delete permanently") }}
+                            <FontAwesomeIcon :icon="faTrash" class="text-[10px]" /> {{ ctrans("Delete permanently") }}
                         </button>
                         <button v-else type="button"
                             class="w-full flex items-center gap-2 px-3 py-1.5 text-xs font-semibold text-white bg-red-600 hover:bg-red-700"
                             @click="forceDeleteChat(menuContact)">
-                            <FontAwesomeIcon :icon="faTrash" class="text-[10px]" /> {{ trans("Click again to confirm") }}
+                            <FontAwesomeIcon :icon="faTrash" class="text-[10px]" /> {{ ctrans("Click again to confirm") }}
                         </button>
                     </template>
 
@@ -1462,9 +1468,9 @@ onUnmounted(() => {
                             <button type="button"
                                 class="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-gray-700 hover:bg-gray-100">
                                 <FontAwesomeIcon :icon="priorityMeta(menuContact.priority).icon" class="text-[11px] w-3.5" :style="{ color: priorityMeta(menuContact.priority).color }" />
-                                <span>{{ trans("Priority") }}</span>
+                                <span>{{ ctrans("Priority") }}</span>
                                 <span class="ml-auto flex items-center gap-1 text-[10px] text-gray-500">
-                                    {{ trans(priorityMeta(menuContact.priority).label) }}
+                                    {{ ctrans(priorityMeta(menuContact.priority).label) }}
                                     <FontAwesomeIcon :icon="faChevronRight" class="text-[8px] text-gray-400" />
                                 </span>
                             </button>
@@ -1474,7 +1480,7 @@ onUnmounted(() => {
                                     :class="menuContact.priority === p.value ? 'font-semibold text-gray-900' : 'text-gray-700'"
                                     @click="setPriority(menuContact, p.value)">
                                     <FontAwesomeIcon :icon="p.icon" class="text-[11px] w-3.5" :style="{ color: p.color }" />
-                                    <span>{{ trans(p.label) }}</span>
+                                    <span>{{ ctrans(p.label) }}</span>
                                     <span v-if="menuContact.priority === p.value" class="ml-auto text-[11px]" :style="{ color: p.color }">✓</span>
                                 </button>
                             </div>
@@ -1486,24 +1492,24 @@ onUnmounted(() => {
                             @click="toggleHighlight(menuContact)">
                             <FontAwesomeIcon :icon="faStar" class="text-[10px]"
                                 :class="menuContact.is_highlighted ? 'text-amber-400' : ''" />
-                            {{ menuContact.is_highlighted ? trans("Remove highlight") : trans("Highlight") }}
+                            {{ menuContact.is_highlighted ? ctrans("Remove highlight") : ctrans("Highlight") }}
                         </button>
                         <div class="border-t border-gray-100 my-1"></div>
 
                         <button v-if="!menuContact.is_spam" type="button"
                             class="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-gray-700 hover:bg-gray-100"
                             @click="markSpam(menuContact, true)">
-                            <FontAwesomeIcon :icon="faBan" class="text-[10px]" /> {{ trans("Report spam") }}
+                            <FontAwesomeIcon :icon="faBan" class="text-[10px]" /> {{ ctrans("Report spam") }}
                         </button>
                         <button v-else type="button"
                             class="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-gray-700 hover:bg-gray-100"
                             @click="markSpam(menuContact, false)">
-                            <FontAwesomeIcon :icon="faRotateLeft" class="text-[10px]" /> {{ trans("Not spam") }}
+                            <FontAwesomeIcon :icon="faRotateLeft" class="text-[10px]" /> {{ ctrans("Not spam") }}
                         </button>
                         <button type="button"
                             class="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-red-600 hover:bg-red-50"
                             @click="trashChat(menuContact)">
-                            <FontAwesomeIcon :icon="faTrash" class="text-[10px]" /> {{ trans("Move to trash") }}
+                            <FontAwesomeIcon :icon="faTrash" class="text-[10px]" /> {{ ctrans("Move to trash") }}
                         </button>
                     </template>
                 </div>

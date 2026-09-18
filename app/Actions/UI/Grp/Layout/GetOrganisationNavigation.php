@@ -250,55 +250,45 @@ class GetOrganisationNavigation
         $canSeeShops = $user->authTo(['accounting.'.$organisation->id.'.view', 'org-supervisor.'.$organisation->id, 'shops-view.'.$organisation->id]);
 
         if ($canSeeShops || $user->chatAgent) {
+            $chatParameters = [$organisation->slug];
+            $isChatAgent    = (bool) $user->chatAgent?->shopAssignments()->exists();
+            $chatDashboard = [
+                'label' => __('Dashboard'),
+                'icon'  => ['fal', 'fa-comment-alt'],
+                'root'  => 'grp.org.chat.dashboard',
+                'route' => [
+                    'name'       => 'grp.org.chat.dashboard',
+                    'parameters' => $chatParameters,
+                ],
+            ];
+            $chatInbox = [
+                'label' => __('Inbox'),
+                'icon'  => ['fal', 'fa-inbox'],
+                'root'  => 'grp.org.chat.inbox',
+                'route' => [
+                    'name'       => 'grp.org.chat.inbox',
+                    'parameters' => $chatParameters,
+                ],
+            ];
+            $chatSettings = [
+                'label' => __('Settings'),
+                'icon'  => ['fal', 'fa-sliders-h'],
+                'root'  => 'grp.org.chat.settings',
+                'route' => [
+                    'name'       => 'grp.org.chat.settings',
+                    'parameters' => $chatParameters,
+                ],
+            ];
+
             $navigation['chat'] = [
                 'label'   => __('Chat'),
-                'icon'    => ['fal', 'comment-alt'],
+                'icon'    => ['fal', 'fa-comment-alt'],
                 'root'    => 'grp.org.chat.',
-                'route'   => [
-                    'name'       => 'grp.org.chat.dashboard',
-                    'parameters' => [$organisation->slug],
-                ],
+                'route'   => $isChatAgent ? $chatInbox['route'] : $chatDashboard['route'],
                 'topMenu' => [
-                    'subSections' => [
-                        [
-                            'label'   => __('Dashboard'),
-                            'icon'    => ['fal', 'comment-alt'],
-                            'root'    => 'grp.org.chat.dashboard',
-                            'route'   => [
-                                'name'       => 'grp.org.chat.dashboard',
-                                'parameters' => [$organisation->slug],
-                            ],
-                        ],
-                        [
-                            'label'   => __('Agents'),
-                            'icon'    => ['fal', 'fa-headset'],
-                            'root'    => 'grp.org.chat.agents.show',
-                            'route'   => [
-                                'name'       => 'grp.org.chat.agents.show',
-                                'parameters' => [$organisation->slug],
-                            ],
-                        ],
-                        [
-                            'label'   => __('Conversations'),
-                            'icon'    => ['fal', 'fa-comments'],
-                            'root'    => 'grp.org.chat.conversations.show',
-                            'route'   => [
-                                'name'       => 'grp.org.chat.conversations.show',
-                                'parameters' => [$organisation->slug],
-                            ],
-                        ],
-                        ...($user->chatAgent ? [
-                            [
-                                'label'   => __('Inbox'),
-                                'icon'    => ['fal', 'fa-inbox'],
-                                'root'    => 'grp.org.chat.inbox',
-                                'route'   => [
-                                    'name'       => 'grp.org.chat.inbox',
-                                    'parameters' => [$organisation->slug],
-                                ],
-                            ],
-                        ] : []),
-                    ],
+                    'subSections' => $isChatAgent
+                        ? [$chatInbox, $chatDashboard, $chatSettings]
+                        : [$chatDashboard, $chatInbox, $chatSettings],
                 ],
             ];
         }
