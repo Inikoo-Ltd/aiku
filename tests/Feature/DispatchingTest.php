@@ -4447,3 +4447,19 @@ test('replacement delivery notes are listed first like premium dispatch (HELP-31
             ->and($ids->search($replacement->id))->toBeLessThan($ids->search($plain->id));
     }
 });
+
+test('a second label cannot be created for a delivery note while one is in progress (HELP-1766)', function () {
+    [$deliveryNote] = handlingDeliveryNoteWithPicking($this);
+    $shipper = StoreShipper::make()->action($this->organisation, ['code' => 'SH'.Str::random(4), 'name' => 'Sh', 'trade_as' => 'sh']);
+
+    $lock = \Illuminate\Support\Facades\Cache::lock('store_shipment_DeliveryNote_'.$deliveryNote->id, 120);
+    $lock->get();
+
+    expect(fn () => StoreShipment::make()->action($deliveryNote, $shipper, ['tracking' => 'TRK'.Str::random(4)]))
+        ->toThrow(\Illuminate\Validation\ValidationException::class);
+
+    $lock->release();
+
+    StoreShipment::make()->action($deliveryNote, $shipper, ['tracking' => 'TRK'.Str::random(4)]);
+    expect($deliveryNote->refresh()->shipments()->count())->toBe(1);
+});
