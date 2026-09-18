@@ -16,7 +16,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { computed, inject, ref } from "vue"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
 import Button from "@/Components/Elements/Buttons/Button.vue"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { isNavigationActive } from "@/Composables/useUrl"
 import { Link } from "@inertiajs/vue3"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
@@ -34,8 +34,8 @@ const handleToggleLeftBar = () => {
 }
 
 const logoutData = computed(() => ({
-    label: trans("Logout"),
-    tooltip: trans("Logout the app"),
+    label: ctrans("Logout"),
+    tooltip: ctrans("Logout the app"),
     icon: "fal fa-sign-out-alt"
 }))
 
@@ -73,9 +73,9 @@ const chatRoute = computed(() => {
 })
 
 const bottomLinks = computed(() => [
-    { route: "grp.tasks.index", parameters: {}, root: "grp.tasks.", label: trans("Tasks"), tooltip: trans("Tasks: ask a colleague or a department for something"), icon: "fal fa-tasks" },
-    { route: "grp.tickets.index", parameters: {}, root: "grp.tickets.", label: trans("Tickets"), tooltip: trans("Tickets: report a problem or ask for help"), icon: "fal fa-life-ring" },
-    { route: chatRoute.value.name, parameters: chatRoute.value.parameters, root: chatRoute.value.root, label: trans("Chat"), tooltip: trans("Chat with customers and colleagues"), icon: "fal fa-comment-alt" },
+    { route: "grp.tasks.index", parameters: {}, root: "grp.tasks.", label: ctrans("Tasks"), tooltip: ctrans("Tasks: ask a colleague or a department for something"), icon: "fal fa-tasks" },
+    { route: "grp.tickets.index", parameters: {}, root: "grp.tickets.", label: ctrans("Tickets"), tooltip: ctrans("Tickets: report a problem or ask for help"), icon: "fal fa-life-ring" },
+    { route: chatRoute.value.name, parameters: chatRoute.value.parameters, root: chatRoute.value.root, label: ctrans("Chat"), tooltip: ctrans("Chat with customers and colleagues"), icon: "fal fa-comment-alt" },
 ])
 
 const loadingRoute = ref<string | null>(null)
@@ -186,13 +186,13 @@ const onLogoutAuth = () => {
                             class="absolute -top-3 left-1/2 -translate-y-full bg-white rounded-md px-4 py-3 border border-gray-200 shadow">
                             <div class="min-w-32 flex flex-col justify-center gap-y-2">
                                 <div class="whitespace-nowrap text-gray-500 text-xs">
-                                    {{ trans("Are you sure want to logout?") }}
+                                    {{ ctrans("Are you sure want to logout?") }}
                                 </div>
                                 <div class="mx-auto">
                                     <Button
                                         @click="onLogoutAuth()"
                                         :loading="isLoadingLogout"
-                                        :label="trans('Yes, Logout')"
+                                        :label="ctrans('Yes, Logout')"
                                         type="red" />
                                 </div>
                             </div>

@@ -260,30 +260,21 @@ class GetOrganisationNavigation
                     'parameters' => $chatParameters,
                 ],
             ];
-            $chatAgents = [
-                'label' => __('Agents'),
-                'icon'  => ['fal', 'fa-headset'],
-                'root'  => 'grp.org.chat.agents.',
-                'route' => [
-                    'name'       => 'grp.org.chat.agents.show',
-                    'parameters' => $chatParameters,
-                ],
-            ];
-            $chatConversations = [
-                'label' => __('Conversations'),
-                'icon'  => ['fal', 'fa-comments'],
-                'root'  => 'grp.org.chat.conversations.',
-                'route' => [
-                    'name'       => 'grp.org.chat.conversations.show',
-                    'parameters' => $chatParameters,
-                ],
-            ];
             $chatInbox = [
                 'label' => __('Inbox'),
                 'icon'  => ['fal', 'fa-inbox'],
                 'root'  => 'grp.org.chat.inbox',
                 'route' => [
                     'name'       => 'grp.org.chat.inbox',
+                    'parameters' => $chatParameters,
+                ],
+            ];
+            $chatSettings = [
+                'label' => __('Settings'),
+                'icon'  => ['fal', 'fa-sliders-h'],
+                'root'  => 'grp.org.chat.settings',
+                'route' => [
+                    'name'       => 'grp.org.chat.settings',
                     'parameters' => $chatParameters,
                 ],
             ];
@@ -295,8 +286,8 @@ class GetOrganisationNavigation
                 'route'   => $isChatAgent ? $chatInbox['route'] : $chatDashboard['route'],
                 'topMenu' => [
                     'subSections' => $isChatAgent
-                        ? [$chatInbox, $chatConversations, $chatDashboard, $chatAgents]
-                        : [$chatDashboard, $chatAgents, $chatConversations],
+                        ? [$chatInbox, $chatDashboard, $chatSettings]
+                        : [$chatDashboard, $chatInbox, $chatSettings],
                 ],
             ];
         }

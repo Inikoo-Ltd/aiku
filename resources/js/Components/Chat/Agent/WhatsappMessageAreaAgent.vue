@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, watch, onMounted, onUnmounted, inject, computed, nextTick, defineAsyncComponent } from "vue"
 import axios from "axios"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import {
     faPaperPlane,
@@ -15,6 +15,7 @@ import {
     faRotateRight,
     faFaceSmile,
     faLifeRing,
+    faEye,
 } from "@fortawesome/free-solid-svg-icons"
 import { faWhatsapp } from "@fortawesome/free-brands-svg-icons"
 import type { ChatMessage, SessionAPI } from "@/types/Chat/chat"
@@ -66,6 +67,7 @@ const props = defineProps<{
     messages: ChatMessage[]
     session: SessionAPI | null
     organisationSlug: string
+    readOnly?: boolean
 }>()
 
 const emit = defineEmits(["back", "messages-read", "assign-self-success", "close-session", "view-profile"])
@@ -104,7 +106,7 @@ const claimChat = async (
         emit("assign-self-success")
     } catch (e: any) {
         notify({
-            title: trans("Error"),
+            title: ctrans("Error"),
             text: e?.response?.data?.message ?? errorText,
             type: "error",
         })
@@ -118,7 +120,7 @@ const assignSelf = () =>
         "grp.org.chat.agents.whatsapp.assign.self",
         "post",
         isAssigningSelf,
-        trans("Failed to assign chat")
+        ctrans("Failed to assign chat")
     )
 
 const takeoverChat = () =>
@@ -126,7 +128,7 @@ const takeoverChat = () =>
         "grp.org.chat.agents.whatsapp.takeover",
         "patch",
         isTakingOver,
-        trans("Failed to assign chat")
+        ctrans("Failed to assign chat")
     )
 
 const reopenChat = () =>
@@ -134,7 +136,7 @@ const reopenChat = () =>
         "grp.org.chat.agents.whatsapp.sessions.reopen",
         "patch",
         isReopening,
-        trans("Failed to reopen chat")
+        ctrans("Failed to reopen chat")
     )
 
 const canSendNonTemplate = ref<boolean | undefined>(undefined)
@@ -188,15 +190,15 @@ const handleImageSelect = (e: Event) => {
 const selectImage = (file: File) => {
     if (!IMAGE_TYPES.includes(file.type)) {
         notify({
-            title: trans("Failed"),
-            text: trans("WhatsApp only accepts JPG and PNG images."),
+            title: ctrans("Failed"),
+            text: ctrans("WhatsApp only accepts JPG and PNG images."),
             type: "error",
         })
         return
     }
 
     if (file.size > MAX_IMAGE_SIZE) {
-        notify({ title: trans("Failed"), text: trans("Maximum image size 5MB"), type: "error" })
+        notify({ title: ctrans("Failed"), text: ctrans("Maximum image size 5MB"), type: "error" })
         return
     }
 
@@ -213,15 +215,15 @@ const handleDocSelect = (e: Event) => {
 const selectDoc = (file: File) => {
     if (!FILE_TYPES.includes(file.type)) {
         notify({
-            title: trans("Failed"),
-            text: trans("WhatsApp accepts PDF, Word, Excel, PowerPoint and plain text."),
+            title: ctrans("Failed"),
+            text: ctrans("WhatsApp accepts PDF, Word, Excel, PowerPoint and plain text."),
             type: "error",
         })
         return
     }
 
     if (file.size > MAX_FILE_SIZE) {
-        notify({ title: trans("Failed"), text: trans("Maximum file size 100MB"), type: "error" })
+        notify({ title: ctrans("Failed"), text: ctrans("Maximum file size 100MB"), type: "error" })
         return
     }
 
@@ -288,7 +290,7 @@ const cancelReply = () => {
 const replyPreviewText = (message: LocalChatMessage) =>
     message.message_text
     || message.file_name
-    || trans(message.message_type === "image" ? "Photo" : "Attachment")
+    || ctrans(message.message_type === "image" ? "Photo" : "Attachment")
 
 const showEmojiPicker = ref(false)
 const emojiPickerContainer = ref<HTMLElement | null>(null)
@@ -435,8 +437,8 @@ const postMessage = async (formData: FormData, optimisticMessage: LocalChatMessa
         const msg = messagesLocal.value.find((m) => m._tempId === optimisticMessage._tempId)
         if (msg) msg._status = "failed"
         notify({
-            title: trans("Error"),
-            text: e?.response?.data?.message ?? trans("Failed to send WhatsApp message"),
+            title: ctrans("Error"),
+            text: e?.response?.data?.message ?? ctrans("Failed to send WhatsApp message"),
             type: "error",
         })
     } finally {
@@ -454,8 +456,8 @@ const sendMessage = async () => {
 
     if (templateOnly.value) {
         notify({
-            title: trans("Error"),
-            text: trans("The customer has not messaged in the last 24 hours. Only template messages can be sent."),
+            title: ctrans("Error"),
+            text: ctrans("The customer has not messaged in the last 24 hours. Only template messages can be sent."),
             type: "error",
         })
         return
@@ -552,7 +554,7 @@ const openTemplateDialog = async () => {
         })
         templates.value = data?.data ?? []
     } catch (e) {
-        notify({ title: trans("Error"), text: trans("Failed to load templates"), type: "error" })
+        notify({ title: ctrans("Error"), text: ctrans("Failed to load templates"), type: "error" })
     } finally {
         isLoadingTemplates.value = false
     }
@@ -685,7 +687,7 @@ const stopSocket = () => {
 // Marks the thread read on our side and sends the receipt that lights up the
 // customer's blue ticks; opening the thread does the same through the messages endpoint.
 const markIncomingAsRead = async () => {
-    if (!chatSession.value?.ulid) return
+    if (!chatSession.value?.ulid || props.readOnly) return
 
     try {
         await axios.post(
@@ -827,21 +829,21 @@ onUnmounted(() => {
                 </div>
             </div>
 
-            <ModalConfirmationDelete v-if="!isClosed" :routeDelete="{
+            <ModalConfirmationDelete v-if="!isClosed && !readOnly" :routeDelete="{
                 name: 'grp.org.chat.agents.whatsapp.sessions.close',
                 parameters: [organisationSlug, session?.ulid],
                 method: 'patch',
-            }" :title="trans('Are you sure you want to end this chat?')"
-                :noLabel="trans('End chat')"
+            }" :title="ctrans('Are you sure you want to end this chat?')"
+                :noLabel="ctrans('End chat')"
                 :noIcon="faTimesCircle"
-                :description="trans('This will close the chat session. The conversation history will be preserved.')"
+                :description="ctrans('This will close the chat session. The conversation history will be preserved.')"
                 @success="$emit('close-session')">
                 <template #default="{ changeModel }">
                     <button @click="changeModel"
                         class="inline-flex items-center justify-center gap-1.5 shrink-0 h-7 px-2.5 text-[11px] font-medium rounded-md transition hover:opacity-90"
                         :style="{ backgroundColor: 'var(--theme-color-4)', color: 'var(--theme-color-5)' }">
                         <FontAwesomeIcon :icon="faTimesCircle" class="text-[11px]" />
-                        {{ trans("End chat") }}
+                        {{ ctrans("End chat") }}
                     </button>
                 </template>
             </ModalConfirmationDelete>
@@ -854,7 +856,7 @@ onUnmounted(() => {
                border rounded-full hover:bg-gray-100 disabled:opacity-50">
                     <FontAwesomeIcon v-if="isLoadingMore" :icon="faSpinner" class="animate-spin text-[10px]" />
                     <span>
-                        {{ isLoadingMore ? trans('Loading messages…') : trans('Load older messages') }}
+                        {{ isLoadingMore ? ctrans('Loading messages…') : ctrans('Load older messages') }}
                     </span>
                 </button>
             </div>
@@ -912,17 +914,24 @@ onUnmounted(() => {
         </div>
 
         <!-- Footer: closed banner -->
-        <footer v-if="isClosed" class="px-3 py-3 bg-white border-t">
+        <footer v-if="readOnly" class="px-3 py-3 bg-white border-t">
+            <div class="flex items-center justify-center gap-2 text-xs text-gray-500">
+                <FontAwesomeIcon :icon="faEye" class="text-gray-400" fixed-width aria-hidden="true" />
+                {{ ctrans("You are viewing this conversation in read-only mode") }}
+            </div>
+        </footer>
+
+        <footer v-else-if="isClosed" class="px-3 py-3 bg-white border-t">
             <div class="flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg bg-gray-50 border border-gray-200">
                 <div class="text-xs text-gray-600">
-                    {{ trans('This chat has been closed') }}
+                    {{ ctrans('This chat has been closed') }}
                 </div>
                 <Button
                     @click="reopenChat"
                     :loading="isReopening"
                     style="primary"
                     size="xs"
-                    :label="trans('Reopen')"
+                    :label="ctrans('Reopen')"
                     :icon="faRotateRight"
                 />
             </div>
@@ -932,14 +941,14 @@ onUnmounted(() => {
         <footer v-else-if="isWaiting" class="px-3 py-3 bg-white border-t">
             <div class="flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg bg-gray-50 border border-gray-200">
                 <div class="text-xs text-gray-600">
-                    {{ trans('Assign this chat to yourself to start the conversation') }}
+                    {{ ctrans('Assign this chat to yourself to start the conversation') }}
                 </div>
                 <Button
                     @click="assignSelf"
                     :loading="isAssigningSelf"
                     style="primary"
                     size="xs"
-                    :label="trans('Assign to me')"
+                    :label="ctrans('Assign to me')"
                     :icon="faUser"
                 />
             </div>
@@ -950,14 +959,14 @@ onUnmounted(() => {
             <div class="flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg bg-indigo-50 border border-indigo-200">
                 <div class="text-xs text-indigo-600">
                     <span class="font-semibold">{{ session?.assigned_agent?.name }}</span>
-                    {{ trans(' is handling this chat') }}
+                    {{ ctrans(' is handling this chat') }}
                 </div>
                 <Button
                     @click="takeoverChat"
                     :loading="isTakingOver"
                     style="primary"
                     size="xs"
-                    :label="trans('Take Over')"
+                    :label="ctrans('Take Over')"
                     :icon="faUser"
                 />
             </div>
@@ -972,19 +981,19 @@ onUnmounted(() => {
             <div v-if="templateOnly && !hasTemplate"
                 class="flex items-center gap-2 mb-2 px-3 py-2 rounded-lg bg-amber-50 border border-amber-200 text-amber-700 text-[11px]">
                 <FontAwesomeIcon :icon="faFileLines" class="text-[10px]" />
-                <span>{{ trans('The customer has not messaged in the last 24 hours. Only template messages can be sent.') }}</span>
+                <span>{{ ctrans('The customer has not messaged in the last 24 hours. Only template messages can be sent.') }}</span>
             </div>
 
             <div v-if="replyingTo"
                 class="flex items-start gap-2 mb-2 px-3 py-2 rounded-lg bg-gray-100">
                 <div class="flex-1 min-w-0">
                     <div class="text-[11px] font-semibold text-gray-600">
-                        {{ trans('Replying to') }}
-                        {{ replyingTo.sender_type === 'agent' ? trans('yourself') : (session?.contact_name || session?.guest_identifier) }}
+                        {{ ctrans('Replying to') }}
+                        {{ replyingTo.sender_type === 'agent' ? ctrans('yourself') : (session?.contact_name || session?.guest_identifier) }}
                     </div>
                     <div class="text-[11px] text-gray-500 truncate">{{ replyPreviewText(replyingTo) }}</div>
                 </div>
-                <button type="button" @click="cancelReply" :aria-label="trans('Cancel reply')"
+                <button type="button" @click="cancelReply" :aria-label="ctrans('Cancel reply')"
                     class="shrink-0 w-6 h-6 flex items-center justify-center rounded hover:bg-gray-200 text-gray-400">
                     <FontAwesomeIcon :icon="faXmark" class="text-xs" />
                 </button>
@@ -997,7 +1006,7 @@ onUnmounted(() => {
                     <span class="font-medium truncate">{{ selectedTemplate?.name }}</span>
                     <span class="text-green-600/70">{{ selectedTemplate?.language }}</span>
                     <button @click="clearTemplate" class="ml-auto text-green-600 hover:text-red-500"
-                        :title="trans('Remove template')">
+                        :title="ctrans('Remove template')">
                         <FontAwesomeIcon :icon="faXmark" class="text-[10px]" />
                     </button>
                 </div>
@@ -1008,14 +1017,14 @@ onUnmounted(() => {
 
                 <div v-if="hasTemplate && templateAutoFills && !templateMissingTags.length"
                     class="mx-3 mb-1 text-[11px] text-gray-400">
-                    {{ trans("Values filled automatically from this contact.") }}
+                    {{ ctrans("Values filled automatically from this contact.") }}
                 </div>
 
                 <div v-if="hasTemplate && templateParameters.length" class="px-3 pb-1 space-y-1.5">
                     <template v-for="(parameter, index) in templateParameters" :key="index">
                         <input v-if="!selectedTemplate?.resolved_values || selectedTemplate.resolved_values[index] == null"
                             v-model="templateParameters[index]" type="text"
-                            :placeholder="trans('Value for :placeholder', { placeholder: parameterLabel(index) })"
+                            :placeholder="ctrans('Value for :placeholder', { placeholder: parameterLabel(index) })"
                             class="w-full text-xs border rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-green-500" />
                     </template>
                 </div>
@@ -1023,17 +1032,17 @@ onUnmounted(() => {
                 <textarea v-if="!hasTemplate" ref="messageInput" v-model="newMessage" @input="autoResize"
                     @paste="onPasteAttachment"
                     @keydown.enter.exact.prevent="sendMessage" rows="1" :disabled="templateOnly"
-                    :placeholder="templateOnly ? trans('24h window closed, send a template message') : trans('Type message...')"
+                    :placeholder="templateOnly ? ctrans('24h window closed, send a template message') : ctrans('Type message...')"
                     class="w-full resize-none px-4 pt-3 pb-1 text-sm leading-5 outline-none border-none ring-0 focus:outline-none focus:ring-0 rounded-t-xl bg-transparent disabled:bg-gray-50 disabled:text-gray-400 disabled:cursor-not-allowed" />
 
                 <div class="flex items-center justify-between px-2 pb-2 pt-1">
                     <div class="flex items-center gap-1">
                         <button @click="imageInput?.click()" :disabled="hasTemplate || templateOnly"
-                            class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-500 transition-colors disabled:opacity-40 disabled:hover:bg-transparent" :title="trans('Upload image')">
+                            class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-500 transition-colors disabled:opacity-40 disabled:hover:bg-transparent" :title="ctrans('Upload image')">
                             <FontAwesomeIcon :icon="faImage" class="text-sm" />
                         </button>
                         <button @click="fileInput?.click()" :disabled="hasTemplate || templateOnly"
-                            class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-500 transition-colors disabled:opacity-40 disabled:hover:bg-transparent" :title="trans('Upload file')">
+                            class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-500 transition-colors disabled:opacity-40 disabled:hover:bg-transparent" :title="ctrans('Upload file')">
                             <FontAwesomeIcon :icon="faPaperclip" class="text-sm" />
                         </button>
                         <div ref="emojiPickerContainer" class="relative">
@@ -1041,7 +1050,7 @@ onUnmounted(() => {
                                 :disabled="hasTemplate || templateOnly"
                                 class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 transition-colors disabled:opacity-40 disabled:hover:bg-transparent"
                                 :class="showEmojiPicker ? 'text-green-600 bg-gray-100' : 'text-gray-500'"
-                                :title="trans('Emoji')" :aria-label="trans('Emoji')">
+                                :title="ctrans('Emoji')" :aria-label="ctrans('Emoji')">
                                 <FontAwesomeIcon :icon="faFaceSmile" class="text-sm" />
                             </button>
 
@@ -1050,11 +1059,11 @@ onUnmounted(() => {
                             </div>
                         </div>
                         <button @click="openTemplateDialog"
-                            class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-green-50 text-gray-500 hover:text-green-600 transition-colors" :title="trans('Send template message')">
+                            class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-green-50 text-gray-500 hover:text-green-600 transition-colors" :title="ctrans('Send template message')">
                             <FontAwesomeIcon :icon="faFileLines" class="text-sm" />
                         </button>
                         <button @click="isTicketModalOpen = true"
-                            class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-blue-50 text-gray-500 hover:text-blue-600 transition-colors" :title="trans('Create ticket from this chat')" :aria-label="trans('Create ticket from this chat')">
+                            class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-blue-50 text-gray-500 hover:text-blue-600 transition-colors" :title="ctrans('Create ticket from this chat')" :aria-label="ctrans('Create ticket from this chat')">
                             <FontAwesomeIcon :icon="faLifeRing" class="text-sm" />
                         </button>
                     </div>

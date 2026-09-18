@@ -592,24 +592,6 @@ class GetShopNavigation
                 "parameters" => $chatParameters,
             ],
         ];
-        $chatAgents = [
-            "label" => __("Agents"),
-            "icon"  => ["fal", "fa-headset"],
-            "root"  => "grp.org.shops.show.chat.agents.show",
-            "route" => [
-                "name"       => "grp.org.shops.show.chat.agents.show",
-                "parameters" => $chatParameters,
-            ],
-        ];
-        $chatConversations = [
-            "label" => __("Conversations"),
-            "icon"  => ["fal", "fa-comments"],
-            "root"  => "grp.org.shops.show.chat.conversations.",
-            "route" => [
-                "name"       => "grp.org.shops.show.chat.conversations.show",
-                "parameters" => $chatParameters,
-            ],
-        ];
         $chatInbox = [
             "label" => __("Inbox"),
             "icon"  => ["fal", "fa-inbox"],
@@ -619,12 +601,12 @@ class GetShopNavigation
                 "parameters" => $chatParameters,
             ],
         ];
-        $chatWhatsappTemplates = [
-            "label" => __("Whatsapp Template"),
-            "icon"  => ["fab", "fa-whatsapp"],
-            "root"  => "grp.org.shops.show.chat.whatsapp_templates.",
+        $chatSettings = [
+            "label" => __("Settings"),
+            "icon"  => ["fal", "fa-sliders-h"],
+            "root"  => "grp.org.shops.show.chat.settings",
             "route" => [
-                "name"       => "grp.org.shops.show.chat.whatsapp_templates.index",
+                "name"       => "grp.org.shops.show.chat.settings",
                 "parameters" => $chatParameters,
             ],
         ];
@@ -636,8 +618,8 @@ class GetShopNavigation
             "route"   => $isChatAgent ? $chatInbox["route"] : $chatDashboard["route"],
             "topMenu" => [
                 "subSections" => $isChatAgent
-                    ? [$chatInbox, $chatConversations, $chatDashboard, $chatAgents, $chatWhatsappTemplates]
-                    : [$chatDashboard, $chatAgents, $chatConversations, $chatWhatsappTemplates],
+                    ? [$chatInbox, $chatDashboard, $chatSettings]
+                    : [$chatDashboard, $chatInbox, $chatSettings],
             ],
         ];
 
