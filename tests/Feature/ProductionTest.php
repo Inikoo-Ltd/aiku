@@ -2580,6 +2580,46 @@ test('a partner line the factory has stock for belongs on pre-pick, not the to p
         ->and($counts()['to_produce'])->toBe($before['to_produce'] + 1);
 });
 
+test('keeping the expiry date writes it onto the published label of a partner line made for another organisation', function () {
+    $stocks       = createStocks($this->group);
+    $makerOrgStock = createOrgStocks($this->organisation, [$stocks[0]])[0];
+    \App\Models\Production\Artefact::where('production_id', $this->production->id)->where('org_stock_id', $makerOrgStock->id)->update(['org_stock_id' => null]);
+    $made = StoreArtefact::make()->action($this->production, ['code' => 'EXPIRY-01', 'name' => 'Dated for a partner']);
+    $made->update(['org_stock_id' => $makerOrgStock->id]);
+
+    $buyer = \App\Models\SysAdmin\Organisation::where('code', 'EXPBUY')->first()
+        ?? \App\Actions\SysAdmin\Organisation\StoreOrganisation::make()->action($this->group, [
+            'code' => 'EXPBUY',
+            'name' => 'Expiry buyer',
+            'type' => \App\Enums\SysAdmin\Organisation\OrganisationTypeEnum::SHOP,
+        ] + \App\Models\SysAdmin\Organisation::factory()->definition());
+    $orgPartner = \App\Models\Procurement\OrgPartner::where('organisation_id', $buyer->id)->where('partner_id', $this->organisation->id)->first()
+        ?? \App\Actions\Procurement\OrgPartner\StoreOrgPartner::make()->action($buyer, $this->organisation);
+
+    $line = \App\Actions\Procurement\PartnerShoppingListItem\StorePartnerShoppingListItem::make()->action($orgPartner, $makerOrgStock, ['quantity' => 4]);
+    expect($line->org_stock_id)->not->toBe($makerOrgStock->id)
+        ->and($line->stock_id)->toBe($stocks[0]->id);
+
+    $label = \App\Models\Production\ArtefactLabel::create([
+        'group_id'        => $made->group_id,
+        'organisation_id' => $made->organisation_id,
+        'artefact_id'     => $made->id,
+        'name'            => 'Dated',
+        'state'           => \App\Enums\Production\Artefact\ArtefactLabelStateEnum::PUBLISHED,
+        'layout'          => ['fields' => [['source' => 'name', 'text' => 'Kept'], ['source' => 'expiry_date', 'text' => '']]],
+    ]);
+
+    actingAs($this->guest->getUser());
+    \Pest\Laravel\post(route('grp.org.productions.show.to_produce.items.preparing', [$this->organisation->slug, $this->production->slug]), [
+        'preparing' => true,
+        'lines'     => [['id' => $line->id, 'expiry_date' => '2027-03-09', 'expiry_applies_to_label' => true]],
+    ])->assertRedirect();
+
+    expect($line->refresh()->preparing_at)->not->toBeNull()
+        ->and($label->refresh()->layout['fields'][1]['text'])->toBe('09/03/2027')
+        ->and($label->layout['fields'][0]['text'])->toBe('Kept');
+});
+
 test('an own customer line leaves the to produce board once its order is dispatched', function () {
     $stocks    = createStocks($this->group);
     $orgStocks = createOrgStocks($this->organisation, [$stocks[0]]);
