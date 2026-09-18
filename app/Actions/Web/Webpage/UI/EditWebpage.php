@@ -139,17 +139,23 @@ class EditWebpage extends OrgAction
                 "maxLength"   => 150,
                 "counter"     => true,
             ],
+            'use_title_prefix_suffix' => [
+                'type'        => 'toggle',
+                'label'       => __('Add extra words to the title'),
+                'information' => __('Adds your prefix and suffix around this page title, so it shows like "Wholesale Bath Bombs | Ancient Wisdom" in the browser tab and on Google. Switch it off if you want the title to show exactly as you typed it.'),
+                'value'       => (bool) Arr::get($webpage->seo_data, 'use_title_prefix_suffix', true),
+            ],
             'webpage_title_prefix'  => [
                 'type'          => 'input',
-                'information'   => __('Would add the set prefix to all of the webpages title. This would not override individual webpage setting (if exists)'),
+                'information'   => __('Words that go in front of this page title. Leave it empty and we will use the one from your website settings.'),
                 'label'         => __('Title Prefix'),
                 'value'         => data_get($webpage->settings, 'webpage.title_prefix', null),
             ],
             'webpage_title_suffix'  => [
                 'type'          => 'input',
-                'information'   => __('Would add the set suffix to all of the webpages title. This would not override individual webpage setting (if exists)'),
+                'information'   => __('Words that go after this page title, like your shop name. Leave it empty and we will use the one from your website settings.'),
                 'label'         => __('Title Suffix'),
-                'value'         => data_get($webpage->settings, 'webpage.title_prefix', null),
+                'value'         => data_get($webpage->settings, 'webpage.title_suffix', null),
             ],
             'show_price'  => [
                 'type'          => 'toggle',

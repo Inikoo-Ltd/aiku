@@ -84,6 +84,7 @@ class ShowBlogWebpage extends OrgAction
                 'root_active' => $subNavigationRoot,
                 'webpage_sub_type' => $webpage->sub_type,
                 'webpage_canonical_url' => $webpage->canonical_url,
+                'lock' => GetWebpageLock::run($webpage, $request->user()),
 
                 BlogWebpageTabsEnum::SHOWCASE->value => $this->tab == BlogWebpageTabsEnum::SHOWCASE->value ?
                     fn () => WebpageResource::make($webpage)->getArray()

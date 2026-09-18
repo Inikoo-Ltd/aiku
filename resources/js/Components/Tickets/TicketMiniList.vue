@@ -5,9 +5,10 @@
   -->
 
 <script setup lang="ts">
+import { ticketRoute } from "@/Composables/useTicketsRoute"
 import { computed, inject, ref, watch } from "vue"
 import { Link } from "@inertiajs/vue3"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import Icon from "@/Components/Icon.vue"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { library } from "@fortawesome/fontawesome-svg-core"
@@ -34,9 +35,9 @@ const onRowClick = (ticket: any, event: MouseEvent) => {
 }
 
 const sortFields = [
-    ...(props.sortKey && !["created_at", "updated_at"].includes(props.sortKey) ? [{ key: props.sortKey, label: trans("Latest") }] : []),
-    { key: "created_at", label: trans("Created") },
-    { key: "updated_at", label: trans("Updated") },
+    ...(props.sortKey && !["created_at", "updated_at"].includes(props.sortKey) ? [{ key: props.sortKey, label: ctrans("Latest") }] : []),
+    { key: "created_at", label: ctrans("Created") },
+    { key: "updated_at", label: ctrans("Updated") },
 ]
 
 const sortField = ref(props.sortKey ?? "created_at")
@@ -71,10 +72,10 @@ const daysAgo = (date?: string) => {
             <span class="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600 tabular-nums">{{ tickets.length }}</span>
             <slot name="filters" />
             <span v-if="tickets.length > 1" class="ml-auto flex items-center text-xs text-gray-500">
-                <button type="button" class="px-1 py-0.5 hover:text-gray-900" :title="trans('Sort by')" @click="cycleSortField">
+                <button type="button" class="px-1 py-0.5 hover:text-gray-900" :title="ctrans('Sort by')" @click="cycleSortField">
                     {{ sortFields.find((option) => option.key === sortField)?.label }}
                 </button>
-                <button type="button" class="px-1 py-0.5 hover:text-gray-900" :title="sortDesc ? trans('Newest first') : trans('Oldest first')" @click="sortDesc = !sortDesc">
+                <button type="button" class="px-1 py-0.5 hover:text-gray-900" :title="sortDesc ? ctrans('Newest first') : ctrans('Oldest first')" @click="sortDesc = !sortDesc">
                     {{ sortDesc ? "↓" : "↑" }}
                 </button>
             </span>
@@ -82,9 +83,9 @@ const daysAgo = (date?: string) => {
         <ul v-if="tickets.length" class="divide-y divide-gray-100 text-sm">
             <li v-for="ticket in shownTickets" :key="ticket.id" class="flex items-center gap-3 px-4 py-2" :class="openQuickLook && 'cursor-pointer transition duration-200 hover:bg-gray-50'" @click="onRowClick(ticket, $event)">
                 <Icon :data="ticket.status_icon" />
-                <span class="inline-flex items-center whitespace-nowrap"><Icon v-if="ticket.type_icon" :data="ticket.type_icon" class="mr-1 text-gray-400" /><Link :href="route('grp.tickets.show', ticket.reference)" class="primaryLink whitespace-nowrap">{{ ticket.reference }}</Link></span>
+                <span class="inline-flex items-center whitespace-nowrap"><Icon v-if="ticket.type_icon" :data="ticket.type_icon" class="mr-1 text-gray-400" /><Link :href="ticketRoute(ticket.reference)" class="primaryLink whitespace-nowrap">{{ ticket.reference }}</Link></span>
                 <span class="truncate flex-1" :class="ticket.has_unread && 'font-semibold text-gray-900'" :title="ticket.subject">{{ ticket.subject }}</span>
-                <span v-if="ticket.has_unread" v-tooltip="trans('Unread update')" class="size-2 shrink-0 rounded-full bg-indigo-500" />
+                <span v-if="ticket.has_unread" v-tooltip="ctrans('Unread update')" class="size-2 shrink-0 rounded-full bg-indigo-500" />
                 <Icon v-if="ticket.qa_status_icon" :data="ticket.qa_status_icon" />
                 <slot name="person" :ticket="ticket">
                     <span v-if="showAssignee" class="text-xs text-gray-500 whitespace-nowrap">{{ ticket.assignee_username || "-" }}</span>
@@ -96,11 +97,11 @@ const daysAgo = (date?: string) => {
             </li>
         </ul>
         <div v-if="tickets.length && pageCount > 1" class="flex items-center justify-between gap-3 border-t border-gray-200 px-4 py-1.5 text-xs text-gray-500">
-            <span class="tabular-nums">{{ (page - 1) * (perPage ?? 0) + 1 }}–{{ Math.min(page * (perPage ?? 0), tickets.length) }} {{ trans("of") }} {{ tickets.length }}</span>
+            <span class="tabular-nums">{{ (page - 1) * (perPage ?? 0) + 1 }}–{{ Math.min(page * (perPage ?? 0), tickets.length) }} {{ ctrans("of") }} {{ tickets.length }}</span>
             <span class="flex items-center gap-1">
-                <button type="button" class="rounded px-2 py-0.5 transition duration-200 hover:bg-gray-100 hover:text-gray-900 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent" :disabled="page === 1" :aria-label="trans('Previous page')" @click="page--">‹</button>
+                <button type="button" class="rounded px-2 py-0.5 transition duration-200 hover:bg-gray-100 hover:text-gray-900 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent" :disabled="page === 1" :aria-label="ctrans('Previous page')" @click="page--">‹</button>
                 <span class="tabular-nums">{{ page }} / {{ pageCount }}</span>
-                <button type="button" class="rounded px-2 py-0.5 transition duration-200 hover:bg-gray-100 hover:text-gray-900 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent" :disabled="page === pageCount" :aria-label="trans('Next page')" @click="page++">›</button>
+                <button type="button" class="rounded px-2 py-0.5 transition duration-200 hover:bg-gray-100 hover:text-gray-900 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent" :disabled="page === pageCount" :aria-label="ctrans('Next page')" @click="page++">›</button>
             </span>
         </div>
         <p v-else-if="!tickets.length" class="px-4 py-6 text-center text-sm text-gray-400">{{ empty }}</p>

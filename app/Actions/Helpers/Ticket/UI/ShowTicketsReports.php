@@ -15,12 +15,16 @@ use App\Models\Helpers\Ticket;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\User;
 use Illuminate\Support\Carbon;
+use App\Models\Catalogue\Shop;
+use App\Models\SysAdmin\Organisation;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 
 class ShowTicketsReports extends OrgAction
 {
+    use WithTicketsScope;
+
     public function authorize(ActionRequest $request): bool
     {
         return $request->user() !== null;
@@ -256,8 +260,27 @@ class ShowTicketsReports extends OrgAction
 
     public function asController(ActionRequest $request): array
     {
-        $this->initialisationFromGroup(group(), $request);
+        $this->initialisationFromTicketsScope($request);
 
+        return $this->statsFromRequest($request);
+    }
+
+    public function inOrganisation(Organisation $organisation, ActionRequest $request): array
+    {
+        $this->initialisationFromTicketsScope($request, $organisation);
+
+        return $this->statsFromRequest($request);
+    }
+
+    public function inShop(Organisation $organisation, Shop $shop, ActionRequest $request): array
+    {
+        $this->initialisationFromTicketsScope($request, $organisation, $shop);
+
+        return $this->statsFromRequest($request);
+    }
+
+    private function statsFromRequest(ActionRequest $request): array
+    {
         $assignee = $request->filled('assignee')
             ? GetTicketBadgeData::engineers($this->group->id)->firstWhere('username', $request->query('assignee'))
             : null;
@@ -271,8 +294,8 @@ class ShowTicketsReports extends OrgAction
             'Tickets/TicketsReports',
             [
                 'breadcrumbs' => array_merge(
-                    ShowTicketsDashboard::make()->getBreadcrumbs(),
-                    [['type' => 'simple', 'simple' => ['route' => ['name' => 'grp.tickets.reports'], 'label' => __('Reports')]]]
+                    $this->ticketsBreadcrumbs(),
+                    [['type' => 'simple', 'simple' => ['route' => $this->ticketsRoute('reports'), 'label' => __('Reports')]]]
                 ),
                 'title'       => __('Tickets reports'),
                 'pageHead'    => [

@@ -131,6 +131,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
+    {{ webpage_data.title }}
     <Head>
         <title>{{ webpage_data.title }}</title>
         <meta name="description" :content="webpage_data.description || ''" />

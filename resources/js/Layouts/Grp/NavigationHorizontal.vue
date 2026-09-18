@@ -267,7 +267,7 @@ const isLoadingNavigation = ref<string | boolean>(false)
         <div v-if="Object.keys(orgNav || []).length === 1" class="flex flex-col gap-y-1 mb-1">
             <!-- group only 1 -->
             <template v-for="nav, navIndex, index in orgNav[Object.keys(orgNav)[0]]" :key="navIndex + index">
-                <NavigationSimple :nav="nav" :navKey="navIndex" :class="{ hidden: navIndex === 'chat' }" />
+                <NavigationSimple :nav="nav" :navKey="navIndex" :class="{ hidden: ['chat', 'tasks', 'tickets'].includes(String(navIndex)) }" />
             </template>
         </div>
 
@@ -279,7 +279,7 @@ const isLoadingNavigation = ref<string | boolean>(false)
                 v-for="nav, navKey, navIndex in currentNavigation()?.value.subNavigation"
                 :key="navKey + navIndex">
                 <!-- {{ navKey }} -->
-                <NavigationSimple :nav="nav" :navKey="navKey" :class="{ hidden: navKey === 'chat' }" />
+                <NavigationSimple :nav="nav" :navKey="navKey" :class="{ hidden: ['chat', 'tasks', 'tickets'].includes(String(navKey)) }" />
 
                 <!-- <div v-if="(nav.route?.name ? isRouteSameAsCurrentUrl(route(nav.route.name, nav.route.parameters)) : false)"
                         class="absolute inset-0 bg-black/20 rounded -z-10"

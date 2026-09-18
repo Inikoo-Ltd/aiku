@@ -8,6 +8,7 @@
 
 namespace App\Actions\UI\Grp\Layout;
 
+use App\Enums\SysAdmin\Authorisation\RolesEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Models\SysAdmin\User;
 use App\Models\Catalogue\Shop;
@@ -728,6 +729,106 @@ class GetShopNavigation
                 ],
             ];
         }
+
+        $navigation["tasks"] = [
+            "label"   => __("Tasks"),
+            "icon"    => ["fal", "fa-tasks"],
+            "root"    => "grp.org.shops.show.tasks.",
+            "route"   => [
+                "name"       => "grp.org.shops.show.tasks.index",
+                "parameters" => [$shop->organisation->slug, $shop->slug],
+            ],
+            "topMenu" => [
+                "subSections" => [
+                    [
+                        "label" => __("My tasks"),
+                        "icon"  => ["fal", "fa-tasks"],
+                        "root"  => "grp.org.shops.show.tasks.index",
+                        "route" => [
+                            "name"       => "grp.org.shops.show.tasks.index",
+                            "parameters" => [$shop->organisation->slug, $shop->slug],
+                        ],
+                    ],
+                    [
+                        "label" => __("All"),
+                        "icon"  => ["fal", "fa-list"],
+                        "root"  => "grp.org.shops.show.tasks.list_all",
+                        "route" => [
+                            "name"       => "grp.org.shops.show.tasks.list_all",
+                            "parameters" => [$shop->organisation->slug, $shop->slug],
+                        ],
+                    ],
+                    [
+                        "label" => __("Board"),
+                        "icon"  => ["fal", "fa-columns"],
+                        "root"  => "grp.org.shops.show.tasks.board",
+                        "route" => [
+                            "name"       => "grp.org.shops.show.tasks.board",
+                            "parameters" => [$shop->organisation->slug, $shop->slug],
+                        ],
+                    ],
+                    [
+                        "label" => __("Reports"),
+                        "icon"  => ["fal", "fa-chart-line"],
+                        "root"  => "grp.org.shops.show.tasks.reports",
+                        "route" => [
+                            "name"       => "grp.org.shops.show.tasks.reports",
+                            "parameters" => [$shop->organisation->slug, $shop->slug],
+                        ],
+                    ],
+                ],
+            ],
+        ];
+
+        $navigation["tickets"] = [
+            "label"   => __("Tickets"),
+            "icon"    => ["fal", "fa-life-ring"],
+            "root"    => "grp.org.shops.show.tickets.",
+            "route"   => [
+                "name"       => $user->roles()->where("name", RolesEnum::HELP_DESK_SUPERVISOR->value)->exists() ? "grp.org.shops.show.tickets.board" : "grp.org.shops.show.tickets.index",
+                "parameters" => [$shop->organisation->slug, $shop->slug],
+            ],
+            "topMenu" => [
+                "subSections" => [
+                    [
+                        "label" => __("Dashboard"),
+                        "icon"  => ["fal", "fa-tachometer-alt"],
+                        "root"  => "grp.org.shops.show.tickets.index",
+                        "route" => [
+                            "name"       => "grp.org.shops.show.tickets.index",
+                            "parameters" => [$shop->organisation->slug, $shop->slug],
+                        ],
+                    ],
+                    [
+                        "label" => __("List"),
+                        "icon"  => ["fal", "fa-list"],
+                        "root"  => "grp.org.shops.show.tickets.list",
+                        "route" => [
+                            "name"       => "grp.org.shops.show.tickets.list",
+                            "parameters" => [$shop->organisation->slug, $shop->slug],
+                        ],
+                    ],
+                    [
+                        "label" => __("Board"),
+                        "icon"  => ["fal", "fa-columns"],
+                        "root"  => "grp.org.shops.show.tickets.board",
+                        "route" => [
+                            "name"       => "grp.org.shops.show.tickets.board",
+                            "parameters" => [$shop->organisation->slug, $shop->slug],
+                        ],
+                    ],
+                    [
+                        "label" => __("Reports"),
+                        "icon"  => ["fal", "fa-chart-line"],
+                        "root"  => "grp.org.shops.show.tickets.reports",
+                        "route" => [
+                            "name"       => "grp.org.shops.show.tickets.reports",
+                            "parameters" => [$shop->organisation->slug, $shop->slug],
+                        ],
+                    ],
+                ],
+            ],
+        ];
 
         if ($user->hasPermissionTo("supervisor-products.$shop->id")) {
             $navigation['setting'] = [

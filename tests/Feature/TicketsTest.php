@@ -1267,8 +1267,8 @@ test('engineers raise task and qa tickets, staff cannot, and internal tickets st
     setPermissionsTeamId($this->group->id);
     $engineer->assignRole('help-desk-clerk');
 
-    expect(collect(TicketKindEnum::raisableBy($engineer))->pluck('value')->all())->toBe(['bug', 'feature', 'task', 'qa', 'documentation', 'data_integrity'])
-        ->and(collect(TicketKindEnum::raisableBy($staff))->pluck('value')->all())->toBe(['bug', 'feature', 'documentation', 'data_integrity']);
+    expect(collect(TicketKindEnum::raisableBy($engineer))->pluck('value')->all())->toBe(['bug', 'feature', 'task', 'qa', 'documentation', 'data_integrity', 'support'])
+        ->and(collect(TicketKindEnum::raisableBy($staff))->pluck('value')->all())->toBe(['bug', 'feature', 'documentation', 'data_integrity', 'support']);
 
     $todoBefore = GetTicketBadgeData::run($engineer)['queue']['todo_week']['count'];
 

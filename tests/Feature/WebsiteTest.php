@@ -43,6 +43,7 @@ use App\Actions\Web\Webpage\ProcessWebpageTimeSeriesRecords;
 use App\Actions\Web\Webpage\StoreWebpage;
 use App\Actions\Web\Webpage\StoreWebpagePageSpeedTimeSeriesRecord;
 use App\Actions\Web\Webpage\UpdateWebpage;
+use Illuminate\Support\Arr;
 use App\Actions\Web\Webpage\LockWebpage;
 use App\Actions\Web\Webpage\UnlockWebpage;
 use App\Actions\Web\Webpage\RequestWebpageEditAccess;
@@ -1338,6 +1339,20 @@ test('UI smoke catalogue webpage routes', function (Website $website, array $cat
     expect($failures)->toBe([]);
 })->depends('launch website', 'create catalogue webpages');
 
+test('UI show blog webpage sends the webpage lock', function (Website $website, array $cat) {
+    $website->refresh();
+
+    get(route('grp.org.shops.show.web.blogs.show', [
+        $this->organisation->slug,
+        $this->shop->slug,
+        $website->slug,
+        $cat['blogWebpage']->slug,
+    ]))->assertInertia(fn (AssertableInertia $page) => $page
+        ->component('Org/Web/Webpage')
+        ->has('lock.editors')
+        ->where('lock.is_locked', false));
+})->depends('launch website', 'create catalogue webpages');
+
 test('UI smoke iris storefront routes', function (Website $website, array $cat) {
     $website->refresh();
     DetectWebsiteFromDomain::mock()->shouldReceive('parseDomain')->andReturn($website->domain);
@@ -1378,6 +1393,29 @@ test('update webpage', function (Website $website) {
 
     expect($updated)->toBeInstanceOf(Webpage::class)
         ->and($updated->id)->toBe($webpage->id);
+})->depends('launch website');
+
+test('webpage title can skip the title prefix and suffix', function (Website $website) {
+    $webpage = StoreWebpage::make()->action($website->storefront, array_merge(Webpage::factory()->definition(), ['title' => 'Bath bombs']));
+    $webpage = UpdateWebpage::make()->action($webpage, [
+        'webpage_title_prefix' => 'Wholesale',
+        'webpage_title_suffix' => '| AW',
+    ]);
+
+    expect(Arr::get($webpage->seo_data, 'use_title_prefix_suffix', true))->toBeTrue()
+        ->and(ShowIrisWebpage::make()->getWebpageData($webpage->id, [], false)['webpage_data']['title'])->toBe('Wholesale Bath bombs | AW');
+
+    $webpage = UpdateWebpage::make()->action($webpage, ['use_title_prefix_suffix' => false]);
+
+    expect(Arr::get($webpage->seo_data, 'use_title_prefix_suffix'))->toBeFalse()
+        ->and(ShowIrisWebpage::make()->getWebpageData($webpage->id, [], false)['webpage_data']['title'])->toBe('Bath bombs');
+
+    UpdateWebsite::make()->action($website, ['webpage_title_suffix' => '| Website']);
+    $webpage = UpdateWebpage::make()->action($webpage, ['use_title_prefix_suffix' => true, 'webpage_title_suffix' => null]);
+
+    expect(ShowIrisWebpage::make()->getWebpageData($webpage->id, [], false)['webpage_data']['title'])->toBe('Wholesale Bath bombs | Website');
+
+    UpdateWebsite::make()->action($website, ['webpage_title_suffix' => null]);
 })->depends('launch website');
 
 test('store redirect from webpage', function (Webpage $webpage) {

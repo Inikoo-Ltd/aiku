@@ -12,9 +12,9 @@ import Icon from "@/Components/Icon.vue"
 import TicketUserAvatar from "@/Components/Tickets/TicketUserAvatar.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faUser, faUsers, faCube, faChevronDown, faQuestionCircle, faBug, faLightbulb, faLevelUp, faTasks, faVial, faBooks, faDatabase } from "@fal"
+import { faUser, faUsers, faCube, faChevronDown, faQuestionCircle, faBug, faLightbulb, faLevelUp, faTasks, faVial, faBooks, faDatabase, faSearch } from "@fal"
 
-library.add(faUser, faUsers, faCube, faChevronDown, faQuestionCircle, faBug, faLightbulb, faLevelUp, faTasks, faVial, faBooks, faDatabase)
+library.add(faUser, faUsers, faCube, faChevronDown, faQuestionCircle, faBug, faLightbulb, faLevelUp, faTasks, faVial, faBooks, faDatabase, faSearch)
 
 const props = withDefaults(defineProps<{
     ticket: any
@@ -30,6 +30,7 @@ const kindIcons: Record<string, string> = {
     qa: "fal fa-vial",
     documentation: "fal fa-books",
     data_integrity: "fal fa-database",
+    support: "fal fa-search",
 }
 
 const readPanelState = (): boolean => {

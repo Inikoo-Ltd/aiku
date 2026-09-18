@@ -9,11 +9,12 @@
 namespace App\Actions\Tasks\UI;
 
 use App\Actions\OrgAction;
-use App\Actions\UI\Dashboards\ShowGroupDashboard;
 use App\Enums\Tasks\StaffTaskStatusEnum;
 use App\Http\Resources\Tasks\StaffTasksResource;
 use App\InertiaTable\InertiaTable;
+use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Group;
+use App\Models\SysAdmin\Organisation;
 use App\Models\Tasks\StaffTask;
 use App\Services\QueryBuilder;
 use Closure;
@@ -26,6 +27,8 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexStaffTasks extends OrgAction
 {
+    use WithStaffTasksScope;
+
     public function authorize(ActionRequest $request): bool
     {
         return $request->user() !== null;
@@ -138,20 +141,12 @@ class IndexStaffTasks extends OrgAction
     public function getBreadcrumbs(): array
     {
         return array_merge(
-            ShowGroupDashboard::make()->getBreadcrumbs(),
+            $this->tasksBreadcrumbs(),
             [
                 [
                     'type'   => 'simple',
                     'simple' => [
-                        'icon'  => 'fal fa-tasks',
-                        'route' => ['name' => 'grp.tasks.index'],
-                        'label' => __('Tasks'),
-                    ],
-                ],
-                [
-                    'type'   => 'simple',
-                    'simple' => [
-                        'route' => ['name' => 'grp.tasks.list_all'],
+                        'route' => $this->tasksRoute('list_all'),
                         'label' => __('All'),
                     ],
                 ],
@@ -161,7 +156,21 @@ class IndexStaffTasks extends OrgAction
 
     public function asController(ActionRequest $request): LengthAwarePaginator
     {
-        $this->initialisationFromGroup(group(), $request);
+        $this->initialisationFromTasksScope($request);
+
+        return $this->handle($this->group);
+    }
+
+    public function inOrganisation(Organisation $organisation, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->initialisationFromTasksScope($request, $organisation);
+
+        return $this->handle($this->group);
+    }
+
+    public function inShop(Organisation $organisation, Shop $shop, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->initialisationFromTasksScope($request, $organisation, $shop);
 
         return $this->handle($this->group);
     }

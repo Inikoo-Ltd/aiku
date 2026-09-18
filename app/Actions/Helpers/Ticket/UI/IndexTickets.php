@@ -28,6 +28,8 @@ use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use App\Models\Catalogue\Shop;
+use App\Models\SysAdmin\Organisation;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -35,6 +37,8 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexTickets extends OrgAction
 {
+    use WithTicketsScope;
+
     public function authorize(ActionRequest $request): bool
     {
         return $request->user() !== null;
@@ -321,7 +325,7 @@ class IndexTickets extends OrgAction
         return Inertia::render(
             'Tickets/Tickets',
             [
-                'breadcrumbs' => $this->getBreadcrumbs(),
+                'breadcrumbs' => $this->ticketsListBreadcrumbs(),
                 'title'       => __('Tickets'),
                 'pageHead'    => [
                     'title'   => __('Tickets'),
@@ -331,7 +335,7 @@ class IndexTickets extends OrgAction
                             'type'  => 'button',
                             'style' => 'create',
                             'label' => __('New ticket'),
-                            'route' => ['name' => 'grp.tickets.create'],
+                            'route' => $this->ticketsRoute('create'),
                         ],
                     ] : [],
                 ],
@@ -405,25 +409,23 @@ class IndexTickets extends OrgAction
         return DateIntervalEnum::from($interval)->wherePeriod($query, $column);
     }
 
-    public function getBreadcrumbs(): array
-    {
-        return array_merge(
-            ShowTicketsDashboard::make()->getBreadcrumbs(),
-            [
-                [
-                    'type'   => 'simple',
-                    'simple' => [
-                        'route' => ['name' => 'grp.tickets.list'],
-                        'label' => __('List'),
-                    ],
-                ],
-            ]
-        );
-    }
-
     public function asController(ActionRequest $request): LengthAwarePaginator
     {
-        $this->initialisationFromGroup(group(), $request);
+        $this->initialisationFromTicketsScope($request);
+
+        return $this->handle($this->group);
+    }
+
+    public function inOrganisation(Organisation $organisation, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->initialisationFromTicketsScope($request, $organisation);
+
+        return $this->handle($this->group);
+    }
+
+    public function inShop(Organisation $organisation, Shop $shop, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->initialisationFromTicketsScope($request, $organisation, $shop);
 
         return $this->handle($this->group);
     }

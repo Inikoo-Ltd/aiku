@@ -19,7 +19,6 @@ enum ProfileTabsEnum: string
 
     case DASHBOARD = 'dashboard';
     case NOTIFICATIONS = 'notifications';
-    case CLOCKING = 'clocking';
     case TIMESHEETS = 'timesheets';
 
     case HISTORY = 'history';
@@ -57,12 +56,6 @@ enum ProfileTabsEnum: string
                 'title' => __('Notifications'),
                 'icon'  => 'fal fa-bell',
             ],
-
-            ProfileTabsEnum::CLOCKING => [
-                'title' => __('Clocking'),
-                'icon'  => 'fal fa-user',
-            ],
-
 
             ProfileTabsEnum::TIMESHEETS => [
                 'title' => __('Timesheets'),
