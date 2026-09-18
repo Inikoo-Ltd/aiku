@@ -41,7 +41,7 @@ const logoutData = computed(() => ({
 
 const chatRoute = computed(() => {
     const organisation = layout.currentParams?.organisation
-    const shop = organisation ? layout.organisationsState?.[organisation]?.currentShop : null
+    const shop = layout.currentParams?.shop
 
     if (organisation && shop) {
         return { name: "grp.org.shops.show.chat.dashboard", parameters: { organisation, shop }, root: "grp.org.shops.show.chat." }
