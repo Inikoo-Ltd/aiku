@@ -13,6 +13,7 @@ namespace App\Actions\Maintenance\Inventory\OrgStockMovement;
 use App\Actions\Inventory\Location\StoreLocation;
 use App\Actions\Inventory\LocationOrgStock\StoreLocationOrgStock;
 use App\Actions\Traits\WithOrganisationSource;
+use App\Enums\Inventory\OrgStockMovement\OrgStockMovementTypeEnum;
 use App\Models\Inventory\Location;
 use App\Models\Inventory\OrgStock;
 use App\Models\Inventory\Warehouse;
@@ -50,6 +51,11 @@ class RepairNotFoundAuroraLocations
             }
 
             $movements = DB::table('org_stock_movements')->where('location_id', $placeholder->id);
+
+            if (!$this->hasStockStillInLocation($placeholder)) {
+                continue;
+            }
+
             $command->line(sprintf(
                 '%s: aurora location %s (%s) %d movements, %d org stocks',
                 $organisation->slug,
@@ -90,6 +96,22 @@ class RepairNotFoundAuroraLocations
                 RepairLocationOrgStockPurchasesPostMigration::run($orgStockId, $command);
             }
         }
+    }
+
+    private function hasStockStillInLocation(Location $placeholder): bool
+    {
+        $lastAssociationTypes = DB::table('org_stock_movements')
+            ->selectRaw('DISTINCT ON (org_stock_id) type')
+            ->where('location_id', $placeholder->id)
+            ->whereIn('type', [OrgStockMovementTypeEnum::ASSOCIATE->value, OrgStockMovementTypeEnum::DISASSOCIATE->value])
+            ->orderBy('org_stock_id')
+            ->orderByDesc('date')
+            ->orderByDesc('id');
+
+        $stocksOnPlaceholder = DB::table('org_stock_movements')->where('location_id', $placeholder->id)->distinct()->count('org_stock_id');
+        $stocksTakenOff      = DB::query()->fromSub($lastAssociationTypes, 'last_association')->where('type', OrgStockMovementTypeEnum::DISASSOCIATE->value)->count();
+
+        return $stocksTakenOff < $stocksOnPlaceholder;
     }
 
     private function getAikuLocation(Organisation $organisation, object $auroraLocationData): ?Location
