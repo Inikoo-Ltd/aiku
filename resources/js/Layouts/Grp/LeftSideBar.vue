@@ -42,15 +42,7 @@ const logoutData = computed(() => ({
 const bottomLinks = computed(() => [
     { route: "grp.tasks.index", root: "grp.tasks.", label: trans("Tasks"), tooltip: trans("Tasks: ask a colleague or a department for something"), icon: "fal fa-tasks" },
     { route: "grp.tickets.index", root: "grp.tickets.", label: trans("Tickets"), tooltip: trans("Tickets: report a problem or ask for help"), icon: "fal fa-life-ring" },
-    ...(layout?.user?.chat?.can_view
-        ? [{
-            route: layout.user.chat.is_agent ? "grp.chat.inbox" : "grp.chat.reports",
-            root: "grp.chat.",
-            label: trans("Chat"),
-            tooltip: trans("Chat with customers and colleagues"),
-            icon: "fal fa-comment-alt",
-        }]
-        : []),
+    { route: "grp.chat.dashboard", root: "grp.chat.", label: trans("Chat"), tooltip: trans("Chat with customers and colleagues"), icon: "fal fa-comment-alt" },
 ])
 
 const loadingRoute = ref<string | null>(null)

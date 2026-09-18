@@ -89,13 +89,7 @@ class GetCrossChannelSessions
 
     public function asController(ActionRequest $request): array
     {
-        $filters = $request->validated();
-
-        if ($request->user()) {
-            $filters['visible_shop_ids'] = GetChatScopeShops::make()->shopIds($request->user());
-        }
-
-        return $this->handle($filters);
+        return $this->handle($request->validated());
     }
 
     public function jsonResponse(array $result): JsonResponse

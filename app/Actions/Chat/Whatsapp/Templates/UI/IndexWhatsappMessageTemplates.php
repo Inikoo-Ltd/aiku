@@ -26,14 +26,7 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexWhatsappMessageTemplates extends OrgAction
 {
-    /** @param array<int, int> $shopIds */
-    public function inChatScope(array $shopIds, $prefix = null): LengthAwarePaginator
-    {
-        return $this->handle(null, $prefix, $shopIds);
-    }
-
-    /** @param array<int, int>|null $shopIds */
-    public function handle(?Shop $shop, $prefix = null, ?array $shopIds = null): LengthAwarePaginator
+    public function handle(Shop $shop, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -45,12 +38,7 @@ class IndexWhatsappMessageTemplates extends OrgAction
         }
 
         $queryBuilder = QueryBuilder::for(MetaMessageTemplate::class);
-
-        if ($shopIds !== null) {
-            $queryBuilder->whereIn('meta_message_templates.shop_id', $shopIds);
-        } else {
-            $queryBuilder->where('meta_message_templates.shop_id', $shop->id);
-        }
+        $queryBuilder->where('meta_message_templates.shop_id', $shop->id);
         $queryBuilder->whereHas('metaChannel', function ($query) {
             $query->where('code', 'whatsapp');
         });
@@ -59,9 +47,8 @@ class IndexWhatsappMessageTemplates extends OrgAction
             ->defaultSort('meta_message_templates.name')
             // headerMedia backs the hover preview; its foreign key has to be selected for
             // the relation to load, and eager loading keeps the list to one extra query.
-            ->with($shopIds !== null ? ['headerMedia', 'shop.organisation'] : ['headerMedia'])
+            ->with('headerMedia')
             ->select([
-                'meta_message_templates.shop_id',
                 'meta_message_templates.id',
                 'meta_message_templates.template_id',
                 'meta_message_templates.name',
@@ -78,9 +65,9 @@ class IndexWhatsappMessageTemplates extends OrgAction
             ->withQueryString();
     }
 
-    public function tableStructure($prefix = null, bool $withShopColumn = false): Closure
+    public function tableStructure($prefix = null): Closure
     {
-        return function (InertiaTable $table) use ($prefix, $withShopColumn) {
+        return function (InertiaTable $table) use ($prefix) {
             if ($prefix) {
                 $table->name($prefix)->pageName($prefix.'Page');
             }
@@ -93,10 +80,6 @@ class IndexWhatsappMessageTemplates extends OrgAction
                         'description' => __('Press synchronize to fetch the templates from Meta.'),
                     ]
                 );
-
-            if ($withShopColumn) {
-                $table->column(key: 'shop', label: __('Shop'), canBeHidden: false);
-            }
 
             $table
                 ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
