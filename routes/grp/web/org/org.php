@@ -79,6 +79,10 @@ Route::prefix("chat")
     ->name("chat.")
     ->group(__DIR__ . "/chat.php");
 
+Route::prefix("tasks")
+    ->name("tasks.")
+    ->group(__DIR__ . "/tasks.php");
+
 Route::prefix("offer")
     ->name("offer.")
     ->group(__DIR__ . "/offer.php");

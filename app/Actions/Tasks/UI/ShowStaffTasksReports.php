@@ -11,7 +11,9 @@ namespace App\Actions\Tasks\UI;
 use App\Actions\Helpers\Ticket\UI\IndexTickets;
 use App\Actions\OrgAction;
 use App\Enums\Tasks\StaffTaskStatusEnum;
+use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Group;
+use App\Models\SysAdmin\Organisation;
 use App\Models\SysAdmin\User;
 use App\Models\Tasks\StaffTask;
 use Illuminate\Support\Carbon;
@@ -26,6 +28,8 @@ use Lorisleiva\Actions\ActionRequest;
  */
 class ShowStaffTasksReports extends OrgAction
 {
+    use WithStaffTasksScope;
+
     private const string METRICS_SQL = "
         count(*) as created,
         count(*) filter (where staff_tasks.status in ('todo', 'in_progress')) as open,
@@ -160,7 +164,21 @@ class ShowStaffTasksReports extends OrgAction
 
     public function asController(ActionRequest $request): array
     {
-        $this->initialisationFromGroup(app('group'), $request);
+        $this->initialisationFromTasksScope($request);
+
+        return $this->handle($this->group, IndexTickets::make()->createdInterval());
+    }
+
+    public function inOrganisation(Organisation $organisation, ActionRequest $request): array
+    {
+        $this->initialisationFromTasksScope($request, $organisation);
+
+        return $this->handle($this->group, IndexTickets::make()->createdInterval());
+    }
+
+    public function inShop(Organisation $organisation, Shop $shop, ActionRequest $request): array
+    {
+        $this->initialisationFromTasksScope($request, $organisation, $shop);
 
         return $this->handle($this->group, IndexTickets::make()->createdInterval());
     }
@@ -171,13 +189,14 @@ class ShowStaffTasksReports extends OrgAction
 
         return Inertia::render('Tasks/StaffTasksReports', [
             'breadcrumbs'      => array_merge(
-                ShowStaffTasks::make()->getBreadcrumbs(),
-                [['type' => 'simple', 'simple' => ['route' => ['name' => 'grp.tasks.reports'], 'label' => __('Reports')]]]
+                $this->tasksBreadcrumbs(),
+                [['type' => 'simple', 'simple' => ['route' => $this->tasksRoute('reports'), 'label' => __('Reports')]]]
             ),
             'title'            => $title,
             'pageHead'         => ['title' => $title, 'icon' => ['icon' => ['fal', 'fa-chart-line'], 'title' => $title]],
             'stats'            => $stats,
             'createdIntervals' => IndexTickets::make()->createdIntervalOptions(),
+            'listAllRoute'     => $this->tasksRoute('list_all'),
         ]);
     }
 }

@@ -747,6 +747,56 @@ class GetShopNavigation
             ];
         }
 
+        $navigation["tasks"] = [
+            "label"   => __("Tasks"),
+            "icon"    => ["fal", "fa-tasks"],
+            "root"    => "grp.org.shops.show.tasks.",
+            "route"   => [
+                "name"       => "grp.org.shops.show.tasks.index",
+                "parameters" => [$shop->organisation->slug, $shop->slug],
+            ],
+            "topMenu" => [
+                "subSections" => [
+                    [
+                        "label" => __("My tasks"),
+                        "icon"  => ["fal", "fa-tasks"],
+                        "root"  => "grp.org.shops.show.tasks.index",
+                        "route" => [
+                            "name"       => "grp.org.shops.show.tasks.index",
+                            "parameters" => [$shop->organisation->slug, $shop->slug],
+                        ],
+                    ],
+                    [
+                        "label" => __("All"),
+                        "icon"  => ["fal", "fa-list"],
+                        "root"  => "grp.org.shops.show.tasks.list_all",
+                        "route" => [
+                            "name"       => "grp.org.shops.show.tasks.list_all",
+                            "parameters" => [$shop->organisation->slug, $shop->slug],
+                        ],
+                    ],
+                    [
+                        "label" => __("Board"),
+                        "icon"  => ["fal", "fa-columns"],
+                        "root"  => "grp.org.shops.show.tasks.board",
+                        "route" => [
+                            "name"       => "grp.org.shops.show.tasks.board",
+                            "parameters" => [$shop->organisation->slug, $shop->slug],
+                        ],
+                    ],
+                    [
+                        "label" => __("Reports"),
+                        "icon"  => ["fal", "fa-chart-line"],
+                        "root"  => "grp.org.shops.show.tasks.reports",
+                        "route" => [
+                            "name"       => "grp.org.shops.show.tasks.reports",
+                            "parameters" => [$shop->organisation->slug, $shop->slug],
+                        ],
+                    ],
+                ],
+            ],
+        ];
+
         if ($user->hasPermissionTo("supervisor-products.$shop->id")) {
             $navigation['setting'] = [
                 "root"    => "grp.org.shops.show.settings.",

@@ -317,6 +317,56 @@ class GetOrganisationNavigation
             ];
         }
 
+        $navigation['tasks'] = [
+            'label'   => __('Tasks'),
+            'icon'    => ['fal', 'fa-tasks'],
+            'root'    => 'grp.org.tasks.',
+            'route'   => [
+                'name'       => 'grp.org.tasks.index',
+                'parameters' => [$organisation->slug],
+            ],
+            'topMenu' => [
+                'subSections' => [
+                    [
+                        'label' => __('My tasks'),
+                        'icon'  => ['fal', 'fa-tasks'],
+                        'root'  => 'grp.org.tasks.index',
+                        'route' => [
+                            'name'       => 'grp.org.tasks.index',
+                            'parameters' => [$organisation->slug],
+                        ],
+                    ],
+                    [
+                        'label' => __('All'),
+                        'icon'  => ['fal', 'fa-list'],
+                        'root'  => 'grp.org.tasks.list_all',
+                        'route' => [
+                            'name'       => 'grp.org.tasks.list_all',
+                            'parameters' => [$organisation->slug],
+                        ],
+                    ],
+                    [
+                        'label' => __('Board'),
+                        'icon'  => ['fal', 'fa-columns'],
+                        'root'  => 'grp.org.tasks.board',
+                        'route' => [
+                            'name'       => 'grp.org.tasks.board',
+                            'parameters' => [$organisation->slug],
+                        ],
+                    ],
+                    [
+                        'label' => __('Reports'),
+                        'icon'  => ['fal', 'fa-chart-line'],
+                        'root'  => 'grp.org.tasks.reports',
+                        'route' => [
+                            'name'       => 'grp.org.tasks.reports',
+                            'parameters' => [$organisation->slug],
+                        ],
+                    ],
+                ],
+            ],
+        ];
+
         $navigation = $this->getSettingsNavs($user, $organisation, $navigation);
 
         if (isset($navigation['setting'])) {
