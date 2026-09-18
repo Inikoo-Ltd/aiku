@@ -3236,7 +3236,7 @@ test('inbound gmail message becomes an email chat session and the agent reply go
     expect(\App\Actions\Comms\Mailbox\ProcessInboundEmail::run($this->shop, 'm1'))->toBeNull();
 
     $agentUser = createAdminGuest($this->organisation->group)->getUser();
-    $agent     = ChatAgent::create(['user_id' => $agentUser->id, 'max_concurrent_chats' => 5, 'language_id' => 68, 'is_online' => false, 'is_available' => false, 'current_chat_count' => 0, 'signature' => "Kind regards,\nSig Agent"]);
+    $agent     = ChatAgent::updateOrCreate(['user_id' => $agentUser->id], ['max_concurrent_chats' => 5, 'language_id' => 68, 'is_online' => false, 'is_available' => false, 'current_chat_count' => 0, 'signature' => "Kind regards,\nSig Agent"]);
     $reply = $session->messages()->create([
         'message_text' => 'Shipped today',
         'message_type' => ChatMessageTypeEnum::TEXT,

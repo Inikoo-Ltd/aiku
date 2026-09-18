@@ -456,6 +456,7 @@ test('an upload records a portfolio log that ends ok when shopify accepts the pr
     Queue::fake();
     $shopifyUser = shopifyProductChannel($this, 'product-logged');
     $portfolio   = StorePortfolio::make()->action($shopifyUser->customerSalesChannel, $this->product, []);
+    $portfolio->update(['sku' => 'LOG-1']);
 
     ShopifyFake::fake([
         'productCreate' => ShopifyFake::graphql(['productCreate' => ['product' => null, 'userErrors' => [['field' => ['title'], 'message' => 'Title cannot be blank']]]]),
