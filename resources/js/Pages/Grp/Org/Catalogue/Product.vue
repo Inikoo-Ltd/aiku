@@ -41,7 +41,7 @@ import ProductContent from '@/Components/Showcases/Grp/ProductContent.vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import Action from '@/Components/Forms/Fields/Action.vue'
 import { faMagnifyingGlass } from '@fortawesome/free-solid-svg-icons'
-import { faShapes, faStar } from '@fas'
+import { faShapes, faStar, faExclamationTriangle } from '@fas'
 import { faHatCowboy } from "@far"
 import TableOffers from '@/Components/Shop/Offers/TableOffers.vue'
 import TableReviews from "@/Components/Shop/Reviews/TableReviews.vue"
@@ -361,26 +361,7 @@ const saveProductReview = async () => {
         </template>
     </PageHeading>
     <Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" />
-    <div v-if="retirement_decision" class="m-4 rounded-md border border-amber-300 bg-amber-50 p-4 text-sm">
-        <div class="font-semibold">{{ trans('This product needs a decision') }}</div>
-        <p class="mt-1">
-            {{ trans('At the Aurora cutover this product was merged into') }}
-            <Link :href="route(retirement_decision.replacement.route.name, retirement_decision.replacement.route.parameters)" class="font-semibold underline">{{ retirement_decision.replacement.code }}</Link>
-            {{ trans('which took over its webpage and sells the same goods with quantity discounts. It was later put back on sale without a webpage of its own, so its link on the website opens the other product.') }}
-        </p>
-        <div class="mt-3 grid gap-4 md:grid-cols-2">
-            <div>
-                <div class="font-semibold">{{ trans('Sell it only through :code', { code: retirement_decision.replacement.code }) }}</div>
-                <p class="mt-1">{{ trans('This product is taken off sale and discontinued. Customers buy the other product and get the quantity discount. If it sits in an order being processed it is hidden now and discontinued later.') }}</p>
-                <Button class="mt-2" type="negative" :label="trans('Retire this product')" :loading="retirementLoading === 'retire'" :disabled="!!retirementLoading" @click="submitRetirementDecision(retirement_decision.retire_route, 'retire')" />
-            </div>
-            <div>
-                <div class="font-semibold">{{ trans('Keep it as its own product') }}</div>
-                <p class="mt-1">{{ trans('This product gets its webpage back and stays on sale. :code goes back to its own webpage, which may need content. Review the quantity discount on :code afterwards so both do not undercut each other.', { code: retirement_decision.replacement.code }) }}</p>
-                <Button class="mt-2" type="save" :label="trans('Keep as separate product')" :loading="retirementLoading === 'keep'" :disabled="!!retirementLoading" @click="submitRetirementDecision(retirement_decision.keep_route, 'keep')" />
-            </div>
-        </div>
-    </div>
+    
     <div v-if="mini_breadcrumbs?.length" class="bg-white  px-4 py-2  w-full  border-gray-200 border-b overflow-x-auto">
         <Breadcrumb :model="mini_breadcrumbs">
             <template #item="{ item, index }">
@@ -396,6 +377,37 @@ const saveProductReview = async () => {
                 </div>
             </template>
         </Breadcrumb>
+    </div>
+    
+    <div v-if="retirement_decision" class="m-4 rounded-md border border-amber-300 bg-amber-50 p-4 text-sm">
+        <div class="flex items-center gap-2 text-base font-semibold text-amber-800">
+            <FontAwesomeIcon :icon="faExclamationTriangle" fixed-width aria-hidden="true" />
+            {{ trans('This product needs a decision') }}
+        </div>
+        <p class="mt-2 text-gray-700">
+            {{ trans('At the Aurora cutover this product was merged into') }}
+            <Link :href="route(retirement_decision.replacement.route.name, retirement_decision.replacement.route.parameters)" class="font-semibold underline">{{ retirement_decision.replacement.code }}</Link>
+            {{ trans('which took over its webpage and sells the same goods with quantity discounts. It was later put back on sale without a webpage of its own, so its link on the website opens the other product.') }}
+        </p>
+
+        <div class="mt-4 font-semibold text-gray-800">{{ trans('Choose one option') }}:</div>
+        <div class="mt-2 flex flex-col gap-3 md:flex-row md:items-stretch">
+            <div class="flex flex-1 flex-col rounded-md border border-red-200 bg-white p-4">
+                <div class="text-xs font-semibold uppercase tracking-wide text-red-600">{{ trans('Option 1') }}</div>
+                <div class="mt-1 font-semibold text-gray-900">{{ trans('Sell it only through :code', { code: retirement_decision.replacement.code }) }}</div>
+                <p class="mt-2 flex-1 text-gray-600">{{ trans('This product is taken off sale and discontinued. Customers buy the other product and get the quantity discount. If it sits in an order being processed it is hidden now and discontinued later.') }}</p>
+                <Button class="mt-3 self-start" type="negative" :label="trans('Retire this product')" :loading="retirementLoading === 'retire'" :disabled="!!retirementLoading" @click="submitRetirementDecision(retirement_decision.retire_route, 'retire')" />
+            </div>
+
+            <div class="flex items-center justify-center text-xs font-semibold uppercase text-gray-400">{{ trans('or') }}</div>
+
+            <div class="flex flex-1 flex-col rounded-md border border-green-200 bg-white p-4">
+                <div class="text-xs font-semibold uppercase tracking-wide text-green-600">{{ trans('Option 2') }}</div>
+                <div class="mt-1 font-semibold text-gray-900">{{ trans('Keep it as its own product') }}</div>
+                <p class="mt-2 flex-1 text-gray-600">{{ trans('This product gets its webpage back and stays on sale. :code goes back to its own webpage, which may need content. Review the quantity discount on :code afterwards so both do not undercut each other.', { code: retirement_decision.replacement.code }) }}</p>
+                <Button class="mt-3 self-start" type="save" :label="trans('Keep as separate product')" :loading="retirementLoading === 'keep'" :disabled="!!retirementLoading" @click="submitRetirementDecision(retirement_decision.keep_route, 'keep')" />
+            </div>
+        </div>
     </div>
 
     <component :is="component" :data="props[currentTab]" :tab="currentTab" :handleTabUpdate :salesData="salesData" />
