@@ -29,14 +29,12 @@ const props = defineProps<{
     title: string
     pageHead: any
     breadcrumbs: any
-    organisation?: { id: number; slug: string; name: string } | null
-    is_read_only?: boolean
+    organisation: { id: number; slug: string; name: string }
     inboxes: Array<{
         id: number
         name: string
         slug: string
         type: string | null
-        organisation?: { id: number; slug: string; name: string }
         channels: Array<{ key: string; name: string; unread: number }>
     }>
     selectedSessionUlid?: string | null
@@ -167,20 +165,6 @@ const mapSession = (s: SessionAPI): Contact => ({
     ai_summary: s.ai_summary ?? null,
 })
 
-const isReadOnly = computed(() => props.is_read_only === true)
-
-const currentOrganisation = computed(() =>
-    selectedSession.value?.organisation
-        ?? selectedInbox.value?.organisation
-        ?? props.organisation
-        ?? null
-)
-
-const orgSlugFor = (entity: any) =>
-    entity?.organisation?.slug
-        ?? props.inboxes?.find((inbox) => inbox.id === entity?.shop?.id)?.organisation?.slug
-        ?? currentOrganisation.value?.slug
-
 const selectedShopId = ref<number | null>(props.inboxes?.[0]?.id ?? null)
 const selectedChannel = ref<string | null>(props.inboxes?.[0]?.channels?.[0]?.key ?? null)
 const expandedInboxIds = ref<number[]>(props.inboxes?.[0] ? [props.inboxes[0].id] : [])
@@ -194,7 +178,7 @@ const buildParams = (page: number) => ({
                 ? { highlighted: 1, statuses: [activeTab.value] }
                 : { statuses: [activeTab.value] }),
     assigned_to_me: myAgentId,
-    ...(selectedInbox.value?.organisation?.id ? { organisation_id: selectedInbox.value.organisation.id } : {}),
+    organisation_id: props.organisation.id,
     page,
     ...(selectedShopId.value && !highlightView.value ? { shop_id: selectedShopId.value } : {}),
     // ponytail: the API ignores `channel` until chat sessions carry one; sent so the intent is visible.
@@ -289,7 +273,7 @@ const markSpam = async (c: Contact, spam: boolean) => {
     isSpamming.value = { ...isSpamming.value, [c.ulid]: true }
     try {
         const routeName = sessionRoute(spam ? "spam" : "not_spam", c)
-        await axios.patch(route(routeName, [orgSlugFor(c), c.ulid]), {}, { withCredentials: true })
+        await axios.patch(route(routeName, [props.organisation.slug, c.ulid]), {}, { withCredentials: true })
         // It moved to (or out of) the Spam tab — drop it from the current list.
         contacts.value = contacts.value.filter((x) => x.ulid !== c.ulid)
         if (selectedSession.value?.ulid === c.ulid) {
@@ -424,7 +408,7 @@ const selectChannel = (shopId: number, channelKey: string) => {
     newChatVisible.value = false
     clearAgentFilter()
 
-    const baseUrl = route("grp.chat.inbox")
+    const baseUrl = route("grp.org.chat.inbox", [props.organisation.slug])
     window.history.replaceState(window.history.state, "", baseUrl)
 
     reloadContacts()
@@ -489,7 +473,7 @@ const patchSession = async (c: Contact, routeName: string, method: "patch" | "de
     if (isSpamming.value[c.ulid]) return
     isSpamming.value = { ...isSpamming.value, [c.ulid]: true }
     try {
-        const url = route(routeName, [orgSlugFor(c), c.ulid])
+        const url = route(routeName, [props.organisation.slug, c.ulid])
         await (method === "delete" ? axios.delete(url, { withCredentials: true }) : axios.patch(url, body, { withCredentials: true }))
         return true
     } catch (e: any) {
@@ -653,6 +637,7 @@ const openPendingSession = async () => {
             params: {
                 ulid,
                 assigned_to_me: myAgentId,
+                organisation_id: props.organisation.id,
                 page: 1,
                 limit: 1,
             },
@@ -808,7 +793,7 @@ const onWhatsappChatCreated = (session: any) => {
         status: session.status,
         priority: session.priority,
         shop: session.shop,
-        organisation: session.organisation ?? currentOrganisation.value,
+        organisation: props.organisation,
         phone_number: session.phone_number,
         customer: session.customer_id ? { id: session.customer_id } : null,
         assigned_agent: session.assigned_agent ?? null,
@@ -859,8 +844,8 @@ const onAssignSelfSuccess = async () => {
 
 const updateUrl = (ulid: string) => {
     const url = selectedChannel.value === "whatsapp"
-        ? route("grp.chat.inbox") + `?channel=whatsapp&session=${ulid}`
-        : route("grp.chat.inbox.conversation", [ulid])
+        ? route("grp.org.chat.inbox", [props.organisation.slug]) + `?channel=whatsapp&session=${ulid}`
+        : route("grp.org.chat.inbox.conversation", [props.organisation.slug, ulid])
 
     window.history.replaceState(window.history.state, "", url)
 }
@@ -885,7 +870,7 @@ const handleSendMessage = async ({ text, image, message_type, is_email_notif }: 
         }
 
         await axios.post(
-            route("grp.org.chat.agents.messages.send", [orgSlugFor(selectedSession.value), selectedSession.value.ulid]),
+            route("grp.org.chat.agents.messages.send", [props.organisation.slug, selectedSession.value.ulid]),
             formData,
             { headers: { "Content-Type": "multipart/form-data" }, withCredentials: true }
         )
@@ -1426,14 +1411,12 @@ onUnmounted(() => {
             <div v-else class="h-full">
                 <WhatsappMessageAreaAgent v-if="activeChannel === 'whatsapp'"
                     :messages="messages" :session="selectedSession"
-                    :organisation-slug="currentOrganisation?.slug"
-                    :read-only="isReadOnly"
+                    :organisation-slug="organisation.slug"
                     @back="selectedSession = null" @messages-read="onMessagesRead"
                     @assign-self-success="onAssignSelfSuccess"
                     @close-session="closeSession"
                     @view-profile="showProfilePanel" />
                 <MessageAreaAgent v-else :messages="messages" :session="selectedSession"
-                    :read-only="isReadOnly"
                     @back="selectedSession = null" @send-message="handleSendMessage"
                     @close-session="closeSession" @view-history="showHistoryPanel"
                     @view-user-profile="showProfilePanel" @view-message-details="showMessageDetailsPanel"

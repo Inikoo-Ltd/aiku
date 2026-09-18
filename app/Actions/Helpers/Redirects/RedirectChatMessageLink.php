@@ -28,7 +28,7 @@ class RedirectChatMessageLink extends OrgAction
             ]));
         }
 
-        return Redirect::to(route('grp.chat.reports'));
+        return Redirect::to(route('grp.chat.dashboard'));
     }
 
     public function asController(ChatMessage $chatMessage, ActionRequest $request): RedirectResponse

@@ -15,9 +15,11 @@ use App\Actions\Web\Webpage\StoreWebpage;
 use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Enums\Web\Webpage\WebpageSubTypeEnum;
 use App\Enums\Web\Webpage\WebpageTypeEnum;
+use App\Models\Web\WebBlockType;
 use App\Models\Web\Webpage;
 use App\Models\Web\Website;
 use Illuminate\Console\Command;
+use Illuminate\Support\Arr;
 use Laravel\Nightwatch\Facades\Nightwatch;
 
 class RepairCreateSystemPages
@@ -44,12 +46,30 @@ class RepairCreateSystemPages
                     'sub_type' => $subType,
                 ]);
             } elseif (count($this->getWebpageBlocksByType($webpage, $systemPage['web_block'])) == 0) {
+                $this->replaceOlderSystemWebBlocks($webpage, $systemPage, $command);
                 $this->restoreSystemWebBlock($webpage, $systemPage['web_block'], $command);
             }
 
             $website->update([$systemPage['website_field'] => $webpage->id]);
 
             $command?->info("{$systemPage['title']}: {$webpage->canonical_url}");
+        }
+    }
+
+    /**
+     * @param  array{web_block: string, replaces_web_blocks?: array<int, string>}  $systemPage
+     */
+    protected function replaceOlderSystemWebBlocks(Webpage $webpage, array $systemPage, ?Command $command = null): void
+    {
+        if (!WebBlockType::where('code', $systemPage['web_block'])->exists()) {
+            return;
+        }
+
+        foreach (Arr::get($systemPage, 'replaces_web_blocks', []) as $olderWebBlockCode) {
+            if (count($this->getWebpageBlocksByType($webpage, $olderWebBlockCode)) > 0) {
+                $this->deleteWebBlocksByCode($webpage, $olderWebBlockCode);
+                $command?->line("{$webpage->code}: {$olderWebBlockCode} web block replaced by {$systemPage['web_block']}");
+            }
         }
     }
 

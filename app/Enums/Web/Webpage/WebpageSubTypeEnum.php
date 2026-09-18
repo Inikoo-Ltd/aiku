@@ -62,14 +62,14 @@ enum WebpageSubTypeEnum: string
     /**
      * System pages that back a website column, keyed by sub type.
      *
-     * @return array<string, array{web_block: string, website_field: string, url: string, title: string}>
+     * @return array<string, array{web_block: string, website_field: string, url: string, title: string, replaces_web_blocks?: array<int, string>}>
      */
     public static function systemPages(): array
     {
         return [
             self::LOGIN_PAGE->value           => ['web_block' => 'login', 'website_field' => 'login_page_id', 'url' => 'login', 'title' => 'Login'],
             self::REGISTER_PAGE->value        => ['web_block' => 'register', 'website_field' => 'register_page_id', 'url' => 'register', 'title' => 'Register'],
-            self::REGISTER_DASHBOARD_PAGE->value => ['web_block' => 'register-dashboard', 'website_field' => 'register_dashboard_page_id', 'url' => 'register-dashboard', 'title' => 'Register Dashboard'],
+            self::REGISTER_DASHBOARD_PAGE->value => ['web_block' => 'register-dashboard-2', 'website_field' => 'register_dashboard_page_id', 'url' => 'register-dashboard', 'title' => 'Register Dashboard', 'replaces_web_blocks' => ['register-dashboard']],
             self::FORGOT_PASSWORD_PAGE->value => ['web_block' => 'forgot-password', 'website_field' => 'forgot_password_page_id', 'url' => 'forgot-password', 'title' => 'Forgot Password'],
             self::BLOG_DASHBOARD_PAGE->value  => ['web_block' => 'blog-categories', 'website_field' => 'blog_dashboard_page_id', 'url' => 'blog', 'title' => 'Our Blog'],
         ];

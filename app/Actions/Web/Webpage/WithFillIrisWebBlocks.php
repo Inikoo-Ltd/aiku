@@ -109,7 +109,7 @@ trait WithFillIrisWebBlocks
             $parsedWebBlocks[$key] = GetIrisWebBlockLogin::run($webpage, $webBlock);
         } elseif ($webBlockType == 'register') {
             $parsedWebBlocks[$key] = GetIrisWebBlockRegister::run($webpage, $webBlock);
-        } elseif ($webBlockType == 'register-dashboard') {
+        } elseif (in_array($webBlockType, ['register-dashboard', 'register-dashboard-2'])) {
             $parsedWebBlocks[$key] = GetIrisWebBlockRegisterDashboard::run($webpage, $webBlock);
         } elseif ($webBlockType == 'forgot-password') {
             $parsedWebBlocks[$key] = GetIrisWebBlockForgotPassword::run($webpage, $webBlock);
