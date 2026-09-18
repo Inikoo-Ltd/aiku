@@ -51,16 +51,31 @@ class RepairFaireInvoiceTax
         $rows   = [];
         $record = [];
 
-        Invoice::query()
+        $query = Invoice::query()
             ->where('type', InvoiceTypeEnum::INVOICE)
             ->whereNotNull('order_id')
             ->whereHas('shop', fn ($query) => $query->where('type', ShopTypeEnum::EXTERNAL))
             ->when($command->option('shop'), fn ($query, $slug) => $query->whereHas('shop', fn ($shopQuery) => $shopQuery->where('slug', $slug)))
             ->when($command->option('from'), fn ($query, $from) => $query->where('date', '>=', $from.' 00:00:00'))
-            ->with(['shop.organisation', 'order'])
-            ->orderBy('id')
-            ->chunkById(100, function ($invoices) use (&$rows, &$record, $command) {
+            ->with(['shop.organisation', 'order']);
+
+        $invoiceCount = (clone $query)->count();
+        if ($invoiceCount == 0) {
+            $command->info('No Faire invoices to check.');
+
+            return 0;
+        }
+
+        $progressBar = $command->getOutput()->createProgressBar($invoiceCount);
+        $progressBar->setFormat(' %current%/%max% [%bar%] %percent:3s%% %elapsed:6s%/%estimated:-6s% %message%');
+        $progressBar->setMessage('0 affected');
+        $progressBar->start();
+
+        $query->orderBy('id')
+            ->chunkById(100, function ($invoices) use (&$rows, &$record, $command, $progressBar) {
                 foreach ($invoices as $invoice) {
+                    $progressBar->advance();
+                    $progressBar->setMessage(count($rows).' affected');
                     $order = $invoice->order;
                     if (!$order?->external_id) {
                         continue;
@@ -104,6 +119,9 @@ class RepairFaireInvoiceTax
                     }
                 }
             });
+
+        $progressBar->finish();
+        $command->newLine(2);
 
         $headers = ['Organisation', 'Shop', 'Invoice', 'Date', 'Net', 'Tax', 'Faire tax', 'Δ tax', 'Pay status'];
         $command->table($headers, $rows);
