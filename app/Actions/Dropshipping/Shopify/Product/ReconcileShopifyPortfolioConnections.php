@@ -118,7 +118,9 @@ class ReconcileShopifyPortfolioConnections
             'shows_as_connected'  => (bool) $portfolio->platform_status,
             'misreported'         => (bool) $portfolio->platform_status && !$status->isConnected(),
             'repair'              => $repair['repair'],
-            'repair_product_id'   => $repair['repair_product_id']
+            'repair_product_id'   => $repair['repair_product_id'],
+            'repair_variant_id'   => $repair['repair_variant_id'],
+            'repair_at_location'  => $repair['repair_at_location']
         ];
     }
 
@@ -176,35 +178,48 @@ class ReconcileShopifyPortfolioConnections
     }
 
     /**
-     * @return array{repair: string, repair_product_id: string|null}
+     * @return array{repair: string, repair_product_id: string|null, repair_variant_id: string|null, repair_at_location: bool}
      */
     private function resolveRepair(PortfolioConnectionAuditEnum $status, array $candidateSkus, array $snapshot): array
     {
+        $noRepair = ['repair_product_id' => null, 'repair_variant_id' => null, 'repair_at_location' => false];
+
         if ($status->isConnected()) {
-            return ['repair' => 'none', 'repair_product_id' => null];
+            return ['repair' => 'none', ...$noRepair];
         }
 
         foreach ($candidateSkus as $candidateSku) {
             $isActiveByProductId = $snapshot['product_ids_by_sku'][$candidateSku] ?? [];
 
             if (count($isActiveByProductId) > 1) {
-                return ['repair' => 'ambiguous', 'repair_product_id' => null];
+                return ['repair' => 'ambiguous', ...$noRepair];
             }
 
             if (count($isActiveByProductId) === 1) {
                 $productId = array_key_first($isActiveByProductId);
 
+                $variantsCarryingSku = array_values(array_filter(
+                    $snapshot['products'][$productId]['variants'] ?? [],
+                    fn (array $variant) => $variant['sku'] && Str::lower($variant['sku']) === $candidateSku
+                ));
+
+                if (count($variantsCarryingSku) !== 1) {
+                    return ['repair' => 'ambiguous', ...$noRepair];
+                }
+
                 /* A draft or archived product carrying the SKU is still a real match to re-link to,
                    it just has to be published first, so it is not the same dead end as a SKU the
                    shop has never heard of. */
                 return [
-                    'repair'            => $isActiveByProductId[$productId] ? 'repairable' : 'match_not_active',
-                    'repair_product_id' => $productId
+                    'repair'             => $isActiveByProductId[$productId] ? 'repairable' : 'match_not_active',
+                    'repair_product_id'  => $productId,
+                    'repair_variant_id'  => $variantsCarryingSku[0]['id'],
+                    'repair_at_location' => $variantsCarryingSku[0]['at_location']
                 ];
             }
         }
 
-        return ['repair' => 'unresolved', 'repair_product_id' => null];
+        return ['repair' => 'unresolved', ...$noRepair];
     }
 
     /**

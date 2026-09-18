@@ -38,6 +38,7 @@ use App\Actions\Dropshipping\Shopify\SetShopifyChannelLinksExistingVariants;
 use App\Actions\Dropshipping\Shopify\WithShopifyPortfolioMatching;
 use App\Actions\Retina\Dropshipping\Portfolio\UnlinkRetinaPortfolio;
 use App\Actions\Dropshipping\Shopify\Product\MatchPortfolioToCurrentShopifyProduct;
+use App\Actions\Dropshipping\Shopify\Product\RepairShopifyPortfolioConnections;
 use App\Actions\Dropshipping\Shopify\Product\UpdateShopifyInventory;
 use App\Actions\Dropshipping\Portfolio\Logs\UpdatePlatformPortfolioLog;
 use App\Enums\Ordering\PlatformLogs\PlatformPortfolioLogsStatusEnum;
@@ -931,4 +932,43 @@ test('an upload throwing a non-Exception error records it on the portfolio inste
 
     expect(fn () => StoreNewProductToCurrentShopify::make()->asJob($portfolio->refresh()))
         ->toThrow(Error::class);
+});
+
+test('repairing a channel re-points portfolios whose product is gone onto the one active listing with the same sku, without writing to shopify', function () {
+    Queue::fake();
+    $shopifyUser = shopifyProductChannel($this, 'product-repair-connections');
+    $channel     = $shopifyUser->customerSalesChannel;
+
+    $gone = StorePortfolio::make()->action($channel, $this->product, []);
+    $gone->update(['sku' => 'REPAIR-1', 'platform_product_id' => 'gid://shopify/Product/6001', 'platform_product_variant_id' => 'gid://shopify/ProductVariant/6001', 'platform_status' => true, 'errors_response' => ['message' => 'Throttled']]);
+
+    $variantEdge = fn (string $variantId, string $sku, string $productId, string $status, bool $atLocation) => ['node' => [
+        'id'            => $variantId,
+        'sku'           => $sku,
+        'product'       => ['id' => $productId, 'status' => $status],
+        'inventoryItem' => ['inventoryLevel' => $atLocation ? ['id' => 'gid://shopify/InventoryLevel/1'] : null]
+    ]];
+
+    ShopifyFake::fake([
+        'auditProductVariants' => ShopifyFake::graphql(['productVariants' => ['pageInfo' => ['hasNextPage' => false, 'endCursor' => null], 'edges' => [
+            $variantEdge('gid://shopify/ProductVariant/9101', 'repair-1', 'gid://shopify/Product/9100', 'ACTIVE', false),
+            $variantEdge('gid://shopify/ProductVariant/9201', 'other', 'gid://shopify/Product/9200', 'ACTIVE', true),
+        ]]]),
+    ]);
+
+    $dryRun = RepairShopifyPortfolioConnections::run($channel, null, true);
+
+    expect($dryRun['repaired'])->toBe(1)
+        ->and($gone->refresh()->platform_product_id)->toBe('gid://shopify/Product/6001');
+
+    $result = RepairShopifyPortfolioConnections::run($channel);
+    $gone->refresh();
+
+    expect($result)->toMatchArray(['complete' => true, 'repaired' => 1, 'connected' => 0, 'not_at_location' => 1, 'portfolio_ids' => [$gone->id]])
+        ->and($gone->platform_product_id)->toBe('gid://shopify/Product/9100')
+        ->and($gone->platform_product_variant_id)->toBe('gid://shopify/ProductVariant/9101')
+        ->and($gone->platform_status)->toBeFalse()
+        ->and($gone->errors_response)->toBeNull()
+        ->and($gone->isShopifyVariantAdopted())->toBeTrue()
+        ->and(array_unique(array_column(ShopifyFake::$requests, 'operation')))->toBe(['auditProductVariants']);
 });
