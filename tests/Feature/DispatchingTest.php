@@ -4463,3 +4463,27 @@ test('a second label cannot be created for a delivery note while one is in progr
     StoreShipment::make()->action($deliveryNote, $shipper, ['tracking' => 'TRK'.Str::random(4)]);
     expect($deliveryNote->refresh()->shipments()->count())->toBe(1);
 });
+
+test('order transactions only show the batch code column once a picking carries one', function () {
+    [$deliveryNote, $deliveryNoteItem] = handlingDeliveryNoteWithPicking($this);
+    $order = $deliveryNote->orders->first();
+
+    $columnKeys = function () use ($order) {
+        request()->setRouteResolver(fn () => new Route('GET', 'test', []));
+        $table = new InertiaTable(request());
+        \App\Actions\Ordering\Transaction\UI\IndexTransactions::make()->tableStructure($order)($table);
+
+        return (new \ReflectionProperty(InertiaTable::class, 'columns'))->getValue($table)->pluck('key');
+    };
+
+    expect($columnKeys())->not->toContain('batch_codes');
+
+    $batchCode = StoreBatchCode::make()->action($this->warehouse, [
+        'code'         => 'BC-'.Str::random(6),
+        'org_stock_id' => $deliveryNoteItem->org_stock_id,
+        'expiry_date'  => now()->addYear(),
+    ]);
+    $deliveryNoteItem->pickings()->update(['batch_code_id' => $batchCode->id]);
+
+    expect($columnKeys())->toContain('batch_codes');
+});
