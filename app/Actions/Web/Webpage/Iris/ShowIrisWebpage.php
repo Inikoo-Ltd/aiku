@@ -56,7 +56,11 @@ class ShowIrisWebpage
 
 
         $webpageImg = [];
-        if ($webpage->seoImage) {
+        if ($webpage->seo_image_url) {
+            $webpageImg = [
+                'url'   => $webpage->seo_image_url
+            ];
+        } elseif ($webpage->seoImage) {
             $webpageImg = $webpage->imageSources(1200, 1200, 'seoImage');
         }
 
