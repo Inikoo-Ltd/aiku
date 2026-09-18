@@ -49,6 +49,7 @@ use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Actions\Web\Webpage\CloseWebpage;
 use App\Actions\Catalogue\Product\RetireProductIntoReplacement;
 use App\Actions\Catalogue\Product\KeepRetiredProductAsSeparate;
+use App\Actions\Catalogue\Product\UI\EditProduct;
 use App\Actions\Web\Webpage\Iris\ShowIrisWebpage;
 use App\Enums\Catalogue\Product\ProductStatusEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
@@ -1594,20 +1595,14 @@ test('keep retired product as separate finds the shared webpage by url when the 
         ->and($replacement->refresh()->webpage_id)->not->toBe($sharedPage->id);
 })->depends('create shop');
 
-test('retired product put back on sale shows the decision box again and hides create webpage', function (Shop $shop) {
+test('retired product edit form hides the for sale toggle', function (Shop $shop) {
     [$retired] = createRetiredProductSharingReplacementWebpage($shop, [['id' => $this->tradeUnit1->id, 'quantity' => 1]]);
     $retired = RetireProductIntoReplacement::make()->action($retired);
-    $retired = UpdateProduct::make()->action($retired, ['is_for_sale' => true]);
 
-    expect($retired->state)->toBe(ProductStateEnum::DISCONTINUED);
+    $fields = collect(EditProduct::make()->getBlueprint($retired->refresh()))->pluck('fields')->collapse();
 
-    get(route('grp.org.shops.show.catalogue.products.all_products.show', [$shop->organisation->slug, $shop->slug, $retired->slug]))
-        ->assertInertia(
-            fn (AssertableInertia $page) => $page
-                ->whereNot('retirement_decision', null)
-                ->where('pageHead.actions', fn ($actions) => collect($actions)->doesntContain('label', 'Create Webpage'))
-                ->etc()
-        );
+    expect($retired->state)->toBe(ProductStateEnum::DISCONTINUED)
+        ->and($fields->has('is_for_sale'))->toBeFalse();
 })->depends('create shop');
 
 test('retired product off sale hides create webpage while the replacement holds its url', function (Shop $shop) {
@@ -1623,10 +1618,9 @@ test('retired product off sale hides create webpage while the replacement holds 
         );
 })->depends('create shop');
 
-test('keep retired product as separate reactivates a discontinued product put back on sale', function (Shop $shop) {
+test('keep retired product as separate reactivates a discontinued product', function (Shop $shop) {
     [$retired, , $sharedPage] = createRetiredProductSharingReplacementWebpage($shop, [['id' => $this->tradeUnit1->id, 'quantity' => 1]]);
     $retired = RetireProductIntoReplacement::make()->action($retired);
-    $retired = UpdateProduct::make()->action($retired, ['is_for_sale' => true]);
 
     $retired = KeepRetiredProductAsSeparate::make()->action($retired);
 

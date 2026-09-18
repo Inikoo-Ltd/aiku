@@ -1000,7 +1000,7 @@ class ShowProduct extends OrgAction
      */
     private function getRetirementDecision(Product $product): ?array
     {
-        if (!Arr::get($product->data, 'retire_at_cutover') || ($product->state == ProductStateEnum::DISCONTINUED && !$product->is_for_sale)) {
+        if (!Arr::get($product->data, 'retire_at_cutover') || $product->state == ProductStateEnum::DISCONTINUED) {
             return null;
         }
 

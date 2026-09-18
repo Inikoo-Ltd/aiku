@@ -8,6 +8,7 @@
 
 namespace App\Actions\Catalogue\Product\UI;
 
+use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
 use App\Actions\Traits\WithUnitsChangeConfirmation;
@@ -262,7 +263,7 @@ class EditProduct extends OrgAction
         $barcodes  = $product->tradeUnits->pluck('barcode')->filter()->unique();
         $languages = [$product->shop->language_id => LanguageResource::make($product->shop->language)->resolve()];
 
-        $canEditNotForSale = true;
+        $canEditNotForSale = $product->state != ProductStateEnum::DISCONTINUED;
         if ($product->masterProduct && !$product->masterProduct->is_for_sale) {
             $canEditNotForSale = false;
         }
