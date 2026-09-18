@@ -8,6 +8,7 @@
 
 namespace App\Actions\UI\Grp\Layout;
 
+use App\Actions\Chat\GetChatCapabilities;
 use App\Enums\SysAdmin\Authorisation\RolesEnum;
 use App\Models\SysAdmin\User;
 use Illuminate\Support\Arr;
@@ -154,35 +155,28 @@ class GetGroupNavigation
             ],
         ];
 
-        $groupNavigation['chat'] = [
-            'label'   => __('Chat'),
-            'tooltip' => __('Chat'),
-            'icon'    => ['fal', 'fa-comment-alt'],
-            'root'    => 'grp.chat.',
-            'route'   => [
-                'name' => 'grp.chat.dashboard',
-            ],
-            'topMenu' => [
-                'subSections' => [
-                    [
-                        'label'   => __('Messaging'),
-                        'tooltip' => __('Messaging'),
-                        'icon'    => ['fal', 'fa-comments'],
-                        'root'    => 'grp.chat.staff.index',
-                        'route'   => [
-                            'name' => 'grp.chat.staff.index',
+        $chat = GetChatCapabilities::run($user);
+
+        if ($chat['can_view']) {
+            $groupNavigation['chat'] = [
+                'label'   => __('Chat'),
+                'tooltip' => __('Chat'),
+                'icon'    => ['fal', 'fa-comment-alt'],
+                'root'    => 'grp.chat.',
+                'route'   => [
+                    'name' => $chat['is_agent'] ? 'grp.chat.inbox' : 'grp.chat.reports',
+                ],
+                'topMenu' => [
+                    'subSections' => [
+                        [
+                            'label'   => __('Reports'),
+                            'tooltip' => __('Reports'),
+                            'icon'    => ['fal', 'fa-chart-line'],
+                            'root'    => 'grp.chat.reports',
+                            'route'   => [
+                                'name' => 'grp.chat.reports',
+                            ],
                         ],
-                    ],
-                    [
-                        'label'   => __('Dashboard'),
-                        'tooltip' => __('Dashboard'),
-                        'icon'    => ['fal', 'fa-comment-alt'],
-                        'root'    => 'grp.chat.dashboard',
-                        'route'   => [
-                            'name' => 'grp.chat.dashboard',
-                        ],
-                    ],
-                    [
                         [
                             'label'   => __('Inbox'),
                             'tooltip' => __('Inbox'),
@@ -192,19 +186,19 @@ class GetGroupNavigation
                                 'name' => 'grp.chat.inbox',
                             ],
                         ],
+                        [
+                            'label'   => __('Settings'),
+                            'tooltip' => __('Settings'),
+                            'icon'    => ['fal', 'fa-sliders-h'],
+                            'root'    => 'grp.chat.settings',
+                            'route'   => [
+                                'name' => 'grp.chat.settings',
+                            ],
+                        ],
                     ],
-                    // [
-                    //     'label'   => __('Agents'),
-                    //     'tooltip' => __('Agents'),
-                    //     'icon'    => ['fal', 'fa-headset'],
-                    //     'root'    => 'grp.chat.agents.',
-                    //     'route'   => [
-                    //         'name' => 'grp.chat.agents.show',
-                    //     ],
-                    // ],
                 ],
-            ],
-        ];
+            ];
+        }
 
         $groupNavigation['devops'] = [
             'label'   => __('Devops'),

@@ -8,6 +8,7 @@
 
 namespace App\Actions\Chat\ChatSession;
 
+use App\Actions\Chat\GetChatScopeShops;
 use App\Enums\CRM\Livechat\ChatAssignmentStatusEnum;
 use App\Enums\CRM\Livechat\ChatEventTypeEnum;
 use App\Enums\CRM\Livechat\ChatSenderTypeEnum;
@@ -60,8 +61,12 @@ class GetChatSessions
             $filters['web_user_id'] = $user->id;
             $filters['include_spam'] = true;
             unset($filters['assigned_to_me'], $filters['view_team'], $filters['is_spam'], $filters['trashed'], $filters['highlighted']);
-        } elseif ($user && !empty($filters['assigned_to_me'])) {
-            $filters['assigned_to_me'] = $user->id;
+        } elseif ($user) {
+            if (!empty($filters['assigned_to_me'])) {
+                $filters['assigned_to_me'] = $user->id;
+            }
+
+            $filters['visible_shop_ids'] = GetChatScopeShops::make()->shopIds($user);
         }
 
         return $this->handle($filters);
@@ -176,6 +181,10 @@ class GetChatSessions
                     });
                 }
             }
+        }
+
+        if (isset($filters['visible_shop_ids'])) {
+            $query->whereIn('shop_id', $filters['visible_shop_ids']);
         }
 
         if (!empty($filters['organisation_id'])) {
