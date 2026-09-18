@@ -24,13 +24,9 @@ class UpdateAndUploadRetinaBulkPortfolioPriceToCurrentChannel extends RetinaActi
     {
         $items = Arr::pull($modelData, 'items');
 
-        foreach ($items as $itemId) {
-            $portfolio = Portfolio::find($itemId);
+        $portfolios = Portfolio::whereIn('id', $items)->with('item')->get();
 
-            if (! $portfolio) {
-                continue;
-            }
-
+        foreach ($portfolios as $portfolio) {
             try {
                 UpdateAndUploadRetinaPortfolioToCurrentChannel::run($portfolio, $modelData, $isDraft);
             } catch (ValidationException) {

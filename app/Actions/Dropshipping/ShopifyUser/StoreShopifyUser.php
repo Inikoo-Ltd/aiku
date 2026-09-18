@@ -109,7 +109,7 @@ class StoreShopifyUser extends RetinaAction
         ]);
 
         if ($wasClosed) {
-            foreach ($customerSalesChannel->portfolios as $portfolio) {
+            foreach ($customerSalesChannel->portfolios()->with(['group', 'organisation', 'shop'])->get() as $portfolio) {
                 UpdatePortfolio::run($portfolio, ['status' => true]);
             }
         }
