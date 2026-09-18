@@ -711,7 +711,8 @@ const cancelAssign = () => {
 					:force-fallback="true"
 					:fallback-tolerance="4"
 					:disabled="!can_manage"
-					class="flex-1 space-y-2 min-h-24 max-h-[70vh] overflow-y-auto pr-0.5"
+					class="thinScrollbar flex-1 space-y-2 min-h-24 overflow-y-auto pr-1"
+					:class="hasColumnToggle(column.key) ? 'max-h-[70vh]' : 'max-h-[calc(70vh+2.25rem)]'"
 					@start="dragging = true"
 					@end="onDragEnd"
 					@change="onMoved(column, $event)">
@@ -826,3 +827,23 @@ const cancelAssign = () => {
 		@updated="isDropDialogSaved = true" />
 	<TicketQuickLook v-model:ticket="quickLook" @closed="closeQuickLook" />
 </template>
+
+<style scoped>
+.thinScrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: theme('colors.gray.300') transparent;
+}
+
+.thinScrollbar::-webkit-scrollbar {
+    width: 6px;
+}
+
+.thinScrollbar::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.thinScrollbar::-webkit-scrollbar-thumb {
+    background-color: theme('colors.gray.300');
+    border-radius: 9999px;
+}
+</style>
