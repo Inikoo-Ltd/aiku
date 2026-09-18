@@ -57,7 +57,7 @@ class RepairFaireInvoiceTax
             ->whereHas('shop', fn ($query) => $query->where('type', ShopTypeEnum::EXTERNAL))
             ->when($command->option('shop'), fn ($query, $slug) => $query->whereHas('shop', fn ($shopQuery) => $shopQuery->where('slug', $slug)))
             ->when($command->option('from'), fn ($query, $from) => $query->where('date', '>=', $from.' 00:00:00'))
-            ->with(['shop', 'order'])
+            ->with(['shop.organisation', 'order'])
             ->orderBy('id')
             ->chunkById(100, function ($invoices) use (&$rows, &$record, $command) {
                 foreach ($invoices as $invoice) {
@@ -84,6 +84,7 @@ class RepairFaireInvoiceTax
                     }
 
                     $rows[] = [
+                        $invoice->shop->organisation->slug,
                         $invoice->shop->slug,
                         $invoice->reference,
                         $invoice->date?->toDateString(),
@@ -91,6 +92,7 @@ class RepairFaireInvoiceTax
                         $invoice->tax_amount,
                         $faireTaxAmount,
                         number_format((float)$invoice->tax_amount - $faireTaxAmount, 2),
+                        $invoice->pay_status?->value ?? '',
                     ];
 
                     if ($command->option('fix')) {
@@ -103,8 +105,13 @@ class RepairFaireInvoiceTax
                 }
             });
 
-        $command->table(['Shop', 'Invoice', 'Date', 'Net', 'Tax', 'Faire tax', 'Δ tax'], $rows);
+        $headers = ['Organisation', 'Shop', 'Invoice', 'Date', 'Net', 'Tax', 'Faire tax', 'Δ tax', 'Pay status'];
+        $command->table($headers, $rows);
         $command->info(count($rows).' Faire invoices whose tax differs from what Faire charged.');
+
+        $listPath = 'repairs/faire_invoice_tax_affected_'.now()->format('Ymd_His').'.csv';
+        $this->storeCsv($listPath, $headers, $rows);
+        $command->info('Affected invoices list: storage/app/'.$listPath);
 
         if (!$command->option('fix')) {
             $command->line('Dry run. Pass --fix to set these to the tax Faire charged.');
@@ -112,18 +119,27 @@ class RepairFaireInvoiceTax
             return 0;
         }
 
-        $csv = fopen('php://temp', 'r+');
-        fputcsv($csv, ['shop', 'invoice', 'order', 'invoice_tax_before', 'invoice_total_before', 'order_tax_before', 'order_total_before', 'invoice_tax_after', 'invoice_total_after', 'order_tax_after', 'order_total_after']);
-        foreach ($record as $line) {
-            fputcsv($csv, $line);
-        }
-        rewind($csv);
         $path = 'repairs/faire_invoice_tax_'.now()->format('Ymd_His').'.csv';
-        Storage::disk('local')->put($path, stream_get_contents($csv));
-        fclose($csv);
+        $this->storeCsv($path, ['shop', 'invoice', 'order', 'invoice_tax_before', 'invoice_total_before', 'order_tax_before', 'order_total_before', 'invoice_tax_after', 'invoice_total_after', 'order_tax_after', 'order_total_after'], $record);
 
         $command->info(count($rows).' invoices repaired. Before/after record: storage/app/'.$path);
 
         return 0;
+    }
+
+    /**
+     * @param  array<int, string>  $headers
+     * @param  array<int, array<int, mixed>>  $rows
+     */
+    private function storeCsv(string $path, array $headers, array $rows): void
+    {
+        $csv = fopen('php://temp', 'r+');
+        fputcsv($csv, $headers);
+        foreach ($rows as $row) {
+            fputcsv($csv, $row);
+        }
+        rewind($csv);
+        Storage::disk('local')->put($path, stream_get_contents($csv));
+        fclose($csv);
     }
 }
