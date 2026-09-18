@@ -3362,3 +3362,43 @@ test('recommended trade units follow the linked trade unit family, not the famil
     expect($recommended)->toContain($tradeUnit->id)
         ->and($recommended)->toContain($prefixOnlyTradeUnit->id);
 });
+
+test('store master variant is blocked while a product waits for its cutover retirement decision', function () {
+    $masterShop   = createFreshMasterShop();
+    $masterFamily = StoreMasterFamily::make()->action(
+        StoreMasterDepartment::make()->action($masterShop, ['code' => 'RTD-DEP-'.uniqid(), 'name' => 'Retirement Dept']),
+        ['code' => 'RTD-FAM-'.uniqid(), 'name' => 'Retirement Family']
+    );
+    $leader = StoreMasterAsset::make()->action($masterFamily, [
+        'code'    => 'RTD-LEAD-'.uniqid(),
+        'name'    => 'Retired Leader',
+        'is_main' => true,
+        'type'    => MasterAssetTypeEnum::PRODUCT,
+        'price'   => 10,
+        'rrp'     => 20,
+        'stocks'  => [],
+    ]);
+
+    [, $product] = createProduct($this->shop);
+    $originalData           = $product->data;
+    $originalMasterProduct  = $product->master_product_id;
+    $product->updateQuietly([
+        'master_product_id' => $leader->id,
+        'data'              => array_merge($product->data ?? [], ['retire_at_cutover' => true, 'replaced_by_product_id' => $product->id]),
+    ]);
+
+    try {
+        $response = post(route('grp.models.master_variant.store', $masterFamily->id), [
+            'data_variants' => [
+                'variants' => [['label' => 'Size', 'options' => ['S']]],
+                'groupBy'  => 'Size',
+                'products' => [$leader->id => ['is_leader' => true, 'product' => ['id' => $leader->id]]],
+            ],
+        ]);
+
+        $response->assertSessionHasErrors('leader_id');
+        expect($leader->refresh()->master_variant_id)->toBeNull();
+    } finally {
+        $product->updateQuietly(['master_product_id' => $originalMasterProduct, 'data' => $originalData]);
+    }
+});
