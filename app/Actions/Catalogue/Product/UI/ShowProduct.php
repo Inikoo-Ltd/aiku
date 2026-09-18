@@ -49,6 +49,7 @@ use App\Models\Fulfilment\Fulfilment;
 use App\Models\Reviews\ReviewRatingLabel;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
+use App\Models\Web\Webpage;
 use App\Enums\Catalogue\Product\ProductStateEnum;
 use Illuminate\Support\Arr;
 use Inertia\Inertia;
@@ -309,7 +310,7 @@ class ShowProduct extends OrgAction
                     ]
                 ],
             ]);
-        } elseif (!$product->is_minion_variant && !$isExternalShop && !$this->getRetirementDecision($product)) {
+        } elseif (!$product->is_minion_variant && !$isExternalShop && !$this->getRetirementDecision($product) && !$this->isUrlHeldByReplacement($product)) {
             $actions[] =
                 [
                     'type'  => 'button',
@@ -980,12 +981,26 @@ class ShowProduct extends OrgAction
         };
     }
 
+    private function isUrlHeldByReplacement(Product $product): bool
+    {
+        $replacementId = Arr::get($product->data, 'replaced_by_product_id');
+        if (!Arr::get($product->data, 'retire_at_cutover') || !$replacementId) {
+            return false;
+        }
+
+        return Webpage::where('website_id', $product->shop->website?->id)
+            ->where('url', strtolower($product->code))
+            ->where('model_type', 'Product')
+            ->where('model_id', $replacementId)
+            ->exists();
+    }
+
     /**
      * @return array{replacement: array{code: string, name: string, price: string, route: array{name: string, parameters: array<string, string>}}, retire_route: array{name: string, parameters: array<string, int>}, keep_route: array{name: string, parameters: array<string, int>}}|null
      */
     private function getRetirementDecision(Product $product): ?array
     {
-        if (!Arr::get($product->data, 'retire_at_cutover') || $product->state == ProductStateEnum::DISCONTINUED) {
+        if (!Arr::get($product->data, 'retire_at_cutover') || ($product->state == ProductStateEnum::DISCONTINUED && !$product->is_for_sale)) {
             return null;
         }
 
