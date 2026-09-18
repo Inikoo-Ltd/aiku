@@ -246,8 +246,11 @@ const trolleyRoute = (trolley: { slug: string }) =>
             <template #cell(actions)="{ item }">
                 <div v-for="destination in item.destinations" :key="destinationKey(item, destination)" class="flex items-center justify-between gap-x-6 py-0.5">
                     <div>
-                        <div v-if="destination.type === 'partner' || destination.locations.length === 1" class="flex items-center gap-x-2 font-mono text-base"
-                            v-tooltip="destination.type === 'partner' ? trans('Goods out bay of :partner', { partner: destination.label }) : trans('The only location of this stock')">
+                        <div v-if="destination.type === 'partner'" class="flex items-center gap-x-2 font-mono text-base" v-tooltip="trans('Goods out bay of partner :partner', { partner: destination.label })">
+                            <span class="inline-flex w-6 shrink-0 justify-center"><FontAwesomeIcon icon="fal fa-hands-helping" class="text-indigo-500" aria-hidden="true" /></span>
+                            {{ putAwayLocation[destinationKey(item, destination)] }}
+                        </div>
+                        <div v-else-if="destination.locations.length === 1" class="flex items-center gap-x-2 font-mono text-base" v-tooltip="trans('The only location of this stock')">
                             <span class="inline-flex w-6 shrink-0 justify-center"><FontAwesomeIcon icon="fal fa-lock" class="text-gray-400" aria-hidden="true" /></span>
                             {{ putAwayLocation[destinationKey(item, destination)] }}
                         </div>
@@ -277,8 +280,8 @@ const trolleyRoute = (trolley: { slug: string }) =>
                         </div>
                         <input v-else v-model.trim="putAwayLocation[destinationKey(item, destination)]" type="text" :placeholder="trans('Location code')" :disabled="!can_edit"
                             class="w-32 rounded py-0.5 font-mono text-base uppercase" :class="putAwayLocation[destinationKey(item, destination)] ? 'border-gray-300' : 'border-amber-400 bg-amber-50'" />
-                        <div class="text-xs tabular-nums" :class="putAwayLocation[destinationKey(item, destination)] ? 'text-gray-500' : 'text-amber-700'">
-                            <template v-if="destination.type === 'partner'">{{ destination.label }}</template>
+                        <div class="pl-8 text-xs tabular-nums" :class="destination.type === 'partner' ? 'text-indigo-700' : putAwayLocation[destinationKey(item, destination)] ? 'text-gray-500' : 'text-amber-700'">
+                            <template v-if="destination.type === 'partner'">{{ trans("Partner bay") }} · {{ destination.label }}</template>
                             <template v-else-if="!putAwayLocation[destinationKey(item, destination)]">{{ trans("No location yet, type one") }}</template>
                             <template v-else-if="stockInLocation(item, destination) !== undefined">({{ trans("stock in location") }}: {{ stockInLocation(item, destination) }})</template>
                             <template v-else>({{ trans("new location for this stock") }})</template>

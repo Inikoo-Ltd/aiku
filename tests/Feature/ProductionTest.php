@@ -3252,7 +3252,7 @@ test('a short day splits the made goods into whole destination trips and carries
         'organisation_id'         => $buyer['organisation']->id,
         'partner_organisation_id' => $this->organisation->id,
         'stock_id'                => $stock->id,
-        'org_stock_id'            => $orgStock->id,
+        'org_stock_id'            => createOrgStocks($buyer['organisation'], [$stock])[0]->id,
         'quantity'                => $quantity,
     ]);
 

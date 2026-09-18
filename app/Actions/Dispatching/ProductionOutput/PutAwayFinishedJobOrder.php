@@ -40,13 +40,13 @@ class PutAwayFinishedJobOrder extends OrgAction
 
         $itemIdsByCode = is_string($locations)
             ? [$locations => null]
-            : collect($locations)->map(fn ($code, $itemId) => ['code' => strtoupper(trim($code)), 'item_id' => (int) $itemId])
+            : collect($locations)->map(fn ($code, $itemId) => ['code' => mb_strtolower(trim($code)), 'item_id' => (int) $itemId])
                 ->groupBy('code')->map(fn ($rows) => $rows->pluck('item_id')->all())->all();
 
         $locationsByCode = [];
         foreach (array_keys($itemIdsByCode) as $code) {
-            $locationsByCode[$code] = $warehouse->locations()->where('code', $code)->first()
-                ?? throw ValidationException::withMessages(['location_code' => __('No location :code in this warehouse', ['code' => $code])]);
+            $locationsByCode[$code] = $warehouse->locations()->whereRaw('lower(code) = ?', [mb_strtolower(trim((string) $code))])->first()
+                ?? throw ValidationException::withMessages(['location_code' => __('No location :code in this warehouse', ['code' => mb_strtoupper((string) $code)])]);
         }
 
         $jobOrders = JobOrder::whereIn('id', $jobOrderIds)->get();
@@ -78,7 +78,7 @@ class PutAwayFinishedJobOrder extends OrgAction
             }
 
             if (!$received) {
-                throw ValidationException::withMessages(['location_id' => __('Nothing from this job order goes to :code', ['code' => implode(', ', array_keys($itemIdsByCode))])]);
+                throw ValidationException::withMessages(['location_id' => __('Nothing from this job order goes to :code', ['code' => collect($locationsByCode)->pluck('code')->implode(', ')])]);
             }
 
             return $received;
