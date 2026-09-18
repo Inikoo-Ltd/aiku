@@ -18,7 +18,7 @@ class CheckIfProductHasVariantAtLocation
 {
     use AsAction;
 
-    public function handle(ShopifyUser $shopifyUser, ?string $productId, ?string $variantId = null): array
+    public function handle(ShopifyUser $shopifyUser, ?string $productId, ?string $variantId = null, bool $onlyThisVariant = false): array
     {
         $result = [
             'exist' => false,
@@ -104,7 +104,7 @@ class CheckIfProductHasVariantAtLocation
             $variantEdges    = $body['data']['product']['variants']['edges'];
             $ownVariantEdges = array_filter($variantEdges, fn (array $edge) => $variantId && Arr::get($edge, 'node.id') === $variantId);
 
-            foreach ($ownVariantEdges ?: $variantEdges as $edge) {
+            foreach ($onlyThisVariant ? $ownVariantEdges : ($ownVariantEdges ?: $variantEdges) as $edge) {
                 $variant = $edge['node'];
                 if (isset($variant['inventoryItem']['inventoryLevel']['id']) && $variant['inventoryItem']['inventoryLevel']['id']) {
                     data_set($result, 'exist', true);
