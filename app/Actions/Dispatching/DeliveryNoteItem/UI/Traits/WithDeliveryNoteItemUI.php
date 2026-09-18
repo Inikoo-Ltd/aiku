@@ -156,6 +156,7 @@ trait WithDeliveryNoteItemUI
             'org_stocks.note_to_packers as org_stock_note_to_packers',
             'delivery_note_items.quantity_waiting_crm',
             'delivery_note_items.quantity_waiting_warehouse',
+            DB::raw("(SELECT jsonb_build_object('code', historic_assets.code, 'name', historic_assets.name, 'quantity', transactions.quantity_ordered) FROM transactions JOIN historic_assets ON historic_assets.id = transactions.historic_asset_id WHERE transactions.id = delivery_note_items.transaction_id) as ordered_asset"),
         ];
     }
 
