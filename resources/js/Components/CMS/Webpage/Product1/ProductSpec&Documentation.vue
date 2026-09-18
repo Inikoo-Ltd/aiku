@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { computed, inject } from 'vue'
-import { faFileCheck, faFilePdf, faFileWord } from "@fal"
+import { faFileCheck, faFileWord } from "@fal"
+import { faFilePdf } from "@fas"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 const props = defineProps<{
     product: {
@@ -27,6 +28,12 @@ const extractFileType = (mime: string) => {
     const parts = mime.split('/')
     return parts[1]?.split('+')[0]?.toLowerCase() || ''
 }
+
+const isPdf = (mime: string) => extractFileType(mime) === 'pdf'
+
+const pdfButtonClass = "inline-flex items-center gap-1.5 rounded border border-gray-300 px-1.5 py-0.5 text-xs font-semibold no-underline transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2"
+
+const fileLinkClass = "inline-flex items-center gap-1 text-xs text-blue-600 underline"
 
 const getIcon = (type: string) => {
     switch (type) {
@@ -82,50 +89,51 @@ const groupedAttachments = computed(() => {
 <template>
     <div class="w-full  border border-gray-300">
         <div v-if="product?.specifications?.origin" class="grid grid-cols-2 border-b border-gray-300">
-            <div class="p-2 font-medium text-sm bg-gray-50">{{ trans('Origin') }}</div>
+            <div class="p-2 font-medium text-sm bg-gray-50">{{ ctrans('Origin') }}</div>
             <div class="p-2 text-sm">{{ product.specifications.origin }}</div>
         </div>
 
         <div v-if="product?.specifications?.marketing_weight" class="grid grid-cols-2 border-b border-gray-300">
-            <div class="p-2 font-medium text-sm bg-gray-50">{{ trans('Net Weight') }}</div>
+            <div class="p-2 font-medium text-sm bg-gray-50">{{ ctrans('Net Weight') }}</div>
             <div class="p-2 text-sm">{{ product.specifications.marketing_weight }} g/{{ product.specifications.unit }}</div>
         </div>
 
         <div v-if="product?.specifications?.gross_weight" class="grid grid-cols-2 border-b border-gray-300">
-            <div class="p-2 font-medium text-sm bg-gray-50">{{ trans("Shipping Weight") }}</div>
+            <div class="p-2 font-medium text-sm bg-gray-50">{{ ctrans("Shipping Weight") }}</div>
             <div class="p-2 text-sm">{{ product.specifications.gross_weight }} g</div>
         </div>
 
         <div v-if="product?.specifications?.dimensions" class="grid grid-cols-2 border-b border-gray-300">
-            <div class="p-2 font-medium text-sm bg-gray-50">{{ trans("Dimensions") }}</div>
+            <div class="p-2 font-medium text-sm bg-gray-50">{{ ctrans("Dimensions") }}</div>
             <div class="p-2 text-sm">{{ product?.specifications?.dimensions }}</div>
         </div>
 
 
         <div v-if="product?.specifications?.ingredients" class="grid grid-cols-2 border-b border-gray-300">
-            <div class="p-2 font-medium text-sm bg-gray-50">{{ trans('Materials/Ingredients') }}</div>
+            <div class="p-2 font-medium text-sm bg-gray-50">{{ ctrans('Materials/Ingredients') }}</div>
             <div class="p-2 text-sm">
                 {{ product.specifications.ingredients }}
-                <a v-if="ingredientsLabelUrl" :href="ingredientsLabelUrl" target="_blank" rel="nofollow" class="mt-1 flex items-center text-xs text-blue-600 underline">
-                    <FontAwesomeIcon :icon="faFilePdf" class="mr-1" />
-                    {{ trans('Download') }} PDF
+                <a v-if="ingredientsLabelUrl" :href="ingredientsLabelUrl" target="_blank" rel="nofollow"
+                    class="mt-2" :class="pdfButtonClass">
+                    <FontAwesomeIcon :icon="faFilePdf" fixed-width aria-hidden="true" class="text-red-600" />
+                    {{ ctrans('Download') }} PDF
                 </a>
             </div>
         </div>
 
         <div v-if="product?.specifications?.barcode" class="grid grid-cols-2 border-b border-gray-300">
-            <div class="p-2 font-medium text-sm bg-gray-50">{{ trans('Barcode') }}</div>
+            <div class="p-2 font-medium text-sm bg-gray-50">{{ ctrans('Barcode') }}</div>
             <div class="p-2 text-sm">{{ product.specifications.barcode }}</div>
         </div>
 
         <div v-if="product?.specifications?.cpnp" class="grid grid-cols-2 border-b border-gray-300">
-            <div class="p-2 font-medium text-sm bg-gray-50">{{ trans('cpnp') }}</div>
+            <div class="p-2 font-medium text-sm bg-gray-50">{{ ctrans('cpnp') }}</div>
             <div class="p-2 text-sm">{{ product?.specifications?.cpnp }}</div>
         </div>
 
         <!-- Section: countries_of_origin -->
         <div v-if="countriesOfOrigin.length" class="grid grid-cols-2 border-b border-gray-300">
-            <div class="p-2 font-medium text-sm bg-gray-50">{{ trans('Origin Country') }}</div>
+            <div class="p-2 font-medium text-sm bg-gray-50">{{ ctrans('Origin Country') }}</div>
             <div class="p-2 flex flex-col gap-1">
                 <div v-for="country in countriesOfOrigin" :key="country.code"
                     class="flex items-center gap-2">
@@ -149,13 +157,13 @@ const groupedAttachments = computed(() => {
 
             <!-- Files column (up to 2 files per scope) -->
             <div>
-                <div v-for="item in items" :key="item.caption"  class="p-2 text-xs text-blue-600 underline cursor-pointer flex items-center">
-                    <div>
-                        <a :href="item.url" target="_blank"  class="flex items-center">
-                            <FontAwesomeIcon :icon="getIcon(extractFileType(item.mime_type))" class="mr-1" />
-                            {{ item.caption }}{{ `.${extractFileType(item.mime_type)}` }}
-                        </a>
-                    </div>
+                <div v-for="item in items" :key="item.caption" class="p-2 flex items-center">
+                    <a :href="item.url" target="_blank"
+                        :class="isPdf(item.mime_type) ? pdfButtonClass : fileLinkClass">
+                        <FontAwesomeIcon :icon="getIcon(extractFileType(item.mime_type))" fixed-width
+                            aria-hidden="true" :class="isPdf(item.mime_type) ? 'text-red-600' : ''" />
+                        {{ item.caption }}{{ `.${extractFileType(item.mime_type)}` }}
+                    </a>
                 </div>
             </div>
         </div>
