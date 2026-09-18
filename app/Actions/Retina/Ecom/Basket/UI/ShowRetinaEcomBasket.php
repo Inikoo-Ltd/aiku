@@ -21,6 +21,7 @@ use App\Actions\Traits\HasBasketDetails;
 use App\Actions\Traits\InteractsWithOrderInBasket;
 use App\Actions\Traits\WithBasketStockIssues;
 use App\Actions\RetinaAction;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Http\Resources\Catalogue\ChargeResource;
 use App\Http\Resources\Fulfilment\RetinaEcomBasketTransactionsResources;
 use App\Http\Resources\Helpers\AddressResource;
@@ -52,6 +53,15 @@ class ShowRetinaEcomBasket extends RetinaAction
         return FixMiscalculatedTransactionAmounts::run($order, true);
     }
 
+
+    public function authorize(ActionRequest $request): bool
+    {
+        if ($this->shop->type === ShopTypeEnum::FULFILMENT) {
+            return false;
+        }
+
+        return parent::authorize($request);
+    }
 
     public function asController(ActionRequest $request): Order|null
     {
