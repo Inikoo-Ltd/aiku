@@ -88,6 +88,16 @@ const props = defineProps<{
 
 const isButtonLoading = ref<boolean | string>(false)
 
+const isPlatformOrderIdCopied = ref(false)
+
+const breakableId = (id: string) => id.replace(/([/:.-])/g, "$1\u200b")
+
+const copyPlatformOrderId = async (id: string) => {
+	await navigator.clipboard.writeText(id)
+	isPlatformOrderIdCopied.value = true
+	setTimeout(() => (isPlatformOrderIdCopied.value = false), 2000)
+}
+
 if (props.dataToSubmit && props.data.actionActualMethod) {
 	props.dataToSubmit["_method"] = props.data.actionActualMethod
 }
@@ -253,7 +263,13 @@ const setError = (e) => {
 								class="h-6 max-w-7 min-w-5 w-auto text-gray-400 font-normal text-lg leading-none"
 								:alt="data.platform.type"
 								v-tooltip="data.platform.title || data.platform.name" />
-                            <span v-tooltip="'platform order id'" v-if="data.platform?.order_id" class="text-light font-sm">{{ data.platform?.order_id }}</span>
+                            <button
+                                v-if="data.platform?.order_id"
+                                v-tooltip="isPlatformOrderIdCopied ? trans('Copied') : trans('Click to copy') + ': ' + breakableId(data.platform.order_id)"
+                                type="button"
+                                class="inline-block max-w-[14rem] truncate align-middle text-sm font-normal tracking-normal transition duration-200 hover:text-gray-800"
+                                :class="isPlatformOrderIdCopied ? 'text-green-600' : 'text-gray-500'"
+                                @click="copyPlatformOrderId(data.platform.order_id)">{{ data.platform.order_id }}</button>
 						</slot>
 
 						<span
