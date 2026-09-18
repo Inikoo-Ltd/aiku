@@ -182,7 +182,7 @@ class GetGroupNavigation
                             'name' => 'grp.chat.dashboard',
                         ],
                     ],
-                    ...($user->chatAgent ? [
+                    [
                         [
                             'label'   => __('Inbox'),
                             'tooltip' => __('Inbox'),
@@ -192,7 +192,7 @@ class GetGroupNavigation
                                 'name' => 'grp.chat.inbox',
                             ],
                         ],
-                    ] : []),
+                    ],
                     // [
                     //     'label'   => __('Agents'),
                     //     'tooltip' => __('Agents'),
