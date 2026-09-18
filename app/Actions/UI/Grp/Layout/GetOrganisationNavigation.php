@@ -8,6 +8,7 @@
 
 namespace App\Actions\UI\Grp\Layout;
 
+use App\Enums\SysAdmin\Authorisation\RolesEnum;
 use App\Models\SysAdmin\Organisation;
 use App\Models\SysAdmin\User;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -360,6 +361,56 @@ class GetOrganisationNavigation
                         'root'  => 'grp.org.tasks.reports',
                         'route' => [
                             'name'       => 'grp.org.tasks.reports',
+                            'parameters' => [$organisation->slug],
+                        ],
+                    ],
+                ],
+            ],
+        ];
+
+        $navigation['tickets'] = [
+            'label'   => __('Tickets'),
+            'icon'    => ['fal', 'fa-life-ring'],
+            'root'    => 'grp.org.tickets.',
+            'route'   => [
+                'name'       => $user->roles()->where('name', RolesEnum::HELP_DESK_SUPERVISOR->value)->exists() ? 'grp.org.tickets.board' : 'grp.org.tickets.index',
+                'parameters' => [$organisation->slug],
+            ],
+            'topMenu' => [
+                'subSections' => [
+                    [
+                        'label' => __('Dashboard'),
+                        'icon'  => ['fal', 'fa-tachometer-alt'],
+                        'root'  => 'grp.org.tickets.index',
+                        'route' => [
+                            'name'       => 'grp.org.tickets.index',
+                            'parameters' => [$organisation->slug],
+                        ],
+                    ],
+                    [
+                        'label' => __('List'),
+                        'icon'  => ['fal', 'fa-list'],
+                        'root'  => 'grp.org.tickets.list',
+                        'route' => [
+                            'name'       => 'grp.org.tickets.list',
+                            'parameters' => [$organisation->slug],
+                        ],
+                    ],
+                    [
+                        'label' => __('Board'),
+                        'icon'  => ['fal', 'fa-columns'],
+                        'root'  => 'grp.org.tickets.board',
+                        'route' => [
+                            'name'       => 'grp.org.tickets.board',
+                            'parameters' => [$organisation->slug],
+                        ],
+                    ],
+                    [
+                        'label' => __('Reports'),
+                        'icon'  => ['fal', 'fa-chart-line'],
+                        'root'  => 'grp.org.tickets.reports',
+                        'route' => [
+                            'name'       => 'grp.org.tickets.reports',
                             'parameters' => [$organisation->slug],
                         ],
                     ],

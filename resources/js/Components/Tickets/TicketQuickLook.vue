@@ -6,9 +6,10 @@
 -->
 
 <script setup lang="ts">
+import { ticketRoute } from "@/Composables/useTicketsRoute"
 import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue"
 import { Link, router } from "@inertiajs/vue3"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import axios from "axios"
 import Icon from "@/Components/Icon.vue"
 import TicketControls from "@/Components/Tickets/TicketControls.vue"
@@ -121,12 +122,12 @@ const close = () => {
                             <div class="flex items-center gap-2 text-xs mb-2">
                         <Icon v-if="displayTicket.type_icon" :data="displayTicket.type_icon" class="text-gray-400" />
                         <Link
-                            :href="route('grp.tickets.show', displayTicket.reference)"
+                            :href="ticketRoute(displayTicket.reference)"
                             class="primaryLink font-medium"
                             >{{ displayTicket.reference }}</Link
                         >
                         <button
-                            v-tooltip="isLinkCopied ? trans('Copied') : trans('Copy link')"
+                            v-tooltip="isLinkCopied ? ctrans('Copied') : ctrans('Copy link')"
                             type="button"
                             class="text-gray-400 transition duration-200 hover:text-gray-600 focus:!text-gray-700"
                             @click="copyTicketLink">
@@ -146,7 +147,7 @@ const close = () => {
                     <h2 class="text-lg font-semibold leading-snug mb-3">{{ displayTicket.subject }}</h2>
                     <div class="grid grid-cols-2 gap-x-6 gap-y-1 text-xs text-gray-600 mb-4">
                         <span class="flex flex-wrap items-center gap-1"
-                            >{{ trans("Raised") }}: {{ shortDate(displayTicket.created_at) }}
+                            >{{ ctrans("Raised") }}: {{ shortDate(displayTicket.created_at) }}
                             {{ displayTicket.reporter ? "· " + displayTicket.reporter : "" }}
                             <span
                                 v-for="role in displayTicket.reporter_roles ?? []"
@@ -157,32 +158,32 @@ const close = () => {
                             ></span
                         >
                         <span v-if="displayTicket.assignee"
-                            >{{ trans("Assignee") }}: {{ displayTicket.assignee }}</span
+                            >{{ ctrans("Assignee") }}: {{ displayTicket.assignee }}</span
                         >
                         <span v-if="displayTicket.assigned_at"
-                            >{{ trans("Assigned") }}: {{ shortDate(displayTicket.assigned_at) }}</span
+                            >{{ ctrans("Assigned") }}: {{ shortDate(displayTicket.assigned_at) }}</span
                         >
                         <span v-if="displayTicket.started_at"
-                            >{{ trans("Started") }}: {{ shortDate(displayTicket.started_at) }}</span
+                            >{{ ctrans("Started") }}: {{ shortDate(displayTicket.started_at) }}</span
                         >
                         <span v-if="displayTicket.waiting_at"
-                            >{{ trans("Waiting since") }}: {{ shortDate(displayTicket.waiting_at) }}</span
+                            >{{ ctrans("Waiting since") }}: {{ shortDate(displayTicket.waiting_at) }}</span
                         >
                         <span v-if="isTicketClosed && displayTicket.closed_at"
-                            >{{ trans("Closed") }}: {{ shortDate(displayTicket.closed_at) }}</span
+                            >{{ ctrans("Closed") }}: {{ shortDate(displayTicket.closed_at) }}</span
                         >
                         <span v-if="displayTicket.customer"
-                            >{{ trans("Customer") }}: {{ displayTicket.customer }}</span
+                            >{{ ctrans("Customer") }}: {{ displayTicket.customer }}</span
                         >
-                        <span v-if="displayTicket.shop">{{ trans("Shop") }}: {{ displayTicket.shop }}</span>
+                        <span v-if="displayTicket.shop">{{ ctrans("Shop") }}: {{ displayTicket.shop }}</span>
                     </div>
                     <template v-if="!isDesktop">
                         <TicketControlPanel v-if="controls" :ticket="displayTicket" storage-key="ticket_quick_look_controls_open" :default-open="false">
                             <TicketControls v-bind="controls" @updated="loadControls(ticket.id)" />
                             <TicketSourceCard v-if="displayTicket.source" :source="displayTicket.source" />
                         </TicketControlPanel>
-                        <p v-else-if="isControlsUnavailable" class="text-sm text-gray-500">{{ trans("Controls are unavailable") }}</p>
-                        <p v-else class="text-sm text-gray-400"><FontAwesomeIcon icon="fal fa-spinner" spin class="mr-1" />{{ trans("Loading") }}</p>
+                        <p v-else-if="isControlsUnavailable" class="text-sm text-gray-500">{{ ctrans("Controls are unavailable") }}</p>
+                        <p v-else class="text-sm text-gray-400"><FontAwesomeIcon icon="fal fa-spinner" spin class="mr-1" />{{ ctrans("Loading") }}</p>
                     </template>
                         </div>
                         <div class="lg:min-h-0 lg:flex-1 lg:overflow-y-auto pr-1 pt-3">
@@ -192,7 +193,7 @@ const close = () => {
                         <TicketAttachmentList v-if="controls.attachment_gallery?.length" :files="controls.attachment_gallery" :preview-blocked="controls.can_preview_attachments === false" compact />
                         <div class="rounded-lg border border-gray-200 bg-white p-3">
                             <div class="flex items-center gap-2">
-                                <span class="text-sm font-semibold text-gray-800">{{ trans("Comments") }}</span>
+                                <span class="text-sm font-semibold text-gray-800">{{ ctrans("Comments") }}</span>
                                 <span class="rounded bg-gray-100 px-1.5 text-[11px] font-medium tabular-nums text-gray-600">{{ controls.comments?.length ?? 0 }}</span>
                             </div>
                             <div class="mt-2">
@@ -212,8 +213,8 @@ const close = () => {
                     </div>
                     <aside v-if="isDesktop" class="text-sm lg:min-h-0 lg:overflow-y-auto lg:border-l lg:border-gray-200 lg:pl-6 lg:pr-1">
                         <TicketControls v-if="controls" v-bind="controls" @updated="loadControls(ticket.id)" />
-                        <p v-else-if="isControlsUnavailable" class="text-gray-500">{{ trans("Controls are unavailable") }}</p>
-                        <p v-else class="text-gray-400"><FontAwesomeIcon icon="fal fa-spinner" spin class="mr-1" />{{ trans("Loading") }}</p>
+                        <p v-else-if="isControlsUnavailable" class="text-gray-500">{{ ctrans("Controls are unavailable") }}</p>
+                        <p v-else class="text-gray-400"><FontAwesomeIcon icon="fal fa-spinner" spin class="mr-1" />{{ ctrans("Loading") }}</p>
                         <TicketSourceCard v-if="displayTicket.source" :source="displayTicket.source" class="mt-4" />
                     </aside>
                 </div>

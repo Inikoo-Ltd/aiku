@@ -39,24 +39,28 @@ const logoutData = computed(() => ({
     icon: "fal fa-sign-out-alt"
 }))
 
-const tasksRoute = computed(() => {
+const scopedModuleRoute = (module: string) => {
     const organisation = layout.currentParams?.organisation
     const shop = layout.currentParams?.shop
 
     if (organisation && shop) {
-        return { name: "grp.org.shops.show.tasks.index", parameters: { organisation, shop }, root: "grp.org.shops.show.tasks." }
+        return { name: `grp.org.shops.show.${module}.index`, parameters: { organisation, shop }, root: `grp.org.shops.show.${module}.` }
     }
 
     if (organisation) {
-        return { name: "grp.org.tasks.index", parameters: { organisation }, root: "grp.org.tasks." }
+        return { name: `grp.org.${module}.index`, parameters: { organisation }, root: `grp.org.${module}.` }
     }
 
-    return { name: "grp.tasks.index", parameters: {}, root: "grp.tasks." }
-})
+    return { name: `grp.${module}.index`, parameters: {}, root: `grp.${module}.` }
+}
+
+const tasksRoute = computed(() => scopedModuleRoute("tasks"))
+
+const ticketsRoute = computed(() => scopedModuleRoute("tickets"))
 
 const bottomLinks = computed(() => [
     { route: tasksRoute.value.name, parameters: tasksRoute.value.parameters, root: tasksRoute.value.root, label: ctrans("Tasks"), tooltip: ctrans("Tasks: ask a colleague or a department for something"), icon: "fal fa-tasks" },
-    { route: "grp.tickets.index", parameters: {}, root: "grp.tickets.", label: ctrans("Tickets"), tooltip: ctrans("Tickets: report a problem or ask for help"), icon: "fal fa-life-ring" },
+    { route: ticketsRoute.value.name, parameters: ticketsRoute.value.parameters, root: ticketsRoute.value.root, label: ctrans("Tickets"), tooltip: ctrans("Tickets: report a problem or ask for help"), icon: "fal fa-life-ring" },
     { route: "grp.chat.dashboard", parameters: {}, root: "grp.chat.", label: ctrans("Chat"), tooltip: ctrans("Chat with customers and colleagues"), icon: "fal fa-comment-alt" },
 ])
 

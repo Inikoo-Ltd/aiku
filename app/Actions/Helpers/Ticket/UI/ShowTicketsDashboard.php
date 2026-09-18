@@ -9,7 +9,6 @@
 namespace App\Actions\Helpers\Ticket\UI;
 
 use App\Actions\OrgAction;
-use App\Actions\UI\Dashboards\ShowGroupDashboard;
 use App\Enums\CRM\Livechat\ChatPriorityEnum;
 use App\Enums\Helpers\Ticket\TicketKindEnum;
 use App\Enums\Helpers\Ticket\TicketModuleEnum;
@@ -20,12 +19,16 @@ use App\Models\Helpers\Ticket;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\User;
 use Illuminate\Database\Eloquent\Builder;
+use App\Models\Catalogue\Shop;
+use App\Models\SysAdmin\Organisation;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 
 class ShowTicketsDashboard extends OrgAction
 {
+    use WithTicketsScope;
+
     private const string PRIORITY_ORDER = "CASE priority WHEN 'urgent' THEN 0 WHEN 'high' THEN 1 WHEN 'normal' THEN 2 ELSE 3 END";
 
     public function authorize(ActionRequest $request): bool
@@ -102,7 +105,21 @@ class ShowTicketsDashboard extends OrgAction
 
     public function asController(ActionRequest $request): array
     {
-        $this->initialisationFromGroup(group(), $request);
+        $this->initialisationFromTicketsScope($request);
+
+        return $this->handle($this->group, $request->user());
+    }
+
+    public function inOrganisation(Organisation $organisation, ActionRequest $request): array
+    {
+        $this->initialisationFromTicketsScope($request, $organisation);
+
+        return $this->handle($this->group, $request->user());
+    }
+
+    public function inShop(Organisation $organisation, Shop $shop, ActionRequest $request): array
+    {
+        $this->initialisationFromTicketsScope($request, $organisation, $shop);
 
         return $this->handle($this->group, $request->user());
     }
@@ -112,7 +129,7 @@ class ShowTicketsDashboard extends OrgAction
         return Inertia::render(
             'Tickets/TicketsDashboard',
             [
-                'breadcrumbs' => $this->getBreadcrumbs(),
+                'breadcrumbs' => $this->ticketsBreadcrumbs(),
                 'title'       => __('Tickets'),
                 'pageHead'    => [
                     'title' => __('Tickets'),
@@ -127,19 +144,4 @@ class ShowTicketsDashboard extends OrgAction
         );
     }
 
-    public function getBreadcrumbs(): array
-    {
-        return array_merge(
-            ShowGroupDashboard::make()->getBreadcrumbs(),
-            [
-                [
-                    'type'   => 'simple',
-                    'simple' => [
-                        'route' => ['name' => 'grp.tickets.index'],
-                        'label' => __('Tickets'),
-                    ],
-                ],
-            ]
-        );
-    }
 }

@@ -114,6 +114,10 @@ Route::prefix('{shop}')->name('show.')
             ->name("tasks.")
             ->group(__DIR__ . "/tasks.php");
 
+        Route::prefix("tickets")
+            ->name("tickets.")
+            ->group(__DIR__ . "/tickets.php");
+
         Route::prefix("reviews")
             ->name("reviews.")
             ->group(__DIR__ . "/reviews.php");
