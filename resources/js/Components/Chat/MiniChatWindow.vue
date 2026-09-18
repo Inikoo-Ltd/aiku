@@ -989,22 +989,17 @@ const initSocket = () => {
 }
 
 const openFullConversation = () => {
-    if (!props.chat.organisationSlug) return
+    if (!props.chat.ulid) return
 
     // WhatsApp has no standalone conversation page yet, so it opens the inbox on the
-    // right shop and channel instead.
+    // right channel instead.
     if (isWhatsapp.value) {
-        if (!props.chat.shopSlug) return
-
-        router.visit(
-            route("grp.org.shops.show.chat.inbox", [props.chat.organisationSlug, props.chat.shopSlug])
-            + `?channel=whatsapp&session=${props.chat.ulid}`
-        )
+        router.visit(route("grp.chat.inbox") + `?channel=whatsapp&session=${props.chat.ulid}`)
 
         return
     }
 
-    router.visit(route("grp.org.chat.inbox.conversation", [props.chat.organisationSlug, props.chat.ulid]))
+    router.visit(route("grp.chat.inbox.conversation", [props.chat.ulid]))
 }
 
 watch(

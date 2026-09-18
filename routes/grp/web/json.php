@@ -6,7 +6,9 @@
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
+use App\Actions\Helpers\Ticket\Json\GetRecentlyUpdatedTickets;
 use App\Actions\Helpers\Ticket\Json\GetTicketControls;
+use App\Actions\Helpers\Ticket\Json\GetTicketQaQueue;
 use App\Actions\Inventory\LocationOrgStock\HandleLowStockAuditLock;
 use App\Actions\Accounting\OrgPaymentServiceProvider\Json\GetOrgPaymentServiceProviders;
 use App\Actions\Catalogue\Product\Json\GetProductsIncludingNotForSaleInShop;
@@ -417,4 +419,6 @@ Route::get('{webpage:id}/web-layout-templates/{layoutTemplate:id}', FetchWebLayo
 
 Route::post('warehouse/{warehouse}/low-stock-audit-lock', HandleLowStockAuditLock::class)->name('warehouse.low_stock_audit_lock')->withoutScopedBindings();
 
+Route::get('tickets/qa-queue', GetTicketQaQueue::class)->name('ticket.qa_queue');
+Route::get('tickets/recently-updated', GetRecentlyUpdatedTickets::class)->name('ticket.recently_updated');
 Route::get('tickets/{ticket:id}/controls', GetTicketControls::class)->name('ticket.controls')->whereNumber('ticket');

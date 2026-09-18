@@ -27,6 +27,7 @@ use App\Models\Dispatching\Shipment;
 use App\Models\Dispatching\Shipper;
 use App\Models\Fulfilment\PalletReturn;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use OwenIt\Auditing\Events\AuditCustom;
@@ -44,6 +45,26 @@ class StoreShipment extends OrgAction
      * @throws \Illuminate\Validation\ValidationException
      */
     public function handle(DeliveryNote|PalletReturn $parent, Shipper $shipper, array $modelData): Shipment
+    {
+        $lock = Cache::lock('store_shipment_'.class_basename($parent).'_'.$parent->id, 120);
+
+        if (!$lock->get()) {
+            throw ValidationException::withMessages([
+                'shipper' => __('A label is already being created for this delivery. Wait a moment and refresh the page.')
+            ]);
+        }
+
+        try {
+            return $this->storeShipment($parent, $shipper, $modelData);
+        } finally {
+            $lock->release();
+        }
+    }
+
+    /**
+     * @throws \Illuminate\Validation\ValidationException
+     */
+    private function storeShipment(DeliveryNote|PalletReturn $parent, Shipper $shipper, array $modelData): Shipment
     {
         if ($parent instanceof DeliveryNote) {
             $order = $parent->orders->first();

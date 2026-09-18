@@ -39,6 +39,7 @@ class TicketResource extends JsonResource
             'qa_status_label' => $this->qa_status ? TicketQaStatusEnum::labels()[$this->qa_status->value] : null,
             'qa_status_icon' => $this->qa_status ? TicketQaStatusEnum::stateIcon()[$this->qa_status->value] : null,
             'qa_user'        => $this->qaUser?->contact_name ?: $this->qaUser?->username,
+            'qa_user_id'     => $this->qa_user_id,
             'qa_requested_at' => $this->qa_requested_at,
             'qa_checked_at'  => $this->qa_checked_at,
             'kind_label'     => $this->kind ? TicketKindEnum::labels()[$this->kind->value] : null,

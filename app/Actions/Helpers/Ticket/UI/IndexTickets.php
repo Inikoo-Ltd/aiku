@@ -15,6 +15,7 @@ use App\Enums\CRM\Livechat\ChatPriorityEnum;
 use App\Enums\DateIntervals\DateIntervalEnum;
 use App\Enums\Helpers\Ticket\TicketKindEnum;
 use App\Enums\Helpers\Ticket\TicketModuleEnum;
+use App\Enums\Helpers\Ticket\TicketQaStatusEnum;
 use App\Enums\Helpers\Ticket\TicketStatusEnum;
 use App\Enums\Helpers\Ticket\TicketTypeEnum;
 use Illuminate\Support\Arr;
@@ -44,13 +45,16 @@ class IndexTickets extends OrgAction
         $user = request()->user();
         $base = $this->whereCreatedIn(Ticket::where('tickets.group_id', $group->id)->visibleTo($user), $this->createdInterval(), 'tickets.created_at');
 
-        return [
+        $groups = [
             'mine'   => [
-                'label'    => __('Mine'),
+                'label'    => __('Ownership'),
+                'optional' => true,
                 'elements' => [
                     'reported' => [__('Reported by me'), (clone $base)->where('reporter_type', 'User')->where('reporter_id', $user->id)->count()],
-                    'assigned' => [__('Assigned to me'), (clone $base)->where('assignee_id', $user->id)->count()],
-                    'collaborating' => [__('Collaborating on'), (clone $base)->whereHas('collaborators', fn ($query) => $query->whereKey($user->id))->count()],
+                    ...(Ticket::canBeManagedBy($user) ? [
+                        'assigned'      => [__('Assigned to me'), (clone $base)->where('assignee_id', $user->id)->count()],
+                        'collaborating' => [__('Collaborating on'), (clone $base)->whereHas('collaborators', fn ($query) => $query->whereKey($user->id))->count()],
+                    ] : []),
                 ],
                 'engine'   => function ($query, $elements) use ($user) {
                     $query->where(function ($query) use ($elements, $user) {
@@ -113,7 +117,46 @@ class IndexTickets extends OrgAction
                     );
                 },
             ],
+            'qa_status' => [
+                'label'    => __('QA status'),
+                'optional' => true,
+                'elements' => collect(TicketQaStatusEnum::cases())->mapWithKeys(fn (TicketQaStatusEnum $qaStatus) => [
+                    $qaStatus->value => [$qaStatus->shortLabel(), (clone $base)->where('qa_status', $qaStatus)->count()],
+                ])->all(),
+                'engine'   => function ($query, $elements) {
+                    $query->whereIn('tickets.qa_status', $elements);
+                },
+            ],
         ];
+
+        if (Ticket::canCheckQa($user)) {
+            $groups['qa_checker'] = [
+                'label'    => __('QA assignee'),
+                'optional' => true,
+                'elements' => [
+                    'mine'     => [__('Mine'), (clone $base)->where('qa_user_id', $user->id)->count()],
+                    'anyone'   => [__('Anyone'), (clone $base)->whereNotNull('qa_status')->whereNull('qa_user_id')->count()],
+                    'everyone' => [__('Everyone'), (clone $base)->whereNotNull('qa_status')->count()],
+                ],
+                'engine'   => function ($query, $elements) use ($user) {
+                    $query->where(function ($query) use ($elements, $user) {
+                        if (in_array('everyone', $elements)) {
+                            $query->orWhereNotNull('tickets.qa_status');
+
+                            return;
+                        }
+                        if (in_array('mine', $elements)) {
+                            $query->orWhere('tickets.qa_user_id', $user->id);
+                        }
+                        if (in_array('anyone', $elements)) {
+                            $query->orWhere(fn ($query) => $query->whereNotNull('tickets.qa_status')->whereNull('tickets.qa_user_id'));
+                        }
+                    });
+                },
+            ];
+        }
+
+        return $groups;
     }
 
     /**
@@ -219,7 +262,8 @@ class IndexTickets extends OrgAction
                 allowedElements: array_keys($elementGroup['elements']),
                 engine: $elementGroup['engine'],
                 prefix: $prefix,
-                default: $key === 'mine' ? $this->savedMineFilter() : null
+                default: $key === 'mine' ? $this->savedMineFilter() : null,
+                optional: $elementGroup['optional'] ?? false
             );
         }
 
@@ -247,7 +291,7 @@ class IndexTickets extends OrgAction
             }
 
             foreach ($this->getElementGroups($group) as $key => $elementGroup) {
-                $table->elementGroup(key: $key, label: $elementGroup['label'], elements: $elementGroup['elements'], default: $key === 'mine' ? $this->savedMineFilter() : null);
+                $table->elementGroup(key: $key, label: $elementGroup['label'], elements: $elementGroup['elements'], default: $key === 'mine' ? $this->savedMineFilter() : null, optional: $elementGroup['optional'] ?? false);
             }
 
             $table

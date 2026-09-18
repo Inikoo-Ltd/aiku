@@ -439,6 +439,40 @@ test('store transaction for existing product adds to quantity instead of duplica
         ->and($order->transactions()->where('model_type', 'Product')->count())->toBe(1);
 })->depends('create transaction');
 
+test('proforma price breakdown shows gross, discount and net only when requested', function (Transaction $transaction) {
+    $transaction->update(['gross_amount' => 100, 'net_amount' => 80]);
+    $order = $transaction->order->refresh();
+
+    $renderProforma = fn (bool $priceBreakdown) => view('invoices.templates.pdf.proforma-invoice', [
+        'shop'                 => $order->shop,
+        'order'                => $order,
+        'transactions'         => $order->transactions()->where('model_type', 'Product')->get(),
+        'totalItemsNet'        => $order->total_amount,
+        'totalShipping'        => 0,
+        'totalNet'             => '0.00',
+        'amountToDeduct'       => 0,
+        'pro_mode'             => false,
+        'country_of_origin'    => false,
+        'rrp'                  => false,
+        'parts'                => false,
+        'commodity_codes'      => false,
+        'weight'               => false,
+        'barcode'              => false,
+        'hide_payment_status'  => false,
+        'cpnp'                 => false,
+        'group_by_tariff_code' => false,
+        'price_breakdown'      => $priceBreakdown,
+    ])->render();
+
+    $symbol = $order->currency->symbol;
+
+    expect($renderProforma(true))->toContain(__('Gross'))
+        ->toContain($symbol.'100.00')
+        ->toContain('-'.$symbol.'20.00')
+        ->toContain($symbol.'80.00')
+        ->and($renderProforma(false))->not->toContain(__('Gross'));
+})->depends('create transaction');
+
 test('create transaction from adjustment', function (Order $order) {
     $adjustment = StoreAdjustment::make()->action(
         $order->shop,

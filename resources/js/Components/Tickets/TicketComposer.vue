@@ -71,8 +71,18 @@ const addFiles = (files: Iterable<File>) => {
 
 const removeImage = (index: number) => emit("update:images", props.images.filter((_, i) => i !== index))
 
+const clipboardFiles = (clipboard: DataTransfer | null): File[] => {
+    if (clipboard?.types.includes("text/html") && clipboard.types.includes("text/plain")) return []
+    const files = Array.from(clipboard?.files ?? [])
+    if (files.length) return files.filter(isAcceptedFile)
+    return Array.from(clipboard?.items ?? [])
+        .filter((item) => item.kind === "file")
+        .map((item) => item.getAsFile())
+        .filter((file): file is File => file !== null && isAcceptedFile(file))
+}
+
 const onPaste = (event: ClipboardEvent) => {
-    const files = Array.from(event.clipboardData?.files ?? []).filter((file) => file.type.startsWith("image/"))
+    const files = clipboardFiles(event.clipboardData)
     if (files.length) {
         event.preventDefault()
         addFiles(files)

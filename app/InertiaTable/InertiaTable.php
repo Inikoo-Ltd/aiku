@@ -400,7 +400,7 @@ class InertiaTable
         return $this;
     }
 
-    public function elementGroup(string $key, array|string $label, array $elements, ?string $default = null): self
+    public function elementGroup(string $key, array|string $label, array $elements, ?string $default = null, bool $optional = false): self
     {
         if (is_string($label)) {
             $label = $label ?: Str::headline($key);
@@ -417,6 +417,7 @@ class InertiaTable
                 label: $label,
                 elements: $elements,
                 default: $default,
+                optional: $optional,
             )
         );
 

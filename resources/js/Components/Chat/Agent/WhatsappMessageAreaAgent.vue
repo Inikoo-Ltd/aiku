@@ -15,6 +15,7 @@ import {
     faRotateRight,
     faFaceSmile,
     faLifeRing,
+    faEye,
 } from "@fortawesome/free-solid-svg-icons"
 import { faWhatsapp } from "@fortawesome/free-brands-svg-icons"
 import type { ChatMessage, SessionAPI } from "@/types/Chat/chat"
@@ -66,6 +67,7 @@ const props = defineProps<{
     messages: ChatMessage[]
     session: SessionAPI | null
     organisationSlug: string
+    readOnly?: boolean
 }>()
 
 const emit = defineEmits(["back", "messages-read", "assign-self-success", "close-session", "view-profile"])
@@ -182,8 +184,10 @@ const previewType = ref<"image" | "file" | null>(null)
 
 const handleImageSelect = (e: Event) => {
     const file = (e.target as HTMLInputElement)?.files?.[0]
-    if (!file) return
+    if (file) selectImage(file)
+}
 
+const selectImage = (file: File) => {
     if (!IMAGE_TYPES.includes(file.type)) {
         notify({
             title: trans("Failed"),
@@ -205,8 +209,10 @@ const handleImageSelect = (e: Event) => {
 
 const handleDocSelect = (e: Event) => {
     const file = (e.target as HTMLInputElement)?.files?.[0]
-    if (!file) return
+    if (file) selectDoc(file)
+}
 
+const selectDoc = (file: File) => {
     if (!FILE_TYPES.includes(file.type)) {
         notify({
             title: trans("Failed"),
@@ -224,6 +230,22 @@ const handleDocSelect = (e: Event) => {
     selectedFile.value = file
     previewType.value = "file"
     previewUrl.value = null
+}
+
+const onPasteAttachment = (event: ClipboardEvent) => {
+    const clipboard = event.clipboardData
+    if (clipboard?.types.includes("text/html") && clipboard.types.includes("text/plain")) return
+    const file = clipboard?.files?.[0]
+        ?? Array.from(clipboard?.items ?? []).find((item) => item.kind === "file")?.getAsFile()
+        ?? null
+    if (!file) return
+
+    event.preventDefault()
+    if (file.type.startsWith("image/")) {
+        selectImage(file)
+    } else {
+        selectDoc(file)
+    }
 }
 
 const removeFile = () => {
@@ -892,7 +914,14 @@ onUnmounted(() => {
         </div>
 
         <!-- Footer: closed banner -->
-        <footer v-if="isClosed" class="px-3 py-3 bg-white border-t">
+        <footer v-if="readOnly" class="px-3 py-3 bg-white border-t">
+            <div class="flex items-center justify-center gap-2 text-xs text-gray-500">
+                <FontAwesomeIcon :icon="faEye" class="text-gray-400" fixed-width aria-hidden="true" />
+                {{ trans("You are viewing this conversation in read-only mode") }}
+            </div>
+        </footer>
+
+        <footer v-else-if="isClosed" class="px-3 py-3 bg-white border-t">
             <div class="flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg bg-gray-50 border border-gray-200">
                 <div class="text-xs text-gray-600">
                     {{ trans('This chat has been closed') }}
@@ -1001,6 +1030,7 @@ onUnmounted(() => {
                 </div>
 
                 <textarea v-if="!hasTemplate" ref="messageInput" v-model="newMessage" @input="autoResize"
+                    @paste="onPasteAttachment"
                     @keydown.enter.exact.prevent="sendMessage" rows="1" :disabled="templateOnly"
                     :placeholder="templateOnly ? trans('24h window closed, send a template message') : trans('Type message...')"
                     class="w-full resize-none px-4 pt-3 pb-1 text-sm leading-5 outline-none border-none ring-0 focus:outline-none focus:ring-0 rounded-t-xl bg-transparent disabled:bg-gray-50 disabled:text-gray-400 disabled:cursor-not-allowed" />

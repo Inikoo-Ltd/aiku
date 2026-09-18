@@ -27,6 +27,15 @@ enum TicketQaStatusEnum: string
         ];
     }
 
+    public function shortLabel(): string
+    {
+        return match ($this) {
+            self::REQUESTED => __('Requested'),
+            self::PASSED    => __('Passed'),
+            self::FAILED    => __('Failed'),
+        };
+    }
+
     public static function stateIcon(): array
     {
         return [

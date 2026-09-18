@@ -7,6 +7,7 @@
 
 namespace App\Actions\Chat\MetaChatSession\UI;
 
+use App\Actions\Chat\GetChatScopeShops;
 use App\Enums\CRM\Livechat\ChatAssignmentStatusEnum;
 use App\Enums\CRM\Livechat\ChatEventTypeEnum;
 use App\Enums\CRM\Livechat\ChatSenderTypeEnum;
@@ -54,7 +55,13 @@ class GetMetaChatSessions
 
     public function asController(ActionRequest $request)
     {
-        return $this->handle($request->validated());
+        $filters = $request->validated();
+
+        if ($request->user()) {
+            $filters['visible_shop_ids'] = GetChatScopeShops::make()->shopIds($request->user());
+        }
+
+        return $this->handle($filters);
     }
 
     /**
@@ -191,6 +198,10 @@ class GetMetaChatSessions
             $query->whereHas('shop', function ($q) use ($organisationId) {
                 $q->where('organisation_id', $organisationId);
             });
+        }
+
+        if (isset($filters['visible_shop_ids'])) {
+            $query->whereIn('shop_id', $filters['visible_shop_ids']);
         }
 
         if (!empty($filters['shop_id'])) {

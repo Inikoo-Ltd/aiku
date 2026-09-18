@@ -124,6 +124,15 @@ class UpdateTicket extends OrgAction
         }
 
         if ($ticket->wasChanged('status')) {
+            NotifyTicketUsers::make()->statusChangedForCollaborators($ticket, $asker instanceof User ? $asker : null);
+        }
+
+        $editedFields = array_values(array_filter(['priority', 'module', 'kind', 'description'], fn (string $field) => $ticket->wasChanged($field)));
+        if ($editedFields !== []) {
+            NotifyTicketUsers::make()->edited($ticket, $asker instanceof User ? $asker : null, $editedFields);
+        }
+
+        if ($ticket->wasChanged('status')) {
             PostTicketSlackThreadReply::run($ticket, $ticket->reference.' is now '.TicketStatusEnum::labels()[$ticket->status->value]);
         }
 

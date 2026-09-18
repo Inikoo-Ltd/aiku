@@ -8,6 +8,7 @@
 
 namespace App\Actions\SysAdmin\User\UI;
 
+use App\Actions\Chat\GetChatCapabilities;
 use App\Actions\Helpers\TimeZone\Json\IndexTimeZones;
 use App\Models\SysAdmin\User;
 use Illuminate\Support\Arr;
@@ -41,6 +42,7 @@ class GetLoggedUser
             'is_agent'     => $isAgent,
             'agent_id'     => $user->chatAgent?->id,
             'agent_shops'  => $agentShops,
+            'chat'         => GetChatCapabilities::run($user),
             'timezone'       => $user->timezone_name,
             'timezone_place' => IndexTimeZones::make()->clockNameFor($user->timezone_name),
             'settings' => [

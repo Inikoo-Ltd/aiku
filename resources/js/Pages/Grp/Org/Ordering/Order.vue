@@ -74,7 +74,8 @@ import {
     faTrash,
     faPercentage,
     faSackDollar,
-    faUndo as falUndo
+    faUndo as falUndo,
+    faInfoCircle,
 } from "@fal"
 import { Currency } from "@/types/LayoutRules"
 import TableInvoices from "@/Components/Tables/Grp/Org/Accounting/TableInvoices.vue"
@@ -104,7 +105,7 @@ import { Icon as IconTS } from "@/types/Utils/Icon"
 import ShipmentSection from "@/Components/Warehouse/DeliveryNotes/ShipmentSection.vue"
 import { ctrans } from "@/Composables/useTrans"
 
-library.add(faParachuteBox, faEllipsisH, faSortNumericDown, fadExclamationTriangle, faExclamationTriangle, faDollarSign, faIdCardAlt, faShippingFast, faIdCard, faEnvelope, faPhone, faEdit, faWeight, faStickyNote, faExclamation, faTruck, faFilePdf, faPaperclip, faSpinnerThird, faMapMarkerAlt, faUndo, faStar, faShieldAlt, faPlus, faCopy, faMoneyCheckEditAlt, faSackDollar)
+library.add(faParachuteBox, faEllipsisH, faSortNumericDown, fadExclamationTriangle, faExclamationTriangle, faDollarSign, faIdCardAlt, faShippingFast, faIdCard, faEnvelope, faPhone, faEdit, faWeight, faStickyNote, faExclamation, faTruck, faFilePdf, faPaperclip, faSpinnerThird, faMapMarkerAlt, faUndo, faStar, faShieldAlt, faPlus, faCopy, faMoneyCheckEditAlt, faSackDollar, faInfoCircle)
 
 interface OrderCharge {
     name: string
@@ -3029,6 +3030,7 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                 <div v-for="check of proforma_invoice.check_list" :key="check.key" class="flex items-center gap-2">
                     <Checkbox v-model="selectedCheck" :inputId="check.value" :name="check.value" :value="check.value" />
                     <label :for="check.value" class="cursor-pointer">{{ check.label }}</label>
+                    <FontAwesomeIcon v-if="check.tooltip" v-tooltip="check.tooltip" icon="fal fa-info-circle" class="text-gray-400" fixed-width aria-hidden="true" />
                 </div>
             </div>
 

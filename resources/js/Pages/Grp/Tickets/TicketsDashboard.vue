@@ -5,16 +5,20 @@
   -->
 
 <script setup lang="ts">
-import { Head, Link } from "@inertiajs/vue3"
+import { computed, provide, ref } from "vue"
+import { Head, Link, router } from "@inertiajs/vue3"
 import { trans } from "laravel-vue-i18n"
 import { capitalize } from "@/Composables/capitalize"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import TicketForm from "@/Components/Tickets/TicketForm.vue"
 import TicketMiniList from "@/Components/Tickets/TicketMiniList.vue"
+import TicketQaQueue from "@/Components/Tickets/TicketQaQueue.vue"
+import TicketTodoTabs from "@/Components/Tickets/TicketTodoTabs.vue"
+import TicketQuickLook from "@/Components/Tickets/TicketQuickLook.vue"
 import Icon from "@/Components/Icon.vue"
 import { useLiveTickets } from "@/Composables/useLiveTickets"
 
-defineProps<{
+const props = defineProps<{
     pageHead: any
     title: string
     can_manage: boolean
@@ -34,7 +38,46 @@ defineProps<{
     by_status?: { status: string; label: string; icon: any; total: number }[]
 }>()
 
-useLiveTickets(["can_manage", "can_qa", "mine", "recently_closed", "stats", "queue", "qa_queue", "assigned", "collaborating", "waiting_due", "by_status"])
+const liveProps = ["can_manage", "can_qa", "mine", "recently_closed", "stats", "queue", "qa_queue", "assigned", "collaborating", "waiting_due", "by_status"]
+
+const quickLook = ref<any | null>(null)
+
+useLiveTickets(liveProps, undefined, computed(() => quickLook.value !== null))
+
+provide("openTicketQuickLook", (ticket: any) => (quickLook.value = ticket))
+
+const closeQuickLook = () => {
+    quickLook.value = null
+    router.reload({ only: liveProps, preserveScroll: true })
+}
+
+type WorkTab = "tickets" | "qa"
+
+const workTabs = computed(() => [
+    ...(props.can_manage ? [{ key: "tickets" as WorkTab, label: trans("Tickets"), total: (props.assigned?.length ?? 0) + (props.collaborating?.length ?? 0) + (props.waiting_due?.length ?? 0) }] : []),
+    ...(props.can_qa ? [{ key: "qa" as WorkTab, label: trans("QA"), total: props.qa_queue?.length ?? 0 }] : []),
+])
+
+const readWorkTab = (): WorkTab | null => {
+    try {
+        return localStorage.getItem("tickets_dashboard_tab") as WorkTab | null
+    } catch {
+        return null
+    }
+}
+
+const chosenWorkTab = ref<WorkTab | null>(readWorkTab())
+
+const activeWorkTab = computed(() => workTabs.value.find((tab) => tab.key === chosenWorkTab.value)?.key ?? workTabs.value[0]?.key ?? null)
+
+const chooseWorkTab = (tab: WorkTab) => {
+    chosenWorkTab.value = tab
+    try {
+        localStorage.setItem("tickets_dashboard_tab", tab)
+    } catch {
+        return
+    }
+}
 
 const hours = (value: number | null) => (value === null ? "-" : value >= 48 ? `${(value / 24).toFixed(1)} ${trans("days")}` : `${value} ${trans("h")}`)
 </script>
@@ -68,15 +111,31 @@ const hours = (value: number | null) => (value === null ? "-" : value >= 48 ? `$
             </template>
         </div>
 
-        <TicketMiniList v-if="can_qa && !can_manage" :title="trans('Waiting for a QA check, oldest first')" :tickets="qa_queue ?? []" :empty="trans('Nothing to check')" date-key="qa_requested_at" show-assignee />
+        <div v-if="workTabs.length" class="bg-white rounded-lg shadow-sm border border-gray-300 overflow-hidden">
+            <div class="flex gap-1 border-b border-gray-200 px-2">
+                <button
+                    v-for="tab in workTabs"
+                    :key="tab.key"
+                    type="button"
+                    class="-mb-px flex items-center gap-2 border-b-2 px-3 py-2.5 text-sm font-semibold transition duration-200"
+                    :class="activeWorkTab === tab.key ? 'border-indigo-600 text-indigo-700' : 'border-transparent text-gray-500 hover:text-gray-800'"
+                    @click="chooseWorkTab(tab.key)"
+                >
+                    {{ tab.label }}
+                    <span class="rounded-full px-2 py-0.5 text-xs font-normal tabular-nums" :class="activeWorkTab === tab.key ? 'bg-indigo-50 text-indigo-700' : 'bg-gray-100 text-gray-600'">{{ tab.total }}</span>
+                </button>
+            </div>
+            <div v-if="activeWorkTab === 'tickets'" class="grid divide-y divide-gray-200 lg:divide-x lg:divide-y-0" :class="collaborating?.length ? 'lg:grid-cols-3' : 'lg:grid-cols-2'">
+                <TicketMiniList flat :title="trans('Assigned to me')" :tickets="assigned ?? []" :empty="trans('Nothing on your plate')" />
+                <TicketMiniList v-if="collaborating?.length" flat :title="trans('Collaborating on')" :tickets="collaborating" :empty="trans('Not collaborating on anything')" show-assignee />
+                <TicketMiniList flat :title="trans('Waiting, due now')" :tickets="waiting_due ?? []" :empty="trans('Nothing due')" date-key="waiting_until" show-assignee />
+            </div>
+            <TicketQaQueue v-else-if="activeWorkTab === 'qa'" flat :title="trans('QA queue')" :tickets="qa_queue ?? []" />
+        </div>
 
         <div v-if="can_manage" class="grid gap-4 lg:grid-cols-2">
-            <TicketMiniList :title="trans('Assigned to me')" :tickets="assigned ?? []" :empty="trans('Nothing on your plate')" />
-            <TicketMiniList v-if="collaborating?.length" :title="trans('Collaborating on')" :tickets="collaborating" :empty="trans('Not collaborating on anything')" show-assignee />
-            <TicketMiniList :title="trans('Waiting for a QA check')" :tickets="qa_queue ?? []" :empty="trans('Nothing to check')" date-key="qa_requested_at" show-assignee />
-            <TicketMiniList :title="trans('Waiting, due now')" :tickets="waiting_due ?? []" :empty="trans('Nothing due')" date-key="waiting_until" show-assignee />
             <div class="lg:col-span-2">
-                <TicketMiniList :title="trans('Todo, unassigned, oldest and most urgent first')" :tickets="queue ?? []" :empty="trans('Queue is empty')" date-key="created_at" />
+                <TicketTodoTabs :queue="queue ?? []" />
                 <p class="text-xs text-gray-500 text-right mt-1"><Link :href="route('grp.tickets.board')" class="primaryLink">{{ trans("Whole board") }}</Link></p>
             </div>
             <TicketMiniList :title="trans('Raised by me')" :tickets="mine" :empty="trans('You have no open tickets')" show-assignee />
@@ -97,4 +156,5 @@ const hours = (value: number | null) => (value === null ? "-" : value >= 48 ? `$
             </div>
         </div>
     </div>
+    <TicketQuickLook v-model:ticket="quickLook" @closed="closeQuickLook" />
 </template>
