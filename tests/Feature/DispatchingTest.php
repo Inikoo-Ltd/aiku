@@ -4487,3 +4487,20 @@ test('order transactions only show the batch code column once a picking carries 
 
     expect($columnKeys())->toContain('batch_codes');
 });
+
+test('finishing a return only marks the still unhandled quantity as not returned (HELP-3194)', function () {
+    [$deliveryNote] = handlingDeliveryNoteWithPicking($this);
+    $deliveryNote->update(['state' => DeliveryNoteStateEnum::DISPATCHED]);
+
+    $returnDeliveryNote = \App\Actions\GoodsIn\ReturnDeliveryNote\ProcessReturnDeliveryNote::make()->handle($deliveryNote, []);
+    $returnItem         = $returnDeliveryNote->returnDeliveryNoteItem()->first();
+    $returnItem->update(['total_expected_qty' => 2]);
+
+    \App\Actions\GoodsIn\ReturnDeliveryNoteItem\UpsertReturnDeliveryNoteItemNotReturned::make()->action($returnItem, ['quantity' => 1]);
+    $returnDeliveryNote->update(['state' => \App\Enums\GoodsIn\ReturnDeliveryNote\ReturnDeliveryNoteStateEnum::RETURNING]);
+
+    request()->setUserResolver(fn () => $this->user);
+    \App\Actions\GoodsIn\ReturnDeliveryNote\SetReturnedReturnDeliveryNote::make()->handle($returnDeliveryNote->refresh());
+
+    expect((float) $returnItem->refresh()->total_item_not_returned)->toBe(2.0);
+});
