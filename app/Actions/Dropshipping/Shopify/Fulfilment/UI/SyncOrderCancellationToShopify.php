@@ -11,6 +11,7 @@ namespace App\Actions\Dropshipping\Shopify\Fulfilment\UI;
 
 use App\Actions\Dropshipping\Shopify\Fulfilment\CloseFulfillOrderToShopify;
 use App\Actions\OrgAction;
+use App\Actions\Traits\WithRetinaCustomerOwnedRouteModels;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\Ordering\Order;
@@ -19,6 +20,8 @@ use Lorisleiva\Actions\ActionRequest;
 
 class SyncOrderCancellationToShopify extends OrgAction
 {
+    use WithRetinaCustomerOwnedRouteModels;
+
     public function handle(Order $order): void
     {
         if ($order->platform->type !== PlatformTypeEnum::SHOPIFY) {

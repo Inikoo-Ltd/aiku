@@ -11,12 +11,14 @@ namespace App\Actions\Retina\Fulfilment\PalletReturn;
 
 use App\Actions\Fulfilment\PalletReturn\SwitchPalletReturnDeliveryAddress;
 use App\Actions\RetinaAction;
+use App\Actions\Traits\WithRetinaCustomerOwnedRouteModels;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Fulfilment\PalletReturn;
 use Lorisleiva\Actions\ActionRequest;
 
 class SwitchRetinaPalletReturnDeliveryAddress extends RetinaAction
 {
+    use WithRetinaCustomerOwnedRouteModels;
     use WithActionUpdate;
 
     public function handle(PalletReturn $palletReturn, array $modelData): void

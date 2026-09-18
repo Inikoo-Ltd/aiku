@@ -11,6 +11,7 @@ namespace App\Actions\Dropshipping\Ebay;
 
 use App\Actions\Dropshipping\Ebay\Traits\WithEbayApiRequest;
 use App\Actions\RetinaAction;
+use App\Actions\Traits\WithRetinaCustomerOwnedRouteModels;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Dropshipping\EbayUser;
 use Illuminate\Support\Arr;
@@ -22,6 +23,7 @@ use Mockery\Exception;
 
 class CheckEbayUserAuthorized extends RetinaAction
 {
+    use WithRetinaCustomerOwnedRouteModels;
     use AsAction;
     use WithAttributes;
     use WithActionUpdate;

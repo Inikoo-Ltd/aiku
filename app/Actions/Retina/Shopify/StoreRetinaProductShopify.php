@@ -12,6 +12,7 @@ namespace App\Actions\Retina\Shopify;
 use App\Actions\Dropshipping\CustomerSalesChannel\Hydrators\CustomerSalesChannelsHydratePortfolios;
 use App\Actions\Dropshipping\Portfolio\StorePortfolio;
 use App\Actions\RetinaAction;
+use App\Actions\Traits\WithRetinaCustomerOwnedRouteModels;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Catalogue\Product;
 use App\Models\Dropshipping\ShopifyUser;
@@ -23,6 +24,7 @@ use Lorisleiva\Actions\Concerns\WithAttributes;
 
 class StoreRetinaProductShopify extends RetinaAction
 {
+    use WithRetinaCustomerOwnedRouteModels;
     use AsAction;
     use WithAttributes;
     use WithActionUpdate;
@@ -51,11 +53,6 @@ class StoreRetinaProductShopify extends RetinaAction
         return [
             'items' => ['required', 'array']
         ];
-    }
-
-    public function authorize(ActionRequest $request): bool
-    {
-        return true;
     }
 
     /**

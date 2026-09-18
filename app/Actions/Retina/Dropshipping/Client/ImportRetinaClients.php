@@ -12,12 +12,14 @@ namespace App\Actions\Retina\Dropshipping\Client;
 use App\Actions\Dropshipping\CustomerClient\ImportCustomerClients;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithImportModel;
+use App\Actions\Traits\WithRetinaCustomerOwnedRouteModels;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Helpers\Upload;
 use Lorisleiva\Actions\ActionRequest;
 
 class ImportRetinaClients extends RetinaAction
 {
+    use WithRetinaCustomerOwnedRouteModels;
     use WithImportModel;
 
     public function handle(CustomerSalesChannel $customerSalesChannel, $file): Upload

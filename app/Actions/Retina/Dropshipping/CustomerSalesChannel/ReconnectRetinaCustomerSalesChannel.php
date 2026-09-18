@@ -14,6 +14,7 @@ use App\Actions\Dropshipping\Magento\ReAuthorizeMagentoUser;
 use App\Actions\Dropshipping\Wix\User\AuthenticateWixAccount;
 use App\Actions\Dropshipping\WooCommerce\ReAuthorizeRetinaWooCommerceUser;
 use App\Actions\RetinaAction;
+use App\Actions\Traits\WithRetinaCustomerOwnedRouteModels;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
@@ -25,6 +26,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class ReconnectRetinaCustomerSalesChannel extends RetinaAction
 {
+    use WithRetinaCustomerOwnedRouteModels;
     use WithActionUpdate;
 
     public function handle(CustomerSalesChannel $customerSalesChannel, ?ActionRequest $request): ?string

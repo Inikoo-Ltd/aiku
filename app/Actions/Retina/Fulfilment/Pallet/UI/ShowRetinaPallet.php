@@ -14,6 +14,7 @@ use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\Retina\Fulfilment\StoredItems\UI\IndexRetinaStoredItems;
 use App\Actions\Retina\Fulfilment\UI\ShowRetinaStorageDashboard;
 use App\Actions\RetinaAction;
+use App\Actions\Traits\WithRetinaCustomerOwnedRouteModels;
 use App\Enums\Fulfilment\Pallet\PalletStatusEnum;
 use App\Enums\UI\Fulfilment\PalletTabsEnum;
 use App\Http\Resources\Fulfilment\RetinaPalletResource;
@@ -33,6 +34,7 @@ use Lorisleiva\Actions\ActionRequest;
  */
 class ShowRetinaPallet extends RetinaAction
 {
+    use WithRetinaCustomerOwnedRouteModels;
     use WithBucketNavigation;
 
     public function asController(Pallet $pallet, ActionRequest $request): Pallet

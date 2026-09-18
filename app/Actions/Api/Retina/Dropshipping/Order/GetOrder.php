@@ -23,7 +23,7 @@ class GetOrder extends RetinaApiAction
 
     public function handle(Order $order): Order
     {
-        return $order;
+        return $order->load(['stats', 'customer', 'deliveryAddress', 'billingAddress', 'transactions', 'payments.paymentAccount', 'payments.currency']);
     }
 
     public function jsonResponse(Order $order)

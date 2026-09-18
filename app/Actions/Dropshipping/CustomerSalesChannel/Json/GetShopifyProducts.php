@@ -19,6 +19,8 @@ use Lorisleiva\Actions\ActionRequest;
 
 class GetShopifyProducts extends OrgAction
 {
+    use WithRetinaOwnedCustomerSalesChannel;
+
     public function handle(CustomerSalesChannel $customerSalesChannel, array $modelData): array|null
     {
         $products = GetShopifyListedProducts::run(

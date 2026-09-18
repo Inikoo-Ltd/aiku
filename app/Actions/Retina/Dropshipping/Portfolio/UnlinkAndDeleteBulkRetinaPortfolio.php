@@ -24,13 +24,13 @@ class UnlinkAndDeleteBulkRetinaPortfolio extends RetinaAction
 
     public function handle(array $modelData): void
     {
-        foreach (Arr::get($modelData, 'portfolios', []) as $portfolioId) {
-            $portfolio = Portfolio::find($portfolioId);
+        $portfolios = Portfolio::whereIn('id', Arr::get($modelData, 'portfolios', []))
+            ->with('customerSalesChannel.platform')
+            ->get();
 
-            if ($portfolio) {
-                UnlinkRetinaPortfolio::run($portfolio);
-                DeleteRetinaPortfolio::run($portfolio);
-            }
+        foreach ($portfolios as $portfolio) {
+            UnlinkRetinaPortfolio::run($portfolio);
+            DeleteRetinaPortfolio::run($portfolio);
         }
     }
 

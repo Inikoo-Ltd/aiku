@@ -9,6 +9,7 @@
 
 namespace App\Actions\Retina\Dropshipping\Orders;
 
+use App\Actions\Traits\WithRetinaRouteModelOwnershipCheck;
 use App\Actions\Ordering\Order\UI\GetOrderDeliveryAddressManagement;
 use App\Actions\Ordering\Order\Watcher\FixMiscalculatedTransactionAmounts;
 use App\Actions\Ordering\Order\WithOrderForbiddenCountryCheck;
@@ -39,6 +40,7 @@ use App\Models\Dropshipping\CustomerSalesChannel;
 
 class ShowRetinaDropshippingBasket extends RetinaAction
 {
+    use WithRetinaRouteModelOwnershipCheck;
     use \App\Actions\Traits\WithLineTaxCategories;
     use HasBasketDetails;
     use GetPlatformLogo;
@@ -52,12 +54,7 @@ class ShowRetinaDropshippingBasket extends RetinaAction
 
     public function authorize(ActionRequest $request): bool
     {
-        $customerSalesChannel = $request->route('customerSalesChannel');
-        if ($customerSalesChannel->customer_id == $this->customer->id) {
-            return true;
-        }
-
-        return false;
+        return $this->retinaCustomerOwnsRouteModels($request);
     }
 
     public function asController(CustomerSalesChannel $customerSalesChannel, Order $order, ActionRequest $request): Order

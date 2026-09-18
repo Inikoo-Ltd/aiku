@@ -12,6 +12,7 @@ namespace App\Actions\Retina\Dropshipping\Orders;
 use App\Actions\Ordering\Order\UpdateOrder;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
+use App\Actions\Traits\WithRetinaCustomerOwnedRouteModels;
 use App\Models\Ordering\Order;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
@@ -20,6 +21,7 @@ use Lorisleiva\Actions\Concerns\WithAttributes;
 
 class UpdateRetinaOrder extends RetinaAction
 {
+    use WithRetinaCustomerOwnedRouteModels;
     use AsAction;
     use WithAttributes;
     use WithActionUpdate;
@@ -27,11 +29,6 @@ class UpdateRetinaOrder extends RetinaAction
     public function handle(Order $order, array $modelData): Order
     {
         return UpdateOrder::make()->action($order, $modelData);
-    }
-
-    public function authorize(ActionRequest $request): bool
-    {
-        return true;
     }
 
     public function rules(): array

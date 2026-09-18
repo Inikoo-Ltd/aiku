@@ -15,6 +15,7 @@ use App\Actions\Dropshipping\Shopify\Product\UpdateShopifyProductVariant;
 use App\Actions\Dropshipping\Wix\Product\UpdateWixProduct;
 use App\Actions\Dropshipping\WooCommerce\Product\UpdateWooProduct;
 use App\Actions\RetinaAction;
+use App\Actions\Traits\WithRetinaCustomerOwnedRouteModels;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\Dropshipping\Portfolio;
 use App\Traits\SanitizeInputs;
@@ -27,6 +28,7 @@ use Lorisleiva\Actions\Concerns\AsAction;
 
 class UpdateAndUploadRetinaPortfolioToCurrentChannel extends RetinaAction
 {
+    use WithRetinaCustomerOwnedRouteModels;
     use AsAction;
     use SanitizeInputs;
 

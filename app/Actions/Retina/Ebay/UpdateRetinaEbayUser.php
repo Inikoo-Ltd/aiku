@@ -12,6 +12,7 @@ namespace App\Actions\Retina\Ebay;
 use App\Actions\Dropshipping\Ebay\UpdateEbayUser;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
+use App\Actions\Traits\WithRetinaCustomerOwnedRouteModels;
 use App\Enums\Dropshipping\EbayUserStepEnum;
 use App\Models\Dropshipping\EbayUser;
 use Illuminate\Support\Arr;
@@ -21,6 +22,7 @@ use Lorisleiva\Actions\Concerns\WithAttributes;
 
 class UpdateRetinaEbayUser extends RetinaAction
 {
+    use WithRetinaCustomerOwnedRouteModels;
     use AsAction;
     use WithAttributes;
     use WithActionUpdate;

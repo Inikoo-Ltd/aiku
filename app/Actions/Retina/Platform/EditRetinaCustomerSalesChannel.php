@@ -10,6 +10,7 @@
 namespace App\Actions\Retina\Platform;
 
 use App\Actions\RetinaAction;
+use App\Actions\Traits\WithRetinaCustomerOwnedRouteModels;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\EbayUser;
 use App\Models\Helpers\TaxCategory;
@@ -21,6 +22,8 @@ use Spatie\LaravelOptions\Options;
 
 class EditRetinaCustomerSalesChannel extends RetinaAction
 {
+    use WithRetinaCustomerOwnedRouteModels;
+
     public function handle(CustomerSalesChannel $customerSalesChannel, ActionRequest $request): Response
     {
         $request->route()->getName();

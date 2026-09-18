@@ -29,23 +29,26 @@ trait HasRetinaCustomerProductData
             $customer = $user->customer;
         }
 
-        $favourite = false;
-        if ($customer) {
-            $favourite = $customer->favourites()?->where('product_id', $this->id)->first();
-        }
-
+        $favourite        = false;
         $back_in_stock_id = null;
         $back_in_stock    = false;
 
-
         if ($customer) {
-            $set_data_back_in_stock = $customer->backInStockReminder()
-                ?->where('product_id', $this->id)
-                ->first();
+            $favouriteProductIds = $request->attributes->get('retina_favourite_product_ids');
+            if ($favouriteProductIds === null) {
+                $favouriteProductIds = $customer->favourites()->whereNull('unfavourited_at')->pluck('product_id')->flip()->all();
+                $request->attributes->set('retina_favourite_product_ids', $favouriteProductIds);
+            }
+            $favourite = isset($favouriteProductIds[$this->id]);
 
-            if ($set_data_back_in_stock) {
+            $backInStockIds = $request->attributes->get('retina_back_in_stock_ids');
+            if ($backInStockIds === null) {
+                $backInStockIds = $customer->backInStockReminder()->pluck('id', 'product_id')->all();
+                $request->attributes->set('retina_back_in_stock_ids', $backInStockIds);
+            }
+            if (isset($backInStockIds[$this->id])) {
                 $back_in_stock    = true;
-                $back_in_stock_id = $set_data_back_in_stock->id;
+                $back_in_stock_id = $backInStockIds[$this->id];
             }
         }
 
@@ -82,7 +85,7 @@ trait HasRetinaCustomerProductData
             'transaction_id'             => $this->transaction_id ?? null,
             'quantity_ordered'           => (int)$this->quantity_ordered ?? 0,
             'quantity_ordered_new'       => (int)$this->quantity_ordered ?? 0,
-            'is_favourite'               => $favourite && !$favourite->unfavourited_at ?? false,
+            'is_favourite'               => $favourite,
             'is_back_in_stock'           => $back_in_stock,
             'back_in_stock_id'           => $back_in_stock_id,
             'profit_per_unit'            => $profitPerUnit,

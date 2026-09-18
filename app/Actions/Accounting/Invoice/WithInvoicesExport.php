@@ -164,7 +164,7 @@ trait WithInvoicesExport
      */
     public function getInvoicePdfTransactions(Invoice $invoice): \Illuminate\Support\Collection
     {
-        $invoiceTransactions = $invoice->invoiceTransactions()->with(['model', 'historicAsset', 'transaction'])->get();
+        $invoiceTransactions = $invoice->invoiceTransactions()->with(['model', 'historicAsset', 'transaction', 'recurringBillTransaction.item'])->get();
 
         if ($invoice->customer->is_fulfilment || $invoice->type == InvoiceTypeEnum::REFUND) {
             return $invoiceTransactions;
@@ -196,9 +196,20 @@ trait WithInvoicesExport
 
         $transactionModel = $this->getInvoicePdfTransactions($invoice);
 
-        $transactions = $transactionModel->map(function ($transaction) {
+        $pallets = Pallet::whereIn('id', $transactionModel->map(fn ($transaction) => $transaction->data['pallet_id'] ?? null)->filter()->unique())->get()->keyBy('id');
+
+        $batchCodesByTransaction = DB::table('delivery_note_items')
+            ->join('pickings', 'pickings.delivery_note_item_id', '=', 'delivery_note_items.id')
+            ->join('batch_codes', 'batch_codes.id', '=', 'pickings.batch_code_id')
+            ->whereIn('delivery_note_items.transaction_id', $transactionModel->pluck('transaction_id')->filter()->unique())
+            ->whereNotNull('pickings.batch_code_id')
+            ->distinct()
+            ->get(['delivery_note_items.transaction_id', 'batch_codes.code'])
+            ->groupBy('transaction_id');
+
+        $transactions = $transactionModel->map(function ($transaction) use ($pallets, $batchCodesByTransaction) {
             if (!empty($transaction->data['pallet_id'])) {
-                $pallet                      = Pallet::find($transaction->data['pallet_id']);
+                $pallet                      = $pallets->get($transaction->data['pallet_id']);
                 $transaction->pallet         = $pallet->reference;
                 $transaction->customerPallet = $pallet->customer_reference;
             } elseif ($transaction->model_type == 'Rental' && $transaction->recurringBillTransaction) {
@@ -211,14 +222,7 @@ trait WithInvoicesExport
             }
 
             if ($transaction->transaction_id) {
-                $transaction->batch_codes = DB::table('delivery_note_items')
-                    ->join('pickings', 'pickings.delivery_note_item_id', '=', 'delivery_note_items.id')
-                    ->join('batch_codes', 'batch_codes.id', '=', 'pickings.batch_code_id')
-                    ->where('delivery_note_items.transaction_id', $transaction->transaction_id)
-                    ->whereNotNull('pickings.batch_code_id')
-                    ->distinct()
-                    ->pluck('batch_codes.code')
-                    ->implode(', ');
+                $transaction->batch_codes = $batchCodesByTransaction->get($transaction->transaction_id, collect())->pluck('code')->unique()->implode(', ');
             } else {
                 $transaction->batch_codes = null;
             }

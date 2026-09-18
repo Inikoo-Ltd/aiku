@@ -42,7 +42,7 @@ class StoreApiPortfolio extends RetinaApiAction
 
     public function jsonResponse(Portfolio $portfolio): PortfolioResource
     {
-        return PortfolioResource::make($portfolio);
+        return PortfolioResource::make($portfolio->load('item'));
     }
 
 }

@@ -11,6 +11,7 @@ namespace App\Actions\Retina\Dropshipping\Product;
 
 use App\Actions\Dropshipping\Portfolio\StoreMultiplePortfolios;
 use App\Actions\RetinaAction;
+use App\Actions\Traits\WithRetinaCustomerOwnedRouteModels;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Actions\Retina\Dropshipping\Portfolio\RemoveFilesFromCatalogueIrisR2;
@@ -21,6 +22,7 @@ use Illuminate\Support\Facades\Log;
 
 class StoreRetinaProductManual extends RetinaAction
 {
+    use WithRetinaCustomerOwnedRouteModels;
     use WithActionUpdate;
 
     /**
@@ -60,11 +62,6 @@ class StoreRetinaProductManual extends RetinaAction
         return [
             'items' => ['required', 'array']
         ];
-    }
-
-    public function authorize(ActionRequest $request): bool
-    {
-        return true;
     }
 
     /**
