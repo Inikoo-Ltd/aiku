@@ -2,13 +2,13 @@
     "private": true,
     "scripts": {
         "dev": "npx concurrently -c \"#06b6d4,#6366f1,#a3e635,#fdba74\" \"npm run dev.aiku-public\" \"npm run dev.grp\" \"npm run dev.iris\" \"npm run dev.retina\" --names=public,grp,iris,retina",
-        "build": "npm run build.grp && npm run build.aiku-public && npm run build.iris && npm run build.retina && npm run build.pupil",
+        "build": "node build.mjs",
         "dev.grp": "vite --config vite.grp.config.mjs",
         "build.grp": "vite build --config vite.grp.config.mjs",
         "dev.aiku-public": "vite --config vite.aiku-public.config.js",
         "build.aiku-public": "vite build --config vite.aiku-public.config.js",
         "dev.iris": "vite --config vite.iris.config.mjs",
-        "build.iris": "vite build --config vite.iris.config.mjs && vite build --config vite.iris.config.mjs --ssr",
+        "build.iris": "npm run build.iris.client && npm run build.iris.ssr",
         "build.iris.ssr": "vite build --config vite.iris.config.mjs --ssr",
         "dev.retina": "vite --config vite.retina.config.mjs",
         "build.retina": "vite build --config vite.retina.config.mjs",
@@ -17,7 +17,9 @@
         "postinstall": "patch-package",
         "bdev.grp": "bunx --bun vite --config vite.grp.config.mjs",
         "bdev.retina": "bunx --bun vite --config vite.retina.config.mjs",
-        "bdev.iris": "bunx --bun vite --config vite.iris.config.mjs"
+        "bdev.iris": "bunx --bun vite --config vite.iris.config.mjs",
+        "build.sequential": "npm run build.grp && npm run build.aiku-public && npm run build.iris && npm run build.retina && npm run build.pupil",
+        "build.iris.client": "vite build --config vite.iris.config.mjs"
     },
     "devDependencies": {
         "@codecov/vite-plugin": "^2.0.1",
