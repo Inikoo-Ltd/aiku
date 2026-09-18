@@ -613,6 +613,15 @@ class GetShopNavigation
                     "parameters" => $chatParameters,
                 ],
             ];
+            $chatInbox = [
+                "label" => __("Inbox"),
+                "icon"  => ["fal", "fa-inbox"],
+                "root"  => "grp.org.shops.show.chat.inbox",
+                "route" => [
+                    "name"       => "grp.org.shops.show.chat.inbox",
+                    "parameters" => $chatParameters,
+                ],
+            ];
             $chatWhatsappTemplates = [
                 "label" => __("Whatsapp Template"),
                 "icon"  => ["fab", "fa-whatsapp"],
@@ -627,10 +636,10 @@ class GetShopNavigation
                 "root"    => "grp.org.shops.show.chat.",
                 "label"   => __("Chat"),
                 "icon"    => ["fal", "fa-comment-alt"],
-                "route"   => $isChatAgent ? $chatConversations["route"] : $chatDashboard["route"],
+                "route"   => $isChatAgent ? $chatInbox["route"] : $chatDashboard["route"],
                 "topMenu" => [
                     "subSections" => $isChatAgent
-                        ? [$chatConversations, $chatDashboard, $chatAgents, $chatWhatsappTemplates]
+                        ? [$chatInbox, $chatConversations, $chatDashboard, $chatAgents, $chatWhatsappTemplates]
                         : [$chatDashboard, $chatAgents, $chatConversations, $chatWhatsappTemplates],
                 ],
             ];

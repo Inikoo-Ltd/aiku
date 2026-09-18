@@ -42,22 +42,25 @@ const logoutData = computed(() => ({
 const chatRoute = computed(() => {
     const organisation = layout.currentParams?.organisation
     const shop = layout.currentParams?.shop
+    const isChatAgent = layout.user.chat.is_agent
 
     if (organisation && shop) {
-        const isChatAgent = layout.user.chat.is_agent
-
         return {
-            name: isChatAgent ? "grp.org.shops.show.chat.conversations.show" : "grp.org.shops.show.chat.dashboard",
+            name: isChatAgent ? "grp.org.shops.show.chat.inbox" : "grp.org.shops.show.chat.dashboard",
             parameters: { organisation, shop },
             root: "grp.org.shops.show.chat.",
         }
     }
 
     if (organisation) {
-        return { name: "grp.org.chat.dashboard", parameters: { organisation }, root: "grp.org.chat." }
+        return {
+            name: isChatAgent ? "grp.org.chat.inbox" : "grp.org.chat.dashboard",
+            parameters: { organisation },
+            root: "grp.org.chat.",
+        }
     }
 
-    return { name: layout.user.chat.is_agent ? "grp.chat.inbox" : "grp.chat.reports", parameters: {}, root: "grp.chat." }
+    return { name: isChatAgent ? "grp.chat.inbox" : "grp.chat.reports", parameters: {}, root: "grp.chat." }
 })
 
 const bottomLinks = computed(() => [
