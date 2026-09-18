@@ -8,7 +8,6 @@
 
 namespace App\Actions\UI\Grp\Layout;
 
-use App\Actions\Chat\GetChatCapabilities;
 use App\Models\SysAdmin\Organisation;
 use App\Models\SysAdmin\User;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -249,11 +248,9 @@ class GetOrganisationNavigation
 
         $canSeeShops = $user->authTo(['accounting.'.$organisation->id.'.view', 'org-supervisor.'.$organisation->id, 'shops-view.'.$organisation->id]);
 
-        $chat = GetChatCapabilities::run($user);
-
-        if ($chat['can_view']) {
+        if ($canSeeShops || $user->chatAgent) {
             $chatParameters = [$organisation->slug];
-            $isChatAgent    = $chat['is_agent'];
+            $isChatAgent    = (bool) $user->chatAgent?->shopAssignments()->exists();
             $chatDashboard = [
                 'label' => __('Dashboard'),
                 'icon'  => ['fal', 'fa-comment-alt'],

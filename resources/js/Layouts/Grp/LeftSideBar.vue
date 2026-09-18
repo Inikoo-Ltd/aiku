@@ -42,13 +42,22 @@ const logoutData = computed(() => ({
 const chatRoute = computed(() => {
     const organisation = layout.currentParams?.organisation
     const shop = layout.currentParams?.shop
-    const isChatAgent = layout.user.chat.is_agent
+    const fulfilment = layout.currentParams?.fulfilment
+    const isChatAgent = !!layout.user?.is_agent
 
     if (organisation && shop) {
         return {
             name: isChatAgent ? "grp.org.shops.show.chat.inbox" : "grp.org.shops.show.chat.dashboard",
             parameters: { organisation, shop },
             root: "grp.org.shops.show.chat.",
+        }
+    }
+
+    if (organisation && fulfilment) {
+        return {
+            name: "grp.org.fulfilments.show.chat.dashboard",
+            parameters: { organisation, fulfilment },
+            root: "grp.org.fulfilments.show.chat.",
         }
     }
 
@@ -60,22 +69,13 @@ const chatRoute = computed(() => {
         }
     }
 
-    return { name: isChatAgent ? "grp.chat.inbox" : "grp.chat.reports", parameters: {}, root: "grp.chat." }
+    return { name: isChatAgent ? "grp.chat.inbox" : "grp.chat.dashboard", parameters: {}, root: "grp.chat." }
 })
 
 const bottomLinks = computed(() => [
     { route: "grp.tasks.index", parameters: {}, root: "grp.tasks.", label: trans("Tasks"), tooltip: trans("Tasks: ask a colleague or a department for something"), icon: "fal fa-tasks" },
     { route: "grp.tickets.index", parameters: {}, root: "grp.tickets.", label: trans("Tickets"), tooltip: trans("Tickets: report a problem or ask for help"), icon: "fal fa-life-ring" },
-    ...(layout?.user?.chat?.can_view
-        ? [{
-            route: chatRoute.value.name,
-            parameters: chatRoute.value.parameters,
-            root: chatRoute.value.root,
-            label: trans("Chat"),
-            tooltip: trans("Chat with customers and colleagues"),
-            icon: "fal fa-comment-alt",
-        }]
-        : []),
+    { route: chatRoute.value.name, parameters: chatRoute.value.parameters, root: chatRoute.value.root, label: trans("Chat"), tooltip: trans("Chat with customers and colleagues"), icon: "fal fa-comment-alt" },
 ])
 
 const loadingRoute = ref<string | null>(null)
