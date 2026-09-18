@@ -39,7 +39,12 @@ use App\Actions\Dropshipping\Shopify\WithShopifyPortfolioMatching;
 use App\Actions\Retina\Dropshipping\Portfolio\UnlinkRetinaPortfolio;
 use App\Actions\Dropshipping\Shopify\Product\MatchPortfolioToCurrentShopifyProduct;
 use App\Actions\Dropshipping\Shopify\Product\UpdateShopifyInventory;
+use App\Actions\Dropshipping\Portfolio\Logs\UpdatePlatformPortfolioLog;
+use App\Enums\Ordering\PlatformLogs\PlatformPortfolioLogsStatusEnum;
+use App\Enums\Ordering\PlatformLogs\PlatformPortfolioLogsTypeEnum;
+use App\Models\Dropshipping\PlatformPortfolioLogs;
 use App\Helpers\PlatformResponseFormatter;
+use Lorisleiva\Actions\Decorators\JobDecorator;
 use App\Models\CRM\Customer;
 use App\Models\Dropshipping\ShopifyUser;
 use Illuminate\Support\Facades\Http;
@@ -433,6 +438,52 @@ test('a rejected product upload keeps the portfolio unpublished with a readable 
         ->and($portfolio->refresh()->errors_response['message'])->toBe('Throttled')
         ->and(PlatformResponseFormatter::make()->format($portfolio->errors_response['message'])['hint'])->toContain('limited how fast')
         ->and(PlatformResponseFormatter::make()->format('Exceeded 2 calls per second for api client. Reduce request rates to resume uninterrupted service.')['hint'])->toContain('limited how fast');
+});
+
+function shopifyLoggedStatuses(): array
+{
+    return collect(Queue::pushedJobs())
+        ->flatten(1)
+        ->pluck('job')
+        ->filter(fn ($job) => $job instanceof JobDecorator && $job->getAction() instanceof UpdatePlatformPortfolioLog)
+        ->map(fn ($job) => Arr::get($job->getParameters(), '1.status'))
+        ->values()
+        ->all();
+}
+
+test('an upload records a portfolio log that ends ok when shopify accepts the product and fail when it rejects it', function () {
+    Queue::fake();
+    $shopifyUser = shopifyProductChannel($this, 'product-logged');
+    $portfolio   = StorePortfolio::make()->action($shopifyUser->customerSalesChannel, $this->product, []);
+
+    ShopifyFake::fake([
+        'productCreate' => ShopifyFake::graphql(['productCreate' => ['product' => null, 'userErrors' => [['field' => ['title'], 'message' => 'Title cannot be blank']]]]),
+    ]);
+
+    StoreNewProductToCurrentShopify::make()->handle($portfolio, []);
+
+    $log = PlatformPortfolioLogs::where('portfolio_id', $portfolio->id)->latest('id')->firstOrFail();
+
+    expect($log->type)->toBe(PlatformPortfolioLogsTypeEnum::UPLOAD)
+        ->and($log->platform_id)->toBe($portfolio->platform_id)
+        ->and(shopifyLoggedStatuses())->toBe([PlatformPortfolioLogsStatusEnum::FAIL]);
+
+    $created = shopifyProductNode('gid://shopify/Product/7300', 'gid://shopify/ProductVariant/8300', $portfolio->sku);
+
+    ShopifyFake::fake([
+        'productCreate'                 => ShopifyFake::graphql(['productCreate' => ['product' => $created, 'userErrors' => []]]),
+        'ProductVariantsList'           => ShopifyFake::graphql(['productVariants' => ['edges' => [['node' => ['id' => 'gid://shopify/ProductVariant/8300', 'title' => 'Default Title', 'price' => '0.00', 'updatedAt' => 'x', 'inventoryQuantity' => 0, 'product' => ['id' => 'gid://shopify/Product/7300', 'title' => 'Listed Product']]]]]]),
+        'ProductVariantsCreate'         => ShopifyFake::graphql(['productVariantsBulkCreate' => ['productVariants' => [['id' => 'gid://shopify/ProductVariant/8301', 'title' => 'Default Title']], 'userErrors' => []]]),
+        'getProduct'                    => ShopifyFake::graphql(['product' => shopifyProductNode('gid://shopify/Product/7300', 'gid://shopify/ProductVariant/8301', $portfolio->sku)]),
+        'GET shop.json'                 => ['shop' => ['id' => 1]],
+        'getProductExistence'           => ShopifyFake::graphql(['product' => ['id' => 'gid://shopify/Product/7300', 'title' => 'Listed Product']]),
+        'getProductInventoryAtLocation' => ShopifyFake::graphql(['product' => ['variants' => ['edges' => [['node' => ['id' => 'gid://shopify/ProductVariant/8301', 'inventoryItem' => ['inventoryLevel' => ['id' => 'gid://shopify/InventoryLevel/1']]]]]]]]),
+    ]);
+
+    StoreNewProductToCurrentShopify::make()->handle($portfolio, []);
+
+    expect(PlatformPortfolioLogs::where('portfolio_id', $portfolio->id)->count())->toBe(2)
+        ->and(shopifyLoggedStatuses())->toBe([PlatformPortfolioLogsStatusEnum::FAIL, PlatformPortfolioLogsStatusEnum::OK]);
 });
 
 test('checking an unmatched portfolio stores the shopify matches in the shape the retina table expects', function () {

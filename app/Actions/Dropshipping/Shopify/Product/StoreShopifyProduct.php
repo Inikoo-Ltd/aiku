@@ -8,12 +8,16 @@
 
 namespace App\Actions\Dropshipping\Shopify\Product;
 
+use App\Actions\Dropshipping\Portfolio\Logs\StorePlatformPortfolioLog;
+use App\Actions\Dropshipping\Portfolio\Logs\UpdatePlatformPortfolioLog;
 use App\Actions\Dropshipping\Portfolio\UpdatePortfolio;
 use App\Actions\Dropshipping\WithPortfolioErrorResponse;
 use App\Actions\Helpers\Images\GetImgProxyUrl;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\HasBucketAttachment;
 use App\Actions\Traits\WithActionUpdate;
+use App\Enums\Ordering\PlatformLogs\PlatformPortfolioLogsStatusEnum;
+use App\Enums\Ordering\PlatformLogs\PlatformPortfolioLogsTypeEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Dropshipping\Portfolio;
 use App\Models\Dropshipping\ShopifyUser;
@@ -39,10 +43,20 @@ class StoreShopifyProduct extends RetinaAction
 
         $client = $shopifyUser->getShopifyClient(true); // Get GraphQL client
 
-        if (!$client) {
-            Log::error("Failed to initialize Shopify GraphQL client");
+        $logs = StorePlatformPortfolioLog::run($portfolio, [
+            'type' => PlatformPortfolioLogsTypeEnum::UPLOAD
+        ]);
 
-            return [false, 'Failed to initialize Shopify GraphQL client'];
+        if (!$client) {
+            $errorMessage = 'Failed to initialize Shopify GraphQL client';
+            Log::error($errorMessage);
+
+            UpdatePlatformPortfolioLog::dispatch($logs, [
+                'status'   => PlatformPortfolioLogsStatusEnum::FAIL,
+                'response' => $errorMessage
+            ]);
+
+            return [false, $errorMessage];
         }
 
         UpdatePortfolio::run($portfolio, [
@@ -161,6 +175,11 @@ class StoreShopifyProduct extends RetinaAction
                 ]);
                 Log::error("Product creation failed: ".$errorMessage);
 
+                UpdatePlatformPortfolioLog::dispatch($logs, [
+                    'status'   => PlatformPortfolioLogsStatusEnum::FAIL,
+                    'response' => $errorMessage
+                ]);
+
                 return [false, $errorMessage];
             }
 
@@ -175,6 +194,11 @@ class StoreShopifyProduct extends RetinaAction
                 ]);
                 Log::error("Product creation failed: ".$errorMessage);
 
+                UpdatePlatformPortfolioLog::dispatch($logs, [
+                    'status'   => PlatformPortfolioLogsStatusEnum::FAIL,
+                    'response' => $errors
+                ]);
+
                 return [false, $errorMessage];
             }
 
@@ -187,6 +211,11 @@ class StoreShopifyProduct extends RetinaAction
                 ]);
                 Log::error("Product creation failed: No product data in response");
 
+                UpdatePlatformPortfolioLog::dispatch($logs, [
+                    'status'   => PlatformPortfolioLogsStatusEnum::FAIL,
+                    'response' => 'No product data in response'
+                ]);
+
                 return [false, 'No product data in response'];
             }
 
@@ -198,8 +227,17 @@ class StoreShopifyProduct extends RetinaAction
             [$variantStored, $variantResult] = StoreShopifyProductVariant::run($portfolio);
 
             if (!$variantStored) {
+                UpdatePlatformPortfolioLog::dispatch($logs, [
+                    'status'   => PlatformPortfolioLogsStatusEnum::FAIL,
+                    'response' => $variantResult
+                ]);
+
                 return [false, $variantResult];
             }
+
+            UpdatePlatformPortfolioLog::dispatch($logs, [
+                'status' => PlatformPortfolioLogsStatusEnum::OK
+            ]);
 
             // Format the response to match the expected structure
             return [true, $this->formatProductResponse($createdProduct)];
@@ -207,6 +245,11 @@ class StoreShopifyProduct extends RetinaAction
             Sentry::captureException($e);
             UpdatePortfolio::run($portfolio, [
                 'errors_response' => $this->portfolioErrorResponse($e->getMessage())
+            ]);
+
+            UpdatePlatformPortfolioLog::dispatch($logs, [
+                'status'   => PlatformPortfolioLogsStatusEnum::FAIL,
+                'response' => $e->getMessage()
             ]);
 
             return [false, $e->getMessage()];
