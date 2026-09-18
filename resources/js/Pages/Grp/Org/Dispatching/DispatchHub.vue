@@ -46,6 +46,7 @@ const props = defineProps<{
         from_locations: { location_org_stock_id: number, code: string, quantity: number }[]
     }[]
     stage_route?: { name: string; parameters: Record<string, string> }
+    release_route?: { name: string; parameters: Record<string, string> }
     production_output?: {
         destination: { type: 'partner' | 'stock', label: string, location_code: string | null }
         job_order_ids: number[]
@@ -129,6 +130,18 @@ function stage(task: NonNullable<typeof props.partner_staging>[number]) {
         onFinish: () => { stagingInProgress.value = null },
     })
 }
+function release(task: NonNullable<typeof props.partner_staging>[number]) {
+    if (!props.release_route || !window.confirm(trans("Send what is left to move back to production?"))) return
+    const key = stagingKey(task)
+    router.post(route(props.release_route.name, props.release_route.parameters), {
+        org_partner_id: task.org_partner_id,
+        org_stock_id: task.org_stock_id,
+    }, {
+        preserveScroll: true,
+        onStart: () => { stagingInProgress.value = key },
+        onFinish: () => { stagingInProgress.value = null },
+    })
+}
 const currentWorkData = computed(() => currentTab.value === "pickers" ? props.pickers_current : props.packers_current)
 
 const orderRoute = (order: { slug: string }) =>
@@ -204,6 +217,9 @@ const trolleyRoute = (trolley: { slug: string }) =>
                         <button v-if="can_edit && task.from_locations.length" type="button" class="relative rounded bg-indigo-600 px-3 py-1 text-white hover:bg-indigo-700 disabled:cursor-wait disabled:opacity-80" :disabled="stagingInProgress !== null" @click="stage(task)">
                             <span :class="{ invisible: stagingInProgress === stagingKey(task) }">{{ trans("Set as Moved") }}</span>
                             <FontAwesomeIcon v-if="stagingInProgress === stagingKey(task)" :icon="faSpinnerThird" spin class="absolute inset-0 m-auto" />
+                        </button>
+                        <button v-if="can_edit && task.org_stock_id" type="button" class="ml-2 rounded border border-gray-300 px-3 py-1 text-gray-700 hover:bg-gray-50 disabled:cursor-wait disabled:opacity-80 dark:border-gray-600 dark:text-gray-200" :disabled="stagingInProgress !== null" @click="release(task)">
+                            {{ trans("Back to production") }}
                         </button>
                     </td>
                 </tr>

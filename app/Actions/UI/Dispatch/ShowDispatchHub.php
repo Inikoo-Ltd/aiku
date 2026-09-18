@@ -127,6 +127,10 @@ class ShowDispatchHub extends OrgAction
                     'name'       => 'grp.org.warehouses.show.dispatching.partner_staging.stage',
                     'parameters' => $request->route()->originalParameters(),
                 ] : null,
+                'release_route'   => $suppliesPartners ? [
+                    'name'       => 'grp.org.warehouses.show.dispatching.partner_staging.release',
+                    'parameters' => $request->route()->originalParameters(),
+                ] : null,
                 'gate_route'      => $this->organisation->hasFulfilmentGate() ? [
                     'name'       => 'grp.org.warehouses.show.dispatching.gate',
                     'parameters' => $request->route()->originalParameters(),
