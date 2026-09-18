@@ -7,7 +7,7 @@ import { faCheckCircle, faInfoCircle, faExclamationTriangle, faSeedling, faShare
 import { library } from "@fortawesome/fontawesome-svg-core"
 import CountUp from "vue-countup-v3"
 import { PageHeadingTypes } from "@/types/PageHeading"
-import PageHeading from "@/Components/Headings/PageHeading.vue"
+import PageHeading from "@/Components/Headings/PageHeadingPublic.vue"
 import { routeType } from "@/types/route"
 import { inject, ref } from "vue"
 import Modal from "@/Components/Utils/Modal.vue"

@@ -156,7 +156,7 @@ const onPick = (event: Event) => {
 <template>
     <div
         class="rounded-md border bg-white"
-        :class="isDragging ? 'border-indigo-400 ring-2 ring-indigo-100' : 'border-gray-300'"
+        :class="isDragging ? 'border-[--app-accent] ring-2 ring-[--app-accent-muted]' : 'border-gray-300'"
         @dragover.prevent="isDragging = true"
         @dragleave="isDragging = false"
         @drop.prevent="onDrop"
@@ -179,7 +179,7 @@ const onPick = (event: Event) => {
                     v-for="(user, index) in mentionSuggestions"
                     :key="user.username"
                     class="flex cursor-pointer gap-2 px-3 py-1.5"
-                    :class="index === mentionIndex ? 'bg-indigo-50 text-indigo-700' : 'text-gray-700'"
+                    :class="index === mentionIndex ? 'bg-[--app-accent-soft] text-[--app-accent-strong]' : 'text-gray-700'"
                     @mousedown.prevent="insertMention(user.username)"
                     @mouseenter="mentionIndex = index"
                 >

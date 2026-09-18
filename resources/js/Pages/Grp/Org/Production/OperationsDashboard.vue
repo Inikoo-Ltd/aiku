@@ -156,7 +156,7 @@ function elapsedSince(startedAt: string) {
                 </h2>
                 <Link
                     :href="route(command_control.floor_route.name, command_control.floor_route.parameters)"
-                    class="rounded bg-indigo-600 text-white text-sm px-3 py-1.5"
+                    class="rounded bg-[--app-accent] text-[--app-accent-text] text-sm px-3 py-1.5 transition duration-200 hover:bg-[--app-accent-strong]"
                 >
                     {{ trans('Open manufacture floor') }}
                 </Link>
@@ -177,11 +177,11 @@ function elapsedSince(startedAt: string) {
                     <div class="font-medium truncate">{{ session.worker }}</div>
                     <div class="text-sm text-gray-600 truncate">
                         {{ session.task_name }} · {{ session.artefact_code }}
-                        · {{ trans('Job order') }} <Link :href="jobOrderHref(session.job_order_slug)" class="text-indigo-700 hover:underline">{{ session.job_order_reference }}</Link>
+                        · {{ trans('Job order') }} <Link :href="jobOrderHref(session.job_order_slug)" class="text-[--app-accent-strong] hover:underline">{{ session.job_order_reference }}</Link>
                     </div>
                 </div>
                 <div class="text-right shrink-0">
-                    <div class="font-mono tabular-nums text-indigo-700">{{ elapsedSince(session.started_at) }}</div>
+                    <div class="font-mono tabular-nums text-[--app-accent-strong]">{{ elapsedSince(session.started_at) }}</div>
                     <div class="text-xs text-gray-500 tabular-nums">{{ session.quantity_made }} / {{ session.quantity_required }}</div>
                 </div>
             </div>
@@ -193,7 +193,7 @@ function elapsedSince(startedAt: string) {
                     <div class="min-w-0 truncate">
                         <span class="font-medium">{{ session.worker }}</span>
                         <span class="text-gray-600"> · {{ session.task_name }} · {{ session.artefact_code }} · </span>
-                        <Link :href="jobOrderHref(session.job_order_slug)" class="text-indigo-700 hover:underline">{{ session.job_order_reference }}</Link>
+                        <Link :href="jobOrderHref(session.job_order_slug)" class="text-[--app-accent-strong] hover:underline">{{ session.job_order_reference }}</Link>
                     </div>
                     <div class="flex items-center gap-3 shrink-0">
                         <span class="tabular-nums text-gray-700">{{ session.quantity_made }}</span>
@@ -224,7 +224,7 @@ function elapsedSince(startedAt: string) {
                     <div class="font-medium truncate">{{ task.task_name }}</div>
                     <div class="text-sm text-gray-600 truncate">
                         {{ task.artefact_code }} — {{ task.artefact_name }}
-                        · {{ trans('Job order') }} <Link :href="jobOrderHref(task.job_order_slug)" class="text-indigo-700 hover:underline">{{ task.job_order_reference }}</Link>
+                        · {{ trans('Job order') }} <Link :href="jobOrderHref(task.job_order_slug)" class="text-[--app-accent-strong] hover:underline">{{ task.job_order_reference }}</Link>
                     </div>
                     <div class="text-xs text-gray-500 mt-0.5 tabular-nums">
                         {{ task.quantity_made }} / {{ task.quantity_required }}
@@ -234,7 +234,7 @@ function elapsedSince(startedAt: string) {
                 <button
                     v-if="!command_control.open_session"
                     type="button"
-                    class="shrink-0 rounded bg-indigo-600 text-white text-sm font-semibold px-4 py-2 disabled:opacity-40"
+                    class="shrink-0 rounded bg-[--app-accent] text-[--app-accent-text] text-sm font-semibold px-4 py-2 transition duration-200 hover:bg-[--app-accent-strong] disabled:opacity-40 disabled:hover:bg-[--app-accent]"
                     :disabled="processing"
                     @click="startTask(task)"
                 >

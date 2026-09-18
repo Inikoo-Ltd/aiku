@@ -254,7 +254,7 @@ const update = (field: string, value: unknown, action: string = field) => {
                     <button
                         v-if="me && me.value !== ticket.assignee_id"
                         type="button"
-                        class="mb-2 flex w-full items-center gap-2 rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-sm font-medium text-gray-700 hover:border-indigo-300 hover:text-indigo-700 active:!bg-gray-50 transition duration-200"
+                        class="mb-2 flex w-full items-center gap-2 rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-sm font-medium text-gray-700 hover:border-[--app-accent-muted] hover:text-[--app-accent-strong] active:!bg-gray-50 transition duration-200"
                         @click="update('assignee_id', me.value); assigneePopover.hide()">
                         <TicketUserAvatar :name="me.label" :avatar="me.avatar" />
                         {{ trans("Assign to me") }}
@@ -265,7 +265,7 @@ const update = (field: string, value: unknown, action: string = field) => {
                             :key="engineer.value"
                             type="button"
                             class="flex w-16 flex-col items-center gap-1 rounded p-1 text-xs hover:bg-gray-100 active:!bg-gray-200 transition duration-200"
-                            :class="engineer.value === ticket.assignee_id && 'bg-indigo-50 text-indigo-700'"
+                            :class="engineer.value === ticket.assignee_id && 'bg-[--app-accent-soft] text-[--app-accent-strong]'"
                             @click="update('assignee_id', engineer.value); assigneePopover.hide()">
                             <TicketUserAvatar :name="engineer.label" :avatar="engineer.avatar" size="lg" />
                             <span class="w-full truncate text-center">{{ engineer.label }}</span>
@@ -287,8 +287,8 @@ const update = (field: string, value: unknown, action: string = field) => {
                         v-if="can_manage_collaborators && !isClosed && ticket.status !== 'pending_deploy'"
                         v-tooltip="trans('Add or remove collaborators')"
                         type="button"
-                        class="flex h-8 w-8 items-center justify-center rounded-full border border-dashed text-sm border-gray-300 text-gray-500 transition duration-200 hover:border-indigo-400 hover:text-indigo-600 active:!border-indigo-400 active:!text-indigo-600"
-                        :class="isCollaboratorPickerOpen && '!border-indigo-400 !bg-indigo-50 !text-indigo-600'"
+                        class="flex h-8 w-8 items-center justify-center rounded-full border border-dashed text-sm border-gray-300 text-gray-500 transition duration-200 hover:border-[--app-accent] hover:text-[--app-accent-strong] active:!border-[--app-accent] active:!text-[--app-accent-strong]"
+                        :class="isCollaboratorPickerOpen && '!border-[--app-accent] !bg-[--app-accent-soft] !text-[--app-accent-strong]'"
                         @click="collaboratorPopover.toggle($event)">
                         <FontAwesomeIcon :icon="isPending('collaborators') ? 'fal fa-spinner' : 'fal fa-user-plus'" :spin="isPending('collaborators')" fixed-width />
                     </button>
@@ -301,7 +301,7 @@ const update = (field: string, value: unknown, action: string = field) => {
                             type="button"
                             class="flex items-center gap-2 rounded p-2 text-left transition duration-200 hover:bg-gray-100 active:!bg-gray-200"
                             @click="toggleCollaborator(person.value)">
-                            <FontAwesomeIcon :icon="collaboratorIds.includes(person.value) ? 'fal fa-check-square' : 'fal fa-square'" fixed-width :class="collaboratorIds.includes(person.value) ? 'text-indigo-600' : 'text-gray-400'" />
+                            <FontAwesomeIcon :icon="collaboratorIds.includes(person.value) ? 'fal fa-check-square' : 'fal fa-square'" fixed-width :class="collaboratorIds.includes(person.value) ? 'text-[--app-accent-strong]' : 'text-gray-400'" />
                             <TicketUserAvatar :name="person.label" :avatar="person.avatar" size="sm" />
                             <span class="truncate">{{ person.label }}</span>
                         </button>
@@ -408,13 +408,13 @@ const update = (field: string, value: unknown, action: string = field) => {
             <div>
                 <p class="mb-1 text-xs font-medium uppercase tracking-wide text-gray-400">{{ trans("Tags") }}</p>
                 <div class="flex flex-wrap items-center gap-1.5">
-                    <span v-for="tag in ticket.tags" :key="tag" class="inline-flex items-center gap-1 rounded-full bg-indigo-50 px-2.5 py-0.5 text-xs text-indigo-700">
+                    <span v-for="tag in ticket.tags" :key="tag" class="inline-flex items-center gap-1 rounded-full bg-[--app-accent-soft] px-2.5 py-0.5 text-xs text-[--app-accent-strong]">
                         {{ tag }}
-                        <button v-if="can_contribute" v-tooltip="trans('Remove')" type="button" class="text-indigo-400 hover:text-indigo-700 active:!text-indigo-700 transition duration-200" @click="update('tags', ticket.tags.filter((t: string) => t !== tag), `tags:remove:${tag}`)">
+                        <button v-if="can_contribute" v-tooltip="trans('Remove')" type="button" class="text-[--app-accent-strong] hover:text-[--app-accent-strong] active:!text-[--app-accent-strong] transition duration-200" @click="update('tags', ticket.tags.filter((t: string) => t !== tag), `tags:remove:${tag}`)">
                             <FontAwesomeIcon :icon="isPending(`tags:remove:${tag}`) ? 'fal fa-spinner' : 'fal fa-times'" :spin="isPending(`tags:remove:${tag}`)" fixed-width />
                         </button>
                     </span>
-                    <button v-if="can_contribute" v-tooltip="trans('Add tag')" type="button" class="flex h-6 w-6 items-center justify-center rounded-full border border-dashed border-gray-300 text-gray-500 hover:border-indigo-400 active:!border-indigo-400 hover:text-indigo-600 active:!text-indigo-600 transition duration-200" :class="isTagPickerOpen && '!border-indigo-400 !text-indigo-600 !bg-indigo-50'" @click="tagPopover.toggle($event)">
+                    <button v-if="can_contribute" v-tooltip="trans('Add tag')" type="button" class="flex h-6 w-6 items-center justify-center rounded-full border border-dashed border-gray-300 text-gray-500 hover:border-[--app-accent] active:!border-[--app-accent] hover:text-[--app-accent-strong] active:!text-[--app-accent-strong] transition duration-200" :class="isTagPickerOpen && '!border-[--app-accent] !text-[--app-accent-strong] !bg-[--app-accent-soft]'" @click="tagPopover.toggle($event)">
                         <FontAwesomeIcon :icon="isPending('tags:add') ? 'fal fa-spinner' : 'fal fa-plus'" :spin="isPending('tags:add')" fixed-width />
                     </button>
                 </div>
@@ -430,7 +430,7 @@ const update = (field: string, value: unknown, action: string = field) => {
                                 @click="update('tags', [...ticket.tags, tag], 'tags:add'); newTag = ''">
                                 {{ tag }}
                             </button>
-                            <button v-if="newTag.trim() && !tagOptions.includes(newTag.trim().toLowerCase())" type="button" class="block w-full rounded px-2 py-1 text-left text-sm text-indigo-600 hover:bg-indigo-50 active:!bg-indigo-100 transition duration-200" @click="addTypedTag">
+                            <button v-if="newTag.trim() && !tagOptions.includes(newTag.trim().toLowerCase())" type="button" class="block w-full rounded px-2 py-1 text-left text-sm text-[--app-accent-strong] hover:bg-[--app-accent-soft] active:!bg-[--app-accent-muted] transition duration-200" @click="addTypedTag">
                                 <FontAwesomeIcon icon="fal fa-plus" fixed-width /> {{ trans("Create") }} "{{ newTag.trim() }}"
                             </button>
                             <p v-if="!availableTags.length && !newTag.trim()" class="px-2 py-1 text-sm text-gray-400">{{ trans("No more tags") }}</p>

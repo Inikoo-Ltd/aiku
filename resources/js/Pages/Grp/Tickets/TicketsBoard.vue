@@ -466,7 +466,7 @@ const cancelAssign = () => {
 			<button
 				type="button"
 				class="rounded-md px-3 py-1 transition duration-200"
-				:class="!typeFilter ? 'bg-indigo-600 text-white shadow-sm' : 'text-gray-600 hover:bg-gray-100'"
+				:class="!typeFilter ? 'bg-[--app-accent] text-[--app-accent-text] shadow-sm' : 'text-gray-600 hover:bg-gray-100'"
 				@click="filterByType(null)">
 				{{ trans("All") }}
 			</button>
@@ -475,7 +475,7 @@ const cancelAssign = () => {
 				:key="option.value"
 				type="button"
 				class="flex items-center gap-1.5 rounded-md px-3 py-1 transition duration-200"
-				:class="typeFilter === option.value ? 'bg-indigo-600 text-white shadow-sm' : 'text-gray-600 hover:bg-gray-100'"
+				:class="typeFilter === option.value ? 'bg-[--app-accent] text-[--app-accent-text] shadow-sm' : 'text-gray-600 hover:bg-gray-100'"
 				@click="filterByType(option.value)">
 				<Icon v-if="option.icon" :data="option.icon" />
 				{{ option.label }}
@@ -498,7 +498,7 @@ const cancelAssign = () => {
 					class="flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 transition"
 					:class="
 						boardFilters[key].includes(option.value)
-							? 'border-indigo-500 bg-indigo-600 text-white shadow-sm'
+							? 'border-[--app-accent] bg-[--app-accent] text-[--app-accent-text] shadow-sm'
 							: option.value === 'Urgent'
 								? 'border-red-200 bg-red-50 text-red-700 hover:bg-red-100'
 								: 'border-gray-200 bg-gray-50 text-gray-600 hover:border-gray-300 hover:bg-white'
@@ -525,7 +525,7 @@ const cancelAssign = () => {
 					class="flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 transition"
 					:class="
 						onlyMine
-							? 'border-indigo-500 bg-indigo-600 text-white shadow-sm'
+							? 'border-[--app-accent] bg-[--app-accent] text-[--app-accent-text] shadow-sm'
 							: 'border-gray-200 bg-gray-50 text-gray-600 hover:border-gray-300 hover:bg-white'
 					"
 					@click="toggleMine()">
@@ -537,7 +537,7 @@ const cancelAssign = () => {
 					class="flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 transition"
 					:class="
 						boardFilters.assignee_username.length && !onlyMine
-							? 'border-indigo-500 bg-indigo-600 text-white shadow-sm'
+							? 'border-[--app-accent] bg-[--app-accent] text-[--app-accent-text] shadow-sm'
 							: 'border-gray-200 bg-gray-50 text-gray-600 hover:border-gray-300 hover:bg-white'
 					"
 					@click="assigneeMenuOpen = !assigneeMenuOpen">
@@ -795,7 +795,7 @@ const cancelAssign = () => {
 		<div v-if="assigning" class="fixed inset-0 z-40" @click="cancelAssign" />
 		<div
 			v-if="assigning"
-			class="fixed z-50 w-80 rounded-lg border border-indigo-300 bg-white p-3 text-xs shadow-xl"
+			class="fixed z-50 w-80 rounded-lg border border-[--app-accent-muted] bg-white p-3 text-xs shadow-xl"
 			:style="{ left: assignPosition.x + 'px', top: assignPosition.y + 'px' }">
 			<div class="mb-1.5 font-medium">{{ assigning.reference }} <span class="font-normal text-gray-500">{{ assigning.subject }}</span></div>
 			<div class="mb-1 text-gray-500">{{ trans("Assign to") }}</div>
@@ -804,7 +804,7 @@ const cancelAssign = () => {
 					v-for="engineer in assignees"
 					:key="engineer.value"
 					type="button"
-					class="flex w-full items-center gap-2 rounded px-1.5 py-1 text-left hover:bg-indigo-50"
+					class="flex w-full items-center gap-2 rounded px-1.5 py-1 text-left hover:bg-[--app-accent-soft]"
 					@click="assignTo(engineer.value)">
 					<TicketUserAvatar :name="engineer.label" :avatar="engineer.avatar" size="xs" />
 					<span :class="engineer.is_me && 'font-medium'">{{ engineer.label }}</span>

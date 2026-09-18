@@ -4,7 +4,7 @@ import { library } from '@fortawesome/fontawesome-svg-core'
 import { faCube, faFolder, faFolderTree, faFolderDownload } from '@fal'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 
-import PageHeading from '@/Components/Headings/PageHeading.vue'
+import PageHeading from '@/Components/Headings/PageHeadingPublic.vue'
 import { capitalize } from '@/Composables/capitalize'
 import { PageHeadingTypes } from '@/types/PageHeading'
 import Breadcrumb from 'primevue/breadcrumb'

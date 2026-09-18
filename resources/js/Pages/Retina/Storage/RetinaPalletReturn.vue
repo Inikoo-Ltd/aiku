@@ -6,7 +6,7 @@
 
 <script setup lang="ts">
 import { Head, useForm } from "@inertiajs/vue3"
-import PageHeading from "@/Components/Headings/PageHeading.vue"
+import PageHeading from "@/Components/Headings/PageHeadingPublic.vue"
 import { capitalize } from "@/Composables/capitalize"
 import Tabs from "@/Components/Navigation/Tabs.vue"
 import { computed, inject, provide, ref, watch } from "vue"

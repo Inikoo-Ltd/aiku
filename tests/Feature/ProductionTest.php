@@ -470,7 +470,7 @@ test('UI create raw material', function () {
     $response->assertInertia(function (AssertableInertia $page) {
         $page
             ->component('CreateModel')
-            ->has('title')->has('formData')->has('pageHead')->has('breadcrumbs', 4);
+            ->has('title')->has('formData')->has('pageHead')->has('breadcrumbs', 3);
     });
 });
 
@@ -500,7 +500,7 @@ test('UI edit raw material', function () {
             ->has('title')
             ->has('formData.blueprint.0.fields', 7)
             ->has('pageHead')
-            ->has('breadcrumbs', 4);
+            ->has('breadcrumbs', 3);
     });
 });
 
@@ -565,7 +565,7 @@ test('UI create artefact', function () {
     $response->assertInertia(function (AssertableInertia $page) {
         $page
             ->component('CreateModel')
-            ->has('title')->has('formData')->has('pageHead')->has('breadcrumbs', 4);
+            ->has('title')->has('formData')->has('pageHead')->has('breadcrumbs', 3);
     });
 });
 
@@ -630,7 +630,7 @@ test('UI edit artefact', function () {
             ->has('title')
             ->has('formData.blueprint.0.fields', 9)
             ->has('pageHead')
-            ->has('breadcrumbs', 4);
+            ->has('breadcrumbs', 3);
     });
 });
 
@@ -651,7 +651,7 @@ test('UI create production task', function () {
     $response->assertInertia(function (AssertableInertia $page) {
         $page
             ->component('CreateModel')
-            ->has('title')->has('formData')->has('pageHead')->has('breadcrumbs', 4);
+            ->has('title')->has('formData')->has('pageHead')->has('breadcrumbs', 3);
     });
 });
 
@@ -704,7 +704,7 @@ test('UI edit manufacture task', function () {
             ->has('title')
             ->has('formData.blueprint.0.fields', 13)
             ->has('pageHead')
-            ->has('breadcrumbs', 4);
+            ->has('breadcrumbs', 3);
     });
 });
 
@@ -948,6 +948,8 @@ test('UI show manufacture floor', function () {
     $response->assertInertia(function (AssertableInertia $page) {
         $page
             ->component('Org/Production/ManufactureFloor')
+            ->has('breadcrumbs', 3)
+            ->where('breadcrumbs.2.simple.label', 'Manufacture floor')
             ->has('tasks')
             ->has('today', fn (AssertableInertia $page) => $page
                 ->has('sessions')
@@ -1130,7 +1132,7 @@ test('UI show manufacture payroll', function () {
         $page
             ->component('Org/Production/ManufacturePayroll')
             ->has('payroll_export_route')
-            ->has('breadcrumbs', 4);
+            ->has('breadcrumbs', 3);
     });
 });
 

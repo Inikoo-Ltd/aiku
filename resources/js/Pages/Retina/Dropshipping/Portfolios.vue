@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Head, router } from "@inertiajs/vue3"
-import PageHeading from "@/Components/Headings/PageHeading.vue"
+import PageHeading from "@/Components/Headings/PageHeadingPublic.vue"
 import { capitalize } from "@/Composables/capitalize"
 import { computed, reactive, ref, watch, onMounted, onBeforeUnmount, inject } from "vue"
 import { PageHeadingTypes } from "@/types/PageHeading"

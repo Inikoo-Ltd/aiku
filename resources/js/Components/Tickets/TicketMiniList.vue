@@ -84,7 +84,7 @@ const daysAgo = (date?: string) => {
                 <Icon :data="ticket.status_icon" />
                 <span class="inline-flex items-center whitespace-nowrap"><Icon v-if="ticket.type_icon" :data="ticket.type_icon" class="mr-1 text-gray-400" /><Link :href="route('grp.tickets.show', ticket.reference)" class="primaryLink whitespace-nowrap">{{ ticket.reference }}</Link></span>
                 <span class="truncate flex-1" :class="ticket.has_unread && 'font-semibold text-gray-900'" :title="ticket.subject">{{ ticket.subject }}</span>
-                <span v-if="ticket.has_unread" v-tooltip="trans('Unread update')" class="size-2 shrink-0 rounded-full bg-indigo-500" />
+                <span v-if="ticket.has_unread" v-tooltip="trans('Unread update')" class="size-2 shrink-0 rounded-full bg-[--app-accent]" />
                 <Icon v-if="ticket.qa_status_icon" :data="ticket.qa_status_icon" />
                 <slot name="person" :ticket="ticket">
                     <span v-if="showAssignee" class="text-xs text-gray-500 whitespace-nowrap">{{ ticket.assignee_username || "-" }}</span>

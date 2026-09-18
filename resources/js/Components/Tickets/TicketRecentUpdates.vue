@@ -107,7 +107,7 @@ onMounted(refresh)
             </span>
         </template>
         <template #person="{ ticket }">
-            <span v-tooltip="ticket.notification_body || ticket.notification_title" class="inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-xs whitespace-nowrap" :class="ticket.reason === 'mention' ? 'bg-indigo-50 text-indigo-700' : 'bg-gray-100 text-gray-600'">
+            <span v-tooltip="ticket.notification_body || ticket.notification_title" class="inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-xs whitespace-nowrap" :class="ticket.reason === 'mention' ? 'bg-[--app-accent-soft] text-[--app-accent-strong]' : 'bg-gray-100 text-gray-600'">
                 <FontAwesomeIcon :icon="ticket.reason_icon" fixed-width />
                 {{ ticket.reason_label }}
             </span>

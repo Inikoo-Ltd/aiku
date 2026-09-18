@@ -15,7 +15,7 @@ import {library} from "@fortawesome/fontawesome-svg-core"
 import {FontAwesomeIcon} from "@fortawesome/vue-fontawesome"
 import {faGoogle} from "@fortawesome/free-brands-svg-icons"
 import { routeType } from '@/types/route'
-import PageHeading from '@/Components/Headings/PageHeading.vue';
+import PageHeading from '@/Components/Headings/PageHeadingPublic.vue';
 import { inject } from 'vue'
 import { faUserLock, faBell, faCopyright, faUserCircle, faMobileAndroidAlt, faKey, faClone, faPaintBrush, faMoonStars, faLightbulbOn, faCheck, faPhone, faIdCard, faFingerprint, faLanguage, faAddressBook, faTrashAlt, faSlidersH } from '@fal'
 import { Head } from '@inertiajs/vue3'

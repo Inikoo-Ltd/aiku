@@ -37,8 +37,8 @@ const chooseTab = (key: string) => {
 }
 
 const countClass = (tab: Tab) => {
-    if (tab.highlight) return "bg-indigo-600 text-white"
-    return activeTab.value === tab.key ? "bg-indigo-50 text-indigo-700" : "bg-gray-100 text-gray-600"
+    if (tab.highlight) return "bg-[--app-accent] text-[--app-accent-text]"
+    return activeTab.value === tab.key ? "bg-[--app-accent-soft] text-[--app-accent-strong]" : "bg-gray-100 text-gray-600"
 }
 </script>
 
@@ -50,7 +50,7 @@ const countClass = (tab: Tab) => {
                 :key="tab.key"
                 type="button"
                 class="flex shrink-0 items-center gap-2 border-b-2 px-3 py-2.5 text-sm font-semibold transition duration-200"
-                :class="activeTab === tab.key ? 'border-indigo-600 text-indigo-700' : 'border-transparent text-gray-500 hover:text-gray-800'"
+                :class="activeTab === tab.key ? 'border-[--app-accent] text-[--app-accent-strong]' : 'border-transparent text-gray-500 hover:text-gray-800'"
                 @click="chooseTab(tab.key)"
             >
                 {{ tab.label }}
