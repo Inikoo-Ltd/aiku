@@ -2331,9 +2331,26 @@ test('repair create system pages puts back a missing system web block', function
 
     $registerDashboard->refresh();
     expect($registerDashboard->webBlocks()->count())->toBe(1)
-        ->and($registerDashboard->webBlocks()->first()->webBlockType->code)->toBe('register-dashboard')
+        ->and($registerDashboard->webBlocks()->first()->webBlockType->code)->toBe('register-dashboard-2')
         ->and($registerDashboard->state)->not->toBe(WebpageStateEnum::LIVE)
         ->and($website->refresh()->register_dashboard_page_id)->toBe($registerDashboard->id);
+})->depends('launch website');
+
+test('repair create system pages replaces the register dashboard block with register dashboard 2', function (Website $website) {
+    $registerDashboard = $website->refresh()->registerDashboardPage;
+    $registerDashboard->modelHasWebBlocks()->delete();
+
+    StoreModelHasWebBlock::make()->action($registerDashboard, [
+        'web_block_type_id' => $website->group->webBlockTypes()->where('code', 'register-dashboard')->firstOrFail()->id,
+        'position'          => 0,
+    ]);
+    expect($registerDashboard->refresh()->webBlocks()->first()->webBlockType->code)->toBe('register-dashboard');
+
+    $this->artisan('repair:create_system_pages', ['--website_id' => $website->id])->assertSuccessful();
+
+    $registerDashboard->refresh();
+    expect($registerDashboard->webBlocks()->count())->toBe(1)
+        ->and($registerDashboard->webBlocks()->first()->webBlockType->code)->toBe('register-dashboard-2');
 })->depends('launch website');
 
 test('retina login renders the iris login block only when that page is live', function (Website $website) {

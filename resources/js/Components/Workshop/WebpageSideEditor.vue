@@ -458,6 +458,7 @@ const blockWithoutVisibilityOptions = [
 	"login",
 	"register",
 	"register-dashboard",
+	"register-dashboard-2",
 	"forgot-password",
 	"blog-categories",
 ]
