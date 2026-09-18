@@ -44,7 +44,13 @@ const chatRoute = computed(() => {
     const shop = layout.currentParams?.shop
 
     if (organisation && shop) {
-        return { name: "grp.org.shops.show.chat.dashboard", parameters: { organisation, shop }, root: "grp.org.shops.show.chat." }
+        const isChatAgent = layout.user.chat.is_agent
+
+        return {
+            name: isChatAgent ? "grp.org.shops.show.chat.conversations.show" : "grp.org.shops.show.chat.dashboard",
+            parameters: { organisation, shop },
+            root: "grp.org.shops.show.chat.",
+        }
     }
 
     if (organisation) {
