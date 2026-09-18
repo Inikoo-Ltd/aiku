@@ -72,18 +72,20 @@ class RepairNotFoundAuroraLocations
 
             $firstMovementDates = (clone $movements)->groupBy('org_stock_id')->selectRaw('org_stock_id, min(date) as first_date')->pluck('first_date', 'org_stock_id');
 
-            DB::table('org_stock_movements')->where('location_id', $placeholder->id)->update(['location_id' => $location->id]);
-            DB::table('org_stock_audit_deltas')->where('location_id', $placeholder->id)->update(['location_id' => $location->id]);
+            DB::transaction(function () use ($placeholder, $location, $firstMovementDates, $command) {
+                DB::table('org_stock_movements')->where('location_id', $placeholder->id)->update(['location_id' => $location->id]);
+                DB::table('org_stock_audit_deltas')->where('location_id', $placeholder->id)->update(['location_id' => $location->id]);
 
-            foreach ($firstMovementDates as $orgStockId => $firstMovementDate) {
-                $orgStock = OrgStock::find($orgStockId);
-                if (!$orgStock->locationOrgStocks()->where('location_id', $location->id)->exists()) {
-                    StoreLocationOrgStock::make()->action($orgStock, $location, [
-                        'date' => Carbon::parse($firstMovementDate)->subMilliseconds(50)->format('Y-m-d H:i:s.u'),
-                    ], strict: false);
+                foreach ($firstMovementDates as $orgStockId => $firstMovementDate) {
+                    $orgStock = OrgStock::find($orgStockId);
+                    if (!$orgStock->locationOrgStocks()->where('location_id', $location->id)->exists()) {
+                        StoreLocationOrgStock::make()->action($orgStock, $location, [
+                            'date' => Carbon::parse($firstMovementDate)->subMilliseconds(50)->format('Y-m-d H:i:s.u'),
+                        ]);
+                    }
+                    RepairLocationOrgStockPurchasesPostMigration::run($orgStock->id, $command);
                 }
-                RepairLocationOrgStockPurchasesPostMigration::run($orgStock->id, $command);
-            }
+            });
         }
     }
 
