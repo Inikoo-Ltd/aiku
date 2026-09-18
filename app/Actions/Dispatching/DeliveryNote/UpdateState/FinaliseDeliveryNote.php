@@ -17,12 +17,14 @@ use App\Enums\Dispatching\DeliveryNote\DeliveryNoteTypeEnum;
 use App\Models\Dispatching\DeliveryNote;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
+use Illuminate\Http\RedirectResponse;
 use Lorisleiva\Actions\ActionRequest;
 
 class FinaliseDeliveryNote extends OrgAction
 {
     use WithActionUpdate;
     use HasDeliveryNoteHydrators;
+    use WithUnprintedLeafletsGuard;
 
     /**
      * @throws \Throwable
@@ -33,6 +35,12 @@ class FinaliseDeliveryNote extends OrgAction
         if ($deliveryNote->shipments->isEmpty() && !$deliveryNote->collection_address_id) {
             throw ValidationException::withMessages([
                 'shipment' => __('Shipment should be set before finalizing.')
+            ]);
+        }
+
+        if ($deliveryNote->hasUnprintedLeaflets()) {
+            throw ValidationException::withMessages([
+                'leaflets' => __('Every insert must be printed before finalizing.')
             ]);
         }
 
@@ -60,8 +68,12 @@ class FinaliseDeliveryNote extends OrgAction
     /**
      * @throws \Throwable
      */
-    public function asController(DeliveryNote $deliveryNote, ActionRequest $request): DeliveryNote
+    public function asController(DeliveryNote $deliveryNote, ActionRequest $request): DeliveryNote|RedirectResponse
     {
+        if ($notification = $this->unprintedLeafletsNotification($deliveryNote, __('Every insert must be printed before finalising.'))) {
+            return $notification;
+        }
+
         $this->initialisationFromShop($deliveryNote->shop, $request);
 
         return $this->handle($deliveryNote);

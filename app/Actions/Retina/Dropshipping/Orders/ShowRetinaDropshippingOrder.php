@@ -17,6 +17,7 @@ use App\Actions\Ordering\Transaction\UI\IndexNonProductItems;
 use App\Actions\Ordering\Transaction\UI\IndexTransactions;
 use App\Actions\Retina\UI\Layout\GetPlatformLogo;
 use App\Actions\RetinaAction;
+use App\Actions\Traits\WithOrderSummaryPackaging;
 use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
 use App\Enums\Catalogue\Review\ReviewScopeEnum;
 use App\Enums\UI\Ordering\RetinaOrderTabsEnum;
@@ -48,6 +49,7 @@ class ShowRetinaDropshippingOrder extends RetinaAction
     use \App\Actions\Traits\WithLineTaxCategories;
     use GetPlatformLogo;
     use WithOrderForbiddenCountryCheck;
+    use WithOrderSummaryPackaging;
 
     public function handle(Order $order): Order
     {
@@ -429,18 +431,7 @@ class ShowRetinaDropshippingOrder extends RetinaAction
                         'price_total' => $order->goods_amount
                     ],
                 ],
-                [
-                    [
-                        'label'       => __('Charges'),
-                        'information' => '',
-                        'price_total' => $order->charges_amount
-                    ],
-                    [
-                        'label'       => __('Shipping'),
-                        'information' => '',
-                        'price_total' => $order->shipping_amount
-                    ]
-                ],
+                $this->buildChargesSummaryGroup($order),
                 [
                     [
                         'label'       => __('Net'),

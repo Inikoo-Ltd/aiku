@@ -22,6 +22,7 @@ use App\Enums\Dispatching\DeliveryNote\DeliveryNoteTypeEnum;
 use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemStateEnum;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\SysAdmin\User;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -29,6 +30,7 @@ class StartPackingDeliveryNote extends OrgAction
 {
     use WithActionUpdate;
     use HasDeliveryNoteHydrators;
+    use WithUnprintedLeafletsGuard;
 
     /**
      * @throws \Throwable
@@ -49,6 +51,10 @@ class StartPackingDeliveryNote extends OrgAction
 
         if ($deliveryNote->hasBlockingItems()) {
             abort(422, __('Cannot start packing: some items are waiting for a replacement decision or warehouse release'));
+        }
+
+        if ($deliveryNote->hasUnprintedLeaflets()) {
+            abort(422, __('Cannot start packing: every insert must be printed first'));
         }
 
         data_set($modelData, 'packing_at', now());
@@ -92,8 +98,12 @@ class StartPackingDeliveryNote extends OrgAction
     /**
      * @throws \Throwable
      */
-    public function asController(DeliveryNote $deliveryNote, ActionRequest $request): DeliveryNote
+    public function asController(DeliveryNote $deliveryNote, ActionRequest $request): DeliveryNote|RedirectResponse
     {
+        if ($notification = $this->unprintedLeafletsNotification($deliveryNote, __('Every insert must be printed before packing can start.'))) {
+            return $notification;
+        }
+
         $this->initialisationFromShop($deliveryNote->shop, $request);
 
         return $this->handle($deliveryNote, $request->user());

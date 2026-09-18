@@ -43,10 +43,19 @@ class IndexInvoiceTransactions extends OrgAction
         $queryBuilder->leftJoin('assets', 'invoice_transactions.asset_id', 'assets.id');
         $queryBuilder->leftJoin('invoices', 'invoice_transactions.invoice_id', 'invoices.id');
         $queryBuilder->leftJoin('currencies', 'invoices.currency_id', 'currencies.id');
+        $queryBuilder->leftJoin('packagings', function ($join) {
+            $join->on('invoice_transactions.model_id', '=', 'packagings.id')
+                ->where('invoice_transactions.model_type', '=', 'Packaging');
+        });
+        $queryBuilder->leftJoin('leaflets', function ($join) {
+            $join->on('invoice_transactions.model_id', '=', 'leaflets.id')
+                ->where('invoice_transactions.model_type', '=', 'Leaflet');
+        });
         $queryBuilder->leftJoin('adjustments', function ($join) {
             $join->on('invoice_transactions.model_id', 'adjustments.id')->where('invoice_transactions.model_type', 'Adjustment');
         });
         $queryBuilder->orderByRaw("case invoice_transactions.model_type when 'Product' then 0 when 'Service' then 1 else 2 end");
+
 
         $queryBuilder
             ->defaultSort('invoice_transactions.id')
@@ -56,8 +65,10 @@ class IndexInvoiceTransactions extends OrgAction
                 'invoice_transactions.is_gift',
                 'invoice_transactions.in_process',
                 'invoice_transactions.data',
-                DB::raw("CASE WHEN invoice_transactions.model_type = 'Adjustment' THEN 'Adjustment' ELSE historic_assets.code END as code"),
-                DB::raw("CASE WHEN invoice_transactions.model_type = 'Adjustment' THEN concat('Adjustment (', adjustments.type, ')') ELSE historic_assets.name END as description"),
+                /* Adjustments name themselves; everything else falls back through the
+                   joined packaging and leaflet tables. */
+                DB::raw("CASE WHEN invoice_transactions.model_type = 'Adjustment' THEN 'Adjustment' ELSE COALESCE(historic_assets.code, packagings.code) END as code"),
+                DB::raw("CASE WHEN invoice_transactions.model_type = 'Adjustment' THEN concat('Adjustment (', adjustments.type, ')') ELSE COALESCE(historic_assets.name, packagings.name, leaflets.name) END as description"),
                 'invoice_transactions.historic_asset_id',
                 'assets.id as asset_id',
                 'assets.shop_id as asset_shop_id',
