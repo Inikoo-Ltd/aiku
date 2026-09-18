@@ -72,7 +72,7 @@ class RepairNotFoundAuroraLocations
 
             $firstMovementDates = (clone $movements)->groupBy('org_stock_id')->selectRaw('org_stock_id, min(date) as first_date')->pluck('first_date', 'org_stock_id');
 
-            DB::transaction(function () use ($placeholder, $location, $firstMovementDates, $command) {
+            DB::transaction(function () use ($placeholder, $location, $firstMovementDates) {
                 DB::table('org_stock_movements')->where('location_id', $placeholder->id)->update(['location_id' => $location->id]);
                 DB::table('org_stock_audit_deltas')->where('location_id', $placeholder->id)->update(['location_id' => $location->id]);
 
@@ -83,9 +83,12 @@ class RepairNotFoundAuroraLocations
                             'date' => Carbon::parse($firstMovementDate)->subMilliseconds(50)->format('Y-m-d H:i:s.u'),
                         ]);
                     }
-                    RepairLocationOrgStockPurchasesPostMigration::run($orgStock->id, $command);
                 }
             });
+
+            foreach ($firstMovementDates->keys() as $orgStockId) {
+                RepairLocationOrgStockPurchasesPostMigration::run($orgStockId, $command);
+            }
         }
     }
 
