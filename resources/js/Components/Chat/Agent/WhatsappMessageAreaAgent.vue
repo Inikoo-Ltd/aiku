@@ -15,6 +15,7 @@ import {
     faRotateRight,
     faFaceSmile,
     faLifeRing,
+    faEye,
 } from "@fortawesome/free-solid-svg-icons"
 import { faWhatsapp } from "@fortawesome/free-brands-svg-icons"
 import type { ChatMessage, SessionAPI } from "@/types/Chat/chat"
@@ -66,6 +67,7 @@ const props = defineProps<{
     messages: ChatMessage[]
     session: SessionAPI | null
     organisationSlug: string
+    readOnly?: boolean
 }>()
 
 const emit = defineEmits(["back", "messages-read", "assign-self-success", "close-session", "view-profile"])
@@ -892,7 +894,14 @@ onUnmounted(() => {
         </div>
 
         <!-- Footer: closed banner -->
-        <footer v-if="isClosed" class="px-3 py-3 bg-white border-t">
+        <footer v-if="readOnly" class="px-3 py-3 bg-white border-t">
+            <div class="flex items-center justify-center gap-2 text-xs text-gray-500">
+                <FontAwesomeIcon :icon="faEye" class="text-gray-400" fixed-width aria-hidden="true" />
+                {{ trans("You are viewing this conversation in read-only mode") }}
+            </div>
+        </footer>
+
+        <footer v-else-if="isClosed" class="px-3 py-3 bg-white border-t">
             <div class="flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg bg-gray-50 border border-gray-200">
                 <div class="text-xs text-gray-600">
                     {{ trans('This chat has been closed') }}

@@ -118,7 +118,7 @@ class ShowGroupChatDashboard extends OrgAction
                     'simple' => [
                         'icon'  => 'fal fa-comment-alt',
                         'route' => [
-                            'name'       => 'grp.chat.dashboard',
+                            'name'       => 'grp.chat.reports',
                             'parameters' => $routeParameters,
                         ],
                         'label' => __('Chat Dashboard'),

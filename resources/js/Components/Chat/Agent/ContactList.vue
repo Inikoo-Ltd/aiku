@@ -393,7 +393,6 @@ const assignToSelf = async (ulid: string) => {
 const handleClickContact = async (c: Contact) => {
     errorPerContact.value[c.ulid] = ""
 
-    const orgSlug = c.organisation?.slug ?? (route().params as Record<string, any>)?.organisation
 
     if (activeTab.value === "waiting" && viewMode.value === "my") {
         const result = await assignToSelf(String(c.ulid))
@@ -404,8 +403,8 @@ const handleClickContact = async (c: Contact) => {
         }
     }
 
-    if (orgSlug) {
-        router.visit(route("grp.org.chat.inbox.conversation", [orgSlug, c.ulid]))
+    if (c.ulid) {
+        router.visit(route("grp.chat.inbox.conversation", [c.ulid]))
         return
     }
 
