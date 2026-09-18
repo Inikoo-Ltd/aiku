@@ -217,7 +217,7 @@ watch(
         <code v-for="tip in searchHelp" :key="tip" class="rounded bg-gray-100 px-1.5 py-0.5 text-gray-500">{{ tip }}</code>
     </div>
     <div class="[&_tbody_tr]:cursor-pointer" @click="onTableClick">
-        <Table :resource="data" class="mt-2">
+        <Table :resource="data" class="mt-2 max-md:[&_td.max-w-0]:max-w-none max-md:[&_th.max-w-0]:max-w-none">
             <template #cell(reference)="{ item }">
                 <span class="inline-flex items-center"><Icon v-if="item.type_icon" :data="item.type_icon" class="mr-1 text-gray-400" /><Link :href="route('grp.tickets.show', item.reference)" class="primaryLink" :data-ticket-id="item.id">{{ item.reference }}</Link></span>
             </template>
@@ -235,8 +235,8 @@ watch(
                 <span v-else :class="readOnlyCellClass"><Icon :data="item.status_icon" /> {{ item.status_label }}</span>
             </template>
             <template #cell(subject)="{ item }">
-                <span class="block truncate" :title="item.subject">{{ item.subject }}</span>
-                <span v-if="item.search_snippet" class="block truncate text-xs text-gray-500 [&_mark]:rounded [&_mark]:bg-yellow-200 [&_mark]:px-0.5" v-html="item.search_snippet" />
+                <span class="block w-56 truncate md:w-auto" :title="item.subject">{{ item.subject }}</span>
+                <span v-if="item.search_snippet" class="block w-56 truncate md:w-auto text-xs text-gray-500 [&_mark]:rounded [&_mark]:bg-yellow-200 [&_mark]:px-0.5" v-html="item.search_snippet" />
             </template>
             <template #cell(priority)="{ item }">
                 <button

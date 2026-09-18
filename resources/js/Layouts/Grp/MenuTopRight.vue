@@ -178,7 +178,7 @@ const isUserMac = navigator.platform.includes('Mac')
 
                 <!-- Button: Notifications -->
                 <div class="relative px-2 rounded-full flex items-center">
-                    <Popover>
+                    <Popover position="right-0 max-sm:fixed max-sm:inset-x-2 max-sm:top-12 max-sm:mt-0" width="w-auto">
                         <template #button>
                             <div tabindex="-1" class="relative text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-500">
                                 <FontAwesomeIcon aria-hidden="true" icon="fa-regular fa-bell" size="lg" />
@@ -186,7 +186,7 @@ const isUserMac = navigator.platform.includes('Mac')
                             </div>
                         </template>
                         <template #content="{ close }">
-                            <div class="w-[450px]">
+                            <div class="w-full sm:w-[450px]">
                                 <NotificationList :close />
                             </div>
                         </template>
