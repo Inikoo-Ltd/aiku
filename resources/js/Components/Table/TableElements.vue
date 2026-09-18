@@ -30,6 +30,7 @@ const props = defineProps<{
 			key: string
 			label: string
 			default?: string | null
+			optional?: boolean
 		}
 	}
 	tableName: string
@@ -40,7 +41,7 @@ const props = defineProps<{
 }>()
 // console.log('element', props.elements)
 const emits = defineEmits<{
-	(e: "checkboxChanged", value: SelectedFilters, isInitial?: boolean): void
+	(e: "checkboxChanged", value: SelectedFilters | Record<string, string[] | string>, isInitial?: boolean): void
 }>()
 
 interface SelectedFilters {
@@ -51,9 +52,11 @@ const selectedGroup = ref(Object.keys(props.elements)[0]) || ref("")
 const defaultSelectedFilters = computed(() =>
 	props.elements[selectedGroup.value]?.default
 		? props.elements[selectedGroup.value].default.split(",")
-		: props.elements[selectedGroup.value]?.elements
-			? Object.keys(props.elements[selectedGroup.value].elements)
-			: []
+		: props.elements[selectedGroup.value]?.optional
+			? []
+			: props.elements[selectedGroup.value]?.elements
+				? Object.keys(props.elements[selectedGroup.value].elements)
+				: []
 )
 const selectedFilters: SelectedFilters = reactive({
 	[selectedGroup.value]: defaultSelectedFilters.value,
@@ -127,7 +130,7 @@ const onClickCheckbox = (elementName: string, scope: string) => {
 
 		if (selectedFilters[scope].includes(elementName)) {
 			// If current active is more than 1, then can deselect
-			if (selectedFilters[scope].length > 1) {
+			if (selectedFilters[scope].length > 1 || props.elements[scope]?.optional) {
 				// console.log('qq', selectedFilters[scope])
 				selectedFilters[scope] = selectedFilters[scope].filter(
 					(item: string) => item !== elementName
@@ -139,8 +142,21 @@ const onClickCheckbox = (elementName: string, scope: string) => {
 		}
 
 		// console.log('end of onClick', selectedFilters[scope])
-		emits("checkboxChanged", selectedFilters)
+		emits("checkboxChanged", withClearedOptionalGroups())
 	}, 200)
+}
+
+const withClearedOptionalGroups = (): SelectedFilters | Record<string, string[] | string> => {
+	const clearedOptionalGroups = Object.keys(selectedFilters).filter(
+		(scope) => props.elements[scope]?.optional && selectedFilters[scope].length === 0
+	)
+	if (!clearedOptionalGroups.length) {
+		return selectedFilters
+	}
+	return {
+		...selectedFilters,
+		...Object.fromEntries(clearedOptionalGroups.map((scope) => [scope, ""])),
+	}
 }
 
 // Method: Double click the box
@@ -181,6 +197,11 @@ onMounted(() => {
 
 	Object.keys(props.elements).forEach((scope) => {
 		const param = searchParams.get(`${prefix}[${scope}]`)
+
+		if (props.elements[scope]?.optional && param === "") {
+			selectedFilters[scope] = []
+			return
+		}
 
 		if (!param) {
 			return

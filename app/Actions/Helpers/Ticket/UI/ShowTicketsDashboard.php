@@ -62,13 +62,13 @@ class ShowTicketsDashboard extends OrgAction
         ];
 
         if ($canManage || $canQa) {
-            $data['qa_queue'] = $this->tickets((clone $base)->where('qa_status', TicketQaStatusEnum::REQUESTED)->visibleTo($user)->orderBy('qa_requested_at'));
+            $data['qa_queue'] = $this->qaQueue($group, $user);
         }
 
         if ($canManage) {
             $byStatus = $open()->selectRaw('status, count(*) as total')->groupBy('status')->pluck('total', 'status');
 
-            $data['queue']       = $this->tickets((clone $base)->where('status', TicketStatusEnum::OPEN)->visibleTo($user)->orderByRaw(self::PRIORITY_ORDER)->orderBy('created_at')->limit(15));
+            $data['queue']       = $this->tickets((clone $base)->where('status', TicketStatusEnum::OPEN)->visibleTo($user)->orderByRaw(self::PRIORITY_ORDER)->orderBy('created_at')->limit(100));
             $data['assigned']    = $this->tickets($open()->where('assignee_id', $user->id)->orderByRaw(self::PRIORITY_ORDER)->orderByDesc('updated_at'));
             $data['collaborating'] = $this->tickets($open()->whereHas('collaborators', fn ($query) => $query->whereKey($user->id))->orderByRaw(self::PRIORITY_ORDER)->orderByDesc('updated_at'));
             $data['waiting_due'] = $this->tickets((clone $base)->where('status', TicketStatusEnum::WAITING)->visibleTo($user)->where('waiting_until', '<=', now()->addDay())->orderBy('waiting_until'));
@@ -83,9 +83,21 @@ class ShowTicketsDashboard extends OrgAction
         return $data;
     }
 
+    public function qaQueue(Group $group, User $user, string $checker = 'all'): array
+    {
+        $query = Ticket::where('tickets.group_id', $group->id)
+            ->where('qa_status', TicketQaStatusEnum::REQUESTED)
+            ->visibleTo($user)
+            ->when($checker === 'anyone', fn (Builder $query) => $query->whereNull('qa_user_id'))
+            ->when($checker === 'me', fn (Builder $query) => $query->where('qa_user_id', $user->id))
+            ->orderBy('qa_requested_at');
+
+        return $this->tickets($query);
+    }
+
     private function tickets(Builder $query): array
     {
-        return TicketResource::collection($query->with(['reporter', 'assignee', 'customer', 'collaborators'])->get())->toArray(request());
+        return TicketResource::collection($query->with(['reporter', 'assignee', 'customer', 'collaborators', 'qaUser'])->get())->toArray(request());
     }
 
     public function asController(ActionRequest $request): array
