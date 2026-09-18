@@ -21,12 +21,16 @@ use App\Http\Resources\Helpers\TicketCommentResource;
 use App\Http\Resources\Helpers\TicketResource;
 use App\Models\Helpers\Ticket;
 use App\Models\SysAdmin\User;
+use App\Models\Catalogue\Shop;
+use App\Models\SysAdmin\Organisation;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 
 class ShowTicket extends OrgAction
 {
+    use WithTicketsScope;
+
     public function authorize(ActionRequest $request): bool
     {
         return $request->user() !== null;
@@ -41,6 +45,28 @@ class ShowTicket extends OrgAction
     {
         abort_unless($ticket->isVisibleTo($request->user()), 403);
         $this->initialisationFromGroup($ticket->group, $request);
+
+        return $this->openTicket($ticket, $request);
+    }
+
+    public function inOrganisation(Organisation $organisation, Ticket $ticket, ActionRequest $request): Ticket
+    {
+        abort_unless($ticket->isVisibleTo($request->user()), 403);
+        $this->initialisationFromTicketsScope($request, $organisation);
+
+        return $this->openTicket($ticket, $request);
+    }
+
+    public function inShop(Organisation $organisation, Shop $shop, Ticket $ticket, ActionRequest $request): Ticket
+    {
+        abort_unless($ticket->isVisibleTo($request->user()), 403);
+        $this->initialisationFromTicketsScope($request, $organisation, $shop);
+
+        return $this->openTicket($ticket, $request);
+    }
+
+    private function openTicket(Ticket $ticket, ActionRequest $request): Ticket
+    {
         MarkTicketNotificationsAsRead::run($ticket, $request->user());
 
         return $this->handle($ticket);
@@ -221,12 +247,12 @@ class ShowTicket extends OrgAction
     public function getBreadcrumbs(Ticket $ticket): array
     {
         return array_merge(
-            IndexTickets::make()->getBreadcrumbs(),
+            $this->ticketsListBreadcrumbs(),
             [
                 [
                     'type'   => 'simple',
                     'simple' => [
-                        'route' => ['name' => 'grp.tickets.show', 'parameters' => [$ticket->reference]],
+                        'route' => $this->ticketsRoute('show', [$ticket->reference]),
                         'label' => $ticket->reference,
                     ],
                 ],

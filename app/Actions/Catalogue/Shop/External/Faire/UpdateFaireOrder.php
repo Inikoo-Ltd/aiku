@@ -198,6 +198,9 @@ class UpdateFaireOrder extends OrgAction
         ]);
 
 
+        $faireTaxAmount = $this->getFaireTaxAmount($orderFaireData, $shop);
+        $order->update(['data->marketplace_tax_amount' => $faireTaxAmount]);
+
         $taxCategory = $this->getCategoryTaxCategory($order, $orderFaireData);
 
         $order = UpdateOrder::run($order, [
@@ -206,8 +209,6 @@ class UpdateFaireOrder extends OrgAction
 
 
         CalculateOrderTotalAmounts::run($order);
-
-        $faireTaxAmount = $this->getFaireTaxAmount($orderFaireData, $shop);
 
         $invoice = $this->getInvoiceToDiscount($order);
         if ($invoice) {

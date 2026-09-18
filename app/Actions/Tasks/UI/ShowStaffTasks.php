@@ -9,9 +9,10 @@
 namespace App\Actions\Tasks\UI;
 
 use App\Actions\OrgAction;
-use App\Actions\UI\Dashboards\ShowGroupDashboard;
 use App\Actions\UI\WithInertia;
+use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Group;
+use App\Models\SysAdmin\Organisation;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -21,10 +22,25 @@ class ShowStaffTasks extends OrgAction
 {
     use AsAction;
     use WithInertia;
+    use WithStaffTasksScope;
 
     public function asController(ActionRequest $request): Group
     {
-        $this->initialisationFromGroup(app('group'), $request);
+        $this->initialisationFromTasksScope($request);
+
+        return $this->group;
+    }
+
+    public function inOrganisation(Organisation $organisation, ActionRequest $request): Group
+    {
+        $this->initialisationFromTasksScope($request, $organisation);
+
+        return $this->group;
+    }
+
+    public function inShop(Organisation $organisation, Shop $shop, ActionRequest $request): Group
+    {
+        $this->initialisationFromTasksScope($request, $organisation, $shop);
 
         return $this->group;
     }
@@ -34,7 +50,7 @@ class ShowStaffTasks extends OrgAction
         $title = __('Tasks');
 
         return Inertia::render('Tasks/StaffTasks', [
-            'breadcrumbs'   => $this->getBreadcrumbs(),
+            'breadcrumbs'   => $this->tasksBreadcrumbs(),
             'title'         => $title,
             'pageHead'      => [
                 'title' => $title,
@@ -42,20 +58,5 @@ class ShowStaffTasks extends OrgAction
             ],
             'selected_task' => $request->query('task'),
         ]);
-    }
-
-    public function getBreadcrumbs(): array
-    {
-        return array_merge(
-            ShowGroupDashboard::make()->getBreadcrumbs(),
-            [[
-                'type'   => 'simple',
-                'simple' => [
-                    'icon'  => 'fal fa-tasks',
-                    'route' => ['name' => 'grp.tasks.index'],
-                    'label' => __('Tasks'),
-                ],
-            ]]
-        );
     }
 }

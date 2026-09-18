@@ -518,6 +518,17 @@ class Order extends Model implements HasMedia, Auditable
         return $this->belongsTo(Currency::class);
     }
 
+    /**
+     * The tax a marketplace (Faire) actually charged the retailer. When set it is the order's
+     * and its invoice's tax, whatever Aiku's own per-line rates would add up to.
+     */
+    public function getMarketplaceTaxAmount(): ?float
+    {
+        $amount = Arr::get($this->data, 'marketplace_tax_amount');
+
+        return is_null($amount) ? null : (float)$amount;
+    }
+
     public function taxCategory(): BelongsTo
     {
         return $this->belongsTo(TaxCategory::class);

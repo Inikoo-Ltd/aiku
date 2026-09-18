@@ -5,9 +5,10 @@
   -->
 
 <script setup lang="ts">
+import { ticketRoute } from "@/Composables/useTicketsRoute"
 import { computed, ref, watch } from "vue"
 import { Head, Link, router, usePage } from "@inertiajs/vue3"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import axios from "axios"
 import { Popover, Listbox } from "primevue"
 import { capitalize } from "@/Composables/capitalize"
@@ -193,13 +194,13 @@ watch(
     <PageHeading :data="pageHead" />
     <TicketsCreatedInterval :options="createdIntervals" :selected="createdInterval" class="mx-4 mt-2" />
     <div v-if="typeOptions?.length" class="mx-4 mt-2 flex flex-wrap items-center gap-1 rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-sm">
-        <span class="mr-2 text-xs font-medium uppercase tracking-wide text-gray-400">{{ trans("Type") }}</span>
+        <span class="mr-2 text-xs font-medium uppercase tracking-wide text-gray-400">{{ ctrans("Type") }}</span>
         <button
             type="button"
             class="rounded-md px-3 py-1 transition duration-200"
             :class="!typeFilter ? 'bg-[--app-accent] text-[--app-accent-text] shadow-sm' : 'text-gray-600 hover:bg-gray-100'"
             @click="filterByType(null)">
-            {{ trans("All") }}
+            {{ ctrans("All") }}
         </button>
         <button
             v-for="option in typeOptions"
@@ -213,20 +214,20 @@ watch(
         </button>
     </div>
     <div class="mx-4 mt-1 flex flex-wrap items-center gap-1 text-xs text-gray-400">
-        <span class="mr-1">{{ trans("Search tips") }}:</span>
+        <span class="mr-1">{{ ctrans("Search tips") }}:</span>
         <code v-for="tip in searchHelp" :key="tip" class="rounded bg-gray-100 px-1.5 py-0.5 text-gray-500">{{ tip }}</code>
     </div>
     <div class="[&_tbody_tr]:cursor-pointer" @click="onTableClick">
         <Table :resource="data" class="mt-2 max-md:[&_td.max-w-0]:max-w-none max-md:[&_th.max-w-0]:max-w-none">
             <template #cell(reference)="{ item }">
-                <span class="inline-flex items-center"><Icon v-if="item.type_icon" :data="item.type_icon" class="mr-1 text-gray-400" /><Link :href="route('grp.tickets.show', item.reference)" class="primaryLink" :data-ticket-id="item.id">{{ item.reference }}</Link></span>
+                <span class="inline-flex items-center"><Icon v-if="item.type_icon" :data="item.type_icon" class="mr-1 text-gray-400" /><Link :href="ticketRoute(item.reference)" class="primaryLink" :data-ticket-id="item.id">{{ item.reference }}</Link></span>
             </template>
             <template #cell(status)="{ item }">
                 <button
                     v-if="statusActionsFor(item).length"
                     type="button"
                     :class="[editableCellClass, isEditing('status', item) && '!bg-gray-200']"
-                    :title="trans('Change status')"
+                    :title="ctrans('Change status')"
                     :disabled="isRowSaving(item)"
                     @click="openEditor('status', item, $event)">
                     <Icon :data="item.status_icon" /> {{ item.status_label }}
@@ -243,7 +244,7 @@ watch(
                     v-if="canEditRow(item)"
                     type="button"
                     :class="[editableCellClass, 'min-w-9 justify-center', isEditing('priority', item) && '!bg-gray-200']"
-                    :title="trans('Change priority')"
+                    :title="ctrans('Change priority')"
                     :disabled="isRowSaving(item)"
                     @click="openEditor('priority', item, $event)">
                     <FontAwesomeIcon v-if="isSaving(item, 'priority')" icon="fal fa-spinner" spin class="text-gray-400" fixed-width />
@@ -256,10 +257,10 @@ watch(
                     v-if="canEditKind(item)"
                     type="button"
                     :class="[editableCellClass, 'text-gray-700', isEditing('kind', item) && '!bg-gray-200']"
-                    :title="trans('Change kind')"
+                    :title="ctrans('Change kind')"
                     :disabled="isRowSaving(item)"
                     @click="openEditor('kind', item, $event)">
-                    {{ item.kind_label || trans("No kind") }}
+                    {{ item.kind_label || ctrans("No kind") }}
                     <FontAwesomeIcon :icon="isSaving(item, 'kind') ? 'fal fa-spinner' : 'fal fa-chevron-down'" :spin="isSaving(item, 'kind')" class="text-[10px] text-gray-400" fixed-width />
                 </button>
                 <span v-else :class="[readOnlyCellClass, 'text-gray-600']">{{ item.kind_label || "-" }}</span>
@@ -269,10 +270,10 @@ watch(
                     v-if="canEditModule(item)"
                     type="button"
                     :class="[editableCellClass, 'text-gray-700', isEditing('module', item) && '!bg-gray-200']"
-                    :title="trans('Change module')"
+                    :title="ctrans('Change module')"
                     :disabled="isRowSaving(item)"
                     @click="openEditor('module', item, $event)">
-                    {{ item.module_label || trans("No module") }}
+                    {{ item.module_label || ctrans("No module") }}
                     <FontAwesomeIcon :icon="isSaving(item, 'module') ? 'fal fa-spinner' : 'fal fa-chevron-down'" :spin="isSaving(item, 'module')" class="text-[10px] text-gray-400" fixed-width />
                 </button>
                 <span v-else :class="[readOnlyCellClass, 'text-gray-600']">{{ item.module_label || "-" }}</span>
@@ -290,11 +291,11 @@ watch(
                     class="mx-auto flex w-20 flex-col items-center gap-0.5 rounded p-2 text-center"
                     :class="canEditRow(item) && ['relative transition duration-200 hover:bg-gray-100 active:!bg-gray-200 disabled:cursor-wait disabled:opacity-60', isEditing('assignee_id', item) && '!bg-gray-200']"
                     :disabled="canEditRow(item) ? isRowSaving(item) : undefined"
-                    :title="canEditRow(item) ? trans('Change assignee') : item.assignee"
+                    :title="canEditRow(item) ? ctrans('Change assignee') : item.assignee"
                     @click="canEditRow(item) && openEditor('assignee_id', item, $event)">
                     <TicketUserAvatar v-if="item.assignee" :name="item.assignee" :avatar="item.assignee_avatar" />
                     <span v-else class="flex h-7 w-7 items-center justify-center rounded-full border border-dashed border-gray-300 text-gray-400"><FontAwesomeIcon icon="fal fa-user" fixed-width /></span>
-                    <span class="w-full truncate text-[10px] leading-tight" :class="item.assignee ? 'text-gray-600' : 'text-gray-400'">{{ item.assignee_short || trans("Unassigned") }}</span>
+                    <span class="w-full truncate text-[10px] leading-tight" :class="item.assignee ? 'text-gray-600' : 'text-gray-400'">{{ item.assignee_short || ctrans("Unassigned") }}</span>
                     <span v-if="item.collaborators?.length" class="text-[10px] leading-tight text-[--app-accent-strong]" :title="item.collaborators.map((collaborator) => collaborator.name).join(', ')">
                         <FontAwesomeIcon icon="fal fa-users" class="mr-0.5" fixed-width />{{ item.collaborators.length }}
                     </span>
@@ -341,14 +342,14 @@ watch(
                 @click="chooseValue('assignee_id', engineer.value)">
                 <TicketUserAvatar :name="engineer.label" :avatar="engineer.avatar" size="sm" />
                 <span :class="engineer.value === myUserId && 'font-medium'">{{ engineer.label }}</span>
-                <span v-if="engineer.value === myUserId" class="text-xs text-gray-400">{{ trans("me") }}</span>
+                <span v-if="engineer.value === myUserId" class="text-xs text-gray-400">{{ ctrans("me") }}</span>
             </button>
             <button
                 v-if="can_assign && activeItem?.assignee_id"
                 type="button"
                 class="mt-1 rounded border-t border-gray-100 p-2 text-left text-gray-500 transition duration-200 hover:bg-gray-100 active:!bg-gray-200"
                 @click="chooseValue('assignee_id', null)">
-                {{ trans("Unassign") }}
+                {{ ctrans("Unassign") }}
             </button>
         </div>
     </Popover>

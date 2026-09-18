@@ -18,12 +18,16 @@ use App\Models\Helpers\Ticket;
 use App\Enums\HumanResources\Employee\EmployeeStateEnum;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\User;
+use App\Models\Catalogue\Shop;
+use App\Models\SysAdmin\Organisation;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 
 class ShowTicketsBoard extends OrgAction
 {
+    use WithTicketsScope;
+
     public function authorize(ActionRequest $request): bool
     {
         return $request->user() !== null;
@@ -113,8 +117,27 @@ class ShowTicketsBoard extends OrgAction
 
     public function asController(ActionRequest $request): array
     {
-        $this->initialisationFromGroup(group(), $request);
+        $this->initialisationFromTicketsScope($request);
 
+        return $this->boardFromRequest($request);
+    }
+
+    public function inOrganisation(Organisation $organisation, ActionRequest $request): array
+    {
+        $this->initialisationFromTicketsScope($request, $organisation);
+
+        return $this->boardFromRequest($request);
+    }
+
+    public function inShop(Organisation $organisation, Shop $shop, ActionRequest $request): array
+    {
+        $this->initialisationFromTicketsScope($request, $organisation, $shop);
+
+        return $this->boardFromRequest($request);
+    }
+
+    private function boardFromRequest(ActionRequest $request): array
+    {
         $periods = array_filter((array) $request->input('periods', []), fn ($period) => in_array($period, self::PERIODS, true));
 
         $type = in_array($request->input('type'), array_column(TicketTypeEnum::cases(), 'value'), true) ? $request->input('type') : null;
@@ -128,8 +151,8 @@ class ShowTicketsBoard extends OrgAction
             'Tickets/TicketsBoard',
             [
                 'breadcrumbs' => array_merge(
-                    ShowTicketsDashboard::make()->getBreadcrumbs(),
-                    [['type' => 'simple', 'simple' => ['route' => ['name' => 'grp.tickets.board'], 'label' => __('Board')]]]
+                    $this->ticketsBreadcrumbs(),
+                    [['type' => 'simple', 'simple' => ['route' => $this->ticketsRoute('board'), 'label' => __('Board')]]]
                 ),
                 'title'       => __('Tickets board'),
                 'pageHead'    => [
@@ -140,7 +163,7 @@ class ShowTicketsBoard extends OrgAction
                             'type'  => 'button',
                             'style' => 'create',
                             'label' => __('New ticket'),
-                            'route' => ['name' => 'grp.tickets.create'],
+                            'route' => $this->ticketsRoute('create'),
                         ],
                     ] : [],
                 ],
