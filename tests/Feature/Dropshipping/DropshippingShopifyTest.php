@@ -60,6 +60,8 @@ use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Portfolio;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Queue;
+use App\Actions\Dropshipping\Shopify\Product\SaveShopifyProductData;
+use App\Actions\Maintenance\Dropshipping\RepairPortfoliosBorrowedSku;
 use App\Actions\Dropshipping\Shopify\Product\StoreShopifyProduct;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
@@ -264,6 +266,11 @@ test('the stock push resolves the variant by sku and never falls back to a sibli
 
     $rewrittenOntoSibling = new Portfolio(['sku' => 'bfgx-03', 'platform_product_variant_id' => 'gid://shopify/ProductVariant/1']);
     expect(BulkUpdateShopifyPortfolio::resolveVariant($rewrittenOntoSibling, $product('BFGx-03'), $bracelets)['variantId'])->toBe('gid://shopify/ProductVariant/3');
+
+    $borrowsSiblingSku = new Portfolio(['sku' => 'nmgc-01', 'platform_product_variant_id' => 'gid://shopify/ProductVariant/1']);
+    $gemstoneChips     = [$variant('1', 'NMGC-01'), $variant('4', 'NMGC-04')];
+    expect(BulkUpdateShopifyPortfolio::resolveVariant($borrowsSiblingSku, $product('NMGC-04'), $gemstoneChips)['variantId'])->toBe('gid://shopify/ProductVariant/4')
+        ->and(BulkUpdateShopifyPortfolio::resolveVariant($borrowsSiblingSku, $product('NMGC-04'), [$variant('1', 'NMGC-01')])['variantId'])->toBe('gid://shopify/ProductVariant/1');
 
     $deletedVariant = new Portfolio(['sku' => 'spbic-12', 'platform_product_variant_id' => 'gid://shopify/ProductVariant/10']);
     expect(BulkUpdateShopifyPortfolio::resolveVariant($deletedVariant, $product('SPBiC-12'), [$variant('10', 'spbic-10')]))->toBeNull();
@@ -985,6 +992,23 @@ test('repairing a channel re-points portfolios whose product is gone onto the on
         ->and(array_unique(array_column(ShopifyFake::$requests, 'operation')))->toBe(['auditProductVariants']);
 });
 
+test('reading a listing back never gives a portfolio the sku that is the code of another product of the shop', function () {
+    Queue::fake();
+    $shopifyUser   = shopifyProductChannel($this, 'product-borrowed-sku');
+    $secondProduct = \App\Actions\Catalogue\Product\StoreProduct::make()->action($this->product->family, array_merge(\App\Models\Catalogue\Product::factory()->definition(), ['trade_units' => [['id' => $this->product->tradeUnits->first()->id, 'quantity' => 1]], 'price' => 50]));
+    $portfolio     = StorePortfolio::make()->action($shopifyUser->customerSalesChannel, $this->product, []);
+    $portfolio->update(['sku' => 'own-sku', 'platform_product_id' => 'gid://shopify/Product/7300']);
+
+    ShopifyFake::fake(['getProduct' => ShopifyFake::graphql(['product' => shopifyProductNode('gid://shopify/Product/7300', 'gid://shopify/ProductVariant/8300', Str::upper($secondProduct->code))])]);
+    SaveShopifyProductData::run($portfolio->refresh());
+    expect($portfolio->refresh()->sku)->toBe('own-sku')
+        ->and(Arr::get($portfolio->data, 'shopify_product.id'))->toBe('gid://shopify/Product/7300');
+
+    ShopifyFake::fake(['getProduct' => ShopifyFake::graphql(['product' => shopifyProductNode('gid://shopify/Product/7300', 'gid://shopify/ProductVariant/8300', 'merchant-own-text')])]);
+    SaveShopifyProductData::run($portfolio->refresh());
+    expect($portfolio->refresh()->sku)->toBe('merchant-own-text');
+});
+
 test('an upload never creates a second product for a portfolio whose product is already in shopify, it only creates the variant', function () {
     Queue::fake();
     $shopifyUser = shopifyProductChannel($this, 'product-already-there');
@@ -1085,4 +1109,74 @@ test('an upload never creates a product or a variant for a portfolio linked to a
     expect($stored)->toBeFalse()
         ->and(ShopifyFake::$requests)->toBeEmpty()
         ->and($portfolio->refresh()->platform_product_id)->toBe('gid://shopify/Product/7700');
+});
+
+test('an order line matched by sku goes to the portfolio whose product code it is, not to one that borrows that sku', function () {
+    Queue::fake();
+    $channel       = shopifyProductChannel($this, 'product-sku-owner-first')->customerSalesChannel;
+    $secondProduct = \App\Actions\Catalogue\Product\StoreProduct::make()->action($this->product->family, array_merge(\App\Models\Catalogue\Product::factory()->definition(), ['trade_units' => [['id' => $this->product->tradeUnits->first()->id, 'quantity' => 1]], 'price' => 50]));
+
+    $borrower = StorePortfolio::make()->action($channel, $this->product, []);
+    $borrower->update(['sku' => Str::lower($secondProduct->code)]);
+    $owner = StorePortfolio::make()->action($channel, $secondProduct, []);
+    $owner->update(['sku' => 'shared-stock-slug']);
+
+    $orderLines = new class () {
+        use WithShopifyPortfolioMatching;
+    };
+
+    expect($orderLines->matchShopifyLineItemToPortfolio($channel, null, null, Str::upper($secondProduct->code))?->id)->toBe($owner->id)
+        ->and($orderLines->matchShopifyLineItemToPortfolio($channel, null, null, 'shared-stock-slug')?->id)->toBe($owner->id);
+
+    $owner->update(['status' => false]);
+    expect($orderLines->matchShopifyLineItemToPortfolio($channel, null, null, $secondProduct->code)?->id)->toBe($borrower->id);
+});
+
+test('two products built on the same stock get their own sku, and each is found back by it', function () {
+    Queue::fake();
+    $channel       = shopifyProductChannel($this, 'product-own-sku')->customerSalesChannel;
+    $secondProduct = \App\Actions\Catalogue\Product\StoreProduct::make()->action($this->product->family, array_merge(\App\Models\Catalogue\Product::factory()->definition(), ['trade_units' => [['id' => $this->product->tradeUnits->first()->id, 'quantity' => 5]], 'price' => 50]));
+
+    $sharedOrgStock = createOrgStocks($this->shop->organisation, createStocks($this->shop->group))[0];
+    $this->product->orgStocks()->sync([$sharedOrgStock->id => ['quantity' => 1]]);
+    $secondProduct->orgStocks()->sync([$sharedOrgStock->id => ['quantity' => 5]]);
+
+    $first  = StorePortfolio::make()->action($channel, $this->product->refresh(), []);
+    $second = StorePortfolio::make()->action($channel, $secondProduct->refresh(), []);
+
+    expect($first->sku)->toBe(Str::lower($this->product->code))
+        ->and($second->sku)->toBe(Str::lower($secondProduct->code))
+        ->and(StorePortfolio::make()->findProductBySKU($second->sku, $this->shop)?->id)->toBe($secondProduct->id);
+
+    $secondProduct->update(['is_bundle' => true]);
+    expect(StorePortfolio::make()->getSKU($secondProduct->refresh()))->toBe($sharedOrgStock->stock->slug);
+});
+
+test('the borrowed sku repair gives an unlinked portfolio its own sku back and leaves alone one linked to a listing', function () {
+    Queue::fake();
+    $channel       = shopifyProductChannel($this, 'product-borrowed-sku-repair')->customerSalesChannel;
+    $secondProduct = \App\Actions\Catalogue\Product\StoreProduct::make()->action($this->product->family, array_merge(\App\Models\Catalogue\Product::factory()->definition(), ['trade_units' => [['id' => $this->product->tradeUnits->first()->id, 'quantity' => 5]], 'price' => 50]));
+
+    $sharedOrgStock = createOrgStocks($this->shop->organisation, createStocks($this->shop->group))[0];
+    $this->product->orgStocks()->sync([$sharedOrgStock->id => ['quantity' => 1]]);
+
+    $borrower = StorePortfolio::make()->action($channel, $this->product->refresh(), []);
+    $borrower->update(['sku' => Str::lower($secondProduct->code)]);
+
+    $repair = RepairPortfoliosBorrowedSku::make();
+
+    expect($repair->borrowedSkuQuery($channel)->pluck('portfolios.id')->all())->toBe([$borrower->id])
+        ->and($repair->borrowedSkuQuery($channel, PlatformTypeEnum::SHOPIFY)->count())->toBe(1)
+        ->and($repair->borrowedSkuQuery($channel, PlatformTypeEnum::EBAY)->count())->toBe(0)
+        ->and($repair->handle($borrower, true))->toBe(RepairPortfoliosBorrowedSku::REPAIRED)
+        ->and($borrower->refresh()->sku)->toBe(Str::lower($secondProduct->code));
+
+    $borrower->update(['platform_product_id' => 'gid://shopify/Product/7500']);
+    expect($repair->handle($borrower->refresh()))->toBe(RepairPortfoliosBorrowedSku::LINKED)
+        ->and($borrower->refresh()->sku)->toBe(Str::lower($secondProduct->code));
+
+    $borrower->update(['platform_product_id' => null]);
+    expect($repair->handle($borrower->refresh()))->toBe(RepairPortfoliosBorrowedSku::REPAIRED)
+        ->and($borrower->refresh()->sku)->toBe(Str::lower($this->product->code))
+        ->and($repair->borrowedSkuQuery($channel)->count())->toBe(0);
 });
