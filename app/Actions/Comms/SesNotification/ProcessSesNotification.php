@@ -273,6 +273,11 @@ class ProcessSesNotification
 
     public function getDispatchedEmail(string $sesMessageID): ?DispatchedEmail
     {
+        $dispatchedEmail = DispatchedEmail::on('aiku_no_sticky')->where('ses_id', $sesMessageID)->first();
+        if ($dispatchedEmail) {
+            return $dispatchedEmail;
+        }
+
         $dispatchedEmailData = DB::connection('aiku_no_sticky')->table('ses_dispatched_emails')->select('dispatched_email_id')->where('ses_id', $sesMessageID)->first();
         if ($dispatchedEmailData) {
             $dispatchedEmail = DispatchedEmail::on('aiku_no_sticky')->find($dispatchedEmailData->dispatched_email_id);
