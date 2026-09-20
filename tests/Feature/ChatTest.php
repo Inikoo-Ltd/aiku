@@ -3857,3 +3857,38 @@ test('losing customer service releases the chats and suspends the agent', functi
         ->and(ChatAgent::find($agent->id))->toBeNull()
         ->and(ChatAgent::withTrashed()->find($agent->id)->trashed())->toBeTrue();
 });
+
+test('a manager supervises chat without being an agent', function () {
+    $session = ChatSession::create([
+        'ulid'             => (string) \Illuminate\Support\Str::ulid(),
+        'shop_id'          => $this->shop->id,
+        'language_id'      => 68,
+        'status'           => ChatSessionStatusEnum::ACTIVE->value,
+        'priority'         => ChatPriorityEnum::NORMAL->value,
+        'guest_identifier' => 'guest-'.\Illuminate\Support\Str::random(8),
+    ]);
+
+    setPermissionsTeamId($this->user->group_id);
+
+    // A shop administrator holds CRM, and used to inherit chat with it.
+    $admin = User::factory()->create(['group_id' => $this->organisation->group_id, 'status' => true]);
+    $admin->assignRole(RolesEnum::getRoleName(RolesEnum::SHOP_ADMIN->value, $this->shop));
+
+    expect($admin->authTo(['crm.'.$this->shop->id]))->toBeTrue()
+        // A manager supervises chat: never routed one, but free to take over and write.
+        ->and($admin->authTo(['chat.'.$this->shop->id]))->toBeFalse()
+        ->and($admin->authTo(['chat-m.'.$this->shop->id]))->toBeTrue();
+
+    $this->actingAs($admin);
+    expect(CloseChatSession::make()->getCurrentAgent($session))->not->toBeNull();
+
+    $adminAgent = ChatAgent::where('user_id', $admin->id)->first();
+    expect(ChatAgent::findAvailableAgent(shopId: $this->shop->id)?->id)->not->toBe($adminAgent->id);
+
+    $clerk = User::factory()->create(['group_id' => $this->organisation->group_id, 'status' => true]);
+    $clerk->assignRole(RolesEnum::getRoleName(RolesEnum::CUSTOMER_SERVICE_CLERK->value, $this->shop));
+
+    $this->actingAs($clerk);
+    expect($clerk->authTo(['chat.'.$this->shop->id]))->toBeTrue()
+        ->and(CloseChatSession::make()->getCurrentAgent($session))->not->toBeNull();
+});

@@ -318,6 +318,7 @@ enum RolesEnum: string
             ],
             RolesEnum::SHOP_ADMIN => [
                 ShopPermissionsEnum::SHOP_ADMIN,
+                ShopPermissionsEnum::CHAT_MANAGER,
                 ShopPermissionsEnum::PRODUCTS,
                 ShopPermissionsEnum::WEB,
                 ShopPermissionsEnum::CRM,
@@ -457,6 +458,7 @@ enum RolesEnum: string
                 ShopPermissionsEnum::SUPERVISOR_WEB,
             ],
             RolesEnum::CUSTOMER_SERVICE_CLERK => [
+                ShopPermissionsEnum::CHAT,
                 ShopPermissionsEnum::CRM,
                 ShopPermissionsEnum::ORDERS,
                 ShopPermissionsEnum::PRODUCTS_VIEW,
@@ -466,6 +468,8 @@ enum RolesEnum: string
 
             ],
             RolesEnum::CUSTOMER_SERVICE_SUPERVISOR => [
+                ShopPermissionsEnum::CHAT,
+                ShopPermissionsEnum::CHAT_MANAGER,
                 ShopPermissionsEnum::CRM,
                 ShopPermissionsEnum::SUPERVISOR_CRM,
                 ShopPermissionsEnum::ORDERS,
@@ -477,6 +481,7 @@ enum RolesEnum: string
 
             ],
             RolesEnum::CUSTOMER_SERVICE_VIEWER => [
+                ShopPermissionsEnum::CHAT_VIEW,
                 ShopPermissionsEnum::CRM_VIEW,
                 ShopPermissionsEnum::ORDERS_VIEW,
                 ShopPermissionsEnum::PRODUCTS_VIEW,

@@ -47,9 +47,10 @@ class RevokeChatAgentAccess
         // Read the grants straight from spatie. authTo() caches a positive answer for an
         // hour, and a revocation that believes a stale yes is the one case that must not
         // happen: the whole point here is that the permission has just gone away.
-        $crmShopIds = $user->getAllPermissions()
-            ->map(fn ($permission) => preg_match('/^crm\.(\d+)$/', $permission->name, $m) ? (int) $m[1] : null)
+        $chatShopIds = $user->getAllPermissions()
+            ->map(fn ($permission) => preg_match('/^chat(?:-m)?\.(\d+)$/', $permission->name, $m) ? (int) $m[1] : null)
             ->filter()
+            ->unique()
             ->values()
             ->all();
 
@@ -64,7 +65,7 @@ class RevokeChatAgentAccess
         foreach ($assignments as $assignment) {
             $shop = $assignment->chatSession?->shop;
 
-            if ($shop && in_array($shop->id, $crmShopIds, true)) {
+            if ($shop && in_array($shop->id, $chatShopIds, true)) {
                 continue;
             }
 
@@ -78,7 +79,7 @@ class RevokeChatAgentAccess
         foreach ($agent->shopAssignments()->with('shop')->get() as $shopAssignment) {
             $shop = $shopAssignment->shop;
 
-            if ($shop && in_array($shop->id, $crmShopIds, true)) {
+            if ($shop && in_array($shop->id, $chatShopIds, true)) {
                 continue;
             }
 
@@ -89,7 +90,7 @@ class RevokeChatAgentAccess
             $shopsRemoved++;
         }
 
-        $suspended = $this->suspendIfNothingLeft($agent, $crmShopIds, $dryRun);
+        $suspended = $this->suspendIfNothingLeft($agent, $chatShopIds, $dryRun);
 
         if (!$dryRun && $released > 0) {
             ChatAgentHydrateChats::run($agent);
@@ -134,11 +135,11 @@ class RevokeChatAgentAccess
     }
 
     /**
-     * @param  array<int, int>  $crmShopIds
+     * @param  array<int, int>  $chatShopIds
      */
-    private function suspendIfNothingLeft(ChatAgent $agent, array $crmShopIds, bool $dryRun): bool
+    private function suspendIfNothingLeft(ChatAgent $agent, array $chatShopIds, bool $dryRun): bool
     {
-        if ($crmShopIds !== []) {
+        if ($chatShopIds !== []) {
             return false;
         }
 

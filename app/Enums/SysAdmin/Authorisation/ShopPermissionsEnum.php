@@ -22,6 +22,21 @@ enum ShopPermissionsEnum: string
     case CRM_EDIT = 'crm.edit';
     case CRM_VIEW = 'crm.view';
 
+    /*
+     * Chat is its own permission rather than a part of CRM: shop admins and the technical
+     * team hold CRM for reasons that have nothing to do with answering customers, and
+     * working somebody's live conversations should be granted deliberately.
+     */
+    case CHAT      = 'chat';
+    case CHAT_VIEW = 'chat.view';
+
+    /*
+     * Supervising chat is not the same as working it: a manager takes over, writes and
+     * closes any conversation on the shop, but is never in the routing pool and never
+     * counts as an agent.
+     */
+    case CHAT_MANAGER = 'chat-m';
+
     case CRM_PROSPECTS      = 'crm.prospects';
     case CRM_PROSPECTS_EDIT = 'crm.prospects.edit';
     case CRM_PROSPECTS_VIEW = 'crm.prospects.view';
