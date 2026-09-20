@@ -4559,6 +4559,8 @@ test('mail from one of our own shops or staff never becomes a chat session', fun
         'work_email'      => 'david@ancientwisdom.biz',
     ]);
 
+    $this->customer->update(['is_staff' => true, 'email' => 'buyer.staff@example.com']);
+
     \Illuminate\Support\Facades\Cache::forget('chat.our_own_email_addresses');
 
     $gmailMessage = fn (string $id, string $from) => \Illuminate\Support\Facades\Http::response([
@@ -4575,16 +4577,49 @@ test('mail from one of our own shops or staff never becomes a chat session', fun
         'oauth2.googleapis.com/token'                         => \Illuminate\Support\Facades\Http::response(['access_token' => 'at']),
         'gmail.googleapis.com/gmail/v1/users/me/messages/o1*' => $gmailMessage('o1', 'AW Artisan <hola@awartisan.es>'),
         'gmail.googleapis.com/gmail/v1/users/me/messages/o2*' => $gmailMessage('o2', 'David Hardy <David@AncientWisdom.biz>'),
+        'gmail.googleapis.com/gmail/v1/users/me/messages/o3*' => $gmailMessage('o3', 'Staff Buyer <buyer.staff@example.com>'),
         'gmail.googleapis.com/gmail/v1/users/me/labels'       => \Illuminate\Support\Facades\Http::response(['labels' => [['id' => 'LF', 'name' => 'aiku/filtered']]]),
         'gmail.googleapis.com/*'                              => \Illuminate\Support\Facades\Http::response([]),
     ]);
 
     $sessionsBefore = ChatSession::count();
 
-    foreach (['o1', 'o2'] as $id) {
+    foreach (['o1', 'o2', 'o3'] as $id) {
         expect(\App\Actions\Comms\Mailbox\ProcessInboundEmail::run($this->shop, $id))->toBeNull();
         \Illuminate\Support\Facades\Http::assertSent(fn ($request) => str_ends_with($request->url(), "messages/$id/modify") && $request['addLabelIds'] === ['LF']);
     }
 
     expect(ChatSession::count())->toBe($sessionsBefore);
+});
+
+test('the sweep marks email conversations already imported from our own addresses as rubbish', function () {
+    $this->shop->update(['email' => 'hola@awartisan.es']);
+    \Illuminate\Support\Facades\Cache::forget('chat.our_own_email_addresses');
+
+    $makeSession = function (string $email) {
+        $session = ChatSession::create([
+            'ulid'        => (string) \Illuminate\Support\Str::ulid(),
+            'shop_id'     => $this->shop->id,
+            'language_id' => 68,
+            'status'      => ChatSessionStatusEnum::ACTIVE->value,
+            'priority'    => ChatPriorityEnum::NORMAL->value,
+            'channel'     => \App\Enums\CRM\Livechat\ChatChannelEnum::EMAIL->value,
+        ]);
+        $session->update(['metadata' => ['email' => $email]]);
+
+        return $session;
+    };
+
+    $ours     = $makeSession('Hola@AWartisan.es');
+    $customer = $makeSession('shopper@example.com');
+
+    expect(\App\Actions\Chat\ChatSession\RubbishOwnMailChatSessions::run(dryRun: true))->toBeGreaterThanOrEqual(1)
+        ->and($ours->fresh()->is_rubbish)->toBeFalse();
+
+    \App\Actions\Chat\ChatSession\RubbishOwnMailChatSessions::run();
+
+    expect($ours->fresh()->is_rubbish)->toBeTrue()
+        ->and($ours->fresh()->rubbish_reason)->toBe(\App\Enums\CRM\Livechat\ChatIgnoreReasonEnum::MARKETING->value)
+        ->and($customer->fresh()->is_rubbish)->toBeFalse()
+        ->and(\App\Actions\Chat\ChatSession\RubbishOwnMailChatSessions::run())->toBe(0);
 });

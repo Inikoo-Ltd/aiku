@@ -11,12 +11,14 @@ namespace App\Actions\Comms\Mailbox;
 use App\Actions\Chat\ChatSession\StoreChatSession;
 use App\Actions\Chat\ChatSession\SendChatMessage;
 use App\Enums\CRM\Livechat\ChatChannelEnum;
+use App\Enums\CRM\Livechat\ChatIgnoreReasonEnum;
 use App\Enums\CRM\Livechat\ChatMessageTypeEnum;
 use App\Enums\CRM\Livechat\ChatPriorityEnum;
 use App\Enums\CRM\Livechat\ChatSenderTypeEnum;
 use App\Enums\CRM\Livechat\ChatSessionStatusEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\HumanResources\Employee;
+use App\Models\CRM\Customer;
 use App\Models\Chat\ChatMessage;
 use App\Models\Chat\ChatSession;
 use App\Models\CRM\WebUser;
@@ -156,24 +158,49 @@ class ProcessInboundEmail
      * Our own mailshots land in every sibling shop's mailbox, and staff write to lists this mailbox
      * is on: neither is a customer waiting for an answer, so they never open a conversation. Matched
      * on the address rather than the domain, since customers do buy from us on our own domains.
+     *
+     * Staff accounts count here whichever way they reach us: a shop mailbox, an employee's work
+     * address, or the account they order on with is_staff set, including the web users under it.
      */
     private function isOneOfOurs(?string $address): bool
     {
-        if (! $address) {
-            return false;
-        }
+        return $address !== null && isset(self::ourOwnAddresses()[strtolower($address)]);
+    }
 
-        $ours = Cache::remember('chat.our_own_email_addresses', 300, function () {
-            return array_map(
-                'strtolower',
-                array_filter(array_merge(
-                    Shop::whereNotNull('email')->pluck('email')->all(),
-                    Employee::whereNotNull('work_email')->pluck('work_email')->all()
-                ))
-            );
+    /**
+     * Lowercase address to why it is ours, so a sweep of what already came in can say which it was.
+     *
+     * @return array<string, ChatIgnoreReasonEnum>
+     */
+    public static function ourOwnAddresses(): array
+    {
+        return Cache::remember('chat.our_own_email_addresses', 300, function () {
+            $ours = [];
+
+            foreach (Employee::whereNotNull('work_email')->pluck('work_email') as $email) {
+                $ours[strtolower($email)] = ChatIgnoreReasonEnum::NOT_FOR_US;
+            }
+
+            foreach (Customer::where('is_staff', true)->whereNotNull('email')->pluck('email') as $email) {
+                $ours[strtolower($email)] = ChatIgnoreReasonEnum::NOT_FOR_US;
+            }
+
+            $staffWebUsers = WebUser::whereNotNull('email')
+                ->whereHas('customer', fn ($query) => $query->where('is_staff', true))
+                ->pluck('email');
+
+            foreach ($staffWebUsers as $email) {
+                $ours[strtolower($email)] = ChatIgnoreReasonEnum::NOT_FOR_US;
+            }
+
+            // Last, so a shop mailbox keeps its own reason: these addresses are also customer and
+            // web user rows of their own, and what arrives from them is our campaigns.
+            foreach (Shop::whereNotNull('email')->pluck('email') as $email) {
+                $ours[strtolower($email)] = ChatIgnoreReasonEnum::MARKETING;
+            }
+
+            return $ours;
         });
-
-        return in_array(strtolower($address), $ours, true);
     }
 
     /**
