@@ -260,6 +260,7 @@ class ChatAgent extends Model
     {
         return $query->online()
             ->where('is_available', true)
+            ->whereHas('user', fn ($user) => $user->where('status', true))
             ->whereColumn('current_chat_count', '<', 'max_concurrent_chats');
     }
 

@@ -3715,3 +3715,44 @@ test('customer service viewer gets no write access to chat', function () {
     expect(CloseChatSession::make()->getCurrentAgent($session))->toBeNull()
         ->and(ChatAgent::where('user_id', $viewer->id)->exists())->toBeFalse();
 });
+
+test('a departed staff member is never a chat agent', function () {
+    $session = ChatSession::create([
+        'ulid'             => (string) \Illuminate\Support\Str::ulid(),
+        'shop_id'          => $this->shop->id,
+        'language_id'      => 68,
+        'status'           => ChatSessionStatusEnum::ACTIVE->value,
+        'priority'         => ChatPriorityEnum::NORMAL->value,
+        'guest_identifier' => 'guest-'.\Illuminate\Support\Str::random(8),
+    ]);
+
+    $leaver = User::factory()->create(['group_id' => $this->organisation->group_id]);
+    setPermissionsTeamId($this->user->group_id);
+    $leaver->assignRole(RolesEnum::getRoleName(RolesEnum::CUSTOMER_SERVICE_CLERK->value, $this->shop));
+
+    $agent = ChatAgent::create([
+        'user_id'              => $leaver->id,
+        'max_concurrent_chats' => 5,
+        'language_id'          => 68,
+        'is_online'            => true,
+        'is_available'         => true,
+        'current_chat_count'   => 0,
+        'presence_status'      => ChatAgentPresenceStatusEnum::ONLINE,
+        'last_heartbeat_at'    => now(),
+    ]);
+
+    ShopHasChatAgent::create([
+        'organisation_id' => $this->shop->organisation_id,
+        'shop_id'         => $this->shop->id,
+        'chat_agent_id'   => $agent->id,
+    ]);
+
+    $this->actingAs($leaver);
+    expect(CloseChatSession::make()->getCurrentAgent($session))->not->toBeNull()
+        ->and(ChatAgent::available()->whereKey($agent->id)->exists())->toBeTrue();
+
+    $leaver->update(['status' => false]);
+
+    expect(CloseChatSession::make()->getCurrentAgent($session->fresh()))->toBeNull()
+        ->and(ChatAgent::available()->whereKey($agent->id)->exists())->toBeFalse();
+});

@@ -41,6 +41,10 @@ trait WithChatAgentAuthorisation
 
     protected function userCanWorkChatOnShop(User $user, Shop $shop): bool
     {
+        if (!$user->status) {
+            return false;
+        }
+
         if ($user->authTo(["crm.{$shop->id}"])) {
             return true;
         }
@@ -69,6 +73,10 @@ trait WithChatAgentAuthorisation
 
     protected function userCanWorkChatOnOrganisation(User $user, Organisation $organisation): bool
     {
+        if (!$user->status) {
+            return false;
+        }
+
         $permissions = $organisation->shops()->pluck('shops.id')
             ->map(fn ($shopId) => "crm.{$shopId}")
             ->all();
