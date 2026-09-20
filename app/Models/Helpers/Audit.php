@@ -119,10 +119,11 @@ class Audit extends \OwenIt\Auditing\Models\Audit
                         }
 
                         if (!empty($newValues)) {
-                            static::withoutEvents(function () use ($recentAudit, $oldValues, $newValues) {
+                            static::withoutEvents(function () use ($audit, $recentAudit, $oldValues, $newValues) {
                                 $recentAudit->update([
                                     'old_values' => $oldValues,
                                     'new_values' => $newValues,
+                                    'comments'   => $audit->comments ?: $recentAudit->comments,
                                 ]);
                             });
                         } else {

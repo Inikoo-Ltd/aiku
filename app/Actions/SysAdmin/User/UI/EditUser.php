@@ -10,6 +10,7 @@ namespace App\Actions\SysAdmin\User\UI;
 
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\User\UI\Traits\HasPermissionsForm;
+use App\Enums\HumanResources\Employee\EmployeeStateEnum;
 use App\Models\HumanResources\Employee;
 use App\Models\SysAdmin\Organisation;
 use App\Models\SysAdmin\User;
@@ -84,6 +85,16 @@ class EditUser extends OrgAction
                                 "type"        => "toggle",
                                 "label"       => __("Can login"),
                                 "value"       => $user->status,
+                                ...($this->hasLeft($user) ? [
+                                    "saveConfirmation" => [
+                                        "title"       => __("Give the login back to somebody who is not working?"),
+                                        "description" => __("This person is not working here any more. Say why they need to log in again; it is kept in their history."),
+                                        "yesLabel"    => __("Yes, give it back"),
+                                        "whenValueIs" => true,
+                                        "reasonField" => "reason",
+                                        "reasonLabel" => __("Reason"),
+                                    ],
+                                ] : []),
                             ],
                             "can_use_mcp" => [
                                 "type"        => "toggle",
@@ -153,6 +164,13 @@ class EditUser extends OrgAction
                 ],
             ],
         ]);
+    }
+
+    private function hasLeft(User $user): bool
+    {
+        return !$user->status && Employee::where('user_id', $user->id)
+            ->whereIn('state', [EmployeeStateEnum::LEFT->value, EmployeeStateEnum::LEAVING->value])
+            ->exists();
     }
 
     public function getBreadcrumbs(string $routeName, array $routeParameters): array

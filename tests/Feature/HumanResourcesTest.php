@@ -2620,3 +2620,83 @@ test('public holidays are generated with the right movable feasts and weekend su
     expect($es2026['Viernes Santo'])->toBe('2026-04-03')
         ->and($es2026['Fiesta Nacional de España'])->toBe('2026-10-12');
 });
+
+test('an employee marked as left gets an end date and their user is deactivated', function () {
+    $employee = Employee::factory()->create([
+        'organisation_id'     => $this->organisation->id,
+        'group_id'            => $this->group->id,
+        'state'               => \App\Enums\HumanResources\Employee\EmployeeStateEnum::WORKING,
+        'employment_end_at'   => null,
+        'email'               => 'leaver-' . uniqid() . '@example.com',
+        'worker_number'       => 'LV' . uniqid(),
+    ]);
+
+    $user = StoreUserFromEmployee::make()->handle($employee, [
+        'username' => 'leaver-' . $employee->id,
+        'password' => 'secret123',
+    ]);
+
+    $employee = UpdateEmployee::make()->action($employee->refresh(), [
+        'state'             => \App\Enums\HumanResources\Employee\EmployeeStateEnum::LEFT,
+        'employment_end_at' => null,
+    ]);
+
+    expect($employee->employment_end_at->format('Y-m-d'))->toBe(now()->format('Y-m-d'))
+        ->and($user->refresh()->status)->toBeFalse();
+});
+
+test('an employee marked as left keeps the end date that was given', function () {
+    $employee = Employee::factory()->create([
+        'organisation_id'   => $this->organisation->id,
+        'group_id'          => $this->group->id,
+        'state'             => \App\Enums\HumanResources\Employee\EmployeeStateEnum::WORKING,
+        'employment_end_at' => null,
+        'email'             => 'leaver-' . uniqid() . '@example.com',
+        'worker_number'     => 'LV' . uniqid(),
+    ]);
+
+    $employee = UpdateEmployee::make()->action($employee, [
+        'state'             => \App\Enums\HumanResources\Employee\EmployeeStateEnum::LEFT,
+        'employment_end_at' => now()->subMonth()->format('Y-m-d'),
+    ]);
+
+    expect($employee->employment_end_at->format('Y-m-d'))->toBe(now()->subMonth()->format('Y-m-d'));
+});
+
+test('giving the login back to somebody who left needs a reason, and it lands in the history', function () {
+    $employee = Employee::factory()->create([
+        'organisation_id' => $this->organisation->id,
+        'group_id'        => $this->group->id,
+        'state'           => \App\Enums\HumanResources\Employee\EmployeeStateEnum::LEFT,
+        'email'           => 'reinstated-' . uniqid() . '@example.com',
+        'worker_number'   => 'RE' . uniqid(),
+    ]);
+
+    $user = StoreUserFromEmployee::make()->handle($employee, [
+        'username' => 'reinstated-' . $employee->id,
+        'password' => 'secret123',
+    ]);
+
+    \App\Actions\SysAdmin\User\UpdateUser::make()->action($user, ['status' => false]);
+
+    // Past the window where an audit folds back into the one before it
+    $this->travel(5)->seconds();
+
+    expect(fn () => \App\Actions\SysAdmin\User\UpdateUser::make()->action($user->refresh(), ['status' => true]))
+        ->toThrow(\Illuminate\Validation\ValidationException::class);
+
+    $user = \App\Actions\SysAdmin\User\UpdateUser::make()->action($user->refresh(), [
+        'status' => true,
+        'reason' => 'Covering the handover until the end of the month',
+    ]);
+
+    expect($user->status)->toBeTrue();
+
+    $audit = \App\Models\Helpers\Audit::where('auditable_type', 'User')
+        ->where('auditable_id', $user->id)
+        ->latest('id')
+        ->first();
+
+    expect($audit->comments)->toBe('Covering the handover until the end of the month')
+        ->and($audit->new_values['status'])->toBeTrue();
+});
