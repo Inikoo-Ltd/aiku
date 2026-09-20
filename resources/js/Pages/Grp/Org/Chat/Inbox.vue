@@ -850,9 +850,9 @@ const updateUrl = (ulid: string) => {
     window.history.replaceState(window.history.state, "", url)
 }
 
-const handleSendMessage = async ({ text, image, message_type, is_email_notif }: {
+const handleSendMessage = async ({ text, files, message_type, is_email_notif }: {
     text: string
-    image?: File | null
+    files?: File[]
     message_type: "text" | "image" | "file"
     tempId: number
     is_email_notif: boolean
@@ -865,8 +865,10 @@ const handleSendMessage = async ({ text, image, message_type, is_email_notif }: 
         formData.append("sender_type", "agent")
         formData.append("is_email_notif", String(is_email_notif ?? false))
 
-        if (image) {
-            formData.append(message_type === "image" ? "image" : "file", image)
+        if (files?.length === 1) {
+            formData.append(message_type === "image" ? "image" : "file", files[0])
+        } else {
+            files?.forEach((file) => formData.append("attachments[]", file))
         }
 
         await axios.post(

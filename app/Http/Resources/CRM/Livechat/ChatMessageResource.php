@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources\CRM\Livechat;
 
+use App\Actions\Helpers\Images\GetPictureSources;
 use App\Http\Resources\HasSelfCall;
 use App\Enums\CRM\Livechat\ChatSenderTypeEnum;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -50,8 +51,8 @@ class ChatMessageResource extends JsonResource
             'is_validated' => $chatMessage->is_validated,
             'is_verifiable_image' => $chatMessage->isVerifiableCustomerImage(),
             'ai_verification' => $chatMessage->metadata['ai_verification'] ?? null,
-            'media_url' => $chatMessage->imageSources(0, 0, 'attachment'),
-            'original_url' => $chatMessage->attachment ? $chatMessage->attachment->getUrl() : null,
+            'media_url' => $chatMessage->attachment?->getCustomProperty('archived_at') ? null : $chatMessage->imageSources(0, 0, 'attachment'),
+            'original_url' => $chatMessage->attachment ? ($chatMessage->attachment->getCustomProperty('archived_at') ? route('grp.api.chats.chat.attachment.download', ['ulid' => $chatMessage->attachment->ulid]) : $chatMessage->attachment->getUrl()) : null,
             'file_name' => $chatMessage->attachment ? $chatMessage->attachment->file_name : null,
             'file_size' => $chatMessage->attachment ? $chatMessage->attachment->size : null,
             'file_mime' => $chatMessage->attachment ? $chatMessage->attachment->mime_type : null,
@@ -63,6 +64,28 @@ class ChatMessageResource extends JsonResource
                 'method'     => 'get',
                 'url'        => route('grp.api.chats.chat.attachment.download', ['ulid' => $chatMessage->attachment->ulid])
             ] : null,
+            'attachments' => $chatMessage->attachedFiles()->map(function ($media) {
+                $isArchived = (bool) $media->getCustomProperty('archived_at');
+                $isImage    = str_starts_with((string) $media->mime_type, 'image/') && !$isArchived;
+                $download   = route('grp.api.chats.chat.attachment.download', ['ulid' => $media->ulid]);
+
+                return [
+                    'id'             => $media->id,
+                    'is_image'       => $isImage,
+                    'is_archived'    => $isArchived,
+                    'media_url'      => $isImage ? GetPictureSources::run($media->getImage()->resize(0, 0)) : null,
+                    'original_url'   => $isArchived ? $download : $media->getUrl(),
+                    'file_name'      => $media->name ?: $media->file_name,
+                    'file_size'      => $media->size,
+                    'file_mime'      => $media->mime_type,
+                    'download_route' => [
+                        'name'       => 'grp.api.chats.chat.attachment.download',
+                        'parameters' => ['ulid' => $media->ulid],
+                        'method'     => 'get',
+                        'url'        => $download,
+                    ],
+                ];
+            })->values(),
             'reactions' => $chatMessage->reactions
                 ->groupBy('emoji')
                 ->map(function ($group, $emoji) {

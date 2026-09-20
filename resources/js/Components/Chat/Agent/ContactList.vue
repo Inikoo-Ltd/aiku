@@ -320,9 +320,9 @@ const back = () => {
     selectedSession.value = null
 }
 
-const handleSendMessage = async ({ text, image, message_type, tempId, is_email_notif }: {
+const handleSendMessage = async ({ text, files, message_type, tempId, is_email_notif }: {
     text: string
-    image?: File | null
+    files?: File[]
     message_type: "text" | "image" | "file"
     tempId: number
     is_email_notif: boolean
@@ -338,11 +338,10 @@ const handleSendMessage = async ({ text, image, message_type, tempId, is_email_n
         formData.append("sender_type", "agent")
         formData.append("is_email_notif", is_email_notif ?? false)
 
-        if (image) {
-            formData.append(
-                message_type === "image" ? "image" : "file",
-                image
-            )
+        if (files?.length === 1) {
+            formData.append(message_type === "image" ? "image" : "file", files[0])
+        } else {
+            files?.forEach((file) => formData.append("attachments[]", file))
         }
 
         const assignRoute: routeType = {
