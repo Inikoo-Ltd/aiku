@@ -68,6 +68,9 @@ use App\Models\Fulfilment\RentalAgreement;
 use App\Models\Fulfilment\RentalAgreementStats;
 use App\Models\Helpers\Address;
 use App\Models\Inventory\Location;
+use App\Enums\SysAdmin\Authorisation\FulfilmentPermissionsEnum;
+use App\Enums\SysAdmin\Authorisation\RolesEnum;
+use App\Enums\SysAdmin\Authorisation\WarehousePermissionsEnum;
 use App\Models\SysAdmin\Permission;
 use App\Models\SysAdmin\Role;
 use App\Models\SysAdmin\User;
@@ -148,12 +151,12 @@ test('create fulfilment shop', function () {
         ->and($organisation->catalogueStats->number_shops)->toBe(1)
         ->and($organisation->catalogueStats->number_shops_type_b2b)->toBe(0)
         ->and($organisation->catalogueStats->number_shops_type_fulfilment)->toBe(1)
-        ->and($shopRoles->count())->toBe(0)
-        ->and($shopPermissions->count())->toBe(0)
-        ->and($fulfilmentRoles->count())->toBe(2)
-        ->and($fulfilmentPermissions->count())->toBe(4)
-        ->and($warehouseRoles->count())->toBe(10)
-        ->and($warehousePermissions->count())->toBe(21);
+        ->and($shopRoles)->toBeEmpty()
+        ->and($shopPermissions)->toBeEmpty()
+        ->and($fulfilmentRoles->pluck('name')->all())->toEqualCanonicalizing(RolesEnum::getRolesWithScope($shop->fulfilment))
+        ->and($fulfilmentPermissions->pluck('name')->all())->toEqualCanonicalizing(FulfilmentPermissionsEnum::getAllValues($shop->fulfilment))
+        ->and($warehouseRoles->pluck('name')->all())->toEqualCanonicalizing(RolesEnum::getRolesWithScope($this->warehouse))
+        ->and($warehousePermissions->pluck('name')->all())->toEqualCanonicalizing(WarehousePermissionsEnum::getAllValues($this->warehouse));
 
     $user = $this->adminGuest->getUser();
     $user->refresh();

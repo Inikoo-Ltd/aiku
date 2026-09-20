@@ -6,7 +6,7 @@ on:
 
 concurrency:
   group: backend_tests_${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 env:
   HOME: /home/aiku_test
