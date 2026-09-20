@@ -54,6 +54,8 @@ class GetMetaChatSessions
             'search'          => ['sometimes', 'string', 'max:100'],
             'organisation_id' => ['sometimes', 'integer', 'exists:organisations,id'],
             'shop_id'         => ['sometimes', 'integer', 'exists:shops,id'],
+            'shop_ids'        => ['sometimes', 'array'],
+            'shop_ids.*'      => ['integer', 'exists:shops,id'],
             'agent_ids'       => ['sometimes', 'array'],
             'agent_ids.*'     => ['integer'],
         ];
@@ -231,6 +233,10 @@ class GetMetaChatSessions
 
         if (!empty($filters['shop_id'])) {
             $query->where('shop_id', (int) $filters['shop_id']);
+        }
+
+        if (!empty($filters['shop_ids'])) {
+            $query->whereIn('shop_id', array_map('intval', (array) $filters['shop_ids']));
         }
 
         if (isset($filters['customer_id'])) {

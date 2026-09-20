@@ -219,6 +219,7 @@ trait WithChatAgentAuthorisation
 
         $shops = Shop::with('fulfilment')
             ->when(!empty($filters['shop_id']), fn ($query) => $query->where('id', (int) $filters['shop_id']))
+            ->when(!empty($filters['shop_ids']), fn ($query) => $query->whereIn('id', array_map('intval', (array) $filters['shop_ids'])))
             ->get();
 
         $filters['allowed_shop_ids'] = $shops

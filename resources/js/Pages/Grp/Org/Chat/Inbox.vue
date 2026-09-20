@@ -17,7 +17,7 @@ import Dialog from "primevue/dialog"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faSearch, faTimes } from "@far"
 import { faCog, faStar, faAngleLeft, faAngleRight, faAngleDown, faFilter, faStoreAlt, faGlobe, faPlus, faEnvelope, faArchive } from "@fal"
-import { faEllipsisVertical, faBan, faRotateLeft, faTrash, faTrashArrowUp, faAnglesUp, faAngleUp, faEquals, faChevronRight, faStar as faStarSolid } from "@fortawesome/free-solid-svg-icons"
+import { faEllipsisVertical, faBan, faRotateLeft, faTrash, faTrashArrowUp, faAnglesUp, faAngleUp, faEquals, faChevronRight, faStar as faStarSolid, faCircleCheck } from "@fortawesome/free-solid-svg-icons"
 import { faWhatsapp } from "@fortawesome/free-brands-svg-icons"
 import { formatChatTime, formatChatAge } from "@/Composables/chatTime"
 import {
@@ -96,11 +96,31 @@ const toggleStatus = (status: ChatStatus) => {
 // The counts come from the channel being looked at, so the capsules say how much work is in
 // each state here rather than across every shop at once.
 // The status capsules count exactly the squares that are on.
-const selectedChannelCounts = computed(() =>
-    selectedCells.value.reduce((total, cell) => {
-        const [channelKey, kind] = cell.split(":") as [string, ChatKind]
-        const tally = selectedInbox.value?.channels?.find((c) => c.key === channelKey)?.[kind]
+const ZERO_TALLY = { waiting: 0, active: 0, closed: 0, mine: 0, colleagues: 0, closed_mine: 0, closed_colleagues: 0 }
 
+// Which shop's squares each capsule counts. One shop is the squares that are on; several shops
+// is every channel on each of them, which is what the list is showing.
+const countedTallies = computed(() => {
+    if (selectedShopIds.value.length > 1) {
+        return selectedShopIds.value.flatMap((shopId) => {
+            const inbox = props.inboxes?.find((i) => i.id === shopId)
+
+            return liveChannels(inbox).flatMap((channel) => [
+                inbox?.channels?.find((c) => c.key === channel.key)?.customer,
+                inbox?.channels?.find((c) => c.key === channel.key)?.guest,
+            ])
+        })
+    }
+
+    return selectedCells.value.map((cell) => {
+        const [channelKey, kind] = cell.split(":") as [string, ChatKind]
+
+        return selectedInbox.value?.channels?.find((c) => c.key === channelKey)?.[kind]
+    })
+})
+
+const selectedChannelCounts = computed(() =>
+    countedTallies.value.reduce((total, tally) => {
         return {
             waiting: total.waiting + (tally?.waiting ?? 0),
             active: total.active + (tally?.active ?? 0),
@@ -110,7 +130,7 @@ const selectedChannelCounts = computed(() =>
             closed_mine: total.closed_mine + (tally?.closed_mine ?? 0),
             closed_colleagues: total.closed_colleagues + (tally?.closed_colleagues ?? 0),
         }
-    }, { waiting: 0, active: 0, closed: 0, mine: 0, colleagues: 0, closed_mine: 0, closed_colleagues: 0 })
+    }, { ...ZERO_TALLY })
 )
 
 const myChatsCount = computed(() => selectedChannelCounts.value.waiting + selectedChannelCounts.value.mine)
@@ -126,14 +146,21 @@ const capsuleCount = (status: ChatStatus) => {
     return selectedChannelCounts.value[status === "closed" ? `closed_${holder}` : holder]
 }
 
+// A colleague holds nothing that is waiting, and what they closed is not counted anywhere yet,
+// so their capsules are Active with the number the rail already shows, and Closed without one.
 const statusCapsules = computed(() =>
     ([
         { key: "waiting" as ChatStatus, label: ctrans("Waiting") },
         { key: "active" as ChatStatus, label: ctrans("Active") },
         { key: "closed" as ChatStatus, label: ctrans("Closed") },
     ])
-        .filter((capsule) => capsule.key !== "waiting" || viewMode.value === "my")
-        .map((capsule) => ({ ...capsule, count: capsuleCount(capsule.key) }))
+        .filter((capsule) => capsule.key !== "waiting" || (viewMode.value === "my" && !agentView.value))
+        .map((capsule) => ({
+            ...capsule,
+            count: agentView.value
+                ? (capsule.key === "active" ? pickedAgentOpen.value : null)
+                : capsuleCount(capsule.key),
+        }))
 )
 
 const onlyClosed = computed(() => selectedStatuses.value.length === 1 && selectedStatuses.value[0] === "closed")
@@ -271,7 +298,16 @@ const mapSession = (s: SessionAPI): Contact => ({
     ai_summary: s.ai_summary ?? null,
 })
 
-const selectedShopId = ref<number | null>(props.inboxes?.[0]?.id ?? null)
+// Whoever oversees can hold several shops at once; an agent's rail is still one shop, which is
+// what a list of one reads as. Everything that needs a single shop — the squares, a new
+// WhatsApp chat, the team badge — asks for `selectedShopId` and stands down when several are on.
+const selectedShopIds = ref<number[]>(props.inboxes?.[0]?.id ? [props.inboxes[0].id] : [])
+const selectedShopId = computed<number | null>(() =>
+    selectedShopIds.value.length === 1 ? selectedShopIds.value[0] : null
+)
+const setShop = (shopId: number | null) => {
+    selectedShopIds.value = shopId === null ? [] : [shopId]
+}
 // Every shop shows all three columns; only the ones that can hold something can be picked.
 const liveChannels = (inbox?: { channels?: Array<{ key: string; available?: boolean }> }) =>
     (inbox?.channels ?? []).filter((c) => c.available !== false)
@@ -302,7 +338,7 @@ const readStoredSelection = () => {
 const storeSelection = () => {
     try {
         window.localStorage.setItem(SELECTION_KEY, JSON.stringify({
-            shopId: selectedShopId.value,
+            shopIds: selectedShopIds.value,
             cells: selectedCells.value,
             statuses: selectedStatuses.value,
         }))
@@ -317,7 +353,7 @@ const storeSelection = () => {
  */
 const restoreSelection = (): boolean => {
     const stored = readStoredSelection()
-    const inbox = props.inboxes?.find((i) => i.id === stored?.shopId)
+    const inbox = props.inboxes?.find((i) => i.id === (stored?.shopIds?.[0] ?? stored?.shopId))
 
     if (!inbox) {
         return false
@@ -332,7 +368,7 @@ const restoreSelection = (): boolean => {
         return false
     }
 
-    selectedShopId.value = inbox.id
+    setShop(inbox.id)
     selectedCells.value = cells
 
     const statuses = (stored.statuses ?? []).filter((x: string) => ["waiting", "active", "closed"].includes(x))
@@ -360,22 +396,54 @@ const KINDS: Array<{ key: ChatKind; initial: string; label: string }> = [
 
 const cellKey = (channelKey: string, kind: ChatKind) => `${channelKey}:${kind}`
 
+// A colleague's load is not a shop's list, so while one is picked no shop is the open one:
+// every row folds back to its line and nothing reads as selected.
+const shopIsOpen = (shopId: number) => !agentView.value && selectedShopId.value === shopId
+
+const shopIsOn = (shopId: number) => !agentView.value && selectedShopIds.value.includes(shopId)
+
+// Overseeing several shops at once: the rail's rows are a filter, and with more than one on
+// there is no shop to square off, so the channel table folds away and every channel is read.
+const toggleShop = (shopId: number) => {
+    if (!props.supervisor) {
+        return selectInbox(shopId)
+    }
+
+    const on = selectedShopIds.value.includes(shopId)
+
+    if (on && selectedShopIds.value.length === 1) {
+        return selectInbox(shopId)
+    }
+
+    agentView.value = false
+    selectedShopIds.value = on
+        ? selectedShopIds.value.filter((id) => id !== shopId)
+        : [...selectedShopIds.value, shopId]
+
+    if (selectedShopIds.value.length === 1) {
+        return selectInbox(selectedShopIds.value[0])
+    }
+
+    selectedCells.value = []
+    afterSelectionChanged()
+}
+
 const isCellOn = (shopId: number, channelKey: string, kind: ChatKind) =>
-    selectedShopId.value === shopId && selectedCells.value.includes(cellKey(channelKey, kind))
+    shopIsOpen(shopId) && selectedCells.value.includes(cellKey(channelKey, kind))
 
 // Any set of squares can be on at once, and they travel as pairs rather than as a list of
 // channels and a list of kinds: wanting email from strangers and website from customers is
 // not the same as wanting both channels from both.
 const selectCell = (shopId: number, channelKey: string, kind: ChatKind) => {
     const key = cellKey(channelKey, kind)
-    const sameShop = selectedShopId.value === shopId && !spamView.value && !trashView.value && !highlightView.value
+    const sameShop = selectedShopId.value === shopId && !agentView.value && !spamView.value && !trashView.value && !highlightView.value
 
     if (!sameShop) {
         spamView.value = false
         rubbishView.value = false
         trashView.value = false
         highlightView.value = false
-        selectedShopId.value = shopId
+        setShop(shopId)
         selectedCells.value = [key]
         afterSelectionChanged()
 
@@ -410,16 +478,21 @@ const buildParams = (page: number) => ({
     ...(listIsMine.value ? { assigned_to_me: myAgentId } : {}),
     ...(selectedAgentIds.value.length ? { agent_ids: selectedAgentIds.value } : {}),
     page,
-    ...(selectedShopId.value && !highlightView.value ? { shop_id: selectedShopId.value } : {}),
+    ...(selectedShopIds.value.length && !highlightView.value && !agentView.value
+        ? { shop_ids: selectedShopIds.value }
+        : {}),
     // ponytail: the API ignores `channel` until chat sessions carry one; sent so the intent is visible.
-    ...(selectedCells.value.length ? { pairs: selectedCells.value } : {}),
+    ...(selectedCells.value.length && !agentView.value ? { pairs: selectedCells.value } : {}),
     ...(viewMode.value === "team" && listIsMine.value ? { view_team: 1 } : {}),
     ...(searchQuery.value.trim() ? { search: searchQuery.value.trim() } : {}),
 })
 
 // Spam, trash and highlight are cross-channel clean-up views, so they read from the
 // merged endpoint instead of whichever channel happens to be selected.
-const isMergedView = computed(() => spamView.value || rubbishView.value || trashView.value || highlightView.value)
+const isMergedView = computed(() =>
+    spamView.value || rubbishView.value || trashView.value || highlightView.value || agentView.value
+    || selectedShopIds.value.length > 1
+)
 
 
 const sessionsUrl = computed(() => {
@@ -547,6 +620,20 @@ const markRubbish = async (c: Contact, rubbish: boolean, reason?: string) => {
 const showAgentFilter = ref(false)
 const selectedAgentIds = ref<Array<number | string>>([])
 
+// Picking a colleague asks what they are holding, which is never one shop's question: their
+// load is counted across every shop they work, so the list drops the shop and the channels.
+const agentView = ref(false)
+
+const pickedAgent = computed(() =>
+    props.agents?.find((a) => a.id === selectedAgentIds.value[0]) ?? null
+)
+
+const pickedAgentOpen = computed(() => pickedAgent.value?.open ?? null)
+
+const pickedAgentName = computed(() =>
+    pickedAgent.value?.name ?? null
+)
+
 const availableAgents = computed(() => {
     const map = new Map<number | string, { id: number | string; name: string }>()
     for (const c of contacts.value) {
@@ -569,6 +656,7 @@ const toggleAgentFilter = (id: number | string) => {
 
 const clearAgentFilter = () => {
     selectedAgentIds.value = []
+    agentView.value = false
     reloadContacts()
 }
 
@@ -578,6 +666,7 @@ const showAgentLoad = (id: number) => {
     const alreadyOn = selectedAgentIds.value.length === 1 && selectedAgentIds.value[0] === id
 
     selectedAgentIds.value = alreadyOn ? [] : [id]
+    agentView.value = !alreadyOn
     if (!alreadyOn) {
         selectedStatuses.value = ["active"]
     }
@@ -610,7 +699,8 @@ const revealViewFor = (contact: Contact): void => {
 
 const matchesCurrentView = (c: Contact) =>
     (spamView.value || trashView.value ? true : selectedStatuses.value.includes(c.status as ChatStatus)) &&
-    (highlightView.value || !selectedShopId.value || c.shop?.id === selectedShopId.value) &&
+    (highlightView.value || agentView.value || !selectedShopIds.value.length
+        || (c.shop?.id && selectedShopIds.value.includes(c.shop.id))) &&
     (!selectedAgentIds.value.length ||
         (c.agent?.id && selectedAgentIds.value.includes(c.agent.id)))
 
@@ -660,7 +750,7 @@ const selectInbox = (shopId: number) => {
 // When `channelKey` is provided (e.g. from URL params) it takes precedence over the
 // default first channel so that deep-links like `?channel=whatsapp` are honoured.
 const revealInbox = (shopId: number, channelKey?: string | null) => {
-    selectedShopId.value = shopId
+    setShop(shopId)
     const inbox = props.inboxes?.find((i) => i.id === shopId)
     const resolved = channelKey && liveChannels(inbox).some((ch) => ch.key === channelKey)
         ? channelKey
@@ -674,7 +764,7 @@ const selectChannel = (shopId: number, channelKey: string) => {
     rubbishView.value = false
     trashView.value = false
     highlightView.value = false
-    selectedShopId.value = shopId
+    setShop(shopId)
     selectedCells.value = [cellKey(channelKey, "customer"), cellKey(channelKey, "guest")]
     afterSelectionChanged()
 }
@@ -686,6 +776,7 @@ function afterSelectionChanged() {
     messages.value = []
     newChatVisible.value = false
     selectedAgentIds.value = []
+    agentView.value = false
 
     const baseUrl = route(props.supervisor ? "grp.org.chat.supervision" : "grp.org.chat.inbox", [props.organisation.slug])
     window.history.replaceState(window.history.state, "", baseUrl)
@@ -701,7 +792,7 @@ const selectRubbish = () => {
     spamView.value = false
     trashView.value = false
     highlightView.value = false
-    selectedShopId.value = null
+    setShop(null)
     selectedCells.value = []
     selectedSession.value = null
     messages.value = []
@@ -716,7 +807,7 @@ const selectSpam = () => {
     rubbishView.value = false
     trashView.value = false
     highlightView.value = false
-    selectedShopId.value = null
+    setShop(null)
     selectedCells.value = []
     selectedSession.value = null
     messages.value = []
@@ -731,7 +822,7 @@ const selectTrash = () => {
     rubbishView.value = false
     spamView.value = false
     highlightView.value = false
-    selectedShopId.value = null
+    setShop(null)
     selectedCells.value = []
     selectedSession.value = null
     messages.value = []
@@ -746,7 +837,7 @@ const selectHighlight = () => {
     rubbishView.value = false
     spamView.value = false
     trashView.value = false
-    selectedShopId.value = null
+    setShop(null)
     selectedCells.value = []
     selectedSession.value = null
     messages.value = []
@@ -1258,7 +1349,7 @@ onMounted(async () => {
     }
 
     // Registered after the restore so putting the stored choice back does not write it again.
-    watch([selectedShopId, selectedCells, selectedStatuses], storeSelection, { deep: true })
+    watch([selectedShopIds, selectedCells, selectedStatuses], storeSelection, { deep: true })
 
     const init = props.initialSession
 
@@ -1361,13 +1452,13 @@ onUnmounted(() => {
             <div class="flex-1 overflow-y-auto">
                 <div v-for="inbox in inboxes" :key="inbox.id"
                     class="transition-colors border-b border-gray-200"
-                    :class="selectedShopId === inbox.id ? 'bg-white' : 'hover:bg-gray-100'">
-                    <button type="button" @click="selectInbox(inbox.id)"
+                    :class="shopIsOn(inbox.id) ? 'bg-white' : 'hover:bg-gray-100'">
+                    <button type="button" @click="toggleShop(inbox.id)"
                         v-tooltip="inboxRailCollapsed ? inbox.name : undefined"
                         class="w-full flex items-center gap-2 min-w-0"
                         :class="[
                             inboxRailCollapsed ? 'justify-center py-1' : 'px-2 py-1',
-                            selectedShopId === inbox.id ? 'font-medium text-gray-800' : 'text-gray-700',
+                            shopIsOn(inbox.id) ? 'font-medium text-gray-800' : 'text-gray-700',
                         ]">
                         <!-- The initials only stand in for the name when the rail is folded and
                              there is no room for it; beside the name they said it twice. -->
@@ -1382,6 +1473,9 @@ onUnmounted(() => {
                                 {{ inboxUnread[inbox.id] }}
                             </span>
                         </div>
+                        <FontAwesomeIcon v-if="!inboxRailCollapsed && supervisor" :icon="faCircleCheck"
+                            class="shrink-0 text-sm transition-colors"
+                            :class="shopIsOn(inbox.id) ? 'text-green-500' : 'text-gray-300'" />
                         <span v-if="!inboxRailCollapsed" class="flex-1 truncate text-sm text-left">{{ inbox.name }}</span>
                         <span v-if="!inboxRailCollapsed && inboxUnread[inbox.id]"
                             v-tooltip="ctrans('Customers waiting')"
@@ -1403,7 +1497,7 @@ onUnmounted(() => {
                     <!-- A little table instead of a row of capsules: channels across, who is
                          on the other end down. Cells line up by construction, and a count of
                          zero holds its place so the eye can run down a column. -->
-                    <table v-if="!inboxRailCollapsed && selectedShopId === inbox.id" class="w-full text-[11px] tabular-nums mb-1">
+                    <table v-if="!inboxRailCollapsed && shopIsOpen(inbox.id)" class="w-full text-[11px] tabular-nums mb-1">
                         <thead>
                             <tr>
                                 <th class="w-4"></th>
@@ -1534,9 +1628,15 @@ onUnmounted(() => {
             <div class="px-3 py-2.5 border-b flex items-center justify-between gap-2">
                 <div class="min-w-0 flex-1">
                     <div class="text-sm font-semibold text-gray-800 truncate mb-1.5">
-                        {{ trashView ? ctrans("Trash") : rubbishView ? ctrans("Ignored") : spamView ? ctrans("Spam") : highlightView ? ctrans("Highlighted") : (selectedInbox?.name ?? ctrans("Inbox")) }}
+                        {{ trashView ? ctrans("Trash") : rubbishView ? ctrans("Ignored") : spamView ? ctrans("Spam") : highlightView ? ctrans("Highlighted") : agentView ? (pickedAgentName ?? ctrans("Inbox")) : selectedShopIds.length > 1 ? ctrans("Selected shops") : (selectedInbox?.name ?? ctrans("Inbox")) }}
                     </div>
-                    <div v-if="supervisor && !spamView && !trashView" class="text-[11px] text-gray-500">
+                    <div v-if="agentView" class="text-[11px] text-gray-500">
+                        {{ ctrans("Across every shop") }}
+                    </div>
+                    <div v-else-if="selectedShopIds.length > 1" class="text-[11px] text-gray-500">
+                        {{ selectedShopIds.length }} {{ ctrans("shops, every channel") }}
+                    </div>
+                    <div v-else-if="supervisor && !spamView && !trashView" class="text-[11px] text-gray-500">
                         {{ ctrans("Everybody's conversations") }}
                     </div>
                     <div v-else-if="!spamView && !trashView && !isReadOnly" class="inline-flex items-center bg-gray-100 rounded-lg p-0.5 text-[11px]">
@@ -1686,12 +1786,13 @@ onUnmounted(() => {
                                         <span v-if="c.lastMessageAge" class="text-gray-400">({{ c.lastMessageAge }})</span>
                                     </span>
                                 </div>
-                                <div v-if="(spamView || trashView || highlightView) && c.shop?.name" class="flex items-center gap-1 text-[10px] text-gray-400 truncate">
-                                    <FontAwesomeIcon :icon="faStoreAlt" class="text-[9px] shrink-0" />
-                                    <span class="truncate">{{ c.shop.name }}</span>
-                                </div>
-                                <div class="flex items-center gap-2">
-                                    <span v-if="c.agent?.name" class="text-[10px] text-gray-400 truncate">
+                                <div class="flex items-center gap-2 text-[10px] text-gray-400 min-w-0">
+                                    <span v-if="(spamView || trashView || highlightView || agentView || selectedShopIds.length > 1) && c.shop?.name"
+                                        class="flex items-center gap-1 min-w-0 truncate">
+                                        <FontAwesomeIcon :icon="faStoreAlt" class="text-[9px] shrink-0" />
+                                        <span class="truncate">{{ c.shop.name }}</span>
+                                    </span>
+                                    <span v-if="c.agent?.name" class="truncate">
                                         {{ c.agent.name.split(' ')[0] }}
                                     </span>
                                 </div>
@@ -1700,7 +1801,7 @@ onUnmounted(() => {
                                     <button v-if="!c.webUser?.customer_id && !c.is_spam && !trashView && !onlyClosed && !isReadOnly" type="button"
                                         :disabled="isSpamming[c.ulid]"
                                         v-tooltip="ctrans('Report spam')"
-                                        class="shrink-0 flex items-center justify-center text-gray-300 opacity-0 group-hover:opacity-100 hover:text-red-500 transition-opacity disabled:opacity-50"
+                                        class="shrink-0 flex items-center justify-center text-gray-400 hover:text-red-500 transition-colors disabled:opacity-50"
                                         @click.stop="markSpam(c, true)">
                                         <FontAwesomeIcon :icon="faBan" class="text-[11px]" />
                                     </button>

@@ -47,6 +47,8 @@ class GetCrossChannelSessions
             'search'          => ['sometimes', 'string', 'max:100'],
             'organisation_id' => ['sometimes', 'integer', 'exists:organisations,id'],
             'shop_id'         => ['sometimes', 'integer', 'exists:shops,id'],
+            'shop_ids'        => ['sometimes', 'array'],
+            'shop_ids.*'      => ['integer', 'exists:shops,id'],
             'agent_ids'       => ['sometimes', 'array'],
             'agent_ids.*'     => ['integer'],
         ];

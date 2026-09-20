@@ -4901,3 +4901,49 @@ test('the closed list only holds what was closed today', function () {
     expect($ulids)->toContain($today->ulid)
         ->and($ulids)->not->toContain($lastMonth->ulid);
 });
+
+test('GetChatSessions limits the list to the shops asked for', function () {
+    $otherShop = \App\Actions\Catalogue\Shop\StoreShop::make()->action($this->organisation, \App\Models\Catalogue\Shop::factory()->definition());
+
+    $sessionOn = function (int $shopId) {
+        $session = ChatSession::create([
+            'ulid'             => (string)Str::ulid(),
+            'status'           => ChatSessionStatusEnum::ACTIVE,
+            'guest_identifier' => 'guest_'.Str::random(5),
+            'language_id'      => 68,
+            'priority'         => ChatPriorityEnum::NORMAL,
+            'shop_id'          => $shopId,
+            'ai_model_version' => 'default',
+            'created_at'       => now(),
+            'updated_at'       => now(),
+        ]);
+
+        ChatMessage::create([
+            'chat_session_id' => $session->id,
+            'message_type'    => ChatMessageTypeEnum::TEXT->value,
+            'sender_type'     => ChatSenderTypeEnum::GUEST->value,
+            'message_text'    => 'hello',
+            'created_at'      => now(),
+            'updated_at'      => now(),
+        ]);
+
+        return $session;
+    };
+
+    $mine  = $sessionOn($this->shop->id);
+    $other = $sessionOn($otherShop->id);
+
+    $both = collect(GetChatSessions::make()->handle([
+        'shop_ids' => [$this->shop->id, $otherShop->id],
+    ])->items())->pluck('ulid');
+
+    $mine->refresh();
+
+    $one = collect(GetChatSessions::make()->handle([
+        'shop_ids' => [$otherShop->id],
+    ])->items())->pluck('ulid');
+
+    expect($both)->toContain($other->ulid)
+        ->and($one)->toContain($other->ulid)
+        ->and($one)->not->toContain($mine->ulid);
+});
