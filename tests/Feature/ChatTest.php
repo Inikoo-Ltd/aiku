@@ -4251,6 +4251,10 @@ test('an agent strikes a card number out of a message everywhere it was stored',
     expect($event->payload['occurrences'])->toBe(3)
         ->and(json_encode($event->payload))->not->toContain('4111111111111111');
 
+    // One careless letter would be struck out of the whole message, with no way back.
+    expect(fn () => RedactChatMessage::make()->handle($session, $redacted, $agent, 'my'))
+        ->toThrow(\Illuminate\Validation\ValidationException::class);
+
     // Redaction only removes: text that is not there cannot be used to rewrite the message.
     expect(fn () => RedactChatMessage::make()->handle($session, $redacted, $agent, 'never written'))
         ->toThrow(\Illuminate\Validation\ValidationException::class);

@@ -39,10 +39,17 @@ class RedactChatMessage
 
     public const MASK = '█';
 
+    /**
+     * Every occurrence goes, because a card number is often written twice. That makes a
+     * careless selection dangerous: one letter would be struck out of the whole message
+     * and there is no way back. Short enough to be a slip, so short is refused.
+     */
+    public const MINIMUM_FRAGMENT = 3;
+
     public function rules(): array
     {
         return [
-            'fragment' => ['required', 'string', 'min:1', 'max:10000'],
+            'fragment' => ['required', 'string', 'min:'.self::MINIMUM_FRAGMENT, 'max:10000'],
         ];
     }
 
@@ -55,6 +62,13 @@ class RedactChatMessage
         if ($chatMessage->chat_session_id !== $chatSession->id) {
             throw ValidationException::withMessages([
                 'message' => __('Message does not belong to this chat session'),
+            ]);
+        }
+
+        // Guarded here rather than only in the request rules, so it holds for every caller.
+        if (mb_strlen($fragment) < self::MINIMUM_FRAGMENT) {
+            throw ValidationException::withMessages([
+                'message' => __('Select at least :count characters to strike out', ['count' => self::MINIMUM_FRAGMENT]),
             ]);
         }
 
