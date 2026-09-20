@@ -9,7 +9,6 @@
 namespace App\Actions\SysAdmin\User\UI;
 
 use App\Actions\OrgAction;
-use App\Actions\SysAdmin\User\GetUserCurrentEmployee;
 use App\Actions\SysAdmin\User\UI\Traits\HasPermissionsForm;
 use App\Models\HumanResources\Employee;
 use App\Models\SysAdmin\Organisation;
@@ -21,8 +20,6 @@ use Lorisleiva\Actions\ActionRequest;
 class EditUser extends OrgAction
 {
     use HasPermissionsForm;
-
-    private ?Employee $employee = null;
 
     public function handle(User $user): User
     {
@@ -44,7 +41,6 @@ class EditUser extends OrgAction
     public function inEmployee(Organisation $organisation, Employee $employee, User $user, ActionRequest $request): User
     {
         $this->initialisation($organisation, $request);
-        $this->employee = $employee;
 
         return $this->handle($user);
     }
@@ -52,8 +48,6 @@ class EditUser extends OrgAction
     public function htmlResponse(User $user, ActionRequest $request): Response
     {
         $permissionsData = $this->getPermissionsFormData($user);
-
-        $employee = $this->employee ?? GetUserCurrentEmployee::run($user);
 
         return Inertia::render("EditModel", [
             "title"       => __("Editing user").' '.$user->username,
@@ -145,7 +139,7 @@ class EditUser extends OrgAction
                         "icon"    => "fa-light fa-user-lock",
                         "current" => false,
                         "fields"  => [
-                            "permissions" => $this->getPermissionsFieldDefinition($user, $permissionsData, $employee),
+                            "permissions" => $this->getPermissionsFieldDefinition($user, $permissionsData),
                         ],
                     ],
 
