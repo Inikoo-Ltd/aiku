@@ -71,6 +71,9 @@ class ChatSessionListResource extends JsonResource
             'status' => $this->status,
             'is_spam' => (bool) $this->is_spam,
             'is_rubbish' => (bool) $this->is_rubbish,
+            'rubbish_reason' => $this->rubbish_reason
+                ? \App\Enums\CRM\Livechat\ChatIgnoreReasonEnum::from($this->rubbish_reason)->label()
+                : null,
             'is_highlighted' => (bool) $this->is_highlighted,
             'guest_identifier' => $this->guest_identifier,
             'created_at' => $this->created_at,

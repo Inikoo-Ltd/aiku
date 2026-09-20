@@ -47,6 +47,7 @@ const props = defineProps<{
     initialSession?: any | null
     preselectShopId?: number | null
     is_read_only?: boolean
+    ignoreReasons?: Array<{ value: string; label: string }>
 }>()
 
 const layout: any = inject("layout", {})
@@ -508,13 +509,17 @@ const markSpam = async (c: Contact, spam: boolean) => {
 
 // Same shape as marking spam, without reporting anybody: the sender is never blocked, and the
 // conversation keeps its status so taking the mark off puts it back where it was.
-const markRubbish = async (c: Contact, rubbish: boolean) => {
+const markRubbish = async (c: Contact, rubbish: boolean, reason?: string) => {
     if (isSpamming.value[c.ulid]) return
     openMenuUlid.value = null
     isSpamming.value = { ...isSpamming.value, [c.ulid]: true }
     try {
         const routeName = sessionRoute(rubbish ? "rubbish" : "not_rubbish", c)
-        await axios.patch(route(routeName, [props.organisation.slug, c.ulid]), {}, { withCredentials: true })
+        await axios.patch(
+            route(routeName, [props.organisation.slug, c.ulid]),
+            reason ? { reason } : {},
+            { withCredentials: true }
+        )
         contacts.value = contacts.value.filter((x) => x.ulid !== c.ulid)
         if (selectedSession.value?.ulid === c.ulid) {
             selectedSession.value = null
@@ -1694,7 +1699,7 @@ onUnmounted(() => {
                     @close-session="closeSession"
                     @view-profile="showProfilePanel" />
                 <MessageAreaAgent v-else :messages="messages" :session="selectedSession"
-                    :read-only="isReadOnly"
+                    :read-only="isReadOnly" :ignore-reasons="ignoreReasons"
                     @back="selectedSession = null" @send-message="handleSendMessage"
                     @close-session="closeSession" @view-history="showHistoryPanel"
                     @view-user-profile="showProfilePanel" @view-message-details="showMessageDetailsPanel"
@@ -1758,12 +1763,19 @@ onUnmounted(() => {
                         </button>
                         <div class="border-t border-gray-100 my-1"></div>
 
-                        <!-- Email and website only: WhatsApp has no imported backlog. -->
-                        <button v-if="menuContact.channel !== 'whatsapp' && !menuContact.is_rubbish" type="button"
-                            class="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-gray-700 hover:bg-gray-100"
-                            @click="markRubbish(menuContact, true)">
-                            <FontAwesomeIcon :icon="faArchive" class="text-[10px]" /> {{ ctrans("Ignore") }}
-                        </button>
+                        <!-- Email and website only: WhatsApp has no imported backlog. The reason
+                             is picked rather than written, so the noise can be counted later. -->
+                        <template v-if="menuContact.channel !== 'whatsapp' && !menuContact.is_rubbish">
+                            <div class="px-3 pt-1.5 pb-1 text-[10px] uppercase tracking-wide text-gray-400">
+                                {{ ctrans("Ignore as") }}
+                            </div>
+                            <button v-for="reason in (ignoreReasons ?? [])" :key="reason.value" type="button"
+                                class="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-gray-700 hover:bg-gray-100"
+                                @click="markRubbish(menuContact, true, reason.value)">
+                                <FontAwesomeIcon :icon="faArchive" class="text-[10px] text-gray-400" />
+                                {{ reason.label }}
+                            </button>
+                        </template>
                         <button v-else-if="menuContact.channel !== 'whatsapp'" type="button"
                             class="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-gray-700 hover:bg-gray-100"
                             @click="markRubbish(menuContact, false)">

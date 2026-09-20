@@ -10,12 +10,14 @@ namespace App\Actions\Chat\ChatSession;
 use App\Actions\Chat\WithChatAgentAuthorisation;
 use App\Enums\CRM\Livechat\ChatActorTypeEnum;
 use App\Enums\CRM\Livechat\ChatEventTypeEnum;
+use App\Enums\CRM\Livechat\ChatIgnoreReasonEnum;
 use App\Events\BroadcastChatListEvent;
 use App\Models\Chat\ChatAgent;
 use App\Models\Chat\ChatSession;
 use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
+use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 /**
@@ -32,13 +34,18 @@ class MarkChatSessionAsRubbish
     /**
      * @throws \Throwable
      */
-    public function handle(ChatSession $chatSession, ChatAgent $agent, bool $rubbish = true): ChatSession
-    {
-        return DB::transaction(function () use ($chatSession, $agent, $rubbish) {
+    public function handle(
+        ChatSession $chatSession,
+        ChatAgent $agent,
+        bool $rubbish = true,
+        ?ChatIgnoreReasonEnum $reason = null
+    ): ChatSession {
+        return DB::transaction(function () use ($chatSession, $agent, $rubbish, $reason) {
             $chatSession->update([
                 'is_rubbish'            => $rubbish,
                 'rubbish_at'            => $rubbish ? now() : null,
                 'rubbished_by_agent_id' => $rubbish ? $agent->id : null,
+                'rubbish_reason'        => $rubbish ? $reason?->value : null,
             ]);
 
             StoreChatEvent::make()->handle(
@@ -46,12 +53,14 @@ class MarkChatSessionAsRubbish
                 eventType: $rubbish ? ChatEventTypeEnum::RUBBISH : ChatEventTypeEnum::NOT_RUBBISH,
                 actorType: ChatActorTypeEnum::AGENT,
                 actorId: $agent->id,
-                payload: [
-                    'action_type'      => $rubbish ? 'rubbish' : 'not_rubbish',
-                    'marked_by_id'     => $agent->id,
-                    'marked_by_name'   => $agent->user?->contact_name,
-                    'marked_at'        => now()->toISOString(),
-                ]
+                payload: array_filter([
+                    'action_type'    => $rubbish ? 'rubbish' : 'not_rubbish',
+                    'marked_by_id'   => $agent->id,
+                    'marked_by_name' => $agent->user?->contact_name,
+                    'marked_at'      => now()->toISOString(),
+                    'reason'         => $rubbish ? $reason?->value : null,
+                    'reason_label'   => $rubbish ? $reason?->label() : null,
+                ], fn ($value) => $value !== null)
             );
 
             BroadcastChatListEvent::dispatch(null, $chatSession);
@@ -60,10 +69,19 @@ class MarkChatSessionAsRubbish
         });
     }
 
-    /** @noinspection PhpUnusedParameterInspection */
-    public function asController(?string $organisation, ChatSession $chatSession): JsonResponse
+    public function rules(): array
     {
-        return $this->respond($chatSession, true);
+        return [
+            'reason' => ['sometimes', 'nullable', 'string', 'in:'.implode(',', ChatIgnoreReasonEnum::values())],
+        ];
+    }
+
+    /** @noinspection PhpUnusedParameterInspection */
+    public function asController(?string $organisation, ChatSession $chatSession, ActionRequest $request): JsonResponse
+    {
+        $reason = $request->validated('reason');
+
+        return $this->respond($chatSession, true, $reason ? ChatIgnoreReasonEnum::from($reason) : null);
     }
 
     /** @noinspection PhpUnusedParameterInspection */
@@ -72,7 +90,7 @@ class MarkChatSessionAsRubbish
         return $this->respond($chatSession, false);
     }
 
-    private function respond(ChatSession $chatSession, bool $rubbish): JsonResponse
+    private function respond(ChatSession $chatSession, bool $rubbish, ?ChatIgnoreReasonEnum $reason = null): JsonResponse
     {
         $agent = $this->getCurrentAgent($chatSession);
 
@@ -91,7 +109,7 @@ class MarkChatSessionAsRubbish
         }
 
         try {
-            $chatSession = $this->handle($chatSession, $agent, $rubbish);
+            $chatSession = $this->handle($chatSession, $agent, $rubbish, $reason);
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
@@ -103,8 +121,9 @@ class MarkChatSessionAsRubbish
             'success' => true,
             'message' => $rubbish ? 'Chat marked as rubbish' : 'Chat restored',
             'data'    => [
-                'session_ulid' => $chatSession->ulid,
-                'is_rubbish'   => $rubbish,
+                'session_ulid'   => $chatSession->ulid,
+                'is_rubbish'     => $rubbish,
+                'rubbish_reason' => $chatSession->rubbish_reason,
             ],
         ]);
     }

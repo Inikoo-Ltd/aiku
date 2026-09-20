@@ -16,6 +16,7 @@ use App\Enums\CRM\Livechat\ChatPriorityEnum;
 use App\Enums\CRM\Livechat\ChatSenderTypeEnum;
 use App\Enums\CRM\Livechat\ChatSessionStatusEnum;
 use App\Models\Catalogue\Shop;
+use App\Models\HumanResources\Employee;
 use App\Models\Chat\ChatMessage;
 use App\Models\Chat\ChatSession;
 use App\Models\CRM\WebUser;
@@ -23,6 +24,7 @@ use App\Services\Gmail\GmailClient;
 use App\Services\Gmail\GmailMessageParser;
 use App\Services\HTMLSanitizer;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Cache;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class ProcessInboundEmail
@@ -55,6 +57,12 @@ class ProcessInboundEmail
 
         $mailboxAddress = Arr::get($shop->settings, 'gmail.email');
         if ($mailboxAddress && $from['address'] && strcasecmp($from['address'], $mailboxAddress) === 0) {
+            return null;
+        }
+
+        if ($this->isOneOfOurs($from['address'])) {
+            $client->addLabel($gmailMessageId, 'aiku/filtered');
+
             return null;
         }
 
@@ -142,6 +150,30 @@ class ProcessInboundEmail
         $client->addLabel($gmailMessageId, $label);
 
         return $message;
+    }
+
+    /**
+     * Our own mailshots land in every sibling shop's mailbox, and staff write to lists this mailbox
+     * is on: neither is a customer waiting for an answer, so they never open a conversation. Matched
+     * on the address rather than the domain, since customers do buy from us on our own domains.
+     */
+    private function isOneOfOurs(?string $address): bool
+    {
+        if (! $address) {
+            return false;
+        }
+
+        $ours = Cache::remember('chat.our_own_email_addresses', 300, function () {
+            return array_map(
+                'strtolower',
+                array_filter(array_merge(
+                    Shop::whereNotNull('email')->pluck('email')->all(),
+                    Employee::whereNotNull('work_email')->pluck('work_email')->all()
+                ))
+            );
+        });
+
+        return in_array(strtolower($address), $ours, true);
     }
 
     /**

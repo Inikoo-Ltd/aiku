@@ -14,6 +14,7 @@ import {
     faLifeRing,
     faEye,
     faArchive,
+    faAngleDown,
 } from "@fortawesome/free-solid-svg-icons"
 import { faSlack } from "@fortawesome/free-brands-svg-icons"
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
@@ -51,6 +52,7 @@ const props = defineProps<{
     messages: ChatMessage[]
     session: SessionAPI | null
     readOnly?: boolean
+    ignoreReasons?: Array<{ value: string; label: string }>
 }>()
 
 const emit = defineEmits([
@@ -141,7 +143,12 @@ const hasBeenAnswered = computed(() =>
 
 const canEndChat = computed(() => hasBeenAnswered.value && !isClosed.value && !isTrashed.value && !props.readOnly)
 
-const markRubbish = async (rubbish: boolean) => {
+// The reason is picked, never typed: clearing an imported mailbox is a bulk job, and what has
+// to be written becomes blank or inconsistent within a day. Picked from a list it can be counted.
+const isIgnoreMenuOpen = ref(false)
+const ignoreMenuRef = ref<HTMLElement | null>(null)
+
+const markRubbish = async (rubbish: boolean, reason?: string) => {
     if (!props.session?.ulid || isSpamMarking.value) return
     isMenuOpen.value = false
     isSpamMarking.value = true
@@ -150,7 +157,11 @@ const markRubbish = async (rubbish: boolean) => {
         const routeName = rubbish
             ? "grp.org.chat.agents.sessions.rubbish"
             : "grp.org.chat.agents.sessions.not_rubbish"
-        await axios.patch(route(routeName, [organisation, props.session.ulid]), {}, { withCredentials: true })
+        await axios.patch(
+            route(routeName, [organisation, props.session.ulid]),
+            reason ? { reason } : {},
+            { withCredentials: true }
+        )
         emit("spam-success")
     } catch (e: any) {
         notify({
@@ -1011,6 +1022,10 @@ const handleClickOutside = (e: MouseEvent) => {
     if (isMenuOpen.value && menuRef.value && !menuRef.value.contains(e.target as Node)) {
         isMenuOpen.value = false
     }
+
+    if (isIgnoreMenuOpen.value && ignoreMenuRef.value && !ignoreMenuRef.value.contains(e.target as Node)) {
+        isIgnoreMenuOpen.value = false
+    }
 }
 </script>
 
@@ -1063,13 +1078,34 @@ const handleClickOutside = (e: MouseEvent) => {
 
             <!-- Out in the open, not behind the dots: clearing the queue is most of the work on
                  an imported mailbox, and a choice nobody finds does not get made. -->
-            <button v-if="canIgnore" type="button" :disabled="isSpamMarking"
-                v-tooltip="ctrans('Nothing to answer here. Only this conversation, and it can be undone.')"
+            <button v-if="canIgnore && (session as any)?.is_rubbish" type="button" :disabled="isSpamMarking"
                 class="inline-flex items-center gap-1.5 shrink-0 h-7 px-2.5 text-[11px] font-medium rounded-md border border-gray-300 text-gray-600 transition hover:bg-gray-100 disabled:opacity-50"
-                @click="markRubbish(!(session as any)?.is_rubbish)">
-                <FontAwesomeIcon :icon="(session as any)?.is_rubbish ? faRotateLeft : faArchive" class="text-[11px]" />
-                {{ (session as any)?.is_rubbish ? ctrans("Not ignored") : ctrans("Ignore") }}
+                @click="markRubbish(false)">
+                <FontAwesomeIcon :icon="faRotateLeft" class="text-[11px]" />
+                {{ ctrans("Not ignored") }}
             </button>
+
+            <div v-else-if="canIgnore" class="relative shrink-0" ref="ignoreMenuRef">
+                <button type="button" :disabled="isSpamMarking"
+                    v-tooltip="ctrans('Nothing to answer here. Only this conversation, and it can be undone.')"
+                    class="inline-flex items-center gap-1.5 h-7 px-2.5 text-[11px] font-medium rounded-md border border-gray-300 text-gray-600 transition hover:bg-gray-100 disabled:opacity-50"
+                    @click.stop="isIgnoreMenuOpen = !isIgnoreMenuOpen">
+                    <FontAwesomeIcon :icon="faArchive" class="text-[11px]" />
+                    {{ ctrans("Ignore") }}
+                    <FontAwesomeIcon :icon="faAngleDown" class="text-[9px] text-gray-400" />
+                </button>
+
+                <div v-if="isIgnoreMenuOpen" class="absolute right-0 mt-1 w-56 bg-white border rounded-md shadow z-50 py-1">
+                    <div class="px-3 pb-1 text-[10px] uppercase tracking-wide text-gray-400">
+                        {{ ctrans("Ignore as") }}
+                    </div>
+                    <button v-for="reason in (ignoreReasons ?? [])" :key="reason.value" type="button"
+                        class="w-full text-left px-3 py-1.5 text-xs text-gray-700 hover:bg-gray-100"
+                        @click="isIgnoreMenuOpen = false; markRubbish(true, reason.value)">
+                        {{ reason.label }}
+                    </button>
+                </div>
+            </div>
 
             <!-- Spam is never offered on a customer: it blocks the address for good, and the same
                  customer writes again next week. -->

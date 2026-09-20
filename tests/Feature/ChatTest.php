@@ -76,6 +76,8 @@ use App\Enums\CRM\Livechat\ChatMessageTypeEnum;
 use App\Enums\CRM\Livechat\ChatPriorityEnum;
 use App\Enums\CRM\Livechat\ChatSenderTypeEnum;
 use App\Enums\CRM\Livechat\ChatChannelEnum;
+use App\Actions\Chat\ChatSession\MarkChatSessionAsRubbish;
+use App\Enums\CRM\Livechat\ChatIgnoreReasonEnum;
 use App\Enums\CRM\Livechat\ChatSessionStatusEnum;
 use App\Enums\SysAdmin\Authorisation\RolesEnum;
 use App\Models\HumanResources\Employee;
@@ -4395,7 +4397,9 @@ test('email does not sit under the website tab', function () {
 
     // A session only counts once somebody has written in it: an opened widget nobody typed
     // into is not a conversation, and the rail says so too.
-    $session = function (ChatChannelEnum $channel) {
+    $created = [];
+
+    $session = function (ChatChannelEnum $channel) use (&$created) {
         $session = ChatSession::create([
             'shop_id' => $this->shop->id,
             'ulid'    => (string) Str::ulid(),
@@ -4409,6 +4413,8 @@ test('email does not sit under the website tab', function () {
             'message_type'    => ChatMessageTypeEnum::TEXT,
             'sender_type'     => ChatSenderTypeEnum::GUEST,
         ]);
+
+        $created[] = $session->id;
 
         return $session;
     };
@@ -4432,6 +4438,13 @@ test('email does not sit under the website tab', function () {
     ])->items());
 
     expect($website->pluck('id')->all())->not->toContain($emailSession->id);
+
+    // One database serves the whole file, so anything left behind lands in the counts another
+    // test makes of the same shop.
+    ChatSession::whereIn('id', $created)->each(function (ChatSession $session) {
+        $session->messages()->forceDelete();
+        $session->forceDelete();
+    });
 });
 
 test('GetChatReports counts only conversations the visitor wrote in and measures the first reply', function () {
@@ -4476,4 +4489,102 @@ test('GetChatReports counts only conversations the visitor wrote in and measures
         ->and(collect($result['by_channel'])->firstWhere('channel', 'email')['conversations'])->toBe(1)
         ->and(collect($result['by_channel'])->firstWhere('channel', 'whatsapp')['conversations'])->toBe(0)
         ->and($widgetOnlyOpened->exists)->toBeTrue();
+});
+
+test('ignoring a conversation records why, and undoing it puts the conversation back', function () {
+    setPermissionsTeamId($this->user->group_id);
+
+    $this->shop->update(['state' => \App\Enums\Catalogue\Shop\ShopStateEnum::OPEN]);
+
+    $agent = User::factory()->create(['group_id' => $this->organisation->group_id, 'status' => true]);
+    $agent->assignRole(RolesEnum::getRoleName(RolesEnum::CUSTOMER_SERVICE_CLERK->value, $this->shop));
+    $agentProfile = ChatAgent::create(['user_id' => $agent->id, 'max_concurrent_chats' => 5, 'language_id' => 68]);
+
+    $session = ChatSession::create([
+        'shop_id' => $this->shop->id,
+        'ulid'    => (string) Str::ulid(),
+        'channel' => ChatChannelEnum::EMAIL,
+        'status'  => ChatSessionStatusEnum::WAITING,
+    ]);
+
+    ChatMessage::create([
+        'chat_session_id' => $session->id,
+        'message_text'    => 'I am out of the office',
+        'message_type'    => ChatMessageTypeEnum::TEXT,
+        'sender_type'     => ChatSenderTypeEnum::GUEST,
+    ]);
+
+    $waiting = fn () => GetChatSessions::make()->handle([
+        'shop_id'  => $this->shop->id,
+        'statuses' => ['waiting'],
+    ])->total();
+
+    $before = $waiting();
+
+    MarkChatSessionAsRubbish::make()->handle($session, $agentProfile, true, ChatIgnoreReasonEnum::OUT_OF_OFFICE);
+    $session->refresh();
+
+    // The reason is countable, which is the point: the noise can be named and dealt with at
+    // its source instead of one conversation at a time.
+    expect($session->rubbish_reason)->toBe('out_of_office')
+        // Hidden from the queue, but its status is untouched, and the sender is never blocked.
+        ->and($session->status)->toBe(ChatSessionStatusEnum::WAITING)
+        ->and($waiting())->toBe($before - 1)
+        ->and(Arr::get($this->shop->fresh()->settings, 'gmail.blocked_senders', []))->toBe([])
+        ->and(GetChatSessions::make()->handle([
+            'shop_id'    => $this->shop->id,
+            'is_rubbish' => 1,
+        ])->total())->toBe(1);
+
+    MarkChatSessionAsRubbish::make()->handle($session, $agentProfile, false);
+
+    expect($session->fresh()->rubbish_reason)->toBeNull()
+        ->and($waiting())->toBe($before);
+
+    $session->messages()->forceDelete();
+    $session->forceDelete();
+});
+
+test('mail from one of our own shops or staff never becomes a chat session', function () {
+    $settings = $this->shop->settings ?? [];
+    $settings['gmail'] = ['email' => 'care@shop.test', 'refresh_token' => \Illuminate\Support\Facades\Crypt::encryptString('rt'), 'history_id' => '1'];
+    $this->shop->update(['settings' => $settings]);
+
+    $sibling = \App\Models\Catalogue\Shop::where('id', '!=', $this->shop->id)->first() ?? $this->shop;
+    $sibling->update(['email' => 'hola@awartisan.es']);
+
+    Employee::factory()->create([
+        'group_id'        => $this->organisation->group_id,
+        'organisation_id' => $this->organisation->id,
+        'work_email'      => 'david@ancientwisdom.biz',
+    ]);
+
+    \Illuminate\Support\Facades\Cache::forget('chat.our_own_email_addresses');
+
+    $gmailMessage = fn (string $id, string $from) => \Illuminate\Support\Facades\Http::response([
+        'id'       => $id,
+        'threadId' => 't'.$id,
+        'payload'  => [
+            'mimeType' => 'text/plain',
+            'headers'  => [['name' => 'From', 'value' => $from], ['name' => 'Subject', 'value' => 'Unlock 25% Off']],
+            'body'     => ['data' => rtrim(strtr(base64_encode('newsletter'), '+/', '-_'), '=')],
+        ],
+    ]);
+
+    \Illuminate\Support\Facades\Http::fake([
+        'oauth2.googleapis.com/token'                         => \Illuminate\Support\Facades\Http::response(['access_token' => 'at']),
+        'gmail.googleapis.com/gmail/v1/users/me/messages/o1*' => $gmailMessage('o1', 'AW Artisan <hola@awartisan.es>'),
+        'gmail.googleapis.com/gmail/v1/users/me/messages/o2*' => $gmailMessage('o2', 'David Hardy <David@AncientWisdom.biz>'),
+        'gmail.googleapis.com/gmail/v1/users/me/labels'       => \Illuminate\Support\Facades\Http::response(['labels' => [['id' => 'LF', 'name' => 'aiku/filtered']]]),
+        'gmail.googleapis.com/*'                              => \Illuminate\Support\Facades\Http::response([]),
+    ]);
+
+    $sessionsBefore = ChatSession::count();
+
+    foreach (['o1', 'o2'] as $id) {
+        expect(\App\Actions\Comms\Mailbox\ProcessInboundEmail::run($this->shop, $id))->toBeNull();
+        \Illuminate\Support\Facades\Http::assertSent(fn ($request) => str_ends_with($request->url(), "messages/$id/modify") && $request['addLabelIds'] === ['LF']);
+    }
+
+    expect(ChatSession::count())->toBe($sessionsBefore);
 });

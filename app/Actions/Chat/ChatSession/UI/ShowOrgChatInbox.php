@@ -14,6 +14,7 @@ use App\Actions\UI\WithInertia;
 use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Enums\CRM\Livechat\ChatChannelEnum;
 use App\Enums\CRM\Livechat\ChatEventTypeEnum;
+use App\Enums\CRM\Livechat\ChatIgnoreReasonEnum;
 use App\Enums\CRM\Livechat\ChatSessionStatusEnum;
 use App\Http\Resources\CRM\Livechat\ChatSessionListResource;
 use App\Models\Catalogue\Shop;
@@ -123,6 +124,9 @@ class ShowOrgChatInbox extends OrgAction
                     'name' => $organisation->name,
                 ],
                 'is_read_only'         => $isReadOnly,
+                // Why a conversation was put aside, chosen from a list: a bulk job done dozens
+                // of times an hour, and what has to be typed becomes blank within a day.
+                'ignoreReasons'        => ChatIgnoreReasonEnum::options(),
                 'inboxes'              => $this->mapInboxes($inboxShops),
                 'selectedSessionUlid'  => $this->selectedSession ? (string) $this->selectedSession->ulid : null,
                 'initialSession'       => $this->resolveSelectedSession(),
