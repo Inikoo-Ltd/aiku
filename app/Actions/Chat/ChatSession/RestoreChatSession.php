@@ -7,13 +7,13 @@
 
 namespace App\Actions\Chat\ChatSession;
 
+use App\Actions\Chat\WithChatAgentAuthorisation;
 use App\Enums\CRM\Livechat\ChatAssignmentStatusEnum;
 use App\Enums\CRM\Livechat\ChatSessionStatusEnum;
 use App\Events\BroadcastChatListEvent;
 use App\Models\Chat\ChatSession;
 use Exception;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -21,6 +21,7 @@ use Lorisleiva\Actions\Concerns\AsAction;
 class RestoreChatSession
 {
     use AsAction;
+    use WithChatAgentAuthorisation;
 
     /**
      * Restore a trashed session. With no active agent it re-enters the Waiting
@@ -50,7 +51,7 @@ class RestoreChatSession
     /** @noinspection PhpUnusedParameterInspection */
     public function asController(?string $organisation, ChatSession $chatSession, ActionRequest $request): JsonResponse
     {
-        if (!Auth::user()?->chatAgent) {
+        if (!$this->getAuthorisedChatAgent($chatSession)) {
             return response()->json(['success' => false, 'message' => 'Only authenticated agents can restore chats'], 403);
         }
 

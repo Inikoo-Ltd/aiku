@@ -8,6 +8,8 @@
 
 namespace App\Actions\UI\Grp\Layout;
 
+use App\Actions\Chat\WithChatAgentAuthorisation;
+use App\Actions\Chat\WithChatNavigation;
 use App\Enums\SysAdmin\Authorisation\RolesEnum;
 use App\Models\SysAdmin\Organisation;
 use App\Models\SysAdmin\User;
@@ -15,6 +17,9 @@ use Lorisleiva\Actions\Concerns\AsAction;
 
 class GetOrganisationNavigation
 {
+    use WithChatAgentAuthorisation;
+    use WithChatNavigation;
+
     use AsAction;
     use WithLayoutNavigation;
 
@@ -249,58 +254,10 @@ class GetOrganisationNavigation
 
         $canSeeShops = $user->authTo(['accounting.'.$organisation->id.'.view', 'org-supervisor.'.$organisation->id, 'shops-view.'.$organisation->id]);
 
-        if ($canSeeShops || $user->chatAgent) {
-            $navigation['chat'] = [
-                'label'   => __('Chat'),
-                'icon'    => ['fal', 'comment-alt'],
-                'root'    => 'grp.org.chat.',
-                'route'   => [
-                    'name'       => 'grp.org.chat.dashboard',
-                    'parameters' => [$organisation->slug],
-                ],
-                'topMenu' => [
-                    'subSections' => [
-                        [
-                            'label'   => __('Dashboard'),
-                            'icon'    => ['fal', 'comment-alt'],
-                            'root'    => 'grp.org.chat.dashboard',
-                            'route'   => [
-                                'name'       => 'grp.org.chat.dashboard',
-                                'parameters' => [$organisation->slug],
-                            ],
-                        ],
-                        [
-                            'label'   => __('Agents'),
-                            'icon'    => ['fal', 'fa-headset'],
-                            'root'    => 'grp.org.chat.agents.show',
-                            'route'   => [
-                                'name'       => 'grp.org.chat.agents.show',
-                                'parameters' => [$organisation->slug],
-                            ],
-                        ],
-                        [
-                            'label'   => __('Conversations'),
-                            'icon'    => ['fal', 'fa-comments'],
-                            'root'    => 'grp.org.chat.conversations.show',
-                            'route'   => [
-                                'name'       => 'grp.org.chat.conversations.show',
-                                'parameters' => [$organisation->slug],
-                            ],
-                        ],
-                        ...($user->chatAgent ? [
-                            [
-                                'label'   => __('Inbox'),
-                                'icon'    => ['fal', 'fa-inbox'],
-                                'root'    => 'grp.org.chat.inbox',
-                                'route'   => [
-                                    'name'       => 'grp.org.chat.inbox',
-                                    'parameters' => [$organisation->slug],
-                                ],
-                            ],
-                        ] : []),
-                    ],
-                ],
-            ];
+        $canWorkChat = $this->userCanWorkChatOnOrganisation($user, $organisation);
+
+        if ($canSeeShops || $canWorkChat) {
+            $navigation['chat'] = $this->getChatNavigation('grp.org.chat.', [$organisation->slug], $canWorkChat);
         }
 
         if ($canSeeShops) {

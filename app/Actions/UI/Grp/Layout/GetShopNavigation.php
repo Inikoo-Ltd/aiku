@@ -8,6 +8,8 @@
 
 namespace App\Actions\UI\Grp\Layout;
 
+use App\Actions\Chat\WithChatAgentAuthorisation;
+use App\Actions\Chat\WithChatNavigation;
 use App\Enums\SysAdmin\Authorisation\RolesEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Models\SysAdmin\User;
@@ -16,6 +18,9 @@ use Lorisleiva\Actions\Concerns\AsAction;
 
 class GetShopNavigation
 {
+    use WithChatAgentAuthorisation;
+    use WithChatNavigation;
+
     use AsAction;
 
     public function handle(Shop $shop, User $user): array
@@ -581,66 +586,11 @@ class GetShopNavigation
             ];
         }
 
-        $navigation["chat"] = [
-            "root"  => "grp.org.shops.show.chat.",
-            "label" => __("Chat"),
-            "icon"  => ["fal", "comment-alt"],
-            "route" => [
-                "name"       => "grp.org.shops.show.chat.dashboard",
-                "parameters" => [$shop->organisation->slug, $shop->slug],
-            ],
-            "topMenu" => [
-                "subSections" => [
-                    [
-                        "label" => __("Dashboard"),
-                        "icon"  => ["fal", "comment-alt"],
-                        "root"  => "grp.org.shops.show.chat.dashboard",
-                        "route" => [
-                            "name"       => "grp.org.shops.show.chat.dashboard",
-                            "parameters" => [$shop->organisation->slug, $shop->slug],
-                        ],
-                    ],
-                    [
-                        "label" => __("Agents"),
-                        "icon"  => ["fal", "fa-headset"],
-                        "root"  => "grp.org.shops.show.chat.agents.show",
-                        "route" => [
-                            "name"       => "grp.org.shops.show.chat.agents.show",
-                            "parameters" => [$shop->organisation->slug, $shop->slug],
-                        ],
-                    ],
-                    [
-                        "label" => __("Conversations"),
-                        "icon"  => ["fal", "fa-comments"],
-                        "root"  => "grp.org.shops.show.chat.conversations.show",
-                        "route" => [
-                            "name"       => "grp.org.shops.show.chat.conversations.show",
-                            "parameters" => [$shop->organisation->slug, $shop->slug],
-                        ],
-                    ],
-                    ...($user->chatAgent ? [
-                        [
-                            "label" => __("Inbox"),
-                            "icon"  => ["fal", "fa-inbox"],
-                            "root"  => "grp.org.shops.show.chat.inbox",
-                            "route" => [
-                                "name"       => "grp.org.shops.show.chat.inbox",
-                                "parameters" => [$shop->organisation->slug, $shop->slug],
-                            ],
-                        ],
-                    ] : []),
-                    [
-                        "label" => __("Whatsapp Template"),
-                        "icon"  => ["fab", "fa-whatsapp"],
-                        "root"  => "grp.org.shops.show.chat.whatsapp_templates.",
-                        "route" => [
-                            "name"       => "grp.org.shops.show.chat.whatsapp_templates.index",
-                            "parameters" => [$shop->organisation->slug, $shop->slug],
-                        ],
-                    ],
-                ],
-            ],
-        ];
+        $navigation["chat"] = $this->getChatNavigation(
+            "grp.org.shops.show.chat.",
+            [$shop->organisation->slug, $shop->slug],
+            $this->userCanWorkChatOnShop($user, $shop)
+        );
 
         if ($user->hasAnyPermission(["orders.$shop->id.view", "accounting.$shop->organisation_id.view"])) {
             $navigation["ordering"] = [

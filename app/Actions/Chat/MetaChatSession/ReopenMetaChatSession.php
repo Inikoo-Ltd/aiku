@@ -7,6 +7,7 @@
 
 namespace App\Actions\Chat\MetaChatSession;
 
+use App\Actions\Chat\WithChatAgentAuthorisation;
 use App\Enums\CRM\Livechat\ChatActorTypeEnum;
 use App\Enums\CRM\Livechat\ChatAssignmentStatusEnum;
 use App\Enums\CRM\Livechat\ChatMessageTypeEnum;
@@ -18,13 +19,13 @@ use App\Models\Chat\ChatAgent;
 use App\Models\Chat\MetaChatSession;
 use Exception;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class ReopenMetaChatSession
 {
     use AsAction;
+    use WithChatAgentAuthorisation;
 
     /**
      * @throws \Throwable
@@ -130,7 +131,7 @@ class ReopenMetaChatSession
     /** @noinspection PhpUnusedParameterInspection */
     public function asController(string $organisation, MetaChatSession $metaChatSession): JsonResponse
     {
-        $agent = $this->getCurrentAgent();
+        $agent = $this->getCurrentAgent($metaChatSession);
 
         if (!$agent) {
             return response()->json([
@@ -168,8 +169,8 @@ class ReopenMetaChatSession
         ]);
     }
 
-    public function getCurrentAgent(): ?ChatAgent
+    public function getCurrentAgent(MetaChatSession $metaChatSession): ?ChatAgent
     {
-        return Auth::user()?->chatAgent;
+        return $this->getAuthorisedChatAgent($metaChatSession);
     }
 }

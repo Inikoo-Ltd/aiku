@@ -115,6 +115,7 @@ class Kernel extends ConsoleKernel
         $schedule->command('nightowl:prune')->dailyAt('04:00')->timezone('UTC')->onOneServer()->withoutOverlapping(180);
         $schedule->command('nightowl:freeze-cold-partitions')->dailyAt('05:00')->timezone('UTC')->onOneServer()->withoutOverlapping(180);
         $schedule->command('comms:archive_dispatched_emails')->dailyAt('03:00')->timezone('UTC')->onOneServer()->withoutOverlapping(180);
+        $schedule->command('chat:archive_media')->dailyAt('03:20')->timezone('UTC')->onOneServer()->withoutOverlapping(60);
         $schedule->command('inventory:archive_stock_histories --dates=5')->dailyAt('03:40')->timezone('UTC')->onOneServer()->withoutOverlapping(60)
             ->when(fn () => config('archive.stock_history_nightly'));
         $schedule->call(function () {
@@ -400,32 +401,6 @@ class Kernel extends ConsoleKernel
                 type: 'job',
                 scheduledAt: now()->format('H:i')
             );
-
-            $this->logSchedule(
-                $schedule->command('fetch:orders aroma -w full -B')->everyFiveMinutes()->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
-                    monitorSlug: 'FetchOrdersInBasket',
-                ),
-                name: 'FetchOrdersInBasket',
-                type: 'job',
-                scheduledAt: now()->format('H:i')
-            );
-
-            $this->logSchedule(
-                $schedule->command('fetch:credits -N')->everyTenMinutes()->timezone('UTC')->onOneServer()->withoutOverlapping(),
-                name: 'FetchCredits',
-                type: 'job',
-                scheduledAt: now()->format('H:i')
-            );
-
-            $this->logSchedule(
-                $schedule->command('fetch:stock_locations aroma')->dailyAt('3:15')->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
-                    monitorSlug: 'FetchAuroraStockLocationsAroma',
-                ),
-                name: 'FetchAuroraStockLocationsAroma',
-                type: 'command',
-                scheduledAt: now()->format('H:i')
-            );
-
 
             $this->logSchedule(
                 $schedule->command('fetch:stock_movements aroma -N -D 2')->everyTenMinutes()->withoutOverlapping()->timezone('UTC')->onOneServer()->sentryMonitor(

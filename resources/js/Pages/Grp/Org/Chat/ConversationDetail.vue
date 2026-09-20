@@ -70,6 +70,17 @@ interface ChatSessionProp {
     ai_summary: { summary?: string; sentiment?: string; key_points?: string[] } | null
 }
 
+interface MessageAttachment {
+    id: number
+    is_image: boolean
+    media_url: { original: string; webp?: string } | null
+    original_url: string
+    file_name: string
+    file_size: number
+    file_mime: string
+    download_route: { url: string }
+}
+
 interface MessageProp {
     id: number
     message_text: string | null
@@ -87,6 +98,7 @@ interface MessageProp {
     file_size: number | null
     file_mime: string | null
     download_route: { url: string } | null
+    attachments?: MessageAttachment[]
     created_at: string
     is_ai_generated: boolean | null
     is_validated: boolean | null
@@ -218,6 +230,23 @@ function needsImageVerification(msg: MessageProp): boolean {
     return msg.message_type === 'image' && !!msg.is_verifiable_image && imageValidation(msg).is_validated == null
 }
 
+function attachmentList(msg: MessageProp): MessageAttachment[] {
+    if (msg.attachments?.length) return msg.attachments
+
+    if (!msg.media_url && !msg.download_route) return []
+
+    return [{
+        id: msg.id,
+        is_image: msg.message_type === 'image',
+        media_url: msg.media_url,
+        original_url: msg.media_url?.original ?? '',
+        file_name: msg.file_name ?? '',
+        file_size: msg.file_size ?? 0,
+        file_mime: msg.file_mime ?? '',
+        download_route: msg.download_route ?? { url: '' },
+    }]
+}
+
 
 function formatTimestamp(raw: string): string {
     return new Date(raw).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
@@ -320,13 +349,31 @@ const tabs: { key: SidePanelTab; label: string; onlyRegistered?: boolean }[] = [
                                 {{ senderLabel(msg) }}
                             </div>
 
-                            <template v-if="msg.message_type === 'image' && msg.media_url">
-                                <Image
-                                    :src="msg.media_url.webp ?? msg.media_url.original"
-                                    preview
-                                    imageClass="rounded-lg max-w-full max-h-64 object-contain cursor-pointer"
-                                    class="mt-1"
-                                />
+                            <p v-if="msg.message_text && attachmentList(msg).length" class="whitespace-pre-wrap break-words mb-1">{{ msg.message_text }}</p>
+
+                            <template v-if="attachmentList(msg).length">
+                                <template v-for="attachment in attachmentList(msg)" :key="attachment.id">
+                                    <Image
+                                        v-if="attachment.is_image && attachment.media_url"
+                                        :src="attachment.media_url.webp ?? attachment.media_url.original"
+                                        preview
+                                        imageClass="rounded-lg max-w-full max-h-64 object-contain cursor-pointer"
+                                        class="mt-1"
+                                    />
+
+                                    <a
+                                        v-else
+                                        :href="attachment.download_route.url"
+                                        target="_blank"
+                                        class="flex items-center gap-x-2 text-sm underline mt-1"
+                                        :class="isFromAgent(msg) ? 'text-white/90' : ''"
+                                        :style="!isFromAgent(msg) ? { color: themePrimary } : {}"
+                                    >
+                                        <FontAwesomeIcon :icon="['fal', 'fa-paperclip']" />
+                                        <span>{{ attachment.file_name || 'Download file' }}</span>
+                                        <span v-if="attachment.file_size" class="text-xs opacity-60">({{ formatFileSize(attachment.file_size) }})</span>
+                                    </a>
+                                </template>
 
                                 <div
                                     v-if="imageValidation(msg).is_validated === true"
@@ -358,20 +405,6 @@ const tabs: { key: SidePanelTab; label: string; onlyRegistered?: boolean }[] = [
                                         Not verified yet
                                     </span>
                                 </div>
-                            </template>
-
-                            <template v-else-if="msg.message_type === 'file' && msg.download_route">
-                                <a
-                                    :href="msg.download_route.url"
-                                    target="_blank"
-                                    class="flex items-center gap-x-2 text-sm underline"
-                                    :class="isFromAgent(msg) ? 'text-white/90' : ''"
-                                    :style="!isFromAgent(msg) ? { color: themePrimary } : {}"
-                                >
-                                    <FontAwesomeIcon :icon="['fal', 'fa-paperclip']" />
-                                    <span>{{ msg.file_name || 'Download file' }}</span>
-                                    <span v-if="msg.file_size" class="text-xs opacity-60">({{ formatFileSize(msg.file_size) }})</span>
-                                </a>
                             </template>
 
                             <template v-else>

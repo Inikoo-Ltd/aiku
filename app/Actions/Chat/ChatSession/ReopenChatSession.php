@@ -7,6 +7,7 @@
 
 namespace App\Actions\Chat\ChatSession;
 
+use App\Actions\Chat\WithChatAgentAuthorisation;
 use App\Actions\Chat\Agent\Hydrators\ChatAgentHydrateChats;
 use App\Enums\CRM\Livechat\ChatActorTypeEnum;
 use App\Enums\CRM\Livechat\ChatAssignmentAssignedByEnum;
@@ -22,13 +23,13 @@ use App\Models\Chat\ChatAssignment;
 use App\Models\Chat\ChatSession;
 use Exception;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class ReopenChatSession
 {
     use AsAction;
+    use WithChatAgentAuthorisation;
 
     /**
      * @throws \Throwable
@@ -124,7 +125,7 @@ class ReopenChatSession
     /** @noinspection PhpUnusedParameterInspection */
     public function asController(?string $organisation, ChatSession $chatSession): JsonResponse
     {
-        $agent = $this->getCurrentAgent();
+        $agent = $this->getCurrentAgent($chatSession);
 
         if (!$agent) {
             return response()->json([
@@ -162,8 +163,8 @@ class ReopenChatSession
         ]);
     }
 
-    public function getCurrentAgent(): ?ChatAgent
+    public function getCurrentAgent(ChatSession $chatSession): ?ChatAgent
     {
-        return Auth::user()?->chatAgent;
+        return $this->getAuthorisedChatAgent($chatSession);
     }
 }

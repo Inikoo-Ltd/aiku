@@ -81,11 +81,13 @@ test('neither master nor slave schedules register when both flags are disabled',
     expect(scheduledEventIds(rebuildSchedule()))
         ->toEqualCanonicalizing(
             [
+                'chat:archive_media',
                 'cloudflare:reload',
                 'comms:archive_dispatched_emails',
                 'google-ads:fetch-campaigns',
                 'horizon:snapshot',
                 'inventory:archive_stock_histories --dates=5',
+                'mailbox:fetch',
                 'nightowl:freeze-cold-partitions',
                 'nightowl:prune',
                 'prune-fetch-stacks',

@@ -7,13 +7,13 @@
 
 namespace App\Actions\Chat\ChatSession;
 
+use App\Actions\Chat\WithChatAgentAuthorisation;
 use App\Models\Chat\ChatAssignment;
 use App\Models\Chat\ChatEvent;
 use App\Models\Chat\ChatMessage;
 use App\Models\Chat\ChatSession;
 use Exception;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -21,6 +21,7 @@ use Lorisleiva\Actions\Concerns\AsAction;
 class DeleteChatSessionPermanently
 {
     use AsAction;
+    use WithChatAgentAuthorisation;
 
     /**
      * Permanently remove the session and its children. Message translations are
@@ -42,7 +43,7 @@ class DeleteChatSessionPermanently
     /** @noinspection PhpUnusedParameterInspection */
     public function asController(?string $organisation, ChatSession $chatSession, ActionRequest $request): JsonResponse
     {
-        if (!Auth::user()?->chatAgent) {
+        if (!$this->getAuthorisedChatAgent($chatSession)) {
             return response()->json(['success' => false, 'message' => 'Only authenticated agents can delete chats'], 403);
         }
 

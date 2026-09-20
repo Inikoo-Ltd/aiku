@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, watch, onMounted, onUnmounted, inject, computed, nextTick, defineAsyncComponent } from "vue"
 import axios from "axios"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import {
     faPaperPlane,
@@ -12,6 +12,7 @@ import {
     faMessage,
     faPaperclip, faXmark, faFilePdf, faEnvelope, faRotateRight, faBan, faRotateLeft, faFaceSmile,
     faLifeRing,
+    faEye,
 } from "@fortawesome/free-solid-svg-icons"
 import { faSlack } from "@fortawesome/free-brands-svg-icons"
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
@@ -48,6 +49,7 @@ interface GetMessagesParams {
 const props = defineProps<{
     messages: ChatMessage[]
     session: SessionAPI | null
+    readOnly?: boolean
 }>()
 
 const emit = defineEmits([
@@ -91,7 +93,7 @@ const takeoverChat = async () => {
         }
         emit("assign-self-success")
     } catch {
-        notify({ title: trans("Error"), text: trans("Failed to take over chat"), type: "error" })
+        notify({ title: ctrans("Error"), text: ctrans("Failed to take over chat"), type: "error" })
     } finally {
         isTakingOver.value = false
     }
@@ -131,8 +133,8 @@ const markSpam = async (spam: boolean) => {
         emit("spam-success")
     } catch (e: any) {
         notify({
-            title: trans("Error"),
-            text: e?.response?.data?.message ?? trans("Failed to update spam status"),
+            title: ctrans("Error"),
+            text: e?.response?.data?.message ?? ctrans("Failed to update spam status"),
             type: "error",
         })
     } finally {
@@ -158,7 +160,7 @@ const assignSelf = async () => {
         }
         emit("assign-self-success")
     } catch {
-        notify({ title: trans("Error"), text: trans("Failed to assign chat"), type: "error" })
+        notify({ title: ctrans("Error"), text: ctrans("Failed to assign chat"), type: "error" })
     } finally {
         isAssigningSelf.value = false
     }
@@ -177,7 +179,7 @@ const restoreChat = async () => {
         )
         emit("restore-success")
     } catch {
-        notify({ title: trans("Error"), text: trans("Failed to restore chat"), type: "error" })
+        notify({ title: ctrans("Error"), text: ctrans("Failed to restore chat"), type: "error" })
     } finally {
         isRestoring.value = false
     }
@@ -201,7 +203,7 @@ const reopenChat = async () => {
         }
         emit("assign-self-success")
     } catch {
-        notify({ title: trans("Error"), text: trans("Failed to reopen chat"), type: "error" })
+        notify({ title: ctrans("Error"), text: ctrans("Failed to reopen chat"), type: "error" })
     } finally {
         isReopening.value = false
     }
@@ -232,8 +234,8 @@ const handleEditMessage = async ({ id, text }: { id: number; text: string }) => 
         }
     } catch (e: any) {
         notify({
-            title: trans("Error"),
-            text: e?.response?.data?.message ?? trans("Failed to edit message"),
+            title: ctrans("Error"),
+            text: e?.response?.data?.message ?? ctrans("Failed to edit message"),
             type: "error",
         })
     }
@@ -290,10 +292,6 @@ const FILE_TYPES = [
     "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
 ]
 
-const getMessageTypeFromFile = (file: File): "image" | "file" => {
-    return IMAGE_TYPES.includes(file.type) ? "image" : "file"
-}
-
 const MAX_SIZE = 10 * 1024 * 1024
 
 const isMenuOpen = ref(false)
@@ -315,69 +313,60 @@ const typingUser = ref<string | null>(null)
 
 const { languages, fetchLanguages, getLanguageIdByCode } = useChatLanguages(baseUrl)
 
-const selectedFile = ref<File | null>(null)
-const previewUrl = ref<string | null>(null)
-const previewType = ref<"image" | "file" | null>(null)
+const MAX_ATTACHMENTS = 10
 
+interface SelectedAttachment {
+    file: File
+    previewUrl: string | null
+    isImage: boolean
+}
+
+const selectedFiles = ref<SelectedAttachment[]>([])
 const isEmailNotif = ref(false)
 
-const handleImageSelect = (e: Event) => {
-    const file = (e.target as HTMLInputElement)?.files?.[0]
-    if (file) selectImage(file)
-}
+const addAttachment = (file: File, isImage: boolean) => {
+    if (selectedFiles.value.length >= MAX_ATTACHMENTS) {
+        notify({ title: "Failed", text: "Maximum 10 attachments", type: "error" })
+        return
+    }
 
-const selectImage = (file: File) => {
-    if (!IMAGE_TYPES.includes(file.type)) {
-        notify({
-            title: "Failed",
-            text: "Image format not supported",
-            type: "error",
-        })
+    if (isImage && !IMAGE_TYPES.includes(file.type)) {
+        notify({ title: "Failed", text: "Image format not supported", type: "error" })
+        return
+    }
+
+    if (!isImage && !FILE_TYPES.includes(file.type)) {
+        notify({ title: "Failed", text: "File format not supported", type: "error" })
         return
     }
 
     if (file.size > MAX_SIZE) {
-        notify({
-            title: "Failed",
-            text: "Maximum image size 10MB",
-            type: "error",
-        })
+        notify({ title: "Failed", text: "Maximum file size 10MB", type: "error" })
         return
     }
 
-    selectedFile.value = file
-    previewType.value = "image"
-    previewUrl.value = URL.createObjectURL(file)
+    selectedFiles.value.push({
+        file,
+        isImage,
+        previewUrl: isImage ? URL.createObjectURL(file) : null,
+    })
 }
+
+const handleImageSelect = (e: Event) => {
+    const files = (e.target as HTMLInputElement)?.files
+    Array.from(files ?? []).forEach((file) => addAttachment(file, true))
+    if (imageInput.value) imageInput.value.value = ""
+}
+
+const selectImage = (file: File) => addAttachment(file, true)
 
 const handleDocSelect = (e: Event) => {
-    const file = (e.target as HTMLInputElement)?.files?.[0]
-    if (file) selectDoc(file)
+    const files = (e.target as HTMLInputElement)?.files
+    Array.from(files ?? []).forEach((file) => addAttachment(file, false))
+    if (fileInput.value) fileInput.value.value = ""
 }
 
-const selectDoc = (file: File) => {
-    if (!FILE_TYPES.includes(file.type)) {
-        notify({
-            title: "Failed",
-            text: "File format not supported",
-            type: "error",
-        })
-        return
-    }
-
-    if (file.size > MAX_SIZE) {
-        notify({
-            title: "Failed",
-            text: "Maximum file size 10MB",
-            type: "error",
-        })
-        return
-    }
-
-    selectedFile.value = file
-    previewType.value = "file"
-    previewUrl.value = null
-}
+const selectDoc = (file: File) => addAttachment(file, false)
 
 const onPasteAttachment = (event: ClipboardEvent) => {
     const clipboard = event.clipboardData
@@ -395,14 +384,17 @@ const onPasteAttachment = (event: ClipboardEvent) => {
     }
 }
 
-const removeFile = () => {
-    if (previewUrl.value) {
-        URL.revokeObjectURL(previewUrl.value)
-    }
+const removeAttachment = (index: number) => {
+    const removed = selectedFiles.value[index]
+    if (removed?.previewUrl) URL.revokeObjectURL(removed.previewUrl)
+    selectedFiles.value.splice(index, 1)
+}
 
-    selectedFile.value = null
-    previewUrl.value = null
-    previewType.value = null
+const removeFile = () => {
+    selectedFiles.value.forEach((attachment) => {
+        if (attachment.previewUrl) URL.revokeObjectURL(attachment.previewUrl)
+    })
+    selectedFiles.value = []
     isEmailNotif.value = false
 
     if (imageInput.value) imageInput.value.value = ""
@@ -424,25 +416,24 @@ const autoResize = () => {
 
 const sendMessage = async () => {
     const hasText = !!newMessage.value.trim()
-    const hasFile = !!selectedFile.value
+    const hasFiles = selectedFiles.value.length > 0
 
-    if (!hasText && !hasFile) return
+    if (!hasText && !hasFiles) return
 
     sendTypingStatus(false)
     isTyping.value = false
 
     const tempId = `tmp-${Date.now()}`
 
-    const messageType = hasFile
-        ? getMessageTypeFromFile(selectedFile.value!)
-        : "text"
+    const allImages = hasFiles && selectedFiles.value.every((a) => a.isImage)
+    const messageType = hasFiles ? (allImages ? "image" : "file") : "text"
 
     const optimisticMessage: LocalChatMessage = {
         id: tempId as any,
         _tempId: tempId,
         message_text: newMessage.value ?? "",
         media_url:
-            messageType === "image" ? previewUrl.value : null,
+            messageType === "image" ? selectedFiles.value[0]?.previewUrl : null,
         sender_type: "agent",
         message_type: messageType,
         created_at: new Date().toISOString(),
@@ -459,7 +450,7 @@ const sendMessage = async () => {
     try {
         emit("send-message", {
             text: text,
-            image: selectedFile.value,
+            files: selectedFiles.value.map((a) => a.file),
             message_type: messageType,
             tempId,
             is_email_notif: isEmailNotif.value,
@@ -738,7 +729,7 @@ const initSocket = () => {
 }
 
 const markAsRead = async () => {
-    if (!chatSession.value?.ulid) return
+    if (!chatSession.value?.ulid || props.readOnly) return
     try {
         const requestFrom = "agent"
         await axios.post(`${baseUrl}/app/api/chats/read`, {
@@ -877,11 +868,11 @@ const handleClickOutside = (e: MouseEvent) => {
     <div class="flex flex-col h-full bg-white overflow-hidden">
         <!-- Header -->
         <header class="flex items-center gap-3 px-3 py-2 border-b">
-            <button @click="$emit('back')" :aria-label="trans('Back')">
+            <button @click="$emit('back')" :aria-label="ctrans('Back')">
                 <FontAwesomeIcon :icon="faArrowLeft" class="text-gray-400" />
             </button>
 
-            <button type="button" v-tooltip="trans('View profile')"
+            <button type="button" v-tooltip="ctrans('View profile')"
                 class="w-8 h-8 rounded-full flex items-center justify-center shrink-0 bg-gray-100 text-gray-500 hover:ring-2 hover:ring-gray-200 transition"
                 @click="onViewUserProfile">
                 <Image v-if="session?.image" :src="session?.image" class="w-full h-full rounded-full object-cover" />
@@ -905,27 +896,27 @@ const handleClickOutside = (e: MouseEvent) => {
                 </div>
             </div>
 
-            <ModalConfirmationDelete v-if="!isClosed && !isTrashed && isMyChat" :routeDelete="{
+            <ModalConfirmationDelete v-if="!isClosed && !isTrashed && isMyChat && !readOnly" :routeDelete="{
                 name: 'grp.org.chat.agents.sessions.close',
                 parameters: [session?.organisation.id, session?.ulid],
                 method: 'patch',
-            }" :title="trans('Are you sure you want to end this chat?')"
-                :noLabel="trans('End chat')"
+            }" :title="ctrans('Are you sure you want to end this chat?')"
+                :noLabel="ctrans('End chat')"
                 :noIcon="faTimesCircle"
-                :description="trans('This will close the chat session. The conversation history will be preserved.')"
+                :description="ctrans('This will close the chat session. The conversation history will be preserved.')"
                 @success="$emit('close-session')">
                 <template #default="{ changeModel }">
                     <button @click="changeModel"
                         class="inline-flex items-center justify-center gap-1.5 shrink-0 h-7 px-2.5 text-[11px] font-medium rounded-md transition hover:opacity-90"
                         :style="{ backgroundColor: 'var(--theme-color-4)', color: 'var(--theme-color-5)' }">
                         <FontAwesomeIcon :icon="faTimesCircle" class="text-[11px]" />
-                        {{ trans("End chat") }}
+                        {{ ctrans("End chat") }}
                     </button>
                 </template>
             </ModalConfirmationDelete>
 
             <Select v-if="languages.length" v-model="selectedLanguage" :options="languages"
-                optionLabel="native_name" optionValue="code" :placeholder="trans('Translate To..')"
+                optionLabel="native_name" optionValue="code" :placeholder="ctrans('Translate To..')"
                 :disabled="isTranslating" size="small"
                 :pt="{ option: { style: 'font-size: 0.6875rem; padding-top: 0.35rem; padding-bottom: 0.35rem;' } }"
                 class="translate-select h-7 w-36 text-[11px]" />
@@ -933,34 +924,36 @@ const handleClickOutside = (e: MouseEvent) => {
             <FontAwesomeIcon v-if="isTranslating" :icon="faSpinner" class="text-gray-400 text-xs animate-spin" />
 
             <div class="relative" ref="menuRef">
-                <button @click.stop="isMenuOpen = !isMenuOpen" :aria-label="trans('Toggle menu')">
+                <button @click.stop="isMenuOpen = !isMenuOpen" :aria-label="ctrans('Toggle menu')">
                     <FontAwesomeIcon :icon="faEllipsisVertical" class="text-gray-400" />
                 </button>
 
                 <div v-if="isMenuOpen && !isClosed && !isTrashed"
                     class="absolute right-0 mt-2 w-56 bg-white border rounded-md shadow z-50">
                     <button class="menu-item" @click="onViewUserProfile">
-                        <FontAwesomeIcon :icon="faUser" /> {{ trans("View Profile") }}
+                        <FontAwesomeIcon :icon="faUser" /> {{ ctrans("View Profile") }}
                     </button>
 
                     <button class="menu-item" @click="onViewMessageDetails">
-                        <FontAwesomeIcon :icon="faMessage" /> {{ trans("Message Details") }}
+                        <FontAwesomeIcon :icon="faMessage" /> {{ ctrans("Message Details") }}
                     </button>
 
-                    <button class="menu-item" @click="openTicketModal">
-                        <FontAwesomeIcon :icon="faLifeRing" class="text-blue-600" /> {{ trans("Create Ticket") }}
-                    </button>
+                    <template v-if="!readOnly">
+                        <button class="menu-item" @click="openTicketModal">
+                            <FontAwesomeIcon :icon="faLifeRing" class="text-blue-600" /> {{ ctrans("Create Ticket") }}
+                        </button>
 
-                    <button class="menu-item" @click="openSlackModal">
-                        <FontAwesomeIcon :icon="faSlack" class="text-purple-600" /> {{ trans("Share to Slack") }}
-                    </button>
+                        <button class="menu-item" @click="openSlackModal">
+                            <FontAwesomeIcon :icon="faSlack" class="text-purple-600" /> {{ ctrans("Share to Slack") }}
+                        </button>
 
-                    <button v-if="!(session as any)?.is_spam" class="menu-item text-red-600" @click="markSpam(true)">
-                        <FontAwesomeIcon :icon="faBan" /> {{ trans("Report spam") }}
-                    </button>
-                    <button v-else class="menu-item" @click="markSpam(false)">
-                        <FontAwesomeIcon :icon="faRotateLeft" /> {{ trans("Not spam") }}
-                    </button>
+                        <button v-if="!(session as any)?.is_spam" class="menu-item text-red-600" @click="markSpam(true)">
+                            <FontAwesomeIcon :icon="faBan" /> {{ ctrans("Report spam") }}
+                        </button>
+                        <button v-else class="menu-item" @click="markSpam(false)">
+                            <FontAwesomeIcon :icon="faRotateLeft" /> {{ ctrans("Not spam") }}
+                        </button>
+                    </template>
                 </div>
             </div>
         </header>
@@ -1012,49 +1005,56 @@ const handleClickOutside = (e: MouseEvent) => {
             </template>
         </div>
         <div v-if="remoteTypingUser" class="text-xs text-gray-400 italic px-2 py-1">
-            {{ remoteTypingUser }} {{ trans("is typing...") }}
+            {{ remoteTypingUser }} {{ ctrans("is typing...") }}
         </div>
 
-        <div v-if="previewType === 'image' && previewUrl" class="px-3 pb-2">
-            <div class="relative inline-block">
-                <img :src="previewUrl" class="h-24 rounded-lg border object-cover" />
-                <button @click="removeFile" class="absolute -top-2 -right-2 bg-white rounded-full shadow p-1" :aria-label="trans('Remove image')">
-                    <FontAwesomeIcon :icon="faXmark" />
-                </button>
-            </div>
-        </div>
+        <div v-if="selectedFiles.length" class="px-3 pb-2 flex flex-wrap gap-2">
+            <div v-for="(attachment, index) in selectedFiles" :key="index" class="relative">
+                <template v-if="attachment.isImage && attachment.previewUrl">
+                    <img :src="attachment.previewUrl" class="h-24 rounded-lg border object-cover" />
+                    <button @click="removeAttachment(index)" class="absolute -top-2 -right-2 bg-white rounded-full shadow p-1" :aria-label="ctrans('Remove image')">
+                        <FontAwesomeIcon :icon="faXmark" />
+                    </button>
+                </template>
 
-        <div v-if="previewType === 'file' && selectedFile" class="px-3 pb-2">
-            <div class="flex items-center gap-3 border rounded-lg p-3 bg-gray-50 min-w-0">
-                <div class="text-2xl">
-                    <FontAwesomeIcon :icon="faFilePdf" />
-                </div>
-                <div class="flex-1 min-w-0 overflow-hidden">
-                    <div class="text-sm font-medium truncate">
-                        {{ selectedFile.name }}
+                <div v-else class="flex items-center gap-3 border rounded-lg p-3 bg-gray-50 min-w-0 max-w-[220px]">
+                    <div class="text-2xl">
+                        <FontAwesomeIcon :icon="faFilePdf" />
                     </div>
-                    <div class="text-xs text-gray-400">
-                        {{ (selectedFile.size / 1024).toFixed(1) }} KB
+                    <div class="flex-1 min-w-0 overflow-hidden">
+                        <div class="text-sm font-medium truncate">
+                            {{ attachment.file.name }}
+                        </div>
+                        <div class="text-xs text-gray-400">
+                            {{ (attachment.file.size / 1024).toFixed(1) }} KB
+                        </div>
                     </div>
+                    <button @click="removeAttachment(index)" class="text-gray-400 hover:text-red-500 shrink-0 ml-2" :aria-label="ctrans('Remove file')">
+                        <FontAwesomeIcon :icon="faXmark" />
+                    </button>
                 </div>
-                <button @click="removeFile" class="text-gray-400 hover:text-red-500 shrink-0 ml-2" :aria-label="trans('Remove file')">
-                    <FontAwesomeIcon :icon="faXmark" />
-                </button>
             </div>
         </div>
 
         <!-- Footer: Restore banner for trashed chats -->
-        <footer v-if="isTrashed" class="px-3 py-3 bg-white border-t">
+        <footer v-if="readOnly" class="px-3 py-3 bg-white border-t">
+            <div class="flex items-center justify-center gap-2 text-xs text-gray-500">
+                <FontAwesomeIcon :icon="faEye" class="text-gray-400" fixed-width aria-hidden="true" />
+                {{ ctrans("You are viewing this conversation in read-only mode") }}
+            </div>
+        </footer>
+
+        <footer v-else-if="isTrashed" class="px-3 py-3 bg-white border-t">
             <div class="flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg bg-gray-50 border border-gray-200">
                 <div class="text-xs text-gray-600">
-                    {{ trans('This chat is in trash') }}
+                    {{ ctrans('This chat is in trash') }}
                 </div>
                 <Button
                     @click="restoreChat"
                     :loading="isRestoring"
                     style="primary"
                     size="xs"
-                    :label="trans('Restore')"
+                    :label="ctrans('Restore')"
                     :icon="faRotateRight"
                 />
             </div>
@@ -1064,14 +1064,14 @@ const handleClickOutside = (e: MouseEvent) => {
         <footer v-else-if="isClosed" class="px-3 py-3 bg-white border-t">
             <div class="flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg bg-gray-50 border border-gray-200">
                 <div class="text-xs text-gray-600">
-                    {{ trans('This chat has been closed') }}
+                    {{ ctrans('This chat has been closed') }}
                 </div>
                 <Button
                     @click="reopenChat"
                     :loading="isReopening"
                     style="primary"
                     size="xs"
-                    :label="trans('Reopen')"
+                    :label="ctrans('Reopen')"
                     :icon="faRotateRight"
                 />
             </div>
@@ -1081,14 +1081,14 @@ const handleClickOutside = (e: MouseEvent) => {
         <footer v-else-if="isWaiting" class="px-3 py-3 bg-white border-t">
             <div class="flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg bg-gray-50 border border-gray-200">
                 <div class="text-xs text-gray-600">
-                    {{ trans('Assign this chat to yourself to start the conversation') }}
+                    {{ ctrans('Assign this chat to yourself to start the conversation') }}
                 </div>
                 <Button
                     @click="assignSelf"
                     :loading="isAssigningSelf"
                     style="primary"
                     size="xs"
-                    :label="trans('Assign to me')"
+                    :label="ctrans('Assign to me')"
                     :icon="['far', 'fa-user']"
                 />
             </div>
@@ -1099,14 +1099,14 @@ const handleClickOutside = (e: MouseEvent) => {
             <div class="flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg bg-indigo-50 border border-indigo-200">
                 <div class="text-xs text-indigo-600">
                     <span class="font-semibold">{{ props.session?.assigned_agent?.name }}</span>
-                    {{ trans(' is handling this chat') }}
+                    {{ ctrans(' is handling this chat') }}
                 </div>
                 <Button
                     @click="takeoverChat"
                     :loading="isTakingOver"
                     style="primary"
                     size="xs"
-                    :label="trans('Take Over')"
+                    :label="ctrans('Take Over')"
                     :icon="['far', 'fa-user']"
                 />
             </div>
@@ -1114,9 +1114,9 @@ const handleClickOutside = (e: MouseEvent) => {
 
         <!-- Footer: Normal message input -->
         <footer v-else class="px-3 py-2 bg-white">
-            <input ref="imageInput" type="file" accept=".webp,.jpg,.jpeg,.png,.avif" class="hidden"
+            <input ref="imageInput" type="file" accept=".webp,.jpg,.jpeg,.png,.avif" multiple class="hidden"
                 @change="handleImageSelect" />
-            <input ref="fileInput" type="file" accept=".pdf,.xls,.xlsx" class="hidden" @change="handleDocSelect" />
+            <input ref="fileInput" type="file" accept=".pdf,.xls,.xlsx" multiple class="hidden" @change="handleDocSelect" />
 
             <div class="rounded-xl border border-gray-200 bg-white shadow-sm focus-within:border-gray-400 focus-within:shadow-md transition-shadow">
                 <textarea ref="messageInput" v-model="newMessage" @input="
@@ -1135,18 +1135,18 @@ const handleClickOutside = (e: MouseEvent) => {
                 <div class="flex items-center justify-between px-2 pb-2 pt-1">
                     <div class="flex items-center gap-1">
                         <button @click="imageInput?.click()"
-                            class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-500 transition-colors" title="Upload image" :aria-label="trans('Upload image')">
+                            class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-500 transition-colors" title="Upload image" :aria-label="ctrans('Upload image')">
                             <FontAwesomeIcon :icon="faImage" class="text-sm" />
                         </button>
                         <button @click="fileInput?.click()"
-                            class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-500 transition-colors" title="Upload file" :aria-label="trans('Upload file')">
+                            class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-500 transition-colors" title="Upload file" :aria-label="ctrans('Upload file')">
                             <FontAwesomeIcon :icon="faPaperclip" class="text-sm" />
                         </button>
                         <div ref="emojiPickerContainer" class="relative">
                             <button type="button" @click.stop="showEmojiPicker = !showEmojiPicker"
                                 class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 transition-colors"
                                 :class="showEmojiPicker ? 'text-indigo-600 bg-gray-100' : 'text-gray-500'"
-                                :title="trans('Emoji')" :aria-label="trans('Emoji')">
+                                :title="ctrans('Emoji')" :aria-label="ctrans('Emoji')">
                                 <FontAwesomeIcon :icon="faFaceSmile" class="text-sm" />
                             </button>
 
@@ -1170,11 +1170,11 @@ const handleClickOutside = (e: MouseEvent) => {
                             </template>
                         </Button>
                         <button @click="openTicketModal"
-                            class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-blue-50 text-gray-500 hover:text-blue-600 transition-colors" :title="trans('Create ticket')" :aria-label="trans('Create ticket')">
+                            class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-blue-50 text-gray-500 hover:text-blue-600 transition-colors" :title="ctrans('Create ticket')" :aria-label="ctrans('Create ticket')">
                             <FontAwesomeIcon :icon="faLifeRing" class="text-sm" />
                         </button>
                     </div>
-                    <Button @click="sendMessage" :icon="faPaperPlane" :tooltip="trans('Send message')"></Button>
+                    <Button @click="sendMessage" :icon="faPaperPlane" :tooltip="ctrans('Send message')"></Button>
                 </div>
             </div>
         </footer>
