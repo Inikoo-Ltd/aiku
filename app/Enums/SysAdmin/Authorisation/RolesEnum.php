@@ -318,7 +318,6 @@ enum RolesEnum: string
             ],
             RolesEnum::SHOP_ADMIN => [
                 ShopPermissionsEnum::SHOP_ADMIN,
-                ShopPermissionsEnum::CHAT_MANAGER,
                 ShopPermissionsEnum::PRODUCTS,
                 ShopPermissionsEnum::WEB,
                 ShopPermissionsEnum::CRM,

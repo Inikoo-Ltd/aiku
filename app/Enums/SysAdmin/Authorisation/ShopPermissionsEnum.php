@@ -33,7 +33,9 @@ enum ShopPermissionsEnum: string
     /*
      * Supervising chat is not the same as working it: a manager takes over, writes and
      * closes any conversation on the shop, but is never in the routing pool and never
-     * counts as an agent.
+     * counts as an agent. It comes from the customer service supervisor position alone,
+     * never from administering the shop: configuring a shop is not a reason to be able to
+     * write to a customer in the middle of their conversation.
      */
     case CHAT_MANAGER = 'chat-m';
 
