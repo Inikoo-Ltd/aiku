@@ -3858,7 +3858,7 @@ test('losing customer service releases the chats and suspends the agent', functi
         ->and(ChatAgent::withTrashed()->find($agent->id)->trashed())->toBeTrue();
 });
 
-test('administering a shop does not let you into its chats', function () {
+test('a shop administrator manages its chats without being an agent', function () {
     $session = ChatSession::create([
         'ulid'             => (string) \Illuminate\Support\Str::ulid(),
         'shop_id'          => $this->shop->id,
@@ -3874,14 +3874,13 @@ test('administering a shop does not let you into its chats', function () {
     $admin = User::factory()->create(['group_id' => $this->organisation->group_id, 'status' => true]);
     $admin->assignRole(RolesEnum::getRoleName(RolesEnum::SHOP_ADMIN->value, $this->shop));
 
-    // Administering a shop is not a reason to be able to write to its customers.
-    expect($admin->authTo(['crm.'.$this->shop->id]))->toBeTrue()
-        ->and($admin->authTo(['chat.'.$this->shop->id]))->toBeFalse()
-        ->and($admin->authTo(['chat-m.'.$this->shop->id]))->toBeFalse();
+    // A shop administrator manages its chats without ever being one of its agents.
+    expect($admin->authTo(['chat-m.'.$this->shop->id]))->toBeTrue()
+        ->and($admin->authTo(['chat.'.$this->shop->id]))->toBeFalse();
 
     $this->actingAs($admin);
-    expect(CloseChatSession::make()->getCurrentAgent($session))->toBeNull()
-        ->and(ChatAgent::where('user_id', $admin->id)->exists())->toBeFalse();
+    expect(CloseChatSession::make()->getCurrentAgent($session))->not->toBeNull()
+        ->and(ChatAgent::findAvailableAgent(shopId: $this->shop->id)?->user_id)->not->toBe($admin->id);
 
     $clerk = User::factory()->create(['group_id' => $this->organisation->group_id, 'status' => true]);
     $clerk->assignRole(RolesEnum::getRoleName(RolesEnum::CUSTOMER_SERVICE_CLERK->value, $this->shop));
@@ -3920,4 +3919,97 @@ test('a customer service supervisor supervises chat without being an agent', fun
     app(\Spatie\Permission\PermissionRegistrar::class)->forgetCachedPermissions();
 
     expect($supervisor->fresh()->authTo(['chat.'.$this->shop->id]))->toBeTrue();
+});
+
+test('an organisation administrator manages chat on every shop, including one opened later', function () {
+    setPermissionsTeamId($this->user->group_id);
+
+    $orgAdmin = User::factory()->create(['group_id' => $this->organisation->group_id, 'status' => true]);
+    $orgAdmin->assignRole(RolesEnum::getRoleName(RolesEnum::ORG_ADMIN->value, $this->organisation));
+
+    $session = ChatSession::create([
+        'ulid'             => (string) \Illuminate\Support\Str::ulid(),
+        'shop_id'          => $this->shop->id,
+        'language_id'      => 68,
+        'status'           => ChatSessionStatusEnum::ACTIVE->value,
+        'priority'         => ChatPriorityEnum::NORMAL->value,
+        'guest_identifier' => 'guest-'.\Illuminate\Support\Str::random(8),
+    ]);
+
+    $this->actingAs($orgAdmin);
+
+    // Manages without holding a single per shop permission, and without being an agent.
+    expect($orgAdmin->authTo(['chat.'.$this->shop->id]))->toBeFalse()
+        ->and($orgAdmin->authTo(['chat-m.'.$this->shop->id]))->toBeFalse()
+        ->and(CloseChatSession::make()->getCurrentAgent($session))->not->toBeNull();
+
+    // A shop opened after the fact is covered too: the grant sits on the organisation.
+    $newShop = createShop($this->organisation)[2] ?? null;
+    if ($newShop) {
+        $laterSession = ChatSession::create([
+            'ulid'             => (string) \Illuminate\Support\Str::ulid(),
+            'shop_id'          => $newShop->id,
+            'language_id'      => 68,
+            'status'           => ChatSessionStatusEnum::ACTIVE->value,
+            'priority'         => ChatPriorityEnum::NORMAL->value,
+            'guest_identifier' => 'guest-'.\Illuminate\Support\Str::random(8),
+        ]);
+
+        expect(CloseChatSession::make()->getCurrentAgent($laterSession))->not->toBeNull();
+    }
+});
+
+test('a fulfilment shop staffs chat from its own positions', function () {
+    $fulfilment     = createFulfilment($this->organisation);
+    $fulfilmentShop = $fulfilment->shop;
+    setPermissionsTeamId($this->user->group_id);
+
+    $session = ChatSession::create([
+        'ulid'             => (string) \Illuminate\Support\Str::ulid(),
+        'shop_id'          => $fulfilmentShop->id,
+        'language_id'      => 68,
+        'status'           => ChatSessionStatusEnum::ACTIVE->value,
+        'priority'         => ChatPriorityEnum::NORMAL->value,
+        'guest_identifier' => 'guest-'.\Illuminate\Support\Str::random(8),
+    ]);
+
+    // Office clerk answers the chats: an agent, routed like any other.
+    $clerk = User::factory()->create(['group_id' => $this->organisation->group_id, 'status' => true]);
+    $clerk->assignRole(RolesEnum::getRoleName(RolesEnum::FULFILMENT_SHOP_CLERK->value, $fulfilment));
+    $this->actingAs($clerk);
+    expect($clerk->authTo(['fulfilment-chat.'.$fulfilment->id]))->toBeTrue()
+        ->and(CloseChatSession::make()->getCurrentAgent($session))->not->toBeNull();
+
+    // Supervisor manages without being routed.
+    $supervisor = User::factory()->create(['group_id' => $this->organisation->group_id, 'status' => true]);
+    $supervisor->assignRole(RolesEnum::getRoleName(RolesEnum::FULFILMENT_SHOP_SUPERVISOR->value, $fulfilment));
+    $this->actingAs($supervisor);
+    expect($supervisor->authTo(['fulfilment-chat-m.'.$fulfilment->id]))->toBeTrue()
+        ->and($supervisor->authTo(['fulfilment-chat.'.$fulfilment->id]))->toBeFalse()
+        ->and(CloseChatSession::make()->getCurrentAgent($session))->not->toBeNull();
+
+    // Warehouse staff stay out of it.
+    $warehouse = User::factory()->create(['group_id' => $this->organisation->group_id, 'status' => true]);
+    $warehouse->assignRole(RolesEnum::getRoleName(RolesEnum::FULFILMENT_WAREHOUSE_WORKER->value, $fulfilment));
+    $this->actingAs($warehouse);
+    expect(CloseChatSession::make()->getCurrentAgent($session))->toBeNull();
+});
+
+test('an external shop has no chat permissions at all', function () {
+    $external = \App\Models\Catalogue\Shop::factory()->make()->toArray();
+    $external['type'] = \App\Enums\Catalogue\Shop\ShopTypeEnum::EXTERNAL->value;
+    $externalShop     = \App\Actions\Catalogue\Shop\StoreShop::run($this->organisation, $external);
+
+    $values = \App\Enums\SysAdmin\Authorisation\ShopPermissionsEnum::getAllValues($externalShop);
+
+    expect(collect($values)->filter(fn ($name) => str_starts_with($name, 'chat')))->toBeEmpty()
+        ->and(collect(\App\Enums\SysAdmin\Authorisation\ShopPermissionsEnum::getAllValues($this->shop))
+            ->filter(fn ($name) => str_starts_with($name, 'chat')))->not->toBeEmpty();
+
+    // Holding the customer service position on it therefore grants nothing.
+    setPermissionsTeamId($this->user->group_id);
+    $worker = User::factory()->create(['group_id' => $this->organisation->group_id, 'status' => true]);
+    $worker->assignRole(RolesEnum::getRoleName(RolesEnum::CUSTOMER_SERVICE_CLERK->value, $externalShop));
+
+    expect($worker->authTo(['chat.'.$externalShop->id]))->toBeFalse();
 });

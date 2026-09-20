@@ -14,6 +14,8 @@ use App\Enums\CRM\Livechat\ChatAssignmentStatusEnum;
 use App\Enums\CRM\Livechat\ChatEventTypeEnum;
 use App\Enums\CRM\Livechat\ChatSessionStatusEnum;
 use App\Events\BroadcastChatListEvent;
+use App\Models\Catalogue\Shop;
+use App\Models\Fulfilment\Fulfilment;
 use App\Models\Chat\ChatAgent;
 use App\Models\Chat\ChatAssignment;
 use App\Models\SysAdmin\User;
@@ -24,7 +26,7 @@ class RevokeChatAgentAccess
 {
     use AsAction;
 
-    public string $commandSignature = 'chat:revoke_lapsed_agents {--dry-run}';
+    public string $commandSignature = 'chat:revoke_lapsed_agents {--dry-run} {--force}';
 
     public string $commandDescription = 'Release the chats of agents who may no longer work the shop they are on';
 
@@ -44,15 +46,49 @@ class RevokeChatAgentAccess
             return ['released' => 0, 'shops_removed' => 0, 'suspended' => false];
         }
 
+        // Roles are read through spatie's team scope, and nothing binds it outside a
+        // request: without this every permission reads as absent and every agent looks
+        // revoked. authTo() binds it on its own, getAllPermissions() does not.
+        if ($user->group_id) {
+            setPermissionsTeamId($user->group_id);
+        }
+
         // Read the grants straight from spatie. authTo() caches a positive answer for an
         // hour, and a revocation that believes a stale yes is the one case that must not
         // happen: the whole point here is that the permission has just gone away.
-        $chatShopIds = $user->getAllPermissions()
+        $granted = $user->getAllPermissions();
+
+        $chatShopIds = $granted
             ->map(fn ($permission) => preg_match('/^chat(?:-m)?\.(\d+)$/', $permission->name, $m) ? (int) $m[1] : null)
             ->filter()
-            ->unique()
-            ->values()
-            ->all();
+            ->values();
+
+        // Administering an organisation carries chat across all of its shops, so nothing
+        // an organisation administrator holds is ever lapsed.
+        $adminOrgIds = $granted
+            ->map(fn ($permission) => preg_match('/^org-admin\.(\d+)$/', $permission->name, $m) ? (int) $m[1] : null)
+            ->filter()
+            ->values();
+
+        // Fulfilment shops staff chat from their own permissions, numbered by fulfilment.
+        $fulfilmentIds = $granted
+            ->map(fn ($permission) => preg_match('/^fulfilment-chat(?:-m)?\.(\d+)$/', $permission->name, $m) ? (int) $m[1] : null)
+            ->filter()
+            ->values();
+
+        if ($fulfilmentIds->isNotEmpty()) {
+            $chatShopIds = $chatShopIds->merge(
+                Shop::whereIn('id', Fulfilment::whereIn('id', $fulfilmentIds)->pluck('shop_id'))->pluck('id')
+            );
+        }
+
+        if ($adminOrgIds->isNotEmpty()) {
+            $chatShopIds = $chatShopIds->merge(
+                Shop::whereIn('organisation_id', $adminOrgIds)->pluck('id')
+            );
+        }
+
+        $chatShopIds = $chatShopIds->unique()->values()->all();
 
         $released     = 0;
         $shopsRemoved = 0;
@@ -153,10 +189,29 @@ class RevokeChatAgentAccess
     public function asCommand(\Illuminate\Console\Command $command): int
     {
         $dryRun = (bool) $command->option('dry-run');
-        $rows   = [];
+
+        // Always work out what would happen first, so the total wipe check below can run
+        // before anything is written.
+        $planned = ChatAgent::with('user')->get()->mapWithKeys(
+            fn (ChatAgent $agent) => [$agent->id => $this->handle($agent, true)]
+        );
+
+        $total     = $planned->count();
+        $suspended = $planned->filter(fn ($result) => $result['suspended'])->count();
+
+        // Suspending every last agent means the permissions are not readable, not that
+        // the whole company stopped doing customer service. Refuse rather than empty the
+        // inboxes on a bad read.
+        if ($suspended === $total && $total > 0 && !$command->option('force')) {
+            $command->error("Refusing: every one of the {$total} agents came back revoked, which means the chat permissions are not being read. Check shop:seed-permissions has run, then pass --force if this really is intended.");
+
+            return 1;
+        }
+
+        $rows = [];
 
         foreach (ChatAgent::with('user')->get() as $agent) {
-            $result = $this->handle($agent, $dryRun);
+            $result = $dryRun ? $planned->get($agent->id) : $this->handle($agent);
 
             if ($result['released'] || $result['shops_removed'] || $result['suspended']) {
                 $rows[] = [

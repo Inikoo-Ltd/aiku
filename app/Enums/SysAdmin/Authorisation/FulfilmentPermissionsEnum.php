@@ -17,6 +17,14 @@ enum FulfilmentPermissionsEnum: string
     case FULFILMENT_SHOP_EDIT       = 'fulfilment-shop.edit';
     case SUPERVISOR_FULFILMENT_SHOP = 'supervisor-fulfilment-shop';
 
+    /*
+     * Chat on a fulfilment shop is named apart from the shop permission of the same job:
+     * both are numbered by their own model, so a bare chat.7 would mean fulfilment 7 here
+     * and shop 7 there, and the two would be impossible to tell apart.
+     */
+    case FULFILMENT_CHAT         = 'fulfilment-chat';
+    case FULFILMENT_CHAT_MANAGER = 'fulfilment-chat-m';
+
     public static function getAllValues(Fulfilment $fulfilment): array
     {
         $rawPermissionsNames = array_column(FulfilmentPermissionsEnum::cases(), 'value');

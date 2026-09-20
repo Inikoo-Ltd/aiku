@@ -51,7 +51,12 @@ trait WithChatAgentAuthorisation
         }
 
         return $this->userCanWorkChatOnShop($user, $shop)
-            || $user->authTo(["chat-m.{$shop->id}"]);
+            || $user->authTo(["chat-m.{$shop->id}"])
+            || $this->holdsFulfilmentPermission($user, $shop, 'fulfilment-chat-m')
+            // Administering an organisation carries chat across every one of its shops,
+            // including any opened later: the permission is held on the organisation, so
+            // there is nothing to grant per shop.
+            || $user->authTo(["org-admin.{$shop->organisation_id}"]);
     }
 
     /**
@@ -64,6 +69,10 @@ trait WithChatAgentAuthorisation
         }
 
         if ($user->authTo(["chat.{$shop->id}"])) {
+            return true;
+        }
+
+        if ($this->holdsFulfilmentPermission($user, $shop, 'fulfilment-chat')) {
             return true;
         }
 
@@ -95,8 +104,16 @@ trait WithChatAgentAuthorisation
             return false;
         }
 
+        if ($user->authTo(["org-admin.{$organisation->id}"])) {
+            return true;
+        }
+
         $permissions = $organisation->shops()->pluck('shops.id')
             ->flatMap(fn ($shopId) => ["chat.{$shopId}", "chat-m.{$shopId}"])
+            ->merge(
+                $organisation->fulfilments()->pluck('fulfilments.id')
+                    ->flatMap(fn ($id) => ["fulfilment-chat.{$id}", "fulfilment-chat-m.{$id}"])
+            )
             ->all();
 
         if ($permissions && $user->authTo($permissions)) {
@@ -107,6 +124,17 @@ trait WithChatAgentAuthorisation
             ->whereNull('deleted_at')
             ->where('organisation_id', $organisation->id)
             ->exists();
+    }
+
+    /**
+     * A fulfilment shop staffs its chat from the fulfilment positions, whose permissions
+     * are numbered by the fulfilment rather than the shop.
+     */
+    private function holdsFulfilmentPermission(User $user, Shop $shop, string $permission): bool
+    {
+        $fulfilmentId = $shop->fulfilment?->id;
+
+        return $fulfilmentId && $user->authTo(["{$permission}.{$fulfilmentId}"]);
     }
 
     protected function chatAgentProfileFor(User $user): ChatAgent
