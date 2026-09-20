@@ -25,6 +25,8 @@ class GetJobOrderDestinationAllocation
      * complete quantity instead of dribbling partials into every bay; only the leftover is short.
      * Anything made beyond what the lines asked for goes to normal stock.
      *
+     * A line carries the buyer's org stock and the artefact the maker's, so they only meet on the stock.
+     *
      * Lines are denominated in SKOs, artisans work in artefact units, org_stocks.packed_in is the
      * only bridge; every quantity returned here is in artefact units.
      *
@@ -37,7 +39,7 @@ class GetJobOrderDestinationAllocation
 
         $lines = PartnerShoppingListItem::where('job_order_id', $jobOrder->id)
             ->get()
-            ->groupBy('org_stock_id');
+            ->groupBy('stock_id');
 
         $bays = OrgPartner::where('organisation_id', $jobOrder->organisation_id)
             ->whereNotNull('goods_out_location_id')
@@ -54,7 +56,7 @@ class GetJobOrderDestinationAllocation
                 continue;
             }
 
-            $itemLines = $lines->get($item->artefact->org_stock_id, collect());
+            $itemLines = $lines->get($item->artefact->orgStock?->stock_id, collect());
             foreach ($itemLines as $line) {
                 $remainingUnitsByLine[$line->id] ??= (float) ($line->quantity_to_produce ?? $line->quantity) * $packedIn;
             }

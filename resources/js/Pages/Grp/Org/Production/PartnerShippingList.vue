@@ -743,7 +743,7 @@ function jobOrderHref(item: { job_order_slug: string }) {
                             {{ trans("hitchhiking") }}
                         </span>
                         <span class="ml-auto flex items-center gap-1 tabular-nums" :class="item.priority === 'urgent' ? 'text-red-600 font-semibold' : ''">
-                            ×{{ useLocaleStore().number(Number(item.quantity)) }}
+                            ×{{ useLocaleStore().number(Number(item.quantity)) }} {{ trans("SKO") }}
                             <template v-if="laneIndex === LANE_PREPARING && item.state === 'open'">
                                 <span class="text-indigo-600">→</span>
                                 <input
@@ -757,7 +757,8 @@ function jobOrderHref(item: { job_order_slug: string }) {
                                     @mousedown.stop
                                     @change="updatePreparingQuantity(item, $event)" />
                             </template>
-                            <span v-else-if="(item.job_order_quantity ?? item.quantity_to_produce) && Number(item.job_order_quantity ?? item.quantity_to_produce) !== Number(item.quantity)" class="text-indigo-600" :title="trans('Making :count', { count: item.job_order_quantity ?? item.quantity_to_produce })">→ {{ useLocaleStore().number(Number(item.job_order_quantity ?? item.quantity_to_produce)) }}</span>
+                            <span v-else-if="item.job_order_quantity" class="text-indigo-600" :title="trans('Making :count units', { count: item.job_order_quantity })">→ {{ useLocaleStore().number(Number(item.job_order_quantity) / (Number(item.packed_in) || 1)) }} {{ trans("SKO") }} ({{ useLocaleStore().number(Number(item.job_order_quantity)) }} {{ trans("units") }})</span>
+                            <span v-else-if="item.quantity_to_produce && Number(item.quantity_to_produce) !== Number(item.quantity)" class="text-indigo-600" :title="trans('Making :count SKO', { count: item.quantity_to_produce })">→ {{ useLocaleStore().number(Number(item.quantity_to_produce)) }} {{ trans("SKO") }}</span>
                         </span>
                     </div>
                     <div class="truncate text-gray-600" :title="item.stock_name">{{ item.stock_name }}</div>

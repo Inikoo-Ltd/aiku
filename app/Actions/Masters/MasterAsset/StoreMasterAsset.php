@@ -30,6 +30,7 @@ use App\Rules\IUnique;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 
 class StoreMasterAsset extends OrgAction
 {
@@ -221,6 +222,13 @@ class StoreMasterAsset extends OrgAction
     /**
      * @throws \Throwable
      */
+    public function afterValidator(Validator $validator): void
+    {
+        if ($this->strict) {
+            $this->validateTradeUnitQuantities($validator, Arr::get($validator->getData(), 'trade_units') ?? []);
+        }
+    }
+
     public function action(MasterProductCategory $masterFamily, array $modelData, int $hydratorsDelay = 0, $strict = true, $audit = true): MasterAsset
     {
         if (!$audit) {

@@ -62,11 +62,21 @@ class ProcessInboundEmail
 
         $webUser = $this->matchWebUser($shop, $from['address']);
 
+        if (! $webUser && $this->isAutomatedMail($from['address'], $subject)) {
+            $client->addLabel($gmailMessageId, 'aiku/filtered');
+
+            return null;
+        }
+
+        $attachments        = $webUser ? ImportPendingGmailAttachments::make()->download($client, $gmailMessageId, $raw) : [];
+        $pendingAttachments = $webUser ? 0 : count(GmailMessageParser::attachments(Arr::get($raw, 'payload', [])));
+
         $session = $this->findOrCreateSession($shop, $webUser, $threadId, $subject, $from);
 
         $message = SendChatMessage::run($session, [
             'message_text' => $body,
             'message_type' => ChatMessageTypeEnum::TEXT->value,
+            'attachments'  => $attachments,
             'sender_type'  => $webUser ? ChatSenderTypeEnum::USER->value : ChatSenderTypeEnum::GUEST->value,
             'sender_id'    => $webUser?->id,
         ]);
@@ -76,7 +86,7 @@ class ProcessInboundEmail
                 'gmail_message_id'        => $gmailMessageId,
                 'gmail_header_message_id' => $headerMessageId,
                 'email_subject'           => $subject,
-            ]),
+            ], $pendingAttachments ? ['gmail_pending_attachments' => $pendingAttachments] : []),
         ]);
 
         $session->update([
@@ -87,10 +97,31 @@ class ProcessInboundEmail
             ]),
         ]);
 
+        foreach ($attachments as $attachment) {
+            @unlink($attachment->getPathname());
+        }
+
         $label = $webUser ? 'aiku/imported' : 'aiku/unmatched';
         $client->addLabel($gmailMessageId, $label);
 
         return $message;
+    }
+
+    /**
+     * Guest mail is mostly machine traffic (measured on production in September 2026: DMARC reports,
+     * bounces and alerts were 59% of it), so these never become chat sessions. Only applied to
+     * senders that match no customer.
+     */
+    private function isAutomatedMail(?string $address, ?string $subject): bool
+    {
+        $localPart = strtolower((string) strstr((string) $address, '@', true));
+        $subject   = strtolower(trim((string) $subject));
+
+        return $localPart === 'mailer-daemon'
+            || str_contains($localPart, 'noreply')
+            || str_contains($localPart, 'no-reply')
+            || str_starts_with($subject, 'report domain:')
+            || str_starts_with($subject, 'delivery status notification');
     }
 
     private function matchWebUser(Shop $shop, ?string $email): ?WebUser

@@ -147,7 +147,7 @@ class EditProductComposition extends OrgAction
             $packedQuantity = max(1, (int)($packedIn[$tradeUnit->id] ?? 0));
 
             return array_merge(
-                ['quantity' => (int)$tradeUnit->pivot->quantity],
+                ['quantity' => round((float) $tradeUnit->pivot->quantity, 3)],
                 ['fraction' => $tradeUnit->pivot->quantity / $packedQuantity],
                 ['packed_in' => $packedQuantity],
                 ['pick_fractional' => riseDivisor(divideWithRemainder(findSmallestFactors($tradeUnit->pivot->quantity / $packedQuantity)), $packedQuantity)],

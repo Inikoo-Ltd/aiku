@@ -65,7 +65,7 @@ const optionIconClasses: Record<string, string> = {
     documentation: "text-sky-600",
     data_integrity: "text-amber-600",
     support: "text-teal-600",
-    feature: "text-indigo-500",
+    feature: "text-[--app-accent-strong]",
 }
 
 const submit = () =>

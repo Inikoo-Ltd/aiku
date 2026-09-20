@@ -4487,3 +4487,44 @@ test('order transactions only show the batch code column once a picking carries 
 
     expect($columnKeys())->toContain('batch_codes');
 });
+
+test('finishing a return only marks the still unhandled quantity as not returned (HELP-3194)', function () {
+    [$deliveryNote, $deliveryNoteItem] = handlingDeliveryNoteWithPicking($this);
+    $deliveryNote->update(['state' => DeliveryNoteStateEnum::DISPATCHED]);
+    $deliveryNoteItem->update(['quantity_dispatched' => 2]);
+
+    $returnDeliveryNote = \App\Actions\GoodsIn\ReturnDeliveryNote\ProcessReturnDeliveryNote::make()->handle($deliveryNote, []);
+    $returnItem         = $returnDeliveryNote->returnDeliveryNoteItem()->first();
+    $returnItem->update(['total_expected_qty' => 2]);
+
+    \App\Actions\GoodsIn\ReturnDeliveryNoteItem\UpsertReturnDeliveryNoteItemNotReturned::make()->action($returnItem, ['quantity' => 1]);
+    $returnDeliveryNote->update(['state' => \App\Enums\GoodsIn\ReturnDeliveryNote\ReturnDeliveryNoteStateEnum::RETURNING]);
+
+    request()->setUserResolver(fn () => $this->user);
+    \App\Actions\GoodsIn\ReturnDeliveryNote\SetReturnedReturnDeliveryNote::make()->handle($returnDeliveryNote->refresh());
+
+    expect((float) $returnItem->refresh()->total_item_not_returned)->toBe(2.0);
+});
+
+test('a second return only covers what was not returned yet and waits for the first to finish (HELP-3194)', function () {
+    [$deliveryNote, $deliveryNoteItem] = handlingDeliveryNoteWithPicking($this);
+    $deliveryNote->update(['state' => DeliveryNoteStateEnum::DISPATCHED]);
+    $deliveryNoteItem->update(['quantity_dispatched' => 3, 'quantity_returned' => 0]);
+    $processReturn = fn () => \App\Actions\GoodsIn\ReturnDeliveryNote\ProcessReturnDeliveryNote::make()->handle($deliveryNote->refresh(), []);
+
+    $firstReturn = $processReturn();
+    expect($firstReturn->reference)->toBe($deliveryNote->reference.'-ret')
+        ->and($processReturn)->toThrow(\Illuminate\Validation\ValidationException::class);
+
+    $firstReturn->update(['state' => \App\Enums\GoodsIn\ReturnDeliveryNote\ReturnDeliveryNoteStateEnum::RETURNED]);
+    $deliveryNoteItem->update(['quantity_returned' => 2]);
+
+    $secondReturn = $processReturn();
+    expect($secondReturn->reference)->toBe($deliveryNote->reference.'-ret2')
+        ->and((float) $secondReturn->returnDeliveryNoteItem()->first()->total_expected_qty)->toBe(1.0);
+
+    $secondReturn->update(['state' => \App\Enums\GoodsIn\ReturnDeliveryNote\ReturnDeliveryNoteStateEnum::RETURNED]);
+    $deliveryNoteItem->update(['quantity_returned' => 3]);
+
+    expect($processReturn)->toThrow(\Illuminate\Validation\ValidationException::class);
+});

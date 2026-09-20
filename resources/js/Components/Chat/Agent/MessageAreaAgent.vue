@@ -292,10 +292,6 @@ const FILE_TYPES = [
     "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
 ]
 
-const getMessageTypeFromFile = (file: File): "image" | "file" => {
-    return IMAGE_TYPES.includes(file.type) ? "image" : "file"
-}
-
 const MAX_SIZE = 10 * 1024 * 1024
 
 const isMenuOpen = ref(false)
@@ -317,69 +313,60 @@ const typingUser = ref<string | null>(null)
 
 const { languages, fetchLanguages, getLanguageIdByCode } = useChatLanguages(baseUrl)
 
-const selectedFile = ref<File | null>(null)
-const previewUrl = ref<string | null>(null)
-const previewType = ref<"image" | "file" | null>(null)
+const MAX_ATTACHMENTS = 10
 
+interface SelectedAttachment {
+    file: File
+    previewUrl: string | null
+    isImage: boolean
+}
+
+const selectedFiles = ref<SelectedAttachment[]>([])
 const isEmailNotif = ref(false)
 
-const handleImageSelect = (e: Event) => {
-    const file = (e.target as HTMLInputElement)?.files?.[0]
-    if (file) selectImage(file)
-}
+const addAttachment = (file: File, isImage: boolean) => {
+    if (selectedFiles.value.length >= MAX_ATTACHMENTS) {
+        notify({ title: "Failed", text: "Maximum 10 attachments", type: "error" })
+        return
+    }
 
-const selectImage = (file: File) => {
-    if (!IMAGE_TYPES.includes(file.type)) {
-        notify({
-            title: "Failed",
-            text: "Image format not supported",
-            type: "error",
-        })
+    if (isImage && !IMAGE_TYPES.includes(file.type)) {
+        notify({ title: "Failed", text: "Image format not supported", type: "error" })
+        return
+    }
+
+    if (!isImage && !FILE_TYPES.includes(file.type)) {
+        notify({ title: "Failed", text: "File format not supported", type: "error" })
         return
     }
 
     if (file.size > MAX_SIZE) {
-        notify({
-            title: "Failed",
-            text: "Maximum image size 10MB",
-            type: "error",
-        })
+        notify({ title: "Failed", text: "Maximum file size 10MB", type: "error" })
         return
     }
 
-    selectedFile.value = file
-    previewType.value = "image"
-    previewUrl.value = URL.createObjectURL(file)
+    selectedFiles.value.push({
+        file,
+        isImage,
+        previewUrl: isImage ? URL.createObjectURL(file) : null,
+    })
 }
+
+const handleImageSelect = (e: Event) => {
+    const files = (e.target as HTMLInputElement)?.files
+    Array.from(files ?? []).forEach((file) => addAttachment(file, true))
+    if (imageInput.value) imageInput.value.value = ""
+}
+
+const selectImage = (file: File) => addAttachment(file, true)
 
 const handleDocSelect = (e: Event) => {
-    const file = (e.target as HTMLInputElement)?.files?.[0]
-    if (file) selectDoc(file)
+    const files = (e.target as HTMLInputElement)?.files
+    Array.from(files ?? []).forEach((file) => addAttachment(file, false))
+    if (fileInput.value) fileInput.value.value = ""
 }
 
-const selectDoc = (file: File) => {
-    if (!FILE_TYPES.includes(file.type)) {
-        notify({
-            title: "Failed",
-            text: "File format not supported",
-            type: "error",
-        })
-        return
-    }
-
-    if (file.size > MAX_SIZE) {
-        notify({
-            title: "Failed",
-            text: "Maximum file size 10MB",
-            type: "error",
-        })
-        return
-    }
-
-    selectedFile.value = file
-    previewType.value = "file"
-    previewUrl.value = null
-}
+const selectDoc = (file: File) => addAttachment(file, false)
 
 const onPasteAttachment = (event: ClipboardEvent) => {
     const clipboard = event.clipboardData
@@ -397,14 +384,17 @@ const onPasteAttachment = (event: ClipboardEvent) => {
     }
 }
 
-const removeFile = () => {
-    if (previewUrl.value) {
-        URL.revokeObjectURL(previewUrl.value)
-    }
+const removeAttachment = (index: number) => {
+    const removed = selectedFiles.value[index]
+    if (removed?.previewUrl) URL.revokeObjectURL(removed.previewUrl)
+    selectedFiles.value.splice(index, 1)
+}
 
-    selectedFile.value = null
-    previewUrl.value = null
-    previewType.value = null
+const removeFile = () => {
+    selectedFiles.value.forEach((attachment) => {
+        if (attachment.previewUrl) URL.revokeObjectURL(attachment.previewUrl)
+    })
+    selectedFiles.value = []
     isEmailNotif.value = false
 
     if (imageInput.value) imageInput.value.value = ""
@@ -426,25 +416,24 @@ const autoResize = () => {
 
 const sendMessage = async () => {
     const hasText = !!newMessage.value.trim()
-    const hasFile = !!selectedFile.value
+    const hasFiles = selectedFiles.value.length > 0
 
-    if (!hasText && !hasFile) return
+    if (!hasText && !hasFiles) return
 
     sendTypingStatus(false)
     isTyping.value = false
 
     const tempId = `tmp-${Date.now()}`
 
-    const messageType = hasFile
-        ? getMessageTypeFromFile(selectedFile.value!)
-        : "text"
+    const allImages = hasFiles && selectedFiles.value.every((a) => a.isImage)
+    const messageType = hasFiles ? (allImages ? "image" : "file") : "text"
 
     const optimisticMessage: LocalChatMessage = {
         id: tempId as any,
         _tempId: tempId,
         message_text: newMessage.value ?? "",
         media_url:
-            messageType === "image" ? previewUrl.value : null,
+            messageType === "image" ? selectedFiles.value[0]?.previewUrl : null,
         sender_type: "agent",
         message_type: messageType,
         created_at: new Date().toISOString(),
@@ -461,7 +450,7 @@ const sendMessage = async () => {
     try {
         emit("send-message", {
             text: text,
-            image: selectedFile.value,
+            files: selectedFiles.value.map((a) => a.file),
             message_type: messageType,
             tempId,
             is_email_notif: isEmailNotif.value,
@@ -1019,31 +1008,31 @@ const handleClickOutside = (e: MouseEvent) => {
             {{ remoteTypingUser }} {{ ctrans("is typing...") }}
         </div>
 
-        <div v-if="previewType === 'image' && previewUrl" class="px-3 pb-2">
-            <div class="relative inline-block">
-                <img :src="previewUrl" class="h-24 rounded-lg border object-cover" />
-                <button @click="removeFile" class="absolute -top-2 -right-2 bg-white rounded-full shadow p-1" :aria-label="ctrans('Remove image')">
-                    <FontAwesomeIcon :icon="faXmark" />
-                </button>
-            </div>
-        </div>
+        <div v-if="selectedFiles.length" class="px-3 pb-2 flex flex-wrap gap-2">
+            <div v-for="(attachment, index) in selectedFiles" :key="index" class="relative">
+                <template v-if="attachment.isImage && attachment.previewUrl">
+                    <img :src="attachment.previewUrl" class="h-24 rounded-lg border object-cover" />
+                    <button @click="removeAttachment(index)" class="absolute -top-2 -right-2 bg-white rounded-full shadow p-1" :aria-label="ctrans('Remove image')">
+                        <FontAwesomeIcon :icon="faXmark" />
+                    </button>
+                </template>
 
-        <div v-if="previewType === 'file' && selectedFile" class="px-3 pb-2">
-            <div class="flex items-center gap-3 border rounded-lg p-3 bg-gray-50 min-w-0">
-                <div class="text-2xl">
-                    <FontAwesomeIcon :icon="faFilePdf" />
-                </div>
-                <div class="flex-1 min-w-0 overflow-hidden">
-                    <div class="text-sm font-medium truncate">
-                        {{ selectedFile.name }}
+                <div v-else class="flex items-center gap-3 border rounded-lg p-3 bg-gray-50 min-w-0 max-w-[220px]">
+                    <div class="text-2xl">
+                        <FontAwesomeIcon :icon="faFilePdf" />
                     </div>
-                    <div class="text-xs text-gray-400">
-                        {{ (selectedFile.size / 1024).toFixed(1) }} KB
+                    <div class="flex-1 min-w-0 overflow-hidden">
+                        <div class="text-sm font-medium truncate">
+                            {{ attachment.file.name }}
+                        </div>
+                        <div class="text-xs text-gray-400">
+                            {{ (attachment.file.size / 1024).toFixed(1) }} KB
+                        </div>
                     </div>
+                    <button @click="removeAttachment(index)" class="text-gray-400 hover:text-red-500 shrink-0 ml-2" :aria-label="ctrans('Remove file')">
+                        <FontAwesomeIcon :icon="faXmark" />
+                    </button>
                 </div>
-                <button @click="removeFile" class="text-gray-400 hover:text-red-500 shrink-0 ml-2" :aria-label="ctrans('Remove file')">
-                    <FontAwesomeIcon :icon="faXmark" />
-                </button>
             </div>
         </div>
 
@@ -1125,9 +1114,9 @@ const handleClickOutside = (e: MouseEvent) => {
 
         <!-- Footer: Normal message input -->
         <footer v-else class="px-3 py-2 bg-white">
-            <input ref="imageInput" type="file" accept=".webp,.jpg,.jpeg,.png,.avif" class="hidden"
+            <input ref="imageInput" type="file" accept=".webp,.jpg,.jpeg,.png,.avif" multiple class="hidden"
                 @change="handleImageSelect" />
-            <input ref="fileInput" type="file" accept=".pdf,.xls,.xlsx" class="hidden" @change="handleDocSelect" />
+            <input ref="fileInput" type="file" accept=".pdf,.xls,.xlsx" multiple class="hidden" @change="handleDocSelect" />
 
             <div class="rounded-xl border border-gray-200 bg-white shadow-sm focus-within:border-gray-400 focus-within:shadow-md transition-shadow">
                 <textarea ref="messageInput" v-model="newMessage" @input="

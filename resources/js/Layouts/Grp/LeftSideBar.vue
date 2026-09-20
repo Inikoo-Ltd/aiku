@@ -13,7 +13,7 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { faChevronLeft } from "@far"
 import { faSignOutAlt, faSensor, faLifeRing, faHeadset, faCommentAlt, faSignOut, faServer, faTasks } from "@fal"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { computed, inject, ref } from "vue"
+import { computed, inject, onBeforeUnmount, onMounted, ref } from "vue"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { ctrans } from "@/Composables/useTrans"
@@ -99,6 +99,21 @@ const bottomLinks = computed(() => [
 
 const loadingRoute = ref<string | null>(null)
 
+const BOTTOM_LINKS_OFFSET = 80
+const bottomLinksGroup = ref<HTMLElement | null>(null)
+const bottomLinksHeight = ref<number | null>(null)
+let bottomLinksObserver: ResizeObserver | null = null
+
+const navigationPaddingBottom = computed(() => (bottomLinksHeight.value === null ? "240px" : `${bottomLinksHeight.value + BOTTOM_LINKS_OFFSET}px`))
+
+onMounted(() => {
+    if (typeof ResizeObserver === "undefined" || !bottomLinksGroup.value) return
+    bottomLinksObserver = new ResizeObserver(([entry]) => (bottomLinksHeight.value = (entry.target as HTMLElement).offsetHeight))
+    bottomLinksObserver.observe(bottomLinksGroup.value)
+})
+
+onBeforeUnmount(() => bottomLinksObserver?.disconnect())
+
 const isLoadingLogout = ref(false)
 const onLogoutAuth = () => {
     useLogoutAuth(layout.user, {
@@ -110,8 +125,9 @@ const onLogoutAuth = () => {
 
 <template>
     <div
-        class="pb-[240px] fixed md:flex md:flex-col md:inset-y-0 h-full transition-all duration-300 ease-in-out"
+        class="fixed top-0 md:flex md:flex-col md:inset-y-0 h-full transition-all duration-300 ease-in-out"
         :style="{
+			paddingBottom: navigationPaddingBottom,
 			'background-color': layout.app.theme[0],
 			color: layout.app.theme[2],
 		}"
@@ -144,7 +160,7 @@ const onLogoutAuth = () => {
             <LeftSidebarNavigation />
         </div>
 
-        <div class="absolute bottom-20 w-full px-2 pt-3">
+        <div ref="bottomLinksGroup" class="absolute bottom-20 w-full px-2 pt-3">
             <div class="flex flex-col justify-center gap-y-1.5">
                 <Link
                     v-for="link in bottomLinks"

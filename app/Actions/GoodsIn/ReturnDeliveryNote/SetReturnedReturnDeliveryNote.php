@@ -48,8 +48,8 @@ class SetReturnedReturnDeliveryNote extends OrgAction
                 $updatedData = [
                     'state'        => ReturnDeliveryNoteItemStateEnum::PROCESSED,
                 ];
-                $qtyReturned     = $item->total_item_damaged + $item->total_item_returned;
-                $qtyNotReturned  = $item->total_expected_qty - $qtyReturned;
+                $qtyHandled     = $item->total_item_damaged + $item->total_item_returned + $item->total_item_not_returned;
+                $qtyNotReturned = $item->total_expected_qty - $qtyHandled;
 
                 if ($qtyNotReturned > 0) {
                     UpsertReturnDeliveryNoteItemNotReturned::make()->action($item, [

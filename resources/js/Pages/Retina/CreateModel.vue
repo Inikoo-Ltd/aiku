@@ -15,7 +15,7 @@ import { trans } from "laravel-vue-i18n"
 import { isArray } from 'lodash-es'
 
 import { ref, onMounted } from 'vue'
-import PageHeading from '@/Components/Headings/PageHeading.vue'
+import PageHeading from '@/Components/Headings/PageHeadingPublic.vue'
 import { capitalize } from '@/Composables/capitalize'
 import { PageHeadingTypes } from '@/types/PageHeading'
 import { Menu, MenuButton, MenuItems, MenuItem } from '@headlessui/vue'

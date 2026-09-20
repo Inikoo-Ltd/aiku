@@ -11,7 +11,7 @@ import Timeline from '@/Components/Utils/Timeline.vue'
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import { trans } from "laravel-vue-i18n"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
-import PageHeading from "@/Components/Headings/PageHeading.vue"
+import PageHeading from "@/Components/Headings/PageHeadingPublic.vue"
 import { PageHeadingTypes } from "@/types/PageHeading"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import PlatformWarningChannelDeleted from "@/Components/Retina/Platform/PlatformWarningChannelDeleted.vue"

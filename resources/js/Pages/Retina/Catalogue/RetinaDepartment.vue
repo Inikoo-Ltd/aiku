@@ -23,7 +23,7 @@ import {
 	faSeedling,
 } from "@fal"
 
-import PageHeading from "@/Components/Headings/PageHeading.vue"
+import PageHeading from "@/Components/Headings/PageHeadingPublic.vue"
 import { computed, ref, watch, onMounted } from "vue"
 import RetinaDepartmentShowcase from "@/Components/Showcases/Retina/Catalouge/RetinaDepartmentShowcase.vue"
 import { useTabChange } from "@/Composables/tab-change"

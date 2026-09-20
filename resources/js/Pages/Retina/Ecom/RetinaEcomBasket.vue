@@ -18,7 +18,7 @@ import TableEcomBasket from "@/Components/Retina/Ecom/Order/TableEcomBasket.vue"
 import BasketStockIssues, { StockIssues } from "@/Components/Retina/Basket/BasketStockIssues.vue"
 import { Image as ImageTS } from "@/types/Image"
 import { PageHeadingTypes } from "@/types/PageHeading"
-import PageHeading from "@/Components/Headings/PageHeading.vue"
+import PageHeading from "@/Components/Headings/PageHeadingPublic.vue"
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
 import EmptyState from '@/Components/Utils/EmptyState.vue'

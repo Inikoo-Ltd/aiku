@@ -24,7 +24,8 @@ class StoreReturnDeliveryNote extends OrgAction
         data_set($modelData, 'customer_id', $deliveryNote->customer_id, false);
         data_set($modelData, 'delivery_note_id', $deliveryNote->id, false);
         data_set($modelData, 'order_id', $deliveryNote->orders()->first()->id);
-        data_set($modelData, 'reference', "{$deliveryNote->reference}-ret");
+        $previousReturns = $deliveryNote->returnedDeliveryNote()->withTrashed()->count();
+        data_set($modelData, 'reference', $deliveryNote->reference.'-ret'.($previousReturns ? $previousReturns + 1 : ''));
 
         return $deliveryNote->returnedDeliveryNote()->create($modelData);
     }

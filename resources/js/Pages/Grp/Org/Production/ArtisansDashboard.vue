@@ -54,7 +54,7 @@ function initials(name: string) {
                     <FontAwesomeIcon :icon="['fal', 'user-hard-hat']" fixed-width class="text-gray-400 mr-1" />
                     {{ trans('Roster') }}
                 </h2>
-                <Link :href="route(floor_route.name, floor_route.parameters)" class="rounded bg-indigo-600 text-white text-sm px-3 py-1.5">
+                <Link :href="route(floor_route.name, floor_route.parameters)" class="rounded bg-[--app-accent] text-[--app-accent-text] text-sm px-3 py-1.5 transition duration-200 hover:bg-[--app-accent-strong]">
                     {{ trans('Open manufacture floor') }}
                 </Link>
             </div>
@@ -67,7 +67,7 @@ function initials(name: string) {
                 :class="artisan.queued || artisan.assigned ? 'border-gray-200 bg-white' : 'border-amber-300 bg-amber-50'">
                 <span class="flex items-center gap-3 min-w-0">
                     <img v-if="artisan.avatar && !brokenAvatars.has(artisan.avatar)" :src="artisan.avatar" :alt="artisan.name" class="h-8 w-8 rounded-full object-cover bg-gray-100" @error="brokenAvatars.add(artisan.avatar)" />
-                    <span v-else class="flex h-8 w-8 items-center justify-center rounded-full bg-indigo-100 text-xs font-semibold text-indigo-700">{{ initials(artisan.name) }}</span>
+                    <span v-else class="flex h-8 w-8 items-center justify-center rounded-full bg-[--app-accent-muted] text-xs font-semibold text-[--app-accent-strong]">{{ initials(artisan.name) }}</span>
                     <span class="font-medium truncate">{{ artisan.name }}</span>
                 </span>
                 <span class="shrink-0 tabular-nums" :class="artisan.queued || artisan.assigned ? 'text-gray-600' : 'text-amber-700'">
@@ -83,7 +83,7 @@ function initials(name: string) {
         </div>
 
         <div>
-            <Link :href="route(performance_route.name, performance_route.parameters)" class="inline-block mt-3 text-sm text-indigo-700 hover:underline">
+            <Link :href="route(performance_route.name, performance_route.parameters)" class="inline-block mt-3 text-sm text-[--app-accent-strong] hover:underline">
                 {{ trans('View performance by artisan') }}
             </Link>
         </div>

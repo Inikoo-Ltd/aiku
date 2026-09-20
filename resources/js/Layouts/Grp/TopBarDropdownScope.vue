@@ -1,5 +1,5 @@
 <script setup lang='ts'>
-import { inject, computed, ref } from 'vue'
+import { inject, computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { layoutStructure } from '@/Composables/useLayoutStructure'
 import { useTruncate } from '@/Composables/useTruncate'
 import { trans } from 'laravel-vue-i18n'
@@ -10,8 +10,8 @@ import Image from "@common/Components/Image.vue";
 import { Image as ImageTS } from '@/types/Image'
 import axios from 'axios'
 import { library } from '@fortawesome/fontawesome-svg-core'
-import { faChevronRight, faWarehouseAlt } from '@fal'
-library.add(faChevronRight, faWarehouseAlt)
+import { faChevronRight, faChevronLeft, faWarehouseAlt, faTimes, faArrowRight } from '@fal'
+library.add(faChevronRight, faChevronLeft, faWarehouseAlt, faTimes, faArrowRight)
 
 const props = defineProps<{
     menuItems: {
@@ -29,6 +29,8 @@ const props = defineProps<{
 }>()
 
 const layout = inject('layout', layoutStructure)
+
+const themeColor = computed(() => layout.app?.theme?.[0] || '#4f46e5')
 
 // Computed property untuk mengurutkan menuItems berdasarkan alphabet
 const sortedMenuItems = computed(() => {
@@ -175,8 +177,60 @@ const getWarehousesForOrg = (slug: string): any[] => {
     const agent = layout.agents.data.find((agent: any) => agent.slug === slug)
     return org?.authorised_warehouses || agent?.authorised_warehouses || []
 }
+const mobileQuery = globalThis.window?.matchMedia?.('(max-width: 1023px)')
+const isMobile = ref(mobileQuery?.matches ?? false)
+const onMobileQueryChange = (event: MediaQueryListEvent) => (isMobile.value = event.matches)
+onMounted(() => mobileQuery?.addEventListener('change', onMobileQueryChange))
+onBeforeUnmount(() => mobileQuery?.removeEventListener('change', onMobileQueryChange))
+
+const currentPlaceLabel = computed(() => {
+    const params = layout.currentParams ?? {}
+    const entity: any = params.organisation ? findEntityBySlug(params.organisation) : null
+    if (params.shop) return entity?.authorised_shops?.find((shop: any) => shop.slug === params.shop)?.label ?? params.shop
+    if (params.fulfilment) return entity?.authorised_fulfilments?.find((fulfilment: any) => fulfilment.slug === params.fulfilment)?.label ?? params.fulfilment
+    if (params.warehouse) return entity?.authorised_warehouses?.find((warehouse: any) => warehouse.slug === params.warehouse)?.label ?? params.warehouse
+    return null
+})
+
+const panelOrg = computed(() => (hoveredOrgSlug.value ? findEntityBySlug(hoveredOrgSlug.value) as any : null))
+
+const closePanel = () => {
+    isFlyoutVisible.value = false
+    hoveredOrgSlug.value = null
+}
+
+const onOrgRowClick = (event: MouseEvent, item: { slug?: string }) => {
+    if (!isMobile.value) {
+        onClickOrg(event, item.slug)
+        return
+    }
+    event.preventDefault()
+    if (hasShopsOrFulfilments(item)) {
+        hoveredOrgSlug.value = item.slug ?? null
+        isFlyoutVisible.value = true
+        return
+    }
+    onClickOrg(event, item.slug)
+    props.closeMenu?.()
+}
+
+const openPanelOrg = (event: MouseEvent) => {
+    const slug = hoveredOrgSlug.value
+    closePanel()
+    onClickOrg(event, slug ?? undefined)
+    props.closeMenu?.()
+}
+
+const selectSubOrg = (sub: any, typeSub: string) => {
+    navigateToSubOrg(sub, typeSub)
+    if (isMobile.value) {
+        closePanel()
+        props.closeMenu?.()
+    }
+}
+
 const showFlyout = (item: { slug?: string }, event: MouseEvent) => {
-    if (!hasShopsOrFulfilments(item)) return
+    if (isMobile.value || !hasShopsOrFulfilments(item)) return
     if (hideTimeout) clearTimeout(hideTimeout)
     const target = event.currentTarget as HTMLElement
     const rect = target.getBoundingClientRect()
@@ -188,6 +242,7 @@ const showFlyout = (item: { slug?: string }, event: MouseEvent) => {
     isFlyoutVisible.value = true
 }
 const hideFlyout = () => {
+    if (isMobile.value) return
     hideTimeout = setTimeout(() => {
         isFlyoutVisible.value = false
         hoveredOrgSlug.value = null
@@ -290,7 +345,7 @@ const navigateToSubOrg = (sub: typeof sortedShowareList.value[number], typeSub: 
             <hr class="w-full rounded-full border-slate-300">
         </div>
 
-        <div class="max-h-52 overflow-y-auto space-y-1.5">
+        <div class="space-y-1.5 lg:max-h-52 lg:overflow-y-auto">
             <template v-if="menuKey === 'group'">
                 <MenuItem v-slot="{ active }">
                 <div @click="() => router.visit(route('grp.dashboard.show'))" :class="[
@@ -307,12 +362,12 @@ const navigateToSubOrg = (sub: typeof sortedShowareList.value[number], typeSub: 
             </template>
 
             <template v-else>
-                <MenuItem v-for="(item, index) in sortedMenuItems" :key="item.slug || index" v-slot="{ active }">
+                <component :is="isMobile ? 'div' : MenuItem" v-for="(item, index) in sortedMenuItems" :key="item.slug || index">
                 <a
                     :href="getOrgHref(item.slug)"
                     @mouseenter="(e) => showFlyout(item, e as MouseEvent)"
                     @mouseleave="hideFlyout"
-                    @click="(e) => onClickOrg(e as MouseEvent, item.slug)"
+                    @click="(e) => onOrgRowClick(e as MouseEvent, item)"
                     :class="[
                         item.slug == layout.currentParams?.organisation
                             ? 'bg-slate-300 text-slate-600'
@@ -323,13 +378,13 @@ const navigateToSubOrg = (sub: typeof sortedShowareList.value[number], typeSub: 
                     class="group flex gap-x-2 w-full justify-between items-center rounded pl-2 pr-2 py-2 text-sm cursor-pointer"
                     :style="item.slug == layout.currentParams?.organisation
                             ? {
-                                backgroundColor: 'color-mix(in srgb, var(--theme-color-0) 40%, transparent)',
-                                color: 'color-mix(in srgb, var(--theme-color-0) 80%, black)',
+                                backgroundColor: `color-mix(in srgb, ${themeColor} 40%, transparent)`,
+                                color: `color-mix(in srgb, ${themeColor} 80%, black)`,
                             }
                             : hoveredOrgSlug === item.slug && hasShopsOrFulfilments(item)
                                 ? {
-                                    backgroundColor: 'color-mix(in srgb, var(--theme-color-0) 15%, transparent)',
-                                    color: 'color-mix(in srgb, var(--theme-color-0) 80%, black)',
+                                    backgroundColor: `color-mix(in srgb, ${themeColor} 15%, transparent)`,
+                                    color: `color-mix(in srgb, ${themeColor} 80%, black)`,
                                     }
                                 : {}"
                 >
@@ -339,29 +394,54 @@ const navigateToSubOrg = (sub: typeof sortedShowareList.value[number], typeSub: 
                                 @onLoadImage="() => imageSkeleton[item.slug] = false" />
                             <div v-show="imageSkeleton[item.slug]" class="skeleton w-5 h-5" />
                         </div>
-                        <div class="font-semibold whitespace-nowrap">{{ useTruncate(item.label, 20) }}</div>
+                        <div class="min-w-0">
+                            <div class="font-semibold whitespace-nowrap">{{ useTruncate(item.label, 20) }}</div>
+                            <div v-if="isMobile && item.slug == layout.currentParams?.organisation && currentPlaceLabel" class="truncate text-xs font-normal opacity-80">{{ currentPlaceLabel }}</div>
+                        </div>
                     </div>
                     <FontAwesomeIcon
                         v-if="hasShopsOrFulfilments(item)"
                         icon="fal fa-chevron-right"
                         class="text-xs flex-shrink-0 transition-colors"
-                        :style="hoveredOrgSlug === item.slug ? { color: 'var(--theme-color-0)' } : {}"
-                        :class="hoveredOrgSlug === item.slug ? '' : 'text-gray-400'"
+                        :style="hoveredOrgSlug === item.slug && item.slug != layout.currentParams?.organisation ? { color: themeColor } : {}"
+                        :class="item.slug == layout.currentParams?.organisation ? 'opacity-70' : hoveredOrgSlug === item.slug ? '' : 'text-gray-400'"
                         aria-hidden="true"
                     />
                 </a>
-                </MenuItem>
+                </component>
             </template>
         </div>
 
-        <Teleport to="body">
+        <Teleport to="body" :disabled="isMobile">
+            <Transition
+                :enter-active-class="isMobile ? 'transition duration-200 ease-out' : ''"
+                :enter-from-class="isMobile ? '-translate-x-full' : ''"
+                :leave-active-class="isMobile ? 'transition duration-150 ease-in' : ''"
+                :leave-to-class="isMobile ? '-translate-x-full' : ''">
             <div
                 v-if="isFlyoutVisible && hoveredOrgSlug"
-                :style="{ top: flyoutStyle.top, left: flyoutStyle.left }"
-                class="fixed z-[200] w-56 bg-white rounded-lg shadow-lg ring-1 ring-black/5 p-2 max-h-96 overflow-y-auto"
+                :style="isMobile ? {} : { top: flyoutStyle.top, left: flyoutStyle.left }"
+                class="fixed z-[200] bg-white overflow-y-auto"
+                :class="isMobile ? 'inset-y-0 left-0 w-72 max-w-[85vw] px-2 py-3 shadow-xl' : 'w-56 rounded-lg shadow-lg ring-1 ring-black/5 p-2 max-h-96'"
                 @mouseenter="keepFlyout"
                 @mouseleave="hideFlyout"
             >
+                <div v-if="isMobile" class="mb-3 flex items-center gap-x-1 border-b border-gray-200 pb-3">
+                    <button type="button" class="shrink-0 rounded p-2 text-gray-400 hover:text-gray-700" :aria-label="trans('Back')" @click="closePanel">
+                        <FontAwesomeIcon icon="fal fa-chevron-left" fixed-width aria-hidden="true" />
+                    </button>
+                    <a
+                        :href="getOrgHref(hoveredOrgSlug)"
+                        class="flex min-w-0 flex-1 items-center gap-x-2 rounded px-2 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100"
+                        @click="(e) => openPanelOrg(e as MouseEvent)"
+                    >
+                        <div class="h-6 aspect-square shrink-0 overflow-hidden rounded-full bg-slate-50 ring-1 ring-slate-200">
+                            <Image :src="panelOrg?.logo" />
+                        </div>
+                        <span class="truncate">{{ panelOrg?.label }}</span>
+                        <FontAwesomeIcon icon="fal fa-arrow-right" class="ml-auto shrink-0 text-xs text-gray-400" fixed-width aria-hidden="true" />
+                    </a>
+                </div>
                 <!-- Section: Shops list -->
                 <template v-if="getShopsForOrg(hoveredOrgSlug).length">
                     <div class="flex items-center gap-x-1.5 px-1 mb-1">
@@ -372,7 +452,7 @@ const navigateToSubOrg = (sub: typeof sortedShowareList.value[number], typeSub: 
                     <div
                         v-for="shop in getShopsForOrg(hoveredOrgSlug)"
                         :key="shop.id"
-                        @click="navigateToSubOrg(shop, 'shop')"
+                        @click="selectSubOrg(shop, 'shop')"
                         :class="[
                             'flex gap-x-2 w-full min-h-[3rem] justify-between items-center rounded pl-2 pr-2 py-1.5 text-sm cursor-pointer transition-colors',
                             shop.slug === layout.organisationsState?.[hoveredOrgSlug]?.currentShop && layout.organisationsState?.[hoveredOrgSlug]?.currentType === 'shop'
@@ -380,8 +460,8 @@ const navigateToSubOrg = (sub: typeof sortedShowareList.value[number], typeSub: 
                                 : 'text-slate-600 hover:bg-slate-200/75',
                         ]"
                         :style="shop.slug === layout.organisationsState?.[hoveredOrgSlug]?.currentShop && layout.organisationsState?.[hoveredOrgSlug]?.currentType === 'shop' ? {
-                            backgroundColor: 'color-mix(in srgb, var(--theme-color-0) 20%, transparent)',
-                            color: 'color-mix(in srgb, var(--theme-color-0) 80%, black)',
+                            backgroundColor: `color-mix(in srgb, ${themeColor} 20%, transparent)`,
+                            color: `color-mix(in srgb, ${themeColor} 80%, black)`,
                         } : {}"
                     >
                         <div class="flex flex-col">
@@ -401,7 +481,7 @@ const navigateToSubOrg = (sub: typeof sortedShowareList.value[number], typeSub: 
                     <div
                         v-for="fulfilment in getFulfilmentsForOrg(hoveredOrgSlug)"
                         :key="fulfilment.id"
-                        @click="navigateToSubOrg(fulfilment, 'fulfilment')"
+                        @click="selectSubOrg(fulfilment, 'fulfilment')"
                         :class="[
                             'flex gap-x-2 w-full justify-between items-center rounded pl-2 pr-2 py-1.5 text-sm cursor-pointer transition-colors',
                             fulfilment.slug === layout.organisationsState?.[hoveredOrgSlug]?.currentFulfilment && layout.organisationsState?.[hoveredOrgSlug]?.currentType === 'fulfilment'
@@ -409,8 +489,8 @@ const navigateToSubOrg = (sub: typeof sortedShowareList.value[number], typeSub: 
                                 : 'text-slate-600 hover:bg-slate-200/75',
                         ]"
                         :style="fulfilment.slug === layout.organisationsState?.[hoveredOrgSlug]?.currentFulfilment && layout.organisationsState?.[hoveredOrgSlug]?.currentType === 'fulfilment' ? {
-                            backgroundColor: 'color-mix(in srgb, var(--theme-color-0) 20%, transparent)',
-                            color: 'color-mix(in srgb, var(--theme-color-0) 80%, black)',
+                            backgroundColor: `color-mix(in srgb, ${themeColor} 20%, transparent)`,
+                            color: `color-mix(in srgb, ${themeColor} 80%, black)`,
                         } : {}"
                     >
                         <div class="font-semibold">{{ fulfilment.label }}</div>
@@ -427,7 +507,7 @@ const navigateToSubOrg = (sub: typeof sortedShowareList.value[number], typeSub: 
                     <div
                         v-for="warehouse in getWarehousesForOrg(hoveredOrgSlug)"
                         :key="warehouse.id"
-                        @click="navigateToSubOrg(warehouse, 'warehouse')"
+                        @click="selectSubOrg(warehouse, 'warehouse')"
                         :class="[
                             'flex gap-x-2 w-full justify-between items-center rounded pl-2 pr-2 py-1.5 text-sm cursor-pointer transition-colors',
                             warehouse.slug === layout.organisationsState?.[hoveredOrgSlug]?.currentWarehouse
@@ -435,14 +515,15 @@ const navigateToSubOrg = (sub: typeof sortedShowareList.value[number], typeSub: 
                                 : 'text-slate-600 hover:bg-slate-200/75',
                         ]"
                         :style="warehouse.slug === layout.organisationsState?.[hoveredOrgSlug]?.currentWarehouse ? {
-                            backgroundColor: 'color-mix(in srgb, var(--theme-color-0) 20%, transparent)',
-                            color: 'color-mix(in srgb, var(--theme-color-0) 80%, black)',
+                            backgroundColor: `color-mix(in srgb, ${themeColor} 20%, transparent)`,
+                            color: `color-mix(in srgb, ${themeColor} 80%, black)`,
                         } : {}"
                     >
                         <div class="font-semibold">{{ warehouse.label }}</div>
                     </div>
                 </template>
             </div>
+            </Transition>
         </Teleport>
     </div>
 </template>

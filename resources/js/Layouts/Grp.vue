@@ -33,6 +33,7 @@ import ScreenWarning from "@/Components/Utils/ScreenWarning.vue"
 import CloneFromMasterProgress from "@/Components/Catalogue/CloneFromMasterProgress.vue"
 import { useColorTheme } from "@/Composables/useStockList"
 import { computed } from "vue"
+import { useAppAccentVariables } from "@/Composables/useAppAccent"
 
 
 import "@/Composables/Icon/ImportGrpFalIcon"
@@ -50,6 +51,7 @@ initialiseApp()
 const layout = useLayoutStore()
 const isEmbedded = usePage().url.includes("embed=1")
 const sidebarOpen = ref(false)
+useAppAccentVariables(() => layout.app?.theme)
 
 // Section: Notification
 watch(
@@ -234,7 +236,7 @@ const safeTheme = computed(() => {
         <div class="">
             <!-- Mobile Helper: background to close hamburger -->
             <div
-                class="bg-gray-200/80 fixed top-0 w-screen h-screen z-10 md:hidden"
+                class="bg-gray-900/30 fixed top-0 w-screen h-screen z-[19] md:hidden"
                 v-if="sidebarOpen"
                 @click="sidebarOpen = !sidebarOpen" />
             <LeftSideBar

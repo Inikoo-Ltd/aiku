@@ -28,6 +28,22 @@ const isAskBotEnabled =  import.meta.env.VITE_ASK_BOT_UI;
 const showSearchDialog = ref(false)
 const showAskBot = ref(false)
 
+const sumBadgeCounts = (rows: Record<string, { count: number }> | null | undefined, keys: string[]) =>
+    Object.entries(rows ?? {}).filter(([key]) => keys.includes(key)).reduce((total, [, row]) => total + row.count, 0)
+
+const mobileBadgeGroups = computed(() => [
+    { key: 'tickets', dot: 'bg-lime-400', total: (layout.ticket_badges?.queue ? sumBadgeCounts(layout.ticket_badges.queue, ['assigned_to_me', 'collaborating']) : 0) + sumBadgeCounts(layout.ticket_badges?.mine, ['to_do', 'in_progress', 'waiting']) },
+    { key: 'orders', dot: 'bg-amber-400', total: (layout?.dispatching_waiting_count ?? 0) + (layout?.crm_waiting_count ?? 0) + (layout?.crm_return_count ?? 0) + (layout?.faire_skipped_count ?? 0) },
+    { key: 'catalogue', dot: 'bg-rose-400', total: (layout?.master_updated_count ?? 0) + (layout?.products_need_review_count ?? 0) },
+].filter((group) => group.total > 0))
+
+const mobileBadgeTotal = computed(() => mobileBadgeGroups.value.reduce((total, group) => total + group.total, 0))
+
+const openBadgesBar = () => {
+    layout.messagingSidebar.show = true
+    layout.messagingSidebar.micro = false
+}
+
 onMounted(() => {
     if (typeof window !== 'undefined') {
         document.addEventListener('keydown', (event) => {
@@ -91,7 +107,7 @@ const isUserMac = navigator.platform.includes('Mac')
             <div class="pl-2 sm:pl-4 flex items-center gap-x-2" :class="layout?.messagingSidebar?.micro ? '' : 'md:hidden'">
 
                 <!-- Badge: Warehouse Waiting Items -->
-                <div v-if="layout?.dispatching_waiting_count > 0" class="relative flex items-center">
+                <div v-if="layout?.dispatching_waiting_count > 0" class="relative items-center hidden md:flex">
                     <Popover width="w-80" position="right-0">
                         <template #button="{ open }">
                             <div class="relative bg-amber-300 text-amber-700 rounded px-2.5 opacity-70 hover:opacity-100 cursor-pointer font-semibold text-sm tabular-nums">
@@ -107,7 +123,7 @@ const isUserMac = navigator.platform.includes('Mac')
                 </div>
 
                 <!-- Badge: CRM Waiting Items -->
-                <div v-if="layout?.crm_waiting_count > 0" class="relative flex items-center">
+                <div v-if="layout?.crm_waiting_count > 0" class="relative items-center hidden md:flex">
                     <Popover width="w-80" position="right-0">
                         <template #button="{ open }">
                             <div class="relative bg-purple-300 text-purple-700 rounded px-2.5 opacity-70 hover:opacity-100 cursor-pointer font-semibold text-sm tabular-nums">
@@ -124,7 +140,7 @@ const isUserMac = navigator.platform.includes('Mac')
 
                 
                 <!-- Badge: CRM Return Items -->
-                <div v-if="layout?.crm_return_count > 0" class="relative flex items-center">
+                <div v-if="layout?.crm_return_count > 0" class="relative items-center hidden md:flex">
                     <Popover width="w-80" position="right-0">
                         <template #button="{ open }">
                             <div class="relative bg-blue-300 text-blue-700 rounded px-2.5 opacity-70 hover:opacity-100 cursor-pointer font-semibold text-sm tabular-nums">
@@ -140,7 +156,7 @@ const isUserMac = navigator.platform.includes('Mac')
                 </div>
 
                 <!-- Badge: Products not following master prices -->
-                <div v-if="layout?.master_updated_count > 0" class="relative flex items-center">
+                <div v-if="layout?.master_updated_count > 0" class="relative items-center hidden md:flex">
                     <Popover width="w-80" position="right-0">
                         <template #button="{ open }">
                             <div class="relative bg-rose-300 text-rose-700 rounded px-2.5 opacity-70 hover:opacity-100 cursor-pointer font-semibold text-sm tabular-nums">
@@ -156,7 +172,7 @@ const isUserMac = navigator.platform.includes('Mac')
                 </div>
 
                 <!-- Badge: Faire orders that could not be imported -->
-                <div v-if="layout?.faire_skipped_count > 0" class="relative flex items-center">
+                <div v-if="layout?.faire_skipped_count > 0" class="relative items-center hidden md:flex">
                     <Popover width="w-80" position="right-0">
                         <template #button="{ open }">
                             <div class="relative bg-sky-300 text-sky-700 rounded px-2.5 opacity-70 hover:opacity-100 cursor-pointer font-semibold text-sm tabular-nums">
@@ -175,6 +191,18 @@ const isUserMac = navigator.platform.includes('Mac')
                 <!-- <div @click="() => layout.stackedComponents.push({ component: Profile, data: { currentTab: 'todo' }})">
                     <Button label="To do" size="xs" :style="'tertiary'" />
                 </div> -->
+
+                <button
+                    v-if="mobileBadgeTotal > 0"
+                    type="button"
+                    class="md:hidden flex h-7 items-center gap-x-1.5 rounded-md px-2 text-sm font-semibold tabular-nums text-gray-600 ring-1 ring-gray-300 hover:bg-gray-200"
+                    :aria-label="trans('Open badges')"
+                    @click="openBadgesBar">
+                    <span class="flex -space-x-0.5">
+                        <span v-for="group in mobileBadgeGroups" :key="group.key" class="h-2 w-2 rounded-full ring-1 ring-gray-50" :class="group.dot" />
+                    </span>
+                    {{ mobileBadgeTotal > 9 ? '9+' : mobileBadgeTotal }}
+                </button>
 
                 <!-- Button: Notifications -->
                 <div class="relative px-2 rounded-full flex items-center">

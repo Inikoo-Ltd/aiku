@@ -50,6 +50,10 @@ trait WithShopifyPortfolioMatching
             ->first();
     }
 
+    /**
+     * A portfolio can carry the sku of another product (shared stock, a recoded stock, a sku read
+     * back from the listing), so the portfolio whose product code it is answers first.
+     */
     private function findPortfolioBySku(CustomerSalesChannel $customerSalesChannel, ?string $sku): ?Portfolio
     {
         $sku = Str::lower(trim((string) $sku));
@@ -64,6 +68,8 @@ trait WithShopifyPortfolioMatching
                 $query->whereRaw('lower(sku) = ?', [$sku])
                     ->orWhereRaw('lower(item_code) = ?', [$sku]);
             })
+            ->orderByRaw('(lower(item_code) = ?) desc nulls last', [$sku])
+            ->orderBy('id')
             ->first();
     }
 

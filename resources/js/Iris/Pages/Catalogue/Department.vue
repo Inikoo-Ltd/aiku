@@ -13,7 +13,7 @@ import {
 } from '@fal'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 
-import PageHeading from '@/Components/Headings/PageHeading.vue'
+import PageHeading from '@/Components/Headings/PageHeadingPublic.vue'
 import Tabs from '@/Components/Navigation/Tabs.vue'
 import { useTabChange } from '@/Composables/tab-change'
 import { capitalize } from '@/Composables/capitalize'

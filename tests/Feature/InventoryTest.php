@@ -2438,6 +2438,7 @@ function packedDeliveryNote($ctx, bool $markWholeNotePacked = false): array
     $deliveryNote = StartPackingDeliveryNote::make()->action($deliveryNote, $ctx->user);
 
     if ($markWholeNotePacked) {
+        $deliveryNote->update(['parcels' => [['weight' => 1, 'dimensions' => [30, 20, 10]]]]);
         UpdateDeliveryNoteStatePacked::make()->action($deliveryNote, $ctx->user);
     } else {
         StorePacking::make()->action($deliveryNoteItem->refresh(), $ctx->user, []);

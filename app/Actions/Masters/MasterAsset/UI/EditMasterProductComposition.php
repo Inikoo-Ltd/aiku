@@ -146,7 +146,7 @@ class EditMasterProductComposition extends OrgAction
 
             return array_merge(
                 [
-                    'quantity'         => (int)$quantity,
+                    'quantity'         => round((float) $quantity, 3),
                     'packed_in'        => $packedInQuantity,
                     'fraction'         => $fraction,
                     'pick_fractional'  => riseDivisor(divideWithRemainder(findSmallestFactors($fraction)), $packedInQuantity),

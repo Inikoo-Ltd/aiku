@@ -18,7 +18,7 @@ import {
 	faUser,
 } from "@fal"
 
-import PageHeading from "@/Components/Headings/PageHeading.vue"
+import PageHeading from "@/Components/Headings/PageHeadingPublic.vue"
 import { computed, ref, onMounted } from "vue"
 import type { Component } from "vue"
 import { useTabChange } from "@/Composables/tab-change"

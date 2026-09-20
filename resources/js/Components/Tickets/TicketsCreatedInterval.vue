@@ -42,7 +42,7 @@ onMounted(() => {
 			:key="interval"
 			type="button"
 			class="rounded-md px-3 py-1 transition"
-			:class="interval === selected ? 'bg-indigo-600 text-white shadow-sm' : 'text-gray-600 hover:bg-gray-100'"
+			:class="interval === selected ? 'bg-[--app-accent] text-[--app-accent-text] shadow-sm' : 'text-gray-600 hover:bg-gray-100'"
 			@click="select(interval)">
 			{{ label }}
 		</button>

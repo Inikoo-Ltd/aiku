@@ -13,12 +13,14 @@ use App\Actions\GoodsIn\ReturnDeliveryNote\Traits\WithHydrateReturnDeliveryNotes
 use App\Actions\GoodsIn\ReturnDeliveryNoteItem\StoreReturnDeliveryNoteItems;
 use App\Actions\OrgAction;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
+use App\Enums\GoodsIn\ReturnDeliveryNote\ReturnDeliveryNoteStateEnum;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\GoodsIn\ReturnDeliveryNote;
 use App\Models\GoodsIn\UnidentifiedReturn;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Illuminate\Validation\Validator;
 use Lorisleiva\Actions\ActionRequest;
 use Illuminate\Http\RedirectResponse;
@@ -32,10 +34,23 @@ class ProcessReturnDeliveryNote extends OrgAction
     public function handle(DeliveryNote $deliveryNote, array $modelData): ReturnDeliveryNote
     {
         $returnDeliveryNote = DB::transaction(function () use ($deliveryNote, $modelData) {
+            DeliveryNote::whereKey($deliveryNote->id)->lockForUpdate()->first();
+
+            if ($deliveryNote->returnedDeliveryNote()->whereIn('state', [ReturnDeliveryNoteStateEnum::RECEIVED, ReturnDeliveryNoteStateEnum::RETURNING])->exists()) {
+                throw ValidationException::withMessages(['delivery_note' => __('This delivery note already has a return in progress, finish or cancel it first.')]);
+            }
+
+            $returnableItems = $deliveryNote->deliveryNoteItems()->get()
+                ->filter(fn ($deliveryNoteItem) => $deliveryNoteItem->quantity_dispatched - ($deliveryNoteItem->quantity_returned ?? 0) > 0);
+
+            if ($returnableItems->isEmpty()) {
+                throw ValidationException::withMessages(['delivery_note' => __('Everything dispatched in this delivery note has already been returned.')]);
+            }
+
             $returnDeliveryNote = StoreReturnDeliveryNote::make()->action($deliveryNote, []);
             $returnDeliveryNote->refresh();
 
-            foreach ($deliveryNote->deliveryNoteItems as $deliveryNoteItem) {
+            foreach ($returnableItems as $deliveryNoteItem) {
                 StoreReturnDeliveryNoteItems::make()->action($returnDeliveryNote, [
                     'delivery_note_items_id' => $deliveryNoteItem->id,
                 ]);

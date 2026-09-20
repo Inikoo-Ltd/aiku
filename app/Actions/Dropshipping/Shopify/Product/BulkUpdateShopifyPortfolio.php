@@ -259,7 +259,8 @@ class BulkUpdateShopifyPortfolio implements ShouldBeUnique
     /**
      * A stored variant id is only trusted while its sku still belongs to this portfolio: Shopify
      * keeps the id when a merchant deletes or reorders variants, and the first variant of a
-     * product is not ours unless its sku says so.
+     * product is not ours unless its sku says so. The product code is looked for before the sku,
+     * because a portfolio can carry the sku of another product whose variant sits on the same listing.
      *
      * @param  list<array{variantId: string, inventoryItemId: string|null, sku: string}>  $variants
      * @return array{variantId: string, inventoryItemId: string|null, sku: string}|null
@@ -270,11 +271,13 @@ class BulkUpdateShopifyPortfolio implements ShouldBeUnique
             return null;
         }
 
-        $ownSkus = array_filter([Str::lower((string)$portfolio->sku), Str::lower((string)$product->code)]);
+        $ownSkus = array_filter([Str::lower((string)$product->code), Str::lower((string)$portfolio->sku)]);
 
-        foreach ($variants as $variant) {
-            if (in_array(Str::lower($variant['sku']), $ownSkus, true)) {
-                return $variant;
+        foreach ($ownSkus as $ownSku) {
+            foreach ($variants as $variant) {
+                if (Str::lower($variant['sku']) === $ownSku) {
+                    return $variant;
+                }
             }
         }
 

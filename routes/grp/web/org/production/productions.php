@@ -13,6 +13,7 @@ use App\Actions\Production\PartnerShippingList\StoreJobOrdersForMixes;
 use App\Actions\Production\Artisan\ToggleArtisanInRoster;
 use App\Actions\Production\PartnerShippingList\UI\IndexPartnerShippingList;
 use App\Actions\Production\PartnerShippingList\PrePickPartnerShoppingListItems;
+use App\Actions\Production\PartnerShippingList\StorePartnerOrderFromBay;
 use App\Actions\Production\Restock\QueueArtefactsToProduce;
 use App\Actions\Production\Restock\UI\ShowToRestock;
 use App\Actions\Production\PartnerShippingList\UI\GetProductionQueueCounts;
@@ -71,6 +72,7 @@ Route::prefix('{production}')
                         Route::get('', ShowOperationsDashboard::class)->name('dashboard');
                         Route::get('job-orders', IndexJobOrders::class)->name('job-orders.index');
                         Route::get('job-orders/{jobOrder}', ShowJobOrder::class)->name('job-orders.show');
+                        Route::post('partner-orders/{orgPartner:id}', StorePartnerOrderFromBay::class)->name('partner_orders.store')->withoutScopedBindings();
                         Route::get('manufacture-tasks', IndexManufactureTasks::class)->name('manufacture_tasks.index');
                         Route::get('manufacture-tasks/create', CreateManufactureTask::class)->name('manufacture_tasks.create');
                         Route::get('manufacture-tasks/{manufactureTask}', ShowManufactureTask::class)->name('manufacture_tasks.show');

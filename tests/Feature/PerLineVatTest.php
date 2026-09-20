@@ -433,6 +433,31 @@ test('invoicing re-syncs stale line tax categories to the order', function () {
         ->and($invoice->invoiceTransactions()->where('model_type', 'Product')->value('tax_category_id'))->toBe($this->vat0->id);
 });
 
+/** HELP-3192: Faire zero rated the tea, invoicing re-charged it at the order's 20%. */
+test('the tax faire charged survives invoicing and later recalculations', function () {
+    $order = StoreOrder::make()->action($this->customer, []);
+    $order->updateQuietly(['tax_category_id' => $this->vat20->id]);
+    StoreTransaction::make()->action($order->refresh(), $this->standardProduct->historicAsset, ['quantity_ordered' => 1]);
+
+    createWarehouse();
+    SubmitOrder::make()->action($order->refresh());
+    SendOrderToWarehouse::make()->action($order, []);
+
+    $order->refresh()->update(['data->marketplace_tax_amount' => 7.5]);
+    CalculateOrderTotalAmounts::run($order->refresh());
+    expect((float)$order->refresh()->tax_amount)->toBe(7.5);
+
+    $invoice = GenerateInvoiceFromOrder::make()->handle($order->refresh());
+    CalculateInvoiceTotals::make()->action($invoice->refresh());
+
+    expect((float)$invoice->refresh()->tax_amount)->toBe(7.5)
+        ->and((float)$invoice->total_amount)->toBe((float)$invoice->net_amount + 7.5)
+        ->and((float)$order->refresh()->tax_amount)->toBe(7.5);
+
+
+    $invoice->delete();
+});
+
 /** HELP-2967: a validity flip re-rates open orders, but never touches an invoiced one. */
 test('a tax number validity change re-rates open orders and skips invoiced ones', function () {
     $openOrder = StoreOrder::make()->action($this->customer, []);

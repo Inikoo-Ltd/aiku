@@ -470,7 +470,7 @@ test('UI create raw material', function () {
     $response->assertInertia(function (AssertableInertia $page) {
         $page
             ->component('CreateModel')
-            ->has('title')->has('formData')->has('pageHead')->has('breadcrumbs', 4);
+            ->has('title')->has('formData')->has('pageHead')->has('breadcrumbs', 3);
     });
 });
 
@@ -500,7 +500,7 @@ test('UI edit raw material', function () {
             ->has('title')
             ->has('formData.blueprint.0.fields', 7)
             ->has('pageHead')
-            ->has('breadcrumbs', 4);
+            ->has('breadcrumbs', 3);
     });
 });
 
@@ -565,7 +565,7 @@ test('UI create artefact', function () {
     $response->assertInertia(function (AssertableInertia $page) {
         $page
             ->component('CreateModel')
-            ->has('title')->has('formData')->has('pageHead')->has('breadcrumbs', 4);
+            ->has('title')->has('formData')->has('pageHead')->has('breadcrumbs', 3);
     });
 });
 
@@ -630,7 +630,7 @@ test('UI edit artefact', function () {
             ->has('title')
             ->has('formData.blueprint.0.fields', 9)
             ->has('pageHead')
-            ->has('breadcrumbs', 4);
+            ->has('breadcrumbs', 3);
     });
 });
 
@@ -651,7 +651,7 @@ test('UI create production task', function () {
     $response->assertInertia(function (AssertableInertia $page) {
         $page
             ->component('CreateModel')
-            ->has('title')->has('formData')->has('pageHead')->has('breadcrumbs', 4);
+            ->has('title')->has('formData')->has('pageHead')->has('breadcrumbs', 3);
     });
 });
 
@@ -704,7 +704,7 @@ test('UI edit manufacture task', function () {
             ->has('title')
             ->has('formData.blueprint.0.fields', 13)
             ->has('pageHead')
-            ->has('breadcrumbs', 4);
+            ->has('breadcrumbs', 3);
     });
 });
 
@@ -948,6 +948,8 @@ test('UI show manufacture floor', function () {
     $response->assertInertia(function (AssertableInertia $page) {
         $page
             ->component('Org/Production/ManufactureFloor')
+            ->has('breadcrumbs', 3)
+            ->where('breadcrumbs.2.simple.label', 'Manufacture floor')
             ->has('tasks')
             ->has('today', fn (AssertableInertia $page) => $page
                 ->has('sessions')
@@ -1130,7 +1132,7 @@ test('UI show manufacture payroll', function () {
         $page
             ->component('Org/Production/ManufacturePayroll')
             ->has('payroll_export_route')
-            ->has('breadcrumbs', 4);
+            ->has('breadcrumbs', 3);
     });
 });
 
@@ -2503,13 +2505,22 @@ test('to produce queue only shows lines with an artefact in this factory', funct
     $location  = \App\Actions\Inventory\Location\StoreLocation::make()->action($area, ['code' => 'L-BRD', 'name' => 'Board loc'] + \App\Models\Inventory\Location::factory()->definition());
     $hubProps  = fn () => get(route('grp.org.warehouses.show.dispatching.backlog', [$this->organisation->slug, $warehouse->slug]))
         ->assertOk()->viewData('page')['props'];
-    $hubOutput = fn () => collect($hubProps()['production_output'])->pluck('jobs')->flatten(1)->pluck('reference')->all();
+    $hubRows   = fn () => collect($hubProps()['production_output']['data']);
+    $hubOutput = fn () => $hubRows()->pluck('job_order_reference')->all();
     expect($hubOutput())->toContain($jobOrder->reference)
-        ->and($hubProps()['tabs']['navigation']['production_output']['number'])->toBe(count($hubProps()['production_output']));
+        ->and($hubProps()['tabs']['navigation']['production_output']['number'])->toBe(count(\App\Actions\Dispatching\ProductionOutput\GetFinishedProductionJobOrders::run($warehouse)));
 
-    $stockItem = collect($hubProps()['production_output'])->where('destination.type', 'stock')->pluck('jobs')->flatten(1)->firstWhere('reference', $jobOrder->reference)['items'][0];
+    $stockItem        = $hubRows()->firstWhere('job_order_reference', $jobOrder->reference);
+    $stockDestination = collect($stockItem['destinations'])->firstWhere('type', 'stock');
+    expect($stockItem['job_order_id'])->toBe($jobOrder->id)
+        ->and(array_column($stockDestination['locations'], 'code'))->toBe(array_filter([$stockDestination['location_code']]));
     expect(fn () => \App\Actions\Dispatching\ProductionOutput\PutAwayFinishedJobOrder::make()->action($warehouse, [$jobOrder->id], [$stockItem['id'] => 'L-BRD']))
         ->toThrow(ValidationException::class, 'is not kept in L-BRD yet');
+
+    \App\Actions\Dispatching\ProductionOutput\PutAwayFinishedJobOrder::make()->action($warehouse, [$jobOrder->id], [$stockItem['id'] => 'L-BRD'], true, [$stockItem['id'] => 1]);
+    $stillWaiting = collect($hubRows()->firstWhere('id', $stockItem['id'])['destinations'])->firstWhere('type', 'stock');
+    expect($stillWaiting['quantity'])->toEqual(round($stockDestination['quantity'] - 1, 3))
+        ->and($jobOrder->refresh()->state)->toBe(JobOrderStateEnum::CONFIRMED);
 
     \App\Actions\Dispatching\ProductionOutput\PutAwayFinishedJobOrder::make()->action($warehouse, [$jobOrder->id], [$stockItem['id'] => 'l-brd'], true);
     expect(\App\Models\Inventory\LocationOrgStock::where('location_id', $location->id)->exists())->toBeTrue()
@@ -2567,6 +2578,46 @@ test('a partner line the factory has stock for belongs on pre-pick, not the to p
     $orgStocks[0]->update(['quantity_in_locations' => 0, 'quantity_available' => 0]);
     expect(collect($backlog())->pluck('id')->all())->toContain($line->id)
         ->and($counts()['to_produce'])->toBe($before['to_produce'] + 1);
+});
+
+test('keeping the expiry date writes it onto the published label of a partner line made for another organisation', function () {
+    $stocks       = createStocks($this->group);
+    $makerOrgStock = createOrgStocks($this->organisation, [$stocks[0]])[0];
+    \App\Models\Production\Artefact::where('production_id', $this->production->id)->where('org_stock_id', $makerOrgStock->id)->update(['org_stock_id' => null]);
+    $made = StoreArtefact::make()->action($this->production, ['code' => 'EXPIRY-01', 'name' => 'Dated for a partner']);
+    $made->update(['org_stock_id' => $makerOrgStock->id]);
+
+    $buyer = \App\Models\SysAdmin\Organisation::where('code', 'EXPBUY')->first()
+        ?? \App\Actions\SysAdmin\Organisation\StoreOrganisation::make()->action($this->group, [
+            'code' => 'EXPBUY',
+            'name' => 'Expiry buyer',
+            'type' => \App\Enums\SysAdmin\Organisation\OrganisationTypeEnum::SHOP,
+        ] + \App\Models\SysAdmin\Organisation::factory()->definition());
+    $orgPartner = \App\Models\Procurement\OrgPartner::where('organisation_id', $buyer->id)->where('partner_id', $this->organisation->id)->first()
+        ?? \App\Actions\Procurement\OrgPartner\StoreOrgPartner::make()->action($buyer, $this->organisation);
+
+    $line = \App\Actions\Procurement\PartnerShoppingListItem\StorePartnerShoppingListItem::make()->action($orgPartner, $makerOrgStock, ['quantity' => 4]);
+    expect($line->org_stock_id)->not->toBe($makerOrgStock->id)
+        ->and($line->stock_id)->toBe($stocks[0]->id);
+
+    $label = \App\Models\Production\ArtefactLabel::create([
+        'group_id'        => $made->group_id,
+        'organisation_id' => $made->organisation_id,
+        'artefact_id'     => $made->id,
+        'name'            => 'Dated',
+        'state'           => \App\Enums\Production\Artefact\ArtefactLabelStateEnum::PUBLISHED,
+        'layout'          => ['fields' => [['source' => 'name', 'text' => 'Kept'], ['source' => 'expiry_date', 'text' => '']]],
+    ]);
+
+    actingAs($this->guest->getUser());
+    \Pest\Laravel\post(route('grp.org.productions.show.to_produce.items.preparing', [$this->organisation->slug, $this->production->slug]), [
+        'preparing' => true,
+        'lines'     => [['id' => $line->id, 'expiry_date' => '2027-03-09', 'expiry_applies_to_label' => true]],
+    ])->assertRedirect();
+
+    expect($line->refresh()->preparing_at)->not->toBeNull()
+        ->and($label->refresh()->layout['fields'][1]['text'])->toBe('09/03/2027')
+        ->and($label->layout['fields'][0]['text'])->toBe('Kept');
 });
 
 test('an own customer line leaves the to produce board once its order is dispatched', function () {
@@ -3241,7 +3292,7 @@ test('a short day splits the made goods into whole destination trips and carries
         'organisation_id'         => $buyer['organisation']->id,
         'partner_organisation_id' => $this->organisation->id,
         'stock_id'                => $stock->id,
-        'org_stock_id'            => $orgStock->id,
+        'org_stock_id'            => createOrgStocks($buyer['organisation'], [$stock])[0]->id,
         'quantity'                => $quantity,
     ]);
 

@@ -19,6 +19,25 @@ type SenderType = "guest" | "user" | "agent" | "system" | "system_campaign"
 type MessageStatus = "sending" | "sent" | "failed"
 type ViewerType = "user" | "agent"
 
+interface ChatAttachment {
+    id: number
+    is_image: boolean
+    media_url: {
+        original: string
+        webp?: string
+        mime?: string
+        name?: string
+        size?: number
+    } | null
+    original_url: string
+    file_name: string
+    file_size: number
+    file_mime: string
+    download_route: {
+        url: string
+    }
+}
+
 interface Message {
     is_offline_message: boolean
     sender_type: SenderType
@@ -37,6 +56,7 @@ interface Message {
     download_route?: {
         url: string
     } | null
+    attachments?: ChatAttachment[]
     is_read?: boolean
     metadata?: Record<string, any> | null
     replied_to?: {
@@ -285,6 +305,54 @@ const isFile = computed(() => props.message.message_type === "file")
 
 const fileMime = computed(() => props.message.file_mime ?? props.message.media_url?.mime ?? "")
 
+const attachmentList = computed<ChatAttachment[]>(() => {
+    if (props.message.attachments?.length) return props.message.attachments
+
+    if (!props.message.media_url && !props.message.download_route) return []
+
+    return [{
+        id: props.message.id ?? 0,
+        is_image: props.message.message_type === "image",
+        media_url: props.message.media_url ?? null,
+        original_url: props.message.media_url?.original ?? "",
+        file_name: props.message.file_name ?? "",
+        file_size: props.message.file_size ?? 0,
+        file_mime: props.message.file_mime ?? "",
+        download_route: props.message.download_route ?? { url: "" },
+    }]
+})
+
+const attachmentMime = (attachment: ChatAttachment) => attachment.file_mime ?? attachment.media_url?.mime ?? ""
+
+const isAttachmentAudio = (attachment: ChatAttachment, index: number) =>
+    attachmentMime(attachment).startsWith("audio/") || (index === 0 && props.message.metadata?.wa_type === "audio")
+
+const isAttachmentVideo = (attachment: ChatAttachment, index: number) =>
+    attachmentMime(attachment).startsWith("video/") || (index === 0 && props.message.metadata?.wa_type === "video")
+
+const attachmentInlineUrl = (attachment: ChatAttachment): string | null => {
+    const url = attachment.download_route?.url
+    if (!url) return null
+    return url + (url.includes("?") ? "&" : "?") + "inline=1"
+}
+
+const attachmentSizeLabel = (attachment: ChatAttachment) => {
+    const bytes = Number(attachment.file_size ?? 0)
+    if (!bytes) return null
+    return bytes >= 1048576
+        ? `${(bytes / 1048576).toFixed(1)} MB`
+        : `${Math.max(1, Math.round(bytes / 1024))} KB`
+}
+
+const attachmentIcon = (attachment: ChatAttachment) => {
+    const mime = attachmentMime(attachment)
+    if (mime.includes("pdf")) return "📕"
+    if (mime.includes("excel") || mime.includes("spreadsheet")) return "📊"
+    if (mime.startsWith("audio/")) return "🎧"
+    if (mime.startsWith("video/")) return "🎬"
+    return "📄"
+}
+
 // Ogg/Opus voice notes are sometimes sniffed as `application/ogg`, so the WhatsApp
 // message type is trusted alongside the stored mime.
 const isAudio = computed(() =>
@@ -337,12 +405,12 @@ const fileIcon = computed(() => {
 
 const isOpening = ref(false)
 
-const openFile = () => {
+const openFile = (attachment?: ChatAttachment) => {
     if (isOpening.value) return
 
     isOpening.value = true
 
-    const url = props.message.download_route?.url
+    const url = attachment ? attachment.download_route?.url : props.message.download_route?.url
     if (url) {
         window.open(url, "_blank")
     }
@@ -856,40 +924,48 @@ watch(selectedLanguage, async (val) => {
                 </div>
             </a>
 
-            <AudioPlayer v-if="isAudio && inlineUrl" :src="inlineUrl"
+            <div v-if="message.metadata?.gmail_pending_attachments" class="mb-1 text-xs italic text-gray-500">
+                {{ trans(":count attachment(s) kept in Gmail, they are added here when you reply", { count: message.metadata.gmail_pending_attachments }) }}
+            </div>
+
+            <template v-if="attachmentList.length && !(attachmentList.length === 1 && isAudio)">
+                <template v-for="(attachment, index) in attachmentList" :key="attachment.id ?? index">
+                    <!-- Played in place, the way the recipient sees it on WhatsApp. -->
+                    <div v-if="isAttachmentVideo(attachment, index) && attachmentInlineUrl(attachment)" class="mb-1 max-w-xs">
+                        <video :src="attachmentInlineUrl(attachment)!" controls preload="metadata"
+                            class="w-full max-h-64 rounded-lg bg-black object-contain" />
+                        <div class="mt-0.5 flex items-center gap-1.5 text-[10px] opacity-60">
+                            <span class="truncate">{{ attachment.file_name }}</span>
+                            <span v-if="attachmentSizeLabel(attachment)" class="shrink-0">· {{ attachmentSizeLabel(attachment) }}</span>
+                        </div>
+                    </div>
+
+                    <Image v-else-if="attachment.is_image && attachment.media_url" :src="attachment.media_url.webp ?? attachment.media_url.original" preview
+                        imageClass="rounded-lg max-w-full max-h-64 min-h-[96px] min-w-[96px] object-contain cursor-pointer bg-gray-50"
+                        class="mb-1 block" />
+
+                    <div v-else @click="openFile(attachment)"
+                        class="mb-1 flex items-center gap-3 p-2.5 rounded-lg border border-black/10 bg-white max-w-xs transition"
+                        :class="isOpening ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer hover:bg-gray-50'">
+                        <div class="text-2xl leading-none">
+                            {{ attachmentIcon(attachment) }}
+                        </div>
+
+                        <div class="flex-1 min-w-0">
+                            <div class="text-xs font-medium truncate text-gray-800">
+                                {{ attachment.file_name }}
+                            </div>
+                            <div class="text-[10px] text-gray-500">
+                                <span v-if="attachmentSizeLabel(attachment)">{{ attachmentSizeLabel(attachment) }} · </span>{{ trans("Click to open") }}
+                            </div>
+                        </div>
+                    </div>
+                </template>
+            </template>
+
+            <AudioPlayer v-if="attachmentList.length === 1 && isAudio && inlineUrl" :src="inlineUrl"
                 :is-voice="!!message.metadata?.wa_payload?.voice" :label="audioLabel"
                 :download-url="message.download_route?.url" />
-
-            <!-- Played in place, the way the recipient sees it on WhatsApp. -->
-            <div v-else-if="isVideo && inlineUrl" class="mb-1 max-w-xs">
-                <video :src="inlineUrl" controls preload="metadata"
-                    class="w-full max-h-64 rounded-lg bg-black object-contain" />
-                <div class="mt-0.5 flex items-center gap-1.5 text-[10px] opacity-60">
-                    <span class="truncate">{{ message.file_name }}</span>
-                    <span v-if="fileSizeLabel" class="shrink-0">· {{ fileSizeLabel }}</span>
-                </div>
-            </div>
-
-            <div v-else-if="isFile && message.media_url" @click="openFile"
-                class="mb-1 flex items-center gap-3 p-2.5 rounded-lg border border-black/10 bg-white max-w-xs transition"
-                :class="isOpening ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer hover:bg-gray-50'">
-                <div class="text-2xl leading-none">
-                    {{ fileIcon }}
-                </div>
-
-                <div class="flex-1 min-w-0">
-                    <div class="text-xs font-medium truncate text-gray-800">
-                        {{ message.file_name || message.media_url.name }}
-                    </div>
-                    <div class="text-[10px] text-gray-500">
-                        <span v-if="fileSizeLabel">{{ fileSizeLabel }} · </span>{{ trans("Click to open") }}
-                    </div>
-                </div>
-            </div>
-
-            <Image v-if="message.message_type === 'image' && message.media_url" :src="message.media_url.webp" preview
-                imageClass="rounded-lg max-w-full max-h-64 min-h-[96px] min-w-[96px] object-contain cursor-pointer bg-gray-50"
-                class="mb-1 block" />
 
             <div v-if="viewerType === 'agent' && message.message_type === 'image' && activeMessage.is_validated === true"
                 class="mt-1" :title="verificationReasoning">

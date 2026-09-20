@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { inject, ref, computed, onMounted, onBeforeUnmount, nextTick, watch, type Ref } from "vue"
+import { inject, ref, computed } from "vue"
+import { useScrollArrows } from "@/Composables/useScrollArrows"
 import { trans } from "laravel-vue-i18n"
 import Icon from "../Icon.vue"
 import { faSpinnerThird } from '@fad'
@@ -83,51 +84,15 @@ const toggleExpanded = () => {
 }
 
 const boxesElement = ref<HTMLElement | null>(null)
-const hasOverflowLeft = ref(false)
-const hasOverflowRight = ref(false)
+const { canScrollLeft: hasOverflowLeft, canScrollRight: hasOverflowRight, scrollBy: scrollBoxes } = useScrollArrows(boxesElement)
 
 const mobileBoxesElement = ref<HTMLElement | null>(null)
-const hasMobileOverflowLeft = ref(false)
-const hasMobileOverflowRight = ref(false)
+const { canScrollLeft: hasMobileOverflowLeft, canScrollRight: hasMobileOverflowRight, scrollBy: scrollMobileBoxes } = useScrollArrows(mobileBoxesElement)
 
-const updateOverflowState = (element: HTMLElement | null, left: Ref<boolean>, right: Ref<boolean>) => {
-    if (!element) return
-
-    left.value = element.scrollLeft > 0
-    right.value = Math.ceil(element.scrollLeft) < (element.scrollWidth - element.clientWidth)
-}
-
-const checkOverflow = () => {
-    updateOverflowState(boxesElement.value, hasOverflowLeft, hasOverflowRight)
-    updateOverflowState(mobileBoxesElement.value, hasMobileOverflowLeft, hasMobileOverflowRight)
-}
-
-const scrollBoxesLeft = () => {
-    boxesElement.value?.scrollBy({ left: -200, behavior: 'smooth' })
-}
-
-const scrollBoxesRight = () => {
-    boxesElement.value?.scrollBy({ left: 200, behavior: 'smooth' })
-}
-
-const scrollMobileBoxesLeft = () => {
-    mobileBoxesElement.value?.scrollBy({ left: -200, behavior: 'smooth' })
-}
-
-const scrollMobileBoxesRight = () => {
-    mobileBoxesElement.value?.scrollBy({ left: 200, behavior: 'smooth' })
-}
-
-watch(() => props.tabs_box, () => nextTick(checkOverflow), { deep: true })
-
-onMounted(() => {
-    nextTick(checkOverflow)
-    window.addEventListener('resize', checkOverflow)
-})
-
-onBeforeUnmount(() => {
-    window.removeEventListener('resize', checkOverflow)
-})
+const scrollBoxesLeft = () => scrollBoxes(-1)
+const scrollBoxesRight = () => scrollBoxes(1)
+const scrollMobileBoxesLeft = () => scrollMobileBoxes(-1)
+const scrollMobileBoxesRight = () => scrollMobileBoxes(1)
 
 const hasChildren = computed(() =>
     props.tabs_box.some(box => (box.children ?? []).length > 0)
@@ -267,10 +232,8 @@ const clickVisitRoute = (visitRoute: {
             <transition name="fade">
                 <div v-if="hasOverflowLeft"
                      @click="scrollBoxesLeft"
-                     class="absolute left-0 top-0 bottom-0 z-10 flex items-center cursor-pointer bg-gradient-to-r from-white via-white to-transparent pl-1 pr-3 sm:pr-6">
-                    <div class="bg-indigo-500 text-white rounded-full p-1 sm:p-1.5 shadow-lg hover:bg-indigo-600 transition-colors flex items-center px-2">
-                        <FontAwesomeIcon icon="far fa-chevron-left" class="text-[10px] sm:text-xs" />
-                    </div>
+                     class="absolute left-0 top-0 bottom-0 z-10 flex w-6 items-center justify-center cursor-pointer rounded-l bg-white text-gray-500 shadow-[6px_0_6px_-4px_rgba(0,0,0,0.12)] hover:text-gray-800">
+                    <FontAwesomeIcon icon="far fa-chevron-left" class="text-xs" />
                 </div>
             </transition>
 
@@ -278,16 +241,13 @@ const clickVisitRoute = (visitRoute: {
             <transition name="fade">
                 <div v-if="hasOverflowRight"
                      @click="scrollBoxesRight"
-                     class="absolute right-0 top-0 bottom-0 z-10 flex items-center cursor-pointer bg-gradient-to-l from-white via-white to-transparent pr-1 pl-3 sm:pl-6">
-                    <div class="bg-indigo-500 text-white rounded-full p-1 sm:p-1.5 shadow-lg hover:bg-indigo-600 transition-colors flex items-center px-2">
-                        <FontAwesomeIcon icon="far fa-chevron-right" class="text-[10px] sm:text-xs" />
-                    </div>
+                     class="absolute right-0 top-0 bottom-0 z-10 flex w-6 items-center justify-center cursor-pointer rounded-r bg-white text-gray-500 shadow-[-6px_0_6px_-4px_rgba(0,0,0,0.12)] hover:text-gray-800">
+                    <FontAwesomeIcon icon="far fa-chevron-right" class="text-xs" />
                 </div>
             </transition>
 
             <div
                 ref="boxesElement"
-                @scroll="checkOverflow"
                 class="flex flex-nowrap gap-x-2 2xl:gap-x-6 items-stretch overflow-x-scroll scrollbar-hide"
             >
             <div
@@ -430,10 +390,8 @@ const clickVisitRoute = (visitRoute: {
             <transition name="fade">
                 <div v-if="hasMobileOverflowLeft"
                      @click="scrollMobileBoxesLeft"
-                     class="absolute left-0 top-0 bottom-0 z-10 flex items-center cursor-pointer bg-gradient-to-r from-white via-white to-transparent pl-1 pr-3">
-                    <div class="bg-indigo-500 text-white rounded-full p-1 shadow-lg hover:bg-indigo-600 transition-colors flex items-center px-2">
-                        <FontAwesomeIcon icon="far fa-chevron-left" class="text-[10px]" />
-                    </div>
+                     class="absolute left-0 top-0 bottom-0 z-10 flex w-6 items-center justify-center cursor-pointer rounded-l bg-white text-gray-500 shadow-[6px_0_6px_-4px_rgba(0,0,0,0.12)] hover:text-gray-800">
+                    <FontAwesomeIcon icon="far fa-chevron-left" class="text-xs" />
                 </div>
             </transition>
 
@@ -441,16 +399,13 @@ const clickVisitRoute = (visitRoute: {
             <transition name="fade">
                 <div v-if="hasMobileOverflowRight"
                      @click="scrollMobileBoxesRight"
-                     class="absolute right-0 top-0 bottom-0 z-10 flex items-center cursor-pointer bg-gradient-to-l from-white via-white to-transparent pr-1 pl-3">
-                    <div class="bg-indigo-500 text-white rounded-full p-1 shadow-lg hover:bg-indigo-600 transition-colors flex items-center px-2">
-                        <FontAwesomeIcon icon="far fa-chevron-right" class="text-[10px]" />
-                    </div>
+                     class="absolute right-0 top-0 bottom-0 z-10 flex w-6 items-center justify-center cursor-pointer rounded-r bg-white text-gray-500 shadow-[-6px_0_6px_-4px_rgba(0,0,0,0.12)] hover:text-gray-800">
+                    <FontAwesomeIcon icon="far fa-chevron-right" class="text-xs" />
                 </div>
             </transition>
 
             <div
                 ref="mobileBoxesElement"
-                @scroll="checkOverflow"
                 class="flex gap-3 overflow-x-auto scrollbar-hide"
             >
             <div

@@ -3236,7 +3236,7 @@ test('inbound gmail message becomes an email chat session and the agent reply go
     expect(\App\Actions\Comms\Mailbox\ProcessInboundEmail::run($this->shop, 'm1'))->toBeNull();
 
     $agentUser = createAdminGuest($this->organisation->group)->getUser();
-    $agent     = ChatAgent::create(['user_id' => $agentUser->id, 'max_concurrent_chats' => 5, 'language_id' => 68, 'is_online' => false, 'is_available' => false, 'current_chat_count' => 0, 'signature' => "Kind regards,\nSig Agent"]);
+    $agent     = ChatAgent::updateOrCreate(['user_id' => $agentUser->id], ['max_concurrent_chats' => 5, 'language_id' => 68, 'is_online' => false, 'is_available' => false, 'current_chat_count' => 0, 'signature' => "Kind regards,\nSig Agent"]);
     $reply = $session->messages()->create([
         'message_text' => 'Shipped today',
         'message_type' => ChatMessageTypeEnum::TEXT,
@@ -3275,6 +3275,14 @@ test('inbound gmail message becomes an email chat session and the agent reply go
         'checksum'     => md5_file($invoicePath),
     ], 'chat_attachments', 'file');
     $fileReply->update(['media_id' => $media->id]);
+    $secondPath = tempnam(sys_get_temp_dir(), 'chat').'.txt';
+    file_put_contents($secondPath, 'packing list');
+    \App\Actions\Helpers\Media\StoreMediaFromFile::run($fileReply, [
+        'path'         => $secondPath,
+        'originalName' => 'packing.txt',
+        'extension'    => 'txt',
+        'checksum'     => md5_file($secondPath),
+    ], 'chat_attachments', 'file');
 
     \App\Actions\Comms\Mailbox\SendChatMessageByGmail::run($fileReply->fresh());
 
@@ -3286,7 +3294,8 @@ test('inbound gmail message becomes an email chat session and the agent reply go
 
         return str_contains($raw, 'Content-Type: multipart/mixed')
             && str_contains($raw, 'Content-Disposition: attachment; filename="invoice.txt"')
-            && str_contains($raw, trim(chunk_split(base64_encode('invoice body'))));
+            && str_contains($raw, trim(chunk_split(base64_encode('invoice body'))))
+            && str_contains($raw, 'Content-Disposition: attachment; filename="packing.txt"');
     });
 });
 
@@ -3430,4 +3439,151 @@ test('staff task reports share a task between its assignee and collaborators', f
     foreach ($people as $person) {
         expect($rows[$person->contact_name ?: $person->username]['created'])->toBe(0.33);
     }
+});
+
+test('inbound guest gmail attachments wait in gmail until an agent replies, then are all saved on the email chat message', function () {
+    Bus::fake([\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class, \App\Actions\Comms\Mailbox\SendChatMessageByGmail::class]);
+
+    $settings = $this->shop->settings ?? [];
+    $settings['gmail'] = [
+        'email'         => 'care@shop.test',
+        'refresh_token' => \Illuminate\Support\Facades\Crypt::encryptString('rt'),
+        'history_id'    => '1',
+    ];
+    $this->shop->update(['settings' => $settings]);
+
+    $encode = fn (string $value) => rtrim(strtr(base64_encode($value), '+/', '-_'), '=');
+
+    \Illuminate\Support\Facades\Http::fake([
+        'oauth2.googleapis.com/token'                                         => \Illuminate\Support\Facades\Http::response(['access_token' => 'at']),
+        'gmail.googleapis.com/gmail/v1/users/me/messages/a1/attachments/att1' => \Illuminate\Support\Facades\Http::response(['data' => $encode('%PDF-1.4 invoice')]),
+        'gmail.googleapis.com/gmail/v1/users/me/messages/a1*'                 => \Illuminate\Support\Facades\Http::response([
+            'id'       => 'a1',
+            'threadId' => 'ta1',
+            'payload'  => [
+                'mimeType' => 'multipart/mixed',
+                'headers'  => [
+                    ['name' => 'From', 'value' => 'Stranger <stranger@example.com>'],
+                    ['name' => 'Subject', 'value' => 'Damaged goods'],
+                ],
+                'parts'    => [
+                    ['mimeType' => 'text/plain', 'filename' => '', 'body' => ['data' => $encode('See attached')]],
+                    ['mimeType' => 'application/pdf', 'filename' => 'invoice.pdf', 'body' => ['attachmentId' => 'att1']],
+                    ['mimeType' => 'image/png', 'filename' => 'photo.png', 'body' => ['data' => $encode(base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=='))]],
+                    ['mimeType' => 'image/png', 'filename' => 'logo.png', 'headers' => [['name' => 'Content-Disposition', 'value' => 'inline; filename="logo.png"']], 'body' => ['data' => $encode('x')]],
+                ],
+            ],
+        ]),
+        'gmail.googleapis.com/gmail/v1/users/me/labels'                       => \Illuminate\Support\Facades\Http::response(['labels' => [['id' => 'L1', 'name' => 'aiku/unmatched']]]),
+        'gmail.googleapis.com/*'                                              => \Illuminate\Support\Facades\Http::response([]),
+    ]);
+
+    $message = \App\Actions\Comms\Mailbox\ProcessInboundEmail::run($this->shop, 'a1');
+
+    expect($message->attachedFiles())->toBeEmpty()
+        ->and(Arr::get($message->metadata, 'gmail_pending_attachments'))->toBe(2);
+
+    \App\Actions\Chat\ChatSession\SendChatMessage::run($message->chatSession, [
+        'message_text' => 'Sorry to hear that',
+        'message_type' => ChatMessageTypeEnum::TEXT->value,
+        'sender_type'  => ChatSenderTypeEnum::AGENT->value,
+    ]);
+
+    $files = $message->fresh()->attachedFiles();
+
+    expect($message->chatSession->messages()->where('sender_type', ChatSenderTypeEnum::GUEST)->count())->toBe(1)
+        ->and(Arr::get($message->fresh()->metadata, 'gmail_pending_attachments'))->toBeNull()
+        ->and($message->fresh()->message_text)->toBe('See attached')
+        ->and($message->fresh()->message_type)->toBe(ChatMessageTypeEnum::FILE)
+        ->and($files->pluck('name')->all())->toBe(['invoice.pdf', 'photo.png'])
+        ->and($files->pluck('collection_name')->all())->toBe(['chat_attachments', 'chat_images'])
+        ->and(stream_get_contents($files[0]->stream()))->toBe('%PDF-1.4 invoice')
+        ->and($message->fresh()->media_id)->toBe($files[0]->id);
+
+    $resource = \App\Http\Resources\CRM\Livechat\ChatMessageResource::make($message->fresh())->resolve();
+    expect($resource['attachments'])->toHaveCount(2)
+        ->and($resource['attachments'][1]['is_image'])->toBeTrue()
+        ->and($resource['attachments'][0]['file_name'])->toBe('invoice.pdf');
+});
+
+test('chat media older than the retention window moves to the archive database and is still downloadable', function () {
+    config()->set(
+        'database.connections.archive',
+        array_merge(config('database.connections.'.config('database.default')), ['search_path' => 'archive'])
+    );
+    DB::purge('archive');
+    DB::statement('create schema if not exists archive');
+
+    $session = ChatSession::first();
+    $message = $session->messages()->create([
+        'message_text' => 'Old invoice',
+        'message_type' => ChatMessageTypeEnum::FILE,
+        'sender_type'  => ChatSenderTypeEnum::GUEST,
+    ]);
+
+    $storeFile = function (string $name, string $contents) use ($message) {
+        $path = tempnam(sys_get_temp_dir(), 'chat').'.txt';
+        file_put_contents($path, $contents);
+
+        return \App\Actions\Helpers\Media\StoreMediaFromFile::run($message, [
+            'path'         => $path,
+            'originalName' => $name,
+            'extension'    => 'txt',
+            'checksum'     => md5_file($path),
+        ], 'chat_attachments', 'file');
+    };
+
+    $old   = $storeFile('old.txt', 'archived invoice body');
+    $fresh = $storeFile('fresh.txt', 'fresh invoice body');
+    DB::table('media')->where('id', $old->id)->update(['created_at' => now()->subDays(config('archive.chat_media_retention_days') + 1)]);
+
+    expect(\App\Actions\Chat\ChatSession\ArchiveChatMedia::run())->toBe(1);
+
+    $old   = $old->fresh();
+    $fresh = $fresh->fresh();
+
+    expect($old->getCustomProperty('archived_at'))->not->toBeNull()
+        ->and(is_file($old->getPath()))->toBeFalse()
+        ->and($fresh->getCustomProperty('archived_at'))->toBeNull()
+        ->and(is_file($fresh->getPath()))->toBeTrue()
+        ->and(\App\Actions\Chat\ChatSession\GetChatMediaContents::run($old))->toBe('archived invoice body')
+        ->and(DownloadChatAttachment::make()->handle($old->ulid)->getContent())->toBe('archived invoice body')
+        ->and(\App\Actions\Chat\ChatSession\ArchiveChatMedia::run())->toBe(0);
+
+    $resource = \App\Http\Resources\CRM\Livechat\ChatMessageResource::make($message->fresh())->resolve();
+    expect(collect($resource['attachments'])->firstWhere('id', $old->id)['is_archived'])->toBeTrue();
+});
+
+test('automated mail from senders that match no customer is labelled filtered and never becomes a chat session', function () {
+    $settings = $this->shop->settings ?? [];
+    $settings['gmail'] = ['email' => 'care@shop.test', 'refresh_token' => \Illuminate\Support\Facades\Crypt::encryptString('rt'), 'history_id' => '1'];
+    $this->shop->update(['settings' => $settings]);
+
+    $gmailMessage = fn (string $id, string $from, string $subject) => \Illuminate\Support\Facades\Http::response([
+        'id'       => $id,
+        'threadId' => 't'.$id,
+        'payload'  => [
+            'mimeType' => 'text/plain',
+            'headers'  => [['name' => 'From', 'value' => $from], ['name' => 'Subject', 'value' => $subject]],
+            'body'     => ['data' => rtrim(strtr(base64_encode('machine text'), '+/', '-_'), '=')],
+        ],
+    ]);
+
+    \Illuminate\Support\Facades\Http::fake([
+        'oauth2.googleapis.com/token'                          => \Illuminate\Support\Facades\Http::response(['access_token' => 'at']),
+        'gmail.googleapis.com/gmail/v1/users/me/messages/f1*' => $gmailMessage('f1', 'Mail Delivery <mailer-daemon@googlemail.com>', 'Undelivered'),
+        'gmail.googleapis.com/gmail/v1/users/me/messages/f2*' => $gmailMessage('f2', 'reports@dmarc.example', 'Report Domain: shop.test Submitter: example'),
+        'gmail.googleapis.com/gmail/v1/users/me/messages/f3*' => $gmailMessage('f3', 'Alerts <no-reply@accounts.example>', 'Security alert'),
+        'gmail.googleapis.com/gmail/v1/users/me/labels'        => \Illuminate\Support\Facades\Http::response(['labels' => [['id' => 'LF', 'name' => 'aiku/filtered']]]),
+        'gmail.googleapis.com/*'                               => \Illuminate\Support\Facades\Http::response([]),
+    ]);
+
+    $sessionsBefore = ChatSession::count();
+
+    foreach (['f1', 'f2', 'f3'] as $id) {
+        expect(\App\Actions\Comms\Mailbox\ProcessInboundEmail::run($this->shop, $id))->toBeNull();
+        \Illuminate\Support\Facades\Http::assertSent(fn ($request) => str_ends_with($request->url(), "messages/$id/modify") && $request['addLabelIds'] === ['LF']);
+    }
+
+    expect(ChatSession::count())->toBe($sessionsBefore);
 });

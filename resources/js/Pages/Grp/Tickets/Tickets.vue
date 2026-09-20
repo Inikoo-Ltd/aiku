@@ -198,7 +198,7 @@ watch(
         <button
             type="button"
             class="rounded-md px-3 py-1 transition duration-200"
-            :class="!typeFilter ? 'bg-indigo-600 text-white shadow-sm' : 'text-gray-600 hover:bg-gray-100'"
+            :class="!typeFilter ? 'bg-[--app-accent] text-[--app-accent-text] shadow-sm' : 'text-gray-600 hover:bg-gray-100'"
             @click="filterByType(null)">
             {{ ctrans("All") }}
         </button>
@@ -207,7 +207,7 @@ watch(
             :key="option.value"
             type="button"
             class="flex items-center gap-1.5 rounded-md px-3 py-1 transition duration-200"
-            :class="typeFilter === option.value ? 'bg-indigo-600 text-white shadow-sm' : 'text-gray-600 hover:bg-gray-100'"
+            :class="typeFilter === option.value ? 'bg-[--app-accent] text-[--app-accent-text] shadow-sm' : 'text-gray-600 hover:bg-gray-100'"
             @click="filterByType(option.value)">
             <Icon v-if="option.icon" :data="option.icon" />
             {{ option.label }}
@@ -296,7 +296,7 @@ watch(
                     <TicketUserAvatar v-if="item.assignee" :name="item.assignee" :avatar="item.assignee_avatar" />
                     <span v-else class="flex h-7 w-7 items-center justify-center rounded-full border border-dashed border-gray-300 text-gray-400"><FontAwesomeIcon icon="fal fa-user" fixed-width /></span>
                     <span class="w-full truncate text-[10px] leading-tight" :class="item.assignee ? 'text-gray-600' : 'text-gray-400'">{{ item.assignee_short || ctrans("Unassigned") }}</span>
-                    <span v-if="item.collaborators?.length" class="text-[10px] leading-tight text-indigo-600" :title="item.collaborators.map((collaborator) => collaborator.name).join(', ')">
+                    <span v-if="item.collaborators?.length" class="text-[10px] leading-tight text-[--app-accent-strong]" :title="item.collaborators.map((collaborator) => collaborator.name).join(', ')">
                         <FontAwesomeIcon icon="fal fa-users" class="mr-0.5" fixed-width />{{ item.collaborators.length }}
                     </span>
                     <FontAwesomeIcon v-if="isSaving(item, 'assignee_id')" icon="fal fa-spinner" spin class="absolute right-1 top-1 text-[10px] text-gray-400" fixed-width />
@@ -338,7 +338,7 @@ watch(
                 :key="engineer.value"
                 type="button"
                 class="flex items-center gap-2 rounded p-2 text-left transition duration-200 hover:bg-gray-100 active:!bg-gray-200"
-                :class="engineer.value === activeItem?.assignee_id && 'bg-indigo-50 text-indigo-700'"
+                :class="engineer.value === activeItem?.assignee_id && 'bg-[--app-accent-soft] text-[--app-accent-strong]'"
                 @click="chooseValue('assignee_id', engineer.value)">
                 <TicketUserAvatar :name="engineer.label" :avatar="engineer.avatar" size="sm" />
                 <span :class="engineer.value === myUserId && 'font-medium'">{{ engineer.label }}</span>

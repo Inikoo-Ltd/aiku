@@ -157,6 +157,11 @@ final class GmailClient
         return $this->get("users/me/messages/$messageId", ['format' => 'full'])->json();
     }
 
+    public function getAttachment(string $messageId, string $attachmentId): string
+    {
+        return GmailMessageParser::decodeData((string) $this->get("users/me/messages/$messageId/attachments/$attachmentId")->json('data'));
+    }
+
     public function send(string $rawRfc822, ?string $threadId = null): array
     {
         $payload = ['raw' => rtrim(strtr(base64_encode($rawRfc822), '+/', '-_'), '=')];

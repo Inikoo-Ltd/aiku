@@ -924,6 +924,9 @@ const warningMsg = computed(() => {
                 <div class="lg:min-w-[20rem] mr-auto">
                     {{ deliveryNoteItem.org_stock_name }} 
                     <span class="italic opacity-80">{{deliveryNoteItem.packed_in_message}}</span>
+                    <div v-if="deliveryNoteItem.ordered_asset" class="text-xs text-pink-500 opacity-80">
+                        {{ ctrans('Ordered') }}: <span class="font-medium text-pink-700">{{ deliveryNoteItem.ordered_asset.quantity }} × {{ deliveryNoteItem.ordered_asset.code }}</span> {{ deliveryNoteItem.ordered_asset.name }}
+                    </div>
                     <span v-if="deliveryNoteItem.replacement_reason_label" class="ml-2 rounded bg-amber-100 px-1.5 py-0.5 text-xs text-amber-800">{{ deliveryNoteItem.replacement_reason_label }}</span>
                     <span
                         v-if="deliveryNoteItem.barcode"

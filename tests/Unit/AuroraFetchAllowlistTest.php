@@ -53,7 +53,7 @@ it('only lets a departed organisation keep the fetchers it has no aiku replaceme
 })->with([
     'purchase orders still come from aurora' => [FetchAuroraPurchaseOrders::class, true],
     'job orders still come from aurora'      => [FetchAuroraJobOrders::class, true],
-    'artefacts still come from aurora'       => [FetchAuroraArtefacts::class, true],
+    'artefacts are aiku owned now'           => [FetchAuroraArtefacts::class, false],
     'raw materials still come from aurora'   => [FetchAuroraRawMaterials::class, true],
     'suppliers still come from aurora'       => [FetchAuroraSuppliers::class, true],
     'timesheets are hr, aiku owned now'      => [FetchAuroraTimesheets::class, false],

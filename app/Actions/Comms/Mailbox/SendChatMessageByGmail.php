@@ -11,6 +11,7 @@ namespace App\Actions\Comms\Mailbox;
 use App\Enums\CRM\Livechat\ChatChannelEnum;
 use App\Enums\CRM\Livechat\ChatSenderTypeEnum;
 use App\Models\Chat\ChatAgent;
+use App\Actions\Chat\ChatSession\GetChatMediaContents;
 use App\Models\Chat\ChatMessage;
 use App\Services\Gmail\GmailClient;
 use Illuminate\Support\Arr;
@@ -96,29 +97,39 @@ class SendChatMessageByGmail
             chunk_split(base64_encode($messageBody)),
         ];
 
-        $attachment = $chatMessage->attachment;
+        $attachments = $chatMessage->attachedFiles();
 
-        if (! $attachment) {
+        if ($attachments->isEmpty()) {
             return implode("\r\n", [...$headers, ...$textPart]);
         }
 
         $boundary = 'aiku-'.bin2hex(random_bytes(12));
-        $fileName = $this->encodeHeader(str_replace(['"', "\r", "\n"], '', $attachment->name ?: $attachment->file_name));
 
-        return implode("\r\n", [
+        $lines = [
             ...$headers,
             "Content-Type: multipart/mixed; boundary=\"{$boundary}\"",
             '',
             "--{$boundary}",
             ...$textPart,
-            "--{$boundary}",
-            "Content-Type: {$attachment->mime_type}; name=\"{$fileName}\"",
-            "Content-Disposition: attachment; filename=\"{$fileName}\"",
-            'Content-Transfer-Encoding: base64',
-            '',
-            chunk_split(base64_encode(stream_get_contents($attachment->stream()))),
-            "--{$boundary}--",
-        ]);
+        ];
+
+        foreach ($attachments as $attachment) {
+            $fileName = $this->encodeHeader(str_replace(['"', "\r", "\n"], '', $attachment->name ?: $attachment->file_name));
+
+            array_push(
+                $lines,
+                "--{$boundary}",
+                "Content-Type: {$attachment->mime_type}; name=\"{$fileName}\"",
+                "Content-Disposition: attachment; filename=\"{$fileName}\"",
+                'Content-Transfer-Encoding: base64',
+                '',
+                chunk_split(base64_encode(GetChatMediaContents::run($attachment))),
+            );
+        }
+
+        $lines[] = "--{$boundary}--";
+
+        return implode("\r\n", $lines);
     }
 
     private function encodeHeader(string $value): string
