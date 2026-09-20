@@ -43,7 +43,7 @@ class RevokeChatAgentAccess
         $user = $agent->user;
 
         if (!$user instanceof User) {
-            return ['released' => 0, 'shops_removed' => 0, 'suspended' => false];
+            return ['released' => 0, 'shops_removed' => 0, 'suspended' => false, 'restored' => false];
         }
 
         // Roles are read through spatie's team scope, and nothing binds it outside a
@@ -126,13 +126,25 @@ class RevokeChatAgentAccess
             $shopsRemoved++;
         }
 
+        // Regaining the permission brings the profile straight back, rather than leaving
+        // somebody missing from the agents list until they next open the inbox.
+        $restored = false;
+
+        if ($chatShopIds !== [] && $agent->trashed()) {
+            if (!$dryRun) {
+                $agent->restore();
+            }
+
+            $restored = true;
+        }
+
         $suspended = $this->suspendIfNothingLeft($agent, $chatShopIds, $dryRun);
 
         if (!$dryRun && $released > 0) {
             ChatAgentHydrateChats::run($agent);
         }
 
-        return ['released' => $released, 'shops_removed' => $shopsRemoved, 'suspended' => $suspended];
+        return ['released' => $released, 'shops_removed' => $shopsRemoved, 'suspended' => $suspended, 'restored' => $restored];
     }
 
     private function release(ChatAssignment $assignment, ChatAgent $agent): void
@@ -192,7 +204,7 @@ class RevokeChatAgentAccess
 
         // Always work out what would happen first, so the total wipe check below can run
         // before anything is written.
-        $planned = ChatAgent::with('user')->get()->mapWithKeys(
+        $planned = ChatAgent::withTrashed()->with('user')->get()->mapWithKeys(
             fn (ChatAgent $agent) => [$agent->id => $this->handle($agent, true)]
         );
 
@@ -210,20 +222,21 @@ class RevokeChatAgentAccess
 
         $rows = [];
 
-        foreach (ChatAgent::with('user')->get() as $agent) {
+        foreach (ChatAgent::withTrashed()->with('user')->get() as $agent) {
             $result = $dryRun ? $planned->get($agent->id) : $this->handle($agent);
 
-            if ($result['released'] || $result['shops_removed'] || $result['suspended']) {
+            if ($result['released'] || $result['shops_removed'] || $result['suspended'] || $result['restored']) {
                 $rows[] = [
                     $agent->user?->username ?? $agent->id,
                     $result['released'],
                     $result['shops_removed'],
                     $result['suspended'] ? 'yes' : 'no',
+                    $result['restored'] ? 'yes' : 'no',
                 ];
             }
         }
 
-        $command->table(['Agent', 'Chats released', 'Shop rows removed', 'Suspended'], $rows);
+        $command->table(['Agent', 'Chats released', 'Shop rows removed', 'Suspended', 'Restored'], $rows);
         $command->info($dryRun ? 'Dry run, nothing written' : 'Done');
 
         return 0;

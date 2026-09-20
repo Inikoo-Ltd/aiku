@@ -60,7 +60,7 @@ class UpdateUser extends OrgAction
                 });
 
                 // Somebody who has left cannot keep holding live conversations.
-                if ($chatAgent = $user->chatAgent) {
+                if ($chatAgent = $user->chatAgent()->withTrashed()->first()) {
                     RevokeChatAgentAccess::run($chatAgent);
                 }
             }

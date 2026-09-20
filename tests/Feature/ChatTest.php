@@ -4013,3 +4013,40 @@ test('an external shop has no chat permissions at all', function () {
 
     expect($worker->authTo(['chat.'.$externalShop->id]))->toBeFalse();
 });
+
+test('regaining the position brings a suspended agent profile back', function () {
+    setPermissionsTeamId($this->user->group_id);
+
+    $user = User::factory()->create(['group_id' => $this->organisation->group_id, 'status' => true]);
+    $user->assignRole(RolesEnum::getRoleName(RolesEnum::CUSTOMER_SERVICE_CLERK->value, $this->shop));
+
+    $agent = ChatAgent::create([
+        'user_id'              => $user->id,
+        'max_concurrent_chats' => 5,
+        'language_id'          => 68,
+        'is_online'            => false,
+        'is_available'         => true,
+        'current_chat_count'   => 0,
+    ]);
+
+    // Losing it suspends the profile.
+    $user->removeRole(RolesEnum::getRoleName(RolesEnum::CUSTOMER_SERVICE_CLERK->value, $this->shop));
+    \App\Actions\SysAdmin\CleanUserCaches::make()->clearPermissionsCache($user);
+    app(\Spatie\Permission\PermissionRegistrar::class)->forgetCachedPermissions();
+
+    expect(\App\Actions\Chat\Agent\RevokeChatAgentAccess::run($agent->fresh())['suspended'])->toBeTrue()
+        ->and(ChatAgent::find($agent->id))->toBeNull();
+
+    // Getting it back restores it, rather than waiting for the next inbox visit.
+    $user->assignRole(RolesEnum::getRoleName(RolesEnum::CUSTOMER_SERVICE_CLERK->value, $this->shop));
+    \App\Actions\SysAdmin\CleanUserCaches::make()->clearPermissionsCache($user);
+    app(\Spatie\Permission\PermissionRegistrar::class)->forgetCachedPermissions();
+
+    $result = \App\Actions\Chat\Agent\RevokeChatAgentAccess::run(ChatAgent::withTrashed()->find($agent->id));
+
+    expect($result['restored'])->toBeTrue()
+        ->and($result['suspended'])->toBeFalse()
+        ->and(ChatAgent::find($agent->id))->not->toBeNull()
+        // The same profile, not a second one.
+        ->and(ChatAgent::withTrashed()->where('user_id', $user->id)->count())->toBe(1);
+});
