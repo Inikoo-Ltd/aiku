@@ -495,10 +495,12 @@ const localMessage = ref<Message | null>(null)
 const selectedLanguage = ref("")
 const isTranslating = ref<boolean>(false)
 const showTranslation = ref(true)
-const showLanguageSelect = ref(false)
 
+// An agent reads in their own language, which the account already knows. Asking them to pick
+// it from a list of every language we support, every time, on every message, was asking a
+// question with one answer.
 const selectedLanguageId = computed(() =>
-    getLanguageIdByCode(selectedLanguage.value)
+    getLanguageIdByCode(selectedLanguage.value) || layout.user?.language_id || null
 )
 
 const activeMessage = computed<Message>(() => {
@@ -856,10 +858,11 @@ watch(
     { immediate: true }
 )
 
+// The conversation's own picker still drives every bubble, for the rare thread somebody wants
+// in a third language.
 watch(selectedLanguage, async (val) => {
     if (!val) return
     await translateMessage()
-    showLanguageSelect.value = false
 })
 </script>
 
@@ -1157,21 +1160,14 @@ watch(selectedLanguage, async (val) => {
                 </template>
             </div>
 
+            <!-- One click, into the agent's own language. Somebody who genuinely wants another
+                 language has the picker on the conversation; this is the common case. -->
             <div v-if="canTranslate" class="mt-1">
-                <button v-if="!showLanguageSelect" @click="showLanguageSelect = true"
-                    class="flex items-center gap-1 text-[10px] text-gray-500 hover:text-gray-700 underline">
+                <button :disabled="isTranslating" @click="translateMessage"
+                    class="flex items-center gap-1 text-[10px] text-gray-500 hover:text-gray-700 underline disabled:opacity-50">
                     <FontAwesomeIcon :icon="faLanguage" class="text-[10px]" />
-                    Translate
+                    {{ trans("Translate") }}
                 </button>
-                <select v-else v-model="selectedLanguage" :disabled="isTranslating"
-                    class="h-[20px] text-[10px] px-1.5 py-0 rounded border border-gray-300 bg-transparent text-gray-600 leading-none focus:outline-none focus:ring-0 disabled:opacity-50">
-                    <option value="" disabled>
-                        Translate To..
-                    </option>
-                    <option v-for="lang in languages" :key="lang.id" :value="lang.code">
-                        {{ lang.native_name }}
-                    </option>
-                </select>
             </div>
 
             <div v-if="choosingRetractionReason" class="mb-1 flex flex-col items-stretch gap-0.5 text-[10px]">

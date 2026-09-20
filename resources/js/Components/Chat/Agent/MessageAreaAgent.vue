@@ -15,6 +15,7 @@ import {
     faEye,
     faArchive,
     faAngleDown,
+    faLanguage,
 } from "@fortawesome/free-solid-svg-icons"
 import { faSlack } from "@fortawesome/free-brands-svg-icons"
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
@@ -29,7 +30,6 @@ import { useJumpToMessage } from "@/Composables/useJumpToMessage"
 import ChatTimelineEvent from "@/Components/Chat/ChatTimelineEvent.vue"
 import { useChatLanguages } from "@/Composables/useLanguages"
 import { notify } from "@kyvg/vue3-notification"
-import { Select } from "primevue"
 
 const EmojiPicker = defineAsyncComponent(() => import("@/Components/Messaging/EmojiPicker.vue"))
 
@@ -973,8 +973,12 @@ const selectedLanguageId = computed(() =>
     getLanguageIdByCode(selectedLanguage.value)
 )
 
+// Whose language the conversation is put into: the agent's own, unless somebody has explicitly
+// asked for another one.
+const translationLanguageId = computed(() => selectedLanguageId.value || layout.user?.language_id || null)
+
 const translateAllMessage = async () => {
-    if (!chatSession.value?.ulid || !selectedLanguageId.value) return
+    if (!chatSession.value?.ulid || !translationLanguageId.value) return
 
     isTranslating.value = true
 
@@ -982,7 +986,7 @@ const translateAllMessage = async () => {
         await axios.post(
             `${baseUrl}/app/api/chats/sessions/${chatSession.value?.ulid}/translate`,
             {
-                target_language_id: selectedLanguageId.value,
+                target_language_id: translationLanguageId.value,
             }
         )
 
@@ -1117,11 +1121,16 @@ const handleClickOutside = (e: MouseEvent) => {
                 {{ (session as any)?.is_spam ? ctrans("Not spam") : ctrans("Spam") }}
             </button>
 
-            <Select v-if="languages.length" v-model="selectedLanguage" :options="languages"
-                optionLabel="native_name" optionValue="code" :placeholder="ctrans('Translate To..')"
-                :disabled="isTranslating" size="small"
-                :pt="{ option: { style: 'font-size: 0.6875rem; padding-top: 0.35rem; padding-bottom: 0.35rem;' } }"
-                class="translate-select h-7 w-36 text-[11px]" />
+            <!-- The whole thread in the agent's own language, which the account already knows.
+                 It used to ask which of every language we support, on a screen where the answer
+                 was always the same one, and each message asked again. -->
+            <button v-if="!isTranslatingAll" type="button" :disabled="isTranslating"
+                v-tooltip="ctrans('Translate the conversation into your language')"
+                class="inline-flex items-center gap-1.5 shrink-0 h-7 px-2.5 text-[11px] font-medium rounded-md border border-gray-300 text-gray-600 transition hover:bg-gray-100 disabled:opacity-50"
+                @click="translateAllMessage">
+                <FontAwesomeIcon :icon="faLanguage" class="text-[11px]" />
+                {{ ctrans("Translate") }}
+            </button>
 
             <FontAwesomeIcon v-if="isTranslating" :icon="faSpinner" class="text-gray-400 text-xs animate-spin" />
 
@@ -1409,20 +1418,6 @@ const handleClickOutside = (e: MouseEvent) => {
     background: #f3f4f6;
 }
 
-.translate-select.p-select {
-    height: 1.75rem;
-    align-items: center;
-    border-radius: 0.375rem;
-}
-
-.translate-select :deep(.p-select-label) {
-    display: flex;
-    align-items: center;
-    padding-top: 0;
-    padding-bottom: 0;
-    font-size: 0.6875rem;
-    line-height: 1;
-}
 
 ::-webkit-scrollbar {
     width: 5px;
