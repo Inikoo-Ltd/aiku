@@ -9,6 +9,7 @@
 use App\Actions\UI\AikuPublic\BlogPosts;
 use App\Actions\UI\AikuPublic\IndexNotesInTypesense;
 use App\Actions\UI\AikuPublic\PingIndexNow;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Http;
 
 use function Pest\Laravel\get;
@@ -239,15 +240,13 @@ test('indexnow key file is served and the ping submits every public url', functi
 test('future-dated posts stay hidden until their date', function () {
     $slug = 'test-scheduled-post-'.uniqid();
     $path = resource_path("markdown/aiku-public/blog/{$slug}.md");
-    file_put_contents($path, "---\ntitle: Scheduled\nsummary: Not yet\ndate: ".now()->addDays(3)->toDateString()."\ntags: test\n---\n\nSoon.\n");
+    File::partialMock()->shouldReceive('glob')->with(resource_path('markdown/aiku-public/blog/*.md'))->andReturn([$path]);
+    File::shouldReceive('isFile')->with($path)->andReturnTrue();
+    File::shouldReceive('get')->with($path)->andReturn("---\ntitle: Scheduled\nsummary: Not yet\ndate: ".now()->addDays(3)->toDateString()."\ntags: test\n---\n\nSoon.\n");
 
-    try {
-        expect(BlogPosts::all()->pluck('slug'))->not->toContain($slug)
-            ->and(BlogPosts::find($slug))->toBeNull();
-        get($this->host.'/blog/'.$slug)->assertNotFound();
-    } finally {
-        unlink($path);
-    }
+    expect(BlogPosts::all()->pluck('slug'))->not->toContain($slug)
+        ->and(BlogPosts::find($slug))->toBeNull();
+    get($this->host.'/blog/'.$slug)->assertNotFound();
 });
 
 test('analytics articles tab lists every note with real commit date and visit stats', function () {
@@ -398,21 +397,19 @@ test('translation freshness is shown against the English source date', function 
     $slug = 'test-freshness-'.uniqid();
     $englishPath = resource_path("markdown/aiku-public/docs/{$slug}.md");
     $translationPath = resource_path("markdown/aiku-public/docs/{$slug}-id.md");
-    file_put_contents($englishPath, "---\ntitle: English guide\nsummary: Test guide\ndate: 2026-01-02\ncategory: production\n---\nEnglish body\n");
-    file_put_contents($translationPath, "---\ntitle: Panduan\nsummary: Test guide\ndate: 2026-01-03\nsource_date: {$sourceDate}\ncategory: production\n---\nIndonesian body\n");
+    File::partialMock()->shouldReceive('glob')->with(resource_path('markdown/aiku-public/docs/*.md'))->andReturn([$englishPath, $translationPath]);
+    File::shouldReceive('isFile')->with($englishPath)->andReturnTrue();
+    File::shouldReceive('isFile')->with($translationPath)->andReturnTrue();
+    File::shouldReceive('get')->with($englishPath)->andReturn("---\ntitle: English guide\nsummary: Test guide\ndate: 2026-01-02\ncategory: production\n---\nEnglish body\n");
+    File::shouldReceive('get')->with($translationPath)->andReturn("---\ntitle: Panduan\nsummary: Test guide\ndate: 2026-01-03\nsource_date: {$sourceDate}\ncategory: production\n---\nIndonesian body\n");
     $this->travelTo(\Illuminate\Support\Carbon::parse('2026-01-10'));
 
-    try {
-        $response = get($this->host.'/docs/'.$slug.'-id')->assertOk();
+    $response = get($this->host.'/docs/'.$slug.'-id')->assertOk();
 
-        if ($stale) {
-            $response->assertSee('telah berubah setelah terjemahan ini', false);
-        } else {
-            $response->assertDontSee('telah berubah setelah terjemahan ini', false);
-        }
-    } finally {
-        unlink($englishPath);
-        unlink($translationPath);
+    if ($stale) {
+        $response->assertSee('telah berubah setelah terjemahan ini', false);
+    } else {
+        $response->assertDontSee('telah berubah setelah terjemahan ini', false);
     }
 })->with([
     'current translation' => ['2026-01-02', false],
@@ -422,17 +419,14 @@ test('translation freshness is shown against the English source date', function 
 test('help falls back to English when the requested translation is missing', function () {
     $slug = 'test-fallback-'.uniqid();
     $path = resource_path("markdown/aiku-public/docs/{$slug}.md");
-    file_put_contents($path, "---\ntitle: English guide\nsummary: Test guide\ndate: 2026-01-02\nhelp_routes: grp.fixture.\n---\nEnglish body\n");
+    File::partialMock()->shouldReceive('glob')->with(resource_path('markdown/aiku-public/docs/*.md'))->andReturn([$path]);
+    File::shouldReceive('get')->with($path)->andReturn("---\ntitle: English guide\nsummary: Test guide\ndate: 2026-01-02\nhelp_routes: grp.fixture.\n---\nEnglish body\n");
     $this->travelTo(\Illuminate\Support\Carbon::parse('2026-01-10'));
 
-    try {
-        expect(BlogPosts::helpFor('grp.fixture.index', 'es'))->toBe([
-            'title' => 'English guide',
-            'url' => 'https://'.config('app.domain').'/docs/'.$slug,
-        ]);
-    } finally {
-        unlink($path);
-    }
+    expect(BlogPosts::helpFor('grp.fixture.index', 'es'))->toBe([
+        'title' => 'English guide',
+        'url' => 'https://'.config('app.domain').'/docs/'.$slug,
+    ]);
 });
 
 test('reading time counts non-latin scripts instead of reporting one minute', function () {

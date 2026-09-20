@@ -3306,8 +3306,15 @@ describe('partner shopping list', function () {
     test('what a partner asked for that is in their bay or on the shelves becomes an order, the rest stays on the list', function () {
         $seller = $this->orgPartner->partner;
 
-        [, $product]    = createProduct(StoreShop::run($seller, Shop::factory()->definition()));
-        $sellerOrgStock = $product->orgStocks()->first();
+        $stock = StoreStock::make()->action($seller->group, Stock::factory()->definition());
+        $sellerOrgStock = createOrgStocks($seller, [$stock])[0];
+        $product = \App\Actions\Catalogue\Product\StoreProduct::make()->action($this->sellerShop, array_merge(
+            \App\Models\Catalogue\Product::factory()->definition(),
+            [
+                'state' => \App\Enums\Catalogue\Product\ProductStateEnum::ACTIVE,
+                'trade_units' => [['id' => $stock->tradeUnits()->firstOrFail()->id, 'quantity' => 1]],
+            ]
+        ));
         $buyerOrgStock  = createOrgStocks($this->orgPartner->organisation, [$sellerOrgStock->stock])[0];
 
         $item = StorePartnerShoppingListItem::make()->action($this->orgPartner, $buyerOrgStock, ['quantity' => 5]);
