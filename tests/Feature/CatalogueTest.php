@@ -56,6 +56,8 @@ use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
+use App\Enums\SysAdmin\Authorisation\RolesEnum;
+use App\Enums\SysAdmin\Authorisation\ShopPermissionsEnum;
 use App\Models\Billables\Charge;
 use App\Models\Billables\Service;
 use App\Models\Catalogue\Asset;
@@ -124,8 +126,8 @@ test('create shop', function () {
         ->and($organisation->catalogueStats->number_shops_type_b2b)->toBe(1)
         ->and($organisation->catalogueStats->number_shops_state_in_process)->toBe(1)
         ->and($organisation->catalogueStats->number_shops_state_open)->toBe(0)
-        ->and($shopRoles->count())->toBe(13)
-        ->and($shopPermissions->count())->toBe(29);
+        ->and($shopRoles->pluck('name')->all())->toEqualCanonicalizing(RolesEnum::getRolesWithScope($shop))
+        ->and($shopPermissions->pluck('name')->all())->toEqualCanonicalizing(ShopPermissionsEnum::getAllValues($shop));
 
 
     $user = $this->guest->getUser();
