@@ -253,4 +253,30 @@ trait WithChatAgentAuthorisation
 
         return $agent;
     }
+
+    /**
+     * @return array<int, int>
+     */
+    protected function shopIdsWorkedBy(int $userId): array
+    {
+        $user = User::find($userId);
+
+        return $user ? $this->workableShopIdsFor($user) : [];
+    }
+
+    /**
+     * The colleagues on the same shops, so the team tab shows the conversations somebody else
+     * is holding on a shop this person also works.
+     *
+     * @param  array<int, int>  $shopIds
+     * @return array<int, int>
+     */
+    protected function agentIdsCovering(array $shopIds, int $exceptAgentId): array
+    {
+        return ChatAgent::with('user')->where('id', '!=', $exceptAgentId)->get()
+            ->filter(fn (ChatAgent $agent) => $agent->user
+                && array_intersect($shopIds, $this->workableShopIdsFor($agent->user)) !== [])
+            ->pluck('id')
+            ->all();
+    }
 }

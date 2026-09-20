@@ -2782,7 +2782,11 @@ test('an agent queue can only be read by the agent it belongs to', function () {
     getJson('/app/api/chats/users/'.$someoneElse->id.'/agent-notifications')->assertForbidden();
 
     getJson('/app/api/chats/users/'.$this->user->id.'/unread-messages')->assertOk();
-    getJson('/app/api/chats/users/'.$this->user->id.'/agent-notifications')->assertOk();
+    getJson('/app/api/chats/users/'.$this->user->id.'/agent-notifications')
+        ->assertOk()
+        ->assertJsonStructure(['data' => ['team_unread']])
+        ->assertJsonMissingPath('data.waiting')
+        ->assertJsonMissingPath('data.whatsapp');
 });
 
 test('customer chat history merges website and whatsapp sessions', function () {
@@ -2969,6 +2973,46 @@ test('my chats excludes a whatsapp thread now held by another agent', function (
     expect($mineUlids)->not->toContain($metaChatSession->ulid)
         ->and($teamUlids)->toContain($metaChatSession->ulid);
 });
+
+test('the whatsapp list follows the position, like the website one, not the retired shop table', function () {
+    setPermissionsTeamId($this->user->group_id);
+
+    $channel = MetaChannel::firstOrCreate(['code' => 'whatsapp'], ['name' => 'WhatsApp']);
+
+    $clerk = User::factory()->create(['group_id' => $this->organisation->group_id, 'status' => true]);
+    $clerk->assignRole(RolesEnum::getRoleName(RolesEnum::CUSTOMER_SERVICE_CLERK->value, $this->shop));
+    ChatAgent::create(['user_id' => $clerk->id, 'max_concurrent_chats' => 10]);
+
+    $unclaimed = MetaChatSession::create([
+        'ulid'            => (string) Str::ulid(),
+        'meta_channel_id' => $channel->id,
+        'shop_id'         => $this->shop->id,
+        'phone_number'    => '+628444555777',
+        'status'          => ChatSessionStatusEnum::ACTIVE,
+        'language_id'     => 68,
+        'priority'        => ChatPriorityEnum::NORMAL,
+    ]);
+
+    $waiting = collect(GetMetaChatSessions::make()->handle([
+        'assigned_to_me' => $clerk->id,
+        'statuses'       => [ChatSessionStatusEnum::WAITING->value],
+        'shop_id'        => $this->shop->id,
+    ])->items())->pluck('ulid');
+
+    expect($waiting)->toContain($unclaimed->ulid);
+});
+
+test('a whatsapp number says which country it is from', function (?string $phone, ?string $countryCode) {
+    expect(\App\Actions\Helpers\Country\GetCountryCodeFromPhone::run($phone))->toBe($countryCode);
+})->with([
+    ['+447926412326', 'GB'],
+    ['+918979080122', 'IN'],
+    ['+12125550100', 'US'],
+    ['+421905123456', 'SK'],
+    ['+18765550100', 'JM'],
+    ['07926412326', null],
+    [null, null],
+]);
 
 
 test('a template status webhook is verified by the WhatsApp Business Account it names', function () {
@@ -4818,4 +4862,42 @@ test('the sweep marks email conversations already imported from our own addresse
         ->and($ours->fresh()->rubbish_reason)->toBe(\App\Enums\CRM\Livechat\ChatIgnoreReasonEnum::MARKETING->value)
         ->and($customer->fresh()->is_rubbish)->toBeFalse()
         ->and(\App\Actions\Chat\ChatSession\RubbishOwnMailChatSessions::run())->toBe(0);
+});
+
+test('the closed list only holds what was closed today', function () {
+    $closedSession = function (\Carbon\Carbon $closedAt) {
+        $session = ChatSession::create([
+            'ulid'             => (string) Str::ulid(),
+            'status'           => ChatSessionStatusEnum::CLOSED,
+            'guest_identifier' => 'guest_'.Str::random(5),
+            'language_id'      => 68,
+            'priority'         => ChatPriorityEnum::NORMAL,
+            'shop_id'          => $this->shop->id,
+            'closed_at'        => $closedAt,
+            'created_at'       => $closedAt,
+            'updated_at'       => $closedAt,
+        ]);
+
+        ChatMessage::create([
+            'chat_session_id' => $session->id,
+            'message_type'    => ChatMessageTypeEnum::TEXT->value,
+            'sender_type'     => ChatSenderTypeEnum::GUEST->value,
+            'message_text'    => 'thanks',
+            'created_at'      => $closedAt,
+            'updated_at'      => $closedAt,
+        ]);
+
+        return $session;
+    };
+
+    $today     = $closedSession(now());
+    $lastMonth = $closedSession(now()->subMonth());
+
+    $ulids = collect(GetChatSessions::make()->handle([
+        'statuses' => [ChatSessionStatusEnum::CLOSED->value],
+        'shop_id'  => $this->shop->id,
+    ])->items())->pluck('ulid');
+
+    expect($ulids)->toContain($today->ulid)
+        ->and($ulids)->not->toContain($lastMonth->ulid);
 });

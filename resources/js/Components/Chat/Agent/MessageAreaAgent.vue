@@ -48,12 +48,44 @@ interface GetMessagesParams {
     media_url?: string | null
 }
 
+import { formatChatTime, formatChatAge } from "@/Composables/chatTime"
+import { faGlobe } from "@fal"
+import { faWhatsapp } from "@fortawesome/free-brands-svg-icons"
+
 const props = defineProps<{
     messages: ChatMessage[]
     session: SessionAPI | null
     readOnly?: boolean
+    showShop?: boolean
     ignoreReasons?: Array<{ value: string; label: string }>
 }>()
+
+const isCustomer = computed(() => Boolean((props.session as any)?.web_user?.customer_id || (props.session as any)?.customer_id))
+
+const channelIcon = computed(() => {
+    const channel = (props.session as any)?.channel
+
+    return channel === "whatsapp" ? faWhatsapp : channel === "email" ? faEnvelope : faGlobe
+})
+
+const channelIconClass = computed(() => {
+    const channel = (props.session as any)?.channel
+
+    return channel === "whatsapp" ? "text-green-600" : channel === "email" ? "text-blue-500" : "text-gray-400"
+})
+
+// When the last word was said, and how long ago: a waiting conversation is judged by its age.
+const lastMessageStamp = computed(() => {
+    const at = props.messages?.[props.messages.length - 1]?.created_at
+
+    if (!at) {
+        return null
+    }
+
+    const stamp = new Date(at).getTime()
+
+    return { time: formatChatTime(stamp), age: formatChatAge(stamp) }
+})
 
 const emit = defineEmits([
     "send-message",
@@ -1051,7 +1083,16 @@ const handleClickOutside = (e: MouseEvent) => {
                         :class="statusBadgeClass">
                         {{ session.status }}
                     </span>
-                    <span v-if="session?.shop?.name" class="text-[11px] text-gray-400 truncate">
+                    <span class="shrink-0 text-[9px] px-1 py-0.5 border leading-none"
+                        :class="isCustomer ? 'border-green-300 text-green-500' : 'border-blue-300 text-blue-400'"
+                        v-tooltip="isCustomer ? ctrans('Customer') : ctrans('Guest')">
+                        {{ isCustomer ? 'C' : 'G' }}
+                    </span>
+                    <FontAwesomeIcon :icon="channelIcon" class="shrink-0 text-[11px]" :class="channelIconClass" />
+                    <span v-if="lastMessageStamp" class="text-[11px] text-gray-400 shrink-0">
+                        {{ lastMessageStamp.time }} <span class="text-gray-300">({{ lastMessageStamp.age }})</span>
+                    </span>
+                    <span v-if="showShop && session?.shop?.name" class="text-[11px] text-gray-400 truncate">
                         {{ session.shop.name }}
                     </span>
                 </div>

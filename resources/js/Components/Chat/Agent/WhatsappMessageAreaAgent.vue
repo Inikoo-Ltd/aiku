@@ -16,8 +16,10 @@ import {
     faFaceSmile,
     faLifeRing,
     faEye,
+    faBan,
 } from "@fortawesome/free-solid-svg-icons"
 import { faWhatsapp } from "@fortawesome/free-brands-svg-icons"
+import { formatChatTime, formatChatAge } from "@/Composables/chatTime"
 import type { ChatMessage, SessionAPI } from "@/types/Chat/chat"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import Image from "@common/Components/Image.vue"
@@ -68,9 +70,46 @@ const props = defineProps<{
     session: SessionAPI | null
     organisationSlug: string
     readOnly?: boolean
+    showShop?: boolean
 }>()
 
-const emit = defineEmits(["back", "messages-read", "assign-self-success", "close-session", "view-profile"])
+const isCustomer = computed(() => Boolean((props.session as any)?.customer_id || (props.session as any)?.web_user?.customer_id))
+
+// When the last word was said, and how long ago: a waiting conversation is judged by its age.
+const lastMessageStamp = computed(() => {
+    const at = props.messages?.[props.messages.length - 1]?.created_at
+
+    if (!at) {
+        return null
+    }
+
+    const stamp = new Date(at).getTime()
+
+    return { time: formatChatTime(stamp), age: formatChatAge(stamp) }
+})
+
+const emit = defineEmits(["back", "messages-read", "assign-self-success", "close-session", "view-profile", "spam-success"])
+
+const isSpamMarking = ref(false)
+
+const markSpam = async () => {
+    if (!props.session?.ulid || isSpamMarking.value) return
+
+    isSpamMarking.value = true
+
+    try {
+        await axios.patch(route("grp.org.chat.agents.whatsapp.sessions.spam", [props.organisationSlug, props.session.ulid]))
+        emit("spam-success")
+    } catch (e: any) {
+        notify({
+            title: ctrans("Something went wrong"),
+            text: e?.response?.data?.message ?? ctrans("Failed to update spam status"),
+            type: "error",
+        })
+    } finally {
+        isSpamMarking.value = false
+    }
+}
 
 const layout: any = inject("layout", {})
 const baseUrl = layout?.appUrl ?? ""
@@ -79,6 +118,10 @@ const isTicketModalOpen = ref(false)
 
 const chatSession = computed(() => props.session)
 const isClosed = computed(() => chatSession.value?.status === "closed")
+// Spam is never offered on a customer: it blocks the number for good.
+const canReportSpam = computed(() =>
+    !(chatSession.value as any)?.customer?.id && !isClosed.value && !(chatSession.value as any)?.is_spam && !props.readOnly
+)
 const isWaiting = computed(() => !chatSession.value?.assigned_agent)
 const isMyChat = computed(() => {
     if (!chatSession.value?.assigned_agent) return true
@@ -815,6 +858,8 @@ onUnmounted(() => {
                 </div>
                 <div class="flex items-center gap-1.5 mt-0.5">
                     <FontAwesomeIcon :icon="faWhatsapp" class="text-[11px] text-green-600" />
+                    <img v-if="(session as any)?.country_code" :src="`/flags/${(session as any).country_code.toLowerCase()}.png`"
+                        :alt="(session as any).country_code" v-tooltip="(session as any).country_code" class="h-3 w-auto shrink-0" />
                     <span v-if="session?.phone_number" class="text-[11px] text-gray-400 truncate">
                         {{ session.phone_number }}
                     </span>
@@ -823,11 +868,28 @@ onUnmounted(() => {
                         :class="statusBadgeClass">
                         {{ session.status }}
                     </span>
-                    <span v-if="session?.shop?.name" class="text-[11px] text-gray-400 truncate">
+                    <span v-if="showShop && session?.shop?.name" class="text-[11px] text-gray-400 truncate">
                         {{ session.shop.name }}
+                    </span>
+                    <span class="shrink-0 text-[9px] px-1 py-0.5 border leading-none"
+                        :class="isCustomer ? 'border-green-300 text-green-500' : 'border-blue-300 text-blue-400'"
+                        v-tooltip="isCustomer ? ctrans('Customer') : ctrans('Guest')">
+                        {{ isCustomer ? 'C' : 'G' }}
+                    </span>
+                    <FontAwesomeIcon :icon="faWhatsapp" class="shrink-0 text-[11px] text-green-600" />
+                    <span v-if="lastMessageStamp" class="text-[11px] text-gray-400 shrink-0">
+                        {{ lastMessageStamp.time }} <span class="text-gray-300">({{ lastMessageStamp.age }})</span>
                     </span>
                 </div>
             </div>
+
+            <button v-if="canReportSpam" type="button" :disabled="isSpamMarking"
+                v-tooltip="ctrans('Blocks this sender. Everything they send from now on goes to spam.')"
+                class="inline-flex items-center gap-1.5 shrink-0 h-7 px-2.5 text-[11px] font-medium rounded-md border border-red-200 text-red-600 transition hover:bg-red-50 disabled:opacity-50"
+                @click="markSpam">
+                <FontAwesomeIcon :icon="faBan" class="text-[11px]" />
+                {{ ctrans("Spam") }}
+            </button>
 
             <ModalConfirmationDelete v-if="!isClosed && !readOnly" :routeDelete="{
                 name: 'grp.org.chat.agents.whatsapp.sessions.close',

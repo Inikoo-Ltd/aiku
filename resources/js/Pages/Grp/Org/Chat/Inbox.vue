@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, inject, onMounted, onUnmounted, watch, nextTick } from "vue"
-import { Head } from "@inertiajs/vue3"
+import { Head, router } from "@inertiajs/vue3"
 import { useDebounceFn, watchDebounced } from "@vueuse/core"
 import axios from "axios"
 import { ctrans } from "@/Composables/useTrans"
@@ -19,6 +19,7 @@ import { faSearch, faTimes } from "@far"
 import { faCog, faStar, faAngleLeft, faAngleRight, faAngleDown, faFilter, faStoreAlt, faGlobe, faPlus, faEnvelope, faArchive } from "@fal"
 import { faEllipsisVertical, faBan, faRotateLeft, faTrash, faTrashArrowUp, faAnglesUp, faAngleUp, faEquals, faChevronRight, faStar as faStarSolid } from "@fortawesome/free-solid-svg-icons"
 import { faWhatsapp } from "@fortawesome/free-brands-svg-icons"
+import { formatChatTime, formatChatAge } from "@/Composables/chatTime"
 import {
     Contact,
     SessionAPI,
@@ -153,6 +154,11 @@ const spamView = ref(false)
 const rubbishView = ref(false)
 const trashView = ref(false)
 const highlightView = ref(false)
+
+// The list header already names the shop; only the views that span shops need it repeated
+// on the conversation.
+const crossShopView = computed(() => trashView.value || rubbishView.value || spamView.value || highlightView.value)
+
 const openMenuUlid = ref<string | null>(null)
 const menuPos = ref({ top: 0, left: 0 })
 const isSpamming = ref<Record<string, boolean>>({})
@@ -234,30 +240,6 @@ const onOpenSlackSettings = () => {
     chatSettingVisible.value = true
 }
 
-// A bare clock reading is a trap on anything but today: 13:42 looks recent whether it was an
-// hour ago or last March, so anything older carries its date.
-const formatTime = (timestamp: number) => {
-    const d = new Date(timestamp)
-    const time = d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
-
-    return d.toDateString() === new Date().toDateString()
-        ? time
-        : `${d.toLocaleDateString([], { day: "numeric", month: "short" })} ${time}`
-}
-
-// How long it has been waiting, in the largest unit that still says something useful.
-const formatAge = (timestamp: number) => {
-    const minutes = Math.max(0, Math.round((Date.now() - timestamp) / 60000))
-
-    if (minutes < 60) {
-        return `${minutes}m`
-    }
-
-    const hours = Math.round(minutes / 60)
-
-    return hours < 48 ? `${hours}h` : `${Math.round(hours / 24)}d`
-}
-
 const mapSession = (s: SessionAPI): Contact => ({
     id: s.id,
     ulid: s.ulid,
@@ -267,10 +249,10 @@ const mapSession = (s: SessionAPI): Contact => ({
     avatar: s.image ?? "",
     lastMessage: cleanEmailText(s.last_message?.message),
     lastMessageTime: s.last_message?.created_at
-        ? formatTime(new Date(s.last_message.created_at).getTime() + PLUS_8_HOURS)
+        ? formatChatTime(new Date(s.last_message.created_at).getTime() + PLUS_8_HOURS)
         : undefined,
     lastMessageAge: s.last_message?.created_at
-        ? formatAge(new Date(s.last_message.created_at).getTime() + PLUS_8_HOURS)
+        ? formatChatAge(new Date(s.last_message.created_at).getTime() + PLUS_8_HOURS)
         : undefined,
     unread: s.unread_count,
     status: s.status,
@@ -278,6 +260,7 @@ const mapSession = (s: SessionAPI): Contact => ({
     is_rubbish: (s as any).is_rubbish ?? false,
     is_highlighted: (s as any).is_highlighted ?? false,
     webUser: s.web_user ?? (s as any).customer,
+    country_code: (s as any).country_code ?? null,
     priority: s.priority,
     guest_profile: s.guest_profile,
     metadata: (s as any).metadata ?? null,
@@ -601,17 +584,6 @@ const showAgentLoad = (id: number) => {
     reloadContacts()
 }
 
-// A shop that is not the one being looked at folds to a line: its name and how much is
-// waiting and in hand across all its channels. Only the open one spends the room on a table.
-const shopTotals = (inbox: (typeof props.inboxes)[number]) =>
-    liveChannels(inbox).reduce(
-        (sum, c: any) => ({
-            waiting: sum.waiting + c.customer.waiting + c.guest.waiting,
-            active: sum.active + c.customer.active + c.guest.active,
-        }),
-        { waiting: 0, active: 0 }
-    )
-
 const PRESENCE_DOT: Record<string, string> = {
     online: "bg-green-500",
     away: "bg-amber-400",
@@ -897,15 +869,7 @@ const restoreChat = async (c: Contact) => {
     }
 }
 
-// Per-agent (My Chats) incoming-chat counts used for the badges.
-const notifWaiting = ref<any[]>([])
-const notifActive = ref<any[]>([])
-const notifReopen = ref<any[]>([])
 const teamUnreadByShop = ref<Record<number, number>>({})
-
-const notifWaWaiting = ref<any[]>([])
-const notifWaActive = ref<any[]>([])
-const notifWaReopen = ref<any[]>([])
 
 const pendingSessionUlid = ref<string | null>(null)
 
@@ -990,17 +954,17 @@ const openPendingSession = async () => {
     }
 }
 
+// The rail's table and its red badge are the same counts, so they are refreshed together
+// and from one place: counted apart, the badge said 40 over a row that added up to 26.
+const reloadInboxCountsSoon = useDebounceFn(() => router.reload({ only: ["inboxes"] }), 500)
+
 const fetchInboxNotifications = async () => {
+    reloadInboxCountsSoon()
+
     if (!myAgentId || isReadOnly.value) return
     try {
         const { data } = await axios.get(`${baseUrl}/app/api/chats/users/${myAgentId}/agent-notifications`)
-        notifWaiting.value = data?.data?.waiting ?? []
-        notifActive.value = data?.data?.active ?? []
-        notifReopen.value = data?.data?.reopen ?? []
         teamUnreadByShop.value = data?.data?.team_unread ?? {}
-        notifWaWaiting.value = data?.data?.whatsapp?.waiting ?? []
-        notifWaActive.value = data?.data?.whatsapp?.active ?? []
-        notifWaReopen.value = data?.data?.whatsapp?.reopen ?? []
     } catch (e) {
         // silent — badges are non-critical
     }
@@ -1014,42 +978,22 @@ const teamUnreadForShop = computed(() =>
         : 0
 )
 
-// Each channel keeps its own feed, so the tab badges follow whichever inbox is open
-// rather than showing website counts above a WhatsApp list.
-const countByShop = (sessions: any[]) => {
-    const map: Record<number, number> = {}
-    for (const session of sessions) {
-        const sid = session?.shop?.id
-        if (!sid) continue
-        map[sid] = (map[sid] ?? 0) + 1
-    }
-    return map
-}
+// Who is waiting, across the shop's channels: the bold numbers on the customer row in red
+// and on the guest row in amber, so each badge can be checked against the table under it.
+// Kept apart because most guests are nobody: an abandoned widget, a bounce, a circular.
+// Active is the grey numbers of both rows, in blue: a conversation somebody took is work
+// still open, and one left open for ever is how a customer ends up answered by nobody.
+const countByInbox = (tally: (channel: any) => number) =>
+    Object.fromEntries(
+        (props.inboxes ?? []).map((inbox) => [
+            inbox.id,
+            liveChannels(inbox).reduce((sum, c) => sum + tally(c), 0),
+        ])
+    ) as Record<number, number>
 
-const shopUnread = computed<Record<number, number>>(() =>
-    countByShop([...notifWaiting.value, ...notifActive.value, ...notifReopen.value])
-)
-
-const whatsappUnread = computed<Record<number, number>>(() =>
-    countByShop([...notifWaWaiting.value, ...notifWaActive.value, ...notifWaReopen.value])
-)
-
-const channelUnread = (inbox: { id: number }, channel: { key: string }) =>
-    channel.key === "whatsapp"
-        ? (whatsappUnread.value[inbox.id] ?? 0)
-        : (shopUnread.value[inbox.id] ?? 0)
-
-const inboxUnread = computed<Record<number, number>>(() => {
-    const map: Record<number, number> = {}
-    for (const inbox of props.inboxes ?? []) {
-        let total = 0
-        for (const channel of liveChannels(inbox)) {
-            total += channelUnread(inbox, channel)
-        }
-        map[inbox.id] = total
-    }
-    return map
-})
+const inboxUnread = computed(() => countByInbox((c) => c.customer?.waiting ?? 0))
+const inboxGuestsWaiting = computed(() => countByInbox((c) => c.guest?.waiting ?? 0))
+const inboxActive = computed(() => countByInbox((c) => (c.customer?.active ?? 0) + (c.guest?.active ?? 0)))
 
 const openChat = (c: Contact) => {
     // Moving to another chat retires the linked one, so it does not sit pinned above
@@ -1433,20 +1377,26 @@ onUnmounted(() => {
                                 {{ shopInitials(inbox.name) }}
                             </div>
                             <span v-if="inboxUnread[inbox.id]"
+                                v-tooltip="ctrans('Customers waiting')"
                                 class="absolute -top-1.5 -right-1.5 min-w-[16px] h-4 px-1 text-[9px] font-semibold leading-4 text-white rounded-full text-center bg-red-500 ring-2 ring-gray-50">
                                 {{ inboxUnread[inbox.id] }}
                             </span>
                         </div>
                         <span v-if="!inboxRailCollapsed" class="flex-1 truncate text-sm text-left">{{ inbox.name }}</span>
-                        <span v-if="!inboxRailCollapsed && selectedShopId !== inbox.id"
-                            v-tooltip="ctrans('Waiting') + ' · ' + ctrans('Active')"
-                            class="shrink-0 text-[11px] tabular-nums inline-flex gap-1">
-                            <span class="font-semibold" :class="shopTotals(inbox).waiting ? 'text-slate-700' : 'text-slate-300'">{{ shopTotals(inbox).waiting }}</span>
-                            <span :class="shopTotals(inbox).active ? 'text-slate-400' : 'text-slate-300'">{{ shopTotals(inbox).active }}</span>
-                        </span>
                         <span v-if="!inboxRailCollapsed && inboxUnread[inbox.id]"
+                            v-tooltip="ctrans('Customers waiting')"
                             class="shrink-0 min-w-[16px] h-4 px-1 text-[9px] font-semibold leading-4 text-white rounded-full text-center bg-red-500">
                             {{ inboxUnread[inbox.id] }}
+                        </span>
+                        <span v-if="!inboxRailCollapsed && inboxGuestsWaiting[inbox.id]"
+                            v-tooltip="ctrans('Guests waiting')"
+                            class="shrink-0 min-w-[16px] h-4 px-1 text-[9px] font-semibold leading-4 text-white rounded-full text-center bg-amber-500">
+                            {{ inboxGuestsWaiting[inbox.id] }}
+                        </span>
+                        <span v-if="!inboxRailCollapsed && inboxActive[inbox.id]"
+                            v-tooltip="ctrans('Active')"
+                            class="shrink-0 min-w-[16px] h-4 px-1 text-[9px] font-semibold leading-4 text-white rounded-full text-center bg-blue-500">
+                            {{ inboxActive[inbox.id] }}
                         </span>
                     </button>
 
@@ -1728,6 +1678,8 @@ onUnmounted(() => {
                                         class="shrink-0 text-[9px] px-1 py-0.5 border border-blue-300 text-blue-400 leading-none">
                                         G
                                     </span>
+                                    <img v-if="(c as any).country_code" :src="`/flags/${(c as any).country_code.toLowerCase()}.png`"
+                                        :alt="(c as any).country_code" v-tooltip="(c as any).country_code" class="shrink-0 h-3 w-auto" />
                                     <span class="flex-1 min-w-0 text-sm font-medium text-gray-800 truncate">{{ capitalize(c.name) }}</span>
                                     <span class="text-[10px] text-gray-500 shrink-0">
                                         {{ c.lastMessageTime }}
@@ -1745,6 +1697,13 @@ onUnmounted(() => {
                                 </div>
                                 <div class="flex items-center gap-1.5">
                                     <span class="text-xs text-gray-500 truncate flex-1 leading-snug">{{ c.lastMessage }}</span>
+                                    <button v-if="!c.webUser?.customer_id && !c.is_spam && !trashView && !onlyClosed && !isReadOnly" type="button"
+                                        :disabled="isSpamming[c.ulid]"
+                                        v-tooltip="ctrans('Report spam')"
+                                        class="shrink-0 flex items-center justify-center text-gray-300 opacity-0 group-hover:opacity-100 hover:text-red-500 transition-opacity disabled:opacity-50"
+                                        @click.stop="markSpam(c, true)">
+                                        <FontAwesomeIcon :icon="faBan" class="text-[11px]" />
+                                    </button>
                                     <button v-if="!trashView && !isReadOnly" type="button"
                                         v-tooltip="c.is_highlighted ? ctrans('Remove highlight') : ctrans('Highlight')"
                                         class="shrink-0 flex items-center justify-center transition-opacity"
@@ -1794,13 +1753,14 @@ onUnmounted(() => {
                 <WhatsappMessageAreaAgent v-if="activeChannel === 'whatsapp'"
                     :messages="messages" :session="selectedSession"
                     :organisation-slug="organisation.slug"
-                    :read-only="isReadOnly"
+                    :read-only="isReadOnly" :show-shop="crossShopView"
                     @back="selectedSession = null" @messages-read="onMessagesRead"
                     @assign-self-success="onAssignSelfSuccess"
                     @close-session="closeSession"
+                    @spam-success="onSpamFromThread"
                     @view-profile="showProfilePanel" />
                 <MessageAreaAgent v-else :messages="messages" :session="selectedSession"
-                    :read-only="isReadOnly" :ignore-reasons="ignoreReasons"
+                    :read-only="isReadOnly" :ignore-reasons="ignoreReasons" :show-shop="crossShopView"
                     @back="selectedSession = null" @send-message="handleSendMessage"
                     @close-session="closeSession" @view-history="showHistoryPanel"
                     @view-user-profile="showProfilePanel" @view-message-details="showMessageDetailsPanel"

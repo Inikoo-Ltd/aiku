@@ -16,6 +16,7 @@ use App\Enums\CRM\Livechat\ChatAssignmentStatusEnum;
 use App\Enums\CRM\Livechat\ChatChannelEnum;
 use App\Enums\CRM\Livechat\ChatEventTypeEnum;
 use App\Enums\CRM\Livechat\ChatIgnoreReasonEnum;
+use App\Actions\Chat\ChatSession\GetChatSessions;
 use App\Enums\CRM\Livechat\ChatSessionStatusEnum;
 use App\Http\Resources\CRM\Livechat\ChatSessionListResource;
 use App\Models\Catalogue\Shop;
@@ -312,10 +313,9 @@ class ShowOrgChatInbox extends OrgAction
      */
     private function waitingAndActiveCounts(Collection $shopIds): array
     {
-        $wanted = [
+        $open = [
             ChatSessionStatusEnum::WAITING->value,
             ChatSessionStatusEnum::ACTIVE->value,
-            ChatSessionStatusEnum::CLOSED->value,
         ];
 
         $counts  = [];
@@ -346,7 +346,8 @@ class ShowOrgChatInbox extends OrgAction
         // Split by who is on the other end as well: a customer waiting is not the same job as
         // a stranger, or a bounce daemon, and the two were adding up into one number.
         $rows = ChatSession::whereIn('shop_id', $shopIds)
-            ->whereIn('status', $wanted)
+            ->where(fn ($q) => $q->whereIn('status', $open)
+                ->orWhere(fn ($c) => GetChatSessions::scopeClosedToday($c->where('status', ChatSessionStatusEnum::CLOSED->value))))
             ->whereHas('messages')
             ->where('is_spam', false)
             // Put aside keeps its status, so it has to be left out by name: the one active
@@ -377,7 +378,8 @@ class ShowOrgChatInbox extends OrgAction
         // WhatsApp has no empty-session problem: a conversation only exists once somebody wrote.
         // It carries the customer on the session itself rather than through a web user.
         $metaRows = MetaChatSession::whereIn('shop_id', $shopIds)
-            ->whereIn('status', $wanted)
+            ->where(fn ($q) => $q->whereIn('status', $open)
+                ->orWhere(fn ($c) => GetChatSessions::scopeClosedToday($c->where('status', ChatSessionStatusEnum::CLOSED->value))))
             ->where('is_spam', false)
             ->groupBy('shop_id', 'status', DB::raw('customer_id is not null'), 'by_me', 'by_colleague')
             ->get([

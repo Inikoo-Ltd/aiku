@@ -112,6 +112,8 @@ interface Translation {
     text: string
 }
 
+import { formatChatTime } from "@/Composables/chatTime"
+
 const props = defineProps<{
     message: Message
     viewerType: ViewerType
@@ -159,9 +161,7 @@ const isRetracted = computed(() => props.message.is_retracted === true)
 const isRetractableMessage = computed(() => isEditableMessage.value && !isRetracted.value)
 
 const retractedTime = computed(() =>
-    props.message.retracted_at
-        ? new Date(props.message.retracted_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
-        : null
+    props.message.retracted_at ? formatChatTime(new Date(props.message.retracted_at).getTime()) : null
 )
 
 // Anybody working the conversation can strike out a card number or a password, whoever
@@ -266,12 +266,7 @@ const bubbleClass = computed(() => ({
     "bg-gray-100 text-gray-400 border border-dashed border-gray-300 italic": isRetracted.value,
 }))
 
-const time = computed(() =>
-    new Date(props.message.created_at).toLocaleTimeString([], {
-        hour: "2-digit",
-        minute: "2-digit",
-    })
-)
+const time = computed(() => formatChatTime(new Date(props.message.created_at).getTime()))
 
 // WhatsApp reports a full delivery lifecycle (sent → delivered → read); website
 // chat only knows read/unread, so it keeps the original two-state tick.

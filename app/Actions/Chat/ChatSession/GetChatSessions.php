@@ -107,12 +107,20 @@ class GetChatSessions
             $query->whereIn('shop_id', $filters['allowed_shop_ids']);
         }
 
-        if (isset($filters['status'])) {
-            $query->where('status', $filters['status']);
-        }
+        $statuses = (array) ($filters['statuses'] ?? (isset($filters['status']) ? [$filters['status']] : []));
 
-        if (isset($filters['statuses'])) {
-            $query->whereIn('status', $filters['statuses']);
+        if ($statuses !== []) {
+            $query->where(function ($outer) use ($statuses) {
+                foreach ($statuses as $status) {
+                    $outer->orWhere(function ($q) use ($status) {
+                        $q->where('status', $status);
+
+                        if ($status === ChatSessionStatusEnum::CLOSED->value) {
+                            self::scopeClosedToday($q);
+                        }
+                    });
+                }
+            });
         }
 
         $isTrashView   = !empty($filters['trashed']);
@@ -263,6 +271,19 @@ class GetChatSessions
         return $query->paginate($filters['limit'] ?? 20);
     }
 
+    /**
+     * Closed conversations are kept forever, so the list and the capsule only ever mean the
+     * ones closed today; older ones are found through search or the reports.
+     *
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
+     */
+    public static function scopeClosedToday($query): void
+    {
+        $table = $query->getModel()->getTable();
+
+        $query->whereRaw("coalesce({$table}.closed_at, {$table}.updated_at) >= ?", [now()->startOfDay()]);
+    }
+
     protected function getCurrentAgent(int $userId): ?ChatAgent
     {
         return ChatAgent::where('user_id', $userId)->first();
@@ -282,32 +303,6 @@ class GetChatSessions
             ->map(fn ($pair) => explode(':', (string) $pair, 2))
             ->filter(fn ($parts) => count($parts) === 2 && $parts[0] !== 'whatsapp')
             ->values()
-            ->all();
-    }
-
-    /**
-     * @return array<int, int>
-     */
-    protected function shopIdsWorkedBy(int $userId): array
-    {
-        $user = User::find($userId);
-
-        return $user ? $this->workableShopIdsFor($user) : [];
-    }
-
-    /**
-     * The colleagues on the same shops, so the team tab shows the conversations somebody else
-     * is holding on a shop this person also works.
-     *
-     * @param  array<int, int>  $shopIds
-     * @return array<int, int>
-     */
-    protected function agentIdsCovering(array $shopIds, int $exceptAgentId): array
-    {
-        return ChatAgent::with('user')->where('id', '!=', $exceptAgentId)->get()
-            ->filter(fn (ChatAgent $agent) => $agent->user
-                && array_intersect($shopIds, $this->workableShopIdsFor($agent->user)) !== [])
-            ->pluck('id')
             ->all();
     }
 

@@ -11,6 +11,7 @@ use App\Actions\Chat\WithChatAgentAuthorisation;
 use App\Enums\CRM\Livechat\ChatAssignmentStatusEnum;
 use App\Enums\CRM\Livechat\ChatEventTypeEnum;
 use App\Enums\CRM\Livechat\ChatSenderTypeEnum;
+use App\Actions\Chat\ChatSession\GetChatSessions;
 use App\Enums\CRM\Livechat\ChatSessionStatusEnum;
 use App\Http\Resources\CRM\Livechat\MetaChatSessionListResource;
 use App\Models\Chat\ChatAgent;
@@ -83,6 +84,9 @@ class GetMetaChatSessions
                         ChatSessionStatusEnum::ACTIVE->value => $q
                             ->where('status', '!=', ChatSessionStatusEnum::CLOSED->value)
                             ->whereHas('assignments', fn ($a) => $a->where('status', ChatAssignmentStatusEnum::ACTIVE->value)),
+                        ChatSessionStatusEnum::CLOSED->value => GetChatSessions::scopeClosedToday(
+                            $q->where('status', $status)
+                        ),
                         default => $q->where('status', $status),
                     };
                 });
@@ -151,7 +155,7 @@ class GetMetaChatSessions
                 ? ChatAgent::where('user_id', (int) $filters['assigned_to_me'])->first()
                 : null;
 
-            $query->whereIn('shop_id', $viewAgent ? $viewAgent->shops()->pluck('shops.id')->all() : []);
+            $query->whereIn('shop_id', $viewAgent ? $this->shopIdsWorkedBy((int) $filters['assigned_to_me']) : []);
         }
 
         if (!$isTrashView && empty($filters['include_spam'])) {
@@ -169,7 +173,7 @@ class GetMetaChatSessions
             $currentAgent = ChatAgent::where('user_id', $userId)->first();
 
             if ($currentAgent) {
-                $shopIds = $currentAgent->shops()->pluck('shops.id');
+                $shopIds = $this->shopIdsWorkedBy($userId);
 
                 $isClosed         = in_array('closed', $requestedStatuses);
                 $assignmentStatus = $isClosed
@@ -182,9 +186,7 @@ class GetMetaChatSessions
                     // my/team it belongs to is then decided from what comes back.
                     $query->whereIn('shop_id', $shopIds);
                 } elseif (!empty($filters['view_team'])) {
-                    $teamAgentIds = ChatAgent::whereHas('shops', function ($q) use ($shopIds) {
-                        $q->whereIn('shops.id', $shopIds);
-                    })->where('id', '!=', $currentAgent->id)->pluck('id');
+                    $teamAgentIds = $this->agentIdsCovering($shopIds, $currentAgent->id);
 
                     $query->whereHas('assignments', function ($assignmentQ) use ($teamAgentIds, $assignmentStatus) {
                         $assignmentQ->whereIn('chat_agent_id', $teamAgentIds)
