@@ -3803,3 +3803,121 @@ test('working hours follow the agent contract, then the shop, then a plain weekd
 
     expect($within('2026-09-21 09:00'))->toBeFalse();
 });
+
+test('losing customer service releases the chats and suspends the agent', function () {
+    $user = User::factory()->create(['group_id' => $this->organisation->group_id, 'status' => true]);
+    setPermissionsTeamId($this->user->group_id);
+    $user->assignRole(RolesEnum::getRoleName(RolesEnum::CUSTOMER_SERVICE_CLERK->value, $this->shop));
+
+    $agent = ChatAgent::create([
+        'user_id'              => $user->id,
+        'max_concurrent_chats' => 5,
+        'language_id'          => 68,
+        'is_online'            => true,
+        'is_available'         => true,
+        'current_chat_count'   => 1,
+    ]);
+
+    ShopHasChatAgent::create([
+        'organisation_id' => $this->shop->organisation_id,
+        'shop_id'         => $this->shop->id,
+        'chat_agent_id'   => $agent->id,
+    ]);
+
+    $session = ChatSession::create([
+        'ulid'             => (string) \Illuminate\Support\Str::ulid(),
+        'shop_id'          => $this->shop->id,
+        'language_id'      => 68,
+        'status'           => ChatSessionStatusEnum::ACTIVE->value,
+        'priority'         => ChatPriorityEnum::NORMAL->value,
+        'guest_identifier' => 'guest-'.\Illuminate\Support\Str::random(8),
+    ]);
+
+    $assignment = $session->assignments()->create([
+        'chat_agent_id' => $agent->id,
+        'status'        => ChatAssignmentStatusEnum::ACTIVE->value,
+        'assigned_at'   => now(),
+    ]);
+
+    // While the position stands, nothing is taken away.
+    expect(\App\Actions\Chat\Agent\RevokeChatAgentAccess::run($agent))
+        ->toMatchArray(['released' => 0, 'shops_removed' => 0, 'suspended' => false]);
+
+    $user->removeRole(RolesEnum::getRoleName(RolesEnum::CUSTOMER_SERVICE_CLERK->value, $this->shop));
+    \App\Actions\SysAdmin\CleanUserCaches::make()->clearPermissionsCache($user);
+
+    $result = \App\Actions\Chat\Agent\RevokeChatAgentAccess::run($agent->fresh());
+
+    expect($result['released'])->toBe(1)
+        ->and($result['shops_removed'])->toBe(1)
+        ->and($result['suspended'])->toBeTrue()
+        // The chat goes back to the shop queue instead of sitting in a name nobody can act on.
+        ->and($session->fresh()->status)->toBe(ChatSessionStatusEnum::WAITING)
+        ->and($assignment->fresh()->status)->toBe(ChatAssignmentStatusEnum::RESOLVED)
+        ->and(ChatAgent::find($agent->id))->toBeNull()
+        ->and(ChatAgent::withTrashed()->find($agent->id)->trashed())->toBeTrue();
+});
+
+test('administering a shop does not let you into its chats', function () {
+    $session = ChatSession::create([
+        'ulid'             => (string) \Illuminate\Support\Str::ulid(),
+        'shop_id'          => $this->shop->id,
+        'language_id'      => 68,
+        'status'           => ChatSessionStatusEnum::ACTIVE->value,
+        'priority'         => ChatPriorityEnum::NORMAL->value,
+        'guest_identifier' => 'guest-'.\Illuminate\Support\Str::random(8),
+    ]);
+
+    setPermissionsTeamId($this->user->group_id);
+
+    // A shop administrator holds CRM, and used to inherit chat with it.
+    $admin = User::factory()->create(['group_id' => $this->organisation->group_id, 'status' => true]);
+    $admin->assignRole(RolesEnum::getRoleName(RolesEnum::SHOP_ADMIN->value, $this->shop));
+
+    // Administering a shop is not a reason to be able to write to its customers.
+    expect($admin->authTo(['crm.'.$this->shop->id]))->toBeTrue()
+        ->and($admin->authTo(['chat.'.$this->shop->id]))->toBeFalse()
+        ->and($admin->authTo(['chat-m.'.$this->shop->id]))->toBeFalse();
+
+    $this->actingAs($admin);
+    expect(CloseChatSession::make()->getCurrentAgent($session))->toBeNull()
+        ->and(ChatAgent::where('user_id', $admin->id)->exists())->toBeFalse();
+
+    $clerk = User::factory()->create(['group_id' => $this->organisation->group_id, 'status' => true]);
+    $clerk->assignRole(RolesEnum::getRoleName(RolesEnum::CUSTOMER_SERVICE_CLERK->value, $this->shop));
+
+    $this->actingAs($clerk);
+    expect($clerk->authTo(['chat.'.$this->shop->id]))->toBeTrue()
+        ->and(CloseChatSession::make()->getCurrentAgent($session))->not->toBeNull();
+});
+
+test('a customer service supervisor supervises chat without being an agent', function () {
+    $session = ChatSession::create([
+        'ulid'             => (string) \Illuminate\Support\Str::ulid(),
+        'shop_id'          => $this->shop->id,
+        'language_id'      => 68,
+        'status'           => ChatSessionStatusEnum::ACTIVE->value,
+        'priority'         => ChatPriorityEnum::NORMAL->value,
+        'guest_identifier' => 'guest-'.\Illuminate\Support\Str::random(8),
+    ]);
+
+    setPermissionsTeamId($this->user->group_id);
+
+    $supervisor = User::factory()->create(['group_id' => $this->organisation->group_id, 'status' => true]);
+    $supervisor->assignRole(RolesEnum::getRoleName(RolesEnum::CUSTOMER_SERVICE_SUPERVISOR->value, $this->shop));
+
+    expect($supervisor->authTo(['chat-m.'.$this->shop->id]))->toBeTrue()
+        ->and($supervisor->authTo(['chat.'.$this->shop->id]))->toBeFalse();
+
+    $this->actingAs($supervisor);
+
+    // May take over and write, but is never one of the shop's agents.
+    expect(CloseChatSession::make()->getCurrentAgent($session))->not->toBeNull();
+
+    // Adding the worker position is what makes somebody an agent, deliberately.
+    $supervisor->assignRole(RolesEnum::getRoleName(RolesEnum::CUSTOMER_SERVICE_CLERK->value, $this->shop));
+    \App\Actions\SysAdmin\CleanUserCaches::make()->clearPermissionsCache($supervisor);
+    app(\Spatie\Permission\PermissionRegistrar::class)->forgetCachedPermissions();
+
+    expect($supervisor->fresh()->authTo(['chat.'.$this->shop->id]))->toBeTrue();
+});

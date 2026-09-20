@@ -457,6 +457,7 @@ enum RolesEnum: string
                 ShopPermissionsEnum::SUPERVISOR_WEB,
             ],
             RolesEnum::CUSTOMER_SERVICE_CLERK => [
+                ShopPermissionsEnum::CHAT,
                 ShopPermissionsEnum::CRM,
                 ShopPermissionsEnum::ORDERS,
                 ShopPermissionsEnum::PRODUCTS_VIEW,
@@ -466,6 +467,9 @@ enum RolesEnum: string
 
             ],
             RolesEnum::CUSTOMER_SERVICE_SUPERVISOR => [
+                // Supervising is not working: somebody who should answer chats holds the
+                // customer service worker position, said out loud rather than implied.
+                ShopPermissionsEnum::CHAT_MANAGER,
                 ShopPermissionsEnum::CRM,
                 ShopPermissionsEnum::SUPERVISOR_CRM,
                 ShopPermissionsEnum::ORDERS,
@@ -477,6 +481,7 @@ enum RolesEnum: string
 
             ],
             RolesEnum::CUSTOMER_SERVICE_VIEWER => [
+                ShopPermissionsEnum::CHAT_VIEW,
                 ShopPermissionsEnum::CRM_VIEW,
                 ShopPermissionsEnum::ORDERS_VIEW,
                 ShopPermissionsEnum::PRODUCTS_VIEW,

@@ -33,7 +33,7 @@ class ShowChatSettings extends OrgAction
 
         if (isset($this->shop)) {
             return $request->user()->authTo([
-                "crm.{$this->shop->id}.view",
+                "chat.{$this->shop->id}.view",
                 "accounting.{$this->shop->organisation_id}.view",
             ]);
         }

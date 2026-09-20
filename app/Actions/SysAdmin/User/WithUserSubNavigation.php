@@ -33,13 +33,13 @@ trait WithUserSubNavigation
             [
                 "label"    => __("Visit Logs"),
                 "route"     => [
-                    // "name"       => "grp.sysadmin.analytics.request.index",
-                    // "parameters" => [
-                    //     'user' => $user->username
-                    // ],
+                    "name"       => "grp.sysadmin.users.show.visit_logs.index",
+                    "parameters" => [
+                        'user' => $user->slug
+                    ],
                 ],
                 "leftIcon" => [
-                    "icon"    => ["fal", "fa-user"],
+                    "icon"    => ["fal", "fa-location-dot"],
                     "tooltip" => __("Visit Logs"),
                 ],
             ],

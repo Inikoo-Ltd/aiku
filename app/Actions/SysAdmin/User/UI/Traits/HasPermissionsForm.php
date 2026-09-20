@@ -16,7 +16,6 @@ use App\Http\Resources\HumanResources\JobPositionResource;
 use App\Http\Resources\Inventory\WarehouseResource;
 use App\Http\Resources\Production\ProductionsResource;
 use App\Http\Resources\SysAdmin\Organisation\OrganisationsResource;
-use App\Models\HumanResources\Employee;
 use App\Models\HumanResources\JobPosition;
 use App\Models\SysAdmin\Organisation;
 use App\Models\SysAdmin\User;
@@ -61,7 +60,7 @@ trait HasPermissionsForm
         ];
     }
 
-    protected function getPermissionsFieldDefinition(User $user, array $permissionsData, ?Employee $employee = null): array
+    protected function getPermissionsFieldDefinition(User $user, array $permissionsData): array
     {
         $field = [
             'full'                          => true,
@@ -102,16 +101,6 @@ trait HasPermissionsForm
             ],
             'fullComponentArea'             => true,
         ];
-
-        if ($employee) {
-            $field['updateEmployeeJobPositionsRoute'] = [
-                'method'     => 'patch',
-                'name'       => 'grp.models.employee.update',
-                'parameters' => [
-                    'employee' => $employee->id,
-                ],
-            ];
-        }
 
         return $field;
     }

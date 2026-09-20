@@ -1188,6 +1188,27 @@ test('update job positions in the organisation where the user is an employee', f
         ->and($user->pseudoJobPositions()->wherePivot('organisation_id', $organisation->id)->count())->toBe(0);
 })->depends('employee job position in another organisation');
 
+test('job positions that do not exist in the organisation are ignored', function (Employee $employee) {
+    $user         = $employee->getUser();
+    $organisation = $employee->organisation;
+    $jobPosition  = $organisation->jobPositions()->where('code', 'hr-c')->first();
+
+    UpdateUserOrganisationPseudoJobPositions::make()->action(
+        $user,
+        $organisation,
+        [
+            'permissions' => [
+                'this-position-does-not-exist' => [],
+                $jobPosition->code             => []
+            ]
+        ]
+    );
+    $employee->refresh();
+
+    expect($employee->jobPositions()->count())->toBe(1)
+        ->and($employee->jobPositions()->where('job_positions.id', $jobPosition->id)->count())->toBe(1);
+})->depends('employee job position in another organisation');
+
 test('can show hr dashboard', function () {
     actingAs(User::first());
 
@@ -1832,6 +1853,7 @@ test('UI sysadmin user show/edit/create/actions', function (User $user) {
     get(route('grp.sysadmin.users.edit', [$user]))->assertOk()
         ->assertInertia(fn (AssertableInertia $page) => $page->has('formData.blueprint.permissions.fields.permissions.options.'.$user->getOrganisation()->slug.'.productions'));
     get(route('grp.sysadmin.users.show.actions.index', [$user]))->assertOk();
+    get(route('grp.sysadmin.users.show.visit_logs.index', [$user]))->assertOk();
 })->depends('SetUserAuthorisedModels command');
 
 test('UI sysadmin scheduled tasks and settings', function (User $user) {

@@ -8,6 +8,7 @@
 
 namespace App\Actions\SysAdmin\User;
 
+use App\Actions\Chat\Agent\RevokeChatAgentAccess;
 use App\Actions\SysAdmin\CleanUserCaches;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\HumanResources\JobPosition\JobPositionScopeEnum;
@@ -124,6 +125,13 @@ class SyncRolesFromJobPositions
 
 
         $user->refresh();
+
+        // Losing the customer service position takes chat with it: the conversations this
+        // person can no longer work go back to their shop's queue rather than staying in a
+        // name nobody can act on, and the agent profile is suspended once nothing is left.
+        if ($chatAgent = $user->chatAgent) {
+            RevokeChatAgentAccess::run($chatAgent);
+        }
     }
 
 

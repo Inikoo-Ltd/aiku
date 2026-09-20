@@ -32,20 +32,38 @@ trait WithChatAgentAuthorisation
             return null;
         }
 
-        if (!$this->userCanWorkChatOnShop($user, $shop)) {
+        if (!$this->userCanActOnChatOnShop($user, $shop)) {
             return null;
         }
 
         return $this->chatAgentProfileFor($user);
     }
 
+    /**
+     * Acting on a conversation — taking it over, writing in it, closing it — is open to
+     * whoever supervises the shop as well as to its agents. Supervising is not working:
+     * a manager is never routed a chat and never counts as an agent.
+     */
+    protected function userCanActOnChatOnShop(User $user, Shop $shop): bool
+    {
+        if (!$user->status) {
+            return false;
+        }
+
+        return $this->userCanWorkChatOnShop($user, $shop)
+            || $user->authTo(["chat-m.{$shop->id}"]);
+    }
+
+    /**
+     * Working chat means being an agent: in the routing pool, in the rota, in the figures.
+     */
     protected function userCanWorkChatOnShop(User $user, Shop $shop): bool
     {
         if (!$user->status) {
             return false;
         }
 
-        if ($user->authTo(["crm.{$shop->id}"])) {
+        if ($user->authTo(["chat.{$shop->id}"])) {
             return true;
         }
 
@@ -56,7 +74,7 @@ trait WithChatAgentAuthorisation
             Log::warning('chat_legacy_agent_grant', [
                 'user_id' => $user->id,
                 'shop_id' => $shop->id,
-                'missing' => "crm.{$shop->id}",
+                'missing' => "chat.{$shop->id}",
             ]);
 
             return true;
@@ -67,8 +85,8 @@ trait WithChatAgentAuthorisation
 
     protected function userCanViewChatOnShop(User $user, Shop $shop): bool
     {
-        return $this->userCanWorkChatOnShop($user, $shop)
-            || $user->authTo(["crm.{$shop->id}.view"]);
+        return $this->userCanActOnChatOnShop($user, $shop)
+            || $user->authTo(["chat.{$shop->id}.view"]);
     }
 
     protected function userCanWorkChatOnOrganisation(User $user, Organisation $organisation): bool
@@ -78,7 +96,7 @@ trait WithChatAgentAuthorisation
         }
 
         $permissions = $organisation->shops()->pluck('shops.id')
-            ->map(fn ($shopId) => "crm.{$shopId}")
+            ->flatMap(fn ($shopId) => ["chat.{$shopId}", "chat-m.{$shopId}"])
             ->all();
 
         if ($permissions && $user->authTo($permissions)) {

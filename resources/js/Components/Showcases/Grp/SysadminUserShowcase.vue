@@ -10,7 +10,8 @@ import { trans } from 'laravel-vue-i18n'
 import PermissionsPictogram from '@/Components/DataDisplay/PermissionsPictogram.vue'
 import Toggle from '@/Components/Pure/Toggle.vue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { faCheck, faRobot, faSkull, faTimes, } from '@fal'
+import { faCheck, faRobot, faSkull, faTimes, faUserHardHat } from '@fal'
+import { Link } from '@inertiajs/vue3'
 import axios from 'axios'
 import { notify } from '@kyvg/vue3-notification'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
@@ -49,6 +50,17 @@ const props = defineProps<{
             last_login: {
                 ip?: string
                 geolocation: string[]
+            }
+            employee?: {
+                slug: string
+                worker_number: string
+                contact_name: string
+                job_title?: string
+                state: string
+                route: {
+                    name: string
+                    parameters: Record<string, string>
+                }
             }
             mcp?: {
                 enabled: boolean
@@ -149,6 +161,20 @@ const force2FA = async () => {
                     <Tag :label="activeUsers[data?.data?.id] ? trans('Online') : trans('Offline')" :theme="activeUsers[data?.data?.id] ? 3 : undefined" />
                 </dd>
             </div> -->
+
+            <div class="border-t border-gray-100 px-4 py-6 sm:col-span-1 sm:px-0">
+                <dt class="text-sm font-medium">{{ trans("Employee") }}:</dt>
+                <dd class="mt-1 text-sm sm:mt-2">
+                    <Link
+                        v-if="data?.data?.employee"
+                        :href="route(data.data.employee.route.name, data.data.employee.route.parameters)"
+                        class="hover:underline">
+                        <FontAwesomeIcon :icon="faUserHardHat" class="mr-1 text-gray-400" fixed-width aria-hidden="true" />{{ data.data.employee.worker_number }}
+                        <span class="text-gray-500">{{ data.data.employee.job_title }}</span>
+                    </Link>
+                    <span v-else class="text-gray-400">-</span>
+                </dd>
+            </div>
 
             <div class="border-t border-gray-100 px-4 py-6 sm:col-span-1 sm:px-0">
                 <dt class="text-sm font-medium">{{ trans("Last Active") }}:</dt>

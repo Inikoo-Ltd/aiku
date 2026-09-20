@@ -53,6 +53,34 @@ class UserShowcaseResource extends JsonResource
         ];
     }
 
+    /**
+     * @return array{slug: string, worker_number: string, contact_name: string, job_title: string|null, state: string, route: array}|null
+     */
+    private function getEmployeeData(User $user): ?array
+    {
+        /** @var \App\Models\HumanResources\Employee|null $employee */
+        $employee = $user->employees()->with('organisation')->first();
+
+        if (!$employee) {
+            return null;
+        }
+
+        return [
+            'slug'          => $employee->slug,
+            'worker_number' => $employee->worker_number,
+            'contact_name'  => $employee->contact_name,
+            'job_title'     => $employee->job_title,
+            'state'         => $employee->state,
+            'route'         => [
+                'name'       => 'grp.org.hr.employees.show',
+                'parameters' => [
+                    'organisation' => $employee->organisation->slug,
+                    'employee'     => $employee->slug,
+                ],
+            ],
+        ];
+    }
+
     public function toArray($request): array|Arrayable|JsonSerializable
     {
         /** @var User $user */
@@ -101,6 +129,7 @@ class UserShowcaseResource extends JsonResource
             'last_login'              => [
                 'ip'          => $user->stats->last_login_ip
             ],
+            'employee'                => $this->getEmployeeData($user->resource),
             'mcp'                     => $this->getMcpData($user->resource)
         ];
     }

@@ -8,6 +8,7 @@
 
 namespace App\Actions\SysAdmin\User;
 
+use App\Actions\Chat\Agent\RevokeChatAgentAccess;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateUsers;
 use App\Actions\Traits\WithActionUpdate;
@@ -57,6 +58,11 @@ class UpdateUser extends OrgAction
                 $user->tokens()->each(function ($token) {
                     DeleteUserAccessToken::run($token);
                 });
+
+                // Somebody who has left cannot keep holding live conversations.
+                if ($chatAgent = $user->chatAgent) {
+                    RevokeChatAgentAccess::run($chatAgent);
+                }
             }
 
         }

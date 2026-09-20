@@ -19,6 +19,8 @@ enum ChatEventTypeEnum: string
 
     case ASSIGNMENT_TO_SELF = 'assignment_to_self';
 
+    case RELEASED = 'released';
+
     case CLOSE = 'close';
     case RATING = 'rating';
     case PRIORITY = 'priority';
@@ -53,6 +55,7 @@ enum ChatEventTypeEnum: string
             self::TRANSFER_REJECT->value,
             self::TRANSFER_TO_AGENT->value,
             self::ASSIGNMENT_TO_SELF->value,
+            self::RELEASED->value,
         ];
     }
 
@@ -73,6 +76,7 @@ enum ChatEventTypeEnum: string
             'reply' => __('Reply'),
             'send' => __('Send'),
             'transfer_to_agent' => __('Transfer to Agent'),
+            'released' => __('Released, waiting for an agent'),
             'Assignment_to_self' => __('Assignment to Self'),
             'priority' => __('Priority Updated'),
             'guest_profile' => __('Guest Profile'),
