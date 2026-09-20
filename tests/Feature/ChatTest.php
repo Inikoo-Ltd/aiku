@@ -3921,3 +3921,41 @@ test('a customer service supervisor supervises chat without being an agent', fun
 
     expect($supervisor->fresh()->authTo(['chat.'.$this->shop->id]))->toBeTrue();
 });
+
+test('an organisation administrator manages chat on every shop, including one opened later', function () {
+    setPermissionsTeamId($this->user->group_id);
+
+    $orgAdmin = User::factory()->create(['group_id' => $this->organisation->group_id, 'status' => true]);
+    $orgAdmin->assignRole(RolesEnum::getRoleName(RolesEnum::ORG_ADMIN->value, $this->organisation));
+
+    $session = ChatSession::create([
+        'ulid'             => (string) \Illuminate\Support\Str::ulid(),
+        'shop_id'          => $this->shop->id,
+        'language_id'      => 68,
+        'status'           => ChatSessionStatusEnum::ACTIVE->value,
+        'priority'         => ChatPriorityEnum::NORMAL->value,
+        'guest_identifier' => 'guest-'.\Illuminate\Support\Str::random(8),
+    ]);
+
+    $this->actingAs($orgAdmin);
+
+    // Manages without holding a single per shop permission, and without being an agent.
+    expect($orgAdmin->authTo(['chat.'.$this->shop->id]))->toBeFalse()
+        ->and($orgAdmin->authTo(['chat-m.'.$this->shop->id]))->toBeFalse()
+        ->and(CloseChatSession::make()->getCurrentAgent($session))->not->toBeNull();
+
+    // A shop opened after the fact is covered too: the grant sits on the organisation.
+    $newShop = createShop($this->organisation)[2] ?? null;
+    if ($newShop) {
+        $laterSession = ChatSession::create([
+            'ulid'             => (string) \Illuminate\Support\Str::ulid(),
+            'shop_id'          => $newShop->id,
+            'language_id'      => 68,
+            'status'           => ChatSessionStatusEnum::ACTIVE->value,
+            'priority'         => ChatPriorityEnum::NORMAL->value,
+            'guest_identifier' => 'guest-'.\Illuminate\Support\Str::random(8),
+        ]);
+
+        expect(CloseChatSession::make()->getCurrentAgent($laterSession))->not->toBeNull();
+    }
+});

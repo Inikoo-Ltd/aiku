@@ -14,6 +14,7 @@ use App\Enums\CRM\Livechat\ChatAssignmentStatusEnum;
 use App\Enums\CRM\Livechat\ChatEventTypeEnum;
 use App\Enums\CRM\Livechat\ChatSessionStatusEnum;
 use App\Events\BroadcastChatListEvent;
+use App\Models\Catalogue\Shop;
 use App\Models\Chat\ChatAgent;
 use App\Models\Chat\ChatAssignment;
 use App\Models\SysAdmin\User;
@@ -54,12 +55,27 @@ class RevokeChatAgentAccess
         // Read the grants straight from spatie. authTo() caches a positive answer for an
         // hour, and a revocation that believes a stale yes is the one case that must not
         // happen: the whole point here is that the permission has just gone away.
-        $chatShopIds = $user->getAllPermissions()
+        $granted = $user->getAllPermissions();
+
+        $chatShopIds = $granted
             ->map(fn ($permission) => preg_match('/^chat(?:-m)?\.(\d+)$/', $permission->name, $m) ? (int) $m[1] : null)
             ->filter()
-            ->unique()
-            ->values()
-            ->all();
+            ->values();
+
+        // Administering an organisation carries chat across all of its shops, so nothing
+        // an organisation administrator holds is ever lapsed.
+        $adminOrgIds = $granted
+            ->map(fn ($permission) => preg_match('/^org-admin\.(\d+)$/', $permission->name, $m) ? (int) $m[1] : null)
+            ->filter()
+            ->values();
+
+        if ($adminOrgIds->isNotEmpty()) {
+            $chatShopIds = $chatShopIds->merge(
+                Shop::whereIn('organisation_id', $adminOrgIds)->pluck('id')
+            );
+        }
+
+        $chatShopIds = $chatShopIds->unique()->values()->all();
 
         $released     = 0;
         $shopsRemoved = 0;

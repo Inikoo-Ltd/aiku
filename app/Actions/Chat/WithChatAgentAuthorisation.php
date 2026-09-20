@@ -51,7 +51,11 @@ trait WithChatAgentAuthorisation
         }
 
         return $this->userCanWorkChatOnShop($user, $shop)
-            || $user->authTo(["chat-m.{$shop->id}"]);
+            || $user->authTo(["chat-m.{$shop->id}"])
+            // Administering an organisation carries chat across every one of its shops,
+            // including any opened later: the permission is held on the organisation, so
+            // there is nothing to grant per shop.
+            || $user->authTo(["org-admin.{$shop->organisation_id}"]);
     }
 
     /**
@@ -93,6 +97,10 @@ trait WithChatAgentAuthorisation
     {
         if (!$user->status) {
             return false;
+        }
+
+        if ($user->authTo(["org-admin.{$organisation->id}"])) {
+            return true;
         }
 
         $permissions = $organisation->shops()->pluck('shops.id')
