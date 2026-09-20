@@ -52,6 +52,7 @@ Route::prefix('users')->as('users.')->group(function () {
     Route::prefix('{user}')->group(function () {
         Route::get('', ShowUser::class)->name('show');
         Route::get('action', IndexUserActions::class)->name('show.actions.index');
+        Route::get('visit-logs', [IndexUserRequests::class, 'inUser'])->name('show.visit_logs.index');
         Route::get('edit', EditUser::class)->name('edit');
     });
 });

@@ -1832,6 +1832,7 @@ test('UI sysadmin user show/edit/create/actions', function (User $user) {
     get(route('grp.sysadmin.users.edit', [$user]))->assertOk()
         ->assertInertia(fn (AssertableInertia $page) => $page->has('formData.blueprint.permissions.fields.permissions.options.'.$user->getOrganisation()->slug.'.productions'));
     get(route('grp.sysadmin.users.show.actions.index', [$user]))->assertOk();
+    get(route('grp.sysadmin.users.show.visit_logs.index', [$user]))->assertOk();
 })->depends('SetUserAuthorisedModels command');
 
 test('UI sysadmin scheduled tasks and settings', function (User $user) {
