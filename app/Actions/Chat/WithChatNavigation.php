@@ -11,13 +11,14 @@ trait WithChatNavigation
 {
     /**
      * The chat section is identical in organisation and shop scope apart from its route prefix
-     * and parameters. The order is the same for everybody; only where they land differs, since
-     * an agent opens on the conversations and everybody else on the figures.
+     * and parameters. The inbox is an agent's rota, so only an agent is given it; overseeing
+     * has its own page, given to whoever oversees and to anybody who is not an agent at all,
+     * since that is the only way they have of looking at a conversation.
      *
      * @param  array<int, string>  $parameters
      * @return array<string, mixed>
      */
-    protected function getChatNavigation(string $rootPrefix, array $parameters, bool $isChatAgent): array
+    protected function getChatNavigation(string $rootPrefix, array $parameters, bool $isChatAgent, bool $isChatSupervisor = false): array
     {
         $section = fn (string $label, array $icon, string $name): array => [
             'label' => __($label),
@@ -29,17 +30,23 @@ trait WithChatNavigation
             ],
         ];
 
-        $reports = $section('Reports', ['fal', 'fa-chart-line'], 'reports');
-        $inbox     = $section('Customer Inbox', ['fal', 'fa-inbox'], 'inbox');
-        $settings  = $section('Settings', ['fal', 'fa-sliders-h'], 'settings');
+        $reports     = $section('Reports', ['fal', 'fa-chart-line'], 'reports');
+        $inbox       = $section('Customer Inbox', ['fal', 'fa-inbox'], 'inbox');
+        $supervision = $section('Supervision', ['fal', 'fa-user-headset'], 'supervision');
+        $settings    = $section('Settings', ['fal', 'fa-sliders-h'], 'settings');
 
         return [
             'label'   => __('Chat'),
             'icon'    => ['fal', 'fa-comment-alt'],
             'root'    => $rootPrefix,
-            'route'   => $isChatAgent ? $inbox['route'] : $reports['route'],
+            'route'   => $isChatAgent ? $inbox['route'] : $supervision['route'],
             'topMenu' => [
-                'subSections' => [$inbox, $reports, $settings],
+                'subSections' => array_values(array_filter([
+                    $isChatAgent ? $inbox : null,
+                    $isChatSupervisor || !$isChatAgent ? $supervision : null,
+                    $reports,
+                    $settings,
+                ])),
             ],
         ];
     }

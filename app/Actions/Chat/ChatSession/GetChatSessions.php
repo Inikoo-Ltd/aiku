@@ -52,6 +52,8 @@ class GetChatSessions
             'search'          => ['sometimes', 'string', 'max:100'],
             'organisation_id' => ['sometimes', 'integer', 'exists:organisations,id'],
             'shop_id'         => ['sometimes', 'integer', 'exists:shops,id'],
+            'agent_ids'       => ['sometimes', 'array'],
+            'agent_ids.*'     => ['integer'],
             'pairs'           => ['sometimes', 'array'],
             'pairs.*'         => ['string', 'regex:/^[a-z]+:(customer|guest)$/'],
         ];
@@ -66,8 +68,8 @@ class GetChatSessions
             $filters['web_user_id'] = $user->id;
             $filters['include_spam'] = true;
             unset($filters['assigned_to_me'], $filters['view_team'], $filters['is_spam'], $filters['trashed'], $filters['highlighted']);
-        } elseif ($user && !empty($filters['assigned_to_me'])) {
-            $filters['assigned_to_me'] = $user->id;
+        } else {
+            $filters = $this->chatFiltersScopedTo($user, $filters);
         }
 
         return $this->handle($filters);
@@ -100,6 +102,10 @@ class GetChatSessions
             ->withLastMessageTime()
             ->orderBy('last_message_at', 'desc');
 
+
+        if (array_key_exists('allowed_shop_ids', $filters)) {
+            $query->whereIn('shop_id', $filters['allowed_shop_ids']);
+        }
 
         if (isset($filters['status'])) {
             $query->where('status', $filters['status']);
@@ -217,6 +223,14 @@ class GetChatSessions
                     });
                 }
             });
+        }
+
+        // Whoever oversees asks for what one colleague is holding. It has to be asked of the
+        // database: picked out of the page already loaded, it finds nothing past the first twenty.
+        if (!empty($filters['agent_ids'])) {
+            $agentIds = array_map('intval', (array) $filters['agent_ids']);
+            $query->whereHas('assignments', fn ($a) => $a->whereIn('chat_agent_id', $agentIds)
+                ->where('status', ChatAssignmentStatusEnum::ACTIVE->value));
         }
 
         if (!empty($filters['shop_id'])) {

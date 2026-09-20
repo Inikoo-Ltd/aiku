@@ -257,7 +257,15 @@ class GetOrganisationNavigation
         $canWorkChat = $this->userCanWorkChatOnOrganisation($user, $organisation);
 
         if ($canSeeShops || $canWorkChat) {
-            $navigation['chat'] = $this->getChatNavigation('grp.org.chat.', [$organisation->slug], $canWorkChat);
+            $navigation['chat'] = $this->getChatNavigation(
+                'grp.org.chat.',
+                [$organisation->slug],
+                (bool) $this->workableShopIdsFor($user),
+                $user->authTo([
+                    "org-admin.{$organisation->id}",
+                    ...$organisation->shops()->pluck('shops.id')->map(fn ($shopId) => "chat-m.{$shopId}")->all(),
+                ])
+            );
         }
 
         if ($canSeeShops) {

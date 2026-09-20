@@ -19,6 +19,10 @@ Route::get('/inbox', ShowOrgChatInbox::class)->name('inbox');
 Route::get('/inbox/{chatSession:ulid}', [ShowOrgChatInbox::class, 'inConversation'])
     ->name('inbox.conversation')
     ->withoutScopedBindings();
+Route::get('/supervision', [ShowOrgChatInbox::class, 'supervision'])->name('supervision');
+Route::get('/supervision/{chatSession:ulid}', [ShowOrgChatInbox::class, 'supervisionInConversation'])
+    ->name('supervision.conversation')
+    ->withoutScopedBindings();
 Route::get('/settings', ShowChatSettings::class)->name('settings');
 Route::get('/conversations', ShowChatConversations::class)->name('conversations.show');
 Route::get('/conversations/export', ExportChatConversations::class)->name('conversations.export');

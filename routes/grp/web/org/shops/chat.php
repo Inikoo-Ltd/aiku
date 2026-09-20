@@ -30,6 +30,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/reports', ShowShopChatDashboard::class)->name('reports');
 Route::get('/inbox', [ShowOrgChatInbox::class, 'inShop'])->name('inbox');
+Route::get('/supervision', [ShowOrgChatInbox::class, 'supervisionInShop'])->name('supervision');
 Route::get('/dashboard-visitors', [GetChatDashboardVisitors::class, 'inShop'])->name('dashboard-visitors');
 Route::get('/agents', ShowShopAgents::class)->name('agents.show');
 Route::get('/settings', [ShowChatSettings::class, 'inShop'])->name('settings');

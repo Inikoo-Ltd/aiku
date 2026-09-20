@@ -7,6 +7,7 @@
 
 namespace App\Actions\Chat\MetaChatSession\UI;
 
+use App\Actions\Chat\WithChatAgentAuthorisation;
 use App\Enums\CRM\Livechat\ChatAssignmentStatusEnum;
 use App\Enums\CRM\Livechat\ChatEventTypeEnum;
 use App\Enums\CRM\Livechat\ChatSenderTypeEnum;
@@ -21,6 +22,7 @@ use Lorisleiva\Actions\Concerns\AsAction;
 class GetMetaChatSessions
 {
     use AsAction;
+    use WithChatAgentAuthorisation;
 
     public function rules(): array
     {
@@ -51,12 +53,14 @@ class GetMetaChatSessions
             'search'          => ['sometimes', 'string', 'max:100'],
             'organisation_id' => ['sometimes', 'integer', 'exists:organisations,id'],
             'shop_id'         => ['sometimes', 'integer', 'exists:shops,id'],
+            'agent_ids'       => ['sometimes', 'array'],
+            'agent_ids.*'     => ['integer'],
         ];
     }
 
     public function asController(ActionRequest $request)
     {
-        return $this->handle($request->validated());
+        return $this->handle($this->chatFiltersScopedTo($request->user(), $request->validated()));
     }
 
     /**
@@ -209,6 +213,18 @@ class GetMetaChatSessions
             $query->whereHas('shop', function ($q) use ($organisationId) {
                 $q->where('organisation_id', $organisationId);
             });
+        }
+
+        if (array_key_exists('allowed_shop_ids', $filters)) {
+            $query->whereIn('shop_id', $filters['allowed_shop_ids']);
+        }
+
+        // Whoever oversees asks for what one colleague is holding. It has to be asked of the
+        // database: picked out of the page already loaded, it finds nothing past the first twenty.
+        if (!empty($filters['agent_ids'])) {
+            $agentIds = array_map('intval', (array) $filters['agent_ids']);
+            $query->whereHas('assignments', fn ($a) => $a->whereIn('chat_agent_id', $agentIds)
+                ->where('status', ChatAssignmentStatusEnum::ACTIVE->value));
         }
 
         if (!empty($filters['shop_id'])) {

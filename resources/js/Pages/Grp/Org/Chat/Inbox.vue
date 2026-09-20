@@ -39,6 +39,7 @@ const props = defineProps<{
         channels: Array<{
             key: string
             name: string
+            available?: boolean
             customer: { waiting: number; active: number; closed: number }
             guest: { waiting: number; active: number; closed: number }
         }>
@@ -47,6 +48,8 @@ const props = defineProps<{
     initialSession?: any | null
     preselectShopId?: number | null
     is_read_only?: boolean
+    supervisor?: boolean
+    agents?: Array<{ id: number; name: string | null; presence: "online" | "away" | "offline"; open: number; max: number }>
     ignoreReasons?: Array<{ value: string; label: string }>
 }>()
 
@@ -61,6 +64,10 @@ const isReadOnly = computed(() => {
 
     return inbox ? inbox.is_read_only === true : props.is_read_only === true
 })
+
+// An agent's list is theirs or their team's. Whoever oversees has no list of their own: they
+// are shown every conversation on the shop, whoever holds it.
+const listIsMine = computed(() => !isReadOnly.value && !props.supervisor)
 
 const PLUS_8_HOURS = layout.app?.environment === "local" ? 8 * 60 * 60 * 1000 : 0
 
@@ -265,9 +272,12 @@ const mapSession = (s: SessionAPI): Contact => ({
 })
 
 const selectedShopId = ref<number | null>(props.inboxes?.[0]?.id ?? null)
+// Every shop shows all three columns; only the ones that can hold something can be picked.
+const liveChannels = (inbox?: { channels?: Array<{ key: string; available?: boolean }> }) =>
+    (inbox?.channels ?? []).filter((c) => c.available !== false)
 // The squares that are on, as "channel:kind". Everything else about the selection is read
 // from these, so there is one source of truth for what the list is showing.
-const firstChannelKey = props.inboxes?.[0]?.channels?.[0]?.key
+const firstChannelKey = liveChannels(props.inboxes?.[0])[0]?.key
 const selectedCells = ref<string[]>(
     firstChannelKey ? [`${firstChannelKey}:customer`, `${firstChannelKey}:guest`] : []
 )
@@ -314,7 +324,7 @@ const restoreSelection = (): boolean => {
     }
 
     const available = new Set(
-        (inbox.channels ?? []).flatMap((c) => [`${c.key}:customer`, `${c.key}:guest`])
+        liveChannels(inbox).flatMap((c) => [`${c.key}:customer`, `${c.key}:guest`])
     )
     const cells = (stored.cells ?? []).filter((c: string) => available.has(c))
 
@@ -397,12 +407,13 @@ const buildParams = (page: number) => ({
                 : highlightView.value
                     ? { highlighted: 1, statuses: selectedStatuses.value }
                     : { statuses: selectedStatuses.value }),
-    ...(isReadOnly.value ? {} : { assigned_to_me: myAgentId }),
+    ...(listIsMine.value ? { assigned_to_me: myAgentId } : {}),
+    ...(selectedAgentIds.value.length ? { agent_ids: selectedAgentIds.value } : {}),
     page,
     ...(selectedShopId.value && !highlightView.value ? { shop_id: selectedShopId.value } : {}),
     // ponytail: the API ignores `channel` until chat sessions carry one; sent so the intent is visible.
     ...(selectedCells.value.length ? { pairs: selectedCells.value } : {}),
-    ...(viewMode.value === "team" && !isReadOnly.value ? { view_team: 1 } : {}),
+    ...(viewMode.value === "team" && listIsMine.value ? { view_team: 1 } : {}),
     ...(searchQuery.value.trim() ? { search: searchQuery.value.trim() } : {}),
 })
 
@@ -553,10 +564,30 @@ const toggleAgentFilter = (id: number | string) => {
     } else {
         selectedAgentIds.value.push(id)
     }
+    reloadContacts()
 }
 
 const clearAgentFilter = () => {
     selectedAgentIds.value = []
+    reloadContacts()
+}
+
+// One colleague at a time from the rail: what is this person holding. Somebody holds a
+// conversation only once it is active, so the list turns to those.
+const showAgentLoad = (id: number) => {
+    const alreadyOn = selectedAgentIds.value.length === 1 && selectedAgentIds.value[0] === id
+
+    selectedAgentIds.value = alreadyOn ? [] : [id]
+    if (!alreadyOn) {
+        selectedStatuses.value = ["active"]
+    }
+    reloadContacts()
+}
+
+const PRESENCE_DOT: Record<string, string> = {
+    online: "bg-green-500",
+    away: "bg-amber-400",
+    offline: "bg-gray-300",
 }
 
 
@@ -622,7 +653,7 @@ const selectInbox = (shopId: number) => {
 
     const inbox = props.inboxes?.find((i) => i.id === shopId)
 
-    selectChannel(shopId, inbox?.channels?.[0]?.key ?? "website")
+    selectChannel(shopId, liveChannels(inbox)[0]?.key ?? "website")
 }
 
 // Select + expand an inbox without reloading — callers on mount reload once afterwards.
@@ -631,9 +662,9 @@ const selectInbox = (shopId: number) => {
 const revealInbox = (shopId: number, channelKey?: string | null) => {
     selectedShopId.value = shopId
     const inbox = props.inboxes?.find((i) => i.id === shopId)
-    const resolved = channelKey && inbox?.channels?.some((ch) => ch.key === channelKey)
+    const resolved = channelKey && liveChannels(inbox).some((ch) => ch.key === channelKey)
         ? channelKey
-        : inbox?.channels?.[0]?.key ?? null
+        : liveChannels(inbox)[0]?.key ?? null
     selectedCells.value = resolved ? [cellKey(resolved, "customer"), cellKey(resolved, "guest")] : []
 }
 
@@ -654,9 +685,9 @@ function afterSelectionChanged() {
     linkedContact.value = null
     messages.value = []
     newChatVisible.value = false
-    clearAgentFilter()
+    selectedAgentIds.value = []
 
-    const baseUrl = route("grp.org.chat.inbox", [props.organisation.slug])
+    const baseUrl = route(props.supervisor ? "grp.org.chat.supervision" : "grp.org.chat.inbox", [props.organisation.slug])
     window.history.replaceState(window.history.state, "", baseUrl)
 
     reloadContacts()
@@ -894,7 +925,7 @@ const openPendingSession = async () => {
         const { data } = await axios.get(url, {
             params: {
                 ulid,
-                ...(isReadOnly.value ? {} : { assigned_to_me: myAgentId }),
+                ...(listIsMine.value ? { assigned_to_me: myAgentId } : {}),
                 page: 1,
                 limit: 1,
             },
@@ -984,7 +1015,7 @@ const inboxUnread = computed<Record<number, number>>(() => {
     const map: Record<number, number> = {}
     for (const inbox of props.inboxes ?? []) {
         let total = 0
-        for (const channel of inbox.channels ?? []) {
+        for (const channel of liveChannels(inbox)) {
             total += channelUnread(inbox, channel)
         }
         map[inbox.id] = total
@@ -1090,9 +1121,10 @@ const onAssignSelfSuccess = async () => {
 const updateUrl = (ulid: string) => {
     // The address follows the conversation that is open, not the sidebar: in a mixed list the
     // two disagree, and a WhatsApp chat deep-linked as a website one does not reopen.
+    const page = props.supervisor ? "grp.org.chat.supervision" : "grp.org.chat.inbox"
     const url = activeChannel.value === "whatsapp"
-        ? route("grp.org.chat.inbox", [props.organisation.slug]) + `?channel=whatsapp&session=${ulid}`
-        : route("grp.org.chat.inbox.conversation", [props.organisation.slug, ulid])
+        ? route(page, [props.organisation.slug]) + `?channel=whatsapp&session=${ulid}`
+        : route(`${page}.conversation`, [props.organisation.slug, ulid])
 
     window.history.replaceState(window.history.state, "", url)
 }
@@ -1344,7 +1376,7 @@ onUnmounted(() => {
                 :class="inboxRailCollapsed ? 'justify-center' : 'justify-between px-3'">
                 <span v-if="!inboxRailCollapsed"
                     class="text-[11px] font-semibold text-gray-500 uppercase tracking-wide">
-                    {{ ctrans("Inboxes") }}
+                    {{ supervisor ? ctrans("Shops") : ctrans("Inboxes") }}
                 </span>
                 <button type="button" @click="inboxRailCollapsed = !inboxRailCollapsed"
                     v-tooltip="inboxRailCollapsed ? ctrans('Expand') : ctrans('Collapse')"
@@ -1389,7 +1421,7 @@ onUnmounted(() => {
                                     class="font-normal pb-0.5 border-b border-slate-100">
                                     <FontAwesomeIcon :icon="channel.key === 'whatsapp' ? faWhatsapp : channel.key === 'email' ? faEnvelope : faGlobe"
                                         class="text-[12px]"
-                                        :class="channel.key === 'whatsapp' ? 'text-green-600' : channel.key === 'email' ? 'text-blue-500' : 'text-gray-500'" />
+                                        :class="channel.available === false ? 'text-slate-300' : channel.key === 'whatsapp' ? 'text-green-600' : channel.key === 'email' ? 'text-blue-500' : 'text-gray-500'" />
                                 </th>
                             </tr>
                         </thead>
@@ -1401,20 +1433,22 @@ onUnmounted(() => {
                                 </td>
                                 <td v-for="channel in inbox.channels" :key="channel.key"
                                     class="border border-slate-100">
-                                    <button type="button"
+                                    <button type="button" :disabled="channel.available === false"
                                         class="w-full flex items-center justify-center gap-1 px-1 py-0.5 leading-5 transition-colors"
-                                        :class="isCellOn(inbox.id, channel.key, kind.key) ? '' : 'hover:bg-slate-100'"
-                                        :style="isCellOn(inbox.id, channel.key, kind.key) ? { backgroundColor: selectedCellFill } : {}"
+                                        :class="channel.available === false ? 'bg-slate-50/60 cursor-default' : isCellOn(inbox.id, channel.key, kind.key) ? '' : 'hover:bg-slate-100'"
+                                        :style="channel.available !== false && isCellOn(inbox.id, channel.key, kind.key) ? { backgroundColor: selectedCellFill } : {}"
                                         @click="selectCell(inbox.id, channel.key, kind.key)">
+                                        <span v-if="channel.available === false" class="text-slate-300">&mdash;</span>
                                         <!-- The selected cell is filled, the same way the rest of
                                              the page marks what is selected. A box around it drew
                                              a blob across the rows that were on together. -->
-                                        <span class="font-semibold"
+                                        <span v-if="channel.available !== false" class="font-semibold"
                                             :class="isCellOn(inbox.id, channel.key, kind.key) ? '' : 'text-slate-700'"
                                             :style="isCellOn(inbox.id, channel.key, kind.key) ? { color: 'var(--theme-color-4)' } : {}">
                                             {{ channel[kind.key].waiting }}
                                         </span>
-                                        <span :class="isCellOn(inbox.id, channel.key, kind.key) ? 'opacity-50' : 'text-slate-400'"
+                                        <span v-if="channel.available !== false"
+                                            :class="isCellOn(inbox.id, channel.key, kind.key) ? 'opacity-50' : 'text-slate-400'"
                                             :style="isCellOn(inbox.id, channel.key, kind.key) ? { color: 'var(--theme-color-4)' } : {}">
                                             {{ channel[kind.key].active }}
                                         </span>
@@ -1426,6 +1460,28 @@ onUnmounted(() => {
                 </div>
                 <div v-if="!inboxes.length && !inboxRailCollapsed" class="px-3 py-6 text-xs text-gray-400 text-center">
                     {{ ctrans("No inboxes assigned") }}
+                </div>
+            </div>
+
+            <!-- The people on these shops: who is there and what they are holding -->
+            <div v-if="supervisor && !inboxRailCollapsed" class="border-t border-gray-200 max-h-[40%] overflow-y-auto">
+                <div class="px-3 pt-2 pb-1 text-[11px] font-semibold text-gray-500 uppercase tracking-wide">
+                    {{ ctrans("Agents") }}
+                </div>
+                <button v-for="agent in agents" :key="agent.id" type="button"
+                    v-tooltip="ctrans('Show what they are holding')"
+                    class="w-full flex items-center gap-2 px-3 py-1 text-sm text-left"
+                    :class="selectedAgentIds.includes(agent.id) ? 'font-medium text-gray-800' : 'text-gray-700 hover:bg-gray-100'"
+                    :style="selectedAgentIds.includes(agent.id) ? { backgroundColor: selectedCellFill } : {}"
+                    @click="showAgentLoad(agent.id)">
+                    <span class="w-2 h-2 rounded-full shrink-0" :class="PRESENCE_DOT[agent.presence]" />
+                    <span class="flex-1 truncate" :class="agent.presence === 'offline' ? 'text-gray-400' : ''">{{ agent.name }}</span>
+                    <span class="text-[11px] tabular-nums" :class="agent.open >= agent.max ? 'text-red-500 font-semibold' : 'text-gray-400'">
+                        {{ agent.open }}/{{ agent.max }}
+                    </span>
+                </button>
+                <div v-if="!agents?.length" class="px-3 py-3 text-xs text-gray-400">
+                    {{ ctrans("Nobody is on these shops") }}
                 </div>
             </div>
 
@@ -1490,7 +1546,10 @@ onUnmounted(() => {
                     <div class="text-sm font-semibold text-gray-800 truncate mb-1.5">
                         {{ trashView ? ctrans("Trash") : rubbishView ? ctrans("Ignored") : spamView ? ctrans("Spam") : highlightView ? ctrans("Highlighted") : (selectedInbox?.name ?? ctrans("Inbox")) }}
                     </div>
-                    <div v-if="!spamView && !trashView && !isReadOnly" class="inline-flex items-center bg-gray-100 rounded-lg p-0.5 text-[11px]">
+                    <div v-if="supervisor && !spamView && !trashView" class="text-[11px] text-gray-500">
+                        {{ ctrans("Everybody's conversations") }}
+                    </div>
+                    <div v-else-if="!spamView && !trashView && !isReadOnly" class="inline-flex items-center bg-gray-100 rounded-lg p-0.5 text-[11px]">
                         <button type="button" class="px-2.5 py-1 rounded-md transition-all whitespace-nowrap shrink-0"
                             :class="viewMode === 'my' ? 'bg-white shadow-sm text-gray-800 font-semibold' : 'text-gray-500 hover:text-gray-700'"
                             @click="viewMode = 'my'">

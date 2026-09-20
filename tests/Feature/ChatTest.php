@@ -4387,6 +4387,141 @@ test('the inbox is the same view whatever scope it is opened from', function () 
         ->and($shopInbox2['is_read_only'])->toBeFalse();
 });
 
+test('overseeing chat has its own page, scoped to the address, showing everybody\'s conversations', function () {
+    setPermissionsTeamId($this->user->group_id);
+
+    $this->shop->update(['state' => \App\Enums\Catalogue\Shop\ShopStateEnum::OPEN]);
+
+    $supervisor = User::factory()->create(['group_id' => $this->organisation->group_id, 'status' => true]);
+    $supervisor->assignRole(RolesEnum::getRoleName(RolesEnum::ORG_ADMIN->value, $this->organisation));
+
+    $agent = User::factory()->create(['group_id' => $this->organisation->group_id, 'status' => true]);
+    $agent->assignRole(RolesEnum::getRoleName(RolesEnum::CUSTOMER_SERVICE_CLERK->value, $this->shop));
+    $agentProfile = ChatAgent::create(['user_id' => $agent->id, 'max_concurrent_chats' => 10]);
+
+    // The inbox is an agent's rota: nobody else is shown it.
+    $this->actingAs($supervisor)
+        ->get(route('grp.org.chat.inbox', [$this->organisation->slug]))
+        ->assertRedirect(route('grp.org.chat.supervision', [$this->organisation->slug]));
+
+    $this->actingAs($supervisor)
+        ->get(route('grp.org.shops.show.chat.inbox', [$this->organisation->slug, $this->shop->slug]))
+        ->assertRedirect(route('grp.org.shops.show.chat.supervision', [$this->organisation->slug, $this->shop->slug]));
+
+    $props = $this->actingAs($supervisor)
+        ->get(route('grp.org.chat.supervision', [$this->organisation->slug]))
+        ->assertOk()
+        ->viewData('page')['props'];
+
+    $shopOrganisations = \App\Models\Catalogue\Shop::whereIn('id', collect($props['inboxes'])->pluck('id'))->pluck('organisation_id')->unique()->all();
+
+    expect($props['supervisor'])->toBeTrue()
+        ->and($shopOrganisations)->toBe([$this->organisation->id])
+        ->and(collect($props['inboxes'])->firstWhere('slug', $this->shop->slug)['is_read_only'])->toBeFalse()
+        ->and(collect($props['agents'])->pluck('id')->all())->toContain($agentProfile->id);
+
+    $held = ChatSession::create([
+        'shop_id' => $this->shop->id,
+        'ulid'    => (string) Str::ulid(),
+        'channel' => ChatChannelEnum::WEBSITE,
+        'status'  => ChatSessionStatusEnum::ACTIVE,
+    ]);
+    $loose = ChatSession::create([
+        'shop_id' => $this->shop->id,
+        'ulid'    => (string) Str::ulid(),
+        'channel' => ChatChannelEnum::WEBSITE,
+        'status'  => ChatSessionStatusEnum::ACTIVE,
+    ]);
+
+    foreach ([$held, $loose] as $session) {
+        ChatMessage::create([
+            'chat_session_id' => $session->id,
+            'message_text'    => 'hello',
+            'message_type'    => ChatMessageTypeEnum::TEXT,
+            'sender_type'     => ChatSenderTypeEnum::GUEST,
+        ]);
+    }
+
+    $assignment = ChatAssignment::create([
+        'chat_session_id' => $held->id,
+        'chat_agent_id'   => $agentProfile->id,
+        'status'          => ChatAssignmentStatusEnum::ACTIVE->value,
+        'assigned_by'     => ChatAssignmentAssignedByEnum::AGENT->value,
+        'assigned_at'     => now(),
+    ]);
+
+    $ofAgent = collect(GetChatSessions::make()->handle([
+        'shop_id'   => $this->shop->id,
+        'agent_ids' => [$agentProfile->id],
+    ])->items())->pluck('id')->all();
+
+    expect($ofAgent)->toContain($held->id)->not->toContain($loose->id);
+
+    $tabs = fn (bool $isAgent, bool $isSupervisor) => collect(data_get(
+        (new class () {
+            use \App\Actions\Chat\WithChatNavigation;
+
+            public function tabs(bool $isAgent, bool $isSupervisor): array
+            {
+                return $this->getChatNavigation('grp.org.chat.', ['aw'], $isAgent, $isSupervisor);
+            }
+        })->tabs($isAgent, $isSupervisor),
+        'topMenu.subSections'
+    ))->pluck('route.name')->all();
+
+    expect($tabs(false, true))->toBe(['grp.org.chat.supervision', 'grp.org.chat.reports', 'grp.org.chat.settings'])
+        ->and($tabs(true, false))->toBe(['grp.org.chat.inbox', 'grp.org.chat.reports', 'grp.org.chat.settings'])
+        ->and($tabs(true, true))->toBe(['grp.org.chat.inbox', 'grp.org.chat.supervision', 'grp.org.chat.reports', 'grp.org.chat.settings']);
+
+    $assignment->forceDelete();
+    foreach ([$held, $loose] as $session) {
+        $session->messages()->forceDelete();
+        $session->forceDelete();
+    }
+    $agentProfile->forceDelete();
+});
+
+test('a list of conversations only ever holds shops the person asking may look at', function () {
+    setPermissionsTeamId($this->user->group_id);
+
+    $session = ChatSession::create([
+        'shop_id' => $this->shop->id,
+        'ulid'    => (string) Str::ulid(),
+        'channel' => ChatChannelEnum::WEBSITE,
+        'status'  => ChatSessionStatusEnum::WAITING,
+    ]);
+
+    ChatMessage::create([
+        'chat_session_id' => $session->id,
+        'message_text'    => 'hello',
+        'message_type'    => ChatMessageTypeEnum::TEXT,
+        'sender_type'     => ChatSenderTypeEnum::GUEST,
+    ]);
+
+    $outsider = User::factory()->create(['group_id' => $this->organisation->group_id, 'status' => true]);
+
+    $agent = User::factory()->create(['group_id' => $this->organisation->group_id, 'status' => true]);
+    $agent->assignRole(RolesEnum::getRoleName(RolesEnum::CUSTOMER_SERVICE_CLERK->value, $this->shop));
+
+    $ulidsSeenBy = fn (User $user, string $route, array $params) => collect(
+        $this->actingAs($user, 'sanctum')
+            ->getJson(route($route, $params))
+            ->assertOk()
+            ->json('data.sessions')
+    )->pluck('ulid')->all();
+
+    foreach (['grp.api.chats.sessions.index', 'grp.api.chats.all.sessions.index'] as $route) {
+        // Naming the shop, or naming a colleague as "me", used to be all it took.
+        expect($ulidsSeenBy($outsider, $route, ['shop_id' => $this->shop->id]))->toBe([])
+            ->and($ulidsSeenBy($outsider, $route, []))->toBe([])
+            ->and($ulidsSeenBy($outsider, $route, ['shop_id' => $this->shop->id, 'assigned_to_me' => $agent->id, 'statuses' => ['waiting']]))->toBe([])
+            ->and($ulidsSeenBy($agent, $route, ['shop_id' => $this->shop->id]))->toContain($session->ulid);
+    }
+
+    $session->messages()->forceDelete();
+    $session->forceDelete();
+});
+
 test('email does not sit under the website tab', function () {
     setPermissionsTeamId($this->user->group_id);
 
@@ -4430,7 +4565,12 @@ test('email does not sit under the website tab', function () {
     $channels = collect($props['inboxes'])->firstWhere('slug', $this->shop->slug)['channels'];
 
     // A bounce notice under a tab marked Website reads as somebody waiting on the other end.
-    expect(collect($channels)->pluck('key')->all())->toContain('email');
+    expect(collect($channels)->pluck('key')->all())->toBe(['website', 'email', 'whatsapp']);
+
+    // The columns are the same three for every shop so the rail reads down as one table; the
+    // ones nothing arrives on are held open and unpickable rather than dropped.
+    expect(collect($channels)->firstWhere('key', 'email')['available'])->toBeTrue();
+    expect(collect($channels)->firstWhere('key', 'whatsapp')['available'])->toBeFalse();
 
     $website = collect(GetChatSessions::make()->handle([
         'shop_id' => $this->shop->id,

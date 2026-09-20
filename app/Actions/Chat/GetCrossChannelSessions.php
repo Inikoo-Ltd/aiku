@@ -27,6 +27,7 @@ use Lorisleiva\Actions\Concerns\AsAction;
 class GetCrossChannelSessions
 {
     use AsAction;
+    use WithChatAgentAuthorisation;
 
     public function rules(): array
     {
@@ -46,6 +47,8 @@ class GetCrossChannelSessions
             'search'          => ['sometimes', 'string', 'max:100'],
             'organisation_id' => ['sometimes', 'integer', 'exists:organisations,id'],
             'shop_id'         => ['sometimes', 'integer', 'exists:shops,id'],
+            'agent_ids'       => ['sometimes', 'array'],
+            'agent_ids.*'     => ['integer'],
         ];
     }
 
@@ -108,7 +111,7 @@ class GetCrossChannelSessions
 
     public function asController(ActionRequest $request): array
     {
-        return $this->handle($request->validated());
+        return $this->handle($this->chatFiltersScopedTo($request->user(), $request->validated()));
     }
 
     public function jsonResponse(array $result): JsonResponse

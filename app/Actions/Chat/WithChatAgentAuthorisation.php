@@ -195,6 +195,40 @@ trait WithChatAgentAuthorisation
         return array_values(array_unique(array_merge($shopIds, $legacy)));
     }
 
+    /**
+     * What a list of conversations may be asked for by the person asking. The shops are limited
+     * to the ones they may look at, and "mine" always means theirs: both used to be taken from
+     * the request, so anybody signed in could read any shop's conversations by naming it, or a
+     * colleague's by naming them.
+     *
+     * Applied where the request comes in, never in handle(), which our own code calls for a
+     * customer's history and has already decided whose it is.
+     *
+     * @param  array<string, mixed>  $filters
+     * @return array<string, mixed>
+     */
+    protected function chatFiltersScopedTo(mixed $user, array $filters): array
+    {
+        if (!$user instanceof User) {
+            return [...$filters, 'allowed_shop_ids' => []];
+        }
+
+        if (!empty($filters['assigned_to_me'])) {
+            $filters['assigned_to_me'] = $user->id;
+        }
+
+        $shops = Shop::with('fulfilment')
+            ->when(!empty($filters['shop_id']), fn ($query) => $query->where('id', (int) $filters['shop_id']))
+            ->get();
+
+        $filters['allowed_shop_ids'] = $shops
+            ->filter(fn (Shop $shop) => $this->userCanViewChatOnShop($user, $shop))
+            ->pluck('id')
+            ->all();
+
+        return $filters;
+    }
+
     protected function chatAgentProfileFor(User $user): ChatAgent
     {
         $agent = ChatAgent::withTrashed()->firstOrNew(['user_id' => $user->id]);

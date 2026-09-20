@@ -12,15 +12,18 @@ use App\Actions\OrgAction;
 use App\Actions\UI\Dashboards\ShowGroupDashboard;
 use App\Actions\UI\WithInertia;
 use App\Enums\Catalogue\Shop\ShopStateEnum;
+use App\Enums\CRM\Livechat\ChatAssignmentStatusEnum;
 use App\Enums\CRM\Livechat\ChatChannelEnum;
 use App\Enums\CRM\Livechat\ChatEventTypeEnum;
 use App\Enums\CRM\Livechat\ChatIgnoreReasonEnum;
 use App\Enums\CRM\Livechat\ChatSessionStatusEnum;
 use App\Http\Resources\CRM\Livechat\ChatSessionListResource;
 use App\Models\Catalogue\Shop;
+use App\Models\Chat\ChatAgent;
 use App\Models\Chat\ChatSession;
 use App\Models\Chat\MetaChatSession;
 use App\Models\SysAdmin\Organisation;
+use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
 use Inertia\Response;
 use Illuminate\Support\Arr;
@@ -39,6 +42,8 @@ class ShowOrgChatInbox extends OrgAction
     private ?ChatSession $selectedSession = null;
 
     private ?int $preselectShopId = null;
+
+    private bool $supervising = false;
 
     public function authorize(ActionRequest $request): bool
     {
@@ -85,7 +90,28 @@ class ShowOrgChatInbox extends OrgAction
         return $this->handle($organisation);
     }
 
-    public function htmlResponse(Organisation $organisation, ActionRequest $request): Response
+    public function supervision(Organisation $organisation, ActionRequest $request): Organisation
+    {
+        $this->supervising = true;
+
+        return $this->asController($organisation, $request);
+    }
+
+    public function supervisionInConversation(Organisation $organisation, ChatSession $chatSession, ActionRequest $request): Organisation
+    {
+        $this->supervising = true;
+
+        return $this->inConversation($organisation, $chatSession, $request);
+    }
+
+    public function supervisionInShop(Organisation $organisation, Shop $shop, ActionRequest $request): Organisation
+    {
+        $this->supervising = true;
+
+        return $this->inShop($organisation, $shop, $request);
+    }
+
+    public function htmlResponse(Organisation $organisation, ActionRequest $request): Response|RedirectResponse
     {
         $user = $request->user();
 
@@ -96,26 +122,36 @@ class ShowOrgChatInbox extends OrgAction
         // Chat does not belong to the organisation in the address bar either. The shops come
         // from the positions, across organisations, so the view is the same wherever it is
         // opened from and the scope in the url only decides which menu item is lit.
-        $openShops  = Shop::where('state', ShopStateEnum::OPEN)->orderBy('name')->get();
-        $inboxShops = $openShops->filter(fn ($shop) => $this->userCanWorkChatOnShop($user, $shop));
-        $isReadOnly = $inboxShops->isEmpty();
+        $openShops = Shop::where('state', ShopStateEnum::OPEN)->orderBy('name')->get();
 
-        // Somebody who may look but not work, an accountant or a supervisor, still reaches this
-        // page through authorize(). They get what they may see, and get to touch none of it.
-        if ($isReadOnly) {
-            $inboxShops = $openShops->filter(fn ($shop) => $this->userCanViewChatOnShop($user, $shop));
+        if ($this->supervising) {
+            // Overseeing, unlike working, does follow the address: whoever runs an organisation
+            // holds every shop in the group, and all of them at once was a wall of forty empty
+            // queues. The organisation or the shop in the url is what they came to look at.
+            $inboxShops = $openShops
+                ->filter(fn ($shop) => isset($this->shop) ? $shop->id === $this->shop->id : $shop->organisation_id === $organisation->id)
+                ->filter(fn ($shop) => $this->userCanViewChatOnShop($user, $shop));
+        } else {
+            $inboxShops = $openShops->filter(fn ($shop) => $this->userCanWorkChatOnShop($user, $shop));
+
+            if ($inboxShops->isEmpty()) {
+                return $this->redirectToSupervision($organisation);
+            }
         }
+
+        $title = $this->supervising ? __('Supervision') : __('Customer Inbox');
+        $icon  = $this->supervising ? 'fa-user-headset' : 'fa-inbox';
 
         return Inertia::render(
             'Org/Chat/Inbox',
             [
                 'breadcrumbs' => $this->getBreadcrumbs($request->route()->originalParameters()),
-                'title'       => __('Customer Inbox'),
+                'title'       => $title,
                 'pageHead'    => [
-                    'title' => __('Customer Inbox'),
+                    'title' => $title,
                     'icon'  => [
-                        'icon'  => ['fal', 'fa-inbox'],
-                        'title' => __('Customer Inbox'),
+                        'icon'  => ['fal', $icon],
+                        'title' => $title,
                     ],
                 ],
                 'organisation' => [
@@ -123,7 +159,11 @@ class ShowOrgChatInbox extends OrgAction
                     'slug' => $organisation->slug,
                     'name' => $organisation->name,
                 ],
-                'is_read_only'         => $isReadOnly,
+                'is_read_only'         => false,
+                // Overseeing shows everybody's conversations on a shop, whoever holds them, and
+                // the people holding them down the side.
+                'supervisor'           => $this->supervising,
+                'agents'               => $this->supervising ? $this->agentsCovering($inboxShops->pluck('id')->all()) : [],
                 // Why a conversation was put aside, chosen from a list: a bulk job done dozens
                 // of times an hour, and what has to be typed becomes blank within a day.
                 'ignoreReasons'        => ChatIgnoreReasonEnum::options(),
@@ -133,6 +173,58 @@ class ShowOrgChatInbox extends OrgAction
                 'preselectShopId'      => $this->preselectShopId,
             ]
         );
+    }
+
+    private function redirectToSupervision(Organisation $organisation): RedirectResponse
+    {
+        if (isset($this->shop)) {
+            return redirect()->route('grp.org.shops.show.chat.supervision', [$organisation->slug, $this->shop->slug]);
+        }
+
+        if ($this->selectedSession) {
+            return redirect()->route('grp.org.chat.supervision.conversation', [$organisation->slug, $this->selectedSession->ulid]);
+        }
+
+        return redirect()->route('grp.org.chat.supervision', [$organisation->slug]);
+    }
+
+    /**
+     * Who is on these shops, whether they are there, and how much they are holding. The load is
+     * counted from the conversations rather than read off the agent's own counter, which drifts.
+     *
+     * @param  array<int, int>  $shopIds
+     * @return array<int, array{id: int, name: string|null, presence: string, open: int, max: int}>
+     */
+    private function agentsCovering(array $shopIds): array
+    {
+        // ponytail: website and email only; WhatsApp assignments live in their own table and
+        // join this count when somebody asks why an agent busy on WhatsApp reads as idle.
+        $open = DB::table('chat_assignments')
+            ->join('chat_sessions', 'chat_sessions.id', '=', 'chat_assignments.chat_session_id')
+            ->where('chat_assignments.status', ChatAssignmentStatusEnum::ACTIVE->value)
+            ->where('chat_sessions.status', ChatSessionStatusEnum::ACTIVE->value)
+            ->whereNull('chat_sessions.deleted_at')
+            ->whereIn('chat_sessions.shop_id', $shopIds)
+            ->groupBy('chat_assignments.chat_agent_id')
+            ->pluck(DB::raw('count(*)'), 'chat_assignments.chat_agent_id');
+
+        return ChatAgent::with('user')->get()
+            ->filter(fn (ChatAgent $agent) => $agent->user?->status
+                && array_intersect($shopIds, $this->workableShopIdsFor($agent->user)) !== [])
+            ->map(fn (ChatAgent $agent) => [
+                'id'       => $agent->id,
+                'name'     => $agent->user->contact_name,
+                'presence' => $agent->presenceStatus()->value,
+                'open'     => (int) ($open[$agent->id] ?? 0),
+                'max'      => $agent->max_concurrent_chats,
+            ])
+            ->sortBy([
+                fn (array $a, array $b) => array_search($a['presence'], ['online', 'away', 'offline']) <=> array_search($b['presence'], ['online', 'away', 'offline']),
+                ['open', 'desc'],
+                ['name', 'asc'],
+            ])
+            ->values()
+            ->all();
     }
 
     private function resolveSelectedSession(): ?array
@@ -182,17 +274,17 @@ class ShowOrgChatInbox extends OrgAction
                 ];
             };
 
-            $channels = [$channel('website', __('Website'))];
+            // Every shop shows the same three columns so the rail reads down as one table;
+            // a channel nothing arrives on is held open and empty rather than dropped, which
+            // used to shift the icons a row out of line from one shop to the next.
+            $hasEmail    = isset($counts["{$shop->id}.email.customer"]) || isset($counts["{$shop->id}.email.guest"]);
+            $hasWhatsapp = (bool) Arr::get($shop->settings, 'whatsapp.enabled', false);
 
-            // Email only appears where email actually arrives, so a shop that never receives
-            // any is not given a column that can never hold anything.
-            if (isset($counts["{$shop->id}.email.customer"]) || isset($counts["{$shop->id}.email.guest"])) {
-                $channels[] = $channel('email', __('Email'));
-            }
-
-            if (Arr::get($shop->settings, 'whatsapp.enabled', false)) {
-                $channels[] = $channel('whatsapp', __('WhatsApp'));
-            }
+            $channels = [
+                $channel('website', __('Website')) + ['available' => true],
+                $channel('email', __('Email')) + ['available' => $hasEmail],
+                $channel('whatsapp', __('WhatsApp')) + ['available' => $hasWhatsapp],
+            ];
 
             return [
                 'id'       => $shop->id,
@@ -277,12 +369,12 @@ class ShowOrgChatInbox extends OrgAction
                 [
                     'type'   => 'simple',
                     'simple' => [
-                        'icon'  => 'fal fa-inbox',
+                        'icon'  => $this->supervising ? 'fal fa-user-headset' : 'fal fa-inbox',
                         'route' => [
-                            'name'       => 'grp.org.chat.inbox',
+                            'name'       => $this->supervising ? 'grp.org.chat.supervision' : 'grp.org.chat.inbox',
                             'parameters' => ['organisation' => $routeParameters['organisation'] ?? null],
                         ],
-                        'label' => __('Customer Inbox'),
+                        'label' => $this->supervising ? __('Supervision') : __('Customer Inbox'),
                     ],
                 ],
             ]

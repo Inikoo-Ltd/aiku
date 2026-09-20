@@ -589,7 +589,8 @@ class GetShopNavigation
         $navigation["chat"] = $this->getChatNavigation(
             "grp.org.shops.show.chat.",
             [$shop->organisation->slug, $shop->slug],
-            $this->userCanWorkChatOnShop($user, $shop)
+            $this->userCanWorkChatOnShop($user, $shop),
+            $user->authTo(["chat-m.{$shop->id}", "org-admin.{$shop->organisation_id}"])
         );
 
         if ($user->hasAnyPermission(["orders.$shop->id.view", "accounting.$shop->organisation_id.view"])) {
