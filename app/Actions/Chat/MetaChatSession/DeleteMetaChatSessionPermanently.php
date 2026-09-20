@@ -7,19 +7,20 @@
 
 namespace App\Actions\Chat\MetaChatSession;
 
+use App\Actions\Chat\WithChatAgentAuthorisation;
 use App\Models\Chat\MetaChatAssignment;
 use App\Models\Chat\MetaChatEvent;
 use App\Models\Chat\MetaChatMessage;
 use App\Models\Chat\MetaChatSession;
 use Exception;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class DeleteMetaChatSessionPermanently
 {
     use AsAction;
+    use WithChatAgentAuthorisation;
 
     /**
      * @throws \Throwable
@@ -45,7 +46,7 @@ class DeleteMetaChatSessionPermanently
     /** @noinspection PhpUnusedParameterInspection */
     public function asController(?string $organisation, MetaChatSession $metaChatSession): JsonResponse
     {
-        if (!Auth::user()?->chatAgent) {
+        if (!$this->getAuthorisedChatAgent($metaChatSession)) {
             return response()->json([
                 'success' => false,
                 'message' => __('Only authenticated agents can delete chats'),

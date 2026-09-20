@@ -8,6 +8,7 @@
 
 namespace App\Actions\UI\Grp\Layout;
 
+use App\Actions\Chat\WithChatAgentAuthorisation;
 use App\Enums\SysAdmin\Authorisation\RolesEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Models\SysAdmin\User;
@@ -16,6 +17,8 @@ use Lorisleiva\Actions\Concerns\AsAction;
 
 class GetShopNavigation
 {
+    use WithChatAgentAuthorisation;
+
     use AsAction;
 
     public function handle(Shop $shop, User $user): array
@@ -582,7 +585,7 @@ class GetShopNavigation
         }
 
         $chatParameters = [$shop->organisation->slug, $shop->slug];
-        $isChatAgent    = (bool) $user->chatAgent?->shopAssignments()->exists();
+        $isChatAgent    = $this->userCanWorkChatOnShop($user, $shop);
 
         $chatDashboard = [
             "label" => __("Dashboard"),

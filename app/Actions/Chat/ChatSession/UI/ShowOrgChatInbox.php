@@ -7,6 +7,7 @@
 
 namespace App\Actions\Chat\ChatSession\UI;
 
+use App\Actions\Chat\WithChatAgentAuthorisation;
 use App\Actions\OrgAction;
 use App\Actions\UI\Dashboards\ShowGroupDashboard;
 use App\Actions\UI\WithInertia;
@@ -25,6 +26,8 @@ use Lorisleiva\Actions\Concerns\AsAction;
 
 class ShowOrgChatInbox extends OrgAction
 {
+    use WithChatAgentAuthorisation;
+
     use AsAction;
     use WithInertia;
 
@@ -34,22 +37,19 @@ class ShowOrgChatInbox extends OrgAction
 
     public function authorize(ActionRequest $request): bool
     {
-        if ($request->user()->chatAgent) {
-            return true;
-        }
+        $user = $request->user();
 
         if (isset($this->shop)) {
-            return $request->user()->authTo([
-                "crm.{$this->shop->id}.view",
-                "accounting.{$this->shop->organisation_id}.view",
-            ]);
+            return $this->userCanViewChatOnShop($user, $this->shop)
+                || $user->authTo(["accounting.{$this->shop->organisation_id}.view"]);
         }
 
-        return $request->user()->authTo([
-            'accounting.'.$this->organisation->id.'.view',
-            'org-supervisor.'.$this->organisation->id,
-            'shops-view.'.$this->organisation->id,
-        ]);
+        return $this->userCanWorkChatOnOrganisation($user, $this->organisation)
+            || $user->authTo([
+                'accounting.'.$this->organisation->id.'.view',
+                'org-supervisor.'.$this->organisation->id,
+                'shops-view.'.$this->organisation->id,
+            ]);
     }
 
     public function handle(Organisation $organisation): Organisation
@@ -82,7 +82,13 @@ class ShowOrgChatInbox extends OrgAction
 
     public function htmlResponse(Organisation $organisation, ActionRequest $request): Response
     {
-        $isReadOnly = !$request->user()->chatAgent?->shopAssignments()->exists();
+        $user       = $request->user();
+        $openShops  = $organisation->shops()->where('state', ShopStateEnum::OPEN)->orderBy('name')->get();
+        $writable   = $openShops->filter(fn ($shop) => $this->userCanWorkChatOnShop($user, $shop));
+        $isReadOnly = $writable->isEmpty();
+        $inboxShops = $isReadOnly
+            ? $openShops->filter(fn ($shop) => $this->userCanViewChatOnShop($user, $shop))
+            : $writable;
 
         return Inertia::render(
             'Org/Chat/Inbox',
@@ -102,9 +108,7 @@ class ShowOrgChatInbox extends OrgAction
                     'name' => $organisation->name,
                 ],
                 'is_read_only'         => $isReadOnly,
-                'inboxes'              => $isReadOnly
-                    ? $this->getReadOnlyInboxes($organisation, $request)
-                    : $this->getAgentInboxes($organisation, $request),
+                'inboxes'              => $this->mapInboxes($inboxShops),
                 'selectedSessionUlid'  => $this->selectedSession ? (string) $this->selectedSession->ulid : null,
                 'initialSession'       => $this->resolveSelectedSession(),
                 'preselectShopId'      => $this->preselectShopId,
@@ -127,54 +131,6 @@ class ShowOrgChatInbox extends OrgAction
         ]);
 
         return (new ChatSessionListResource($this->selectedSession))->resolve();
-    }
-
-    /**
-     * The website channel comes from the agent's real shop assignments; the WhatsApp channel is a
-     * ponytail: static stub until chat sessions carry a channel and WhatsApp inboxes are modelled.
-     *
-     * @return array<int, array{id: int, name: string, slug: string, type: string|null, channels: array<int, array{key: string, name: string, unread: int}>}>
-     */
-    private function getAgentInboxes(Organisation $organisation, ActionRequest $request): array
-    {
-        $agent = $request->user()?->chatAgent;
-
-        if (!$agent) {
-            return [];
-        }
-
-        $assignments = $agent->shopAssignments()
-            ->where('organisation_id', $organisation->id)
-            ->get();
-
-        if ($assignments->isEmpty()) {
-            return [];
-        }
-
-        $shopsQuery = $organisation->shops()
-            ->where('state', ShopStateEnum::OPEN)
-            ->orderBy('name');
-
-        $isOrgWide = $assignments->contains(fn ($assignment) => $assignment->shop_id === null);
-
-        if (!$isOrgWide) {
-            $shopsQuery->whereIn('id', $assignments->pluck('shop_id')->filter());
-        }
-
-        return $this->mapInboxes($shopsQuery->get());
-    }
-
-    /**
-     * @return array<int, array{id: int, name: string, slug: string, type: string|null, channels: array<int, array{key: string, name: string, unread: int}>}>
-     */
-    private function getReadOnlyInboxes(Organisation $organisation, ActionRequest $request): array
-    {
-        $shopsQuery = $request->user()->authorisedShops()
-            ->where('shops.organisation_id', $organisation->id)
-            ->where('shops.state', ShopStateEnum::OPEN)
-            ->orderBy('shops.name');
-
-        return $this->mapInboxes($shopsQuery->get());
     }
 
     /**

@@ -7,17 +7,18 @@
 
 namespace App\Actions\Chat\MetaChatSession;
 
+use App\Actions\Chat\WithChatAgentAuthorisation;
 use App\Events\BroadcastMetaChatListEvent;
 use App\Models\Chat\MetaChatSession;
 use Exception;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class RestoreMetaChatSession
 {
     use AsAction;
+    use WithChatAgentAuthorisation;
 
     /**
      * Brings a trashed thread back. Meta sessions never store `waiting` — it is derived
@@ -40,7 +41,7 @@ class RestoreMetaChatSession
     /** @noinspection PhpUnusedParameterInspection */
     public function asController(?string $organisation, MetaChatSession $metaChatSession): JsonResponse
     {
-        if (!Auth::user()?->chatAgent) {
+        if (!$this->getAuthorisedChatAgent($metaChatSession)) {
             return response()->json([
                 'success' => false,
                 'message' => __('Only authenticated agents can restore chats'),

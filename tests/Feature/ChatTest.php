@@ -71,6 +71,7 @@ use App\Enums\CRM\Livechat\ChatMessageTypeEnum;
 use App\Enums\CRM\Livechat\ChatPriorityEnum;
 use App\Enums\CRM\Livechat\ChatSenderTypeEnum;
 use App\Enums\CRM\Livechat\ChatSessionStatusEnum;
+use App\Enums\SysAdmin\Authorisation\RolesEnum;
 use App\Enums\CRM\WebUser\WebUserTypeEnum;
 use App\Http\Resources\CRM\Livechat\ChatSessionResource;
 use App\Models\Chat\ChatAgent;
@@ -471,6 +472,12 @@ test('authenticated agent can assign chat session to self', function () {
         ]
     );
 
+    ShopHasChatAgent::firstOrCreate([
+        'organisation_id' => $this->shop->organisation_id,
+        'shop_id'         => $this->shop->id,
+        'chat_agent_id'   => $agent->id,
+    ]);
+
     $chatSession = ChatSession::create([
         'ulid'             => Str::ulid(),
         'status'           => ChatSessionStatusEnum::WAITING->value,
@@ -520,6 +527,12 @@ test('can send message from agent after assignment', function () {
             'current_chat_count'   => 0,
         ]);
     }
+
+    ShopHasChatAgent::firstOrCreate([
+        'organisation_id' => $this->shop->organisation_id,
+        'shop_id'         => $this->shop->id,
+        'chat_agent_id'   => $agent->id,
+    ]);
 
     $chatSession = ChatSession::whereHas('assignments', function ($query) use ($agent) {
         $query->where('chat_agent_id', $agent->id)
@@ -2928,6 +2941,10 @@ test('my chats excludes a whatsapp thread now held by another agent', function (
     $other = StoreChatAgent::make()->handle(['user_id' => User::factory()->create(['group_id' => $this->organisation->group_id])->id]);
 
     foreach ([$mine, $other] as $agent) {
+        if ($agent->isAssignedToShop($this->shop->id, $this->organisation->id)) {
+            continue;
+        }
+
         AssignChatAgentToScope::make()->handle([
             'organisation_id' => $this->organisation->id,
             'shop_id'         => [$this->shop->id],
@@ -3586,4 +3603,115 @@ test('automated mail from senders that match no customer is labelled filtered an
     }
 
     expect(ChatSession::count())->toBe($sessionsBefore);
+});
+
+test('a chat agent can only act on sessions of the shops it is assigned to', function () {
+    $session = ChatSession::create([
+        'ulid'             => (string) \Illuminate\Support\Str::ulid(),
+        'shop_id'          => $this->shop->id,
+        'language_id'      => 68,
+        'status'           => ChatSessionStatusEnum::ACTIVE->value,
+        'priority'         => ChatPriorityEnum::NORMAL->value,
+        'guest_identifier' => 'guest-'.\Illuminate\Support\Str::random(8),
+    ]);
+
+    $strangerUser = User::factory()->create(['group_id' => $this->organisation->group_id]);
+    $stranger     = ChatAgent::create([
+        'user_id'              => $strangerUser->id,
+        'max_concurrent_chats' => 5,
+        'language_id'          => 68,
+        'is_online'            => true,
+        'is_available'         => true,
+        'current_chat_count'   => 0,
+    ]);
+
+    $this->actingAs($strangerUser);
+    expect(CloseChatSession::make()->getCurrentAgent($session))->toBeNull()
+        ->and($stranger->isAssignedToShop($this->shop->id, $this->shop->organisation_id))->toBeFalse();
+
+    ShopHasChatAgent::create([
+        'organisation_id' => $this->shop->organisation_id,
+        'shop_id'         => $this->shop->id,
+        'chat_agent_id'   => $stranger->id,
+    ]);
+
+    expect(CloseChatSession::make()->getCurrentAgent($session)->id)->toBe($stranger->id);
+});
+
+test('an org wide chat agent can act on any shop of that organisation', function () {
+    $session = ChatSession::create([
+        'ulid'             => (string) \Illuminate\Support\Str::ulid(),
+        'shop_id'          => $this->shop->id,
+        'language_id'      => 68,
+        'status'           => ChatSessionStatusEnum::ACTIVE->value,
+        'priority'         => ChatPriorityEnum::NORMAL->value,
+        'guest_identifier' => 'guest-'.\Illuminate\Support\Str::random(8),
+    ]);
+
+    $user  = User::factory()->create(['group_id' => $this->organisation->group_id]);
+    $agent = ChatAgent::create([
+        'user_id'              => $user->id,
+        'max_concurrent_chats' => 5,
+        'language_id'          => 68,
+        'is_online'            => true,
+        'is_available'         => true,
+        'current_chat_count'   => 0,
+    ]);
+
+    ShopHasChatAgent::create([
+        'organisation_id' => $this->shop->organisation_id,
+        'shop_id'         => null,
+        'chat_agent_id'   => $agent->id,
+    ]);
+
+    $this->actingAs($user);
+
+    expect(CloseChatSession::make()->getCurrentAgent($session)->id)->toBe($agent->id);
+});
+
+test('customer service permission makes an agent, creating the profile on first use', function () {
+    $session = ChatSession::create([
+        'ulid'             => (string) \Illuminate\Support\Str::ulid(),
+        'shop_id'          => $this->shop->id,
+        'language_id'      => 68,
+        'status'           => ChatSessionStatusEnum::ACTIVE->value,
+        'priority'         => ChatPriorityEnum::NORMAL->value,
+        'guest_identifier' => 'guest-'.\Illuminate\Support\Str::random(8),
+    ]);
+
+    $csUser = User::factory()->create(['group_id' => $this->organisation->group_id]);
+    setPermissionsTeamId($this->user->group_id);
+    $csUser->assignRole(RolesEnum::getRoleName(RolesEnum::CUSTOMER_SERVICE_CLERK->value, $this->shop));
+
+    expect(ChatAgent::where('user_id', $csUser->id)->exists())->toBeFalse();
+
+    $this->actingAs($csUser);
+    $agent = CloseChatSession::make()->getCurrentAgent($session);
+
+    expect($agent)->toBeInstanceOf(ChatAgent::class)
+        ->and($agent->user_id)->toBe($csUser->id)
+        ->and($agent->is_online)->toBeFalse()
+        ->and(ChatAgent::where('user_id', $csUser->id)->count())->toBe(1);
+
+    expect(CloseChatSession::make()->getCurrentAgent($session)->id)->toBe($agent->id);
+});
+
+test('customer service viewer gets no write access to chat', function () {
+    $session = ChatSession::create([
+        'ulid'             => (string) \Illuminate\Support\Str::ulid(),
+        'shop_id'          => $this->shop->id,
+        'language_id'      => 68,
+        'status'           => ChatSessionStatusEnum::ACTIVE->value,
+        'priority'         => ChatPriorityEnum::NORMAL->value,
+        'guest_identifier' => 'guest-'.\Illuminate\Support\Str::random(8),
+    ]);
+
+    $viewer = User::factory()->create(['group_id' => $this->organisation->group_id]);
+    setPermissionsTeamId($this->user->group_id);
+    $viewer->assignRole(RolesEnum::getRoleName(RolesEnum::CUSTOMER_SERVICE_VIEWER->value, $this->shop));
+
+    $this->actingAs($viewer);
+
+    expect(CloseChatSession::make()->getCurrentAgent($session))->toBeNull()
+        ->and(ChatAgent::where('user_id', $viewer->id)->exists())->toBeFalse();
 });

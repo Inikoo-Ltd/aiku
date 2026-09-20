@@ -135,6 +135,27 @@ class ChatAgent extends Model
         return $this->hasMany(ShopHasChatAgent::class);
     }
 
+    public function isAssignedToShop(?int $shopId, ?int $organisationId): bool
+    {
+        if (!$shopId && !$organisationId) {
+            return false;
+        }
+
+        return $this->shopAssignments()
+            ->whereNull('deleted_at')
+            ->where(function ($query) use ($shopId, $organisationId) {
+                if ($shopId) {
+                    $query->where('shop_id', $shopId);
+                }
+                if ($organisationId) {
+                    $query->orWhere(function ($orgWide) use ($organisationId) {
+                        $orgWide->whereNull('shop_id')->where('organisation_id', $organisationId);
+                    });
+                }
+            })
+            ->exists();
+    }
+
     public function shops()
     {
         return $this->belongsToMany(Shop::class, 'shop_has_chat_agents')

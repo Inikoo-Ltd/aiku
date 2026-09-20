@@ -8,6 +8,7 @@
 
 namespace App\Actions\UI\Grp\Layout;
 
+use App\Actions\Chat\WithChatAgentAuthorisation;
 use App\Enums\SysAdmin\Authorisation\RolesEnum;
 use App\Models\SysAdmin\Organisation;
 use App\Models\SysAdmin\User;
@@ -15,6 +16,8 @@ use Lorisleiva\Actions\Concerns\AsAction;
 
 class GetOrganisationNavigation
 {
+    use WithChatAgentAuthorisation;
+
     use AsAction;
     use WithLayoutNavigation;
 
@@ -249,9 +252,11 @@ class GetOrganisationNavigation
 
         $canSeeShops = $user->authTo(['accounting.'.$organisation->id.'.view', 'org-supervisor.'.$organisation->id, 'shops-view.'.$organisation->id]);
 
-        if ($canSeeShops || $user->chatAgent) {
+        $canWorkChat = $this->userCanWorkChatOnOrganisation($user, $organisation);
+
+        if ($canSeeShops || $canWorkChat) {
             $chatParameters = [$organisation->slug];
-            $isChatAgent    = (bool) $user->chatAgent?->shopAssignments()->exists();
+            $isChatAgent    = $canWorkChat;
             $chatDashboard = [
                 'label' => __('Dashboard'),
                 'icon'  => ['fal', 'fa-comment-alt'],

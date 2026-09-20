@@ -7,6 +7,7 @@
 
 namespace App\Actions\Chat\ChatSession;
 
+use App\Actions\Chat\WithChatAgentAuthorisation;
 use App\Enums\CRM\Livechat\ChatActorTypeEnum;
 use App\Enums\CRM\Livechat\ChatEventTypeEnum;
 use App\Events\BroadcastChatListEvent;
@@ -14,13 +15,13 @@ use App\Models\Chat\ChatAgent;
 use App\Models\Chat\ChatSession;
 use Exception;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class UnmarkChatSessionAsSpam
 {
     use AsAction;
+    use WithChatAgentAuthorisation;
 
     /**
      * Clear the spam flag so the session returns to its normal inbox tab.
@@ -60,7 +61,7 @@ class UnmarkChatSessionAsSpam
     /** @noinspection PhpUnusedParameterInspection */
     public function asController(?string $organisation, ChatSession $chatSession): JsonResponse
     {
-        $agent = $this->getCurrentAgent();
+        $agent = $this->getCurrentAgent($chatSession);
 
         if (!$agent) {
             return response()->json([
@@ -96,8 +97,8 @@ class UnmarkChatSessionAsSpam
         ]);
     }
 
-    public function getCurrentAgent(): ?ChatAgent
+    public function getCurrentAgent(ChatSession $chatSession): ?ChatAgent
     {
-        return Auth::user()?->chatAgent;
+        return $this->getAuthorisedChatAgent($chatSession);
     }
 }
