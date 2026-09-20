@@ -2593,3 +2593,30 @@ describe('hr records leave on behalf of employee', function () {
         expect((float) $balance->medical_used)->toBe((float) $leave->duration_days);
     });
 });
+
+test('public holidays are generated with the right movable feasts and weekend substitutions', function () {
+    $generator = \App\Actions\HumanResources\Holiday\GeneratePublicHolidays::make();
+
+    $uk2026 = collect($generator->holidaysFor('gb', 2026))->pluck('date', 'label');
+    expect($uk2026['Good Friday'])->toBe('2026-04-03')
+        ->and($uk2026['Easter Monday'])->toBe('2026-04-06')
+        ->and($uk2026['Early May bank holiday'])->toBe('2026-05-04')
+        ->and($uk2026['Spring bank holiday'])->toBe('2026-05-25')
+        ->and($uk2026['Summer bank holiday'])->toBe('2026-08-31')
+        // Boxing Day 2026 is a Saturday, so England and Wales take the Monday.
+        ->and($uk2026['Boxing Day'])->toBe('2026-12-28');
+
+    // 2027 pushes both Christmas and Boxing Day off the weekend, onto consecutive days.
+    $uk2027 = collect($generator->holidaysFor('gb', 2027))->pluck('date', 'label');
+    expect($uk2027['Christmas Day'])->toBe('2027-12-27')
+        ->and($uk2027['Boxing Day'])->toBe('2027-12-28');
+
+    // Slovakia does not substitute: Christmas Day 2027 stays on the Saturday.
+    $sk2027 = collect($generator->holidaysFor('sk', 2027))->pluck('date', 'label');
+    expect($sk2027['Prvý sviatok vianočný'])->toBe('2027-12-25')
+        ->and($sk2027['Veľký piatok'])->toBe('2027-03-26');
+
+    $es2026 = collect($generator->holidaysFor('es', 2026))->pluck('date', 'label');
+    expect($es2026['Viernes Santo'])->toBe('2026-04-03')
+        ->and($es2026['Fiesta Nacional de España'])->toBe('2026-10-12');
+});

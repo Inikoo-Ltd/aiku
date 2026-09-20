@@ -72,6 +72,8 @@ use App\Enums\CRM\Livechat\ChatPriorityEnum;
 use App\Enums\CRM\Livechat\ChatSenderTypeEnum;
 use App\Enums\CRM\Livechat\ChatSessionStatusEnum;
 use App\Enums\SysAdmin\Authorisation\RolesEnum;
+use App\Models\HumanResources\Employee;
+use App\Actions\Chat\Reports\IsWithinWorkingHours;
 use App\Enums\CRM\WebUser\WebUserTypeEnum;
 use App\Http\Resources\CRM\Livechat\ChatSessionResource;
 use App\Models\Chat\ChatAgent;
@@ -3755,4 +3757,49 @@ test('a departed staff member is never a chat agent', function () {
 
     expect(CloseChatSession::make()->getCurrentAgent($session->fresh()))->toBeNull()
         ->and(ChatAgent::available()->whereKey($agent->id)->exists())->toBeFalse();
+});
+
+test('working hours follow the agent contract, then the shop, then a plain weekday', function () {
+    $tz = \App\Models\Helpers\Timezone::where('name', 'Europe/London')->first();
+    $this->shop->update(['timezone_id' => $tz->id, 'opening_hours' => []]);
+    $shop = $this->shop->fresh();
+
+    $employee = Employee::factory()->create([
+        'group_id'        => $this->organisation->group_id,
+        'organisation_id' => $this->organisation->id,
+        'working_hours'   => ['data' => [
+            // Monday to Thursday only: this agent does not work Fridays.
+            '1' => ['s' => '08:00', 'e' => '16:00', 'b' => [['s' => '12:00', 'e' => '12:30']]],
+            '2' => ['s' => '08:00', 'e' => '16:00', 'b' => []],
+            '3' => ['s' => '08:00', 'e' => '16:00', 'b' => []],
+            '4' => ['s' => '08:00', 'e' => '16:00', 'b' => []],
+        ]],
+    ]);
+
+    $at = fn (string $when) => \Illuminate\Support\Carbon::parse($when, 'Europe/London');
+    $within = fn (string $when) => IsWithinWorkingHours::run($shop, $at($when), $employee);
+
+    expect($within('2026-09-21 09:00'))->toBeTrue()          // Monday morning
+        ->and($within('2026-09-21 07:59'))->toBeFalse()       // before the shift
+        ->and($within('2026-09-21 16:00'))->toBeFalse()       // end is exclusive
+        ->and($within('2026-09-21 12:15'))->toBeFalse()       // on a break
+        ->and($within('2026-09-25 09:00'))->toBeFalse()       // Friday: not contracted
+        ->and($within('2026-09-26 09:00'))->toBeFalse();      // Saturday
+
+    // No contract: the plain weekday fallback answers instead.
+    expect(IsWithinWorkingHours::run($shop, $at('2026-09-25 09:30')))->toBeTrue()
+        ->and(IsWithinWorkingHours::run($shop, $at('2026-09-25 07:30')))->toBeFalse()
+        ->and(IsWithinWorkingHours::run($shop, $at('2026-09-25 16:30')))->toBeFalse();
+
+    // A public holiday of the organisation is never working time, contract or not.
+    $this->organisation->holidays()->create([
+        'group_id' => $this->organisation->group_id,
+        'type'     => \App\Enums\HumanResources\Holiday\HolidayTypeEnum::PUBLIC->value,
+        'year'     => 2026,
+        'label'    => 'Test bank holiday',
+        'from'     => '2026-09-21',
+        'to'       => '2026-09-21',
+    ]);
+
+    expect($within('2026-09-21 09:00'))->toBeFalse();
 });
