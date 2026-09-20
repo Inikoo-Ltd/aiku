@@ -4260,7 +4260,15 @@ test('an agent strikes a card number out of a message everywhere it was stored',
         ->toThrow(\Illuminate\Validation\ValidationException::class);
 });
 
-test('an agent removes a photograph of a card from a message and from the archive', function () {
+test('an agent removes a photograph of a card from a message and from the archive', function (bool $hasArchiveCopy) {
+    $archiveSchema = $hasArchiveCopy ? 'chat_redaction_archived' : 'chat_redaction_unarchived';
+    config()->set(
+        'database.connections.archive',
+        array_merge(config('database.connections.'.config('database.default')), ['search_path' => $archiveSchema])
+    );
+    DB::purge('archive');
+    DB::statement('create schema if not exists '.$archiveSchema);
+
     setPermissionsTeamId($this->user->group_id);
 
     $session = ChatSession::create([
@@ -4303,6 +4311,23 @@ test('an agent removes a photograph of a card from a message and from the archiv
 
     expect(is_file($diskPath))->toBeTrue();
 
+    $archiveTable = \App\Actions\Chat\ChatSession\ArchiveChatMedia::ARCHIVE_TABLE;
+    if ($hasArchiveCopy) {
+        \Illuminate\Support\Facades\Schema::connection('archive')->create($archiveTable, function (\Illuminate\Database\Schema\Blueprint $table) {
+            $table->unsignedBigInteger('media_id')->primary();
+            $table->binary('contents');
+            $table->string('checksum', 32);
+            $table->timestampTz('archived_at');
+        });
+        DB::connection('archive')->table($archiveTable)->insert([
+            'media_id' => $mediaId,
+            'contents' => 'a photograph of a card',
+            'checksum' => md5('a photograph of a card'),
+            'archived_at' => now(),
+        ]);
+        expect(DB::connection('archive')->table($archiveTable)->where('media_id', $mediaId)->exists())->toBeTrue();
+    }
+
     RedactChatMessage::make()->handleAttachment($session, $message->fresh(), $agent);
 
     // Off the disk, out of the table, and the message says a file was taken out of it.
@@ -4314,7 +4339,14 @@ test('an agent removes a photograph of a card from a message and from the archiv
         ->and(ChatEvent::where('chat_session_id', $session->id)
             ->where('event_type', ChatEventTypeEnum::REDACT->value)
             ->value('payload')['files'] ?? null)->toBe(1);
-});
+    if ($hasArchiveCopy) {
+        expect(DB::connection('archive')->table($archiveTable)->where('media_id', $mediaId)->exists())->toBeFalse();
+    }
+})->with([
+    'archive not initialized' => [false],
+    'file also stored in archive' => [true],
+]);
+
 
 test('the agents a chat can be handed to come from permissions, not the old shop table', function () {
     setPermissionsTeamId($this->user->group_id);
