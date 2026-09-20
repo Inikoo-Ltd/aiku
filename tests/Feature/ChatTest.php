@@ -3753,10 +3753,25 @@ test('a departed staff member is never a chat agent', function () {
     expect(CloseChatSession::make()->getCurrentAgent($session))->not->toBeNull()
         ->and(ChatAgent::available()->whereKey($agent->id)->exists())->toBeTrue();
 
+    $assignment = $session->assignments()->create([
+        'chat_agent_id' => $agent->id,
+        'status'        => ChatAssignmentStatusEnum::ACTIVE->value,
+        'assigned_at'   => now(),
+    ]);
+
     $leaver->update(['status' => false]);
 
     expect(CloseChatSession::make()->getCurrentAgent($session->fresh()))->toBeNull()
         ->and(ChatAgent::available()->whereKey($agent->id)->exists())->toBeFalse();
+
+    // Deactivating hands the conversations back even though the roles outlive the account.
+    $result = \App\Actions\Chat\Agent\RevokeChatAgentAccess::run(ChatAgent::withTrashed()->find($agent->id));
+
+    expect($result['released'])->toBe(1)
+        ->and($result['suspended'])->toBeTrue()
+        ->and($assignment->fresh()->status)->toBe(ChatAssignmentStatusEnum::RESOLVED)
+        ->and($session->fresh()->status)->toBe(ChatSessionStatusEnum::WAITING)
+        ->and(ChatAgent::find($agent->id))->toBeNull();
 });
 
 test('working hours follow the agent contract, then the shop, then a plain weekday', function () {

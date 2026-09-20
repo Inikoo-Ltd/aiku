@@ -56,6 +56,12 @@ class RevokeChatAgentAccess
         // Read the grants straight from spatie. authTo() caches a positive answer for an
         // hour, and a revocation that believes a stale yes is the one case that must not
         // happen: the whole point here is that the permission has just gone away.
+        // Somebody who can no longer log in works nothing, whatever they still hold: the
+        // roles outlive the account, since they only go when the job positions are synced.
+        if (!$user->status) {
+            return $this->revokeEverything($agent, $dryRun);
+        }
+
         $granted = $user->getAllPermissions();
 
         $chatShopIds = $granted
@@ -145,6 +151,43 @@ class RevokeChatAgentAccess
         }
 
         return ['released' => $released, 'shops_removed' => $shopsRemoved, 'suspended' => $suspended, 'restored' => $restored];
+    }
+
+    /**
+     * @return array{released: int, shops_removed: int, suspended: bool, restored: bool}
+     */
+    private function revokeEverything(ChatAgent $agent, bool $dryRun): array
+    {
+        $released = 0;
+
+        foreach (
+            ChatAssignment::with('chatSession.shop')
+                ->where('chat_agent_id', $agent->id)
+                ->where('status', ChatAssignmentStatusEnum::ACTIVE->value)
+                ->get() as $assignment
+        ) {
+            if (!$dryRun) {
+                $this->release($assignment, $agent);
+            }
+
+            $released++;
+        }
+
+        $shopsRemoved = $agent->shopAssignments()->count();
+
+        if (!$dryRun) {
+            $agent->shopAssignments()->delete();
+
+            if ($released > 0) {
+                ChatAgentHydrateChats::run($agent);
+            }
+
+            if (!$agent->trashed()) {
+                $agent->delete();
+            }
+        }
+
+        return ['released' => $released, 'shops_removed' => $shopsRemoved, 'suspended' => true, 'restored' => false];
     }
 
     private function release(ChatAssignment $assignment, ChatAgent $agent): void
