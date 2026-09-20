@@ -9,6 +9,7 @@
 namespace App\Actions\UI\Grp\Layout;
 
 use App\Actions\Chat\WithChatAgentAuthorisation;
+use App\Actions\Chat\WithChatNavigation;
 use App\Enums\SysAdmin\Authorisation\RolesEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Models\SysAdmin\User;
@@ -18,6 +19,7 @@ use Lorisleiva\Actions\Concerns\AsAction;
 class GetShopNavigation
 {
     use WithChatAgentAuthorisation;
+    use WithChatNavigation;
 
     use AsAction;
 
@@ -584,48 +586,11 @@ class GetShopNavigation
             ];
         }
 
-        $chatParameters = [$shop->organisation->slug, $shop->slug];
-        $isChatAgent    = $this->userCanWorkChatOnShop($user, $shop);
-
-        $chatDashboard = [
-            "label" => __("Dashboard"),
-            "icon"  => ["fal", "fa-comment-alt"],
-            "root"  => "grp.org.shops.show.chat.dashboard",
-            "route" => [
-                "name"       => "grp.org.shops.show.chat.dashboard",
-                "parameters" => $chatParameters,
-            ],
-        ];
-        $chatInbox = [
-            "label" => __("Inbox"),
-            "icon"  => ["fal", "fa-inbox"],
-            "root"  => "grp.org.shops.show.chat.inbox",
-            "route" => [
-                "name"       => "grp.org.shops.show.chat.inbox",
-                "parameters" => $chatParameters,
-            ],
-        ];
-        $chatSettings = [
-            "label" => __("Settings"),
-            "icon"  => ["fal", "fa-sliders-h"],
-            "root"  => "grp.org.shops.show.chat.settings",
-            "route" => [
-                "name"       => "grp.org.shops.show.chat.settings",
-                "parameters" => $chatParameters,
-            ],
-        ];
-
-        $navigation["chat"] = [
-            "root"    => "grp.org.shops.show.chat.",
-            "label"   => __("Chat"),
-            "icon"    => ["fal", "fa-comment-alt"],
-            "route"   => $isChatAgent ? $chatInbox["route"] : $chatDashboard["route"],
-            "topMenu" => [
-                "subSections" => $isChatAgent
-                    ? [$chatInbox, $chatDashboard, $chatSettings]
-                    : [$chatDashboard, $chatInbox, $chatSettings],
-            ],
-        ];
+        $navigation["chat"] = $this->getChatNavigation(
+            "grp.org.shops.show.chat.",
+            [$shop->organisation->slug, $shop->slug],
+            $this->userCanWorkChatOnShop($user, $shop)
+        );
 
         if ($user->hasAnyPermission(["orders.$shop->id.view", "accounting.$shop->organisation_id.view"])) {
             $navigation["ordering"] = [

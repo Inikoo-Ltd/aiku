@@ -1276,7 +1276,8 @@ onUnmounted(() => {
 
             <!-- Search -->
             <div v-if="showSearch" class="px-3 py-2 border-b">
-                <input v-model="searchQuery" type="text" :placeholder="ctrans('Search…')"
+                <label for="chat-inbox-search" class="sr-only">{{ ctrans("Search conversations") }}</label>
+                <input id="chat-inbox-search" v-model="searchQuery" type="text" :placeholder="ctrans('Search…')"
                     class="w-full text-sm border rounded-lg px-3 py-1.5 focus:outline-none focus:ring-1" />
             </div>
 

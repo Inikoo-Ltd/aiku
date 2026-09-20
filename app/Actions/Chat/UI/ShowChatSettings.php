@@ -57,6 +57,7 @@ class ShowChatSettings extends OrgAction
         return $this->handle($organisation);
     }
 
+    /** @noinspection PhpUnusedParameterInspection */
     public function inShop(Organisation $organisation, Shop $shop, ActionRequest $request): Shop
     {
         $this->initialisationFromShop($shop, $request)->withTab(ChatSettingsTabsEnum::values());
