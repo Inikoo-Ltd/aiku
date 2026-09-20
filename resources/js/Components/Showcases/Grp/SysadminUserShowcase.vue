@@ -28,6 +28,7 @@ const props = defineProps<{
             username: string
             avatar: ImageTS
             email?: string
+            status: boolean
             parent_type: string
             contact_name: string
             authorizedOrganisations: {
@@ -133,6 +134,18 @@ const force2FA = async () => {
         <div class="">
             <div class="h-40 aspect-square rounded-full overflow-hidden shadow m-5">
                 <Image :src="data?.data?.avatar" :alt="data?.data?.contact_name" />
+            </div>
+            <div class="text-center">
+                <span
+                    v-if="data?.data?.status"
+                    class="inline-block border rounded-md border-green-500 text-green-600 px-2 py-1 text-sm">
+                    <FontAwesomeIcon :icon="faCheck" /> {{ trans('Active') }}
+                </span>
+                <span
+                    v-else
+                    class="inline-block border rounded-md border-red-500 text-red-600 px-2 py-1 text-sm">
+                    <FontAwesomeIcon :icon="faTimes" /> {{ trans('Inactive') }}
+                </span>
             </div>
         </div>
 
