@@ -8,14 +8,12 @@
 
 namespace App\Actions\Chat\ChatSession\UI;
 
-use App\Actions\Chat\ChatSession\GetChatDashboardData;
-use App\Actions\Chat\ChatSession\GetGroupChatDashboardData;
 use App\Actions\OrgAction;
 use App\Actions\UI\Dashboards\ShowGroupDashboard;
 use App\Actions\UI\WithInertia;
+use App\Enums\Catalogue\Shop\ShopStateEnum;
+use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Group;
-use App\Models\SysAdmin\Organisation;
-use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -25,6 +23,7 @@ class ShowGroupChatDashboard extends OrgAction
 {
     use AsAction;
     use WithInertia;
+    use WithChatReportsResponse;
 
     public function authorize(ActionRequest $request): bool
     {
@@ -45,67 +44,18 @@ class ShowGroupChatDashboard extends OrgAction
 
     public function htmlResponse(Group $group, ActionRequest $request): Response
     {
-        $title         = __('Chat Reports');
-        $dashboardData = GetGroupChatDashboardData::run($group);
-
-        $agentDashboards = $this->getAgentDashboards();
+        $shops = Shop::query()
+            ->where('group_id', $group->id)
+            ->where('state', ShopStateEnum::OPEN)
+            ->get(['id', 'slug', 'name']);
 
         return Inertia::render(
-            'Chat/Dashboard',
+            'Chat/ChatReports',
             [
-                'breadcrumbs'     => $this->getBreadcrumbs($request->route()->getName(), $request->route()->originalParameters()),
-                'title'           => $title,
-                'pageHead'        => [
-                    'title' => $title,
-                    'icon'  => [
-                        'icon'  => ['fal', 'fa-comment-alt'],
-                        'title' => $title,
-                    ],
-                ],
-                'stats'           => $dashboardData['stats'],
-                'table'           => $dashboardData['table'],
-                'agentDashboards' => $agentDashboards,
+                'breadcrumbs' => $this->getBreadcrumbs($request->route()->getName(), $request->route()->originalParameters()),
+                ...$this->chatReportsProps($shops),
             ]
         );
-    }
-
-    private function getAgentDashboards(): array
-    {
-        $user = Auth::user();
-
-        if (!$user) {
-            return [];
-        }
-
-        $chatAgent = $user->chatAgent()->with('organisations')->first();
-
-        if (!$chatAgent) {
-            return [];
-        }
-
-        return $chatAgent->organisations->unique('id')->map(function (Organisation $organisation) use ($chatAgent): array {
-            /** @var \App\Models\Chat\ChatAgent $chatAgent */
-            $data = GetChatDashboardData::run($organisation);
-
-            $agentShopIds = $chatAgent->shops()
-                ->wherePivot('organisation_id', $organisation->id)
-                ->pluck('shops.id')
-                ->toArray();
-
-            $shopQuery = \count($agentShopIds)
-                ? '?' . implode('&', array_map(fn ($id) => "shop_ids[]={$id}", $agentShopIds))
-                : '';
-
-            return [
-                'organisation'           => ['slug' => $organisation->slug, 'name' => $organisation->name],
-                'stats'                  => $data['stats'],
-                'chatEnabledShops'       => $data['chatEnabledShops'],
-                'table'                  => $data['table'],
-                'dashboardVisitorsRoute' => route('grp.org.chat.dashboard-visitors', $organisation->slug) . $shopQuery,
-                'activeSessionsRoute'    => route('grp.org.chat.active-sessions', $organisation->slug),
-                'visitorsByCountryRoute' => route('grp.org.chat.visitors-by-country', $organisation->slug),
-            ];
-        })->values()->all();
     }
 
     public function getBreadcrumbs(string $routeName, array $routeParameters): array

@@ -8,10 +8,11 @@
 
 namespace App\Actions\Chat\ChatSession\UI;
 
-use App\Actions\Chat\ChatSession\GetChatDashboardData;
 use App\Actions\OrgAction;
 use App\Actions\UI\Dashboards\ShowGroupDashboard;
 use App\Actions\UI\WithInertia;
+use App\Enums\Catalogue\Shop\ShopStateEnum;
+use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Organisation;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -22,6 +23,7 @@ class ShowChatDashboard extends OrgAction
 {
     use AsAction;
     use WithInertia;
+    use WithChatReportsResponse;
 
     public function handle(Organisation $organisation): Organisation
     {
@@ -43,27 +45,16 @@ class ShowChatDashboard extends OrgAction
 
     public function htmlResponse(Organisation $organisation, ActionRequest $request): Response
     {
-        $title         = __('Chat Reports');
-        $dashboardData = GetChatDashboardData::run($organisation);
+        $shops = Shop::query()
+            ->where('organisation_id', $organisation->id)
+            ->where('state', ShopStateEnum::OPEN)
+            ->get(['id', 'slug', 'name']);
 
         return Inertia::render(
-            'Org/Chat/Dashboard',
+            'Chat/ChatReports',
             [
-                'breadcrumbs'      => $this->getBreadcrumbs($request->route()->getName(), $request->route()->originalParameters()),
-                'title'            => $title,
-                'pageHead'         => [
-                    'title' => $title,
-                    'icon'  => [
-                        'icon'  => ['fal', 'comment-alt'],
-                        'title' => $title,
-                    ],
-                ],
-                'stats'                 => $dashboardData['stats'],
-                'chatEnabledShops'      => $dashboardData['chatEnabledShops'],
-                'table'                 => $dashboardData['table'],
-                'visitorsByCountryRoute' => route('grp.org.chat.visitors-by-country', $organisation->slug),
-                'activeSessionsRoute'      => route('grp.org.chat.active-sessions', $organisation->slug),
-                'dashboardVisitorsRoute'   => route('grp.org.chat.dashboard-visitors', $organisation->slug),
+                'breadcrumbs' => $this->getBreadcrumbs($request->route()->getName(), $request->route()->originalParameters()),
+                ...$this->chatReportsProps($shops),
             ]
         );
     }

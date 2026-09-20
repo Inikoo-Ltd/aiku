@@ -27,14 +27,12 @@ use App\Actions\Chat\ChatSession\GetChatAgents;
 use App\Actions\Chat\ChatSession\GetChatAgentSpecializations;
 use App\Actions\Chat\ChatSession\GetChatCustomerProfile;
 use App\Actions\Chat\ChatSession\GetChatCustomerTimeline;
-use App\Actions\Chat\ChatSession\GetChatDashboardData;
+use App\Actions\Chat\ChatSession\GetChatReports;
 use App\Actions\Chat\ChatSession\GetChatDashboardVisitors;
 use App\Actions\Chat\ChatSession\GetChatMessages;
 use App\Actions\Chat\ChatSession\GetChatSessions;
 use App\Actions\Chat\ChatSession\GetChatStatus;
 use App\Actions\Chat\ChatSession\GetChatVisitorsByCountry;
-use App\Actions\Chat\ChatSession\GetGroupChatDashboardData;
-use App\Actions\Chat\ChatSession\GetShopChatDashboardData;
 use App\Actions\Chat\ChatSession\HandleChatTyping;
 use App\Actions\Chat\ChatSession\MarkChatMessagesAsRead;
 use App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects;
@@ -1751,13 +1749,6 @@ test('GetChatActivity returns formatted events for a chat session', function () 
         ->and($result['events'])->toHaveCount(1);
 });
 
-test('GetGroupChatDashboardData returns stats and table for a group', function () {
-    $result = GetGroupChatDashboardData::make()->handle($this->organisation->group);
-
-    expect($result)->toHaveKeys(['stats', 'table'])
-        ->and($result['stats'])->toHaveKeys(['chatEnabledShops', 'chatAgents', 'chatSessionsTotal']);
-});
-
 test('SummarizeChatSession returns session unchanged when there are no messages', function () {
     $chatSession = ChatSession::create([
         'ulid'             => (string)Str::ulid(),
@@ -1775,21 +1766,6 @@ test('SummarizeChatSession returns session unchanged when there are no messages'
 
     expect($result->id)->toBe($chatSession->id)
         ->and($result->metadata)->toBeNull();
-});
-
-test('GetShopChatDashboardData returns stats for a shop', function () {
-    $result = GetShopChatDashboardData::make()->handle($this->shop);
-
-    expect($result)->toHaveKeys([
-        'chatEnabled',
-        'chatAgents',
-        'chatSessionsTotal',
-        'chatSessionsWaiting',
-        'chatSessionsActive',
-        'chatSessionsClosed',
-        'chatMessagesTotal',
-        'chatMessagesUnread',
-    ]);
 });
 
 test('GetChatAgentSpecializations returns all enum cases with labels', function () {
@@ -1893,12 +1869,6 @@ test('GetActiveChatSessions returns active and waiting sessions for an organisat
 
     expect($result)->not->toBeEmpty()
         ->and($result[0])->toHaveKeys(['id', 'status', 'has_messages', 'country_code']);
-});
-
-test('GetChatDashboardData returns stats, shops and table for an organisation', function () {
-    $result = GetChatDashboardData::make()->handle($this->organisation);
-
-    expect($result)->toHaveKeys(['stats', 'chatEnabledShops', 'table']);
 });
 
 test('TranslateSingleMessage dispatches a translation job when no translation exists yet', function () {
@@ -2104,7 +2074,7 @@ test('UI Show shop chat dashboard', function () {
     $response = get(route('grp.org.shops.show.chat.reports', [$this->organisation->slug, $this->shop->slug]));
 
     $response->assertInertia(function (AssertableInertia $page) {
-        $page->component('Org/Shop/Chat/Dashboard');
+        $page->component('Chat/ChatReports');
     });
 });
 
@@ -4462,4 +4432,48 @@ test('email does not sit under the website tab', function () {
     ])->items());
 
     expect($website->pluck('id')->all())->not->toContain($emailSession->id);
+});
+
+test('GetChatReports counts only conversations the visitor wrote in and measures the first reply', function () {
+    $session = fn (string $channel) => ChatSession::create([
+        'ulid'             => (string)Str::ulid(),
+        'status'           => ChatSessionStatusEnum::ACTIVE,
+        'guest_identifier' => 'guest_'.Str::random(5),
+        'language_id'      => 68,
+        'priority'         => ChatPriorityEnum::NORMAL,
+        'shop_id'          => $this->shop->id,
+        'channel'          => $channel,
+        'created_at'       => now()->subHours(2),
+        'updated_at'       => now(),
+    ]);
+
+    $message = fn (ChatSession $chatSession, string $senderType, $minutesAgo) => ChatMessage::create([
+        'chat_session_id' => $chatSession->id,
+        'message_type'    => ChatMessageTypeEnum::TEXT->value,
+        'sender_type'     => $senderType,
+        'sender_id'       => null,
+        'message_text'    => 'x',
+        'is_read'         => false,
+        'created_at'      => now()->subMinutes($minutesAgo),
+        'updated_at'      => now(),
+    ]);
+
+    $answered = $session('website');
+    $message($answered, ChatSenderTypeEnum::GUEST->value, 100);
+    $message($answered, ChatSenderTypeEnum::AGENT->value, 90);
+
+    $emailed = $session('email');
+    $message($emailed, ChatSenderTypeEnum::USER->value, 60);
+
+    $widgetOnlyOpened = $session('website');
+
+    $result = GetChatReports::make()->handle(collect([$this->shop->id]), '1w');
+
+    expect($result['conversations'])->toBe(2)
+        ->and($result['answered'])->toBe(1)
+        ->and($result['unanswered'])->toBe(1)
+        ->and($result['median_reply_minutes'])->toBe(10.0)
+        ->and(collect($result['by_channel'])->firstWhere('channel', 'email')['conversations'])->toBe(1)
+        ->and(collect($result['by_channel'])->firstWhere('channel', 'whatsapp')['conversations'])->toBe(0)
+        ->and($widgetOnlyOpened->exists)->toBeTrue();
 });
