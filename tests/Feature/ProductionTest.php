@@ -2386,7 +2386,7 @@ test('an operative only sees the factory jobs page and nothing group or commerci
     expect((float) $session->refresh()->quantity_rejected)->toBe(0.0)
         ->and((float) $session->quantity_made)->toBe(2.0);
 
-    get(route('grp.org.chat.dashboard', $this->organisation->slug))->assertForbidden();
+    get(route('grp.org.chat.reports', $this->organisation->slug))->assertForbidden();
     get(route('grp.org.offer.calendar', $this->organisation->slug))->assertForbidden();
     get(route('grp.org.overview.hub', $this->organisation->slug))->assertForbidden();
     actingAs($this->guest->getUser());

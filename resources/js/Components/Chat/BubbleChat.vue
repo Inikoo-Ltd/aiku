@@ -6,10 +6,12 @@ import { faCheck, faCheckDouble, faExclamationCircle, faLanguage, faRobot, faShi
 import { faShare, faFaceSmile, faReply, faLocationDot, faPhone, faCopy, faCircleExclamation, faBullhorn } from "@fortawesome/free-solid-svg-icons"
 import axios from "axios"
 import { useChatLanguages } from "@/Composables/useLanguages"
+import { cleanEmailText } from "@/Composables/cleanEmailText"
 import Image from "primevue/image"
 import { trans } from "laravel-vue-i18n"
 import { notify } from "@kyvg/vue3-notification"
 import SlackShareModal from "@/Components/Chat/Agent/SlackShareModal.vue"
+import EmailBody from "@/Components/Chat/EmailBody.vue"
 import ChatTimelineEvent from "@/Components/Chat/ChatTimelineEvent.vue"
 import AudioPlayer from "@/Components/Chat/AudioPlayer.vue"
 import { formatWhatsappMarkup } from "@/Composables/useWhatsappMarkup"
@@ -508,10 +510,21 @@ const displayText = computed(() => {
         return trans(props.message.message_text)
     }
 
-    return activeMessage.value.original?.text || props.message.message_text
+    // An email body reaches us as text with its stylesheet still in it, so it is cleaned here
+    // rather than shown raw. Ordinary chat has nothing to clean and passes through untouched.
+    return cleanEmailText(activeMessage.value.original?.text || props.message.message_text)
 })
 
 const formattedText = computed(() => formatWhatsappMarkup(displayText.value))
+
+// Only the sender's own message is shown as markup. An edited, retracted or translated message
+// falls back to text, because what is on screen then is not what arrived.
+const showEmailBody = computed(() =>
+    !!props.message.html_body
+    && !isEditingMessage.value
+    && !isRetracted.value
+    && !showTranslation.value
+)
 
 const location = computed(() => {
     if (props.message.metadata?.wa_type !== "location") return null
@@ -1075,6 +1088,9 @@ watch(selectedLanguage, async (val) => {
                 <span>{{ displayText || trans("Unsupported message") }}</span>
             </div>
 
+            <!-- A received email keeps its layout; everything else is text. -->
+            <EmailBody v-else-if="showEmailBody" :html="message.html_body" />
+
             <p v-else-if="!isEditingMessage && !location && !sharedContacts.length && formatMarkup && !(isRetracted && viewerType !== 'agent')" class="whitespace-pre-wrap break-words"
                 v-html="formattedText" />
 
@@ -1102,6 +1118,12 @@ watch(selectedLanguage, async (val) => {
                 !(props.message.sender_type === 'guest' && props.viewerType === 'user')
             " class="text-[10px] text-amber-600 mb-1 font-medium">
                 {{ trans('Offline message') }}
+            </div>
+
+            <!-- Nobody wrote this: a mailbox answered by itself. Said plainly so an out of
+                 office is not read as the customer coming back with something to say. -->
+            <div v-if="message?.metadata?.auto_reply" class="text-[10px] text-gray-400 mb-1 font-medium">
+                {{ trans('Automatic reply') }}
             </div>
 
             <div v-if="canShowTranslation && (latestTranslation || isTranslating)"

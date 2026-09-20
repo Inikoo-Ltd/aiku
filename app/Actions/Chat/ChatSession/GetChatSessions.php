@@ -13,8 +13,10 @@ use App\Enums\CRM\Livechat\ChatEventTypeEnum;
 use App\Enums\CRM\Livechat\ChatSenderTypeEnum;
 use App\Enums\CRM\Livechat\ChatSessionStatusEnum;
 use App\Http\Resources\CRM\Livechat\ChatSessionListResource;
+use App\Actions\Chat\WithChatAgentAuthorisation;
 use App\Models\Chat\ChatAgent;
 use App\Models\Chat\ChatSession;
+use App\Models\SysAdmin\User;
 use Illuminate\Http\JsonResponse;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -23,6 +25,7 @@ use App\Models\CRM\WebUser;
 class GetChatSessions
 {
     use AsAction;
+    use WithChatAgentAuthorisation;
 
     public function rules(): array
     {
@@ -40,6 +43,7 @@ class GetChatSessions
             'assigned_to_me' => ['sometimes', 'integer'],
             'view_team'       => ['sometimes', 'boolean'],
             'is_spam'         => ['sometimes', 'boolean'],
+            'is_rubbish'      => ['sometimes', 'boolean'],
             'highlighted'     => ['sometimes', 'boolean'],
             'trashed'         => ['sometimes', 'boolean'],
             'limit'           => ['sometimes', 'integer', 'min:1', 'max:50'],
@@ -48,6 +52,8 @@ class GetChatSessions
             'search'          => ['sometimes', 'string', 'max:100'],
             'organisation_id' => ['sometimes', 'integer', 'exists:organisations,id'],
             'shop_id'         => ['sometimes', 'integer', 'exists:shops,id'],
+            'pairs'           => ['sometimes', 'array'],
+            'pairs.*'         => ['string', 'regex:/^[a-z]+:(customer|guest)$/'],
         ];
     }
 
@@ -103,9 +109,16 @@ class GetChatSessions
             $query->whereIn('status', $filters['statuses']);
         }
 
-        $isTrashView = !empty($filters['trashed']);
-        $isSpamView  = !empty($filters['is_spam']) && !$isTrashView;
-        $includeSpam = !empty($filters['include_spam']);
+        $isTrashView   = !empty($filters['trashed']);
+        $isSpamView    = !empty($filters['is_spam']) && !$isTrashView;
+        $isRubbishView = !empty($filters['is_rubbish']) && !$isTrashView && !$isSpamView;
+        $includeSpam   = !empty($filters['include_spam']);
+
+        // Rubbish stays out of every list but its own. The mark hides the conversation, it does
+        // not change its status, so taking it off puts it back where it was.
+        if (!$isTrashView) {
+            $query->where('is_rubbish', $isRubbishView);
+        }
 
         // Trash view: only soft-deleted sessions, scoped to the agent's shops.
         if ($isTrashView) {
@@ -115,7 +128,7 @@ class GetChatSessions
                 ? $this->getCurrentAgent((int) $filters['assigned_to_me'])
                 : null;
 
-            $query->whereIn('shop_id', $trashAgent ? $trashAgent->shops()->pluck('shops.id')->all() : []);
+            $query->whereIn('shop_id', $trashAgent ? $this->shopIdsWorkedBy((int) $filters['assigned_to_me']) : []);
         } elseif (!$includeSpam) {
             $query->where('is_spam', $isSpamView);
         }
@@ -125,7 +138,7 @@ class GetChatSessions
                 ? $this->getCurrentAgent((int) $filters['assigned_to_me'])
                 : null;
 
-            $query->whereIn('shop_id', $spamAgent ? $spamAgent->shops()->pluck('shops.id')->all() : []);
+            $query->whereIn('shop_id', $spamAgent ? $this->shopIdsWorkedBy((int) $filters['assigned_to_me']) : []);
         }
 
         // Highlight view is additive: it keeps the normal status/assignment filters
@@ -139,7 +152,7 @@ class GetChatSessions
             $currentAgent = $this->getCurrentAgent($userId);
 
             if ($currentAgent) {
-                $shopIds = $currentAgent->shops()->pluck('shops.id');
+                $shopIds = $this->shopIdsWorkedBy($userId);
 
                 $requestedStatuses = (array) ($filters['statuses'] ?? ($filters['status'] ? [$filters['status']] : []));
                 $isClosed          = in_array('closed', $requestedStatuses);
@@ -153,9 +166,7 @@ class GetChatSessions
                     // my/team it belongs to is then decided from what comes back.
                     $query->whereIn('shop_id', $shopIds);
                 } elseif (!empty($filters['view_team'])) {
-                    $teamAgentIds = ChatAgent::whereHas('shops', function ($q) use ($shopIds) {
-                        $q->whereIn('shops.id', $shopIds);
-                    })->where('id', '!=', $currentAgent->id)->pluck('id');
+                    $teamAgentIds = $this->agentIdsCovering($shopIds, $currentAgent->id);
 
                     $query->whereHas('assignments', function ($assignmentQ) use ($teamAgentIds, $assignmentStatus) {
                         $assignmentQ->whereIn('chat_agent_id', $teamAgentIds)
@@ -182,6 +193,29 @@ class GetChatSessions
             $organisationId = (int) $filters['organisation_id'];
             $query->whereHas('shop', function ($q) use ($organisationId) {
                 $q->where('organisation_id', $organisationId);
+            });
+        }
+
+        // Each pair is one channel for one kind of sender, and any set of them may be asked
+        // for at once. They have to be matched as pairs rather than as two separate lists:
+        // wanting email from strangers and website from customers is not the same as wanting
+        // both channels from both, which is what filtering the two dimensions apart would give.
+        //
+        // A conversation belongs to a customer when it is tied to their web user; everything
+        // else is a stranger, which on email means a supplier or a robot.
+        $pairs = $this->sessionPairs($filters);
+
+        if ($pairs !== []) {
+            $query->where(function ($outer) use ($pairs) {
+                foreach ($pairs as [$channel, $kind]) {
+                    $outer->orWhere(function ($inner) use ($channel, $kind) {
+                        $inner->where('channel', $channel);
+
+                        $kind === 'customer'
+                            ? $inner->whereNotNull('web_user_id')
+                            : $inner->whereNull('web_user_id');
+                    });
+                }
             });
         }
 
@@ -218,6 +252,49 @@ class GetChatSessions
     protected function getCurrentAgent(int $userId): ?ChatAgent
     {
         return ChatAgent::where('user_id', $userId)->first();
+    }
+
+    /**
+     * The channel and sender pairs this list is limited to, WhatsApp left out because it lives
+     * in its own table. No pairs at all means no limit, which is what the housekeeping views
+     * and the notification counters ask for.
+     *
+     * @param  array<string, mixed>  $filters
+     * @return array<int, array{0: string, 1: string}>
+     */
+    public static function sessionPairs(array $filters): array
+    {
+        return collect($filters['pairs'] ?? [])
+            ->map(fn ($pair) => explode(':', (string) $pair, 2))
+            ->filter(fn ($parts) => count($parts) === 2 && $parts[0] !== 'whatsapp')
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @return array<int, int>
+     */
+    protected function shopIdsWorkedBy(int $userId): array
+    {
+        $user = User::find($userId);
+
+        return $user ? $this->workableShopIdsFor($user) : [];
+    }
+
+    /**
+     * The colleagues on the same shops, so the team tab shows the conversations somebody else
+     * is holding on a shop this person also works.
+     *
+     * @param  array<int, int>  $shopIds
+     * @return array<int, int>
+     */
+    protected function agentIdsCovering(array $shopIds, int $exceptAgentId): array
+    {
+        return ChatAgent::with('user')->where('id', '!=', $exceptAgentId)->get()
+            ->filter(fn (ChatAgent $agent) => $agent->user
+                && array_intersect($shopIds, $this->workableShopIdsFor($agent->user)) !== [])
+            ->pluck('id')
+            ->all();
     }
 
     public function jsonResponse($sessions): JsonResponse

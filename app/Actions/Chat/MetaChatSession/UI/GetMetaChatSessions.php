@@ -37,6 +37,8 @@ class GetMetaChatSessions
             ],
             'assigned_to_me' => ['sometimes', 'integer'],
             'is_spam'        => ['sometimes', 'boolean'],
+            'pairs'          => ['sometimes', 'array'],
+            'pairs.*'        => ['string', 'regex:/^[a-z]+:(customer|guest)$/'],
             'highlighted'    => ['sometimes', 'boolean'],
             'trashed'        => ['sometimes', 'boolean'],
             'include_spam'   => ['sometimes', 'boolean'],
@@ -115,6 +117,22 @@ class GetMetaChatSessions
 
         if ($requestedStatuses) {
             $this->applyStatusFilter($query, $requestedStatuses);
+        }
+
+        // WhatsApp carries the customer on the session itself rather than through a web user.
+        // Only its own pairs say anything here; the other channels live in another table.
+        $kinds = collect($filters['pairs'] ?? [])
+            ->map(fn ($pair) => explode(':', (string) $pair, 2))
+            ->filter(fn ($parts) => count($parts) === 2 && $parts[0] === 'whatsapp')
+            ->map(fn ($parts) => $parts[1])
+            ->unique()
+            ->values()
+            ->all();
+
+        if ($kinds === ['customer']) {
+            $query->whereNotNull('customer_id');
+        } elseif ($kinds === ['guest']) {
+            $query->whereNull('customer_id');
         }
 
         $isTrashView = !empty($filters['trashed']);

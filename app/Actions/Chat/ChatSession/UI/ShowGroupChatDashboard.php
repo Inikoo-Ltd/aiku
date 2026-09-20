@@ -45,7 +45,7 @@ class ShowGroupChatDashboard extends OrgAction
 
     public function htmlResponse(Group $group, ActionRequest $request): Response
     {
-        $title         = __('Chat Dashboard');
+        $title         = __('Chat Reports');
         $dashboardData = GetGroupChatDashboardData::run($group);
 
         $agentDashboards = $this->getAgentDashboards();
@@ -118,10 +118,10 @@ class ShowGroupChatDashboard extends OrgAction
                     'simple' => [
                         'icon'  => 'fal fa-comment-alt',
                         'route' => [
-                            'name'       => 'grp.chat.dashboard',
+                            'name'       => 'grp.chat.reports',
                             'parameters' => $routeParameters,
                         ],
-                        'label' => __('Chat Dashboard'),
+                        'label' => __('Chat Reports'),
                     ],
                 ],
             ]

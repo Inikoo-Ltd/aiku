@@ -11,7 +11,7 @@ use App\Actions\Chat\ChatSession\UI\ShowOrgChatInbox;
 use App\Actions\Chat\UI\ShowChatSettings;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/dashboard', ShowChatDashboard::class)->name('dashboard');
+Route::get('/reports', ShowChatDashboard::class)->name('reports');
 Route::get('/visitors-by-country', GetChatVisitorsByCountry::class)->name('visitors-by-country');
 Route::get('/active-sessions', GetActiveChatSessions::class)->name('active-sessions');
 Route::get('/dashboard-visitors', GetChatDashboardVisitors::class)->name('dashboard-visitors');

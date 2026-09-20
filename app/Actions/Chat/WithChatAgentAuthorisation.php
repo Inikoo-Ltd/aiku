@@ -8,12 +8,14 @@
 namespace App\Actions\Chat;
 
 use App\Models\Catalogue\Shop;
+use App\Models\Fulfilment\Fulfilment;
 use App\Models\Chat\ChatAgent;
 use App\Models\Chat\ChatSession;
 use App\Models\Chat\MetaChatSession;
 use App\Models\SysAdmin\Organisation;
 use App\Models\SysAdmin\User;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 trait WithChatAgentAuthorisation
@@ -135,6 +137,62 @@ trait WithChatAgentAuthorisation
         $fulfilmentId = $shop->fulfilment?->id;
 
         return $fulfilmentId && $user->authTo(["{$permission}.{$fulfilmentId}"]);
+    }
+
+    /**
+     * The shops somebody works, across every organisation, since chat is not scoped to one:
+     * an agent covers whatever their positions give them. This is the one answer to "whose
+     * conversations are these", so a list scoped any other way will disagree with the inbox.
+     *
+     * Read from the permission names rather than shop by shop, because the logged in user's
+     * props carry it on every request.
+     *
+     * @return array<int, int>
+     */
+    protected function workableShopIdsFor(User $user): array
+    {
+        if (!$user->status) {
+            return [];
+        }
+
+        $names = DB::table('model_has_roles')
+            ->join('role_has_permissions', 'role_has_permissions.role_id', '=', 'model_has_roles.role_id')
+            ->join('permissions', 'permissions.id', '=', 'role_has_permissions.permission_id')
+            ->where('model_has_roles.model_type', 'User')
+            ->where('model_has_roles.model_id', $user->id)
+            ->where(function ($query) {
+                $query->where('permissions.name', 'like', 'chat.%')
+                    ->orWhere('permissions.name', 'like', 'fulfilment-chat.%');
+            })
+            ->distinct()
+            ->pluck('permissions.name');
+
+        $shopByFulfilment = null;
+        $shopIds          = [];
+
+        foreach ($names as $name) {
+            // chat.12.view is a permission to read, never to work, so only the bare form counts.
+            if (preg_match('/^chat\.(\d+)$/', $name, $match)) {
+                $shopIds[] = (int) $match[1];
+
+                continue;
+            }
+
+            if (preg_match('/^fulfilment-chat\.(\d+)$/', $name, $match)) {
+                $shopByFulfilment ??= Fulfilment::pluck('shop_id', 'id');
+                $shopId             = $shopByFulfilment[(int) $match[1]] ?? null;
+
+                if ($shopId) {
+                    $shopIds[] = (int) $shopId;
+                }
+            }
+        }
+
+        // ponytail: the retired assignment table still counts while the positions catch up,
+        // same as userCanWorkChatOnShop. Goes with that branch.
+        $legacy = $user->chatAgent?->shopAssignments()->whereNull('deleted_at')->pluck('shop_id')->all() ?? [];
+
+        return array_values(array_unique(array_merge($shopIds, $legacy)));
     }
 
     protected function chatAgentProfileFor(User $user): ChatAgent

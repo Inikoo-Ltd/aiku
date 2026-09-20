@@ -111,6 +111,9 @@ class MetaChatSessionListResource extends JsonResource
             // customer rather than to a web user account.
             'customer' => $customer ? [
                 'id' => $customer->id,
+                // Same key the website and email rows carry, so one row template links the
+                // name through the majordomo redirect whatever channel it arrived on.
+                'customer_id' => $customer->id,
                 'name' => $customer->contact_name ?? $customer->name,
                 'slug' => $customer->slug,
                 'email' => $customer->email,

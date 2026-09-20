@@ -336,7 +336,7 @@ test('helpFor matches grp routes to docs by longest prefix', function () {
     expect(BlogPosts::helpFor('grp.org.procurement.org_partners.show.shopping.dashboard')['title'])->toBe('Reading the partner shopping dashboard')
         ->and(BlogPosts::helpFor('grp.org.procurement.org_partners.show.shopping_list.index')['title'])->toBe('Buying from a partner')
         ->and(BlogPosts::helpFor('grp.org.procurement.org_partners.index')['title'])->toBe('Ordering from a partner organisation')
-        ->and(BlogPosts::helpFor('grp.org.shops.show.chat.dashboard')['url'])->toContain('/docs/customer-chat')
+        ->and(BlogPosts::helpFor('grp.org.shops.show.chat.reports')['url'])->toContain('/docs/customer-chat')
         ->and(BlogPosts::helpFor('grp.chat.staff.show', 'sk')['url'])->toEndWith('/docs/staff-chat-sk')
         ->and(BlogPosts::helpFor('grp.profile.edit')['url'])->toContain('/docs/getting-notifications-on-your-computer-and-phone')
         ->and(BlogPosts::helpFor('grp.dashboard.show'))->toBeNull()

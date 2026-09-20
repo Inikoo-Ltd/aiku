@@ -31,11 +31,14 @@ class GetCrossChannelSessions
     public function rules(): array
     {
         return [
+            'pairs'           => ['sometimes', 'array'],
+            'pairs.*'         => ['string', 'regex:/^[a-z]+:(customer|guest)$/'],
             'statuses'        => ['sometimes', 'array'],
             'statuses.*'      => ['string', 'in:'.implode(',', array_column(ChatSessionStatusEnum::cases(), 'value'))],
             'assigned_to_me'  => ['sometimes', 'integer'],
             'view_team'       => ['sometimes', 'boolean'],
             'is_spam'         => ['sometimes', 'boolean'],
+            'is_rubbish'      => ['sometimes', 'boolean'],
             'trashed'         => ['sometimes', 'boolean'],
             'highlighted'     => ['sometimes', 'boolean'],
             'page'            => ['sometimes', 'integer', 'min:1'],
@@ -61,13 +64,27 @@ class GetCrossChannelSessions
 
         $sourceFilters = array_merge($filters, ['page' => 1, 'limit' => $take]);
 
-        $website = GetChatSessions::make()->handle($sourceFilters);
-        $meta    = GetMetaChatSessions::make()->handle($sourceFilters);
+        // Asking for nothing in particular means everything, which is what the housekeeping
+        // views want. Naming pairs asks only those, and a table nobody asked for is not queried
+        // at all rather than queried and thrown away.
+        $pairs    = (array) ($filters['pairs'] ?? []);
+        $wantsAll = $pairs === [];
 
-        $rows = collect($website->items())
+        $channels = collect($pairs)->map(fn ($pair) => explode(':', (string) $pair, 2)[0]);
+
+        // Rubbish is a mark on an imported mailbox's backlog; WhatsApp has no such history and
+        // no such column, so its bin is email and website only.
+        $wantsWhatsapp = (! ($filters['is_rubbish'] ?? false))
+            && ($wantsAll || $channels->contains('whatsapp'));
+        $wantsSessions = $wantsAll || $channels->contains(fn ($channel) => $channel !== 'whatsapp');
+
+        $website = $wantsSessions ? GetChatSessions::make()->handle($sourceFilters) : null;
+        $meta    = $wantsWhatsapp ? GetMetaChatSessions::make()->handle($sourceFilters) : null;
+
+        $rows = collect($website?->items() ?? [])
             ->map(fn ($session) => ['channel' => $session->channel?->value ?? 'website', 'session' => $session])
             ->concat(
-                collect($meta->items())->map(fn ($session) => ['channel' => 'whatsapp', 'session' => $session])
+                collect($meta?->items() ?? [])->map(fn ($session) => ['channel' => 'whatsapp', 'session' => $session])
             )
             ->sortByDesc(fn (array $row) => $this->lastActivityAt($row['session']))
             ->values();
@@ -76,7 +93,9 @@ class GetCrossChannelSessions
             'rows'     => $rows->slice(($page - 1) * $limit, $limit)->values(),
             'page'     => $page,
             'limit'    => $limit,
-            'has_more' => $rows->count() > $page * $limit || $website->hasMorePages() || $meta->hasMorePages(),
+            'has_more' => $rows->count() > $page * $limit
+                || (bool) $website?->hasMorePages()
+                || (bool) $meta?->hasMorePages(),
         ];
     }
 

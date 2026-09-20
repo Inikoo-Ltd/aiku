@@ -28,7 +28,7 @@ use App\Actions\Chat\Whatsapp\Templates\UpdateWhatsappTemplateTags;
 use App\Actions\Chat\Whatsapp\Templates\UI\IndexWhatsappMessageTemplates;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/dashboard', ShowShopChatDashboard::class)->name('dashboard');
+Route::get('/reports', ShowShopChatDashboard::class)->name('reports');
 Route::get('/inbox', [ShowOrgChatInbox::class, 'inShop'])->name('inbox');
 Route::get('/dashboard-visitors', [GetChatDashboardVisitors::class, 'inShop'])->name('dashboard-visitors');
 Route::get('/agents', ShowShopAgents::class)->name('agents.show');

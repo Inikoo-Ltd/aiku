@@ -120,14 +120,17 @@ export interface Contact {
 	lastMessage: string
 	priority: string
 	lastMessageTime?: string
+	lastMessageAge?: string
 	unread: number
 	status: "waiting" | "active" | "closed" | string
 	is_spam?: boolean
+	is_rubbish?: boolean
 	is_highlighted?: boolean
 	messages?: ChatMessage[]
 	webUser?: {
 		id: string
 		name: string
+		customer_id?: number | null
 		slug: string
 		email: string
 		phone: string
@@ -194,6 +197,7 @@ export interface ChatMessage {
 	message?: string
 	ulid?: string
 	message_text: string
+	html_body?: string | null
 	message_type?: "text" | "image" | "file"
 	sender_type: "guest" | "user" | "agent" | "system" | "system_campaign"
 	created_at: string

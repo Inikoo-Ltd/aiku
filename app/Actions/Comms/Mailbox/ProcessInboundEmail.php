@@ -21,6 +21,7 @@ use App\Models\Chat\ChatSession;
 use App\Models\CRM\WebUser;
 use App\Services\Gmail\GmailClient;
 use App\Services\Gmail\GmailMessageParser;
+use App\Services\HTMLSanitizer;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -45,6 +46,10 @@ class ProcessInboundEmail
         $from    = GmailMessageParser::fromAddress($raw);
         $subject = GmailMessageParser::header($raw, 'Subject');
         $body    = GmailMessageParser::body($raw);
+
+        // Kept beside the text, never instead of it: the text is what search, previews and
+        // translation read, and what is shown if the markup is ever refused.
+        $html = app(HTMLSanitizer::class)->cleanEmail(GmailMessageParser::htmlBody($raw));
         $threadId = GmailMessageParser::threadId($raw);
         $headerMessageId = GmailMessageParser::header($raw, 'Message-ID');
 
@@ -68,10 +73,31 @@ class ProcessInboundEmail
             return null;
         }
 
-        $attachments        = $webUser ? ImportPendingGmailAttachments::make()->download($client, $gmailMessageId, $raw) : [];
-        $pendingAttachments = $webUser ? 0 : count(GmailMessageParser::attachments(Arr::get($raw, 'payload', [])));
+        // An out of office is a machine answering, not the customer coming back. It belongs in
+        // the thread so the history is honest, but it must not drag a finished conversation into
+        // the waiting queue: customer service writes, the robot replies, and the chat reopens.
+        $isAutoReply = $this->isAutoReply($raw);
+        $existing    = $this->findSessionByThread($shop, $threadId);
 
-        $session = $this->findOrCreateSession($shop, $webUser, $threadId, $subject, $from);
+        // On its own it is not a conversation at all: answering a mail we never sent leaves
+        // nobody to reply to, so it is filtered rather than opened as new work.
+        if (! $existing && $isAutoReply) {
+            $client->addLabel($gmailMessageId, 'aiku/filtered');
+
+            return null;
+        }
+
+        // Pictures come in whoever sent them: with the markup discarded they are the only thing
+        // left to look at, and mail whose images are missing reads as broken. A stranger's other
+        // files still wait in Gmail until an agent has replied.
+        $attachments = ImportPendingGmailAttachments::make()
+            ->download($client, $gmailMessageId, $raw, trusted: (bool) $webUser);
+
+        $pendingAttachments = ImportPendingGmailAttachments::make()->countDeferred($raw, trusted: (bool) $webUser);
+
+        $session = $existing
+            ? $this->reuseSession($existing, $from, $isAutoReply)
+            : $this->createSession($shop, $webUser, $threadId, $subject, $from);
 
         $message = SendChatMessage::run($session, [
             'message_text' => $body,
@@ -81,12 +107,23 @@ class ProcessInboundEmail
             'sender_id'    => $webUser?->id,
         ]);
 
+        if ($html !== '') {
+            $message->update(['html_body' => $html]);
+        }
+
         $message->update([
-            'metadata' => array_merge($message->metadata ?? [], [
+            'metadata' => array_merge(
+                $message->metadata ?? [],
+                [
                 'gmail_message_id'        => $gmailMessageId,
                 'gmail_header_message_id' => $headerMessageId,
                 'email_subject'           => $subject,
-            ], $pendingAttachments ? ['gmail_pending_attachments' => $pendingAttachments] : []),
+            ],
+                // Marked on the message rather than given a state of its own: it is kept so the
+                // history is honest, and shown for what it is so nobody reads it as an answer.
+                $isAutoReply ? ['auto_reply' => true] : [],
+                $pendingAttachments ? ['gmail_pending_attachments' => $pendingAttachments] : []
+            ),
         ]);
 
         $session->update([
@@ -124,6 +161,34 @@ class ProcessInboundEmail
             || str_starts_with($subject, 'delivery status notification');
     }
 
+    /**
+     * Mail that answers by itself says so in its headers, which is the only honest way to tell:
+     * the wording of an out of office is different in every language and every mailbox.
+     *
+     * @param  array<string, mixed>  $raw
+     */
+    private function isAutoReply(array $raw): bool
+    {
+        $autoSubmitted = strtolower(trim((string) GmailMessageParser::header($raw, 'Auto-Submitted')));
+
+        // RFC 3834: anything other than "no" means it was generated rather than written.
+        if ($autoSubmitted !== '' && $autoSubmitted !== 'no') {
+            return true;
+        }
+
+        foreach (['X-Autoreply', 'X-Autorespond', 'X-Auto-Response-Suppress'] as $header) {
+            if (GmailMessageParser::header($raw, $header)) {
+                return true;
+            }
+        }
+
+        return in_array(
+            strtolower(trim((string) GmailMessageParser::header($raw, 'Precedence'))),
+            ['auto_reply', 'bulk'],
+            true
+        );
+    }
+
     private function matchWebUser(Shop $shop, ?string $email): ?WebUser
     {
         if (! $email) {
@@ -140,37 +205,47 @@ class ProcessInboundEmail
             ->first();
     }
 
-    private function findOrCreateSession(Shop $shop, ?WebUser $webUser, string $threadId, ?string $subject, array $from): ChatSession
+    private function findSessionByThread(Shop $shop, string $threadId): ?ChatSession
     {
-        $session = ChatSession::where('shop_id', $shop->id)
+        return ChatSession::where('shop_id', $shop->id)
             ->where('channel', ChatChannelEnum::EMAIL)
             ->where('metadata->gmail_thread_id', $threadId)
             ->first();
+    }
 
-        if ($session) {
-            if ($session->isClosed()) {
-                $session->update([
-                    'status'    => ChatSessionStatusEnum::ACTIVE,
-                    'closed_at' => null,
-                ]);
-            }
-
+    /**
+     * @param  array{address: ?string, name: ?string}  $from
+     */
+    private function reuseSession(ChatSession $session, array $from, bool $isAutoReply): ChatSession
+    {
+        if ($session->isClosed() && ! $isAutoReply) {
             $session->update([
-                'metadata' => array_merge($session->metadata ?? [], [
-                    'name' => $from['name'] ?? $from['address'],
-                    'email' => $from['address'],
-                ]),
+                'status'    => ChatSessionStatusEnum::ACTIVE,
+                'closed_at' => null,
             ]);
-
-            return $session;
         }
 
+        $session->update([
+            'metadata' => array_merge($session->metadata ?? [], [
+                'name'  => $from['name'] ?? $from['address'],
+                'email' => $from['address'],
+            ]),
+        ]);
+
+        return $session;
+    }
+
+    /**
+     * @param  array{address: ?string, name: ?string}  $from
+     */
+    private function createSession(Shop $shop, ?WebUser $webUser, string $threadId, ?string $subject, array $from): ChatSession
+    {
         $session = StoreChatSession::run([
             'shop_id'             => $shop->id,
             'trusted_web_user_id' => $webUser?->id,
-            'language_id' => $shop->language_id,
-            'priority'    => ChatPriorityEnum::NORMAL,
-            'channel'     => ChatChannelEnum::EMAIL,
+            'language_id'         => $shop->language_id,
+            'priority'            => ChatPriorityEnum::NORMAL,
+            'channel'             => ChatChannelEnum::EMAIL,
         ]);
 
         $session->update([
@@ -179,8 +254,8 @@ class ProcessInboundEmail
                 'email_subject'   => $subject,
                 'email_from'      => $from['address'],
                 'email_from_name' => $from['name'],
-                'name' => $from['name'] ?? $from['address'],
-                'email' => $from['address'],
+                'name'            => $from['name'] ?? $from['address'],
+                'email'           => $from['address'],
             ]),
         ]);
 

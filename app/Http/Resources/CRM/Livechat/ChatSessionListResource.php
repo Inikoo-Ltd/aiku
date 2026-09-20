@@ -70,6 +70,7 @@ class ChatSessionListResource extends JsonResource
             'channel' => $this->channel?->value ?? 'website',
             'status' => $this->status,
             'is_spam' => (bool) $this->is_spam,
+            'is_rubbish' => (bool) $this->is_rubbish,
             'is_highlighted' => (bool) $this->is_highlighted,
             'guest_identifier' => $this->guest_identifier,
             'created_at' => $this->created_at,
@@ -97,14 +98,16 @@ class ChatSessionListResource extends JsonResource
             'web_user' => $webUser ? [
                 'id' => $webUser->id,
                 'name' => $webUser->contact_name,
-                'slug' => $webUser->customer->slug,
-                'email' => $webUser->customer->email,
-                'phone' => $webUser->customer->phone,
-                'slug' => $webUser->customer->slug,
-                'organisation' => $webUser->customer->organisation->name,
-                'organisation_slug' => $webUser->customer->organisation->slug,
-                'shop' => $webUser->customer->shop->name,
-                'shop_slug' => $webUser->customer->shop->slug,
+                // The customer's own id, so the name can be followed through the majordomo
+                // redirect, which knows whether they belong to a shop or to a fulfilment.
+                'customer_id' => $webUser->customer?->id,
+                'slug' => $webUser->customer?->slug,
+                'email' => $webUser->customer?->email,
+                'phone' => $webUser->customer?->phone,
+                'organisation' => $webUser->customer?->organisation?->name,
+                'organisation_slug' => $webUser->customer?->organisation?->slug,
+                'shop' => $webUser->customer?->shop?->name,
+                'shop_slug' => $webUser->customer?->shop?->slug,
                 'image' => !blank($webUser->image_id)
                     ? $webUser->imageSources(320, 320)
                     : [

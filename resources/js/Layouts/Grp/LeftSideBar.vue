@@ -47,7 +47,7 @@ const chatRoute = computed(() => {
 
     if (organisation && shop) {
         return {
-            name: isChatAgent ? "grp.org.shops.show.chat.inbox" : "grp.org.shops.show.chat.dashboard",
+            name: isChatAgent ? "grp.org.shops.show.chat.inbox" : "grp.org.shops.show.chat.reports",
             parameters: { organisation, shop },
             root: "grp.org.shops.show.chat.",
         }
@@ -55,7 +55,7 @@ const chatRoute = computed(() => {
 
     if (organisation && fulfilment) {
         return {
-            name: "grp.org.fulfilments.show.chat.dashboard",
+            name: "grp.org.fulfilments.show.chat.reports",
             parameters: { organisation, fulfilment },
             root: "grp.org.fulfilments.show.chat.",
         }
@@ -63,13 +63,13 @@ const chatRoute = computed(() => {
 
     if (organisation) {
         return {
-            name: isChatAgent ? "grp.org.chat.inbox" : "grp.org.chat.dashboard",
+            name: isChatAgent ? "grp.org.chat.inbox" : "grp.org.chat.reports",
             parameters: { organisation },
             root: "grp.org.chat.",
         }
     }
 
-    return { name: isChatAgent ? "grp.chat.inbox" : "grp.chat.dashboard", parameters: {}, root: "grp.chat." }
+    return { name: isChatAgent ? "grp.chat.inbox" : "grp.chat.reports", parameters: {}, root: "grp.chat." }
 })
 
 const scopedModuleRoute = (module: string) => {

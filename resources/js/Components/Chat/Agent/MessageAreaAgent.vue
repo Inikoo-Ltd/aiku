@@ -13,6 +13,7 @@ import {
     faPaperclip, faXmark, faFilePdf, faEnvelope, faRotateRight, faBan, faRotateLeft, faFaceSmile,
     faLifeRing,
     faEye,
+    faArchive,
 } from "@fortawesome/free-solid-svg-icons"
 import { faSlack } from "@fortawesome/free-brands-svg-icons"
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
@@ -120,6 +121,48 @@ const onOpenSlackSettings = () => {
 }
 
 const isSpamMarking = ref(false)
+// Ignored is the conversation nobody has to answer: an out of office, a circular, a newsletter.
+// Unlike spam it never blocks the sender, since the same address writes properly next week.
+// A guest is a stranger: their address can be blocked. A customer's never is, so all they get
+// is Ignore, which puts this one conversation aside and nothing else.
+const isGuest = computed(() => !(props.session as any)?.web_user?.customer_id && !(props.session as any)?.customer?.id)
+
+const canIgnore = computed(() =>
+    (props.session as any)?.channel !== "whatsapp" && !isClosed.value && !isTrashed.value && !props.readOnly
+)
+
+const canReportSpam = computed(() => isGuest.value && !isClosed.value && !isTrashed.value && !props.readOnly)
+
+// Ending a conversation nobody ever answered is rude: from the other side it reads as being
+// shown the door for writing in. Until somebody here has replied, the way to clear it is Ignore.
+const hasBeenAnswered = computed(() =>
+    (props.messages ?? []).some((message) => message.sender_type === "agent")
+)
+
+const canEndChat = computed(() => hasBeenAnswered.value && !isClosed.value && !isTrashed.value && !props.readOnly)
+
+const markRubbish = async (rubbish: boolean) => {
+    if (!props.session?.ulid || isSpamMarking.value) return
+    isMenuOpen.value = false
+    isSpamMarking.value = true
+    try {
+        const organisation = (route().params as Record<string, any>)?.organisation ?? "aw"
+        const routeName = rubbish
+            ? "grp.org.chat.agents.sessions.rubbish"
+            : "grp.org.chat.agents.sessions.not_rubbish"
+        await axios.patch(route(routeName, [organisation, props.session.ulid]), {}, { withCredentials: true })
+        emit("spam-success")
+    } catch (e: any) {
+        notify({
+            title: ctrans("Error"),
+            text: e?.response?.data?.message ?? ctrans("Failed to update"),
+            type: "error",
+        })
+    } finally {
+        isSpamMarking.value = false
+    }
+}
+
 const markSpam = async (spam: boolean) => {
     if (!props.session?.ulid || isSpamMarking.value) return
     isMenuOpen.value = false
@@ -979,14 +1022,6 @@ const handleClickOutside = (e: MouseEvent) => {
                 <FontAwesomeIcon :icon="faArrowLeft" class="text-gray-400" />
             </button>
 
-            <button type="button" v-tooltip="ctrans('View profile')"
-                class="w-8 h-8 rounded-full flex items-center justify-center shrink-0 bg-gray-100 text-gray-500 hover:ring-2 hover:ring-gray-200 transition"
-                @click="onViewUserProfile">
-                <Image v-if="session?.image" :src="session?.image" class="w-full h-full rounded-full object-cover" />
-
-                <FontAwesomeIcon v-else :icon="faUser" class="text-sm" />
-            </button>
-
             <div class="flex-1 min-w-0 cursor-pointer" @click="onViewMessageDetails">
                 <div class="text-sm font-semibold truncate primary-text hover:primary-text-hover transition-colors">
                     {{ session?.guest_identifier || session?.contact_name }}
@@ -1003,24 +1038,48 @@ const handleClickOutside = (e: MouseEvent) => {
                 </div>
             </div>
 
-            <ModalConfirmationDelete v-if="!isClosed && !isTrashed && isMyChat && !readOnly" :routeDelete="{
+            <!-- Also offered on a conversation nobody has taken: an out of office reply or a
+                 supplier's newsletter needs disposing of, and having to assign it to yourself
+                 first to close it is why they pile up in the waiting queue. -->
+            <ModalConfirmationDelete v-if="canEndChat" :routeDelete="{
                 name: 'grp.org.chat.agents.sessions.close',
                 parameters: [session?.organisation.id, session?.ulid],
                 method: 'patch',
             }" :title="ctrans('Are you sure you want to end this chat?')"
                 :noLabel="ctrans('End chat')"
                 :noIcon="faTimesCircle"
-                :description="ctrans('This will close the chat session. The conversation history will be preserved.')"
+                :description="ctrans('This closes the chat. Nothing is deleted, and it can be reopened.')"
                 @success="$emit('close-session')">
                 <template #default="{ changeModel }">
                     <button @click="changeModel"
                         class="inline-flex items-center justify-center gap-1.5 shrink-0 h-7 px-2.5 text-[11px] font-medium rounded-md transition hover:opacity-90"
-                        :style="{ backgroundColor: 'var(--theme-color-4)', color: 'var(--theme-color-5)' }">
+                        :class="isMyChat ? '' : 'border border-gray-300 text-gray-600 hover:bg-gray-100'"
+                        :style="isMyChat ? { backgroundColor: 'var(--theme-color-4)', color: 'var(--theme-color-5)' } : {}">
                         <FontAwesomeIcon :icon="faTimesCircle" class="text-[11px]" />
                         {{ ctrans("End chat") }}
                     </button>
                 </template>
             </ModalConfirmationDelete>
+
+            <!-- Out in the open, not behind the dots: clearing the queue is most of the work on
+                 an imported mailbox, and a choice nobody finds does not get made. -->
+            <button v-if="canIgnore" type="button" :disabled="isSpamMarking"
+                v-tooltip="ctrans('Nothing to answer here. Only this conversation, and it can be undone.')"
+                class="inline-flex items-center gap-1.5 shrink-0 h-7 px-2.5 text-[11px] font-medium rounded-md border border-gray-300 text-gray-600 transition hover:bg-gray-100 disabled:opacity-50"
+                @click="markRubbish(!(session as any)?.is_rubbish)">
+                <FontAwesomeIcon :icon="(session as any)?.is_rubbish ? faRotateLeft : faArchive" class="text-[11px]" />
+                {{ (session as any)?.is_rubbish ? ctrans("Not ignored") : ctrans("Ignore") }}
+            </button>
+
+            <!-- Spam is never offered on a customer: it blocks the address for good, and the same
+                 customer writes again next week. -->
+            <button v-if="canReportSpam" type="button" :disabled="isSpamMarking"
+                v-tooltip="ctrans('Blocks this sender. Everything they send from now on goes to spam.')"
+                class="inline-flex items-center gap-1.5 shrink-0 h-7 px-2.5 text-[11px] font-medium rounded-md border border-red-200 text-red-600 transition hover:bg-red-50 disabled:opacity-50"
+                @click="markSpam(!(session as any)?.is_spam)">
+                <FontAwesomeIcon :icon="(session as any)?.is_spam ? faRotateLeft : faBan" class="text-[11px]" />
+                {{ (session as any)?.is_spam ? ctrans("Not spam") : ctrans("Spam") }}
+            </button>
 
             <Select v-if="languages.length" v-model="selectedLanguage" :options="languages"
                 optionLabel="native_name" optionValue="code" :placeholder="ctrans('Translate To..')"
@@ -1054,12 +1113,6 @@ const handleClickOutside = (e: MouseEvent) => {
                             <FontAwesomeIcon :icon="faSlack" class="text-purple-600" /> {{ ctrans("Share to Slack") }}
                         </button>
 
-                        <button v-if="!(session as any)?.is_spam" class="menu-item text-red-600" @click="markSpam(true)">
-                            <FontAwesomeIcon :icon="faBan" /> {{ ctrans("Report spam") }}
-                        </button>
-                        <button v-else class="menu-item" @click="markSpam(false)">
-                            <FontAwesomeIcon :icon="faRotateLeft" /> {{ ctrans("Not spam") }}
-                        </button>
                     </template>
                 </div>
             </div>

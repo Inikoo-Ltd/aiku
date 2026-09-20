@@ -5,6 +5,7 @@ import { useDebounceFn, watchDebounced } from "@vueuse/core"
 import axios from "axios"
 import { ctrans } from "@/Composables/useTrans"
 import { capitalize } from "@/Composables/capitalize"
+import { cleanEmailText } from "@/Composables/cleanEmailText"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import MessageAreaAgent from "@/Components/Chat/Agent/MessageAreaAgent.vue"
 import WhatsappMessageAreaAgent from "@/Components/Chat/Agent/WhatsappMessageAreaAgent.vue"
@@ -12,11 +13,10 @@ import ChatConversationSidePanel from "@/Components/Chat/ChatConversationSidePan
 import SettingChat from "@/Components/Chat/SettingChat.vue"
 import NewWhatsappChatDialog from "@/Components/Chat/NewWhatsappChatDialog.vue"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
-import Image from "@common/Components/Image.vue"
 import Dialog from "primevue/dialog"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faUser, faSearch, faTimes } from "@far"
-import { faCog, faStar, faAngleLeft, faAngleRight, faAngleDown, faFilter, faStoreAlt, faGlobe, faPlus, faEnvelope } from "@fal"
+import { faSearch, faTimes } from "@far"
+import { faCog, faStar, faAngleLeft, faAngleRight, faAngleDown, faFilter, faStoreAlt, faGlobe, faPlus, faEnvelope, faArchive } from "@fal"
 import { faEllipsisVertical, faBan, faRotateLeft, faTrash, faTrashArrowUp, faAnglesUp, faAngleUp, faEquals, faChevronRight, faStar as faStarSolid } from "@fortawesome/free-solid-svg-icons"
 import { faWhatsapp } from "@fortawesome/free-brands-svg-icons"
 import {
@@ -35,7 +35,13 @@ const props = defineProps<{
         name: string
         slug: string
         type: string | null
-        channels: Array<{ key: string; name: string; unread: number }>
+        is_read_only?: boolean
+        channels: Array<{
+            key: string
+            name: string
+            customer: { waiting: number; active: number; closed: number }
+            guest: { waiting: number; active: number; closed: number }
+        }>
     }>
     selectedSessionUlid?: string | null
     initialSession?: any | null
@@ -46,15 +52,80 @@ const props = defineProps<{
 const layout: any = inject("layout", {})
 const baseUrl = layout?.appUrl ?? ""
 const myAgentId = layout.user?.id
-const myAgentShop = layout.user?.agent_shops ?? []
 
-const isReadOnly = computed(() => props.is_read_only === true)
+// Read only follows the shop being looked at, not the page: the same person answers chats on
+// one shop and only oversees another, and the inbox shows them side by side.
+const isReadOnly = computed(() => {
+    const inbox = props.inboxes?.find((i) => i.id === selectedShopId.value)
+
+    return inbox ? inbox.is_read_only === true : props.is_read_only === true
+})
 
 const PLUS_8_HOURS = layout.app?.environment === "local" ? 8 * 60 * 60 * 1000 : 0
 
 const contacts = ref<Contact[]>([])
-const activeTab = ref<"waiting" | "active" | "closed">("waiting")
+type ChatStatus = "waiting" | "active" | "closed"
+
+// The states are filters, not tabs: watching a quiet shop means wanting waiting and active
+// side by side. An empty selection would list nothing, so one of them always stays on.
+const selectedStatuses = ref<ChatStatus[]>(["waiting"])
+
+const isStatusOn = (status: ChatStatus) => selectedStatuses.value.includes(status)
+
+const toggleStatus = (status: ChatStatus) => {
+    if (!isStatusOn(status)) {
+        selectedStatuses.value = [...selectedStatuses.value, status]
+
+        return
+    }
+
+    if (selectedStatuses.value.length > 1) {
+        selectedStatuses.value = selectedStatuses.value.filter((s) => s !== status)
+    }
+}
+
+// The counts come from the channel being looked at, so the capsules say how much work is in
+// each state here rather than across every shop at once.
+// The status capsules count exactly the squares that are on.
+const selectedChannelCounts = computed(() =>
+    selectedCells.value.reduce((total, cell) => {
+        const [channelKey, kind] = cell.split(":") as [string, ChatKind]
+        const tally = selectedInbox.value?.channels?.find((c) => c.key === channelKey)?.[kind]
+
+        return {
+            waiting: total.waiting + (tally?.waiting ?? 0),
+            active: total.active + (tally?.active ?? 0),
+            closed: total.closed + (tally?.closed ?? 0),
+        }
+    }, { waiting: 0, active: 0, closed: 0 })
+)
+
+const statusCapsules = computed(() =>
+    ([
+        { key: "waiting" as ChatStatus, label: ctrans("Waiting") },
+        { key: "active" as ChatStatus, label: ctrans("Active") },
+        { key: "closed" as ChatStatus, label: ctrans("Closed") },
+    ])
+        .filter((capsule) => capsule.key !== "waiting" || viewMode.value === "my")
+        .map((capsule) => ({ ...capsule, count: selectedChannelCounts.value[capsule.key] }))
+)
+
+const onlyClosed = computed(() => selectedStatuses.value.length === 1 && selectedStatuses.value[0] === "closed")
+
+// Nobody is waiting on a colleague's chat, so the team view drops that state and keeps
+// whatever else was picked, falling back to active rather than to nothing.
+const dropWaitingInTeamView = (): boolean => {
+    if (viewMode.value !== "team" || !isStatusOn("waiting")) {
+        return false
+    }
+
+    const rest = selectedStatuses.value.filter((s) => s !== "waiting")
+    selectedStatuses.value = rest.length ? rest : ["active"]
+
+    return true
+}
 const spamView = ref(false)
+const rubbishView = ref(false)
 const trashView = ref(false)
 const highlightView = ref(false)
 const openMenuUlid = ref<string | null>(null)
@@ -116,8 +187,10 @@ const panelSession = computed(() => {
     }
 })
 
+const selectedCellFill = "color-mix(in srgb, var(--theme-color-4) 18%, white)"
+
 const selectedItemStyle = {
-    backgroundColor: "color-mix(in srgb, var(--theme-color-4) 18%, white)",
+    backgroundColor: selectedCellFill,
     boxShadow: "inset 3px 0 0 var(--theme-color-4)",
 }
 
@@ -136,9 +209,28 @@ const onOpenSlackSettings = () => {
     chatSettingVisible.value = true
 }
 
+// A bare clock reading is a trap on anything but today: 13:42 looks recent whether it was an
+// hour ago or last March, so anything older carries its date.
 const formatTime = (timestamp: number) => {
     const d = new Date(timestamp)
-    return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+    const time = d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+
+    return d.toDateString() === new Date().toDateString()
+        ? time
+        : `${d.toLocaleDateString([], { day: "numeric", month: "short" })} ${time}`
+}
+
+// How long it has been waiting, in the largest unit that still says something useful.
+const formatAge = (timestamp: number) => {
+    const minutes = Math.max(0, Math.round((Date.now() - timestamp) / 60000))
+
+    if (minutes < 60) {
+        return `${minutes}m`
+    }
+
+    const hours = Math.round(minutes / 60)
+
+    return hours < 48 ? `${hours}h` : `${Math.round(hours / 24)}d`
 }
 
 const mapSession = (s: SessionAPI): Contact => ({
@@ -148,13 +240,17 @@ const mapSession = (s: SessionAPI): Contact => ({
     channel: (s as any).channel ?? (selectedChannel.value === "whatsapp" ? "whatsapp" : "website"),
     name: s.contact_name || s.guest_identifier || "",
     avatar: s.image ?? "",
-    lastMessage: s.last_message?.message ?? "",
+    lastMessage: cleanEmailText(s.last_message?.message),
     lastMessageTime: s.last_message?.created_at
         ? formatTime(new Date(s.last_message.created_at).getTime() + PLUS_8_HOURS)
+        : undefined,
+    lastMessageAge: s.last_message?.created_at
+        ? formatAge(new Date(s.last_message.created_at).getTime() + PLUS_8_HOURS)
         : undefined,
     unread: s.unread_count,
     status: s.status,
     is_spam: (s as any).is_spam ?? false,
+    is_rubbish: (s as any).is_rubbish ?? false,
     is_highlighted: (s as any).is_highlighted ?? false,
     webUser: s.web_user ?? (s as any).customer,
     priority: s.priority,
@@ -168,33 +264,154 @@ const mapSession = (s: SessionAPI): Contact => ({
 })
 
 const selectedShopId = ref<number | null>(props.inboxes?.[0]?.id ?? null)
-const selectedChannel = ref<string | null>(props.inboxes?.[0]?.channels?.[0]?.key ?? null)
-const expandedInboxIds = ref<number[]>(props.inboxes?.[0] ? [props.inboxes[0].id] : [])
+// The squares that are on, as "channel:kind". Everything else about the selection is read
+// from these, so there is one source of truth for what the list is showing.
+const firstChannelKey = props.inboxes?.[0]?.channels?.[0]?.key
+const selectedCells = ref<string[]>(
+    firstChannelKey ? [`${firstChannelKey}:customer`, `${firstChannelKey}:guest`] : []
+)
+
+const selectedChannels = computed(() => [...new Set(selectedCells.value.map((c) => c.split(":")[0]))])
+
+// An agent works the same squares every day, so the choice outlives the page. It is kept per
+// browser rather than on the account: it is how somebody is working right now, not a setting,
+// and a blocked or cleared store must never stop the inbox loading.
+const SELECTION_KEY = `chat-inbox-selection:${layout.user?.id ?? "anonymous"}`
+
+const readStoredSelection = () => {
+    try {
+        const raw = window.localStorage.getItem(SELECTION_KEY)
+
+        return raw ? JSON.parse(raw) : null
+    } catch {
+        return null
+    }
+}
+
+const storeSelection = () => {
+    try {
+        window.localStorage.setItem(SELECTION_KEY, JSON.stringify({
+            shopId: selectedShopId.value,
+            cells: selectedCells.value,
+            statuses: selectedStatuses.value,
+        }))
+    } catch {
+        // A private window, or storage turned off. Losing the choice is not worth an error.
+    }
+}
+
+/**
+ * Only what still exists is restored: shops come and go with the positions somebody holds, and
+ * a channel disappears from a shop that stops receiving on it.
+ */
+const restoreSelection = (): boolean => {
+    const stored = readStoredSelection()
+    const inbox = props.inboxes?.find((i) => i.id === stored?.shopId)
+
+    if (!inbox) {
+        return false
+    }
+
+    const available = new Set(
+        (inbox.channels ?? []).flatMap((c) => [`${c.key}:customer`, `${c.key}:guest`])
+    )
+    const cells = (stored.cells ?? []).filter((c: string) => available.has(c))
+
+    if (!cells.length) {
+        return false
+    }
+
+    selectedShopId.value = inbox.id
+    selectedCells.value = cells
+
+    const statuses = (stored.statuses ?? []).filter((x: string) => ["waiting", "active", "closed"].includes(x))
+
+    if (statuses.length) {
+        selectedStatuses.value = statuses as ChatStatus[]
+    }
+
+    return true
+}
+
+// One channel selected still means "this is a WhatsApp list" to everything downstream. With
+// several on there is no single answer, so it goes null and each row is read from its own
+// channel instead.
+const selectedChannel = computed(() => (selectedChannels.value.length === 1 ? selectedChannels.value[0] : null))
+
+const isChannelOn = (key: string) => selectedChannels.value.includes(key)
+
+type ChatKind = "customer" | "guest"
+
+const KINDS: Array<{ key: ChatKind; initial: string; label: string }> = [
+    { key: "customer", initial: "C", label: ctrans("Customers") },
+    { key: "guest", initial: "G", label: ctrans("Guests") },
+]
+
+const cellKey = (channelKey: string, kind: ChatKind) => `${channelKey}:${kind}`
+
+const isCellOn = (shopId: number, channelKey: string, kind: ChatKind) =>
+    selectedShopId.value === shopId && selectedCells.value.includes(cellKey(channelKey, kind))
+
+// Any set of squares can be on at once, and they travel as pairs rather than as a list of
+// channels and a list of kinds: wanting email from strangers and website from customers is
+// not the same as wanting both channels from both.
+const selectCell = (shopId: number, channelKey: string, kind: ChatKind) => {
+    const key = cellKey(channelKey, kind)
+    const sameShop = selectedShopId.value === shopId && !spamView.value && !trashView.value && !highlightView.value
+
+    if (!sameShop) {
+        spamView.value = false
+        rubbishView.value = false
+        trashView.value = false
+        highlightView.value = false
+        selectedShopId.value = shopId
+        selectedCells.value = [key]
+        afterSelectionChanged()
+
+        return
+    }
+
+    const on = selectedCells.value.includes(key)
+
+    if (on && selectedCells.value.length === 1) {
+        return
+    }
+
+    selectedCells.value = on
+        ? selectedCells.value.filter((c) => c !== key)
+        : [...selectedCells.value, key]
+
+    afterSelectionChanged()
+}
+
+const isMultiChannel = computed(() => selectedChannels.value.length > 1)
 
 const buildParams = (page: number) => ({
     ...(trashView.value
         ? { trashed: 1 }
-        : spamView.value
-            ? { is_spam: 1 }
-            : highlightView.value
-                ? { highlighted: 1, statuses: [activeTab.value] }
-                : { statuses: [activeTab.value] }),
+        : rubbishView.value
+            ? { is_rubbish: 1 }
+            : spamView.value
+                ? { is_spam: 1 }
+                : highlightView.value
+                    ? { highlighted: 1, statuses: selectedStatuses.value }
+                    : { statuses: selectedStatuses.value }),
     ...(isReadOnly.value ? {} : { assigned_to_me: myAgentId }),
-    organisation_id: props.organisation.id,
     page,
     ...(selectedShopId.value && !highlightView.value ? { shop_id: selectedShopId.value } : {}),
     // ponytail: the API ignores `channel` until chat sessions carry one; sent so the intent is visible.
-    ...(selectedChannel.value ? { channel: selectedChannel.value } : {}),
+    ...(selectedCells.value.length ? { pairs: selectedCells.value } : {}),
     ...(viewMode.value === "team" && !isReadOnly.value ? { view_team: 1 } : {}),
     ...(searchQuery.value.trim() ? { search: searchQuery.value.trim() } : {}),
 })
 
 // Spam, trash and highlight are cross-channel clean-up views, so they read from the
 // merged endpoint instead of whichever channel happens to be selected.
-const isMergedView = computed(() => spamView.value || trashView.value || highlightView.value)
+const isMergedView = computed(() => spamView.value || rubbishView.value || trashView.value || highlightView.value)
+
 
 const sessionsUrl = computed(() => {
-    if (isMergedView.value) {
+    if (isMergedView.value || isMultiChannel.value) {
         return `${baseUrl}/app/api/chats/all/sessions`
     }
 
@@ -289,6 +506,28 @@ const markSpam = async (c: Contact, spam: boolean) => {
     }
 }
 
+// Same shape as marking spam, without reporting anybody: the sender is never blocked, and the
+// conversation keeps its status so taking the mark off puts it back where it was.
+const markRubbish = async (c: Contact, rubbish: boolean) => {
+    if (isSpamming.value[c.ulid]) return
+    openMenuUlid.value = null
+    isSpamming.value = { ...isSpamming.value, [c.ulid]: true }
+    try {
+        const routeName = sessionRoute(rubbish ? "rubbish" : "not_rubbish", c)
+        await axios.patch(route(routeName, [props.organisation.slug, c.ulid]), {}, { withCredentials: true })
+        contacts.value = contacts.value.filter((x) => x.ulid !== c.ulid)
+        if (selectedSession.value?.ulid === c.ulid) {
+            selectedSession.value = null
+            messages.value = []
+        }
+        fetchInboxNotifications()
+    } catch (e: any) {
+        errorPerContact.value[c.ulid] = e?.response?.data?.message ?? "Failed to mark as rubbish"
+    } finally {
+        isSpamming.value = { ...isSpamming.value, [c.ulid]: false }
+    }
+}
+
 const showAgentFilter = ref(false)
 const selectedAgentIds = ref<Array<number | string>>([])
 
@@ -328,13 +567,13 @@ const revealViewFor = (contact: Contact): void => {
         viewMode.value = mode
     }
 
-    if (tab && ["waiting", "active", "closed"].includes(tab) && activeTab.value !== tab) {
-        activeTab.value = tab as "waiting" | "active" | "closed"
+    if (tab && ["waiting", "active", "closed"].includes(tab) && !isStatusOn(tab as ChatStatus)) {
+        selectedStatuses.value = [tab as ChatStatus]
     }
 }
 
 const matchesCurrentView = (c: Contact) =>
-    (spamView.value || trashView.value ? true : c.status === activeTab.value) &&
+    (spamView.value || trashView.value ? true : selectedStatuses.value.includes(c.status as ChatStatus)) &&
     (highlightView.value || !selectedShopId.value || c.shop?.id === selectedShopId.value) &&
     (!selectedAgentIds.value.length ||
         (c.agent?.id && selectedAgentIds.value.includes(c.agent.id)))
@@ -369,16 +608,16 @@ const shopAvatarStyle = (inbox: { id: number }) => {
     return { backgroundColor: color + "1A", color }
 }
 
-const toggleInbox = (shopId: number) => {
+// Picking a shop means picking its first channel: there is nothing left to unfold, since the
+// channels sit on the row itself.
+const selectInbox = (shopId: number) => {
     if (inboxRailCollapsed.value) {
         inboxRailCollapsed.value = false
     }
-    const idx = expandedInboxIds.value.indexOf(shopId)
-    if (idx >= 0) {
-        expandedInboxIds.value.splice(idx, 1)
-    } else {
-        expandedInboxIds.value.push(shopId)
-    }
+
+    const inbox = props.inboxes?.find((i) => i.id === shopId)
+
+    selectChannel(shopId, inbox?.channels?.[0]?.key ?? "website")
 }
 
 // Select + expand an inbox without reloading — callers on mount reload once afterwards.
@@ -390,19 +629,22 @@ const revealInbox = (shopId: number, channelKey?: string | null) => {
     const resolved = channelKey && inbox?.channels?.some((ch) => ch.key === channelKey)
         ? channelKey
         : inbox?.channels?.[0]?.key ?? null
-    selectedChannel.value = resolved
-    if (!expandedInboxIds.value.includes(shopId)) {
-        expandedInboxIds.value.push(shopId)
-    }
+    selectedCells.value = resolved ? [cellKey(resolved, "customer"), cellKey(resolved, "guest")] : []
 }
 
+// A whole channel, both kinds of sender: what a deep link or a shop click asks for.
 const selectChannel = (shopId: number, channelKey: string) => {
-    if (selectedShopId.value === shopId && selectedChannel.value === channelKey && !spamView.value && !trashView.value && !highlightView.value) return
     spamView.value = false
+    rubbishView.value = false
     trashView.value = false
     highlightView.value = false
     selectedShopId.value = shopId
-    selectedChannel.value = channelKey
+    selectedCells.value = [cellKey(channelKey, "customer"), cellKey(channelKey, "guest")]
+    afterSelectionChanged()
+}
+
+// Everything a change of selection has to clear, whether a whole channel or one square.
+function afterSelectionChanged() {
     selectedSession.value = null
     linkedContact.value = null
     messages.value = []
@@ -415,13 +657,31 @@ const selectChannel = (shopId: number, channelKey: string) => {
     reloadContacts()
 }
 
-const selectSpam = () => {
-    if (spamView.value) return
-    spamView.value = true
+// Rubbish is the takeover backlog: an out of office, a circular, a newsletter. Not spam, so
+// nobody is blocked, and the conversation keeps its status so unmarking restores it exactly.
+const selectRubbish = () => {
+    if (rubbishView.value) return
+    rubbishView.value = true
+    spamView.value = false
     trashView.value = false
     highlightView.value = false
     selectedShopId.value = null
-    selectedChannel.value = null
+    selectedCells.value = []
+    selectedSession.value = null
+    messages.value = []
+    newChatVisible.value = false
+    clearAgentFilter()
+    reloadContacts()
+}
+
+const selectSpam = () => {
+    if (spamView.value) return
+    spamView.value = true
+    rubbishView.value = false
+    trashView.value = false
+    highlightView.value = false
+    selectedShopId.value = null
+    selectedCells.value = []
     selectedSession.value = null
     messages.value = []
     newChatVisible.value = false
@@ -432,10 +692,11 @@ const selectSpam = () => {
 const selectTrash = () => {
     if (trashView.value) return
     trashView.value = true
+    rubbishView.value = false
     spamView.value = false
     highlightView.value = false
     selectedShopId.value = null
-    selectedChannel.value = null
+    selectedCells.value = []
     selectedSession.value = null
     messages.value = []
     newChatVisible.value = false
@@ -446,16 +707,15 @@ const selectTrash = () => {
 const selectHighlight = () => {
     if (highlightView.value) return
     highlightView.value = true
+    rubbishView.value = false
     spamView.value = false
     trashView.value = false
     selectedShopId.value = null
-    selectedChannel.value = null
+    selectedCells.value = []
     selectedSession.value = null
     messages.value = []
     newChatVisible.value = false
-    if (viewMode.value === "team" && activeTab.value === "waiting") {
-        activeTab.value = "active"
-    }
+    dropWaitingInTeamView()
     clearAgentFilter()
     reloadContacts()
 }
@@ -590,7 +850,7 @@ const applyChannelFromUrl = () => {
     const channel = params.get("channel")
 
     if (channel === "whatsapp" || channel === "website") {
-        selectedChannel.value = channel
+        selectedCells.value = [cellKey(channel, "customer"), cellKey(channel, "guest")]
     }
 
     pendingSessionUlid.value = params.get("session")
@@ -630,7 +890,6 @@ const openPendingSession = async () => {
             params: {
                 ulid,
                 ...(isReadOnly.value ? {} : { assigned_to_me: myAgentId }),
-                organisation_id: props.organisation.id,
                 page: 1,
                 limit: 1,
             },
@@ -693,18 +952,6 @@ const teamUnreadForShop = computed(() =>
 
 // Each channel keeps its own feed, so the tab badges follow whichever inbox is open
 // rather than showing website counts above a WhatsApp list.
-const tabUnread = computed(() => {
-    const sid = selectedShopId.value
-    const inShop = (arr: any[]) => (sid ? arr.filter((s) => s?.shop?.id === sid) : arr)
-    const isWhatsapp = selectedChannel.value === "whatsapp"
-
-    return {
-        waiting: inShop(isWhatsapp ? notifWaWaiting.value : notifWaiting.value).length,
-        active: inShop(isWhatsapp ? notifWaActive.value : notifActive.value).length,
-        closed: inShop(isWhatsapp ? notifWaReopen.value : notifReopen.value).length,
-    }
-})
-
 const countByShop = (sessions: any[]) => {
     const map: Record<number, number> = {}
     for (const session of sessions) {
@@ -723,7 +970,7 @@ const whatsappUnread = computed<Record<number, number>>(() =>
     countByShop([...notifWaWaiting.value, ...notifWaActive.value, ...notifWaReopen.value])
 )
 
-const channelUnread = (inbox: { id: number }, channel: { key: string; unread: number }) =>
+const channelUnread = (inbox: { id: number }, channel: { key: string }) =>
     channel.key === "whatsapp"
         ? (whatsappUnread.value[inbox.id] ?? 0)
         : (shopUnread.value[inbox.id] ?? 0)
@@ -820,7 +1067,7 @@ const onAssignSelfSuccess = async () => {
     const prev = selectedSession.value
 
     viewMode.value = "my"
-    activeTab.value = "active"
+    selectedStatuses.value = ["active"]
     await reloadContacts()
     await nextTick()
 
@@ -836,7 +1083,9 @@ const onAssignSelfSuccess = async () => {
 }
 
 const updateUrl = (ulid: string) => {
-    const url = selectedChannel.value === "whatsapp"
+    // The address follows the conversation that is open, not the sidebar: in a mixed list the
+    // two disagree, and a WhatsApp chat deep-linked as a website one does not reopen.
+    const url = activeChannel.value === "whatsapp"
         ? route("grp.org.chat.inbox", [props.organisation.slug]) + `?channel=whatsapp&session=${ulid}`
         : route("grp.org.chat.inbox.conversation", [props.organisation.slug, ulid])
 
@@ -892,12 +1141,11 @@ const onTransferAgentSuccess = async () => {
 }
 
 
-watch([activeTab, viewMode], async () => {
+watch([selectedStatuses, viewMode], async () => {
     selectedSession.value = null
     linkedContact.value = null
     messages.value = []
-    if (viewMode.value === "team" && activeTab.value === "waiting") {
-        activeTab.value = "active"
+    if (dropWaitingInTeamView()) {
         return
     }
     await reloadContacts()
@@ -985,6 +1233,11 @@ const onMetaChatListEvent = (e: any) => {
 }
 
 onMounted(async () => {
+    // What the address asks for wins over what was last looked at.
+    if (!props.preselectShopId && !props.selectedSessionUlid) {
+        restoreSelection()
+    }
+
     applyChannelFromUrl()
     fetchInboxNotifications()
 
@@ -994,6 +1247,9 @@ onMounted(async () => {
     if (props.preselectShopId && props.inboxes?.some((i) => i.id === props.preselectShopId)) {
         revealInbox(props.preselectShopId, urlChannel)
     }
+
+    // Registered after the restore so putting the stored choice back does not write it again.
+    watch([selectedShopId, selectedCells, selectedStatuses], storeSelection, { deep: true })
 
     const init = props.initialSession
 
@@ -1019,7 +1275,10 @@ onMounted(async () => {
     }
 
     if (window.Echo) {
-        const shopIds: number[] = Array.isArray(myAgentShop) ? myAgentShop : []
+        // The shops in the rail are the ones this person may work, so they are also the ones
+        // worth listening to. Reading them from the assignment table left an agent whose shops
+        // come from their position with no live updates at all.
+        const shopIds: number[] = (props.inboxes ?? []).map((i) => i.id)
         shopIds.forEach((shopId) => {
             const channel = `chat-list.${shopId}`
             joinedChatListChannels.push(channel)
@@ -1074,7 +1333,7 @@ onUnmounted(() => {
     <div class="flex border-t border-gray-200 h-[calc(100vh-10rem)] bg-white">
         <!-- PANEL 1: Inboxes (shops the agent handles) -->
         <div class="shrink-0 border-r border-gray-200 flex flex-col bg-gray-50 transition-all duration-200"
-            :class="inboxRailCollapsed ? 'w-16' : 'w-52'">
+            :class="inboxRailCollapsed ? 'w-16' : 'w-64'">
             <!-- Header + collapse toggle -->
             <div class="border-b border-gray-200 flex items-center h-[41px]"
                 :class="inboxRailCollapsed ? 'justify-center' : 'justify-between px-3'">
@@ -1091,16 +1350,18 @@ onUnmounted(() => {
 
             <!-- Shop list -->
             <div class="flex-1 overflow-y-auto py-1">
-                <div v-for="inbox in inboxes" :key="inbox.id">
-                    <button type="button" @click="toggleInbox(inbox.id)"
+                <div v-for="inbox in inboxes" :key="inbox.id"
+                    class="transition-colors"
+                    :class="selectedShopId === inbox.id ? 'bg-gray-50' : 'hover:bg-gray-100'">
+                    <button type="button" @click="selectInbox(inbox.id)"
                         v-tooltip="inboxRailCollapsed ? inbox.name : undefined"
-                        class="w-full flex items-center transition-colors relative"
+                        class="w-full flex items-center gap-2 min-w-0"
                         :class="[
-                            inboxRailCollapsed ? 'justify-center py-2' : 'gap-2.5 px-3 py-2.5',
-                            selectedShopId === inbox.id ? 'font-medium text-gray-800' : 'text-gray-700 hover:bg-gray-100',
+                            inboxRailCollapsed ? 'justify-center py-1' : 'px-2 pt-1',
+                            selectedShopId === inbox.id ? 'font-medium text-gray-800' : 'text-gray-700',
                         ]">
                         <div class="relative shrink-0">
-                            <div class="w-8 h-8 rounded-lg flex items-center justify-center text-[11px] font-bold"
+                            <div class="w-7 h-7 rounded-lg flex items-center justify-center text-[11px] font-bold"
                                 :style="shopAvatarStyle(inbox)">
                                 {{ shopInitials(inbox.name) }}
                             </div>
@@ -1109,30 +1370,54 @@ onUnmounted(() => {
                                 {{ inboxUnread[inbox.id] }}
                             </span>
                         </div>
-                        <span v-if="!inboxRailCollapsed" class="truncate text-sm flex-1 text-left">{{ inbox.name }}</span>
-                        <FontAwesomeIcon v-if="!inboxRailCollapsed"
-                            :icon="expandedInboxIds.includes(inbox.id) ? faAngleDown : faAngleRight"
-                            class="text-[10px] text-gray-400 shrink-0" />
+                        <span v-if="!inboxRailCollapsed" class="truncate text-sm text-left">{{ inbox.name }}</span>
                     </button>
 
-                    <div v-if="!inboxRailCollapsed && expandedInboxIds.includes(inbox.id)" class="pb-1">
-                        <button v-for="channel in inbox.channels" :key="channel.key" type="button"
-                            @click="selectChannel(inbox.id, channel.key)"
-                            class="w-full flex items-center gap-2 py-1.5 pr-3 pl-[38px] text-sm transition-colors"
-                            :class="selectedShopId === inbox.id && selectedChannel === channel.key
-                                ? 'font-medium text-gray-800'
-                                : 'text-gray-600 hover:bg-gray-100'"
-                            :style="selectedShopId === inbox.id && selectedChannel === channel.key ? selectedItemStyle : {}">
-                            <FontAwesomeIcon :icon="channel.key === 'whatsapp' ? faWhatsapp : channel.key === 'email' ? faEnvelope : faGlobe"
-                                class="text-xs shrink-0"
-                                :class="channel.key === 'whatsapp' ? 'text-green-600' : channel.key === 'email' ? 'text-blue-500' : 'text-gray-400'" />
-                            <span class="truncate flex-1 text-left">{{ channel.name }}</span>
-                            <span v-if="channelUnread(inbox, channel)"
-                                class="min-w-[16px] h-4 px-1 text-[9px] font-semibold leading-4 text-white rounded-full text-center bg-red-500">
-                                {{ channelUnread(inbox, channel) }}
-                            </span>
-                        </button>
-                    </div>
+                    <!-- A little table instead of a row of capsules: channels across, who is
+                         on the other end down. Cells line up by construction, and a count of
+                         zero holds its place so the eye can run down a column. -->
+                    <table v-if="!inboxRailCollapsed" class="w-full text-[11px] tabular-nums mb-1">
+                        <thead>
+                            <tr>
+                                <th class="w-4"></th>
+                                <th v-for="channel in inbox.channels" :key="channel.key"
+                                    class="font-normal pb-0.5 border-b border-slate-100">
+                                    <FontAwesomeIcon :icon="channel.key === 'whatsapp' ? faWhatsapp : channel.key === 'email' ? faEnvelope : faGlobe"
+                                        class="text-[12px]"
+                                        :class="channel.key === 'whatsapp' ? 'text-green-600' : channel.key === 'email' ? 'text-blue-500' : 'text-gray-500'" />
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr v-for="kind in KINDS" :key="kind.key">
+                                <td class="text-[9px] font-bold text-center border-r border-slate-100"
+                                    :class="kind.key === 'customer' ? 'text-green-500' : 'text-blue-400'">
+                                    {{ kind.initial }}
+                                </td>
+                                <td v-for="channel in inbox.channels" :key="channel.key"
+                                    class="border border-slate-100">
+                                    <button type="button"
+                                        class="w-full flex items-center justify-center gap-1 px-1 py-0.5 leading-5 transition-colors"
+                                        :class="isCellOn(inbox.id, channel.key, kind.key) ? '' : 'hover:bg-slate-100'"
+                                        :style="isCellOn(inbox.id, channel.key, kind.key) ? { backgroundColor: selectedCellFill } : {}"
+                                        @click="selectCell(inbox.id, channel.key, kind.key)">
+                                        <!-- The selected cell is filled, the same way the rest of
+                                             the page marks what is selected. A box around it drew
+                                             a blob across the rows that were on together. -->
+                                        <span class="font-semibold"
+                                            :class="isCellOn(inbox.id, channel.key, kind.key) ? '' : 'text-slate-700'"
+                                            :style="isCellOn(inbox.id, channel.key, kind.key) ? { color: 'var(--theme-color-4)' } : {}">
+                                            {{ channel[kind.key].waiting }}
+                                        </span>
+                                        <span :class="isCellOn(inbox.id, channel.key, kind.key) ? 'opacity-50' : 'text-slate-400'"
+                                            :style="isCellOn(inbox.id, channel.key, kind.key) ? { color: 'var(--theme-color-4)' } : {}">
+                                            {{ channel[kind.key].active }}
+                                        </span>
+                                    </button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
                 <div v-if="!inboxes.length && !inboxRailCollapsed" class="px-3 py-6 text-xs text-gray-400 text-center">
                     {{ ctrans("No inboxes assigned") }}
@@ -1151,6 +1436,17 @@ onUnmounted(() => {
                     :style="spamView ? selectedItemStyle : {}">
                     <FontAwesomeIcon :icon="faBan" class="text-sm shrink-0" :class="spamView ? 'text-red-500' : ''" />
                     <span v-if="!inboxRailCollapsed">{{ ctrans("Spam") }}</span>
+                </button>
+                <button type="button" @click="selectRubbish"
+                    v-tooltip="inboxRailCollapsed ? ctrans('Ignored') : undefined"
+                    class="w-full flex items-center text-sm transition-colors"
+                    :class="[
+                        inboxRailCollapsed ? 'justify-center py-2.5' : 'gap-2.5 px-3 py-2',
+                        rubbishView ? 'font-medium text-gray-800' : 'text-gray-600 hover:bg-gray-100',
+                    ]"
+                    :style="rubbishView ? selectedItemStyle : {}">
+                    <FontAwesomeIcon :icon="faArchive" class="text-sm shrink-0" :class="rubbishView ? 'text-gray-600' : ''" />
+                    <span v-if="!inboxRailCollapsed">{{ ctrans("Ignored") }}</span>
                 </button>
                 <button type="button" @click="selectTrash"
                     v-tooltip="inboxRailCollapsed ? ctrans('Trash') : undefined"
@@ -1187,7 +1483,7 @@ onUnmounted(() => {
             <div class="px-3 py-2.5 border-b flex items-center justify-between gap-2">
                 <div class="min-w-0 flex-1">
                     <div class="text-sm font-semibold text-gray-800 truncate mb-1.5">
-                        {{ trashView ? ctrans("Trash") : spamView ? ctrans("Spam") : highlightView ? ctrans("Highlighted") : (selectedInbox?.name ?? ctrans("Inbox")) }}
+                        {{ trashView ? ctrans("Trash") : rubbishView ? ctrans("Ignored") : spamView ? ctrans("Spam") : highlightView ? ctrans("Highlighted") : (selectedInbox?.name ?? ctrans("Inbox")) }}
                     </div>
                     <div v-if="!spamView && !trashView && !isReadOnly" class="inline-flex items-center bg-gray-100 rounded-lg p-0.5 text-[11px]">
                         <button type="button" class="px-2.5 py-1 rounded-md transition-all whitespace-nowrap shrink-0"
@@ -1270,38 +1566,22 @@ onUnmounted(() => {
                     class="w-full text-sm border rounded-lg px-3 py-1.5 focus:outline-none focus:ring-1" />
             </div>
 
-            <!-- Status segmented tabs -->
+            <!-- Status capsules: any combination, never none -->
             <div v-if="!spamView && !trashView" class="px-3 py-2 border-b">
-                <div class="flex items-center bg-gray-100 rounded-lg p-1 text-xs">
-                    <button v-if="viewMode === 'my'" type="button"
-                        class="flex-1 py-1.5 rounded-md transition-all inline-flex items-center justify-center gap-1"
-                        :class="activeTab === 'waiting' ? 'bg-white shadow-sm font-semibold' : 'text-gray-500 hover:text-gray-700'"
-                        :style="activeTab === 'waiting' ? { color: 'var(--theme-color-4)' } : {}"
-                        @click="activeTab = 'waiting'">
-                        {{ ctrans("Waiting") }}
-                        <span v-if="viewMode === 'my' && !highlightView && tabUnread.waiting"
-                            class="min-w-[15px] px-1 text-[9px] leading-[15px] text-white rounded-full text-center"
-                            :style="{ backgroundColor: 'var(--theme-color-4)' }">{{ tabUnread.waiting }}</span>
-                    </button>
-                    <button type="button"
-                        class="flex-1 py-1.5 rounded-md transition-all inline-flex items-center justify-center gap-1"
-                        :class="activeTab === 'active' ? 'bg-white shadow-sm font-semibold' : 'text-gray-500 hover:text-gray-700'"
-                        :style="activeTab === 'active' ? { color: 'var(--theme-color-4)' } : {}"
-                        @click="activeTab = 'active'">
-                        {{ ctrans("Active") }}
-                        <span v-if="viewMode === 'my' && !highlightView && tabUnread.active"
-                            class="min-w-[15px] px-1 text-[9px] leading-[15px] text-white rounded-full text-center"
-                            :style="{ backgroundColor: 'var(--theme-color-4)' }">{{ tabUnread.active }}</span>
-                    </button>
-                    <button type="button"
-                        class="flex-1 py-1.5 rounded-md transition-all inline-flex items-center justify-center gap-1"
-                        :class="activeTab === 'closed' ? 'bg-white shadow-sm font-semibold' : 'text-gray-500 hover:text-gray-700'"
-                        :style="activeTab === 'closed' ? { color: 'var(--theme-color-4)' } : {}"
-                        @click="activeTab = 'closed'">
-                        {{ ctrans("Closed") }}
-                        <span v-if="viewMode === 'my' && !highlightView && tabUnread.closed"
-                            class="min-w-[15px] px-1 text-[9px] leading-[15px] text-white rounded-full text-center"
-                            :style="{ backgroundColor: 'var(--theme-color-4)' }">{{ tabUnread.closed }}</span>
+                <div class="flex items-center gap-1.5 text-xs">
+                    <button v-for="capsule in statusCapsules" :key="capsule.key" type="button"
+                        v-tooltip="ctrans('Show or hide these, at least one stays on')"
+                        class="flex-1 py-1.5 px-2 rounded-full border transition-all inline-flex items-center justify-center gap-1"
+                        :class="isStatusOn(capsule.key)
+                            ? 'bg-white shadow-sm font-semibold border-transparent'
+                            : 'border-gray-200 text-gray-500 hover:text-gray-700'"
+                        :style="isStatusOn(capsule.key) ? { color: 'var(--theme-color-4)', borderColor: 'var(--theme-color-4)' } : {}"
+                        @click="toggleStatus(capsule.key)">
+                        {{ capsule.label }}
+                        <span v-if="capsule.count"
+                            class="min-w-[15px] px-1 text-[9px] leading-[15px] rounded-full text-center"
+                            :class="isStatusOn(capsule.key) ? 'text-white' : 'text-gray-600 bg-gray-200'"
+                            :style="isStatusOn(capsule.key) ? { backgroundColor: 'var(--theme-color-4)' } : {}">{{ capsule.count }}</span>
                     </button>
                 </div>
             </div>
@@ -1316,7 +1596,7 @@ onUnmounted(() => {
 
                 <div v-else>
                     <div v-for="c in filteredContacts" :key="c.ulid">
-                        <div class="group relative flex items-center gap-3 px-3 py-2 border-b cursor-pointer transition-colors"
+                        <div class="group relative flex items-center gap-2 px-3 py-2 border-b cursor-pointer transition-colors"
                             :class="selectedSession?.ulid === c.ulid ? '' : 'hover:bg-gray-50'"
                             :style="selectedSession?.ulid === c.ulid ? selectedItemStyle : {}"
                             @click="handleClickContact(c)"
@@ -1333,24 +1613,20 @@ onUnmounted(() => {
                                 <FontAwesomeIcon :icon="faEllipsisVertical" class="text-sm" />
                             </button>
 
-                            <div class="relative shrink-0">
-                                <div class="w-8 h-8 rounded-full flex items-center justify-center bg-gray-100 text-gray-500">
-                                    <Image v-if="c.avatar" :src="c.avatar" class="w-full h-full rounded-full object-cover" />
-                                    <FontAwesomeIcon v-else :icon="faUser" class="text-sm" />
-                                </div>
-                                <span v-if="isMergedView"
-                                    v-tooltip="c.channel === 'whatsapp' ? 'WhatsApp' : c.channel === 'email' ? ctrans('Email') : ctrans('Website chat')"
-                                    class="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full bg-white ring-1 ring-gray-200 flex items-center justify-center">
-                                    <FontAwesomeIcon :icon="c.channel === 'whatsapp' ? faWhatsapp : c.channel === 'email' ? faEnvelope : faGlobe"
-                                        class="text-[9px]"
-                                        :class="c.channel === 'whatsapp' ? 'text-green-600' : c.channel === 'email' ? 'text-blue-500' : 'text-gray-400'" />
-                                </span>
-                            </div>
-
                             <div class="flex-1 min-w-0 flex flex-col gap-0.5">
                                 <div class="flex items-center justify-between gap-2">
-                                    <span class="text-sm font-medium text-gray-800 truncate">{{ capitalize(c.name) }}</span>
-                                    <span class="text-[10px] text-gray-400 shrink-0">{{ c.lastMessageTime }}</span>
+                                    <!-- Only the guests are marked. A customer is already shown
+                                         by their name being a link through to their record, and
+                                         a badge on every other row says nothing. -->
+                                    <span v-if="!c.webUser?.customer_id"
+                                        class="shrink-0 text-[9px] px-1 py-0.5 border border-blue-300 text-blue-400 leading-none">
+                                        G
+                                    </span>
+                                    <span class="flex-1 min-w-0 text-sm font-medium text-gray-800 truncate">{{ capitalize(c.name) }}</span>
+                                    <span class="text-[10px] text-gray-500 shrink-0">
+                                        {{ c.lastMessageTime }}
+                                        <span v-if="c.lastMessageAge" class="text-gray-400">({{ c.lastMessageAge }})</span>
+                                    </span>
                                 </div>
                                 <div v-if="(spamView || trashView || highlightView) && c.shop?.name" class="flex items-center gap-1 text-[10px] text-gray-400 truncate">
                                     <FontAwesomeIcon :icon="faStoreAlt" class="text-[9px] shrink-0" />
@@ -1359,11 +1635,6 @@ onUnmounted(() => {
                                 <div class="flex items-center gap-2">
                                     <span v-if="c.agent?.name" class="text-[10px] text-gray-400 truncate">
                                         {{ c.agent.name.split(' ')[0] }}
-                                    </span>
-                                    <span v-if="c.unread && activeTab !== 'closed'"
-                                        class="ml-auto min-w-[16px] px-1.5 text-[10px] leading-4 text-white rounded-full text-center shrink-0"
-                                        :style="{ backgroundColor: 'var(--theme-color-4)' }">
-                                        {{ c.unread }}
                                     </span>
                                 </div>
                                 <div class="flex items-center gap-1.5">
@@ -1375,10 +1646,19 @@ onUnmounted(() => {
                                         @click.stop="toggleHighlight(c)">
                                         <FontAwesomeIcon :icon="faStarSolid" class="text-[11px]" />
                                     </button>
-                                    <span class="shrink-0 text-[9px] px-1 py-0.5 border leading-none"
-                                        :class="c.webUser?.id ? 'border-green-400 text-green-500' : 'border-blue-300 text-blue-400'">
-                                        {{ c.webUser?.id ? 'C' : 'G' }}
+                                    <!-- Unread sits beside the channel it arrived on, quietly:
+                                         it is a count, not an alarm. -->
+                                    <span v-if="c.unread && !onlyClosed"
+                                        class="shrink-0 text-[10px] font-semibold leading-none text-gray-400">
+                                        {{ c.unread }}
                                     </span>
+                                    <!-- Always shown, not only in a mixed list: an agent reading
+                                         one row has to know whether to answer a chat or an email,
+                                         and the sidebar is not where they are looking. -->
+                                    <FontAwesomeIcon
+                                        :icon="c.channel === 'whatsapp' ? faWhatsapp : c.channel === 'email' ? faEnvelope : faGlobe"
+                                        class="shrink-0 text-xs"
+                                        :class="c.channel === 'whatsapp' ? 'text-green-600' : c.channel === 'email' ? 'text-blue-500' : 'text-gray-400'" />
                                 </div>
                             </div>
                         </div>
@@ -1477,6 +1757,18 @@ onUnmounted(() => {
                             {{ menuContact.is_highlighted ? ctrans("Remove highlight") : ctrans("Highlight") }}
                         </button>
                         <div class="border-t border-gray-100 my-1"></div>
+
+                        <!-- Email and website only: WhatsApp has no imported backlog. -->
+                        <button v-if="menuContact.channel !== 'whatsapp' && !menuContact.is_rubbish" type="button"
+                            class="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-gray-700 hover:bg-gray-100"
+                            @click="markRubbish(menuContact, true)">
+                            <FontAwesomeIcon :icon="faArchive" class="text-[10px]" /> {{ ctrans("Ignore") }}
+                        </button>
+                        <button v-else-if="menuContact.channel !== 'whatsapp'" type="button"
+                            class="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-gray-700 hover:bg-gray-100"
+                            @click="markRubbish(menuContact, false)">
+                            <FontAwesomeIcon :icon="faRotateLeft" class="text-[10px]" /> {{ ctrans("Not ignored") }}
+                        </button>
 
                         <button v-if="!menuContact.is_spam" type="button"
                             class="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-gray-700 hover:bg-gray-100"

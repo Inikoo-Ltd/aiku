@@ -37,6 +37,10 @@ enum ChatEventTypeEnum: string
 
     case NOT_SPAM = 'not_spam';
 
+    case RUBBISH = 'rubbish';
+
+    case NOT_RUBBISH = 'not_rubbish';
+
     case TRASH = 'trash';
 
     case RESTORE = 'restore';
@@ -55,6 +59,8 @@ enum ChatEventTypeEnum: string
         return [
             self::SPAM->value,
             self::NOT_SPAM->value,
+            self::RUBBISH->value,
+            self::NOT_RUBBISH->value,
             self::TRASH->value,
             self::RESTORE->value,
             self::REDACT->value,

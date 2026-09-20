@@ -77,6 +77,7 @@ use App\Enums\CRM\Livechat\ChatEventTypeEnum;
 use App\Enums\CRM\Livechat\ChatMessageTypeEnum;
 use App\Enums\CRM\Livechat\ChatPriorityEnum;
 use App\Enums\CRM\Livechat\ChatSenderTypeEnum;
+use App\Enums\CRM\Livechat\ChatChannelEnum;
 use App\Enums\CRM\Livechat\ChatSessionStatusEnum;
 use App\Enums\SysAdmin\Authorisation\RolesEnum;
 use App\Models\HumanResources\Employee;
@@ -2100,7 +2101,7 @@ test('TranslateSessionMessages chains translation jobs for unread visitor messag
 test('UI Show shop chat dashboard', function () {
     actingAs($this->user);
 
-    $response = get(route('grp.org.shops.show.chat.dashboard', [$this->organisation->slug, $this->shop->slug]));
+    $response = get(route('grp.org.shops.show.chat.reports', [$this->organisation->slug, $this->shop->slug]));
 
     $response->assertInertia(function (AssertableInertia $page) {
         $page->component('Org/Shop/Chat/Dashboard');
@@ -2140,7 +2141,7 @@ test('UI Show chat session for a shop', function () {
 test('UI Show org chat dashboard', function () {
     actingAs($this->user);
 
-    $response = get(route('grp.org.chat.dashboard', [$this->organisation->slug]));
+    $response = get(route('grp.org.chat.reports', [$this->organisation->slug]));
 
     $response->assertOk();
 });
@@ -2168,7 +2169,7 @@ test('UI Show org chat conversation detail', function () {
 test('UI Show group chat dashboard', function () {
     actingAs($this->user);
 
-    $response = get(route('grp.chat.dashboard'));
+    $response = get(route('grp.chat.reports'));
 
     $response->assertOk();
 });
@@ -3504,8 +3505,11 @@ test('inbound guest gmail attachments wait in gmail until an agent replies, then
 
     $message = \App\Actions\Comms\Mailbox\ProcessInboundEmail::run($this->shop, 'a1');
 
-    expect($message->attachedFiles())->toBeEmpty()
-        ->and(Arr::get($message->metadata, 'gmail_pending_attachments'))->toBe(2);
+    // A stranger's pictures come in at once: an email whose images are missing reads as broken,
+    // and staff compare this screen against Gmail. Their other files still wait for a reply,
+    // and the signature logo is never imported at all.
+    expect($message->attachedFiles()->pluck('name')->all())->toBe(['photo.png'])
+        ->and(Arr::get($message->metadata, 'gmail_pending_attachments'))->toBe(1);
 
     \App\Actions\Chat\ChatSession\SendChatMessage::run($message->chatSession, [
         'message_text' => 'Sorry to hear that',
@@ -3519,15 +3523,15 @@ test('inbound guest gmail attachments wait in gmail until an agent replies, then
         ->and(Arr::get($message->fresh()->metadata, 'gmail_pending_attachments'))->toBeNull()
         ->and($message->fresh()->message_text)->toBe('See attached')
         ->and($message->fresh()->message_type)->toBe(ChatMessageTypeEnum::FILE)
-        ->and($files->pluck('name')->all())->toBe(['invoice.pdf', 'photo.png'])
-        ->and($files->pluck('collection_name')->all())->toBe(['chat_attachments', 'chat_images'])
-        ->and(stream_get_contents($files[0]->stream()))->toBe('%PDF-1.4 invoice')
-        ->and($message->fresh()->media_id)->toBe($files[0]->id);
+        // The photograph is not fetched twice: the reply only brings what was waiting.
+        ->and($files->pluck('name')->all())->toBe(['photo.png', 'invoice.pdf'])
+        ->and($files->pluck('collection_name')->all())->toBe(['chat_images', 'chat_attachments'])
+        ->and(stream_get_contents($files[1]->stream()))->toBe('%PDF-1.4 invoice');
 
     $resource = \App\Http\Resources\CRM\Livechat\ChatMessageResource::make($message->fresh())->resolve();
     expect($resource['attachments'])->toHaveCount(2)
-        ->and($resource['attachments'][1]['is_image'])->toBeTrue()
-        ->and($resource['attachments'][0]['file_name'])->toBe('invoice.pdf');
+        ->and($resource['attachments'][0]['is_image'])->toBeTrue()
+        ->and($resource['attachments'][1]['file_name'])->toBe('invoice.pdf');
 });
 
 test('chat media older than the retention window moves to the archive database and is still downloadable', function () {
@@ -4346,4 +4350,84 @@ test('the agents a chat can be handed to come from permissions, not the old shop
         ->and($listed[$workerAgent->id]['shop_names'])->toContain($this->shop->name)
         // A supervisor oversees chats, so handing one to them is not offered.
         ->and($listed->has($managerAgent->id))->toBeFalse();
+});
+
+test('the inbox is the same view whatever scope it is opened from', function () {
+    setPermissionsTeamId($this->user->group_id);
+
+    $this->shop->update(['state' => \App\Enums\Catalogue\Shop\ShopStateEnum::OPEN]);
+
+    $agent = User::factory()->create(['group_id' => $this->organisation->group_id, 'status' => true]);
+    $agent->assignRole(RolesEnum::getRoleName(RolesEnum::CUSTOMER_SERVICE_CLERK->value, $this->shop));
+
+    // No shop_has_chat_agents row and no chat agent profile: the position is the whole setup.
+    $inboxesFrom = function (string $url) use ($agent) {
+        $props = $this->actingAs($agent)->get($url)
+            ->assertOk()
+            ->viewData('page')['props'];
+
+        return [
+            collect($props['inboxes'])->pluck('slug')->sort()->values()->all(),
+            collect($props['inboxes'])->firstWhere('slug', $this->shop->slug),
+        ];
+    };
+
+    [$fromOrg, $shopInbox]   = $inboxesFrom(route('grp.org.chat.inbox', [$this->organisation->slug]));
+    [$fromShop, $shopInbox2] = $inboxesFrom(route('grp.org.shops.show.chat.inbox', [$this->organisation->slug, $this->shop->slug]));
+
+    expect($fromOrg)->toContain($this->shop->slug)
+        // Chat is not scoped: an agent covers shops across organisations, so the address the
+        // inbox was opened from must not change what it holds.
+        ->and($fromShop)->toBe($fromOrg)
+        ->and($shopInbox['is_read_only'])->toBeFalse()
+        ->and($shopInbox2['is_read_only'])->toBeFalse();
+});
+
+test('email does not sit under the website tab', function () {
+    setPermissionsTeamId($this->user->group_id);
+
+    $this->shop->update(['state' => \App\Enums\Catalogue\Shop\ShopStateEnum::OPEN]);
+
+    $agent = User::factory()->create(['group_id' => $this->organisation->group_id, 'status' => true]);
+    $agent->assignRole(RolesEnum::getRoleName(RolesEnum::CUSTOMER_SERVICE_CLERK->value, $this->shop));
+
+    // A session only counts once somebody has written in it: an opened widget nobody typed
+    // into is not a conversation, and the rail says so too.
+    $session = function (ChatChannelEnum $channel) {
+        $session = ChatSession::create([
+            'shop_id' => $this->shop->id,
+            'ulid'    => (string) Str::ulid(),
+            'channel' => $channel,
+            'status'  => ChatSessionStatusEnum::WAITING,
+        ]);
+
+        ChatMessage::create([
+            'chat_session_id' => $session->id,
+            'message_text'    => 'hello',
+            'message_type'    => ChatMessageTypeEnum::TEXT,
+            'sender_type'     => ChatSenderTypeEnum::GUEST,
+        ]);
+
+        return $session;
+    };
+
+    $session(ChatChannelEnum::WEBSITE);
+    $emailSession = $session(ChatChannelEnum::EMAIL);
+
+    $props = $this->actingAs($agent)
+        ->get(route('grp.org.shops.show.chat.inbox', [$this->organisation->slug, $this->shop->slug]))
+        ->assertOk()
+        ->viewData('page')['props'];
+
+    $channels = collect($props['inboxes'])->firstWhere('slug', $this->shop->slug)['channels'];
+
+    // A bounce notice under a tab marked Website reads as somebody waiting on the other end.
+    expect(collect($channels)->pluck('key')->all())->toContain('email');
+
+    $website = collect(GetChatSessions::make()->handle([
+        'shop_id' => $this->shop->id,
+        'pairs'   => ['website:customer', 'website:guest'],
+    ])->items());
+
+    expect($website->pluck('id')->all())->not->toContain($emailSession->id);
 });

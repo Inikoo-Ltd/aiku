@@ -8,6 +8,7 @@
 
 namespace App\Actions\SysAdmin\User\UI;
 
+use App\Actions\Chat\WithChatAgentAuthorisation;
 use App\Actions\Helpers\TimeZone\Json\IndexTimeZones;
 use App\Models\SysAdmin\User;
 use Illuminate\Support\Arr;
@@ -16,20 +17,16 @@ use Lorisleiva\Actions\Concerns\AsObject;
 class GetLoggedUser
 {
     use AsObject;
+    use WithChatAgentAuthorisation;
 
     public function handle(User $user): array
     {
 
-        $isAgent = false;
-        $agentShops = [];
-
-        if ($user->chatAgent) {
-            $shopAssignments = $user->chatAgent->shopAssignments;
-            if ($shopAssignments && $shopAssignments->isNotEmpty()) {
-                $isAgent = true;
-                $agentShops = $shopAssignments->pluck('shop_id')->unique()->values()->toArray();
-            }
-        }
+        // Being an agent comes from the customer service position, not from the shop assignment
+        // table being retired: somebody made an agent by their position was shown no chat in the
+        // menu and given no live updates, because the table knew nothing about them.
+        $agentShops = $this->workableShopIdsFor($user);
+        $isAgent    = $agentShops !== [];
 
         return [
             'id'           => $user->id,

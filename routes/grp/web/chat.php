@@ -13,7 +13,7 @@ use App\Actions\Chat\ChatSession\UI\RedirectToOrgChatInbox;
 use App\Actions\Chat\ChatSession\UI\ShowGroupChatDashboard;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/dashboard', ShowGroupChatDashboard::class)->name('dashboard');
+Route::get('/reports', ShowGroupChatDashboard::class)->name('reports');
 Route::get('/agents', ShowGroupAgents::class)->name('agents.show');
 Route::get('/inbox', RedirectToOrgChatInbox::class)->name('inbox');
 Route::post('/presence', TrackChatAgentPresence::class)->name('presence.track');

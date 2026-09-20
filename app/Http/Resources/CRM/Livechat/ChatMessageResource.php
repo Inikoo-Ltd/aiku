@@ -32,6 +32,9 @@ class ChatMessageResource extends JsonResource
         return [
             'id' => $chatMessage->id,
             'message_text' => $chatMessage->message_text,
+            // Already purified when it was stored, and shown inside a sandboxed frame. The text
+            // above stays the message of record: it is what search and translation read.
+            'html_body' => $chatMessage->html_body,
             'original' => [
                 'text'          => $chatMessage->original_text,
                 'language_name' => $chatMessage->originalLanguage?->name,
