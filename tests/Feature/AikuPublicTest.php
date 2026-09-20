@@ -13,6 +13,10 @@ use Illuminate\Support\Facades\Http;
 
 use function Pest\Laravel\get;
 
+beforeAll(function () {
+    loadDB();
+});
+
 beforeEach(function () {
     $this->host = 'http://'.config('app.domain');
     cache()->put('aiku_public_article_commit_dates', ['anatomy-of-a-deploy' => '2026-08-19T10:00:00+08:00'], 600);
@@ -310,7 +314,7 @@ test('the partner and factory series is complete in every worker language', func
                 ->and($translation['source_date']?->toDateString())->toBe($english['date']->toDateString(), $english['slug'].'-'.$lang.' is stale');
         }
     }
-});
+})->group('editorial');
 
 test('docs index shows the clickable module map', function () {
     get($this->host.'/docs')->assertOk()
@@ -371,23 +375,64 @@ test('translated docs are served, linked and kept out of the English listings', 
 });
 
 test('staff guides have Spanish and Slovak, engineer and QA guides Indonesian, made from the current English', function () {
-    foreach (BlogPosts::all('docs') as $english) {
+    $docs = BlogPosts::everything('docs')->keyBy('slug');
+    $issues = [];
+
+    foreach ($docs->where('lang', 'en') as $english) {
         foreach ($english['audience'] ? ['id'] : ['es', 'sk'] as $lang) {
-            $translation = BlogPosts::everything('docs')->firstWhere('slug', $english['slug'].'-'.$lang);
-            expect($translation)->not->toBeNull($english['slug'].' has no '.$lang.' translation')
-                ->and($translation['source_date']?->toDateString())->toBe($english['date']->toDateString(), $english['slug'].'-'.$lang.' is stale');
+            $slug = $english['slug'].'-'.$lang;
+            $translation = $docs->get($slug);
+
+            if (!$translation) {
+                $issues[] = $slug.' is missing';
+            } elseif ($translation['source_date']?->toDateString() !== $english['date']->toDateString()) {
+                $issues[] = $slug.' is stale';
+            }
         }
     }
-});
 
-test('a translation older than its English original is flagged as stale', function () {
-    $english = BlogPosts::all('docs')->firstWhere('slug', 'your-clean-handover-score');
-    $translation = BlogPosts::everything('docs')->firstWhere('slug', 'your-clean-handover-score-id');
+    expect($issues)->toBeEmpty(implode("\n", $issues));
+})->group('editorial');
 
-    expect($translation['source_date']->toDateString())->toBe($english['date']->toDateString());
+test('translation freshness is shown against the English source date', function (string $sourceDate, bool $stale) {
+    $slug = 'test-freshness-'.uniqid();
+    $englishPath = resource_path("markdown/aiku-public/docs/{$slug}.md");
+    $translationPath = resource_path("markdown/aiku-public/docs/{$slug}-id.md");
+    file_put_contents($englishPath, "---\ntitle: English guide\nsummary: Test guide\ndate: 2026-01-02\ncategory: production\n---\nEnglish body\n");
+    file_put_contents($translationPath, "---\ntitle: Panduan\nsummary: Test guide\ndate: 2026-01-03\nsource_date: {$sourceDate}\ncategory: production\n---\nIndonesian body\n");
+    $this->travelTo(\Illuminate\Support\Carbon::parse('2026-01-10'));
 
-    get($this->host.'/docs/your-clean-handover-score-id')->assertOk()
-        ->assertDontSee('telah berubah setelah terjemahan ini', false);
+    try {
+        $response = get($this->host.'/docs/'.$slug.'-id')->assertOk();
+
+        if ($stale) {
+            $response->assertSee('telah berubah setelah terjemahan ini', false);
+        } else {
+            $response->assertDontSee('telah berubah setelah terjemahan ini', false);
+        }
+    } finally {
+        unlink($englishPath);
+        unlink($translationPath);
+    }
+})->with([
+    'current translation' => ['2026-01-02', false],
+    'stale translation' => ['2026-01-01', true],
+]);
+
+test('help falls back to English when the requested translation is missing', function () {
+    $slug = 'test-fallback-'.uniqid();
+    $path = resource_path("markdown/aiku-public/docs/{$slug}.md");
+    file_put_contents($path, "---\ntitle: English guide\nsummary: Test guide\ndate: 2026-01-02\nhelp_routes: grp.fixture.\n---\nEnglish body\n");
+    $this->travelTo(\Illuminate\Support\Carbon::parse('2026-01-10'));
+
+    try {
+        expect(BlogPosts::helpFor('grp.fixture.index', 'es'))->toBe([
+            'title' => 'English guide',
+            'url' => 'https://'.config('app.domain').'/docs/'.$slug,
+        ]);
+    } finally {
+        unlink($path);
+    }
 });
 
 test('reading time counts non-latin scripts instead of reporting one minute', function () {

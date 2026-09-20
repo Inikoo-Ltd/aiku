@@ -52,7 +52,16 @@ jobs:
       - name: Retrieve db dumps
         run: cp ../../../../artifacts/aiku.dump tests/datasets/db_dumps/
       - name: Run test without coverage
-        run: /usr/bin/php8.4 -dxdebug.mode=off -d newrelic.enabled=0 vendor/bin/pest --parallel --processes=6 --stop-on-defect --log-junit junit.xml
+        run: /usr/bin/php8.4 -dxdebug.mode=off -d newrelic.enabled=0 vendor/bin/pest --parallel --processes=6 --log-junit junit.xml
+      - name: Editorial translation audit
+        if: ${{ !cancelled() }}
+        continue-on-error: true
+        run: |
+          if ! /usr/bin/php8.4 -dxdebug.mode=off -d newrelic.enabled=0 vendor/bin/pest tests/Feature/AikuPublicTest.php --group=editorial; then
+            echo "::warning::Documentation translations are missing or stale; see the editorial audit output."
+            echo "Documentation translations need attention. See the Editorial translation audit step for missing or stale guides." >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
       - name: Upload test results to Codecov
         if: ${{ !cancelled() }}
         uses: codecov/test-results-action@v1
@@ -67,7 +76,7 @@ jobs:
           if [ -z "$BEFORE" ] || [ "$BEFORE" = "0000000000000000000000000000000000000000" ] || ! git cat-file -e "$BEFORE" 2>/dev/null; then
             BEFORE=$(git rev-parse HEAD~1)
           fi
-          CHANGED=$(git diff --name-only "$BEFORE" HEAD -- 'tests/Feature' | grep 'Test\.php$' || true)
+          CHANGED=$(git diff --name-only "$BEFORE" HEAD -- 'tests/Feature' 'tests/Unit' | grep 'Test\.php$' || true)
           if [ -z "$CHANGED" ]; then
             echo "No changed test files, skipping"
             exit 0

@@ -72,8 +72,8 @@ class StoreJobOrdersGroupedByArtisan
     {
         return [
             'demand_skos' => (float) $line['quantity'],
-            'batch_code'  => $line['batch_code'] ?: $jobOrder->reference.'-'.$line['artefact']->code,
-            'expiry_date' => $line['expiry_date'] ?: null,
+            'batch_code'  => ($line['batch_code'] ?? null) ?: $jobOrder->reference.'-'.$line['artefact']->code,
+            'expiry_date' => ($line['expiry_date'] ?? null) ?: null,
         ];
     }
 }

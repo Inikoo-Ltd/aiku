@@ -4007,7 +4007,8 @@ test('repair cancel leaves the old pickings and their stock alone', function () 
 });
 
 test('a dispatched marketplace delivery note can be picked up for a return', function () {
-    [$deliveryNote] = handlingDeliveryNoteWithPicking($this);
+    [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($this);
+    $item->update(['state' => DeliveryNoteItemStateEnum::DISPATCHED, 'quantity_dispatched' => $item->quantity_picked]);
 
     $deliveryNote->update(['state' => DeliveryNoteStateEnum::DISPATCHED, 'is_returned' => false]);
     $this->shop->update(['type' => \App\Enums\Catalogue\Shop\ShopTypeEnum::EXTERNAL, 'is_aiku' => true]);
@@ -4021,7 +4022,8 @@ test('a dispatched marketplace delivery note can be picked up for a return', fun
 });
 
 test('a return delivery note lookup finds the note from what the box carries', function () {
-    [$deliveryNote] = handlingDeliveryNoteWithPicking($this);
+    [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($this);
+    $item->update(['state' => DeliveryNoteItemStateEnum::DISPATCHED, 'quantity_dispatched' => $item->quantity_picked]);
 
     $order = $deliveryNote->orders()->first();
     $order->update([
@@ -4067,7 +4069,8 @@ test('a return delivery note lookup finds the note from what the box carries', f
 });
 
 test('the return delivery note dropdown label shows what the operator can check against the box', function () {
-    [$deliveryNote] = handlingDeliveryNoteWithPicking($this);
+    [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($this);
+    $item->update(['state' => DeliveryNoteItemStateEnum::DISPATCHED, 'quantity_dispatched' => $item->quantity_picked]);
 
     $deliveryNote->update([
         'state'           => DeliveryNoteStateEnum::DISPATCHED,
@@ -4085,6 +4088,7 @@ test('the return delivery note dropdown label shows what the operator can check 
     $response->assertOk();
 
     $row   = collect($response->json("data"))->firstWhere('id', $deliveryNote->id);
+    expect($row)->not->toBeNull();
     $label = $row['label'];
 
     expect($label)->toContain($deliveryNote->reference)
@@ -4099,7 +4103,8 @@ test('the return delivery note dropdown label shows what the operator can check 
 });
 
 test('the return delivery note lookup leads with the search index hits and still falls back to sql', function () {
-    [$deliveryNote] = handlingDeliveryNoteWithPicking($this);
+    [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($this);
+    $item->update(['state' => DeliveryNoteItemStateEnum::DISPATCHED, 'quantity_dispatched' => $item->quantity_picked]);
     $deliveryNote->update(['state' => DeliveryNoteStateEnum::DISPATCHED, 'is_returned' => false]);
     $this->shop->update(['is_aiku' => true]);
 
@@ -4126,7 +4131,8 @@ test('the return delivery note lookup leads with the search index hits and still
 });
 
 test('a box with no findable delivery note is logged to identify and later identified into a return', function () {
-    [$deliveryNote] = handlingDeliveryNoteWithPicking($this);
+    [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($this);
+    $item->update(['state' => DeliveryNoteItemStateEnum::DISPATCHED, 'quantity_dispatched' => $item->quantity_picked]);
     $deliveryNote->update(['state' => DeliveryNoteStateEnum::DISPATCHED, 'is_returned' => false]);
     $this->shop->update(['is_aiku' => true]);
 
@@ -4156,7 +4162,7 @@ test('a box with no findable delivery note is logged to identify and later ident
 
     patch(route('grp.models.delivery_note.return.process', [$deliveryNote->id]), [
         'unidentified_return_id' => $unidentifiedReturn->id,
-    ])->assertRedirect();
+    ])->assertSessionHasNoErrors()->assertRedirect();
 
     $unidentifiedReturn->refresh();
     expect($unidentifiedReturn->identified_at)->not->toBeNull()

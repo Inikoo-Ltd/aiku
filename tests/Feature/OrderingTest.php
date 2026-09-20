@@ -4193,6 +4193,7 @@ test('discontinued products are removed from baskets only when run live, submitt
     $keptLine         = $addLine($basket, $this->product);
 
     $submitted = StoreOrder::make()->action($this->customer, Order::factory()->definition());
+    $submitted->update(['shipping_engine' => \App\Enums\Ordering\Order\OrderShippingEngineEnum::MANUAL]);
     $submittedLine = $addLine($submitted, $discontinued);
     $submitted->update(['state' => OrderStateEnum::SUBMITTED]);
 

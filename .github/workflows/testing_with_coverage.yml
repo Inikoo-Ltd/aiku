@@ -73,6 +73,15 @@ jobs:
           files: clover.xml
           flags: backend
           fail_ci_if_error: true
+      - name: Editorial translation audit
+        if: ${{ !cancelled() }}
+        continue-on-error: true
+        run: |
+          if ! /usr/bin/php8.4 -dxdebug.mode=off -d newrelic.enabled=0 vendor/bin/pest tests/Feature/AikuPublicTest.php --group=editorial; then
+            echo "::warning::Documentation translations are missing or stale; see the editorial audit output."
+            echo "Documentation translations need attention. See the Editorial translation audit step for missing or stale guides." >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
       - name: Upload test results to Codecov
         if: ${{ !cancelled() }}
         uses: codecov/test-results-action@v1

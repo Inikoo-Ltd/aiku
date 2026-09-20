@@ -2838,7 +2838,13 @@ describe('org supplier sub pages navigation', function () {
 });
 
 describe('partner shopping list', function () {
+    afterEach(function () {
+        DB::rollBack();
+    });
+
     beforeEach(function () {
+        DB::beginTransaction();
+
         $seller = $this->orgPartner->partner;
 
         $sellerShop = $seller->shops()->first();

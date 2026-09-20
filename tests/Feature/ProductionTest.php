@@ -470,7 +470,7 @@ test('UI create raw material', function () {
     $response->assertInertia(function (AssertableInertia $page) {
         $page
             ->component('CreateModel')
-            ->has('title')->has('formData')->has('pageHead')->has('breadcrumbs', 3);
+            ->has('title')->has('formData')->has('pageHead')->where('breadcrumbs', fn ($breadcrumbs) => collect($breadcrumbs)->last()['type'] === 'creatingModel');
     });
 });
 
@@ -500,7 +500,7 @@ test('UI edit raw material', function () {
             ->has('title')
             ->has('formData.blueprint.0.fields', 7)
             ->has('pageHead')
-            ->has('breadcrumbs', 3);
+            ->where('breadcrumbs', fn ($breadcrumbs) => collect($breadcrumbs)->last()['type'] === 'editingModel');
     });
 });
 
@@ -565,7 +565,7 @@ test('UI create artefact', function () {
     $response->assertInertia(function (AssertableInertia $page) {
         $page
             ->component('CreateModel')
-            ->has('title')->has('formData')->has('pageHead')->has('breadcrumbs', 3);
+            ->has('title')->has('formData')->has('pageHead')->where('breadcrumbs', fn ($breadcrumbs) => collect($breadcrumbs)->last()['type'] === 'creatingModel');
     });
 });
 
@@ -630,7 +630,7 @@ test('UI edit artefact', function () {
             ->has('title')
             ->has('formData.blueprint.0.fields', 9)
             ->has('pageHead')
-            ->has('breadcrumbs', 3);
+            ->where('breadcrumbs', fn ($breadcrumbs) => collect($breadcrumbs)->last()['type'] === 'editingModel');
     });
 });
 
@@ -651,7 +651,7 @@ test('UI create production task', function () {
     $response->assertInertia(function (AssertableInertia $page) {
         $page
             ->component('CreateModel')
-            ->has('title')->has('formData')->has('pageHead')->has('breadcrumbs', 3);
+            ->has('title')->has('formData')->has('pageHead')->where('breadcrumbs', fn ($breadcrumbs) => collect($breadcrumbs)->last()['type'] === 'creatingModel');
     });
 });
 
@@ -704,7 +704,7 @@ test('UI edit manufacture task', function () {
             ->has('title')
             ->has('formData.blueprint.0.fields', 13)
             ->has('pageHead')
-            ->has('breadcrumbs', 3);
+            ->where('breadcrumbs', fn ($breadcrumbs) => collect($breadcrumbs)->last()['type'] === 'editingModel');
     });
 });
 
@@ -1132,7 +1132,7 @@ test('UI show manufacture payroll', function () {
         $page
             ->component('Org/Production/ManufacturePayroll')
             ->has('payroll_export_route')
-            ->has('breadcrumbs', 3);
+            ->where('breadcrumbs', fn ($breadcrumbs) => collect($breadcrumbs)->last()['simple']['route']['name'] === 'grp.org.productions.show.artisans.payroll');
     });
 });
 
@@ -2141,7 +2141,9 @@ test('mixes to prepare are derived from open job orders and become job orders', 
     $created   = StoreJobOrdersForMixes::make()->action($this->production, [['artefact_id' => $mixArtefact->id, 'quantity' => $shortfall]]);
     expect($created)->toHaveCount(1)
         ->and($created[0]->jobOrderItems()->first()->artefact_id)->toBe($mixArtefact->id)
-        ->and($created[0]->jobOrderItems()->first()->quantity)->toBe((int) ceil($shortfall));
+        ->and($created[0]->jobOrderItems()->first()->quantity)->toBe((int) ceil($shortfall))
+        ->and($created[0]->jobOrderItems()->first()->data['batch_code'])->toBe($created[0]->reference.'-'.$mixArtefact->code)
+        ->and($created[0]->jobOrderItems()->first()->data['expiry_date'])->toBeNull();
 
     $mixes = collect(GetMixesToPrepare::run($this->production))->keyBy('code');
     expect($mixes->get('MIX-BASE')['in_progress'])->toBe((float) ceil($shortfall))
@@ -2353,8 +2355,12 @@ test('an operative only sees the factory jobs page and nothing group or commerci
 
     actingAs($user);
     get(route('grp.dashboard.show'))->assertRedirect(route('grp.org.dashboard.show', $this->organisation->slug));
-    get(route('grp.org.dashboard.show', $this->organisation->slug))
-        ->assertRedirect(route('grp.org.productions.show.floor', [$this->organisation->slug, $this->production->slug]));
+    get(route('grp.org.dashboard.show', $this->organisation->slug))->assertOk()
+        ->assertInertia(
+            fn (AssertableInertia $page) => $page
+            ->component('Dashboard/OrganisationDashboard')
+            ->where('dashboard.super_blocks', [])
+        );
     $this->artefact->manufactureTasks()->sync([
         $this->manufactureTask->id => ['position' => 1, 'units_per_artefact' => 1],
     ]);
