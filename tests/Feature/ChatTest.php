@@ -3858,7 +3858,7 @@ test('losing customer service releases the chats and suspends the agent', functi
         ->and(ChatAgent::withTrashed()->find($agent->id)->trashed())->toBeTrue();
 });
 
-test('administering a shop does not let you into its chats', function () {
+test('a shop administrator manages its chats without being an agent', function () {
     $session = ChatSession::create([
         'ulid'             => (string) \Illuminate\Support\Str::ulid(),
         'shop_id'          => $this->shop->id,
@@ -3874,14 +3874,13 @@ test('administering a shop does not let you into its chats', function () {
     $admin = User::factory()->create(['group_id' => $this->organisation->group_id, 'status' => true]);
     $admin->assignRole(RolesEnum::getRoleName(RolesEnum::SHOP_ADMIN->value, $this->shop));
 
-    // Administering a shop is not a reason to be able to write to its customers.
-    expect($admin->authTo(['crm.'.$this->shop->id]))->toBeTrue()
-        ->and($admin->authTo(['chat.'.$this->shop->id]))->toBeFalse()
-        ->and($admin->authTo(['chat-m.'.$this->shop->id]))->toBeFalse();
+    // A shop administrator manages its chats without ever being one of its agents.
+    expect($admin->authTo(['chat-m.'.$this->shop->id]))->toBeTrue()
+        ->and($admin->authTo(['chat.'.$this->shop->id]))->toBeFalse();
 
     $this->actingAs($admin);
-    expect(CloseChatSession::make()->getCurrentAgent($session))->toBeNull()
-        ->and(ChatAgent::where('user_id', $admin->id)->exists())->toBeFalse();
+    expect(CloseChatSession::make()->getCurrentAgent($session))->not->toBeNull()
+        ->and(ChatAgent::findAvailableAgent(shopId: $this->shop->id)?->user_id)->not->toBe($admin->id);
 
     $clerk = User::factory()->create(['group_id' => $this->organisation->group_id, 'status' => true]);
     $clerk->assignRole(RolesEnum::getRoleName(RolesEnum::CUSTOMER_SERVICE_CLERK->value, $this->shop));
