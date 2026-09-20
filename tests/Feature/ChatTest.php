@@ -66,6 +66,13 @@ use App\Enums\CRM\Livechat\ChatAgentPresenceStatusEnum;
 use App\Enums\CRM\Livechat\ChatAssignmentAssignedByEnum;
 use App\Enums\CRM\Livechat\ChatAssignmentStatusEnum;
 use App\Enums\CRM\Livechat\ChatSessionClosedByTypeEnum;
+use App\Enums\CRM\Livechat\ChatRetractionReasonEnum;
+use App\Actions\Chat\ChatSession\RedactChatMessage;
+use App\Models\Chat\ChatMessageTranslation;
+use App\Actions\Chat\ChatSession\RetractChatMessage;
+use App\Actions\Chat\ChatSession\RestoreChatSession;
+use App\Actions\Chat\ChatSession\TrashChatSession;
+use Illuminate\Support\Facades\Route;
 use App\Enums\CRM\Livechat\ChatEventTypeEnum;
 use App\Enums\CRM\Livechat\ChatMessageTypeEnum;
 use App\Enums\CRM\Livechat\ChatPriorityEnum;
@@ -1847,8 +1854,11 @@ test('GetChatCustomerTimeline returns empty events when session has no customer'
     expect($result)->toBe(['events' => []]);
 });
 
-test('GetChatAgents returns only available agents with shop assignments', function () {
-    $user  = User::factory()->create(['group_id' => $this->organisation->group_id]);
+test('GetChatAgents returns only available agents who may work the shop', function () {
+    $user = User::factory()->create(['group_id' => $this->organisation->group_id, 'status' => true]);
+    setPermissionsTeamId($this->user->group_id);
+    $user->assignRole(RolesEnum::getRoleName(RolesEnum::CUSTOMER_SERVICE_CLERK->value, $this->shop));
+
     $agent = ChatAgent::create([
         'user_id'              => $user->id,
         'max_concurrent_chats' => 5,
@@ -1859,11 +1869,6 @@ test('GetChatAgents returns only available agents with shop assignments', functi
         'presence_status'      => ChatAgentPresenceStatusEnum::ONLINE,
         'last_heartbeat_at'    => now(),
     ]);
-
-    AssignChatAgentToScope::make()->handle([
-        'organisation_id' => $this->organisation->id,
-        'shop_id'         => [$this->shop->id],
-    ], $agent);
 
     $result = GetChatAgents::make()->handle();
 
@@ -4088,4 +4093,253 @@ test('giving the login back brings the agent profile with it', function () {
 
     expect(ChatAgent::find($agent->id))->not->toBeNull()
         ->and(ChatAgent::withTrashed()->where('user_id', $user->id)->count())->toBe(1);
+});
+
+test('a conversation cannot be destroyed, and trashing one is written into its record', function () {
+    setPermissionsTeamId($this->user->group_id);
+
+    $session = ChatSession::create([
+        'ulid'             => (string) \Illuminate\Support\Str::ulid(),
+        'shop_id'          => $this->shop->id,
+        'language_id'      => 68,
+        'status'           => ChatSessionStatusEnum::WAITING->value,
+        'priority'         => ChatPriorityEnum::NORMAL->value,
+        'guest_identifier' => 'guest-'.\Illuminate\Support\Str::random(8),
+    ]);
+
+    // Nothing anywhere offers to destroy a conversation.
+    expect(collect(Route::getRoutes()->getRoutes())
+        ->filter(fn ($route) => str_contains((string) $route->getName(), 'sessions.force_delete'))
+        ->isEmpty())->toBeTrue();
+
+    $clerk = User::factory()->create(['group_id' => $this->organisation->group_id, 'status' => true]);
+    $clerk->assignRole(RolesEnum::getRoleName(RolesEnum::CUSTOMER_SERVICE_CLERK->value, $this->shop));
+    $this->actingAs($clerk);
+
+    $agent = ChatAgent::create(['user_id' => $clerk->id, 'language_id' => $clerk->language_id]);
+    TrashChatSession::make()->handle($session, $agent->id);
+
+    // Out of sight, still there, and the move is on the record with a name against it.
+    $trashed = ChatSession::withTrashed()->find($session->id);
+    expect($trashed->trashed())->toBeTrue()
+        ->and(ChatEvent::where('chat_session_id', $session->id)
+            ->where('event_type', ChatEventTypeEnum::TRASH->value)
+            ->value('payload')['user_id'] ?? null)->toBe($clerk->id);
+
+    RestoreChatSession::make()->handle($trashed, $agent->id);
+
+    expect(ChatSession::find($session->id))->not->toBeNull()
+        ->and(ChatEvent::where('chat_session_id', $session->id)
+            ->where('event_type', ChatEventTypeEnum::RESTORE->value)
+            ->exists())->toBeTrue();
+});
+
+test('an agent takes back their own message: the customer loses it, we keep it', function () {
+    setPermissionsTeamId($this->user->group_id);
+
+    $session = ChatSession::create([
+        'ulid'             => (string) \Illuminate\Support\Str::ulid(),
+        'shop_id'          => $this->shop->id,
+        'language_id'      => 68,
+        'status'           => ChatSessionStatusEnum::ACTIVE->value,
+        'priority'         => ChatPriorityEnum::NORMAL->value,
+        'guest_identifier' => 'guest-'.\Illuminate\Support\Str::random(8),
+    ]);
+
+    $clerk = User::factory()->create(['group_id' => $this->organisation->group_id, 'status' => true]);
+    $clerk->assignRole(RolesEnum::getRoleName(RolesEnum::CUSTOMER_SERVICE_CLERK->value, $this->shop));
+    $agent = ChatAgent::create(['user_id' => $clerk->id, 'language_id' => $clerk->language_id]);
+
+    ChatAssignment::create([
+        'chat_session_id' => $session->id,
+        'chat_agent_id'   => $agent->id,
+        'status'          => ChatAssignmentStatusEnum::ACTIVE->value,
+        'assigned_at'     => now(),
+    ]);
+
+    $message = ChatMessage::create([
+        'chat_session_id' => $session->id,
+        'message_type'    => ChatMessageTypeEnum::TEXT->value,
+        'sender_type'     => ChatSenderTypeEnum::AGENT->value,
+        'sender_id'       => $agent->id,
+        'message_text'    => 'sent to the wrong person',
+    ]);
+
+    $this->actingAs($clerk);
+    RetractChatMessage::make()->handle(
+        $session,
+        $message,
+        $agent,
+        ChatRetractionReasonEnum::WRONG_CONVERSATION,
+        'pasted from the other chat'
+    );
+
+    $public = GetChatMessages::make()->handle($session, [])->firstWhere('id', $message->id);
+    $staff  = GetChatMessages::make()->handle($session, [], true)->firstWhere('id', $message->id);
+
+    // The customer is told something was withdrawn and why, and never reads the words.
+    expect($public)->not->toBeNull()
+        ->and($public->message_text)->toBeNull()
+        ->and($staff->message_text)->toBe('sent to the wrong person')
+        ->and(ChatMessage::withTrashed()->find($message->id)->metadata['retraction_reason'])
+        ->toBe(ChatRetractionReasonEnum::WRONG_CONVERSATION->value);
+
+    // The note we keep for ourselves is never put on the wire, to either side.
+    $rendered = (new \App\Http\Resources\CRM\Livechat\ChatMessageResource($staff))->resolve();
+    expect($rendered['retraction_reason'])->toBe(ChatRetractionReasonEnum::WRONG_CONVERSATION->label())
+        ->and(json_encode($rendered))->not->toContain('pasted from the other chat');
+
+    // Somebody else's message is not theirs to take back.
+    $other = ChatMessage::create([
+        'chat_session_id' => $session->id,
+        'message_type'    => ChatMessageTypeEnum::TEXT->value,
+        'sender_type'     => ChatSenderTypeEnum::GUEST->value,
+        'message_text'    => 'the customer wrote this',
+    ]);
+
+    expect(fn () => RetractChatMessage::make()->handle($session, $other, $agent, ChatRetractionReasonEnum::MISTAKE))
+        ->toThrow(\Illuminate\Validation\ValidationException::class);
+});
+
+test('an agent strikes a card number out of a message everywhere it was stored', function () {
+    setPermissionsTeamId($this->user->group_id);
+
+    $session = ChatSession::create([
+        'ulid'             => (string) \Illuminate\Support\Str::ulid(),
+        'shop_id'          => $this->shop->id,
+        'language_id'      => 68,
+        'status'           => ChatSessionStatusEnum::ACTIVE->value,
+        'priority'         => ChatPriorityEnum::NORMAL->value,
+        'guest_identifier' => 'guest-'.\Illuminate\Support\Str::random(8),
+    ]);
+
+    $clerk = User::factory()->create(['group_id' => $this->organisation->group_id, 'status' => true]);
+    $clerk->assignRole(RolesEnum::getRoleName(RolesEnum::CUSTOMER_SERVICE_CLERK->value, $this->shop));
+    $agent = ChatAgent::create(['user_id' => $clerk->id, 'language_id' => $clerk->language_id]);
+
+    $message = ChatMessage::create([
+        'chat_session_id' => $session->id,
+        'message_type'    => ChatMessageTypeEnum::TEXT->value,
+        'sender_type'     => ChatSenderTypeEnum::GUEST->value,
+        'message_text'    => 'my card is 4111111111111111 please charge it',
+        'original_text'   => 'mi tarjeta es 4111111111111111 por favor',
+    ]);
+
+    ChatMessageTranslation::create([
+        'chat_message_id'   => $message->id,
+        'target_language_id' => 68,
+        'translated_text'   => 'my card is 4111111111111111 please',
+    ]);
+
+    $this->actingAs($clerk);
+    RedactChatMessage::make()->handle($session, $message->fresh(), $agent, '4111111111111111');
+
+    $redacted = $message->fresh();
+    $mask = str_repeat(RedactChatMessage::MASK, 16);
+
+    // Gone from the message, from what it was translated from, and from the translation.
+    expect($redacted->message_text)->toBe("my card is $mask please charge it")
+        ->and($redacted->original_text)->toBe("mi tarjeta es $mask por favor")
+        ->and($redacted->translations()->first()->translated_text)->toBe("my card is $mask please")
+        ->and($redacted->metadata['redacted_by_user_id'])->toBe($clerk->id);
+
+    // The record says it happened and never repeats what was taken out.
+    $event = ChatEvent::where('chat_session_id', $session->id)
+        ->where('event_type', ChatEventTypeEnum::REDACT->value)
+        ->first();
+
+    expect($event->payload['occurrences'])->toBe(3)
+        ->and(json_encode($event->payload))->not->toContain('4111111111111111');
+
+    // Redaction only removes: text that is not there cannot be used to rewrite the message.
+    expect(fn () => RedactChatMessage::make()->handle($session, $redacted, $agent, 'never written'))
+        ->toThrow(\Illuminate\Validation\ValidationException::class);
+});
+
+test('an agent removes a photograph of a card from a message and from the archive', function () {
+    setPermissionsTeamId($this->user->group_id);
+
+    $session = ChatSession::create([
+        'ulid'             => (string) \Illuminate\Support\Str::ulid(),
+        'shop_id'          => $this->shop->id,
+        'language_id'      => 68,
+        'status'           => ChatSessionStatusEnum::ACTIVE->value,
+        'priority'         => ChatPriorityEnum::NORMAL->value,
+        'guest_identifier' => 'guest-'.\Illuminate\Support\Str::random(8),
+    ]);
+
+    $clerk = User::factory()->create(['group_id' => $this->organisation->group_id, 'status' => true]);
+    $clerk->assignRole(RolesEnum::getRoleName(RolesEnum::CUSTOMER_SERVICE_CLERK->value, $this->shop));
+    $agent = ChatAgent::create(['user_id' => $clerk->id, 'language_id' => $clerk->language_id]);
+
+    $message = ChatMessage::create([
+        'chat_session_id' => $session->id,
+        'message_type'    => ChatMessageTypeEnum::TEXT->value,
+        'sender_type'     => ChatSenderTypeEnum::GUEST->value,
+        'message_text'    => 'here is a picture of my card',
+    ]);
+
+    // Nothing attached: there is nothing to remove, and we say so rather than pretending.
+    $this->actingAs($clerk);
+    expect(fn () => RedactChatMessage::make()->handleAttachment($session, $message, $agent))
+        ->toThrow(\Illuminate\Validation\ValidationException::class);
+
+    $cardPath = tempnam(sys_get_temp_dir(), 'chat').'.txt';
+    file_put_contents($cardPath, 'a photograph of a card');
+    $media = \App\Actions\Helpers\Media\StoreMediaFromFile::run($message, [
+        'path'         => $cardPath,
+        'originalName' => 'card.txt',
+        'extension'    => 'txt',
+        'checksum'     => md5_file($cardPath),
+    ], 'chat_attachments', 'file');
+    $message->update(['media_id' => $media->id]);
+
+    $mediaId  = $media->id;
+    $diskPath = $media->getPath();
+
+    expect(is_file($diskPath))->toBeTrue();
+
+    RedactChatMessage::make()->handleAttachment($session, $message->fresh(), $agent);
+
+    // Off the disk, out of the table, and the message says a file was taken out of it.
+    $redacted = $message->fresh();
+    expect(\App\Models\Helpers\Media::find($mediaId))->toBeNull()
+        ->and(is_file($diskPath))->toBeFalse()
+        ->and($redacted->media_id)->toBeNull()
+        ->and($redacted->metadata['attachment_redacted_at'])->not->toBeNull()
+        ->and(ChatEvent::where('chat_session_id', $session->id)
+            ->where('event_type', ChatEventTypeEnum::REDACT->value)
+            ->value('payload')['files'] ?? null)->toBe(1);
+});
+
+test('the agents a chat can be handed to come from permissions, not the old shop table', function () {
+    setPermissionsTeamId($this->user->group_id);
+
+    $worker = User::factory()->create(['group_id' => $this->organisation->group_id, 'status' => true]);
+    $worker->assignRole(RolesEnum::getRoleName(RolesEnum::CUSTOMER_SERVICE_CLERK->value, $this->shop));
+
+    $manager = User::factory()->create(['group_id' => $this->organisation->group_id, 'status' => true]);
+    $manager->assignRole(RolesEnum::getRoleName(RolesEnum::CUSTOMER_SERVICE_SUPERVISOR->value, $this->shop));
+
+    $online = fn (User $user) => ChatAgent::create([
+        'user_id'              => $user->id,
+        'max_concurrent_chats' => 5,
+        'language_id'          => 68,
+        'is_online'            => true,
+        'is_available'         => true,
+        'current_chat_count'   => 0,
+        'presence_status'      => ChatAgentPresenceStatusEnum::ONLINE,
+        'last_heartbeat_at'    => now(),
+    ]);
+
+    $workerAgent  = $online($worker);
+    $managerAgent = $online($manager);
+
+    // No shop_has_chat_agents rows exist for either: the old table is being retired.
+    $listed = collect(\App\Actions\Chat\ChatSession\GetChatAgents::run())->keyBy('agent_id');
+
+    expect($listed->has($workerAgent->id))->toBeTrue()
+        ->and($listed[$workerAgent->id]['shop_names'])->toContain($this->shop->name)
+        // A supervisor oversees chats, so handing one to them is not offered.
+        ->and($listed->has($managerAgent->id))->toBeFalse();
 });
