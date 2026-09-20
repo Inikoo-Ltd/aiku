@@ -10,7 +10,6 @@ import PageHeading from "@/Components/Headings/PageHeading.vue"
 import { PageHeadingTypes } from "@/types/PageHeading"
 import { Intervals, Settings } from "@/types/Components/Dashboard"
 import ChatDashboard from "@/Components/Chat/ChatDashboard.vue"
-import ChatVisitorsBubble from "@/Components/Chat/ChatVisitorsBubble.vue"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faCommentAlt, faPencil } from "@fortawesome/free-solid-svg-icons"
 library.add(faCommentAlt, faPencil)
@@ -62,7 +61,6 @@ const props = defineProps<{
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead" />
     <div class="p-4 space-y-4">
-        <ChatVisitorsBubble :route="dashboardVisitorsRoute" />
         <ChatDashboard :stats="stats" :chat-enabled-shops="chatEnabledShops" :table="table" />
     </div>
 </template>
