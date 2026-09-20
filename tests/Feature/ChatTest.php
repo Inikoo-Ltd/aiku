@@ -3994,3 +3994,22 @@ test('a fulfilment shop staffs chat from its own positions', function () {
     $this->actingAs($warehouse);
     expect(CloseChatSession::make()->getCurrentAgent($session))->toBeNull();
 });
+
+test('an external shop has no chat permissions at all', function () {
+    $external = \App\Models\Catalogue\Shop::factory()->make()->toArray();
+    $external['type'] = \App\Enums\Catalogue\Shop\ShopTypeEnum::EXTERNAL->value;
+    $externalShop     = \App\Actions\Catalogue\Shop\StoreShop::run($this->organisation, $external);
+
+    $values = \App\Enums\SysAdmin\Authorisation\ShopPermissionsEnum::getAllValues($externalShop);
+
+    expect(collect($values)->filter(fn ($name) => str_starts_with($name, 'chat')))->toBeEmpty()
+        ->and(collect(\App\Enums\SysAdmin\Authorisation\ShopPermissionsEnum::getAllValues($this->shop))
+            ->filter(fn ($name) => str_starts_with($name, 'chat')))->not->toBeEmpty();
+
+    // Holding the customer service position on it therefore grants nothing.
+    setPermissionsTeamId($this->user->group_id);
+    $worker = User::factory()->create(['group_id' => $this->organisation->group_id, 'status' => true]);
+    $worker->assignRole(RolesEnum::getRoleName(RolesEnum::CUSTOMER_SERVICE_CLERK->value, $externalShop));
+
+    expect($worker->authTo(['chat.'.$externalShop->id]))->toBeFalse();
+});

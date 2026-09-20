@@ -8,6 +8,7 @@
 
 namespace App\Enums\SysAdmin\Authorisation;
 
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Models\Catalogue\Shop;
 
 enum ShopPermissionsEnum: string
@@ -70,12 +71,40 @@ enum ShopPermissionsEnum: string
     {
         $rawPermissionsNames = array_column(ShopPermissionsEnum::cases(), 'value');
 
+        if (!self::shopHasChat($shop)) {
+            $rawPermissionsNames = array_values(array_diff($rawPermissionsNames, self::chatValues()));
+        }
+
         $permissionsNames = [];
         foreach ($rawPermissionsNames as $rawPermissionsName) {
             $permissionsNames[] = self::getPermissionName($rawPermissionsName, $shop);
         }
 
         return $permissionsNames;
+    }
+
+    /**
+     * Whether a shop has conversations of ours to work at all.
+     *
+     * An external shop's customers write on the marketplace rather than to us, so today
+     * none of them do. When one grows a chat of its own — a Shopify shop, say — this is
+     * the single place that decides it, per shop or per platform.
+     */
+    public static function shopHasChat(Shop $shop): bool
+    {
+        return $shop->type !== ShopTypeEnum::EXTERNAL;
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    public static function chatValues(): array
+    {
+        return [
+            self::CHAT->value,
+            self::CHAT_VIEW->value,
+            self::CHAT_MANAGER->value,
+        ];
     }
 
     public static function getPermissionName(string $rawName, Shop $shop): string
