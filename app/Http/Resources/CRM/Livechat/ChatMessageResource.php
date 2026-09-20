@@ -4,12 +4,24 @@ namespace App\Http\Resources\CRM\Livechat;
 
 use App\Actions\Helpers\Images\GetPictureSources;
 use App\Http\Resources\HasSelfCall;
+use App\Enums\CRM\Livechat\ChatRetractionReasonEnum;
 use App\Enums\CRM\Livechat\ChatSenderTypeEnum;
+use Illuminate\Support\Arr;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 class ChatMessageResource extends JsonResource
 {
     use HasSelfCall;
+
+    /**
+     * Metadata this resource never puts on the wire. The customer's widget reads the same
+     * resource as the inbox does, and it is also what goes out over the public session
+     * channel, so what was said before an edit and why a message was taken back are kept
+     * out of it whoever is asking.
+     *
+     * @var array<int, string>
+     */
+    public const PRIVATE_METADATA = ['edit_history', 'retraction_note'];
 
     public function toArray($request): array
     {
@@ -47,6 +59,13 @@ class ChatMessageResource extends JsonResource
             'is_system' => $chatMessage->sender_type->value === ChatSenderTypeEnum::SYSTEM->value,
             'is_ai' => $chatMessage->sender_type->value === ChatSenderTypeEnum::AI->value,
             'is_read' => $chatMessage->is_read,
+            'is_redacted' => isset($chatMessage->metadata['redacted_at']),
+            'is_attachment_redacted' => isset($chatMessage->metadata['attachment_redacted_at']),
+            'is_retracted' => $chatMessage->trashed(),
+            'retracted_at' => $chatMessage->deleted_at?->toISOString(),
+            'retraction_reason' => ChatRetractionReasonEnum::tryFrom(
+                (string) ($chatMessage->metadata['retraction_reason'] ?? '')
+            )?->label(),
             'is_ai_generated' => $chatMessage->is_ai_generated,
             'is_validated' => $chatMessage->is_validated,
             'is_verifiable_image' => $chatMessage->isVerifiableCustomerImage(),
@@ -100,7 +119,7 @@ class ChatMessageResource extends JsonResource
                         })->values(),
                     ];
                 })->values(),
-            'metadata' => $chatMessage->metadata,
+            'metadata' => Arr::except($chatMessage->metadata ?? [], self::PRIVATE_METADATA),
             'is_offline_message' => $chatMessage->metadata['is_offline_message'] ?? false,
             'edited_at' => $chatMessage->edited_at,
             'created_at' => $this->created_at,

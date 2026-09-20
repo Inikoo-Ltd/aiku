@@ -4197,7 +4197,7 @@ test('an agent takes back their own message: the customer loses it, we keep it',
         'message_text'    => 'the customer wrote this',
     ]);
 
-    expect(fn () => RetractChatMessage::make()->handle($session, $other, $agent, ChatRetractionReasonEnum::MISTAKE))
+    expect(fn () => RetractChatMessage::make()->handle($session, $other, $agent, ChatRetractionReasonEnum::EXPLAINING))
         ->toThrow(\Illuminate\Validation\ValidationException::class);
 });
 

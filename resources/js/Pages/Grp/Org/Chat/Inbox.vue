@@ -58,7 +58,6 @@ const spamView = ref(false)
 const trashView = ref(false)
 const highlightView = ref(false)
 const openMenuUlid = ref<string | null>(null)
-const confirmDeleteUlid = ref<string | null>(null)
 const menuPos = ref({ top: 0, left: 0 })
 const isSpamming = ref<Record<string, boolean>>({})
 
@@ -239,12 +238,10 @@ const menuContact = computed(() => contacts.value.find((c) => c.ulid === openMen
 
 const closeRowMenu = () => {
     openMenuUlid.value = null
-    confirmDeleteUlid.value = null
 }
 
 const toggleRowMenu = (ulid: string, ev?: MouseEvent) => {
     if (isReadOnly.value) return
-    confirmDeleteUlid.value = null
     if (openMenuUlid.value === ulid) {
         openMenuUlid.value = null
         return
@@ -573,14 +570,6 @@ const restoreChat = async (c: Contact) => {
     if (await patchSession(c, sessionRoute("restore", c), "patch")) {
         removeFromList(c.ulid)
         fetchInboxNotifications()
-    }
-}
-
-const forceDeleteChat = async (c: Contact) => {
-    confirmDeleteUlid.value = null
-    openMenuUlid.value = null
-    if (await patchSession(c, sessionRoute("force_delete", c), "delete")) {
-        removeFromList(c.ulid)
     }
 }
 
@@ -1453,16 +1442,6 @@ onUnmounted(() => {
                             class="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-gray-700 hover:bg-gray-100"
                             @click="restoreChat(menuContact)">
                             <FontAwesomeIcon :icon="faTrashArrowUp" class="text-[10px]" /> {{ ctrans("Restore") }}
-                        </button>
-                        <button v-if="confirmDeleteUlid !== menuContact.ulid" type="button"
-                            class="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-red-600 hover:bg-red-50"
-                            @click.stop="confirmDeleteUlid = menuContact.ulid">
-                            <FontAwesomeIcon :icon="faTrash" class="text-[10px]" /> {{ ctrans("Delete permanently") }}
-                        </button>
-                        <button v-else type="button"
-                            class="w-full flex items-center gap-2 px-3 py-1.5 text-xs font-semibold text-white bg-red-600 hover:bg-red-700"
-                            @click="forceDeleteChat(menuContact)">
-                            <FontAwesomeIcon :icon="faTrash" class="text-[10px]" /> {{ ctrans("Click again to confirm") }}
                         </button>
                     </template>
 

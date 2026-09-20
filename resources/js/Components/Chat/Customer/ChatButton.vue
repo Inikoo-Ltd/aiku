@@ -394,6 +394,20 @@ const initWebSocket = () => {
 
     const notifiedMessageIds = new Set<number>()
 
+    // An agent took a message back: the words go at once, the fact that something was
+    // withdrawn stays, so nothing disappears from under the customer unexplained.
+    chatChannel.listen(".message.retracted", (e: any) => {
+        const msg: any = messagesLocal.value.find((m) => String(m.id) === String(e?.id))
+        if (msg) {
+            msg.message_text = null
+            msg.original = null
+            msg.translations = []
+            msg.is_retracted = true
+            msg.retracted_at = e?.retracted_at ?? new Date().toISOString()
+            msg.retraction_reason = e?.retraction_reason ?? null
+        }
+    })
+
     chatChannel.listen(".message", (e: any) => {
         const msg = e.message
         if (!msg) return

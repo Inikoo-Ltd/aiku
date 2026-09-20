@@ -1050,6 +1050,13 @@ const initSocket = () => {
     }
 
     chatChannel.listen(".message", onMessage)
+    chatChannel.listen(".message.retracted", (e: any) => {
+        const msg: any = messagesLocal.value.find((m) => String(m.id) === String(e?.id))
+        if (msg) {
+            msg.is_retracted = true
+            msg.retracted_at = e?.retracted_at ?? new Date().toISOString()
+        }
+    })
     chatChannel.listen(".typing", onTyping)
     chatChannel.listen(".status", onStatus)
     chatChannel.listen(".messages.read", onMessagesRead)

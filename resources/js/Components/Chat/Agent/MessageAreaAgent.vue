@@ -241,6 +241,99 @@ const handleEditMessage = async ({ id, text }: { id: number; text: string }) => 
     }
 }
 
+const handleRetractMessage = async ({ id, reason }: { id: number; reason: string }) => {
+    if (!props.session?.ulid) return
+    try {
+        const organisation = (route().params as Record<string, any>)?.organisation ?? "aw"
+        const { data } = await axios.delete(
+            route("grp.org.chat.agents.messages.retract", [organisation, props.session.ulid, id]),
+            { data: { reason }, withCredentials: true }
+        )
+
+        const msg: any = messagesLocal.value.find((m) => String(m.id) === String(id))
+        if (msg) {
+            msg.is_retracted = true
+            msg.retracted_at = data?.data?.retracted_at ?? new Date().toISOString()
+            msg.retraction_reason = data?.data?.retraction_reason ?? null
+        }
+    } catch (e: any) {
+        notify({
+            title: ctrans("Error"),
+            text: e?.response?.data?.message ?? ctrans("Failed to take back message"),
+            type: "error",
+        })
+    }
+}
+
+const handleRedactMessage = async ({ id, fragment }: { id: number; fragment: string }) => {
+    if (!props.session?.ulid) return
+
+    if (!fragment) {
+        notify({
+            title: ctrans("Nothing selected"),
+            text: ctrans("Select the text to strike out inside the message, then click Redact"),
+            type: "warning",
+        })
+        return
+    }
+
+    if (!window.confirm(ctrans("Strike this text out of the conversation for good? It cannot be brought back."))) {
+        return
+    }
+
+    try {
+        const organisation = (route().params as Record<string, any>)?.organisation ?? "aw"
+        const { data } = await axios.patch(
+            route("grp.org.chat.agents.messages.redact", [organisation, props.session.ulid, id]),
+            { fragment },
+            { withCredentials: true }
+        )
+
+        const updated = data?.data
+        const msg: any = messagesLocal.value.find((m) => String(m.id) === String(id))
+        if (msg && updated) {
+            msg.message_text = updated.message_text
+            msg.original = updated.original
+            msg.translations = updated.translations
+            msg.is_redacted = true
+        }
+    } catch (e: any) {
+        notify({
+            title: ctrans("Error"),
+            text: e?.response?.data?.message ?? ctrans("Failed to redact message"),
+            type: "error",
+        })
+    }
+}
+
+const handleRedactAttachment = async ({ id }: { id: number }) => {
+    if (!props.session?.ulid) return
+
+    if (!window.confirm(ctrans("Remove this file from the conversation for good? It cannot be brought back."))) {
+        return
+    }
+
+    try {
+        const organisation = (route().params as Record<string, any>)?.organisation ?? "aw"
+        const { data } = await axios.delete(
+            route("grp.org.chat.agents.messages.redact_attachment", [organisation, props.session.ulid, id]),
+            { withCredentials: true }
+        )
+
+        const updated = data?.data
+        const msg: any = messagesLocal.value.find((m) => String(m.id) === String(id))
+        if (msg && updated) {
+            Object.assign(msg, updated)
+        }
+    } catch (e: any) {
+        notify({
+            title: ctrans("Error"),
+            text: e?.response?.data?.message ?? ctrans("Failed to remove file"),
+            type: "error",
+        })
+    }
+}
+
 const messageInput = ref<HTMLTextAreaElement>()
 const messagesContainer = ref<HTMLDivElement>()
 
@@ -607,6 +700,7 @@ let onReaction: ((payload: any) => void) | null = null
 let onMessagesRead: ((payload: any) => void) | null = null
 let onTyping: ((payload: any) => void) | null = null
 let onTranslation: ((payload: any) => void) | null = null
+let onRetracted: ((payload: any) => void) | null = null
 
 const stopSocket = () => {
     if (onMessage) chatChannel?.stopListening(".message", onMessage)
@@ -614,11 +708,13 @@ const stopSocket = () => {
     if (onMessagesRead) chatChannel?.stopListening(".messages.read", onMessagesRead)
     if (onTyping) chatChannel?.stopListening(".typing", onTyping)
     if (onTranslation) chatChannel?.stopListening(".translation", onTranslation)
+    if (onRetracted) chatChannel?.stopListening(".message.retracted", onRetracted)
     onMessage = null
     onReaction = null
     onMessagesRead = null
     onTyping = null
     onTranslation = null
+    onRetracted = null
     chatChannel = null
 }
 
@@ -725,7 +821,18 @@ const initSocket = () => {
     chatChannel.listen(".reaction", onReaction)
     chatChannel.listen(".messages.read", onMessagesRead)
     chatChannel.listen(".typing", onTyping)
+    // The broadcast carries no text: this side already holds it and keeps showing it.
+    onRetracted = (payload: any) => {
+        const msg: any = messagesLocal.value.find((m) => String(m.id) === String(payload?.id))
+        if (msg) {
+            msg.is_retracted = true
+            msg.retracted_at = payload?.retracted_at ?? new Date().toISOString()
+            msg.retraction_reason = payload?.retraction_reason ?? null
+        }
+    }
+
     chatChannel.listen(".translation", onTranslation)
+    chatChannel.listen(".message.retracted", onRetracted)
 }
 
 const markAsRead = async () => {
@@ -998,6 +1105,9 @@ const handleClickOutside = (e: MouseEvent) => {
                             :sessionUlid="session?.ulid"
                             :viewerReactorId="layout?.user?.id"
                             @edit-message="handleEditMessage"
+                            @retract-message="handleRetractMessage"
+                            @redact-message="handleRedactMessage"
+                            @redact-attachment="handleRedactAttachment"
                             @jump-to-message="jumpToMessage"
                             @open-slack-settings="onOpenSlackSettings" />
                     </div>

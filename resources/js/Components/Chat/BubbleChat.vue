@@ -72,6 +72,12 @@ interface Message {
     original?: Translation
     translations?: Translation[]
     edited_at?: string | null
+    is_redacted?: boolean
+    is_attachment_redacted?: boolean
+    is_retracted?: boolean
+    retracted_at?: string | null
+    retraction_reason?: string | null
+    retracted_count?: number
     is_ai_generated?: boolean | null
     is_validated?: boolean | null
     is_verifiable_image?: boolean
@@ -124,6 +130,9 @@ const props = defineProps<{
 
 const emit = defineEmits<{
     (e: "edit-message", payload: { id: number; text: string }): void
+    (e: "retract-message", payload: { id: number; reason: string }): void
+    (e: "redact-message", payload: { id: number; fragment: string }): void
+    (e: "redact-attachment", payload: { id: number }): void
     (e: "open-slack-settings"): void
     (e: "reply", message: Message): void
     (e: "jump-to-message", id: number): void
@@ -140,6 +149,55 @@ const isEditableMessage = computed(() =>
     props.message._status !== "sending" &&
     Date.now() - new Date(props.message.created_at).getTime() < EDIT_WINDOW_MS
 )
+
+// A message taken back is gone for the customer but stays here, so whoever reads the
+// conversation next sees both that it was said and that it was withdrawn.
+const isRetracted = computed(() => props.message.is_retracted === true)
+
+const isRetractableMessage = computed(() => isEditableMessage.value && !isRetracted.value)
+
+const retractedTime = computed(() =>
+    props.message.retracted_at
+        ? new Date(props.message.retracted_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+        : null
+)
+
+// Anybody working the conversation can strike out a card number or a password, whoever
+// wrote it and however long ago: leaving it sitting there is the bigger risk.
+const isRedactableMessage = computed(() =>
+    props.canEdit === true &&
+    props.viewerType === "agent" &&
+    (props.message.message_type ?? "text") === "text" &&
+    !!props.message.id &&
+    !isRetracted.value &&
+    props.message._status !== "sending"
+)
+
+const redactSelection = () => {
+    const fragment = (window.getSelection()?.toString() ?? "").trim()
+
+    if (!fragment) {
+        emit("redact-message", { id: props.message.id!, fragment: "" })
+        return
+    }
+
+    emit("redact-message", { id: props.message.id!, fragment })
+    window.getSelection()?.removeAllRanges()
+}
+
+// A fixed list so the line the customer reads is translated and worded the same whoever
+// sends it. The values match ChatRetractionReasonEnum.
+const RETRACTION_REASONS = [
+    { value: "wrong_conversation", label: trans("Meant for another conversation") },
+    { value: "explaining", label: trans("I will explain myself") },
+]
+
+const choosingRetractionReason = ref(false)
+
+const retractWithReason = (reason: string) => {
+    choosingRetractionReason.value = false
+    emit("retract-message", { id: props.message.id!, reason })
+}
 
 const isEditingMessage = ref(false)
 const editText = ref("")
@@ -201,8 +259,9 @@ const canShowTranslation = computed(() => {
 })
 
 const bubbleClass = computed(() => ({
-    "bubble-primary": isFromViewer.value,
-    "bubble-secondary": !isFromViewer.value,
+    "bubble-primary": isFromViewer.value && !isRetracted.value,
+    "bubble-secondary": !isFromViewer.value && !isRetracted.value,
+    "bg-gray-100 text-gray-400 border border-dashed border-gray-300 italic": isRetracted.value,
 }))
 
 const time = computed(() =>
@@ -321,6 +380,15 @@ const attachmentList = computed<ChatAttachment[]>(() => {
         download_route: props.message.download_route ?? { url: "" },
     }]
 })
+
+const isAttachmentRedactable = computed(() =>
+    props.canEdit === true &&
+    props.viewerType === "agent" &&
+    !!props.message.id &&
+    !isRetracted.value &&
+    props.message.is_attachment_redacted !== true &&
+    attachmentList.value.length > 0
+)
 
 const attachmentMime = (attachment: ChatAttachment) => attachment.file_mime ?? attachment.media_url?.mime ?? ""
 
@@ -990,13 +1058,24 @@ watch(selectedLanguage, async (val) => {
                 </button>
             </div>
 
+            <!-- The customer is told that something was withdrawn, and why, rather than
+                 watching a message disappear from under them. -->
+            <div v-if="isRetracted && viewerType !== 'agent'"
+                class="inline-flex w-fit items-center gap-1.5 text-[11px] italic opacity-70">
+                <FontAwesomeIcon :icon="faCircleExclamation" class="text-[10px]" />
+                <span v-if="(message.retracted_count ?? 1) > 1">
+                    {{ trans(":count messages were removed", { count: message.retracted_count }) }}
+                </span>
+                <span v-else>{{ message.retraction_reason || trans("This message was removed") }}</span>
+            </div>
+
             <div v-if="isUnsupportedMessage"
                 class="inline-flex w-fit items-center gap-1.5 text-[11px] italic opacity-60">
                 <FontAwesomeIcon :icon="faCircleExclamation" class="text-[10px]" />
                 <span>{{ displayText || trans("Unsupported message") }}</span>
             </div>
 
-            <p v-else-if="!isEditingMessage && !location && !sharedContacts.length && formatMarkup" class="whitespace-pre-wrap break-words"
+            <p v-else-if="!isEditingMessage && !location && !sharedContacts.length && formatMarkup && !(isRetracted && viewerType !== 'agent')" class="whitespace-pre-wrap break-words"
                 v-html="formattedText" />
 
             <p v-else-if="!isEditingMessage && !location && !sharedContacts.length" class="whitespace-pre-wrap break-words">
@@ -1073,14 +1152,49 @@ watch(selectedLanguage, async (val) => {
                 </select>
             </div>
 
+            <div v-if="choosingRetractionReason" class="mb-1 flex flex-col items-stretch gap-0.5 text-[10px]">
+                <span class="opacity-70">{{ trans("What the customer is told:") }}</span>
+                <button v-for="reason in RETRACTION_REASONS" :key="reason.value" type="button"
+                    class="text-left underline leading-tight" @click="retractWithReason(reason.value)">
+                    {{ reason.label }}
+                </button>
+                <button type="button" class="text-left opacity-70 leading-tight"
+                    @click="choosingRetractionReason = false">
+                    {{ trans("Cancel") }}
+                </button>
+            </div>
+
             <div class="flex items-center justify-end gap-1 text-[10px] opacity-70 min-h-[14px]">
-                <button v-if="isEditableMessage && !isEditingMessage" type="button"
+                <button v-if="isEditableMessage && !isRetracted && !isEditingMessage" type="button"
                     class="mr-auto underline leading-none" @click="startEditMessage">
                     {{ trans("Edit") }}
+                </button>
+                <button v-if="isAttachmentRedactable && !isEditingMessage" type="button"
+                    class="underline leading-none" @click="emit('redact-attachment', { id: message.id! })">
+                    {{ trans("Remove file") }}
+                </button>
+                <button v-if="isRedactableMessage && !isEditingMessage" type="button"
+                    class="underline leading-none" :title="trans('Select the text to strike out, then click')"
+                    @click="redactSelection">
+                    {{ trans("Redact") }}
+                </button>
+                <button v-if="isRetractableMessage && !isEditingMessage" type="button"
+                    class="underline leading-none text-red-600"
+                    @click="choosingRetractionReason = !choosingRetractionReason">
+                    {{ trans("Take back") }}
                 </button>
 
                 <span v-if="message.edited_at" class="italic leading-none">
                     {{ trans("edited") }}
+                </span>
+                <span v-if="message.is_attachment_redacted" class="italic leading-none">
+                    {{ trans("file removed") }}
+                </span>
+                <span v-if="message.is_redacted" class="italic leading-none">
+                    {{ trans("redacted") }}
+                </span>
+                <span v-if="isRetracted && viewerType === 'agent'" class="italic leading-none">
+                    {{ trans("sent") }} {{ time }} · {{ trans("taken back") }} {{ retractedTime }}
                 </span>
                 <span v-if="!isSending" class="leading-none">
                     {{ time }}

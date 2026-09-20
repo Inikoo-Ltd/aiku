@@ -37,6 +37,12 @@ enum ChatEventTypeEnum: string
 
     case NOT_SPAM = 'not_spam';
 
+    case TRASH = 'trash';
+
+    case RESTORE = 'restore';
+
+    case REDACT = 'redact';
+
     /**
      * Events shown as chips inside the conversation. Close and reopen are absent on
      * purpose: both channels already store a system message for them, which the thread
@@ -49,6 +55,9 @@ enum ChatEventTypeEnum: string
         return [
             self::SPAM->value,
             self::NOT_SPAM->value,
+            self::TRASH->value,
+            self::RESTORE->value,
+            self::REDACT->value,
             self::PRIORITY->value,
             self::TRANSFER->value,
             self::TRANSFER_ACCEPT->value,
@@ -65,6 +74,9 @@ enum ChatEventTypeEnum: string
             'open' => __('Chat Opened'),
             'spam' => __('Marked as Spam'),
             'not_spam' => __('Marked as Not Spam'),
+            'trash' => __('Moved to Trash'),
+            'restore' => __('Restored from Trash'),
+            'redact' => __('Message Redacted'),
             'ai_reply' => __('AI Reply'),
             'transfer_request' => __('Transfer Request'),
             'transfer_accept' => __('Transfer Accepted'),
