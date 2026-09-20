@@ -3803,3 +3803,57 @@ test('working hours follow the agent contract, then the shop, then a plain weekd
 
     expect($within('2026-09-21 09:00'))->toBeFalse();
 });
+
+test('losing customer service releases the chats and suspends the agent', function () {
+    $user = User::factory()->create(['group_id' => $this->organisation->group_id, 'status' => true]);
+    setPermissionsTeamId($this->user->group_id);
+    $user->assignRole(RolesEnum::getRoleName(RolesEnum::CUSTOMER_SERVICE_CLERK->value, $this->shop));
+
+    $agent = ChatAgent::create([
+        'user_id'              => $user->id,
+        'max_concurrent_chats' => 5,
+        'language_id'          => 68,
+        'is_online'            => true,
+        'is_available'         => true,
+        'current_chat_count'   => 1,
+    ]);
+
+    ShopHasChatAgent::create([
+        'organisation_id' => $this->shop->organisation_id,
+        'shop_id'         => $this->shop->id,
+        'chat_agent_id'   => $agent->id,
+    ]);
+
+    $session = ChatSession::create([
+        'ulid'             => (string) \Illuminate\Support\Str::ulid(),
+        'shop_id'          => $this->shop->id,
+        'language_id'      => 68,
+        'status'           => ChatSessionStatusEnum::ACTIVE->value,
+        'priority'         => ChatPriorityEnum::NORMAL->value,
+        'guest_identifier' => 'guest-'.\Illuminate\Support\Str::random(8),
+    ]);
+
+    $assignment = $session->assignments()->create([
+        'chat_agent_id' => $agent->id,
+        'status'        => ChatAssignmentStatusEnum::ACTIVE->value,
+        'assigned_at'   => now(),
+    ]);
+
+    // While the position stands, nothing is taken away.
+    expect(\App\Actions\Chat\Agent\RevokeChatAgentAccess::run($agent))
+        ->toMatchArray(['released' => 0, 'shops_removed' => 0, 'suspended' => false]);
+
+    $user->removeRole(RolesEnum::getRoleName(RolesEnum::CUSTOMER_SERVICE_CLERK->value, $this->shop));
+    \App\Actions\SysAdmin\CleanUserCaches::make()->clearPermissionsCache($user);
+
+    $result = \App\Actions\Chat\Agent\RevokeChatAgentAccess::run($agent->fresh());
+
+    expect($result['released'])->toBe(1)
+        ->and($result['shops_removed'])->toBe(1)
+        ->and($result['suspended'])->toBeTrue()
+        // The chat goes back to the shop queue instead of sitting in a name nobody can act on.
+        ->and($session->fresh()->status)->toBe(ChatSessionStatusEnum::WAITING)
+        ->and($assignment->fresh()->status)->toBe(ChatAssignmentStatusEnum::RESOLVED)
+        ->and(ChatAgent::find($agent->id))->toBeNull()
+        ->and(ChatAgent::withTrashed()->find($agent->id)->trashed())->toBeTrue();
+});
