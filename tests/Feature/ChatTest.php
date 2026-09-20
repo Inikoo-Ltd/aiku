@@ -4065,3 +4065,27 @@ test('regaining the position brings a suspended agent profile back', function ()
         // The same profile, not a second one.
         ->and(ChatAgent::withTrashed()->where('user_id', $user->id)->count())->toBe(1);
 });
+
+test('giving the login back brings the agent profile with it', function () {
+    setPermissionsTeamId($this->user->group_id);
+
+    $user = User::factory()->create(['group_id' => $this->organisation->group_id, 'status' => true]);
+    $user->assignRole(RolesEnum::getRoleName(RolesEnum::CUSTOMER_SERVICE_CLERK->value, $this->shop));
+
+    $agent = ChatAgent::create([
+        'user_id'              => $user->id,
+        'max_concurrent_chats' => 5,
+        'language_id'          => 68,
+        'is_online'            => false,
+        'is_available'         => true,
+        'current_chat_count'   => 0,
+    ]);
+
+    \App\Actions\SysAdmin\User\UpdateUser::make()->action($user, ['status' => false]);
+    expect(ChatAgent::find($agent->id))->toBeNull();
+
+    \App\Actions\SysAdmin\User\UpdateUser::make()->action($user->fresh(), ['status' => true]);
+
+    expect(ChatAgent::find($agent->id))->not->toBeNull()
+        ->and(ChatAgent::withTrashed()->where('user_id', $user->id)->count())->toBe(1);
+});
