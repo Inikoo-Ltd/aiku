@@ -3892,3 +3892,34 @@ test('a manager supervises chat without being an agent', function () {
     expect($clerk->authTo(['chat.'.$this->shop->id]))->toBeTrue()
         ->and(CloseChatSession::make()->getCurrentAgent($session))->not->toBeNull();
 });
+
+test('a customer service supervisor supervises chat without being an agent', function () {
+    $session = ChatSession::create([
+        'ulid'             => (string) \Illuminate\Support\Str::ulid(),
+        'shop_id'          => $this->shop->id,
+        'language_id'      => 68,
+        'status'           => ChatSessionStatusEnum::ACTIVE->value,
+        'priority'         => ChatPriorityEnum::NORMAL->value,
+        'guest_identifier' => 'guest-'.\Illuminate\Support\Str::random(8),
+    ]);
+
+    setPermissionsTeamId($this->user->group_id);
+
+    $supervisor = User::factory()->create(['group_id' => $this->organisation->group_id, 'status' => true]);
+    $supervisor->assignRole(RolesEnum::getRoleName(RolesEnum::CUSTOMER_SERVICE_SUPERVISOR->value, $this->shop));
+
+    expect($supervisor->authTo(['chat-m.'.$this->shop->id]))->toBeTrue()
+        ->and($supervisor->authTo(['chat.'.$this->shop->id]))->toBeFalse();
+
+    $this->actingAs($supervisor);
+
+    // May take over and write, but is never one of the shop's agents.
+    expect(CloseChatSession::make()->getCurrentAgent($session))->not->toBeNull();
+
+    // Adding the worker position is what makes somebody an agent, deliberately.
+    $supervisor->assignRole(RolesEnum::getRoleName(RolesEnum::CUSTOMER_SERVICE_CLERK->value, $this->shop));
+    \App\Actions\SysAdmin\CleanUserCaches::make()->clearPermissionsCache($supervisor);
+    app(\Spatie\Permission\PermissionRegistrar::class)->forgetCachedPermissions();
+
+    expect($supervisor->fresh()->authTo(['chat.'.$this->shop->id]))->toBeTrue();
+});
