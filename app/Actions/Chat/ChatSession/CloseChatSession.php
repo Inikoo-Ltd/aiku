@@ -8,6 +8,7 @@
 
 namespace App\Actions\Chat\ChatSession;
 
+use App\Actions\Chat\WithChatAgentAuthorisation;
 use App\Actions\Chat\Agent\Hydrators\ChatAgentHydrateChats;
 use App\Enums\CRM\Livechat\ChatActorTypeEnum;
 use App\Enums\CRM\Livechat\ChatAssignmentStatusEnum;
@@ -22,7 +23,6 @@ use Exception;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
@@ -31,6 +31,7 @@ use Lorisleiva\Actions\Concerns\AsAction;
 class CloseChatSession
 {
     use AsAction;
+    use WithChatAgentAuthorisation;
 
     /**
      * @throws \Throwable
@@ -114,7 +115,7 @@ class CloseChatSession
 
     public function asController(ActionRequest $request, ?string $organisation, ChatSession $chatSession): RedirectResponse
     {
-        $agent = $this->getCurrentAgent();
+        $agent = $this->getCurrentAgent($chatSession);
         if (!$agent) {
             throw ValidationException::withMessages([
                 'message' => 'User not found',
@@ -132,16 +133,9 @@ class CloseChatSession
         return back()->setStatusCode(303);
     }
 
-    public function getCurrentAgent(): ?ChatAgent
+    public function getCurrentAgent(ChatSession $chatSession): ?ChatAgent
     {
-        $user = Auth::user();
-
-        if ($user) {
-            if (!$user->chatAgent) {
-                return null;
-            }
-        }
-        return $user->chatAgent;
+        return $this->getAuthorisedChatAgent($chatSession);
     }
 
     protected function logCloseEvent(

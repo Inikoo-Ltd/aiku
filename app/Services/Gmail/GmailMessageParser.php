@@ -69,6 +69,42 @@ class GmailMessageParser
         return '';
     }
 
+    /**
+     * @return array<int, array{filename: string, mimeType: string, attachmentId: ?string, data: ?string}>
+     */
+    public static function attachments(array $part): array
+    {
+        $attachments = [];
+        $filename    = (string) Arr::get($part, 'filename', '');
+
+        if ($filename !== '' && ! self::isInline($part)) {
+            $attachments[] = [
+                'filename'     => $filename,
+                'mimeType'     => (string) Arr::get($part, 'mimeType', 'application/octet-stream'),
+                'attachmentId' => Arr::get($part, 'body.attachmentId'),
+                'data'         => Arr::get($part, 'body.data'),
+            ];
+        }
+
+        foreach (Arr::get($part, 'parts', []) as $child) {
+            array_push($attachments, ...self::attachments($child));
+        }
+
+        return $attachments;
+    }
+
+    public static function decodeData(string $base64url): string
+    {
+        return self::decode($base64url);
+    }
+
+    private static function isInline(array $part): bool
+    {
+        $disposition = self::header(['payload' => $part], 'Content-Disposition');
+
+        return $disposition !== null && str_starts_with(strtolower(trim($disposition)), 'inline');
+    }
+
     private static function findPart(array $part, string $mimeType): ?string
     {
         if (Arr::get($part, 'mimeType') === $mimeType) {

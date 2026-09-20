@@ -7,6 +7,7 @@
 
 namespace App\Actions\Chat\MetaChatSession;
 
+use App\Actions\Chat\WithChatAgentAuthorisation;
 use App\Enums\CRM\Livechat\ChatAssignmentAssignedByEnum;
 use App\Enums\CRM\Livechat\ChatAssignmentStatusEnum;
 use App\Enums\CRM\Livechat\ChatSessionStatusEnum;
@@ -16,16 +17,16 @@ use App\Models\Chat\MetaChatAssignment;
 use App\Models\Chat\MetaChatSession;
 use Exception;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\Auth;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class AssignMetaChatToAgent
 {
     use AsAction;
+    use WithChatAgentAuthorisation;
 
-    protected function getCurrentAgent(): ?ChatAgent
+    protected function getCurrentAgent(MetaChatSession $metaChatSession): ?ChatAgent
     {
-        return Auth::user()?->chatAgent;
+        return $this->getAuthorisedChatAgent($metaChatSession);
     }
 
     protected function getActiveAssignment(MetaChatSession $metaChatSession): ?MetaChatAssignment
@@ -71,7 +72,7 @@ class AssignMetaChatToAgent
     /** @noinspection PhpUnusedParameterInspection */
     public function assignToSelf(string $organisation, MetaChatSession $metaChatSession): JsonResponse
     {
-        $agent = $this->getCurrentAgent();
+        $agent = $this->getCurrentAgent($metaChatSession);
 
         if (!$agent) {
             return response()->json([
@@ -100,7 +101,7 @@ class AssignMetaChatToAgent
     /** @noinspection PhpUnusedParameterInspection */
     public function takeOver(string $organisation, MetaChatSession $metaChatSession): JsonResponse
     {
-        $agent = $this->getCurrentAgent();
+        $agent = $this->getCurrentAgent($metaChatSession);
 
         if (!$agent) {
             return response()->json([

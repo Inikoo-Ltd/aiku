@@ -38,6 +38,11 @@ class MetaMessageTemplatesResource extends JsonResource
         return [
             'id'             => $this->id,
             'template_id'    => $this->template_id,
+            'shop'           => $this->whenLoaded('shop', fn () => [
+                'name'              => $this->shop->name,
+                'slug'              => $this->shop->slug,
+                'organisation_slug' => $this->shop->organisation?->slug,
+            ]),
             'name'           => $this->name,
             'label'          => Arr::get($this->data ?? [], 'label'),
             'language'       => $this->language,

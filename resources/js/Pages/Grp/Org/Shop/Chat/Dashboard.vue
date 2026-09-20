@@ -4,7 +4,6 @@ import { capitalize } from "@/Composables/capitalize"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import { PageHeadingTypes } from "@/types/PageHeading"
 import TabsBoxDisplay from "@/Components/Dashboards/TabsBoxDisplay.vue"
-import ChatVisitorsBubble from "@/Components/Chat/ChatVisitorsBubble.vue"
 import { computed } from "vue"
 import { trans } from "laravel-vue-i18n"
 import { library } from "@fortawesome/fontawesome-svg-core"
@@ -116,7 +115,6 @@ const tabsBox = computed(() => [
     <PageHeading :data="pageHead" />
 
     <div class="p-4 space-y-4">
-        <ChatVisitorsBubble :route="dashboardVisitorsRoute" />
         <TabsBoxDisplay :tabs_box="tabsBox" />
     </div>
 </template>

@@ -8,6 +8,7 @@
 
 namespace App\Actions\Chat\ChatSession;
 
+use App\Actions\Chat\WithChatAgentAuthorisation;
 use App\Actions\Chat\MetaChatSession\StoreMetaChatEvent;
 use App\Actions\Helpers\Ticket\StoreTicket;
 use App\Enums\CRM\Livechat\ChatActorTypeEnum;
@@ -23,13 +24,13 @@ use App\Models\Helpers\Ticket;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class StoreTicketFromChatSession
 {
     use AsAction;
+    use WithChatAgentAuthorisation;
 
     public function handle(ChatSession|MetaChatSession $session, ChatAgent $agent, array $modelData): Ticket
     {
@@ -127,7 +128,7 @@ class StoreTicketFromChatSession
 
     private function respond(ChatSession|MetaChatSession $session, Request $request): JsonResponse
     {
-        $agent = Auth::user()?->chatAgent;
+        $agent = $this->getAuthorisedChatAgent($session);
 
         if (!$agent) {
             return response()->json(['success' => false, 'message' => 'Only authenticated agents can create tickets'], 403);

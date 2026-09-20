@@ -178,13 +178,31 @@ export interface ChatMessageReactionGroup {
 	reactors: { type: string; id: number | null }[]
 }
 
+export interface ChatMessageAttachment {
+	id: number
+	is_image: boolean
+	media_url: { original: string; webp?: string } | null
+	original_url: string
+	file_name: string
+	file_size: number
+	file_mime: string
+	download_route: { name: string; parameters: Record<string, any>; method: string; url: string }
+}
+
 export interface ChatMessage {
 	id: string
 	message?: string
 	ulid?: string
 	message_text: string
+	message_type?: "text" | "image" | "file"
 	sender_type: "guest" | "user" | "agent" | "system" | "system_campaign"
 	created_at: string
 	is_read?: boolean
 	reactions?: ChatMessageReactionGroup[]
+	media_url?: { original: string; webp?: string } | null
+	file_name?: string | null
+	file_size?: number | null
+	file_mime?: string | null
+	download_route?: { url: string } | null
+	attachments?: ChatMessageAttachment[]
 }
