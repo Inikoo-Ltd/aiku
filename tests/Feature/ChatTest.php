@@ -3958,3 +3958,39 @@ test('an organisation administrator manages chat on every shop, including one op
         expect(CloseChatSession::make()->getCurrentAgent($laterSession))->not->toBeNull();
     }
 });
+
+test('a fulfilment shop staffs chat from its own positions', function () {
+    $fulfilment     = createFulfilment($this->organisation);
+    $fulfilmentShop = $fulfilment->shop;
+    setPermissionsTeamId($this->user->group_id);
+
+    $session = ChatSession::create([
+        'ulid'             => (string) \Illuminate\Support\Str::ulid(),
+        'shop_id'          => $fulfilmentShop->id,
+        'language_id'      => 68,
+        'status'           => ChatSessionStatusEnum::ACTIVE->value,
+        'priority'         => ChatPriorityEnum::NORMAL->value,
+        'guest_identifier' => 'guest-'.\Illuminate\Support\Str::random(8),
+    ]);
+
+    // Office clerk answers the chats: an agent, routed like any other.
+    $clerk = User::factory()->create(['group_id' => $this->organisation->group_id, 'status' => true]);
+    $clerk->assignRole(RolesEnum::getRoleName(RolesEnum::FULFILMENT_SHOP_CLERK->value, $fulfilment));
+    $this->actingAs($clerk);
+    expect($clerk->authTo(['fulfilment-chat.'.$fulfilment->id]))->toBeTrue()
+        ->and(CloseChatSession::make()->getCurrentAgent($session))->not->toBeNull();
+
+    // Supervisor manages without being routed.
+    $supervisor = User::factory()->create(['group_id' => $this->organisation->group_id, 'status' => true]);
+    $supervisor->assignRole(RolesEnum::getRoleName(RolesEnum::FULFILMENT_SHOP_SUPERVISOR->value, $fulfilment));
+    $this->actingAs($supervisor);
+    expect($supervisor->authTo(['fulfilment-chat-m.'.$fulfilment->id]))->toBeTrue()
+        ->and($supervisor->authTo(['fulfilment-chat.'.$fulfilment->id]))->toBeFalse()
+        ->and(CloseChatSession::make()->getCurrentAgent($session))->not->toBeNull();
+
+    // Warehouse staff stay out of it.
+    $warehouse = User::factory()->create(['group_id' => $this->organisation->group_id, 'status' => true]);
+    $warehouse->assignRole(RolesEnum::getRoleName(RolesEnum::FULFILMENT_WAREHOUSE_WORKER->value, $fulfilment));
+    $this->actingAs($warehouse);
+    expect(CloseChatSession::make()->getCurrentAgent($session))->toBeNull();
+});

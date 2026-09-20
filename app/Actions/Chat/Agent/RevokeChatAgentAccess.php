@@ -15,6 +15,7 @@ use App\Enums\CRM\Livechat\ChatEventTypeEnum;
 use App\Enums\CRM\Livechat\ChatSessionStatusEnum;
 use App\Events\BroadcastChatListEvent;
 use App\Models\Catalogue\Shop;
+use App\Models\Fulfilment\Fulfilment;
 use App\Models\Chat\ChatAgent;
 use App\Models\Chat\ChatAssignment;
 use App\Models\SysAdmin\User;
@@ -68,6 +69,18 @@ class RevokeChatAgentAccess
             ->map(fn ($permission) => preg_match('/^org-admin\.(\d+)$/', $permission->name, $m) ? (int) $m[1] : null)
             ->filter()
             ->values();
+
+        // Fulfilment shops staff chat from their own permissions, numbered by fulfilment.
+        $fulfilmentIds = $granted
+            ->map(fn ($permission) => preg_match('/^fulfilment-chat(?:-m)?\.(\d+)$/', $permission->name, $m) ? (int) $m[1] : null)
+            ->filter()
+            ->values();
+
+        if ($fulfilmentIds->isNotEmpty()) {
+            $chatShopIds = $chatShopIds->merge(
+                Shop::whereIn('id', Fulfilment::whereIn('id', $fulfilmentIds)->pluck('shop_id'))->pluck('id')
+            );
+        }
 
         if ($adminOrgIds->isNotEmpty()) {
             $chatShopIds = $chatShopIds->merge(

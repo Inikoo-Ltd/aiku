@@ -336,10 +336,12 @@ enum RolesEnum: string
             RolesEnum::FULFILMENT_SHOP_SUPERVISOR => [
                 FulfilmentPermissionsEnum::FULFILMENT_SHOP,
                 FulfilmentPermissionsEnum::SUPERVISOR_FULFILMENT_SHOP,
+                FulfilmentPermissionsEnum::FULFILMENT_CHAT_MANAGER,
                 WarehousePermissionsEnum::FULFILMENT,
             ],
             RolesEnum::FULFILMENT_SHOP_CLERK => [
                 FulfilmentPermissionsEnum::FULFILMENT_SHOP,
+                FulfilmentPermissionsEnum::FULFILMENT_CHAT,
                 WarehousePermissionsEnum::FULFILMENT_VIEW,
             ],
             RolesEnum::FULFILMENT_WAREHOUSE_SUPERVISOR => [
