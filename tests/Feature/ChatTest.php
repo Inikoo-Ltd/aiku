@@ -4450,6 +4450,57 @@ test('overseeing chat has its own page, scoped to the address, showing everybody
         'assigned_at'     => now(),
     ]);
 
+    // Counted with a conversation actually held: with nothing to count the query never ran
+    // far enough to fail, and the page fell over the first time anybody was busy.
+    $agents = $this->actingAs($supervisor)
+        ->get(route('grp.org.chat.supervision', [$this->organisation->slug]))
+        ->assertOk()
+        ->viewData('page')['props']['agents'];
+
+    expect(collect($agents)->firstWhere('id', $agentProfile->id)['open'])->toBe(1);
+
+    $colleague = User::factory()->create(['group_id' => $this->organisation->group_id, 'status' => true]);
+    $colleague->assignRole(RolesEnum::getRoleName(RolesEnum::CUSTOMER_SERVICE_CLERK->value, $this->shop));
+
+    $websiteGuestsSeenBy = fn (User $user) => collect(collect($this->actingAs($user)
+        ->get(route('grp.org.chat.inbox', [$this->organisation->slug]))
+        ->assertOk()
+        ->viewData('page')['props']['inboxes'])
+        ->firstWhere('slug', $this->shop->slug)['channels'])
+        ->firstWhere('key', 'website')['guest'];
+
+    $finished = ChatSession::create([
+        'shop_id' => $this->shop->id,
+        'ulid'    => (string) Str::ulid(),
+        'channel' => ChatChannelEnum::WEBSITE,
+        'status'  => ChatSessionStatusEnum::CLOSED,
+    ]);
+    ChatMessage::create([
+        'chat_session_id' => $finished->id,
+        'message_text'    => 'thanks',
+        'message_type'    => ChatMessageTypeEnum::TEXT,
+        'sender_type'     => ChatSenderTypeEnum::GUEST,
+    ]);
+    $finishedAssignment = ChatAssignment::create([
+        'chat_session_id' => $finished->id,
+        'chat_agent_id'   => $agentProfile->id,
+        'status'          => ChatAssignmentStatusEnum::RESOLVED->value,
+        'assigned_by'     => ChatAssignmentAssignedByEnum::AGENT->value,
+        'assigned_at'     => now(),
+    ]);
+
+    expect($websiteGuestsSeenBy($agent)['closed_mine'])->toBe(1)
+        ->and($websiteGuestsSeenBy($colleague)['closed_mine'])->toBe(0)
+        ->and($websiteGuestsSeenBy($colleague)['closed_colleagues'])->toBe($websiteGuestsSeenBy($agent)['closed_colleagues'] + 1);
+
+    $finishedAssignment->forceDelete();
+    $finished->messages()->forceDelete();
+    $finished->forceDelete();
+
+    expect($websiteGuestsSeenBy($agent)['mine'])->toBe(1)
+        ->and($websiteGuestsSeenBy($colleague)['mine'])->toBe(0)
+        ->and($websiteGuestsSeenBy($colleague)['colleagues'])->toBe($websiteGuestsSeenBy($agent)['colleagues'] + 1);
+
     $ofAgent = collect(GetChatSessions::make()->handle([
         'shop_id'   => $this->shop->id,
         'agent_ids' => [$agentProfile->id],
@@ -4556,6 +4607,7 @@ test('email does not sit under the website tab', function () {
 
     $session(ChatChannelEnum::WEBSITE);
     $emailSession = $session(ChatChannelEnum::EMAIL);
+    $session(ChatChannelEnum::EMAIL)->update(['status' => ChatSessionStatusEnum::ACTIVE, 'is_rubbish' => true]);
 
     $props = $this->actingAs($agent)
         ->get(route('grp.org.shops.show.chat.inbox', [$this->organisation->slug, $this->shop->slug]))
@@ -4570,6 +4622,10 @@ test('email does not sit under the website tab', function () {
     // The columns are the same three for every shop so the rail reads down as one table; the
     // ones nothing arrives on are held open and unpickable rather than dropped.
     expect(collect($channels)->firstWhere('key', 'email')['available'])->toBeTrue();
+
+    // Put aside keeps its status, and the list leaves it out, so the rail must as well or it
+    // promises an active email nobody can find.
+    expect(collect($channels)->firstWhere('key', 'email')['guest']['active'])->toBe(0);
     expect(collect($channels)->firstWhere('key', 'whatsapp')['available'])->toBeFalse();
 
     $website = collect(GetChatSessions::make()->handle([

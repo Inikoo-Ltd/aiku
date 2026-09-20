@@ -206,7 +206,8 @@ class ShowOrgChatInbox extends OrgAction
             ->whereNull('chat_sessions.deleted_at')
             ->whereIn('chat_sessions.shop_id', $shopIds)
             ->groupBy('chat_assignments.chat_agent_id')
-            ->pluck(DB::raw('count(*)'), 'chat_assignments.chat_agent_id');
+            ->selectRaw('chat_assignments.chat_agent_id, count(*) as open')
+            ->pluck('open', 'chat_agent_id');
 
         return ChatAgent::with('user')->get()
             ->filter(fn (ChatAgent $agent) => $agent->user?->status
@@ -263,6 +264,10 @@ class ShowOrgChatInbox extends OrgAction
                         'waiting' => $row[ChatSessionStatusEnum::WAITING->value] ?? 0,
                         'active'  => $row[ChatSessionStatusEnum::ACTIVE->value] ?? 0,
                         'closed'  => $row[ChatSessionStatusEnum::CLOSED->value] ?? 0,
+                        'mine'              => $row['mine'] ?? 0,
+                        'colleagues'        => $row['colleagues'] ?? 0,
+                        'closed_mine'       => $row['closed_mine'] ?? 0,
+                        'closed_colleagues' => $row['closed_colleagues'] ?? 0,
                     ];
                 };
 
@@ -313,7 +318,26 @@ class ShowOrgChatInbox extends OrgAction
             ChatSessionStatusEnum::CLOSED->value,
         ];
 
-        $counts = [];
+        $counts  = [];
+        $agentId = (int) ChatAgent::where('user_id', request()->user()?->id)->value('id');
+
+        $add = function (string $key, string $state, int $total) use (&$counts): void {
+            $counts[$key][$state] = ($counts[$key][$state] ?? 0) + $total;
+        };
+
+        // A closed conversation passed between two people is in both their lists, so it counts
+        // for both, as the lists themselves do.
+        $addByHolder = function (string $key, object $row, bool $isClosed) use ($add): void {
+            $prefix = $isClosed ? 'closed_' : '';
+
+            if ($row->by_me) {
+                $add($key, $prefix.'mine', (int) $row->total);
+            }
+
+            if ($row->by_colleague) {
+                $add($key, $prefix.'colleagues', (int) $row->total);
+            }
+        };
 
         // The same conditions the list itself applies, or the capsule promises work that is not
         // there: most website sessions are a widget opened and abandoned without a word, and
@@ -325,19 +349,29 @@ class ShowOrgChatInbox extends OrgAction
             ->whereIn('status', $wanted)
             ->whereHas('messages')
             ->where('is_spam', false)
-            ->groupBy('shop_id', 'channel', 'status', DB::raw('web_user_id is not null'))
+            // Put aside keeps its status, so it has to be left out by name: the one active
+            // email the rail promised was an ignored one the list rightly would not show.
+            ->where('is_rubbish', false)
+            ->groupBy('shop_id', 'channel', 'status', DB::raw('web_user_id is not null'), 'by_me', 'by_colleague')
             ->get([
                 'shop_id',
                 'channel',
                 'status',
                 DB::raw('web_user_id is not null as is_customer'),
+                ...$this->holderColumns('chat_assignments', 'chat_session_id', 'chat_sessions', $agentId),
                 DB::raw('count(*) as total'),
             ]);
 
         foreach ($rows as $row) {
             $channel = $row->channel instanceof ChatChannelEnum ? $row->channel->value : (string) $row->channel;
             $kind    = $row->is_customer ? 'customer' : 'guest';
-            $counts["{$row->shop_id}.{$channel}.{$kind}"][$row->status->value] = (int) $row->total;
+            $key     = "{$row->shop_id}.{$channel}.{$kind}";
+
+            $add($key, $row->status->value, (int) $row->total);
+
+            if ($row->status !== ChatSessionStatusEnum::WAITING) {
+                $addByHolder($key, $row, $row->status === ChatSessionStatusEnum::CLOSED);
+            }
         }
 
         // WhatsApp has no empty-session problem: a conversation only exists once somebody wrote.
@@ -345,20 +379,48 @@ class ShowOrgChatInbox extends OrgAction
         $metaRows = MetaChatSession::whereIn('shop_id', $shopIds)
             ->whereIn('status', $wanted)
             ->where('is_spam', false)
-            ->groupBy('shop_id', 'status', DB::raw('customer_id is not null'))
+            ->groupBy('shop_id', 'status', DB::raw('customer_id is not null'), 'by_me', 'by_colleague')
             ->get([
                 'shop_id',
                 'status',
                 DB::raw('customer_id is not null as is_customer'),
+                ...$this->holderColumns('meta_chat_assignments', 'meta_chat_session_id', 'meta_chat_sessions', $agentId),
                 DB::raw('count(*) as total'),
             ]);
 
         foreach ($metaRows as $row) {
-            $kind = $row->is_customer ? 'customer' : 'guest';
-            $counts["{$row->shop_id}.whatsapp.{$kind}"][$row->status->value] = (int) $row->total;
+            $kind   = $row->is_customer ? 'customer' : 'guest';
+            $key    = "{$row->shop_id}.whatsapp.{$kind}";
+            $isOpen = $row->status !== ChatSessionStatusEnum::CLOSED;
+
+            // A WhatsApp conversation is never stored as waiting: it waits while nobody holds it,
+            // which is how its list reads it too.
+            $isHeld = $row->by_me || $row->by_colleague;
+            $state  = $isOpen && !$isHeld ? ChatSessionStatusEnum::WAITING->value : $row->status->value;
+
+            $add($key, $state, (int) $row->total);
+            $addByHolder($key, $row, !$isOpen);
         }
 
         return $counts;
+    }
+
+    /**
+     * Whether the person asking, and whether a colleague, holds a conversation: the active
+     * assignment while it is open, the resolved one once it is closed.
+     *
+     * @return array<int, \Illuminate\Contracts\Database\Query\Expression>
+     */
+    private function holderColumns(string $assignments, string $foreignKey, string $sessions, int $agentId): array
+    {
+        $assigned = "select 1 from {$assignments} a where a.{$foreignKey} = {$sessions}.id and a.deleted_at is null"
+            ." and a.status = case when {$sessions}.status = '".ChatSessionStatusEnum::CLOSED->value."'"
+            ." then '".ChatAssignmentStatusEnum::RESOLVED->value."' else '".ChatAssignmentStatusEnum::ACTIVE->value."' end";
+
+        return [
+            DB::raw("exists ({$assigned} and a.chat_agent_id = {$agentId}) as by_me"),
+            DB::raw("exists ({$assigned} and a.chat_agent_id is not null and a.chat_agent_id <> {$agentId}) as by_colleague"),
+        ];
     }
 
     public function getBreadcrumbs(array $routeParameters): array

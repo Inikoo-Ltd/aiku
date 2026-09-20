@@ -40,8 +40,8 @@ const props = defineProps<{
             key: string
             name: string
             available?: boolean
-            customer: { waiting: number; active: number; closed: number }
-            guest: { waiting: number; active: number; closed: number }
+            customer: { waiting: number; active: number; closed: number; mine: number; colleagues: number; closed_mine: number; closed_colleagues: number }
+            guest: { waiting: number; active: number; closed: number; mine: number; colleagues: number; closed_mine: number; closed_colleagues: number }
         }>
     }>
     selectedSessionUlid?: string | null
@@ -104,9 +104,26 @@ const selectedChannelCounts = computed(() =>
             waiting: total.waiting + (tally?.waiting ?? 0),
             active: total.active + (tally?.active ?? 0),
             closed: total.closed + (tally?.closed ?? 0),
+            mine: total.mine + (tally?.mine ?? 0),
+            colleagues: total.colleagues + (tally?.colleagues ?? 0),
+            closed_mine: total.closed_mine + (tally?.closed_mine ?? 0),
+            closed_colleagues: total.closed_colleagues + (tally?.closed_colleagues ?? 0),
         }
-    }, { waiting: 0, active: 0, closed: 0 })
+    }, { waiting: 0, active: 0, closed: 0, mine: 0, colleagues: 0, closed_mine: 0, closed_colleagues: 0 })
 )
+
+const myChatsCount = computed(() => selectedChannelCounts.value.waiting + selectedChannelCounts.value.mine)
+const colleaguesChatsCount = computed(() => selectedChannelCounts.value.colleagues)
+
+const capsuleCount = (status: ChatStatus) => {
+    if (status === "waiting" || !listIsMine.value) {
+        return selectedChannelCounts.value[status]
+    }
+
+    const holder = viewMode.value === "team" ? "colleagues" : "mine"
+
+    return selectedChannelCounts.value[status === "closed" ? `closed_${holder}` : holder]
+}
 
 const statusCapsules = computed(() =>
     ([
@@ -115,7 +132,7 @@ const statusCapsules = computed(() =>
         { key: "closed" as ChatStatus, label: ctrans("Closed") },
     ])
         .filter((capsule) => capsule.key !== "waiting" || viewMode.value === "my")
-        .map((capsule) => ({ ...capsule, count: selectedChannelCounts.value[capsule.key] }))
+        .map((capsule) => ({ ...capsule, count: capsuleCount(capsule.key) }))
 )
 
 const onlyClosed = computed(() => selectedStatuses.value.length === 1 && selectedStatuses.value[0] === "closed")
@@ -583,6 +600,17 @@ const showAgentLoad = (id: number) => {
     }
     reloadContacts()
 }
+
+// A shop that is not the one being looked at folds to a line: its name and how much is
+// waiting and in hand across all its channels. Only the open one spends the room on a table.
+const shopTotals = (inbox: (typeof props.inboxes)[number]) =>
+    liveChannels(inbox).reduce(
+        (sum, c: any) => ({
+            waiting: sum.waiting + c.customer.waiting + c.guest.waiting,
+            active: sum.active + c.customer.active + c.guest.active,
+        }),
+        { waiting: 0, active: 0 }
+    )
 
 const PRESENCE_DOT: Record<string, string> = {
     online: "bg-green-500",
@@ -1386,18 +1414,20 @@ onUnmounted(() => {
             </div>
 
             <!-- Shop list -->
-            <div class="flex-1 overflow-y-auto py-1">
+            <div class="flex-1 overflow-y-auto">
                 <div v-for="inbox in inboxes" :key="inbox.id"
-                    class="transition-colors"
-                    :class="selectedShopId === inbox.id ? 'bg-gray-50' : 'hover:bg-gray-100'">
+                    class="transition-colors border-b border-gray-200"
+                    :class="selectedShopId === inbox.id ? 'bg-white' : 'hover:bg-gray-100'">
                     <button type="button" @click="selectInbox(inbox.id)"
                         v-tooltip="inboxRailCollapsed ? inbox.name : undefined"
                         class="w-full flex items-center gap-2 min-w-0"
                         :class="[
-                            inboxRailCollapsed ? 'justify-center py-1' : 'px-2 pt-1',
+                            inboxRailCollapsed ? 'justify-center py-1' : 'px-2 py-1',
                             selectedShopId === inbox.id ? 'font-medium text-gray-800' : 'text-gray-700',
                         ]">
-                        <div class="relative shrink-0">
+                        <!-- The initials only stand in for the name when the rail is folded and
+                             there is no room for it; beside the name they said it twice. -->
+                        <div v-if="inboxRailCollapsed" class="relative shrink-0">
                             <div class="w-7 h-7 rounded-lg flex items-center justify-center text-[11px] font-bold"
                                 :style="shopAvatarStyle(inbox)">
                                 {{ shopInitials(inbox.name) }}
@@ -1407,13 +1437,23 @@ onUnmounted(() => {
                                 {{ inboxUnread[inbox.id] }}
                             </span>
                         </div>
-                        <span v-if="!inboxRailCollapsed" class="truncate text-sm text-left">{{ inbox.name }}</span>
+                        <span v-if="!inboxRailCollapsed" class="flex-1 truncate text-sm text-left">{{ inbox.name }}</span>
+                        <span v-if="!inboxRailCollapsed && selectedShopId !== inbox.id"
+                            v-tooltip="ctrans('Waiting') + ' · ' + ctrans('Active')"
+                            class="shrink-0 text-[11px] tabular-nums inline-flex gap-1">
+                            <span class="font-semibold" :class="shopTotals(inbox).waiting ? 'text-slate-700' : 'text-slate-300'">{{ shopTotals(inbox).waiting }}</span>
+                            <span :class="shopTotals(inbox).active ? 'text-slate-400' : 'text-slate-300'">{{ shopTotals(inbox).active }}</span>
+                        </span>
+                        <span v-if="!inboxRailCollapsed && inboxUnread[inbox.id]"
+                            class="shrink-0 min-w-[16px] h-4 px-1 text-[9px] font-semibold leading-4 text-white rounded-full text-center bg-red-500">
+                            {{ inboxUnread[inbox.id] }}
+                        </span>
                     </button>
 
                     <!-- A little table instead of a row of capsules: channels across, who is
                          on the other end down. Cells line up by construction, and a count of
                          zero holds its place so the eye can run down a column. -->
-                    <table v-if="!inboxRailCollapsed" class="w-full text-[11px] tabular-nums mb-1">
+                    <table v-if="!inboxRailCollapsed && selectedShopId === inbox.id" class="w-full text-[11px] tabular-nums mb-1">
                         <thead>
                             <tr>
                                 <th class="w-4"></th>
@@ -1554,13 +1594,15 @@ onUnmounted(() => {
                             :class="viewMode === 'my' ? 'bg-white shadow-sm text-gray-800 font-semibold' : 'text-gray-500 hover:text-gray-700'"
                             @click="viewMode = 'my'">
                             {{ ctrans("My Chats") }}
+                            <span v-if="myChatsCount" class="ml-1 tabular-nums text-gray-500">{{ myChatsCount }}</span>
                         </button>
                         <button type="button" class="px-2.5 py-1 rounded-md transition-all whitespace-nowrap shrink-0 inline-flex items-center gap-1"
                             :class="viewMode === 'team' ? 'bg-white shadow-sm text-gray-800 font-semibold' : 'text-gray-500 hover:text-gray-700'"
                             @click="viewMode = 'team'">
-                            {{ ctrans("Team Chats") }}
+                            {{ ctrans("Colleagues' Chats") }}
+                            <span v-if="colleaguesChatsCount" class="tabular-nums text-gray-500">{{ colleaguesChatsCount }}</span>
                             <span v-if="teamUnreadForShop"
-                                v-tooltip="ctrans('Unread team chats in this inbox — take over to reply')"
+                                v-tooltip="ctrans('Unread chats held by colleagues in this inbox — take over to reply')"
                                 class="min-w-[15px] px-1 text-[9px] leading-[15px] text-white rounded-full text-center bg-amber-500">
                                 {{ teamUnreadForShop }}
                             </span>

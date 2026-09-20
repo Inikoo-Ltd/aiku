@@ -482,7 +482,7 @@ onMounted(async () => {
                 :aria-selected="viewMode === 'team'"
                 @click="viewMode = 'team'"
                 @keydown.enter="viewMode = 'team'">
-                {{ trans("Team Chats") }}
+                {{ trans("Colleagues' Chats") }}
             </div>
         </div>
 
