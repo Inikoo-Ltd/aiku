@@ -243,12 +243,35 @@ const updateRating = async (r: number) => {
     }, 300)
 }
 
+// An agent having a bad minute can take several messages back in a row. Each one is kept
+// and each one is on our record, but the customer is shown a single line rather than a
+// column of apologies: the one that matters is the message that follows them.
+const collapseRetracted = (messages: any[]) =>
+    messages.reduce((kept: any[], msg: any) => {
+        const previous = kept[kept.length - 1]
+
+        if (msg.is_retracted && previous?.is_retracted) {
+            kept[kept.length - 1] = {
+                ...msg,
+                retracted_count: (previous.retracted_count ?? 1) + 1,
+            }
+
+            return kept
+        }
+
+        kept.push(msg)
+
+        return kept
+    }, [])
+
 const groupedMessages = computed(() => {
     const groups: Record<string, any[]> = {}
 
-    localMessages.value
-        .slice()
-        .sort((a, b) => +new Date(a.created_at) - +new Date(b.created_at))
+    collapseRetracted(
+        localMessages.value
+            .slice()
+            .sort((a, b) => +new Date(a.created_at) - +new Date(b.created_at))
+    )
         .forEach((msg) => {
             const label = new Intl.DateTimeFormat("id-ID", {
                 day: "2-digit",

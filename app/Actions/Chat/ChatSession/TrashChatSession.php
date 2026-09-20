@@ -18,6 +18,8 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
+use App\Enums\CRM\Livechat\ChatEventTypeEnum;
+use Illuminate\Support\Facades\Auth;
 
 class TrashChatSession
 {
@@ -45,6 +47,15 @@ class TrashChatSession
             if ($hasActiveAgent && !$chatSession->isClosed()) {
                 CloseChatSession::run($chatSession, $actorId, ChatActorTypeEnum::AGENT);
             }
+
+            // Who put a conversation out of sight is part of the conversation's record.
+            StoreChatEvent::run(
+                $chatSession,
+                ChatEventTypeEnum::TRASH,
+                ChatActorTypeEnum::AGENT,
+                $actorId,
+                ['user_id' => Auth::id()]
+            );
 
             BroadcastChatListEvent::dispatch(null, $chatSession);
 

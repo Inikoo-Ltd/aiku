@@ -18,6 +18,8 @@ use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
+use App\Enums\CRM\Livechat\ChatEventTypeEnum;
+use Illuminate\Support\Facades\Auth;
 
 class TrashMetaChatSession
 {
@@ -44,6 +46,14 @@ class TrashMetaChatSession
             if ($hasActiveAgent && $metaChatSession->status !== ChatSessionStatusEnum::CLOSED) {
                 CloseMetaChatSession::run($metaChatSession, $actorId, ChatActorTypeEnum::AGENT);
             }
+
+            StoreMetaChatEvent::run(
+                $metaChatSession,
+                ChatEventTypeEnum::TRASH,
+                ChatActorTypeEnum::AGENT,
+                $actorId,
+                ['user_id' => Auth::id()]
+            );
 
             BroadcastMetaChatListEvent::dispatch(null, $metaChatSession);
 

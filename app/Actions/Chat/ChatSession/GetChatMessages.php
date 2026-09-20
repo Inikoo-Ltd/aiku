@@ -8,12 +8,15 @@
 
 namespace App\Actions\Chat\ChatSession;
 
+use App\Actions\Chat\WithChatAgentAuthorisation;
 use App\Enums\CRM\Livechat\ChatEventTypeEnum;
 use App\Enums\CRM\Livechat\ChatSenderTypeEnum;
 use App\Http\Resources\CRM\Livechat\ChatMessageResource;
 use App\Http\Resources\CRM\Livechat\ChatTimelineEventResource;
 use App\Models\Chat\ChatAgent;
+use App\Models\Catalogue\Shop;
 use App\Models\Chat\ChatSession;
+use App\Models\SysAdmin\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
@@ -23,7 +26,7 @@ use Illuminate\Support\Collection;
 class GetChatMessages
 {
     use AsAction;
-
+    use WithChatAgentAuthorisation;
 
     public function rules(): array
     {
@@ -53,13 +56,18 @@ class GetChatMessages
     {
         $validated = $request->validated();
 
+        $user = $request->user();
+        $forStaff = $user instanceof User
+            && $chatSession->shop instanceof Shop
+            && $this->userCanViewChatOnShop($user, $chatSession->shop);
+
         if (array_key_exists('request_from', $validated)) {
             $requestFrom = $validated['request_from'] ?? ChatSenderTypeEnum::GUEST->value;
             $readerType = ChatSenderTypeEnum::tryFrom($requestFrom) ?? ChatSenderTypeEnum::GUEST;
             MarkChatMessagesAsRead::run($chatSession, $readerType);
         }
 
-        $messages = $this->handle($chatSession, $validated);
+        $messages = $this->handle($chatSession, $validated, $forStaff);
 
         $nextCursor = null;
 
@@ -85,9 +93,17 @@ class GetChatMessages
 
 
 
-    public function handle(ChatSession $chatSession, array $filters)
+    /**
+     * A message that was taken back stays in the list for both sides, so the customer is
+     * told that something was withdrawn rather than watching it silently disappear. Only
+     * staff get to keep reading it: for anybody else the words are stripped here, leaving
+     * the marker and the reason. This endpoint is public, so the request cannot ask to be
+     * treated as staff.
+     */
+    public function handle(ChatSession $chatSession, array $filters, bool $forStaff = false)
     {
         $query = $chatSession->messages()
+            ->withTrashed()
             ->with([
                 'media',
                 'translations' => function ($query) use ($filters) {
@@ -121,7 +137,22 @@ class GetChatMessages
 
         $this->attachAgentSenderNames($messages);
 
+        if (!$forStaff) {
+            $messages->each(fn ($message) => $this->stripRetracted($message));
+        }
+
         return $messages;
+    }
+
+    private function stripRetracted(\App\Models\Chat\ChatMessage $message): void
+    {
+        if (!$message->trashed()) {
+            return;
+        }
+
+        $message->setAttribute('message_text', null);
+        $message->setAttribute('original_text', null);
+        $message->setRelation('translations', collect());
     }
 
     private function attachAgentSenderNames(Collection $messages): void

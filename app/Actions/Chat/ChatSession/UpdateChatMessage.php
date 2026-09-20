@@ -74,10 +74,26 @@ class UpdateChatMessage
             ]);
         }
 
+        // What was said before the edit is kept, so an edited message can always be read
+        // back as it was first sent.
+        $metadata = $chatMessage->metadata ?? [];
+        $history  = $metadata['edit_history'] ?? [];
+
+        $history[] = [
+            'message_text'  => $chatMessage->message_text,
+            'original_text' => $chatMessage->original_text,
+            'edited_at'     => now()->toISOString(),
+            'user_id'       => Auth::id(),
+            'agent_id'      => $agent->id,
+        ];
+
+        data_set($metadata, 'edit_history', $history);
+
         $chatMessage->update([
             'message_text' => $messageText,
             'original_text' => $chatMessage->original_text !== null ? $messageText : null,
             'edited_at' => now(),
+            'metadata' => $metadata,
         ]);
 
         $chatMessage->refresh();
