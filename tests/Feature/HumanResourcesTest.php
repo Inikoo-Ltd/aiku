@@ -3003,3 +3003,65 @@ test('a human resources supervisor can create a holiday from the holidays page',
         ->and($holiday->year)->toBe(2026)
         ->and(data_get($holiday->data, 'is_recurring'))->toBeTrue();
 });
+
+test('clocking photo does not appear in the group uploaded images gallery', function () {
+    $employee = Employee::factory()->create([
+        'organisation_id' => $this->organisation->id,
+        'group_id'        => $this->group->id,
+    ]);
+
+    $workplace = StoreWorkplace::make()->action($this->organisation, [
+        'name' => 'Photo Workplace',
+        'type' => \App\Enums\HumanResources\Workplace\WorkplaceTypeEnum::HQ,
+    ]);
+
+    $clocking = StoreClocking::make()->action($this->organisation, $workplace, $employee, [
+        'type' => 'in',
+        'at'   => now()->toDateTimeString(),
+    ], 0, true);
+
+    $imagePath = tempnam(sys_get_temp_dir(), 'clocking-photo-') . '.png';
+    file_put_contents($imagePath, base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=='));
+
+    \App\Actions\HumanResources\Clocking\Traits\SetClockingPhotoFromImage::run($clocking, $imagePath, 'selfie.png', 'png');
+    unlink($imagePath);
+
+    $clocking->refresh();
+
+    expect($clocking->image_id)->not->toBeNull()
+        ->and($clocking->image->collection_name)->toBe('clocking_photo')
+        ->and(
+            \App\Models\Helpers\Media::where('group_id', $this->group->id)
+                ->where('collection_name', 'image')
+                ->pluck('id')
+                ->all()
+        )->not->toContain($clocking->image_id);
+});
+
+test('a staff avatar is not offered in the group image gallery', function () {
+    $employee = Employee::factory()->create([
+        'organisation_id' => $this->organisation->id,
+        'group_id'        => $this->group->id,
+    ]);
+
+    $imagePath = tempnam(sys_get_temp_dir(), 'avatar-') . '.png';
+    file_put_contents($imagePath, base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=='));
+
+    \App\Actions\Helpers\Media\SaveModelImage::run(
+        model: $employee,
+        imageData: ['path' => $imagePath, 'originalName' => 'me.png', 'extension' => 'png'],
+        scope: 'avatar'
+    );
+    unlink($imagePath);
+
+    $employee->refresh();
+
+    expect($employee->image_id)->not->toBeNull()
+        ->and($employee->image->collection_name)->toBe('avatar')
+        ->and(
+            \App\Models\Helpers\Media::where('group_id', $this->group->id)
+                ->where('collection_name', 'image')
+                ->pluck('id')
+                ->all()
+        )->not->toContain($employee->image_id);
+});
