@@ -65,17 +65,19 @@ class GetChatCustomerProfile
     }
 
     /**
-     * @return array{company_name: ?string, phone: ?string, address: ?string, last_orders: array<int, array{reference: string, date: ?string, state: string, total: string, url: ?string}>}
+     * @return array{company_name: ?string, phone: ?string, location: ?array{0: ?string, 1: ?string, 2: ?string}, address: ?string, last_orders: array<int, array{reference: string, date: ?string, state: string, total: string, url: ?string}>}
      */
     public function contactAndLastOrders(Customer $customer): array
     {
         $stateLabels  = OrderStateEnum::labels();
         $organisation = $customer->organisation;
         $shop         = $customer->shop;
+        $location     = is_string($customer->location) ? json_decode($customer->location, true) : $customer->location;
 
         return [
             'company_name' => $customer->company_name,
             'phone'        => $customer->phone,
+            'location'     => is_array($location) && Arr::get($location, 0) ? array_values($location) : null,
             'address'      => $customer->address ? GetFormattedAddress::run($customer->address) : null,
             'last_orders'  => $customer->orders()
                 ->where('state', '!=', OrderStateEnum::CREATING)

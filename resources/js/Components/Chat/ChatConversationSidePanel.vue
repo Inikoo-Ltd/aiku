@@ -11,6 +11,7 @@ import ChatActivityTimeline from '@/Components/Chat/ChatActivityTimeline.vue'
 import HistoryChatList from '@/Components/Chat/HistoryChatList.vue'
 import MessageHistory from '@/Components/Chat/MessageHistory.vue'
 import TicketQuickLook from '@/Components/Tickets/TicketQuickLook.vue'
+import AddressLocation from '@/Components/Elements/Info/AddressLocation.vue'
 import Icon from '@/Components/Icon.vue'
 import { faArrowLeft, faLink, faEnvelope, faGlobe } from '@fal'
 import { faWhatsapp } from '@fortawesome/free-brands-svg-icons'
@@ -139,6 +140,7 @@ interface CustomerProfile {
     profile_url: string | null
     company_name?: string | null
     phone?: string | null
+    location?: [string | null, string, string] | null
     address?: string | null
     last_orders?: LastOrder[]
     previous_chats?: PreviousChat[]
@@ -398,9 +400,9 @@ const copyChatId = async () => {
             <!-- Profile -->
             <div v-if="activeTab === 'profile'" class="divide-y divide-gray-100">
                 <div class="px-4 py-3 space-y-2.5">
-                    <p class="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Contact</p>
+                    <p class="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">{{ ctrans("Contact") }}</p>
                     <div class="grid grid-cols-3 gap-2 items-start">
-                        <div class="text-gray-500 text-xs">Name</div>
+                        <div class="text-gray-500 text-xs">{{ ctrans("Name") }}</div>
                         <div class="col-span-2 text-xs font-medium text-gray-800">
                             <a v-if="!session.is_guest && customerProfile.profile_url"
                                 :href="customerProfile.profile_url" target="_blank" rel="noopener"
@@ -413,13 +415,13 @@ const copyChatId = async () => {
                         </div>
                     </div>
                     <div v-if="!session.is_guest && customerProfile.email" class="grid grid-cols-3 gap-2 items-start">
-                        <div class="text-gray-500 text-xs">Email</div>
+                        <div class="text-gray-500 text-xs">{{ ctrans("Email") }}</div>
                         <div class="col-span-2 text-xs font-medium text-gray-800 break-all">
                             <a :href="`mailto:${customerProfile.email}`" class="hover:underline" :style="{ color: themePrimary }">{{ customerProfile.email }}</a>
                         </div>
                     </div>
                     <div v-if="session.is_guest && session.guest_email" class="grid grid-cols-3 gap-2 items-start">
-                        <div class="text-gray-500 text-xs">Email</div>
+                        <div class="text-gray-500 text-xs">{{ ctrans("Email") }}</div>
                         <div class="col-span-2 text-xs font-medium text-gray-800 break-all">
                             <a :href="`mailto:${session.guest_email}`" class="hover:underline" :style="{ color: themePrimary }">{{ session.guest_email }}</a>
                         </div>
@@ -429,12 +431,15 @@ const copyChatId = async () => {
                         <div class="col-span-2 text-xs font-medium text-gray-800">{{ customerProfile.company_name }}</div>
                     </div>
                     <div v-if="session.phone_number || session.guest_phone || customerProfile.phone" class="grid grid-cols-3 gap-2 items-start">
-                        <div class="text-gray-500 text-xs">Phone</div>
+                        <div class="text-gray-500 text-xs">{{ ctrans("Phone") }}</div>
                         <div class="col-span-2 text-xs font-medium text-gray-800 break-all">{{ session.phone_number || session.guest_phone || customerProfile.phone }}</div>
                     </div>
-                    <div v-if="customerProfile.address" class="grid grid-cols-3 gap-2 items-start">
+                    <div v-if="customerProfile.location || customerProfile.address" class="grid grid-cols-3 gap-2 items-start">
                         <div class="text-gray-500 text-xs">{{ ctrans("Address") }}</div>
-                        <div class="col-span-2 text-xs font-medium text-gray-800" v-html="customerProfile.address"></div>
+                        <div class="col-span-2 text-xs space-y-0.5">
+                            <AddressLocation v-if="customerProfile.location" :data="customerProfile.location" class="font-medium text-gray-800" />
+                            <div v-if="customerProfile.address" class="text-[11px] text-gray-500" v-html="customerProfile.address"></div>
+                        </div>
                     </div>
                     <div v-if="canMatchCustomer" class="grid grid-cols-3 gap-2 items-start">
                         <div></div>

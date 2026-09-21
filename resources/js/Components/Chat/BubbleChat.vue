@@ -1219,19 +1219,21 @@ watch(selectedLanguage, async (val) => {
 <style scoped>
 .bubble-own-agent {
     @apply bg-white text-gray-800 border border-gray-200;
-    border-left: 3px solid v-bind("layout.app.theme[4]");
-    border-bottom-right-radius: 4px;
+    border-left: 4px solid v-bind("layout.app.theme[4]");
+    border-bottom-right-radius: 0px;
+    border-top-left-radius: 8px;
+    border-bottom-left-radius: 8px;
 }
 
 .bubble-primary {
     background-color: v-bind("layout.app.theme[4]");
     color: v-bind("layout.app.theme[5]");
-    border-bottom-right-radius: 4px;
+    border-bottom-right-radius: 0px;
 }
 
 .bubble-secondary {
     @apply bg-white text-gray-800 border border-gray-200;
-    border-bottom-left-radius: 4px;
+    border-bottom-left-radius: 0px;
 }
 
 </style>
