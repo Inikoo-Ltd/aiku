@@ -30,6 +30,7 @@ import BubbleChat from "@/Components/Chat/BubbleChat.vue"
 import { useJumpToMessage } from "@/Composables/useJumpToMessage"
 import ChatTimelineEvent from "@/Components/Chat/ChatTimelineEvent.vue"
 import { useChatLanguages } from "@/Composables/useLanguages"
+import { useUploadLimits } from "@/Composables/useUploadLimits"
 import { notify } from "@kyvg/vue3-notification"
 
 const EmojiPicker = defineAsyncComponent(() => import("@/Components/Messaging/EmojiPicker.vue"))
@@ -527,6 +528,8 @@ interface SelectedAttachment {
 const selectedFiles = ref<SelectedAttachment[]>([])
 const isEmailNotif = ref(false)
 
+const { rejectionFor } = useUploadLimits()
+
 const addAttachment = (file: File, isImage: boolean) => {
     if (selectedFiles.value.length >= MAX_ATTACHMENTS) {
         notify({ title: "Failed", text: "Maximum 10 attachments", type: "error" })
@@ -543,8 +546,14 @@ const addAttachment = (file: File, isImage: boolean) => {
         return
     }
 
-    if (file.size > MAX_SIZE) {
-        notify({ title: "Failed", text: "Maximum file size 10MB", type: "error" })
+    // The server's own limit as well as ours, and the batch as well as the file: a batch that is
+    // refused whole takes the files that were fine down with the one that was not, which is the
+    // opposite of what dropping several at once should do.
+    const rejection = rejectionFor(file, selectedFiles.value.map((a) => a.file), MAX_SIZE)
+
+    if (rejection) {
+        notify({ title: ctrans("File not attached"), text: `${file.name} - ${rejection}`, type: "error" })
+
         return
     }
 

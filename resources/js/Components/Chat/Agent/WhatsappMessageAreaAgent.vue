@@ -3,6 +3,7 @@ import { ref, watch, onMounted, onUnmounted, inject, computed, nextTick, defineA
 import axios from "axios"
 import { ctrans } from "@/Composables/useTrans"
 import { chatSendErrorText } from "@/Composables/chatSendError"
+import { useUploadLimits } from "@/Composables/useUploadLimits"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import {
     faPaperPlane,
@@ -230,6 +231,8 @@ const canLoadMore = ref(false)
 const nextCursor = ref<string | null>(null)
 const isSending = ref(false)
 
+const { rejectionFor } = useUploadLimits()
+
 const selectedFile = ref<File | null>(null)
 const previewUrl = ref<string | null>(null)
 const previewType = ref<"image" | "file" | null>(null)
@@ -249,8 +252,10 @@ const selectImage = (file: File) => {
         return
     }
 
-    if (file.size > MAX_IMAGE_SIZE) {
-        notify({ title: ctrans("Failed"), text: ctrans("Maximum image size 5MB"), type: "error" })
+    const imageRejection = rejectionFor(file, [], MAX_IMAGE_SIZE)
+
+    if (imageRejection) {
+        notify({ title: ctrans("Failed"), text: imageRejection, type: "error" })
         return
     }
 
@@ -274,8 +279,12 @@ const selectDoc = (file: File) => {
         return
     }
 
-    if (file.size > MAX_FILE_SIZE) {
-        notify({ title: ctrans("Failed"), text: ctrans("Maximum file size 100MB"), type: "error" })
+    // WhatsApp itself allows 100MB, but this server has its own word on what it will take, and
+    // it is the one that answers the upload.
+    const fileRejection = rejectionFor(file, [], MAX_FILE_SIZE)
+
+    if (fileRejection) {
+        notify({ title: ctrans("Failed"), text: fileRejection, type: "error" })
         return
     }
 

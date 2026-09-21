@@ -3,6 +3,7 @@ import { ref, computed, watch, onMounted, onUnmounted, nextTick, defineAsyncComp
 import axios from "axios"
 import { ctrans } from "@/Composables/useTrans"
 import { chatSendErrorText } from "@/Composables/chatSendError"
+import { useUploadLimits } from "@/Composables/useUploadLimits"
 import { router } from "@inertiajs/vue3"
 import { useJumpToMessage } from "@/Composables/useJumpToMessage"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -192,6 +193,8 @@ const FILE_TYPES = [
 ]
 
 const MAX_SIZE = 10 * 1024 * 1024
+
+const { rejectionFor } = useUploadLimits()
 
 const waReadIcon = (message: LocalChatMessage) => {
     const waStatus = message.metadata?.wa_status
@@ -633,8 +636,12 @@ const addAttachment = (file: File, isImage: boolean) => {
         return
     }
 
-    if (file.size > MAX_SIZE) {
-        notifyRejectedFile(ctrans(isImage ? "Maximum image size 10MB" : "Maximum file size 10MB"))
+    // The server's own limit as well as ours, and the batch as well as the file: a batch that is
+    // refused whole takes the files that were fine down with the one that was not.
+    const rejection = rejectionFor(file, selectedFiles.value.map((a) => a.file), MAX_SIZE)
+
+    if (rejection) {
+        notifyRejectedFile(`${file.name} - ${rejection}`)
         return
     }
 
