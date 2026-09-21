@@ -20,7 +20,8 @@ class HandleLowStockAuditLock
 {
     use AsAction;
 
-    private const int LOCK_FOREVER = 0;
+    // ponytail: a tab that dies without releasing (crash, lost beacon) must not hold the SKO for ever
+    private const int LOCK_SECONDS = 1800;
 
     public function rules(): array
     {
@@ -51,7 +52,7 @@ class HandleLowStockAuditLock
 
     private function acquire(int $orgStockId, string $holder): bool
     {
-        $lock = Cache::lock($this->lockKey($orgStockId), self::LOCK_FOREVER, $holder);
+        $lock = Cache::lock($this->lockKey($orgStockId), self::LOCK_SECONDS, $holder);
 
         // Asking twice for a lock already held is the same holder settling, not a refusal
         return $lock->get() || $lock->isOwnedByCurrentProcess();

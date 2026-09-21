@@ -26,6 +26,7 @@ use App\Actions\Inventory\Location\UpdateLocation;
 use App\Actions\Inventory\LocationOrgStock\AuditLocationOrgStock;
 use App\Actions\Inventory\LocationOrgStock\CalculateValueLocationOrgStock;
 use App\Actions\Inventory\LocationOrgStock\DeleteLocationOrgStock;
+use App\Actions\Inventory\LocationOrgStock\HandleLowStockAuditLock;
 use App\Actions\Inventory\LocationOrgStock\MoveOrgStockToOtherLocation;
 use App\Actions\Inventory\LocationOrgStock\StoreLocationOrgStock;
 use App\Actions\Inventory\LocationOrgStock\UpdateLocationOrgStock;
@@ -3401,4 +3402,19 @@ test('UI low stock audits sorts locations ascending and descending', function ()
 
     expect($locationCodesFor('locations'))->toBe(['LSA-A1', 'LSA-Z9'])
         ->and($locationCodesFor('-locations'))->toBe(['LSA-Z9', 'LSA-A1']);
+});
+
+test('an abandoned low stock audit lock expires instead of holding the SKO for ever', function () {
+    $warehouse = createWarehouse();
+    $stock     = StoreStock::make()->action($this->group, array_merge(Stock::factory()->definition(), ['state' => StockStateEnum::ACTIVE]));
+    $orgStock  = StoreOrgStock::make()->action($this->organisation, $stock);
+
+    $lock = ['org_stock_id' => $orgStock->id, 'is_locked' => true, 'source' => 'detail'];
+
+    expect(HandleLowStockAuditLock::make()->handle($warehouse, $lock + ['holder' => 'tab-that-died'])['granted'])->toBeTrue()
+        ->and(HandleLowStockAuditLock::make()->handle($warehouse, $lock + ['holder' => 'another-tab'])['granted'])->toBeFalse();
+
+    $this->travel(31)->minutes();
+
+    expect(HandleLowStockAuditLock::make()->handle($warehouse, $lock + ['holder' => 'another-tab'])['granted'])->toBeTrue();
 });
