@@ -25,7 +25,6 @@ use App\Actions\Chat\ChatSession\TrashChatSession;
 use App\Actions\Chat\ChatSession\UnmarkChatSessionAsSpam;
 use App\Actions\Chat\ChatSession\RestoreChatAgent;
 use App\Actions\Chat\ChatSession\SendChatMessage;
-use App\Actions\Chat\ChatSession\UpdateChatMessage;
 use App\Actions\Chat\ChatSession\UpdateChatSessionSlackSettings;
 use App\Actions\Chat\ChatSession\VerifyChatImageMessage;
 use App\Actions\Chat\ChatSession\StoreTicketFromChatSession;
@@ -78,7 +77,6 @@ Route::name('agents.')->prefix('agents')->group(function () {
         ->name('whatsapp.sessions.trash');
     Route::patch('/whatsapp/{metaChatSession:ulid}/restore', RestoreMetaChatSession::class)
         ->name('whatsapp.sessions.restore')->withTrashed();
-    Route::patch('/messages/{chatSession:ulid}/{chatMessage}/edit', UpdateChatMessage::class)->name('messages.update');
     Route::patch('/messages/{chatSession:ulid}/{chatMessage}/redact', RedactChatMessage::class)->name('messages.redact');
     Route::delete('/messages/{chatSession:ulid}/{chatMessage}/redact-attachment', [RedactChatMessage::class, 'inAttachment'])->name('messages.redact_attachment');
     Route::delete('/messages/{chatSession:ulid}/{chatMessage}/retract', RetractChatMessage::class)->name('messages.retract');

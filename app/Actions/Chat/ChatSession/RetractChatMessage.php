@@ -32,7 +32,7 @@ class RetractChatMessage
 {
     use AsAction;
 
-    public const RETRACT_WINDOW_MINUTES = UpdateChatMessage::EDIT_WINDOW_MINUTES;
+    public const RETRACT_WINDOW_MINUTES = 30;
 
     public function rules(): array
     {
