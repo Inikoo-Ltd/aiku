@@ -1368,8 +1368,7 @@ const onMetaChatListEvent = (e: any) => {
     // regardless of which channel is selected.
     fetchInboxNotifications()
 
-    // Contact list only needs a full reload when viewing the WhatsApp channel.
-    if (selectedChannel.value !== "whatsapp") return
+    if (!isMergedView.value && !isChannelOn("whatsapp")) return
 
     reloadContactsSoon()
 
@@ -1877,7 +1876,7 @@ onUnmounted(() => {
                                     </span>
                                     <img v-if="(c as any).country_code" :src="`/flags/${(c as any).country_code.toLowerCase()}.png`"
                                         :alt="(c as any).country_code" v-tooltip="(c as any).country_code" class="shrink-0 h-3 w-auto" />
-                                    <span class="flex-1 min-w-0 text-sm font-medium text-gray-800 truncate">{{ capitalize(c.name) }}</span>
+                                    <span class="flex-1 min-w-0 text-sm text-gray-800 truncate" :class="c.unread && !onlyClosed ? 'font-bold' : 'font-medium'">{{ capitalize(c.name) }}</span>
                                     <span class="text-[10px] text-gray-500 shrink-0">
                                         {{ c.lastMessageTime }}
                                         <span v-if="c.lastMessageAge" class="text-gray-400">({{ c.lastMessageAge }})</span>
@@ -1903,7 +1902,7 @@ onUnmounted(() => {
                                     </span>
                                 </div>
                                 <div class="flex items-center gap-1.5">
-                                    <span class="text-xs text-gray-500 truncate flex-1 leading-snug">{{ c.lastMessage }}</span>
+                                    <span class="text-xs truncate flex-1 leading-snug" :class="c.unread && !onlyClosed ? 'font-semibold text-gray-800' : 'text-gray-500'">{{ c.lastMessage }}</span>
                                     <button v-if="!c.webUser?.customer_id && !c.is_spam && !trashView && !onlyClosed && !isReadOnly" type="button"
                                         :disabled="isSpamming[c.ulid]"
                                         v-tooltip="ctrans('Report spam')"
@@ -1918,10 +1917,9 @@ onUnmounted(() => {
                                         @click.stop="toggleHighlight(c)">
                                         <FontAwesomeIcon :icon="faStarSolid" class="text-[11px]" />
                                     </button>
-                                    <!-- Unread sits beside the channel it arrived on, quietly:
-                                         it is a count, not an alarm. -->
                                     <span v-if="c.unread && !onlyClosed"
-                                        class="shrink-0 text-[10px] font-semibold leading-none text-gray-400">
+                                        v-tooltip="ctrans('Unread messages')"
+                                        class="shrink-0 min-w-[16px] h-4 px-1 text-[9px] font-semibold leading-4 text-white rounded-full text-center bg-red-500">
                                         {{ c.unread }}
                                     </span>
                                     <!-- Always shown, not only in a mixed list: an agent reading
