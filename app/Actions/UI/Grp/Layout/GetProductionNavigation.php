@@ -61,6 +61,7 @@ class GetProductionNavigation
                 'topMenu' => [
                     'subSections' => [
                         [
+                            'label'   => __("Dashboard"),
                             "tooltip" => __("Dashboard"),
                             "icon"    => ["fal", "fa-chart-network"],
                             "root"    => "grp.org.productions.show.crafts.dashboard",
@@ -113,6 +114,7 @@ class GetProductionNavigation
                 'topMenu' => [
                     'subSections' => [
                         [
+                            'label'   => __("Dashboard"),
                             "tooltip" => __("Dashboard"),
                             "icon"    => ["fal", "fa-chart-network"],
                             "root"    => "grp.org.productions.show.operations.dashboard",
@@ -196,6 +198,7 @@ class GetProductionNavigation
                 'topMenu' => [
                     'subSections' => [
                         [
+                            'label'   => __("Dashboard"),
                             "tooltip" => __("Dashboard"),
                             "icon"    => ["fal", "fa-chart-network"],
                             "root"    => "grp.org.productions.show.artisans.dashboard",
