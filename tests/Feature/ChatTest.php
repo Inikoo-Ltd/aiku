@@ -5148,6 +5148,31 @@ test('machine mail from a stranger is put aside by rule without asking the model
         ->and(\App\Actions\Chat\ChatSession\ClassifyChatSessionNoise::forList($dmarc)['automatic'])->toBeTrue();
 });
 
+test('an out of office is put aside in any language and whoever owns the mailbox', function () {
+    \Illuminate\Support\Facades\Http::fake();
+
+    $classify = fn (ChatSession $chatSession) => \App\Actions\Chat\ChatSession\ClassifyChatSessionNoise::make()->handle($chatSession)->refresh();
+
+    $webUser = StoreWebUser::make()->action($this->customer, WebUser::factory()->definition());
+
+    $customerAway = noiseTestEmailSession($this->shop, 'buyer@example.com', 'Automatic reply: Our newsletter', 'I am on leave');
+    $customerAway->update(['web_user_id' => $webUser->id]);
+    $customerAway = $classify($customerAway);
+
+    $portuguese = $classify(noiseTestEmailSession($this->shop, 'info@misticozen.com', 'Resposta automatica', 'Estou ausente'));
+    $slovak     = $classify(noiseTestEmailSession($this->shop, 'jan@example.sk', 'Automaticka odpoved: novinky', 'Som mimo'));
+    $postmaster = $classify(noiseTestEmailSession($this->shop, 'postmaster@example.com', 'Undeliverable', 'The address failed'));
+
+    \Illuminate\Support\Facades\Http::assertNothingSent();
+
+    expect($customerAway->is_rubbish)->toBeTrue()
+        ->and($customerAway->rubbish_reason)->toBe('out_of_office')
+        ->and($customerAway->noise_source)->toBe('rule')
+        ->and($portuguese->rubbish_reason)->toBe('out_of_office')
+        ->and($slovak->rubbish_reason)->toBe('out_of_office')
+        ->and($postmaster->rubbish_reason)->toBe('automated_notification');
+});
+
 test('the model only hints until it is allowed to put aside, never touches a customer, and is never asked twice', function () {
     noiseTestFakeModel('spam', 95);
 
