@@ -151,6 +151,35 @@ const onCanvasEditText = ({
     data.value = updated
 }
 
+const onCanvasResize = ({
+    modelPath,
+    slideUlid,
+    width,
+    height
+}: {
+    modelPath: string
+    slideUlid: string | null
+    width: number
+    height: number
+}) => {
+    const updated = cloneDeep(props.modelValue)
+    const index = updated.components?.findIndex((slide) => slide.ulid === slideUlid) ?? -1
+
+    if (index === -1) {
+        return
+    }
+
+    const cardPath = ["components", index, ...modelPath.split(".")]
+
+    if (!get(updated, cardPath)) {
+        return
+    }
+
+    set(updated, [...cardPath, "width"], width)
+    set(updated, [...cardPath, "height"], height)
+    data.value = updated
+}
+
 watch(
     () => props.modelValue.components.length,
     async () => {
@@ -208,6 +237,7 @@ watch(isPlaying, (playing) => {
                         :selectedKey="selectedKey"
                         @select="onCanvasSelect"
                         @editText="onCanvasEditText"
+                        @resize="onCanvasResize"
                     />
                 </div>
             </div>
@@ -236,6 +266,7 @@ watch(isPlaying, (playing) => {
                             :selectedKey="selectedKey"
                             @select="onCanvasSelect"
                             @editText="onCanvasEditText"
+                            @resize="onCanvasResize"
                         />
                     </div>
                 </div>

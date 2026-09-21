@@ -155,6 +155,28 @@ const getCard = (component) => {
     return card
 }
 
+
+/**
+ * Where the rendered card lives in the slide, so the workshop writes back to the
+ * same place it was read from instead of forking a per screen copy.
+ */
+const cardViewKey = (component: any) => {
+    const card = get(component, ['layout', 'card'])
+
+    if (!card) return null
+    if (!(card.desktop || card.tablet || card.mobile)) return null
+
+    const view = props.view || 'desktop'
+
+    return card[view] ? view : (card.desktop ? 'desktop' : null)
+}
+
+const cardModelPath = (component: any, key: string) => {
+    const viewKey = cardViewKey(component)
+
+    return viewKey ? `layout.card.${viewKey}.${key}` : `layout.card.${key}`
+}
+
 const contentAlignClasses: Record<string, string> = {
     top: 'justify-start',
     middle: 'justify-center',
@@ -372,7 +394,9 @@ onBeforeUnmount(() => {
                                         }
                                     ]">
 
-                                        <div class="relative editor-class pointer-events-auto" :style="{
+                                        <div class="relative editor-class pointer-events-auto"
+                                            :data-editable="`card.${key}`" data-editable-scope="slide"
+                                            :data-model-path="cardModelPath(component, key)" :style="{
                                             ...cardEdgeMargin(card),
                                             width: (card.width || 60) + '%',
                                             height: (card.height || 300) + 'px',

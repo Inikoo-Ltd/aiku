@@ -78,7 +78,9 @@ export const useBlueprintFieldFocus = (
             return
         }
 
-        field.scrollIntoView({ block: "center", behavior: "smooth" })
+        // "nearest" leaves the page alone when the field is already on screen,
+        // so opening a field does not scroll the banner out of view.
+        field.scrollIntoView({ block: "nearest", behavior: "smooth" })
 
         highlightedPath.value = location.fieldPath
         if (highlightTimeout) {
@@ -86,10 +88,17 @@ export const useBlueprintFieldFocus = (
         }
         highlightTimeout = setTimeout(() => (highlightedPath.value = null), HIGHLIGHT_MS)
 
+        // Only a field that owns the path outright gets the caret. A group field
+        // such as the corners grid or the cards builder holds many inputs and
+        // focusing the first of them would be arbitrary.
+        if (location.fieldPath !== path) {
+            return
+        }
+
         const input = field.querySelector<HTMLInputElement>('input:not([type="hidden"]), textarea')
 
         if (input && !input.disabled && !input.readOnly) {
-            input.focus()
+            input.focus({ preventScroll: true })
         }
     }
 
