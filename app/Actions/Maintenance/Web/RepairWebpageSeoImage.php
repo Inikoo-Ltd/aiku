@@ -35,6 +35,9 @@ class RepairWebpageSeoImage
             return;
         }
 
+        $seoData = $webpage->seo_data;
+        data_set($seoData, 'image_alt', $webpage->title, true);
+
         if ($isBlog) {
             $blogModelHasWebBlock = $webpage->modelHasWebBlocks()
                 ->whereHas('webBlock.webBlockType', function ($query) {
@@ -48,7 +51,8 @@ class RepairWebpageSeoImage
 
             if ($thirdPartyUrl) {
                 $webpage->updateQuietly([
-                    'seo_image_url' => $thirdPartyUrl
+                    'seo_image_url' => $thirdPartyUrl,
+                    'seo_data'      => $seoData
                 ]);
             }
         } else {
@@ -56,7 +60,10 @@ class RepairWebpageSeoImage
             if ($model && $model->images->isNotEmpty()) {
                 $media = $model->image ?? $model->images->first();
 
-                $webpage->updateQuietly(['seo_image_id' => $media->id]);
+                $webpage->updateQuietly([
+                    'seo_image_id'  => $media->id,
+                    'seo_data'      => $seoData
+                ]);
                 $webpage->images()->sync([
                     $media->id => [
                         'group_id'        => $webpage->group_id,
