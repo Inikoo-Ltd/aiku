@@ -9,12 +9,18 @@ import { trans } from "laravel-vue-i18n";
 import { faCheck, faTimes } from "@fas";
 import { isEqual } from 'lodash-es'
 import { faTrash } from "@far";
+import { faCopy, faInfoCircle } from "@fal";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import PasteProductOrderModal from "@/Components/Master/PasteProductOrderModal.vue";
+
+library.add(faCopy, faInfoCircle);
 
 const props = withDefaults(
     defineProps<{
         data: any
         useDelete?: boolean
         disabled?: boolean
+        pasteLookupRoute?: { name: string; parameters?: Record<string, unknown> } | null
     }>(),
     {
         disabled : false,
@@ -23,13 +29,15 @@ const props = withDefaults(
 )
 
 const viewMode = ref<'list' | 'card'>('list')
+
+const rowsOf = (data: any): any[] => (Array.isArray(data) ? data : (data?.data ?? []))
+
 const items = ref(
-    (props.data?.data ?? []).map((item: any, index: number) => ({
+    rowsOf(props.data).map((item: any, index: number) => ({
         ...item,
         order: index + 1,
     }))
 )
-console.log("Items:", items.value)
 
 const emits = defineEmits([
     "update:data",
@@ -158,6 +166,18 @@ const applySort = (type: 'manual' | 'name' | 'code') => {
     updateOrder()
 }
 
+const isPasteOpen = ref(false)
+
+const applyPastedOrder = (orderedItems: any[]) => {
+    saveHistory()
+    items.value = orderedItems.map((item: any, index: number) => ({
+        ...item,
+        order: index + 1,
+        index_under_family: index,
+    }))
+    emits("update:data", items.value)
+}
+
 const getImageSource = (item: any) => item?.image_thumbnail?.main?.thumbnail ?? item?.image_thumbnail
 
 const getArrow = (type: 'name' | 'code') => {
@@ -167,7 +187,7 @@ const getArrow = (type: 'name' | 'code') => {
 
 
 watch(
-    () => props.data?.data,
+    () => rowsOf(props.data),
     (newData) => {
         if (!newData) return
 
@@ -208,7 +228,21 @@ onBeforeUnmount(() => window.removeEventListener("keydown", handleKey))
                 </div>
             </div>
 
-            <div class="flex">
+            <div class="flex items-center gap-2">
+                <button
+                    v-if="!disabled"
+                    type="button"
+                    class="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-xs text-gray-600 transition duration-200 hover:bg-gray-50 hover:text-gray-800"
+                    @click="isPasteOpen = true">
+                    <FontAwesomeIcon :icon="faCopy" fixed-width aria-hidden="true" />
+                    {{ trans("Paste order") }}
+                </button>
+                <span
+                    v-if="!disabled"
+                    v-tooltip="trans('Paste one code per line, in the order you want. Numbering like 1. 2) or - is ignored, and nothing is saved until you press Save order.')"
+                    class="text-gray-400 hover:text-gray-600">
+                    <FontAwesomeIcon :icon="faInfoCircle" fixed-width aria-hidden="true" />
+                </span>
                 <slot name="before-button-list"></slot>
                 <div class="inline-flex rounded-lg border bg-gray-100 p-1">
                     <button @click="viewMode = 'list'"
@@ -328,6 +362,12 @@ onBeforeUnmount(() => window.removeEventListener("keydown", handleKey))
             </template>
         </draggable>
     </div>
+    <PasteProductOrderModal
+        :is-open="isPasteOpen"
+        :items="items"
+        :lookup-route="pasteLookupRoute"
+        @close="isPasteOpen = false"
+        @apply="applyPastedOrder" />
 </template>
 
 <style>

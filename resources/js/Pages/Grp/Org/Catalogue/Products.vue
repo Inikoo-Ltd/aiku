@@ -265,6 +265,7 @@ const replaceProps = (updatedData) => {
         :key="currentTab + key"
         :tab="currentTab"
         :data="localData[currentTab]"
+        :pasteLookupRoute="currentTab === 'index_ordering' ? { name: 'grp.json.product_category.products_by_codes', parameters: { productCategory: familyId } } : null"
         :isCheckboxProducts="currentTab === 'bulk_unit'"
         :selectedProductsId="selectedProductsId"
         :variantSlugs="variantSlugs"
