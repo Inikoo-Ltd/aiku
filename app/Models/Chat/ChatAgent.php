@@ -9,6 +9,7 @@
 namespace App\Models\Chat;
 
 use App\Enums\CRM\Livechat\ChatAgentPresenceStatusEnum;
+use App\Enums\CRM\Livechat\ChatPhoneCallStatusEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\Helpers\Language;
 use App\Models\SysAdmin\Organisation;
@@ -18,6 +19,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
 
@@ -179,10 +181,31 @@ class ChatAgent extends Model
     }
 
 
+    public function phoneCalls(): HasMany
+    {
+        return $this->hasMany(ChatPhoneCall::class, 'chat_agent_id');
+    }
+
+
+    public function activePhoneCall(): HasOne
+    {
+        return $this->hasOne(ChatPhoneCall::class, 'chat_agent_id')
+            ->where('status', ChatPhoneCallStatusEnum::IN_PROGRESS)
+            ->latestOfMany('started_at');
+    }
+
+
+    public function isOnPhoneCall(): bool
+    {
+        return $this->phoneCalls()->inProgress()->exists();
+    }
+
+
     public function isAvailableForChat(): bool
     {
         return $this->isOnline()
             && $this->is_available
+            && !$this->isOnPhoneCall()
             && $this->current_chat_count < $this->max_concurrent_chats;
     }
 
@@ -261,6 +284,7 @@ class ChatAgent extends Model
         return $query->online()
             ->where('is_available', true)
             ->whereHas('user', fn ($user) => $user->where('status', true))
+            ->whereDoesntHave('phoneCalls', fn ($call) => $call->inProgress())
             ->whereColumn('current_chat_count', '<', 'max_concurrent_chats');
     }
 

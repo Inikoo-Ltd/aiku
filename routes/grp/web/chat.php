@@ -7,6 +7,12 @@
  */
 
 use App\Actions\Chat\Agent\Presence\TrackChatAgentPresence;
+use App\Actions\Chat\PhoneCall\CancelChatPhoneCall;
+use App\Actions\Chat\PhoneCall\EndChatPhoneCall;
+use App\Actions\Chat\PhoneCall\GetActiveChatPhoneCall;
+use App\Actions\Chat\PhoneCall\GetChatPhoneCallGuests;
+use App\Actions\Chat\PhoneCall\StartChatPhoneCall;
+use App\Actions\Chat\PhoneCall\UI\ShowGroupChatPhoneCalls;
 use App\Actions\Helpers\Language\UI\GetLanguagesOptions;
 use App\Actions\Chat\Agent\UI\ShowGroupAgents;
 use App\Actions\Chat\ChatSession\UI\RedirectToOrgChatInbox;
@@ -18,6 +24,15 @@ Route::get('/agents', ShowGroupAgents::class)->name('agents.show');
 Route::get('/inbox', RedirectToOrgChatInbox::class)->name('inbox');
 Route::post('/presence', TrackChatAgentPresence::class)->name('presence.track');
 Route::get('/languages', [GetLanguagesOptions::class, 'getLanguageJson'])->name('languages.index');
+
+Route::prefix('phone-calls')->name('phone_calls.')->group(function () {
+    Route::get('/', ShowGroupChatPhoneCalls::class)->name('index');
+    Route::get('/active', GetActiveChatPhoneCall::class)->name('active');
+    Route::get('/guests', GetChatPhoneCallGuests::class)->name('guests');
+    Route::post('/start', StartChatPhoneCall::class)->name('start');
+    Route::post('/end', EndChatPhoneCall::class)->name('end');
+    Route::post('/cancel', CancelChatPhoneCall::class)->name('cancel');
+});
 
 Route::prefix('staff')->name('staff.')->middleware('throttle:240,1')->group(function () {
     Route::get('/', \App\Actions\Chat\Staff\UI\ShowStaffMessaging::class)->name('index');

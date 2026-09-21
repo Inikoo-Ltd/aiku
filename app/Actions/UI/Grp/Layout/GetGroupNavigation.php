@@ -185,6 +185,15 @@ class GetGroupNavigation
                         ],
                     ],
                     [
+                        'label'   => __('Phone calls'),
+                        'tooltip' => __('Phone calls'),
+                        'icon'    => ['fal', 'fa-phone'],
+                        'root'    => 'grp.chat.phone_calls.',
+                        'route'   => [
+                            'name' => 'grp.chat.phone_calls.index',
+                        ],
+                    ],
+                    [
                         'label'   => __('Reports'),
                         'tooltip' => __('Reports'),
                         'icon'    => ['fal', 'fa-chart-line'],

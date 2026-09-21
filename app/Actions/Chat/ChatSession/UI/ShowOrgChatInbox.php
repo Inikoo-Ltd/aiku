@@ -21,6 +21,7 @@ use App\Enums\CRM\Livechat\ChatSessionStatusEnum;
 use App\Http\Resources\CRM\Livechat\ChatSessionListResource;
 use App\Models\Catalogue\Shop;
 use App\Models\Chat\ChatAgent;
+use App\Models\Chat\ChatPhoneCall;
 use App\Models\Chat\ChatSession;
 use App\Models\Chat\MetaChatSession;
 use App\Models\SysAdmin\Organisation;
@@ -194,7 +195,7 @@ class ShowOrgChatInbox extends OrgAction
      * counted from the conversations rather than read off the agent's own counter, which drifts.
      *
      * @param  array<int, int>  $shopIds
-     * @return array<int, array{id: int, name: string|null, presence: string, open: int, max: int}>
+     * @return array<int, array{id: int, name: string|null, presence: string, open: int, max: int, on_call: bool, on_call_since: string|null}>
      */
     private function agentsCovering(array $shopIds): array
     {
@@ -210,15 +211,23 @@ class ShowOrgChatInbox extends OrgAction
             ->selectRaw('chat_assignments.chat_agent_id, count(*) as open')
             ->pluck('open', 'chat_agent_id');
 
+        // Somebody away from the keyboard on the telephone reads as idle otherwise, and the
+        // conversations they are not answering look like neglect rather than a call in progress.
+        $onCall = ChatPhoneCall::inProgress()
+            ->orderBy('started_at')
+            ->pluck('started_at', 'chat_agent_id');
+
         return ChatAgent::with('user')->get()
             ->filter(fn (ChatAgent $agent) => $agent->user?->status
                 && array_intersect($shopIds, $this->workableShopIdsFor($agent->user)) !== [])
             ->map(fn (ChatAgent $agent) => [
-                'id'       => $agent->id,
-                'name'     => $agent->user->contact_name,
-                'presence' => $agent->presenceStatus()->value,
-                'open'     => (int) ($open[$agent->id] ?? 0),
-                'max'      => $agent->max_concurrent_chats,
+                'id'            => $agent->id,
+                'name'          => $agent->user->contact_name,
+                'presence'      => $agent->presenceStatus()->value,
+                'open'          => (int) ($open[$agent->id] ?? 0),
+                'max'           => $agent->max_concurrent_chats,
+                'on_call'       => $onCall->has($agent->id),
+                'on_call_since' => $onCall->get($agent->id)?->toIso8601String(),
             ])
             ->sortBy([
                 fn (array $a, array $b) => array_search($a['presence'], ['online', 'away', 'offline']) <=> array_search($b['presence'], ['online', 'away', 'offline']),

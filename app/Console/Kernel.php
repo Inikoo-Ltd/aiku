@@ -1071,6 +1071,15 @@ class Kernel extends ConsoleKernel
                 type: 'command',
                 scheduledAt: now()->format('H:i')
             );
+
+            $this->logSchedule(
+                $schedule->command('chat:close-stale-phone-calls')->everyFiveMinutes()->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
+                    monitorSlug: 'AutoCloseStaleChatPhoneCalls',
+                ),
+                name: 'AutoCloseStaleChatPhoneCalls',
+                type: 'command',
+                scheduledAt: now()->format('H:i')
+            );
         }
     }
 
