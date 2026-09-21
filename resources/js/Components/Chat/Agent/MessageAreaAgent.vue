@@ -8,6 +8,7 @@ import {
     faArrowLeft,
     faImage,
     faEllipsisVertical,
+    faLanguage,
     faTimesCircle,
     faMessage,
     faPaperclip, faXmark, faFilePdf, faEnvelope, faRotateRight, faBan, faRotateLeft, faFaceSmile,
@@ -15,7 +16,6 @@ import {
     faEye,
     faArchive,
     faAngleDown,
-    faLanguage,
 } from "@fortawesome/free-solid-svg-icons"
 import { faSlack } from "@fortawesome/free-brands-svg-icons"
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
@@ -776,7 +776,6 @@ const stopSocket = () => {
     chatChannel = null
 }
 
-const isTranslatingAll = ref(false)
 const notifiedMessageIds = new Set<number>()
 
 const initSocket = () => {
@@ -870,8 +869,6 @@ const initSocket = () => {
     }
 
     onTranslation = async () => {
-        isTranslatingAll.value = false
-
         await getMessages()
     }
 
@@ -910,6 +907,21 @@ const markAsRead = async () => {
 const onViewMessageDetails = () => {
     isMenuOpen.value = false
     emit("view-message-details")
+}
+
+const translateConversation = async () => {
+    isMenuOpen.value = false
+    const languageId = layout.user?.language_id
+    if (!chatSession.value?.ulid || !languageId) return
+
+    try {
+        await axios.post(`${baseUrl}/app/api/chats/sessions/${chatSession.value.ulid}/translate`, {
+            target_language_id: languageId,
+        })
+        await getMessages()
+    } catch (e) {
+        console.error("Translate failed", e)
+    }
 }
 
 const onViewUserProfile = () => {
@@ -971,39 +983,10 @@ const handleTyping = () => {
 }
 
 const selectedLanguage = ref("")
-const isTranslating = ref(false)
 
 const selectedLanguageId = computed(() =>
     getLanguageIdByCode(selectedLanguage.value)
 )
-
-// Whose language the conversation is put into: the agent's own, unless somebody has explicitly
-// asked for another one.
-const translationLanguageId = computed(() => selectedLanguageId.value || layout.user?.language_id || null)
-
-const translateAllMessage = async () => {
-    if (!chatSession.value?.ulid || !translationLanguageId.value) return
-
-    isTranslating.value = true
-
-    try {
-        await axios.post(
-            `${baseUrl}/app/api/chats/sessions/${chatSession.value?.ulid}/translate`,
-            {
-                target_language_id: translationLanguageId.value,
-            }
-        )
-
-        messagesLocal.value = []
-
-        await getMessages()
-        isTranslatingAll.value = true
-    } catch (e) {
-        console.error("Translate failed", e)
-    } finally {
-        isTranslating.value = false
-    }
-}
 
 onMounted(async () => {
     await getMessages()
@@ -1018,12 +1001,6 @@ onUnmounted(() => {
     stopSocket()
     document.removeEventListener("click", handleClickOutside)
     document.removeEventListener("click", handleClickOutsideEmoji)
-})
-
-watch(selectedLanguage, (code) => {
-    if (!code) return
-    initSocket()
-    translateAllMessage()
 })
 
 const handleClickOutside = (e: MouseEvent) => {
@@ -1134,18 +1111,11 @@ const handleClickOutside = (e: MouseEvent) => {
                 {{ (session as any)?.is_spam ? ctrans("Not spam") : ctrans("Spam") }}
             </button>
 
-            <!-- The whole thread in the agent's own language, which the account already knows.
-                 It used to ask which of every language we support, on a screen where the answer
-                 was always the same one, and each message asked again. -->
-            <button v-if="!isTranslatingAll" type="button" :disabled="isTranslating"
-                v-tooltip="ctrans('Translate the conversation into your language')"
-                class="inline-flex items-center gap-1.5 shrink-0 h-7 px-2.5 text-[11px] font-medium rounded-md border border-gray-300 text-gray-600 transition hover:bg-gray-100 disabled:opacity-50"
-                @click="translateAllMessage">
-                <FontAwesomeIcon :icon="faLanguage" class="text-[11px]" />
-                {{ ctrans("Translate") }}
+            <button type="button" v-tooltip="ctrans('Customer details')" :aria-label="ctrans('Customer details')"
+                class="inline-flex items-center justify-center shrink-0 h-7 w-7 rounded-md border border-gray-300 text-gray-600 transition hover:bg-gray-100"
+                @click="onViewUserProfile">
+                <FontAwesomeIcon :icon="faUser" class="text-[11px]" />
             </button>
-
-            <FontAwesomeIcon v-if="isTranslating" :icon="faSpinner" class="text-gray-400 text-xs animate-spin" />
 
             <div class="relative" ref="menuRef">
                 <button @click.stop="isMenuOpen = !isMenuOpen" :aria-label="ctrans('Toggle menu')">
@@ -1156,6 +1126,10 @@ const handleClickOutside = (e: MouseEvent) => {
                     class="absolute right-0 mt-2 w-56 bg-white border rounded-md shadow z-50">
                     <button class="menu-item" @click="onViewUserProfile">
                         <FontAwesomeIcon :icon="faUser" /> {{ ctrans("View Profile") }}
+                    </button>
+
+                    <button class="menu-item" @click="translateConversation">
+                        <FontAwesomeIcon :icon="faLanguage" /> {{ ctrans("Translate conversation") }}
                     </button>
 
                     <button class="menu-item" @click="onViewMessageDetails">
@@ -1175,20 +1149,6 @@ const handleClickOutside = (e: MouseEvent) => {
                 </div>
             </div>
         </header>
-
-        <div v-if="isTranslatingAll" class="sticky top-0 z-10 bg-white/90 backdrop-blur
-            border-b border-gray-200 px-4 py-3">
-
-            <div class="flex items-center justify-center gap-3 text-sm text-gray-600">
-                <LoadingIcon class="w-4 h-4 animate-spin" />
-                <div class="flex flex-col leading-tight">
-                    <span class="font-medium">Updating translations</span>
-                    <span class="text-xs text-gray-400">
-                        Messages will refresh automatically
-                    </span>
-                </div>
-            </div>
-        </div>
 
         <!-- Messages -->
         <div ref="messagesContainer" class="flex-1 overflow-y-auto px-3 py-2 space-y-3 bg-[#F0F4F8]">
