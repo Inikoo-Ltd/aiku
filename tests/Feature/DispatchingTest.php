@@ -62,6 +62,7 @@ use App\Actions\Dispatching\PickingSession\CalculatePickingSessionPicks;
 use App\Actions\Dispatching\PickingSession\StartPickPickingSession;
 use App\Actions\Dispatching\PickingSession\StorePickingSession;
 use App\Actions\Dispatching\PickingSession\UpdatePickingSession;
+use App\Actions\Dispatching\Shipment\FetchShipmentLabel;
 use App\Actions\Dispatching\Shipment\StoreShipment;
 use App\Actions\Dispatching\Shipment\UpdateShipment;
 use App\Actions\Dispatching\Shipper\Json\GetShippers;
@@ -122,6 +123,7 @@ use App\Models\Goods\TradeUnit;
 use App\Models\Dispatching\Packing;
 use App\Models\Dispatching\Picking;
 use App\Models\Dispatching\Shipment;
+use Illuminate\Support\Facades\Http;
 use App\Models\Dispatching\Shipper;
 use App\Models\Dispatching\Trolley;
 use App\Models\Fulfilment\Pallet;
@@ -641,6 +643,24 @@ test('update shipment', function ($lastShipment) {
     $shipment = UpdateShipment::make()->action($lastShipment, $arrayData);
 
     expect($shipment->reference)->toBe($arrayData['reference']);
+})->depends('create shipment');
+
+test('fetch shipment label refills an empty apc label', function ($lastShipment) {
+    $lastShipment->shipper->update(['api_shipper' => 'apc-gb']);
+    $lastShipment->update([
+        'label'        => '',
+        'api_response' => ['Orders' => ['Order' => ['OrderNumber' => '000000003884234503']]],
+    ]);
+
+    config(['app.sandbox.shipper_apc_token' => 'token']);
+
+    Http::fake([
+        '*/Orders/000000003884234503.json' => Http::response(['Orders' => ['Order' => ['Label' => ['Content' => 'TEST-LABEL']]]]),
+    ]);
+
+    $shipment = FetchShipmentLabel::run($lastShipment);
+
+    expect($shipment->refresh()->label)->toBe('TEST-LABEL');
 })->depends('create shipment');
 
 test("UI Index dispatching delivery-notes", function () {
