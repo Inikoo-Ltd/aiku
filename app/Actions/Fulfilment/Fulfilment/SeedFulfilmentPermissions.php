@@ -112,7 +112,7 @@ class SeedFulfilmentPermissions
     public function asCommand(Command $command): int
     {
         foreach (Fulfilment::all() as $fulfilment) {
-            $command->info("Seeding permissions for fulfilment: $fulfilment->shop->name");
+            $command->info("Seeding permissions for fulfilment: {$fulfilment->shop->name}");
             setPermissionsTeamId($fulfilment->group_id);
             $this->handle($fulfilment);
         }

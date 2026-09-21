@@ -232,9 +232,17 @@
     <tr>
         <td style="width:14%;text-align:left">{{ __('Code') }}</td>
 
-        <td style="text-align:left" colspan="2">{{ __('Description') }}</td>
+        @if($price_breakdown)
+            <td style="text-align:left">{{ __('Description') }}</td>
+            <td style="text-align:right">{{ __('Qty') }}.</td>
+            <td style="text-align:right">{{ __('Gross') }}</td>
+            <td style="text-align:right">{{ __('Discount') }}</td>
+        @else
+            <td style="text-align:left" colspan="2">{{ __('Description') }}</td>
+        @endif
 
-        @if($pro_mode)
+        @if($price_breakdown)
+        @elseif($pro_mode)
             <td style="text-align:right;width:20% ">{{ __('Unit Price') }}</td>
             <td style="text-align:right;width:20% ">{{ __('Units') }}</td>
         @else
@@ -267,13 +275,21 @@
             <tr class="@if($loop->last) last @endif">
                 <td style="text-align:left">{{ $transaction->historicAsset?->code }}</td>
 
-                @if($pro_mode)
+                @if($price_breakdown)
+                    @php($grossAmount = (float) $transaction->gross_amount)
+                    <td style="text-align:left">
+                        {{ $transaction->historicAsset?->name }}
+                        @if($transaction->historicAsset)
+                            ({{ $order->currency->symbol }}{{ number_format((float) $transaction->historicAsset->price, 2) }})
+                        @endif
+                    </td>
+                    <td style="text-align:right">{{ packQuantityLabel($transaction->quantity_ordered, soldPackUnits($transaction->historicAsset?->units, $transaction->model?->units)) }}</td>
+                    <td style="text-align:right">{{ $order->currency->symbol }}{{ number_format($grossAmount, 2) }}</td>
+                    <td style="text-align:right">{{ $grossAmount - $netAmount != 0 ? '-'.$order->currency->symbol.number_format($grossAmount - $netAmount, 2) : '-' }}</td>
+                @elseif($pro_mode)
                     <td style="text-align:left" colspan="2">{{ $transaction->historicAsset?->name }}</td>
                 @else
                     <td style="text-align:left" colspan="2">
-                        @if($transaction->historicAsset?->units > 1)
-                            {{ trimDecimalZeros($transaction->historicAsset?->units) . 'x' }}
-                        @endif
                         {{ $transaction->historicAsset?->name }}
 
                         @if($transaction->historicAsset)
@@ -304,7 +320,8 @@
                     </td>
                 @endif
 
-                @if($pro_mode)
+                @if($price_breakdown)
+                @elseif($pro_mode)
                     <td style="text-align:right">
                         @if(!$transaction->quantity_ordered || $transaction->quantity_ordered == 0)
                             {{ $order->currency->symbol }} {{ number_format((float) optional($transaction->historicAsset)->price, 2) }}
@@ -312,10 +329,10 @@
                             {{ $order->currency->symbol . ' ' . number_format((float) $transaction->net_amount / $transaction->quantity_ordered, 2) }}
                         @endif
                     </td>
-                    <td style="text-align:right">{{  trimDecimalZeros($transaction->quantity_ordered) }}</td>
+                    <td style="text-align:right">{{ packQuantityLabel($transaction->quantity_ordered, soldPackUnits($transaction->historicAsset?->units, $transaction->model?->units)) }}</td>
                 @else
                     <td style="text-align:right">{{ $discountFactor > 0 ? percentage($discountFactor, 1) : '-' }}</td>
-                    <td style="text-align:right">{{ trimDecimalZeros($transaction->quantity_ordered)  }}</td>
+                    <td style="text-align:right">{{ packQuantityLabel($transaction->quantity_ordered, soldPackUnits($transaction->historicAsset?->units, $transaction->model?->units)) }}</td>
                 @endif
 
                 <td style="text-align:right">{{ $order->currency->symbol }}{{ number_format($netAmount, 2) }}</td>

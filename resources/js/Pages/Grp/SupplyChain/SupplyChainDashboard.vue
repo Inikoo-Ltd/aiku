@@ -93,6 +93,17 @@ const showAspos = ref(true)
 const showPos = ref(true)
 const agentFilter = ref<Set<string>>(new Set())
 
+// ponytail: the rows are already in the payload, so paginate in the browser; move it server side if the payload itself gets heavy
+const stalePerPage = 50
+const stalePage = ref(1)
+const stalePageCount = computed(() => Math.max(1, Math.ceil(sortedStaleOrders.value.length / stalePerPage)))
+const pagedStaleOrders = computed(() =>
+    sortedStaleOrders.value.slice((stalePage.value - 1) * stalePerPage, stalePage.value * stalePerPage)
+)
+watch(sortedStaleOrders, () => {
+    stalePage.value = 1
+})
+
 let filtersInitialised = false
 watch(
     () => props.staleOrders,
@@ -299,7 +310,7 @@ const currencyFormat = (currency: string | null, amount: number | null) => {
                         </thead>
                         <tbody>
                             <tr
-                                v-for="order in sortedStaleOrders"
+                                v-for="order in pagedStaleOrders"
                                 :key="order.type + order.reference"
                                 class="border-b border-gray-100 last:border-0 hover:bg-gray-50"
                                 :class="order.deposit_paid_at && !order.has_deliveries ? 'bg-red-50 hover:bg-red-100' : ''">
@@ -337,6 +348,30 @@ const currencyFormat = (currency: string | null, amount: number | null) => {
                             </tr>
                         </tbody>
                     </table>
+                </div>
+
+                <div v-if="stalePageCount > 1" class="flex items-center justify-end gap-2 px-3 py-2 text-xs text-gray-500">
+                    <span>
+                        {{ trans(":from-:to of :total", {
+                            from: String((stalePage - 1) * stalePerPage + 1),
+                            to: String(Math.min(stalePage * stalePerPage, sortedStaleOrders.length)),
+                            total: String(sortedStaleOrders.length),
+                        }) }}
+                    </span>
+                    <button
+                        type="button"
+                        class="rounded border border-gray-200 px-2 py-px disabled:text-gray-300"
+                        :disabled="stalePage === 1"
+                        @click="stalePage--">
+                        {{ trans("Previous") }}
+                    </button>
+                    <button
+                        type="button"
+                        class="rounded border border-gray-200 px-2 py-px disabled:text-gray-300"
+                        :disabled="stalePage === stalePageCount"
+                        @click="stalePage++">
+                        {{ trans("Next") }}
+                    </button>
                 </div>
             </DashboardWidgetBox>
         </Deferred>

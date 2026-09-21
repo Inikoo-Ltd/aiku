@@ -349,6 +349,10 @@ class ShowWebsite extends OrgAction
                         'live_visitors_enabled' => $liveVisitorsEnabled,
                         'currency_code'        => $website->shop?->currency?->code,
                         'route_live_users'     => $analyticsRoute('live_users'),
+                        'route_chat_visitors'  => route('grp.org.shops.show.chat.dashboard-visitors', [
+                            $website->organisation->slug,
+                            $website->shop->slug,
+                        ]),
                         'website_type'         => $website->shop->type,
                         'migrated'             => $website->migrated,
                         'search_insights'      => GetWebsiteSearchAnalytics::run($website),

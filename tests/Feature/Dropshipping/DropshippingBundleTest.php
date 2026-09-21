@@ -49,14 +49,15 @@ beforeEach(function () {
 
     $this->customer = createCustomer($this->shop);
 
-    list($this->tradeUnit, $this->product) = createProduct($this->shop);
+    [, $this->product] = createProduct($this->shop);
+    $this->tradeUnit = $this->product->tradeUnits()->firstOrFail();
 
     $secondProductData = array_merge(
         Product::factory()->definition(),
         [
             'trade_units' => [
                 [
-                    'id'       => $this->tradeUnit->id ?? $this->tradeUnit[0]->id,
+                    'id'       => $this->tradeUnit->id,
                     'quantity' => 1,
                 ],
             ],
@@ -294,3 +295,125 @@ test('delete bundle discontinues product and clears flags', function (Bundle $bu
         ->and($bundle->exist_in_platform)->toBeFalse()
         ->and($bundle->bundleable->state)->toBe(ProductStateEnum::DISCONTINUED);
 })->depends('store or update bundle dispatches to store when no id given');
+
+test('two components made of the same trade unit both count towards the bundle instead of one replacing the other', function () {
+    $channel = StoreCustomerSalesChannel::make()->action(
+        $this->customer,
+        $this->group->platforms()->where('type', PlatformTypeEnum::SHOPIFY)->first(),
+        ['reference' => 'shared_trade_unit_channel']
+    );
+
+    $sharedTradeUnitId = $this->tradeUnit->id;
+
+    $bundle = StoreBundle::make()->action($channel, [
+        'name'     => 'Shared Trade Unit Bundle',
+        'products' => [
+            ['product_id' => $this->product->id, 'quantity' => 1],
+            ['product_id' => $this->secondProduct->id, 'quantity' => 2],
+        ],
+    ]);
+
+    $bundleTradeUnits = $bundle->bundleable->tradeUnits;
+
+    expect($bundleTradeUnits)->toHaveCount(1)
+        ->and($bundleTradeUnits->first()->id)->toBe($sharedTradeUnitId)
+        ->and((float) $bundleTradeUnits->first()->pivot->quantity)->toEqual(3.0);
+});
+
+test('a component added after the bundle was created reaches the bundle product and its portfolio sku', function () {
+    $channel = StoreCustomerSalesChannel::make()->action(
+        $this->customer,
+        $this->group->platforms()->where('type', PlatformTypeEnum::SHOPIFY)->first(),
+        ['reference' => 'late_component_channel']
+    );
+
+    $stock = \App\Actions\Goods\Stock\StoreStock::make()->action($this->group, \App\Models\Goods\Stock::factory()->definition());
+    $otherTradeUnit = $stock->tradeUnits()->firstOrFail();
+
+    $family = $this->shop->productCategories()
+        ->where('type', \App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum::FAMILY)
+        ->first();
+
+    $thirdProduct = \App\Actions\Catalogue\Product\StoreProduct::make()->action($family, array_merge(
+        Product::factory()->definition(),
+        [
+            'trade_units' => [['id' => $otherTradeUnit->id, 'quantity' => 1]],
+            'price'       => 10,
+            'rrp'         => 20,
+        ]
+    ));
+    $thirdProduct = \App\Actions\Catalogue\Product\UpdateProduct::make()->action($thirdProduct, ['state' => ProductStateEnum::ACTIVE]);
+
+    $bundle = StoreBundle::make()->action($channel, [
+        'name'     => 'Grows Later Bundle',
+        'products' => [
+            ['product_id' => $this->product->id, 'quantity' => 1],
+        ],
+    ]);
+
+    $portfolio = \App\Models\Dropshipping\Portfolio::where('bundle_id', $bundle->id)->firstOrFail();
+    $skuOnCreation = $portfolio->sku;
+
+    UpdateBundle::make()->action($bundle, [
+        'products' => [
+            ['product_id' => $this->product->id, 'quantity' => 1],
+            ['product_id' => $thirdProduct->id, 'quantity' => 1],
+        ],
+    ]);
+
+    $bundleTradeUnitIds = $bundle->bundleable->refresh()->tradeUnits->pluck('id');
+
+    expect($bundle->items()->count())->toBe(2)
+        ->and($bundleTradeUnitIds)->toContain($otherTradeUnit->id)
+        ->and($bundleTradeUnitIds)->toHaveCount(2)
+        ->and($portfolio->refresh()->sku)->not->toBe($skuOnCreation)
+        ->and($portfolio->sku)->toBe($stock->slug);
+});
+
+test('a bundle holding several of a component made of several trade units multiplies the two quantities', function () {
+    $channel = StoreCustomerSalesChannel::make()->action(
+        $this->customer,
+        $this->group->platforms()->where('type', PlatformTypeEnum::SHOPIFY)->first(),
+        ['reference' => 'multi_trade_unit_channel']
+    );
+
+    $tradeUnitId = $this->tradeUnit->id;
+
+    $family = $this->shop->productCategories()
+        ->where('type', \App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum::FAMILY)
+        ->first();
+
+    $threePack = \App\Actions\Catalogue\Product\StoreProduct::make()->action($family, array_merge(
+        Product::factory()->definition(),
+        [
+            'trade_units' => [['id' => $tradeUnitId, 'quantity' => 3]],
+            'price'       => 10,
+            'rrp'         => 20,
+        ]
+    ));
+
+    $bundle = StoreBundle::make()->action($channel, [
+        'name'     => 'Three Pack Bundle',
+        'products' => [
+            ['product_id' => $threePack->id, 'quantity' => 2],
+        ],
+    ]);
+
+    expect((float) $bundle->bundleable->tradeUnits->first()->pivot->quantity)->toEqual(6.0);
+});
+
+test('a customer bundle stays out of the public shop data feed', function () {
+    $bundle = StoreBundle::make()->action(
+        $this->customerSalesChannel,
+        [
+            'products' => [
+                ['product_id' => $this->product->id, 'quantity' => 1],
+            ],
+        ]
+    );
+    $bundle->bundleable->update(['state' => ProductStateEnum::ACTIVE]);
+
+    $feedProductIds = (new \App\Exports\Marketing\ProductsInShopExport($this->shop))->query()->pluck('id');
+
+    expect($feedProductIds)->not->toContain($bundle->bundleable_id);
+});

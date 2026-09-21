@@ -1,0 +1,137 @@
+{
+	"slug": "register-dashboard",
+	"code": "register-dashboard",
+	"name": "Register Dashboard",
+	"scope": "webpage",
+	"category": "block",
+	"website_type": [
+		"b2b",
+		"b2c",
+		"dropshipping",
+		"fulfilment"
+	],
+	"shop_availability": [],
+	"icon": [
+		"fal",
+		"id-card"
+	],
+	"is_in_test": false,
+	"fixed": true,
+	"data": {
+		"fieldValue": {
+			"accent_color": "#c94f00",
+			"hero": {
+				"image": null,
+				"image_url": "/art/register-dashboard-hero.webp",
+				"image_alt": "Wholesale giftware",
+				"title": "Discover your shop’s next bestsellers",
+				"intro": "<p>Wholesale gifts, aromatherapy, bath &amp; body and home fragrance for independent businesses.</p>",
+				"show_benefits": true,
+				"benefits": [
+					{
+						"icon": [
+							"fal",
+							"box"
+						],
+						"text": "No minimum<br>order value"
+					},
+					{
+						"icon": [
+							"fal",
+							"tag"
+						],
+						"text": "7,500+ products<br>to explore"
+					},
+					{
+						"icon": [
+							"fal",
+							"users"
+						],
+						"text": "Wholesale<br>since 1995"
+					},
+					{
+						"icon": [
+							"fal",
+							"percent"
+						],
+						"text": "10% First<br>Order Bonus"
+					},
+					{
+						"icon": [
+							"fal",
+							"truck"
+						],
+						"text": "Next Day UK<br>Delivery Service"
+					}
+				]
+			},
+			"signup": {
+				"title": "Create your<br>wholesale account",
+				"subtitle": "Find something truly unique for your customers.",
+				"button": {
+					"show": true,
+					"label": "Register with email",
+					"icon": [
+						"fal",
+						"envelope"
+					],
+					"link": {
+						"type": "internal",
+						"href": "/app/registration-form",
+						"url": null,
+						"canonical_url": null,
+						"id": null,
+						"target": "_self"
+					}
+				},
+				"google": {
+					"show": true,
+					"note": null,
+					"label": "Register with Google"
+				},
+				"login_note": "<p>Already have an account? <a href=\"/app/login\">Log in</a></p>",
+				"whatsapp": {
+					"show": true,
+					"title": "Prefer WhatsApp?",
+					"text": "Add your number during registration.",
+					"note": "WhatsApp offers are optional.",
+					"number": null,
+					"message": null
+				},
+				"audience": {
+					"show": true,
+					"icon": [
+						"fal",
+						"store"
+					],
+					"text": "For shops, online sellers and wellbeing businesses."
+				}
+			},
+			"faq": {
+				"show": true,
+				"title": "New to wholesale? You’re in the right place.",
+				"items": [
+					{
+						"question": "Who can register?",
+						"answer": "<p>We supply independent shops, online sellers, wellbeing practitioners and other genuine businesses.</p>"
+					},
+					{
+						"question": "Is there a minimum order?",
+						"answer": "<p>There is no minimum order value. Check individual product pages for pack sizes and quantities.</p>"
+					}
+				]
+			},
+			"container": {
+				"properties": {
+					"background": {
+						"type": "color",
+						"color": "rgba(255, 255, 255, 1)",
+						"image": {
+							"original": null
+						}
+					}
+				}
+			}
+		}
+	}
+}

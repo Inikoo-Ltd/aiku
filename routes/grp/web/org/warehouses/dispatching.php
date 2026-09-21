@@ -10,6 +10,7 @@ use App\Actions\Dispatching\Box\UI\CreateBox;
 use App\Actions\Dispatching\Box\UI\IndexBoxes;
 use App\Actions\Dispatching\DeliveryNote\UI\IndexDeliveryNotes;
 use App\Actions\Dispatching\FulfilmentGate\StoreJobOrderFromShortfall;
+use App\Actions\Dispatching\PartnerStaging\ReleasePartnerStagingTask;
 use App\Actions\Dispatching\PartnerStaging\StagePartnerStock;
 use App\Actions\Dispatching\ProductionOutput\PutAwayFinishedJobOrder;
 use App\Actions\Dispatching\FulfilmentGate\UI\IndexOrdersAtGate;
@@ -44,6 +45,7 @@ Route::get('/', ShowDispatchHub::class)->name('backlog');
 Route::get('/reports', ShowDispatchReports::class)->name('reports');
 Route::get('/gate', IndexOrdersAtGate::class)->name('gate');
 Route::post('/partner-staging/stage', StagePartnerStock::class)->name('partner_staging.stage');
+Route::post('/partner-staging/release', ReleasePartnerStagingTask::class)->name('partner_staging.release');
 Route::post('/production-output/put-away', PutAwayFinishedJobOrder::class)->name('production_output.put_away')->withoutScopedBindings();
 Route::post('/gate/job-order', StoreJobOrderFromShortfall::class)->name('gate.job_order');
 

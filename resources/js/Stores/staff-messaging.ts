@@ -83,6 +83,7 @@ const bubblePositionKey = (ulid: string) => `staff-chat-bubble-${ulid}`
 export const useStaffMessaging = defineStore("staff-messaging", {
     state: () => ({
         conversations: [] as StaffConversation[],
+        visitingConversations: [] as StaffConversation[],
         messagesByUlid: {} as Record<string, StaffMessage[]>,
         notesByUlid: {} as Record<string, ArchivedNote[]>,
         openWindows: [] as WindowState[],
@@ -97,7 +98,7 @@ export const useStaffMessaging = defineStore("staff-messaging", {
         totalUnread: (state) => state.conversations.reduce((sum, c) => sum + (c.unread_count || 0), 0),
         openWindowsVisible: (state) => state.openWindows.filter((w) => !w.minimised),
         openWindowsMinimised: (state) => state.openWindows.filter((w) => w.minimised),
-        conversationByUlid: (state) => (ulid: string) => state.conversations.find((c) => c.ulid === ulid),
+        conversationByUlid: (state) => (ulid: string) => state.conversations.find((c) => c.ulid === ulid) ?? state.visitingConversations.find((c) => c.ulid === ulid),
     },
 
     actions: {
@@ -143,6 +144,16 @@ export const useStaffMessaging = defineStore("staff-messaging", {
             if (message) {
                 await this.send(conversation.ulid, message)
             }
+        },
+
+        async openTaskThread(task: { reference: string; conversation_ulid: string | null }) {
+            if (!task.conversation_ulid) return
+            if (!this.fetched) await this.fetchConversations()
+            if (!this.conversationByUlid(task.conversation_ulid)) {
+                const { data } = await axios.get(route("grp.tasks.conversation", task.reference))
+                this.visitingConversations.push(data.data)
+            }
+            this.openConversation(task.conversation_ulid)
         },
 
         openConversation(ulid: string) {

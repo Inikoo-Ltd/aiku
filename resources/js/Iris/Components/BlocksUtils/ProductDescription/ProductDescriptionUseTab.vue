@@ -137,7 +137,7 @@ const faqJsonLd = computed(() =>
 		:id="'product-description-' + indexBlock"
 		:style="sectionStyle">
 		<div
-			class="mx-auto mw-full px-4 md:px-6  lg:px-8  2xl:px-10 "
+			class="mx-auto mw-full px-4 md:px-6 lg:px-8  2xl:px-10 "
 			:style="containerStyle">
 			<!-- TOP NAV -->
 			<div class="border-b border-[#9a9a9a] bg-[#fbfaf9] mx-3 ">

@@ -22,6 +22,7 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
 use App\Enums\Catalogue\Shop\ShopEngineEnum;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteTypeEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
@@ -54,6 +55,12 @@ class UpdateDeliveryNoteStatePacked extends OrgAction
 
         if ($deliveryNote->hasBlockingItems()) {
             abort(422, __('Cannot pack: some items are waiting for a replacement decision or warehouse release'));
+        }
+
+        if (static::hasMissingParcelDimensions($deliveryNote)) {
+            throw ValidationException::withMessages([
+                'parcels' => __('Enter the dimensions of every parcel before setting as packed'),
+            ]);
         }
 
         $oldState = $deliveryNote->state;
@@ -203,6 +210,22 @@ class UpdateDeliveryNoteStatePacked extends OrgAction
         }
     }
 
+
+    /**
+     * Parcel dimensions are obligatory, only dropshipping falls back to the 5x5x5 cm default parcel (HELP-3169).
+     */
+    public static function hasMissingParcelDimensions(DeliveryNote $deliveryNote): bool
+    {
+        if ($deliveryNote->shop->type == ShopTypeEnum::DROPSHIPPING) {
+            return false;
+        }
+
+        $parcels = $deliveryNote->parcels ?? [];
+
+        return empty($parcels) || collect($parcels)->contains(
+            fn ($parcel) => collect(range(0, 2))->contains(fn ($index) => (float)data_get($parcel, "dimensions.$index") <= 0)
+        );
+    }
 
     /**
      * @throws \Throwable

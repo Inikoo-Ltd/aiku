@@ -203,6 +203,12 @@ const varinatNavigation = ref({
   nextEl: null as HTMLElement | null,
 })
 
+const isVariantSwiperLocked = ref(true)
+
+const syncVariantNavigationState = (swiper: any) => {
+  isVariantSwiperLocked.value = swiper.isLocked ?? (swiper.isBeginning && swiper.isEnd)
+}
+
 const showDiscount = computed(() => {
     return (
         product.value?.stock &&
@@ -445,14 +451,18 @@ onMounted(async () => {
                 </div>
 
                 
-                <div v-if="listProducts && listProducts.length > 0" class="bg-white shadow-sm p-0.5 rounded-md mb-4">
+                <div v-if="listProducts && listProducts.length > 0" class="group bg-white shadow-sm p-0.5 rounded-md mb-4">
                     <Swiper :modules="[Navigation]" :navigation="varinatNavigation" :space-between="6"
                         :slides-per-view="3.2" :grab-cursor="true" :breakpoints="{
                             640: { slidesPerView: 4.5 },
                             1024: { slidesPerView: 4 }
-                        }">
+                        }"
+                        @swiper="syncVariantNavigationState" @resize="syncVariantNavigationState"
+                        @breakpoint="syncVariantNavigationState" @lock="syncVariantNavigationState"
+                        @unlock="syncVariantNavigationState">
 
-                        <div class="absolute inset-0 pointer-events-none z-50">
+                        <div v-show="!isVariantSwiperLocked"
+                            class="absolute inset-0 pointer-events-none z-50 opacity-0 group-hover:opacity-100 transition-opacity">
                             <div ref="variantPrevEl"
                                 class="absolute left-2 top-1/2 -translate-y-1/2 text-3xl cursor-pointer opacity-60 hover:opacity-100 pointer-events-auto">
                                 <FontAwesomeIcon :icon="faChevronCircleLeft" />
@@ -681,7 +691,7 @@ onMounted(async () => {
                     {{ product.code }}
                 </span>
 
-                <span v-if="!layout?.iris?.is_logged_in" class="text-primary font-semibold">
+                <span v-if="!layout?.iris?.is_logged_in && product.rrp_per_unit > 0" class="text-primary font-semibold">
                     RRP : {{ locale.currencyFormatRrp(layout?.iris?.currency?.code, product?.rrp_per_unit) }} / {{
                     product.unit }}
                 </span>

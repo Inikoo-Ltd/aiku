@@ -78,6 +78,7 @@ use App\Audits\Transformer\RelationTransformer;
  * @property OrderStateEnum $state
  * @property OrderStatusEnum $status
  * @property OrderHandingTypeEnum $handing_type
+ * @property bool $handled_in_aurora
  * @property bool $customer_locked
  * @property bool $billing_locked
  * @property bool $delivery_locked
@@ -230,6 +231,7 @@ class Order extends Model implements HasMedia, Auditable
     public const PAY_SETTLED_STATUSES = [OrderPayStatusEnum::PAID, OrderPayStatusEnum::NO_NEED];
 
     protected $casts = [
+        'handled_in_aurora'             => 'boolean',
         'data'                          => 'array',
         'payment_data'                  => 'array',
         'post_submit_modification_data' => 'array',
@@ -516,6 +518,17 @@ class Order extends Model implements HasMedia, Auditable
         return $this->belongsTo(Currency::class);
     }
 
+    /**
+     * The tax a marketplace (Faire) actually charged the retailer. When set it is the order's
+     * and its invoice's tax, whatever Aiku's own per-line rates would add up to.
+     */
+    public function getMarketplaceTaxAmount(): ?float
+    {
+        $amount = Arr::get($this->data, 'marketplace_tax_amount');
+
+        return is_null($amount) ? null : (float)$amount;
+    }
+
     public function taxCategory(): BelongsTo
     {
         return $this->belongsTo(TaxCategory::class);
@@ -626,4 +639,9 @@ class Order extends Model implements HasMedia, Auditable
             ->withTimestamps();
     }
 
+
+    public function isLockedInAurora(): bool
+    {
+        return $this->handled_in_aurora && !in_array($this->state, [OrderStateEnum::DISPATCHED, OrderStateEnum::CANCELLED]);
+    }
 }

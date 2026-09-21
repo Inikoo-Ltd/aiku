@@ -71,14 +71,14 @@ createInertiaApp(
     setup({ el, App, props, plugin }) {
       const app = createSSRApp({ render: () => h(App, props) });
       if (import.meta.env.VITE_SENTRY_IRIS_DSN) {
-        const initSentry = () => import("@sentry/vue").then((Sentry) => {
-          Sentry.init({
+        const initSentry = () => import("@sentry/vue").then(({ init: sentryInit, browserTracingIntegration: sentryTracing }) => {
+          sentryInit({
                         app,
                         dsn             : import.meta.env.VITE_SENTRY_IRIS_DSN,
                         environment     : import.meta.env.VITE_APP_ENV,
                         release         : document.querySelector('meta[name="app-release"]')?.content || undefined,
                         tracesSampleRate: 0.05,
-                        integrations    : [Sentry.browserTracingIntegration()]
+                        integrations    : [sentryTracing()]
                       });
         });
         if (document.readyState === "complete") {

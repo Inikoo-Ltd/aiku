@@ -208,7 +208,7 @@ const offerRoute = (offer: { slug: string }, extraParams?: {}) => {
         <select
             v-model="selectedCampaign"
             @change="applyFilters"
-            class="rounded border-gray-300 text-sm py-1.5 pr-8 focus:ring-indigo-500 focus:border-indigo-500">
+            class="rounded border-gray-300 text-sm py-1.5 pr-8 focus:ring-[--app-accent] focus:border-[--app-accent]">
             <option value="">{{ trans("All campaigns") }}</option>
             <option v-for="campaign in filters.campaigns" :key="campaign.slug" :value="campaign.slug">
                 {{ campaign.name }}
@@ -218,19 +218,19 @@ const offerRoute = (offer: { slug: string }, extraParams?: {}) => {
         <select
             v-model="selectedType"
             @change="applyFilters"
-            class="rounded border-gray-300 text-sm py-1.5 pr-8 focus:ring-indigo-500 focus:border-indigo-500">
+            class="rounded border-gray-300 text-sm py-1.5 pr-8 focus:ring-[--app-accent] focus:border-[--app-accent]">
             <option value="">{{ trans("All coupon types") }}</option>
             <option v-for="type in filters.types" :key="type" :value="type">
                 {{ type }}
             </option>
         </select>
 
-        <LoadingIcon v-if="isLoadingFilter" class="text-indigo-500" />
+        <LoadingIcon v-if="isLoadingFilter" class="text-[--app-accent-strong]" />
     </div>
 
     <div class="relative px-6 pb-6 flex flex-col gap-y-4">
         <div v-if="isLoadingOnTable" class="absolute inset-0 bg-white/50 flex items-center justify-center z-20 rounded">
-            <LoadingIcon class="text-indigo-500 text-3xl" />
+            <LoadingIcon class="text-[--app-accent-strong] text-3xl" />
         </div>
 
         <!-- Section: KPI -->
@@ -272,7 +272,7 @@ const offerRoute = (offer: { slug: string }, extraParams?: {}) => {
                     class="text-right transition-opacity"
                     :class="activeMetric === 'redemptions' ? '' : 'opacity-40 hover:opacity-70'">
                     <div class="flex items-center justify-end gap-1.5 text-xs font-medium uppercase tracking-wide text-gray-400">
-                        <span class="inline-block h-2 w-2 rounded-full bg-indigo-500" />
+                        <span class="inline-block h-2 w-2 rounded-full bg-[--app-accent]" />
                         {{ trans("Redemptions over time") }}
                     </div>
                     <div class="mt-1 text-3xl font-semibold tabular-nums text-gray-900">
@@ -302,7 +302,7 @@ const offerRoute = (offer: { slug: string }, extraParams?: {}) => {
                         v-tooltip="bar.tooltip"
                         class="group flex-1 min-w-0 rounded-t-sm transition-colors"
                         :class="activeMetric === 'redemptions'
-                            ? 'bg-indigo-500 hover:bg-indigo-600'
+                            ? 'bg-[--app-accent] hover:bg-[--app-accent-deep]'
                             : 'bg-green-600 hover:bg-green-700'"
                         :style="{ height: bar.height }" />
                 </div>

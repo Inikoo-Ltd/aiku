@@ -13,6 +13,7 @@ use App\Actions\Production\PartnerShippingList\StoreJobOrdersForMixes;
 use App\Actions\Production\Artisan\ToggleArtisanInRoster;
 use App\Actions\Production\PartnerShippingList\UI\IndexPartnerShippingList;
 use App\Actions\Production\PartnerShippingList\PrePickPartnerShoppingListItems;
+use App\Actions\Production\PartnerShippingList\StorePartnerOrderFromBay;
 use App\Actions\Production\Restock\QueueArtefactsToProduce;
 use App\Actions\Production\Restock\UI\ShowToRestock;
 use App\Actions\Production\PartnerShippingList\UI\GetProductionQueueCounts;
@@ -28,6 +29,7 @@ use App\Actions\Production\ArtefactFamily\UI\ShowArtefactFamily;
 use App\Actions\Production\ArtefactDepartment\UI\ShowArtefactDepartment;
 use App\Actions\Production\Artefact\SetArtefactAsMix;
 use App\Actions\Production\Artefact\UI\EditArtefact;
+use App\Actions\Production\Artefact\Label\UI\IndexArtefactLabels;
 use App\Actions\Production\Artefact\UI\IndexArtefacts;
 use App\Actions\Production\Artefact\UI\ShowArtefact;
 use App\Actions\Production\JobOrder\UI\IndexJobOrders;
@@ -70,6 +72,7 @@ Route::prefix('{production}')
                         Route::get('', ShowOperationsDashboard::class)->name('dashboard');
                         Route::get('job-orders', IndexJobOrders::class)->name('job-orders.index');
                         Route::get('job-orders/{jobOrder}', ShowJobOrder::class)->name('job-orders.show');
+                        Route::post('partner-orders/{orgPartner:id}', StorePartnerOrderFromBay::class)->name('partner_orders.store')->withoutScopedBindings();
                         Route::get('manufacture-tasks', IndexManufactureTasks::class)->name('manufacture_tasks.index');
                         Route::get('manufacture-tasks/create', CreateManufactureTask::class)->name('manufacture_tasks.create');
                         Route::get('manufacture-tasks/{manufactureTask}', ShowManufactureTask::class)->name('manufacture_tasks.show');
@@ -123,6 +126,8 @@ Route::prefix('{production}')
                         Route::get('raw-materials/create', CreateRawMaterial::class)->name('raw_materials.create');
                         Route::get('raw-materials/{rawMaterial}', ShowRawMaterial::class)->name('raw_materials.show');
                         Route::get('raw-materials/{rawMaterial}/edit', EditRawMaterial::class)->name('raw_materials.edit');
+
+                        Route::get('labels', IndexArtefactLabels::class)->name('labels.index');
 
                         Route::get('artefacts', IndexArtefacts::class)->name('artefacts.index');
                         Route::get('artefacts/create', CreateArtefact::class)->name('artefacts.create');

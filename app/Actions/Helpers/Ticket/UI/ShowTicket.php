@@ -21,12 +21,16 @@ use App\Http\Resources\Helpers\TicketCommentResource;
 use App\Http\Resources\Helpers\TicketResource;
 use App\Models\Helpers\Ticket;
 use App\Models\SysAdmin\User;
+use App\Models\Catalogue\Shop;
+use App\Models\SysAdmin\Organisation;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 
 class ShowTicket extends OrgAction
 {
+    use WithTicketsScope;
+
     public function authorize(ActionRequest $request): bool
     {
         return $request->user() !== null;
@@ -41,6 +45,28 @@ class ShowTicket extends OrgAction
     {
         abort_unless($ticket->isVisibleTo($request->user()), 403);
         $this->initialisationFromGroup($ticket->group, $request);
+
+        return $this->openTicket($ticket, $request);
+    }
+
+    public function inOrganisation(Organisation $organisation, Ticket $ticket, ActionRequest $request): Ticket
+    {
+        abort_unless($ticket->isVisibleTo($request->user()), 403);
+        $this->initialisationFromTicketsScope($request, $organisation);
+
+        return $this->openTicket($ticket, $request);
+    }
+
+    public function inShop(Organisation $organisation, Shop $shop, Ticket $ticket, ActionRequest $request): Ticket
+    {
+        abort_unless($ticket->isVisibleTo($request->user()), 403);
+        $this->initialisationFromTicketsScope($request, $organisation, $shop);
+
+        return $this->openTicket($ticket, $request);
+    }
+
+    private function openTicket(Ticket $ticket, ActionRequest $request): Ticket
+    {
         MarkTicketNotificationsAsRead::run($ticket, $request->user());
 
         return $this->handle($ticket);
@@ -194,10 +220,12 @@ class ShowTicket extends OrgAction
                 'mentionable' => $this->mentionableFor($ticket),
             ],
             'can_manage'             => Ticket::canBeManagedBy($user),
-            'can_assign'             => Ticket::canBeAssignedBy($user) || (Ticket::canBeManagedBy($user) && $ticket->assignee_id === $user->id),
+            'can_assign'             => $ticket->canChangeAssigneeBy($user),
             'can_flag_confidential'  => Ticket::canBeAssignedBy($user),
             'can_qa'                 => Ticket::canCheckQa($user),
             'is_reporter'            => $ticket->isReportedBy($user),
+            'can_cancel_as_reporter' => $ticket->canBeCancelledByReporter($user),
+            'can_reopen_as_reporter' => $ticket->canBeReopenedByReporter($user),
             'can_change_kind_module' => $ticket->canChangeKindAndModuleBy($user),
             'can_update'               => $ticket->canBeUpdatedBy($user),
             'can_contribute'           => $ticket->canContributeBy($user),
@@ -219,12 +247,12 @@ class ShowTicket extends OrgAction
     public function getBreadcrumbs(Ticket $ticket): array
     {
         return array_merge(
-            IndexTickets::make()->getBreadcrumbs(),
+            $this->ticketsListBreadcrumbs(),
             [
                 [
                     'type'   => 'simple',
                     'simple' => [
-                        'route' => ['name' => 'grp.tickets.show', 'parameters' => [$ticket->reference]],
+                        'route' => $this->ticketsRoute('show', [$ticket->reference]),
                         'label' => $ticket->reference,
                     ],
                 ],

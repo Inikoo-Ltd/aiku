@@ -44,12 +44,12 @@ class UsersResource extends JsonResource
             'email'                     => $this->email,
             'status'                    => match ($this->status) {
                 true => [
-                    'tooltip' => __('active'),
+                    'tooltip' => __('Active'),
                     'icon'    => 'fal fa-check',
                     'class'   => 'text-green-500'
                 ],
                 default => [
-                    'tooltip' => __('suspended'),
+                    'tooltip' => __('Inactive'),
                     'icon'    => 'fal fa-times',
                     'class'   => 'text-red-500'
                 ]

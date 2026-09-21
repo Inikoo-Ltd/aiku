@@ -14,9 +14,12 @@ use App\Actions\Chat\Whatsapp\StoreMetaTrackingEvent;
 use App\Actions\Chat\Whatsapp\Templates\ResolveWhatsappTemplateTags;
 use App\Enums\Comms\WhatsappCampaign\WhatsappCampaignStateEnum;
 use App\Enums\Comms\WhatsappDeliveryChannel\WhatsappDeliveryChannelStateEnum;
+use App\Enums\CRM\Livechat\ChatAssignmentStatusEnum;
 use App\Enums\CRM\Livechat\ChatMessageStateEnum;
 use App\Enums\CRM\Livechat\ChatMessageTypeEnum;
 use App\Enums\CRM\Livechat\ChatSenderTypeEnum;
+use App\Enums\CRM\Livechat\ChatSessionClosedByTypeEnum;
+use App\Enums\CRM\Livechat\ChatSessionStatusEnum;
 use App\Enums\CRM\Livechat\MetaTrackingEventTypeEnum;
 use App\Models\Chat\MetaChatSession;
 use App\Models\Comms\WhatsappCampaign;
@@ -217,6 +220,32 @@ class SendWhatsappDeliveryChannel
         $recipient->update(['meta_chat_message_id' => $metaChatMessage->id]);
 
         $session->update(['last_agent_message_at' => now()]);
+
+        $this->parkSession($session);
+    }
+
+    /**
+     * A promotion is not a conversation. Left open, every recipient shows up in the inbox as
+     * a chat waiting for an agent and the customers who actually wrote back drown among them.
+     * Closing it here, without the system notice and broadcast a manual close makes, keeps it
+     * out of the inbox until the customer replies, when the incoming webhook reopens it to
+     * waiting like any other closed chat. A chat an agent is already handling is left alone.
+     */
+    public function parkSession(MetaChatSession $session): void
+    {
+        $isBeingHandled = $session->assignments()
+            ->where('status', ChatAssignmentStatusEnum::ACTIVE->value)
+            ->exists();
+
+        if ($isBeingHandled || $session->status === ChatSessionStatusEnum::CLOSED) {
+            return;
+        }
+
+        $session->update([
+            'status'    => ChatSessionStatusEnum::CLOSED,
+            'closed_by' => ChatSessionClosedByTypeEnum::SYSTEM,
+            'closed_at' => now(),
+        ]);
     }
 
     /**

@@ -10,6 +10,7 @@
 namespace App\Actions\Catalogue\Product\Hydrators;
 
 use App\Actions\Traits\Hydrators\WithLabelInfoFromTradeUnits;
+use App\Actions\Web\Webpage\BreakWebpageCache;
 use App\Models\Catalogue\Product;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -32,8 +33,14 @@ class ProductHydrateLabelInfoFromTradeUnits implements ShouldBeUnique
             ? $this->getLabelInfoFromMaster($masterProduct)
             : $this->getLabelInfoFromTradeUnits($product);
 
+        $wasApproved = data_get($product->label_info, 'label_info_approved', false) === true;
+
         $product->updateQuietly([
             'label_info' => $this->mergeLabelInfo($product, $labelInfo),
         ]);
+
+        if ($wasApproved !== $labelInfo['label_info_approved'] && $product->webpage) {
+            BreakWebpageCache::dispatch($product->webpage);
+        }
     }
 }

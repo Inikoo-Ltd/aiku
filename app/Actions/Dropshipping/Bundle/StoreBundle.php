@@ -19,7 +19,6 @@ use App\Models\CRM\Customer;
 use App\Models\Dropshipping\Bundle;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Portfolio;
-use App\Models\Goods\TradeUnit;
 use Faker\Factory as Faker;
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
@@ -30,6 +29,7 @@ class StoreBundle extends OrgAction
 {
     use WithNoStrictRules;
     use WithOpenCustomerSalesChannelCheck;
+    use WithBundleTradeUnits;
 
     private Customer $customer;
 
@@ -52,21 +52,7 @@ class StoreBundle extends OrgAction
                 ->get();
 
             data_set($productData, 'exclusive_for_customer_id', $customerSalesChannel->customer_id);
-            data_set(
-                $productData,
-                'trade_units',
-                $productSelected->map(function ($product) use ($selectedProducts) {
-                    return $product->tradeUnits->map(function (TradeUnit $tradeUnit) use ($product, $selectedProducts) {
-                        /** @var array $productQty */
-                        $productQty = collect($selectedProducts)->where('product_id', $product->id)->first();
-
-                        return [
-                            'id' => $tradeUnit->id,
-                            'quantity' => Arr::get($productQty, 'quantity')
-                        ];
-                    });
-                })->collapse()->toArray()
-            );
+            data_set($productData, 'trade_units', $this->getBundleTradeUnits($productSelected, $selectedProducts));
 
             data_set($productData, 'description', Arr::pull($modelData, 'description'));
             data_set($productData, 'price', Arr::pull($modelData, 'price'));

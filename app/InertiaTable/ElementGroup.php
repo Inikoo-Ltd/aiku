@@ -18,6 +18,7 @@ use Illuminate\Contracts\Support\Arrayable;
         public string|array $label,
         public array $elements,
         public ?string $default = null,
+        public bool $optional = false,
     ) {
     }
 
@@ -28,6 +29,7 @@ use Illuminate\Contracts\Support\Arrayable;
             'label'    => $this->label,
             'elements' => $this->elements,
             'default'  => $this->default,
+            'optional' => $this->optional,
         ];
     }
 }

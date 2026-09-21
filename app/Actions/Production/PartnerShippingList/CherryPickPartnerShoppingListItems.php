@@ -15,8 +15,8 @@ use App\Actions\Ordering\Order\StoreOrder;
 use App\Actions\Ordering\SalesChannel\StoreSalesChannel;
 use App\Actions\Ordering\Transaction\StoreTransaction;
 use App\Actions\Procurement\OrgPartner\GetPartnerIntercompanyCustomer;
+use App\Actions\Procurement\OrgPartner\PartnerSkoPrice;
 use App\Actions\Procurement\OrgPartner\Hydrators\OrgPartnerHydrateShoppingListItems;
-use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Ordering\SalesChannel\SalesChannelTypeEnum;
 use App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum;
@@ -119,6 +119,8 @@ class CherryPickPartnerShoppingListItems extends OrgAction
                         'needed_by',
                         'notes',
                         'added_by_user_id',
+                        'pre_picked_at',
+                        'job_order_id',
                     ]),
                     'parent_id'      => $item->id,
                     'quantity' => $remainder,
@@ -160,10 +162,13 @@ class CherryPickPartnerShoppingListItems extends OrgAction
             ->where('stock_id', $item->stock_id)
             ->first();
 
-        return $sellerOrgStock
-            ?->products()
-            ->where('products.state', ProductStateEnum::ACTIVE)
-            ->first();
+        $products = $sellerOrgStock?->products();
+        if (!$products) {
+            return null;
+        }
+        PartnerSkoPrice::scopeToPricingProducts($products->getBaseQuery());
+
+        return $products->first();
     }
 
     private function resolveIntercompanyCustomer(OrgPartner $orgPartner, Shop $shop): ?Customer

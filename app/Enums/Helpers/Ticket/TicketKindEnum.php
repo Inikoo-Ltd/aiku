@@ -21,6 +21,9 @@ enum TicketKindEnum: string
     case FEATURE    = 'feature';
     case TASK       = 'task';
     case QA         = 'qa';
+    case DOCUMENTATION   = 'documentation';
+    case DATA_INTEGRITY  = 'data_integrity';
+    case SUPPORT         = 'support';
 
     public static function labels(): array
     {
@@ -30,6 +33,9 @@ enum TicketKindEnum: string
             'feature'    => __('Feature request'),
             'task'       => __('Engineering task'),
             'qa'         => __('QA check request'),
+            'documentation'  => __('Documentation'),
+            'data_integrity' => __('Data integrity'),
+            'support'        => __('Support / investigation'),
         ];
     }
 
@@ -37,6 +43,24 @@ enum TicketKindEnum: string
     public static function internalValues(): array
     {
         return [self::TASK->value, self::QA->value];
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    public static function chatValues(): array
+    {
+        return [self::BUG->value, self::DOCUMENTATION->value, self::DATA_INTEGRITY->value];
+    }
+
+    /** @return array<int, array{label: string, value: string}> */
+    public static function raisableFromChat(): array
+    {
+        return collect(self::labels())
+            ->only(self::chatValues())
+            ->map(fn ($label, $value) => ['label' => $label, 'value' => $value])
+            ->values()
+            ->all();
     }
 
     /** @return array<int, array{label: string, value: string}> */

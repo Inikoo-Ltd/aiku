@@ -13,7 +13,7 @@ import draggable from "vuedraggable"
 import { trans } from "laravel-vue-i18n"
 import { notify } from "@kyvg/vue3-notification"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faColumns, faComments, faUser, faCalendar, faLock } from "@fal"
+import { faColumns, faComments, faUser, faCalendar, faLock, faBell, faBellSlash } from "@fal"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import { PageHeadingTypes } from "@/types/PageHeading"
@@ -21,7 +21,7 @@ import Image from "@/Common/Components/Image.vue"
 import { useStaffMessaging } from "@/Stores/staff-messaging"
 import { useFormatTime } from "@/Composables/useFormatTime"
 
-library.add(faColumns, faComments, faUser, faCalendar, faLock)
+library.add(faColumns, faComments, faUser, faCalendar, faLock, faBell, faBellSlash)
 
 const props = defineProps<{
     title: string
@@ -112,10 +112,12 @@ const abortCancel = () => {
     cancelFor.value = null
 }
 
-const openThread = async (task: any) => {
-    if (!task.conversation_ulid) return
-    if (!store.conversations.length) await store.fetchConversations()
-    store.openConversation(task.conversation_ulid)
+const openThread = (task: any) => store.openTaskThread(task)
+
+const toggleSubscription = async (task: any) => {
+    const { data } = await axios.post(route("grp.tasks.subscription.toggle", task.reference))
+    task.is_subscribed = data.data.is_subscribed
+    await store.fetchConversations()
 }
 </script>
 
@@ -184,6 +186,13 @@ const openThread = async (task: any) => {
                                     <FontAwesomeIcon icon="fal fa-calendar" fixed-width aria-hidden="true" />
                                     {{ useFormatTime(task.due_at) }}
                                 </span>
+                                <button
+                                    v-if="can_manage && task.requester?.id !== me && task.assignee?.id !== me"
+                                    v-tooltip="task.is_subscribed ? trans('Stop notifications') : trans('Notify me about this task')"
+                                    :class="task.is_subscribed ? 'text-indigo-600' : 'text-gray-400 hover:text-indigo-600'"
+                                    @click.stop="toggleSubscription(task)">
+                                    <FontAwesomeIcon :icon="task.is_subscribed ? 'fal fa-bell' : 'fal fa-bell-slash'" fixed-width aria-hidden="true" />
+                                </button>
                                 <button class="text-gray-400 hover:text-indigo-600" v-tooltip="trans('Open thread')" @click.stop="openThread(task)">
                                     <FontAwesomeIcon icon="fal fa-comments" fixed-width aria-hidden="true" />
                                 </button>

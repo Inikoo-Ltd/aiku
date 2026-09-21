@@ -42,6 +42,17 @@ const EmojiPicker = defineAsyncComponent(() => import("@/Components/Messaging/Em
 
 type LocalMessageStatus = "sending" | "sent" | "failed"
 
+interface ChatAttachment {
+    id: number
+    is_image: boolean
+    media_url: { original: string; webp?: string; mime?: string; name?: string } | null
+    original_url: string
+    file_name: string
+    file_size: number
+    file_mime: string
+    download_route: { url: string }
+}
+
 type LocalChatMessage = Record<string, any> & {
     _status?: LocalMessageStatus
     _tempId?: string
@@ -85,9 +96,15 @@ const { jumpToMessage } = useJumpToMessage(messagesContainer)
 
 const imageInput = ref<HTMLInputElement | null>(null)
 const fileInput = ref<HTMLInputElement | null>(null)
-const selectedFile = ref<File | null>(null)
-const previewUrl = ref<string | null>(null)
-const previewType = ref<"image" | "file" | null>(null)
+
+interface SelectedAttachment {
+    file: File
+    previewUrl: string | null
+    isImage: boolean
+}
+
+const MAX_ATTACHMENTS = 10
+const selectedFiles = ref<SelectedAttachment[]>([])
 const isTicketModalOpen = ref(false)
 const isEmailNotif = ref(false)
 
@@ -193,7 +210,7 @@ const waReadIconClass = (message: LocalChatMessage): string => {
 const isClosed = computed(() => props.chat.status === "closed")
 const isWaiting = computed(() => props.chat.status === "waiting")
 const canSend = computed(() => !isClosed.value && !isWaiting.value && !templateOnly.value)
-const hasAttachment = computed(() => !!selectedFile.value)
+const hasAttachment = computed(() => selectedFiles.value.length > 0)
 
 const isEndingChat = ref(false)
 const showEndConfirm = ref(false)
@@ -313,6 +330,27 @@ const openAttachment = (message: LocalChatMessage) => {
     }
 }
 
+const attachmentList = (message: LocalChatMessage): ChatAttachment[] => {
+    if (message.attachments?.length) return message.attachments
+
+    if (!message.media_url && !message.download_route) return []
+
+    return [{
+        id: message.id ?? 0,
+        is_image: message.message_type === "image",
+        media_url: message.media_url ?? null,
+        original_url: message.media_url?.original ?? "",
+        file_name: message.file_name ?? "",
+        file_size: message.file_size ?? 0,
+        file_mime: message.file_mime ?? "",
+        download_route: message.download_route ?? { url: "" },
+    }]
+}
+
+const openAttachmentFile = (attachment: ChatAttachment) => {
+    if (attachment.download_route?.url) window.open(attachment.download_route.url, "_blank")
+}
+
 /* Quick reactions, matching the inbox toolbar. The endpoint differs per channel because
    the two channels store their messages in separate tables. */
 const quickReactions = ["✅", "👀", "👏"] as const
@@ -410,6 +448,23 @@ const fileSizeLabel = (message: LocalChatMessage) => {
     return bytes >= 1048576
         ? `${(bytes / 1048576).toFixed(1)} MB`
         : `${Math.max(1, Math.round(bytes / 1024))} KB`
+}
+
+const attachmentSizeLabel = (attachment: ChatAttachment) => {
+    const bytes = Number(attachment.file_size ?? 0)
+    if (!bytes) return null
+    return bytes >= 1048576
+        ? `${(bytes / 1048576).toFixed(1)} MB`
+        : `${Math.max(1, Math.round(bytes / 1024))} KB`
+}
+
+const attachmentIcon = (attachment: ChatAttachment) => {
+    const mime = attachment.file_mime ?? ""
+    if (mime.includes("pdf")) return "📕"
+    if (mime.includes("excel") || mime.includes("spreadsheet")) return "📊"
+    if (mime.startsWith("audio/")) return "🎧"
+    if (mime.startsWith("video/")) return "🎬"
+    return "📄"
 }
 
 const MAP = { tile: 256, zoom: 16, width: 200, height: 90 }
@@ -557,54 +612,64 @@ const markAsRead = async () => {
 const notifyRejectedFile = (text: string) =>
     notify({ title: trans("Failed"), text, type: "error" })
 
-const handleImageSelect = (event: Event) => {
-    const file = (event.target as HTMLInputElement)?.files?.[0]
-    if (!file) return
+// WhatsApp's send endpoint only ever takes a single file, so selection there stays
+// capped at one; the website chat endpoint accepts up to MAX_ATTACHMENTS.
+const addAttachment = (file: File, isImage: boolean) => {
+    if (isWhatsapp.value) clearAttachment()
 
-    if (!IMAGE_TYPES.includes(file.type)) {
+    if (selectedFiles.value.length >= (isWhatsapp.value ? 1 : MAX_ATTACHMENTS)) {
+        notifyRejectedFile(trans("Maximum :count attachments", { count: isWhatsapp.value ? 1 : MAX_ATTACHMENTS }))
+        return
+    }
+
+    if (isImage && !IMAGE_TYPES.includes(file.type)) {
         notifyRejectedFile(trans("Image format not supported"))
         return
     }
 
-    if (file.size > MAX_SIZE) {
-        notifyRejectedFile(trans("Maximum image size 10MB"))
-        return
-    }
-
-    clearAttachment()
-    selectedFile.value = file
-    previewType.value = "image"
-    previewUrl.value = URL.createObjectURL(file)
-}
-
-const handleDocSelect = (event: Event) => {
-    const file = (event.target as HTMLInputElement)?.files?.[0]
-    if (!file) return
-
-    if (!FILE_TYPES.includes(file.type)) {
+    if (!isImage && !FILE_TYPES.includes(file.type)) {
         notifyRejectedFile(trans("File format not supported"))
         return
     }
 
     if (file.size > MAX_SIZE) {
-        notifyRejectedFile(trans("Maximum file size 10MB"))
+        notifyRejectedFile(trans(isImage ? "Maximum image size 10MB" : "Maximum file size 10MB"))
         return
     }
 
-    clearAttachment()
-    selectedFile.value = file
-    previewType.value = "file"
-    previewUrl.value = null
+    selectedFiles.value.push({
+        file,
+        isImage,
+        previewUrl: isImage ? URL.createObjectURL(file) : null,
+    })
+}
+
+const handleImageSelect = (event: Event) => {
+    const files = (event.target as HTMLInputElement)?.files
+    Array.from(files ?? []).forEach((file) => addAttachment(file, true))
+    if (imageInput.value) imageInput.value.value = ""
+}
+
+const handleDocSelect = (event: Event) => {
+    const files = (event.target as HTMLInputElement)?.files
+    Array.from(files ?? []).forEach((file) => addAttachment(file, false))
+    if (fileInput.value) fileInput.value.value = ""
+}
+
+const removeAttachment = (index: number) => {
+    const removed = selectedFiles.value[index]
+    if (removed?.previewUrl) URL.revokeObjectURL(removed.previewUrl)
+    selectedFiles.value.splice(index, 1)
 }
 
 const clearAttachment = (revokePreview = true) => {
-    if (revokePreview && previewUrl.value) {
-        URL.revokeObjectURL(previewUrl.value)
+    if (revokePreview) {
+        selectedFiles.value.forEach((attachment) => {
+            if (attachment.previewUrl) URL.revokeObjectURL(attachment.previewUrl)
+        })
     }
 
-    selectedFile.value = null
-    previewUrl.value = null
-    previewType.value = null
+    selectedFiles.value = []
 
     if (imageInput.value) imageInput.value.value = ""
     if (fileInput.value) fileInput.value.value = ""
@@ -758,19 +823,20 @@ const sendMessage = async () => {
     }
 
     const text = newMessage.value.trim()
-    const file = selectedFile.value
+    const files = selectedFiles.value
 
-    if ((!text && !file) || !canSend.value) return
+    if ((!text && !files.length) || !canSend.value) return
 
-    const messageType = file ? previewType.value ?? "file" : "text"
+    const allImages = files.length > 0 && files.every((a) => a.isImage)
+    const messageType = files.length ? (allImages ? "image" : "file") : "text"
     const tempId = `tmp-${Date.now()}`
     messages.value.push({
         id: tempId,
         _tempId: tempId,
         message_text: text,
         message_type: messageType,
-        media_url: messageType === "image" ? { original: previewUrl.value } : null,
-        file_name: file?.name,
+        media_url: messageType === "image" ? { original: files[0]?.previewUrl } : null,
+        file_name: files[0]?.file.name,
         sender_type: "agent",
         created_at: new Date().toISOString(),
         _status: "sending",
@@ -796,8 +862,10 @@ const sendMessage = async () => {
             formData.append("is_email_notif", String(isEmailNotif.value))
         }
 
-        if (file) {
-            formData.append(messageType === "image" ? "image" : "file", file)
+        if (files.length === 1) {
+            formData.append(messageType === "image" ? "image" : "file", files[0].file)
+        } else {
+            files.forEach((attachment) => formData.append("attachments[]", attachment.file))
         }
 
         if (isWhatsapp.value && quoted?.id) {
@@ -982,6 +1050,13 @@ const initSocket = () => {
     }
 
     chatChannel.listen(".message", onMessage)
+    chatChannel.listen(".message.retracted", (e: any) => {
+        const msg: any = messagesLocal.value.find((m) => String(m.id) === String(e?.id))
+        if (msg) {
+            msg.is_retracted = true
+            msg.retracted_at = e?.retracted_at ?? new Date().toISOString()
+        }
+    })
     chatChannel.listen(".typing", onTyping)
     chatChannel.listen(".status", onStatus)
     chatChannel.listen(".messages.read", onMessagesRead)
@@ -1245,29 +1320,32 @@ onUnmounted(() => {
                                         {{ messageText(message) }}
                                     </p>
 
-                                    <img v-if="message.message_type === 'image' && message.media_url"
-                                        :src="message.media_url.webp ?? message.media_url.original" :alt="trans('Attachment')"
-                                        class="mt-1 rounded max-w-full max-h-28 object-contain cursor-pointer bg-gray-50"
-                                        @click="openAttachment(message)" loading="lazy" decoding="async" />
+                                    <template v-if="isVideoMessage(message) && inlineUrl(message) && !message.attachments?.length">
+                                        <!-- Played in place, the way the recipient sees it on WhatsApp. -->
+                                        <video :src="inlineUrl(message)!" controls preload="metadata"
+                                            class="mt-1 w-full max-h-32 rounded bg-black object-contain" />
+                                    </template>
 
-                                    <!-- Played in place, the way the recipient sees it on WhatsApp. -->
-                                    <video v-else-if="isVideoMessage(message) && inlineUrl(message)"
-                                        :src="inlineUrl(message)!" controls preload="metadata"
-                                        class="mt-1 w-full max-h-32 rounded bg-black object-contain" />
+                                    <template v-else v-for="attachment in attachmentList(message)" :key="attachment.id">
+                                        <img v-if="attachment.is_image && attachment.media_url"
+                                            :src="attachment.media_url.webp ?? attachment.media_url.original" :alt="trans('Attachment')"
+                                            class="mt-1 rounded max-w-full max-h-28 object-contain cursor-pointer bg-gray-50"
+                                            @click="openAttachmentFile(attachment)" loading="lazy" decoding="async" />
 
-                                    <button v-else-if="message.message_type === 'file' && message.media_url" type="button"
-                                        class="mt-1 flex w-full items-center gap-1.5 rounded border border-black/10 bg-white/90 px-1.5 py-1 text-left text-gray-800 transition hover:bg-white"
-                                        @click="openAttachment(message)">
-                                        <span class="text-sm leading-none">{{ fileIcon(message) }}</span>
-                                        <span class="min-w-0 flex-1">
-                                            <span class="block truncate text-[10px] font-medium">
-                                                {{ message.file_name || message.media_url.name || trans('Attachment') }}
+                                        <button v-else type="button"
+                                            class="mt-1 flex w-full items-center gap-1.5 rounded border border-black/10 bg-white/90 px-1.5 py-1 text-left text-gray-800 transition hover:bg-white"
+                                            @click="openAttachmentFile(attachment)">
+                                            <span class="text-sm leading-none">{{ attachmentIcon(attachment) }}</span>
+                                            <span class="min-w-0 flex-1">
+                                                <span class="block truncate text-[10px] font-medium">
+                                                    {{ attachment.file_name || trans('Attachment') }}
+                                                </span>
+                                                <span v-if="attachmentSizeLabel(attachment)" class="block text-[9px] text-gray-500">
+                                                    {{ attachmentSizeLabel(attachment) }}
+                                                </span>
                                             </span>
-                                            <span v-if="fileSizeLabel(message)" class="block text-[9px] text-gray-500">
-                                                {{ fileSizeLabel(message) }}
-                                            </span>
-                                        </span>
-                                    </button>
+                                        </button>
+                                    </template>
                                 </template>
 
                                 <div class="flex items-center justify-end gap-1 mt-0.5 text-[9px]"
@@ -1342,9 +1420,9 @@ onUnmounted(() => {
 
             <template v-else>
                 <div class="border-t border-gray-200 shrink-0">
-                    <input ref="imageInput" type="file" :accept="isWhatsapp ? '.jpg,.jpeg,.png' : '.webp,.jpg,.jpeg,.png,.avif'" class="hidden"
+                    <input ref="imageInput" type="file" :accept="isWhatsapp ? '.jpg,.jpeg,.png' : '.webp,.jpg,.jpeg,.png,.avif'" :multiple="!isWhatsapp" class="hidden"
                         @change="handleImageSelect" />
-                    <input ref="fileInput" type="file" :accept="isWhatsapp ? '.pdf,.txt,.doc,.docx,.xls,.xlsx,.ppt,.pptx' : '.pdf,.xls,.xlsx'" class="hidden"
+                    <input ref="fileInput" type="file" :accept="isWhatsapp ? '.pdf,.txt,.doc,.docx,.xls,.xlsx,.ppt,.pptx' : '.pdf,.xls,.xlsx'" :multiple="!isWhatsapp" class="hidden"
                         @change="handleDocSelect" />
 
                     <div v-if="templateOnly && !hasTemplate"
@@ -1374,28 +1452,28 @@ onUnmounted(() => {
                         </div>
                     </div>
 
-                    <div v-if="previewType === 'image' && previewUrl" class="px-2 pt-1.5">
-                        <div class="relative inline-block">
-                            <img :src="previewUrl" class="h-12 rounded border border-gray-200 object-cover" />
-                            <button type="button"
-                                class="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-white shadow border border-gray-200 text-gray-500 hover:text-red-500"
-                                @click="clearAttachment()">
-                                <FontAwesomeIcon :icon="faXmark" class="text-[8px]" />
-                            </button>
-                        </div>
-                    </div>
+                    <div v-if="selectedFiles.length" class="px-2 pt-1.5 flex flex-wrap gap-1.5">
+                        <div v-for="(attachment, index) in selectedFiles" :key="index" class="relative">
+                            <template v-if="attachment.isImage && attachment.previewUrl">
+                                <img :src="attachment.previewUrl" class="h-12 rounded border border-gray-200 object-cover" />
+                                <button type="button"
+                                    class="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-white shadow border border-gray-200 text-gray-500 hover:text-red-500"
+                                    @click="removeAttachment(index)">
+                                    <FontAwesomeIcon :icon="faXmark" class="text-[8px]" />
+                                </button>
+                            </template>
 
-                    <div v-else-if="previewType === 'file' && selectedFile" class="px-2 pt-1.5">
-                        <div class="flex items-center gap-1.5 px-1.5 py-1 rounded border border-gray-200 bg-gray-50 min-w-0">
-                            <FontAwesomeIcon :icon="faFileLines" class="text-[10px] text-gray-400 shrink-0" />
-                            <div class="flex-1 min-w-0">
-                                <div class="text-[10px] text-gray-700 truncate">{{ selectedFile.name }}</div>
-                                <div class="text-[9px] text-gray-400">{{ (selectedFile.size / 1024).toFixed(1) }} KB</div>
+                            <div v-else class="flex items-center gap-1.5 px-1.5 py-1 rounded border border-gray-200 bg-gray-50 min-w-0 max-w-[160px]">
+                                <FontAwesomeIcon :icon="faFileLines" class="text-[10px] text-gray-400 shrink-0" />
+                                <div class="flex-1 min-w-0">
+                                    <div class="text-[10px] text-gray-700 truncate">{{ attachment.file.name }}</div>
+                                    <div class="text-[9px] text-gray-400">{{ (attachment.file.size / 1024).toFixed(1) }} KB</div>
+                                </div>
+                                <button type="button" class="text-gray-400 hover:text-red-500 shrink-0"
+                                    @click="removeAttachment(index)">
+                                    <FontAwesomeIcon :icon="faXmark" class="text-[9px]" />
+                                </button>
                             </div>
-                            <button type="button" class="text-gray-400 hover:text-red-500 shrink-0"
-                                @click="clearAttachment()">
-                                <FontAwesomeIcon :icon="faXmark" class="text-[9px]" />
-                            </button>
                         </div>
                     </div>
 

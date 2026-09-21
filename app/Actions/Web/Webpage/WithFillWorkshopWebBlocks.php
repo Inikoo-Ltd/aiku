@@ -22,7 +22,7 @@ use App\Actions\Web\WebBlock\Workshop\GetWebBlockBlogList;
 use App\Actions\Web\WebBlock\Workshop\GetWebBlockDepartmentDescription;
 use App\Actions\Web\WebBlock\Workshop\GetWebBlockRecommendationsFromMaster;
 use App\Actions\Web\WebBlock\Workshop\GetWebBlockRecommendationsProductCategoriesFromMaster;
-use App\Actions\Web\WebBlock\Workshop\GetWebBlockLuigiRecommendations;
+use App\Actions\Web\WebBlock\Workshop\GetWebBlockInternalRecommendations;
 use App\Actions\Web\WebBlock\Workshop\GetWebBlockProduct;
 use App\Actions\Web\WebBlock\Workshop\GetWebBlockProducts;
 use App\Actions\Web\WebBlock\Workshop\GetWebBlockFamiliesFour;
@@ -32,6 +32,7 @@ use App\Actions\Web\WebBlock\Workshop\GetTopFamilies;
 use App\Actions\Web\WebBlock\Workshop\GetWebBlockForgotPassword;
 use App\Actions\Web\WebBlock\Workshop\GetWebBlockLogin;
 use App\Actions\Web\WebBlock\Workshop\GetWebBlockRegister;
+use App\Actions\Web\WebBlock\Workshop\GetWebBlockRegisterDashboard;
 use Illuminate\Support\Arr;
 
 trait WithFillWorkshopWebBlocks
@@ -92,6 +93,8 @@ trait WithFillWorkshopWebBlocks
             $parsedWebBlocks[$key] = GetWebBlockLogin::run($webpage, $webBlock);
         } elseif ($webBlockType == 'register') {
             $parsedWebBlocks[$key] = GetWebBlockRegister::run($webpage, $webBlock);
+        } elseif (in_array($webBlockType, ['register-dashboard', 'register-dashboard-2'])) {
+            $parsedWebBlocks[$key] = GetWebBlockRegisterDashboard::run($webpage, $webBlock);
         } elseif ($webBlockType == 'forgot-password') {
             $parsedWebBlocks[$key] = GetWebBlockForgotPassword::run($webpage, $webBlock);
         } elseif ($webBlockType == 'recommendation-customer-recently-bought-1') {
@@ -106,7 +109,7 @@ trait WithFillWorkshopWebBlocks
                 unset($parsedWebBlocks[$key]);
             }
         } elseif (in_array($webBlockType, ['luigi-last-seen-1', 'luigi-item-alternatives-1'])) {
-            $parsedWebBlocks[$key] = GetWebBlockLuigiRecommendations::run($webpage, $webBlock);
+            $parsedWebBlocks[$key] = GetWebBlockInternalRecommendations::run($webpage, $webBlock);
         } elseif ($webBlockType == 'faq-department') {
             $webBlockData = GetFaqDepartment::run($webpage, $webBlock);
             if ($webBlockData) {

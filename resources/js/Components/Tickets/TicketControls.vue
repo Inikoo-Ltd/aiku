@@ -18,9 +18,9 @@ import TicketStatusNoteDialog from "@/Components/Tickets/TicketStatusNoteDialog.
 import TicketUserAvatar from "@/Components/Tickets/TicketUserAvatar.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faPaperclip, faCircle, faUserCheck, faSpinner, faClock, faCheckCircle, faBan, faPlay, faPause, faStop, faCheck, faUndo, faBug, faLightbulb, faLevelUp, faCube, faQuestionCircle, faEllipsisV, faTrashAlt, faUser, faPencil, faTimes, faPlus, faPlusCircle, faExchange, faHourglassHalf, faVial, faShieldCheck, faShield, faRocket, faUserPlus, faCheckSquare, faSquare } from "@fal"
+import { faPaperclip, faCircle, faUserCheck, faSpinner, faClock, faCheckCircle, faBan, faPlay, faPause, faStop, faCheck, faUndo, faBug, faLightbulb, faLevelUp, faCube, faQuestionCircle, faEllipsisV, faTrashAlt, faUser, faPencil, faTimes, faPlus, faPlusCircle, faExchange, faHourglassHalf, faVial, faShieldCheck, faShield, faRocket, faUserPlus, faCheckSquare, faSquare, faBooks, faDatabase, faSearch, faTasks, faCommentDots } from "@fal"
 
-library.add(faUserPlus, faCheckSquare, faSquare, faRocket, faVial, faShieldCheck, faShield, faHourglassHalf, faPlusCircle, faExchange, faEllipsisV, faTrashAlt, faUser, faPencil, faTimes, faPlus,faPaperclip, faCircle, faUserCheck, faSpinner, faClock, faCheckCircle, faBan, faPlay, faPause, faStop, faCheck, faUndo, faBug, faLightbulb, faLevelUp, faCube, faQuestionCircle)
+library.add(faBooks, faDatabase, faSearch, faTasks, faUserPlus, faCheckSquare, faSquare, faRocket, faVial, faShieldCheck, faShield, faHourglassHalf, faPlusCircle, faExchange, faEllipsisV, faTrashAlt, faUser, faPencil, faTimes, faPlus,faPaperclip, faCircle, faUserCheck, faSpinner, faClock, faCheckCircle, faBan, faPlay, faPause, faStop, faCheck, faUndo, faBug, faLightbulb, faLevelUp, faCube, faQuestionCircle, faCommentDots)
 
 type Option<Value> = { label: string; value: Value }
 
@@ -43,6 +43,8 @@ const props = defineProps<{
     is_reporter: boolean
     can_change_kind_module: boolean
     can_update?: boolean
+    can_cancel_as_reporter?: boolean
+    can_reopen_as_reporter?: boolean
     can_contribute?: boolean
     can_manage_collaborators?: boolean
     hideConfidential?: boolean
@@ -61,6 +63,11 @@ const kindIcons: Record<string, string> = {
     bug: "fal fa-bug",
     feature: "fal fa-lightbulb",
     escalation: "fal fa-level-up",
+    task: "fal fa-tasks",
+    qa: "fal fa-vial",
+    documentation: "fal fa-books",
+    data_integrity: "fal fa-database",
+    support: "fal fa-search",
 }
 
 const kindPopover = ref()
@@ -81,7 +88,7 @@ const statusBadgeClasses: Record<string, string> = {
     red: "bg-red-100 text-red-700",
 }
 
-const { statusActions, actionsFor } = useTicketStatusActions()
+const { statusActions, actionsFor, cancel, reopenAsReporter } = useTicketStatusActions()
 
 const selectableKinds = computed(() => props.options.kinds.filter((kind) => kind.value !== "escalation"))
 const canChangeKind = computed(() => props.can_change_kind_module && props.ticket.kind !== "escalation")
@@ -111,20 +118,20 @@ const escalate = () => {
 
 const isAskReporterOpen = ref(false)
 const isStatusNoteOpen = ref(false)
-const statusNoteAction = ref<"resolved" | "cancelled">("resolved")
+const statusNoteAction = ref<"resolved" | "cancelled" | "answered">("resolved")
 
 const openAskReporter = () => {
     isAskReporterOpen.value = true
 }
 
-const openStatusNote = (status: "resolved" | "cancelled") => {
+const openStatusNote = (status: "resolved" | "cancelled" | "answered") => {
     statusNoteAction.value = status
     isStatusNoteOpen.value = true
 }
 
 const runStatusAction = (status: string) => {
     if (status === "waiting") openAskReporter()
-    else if (status === "resolved" || status === "cancelled") openStatusNote(status)
+    else if (status === "resolved" || status === "cancelled" || status === "answered") openStatusNote(status)
     else update("status", status, `status:${status}`)
 }
 
@@ -157,7 +164,7 @@ const sendQaVerdict = () => {
 
 const isClosed = computed(() => ["resolved", "cancelled"].includes(props.ticket.status))
 const isResolvedWithinADay = computed(() => props.ticket.status === "resolved" && !!props.ticket.resolved_at && Date.now() - new Date(props.ticket.resolved_at).getTime() < 24 * 60 * 60 * 1000)
-const canAskQa = computed(() => props.can_contribute && (["in_progress", "waiting"].includes(props.ticket.status) || isResolvedWithinADay.value) && props.ticket.qa_status !== "requested")
+const canAskQa = computed(() => props.can_contribute && (["in_progress", "waiting", "pending_deploy"].includes(props.ticket.status) || isResolvedWithinADay.value) && props.ticket.qa_status !== "requested")
 
 const qaPopover = ref()
 
@@ -234,6 +241,7 @@ const update = (field: string, value: unknown, action: string = field) => {
 <template>
     <div class="space-y-4" :class="isBusy && 'pointer-events-none'" :aria-busy="isBusy">
             <div>
+                <p class="mb-1 text-xs font-medium uppercase tracking-wide text-gray-400">{{ trans("Assignee") }}</p>
                 <component :is="can_assign ? 'button' : 'div'" type="button" class="flex items-center gap-2 rounded p-2 transition duration-200" :class="[can_assign && 'hover:bg-gray-100 active:!bg-gray-200', isAssigneePickerOpen && '!bg-gray-200']" @click="can_assign && assigneePopover.toggle($event)">
                     <TicketUserAvatar v-if="ticket.assignee" :name="ticket.assignee" :avatar="ticket.assignee_avatar" />
                     <span v-else class="flex h-7 w-7 items-center justify-center rounded-full bg-gray-200 text-gray-500">
@@ -246,7 +254,7 @@ const update = (field: string, value: unknown, action: string = field) => {
                     <button
                         v-if="me && me.value !== ticket.assignee_id"
                         type="button"
-                        class="mb-2 flex w-full items-center gap-2 rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-sm font-medium text-gray-700 hover:border-indigo-300 hover:text-indigo-700 active:!bg-gray-50 transition duration-200"
+                        class="mb-2 flex w-full items-center gap-2 rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-sm font-medium text-gray-700 hover:border-[--app-accent-muted] hover:text-[--app-accent-strong] active:!bg-gray-50 transition duration-200"
                         @click="update('assignee_id', me.value); assigneePopover.hide()">
                         <TicketUserAvatar :name="me.label" :avatar="me.avatar" />
                         {{ trans("Assign to me") }}
@@ -257,7 +265,7 @@ const update = (field: string, value: unknown, action: string = field) => {
                             :key="engineer.value"
                             type="button"
                             class="flex w-16 flex-col items-center gap-1 rounded p-1 text-xs hover:bg-gray-100 active:!bg-gray-200 transition duration-200"
-                            :class="engineer.value === ticket.assignee_id && 'bg-indigo-50 text-indigo-700'"
+                            :class="engineer.value === ticket.assignee_id && 'bg-[--app-accent-soft] text-[--app-accent-strong]'"
                             @click="update('assignee_id', engineer.value); assigneePopover.hide()">
                             <TicketUserAvatar :name="engineer.label" :avatar="engineer.avatar" size="lg" />
                             <span class="w-full truncate text-center">{{ engineer.label }}</span>
@@ -268,24 +276,24 @@ const update = (field: string, value: unknown, action: string = field) => {
                     </button>
                 </Popover>
             </div>
-            <div v-if="ticket.collaborators?.length || (can_manage_collaborators && !isClosed)">
-                <p class="mb-1 text-xs text-gray-500">{{ trans("Collaborators") }}</p>
+            <div v-if="ticket.collaborators?.length || (can_manage_collaborators && !isClosed && ticket.status !== 'pending_deploy')">
+                <p class="mb-1 text-xs font-medium uppercase tracking-wide text-gray-400">{{ trans("Collaborators") }}</p>
                 <div class="flex flex-wrap items-center gap-2">
                     <span v-for="collaborator in ticket.collaborators" :key="collaborator.id" v-tooltip="collaborator.name" class="inline-flex items-center gap-1.5 rounded-full bg-gray-100 py-1 pl-1 pr-2.5 text-xs text-gray-700">
                         <TicketUserAvatar :name="collaborator.name" :avatar="collaborator.avatar" size="xs" />
                         {{ collaborator.short }}
                     </span>
                     <button
-                        v-if="can_manage_collaborators && !isClosed"
+                        v-if="can_manage_collaborators && !isClosed && ticket.status !== 'pending_deploy'"
                         v-tooltip="trans('Add or remove collaborators')"
                         type="button"
-                        class="flex h-8 w-8 items-center justify-center rounded-full border border-dashed text-sm border-gray-300 text-gray-500 transition duration-200 hover:border-indigo-400 hover:text-indigo-600 active:!border-indigo-400 active:!text-indigo-600"
-                        :class="isCollaboratorPickerOpen && '!border-indigo-400 !bg-indigo-50 !text-indigo-600'"
+                        class="flex h-8 w-8 items-center justify-center rounded-full border border-dashed text-sm border-gray-300 text-gray-500 transition duration-200 hover:border-[--app-accent] hover:text-[--app-accent-strong] active:!border-[--app-accent] active:!text-[--app-accent-strong]"
+                        :class="isCollaboratorPickerOpen && '!border-[--app-accent] !bg-[--app-accent-soft] !text-[--app-accent-strong]'"
                         @click="collaboratorPopover.toggle($event)">
                         <FontAwesomeIcon :icon="isPending('collaborators') ? 'fal fa-spinner' : 'fal fa-user-plus'" :spin="isPending('collaborators')" fixed-width />
                     </button>
                 </div>
-                <Popover v-if="can_manage_collaborators && !isClosed" ref="collaboratorPopover" @show="isCollaboratorPickerOpen = true" @hide="onCollaboratorPickerHide">
+                <Popover v-if="can_manage_collaborators && !isClosed && ticket.status !== 'pending_deploy'" ref="collaboratorPopover" @show="isCollaboratorPickerOpen = true" @hide="onCollaboratorPickerHide">
                     <div class="flex max-h-72 w-60 flex-col overflow-y-auto text-sm">
                         <button
                             v-for="person in collaboratorCandidates"
@@ -293,7 +301,7 @@ const update = (field: string, value: unknown, action: string = field) => {
                             type="button"
                             class="flex items-center gap-2 rounded p-2 text-left transition duration-200 hover:bg-gray-100 active:!bg-gray-200"
                             @click="toggleCollaborator(person.value)">
-                            <FontAwesomeIcon :icon="collaboratorIds.includes(person.value) ? 'fal fa-check-square' : 'fal fa-square'" fixed-width :class="collaboratorIds.includes(person.value) ? 'text-indigo-600' : 'text-gray-400'" />
+                            <FontAwesomeIcon :icon="collaboratorIds.includes(person.value) ? 'fal fa-check-square' : 'fal fa-square'" fixed-width :class="collaboratorIds.includes(person.value) ? 'text-[--app-accent-strong]' : 'text-gray-400'" />
                             <TicketUserAvatar :name="person.label" :avatar="person.avatar" size="sm" />
                             <span class="truncate">{{ person.label }}</span>
                         </button>
@@ -301,9 +309,10 @@ const update = (field: string, value: unknown, action: string = field) => {
                     </div>
                 </Popover>
             </div>
-            <div v-if="can_manage || is_reporter || ticket.qa_status || canAskQa">
+            <div v-if="can_manage || is_reporter || ticket.qa_status || canAskQa" class="space-y-2">
+                <div v-if="can_manage || is_reporter">
+                <p class="mb-1 text-xs font-medium uppercase tracking-wide text-gray-400">{{ trans("Status") }}</p>
                 <div class="flex flex-wrap items-center gap-2">
-                    <template v-if="can_manage || is_reporter">
                         <span class="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-sm font-medium" :class="statusBadgeClasses[ticket.status_icon.color]">
                             <FontAwesomeIcon :icon="ticket.status_icon.icon" fixed-width />
                             {{ ticket.status_label }}
@@ -313,7 +322,7 @@ const update = (field: string, value: unknown, action: string = field) => {
                             {{ useFormatTime(ticket.waiting_until, { formatTime: "hm" }) }}
                         </span>
                         <button
-                            v-for="action in can_update ? actionsFor(statusActions, ticket) : []"
+                            v-for="action in can_update ? actionsFor(statusActions, ticket) : (can_cancel_as_reporter ? [cancel] : (can_reopen_as_reporter ? [reopenAsReporter] : []))"
                             :key="action.status"
                             v-tooltip="action.label"
                             type="button"
@@ -322,8 +331,11 @@ const update = (field: string, value: unknown, action: string = field) => {
                             @click="runStatusAction(action.status)">
                             <FontAwesomeIcon :icon="isPending(`status:${action.status}`) ? 'fal fa-spinner' : action.icon" :spin="isPending(`status:${action.status}`)" fixed-width />
                         </button>
-                    </template>
-                    <template v-if="ticket.qa_status || canAskQa">
+                </div>
+                </div>
+                <div v-if="ticket.qa_status || canAskQa">
+                <p class="mb-1 text-xs font-medium uppercase tracking-wide text-gray-400">{{ trans("QA") }}</p>
+                <div class="flex flex-wrap items-center gap-2">
                         <span v-if="ticket.qa_status" v-tooltip="ticket.qa_user ? `${ticket.qa_status_label} · ${ticket.qa_user}` : ticket.qa_status_label" class="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-sm font-medium" :class="statusBadgeClasses[ticket.qa_status_icon.color]">
                             <FontAwesomeIcon :icon="ticket.qa_status_icon.icon" fixed-width />
                             {{ ticket.qa_status_label }}
@@ -350,7 +362,7 @@ const update = (field: string, value: unknown, action: string = field) => {
                             </div>
                         </Popover>
                         <button v-if="can_contribute && ticket.qa_status === 'requested'" v-tooltip="trans('Withdraw QA request')" type="button" class="rounded-md p-1.5 text-gray-400 hover:bg-gray-100 active:!bg-gray-200 transition duration-200" @click="update('qa_status', null, 'qa:withdraw')"><FontAwesomeIcon :icon="isPending('qa:withdraw') ? 'fal fa-spinner' : 'fal fa-times'" :spin="isPending('qa:withdraw')" fixed-width /></button>
-                    </template>
+                </div>
                 </div>
                 <div v-if="ticket.status === 'pending_deploy' && ticket.deploy_comment" class="mt-2 rounded-md border border-green-200 bg-green-50 px-3 py-2 text-sm text-gray-700">
                     <div class="mb-1 text-xs font-medium text-green-700">{{ trans("Posted to the reporter when the deployment lands") }}</div>
@@ -358,7 +370,9 @@ const update = (field: string, value: unknown, action: string = field) => {
                 </div>
             </div>
             <template v-if="can_manage || can_contribute">
-            <div v-if="ticket.type === 'help'" class="flex flex-wrap gap-2">
+            <div v-if="ticket.type === 'help'">
+                <p class="mb-1 text-xs font-medium uppercase tracking-wide text-gray-400">{{ trans("Kind and module") }}</p>
+                <div class="flex flex-wrap gap-2">
                 <span
                     v-tooltip="canChangeKind ? trans('Kind · click to change') : trans('Kind')"
                     class="inline-flex items-center gap-1.5 rounded-md bg-gray-100 px-2 py-1 select-none transition duration-200"
@@ -389,17 +403,18 @@ const update = (field: string, value: unknown, action: string = field) => {
                 <Popover v-if="can_change_kind_module" ref="modulePopover" @show="isModulePickerOpen = true" @hide="isModulePickerOpen = false">
                     <Listbox :model-value="ticket.module" :options="options.modules" option-label="label" option-value="value" filter scroll-height="16rem" class="border-0" @update:model-value="update('module', $event); modulePopover.hide()" />
                 </Popover>
+                </div>
             </div>
             <div>
-                <p class="text-xs text-gray-500 mb-1">{{ trans("Tags") }}</p>
+                <p class="mb-1 text-xs font-medium uppercase tracking-wide text-gray-400">{{ trans("Tags") }}</p>
                 <div class="flex flex-wrap items-center gap-1.5">
-                    <span v-for="tag in ticket.tags" :key="tag" class="inline-flex items-center gap-1 rounded-full bg-indigo-50 px-2.5 py-0.5 text-xs text-indigo-700">
+                    <span v-for="tag in ticket.tags" :key="tag" class="inline-flex items-center gap-1 rounded-full bg-[--app-accent-soft] px-2.5 py-0.5 text-xs text-[--app-accent-strong]">
                         {{ tag }}
-                        <button v-if="can_contribute" v-tooltip="trans('Remove')" type="button" class="text-indigo-400 hover:text-indigo-700 active:!text-indigo-700 transition duration-200" @click="update('tags', ticket.tags.filter((t: string) => t !== tag), `tags:remove:${tag}`)">
+                        <button v-if="can_contribute" v-tooltip="trans('Remove')" type="button" class="text-[--app-accent-strong] hover:text-[--app-accent-strong] active:!text-[--app-accent-strong] transition duration-200" @click="update('tags', ticket.tags.filter((t: string) => t !== tag), `tags:remove:${tag}`)">
                             <FontAwesomeIcon :icon="isPending(`tags:remove:${tag}`) ? 'fal fa-spinner' : 'fal fa-times'" :spin="isPending(`tags:remove:${tag}`)" fixed-width />
                         </button>
                     </span>
-                    <button v-if="can_contribute" v-tooltip="trans('Add tag')" type="button" class="flex h-6 w-6 items-center justify-center rounded-full border border-dashed border-gray-300 text-gray-500 hover:border-indigo-400 active:!border-indigo-400 hover:text-indigo-600 active:!text-indigo-600 transition duration-200" :class="isTagPickerOpen && '!border-indigo-400 !text-indigo-600 !bg-indigo-50'" @click="tagPopover.toggle($event)">
+                    <button v-if="can_contribute" v-tooltip="trans('Add tag')" type="button" class="flex h-6 w-6 items-center justify-center rounded-full border border-dashed border-gray-300 text-gray-500 hover:border-[--app-accent] active:!border-[--app-accent] hover:text-[--app-accent-strong] active:!text-[--app-accent-strong] transition duration-200" :class="isTagPickerOpen && '!border-[--app-accent] !text-[--app-accent-strong] !bg-[--app-accent-soft]'" @click="tagPopover.toggle($event)">
                         <FontAwesomeIcon :icon="isPending('tags:add') ? 'fal fa-spinner' : 'fal fa-plus'" :spin="isPending('tags:add')" fixed-width />
                     </button>
                 </div>
@@ -415,7 +430,7 @@ const update = (field: string, value: unknown, action: string = field) => {
                                 @click="update('tags', [...ticket.tags, tag], 'tags:add'); newTag = ''">
                                 {{ tag }}
                             </button>
-                            <button v-if="newTag.trim() && !tagOptions.includes(newTag.trim().toLowerCase())" type="button" class="block w-full rounded px-2 py-1 text-left text-sm text-indigo-600 hover:bg-indigo-50 active:!bg-indigo-100 transition duration-200" @click="addTypedTag">
+                            <button v-if="newTag.trim() && !tagOptions.includes(newTag.trim().toLowerCase())" type="button" class="block w-full rounded px-2 py-1 text-left text-sm text-[--app-accent-strong] hover:bg-[--app-accent-soft] active:!bg-[--app-accent-muted] transition duration-200" @click="addTypedTag">
                                 <FontAwesomeIcon icon="fal fa-plus" fixed-width /> {{ trans("Create") }} "{{ newTag.trim() }}"
                             </button>
                             <p v-if="!availableTags.length && !newTag.trim()" class="px-2 py-1 text-sm text-gray-400">{{ trans("No more tags") }}</p>

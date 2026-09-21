@@ -120,6 +120,7 @@ class DeliveryNotesResource extends JsonResource
             'organisation_slug'           => $this->organisation_slug,
             'shop_name'                   => $this->shop_name,
             'is_premium_dispatch'         => $this->is_premium_dispatch,
+            'handled_in_aurora'           => (bool)$this->handled_in_aurora,
             'is_customer_vip'             => $this->is_customer_vip,
             'has_extra_packing'           => $this->has_extra_packing,
             'picking_sessions_count'      => $this->picking_sessions_count,

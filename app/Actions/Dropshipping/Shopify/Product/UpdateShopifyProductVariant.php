@@ -28,10 +28,18 @@ class UpdateShopifyProductVariant extends RetinaAction
 
     public function handle(Portfolio $portfolio): array
     {
+        if ($portfolio->isShopifyVariantAdopted()) {
+            return [true, 'The merchant owns the price of this variant, nothing is sent'];
+        }
+
         $customerSalesChannel = $portfolio->customerSalesChannel;
 
         /** @var ShopifyUser $shopifyUser */
-        $shopifyUser = $customerSalesChannel->user;
+        $shopifyUser = $customerSalesChannel?->user;
+
+        if (!$shopifyUser) {
+            return [false, 'Shopify user not found for this customer sales channel'];
+        }
 
         $client = $shopifyUser->getShopifyClient(true);
 

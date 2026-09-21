@@ -18,3 +18,13 @@ test('a sold line keeps the pack size it was sold in', function (int|float|null 
     'no historic composition recorded'       => [null, 4.0, 4.0],
     'neither known'                          => [null, null, null],
 ]);
+
+test('a quantity reads as packs times units', function (int|float|string|null $quantity, int|float|string|null $packUnits, string $expected) {
+    expect(packQuantityLabel($quantity, $packUnits))->toBe($expected);
+})->with([
+    // HELP-3164, order GB588261: 10 x OBO-05 (pack of 3) shipped 30 units and the invoice read "10".
+    'ten packs of three'   => ['10.000000', '3.000', '10 × 3'],
+    'singles stay plain'   => ['12.000000', '1.000', '12'],
+    'unknown pack size'    => ['5.000000', null, '5'],
+    'fractional quantity'  => ['2.500000', '6.000', '2.5 × 6'],
+]);

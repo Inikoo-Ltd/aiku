@@ -16,6 +16,7 @@ use App\Models\SysAdmin\User;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
@@ -29,6 +30,7 @@ use Illuminate\Support\Carbon;
  * @property int $current_chat_count
  * @property array<array-key, mixed>|null $specialization
  * @property bool $auto_accept
+ * @property string|null $signature
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property Carbon|null $deleted_at
@@ -129,12 +131,33 @@ class ChatAgent extends Model
         return $this->hasMany(ChatAssignment::class, 'chat_agent_id');
     }
 
-    public function shopAssignments()
+    public function shopAssignments(): HasMany
     {
         return $this->hasMany(ShopHasChatAgent::class);
     }
 
-    public function shops()
+    public function isAssignedToShop(?int $shopId, ?int $organisationId): bool
+    {
+        if (!$shopId && !$organisationId) {
+            return false;
+        }
+
+        return $this->shopAssignments()
+            ->whereNull('deleted_at')
+            ->where(function ($query) use ($shopId, $organisationId) {
+                if ($shopId) {
+                    $query->where('shop_id', $shopId);
+                }
+                if ($organisationId) {
+                    $query->orWhere(function ($orgWide) use ($organisationId) {
+                        $orgWide->whereNull('shop_id')->where('organisation_id', $organisationId);
+                    });
+                }
+            })
+            ->exists();
+    }
+
+    public function shops(): BelongsToMany
     {
         return $this->belongsToMany(Shop::class, 'shop_has_chat_agents')
             ->withPivot(['organisation_id'])
@@ -142,7 +165,7 @@ class ChatAgent extends Model
             ->withTimestamps();
     }
 
-    public function organisations()
+    public function organisations(): BelongsToMany
     {
         return $this->belongsToMany(Organisation::class, 'shop_has_chat_agents')
             ->withPivot(['shop_id'])
@@ -237,6 +260,7 @@ class ChatAgent extends Model
     {
         return $query->online()
             ->where('is_available', true)
+            ->whereHas('user', fn ($user) => $user->where('status', true))
             ->whereColumn('current_chat_count', '<', 'max_concurrent_chats');
     }
 

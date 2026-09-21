@@ -12,6 +12,7 @@ namespace App\Actions\Dispatching\PickingSession;
 use App\Actions\Inventory\Warehouse\Hydrators\WarehouseHydratePickingSessions;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
+use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemStateEnum;
 use App\Enums\Dispatching\PickingSession\PickingSessionStateEnum;
 use App\Models\Dispatching\DeliveryNoteItem;
@@ -24,6 +25,10 @@ class AutoFinishPickingPickingSession extends OrgAction
 
     public function handle(PickingSession $pickingSession): PickingSession
     {
+        if ($pickingSession->state == PickingSessionStateEnum::HANDLING_BLOCKED) {
+            return UpdatePickingSessionStateFromHandlingBlocked::run($pickingSession);
+        }
+
         $numberItems = DeliveryNoteItem::where('picking_session_id', $pickingSession->id)->where('state', '!=', DeliveryNoteItemStateEnum::CANCELLED)->count();
 
         $numberHandled = DeliveryNoteItem::where('picking_session_id', $pickingSession->id)
@@ -33,8 +38,22 @@ class AutoFinishPickingPickingSession extends OrgAction
 
 
         if ($numberHandled == $numberItems) {
+            /*
+             * Waiting lines count as handled, so picking can be finished while a note still waits.
+             * The session waits with it rather than go to packing with that note incomplete.
+             */
+            $hasBlockedDeliveryNotes = $pickingSession->deliveryNotes()
+                ->where('delivery_notes.state', DeliveryNoteStateEnum::HANDLING_BLOCKED)
+                ->exists();
+
             $this->update($pickingSession, [
-                'state' => PickingSessionStateEnum::PICKING_FINISHED
+                'state' => $hasBlockedDeliveryNotes ? PickingSessionStateEnum::HANDLING_BLOCKED : PickingSessionStateEnum::PICKING_FINISHED
+            ]);
+            WarehouseHydratePickingSessions::dispatch($pickingSession->warehouse);
+        } elseif ($pickingSession->state == PickingSessionStateEnum::PICKING_FINISHED) {
+            // A pick undone after picking finished: the session is being picked again.
+            $this->update($pickingSession, [
+                'state' => PickingSessionStateEnum::HANDLING
             ]);
             WarehouseHydratePickingSessions::dispatch($pickingSession->warehouse);
         }

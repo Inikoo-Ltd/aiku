@@ -3,17 +3,19 @@ import { ref, computed, inject, onMounted, watch } from 'vue'
 import axios from 'axios'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { library } from '@fortawesome/fontawesome-svg-core'
-import { faTag, faRobot, faChartLine, faCopy, faCheck, faTimes, faExternalLinkAlt } from '@fal'
+import { faTag, faRobot, faChartLine, faCopy, faCheck, faTimes, faExternalLinkAlt, faLifeRing } from '@fal'
 import { faAnglesUp, faAngleUp, faEquals, faAngleDown, faChevronDown } from '@fortawesome/free-solid-svg-icons'
 import CustomerTimeline from '@/Components/Showcases/Grp/CustomerTimeline.vue'
 import ChatActivityTimeline from '@/Components/Chat/ChatActivityTimeline.vue'
 import HistoryChatList from '@/Components/Chat/HistoryChatList.vue'
 import MessageHistory from '@/Components/Chat/MessageHistory.vue'
+import TicketQuickLook from '@/Components/Tickets/TicketQuickLook.vue'
+import Icon from '@/Components/Icon.vue'
 import { faArrowLeft, faLink } from '@fal'
 
-library.add(faTag, faRobot, faChartLine, faCopy, faCheck, faTimes, faExternalLinkAlt, faArrowLeft, faLink)
+library.add(faTag, faRobot, faChartLine, faCopy, faCheck, faTimes, faExternalLinkAlt, faArrowLeft, faLink, faLifeRing)
 
-type SidePanelTab = 'profile' | 'statistics' | 'timeline' | 'log' | 'history'
+type SidePanelTab = 'profile' | 'statistics' | 'tickets' | 'timeline' | 'log' | 'history'
 
 interface PanelSession {
     ulid: string
@@ -130,6 +132,11 @@ const historyHasMore = ref(false)
 const historyPage = ref(1)
 const selectedHistory = ref<any | null>(null)
 
+const tickets = ref<any[]>([])
+const isLoadingTickets = ref(false)
+const ticketsLoaded = ref(false)
+const quickLookTicket = ref<any | null>(null)
+
 const statusColors: Record<string, string> = {
     active:      'bg-green-100 text-green-700',
     waiting:     'bg-yellow-100 text-yellow-700',
@@ -141,6 +148,7 @@ const statusColors: Record<string, string> = {
 const tabs: { key: SidePanelTab; label: string; onlyRegistered?: boolean }[] = [
     { key: 'profile',    label: 'Profile' },
     { key: 'statistics', label: 'Statistics', onlyRegistered: true },
+    { key: 'tickets',    label: 'Tickets' },
     { key: 'history',    label: 'History',    onlyRegistered: true },
     { key: 'timeline',   label: 'Timeline',   onlyRegistered: true },
     { key: 'log',        label: 'Log' },
@@ -151,6 +159,20 @@ const sessionApiBase = computed(() =>
         ? `${baseUrl}/app/api/chats/meta/sessions`
         : `${baseUrl}/app/api/chats/sessions`
 )
+
+const loadTickets = async () => {
+    if (!props.session.ulid) return
+    try {
+        isLoadingTickets.value = true
+        const res = await axios.get(`${sessionApiBase.value}/${props.session.ulid}/tickets`)
+        tickets.value = res.data?.data ?? []
+        ticketsLoaded.value = true
+    } catch (e) {
+        tickets.value = []
+    } finally {
+        isLoadingTickets.value = false
+    }
+}
 
 const loadCustomerProfile = async () => {
     if (props.session.is_guest || profileLoaded.value || !props.session.ulid) return
@@ -226,6 +248,9 @@ const resetAndLoad = () => {
     historyHasMore.value = false
     historyPage.value = 1
     selectedHistory.value = null
+    tickets.value = []
+    ticketsLoaded.value = false
+    quickLookTicket.value = null
     customerProfile.value = { tags: [], stats: null, email: null, profile_url: null }
     activeTab.value = 'profile'
     loadCustomerProfile()
@@ -235,6 +260,7 @@ watch(() => props.session.ulid, () => resetAndLoad())
 
 watch(activeTab, async (tab) => {
     if ((tab === 'profile' || tab === 'statistics') && !profileLoaded.value) await loadCustomerProfile()
+    if (tab === 'tickets' && !ticketsLoaded.value) await loadTickets()
     if (tab === 'timeline' && !timelineLoaded.value) await loadTimeline()
     if (tab === 'history' && !historyLoaded.value) await loadHistory()
 })
@@ -541,6 +567,38 @@ const copyChatId = async () => {
                 <CustomerTimeline v-else :data="timelineData" />
             </div>
 
+            <!-- Tickets -->
+            <div v-if="activeTab === 'tickets'" class="p-3">
+                <div v-if="isLoadingTickets" class="space-y-2">
+                    <div class="h-12 bg-gray-100 rounded animate-pulse" />
+                    <div class="h-12 bg-gray-100 rounded animate-pulse w-5/6" />
+                </div>
+                <div v-else-if="!tickets.length" class="flex flex-col items-center justify-center py-10 text-gray-400">
+                    <FontAwesomeIcon :icon="['fal', 'fa-life-ring']" class="text-2xl mb-2 opacity-30" />
+                    <p class="text-xs">No tickets yet</p>
+                </div>
+                <ul v-else class="space-y-2">
+                    <li v-for="ticket in tickets" :key="ticket.id">
+                        <button type="button"
+                            class="w-full rounded-lg border border-gray-200 bg-white p-2.5 text-left transition hover:border-gray-300 hover:bg-gray-50"
+                            @click="quickLookTicket = ticket">
+                            <div class="flex items-center gap-2 text-[11px] text-gray-500">
+                                <span class="font-semibold text-gray-700">{{ ticket.reference }}</span>
+                                <Icon v-if="ticket.status_icon" :data="ticket.status_icon" />
+                                <span>{{ ticket.status_label }}</span>
+                                <Icon v-if="ticket.priority_icon" :data="ticket.priority_icon" class="ml-auto" />
+                            </div>
+                            <p class="mt-1 line-clamp-2 text-xs font-medium text-gray-800">{{ ticket.subject }}</p>
+                            <div class="mt-1 flex items-center gap-2 text-[11px] text-gray-400">
+                                <span v-if="ticket.kind_label">{{ ticket.kind_label }}</span>
+                                <span v-if="ticket.assignee">· {{ ticket.assignee }}</span>
+                                <span class="ml-auto">{{ formatStatDate(ticket.created_at) }}</span>
+                            </div>
+                        </button>
+                    </li>
+                </ul>
+            </div>
+
             <!-- Log -->
             <div v-if="activeTab === 'log'" class="px-4">
                 <ChatActivityTimeline :sessionUlid="session.ulid" :baseUrl="baseUrl" :channel="session.channel" />
@@ -568,5 +626,6 @@ const copyChatId = async () => {
                 </template>
             </div>
         </div>
-    </div>
+        <TicketQuickLook v-model:ticket="quickLookTicket" @closed="quickLookTicket = null" />
+</div>
 </template>

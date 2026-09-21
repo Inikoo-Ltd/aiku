@@ -11,9 +11,12 @@ namespace App\Actions\Chat\ChatSession;
 use App\Actions\Comms\ChatEmailRecipient\StoreChatEmailRecipient;
 use App\Actions\Comms\Email\SendChatNotificationToCustomer;
 use App\Actions\Comms\Email\SendChatNotificationToExternal;
+use App\Actions\Comms\Mailbox\ImportPendingGmailAttachments;
+use App\Actions\Comms\Mailbox\SendChatMessageByGmail;
 use App\Actions\Helpers\Media\StoreMediaFromFile;
 use App\Enums\CRM\Livechat\ChatActorTypeEnum;
 use App\Enums\CRM\Livechat\ChatAssignmentStatusEnum;
+use App\Enums\CRM\Livechat\ChatChannelEnum;
 use App\Enums\CRM\Livechat\ChatMessageTypeEnum;
 use App\Enums\CRM\Livechat\ChatSenderTypeEnum;
 use App\Events\BroadcastChatListEvent;
@@ -80,6 +83,9 @@ class SendChatMessage
         if (isset($modelData['file']) && $modelData['file'] instanceof UploadedFile) {
             $this->processMessageFile($chatMessage, $modelData['file']);
         }
+        if (! empty($modelData['attachments'])) {
+            $this->processMessageAttachments($chatMessage, $modelData['attachments']);
+        }
 
         ProcessChatMessageSideEffects::dispatch(
             $chatSession,
@@ -91,6 +97,11 @@ class SendChatMessage
         TranslateChatMessage::dispatch(messageId: $chatMessage->id);
         BroadcastRealtimeChat::dispatch($chatMessage);
         BroadcastChatListEvent::dispatch($chatMessage);
+
+        if ($chatSession->channel === ChatChannelEnum::EMAIL && $modelData['sender_type'] === ChatSenderTypeEnum::AGENT->value) {
+            SendChatMessageByGmail::dispatch($chatMessage);
+            ImportPendingGmailAttachments::dispatch($chatSession);
+        }
 
         $shouldNotifyByEmail = $modelData['is_email_notif'] ?? false;
 
@@ -134,6 +145,36 @@ class SendChatMessage
         $chatMessage->updateQuietly([
             'media_id'     => $media->id,
             'message_type' => ChatMessageTypeEnum::FILE,
+        ]);
+
+        $chatMessage->refresh();
+    }
+
+    /**
+     * @param  array<int, UploadedFile>  $files
+     */
+    public function processMessageAttachments(ChatMessage $chatMessage, array $files): void
+    {
+        $firstMediaId = $chatMessage->media_id;
+        $allImages    = true;
+
+        foreach ($files as $file) {
+            $isImage   = str_starts_with((string) $file->getMimeType(), 'image/');
+            $allImages = $allImages && $isImage;
+
+            $media = StoreMediaFromFile::run($chatMessage, [
+                'path'         => $file->getPathName(),
+                'originalName' => $file->getClientOriginalName(),
+                'extension'    => $file->getClientOriginalExtension(),
+                'checksum'     => md5_file($file->getPathName()),
+            ], $isImage ? 'chat_images' : 'chat_attachments', $isImage ? 'image' : 'file');
+
+            $firstMediaId ??= $media->id;
+        }
+
+        $chatMessage->updateQuietly([
+            'media_id'     => $firstMediaId,
+            'message_type' => $allImages && $chatMessage->message_type !== ChatMessageTypeEnum::FILE ? ChatMessageTypeEnum::IMAGE : ChatMessageTypeEnum::FILE,
         ]);
 
         $chatMessage->refresh();
@@ -227,7 +268,7 @@ class SendChatMessage
     {
         return [
             'message_text'   => [
-                'required_without_all:image,file',
+                'required_without_all:image,file,attachments',
                 'nullable',
                 'string',
                 'max:5000'
@@ -254,6 +295,15 @@ class SendChatMessage
                 'sometimes',
                 'nullable',
                 File::types(['pdf', 'doc', 'docx', 'xls', 'xlsx', 'csv', 'txt', 'pptx'])
+                    ->max(20 * 1024)
+            ],
+            'attachments'    => [
+                'sometimes',
+                'array',
+                'max:10',
+            ],
+            'attachments.*'  => [
+                File::types(['jpg', 'jpeg', 'png', 'gif', 'webp', 'pdf', 'doc', 'docx', 'xls', 'xlsx', 'csv', 'txt', 'pptx'])
                     ->max(20 * 1024)
             ],
             'is_email_notif' => [

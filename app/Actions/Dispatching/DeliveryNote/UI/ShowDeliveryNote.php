@@ -986,7 +986,7 @@ class ShowDeliveryNote extends OrgAction
     public function htmlResponse(DeliveryNote $deliveryNote, ActionRequest $request): Response
     {
         $isEditable = false;
-        if ($this->parent instanceof Warehouse) {
+        if ($this->parent instanceof Warehouse && !$deliveryNote->isLockedInAurora()) {
             $isEditable = true;
         }
         $this->countriesAddressData ??= GetAddressData::run();
@@ -995,7 +995,8 @@ class ShowDeliveryNote extends OrgAction
 
         $this->allowAction = $allowAction;
 
-        $actions = $this->getActions($deliveryNote, $request);
+        $lockedInAurora = $deliveryNote->isLockedInAurora();
+        $actions        = $lockedInAurora ? [] : $this->getActions($deliveryNote, $request);
 
         $warning = null;
 
@@ -1178,9 +1179,10 @@ class ShowDeliveryNote extends OrgAction
                     'label' => $deliveryNote->state->labels()[$deliveryNote->state->value],
                 ],
                 'actions'         => $actions,
-                'wrapped_actions' => $this->wrappedActions($deliveryNote),
+                'wrapped_actions' => $lockedInAurora ? [] : $this->wrappedActions($deliveryNote),
             ],
             'warning'       => $warning,
+            'aurora_notice' => $lockedInAurora ? __('This delivery note belongs to an order submitted in Aurora. Pick, pack and dispatch it in Aurora, not here.') : null,
             'is_editable'   => $isEditable,
             'tabs'          => [
                 'current'    => $this->tab,
@@ -1669,15 +1671,15 @@ class ShowDeliveryNote extends OrgAction
             defaultSort: $this->deliveryNoteDefaultSort($bucket),
             forward: $forward,
             sortValues: [
-                'customers.name'                            => $deliveryNote->customer?->name,
-                'NOT delivery_notes.is_premium_dispatch'    => !$deliveryNote->is_premium_dispatch,
+                'customers.name' => $deliveryNote->customer?->name,
+                "NOT (delivery_notes.is_premium_dispatch OR delivery_notes.type = 'replacement')" => !($deliveryNote->is_premium_dispatch || $deliveryNote->type == DeliveryNoteTypeEnum::REPLACEMENT),
             ]
         );
     }
 
     /**
-     * Outside the dispatched bucket the index puts premium dispatch first, then oldest first,
-     * which is the ascending order of (not premium, date).
+     * Outside the dispatched bucket the index puts premium dispatch and replacements first, then oldest first,
+     * which is the ascending order of (not priority, date).
      *
      * @return array{0: string|array<string>, 1: bool}
      */
@@ -1687,7 +1689,7 @@ class ShowDeliveryNote extends OrgAction
             return ['delivery_notes.date', true];
         }
 
-        return [['NOT delivery_notes.is_premium_dispatch', 'delivery_notes.date'], false];
+        return [["NOT (delivery_notes.is_premium_dispatch OR delivery_notes.type = 'replacement')", 'delivery_notes.date'], false];
     }
 
     private function getNextPrevCommon($query, DeliveryNote $deliveryNote, ActionRequest $request)

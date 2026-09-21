@@ -313,7 +313,7 @@ const onHideStepsPopover = () => {
                 <LabelComingSoon v-else-if="product.is_coming_soon" :product="product" />
             </div>
 
-            <div v-if="(product?.rrp_per_unit ?? 0 > 0) && !product.is_coming_soon"
+            <div v-if="(product?.rrp_per_unit ?? 0) > 0 && !product.is_coming_soon"
                 style="margin-left: auto; display: flex; align-items: center; gap: 0.25rem; white-space: nowrap;">
                 <span @click="_popoverProfit?.toggle" @mouseenter="_popoverProfit?.show"
                     @mouseleave="_popoverProfit?.hide"
@@ -321,7 +321,7 @@ const onHideStepsPopover = () => {
                     <FontAwesomeIcon icon="fal fa-plus-circle" fixed-width />
                 </span>
 
-                <span class="text-[8px] sm:text-[9px] md:text-[10px] text-[#E87928] border-[#E87928] font-bold">
+                <span class="text-[8px] sm:text-[9px] md:text-[10px] text-primary border-primaryfont-bold">
                     {{ trans('RRP') }}:
                     <span class="font-bold">
                         {{ locale.currencyFormatRrp(currency?.code, product?.rrp_per_unit) }}

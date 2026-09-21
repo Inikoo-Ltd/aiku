@@ -9,6 +9,7 @@
 
 namespace App\Http\Resources\Dispatching;
 
+use App\Actions\Dispatching\PartnerStaging\PartnerBayPickingOrder;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Http\Resources\Inventory\LocationOrgStocksForPickingActionsResource;
 use App\Models\Dispatching\DeliveryNoteItem;
@@ -78,6 +79,7 @@ class WaitingDeliveryNoteItemsGroupedByItemDeliveryNoteResource extends JsonReso
     ) as pickings_data',
                 ['pick', $this->id]
             )
+            ->orderByRaw(PartnerBayPickingOrder::sql((string) (int) $this->id))
             ->orderByRaw(
                 $deliveryNote?->shop_type == ShopTypeEnum::B2B
                     ? 'location_org_stocks.default_wholesale_picking_location::int desc'

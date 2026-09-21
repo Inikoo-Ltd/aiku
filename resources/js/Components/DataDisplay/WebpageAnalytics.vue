@@ -226,7 +226,7 @@ const formatTotal = (key: keyof typeof series) =>
 </script>
 
 <template>
-	<div class="p-6 space-y-6">
+	<div class="py-6 space-y-6" >
 		<div class="flex flex-wrap items-center gap-3 text-sm">
 			<label class="flex items-center gap-2">
 				<span class="text-gray-500">{{ trans("From") }}</span>

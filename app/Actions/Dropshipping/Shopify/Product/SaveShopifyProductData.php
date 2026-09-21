@@ -12,15 +12,18 @@ use App\Actions\Dropshipping\CustomerSalesChannel\Hydrators\CustomerSalesChannel
 use App\Actions\Dropshipping\Portfolio\UpdatePortfolio;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
+use App\Models\Catalogue\Product;
 use App\Models\Dropshipping\Portfolio;
 use Exception;
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 class SaveShopifyProductData extends RetinaAction
 {
     use WithActionUpdate;
+    use WithShopifyPortfolioVariant;
 
 
     public function handle(Portfolio $portfolio, array $productData = []): ?array
@@ -154,7 +157,8 @@ class SaveShopifyProductData extends RetinaAction
                 $productData = $body['data']['product'];
             }
 
-            $sku = Arr::get($productData, 'variants.edges.0.node.sku');
+            $variantNode = $this->portfolioVariantNode($portfolio, Arr::get($productData, 'variants.edges', []));
+            $sku         = Arr::get($variantNode, 'sku');
 
 
 
@@ -164,11 +168,11 @@ class SaveShopifyProductData extends RetinaAction
             $dataToUpdate = [
                 'data' => $data
             ];
-            if ($sku) {
+            if ($sku && !$this->skuIsCodeOfAnotherProduct($portfolio, $sku)) {
                 data_set($dataToUpdate, 'sku', $sku);
             }
 
-            $inventoryQuantity = Arr::get($productData, 'variants.edges.0.node.inventoryQuantity');
+            $inventoryQuantity = Arr::get($variantNode, 'inventoryQuantity');
             if ($portfolio->last_stock_value === null && $inventoryQuantity !== null) {
                 data_set($dataToUpdate, 'last_stock_value', (int) $inventoryQuantity);
                 data_set($dataToUpdate, 'stock_last_updated_at', now());
@@ -183,6 +187,22 @@ class SaveShopifyProductData extends RetinaAction
         } catch (Exception) {
             return null;
         }
+    }
+
+    /**
+     * The sku of the listing is the merchant's own text. When it is the code of another product of
+     * the shop, keeping it would make this portfolio answer for that product in every sku lookup.
+     */
+    private function skuIsCodeOfAnotherProduct(Portfolio $portfolio, string $sku): bool
+    {
+        if (Str::lower(trim($sku)) === Str::lower((string) $portfolio->item_code)) {
+            return false;
+        }
+
+        return Product::where('shop_id', $portfolio->shop_id)
+            ->where('id', '!=', $portfolio->item_id)
+            ->whereRaw('lower(code collate "C") = ?', [Str::lower(trim($sku))])
+            ->exists();
     }
 
     public function getCommandSignature(): string

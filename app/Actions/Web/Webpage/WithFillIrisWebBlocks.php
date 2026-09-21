@@ -26,7 +26,7 @@ use App\Actions\Web\WebBlock\Iris\GetIrisWebBlockBlogList;
 use App\Actions\Web\WebBlock\Iris\GetIrisWebBlockRecommendationsCRB;
 use App\Actions\Web\WebBlock\Iris\GetIrisWebBlockRecommendationsFromMaster;
 use App\Actions\Web\WebBlock\Iris\GetIrisWebBlockRecommendationsProductCategoriesFromMaster;
-use App\Actions\Web\WebBlock\Iris\GetIrisWebBlockLuigiRecommendations;
+use App\Actions\Web\WebBlock\Iris\GetIrisWebBlockInternalRecommendations;
 use App\Actions\Web\WebBlock\Iris\GetWebBlockProduct;
 use App\Actions\Web\WebBlock\Iris\GetWebBlockProducts;
 use App\Actions\Web\WebBlock\Iris\GetIrisRelatedProductCategory;
@@ -34,10 +34,10 @@ use App\Actions\Web\WebBlock\Iris\GetIrisWebBlockFamiliesFour;
 use App\Actions\Web\WebBlock\Iris\GetIrisWebBlockSubDepartmentsThree;
 use App\Actions\Web\WebBlock\Iris\GetIrisFaqDepartment;
 use App\Actions\Web\WebBlock\Iris\GetIrisTopFamilies;
-use App\Actions\Web\WebBlock\Iris\GetIrisWebBlockBlogRegister;
 use App\Actions\Web\WebBlock\Iris\GetIrisWebBlockForgotPassword;
 use App\Actions\Web\WebBlock\Iris\GetIrisWebBlockLogin;
 use App\Actions\Web\WebBlock\Iris\GetIrisWebBlockRegister;
+use App\Actions\Web\WebBlock\Iris\GetIrisWebBlockRegisterDashboard;
 use App\Actions\Web\Webpage\UI\SanitiseImagesWebBlock;
 use Illuminate\Support\Arr;
 
@@ -109,6 +109,8 @@ trait WithFillIrisWebBlocks
             $parsedWebBlocks[$key] = GetIrisWebBlockLogin::run($webpage, $webBlock);
         } elseif ($webBlockType == 'register') {
             $parsedWebBlocks[$key] = GetIrisWebBlockRegister::run($webpage, $webBlock);
+        } elseif (in_array($webBlockType, ['register-dashboard', 'register-dashboard-2'])) {
+            $parsedWebBlocks[$key] = GetIrisWebBlockRegisterDashboard::run($webpage, $webBlock);
         } elseif ($webBlockType == 'forgot-password') {
             $parsedWebBlocks[$key] = GetIrisWebBlockForgotPassword::run($webpage, $webBlock);
         } elseif ($webBlockType == 'recommendation-customer-recently-bought-1') {
@@ -124,7 +126,7 @@ trait WithFillIrisWebBlocks
         } elseif ($webBlockType == 'recommendation-from-master') {
             $parsedWebBlocks[$key] = GetIrisWebBlockRecommendationsFromMaster::run($webpage, $webBlock);
         } elseif (in_array($webBlockType, ['luigi-last-seen-1', 'luigi-item-alternatives-1', 'luigi-trends-1'])) {
-            $webBlockData = GetIrisWebBlockLuigiRecommendations::run($webpage, $webBlock);
+            $webBlockData = GetIrisWebBlockInternalRecommendations::run($webpage, $webBlock);
             if ($webBlockData) {
                 $parsedWebBlocks[$key] = $webBlockData;
             } else {

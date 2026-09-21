@@ -56,17 +56,23 @@ class ShowIrisWebpage
 
 
         $webpageImg = [];
-        if ($webpage->seoImage) {
+        if ($webpage->seo_image_url) {
+            $webpageImg = [
+                'url'   => $webpage->seo_image_url
+            ];
+        } elseif ($webpage->seoImage) {
             $webpageImg = $webpage->imageSources(1200, 1200, 'seoImage');
         }
 
         $website = $webpage->website;
 
         $title = $webpage->title;
-        // Prioritize webpage prefix/suffix -> website prefix/suffix
-        $prefix = data_get($webpage->settings, 'webpage.title_prefix', data_get($website->settings, 'webpage.title_prefix', null));
-        $suffix = data_get($webpage->settings, 'webpage.title_suffix', data_get($website->settings, 'webpage.title_suffix', null));
-        $title = collect([$prefix, $title, $suffix])->filter()->implode(' ');
+        if (Arr::get($webpage->seo_data, 'use_title_prefix_suffix', true)) {
+            // Prioritize webpage prefix/suffix -> website prefix/suffix
+            $prefix = data_get($webpage->settings, 'webpage.title_prefix') ?: data_get($website->settings, 'webpage.title_prefix');
+            $suffix = data_get($webpage->settings, 'webpage.title_suffix') ?: data_get($website->settings, 'webpage.title_suffix');
+            $title  = collect([$prefix, $title, $suffix])->filter()->implode(' ');
+        }
         $baseWebpageData = [
             'breadcrumbs'                 => $this->getIrisBreadcrumbs(
                 webpage: $webpage,
@@ -126,7 +132,7 @@ class ShowIrisWebpage
     {
         if ($path == 'robots.txt') {
             return 'robots';
-        } elseif (in_array($path, ['login.sys', 'register.sys', 'index.php', 'asset_label.php', 'home.sys', 'login', 'register', 'forgot-password'])) {
+        } elseif (in_array($path, ['login.sys', 'register.sys', 'index.php', 'asset_label.php', 'home.sys', 'login', 'register', 'register-dashboard', 'forgot-password'])) {
             return $path;
         }
 
@@ -271,10 +277,11 @@ class ShowIrisWebpage
         if (is_string($webpageData)) {
 
             // Depends on the visitor, so it must never reach Varnish or the browser cache.
-            if (in_array($webpageData, ['login', 'register', 'forgot-password'])) {
+            if (in_array($webpageData, ['login', 'register', 'register-dashboard', 'forgot-password'])) {
                 $redirect = match($webpageData) {
                     'login'             => '/app/login',
                     'register'          => '/app/register',
+                    'register-dashboard' => '/app/register',
                     'forgot-password'   => '/app/reset-password-send',
                     default             => null,
                 };

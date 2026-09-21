@@ -2173,6 +2173,32 @@ test('DeleteMasterProductCategory force deletes a master sub department without 
     expect(MasterProductCategory::find($masterSubDepartmentId))->toBeNull();
 });
 
+test('DeleteMasterProductCategory deletes empty shop categories and keeps the ones with products', function () {
+    $masterShop       = createFreshMasterShop();
+    $masterDepartment = StoreMasterDepartment::make()->action($masterShop, ['code' => 'DMC-DEPT-'.uniqid(), 'name' => 'Delete Cascade Department']);
+    $masterFamily     = StoreMasterFamily::make()->action($masterDepartment, ['code' => 'DMC-FAM-'.uniqid(), 'name' => 'Delete Cascade Family']);
+
+    [, $product] = createProduct($this->shop);
+    $department  = $this->shop->productCategories()->where('type', ProductCategoryTypeEnum::DEPARTMENT)->first();
+    $emptyFamily = StoreProductCategory::make()->action($department, array_merge(
+        ProductCategory::factory()->definition(),
+        ['type' => ProductCategoryTypeEnum::FAMILY->value]
+    ));
+    $familyWithProducts = $product->family;
+
+    $emptyFamily->updateQuietly(['master_product_category_id' => $masterFamily->id]);
+    $familyWithProducts->updateQuietly(['master_product_category_id' => $masterFamily->id]);
+
+    expect(fn () => DeleteMasterProductCategory::make()->action($masterFamily))->toThrow(\Illuminate\Validation\ValidationException::class);
+
+    DeleteMasterProductCategory::make()->handle($masterFamily);
+
+    expect(ProductCategory::find($emptyFamily->id))->toBeNull()
+        ->and(ProductCategory::find($familyWithProducts->id))->not->toBeNull()
+        ->and(MasterProductCategory::find($masterFamily->id))->toBeNull()
+        ->and($familyWithProducts->fresh()->master_product_category_id)->toBeNull();
+});
+
 test('AttachMasterFamiliesToMasterDepartment moves families under a department', function () {
     $masterShop       = createFreshMasterShop();
     $masterDepartment = StoreMasterDepartment::make()->action($masterShop, [
@@ -3335,4 +3361,44 @@ test('recommended trade units follow the linked trade unit family, not the famil
 
     expect($recommended)->toContain($tradeUnit->id)
         ->and($recommended)->toContain($prefixOnlyTradeUnit->id);
+});
+
+test('store master variant is blocked while a product waits for its cutover retirement decision', function () {
+    $masterShop   = createFreshMasterShop();
+    $masterFamily = StoreMasterFamily::make()->action(
+        StoreMasterDepartment::make()->action($masterShop, ['code' => 'RTD-DEP-'.uniqid(), 'name' => 'Retirement Dept']),
+        ['code' => 'RTD-FAM-'.uniqid(), 'name' => 'Retirement Family']
+    );
+    $leader = StoreMasterAsset::make()->action($masterFamily, [
+        'code'    => 'RTD-LEAD-'.uniqid(),
+        'name'    => 'Retired Leader',
+        'is_main' => true,
+        'type'    => MasterAssetTypeEnum::PRODUCT,
+        'price'   => 10,
+        'rrp'     => 20,
+        'stocks'  => [],
+    ]);
+
+    [, $product] = createProduct($this->shop);
+    $originalData           = $product->data;
+    $originalMasterProduct  = $product->master_product_id;
+    $product->updateQuietly([
+        'master_product_id' => $leader->id,
+        'data'              => array_merge($product->data ?? [], ['retire_at_cutover' => true, 'replaced_by_product_id' => $product->id]),
+    ]);
+
+    try {
+        $response = post(route('grp.models.master_variant.store', $masterFamily->id), [
+            'data_variants' => [
+                'variants' => [['label' => 'Size', 'options' => ['S']]],
+                'groupBy'  => 'Size',
+                'products' => [$leader->id => ['is_leader' => true, 'product' => ['id' => $leader->id]]],
+            ],
+        ]);
+
+        $response->assertSessionHasErrors('leader_id');
+        expect($leader->refresh()->master_variant_id)->toBeNull();
+    } finally {
+        $product->updateQuietly(['master_product_id' => $originalMasterProduct, 'data' => $originalData]);
+    }
 });

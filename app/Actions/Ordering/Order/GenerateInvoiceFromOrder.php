@@ -21,6 +21,7 @@ use App\Actions\Accounting\Payment\StorePayment;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Traits\WithLineTaxCategories;
+use App\Enums\Accounting\CreditTransaction\CreditTransactionReasonEnum;
 use App\Enums\Accounting\CreditTransaction\CreditTransactionTypeEnum;
 use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
 use App\Enums\Accounting\Payment\PaymentStateEnum;
@@ -186,6 +187,8 @@ class GenerateInvoiceFromOrder extends OrgAction
                 StoreCreditTransaction::make()->action($invoice->customer, [
                     'amount'     => $amountToCredit,
                     'type'       => CreditTransactionTypeEnum::FROM_EXCESS,
+                    'reason'     => CreditTransactionReasonEnum::OTHER,
+                    'notes'      => __('Refund for items not shipped in order :reference', ['reference' => $order->reference]),
                     'payment_id' => $creditPayment->id,
                     'date'       => now()
                 ]);

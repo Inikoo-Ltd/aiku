@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { computed, ref } from "vue"
+import { computed, onMounted, ref } from "vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { ulid } from "ulid"
 import {
 	faShieldCheck,
 	faGlobe,
@@ -131,10 +132,16 @@ const openRow = ref<string | null>(null)
 const toggleRow = (key: string) => {
 	openRow.value = openRow.value === key ? null : key
 }
+
+const renderKey = ref("server")
+
+onMounted(() => {
+	renderKey.value = ulid()
+})
 </script>
 
 <template>
-	<div class="py-5 md:py-6 lg:py-12">
+	<div :key="renderKey" class="py-5 md:py-6 lg:py-12" :style="{ paddingTop:'3rem', paddingBottom:'3rem' }">
 	<div v-if="cards.length || rows.length" class="regulatory-panel" :style="containerStyle">
 		<div class="flex items-start gap-3">
 			<FontAwesomeIcon :icon="faShieldCheck" class="mt-1  text-primary " style="font-size: 40px;" />

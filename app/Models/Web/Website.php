@@ -225,11 +225,6 @@ class Website extends Model implements Auditable, HasMedia
         });
     }
 
-    public function usesLuigiSearch(): bool
-    {
-        return data_get($this->settings, 'iris_search_model', 'internal') !== 'internal';
-    }
-
     protected $casts = [
         'type'                    => WebsiteTypeEnum::class,
         'data'                    => 'array',
@@ -308,7 +303,7 @@ class Website extends Model implements Auditable, HasMedia
     {
         return $this->hasOne(Webpage::class, 'id', 'landing_page_id');
     }
-    
+
     public function loginPage(): HasOne
     {
         return $this->hasOne(Webpage::class, 'id', 'login_page_id');
@@ -317,6 +312,11 @@ class Website extends Model implements Auditable, HasMedia
     public function registerPage(): HasOne
     {
         return $this->hasOne(Webpage::class, 'id', 'register_page_id');
+    }
+
+    public function registerDashboardPage(): HasOne
+    {
+        return $this->hasOne(Webpage::class, 'id', 'register_dashboard_page_id');
     }
 
     public function forgotPasswordPage(): HasOne

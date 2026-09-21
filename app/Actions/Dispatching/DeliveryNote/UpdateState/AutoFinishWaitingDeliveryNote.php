@@ -8,6 +8,7 @@
 
 namespace App\Actions\Dispatching\DeliveryNote\UpdateState;
 
+use App\Actions\Dispatching\PickingSession\UpdatePickingSessionStateFromHandlingBlocked;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
@@ -79,6 +80,11 @@ class AutoFinishWaitingDeliveryNote extends OrgAction
         }
 
         UpdateDeliveryNoteStateToPicked::run($deliveryNote);
+
+        /** The released note may have been the last thing its picking sessions were waiting on. */
+        foreach ($deliveryNote->pickingSessions as $pickingSession) {
+            UpdatePickingSessionStateFromHandlingBlocked::run($pickingSession);
+        }
 
         return $deliveryNote;
     }

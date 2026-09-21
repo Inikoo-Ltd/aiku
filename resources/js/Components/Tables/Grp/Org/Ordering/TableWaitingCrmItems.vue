@@ -522,6 +522,12 @@ const submitSendBackWarehouse = () => {
                             <template v-else>{{ Number(subItem.quantity_waiting_crm) }}</template>
                             {{ ctrans("SKO") }}
                         </div>
+                        <div v-if="subItem.net_amount !== null && subItem.net_amount !== undefined" class="tabular-nums text-sm text-gray-500">
+                            {{ ctrans("Product") }} <span class="font-semibold">{{ subItem.product_code }}</span>: {{ Number(subItem.quantity_ordered) }} ×
+                            {{ locale.currencyFormat(subItem.currency_code, subItem.net_amount) }} {{ ctrans("net") }}
+                            · <span class="font-semibold">{{ locale.currencyFormat(subItem.currency_code, subItem.net_amount_with_tax) }}</span> {{ ctrans("inc. VAT") }}
+                            <span v-if="subItem.number_skos_in_product > 1" class="italic">({{ ctrans("whole product, made of :count SKOs", { count: String(subItem.number_skos_in_product) }) }})</span>
+                        </div>
                         <div v-if="subItem.notes" class="text-left border border-gray-300 bg-gray-100 px-2 py-1 rounded text-xs w-fit">
                             <FontAwesomeIcon icon="fal fa-sticky-note" fixed-width aria-hidden="true" />
                             {{ subItem.notes }}
@@ -638,7 +644,8 @@ const submitSendBackWarehouse = () => {
                                 <span class="ml-1">{{ ctrans("SKO") }}</span>
                             </div>
                             <div v-if="selectedItem?.net_amount" class="tabular-nums text-xs opacity-70 mt-0.5">
-                                {{ locale.currencyFormat(selectedItem?.currency_code, selectedItem?.net_amount) }}
+                                {{ locale.currencyFormat(selectedItem?.currency_code, selectedItem?.net_amount) }} {{ ctrans("net") }}
+                                · {{ locale.currencyFormat(selectedItem?.currency_code, selectedItem?.net_amount_with_tax) }} {{ ctrans("inc. VAT") }}
                             </div>
                         </div>
                     </div>

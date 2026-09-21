@@ -369,7 +369,7 @@ class GetFulfilmentNavigation
                 'label' => __('Chat'),
                 'icon'  => ['fal', 'comment-alt'],
                 'route' => [
-                    'name'       => 'grp.org.fulfilments.show.chat.dashboard',
+                    'name'       => 'grp.org.fulfilments.show.chat.reports',
                     'parameters' => [$fulfilment->organisation->slug, $fulfilment->slug]
                 ],
 
@@ -378,9 +378,9 @@ class GetFulfilmentNavigation
                         [
                             'label' => __('Dashboard'),
                             'icon'  => ['fal', 'comment-alt'],
-                            'root'  => 'grp.org.fulfilments.show.chat.dashboard',
+                            'root'  => 'grp.org.fulfilments.show.chat.reports',
                             'route' => [
-                                'name'       => 'grp.org.fulfilments.show.chat.dashboard',
+                                'name'       => 'grp.org.fulfilments.show.chat.reports',
                                 'parameters' => [$fulfilment->organisation->slug, $fulfilment->slug]
                             ],
                         ],

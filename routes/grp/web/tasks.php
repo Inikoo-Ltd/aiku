@@ -6,9 +6,12 @@
  * Copyright (c) 2026, Raul A Perusquia Flores
  */
 
+use App\Actions\Tasks\Json\GetStaffTaskConversation;
 use App\Actions\Tasks\Json\GetStaffTaskOptions;
 use App\Actions\Tasks\Json\GetStaffTasks;
 use App\Actions\Tasks\StoreStaffTask;
+use App\Actions\Tasks\SyncStaffTaskCollaborators;
+use App\Actions\Tasks\ToggleStaffTaskSubscription;
 use App\Actions\Tasks\UI\ShowStaffTasks;
 use App\Actions\Tasks\UI\ShowStaffTasksBoard;
 use App\Actions\Tasks\UI\ShowStaffTasksReports;
@@ -24,3 +27,6 @@ Route::get('/list', GetStaffTasks::class)->name('list');
 Route::get('/options', GetStaffTaskOptions::class)->name('options');
 Route::post('/', StoreStaffTask::class)->name('store');
 Route::patch('/{staffTask}', UpdateStaffTask::class)->name('update');
+Route::get('/{staffTask}/conversation', GetStaffTaskConversation::class)->name('conversation');
+Route::patch('/{staffTask}/collaborators', SyncStaffTaskCollaborators::class)->name('collaborators.update');
+Route::post('/{staffTask}/subscription', ToggleStaffTaskSubscription::class)->name('subscription.toggle');

@@ -26,6 +26,7 @@ use App\Actions\Reviews\ReviewReply\DeleteReviewReply;
 use App\Actions\Reviews\ReviewReply\StoreReviewReply;
 use App\Actions\Reviews\ReviewReply\UpdateReviewReply;
 use App\Actions\Reviews\GetReviewableReviews;
+use App\Actions\Reviews\Import\CustomReviewImport;
 use App\Actions\Reviews\Import\ReviewIOImport;
 use App\Actions\Reviews\Import\TrustPilotImport;
 use App\Actions\Reviews\StoreReview;
@@ -699,11 +700,34 @@ test('review io import product and shop csv', function () {
         ->and(Review::where('external_id', 'rio-fp-2')->first()->replied)->toBeTrue();
 });
 
+test('custom review csv import', function () {
+    $rows = collect([
+        collect(["\u{FEFF}author", 'rating', 'review', 'date', 'source', 'response', 'response_date']),
+        collect(['Sarah ', '5', 'Amazing soap', 'Sep 05, 2026', 'Custom', '', '']),
+        collect(['Stan ', '4', 'Great variety', 'Jun 28, 2025', 'Google', 'Thank you Stan', 'Jun 30, 2025']),
+    ]);
+
+    (new CustomReviewImport($this->shop))->collection($rows);
+    (new CustomReviewImport($this->shop))->collection($rows);
+
+    $withoutReply = Review::where('message', 'Amazing soap')->get();
+    $withReply    = Review::where('message', 'Great variety')->first();
+
+    expect($withoutReply)->toHaveCount(1)
+        ->and($withoutReply->first()->customer_id)->toBeNull()
+        ->and($withoutReply->first()->meta['author_name'])->toBe('Sarah')
+        ->and($withReply->meta['source'])->toBe('Google')
+        ->and($withReply->replied)->toBeTrue()
+        ->and($withReply->reply_message)->toBe('Thank you Stan');
+});
+
 test('csv import command guards', function () {
     $this->artisan('import:trustpilot_csv', ['filename' => 'nope.csv', 'shop' => ''])->assertExitCode(1);
     $this->artisan('import:trustpilot_csv', ['filename' => 'does-not-exist.csv', 'shop' => $this->shop->slug])->assertExitCode(1);
     $this->artisan('import:review_io_csv', ['filename' => 'nope.csv', 'shop' => ''])->assertExitCode(1);
     $this->artisan('import:review_io_csv', ['filename' => 'does-not-exist.csv', 'shop' => $this->shop->slug])->assertExitCode(1);
+    $this->artisan('import:custom_review_csv', ['filename' => 'nope.csv', 'shop' => ''])->assertExitCode(1);
+    $this->artisan('import:custom_review_csv', ['filename' => 'does-not-exist.csv', 'shop' => $this->shop->slug])->assertExitCode(1);
 });
 
 test('index reviews in iris scope handlers', function () {

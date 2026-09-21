@@ -22,6 +22,8 @@ class GetShopifyListedProducts
 
     private const int MAX_PAGES = 40;
 
+    public const int VARIANTS_READ_PER_PRODUCT = 10;
+
     /**
      * Only active products are on sale, so drafts and archived products are left out: matching
      * a portfolio to one would point it at something no buyer can see.
@@ -149,7 +151,8 @@ class GetShopifyListedProducts
                 fn ($imageEdge) => Arr::get($imageEdge, 'node'),
                 Arr::get($product, 'images.edges', [])
             ),
-            'sku_list' => $skuList
+            'sku_list' => $skuList,
+            'number_variants' => count(Arr::get($product, 'variants.edges', []))
         ];
     }
 }

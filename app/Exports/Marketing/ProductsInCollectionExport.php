@@ -42,6 +42,7 @@ class ProductsInCollectionExport implements FromQuery, WithMapping, ShouldAutoSi
             ->leftJoin('product_categories as departments', 'products.department_id', '=', 'departments.id')
             ->leftJoin('product_categories as sub_departments', 'products.sub_department_id', '=', 'sub_departments.id')
             ->leftJoin('collection_has_models', 'collection_has_models.model_id', '=', 'products.id')
+            ->whereNull('products.exclusive_for_customer_id')
             ->whereIn('products.state', [ProductStateEnum::ACTIVE->value, ProductStateEnum::DISCONTINUING->value])
             ->where('collection_has_models.model_type', 'Product')
             ->where('collection_has_models.collection_id', $this->collection->id)

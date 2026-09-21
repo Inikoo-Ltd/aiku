@@ -42,25 +42,38 @@ trait HasPaymentServiceProviderFields
                     'type'     => 'input',
                     'label'    => __('bank name'),
                     'required' => true,
-                    'value'    => Arr::get($data, 'bank_name')
+                    'value'    => Arr::get($data, 'bank.name')
                 ],
                 'bank_account_name' => [
                     'type'     => 'input',
                     'label'    => __('bank account name'),
                     'required' => true,
-                    'value'    => Arr::get($data, 'bank_account_name')
+                    'value'    => Arr::get($data, 'bank.recipient')
                 ],
                 'bank_account_id' => [
                     'type'     => 'input',
-                    'label'    => __('bank account id'),
-                    'required' => true,
-                    'value'    => Arr::get($data, 'bank_account_id')
+                    'label'    => __('bank account number'),
+                    'required' => false,
+                    'value'    => Arr::get($data, 'bank.account')
+                ],
+                'bank_iban' => [
+                    'type'     => 'input',
+                    'label'    => __('IBAN'),
+                    'required' => false,
+                    'value'    => Arr::get($data, 'bank.iban')
                 ],
                 'bank_swift_code' => [
                     'type'     => 'input',
                     'label'    => __('bank swift code'),
                     'required' => false,
-                    'value'    => Arr::get($data, 'bank_swift_code')
+                    'value'    => Arr::get($data, 'bank.swift')
+                ],
+                'bank_sort_code' => [
+                    'type'        => 'input',
+                    'label'       => __('sort code'),
+                    'information' => __('UK accounts only, shown at checkout when the IBAN is a GB one'),
+                    'required'    => false,
+                    'value'       => Arr::get($data, 'bank.sort_code')
                 ]
             ],
             'paypal' => [

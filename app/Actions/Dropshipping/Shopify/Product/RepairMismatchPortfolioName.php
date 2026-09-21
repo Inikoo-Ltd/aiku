@@ -54,11 +54,18 @@ class RepairMismatchPortfolioName
                 ];
             }
 
+            $sku = [];
+            if (!$portfolio->platform_product_id && !$portfolio->platform_product_variant_id) {
+                $sku = [
+                    'sku' => StorePortfolio::make()->getSku($product)
+                ];
+            }
+
             $portfolio = UpdatePortfolio::run($portfolio, [
                 'item_name' => $product->name,
                 'customer_product_name' => $product->name,
                 ...$itemId,
-                'sku' => StorePortfolio::make()->getSku($product)
+                ...$sku
             ]);
 
             if ($portfolio->customer_product_name === $product->name) {

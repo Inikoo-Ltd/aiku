@@ -83,6 +83,7 @@ class PartnerShoppingListItem extends Model
             'priority'       => ShoppingListItemPriorityEnum::class,
             'state'          => ShoppingListItemStateEnum::class,
             'needed_by'      => 'date',
+            'expiry_date'    => 'date',
         ];
     }
 

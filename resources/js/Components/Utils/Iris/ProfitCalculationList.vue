@@ -29,7 +29,7 @@ const locale = inject('locale', aikuLocaleStructure)
         <tbody class="bg-gray-100">
           
           <!-- Retail | Row 1 -->
-          <tr>
+          <tr v-if="product.rrp > 0">
             <td class="pt-1.5 sm:pt-3 pb-0.5 sm:pb-1 pl-1.5 sm:pl-3 pr-2.5 sm:pr-6">
               {{ trans("Retail") }}:
             </td>

@@ -37,11 +37,13 @@ use App\Actions\Web\Webpage\FetchTopWebpagesPageSpeed;
 use App\Actions\Web\Webpage\HydrateWebpage;
 use App\Actions\Web\Webpage\Iris\ShowIrisRobotsTxt;
 use App\Actions\CRM\WebUser\Retina\UI\ShowRetinaLogin;
+use App\Actions\CRM\WebUser\Retina\UI\ShowRetinaRegisterChooseMethod;
 use App\Actions\Web\Webpage\Iris\ShowIrisWebpage;
 use App\Actions\Web\Webpage\ProcessWebpageTimeSeriesRecords;
 use App\Actions\Web\Webpage\StoreWebpage;
 use App\Actions\Web\Webpage\StoreWebpagePageSpeedTimeSeriesRecord;
 use App\Actions\Web\Webpage\UpdateWebpage;
+use Illuminate\Support\Arr;
 use App\Actions\Web\Webpage\LockWebpage;
 use App\Actions\Web\Webpage\UnlockWebpage;
 use App\Actions\Web\Webpage\RequestWebpageEditAccess;
@@ -1337,6 +1339,20 @@ test('UI smoke catalogue webpage routes', function (Website $website, array $cat
     expect($failures)->toBe([]);
 })->depends('launch website', 'create catalogue webpages');
 
+test('UI show blog webpage sends the webpage lock', function (Website $website, array $cat) {
+    $website->refresh();
+
+    get(route('grp.org.shops.show.web.blogs.show', [
+        $this->organisation->slug,
+        $this->shop->slug,
+        $website->slug,
+        $cat['blogWebpage']->slug,
+    ]))->assertInertia(fn (AssertableInertia $page) => $page
+        ->component('Org/Web/Webpage')
+        ->has('lock.editors')
+        ->where('lock.is_locked', false));
+})->depends('launch website', 'create catalogue webpages');
+
 test('UI smoke iris storefront routes', function (Website $website, array $cat) {
     $website->refresh();
     DetectWebsiteFromDomain::mock()->shouldReceive('parseDomain')->andReturn($website->domain);
@@ -1377,6 +1393,29 @@ test('update webpage', function (Website $website) {
 
     expect($updated)->toBeInstanceOf(Webpage::class)
         ->and($updated->id)->toBe($webpage->id);
+})->depends('launch website');
+
+test('webpage title can skip the title prefix and suffix', function (Website $website) {
+    $webpage = StoreWebpage::make()->action($website->storefront, array_merge(Webpage::factory()->definition(), ['title' => 'Bath bombs']));
+    $webpage = UpdateWebpage::make()->action($webpage, [
+        'webpage_title_prefix' => 'Wholesale',
+        'webpage_title_suffix' => '| AW',
+    ]);
+
+    expect(Arr::get($webpage->seo_data, 'use_title_prefix_suffix', true))->toBeTrue()
+        ->and(ShowIrisWebpage::make()->getWebpageData($webpage->id, [], false)['webpage_data']['title'])->toBe('Wholesale Bath bombs | AW');
+
+    $webpage = UpdateWebpage::make()->action($webpage, ['use_title_prefix_suffix' => false]);
+
+    expect(Arr::get($webpage->seo_data, 'use_title_prefix_suffix'))->toBeFalse()
+        ->and(ShowIrisWebpage::make()->getWebpageData($webpage->id, [], false)['webpage_data']['title'])->toBe('Bath bombs');
+
+    UpdateWebsite::make()->action($website, ['webpage_title_suffix' => '| Website']);
+    $webpage = UpdateWebpage::make()->action($webpage, ['use_title_prefix_suffix' => true, 'webpage_title_suffix' => null]);
+
+    expect(ShowIrisWebpage::make()->getWebpageData($webpage->id, [], false)['webpage_data']['title'])->toBe('Wholesale Bath bombs | Website');
+
+    UpdateWebsite::make()->action($website, ['webpage_title_suffix' => null]);
 })->depends('launch website');
 
 test('store redirect from webpage', function (Webpage $webpage) {
@@ -2316,8 +2355,40 @@ test('storing a system page wires it to the website', function (Website $website
 
         expect($website->refresh()->{$systemPage['website_field']})->toBe($webpage->id)
             ->and($webpage->webBlocks()->count())->toBeGreaterThan(0)
+            ->and($webpage->webBlocks()->first()->webBlockType->code)->toBe($systemPage['web_block'])
             ->and(WebpageSubTypeEnum::labels())->toHaveKey($subTypeValue);
     }
+})->depends('launch website');
+
+test('repair create system pages puts back a missing system web block', function (Website $website) {
+    $registerDashboard = $website->refresh()->registerDashboardPage;
+    $registerDashboard->modelHasWebBlocks()->delete();
+    expect($registerDashboard->webBlocks()->count())->toBe(0);
+
+    $this->artisan('repair:create_system_pages', ['--website_id' => $website->id])->assertSuccessful();
+
+    $registerDashboard->refresh();
+    expect($registerDashboard->webBlocks()->count())->toBe(1)
+        ->and($registerDashboard->webBlocks()->first()->webBlockType->code)->toBe('register-dashboard-2')
+        ->and($registerDashboard->state)->not->toBe(WebpageStateEnum::LIVE)
+        ->and($website->refresh()->register_dashboard_page_id)->toBe($registerDashboard->id);
+})->depends('launch website');
+
+test('repair create system pages replaces the register dashboard block with register dashboard 2', function (Website $website) {
+    $registerDashboard = $website->refresh()->registerDashboardPage;
+    $registerDashboard->modelHasWebBlocks()->delete();
+
+    StoreModelHasWebBlock::make()->action($registerDashboard, [
+        'web_block_type_id' => $website->group->webBlockTypes()->where('code', 'register-dashboard')->firstOrFail()->id,
+        'position'          => 0,
+    ]);
+    expect($registerDashboard->refresh()->webBlocks()->first()->webBlockType->code)->toBe('register-dashboard');
+
+    $this->artisan('repair:create_system_pages', ['--website_id' => $website->id])->assertSuccessful();
+
+    $registerDashboard->refresh();
+    expect($registerDashboard->webBlocks()->count())->toBe(1)
+        ->and($registerDashboard->webBlocks()->first()->webBlockType->code)->toBe('register-dashboard-2');
 })->depends('launch website');
 
 test('retina login renders the iris login block only when that page is live', function (Website $website) {
@@ -2345,6 +2416,39 @@ test('retina login renders the iris login block only when that page is live', fu
     $liveResponse = (new ShowRetinaLogin())->handle($request);
     expect($liveResponse)->toBeInstanceOf(Illuminate\Http\Response::class)
         ->and($liveResponse->headers->get('X-AIKU-WEBSITE'))->toBe((string) $website->id);
+})->depends('launch website');
+
+test('retina register renders the iris register dashboard block only when that page is live', function (Website $website) {
+    config()->set('iris.cache.webpage_path.ttl', 0);
+    config()->set('iris.cache.webpage.ttl', 0);
+
+    $request = ActionRequest::createFrom(Request::create('https://'.$website->domain.'/app/register'));
+    $request->merge(['website' => $website]);
+    app()->instance('request', $request);
+    Inertia\Inertia::setRootView('app-retina');
+
+    $registerDashboard = $website->refresh()->registerDashboardPage;
+    expect($registerDashboard)->not->toBeNull()
+        ->and($registerDashboard->state)->not->toBe(WebpageStateEnum::LIVE);
+
+    $inertiaResponse = (new ShowRetinaRegisterChooseMethod())->handle($request);
+    $component       = new ReflectionProperty($inertiaResponse, 'component');
+    $component->setAccessible(true);
+
+    expect($inertiaResponse)->toBeInstanceOf(Inertia\Response::class)
+        ->and($component->getValue($inertiaResponse))->toBe('Auth/RegisterSelectMethod');
+
+    $registerDashboard->update(['state' => WebpageStateEnum::LIVE]);
+
+    $liveResponse = (new ShowRetinaRegisterChooseMethod())->handle($request);
+    expect($liveResponse)->toBeInstanceOf(Illuminate\Http\Response::class)
+        ->and($liveResponse->headers->get('X-AIKU-WEBSITE'))->toBe((string) $website->id)
+        ->and($liveResponse->headers->get('X-AIKU-WEBPAGE'))->toBe((string) $registerDashboard->id);
+
+    $irisPath = ShowIrisWebpage::make()->handle('register-dashboard', [], $request);
+    $redirect = ShowIrisWebpage::make()->htmlResponse($irisPath);
+    expect($irisPath)->toBe('register-dashboard')
+        ->and($redirect->getTargetUrl())->toEndWith('/app/register');
 })->depends('launch website');
 
 test('locked webpage rejects writes from other users, accepts owner and granted editor, and relocks after publish', function (Webpage $webpage) {

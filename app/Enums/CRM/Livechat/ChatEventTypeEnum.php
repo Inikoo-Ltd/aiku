@@ -19,6 +19,8 @@ enum ChatEventTypeEnum: string
 
     case ASSIGNMENT_TO_SELF = 'assignment_to_self';
 
+    case RELEASED = 'released';
+
     case CLOSE = 'close';
     case RATING = 'rating';
     case PRIORITY = 'priority';
@@ -35,6 +37,16 @@ enum ChatEventTypeEnum: string
 
     case NOT_SPAM = 'not_spam';
 
+    case RUBBISH = 'rubbish';
+
+    case NOT_RUBBISH = 'not_rubbish';
+
+    case TRASH = 'trash';
+
+    case RESTORE = 'restore';
+
+    case REDACT = 'redact';
+
     /**
      * Events shown as chips inside the conversation. Close and reopen are absent on
      * purpose: both channels already store a system message for them, which the thread
@@ -47,12 +59,18 @@ enum ChatEventTypeEnum: string
         return [
             self::SPAM->value,
             self::NOT_SPAM->value,
+            self::RUBBISH->value,
+            self::NOT_RUBBISH->value,
+            self::TRASH->value,
+            self::RESTORE->value,
+            self::REDACT->value,
             self::PRIORITY->value,
             self::TRANSFER->value,
             self::TRANSFER_ACCEPT->value,
             self::TRANSFER_REJECT->value,
             self::TRANSFER_TO_AGENT->value,
             self::ASSIGNMENT_TO_SELF->value,
+            self::RELEASED->value,
         ];
     }
 
@@ -62,6 +80,9 @@ enum ChatEventTypeEnum: string
             'open' => __('Chat Opened'),
             'spam' => __('Marked as Spam'),
             'not_spam' => __('Marked as Not Spam'),
+            'trash' => __('Moved to Trash'),
+            'restore' => __('Restored from Trash'),
+            'redact' => __('Message Redacted'),
             'ai_reply' => __('AI Reply'),
             'transfer_request' => __('Transfer Request'),
             'transfer_accept' => __('Transfer Accepted'),
@@ -73,6 +94,7 @@ enum ChatEventTypeEnum: string
             'reply' => __('Reply'),
             'send' => __('Send'),
             'transfer_to_agent' => __('Transfer to Agent'),
+            'released' => __('Released, waiting for an agent'),
             'Assignment_to_self' => __('Assignment to Self'),
             'priority' => __('Priority Updated'),
             'guest_profile' => __('Guest Profile'),

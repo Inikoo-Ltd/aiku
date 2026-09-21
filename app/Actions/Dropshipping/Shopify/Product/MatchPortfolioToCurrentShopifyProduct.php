@@ -9,6 +9,7 @@
 namespace App\Actions\Dropshipping\Shopify\Product;
 
 use App\Actions\OrgAction;
+use App\Actions\Retina\Dropshipping\Portfolio\UnlinkRetinaPortfolio;
 use App\Events\UploadProductToShopifyProgressEvent;
 use App\Models\Dropshipping\Portfolio;
 use Illuminate\Support\Arr;
@@ -22,13 +23,21 @@ class MatchPortfolioToCurrentShopifyProduct extends OrgAction
     public function handle(Portfolio $portfolio, array $modelData)
     {
         $shopifyProductId = Arr::get($modelData, 'shopify_product_id');
-        $portfolio->update([
-            'platform_product_id' => $shopifyProductId,
-        ]);
 
-        $portfolio->refresh();
-        StoreShopifyProductVariant::run($portfolio, 0);
-        $portfolio = CheckShopifyPortfolio::run($portfolio);
+        if (AdoptShopifyProductVariant::run($portfolio, $shopifyProductId) === null) {
+            if ($portfolio->isShopifyVariantAdopted()) {
+                UnlinkRetinaPortfolio::run($portfolio);
+            }
+
+            $portfolio->update([
+                'platform_product_id' => $shopifyProductId,
+            ]);
+
+            $portfolio->refresh();
+            StoreShopifyProductVariant::run($portfolio, 0);
+        }
+
+        $portfolio = CheckShopifyPortfolio::run($portfolio->refresh());
 
         UploadProductToShopifyProgressEvent::dispatch($portfolio->customerSalesChannel->user, $portfolio);
     }

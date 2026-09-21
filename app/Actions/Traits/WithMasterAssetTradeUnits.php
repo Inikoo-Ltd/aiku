@@ -17,6 +17,7 @@ use App\Models\Catalogue\Product;
 use App\Models\Goods\TradeUnit;
 use App\Models\Masters\MasterAsset;
 use Illuminate\Support\Arr;
+use Illuminate\Validation\Validator;
 
 trait WithMasterAssetTradeUnits
 {
@@ -113,6 +114,26 @@ trait WithMasterAssetTradeUnits
         }
 
         return ['units' => $units, 'unit' => 'bundle'];
+    }
+
+    /**
+     * @param array<int, array{id?: mixed, quantity?: mixed}> $tradeUnits
+     */
+    public function validateTradeUnitQuantities(Validator $validator, array $tradeUnits): void
+    {
+        $fractional = collect($tradeUnits)->filter(fn (array $tradeUnit) => fmod(round((float) Arr::get($tradeUnit, 'quantity', 1), 3), 1.0) !== 0.0);
+
+        if ($fractional->isEmpty()) {
+            return;
+        }
+
+        TradeUnit::whereIn('id', $fractional->pluck('id'))
+            ->where('is_divisible', false)
+            ->pluck('code')
+            ->each(fn (string $code) => $validator->errors()->add(
+                'trade_units',
+                __(':code is sold in whole units only. Mark the trade unit as divisible to use part of it.', ['code' => $code])
+            ));
     }
 
     public function processTradeUnits(MasterAsset $masterAsset, array $tradeUnitsRaw): void

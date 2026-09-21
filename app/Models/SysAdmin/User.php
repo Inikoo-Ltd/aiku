@@ -246,6 +246,17 @@ class User extends Authenticatable implements HasMedia, Auditable, PasskeyUser
         'password' => PasswordRedactor::class,
     ];
 
+    public ?string $auditReason = null;
+
+    public function transformAudit(array $data): array
+    {
+        if ($this->auditReason) {
+            $data['comments'] = $this->auditReason;
+        }
+
+        return $data;
+    }
+
     public function getSlugOptions(): SlugOptions
     {
         return SlugOptions::create()

@@ -4,8 +4,11 @@ import { trans } from "laravel-vue-i18n"
 import { useLocaleStore } from "@/Stores/locale"
 import { routeType } from "@/types/route"
 import PaymentMethodBadge from "@/Components/Accounting/PaymentMethodBadge.vue"
+import { inject } from "vue"
+import { layoutStructure } from "@/Composables/useLayoutStructure"
 
 const locale = useLocaleStore()
+const layout = inject("layout", layoutStructure)
 
 defineProps<{
     summary: {
@@ -42,7 +45,7 @@ defineProps<{
                     <PaymentMethodBadge :label="row.method_label" :method="row.method" :accountType="row.payment_account_type" />
                 </div>
                 <div class="h-1.5 flex-1 rounded bg-gray-100">
-                    <div class="h-1.5 rounded bg-indigo-500" :style="{ width: row.share + '%' }" />
+                    <div class="h-1.5 rounded" :style="{ width: row.share + '%', backgroundColor: layout?.app?.theme?.[4] || '#6366f1' }" />
                 </div>
             </div>
             <div class="tabular-nums text-right text-gray-600 whitespace-nowrap">

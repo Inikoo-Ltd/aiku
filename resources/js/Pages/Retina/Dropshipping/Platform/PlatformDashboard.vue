@@ -111,7 +111,7 @@ const dismissNotice = (notice: string) => {
 const onSubmitReconnect = async () => {
 	try {
 		const response = await axios.get(route('retina.dropshipping.customer_sales_channels.reconnect', route().params));
-		window.open(response.data)
+		window.location.href = response.data
 	} catch (err) {
 		notify({
 			title: trans("Something went wrong"),

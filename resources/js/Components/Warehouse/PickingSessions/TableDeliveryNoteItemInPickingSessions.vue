@@ -439,10 +439,6 @@ onUnmounted(() => {
                 </Link>
                 <FontAwesomeIcon v-if="item.delivery_note_is_premium_dispatch" v-tooltip="trans('Priority dispatch')" icon="fas fa-star" class="text-yellow-500 animate-bounce" fixed-width aria-hidden="true" />
                 <FontAwesomeIcon v-if="item.delivery_note_has_extra_packing" v-tooltip="trans('Extra packing')" icon="fas fa-box-heart" class="text-yellow-500 animate-bounce" fixed-width aria-hidden="true" />
-                <span v-if="item.delivery_note_is_waiting_ready" v-tooltip="trans('Waiting item picked, ready to pack')" class="inline-flex items-center gap-1 rounded bg-green-100 px-1.5 py-0.5 text-xs font-semibold text-green-700 animate-pulse">
-                    <FontAwesomeIcon icon="fal fa-hourglass-half" fixed-width aria-hidden="true" />
-                    {{ trans('Ready to pack') }}
-                </span>
                 <FontAwesomeIcon v-if="item.delivery_note_is_for_collection" v-tooltip="trans('For Collection')" icon="fas fa-people-arrows" class="text-purple-500 animate-bounce" fixed-width aria-hidden="true" />
 
 
@@ -690,8 +686,8 @@ onUnmounted(() => {
 
                     <Button
                         v-if="
-                            pickingSession.state === 'picking_finished'
-                            && deliveryItem.delivery_note_state === 'handling'
+                            (pickingSession.state === 'picking_finished' || (pickingSession.state === 'handling_blocked'))
+                            && ['handling', 'picked'].includes(deliveryItem.delivery_note_state)
                             && !deliveryItem.delivery_note_has_waiting_items
                         "
                         type="save"
@@ -700,7 +696,7 @@ onUnmounted(() => {
                         @click="onOpenModalDetail(deliveryItem)"
                     />
 
-                    <div v-if="deliveryItem.pickings?.length && deliveryItem.state == 'handling'" class="space-y-1">
+                    <div v-if="deliveryItem.pickings?.length && ['handling', 'picked'].includes(deliveryItem.state)" class="space-y-1">
                         <div v-for="picking in deliveryItem.pickings" :key="picking.id" class="flex gap-x-2 w-fit">
                             <!-- {{ picking.location_code }} -->
                             <div v-if="picking.type === 'pick'" class="flex gap-x-2 items-center">
@@ -731,7 +727,7 @@ onUnmounted(() => {
                             </div>
 
                             <ButtonWithLink
-                                v-if="!deliveryItem.is_packed && deliveryItem.state == 'handling'"
+                                v-if="!deliveryItem.is_packed && ['handling', 'picked'].includes(deliveryItem.state)"
                                 v-tooltip="ctrans('Undo')"
                                 type="negative"
                                 size="xxs"
@@ -931,9 +927,10 @@ onUnmounted(() => {
 
             <Button
                 v-if="
-                    pickingSession.state === 'picking_finished'
+                    (pickingSession.state === 'picking_finished' || (pickingSession.state === 'handling_blocked'))
                     && (
                         itemValue.delivery_note_state === 'handling'
+                        || itemValue.delivery_note_state === 'picked'
                         || itemValue.delivery_note_state === 'packing'
                     )
                     && !itemValue.delivery_note_has_waiting_items

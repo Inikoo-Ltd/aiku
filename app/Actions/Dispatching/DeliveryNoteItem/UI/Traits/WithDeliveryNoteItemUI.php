@@ -2,6 +2,7 @@
 
 namespace App\Actions\Dispatching\DeliveryNoteItem\UI\Traits;
 
+use App\Actions\Dispatching\PartnerStaging\PartnerBayPickingOrder;
 use App\Actions\Dispatching\DeliveryNote\WithDeliveryNoteHandler;
 use App\Enums\Dispatching\Picking\PickingTypeEnum;
 use App\InertiaTable\InertiaTable;
@@ -91,7 +92,7 @@ trait WithDeliveryNoteItemUI
             DB::table('location_org_stocks')
                 ->join('locations', 'locations.id', '=', 'location_org_stocks.location_id')
                 ->whereColumn('location_org_stocks.org_stock_id', 'org_stocks.id')
-                ->where('locations.is_goods_out', false)
+                ->whereRaw(PartnerBayPickingOrder::sql('delivery_note_items.id').' < 2')
                 ->select([
                     'locations.id',
                     'locations.code',
@@ -99,6 +100,7 @@ trait WithDeliveryNoteItemUI
                     'locations.sort_code',
                     'locations.warehouse_area_id',
                 ])
+                ->orderByRaw(PartnerBayPickingOrder::sql('delivery_note_items.id'))
                 ->orderByRaw("
                     CASE
                         WHEN (SELECT type FROM shops WHERE shops.id = delivery_note_items.shop_id) = 'b2b'
@@ -156,6 +158,7 @@ trait WithDeliveryNoteItemUI
             'org_stocks.note_to_packers as org_stock_note_to_packers',
             'delivery_note_items.quantity_waiting_crm',
             'delivery_note_items.quantity_waiting_warehouse',
+            DB::raw("(SELECT jsonb_build_object('code', historic_assets.code, 'name', historic_assets.name, 'quantity', transactions.quantity_ordered) FROM transactions JOIN historic_assets ON historic_assets.id = transactions.historic_asset_id WHERE transactions.id = delivery_note_items.transaction_id) as ordered_asset"),
         ];
     }
 

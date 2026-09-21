@@ -51,6 +51,7 @@ const props = defineProps<{
 		max?: number
 		min?: number
 		step?: number
+		maxFractionDigits?: number
 	}
 	colorTheme?: string // '#374151'
 	isUseAxios?: boolean
@@ -75,7 +76,7 @@ const emits = defineEmits<{
 
 const model = defineModel()
 
-const roundToDecimals = (value: number, decimals: number = 2): number => {
+const roundToDecimals = (value: number, decimals: number = props.bindToTarget?.maxFractionDigits ?? 2): number => {
 	return Number(Number(value).toFixed(decimals))
 }
 

@@ -7,6 +7,7 @@
 
 namespace App\Actions\Chat\ChatSession;
 
+use App\Actions\Chat\WithChatAgentAuthorisation;
 use App\Enums\CRM\Livechat\ChatActorTypeEnum;
 use App\Enums\CRM\Livechat\ChatAssignmentStatusEnum;
 use App\Events\BroadcastChatListEvent;
@@ -14,14 +15,16 @@ use App\Models\Chat\ChatAgent;
 use App\Models\Chat\ChatSession;
 use Exception;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
+use App\Enums\CRM\Livechat\ChatEventTypeEnum;
+use Illuminate\Support\Facades\Auth;
 
 class TrashChatSession
 {
     use AsAction;
+    use WithChatAgentAuthorisation;
 
     /**
      * Soft-delete the session (moves it to Trash). The chat is closed first so a
@@ -45,6 +48,15 @@ class TrashChatSession
                 CloseChatSession::run($chatSession, $actorId, ChatActorTypeEnum::AGENT);
             }
 
+            // Who put a conversation out of sight is part of the conversation's record.
+            StoreChatEvent::run(
+                $chatSession,
+                ChatEventTypeEnum::TRASH,
+                ChatActorTypeEnum::AGENT,
+                $actorId,
+                ['user_id' => Auth::id()]
+            );
+
             BroadcastChatListEvent::dispatch(null, $chatSession);
 
             $chatSession->delete();
@@ -56,7 +68,7 @@ class TrashChatSession
     /** @noinspection PhpUnusedParameterInspection */
     public function asController(?string $organisation, ChatSession $chatSession, ActionRequest $request): JsonResponse
     {
-        $agent = Auth::user()?->chatAgent;
+        $agent = $this->getAuthorisedChatAgent($chatSession);
 
         if (!$agent instanceof ChatAgent) {
             return response()->json(['success' => false, 'message' => 'Only authenticated agents can trash chats'], 403);

@@ -7,6 +7,7 @@
 
 namespace App\Http\Resources\CRM\Livechat;
 
+use App\Actions\Helpers\Country\GetCountryCodeFromPhone;
 use App\Enums\CRM\Livechat\ChatAssignmentStatusEnum;
 use App\Enums\CRM\Livechat\ChatSessionStatusEnum;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -87,6 +88,7 @@ class MetaChatSessionListResource extends JsonResource
             'status' => $status,
             'guest_identifier' => $this->guest_identifier ?? $this->phone_number,
             'phone_number' => $this->phone_number,
+            'country_code' => GetCountryCodeFromPhone::run($this->phone_number),
             'created_at' => $this->created_at,
             'priority' => $this->priority,
             'contact_name' => $customer?->contact_name
@@ -111,6 +113,9 @@ class MetaChatSessionListResource extends JsonResource
             // customer rather than to a web user account.
             'customer' => $customer ? [
                 'id' => $customer->id,
+                // Same key the website and email rows carry, so one row template links the
+                // name through the majordomo redirect whatever channel it arrived on.
+                'customer_id' => $customer->id,
                 'name' => $customer->contact_name ?? $customer->name,
                 'slug' => $customer->slug,
                 'email' => $customer->email,

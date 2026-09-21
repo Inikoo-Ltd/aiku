@@ -14,6 +14,7 @@ use App\Enums\CRM\Livechat\ChatPriorityEnum;
 use App\Enums\Helpers\Ticket\TicketKindEnum;
 use App\Enums\Helpers\Ticket\TicketModuleEnum;
 use App\Enums\Helpers\Ticket\TicketQaStatusEnum;
+use App\Enums\Helpers\Ticket\TicketSourceChannelEnum;
 use App\Enums\Helpers\Ticket\TicketStatusEnum;
 use App\Enums\Helpers\Ticket\TicketTypeEnum;
 use App\Models\CRM\Customer;
@@ -116,6 +117,7 @@ class Ticket extends Model implements Auditable, HasMedia
             'tags'        => 'array',
             'is_confidential' => 'boolean',
             'qa_status'   => TicketQaStatusEnum::class,
+            'source_channel' => TicketSourceChannelEnum::class,
             'qa_requested_at' => 'datetime',
             'qa_checked_at' => 'datetime',
             'rated_at'    => 'datetime',
@@ -174,6 +176,11 @@ class Ticket extends Model implements Auditable, HasMedia
         return $this->morphTo();
     }
 
+    public function source(): MorphTo
+    {
+        return $this->morphTo();
+    }
+
     public function assignee(): BelongsTo
     {
         return $this->belongsTo(User::class, 'assignee_id');
@@ -221,6 +228,26 @@ class Ticket extends Model implements Auditable, HasMedia
     public static function canBeRaisedBy(?User $user): bool
     {
         return $user !== null;
+    }
+
+    public static function canChooseType(?User $user): bool
+    {
+        return self::canBeManagedBy($user) || self::canCheckQa($user);
+    }
+
+    public function canChangeAssigneeBy(?User $user): bool
+    {
+        if (self::canBeAssignedBy($user)) {
+            return true;
+        }
+
+        if (!self::canBeManagedBy($user)) {
+            return false;
+        }
+
+        return $this->assignee_id === null
+            || $this->assignee_id === $user->id
+            || !self::canBeManagedBy($this->assignee()->first());
     }
 
     public static function canBeAssignedBy(?User $user): bool
@@ -291,6 +318,16 @@ class Ticket extends Model implements Auditable, HasMedia
     public function isReportedBy(?User $user): bool
     {
         return $user !== null && $this->reporter_type === 'User' && $this->reporter_id === $user->id;
+    }
+
+    public function canBeCancelledByReporter(?User $user): bool
+    {
+        return $this->isReportedBy($user) && $this->status->isOpen();
+    }
+
+    public function canBeReopenedByReporter(?User $user): bool
+    {
+        return $this->isReportedBy($user) && $this->status === TicketStatusEnum::RESOLVED;
     }
 
     public function scopeVisibleTo(Builder $query, User $user): Builder

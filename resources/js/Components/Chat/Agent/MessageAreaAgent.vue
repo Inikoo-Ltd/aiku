@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, watch, onMounted, onUnmounted, inject, computed, nextTick, defineAsyncComponent } from "vue"
 import axios from "axios"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import {
     faPaperPlane,
@@ -12,6 +12,10 @@ import {
     faMessage,
     faPaperclip, faXmark, faFilePdf, faEnvelope, faRotateRight, faBan, faRotateLeft, faFaceSmile,
     faLifeRing,
+    faEye,
+    faArchive,
+    faAngleDown,
+    faLanguage,
 } from "@fortawesome/free-solid-svg-icons"
 import { faSlack } from "@fortawesome/free-brands-svg-icons"
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
@@ -26,7 +30,6 @@ import { useJumpToMessage } from "@/Composables/useJumpToMessage"
 import ChatTimelineEvent from "@/Components/Chat/ChatTimelineEvent.vue"
 import { useChatLanguages } from "@/Composables/useLanguages"
 import { notify } from "@kyvg/vue3-notification"
-import { Select } from "primevue"
 
 const EmojiPicker = defineAsyncComponent(() => import("@/Components/Messaging/EmojiPicker.vue"))
 
@@ -45,10 +48,44 @@ interface GetMessagesParams {
     media_url?: string | null
 }
 
+import { formatChatTime, formatChatAge } from "@/Composables/chatTime"
+import { faGlobe } from "@fal"
+import { faWhatsapp } from "@fortawesome/free-brands-svg-icons"
+
 const props = defineProps<{
     messages: ChatMessage[]
     session: SessionAPI | null
+    readOnly?: boolean
+    showShop?: boolean
+    ignoreReasons?: Array<{ value: string; label: string }>
 }>()
+
+const isCustomer = computed(() => Boolean((props.session as any)?.web_user?.customer_id || (props.session as any)?.customer_id))
+
+const channelIcon = computed(() => {
+    const channel = (props.session as any)?.channel
+
+    return channel === "whatsapp" ? faWhatsapp : channel === "email" ? faEnvelope : faGlobe
+})
+
+const channelIconClass = computed(() => {
+    const channel = (props.session as any)?.channel
+
+    return channel === "whatsapp" ? "text-green-600" : channel === "email" ? "text-blue-500" : "text-gray-400"
+})
+
+// When the last word was said, and how long ago: a waiting conversation is judged by its age.
+const lastMessageStamp = computed(() => {
+    const at = props.messages?.[props.messages.length - 1]?.created_at
+
+    if (!at) {
+        return null
+    }
+
+    const stamp = new Date(at).getTime()
+
+    return { time: formatChatTime(stamp), age: formatChatAge(stamp) }
+})
 
 const emit = defineEmits([
     "send-message",
@@ -91,7 +128,7 @@ const takeoverChat = async () => {
         }
         emit("assign-self-success")
     } catch {
-        notify({ title: trans("Error"), text: trans("Failed to take over chat"), type: "error" })
+        notify({ title: ctrans("Error"), text: ctrans("Failed to take over chat"), type: "error" })
     } finally {
         isTakingOver.value = false
     }
@@ -118,6 +155,57 @@ const onOpenSlackSettings = () => {
 }
 
 const isSpamMarking = ref(false)
+// Ignored is the conversation nobody has to answer: an out of office, a circular, a newsletter.
+// Unlike spam it never blocks the sender, since the same address writes properly next week.
+// A guest is a stranger: their address can be blocked. A customer's never is, so all they get
+// is Ignore, which puts this one conversation aside and nothing else.
+const isGuest = computed(() => !(props.session as any)?.web_user?.customer_id && !(props.session as any)?.customer?.id)
+
+const canIgnore = computed(() =>
+    (props.session as any)?.channel !== "whatsapp" && !isClosed.value && !isTrashed.value && !props.readOnly
+)
+
+const canReportSpam = computed(() => isGuest.value && !isClosed.value && !isTrashed.value && !props.readOnly)
+
+// Ending a conversation nobody ever answered is rude: from the other side it reads as being
+// shown the door for writing in. Until somebody here has replied, the way to clear it is Ignore.
+const hasBeenAnswered = computed(() =>
+    (props.messages ?? []).some((message) => message.sender_type === "agent")
+)
+
+const canEndChat = computed(() => hasBeenAnswered.value && !isClosed.value && !isTrashed.value && !props.readOnly)
+
+// The reason is picked, never typed: clearing an imported mailbox is a bulk job, and what has
+// to be written becomes blank or inconsistent within a day. Picked from a list it can be counted.
+const isIgnoreMenuOpen = ref(false)
+const ignoreMenuRef = ref<HTMLElement | null>(null)
+
+const markRubbish = async (rubbish: boolean, reason?: string) => {
+    if (!props.session?.ulid || isSpamMarking.value) return
+    isMenuOpen.value = false
+    isSpamMarking.value = true
+    try {
+        const organisation = (route().params as Record<string, any>)?.organisation ?? "aw"
+        const routeName = rubbish
+            ? "grp.org.chat.agents.sessions.rubbish"
+            : "grp.org.chat.agents.sessions.not_rubbish"
+        await axios.patch(
+            route(routeName, [organisation, props.session.ulid]),
+            reason ? { reason } : {},
+            { withCredentials: true }
+        )
+        emit("spam-success")
+    } catch (e: any) {
+        notify({
+            title: ctrans("Error"),
+            text: e?.response?.data?.message ?? ctrans("Failed to update"),
+            type: "error",
+        })
+    } finally {
+        isSpamMarking.value = false
+    }
+}
+
 const markSpam = async (spam: boolean) => {
     if (!props.session?.ulid || isSpamMarking.value) return
     isMenuOpen.value = false
@@ -131,8 +219,8 @@ const markSpam = async (spam: boolean) => {
         emit("spam-success")
     } catch (e: any) {
         notify({
-            title: trans("Error"),
-            text: e?.response?.data?.message ?? trans("Failed to update spam status"),
+            title: ctrans("Error"),
+            text: e?.response?.data?.message ?? ctrans("Failed to update spam status"),
             type: "error",
         })
     } finally {
@@ -158,7 +246,7 @@ const assignSelf = async () => {
         }
         emit("assign-self-success")
     } catch {
-        notify({ title: trans("Error"), text: trans("Failed to assign chat"), type: "error" })
+        notify({ title: ctrans("Error"), text: ctrans("Failed to assign chat"), type: "error" })
     } finally {
         isAssigningSelf.value = false
     }
@@ -177,7 +265,7 @@ const restoreChat = async () => {
         )
         emit("restore-success")
     } catch {
-        notify({ title: trans("Error"), text: trans("Failed to restore chat"), type: "error" })
+        notify({ title: ctrans("Error"), text: ctrans("Failed to restore chat"), type: "error" })
     } finally {
         isRestoring.value = false
     }
@@ -201,7 +289,7 @@ const reopenChat = async () => {
         }
         emit("assign-self-success")
     } catch {
-        notify({ title: trans("Error"), text: trans("Failed to reopen chat"), type: "error" })
+        notify({ title: ctrans("Error"), text: ctrans("Failed to reopen chat"), type: "error" })
     } finally {
         isReopening.value = false
     }
@@ -232,8 +320,101 @@ const handleEditMessage = async ({ id, text }: { id: number; text: string }) => 
         }
     } catch (e: any) {
         notify({
-            title: trans("Error"),
-            text: e?.response?.data?.message ?? trans("Failed to edit message"),
+            title: ctrans("Error"),
+            text: e?.response?.data?.message ?? ctrans("Failed to edit message"),
+            type: "error",
+        })
+    }
+}
+
+const handleRetractMessage = async ({ id, reason }: { id: number; reason: string }) => {
+    if (!props.session?.ulid) return
+    try {
+        const organisation = (route().params as Record<string, any>)?.organisation ?? "aw"
+        const { data } = await axios.delete(
+            route("grp.org.chat.agents.messages.retract", [organisation, props.session.ulid, id]),
+            { data: { reason }, withCredentials: true }
+        )
+
+        const msg: any = messagesLocal.value.find((m) => String(m.id) === String(id))
+        if (msg) {
+            msg.is_retracted = true
+            msg.retracted_at = data?.data?.retracted_at ?? new Date().toISOString()
+            msg.retraction_reason = data?.data?.retraction_reason ?? null
+        }
+    } catch (e: any) {
+        notify({
+            title: ctrans("Error"),
+            text: e?.response?.data?.message ?? ctrans("Failed to take back message"),
+            type: "error",
+        })
+    }
+}
+
+const handleRedactMessage = async ({ id, fragment }: { id: number; fragment: string }) => {
+    if (!props.session?.ulid) return
+
+    if (!fragment) {
+        notify({
+            title: ctrans("Nothing selected"),
+            text: ctrans("Select the text to strike out inside the message, then click Redact"),
+            type: "warning",
+        })
+        return
+    }
+
+    if (!window.confirm(ctrans("Strike this text out of the conversation for good? It cannot be brought back."))) {
+        return
+    }
+
+    try {
+        const organisation = (route().params as Record<string, any>)?.organisation ?? "aw"
+        const { data } = await axios.patch(
+            route("grp.org.chat.agents.messages.redact", [organisation, props.session.ulid, id]),
+            { fragment },
+            { withCredentials: true }
+        )
+
+        const updated = data?.data
+        const msg: any = messagesLocal.value.find((m) => String(m.id) === String(id))
+        if (msg && updated) {
+            msg.message_text = updated.message_text
+            msg.original = updated.original
+            msg.translations = updated.translations
+            msg.is_redacted = true
+        }
+    } catch (e: any) {
+        notify({
+            title: ctrans("Error"),
+            text: e?.response?.data?.message ?? ctrans("Failed to redact message"),
+            type: "error",
+        })
+    }
+}
+
+const handleRedactAttachment = async ({ id }: { id: number }) => {
+    if (!props.session?.ulid) return
+
+    if (!window.confirm(ctrans("Remove this file from the conversation for good? It cannot be brought back."))) {
+        return
+    }
+
+    try {
+        const organisation = (route().params as Record<string, any>)?.organisation ?? "aw"
+        const { data } = await axios.delete(
+            route("grp.org.chat.agents.messages.redact_attachment", [organisation, props.session.ulid, id]),
+            { withCredentials: true }
+        )
+
+        const updated = data?.data
+        const msg: any = messagesLocal.value.find((m) => String(m.id) === String(id))
+        if (msg && updated) {
+            Object.assign(msg, updated)
+        }
+    } catch (e: any) {
+        notify({
+            title: ctrans("Error"),
+            text: e?.response?.data?.message ?? ctrans("Failed to remove file"),
             type: "error",
         })
     }
@@ -290,10 +471,6 @@ const FILE_TYPES = [
     "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
 ]
 
-const getMessageTypeFromFile = (file: File): "image" | "file" => {
-    return IMAGE_TYPES.includes(file.type) ? "image" : "file"
-}
-
 const MAX_SIZE = 10 * 1024 * 1024
 
 const isMenuOpen = ref(false)
@@ -315,74 +492,88 @@ const typingUser = ref<string | null>(null)
 
 const { languages, fetchLanguages, getLanguageIdByCode } = useChatLanguages(baseUrl)
 
-const selectedFile = ref<File | null>(null)
-const previewUrl = ref<string | null>(null)
-const previewType = ref<"image" | "file" | null>(null)
+const MAX_ATTACHMENTS = 10
 
-const isEmailNotif = ref(false)
-
-const handleImageSelect = (e: Event) => {
-    const file = (e.target as HTMLInputElement)?.files?.[0]
-    if (!file) return
-
-    if (!IMAGE_TYPES.includes(file.type)) {
-        notify({
-            title: "Failed",
-            text: "Image format not supported",
-            type: "error",
-        })
-        return
-    }
-
-    if (file.size > MAX_SIZE) {
-        notify({
-            title: "Failed",
-            text: "Maximum image size 10MB",
-            type: "error",
-        })
-        return
-    }
-
-    selectedFile.value = file
-    previewType.value = "image"
-    previewUrl.value = URL.createObjectURL(file)
+interface SelectedAttachment {
+    file: File
+    previewUrl: string | null
+    isImage: boolean
 }
 
-const handleDocSelect = (e: Event) => {
-    const file = (e.target as HTMLInputElement)?.files?.[0]
-    if (!file) return
+const selectedFiles = ref<SelectedAttachment[]>([])
+const isEmailNotif = ref(false)
 
-    if (!FILE_TYPES.includes(file.type)) {
-        notify({
-            title: "Failed",
-            text: "File format not supported",
-            type: "error",
-        })
+const addAttachment = (file: File, isImage: boolean) => {
+    if (selectedFiles.value.length >= MAX_ATTACHMENTS) {
+        notify({ title: "Failed", text: "Maximum 10 attachments", type: "error" })
+        return
+    }
+
+    if (isImage && !IMAGE_TYPES.includes(file.type)) {
+        notify({ title: "Failed", text: "Image format not supported", type: "error" })
+        return
+    }
+
+    if (!isImage && !FILE_TYPES.includes(file.type)) {
+        notify({ title: "Failed", text: "File format not supported", type: "error" })
         return
     }
 
     if (file.size > MAX_SIZE) {
-        notify({
-            title: "Failed",
-            text: "Maximum file size 10MB",
-            type: "error",
-        })
+        notify({ title: "Failed", text: "Maximum file size 10MB", type: "error" })
         return
     }
 
-    selectedFile.value = file
-    previewType.value = "file"
-    previewUrl.value = null
+    selectedFiles.value.push({
+        file,
+        isImage,
+        previewUrl: isImage ? URL.createObjectURL(file) : null,
+    })
+}
+
+const handleImageSelect = (e: Event) => {
+    const files = (e.target as HTMLInputElement)?.files
+    Array.from(files ?? []).forEach((file) => addAttachment(file, true))
+    if (imageInput.value) imageInput.value.value = ""
+}
+
+const selectImage = (file: File) => addAttachment(file, true)
+
+const handleDocSelect = (e: Event) => {
+    const files = (e.target as HTMLInputElement)?.files
+    Array.from(files ?? []).forEach((file) => addAttachment(file, false))
+    if (fileInput.value) fileInput.value.value = ""
+}
+
+const selectDoc = (file: File) => addAttachment(file, false)
+
+const onPasteAttachment = (event: ClipboardEvent) => {
+    const clipboard = event.clipboardData
+    if (clipboard?.types.includes("text/html") && clipboard.types.includes("text/plain")) return
+    const file = clipboard?.files?.[0]
+        ?? Array.from(clipboard?.items ?? []).find((item) => item.kind === "file")?.getAsFile()
+        ?? null
+    if (!file) return
+
+    event.preventDefault()
+    if (file.type.startsWith("image/")) {
+        selectImage(file)
+    } else {
+        selectDoc(file)
+    }
+}
+
+const removeAttachment = (index: number) => {
+    const removed = selectedFiles.value[index]
+    if (removed?.previewUrl) URL.revokeObjectURL(removed.previewUrl)
+    selectedFiles.value.splice(index, 1)
 }
 
 const removeFile = () => {
-    if (previewUrl.value) {
-        URL.revokeObjectURL(previewUrl.value)
-    }
-
-    selectedFile.value = null
-    previewUrl.value = null
-    previewType.value = null
+    selectedFiles.value.forEach((attachment) => {
+        if (attachment.previewUrl) URL.revokeObjectURL(attachment.previewUrl)
+    })
+    selectedFiles.value = []
     isEmailNotif.value = false
 
     if (imageInput.value) imageInput.value.value = ""
@@ -404,25 +595,24 @@ const autoResize = () => {
 
 const sendMessage = async () => {
     const hasText = !!newMessage.value.trim()
-    const hasFile = !!selectedFile.value
+    const hasFiles = selectedFiles.value.length > 0
 
-    if (!hasText && !hasFile) return
+    if (!hasText && !hasFiles) return
 
     sendTypingStatus(false)
     isTyping.value = false
 
     const tempId = `tmp-${Date.now()}`
 
-    const messageType = hasFile
-        ? getMessageTypeFromFile(selectedFile.value!)
-        : "text"
+    const allImages = hasFiles && selectedFiles.value.every((a) => a.isImage)
+    const messageType = hasFiles ? (allImages ? "image" : "file") : "text"
 
     const optimisticMessage: LocalChatMessage = {
         id: tempId as any,
         _tempId: tempId,
         message_text: newMessage.value ?? "",
         media_url:
-            messageType === "image" ? previewUrl.value : null,
+            messageType === "image" ? selectedFiles.value[0]?.previewUrl : null,
         sender_type: "agent",
         message_type: messageType,
         created_at: new Date().toISOString(),
@@ -439,7 +629,7 @@ const sendMessage = async () => {
     try {
         emit("send-message", {
             text: text,
-            image: selectedFile.value,
+            files: selectedFiles.value.map((a) => a.file),
             message_type: messageType,
             tempId,
             is_email_notif: isEmailNotif.value,
@@ -596,6 +786,7 @@ let onReaction: ((payload: any) => void) | null = null
 let onMessagesRead: ((payload: any) => void) | null = null
 let onTyping: ((payload: any) => void) | null = null
 let onTranslation: ((payload: any) => void) | null = null
+let onRetracted: ((payload: any) => void) | null = null
 
 const stopSocket = () => {
     if (onMessage) chatChannel?.stopListening(".message", onMessage)
@@ -603,11 +794,13 @@ const stopSocket = () => {
     if (onMessagesRead) chatChannel?.stopListening(".messages.read", onMessagesRead)
     if (onTyping) chatChannel?.stopListening(".typing", onTyping)
     if (onTranslation) chatChannel?.stopListening(".translation", onTranslation)
+    if (onRetracted) chatChannel?.stopListening(".message.retracted", onRetracted)
     onMessage = null
     onReaction = null
     onMessagesRead = null
     onTyping = null
     onTranslation = null
+    onRetracted = null
     chatChannel = null
 }
 
@@ -714,11 +907,22 @@ const initSocket = () => {
     chatChannel.listen(".reaction", onReaction)
     chatChannel.listen(".messages.read", onMessagesRead)
     chatChannel.listen(".typing", onTyping)
+    // The broadcast carries no text: this side already holds it and keeps showing it.
+    onRetracted = (payload: any) => {
+        const msg: any = messagesLocal.value.find((m) => String(m.id) === String(payload?.id))
+        if (msg) {
+            msg.is_retracted = true
+            msg.retracted_at = payload?.retracted_at ?? new Date().toISOString()
+            msg.retraction_reason = payload?.retraction_reason ?? null
+        }
+    }
+
     chatChannel.listen(".translation", onTranslation)
+    chatChannel.listen(".message.retracted", onRetracted)
 }
 
 const markAsRead = async () => {
-    if (!chatSession.value?.ulid) return
+    if (!chatSession.value?.ulid || props.readOnly) return
     try {
         const requestFrom = "agent"
         await axios.post(`${baseUrl}/app/api/chats/read`, {
@@ -801,8 +1005,12 @@ const selectedLanguageId = computed(() =>
     getLanguageIdByCode(selectedLanguage.value)
 )
 
+// Whose language the conversation is put into: the agent's own, unless somebody has explicitly
+// asked for another one.
+const translationLanguageId = computed(() => selectedLanguageId.value || layout.user?.language_id || null)
+
 const translateAllMessage = async () => {
-    if (!chatSession.value?.ulid || !selectedLanguageId.value) return
+    if (!chatSession.value?.ulid || !translationLanguageId.value) return
 
     isTranslating.value = true
 
@@ -810,7 +1018,7 @@ const translateAllMessage = async () => {
         await axios.post(
             `${baseUrl}/app/api/chats/sessions/${chatSession.value?.ulid}/translate`,
             {
-                target_language_id: selectedLanguageId.value,
+                target_language_id: translationLanguageId.value,
             }
         )
 
@@ -850,6 +1058,10 @@ const handleClickOutside = (e: MouseEvent) => {
     if (isMenuOpen.value && menuRef.value && !menuRef.value.contains(e.target as Node)) {
         isMenuOpen.value = false
     }
+
+    if (isIgnoreMenuOpen.value && ignoreMenuRef.value && !ignoreMenuRef.value.contains(e.target as Node)) {
+        isIgnoreMenuOpen.value = false
+    }
 }
 </script>
 
@@ -857,16 +1069,8 @@ const handleClickOutside = (e: MouseEvent) => {
     <div class="flex flex-col h-full bg-white overflow-hidden">
         <!-- Header -->
         <header class="flex items-center gap-3 px-3 py-2 border-b">
-            <button @click="$emit('back')" :aria-label="trans('Back')">
+            <button @click="$emit('back')" :aria-label="ctrans('Back')">
                 <FontAwesomeIcon :icon="faArrowLeft" class="text-gray-400" />
-            </button>
-
-            <button type="button" v-tooltip="trans('View profile')"
-                class="w-8 h-8 rounded-full flex items-center justify-center shrink-0 bg-gray-100 text-gray-500 hover:ring-2 hover:ring-gray-200 transition"
-                @click="onViewUserProfile">
-                <Image v-if="session?.image" :src="session?.image" class="w-full h-full rounded-full object-cover" />
-
-                <FontAwesomeIcon v-else :icon="faUser" class="text-sm" />
             </button>
 
             <div class="flex-1 min-w-0 cursor-pointer" @click="onViewMessageDetails">
@@ -879,68 +1083,123 @@ const handleClickOutside = (e: MouseEvent) => {
                         :class="statusBadgeClass">
                         {{ session.status }}
                     </span>
-                    <span v-if="session?.shop?.name" class="text-[11px] text-gray-400 truncate">
+                    <span class="shrink-0 text-[9px] px-1 py-0.5 border leading-none"
+                        :class="isCustomer ? 'border-green-300 text-green-500' : 'border-blue-300 text-blue-400'"
+                        v-tooltip="isCustomer ? ctrans('Customer') : ctrans('Guest')">
+                        {{ isCustomer ? 'C' : 'G' }}
+                    </span>
+                    <FontAwesomeIcon :icon="channelIcon" class="shrink-0 text-[11px]" :class="channelIconClass" />
+                    <span v-if="lastMessageStamp" class="text-[11px] text-gray-400 shrink-0">
+                        {{ lastMessageStamp.time }} <span class="text-gray-300">({{ lastMessageStamp.age }})</span>
+                    </span>
+                    <span v-if="showShop && session?.shop?.name" class="text-[11px] text-gray-400 truncate">
                         {{ session.shop.name }}
                     </span>
                 </div>
             </div>
 
-            <ModalConfirmationDelete v-if="!isClosed && !isTrashed && isMyChat" :routeDelete="{
+            <!-- Also offered on a conversation nobody has taken: an out of office reply or a
+                 supplier's newsletter needs disposing of, and having to assign it to yourself
+                 first to close it is why they pile up in the waiting queue. -->
+            <ModalConfirmationDelete v-if="canEndChat" :routeDelete="{
                 name: 'grp.org.chat.agents.sessions.close',
                 parameters: [session?.organisation.id, session?.ulid],
                 method: 'patch',
-            }" :title="trans('Are you sure you want to end this chat?')"
-                :noLabel="trans('End chat')"
+            }" :title="ctrans('Are you sure you want to end this chat?')"
+                :noLabel="ctrans('End chat')"
                 :noIcon="faTimesCircle"
-                :description="trans('This will close the chat session. The conversation history will be preserved.')"
+                :description="ctrans('This closes the chat. Nothing is deleted, and it can be reopened.')"
                 @success="$emit('close-session')">
                 <template #default="{ changeModel }">
                     <button @click="changeModel"
                         class="inline-flex items-center justify-center gap-1.5 shrink-0 h-7 px-2.5 text-[11px] font-medium rounded-md transition hover:opacity-90"
-                        :style="{ backgroundColor: 'var(--theme-color-4)', color: 'var(--theme-color-5)' }">
+                        :class="isMyChat ? '' : 'border border-gray-300 text-gray-600 hover:bg-gray-100'"
+                        :style="isMyChat ? { backgroundColor: 'var(--theme-color-4)', color: 'var(--theme-color-5)' } : {}">
                         <FontAwesomeIcon :icon="faTimesCircle" class="text-[11px]" />
-                        {{ trans("End chat") }}
+                        {{ ctrans("End chat") }}
                     </button>
                 </template>
             </ModalConfirmationDelete>
 
-            <Select v-if="languages.length" v-model="selectedLanguage" :options="languages"
-                optionLabel="native_name" optionValue="code" :placeholder="trans('Translate To..')"
-                :disabled="isTranslating" size="small"
-                :pt="{ option: { style: 'font-size: 0.6875rem; padding-top: 0.35rem; padding-bottom: 0.35rem;' } }"
-                class="translate-select h-7 w-36 text-[11px]" />
+            <!-- Out in the open, not behind the dots: clearing the queue is most of the work on
+                 an imported mailbox, and a choice nobody finds does not get made. -->
+            <button v-if="canIgnore && (session as any)?.is_rubbish" type="button" :disabled="isSpamMarking"
+                class="inline-flex items-center gap-1.5 shrink-0 h-7 px-2.5 text-[11px] font-medium rounded-md border border-gray-300 text-gray-600 transition hover:bg-gray-100 disabled:opacity-50"
+                @click="markRubbish(false)">
+                <FontAwesomeIcon :icon="faRotateLeft" class="text-[11px]" />
+                {{ ctrans("Not ignored") }}
+            </button>
+
+            <div v-else-if="canIgnore" class="relative shrink-0" ref="ignoreMenuRef">
+                <button type="button" :disabled="isSpamMarking"
+                    v-tooltip="ctrans('Nothing to answer here. Only this conversation, and it can be undone.')"
+                    class="inline-flex items-center gap-1.5 h-7 px-2.5 text-[11px] font-medium rounded-md border border-gray-300 text-gray-600 transition hover:bg-gray-100 disabled:opacity-50"
+                    @click.stop="isIgnoreMenuOpen = !isIgnoreMenuOpen">
+                    <FontAwesomeIcon :icon="faArchive" class="text-[11px]" />
+                    {{ ctrans("Ignore") }}
+                    <FontAwesomeIcon :icon="faAngleDown" class="text-[9px] text-gray-400" />
+                </button>
+
+                <div v-if="isIgnoreMenuOpen" class="absolute right-0 mt-1 w-56 bg-white border rounded-md shadow z-50 py-1">
+                    <div class="px-3 pb-1 text-[10px] uppercase tracking-wide text-gray-400">
+                        {{ ctrans("Ignore as") }}
+                    </div>
+                    <button v-for="reason in (ignoreReasons ?? [])" :key="reason.value" type="button"
+                        class="w-full text-left px-3 py-1.5 text-xs text-gray-700 hover:bg-gray-100"
+                        @click="isIgnoreMenuOpen = false; markRubbish(true, reason.value)">
+                        {{ reason.label }}
+                    </button>
+                </div>
+            </div>
+
+            <!-- Spam is never offered on a customer: it blocks the address for good, and the same
+                 customer writes again next week. -->
+            <button v-if="canReportSpam" type="button" :disabled="isSpamMarking"
+                v-tooltip="ctrans('Blocks this sender. Everything they send from now on goes to spam.')"
+                class="inline-flex items-center gap-1.5 shrink-0 h-7 px-2.5 text-[11px] font-medium rounded-md border border-red-200 text-red-600 transition hover:bg-red-50 disabled:opacity-50"
+                @click="markSpam(!(session as any)?.is_spam)">
+                <FontAwesomeIcon :icon="(session as any)?.is_spam ? faRotateLeft : faBan" class="text-[11px]" />
+                {{ (session as any)?.is_spam ? ctrans("Not spam") : ctrans("Spam") }}
+            </button>
+
+            <!-- The whole thread in the agent's own language, which the account already knows.
+                 It used to ask which of every language we support, on a screen where the answer
+                 was always the same one, and each message asked again. -->
+            <button v-if="!isTranslatingAll" type="button" :disabled="isTranslating"
+                v-tooltip="ctrans('Translate the conversation into your language')"
+                class="inline-flex items-center gap-1.5 shrink-0 h-7 px-2.5 text-[11px] font-medium rounded-md border border-gray-300 text-gray-600 transition hover:bg-gray-100 disabled:opacity-50"
+                @click="translateAllMessage">
+                <FontAwesomeIcon :icon="faLanguage" class="text-[11px]" />
+                {{ ctrans("Translate") }}
+            </button>
 
             <FontAwesomeIcon v-if="isTranslating" :icon="faSpinner" class="text-gray-400 text-xs animate-spin" />
 
             <div class="relative" ref="menuRef">
-                <button @click.stop="isMenuOpen = !isMenuOpen" :aria-label="trans('Toggle menu')">
+                <button @click.stop="isMenuOpen = !isMenuOpen" :aria-label="ctrans('Toggle menu')">
                     <FontAwesomeIcon :icon="faEllipsisVertical" class="text-gray-400" />
                 </button>
 
                 <div v-if="isMenuOpen && !isClosed && !isTrashed"
                     class="absolute right-0 mt-2 w-56 bg-white border rounded-md shadow z-50">
                     <button class="menu-item" @click="onViewUserProfile">
-                        <FontAwesomeIcon :icon="faUser" /> {{ trans("View Profile") }}
+                        <FontAwesomeIcon :icon="faUser" /> {{ ctrans("View Profile") }}
                     </button>
 
                     <button class="menu-item" @click="onViewMessageDetails">
-                        <FontAwesomeIcon :icon="faMessage" /> {{ trans("Message Details") }}
+                        <FontAwesomeIcon :icon="faMessage" /> {{ ctrans("Message Details") }}
                     </button>
 
-                    <button class="menu-item" @click="openTicketModal">
-                        <FontAwesomeIcon :icon="faLifeRing" class="text-blue-600" /> {{ trans("Create Ticket") }}
-                    </button>
+                    <template v-if="!readOnly">
+                        <button class="menu-item" @click="openTicketModal">
+                            <FontAwesomeIcon :icon="faLifeRing" class="text-blue-600" /> {{ ctrans("Create Ticket") }}
+                        </button>
 
-                    <button class="menu-item" @click="openSlackModal">
-                        <FontAwesomeIcon :icon="faSlack" class="text-purple-600" /> {{ trans("Share to Slack") }}
-                    </button>
+                        <button class="menu-item" @click="openSlackModal">
+                            <FontAwesomeIcon :icon="faSlack" class="text-purple-600" /> {{ ctrans("Share to Slack") }}
+                        </button>
 
-                    <button v-if="!(session as any)?.is_spam" class="menu-item text-red-600" @click="markSpam(true)">
-                        <FontAwesomeIcon :icon="faBan" /> {{ trans("Report spam") }}
-                    </button>
-                    <button v-else class="menu-item" @click="markSpam(false)">
-                        <FontAwesomeIcon :icon="faRotateLeft" /> {{ trans("Not spam") }}
-                    </button>
+                    </template>
                 </div>
             </div>
         </header>
@@ -985,6 +1244,9 @@ const handleClickOutside = (e: MouseEvent) => {
                             :sessionUlid="session?.ulid"
                             :viewerReactorId="layout?.user?.id"
                             @edit-message="handleEditMessage"
+                            @retract-message="handleRetractMessage"
+                            @redact-message="handleRedactMessage"
+                            @redact-attachment="handleRedactAttachment"
                             @jump-to-message="jumpToMessage"
                             @open-slack-settings="onOpenSlackSettings" />
                     </div>
@@ -992,49 +1254,56 @@ const handleClickOutside = (e: MouseEvent) => {
             </template>
         </div>
         <div v-if="remoteTypingUser" class="text-xs text-gray-400 italic px-2 py-1">
-            {{ remoteTypingUser }} {{ trans("is typing...") }}
+            {{ remoteTypingUser }} {{ ctrans("is typing...") }}
         </div>
 
-        <div v-if="previewType === 'image' && previewUrl" class="px-3 pb-2">
-            <div class="relative inline-block">
-                <img :src="previewUrl" class="h-24 rounded-lg border object-cover" />
-                <button @click="removeFile" class="absolute -top-2 -right-2 bg-white rounded-full shadow p-1" :aria-label="trans('Remove image')">
-                    <FontAwesomeIcon :icon="faXmark" />
-                </button>
-            </div>
-        </div>
+        <div v-if="selectedFiles.length" class="px-3 pb-2 flex flex-wrap gap-2">
+            <div v-for="(attachment, index) in selectedFiles" :key="index" class="relative">
+                <template v-if="attachment.isImage && attachment.previewUrl">
+                    <img :src="attachment.previewUrl" class="h-24 rounded-lg border object-cover" />
+                    <button @click="removeAttachment(index)" class="absolute -top-2 -right-2 bg-white rounded-full shadow p-1" :aria-label="ctrans('Remove image')">
+                        <FontAwesomeIcon :icon="faXmark" />
+                    </button>
+                </template>
 
-        <div v-if="previewType === 'file' && selectedFile" class="px-3 pb-2">
-            <div class="flex items-center gap-3 border rounded-lg p-3 bg-gray-50 min-w-0">
-                <div class="text-2xl">
-                    <FontAwesomeIcon :icon="faFilePdf" />
-                </div>
-                <div class="flex-1 min-w-0 overflow-hidden">
-                    <div class="text-sm font-medium truncate">
-                        {{ selectedFile.name }}
+                <div v-else class="flex items-center gap-3 border rounded-lg p-3 bg-gray-50 min-w-0 max-w-[220px]">
+                    <div class="text-2xl">
+                        <FontAwesomeIcon :icon="faFilePdf" />
                     </div>
-                    <div class="text-xs text-gray-400">
-                        {{ (selectedFile.size / 1024).toFixed(1) }} KB
+                    <div class="flex-1 min-w-0 overflow-hidden">
+                        <div class="text-sm font-medium truncate">
+                            {{ attachment.file.name }}
+                        </div>
+                        <div class="text-xs text-gray-400">
+                            {{ (attachment.file.size / 1024).toFixed(1) }} KB
+                        </div>
                     </div>
+                    <button @click="removeAttachment(index)" class="text-gray-400 hover:text-red-500 shrink-0 ml-2" :aria-label="ctrans('Remove file')">
+                        <FontAwesomeIcon :icon="faXmark" />
+                    </button>
                 </div>
-                <button @click="removeFile" class="text-gray-400 hover:text-red-500 shrink-0 ml-2" :aria-label="trans('Remove file')">
-                    <FontAwesomeIcon :icon="faXmark" />
-                </button>
             </div>
         </div>
 
         <!-- Footer: Restore banner for trashed chats -->
-        <footer v-if="isTrashed" class="px-3 py-3 bg-white border-t">
+        <footer v-if="readOnly" class="px-3 py-3 bg-white border-t">
+            <div class="flex items-center justify-center gap-2 text-xs text-gray-500">
+                <FontAwesomeIcon :icon="faEye" class="text-gray-400" fixed-width aria-hidden="true" />
+                {{ ctrans("You are viewing this conversation in read-only mode") }}
+            </div>
+        </footer>
+
+        <footer v-else-if="isTrashed" class="px-3 py-3 bg-white border-t">
             <div class="flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg bg-gray-50 border border-gray-200">
                 <div class="text-xs text-gray-600">
-                    {{ trans('This chat is in trash') }}
+                    {{ ctrans('This chat is in trash') }}
                 </div>
                 <Button
                     @click="restoreChat"
                     :loading="isRestoring"
                     style="primary"
                     size="xs"
-                    :label="trans('Restore')"
+                    :label="ctrans('Restore')"
                     :icon="faRotateRight"
                 />
             </div>
@@ -1044,14 +1313,14 @@ const handleClickOutside = (e: MouseEvent) => {
         <footer v-else-if="isClosed" class="px-3 py-3 bg-white border-t">
             <div class="flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg bg-gray-50 border border-gray-200">
                 <div class="text-xs text-gray-600">
-                    {{ trans('This chat has been closed') }}
+                    {{ ctrans('This chat has been closed') }}
                 </div>
                 <Button
                     @click="reopenChat"
                     :loading="isReopening"
                     style="primary"
                     size="xs"
-                    :label="trans('Reopen')"
+                    :label="ctrans('Reopen')"
                     :icon="faRotateRight"
                 />
             </div>
@@ -1061,14 +1330,14 @@ const handleClickOutside = (e: MouseEvent) => {
         <footer v-else-if="isWaiting" class="px-3 py-3 bg-white border-t">
             <div class="flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg bg-gray-50 border border-gray-200">
                 <div class="text-xs text-gray-600">
-                    {{ trans('Assign this chat to yourself to start the conversation') }}
+                    {{ ctrans('Assign this chat to yourself to start the conversation') }}
                 </div>
                 <Button
                     @click="assignSelf"
                     :loading="isAssigningSelf"
                     style="primary"
                     size="xs"
-                    :label="trans('Assign to me')"
+                    :label="ctrans('Assign to me')"
                     :icon="['far', 'fa-user']"
                 />
             </div>
@@ -1079,14 +1348,14 @@ const handleClickOutside = (e: MouseEvent) => {
             <div class="flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg bg-indigo-50 border border-indigo-200">
                 <div class="text-xs text-indigo-600">
                     <span class="font-semibold">{{ props.session?.assigned_agent?.name }}</span>
-                    {{ trans(' is handling this chat') }}
+                    {{ ctrans(' is handling this chat') }}
                 </div>
                 <Button
                     @click="takeoverChat"
                     :loading="isTakingOver"
                     style="primary"
                     size="xs"
-                    :label="trans('Take Over')"
+                    :label="ctrans('Take Over')"
                     :icon="['far', 'fa-user']"
                 />
             </div>
@@ -1094,9 +1363,9 @@ const handleClickOutside = (e: MouseEvent) => {
 
         <!-- Footer: Normal message input -->
         <footer v-else class="px-3 py-2 bg-white">
-            <input ref="imageInput" type="file" accept=".webp,.jpg,.jpeg,.png,.avif" class="hidden"
+            <input ref="imageInput" type="file" accept=".webp,.jpg,.jpeg,.png,.avif" multiple class="hidden"
                 @change="handleImageSelect" />
-            <input ref="fileInput" type="file" accept=".pdf,.xls,.xlsx" class="hidden" @change="handleDocSelect" />
+            <input ref="fileInput" type="file" accept=".pdf,.xls,.xlsx" multiple class="hidden" @change="handleDocSelect" />
 
             <div class="rounded-xl border border-gray-200 bg-white shadow-sm focus-within:border-gray-400 focus-within:shadow-md transition-shadow">
                 <textarea ref="messageInput" v-model="newMessage" @input="
@@ -1109,24 +1378,24 @@ const handleClickOutside = (e: MouseEvent) => {
                         isTyping = false
                         sendTypingStatus(false)
                     }
-                " @keydown.enter.exact.prevent="sendMessage" rows="1" placeholder="Type message..."
+                " @paste="onPasteAttachment" @keydown.enter.exact.prevent="sendMessage" rows="1" placeholder="Type message..."
                     class="w-full resize-none px-4 pt-3 pb-1 text-sm leading-5 outline-none border-none ring-0 focus:outline-none focus:ring-0 rounded-t-xl bg-transparent" />
 
                 <div class="flex items-center justify-between px-2 pb-2 pt-1">
                     <div class="flex items-center gap-1">
                         <button @click="imageInput?.click()"
-                            class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-500 transition-colors" title="Upload image" :aria-label="trans('Upload image')">
+                            class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-500 transition-colors" title="Upload image" :aria-label="ctrans('Upload image')">
                             <FontAwesomeIcon :icon="faImage" class="text-sm" />
                         </button>
                         <button @click="fileInput?.click()"
-                            class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-500 transition-colors" title="Upload file" :aria-label="trans('Upload file')">
+                            class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-500 transition-colors" title="Upload file" :aria-label="ctrans('Upload file')">
                             <FontAwesomeIcon :icon="faPaperclip" class="text-sm" />
                         </button>
                         <div ref="emojiPickerContainer" class="relative">
                             <button type="button" @click.stop="showEmojiPicker = !showEmojiPicker"
                                 class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 transition-colors"
                                 :class="showEmojiPicker ? 'text-indigo-600 bg-gray-100' : 'text-gray-500'"
-                                :title="trans('Emoji')" :aria-label="trans('Emoji')">
+                                :title="ctrans('Emoji')" :aria-label="ctrans('Emoji')">
                                 <FontAwesomeIcon :icon="faFaceSmile" class="text-sm" />
                             </button>
 
@@ -1150,11 +1419,11 @@ const handleClickOutside = (e: MouseEvent) => {
                             </template>
                         </Button>
                         <button @click="openTicketModal"
-                            class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-blue-50 text-gray-500 hover:text-blue-600 transition-colors" :title="trans('Create ticket')" :aria-label="trans('Create ticket')">
+                            class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-blue-50 text-gray-500 hover:text-blue-600 transition-colors" :title="ctrans('Create ticket')" :aria-label="ctrans('Create ticket')">
                             <FontAwesomeIcon :icon="faLifeRing" class="text-sm" />
                         </button>
                     </div>
-                    <Button @click="sendMessage" :icon="faPaperPlane" :tooltip="trans('Send message')"></Button>
+                    <Button @click="sendMessage" :icon="faPaperPlane" :tooltip="ctrans('Send message')"></Button>
                 </div>
             </div>
         </footer>
@@ -1190,20 +1459,6 @@ const handleClickOutside = (e: MouseEvent) => {
     background: #f3f4f6;
 }
 
-.translate-select.p-select {
-    height: 1.75rem;
-    align-items: center;
-    border-radius: 0.375rem;
-}
-
-.translate-select :deep(.p-select-label) {
-    display: flex;
-    align-items: center;
-    padding-top: 0;
-    padding-bottom: 0;
-    font-size: 0.6875rem;
-    line-height: 1;
-}
 
 ::-webkit-scrollbar {
     width: 5px;

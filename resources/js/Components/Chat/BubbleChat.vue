@@ -6,10 +6,12 @@ import { faCheck, faCheckDouble, faExclamationCircle, faLanguage, faRobot, faShi
 import { faShare, faFaceSmile, faReply, faLocationDot, faPhone, faCopy, faCircleExclamation, faBullhorn } from "@fortawesome/free-solid-svg-icons"
 import axios from "axios"
 import { useChatLanguages } from "@/Composables/useLanguages"
+import { cleanEmailText } from "@/Composables/cleanEmailText"
 import Image from "primevue/image"
 import { trans } from "laravel-vue-i18n"
 import { notify } from "@kyvg/vue3-notification"
 import SlackShareModal from "@/Components/Chat/Agent/SlackShareModal.vue"
+import EmailBody from "@/Components/Chat/EmailBody.vue"
 import ChatTimelineEvent from "@/Components/Chat/ChatTimelineEvent.vue"
 import AudioPlayer from "@/Components/Chat/AudioPlayer.vue"
 import { formatWhatsappMarkup } from "@/Composables/useWhatsappMarkup"
@@ -18,6 +20,25 @@ import { useCopyText } from "@/Composables/useCopyText"
 type SenderType = "guest" | "user" | "agent" | "system" | "system_campaign"
 type MessageStatus = "sending" | "sent" | "failed"
 type ViewerType = "user" | "agent"
+
+interface ChatAttachment {
+    id: number
+    is_image: boolean
+    media_url: {
+        original: string
+        webp?: string
+        mime?: string
+        name?: string
+        size?: number
+    } | null
+    original_url: string
+    file_name: string
+    file_size: number
+    file_mime: string
+    download_route: {
+        url: string
+    }
+}
 
 interface Message {
     is_offline_message: boolean
@@ -37,6 +58,7 @@ interface Message {
     download_route?: {
         url: string
     } | null
+    attachments?: ChatAttachment[]
     is_read?: boolean
     metadata?: Record<string, any> | null
     replied_to?: {
@@ -52,6 +74,12 @@ interface Message {
     original?: Translation
     translations?: Translation[]
     edited_at?: string | null
+    is_redacted?: boolean
+    is_attachment_redacted?: boolean
+    is_retracted?: boolean
+    retracted_at?: string | null
+    retraction_reason?: string | null
+    retracted_count?: number
     is_ai_generated?: boolean | null
     is_validated?: boolean | null
     is_verifiable_image?: boolean
@@ -84,6 +112,8 @@ interface Translation {
     text: string
 }
 
+import { formatChatTime } from "@/Composables/chatTime"
+
 const props = defineProps<{
     message: Message
     viewerType: ViewerType
@@ -104,6 +134,9 @@ const props = defineProps<{
 
 const emit = defineEmits<{
     (e: "edit-message", payload: { id: number; text: string }): void
+    (e: "retract-message", payload: { id: number; reason: string }): void
+    (e: "redact-message", payload: { id: number; fragment: string }): void
+    (e: "redact-attachment", payload: { id: number }): void
     (e: "open-slack-settings"): void
     (e: "reply", message: Message): void
     (e: "jump-to-message", id: number): void
@@ -120,6 +153,53 @@ const isEditableMessage = computed(() =>
     props.message._status !== "sending" &&
     Date.now() - new Date(props.message.created_at).getTime() < EDIT_WINDOW_MS
 )
+
+// A message taken back is gone for the customer but stays here, so whoever reads the
+// conversation next sees both that it was said and that it was withdrawn.
+const isRetracted = computed(() => props.message.is_retracted === true)
+
+const isRetractableMessage = computed(() => isEditableMessage.value && !isRetracted.value)
+
+const retractedTime = computed(() =>
+    props.message.retracted_at ? formatChatTime(new Date(props.message.retracted_at).getTime()) : null
+)
+
+// Anybody working the conversation can strike out a card number or a password, whoever
+// wrote it and however long ago: leaving it sitting there is the bigger risk.
+const isRedactableMessage = computed(() =>
+    props.canEdit === true &&
+    props.viewerType === "agent" &&
+    (props.message.message_type ?? "text") === "text" &&
+    !!props.message.id &&
+    !isRetracted.value &&
+    props.message._status !== "sending"
+)
+
+const redactSelection = () => {
+    const fragment = (window.getSelection()?.toString() ?? "").trim()
+
+    if (!fragment) {
+        emit("redact-message", { id: props.message.id!, fragment: "" })
+        return
+    }
+
+    emit("redact-message", { id: props.message.id!, fragment })
+    window.getSelection()?.removeAllRanges()
+}
+
+// A fixed list so the line the customer reads is translated and worded the same whoever
+// sends it. The values match ChatRetractionReasonEnum.
+const RETRACTION_REASONS = [
+    { value: "wrong_conversation", label: trans("Meant for another conversation") },
+    { value: "explaining", label: trans("I will explain myself") },
+]
+
+const choosingRetractionReason = ref(false)
+
+const retractWithReason = (reason: string) => {
+    choosingRetractionReason.value = false
+    emit("retract-message", { id: props.message.id!, reason })
+}
 
 const isEditingMessage = ref(false)
 const editText = ref("")
@@ -181,16 +261,12 @@ const canShowTranslation = computed(() => {
 })
 
 const bubbleClass = computed(() => ({
-    "bubble-primary": isFromViewer.value,
-    "bubble-secondary": !isFromViewer.value,
+    "bubble-primary": isFromViewer.value && !isRetracted.value,
+    "bubble-secondary": !isFromViewer.value && !isRetracted.value,
+    "bg-gray-100 text-gray-400 border border-dashed border-gray-300 italic": isRetracted.value,
 }))
 
-const time = computed(() =>
-    new Date(props.message.created_at).toLocaleTimeString([], {
-        hour: "2-digit",
-        minute: "2-digit",
-    })
-)
+const time = computed(() => formatChatTime(new Date(props.message.created_at).getTime()))
 
 // WhatsApp reports a full delivery lifecycle (sent → delivered → read); website
 // chat only knows read/unread, so it keeps the original two-state tick.
@@ -253,6 +329,15 @@ const senderLabel = computed(() => {
 // so it renders as the same chip the event stream uses.
 const isSystemNotice = computed(() => props.message.sender_type === "system")
 
+// To an agent a promotion is a footnote in the conversation, not part of it: it starts folded
+// to one line so the customer's own messages stand out, and opens on click.
+const isPromotionFolded = ref(props.viewerType === "agent" && props.message.sender_type === "system_campaign")
+const promotionLabel = computed(() =>
+    props.message.metadata?.template
+        ? `${trans("Promotion")}: ${props.message.metadata.template}`
+        : trans("Promotion")
+)
+
 // Quoting is opt-in: only channels that can carry a reply upstream ask for the button.
 const canReplyToMessage = computed(() => props.canReply === true && !!props.message.id)
 
@@ -275,6 +360,63 @@ const quotedAuthor = computed(() =>
 const isFile = computed(() => props.message.message_type === "file")
 
 const fileMime = computed(() => props.message.file_mime ?? props.message.media_url?.mime ?? "")
+
+const attachmentList = computed<ChatAttachment[]>(() => {
+    if (props.message.attachments?.length) return props.message.attachments
+
+    if (!props.message.media_url && !props.message.download_route) return []
+
+    return [{
+        id: props.message.id ?? 0,
+        is_image: props.message.message_type === "image",
+        media_url: props.message.media_url ?? null,
+        original_url: props.message.media_url?.original ?? "",
+        file_name: props.message.file_name ?? "",
+        file_size: props.message.file_size ?? 0,
+        file_mime: props.message.file_mime ?? "",
+        download_route: props.message.download_route ?? { url: "" },
+    }]
+})
+
+const isAttachmentRedactable = computed(() =>
+    props.canEdit === true &&
+    props.viewerType === "agent" &&
+    !!props.message.id &&
+    !isRetracted.value &&
+    props.message.is_attachment_redacted !== true &&
+    attachmentList.value.length > 0
+)
+
+const attachmentMime = (attachment: ChatAttachment) => attachment.file_mime ?? attachment.media_url?.mime ?? ""
+
+const isAttachmentAudio = (attachment: ChatAttachment, index: number) =>
+    attachmentMime(attachment).startsWith("audio/") || (index === 0 && props.message.metadata?.wa_type === "audio")
+
+const isAttachmentVideo = (attachment: ChatAttachment, index: number) =>
+    attachmentMime(attachment).startsWith("video/") || (index === 0 && props.message.metadata?.wa_type === "video")
+
+const attachmentInlineUrl = (attachment: ChatAttachment): string | null => {
+    const url = attachment.download_route?.url
+    if (!url) return null
+    return url + (url.includes("?") ? "&" : "?") + "inline=1"
+}
+
+const attachmentSizeLabel = (attachment: ChatAttachment) => {
+    const bytes = Number(attachment.file_size ?? 0)
+    if (!bytes) return null
+    return bytes >= 1048576
+        ? `${(bytes / 1048576).toFixed(1)} MB`
+        : `${Math.max(1, Math.round(bytes / 1024))} KB`
+}
+
+const attachmentIcon = (attachment: ChatAttachment) => {
+    const mime = attachmentMime(attachment)
+    if (mime.includes("pdf")) return "📕"
+    if (mime.includes("excel") || mime.includes("spreadsheet")) return "📊"
+    if (mime.startsWith("audio/")) return "🎧"
+    if (mime.startsWith("video/")) return "🎬"
+    return "📄"
+}
 
 // Ogg/Opus voice notes are sometimes sniffed as `application/ogg`, so the WhatsApp
 // message type is trusted alongside the stored mime.
@@ -328,12 +470,12 @@ const fileIcon = computed(() => {
 
 const isOpening = ref(false)
 
-const openFile = () => {
+const openFile = (attachment?: ChatAttachment) => {
     if (isOpening.value) return
 
     isOpening.value = true
 
-    const url = props.message.download_route?.url
+    const url = attachment ? attachment.download_route?.url : props.message.download_route?.url
     if (url) {
         window.open(url, "_blank")
     }
@@ -348,10 +490,12 @@ const localMessage = ref<Message | null>(null)
 const selectedLanguage = ref("")
 const isTranslating = ref<boolean>(false)
 const showTranslation = ref(true)
-const showLanguageSelect = ref(false)
 
+// An agent reads in their own language, which the account already knows. Asking them to pick
+// it from a list of every language we support, every time, on every message, was asking a
+// question with one answer.
 const selectedLanguageId = computed(() =>
-    getLanguageIdByCode(selectedLanguage.value)
+    getLanguageIdByCode(selectedLanguage.value) || layout.user?.language_id || null
 )
 
 const activeMessage = computed<Message>(() => {
@@ -363,10 +507,21 @@ const displayText = computed(() => {
         return trans(props.message.message_text)
     }
 
-    return activeMessage.value.original?.text || props.message.message_text
+    // An email body reaches us as text with its stylesheet still in it, so it is cleaned here
+    // rather than shown raw. Ordinary chat has nothing to clean and passes through untouched.
+    return cleanEmailText(activeMessage.value.original?.text || props.message.message_text)
 })
 
 const formattedText = computed(() => formatWhatsappMarkup(displayText.value))
+
+// Only the sender's own message is shown as markup. An edited, retracted or translated message
+// falls back to text, because what is on screen then is not what arrived.
+const showEmailBody = computed(() =>
+    !!props.message.html_body
+    && !isEditingMessage.value
+    && !isRetracted.value
+    && !showTranslation.value
+)
 
 const location = computed(() => {
     if (props.message.metadata?.wa_type !== "location") return null
@@ -698,16 +853,27 @@ watch(
     { immediate: true }
 )
 
+// The conversation's own picker still drives every bubble, for the rare thread somebody wants
+// in a third language.
 watch(selectedLanguage, async (val) => {
     if (!val) return
     await translateMessage()
-    showLanguageSelect.value = false
 })
 </script>
 
 <template>
     <div v-if="isSystemNotice" class="w-full flex justify-center">
         <ChatTimelineEvent :event="{ description: displayText, created_at: message.created_at }" />
+    </div>
+
+    <div v-else-if="isPromotionFolded" class="w-full flex justify-end">
+        <button type="button"
+            class="flex items-center gap-1.5 rounded-full border border-gray-200 bg-gray-50 px-3 py-1 text-[11px] text-gray-500 hover:bg-gray-100"
+            @click="isPromotionFolded = false">
+            <FontAwesomeIcon :icon="faBullhorn" class="text-[10px]" />
+            <span class="max-w-[260px] truncate">{{ promotionLabel }}</span>
+            <span class="opacity-60">{{ time }}</span>
+        </button>
     </div>
 
     <div v-else class="flex flex-col w-full group/msg" :class="isFromViewer ? 'items-end' : 'items-start'">
@@ -837,40 +1003,48 @@ watch(selectedLanguage, async (val) => {
                 </div>
             </a>
 
-            <AudioPlayer v-if="isAudio && inlineUrl" :src="inlineUrl"
+            <div v-if="message.metadata?.gmail_pending_attachments" class="mb-1 text-xs italic text-gray-500">
+                {{ trans(":count attachment(s) kept in Gmail, they are added here when you reply", { count: message.metadata.gmail_pending_attachments }) }}
+            </div>
+
+            <template v-if="attachmentList.length && !(attachmentList.length === 1 && isAudio)">
+                <template v-for="(attachment, index) in attachmentList" :key="attachment.id ?? index">
+                    <!-- Played in place, the way the recipient sees it on WhatsApp. -->
+                    <div v-if="isAttachmentVideo(attachment, index) && attachmentInlineUrl(attachment)" class="mb-1 max-w-xs">
+                        <video :src="attachmentInlineUrl(attachment)!" controls preload="metadata"
+                            class="w-full max-h-64 rounded-lg bg-black object-contain" />
+                        <div class="mt-0.5 flex items-center gap-1.5 text-[10px] opacity-60">
+                            <span class="truncate">{{ attachment.file_name }}</span>
+                            <span v-if="attachmentSizeLabel(attachment)" class="shrink-0">· {{ attachmentSizeLabel(attachment) }}</span>
+                        </div>
+                    </div>
+
+                    <Image v-else-if="attachment.is_image && attachment.media_url" :src="attachment.media_url.webp ?? attachment.media_url.original" preview
+                        imageClass="rounded-lg max-w-full max-h-64 min-h-[96px] min-w-[96px] object-contain cursor-pointer bg-gray-50"
+                        class="mb-1 block" />
+
+                    <div v-else @click="openFile(attachment)"
+                        class="mb-1 flex items-center gap-3 p-2.5 rounded-lg border border-black/10 bg-white max-w-xs transition"
+                        :class="isOpening ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer hover:bg-gray-50'">
+                        <div class="text-2xl leading-none">
+                            {{ attachmentIcon(attachment) }}
+                        </div>
+
+                        <div class="flex-1 min-w-0">
+                            <div class="text-xs font-medium truncate text-gray-800">
+                                {{ attachment.file_name }}
+                            </div>
+                            <div class="text-[10px] text-gray-500">
+                                <span v-if="attachmentSizeLabel(attachment)">{{ attachmentSizeLabel(attachment) }} · </span>{{ trans("Click to open") }}
+                            </div>
+                        </div>
+                    </div>
+                </template>
+            </template>
+
+            <AudioPlayer v-if="attachmentList.length === 1 && isAudio && inlineUrl" :src="inlineUrl"
                 :is-voice="!!message.metadata?.wa_payload?.voice" :label="audioLabel"
                 :download-url="message.download_route?.url" />
-
-            <!-- Played in place, the way the recipient sees it on WhatsApp. -->
-            <div v-else-if="isVideo && inlineUrl" class="mb-1 max-w-xs">
-                <video :src="inlineUrl" controls preload="metadata"
-                    class="w-full max-h-64 rounded-lg bg-black object-contain" />
-                <div class="mt-0.5 flex items-center gap-1.5 text-[10px] opacity-60">
-                    <span class="truncate">{{ message.file_name }}</span>
-                    <span v-if="fileSizeLabel" class="shrink-0">· {{ fileSizeLabel }}</span>
-                </div>
-            </div>
-
-            <div v-else-if="isFile && message.media_url" @click="openFile"
-                class="mb-1 flex items-center gap-3 p-2.5 rounded-lg border border-black/10 bg-white max-w-xs transition"
-                :class="isOpening ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer hover:bg-gray-50'">
-                <div class="text-2xl leading-none">
-                    {{ fileIcon }}
-                </div>
-
-                <div class="flex-1 min-w-0">
-                    <div class="text-xs font-medium truncate text-gray-800">
-                        {{ message.file_name || message.media_url.name }}
-                    </div>
-                    <div class="text-[10px] text-gray-500">
-                        <span v-if="fileSizeLabel">{{ fileSizeLabel }} · </span>{{ trans("Click to open") }}
-                    </div>
-                </div>
-            </div>
-
-            <Image v-if="message.message_type === 'image' && message.media_url" :src="message.media_url.webp" preview
-                imageClass="rounded-lg max-w-full max-h-64 min-h-[96px] min-w-[96px] object-contain cursor-pointer bg-gray-50"
-                class="mb-1 block" />
 
             <div v-if="viewerType === 'agent' && message.message_type === 'image' && activeMessage.is_validated === true"
                 class="mt-1" :title="verificationReasoning">
@@ -895,13 +1069,27 @@ watch(selectedLanguage, async (val) => {
                 </button>
             </div>
 
+            <!-- The customer is told that something was withdrawn, and why, rather than
+                 watching a message disappear from under them. -->
+            <div v-if="isRetracted && viewerType !== 'agent'"
+                class="inline-flex w-fit items-center gap-1.5 text-[11px] italic opacity-70">
+                <FontAwesomeIcon :icon="faCircleExclamation" class="text-[10px]" />
+                <span v-if="(message.retracted_count ?? 1) > 1">
+                    {{ trans(":count messages were removed", { count: message.retracted_count }) }}
+                </span>
+                <span v-else>{{ message.retraction_reason || trans("This message was removed") }}</span>
+            </div>
+
             <div v-if="isUnsupportedMessage"
                 class="inline-flex w-fit items-center gap-1.5 text-[11px] italic opacity-60">
                 <FontAwesomeIcon :icon="faCircleExclamation" class="text-[10px]" />
                 <span>{{ displayText || trans("Unsupported message") }}</span>
             </div>
 
-            <p v-else-if="!isEditingMessage && !location && !sharedContacts.length && formatMarkup" class="whitespace-pre-wrap break-words"
+            <!-- A received email keeps its layout; everything else is text. -->
+            <EmailBody v-else-if="showEmailBody" :html="message.html_body" />
+
+            <p v-else-if="!isEditingMessage && !location && !sharedContacts.length && formatMarkup && !(isRetracted && viewerType !== 'agent')" class="whitespace-pre-wrap break-words"
                 v-html="formattedText" />
 
             <p v-else-if="!isEditingMessage && !location && !sharedContacts.length" class="whitespace-pre-wrap break-words">
@@ -928,6 +1116,12 @@ watch(selectedLanguage, async (val) => {
                 !(props.message.sender_type === 'guest' && props.viewerType === 'user')
             " class="text-[10px] text-amber-600 mb-1 font-medium">
                 {{ trans('Offline message') }}
+            </div>
+
+            <!-- Nobody wrote this: a mailbox answered by itself. Said plainly so an out of
+                 office is not read as the customer coming back with something to say. -->
+            <div v-if="message?.metadata?.auto_reply" class="text-[10px] text-gray-400 mb-1 font-medium">
+                {{ trans('Automatic reply') }}
             </div>
 
             <div v-if="canShowTranslation && (latestTranslation || isTranslating)"
@@ -961,31 +1155,59 @@ watch(selectedLanguage, async (val) => {
                 </template>
             </div>
 
+            <!-- One click, into the agent's own language. Somebody who genuinely wants another
+                 language has the picker on the conversation; this is the common case. -->
             <div v-if="canTranslate" class="mt-1">
-                <button v-if="!showLanguageSelect" @click="showLanguageSelect = true"
-                    class="flex items-center gap-1 text-[10px] text-gray-500 hover:text-gray-700 underline">
+                <button :disabled="isTranslating" @click="translateMessage"
+                    class="flex items-center gap-1 text-[10px] text-gray-500 hover:text-gray-700 underline disabled:opacity-50">
                     <FontAwesomeIcon :icon="faLanguage" class="text-[10px]" />
-                    Translate
+                    {{ trans("Translate") }}
                 </button>
-                <select v-else v-model="selectedLanguage" :disabled="isTranslating"
-                    class="h-[20px] text-[10px] px-1.5 py-0 rounded border border-gray-300 bg-transparent text-gray-600 leading-none focus:outline-none focus:ring-0 disabled:opacity-50">
-                    <option value="" disabled>
-                        Translate To..
-                    </option>
-                    <option v-for="lang in languages" :key="lang.id" :value="lang.code">
-                        {{ lang.native_name }}
-                    </option>
-                </select>
+            </div>
+
+            <div v-if="choosingRetractionReason" class="mb-1 flex flex-col items-stretch gap-0.5 text-[10px]">
+                <span class="opacity-70">{{ trans("What the customer is told:") }}</span>
+                <button v-for="reason in RETRACTION_REASONS" :key="reason.value" type="button"
+                    class="text-left underline leading-tight" @click="retractWithReason(reason.value)">
+                    {{ reason.label }}
+                </button>
+                <button type="button" class="text-left opacity-70 leading-tight"
+                    @click="choosingRetractionReason = false">
+                    {{ trans("Cancel") }}
+                </button>
             </div>
 
             <div class="flex items-center justify-end gap-1 text-[10px] opacity-70 min-h-[14px]">
-                <button v-if="isEditableMessage && !isEditingMessage" type="button"
+                <button v-if="isEditableMessage && !isRetracted && !isEditingMessage" type="button"
                     class="mr-auto underline leading-none" @click="startEditMessage">
                     {{ trans("Edit") }}
+                </button>
+                <button v-if="isAttachmentRedactable && !isEditingMessage" type="button"
+                    class="underline leading-none" @click="emit('redact-attachment', { id: message.id! })">
+                    {{ trans("Remove file") }}
+                </button>
+                <button v-if="isRedactableMessage && !isEditingMessage" type="button"
+                    class="underline leading-none" :title="trans('Select the text to strike out, then click')"
+                    @click="redactSelection">
+                    {{ trans("Redact") }}
+                </button>
+                <button v-if="isRetractableMessage && !isEditingMessage" type="button"
+                    class="underline leading-none text-red-600"
+                    @click="choosingRetractionReason = !choosingRetractionReason">
+                    {{ trans("Take back") }}
                 </button>
 
                 <span v-if="message.edited_at" class="italic leading-none">
                     {{ trans("edited") }}
+                </span>
+                <span v-if="message.is_attachment_redacted" class="italic leading-none">
+                    {{ trans("file removed") }}
+                </span>
+                <span v-if="message.is_redacted" class="italic leading-none">
+                    {{ trans("redacted") }}
+                </span>
+                <span v-if="isRetracted && viewerType === 'agent'" class="italic leading-none">
+                    {{ trans("sent") }} {{ time }} · {{ trans("taken back") }} {{ retractedTime }}
                 </span>
                 <span v-if="!isSending" class="leading-none">
                     {{ time }}

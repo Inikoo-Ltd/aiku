@@ -15,8 +15,10 @@ use App\Enums\CRM\Livechat\ChatPriorityEnum;
 use App\Enums\DateIntervals\DateIntervalEnum;
 use App\Enums\Helpers\Ticket\TicketKindEnum;
 use App\Enums\Helpers\Ticket\TicketModuleEnum;
+use App\Enums\Helpers\Ticket\TicketQaStatusEnum;
 use App\Enums\Helpers\Ticket\TicketStatusEnum;
 use App\Enums\Helpers\Ticket\TicketTypeEnum;
+use Illuminate\Support\Arr;
 use App\Http\Resources\Helpers\TicketResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Helpers\Ticket;
@@ -26,6 +28,8 @@ use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use App\Models\Catalogue\Shop;
+use App\Models\SysAdmin\Organisation;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -33,6 +37,8 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexTickets extends OrgAction
 {
+    use WithTicketsScope;
+
     public function authorize(ActionRequest $request): bool
     {
         return $request->user() !== null;
@@ -43,13 +49,16 @@ class IndexTickets extends OrgAction
         $user = request()->user();
         $base = $this->whereCreatedIn(Ticket::where('tickets.group_id', $group->id)->visibleTo($user), $this->createdInterval(), 'tickets.created_at');
 
-        return [
+        $groups = [
             'mine'   => [
-                'label'    => __('Mine'),
+                'label'    => __('Ownership'),
+                'optional' => true,
                 'elements' => [
                     'reported' => [__('Reported by me'), (clone $base)->where('reporter_type', 'User')->where('reporter_id', $user->id)->count()],
-                    'assigned' => [__('Assigned to me'), (clone $base)->where('assignee_id', $user->id)->count()],
-                    'collaborating' => [__('Collaborating on'), (clone $base)->whereHas('collaborators', fn ($query) => $query->whereKey($user->id))->count()],
+                    ...(Ticket::canBeManagedBy($user) ? [
+                        'assigned'      => [__('Assigned to me'), (clone $base)->where('assignee_id', $user->id)->count()],
+                        'collaborating' => [__('Collaborating on'), (clone $base)->whereHas('collaborators', fn ($query) => $query->whereKey($user->id))->count()],
+                    ] : []),
                 ],
                 'engine'   => function ($query, $elements) use ($user) {
                     $query->where(function ($query) use ($elements, $user) {
@@ -112,7 +121,46 @@ class IndexTickets extends OrgAction
                     );
                 },
             ],
+            'qa_status' => [
+                'label'    => __('QA status'),
+                'optional' => true,
+                'elements' => collect(TicketQaStatusEnum::cases())->mapWithKeys(fn (TicketQaStatusEnum $qaStatus) => [
+                    $qaStatus->value => [$qaStatus->shortLabel(), (clone $base)->where('qa_status', $qaStatus)->count()],
+                ])->all(),
+                'engine'   => function ($query, $elements) {
+                    $query->whereIn('tickets.qa_status', $elements);
+                },
+            ],
         ];
+
+        if (Ticket::canCheckQa($user)) {
+            $groups['qa_checker'] = [
+                'label'    => __('QA assignee'),
+                'optional' => true,
+                'elements' => [
+                    'mine'     => [__('Mine'), (clone $base)->where('qa_user_id', $user->id)->count()],
+                    'anyone'   => [__('Anyone'), (clone $base)->whereNotNull('qa_status')->whereNull('qa_user_id')->count()],
+                    'everyone' => [__('Everyone'), (clone $base)->whereNotNull('qa_status')->count()],
+                ],
+                'engine'   => function ($query, $elements) use ($user) {
+                    $query->where(function ($query) use ($elements, $user) {
+                        if (in_array('everyone', $elements)) {
+                            $query->orWhereNotNull('tickets.qa_status');
+
+                            return;
+                        }
+                        if (in_array('mine', $elements)) {
+                            $query->orWhere('tickets.qa_user_id', $user->id);
+                        }
+                        if (in_array('anyone', $elements)) {
+                            $query->orWhere(fn ($query) => $query->whereNotNull('tickets.qa_status')->whereNull('tickets.qa_user_id'));
+                        }
+                    });
+                },
+            ];
+        }
+
+        return $groups;
     }
 
     /**
@@ -208,7 +256,7 @@ class IndexTickets extends OrgAction
             ->where('tickets.group_id', $group->id)
             ->visibleTo(request()->user())
             ->leftJoin('users', 'users.id', '=', 'tickets.assignee_id')
-            ->with(['reporter', 'customer', 'assignee', 'collaborators']);
+            ->with(['reporter', 'customer', 'assignee', 'collaborators', 'organisation', 'source']);
 
         $this->whereCreatedIn($queryBuilder, $this->createdInterval(), 'tickets.created_at');
 
@@ -218,7 +266,8 @@ class IndexTickets extends OrgAction
                 allowedElements: array_keys($elementGroup['elements']),
                 engine: $elementGroup['engine'],
                 prefix: $prefix,
-                default: $key === 'mine' ? $this->savedMineFilter() : null
+                default: $key === 'mine' ? $this->savedMineFilter() : null,
+                optional: $elementGroup['optional'] ?? false
             );
         }
 
@@ -246,7 +295,7 @@ class IndexTickets extends OrgAction
             }
 
             foreach ($this->getElementGroups($group) as $key => $elementGroup) {
-                $table->elementGroup(key: $key, label: $elementGroup['label'], elements: $elementGroup['elements'], default: $key === 'mine' ? $this->savedMineFilter() : null);
+                $table->elementGroup(key: $key, label: $elementGroup['label'], elements: $elementGroup['elements'], default: $key === 'mine' ? $this->savedMineFilter() : null, optional: $elementGroup['optional'] ?? false);
             }
 
             $table
@@ -276,7 +325,7 @@ class IndexTickets extends OrgAction
         return Inertia::render(
             'Tickets/Tickets',
             [
-                'breadcrumbs' => $this->getBreadcrumbs(),
+                'breadcrumbs' => $this->ticketsListBreadcrumbs(),
                 'title'       => __('Tickets'),
                 'pageHead'    => [
                     'title'   => __('Tickets'),
@@ -286,14 +335,21 @@ class IndexTickets extends OrgAction
                             'type'  => 'button',
                             'style' => 'create',
                             'label' => __('New ticket'),
-                            'route' => ['name' => 'grp.tickets.create'],
+                            'route' => $this->ticketsRoute('create'),
                         ],
                     ] : [],
                 ],
                 'data'        => TicketResource::collection($tickets),
                 'updateRoute' => 'grp.models.ticket.update',
                 'can_assign'  => Ticket::canBeAssignedBy(request()->user()),
+                'can_manage'  => Ticket::canBeManagedBy(request()->user()),
                 'mineFilter'  => $this->savedMineFilter(),
+                'typeFilter'  => Arr::get(request()->input('elements', []), 'type'),
+                'typeOptions' => collect(TicketTypeEnum::cases())->map(fn (TicketTypeEnum $type) => [
+                    'label' => $type->prefix(),
+                    'value' => $type->value,
+                    'icon'  => $type->icon(),
+                ])->values(),
                 'options'     => [
                     'priorities' => collect(ChatPriorityEnum::labels())->map(fn ($label, $value) => ['label' => $label, 'value' => $value, 'icon' => ChatPriorityEnum::stateIcon()[$value]])->values(),
                     'kinds'      => collect(TicketKindEnum::labels())->map(fn ($label, $value) => ['label' => $label, 'value' => $value])->values(),
@@ -353,25 +409,23 @@ class IndexTickets extends OrgAction
         return DateIntervalEnum::from($interval)->wherePeriod($query, $column);
     }
 
-    public function getBreadcrumbs(): array
-    {
-        return array_merge(
-            ShowTicketsDashboard::make()->getBreadcrumbs(),
-            [
-                [
-                    'type'   => 'simple',
-                    'simple' => [
-                        'route' => ['name' => 'grp.tickets.list'],
-                        'label' => __('List'),
-                    ],
-                ],
-            ]
-        );
-    }
-
     public function asController(ActionRequest $request): LengthAwarePaginator
     {
-        $this->initialisationFromGroup(group(), $request);
+        $this->initialisationFromTicketsScope($request);
+
+        return $this->handle($this->group);
+    }
+
+    public function inOrganisation(Organisation $organisation, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->initialisationFromTicketsScope($request, $organisation);
+
+        return $this->handle($this->group);
+    }
+
+    public function inShop(Organisation $organisation, Shop $shop, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->initialisationFromTicketsScope($request, $organisation, $shop);
 
         return $this->handle($this->group);
     }

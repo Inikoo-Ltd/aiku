@@ -31,7 +31,7 @@ const onClickReconnect = async () => {
             throw new Error('Something went wrong. Try again later.')
         } else {
             if(! response.data.id) {
-                window.open(response.data, '_blank');
+                window.location.href = response.data
             } else {
                 window.location.href = ''
             }

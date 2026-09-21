@@ -356,7 +356,8 @@ const fetchRoute = async () => {
     try {
         const www = await axios.get(route('retina.json.dropshipping.customer_sales_channel.shopify_products', {
             customerSalesChannel: props.customerSalesChannel?.id,
-            query: querySearchPortfolios.value
+            query: querySearchPortfolios.value,
+            portfolio: selectedPortfolio.value?.id
         }))
 
         if (!Array.isArray(www.data.products) || www.data.products.length < 50) {
@@ -395,6 +396,7 @@ const loadMore = async () => {
         const www = await axios.get(route('retina.json.dropshipping.customer_sales_channel.shopify_products', {
             customerSalesChannel: props.customerSalesChannel?.id,
             query: querySearchPortfolios.value,
+            portfolio: selectedPortfolio.value?.id,
             offset: currentOffset.value
         }))
 
@@ -878,7 +880,7 @@ onMounted(() => {
 
                     <div v-if="!disabled">
                     <Button v-if="item.platform_possible_matches?.number_matches"
-                        @click="() => {if(item.is_for_sale) {fetchRoute(); isOpenModal = true; selectedPortfolio = item}}"
+                        @click="() => {if(item.is_for_sale) {selectedPortfolio = item; fetchRoute(); isOpenModal = true}}"
                         :label="trans('Choose another product from your shop')" 
                         :capitalize="false" 
                         size="xxs"
@@ -887,7 +889,7 @@ onMounted(() => {
                         :disabled="disableButtons(item)"
                     />
                     <Button v-else 
-                        @click="() => {if(item.is_for_sale) {fetchRoute(); isOpenModal = true; selectedPortfolio = item}}"
+                        @click="() => {if(item.is_for_sale) {selectedPortfolio = item; fetchRoute(); isOpenModal = true}}"
                         :label="trans('Match it with an existing product in your shop')" 
                         :capitalize="false"
                         size="xxs"
@@ -912,7 +914,7 @@ onMounted(() => {
                     </template>
                     <Button v-if="!disabled" 
                         class="mt-2" 
-                        @click="() => {if(item.is_for_sale) {fetchRoute(); isOpenModal = true; selectedPortfolio = item}}"
+                        @click="() => {if(item.is_for_sale) {selectedPortfolio = item; fetchRoute(); isOpenModal = true}}"
                         :label="trans('Connect with other product')" 
                         :capitalize="false" 
                         :icon="faRecycle"
@@ -1068,6 +1070,9 @@ onMounted(() => {
                                                 </div>
                                                 <div v-if="item.sku_list" v-tooltip="trans('SKO')" class="w-fit text-xxs text-slate-600 italic">
                                                         {{ item.sku_list.join('; ') }}
+                                                </div>
+                                                <div v-if="item.variant_to_link" class="w-fit text-xs text-green-700 mt-1">
+                                                    {{ trans("Will link to the existing variant :_sku", {_sku: item.variant_to_link}) }}
                                                 </div>
                                             </div>
                                             <!-- <div v-if="!item.no_price" xclick="() => selectProduct(item)"

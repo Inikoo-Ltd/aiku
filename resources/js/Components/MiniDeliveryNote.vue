@@ -17,9 +17,9 @@ import { trans } from "laravel-vue-i18n"
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faIdCardAlt, faEnvelope, faPhone, faGift, faBoxFull, faWeight, faCube, faBarcodeRead, faPrint } from "@fal"
-import { faCubes } from "@fas"
+import { faCubes, faPeopleArrows } from "@fas"
 import { router, usePage } from "@inertiajs/vue3"
-import { inject, ref, toRaw } from "vue"
+import { computed, inject, ref, toRaw } from "vue"
 import { set } from 'lodash-es'
 import { notify } from "@kyvg/vue3-notification"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
@@ -34,7 +34,7 @@ import PageHeading from "./Headings/PageHeading.vue";
 library.add(
     faIdCardAlt, faEnvelope, faPhone, faGift, faBoxFull, faWeight, faCube, faCubes,
     faPrint, faBarcodeRead, faSkull, faArrowDown, faDebug, faClipboardListCheck,
-    faUndoAlt, faHandHoldingBox, faListOl
+    faUndoAlt, faHandHoldingBox, faListOl, faPeopleArrows
 );
 
 const props = defineProps<{
@@ -72,6 +72,25 @@ const onDeleteParcel = (index: number) => {
     parcelsCopy.value.splice(index, 1)
 }
 
+// Parcel dimensions are needed to pack anything but dropshipping (HELP-3169), so they can be entered before packing too
+const statesWithParcels = ['handling', 'picked', 'packing', 'packed', 'dispatched', 'finalised']
+const statesWithEditableParcels = ['handling', 'picked', 'packing', 'packed']
+const isCollection = computed(() => Boolean(data.value?.delivery_note?.is_collection))
+const isDropshipping = computed(() => data.value?.delivery_note?.shop_type === 'dropshipping')
+const newParcel = () => isDropshipping.value
+    ? { weight: 1, dimensions: [5, 5, 5] }
+    : { weight: 1, dimensions: [null, null, null] }
+const isParcelMissingDimensions = (parcel) => !isDropshipping.value
+    && ![0, 1, 2].every(index => Number(parcel?.dimensions?.[index]) > 0)
+const isParcelsMissingForPacking = computed(() => !isDropshipping.value
+    && ['handling', 'picked', 'packing'].includes(data.value?.delivery_note?.state)
+    && (!data.value?.delivery_note?.parcels?.length || data.value.delivery_note.parcels.some(isParcelMissingDimensions)))
+const onOpenModalParcels = () => {
+    const parcels = (data.value?.delivery_note?.parcels || []).map(parcel => ({ ...parcel, dimensions: [...(parcel.dimensions || [null, null, null])] }))
+    parcelsCopy.value = parcels.length ? parcels : [newParcel()]
+    isModalParcels.value = true
+}
+
 const onSubmitParcels = () => {
     router.patch(route('grp.models.delivery_note.update', {
         deliveryNote: props?.deliveryNote?.delivery_note_id
@@ -79,6 +98,7 @@ const onSubmitParcels = () => {
         parcels: parcelsCopy.value,
     }, {
         preserveScroll: true,
+        preserveState: true,
         onStart: () => isLoadingSubmitParcels.value = true,
         onSuccess: () => {
             isModalParcels.value = false
@@ -191,7 +211,7 @@ const handleSetAsPacked = async () => {
         notify({
             type: "error",
             title: trans("Failed"),
-            text: trans("Unable to set delivery note as packed."),
+            text: error?.response?.data?.message ?? trans("Unable to set delivery note as packed."),
         })
     } finally {
         loadingFinal.value = false
@@ -221,9 +241,9 @@ onMounted(() => {
             />
 
             <Button v-if="props.deliveryNote?.delivery_note_id && props.deliveryNote.delivery_note_state === 'packed'"
-                type="save" label="Finalise and Dispatch" :loading="loadingFinal" @click="handleFinaliseAndDispatch" />
+                type="save" :label="isCollection ? trans('Finalise and set as Collected') : trans('Finalise and Dispatch')" :loading="loadingFinal" @click="handleFinaliseAndDispatch" />
 
-            <Button v-if="props.deliveryNote?.delivery_note_id && (props.deliveryNote.delivery_note_state === 'handling' || props.deliveryNote.delivery_note_state === 'packing')"
+            <Button v-if="props.deliveryNote?.delivery_note_id && (props.deliveryNote.delivery_note_state === 'handling' || props.deliveryNote.delivery_note_state === 'picked' || props.deliveryNote.delivery_note_state === 'packing')"
                 type="save" label="Set as packed" size="sm" class="mx-3" :loading="loadingFinal"
                 @click="handleSetAsPacked" />
         </template>
@@ -243,7 +263,12 @@ onMounted(() => {
         <BoxStatPallet class="p-4 space-y-2 border rounded-lg shadow-sm bg-white">
             <h3 class="text-base font-semibold text-gray-800 mb-2">{{ trans("Shipping") }}</h3>
 
-            <div v-if="data.delivery_note?.delivery_address">
+            <div v-if="isCollection" class="border border-purple-300 p-4 rounded-lg bg-purple-50 text-sm font-semibold text-purple-700 flex items-center gap-2">
+                <FontAwesomeIcon icon="fas fa-people-arrows" fixed-width aria-hidden="true" />
+                {{ trans("For Collection, do not ship") }}
+            </div>
+
+            <div v-else-if="data.delivery_note?.delivery_address">
                 <div class="border border-gray-300 p-4 rounded-lg bg-gray-50 space-y-2 text-sm text-gray-700">
                     <div v-if="data.delivery_note.customer_client">
                         <p><strong>{{ trans("Name") }}:</strong> {{ data.delivery_note.customer_client.contact_name || data.delivery_note.customer_client.name }}</p>
@@ -302,26 +327,31 @@ onMounted(() => {
                     <dd>{{ locale.number(data.delivery_note?.products.estimated_weight) || '-' }} kg</dd>
                 </dl>
 
-                <div v-if="['packed', 'dispatched', 'finalised'].includes(data.delivery_note?.state)">
+                <div v-if="statesWithParcels.includes(data.delivery_note?.state)">
                     <div class="flex justify-between items-center text-sm">
                         <div class="font-medium text-gray-700">
                             {{ trans("Parcels") }} ({{ data.delivery_note?.parcels?.length ?? 0 }})
                         </div>
-                        <div v-if="data.delivery_note?.state === 'packed'"
+                        <div v-if="statesWithEditableParcels.includes(data.delivery_note?.state)"
                             class="text-gray-500 cursor-pointer hover:text-gray-700"
-                            @click="() => (isModalParcels = true, parcelsCopy = [...data.delivery_note?.parcels || []])">
-                            {{ trans("Edit") }}
-                            <FontAwesomeIcon icon="fal fa-pencil" size="sm" />
+                            @click="onOpenModalParcels">
+                            {{ data.delivery_note?.parcels?.length ? trans("Edit") : trans("Add") }}
+                            <FontAwesomeIcon :icon="data.delivery_note?.parcels?.length ? 'fal fa-pencil' : 'fas fa-plus'" size="sm" />
                         </div>
                     </div>
                     <ul class="list-disc pl-4 mt-1 text-gray-600 text-xs space-y-0.5">
                         <li v-for="(parcel, idx) in data.delivery_note?.parcels" :key="idx">
-                            {{ parcel.weight }} kg ({{ parcel.dimensions?.join('×') }} cm)
+                            {{ parcel.weight }} kg
+                            <span v-if="isParcelMissingDimensions(parcel)" class="text-red-500">({{ trans("dimensions missing") }})</span>
+                            <span v-else>({{ parcel.dimensions?.join('×') }} cm)</span>
                         </li>
                     </ul>
+                    <div v-if="isParcelsMissingForPacking" class="mt-1 text-xs text-red-500">
+                        {{ trans("Add parcels with their dimensions before setting as packed") }}
+                    </div>
                 </div>
 
-                <div v-if="['packed', 'dispatched', 'finalised'].includes(data.delivery_note?.state) && props.deliveryNote">
+                <div v-if="!isCollection && ['packed', 'dispatched', 'finalised'].includes(data.delivery_note?.state) && props.deliveryNote">
                     <div :class="usePage()?.props?.errors?.shipment ? 'errorShake' : ''">
                         <ShipmentSection
                             :shipments="shipments?.shipment?.shipments ?? []"
@@ -408,7 +438,7 @@ onMounted(() => {
                 <!-- Repeat for more rows -->
                 <div class=" grid grid-cols-12 mt-2">
                     <div></div>
-                    <div @click="() => parcelsCopy.push({ weight: 1, dimensions: [5, 5, 5] })"
+                    <div @click="() => parcelsCopy.push(newParcel())"
                         class="hover:bg-gray-200 cursor-pointer border border-dashed border-gray-400 col-span-11 text-center py-1.5 text-xs rounded">
                         <FontAwesomeIcon icon="fas fa-plus" class="text-gray-500" fixed-width aria-hidden="true" />
                         {{ trans("Add another parcel") }}
@@ -416,6 +446,9 @@ onMounted(() => {
                 </div>
             </Fieldset>
 
+            <div v-if="parcelsCopy?.some(isParcelMissingDimensions)" class="mt-3 text-xs text-red-500">
+                {{ trans("Enter length, width and height of every parcel, they are needed to set as packed") }}
+            </div>
             <div class="flex justify-end mt-3">
                 <Button :style="'save'" :loading="isLoadingSubmitParcels" :label="'save'" xdisabled="
 							!formTrackingNumber.shipping_id || !(formTrackingNumber.shipping_id.api_shipper ? true : formTrackingNumber.tracking_number)

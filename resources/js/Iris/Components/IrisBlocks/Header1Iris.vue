@@ -83,7 +83,9 @@ const props = defineProps<{
 
 const layout = inject('layout', layoutStructure)
 const isLoggedIn = computed(() => layout?.iris?.is_logged_in || false)
+const isShopB2B = computed(() => layout?.retina?.type === 'b2b')
 const displayUsername = computed(() => layout?.user?.username?.split('@')[0] || '')
+const loginUrl = computed(() => urlLoginWithRedirect())
 const loadingRedirect = ref(false)
 const isLoadingLogout = ref(false)
 let restoreIrisSession: (() => void) | null = null
@@ -154,7 +156,7 @@ const onClickLogout = () => {
 			<!-- Right Menu -->
 			<div class="shrink-0 h-full flex items-center gap-6">
 				<!-- My Interest -->
-				<LinkIris v-if="isLoggedIn" href="/app/interest/favourites" :type="'internal'"
+				<LinkIris v-if="isLoggedIn && isShopB2B" href="/app/interest/favourites" :type="'internal'"
 					v-slot="{ isLoading } = { isLoading: false }">
 					<button
 						class="flex items-center gap-2 text-gray-600 hover:text-red-500 transition-colors disabled:opacity-60 disabled:cursor-wait"
@@ -169,7 +171,7 @@ const onClickLogout = () => {
 
 
 				<!-- Cart -->
-				<LinkIris v-if="isLoggedIn" href="/app/basket" :type="'internal'"
+				<LinkIris v-if="isLoggedIn && isShopB2B" href="/app/basket" :type="'internal'"
 					v-slot="{ isLoading } = { isLoading: false }">
 					<button
 						class="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors disabled:opacity-60 disabled:cursor-wait"
@@ -186,7 +188,7 @@ const onClickLogout = () => {
 				</LinkIris>
 
 				<!-- Divider -->
-				<div v-if="isLoggedIn" class="h-8 w-px bg-gray-200" />
+				<div v-if="isLoggedIn && isShopB2B" class="h-8 w-px bg-gray-200" />
 
 				<!-- Logged In -->
 				<template v-if="isLoggedIn">
@@ -271,10 +273,9 @@ const onClickLogout = () => {
 				<template v-else>
 					<div class="flex items-center gap-3">
 						<!-- Login -->
-						<LinkIris :href="urlLoginWithRedirect()" :type="'internal'"
+						<LinkIris :href="loginUrl" :type="'internal'"
 							v-slot="{ isLoading } = { isLoading: false }">
-							<Button @click="() => urlLoginWithRedirect()" :label="ctrans('Login')"
-								:icon="faSignInAlt"></Button>
+							<Button :label="ctrans('Login')" :icon="faSignInAlt" :loading="isLoading"></Button>
 						</LinkIris>
 
 						<!-- Register -->

@@ -443,9 +443,9 @@ const blockNotEditableVisible = [
 		'department-description-1' ,
 		'sub-department-description-1' ,
 		'family-1', */
-		"families-1",
+		/* "families-1",
 		"families-2",
-		"families-3",
+		"families-3", */
 		"products-1",
 		"products-2",
 		"product-1",
@@ -457,6 +457,8 @@ const blockNotEditableVisible = [
 const blockWithoutVisibilityOptions = [
 	"login",
 	"register",
+	"register-dashboard",
+	"register-dashboard-2",
 	"forgot-password",
 	"blog-categories",
 ]

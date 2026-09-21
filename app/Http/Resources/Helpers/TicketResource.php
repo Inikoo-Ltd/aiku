@@ -10,6 +10,8 @@ namespace App\Http\Resources\Helpers;
 
 use App\Enums\CRM\Livechat\ChatPriorityEnum;
 use App\Enums\Helpers\Ticket\TicketKindEnum;
+use App\Enums\Helpers\Ticket\TicketSourceChannelEnum;
+use App\Models\Chat\MetaChatSession;
 use App\Enums\Helpers\Ticket\TicketModuleEnum;
 use App\Enums\Helpers\Ticket\TicketQaStatusEnum;
 use App\Enums\Helpers\Ticket\TicketStatusEnum;
@@ -26,6 +28,7 @@ class TicketResource extends JsonResource
         return [
             'id'             => $this->id,
             'reference'      => $this->reference,
+            'type_icon'      => $this->type?->icon(),
             'type'           => $this->type->value,
             'kind'           => $this->kind?->value,
             'module'         => $this->module?->value,
@@ -36,6 +39,7 @@ class TicketResource extends JsonResource
             'qa_status_label' => $this->qa_status ? TicketQaStatusEnum::labels()[$this->qa_status->value] : null,
             'qa_status_icon' => $this->qa_status ? TicketQaStatusEnum::stateIcon()[$this->qa_status->value] : null,
             'qa_user'        => $this->qaUser?->contact_name ?: $this->qaUser?->username,
+            'qa_user_id'     => $this->qa_user_id,
             'qa_requested_at' => $this->qa_requested_at,
             'qa_checked_at'  => $this->qa_checked_at,
             'kind_label'     => $this->kind ? TicketKindEnum::labels()[$this->kind->value] : null,
@@ -51,6 +55,7 @@ class TicketResource extends JsonResource
             'search_snippet' => $this->search_snippet ? str_replace(['[[', ']]', '~~'], ['<mark>', '</mark>', ' … '], e($this->search_snippet)) : null,
             'description'    => $this->description,
             'reporter'       => $this->reporter?->contact_name ?: $this->reporter?->username,
+            'reporter_roles' => $request->routeIs('retina.*') ? [] : $this->reporterRoles(),
             'reporter_short' => $this->reporter_type === 'User' ? $this->reporter?->username : ($this->reporter?->contact_name ?: $this->reporter?->username),
             'reporter_avatar' => $this->reporter_type === 'User' ? $this->reporter?->imageSources(48, 48) : null,
             'is_from_slack'  => (bool) data_get($this->data, 'slack'),
@@ -71,6 +76,7 @@ class TicketResource extends JsonResource
             'shop'           => $this->shop?->name,
             'model_type'     => $this->model_type,
             'model_id'       => $this->model_id,
+            'source'         => $this->sourceData(),
             'created_at'     => $this->created_at,
             'updated_at'     => $this->updated_at,
             'resolved_at'    => $this->resolved_at,
@@ -87,5 +93,78 @@ class TicketResource extends JsonResource
             'attachments'    => $this->ticketAttachments(),
             'commits'        => collect(data_get($this->data, 'commits', []))->map(fn ($commit) => $commit + ['url' => config('services.github.repo') ? 'https://github.com/'.config('services.github.repo').'/commit/'.$commit['hash'] : null])->all(),
         ];
+    }
+
+    /** @return array{channel: string|null, channel_label: string|null, channel_icon: array|null, contact: string|null, reference: string|null, url: string|null}|null */
+    private function sourceData(): ?array
+    {
+        if (!$this->source_type || !$this->source_id) {
+            return null;
+        }
+
+        $session  = $this->source;
+        $channel  = $this->source_channel;
+        $customer = $session instanceof MetaChatSession ? $session->customer : $session?->webUser?->customer;
+
+        return [
+            'channel'       => $channel?->value,
+            'channel_label' => $channel ? TicketSourceChannelEnum::labels()[$channel->value] : null,
+            'channel_icon'  => $channel ? TicketSourceChannelEnum::stateIcon()[$channel->value] : null,
+            'contact'       => $customer?->name
+                ?: ($session instanceof MetaChatSession
+                    ? ($session->phone_number ?: $session->guest_identifier)
+                    : ($session?->webUser?->contact_name ?: $session?->guest_identifier)),
+            'reference'     => $customer?->reference,
+            'url'           => $this->sourceUrl($session),
+        ];
+    }
+
+    private function sourceUrl(mixed $session): ?string
+    {
+        $organisationSlug = $this->organisation?->slug ?? $session?->shop?->organisation?->slug;
+
+        if (!$organisationSlug || !$session?->ulid) {
+            return null;
+        }
+
+        if ($session instanceof MetaChatSession) {
+            return route('grp.org.chat.inbox', ['organisation' => $organisationSlug])
+                .'?channel=whatsapp&session='.$session->ulid;
+        }
+
+        return route('grp.org.chat.inbox.conversation', [
+            'organisation' => $organisationSlug,
+            'chatSession'  => $session->ulid,
+        ]);
+    }
+
+    /**
+     * @return array<int, array{key: string, label: string}>
+     */
+    private function reporterRoles(): array
+    {
+        $reporter = $this->reporter;
+
+        if (!$reporter instanceof \App\Models\SysAdmin\User) {
+            return $reporter ? [['key' => 'customer', 'label' => __('Customer')]] : [];
+        }
+
+        if ($reporter->is_bot) {
+            return [['key' => 'bot', 'label' => __('Bot')]];
+        }
+
+        if (\App\Models\Helpers\Ticket::canBeAssignedBy($reporter)) {
+            return [['key' => 'lead_engineer', 'label' => __('Engineer')]];
+        }
+
+        if (\App\Models\Helpers\Ticket::canBeManagedBy($reporter)) {
+            return [['key' => 'engineer', 'label' => __('Engineer')]];
+        }
+
+        if (\App\Models\Helpers\Ticket::canCheckQa($reporter)) {
+            return [['key' => 'qa', 'label' => __('QA')]];
+        }
+
+        return [['key' => 'staff', 'label' => __('Staff')]];
     }
 }

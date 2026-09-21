@@ -6,7 +6,7 @@
 
 <script setup lang="ts">
 import { Head } from '@inertiajs/vue3'
-import PageHeading from '@/Components/Headings/PageHeading.vue'
+import PageHeading from '@/Components/Headings/PageHeadingPublic.vue'
 import TableRentals from "@/Components/Tables/Grp/Org/Fulfilment/TableRentals.vue";
 import { capitalize } from "@/Composables/capitalize"
 import { computed, ref } from "vue"

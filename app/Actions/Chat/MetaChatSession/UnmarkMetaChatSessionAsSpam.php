@@ -7,6 +7,7 @@
 
 namespace App\Actions\Chat\MetaChatSession;
 
+use App\Actions\Chat\WithChatAgentAuthorisation;
 use App\Enums\CRM\Livechat\ChatActorTypeEnum;
 use App\Enums\CRM\Livechat\ChatEventTypeEnum;
 use App\Events\BroadcastMetaChatListEvent;
@@ -14,13 +15,13 @@ use App\Models\Chat\ChatAgent;
 use App\Models\Chat\MetaChatSession;
 use Exception;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class UnmarkMetaChatSessionAsSpam
 {
     use AsAction;
+    use WithChatAgentAuthorisation;
 
     /**
      * @throws \Throwable
@@ -56,7 +57,7 @@ class UnmarkMetaChatSessionAsSpam
     /** @noinspection PhpUnusedParameterInspection */
     public function asController(?string $organisation, MetaChatSession $metaChatSession): JsonResponse
     {
-        $agent = Auth::user()?->chatAgent;
+        $agent = $this->getAuthorisedChatAgent($metaChatSession);
 
         if (!$agent) {
             return response()->json([

@@ -894,3 +894,14 @@ test('products export links every image as a jpg', function () {
     expect($originalExport->mapRow($originalExport->dataQuery()->where('products.id', $product->id)->first()))
         ->toBe(['https://media.test/signature/'.$encodeSource('local://media/first.jpeg')]);
 });
+
+test('products export ends with the weight unit columns', function () {
+    $product = \App\Models\Catalogue\Product::where('shop_id', $this->shop->id)->where('is_main', true)->whereNull('exclusive_for_customer_id')->first();
+    $product->update(['marketing_weight' => 250, 'gross_weight' => null]);
+
+    $export = new \App\Exports\Catalogue\ProductsExport($this->shop, 'all');
+    $row    = $export->mapRow($export->dataQuery()->where('products.id', $product->id)->first());
+
+    expect(array_slice($export->headings(), -2))->toBe(['Unit weight (marketing) unit', 'Gross weight unit'])
+        ->and(array_slice($row, -2))->toBe(['g', null]);
+});

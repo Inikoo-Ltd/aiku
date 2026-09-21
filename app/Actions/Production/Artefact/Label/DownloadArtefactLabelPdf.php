@@ -12,20 +12,25 @@ use App\Actions\OrgAction;
 use App\Enums\Production\Artefact\ArtefactLabelStateEnum;
 use App\Models\Production\Artefact;
 use App\Models\Production\ArtefactLabel;
+use Illuminate\Support\Arr;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 use Lorisleiva\Actions\ActionRequest;
 use Symfony\Component\HttpFoundation\HeaderUtils;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\HttpException;
+use Throwable;
 
 class DownloadArtefactLabelPdf extends OrgAction
 {
     private const PDF_MIME_TYPE = 'application/pdf';
 
     /**
+     * @param  array<string, string>  $runTexts  keyed by field source, replacing what the design holds
+     *
      * @throws \Mpdf\MpdfException
      */
-    public function handle(Artefact $artefact, ArtefactLabel $artefactLabel): Response
+    public function handle(Artefact $artefact, ArtefactLabel $artefactLabel, array $runTexts = []): Response
     {
         abort_unless($artefactLabel->state === ArtefactLabelStateEnum::PUBLISHED, 404);
 
@@ -34,7 +39,7 @@ class DownloadArtefactLabelPdf extends OrgAction
         try {
             return PdfArtefactLabelSheet::make()->handle(
                 $artefact,
-                $artefactLabel->layout,
+                $this->applyRunTexts($artefactLabel->layout, $runTexts),
                 $artwork ? ['path' => $artwork->getPath(), 'mime_type' => $artwork->mime_type] : null
             );
         } catch (HttpException $exception) {
@@ -68,6 +73,70 @@ class DownloadArtefactLabelPdf extends OrgAction
     {
         $this->initialisationFromProduction($artefact->production, $request);
 
-        return $this->handle($artefact, $label);
+        return $this->handle($artefact, $label, $this->getRunTexts($request));
+    }
+
+    /**
+     * A run carries its own batch code and expiry date, and the board prints from the run, not from
+     * the design. Anything not sent keeps what the label was designed with.
+     *
+     * @return array<string, string>
+     */
+    private function getRunTexts(ActionRequest $request): array
+    {
+        return array_filter([
+            'batch_code'  => trim((string) $request->query('batch_code')),
+            'expiry_date' => $this->getRunExpiryDate($request->query('expiry_date')),
+        ], fn (string $text) => $text !== '');
+    }
+
+    /**
+     * Only a date reaches the sheet. Anything else, a timestamp that slipped through a caller or a
+     * hand edited link, is dropped rather than printed, because a label is read by people who
+     * cannot tell a formatting accident from a real date.
+     */
+    private function getRunExpiryDate(mixed $expiryDate): string
+    {
+        $expiryDate = trim((string) $expiryDate);
+
+        if ($expiryDate === '') {
+            return '';
+        }
+
+        foreach (['d/m/Y', 'Y-m-d'] as $format) {
+            try {
+                $date = Carbon::createFromFormat($format, $expiryDate);
+            } catch (Throwable) {
+                continue;
+            }
+
+            if ($date && $date->format($format) === $expiryDate) {
+                return $date->format('d/m/Y');
+            }
+        }
+
+        return '';
+    }
+
+    /**
+     * @param  array<string, mixed>  $layout
+     * @param  array<string, string>  $runTexts
+     * @return array<string, mixed>
+     */
+    private function applyRunTexts(array $layout, array $runTexts): array
+    {
+        if (!$runTexts) {
+            return $layout;
+        }
+
+        foreach (Arr::get($layout, 'fields', []) ?? [] as $index => $field) {
+            $source = Arr::get($field, 'source');
+
+            if (isset($runTexts[$source])) {
+                $layout['fields'][$index]['text'] = $runTexts[$source];
+            }
+        }
+
+        return $layout;
     }
 }

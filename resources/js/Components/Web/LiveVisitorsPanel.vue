@@ -256,6 +256,8 @@ useIntervalFn(() => (clock.value = Date.now()), 1000)
                 </table>
             </div>
         </div>
+
+        <slot name="footer" />
     </div>
 </template>
 

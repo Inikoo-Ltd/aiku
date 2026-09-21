@@ -71,10 +71,14 @@ class GetFinishedProductionJobOrders
                 $trips[$key]['job_order_ids'][$jobOrder->id]                = $jobOrder->id;
                 $trips[$key]['jobs'][$jobOrder->id]['reference']            = $jobOrder->reference;
                 $trips[$key]['jobs'][$jobOrder->id]['artisan']              = $jobOrder->employee?->contact_name;
-                $packedIn = max(1, (int) $item->artefact->orgStock?->packed_in);
+                $packedIn      = max(1, (int) $item->artefact->orgStock?->packed_in);
+                $stockLocations = $locationId ? [] : ($item->artefact->orgStock?->locations->sortBy('pivot.picking_priority')
+                    ->map(fn (Location $location) => ['code' => $location->code, 'quantity' => round((float) $location->pivot->quantity, 3)])->values()->all() ?? []);
                 $trips[$key]['jobs'][$jobOrder->id]['items'][$item->id]     = [
-                    'id'            => $item->id,
-                    'location_code' => $locationId ? null : $item->artefact->orgStock?->locations->sortBy('pivot.picking_priority')->first()?->code,
+                    'id'             => $item->id,
+                    'job_order_id'   => $jobOrder->id,
+                    'location_code'  => $stockLocations[0]['code'] ?? null,
+                    'locations'      => $stockLocations,
                     'code'          => $item->artefact->code,
                     'name'     => $item->artefact->name,
                     'quantity' => round(($trips[$key]['jobs'][$jobOrder->id]['items'][$item->id]['quantity'] ?? 0) + $quantity / $packedIn, 3),

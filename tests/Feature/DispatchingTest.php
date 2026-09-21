@@ -47,7 +47,6 @@ use App\Actions\Maintenance\Catalogue\RemoveIal01FromBillsOfMaterials;
 use App\Actions\Inventory\OrgStock\UpdateOrgStock;
 use Illuminate\Routing\Route;
 use App\Http\Resources\Dispatching\DeliveryNoteItemsStateHandlingResource;
-use App\Http\Resources\Dispatching\PickingSessionDeliveryNoteItemsGroupedResource;
 use App\Actions\Dispatching\Packing\StorePacking;
 use App\Actions\Dispatching\PickedBay\AttachDeliveryNoteToPickedBay;
 use App\Actions\Dispatching\PickedBay\Hydrators\PickedBayHydrateNumberDeliveryNotes;
@@ -98,6 +97,7 @@ use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\CRM\Customer\CustomerStateEnum;
 use App\Enums\CRM\Customer\CustomerStatusEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
+use App\Enums\Dispatching\DeliveryNote\DeliveryNoteTypeEnum;
 use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemStateEnum;
 use App\Enums\Dispatching\Picking\PickingTypeEnum;
 use App\Enums\Dispatching\PickingSession\PickingSessionStateEnum;
@@ -607,6 +607,7 @@ test('Set Delivery Note state to Packed', function (Picking $picking) {
 
     $deliveryNoteItem = $picking->deliveryNoteItem;
 
+    giveParcelDimensions($deliveryNote);
     $packedDeliveryNote = UpdateDeliveryNoteStatePacked::make()->action($deliveryNote, $this->user);
 
     $packedDeliveryNote->refresh();
@@ -836,32 +837,6 @@ test('start picking a picking session', function () {
     $pickingSession = StartPickPickingSession::run($pickingSession, []);
 
     expect($pickingSession->state)->toBe(PickingSessionStateEnum::HANDLING);
-});
-
-test('picking session flags delivery notes whose waiting items are ready to pack', function () {
-    $pickingSession = PickingSession::first();
-    $deliveryNote   = $pickingSession->deliveryNotes()->first();
-    $originalData   = $deliveryNote->only(['state', 'handling_blocked_at']);
-
-    $sessionRow = fn () => collect(
-        get(route('grp.org.warehouses.show.dispatching.picking_sessions.index', [$this->organisation->slug, $this->warehouse->slug]))
-            ->assertOk()
-            ->viewData('page')['props']['data']['data']
-    )->firstWhere('id', $pickingSession->id);
-
-    expect($sessionRow()['number_delivery_notes_waiting_ready'])->toBe(0);
-
-    $deliveryNote->update(['state' => DeliveryNoteStateEnum::PICKED, 'handling_blocked_at' => now()]);
-
-    $groupedRow = (object)array_merge(array_fill_keys([
-        'delivery_note_reference', 'delivery_note_slug', 'delivery_note_customer_notes', 'delivery_note_public_notes',
-        'delivery_note_internal_notes', 'delivery_note_shipping_notes', 'delivery_note_is_premium_dispatch', 'delivery_note_has_extra_packing',
-    ], null), ['delivery_note_id' => $deliveryNote->id]);
-
-    expect($sessionRow()['number_delivery_notes_waiting_ready'])->toBe(1)
-        ->and((new PickingSessionDeliveryNoteItemsGroupedResource($groupedRow))->resolve()['delivery_note_is_waiting_ready'])->toBeTrue();
-
-    $deliveryNote->update($originalData);
 });
 
 test('picking session calculate picks', function (PickingSession $pickingSession) {
@@ -1347,8 +1322,11 @@ test('json badges and picker packer lists', function () {
 
 test('json mini delivery note and valid for return', function () {
     $deliveryNote = makeDeliveryNote($this);
-    get(route('grp.json.mini_delivery_note', [$deliveryNote->id]))->assertOk();
+    getJson(route('grp.json.mini_delivery_note', [$deliveryNote->id]))->assertOk()->assertJsonPath('delivery_note.is_collection', false);
     get(route('grp.json.mini_delivery_note_shipments', [$deliveryNote->id]))->assertOk();
+
+    $deliveryNote->updateQuietly(['collection_address_id' => $deliveryNote->shop->address_id]);
+    getJson(route('grp.json.mini_delivery_note', [$deliveryNote->id]))->assertOk()->assertJsonPath('delivery_note.is_collection', true);
     get(route('grp.json.delivery_note_valid_for_return', [$this->warehouse->slug]))->assertOk();
 });
 
@@ -1372,6 +1350,11 @@ function freshSubmittedOrder($ctx)
     StoreTransaction::make()->action($order, $ctx->product->historicAsset, Transaction::factory()->definition());
 
     return SubmitOrder::make()->action($order);
+}
+
+function giveParcelDimensions(DeliveryNote $deliveryNote): void
+{
+    $deliveryNote->update(['parcels' => [['weight' => 1, 'dimensions' => [30, 20, 10]]]]);
 }
 
 function handlingDeliveryNoteWithPicking($ctx, int $pickedQuantity = 10): array
@@ -1433,6 +1416,7 @@ test('delivery note undo picked and undo packing', function () {
 
     $deliveryNote = \App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStateToPicked::run($deliveryNote);
     $deliveryNote = \App\Actions\Dispatching\DeliveryNote\UpdateState\StartPackingDeliveryNote::make()->action($deliveryNote, $this->user);
+    giveParcelDimensions($item->deliveryNote);
     StorePacking::make()->action($item->refresh(), $this->user, []);
     $deliveryNote = \App\Actions\Dispatching\DeliveryNote\UpdateState\UndoPackingDeliveryNote::make()->action($deliveryNote->refresh(), $this->user);
     expect($deliveryNote->state)->toBe(DeliveryNoteStateEnum::PICKED);
@@ -1486,6 +1470,7 @@ test('delivery note finalise and dispatch', function () {
     [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($this);
     $deliveryNote = \App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStateToPicked::run($deliveryNote);
     $deliveryNote = \App\Actions\Dispatching\DeliveryNote\UpdateState\StartPackingDeliveryNote::make()->action($deliveryNote, $this->user);
+    giveParcelDimensions($item->deliveryNote);
     StorePacking::make()->action($item->refresh(), $this->user, []);
     $deliveryNote = UpdateDeliveryNoteStatePacked::make()->action($deliveryNote->refresh(), $this->user);
 
@@ -1516,6 +1501,7 @@ function finalisedDeliveryNote($ctx): array
     [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($ctx);
     $deliveryNote = \App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStateToPicked::run($deliveryNote);
     $deliveryNote = \App\Actions\Dispatching\DeliveryNote\UpdateState\StartPackingDeliveryNote::make()->action($deliveryNote, $ctx->user);
+    giveParcelDimensions($item->deliveryNote);
     StorePacking::make()->action($item->refresh(), $ctx->user, []);
     $deliveryNote = UpdateDeliveryNoteStatePacked::make()->action($deliveryNote->refresh(), $ctx->user);
 
@@ -1636,6 +1622,7 @@ test('mixed order with service picks and invoices', function () {
     $deliveryNote = $deliveryNote->refresh();
     $deliveryNote = \App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStateToPicked::run($deliveryNote);
     $deliveryNote = \App\Actions\Dispatching\DeliveryNote\UpdateState\StartPackingDeliveryNote::make()->action($deliveryNote, $this->user);
+    giveParcelDimensions($deliveryNoteItem->deliveryNote);
     StorePacking::make()->action($deliveryNoteItem->refresh(), $this->user, []);
     $deliveryNote = UpdateDeliveryNoteStatePacked::make()->action($deliveryNote->refresh(), $this->user);
 
@@ -1707,6 +1694,7 @@ test('delivery note finalise and dispatch combined and pick as employee', functi
 
     $deliveryNote = \App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStateToPicked::run($deliveryNote->refresh());
     $deliveryNote = \App\Actions\Dispatching\DeliveryNote\UpdateState\StartPackingDeliveryNote::make()->action($deliveryNote, $this->user);
+    giveParcelDimensions($item->deliveryNote);
     StorePacking::make()->action($item->refresh(), $this->user, []);
     $deliveryNote = UpdateDeliveryNoteStatePacked::make()->action($deliveryNote->refresh(), $this->user);
 
@@ -2055,6 +2043,140 @@ test('picking waiting warehouse and crm flow', function () {
     expect($sentBack->has_waiting_crm)->toBeFalse();
 });
 
+test('picking the last of a line in a picking session sets the line and its note as picked', function () {
+    [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($this, 6);
+    $deliveryNote->update(['state' => DeliveryNoteStateEnum::UNASSIGNED]);
+
+    $pickingSession = StorePickingSession::make()->handle($this->warehouse, [
+        'delivery_notes' => [$deliveryNote->id],
+        'user_id'        => $this->user->id,
+    ]);
+    $pickingSession = StartPickPickingSession::run($pickingSession, []);
+
+    // The shared order can bring lines of its own; this is about the one line being picked.
+    $deliveryNote->deliveryNoteItems()->where('id', '!=', $item->id)->update(['state' => DeliveryNoteItemStateEnum::CANCELLED]);
+
+    StorePicking::make()->action($item->refresh(), $this->user, [
+        'picker_user_id'        => $this->user->id,
+        'location_org_stock_id' => $item->orgStock->locationOrgStocks()->first()->id,
+        'quantity'              => 3,
+    ]);
+
+    // Still one to go: nothing moves yet.
+    expect($item->refresh()->state)->toBe(DeliveryNoteItemStateEnum::HANDLING)
+        ->and($deliveryNote->refresh()->state)->toBe(DeliveryNoteStateEnum::HANDLING);
+
+    StorePicking::make()->action($item->refresh(), $this->user, [
+        'picker_user_id'        => $this->user->id,
+        'location_org_stock_id' => $item->orgStock->locationOrgStocks()->first()->id,
+        'quantity'              => 1,
+    ]);
+
+    expect($item->refresh()->state)->toBe(DeliveryNoteItemStateEnum::PICKED)
+        ->and($deliveryNote->refresh()->state)->toBe(DeliveryNoteStateEnum::PICKED)
+        ->and($pickingSession->refresh()->state)->toBe(PickingSessionStateEnum::PICKING_FINISHED)
+        ->and($pickingSession->is_waiting_ready)->toBeFalse();
+
+    // Undoing that pick puts the line, the note and the session back to picking.
+    \App\Actions\Dispatching\Picking\DeletePicking::make()->action($item->refresh()->pickings()->latest('id')->first(), $this->user);
+
+    expect($item->refresh()->state)->toBe(DeliveryNoteItemStateEnum::HANDLING)
+        ->and($deliveryNote->refresh()->state)->toBe(DeliveryNoteStateEnum::HANDLING)
+        ->and($pickingSession->refresh()->state)->toBe(PickingSessionStateEnum::HANDLING);
+});
+
+test('a wholesale note packed by scan in a picking session asks for parcel dimensions before it is packed', function () {
+    [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($this, 6);
+    $deliveryNote->update(['state' => DeliveryNoteStateEnum::UNASSIGNED, 'parcels' => null]);
+
+    $pickingSession = StorePickingSession::make()->handle($this->warehouse, [
+        'delivery_notes' => [$deliveryNote->id],
+        'user_id'        => $this->user->id,
+    ]);
+    $pickingSession = StartPickPickingSession::run($pickingSession, []);
+
+    // The shared order can bring lines of its own; this is about the one line being packed.
+    $deliveryNote->deliveryNoteItems()->where('id', '!=', $item->id)->update(['state' => DeliveryNoteItemStateEnum::CANCELLED]);
+
+    StorePicking::make()->action($item->refresh(), $this->user, [
+        'picker_user_id'        => $this->user->id,
+        'location_org_stock_id' => $item->orgStock->locationOrgStocks()->first()->id,
+        'quantity'              => 4,
+    ]);
+
+    expect($deliveryNote->refresh()->state)->toBe(DeliveryNoteStateEnum::PICKED)
+        ->and($pickingSession->refresh()->state)->toBe(PickingSessionStateEnum::PICKING_FINISHED);
+
+    // Every line is in the box, but without parcel dimensions the note cannot be packed, and the scan says so.
+    // The scan answers with the table row, which is named after the current route.
+    request()->setRouteResolver(fn () => (new \Illuminate\Routing\Route('GET', 'picking-session', []))->name('grp.org.warehouses.show.dispatching.picking_sessions.show'));
+    $outcome = \App\Actions\Dispatching\PickingSession\PackPickingSessionItemByScan::make()->handle(
+        $pickingSession,
+        $this->user,
+        ['barcode' => $item->orgStock->code]
+    );
+
+    expect($outcome['status'])->toBe('packed')
+        ->and($outcome['message'])->toContain('Add the parcel dimensions of '.$deliveryNote->reference)
+        ->and($deliveryNote->refresh()->state)->not->toBe(DeliveryNoteStateEnum::PACKED);
+
+    // With the dimensions entered, 'Set as packed' goes through and the session finishes packing.
+    giveParcelDimensions($deliveryNote);
+    UpdateDeliveryNoteStatePacked::make()->action($deliveryNote->refresh(), $this->user);
+
+    expect($deliveryNote->refresh()->state)->toBe(DeliveryNoteStateEnum::PACKED)
+        ->and($pickingSession->refresh()->state)->toBe(PickingSessionStateEnum::PACKING_FINISHED);
+});
+
+test('picking session waits on a waiting note and is flagged once the wait is picked', function () {
+    $settings = $this->organisation->settings;
+    data_set($settings, 'orders.allow_waiting', true);
+    $this->organisation->update(['settings' => $settings]);
+
+    // 6 of the 10 go in the tote, so there is something left for the warehouse to wait on.
+    [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($this, 6);
+    $deliveryNote->update(['state' => DeliveryNoteStateEnum::UNASSIGNED]);
+
+    $pickingSession = StorePickingSession::make()->handle($this->warehouse, [
+        'delivery_notes' => [$deliveryNote->id],
+        'user_id'        => $this->user->id,
+    ]);
+    $pickingSession = StartPickPickingSession::run($pickingSession, []);
+
+    // The shared order can bring lines of its own; this is about the one line that waits.
+    $deliveryNote->deliveryNoteItems()->where('id', '!=', $item->id)->update(['state' => DeliveryNoteItemStateEnum::CANCELLED]);
+
+    // Nobody sets a note as picked inside a session: parking the rest as waiting blocks it on its own.
+    \App\Actions\Dispatching\Picking\SetAsWaitingWarehouse::make()->action($item->refresh(), $this->user, ['quantity' => 4]);
+
+    expect($deliveryNote->refresh()->state)->toBe(DeliveryNoteStateEnum::HANDLING_BLOCKED)
+        ->and($deliveryNote->handling_blocked_at)->not->toBeNull()
+        ->and($pickingSession->refresh()->state)->toBe(PickingSessionStateEnum::HANDLING_BLOCKED)
+        ->and($pickingSession->is_waiting_ready)->toBeFalse()
+        ->and($deliveryNote->orders->first()->refresh()->state)->toBe(\App\Enums\Ordering\Order\OrderStateEnum::HANDLING_BLOCKED);
+
+    // The stock turns up and the wait is picked: the note is released and the session goes to packing, flagged.
+    // PickAllItem stores the pick as the request user.
+    request()->setUserResolver(fn () => $this->user);
+    $item->refresh()->update(['locked_at' => null]);
+    \App\Actions\Dispatching\Picking\PickAllItemFromWaitingWarehouse::run(
+        $item->refresh(),
+        $this->user,
+        ['location_org_stock_id' => $item->orgStock->locationOrgStocks()->first()->id]
+    );
+
+    expect($deliveryNote->refresh()->state)->toBe(DeliveryNoteStateEnum::PICKED)
+        ->and($item->refresh()->state)->toBe(DeliveryNoteItemStateEnum::PICKED)
+        ->and($pickingSession->refresh()->state)->toBe(PickingSessionStateEnum::PICKING_FINISHED)
+        ->and($pickingSession->is_waiting_ready)->toBeTrue();
+
+    // The next action in the session clears the flag.
+    CalculatePickingSessionPicks::run($pickingSession->refresh());
+
+    expect($pickingSession->refresh()->is_waiting_ready)->toBeFalse()
+        ->and($pickingSession->state)->toBe(PickingSessionStateEnum::PICKING_FINISHED);
+});
+
 test('delete picking on blocked line partly waiting with crm does not abort', function () {
     $settings = $this->organisation->settings;
     data_set($settings, 'orders.allow_waiting', true);
@@ -2363,6 +2485,7 @@ test('UI show delivery note richer states and tabs', function () {
     [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($this);
     $deliveryNote = \App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStateToPicked::run($deliveryNote);
     $deliveryNote = \App\Actions\Dispatching\DeliveryNote\UpdateState\StartPackingDeliveryNote::make()->action($deliveryNote, $this->user);
+    giveParcelDimensions($item->deliveryNote);
     StorePacking::make()->action($item->refresh(), $this->user, []);
     $deliveryNote = UpdateDeliveryNoteStatePacked::make()->action($deliveryNote->refresh(), $this->user);
     $shipper = StoreShipper::make()->action($this->organisation, ['code' => 'SD'.Str::random(4), 'name' => 'Sd', 'trade_as' => 'sd']);
@@ -3254,6 +3377,28 @@ test('waiting quantities never exceed what is still unpicked', function () {
         ->toThrow(\Symfony\Component\HttpKernel\Exception\HttpException::class);
 });
 
+test('lines waiting for customer service carry the product order line net and tax inclusive amounts', function () {
+    [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($this);
+
+    $item->update(['quantity_picked' => 0, 'quantity_waiting_crm' => 1]);
+    $deliveryNote->update(['number_items_waiting_crm' => 1]);
+    $transaction = $item->transaction;
+    $transaction->update(['net_amount' => 10]);
+
+    $rows = get(route('grp.org.shops.show.ordering.backlog.waiting_items', [$this->organisation->slug, $deliveryNote->shop->slug]))
+        ->assertOk()
+        ->viewData('page')['props']['waiting_crm_items']['data'];
+
+    $line = collect($rows)->pluck('items')->flatten(1)->firstWhere('id', $item->id);
+
+    $rate = (float) ($transaction->taxCategory?->rate ?? 0);
+
+    expect((float) $line['net_amount'])->toBe(10.0)
+        ->and((float) $line['net_amount_with_tax'])->toBe(round(10 * (1 + $rate), 2))
+        ->and($line['product_code'])->toBe($transaction->historicAsset->code)
+        ->and($line['number_skos_in_product'])->toBeGreaterThanOrEqual(1);
+});
+
 test('a redefined pack does not change what an already sold box means', function () {
     [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($this);
 
@@ -3736,6 +3881,7 @@ test('a short picked line still has to be packed before the note is done', funct
     $deliveryNote = \App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStateToPicked::run($deliveryNote);
     $deliveryNote = \App\Actions\Dispatching\DeliveryNote\UpdateState\StartPackingDeliveryNote::make()->action($deliveryNote, $this->user);
 
+    giveParcelDimensions($item->deliveryNote);
     \App\Actions\Dispatching\DeliveryNoteItem\UpdateDeliveryNoteItemPacking::make()->action($item->refresh(), $this->user);
 
     expect($deliveryNote->fresh()->state)->not->toBe(DeliveryNoteStateEnum::PACKED)
@@ -3747,6 +3893,7 @@ test('repair stuck finalised delivery note dispatches it backdated without touch
 
     $deliveryNote = \App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStateToPicked::run($deliveryNote->refresh());
     $deliveryNote = \App\Actions\Dispatching\DeliveryNote\UpdateState\StartPackingDeliveryNote::make()->action($deliveryNote, $this->user);
+    giveParcelDimensions($item->deliveryNote);
     StorePacking::make()->action($item->refresh(), $this->user, []);
     $deliveryNote = UpdateDeliveryNoteStatePacked::make()->action($deliveryNote->refresh(), $this->user);
 
@@ -3813,6 +3960,7 @@ test('repair dispatches an order left stuck in finalised, backdated and silent',
 
     $deliveryNote = \App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStateToPicked::run($deliveryNote->refresh());
     $deliveryNote = \App\Actions\Dispatching\DeliveryNote\UpdateState\StartPackingDeliveryNote::make()->action($deliveryNote, $this->user);
+    giveParcelDimensions($item->deliveryNote);
     StorePacking::make()->action($item->refresh(), $this->user, []);
     $deliveryNote = UpdateDeliveryNoteStatePacked::make()->action($deliveryNote->refresh(), $this->user);
 
@@ -3841,6 +3989,7 @@ test('repair cancel leaves the old pickings and their stock alone', function () 
 
     $deliveryNote = \App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStateToPicked::run($deliveryNote->refresh());
     $deliveryNote = \App\Actions\Dispatching\DeliveryNote\UpdateState\StartPackingDeliveryNote::make()->action($deliveryNote, $this->user);
+    giveParcelDimensions($item->deliveryNote);
     StorePacking::make()->action($item->refresh(), $this->user, []);
     $deliveryNote = UpdateDeliveryNoteStatePacked::make()->action($deliveryNote->refresh(), $this->user);
 
@@ -3858,7 +4007,8 @@ test('repair cancel leaves the old pickings and their stock alone', function () 
 });
 
 test('a dispatched marketplace delivery note can be picked up for a return', function () {
-    [$deliveryNote] = handlingDeliveryNoteWithPicking($this);
+    [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($this);
+    $item->update(['state' => DeliveryNoteItemStateEnum::DISPATCHED, 'quantity_dispatched' => $item->quantity_picked]);
 
     $deliveryNote->update(['state' => DeliveryNoteStateEnum::DISPATCHED, 'is_returned' => false]);
     $this->shop->update(['type' => \App\Enums\Catalogue\Shop\ShopTypeEnum::EXTERNAL, 'is_aiku' => true]);
@@ -3872,7 +4022,8 @@ test('a dispatched marketplace delivery note can be picked up for a return', fun
 });
 
 test('a return delivery note lookup finds the note from what the box carries', function () {
-    [$deliveryNote] = handlingDeliveryNoteWithPicking($this);
+    [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($this);
+    $item->update(['state' => DeliveryNoteItemStateEnum::DISPATCHED, 'quantity_dispatched' => $item->quantity_picked]);
 
     $order = $deliveryNote->orders()->first();
     $order->update([
@@ -3918,7 +4069,8 @@ test('a return delivery note lookup finds the note from what the box carries', f
 });
 
 test('the return delivery note dropdown label shows what the operator can check against the box', function () {
-    [$deliveryNote] = handlingDeliveryNoteWithPicking($this);
+    [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($this);
+    $item->update(['state' => DeliveryNoteItemStateEnum::DISPATCHED, 'quantity_dispatched' => $item->quantity_picked]);
 
     $deliveryNote->update([
         'state'           => DeliveryNoteStateEnum::DISPATCHED,
@@ -3936,6 +4088,7 @@ test('the return delivery note dropdown label shows what the operator can check 
     $response->assertOk();
 
     $row   = collect($response->json("data"))->firstWhere('id', $deliveryNote->id);
+    expect($row)->not->toBeNull();
     $label = $row['label'];
 
     expect($label)->toContain($deliveryNote->reference)
@@ -3950,7 +4103,8 @@ test('the return delivery note dropdown label shows what the operator can check 
 });
 
 test('the return delivery note lookup leads with the search index hits and still falls back to sql', function () {
-    [$deliveryNote] = handlingDeliveryNoteWithPicking($this);
+    [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($this);
+    $item->update(['state' => DeliveryNoteItemStateEnum::DISPATCHED, 'quantity_dispatched' => $item->quantity_picked]);
     $deliveryNote->update(['state' => DeliveryNoteStateEnum::DISPATCHED, 'is_returned' => false]);
     $this->shop->update(['is_aiku' => true]);
 
@@ -3977,7 +4131,8 @@ test('the return delivery note lookup leads with the search index hits and still
 });
 
 test('a box with no findable delivery note is logged to identify and later identified into a return', function () {
-    [$deliveryNote] = handlingDeliveryNoteWithPicking($this);
+    [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($this);
+    $item->update(['state' => DeliveryNoteItemStateEnum::DISPATCHED, 'quantity_dispatched' => $item->quantity_picked]);
     $deliveryNote->update(['state' => DeliveryNoteStateEnum::DISPATCHED, 'is_returned' => false]);
     $this->shop->update(['is_aiku' => true]);
 
@@ -4007,7 +4162,7 @@ test('a box with no findable delivery note is logged to identify and later ident
 
     patch(route('grp.models.delivery_note.return.process', [$deliveryNote->id]), [
         'unidentified_return_id' => $unidentifiedReturn->id,
-    ])->assertRedirect();
+    ])->assertSessionHasNoErrors()->assertRedirect();
 
     $unidentifiedReturn->refresh();
     expect($unidentifiedReturn->identified_at)->not->toBeNull()
@@ -4222,4 +4377,160 @@ test('returned delivery notes are listed first whatever the sort asked for (HELP
             ->and($plainPosition)->not->toBeFalse()
             ->and($returnedPosition)->toBeLessThan($plainPosition);
     }
+});
+
+test('non dropshipping delivery note needs parcel dimensions before it can be packed', function () {
+    [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($this);
+    expect($this->shop->type)->not->toBe(\App\Enums\Catalogue\Shop\ShopTypeEnum::DROPSHIPPING);
+    $deliveryNote = \App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStateToPicked::run($deliveryNote);
+    $deliveryNote = \App\Actions\Dispatching\DeliveryNote\UpdateState\StartPackingDeliveryNote::make()->action($deliveryNote, $this->user);
+    $deliveryNote->update(['parcels' => [['weight' => 1, 'dimensions' => [null, null, null]]]]);
+
+    patch(route('grp.models.delivery_note.state.packed', $deliveryNote->id))
+        ->assertSessionHasErrors('parcels');
+
+    StorePacking::make()->action($item->refresh(), $this->user, []);
+    expect($deliveryNote->refresh()->state)->toBe(DeliveryNoteStateEnum::PACKING);
+
+    $deliveryNote->update(['parcels' => [['weight' => 1, 'dimensions' => [30, 20, 10]]]]);
+    patch(route('grp.models.delivery_note.state.packed', $deliveryNote->id))
+        ->assertSessionHasNoErrors();
+    expect($deliveryNote->refresh()->state)->toBe(DeliveryNoteStateEnum::PACKED);
+});
+
+test('orders still in process in Aurora are locked against staff routes until Aurora dispatches or cancels them', function () {
+    [$deliveryNote] = handlingDeliveryNoteWithPicking($this);
+    $order          = $deliveryNote->orders()->first();
+    $untouched      = freshSubmittedOrder($this);
+
+    $order->update(['source_id' => '4:990001']);
+    $deliveryNote->update(['source_id' => '4:990001']);
+
+    expect(\App\Actions\Maintenance\Ordering\LockAromaOrdersInProcessInAurora::run($this->shop, false))->toBe([1, 1])
+        ->and($order->refresh()->handled_in_aurora)->toBeFalse();
+
+    expect(\App\Actions\Maintenance\Ordering\LockAromaOrdersInProcessInAurora::run($this->shop, true))->toBe([1, 1])
+        ->and($order->refresh()->handled_in_aurora)->toBeTrue()
+        ->and($deliveryNote->refresh()->handled_in_aurora)->toBeTrue()
+        ->and($untouched->refresh()->handled_in_aurora)->toBeFalse();
+
+    patch(route('grp.models.delivery_note.state.cancel', $deliveryNote->id))->assertSessionHasErrors('message');
+    patch(route('grp.models.order.state.cancelled', $order->id))->assertSessionHasErrors('message');
+    post(route('grp.models.warehouse.picking_session.store', $this->warehouse->id), ['delivery_notes' => [$deliveryNote->id]])
+        ->assertSessionHasErrors('message');
+    expect($deliveryNote->refresh()->state)->toBe(DeliveryNoteStateEnum::HANDLING)
+        ->and($order->refresh()->state)->not->toBe(OrderStateEnum::CANCELLED);
+
+    patch(route('grp.models.order.state.cancelled', $untouched->id))->assertSessionDoesntHaveErrors('message');
+
+    $deliveryNote->update(['state' => DeliveryNoteStateEnum::DISPATCHED]);
+    $order->update(['state' => OrderStateEnum::DISPATCHED]);
+    expect($deliveryNote->refresh()->isLockedInAurora())->toBeFalse()
+        ->and($order->refresh()->isLockedInAurora())->toBeFalse();
+    patch(route('grp.models.order.rollback_dispatch', $order->id))->assertSessionDoesntHaveErrors('message');
+});
+
+test('replacement delivery notes are listed first like premium dispatch (HELP-3184)', function () {
+    $this->shop->update(['is_aiku' => true]);
+
+    $replacement = SendOrderToWarehouse::make()->action(freshSubmittedOrder($this), ['warehouse_id' => $this->warehouse->id]);
+    $plain       = SendOrderToWarehouse::make()->action(freshSubmittedOrder($this), ['warehouse_id' => $this->warehouse->id]);
+
+    $replacement->update(['type' => DeliveryNoteTypeEnum::REPLACEMENT, 'is_premium_dispatch' => false, 'is_returned' => false, 'date' => now(), 'reference' => 'ZZ-REPLACEMENT']);
+    $plain->update(['type' => DeliveryNoteTypeEnum::ORDER, 'is_premium_dispatch' => false, 'is_returned' => false, 'date' => now()->subWeek(), 'reference' => 'AA-PLAIN']);
+
+    foreach ([[], ['sort' => 'reference'], ['sort' => 'date'], ['sort' => 'customer_name']] as $query) {
+        $response = get(route('grp.org.warehouses.show.dispatching.unassigned.delivery-notes', [
+            $this->organisation->slug,
+            $this->warehouse->slug,
+            ...$query,
+        ]));
+        $response->assertOk();
+
+        $ids = collect($response->viewData('page')['props']['data']['data'])->pluck('id');
+
+        expect($ids->search($replacement->id))->not->toBeFalse()
+            ->and($ids->search($replacement->id))->toBeLessThan($ids->search($plain->id));
+    }
+});
+
+test('a second label cannot be created for a delivery note while one is in progress (HELP-1766)', function () {
+    [$deliveryNote] = handlingDeliveryNoteWithPicking($this);
+    $shipper = StoreShipper::make()->action($this->organisation, ['code' => 'SH'.Str::random(4), 'name' => 'Sh', 'trade_as' => 'sh']);
+
+    $lock = \Illuminate\Support\Facades\Cache::lock('store_shipment_DeliveryNote_'.$deliveryNote->id, 120);
+    $lock->get();
+
+    expect(fn () => StoreShipment::make()->action($deliveryNote, $shipper, ['tracking' => 'TRK'.Str::random(4)]))
+        ->toThrow(\Illuminate\Validation\ValidationException::class);
+
+    $lock->release();
+
+    StoreShipment::make()->action($deliveryNote, $shipper, ['tracking' => 'TRK'.Str::random(4)]);
+    expect($deliveryNote->refresh()->shipments()->count())->toBe(1);
+});
+
+test('order transactions only show the batch code column once a picking carries one', function () {
+    [$deliveryNote, $deliveryNoteItem] = handlingDeliveryNoteWithPicking($this);
+    $order = $deliveryNote->orders->first();
+
+    $columnKeys = function () use ($order) {
+        request()->setRouteResolver(fn () => new Route('GET', 'test', []));
+        $table = new InertiaTable(request());
+        \App\Actions\Ordering\Transaction\UI\IndexTransactions::make()->tableStructure($order)($table);
+
+        return (new \ReflectionProperty(InertiaTable::class, 'columns'))->getValue($table)->pluck('key');
+    };
+
+    expect($columnKeys())->not->toContain('batch_codes');
+
+    $batchCode = StoreBatchCode::make()->action($this->warehouse, [
+        'code'         => 'BC-'.Str::random(6),
+        'org_stock_id' => $deliveryNoteItem->org_stock_id,
+        'expiry_date'  => now()->addYear(),
+    ]);
+    $deliveryNoteItem->pickings()->update(['batch_code_id' => $batchCode->id]);
+
+    expect($columnKeys())->toContain('batch_codes');
+});
+
+test('finishing a return only marks the still unhandled quantity as not returned (HELP-3194)', function () {
+    [$deliveryNote, $deliveryNoteItem] = handlingDeliveryNoteWithPicking($this);
+    $deliveryNote->update(['state' => DeliveryNoteStateEnum::DISPATCHED]);
+    $deliveryNoteItem->update(['quantity_dispatched' => 2]);
+
+    $returnDeliveryNote = \App\Actions\GoodsIn\ReturnDeliveryNote\ProcessReturnDeliveryNote::make()->handle($deliveryNote, []);
+    $returnItem         = $returnDeliveryNote->returnDeliveryNoteItem()->first();
+    $returnItem->update(['total_expected_qty' => 2]);
+
+    \App\Actions\GoodsIn\ReturnDeliveryNoteItem\UpsertReturnDeliveryNoteItemNotReturned::make()->action($returnItem, ['quantity' => 1]);
+    $returnDeliveryNote->update(['state' => \App\Enums\GoodsIn\ReturnDeliveryNote\ReturnDeliveryNoteStateEnum::RETURNING]);
+
+    request()->setUserResolver(fn () => $this->user);
+    \App\Actions\GoodsIn\ReturnDeliveryNote\SetReturnedReturnDeliveryNote::make()->handle($returnDeliveryNote->refresh());
+
+    expect((float) $returnItem->refresh()->total_item_not_returned)->toBe(2.0);
+});
+
+test('a second return only covers what was not returned yet and waits for the first to finish (HELP-3194)', function () {
+    [$deliveryNote, $deliveryNoteItem] = handlingDeliveryNoteWithPicking($this);
+    $deliveryNote->update(['state' => DeliveryNoteStateEnum::DISPATCHED]);
+    $deliveryNoteItem->update(['quantity_dispatched' => 3, 'quantity_returned' => 0]);
+    $processReturn = fn () => \App\Actions\GoodsIn\ReturnDeliveryNote\ProcessReturnDeliveryNote::make()->handle($deliveryNote->refresh(), []);
+
+    $firstReturn = $processReturn();
+    expect($firstReturn->reference)->toBe($deliveryNote->reference.'-ret')
+        ->and($processReturn)->toThrow(\Illuminate\Validation\ValidationException::class);
+
+    $firstReturn->update(['state' => \App\Enums\GoodsIn\ReturnDeliveryNote\ReturnDeliveryNoteStateEnum::RETURNED]);
+    $deliveryNoteItem->update(['quantity_returned' => 2]);
+
+    $secondReturn = $processReturn();
+    expect($secondReturn->reference)->toBe($deliveryNote->reference.'-ret2')
+        ->and((float) $secondReturn->returnDeliveryNoteItem()->first()->total_expected_qty)->toBe(1.0);
+
+    $secondReturn->update(['state' => \App\Enums\GoodsIn\ReturnDeliveryNote\ReturnDeliveryNoteStateEnum::RETURNED]);
+    $deliveryNoteItem->update(['quantity_returned' => 3]);
+
+    expect($processReturn)->toThrow(\Illuminate\Validation\ValidationException::class);
 });

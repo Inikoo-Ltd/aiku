@@ -55,7 +55,7 @@ const closePopover = (close: any): void => {
                 <div class="grid grid-cols-6 gap-4 items-start" @mouseover="(e) => hoverPopover(e, open)"
                     @mouseleave="closePopover(close)">
                     <!-- Retail -->
-                    <div class="flex flex-col text-left col-span-4">
+                    <div v-if="fieldValue.product?.rrp_per_unit > 0" class="flex flex-col text-left col-span-4">
                         <span class="text-sm font-medium text-gray-600 xmb-1 w-fit" v-tooltip="trans('Recommended Retail Price')">{{ trans('Retail Price') }}</span>
                         <div class="flex flex-wrap items-baseline gap-1">
                             <span class="text-base font-semibold">
@@ -94,7 +94,7 @@ const closePopover = (close: any): void => {
             <div class="p-5 bg-gray-50 rounded-md shadow-sm border border-gray-200 text-gray-800 space-y-2">
 
                 <!-- Retail Price -->
-                <div class="flex justify-between items-center text-sm">
+                <div v-if="fieldValue.product?.rrp > 0" class="flex justify-between items-center text-sm">
                     <span class="text-gray-700">{{ trans('Recommended Retail Price') }}</span>
                     <div class="flex items-center gap-4 text-right">
                         <span class="font-semibold text-gray-900 min-w-[90px] text-end">

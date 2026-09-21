@@ -38,7 +38,7 @@ const submit = () => {
         <p v-if="ratingComment" class="mt-2 text-sm whitespace-pre-wrap">{{ ratingComment }}</p>
     </div>
 
-    <form v-else-if="canRate" class="rounded-lg border border-indigo-200 bg-indigo-50 p-4 space-y-3" @submit.prevent="submit">
+    <form v-else-if="canRate" class="rounded-lg border border-[--app-accent-muted] bg-[--app-accent-soft] p-4 space-y-3" @submit.prevent="submit">
         <p class="text-sm font-medium">{{ trans("This ticket is resolved. How did we do?") }}</p>
         <div class="flex items-center gap-1 text-2xl" @mouseleave="hovered = 0">
             <button

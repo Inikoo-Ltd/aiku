@@ -398,3 +398,21 @@ test('iris error pages carry the ziggy route list so the search bar can build ur
         ->and($page['props']['ziggy']['routes'])->toHaveKey('iris.json.search.catalogue')
         ->and($page['props']['ziggy']['location'])->toBe('http://'.$this->website->domain.'/no-such-page');
 });
+
+test('iris streams a product ingredients label pdf only for its own shop products with ingredients', function () {
+    [, $product] = createProduct($this->shop);
+    $url = 'http://'.$this->website->domain.'/catalogue/product/'.$product->slug.'/ingredients-label.pdf';
+
+    $product->updateQuietly(['marketing_ingredients' => null]);
+    $this->get($url)->assertNotFound();
+
+    $product->updateQuietly(['marketing_ingredients' => 'Aqua, Glycerin', 'marketing_weight' => 100]);
+    $response = $this->get($url);
+
+    $response->assertOk()->assertHeader('Content-Type', 'application/pdf');
+    expect($response->headers->get('Content-Disposition'))->toContain($product->code.'_unit_ingredients.pdf');
+
+    $otherShop = createOwnShop('ingredients-label-other-shop')[2];
+    $product->updateQuietly(['shop_id' => $otherShop->id]);
+    $this->get($url)->assertNotFound();
+});

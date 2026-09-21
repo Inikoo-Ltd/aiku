@@ -149,4 +149,14 @@ class Portfolio extends Model implements Auditable
         return $this->belongsTo(CustomerSalesChannel::class);
     }
 
+
+    public function isShopifyVariantAdopted(): bool
+    {
+        return (bool) data_get($this->settings, 'shopify_variant_adopted', false);
+    }
+
+    public function markShopifyVariantAdopted(bool $adopted): void
+    {
+        $this->update(['settings' => [...($this->settings ?? []), 'shopify_variant_adopted' => $adopted]]);
+    }
 }

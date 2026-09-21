@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Head, router } from "@inertiajs/vue3"
-import PageHeading from "@/Components/Headings/PageHeading.vue"
+import PageHeading from "@/Components/Headings/PageHeadingPublic.vue"
 import { capitalize } from "@/Composables/capitalize"
 import { computed, reactive, ref, watch, onMounted, onBeforeUnmount, inject } from "vue"
 import { PageHeadingTypes } from "@/types/PageHeading"
@@ -258,7 +258,7 @@ const onClickReconnect = async (customerSalesChannel: CustomerSalesChannel) => {
 		if (response.status !== 200) {
 			throw new Error("Something went wrong. Try again later.")
 		} else {
-			window.open(response.data, "_blank")
+			window.location.href = response.data
 		}
 	} catch (error: any) {
 		notify({

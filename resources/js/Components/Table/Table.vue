@@ -518,8 +518,6 @@ function getColumnOrderForQuery() {
     return isEqual(current, queryBuilderProps.value.defaultColumnOrder ?? current) ? [] : current;
 }
 
-const hasHiddenColumns = computed(() => (queryBuilderData.value.columns ?? []).some((column: any) => column.hidden));
-
 function changeColumnStatus(key: string, hidden: boolean) {
     const column = (queryBuilderData.value.columns ?? []).find((column: any) => column.key === key);
 
@@ -1250,7 +1248,6 @@ const getSeverity = (type?: string) => {
                         <div v-if="queryBuilderProps.columnChooser && queryBuilderProps.hasToggleableColumns" class="w-fit">
                             <TableColumns
                                 :columns="queryBuilderData.columns"
-                                :has-hidden-columns="hasHiddenColumns"
                                 :on-change="changeColumnStatus"
                                 :on-move="moveColumn" />
                         </div>

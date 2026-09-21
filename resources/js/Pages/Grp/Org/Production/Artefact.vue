@@ -14,6 +14,7 @@ import { Tabs as TSTabs } from '@/types/Tabs'
 import TableArtefactRecipe from "@/Components/Tables/Grp/Org/Production/TableArtefactRecipe.vue"
 import TableArtefactCompliance from "@/Components/Tables/Grp/Org/Production/TableArtefactCompliance.vue"
 import ArtefactShowcase from "@/Components/Showcases/Grp/ArtefactShowcase.vue"
+import ArtefactLabels from "@/Components/Production/Artefact/ArtefactLabels.vue"
 import ArtisanAssignments from "@/Components/Production/ArtisanAssignments.vue"
 
 const props = defineProps<{
@@ -22,6 +23,7 @@ const props = defineProps<{
     tabs: TSTabs
     showcase?: {}
     manufacture_tasks?:{}
+    labels?: {}
     compliance?: {}
     history?: {}
     artisans: {}
@@ -37,6 +39,7 @@ const component = computed(() => {
     const components: Component = {
         showcase: ArtefactShowcase,
         manufacture_tasks: TableArtefactRecipe,
+        labels: ArtefactLabels,
         compliance: TableArtefactCompliance,
         history: TableHistories,
     }

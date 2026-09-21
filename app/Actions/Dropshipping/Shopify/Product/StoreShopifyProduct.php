@@ -8,13 +8,18 @@
 
 namespace App\Actions\Dropshipping\Shopify\Product;
 
+use App\Actions\Dropshipping\Portfolio\Logs\StorePlatformPortfolioLog;
+use App\Actions\Dropshipping\Portfolio\Logs\UpdatePlatformPortfolioLog;
 use App\Actions\Dropshipping\Portfolio\UpdatePortfolio;
 use App\Actions\Dropshipping\WithPortfolioErrorResponse;
 use App\Actions\Helpers\Images\GetImgProxyUrl;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\HasBucketAttachment;
 use App\Actions\Traits\WithActionUpdate;
+use App\Enums\Ordering\PlatformLogs\PlatformPortfolioLogsStatusEnum;
+use App\Enums\Ordering\PlatformLogs\PlatformPortfolioLogsTypeEnum;
 use App\Models\Catalogue\Product;
+use App\Models\Dropshipping\PlatformPortfolioLogs;
 use App\Models\Dropshipping\Portfolio;
 use App\Models\Dropshipping\ShopifyUser;
 use App\Models\Helpers\Media;
@@ -33,21 +38,59 @@ class StoreShopifyProduct extends RetinaAction
 
     public function handle(Portfolio $portfolio, array $productData = []): array
     {
+        if ($portfolio->isShopifyVariantAdopted()) {
+            return [false, 'This portfolio is linked to a variant the merchant already had, a product is never created for it'];
+        }
+
         /** @var ShopifyUser $shopifyUser */
         $shopifyUser = $portfolio->customerSalesChannel->user;
         $website     = $portfolio->customerSalesChannel?->shop?->website;
 
         $client = $shopifyUser->getShopifyClient(true); // Get GraphQL client
 
-        if (!$client) {
-            Log::error("Failed to initialize Shopify GraphQL client");
+        $logs = StorePlatformPortfolioLog::run($portfolio, [
+            'type' => PlatformPortfolioLogsTypeEnum::UPLOAD
+        ]);
 
-            return [false, 'Failed to initialize Shopify GraphQL client'];
+        if (!$client) {
+            $errorMessage = 'Failed to initialize Shopify GraphQL client';
+            Log::error($errorMessage);
+
+            UpdatePlatformPortfolioLog::dispatch($logs, [
+                'status'   => PlatformPortfolioLogsStatusEnum::FAIL,
+                'response' => $errorMessage
+            ]);
+
+            return [false, $errorMessage];
         }
 
         UpdatePortfolio::run($portfolio, [
             'errors_response' => null
         ]);
+
+        $productExistsInShopify = CheckIfProductExistsInShopify::run($shopifyUser, $portfolio->platform_product_id);
+
+        if ($productExistsInShopify['error']) {
+            return $this->refuseUnverifiedUpload($portfolio, $logs);
+        }
+
+        if ($productExistsInShopify['exist']) {
+            $variantAtLocation = CheckIfProductHasVariantAtLocation::run($shopifyUser, $portfolio->platform_product_id, $portfolio->platform_product_variant_id, true);
+
+            if ($variantAtLocation['error']) {
+                return $this->refuseUnverifiedUpload($portfolio, $logs);
+            }
+
+            if ($variantAtLocation['exist']) {
+                UpdatePlatformPortfolioLog::dispatch($logs, [
+                    'status' => PlatformPortfolioLogsStatusEnum::OK
+                ]);
+
+                return [true, $this->formatProductResponse(['id' => $portfolio->platform_product_id])];
+            }
+
+            return $this->storeVariant($portfolio, $logs, ['id' => $portfolio->platform_product_id]);
+        }
 
         /** @var Product $product */
         $product = $portfolio->item;
@@ -161,6 +204,11 @@ class StoreShopifyProduct extends RetinaAction
                 ]);
                 Log::error("Product creation failed: ".$errorMessage);
 
+                UpdatePlatformPortfolioLog::dispatch($logs, [
+                    'status'   => PlatformPortfolioLogsStatusEnum::FAIL,
+                    'response' => $errorMessage
+                ]);
+
                 return [false, $errorMessage];
             }
 
@@ -175,6 +223,11 @@ class StoreShopifyProduct extends RetinaAction
                 ]);
                 Log::error("Product creation failed: ".$errorMessage);
 
+                UpdatePlatformPortfolioLog::dispatch($logs, [
+                    'status'   => PlatformPortfolioLogsStatusEnum::FAIL,
+                    'response' => $errors
+                ]);
+
                 return [false, $errorMessage];
             }
 
@@ -187,6 +240,11 @@ class StoreShopifyProduct extends RetinaAction
                 ]);
                 Log::error("Product creation failed: No product data in response");
 
+                UpdatePlatformPortfolioLog::dispatch($logs, [
+                    'status'   => PlatformPortfolioLogsStatusEnum::FAIL,
+                    'response' => 'No product data in response'
+                ]);
+
                 return [false, 'No product data in response'];
             }
 
@@ -195,24 +253,57 @@ class StoreShopifyProduct extends RetinaAction
                 'platform_product_id' => Arr::get($createdProduct, 'id'),
             ]);
 
-            [$variantStored, $variantResult] = StoreShopifyProductVariant::run($portfolio);
-
-            if (!$variantStored) {
-                return [false, $variantResult];
-            }
-
-            // Format the response to match the expected structure
-            return [true, $this->formatProductResponse($createdProduct)];
+            return $this->storeVariant($portfolio, $logs, $createdProduct);
         } catch (Exception $e) {
             Sentry::captureException($e);
             UpdatePortfolio::run($portfolio, [
                 'errors_response' => $this->portfolioErrorResponse($e->getMessage())
             ]);
 
+            UpdatePlatformPortfolioLog::dispatch($logs, [
+                'status'   => PlatformPortfolioLogsStatusEnum::FAIL,
+                'response' => $e->getMessage()
+            ]);
+
             return [false, $e->getMessage()];
         }
     }
 
+
+    private function refuseUnverifiedUpload(Portfolio $portfolio, PlatformPortfolioLogs $logs): array
+    {
+        $errorMessage = 'Could not check whether this product is already in Shopify, nothing was created to avoid a duplicate';
+        UpdatePortfolio::run($portfolio, [
+            'errors_response' => $this->portfolioErrorResponse($errorMessage)
+        ]);
+
+        UpdatePlatformPortfolioLog::dispatch($logs, [
+            'status'   => PlatformPortfolioLogsStatusEnum::FAIL,
+            'response' => $errorMessage
+        ]);
+
+        return [false, $errorMessage];
+    }
+
+    private function storeVariant(Portfolio $portfolio, PlatformPortfolioLogs $logs, array $shopifyProduct): array
+    {
+        [$variantStored, $variantResult] = StoreShopifyProductVariant::run($portfolio);
+
+        if (!$variantStored) {
+            UpdatePlatformPortfolioLog::dispatch($logs, [
+                'status'   => PlatformPortfolioLogsStatusEnum::FAIL,
+                'response' => $variantResult
+            ]);
+
+            return [false, $variantResult];
+        }
+
+        UpdatePlatformPortfolioLog::dispatch($logs, [
+            'status' => PlatformPortfolioLogsStatusEnum::OK
+        ]);
+
+        return [true, $this->formatProductResponse($shopifyProduct)];
+    }
 
     private function formatProductResponse(array $product): array
     {
@@ -231,12 +322,12 @@ class StoreShopifyProduct extends RetinaAction
         }
 
         return [
-            'id'           => $product['id'],
-            'title'        => $product['title'],
-            'handle'       => $product['handle'],
-            'body_html'    => $product['descriptionHtml'],
-            'vendor'       => $product['vendor'],
-            'product_type' => $product['productType'],
+            'id'           => Arr::get($product, 'id'),
+            'title'        => Arr::get($product, 'title'),
+            'handle'       => Arr::get($product, 'handle'),
+            'body_html'    => Arr::get($product, 'descriptionHtml'),
+            'vendor'       => Arr::get($product, 'vendor'),
+            'product_type' => Arr::get($product, 'productType'),
             'variants'     => $variants,
             'images'       => $images
         ];

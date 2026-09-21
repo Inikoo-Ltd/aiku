@@ -78,8 +78,10 @@ use App\Actions\Ordering\Purge\StorePurge;
 use App\Actions\Ordering\Purge\UpdatePurge;
 use App\Actions\Ordering\PurgedOrder\UpdatePurgedOrder;
 use App\Actions\Ordering\Transaction\DeleteTransaction;
+use App\Actions\Ordering\Transaction\UpdateTransactionChargeAmount;
 use App\Actions\Ordering\Order\GenerateInvoiceFromOrder;
 use App\Actions\Iris\Basket\StoreEcomBasketTransaction;
+use App\Actions\Maintenance\Ordering\RemoveDiscontinuedProductsFromBaskets;
 use App\Actions\Ordering\Transaction\StoreTransaction;
 use App\Actions\Ordering\Transaction\SyncBasketLinesWithProductStock;
 use Illuminate\Support\Str;
@@ -437,6 +439,40 @@ test('store transaction for existing product adds to quantity instead of duplica
         ->and($order->transactions()->where('model_type', 'Product')->count())->toBe(1);
 })->depends('create transaction');
 
+test('proforma price breakdown shows gross, discount and net only when requested', function (Transaction $transaction) {
+    $transaction->update(['gross_amount' => 100, 'net_amount' => 80]);
+    $order = $transaction->order->refresh();
+
+    $renderProforma = fn (bool $priceBreakdown) => view('invoices.templates.pdf.proforma-invoice', [
+        'shop'                 => $order->shop,
+        'order'                => $order,
+        'transactions'         => $order->transactions()->where('model_type', 'Product')->get(),
+        'totalItemsNet'        => $order->total_amount,
+        'totalShipping'        => 0,
+        'totalNet'             => '0.00',
+        'amountToDeduct'       => 0,
+        'pro_mode'             => false,
+        'country_of_origin'    => false,
+        'rrp'                  => false,
+        'parts'                => false,
+        'commodity_codes'      => false,
+        'weight'               => false,
+        'barcode'              => false,
+        'hide_payment_status'  => false,
+        'cpnp'                 => false,
+        'group_by_tariff_code' => false,
+        'price_breakdown'      => $priceBreakdown,
+    ])->render();
+
+    $symbol = $order->currency->symbol;
+
+    expect($renderProforma(true))->toContain(__('Gross'))
+        ->toContain($symbol.'100.00')
+        ->toContain('-'.$symbol.'20.00')
+        ->toContain($symbol.'80.00')
+        ->and($renderProforma(false))->not->toContain(__('Gross'));
+})->depends('create transaction');
+
 test('create transaction from adjustment', function (Order $order) {
     $adjustment = StoreAdjustment::make()->action(
         $order->shop,
@@ -541,6 +577,13 @@ test('small order charge configured through the UI applies to an order', functio
 
     expect($chargeTransactions()->count())->toBe(1)
         ->and((int) $chargeTransactions()->first()->net_amount)->toBe(255);
+
+    UpdateTransactionChargeAmount::make()->handle($chargeTransactions()->first(), ['amount' => 0]);
+    $order->goods_amount = 1000;
+    CalculateOrderHangingCharges::run($order);
+
+    expect((float) $chargeTransactions()->first()->net_amount)->toBe(0.0)
+        ->and((int) $chargeTransactions()->first()->gross_amount)->toBe(255);
 
     $order->goods_amount = 3000;
     CalculateOrderHangingCharges::run($order);
@@ -3990,7 +4033,6 @@ test('retina basket lines resolve their webpage and image without a query per li
     foreach ($rows as $row) {
         $webpage = $webpages[$row['asset_code']];
         expect($row['webpage_url'])->toBe($webpage->canonical_url)
-            ->and($row['luigi_identity'])->toBe("$webpage->group_id:$webpage->organisation_id:$webpage->shop_id:$webpage->website_id:$webpage->id")
             ->and($row['image'])->toBeNull();
     }
 });
@@ -4129,4 +4171,40 @@ test('an exclusive product can be added only by its own customer, and only while
     $line = StoreEcomBasketTransaction::make()->handle($owner->fresh(), $exclusive->fresh(), ['quantity' => 4]);
     SyncBasketLinesWithProductStock::run($exclusive->fresh());
     expect((float) $line->fresh()->quantity_ordered)->toBe(4.0);
+});
+
+test('discontinued products are removed from baskets only when run live, submitted orders keep them', function () {
+    [, $bulk]     = createProduct($this->shop);
+    $discontinued = StoreProduct::make()->action($bulk->family, array_merge(
+        Product::factory()->definition(),
+        ['trade_units' => [['id' => $bulk->tradeUnits->first()->id, 'quantity' => 1]], 'price' => 2]
+    ));
+
+    $addLine = function (Order $order, Product $product) {
+        $data             = Transaction::factory()->definition();
+        $data['order_id'] = $order->id;
+
+        return StoreTransaction::make()->action($order, $product->currentHistoricProduct, $data);
+    };
+
+    $basket = StoreOrder::make()->action($this->customer, Order::factory()->definition());
+    $basket->update(['shipping_engine' => \App\Enums\Ordering\Order\OrderShippingEngineEnum::MANUAL]);
+    $discontinuedLine = $addLine($basket, $discontinued);
+    $keptLine         = $addLine($basket, $this->product);
+
+    $submitted = StoreOrder::make()->action($this->customer, Order::factory()->definition());
+    $submitted->update(['shipping_engine' => \App\Enums\Ordering\Order\OrderShippingEngineEnum::MANUAL]);
+    $submittedLine = $addLine($submitted, $discontinued);
+    $submitted->update(['state' => OrderStateEnum::SUBMITTED]);
+
+    $discontinued->update(['state' => ProductStateEnum::DISCONTINUED]);
+
+    expect(RemoveDiscontinuedProductsFromBaskets::run($this->shop, false))->toBe(1)
+        ->and(Transaction::find($discontinuedLine->id))->not->toBeNull();
+
+    expect(RemoveDiscontinuedProductsFromBaskets::run($this->shop, true))->toBe(1)
+        ->and(Transaction::find($discontinuedLine->id))->toBeNull()
+        ->and(Transaction::find($keptLine->id))->not->toBeNull()
+        ->and(Transaction::find($submittedLine->id))->not->toBeNull()
+        ->and(RemoveDiscontinuedProductsFromBaskets::run($this->shop, false))->toBe(0);
 });

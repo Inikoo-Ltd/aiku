@@ -34,6 +34,10 @@ class StoreShopifyProductVariant extends RetinaAction
      */
     public function handle(Portfolio $portfolio, $level = 1): array
     {
+        if ($portfolio->isShopifyVariantAdopted()) {
+            return [false, 'This portfolio is linked to a variant the merchant already had, another variant is never created for it'];
+        }
+
         $customerSalesChannel = $portfolio->customerSalesChannel;
 
         /** @var ShopifyUser $shopifyUser */

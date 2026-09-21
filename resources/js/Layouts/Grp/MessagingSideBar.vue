@@ -9,7 +9,7 @@ import { computed, defineAsyncComponent, inject, nextTick, onMounted, onUnmounte
 import axios from "axios"
 import { trans } from "laravel-vue-i18n"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faChevronLeft, faChevronDoubleLeft, faChevronDoubleRight, faSearch, faUser, faComments, faStar as faStarRegular, faPlus, faTimes, faComment, faGopuram, faHomeAlt, faHeart, faExpandAlt, faPencil } from "@fal"
+import { faChevronLeft, faChevronDoubleLeft, faChevronDoubleRight, faSearch, faUser, faComments, faStar as faStarRegular, faPlus, faTimes, faComment, faGopuram, faHomeAlt, faHeart, faExpandAlt, faPencil, faLifeRing, faShoppingCart, faCube } from "@fal"
 import { faStar as faStarSolid } from "@fas"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { router } from "@inertiajs/vue3"
@@ -23,7 +23,7 @@ import { useStaffMessaging, type StaffCoworker } from "@/Stores/staff-messaging"
 import { fetchUnreadCount, totalUnread as crmUnread } from "@/Composables/useNotificationSound"
 import { useTruncate } from "@/Composables/useTruncate"
 
-library.add(faChevronLeft, faChevronDoubleLeft, faChevronDoubleRight, faSearch, faUser, faComments, faStarRegular, faStarSolid, faPlus, faTimes, faComment, faGopuram, faHomeAlt, faHeart, faExpandAlt, faPencil)
+library.add(faChevronLeft, faChevronDoubleLeft, faChevronDoubleRight, faSearch, faUser, faComments, faStarRegular, faStarSolid, faPlus, faTimes, faComment, faGopuram, faHomeAlt, faHeart, faExpandAlt, faPencil, faLifeRing, faShoppingCart, faCube)
 
 const openFullMessaging = () => router.visit(route("grp.chat.staff.index"))
 
@@ -37,8 +37,57 @@ const persistSidebarState = () => {
     }
 }
 
+const mobileQuery = globalThis.window?.matchMedia?.("(max-width: 767px)")
+const isMobile = ref(mobileQuery?.matches ?? false)
+const onMobileQueryChange = (event: MediaQueryListEvent) => {
+    isMobile.value = event.matches
+    if (event.matches) layout.messagingSidebar.show = false
+}
+
+const sumBadgeCounts = (rows: Record<string, { count: number }> | null | undefined, keys: string[]) =>
+    Object.entries(rows ?? {}).filter(([key]) => keys.includes(key)).reduce((total, [, row]) => total + row.count, 0)
+
+const stripBadgeGroups = computed(() => [
+    {
+        key: "tickets",
+        icon: "fal fa-life-ring",
+        label: trans("Tickets"),
+        counts: [
+            { key: "queue", label: trans("Tickets assigned to me"), class: "text-lime-300", value: layout.ticket_badges?.queue ? sumBadgeCounts(layout.ticket_badges.queue, ["assigned_to_me", "collaborating"]) : 0 },
+            { key: "mine", label: trans("My tickets"), class: "text-lime-100", value: sumBadgeCounts(layout.ticket_badges?.mine, ["to_do", "in_progress", "waiting"]) },
+        ],
+    },
+    {
+        key: "orders",
+        icon: "fal fa-shopping-cart",
+        label: trans("Orders"),
+        counts: [
+            { key: "dispatching", label: trans("Orders waiting in the warehouse"), class: "text-amber-300", value: layout?.dispatching_waiting_count ?? 0 },
+            { key: "crm_waiting", label: trans("Orders waiting in CRM"), class: "text-purple-300", value: layout?.crm_waiting_count ?? 0 },
+            { key: "crm_return", label: trans("Orders with returns"), class: "text-blue-300", value: layout?.crm_return_count ?? 0 },
+            { key: "faire", label: trans("Faire orders not imported"), class: "text-sky-300", value: layout?.faire_skipped_count ?? 0 },
+        ],
+    },
+    {
+        key: "catalogue",
+        icon: "fal fa-cube",
+        label: trans("Catalogue"),
+        counts: [
+            { key: "master", label: trans("Prices not matching master"), class: "text-rose-300", value: layout?.master_updated_count ?? 0 },
+            { key: "review", label: trans("Master text changed"), class: "text-emerald-300", value: layout?.products_need_review_count ?? 0 },
+        ],
+    },
+].map((group) => ({ ...group, counts: group.counts.filter((count) => count.value > 0) })).filter((group) => group.counts.length))
+
+const isMicro = computed(() => (isMobile.value ? !layout.messagingSidebar.show : layout.messagingSidebar.micro))
+
 const handleToggle = () => {
     const bar = layout.messagingSidebar
+    if (isMobile.value) {
+        bar.show = !bar.show
+        if (bar.show) bar.micro = false
+        return
+    }
     if (bar.micro) {
         bar.micro = false
     } else {
@@ -308,45 +357,56 @@ onMounted(() => {
         layout.messagingSidebar.show = JSON.parse(localStorage.getItem("messagingSideBar") ?? "false")
     }
     layout.messagingSidebar.micro = !layout.messagingSidebar.show && localStorage.getItem("messagingSideBarMicro") === "true"
+    if (isMobile.value) layout.messagingSidebar.show = false
+    mobileQuery?.addEventListener("change", onMobileQueryChange)
     fetchCoworkers("")
     store.fetchConversations()
     refreshInterval = setInterval(() => {
         fetchCoworkers(search.value)
         // FooterMessage owns this count but is unmounted in micro view; keep the strip's badge fresh
-        if (layout.messagingSidebar.micro && layout?.user?.is_agent) fetchUnreadCount()
+        if (isMicro.value && layout?.user?.is_agent) fetchUnreadCount()
     }, 60000)
-    if (layout.messagingSidebar.micro && layout?.user?.is_agent) fetchUnreadCount()
+    if (isMicro.value && layout?.user?.is_agent) fetchUnreadCount()
     tickInterval = setInterval(() => { nowTick.value++ }, 60000)
 })
 
 onUnmounted(() => {
     if (refreshInterval) clearInterval(refreshInterval)
     if (tickInterval) clearInterval(tickInterval)
+    mobileQuery?.removeEventListener("change", onMobileQueryChange)
     if (searchTimeout) clearTimeout(searchTimeout)
 })
 </script>
 
 <template>
+    <div v-if="isMobile && layout.messagingSidebar.show" class="fixed inset-0 z-[21] bg-gray-900/30 md:hidden" aria-hidden="true" @click="handleToggle" />
     <div
-        class="hidden md:flex md:flex-col fixed inset-y-0 right-0 h-full bg-[var(--chat-bg)] border-l border-[var(--chat-line)] z-[22] transition-all duration-300 ease-in-out"
+        class="flex flex-col fixed inset-y-0 right-0 h-full bg-[var(--chat-bg)] border-l border-[var(--chat-line)] z-[22] transition-all duration-300 ease-in-out"
         :class="[
+            layout.messagingSidebar.show ? 'w-56' : 'w-4',
             layout.messagingSidebar.show ? 'md:w-56' : (layout.messagingSidebar.micro ? 'md:w-4' : 'md:w-12'),
         ]"
         id="messagingSidebar">
         <!-- Toggle: collapse-expand MessagingSideBar -->
         <div
             @click="handleToggle"
-            class="absolute z-10 left-0 top-2/4 -translate-y-full lg:-translate-x-1/2 w-11 lg:w-5 aspect-square border border-[var(--chat-muted)] rounded-full bg-[var(--chat-line)] flex justify-center items-center cursor-pointer"
+            class="absolute z-10 left-0 top-2/4 -translate-y-full -translate-x-2/3 lg:-translate-x-1/2 w-7 lg:w-5 aspect-square border border-[var(--chat-muted)] rounded-full bg-[var(--chat-line)] flex justify-center items-center cursor-pointer"
             :title="layout.messagingSidebar.show ? 'Collapse the bar' : 'Expand the bar'">
             <FontAwesomeIcon
                 icon="far fa-chevron-left"
-                class="h-4 lg:h-[10px] leading-none transition-all duration-300 ease-in-out text-[var(--chat-text)]"
+                class="h-3 lg:h-[10px] leading-none transition-all duration-300 ease-in-out text-[var(--chat-text)]"
                 aria-hidden="true"
                 :class="layout.messagingSidebar.show ? 'rotate-180' : ''" />
         </div>
 
         <!-- MICRO: super-thin strip with the counts; click to grow back to the rail -->
-        <div v-if="layout.messagingSidebar.micro" class="flex-1 flex flex-col items-center gap-y-2 pt-14 cursor-pointer text-xxs tabular-nums leading-none" v-tooltip="trans('Show messaging bar')" @click="handleToggle">
+        <div v-if="isMicro" class="flex-1 flex flex-col items-center gap-y-2 pt-14 cursor-pointer text-xxs tabular-nums leading-none" v-tooltip="trans('Show messaging bar')" @click="handleToggle">
+            <template v-for="group in stripBadgeGroups" :key="'micro-badges-' + group.key">
+                <FontAwesomeIcon :icon="group.icon" class="text-[8px] text-[var(--chat-muted)]" fixed-width :title="group.label" aria-hidden="true" />
+                <span v-for="count in group.counts" :key="count.key" :class="count.class" :title="count.label">{{ count.value > 99 ? 99 : count.value }}</span>
+            </template>
+            <div v-if="stripBadgeGroups.length" class="w-3 border-t border-[var(--chat-line)]" />
+
             <span class="text-[var(--chat-green)]">{{ allOnlineCount > 99 ? 99 : allOnlineCount }}</span>
             <span class="text-[var(--chat-cyan)]">{{ orgOnlineCount > 99 ? 99 : orgOnlineCount }}</span>
             <span class="text-[var(--chat-accent)]">{{ teamOnlineCount > 99 ? 99 : teamOnlineCount }}</span>

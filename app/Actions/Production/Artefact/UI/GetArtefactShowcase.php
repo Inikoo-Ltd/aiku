@@ -8,8 +8,8 @@
 
 namespace App\Actions\Production\Artefact\UI;
 
+use App\Actions\Production\JobOrderItem\GetOpenJobOrderItemsOffBatch;
 use App\Actions\Production\Artefact\GetArtefactComplianceStatus;
-use App\Http\Resources\Production\ArtefactLabelResource;
 use App\Models\Inventory\OrgStock;
 use App\Models\Production\Artefact;
 use Lorisleiva\Actions\Concerns\AsObject;
@@ -33,40 +33,16 @@ class GetArtefactShowcase
             'compliance_label'  => $compliance['label'],
             'recommended_batch_size' => $artefact->recommended_batch_size,
             'batch_pack'        => $this->getBatchPack($artefact),
+            'jobs_off_batch'    => GetOpenJobOrderItemsOffBatch::run([$artefact->id])->map(fn (array $item) => array_merge($item, [
+                'route' => [
+                    'name'       => 'grp.org.productions.show.operations.job-orders.show',
+                    'parameters' => [$artefact->organisation->slug, $artefact->production->slug, $item['job_order_slug']],
+                ],
+            ]))->all(),
             'shelf_life_days'   => $artefact->shelf_life_days,
             'update_route'      => [
                 'name'       => 'grp.models.production.artefacts.update',
                 'parameters' => [$artefact->production_id, $artefact->id]
-            ],
-            'label_sheet'       => [
-                'route' => [
-                    'name'       => 'grp.models.artefact.label_sheet',
-                    'parameters' => ['artefact' => $artefact->id]
-                ],
-                'store_route' => [
-                    'name'       => 'grp.models.artefact.labels.store',
-                    'parameters' => ['artefact' => $artefact->id]
-                ],
-                'update_route' => [
-                    'name'       => 'grp.models.artefact.labels.update',
-                    'parameters' => ['artefact' => $artefact->id]
-                ],
-                'delete_route' => [
-                    'name'       => 'grp.models.artefact.labels.delete',
-                    'parameters' => ['artefact' => $artefact->id]
-                ],
-                'publish_route' => [
-                    'name'       => 'grp.models.artefact.labels.publish',
-                    'parameters' => ['artefact' => $artefact->id]
-                ],
-                'unpublish_route' => [
-                    'name'       => 'grp.models.artefact.labels.unpublish',
-                    'parameters' => ['artefact' => $artefact->id]
-                ],
-                'batch_code'  => $this->getPlaceholderBatchCode($artefact),
-                'expiry_date' => $this->getPlaceholderExpiryDate(),
-                'barcode'     => $this->getBarcode($artefact),
-                'labels'      => ArtefactLabelResource::collection($artefact->labels()->with('artwork')->get())->resolve(),
             ],
             'trade_unit' => $artefact->tradeUnit ? [
                 'id'   => $artefact->tradeUnit->id,
@@ -153,36 +129,5 @@ class GetArtefactShowcase
                 ? max($packedIn, (int) round($artefact->recommended_batch_size / $packedIn) * $packedIn)
                 : null,
         ];
-    }
-
-    /**
-     * The outer CODE 128 printed on the packing, falling back to the unit EAN13 for the org stocks
-     * that only carry that one.
-     */
-    private function getBarcode(Artefact $artefact): string
-    {
-        $orgStock = $artefact->orgStock;
-
-        if (!$orgStock) {
-            return '';
-        }
-
-        return $orgStock->barcode ?: ($orgStock->unit_barcode ?: '');
-    }
-
-    /**
-     * Artefacts have no batch code column yet, this is the stand in until the real one is stored.
-     */
-    private function getPlaceholderBatchCode(Artefact $artefact): string
-    {
-        return strtoupper($artefact->code).'-'.now()->format('ymd');
-    }
-
-    /**
-     * Artefacts have no expiry date column yet, this is the stand in until the real one is stored.
-     */
-    private function getPlaceholderExpiryDate(): string
-    {
-        return now()->addYear()->format('d/m/Y');
     }
 }

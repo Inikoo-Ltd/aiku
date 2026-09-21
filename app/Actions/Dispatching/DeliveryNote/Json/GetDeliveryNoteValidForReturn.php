@@ -5,6 +5,7 @@ namespace App\Actions\Dispatching\DeliveryNote\Json;
 use App\Actions\OrgAction;
 use App\Actions\Search\WithTypesenseApi;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
+use App\Enums\GoodsIn\ReturnDeliveryNote\ReturnDeliveryNoteStateEnum;
 use App\Http\Resources\Dispatching\DeliveryNote\DeliveryNotesForSelectResource;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\Inventory\Warehouse;
@@ -112,7 +113,17 @@ class GetDeliveryNoteValidForReturn extends OrgAction
 
         $query->where('delivery_notes.state', DeliveryNoteStateEnum::DISPATCHED);
         $query->where('delivery_notes.organisation_id', $warehouse->organisation_id);
-        $query->where('delivery_notes.is_returned', false);
+        $query->whereNotExists(function ($openReturns) {
+            $openReturns->selectRaw('1')->from('return_delivery_notes')
+                ->whereColumn('return_delivery_notes.delivery_note_id', 'delivery_notes.id')
+                ->whereIn('return_delivery_notes.state', [ReturnDeliveryNoteStateEnum::RECEIVED, ReturnDeliveryNoteStateEnum::RETURNING])
+                ->whereNull('return_delivery_notes.deleted_at');
+        });
+        $query->whereExists(function ($returnableItems) {
+            $returnableItems->selectRaw('1')->from('delivery_note_items')
+                ->whereColumn('delivery_note_items.delivery_note_id', 'delivery_notes.id')
+                ->whereRaw('delivery_note_items.quantity_dispatched > coalesce(delivery_note_items.quantity_returned, 0)');
+        });
 
         $query->where('shops.is_aiku', true);
 

@@ -207,6 +207,12 @@ const variantNavigation = ref<{ prevEl: HTMLElement | null; nextEl: HTMLElement 
     nextEl: null
 })
 
+const isVariantSwiperLocked = ref(true)
+
+const syncVariantNavigationState = (swiper: any) => {
+    isVariantSwiperLocked.value = swiper.isLocked ?? (swiper.isBeginning && swiper.isEnd)
+}
+
 onMounted(async () => {
     if (props.templateEdit != 'webpage') {
         layout.iris = {
@@ -322,10 +328,12 @@ defineOptions({
                     </div>
 
                     <div class="text-right">
-                        <p class="text-xs text-black leading-tight">{{ trans("Retail Price") }}:</p>
-                        <p class="text-xs text-black leading-tight line-through">
-                            {{ locale.currencyFormatRrp(currency?.code, product.rrp_per_unit || 0) }}/{{ product.unit }}
-                        </p>
+                        <template v-if="product.rrp_per_unit > 0">
+                            <p class="text-xs text-black leading-tight">{{ trans("Retail Price") }}:</p>
+                            <p class="text-xs text-black leading-tight line-through">
+                                {{ locale.currencyFormatRrp(currency?.code, product.rrp_per_unit || 0) }}/{{ product.unit }}
+                            </p>
+                        </template>
 
                         <p class="mt-2 text-xs text-black leading-tight">{{ trans("Profit") }}:</p>
                         <div class="flex items-baseline justify-end gap-1 text-black">
@@ -367,14 +375,14 @@ defineOptions({
                         <span class="ml-1">{{ selectedVariantLabel }}</span>
                     </div>
 
-                    <div class="relative px-5">
-                        <button ref="variantPrevEl" type="button"
-                            class="absolute left-0 top-1/2 -translate-y-1/2 z-10 text-gray-500 hover:text-gray-800">
+                    <div class="group/variants relative px-5">
+                        <button v-show="!isVariantSwiperLocked" ref="variantPrevEl" type="button"
+                            class="absolute left-0 top-1/2 -translate-y-1/2 z-10 text-gray-500 hover:text-gray-800 opacity-0 group-hover/variants:opacity-100 transition-opacity">
                             <FontAwesomeIcon :icon="faChevronLeft" class="text-sm" />
                         </button>
 
-                        <button ref="variantNextEl" type="button"
-                            class="absolute right-0 top-1/2 -translate-y-1/2 z-10 text-gray-500 hover:text-gray-800">
+                        <button v-show="!isVariantSwiperLocked" ref="variantNextEl" type="button"
+                            class="absolute right-0 top-1/2 -translate-y-1/2 z-10 text-gray-500 hover:text-gray-800 opacity-0 group-hover/variants:opacity-100 transition-opacity">
                             <FontAwesomeIcon :icon="faChevronRight" class="text-sm" />
                         </button>
 
@@ -383,7 +391,10 @@ defineOptions({
                                 640: { slidesPerView: 4 },
                                 768: { slidesPerView: 4 },
                                 1024: { slidesPerView: 4 }
-                            }">
+                            }"
+                            @swiper="syncVariantNavigationState" @resize="syncVariantNavigationState"
+                            @breakpoint="syncVariantNavigationState" @lock="syncVariantNavigationState"
+                            @unlock="syncVariantNavigationState">
                             <SwiperSlide v-for="item in listProducts" :key="item.id">
                                 <button @click="onSelectProduct(item)" :disabled="item.code === product.code"
                                     class="group relative w-full rounded-lg border bg-white overflow-hidden transition flex flex-col"
@@ -397,14 +408,12 @@ defineOptions({
 
                                         <FontAwesomeIcon v-else :icon="faImage"
                                             class="absolute inset-0 m-auto text-gray-300 text-xl" />
+                                    </div>
 
-                                        <div
-                                            class="pointer-events-none absolute bottom-1 left-1 right-1 opacity-0 translate-y-1 transition-all duration-200 group-hover:opacity-100 group-hover:translate-y-0">
-                                            <span
-                                                class="block text-[11px] font-medium px-2 py-0.5 rounded text-center truncate bg-gray-900/80 text-white backdrop-blur">
-                                                {{ item.variant_label }}
-                                            </span>
-                                        </div>
+                                    <div v-if="item.variant_label" class="p-1">
+                                        <span class="block text-[11px] font-medium px-2 py-0.5 rounded text-center truncate bg-gray-100 text-gray-700">
+                                            {{ item.variant_label }}
+                                        </span>
                                     </div>
                                 </button>
                             </SwiperSlide>
@@ -568,10 +577,12 @@ defineOptions({
                 </div>
 
                 <div class="text-right">
-                    <p class="text-xs text-black leading-tight">{{ trans("Retail Price") }}:</p>
-                    <p class="text-xs text-black leading-tight line-through">
-                        {{ locale.currencyFormatRrp(currency?.code, product.rrp_per_unit || 0) }}/{{ product.unit }}
-                    </p>
+                    <template v-if="product.rrp_per_unit > 0">
+                        <p class="text-xs text-black leading-tight">{{ trans("Retail Price") }}:</p>
+                        <p class="text-xs text-black leading-tight line-through">
+                            {{ locale.currencyFormatRrp(currency?.code, product.rrp_per_unit || 0) }}/{{ product.unit }}
+                        </p>
+                    </template>
 
                     <p class="mt-2 text-xs text-black leading-tight">{{ trans("Profit") }}:</p>
                     <div class="flex items-baseline justify-end gap-1 text-black">

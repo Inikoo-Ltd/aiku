@@ -75,8 +75,8 @@ onErrorCaptured((error, _instance, info) => {
         error
     );
 
-    import("@sentry/vue").then((Sentry) => {
-        Sentry.captureException(error, {
+    import("@sentry/vue").then(({ captureException }) => {
+        captureException(error, {
             tags: {
                 area: "iris-header",
                 header_block: blockCode,

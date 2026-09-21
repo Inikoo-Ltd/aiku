@@ -160,13 +160,22 @@ class GetGroupNavigation
             'icon'    => ['fal', 'fa-comment-alt'],
             'root'    => 'grp.chat.',
             'route'   => [
-                'name' => 'grp.chat.dashboard',
+                'name' => 'grp.chat.reports',
             ],
             'topMenu' => [
                 'subSections' => [
                     [
-                        'label'   => __('Messaging'),
-                        'tooltip' => __('Messaging'),
+                        'label'   => __('Customer Inbox'),
+                        'tooltip' => __('Customer Inbox'),
+                        'icon'    => ['fal', 'fa-inbox'],
+                        'root'    => 'grp.chat.inbox',
+                        'route'   => [
+                            'name' => 'grp.chat.inbox',
+                        ],
+                    ],
+                    [
+                        'label'   => __('Internal Messages'),
+                        'tooltip' => __('Internal Messages'),
                         'icon'    => ['fal', 'fa-comments'],
                         'root'    => 'grp.chat.staff.index',
                         'route'   => [
@@ -174,25 +183,14 @@ class GetGroupNavigation
                         ],
                     ],
                     [
-                        'label'   => __('Dashboard'),
-                        'tooltip' => __('Dashboard'),
-                        'icon'    => ['fal', 'fa-comment-alt'],
-                        'root'    => 'grp.chat.dashboard',
+                        'label'   => __('Reports'),
+                        'tooltip' => __('Reports'),
+                        'icon'    => ['fal', 'fa-chart-line'],
+                        'root'    => 'grp.chat.reports',
                         'route'   => [
-                            'name' => 'grp.chat.dashboard',
+                            'name' => 'grp.chat.reports',
                         ],
                     ],
-                    ...($user->chatAgent ? [
-                        [
-                            'label'   => __('Inbox'),
-                            'tooltip' => __('Inbox'),
-                            'icon'    => ['fal', 'fa-inbox'],
-                            'root'    => 'grp.chat.inbox',
-                            'route'   => [
-                                'name' => 'grp.chat.inbox',
-                            ],
-                        ],
-                    ] : []),
                     // [
                     //     'label'   => __('Agents'),
                     //     'tooltip' => __('Agents'),

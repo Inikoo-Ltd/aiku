@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { trans } from "laravel-vue-i18n"
 import ButtonWithDropdown from "./ButtonWithDropdown.vue"
+import { computed } from "vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faChevronDown, faChevronUp } from "@fal"
-import { faEye } from "@fas"
+import { faChevronDown, faChevronUp, faEye, faEyeSlash } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 
-library.add(faEye, faChevronUp, faChevronDown)
+library.add(faEye, faEyeSlash, faChevronUp, faChevronDown)
 
 /**
  * Which columns the table shows and in what order. Every column is listed so it can be moved; only
@@ -17,7 +17,6 @@ type Column = { key: string; label: any; hidden: boolean; can_be_hidden: boolean
 
 const props = defineProps<{
     columns: Column[]
-    hasHiddenColumns: boolean
     onChange: (key: string, hidden: boolean) => void
     onMove: (key: string, direction: -1 | 1) => void
 }>()
@@ -30,17 +29,31 @@ const labelOf = (column: Column): string => {
 
     return column.key
 }
+
+const hiddenCount = computed(() => props.columns.filter((column) => column.hidden).length)
+
+/* A crossed-out eye says some columns are being held back, which is the ordinary state on a wide
+   table rather than a success or a warning, so the shape carries it and the colour stays neutral. */
+const buttonTooltip = computed(() =>
+    hiddenCount.value
+        ? trans("Choose and order columns, :count hidden", { count: String(hiddenCount.value) })
+        : trans("Choose and order columns")
+)
 </script>
 
 <template>
-    <ButtonWithDropdown placement="bottom-end" dusk="columns-dropdown" :active="hasHiddenColumns" id="filter-colums">
+    <ButtonWithDropdown
+        placement="bottom-end"
+        dusk="columns-dropdown"
+        id="filter-colums"
+        button-class="h-7 px-2 rounded">
         <template #button>
-            <span v-tooltip="trans('Choose and order columns')" class="flex items-center">
+            <span v-tooltip="buttonTooltip" class="flex items-center">
                 <FontAwesomeIcon
-                    icon="fas fa-eye"
+                    :icon="hiddenCount ? 'fal fa-eye-slash' : 'fal fa-eye'"
                     aria-hidden="true"
-                    :class="[hasHiddenColumns ? 'text-green-400' : 'text-gray-400', 'h-5 w-5']" />
-                <span class="sr-only">{{ trans("Choose and order columns") }}</span>
+                    class="h-4 w-4 text-gray-500" />
+                <span class="sr-only">{{ buttonTooltip }}</span>
             </span>
         </template>
 

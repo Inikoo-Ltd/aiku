@@ -298,6 +298,49 @@ test('retina bank transfer checkout data shows note only when set', function (Pa
         ->and($checkoutData['data']['recipient'])->toBe('Ancient Wisdom s.r.o.');
 })->depends('update payment account shop');
 
+test('retina bank transfer checkout data shows sort code only for GB accounts', function (PaymentAccount $paymentAccount) {
+    $paymentAccountShop = $paymentAccount->paymentAccountShops()->first();
+    $paymentAccountShop->update(['state' => PaymentAccountShopStateEnum::ACTIVE]);
+    $order    = new \App\Models\Ordering\Order();
+    $apiPoint = new \App\Models\Accounting\OrderPaymentApiPoint();
+
+    $paymentAccount->update(['data' => ['bank' => ['name' => 'Tatra Banka a.s.', 'iban' => 'SK35 1100 0000 0029 4803 8424', 'account' => '2948038424', 'sort_code' => '1100']]]);
+    $checkoutData = \App\Actions\Accounting\PaymentAccountShop\UI\GetRetinaPaymentAccountShopData::run($order, $paymentAccountShop->fresh(), $apiPoint);
+    expect($checkoutData['data'])->not->toHaveKey('sort_code');
+
+    $paymentAccount->update(['data' => ['bank' => ['name' => 'HSBC', 'iban' => 'GB74HBUK40415780719102', 'account' => '80719102', 'sort_code' => '404157']]]);
+    $checkoutData = \App\Actions\Accounting\PaymentAccountShop\UI\GetRetinaPaymentAccountShopData::run($order, $paymentAccountShop->fresh(), $apiPoint);
+    expect($checkoutData['data']['sort_code'])->toBe('404157');
+})->depends('update payment account shop');
+
+test('bank payment account create and edit write the fields checkout reads', function () {
+    $paymentAccount = StoreOrgPaymentServiceProviderAccount::make()->action(
+        $this->organisation,
+        PaymentServiceProvider::where('code', 'bank')->firstOrFail(),
+        [
+            'code'            => 'bank-sort-code',
+            'name'            => 'HSBC GBP',
+            'bank_name'       => 'HSBC',
+            'bank_iban'       => 'GB74HBUK40415780719102',
+            'bank_swift_code' => 'HBUKGB4B',
+        ]
+    );
+
+    expect($paymentAccount->data['bank'])->not->toHaveKey('sort_code');
+
+    $paymentAccount = UpdatePaymentAccount::make()->action($paymentAccount, [
+        'bank_name'      => 'HSBC UK',
+        'bank_sort_code' => '404157',
+    ]);
+
+    expect($paymentAccount->data['bank'])->toMatchArray([
+        'name'      => 'HSBC UK',
+        'sort_code' => '404157',
+        'iban'      => 'GB74HBUK40415780719102',
+        'swift'     => 'HBUKGB4B',
+    ]);
+});
+
 test('update payment account', function ($paymentAccount) {
     $paymentAccount = UpdatePaymentAccount::make()->action(
         $paymentAccount,
@@ -2092,7 +2135,8 @@ test('update payment account by type', function () {
         'bank_name'         => 'Big Bank',
         'bank_account_name' => 'Ops',
     ]);
-    expect(\Illuminate\Support\Arr::get($account->data, 'bank_name'))->toBe('Big Bank');
+    expect(\Illuminate\Support\Arr::get($account->data, 'bank.name'))->toBe('Big Bank')
+        ->and(\Illuminate\Support\Arr::get($account->data, 'bank.recipient'))->toBe('Ops');
 
     $account = \App\Actions\Accounting\PaymentAccount\Types\UpdateCashPaymentAccount::make()->action($account, [
         'name' => 'Petty Cash',

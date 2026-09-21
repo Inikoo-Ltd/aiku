@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Head, usePage, router } from "@inertiajs/vue3"
-import PageHeading from "@/Components/Headings/PageHeading.vue"
+import PageHeading from "@/Components/Headings/PageHeadingPublic.vue"
 import { capitalize } from "@/Composables/capitalize"
 import { CheckoutComFlow } from "@/types/CheckoutComFlow"
 import { FlashNotification as FlashNotificationType } from "@/types/FlashNotification"

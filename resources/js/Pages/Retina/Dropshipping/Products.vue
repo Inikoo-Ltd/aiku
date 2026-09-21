@@ -24,7 +24,7 @@ import { notify } from '@kyvg/vue3-notification'
 import Modal from '@/Components/Utils/Modal.vue'
 import {capitalize} from "@/Composables/capitalize";
 import { Head } from '@inertiajs/vue3'
-import PageHeading from '@/Components/Headings/PageHeading.vue'
+import PageHeading from '@/Components/Headings/PageHeadingPublic.vue'
 
 library.add(faSearch, faThLarge, faListUl, faStar, falStar)
 

@@ -18,6 +18,7 @@ import StatsBox from "@/Components/Stats/StatsBox.vue"
 import { routeType } from "@/types/route"
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
 import LiveVisitorsPanel from "@/Components/Web/LiveVisitorsPanel.vue"
+import ChatVisitorsBubble from "@/Components/Chat/ChatVisitorsBubble.vue"
 import { useLiveVisitors } from "@/Composables/useLiveVisitors"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
 import { faDoorOpen } from "@far"
@@ -99,6 +100,7 @@ const props = defineProps<{
             webmaster?: { name: string }[]
             seo?: { name: string }[]
         } | null
+        route_chat_visitors?: string
         route_restricted_country?: routeType
         search_insights?: any
         search_merchandising?: any
@@ -189,7 +191,16 @@ const links = computed(() => {
                         :counts="liveCounts"
                         :currency="props.data.currency_code ?? null"
                         :live-users-url="liveUsersUrl"
-                    />
+                    >
+                        <template #footer>
+                            <ChatVisitorsBubble
+                                v-if="props.data.route_chat_visitors"
+                                class="border-t border-gray-100"
+                                :route="props.data.route_chat_visitors"
+                                :website-id="props.data.id"
+                            />
+                        </template>
+                    </LiveVisitorsPanel>
                 </div>
 
                 <div class="border-t border-gray-300 mt-6 pt-4">

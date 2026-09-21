@@ -8,7 +8,7 @@ help_routes: grp.org.shops.show.web.webpages.show
 ---
 
 <aside class="tldr">
-Open any webpage in aiku and click <b>Performance</b>. One chart shows how many people found the page on Google, how much the products on it sold, and a marker on every day the page was published or a price was changed. Hover a marker to read what changed. If you edit pages, write a short comment when you publish: it becomes the label on the marker. If you only want the numbers, the three cards at the top are the totals for the period.
+Open any webpage in aiku and click <b>Performance</b>. One chart shows how many people found the page on Google, how much the products on it sold, and a marker on every day the page was published or a price was changed. Hover a marker to read what changed. If you edit pages, write a short comment when you publish: it becomes the label on the marker. If you only want the numbers, the three cards at the top are the totals for the period. For Google's speed, accessibility and SEO scores of the same page, read <a href="/docs/how-fast-is-my-page">How fast is my page?</a>
 </aside>
 
 ## What the chart shows

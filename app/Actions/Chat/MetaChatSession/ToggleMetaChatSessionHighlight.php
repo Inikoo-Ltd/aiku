@@ -7,16 +7,17 @@
 
 namespace App\Actions\Chat\MetaChatSession;
 
+use App\Actions\Chat\WithChatAgentAuthorisation;
 use App\Events\BroadcastMetaChatListEvent;
 use App\Models\Chat\ChatAgent;
 use App\Models\Chat\MetaChatSession;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\Auth;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class ToggleMetaChatSessionHighlight
 {
     use AsAction;
+    use WithChatAgentAuthorisation;
 
     public function handle(MetaChatSession $metaChatSession, ChatAgent $agent): MetaChatSession
     {
@@ -36,7 +37,7 @@ class ToggleMetaChatSessionHighlight
     /** @noinspection PhpUnusedParameterInspection */
     public function asController(?string $organisation, MetaChatSession $metaChatSession): JsonResponse
     {
-        $agent = Auth::user()?->chatAgent;
+        $agent = $this->getAuthorisedChatAgent($metaChatSession);
 
         if (!$agent) {
             return response()->json([

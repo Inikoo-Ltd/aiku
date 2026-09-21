@@ -5,9 +5,15 @@
  */
 
 import { router, usePage } from "@inertiajs/vue3"
-import { Ref, ref, watch } from "vue"
+import { ref, watch } from "vue"
+import type { Ref } from "vue"
 
-export const useTabChange = (tabSlug: string, currentTab: Ref<string>) => {
+/**
+ * A tab change is a partial visit, and Laravel leaves deferredProps out of a partial response, so
+ * Inertia never goes and gets them: a prop the tab needs but does not own, such as the pagespeed
+ * report of the webpage performance tab, has to be asked for once the tab itself has arrived.
+ */
+export const useTabChange = (tabSlug: string, currentTab: Ref<string>, deferredProps: string[] = []) => {
     if (tabSlug === currentTab.value) {
         return
     }
@@ -33,6 +39,10 @@ export const useTabChange = (tabSlug: string, currentTab: Ref<string>) => {
             preserveScroll: true,
             onSuccess: () => {
                 currentTab.value = tabSlug;
+
+                if (deferredProps.length) {
+                    router.reload({ only: deferredProps })
+                }
             },
             onError: (e) => {
                 // console.log('eeerr', e)

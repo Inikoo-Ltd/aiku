@@ -312,15 +312,6 @@ const pushViewItem = () => {
     return
   }
 
-  if (prod.luigi_identity) {
-    window?.dataLayer?.push({
-      event: "view_item",
-      ecommerce: {
-        items: [{ item_id: prod.luigi_identity }],
-      },
-    })
-  }
-
   const item: Record<string, any> = {
     item_id: prod.slug,
     item_name: prod.name,

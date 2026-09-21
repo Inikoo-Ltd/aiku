@@ -11,16 +11,17 @@ import axios from "axios"
 import { trans } from "laravel-vue-i18n"
 import { notify } from "@kyvg/vue3-notification"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faTasks, faPlus, faComments, faCircle, faSpinner, faCheckCircle, faBan, faCalendar, faUser } from "@fal"
+import { faTasks, faPlus, faComments, faCircle, faSpinner, faCheckCircle, faBan, faCalendar, faUser, faBell, faBellSlash } from "@fal"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import { PageHeadingTypes } from "@/types/PageHeading"
 import Image from "@/Common/Components/Image.vue"
 import StaffTaskDialog from "@/Components/Tasks/StaffTaskDialog.vue"
+import StaffTaskCollaborators from "@/Components/Tasks/StaffTaskCollaborators.vue"
 import { useStaffMessaging } from "@/Stores/staff-messaging"
 import { useFormatTime } from "@/Composables/useFormatTime"
 
-library.add(faTasks, faPlus, faComments, faCircle, faSpinner, faCheckCircle, faBan, faCalendar, faUser)
+library.add(faTasks, faPlus, faComments, faCircle, faSpinner, faCheckCircle, faBan, faCalendar, faUser, faBell, faBellSlash)
 
 const props = defineProps<{
     title: string
@@ -66,6 +67,16 @@ const update = async (task: any, payload: Record<string, unknown>) => {
     }
 }
 
+const syncCollaborators = async (task: any, people: any[]) => {
+    try {
+        const { data } = await axios.patch(route("grp.tasks.collaborators.update", task.reference), { collaborator_ids: people.map((person) => person.id) })
+        const index = tasks.value.findIndex((t) => t.id === task.id)
+        if (index !== -1) tasks.value[index] = data.data
+    } catch (error: any) {
+        notify({ title: trans("Could not update task"), text: error.response?.data?.message, type: "error" })
+    }
+}
+
 const claim = (task: any) => update(task, { assignee_id: myId.value, status: "in_progress" })
 const done = (task: any) => update(task, { status: "done" })
 const askCancel = (task: any) => { cancelNoteFor.value = task; cancelNote.value = "" }
@@ -75,8 +86,13 @@ const confirmCancel = async () => {
     cancelNoteFor.value = null
 }
 
-const openThread = (task: any) => {
-    if (task.conversation_ulid) store.openConversation(task.conversation_ulid)
+const openThread = (task: any) => store.openTaskThread(task)
+
+const toggleSubscription = async (task: any) => {
+    const { data } = await axios.post(route("grp.tasks.subscription.toggle", task.reference))
+    const index = tasks.value.findIndex((t) => t.id === task.id)
+    if (index !== -1) tasks.value[index] = data.data
+    await store.fetchConversations()
 }
 
 const onCreated = (task: any) => {
@@ -142,6 +158,11 @@ onMounted(async () => {
                             <span class="text-gray-300">→</span>
                             {{ task.assignee?.name ?? task.department_label ?? '—' }}
                         </span>
+                        <StaffTaskCollaborators
+                            :model-value="task.collaborators"
+                            :exclude-ids="task.assignee ? [task.assignee.id] : []"
+                            compact
+                            @update:model-value="(people) => syncCollaborators(task, people)" />
                         <span v-if="task.due_at" class="flex items-center gap-x-1" :class="task.is_overdue ? 'text-red-600' : ''">
                             <FontAwesomeIcon icon="fal fa-calendar" fixed-width aria-hidden="true" />
                             {{ useFormatTime(task.due_at) }}
@@ -152,6 +173,14 @@ onMounted(async () => {
                 <div class="flex items-center gap-x-1 shrink-0">
                     <button v-tooltip="trans('Open thread')" class="p-1.5 text-gray-400 hover:text-indigo-600" @click="openThread(task)">
                         <FontAwesomeIcon icon="fal fa-comments" fixed-width aria-hidden="true" />
+                    </button>
+                    <button
+                        v-if="task.requester?.id !== myId && task.assignee?.id !== myId"
+                        v-tooltip="task.is_subscribed ? trans('Stop notifications') : trans('Notify me about this task')"
+                        class="p-1.5"
+                        :class="task.is_subscribed ? 'text-indigo-600' : 'text-gray-400 hover:text-indigo-600'"
+                        @click="toggleSubscription(task)">
+                        <FontAwesomeIcon :icon="task.is_subscribed ? 'fal fa-bell' : 'fal fa-bell-slash'" fixed-width aria-hidden="true" />
                     </button>
                     <template v-if="['todo', 'in_progress'].includes(task.status)">
                         <button v-if="task.assignee?.id !== myId" class="px-2 py-1 text-xs rounded border border-gray-300 hover:bg-gray-50" @click="claim(task)">{{ trans('I will do it') }}</button>

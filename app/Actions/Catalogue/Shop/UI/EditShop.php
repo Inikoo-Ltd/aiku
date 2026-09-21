@@ -101,6 +101,10 @@ class EditShop extends OrgAction
 
         $isGoogleAdsConnected = filled(Arr::get($shop->settings, 'google_ads.refresh_token'));
 
+        $isMailboxConnected = filled(Arr::get($shop->settings, 'gmail.email'));
+        $mailboxEmail       = Arr::get($shop->settings, 'gmail.email');
+        $mailboxConnectedAt = Arr::get($shop->settings, 'gmail.connected_at');
+
         $googleAdsLastSyncInformation = '';
         if ($lastSync = Arr::get($shop->settings, 'google_ads.last_sync')) {
             $googleAdsLastSyncInformation = ' ' . __('Last sync: :at, uploaded :uploaded, removed :removed.', [
@@ -879,6 +883,28 @@ class EditShop extends OrgAction
                             'label'       => __('Campaign Name Prefix'),
                             'placeholder' => __('Only when the ad account also advertises another shop'),
                             'value'       => Arr::get($shop->settings, 'meta_ads.campaign_name_prefix', ''),
+                        ],
+                    ],
+                ],
+                [
+                    'label'  => __('Customer mailbox'),
+                    'icon'   => 'fa-light fa-envelope',
+                    'fields' => [
+                        'mailbox' => [
+                            'type'    => 'mailbox_connect',
+                            'noTitle'      => true,
+                            'noSaveButton' => true,
+                            'value'   => [
+                                'connected'        => $isMailboxConnected,
+                                'email'            => $mailboxEmail,
+                                'connected_at'     => $mailboxConnectedAt,
+                                'connect_url'      => route('grp.org.shops.show.settings.mailbox.connect', [$shop->organisation->slug, $shop->slug]).($request->query('section') ? '?section='.$request->query('section') : ''),
+                                'disconnect_route' => [
+                                    'name'       => 'grp.org.shops.show.settings.mailbox.disconnect',
+                                    'parameters' => [$shop->organisation->slug, $shop->slug],
+                                ],
+                                'inbox_url'        => route('grp.org.shops.show.chat.inbox', [$shop->organisation->slug, $shop->slug]),
+                            ],
                         ],
                     ],
                 ],

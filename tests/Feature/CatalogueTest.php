@@ -45,11 +45,19 @@ use App\Enums\Catalogue\Charge\ChargeStateEnum;
 use App\Enums\Catalogue\Charge\ChargeTriggerEnum;
 use App\Enums\Catalogue\Charge\ChargeTypeEnum;
 use App\Enums\Catalogue\Product\ProductStateEnum;
+use App\Enums\Web\Webpage\WebpageStateEnum;
+use App\Actions\Web\Webpage\CloseWebpage;
+use App\Actions\Catalogue\Product\RetireProductIntoReplacement;
+use App\Actions\Catalogue\Product\KeepRetiredProductAsSeparate;
+use App\Actions\Catalogue\Product\UI\EditProduct;
+use App\Actions\Web\Webpage\Iris\ShowIrisWebpage;
 use App\Enums\Catalogue\Product\ProductStatusEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
+use App\Enums\SysAdmin\Authorisation\RolesEnum;
+use App\Enums\SysAdmin\Authorisation\ShopPermissionsEnum;
 use App\Models\Billables\Charge;
 use App\Models\Billables\Service;
 use App\Models\Catalogue\Asset;
@@ -118,8 +126,8 @@ test('create shop', function () {
         ->and($organisation->catalogueStats->number_shops_type_b2b)->toBe(1)
         ->and($organisation->catalogueStats->number_shops_state_in_process)->toBe(1)
         ->and($organisation->catalogueStats->number_shops_state_open)->toBe(0)
-        ->and($shopRoles->count())->toBe(13)
-        ->and($shopPermissions->count())->toBe(29);
+        ->and($shopRoles->pluck('name')->all())->toEqualCanonicalizing(RolesEnum::getRolesWithScope($shop))
+        ->and($shopPermissions->pluck('name')->all())->toEqualCanonicalizing(ShopPermissionsEnum::getAllValues($shop));
 
 
     $user = $this->guest->getUser();
@@ -1517,3 +1525,121 @@ test('faire discontinue is skipped when faire returns far fewer live products th
     expect($discontinued)->toBe(0)
         ->and($products->every(fn ($product) => $product->refresh()->state !== \App\Enums\Catalogue\Product\ProductStateEnum::DISCONTINUED))->toBeTrue();
 });
+
+function createRetiredProductSharingReplacementWebpage(Shop $shop, array $tradeUnits): array
+{
+    $storeProduct = fn (string $code) => StoreProduct::make()->action($shop, array_merge(
+        Product::factory()->definition(),
+        ['code' => $code, 'trade_units' => $tradeUnits, 'price' => 45, 'unit' => 'bottle']
+    ));
+
+    $retired     = $storeProduct(fake()->unique()->lexify('ret????'));
+    $replacement = $storeProduct($retired->code.'-10ml');
+
+    $replacementOwnPage = StoreProductWebpage::make()->action($replacement);
+    $sharedPage         = StoreProductWebpage::make()->action($retired);
+    $replacementOwnPage->modelHasWebBlocks()->delete();
+
+    $sharedPage->update(['state' => WebpageStateEnum::LIVE]);
+    CloseWebpage::make()->action($replacementOwnPage, ['redirect_type' => \App\Enums\Web\Redirect\RedirectTypeEnum::PERMANENT->value, 'to_webpage_id' => $sharedPage->id]);
+    $sharedPage->update(['model_id' => $replacement->id]);
+    $replacement->update(['webpage_id' => $sharedPage->id, 'is_for_sale' => true]);
+    $retired->update([
+        'is_for_sale' => true,
+        'data'        => array_merge($retired->data, ['retire_at_cutover' => true, 'replaced_by_product_id' => $replacement->id]),
+    ]);
+
+    return [$retired->refresh(), $replacement->refresh(), $sharedPage->refresh(), $replacementOwnPage->refresh()];
+}
+
+test('retire product into its replacement takes it off sale and discontinues it', function (Shop $shop) {
+    [$retired, $replacement, $sharedPage] = createRetiredProductSharingReplacementWebpage($shop, [['id' => $this->tradeUnit1->id, 'quantity' => 1]]);
+
+    $retired = RetireProductIntoReplacement::make()->action($retired);
+
+    expect($retired->is_main)->toBeFalse()
+        ->and($retired->is_for_sale)->toBeFalse()
+        ->and($retired->state)->toBe(ProductStateEnum::DISCONTINUED)
+        ->and($sharedPage->refresh()->model_id)->toBe($replacement->id)
+        ->and($replacement->refresh()->is_for_sale)->toBeTrue();
+})->depends('create shop');
+
+test('keep retired product as separate gives both products their own webpage', function (Shop $shop) {
+    [$retired, $replacement, $sharedPage, $replacementOwnPage] = createRetiredProductSharingReplacementWebpage($shop, [['id' => $this->tradeUnit1->id, 'quantity' => 1]]);
+
+    $retired = KeepRetiredProductAsSeparate::make()->action($retired);
+    $replacement->refresh();
+
+    expect($retired->webpage_id)->toBe($sharedPage->id)
+        ->and($sharedPage->refresh()->model_id)->toBe($retired->id)
+        ->and($replacement->webpage_id)->toBe($replacementOwnPage->id)
+        ->and($replacementOwnPage->refresh()->state)->toBe(WebpageStateEnum::LIVE)
+        ->and($replacementOwnPage->redirect_webpage_id)->toBeNull()
+        ->and($replacementOwnPage->webBlocks()->exists())->toBeTrue()
+        ->and($replacementOwnPage->published_layout['web_blocks'] ?? [])->not->toBeEmpty()
+        ->and(ShowIrisWebpage::make()->getWebpageID($shop->website, $sharedPage->url))->toBe($sharedPage->id)
+        ->and(ShowIrisWebpage::make()->getWebpageID($shop->website, $replacementOwnPage->url))->toBe($replacementOwnPage->id)
+        ->and($retired->webpage->id)->toBe($sharedPage->id)
+        ->and($replacement->webpage->id)->toBe($replacementOwnPage->id)
+        ->and($retired->is_for_sale)->toBeTrue()
+        ->and($retired->data)->not->toHaveKey('retire_at_cutover')
+        ->and($retired->data)->not->toHaveKey('replaced_by_product_id');
+})->depends('create shop');
+
+test('keep retired product as separate finds the shared webpage by url when the product lost its webpage id', function (Shop $shop) {
+    [$retired, $replacement, $sharedPage] = createRetiredProductSharingReplacementWebpage($shop, [['id' => $this->tradeUnit1->id, 'quantity' => 1]]);
+    $retired->update(['webpage_id' => null]);
+
+    $retired = KeepRetiredProductAsSeparate::make()->action($retired->refresh());
+
+    expect($retired->webpage_id)->toBe($sharedPage->id)
+        ->and($sharedPage->refresh()->model_id)->toBe($retired->id)
+        ->and($replacement->refresh()->webpage_id)->not->toBe($sharedPage->id);
+})->depends('create shop');
+
+test('retired product edit form hides the for sale toggle', function (Shop $shop) {
+    [$retired] = createRetiredProductSharingReplacementWebpage($shop, [['id' => $this->tradeUnit1->id, 'quantity' => 1]]);
+    $retired = RetireProductIntoReplacement::make()->action($retired);
+
+    $fields = collect(EditProduct::make()->getBlueprint($retired->refresh()))->pluck('fields')->collapse();
+
+    expect($retired->state)->toBe(ProductStateEnum::DISCONTINUED)
+        ->and($fields->has('is_for_sale'))->toBeFalse();
+})->depends('create shop');
+
+test('retired product off sale hides create webpage while the replacement holds its url', function (Shop $shop) {
+    [$retired] = createRetiredProductSharingReplacementWebpage($shop, [['id' => $this->tradeUnit1->id, 'quantity' => 1]]);
+    $retired = RetireProductIntoReplacement::make()->action($retired);
+
+    get(route('grp.org.shops.show.catalogue.products.all_products.show', [$shop->organisation->slug, $shop->slug, $retired->slug]))
+        ->assertInertia(
+            fn (AssertableInertia $page) => $page
+                ->where('retirement_decision', null)
+                ->where('pageHead.actions', fn ($actions) => collect($actions)->doesntContain('label', 'Create Webpage'))
+                ->etc()
+        );
+})->depends('create shop');
+
+test('keep retired product as separate reactivates a discontinued product', function (Shop $shop) {
+    [$retired, , $sharedPage] = createRetiredProductSharingReplacementWebpage($shop, [['id' => $this->tradeUnit1->id, 'quantity' => 1]]);
+    $retired = RetireProductIntoReplacement::make()->action($retired);
+
+    $retired = KeepRetiredProductAsSeparate::make()->action($retired);
+
+    expect($retired->state)->toBe(ProductStateEnum::ACTIVE)
+        ->and($retired->status)->not->toBe(ProductStatusEnum::DISCONTINUED)
+        ->and($retired->webpage_id)->toBe($sharedPage->id)
+        ->and($sharedPage->refresh()->state)->toBe(WebpageStateEnum::LIVE);
+})->depends('create shop');
+
+test('product webpage replaces characters not allowed in webpage urls', function (Shop $shop) {
+    $product = StoreProduct::make()->action($shop, array_merge(
+        Product::factory()->definition(),
+        ['code' => fake()->unique()->lexify('dot????').'-0.5L', 'trade_units' => [['id' => $this->tradeUnit1->id, 'quantity' => 1]], 'price' => 45, 'unit' => 'bottle']
+    ));
+
+    $webpage = StoreProductWebpage::make()->action($product);
+
+    expect($webpage->url)->toBe(strtolower(str_replace('.', '-', $product->code)))
+        ->and($product->refresh()->webpage_id)->toBe($webpage->id);
+})->depends('create shop');

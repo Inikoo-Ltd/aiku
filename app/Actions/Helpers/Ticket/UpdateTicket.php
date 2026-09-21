@@ -46,7 +46,7 @@ class UpdateTicket extends OrgAction
         }
 
         if ($statusComment !== '' && $asker instanceof User) {
-            StoreTicketComment::make()->action($ticket, $asker, ['body' => $statusComment], notifyUsers: false);
+            StoreTicketComment::make()->action($ticket, $asker, ['body' => $statusComment], notifyUsers: Arr::get($modelData, 'status') === TicketStatusEnum::ANSWERED->value);
         }
 
         if (Arr::exists($modelData, 'assignee_id') && Arr::get($modelData, 'assignee_id') != $ticket->assignee_id) {
@@ -124,6 +124,15 @@ class UpdateTicket extends OrgAction
         }
 
         if ($ticket->wasChanged('status')) {
+            NotifyTicketUsers::make()->statusChangedForCollaborators($ticket, $asker instanceof User ? $asker : null);
+        }
+
+        $editedFields = array_values(array_filter(['priority', 'module', 'kind', 'description'], fn (string $field) => $ticket->wasChanged($field)));
+        if ($editedFields !== []) {
+            NotifyTicketUsers::make()->edited($ticket, $asker instanceof User ? $asker : null, $editedFields);
+        }
+
+        if ($ticket->wasChanged('status')) {
             PostTicketSlackThreadReply::run($ticket, $ticket->reference.' is now '.TicketStatusEnum::labels()[$ticket->status->value]);
         }
 
@@ -197,8 +206,28 @@ class UpdateTicket extends OrgAction
             return $isVerdict ? Ticket::canCheckQa($user) : $ticket->canContributeBy($user);
         }
 
+        if ($request->input('status') === TicketStatusEnum::CANCELLED->value && array_diff($fields, ['status', 'status_comment']) === []) {
+            return $ticket->canBeCancelledByReporter($user);
+        }
+
+        if ($request->input('status') === TicketStatusEnum::ANSWERED->value && $request->filled('status_comment') && array_diff($fields, ['status', 'status_comment']) === []) {
+            return $ticket->canBeReopenedByReporter($user);
+        }
+
+        if ($request->has('assignee_id')) {
+            $canHandOver = $ticket->canChangeAssigneeBy($user) && ($request->filled('assignee_id') || Ticket::canBeAssignedBy($user));
+
+            if (!$canHandOver) {
+                return false;
+            }
+
+            if (array_diff($fields, ['assignee_id']) === []) {
+                return true;
+            }
+        }
+
         if ($ticket->canBeUpdatedBy($user)) {
-            return (!$request->has('assignee_id') || $request->filled('assignee_id')) && !$request->has('is_confidential');
+            return !$request->has('is_confidential');
         }
 
         if ($request->has('tags') && array_diff($fields, ['tags']) === [] && $ticket->hasCollaborator($user)) {
