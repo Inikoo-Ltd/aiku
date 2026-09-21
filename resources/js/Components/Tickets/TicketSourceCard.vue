@@ -10,22 +10,29 @@ import { trans } from "laravel-vue-i18n"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faComments } from "@fal"
+import { useTicketChatPanel } from "@/Composables/useTicketChatPanel"
 
 library.add(faComments)
 
-defineProps<{
+const props = defineProps<{
     source: {
         channel_icon?: { icon: any; class?: string } | null
         channel_label: string
         contact?: string | null
         reference?: string | null
         url?: string | null
+        has_conversation?: boolean
     }
+    ticketId?: number | string | null
 }>()
+
+// These same details become the conversation's header once it is opened, so the panel gives
+// them up rather than saying everything twice.
+const { isOpen: isConversationOpen } = useTicketChatPanel(props.ticketId ?? '')
 </script>
 
 <template>
-    <div class="rounded-md border border-gray-200 bg-gray-50 p-3 text-sm">
+    <div v-if="!isConversationOpen" class="rounded-md border border-gray-200 bg-gray-50 p-3 text-sm">
         <div class="flex items-center gap-2">
             <FontAwesomeIcon v-if="source.channel_icon" :icon="source.channel_icon.icon" :class="source.channel_icon.class" fixed-width aria-hidden="true" />
             <span class="font-medium text-gray-800">{{ source.channel_label }}</span>

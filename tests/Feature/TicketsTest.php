@@ -2523,3 +2523,77 @@ test('the assignee cancels their own ticket, and the reporter still can too', fu
 
     expect($reporterTicket->refresh()->status)->toBe(TicketStatusEnum::CANCELLED);
 });
+
+test('a ticket raised from a chat carries that conversation, read only', function () {
+    $session = \App\Models\Chat\ChatSession::create([
+        'ulid'             => (string) \Illuminate\Support\Str::ulid(),
+        'shop_id'          => $this->shop->id,
+        'language_id'      => 68,
+        'status'           => \App\Enums\CRM\Livechat\ChatSessionStatusEnum::ACTIVE->value,
+        'priority'         => ChatPriorityEnum::NORMAL->value,
+        'guest_identifier' => 'guest-'.\Illuminate\Support\Str::random(8),
+    ]);
+
+    $session->messages()->create([
+        'message_text' => 'My order never arrived',
+        'message_type' => \App\Enums\CRM\Livechat\ChatMessageTypeEnum::TEXT->value,
+        'sender_type'  => \App\Enums\CRM\Livechat\ChatSenderTypeEnum::GUEST->value,
+    ]);
+
+    $withdrawn = $session->messages()->create([
+        'message_text' => 'ignore that, wrong chat',
+        'message_type' => \App\Enums\CRM\Livechat\ChatMessageTypeEnum::TEXT->value,
+        'sender_type'  => \App\Enums\CRM\Livechat\ChatSenderTypeEnum::GUEST->value,
+    ]);
+    $withdrawn->delete();
+
+    $ticket = StoreTicket::make()->action($this->group, [
+        'subject'     => 'Order never arrived',
+        'type'        => TicketTypeEnum::CUSTOMER->value,
+        'source_type' => 'ChatSession',
+        'source_id'   => $session->id,
+    ]);
+
+    $payload = get(route('grp.json.ticket.chat', $ticket->id))->assertOk()->json();
+
+    expect($payload['session']['ulid'])->toBe($session->ulid)
+        ->and($payload['messages'])->toHaveCount(2)
+        ->and($payload['messages'][0]['text'])->toBe('My order never arrived')
+        ->and($payload['messages'][0]['sender_type'])->toBe('guest')
+        // a withdrawn message keeps its place without its words
+        ->and($payload['messages'][1]['is_redacted'])->toBeTrue()
+        ->and($payload['messages'][1]['text'])->toBeNull()
+        ->and($payload['truncated'])->toBeFalse();
+
+    // the resource tells the page there is something to read
+    expect(TicketResource::make($ticket->refresh())->resolve()['source']['has_conversation'])->toBeTrue();
+
+    // a ticket with no conversation behind it says so, and does not offer one
+    $plain = StoreTicket::make()->action($this->group, ['subject' => 'Raised by hand']);
+
+    expect(TicketResource::make($plain)->resolve()['source'])->toBeNull()
+        ->and(get(route('grp.json.ticket.chat', $plain->id))->assertOk()->json('session'))->toBeNull();
+});
+
+test('somebody who cannot see a ticket cannot read its conversation', function () {
+    $session = \App\Models\Chat\ChatSession::create([
+        'ulid'             => (string) \Illuminate\Support\Str::ulid(),
+        'shop_id'          => $this->shop->id,
+        'language_id'      => 68,
+        'status'           => \App\Enums\CRM\Livechat\ChatSessionStatusEnum::ACTIVE->value,
+        'priority'         => ChatPriorityEnum::NORMAL->value,
+        'guest_identifier' => 'guest-'.\Illuminate\Support\Str::random(8),
+    ]);
+
+    $ticket = StoreTicket::make()->action($this->group, [
+        'subject'         => 'Confidential one',
+        'type'            => TicketTypeEnum::CUSTOMER->value,
+        'is_confidential' => true,
+        'source_type'     => 'ChatSession',
+        'source_id'       => $session->id,
+    ]);
+
+    actingAs(User::factory()->create(['group_id' => $this->group->id]));
+
+    get(route('grp.json.ticket.chat', $ticket->id))->assertForbidden();
+});

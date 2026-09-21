@@ -11,6 +11,7 @@ namespace App\Http\Resources\Helpers;
 use App\Enums\CRM\Livechat\ChatPriorityEnum;
 use App\Enums\Helpers\Ticket\TicketKindEnum;
 use App\Enums\Helpers\Ticket\TicketSourceChannelEnum;
+use App\Models\Chat\ChatSession;
 use App\Models\Chat\MetaChatSession;
 use App\Enums\Helpers\Ticket\TicketModuleEnum;
 use App\Enums\Helpers\Ticket\TicketQaStatusEnum;
@@ -118,6 +119,9 @@ class TicketResource extends JsonResource
                     : ($session?->webUser?->contact_name ?: $session?->guest_identifier)),
             'reference'     => $customer?->reference,
             'url'           => $this->sourceUrl($session),
+            // Whether there is a conversation to read on the ticket, rather than just a note of
+            // where it came from
+            'has_conversation' => $session instanceof ChatSession || $session instanceof MetaChatSession,
         ];
     }
 
