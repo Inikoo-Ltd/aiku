@@ -27,6 +27,7 @@ use App\Models\CRM\WebUser;
 use App\Services\Gmail\GmailClient;
 use App\Services\Gmail\GmailMessageParser;
 use App\Services\HTMLSanitizer;
+use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
@@ -36,9 +37,20 @@ class ProcessInboundEmail
 {
     use AsAction;
 
+    /**
+     * A sender who deletes their mail before we read it leaves an id Gmail still lists and no
+     * longer serves. Nothing here ever wrote a row for it, and a row is the only thing that
+     * stops it being fetched again, so it came back every couple of minutes all day.
+     */
+    private const int GONE_TTL_DAYS = 7;
+
     public function handle(Shop $shop, string $gmailMessageId): ?ChatMessage
     {
         if (ChatMessage::where('metadata->gmail_message_id', $gmailMessageId)->exists()) {
+            return null;
+        }
+
+        if (Cache::has($this->goneKey($shop, $gmailMessageId))) {
             return null;
         }
 
@@ -48,7 +60,17 @@ class ProcessInboundEmail
             return null;
         }
 
-        $raw = $client->getMessage($gmailMessageId);
+        try {
+            $raw = $client->getMessage($gmailMessageId);
+        } catch (RequestException $exception) {
+            if ($exception->response->status() !== 404) {
+                throw $exception;
+            }
+
+            Cache::put($this->goneKey($shop, $gmailMessageId), true, now()->addDays(self::GONE_TTL_DAYS));
+
+            return null;
+        }
 
         $from    = GmailMessageParser::fromAddress($raw);
         $subject = GmailMessageParser::header($raw, 'Subject');
@@ -170,6 +192,11 @@ class ProcessInboundEmail
         $this->importThreadHistory($client, $session, $threadId, $mailboxAddress, $webUser);
 
         return $message;
+    }
+
+    private function goneKey(Shop $shop, string $gmailMessageId): string
+    {
+        return "gmail-message-gone:{$shop->id}:$gmailMessageId";
     }
 
     /**

@@ -5664,3 +5664,19 @@ test('a phone call takes the agent out of the rota, is filed only against their 
     expect($seen->total())->toBe(0)
         ->and($own->total())->toBe(2);
 });
+
+test('a gmail message the sender has deleted is given up on rather than fetched again forever', function () {
+    $settings = $this->shop->settings ?? [];
+    $settings['gmail'] = ['email' => 'care@shop.test', 'refresh_token' => \Illuminate\Support\Facades\Crypt::encryptString('rt'), 'history_id' => '1'];
+    $this->shop->update(['settings' => $settings]);
+
+    \Illuminate\Support\Facades\Http::fake([
+        'oauth2.googleapis.com/token'                         => \Illuminate\Support\Facades\Http::response(['access_token' => 'at']),
+        'gmail.googleapis.com/gmail/v1/users/me/messages/d1*' => \Illuminate\Support\Facades\Http::response(['error' => ['code' => 404, 'message' => 'Requested entity was not found.']], 404),
+    ]);
+
+    expect(\App\Actions\Comms\Mailbox\ProcessInboundEmail::run($this->shop, 'd1'))->toBeNull()
+        ->and(\App\Actions\Comms\Mailbox\ProcessInboundEmail::run($this->shop, 'd1'))->toBeNull();
+
+    \Illuminate\Support\Facades\Http::assertSentCount(2);
+});
