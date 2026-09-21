@@ -2548,10 +2548,13 @@ test('a ticket raised from a chat carries that conversation, read only', functio
     $withdrawn->delete();
 
     $ticket = StoreTicket::make()->action($this->group, [
-        'subject'     => 'Order never arrived',
-        'type'        => TicketTypeEnum::CUSTOMER->value,
-        'source_type' => 'ChatSession',
-        'source_id'   => $session->id,
+        'subject'         => 'Order never arrived',
+        'type'            => TicketTypeEnum::CUSTOMER->value,
+        'organisation_id' => $this->organisation->id,
+        'shop_id'         => $this->shop->id,
+        'customer_id'     => $this->customer->id,
+        'source_type'     => 'ChatSession',
+        'source_id'       => $session->id,
     ]);
 
     $payload = get(route('grp.json.ticket.chat', $ticket->id))->assertOk()->json();
@@ -2565,8 +2568,14 @@ test('a ticket raised from a chat carries that conversation, read only', functio
         ->and($payload['messages'][1]['text'])->toBeNull()
         ->and($payload['truncated'])->toBeFalse();
 
-    // the resource tells the page there is something to read
-    expect(TicketResource::make($ticket->refresh())->resolve()['source']['has_conversation'])->toBeTrue();
+    // the resource tells the page there is something to read, and the customer is one click away
+    expect(TicketResource::make($ticket->refresh())->resolve()['source']['has_conversation'])->toBeTrue()
+        ->and($payload['customer']['name'])->toBe($this->customer->name)
+        ->and($payload['customer']['url'])->toBe(route('grp.org.shops.show.crm.customers.show', [
+            $this->organisation->slug,
+            $this->shop->slug,
+            $this->customer->slug,
+        ]));
 
     // a ticket with no conversation behind it says so, and does not offer one
     $plain = StoreTicket::make()->action($this->group, ['subject' => 'Raised by hand']);
@@ -2596,4 +2605,72 @@ test('somebody who cannot see a ticket cannot read its conversation', function (
     actingAs(User::factory()->create(['group_id' => $this->group->id]));
 
     get(route('grp.json.ticket.chat', $ticket->id))->assertForbidden();
+});
+
+test('settling a ticket tells the customer and ends the conversation, when that was agreed', function () {
+    $session = \App\Models\Chat\ChatSession::create([
+        'ulid'             => (string) \Illuminate\Support\Str::ulid(),
+        'shop_id'          => $this->shop->id,
+        'language_id'      => 68,
+        'status'           => \App\Enums\CRM\Livechat\ChatSessionStatusEnum::ACTIVE->value,
+        'priority'         => ChatPriorityEnum::NORMAL->value,
+        'guest_identifier' => 'guest-'.\Illuminate\Support\Str::random(8),
+    ]);
+
+    $ticket = StoreTicket::make()->action($this->group, [
+        'subject'       => 'Refund never arrived',
+        'type'          => TicketTypeEnum::CUSTOMER->value,
+        'blocks_source' => true,
+        'closes_source' => true,
+        'source_type'   => 'ChatSession',
+        'source_id'     => $session->id,
+        'assignee_id'   => $this->user->id,
+    ]);
+
+    patch(route('grp.models.ticket.update', $ticket->id), [
+        'status'         => 'resolved',
+        'status_comment' => 'Refunded this morning, it will show in a day or two',
+    ])->assertRedirect()->assertSessionHasNoErrors();
+
+    $session->refresh();
+
+    // the customer was told, in the conversation, with the note signed off
+    $lastMessage = $session->messages()->latest('id')->skip(1)->first();
+
+    expect($lastMessage->message_text)->toContain('Refunded this morning')
+        ->and($lastMessage->message_text)->toContain('- Developer')
+        ->and($lastMessage->sender_type)->toBe(\App\Enums\CRM\Livechat\ChatSenderTypeEnum::AGENT)
+        ->and($lastMessage->sender_id)->toBeNull()
+        ->and($session->status)->toBe(\App\Enums\CRM\Livechat\ChatSessionStatusEnum::CLOSED);
+
+    // and the ticket says what happened
+    expect($ticket->refresh()->comments()->where('is_internal', true)->latest('id')->value('body'))
+        ->toContain('sent to the customer');
+});
+
+test('a ticket that was not agreed to close its conversation leaves it alone', function () {
+    $session = \App\Models\Chat\ChatSession::create([
+        'ulid'             => (string) \Illuminate\Support\Str::ulid(),
+        'shop_id'          => $this->shop->id,
+        'language_id'      => 68,
+        'status'           => \App\Enums\CRM\Livechat\ChatSessionStatusEnum::ACTIVE->value,
+        'priority'         => ChatPriorityEnum::NORMAL->value,
+        'guest_identifier' => 'guest-'.\Illuminate\Support\Str::random(8),
+    ]);
+
+    $ticket = StoreTicket::make()->action($this->group, [
+        'subject'     => 'Nothing to tell them',
+        'type'        => TicketTypeEnum::CUSTOMER->value,
+        'source_type' => 'ChatSession',
+        'source_id'   => $session->id,
+        'assignee_id' => $this->user->id,
+    ]);
+
+    patch(route('grp.models.ticket.update', $ticket->id), [
+        'status'         => 'resolved',
+        'status_comment' => 'Fixed, nothing the customer needs to hear',
+    ])->assertRedirect();
+
+    expect($session->refresh()->status)->toBe(\App\Enums\CRM\Livechat\ChatSessionStatusEnum::ACTIVE)
+        ->and($session->messages()->count())->toBe(0);
 });

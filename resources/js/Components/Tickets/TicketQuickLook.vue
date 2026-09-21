@@ -16,7 +16,6 @@ import TicketControls from "@/Components/Tickets/TicketControls.vue"
 import TicketAttachmentList from "@/Components/Tickets/TicketAttachmentList.vue"
 import TicketThread from "@/Components/Tickets/TicketThread.vue"
 import TicketControlPanel from "@/Components/Tickets/TicketControlPanel.vue"
-import TicketSourceCard from "@/Components/Tickets/TicketSourceCard.vue"
 import TicketChatDropdown from "@/Components/Tickets/TicketChatDropdown.vue"
 import { useModalFocusTrap } from "@/Composables/useModalFocusTrap"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -181,7 +180,6 @@ const close = () => {
                     <template v-if="!isDesktop">
                         <TicketControlPanel v-if="controls" :ticket="displayTicket" storage-key="ticket_quick_look_controls_open" :default-open="false">
                             <TicketControls v-bind="controls" @updated="loadControls(ticket.id)" />
-                            <TicketSourceCard v-if="displayTicket.source" :source="displayTicket.source" :ticketId="displayTicket.id" />
                         </TicketControlPanel>
                         <p v-else-if="isControlsUnavailable" class="text-sm text-gray-500">{{ ctrans("Controls are unavailable") }}</p>
                         <p v-else class="text-sm text-gray-400"><FontAwesomeIcon icon="fal fa-spinner" spin class="mr-1" />{{ ctrans("Loading") }}</p>
@@ -217,7 +215,6 @@ const close = () => {
                         <TicketControls v-if="controls" v-bind="controls" @updated="loadControls(ticket.id)" />
                         <p v-else-if="isControlsUnavailable" class="text-gray-500">{{ ctrans("Controls are unavailable") }}</p>
                         <p v-else class="text-gray-400"><FontAwesomeIcon icon="fal fa-spinner" spin class="mr-1" />{{ ctrans("Loading") }}</p>
-                        <TicketSourceCard v-if="displayTicket.source" :source="displayTicket.source" :ticketId="displayTicket.id" class="mt-4" />
                     </aside>
                 </div>
             </div>

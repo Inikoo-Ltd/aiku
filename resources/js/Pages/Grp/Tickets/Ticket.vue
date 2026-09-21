@@ -12,7 +12,6 @@ import axios from "axios"
 import { ctrans } from "@/Composables/useTrans"
 import Icon from "@/Components/Icon.vue"
 import TicketControlPanel from "@/Components/Tickets/TicketControlPanel.vue"
-import TicketSourceCard from "@/Components/Tickets/TicketSourceCard.vue"
 import TicketChatDropdown from "@/Components/Tickets/TicketChatDropdown.vue"
 import { capitalize } from "@/Composables/capitalize"
 import { useFormatTime } from "@/Composables/useFormatTime"
@@ -173,7 +172,6 @@ const update = (field: string, value: unknown) => {
                     </li>
                 </ul>
             </div>
-            <TicketSourceCard v-if="ticket.source" :source="ticket.source" :ticketId="ticket.id" />
             <dl class="space-y-1 text-gray-600">
                 <div v-if="ticket.parent" class="flex justify-between"><dt>{{ ctrans("Escalated from") }}</dt><dd><Link :href="ticketRoute(ticket.parent)" class="text-blue-600 hover:underline">{{ ticket.parent }}</Link></dd></div>
                 <div v-if="ticket.escalations.length" class="flex justify-between"><dt>{{ ctrans("Escalated to") }}</dt><dd class="space-x-1"><Link v-for="ref in ticket.escalations" :key="ref" :href="ticketRoute(ref)" class="text-blue-600 hover:underline">{{ ref }}</Link></dd></div>

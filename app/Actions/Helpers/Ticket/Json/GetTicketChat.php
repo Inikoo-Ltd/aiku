@@ -38,7 +38,7 @@ class GetTicketChat extends OrgAction
         $session = $ticket->source;
 
         if (!$session instanceof ChatSession && !$session instanceof MetaChatSession) {
-            return ['session' => null, 'messages' => [], 'truncated' => false];
+            return ['customer' => $this->customerData($ticket), 'session' => null, 'messages' => [], 'truncated' => false];
         }
 
         $total    = $session->messages()->withTrashed()->count();
@@ -52,9 +52,35 @@ class GetTicketChat extends OrgAction
             ->values();
 
         return [
+            'customer'  => $this->customerData($ticket),
             'session'   => $this->sessionData($session),
             'messages'  => $this->messageData($messages),
             'truncated' => $total > self::MESSAGE_LIMIT,
+        ];
+    }
+
+    /**
+     * Where to read the rest of this customer's story, one click from the ticket.
+     *
+     * @return array<string, mixed>|null
+     */
+    private function customerData(Ticket $ticket): ?array
+    {
+        $customer = $ticket->customer;
+
+        if (!$customer) {
+            return null;
+        }
+
+        $organisation = $customer->organisation;
+        $shop         = $customer->shop;
+
+        return [
+            'name'      => $customer->name,
+            'reference' => $customer->reference,
+            'url'       => $organisation && $shop
+                ? route('grp.org.shops.show.crm.customers.show', [$organisation->slug, $shop->slug, $customer->slug])
+                : null,
         ];
     }
 
