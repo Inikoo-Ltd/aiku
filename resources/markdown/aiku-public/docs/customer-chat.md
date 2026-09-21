@@ -39,6 +39,8 @@ Then it works like any messenger: type and send, add an emoji, attach as many im
 
 A sent message cannot be edited, because the customer already has it. <b>Take back</b> removes it on every channel and tells the customer. <b>Redact</b> strikes selected text - a card number, a password - out of a message for good.
 
+<b>&#8942;</b> &rarr; <b>Email notification</b> says <b>On</b> or <b>Off</b>. On, what you send also goes to the customer by email, for the customer who asked a question on the website and closed the tab. It is offered only in a conversation you are holding, where there is an address to write to, and never on an email conversation, which is already an email.
+
 ## The customer at your side
 
 The side panel shows who you are talking to: contact details, last orders, invoices, what is in their basket, and a link to their customer page. Under that are their last three conversations in a line each, and how often each topic came up over twelve months.
@@ -76,6 +78,8 @@ A call left running closes on its own after an hour, with a warning ten minutes 
 ## Ending well
 
 <b>End chat</b> closes the conversation and tells the customer; <b>Reopen</b> picks it up where it stopped. A conversation with a blocking ticket cannot be closed until that ticket is settled. Nothing is ever deleted: a closed conversation stays on the customer's record.
+
+A conversation can also end without you. If the ticket was raised with <b>Let the developer close this chat</b> ticked, then whoever settles that ticket has their closing note sent to the customer here, signed off as a developer, and the conversation closes. On WhatsApp, where a message can only be sent within a day of the customer's last one, a conversation settled later is closed in silence and the ticket says the customer could not be told.
 
 ## Reports
 

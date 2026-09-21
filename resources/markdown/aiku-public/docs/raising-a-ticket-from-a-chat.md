@@ -1,6 +1,6 @@
 ---
 title: Raising a ticket from a chat
-summary: Turn a customer conversation into a ticket without retyping it, and hold the chat open until the work is done.
+summary: Turn a customer conversation into a ticket without retyping it, hold the chat open until the work is done, and let whoever fixes it tell the customer and close the conversation.
 date: 2026-09-21
 tags: chat, tickets, help desk
 category: crm
@@ -36,6 +36,18 @@ Choosing the <b>Bug</b> kind ticks the box for you, because a bug is usually the
 
 <b>When to tick it.</b> Tick it when the customer is owed an answer that depends on the ticket. Leave it unticked when the ticket is our own housekeeping - a documentation note, a tidy-up - and the customer has already been served. A chat held open for housekeeping is a chat nobody ever closes.
 
+## Letting the developer close it
+
+Ticking <b>Mark as blocked</b> offers a second choice: <b>Let the developer close this chat when the ticket is settled</b>.
+
+Left unticked, the chat waits for you: the ticket is settled, the hold lifts, and you tell the customer yourself and close the conversation.
+
+Ticked, whoever settles the ticket does it for you. They write a closing note when they mark it <b>Done</b> or <b>Cancel</b> it, that note is sent to this customer in this conversation, and the conversation closes. It goes out on whichever channel they wrote from - the website bubble, email, or WhatsApp - signed off as a developer rather than in a name the customer has never spoken to. Both closing dialogs warn the person writing that the customer will read it.
+
+<b>WhatsApp has a limit we do not set.</b> Meta only carries a written reply within a day of the customer's last message. A ticket settled later cannot be answered there, so the conversation is closed without a message and the ticket records that the customer could not be told. Whatever happened - told and closed, closed in silence, or neither - is written on the ticket, because "the customer was told" and "we tried" are different things.
+
+<b>What it is for.</b> A bug the customer is waiting on: they are owed the news the day it is fixed, not whenever an agent next reads the ticket. What it is not for: anything where the answer needs your words rather than an engineer's.
+
 ## Following it afterwards
 
 The thread's header counts what is still open on the conversation. Click that count and the side panel opens on <b>Tickets</b>, listing every ticket raised from this chat with its reference, status, kind and date. Click a row to read the ticket without leaving the conversation.
@@ -46,7 +58,9 @@ To clear a block, finish the work and set the ticket to <b>Done</b>, or <b>Cance
 
 ## What lands on the ticket
 
-The ticket keeps the conversation as its source, so opening it shows the channel, the contact and a link back to the chat. The customer and shop come across automatically, and you are recorded as the reporter. If the bug needs an engineer urgently, mention them by name in a comment - the ticket says who to mention and how.
+The customer and shop come across automatically, and you are recorded as the reporter. If the bug needs an engineer urgently, mention them by name in a comment - the ticket says who to mention and how.
+
+The ticket keeps the conversation itself, under the description: who the customer is, with a link to their page, who held the chat, and links back to it. Open <b>Conversation</b> there and the whole exchange is read on the ticket, in order, without going anywhere - read only, because a ticket is not a place to answer a customer from.
 
 <aside class="wayfinder"><strong>Where to click in aiku</strong>
 <ul>
@@ -54,5 +68,7 @@ The ticket keeps the conversation as its source, so opening it shows the channel
 <li><b>Hold the chat open:</b> tick <b>Mark as blocked</b> before pressing <b>Create</b>.</li>
 <li><b>See what is outstanding:</b> the count button in the thread's header &rarr; <b>Tickets</b> in the side panel.</li>
 <li><b>Release the hold:</b> open the ticket &rarr; <b>Done</b>, or <b>Cancel</b>.</li>
+<li><b>Have the developer tell the customer:</b> tick <b>Let the developer close this chat</b> as well, before pressing <b>Create</b>.</li>
+<li><b>Read the conversation on the ticket:</b> open the ticket &rarr; <b>Conversation</b>, under the description.</li>
 </ul>
 </aside>
