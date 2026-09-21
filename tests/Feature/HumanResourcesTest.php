@@ -75,6 +75,7 @@ use App\Actions\HumanResources\TimeTracker\ClockInTimeTracker;
 use App\Actions\HumanResources\TimeTracker\AddClockingToTimeTracker;
 use App\Actions\HumanResources\TimeTracker\CloseTimeTracker;
 use App\Actions\HumanResources\TimeTracker\RepairNegativeTimeTrackers;
+use App\Actions\HumanResources\Employee\UI\IndexClockingEmployees;
 use App\Actions\HumanResources\Timesheet\StoreTimesheet;
 use App\Actions\HumanResources\Timesheet\DeleteTimesheet;
 use App\Actions\HumanResources\Leave\StoreLeave;
@@ -2725,4 +2726,248 @@ test('profile timesheets tab returns timesheets beyond today', function () {
     $response->assertOk();
 
     expect($response->json('data'))->toHaveCount(2);
+});
+
+test('an employee can be given a shorter week than the organisation works', function () {
+    $employee = Employee::factory()->create([
+        'organisation_id' => $this->organisation->id,
+        'group_id'        => $this->group->id,
+        'state'           => \App\Enums\HumanResources\Employee\EmployeeStateEnum::WORKING,
+        'email'           => 'four-day-'.uniqid().'@example.com',
+        'worker_number'   => 'FD'.uniqid(),
+    ]);
+
+    // Monday to Friday, nine to five, as the organisation works
+    $organisationHours = collect(range(1, 5))
+        ->mapWithKeys(fn (int $day) => [$day => ['s' => '09:00', 'e' => '17:00']])
+        ->all();
+
+    $organisationSchedule = StoreWorkSchedule::make()->action($this->organisation, [
+        'name'          => 'Org hours',
+        'type'          => 'default',
+        'working_hours' => ['data' => $organisationHours],
+    ]);
+
+    // this one does not work Fridays: the day is kept, and says nobody is expected in
+    UpdateEmployee::make()->action($employee, [
+        'working_hours' => [
+            'data' => array_replace($organisationHours, [5 => ['s' => null, 'e' => null, 'w' => false, 'b' => []]]),
+        ],
+    ]);
+
+    $schedule = $employee->refresh()->getDefaultWorkSchedule();
+
+    expect($schedule)->not->toBeNull();
+
+    $friday = $schedule->days()->where('day_of_week', 5)->first();
+    $thursday = $schedule->days()->where('day_of_week', 4)->first();
+
+    expect($friday)->not->toBeNull()
+        ->and($friday->is_working_day)->toBeFalse()
+        ->and($friday->start_time)->toBeNull()
+        ->and($thursday->is_working_day)->toBeTrue()
+        ->and($thursday->start_time)->toBe('09:00:00')
+        ->and($schedule->days()->where('is_working_day', true)->count())->toBe(4);
+
+    // and the organisation still works its Friday
+    expect($organisationSchedule->days()->where('day_of_week', 5)->value('is_working_day'))->toBeTrue();
+});
+
+test('a day switched back on keeps its hours and a day switched off drops its breaks', function () {
+    $employee = Employee::factory()->create([
+        'organisation_id' => $this->organisation->id,
+        'group_id'        => $this->group->id,
+        'state'           => \App\Enums\HumanResources\Employee\EmployeeStateEnum::WORKING,
+        'email'           => 'breaks-'.uniqid().'@example.com',
+        'worker_number'   => 'BR'.uniqid(),
+    ]);
+
+    UpdateEmployee::make()->action($employee, [
+        'working_hours' => [
+            'data' => [
+                3 => ['s' => '08:00', 'e' => '16:00', 'b' => [['s' => '12:00', 'e' => '12:30', 'n' => 'Lunch', 'p' => false]]],
+            ],
+        ],
+    ]);
+
+    $schedule = $employee->refresh()->getDefaultWorkSchedule();
+    expect($schedule->days()->where('day_of_week', 3)->first()->breaks()->count())->toBe(1);
+
+    UpdateEmployee::make()->action($employee, [
+        'working_hours' => [
+            'data' => [
+                3 => ['s' => '08:00', 'e' => '16:00', 'w' => false, 'b' => [['s' => '12:00', 'e' => '12:30', 'n' => 'Lunch', 'p' => false]]],
+            ],
+        ],
+    ]);
+
+    $wednesday = $schedule->refresh()->days()->where('day_of_week', 3)->first();
+
+    expect($wednesday->is_working_day)->toBeFalse()
+        ->and($wednesday->start_time)->toBeNull()
+        ->and($wednesday->breaks()->count())->toBe(0);
+
+    // switched on but with no hours is still not a day anybody works
+    UpdateEmployee::make()->action($employee, [
+        'working_hours' => [
+            'data' => [
+                3 => ['s' => null, 'e' => null, 'w' => true, 'b' => []],
+                4 => ['s' => '08:00', 'e' => null, 'w' => true, 'b' => []],
+            ],
+        ],
+    ]);
+
+    $schedule->refresh();
+
+    expect($schedule->days()->where('day_of_week', 3)->value('is_working_day'))->toBeFalse()
+        ->and($schedule->days()->where('day_of_week', 4)->value('is_working_day'))->toBeFalse()
+        ->and($schedule->days()->where('day_of_week', 4)->value('start_time'))->toBeNull();
+});
+
+test('a schedule saved the old way, without the working day flag, is unchanged', function () {
+    $schedule = StoreWorkSchedule::make()->action($this->organisation, [
+        'name' => 'Legacy payload',
+        'type' => 'shift',
+    ]);
+
+    // what the organisation's own hours editor sends: no 'w' anywhere
+    UpdateWorkSchedule::make()->action($this->organisation, $schedule, [
+        'working_hours' => [
+            'data' => [
+                1 => ['s' => '09:00', 'e' => '17:00', 'b' => [['s' => '13:00', 'e' => '13:30', 'n' => 'Lunch']]],
+                6 => ['s' => null, 'e' => null, 'b' => []],
+            ],
+        ],
+    ]);
+
+    $monday   = $schedule->days()->where('day_of_week', 1)->first();
+    $saturday = $schedule->days()->where('day_of_week', 6)->first();
+
+    expect($monday->is_working_day)->toBeTrue()
+        ->and($monday->start_time)->toBe('09:00:00')
+        ->and($monday->breaks()->count())->toBe(1)
+        ->and($saturday->is_working_day)->toBeFalse()
+        ->and($schedule->days()->count())->toBe(2);
+});
+
+test('attendance is judged against the employee week, not the organisation one', function () {
+    $employee = Employee::factory()->create([
+        'organisation_id'  => $this->organisation->id,
+        'group_id'         => $this->group->id,
+        'state'            => \App\Enums\HumanResources\Employee\EmployeeStateEnum::WORKING,
+        'employment_type'  => \App\Enums\HumanResources\Employee\EmploymentTypeEnum::FULL_TIME,
+        'email'            => 'late-'.uniqid().'@example.com',
+        'worker_number'    => 'LT'.uniqid(),
+    ]);
+
+    $everyDayNineToFive = collect(range(1, 7))
+        ->mapWithKeys(fn (int $day) => [$day => ['s' => '09:00', 'e' => '17:00']])
+        ->all();
+
+    // the organisation works every day of the week
+    StoreWorkSchedule::make()->action($this->organisation, [
+        'name'          => 'Org every day '.uniqid(),
+        'type'          => 'default',
+        'working_hours' => ['data' => $everyDayNineToFive],
+    ]);
+
+    $lateClocking = new class () {
+        use \App\Actions\HumanResources\Clocking\Traits\DeterminesClockingResult;
+
+        public function check(Employee $employee, \Illuminate\Support\Carbon $at): bool
+        {
+            return $this->calculateLateClocking($employee, $at);
+        }
+    };
+
+    // in the organisation's timezone, since that is the clock the check works against
+    $timezone     = $this->organisation->timezone->name ?? config('app.timezone');
+    $todayIso     = \Illuminate\Support\Carbon::today($timezone)->dayOfWeekIso;
+    $twoHoursLate = \Illuminate\Support\Carbon::today($timezone)->setTimeFromTimeString('09:00')->addHours(2);
+
+    // this employee does not work today, whatever the organisation says
+    UpdateEmployee::make()->action($employee, [
+        'working_hours' => [
+            'data' => array_replace($everyDayNineToFive, [$todayIso => ['s' => null, 'e' => null, 'w' => false, 'b' => []]]),
+        ],
+    ]);
+
+    expect($employee->refresh()->getEffectiveWorkSchedule()->days()->where('day_of_week', $todayIso)->value('is_working_day'))->toBeFalse()
+        ->and($lateClocking->check($employee->refresh(), $twoHoursLate))->toBeFalse();
+
+    // and once today is a day they do work, the same clocking is late
+    UpdateEmployee::make()->action($employee, [
+        'working_hours' => ['data' => $everyDayNineToFive],
+    ]);
+
+    expect($lateClocking->check($employee->refresh(), $twoHoursLate))->toBeTrue();
+});
+
+test('the clocking screen counts attendance against each employee own week', function () {
+    $organisation = $this->organisation;
+
+    $everyDayNineToFive = collect(range(1, 7))
+        ->mapWithKeys(fn (int $day) => [$day => ['s' => '09:00', 'e' => '17:00']])
+        ->all();
+
+    // the organisation's own default schedule, not a second one beside it: only the first is
+    // ever read back
+    $organisationSchedule = $organisation->getDefaultWorkSchedule();
+
+    if ($organisationSchedule) {
+        UpdateWorkSchedule::make()->action($organisation, $organisationSchedule, [
+            'working_hours' => ['data' => $everyDayNineToFive],
+        ]);
+    } else {
+        StoreWorkSchedule::make()->action($organisation, [
+            'name'          => 'Org every day '.uniqid(),
+            'type'          => 'default',
+            'working_hours' => ['data' => $everyDayNineToFive],
+        ]);
+    }
+
+    $timezone = $organisation->timezone->name ?? config('app.timezone');
+    $today    = \Illuminate\Support\Carbon::today($timezone);
+    $todayIso = $today->dayOfWeekIso;
+
+    $employee = Employee::factory()->create([
+        'organisation_id' => $organisation->id,
+        'group_id'        => $this->group->id,
+        'state'           => \App\Enums\HumanResources\Employee\EmployeeStateEnum::WORKING,
+        'email'           => 'stats-'.uniqid().'@example.com',
+        'worker_number'   => 'ST'.uniqid(),
+    ]);
+
+    // clocked in two hours after the organisation's start
+    $timesheet = StoreTimesheet::make()->action($employee, ['date' => $today->toDateString()]);
+    // written with an explicit offset so the instant is unambiguous whatever the app and the
+    // organisation are set to: two hours after the day starts, and away on time
+    \Illuminate\Support\Facades\DB::table('timesheets')->where('id', $timesheet->id)->update([
+        'start_at' => $today->copy()->setTimeFromTimeString('11:00')->utc()->format('Y-m-d H:i:sP'),
+        'end_at'   => $today->copy()->setTimeFromTimeString('17:00')->utc()->format('Y-m-d H:i:sP'),
+    ]);
+
+    expect($timesheet->refresh()->start_at->copy()->setTimezone($timezone)->format('H:i'))->toBe('11:00');
+
+    $lateCount = function () use ($employee, $timezone) {
+        $action = IndexClockingEmployees::make();
+        $statsQuery = \App\Models\HumanResources\Timesheet::where('subject_type', 'Employee')
+            ->where('subject_id', $employee->id);
+
+        $statistics = (new ReflectionMethod($action, 'getStatistics'))
+            ->invoke($action, $employee->refresh(), $statsQuery, $timezone, null, null);
+
+        return $statistics['late_clock_in'] ?? null;
+    };
+
+    expect($lateCount())->toBe(1);
+
+    // the same clocking on a day this employee does not work is not counted
+    UpdateEmployee::make()->action($employee, [
+        'working_hours' => [
+            'data' => array_replace($everyDayNineToFive, [$todayIso => ['s' => null, 'e' => null, 'w' => false, 'b' => []]]),
+        ],
+    ]);
+
+    expect($lateCount())->toBe(0);
 });
