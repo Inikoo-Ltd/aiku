@@ -16,6 +16,8 @@ use App\Enums\CRM\Livechat\ChatAssignmentStatusEnum;
 use App\Enums\CRM\Livechat\ChatChannelEnum;
 use App\Enums\CRM\Livechat\ChatEventTypeEnum;
 use App\Enums\CRM\Livechat\ChatIgnoreReasonEnum;
+use App\Enums\CRM\Livechat\ChatPhoneCallContactTypeEnum;
+use App\Enums\CRM\Livechat\ChatPhoneCallStatusEnum;
 use App\Actions\Chat\ChatSession\GetChatSessions;
 use App\Enums\CRM\Livechat\ChatSessionStatusEnum;
 use App\Http\Resources\CRM\Livechat\ChatSessionListResource;
@@ -264,8 +266,9 @@ class ShowOrgChatInbox extends OrgAction
 
         $shopIds = $shops->pluck('id');
         $counts  = $this->waitingAndActiveCounts($shopIds);
+        $phone   = $this->phoneCallCounts($shopIds);
 
-        return $shops->map(function ($shop) use ($user, $counts) {
+        return $shops->map(function ($shop) use ($user, $counts, $phone) {
             $channel = function (string $key, string $name) use ($shop, $counts): array {
                 $tally = function (string $kind) use ($shop, $counts, $key): array {
                     $row = $counts["{$shop->id}.{$key}.{$kind}"] ?? [];
@@ -307,11 +310,63 @@ class ShowOrgChatInbox extends OrgAction
                 'slug'     => $shop->slug,
                 'type'     => $shop->type?->value,
                 'channels' => $channels,
+                // The telephone is not a channel: nothing arrives on it, nothing waits on it and
+                // no conversation is held in it. It rides beside the channels as its own column
+                // so the rail says how much of the day went on the phone next to how much went
+                // on chat, which is the comparison anybody looking at this rail is making.
+                'phone'    => $phone[$shop->id] ?? ['in_progress' => 0, 'customer' => 0, 'guest' => 0],
                 // Writing is decided shop by shop, never once for the page: the same person is
                 // an agent on one shop and only oversees another.
                 'is_read_only' => !$this->userCanActOnChatOnShop($user, $shop),
             ];
         })->values()->all();
+    }
+
+    /**
+     * Telephone time per shop: what is happening now, and what has been finished today.
+     *
+     * A call in progress is deliberately not split between customer and guest. Who was on the
+     * other end is chosen when the call is filed, so until then it belongs to neither row, and
+     * putting it in one would make that row wrong for as long as the call lasts.
+     *
+     * @param  Collection<int, int>  $shopIds
+     * @return array<int, array{in_progress: int, customer: int, guest: int}>
+     */
+    private function phoneCallCounts(Collection $shopIds): array
+    {
+        $counts = [];
+
+        $running = ChatPhoneCall::whereIn('shop_id', $shopIds)
+            ->inProgress()
+            ->groupBy('shop_id')
+            ->selectRaw('shop_id, count(*) as total')
+            ->pluck('total', 'shop_id');
+
+        $finished = ChatPhoneCall::whereIn('shop_id', $shopIds)
+            ->where('status', ChatPhoneCallStatusEnum::COMPLETED)
+            ->whereDate('ended_at', today())
+            ->groupBy('shop_id', 'contact_type')
+            ->get(['shop_id', 'contact_type', DB::raw('count(*) as total')]);
+
+        foreach ($shopIds as $shopId) {
+            $counts[$shopId] = [
+                'in_progress' => (int) ($running[$shopId] ?? 0),
+                'customer'    => 0,
+                'guest'       => 0,
+            ];
+        }
+
+        foreach ($finished as $row) {
+            $kind = $row->contact_type instanceof ChatPhoneCallContactTypeEnum
+                ? $row->contact_type->value
+                : (string) $row->contact_type;
+
+            if (isset($counts[$row->shop_id][$kind])) {
+                $counts[$row->shop_id][$kind] += (int) $row->total;
+            }
+        }
+
+        return $counts;
     }
 
     /**

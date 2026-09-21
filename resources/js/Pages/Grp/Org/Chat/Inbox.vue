@@ -45,6 +45,7 @@ const props = defineProps<{
             customer: { waiting: number; active: number; closed: number; mine: number; colleagues: number; closed_mine: number; closed_colleagues: number }
             guest: { waiting: number; active: number; closed: number; mine: number; colleagues: number; closed_mine: number; closed_colleagues: number }
         }>
+        phone?: { in_progress: number; customer: number; guest: number }
     }>
     selectedSessionUlid?: string | null
     initialSession?: any | null
@@ -332,6 +333,14 @@ const {
 const openPhoneCall = () => {
     setPreferredShop(selectedShopId.value ?? props.preselectShopId ?? null)
     openPhoneCallModal()
+}
+
+// The telephone column leaves the inbox rather than filtering it: a call is not a conversation,
+// and the list beside it only knows how to show conversations.
+const openPhoneCalls = (inbox: { slug: string }) => {
+    router.visit(
+        route("grp.org.shops.show.chat.phone_calls.index", [props.organisation.slug, inbox.slug])
+    )
 }
 
 watch(
@@ -1563,6 +1572,22 @@ onUnmounted(() => {
                                         class="text-[12px]"
                                         :class="channel.available === false ? 'text-slate-300' : channel.key === 'whatsapp' ? 'text-green-600' : channel.key === 'email' ? 'text-blue-500' : 'text-gray-500'" />
                                 </th>
+                                <!-- A call being taken right now belongs to neither row until it
+                                     is filed, so it is said once here rather than guessed into
+                                     the customer or the guest line. -->
+                                <th class="font-normal pb-0.5 border-b border-slate-100 border-l"
+                                    v-tooltip="inbox.phone?.in_progress
+                                        ? ctrans(':count on the phone right now', { count: String(inbox.phone.in_progress) })
+                                        : ctrans('Phone calls finished today')">
+                                    <span class="relative inline-flex items-center justify-center">
+                                        <FontAwesomeIcon :icon="faPhone" class="text-[12px]"
+                                            :class="inbox.phone?.in_progress ? 'text-emerald-600' : 'text-gray-500'" />
+                                        <span v-if="inbox.phone?.in_progress" class="absolute -top-0.5 -right-1 flex h-1.5 w-1.5">
+                                            <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+                                            <span class="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                                        </span>
+                                    </span>
+                                </th>
                             </tr>
                         </thead>
                         <tbody>
@@ -1591,6 +1616,16 @@ onUnmounted(() => {
                                             :class="isCellOn(inbox.id, channel.key, kind.key) ? 'opacity-50' : 'text-slate-400'"
                                             :style="isCellOn(inbox.id, channel.key, kind.key) ? { color: 'var(--theme-color-4)' } : {}">
                                             {{ channel[kind.key].active }}
+                                        </span>
+                                    </button>
+                                </td>
+                                <td class="border border-slate-100 border-l-slate-200">
+                                    <button type="button" @click="openPhoneCalls(inbox)"
+                                        v-tooltip="ctrans('Phone calls on this shop')"
+                                        class="w-full flex items-center justify-center px-1 py-0.5 leading-5 transition-colors hover:bg-slate-100">
+                                        <span class="font-semibold"
+                                            :class="inbox.phone?.[kind.key] ? 'text-slate-700' : 'text-slate-400'">
+                                            {{ inbox.phone?.[kind.key] ?? 0 }}
                                         </span>
                                     </button>
                                 </td>
