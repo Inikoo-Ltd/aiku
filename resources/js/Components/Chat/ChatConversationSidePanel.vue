@@ -13,6 +13,10 @@ import MessageHistory from '@/Components/Chat/MessageHistory.vue'
 import TicketQuickLook from '@/Components/Tickets/TicketQuickLook.vue'
 import AddressLocation from '@/Components/Elements/Info/AddressLocation.vue'
 import Icon from '@/Components/Icon.vue'
+import Modal from '@/Components/Utils/Modal.vue'
+import ProductsSelector from '@/Components/Dropshipping/ProductsSelector.vue'
+import { notify } from '@kyvg/vue3-notification'
+import { routeType } from '@/types/route'
 import { faArrowLeft, faLink, faEnvelope, faGlobe, faLock } from '@fal'
 import { faWhatsapp } from '@fortawesome/free-brands-svg-icons'
 
@@ -129,6 +133,9 @@ interface LastOrder {
     state: string
     total: string
     url: string | null
+    add_items: { products: routeType, save: routeType } | null
+    follow_up: routeType | null
+    payment_link: routeType | null
 }
 
 interface PreviousChat {
@@ -211,6 +218,86 @@ const loadTickets = async () => {
         tickets.value = []
     } finally {
         isLoadingTickets.value = false
+    }
+}
+
+const orderTakingItems = ref<LastOrder | null>(null)
+const isAddingItems = ref(false)
+
+const addItemsToOrder = async (products: { id: number, quantity_selected?: number }[]) => {
+    const order = orderTakingItems.value
+    if (!order?.add_items || isAddingItems.value) return
+    isAddingItems.value = true
+    try {
+        await axios.patch(route(order.add_items.save.name, order.add_items.save.parameters), {
+            products: Object.fromEntries(products.map((product) => [product.id, { quantity_ordered: product.quantity_selected ?? 1 }]))
+        })
+        notify({
+            title: ctrans("Success"),
+            text: ctrans("Items added to order :reference, the warehouse has been notified", { reference: order.reference }),
+            type: "success"
+        })
+        orderTakingItems.value = null
+        profileLoaded.value = false
+        loadCustomerProfile()
+    } catch (error: any) {
+        notify({
+            title: ctrans("Something went wrong"),
+            text: error?.response?.data?.message ?? ctrans("The items could not be added"),
+            type: "error"
+        })
+    } finally {
+        isAddingItems.value = false
+    }
+}
+
+const orderBeingFollowedUp = ref<string | null>(null)
+
+const createFollowUpOrder = async (order: LastOrder) => {
+    if (!order.follow_up || orderBeingFollowedUp.value) return
+    orderBeingFollowedUp.value = order.reference
+    try {
+        const res = await axios.post(route(order.follow_up.name, order.follow_up.parameters))
+        window.open(res.data.url, '_blank', 'noopener')
+        notify({
+            title: ctrans("Success"),
+            text: ctrans("Order :followUp created, the warehouse is told to send it together with :reference", { followUp: res.data.reference, reference: order.reference }),
+            type: "success"
+        })
+        profileLoaded.value = false
+        loadCustomerProfile()
+    } catch (error: any) {
+        notify({
+            title: ctrans("Something went wrong"),
+            text: error?.response?.data?.message ?? ctrans("The follow-up order could not be created"),
+            type: "error"
+        })
+    } finally {
+        orderBeingFollowedUp.value = null
+    }
+}
+
+const orderGettingPaymentLink = ref<string | null>(null)
+
+const createPaymentLink = async (order: LastOrder) => {
+    if (!order.payment_link || orderGettingPaymentLink.value) return
+    orderGettingPaymentLink.value = order.reference
+    try {
+        const res = await axios.post(route(order.payment_link.name, order.payment_link.parameters))
+        await navigator.clipboard.writeText(res.data.url)
+        notify({
+            title: ctrans("Payment link copied"),
+            text: ctrans("Paste it in the chat: :amount :currency for order :reference, the payment lands on the order by itself", { amount: res.data.amount, currency: res.data.currency, reference: order.reference }),
+            type: "success"
+        })
+    } catch (error: any) {
+        notify({
+            title: ctrans("Something went wrong"),
+            text: error?.response?.data?.message ?? ctrans("The payment link could not be created"),
+            type: "error"
+        })
+    } finally {
+        orderGettingPaymentLink.value = null
     }
 }
 
@@ -552,9 +639,31 @@ const copyChatId = async () => {
                             class="font-medium hover:underline" :style="{ color: themePrimary }">{{ order.reference }}</a>
                         <span v-else class="font-medium text-gray-800">{{ order.reference }}</span>
                         <span class="text-gray-500">{{ order.state }}</span>
+                        <button v-if="order.add_items" type="button" class="font-medium hover:underline"
+                            :style="{ color: themePrimary }" @click="orderTakingItems = order">
+                            + {{ ctrans("Add items") }}
+                        </button>
+                        <button v-else-if="order.follow_up" type="button" class="font-medium hover:underline disabled:opacity-50"
+                            :style="{ color: themePrimary }" :disabled="orderBeingFollowedUp === order.reference"
+                            v-tooltip="ctrans('Already picked: the extra items go on a new order the warehouse sends in the same parcel')"
+                            @click="createFollowUpOrder(order)">
+                            + {{ ctrans("Follow-up order") }}
+                        </button>
+                        <button v-if="order.payment_link" type="button" class="font-medium hover:underline disabled:opacity-50"
+                            :style="{ color: themePrimary }" :disabled="orderGettingPaymentLink === order.reference"
+                            v-tooltip="ctrans('Create a card payment link for what this order still owes and copy it')"
+                            @click="createPaymentLink(order)">
+                            {{ ctrans("Payment link") }}
+                        </button>
                         <span class="ml-auto text-gray-500">{{ formatStatDate(order.date) }}</span>
                         <span class="w-16 text-right font-medium text-gray-800">{{ customerProfile.stats?.currency_symbol ?? '' }}{{ order.total }}</span>
                     </div>
+                    <Modal :isOpen="!!orderTakingItems" @onClose="orderTakingItems = null" width="w-full max-w-6xl">
+                        <ProductsSelector v-if="orderTakingItems?.add_items"
+                            :headLabel="ctrans('Add products to Order') + ' #' + orderTakingItems.reference"
+                            :routeFetch="orderTakingItems.add_items.products" :isLoadingSubmit="isAddingItems"
+                            withQuantity @submit="addItemsToOrder" />
+                    </Modal>
                 </div>
 
                 <div v-if="customerProfile.previous_chats?.length" class="px-4 py-3 space-y-2">

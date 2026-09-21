@@ -12,6 +12,11 @@ use App\Models\Chat\ChatSession;
 use Illuminate\Http\JsonResponse;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
+use App\Actions\Accounting\OrderPaymentApiPoint\StoreOrderPaymentLink;
+use App\Actions\Ordering\Order\SaveOrderModification;
+use App\Enums\Accounting\PaymentAccount\PaymentAccountTypeEnum;
+use App\Enums\Accounting\PaymentAccountShop\PaymentAccountShopStateEnum;
+use App\Actions\Ordering\Order\StoreFollowUpOrder;
 use App\Actions\Helpers\Address\GetFormattedAddress;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\CRM\Livechat\ChatTopicEnum;
@@ -65,13 +70,18 @@ class GetChatCustomerProfile
     }
 
     /**
-     * @return array{company_name: ?string, phone: ?string, location: ?array{0: ?string, 1: ?string, 2: ?string}, address: ?string, last_orders: array<int, array{reference: string, date: ?string, state: string, total: string, url: ?string}>}
+     * @return array{company_name: ?string, phone: ?string, location: ?array{0: ?string, 1: ?string, 2: ?string}, address: ?string, last_orders: array<int, array{reference: string, date: ?string, state: string, total: string, url: ?string, add_items: ?array{products: array, save: array}, follow_up: ?array, payment_link: ?array}>}
      */
     public function contactAndLastOrders(Customer $customer): array
     {
         $stateLabels  = OrderStateEnum::labels();
         $organisation = $customer->organisation;
         $shop         = $customer->shop;
+        $canEditOrders = $shop && (bool)request()->user()?->authTo(["orders.{$shop->id}.edit"]);
+        $takesPaymentLinks = $canEditOrders && $shop->paymentAccountShops()
+            ->where('state', PaymentAccountShopStateEnum::ACTIVE)
+            ->where('type', PaymentAccountTypeEnum::CHECKOUT)
+            ->exists();
         $location     = is_string($customer->location) ? json_decode($customer->location, true) : $customer->location;
 
         return [
@@ -83,7 +93,9 @@ class GetChatCustomerProfile
                 ->where('state', '!=', OrderStateEnum::CREATING)
                 ->latest('date')
                 ->limit(5)
-                ->get(['id', 'slug', 'reference', 'date', 'state', 'total_amount'])
+                ->with('platform')
+                ->get()
+                ->each->setRelation('shop', $shop)
                 ->map(fn (Order $order) => [
                     'reference' => $order->reference,
                     'date'      => $order->date?->toIso8601String(),
@@ -91,6 +103,18 @@ class GetChatCustomerProfile
                     'total'     => $order->total_amount,
                     'url'       => $organisation && $shop
                         ? route('grp.org.shops.show.crm.customers.show.orders.show', [$organisation->slug, $shop->slug, $customer->slug, $order->slug])
+                        : null,
+                    'add_items' => $canEditOrders && SaveOrderModification::acceptsNewProducts($order)
+                        ? [
+                            'products' => ['name' => 'grp.json.order.products_for_modify', 'parameters' => ['order' => $order->id]],
+                            'save'     => ['name' => 'grp.models.order.modification.save', 'parameters' => ['order' => $order->id]],
+                        ]
+                        : null,
+                    'follow_up' => $canEditOrders && StoreFollowUpOrder::offersFollowUp($order)
+                        ? ['name' => 'grp.models.order.follow_up.store', 'parameters' => ['order' => $order->id]]
+                        : null,
+                    'payment_link' => $takesPaymentLinks && $order->state != OrderStateEnum::CANCELLED && StoreOrderPaymentLink::amountDue($order) > 0
+                        ? ['name' => 'grp.models.order.payment_link.store', 'parameters' => ['order' => $order->id]]
                         : null,
                 ])->all(),
         ];
