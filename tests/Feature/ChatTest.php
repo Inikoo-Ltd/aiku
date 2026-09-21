@@ -5724,3 +5724,55 @@ test('a photograph too large for an email arrives as a drive link and is fetched
 
     expect($message->attachedFiles()->pluck('name')->all())->toBe(['IMG_8872.jpeg']);
 });
+
+test('starting an email from the customer record opens an email conversation and keeps the thread', function () {
+    Bus::fake([\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class, \App\Actions\Comms\Mailbox\SendChatMessageByGmail::class]);
+
+    actingAs($this->user);
+
+    $settings          = $this->shop->settings ?? [];
+    $settings['gmail'] = [
+        'email'         => 'care@shop.test',
+        'refresh_token' => \Illuminate\Support\Facades\Crypt::encryptString('rt'),
+        'history_id'    => '1',
+    ];
+    $this->shop->update(['settings' => $settings]);
+    $this->customer->update(['email' => 'buyer@example.com']);
+    $this->customer->refresh();
+
+    \Illuminate\Support\Facades\Http::fake([
+        'oauth2.googleapis.com/token'                          => \Illuminate\Support\Facades\Http::response(['access_token' => 'at']),
+        'gmail.googleapis.com/gmail/v1/users/me/messages/send' => \Illuminate\Support\Facades\Http::response(['id' => 'sent9', 'threadId' => 't9']),
+        'gmail.googleapis.com/*'                               => \Illuminate\Support\Facades\Http::response([]),
+    ]);
+
+    expect(\App\Actions\Chat\ChatSession\StartCustomerEmailChat::canBeStarted($this->customer))->toBeTrue();
+
+    $session = \App\Actions\Chat\ChatSession\StartCustomerEmailChat::make()->action($this->customer, [
+        'subject' => 'Your order',
+        'message' => 'We have a question about your order',
+    ]);
+
+    expect($session->channel)->toBe(\App\Enums\CRM\Livechat\ChatChannelEnum::EMAIL)
+        ->and($session->status)->toBe(ChatSessionStatusEnum::ACTIVE)
+        ->and(Arr::get($session->metadata, 'email_from'))->toBe('buyer@example.com')
+        ->and($session->assignments()->where('status', ChatAssignmentStatusEnum::ACTIVE->value)->count())->toBe(1)
+        ->and($session->messages()->count())->toBe(1);
+
+    \App\Actions\Comms\Mailbox\SendChatMessageByGmail::run($session->messages()->first());
+
+    \Illuminate\Support\Facades\Http::assertSent(function (\Illuminate\Http\Client\Request $request) {
+        if (!str_ends_with($request->url(), 'users/me/messages/send')) {
+            return false;
+        }
+        $raw = base64_decode(strtr($request['raw'], '-_', '+/'));
+
+        return !isset($request['threadId'])
+            && str_contains($raw, 'To: ')
+            && str_contains($raw, 'buyer@example.com')
+            && str_contains($raw, 'Subject: Your order')
+            && !str_contains($raw, 'In-Reply-To:');
+    });
+
+    expect(Arr::get($session->fresh()->metadata, 'gmail_thread_id'))->toBe('t9');
+});

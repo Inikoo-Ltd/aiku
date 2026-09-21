@@ -26,6 +26,7 @@ use App\Actions\Billables\Service\StoreService;
 use App\Actions\Billables\ShippingZone\StoreShippingZone;
 use App\Actions\Billables\ShippingZone\UpdateShippingZone;
 use App\Actions\Billables\ShippingZoneSchema\UpdateShippingZoneSchema;
+use App\Actions\Chat\ChatSession\StartCustomerEmailChat;
 use App\Actions\Catalogue\Collection\AttachCollectionToModel;
 use App\Actions\Catalogue\Collection\AttachModelsToCollection;
 use App\Actions\Catalogue\Collection\AttachMultipleParentsToACollection;
@@ -1305,6 +1306,7 @@ Route::name('customer.')->prefix('customer/{customer:id}')->group(function () {
     Route::delete('address/{address:id}/delete', [DeleteCustomerDeliveryAddress::class, 'inCustomer'])->name('delivery-address.delete')->withoutScopedBindings();
     Route::post('attachment/attach', [AttachAttachmentToModel::class, 'inCustomer'])->name('attachment.attach');
     Route::delete('attachment/{attachment:id}/detach', [DetachAttachmentFromModel::class, 'inCustomer'])->name('attachment.detach')->withoutScopedBindings();
+    Route::post('email-chat', StartCustomerEmailChat::class)->name('email_chat.store');
     Route::post('order', [StoreOrder::class, 'inCustomer'])->name('order.store');
     Route::post('submitted-order', StoreSubmittedOrder::class)->name('submitted_order.store');
     Route::post('tags/store', [StoreTag::class, 'inCustomer'])->name('tags.store');
