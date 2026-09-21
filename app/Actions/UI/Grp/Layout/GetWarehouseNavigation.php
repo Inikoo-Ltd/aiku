@@ -53,6 +53,7 @@ class GetWarehouseNavigation
                 "topMenu" => [
                     "subSections" => [
                         [
+                            "label" => __("Dashboard"),
                             "icon"  => ["fal", "fa-chart-network"],
                             'root'  => 'grp.org.warehouses.show.inventory.dashboard',
                             "route" => [

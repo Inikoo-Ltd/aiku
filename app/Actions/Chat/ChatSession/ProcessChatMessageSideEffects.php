@@ -9,6 +9,7 @@
 namespace App\Actions\Chat\ChatSession;
 
 use App\Enums\CRM\Livechat\ChatActorTypeEnum;
+use App\Enums\CRM\Livechat\ChatChannelEnum;
 use App\Enums\CRM\Livechat\ChatSenderTypeEnum;
 use App\Models\Chat\ChatMessage;
 use App\Models\Chat\ChatSession;
@@ -25,6 +26,14 @@ class ProcessChatMessageSideEffects
     {
         $this->updateSessionTimestamps($chatSession, $senderType);
         $this->logMessageEvent($chatSession, $senderType, $senderId, $chatMessage);
+
+        if ($senderType === ChatSenderTypeEnum::GUEST->value && $chatSession->channel !== ChatChannelEnum::EMAIL) {
+            $chatSession = SuggestChatSessionCustomer::run($chatSession->refresh());
+
+            if (ClassifyChatSessionNoise::isCandidate($chatSession)) {
+                ClassifyChatSessionNoise::dispatch($chatSession);
+            }
+        }
     }
 
     private function updateSessionTimestamps(ChatSession $chatSession, string $senderType): void

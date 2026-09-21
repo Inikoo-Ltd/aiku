@@ -103,6 +103,13 @@ class MarkChatSessionAsRubbish
             ], 403);
         }
 
+        if (!$this->userCanDisposeOfChat($agent->user, $chatSession)) {
+            return response()->json([
+                'success' => false,
+                'message' => $this->chatHeldByAnotherAgentMessage($chatSession),
+            ], 403);
+        }
+
         if ((bool) $chatSession->is_rubbish === $rubbish) {
             return response()->json([
                 'success' => false,

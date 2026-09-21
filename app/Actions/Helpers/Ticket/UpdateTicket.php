@@ -206,12 +206,15 @@ class UpdateTicket extends OrgAction
             return $isVerdict ? Ticket::canCheckQa($user) : $ticket->canContributeBy($user);
         }
 
+        // The reporter's own cancel and reopen are additions to who could already do it: whoever
+        // holds the ticket keeps every status of it, or the assignee is shown a Cancel button
+        // that answers 403.
         if ($request->input('status') === TicketStatusEnum::CANCELLED->value && array_diff($fields, ['status', 'status_comment']) === []) {
-            return $ticket->canBeCancelledByReporter($user);
+            return $ticket->canBeCancelledByReporter($user) || $ticket->canBeUpdatedBy($user);
         }
 
         if ($request->input('status') === TicketStatusEnum::ANSWERED->value && $request->filled('status_comment') && array_diff($fields, ['status', 'status_comment']) === []) {
-            return $ticket->canBeReopenedByReporter($user);
+            return $ticket->canBeReopenedByReporter($user) || $ticket->canBeUpdatedBy($user);
         }
 
         if ($request->has('assignee_id')) {

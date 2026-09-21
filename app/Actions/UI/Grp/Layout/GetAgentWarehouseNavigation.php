@@ -38,6 +38,7 @@ class GetAgentWarehouseNavigation
                 "topMenu" => [
                     "subSections" => [
                         [
+                            "label" => __("Dashboard"),
                             "icon"  => ["fal", "fa-chart-network"],
                             'root'  => 'grp.org.warehouses.show.agent_inventory.dashboard',
                             "route" => [

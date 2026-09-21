@@ -109,7 +109,7 @@ const handleToggleLeftBar = () => {
             
             <RetinaLeftSidebarNavigation>
                 <template #default>
-                    <a
+                    <!-- <a
                         v-if="layout.retina.portal_link && layout.retina.portal_link !== ''"
                         :href="layout.retina.portal_link"
                         class="relative group hover:underline rounded-md py-2 w-full group flex items-center text-sm gap-x-2" xclass="[open ? 'bg-black/25' : '']"
@@ -132,7 +132,7 @@ const handleToggleLeftBar = () => {
                         </Transition>
 
                         <FontAwesomeIcon v-if="layout.leftSidebar.show" icon="fal fa-external-link-alt" class="opacity-50 group-hover:opacity-100 absolute right-4 text-[var(--theme-color-1)]" fixed-width aria-hidden="true" />
-                    </a>
+                    </a> -->
                 </template>
             </RetinaLeftSidebarNavigation>
             

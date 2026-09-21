@@ -11,6 +11,7 @@ use App\Actions\Chat\WithChatAgentAuthorisation;
 use App\Enums\CRM\Livechat\ChatAssignmentStatusEnum;
 use App\Enums\CRM\Livechat\ChatEventTypeEnum;
 use App\Enums\CRM\Livechat\ChatSenderTypeEnum;
+use App\Enums\Helpers\Ticket\TicketStatusEnum;
 use App\Actions\Chat\ChatSession\GetChatSessions;
 use App\Enums\CRM\Livechat\ChatSessionStatusEnum;
 use App\Http\Resources\CRM\Livechat\MetaChatSessionListResource;
@@ -119,7 +120,14 @@ class GetMetaChatSessions
                             ChatSenderTypeEnum::GUEST->value,
                             ChatSenderTypeEnum::USER->value,
                         ]);
-                }
+                },
+                'tickets as open_tickets_count' => function ($q) {
+                    $q->whereNotIn('status', [TicketStatusEnum::RESOLVED->value, TicketStatusEnum::CANCELLED->value]);
+                },
+                'tickets as blocking_tickets_count' => function ($q) {
+                    $q->where('blocks_source', true)
+                        ->whereNotIn('status', [TicketStatusEnum::RESOLVED->value, TicketStatusEnum::CANCELLED->value]);
+                },
             ])
             ->orderByRaw('COALESCE(last_visitor_message_at, last_agent_message_at, created_at) DESC');
 

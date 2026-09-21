@@ -107,6 +107,7 @@ const props = defineProps<{
 		by_shop: ShopRow[]
 		by_topic: TopicRow[]
 		unclassified: number
+		customer_suggestions: { basis: string; suggested: number; confirmed: number; rejected: number }[]
 		noise: { source: string; noise: number; genuine: number; reversed: number }[]
 		agents: AgentRow[]
 		agents_total: {
@@ -619,6 +620,40 @@ const sortedShops = computed(() => sortRows(props.stats.by_shop, "shops"))
 							<td class="px-4 py-2 text-right">{{ row.noise }}</td>
 							<td class="px-4 py-2 text-right">{{ row.genuine }}</td>
 							<td class="px-4 py-2 text-right font-medium">{{ row.reversed }}</td>
+						</tr>
+					</tbody>
+				</table>
+			</div>
+		</DashboardWidgetBox>
+
+		<DashboardWidgetBox v-if="stats.customer_suggestions.length" storageKey="chat_reports_suggestions_collapsed">
+			<template #header>
+				<span class="flex items-center gap-2 text-sm font-semibold text-gray-600">
+					<FontAwesomeIcon icon="fal fa-user-headset" class="text-violet-600" fixed-width aria-hidden="true" />
+					{{ ctrans("Guests taken for a customer") }}
+				</span>
+				<span class="text-xs text-gray-400">
+					{{ ctrans("Suggested by the system, decided by an agent") }}
+				</span>
+			</template>
+			<div class="-mx-4 -mb-4 overflow-x-auto">
+				<table class="min-w-full text-sm tabular-nums">
+					<thead class="text-left text-xs text-gray-500">
+						<tr>
+							<th class="px-4 py-2">{{ ctrans("Went on") }}</th>
+							<th class="px-4 py-2 text-right">{{ ctrans("Suggested") }}</th>
+							<th class="px-4 py-2 text-right">{{ ctrans("Confirmed") }}</th>
+							<th class="px-4 py-2 text-right">{{ ctrans("Not them") }}</th>
+						</tr>
+					</thead>
+					<tbody class="divide-y divide-gray-100">
+						<tr v-for="row in stats.customer_suggestions" :key="row.basis" class="hover:bg-gray-50">
+							<td class="px-4 py-2">
+								{{ row.basis === "email" ? ctrans("Email they gave") : row.basis === "phone" ? ctrans("Phone number") : ctrans("Order number") }}
+							</td>
+							<td class="px-4 py-2 text-right">{{ row.suggested }}</td>
+							<td class="px-4 py-2 text-right">{{ row.confirmed }}</td>
+							<td class="px-4 py-2 text-right font-medium">{{ row.rejected }}</td>
 						</tr>
 					</tbody>
 				</table>

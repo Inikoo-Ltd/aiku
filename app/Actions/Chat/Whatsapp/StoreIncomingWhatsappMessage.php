@@ -8,6 +8,7 @@
 namespace App\Actions\Chat\Whatsapp;
 
 use App\Actions\Chat\ChatSession\ClassifyChatSessionNoise;
+use App\Actions\Chat\ChatSession\SuggestChatSessionCustomer;
 use App\Actions\Chat\MetaChatSession\ReopenMetaChatSession;
 use App\Actions\Chat\MetaChatSession\SetMetaChatMessageReaction;
 use App\Actions\Chat\MetaChatSession\StoreMetaChatMessage;
@@ -145,6 +146,10 @@ class StoreIncomingWhatsappMessage
         }
 
         $metaChatSession->update(['last_visitor_message_at' => now()]);
+
+        if (SuggestChatSessionCustomer::isOpenToSuggestion($metaChatSession)) {
+            SuggestChatSessionCustomer::dispatch($metaChatSession);
+        }
 
         if (ClassifyChatSessionNoise::isCandidate($metaChatSession)) {
             ClassifyChatSessionNoise::dispatch($metaChatSession);

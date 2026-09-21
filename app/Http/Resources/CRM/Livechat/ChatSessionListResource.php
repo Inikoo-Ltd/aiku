@@ -78,6 +78,7 @@ class ChatSessionListResource extends JsonResource
             'rubbish_reason' => $this->rubbish_reason
                 ? \App\Enums\CRM\Livechat\ChatIgnoreReasonEnum::from($this->rubbish_reason)->label()
                 : null,
+            'customer_suggestion' => \App\Actions\Chat\ChatSession\SuggestChatSessionCustomer::forList($this->resource),
             'noise' => \App\Actions\Chat\ChatSession\ClassifyChatSessionNoise::forList($this->resource),
             'is_highlighted' => (bool) $this->is_highlighted,
             'guest_identifier' => $this->guest_identifier,
@@ -145,6 +146,11 @@ class ChatSessionListResource extends JsonResource
                     'original' => '/retina-default-user.svg'
                 ]
             ] : null,
+
+            'open_tickets_count'     => (int) ($this->open_tickets_count ?? 0),
+            'blocking_tickets_count' => (int) ($this->blocking_tickets_count ?? 0),
+
+            'can_dispose'    => \App\Actions\Chat\CanDisposeOfChat::run($request->user(), $this->resource),
 
             'assigned_agent' => $activeAssignment ? [
                 'id'      => $activeAssignment->chatAgent?->id,

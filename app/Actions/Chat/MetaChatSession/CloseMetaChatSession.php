@@ -7,6 +7,7 @@
 
 namespace App\Actions\Chat\MetaChatSession;
 
+use App\Actions\Chat\WithBlockingTickets;
 use App\Actions\Chat\WithChatAgentAuthorisation;
 use App\Enums\CRM\Livechat\ChatActorTypeEnum;
 use App\Enums\CRM\Livechat\ChatAssignmentStatusEnum;
@@ -29,6 +30,7 @@ use Lorisleiva\Actions\Concerns\AsAction;
 class CloseMetaChatSession
 {
     use AsAction;
+    use WithBlockingTickets;
     use WithChatAgentAuthorisation;
 
     /**
@@ -40,6 +42,16 @@ class CloseMetaChatSession
         ChatActorTypeEnum $actorType = ChatActorTypeEnum::AGENT,
         array $additionalData = []
     ): MetaChatSession {
+        if ($actorType === ChatActorTypeEnum::AGENT) {
+            $blockingTickets = $this->unresolvedBlockingTickets($metaChatSession);
+
+            if ($blockingTickets->isNotEmpty()) {
+                throw ValidationException::withMessages([
+                    'message' => $this->blockingTicketsMessage($blockingTickets),
+                ]);
+            }
+        }
+
         $systemMessage = null;
 
         $metaChatSession = DB::transaction(function () use ($metaChatSession, $actorId, $actorType, $additionalData, &$systemMessage) {
