@@ -231,6 +231,7 @@ test('a product added while the note is being picked reaches the picker and the 
         ->and((float)$lateTransaction->submitted_quantity_ordered)->toBe(3.0)
         ->and($lateItems)->not->toBeEmpty()
         ->and($lateItems->every(fn ($item) => $item->state == DeliveryNoteItemStateEnum::HANDLING))->toBeTrue()
+        ->and($lateItems->every(fn ($item) => $item->is_dirty))->toBeTrue()
         ->and((float)$order->total_amount)->toBeGreaterThan($totalBefore)
         ->and($order->pay_status)->not->toEqual(OrderPayStatusEnum::PAID)
         ->and($order->post_submit_modification_data)->toHaveCount(1);

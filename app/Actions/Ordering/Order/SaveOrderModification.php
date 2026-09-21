@@ -186,7 +186,7 @@ class SaveOrderModification extends OrgAction
             ]);
 
             if ($beingPicked) {
-                $deliveryNoteItem->update(['state' => DeliveryNoteItemStateEnum::HANDLING]);
+                $deliveryNoteItem->update(['state' => DeliveryNoteItemStateEnum::HANDLING, 'is_dirty' => true]);
             }
         }
 
