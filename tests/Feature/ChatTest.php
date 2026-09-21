@@ -26,6 +26,8 @@ use App\Actions\Chat\ChatSession\GetChatAgentByUserId;
 use App\Actions\Chat\ChatSession\GetChatAgents;
 use App\Actions\Chat\ChatSession\GetChatAgentSpecializations;
 use App\Actions\Chat\ChatSession\GetChatCustomerProfile;
+use App\Actions\Helpers\Address\GetFormattedAddress;
+use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Actions\Chat\ChatSession\GetChatCustomerTimeline;
 use App\Actions\Chat\ChatSession\GetChatReports;
 use App\Actions\Chat\ChatSession\GetChatDashboardVisitors;
@@ -75,6 +77,7 @@ use App\Enums\CRM\Livechat\ChatEventTypeEnum;
 use App\Enums\CRM\Livechat\ChatMessageTypeEnum;
 use App\Enums\CRM\Livechat\ChatPriorityEnum;
 use App\Enums\CRM\Livechat\ChatSenderTypeEnum;
+use App\Enums\CRM\Livechat\ChatTopicEnum;
 use App\Enums\CRM\Livechat\ChatChannelEnum;
 use App\Actions\Chat\ChatSession\MarkChatSessionAsRubbish;
 use App\Enums\CRM\Livechat\ChatIgnoreReasonEnum;
@@ -1815,6 +1818,16 @@ test('GetChatCustomerProfile returns empty defaults when session has no web user
     expect($result)->toBe(['tags' => [], 'stats' => null, 'email' => null, 'profile_url' => null]);
 });
 
+test('GetChatCustomerProfile gives the customer address and leaves baskets out of the last orders', function () {
+    $result = GetChatCustomerProfile::make()->contactAndLastOrders($this->customer);
+
+    expect($result)->toHaveKeys(['company_name', 'phone', 'address', 'last_orders'])
+        ->and($result['address'])->toBe(GetFormattedAddress::run($this->customer->address))
+        ->and(count($result['last_orders']))->toBe(
+            min(5, $this->customer->orders()->where('state', '!=', OrderStateEnum::CREATING)->count())
+        );
+});
+
 test('GetChatCustomerTimeline returns empty events when session has no customer', function () {
     $chatSession = ChatSession::create([
         'ulid'             => (string)Str::ulid(),
@@ -2830,6 +2843,13 @@ test('customer chat history merges website and whatsapp sessions', function () {
     expect($result['rows'])->toHaveCount(2)
         ->and($byUlid[$websiteSession->ulid]['channel'])->toBe('website')
         ->and($byUlid[$whatsappSession->ulid]['channel'])->toBe('whatsapp');
+
+    $websiteSession->update(['channel' => ChatChannelEnum::EMAIL]);
+
+    $emailRow = GetCustomerChatHistory::make()->handle(['customer_id' => $customer->id])['rows']
+        ->firstWhere(fn (array $row) => $row['session']->ulid === $websiteSession->ulid);
+
+    expect($emailRow['channel'])->toBe('email');
 });
 
 test('customer chat history resolves the customer from a web user id', function () {
@@ -4718,6 +4738,8 @@ test('GetChatReports counts only conversations the visitor wrote in and measures
     $message($answered, ChatSenderTypeEnum::GUEST->value, 100);
     $message($answered, ChatSenderTypeEnum::AGENT->value, 90);
 
+    $answered->update(['topic' => ChatTopicEnum::ORDER_STATUS->value]);
+
     $emailed = $session('email', $reportShop->id);
     $message($emailed, ChatSenderTypeEnum::USER->value, 60);
 
@@ -4734,6 +4756,9 @@ test('GetChatReports counts only conversations the visitor wrote in and measures
         ->and($result['median_reply_minutes'])->toBe(10.0)
         ->and(collect($result['by_channel'])->firstWhere('channel', 'email')['conversations'])->toBe(1)
         ->and(collect($result['by_channel'])->firstWhere('channel', 'whatsapp')['conversations'])->toBe(0)
+        ->and($result['by_topic'])->toHaveCount(1)
+        ->and($result['by_topic'][0])->toMatchArray(['topic' => 'order_status', 'conversations' => 1, 'share' => 100.0, 'website' => 1, 'unanswered' => 0])
+        ->and($result['unclassified'])->toBe(1)
         ->and($widgetOnlyOpened->exists)->toBeTrue();
 });
 
@@ -4952,4 +4977,87 @@ test('GetChatSessions limits the list to the shops asked for', function () {
     expect($both)->toContain($other->ulid)
         ->and($one)->toContain($other->ulid)
         ->and($one)->not->toContain($mine->ulid);
+});
+
+test('SummarizeChatSession classifies what the customer wanted and leaves system messages out', function () {
+    $webUser = StoreWebUser::make()->action($this->customer, WebUser::factory()->definition());
+    config(['askbot-laravel.openai_api_key' => 'test-key']);
+
+    \Illuminate\Support\Facades\Http::fake([
+        'api.openai.com/*' => \Illuminate\Support\Facades\Http::response(['choices' => [['message' => [
+            'content' => "```json\n".json_encode([
+                'summary'    => 'Two candles missing from GB589048, replacement sent.',
+                'topic'      => 'missing_or_damaged',
+                'key_points' => ['Two candles missing'],
+                'status'     => 'resolved',
+                'sentiment'  => 'neutral',
+            ])."\n```",
+        ]]]]),
+    ]);
+
+    $chatSession = ChatSession::create([
+        'ulid'             => (string) Str::ulid(),
+        'status'           => ChatSessionStatusEnum::CLOSED,
+        'guest_identifier' => 'guest_'.Str::random(5),
+        'language_id'      => 68,
+        'priority'         => ChatPriorityEnum::NORMAL,
+        'shop_id'          => $this->shop->id,
+        'web_user_id'      => $webUser->id,
+    ]);
+
+    foreach ([
+        [ChatSenderTypeEnum::USER, 'Two candles are missing from GB589048'],
+        [ChatSenderTypeEnum::SYSTEM, 'Chat session has been closed by agent'],
+    ] as [$senderType, $text]) {
+        ChatMessage::create([
+            'chat_session_id' => $chatSession->id,
+            'message_type'    => ChatMessageTypeEnum::TEXT,
+            'sender_type'     => $senderType,
+            'message_text'    => $text,
+        ]);
+    }
+
+    $chatSession = SummarizeChatSession::make()->handle($chatSession)->refresh();
+
+    expect($chatSession->topic)->toBe(ChatTopicEnum::MISSING_OR_DAMAGED->value)
+        ->and($chatSession->summarised_at)->not->toBeNull()
+        ->and(Arr::get($chatSession->metadata, 'ai_summary.summary'))->toContain('GB589048')
+        ->and(Arr::get($chatSession->metadata, 'ai_summary'))->not->toHaveKey('topic');
+
+    \Illuminate\Support\Facades\Http::assertSent(
+        fn ($request) => str_contains($request['messages'][1]['content'], 'customer: Two candles')
+            && !str_contains($request['messages'][1]['content'], 'closed by agent')
+    );
+
+    $previousContact = GetChatCustomerProfile::make()->previousContact($this->customer, new ChatSession());
+
+    expect($previousContact['previous_chats'][0]['ulid'])->toBe($chatSession->ulid)
+        ->and($previousContact['previous_chats'][0]['summary'])->toContain('GB589048')
+        ->and($previousContact['chat_topics'][0])->toMatchArray(['topic' => 'missing_or_damaged', 'count' => 1])
+        ->and(GetChatCustomerProfile::make()->previousContact($this->customer, $chatSession)['previous_chats'])->toBeEmpty();
+});
+
+test('SummarizeChatSession does not ask the model about a conversation the customer never wrote in', function () {
+    \Illuminate\Support\Facades\Http::fake();
+
+    $chatSession = ChatSession::create([
+        'ulid'             => (string) Str::ulid(),
+        'status'           => ChatSessionStatusEnum::CLOSED,
+        'guest_identifier' => 'guest_'.Str::random(5),
+        'language_id'      => 68,
+        'priority'         => ChatPriorityEnum::NORMAL,
+        'shop_id'          => $this->shop->id,
+    ]);
+
+    ChatMessage::create([
+        'chat_session_id' => $chatSession->id,
+        'message_type'    => ChatMessageTypeEnum::TEXT,
+        'sender_type'     => ChatSenderTypeEnum::AGENT,
+        'message_text'    => 'Hello, can I help?',
+    ]);
+
+    $chatSession = SummarizeChatSession::make()->handle($chatSession)->refresh();
+
+    \Illuminate\Support\Facades\Http::assertNothingSent();
+    expect($chatSession->topic)->toBeNull()->and($chatSession->summarised_at)->toBeNull();
 });

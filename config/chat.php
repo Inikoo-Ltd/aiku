@@ -17,4 +17,6 @@ return [
 
     ],
 
+    'summary_model' => env('CHAT_SUMMARY_MODEL', 'gpt-4o'),
+
 ];

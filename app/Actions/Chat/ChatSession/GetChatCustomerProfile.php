@@ -12,7 +12,13 @@ use App\Models\Chat\ChatSession;
 use Illuminate\Http\JsonResponse;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
+use App\Actions\Helpers\Address\GetFormattedAddress;
+use App\Enums\Ordering\Order\OrderStateEnum;
+use App\Enums\CRM\Livechat\ChatTopicEnum;
+use App\Models\Chat\MetaChatSession;
 use App\Models\CRM\Customer;
+use Illuminate\Support\Arr;
+use App\Models\Ordering\Order;
 
 class GetChatCustomerProfile
 {
@@ -35,6 +41,8 @@ class GetChatCustomerProfile
         return [
             'email'       => $customer->email ?: $webUser->email,
             'profile_url' => $this->customerProfileUrl($customer),
+            ...$this->contactAndLastOrders($customer),
+            ...$this->previousContact($customer, $chatSession),
 
             'tags'  => $customer->tags->map(fn ($tag) => [
                 'id'   => $tag->id,
@@ -53,6 +61,88 @@ class GetChatCustomerProfile
                 'number_returns'         => $stats->number_returns,
                 'number_orders_state_creating' => $stats->number_orders_state_creating,
             ] : null,
+        ];
+    }
+
+    /**
+     * @return array{company_name: ?string, phone: ?string, address: ?string, last_orders: array<int, array{reference: string, date: ?string, state: string, total: string, url: ?string}>}
+     */
+    public function contactAndLastOrders(Customer $customer): array
+    {
+        $stateLabels  = OrderStateEnum::labels();
+        $organisation = $customer->organisation;
+        $shop         = $customer->shop;
+
+        return [
+            'company_name' => $customer->company_name,
+            'phone'        => $customer->phone,
+            'address'      => $customer->address ? GetFormattedAddress::run($customer->address) : null,
+            'last_orders'  => $customer->orders()
+                ->where('state', '!=', OrderStateEnum::CREATING)
+                ->latest('date')
+                ->limit(5)
+                ->get(['id', 'slug', 'reference', 'date', 'state', 'total_amount'])
+                ->map(fn (Order $order) => [
+                    'reference' => $order->reference,
+                    'date'      => $order->date?->toIso8601String(),
+                    'state'     => $stateLabels[$order->state->value] ?? $order->state->value,
+                    'total'     => $order->total_amount,
+                    'url'       => $organisation && $shop
+                        ? route('grp.org.shops.show.crm.customers.show.orders.show', [$organisation->slug, $shop->slug, $customer->slug, $order->slug])
+                        : null,
+                ])->all(),
+        ];
+    }
+
+    /**
+     * What this customer wrote to us about over the last year, on every channel, leaving out
+     * the conversation being looked at: the last few in a line each, and how often each topic
+     * came up. Counted from the topic given to each conversation, so it says what happened
+     * and leaves the judging to whoever reads it.
+     *
+     * @return array{previous_chats: array<int, array{ulid: string, channel: string, date: ?string, topic: ?string, summary: ?string, status: ?string}>, chat_topics: array<int, array{topic: string, label: string, count: int}>}
+     */
+    public function previousContact(Customer $customer, ChatSession|MetaChatSession $current): array
+    {
+        $columns = ['id', 'ulid', 'topic', 'metadata', 'created_at'];
+
+        $chatSessions = ChatSession::query()
+            ->whereIn('web_user_id', $customer->webUsers()->select('id'))
+            ->where('is_rubbish', false)
+            ->where('is_spam', false)
+            ->whereNotNull('topic')
+            ->where('created_at', '>=', now()->subYear())
+            ->get([...$columns, 'channel'])
+            ->concat(
+                MetaChatSession::query()
+                    ->where('customer_id', $customer->id)
+                    ->where('is_spam', false)
+                    ->whereNotNull('topic')
+                    ->where('created_at', '>=', now()->subYear())
+                    ->get($columns)
+            )
+            ->reject(fn (ChatSession|MetaChatSession $chatSession) => $chatSession->is($current))
+            ->sortByDesc('created_at')
+            ->values();
+
+        $topicLabels = ChatTopicEnum::labels();
+
+        return [
+            'previous_chats' => $chatSessions->take(3)->map(fn (ChatSession|MetaChatSession $chatSession) => [
+                'ulid'    => $chatSession->ulid,
+                'channel' => $chatSession instanceof MetaChatSession ? 'whatsapp' : ($chatSession->channel?->value ?? 'website'),
+                'date'    => $chatSession->created_at?->toIso8601String(),
+                'topic'   => $topicLabels[$chatSession->topic] ?? null,
+                'summary' => Arr::get($chatSession->metadata ?? [], 'ai_summary.summary'),
+                'status'  => Arr::get($chatSession->metadata ?? [], 'ai_summary.status'),
+            ])->all(),
+            'chat_topics' => $chatSessions
+                ->where('topic', '!=', ChatTopicEnum::NO_REQUEST->value)
+                ->countBy('topic')
+                ->sortDesc()
+                ->map(fn (int $count, string $topic) => ['topic' => $topic, 'label' => $topicLabels[$topic] ?? $topic, 'count' => $count])
+                ->values()
+                ->all(),
         ];
     }
 

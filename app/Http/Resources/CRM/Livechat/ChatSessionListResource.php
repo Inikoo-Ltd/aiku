@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources\CRM\Livechat;
 
+use App\Enums\CRM\Livechat\ChatTopicEnum;
 use App\Enums\CRM\Livechat\ChatAssignmentStatusEnum;
 use App\Enums\CRM\Livechat\ChatSenderTypeEnum;
 use App\Enums\CRM\Livechat\ChatSessionStatusEnum;
@@ -62,6 +63,9 @@ class ChatSessionListResource extends JsonResource
                 'summary'     => Arr::get($summaryData, 'summary'),
                 'key_points'  => Arr::get($summaryData, 'key_points', []),
                 'sentiment'   => Arr::get($summaryData, 'sentiment', 'neutral'),
+                'status'      => Arr::get($summaryData, 'status'),
+                'topic'       => $this->topic,
+                'topic_label' => ChatTopicEnum::tryFrom((string) $this->topic)?->label(),
             ];
         }
 

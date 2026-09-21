@@ -8,6 +8,7 @@
 namespace App\Actions\Chat\ChatSession;
 
 use App\Enums\CRM\Livechat\ChatSessionStatusEnum;
+use App\Enums\CRM\Livechat\ChatTopicEnum;
 use App\Models\SysAdmin\User;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
@@ -88,6 +89,8 @@ class GetChatReports
             'by_status'     => $this->byStatus($sessions),
             'by_channel'    => $this->byChannel($sessions),
             'by_shop'       => $this->byShop($sessions, $shopNames),
+            'by_topic'      => $this->byTopic($sessions),
+            'unclassified'  => $sessions->whereNull('topic')->count(),
             'agents'        => $agents,
             'agents_total'  => [
                 'name'          => __('Total'),
@@ -113,6 +116,7 @@ class GetChatReports
                     s.shop_id,
                     {$source['channel']} as channel,
                     s.status,
+                    s.topic,
                     s.rating,
                     s.created_at,
                     s.closed_at,
@@ -351,6 +355,40 @@ class GetChatReports
                     'median_reply_minutes' => $this->median($answered->map(fn (object $row) => $this->replyMinutes($row))),
                 ];
             })
+            ->values()
+            ->all();
+    }
+
+    /**
+     * What customers wrote in about, from the topic the summariser gave each conversation.
+     * Greetings and tests are counted as their own line rather than hidden, so the share
+     * column adds up to the conversations that have been classified.
+     *
+     * @param  Collection<int, object>  $sessions
+     */
+    private function byTopic(Collection $sessions): array
+    {
+        $classified = $sessions->whereNotNull('topic');
+        $labels     = ChatTopicEnum::labels();
+
+        return $classified
+            ->groupBy('topic')
+            ->map(function (Collection $rows, string $topic) use ($classified, $labels) {
+                $answered = $rows->filter(fn (object $row) => $row->first_agent_at !== null);
+
+                return [
+                    'topic'         => $topic,
+                    'label'         => $labels[$topic] ?? $topic,
+                    'conversations' => $rows->count(),
+                    'share'         => round($rows->count() / $classified->count() * 100, 1),
+                    'unanswered'    => $rows->count() - $answered->count(),
+                    'website'       => $rows->where('channel', 'website')->count(),
+                    'email'         => $rows->where('channel', 'email')->count(),
+                    'whatsapp'      => $rows->where('channel', 'whatsapp')->count(),
+                    'median_reply_minutes' => $this->median($answered->map(fn (object $row) => $this->replyMinutes($row))),
+                ];
+            })
+            ->sortByDesc('conversations')
             ->values()
             ->all();
     }

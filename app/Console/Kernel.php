@@ -1053,6 +1053,15 @@ class Kernel extends ConsoleKernel
                 type: 'command',
                 scheduledAt: now()->format('H:i')
             );
+
+            $this->logSchedule(
+                $schedule->command('chat:summarise-idle')->hourlyAt(17)->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
+                    monitorSlug: 'SummarizeIdleChatSessions',
+                ),
+                name: 'SummarizeIdleChatSessions',
+                type: 'command',
+                scheduledAt: now()->format('H:i')
+            );
         }
     }
 
