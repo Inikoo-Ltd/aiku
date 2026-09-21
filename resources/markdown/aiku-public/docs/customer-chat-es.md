@@ -39,6 +39,8 @@ Después funciona como cualquier mensajería: escribe y envía, añade un emoji,
 
 Un mensaje enviado no se puede editar, porque el cliente ya lo tiene. <b>Take back</b> (Retirar) lo quita de todos los canales y avisa al cliente. <b>Redact</b> (Tachar) elimina para siempre el texto seleccionado de un mensaje - un número de tarjeta, una contraseña.
 
+<b>&#8942;</b> &rarr; <b>Email notification</b> (Aviso por correo) indica <b>On</b> (Activado) u <b>Off</b> (Desactivado). Activado, lo que envías le llega al cliente también por correo, pensado para quien preguntó en la web y cerró la pestaña. Solo se ofrece en una conversación que tengas tú, cuando hay una dirección a la que escribir, y nunca en una conversación de correo, que ya es un correo.
+
 ## El cliente a tu lado
 
 El panel lateral muestra con quién hablas: datos de contacto, últimos pedidos, facturas, lo que tiene en la cesta y un enlace a su página de cliente. Debajo están sus últimas tres conversaciones, una línea cada una, y con qué frecuencia salió cada tema en los últimos doce meses.
@@ -76,6 +78,8 @@ Una llamada que se deja en marcha se cierra sola al cabo de una hora, con un avi
 ## Terminar bien
 
 <b>End chat</b> (Finalizar chat) cierra la conversación y avisa al cliente; <b>Reopen</b> (Reabrir) la retoma donde se quedó. Una conversación con un ticket bloqueante no se puede cerrar hasta que ese ticket esté resuelto. Nada se borra nunca: una conversación cerrada se queda en la ficha del cliente.
+
+Una conversación también puede terminar sin ti. Si el ticket se abrió con <b>Let the developer close this chat</b> (Permitir que el desarrollador cierre este chat) marcado, quien resuelva ese ticket manda aquí su nota de cierre al cliente, firmada como desarrollador, y la conversación se cierra. En WhatsApp, donde solo se puede escribir dentro del día siguiente al último mensaje del cliente, una conversación resuelta más tarde se cierra en silencio y el ticket deja constancia de que no se pudo avisar al cliente.
 
 ## Informes
 

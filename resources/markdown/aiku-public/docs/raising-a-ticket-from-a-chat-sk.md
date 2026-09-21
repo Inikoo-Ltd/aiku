@@ -1,6 +1,6 @@
 ---
 title: Založenie ticketu z chatu
-summary: Zmeňte konverzáciu so zákazníkom na ticket bez prepisovania a držte chat otvorený, kým nie je práca hotová.
+summary: Premeňte konverzáciu so zákazníkom na ticket bez prepisovania, držte chat otvorený, kým nie je práca hotová, a nechajte toho, kto to opraví, oznámiť to zákazníkovi a konverzáciu zavrieť.
 date: 2026-09-21
 source_date: 2026-09-21
 tags: chat, tickets, help desk
@@ -37,6 +37,18 @@ Voľba typu <b>Bug</b> zaškrtne políčko za vás, pretože pri chybe zvyčajne
 
 <b>Kedy ho zaškrtnúť.</b> Zaškrtnite ho, keď zákazníkovi dlhujeme odpoveď, ktorá závisí od ticketu. Nechajte nezaškrtnuté, keď je ticket naša vlastná interná záležitosť - poznámka do dokumentácie, upratanie - a zákazník už bol obslúžený. Chat držaný otvorený kvôli internej záležitosti je chat, ktorý nikto nikdy nezatvorí.
 
+## Nechať ho zavrieť vývojárovi
+
+Zaškrtnutie <b>Mark as blocked</b> ponúkne druhú možnosť: <b>Let the developer close this chat when the ticket is settled</b> (nechať vývojára zavrieť tento chat, keď sa ticket vybaví).
+
+Nezaškrtnuté - chat čaká na vás: ticket sa vybaví, blokovanie sa uvoľní a zákazníkovi to poviete a konverzáciu zavriete vy.
+
+Zaškrtnuté - urobí to za vás ten, kto ticket vybaví. Pri označení <b>Done</b> (hotovo) alebo <b>Cancel</b> (zrušiť) napíše záverečnú poznámku, tá sa pošle tomuto zákazníkovi do tejto konverzácie a konverzácia sa zavrie. Ide von tým kanálom, ktorým písal - chat na webe, e-mail alebo WhatsApp - podpísaná ako vývojár, nie menom, s ktorým zákazník nikdy nehovoril. Oba dialógy na zavretie upozornia toho, kto píše, že si to zákazník prečíta.
+
+<b>WhatsApp má limit, ktorý nestanovujeme my.</b> Meta prenesie napísanú odpoveď len do dňa od poslednej správy zákazníka. Na neskôr vybavený ticket sa tam už odpovedať nedá, takže sa konverzácia zavrie bez správy a na tickete zostane, že zákazníkovi to nebolo možné oznámiť. Čo sa stalo - oznámené a zavreté, zavreté potichu, alebo ani jedno - je zapísané na tickete, pretože "zákazníkovi sme to povedali" a "skúsili sme to" sú dve rôzne veci.
+
+<b>Na čo to je.</b> Chyba, na ktorú zákazník čaká: správu si zaslúži v deň, keď je opravená, nie vtedy, keď si niekto nabudúce prečíta ticket. Na čo to nie je: čokoľvek, kde odpoveď potrebuje vaše slová, nie slová inžiniera.
+
 ## Sledovanie ticketu neskôr
 
 Hlavička vlákna počíta, čo je na konverzácii ešte otvorené. Kliknutím na tento počet sa bočný panel otvorí na <b>Tickets</b>, so zoznamom každého ticketu založeného z tohto chatu, s jeho referenciou, stavom, typom a dátumom. Kliknutím na riadok si prečítate ticket bez opustenia konverzácie.
@@ -47,7 +59,9 @@ Na uvoľnenie blokovania dokončite prácu a nastavte ticket na <b>Done</b>, ale
 
 ## Čo sa dostane na ticket
 
-Ticket si drží konverzáciu ako svoj zdroj, takže jeho otvorenie ukáže kanál, kontakt a odkaz späť na chat. Zákazník a obchod sa doplnia automaticky a vy ste zaznamenaný ako reportér. Ak chyba potrebuje inžiniera urýchlene, spomeňte ho menom v komentári - ticket povie, koho a ako spomenúť.
+Zákazník a obchod sa doplnia automaticky a vy ste zaznamenaný ako reportér. Ak chyba potrebuje inžiniera urýchlene, spomeňte ho menom v komentári - ticket povie, koho a ako spomenúť.
+
+Ticket si drží samotnú konverzáciu, pod popisom: kto je zákazník, s odkazom na jeho kartu, kto držal chat, a odkazy späť naň. Otvorte tam <b>Conversation</b> (konverzácia) a celú výmenu si prečítate priamo na tickete, v poradí, bez toho, aby ste niekam odchádzali - len na čítanie, pretože ticket nie je miesto, odkiaľ sa odpovedá zákazníkovi.
 
 <aside class="wayfinder"><strong>Kde kliknúť v aiku</strong>
 <ul>
@@ -55,5 +69,7 @@ Ticket si drží konverzáciu ako svoj zdroj, takže jeho otvorenie ukáže kan�
 <li><b>Držať chat otvorený:</b> zaškrtnite <b>Mark as blocked</b> pred stlačením <b>Create</b>.</li>
 <li><b>Pozrieť, čo je otvorené:</b> tlačidlo s počtom v hlavičke vlákna &rarr; <b>Tickets</b> v bočnom paneli.</li>
 <li><b>Uvoľniť blokovanie:</b> otvorte ticket &rarr; <b>Done</b>, alebo <b>Cancel</b>.</li>
+<li><b>Nechať vývojára oznámiť to zákazníkovi:</b> zaškrtnite aj <b>Let the developer close this chat</b> pred stlačením <b>Create</b>.</li>
+<li><b>Prečítať si konverzáciu na tickete:</b> otvorte ticket &rarr; <b>Conversation</b>, pod popisom.</li>
 </ul>
 </aside>

@@ -1,6 +1,6 @@
 ---
 title: Abrir un ticket desde un chat
-summary: Convierte una conversación con un cliente en un ticket sin tener que volver a escribirla, y mantén el chat abierto hasta que el trabajo esté hecho.
+summary: Convierte una conversación con un cliente en un ticket sin volver a escribirla, mantén el chat abierto hasta que el trabajo esté hecho, y deja que quien lo arregle avise al cliente y cierre la conversación.
 date: 2026-09-21
 source_date: 2026-09-21
 tags: chat, tickets, help desk
@@ -37,6 +37,18 @@ Elegir el tipo <b>Bug</b> (Fallo) marca la casilla por ti, porque un fallo suele
 
 <b>Cuándo marcarlo.</b> Márcalo cuando al cliente se le debe una respuesta que depende del ticket. Déjalo sin marcar cuando el ticket es tarea nuestra - una nota de documentación, un arreglo interno - y al cliente ya se le ha atendido. Un chat retenido por tarea interna es un chat que nadie cierra nunca.
 
+## Dejar que lo cierre el desarrollador
+
+Al marcar <b>Mark as blocked</b> aparece una segunda opción: <b>Let the developer close this chat when the ticket is settled</b> (Permitir que el desarrollador cierre este chat cuando el ticket se resuelva).
+
+Sin marcar, el chat te espera a ti: el ticket se resuelve, el bloqueo se levanta, y tú avisas al cliente y cierras la conversación.
+
+Marcado, lo hace por ti quien resuelva el ticket. Al ponerlo en <b>Done</b> (Hecho) o al hacer <b>Cancel</b> (Cancelar) escribe una nota de cierre, esa nota se envía a este cliente en esta conversación, y la conversación se cierra. Sale por el canal desde el que escribió - el chat de la web, el correo o WhatsApp - firmada como desarrollador y no con un nombre con el que el cliente nunca ha hablado. Ambos diálogos de cierre avisan a quien escribe de que el cliente lo va a leer.
+
+<b>WhatsApp tiene un límite que no ponemos nosotros.</b> Meta solo admite una respuesta escrita dentro del día siguiente al último mensaje del cliente. Un ticket resuelto más tarde no se puede contestar allí, así que la conversación se cierra sin mensaje y el ticket deja constancia de que no se pudo avisar al cliente. Lo que pasó - avisado y cerrado, cerrado en silencio, o ninguna de las dos - queda escrito en el ticket, porque "se avisó al cliente" y "lo intentamos" no son lo mismo.
+
+<b>Para qué es.</b> Un fallo que el cliente está esperando: se le debe la noticia el día en que se arregla, no cuando un agente vuelva a leer el ticket. Para qué no es: nada cuya respuesta necesite tus palabras y no las de un ingeniero.
+
 ## Seguirlo después
 
 La cabecera del hilo cuenta lo que sigue abierto en la conversación. Haz clic en ese contador y el panel lateral se abre en <b>Tickets</b> (Tickets), con todos los tickets abiertos desde este chat, su referencia, estado, tipo y fecha. Haz clic en una fila para leer el ticket sin salir de la conversación.
@@ -47,7 +59,9 @@ Para quitar el bloqueo, termina el trabajo y pon el ticket en <b>Done</b> (Hecho
 
 ## Qué llega al ticket
 
-El ticket mantiene la conversación como su origen, así que al abrirlo se ve el canal, el contacto y un enlace de vuelta al chat. El cliente y la tienda pasan automáticamente, y quedas registrado como quien lo reportó. Si el fallo necesita a un ingeniero con urgencia, menciónalo por su nombre en un comentario - el ticket dice a quién mencionar y cómo.
+El cliente y la tienda pasan automáticamente, y quedas registrado como quien lo reportó. Si el fallo necesita a un ingeniero con urgencia, menciónalo por su nombre en un comentario - el ticket dice a quién mencionar y cómo.
+
+El ticket se queda con la conversación misma, debajo de la descripción: quién es el cliente, con un enlace a su ficha, quién llevaba el chat y enlaces de vuelta a él. Abre allí <b>Conversation</b> (Conversación) y se lee el intercambio entero en el ticket, en orden, sin ir a ninguna parte - solo lectura, porque un ticket no es sitio desde el que responder a un cliente.
 
 <aside class="wayfinder"><strong>Dónde hacer clic en aiku</strong>
 <ul>
@@ -55,5 +69,7 @@ El ticket mantiene la conversación como su origen, así que al abrirlo se ve el
 <li><b>Mantener el chat abierto:</b> marca <b>Mark as blocked</b> antes de pulsar <b>Create</b>.</li>
 <li><b>Ver qué queda pendiente:</b> el botón contador en la cabecera del hilo &rarr; <b>Tickets</b> en el panel lateral.</li>
 <li><b>Levantar el bloqueo:</b> abre el ticket &rarr; <b>Done</b>, o <b>Cancel</b>.</li>
+<li><b>Que el desarrollador avise al cliente:</b> marca también <b>Let the developer close this chat</b> antes de pulsar <b>Create</b>.</li>
+<li><b>Leer la conversación en el ticket:</b> abre el ticket &rarr; <b>Conversation</b>, debajo de la descripción.</li>
 </ul>
 </aside>

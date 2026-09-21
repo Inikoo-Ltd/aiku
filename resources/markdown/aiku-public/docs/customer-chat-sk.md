@@ -39,6 +39,8 @@ Potom to funguje ako každý messenger: píšte a posielajte, pridajte emoji, pr
 
 Odoslanú správu nemožno upraviť, pretože zákazník ju už má. <b>Take back</b> (vziať späť) ju odstráni na každom kanáli a oznámi to zákazníkovi. <b>Redact</b> (začierniť) natrvalo vymaže vybraný text - číslo karty, heslo - zo správy.
 
+<b>&#8942;</b> &rarr; <b>Email notification</b> (e-mailové upozornenie) hovorí <b>On</b> (zapnuté) alebo <b>Off</b> (vypnuté). Zapnuté, to čo pošlete, príde zákazníkovi aj e-mailom - pre toho, kto sa opýtal na webe a zavrel kartu. Ponúka sa len v konverzácii, ktorú držíte vy, kde je adresa, na ktorú sa dá písať, a nikdy v e-mailovej konverzácii, ktorá už e-mailom je.
+
 ## Zákazník po vašom boku
 
 Bočný panel ukazuje, s kým hovoríte: kontaktné údaje, posledné objednávky, faktúry, čo má v košíku a odkaz na jeho zákaznícku stránku. Pod tým sú jeho posledné tri konverzácie, každá v jednom riadku, a ako často sa jednotlivé témy objavili za posledných dvanásť mesiacov.
@@ -76,6 +78,8 @@ Hovor ponechaný bežať sa sám ukončí po hodine, s upozornením desať minú
 ## Dobré zakončenie
 
 <b>End chat</b> (ukončiť chat) zavrie konverzáciu a oznámi to zákazníkovi; <b>Reopen</b> (znovu otvoriť) ju obnoví presne tam, kde sa zastavila. Konverzáciu s blokujúcim ticketom nemožno zavrieť, kým ten ticket nie je vybavený. Nič sa nikdy nemaže: zatvorená konverzácia zostáva v zázname zákazníka.
+
+Konverzácia sa môže skončiť aj bez vás. Ak bol ticket založený so zaškrtnutým <b>Let the developer close this chat</b> (nechať vývojára zavrieť tento chat), ten, kto ticket vybaví, pošle svoju záverečnú poznámku zákazníkovi sem, podpísanú ako vývojár, a konverzácia sa zavrie. Na WhatsApp, kde sa dá napísať len do dňa od poslednej správy zákazníka, sa neskôr vybavená konverzácia zavrie potichu a na tickete zostane, že zákazníkovi to nebolo možné oznámiť.
 
 ## Reporty
 
