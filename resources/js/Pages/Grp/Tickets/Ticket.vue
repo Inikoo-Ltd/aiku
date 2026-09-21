@@ -13,6 +13,7 @@ import { ctrans } from "@/Composables/useTrans"
 import Icon from "@/Components/Icon.vue"
 import TicketControlPanel from "@/Components/Tickets/TicketControlPanel.vue"
 import TicketSourceCard from "@/Components/Tickets/TicketSourceCard.vue"
+import TicketChatDropdown from "@/Components/Tickets/TicketChatDropdown.vue"
 import { capitalize } from "@/Composables/capitalize"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
@@ -153,6 +154,7 @@ const update = (field: string, value: unknown) => {
             <TicketRating :rating="ticket.rating" :rating-comment="ticket.rating_comment" :can-rate="can_rate" :rate-route="routes.rate" />
             <TicketThread :ticket="ticket" :comments="comments" :comment-route="routes.comment" :can-comment-internally="can_comment_internally" :mentionable="options.mentionable" :comments-newest-first="comments_newest_first" @update:comments-newest-first="saveTicketOrderSetting('ticket_comments_newest_first', $event)">
                 <template #after-description>
+                    <TicketChatDropdown v-if="ticket.source?.has_conversation" :ticketId="ticket.id" :source="ticket.source" />
                     <TicketAttachmentList :files="attachment_gallery" :preview-blocked="can_preview_attachments === false" />
                 </template>
             </TicketThread>
@@ -171,7 +173,7 @@ const update = (field: string, value: unknown) => {
                     </li>
                 </ul>
             </div>
-            <TicketSourceCard v-if="ticket.source" :source="ticket.source" />
+            <TicketSourceCard v-if="ticket.source" :source="ticket.source" :ticketId="ticket.id" />
             <dl class="space-y-1 text-gray-600">
                 <div v-if="ticket.parent" class="flex justify-between"><dt>{{ ctrans("Escalated from") }}</dt><dd><Link :href="ticketRoute(ticket.parent)" class="text-blue-600 hover:underline">{{ ticket.parent }}</Link></dd></div>
                 <div v-if="ticket.escalations.length" class="flex justify-between"><dt>{{ ctrans("Escalated to") }}</dt><dd class="space-x-1"><Link v-for="ref in ticket.escalations" :key="ref" :href="ticketRoute(ref)" class="text-blue-600 hover:underline">{{ ref }}</Link></dd></div>

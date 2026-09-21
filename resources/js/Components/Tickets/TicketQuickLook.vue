@@ -17,6 +17,7 @@ import TicketAttachmentList from "@/Components/Tickets/TicketAttachmentList.vue"
 import TicketThread from "@/Components/Tickets/TicketThread.vue"
 import TicketControlPanel from "@/Components/Tickets/TicketControlPanel.vue"
 import TicketSourceCard from "@/Components/Tickets/TicketSourceCard.vue"
+import TicketChatDropdown from "@/Components/Tickets/TicketChatDropdown.vue"
 import { useModalFocusTrap } from "@/Composables/useModalFocusTrap"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
@@ -180,7 +181,7 @@ const close = () => {
                     <template v-if="!isDesktop">
                         <TicketControlPanel v-if="controls" :ticket="displayTicket" storage-key="ticket_quick_look_controls_open" :default-open="false">
                             <TicketControls v-bind="controls" @updated="loadControls(ticket.id)" />
-                            <TicketSourceCard v-if="displayTicket.source" :source="displayTicket.source" />
+                            <TicketSourceCard v-if="displayTicket.source" :source="displayTicket.source" :ticketId="displayTicket.id" />
                         </TicketControlPanel>
                         <p v-else-if="isControlsUnavailable" class="text-sm text-gray-500">{{ ctrans("Controls are unavailable") }}</p>
                         <p v-else class="text-sm text-gray-400"><FontAwesomeIcon icon="fal fa-spinner" spin class="mr-1" />{{ ctrans("Loading") }}</p>
@@ -189,6 +190,7 @@ const close = () => {
                         <div class="lg:min-h-0 lg:flex-1 lg:overflow-y-auto pr-1 pt-3">
                             <div class="flex min-h-full flex-col">
                                 <p class="text-sm whitespace-pre-wrap break-words">{{ displayTicket.description }}</p>
+                                <TicketChatDropdown v-if="displayTicket.source?.has_conversation" :ticketId="displayTicket.id" :source="displayTicket.source" class="mt-3" />
                     <div v-if="controls" class="mt-auto space-y-3 pb-2.5 pt-4">
                         <TicketAttachmentList v-if="controls.attachment_gallery?.length" :files="controls.attachment_gallery" :preview-blocked="controls.can_preview_attachments === false" compact />
                         <div class="rounded-lg border border-gray-200 bg-white p-3">
@@ -215,7 +217,7 @@ const close = () => {
                         <TicketControls v-if="controls" v-bind="controls" @updated="loadControls(ticket.id)" />
                         <p v-else-if="isControlsUnavailable" class="text-gray-500">{{ ctrans("Controls are unavailable") }}</p>
                         <p v-else class="text-gray-400"><FontAwesomeIcon icon="fal fa-spinner" spin class="mr-1" />{{ ctrans("Loading") }}</p>
-                        <TicketSourceCard v-if="displayTicket.source" :source="displayTicket.source" class="mt-4" />
+                        <TicketSourceCard v-if="displayTicket.source" :source="displayTicket.source" :ticketId="displayTicket.id" class="mt-4" />
                     </aside>
                 </div>
             </div>
