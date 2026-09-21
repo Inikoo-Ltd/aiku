@@ -299,34 +299,6 @@ const messagesLocal = ref<LocalChatMessage[]>([])
 const eventsLocal = ref<any[]>([])
 const newMessage = ref("")
 
-const handleEditMessage = async ({ id, text }: { id: number; text: string }) => {
-    if (!props.session?.ulid) return
-    try {
-        const organisation = (route().params as Record<string, any>)?.organisation ?? "aw"
-        const { data } = await axios.patch(
-            route("grp.org.chat.agents.messages.update", [organisation, props.session.ulid, id]),
-            { message_text: text },
-            { withCredentials: true }
-        )
-
-        const updated = data?.data
-        const msg: any = messagesLocal.value.find((m) => String(m.id) === String(id))
-        if (msg) {
-            msg.message_text = updated?.message_text ?? text
-            msg.edited_at = updated?.edited_at ?? new Date().toISOString()
-            if (msg.original?.text) {
-                msg.original.text = msg.message_text
-            }
-        }
-    } catch (e: any) {
-        notify({
-            title: ctrans("Error"),
-            text: e?.response?.data?.message ?? ctrans("Failed to edit message"),
-            type: "error",
-        })
-    }
-}
-
 const handleRetractMessage = async ({ id, reason }: { id: number; reason: string }) => {
     if (!props.session?.ulid) return
     try {
@@ -1243,7 +1215,6 @@ const handleClickOutside = (e: MouseEvent) => {
                             :canEdit="isMyChat && !isClosed && !isWaiting"
                             :sessionUlid="session?.ulid"
                             :viewerReactorId="layout?.user?.id"
-                            @edit-message="handleEditMessage"
                             @retract-message="handleRetractMessage"
                             @redact-message="handleRedactMessage"
                             @redact-attachment="handleRedactAttachment"
