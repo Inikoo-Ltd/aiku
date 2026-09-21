@@ -7,6 +7,7 @@
 
 namespace App\Actions\Chat\MetaChatSession;
 
+use App\Actions\Chat\ChatSession\ClassifyChatSessionNoise;
 use App\Actions\Chat\WithChatAgentAuthorisation;
 use App\Enums\CRM\Livechat\ChatActorTypeEnum;
 use App\Enums\CRM\Livechat\ChatEventTypeEnum;
@@ -37,6 +38,9 @@ class MarkMetaChatSessionAsSpam
                 'spam_at'             => now(),
                 'spammed_by_agent_id' => $agent->id,
             ]);
+
+            ClassifyChatSessionNoise::humanDecided($metaChatSession, true);
+
 
             StoreMetaChatEvent::make()->handle(
                 $metaChatSession,

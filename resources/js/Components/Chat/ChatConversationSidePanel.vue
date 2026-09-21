@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, inject, onMounted, watch } from 'vue'
 import axios from 'axios'
+import { ctrans } from '@/Composables/useTrans'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { faTag, faRobot, faChartLine, faCopy, faCheck, faTimes, faExternalLinkAlt, faLifeRing } from '@fal'
@@ -11,7 +12,8 @@ import HistoryChatList from '@/Components/Chat/HistoryChatList.vue'
 import MessageHistory from '@/Components/Chat/MessageHistory.vue'
 import TicketQuickLook from '@/Components/Tickets/TicketQuickLook.vue'
 import Icon from '@/Components/Icon.vue'
-import { faArrowLeft, faLink } from '@fal'
+import { faArrowLeft, faLink, faEnvelope, faGlobe } from '@fal'
+import { faWhatsapp } from '@fortawesome/free-brands-svg-icons'
 
 library.add(faTag, faRobot, faChartLine, faCopy, faCheck, faTimes, faExternalLinkAlt, faArrowLeft, faLink, faLifeRing)
 
@@ -109,13 +111,42 @@ const updatePriority = async (value: string) => {
 const layout: any = inject('layout', {})
 const baseUrl = layout?.appUrl ?? ''
 const themePrimary = computed<string>(() => layout?.app?.theme?.[0] ?? '#16a34a')
-const avatarStyle = computed(() => ({ backgroundColor: themePrimary.value + '1A', color: themePrimary.value }))
-const badgeStyle = computed(() => ({ backgroundColor: themePrimary.value + '1A', color: themePrimary.value }))
 
 const activeTab = ref<SidePanelTab>('profile')
 const isCopied = ref(false)
 
-const customerProfile = ref<{ tags: CustomerTag[]; stats: CustomerStats | null; email: string | null; profile_url: string | null }>({ tags: [], stats: null, email: null, profile_url: null })
+interface LastOrder {
+    reference: string
+    date: string | null
+    state: string
+    total: string
+    url: string | null
+}
+
+interface PreviousChat {
+    ulid: string
+    channel: string
+    date: string | null
+    topic: string | null
+    summary: string | null
+    status: string | null
+}
+
+interface CustomerProfile {
+    tags: CustomerTag[]
+    stats: CustomerStats | null
+    email: string | null
+    profile_url: string | null
+    company_name?: string | null
+    phone?: string | null
+    address?: string | null
+    last_orders?: LastOrder[]
+    previous_chats?: PreviousChat[]
+    chat_topics?: { topic: string, label: string, count: number }[]
+}
+
+const emptyCustomerProfile = (): CustomerProfile => ({ tags: [], stats: null, email: null, profile_url: null })
+const customerProfile = ref<CustomerProfile>(emptyCustomerProfile())
 const isLoadingProfile = ref(false)
 const profileLoaded = ref(false)
 
@@ -146,12 +177,12 @@ const statusColors: Record<string, string> = {
 }
 
 const tabs: { key: SidePanelTab; label: string; onlyRegistered?: boolean }[] = [
-    { key: 'profile',    label: 'Profile' },
-    { key: 'statistics', label: 'Statistics', onlyRegistered: true },
-    { key: 'tickets',    label: 'Tickets' },
-    { key: 'history',    label: 'History',    onlyRegistered: true },
-    { key: 'timeline',   label: 'Timeline',   onlyRegistered: true },
-    { key: 'log',        label: 'Log' },
+    { key: 'profile',    label: ctrans('Overview') },
+    { key: 'history',    label: ctrans('Chats'), onlyRegistered: true },
+    { key: 'tickets',    label: ctrans('Tickets') },
+    { key: 'statistics', label: ctrans('Stats'), onlyRegistered: true },
+    { key: 'timeline',   label: ctrans('Timeline'), onlyRegistered: true },
+    { key: 'log',        label: ctrans('Log') },
 ]
 
 const sessionApiBase = computed(() =>
@@ -240,6 +271,11 @@ const loadHistory = async (loadMore = false) => {
     }
 }
 
+const openPreviousChat = (chat: PreviousChat) => {
+    selectedHistory.value = { ulid: chat.ulid, channel: chat.channel }
+    activeTab.value = 'history'
+}
+
 const resetAndLoad = () => {
     profileLoaded.value = false
     timelineLoaded.value = false
@@ -251,7 +287,7 @@ const resetAndLoad = () => {
     tickets.value = []
     ticketsLoaded.value = false
     quickLookTicket.value = null
-    customerProfile.value = { tags: [], stats: null, email: null, profile_url: null }
+    customerProfile.value = emptyCustomerProfile()
     activeTab.value = 'profile'
     loadCustomerProfile()
 }
@@ -322,9 +358,6 @@ const syncGuest = async () => {
     }
 }
 
-const getInitials = (name: string): string =>
-    (name || '?').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()
-
 const formatStatDate = (date: string | null): string => {
     if (!date) return '-'
     return new Date(date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
@@ -344,33 +377,20 @@ const copyChatId = async () => {
 
 <template>
     <div class="w-96 shrink-0 flex flex-col border-l border-gray-200 bg-white overflow-hidden">
-        <!-- Contact Header -->
-        <div class="relative flex flex-col items-center px-4 py-4 border-b border-gray-100 text-center shrink-0">
-            <button class="absolute top-2 right-2 text-gray-400 hover:text-gray-600" @click="emit('close')" aria-label="Close">
-                <FontAwesomeIcon :icon="['fal', 'fa-times']" class="text-sm" />
-            </button>
-            <div class="w-12 h-12 rounded-full flex items-center justify-center text-base font-bold mb-2" :style="avatarStyle">
-                {{ getInitials(session.contact_name) }}
-            </div>
-            <p class="text-sm font-semibold text-gray-800">{{ session.contact_name }}</p>
-            <span class="mt-1 inline-flex items-center justify-center px-2 py-0.5 rounded-sm text-[11px] font-medium"
-                :class="session.is_guest ? 'bg-blue-100 text-blue-800' : ''"
-                :style="!session.is_guest ? badgeStyle : {}">
-                {{ session.is_guest ? 'Guest' : 'Customer' }}
-            </span>
-        </div>
-
         <!-- Tabs -->
-        <div class="flex border-b border-gray-100 shrink-0 text-xs">
+        <div class="flex border-b border-gray-100 shrink-0 text-xs pl-2">
             <template v-for="tab in tabs" :key="tab.key">
                 <button v-if="!tab.onlyRegistered || !session.is_guest"
-                    class="flex-1 py-2.5 font-medium transition-colors"
+                    class="flex-1 py-2.5 font-medium transition-colors whitespace-nowrap"
                     :class="activeTab === tab.key ? 'border-b-2' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'"
                     :style="activeTab === tab.key ? { color: themePrimary, borderBottomColor: themePrimary } : {}"
                     @click="activeTab = tab.key">
                     {{ tab.label }}
                 </button>
             </template>
+            <button class="px-3 text-gray-400 hover:text-gray-600" @click="emit('close')" aria-label="Close">
+                <FontAwesomeIcon :icon="['fal', 'fa-times']" class="text-sm" />
+            </button>
         </div>
 
         <!-- Tab Content -->
@@ -404,9 +424,17 @@ const copyChatId = async () => {
                             <a :href="`mailto:${session.guest_email}`" class="hover:underline" :style="{ color: themePrimary }">{{ session.guest_email }}</a>
                         </div>
                     </div>
-                    <div v-if="session.phone_number || session.guest_phone" class="grid grid-cols-3 gap-2 items-start">
+                    <div v-if="customerProfile.company_name" class="grid grid-cols-3 gap-2 items-start">
+                        <div class="text-gray-500 text-xs">{{ ctrans("Company") }}</div>
+                        <div class="col-span-2 text-xs font-medium text-gray-800">{{ customerProfile.company_name }}</div>
+                    </div>
+                    <div v-if="session.phone_number || session.guest_phone || customerProfile.phone" class="grid grid-cols-3 gap-2 items-start">
                         <div class="text-gray-500 text-xs">Phone</div>
-                        <div class="col-span-2 text-xs font-medium text-gray-800 break-all">{{ session.phone_number || session.guest_phone }}</div>
+                        <div class="col-span-2 text-xs font-medium text-gray-800 break-all">{{ session.phone_number || session.guest_phone || customerProfile.phone }}</div>
+                    </div>
+                    <div v-if="customerProfile.address" class="grid grid-cols-3 gap-2 items-start">
+                        <div class="text-gray-500 text-xs">{{ ctrans("Address") }}</div>
+                        <div class="col-span-2 text-xs font-medium text-gray-800" v-html="customerProfile.address"></div>
                     </div>
                     <div v-if="canMatchCustomer" class="grid grid-cols-3 gap-2 items-start">
                         <div></div>
@@ -434,6 +462,50 @@ const copyChatId = async () => {
                             </button>
                         </div>
                     </div>
+                </div>
+
+                <div v-if="!session.is_guest" class="px-4 py-3 space-y-2">
+                    <p class="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">{{ ctrans("Last orders") }}</p>
+                    <div v-if="isLoadingProfile" class="space-y-2">
+                        <div class="h-4 bg-gray-100 rounded animate-pulse w-3/4" />
+                        <div class="h-4 bg-gray-100 rounded animate-pulse w-1/2" />
+                    </div>
+                    <p v-else-if="!customerProfile.last_orders?.length" class="text-xs text-gray-400">{{ ctrans("No orders yet") }}</p>
+                    <div v-for="order in customerProfile.last_orders" v-else :key="order.reference"
+                        class="flex items-center gap-2 text-xs">
+                        <a v-if="order.url" :href="order.url" target="_blank" rel="noopener"
+                            class="font-medium hover:underline" :style="{ color: themePrimary }">{{ order.reference }}</a>
+                        <span v-else class="font-medium text-gray-800">{{ order.reference }}</span>
+                        <span class="text-gray-500">{{ order.state }}</span>
+                        <span class="ml-auto text-gray-500">{{ formatStatDate(order.date) }}</span>
+                        <span class="w-16 text-right font-medium text-gray-800">{{ customerProfile.stats?.currency_symbol ?? '' }}{{ order.total }}</span>
+                    </div>
+                </div>
+
+                <div v-if="customerProfile.previous_chats?.length" class="px-4 py-3 space-y-2">
+                    <p class="text-[10px] font-semibold text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
+                        {{ ctrans("Previous contact") }}
+                        <FontAwesomeIcon :icon="['fal', 'fa-robot']" class="text-gray-300" :title="ctrans('Written by AI from the conversation. Open it to check.')" />
+                    </p>
+                    <p v-if="customerProfile.chat_topics?.length" class="text-xs text-gray-500">
+                        {{ ctrans("Last 12 months:") }}
+                        <span v-for="(chatTopic, index) in customerProfile.chat_topics" :key="chatTopic.topic">
+                            <span class="font-medium text-gray-800">{{ chatTopic.count }}</span> {{ chatTopic.label }}<span v-if="index < customerProfile.chat_topics.length - 1"> · </span>
+                        </span>
+                    </p>
+                    <button v-for="chat in customerProfile.previous_chats" :key="chat.ulid" type="button"
+                        class="block w-full text-left text-xs rounded hover:bg-gray-50 -mx-1 px-1 py-0.5"
+                        @click="openPreviousChat(chat)">
+                        <span class="flex items-center gap-1.5">
+                            <FontAwesomeIcon
+                                :icon="chat.channel === 'whatsapp' ? faWhatsapp : chat.channel === 'email' ? faEnvelope : faGlobe"
+                                class="shrink-0" :class="chat.channel === 'whatsapp' ? 'text-green-500' : 'text-blue-500'" />
+                            <span class="font-medium text-gray-800 truncate">{{ chat.topic }}</span>
+                            <span v-if="chat.status === 'pending'" class="shrink-0 text-amber-600">{{ ctrans("Unresolved") }}</span>
+                            <span class="ml-auto shrink-0 text-gray-500">{{ formatStatDate(chat.date) }}</span>
+                        </span>
+                        <span class="block text-gray-500 line-clamp-2">{{ chat.summary }}</span>
+                    </button>
                 </div>
 
                 <div class="px-4 py-3 space-y-2.5">

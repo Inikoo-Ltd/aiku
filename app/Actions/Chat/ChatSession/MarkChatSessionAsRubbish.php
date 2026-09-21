@@ -48,6 +48,8 @@ class MarkChatSessionAsRubbish
                 'rubbish_reason'        => $rubbish ? $reason?->value : null,
             ]);
 
+            ClassifyChatSessionNoise::humanDecided($chatSession, $rubbish);
+
             StoreChatEvent::make()->handle(
                 chatSession: $chatSession,
                 eventType: $rubbish ? ChatEventTypeEnum::RUBBISH : ChatEventTypeEnum::NOT_RUBBISH,

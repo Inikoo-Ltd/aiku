@@ -15,6 +15,7 @@ use App\Enums\CRM\Livechat\ChatSenderTypeEnum;
 use App\Enums\CRM\Livechat\ChatSessionClosedByTypeEnum;
 use App\Enums\CRM\Livechat\ChatSessionStatusEnum;
 use App\Events\BroadcastMetaChatListEvent;
+use App\Actions\Chat\ChatSession\SummarizeChatSession;
 use App\Events\BroadcastRealtimeMetaChat;
 use App\Models\Chat\ChatAgent;
 use App\Models\Chat\MetaChatSession;
@@ -91,6 +92,8 @@ class CloseMetaChatSession
         if ($systemMessage) {
             BroadcastRealtimeMetaChat::dispatch($systemMessage->fresh('metaChatSession'));
         }
+
+        SummarizeChatSession::dispatch($metaChatSession)->delay(now()->addSeconds(5));
 
         BroadcastMetaChatListEvent::dispatch(null, $metaChatSession);
 

@@ -54,6 +54,9 @@ class MarkChatSessionAsSpam
                 }
             }
 
+            ClassifyChatSessionNoise::humanDecided($chatSession, true);
+
+
             StoreChatEvent::make()->handle(
                 chatSession: $chatSession,
                 eventType: ChatEventTypeEnum::SPAM,

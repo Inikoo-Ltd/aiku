@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, inject, onMounted, onUnmounted, watch, nextTick } from "vue"
 import { Head, router } from "@inertiajs/vue3"
-import { useDebounceFn, watchDebounced } from "@vueuse/core"
+import { useDebounceFn, useLocalStorage, watchDebounced } from "@vueuse/core"
 import axios from "axios"
 import { ctrans } from "@/Composables/useTrans"
 import { capitalize } from "@/Composables/capitalize"
@@ -253,6 +253,11 @@ const selectedItemStyle = {
 }
 
 const sidePanelVisible = ref(false)
+const sidePanelPreferred = useLocalStorage(`chat-inbox-side-panel:${layout.user?.id ?? "anonymous"}`, true)
+
+watch(() => [panelSession.value?.ulid, panelSession.value?.is_guest], ([ulid, isGuest]) => {
+    if (ulid && !isGuest) sidePanelVisible.value = sidePanelPreferred.value
+}, { immediate: true })
 
 const chatSettingVisible = ref(false)
 const settingInitialTab = ref<"general" | "slack">("general")
@@ -285,6 +290,7 @@ const mapSession = (s: SessionAPI): Contact => ({
     status: s.status,
     is_spam: (s as any).is_spam ?? false,
     is_rubbish: (s as any).is_rubbish ?? false,
+    noise: (s as any).noise ?? null,
     is_highlighted: (s as any).is_highlighted ?? false,
     webUser: s.web_user ?? (s as any).customer,
     country_code: (s as any).country_code ?? null,
@@ -719,7 +725,7 @@ const selectedInbox = computed(() =>
     props.inboxes?.find((i) => i.id === selectedShopId.value) ?? props.inboxes?.[0] ?? null
 )
 
-const inboxRailCollapsed = ref(false)
+const inboxRailCollapsed = useLocalStorage(`chat-inbox-rail-collapsed:${layout.user?.id ?? "anonymous"}`, false)
 
 const SHOP_COLORS = ["#6366f1", "#0ea5e9", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6", "#ec4899", "#14b8a6"]
 
@@ -1223,11 +1229,17 @@ const handleSendMessage = async ({ text, files, message_type, is_email_notif }: 
     }
 }
 
-const toggleSidePanel = () => { sidePanelVisible.value = !sidePanelVisible.value }
+const toggleSidePanel = () => {
+    sidePanelVisible.value = !sidePanelVisible.value
+    sidePanelPreferred.value = sidePanelVisible.value
+}
 const showHistoryPanel = () => toggleSidePanel()
 const showProfilePanel = () => toggleSidePanel()
 const showMessageDetailsPanel = () => toggleSidePanel()
-const closeSidePanel = () => { sidePanelVisible.value = false }
+const closeSidePanel = () => {
+    sidePanelVisible.value = false
+    sidePanelPreferred.value = false
+}
 
 const closeSession = async () => {
     selectedSession.value = null
@@ -1794,6 +1806,11 @@ onUnmounted(() => {
                                     </span>
                                     <span v-if="c.agent?.name" class="truncate">
                                         {{ c.agent.name.split(' ')[0] }}
+                                    </span>
+                                    <span v-if="c.noise" v-tooltip="c.noise.note"
+                                        class="shrink-0 rounded px-1 font-medium"
+                                        :class="c.noise.automatic ? 'bg-gray-100 text-gray-600' : 'bg-amber-50 text-amber-700'">
+                                        {{ c.noise.automatic ? ctrans("Put aside automatically") : ctrans("Possible noise") }}: {{ c.noise.label }}
                                     </span>
                                 </div>
                                 <div class="flex items-center gap-1.5">
