@@ -194,7 +194,6 @@ class Website extends Model implements Auditable, HasMedia
      * it or visitors keep the old behaviour for hours while the admin UI shows the new value.
      */
     private const IRIS_CACHED_SETTINGS = [
-        'iris_search_model',
         'google_tag_id',
         'webpage.show_price',
     ];
