@@ -4285,4 +4285,16 @@ test('a packed order shipped by us offers the invoice button once the packer rec
     $deliveryNote->update(['parcels' => [['weight' => 11.01, 'dimensions' => [39, 39, 57]]]]);
 
     expect($hasInvoice($order->fresh()))->toBeTrue();
+
+    /** Export orders are invoiced before the carrier label exists: the note waits packed, then finalises without invoicing twice */
+    $order = FinaliseOrder::make()->action($order->fresh());
+    expect($order->state)->toBe(OrderStateEnum::FINALISED)
+        ->and($deliveryNote->fresh()->state)->not->toBe(DeliveryNoteStateEnum::FINALISED);
+
+    $shipper = StoreShipper::make()->action($order->organisation, ['code' => 'exp3220', 'name' => 'exp3220', 'trade_as' => 'exp3220']);
+    StoreShipment::make()->action($deliveryNote->fresh(), $shipper, ['reference' => 'exp3220', 'tracking' => 'exp3220']);
+
+    $deliveryNote = \App\Actions\Dispatching\DeliveryNote\UpdateState\FinaliseDeliveryNote::make()->action($deliveryNote->fresh());
+    expect($deliveryNote->state)->toBe(DeliveryNoteStateEnum::FINALISED)
+        ->and($order->invoices()->count())->toBe(1);
 });

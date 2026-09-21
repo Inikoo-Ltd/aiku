@@ -65,7 +65,7 @@ class FinaliseOrder extends OrgAction
             if (!$fromDeliveryNote) {
                 /** @var DeliveryNote $deliveryNote */
                 $deliveryNote = $order->deliveryNotes()->where('type', DeliveryNoteTypeEnum::ORDER)->first();
-                if ($deliveryNote) {
+                if ($deliveryNote && ($deliveryNote->shipments()->exists() || $deliveryNote->collection_address_id)) {
                     FinaliseDeliveryNote::make()->action($deliveryNote, true);
                 }
             }
