@@ -93,6 +93,7 @@ class GetShopNavigation
                 "topMenu" => [
                     "subSections" => [
                         [
+                            'label'   => __("Catalogue"),
                             "tooltip" => __("Catalogue"),
                             "icon" => ["fal", "fa-books"],
                             'root' => 'grp.org.shops.show.catalogue.dashboard',
@@ -157,6 +158,7 @@ class GetShopNavigation
                     "topMenu" => [
                         "subSections" => [
                             [
+                                'label'   => __("Shop"),
                                 "tooltip" => __("Shop"),
                                 "icon" => ["fal", "fa-store-alt"],
                                 'root' => 'grp.org.shops.show.billables.dashboard',
@@ -212,6 +214,7 @@ class GetShopNavigation
             "topMenu" => [
                 "subSections" => [
                     [
+                        'label'   => __("Dashboard"),
                         "tooltip" => __("Dashboard"),
                         "icon"    => ["fal", "fa-chart-network"],
                         "root"    => "grp.org.shops.show.reviews.dashboard",
@@ -276,6 +279,7 @@ class GetShopNavigation
                 "topMenu" => [
                     "subSections" => [
                         [
+                            'label'   => __("Offers dashboard"),
                             "tooltip" => __("Offers dashboard"),
                             "icon"    => ["fal", "fa-chart-network"],
                             'root'    => 'grp.org.shops.show.discounts.dashboard',
@@ -331,6 +335,7 @@ class GetShopNavigation
                 "topMenu" => [
                     "subSections" => [
                         [
+                            'label'   => __("Marketing dashboard"),
                             "tooltip" => __("Marketing dashboard"),
                             "icon"    => ["fal", "fa-chart-network"],
                             'root'    => 'grp.org.shops.show.marketing.dashboard',
@@ -606,6 +611,7 @@ class GetShopNavigation
                 "topMenu" => [
                     "subSections" => [
                         [
+                            'label'   => __("Ordering dashboard"),
                             "tooltip" => __("Ordering dashboard"),
                             "icon"    => ["fal", "fa-chart-network"],
                             'root'    => 'grp.org.shops.show.ordering.dashboard',

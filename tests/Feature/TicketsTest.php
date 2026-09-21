@@ -632,25 +632,6 @@ test('staff reporter rates their own resolved help ticket from grp', function ()
     get(route('grp.tickets.show', $ticket->reference))->assertInertia(fn (AssertableInertia $page) => $page->where('can_rate', false)->where('ticket.rating', 5));
 });
 
-test('customer ticket escalates to a help ticket that keeps the customer and points back', function () {
-    $customerTicket = StoreRetinaTicket::make()->action($this->webUser, ['subject' => 'Feed is empty', 'priority' => 'high']);
-
-    $response = post(route('grp.models.ticket.escalate', $customerTicket->id), ['description' => 'Feed generator crashed']);
-    $helpTicket = Ticket::where('model_type', 'Ticket')->where('model_id', $customerTicket->id)->first();
-    $response->assertRedirect(route('grp.tickets.show', $helpTicket->reference));
-
-    expect($helpTicket->type)->toBe(TicketTypeEnum::HELP)
-        ->and($helpTicket->kind)->toBe(TicketKindEnum::ESCALATION)
-        ->and($helpTicket->subject)->toBe('Feed is empty')
-        ->and($helpTicket->description)->toBe('Feed generator crashed')
-        ->and($helpTicket->priority)->toBe(ChatPriorityEnum::HIGH)
-        ->and($helpTicket->customer_id)->toBe($this->customer->id)
-        ->and($helpTicket->reporter_id)->toBe($this->user->id)
-        ->and($customerTicket->escalations()->pluck('reference')->all())->toBe([$helpTicket->reference]);
-
-    post(route('grp.models.ticket.escalate', $helpTicket->id))->assertStatus(422);
-});
-
 test('staff file a bug from anywhere without leaving the page', function () {
     actingAs(User::factory()->create(['group_id' => $this->group->id]));
     $response = post(route('grp.models.ticket.store'), [
@@ -1352,7 +1333,7 @@ test('only the assignee and supervisors change kind and module, and no ticket is
     get(route('grp.json.ticket.controls', $ticket->id))->assertOk()
         ->assertJsonPath('can_change_kind_module', true)
         ->assertJsonPath('ticket.reference', $ticket->reference)
-        ->assertJsonStructure(['ticket', 'options' => ['kinds', 'modules', 'assignees'], 'can_manage', 'can_assign', 'routes' => ['update', 'escalate']]);
+        ->assertJsonStructure(['ticket', 'options' => ['kinds', 'modules', 'assignees'], 'can_manage', 'can_assign', 'routes' => ['update']]);
 
     actingAs($this->user);
     patch(route('grp.models.ticket.update', $ticket->id), ['kind' => 'bug'])->assertRedirect()->assertSessionHasNoErrors();
@@ -2368,6 +2349,7 @@ test('the ticket list offers ownership by role and QA filters', function () {
     get(route('grp.tickets.list'))->assertInertia(
         fn (AssertableInertia $page) => $page->where('queryBuilderProps.default.elementGroups.mine.label', 'Ownership')
             ->has('queryBuilderProps.default.elementGroups.mine.elements.assigned')
+            ->has('queryBuilderProps.default.elementGroups.mine.elements.unassigned')
             ->has('queryBuilderProps.default.elementGroups.qa_status')
             ->has('queryBuilderProps.default.elementGroups.qa_checker')
     );
@@ -2381,6 +2363,12 @@ test('the ticket list offers ownership by role and QA filters', function () {
             ->has('queryBuilderProps.default.elementGroups.qa_checker')
     );
 
+    actingAs($this->user);
+    $unassignedTicket = StoreTicket::make()->action($this->group, ['subject' => 'List nobody on it']);
+    $assignedTicket   = StoreTicket::make()->action($this->group, ['subject' => 'List someone on it', 'assignee_id' => $this->user->id]);
+    expect($references(['mine' => 'unassigned'])->all())->toContain($unassignedTicket->reference)->not->toContain($assignedTicket->reference);
+
+    actingAs($qa);
     expect($references(['mine' => 'reported'])->all())->toContain($noQa->reference)->not->toContain($forAnyone->reference)
         ->and($references(['qa_checker' => 'mine'])->all())->toContain($forQa->reference, $failed->reference)->not->toContain($forAnyone->reference, $noQa->reference)
         ->and($references(['qa_checker' => 'anyone'])->all())->toContain($forAnyone->reference)->not->toContain($forQa->reference, $noQa->reference)
@@ -2480,4 +2468,19 @@ test('status changes and QA verdicts reach collaborators, and field edits reach 
     UpdateTicket::make()->action($ticket->fresh(), ['module' => TicketModuleEnum::cases()[0]->value]);
     Notification::assertNotSentTo($assignee, App\Notifications\TicketNotification::class);
     actingAs($this->user);
+});
+
+test('ticket and comment resources carry the author identity the hover card needs', function () {
+    $ticket = StoreTicket::make()->action($this->group, ['subject' => 'Hover card identity', 'reporter_type' => 'User', 'reporter_id' => $this->user->id]);
+    StoreTicketComment::make()->action($ticket, $this->user, ['body' => 'on it']);
+
+    $ticketPayload = TicketResource::make($ticket->refresh())->resolve();
+
+    expect($ticketPayload['reporter_key'])->toBe('User-'.$this->user->id)
+        ->and($ticketPayload['reporter_username'])->toBe($this->user->username);
+
+    $commentPayload = \App\Http\Resources\Helpers\TicketCommentResource::make($ticket->comments()->first())->resolve();
+
+    expect($commentPayload['author_key'])->toBe('User-'.$this->user->id)
+        ->and($commentPayload['author_username'])->toBe($this->user->username);
 });

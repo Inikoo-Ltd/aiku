@@ -4597,3 +4597,19 @@ test('attach a supplier product to an org stock that has none, first one becomes
     expect((int) $second->local_priority)->toBe(0)
         ->and(OrgStockHasOrgSupplierProduct::where('org_stock_id', $orgStock->id)->count())->toBe(2);
 });
+
+test('every organisation and group top menu subsection carries a label', function () {
+    $unlabelled = function (array $navigation) {
+        return collect($navigation)
+            ->flatMap(fn ($section, $key) => collect(data_get($section, 'topMenu.subSections', []))
+                ->filter(fn ($subSection) => is_array($subSection) && blank(data_get($subSection, 'label')))
+                ->map(fn ($subSection) => $key.': '.data_get($subSection, 'route.name', '?')))
+            ->values()
+            ->all();
+    };
+
+    $user = $this->adminGuest->getUser();
+
+    expect($unlabelled(GetOrganisationNavigation::run($user, $this->organisation)))->toBe([])
+        ->and($unlabelled(\App\Actions\UI\Grp\Layout\GetGroupNavigation::run($user)))->toBe([]);
+});

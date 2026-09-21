@@ -147,6 +147,23 @@ const onKeydown = (event: KeyboardEvent) => {
     }
 }
 
+const appendMention = (username: string) => {
+    const mention = `@${username} `
+    const separator = !props.body || /\s$/.test(props.body) ? "" : " "
+    const value = props.body + separator + mention
+    emit("update:body", value)
+    mentionQuery.value = null
+    nextTick(() => {
+        const element = textarea.value
+        if (!element) return
+        element.focus()
+        element.selectionStart = element.selectionEnd = value.length
+        element.scrollIntoView({ block: "center", behavior: "smooth" })
+    })
+}
+
+defineExpose({ appendMention })
+
 const onPick = (event: Event) => {
     addFiles((event.target as HTMLInputElement).files ?? [])
     if (fileInput.value) fileInput.value.value = ""

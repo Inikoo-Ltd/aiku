@@ -54,6 +54,9 @@ class MarkChatSessionAsSpam
                 }
             }
 
+            ClassifyChatSessionNoise::humanDecided($chatSession, true);
+
+
             StoreChatEvent::make()->handle(
                 chatSession: $chatSession,
                 eventType: ChatEventTypeEnum::SPAM,
@@ -82,6 +85,13 @@ class MarkChatSessionAsSpam
             return response()->json([
                 'success' => false,
                 'message' => 'Only authenticated agents can mark chats as spam',
+            ], 403);
+        }
+
+        if (!$this->userCanDisposeOfChat($agent->user, $chatSession)) {
+            return response()->json([
+                'success' => false,
+                'message' => $this->chatHeldByAnotherAgentMessage($chatSession),
             ], 403);
         }
 

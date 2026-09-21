@@ -502,6 +502,7 @@ use App\Actions\SysAdmin\User\DeleteUserAccessToken;
 use App\Actions\SysAdmin\User\StoreUserFromEmployee;
 use App\Actions\UI\Notification\MarkAllNotificationAsRead;
 use App\Actions\UI\Notification\MarkNotificationAsRead;
+use App\Actions\UI\Notification\MarkNotificationAsUnread;
 use App\Actions\UI\Profile\GetProfileAppLoginQRCode;
 use App\Actions\UI\Profile\UpdateProfile;
 use App\Actions\Web\Announcement\DeleteAnnouncement;
@@ -565,7 +566,6 @@ use App\Actions\Web\Website\UpdateWebsite;
 use App\Actions\Web\Website\UploadImagesToWebsite;
 use App\Stubs\UIDummies\ImportDummy;
 use App\Actions\Helpers\Ticket\DeleteTicket;
-use App\Actions\Helpers\Ticket\EscalateTicket;
 use App\Actions\Helpers\Ticket\RateTicket;
 use App\Actions\Helpers\Ticket\StoreTicket;
 use App\Actions\Helpers\Ticket\StoreTicketComment;
@@ -583,6 +583,7 @@ Route::post('dashboard/break-cache', BreakDashboardTimeSeriesCache::class)->name
 Route::get('/profile/app-login-qrcode', GetProfileAppLoginQRCode::class)->name('profile.app-login-qrcode');
 
 Route::patch('notification/{notification}', MarkNotificationAsRead::class)->name('notifications.read');
+Route::patch('notification/{notification}/unread', MarkNotificationAsUnread::class)->name('notifications.unread');
 Route::patch('notifications', MarkAllNotificationAsRead::class)->name('notifications.all.read');
 
 Route::prefix('ticket')->name('ticket.')->group(function () {
@@ -594,7 +595,6 @@ Route::prefix('ticket')->name('ticket.')->group(function () {
     Route::patch('comment/{ticketComment:id}/visibility', ToggleTicketCommentVisibility::class)->name('comment.toggle_visibility')->whereNumber('ticketComment');
     Route::delete('comment/{ticketComment:id}', DeleteTicketComment::class)->name('comment.delete')->whereNumber('ticketComment');
     Route::post('{ticket:id}/rate', RateTicket::class)->name('rate')->whereNumber('ticket');
-    Route::post('{ticket:id}/escalate', EscalateTicket::class)->name('escalate')->whereNumber('ticket');
     Route::delete('{ticket:id}', DeleteTicket::class)->name('delete')->whereNumber('ticket');
 });
 

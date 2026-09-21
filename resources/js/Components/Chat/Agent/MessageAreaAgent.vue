@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch, onMounted, onUnmounted, inject, computed, nextTick, defineAsyncComponent } from "vue"
+import { ref, watch, onMounted, onUnmounted, inject, computed, nextTick, defineAsyncComponent, getCurrentInstance } from "vue"
 import axios from "axios"
 import { ctrans } from "@/Composables/useTrans"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -8,6 +8,7 @@ import {
     faArrowLeft,
     faImage,
     faEllipsisVertical,
+    faLanguage,
     faTimesCircle,
     faMessage,
     faPaperclip, faXmark, faFilePdf, faEnvelope, faRotateRight, faBan, faRotateLeft, faFaceSmile,
@@ -15,7 +16,7 @@ import {
     faEye,
     faArchive,
     faAngleDown,
-    faLanguage,
+    faLock,
 } from "@fortawesome/free-solid-svg-icons"
 import { faSlack } from "@fortawesome/free-brands-svg-icons"
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
@@ -100,6 +101,7 @@ const emit = defineEmits([
     "open-slack-settings",
     "spam-success",
     "restore-success",
+    "view-tickets",
 ])
 
 const layout: any = inject("layout", {})
@@ -161,11 +163,61 @@ const isSpamMarking = ref(false)
 // is Ignore, which puts this one conversation aside and nothing else.
 const isGuest = computed(() => !(props.session as any)?.web_user?.customer_id && !(props.session as any)?.customer?.id)
 
-const canIgnore = computed(() =>
-    (props.session as any)?.channel !== "whatsapp" && !isClosed.value && !isTrashed.value && !props.readOnly
+// Disposing of a conversation somebody else is holding is theirs to do, not ours. The server
+// says whether this viewer may, since supervisors keep the override and the page cannot know
+// who supervises what.
+const canDispose = computed(() => {
+    const flag = (props.session as any)?.can_dispose
+    return typeof flag === "boolean" ? flag : isMyChat.value
+})
+
+// The tickets panel lives in the page around us, and not every page that shows a thread has
+// one, so the button only appears where pressing it would go somewhere.
+const instance = getCurrentInstance()
+const hasTicketsPanel = computed(() => Boolean((instance?.vnode?.props as any)?.onViewTickets))
+
+const openTicketsCount = computed(() => Number((props.session as any)?.open_tickets_count ?? 0))
+const blockingTicketsCount = computed(() => Number((props.session as any)?.blocking_tickets_count ?? 0))
+
+const openTicketsTooltip = computed(() =>
+    blockingTicketsCount.value
+        ? ctrans("This chat is waiting on :blocked of :total open tickets. It cannot be closed until they are resolved or cancelled.", {
+            blocked: String(blockingTicketsCount.value),
+            total: String(openTicketsCount.value),
+        })
+        : ctrans(":total open :ticket raised from this chat.", {
+            total: String(openTicketsCount.value),
+            ticket: openTicketsCount.value === 1 ? ctrans("ticket") : ctrans("tickets"),
+        })
 )
 
-const canReportSpam = computed(() => isGuest.value && !isClosed.value && !isTrashed.value && !props.readOnly)
+// The count in the header comes with the conversation, so a ticket raised here has to be added
+// to it by hand; the list is only refetched when the inbox reloads.
+const onTicketCreated = (ticket: { blocks_source?: boolean }) => {
+    const session = props.session as any
+    if (!session) return
+    session.open_tickets_count = Number(session.open_tickets_count ?? 0) + 1
+    if (ticket?.blocks_source) {
+        session.blocking_tickets_count = Number(session.blocking_tickets_count ?? 0) + 1
+    }
+}
+
+const onViewTickets = () => {
+    isMenuOpen.value = false
+    emit("view-tickets")
+}
+
+const heldByAnotherAgent = computed(() =>
+    ctrans(":agent is handling this chat. Take it over first, or ask a supervisor.", {
+        agent: props.session?.assigned_agent?.name || ctrans("Another agent"),
+    })
+)
+
+const canIgnore = computed(() =>
+    (props.session as any)?.channel !== "whatsapp" && !isClosed.value && !isTrashed.value && !props.readOnly && canDispose.value
+)
+
+const canReportSpam = computed(() => isGuest.value && !isClosed.value && !isTrashed.value && !props.readOnly && canDispose.value)
 
 // Ending a conversation nobody ever answered is rude: from the other side it reads as being
 // shown the door for writing in. Until somebody here has replied, the way to clear it is Ignore.
@@ -298,34 +350,6 @@ const reopenChat = async () => {
 const messagesLocal = ref<LocalChatMessage[]>([])
 const eventsLocal = ref<any[]>([])
 const newMessage = ref("")
-
-const handleEditMessage = async ({ id, text }: { id: number; text: string }) => {
-    if (!props.session?.ulid) return
-    try {
-        const organisation = (route().params as Record<string, any>)?.organisation ?? "aw"
-        const { data } = await axios.patch(
-            route("grp.org.chat.agents.messages.update", [organisation, props.session.ulid, id]),
-            { message_text: text },
-            { withCredentials: true }
-        )
-
-        const updated = data?.data
-        const msg: any = messagesLocal.value.find((m) => String(m.id) === String(id))
-        if (msg) {
-            msg.message_text = updated?.message_text ?? text
-            msg.edited_at = updated?.edited_at ?? new Date().toISOString()
-            if (msg.original?.text) {
-                msg.original.text = msg.message_text
-            }
-        }
-    } catch (e: any) {
-        notify({
-            title: ctrans("Error"),
-            text: e?.response?.data?.message ?? ctrans("Failed to edit message"),
-            type: "error",
-        })
-    }
-}
 
 const handleRetractMessage = async ({ id, reason }: { id: number; reason: string }) => {
     if (!props.session?.ulid) return
@@ -804,7 +828,6 @@ const stopSocket = () => {
     chatChannel = null
 }
 
-const isTranslatingAll = ref(false)
 const notifiedMessageIds = new Set<number>()
 
 const initSocket = () => {
@@ -898,8 +921,6 @@ const initSocket = () => {
     }
 
     onTranslation = async () => {
-        isTranslatingAll.value = false
-
         await getMessages()
     }
 
@@ -938,6 +959,21 @@ const markAsRead = async () => {
 const onViewMessageDetails = () => {
     isMenuOpen.value = false
     emit("view-message-details")
+}
+
+const translateConversation = async () => {
+    isMenuOpen.value = false
+    const languageId = layout.user?.language_id
+    if (!chatSession.value?.ulid || !languageId) return
+
+    try {
+        await axios.post(`${baseUrl}/app/api/chats/sessions/${chatSession.value.ulid}/translate`, {
+            target_language_id: languageId,
+        })
+        await getMessages()
+    } catch (e) {
+        console.error("Translate failed", e)
+    }
 }
 
 const onViewUserProfile = () => {
@@ -999,39 +1035,10 @@ const handleTyping = () => {
 }
 
 const selectedLanguage = ref("")
-const isTranslating = ref(false)
 
 const selectedLanguageId = computed(() =>
     getLanguageIdByCode(selectedLanguage.value)
 )
-
-// Whose language the conversation is put into: the agent's own, unless somebody has explicitly
-// asked for another one.
-const translationLanguageId = computed(() => selectedLanguageId.value || layout.user?.language_id || null)
-
-const translateAllMessage = async () => {
-    if (!chatSession.value?.ulid || !translationLanguageId.value) return
-
-    isTranslating.value = true
-
-    try {
-        await axios.post(
-            `${baseUrl}/app/api/chats/sessions/${chatSession.value?.ulid}/translate`,
-            {
-                target_language_id: translationLanguageId.value,
-            }
-        )
-
-        messagesLocal.value = []
-
-        await getMessages()
-        isTranslatingAll.value = true
-    } catch (e) {
-        console.error("Translate failed", e)
-    } finally {
-        isTranslating.value = false
-    }
-}
 
 onMounted(async () => {
     await getMessages()
@@ -1046,12 +1053,6 @@ onUnmounted(() => {
     stopSocket()
     document.removeEventListener("click", handleClickOutside)
     document.removeEventListener("click", handleClickOutsideEmoji)
-})
-
-watch(selectedLanguage, (code) => {
-    if (!code) return
-    initSocket()
-    translateAllMessage()
 })
 
 const handleClickOutside = (e: MouseEvent) => {
@@ -1162,18 +1163,22 @@ const handleClickOutside = (e: MouseEvent) => {
                 {{ (session as any)?.is_spam ? ctrans("Not spam") : ctrans("Spam") }}
             </button>
 
-            <!-- The whole thread in the agent's own language, which the account already knows.
-                 It used to ask which of every language we support, on a screen where the answer
-                 was always the same one, and each message asked again. -->
-            <button v-if="!isTranslatingAll" type="button" :disabled="isTranslating"
-                v-tooltip="ctrans('Translate the conversation into your language')"
-                class="inline-flex items-center gap-1.5 shrink-0 h-7 px-2.5 text-[11px] font-medium rounded-md border border-gray-300 text-gray-600 transition hover:bg-gray-100 disabled:opacity-50"
-                @click="translateAllMessage">
-                <FontAwesomeIcon :icon="faLanguage" class="text-[11px]" />
-                {{ ctrans("Translate") }}
+            <!-- What is still outstanding on this conversation, one click from the thread: an agent
+                 about to close a chat should not have to go looking for what is holding it. -->
+            <button v-if="openTicketsCount && hasTicketsPanel" type="button" v-tooltip="openTicketsTooltip"
+                :aria-label="openTicketsTooltip"
+                class="inline-flex items-center gap-1.5 shrink-0 h-7 px-2.5 text-[11px] font-medium rounded-md border transition"
+                :class="blockingTicketsCount ? 'border-amber-300 bg-amber-50 text-amber-700 hover:bg-amber-100' : 'border-gray-300 text-gray-600 hover:bg-gray-100'"
+                @click="onViewTickets">
+                <FontAwesomeIcon :icon="blockingTicketsCount ? faLock : faLifeRing" class="text-[11px]" />
+                {{ openTicketsCount }}
             </button>
 
-            <FontAwesomeIcon v-if="isTranslating" :icon="faSpinner" class="text-gray-400 text-xs animate-spin" />
+            <button type="button" v-tooltip="ctrans('Customer details')" :aria-label="ctrans('Customer details')"
+                class="inline-flex items-center justify-center shrink-0 h-7 w-7 rounded-md border border-gray-300 text-gray-600 transition hover:bg-gray-100"
+                @click="onViewUserProfile">
+                <FontAwesomeIcon :icon="faUser" class="text-[11px]" />
+            </button>
 
             <div class="relative" ref="menuRef">
                 <button @click.stop="isMenuOpen = !isMenuOpen" :aria-label="ctrans('Toggle menu')">
@@ -1186,12 +1191,17 @@ const handleClickOutside = (e: MouseEvent) => {
                         <FontAwesomeIcon :icon="faUser" /> {{ ctrans("View Profile") }}
                     </button>
 
+                    <button class="menu-item" @click="translateConversation">
+                        <FontAwesomeIcon :icon="faLanguage" /> {{ ctrans("Translate conversation") }}
+                    </button>
+
                     <button class="menu-item" @click="onViewMessageDetails">
                         <FontAwesomeIcon :icon="faMessage" /> {{ ctrans("Message Details") }}
                     </button>
 
                     <template v-if="!readOnly">
-                        <button class="menu-item" @click="openTicketModal">
+                        <button class="menu-item disabled:cursor-not-allowed disabled:opacity-50" :disabled="!canDispose"
+                            v-tooltip="canDispose ? undefined : heldByAnotherAgent" @click="openTicketModal">
                             <FontAwesomeIcon :icon="faLifeRing" class="text-blue-600" /> {{ ctrans("Create Ticket") }}
                         </button>
 
@@ -1203,20 +1213,6 @@ const handleClickOutside = (e: MouseEvent) => {
                 </div>
             </div>
         </header>
-
-        <div v-if="isTranslatingAll" class="sticky top-0 z-10 bg-white/90 backdrop-blur
-            border-b border-gray-200 px-4 py-3">
-
-            <div class="flex items-center justify-center gap-3 text-sm text-gray-600">
-                <LoadingIcon class="w-4 h-4 animate-spin" />
-                <div class="flex flex-col leading-tight">
-                    <span class="font-medium">Updating translations</span>
-                    <span class="text-xs text-gray-400">
-                        Messages will refresh automatically
-                    </span>
-                </div>
-            </div>
-        </div>
 
         <!-- Messages -->
         <div ref="messagesContainer" class="flex-1 overflow-y-auto px-3 py-2 space-y-3 bg-[#F0F4F8]">
@@ -1243,7 +1239,6 @@ const handleClickOutside = (e: MouseEvent) => {
                             :canEdit="isMyChat && !isClosed && !isWaiting"
                             :sessionUlid="session?.ulid"
                             :viewerReactorId="layout?.user?.id"
-                            @edit-message="handleEditMessage"
                             @retract-message="handleRetractMessage"
                             @redact-message="handleRedactMessage"
                             @redact-attachment="handleRedactAttachment"
@@ -1432,6 +1427,7 @@ const handleClickOutside = (e: MouseEvent) => {
             :is-open="isTicketModalOpen"
             :session="session"
             :organisation="currentOrganisation"
+            @created="onTicketCreated"
             @close="isTicketModalOpen = false"
         />
 

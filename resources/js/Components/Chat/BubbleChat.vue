@@ -8,7 +8,7 @@ import axios from "axios"
 import { useChatLanguages } from "@/Composables/useLanguages"
 import { cleanEmailText } from "@/Composables/cleanEmailText"
 import Image from "primevue/image"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { notify } from "@kyvg/vue3-notification"
 import SlackShareModal from "@/Components/Chat/Agent/SlackShareModal.vue"
 import EmailBody from "@/Components/Chat/EmailBody.vue"
@@ -133,7 +133,6 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-    (e: "edit-message", payload: { id: number; text: string }): void
     (e: "retract-message", payload: { id: number; reason: string }): void
     (e: "redact-message", payload: { id: number; fragment: string }): void
     (e: "redact-attachment", payload: { id: number }): void
@@ -142,23 +141,23 @@ const emit = defineEmits<{
     (e: "jump-to-message", id: number): void
 }>()
 
-const EDIT_WINDOW_MS = 30 * 60 * 1000
+const RETRACT_WINDOW_MS = 30 * 60 * 1000
 
-const isEditableMessage = computed(() =>
+const isWithinRetractWindow = computed(() =>
     props.canEdit === true &&
     props.viewerType === "agent" &&
     props.message.sender_type === "agent" &&
     (props.message.message_type ?? "text") === "text" &&
     !!props.message.id &&
     props.message._status !== "sending" &&
-    Date.now() - new Date(props.message.created_at).getTime() < EDIT_WINDOW_MS
+    Date.now() - new Date(props.message.created_at).getTime() < RETRACT_WINDOW_MS
 )
 
 // A message taken back is gone for the customer but stays here, so whoever reads the
 // conversation next sees both that it was said and that it was withdrawn.
 const isRetracted = computed(() => props.message.is_retracted === true)
 
-const isRetractableMessage = computed(() => isEditableMessage.value && !isRetracted.value)
+const isRetractableMessage = computed(() => isWithinRetractWindow.value && !isRetracted.value)
 
 const retractedTime = computed(() =>
     props.message.retracted_at ? formatChatTime(new Date(props.message.retracted_at).getTime()) : null
@@ -190,8 +189,8 @@ const redactSelection = () => {
 // A fixed list so the line the customer reads is translated and worded the same whoever
 // sends it. The values match ChatRetractionReasonEnum.
 const RETRACTION_REASONS = [
-    { value: "wrong_conversation", label: trans("Meant for another conversation") },
-    { value: "explaining", label: trans("I will explain myself") },
+    { value: "wrong_conversation", label: ctrans("Meant for another conversation") },
+    { value: "explaining", label: ctrans("I will explain myself") },
 ]
 
 const choosingRetractionReason = ref(false)
@@ -199,26 +198,6 @@ const choosingRetractionReason = ref(false)
 const retractWithReason = (reason: string) => {
     choosingRetractionReason.value = false
     emit("retract-message", { id: props.message.id!, reason })
-}
-
-const isEditingMessage = ref(false)
-const editText = ref("")
-
-const startEditMessage = () => {
-    editText.value = props.message.original?.text || props.message.message_text
-    isEditingMessage.value = true
-}
-
-const cancelEditMessage = () => {
-    isEditingMessage.value = false
-}
-
-const saveEditMessage = () => {
-    const text = editText.value.trim()
-    if (text && props.message.id && text !== (props.message.original?.text || props.message.message_text)) {
-        emit("edit-message", { id: props.message.id, text })
-    }
-    isEditingMessage.value = false
 }
 
 const layout: any = inject("layout", {})
@@ -260,8 +239,12 @@ const canShowTranslation = computed(() => {
     return true
 })
 
+// In the agent console ours is a white bubble with a brand accent: the actions living on it
+// (redact, take back, the ticks) are dark text, and the fill is the organisation's own colour,
+// which no contrast rule can be written against. The customer widget keeps the brand fill.
 const bubbleClass = computed(() => ({
-    "bubble-primary": isFromViewer.value && !isRetracted.value,
+    "bubble-own-agent": isFromViewer.value && !isRetracted.value && props.viewerType === "agent",
+    "bubble-primary": isFromViewer.value && !isRetracted.value && props.viewerType !== "agent",
     "bubble-secondary": !isFromViewer.value && !isRetracted.value,
     "bg-gray-100 text-gray-400 border border-dashed border-gray-300 italic": isRetracted.value,
 }))
@@ -288,7 +271,7 @@ const readIcon = computed(() => {
 
 const readIconClass = computed(() => {
     if (isFailed.value) {
-        return "text-red-500"
+        return props.viewerType === "agent" ? "text-red-500" : "text-red-300"
     }
 
     return waStatus.value === "read" ? "text-sky-400" : ""
@@ -296,10 +279,10 @@ const readIconClass = computed(() => {
 
 const readIconLabel = computed(() => {
     if (isFailed.value) {
-        return props.message.metadata?.wa_error?.message ?? trans("Failed to send")
+        return props.message.metadata?.wa_error?.message ?? ctrans("Failed to send")
     }
 
-    return waStatus.value ? trans(waStatus.value) : ""
+    return waStatus.value ? ctrans(waStatus.value) : ""
 })
 
 const agentDisplayName = computed(() => {
@@ -315,7 +298,7 @@ const firstName = (name?: string | null): string =>
 
 const senderLabel = computed(() => {
     if (isCampaign.value) {
-        return trans("Campaign")
+        return ctrans("Campaign")
     }
 
     if (props.message.sender_type === "agent") {
@@ -334,8 +317,8 @@ const isSystemNotice = computed(() => props.message.sender_type === "system")
 const isPromotionFolded = ref(props.viewerType === "agent" && props.message.sender_type === "system_campaign")
 const promotionLabel = computed(() =>
     props.message.metadata?.template
-        ? `${trans("Promotion")}: ${props.message.metadata.template}`
-        : trans("Promotion")
+        ? `${ctrans("Promotion")}: ${props.message.metadata.template}`
+        : ctrans("Promotion")
 )
 
 // Quoting is opt-in: only channels that can carry a reply upstream ask for the button.
@@ -348,13 +331,13 @@ const quotedLabel = computed(() => {
 
     if (quoted.message_text) return quoted.message_text
 
-    return quoted.file_name || trans(quoted.message_type === "image" ? "Photo" : "Attachment")
+    return quoted.file_name || ctrans(quoted.message_type === "image" ? "Photo" : "Attachment")
 })
 
 const quotedAuthor = computed(() =>
     props.message.replied_to?.sender_type === "agent"
-        ? props.agentName ?? trans("Agent")
-        : props.contactName ?? trans("Customer")
+        ? props.agentName ?? ctrans("Agent")
+        : props.contactName ?? ctrans("Customer")
 )
 
 const isFile = computed(() => props.message.message_type === "file")
@@ -429,8 +412,8 @@ const isAudio = computed(() =>
 // as such reads better than "whatsapp-<media id>.ogg".
 const audioLabel = computed(() =>
     props.message.metadata?.wa_payload?.voice
-        ? trans("Voice message")
-        : props.message.file_name ?? trans("Audio")
+        ? ctrans("Voice message")
+        : props.message.file_name ?? ctrans("Audio")
 )
 
 // Images go through imgproxy, but everything else is streamed by the download route.
@@ -504,7 +487,7 @@ const activeMessage = computed<Message>(() => {
 
 const displayText = computed(() => {
     if (props.message.sender_type === "system") {
-        return trans(props.message.message_text)
+        return ctrans(props.message.message_text)
     }
 
     // An email body reaches us as text with its stylesheet still in it, so it is cleaned here
@@ -518,7 +501,6 @@ const formattedText = computed(() => formatWhatsappMarkup(displayText.value))
 // falls back to text, because what is on screen then is not what arrived.
 const showEmailBody = computed(() =>
     !!props.message.html_body
-    && !isEditingMessage.value
     && !isRetracted.value
     && !showTranslation.value
 )
@@ -535,7 +517,7 @@ const location = computed(() => {
     return {
         latitude,
         longitude,
-        name: payload?.name || trans("Shared location"),
+        name: payload?.name || ctrans("Shared location"),
         address: payload?.address || `${latitude.toFixed(5)}, ${longitude.toFixed(5)}`,
     }
 })
@@ -550,7 +532,7 @@ const sharedContacts = computed(() => {
     return payload.map((contact: any, index: number) => {
         const name = contact?.name?.formatted_name
             || [contact?.name?.first_name, contact?.name?.last_name].filter(Boolean).join(" ")
-            || trans("Shared contact")
+            || ctrans("Shared contact")
 
         return {
             key: `${index}-${name}`,
@@ -782,7 +764,7 @@ const toggleReaction = async (emoji: string) => {
             : reactionState.value
     } catch (e) {
         reactionState.value = previous
-        notify({ title: trans("Failed"), text: trans("Could not update reaction."), type: "error" })
+        notify({ title: ctrans("Failed"), text: ctrans("Could not update reaction."), type: "error" })
     } finally {
         isReacting.value = false
     }
@@ -889,7 +871,7 @@ watch(selectedLanguage, async (val) => {
                     v-for="emoji in quickReactions"
                     :key="emoji"
                     type="button"
-                    v-tooltip.top="trans('React')"
+                    v-tooltip.top="ctrans('React')"
                     class="w-[33px] h-[33px] flex items-center justify-center text-lg rounded-full hover:bg-gray-100 hover:scale-110 transition-all"
                     :class="myReactedEmojis.has(emoji) ? 'bg-indigo-50 ring-1 ring-indigo-200' : ''"
                     @click="toggleReaction(emoji)"
@@ -899,14 +881,14 @@ watch(selectedLanguage, async (val) => {
 
                 <span class="w-px h-5 bg-gray-200 mx-0.5"></span>
 
-                <button v-if="canReplyToMessage" type="button" v-tooltip.top="trans('Reply')"
+                <button v-if="canReplyToMessage" type="button" v-tooltip.top="ctrans('Reply')"
                     class="w-[33px] h-[33px] flex items-center justify-center text-gray-500 rounded-full hover:bg-gray-100 hover:!text-indigo-600 hover:scale-110 transition-all"
                     @click="emit('reply', message)">
                     <FontAwesomeIcon :icon="faReply" class="text-sm" />
                 </button>
 
                 <div class="relative" ref="emojiPickerRef">
-                    <button type="button" v-tooltip.top="trans('Add reaction')"
+                    <button type="button" v-tooltip.top="ctrans('Add reaction')"
                         class="w-[33px] h-[33px] flex items-center justify-center text-gray-500 rounded-full hover:bg-gray-100 hover:!text-indigo-600 hover:scale-110 transition-all"
                         @click="isEmojiPickerOpen = !isEmojiPickerOpen">
                         <FontAwesomeIcon :icon="faFaceSmile" class="text-sm" />
@@ -928,7 +910,7 @@ watch(selectedLanguage, async (val) => {
                     </div>
                 </div>
 
-                <button v-if="canForwardToSlack" type="button" v-tooltip.top="trans('Forward message…')"
+                <button v-if="canForwardToSlack" type="button" v-tooltip.top="ctrans('Forward message…')"
                     class="w-[33px] h-[33px] flex items-center justify-center text-gray-500 rounded-full hover:bg-gray-100 hover:!text-indigo-600 hover:scale-110 transition-all"
                     @click="isForwardModalOpen = true">
                     <FontAwesomeIcon :icon="faShare" class="text-sm" />
@@ -945,7 +927,7 @@ watch(selectedLanguage, async (val) => {
 
             <!-- Tapping the quote jumps to the message it answers, as WhatsApp does. -->
             <div v-if="message.replied_to" role="button" tabindex="0"
-                :title="trans('Go to the quoted message')"
+                :title="ctrans('Go to the quoted message')"
                 class="mb-1 cursor-pointer rounded-md border-l-[3px] border-current bg-black/5 px-2 py-1 text-[11px] leading-snug opacity-90 transition hover:bg-black/10"
                 @click.stop="emit('jump-to-message', message.replied_to.id)"
                 @keydown.enter.stop.prevent="emit('jump-to-message', message.replied_to.id)">
@@ -971,7 +953,7 @@ watch(selectedLanguage, async (val) => {
                             <div class="truncate text-[11px] text-gray-700">{{ phone.number }}</div>
                             <div v-if="phone.label" class="text-[10px] text-gray-400">{{ phone.label }}</div>
                         </div>
-                        <button type="button" v-tooltip.top="trans('Copy number')" @click="useCopyText(phone.number)"
+                        <button type="button" v-tooltip.top="ctrans('Copy number')" @click="useCopyText(phone.number)"
                             class="shrink-0 rounded p-1 text-gray-400 transition hover:bg-gray-100 hover:text-gray-600">
                             <FontAwesomeIcon :icon="faCopy" class="text-[10px]" />
                         </button>
@@ -1004,7 +986,7 @@ watch(selectedLanguage, async (val) => {
             </a>
 
             <div v-if="message.metadata?.gmail_pending_attachments" class="mb-1 text-xs italic text-gray-500">
-                {{ trans(":count attachment(s) kept in Gmail, they are added here when you reply", { count: message.metadata.gmail_pending_attachments }) }}
+                {{ ctrans(":count attachment(s) kept in Gmail, they are added here when you reply", { count: message.metadata.gmail_pending_attachments }) }}
             </div>
 
             <template v-if="attachmentList.length && !(attachmentList.length === 1 && isAudio)">
@@ -1035,7 +1017,7 @@ watch(selectedLanguage, async (val) => {
                                 {{ attachment.file_name }}
                             </div>
                             <div class="text-[10px] text-gray-500">
-                                <span v-if="attachmentSizeLabel(attachment)">{{ attachmentSizeLabel(attachment) }} · </span>{{ trans("Click to open") }}
+                                <span v-if="attachmentSizeLabel(attachment)">{{ attachmentSizeLabel(attachment) }} · </span>{{ ctrans("Click to open") }}
                             </div>
                         </div>
                     </div>
@@ -1051,12 +1033,12 @@ watch(selectedLanguage, async (val) => {
                 <span v-if="activeMessage.is_ai_generated"
                     class="inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded bg-amber-100 text-amber-700">
                     <FontAwesomeIcon :icon="faRobot" class="text-[10px]" />
-                    {{ trans("AI generated") }}
+                    {{ ctrans("AI generated") }}
                 </span>
                 <span v-else
                     class="inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-700">
                     <FontAwesomeIcon :icon="faShieldCheck" class="text-[10px]" />
-                    {{ trans("Verified") }}
+                    {{ ctrans("Verified") }}
                 </span>
             </div>
 
@@ -1065,7 +1047,7 @@ watch(selectedLanguage, async (val) => {
                     class="flex items-center gap-1 text-[10px] text-gray-500 hover:text-gray-700 underline disabled:opacity-50">
                     <LoadingIcon v-if="isVerifyingImage" />
                     <FontAwesomeIcon v-else :icon="faShieldCheck" class="text-[10px]" />
-                    {{ isVerifyingImage ? trans("Verifying…") : trans("Verify image") }}
+                    {{ isVerifyingImage ? ctrans("Verifying…") : ctrans("Verify image") }}
                 </button>
             </div>
 
@@ -1075,53 +1057,38 @@ watch(selectedLanguage, async (val) => {
                 class="inline-flex w-fit items-center gap-1.5 text-[11px] italic opacity-70">
                 <FontAwesomeIcon :icon="faCircleExclamation" class="text-[10px]" />
                 <span v-if="(message.retracted_count ?? 1) > 1">
-                    {{ trans(":count messages were removed", { count: message.retracted_count }) }}
+                    {{ ctrans(":count messages were removed", { count: message.retracted_count }) }}
                 </span>
-                <span v-else>{{ message.retraction_reason || trans("This message was removed") }}</span>
+                <span v-else>{{ message.retraction_reason || ctrans("This message was removed") }}</span>
             </div>
 
             <div v-if="isUnsupportedMessage"
                 class="inline-flex w-fit items-center gap-1.5 text-[11px] italic opacity-60">
                 <FontAwesomeIcon :icon="faCircleExclamation" class="text-[10px]" />
-                <span>{{ displayText || trans("Unsupported message") }}</span>
+                <span>{{ displayText || ctrans("Unsupported message") }}</span>
             </div>
 
             <!-- A received email keeps its layout; everything else is text. -->
             <EmailBody v-else-if="showEmailBody" :html="message.html_body" />
 
-            <p v-else-if="!isEditingMessage && !location && !sharedContacts.length && formatMarkup && !(isRetracted && viewerType !== 'agent')" class="whitespace-pre-wrap break-words"
+            <p v-else-if="!location && !sharedContacts.length && formatMarkup && !(isRetracted && viewerType !== 'agent')" class="whitespace-pre-wrap break-words"
                 v-html="formattedText" />
 
-            <p v-else-if="!isEditingMessage && !location && !sharedContacts.length" class="whitespace-pre-wrap break-words">
+            <p v-else-if="!location && !sharedContacts.length" class="whitespace-pre-wrap break-words">
                 {{ displayText }}
             </p>
 
-            <div v-else-if="isEditingMessage" class="flex flex-col gap-1.5 min-w-[220px]">
-                <textarea v-model="editText" rows="2"
-                    class="w-full text-sm rounded-md border border-gray-300 px-2 py-1.5 text-gray-800 bg-white focus:outline-none focus:ring-1 resize-y"
-                    @keydown.enter.exact.prevent="saveEditMessage" @keydown.esc="cancelEditMessage" />
-                <div class="flex items-center justify-end gap-2">
-                    <button type="button" class="text-[11px] underline opacity-80" @click="cancelEditMessage">
-                        {{ trans("Cancel") }}
-                    </button>
-                    <button type="button"
-                        class="text-[11px] font-semibold px-2 py-0.5 rounded bg-white text-gray-800 border border-gray-300 hover:bg-gray-50"
-                        @click="saveEditMessage">
-                        {{ trans("Save") }}
-                    </button>
-                </div>
-            </div>
             <div v-if="
                 message?.is_offline_message &&
                 !(props.message.sender_type === 'guest' && props.viewerType === 'user')
             " class="text-[10px] text-amber-600 mb-1 font-medium">
-                {{ trans('Offline message') }}
+                {{ ctrans('Offline message') }}
             </div>
 
             <!-- Nobody wrote this: a mailbox answered by itself. Said plainly so an out of
                  office is not read as the customer coming back with something to say. -->
             <div v-if="message?.metadata?.auto_reply" class="text-[10px] text-gray-400 mb-1 font-medium">
-                {{ trans('Automatic reply') }}
+                {{ ctrans('Automatic reply') }}
             </div>
 
             <div v-if="canShowTranslation && (latestTranslation || isTranslating)"
@@ -1161,53 +1128,49 @@ watch(selectedLanguage, async (val) => {
                 <button :disabled="isTranslating" @click="translateMessage"
                     class="flex items-center gap-1 text-[10px] text-gray-500 hover:text-gray-700 underline disabled:opacity-50">
                     <FontAwesomeIcon :icon="faLanguage" class="text-[10px]" />
-                    {{ trans("Translate") }}
+                    {{ ctrans("Translate") }}
                 </button>
             </div>
 
             <div v-if="choosingRetractionReason" class="mb-1 flex flex-col items-stretch gap-0.5 text-[10px]">
-                <span class="opacity-70">{{ trans("What the customer is told:") }}</span>
+                <span class="opacity-70">{{ ctrans("What the customer is told:") }}</span>
                 <button v-for="reason in RETRACTION_REASONS" :key="reason.value" type="button"
                     class="text-left underline leading-tight" @click="retractWithReason(reason.value)">
                     {{ reason.label }}
                 </button>
                 <button type="button" class="text-left opacity-70 leading-tight"
                     @click="choosingRetractionReason = false">
-                    {{ trans("Cancel") }}
+                    {{ ctrans("Cancel") }}
                 </button>
             </div>
 
             <div class="flex items-center justify-end gap-1 text-[10px] opacity-70 min-h-[14px]">
-                <button v-if="isEditableMessage && !isRetracted && !isEditingMessage" type="button"
-                    class="mr-auto underline leading-none" @click="startEditMessage">
-                    {{ trans("Edit") }}
-                </button>
-                <button v-if="isAttachmentRedactable && !isEditingMessage" type="button"
+                <button v-if="isAttachmentRedactable" type="button"
                     class="underline leading-none" @click="emit('redact-attachment', { id: message.id! })">
-                    {{ trans("Remove file") }}
+                    {{ ctrans("Remove file") }}
                 </button>
-                <button v-if="isRedactableMessage && !isEditingMessage" type="button"
-                    class="underline leading-none" :title="trans('Select the text to strike out, then click')"
+                <button v-if="isRedactableMessage" type="button"
+                    class="underline leading-none" :title="ctrans('Select the text to strike out, then click')"
                     @click="redactSelection">
-                    {{ trans("Redact") }}
+                    {{ ctrans("Redact") }}
                 </button>
-                <button v-if="isRetractableMessage && !isEditingMessage" type="button"
-                    class="underline leading-none text-red-600"
+                <button v-if="isRetractableMessage" type="button"
+                    class="underline leading-none text-red-600 hover:text-red-700"
                     @click="choosingRetractionReason = !choosingRetractionReason">
-                    {{ trans("Take back") }}
+                    {{ ctrans("Take back") }}
                 </button>
 
                 <span v-if="message.edited_at" class="italic leading-none">
-                    {{ trans("edited") }}
+                    {{ ctrans("edited") }}
                 </span>
                 <span v-if="message.is_attachment_redacted" class="italic leading-none">
-                    {{ trans("file removed") }}
+                    {{ ctrans("file removed") }}
                 </span>
                 <span v-if="message.is_redacted" class="italic leading-none">
-                    {{ trans("redacted") }}
+                    {{ ctrans("redacted") }}
                 </span>
                 <span v-if="isRetracted && viewerType === 'agent'" class="italic leading-none">
-                    {{ trans("sent") }} {{ time }} · {{ trans("taken back") }} {{ retractedTime }}
+                    {{ ctrans("sent") }} {{ time }} · {{ ctrans("taken back") }} {{ retractedTime }}
                 </span>
                 <span v-if="!isSending" class="leading-none">
                     {{ time }}
@@ -1254,15 +1217,23 @@ watch(selectedLanguage, async (val) => {
 </template>
 
 <style scoped>
+.bubble-own-agent {
+    @apply bg-white text-gray-800 border border-gray-200;
+    border-left: 4px solid v-bind("layout.app.theme[4]");
+    border-bottom-right-radius: 0px;
+    border-top-left-radius: 8px;
+    border-bottom-left-radius: 8px;
+}
+
 .bubble-primary {
     background-color: v-bind("layout.app.theme[4]");
     color: v-bind("layout.app.theme[5]");
-    border-bottom-right-radius: 4px;
+    border-bottom-right-radius: 0px;
 }
 
 .bubble-secondary {
     @apply bg-white text-gray-800 border border-gray-200;
-    border-bottom-left-radius: 4px;
+    border-bottom-left-radius: 0px;
 }
 
 </style>

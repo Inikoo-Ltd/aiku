@@ -8,6 +8,7 @@
 
 namespace App\Actions\CRM\WebUser\Retina;
 
+use App\Actions\Traits\WithIrisAuthCookie;
 use App\Actions\Traits\WithRetinaAuthRedirect;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -21,6 +22,7 @@ use Symfony\Component\HttpFoundation\Response;
 class RetinaLogout
 {
     use AsController;
+    use WithIrisAuthCookie;
     use WithRetinaAuthRedirect;
 
 
@@ -31,7 +33,7 @@ class RetinaLogout
         $request->session()->regenerateToken();
         Session::put('reloadLayout', '1');
 
-        Cookie::queue(Cookie::forget('iris_vua'));
+        $this->forgetIrisAuthCookie();
 
         /* The touch history belongs to the journey that just ended. On a shared browser the next
            person to log in must not inherit it into their own attribution record. */

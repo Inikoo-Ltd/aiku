@@ -1,6 +1,15 @@
 - DO not write code comments you must write clear, self-explanatory code instead
 - Do not create test file unless we ask you
 
+## Frontend translations use `ctrans`, never `trans`
+
+Every translated string in `resources/js` goes through
+`import { ctrans } from "@/Composables/useTrans"`, never `trans` from `laravel-vue-i18n`.
+Same signature — `ctrans(text, replacements)` — but it falls back to the original text with
+`:placeholder` replacements applied when no translation exists, so a missing key renders the
+English string instead of an empty node. When you touch a file that still calls `trans(`,
+convert those calls and the import as well.
+
 ## Tests share one database per parallel worker
 
 Pest runs with `--parallel`. Each worker restores the dump ONCE and then runs many test

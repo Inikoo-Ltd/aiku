@@ -80,10 +80,10 @@ import TiptapVariableDialog from "@/Components/Forms/Fields/BubleTextEditor/Tipt
 import { Plugin } from "prosemirror-state"
 import Variabel from "./Variables/Variables"
 import suggestion from './Variables/suggestion'
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { routeType } from "@/types/route"
 import { irisVariable } from "@/Composables/variableList"
-import { uniqueId } from "lodash"
+import { uniqueId } from "lodash-es"
 import { ulid } from "ulid"
 
 
@@ -461,7 +461,7 @@ defineExpose({
 
 const tableBorderWidthOptions = [
     {
-        label: trans('No border'),
+        label: ctrans('No border'),
         value: '0px'
     },
     {
@@ -732,7 +732,7 @@ onMounted(async () => {
                                 <template #trigger>
                                     <FontAwesomeIcon :icon="faFont" class="h-4 w-4" />
                                     <span class="max-w-[5.5rem] truncate text-xs">
-                                        {{ editorInstance?.getAttributes('textStyle').fontFamily || trans('Font') }}
+                                        {{ editorInstance?.getAttributes('textStyle').fontFamily || ctrans('Font') }}
                                     </span>
                                     <FontAwesomeIcon :icon="faChevronDown" class="h-2.5 w-2.5 opacity-60" />
                                 </template>
@@ -741,7 +741,7 @@ onMounted(async () => {
                                         <button type="button"
                                             class="flex w-full items-center px-3 py-1.5 text-left text-sm text-red-600 hover:bg-gray-100"
                                             @click="editorInstance?.chain().focus().unsetFontFamily().run(); close()">
-                                            {{ trans('Clear font') }}
+                                            {{ ctrans('Clear font') }}
                                         </button>
                                         <button v-for="font in useFontFamilyList" :key="font.value" type="button"
                                             class="flex w-full items-center px-3 py-1.5 text-left text-sm transition-colors"
@@ -772,7 +772,7 @@ onMounted(async () => {
                                         <button type="button"
                                             class="flex w-full items-center px-3 py-1.5 text-left text-sm text-red-600 hover:bg-gray-100"
                                             @click="editorInstance?.chain().focus().unsetFontSize().run(); close()">
-                                            {{ trans('Clear') }}
+                                            {{ ctrans('Clear') }}
                                         </button>
                                         <button v-for="fontsize in fontSizeOptions" :key="fontsize" type="button"
                                             class="flex w-full items-center justify-between px-3 py-1.5 text-left text-sm transition-colors"
@@ -789,7 +789,7 @@ onMounted(async () => {
 
                         <!-- Heading: one button, full choice on open -->
                         <TiptapToolbarGroup v-if="availableHeadingOptions.length" class="px-1 first:pl-0">
-                            <TiptapToolbarDropdown :label="trans('Heading')" :menu-height="60"
+                            <TiptapToolbarDropdown :label="ctrans('Heading')" :menu-height="60"
                                 :is-active="!!activeHeadingOption">
                                 <template #trigger>
                                     <FontAwesomeIcon :icon="activeHeadingOption?.icon ?? faHeading"
@@ -799,8 +799,8 @@ onMounted(async () => {
                                 <template #menu="{ close }">
                                     <div class="flex items-center gap-0.5 px-1">
                                         <button v-for="option in availableHeadingOptions" :key="option.level"
-                                            type="button" v-tooltip="trans(option.label)"
-                                            :aria-label="trans(option.label)"
+                                            type="button" v-tooltip="ctrans(option.label)"
+                                            :aria-label="ctrans(option.label)"
                                             class="inline-flex h-7 w-7 items-center justify-center rounded transition-colors"
                                             :class="activeHeadingOption?.level === option.level
                                                 ? 'bg-blue-100 text-blue-800'
@@ -815,7 +815,7 @@ onMounted(async () => {
 
                         <!-- Lists: one button, full choice on open -->
                         <TiptapToolbarGroup v-if="availableListOptions.length" class="px-1 first:pl-0">
-                            <TiptapToolbarDropdown :label="trans('Lists')" :menu-height="60"
+                            <TiptapToolbarDropdown :label="ctrans('Lists')" :menu-height="60"
                                 :is-active="!!activeListOption">
                                 <template #trigger>
                                     <FontAwesomeIcon :icon="activeListOption?.icon ?? faList" class="h-4 w-4" />
@@ -824,8 +824,8 @@ onMounted(async () => {
                                 <template #menu="{ close }">
                                     <div class="flex items-center gap-0.5 px-1">
                                         <button v-for="option in availableListOptions" :key="option.value"
-                                            type="button" v-tooltip="trans(option.label)"
-                                            :aria-label="trans(option.label)"
+                                            type="button" v-tooltip="ctrans(option.label)"
+                                            :aria-label="ctrans(option.label)"
                                             class="inline-flex h-7 w-7 items-center justify-center rounded transition-colors"
                                             :class="activeListOption?.value === option.value
                                                 ? 'bg-blue-100 text-blue-800'
@@ -867,11 +867,11 @@ onMounted(async () => {
                             </TiptapToolbarButton>
 
                             <TiptapToolbarButton v-if="toggle.includes('color')" label="Text Color" :preserve-selection="false">
-                                <EditorColorPicker :color="textColorValue" :label="trans('Text Color')" @open="onColorPickerOpen"
+                                <EditorColorPicker :color="textColorValue" :label="ctrans('Text Color')" @open="onColorPickerOpen"
                                     @close="onColorPickerClose" @changeColor="applyTextColor">
                                     <template #button>
                                         <div class="flex h-5 w-5 cursor-pointer items-center justify-center rounded"
-                                            :aria-label="trans('Text Color')"
+                                            :aria-label="ctrans('Text Color')"
                                             :style="{ color: editorInstance.getAttributes('textStyle').color || 'gray' }">
                                             <FontAwesomeIcon :icon="faTint" class="text-sm" />
                                         </div>
@@ -880,11 +880,11 @@ onMounted(async () => {
                             </TiptapToolbarButton>
 
                             <TiptapToolbarButton v-if="toggle.includes('highlight')" label="Text highlight" :preserve-selection="false">
-                                <EditorColorPicker :color="highlightColorValue" :label="trans('Text highlight')" @open="onColorPickerOpen"
+                                <EditorColorPicker :color="highlightColorValue" :label="ctrans('Text highlight')" @open="onColorPickerOpen"
                                     @close="onColorPickerClose" @changeColor="applyHighlightColor">
                                     <template #button>
                                         <div class="flex h-5 w-5 cursor-pointer items-center justify-center rounded"
-                                            :aria-label="trans('Text highlight')"
+                                            :aria-label="ctrans('Text highlight')"
                                             :style="{ backgroundColor: editorInstance?.getAttributes('highlight').color }">
                                             <FontAwesomeIcon :icon="faPaintBrushAlt" class="text-sm" />
                                         </div>
@@ -895,7 +895,7 @@ onMounted(async () => {
 
                         <!-- Alignment: one button, full choice on open -->
                         <TiptapToolbarGroup v-if="availableAlignOptions.length" class="px-1 first:pl-0">
-                            <TiptapToolbarDropdown :label="trans('Text alignment')" :menu-height="60"
+                            <TiptapToolbarDropdown :label="ctrans('Text alignment')" :menu-height="60"
                                 :is-active="!!activeAlignOption">
                                 <template #trigger>
                                     <FontAwesomeIcon :icon="activeAlignOption?.icon ?? faAlignLeft" class="h-4 w-4" />
@@ -904,8 +904,8 @@ onMounted(async () => {
                                 <template #menu="{ close }">
                                     <div class="flex items-center gap-0.5 px-1">
                                         <button v-for="option in availableAlignOptions" :key="option.value"
-                                            type="button" v-tooltip="trans(option.label)"
-                                            :aria-label="trans(option.label)"
+                                            type="button" v-tooltip="ctrans(option.label)"
+                                            :aria-label="ctrans(option.label)"
                                             class="inline-flex h-7 w-7 items-center justify-center rounded transition-colors"
                                             :class="activeAlignOption?.value === option.value
                                                 ? 'bg-blue-100 text-blue-800'
@@ -941,7 +941,7 @@ onMounted(async () => {
 
                         <!-- Clear formatting -->
                         <TiptapToolbarGroup v-if="toggle.includes('clear')" class="px-1 first:pl-0">
-                            <TiptapToolbarButton :label="trans('Clear formatting')"
+                            <TiptapToolbarButton :label="ctrans('Clear formatting')"
                                 @click="editorInstance?.chain().focus().unsetAllMarks().run()">
                                 <FontAwesomeIcon :icon="faEraser" class="h-4 w-4" />
                             </TiptapToolbarButton>
@@ -949,7 +949,7 @@ onMounted(async () => {
 
                         <!-- Everything else, one click away -->
                         <TiptapToolbarGroup v-if="hasMoreMenuItems" class="px-1 first:pl-0">
-                            <TiptapToolbarDropdown :label="trans('More options')" align-menu="right"
+                            <TiptapToolbarDropdown :label="ctrans('More options')" align-menu="right"
                                 :menu-height="320">
                                 <template #trigger>
                                     <FontAwesomeIcon :icon="faEllipsisH" class="h-4 w-4" />
@@ -960,25 +960,25 @@ onMounted(async () => {
                                             v-if="toggle.includes('image') || toggle.includes('video') || toggle.includes('table') || toggle.includes('blockquote') || toggle.includes('divider')">
                                             <div class="my-1 h-px bg-gray-200" aria-hidden="true" />
                                             <div class="px-3 py-1 text-[10px] font-semibold uppercase tracking-wide text-gray-400">
-                                                {{ trans('Insert') }}
+                                                {{ ctrans('Insert') }}
                                             </div>
                                             <button v-if="toggle.includes('image')" type="button"
                                                 class="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-gray-700 transition-colors hover:bg-gray-100"
                                                 @click="showAddImageDialog = true; showDialog = true; close()">
                                                 <FontAwesomeIcon :icon="faImage" class="h-4 w-4" fixed-width />
-                                                {{ trans('Image') }}
+                                                {{ ctrans('Image') }}
                                             </button>
                                             <button v-if="toggle.includes('video')" type="button"
                                                 class="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-gray-700 transition-colors hover:bg-gray-100"
                                                 @click="showAddYoutubeDialog = true; showDialog = true; close()">
                                                 <FontAwesomeIcon :icon="faFileVideo" class="h-4 w-4" fixed-width />
-                                                {{ trans('YouTube video') }}
+                                                {{ ctrans('YouTube video') }}
                                             </button>
                                             <button v-if="toggle.includes('table')" type="button"
                                                 class="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-gray-700 transition-colors hover:bg-gray-100"
                                                 @click="showAddTableDialog = true; showDialog = true; close()">
                                                 <FontAwesomeIcon :icon="faTable" class="h-4 w-4" fixed-width />
-                                                {{ trans('Table') }}
+                                                {{ ctrans('Table') }}
                                             </button>
                                             <button v-if="toggle.includes('blockquote')" type="button"
                                                 class="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm transition-colors"
@@ -987,13 +987,13 @@ onMounted(async () => {
                                                     : 'text-gray-700 hover:bg-gray-100'"
                                                 @click="editorInstance?.chain().focus().toggleBlockquote().run(); close()">
                                                 <FontAwesomeIcon :icon="faQuoteLeft" class="h-4 w-4" fixed-width />
-                                                {{ trans('Blockquote') }}
+                                                {{ ctrans('Blockquote') }}
                                             </button>
                                             <button v-if="toggle.includes('divider')" type="button"
                                                 class="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-gray-700 transition-colors hover:bg-gray-100"
                                                 @click="editorInstance?.chain().focus().setHorizontalRule().run(); close()">
                                                 <FontAwesomeIcon :icon="faMinus" class="h-4 w-4" fixed-width />
-                                                {{ trans('Horizontal line') }}
+                                                {{ ctrans('Horizontal line') }}
                                             </button>
                                         </template>
 
@@ -1004,7 +1004,7 @@ onMounted(async () => {
                                                 @click="showAddVariableDialog = true; showDialog = true; close()">
                                                 <FontAwesomeIcon :icon="faBracketsCurly" class="h-4 w-4"
                                                     fixed-width />
-                                                {{ trans('Insert variable') }}…
+                                                {{ ctrans('Insert variable') }}…
                                             </button>
                                         </template>
                                     </div>
@@ -1014,8 +1014,8 @@ onMounted(async () => {
 
                         <!-- Close -->
                         <div v-if="props.toggle.length" class="px-1 first:pl-0">
-                            <button type="button" v-tooltip="trans('Close toolbar')"
-                                :aria-label="trans('Close toolbar')" @mousedown.prevent @click="closeBubble"
+                            <button type="button" v-tooltip="ctrans('Close toolbar')"
+                                :aria-label="ctrans('Close toolbar')" @mousedown.prevent @click="closeBubble"
                                 class="inline-flex h-7 w-7 items-center justify-center rounded text-gray-400 transition-colors hover:bg-red-50 hover:text-red-600">
                                 <FontAwesomeIcon :icon="faTimes" class="h-4 w-4" />
                             </button>
@@ -1026,10 +1026,10 @@ onMounted(async () => {
                     <section v-if="editorInstance?.isActive('table')"
                         class="mt-1 flex flex-nowrap items-center gap-0.5 overflow-x-auto border-t border-gray-200 pt-1">
                         <span class="shrink-0 pr-1 text-[10px] font-semibold uppercase tracking-wide text-gray-400">
-                            {{ trans('Table') }}
+                            {{ ctrans('Table') }}
                         </span>
 
-                        <TiptapToolbarButton v-if="toggle.includes('color')" :label="trans('Color background')" :preserve-selection="false">
+                        <TiptapToolbarButton v-if="toggle.includes('color')" :label="ctrans('Color background')" :preserve-selection="false">
                             <div class="relative h-5 w-5">
                                 <UtilsColorPicker key="picker_table_background_color"
                                     :color="editorInstance.getAttributes('table')?.backgroundColor || editorInstance.getAttributes('tableCell')?.backgroundColor"
@@ -1049,7 +1049,7 @@ onMounted(async () => {
                             </div>
                         </TiptapToolbarButton>
 
-                        <TiptapToolbarButton v-if="toggle.includes('color')" :label="trans('Color border')" :preserve-selection="false">
+                        <TiptapToolbarButton v-if="toggle.includes('color')" :label="ctrans('Color border')" :preserve-selection="false">
                             <div class="relative h-5 w-5">
                                 <UtilsColorPicker key="picker_table_border_color"
                                     :color="editorInstance.getAttributes('tableCell')?.borderColor"
@@ -1063,7 +1063,7 @@ onMounted(async () => {
                                                 :modelValue="editorInstance.getAttributes('tableCell')?.borderWidth"
                                                 @update:modelValue="(e) => (editorInstance?.chain().focus().setCellAttribute('borderWidth', e).run())"
                                                 :options="tableBorderWidthOptions" optionLabel="label"
-                                                optionValue="value" :placeholder="trans('Select border width')"
+                                                optionValue="value" :placeholder="ctrans('Select border width')"
                                                 fluid />
                                         </div>
                                     </template>

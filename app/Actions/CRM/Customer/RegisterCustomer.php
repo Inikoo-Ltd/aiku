@@ -16,6 +16,7 @@ use App\Actions\CRM\PollReply\StoreMultiPollReply;
 use App\Actions\CRM\WebUser\StoreWebUser;
 use App\Actions\Dropshipping\Tiktok\User\ProcessUnregisterCustomerTiktokUser;
 use App\Actions\OrgAction;
+use App\Actions\Traits\WithIrisAuthCookie;
 use App\Enums\CRM\Customer\CustomerStateEnum;
 use App\Enums\CRM\Customer\CustomerStatusEnum;
 use App\Models\Catalogue\Shop;
@@ -25,6 +26,8 @@ use Illuminate\Support\Facades\DB;
 
 class RegisterCustomer extends OrgAction
 {
+    use WithIrisAuthCookie;
+
     /**
      * @throws \Throwable
      */
@@ -84,6 +87,7 @@ class RegisterCustomer extends OrgAction
 
 
         auth('retina')->login($webUser);
+        $this->queueIrisAuthCookie();
 
         return $customer;
     }

@@ -118,15 +118,23 @@ const isTicketModalOpen = ref(false)
 
 const chatSession = computed(() => props.session)
 const isClosed = computed(() => chatSession.value?.status === "closed")
-// Spam is never offered on a customer: it blocks the number for good.
-const canReportSpam = computed(() =>
-    !(chatSession.value as any)?.customer?.id && !isClosed.value && !(chatSession.value as any)?.is_spam && !props.readOnly
-)
 const isWaiting = computed(() => !chatSession.value?.assigned_agent)
 const isMyChat = computed(() => {
     if (!chatSession.value?.assigned_agent) return true
     return String(chatSession.value.assigned_agent.user_id ?? "") === String(layout?.user?.id ?? "")
 })
+
+// Disposing of a chat another agent is holding is theirs to do. The server decides, since
+// supervisors keep the override and the page cannot know who supervises what.
+const canDispose = computed(() => {
+    const flag = (chatSession.value as any)?.can_dispose
+    return typeof flag === "boolean" ? flag : isMyChat.value
+})
+
+// Spam is never offered on a customer: it blocks the number for good.
+const canReportSpam = computed(() =>
+    !(chatSession.value as any)?.customer?.id && !isClosed.value && !(chatSession.value as any)?.is_spam && !props.readOnly && canDispose.value
+)
 
 const isAssigningSelf = ref(false)
 const isTakingOver = ref(false)

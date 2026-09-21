@@ -215,15 +215,14 @@ test('iris search click endpoint records the click once', function () {
         ->and($log->clicked_at->equalTo($firstClickedAt))->toBeTrue();
 });
 
-test('changing the search engine breaks the cached storefront layout props', function () {
-    // the dump ships websites already on internal, so pin a known starting point first
-    $this->website->update(['settings' => array_merge($this->website->settings, ['iris_search_model' => 'luigi'])]);
+test('changing a cached storefront setting breaks the cached layout props', function () {
+    $this->website->update(['settings' => array_merge($this->website->settings, ['google_tag_id' => 'GTM-OLD'])]);
 
-    // exactly one break: the unrelated settings write must not trigger it, the engine flip must
+    // exactly one break: the unrelated settings write must not trigger it, the cached setting must
     \App\Actions\Web\Website\BreakWebsiteIrisCache::mock()->shouldReceive('handle')->once();
 
     $this->website->update(['settings' => array_merge($this->website->refresh()->settings, ['unrelated_flag' => true])]);
-    $this->website->update(['settings' => array_merge($this->website->settings, ['iris_search_model' => 'internal'])]);
+    $this->website->update(['settings' => array_merge($this->website->settings, ['google_tag_id' => 'GTM-NEW'])]);
 });
 
 test('legacy search settings still use internal search', function () {
@@ -234,13 +233,6 @@ test('legacy search settings still use internal search', function () {
     $this->getJson('http://'.$this->website->domain.'/json/search/catalogue?q=candles')
         ->assertOk()
         ->assertJsonPath('results.products', []);
-
-    $middleware = new class () {
-        use \App\Http\Middleware\WithIrisInertia;
-    };
-
-    Cache::flush();
-    expect($middleware->getIrisData($this->website->refresh())['iris_search_model'])->toBe('internal');
 });
 
 test('iris search only returns hits flagged is_in_website', function () {

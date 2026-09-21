@@ -26,6 +26,8 @@ use App\Actions\Chat\ChatSession\GetChatAgentByUserId;
 use App\Actions\Chat\ChatSession\GetChatAgents;
 use App\Actions\Chat\ChatSession\GetChatAgentSpecializations;
 use App\Actions\Chat\ChatSession\GetChatCustomerProfile;
+use App\Actions\Helpers\Address\GetFormattedAddress;
+use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Actions\Chat\ChatSession\GetChatCustomerTimeline;
 use App\Actions\Chat\ChatSession\GetChatReports;
 use App\Actions\Chat\ChatSession\GetChatDashboardVisitors;
@@ -75,6 +77,7 @@ use App\Enums\CRM\Livechat\ChatEventTypeEnum;
 use App\Enums\CRM\Livechat\ChatMessageTypeEnum;
 use App\Enums\CRM\Livechat\ChatPriorityEnum;
 use App\Enums\CRM\Livechat\ChatSenderTypeEnum;
+use App\Enums\CRM\Livechat\ChatTopicEnum;
 use App\Enums\CRM\Livechat\ChatChannelEnum;
 use App\Actions\Chat\ChatSession\MarkChatSessionAsRubbish;
 use App\Enums\CRM\Livechat\ChatIgnoreReasonEnum;
@@ -1815,6 +1818,16 @@ test('GetChatCustomerProfile returns empty defaults when session has no web user
     expect($result)->toBe(['tags' => [], 'stats' => null, 'email' => null, 'profile_url' => null]);
 });
 
+test('GetChatCustomerProfile gives the customer address and leaves baskets out of the last orders', function () {
+    $result = GetChatCustomerProfile::make()->contactAndLastOrders($this->customer);
+
+    expect($result)->toHaveKeys(['company_name', 'phone', 'address', 'last_orders'])
+        ->and($result['address'])->toBe(GetFormattedAddress::run($this->customer->address))
+        ->and(count($result['last_orders']))->toBe(
+            min(5, $this->customer->orders()->where('state', '!=', OrderStateEnum::CREATING)->count())
+        );
+});
+
 test('GetChatCustomerTimeline returns empty events when session has no customer', function () {
     $chatSession = ChatSession::create([
         'ulid'             => (string)Str::ulid(),
@@ -2830,6 +2843,13 @@ test('customer chat history merges website and whatsapp sessions', function () {
     expect($result['rows'])->toHaveCount(2)
         ->and($byUlid[$websiteSession->ulid]['channel'])->toBe('website')
         ->and($byUlid[$whatsappSession->ulid]['channel'])->toBe('whatsapp');
+
+    $websiteSession->update(['channel' => ChatChannelEnum::EMAIL]);
+
+    $emailRow = GetCustomerChatHistory::make()->handle(['customer_id' => $customer->id])['rows']
+        ->firstWhere(fn (array $row) => $row['session']->ulid === $websiteSession->ulid);
+
+    expect($emailRow['channel'])->toBe('email');
 });
 
 test('customer chat history resolves the customer from a web user id', function () {
@@ -4688,13 +4708,16 @@ test('email does not sit under the website tab', function () {
 });
 
 test('GetChatReports counts only conversations the visitor wrote in and measures the first reply', function () {
-    $session = fn (string $channel) => ChatSession::create([
+    $this->freezeTime();
+    [, , $reportShop] = createOwnShop(__FILE__.':chat-reports');
+
+    $session = fn (string $channel, int $shopId) => ChatSession::create([
         'ulid'             => (string)Str::ulid(),
         'status'           => ChatSessionStatusEnum::ACTIVE,
         'guest_identifier' => 'guest_'.Str::random(5),
         'language_id'      => 68,
         'priority'         => ChatPriorityEnum::NORMAL,
-        'shop_id'          => $this->shop->id,
+        'shop_id'          => $shopId,
         'channel'          => $channel,
         'created_at'       => now()->subHours(2),
         'updated_at'       => now(),
@@ -4711,16 +4734,21 @@ test('GetChatReports counts only conversations the visitor wrote in and measures
         'updated_at'      => now(),
     ]);
 
-    $answered = $session('website');
+    $answered = $session('website', $reportShop->id);
     $message($answered, ChatSenderTypeEnum::GUEST->value, 100);
     $message($answered, ChatSenderTypeEnum::AGENT->value, 90);
 
-    $emailed = $session('email');
+    $answered->update(['topic' => ChatTopicEnum::ORDER_STATUS->value]);
+
+    $emailed = $session('email', $reportShop->id);
     $message($emailed, ChatSenderTypeEnum::USER->value, 60);
 
-    $widgetOnlyOpened = $session('website');
+    $widgetOnlyOpened = $session('website', $reportShop->id);
 
-    $result = GetChatReports::make()->handle(collect([$this->shop->id]), '1w');
+    $otherShopConversation = $session('website', $this->shop->id);
+    $message($otherShopConversation, ChatSenderTypeEnum::GUEST->value, 30);
+
+    $result = GetChatReports::make()->handle(collect([$reportShop->id]), '1w');
 
     expect($result['conversations'])->toBe(2)
         ->and($result['answered'])->toBe(1)
@@ -4728,6 +4756,9 @@ test('GetChatReports counts only conversations the visitor wrote in and measures
         ->and($result['median_reply_minutes'])->toBe(10.0)
         ->and(collect($result['by_channel'])->firstWhere('channel', 'email')['conversations'])->toBe(1)
         ->and(collect($result['by_channel'])->firstWhere('channel', 'whatsapp')['conversations'])->toBe(0)
+        ->and($result['by_topic'])->toHaveCount(1)
+        ->and($result['by_topic'][0])->toMatchArray(['topic' => 'order_status', 'conversations' => 1, 'share' => 100.0, 'website' => 1, 'unanswered' => 0])
+        ->and($result['unclassified'])->toBe(1)
         ->and($widgetOnlyOpened->exists)->toBeTrue();
 });
 
@@ -4946,4 +4977,599 @@ test('GetChatSessions limits the list to the shops asked for', function () {
     expect($both)->toContain($other->ulid)
         ->and($one)->toContain($other->ulid)
         ->and($one)->not->toContain($mine->ulid);
+});
+
+test('SummarizeChatSession classifies what the customer wanted and leaves system messages out', function () {
+    $webUser = StoreWebUser::make()->action($this->customer, WebUser::factory()->definition());
+    config(['askbot-laravel.openai_api_key' => 'test-key']);
+
+    \Illuminate\Support\Facades\Http::fake([
+        'api.openai.com/*' => \Illuminate\Support\Facades\Http::response(['choices' => [['message' => [
+            'content' => "```json\n".json_encode([
+                'summary'    => 'Two candles missing from GB589048, replacement sent.',
+                'topic'      => 'missing_or_damaged',
+                'key_points' => ['Two candles missing'],
+                'status'     => 'resolved',
+                'sentiment'  => 'neutral',
+            ])."\n```",
+        ]]]]),
+    ]);
+
+    $chatSession = ChatSession::create([
+        'ulid'             => (string) Str::ulid(),
+        'status'           => ChatSessionStatusEnum::CLOSED,
+        'guest_identifier' => 'guest_'.Str::random(5),
+        'language_id'      => 68,
+        'priority'         => ChatPriorityEnum::NORMAL,
+        'shop_id'          => $this->shop->id,
+        'web_user_id'      => $webUser->id,
+    ]);
+
+    foreach ([
+        [ChatSenderTypeEnum::USER, 'Two candles are missing from GB589048'],
+        [ChatSenderTypeEnum::SYSTEM, 'Chat session has been closed by agent'],
+    ] as [$senderType, $text]) {
+        ChatMessage::create([
+            'chat_session_id' => $chatSession->id,
+            'message_type'    => ChatMessageTypeEnum::TEXT,
+            'sender_type'     => $senderType,
+            'message_text'    => $text,
+        ]);
+    }
+
+    $chatSession = SummarizeChatSession::make()->handle($chatSession)->refresh();
+
+    expect($chatSession->topic)->toBe(ChatTopicEnum::MISSING_OR_DAMAGED->value)
+        ->and($chatSession->summarised_at)->not->toBeNull()
+        ->and(Arr::get($chatSession->metadata, 'ai_summary.summary'))->toContain('GB589048')
+        ->and(Arr::get($chatSession->metadata, 'ai_summary'))->not->toHaveKey('topic');
+
+    \Illuminate\Support\Facades\Http::assertSent(
+        fn ($request) => str_contains($request['messages'][1]['content'], 'customer: Two candles')
+            && !str_contains($request['messages'][1]['content'], 'closed by agent')
+    );
+
+    $previousContact = GetChatCustomerProfile::make()->previousContact($this->customer, new ChatSession());
+
+    expect($previousContact['previous_chats'][0]['ulid'])->toBe($chatSession->ulid)
+        ->and($previousContact['previous_chats'][0]['summary'])->toContain('GB589048')
+        ->and($previousContact['chat_topics'][0])->toMatchArray(['topic' => 'missing_or_damaged', 'count' => 1])
+        ->and(GetChatCustomerProfile::make()->previousContact($this->customer, $chatSession)['previous_chats'])->toBeEmpty();
+});
+
+test('SummarizeChatSession does not ask the model about a conversation the customer never wrote in', function () {
+    \Illuminate\Support\Facades\Http::fake();
+
+    $chatSession = ChatSession::create([
+        'ulid'             => (string) Str::ulid(),
+        'status'           => ChatSessionStatusEnum::CLOSED,
+        'guest_identifier' => 'guest_'.Str::random(5),
+        'language_id'      => 68,
+        'priority'         => ChatPriorityEnum::NORMAL,
+        'shop_id'          => $this->shop->id,
+    ]);
+
+    ChatMessage::create([
+        'chat_session_id' => $chatSession->id,
+        'message_type'    => ChatMessageTypeEnum::TEXT,
+        'sender_type'     => ChatSenderTypeEnum::AGENT,
+        'message_text'    => 'Hello, can I help?',
+    ]);
+
+    $chatSession = SummarizeChatSession::make()->handle($chatSession)->refresh();
+
+    \Illuminate\Support\Facades\Http::assertNothingSent();
+    expect($chatSession->topic)->toBeNull()->and($chatSession->summarised_at)->toBeNull();
+});
+
+function noiseTestEmailSession(\App\Models\Catalogue\Shop $shop, string $from, string $subject, string $text, array $messageMetadata = []): ChatSession
+{
+    $chatSession = ChatSession::create([
+        'ulid'                    => (string) Str::ulid(),
+        'status'                  => ChatSessionStatusEnum::WAITING,
+        'channel'                 => ChatChannelEnum::EMAIL,
+        'shop_id'                 => $shop->id,
+        'last_visitor_message_at' => now(),
+        'metadata'                => ['email_from' => $from, 'email_subject' => $subject],
+    ]);
+
+    ChatMessage::create([
+        'chat_session_id' => $chatSession->id,
+        'message_type'    => ChatMessageTypeEnum::TEXT,
+        'sender_type'     => ChatSenderTypeEnum::GUEST,
+        'message_text'    => $text,
+        'metadata'        => $messageMetadata,
+    ]);
+
+    return $chatSession;
+}
+
+function noiseTestWhatsappSession(\App\Models\Catalogue\Shop $shop, string $phone, string $text): MetaChatSession
+{
+    $channel = MetaChannel::firstOrCreate(['code' => 'whatsapp'], ['name' => 'WhatsApp']);
+
+    $metaChatSession = MetaChatSession::create([
+        'ulid'                    => (string) Str::ulid(),
+        'meta_channel_id'         => $channel->id,
+        'shop_id'                 => $shop->id,
+        'phone_number'            => $phone,
+        'status'                  => ChatSessionStatusEnum::WAITING,
+        'language_id'             => 68,
+        'priority'                => ChatPriorityEnum::NORMAL,
+        'last_visitor_message_at' => now(),
+    ]);
+
+    \App\Models\Chat\MetaChatMessage::create([
+        'meta_chat_session_id' => $metaChatSession->id,
+        'meta_channel_id'      => $channel->id,
+        'message_type'         => ChatMessageTypeEnum::TEXT,
+        'sender_type'          => ChatSenderTypeEnum::GUEST,
+        'message_text'         => $text,
+    ]);
+
+    return $metaChatSession;
+}
+
+function noiseTestFakeModel(string $verdict, int $confidence): void
+{
+    config([
+        'askbot-laravel.openai_api_key' => 'test-key',
+        'chat.noise.test_answer'        => json_encode(['verdict' => $verdict, 'confidence' => $confidence, 'reason' => 'Because.']),
+    ]);
+
+    \Illuminate\Support\Facades\Http::fake([
+        'api.openai.com/*' => fn () => \Illuminate\Support\Facades\Http::response(['choices' => [['message' => [
+            'content' => config('chat.noise.test_answer'),
+        ]]]]),
+    ]);
+}
+
+test('machine mail from a stranger is put aside by rule without asking the model', function () {
+    \Illuminate\Support\Facades\Http::fake();
+
+    $classify = fn (ChatSession $chatSession) => \App\Actions\Chat\ChatSession\ClassifyChatSessionNoise::make()->handle($chatSession)->refresh();
+
+    $dmarc = $classify(noiseTestEmailSession($this->shop, 'dmarcreport@microsoft.com', '[Preview] Report Domain: ancientwisdom.biz', 'Aggregate report'));
+    $testflight = $classify(noiseTestEmailSession($this->shop, 'testflight_no_reply@email.apple.com', 'You are invited', 'Invite'));
+    $away = $classify(noiseTestEmailSession($this->shop, 'jane@example.com', 'Automatic reply: Offers', 'I am on leave'));
+    $newsletter = $classify(noiseTestEmailSession($this->shop, 'news@example.com', 'This week', 'Offers', ['email_headers' => ['list_unsubscribe' => true]]));
+    $voicemail = noiseTestEmailSession($this->shop, 'voicemail@btcloudvoice.com', 'Voicemail received', 'A caller left a message');
+
+    \Illuminate\Support\Facades\Http::assertNothingSent();
+
+    expect($dmarc->is_rubbish)->toBeTrue()
+        ->and($dmarc->rubbish_reason)->toBe('automated_notification')
+        ->and($dmarc->rubbished_by_agent_id)->toBeNull()
+        ->and($dmarc->noise_source)->toBe('rule')
+        ->and($testflight->rubbish_reason)->toBe('automated_notification')
+        ->and($away->rubbish_reason)->toBe('out_of_office')
+        ->and($newsletter->rubbish_reason)->toBe('marketing')
+        ->and(\App\Actions\Chat\ChatSession\ClassifyChatSessionNoise::make()->verdictByRules($voicemail))->toBeNull()
+        ->and(\App\Actions\Chat\ChatSession\ClassifyChatSessionNoise::forList($dmarc)['automatic'])->toBeTrue();
+});
+
+test('the model only hints until it is allowed to put aside, never touches a customer, and is never asked twice', function () {
+    noiseTestFakeModel('spam', 95);
+
+    $pitch = noiseTestEmailSession($this->shop, 'sales@kaitk.com', 'Wooden gifts', 'We are a manufacturer of wooden gifts');
+    $pitch = \App\Actions\Chat\ChatSession\ClassifyChatSessionNoise::make()->handle($pitch)->refresh();
+
+    expect($pitch->is_spam)->toBeFalse()
+        ->and($pitch->noise_verdict)->toBe('spam')
+        ->and($pitch->noise_confidence)->toBe(95)
+        ->and(\App\Actions\Chat\ChatSession\ClassifyChatSessionNoise::forList($pitch))->toMatchArray(['automatic' => false, 'source' => 'ai']);
+
+    \App\Actions\Chat\ChatSession\ClassifyChatSessionNoise::make()->handle($pitch);
+    \Illuminate\Support\Facades\Http::assertSentCount(1);
+
+    config(['chat.noise.auto_put_aside' => true]);
+
+    $second = noiseTestEmailSession($this->shop, 'sales@other.com', 'Pencil cases', 'We are a manufacturer of pencil cases');
+    $second = \App\Actions\Chat\ChatSession\ClassifyChatSessionNoise::make()->handle($second)->refresh();
+
+    $webUser  = StoreWebUser::make()->action($this->customer, WebUser::factory()->definition());
+    $customer = noiseTestEmailSession($this->shop, 'buyer@example.com', 'Hello', 'We are a manufacturer too');
+    $customer->update(['web_user_id' => $webUser->id]);
+    $customer = \App\Actions\Chat\ChatSession\ClassifyChatSessionNoise::make()->handle($customer)->refresh();
+
+    noiseTestFakeModel('nonsense', 99);
+    $odd = noiseTestEmailSession($this->shop, 'someone@example.com', 'Question', 'Do you ship to Norway?');
+    $odd = \App\Actions\Chat\ChatSession\ClassifyChatSessionNoise::make()->handle($odd)->refresh();
+
+    expect($second->is_spam)->toBeTrue()
+        ->and($second->spammed_by_agent_id)->toBeNull()
+        ->and($customer->noise_checked_at)->toBeNull()
+        ->and($customer->is_spam)->toBeFalse()
+        ->and($odd->noise_verdict)->toBe('genuine')
+        ->and($odd->is_spam)->toBeFalse();
+});
+
+test('a person undoing or overruling a noise verdict is counted and never checked again', function () {
+    \Illuminate\Support\Facades\Http::fake();
+
+    $agentProfile = ChatAgent::firstOrCreate(['user_id' => $this->user->id], ['max_concurrent_chats' => 5, 'language_id' => 68]);
+
+    $dmarc = noiseTestEmailSession($this->shop, 'noreply-dmarc@zoho.com', 'Report domain: x', 'Report');
+    $dmarc = \App\Actions\Chat\ChatSession\ClassifyChatSessionNoise::make()->handle($dmarc)->refresh();
+
+    $restored = \App\Actions\Chat\ChatSession\MarkChatSessionAsRubbish::make()->handle($dmarc, $agentProfile, false);
+    $again    = \App\Actions\Chat\ChatSession\ClassifyChatSessionNoise::make()->handle($restored)->refresh();
+
+    $untouched = noiseTestEmailSession($this->shop, 'a@example.com', 'Hi', 'Hi');
+    $untouched = \App\Actions\Chat\ChatSession\MarkChatSessionAsSpam::make()->handle($untouched, $agentProfile);
+
+    $noise = collect(GetChatReports::make()->handle(collect([$this->shop->id]), 'all')['noise'])->firstWhere('source', 'rule');
+
+    expect($restored->noise_reversed_at)->not->toBeNull()
+        ->and($again->is_rubbish)->toBeFalse()
+        ->and(\App\Actions\Chat\ChatSession\ClassifyChatSessionNoise::forList($again))->toBeNull()
+        ->and($untouched->noise_checked_at)->not->toBeNull()
+        ->and($untouched->noise_reversed_at)->toBeNull()
+        ->and($noise['reversed'])->toBeGreaterThanOrEqual(1);
+});
+
+test('a WhatsApp greeting from a supplier country is put aside, and comes back when a buyer says what they want', function () {
+    config(['chat.noise.greet_bare_hello' => false]);
+    noiseTestFakeModel('genuine', 96);
+
+    $hello = noiseTestWhatsappSession($this->shop, '+919062915151', 'Hi sir');
+    $hello = \App\Actions\Chat\ChatSession\ClassifyChatSessionNoise::make()->handle($hello)->refresh();
+
+    $british = noiseTestWhatsappSession($this->shop, '+447500000001', 'Hello');
+    $british = \App\Actions\Chat\ChatSession\ClassifyChatSessionNoise::make()->handle($british)->refresh();
+
+    \Illuminate\Support\Facades\Http::assertNothingSent();
+
+    expect($hello->is_spam)->toBeTrue()
+        ->and($hello->noise_verdict)->toBe('supplier_circular')
+        ->and(\App\Actions\Chat\ChatSession\ClassifyChatSessionNoise::isProvisional($hello))->toBeTrue()
+        ->and($british->is_spam)->toBeFalse()
+        ->and($british->noise_checked_at)->toBeNull();
+
+    \App\Models\Chat\MetaChatMessage::create([
+        'meta_chat_session_id' => $hello->id,
+        'meta_channel_id'      => $hello->meta_channel_id,
+        'message_type'         => ChatMessageTypeEnum::TEXT,
+        'sender_type'          => ChatSenderTypeEnum::GUEST,
+        'message_text'         => 'I have a shop in Delhi and want prices for 30 lavender essential oils',
+    ]);
+
+    $hello = \App\Actions\Chat\ChatSession\ClassifyChatSessionNoise::make()->handle($hello)->refresh();
+
+    expect($hello->is_spam)->toBeFalse()
+        ->and($hello->noise_verdict)->toBe('genuine')
+        ->and(\App\Actions\Chat\ChatSession\ClassifyChatSessionNoise::isCandidate($hello))->toBeFalse();
+
+    noiseTestFakeModel('spam', 97);
+
+    $pitch = noiseTestWhatsappSession($this->shop, '+8615000000001', 'Dear Sir, this is Selma from Will Printing, a manufacturer of gift packaging');
+    $pitch = \App\Actions\Chat\ChatSession\ClassifyChatSessionNoise::make()->handle($pitch)->refresh();
+
+    expect($pitch->is_spam)->toBeTrue()->and($pitch->noise_source)->toBe('rule');
+});
+
+test('a stranger who only says hello on WhatsApp is asked once what they want', function () {
+    $this->shop->update(['settings' => array_merge($this->shop->settings ?? [], ['whatsapp' => ['phone_number_id' => '123']])]);
+    $this->organisation->update(['settings' => array_merge($this->organisation->settings ?? [], ['meta' => ['access_key' => 'token']])]);
+
+    \Illuminate\Support\Facades\Http::fake(['*' => \Illuminate\Support\Facades\Http::response(['messages' => [['id' => 'wamid.greeting']]])]);
+
+    $hello = noiseTestWhatsappSession($this->shop->fresh(), '+447500000002', 'Hello');
+
+    \App\Actions\Chat\ChatSession\ClassifyChatSessionNoise::make()->handle($hello);
+    \App\Actions\Chat\ChatSession\ClassifyChatSessionNoise::make()->handle($hello->refresh());
+
+    \Illuminate\Support\Facades\Http::assertSentCount(1);
+
+    $greeting = $hello->messages()->where('sender_type', ChatSenderTypeEnum::SYSTEM)->first();
+
+    expect($greeting->message_text)->toContain('How can we help you')
+        ->and($hello->refresh()->last_agent_message_at)->toBeNull()
+        ->and($hello->is_spam)->toBeFalse();
+});
+
+test('an inbound gmail message brings the rest of its gmail thread in as earlier chat messages', function () {
+    Bus::fake([\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class, \App\Actions\Comms\Mailbox\SendChatMessageByGmail::class]);
+
+    $settings = $this->shop->settings ?? [];
+    $settings['gmail'] = [
+        'email'         => 'care@shop.test',
+        'refresh_token' => \Illuminate\Support\Facades\Crypt::encryptString('rt'),
+        'history_id'    => '1',
+    ];
+    $this->shop->update(['settings' => $settings]);
+
+    $gmailMessage = fn (string $id, string $from, string $text, array $labels, int $sentAtMs) => [
+        'id'           => $id,
+        'threadId'     => 'th-history',
+        'labelIds'     => $labels,
+        'internalDate' => (string) $sentAtMs,
+        'payload'      => [
+            'mimeType' => 'text/plain',
+            'headers'  => [
+                ['name' => 'From', 'value' => $from],
+                ['name' => 'Subject', 'value' => 'Broken jar'],
+                ['name' => 'Message-ID', 'value' => "<$id@example.com>"],
+            ],
+            'body'     => ['data' => rtrim(strtr(base64_encode($text), '+/', '-_'), '=')],
+        ],
+    ];
+
+    $first  = $gmailMessage('h1', 'Thread Writer <thread.writer@example.com>', 'My jar arrived broken', ['INBOX'], 1789000000000);
+    $answer = $gmailMessage('h2', 'Care <care@shop.test>', 'Sorry, a new one is on its way', ['SENT'], 1789003600000);
+    $latest = $gmailMessage('h3', 'Thread Writer <thread.writer@example.com>', 'Thank you, received', ['INBOX'], 1789090000000);
+    $draft  = $gmailMessage('h4', 'Care <care@shop.test>', 'half written', ['DRAFT'], 1789090100000);
+
+    \Illuminate\Support\Facades\Http::fake([
+        'oauth2.googleapis.com/token'                                 => \Illuminate\Support\Facades\Http::response(['access_token' => 'at']),
+        'gmail.googleapis.com/gmail/v1/users/me/messages/h3?*'        => \Illuminate\Support\Facades\Http::response($latest),
+        'gmail.googleapis.com/gmail/v1/users/me/threads/th-history*'  => \Illuminate\Support\Facades\Http::response(['messages' => [$first, $answer, $latest, $draft]]),
+        'gmail.googleapis.com/gmail/v1/users/me/labels'               => \Illuminate\Support\Facades\Http::response(['labels' => [['id' => 'L2', 'name' => 'aiku/unmatched']]]),
+        'gmail.googleapis.com/*'                                      => \Illuminate\Support\Facades\Http::response([]),
+    ]);
+
+    $message = \App\Actions\Comms\Mailbox\ProcessInboundEmail::run($this->shop, 'h3');
+
+    $thread = $message->chatSession->messages()->orderBy('created_at')->get();
+
+    expect($thread->pluck('message_text')->all())->toBe(['My jar arrived broken', 'Sorry, a new one is on its way', 'Thank you, received'])
+        ->and($thread[0]->sender_type)->toBe(ChatSenderTypeEnum::GUEST)
+        ->and($thread[1]->sender_type)->toBe(ChatSenderTypeEnum::AGENT)
+        ->and($thread[1]->created_at->getTimestampMs())->toBe(1789003600000)
+        ->and($thread[2]->id)->toBe($message->id);
+
+    Bus::assertNotDispatched(\App\Actions\Comms\Mailbox\SendChatMessageByGmail::class);
+
+    \App\Actions\Comms\Mailbox\ProcessInboundEmail::make()->handle($this->shop, 'h3');
+    expect($message->chatSession->messages()->count())->toBe(3);
+
+    $message->chatSession->messages()->where('metadata->gmail_thread_history', true)->delete();
+    ChatSession::where('shop_id', $this->shop->id)
+        ->where('channel', ChatChannelEnum::EMAIL)
+        ->whereKeyNot($message->chat_session_id)
+        ->update(['status' => ChatSessionStatusEnum::CLOSED]);
+    expect(\App\Actions\Comms\Mailbox\BackfillGmailThreadHistory::run($this->shop))->toBe(['sessions' => 1, 'messages' => 2, 'failed' => 0])
+        ->and(\App\Actions\Comms\Mailbox\BackfillGmailThreadHistory::run($this->shop)['messages'])->toBe(0);
+});
+
+test('a ticket marked as blocking holds the chat open until it is settled', function () {
+    $session = ChatSession::create([
+        'ulid'             => (string) \Illuminate\Support\Str::ulid(),
+        'shop_id'          => $this->shop->id,
+        'language_id'      => 68,
+        'status'           => ChatSessionStatusEnum::ACTIVE->value,
+        'priority'         => ChatPriorityEnum::NORMAL->value,
+        'guest_identifier' => 'guest-'.\Illuminate\Support\Str::random(8),
+    ]);
+
+    $user  = User::factory()->create(['group_id' => $this->organisation->group_id]);
+    $agent = ChatAgent::create([
+        'user_id'              => $user->id,
+        'max_concurrent_chats' => 5,
+        'language_id'          => 68,
+        'is_online'            => true,
+        'is_available'         => true,
+        'current_chat_count'   => 0,
+    ]);
+
+    $ticket = \App\Actions\Chat\ChatSession\StoreTicketFromChatSession::make()->handle($session, $agent, [
+        'summary'       => 'Refund never arrived',
+        'blocks_source' => true,
+    ]);
+
+    expect($ticket->blocks_source)->toBeTrue();
+
+    expect(fn () => CloseChatSession::make()->handle($session, $agent->id))
+        ->toThrow(\Illuminate\Validation\ValidationException::class, $ticket->reference);
+
+    // the customer ending the chat from their side is not held up by our backlog
+    $otherSession = ChatSession::create([
+        'ulid'             => (string) \Illuminate\Support\Str::ulid(),
+        'shop_id'          => $this->shop->id,
+        'language_id'      => 68,
+        'status'           => ChatSessionStatusEnum::ACTIVE->value,
+        'priority'         => ChatPriorityEnum::NORMAL->value,
+        'guest_identifier' => 'guest-'.\Illuminate\Support\Str::random(8),
+    ]);
+    \App\Actions\Chat\ChatSession\StoreTicketFromChatSession::make()->handle($otherSession, $agent, [
+        'summary'       => 'Also blocking',
+        'blocks_source' => true,
+    ]);
+
+    expect(CloseChatSession::make()->handle($otherSession, null, \App\Enums\CRM\Livechat\ChatActorTypeEnum::GUEST)->status)
+        ->toBe(ChatSessionStatusEnum::CLOSED);
+
+    $ticket->update(['status' => \App\Enums\Helpers\Ticket\TicketStatusEnum::RESOLVED->value]);
+
+    expect(CloseChatSession::make()->handle($session->fresh(), $agent->id)->status)
+        ->toBe(ChatSessionStatusEnum::CLOSED);
+});
+
+test('a ticket raised from a chat does not block it unless it was marked as blocking', function () {
+    $session = ChatSession::create([
+        'ulid'             => (string) \Illuminate\Support\Str::ulid(),
+        'shop_id'          => $this->shop->id,
+        'language_id'      => 68,
+        'status'           => ChatSessionStatusEnum::ACTIVE->value,
+        'priority'         => ChatPriorityEnum::NORMAL->value,
+        'guest_identifier' => 'guest-'.\Illuminate\Support\Str::random(8),
+    ]);
+
+    $user  = User::factory()->create(['group_id' => $this->organisation->group_id]);
+    $agent = ChatAgent::create([
+        'user_id'              => $user->id,
+        'max_concurrent_chats' => 5,
+        'language_id'          => 68,
+        'is_online'            => true,
+        'is_available'         => true,
+        'current_chat_count'   => 0,
+    ]);
+
+    $ticket = \App\Actions\Chat\ChatSession\StoreTicketFromChatSession::make()->handle($session, $agent, [
+        'summary' => 'Nice to have, not urgent',
+    ]);
+
+    expect($ticket->blocks_source)->toBeFalse()
+        ->and(CloseChatSession::make()->handle($session, $agent->id)->status)->toBe(ChatSessionStatusEnum::CLOSED);
+});
+
+test('a chat another agent is holding can only be disposed of by them or a supervisor', function () {
+    $session = ChatSession::create([
+        'ulid'             => (string) \Illuminate\Support\Str::ulid(),
+        'shop_id'          => $this->shop->id,
+        'language_id'      => 68,
+        'status'           => ChatSessionStatusEnum::ACTIVE->value,
+        'priority'         => ChatPriorityEnum::NORMAL->value,
+        'guest_identifier' => 'guest-'.\Illuminate\Support\Str::random(8),
+    ]);
+
+    setPermissionsTeamId($this->user->group_id);
+
+    $holder = User::factory()->create(['group_id' => $this->organisation->group_id, 'status' => true]);
+    $holder->assignRole(RolesEnum::getRoleName(RolesEnum::CUSTOMER_SERVICE_CLERK->value, $this->shop));
+    $holdingAgent = ChatAgent::create([
+        'user_id'              => $holder->id,
+        'max_concurrent_chats' => 5,
+        'language_id'          => 68,
+        'is_online'            => true,
+        'is_available'         => true,
+        'current_chat_count'   => 0,
+    ]);
+
+    $session->assignments()->create([
+        'chat_agent_id' => $holdingAgent->id,
+        'status'        => \App\Enums\CRM\Livechat\ChatAssignmentStatusEnum::ACTIVE->value,
+        'assigned_by'   => \App\Enums\CRM\Livechat\ChatAssignmentAssignedByEnum::AGENT->value,
+        'assigned_at'   => now(),
+    ]);
+
+    $colleague = User::factory()->create(['group_id' => $this->organisation->group_id, 'status' => true]);
+    $colleague->assignRole(RolesEnum::getRoleName(RolesEnum::CUSTOMER_SERVICE_CLERK->value, $this->shop));
+
+    $supervisor = User::factory()->create(['group_id' => $this->organisation->group_id, 'status' => true]);
+    $supervisor->assignRole(RolesEnum::getRoleName(RolesEnum::CUSTOMER_SERVICE_SUPERVISOR->value, $this->shop));
+
+    expect(\App\Actions\Chat\CanDisposeOfChat::run($holder, $session->fresh()))->toBeTrue()
+        ->and(\App\Actions\Chat\CanDisposeOfChat::run($colleague, $session->fresh()))->toBeFalse()
+        ->and(\App\Actions\Chat\CanDisposeOfChat::run($supervisor, $session->fresh()))->toBeTrue();
+
+    // and an unassigned conversation stays anybody's to clear
+    $waiting = ChatSession::create([
+        'ulid'             => (string) \Illuminate\Support\Str::ulid(),
+        'shop_id'          => $this->shop->id,
+        'language_id'      => 68,
+        'status'           => ChatSessionStatusEnum::ACTIVE->value,
+        'priority'         => ChatPriorityEnum::NORMAL->value,
+        'guest_identifier' => 'guest-'.\Illuminate\Support\Str::random(8),
+    ]);
+
+    expect(\App\Actions\Chat\CanDisposeOfChat::run($colleague, $waiting))->toBeTrue();
+
+    $this->actingAs($colleague);
+
+    $response = $this->patchJson(route('grp.org.chat.agents.sessions.spam', [$this->organisation->slug, $session->ulid]));
+
+    $response->assertStatus(403);
+    expect($response->json('message'))->toContain($holder->contact_name);
+});
+
+test('a website guest who gave a customer\'s email is suggested, never linked, until an agent confirms', function () {
+    StoreWebUser::make()->action($this->customer, WebUser::factory()->definition());
+    $this->customer->update(['email' => 'buyer@janesgifts.test']);
+
+    $agentProfile = ChatAgent::firstOrCreate(['user_id' => $this->user->id], ['max_concurrent_chats' => 5, 'language_id' => 68]);
+
+    $guest = fn (array $metadata) => ChatSession::create([
+        'ulid'     => (string) Str::ulid(),
+        'status'   => ChatSessionStatusEnum::WAITING,
+        'channel'  => ChatChannelEnum::WEBSITE,
+        'shop_id'  => $this->shop->id,
+        'metadata' => $metadata,
+    ]);
+
+    $suggest = fn ($chatSession) => \App\Actions\Chat\ChatSession\SuggestChatSessionCustomer::make()->handle($chatSession)->refresh();
+
+    $byEmail = $suggest($guest(['email' => 'Buyer@JanesGifts.test']));
+
+    expect($byEmail->web_user_id)->toBeNull()
+        ->and($byEmail->suggested_customer_id)->toBe($this->customer->id)
+        ->and($byEmail->suggestion_basis)->toBe('email')
+        ->and(\App\Actions\Chat\ChatSession\SuggestChatSessionCustomer::forList($byEmail)['customer']['name'])->toBe($this->customer->name);
+
+    $colleague = $suggest($guest(['email' => 'accounts@janesgifts.test']));
+
+    expect($colleague->suggested_customer_id)->toBeNull()
+        ->and($colleague->suggestion_hint)->toContain($this->customer->name)
+        ->and(\App\Actions\Chat\ChatSession\SuggestChatSessionCustomer::forList($colleague)['customer'])->toBeNull();
+
+    $stranger = $suggest($guest(['email' => 'someone@gmail.com']));
+    expect($stranger->suggested_customer_id)->toBeNull()->and($stranger->suggestion_hint)->toBeNull();
+
+    $confirmed = \App\Actions\Chat\ChatSession\ConfirmSuggestedChatCustomer::make()->handle($byEmail, $agentProfile, true);
+    expect($confirmed->id)->toBe($this->customer->id)
+        ->and($byEmail->refresh()->webUser->customer_id)->toBe($this->customer->id);
+
+    $other = $suggest($guest(['email' => 'buyer@janesgifts.test']));
+    \App\Actions\Chat\ChatSession\ConfirmSuggestedChatCustomer::make()->handle($other, $agentProfile, false);
+    $other = $suggest($other->refresh());
+
+    expect($other->web_user_id)->toBeNull()
+        ->and($other->suggestion_rejected_at)->not->toBeNull()
+        ->and(\App\Actions\Chat\ChatSession\SuggestChatSessionCustomer::forList($other))->toBeNull();
+
+    $outcomes = collect(GetChatReports::make()->handle(collect([$this->shop->id]), 'all')['customer_suggestions'])->firstWhere('basis', 'email');
+    expect($outcomes['confirmed'])->toBeGreaterThanOrEqual(1)->and($outcomes['rejected'])->toBeGreaterThanOrEqual(1);
+});
+
+test('a WhatsApp guest is suggested by the number they write from, whatever way it was stored', function () {
+    config(['chat.noise.greet_bare_hello' => false]);
+    $this->customer->update(['phone' => '07500 111222']);
+
+    $metaChatSession = noiseTestWhatsappSession($this->shop, '+447500111222', 'Hello');
+    $metaChatSession = \App\Actions\Chat\ChatSession\SuggestChatSessionCustomer::make()->handle($metaChatSession)->refresh();
+
+    expect($metaChatSession->customer_id)->toBeNull()
+        ->and($metaChatSession->suggested_customer_id)->toBe($this->customer->id)
+        ->and($metaChatSession->suggestion_basis)->toBe('phone');
+});
+
+test('a guest who writes like a customer and cannot be identified is asked once, and never by email', function () {
+    config(['chat.noise.greet_bare_hello' => false]);
+    config([
+        'askbot-laravel.openai_api_key' => 'test-key',
+        'chat.noise.test_answer'        => json_encode(['verdict' => 'genuine', 'confidence' => 95, 'reason' => 'Asks about an order.', 'existing_customer' => true]),
+    ]);
+    \Illuminate\Support\Facades\Http::fake([
+        'api.openai.com/*' => fn () => \Illuminate\Support\Facades\Http::response(['choices' => [['message' => ['content' => config('chat.noise.test_answer')]]]]),
+    ]);
+
+    $website = ChatSession::create([
+        'ulid'     => (string) Str::ulid(),
+        'status'   => ChatSessionStatusEnum::WAITING,
+        'channel'  => ChatChannelEnum::WEBSITE,
+        'shop_id'  => $this->shop->id,
+        'metadata' => ['email' => 'nobody-we-know@gmail.com'],
+    ]);
+    ChatMessage::create([
+        'chat_session_id' => $website->id,
+        'message_type'    => ChatMessageTypeEnum::TEXT,
+        'sender_type'     => ChatSenderTypeEnum::GUEST,
+        'message_text'    => 'Where is my order? It was due on Friday.',
+    ]);
+
+    $website = \App\Actions\Chat\ChatSession\ClassifyChatSessionNoise::make()->handle($website)->refresh();
+
+    $asked = $website->messages()->where('sender_type', ChatSenderTypeEnum::SYSTEM)->get();
+
+    expect($asked)->toHaveCount(1)
+        ->and($asked->first()->message_text)->toContain('order number')
+        ->and($website->customer_asked_at)->not->toBeNull()
+        ->and($website->is_spam)->toBeFalse()
+        ->and(\App\Actions\Chat\ChatSession\AskGuestIfCustomer::make()->handle($website))->toBeFalse();
+
+    $email = noiseTestEmailSession($this->shop, 'someone@example.com', 'My order', 'Where is my order?');
+    $email = \App\Actions\Chat\ChatSession\ClassifyChatSessionNoise::make()->handle($email)->refresh();
+
+    expect($email->customer_asked_at)->toBeNull()
+        ->and($email->messages()->where('sender_type', ChatSenderTypeEnum::SYSTEM)->count())->toBe(0);
 });

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, inject, onMounted, onUnmounted, watch, nextTick } from "vue"
 import { Head, router } from "@inertiajs/vue3"
-import { useDebounceFn, watchDebounced } from "@vueuse/core"
+import { useDebounceFn, useLocalStorage, watchDebounced } from "@vueuse/core"
 import axios from "axios"
 import { ctrans } from "@/Composables/useTrans"
 import { capitalize } from "@/Composables/capitalize"
@@ -235,6 +235,7 @@ const panelSession = computed(() => {
         customer_id: customerId,
         guest_email: (s as any).metadata?.email ?? s.guest_profile?.email ?? null,
         guest_phone: (s as any).metadata?.phone ?? s.guest_profile?.phone ?? null,
+        customer_suggestion: (s as any).customer_suggestion ?? null,
         phone_number: (s as any).phone_number ?? null,
         shop_name: s.shop?.name ?? null,
         status: s.status,
@@ -253,6 +254,11 @@ const selectedItemStyle = {
 }
 
 const sidePanelVisible = ref(false)
+const sidePanelPreferred = useLocalStorage(`chat-inbox-side-panel:${layout.user?.id ?? "anonymous"}`, true)
+
+watch(() => [panelSession.value?.ulid, panelSession.value?.is_guest, !!panelSession.value?.customer_suggestion?.customer], ([ulid, isGuest, hasSuggestion]) => {
+    if (ulid && (!isGuest || hasSuggestion)) sidePanelVisible.value = sidePanelPreferred.value
+}, { immediate: true })
 
 const chatSettingVisible = ref(false)
 const settingInitialTab = ref<"general" | "slack">("general")
@@ -285,6 +291,11 @@ const mapSession = (s: SessionAPI): Contact => ({
     status: s.status,
     is_spam: (s as any).is_spam ?? false,
     is_rubbish: (s as any).is_rubbish ?? false,
+    can_dispose: (s as any).can_dispose,
+    open_tickets_count: Number((s as any).open_tickets_count ?? 0),
+    blocking_tickets_count: Number((s as any).blocking_tickets_count ?? 0),
+    noise: (s as any).noise ?? null,
+    customer_suggestion: (s as any).customer_suggestion ?? null,
     is_highlighted: (s as any).is_highlighted ?? false,
     webUser: s.web_user ?? (s as any).customer,
     country_code: (s as any).country_code ?? null,
@@ -719,7 +730,7 @@ const selectedInbox = computed(() =>
     props.inboxes?.find((i) => i.id === selectedShopId.value) ?? props.inboxes?.[0] ?? null
 )
 
-const inboxRailCollapsed = ref(false)
+const inboxRailCollapsed = useLocalStorage(`chat-inbox-rail-collapsed:${layout.user?.id ?? "anonymous"}`, false)
 
 const SHOP_COLORS = ["#6366f1", "#0ea5e9", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6", "#ec4899", "#14b8a6"]
 
@@ -1108,6 +1119,11 @@ const openChat = (c: Contact) => {
         organisation: c.organisation,
         ai_summary: c.ai_summary ?? null,
         is_trashed: trashView.value,
+        is_spam: c.is_spam,
+        is_rubbish: c.is_rubbish,
+        can_dispose: (c as any).can_dispose,
+        open_tickets_count: (c as any).open_tickets_count ?? 0,
+        blocking_tickets_count: (c as any).blocking_tickets_count ?? 0,
     } as SessionAPI
     messages.value = c.messages ?? []
     updateUrl(String(c.ulid))
@@ -1223,11 +1239,23 @@ const handleSendMessage = async ({ text, files, message_type, is_email_notif }: 
     }
 }
 
-const toggleSidePanel = () => { sidePanelVisible.value = !sidePanelVisible.value }
+const toggleSidePanel = () => {
+    sidePanelVisible.value = !sidePanelVisible.value
+    sidePanelPreferred.value = sidePanelVisible.value
+}
 const showHistoryPanel = () => toggleSidePanel()
 const showProfilePanel = () => toggleSidePanel()
+const sidePanelTab = ref<'profile' | 'tickets'>('profile')
+const showTicketsPanel = () => {
+    sidePanelTab.value = 'tickets'
+    sidePanelVisible.value = true
+    sidePanelPreferred.value = true
+}
 const showMessageDetailsPanel = () => toggleSidePanel()
-const closeSidePanel = () => { sidePanelVisible.value = false }
+const closeSidePanel = () => {
+    sidePanelVisible.value = false
+    sidePanelPreferred.value = false
+}
 
 const closeSession = async () => {
     selectedSession.value = null
@@ -1795,6 +1823,15 @@ onUnmounted(() => {
                                     <span v-if="c.agent?.name" class="truncate">
                                         {{ c.agent.name.split(' ')[0] }}
                                     </span>
+                                    <span v-if="c.customer_suggestion?.customer && !c.webUser?.customer_id" v-tooltip="c.customer_suggestion.label"
+                                        class="shrink-0 truncate rounded bg-amber-50 px-1 font-medium text-amber-700">
+                                        {{ ctrans("Probably") }} {{ c.customer_suggestion.customer.name }}
+                                    </span>
+                                    <span v-if="c.noise" v-tooltip="c.noise.note"
+                                        class="shrink-0 rounded px-1 font-medium"
+                                        :class="c.noise.automatic ? 'bg-gray-100 text-gray-600' : 'bg-amber-50 text-amber-700'">
+                                        {{ c.noise.automatic ? ctrans("Put aside automatically") : ctrans("Possible noise") }}: {{ c.noise.label }}
+                                    </span>
                                 </div>
                                 <div class="flex items-center gap-1.5">
                                     <span class="text-xs text-gray-500 truncate flex-1 leading-snug">{{ c.lastMessage }}</span>
@@ -1869,13 +1906,14 @@ onUnmounted(() => {
                     @assign-self-success="onAssignSelfSuccess" @messages-read="onMessagesRead"
                     @open-slack-settings="onOpenSlackSettings"
                     @spam-success="onSpamFromThread"
+                    @view-tickets="showTicketsPanel"
                     @restore-success="onRestoreFromThread" />
             </div>
         </div>
 
         <!-- RIGHT: conversation profile panel (Conversation-style) -->
         <ChatConversationSidePanel v-if="panelSession && sidePanelVisible"
-            :session="panelSession" @close="closeSidePanel" @priority-updated="onPriorityUpdated"
+            :session="panelSession" :initial-tab="sidePanelTab" @close="closeSidePanel" @priority-updated="onPriorityUpdated"
             @synced="onSessionSynced" @customer-synced="onCustomerSynced" />
 
         <!-- Row action menu (teleported so it is never clipped by the list's overflow) -->

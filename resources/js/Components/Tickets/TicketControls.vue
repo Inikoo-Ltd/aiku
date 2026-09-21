@@ -35,6 +35,7 @@ const props = defineProps<{
         kinds: Option<string>[]
         modules: Option<string>[]
         collaborators?: (Option<number> & { avatar?: Record<string, string> | null })[]
+        developers?: { username: string; name: string }[]
     }
     can_manage: boolean
     can_assign: boolean
@@ -50,7 +51,6 @@ const props = defineProps<{
     hideConfidential?: boolean
     routes: {
         update: { name: string; parameters: Record<string, unknown> }
-        escalate: { name: string; parameters: Record<string, unknown> }
         collaborators?: { name: string; parameters: Record<string, unknown> }
     }
 }>()
@@ -104,17 +104,17 @@ const addTypedTag = () => {
     newTag.value = ""
 }
 
+// Who to name: the tooltip spells out the usernames, since @ in the comment box is the only
+// thing that actually reaches somebody.
+const developers = computed(() => props.options?.developers ?? [])
+
+const developersTooltip = computed(() =>
+    [trans("Type @ in a comment and pick:"), ...developers.value.map((person) => `@${person.username} (${person.name})`)].join("\n")
+)
+
 const pendingAction = ref<string | null>(null)
 const isBusy = computed(() => pendingAction.value !== null)
 const isPending = (action: string) => pendingAction.value === action
-
-const escalate = () => {
-    if (isBusy.value) return
-    router.post(route(props.routes.escalate.name, props.routes.escalate.parameters), {}, {
-        onStart: () => (pendingAction.value = "escalate"),
-        onFinish: () => (pendingAction.value = null),
-    })
-}
 
 const isAskReporterOpen = ref(false)
 const isStatusNoteOpen = ref(false)
@@ -438,7 +438,13 @@ const update = (field: string, value: unknown, action: string = field) => {
                     </div>
                 </Popover>
             </div>
-            <Button v-if="can_update && ticket.type === 'customer' && !ticket.escalations.length" type="secondary" icon="fal fa-level-up" :label="trans('Escalate to help desk')" full :loading="isPending('escalate')" @click="escalate" />
+            <!-- A customer ticket used to be handed off to the help desk as a second ticket, which
+                 split the thread in two. Naming the developer in this one keeps it whole. -->
+            <p v-if="can_update && ticket.type === 'customer'" class="flex items-start gap-x-1.5 rounded-md bg-amber-50 px-2.5 py-2 text-xs text-amber-800">
+                <span>{{ trans("Mention the developers if it's a bug that needs to be fixed ASAP") }}</span>
+                <FontAwesomeIcon v-if="developers.length" icon="fal fa-question-circle" v-tooltip="developersTooltip"
+                    class="mt-0.5 shrink-0 text-amber-500" />
+            </p>
             <label v-if="can_flag_confidential && !hideConfidential" class="flex items-center gap-x-2 text-gray-600 cursor-pointer">
                 <input type="checkbox" :checked="ticket.is_confidential" :disabled="isBusy" class="rounded border-gray-300 cursor-pointer disabled:cursor-wait" @change="update('is_confidential', ($event.target as HTMLInputElement).checked, 'confidential')" />
                 {{ trans("Confidential") }} <span class="text-xs text-gray-400">({{ trans("only reporter and lead engineers") }})</span>

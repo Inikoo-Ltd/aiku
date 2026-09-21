@@ -106,6 +106,8 @@ class RedactChatMessage
 
         $chatMessage->refresh();
 
+        $this->forgetSummary($chatSession);
+
         // What was taken out is never written into the record of taking it out.
         StoreChatEvent::run(
             $chatSession,
@@ -270,5 +272,23 @@ class RedactChatMessage
             'message' => __('Message redacted'),
             'data'    => (new \App\Http\Resources\CRM\Livechat\ChatMessageResource($chatMessage))->resolve(),
         ]);
+    }
+
+    /**
+     * The summary was written from the text as it was, so it may repeat what has just been
+     * struck out. It goes at once, and a new one is written from what is left.
+     */
+    private function forgetSummary(ChatSession $chatSession): void
+    {
+        $metadata = $chatSession->metadata ?? [];
+
+        if (!isset($metadata['ai_summary'])) {
+            return;
+        }
+
+        unset($metadata['ai_summary']);
+        $chatSession->update(['metadata' => $metadata]);
+
+        SummarizeChatSession::dispatch($chatSession);
     }
 }

@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources\CRM\Livechat;
 
+use App\Enums\CRM\Livechat\ChatTopicEnum;
 use App\Enums\CRM\Livechat\ChatAssignmentStatusEnum;
 use App\Enums\CRM\Livechat\ChatSenderTypeEnum;
 use App\Enums\CRM\Livechat\ChatSessionStatusEnum;
@@ -62,6 +63,9 @@ class ChatSessionListResource extends JsonResource
                 'summary'     => Arr::get($summaryData, 'summary'),
                 'key_points'  => Arr::get($summaryData, 'key_points', []),
                 'sentiment'   => Arr::get($summaryData, 'sentiment', 'neutral'),
+                'status'      => Arr::get($summaryData, 'status'),
+                'topic'       => $this->topic,
+                'topic_label' => ChatTopicEnum::tryFrom((string) $this->topic)?->label(),
             ];
         }
 
@@ -74,6 +78,8 @@ class ChatSessionListResource extends JsonResource
             'rubbish_reason' => $this->rubbish_reason
                 ? \App\Enums\CRM\Livechat\ChatIgnoreReasonEnum::from($this->rubbish_reason)->label()
                 : null,
+            'customer_suggestion' => \App\Actions\Chat\ChatSession\SuggestChatSessionCustomer::forList($this->resource),
+            'noise' => \App\Actions\Chat\ChatSession\ClassifyChatSessionNoise::forList($this->resource),
             'is_highlighted' => (bool) $this->is_highlighted,
             'guest_identifier' => $this->guest_identifier,
             'created_at' => $this->created_at,
@@ -140,6 +146,11 @@ class ChatSessionListResource extends JsonResource
                     'original' => '/retina-default-user.svg'
                 ]
             ] : null,
+
+            'open_tickets_count'     => (int) ($this->open_tickets_count ?? 0),
+            'blocking_tickets_count' => (int) ($this->blocking_tickets_count ?? 0),
+
+            'can_dispose'    => \App\Actions\Chat\CanDisposeOfChat::run($request->user(), $this->resource),
 
             'assigned_agent' => $activeAssignment ? [
                 'id'      => $activeAssignment->chatAgent?->id,
