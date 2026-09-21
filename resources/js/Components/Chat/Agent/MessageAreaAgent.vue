@@ -2,7 +2,7 @@
 import { ref, watch, onMounted, onUnmounted, inject, computed, nextTick, defineAsyncComponent, getCurrentInstance } from "vue"
 import axios from "axios"
 import { ctrans } from "@/Composables/useTrans"
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { FontAwesomeIcon, FontAwesomeLayers } from "@fortawesome/vue-fontawesome"
 import {
     faPaperPlane,
     faArrowLeft,
@@ -17,6 +17,8 @@ import {
     faArchive,
     faAngleDown,
     faLock,
+    faExclamationCircle,
+    faCircle,
 } from "@fortawesome/free-solid-svg-icons"
 import { faSlack } from "@fortawesome/free-brands-svg-icons"
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
@@ -528,6 +530,19 @@ interface SelectedAttachment {
 
 const selectedFiles = ref<SelectedAttachment[]>([])
 const isEmailNotif = ref(false)
+
+// Only worth offering where there is somebody to email and something to say: an email
+// conversation is already an email, and a stranger who left no address cannot be written to.
+const canEmailNotify = computed(() => {
+    if (props.readOnly || isClosed.value || isTrashed.value || !isMyChat.value) return false
+    if ((props.session as any)?.channel === "email") return false
+
+    const session = props.session as any
+
+    return !!session?.web_user?.customer_id
+        || !!session?.guest_profile?.email
+        || !!session?.metadata?.email
+})
 
 const { rejectionFor } = useUploadLimits()
 
@@ -1269,6 +1284,24 @@ const handleClickOutside = (e: MouseEvent) => {
                     </button>
 
                     <template v-if="!readOnly">
+                        <button v-if="canEmailNotify" class="menu-item" @click="isEmailNotif = !isEmailNotif">
+                            <!-- The badge sits on the envelope's corner, with a white disc behind it so
+                                 the two shapes stay separate instead of bleeding into one another. -->
+                            <!-- Two tones and a white disc between them: the envelope pale, the badge
+                                 dark, or the two shapes read as one blot at this size. -->
+                            <FontAwesomeLayers class="h-4 w-4 shrink-0">
+                                <FontAwesomeIcon :icon="faEnvelope" class="text-[0.9em]"
+                                    :class="isEmailNotif ? 'text-green-400' : 'text-red-300'" />
+                                <FontAwesomeIcon :icon="faCircle" class="text-[0.7em] text-white translate-x-[0.5em] -translate-y-[0.4em]" />
+                                <FontAwesomeIcon :icon="faExclamationCircle" class="text-[0.55em] translate-x-[0.5em] -translate-y-[0.4em]"
+                                    :class="isEmailNotif ? 'text-green-700' : 'text-red-600'" />
+                            </FontAwesomeLayers>
+                            {{ ctrans("Email notification:") }}
+                            <span :class="isEmailNotif ? 'font-medium text-green-600' : 'text-gray-500'">
+                                {{ isEmailNotif ? ctrans("On") : ctrans("Off") }}
+                            </span>
+                        </button>
+
                         <button class="menu-item disabled:cursor-not-allowed disabled:opacity-50" :disabled="!canDispose"
                             v-tooltip="canDispose ? undefined : heldByAnotherAgent" @click="openTicketModal">
                             <FontAwesomeIcon :icon="faLifeRing" class="text-blue-600" /> {{ ctrans("Create Ticket") }}
@@ -1467,21 +1500,6 @@ const handleClickOutside = (e: MouseEvent) => {
                                 <EmojiPicker @pick="pickEmoji" />
                             </div>
                         </div>
-                        <Button
-                            @click="isEmailNotif = !isEmailNotif"
-                            type="transparent"
-                            class="transition-all duration-150"
-                            :class="isEmailNotif
-                                ? '!bg-green-500 !border-green-600 !text-white'
-                                : '!bg-transparent text-gray-500 hover:!bg-gray-100'"
-                            :tooltip="isEmailNotif
-                                ? 'Email notification ON'
-                                : 'Send email notification'"
-                        >
-                            <template #icon>
-                                <FontAwesomeIcon :icon="faEnvelope" />
-                            </template>
-                        </Button>
                         <button @click="openTicketModal"
                             class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-blue-50 text-gray-500 hover:text-blue-600 transition-colors" :title="ctrans('Create ticket')" :aria-label="ctrans('Create ticket')">
                             <FontAwesomeIcon :icon="faLifeRing" class="text-sm" />
