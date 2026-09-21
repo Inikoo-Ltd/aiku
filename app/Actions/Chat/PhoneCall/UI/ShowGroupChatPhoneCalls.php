@@ -45,7 +45,7 @@ class ShowGroupChatPhoneCalls extends OrgAction
         $calls = $index->handle($group, 'phone_calls', $request->user());
 
         return Inertia::render(
-            'Grp/Chat/PhoneCalls',
+            'Chat/PhoneCalls',
             [
                 'breadcrumbs' => $this->getBreadcrumbs($request->route()->originalParameters()),
                 'title'       => __('Phone calls'),
