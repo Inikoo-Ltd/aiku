@@ -1,8 +1,8 @@
 <script setup lang='ts'>
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faCircle } from '@fas'
-import { faSearch, faSortAlphaDown, faSortAlphaUp, faSort, faChevronLeft, faChevronRight, faChevronDoubleLeft, faChevronDoubleRight, faBellSlash, faSignOutAlt, faTruckCouch } from '@fal'
+import { faSearch, faSortAlphaDown, faSortAlphaUp, faSort, faChevronLeft, faChevronRight, faChevronDoubleLeft, faChevronDoubleRight, faBellSlash, faSignOutAlt, faTruckCouch, faCheckDouble, faEnvelope } from '@fal'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { computed, inject, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { router } from '@inertiajs/vue3'
@@ -10,7 +10,7 @@ import axios from 'axios'
 import PureInput from '@/Components/Pure/PureInput.vue'
 import { layoutStructure } from '@/Composables/useLayoutStructure'
 import { useFormatTime } from '@/Composables/useFormatTime'
-library.add(faCircle, faSearch, faSortAlphaDown, faSortAlphaUp, faSort, faChevronLeft, faChevronRight, faChevronDoubleLeft, faChevronDoubleRight, faBellSlash, faSignOutAlt, faTruckCouch)
+library.add(faCircle, faSearch, faSortAlphaDown, faSortAlphaUp, faSort, faChevronLeft, faChevronRight, faChevronDoubleLeft, faChevronDoubleRight, faBellSlash, faSignOutAlt, faTruckCouch, faCheckDouble, faEnvelope)
 
 interface ProfileNotification {
     id: string
@@ -98,7 +98,7 @@ const sortIcon = computed(() => {
     return 'fal fa-sort'
 })
 
-const paginationReport = computed(() => trans('Showing :first to :last of :total notifications', {
+const paginationReport = computed(() => ctrans('Showing :first to :last of :total notifications', {
     first: String(totalNotifications.value ? firstIndex.value + 1 : 0),
     last: String(lastIndex.value),
     total: String(totalNotifications.value),
@@ -130,7 +130,7 @@ const resolveNotificationUrl = (notification: ProfileNotification): string | nul
         : route(notification.route.name, notification.route.parameters)
 }
 
-const markNotificationAsRead = (notification: ProfileNotification) => {
+const markNotificationAsRead = async (notification: ProfileNotification) => {
     if (notification.read_at) {
         return
     }
@@ -141,21 +141,75 @@ const markNotificationAsRead = (notification: ProfileNotification) => {
         bellNotification.read = true
     }
 
-    axios.patch(route('grp.models.notifications.read', notification.id)).catch(() => {
+    try {
+        await axios.patch(route('grp.models.notifications.read', notification.id))
+    } catch (error) {
         notification.read_at = null
-    })
+        throw error
+    }
 }
+
+const markNotificationAsUnread = async (notification: ProfileNotification) => {
+    if (!notification.read_at) {
+        return
+    }
+
+    const previousReadAt = notification.read_at
+    notification.read_at = null
+    const bellNotification = layout.notifications?.find((item: { id: string }) => item.id === notification.id)
+    if (bellNotification) {
+        bellNotification.read = false
+    }
+
+    try {
+        await axios.patch(route('grp.models.notifications.unread', notification.id))
+    } catch (error) {
+        notification.read_at = previousReadAt
+        if (bellNotification) {
+            bellNotification.read = true
+        }
+        throw error
+    }
+}
+
+const isMarkingSelected = ref(false)
+
+const selectedNotifications = computed(
+    () => (props.data?.data ?? []).filter((notification) => selectedNotificationIds.value.includes(notification.id))
+)
+
+const hasSelectedUnread = computed(() => selectedNotifications.value.some((notification) => !notification.read_at))
+const hasSelectedRead = computed(() => selectedNotifications.value.some((notification) => notification.read_at))
+
+const applyToSelected = async (action: (notification: ProfileNotification) => Promise<void>) => {
+    const notifications = [...selectedNotifications.value]
+
+    if (!notifications.length) {
+        return
+    }
+
+    isMarkingSelected.value = true
+    try {
+        await Promise.allSettled(notifications.map((notification) => action(notification)))
+        selectedNotificationIds.value = []
+    } finally {
+        isMarkingSelected.value = false
+    }
+}
+
+const markSelectedAsRead = () => applyToSelected(markNotificationAsRead)
+const markSelectedAsUnread = () => applyToSelected(markNotificationAsUnread)
 
 const openNotification = (notification: ProfileNotification) => {
     const url = resolveNotificationUrl(notification)
     if (!url) {
-        markNotificationAsRead(notification)
+        markNotificationAsRead(notification).catch(() => {})
         return
     }
 
     router.visit(url, {
         onSuccess: () => {
-            markNotificationAsRead(notification)
+            markNotificationAsRead(notification).catch(() => {})
             layout.stackedComponents = []
         },
     })
@@ -199,22 +253,34 @@ onBeforeUnmount(() => {
     <div ref="_container" class="px-4 flex flex-col min-h-0" :style="{ height: containerHeight }">
         <div class="shrink-0 border-b border-gray-200">
             <div class="py-3 w-full max-w-xs">
-                <PureInput v-model="searchValue" :placeholder="trans('Search notifications')" :prefix="{ icon: 'fal fa-search', label: '' }" />
+                <PureInput v-model="searchValue" :placeholder="ctrans('Search notifications')" :prefix="{ icon: 'fal fa-search', label: '' }" />
             </div>
 
             <div class="flex items-center gap-x-4 px-4 py-3 border-t border-gray-200 bg-gray-50 text-sm font-semibold text-gray-700">
                 <input type="checkbox" :checked="isAllPageSelected" @change="toggleSelectAllInPage"
-                    :aria-label="trans('Select all notifications on this page')"
+                    :aria-label="ctrans('Select all notifications on this page')"
                     class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer" />
                 <span class="w-6 shrink-0" />
                 <button type="button" @click="toggleSort" class="flex items-center gap-x-2 hover:text-indigo-600 transition-colors">
-                    {{ trans('Notification') }}
+                    {{ ctrans('Notification') }}
                     <FontAwesomeIcon :icon="sortIcon" class="text-xs" :class="sortDirection ? 'text-indigo-600' : 'text-gray-400'" fixed-width aria-hidden="true" />
                 </button>
-                <span v-if="selectedNotificationIds.length" class="ml-auto text-xs font-medium text-indigo-600">
-                    {{ selectedNotificationIds.length }} {{ trans('selected') }}
+                <span v-if="selectedNotificationIds.length" class="ml-auto flex items-center gap-x-3">
+                    <span class="text-xs font-medium text-indigo-600">
+                        {{ selectedNotificationIds.length }} {{ ctrans('selected') }}
+                    </span>
+                    <button v-if="hasSelectedUnread" type="button" @click="markSelectedAsRead" :disabled="isMarkingSelected"
+                        class="flex items-center gap-x-2 rounded-md bg-indigo-600 px-2.5 py-1 text-xs font-medium text-white transition-colors hover:bg-indigo-500 disabled:opacity-50">
+                        <FontAwesomeIcon icon="fal fa-check-double" class="text-xs" fixed-width aria-hidden="true" />
+                        {{ ctrans('Mark as read') }}
+                    </button>
+                    <button v-if="hasSelectedRead" type="button" @click="markSelectedAsUnread" :disabled="isMarkingSelected"
+                        class="flex items-center gap-x-2 rounded-md border border-indigo-600 px-2.5 py-1 text-xs font-medium text-indigo-600 transition-colors hover:bg-indigo-50 disabled:opacity-50">
+                        <FontAwesomeIcon icon="fal fa-envelope" class="text-xs" fixed-width aria-hidden="true" />
+                        {{ ctrans('Mark as unread') }}
+                    </button>
                 </span>
-                <span class="text-right" :class="selectedNotificationIds.length ? '' : 'ml-auto'">{{ trans('Date') }}</span>
+                <span class="text-right" :class="selectedNotificationIds.length ? '' : 'ml-auto'">{{ ctrans('Date') }}</span>
             </div>
         </div>
 
@@ -225,9 +291,11 @@ onBeforeUnmount(() => {
                 role="link" tabindex="0"
                 class="flex items-start gap-x-4 px-4 py-3 cursor-pointer hover:bg-gray-50 focus:outline-none focus-visible:bg-gray-50 transition-colors"
                 :class="selectedNotificationIds.includes(notification.id) ? 'bg-indigo-50/60' : ''">
-                <input type="checkbox" v-model="selectedNotificationIds" :value="notification.id" @click.stop"
-                    :aria-label="trans('Select notification')"
-                    class="mt-1 h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer" />
+                <div class="shrink-0 -m-2 p-2" @click.stop @keydown.enter.stop>
+                    <input type="checkbox" v-model="selectedNotificationIds" :value="notification.id"
+                        :aria-label="ctrans('Select notification')"
+                        class="mt-1 h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer" />
+                </div>
 
                 <div class="w-6 shrink-0 pt-0.5 text-gray-400 text-center">
                     <FontAwesomeIcon v-if="notificationIcons[notification.type]" :icon="notificationIcons[notification.type]" fixed-width aria-hidden="true" />
@@ -250,17 +318,17 @@ onBeforeUnmount(() => {
 
             <div v-if="!pagedNotifications.length" class="h-full min-h-40 flex flex-col items-center justify-center gap-y-2 text-gray-400">
                 <FontAwesomeIcon icon="fal fa-bell-slash" class="text-2xl" aria-hidden="true" />
-                <span class="text-sm italic">{{ searchValue ? trans('No notifications match your search') : trans('You have no notifications') }}</span>
+                <span class="text-sm italic">{{ searchValue ? ctrans('No notifications match your search') : ctrans('You have no notifications') }}</span>
             </div>
         </div>
 
         <div class="shrink-0 flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-t border-gray-200 py-3 text-sm text-gray-600">
             <div class="flex items-center gap-x-1">
-                <button type="button" @click="goToPage(1)" :disabled="currentPage === 1" :aria-label="trans('First page')"
+                <button type="button" @click="goToPage(1)" :disabled="currentPage === 1" :aria-label="ctrans('First page')"
                     class="h-8 w-8 rounded-full flex items-center justify-center hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-transparent">
                     <FontAwesomeIcon icon="fal fa-chevron-double-left" class="text-xs" aria-hidden="true" />
                 </button>
-                <button type="button" @click="goToPage(currentPage - 1)" :disabled="currentPage === 1" :aria-label="trans('Previous page')"
+                <button type="button" @click="goToPage(currentPage - 1)" :disabled="currentPage === 1" :aria-label="ctrans('Previous page')"
                     class="h-8 w-8 rounded-full flex items-center justify-center hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-transparent">
                     <FontAwesomeIcon icon="fal fa-chevron-left" class="text-xs" aria-hidden="true" />
                 </button>
@@ -271,11 +339,11 @@ onBeforeUnmount(() => {
                     {{ page }}
                 </button>
 
-                <button type="button" @click="goToPage(currentPage + 1)" :disabled="currentPage === totalPages" :aria-label="trans('Next page')"
+                <button type="button" @click="goToPage(currentPage + 1)" :disabled="currentPage === totalPages" :aria-label="ctrans('Next page')"
                     class="h-8 w-8 rounded-full flex items-center justify-center hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-transparent">
                     <FontAwesomeIcon icon="fal fa-chevron-right" class="text-xs" aria-hidden="true" />
                 </button>
-                <button type="button" @click="goToPage(totalPages)" :disabled="currentPage === totalPages" :aria-label="trans('Last page')"
+                <button type="button" @click="goToPage(totalPages)" :disabled="currentPage === totalPages" :aria-label="ctrans('Last page')"
                     class="h-8 w-8 rounded-full flex items-center justify-center hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-transparent">
                     <FontAwesomeIcon icon="fal fa-chevron-double-right" class="text-xs" aria-hidden="true" />
                 </button>
@@ -284,7 +352,7 @@ onBeforeUnmount(() => {
             <div class="flex items-center gap-x-3">
                 <span class="tabular-nums">{{ paginationReport }}</span>
                 <label class="flex items-center gap-x-2">
-                    <span class="sr-only">{{ trans('Rows per page') }}</span>
+                    <span class="sr-only">{{ ctrans('Rows per page') }}</span>
                     <select v-model.number="rowsPerPage"
                         class="rounded-md border-gray-300 py-1 pl-2 pr-8 text-sm focus:border-indigo-500 focus:ring-indigo-500">
                         <option v-for="option in rowsPerPageOptions" :key="option" :value="option">{{ option }}</option>
