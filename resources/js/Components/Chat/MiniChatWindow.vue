@@ -16,6 +16,7 @@ import {
     faImage,
     faPaperclip,
     faFileLines,
+    faCircleQuestion,
     faTimesCircle,
     faRotateRight,
     faFaceSmile,
@@ -1437,6 +1438,16 @@ onUnmounted(() => {
                         class="flex items-center gap-1.5 mx-2 mt-1.5 px-2 py-1 rounded bg-amber-50 border border-amber-200 text-amber-700 text-[9px]">
                         <FontAwesomeIcon :icon="faFileLines" class="text-[8px]" />
                         <span>{{ ctrans('24h window closed. Send a template.') }}</span>
+                        <button type="button" @click="openTemplateDialog"
+                            class="ml-auto shrink-0 px-1.5 py-0.5 rounded bg-amber-600 text-white font-medium hover:bg-amber-700">
+                            {{ ctrans('Pick the message') }}
+                        </button>
+                        <a href="https://aiku.io/docs/replying-on-whatsapp-after-24-hours" target="_blank" rel="noopener"
+                            class="shrink-0 w-4 h-4 text-[9px] flex items-center justify-center text-amber-600 hover:text-amber-800"
+                            v-tooltip="ctrans('Why can I not type? The WhatsApp 24 hour rule, explained')"
+                            :aria-label="ctrans('Guide: the WhatsApp 24 hour rule')">
+                            <FontAwesomeIcon :icon="faCircleQuestion" />
+                        </a>
                     </div>
 
                     <div v-if="hasTemplate" class="mx-2 mt-1.5">

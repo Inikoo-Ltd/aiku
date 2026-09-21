@@ -13,6 +13,7 @@ import {
     faXmark,
     faFilePdf,
     faFileLines,
+    faCircleQuestion,
     faTimesCircle,
     faRotateRight,
     faFaceSmile,
@@ -1131,6 +1132,16 @@ onUnmounted(() => {
                 class="flex items-center gap-2 mb-2 px-3 py-2 rounded-lg bg-amber-50 border border-amber-200 text-amber-700 text-[11px]">
                 <FontAwesomeIcon :icon="faFileLines" class="text-[10px]" />
                 <span>{{ ctrans('The customer has not messaged in the last 24 hours. Only template messages can be sent.') }}</span>
+                <button type="button" @click="openTemplateDialog"
+                    class="ml-auto shrink-0 px-2 py-1 rounded-md bg-amber-600 text-white font-medium hover:bg-amber-700">
+                    {{ ctrans('Pick the message') }}
+                </button>
+                <a href="https://aiku.io/docs/replying-on-whatsapp-after-24-hours" target="_blank" rel="noopener"
+                    class="shrink-0 w-5 h-5 text-[11px] flex items-center justify-center text-amber-600 hover:text-amber-800"
+                    v-tooltip="ctrans('Why can I not type? The WhatsApp 24 hour rule, explained')"
+                    :aria-label="ctrans('Guide: the WhatsApp 24 hour rule')">
+                    <FontAwesomeIcon :icon="faCircleQuestion" />
+                </a>
             </div>
 
             <div v-if="replyingTo"
