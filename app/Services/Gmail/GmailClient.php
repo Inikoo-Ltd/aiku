@@ -157,6 +157,14 @@ final class GmailClient
         return $this->get("users/me/messages/$messageId", ['format' => 'full'])->json();
     }
 
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    public function getThreadMessages(string $threadId): array
+    {
+        return $this->get("users/me/threads/$threadId", ['format' => 'full'])->json('messages', []);
+    }
+
     public function getAttachment(string $messageId, string $attachmentId): string
     {
         return GmailMessageParser::decodeData((string) $this->get("users/me/messages/$messageId/attachments/$attachmentId")->json('data'));

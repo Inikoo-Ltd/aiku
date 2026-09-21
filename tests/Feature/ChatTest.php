@@ -5267,3 +5267,63 @@ test('a stranger who only says hello on WhatsApp is asked once what they want', 
         ->and($hello->refresh()->last_agent_message_at)->toBeNull()
         ->and($hello->is_spam)->toBeFalse();
 });
+
+test('an inbound gmail message brings the rest of its gmail thread in as earlier chat messages', function () {
+    Bus::fake([\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class, \App\Actions\Comms\Mailbox\SendChatMessageByGmail::class]);
+
+    $settings = $this->shop->settings ?? [];
+    $settings['gmail'] = [
+        'email'         => 'care@shop.test',
+        'refresh_token' => \Illuminate\Support\Facades\Crypt::encryptString('rt'),
+        'history_id'    => '1',
+    ];
+    $this->shop->update(['settings' => $settings]);
+
+    $gmailMessage = fn (string $id, string $from, string $text, array $labels, int $sentAtMs) => [
+        'id'           => $id,
+        'threadId'     => 'th-history',
+        'labelIds'     => $labels,
+        'internalDate' => (string) $sentAtMs,
+        'payload'      => [
+            'mimeType' => 'text/plain',
+            'headers'  => [
+                ['name' => 'From', 'value' => $from],
+                ['name' => 'Subject', 'value' => 'Broken jar'],
+                ['name' => 'Message-ID', 'value' => "<$id@example.com>"],
+            ],
+            'body'     => ['data' => rtrim(strtr(base64_encode($text), '+/', '-_'), '=')],
+        ],
+    ];
+
+    $first  = $gmailMessage('h1', 'Thread Writer <thread.writer@example.com>', 'My jar arrived broken', ['INBOX'], 1789000000000);
+    $answer = $gmailMessage('h2', 'Care <care@shop.test>', 'Sorry, a new one is on its way', ['SENT'], 1789003600000);
+    $latest = $gmailMessage('h3', 'Thread Writer <thread.writer@example.com>', 'Thank you, received', ['INBOX'], 1789090000000);
+    $draft  = $gmailMessage('h4', 'Care <care@shop.test>', 'half written', ['DRAFT'], 1789090100000);
+
+    \Illuminate\Support\Facades\Http::fake([
+        'oauth2.googleapis.com/token'                                 => \Illuminate\Support\Facades\Http::response(['access_token' => 'at']),
+        'gmail.googleapis.com/gmail/v1/users/me/messages/h3?*'        => \Illuminate\Support\Facades\Http::response($latest),
+        'gmail.googleapis.com/gmail/v1/users/me/threads/th-history*'  => \Illuminate\Support\Facades\Http::response(['messages' => [$first, $answer, $latest, $draft]]),
+        'gmail.googleapis.com/gmail/v1/users/me/labels'               => \Illuminate\Support\Facades\Http::response(['labels' => [['id' => 'L2', 'name' => 'aiku/unmatched']]]),
+        'gmail.googleapis.com/*'                                      => \Illuminate\Support\Facades\Http::response([]),
+    ]);
+
+    $message = \App\Actions\Comms\Mailbox\ProcessInboundEmail::run($this->shop, 'h3');
+
+    $thread = $message->chatSession->messages()->orderBy('created_at')->get();
+
+    expect($thread->pluck('message_text')->all())->toBe(['My jar arrived broken', 'Sorry, a new one is on its way', 'Thank you, received'])
+        ->and($thread[0]->sender_type)->toBe(ChatSenderTypeEnum::GUEST)
+        ->and($thread[1]->sender_type)->toBe(ChatSenderTypeEnum::AGENT)
+        ->and($thread[1]->created_at->getTimestampMs())->toBe(1789003600000)
+        ->and($thread[2]->id)->toBe($message->id);
+
+    Bus::assertNotDispatched(\App\Actions\Comms\Mailbox\SendChatMessageByGmail::class);
+
+    \App\Actions\Comms\Mailbox\ProcessInboundEmail::make()->handle($this->shop, 'h3');
+    expect($message->chatSession->messages()->count())->toBe(3);
+
+    $message->chatSession->messages()->where('metadata->gmail_thread_history', true)->delete();
+    expect(\App\Actions\Comms\Mailbox\BackfillGmailThreadHistory::run($this->shop))->toBe(['sessions' => 1, 'messages' => 2, 'failed' => 0])
+        ->and(\App\Actions\Comms\Mailbox\BackfillGmailThreadHistory::run($this->shop)['messages'])->toBe(0);
+});

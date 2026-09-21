@@ -27,6 +27,7 @@ use App\Services\Gmail\GmailClient;
 use App\Services\Gmail\GmailMessageParser;
 use App\Services\HTMLSanitizer;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -161,7 +162,69 @@ class ProcessInboundEmail
         $label = $webUser ? 'aiku/imported' : 'aiku/unmatched';
         $client->addLabel($gmailMessageId, $label);
 
+        $this->importThreadHistory($client, $session, $threadId, $mailboxAddress, $webUser);
+
         return $message;
+    }
+
+    /**
+     * The rest of the Gmail thread, so the conversation reads whole: what the customer wrote before
+     * and what we answered from Gmail itself. Written straight to the table at the time Gmail has
+     * for them, because these were already sent and read: nothing is mailed, broadcast or counted.
+     *
+     * ponytail: text and markup only, attachments of older mails stay in Gmail. An aiku reply whose
+     * send job has not yet stored its gmail id would come in twice; the job runs in seconds.
+     */
+    public function importThreadHistory(GmailClient $client, ChatSession $session, string $threadId, ?string $mailboxAddress, ?WebUser $webUser): int
+    {
+        $imported = 0;
+
+        $known = ChatMessage::where('chat_session_id', $session->id)
+            ->pluck('metadata')
+            ->map(fn ($metadata) => Arr::get($metadata, 'gmail_message_id'))
+            ->filter()
+            ->flip();
+
+        foreach ($client->getThreadMessages($threadId) as $raw) {
+            $labels = Arr::get($raw, 'labelIds', []);
+
+            if ($known->has(Arr::get($raw, 'id')) || array_intersect($labels, ['DRAFT', 'SPAM', 'TRASH'])) {
+                continue;
+            }
+
+            $from   = GmailMessageParser::fromAddress($raw)['address'];
+            $isOurs = in_array('SENT', $labels, true) || ($mailboxAddress && $from && strcasecmp($from, $mailboxAddress) === 0);
+            $sentAt = Carbon::createFromTimestampMs((int) Arr::get($raw, 'internalDate'));
+            $html   = app(HTMLSanitizer::class)->cleanEmail(GmailMessageParser::htmlBody($raw));
+            $text   = trim(strip_tags(GmailMessageParser::body($raw)));
+
+            ChatMessage::create([
+                'chat_session_id' => $session->id,
+                'message_type'    => ChatMessageTypeEnum::TEXT,
+                'sender_type'     => match (true) {
+                    $isOurs        => ChatSenderTypeEnum::AGENT,
+                    (bool) $webUser => ChatSenderTypeEnum::USER,
+                    default        => ChatSenderTypeEnum::GUEST,
+                },
+                'sender_id'       => $isOurs ? null : $webUser?->id,
+                'message_text'    => $text,
+                'original_text'   => $text,
+                'html_body'       => $html !== '' ? $html : null,
+                'is_read'         => true,
+                'created_at'      => $sentAt,
+                'updated_at'      => $sentAt,
+                'metadata'        => [
+                    'gmail_message_id'        => Arr::get($raw, 'id'),
+                    'gmail_header_message_id' => GmailMessageParser::header($raw, 'Message-ID'),
+                    'email_subject'           => GmailMessageParser::header($raw, 'Subject'),
+                    'gmail_thread_history'    => true,
+                ],
+            ]);
+
+            $imported++;
+        }
+
+        return $imported;
     }
 
     /**
