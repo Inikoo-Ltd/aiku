@@ -63,6 +63,7 @@ use App\Actions\Web\Website\LaunchWebsite;
 use App\Actions\Web\Website\ProcessWebsiteTimeSeriesRecords;
 use App\Actions\Web\Website\PublishWebsiteMarginal;
 use App\Actions\Web\Webpage\GetWebpagePageSpeed;
+use App\Actions\Web\Webpage\GetWebpageSeo;
 use App\Actions\Web\Webpage\GetWebpagePerformance;
 use App\Actions\Web\Webpage\PublishWebpage;
 use App\Enums\Helpers\Audit\AuditEventEnum;
@@ -901,9 +902,46 @@ test('UI show webpage in shop website', function (Website $website, Webpage $web
                 "pageHead",
                 fn (AssertableInertia $page) => $page->where("title", $webpage->code)->etc()
             )
-            ->has('tabs');
+            ->has('tabs')
+            ->has('seo');
     });
+
+    expect($response->original->getData()['page']['deferredProps'] ?? [])->toHaveKey('pagespeed');
 })->depends('create b2b website', 'create webpage');
+
+test('the seo block of a webpage reads back the head the public site renders', function (Webpage $webpage) {
+    $asItWas = $webpage->only(['title', 'description', 'index_page', 'follow_link', 'seo_data', 'settings']);
+
+    $webpage->update([
+        'title'       => 'Blue widgets',
+        'description' => 'The best blue widgets',
+        'index_page'  => false,
+        'follow_link' => true,
+        'seo_data'    => [
+            'image_alt'       => 'A blue widget',
+            'structured_data' => ['@type' => 'Product'],
+        ],
+        'settings'    => ['webpage' => ['title_prefix' => 'Shop', 'title_suffix' => '| Aiku']],
+    ]);
+
+    $seo = GetWebpageSeo::run($webpage->refresh());
+
+    expect($seo['title'])->toBe('Shop Blue widgets | Aiku')
+        ->and($seo['page_title'])->toBe('Blue widgets')
+        ->and($seo['description'])->toBe('The best blue widgets')
+        ->and($seo['robots'])->toBe('noindex, follow')
+        ->and($seo['share_image']['url'])->toBeNull()
+        ->and($seo['share_image']['alt'])->toBe('A blue widget')
+        ->and($seo['structured_data'])->toBe(['@type' => 'Product'])
+        ->and($seo['structured_data_types'])->toBe(['Product'])
+        ->and($seo['canonical_url'])->toBe($webpage->canonical_url);
+
+    $webpage->update(['seo_data' => ['use_title_prefix_suffix' => false]]);
+
+    expect(GetWebpageSeo::run($webpage->refresh())['title'])->toBe('Blue widgets');
+
+    $webpage->update($asItWas);
+})->depends('create webpage');
 
 test('UI show webpage workshop in shop website', function (Website $website, Webpage $webpage) {
     $this->withoutExceptionHandling();

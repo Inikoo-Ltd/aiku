@@ -158,6 +158,8 @@ const applySort = (type: 'manual' | 'name' | 'code') => {
     updateOrder()
 }
 
+const getImageSource = (item: any) => item?.image_thumbnail?.main?.thumbnail ?? item?.image_thumbnail
+
 const getArrow = (type: 'name' | 'code') => {
     if (sortBy.value !== type) return ''
     return sortDirection.value === 'asc' ? '↑' : '↓'
@@ -258,7 +260,7 @@ onBeforeUnmount(() => window.removeEventListener("keydown", handleKey))
 
                     <slot name="list-content" :item="element">
                         <slot name="image-list" :item="element">
-                            <Image :src="element.image_thumbnail?.main?.original" class="w-10 h-10 object-cover rounded" />
+                            <Image :src="getImageSource(element)" class="w-10 h-10 object-cover rounded" />
                         </slot>
 
 
@@ -308,7 +310,7 @@ onBeforeUnmount(() => window.removeEventListener("keydown", handleKey))
                     <slot name="card-content" :item="element">
 
                         <slot name="image-card" :item="element">
-                             <Image :src="element.image_thumbnail?.main?.original"
+                             <Image :src="getImageSource(element)"
                             class="w-full h-24 object-cover rounded mb-2" />
                         </slot>
 
