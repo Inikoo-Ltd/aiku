@@ -6003,3 +6003,34 @@ test('the unclaimed alert reports the backlog once and stays quiet until it chan
 
     expect(\Illuminate\Support\Facades\Cache::get('chat:unclaimed:last-alerted'))->not->toBe($signature);
 });
+
+test('a shop may set its own unclaimed time, and the rest follow the group default', function () {
+    \Illuminate\Support\Facades\Http::fake();
+
+    config(['chat.unclaimed.after_seconds.email' => 7200]);
+
+    \Illuminate\Support\Facades\Cache::forget('chat:unclaimed:overrides:email');
+
+    $patient = noiseTestEmailSession($this->shop, 'patient@example.com', 'Shop waits longer', 'Where is my order');
+    $patient->update(['last_visitor_message_at' => now()->subHours(3)]);
+
+    $queue = fn () => collect(GetChatSessions::make()->handle(['unclaimed' => true])->items())->pluck('id')->all();
+
+    expect($queue())->toContain($patient->id);
+
+    \App\Actions\Catalogue\Shop\UpdateShop::make()->action($this->shop, ['chat_unclaimed_email_seconds' => 86400]);
+
+    \Illuminate\Support\Facades\Cache::forget('chat:unclaimed:overrides:email');
+
+    expect(Arr::get($this->shop->refresh()->settings, 'chat.unclaimed_after_seconds.email'))->toBe(86400)
+        ->and($queue())->not->toContain($patient->id);
+
+    // Nought is not a time, it is "no opinion": stored as one it would drag every conversation
+    // on the shop into the queue the moment it arrived.
+    \App\Actions\Catalogue\Shop\UpdateShop::make()->action($this->shop, ['chat_unclaimed_email_seconds' => 0]);
+
+    \Illuminate\Support\Facades\Cache::forget('chat:unclaimed:overrides:email');
+
+    expect(Arr::get($this->shop->refresh()->settings, 'chat.unclaimed_after_seconds.email'))->toBeNull()
+        ->and($queue())->toContain($patient->id);
+});

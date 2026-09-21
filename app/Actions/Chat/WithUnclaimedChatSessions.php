@@ -10,9 +10,12 @@ namespace App\Actions\Chat;
 use App\Enums\CRM\Livechat\ChatAssignmentStatusEnum;
 use App\Enums\CRM\Livechat\ChatChannelEnum;
 use App\Enums\CRM\Livechat\ChatSessionStatusEnum;
+use App\Models\Catalogue\Shop;
 use App\Models\Chat\ChatSession;
 use App\Models\Chat\MetaChatSession;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Cache;
 
 /**
  * A conversation nobody has claimed past the time agreed for its channel. Unowned rather than
@@ -33,6 +36,28 @@ trait WithUnclaimedChatSessions
     }
 
     /**
+     * The shops that set their own time for this channel. Everything else runs on the group's
+     * number, so a shop that never had an opinion has nothing stored and follows any change to
+     * the default without being touched.
+     *
+     * ponytail: read once a minute rather than on every poll, and not invalidated on save. A
+     * changed time taking a minute to bite is nothing; if that ever matters, forget the key in
+     * UpdateShop.
+     *
+     * @return array<int, int>
+     */
+    protected function unclaimedShopOverrides(string $channel): array
+    {
+        return Cache::remember("chat:unclaimed:overrides:$channel", 60, fn () => Shop::query()
+            ->whereNotNull('settings')
+            ->pluck('settings', 'id')
+            ->map(fn ($settings) => Arr::get((array) $settings, "chat.unclaimed_after_seconds.$channel"))
+            ->filter(fn ($seconds) => is_numeric($seconds) && (int) $seconds > 0)
+            ->map(fn ($seconds) => (int) $seconds)
+            ->all());
+    }
+
+    /**
      * @param  Builder<ChatSession>  $query
      */
     public function scopeUnclaimedChatSessions(Builder $query): void
@@ -48,7 +73,7 @@ trait WithUnclaimedChatSessions
                 foreach (ChatChannelEnum::cases() as $channel) {
                     $outer->orWhere(function ($q) use ($channel) {
                         $q->where('channel', $channel->value);
-                        $this->waitingLongerThan($q, self::unclaimedAfterSeconds($channel->value));
+                        $this->pastItsTime($q, $channel->value);
                     });
                 }
             });
@@ -64,7 +89,7 @@ trait WithUnclaimedChatSessions
             ->where('status', '!=', ChatSessionStatusEnum::CLOSED->value)
             ->whereDoesntHave('assignments', fn ($a) => $a->where('status', ChatAssignmentStatusEnum::ACTIVE->value));
 
-        $this->waitingLongerThan($query, self::unclaimedAfterSeconds('whatsapp'));
+        $this->pastItsTime($query, 'whatsapp');
     }
 
     public function unclaimedChatSessions(): Builder
@@ -81,6 +106,31 @@ trait WithUnclaimedChatSessions
         $this->scopeUnclaimedMetaChatSessions($query);
 
         return $query;
+    }
+
+    /**
+     * Waiting longer than its shop allows on this channel: the group's time for every shop that
+     * has not set its own, and each of those shops' own time for the few that have.
+     *
+     * @param  Builder<ChatSession|MetaChatSession>  $query
+     */
+    private function pastItsTime(Builder $query, string $channel): void
+    {
+        $overrides = $this->unclaimedShopOverrides($channel);
+
+        $query->where(function ($outer) use ($overrides, $channel) {
+            $outer->where(function ($q) use ($overrides, $channel) {
+                $q->whereNotIn('shop_id', array_keys($overrides));
+                $this->waitingLongerThan($q, self::unclaimedAfterSeconds($channel));
+            });
+
+            foreach ($overrides as $shopId => $seconds) {
+                $outer->orWhere(function ($q) use ($shopId, $seconds) {
+                    $q->where('shop_id', $shopId);
+                    $this->waitingLongerThan($q, $seconds);
+                });
+            }
+        });
     }
 
     /**
