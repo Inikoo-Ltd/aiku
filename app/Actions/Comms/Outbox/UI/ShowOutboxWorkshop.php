@@ -170,7 +170,9 @@ class ShowOutboxWorkshop extends OrgAction
                 ],
                 'mergeTags' => GetOutboxMergeTagByOutbox::run($this->outbox),
                 'status' => $email->outbox->state,
-                'organisationSlug' => $this->organisation->slug
+                'organisationSlug' => $this->organisation->slug,
+                'shopSlug' => $email->shop?->slug,
+                'shopId' => $email->shop_id
             ]
         );
     }

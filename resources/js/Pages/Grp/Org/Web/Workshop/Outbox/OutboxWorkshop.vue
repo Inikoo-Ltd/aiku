@@ -40,6 +40,8 @@ const props = defineProps<{
     sendTestRoute: routeType
     storeTemplateRoute: routeType
     organisationSlug: string
+    shopSlug?: string
+    shopId?: number
 }>()
 
 const comment = ref('')
@@ -252,7 +254,8 @@ const schedulePublish = async () => {
 
     <!-- beefree -->
     <Beetree v-if="builder == 'beefree'" :updateRoute="updateRoute" :imagesUploadRoute="imagesUploadRoute"
-        :snapshot="snapshot" :mergeTags="mergeTags" :organisationSlug="organisationSlug" @onSave="onSendPublish"
+        :snapshot="snapshot" :mergeTags="mergeTags" :organisationSlug="organisationSlug" :shopSlug="shopSlug"
+        :shopId="shopId" @onSave="onSendPublish"
         @sendTest="openSendTest" @auto-save="autoSave" @saveTemplate="onSaveTemplate" ref="_beefree" />
 
     <!-- unlayer -->
