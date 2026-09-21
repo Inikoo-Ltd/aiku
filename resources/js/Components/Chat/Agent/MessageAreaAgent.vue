@@ -76,9 +76,11 @@ const channelIconClass = computed(() => {
     return channel === "whatsapp" ? "text-green-600" : channel === "email" ? "text-blue-500" : "text-gray-400"
 })
 
+const messagesLocal = ref<LocalChatMessage[]>([])
+
 // When the last word was said, and how long ago: a waiting conversation is judged by its age.
 const lastMessageStamp = computed(() => {
-    const at = props.messages?.[props.messages.length - 1]?.created_at
+    const at = messagesLocal.value[messagesLocal.value.length - 1]?.created_at
 
     if (!at) {
         return null
@@ -223,7 +225,7 @@ const canReportSpam = computed(() => isGuest.value && !isClosed.value && !isTras
 // Ending a conversation nobody ever answered is rude: from the other side it reads as being
 // shown the door for writing in. Until somebody here has replied, the way to clear it is Ignore.
 const hasBeenAnswered = computed(() =>
-    (props.messages ?? []).some((message) => message.sender_type === "agent")
+    messagesLocal.value.some((message) => message.sender_type === "agent")
 )
 
 const canEndChat = computed(() => hasBeenAnswered.value && !isClosed.value && !isTrashed.value && !props.readOnly)
@@ -348,7 +350,6 @@ const reopenChat = async () => {
     }
 }
 
-const messagesLocal = ref<LocalChatMessage[]>([])
 const eventsLocal = ref<any[]>([])
 const newMessage = ref("")
 
