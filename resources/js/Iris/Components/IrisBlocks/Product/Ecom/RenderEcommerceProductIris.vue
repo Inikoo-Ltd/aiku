@@ -4,7 +4,7 @@ import { faFilePdf, faFileDownload } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { ref, inject, onMounted, onBeforeUnmount, computed, watch, type Ref } from "vue"
 import { notify } from "@kyvg/vue3-notification"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { router } from "@inertiajs/vue3"
 import axios from "axios"
 
@@ -14,6 +14,7 @@ import ProductIris2Ecom from "@/Iris/Components/IrisBlocks/Product/Ecom/ProductI
 import ProductIris3Ecom from "@/Iris/Components/IrisBlocks/Product/Ecom/ProductIris3Ecom.vue"
 import { resolveProductImages, resolveProductVideo } from "@/Composables/useProductPage"
 import { useProductStructuredData } from "@/Iris/Composables/useProductStructuredData"
+import { useSelectedProductDetail } from "@/Iris/Composables/useSelectedProductDetail"
 
 library.add(faCube, faLink, faFilePdf, faFileDownload)
 
@@ -70,11 +71,9 @@ const layout = inject("layout", {})
 const injectedWebpageData = inject<any>("webpage_data", null)
 
 const variant = ref<any>(props.fieldValue?.variant ?? null)
-const selected_product = ref<ProductResource>(props.fieldValue.product)
 const appliedVariantFromUrl = ref(false)
 
 const variantProductsData = ref<ProductResource[]>([])
-const uncachedProductData = ref<Record<string, any>>({})
 
 const customerData = ref<Record<number, any>>({})
 const pendingOrderingRequests = new Set<number>()
@@ -162,8 +161,8 @@ const fetchOrderingData = async (productId: number) => {
     }
   } catch (error) {
     notify({
-      title: trans("Something went wrong"),
-      text: trans("Failed to load product ordering data"),
+      title: ctrans("Something went wrong"),
+      text: ctrans("Failed to load product ordering data"),
       type: "error",
     })
     console.error(error)
@@ -171,6 +170,25 @@ const fetchOrderingData = async (productId: number) => {
     pendingOrderingRequests.delete(productId)
   }
 }
+
+const fetchProductDetail = async (slug: string) => {
+  const response = await axios.get(
+    route("iris.catalogue.product.resource", { product: slug })
+  )
+
+  return response.data
+}
+
+const {
+  selectedProduct: selected_product,
+  loadDetail: loadProductDetail,
+  selectProduct,
+  applyBlockProduct,
+} = useSelectedProductDetail({
+  initialProduct: props.fieldValue.product,
+  fetchDetail: fetchProductDetail,
+  onSelect: product => fetchOrderingData(product.id),
+})
 
 const fetchAllOrderingData = async () => {
   if (!layout?.iris?.is_logged_in) return
@@ -180,26 +198,6 @@ const fetchAllOrderingData = async () => {
   )
 
   await Promise.all([...productIds].map(id => fetchOrderingData(id)))
-}
-
-const fetchUncachedProduct = async (product: ProductResource = selected_product.value) => {
-  if (!product?.slug) return
-
-  try {
-    const response = await axios.get(
-      route("iris.catalogue.product.resource", {
-        product: product.slug,
-      })
-    )
-
-    if (selected_product.value?.slug !== product.slug) return
-
-    console.log("Fetched uncached product data", response.data)
-    uncachedProductData.value = response.data
-    selected_product.value = { ...selected_product.value, ...response.data }
-  } catch (error) {
-    console.error("Failed to load uncached product data", error)
-  }
 }
 
 
@@ -265,9 +263,7 @@ const toggleBackInStockReminder = (product: ProductResource, isReminderWanted: b
 }
 
 const changeSelectedProduct = (product: ProductResource) => {
-  uncachedProductData.value = {}
-  selected_product.value = { ...product }
-  fetchOrderingData(product.id)
+  selectProduct(product)
 
   const url = new URL(window.location.href)
   url.searchParams.set("variant", product.code)
@@ -283,9 +279,7 @@ const applyVariantFromUrl = () => {
   const matchedProduct = listProducts.value.find(p => p.code === variantCode)
   if (!matchedProduct) return
 
-  uncachedProductData.value = {}
-  selected_product.value = { ...matchedProduct }
-  fetchOrderingData(matchedProduct.id)
+  selectProduct(matchedProduct)
   appliedVariantFromUrl.value = true
 }
 
@@ -302,24 +296,8 @@ watch(
 
 watch(
   () => props.fieldValue.product,
-  product => {
-    if (selected_product.value?.id !== product.id) {
-      uncachedProductData.value = {}
-    }
-
-    selected_product.value = { ...product, ...uncachedProductData.value }
-    fetchOrderingData(product.id)
-  },
+  product => applyBlockProduct(product),
   { deep: true }
-)
-
-watch(
-  () => selected_product.value?.slug,
-  (slug, previousSlug) => {
-    if (!slug || slug === previousSlug) return
-
-    fetchUncachedProduct(selected_product.value)
-  }
 )
 
 watch(
@@ -328,7 +306,7 @@ watch(
     if (!isLoggedIn) return
 
     fetchAllOrderingData()
-    fetchUncachedProduct()
+    loadProductDetail()
   },
   { immediate: true }
 )
