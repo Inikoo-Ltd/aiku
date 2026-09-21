@@ -339,8 +339,8 @@ const dashboardBoxes = computed(() => (props.stats.interval === "all" ? (["peopl
                     </p>
                     <div class="flex items-center gap-4">
                         <div class="relative h-44 w-44 shrink-0">
-                            <Chart type="doughnut" :data="donutChart" :options="donutOptions" class="h-full" />
-                            <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                            <Chart type="doughnut" :data="donutChart" :options="donutOptions" class="relative z-10 h-full" />
+                            <div class="absolute inset-0 z-0 flex flex-col items-center justify-center pointer-events-none">
                                 <span class="text-3xl font-bold">{{ totalTickets }}</span>
                                 <span class="text-xs text-gray-500">{{ ctrans("Total") }}</span>
                             </div>

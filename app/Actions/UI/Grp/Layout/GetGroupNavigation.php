@@ -305,7 +305,7 @@ class GetGroupNavigation
                 'subSections' => [
                     [
                         "tooltip" => __("Master Catalogue"),
-                        "icon"    => ["fal", "fa-books"],
+                        "icon"    => ["fab", "fa-octopus-deploy"],
                         'root'    => 'grp.masters.dashboard',
                         "route"   => [
                             "name"       => 'grp.masters.dashboard',
