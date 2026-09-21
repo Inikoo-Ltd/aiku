@@ -53,7 +53,7 @@ const guestOptions = computed(() =>
 )
 
 const customerFetchRoute = computed(() => ({
-    name: "grp.json.shop.customers",
+    name: "grp.chat.phone_calls.customers",
     parameters: { shop: shopId.value },
 }))
 
