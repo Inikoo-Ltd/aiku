@@ -2,6 +2,7 @@
 import { ref, watch, onMounted, onUnmounted, inject, computed, nextTick, defineAsyncComponent } from "vue"
 import axios from "axios"
 import { ctrans } from "@/Composables/useTrans"
+import { chatSendErrorText } from "@/Composables/chatSendError"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import {
     faPaperPlane,
@@ -299,6 +300,73 @@ const onPasteAttachment = (event: ClipboardEvent) => {
     }
 }
 
+// Dropping a file is the paperclip by another route, and refuses what the paperclip refuses:
+// WhatsApp carries one attachment per message, and none at all once the 24 hour window shuts or
+// a template has been chosen.
+const isDraggingFile = ref(false)
+let dragDepth = 0
+
+const canAttach = computed(
+    () => !props.readOnly
+        && !isClosed.value
+        && !isWaiting.value
+        && isMyChat.value
+        && !hasTemplate.value
+        && !templateOnly.value
+)
+
+// Dragging a selection of text around the page carries no files, and lighting the whole pane up
+// for it would be wrong every time somebody moves a quote from one message to another.
+const carriesFiles = (event: DragEvent) =>
+    Array.from(event.dataTransfer?.types ?? []).includes("Files")
+
+const onDragEnterAttachment = (event: DragEvent) => {
+    if (!canAttach.value || !carriesFiles(event)) return
+
+    event.preventDefault()
+    dragDepth += 1
+    isDraggingFile.value = true
+}
+
+const onDragOverAttachment = (event: DragEvent) => {
+    if (!canAttach.value || !carriesFiles(event)) return
+
+    // Without this the browser takes the drop itself and opens the file over the inbox.
+    event.preventDefault()
+
+    if (event.dataTransfer) {
+        event.dataTransfer.dropEffect = "copy"
+    }
+}
+
+const onDragLeaveAttachment = () => {
+    if (!isDraggingFile.value) return
+
+    dragDepth = Math.max(0, dragDepth - 1)
+
+    if (dragDepth === 0) {
+        isDraggingFile.value = false
+    }
+}
+
+const onDropAttachment = (event: DragEvent) => {
+    if (!canAttach.value || !carriesFiles(event)) return
+
+    event.preventDefault()
+    dragDepth = 0
+    isDraggingFile.value = false
+
+    const file = event.dataTransfer?.files?.[0]
+
+    if (!file) return
+
+    if (file.type.startsWith("image/")) {
+        selectImage(file)
+    } else {
+        selectDoc(file)
+    }
+}
+
 const removeFile = () => {
     if (previewUrl.value) {
         URL.revokeObjectURL(previewUrl.value)
@@ -489,7 +557,7 @@ const postMessage = async (formData: FormData, optimisticMessage: LocalChatMessa
         if (msg) msg._status = "failed"
         notify({
             title: ctrans("Error"),
-            text: e?.response?.data?.message ?? ctrans("Failed to send WhatsApp message"),
+            text: chatSendErrorText(e, ctrans("Failed to send WhatsApp message")),
             type: "error",
         })
     } finally {
@@ -846,7 +914,9 @@ onUnmounted(() => {
 </script>
 
 <template>
-    <div class="flex flex-col h-full bg-white overflow-hidden">
+    <div class="relative flex flex-col h-full bg-white overflow-hidden"
+        @dragenter="onDragEnterAttachment" @dragover="onDragOverAttachment"
+        @dragleave="onDragLeaveAttachment" @drop="onDropAttachment">
         <!-- Header -->
         <header class="flex items-center gap-3 px-3 py-2 border-b">
             <button @click="$emit('back')">
@@ -1160,6 +1230,19 @@ onUnmounted(() => {
             :organisation="organisationSlug"
             channel="whatsapp"
             @close="isTicketModalOpen = false" />
+
+        <!-- Nothing here takes the pointer, so the drag keeps reaching the pane underneath and
+             the drop still lands. -->
+        <div v-if="isDraggingFile"
+            class="pointer-events-none absolute inset-0 z-30 flex items-center justify-center bg-white/75 p-6">
+            <div class="flex flex-col items-center gap-2 rounded-xl border-2 border-dashed border-green-500 bg-white px-10 py-8 shadow-sm">
+                <FontAwesomeIcon :icon="faPaperclip" class="text-2xl text-green-600" />
+                <div class="text-sm font-medium text-gray-700">{{ ctrans("Drop the file here") }}</div>
+                <div class="text-xs text-gray-400">
+                    {{ ctrans("One file per message: JPG or PNG up to 5MB, or a document up to 100MB") }}
+                </div>
+            </div>
+        </div>
     </div>
 </template>
 

@@ -4,6 +4,7 @@ import { Head, router } from "@inertiajs/vue3"
 import { useDebounceFn, useLocalStorage, watchDebounced } from "@vueuse/core"
 import axios from "axios"
 import { ctrans } from "@/Composables/useTrans"
+import { chatSendErrorText } from "@/Composables/chatSendError"
 import { capitalize } from "@/Composables/capitalize"
 import { cleanEmailText } from "@/Composables/cleanEmailText"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
@@ -1237,12 +1238,13 @@ const updateUrl = (ulid: string) => {
     window.history.replaceState(window.history.state, "", url)
 }
 
-const handleSendMessage = async ({ text, files, message_type, is_email_notif }: {
+const handleSendMessage = async ({ text, files, message_type, is_email_notif, onFailed }: {
     text: string
     files?: File[]
     message_type: "text" | "image" | "file"
     tempId: number
     is_email_notif: boolean
+    onFailed?: (message: string) => void
 }) => {
     if (!selectedSession.value?.ulid) return
     try {
@@ -1265,6 +1267,8 @@ const handleSendMessage = async ({ text, files, message_type, is_email_notif }: 
         )
     } catch (error) {
         console.error("Error sending message:", error)
+
+        onFailed?.(chatSendErrorText(error, ctrans("The message was not sent. Try again.")))
     }
 }
 

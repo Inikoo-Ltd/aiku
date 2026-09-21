@@ -587,6 +587,61 @@ const onPasteAttachment = (event: ClipboardEvent) => {
     }
 }
 
+// Dropping a file on the conversation is the paperclip by another route: the same formats, the
+// same ten-file limit, the same preview strip, and nothing leaves the browser until Send.
+const isDraggingFile = ref(false)
+let dragDepth = 0
+
+const canAttach = computed(
+    () => !props.readOnly && !isTrashed.value && !isClosed.value && !isWaiting.value && isMyChat.value
+)
+
+// Dragging a selection of text around the page carries no files, and lighting the whole pane up
+// for it would be wrong every time somebody moves a quote from one message to another.
+const carriesFiles = (event: DragEvent) =>
+    Array.from(event.dataTransfer?.types ?? []).includes("Files")
+
+const onDragEnterAttachment = (event: DragEvent) => {
+    if (!canAttach.value || !carriesFiles(event)) return
+
+    event.preventDefault()
+    dragDepth += 1
+    isDraggingFile.value = true
+}
+
+const onDragOverAttachment = (event: DragEvent) => {
+    if (!canAttach.value || !carriesFiles(event)) return
+
+    // Without this the browser takes the drop itself and opens the file over the inbox.
+    event.preventDefault()
+
+    if (event.dataTransfer) {
+        event.dataTransfer.dropEffect = "copy"
+    }
+}
+
+const onDragLeaveAttachment = () => {
+    if (!isDraggingFile.value) return
+
+    dragDepth = Math.max(0, dragDepth - 1)
+
+    if (dragDepth === 0) {
+        isDraggingFile.value = false
+    }
+}
+
+const onDropAttachment = (event: DragEvent) => {
+    if (!canAttach.value || !carriesFiles(event)) return
+
+    event.preventDefault()
+    dragDepth = 0
+    isDraggingFile.value = false
+
+    Array.from(event.dataTransfer?.files ?? []).forEach((file) =>
+        file.type.startsWith("image/") ? selectImage(file) : selectDoc(file)
+    )
+}
+
 const removeAttachment = (index: number) => {
     const removed = selectedFiles.value[index]
     if (removed?.previewUrl) URL.revokeObjectURL(removed.previewUrl)
@@ -650,29 +705,31 @@ const sendMessage = async () => {
     newMessage.value = ""
     autoResize()
     typingUser.value = null
-    try {
-        emit("send-message", {
-            text: text,
-            files: selectedFiles.value.map((a) => a.file),
-            message_type: messageType,
-            tempId,
-            is_email_notif: isEmailNotif.value,
-        })
-        removeFile()
-        const msg = messagesLocal.value.find((m) => m._tempId === tempId)
 
-        if (msg) msg._status = "sending"
-        // const index = messagesLocal.value.findIndex(
-        //     (m) => m._tempId === tempId
-        // )
+    // The request itself is made by whoever owns this thread, so the bubble can only be told how
+    // it went by being handed a way to say so. Wrapping the emit in a try/catch caught nothing:
+    // emit returns before the upload has begun, and a refused upload left the bubble saying
+    // "sending" for the rest of the day.
+    const markFailed = (message: string) => {
+        const failed = messagesLocal.value.find((m) => m._tempId === tempId)
 
-        // if (index !== -1) {
-        //     messagesLocal.value.splice(index, 1)
-        // }
-    } catch {
-        const msg = messagesLocal.value.find((m) => m._tempId === tempId)
-        if (msg) msg._status = "failed"
+        if (failed) {
+            failed._status = "failed"
+        }
+
+        notify({ title: ctrans("Failed to send"), text: message, type: "error" })
     }
+
+    emit("send-message", {
+        text: text,
+        files: selectedFiles.value.map((a) => a.file),
+        message_type: messageType,
+        tempId,
+        is_email_notif: isEmailNotif.value,
+        onFailed: markFailed,
+    })
+
+    removeFile()
 }
 
 const resendMessage = async (msg: LocalChatMessage) => {
@@ -1067,7 +1124,9 @@ const handleClickOutside = (e: MouseEvent) => {
 </script>
 
 <template>
-    <div class="flex flex-col h-full bg-white overflow-hidden">
+    <div class="relative flex flex-col h-full bg-white overflow-hidden"
+        @dragenter="onDragEnterAttachment" @dragover="onDragOverAttachment"
+        @dragleave="onDragLeaveAttachment" @drop="onDropAttachment">
         <!-- Header -->
         <header class="flex items-center gap-3 px-3 py-2 border-b">
             <button @click="$emit('back')" :aria-label="ctrans('Back')">
@@ -1439,6 +1498,19 @@ const handleClickOutside = (e: MouseEvent) => {
             @close="isSlackModalOpen = false"
             @open-settings="onOpenSlackSettings"
         />
+
+        <!-- Nothing here takes the pointer, so the drag keeps reaching the pane underneath and
+             the drop still lands. -->
+        <div v-if="isDraggingFile"
+            class="pointer-events-none absolute inset-0 z-30 flex items-center justify-center bg-white/75 p-6">
+            <div class="flex flex-col items-center gap-2 rounded-xl border-2 border-dashed border-sky-400 bg-white px-10 py-8 shadow-sm">
+                <FontAwesomeIcon :icon="faPaperclip" class="text-2xl text-sky-500" />
+                <div class="text-sm font-medium text-gray-700">{{ ctrans("Drop the files here") }}</div>
+                <div class="text-xs text-gray-400">
+                    {{ ctrans("Images, PDF and spreadsheets, up to 10 at a time, 10MB each") }}
+                </div>
+            </div>
+        </div>
     </div>
 </template>
 <style scoped>
