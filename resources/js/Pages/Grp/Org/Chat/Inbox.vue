@@ -235,6 +235,7 @@ const panelSession = computed(() => {
         customer_id: customerId,
         guest_email: (s as any).metadata?.email ?? s.guest_profile?.email ?? null,
         guest_phone: (s as any).metadata?.phone ?? s.guest_profile?.phone ?? null,
+        customer_suggestion: (s as any).customer_suggestion ?? null,
         phone_number: (s as any).phone_number ?? null,
         shop_name: s.shop?.name ?? null,
         status: s.status,
@@ -255,8 +256,8 @@ const selectedItemStyle = {
 const sidePanelVisible = ref(false)
 const sidePanelPreferred = useLocalStorage(`chat-inbox-side-panel:${layout.user?.id ?? "anonymous"}`, true)
 
-watch(() => [panelSession.value?.ulid, panelSession.value?.is_guest], ([ulid, isGuest]) => {
-    if (ulid && !isGuest) sidePanelVisible.value = sidePanelPreferred.value
+watch(() => [panelSession.value?.ulid, panelSession.value?.is_guest, !!panelSession.value?.customer_suggestion?.customer], ([ulid, isGuest, hasSuggestion]) => {
+    if (ulid && (!isGuest || hasSuggestion)) sidePanelVisible.value = sidePanelPreferred.value
 }, { immediate: true })
 
 const chatSettingVisible = ref(false)
@@ -294,6 +295,7 @@ const mapSession = (s: SessionAPI): Contact => ({
     open_tickets_count: Number((s as any).open_tickets_count ?? 0),
     blocking_tickets_count: Number((s as any).blocking_tickets_count ?? 0),
     noise: (s as any).noise ?? null,
+    customer_suggestion: (s as any).customer_suggestion ?? null,
     is_highlighted: (s as any).is_highlighted ?? false,
     webUser: s.web_user ?? (s as any).customer,
     country_code: (s as any).country_code ?? null,
@@ -1820,6 +1822,10 @@ onUnmounted(() => {
                                     </span>
                                     <span v-if="c.agent?.name" class="truncate">
                                         {{ c.agent.name.split(' ')[0] }}
+                                    </span>
+                                    <span v-if="c.customer_suggestion?.customer && !c.webUser?.customer_id" v-tooltip="c.customer_suggestion.label"
+                                        class="shrink-0 truncate rounded bg-amber-50 px-1 font-medium text-amber-700">
+                                        {{ ctrans("Probably") }} {{ c.customer_suggestion.customer.name }}
                                     </span>
                                     <span v-if="c.noise" v-tooltip="c.noise.note"
                                         class="shrink-0 rounded px-1 font-medium"

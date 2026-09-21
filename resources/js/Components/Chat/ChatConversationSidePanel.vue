@@ -29,6 +29,12 @@ interface PanelSession {
     customer_id?: number | null
     guest_email?: string | null
     guest_phone?: string | null
+    customer_suggestion?: {
+        label: string
+        basis: string | null
+        customer: { name: string | null; email: string | null; reference: string | null } | null
+        hint: string | null
+    } | null
     phone_number?: string | null
     shop_name?: string | null
     status: string
@@ -372,6 +378,34 @@ const syncGuest = async () => {
     }
 }
 
+const suggestionDismissed = ref(false)
+
+watch(() => props.session.ulid, () => {
+    suggestionDismissed.value = false
+    syncError.value = null
+})
+
+const answerSuggestion = async (confirmed: boolean) => {
+    if (isSyncing.value) return
+    isSyncing.value = true
+    syncError.value = null
+
+    try {
+        const res = await axios.request({
+            method: confirmed ? 'put' : 'delete',
+            url: `${sessionApiBase.value}/${props.session.ulid}/suggested-customer`,
+            withCredentials: true,
+        })
+        suggestionDismissed.value = true
+        if (confirmed && isWhatsapp.value) emit('customer-synced', res.data.data.customer)
+        if (confirmed && !isWhatsapp.value) emit('synced', res.data.data.web_user)
+    } catch (e: any) {
+        syncError.value = e?.response?.data?.message ?? ctrans('Could not update the suggested customer')
+    } finally {
+        isSyncing.value = false
+    }
+}
+
 const formatStatDate = (date: string | null): string => {
     if (!date) return '-'
     return new Date(date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
@@ -452,6 +486,30 @@ const copyChatId = async () => {
                             <AddressLocation v-if="customerProfile.location" :data="customerProfile.location" class="font-medium text-gray-800" />
                             <div v-if="customerProfile.address" class="text-[11px] text-gray-500" v-html="customerProfile.address"></div>
                         </div>
+                    </div>
+                    <div v-if="session.is_guest && session.customer_suggestion && !suggestionDismissed"
+                        class="rounded border border-amber-200 bg-amber-50 px-2 py-1.5 text-xs space-y-1">
+                        <template v-if="session.customer_suggestion.customer">
+                            <div class="font-medium text-gray-800">
+                                {{ ctrans("Probably") }} {{ session.customer_suggestion.customer.name }}
+                                <span v-if="session.customer_suggestion.customer.reference" class="font-normal text-gray-500">({{ session.customer_suggestion.customer.reference }})</span>
+                            </div>
+                            <div class="text-gray-600">{{ session.customer_suggestion.label }} · {{ ctrans("not verified") }}</div>
+                            <div class="flex items-center gap-2 pt-0.5">
+                                <button type="button" :disabled="isSyncing"
+                                    class="font-medium rounded border px-1.5 py-0.5 bg-white hover:bg-gray-50 disabled:opacity-60"
+                                    :style="{ color: themePrimary, borderColor: themePrimary }"
+                                    @click="answerSuggestion(true)">
+                                    {{ ctrans("Confirm") }}
+                                </button>
+                                <button type="button" :disabled="isSyncing"
+                                    class="text-gray-500 hover:text-gray-700 hover:underline disabled:opacity-60"
+                                    @click="answerSuggestion(false)">
+                                    {{ ctrans("Not them") }}
+                                </button>
+                            </div>
+                        </template>
+                        <div v-else class="text-gray-700">{{ session.customer_suggestion.hint }}</div>
                     </div>
                     <div v-if="canMatchCustomer" class="grid grid-cols-3 gap-2 items-start">
                         <div></div>

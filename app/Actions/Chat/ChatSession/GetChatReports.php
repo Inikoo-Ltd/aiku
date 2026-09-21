@@ -36,6 +36,7 @@ class GetChatReports
             'foreign'  => 'chat_session_id',
             'channel'  => 's.channel',
             'where'    => ' and s.is_rubbish = false',
+            'customer' => 's.web_user_id',
         ],
         'meta' => [
             'sessions' => 'meta_chat_sessions',
@@ -43,6 +44,7 @@ class GetChatReports
             'foreign'  => 'meta_chat_session_id',
             'channel'  => "'whatsapp'",
             'where'    => '',
+            'customer' => 's.customer_id',
         ],
     ];
 
@@ -92,6 +94,7 @@ class GetChatReports
             'by_topic'      => $this->byTopic($sessions),
             'unclassified'  => $sessions->whereNull('topic')->count(),
             'noise'         => $this->noise($shopIds, $from, $to),
+            'customer_suggestions' => $this->customerSuggestions($shopIds, $from, $to),
             'agents'        => $agents,
             'agents_total'  => [
                 'name'          => __('Total'),
@@ -177,6 +180,42 @@ class GetChatReports
                 'noise'    => (int) $rows->sum('noise'),
                 'genuine'  => (int) $rows->sum('genuine'),
                 'reversed' => (int) $rows->sum('reversed'),
+            ])
+            ->values()
+            ->all();
+    }
+
+    /**
+     * Guests the system took for a customer, by what it went on, and what the agent made of
+     * it. A basis that keeps being turned down is one to stop trusting.
+     *
+     * @param  Collection<int, int>  $shopIds
+     * @return array<int, array{basis: string, suggested: int, confirmed: int, rejected: int}>
+     */
+    private function customerSuggestions(Collection $shopIds, Carbon $from, Carbon $to): array
+    {
+        return $this->fromEverySource(
+            fn (array $source) => "
+                select s.suggestion_basis as basis,
+                    count(*) as suggested,
+                    count(*) filter (where {$source['customer']} is not null) as confirmed,
+                    count(*) filter (where s.suggestion_rejected_at is not null) as rejected
+                from {$source['sessions']} s
+                where s.deleted_at is null
+                    and s.suggested_customer_id is not null
+                    and s.shop_id in (:shops)
+                    and s.created_at between :from and :to
+                group by 1
+            ",
+            $shopIds,
+            ['from' => $from, 'to' => $to]
+        )
+            ->groupBy('basis')
+            ->map(fn (Collection $rows, string $basis) => [
+                'basis'     => $basis,
+                'suggested' => (int) $rows->sum('suggested'),
+                'confirmed' => (int) $rows->sum('confirmed'),
+                'rejected'  => (int) $rows->sum('rejected'),
             ])
             ->values()
             ->all();

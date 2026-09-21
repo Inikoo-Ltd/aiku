@@ -23,6 +23,7 @@ use App\Actions\Chat\ChatSession\StoreChatAgent;
 use App\Actions\Chat\ChatSession\StoreChatSession;
 use App\Actions\Chat\ChatSession\StoreGuestProfile;
 use App\Actions\Chat\ChatSession\StoreOfflineMessage;
+use App\Actions\Chat\ChatSession\ConfirmSuggestedChatCustomer;
 use App\Actions\Chat\ChatSession\SyncChatSessionByEmail;
 use App\Actions\Chat\ChatSession\ToggleChatMessageReaction;
 use App\Actions\Chat\ChatSession\TranslateSessionMessages;
@@ -88,6 +89,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/sessions/{chatSession:ulid}/share-to-slack', [ShareChatSessionToSlack::class, 'asController'])->name('sessions.share_to_slack');
     Route::put('/sessions/{chatSession:ulid}/sync-by-email', SyncChatSessionByEmail::class)->name('sessions.sync_by_email');
     Route::put('/meta/sessions/{metaChatSession:ulid}/sync-by-phone', SyncMetaChatSessionByPhone::class)->name('meta.sessions.sync_by_phone');
+    Route::put('/sessions/{chatSession:ulid}/suggested-customer', ConfirmSuggestedChatCustomer::class)->name('sessions.suggested_customer.confirm');
+    Route::delete('/sessions/{chatSession:ulid}/suggested-customer', [ConfirmSuggestedChatCustomer::class, 'reject'])->name('sessions.suggested_customer.reject');
+    Route::put('/meta/sessions/{metaChatSession:ulid}/suggested-customer', [ConfirmSuggestedChatCustomer::class, 'inMetaChatSession'])->name('meta.sessions.suggested_customer.confirm');
+    Route::delete('/meta/sessions/{metaChatSession:ulid}/suggested-customer', [ConfirmSuggestedChatCustomer::class, 'rejectInMetaChatSession'])->name('meta.sessions.suggested_customer.reject');
     Route::get('/meta/sessions/{metaChatSession:ulid}/customer-profile', GetMetaChatCustomerProfile::class)->name('meta.sessions.customer_profile')->withTrashed();
     Route::get('/meta/sessions/{metaChatSession:ulid}/customer-timeline', GetMetaChatCustomerTimeline::class)->name('meta.sessions.customer_timeline')->withTrashed();
     Route::get('/meta/sessions/{metaChatSession:ulid}/tickets', [GetChatSessionTickets::class, 'inMetaChatSession'])->name('meta.sessions.tickets')->withTrashed();

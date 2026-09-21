@@ -28,9 +28,9 @@ class SendMetaChatGreeting
     use AsAction;
     use WithWhatsappCredentials;
 
-    public function handle(MetaChatSession $metaChatSession): bool
+    public function handle(MetaChatSession $metaChatSession, ?string $text = null, string $onceKey = 'greeted_at'): bool
     {
-        if (data_get($metaChatSession->metadata, 'greeted_at') || !$metaChatSession->can_send_non_template_message) {
+        if (data_get($metaChatSession->metadata, $onceKey) || !$metaChatSession->can_send_non_template_message) {
             return false;
         }
 
@@ -41,10 +41,10 @@ class SendMetaChatGreeting
         }
 
         $metaChatSession->update([
-            'metadata' => array_merge($metaChatSession->metadata ?? [], ['greeted_at' => now()->toISOString()]),
+            'metadata' => array_merge($metaChatSession->metadata ?? [], [$onceKey => now()->toISOString()]),
         ]);
 
-        $text = __('Hello, thank you for your message. How can we help you?', [], $metaChatSession->shop->language?->code);
+        $text ??= __('Hello, thank you for your message. How can we help you?', [], $metaChatSession->shop->language?->code);
 
         $response = Http::withToken($accessToken)->post($this->whatsappEndpoint($phoneNumberId.'/messages'), [
             'messaging_product' => 'whatsapp',
@@ -62,7 +62,7 @@ class SendMetaChatGreeting
             'message_type'    => ChatMessageTypeEnum::TEXT,
             'sender_type'     => ChatSenderTypeEnum::SYSTEM,
             'message_text'    => $text,
-            'metadata'        => ['wa_status' => 'sent', 'greeting' => true],
+            'metadata'        => ['wa_status' => 'sent', $onceKey => true],
         ]);
 
         BroadcastRealtimeMetaChat::dispatch($metaChatMessage->fresh(['attachment', 'metaChatSession']));

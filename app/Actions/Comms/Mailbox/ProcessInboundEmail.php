@@ -10,6 +10,7 @@ namespace App\Actions\Comms\Mailbox;
 
 use App\Actions\Chat\ChatSession\ClassifyChatSessionNoise;
 use App\Actions\Chat\ChatSession\StoreChatSession;
+use App\Actions\Chat\ChatSession\SuggestChatSessionCustomer;
 use App\Actions\Chat\ChatSession\SendChatMessage;
 use App\Enums\CRM\Livechat\ChatChannelEnum;
 use App\Enums\CRM\Livechat\ChatIgnoreReasonEnum;
@@ -153,6 +154,10 @@ class ProcessInboundEmail
 
         foreach ($attachments as $attachment) {
             @unlink($attachment->getPathname());
+        }
+
+        if (! $webUser) {
+            SuggestChatSessionCustomer::dispatch($session);
         }
 
         if (! $existing && ! $webUser) {

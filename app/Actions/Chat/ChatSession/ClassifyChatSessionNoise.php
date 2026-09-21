@@ -13,6 +13,7 @@ use App\Actions\Chat\MetaChatSession\StoreMetaChatEvent;
 use App\Actions\Comms\Mailbox\ProcessInboundEmail;
 use App\Actions\Helpers\AI\AskToAi;
 use App\Enums\CRM\Livechat\ChatActorTypeEnum;
+use App\Enums\CRM\Livechat\ChatChannelEnum;
 use App\Enums\CRM\Livechat\ChatEventTypeEnum;
 use App\Enums\CRM\Livechat\ChatNoiseVerdictEnum;
 use App\Enums\CRM\Livechat\ChatSenderTypeEnum;
@@ -83,6 +84,10 @@ class ClassifyChatSessionNoise
 
         $answer = $this->askModel($chatSession, $text);
 
+        if ($answer && $answer['verdict'] === ChatNoiseVerdictEnum::GENUINE && $answer['existing_customer']) {
+            AskGuestIfCustomer::run(SuggestChatSessionCustomer::run($chatSession));
+        }
+
         if ($rule) {
             $rescued = $answer
                 && $answer['verdict'] === ChatNoiseVerdictEnum::GENUINE
@@ -97,9 +102,20 @@ class ClassifyChatSessionNoise
             return $chatSession;
         }
 
-        $putAside = config('chat.noise.auto_put_aside') && $answer['confidence'] >= (int) config('chat.noise.put_aside_confidence');
+        $putAside = config('chat.noise.auto_put_aside')
+            && !self::isWebsite($chatSession)
+            && $answer['confidence'] >= (int) config('chat.noise.put_aside_confidence');
 
         return $this->record($chatSession, $answer['verdict'], self::SOURCE_AI, $answer['confidence'], $answer['note'], $putAside);
+    }
+
+    /**
+     * Website chat is read for who is writing, never to put anybody aside: nearly everybody
+     * there is genuine and an agent is already looking at them.
+     */
+    private static function isWebsite(ChatSession|MetaChatSession $chatSession): bool
+    {
+        return $chatSession instanceof ChatSession && $chatSession->channel !== ChatChannelEnum::EMAIL;
     }
 
     public static function isCandidate(ChatSession|MetaChatSession $chatSession): bool
@@ -245,7 +261,7 @@ class ClassifyChatSessionNoise
     }
 
     /**
-     * @return array{verdict: ChatNoiseVerdictEnum, confidence: int, note: string}|null
+     * @return array{verdict: ChatNoiseVerdictEnum, confidence: int, note: string, existing_customer: bool}|null
      */
     private function askModel(ChatSession|MetaChatSession $chatSession, string $text): ?array
     {
@@ -265,6 +281,7 @@ class ClassifyChatSessionNoise
             'verdict'    => ChatNoiseVerdictEnum::tryFrom((string) Arr::get($data, 'verdict')) ?? ChatNoiseVerdictEnum::GENUINE,
             'confidence' => max(0, min(100, (int) Arr::get($data, 'confidence', 0))),
             'note'       => mb_substr((string) Arr::get($data, 'reason', ''), 0, 300),
+            'existing_customer' => Arr::get($data, 'existing_customer') === true,
         ];
     }
 
@@ -274,7 +291,7 @@ class ClassifyChatSessionNoise
             ->map(fn (string $definition, string $verdict) => "- $verdict: $definition")
             ->join("\n");
 
-        $channel = $chatSession instanceof MetaChatSession ? 'WhatsApp' : 'email';
+        $channel = $chatSession instanceof MetaChatSession ? 'WhatsApp' : (self::isWebsite($chatSession) ? 'website chat' : 'email');
         $subject = $chatSession instanceof ChatSession ? (string) data_get($chatSession->metadata, 'email_subject') : '';
         $sender  = $chatSession instanceof ChatSession
             ? (string) data_get($chatSession->metadata, 'email_from')
@@ -294,13 +311,16 @@ class ClassifyChatSessionNoise
 
         "reason" is one short sentence in English for the agent who reviews it.
 
+        "existing_customer" is true only when the writer reads like somebody who already buys
+        from us: they mention their order, their account, an invoice, a delivery, logging in.
+
         Sender: $sender
         Subject: $subject
         Message:
         $text
 
         Output JSON only, no code fence:
-        {"verdict": "one from the list", "confidence": 0, "reason": "one sentence"}
+        {"verdict": "one from the list", "confidence": 0, "reason": "one sentence", "existing_customer": false}
         EOT;
     }
 

@@ -19,6 +19,8 @@ return [
 
     'summary_model' => env('CHAT_SUMMARY_MODEL', 'gpt-4o'),
 
+    'ask_guest_if_customer' => (bool) env('CHAT_ASK_GUEST_IF_CUSTOMER', true),
+
     'noise' => [
 
         'auto_put_aside' => (bool) env('CHAT_NOISE_AUTO_PUT_ASIDE', false),
