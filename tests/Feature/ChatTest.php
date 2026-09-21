@@ -5829,3 +5829,64 @@ test('starting an email from the customer record opens an email conversation and
 
     expect(Arr::get($session->fresh()->metadata, 'gmail_thread_id'))->toBe('t9');
 });
+
+test('GetChatCustomerTimeline puts every channel, the orders and what is still owed in one line', function () {
+    $webUser = StoreWebUser::make()->action($this->customer, WebUser::factory()->definition());
+
+    $earlierWebsite = ChatSession::create([
+        'ulid'             => (string) Str::ulid(),
+        'status'           => ChatSessionStatusEnum::CLOSED,
+        'guest_identifier' => 'guest_'.Str::random(5),
+        'language_id'      => 68,
+        'priority'         => ChatPriorityEnum::NORMAL,
+        'shop_id'          => $this->shop->id,
+        'web_user_id'      => $webUser->id,
+        'topic'            => ChatTopicEnum::MISSING_OR_DAMAGED->value,
+        'metadata'         => ['ai_summary' => ['summary' => 'Two candles missing', 'status' => 'resolved']],
+        'created_at'       => now()->subDays(10),
+        'last_visitor_message_at' => now()->subDays(10),
+    ]);
+
+    $channel = MetaChannel::firstOrCreate(['code' => 'whatsapp'], ['name' => 'WhatsApp']);
+
+    $whatsapp = MetaChatSession::create([
+        'ulid'            => (string) Str::ulid(),
+        'meta_channel_id' => $channel->id,
+        'shop_id'         => $this->shop->id,
+        'customer_id'     => $this->customer->id,
+        'phone_number'    => '+628123456789',
+        'status'          => ChatSessionStatusEnum::CLOSED,
+        'language_id'     => 68,
+        'priority'        => ChatPriorityEnum::NORMAL,
+        'created_at'      => now()->subDays(2),
+        'last_visitor_message_at' => now()->subDays(2),
+    ]);
+
+    $current = ChatSession::create([
+        'ulid'             => (string) Str::ulid(),
+        'status'           => ChatSessionStatusEnum::ACTIVE,
+        'guest_identifier' => 'guest_'.Str::random(5),
+        'language_id'      => 68,
+        'priority'         => ChatPriorityEnum::NORMAL,
+        'shop_id'          => $this->shop->id,
+        'web_user_id'      => $webUser->id,
+    ]);
+
+    $unpaidInvoice = \App\Actions\Accounting\Invoice\StoreInvoice::make()
+        ->action($this->customer, \App\Models\Accounting\Invoice::factory()->definition());
+    $unpaidInvoice->update(['pay_status' => \App\Enums\Accounting\Invoice\InvoicePayStatusEnum::UNPAID]);
+
+    $events = collect(GetChatCustomerTimeline::make()->handle($current)['events']);
+
+    $conversations = $events->where('type', 'conversation');
+
+    expect($conversations->pluck('metadata.ulid')->all())->toBe([$whatsapp->ulid, $earlierWebsite->ulid])
+        ->and($conversations->pluck('metadata.channel')->all())->toBe(['whatsapp', 'website'])
+        ->and($conversations->last()['comment'])->toBe('Two candles missing')
+        ->and($events->pluck('metadata.ulid'))->not->toContain($current->ulid)
+        ->and($events->pluck('datetime')->filter()->values()->all())
+        ->toBe($events->pluck('datetime')->filter()->sortDesc()->values()->all());
+
+    expect($events->where('type', 'invoice_open')->pluck('metadata.reference'))
+        ->toContain($unpaidInvoice->reference);
+});

@@ -25,14 +25,18 @@ import {
     faShoppingCart,
     faUndo,
     faStopwatch,
+    faComments,
+    faEnvelopeOpenText,
+    faCommentDots,
+    faFileInvoiceDollar,
 } from '@fal'
 import { useFormatTime } from '@/Composables/useFormatTime'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 
 library.add(
     faUserEdit, faStickyNote, faInboxIn, faPaperPlane, faTimesCircle,
     faMoneyBill, faEnvelope, faCodeBranch, faChevronDown, faChevronUp, faFilter, faGlobe,
-    faEye, faShoppingCart, faUndo
+    faEye, faShoppingCart, faUndo, faComments, faEnvelopeOpenText, faCommentDots, faFileInvoiceDollar
 )
 
 interface NoteImage {
@@ -66,13 +70,14 @@ const activeFilter = ref<string | null>(null)
 const expandedIds = ref<Set<string>>(new Set())
 
 const filterOptions = [
-    { key: null, label: 'All' },
-    { key: 'order', label: 'Orders', types: ['order_placed', 'order_dispatched', 'order_cancelled'] },
-    { key: 'account_update', label: 'Account Changes', types: ['account_update', 'note'] },
-    { key: 'payment', label: 'Payments', types: ['payment'] },
-    { key: 'email', label: 'Emails', types: ['email'] },
-    { key: 'web_activity', label: 'Website Activity', types: ['page_view', 'product_view', 'add_to_basket'] },
-    { key: 'return', label: 'Returns', types: ['return'] },
+    { key: null, label: ctrans('All') },
+    { key: 'conversation', label: ctrans('Conversations'), types: ['conversation'] },
+    { key: 'order', label: ctrans('Orders'), types: ['order_placed', 'order_dispatched', 'order_cancelled'] },
+    { key: 'account_update', label: ctrans('Account Changes'), types: ['account_update', 'note'] },
+    { key: 'payment', label: ctrans('Payments'), types: ['payment', 'invoice_open'] },
+    { key: 'email', label: ctrans('Emails'), types: ['email'] },
+    { key: 'web_activity', label: ctrans('Website Activity'), types: ['page_view', 'product_view', 'add_to_basket'] },
+    { key: 'return', label: ctrans('Returns'), types: ['return'] },
 ]
 
 const colorClasses: Record<string, { bg: string; icon: string }> = {
@@ -84,6 +89,7 @@ const colorClasses: Record<string, { bg: string; icon: string }> = {
     yellow: { bg: 'bg-yellow-100', icon: 'text-yellow-600' },
     teal:   { bg: 'bg-teal-100',   icon: 'text-teal-600' },
     orange: { bg: 'bg-orange-100', icon: 'text-orange-600' },
+    sky:    { bg: 'bg-sky-100',    icon: 'text-sky-600' },
 }
 
 const filteredEvents = computed(() => {
@@ -132,6 +138,12 @@ const hasExpandableData = (event: TimelineEvent): boolean => {
     if (event.type === 'return') {
         return !!(event.metadata?.return_reason || event.metadata?.number_items)
     }
+    if (event.type === 'conversation') {
+        return !!(event.metadata?.summary || event.metadata?.outcome)
+    }
+    if (event.type === 'invoice_open') {
+        return !!event.metadata?.total_amount
+    }
     return false
 }
 
@@ -167,9 +179,9 @@ const formatMetadataValue = (value: unknown): string => {
             <div class="mb-4 animate-pulse">
                 <FontAwesomeIcon :icon="['fal', 'fa-code-branch']" class="text-gray-300 text-5xl" />
             </div>
-            <p class="text-gray-500 text-base font-medium">No activity found</p>
+            <p class="text-gray-500 text-base font-medium">{{ ctrans('No activity found') }}</p>
             <p class="text-gray-400 text-sm mt-1">
-                {{ activeFilter ? 'Try selecting a different filter.' : 'No activity in the last 12 months.' }}
+                {{ activeFilter ? ctrans('Try selecting a different filter.') : ctrans('No activity in the last 12 months.') }}
             </p>
         </div>
 
@@ -258,10 +270,10 @@ const formatMetadataValue = (value: unknown): string => {
                                 </template>
 
                                 <template v-else-if="['page_view', 'product_view'].includes(event.type)">
-                                    <span v-if="event.metadata?.duration_seconds" class="flex gap-2" v-tooltip="trans('Browsed for :_durationSeconds seconds', {_durationSeconds: event.metadata?.duration_seconds})">
+                                    <span v-if="event.metadata?.duration_seconds" class="flex gap-2" v-tooltip="ctrans('Browsed for :_durationSeconds seconds', {_durationSeconds: event.metadata?.duration_seconds})">
                                         <FontAwesomeIcon :icon="faStopwatch" class="self-center" /> 
                                         <span  class="self-center">
-                                            {{ event.metadata?.duration_seconds }} {{ trans('Seconds') }}
+                                            {{ event.metadata?.duration_seconds }} {{ ctrans('Seconds') }}
                                         </span>
                                     </span>
                                 </template>
@@ -326,11 +338,11 @@ const formatMetadataValue = (value: unknown): string => {
                                 <template v-else-if="['page_view', 'product_view'].includes(event.type)">
                                     <div class="space-y-0.5">
                                         <div v-if="event.metadata.duration_seconds" class="flex gap-2">
-                                            <span class="font-medium text-gray-700 w-24 flex-none">{{ trans('Duration') }}:</span>
+                                            <span class="font-medium text-gray-700 w-24 flex-none">{{ ctrans('Duration') }}:</span>
                                             <span>{{ event.metadata.duration_seconds }}s</span>
                                         </div>
                                         <div v-if="event.metadata.page_sub_type" class="flex gap-2">
-                                            <span class="font-medium text-gray-700 w-24 flex-none">{{ trans('Type') }}:</span>
+                                            <span class="font-medium text-gray-700 w-24 flex-none">{{ ctrans('Type') }}:</span>
                                             <span class="capitalize">{{ String(event.metadata.page_sub_type).replace(/_/g, ' ') }}</span>
                                         </div>
                                     </div>
@@ -340,7 +352,7 @@ const formatMetadataValue = (value: unknown): string => {
                                 <template v-else-if="event.type === 'add_to_basket'">
                                     <div class="space-y-0.5">
                                         <div v-if="event.metadata.quantity" class="flex gap-2">
-                                            <span class="font-medium text-gray-700 w-24 flex-none">{{ trans('Quantity') }}:</span>
+                                            <span class="font-medium text-gray-700 w-24 flex-none">{{ ctrans('Quantity') }}:</span>
                                             <span>{{ event.metadata.quantity }}</span>
                                         </div>
                                         <div v-if="event.metadata.product_id" class="flex gap-2">
@@ -350,19 +362,42 @@ const formatMetadataValue = (value: unknown): string => {
                                     </div>
                                 </template>
 
+                                <!-- Conversation: what it was about -->
+                                <template v-else-if="event.type === 'conversation'">
+                                    <div class="space-y-0.5">
+                                        <p v-if="event.metadata.summary" class="whitespace-pre-wrap leading-relaxed">{{ event.metadata.summary }}</p>
+                                        <div v-if="event.metadata.outcome" class="flex gap-2">
+                                            <span class="font-medium text-gray-700 w-24 flex-none">{{ ctrans('Outcome') }}:</span>
+                                            <span class="capitalize">{{ String(event.metadata.outcome).replace(/_/g, ' ') }}</span>
+                                        </div>
+                                        <div v-if="event.metadata.status" class="flex gap-2">
+                                            <span class="font-medium text-gray-700 w-24 flex-none">{{ ctrans('State') }}:</span>
+                                            <span class="capitalize">{{ String(event.metadata.status).replace(/_/g, ' ') }}</span>
+                                        </div>
+                                    </div>
+                                </template>
+
+                                <!-- Open invoice: what is still owed -->
+                                <template v-else-if="event.type === 'invoice_open'">
+                                    <div class="flex gap-2">
+                                        <span class="font-medium text-gray-700 w-24 flex-none">{{ ctrans('Outstanding') }}:</span>
+                                        <span>{{ event.metadata.currency_code }} {{ event.metadata.total_amount }}</span>
+                                    </div>
+                                </template>
+
                                 <!-- Return: reason, items -->
                                 <template v-else-if="event.type === 'return'">
                                     <div class="space-y-0.5">
                                         <div v-if="event.metadata.number_items" class="flex gap-2">
-                                            <span class="font-medium text-gray-700 w-24 flex-none">{{ trans('Items') }}:</span>
+                                            <span class="font-medium text-gray-700 w-24 flex-none">{{ ctrans('Items') }}:</span>
                                             <span>{{ event.metadata.number_items }}</span>
                                         </div>
                                         <div v-if="event.metadata.state" class="flex gap-2">
-                                            <span class="font-medium text-gray-700 w-24 flex-none">{{ trans('State') }}:</span>
+                                            <span class="font-medium text-gray-700 w-24 flex-none">{{ ctrans('State') }}:</span>
                                             <span class="capitalize">{{ String(event.metadata.state).replace(/_/g, ' ') }}</span>
                                         </div>
                                         <div v-if="event.metadata.return_reason" class="flex gap-2 mt-1">
-                                            <span class="font-medium text-gray-700 w-24 flex-none">{{ trans('Reason') }}:</span>
+                                            <span class="font-medium text-gray-700 w-24 flex-none">{{ ctrans('Reason') }}:</span>
                                             <span class="whitespace-pre-wrap">{{ event.metadata.return_reason }}</span>
                                         </div>
                                     </div>

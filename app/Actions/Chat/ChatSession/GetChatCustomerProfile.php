@@ -23,6 +23,7 @@ use App\Enums\CRM\Livechat\ChatTopicEnum;
 use App\Models\Chat\MetaChatSession;
 use App\Models\CRM\Customer;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Collection;
 use App\Models\Ordering\Order;
 
 class GetChatCustomerProfile
@@ -121,6 +122,42 @@ class GetChatCustomerProfile
     }
 
     /**
+     * Every conversation this customer has had with us over the last year on every channel,
+     * newest first, leaving out the one being looked at. WhatsApp lives in its own table, so
+     * the two are read separately and merged. Identity is the customer's own web users and
+     * customer id: an email address a guest typed into the widget is unverified and never
+     * matched on, because the failure mode is showing one person another person's letters.
+     *
+     * @return Collection<int, ChatSession|MetaChatSession>
+     */
+    public function conversationsWith(Customer $customer, ChatSession|MetaChatSession $current): Collection
+    {
+        $columns = ['id', 'ulid', 'topic', 'status', 'metadata', 'created_at', 'closed_at', 'last_visitor_message_at', 'last_agent_message_at'];
+
+        return ChatSession::query()
+            ->whereIn('web_user_id', $customer->webUsers()->select('id'))
+            ->where('is_rubbish', false)
+            ->where('is_spam', false)
+            ->where('created_at', '>=', now()->subYear())
+            ->get([...$columns, 'channel'])
+            ->concat(
+                MetaChatSession::query()
+                    ->where('customer_id', $customer->id)
+                    ->where('is_spam', false)
+                    ->where('created_at', '>=', now()->subYear())
+                    ->get($columns)
+            )
+            ->reject(fn (ChatSession|MetaChatSession $chatSession) => $chatSession->is($current))
+            ->sortByDesc('created_at')
+            ->values();
+    }
+
+    public static function channelOf(ChatSession|MetaChatSession $chatSession): string
+    {
+        return $chatSession instanceof MetaChatSession ? 'whatsapp' : ($chatSession->channel?->value ?? 'website');
+    }
+
+    /**
      * What this customer wrote to us about over the last year, on every channel, leaving out
      * the conversation being looked at: the last few in a line each, and how often each topic
      * came up. Counted from the topic given to each conversation, so it says what happened
@@ -130,25 +167,8 @@ class GetChatCustomerProfile
      */
     public function previousContact(Customer $customer, ChatSession|MetaChatSession $current): array
     {
-        $columns = ['id', 'ulid', 'topic', 'metadata', 'created_at'];
-
-        $chatSessions = ChatSession::query()
-            ->whereIn('web_user_id', $customer->webUsers()->select('id'))
-            ->where('is_rubbish', false)
-            ->where('is_spam', false)
-            ->whereNotNull('topic')
-            ->where('created_at', '>=', now()->subYear())
-            ->get([...$columns, 'channel'])
-            ->concat(
-                MetaChatSession::query()
-                    ->where('customer_id', $customer->id)
-                    ->where('is_spam', false)
-                    ->whereNotNull('topic')
-                    ->where('created_at', '>=', now()->subYear())
-                    ->get($columns)
-            )
-            ->reject(fn (ChatSession|MetaChatSession $chatSession) => $chatSession->is($current))
-            ->sortByDesc('created_at')
+        $chatSessions = $this->conversationsWith($customer, $current)
+            ->filter(fn (ChatSession|MetaChatSession $chatSession) => $chatSession->topic !== null)
             ->values();
 
         $topicLabels = ChatTopicEnum::labels();
@@ -156,7 +176,7 @@ class GetChatCustomerProfile
         return [
             'previous_chats' => $chatSessions->take(3)->map(fn (ChatSession|MetaChatSession $chatSession) => [
                 'ulid'    => $chatSession->ulid,
-                'channel' => $chatSession instanceof MetaChatSession ? 'whatsapp' : ($chatSession->channel?->value ?? 'website'),
+                'channel' => self::channelOf($chatSession),
                 'date'    => $chatSession->created_at?->toIso8601String(),
                 'topic'   => $topicLabels[$chatSession->topic] ?? null,
                 'summary' => Arr::get($chatSession->metadata ?? [], 'ai_summary.summary'),
