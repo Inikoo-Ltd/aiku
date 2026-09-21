@@ -128,7 +128,7 @@ class ProcessInboundEmail
         $attachments = ImportPendingGmailAttachments::make()
             ->download($client, $gmailMessageId, $raw, trusted: (bool) $webUser);
 
-        $pendingAttachments = ImportPendingGmailAttachments::make()->countDeferred($raw, trusted: (bool) $webUser);
+        $pendingAttachments = ImportPendingGmailAttachments::make()->countDeferred($client, $raw, trusted: (bool) $webUser);
 
         $session = $existing
             ? $this->reuseSession($existing, $from, $isAutoReply)

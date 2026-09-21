@@ -5680,3 +5680,47 @@ test('a gmail message the sender has deleted is given up on rather than fetched 
 
     \Illuminate\Support\Facades\Http::assertSentCount(2);
 });
+
+test('a photograph too large for an email arrives as a drive link and is fetched from drive', function () {
+    Bus::fake([\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class]);
+
+    $settings = $this->shop->settings ?? [];
+    $settings['gmail'] = ['email' => 'care@shop.test', 'refresh_token' => \Illuminate\Support\Facades\Crypt::encryptString('rt'), 'history_id' => '1'];
+    $this->shop->update(['settings' => $settings]);
+
+    $encode  = fn (string $value) => rtrim(strtr(base64_encode($value), '+/', '-_'), '=');
+    $jpeg    = base64_decode('/9j/4AAQSkZJRgABAQEAYABgAAD/2wBDAAEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQH/wAALCAABAAEBAREA/8QAFAABAAAAAAAAAAAAAAAAAAAACf/EABQQAQAAAAAAAAAAAAAAAAAAAAD/2gAIAQEAAD8AKp//2Q==');
+
+    $html = '<div>Apologies photos didn\'t attach</div>'
+        .'<a href="https://drive.google.com/file/d/1xVm7efg7RmtSz1EQ8/view">IMG_8872.jpeg</a>'
+        .'<a href="https://drive.google.com/file/d/1GaROJ3DR15p0kXrjv/view">private-notes.txt</a>';
+
+    \Illuminate\Support\Facades\Http::fake([
+        'oauth2.googleapis.com/token'                                   => \Illuminate\Support\Facades\Http::response(['access_token' => 'at']),
+        'www.googleapis.com/drive/v3/files/1xVm7efg7RmtSz1EQ8?alt=media' => \Illuminate\Support\Facades\Http::response($jpeg),
+        'www.googleapis.com/drive/v3/files/1xVm7efg7RmtSz1EQ8*'          => \Illuminate\Support\Facades\Http::response(['name' => 'IMG_8872.jpeg', 'mimeType' => 'image/jpeg', 'size' => '2400000']),
+        // Never shared with us: the link stays in the message and nothing is invented for it.
+        'www.googleapis.com/drive/v3/files/1GaROJ3DR15p0kXrjv*'          => \Illuminate\Support\Facades\Http::response(['error' => ['code' => 404]], 404),
+        'gmail.googleapis.com/gmail/v1/users/me/messages/dr1*'           => \Illuminate\Support\Facades\Http::response([
+            'id'       => 'dr1',
+            'threadId' => 'tdr1',
+            'payload'  => [
+                'mimeType' => 'multipart/alternative',
+                'headers'  => [
+                    ['name' => 'From', 'value' => 'Charlotte <charlotte@example.com>'],
+                    ['name' => 'Subject', 'value' => 'Photos for previous email'],
+                ],
+                'parts'    => [
+                    ['mimeType' => 'text/plain', 'filename' => '', 'body' => ['data' => $encode("Apologies photos didn't attach\n\n[image: Image]\nIMG_8872.jpeg")]],
+                    ['mimeType' => 'text/html', 'filename' => '', 'body' => ['data' => $encode($html)]],
+                ],
+            ],
+        ]),
+        'gmail.googleapis.com/gmail/v1/users/me/labels'                 => \Illuminate\Support\Facades\Http::response(['labels' => [['id' => 'L1', 'name' => 'aiku/unmatched']]]),
+        'gmail.googleapis.com/*'                                        => \Illuminate\Support\Facades\Http::response([]),
+    ]);
+
+    $message = \App\Actions\Comms\Mailbox\ProcessInboundEmail::run($this->shop, 'dr1');
+
+    expect($message->attachedFiles()->pluck('name')->all())->toBe(['IMG_8872.jpeg']);
+});
