@@ -1,62 +1,95 @@
 ---
 title: Talking to customers in Chat
-summary: The live chat desk inside your shop - see visitors writing in from the website, take a conversation, reply with everything you know about the customer at your side, and close it cleanly when it's done.
-date: 2026-08-31
+summary: One inbox for the website chat, WhatsApp and the shop's email - take a conversation, answer with the customer's orders at your side, log a phone call, raise a ticket, and see how the desk is doing.
+date: 2026-09-21
 tags: crm, chat
 category: crm
 help_routes: grp.org.shops.show.chat
 ---
 
 <aside class="tldr">
-Every shop with chat switched on gets a **Chat** section: a dashboard for the numbers, an **Inbox** where agents actually talk to customers, and a **Conversations** archive of everything that has ever been said. A customer types into the little chat bubble on your website; their message lands in the Inbox; someone on your team picks it up and answers in real time. When nobody is online, the widget takes an offline message instead - name, email and question - so nothing is lost overnight.
+<b>Chat</b> is where every customer conversation lands, however it reached us: the chat bubble on the website, <b>WhatsApp</b>, or an <b>email</b> to the shop's mailbox. They sit in one inbox, are answered the same way, and the reply goes back the way the customer came. Beside the conversation you see who they are, what they ordered and what they wrote about last time. A phone call is logged from the same screen, so it is on the customer's record too, and a problem that outlasts the conversation becomes a <b>ticket</b> without retyping it.
 </aside>
 
 ## Where it lives
 
-Open your shop and look for **Chat** in the shop's menu. It has up to four sections:
+Open <b>Chat</b> in the menu of your shop or your organisation. What you see depends on your job position, not on a list somebody keeps by hand:
 
-- **Dashboard** - the health check: how many sessions are active, how many are waiting for someone, how many messages are unread, and how many agents you have.
-- **Agents** - who on your staff is allowed to answer chats. New agents are created here; each one can be given specialities such as sales, billing, support or complaints.
-- **Conversations** - the full archive, every chat that ever happened in this shop, with its status and its history.
-- **Inbox** - the working screen. You only see this entry if you are set up as a chat agent yourself.
+- <b>Customer Inbox</b> - the working screen. You have it if your position is customer service on that shop; that makes you an agent on its website chat, WhatsApp and email at once.
+- <b>Supervision</b> - the same screen for whoever oversees chat: every conversation on the shops they run, whoever is holding it, and the agents down the side with whether they are there and how much they hold. Supervisors and administrators can take over, write in and close any conversation without being routed one.
+- <b>Phone calls</b> - the notes of every call logged on the shops you work.
+- <b>Reports</b> - the figures, for a shop, an organisation or the whole group.
+- <b>Settings</b> - working hours, the mailbox and the channels.
 
-## Taking a chat
+When somebody changes position or leaves, their access follows on its own and the conversations they were holding go back to the shop's queue.
 
-The Inbox splits conversations into three lists: **My Chats** (assigned to you), **Team Chats** (assigned to colleagues - you can still read them, and take over if needed) and **Waiting** (nobody has picked them up yet). A waiting chat shows an **Assign to me** button; click it and the conversation is yours. You can also filter the lists by agent, or switch to the **Highlighted**, **Spam** and **Trash** views.
+## Three channels, one inbox
 
-Once a chat is yours, it works like any messenger: type and **Send**, add an emoji, attach an image or a file (up to five at a time). The customer sees when you are typing, and you see when they are.
+The rail on the left lists your shops with what is <b>waiting</b> and <b>active</b> on each channel. Whoever oversees chat can switch several shops on at once and read them as one list.
 
-Two things make it more than a messenger:
+- <b>Website</b> - the customer types into the bubble on the site. Outside working hours the widget says when you are back and takes a name, an email and a message instead.
+- <b>WhatsApp</b> - messages to the shop's number. See <a href="/docs/connecting-whatsapp-to-your-shop">Connecting WhatsApp to your shop</a>. Our own promotions do not fill the Waiting list.
+- <b>Email</b> - the shop's Gmail mailbox, connected once in the shop's settings; see <a href="/docs/connecting-an-email-mailbox-to-your-shop">Connecting an email mailbox to your shop</a>. An incoming mail opens a conversation and brings the rest of its thread with it, so you read the whole exchange. Your reply leaves from that mailbox, in the same thread, with your signature and your attachments.
 
-- **Translation.** If the customer writes in another language, use **Translate To..** and read the conversation in yours - and your replies can be translated back. Language stops being a reason to pass a chat around.
-- **The customer at your side.** A side panel shows who you are talking to. If they are a known customer you get their profile, order history, invoices, total spend and what is sitting in their basket right now - with a link straight to their full customer page. If they are a guest, you can **sync by email** to connect the chat to their customer record. There is also an **AI Summary** of the conversation so far, with its overall sentiment and key points - handy when you take over a chat mid-stream.
+## Taking a conversation
 
-## Priorities, highlights and housekeeping
+The inbox has two lists, each with its count: <b>My Chats</b> and <b>Colleagues' Chats</b>, the ones somebody else is holding on a shop you also work. Within them, <b>Waiting</b> is what nobody has picked up, <b>Active</b> is in hand and <b>Closed</b> is what was closed today. <b>Assign to me</b> makes a waiting conversation yours; <b>Take Over</b> takes one from a colleague who has gone to lunch.
 
-- Mark a session **urgent** when it needs eyes now; everything else stays normal.
-- **Highlight** a conversation you want to find again easily - it appears in the Highlighted list.
-- **Report spam** moves junk out of the way (and **Not spam** brings back a mistake). **Move to trash** does the same for dead conversations; both can be restored.
-- If a colleague is handling a chat and goes to lunch, **Take Over** reassigns it to you on the spot.
+Then it works like any messenger: type and send, add an emoji, attach as many images or documents as you need. <b>Translate</b> lets you read the customer in your language and answer in theirs.
 
-## When you need more than chat
+A sent message cannot be edited, because the customer already has it. <b>Take back</b> removes it on every channel and tells the customer. <b>Redact</b> strikes selected text - a card number, a password - out of a message for good.
 
-From inside a conversation you can **Share to Slack** - the whole session, or just one message - so a colleague who lives in Slack sees it immediately. You can also **Create a Jira ticket** straight from the chat when the customer has found a real problem that developers need to look at; the ticket carries the context so you don't retype the story. Both need to be configured once in the chat settings before the buttons do anything.
+## The customer at your side
+
+The side panel shows who you are talking to: contact details, last orders, invoices, what is in their basket, and a link to their customer page. Under that are their last three conversations in a line each, and how often each topic came up over twelve months.
+
+Every conversation is given a one-line summary and a <b>topic</b> from a fixed list - where is my order, missing or damaged, return or refund and so on - so you know what the customer wanted before you answer, and the reports can count it.
+
+## Guests who are really customers
+
+Many guests are customers who are simply not logged in. Every guest message is checked against the same shop: the email they gave, an order number they wrote, the number they write from. When something matches, the row says <b>Probably</b> and the customer's name, and the side panel shows what it went on, marked <b>not verified</b>.
+
+It is a suggestion and you decide. Anybody can type somebody else's email, and a linked conversation puts that customer's orders in front of you. <b>Confirm</b> links the conversation; <b>Not them</b> removes the suggestion for good. A customer of a sister shop, or somebody on the same company domain, is shown as a hint that cannot be confirmed.
+
+When nothing identifies a guest who writes like an existing customer, they are asked once, automatically, for the email on their account or an order number. This happens on the website and WhatsApp, never by email.
+
+## Noise
+
+A stranger's first email or WhatsApp message is checked as it arrives, so an automatic report, an out-of-office or a supplier circular is not counted as somebody waiting. A known customer is never checked and nothing is deleted. What is certain - no-reply senders, bounces, mail sent to a list - is put aside into <b>Ignored</b> or <b>Spam</b>, marked as automatic with the reason, and comes back with one click. What is only likely stays in the queue with a <b>Possible noise</b> label. Voicemail notices always stay: that is somebody who rang.
+
+When you put a conversation aside yourself, <b>Ignore as</b> asks for the reason from a short list. <b>Report spam</b> on an email also blocks that sender for the mailbox. Ignore, Spam and Create Ticket belong to whoever holds the conversation; supervisors keep the override.
+
+## Phone calls
+
+The phone button at the top of the inbox logs a call. Press <b>Start Phone Call</b> when you pick up: a timer runs, your colleagues see you are on a call, and no new conversation is handed to you until it ends.
+
+When you hang up, choose the shop, say whether you spoke to a <b>Customer</b> or a <b>Guest</b>, and write what came out of it: what was asked, what you agreed, what happens next. The call cannot be filed without that, because it is what the next agent reads. <b>End call</b> files the notes on the customer's conversation and in <b>Phone calls</b>. <b>Cancel call</b> throws it away and keeps nothing.
+
+A call left running closes on its own after an hour, with a warning ten minutes before. Only a call you ended yourself counts as time on the phone. Call notes are read by the people who work that shop and by those who oversee it. The full guide is <a href="/docs/taking-a-phone-call">Taking a phone call</a>.
+
+## When it needs more than a conversation
+
+- <b>A ticket.</b> <b>&#8942;</b> &rarr; <b>Create Ticket</b> carries the customer, the shop and the conversation with it, and can hold the chat open until the work is done. See <a href="/docs/raising-a-ticket-from-a-chat">Raising a ticket from a chat</a>.
+- <b>A task for a colleague.</b> When another department has to do something, ask them with a task rather than a message that scrolls away. See <a href="/docs/asking-a-colleague-for-something">Asking a colleague for something</a>.
+- <b>Share to Slack</b> sends the conversation, or one message, to a colleague who is there.
 
 ## Ending well
 
-**End chat** closes the session; the customer is told, and the whole conversation is preserved in **Conversations** forever. If they come back with "one more thing", **Reopen** picks up exactly where you left off - the history stays in one thread instead of scattering across new sessions.
+<b>End chat</b> closes the conversation and tells the customer; <b>Reopen</b> picks it up where it stopped. A conversation with a blocking ticket cannot be closed until that ticket is settled. Nothing is ever deleted: a closed conversation stays on the customer's record.
 
-The **Conversations** archive shows every chat with its status - *active*, *waiting*, *resolved*, *transferred*, *closed* - and an **Export** button that downloads filtered sets of past conversations as a spreadsheet, which is useful for reviews of how the team is answering.
+## Reports
 
-## Out of hours
+<b>Chat &rarr; Reports</b> counts the three channels side by side over the period you choose. A conversation is one the customer actually wrote in; a widget somebody opened and left is not counted. It shows what was started, answered and is still open, the time to first reply measured against the hours each agent actually works, a table per agent and per shop, what customers wanted by topic, a year of satisfaction, how often guest suggestions were confirmed or turned down, and how often a noise verdict was reversed.
 
-The website widget knows your working hours. Outside them it tells the customer the team is offline, shows when you are back, and offers a short form - name, email, message. Those offline messages arrive in chat like any other conversation, waiting for the first agent of the morning.
+Because reply time is measured against working hours, each agent's hours in their employee record need to be right.
 
 <aside class="wayfinder"><strong>Where to click in aiku</strong>
 <ul>
-<li><b>Answer customers:</b> your organisation → your shop → <b>Chat → Inbox</b> → pick a chat from <b>Waiting</b> → <b>Assign to me</b> → type and <b>Send</b>.</li>
-<li><b>See the state of play:</b> <b>Chat → Dashboard</b> for active, waiting and unread counts.</li>
-<li><b>Add someone to the team:</b> <b>Chat → Agents</b> → <b>Create CRM Agent</b>.</li>
-<li><b>Look up an old chat:</b> <b>Chat → Conversations</b> → open it, or <b>Export</b> a filtered set.</li>
+<li><b>Answer customers:</b> <b>Chat &rarr; Customer Inbox</b> &rarr; a conversation under <b>Waiting</b> &rarr; <b>Assign to me</b>.</li>
+<li><b>Link a guest:</b> open the conversation &rarr; side panel &rarr; <b>Confirm</b> or <b>Not them</b>.</li>
+<li><b>Log a call:</b> the phone button at the top of the inbox &rarr; <b>Start Phone Call</b> &rarr; notes &rarr; <b>End call</b>.</li>
+<li><b>Raise a ticket:</b> <b>&#8942;</b> &rarr; <b>Create Ticket</b>.</li>
+<li><b>Oversee the desk:</b> <b>Chat &rarr; Supervision</b>.</li>
+<li><b>See the figures:</b> <b>Chat &rarr; Reports</b>.</li>
 </ul>
 </aside>
