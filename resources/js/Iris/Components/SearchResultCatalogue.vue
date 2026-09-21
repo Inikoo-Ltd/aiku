@@ -172,7 +172,7 @@ const getProductPrice = (product: { price?: number | string | null; unit?: strin
 
 <template>
     <div class="relative grid grid-cols-4 h-full min-h-0 w-full col-span-12">
-        <!-- Ribbon: accent bar across the top (matches Luigi's Box) -->
+        <!-- Ribbon: accent bar across the top -->
         <div class="absolute inset-x-0 top-0 h-[6px] z-20 bg-[var(--theme-color-0)]"></div>
 
         <!-- Close button -->

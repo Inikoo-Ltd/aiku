@@ -326,7 +326,7 @@ const gridColsVars = computed(() => {
     }
 })
 
-// Section: quick searches (Luigi's Box lookalike tabs + card rail)
+// Section: quick searches (tabs + card rail)
 type RailItem = InternalFacetItem | InternalCatalogueItem
 
 const activeQuickSearch = ref<'category' | 'department' | 'sub_department' | 'tag' | 'collection'>('category')

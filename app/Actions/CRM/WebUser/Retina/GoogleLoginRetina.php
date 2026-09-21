@@ -11,11 +11,11 @@ namespace App\Actions\CRM\WebUser\Retina;
 use App\Actions\CRM\WebUser\LogWebUserFailLogin;
 use App\Actions\CRM\WebUser\LogWebUserLogin;
 use App\Actions\IrisAction;
+use App\Actions\Traits\WithIrisAuthCookie;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\WebUser;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Validation\Validator;
 use Lorisleiva\Actions\ActionRequest;
@@ -25,6 +25,8 @@ use Google_Client;
 
 class GoogleLoginRetina extends IrisAction
 {
+    use WithIrisAuthCookie;
+
     public function handle(Shop $shop, ActionRequest $request): array|WebUser
     {
         $websiteId = $request->input('website')->id;
@@ -120,7 +122,7 @@ class GoogleLoginRetina extends IrisAction
         if ($language) {
             app()->setLocale($language->code);
         }
-        Cookie::queue('iris_vua', true, config('session.lifetime') * 60);
+        $this->queueIrisAuthCookie();
         return response()->json([
             'logged_in' => true,
         ]);

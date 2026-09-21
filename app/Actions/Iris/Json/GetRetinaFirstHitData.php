@@ -10,13 +10,14 @@ namespace App\Actions\Iris\Json;
 
 use App\Actions\RetinaAction;
 use App\Actions\Traits\HasIrisUserData;
+use App\Actions\Traits\WithIrisAuthCookie;
 use App\Models\Catalogue\Collection;
-use Illuminate\Support\Facades\Cookie;
 use Lorisleiva\Actions\ActionRequest;
 
 class GetRetinaFirstHitData extends RetinaAction
 {
     use HasIrisUserData;
+    use WithIrisAuthCookie;
 
     /**
      * @throws \Psr\Container\ContainerExceptionInterface
@@ -26,9 +27,9 @@ class GetRetinaFirstHitData extends RetinaAction
     {
 
         if (auth()->check()) {
-            Cookie::queue('iris_vua', true, config('session.lifetime') * 60);
+            $this->queueIrisAuthCookie();
         } else {
-            Cookie::queue(Cookie::forget('iris_vua'));
+            $this->forgetIrisAuthCookie();
         }
 
         return $this->getIrisUserData();

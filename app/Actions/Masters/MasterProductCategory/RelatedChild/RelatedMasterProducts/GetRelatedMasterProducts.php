@@ -36,6 +36,12 @@ class GetRelatedMasterProducts
                 'parameters' => [
                     'masterShop' => $masterProductCategory->masterShop->slug,
                 ]
+            ],
+            'route_products_by_codes'     => [
+                'name'       => 'grp.json.master_shop.products_by_codes',
+                'parameters' => [
+                    'masterShop' => $masterProductCategory->masterShop->id,
+                ]
             ]
         ];
     }

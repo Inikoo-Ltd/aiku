@@ -56,7 +56,6 @@ export const retinaLayoutStructure = {
             language_options: {} as { [key: string]: Language },
         },
         is_logged_in: false,
-        iris_search_model: 'internal' as 'luigi' | 'internal',
     },
     iris_variables: {
         cart_count: 0,

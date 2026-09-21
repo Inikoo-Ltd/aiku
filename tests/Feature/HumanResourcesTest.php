@@ -114,6 +114,7 @@ use Illuminate\Support\Facades\Storage;
 use App\Actions\Helpers\Avatars\GetDiceBearAvatar;
 
 use function Pest\Laravel\actingAs;
+use function Pest\Laravel\get;
 
 class CollidingStoreClockingMachineQRCode extends StoreClockingMachineQRCode
 {
@@ -2699,4 +2700,29 @@ test('giving the login back to somebody who left needs a reason, and it lands in
 
     expect($audit->comments)->toBe('Covering the handover until the end of the month')
         ->and($audit->new_values['status'])->toBeTrue();
+});
+
+test('profile timesheets tab returns timesheets beyond today', function () {
+    $employee = Employee::factory()->create([
+        'organisation_id' => $this->organisation->id,
+        'group_id'        => $this->group->id,
+        'state'           => \App\Enums\HumanResources\Employee\EmployeeStateEnum::WORKING,
+        'email'           => 'profile-timesheets-' . uniqid() . '@example.com',
+        'worker_number'   => 'PT' . uniqid(),
+    ]);
+
+    $user = StoreUserFromEmployee::make()->handle($employee, [
+        'username' => 'profile-timesheets-' . $employee->id,
+        'password' => 'secret123',
+    ]);
+
+    StoreTimesheet::make()->action($employee, ['date' => now()]);
+    StoreTimesheet::make()->action($employee, ['date' => now()->subDays(3)]);
+
+    actingAs($user);
+
+    $response = get(route('grp.profile.timesheets.index'), ['Accept' => 'application/json']);
+    $response->assertOk();
+
+    expect($response->json('data'))->toHaveCount(2);
 });
