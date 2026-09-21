@@ -3,7 +3,7 @@ import { Head, router } from '@inertiajs/vue3'
 import TabsScrollable from "@/Components/Navigation/TabsScrollable.vue"
 
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
-import { computed, defineAsyncComponent, inject, onMounted, ref } from 'vue'
+import { computed, defineAsyncComponent, inject, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import type { Component } from 'vue'
 
 import { PageHeadingTypes } from '@/types/PageHeading'
@@ -175,10 +175,35 @@ const onLogoutAuth = () => {
     })
 }
 
+const _tabContent = ref<HTMLElement | null>(null)
+const tabContentHeight = ref<string>('auto')
+
+const fitTabContentToViewport = () => {
+    if (!_tabContent.value) {
+        return
+    }
+
+    const stackedPanelBottomPadding = 24
+    const available = window.innerHeight - _tabContent.value.getBoundingClientRect().top - stackedPanelBottomPadding
+    tabContentHeight.value = `${Math.max(320, available)}px`
+}
+
+watch([currentTab, isTabLoading, headerLayoutVersion], async () => {
+    await nextTick()
+    fitTabContentToViewport()
+})
+
+onBeforeUnmount(() => {
+    window.removeEventListener('resize', fitTabContentToViewport)
+})
+
 onMounted(async () => {
+    window.addEventListener('resize', fitTabContentToViewport)
     await fetchPageHead()
     currentTab.value = props?.data?.currentTab || currentTab.value
     await fetchTabData(currentTab.value)
+    await nextTick()
+    fitTabContentToViewport()
 })
 
 </script>
@@ -196,7 +221,8 @@ onMounted(async () => {
         <div v-if="isTabLoading" class="pt-32 w-full flex justify-center">
             <LoadingIcon size="2x" />
         </div>
-        <div v-else-if="dataTab" :class="isViewportFittedTab ? 'overflow-hidden' : 'pb-16 h-full overflow-auto'">
+        <div v-else-if="dataTab" ref="_tabContent" :style="{ height: tabContentHeight }"
+            :class="isViewportFittedTab ? 'overflow-hidden' : 'pb-16 overflow-y-auto'">
             <component :is="component" :data="dataTab" :tab="currentTab" v-bind="isViewportFittedTab ? { layoutVersion: headerLayoutVersion } : {}" />
         </div>
         <div v-else class="h-full w-full flex items-center justify-center text-gray-400 italic">
