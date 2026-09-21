@@ -5647,7 +5647,10 @@ test('a phone call takes the agent out of the rota, is filed only against their 
     ]);
 
     expect(\App\Actions\Chat\PhoneCall\AutoCloseStaleChatPhoneCalls::run())->toBe(1)
-        ->and($stale->fresh()->status)->toBe(\App\Enums\CRM\Livechat\ChatPhoneCallStatusEnum::AUTO_CLOSED);
+        ->and($stale->fresh()->status)->toBe(\App\Enums\CRM\Livechat\ChatPhoneCallStatusEnum::AUTO_CLOSED)
+        ->and($stale->fresh()->duration_seconds)->toBeNull()
+        ->and((int) \App\Models\Chat\ChatPhoneCall::where('chat_agent_id', $agent->id)->sum('duration_seconds'))
+        ->toBe((int) \App\Models\Chat\ChatPhoneCall::where('chat_agent_id', $agent->id)->where('status', \App\Enums\CRM\Livechat\ChatPhoneCallStatusEnum::COMPLETED)->sum('duration_seconds'));
 
     $this->get(route('grp.chat.phone_calls.index'))->assertForbidden();
 

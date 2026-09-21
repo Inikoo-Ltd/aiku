@@ -96,7 +96,9 @@ trait WithChatPhoneCall
         $call->update(array_merge($attributes, [
             'status'           => $status,
             'ended_at'         => $endedAt,
-            'duration_seconds' => (int) $call->started_at->diffInSeconds($endedAt, absolute: true),
+            'duration_seconds' => $status === ChatPhoneCallStatusEnum::COMPLETED
+                ? (int) $call->started_at->diffInSeconds($endedAt, absolute: true)
+                : null,
         ]));
 
         return $call->refresh();
