@@ -11,6 +11,7 @@ import { Colors } from "@/types/Color"
 import { ref } from "vue"
 import { useColorTheme } from "@/Composables/useStockList"
 import { useFamilyPageBasket } from "@/Composables/useFamilyPageBasket"
+import { resolveIsLoggedIn } from "@/Composables/irisAuthFlag"
 
 
 interface User {
@@ -66,7 +67,7 @@ export const useIrisLayoutStore = defineStore("irisLayout", () => {
 		isFetching: false,
 	}
 	const iris = {
-		is_logged_in: getLocalStorage().is_logged_in || false,
+		is_logged_in: resolveIsLoggedIn(getLocalStorage().is_logged_in),
 	}
 	const iris_variables = getLocalStorage().iris_variables || {}
 	const offer_meters = getLocalStorage().offer_meters || {}
