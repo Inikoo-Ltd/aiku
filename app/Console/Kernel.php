@@ -1080,6 +1080,15 @@ class Kernel extends ConsoleKernel
                 type: 'command',
                 scheduledAt: now()->format('H:i')
             );
+
+            $this->logSchedule(
+                $schedule->command('chat:alert-unclaimed')->everyFiveMinutes()->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
+                    monitorSlug: 'AlertUnclaimedChatSessions',
+                ),
+                name: 'AlertUnclaimedChatSessions',
+                type: 'command',
+                scheduledAt: now()->format('H:i')
+            );
         }
     }
 

@@ -277,6 +277,14 @@ trait WithChatAgentAuthorisation
             ->pluck('id')
             ->all();
 
+        // The unclaimed queue is deliberately not scoped to the shops this person works. A
+        // conversation reaching a queue nobody watching could answer is the whole failure it
+        // exists to catch, so it is the group's queue and anybody who works chat at all sees
+        // every conversation in it, whichever shop or organisation it arrived on.
+        if (!empty($filters['unclaimed']) && $filters['allowed_shop_ids'] !== []) {
+            unset($filters['allowed_shop_ids']);
+        }
+
         return $filters;
     }
 

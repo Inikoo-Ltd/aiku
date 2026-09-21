@@ -15,6 +15,7 @@ use App\Enums\Helpers\Ticket\TicketStatusEnum;
 use App\Enums\CRM\Livechat\ChatSessionStatusEnum;
 use App\Http\Resources\CRM\Livechat\ChatSessionListResource;
 use App\Actions\Chat\WithChatAgentAuthorisation;
+use App\Actions\Chat\WithUnclaimedChatSessions;
 use App\Models\Chat\ChatAgent;
 use App\Models\Chat\ChatSession;
 use App\Models\SysAdmin\User;
@@ -27,6 +28,7 @@ class GetChatSessions
 {
     use AsAction;
     use WithChatAgentAuthorisation;
+    use WithUnclaimedChatSessions;
 
     public function rules(): array
     {
@@ -46,6 +48,7 @@ class GetChatSessions
             'is_spam'         => ['sometimes', 'boolean'],
             'is_rubbish'      => ['sometimes', 'boolean'],
             'highlighted'     => ['sometimes', 'boolean'],
+            'unclaimed'       => ['sometimes', 'boolean'],
             'trashed'         => ['sometimes', 'boolean'],
             'limit'           => ['sometimes', 'integer', 'min:1', 'max:50'],
             'web_user_id'     => ['sometimes', 'integer', 'exists:web_users,id'],
@@ -178,13 +181,19 @@ class GetChatSessions
             $query->whereIn('shop_id', $spamAgent ? $this->shopIdsWorkedBy((int) $filters['assigned_to_me']) : []);
         }
 
+        // The unclaimed queue is the whole group's, so it takes no status, no my/team and no
+        // shop: which shops the person asking works is exactly what let these go unanswered.
+        if (!empty($filters['unclaimed'])) {
+            $this->scopeUnclaimedChatSessions($query);
+        }
+
         // Highlight view is additive: it keeps the normal status/assignment filters
         // (waiting/active/closed + my/team) and just restricts to highlighted sessions.
         if (!empty($filters['highlighted'])) {
             $query->where('is_highlighted', true);
         }
 
-        if (!$isSpamView && !$isTrashView && !empty($filters['assigned_to_me'])) {
+        if (!$isSpamView && !$isTrashView && empty($filters['unclaimed']) && !empty($filters['assigned_to_me'])) {
             $userId       = (int) $filters['assigned_to_me'];
             $currentAgent = $this->getCurrentAgent($userId);
 

@@ -5890,3 +5890,116 @@ test('GetChatCustomerTimeline puts every channel, the orders and what is still o
     expect($events->where('type', 'invoice_open')->pluck('metadata.reference'))
         ->toContain($unpaidInvoice->reference);
 });
+
+test('a conversation nobody has taken past its channel time joins the group queue, and a held or fresh one does not', function () {
+    \Illuminate\Support\Facades\Http::fake();
+
+    config([
+        'chat.unclaimed.after_seconds.email'    => 7200,
+        'chat.unclaimed.after_seconds.website'  => 120,
+        'chat.unclaimed.after_seconds.whatsapp' => 1800,
+    ]);
+
+    $stale = noiseTestEmailSession($this->shop, 'waited@example.com', 'Nobody answered', 'Where is my order');
+    $stale->update(['last_visitor_message_at' => now()->subHours(3)]);
+
+    $fresh = noiseTestEmailSession($this->shop, 'justnow@example.com', 'Just arrived', 'Where is my order');
+    $fresh->update(['last_visitor_message_at' => now()->subMinutes(5)]);
+
+    $held = noiseTestEmailSession($this->shop, 'taken@example.com', 'Being answered', 'Where is my order');
+    $held->update(['last_visitor_message_at' => now()->subHours(3)]);
+
+    $agent = ChatAgent::firstOrCreate(
+        ['user_id' => $this->user->id],
+        [
+            'max_concurrent_chats' => 5,
+            'language_id'          => 68,
+            'is_online'            => true,
+            'is_available'         => true,
+            'current_chat_count'   => 0,
+        ]
+    );
+
+    $held->assignments()->create([
+        'chat_agent_id' => $agent->id,
+        'status'        => ChatAssignmentStatusEnum::ACTIVE,
+        'assigned_by'   => ChatAssignmentAssignedByEnum::SYSTEM,
+        'assigned_at'   => now(),
+    ]);
+
+    // A widget opened and abandoned without a word: 4,115 of these sit in `waiting` on
+    // production, and counting them would make every number here nonsense.
+    $empty = ChatSession::create([
+        'ulid'                    => (string) Str::ulid(),
+        'status'                  => ChatSessionStatusEnum::WAITING,
+        'channel'                 => ChatChannelEnum::WEBSITE,
+        'shop_id'                 => $this->shop->id,
+        'guest_identifier'        => 'guest_'.Str::random(5),
+        'last_visitor_message_at' => now()->subDays(2),
+    ]);
+
+    $queue = collect(GetChatSessions::make()->handle(['unclaimed' => true])->items())->pluck('id')->all();
+
+    expect($queue)->toContain($stale->id)
+        ->and($queue)->not->toContain($fresh->id)
+        ->and($queue)->not->toContain($held->id)
+        ->and($queue)->not->toContain($empty->id);
+});
+
+test('the unclaimed queue is the whole group\'s, not the shops the person asking works', function () {
+    \Illuminate\Support\Facades\Http::fake();
+
+    config(['chat.unclaimed.after_seconds.email' => 7200]);
+
+    [, , $otherShop] = createOwnShop('unclaimed-other-shop');
+
+    $foreign = noiseTestEmailSession($otherShop, 'bulgaria@example.com', 'Nobody watching', 'Where is my order');
+    $foreign->update(['last_visitor_message_at' => now()->subHours(3)]);
+
+    $action = GetChatSessions::make();
+    $user   = $this->user;
+
+    $scopeFor = fn (array $filters) => (function (array $filters) use ($user) {
+        return $this->chatFiltersScopedTo($user, $filters);
+    })->call($action, $filters);
+
+    expect($scopeFor(['unclaimed' => true]))->not->toHaveKey('allowed_shop_ids')
+        ->and($scopeFor([]))->toHaveKey('allowed_shop_ids');
+
+    $queue = collect($action->handle($scopeFor(['unclaimed' => true]))->items())->pluck('id')->all();
+
+    expect($queue)->toContain($foreign->id);
+});
+
+test('the unclaimed alert reports the backlog once and stays quiet until it changes', function () {
+    \Illuminate\Support\Facades\Http::fake();
+
+    config([
+        'chat.unclaimed.after_seconds.email' => 7200,
+        'chat.unclaimed.slack_channel'       => null,
+    ]);
+
+    \Illuminate\Support\Facades\Cache::forget('chat:unclaimed:last-alerted');
+
+    $stale = noiseTestEmailSession($this->shop, 'unanswered@example.com', 'Nobody answered', 'Where is my order');
+    $stale->update(['last_visitor_message_at' => now()->subHours(3)]);
+
+    $first = \App\Actions\Chat\AlertUnclaimedChatSessions::make()->handle();
+
+    expect($first['total'])->toBeGreaterThanOrEqual(1)
+        ->and($first['by_shop'])->toHaveKey($this->shop->name)
+        ->and($first['oldest_minutes'])->toBeGreaterThanOrEqual(180);
+
+    $signature = \Illuminate\Support\Facades\Cache::get('chat:unclaimed:last-alerted');
+
+    \App\Actions\Chat\AlertUnclaimedChatSessions::make()->handle();
+
+    expect(\Illuminate\Support\Facades\Cache::get('chat:unclaimed:last-alerted'))->toBe($signature);
+
+    $another = noiseTestEmailSession($this->shop, 'also@example.com', 'Also nobody', 'Where is my order');
+    $another->update(['last_visitor_message_at' => now()->subHours(3)]);
+
+    \App\Actions\Chat\AlertUnclaimedChatSessions::make()->handle();
+
+    expect(\Illuminate\Support\Facades\Cache::get('chat:unclaimed:last-alerted'))->not->toBe($signature);
+});

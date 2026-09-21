@@ -17,7 +17,7 @@ import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import Dialog from "primevue/dialog"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faSearch, faTimes } from "@far"
-import { faCog, faStar, faAngleLeft, faAngleRight, faAngleDown, faFilter, faStoreAlt, faGlobe, faPlus, faEnvelope, faArchive, faPhone } from "@fal"
+import { faCog, faStar, faAngleLeft, faAngleRight, faAngleDown, faFilter, faStoreAlt, faGlobe, faPlus, faEnvelope, faArchive, faPhone, faBell } from "@fal"
 import { faEllipsisVertical, faBan, faRotateLeft, faTrash, faTrashArrowUp, faAnglesUp, faAngleUp, faEquals, faChevronRight, faStar as faStarSolid, faCircleCheck } from "@fortawesome/free-solid-svg-icons"
 import { faWhatsapp } from "@fortawesome/free-brands-svg-icons"
 import { formatChatTime, formatChatAge } from "@/Composables/chatTime"
@@ -185,9 +185,15 @@ const rubbishView = ref(false)
 const trashView = ref(false)
 const highlightView = ref(false)
 
+// Nobody has taken these, past the time agreed for their channel. The group's queue, not this
+// agent's: which shops somebody works is exactly what let last week's chats go unanswered, so
+// it spans every shop and every channel and carries no my/team of its own.
+const unclaimedView = ref(false)
+const unclaimedCount = ref(0)
+
 // The list header already names the shop; only the views that span shops need it repeated
 // on the conversation.
-const crossShopView = computed(() => trashView.value || rubbishView.value || spamView.value || highlightView.value)
+const crossShopView = computed(() => trashView.value || rubbishView.value || spamView.value || highlightView.value || unclaimedView.value)
 
 const openMenuUlid = ref<string | null>(null)
 const menuPos = ref({ top: 0, left: 0 })
@@ -482,7 +488,7 @@ const isCellOn = (shopId: number, channelKey: string, kind: ChatKind) =>
 // not the same as wanting both channels from both.
 const selectCell = (shopId: number, channelKey: string, kind: ChatKind) => {
     const key = cellKey(channelKey, kind)
-    const alreadyShowing = selectedShopIds.value.includes(shopId) && !agentView.value && !spamView.value && !trashView.value && !highlightView.value
+    const alreadyShowing = selectedShopIds.value.includes(shopId) && !agentView.value && !spamView.value && !trashView.value && !highlightView.value && !unclaimedView.value
     const sameShop = alreadyShowing && (selectedShopId.value === shopId || selectedShopIds.value.length > 1)
 
     if (!sameShop) {
@@ -490,6 +496,7 @@ const selectCell = (shopId: number, channelKey: string, kind: ChatKind) => {
         rubbishView.value = false
         trashView.value = false
         highlightView.value = false
+        unclaimedView.value = false
         setShop(shopId)
         selectedCells.value = [key]
         afterSelectionChanged()
@@ -519,24 +526,26 @@ const buildParams = (page: number) => ({
             ? { is_rubbish: 1 }
             : spamView.value
                 ? { is_spam: 1 }
-                : highlightView.value
-                    ? { highlighted: 1, statuses: selectedStatuses.value }
-                    : { statuses: selectedStatuses.value }),
-    ...(listIsMine.value ? { assigned_to_me: myAgentId } : {}),
+                : unclaimedView.value
+                    ? { unclaimed: 1 }
+                    : highlightView.value
+                        ? { highlighted: 1, statuses: selectedStatuses.value }
+                        : { statuses: selectedStatuses.value }),
+    ...(listIsMine.value && !unclaimedView.value ? { assigned_to_me: myAgentId } : {}),
     ...(selectedAgentIds.value.length ? { agent_ids: selectedAgentIds.value } : {}),
     page,
-    ...(selectedShopIds.value.length && !highlightView.value && !agentView.value
+    ...(selectedShopIds.value.length && !highlightView.value && !unclaimedView.value && !agentView.value
         ? { shop_ids: selectedShopIds.value }
         : {}),
-    ...(selectedCells.value.length && !agentView.value ? { pairs: selectedCells.value } : {}),
-    ...(viewMode.value === "team" && listIsMine.value ? { view_team: 1 } : {}),
+    ...(selectedCells.value.length && !agentView.value && !unclaimedView.value ? { pairs: selectedCells.value } : {}),
+    ...(viewMode.value === "team" && listIsMine.value && !unclaimedView.value ? { view_team: 1 } : {}),
     ...(searchQuery.value.trim() ? { search: searchQuery.value.trim() } : {}),
 })
 
 // Spam, trash and highlight are cross-channel clean-up views, so they read from the
 // merged endpoint instead of whichever channel happens to be selected.
 const isMergedView = computed(() =>
-    spamView.value || rubbishView.value || trashView.value || highlightView.value || agentView.value
+    spamView.value || rubbishView.value || trashView.value || highlightView.value || unclaimedView.value || agentView.value
     || selectedShopIds.value.length > 1
 )
 
@@ -744,8 +753,8 @@ const revealViewFor = (contact: Contact): void => {
 }
 
 const matchesCurrentView = (c: Contact) =>
-    (spamView.value || trashView.value ? true : selectedStatuses.value.includes(c.status as ChatStatus)) &&
-    (highlightView.value || agentView.value || !selectedShopIds.value.length
+    (spamView.value || trashView.value || unclaimedView.value ? true : selectedStatuses.value.includes(c.status as ChatStatus)) &&
+    (highlightView.value || unclaimedView.value || agentView.value || !selectedShopIds.value.length
         || (c.shop?.id && selectedShopIds.value.includes(c.shop.id))) &&
     (!selectedAgentIds.value.length ||
         (c.agent?.id && selectedAgentIds.value.includes(c.agent.id)))
@@ -810,6 +819,7 @@ const selectChannel = (shopId: number, channelKey: string) => {
     rubbishView.value = false
     trashView.value = false
     highlightView.value = false
+    unclaimedView.value = false
     setShop(shopId)
     selectedCells.value = [cellKey(channelKey, "customer"), cellKey(channelKey, "guest")]
     afterSelectionChanged()
@@ -838,6 +848,7 @@ const selectRubbish = () => {
     spamView.value = false
     trashView.value = false
     highlightView.value = false
+    unclaimedView.value = false
     setShop(null)
     selectedCells.value = []
     selectedSession.value = null
@@ -853,6 +864,7 @@ const selectSpam = () => {
     rubbishView.value = false
     trashView.value = false
     highlightView.value = false
+    unclaimedView.value = false
     setShop(null)
     selectedCells.value = []
     selectedSession.value = null
@@ -868,6 +880,25 @@ const selectTrash = () => {
     rubbishView.value = false
     spamView.value = false
     highlightView.value = false
+    unclaimedView.value = false
+    setShop(null)
+    selectedCells.value = []
+    selectedSession.value = null
+    messages.value = []
+    newChatVisible.value = false
+    clearAgentFilter()
+    reloadContacts()
+}
+
+// Taking one out of here is answering it: the row leaves the queue as soon as somebody holds
+// it, so the list is reloaded rather than trusted after any action.
+const selectUnclaimed = () => {
+    if (unclaimedView.value) return
+    unclaimedView.value = true
+    highlightView.value = false
+    rubbishView.value = false
+    spamView.value = false
+    trashView.value = false
     setShop(null)
     selectedCells.value = []
     selectedSession.value = null
@@ -1102,6 +1133,7 @@ const fetchInboxNotifications = async () => {
     try {
         const { data } = await axios.get(`${baseUrl}/app/api/chats/users/${myAgentId}/agent-notifications`)
         teamUnreadByShop.value = data?.data?.team_unread ?? {}
+        unclaimedCount.value = data?.data?.unclaimed ?? 0
     } catch (e) {
         // silent — badges are non-critical
     }
@@ -1670,6 +1702,26 @@ onUnmounted(() => {
                 </div>
             </div>
 
+            <!-- Unclaimed: the group's queue, shown to everybody including whoever only oversees -->
+            <div class="border-t border-gray-200 py-1">
+                <button type="button" @click="selectUnclaimed"
+                    v-tooltip="ctrans('Nobody has taken these yet, on any shop')"
+                    class="w-full flex items-center text-sm transition-colors"
+                    :class="[
+                        inboxRailCollapsed ? 'justify-center py-2.5' : 'gap-2.5 px-3 py-2',
+                        unclaimedView ? 'font-medium text-gray-800' : 'text-gray-600 hover:bg-gray-100',
+                    ]"
+                    :style="unclaimedView ? selectedItemStyle : {}">
+                    <FontAwesomeIcon :icon="faBell" class="text-sm shrink-0"
+                        :class="unclaimedCount ? 'text-red-500' : unclaimedView ? 'text-gray-600' : ''" />
+                    <span v-if="!inboxRailCollapsed" class="flex-1 text-left">{{ ctrans("Unclaimed") }}</span>
+                    <span v-if="unclaimedCount"
+                        class="text-[10px] font-semibold rounded-full px-1.5 py-0.5 bg-red-500 text-white shrink-0">
+                        {{ unclaimedCount }}
+                    </span>
+                </button>
+            </div>
+
             <!-- Spam -->
             <div v-if="!isReadOnly" class="border-t border-gray-200 py-1">
                 <button type="button" @click="selectSpam"
@@ -1729,18 +1781,21 @@ onUnmounted(() => {
             <div class="px-3 py-2.5 border-b flex items-center justify-between gap-2">
                 <div class="min-w-0 flex-1">
                     <div class="text-sm font-semibold text-gray-800 truncate mb-1.5">
-                        {{ trashView ? ctrans("Trash") : rubbishView ? ctrans("Ignored") : spamView ? ctrans("Spam") : highlightView ? ctrans("Highlighted") : agentView ? (pickedAgentName ?? ctrans("Inbox")) : selectedShopIds.length > 1 ? ctrans("Selected shops") : (selectedInbox?.name ?? ctrans("Inbox")) }}
+                        {{ trashView ? ctrans("Trash") : rubbishView ? ctrans("Ignored") : spamView ? ctrans("Spam") : unclaimedView ? ctrans("Unclaimed") : highlightView ? ctrans("Highlighted") : agentView ? (pickedAgentName ?? ctrans("Inbox")) : selectedShopIds.length > 1 ? ctrans("Selected shops") : (selectedInbox?.name ?? ctrans("Inbox")) }}
                     </div>
                     <div v-if="agentView" class="text-[11px] text-gray-500">
                         {{ ctrans("Across every shop") }}
                     </div>
+                    <div v-else-if="unclaimedView" class="text-[11px] text-gray-500">
+                        {{ ctrans("Every shop, waiting longer than agreed") }}
+                    </div>
                     <div v-else-if="selectedShopIds.length > 1" class="text-[11px] text-gray-500">
                         {{ selectedShopIds.length }} {{ ctrans("shops, every channel") }}
                     </div>
-                    <div v-else-if="supervisor && !spamView && !trashView" class="text-[11px] text-gray-500">
+                    <div v-else-if="supervisor && !spamView && !trashView && !unclaimedView" class="text-[11px] text-gray-500">
                         {{ ctrans("Everybody's conversations") }}
                     </div>
-                    <div v-else-if="!spamView && !trashView && !isReadOnly" class="inline-flex items-center bg-gray-100 rounded-lg p-0.5 text-[11px]">
+                    <div v-else-if="!spamView && !trashView && !unclaimedView && !isReadOnly" class="inline-flex items-center bg-gray-100 rounded-lg p-0.5 text-[11px]">
                         <button type="button" class="px-2.5 py-1 rounded-md transition-all whitespace-nowrap shrink-0"
                             :class="viewMode === 'my' ? 'bg-white shadow-sm text-gray-800 font-semibold' : 'text-gray-500 hover:text-gray-700'"
                             @click="viewMode = 'my'">
@@ -1824,7 +1879,7 @@ onUnmounted(() => {
             </div>
 
             <!-- Status capsules: any combination, never none -->
-            <div v-if="!spamView && !trashView" class="px-3 py-2 border-b">
+            <div v-if="!spamView && !trashView && !unclaimedView" class="px-3 py-2 border-b">
                 <div class="flex items-center gap-1.5 text-xs">
                     <button v-for="capsule in statusCapsules" :key="capsule.key" type="button"
                         v-tooltip="ctrans('Show or hide these, at least one stays on')"
@@ -1888,7 +1943,7 @@ onUnmounted(() => {
                                     </span>
                                 </div>
                                 <div class="flex items-center gap-2 text-[10px] text-gray-400 min-w-0">
-                                    <span v-if="(spamView || trashView || highlightView || agentView || selectedShopIds.length > 1) && c.shop?.name"
+                                    <span v-if="(spamView || trashView || highlightView || unclaimedView || agentView || selectedShopIds.length > 1) && c.shop?.name"
                                         class="flex items-center gap-1 min-w-0 truncate">
                                         <FontAwesomeIcon :icon="faStoreAlt" class="text-[9px] shrink-0" />
                                         <span class="truncate">{{ c.shop.name }}</span>
