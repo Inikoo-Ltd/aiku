@@ -91,7 +91,11 @@ class GetCrossChannelSessions
             ->concat(
                 collect($meta?->items() ?? [])->map(fn ($session) => ['channel' => 'whatsapp', 'session' => $session])
             )
-            ->sortByDesc(fn (array $row) => $this->lastActivityAt($row['session']))
+            ->sortBy(
+                fn (array $row) => $this->lastActivityAt($row['session']),
+                SORT_REGULAR,
+                !GetChatSessions::oldestFirst($filters)
+            )
             ->values();
 
         return [

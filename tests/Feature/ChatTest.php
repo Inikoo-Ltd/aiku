@@ -4584,9 +4584,9 @@ test('overseeing chat has its own page, scoped to the address, showing everybody
         'topMenu.subSections'
     ))->pluck('route.name')->all();
 
-    expect($tabs(false, true))->toBe(['grp.org.chat.supervision', 'grp.org.chat.reports', 'grp.org.chat.settings'])
-        ->and($tabs(true, false))->toBe(['grp.org.chat.inbox', 'grp.org.chat.reports', 'grp.org.chat.settings'])
-        ->and($tabs(true, true))->toBe(['grp.org.chat.inbox', 'grp.org.chat.supervision', 'grp.org.chat.reports', 'grp.org.chat.settings']);
+    expect($tabs(false, true))->toBe(['grp.org.chat.supervision', 'grp.org.chat.phone_calls.index', 'grp.org.chat.reports', 'grp.org.chat.settings'])
+        ->and($tabs(true, false))->toBe(['grp.org.chat.inbox', 'grp.org.chat.phone_calls.index', 'grp.org.chat.reports', 'grp.org.chat.settings'])
+        ->and($tabs(true, true))->toBe(['grp.org.chat.inbox', 'grp.org.chat.supervision', 'grp.org.chat.phone_calls.index', 'grp.org.chat.reports', 'grp.org.chat.settings']);
 
     $assignment->forceDelete();
     foreach ([$held, $loose] as $session) {
@@ -4612,6 +4612,11 @@ test('a list of conversations only ever holds shops the person asking may look a
         'message_type'    => ChatMessageTypeEnum::TEXT,
         'sender_type'     => ChatSenderTypeEnum::GUEST,
     ]);
+
+    // The queue is worked oldest first, so what this test looks for has to be old enough to be
+    // on the first page of everything the rest of the file has left lying about.
+    $session->update(['created_at' => now()->subYear()]);
+    $session->messages()->update(['created_at' => now()->subYear()]);
 
     $outsider = User::factory()->create(['group_id' => $this->organisation->group_id, 'status' => true]);
 
@@ -4945,8 +4950,8 @@ test('GetChatSessions limits the list to the shops asked for', function () {
             'priority'         => ChatPriorityEnum::NORMAL,
             'shop_id'          => $shopId,
             'ai_model_version' => 'default',
-            'created_at'       => now(),
-            'updated_at'       => now(),
+            'created_at'       => now()->subYear(),
+            'updated_at'       => now()->subYear(),
         ]);
 
         ChatMessage::create([
@@ -4954,8 +4959,8 @@ test('GetChatSessions limits the list to the shops asked for', function () {
             'message_type'    => ChatMessageTypeEnum::TEXT->value,
             'sender_type'     => ChatSenderTypeEnum::GUEST->value,
             'message_text'    => 'hello',
-            'created_at'      => now(),
-            'updated_at'      => now(),
+            'created_at'      => now()->subYear(),
+            'updated_at'      => now()->subYear(),
         ]);
 
         return $session;
@@ -5146,6 +5151,29 @@ test('machine mail from a stranger is put aside by rule without asking the model
         ->and($newsletter->rubbish_reason)->toBe('marketing')
         ->and(\App\Actions\Chat\ChatSession\ClassifyChatSessionNoise::make()->verdictByRules($voicemail))->toBeNull()
         ->and(\App\Actions\Chat\ChatSession\ClassifyChatSessionNoise::forList($dmarc)['automatic'])->toBeTrue();
+});
+
+test('the waiting queue is worked oldest first and the bins are still newest first', function () {
+    \Illuminate\Support\Facades\Http::fake();
+
+    $oldest = noiseTestEmailSession($this->shop, 'first@example.com', 'Waited longest', 'Where is my order');
+    $newest = noiseTestEmailSession($this->shop, 'third@example.com', 'Just arrived', 'Where is my order');
+
+    $oldest->messages()->update(['created_at' => now()->subDays(4)]);
+    $newest->messages()->update(['created_at' => now()->subMinutes(2)]);
+
+    $queue = fn (array $filters) => collect(GetChatSessions::make()->handle(array_merge(['shop_id' => $this->shop->id], $filters))->items())
+        ->pluck('id')->all();
+
+    $waiting = $queue(['statuses' => ['waiting']]);
+
+    $oldest->update(['is_rubbish' => true, 'rubbish_at' => now()]);
+    $newest->update(['is_rubbish' => true, 'rubbish_at' => now()]);
+
+    $bin = $queue(['is_rubbish' => true]);
+
+    expect(array_search($oldest->id, $waiting, true))->toBeLessThan(array_search($newest->id, $waiting, true))
+        ->and(array_search($newest->id, $bin, true))->toBeLessThan(array_search($oldest->id, $bin, true));
 });
 
 test('an out of office is put aside in any language and whoever owns the mailbox', function () {

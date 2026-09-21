@@ -129,7 +129,7 @@ class GetMetaChatSessions
                         ->whereNotIn('status', [TicketStatusEnum::RESOLVED->value, TicketStatusEnum::CANCELLED->value]);
                 },
             ])
-            ->orderByRaw('COALESCE(last_visitor_message_at, last_agent_message_at, created_at) DESC');
+            ->orderByRaw('COALESCE(last_visitor_message_at, last_agent_message_at, created_at) '.(GetChatSessions::oldestFirst($filters) ? 'ASC' : 'DESC'));
 
         $requestedStatuses = (array) ($filters['statuses'] ?? (isset($filters['status']) ? [$filters['status']] : []));
 

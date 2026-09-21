@@ -78,6 +78,19 @@ class GetChatSessions
         return $this->handle($filters);
     }
 
+    /**
+     * A queue is worked from the top, so the conversation that has been waiting longest belongs
+     * there: newest first is how a chat from Monday goes untouched for four days while one that
+     * arrived after it is answered in two minutes.
+     *
+     * The bins are the other way round. Nobody works through spam, rubbish or the trash; they
+     * are looked at to find what landed there a moment ago.
+     */
+    public static function oldestFirst(array $filters): bool
+    {
+        return empty($filters['is_spam']) && empty($filters['is_rubbish']) && empty($filters['trashed']);
+    }
+
     public function handle(array $filters = [])
     {
 
@@ -110,7 +123,7 @@ class GetChatSessions
                 },
             ])
             ->withLastMessageTime()
-            ->orderBy('last_message_at', 'desc');
+            ->orderBy('last_message_at', self::oldestFirst($filters) ? 'asc' : 'desc');
 
 
         if (array_key_exists('allowed_shop_ids', $filters)) {
