@@ -4208,3 +4208,26 @@ test('discontinued products are removed from baskets only when run live, submitt
         ->and(Transaction::find($submittedLine->id))->not->toBeNull()
         ->and(RemoveDiscontinuedProductsFromBaskets::run($this->shop, false))->toBe(0);
 });
+
+test('a packed order shipped by us offers the invoice button once the packer recorded parcels', function () {
+    $customer = freshCustomerLike($this->shop, $this->customer);
+    $order    = StoreOrder::make()->action($customer, Order::factory()->definition());
+    /** These tests are about the invoice button, not shipping: the zones earlier tests in this file create are random */
+    $order->update(['shipping_engine' => \App\Enums\Ordering\Order\OrderShippingEngineEnum::MANUAL]);
+    StoreTransaction::make()->action($order, $this->product->currentHistoricProduct, Transaction::factory()->definition());
+    SubmitOrder::make()->action($order);
+    $order->refresh();
+    $order->update(['pay_status' => OrderPayStatusEnum::PAID]);
+
+    $deliveryNote = SendOrderToWarehouse::make()->action($order, []);
+    $order->refresh()->update(['state' => OrderStateEnum::PACKED, 'is_shipping_by_external' => false]);
+
+    $hasInvoice = fn (Order $order) => collect(\App\Actions\Ordering\Order\UI\GetEcomOrderActions::run($order, true))
+        ->contains(fn ($action) => ($action['key'] ?? null) === 'action');
+
+    expect($hasInvoice($order->fresh()))->toBeFalse();
+
+    $deliveryNote->update(['parcels' => [['weight' => 11.01, 'dimensions' => [39, 39, 57]]]]);
+
+    expect($hasInvoice($order->fresh()))->toBeTrue();
+});
