@@ -62,6 +62,7 @@ use App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrderTransactionQuantity
 use App\Actions\Procurement\PurchaseOrderTransaction\CancelPurchaseOrderTransaction;
 use App\Actions\Procurement\PurchaseOrderTransaction\StorePurchaseOrderTransaction;
 use App\Actions\Procurement\PurchaseOrderTransaction\UpdatePurchaseOrderTransaction;
+use App\Actions\Catalogue\Product\GetProductIncomingStock;
 use App\Actions\Catalogue\Shop\StoreShop;
 use App\Actions\Procurement\OrgPartner\Hydrators\OrgPartnerHydrateShoppingListItems;
 use App\Actions\Production\PartnerShippingList\CherryPickPartnerShoppingListItems;
@@ -4612,4 +4613,51 @@ test('every organisation and group top menu subsection carries a label', functio
 
     expect($unlabelled(GetOrganisationNavigation::run($user, $this->organisation)))->toBe([])
         ->and($unlabelled(\App\Actions\UI\Grp\Layout\GetGroupNavigation::run($user)))->toBe([]);
+});
+
+test('incoming stock tells the customer when an out of stock product is expected back', function () {
+    $orgStock = $this->orgStocks[0];
+
+    $supplier    = StoreSupplier::make()->action($this->group, Supplier::factory()->definition());
+    $orgSupplier = $supplier->orgSuppliers()->where('organisation_id', $this->organisation->id)->first();
+
+    $supplierProduct    = StoreSupplierProduct::make()->action($supplier, [
+        'code'             => 'ETA-01',
+        'name'             => 'ETA asset',
+        'cost'             => 100,
+        'stock_id'         => $orgStock->stock_id,
+        'units_per_pack'   => 10,
+        'units_per_carton' => 100,
+    ]);
+    $orgSupplierProduct = StoreOrgSupplierProduct::make()->action($orgSupplier, $supplierProduct);
+
+    $stockDelivery = StoreStockDelivery::make()->action($orgSupplier, [
+        'reference' => 'ETA-DEL-1',
+        'date'      => date('Y-m-d'),
+    ]);
+    StoreStockDeliveryItem::make()->action(
+        $stockDelivery,
+        $orgSupplierProduct->supplierProduct->historicSupplierProduct,
+        $orgStock,
+        array_merge(StockDeliveryItem::factory()->definition(), ['unit_quantity' => 120])
+    );
+
+    [, $product] = createProduct(StoreShop::run($this->organisation, Shop::factory()->definition()));
+    $product->orgStocks()->syncWithoutDetaching([$orgStock->id => ['quantity' => 1]]);
+    $product->load('orgStocks');
+
+    expect(GetProductIncomingStock::run($product))->toBe([]);
+
+    DispatchStockDelivery::make()->action($stockDelivery);
+    $product->load('orgStocks');
+
+    $incoming = GetProductIncomingStock::run($product);
+    $expectedEta = now()->addDays(7)->toDateString();
+
+    expect($incoming)->toHaveCount(1)
+        ->and($incoming[0]['type'])->toBe('stock_delivery')
+        ->and($incoming[0]['reference'])->toBe('ETA-DEL-1')
+        ->and($incoming[0]['quantity'])->toBe(120.0)
+        ->and($incoming[0]['eta'])->toBe($expectedEta)
+        ->and(GetProductIncomingStock::make()->earliestEta($product))->toBe($expectedEta);
 });

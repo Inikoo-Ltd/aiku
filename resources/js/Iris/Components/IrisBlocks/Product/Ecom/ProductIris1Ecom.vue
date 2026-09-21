@@ -16,7 +16,8 @@ import Button from "@/Components/Elements/Buttons/Button.vue"
 import LinkIris from "@/Iris/Components/LinkIris.vue"
 import EcomAddToBasketv2 from "@/Components/Iris/Products/EcomAddToBasketv2.vue"
 
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
+import { useOutOfStockLabel } from "@/Composables/useOutOfStockLabel"
 import { urlLoginWithRedirect } from "@/Composables/urlLoginWithRedirect"
 import { pushGtmEvent, buildGtmProductPayload } from "@/Composables/useGtm"
 import { getStyles } from "@/Composables/styles"
@@ -270,7 +271,7 @@ onMounted(async () => {
                         <FontAwesomeIcon v-if="!tag.image" :icon="faDotCircle" class="text-sm" />
                         <Image v-else :src="tag.image" :alt="`Thumbnail tag ${index}`"
                             class="w-[15px] h-[15px] object-cover" />
-                        <span>{{ trans(tag?.label) || tag?.label }}</span>
+                        <span>{{ ctrans(tag?.label) || tag?.label }}</span>
                     </div>
                 </div>
             </div>
@@ -290,7 +291,7 @@ onMounted(async () => {
                             <div class="flex items-center justify-between">
 
                                 <div>
-                                    {{ trans("Product code") }}: {{ product.code }}
+                                    {{ ctrans("Product code") }}: {{ product.code }}
                                 </div>
 
                                 <div class="relative rating" v-if="fieldValue?.reviews?.review_summary > 0">
@@ -315,22 +316,22 @@ onMounted(async () => {
                                     :class="product.stock ? 'text-green-600' : 'text-red-600'" />
                                 <span>
                                     {{ product?.stock >= 250
-                                        ? trans("Unlimited quantity available")
-                                        : (product.stock > 0 ? trans("In stock") : trans("Out Of Stock"))
+                                        ? ctrans("Unlimited quantity available")
+                                        : (product.stock > 0 ? ctrans("In stock") : useOutOfStockLabel(product))
                                     }}
                                 </span>
                             </div>
 
                             <!-- REMIND ME -->
                             <button v-if="!product.stock && layout?.outboxes?.oos_notification?.state == 'active'"
-                                v-tooltip="customerData?.back_in_stock ? trans('You will be notify via email when the product back in stock') : trans('Click to be notified via email when the product back in stock')"
+                                v-tooltip="customerData?.back_in_stock ? ctrans('You will be notify via email when the product back in stock') : ctrans('Click to be notified via email when the product back in stock')"
                                 @click="() => customerData?.back_in_stock ? onUnselectBackInStock(product) : onAddBackInStock(product)"
                                 class="absolute right-0 bottom-0 inline-flex items-center gap-2 rounded-full border border-gray-300 bg-gray-100 px-3 py-1.5 text-sm font-medium text-gray-700 shadow-sm transition hover:bg-gray-200 hover:border-gray-400">
                                 <LoadingIcon v-if="isLoadingRemindBackInStock" />
                                 <FontAwesomeIcon v-else
                                     :icon="customerData?.back_in_stock ? faEnvelopeCircleCheck : faEnvelope"
                                     :class="[customerData?.back_in_stock ? 'text-green-600' : 'text-gray-600']" />
-                                <span>{{ customerData?.back_in_stock ? trans("Notified") : trans("Remind me") }}</span>
+                                <span>{{ customerData?.back_in_stock ? ctrans("Notified") : ctrans("Remind me") }}</span>
                             </button>
                         </div>
                     </div>
@@ -398,7 +399,7 @@ onMounted(async () => {
                     
                     <!-- Section: Profit and the popover -->
                     <div class="flex justify-between items-end">
-                        <span @click="_popoverProfit?.toggle">{{ trans("Profit") }}</span>:
+                        <span @click="_popoverProfit?.toggle">{{ ctrans("Profit") }}</span>:
                         <span class="text-green-500 ml-1 font-bold">
                             {{( layout?.user?.gr_data?.customer_is_gr ||  layout?.user?.gr_data?.amnesty) ? fieldValue.product?.discounted_margin : fieldValue.product?.margin }}
                         </span>
@@ -437,7 +438,7 @@ onMounted(async () => {
                             :key="keyCustomer" :buttonStyle="getStyles(fieldValue?.button?.properties, screenType)" />
 
                         <div v-else>
-                            <Button :label="product.status_label ?? trans('Out of stock')" type="tertiary" disabled full />
+                            <Button :label="product.status_label ?? ctrans('Out of stock')" type="tertiary" disabled full />
                         </div>
                     </div>
 
@@ -445,7 +446,7 @@ onMounted(async () => {
                     <LinkIris v-else-if="product.status !== 'coming-soon'" :href="urlLoginWithRedirect()"
                         class="block w-full text-center border border-gray-400 bg-gray rounded px-3 py-2 text-sm text-gray-600"
                         :style="getStyles(fieldValue?.buttonLogin?.properties, screenType)">
-                        {{ trans("Login or Register for Wholesale Prices") }}
+                        {{ ctrans("Login or Register for Wholesale Prices") }}
                     </LinkIris>
 
                 </div>
@@ -511,7 +512,7 @@ onMounted(async () => {
                     </div>
 
                     <button v-if="product.description_extra" @click="toggleExpanded" class="mt-1 text-xs underline">
-                        {{ expanded ? trans("Show Less") : trans("Read More") }}
+                        {{ expanded ? ctrans("Show Less") : ctrans("Read More") }}
                     </button>
                 </div>
 
@@ -525,7 +526,7 @@ onMounted(async () => {
                         :informations="fieldValue.information" :styleData="fieldValue?.information_style" />
 
                     <h2 v-if="fieldValue?.paymentData?.length" class="text-base font-semibold text-gray-800">
-                        {{ trans("Secure Payments") }}:
+                        {{ ctrans("Secure Payments") }}:
                     </h2>
 
                     <div class="flex flex-wrap items-center gap-6 py-2">
@@ -578,10 +579,10 @@ onMounted(async () => {
                 <span>
                     {{
                         product.stock >= 250
-                            ? trans("Unlimited quantity available")
+                            ? ctrans("Unlimited quantity available")
                             : product.stock > 0
-                                ? `${trans("In stock")} (${product.stock} ${trans("available")})`
-                                : trans("Out Of Stock")
+                                ? `${ctrans("In stock")} (${product.stock} ${ctrans("available")})`
+                                : useOutOfStockLabel(product)
                     }}
                 </span>
             </div>
@@ -644,7 +645,7 @@ onMounted(async () => {
                 <!-- PROFIT -->
                 <div class="flex items-end text-sm">
                     <span @click="_popoverProfit?.toggle">
-                        {{ trans("Profit") }}
+                        {{ ctrans("Profit") }}
                     </span>:
                     <span class="ml-1 font-bold text-green-500">
                     {{ (layout?.user?.gr_data?.customer_is_gr || layout?.user?.gr_data?.amnesty) ? fieldValue.product?.discounted_margin : fieldValue.product?.margin }}
@@ -716,7 +717,7 @@ onMounted(async () => {
                 :class="customerData?.back_in_stock ? 'text-green-600' : 'text-gray-600'"
             />
             <span>
-                {{ customerData?.back_in_stock ? trans("Notified") : trans("Remind me") }}
+                {{ customerData?.back_in_stock ? ctrans("Notified") : ctrans("Remind me") }}
             </span>
         </button>
 
@@ -745,7 +746,7 @@ onMounted(async () => {
 
             <Button
                 v-else-if="layout?.iris?.is_logged_in"
-                :label="product.status_label ?? trans('Out of stock')"
+                :label="product.status_label ?? ctrans('Out of stock')"
                 type="tertiary"
                 disabled
                 full
@@ -756,7 +757,7 @@ onMounted(async () => {
                 :href="urlLoginWithRedirect()"
                 class="block w-full text-center border border-gray-400 bg-gray rounded px-3 py-2 text-sm text-gray-600"
             >
-                {{ trans("Login or Register for Wholesale Prices") }}
+                {{ ctrans("Login or Register for Wholesale Prices") }}
             </LinkIris>
         </div>
 
@@ -822,7 +823,7 @@ onMounted(async () => {
 
             <div v-if="fieldValue.paymentData?.length">
                 <h2 class="text-base font-semibold mb-2">
-                    {{ trans("Secure Payments") }}:
+                    {{ ctrans("Secure Payments") }}:
                 </h2>
                 <div class="flex flex-wrap gap-4">
                     <img

@@ -25,6 +25,7 @@ export interface ProductResource {
 	bestseller?: boolean
 	is_favourite?: boolean
 	is_back_in_stock?: boolean
+	expected_back_in_stock_at?: string | null
 	is_golden_product?: boolean
 	is_variant?: boolean
 	top_seller: number | null
