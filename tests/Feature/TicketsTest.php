@@ -2488,3 +2488,18 @@ test('status changes and QA verdicts reach collaborators, and field edits reach 
     Notification::assertNotSentTo($assignee, App\Notifications\TicketNotification::class);
     actingAs($this->user);
 });
+
+test('ticket and comment resources carry the author identity the hover card needs', function () {
+    $ticket = StoreTicket::make()->action($this->group, ['subject' => 'Hover card identity', 'reporter_type' => 'User', 'reporter_id' => $this->user->id]);
+    StoreTicketComment::make()->action($ticket, $this->user, ['body' => 'on it']);
+
+    $ticketPayload = TicketResource::make($ticket->refresh())->resolve();
+
+    expect($ticketPayload['reporter_key'])->toBe('User-'.$this->user->id)
+        ->and($ticketPayload['reporter_username'])->toBe($this->user->username);
+
+    $commentPayload = \App\Http\Resources\Helpers\TicketCommentResource::make($ticket->comments()->first())->resolve();
+
+    expect($commentPayload['author_key'])->toBe('User-'.$this->user->id)
+        ->and($commentPayload['author_username'])->toBe($this->user->username);
+});

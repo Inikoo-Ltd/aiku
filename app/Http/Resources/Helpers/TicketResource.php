@@ -56,6 +56,8 @@ class TicketResource extends JsonResource
             'description'    => $this->description,
             'reporter'       => $this->reporter?->contact_name ?: $this->reporter?->username,
             'reporter_roles' => $request->routeIs('retina.*') ? [] : $this->reporterRoles(),
+            'reporter_key'   => $this->reporter_id ? $this->reporter_type.'-'.$this->reporter_id : null,
+            'reporter_username' => $this->reporter_type === 'User' ? $this->reporter?->username : null,
             'reporter_short' => $this->reporter_type === 'User' ? $this->reporter?->username : ($this->reporter?->contact_name ?: $this->reporter?->username),
             'reporter_avatar' => $this->reporter_type === 'User' ? $this->reporter?->imageSources(48, 48) : null,
             'is_from_slack'  => (bool) data_get($this->data, 'slack'),

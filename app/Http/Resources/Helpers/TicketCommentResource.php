@@ -29,6 +29,8 @@ class TicketCommentResource extends JsonResource
             'is_staff'    => $this->author_type === 'User',
             'author'        => $this->author?->contact_name ?: $this->author?->username,
             'author_avatar' => $this->author?->imageSources(48, 48),
+            'author_key'    => $this->author_id ? $this->author_type.'-'.$this->author_id : null,
+            'author_username' => $this->author_type === 'User' ? $this->author?->username : null,
             'author_roles'  => $request->routeIs('retina.*') ? [] : $this->authorRoles(),
             'created_at'  => $this->created_at,
             'images'      => $this->ticketImageSources(),

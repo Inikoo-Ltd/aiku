@@ -13,7 +13,7 @@ import { useFormatTime } from "@/Composables/useFormatTime"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import TicketComposer from "@/Components/Tickets/TicketComposer.vue"
 import TicketBody from "@/Components/Tickets/TicketBody.vue"
-import TicketUserAvatar from "@/Components/Tickets/TicketUserAvatar.vue"
+import TicketUserHoverCard from "@/Components/Tickets/TicketUserHoverCard.vue"
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
@@ -23,8 +23,8 @@ import { faSlack } from "@fortawesome/free-brands-svg-icons"
 library.add(faPencil, faTrashAlt, faUser)
 
 const props = withDefaults(defineProps<{
-    ticket: { subject: string; description: string | null; reporter: string | null; reporter_roles?: { key: string; label: string }[]; reporter_avatar?: Record<string, string> | null; is_from_slack?: boolean; reference_url?: string | null; created_at: string; images?: Record<string, string>[] }
-    comments: { id: number; body: string; is_internal: boolean; is_lead_only?: boolean; author_avatar?: Record<string, string> | null; author_roles?: { key: string; label: string }[]; can_toggle_visibility?: boolean; is_staff: boolean; author: string | null; created_at: string; images?: Record<string, string>[]; attachments?: { name: string; url: string }[]; can_edit?: boolean; can_delete?: boolean }[]
+    ticket: { subject: string; description: string | null; reporter: string | null; reporter_roles?: { key: string; label: string }[]; reporter_avatar?: Record<string, string> | null; reporter_username?: string | null; reporter_key?: string | null; is_from_slack?: boolean; reference_url?: string | null; created_at: string; images?: Record<string, string>[] }
+    comments: { id: number; body: string; is_internal: boolean; is_lead_only?: boolean; author_avatar?: Record<string, string> | null; author_username?: string | null; author_key?: string | null; author_roles?: { key: string; label: string }[]; can_toggle_visibility?: boolean; is_staff: boolean; author: string | null; created_at: string; images?: Record<string, string>[]; attachments?: { name: string; url: string }[]; can_edit?: boolean; can_delete?: boolean }[]
     commentRoute: { name: string; parameters: Record<string, unknown> }
     mentionable?: { username: string; name: string | null; suggested?: boolean; is_customer?: boolean }[]
     commentsNewestFirst?: boolean
@@ -36,17 +36,11 @@ const emit = defineEmits<{
     (e: "update:commentsNewestFirst", value: boolean): void
 }>()
 
-const roleClasses: Record<string, string> = {
-    lead_engineer: "bg-teal-100 text-teal-700",
-    engineer: "bg-blue-100 text-blue-700",
-    qa: "bg-purple-100 text-purple-700",
-    reporter: "bg-orange-100 text-orange-700",
-    staff: "bg-gray-100 text-gray-600",
-    bot: "bg-[--app-accent-muted] text-[--app-accent-strong]",
-    customer: "bg-slate-200 text-slate-700",
-}
-
 const form = useForm<{ body: string; images: File[]; is_internal: boolean }>({ body: "", images: [], is_internal: false })
+
+const composer = ref<{ appendMention: (username: string) => void } | null>(null)
+
+const mentionInReply = (username: string) => composer.value?.appendMention(username)
 
 const isNewestFirst = ref(props.commentsNewestFirst)
 
@@ -102,15 +96,14 @@ const submit = () => {
     <div class="space-y-4">
         <div v-if="showDescription" class="bg-white rounded-lg border-2 border-[--app-accent-muted] p-5 shadow-sm">
             <div class="text-xs text-gray-500 mb-3 pb-2 border-b border-gray-200 flex items-center gap-2">
-                <TicketUserAvatar :name="ticket.reporter" :avatar="ticket.reporter_avatar" size="sm" />
-                <span class="font-semibold text-gray-800">{{ ticket.reporter || trans("Unknown") }}</span>
-                <span
-                    v-for="role in ticket.reporter_roles ?? []"
-                    :key="role.key"
-                    class="rounded px-1.5 py-0.5 text-[10px] font-medium"
-                    :class="roleClasses[role.key] ?? 'bg-gray-100 text-gray-600'"
-                    >{{ role.label }}</span
-                >
+                <TicketUserHoverCard
+                    :name="ticket.reporter"
+                    :avatar="ticket.reporter_avatar"
+                    :roles="ticket.reporter_roles ?? []"
+                    :username="ticket.reporter_username"
+                    :reporterKey="ticket.reporter_key"
+                    size="sm"
+                    @mention="mentionInReply" />
                 <span>· {{ useFormatTime(ticket.created_at, { formatTime: "PP, HH:mm:ss zzz" }) }}</span>
                 <span class="text-gray-400">({{ daysAgo(ticket.created_at) }})</span>
                 <FontAwesomeIcon v-if="ticket.is_from_slack" v-tooltip="trans('Raised from Slack')" :icon="faSlack" class="text-gray-500" />
@@ -124,7 +117,7 @@ const submit = () => {
         <slot name="after-description" />
 
         <form class="space-y-3 rounded-lg border p-4 transition duration-200" :class="form.is_internal ? 'border-amber-300 bg-amber-50' : 'border-gray-300 bg-white'" @submit.prevent="submit">
-            <TicketComposer v-model:body="form.body" v-model:images="form.images" :rows="4" :mentionable="form.is_internal ? mentionable?.filter((person) => !person.is_customer) : mentionable" :placeholder="trans('Write a comment, paste a screenshot or drop images')" />
+            <TicketComposer ref="composer" v-model:body="form.body" v-model:images="form.images" :rows="4" :mentionable="form.is_internal ? mentionable?.filter((person) => !person.is_customer) : mentionable" :placeholder="trans('Write a comment, paste a screenshot or drop images')" />
             <p v-if="form.errors.body || form.errors.images" class="text-xs text-red-600">{{ form.errors.body || form.errors.images }}</p>
             <div class="flex flex-wrap items-center justify-end gap-3">
                 <label v-if="canCommentInternally" class="mr-auto flex cursor-pointer select-none items-center gap-2 text-sm transition duration-200" :class="form.is_internal ? 'font-semibold text-amber-700' : 'text-gray-500 hover:text-gray-700'">
@@ -151,15 +144,14 @@ const submit = () => {
             >
                 <div class="text-xs text-gray-500 mb-1 flex items-center gap-2">
                     <span v-if="comment.author" class="flex items-center gap-1.5 font-medium text-gray-700">
-                        <TicketUserAvatar :name="comment.author" :avatar="comment.author_avatar" size="xs" />
-                        {{ comment.author }}
-                        <span
-                            v-for="role in comment.author_roles ?? []"
-                            :key="role.key"
-                            class="rounded px-1.5 py-0.5 text-[10px] font-medium"
-                            :class="roleClasses[role.key] ?? 'bg-gray-100 text-gray-600'"
-                            >{{ role.label }}</span
-                        >
+                        <TicketUserHoverCard
+                            :name="comment.author"
+                            :avatar="comment.author_avatar"
+                            :roles="comment.author_roles ?? []"
+                            :username="comment.author_username"
+                            :reporterKey="comment.author_key"
+                            size="xs"
+                            @mention="mentionInReply" />
                         ·
                     </span>
                     <span v-else class="flex items-center gap-2"><img class="h-4 select-none" src="/art/invader.svg" alt="aiku" /> ·</span>
