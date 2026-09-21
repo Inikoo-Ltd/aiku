@@ -290,6 +290,9 @@ const mapSession = (s: SessionAPI): Contact => ({
     status: s.status,
     is_spam: (s as any).is_spam ?? false,
     is_rubbish: (s as any).is_rubbish ?? false,
+    can_dispose: (s as any).can_dispose,
+    open_tickets_count: Number((s as any).open_tickets_count ?? 0),
+    blocking_tickets_count: Number((s as any).blocking_tickets_count ?? 0),
     noise: (s as any).noise ?? null,
     is_highlighted: (s as any).is_highlighted ?? false,
     webUser: s.web_user ?? (s as any).customer,
@@ -1114,6 +1117,11 @@ const openChat = (c: Contact) => {
         organisation: c.organisation,
         ai_summary: c.ai_summary ?? null,
         is_trashed: trashView.value,
+        is_spam: c.is_spam,
+        is_rubbish: c.is_rubbish,
+        can_dispose: (c as any).can_dispose,
+        open_tickets_count: (c as any).open_tickets_count ?? 0,
+        blocking_tickets_count: (c as any).blocking_tickets_count ?? 0,
     } as SessionAPI
     messages.value = c.messages ?? []
     updateUrl(String(c.ulid))
@@ -1235,6 +1243,12 @@ const toggleSidePanel = () => {
 }
 const showHistoryPanel = () => toggleSidePanel()
 const showProfilePanel = () => toggleSidePanel()
+const sidePanelTab = ref<'profile' | 'tickets'>('profile')
+const showTicketsPanel = () => {
+    sidePanelTab.value = 'tickets'
+    sidePanelVisible.value = true
+    sidePanelPreferred.value = true
+}
 const showMessageDetailsPanel = () => toggleSidePanel()
 const closeSidePanel = () => {
     sidePanelVisible.value = false
@@ -1886,13 +1900,14 @@ onUnmounted(() => {
                     @assign-self-success="onAssignSelfSuccess" @messages-read="onMessagesRead"
                     @open-slack-settings="onOpenSlackSettings"
                     @spam-success="onSpamFromThread"
+                    @view-tickets="showTicketsPanel"
                     @restore-success="onRestoreFromThread" />
             </div>
         </div>
 
         <!-- RIGHT: conversation profile panel (Conversation-style) -->
         <ChatConversationSidePanel v-if="panelSession && sidePanelVisible"
-            :session="panelSession" @close="closeSidePanel" @priority-updated="onPriorityUpdated"
+            :session="panelSession" :initial-tab="sidePanelTab" @close="closeSidePanel" @priority-updated="onPriorityUpdated"
             @synced="onSessionSynced" @customer-synced="onCustomerSynced" />
 
         <!-- Row action menu (teleported so it is never clipped by the list's overflow) -->

@@ -632,25 +632,6 @@ test('staff reporter rates their own resolved help ticket from grp', function ()
     get(route('grp.tickets.show', $ticket->reference))->assertInertia(fn (AssertableInertia $page) => $page->where('can_rate', false)->where('ticket.rating', 5));
 });
 
-test('customer ticket escalates to a help ticket that keeps the customer and points back', function () {
-    $customerTicket = StoreRetinaTicket::make()->action($this->webUser, ['subject' => 'Feed is empty', 'priority' => 'high']);
-
-    $response = post(route('grp.models.ticket.escalate', $customerTicket->id), ['description' => 'Feed generator crashed']);
-    $helpTicket = Ticket::where('model_type', 'Ticket')->where('model_id', $customerTicket->id)->first();
-    $response->assertRedirect(route('grp.tickets.show', $helpTicket->reference));
-
-    expect($helpTicket->type)->toBe(TicketTypeEnum::HELP)
-        ->and($helpTicket->kind)->toBe(TicketKindEnum::ESCALATION)
-        ->and($helpTicket->subject)->toBe('Feed is empty')
-        ->and($helpTicket->description)->toBe('Feed generator crashed')
-        ->and($helpTicket->priority)->toBe(ChatPriorityEnum::HIGH)
-        ->and($helpTicket->customer_id)->toBe($this->customer->id)
-        ->and($helpTicket->reporter_id)->toBe($this->user->id)
-        ->and($customerTicket->escalations()->pluck('reference')->all())->toBe([$helpTicket->reference]);
-
-    post(route('grp.models.ticket.escalate', $helpTicket->id))->assertStatus(422);
-});
-
 test('staff file a bug from anywhere without leaving the page', function () {
     actingAs(User::factory()->create(['group_id' => $this->group->id]));
     $response = post(route('grp.models.ticket.store'), [
@@ -1352,7 +1333,7 @@ test('only the assignee and supervisors change kind and module, and no ticket is
     get(route('grp.json.ticket.controls', $ticket->id))->assertOk()
         ->assertJsonPath('can_change_kind_module', true)
         ->assertJsonPath('ticket.reference', $ticket->reference)
-        ->assertJsonStructure(['ticket', 'options' => ['kinds', 'modules', 'assignees'], 'can_manage', 'can_assign', 'routes' => ['update', 'escalate']]);
+        ->assertJsonStructure(['ticket', 'options' => ['kinds', 'modules', 'assignees'], 'can_manage', 'can_assign', 'routes' => ['update']]);
 
     actingAs($this->user);
     patch(route('grp.models.ticket.update', $ticket->id), ['kind' => 'bug'])->assertRedirect()->assertSessionHasNoErrors();

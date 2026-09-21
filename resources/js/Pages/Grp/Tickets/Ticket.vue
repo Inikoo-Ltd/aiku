@@ -74,7 +74,6 @@ const props = defineProps<{
         update: { name: string; parameters: Record<string, unknown> }
         comment: { name: string; parameters: Record<string, unknown> }
         rate: { name: string; parameters: Record<string, unknown> }
-        escalate: { name: string; parameters: Record<string, unknown> }
     }
 }>()
 

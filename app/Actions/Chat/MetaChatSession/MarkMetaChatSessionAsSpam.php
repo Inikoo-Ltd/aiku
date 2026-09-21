@@ -73,6 +73,13 @@ class MarkMetaChatSessionAsSpam
             ], 403);
         }
 
+        if (!$this->userCanDisposeOfChat($agent->user, $metaChatSession)) {
+            return response()->json([
+                'success' => false,
+                'message' => $this->chatHeldByAnotherAgentMessage($metaChatSession),
+            ], 403);
+        }
+
         if ($metaChatSession->is_spam) {
             return response()->json([
                 'success' => false,

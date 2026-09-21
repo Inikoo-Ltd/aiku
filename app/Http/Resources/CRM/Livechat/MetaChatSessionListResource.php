@@ -153,6 +153,11 @@ class MetaChatSessionListResource extends JsonResource
                 ]
             ] : null,
 
+            'open_tickets_count'     => (int) ($this->open_tickets_count ?? 0),
+            'blocking_tickets_count' => (int) ($this->blocking_tickets_count ?? 0),
+
+            'can_dispose'    => \App\Actions\Chat\CanDisposeOfChat::run($request->user(), $this->resource),
+
             'assigned_agent' => $activeAssignment ? [
                 'id'      => $activeAssignment->chatAgent?->id,
                 'user_id' => $activeAssignment->chatAgent?->user_id,

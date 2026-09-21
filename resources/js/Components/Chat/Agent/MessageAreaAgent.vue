@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch, onMounted, onUnmounted, inject, computed, nextTick, defineAsyncComponent } from "vue"
+import { ref, watch, onMounted, onUnmounted, inject, computed, nextTick, defineAsyncComponent, getCurrentInstance } from "vue"
 import axios from "axios"
 import { ctrans } from "@/Composables/useTrans"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -16,6 +16,7 @@ import {
     faEye,
     faArchive,
     faAngleDown,
+    faLock,
 } from "@fortawesome/free-solid-svg-icons"
 import { faSlack } from "@fortawesome/free-brands-svg-icons"
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
@@ -100,6 +101,7 @@ const emit = defineEmits([
     "open-slack-settings",
     "spam-success",
     "restore-success",
+    "view-tickets",
 ])
 
 const layout: any = inject("layout", {})
@@ -161,11 +163,61 @@ const isSpamMarking = ref(false)
 // is Ignore, which puts this one conversation aside and nothing else.
 const isGuest = computed(() => !(props.session as any)?.web_user?.customer_id && !(props.session as any)?.customer?.id)
 
-const canIgnore = computed(() =>
-    (props.session as any)?.channel !== "whatsapp" && !isClosed.value && !isTrashed.value && !props.readOnly
+// Disposing of a conversation somebody else is holding is theirs to do, not ours. The server
+// says whether this viewer may, since supervisors keep the override and the page cannot know
+// who supervises what.
+const canDispose = computed(() => {
+    const flag = (props.session as any)?.can_dispose
+    return typeof flag === "boolean" ? flag : isMyChat.value
+})
+
+// The tickets panel lives in the page around us, and not every page that shows a thread has
+// one, so the button only appears where pressing it would go somewhere.
+const instance = getCurrentInstance()
+const hasTicketsPanel = computed(() => Boolean((instance?.vnode?.props as any)?.onViewTickets))
+
+const openTicketsCount = computed(() => Number((props.session as any)?.open_tickets_count ?? 0))
+const blockingTicketsCount = computed(() => Number((props.session as any)?.blocking_tickets_count ?? 0))
+
+const openTicketsTooltip = computed(() =>
+    blockingTicketsCount.value
+        ? ctrans("This chat is waiting on :blocked of :total open tickets. It cannot be closed until they are resolved or cancelled.", {
+            blocked: String(blockingTicketsCount.value),
+            total: String(openTicketsCount.value),
+        })
+        : ctrans(":total open :ticket raised from this chat.", {
+            total: String(openTicketsCount.value),
+            ticket: openTicketsCount.value === 1 ? ctrans("ticket") : ctrans("tickets"),
+        })
 )
 
-const canReportSpam = computed(() => isGuest.value && !isClosed.value && !isTrashed.value && !props.readOnly)
+// The count in the header comes with the conversation, so a ticket raised here has to be added
+// to it by hand; the list is only refetched when the inbox reloads.
+const onTicketCreated = (ticket: { blocks_source?: boolean }) => {
+    const session = props.session as any
+    if (!session) return
+    session.open_tickets_count = Number(session.open_tickets_count ?? 0) + 1
+    if (ticket?.blocks_source) {
+        session.blocking_tickets_count = Number(session.blocking_tickets_count ?? 0) + 1
+    }
+}
+
+const onViewTickets = () => {
+    isMenuOpen.value = false
+    emit("view-tickets")
+}
+
+const heldByAnotherAgent = computed(() =>
+    ctrans(":agent is handling this chat. Take it over first, or ask a supervisor.", {
+        agent: props.session?.assigned_agent?.name || ctrans("Another agent"),
+    })
+)
+
+const canIgnore = computed(() =>
+    (props.session as any)?.channel !== "whatsapp" && !isClosed.value && !isTrashed.value && !props.readOnly && canDispose.value
+)
+
+const canReportSpam = computed(() => isGuest.value && !isClosed.value && !isTrashed.value && !props.readOnly && canDispose.value)
 
 // Ending a conversation nobody ever answered is rude: from the other side it reads as being
 // shown the door for writing in. Until somebody here has replied, the way to clear it is Ignore.
@@ -1111,6 +1163,17 @@ const handleClickOutside = (e: MouseEvent) => {
                 {{ (session as any)?.is_spam ? ctrans("Not spam") : ctrans("Spam") }}
             </button>
 
+            <!-- What is still outstanding on this conversation, one click from the thread: an agent
+                 about to close a chat should not have to go looking for what is holding it. -->
+            <button v-if="openTicketsCount && hasTicketsPanel" type="button" v-tooltip="openTicketsTooltip"
+                :aria-label="openTicketsTooltip"
+                class="inline-flex items-center gap-1.5 shrink-0 h-7 px-2.5 text-[11px] font-medium rounded-md border transition"
+                :class="blockingTicketsCount ? 'border-amber-300 bg-amber-50 text-amber-700 hover:bg-amber-100' : 'border-gray-300 text-gray-600 hover:bg-gray-100'"
+                @click="onViewTickets">
+                <FontAwesomeIcon :icon="blockingTicketsCount ? faLock : faLifeRing" class="text-[11px]" />
+                {{ openTicketsCount }}
+            </button>
+
             <button type="button" v-tooltip="ctrans('Customer details')" :aria-label="ctrans('Customer details')"
                 class="inline-flex items-center justify-center shrink-0 h-7 w-7 rounded-md border border-gray-300 text-gray-600 transition hover:bg-gray-100"
                 @click="onViewUserProfile">
@@ -1137,7 +1200,8 @@ const handleClickOutside = (e: MouseEvent) => {
                     </button>
 
                     <template v-if="!readOnly">
-                        <button class="menu-item" @click="openTicketModal">
+                        <button class="menu-item disabled:cursor-not-allowed disabled:opacity-50" :disabled="!canDispose"
+                            v-tooltip="canDispose ? undefined : heldByAnotherAgent" @click="openTicketModal">
                             <FontAwesomeIcon :icon="faLifeRing" class="text-blue-600" /> {{ ctrans("Create Ticket") }}
                         </button>
 
@@ -1363,6 +1427,7 @@ const handleClickOutside = (e: MouseEvent) => {
             :is-open="isTicketModalOpen"
             :session="session"
             :organisation="currentOrganisation"
+            @created="onTicketCreated"
             @close="isTicketModalOpen = false"
         />
 

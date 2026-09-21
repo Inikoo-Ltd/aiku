@@ -13,10 +13,10 @@ import MessageHistory from '@/Components/Chat/MessageHistory.vue'
 import TicketQuickLook from '@/Components/Tickets/TicketQuickLook.vue'
 import AddressLocation from '@/Components/Elements/Info/AddressLocation.vue'
 import Icon from '@/Components/Icon.vue'
-import { faArrowLeft, faLink, faEnvelope, faGlobe } from '@fal'
+import { faArrowLeft, faLink, faEnvelope, faGlobe, faLock } from '@fal'
 import { faWhatsapp } from '@fortawesome/free-brands-svg-icons'
 
-library.add(faTag, faRobot, faChartLine, faCopy, faCheck, faTimes, faExternalLinkAlt, faArrowLeft, faLink, faLifeRing)
+library.add(faTag, faRobot, faChartLine, faCopy, faCheck, faTimes, faExternalLinkAlt, faArrowLeft, faLink, faLifeRing, faLock)
 
 type SidePanelTab = 'profile' | 'statistics' | 'tickets' | 'timeline' | 'log' | 'history'
 
@@ -62,6 +62,7 @@ interface CustomerStats {
 
 const props = defineProps<{
     session: PanelSession
+    initialTab?: SidePanelTab
 }>()
 
 const emit = defineEmits<{
@@ -113,7 +114,7 @@ const layout: any = inject('layout', {})
 const baseUrl = layout?.appUrl ?? ''
 const themePrimary = computed<string>(() => layout?.app?.theme?.[0] ?? '#16a34a')
 
-const activeTab = ref<SidePanelTab>('profile')
+const activeTab = ref<SidePanelTab>(props.initialTab ?? 'profile')
 const isCopied = ref(false)
 
 interface LastOrder {
@@ -278,6 +279,8 @@ const openPreviousChat = (chat: PreviousChat) => {
     activeTab.value = 'history'
 }
 
+const isTicketSettled = (ticket: any) => ['resolved', 'cancelled'].includes(String(ticket?.status ?? ''))
+
 const resetAndLoad = () => {
     profileLoaded.value = false
     timelineLoaded.value = false
@@ -303,7 +306,16 @@ watch(activeTab, async (tab) => {
     if (tab === 'history' && !historyLoaded.value) await loadHistory()
 })
 
-onMounted(() => loadCustomerProfile())
+// Opened straight onto a tab from the thread (the outstanding tickets button), and again when
+// that button is pressed while the panel is already open on something else.
+watch(() => props.initialTab, (tab) => {
+    if (tab) activeTab.value = tab
+})
+
+onMounted(() => {
+    loadCustomerProfile()
+    if (props.initialTab === 'tickets') loadTickets()
+})
 
 // When a guest gets matched to a registered Aiku customer, refresh the customer data.
 watch(() => props.session.is_guest, (isGuest) => {
@@ -663,6 +675,13 @@ const copyChatId = async () => {
                                 <span class="font-semibold text-gray-700">{{ ticket.reference }}</span>
                                 <Icon v-if="ticket.status_icon" :data="ticket.status_icon" />
                                 <span>{{ ticket.status_label }}</span>
+                                <FontAwesomeIcon v-if="ticket.blocks_source"
+                                    :icon="['fal', 'fa-lock']"
+                                    v-tooltip="isTicketSettled(ticket)
+                                        ? ctrans('This was holding the chat open. It is settled, so it no longer does.')
+                                        : ctrans('This chat cannot be closed until this ticket is resolved or cancelled.')"
+                                    class="text-[11px]"
+                                    :class="isTicketSettled(ticket) ? 'text-gray-300' : 'text-amber-600'" />
                                 <Icon v-if="ticket.priority_icon" :data="ticket.priority_icon" class="ml-auto" />
                             </div>
                             <p class="mt-1 line-clamp-2 text-xs font-medium text-gray-800">{{ ticket.subject }}</p>
