@@ -36,6 +36,7 @@ const props = defineProps<{
 	}
 	history?: HistoryRecord[]
 	historyFrequency?: "daily" | "weekly"
+	embedded?: boolean
 }>()
 
 const HISTORY_COLOR = "#E8710A"
@@ -201,7 +202,7 @@ const reMeasure = async () => {
 </script>
 
 <template>
-	<div class="rounded-lg bg-white shadow">
+	<div :class="embedded ? '' : 'rounded-lg bg-white shadow'">
 		<div class="flex flex-wrap items-center gap-3 border-b px-6 py-3">
 			<span class="text-sm font-semibold">{{ trans("PageSpeed Insights") }}</span>
 
