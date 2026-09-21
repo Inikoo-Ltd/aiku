@@ -4074,6 +4074,39 @@ test('an external shop has no chat permissions at all', function () {
     expect($worker->authTo(['chat.'.$externalShop->id]))->toBeFalse();
 });
 
+test('an external shop with chat enabled gets chat permissions', function () {
+    $external = \App\Models\Catalogue\Shop::factory()->make()->toArray();
+    $external['type'] = \App\Enums\Catalogue\Shop\ShopTypeEnum::EXTERNAL->value;
+    $externalShop     = \App\Actions\Catalogue\Shop\StoreShop::run($this->organisation, $external);
+
+    $externalShop->update(['settings' => array_merge($externalShop->settings ?? [], ['chat' => ['enabled' => true]])]);
+    $externalShop->refresh();
+
+    expect(\App\Enums\SysAdmin\Authorisation\ShopPermissionsEnum::shopHasChat($externalShop))->toBeTrue()
+        ->and(collect(\App\Enums\SysAdmin\Authorisation\ShopPermissionsEnum::getAllValues($externalShop))
+            ->filter(fn ($name) => str_starts_with($name, 'chat')))->not->toBeEmpty();
+
+    \App\Actions\Catalogue\Shop\Seeders\SeedShopPermissions::run($externalShop);
+
+    setPermissionsTeamId($this->user->group_id);
+    $worker = User::factory()->create(['group_id' => $this->organisation->group_id, 'status' => true]);
+    $worker->assignRole(RolesEnum::getRoleName(RolesEnum::CUSTOMER_SERVICE_CLERK->value, $externalShop));
+
+    expect($worker->authTo(['chat.'.$externalShop->id]))->toBeTrue();
+});
+
+test('a non external shop with chat disabled loses chat permissions', function () {
+    $this->shop->update(['settings' => array_merge($this->shop->settings ?? [], ['chat' => ['enabled' => false]])]);
+    $this->shop->refresh();
+
+    expect(\App\Enums\SysAdmin\Authorisation\ShopPermissionsEnum::shopHasChat($this->shop))->toBeFalse()
+        ->and(collect(\App\Enums\SysAdmin\Authorisation\ShopPermissionsEnum::getAllValues($this->shop))
+            ->filter(fn ($name) => str_starts_with($name, 'chat')))->toBeEmpty();
+
+    $this->shop->update(['settings' => array_merge($this->shop->settings ?? [], ['chat' => ['enabled' => true]])]);
+    $this->shop->refresh();
+});
+
 test('regaining the position brings a suspended agent profile back', function () {
     setPermissionsTeamId($this->user->group_id);
 

@@ -88,8 +88,26 @@ interface ContactOption {
     url: string
 }
 
+/*
+ * The widget also runs outside Iris, in the Shopify embedded app, where there is no website
+ * layout to read the shop from and sessions are opened through a route that knows the
+ * merchant. Both are passed in there; everywhere else they keep coming from Iris.
+ */
+const props = withDefaults(
+    defineProps<{
+        shopId?: number | null
+        createSessionUrl?: string | null
+    }>(),
+    {
+        shopId: null,
+        createSessionUrl: null,
+    }
+)
+
 const layout: any = inject("layout", {})
 const baseUrl = layout?.appUrl ?? ""
+
+const shopId = computed(() => props.shopId ?? layout?.iris?.shop?.id)
 
 const isClient = typeof window !== "undefined"
 
@@ -235,14 +253,17 @@ const createSession = async (): Promise<ChatSessionData | null> => {
         const payload: any = {
             language_id: 68,
             priority: "normal",
-            shop_id: layout?.iris?.shop?.id,
+            shop_id: shopId.value,
         }
 
         if (isLoggedIn.value && layout.user?.id) {
             payload.web_user_id = layout.user?.id
         }
 
-        const res = await axios.post(`${baseUrl}/app/api/chats/sessions`, payload)
+        const res = await axios.post(
+            props.createSessionUrl ?? `${baseUrl}/app/api/chats/sessions`,
+            payload
+        )
         if (res.data?.data?.ulid) {
             saveChatSession(res.data.data)
             chatSession.value = res.data.data
@@ -655,7 +676,7 @@ const checkChatStatus = async (sessionUlid: string, isRetry = false) => {
     try {
         const res = await axios.get(`${baseUrl}/app/api/chats/status`, {
             params: {
-                shop_id: layout?.iris?.shop?.id,
+                shop_id: shopId.value,
                 ulid: sessionUlid
             },
         })

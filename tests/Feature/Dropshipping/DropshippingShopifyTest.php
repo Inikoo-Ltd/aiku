@@ -24,6 +24,10 @@ use App\Actions\Dropshipping\Shopify\Product\CreateNewBulkPortfoliosToShopify;
 use App\Actions\Dropshipping\Shopify\Product\StoreNewProductToCurrentShopify;
 use App\Actions\Maintenance\Dropshipping\RepairShopifyChannelReconnects;
 use App\Actions\Dropshipping\ShopifyUser\StoreShopifyUser;
+use App\Actions\Pupil\Chat\StorePupilChatSession;
+use App\Enums\CRM\Livechat\ChatChannelEnum;
+use App\Models\CRM\WebUser;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 use App\Actions\CRM\Customer\StoreCustomer;
 use App\Actions\Dropshipping\PlatformOutboundGuard;
 use App\Actions\Dropshipping\Portfolio\MatchBulkPortfoliosToPlatform;
@@ -1179,4 +1183,50 @@ test('the borrowed sku repair gives an unlinked portfolio its own sku back and l
     expect($repair->handle($borrower->refresh()))->toBe(RepairPortfoliosBorrowedSku::REPAIRED)
         ->and($borrower->refresh()->sku)->toBe(Str::lower($this->product->code))
         ->and($repair->borrowedSkuQuery($channel)->count())->toBe(0);
+});
+
+test('a shopify merchant opens a chat session bound to their web user', function () {
+    $customer    = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+    $shopifyUser = StoreShopifyUser::make()->handle($customer, ['name' => 'chat-shop']);
+
+    $webUser = WebUser::factory()->create([
+        'customer_id'     => $customer->id,
+        'group_id'        => $customer->group_id,
+        'organisation_id' => $customer->organisation_id,
+        'website_id'      => $customer->shop->website?->id,
+        'status'          => true,
+    ]);
+
+    $chatSession = StorePupilChatSession::make()->handle($shopifyUser->refresh());
+
+    expect($chatSession->shop_id)->toBe($this->shop->id)
+        ->and($chatSession->web_user_id)->toBe($webUser->id)
+        ->and($chatSession->guest_identifier)->toBeNull()
+        ->and($chatSession->channel)->toBe(ChatChannelEnum::WEBSITE);
+});
+
+test('a shopify merchant without a linked customer gets no chat session', function () {
+    $shopifyUser = StoreShopifyUser::make()->handle(
+        StoreCustomer::make()->action($this->shop, Customer::factory()->definition()),
+        ['name' => 'chat-shop-unlinked']
+    );
+    $shopifyUser->update(['customer_id' => null]);
+
+    StorePupilChatSession::make()->handle($shopifyUser->refresh());
+})->throws(HttpException::class);
+
+test('a shopify merchant on a shop with chat switched off gets no chat session', function () {
+    $customer    = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+    $shopifyUser = StoreShopifyUser::make()->handle($customer, ['name' => 'chat-shop-disabled']);
+
+    $this->shop->update(['settings' => array_merge($this->shop->settings ?? [], ['chat' => ['enabled' => false]])]);
+
+    try {
+        StorePupilChatSession::make()->handle($shopifyUser->refresh());
+        $this->fail('Expected the disabled shop to refuse a chat session');
+    } catch (HttpException $e) {
+        expect($e->getStatusCode())->toBe(403);
+    } finally {
+        $this->shop->update(['settings' => array_merge($this->shop->settings ?? [], ['chat' => ['enabled' => true]])]);
+    }
 });

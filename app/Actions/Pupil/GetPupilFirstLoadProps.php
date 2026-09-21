@@ -10,6 +10,7 @@ namespace App\Actions\Pupil;
 
 use App\Actions\Helpers\Language\UI\GetLanguagesOptions;
 use App\Actions\Retina\UI\Layout\GetPupilDropshippingNavigation;
+use App\Enums\SysAdmin\Authorisation\ShopPermissionsEnum;
 use App\Http\Resources\Helpers\LanguageResource;
 use App\Models\Dropshipping\ShopifyUser;
 use App\Models\Helpers\Language;
@@ -40,8 +41,29 @@ class GetPupilFirstLoadProps
                 ],
                 'layout'   => [
                     'navigation'    => GetPupilDropshippingNavigation::run($shopifyUser),
+                    'chat'          => $this->getChat($shopifyUser),
                 ],
                 'environment' => app()->environment(),
             ];
+    }
+
+    /**
+     * @return array{enabled: bool, shop_id: int|null}
+     */
+    private function getChat(?ShopifyUser $shopifyUser): array
+    {
+        $shop = $shopifyUser?->customer?->shop;
+
+        if (!$shop || !ShopPermissionsEnum::shopHasChat($shop)) {
+            return [
+                'enabled' => false,
+                'shop_id' => null,
+            ];
+        }
+
+        return [
+            'enabled' => true,
+            'shop_id' => $shop->id,
+        ];
     }
 }
