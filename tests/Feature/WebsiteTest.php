@@ -42,6 +42,7 @@ use App\Actions\Web\Webpage\Iris\ShowIrisWebpage;
 use App\Actions\Web\Webpage\ProcessWebpageTimeSeriesRecords;
 use App\Actions\Web\Webpage\StoreWebpage;
 use App\Actions\Web\Webpage\StoreWebpagePageSpeedTimeSeriesRecord;
+use App\Actions\Web\Website\GetWebsitePageSpeedHistory;
 use App\Actions\Web\Webpage\UpdateWebpage;
 use Illuminate\Support\Arr;
 use App\Actions\Web\Webpage\LockWebpage;
@@ -498,6 +499,8 @@ test('UI show website exposes showcase props the component actually reads', func
                 ->etc()
         )
         ->etc());
+
+    expect($response->original->getData()['page']['deferredProps'] ?? [])->toHaveKey('pagespeed_history');
 })->depends('launch website');
 
 test('UI index websites in organisation', function () {
@@ -1800,6 +1803,42 @@ test('the daily pagespeed crawl queues every department and the best performing 
         ->and($queuedWebpageIds)->not->toContain($slowFamily->id)
         ->and($queuedWebpageIds)->not->toContain($productPage->id)
         ->and($queuedWebpageIds)->not->toContain($closedFamily->id);
+})->depends('launch website');
+
+test('the website page speed history averages every measured webpage of the website per day', function (Website $website) {
+    $storeScore = fn (Webpage $webpage, string $strategy, string $fetchedAt, int $performance) => StoreWebpagePageSpeedTimeSeriesRecord::run($webpage, [
+        'strategy'   => $strategy,
+        'fetched_at' => $fetchedAt,
+        'scores'     => [
+            ['key' => 'performance', 'label' => 'Performance', 'score' => $performance, 'rating' => 'average'],
+            ['key' => 'seo', 'label' => 'SEO', 'score' => 90, 'rating' => 'fast'],
+        ],
+    ]);
+
+    $fastWebpage = StoreWebpage::make()->action($website->storefront, Webpage::factory()->definition());
+    $slowWebpage = StoreWebpage::make()->action($website->storefront, Webpage::factory()->definition());
+
+    $yesterday = now()->subDay()->startOfDay();
+    $today     = now()->startOfDay();
+
+    $storeScore($fastWebpage, 'desktop', $yesterday->copy()->addHours(3)->toIso8601String(), 80);
+    $storeScore($slowWebpage, 'desktop', $yesterday->copy()->addHours(4)->toIso8601String(), 60);
+    $storeScore($fastWebpage, 'mobile', $yesterday->copy()->addHours(5)->toIso8601String(), 40);
+    $storeScore($fastWebpage, 'desktop', $today->copy()->addHours(3)->toIso8601String(), 90);
+
+    $pageSpeed = GetWebsitePageSpeedHistory::run($website);
+    $points    = collect($pageSpeed['history'])->keyBy('date');
+
+    expect($pageSpeed['frequency'])->toBe('daily')
+        ->and($pageSpeed['last_measured_on'])->toBe($today->toDateString())
+        ->and($pageSpeed['measured_webpages'])->toBeGreaterThanOrEqual(2)
+        ->and($points[$yesterday->toDateString()]['webpages'])->toBe(['desktop' => 2, 'mobile' => 1])
+        ->and($points[$yesterday->toDateString()]['desktop']['performance'])->toBe(70)
+        ->and($points[$yesterday->toDateString()]['desktop']['seo'])->toBe(90)
+        ->and($points[$yesterday->toDateString()]['mobile']['performance'])->toBe(40)
+        ->and($points[$yesterday->toDateString()]['mobile']['accessibility'])->toBeNull()
+        ->and($points[$today->toDateString()]['desktop']['performance'])->toBe(90)
+        ->and($points[$today->toDateString()]['webpages'])->toBe(['desktop' => 1, 'mobile' => 0]);
 })->depends('launch website');
 
 test('publish announcement', function (Website $website) {
