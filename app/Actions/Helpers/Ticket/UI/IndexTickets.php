@@ -58,6 +58,7 @@ class IndexTickets extends OrgAction
                     ...(Ticket::canBeManagedBy($user) ? [
                         'assigned'      => [__('Assigned to me'), (clone $base)->where('assignee_id', $user->id)->count()],
                         'collaborating' => [__('Collaborating on'), (clone $base)->whereHas('collaborators', fn ($query) => $query->whereKey($user->id))->count()],
+                        'unassigned'    => [__('Unassigned'), (clone $base)->whereNull('assignee_id')->count()],
                     ] : []),
                 ],
                 'engine'   => function ($query, $elements) use ($user) {
@@ -70,6 +71,9 @@ class IndexTickets extends OrgAction
                         }
                         if (in_array('collaborating', $elements)) {
                             $query->orWhereExists(fn ($collaborators) => $collaborators->selectRaw('1')->from('ticket_collaborators')->whereColumn('ticket_collaborators.ticket_id', 'tickets.id')->where('ticket_collaborators.user_id', $user->id));
+                        }
+                        if (in_array('unassigned', $elements)) {
+                            $query->orWhereNull('tickets.assignee_id');
                         }
                     });
                 },

@@ -2368,6 +2368,7 @@ test('the ticket list offers ownership by role and QA filters', function () {
     get(route('grp.tickets.list'))->assertInertia(
         fn (AssertableInertia $page) => $page->where('queryBuilderProps.default.elementGroups.mine.label', 'Ownership')
             ->has('queryBuilderProps.default.elementGroups.mine.elements.assigned')
+            ->has('queryBuilderProps.default.elementGroups.mine.elements.unassigned')
             ->has('queryBuilderProps.default.elementGroups.qa_status')
             ->has('queryBuilderProps.default.elementGroups.qa_checker')
     );
@@ -2381,6 +2382,12 @@ test('the ticket list offers ownership by role and QA filters', function () {
             ->has('queryBuilderProps.default.elementGroups.qa_checker')
     );
 
+    actingAs($this->user);
+    $unassignedTicket = StoreTicket::make()->action($this->group, ['subject' => 'List nobody on it']);
+    $assignedTicket   = StoreTicket::make()->action($this->group, ['subject' => 'List someone on it', 'assignee_id' => $this->user->id]);
+    expect($references(['mine' => 'unassigned'])->all())->toContain($unassignedTicket->reference)->not->toContain($assignedTicket->reference);
+
+    actingAs($qa);
     expect($references(['mine' => 'reported'])->all())->toContain($noQa->reference)->not->toContain($forAnyone->reference)
         ->and($references(['qa_checker' => 'mine'])->all())->toContain($forQa->reference, $failed->reference)->not->toContain($forAnyone->reference, $noQa->reference)
         ->and($references(['qa_checker' => 'anyone'])->all())->toContain($forAnyone->reference)->not->toContain($forQa->reference, $noQa->reference)
