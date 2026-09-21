@@ -5324,6 +5324,7 @@ test('an inbound gmail message brings the rest of its gmail thread in as earlier
     expect($message->chatSession->messages()->count())->toBe(3);
 
     $message->chatSession->messages()->where('metadata->gmail_thread_history', true)->delete();
+    \Illuminate\Support\Sleep::fake();
     ChatSession::where('shop_id', $this->shop->id)
         ->where('channel', ChatChannelEnum::EMAIL)
         ->whereKeyNot($message->chat_session_id)

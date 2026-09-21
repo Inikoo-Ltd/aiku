@@ -14,7 +14,9 @@ use App\Models\Catalogue\Shop;
 use App\Models\Chat\ChatSession;
 use App\Services\Gmail\GmailClient;
 use Illuminate\Console\Command;
+use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Sleep;
 use Laravel\Nightwatch\Facades\Nightwatch;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Throwable;
@@ -47,14 +49,21 @@ class BackfillGmailThreadHistory
             ->chunkById(100, function ($sessions) use ($client, $mailboxAddress, &$result) {
                 foreach ($sessions as $session) {
                     try {
-                        $result['messages'] += ProcessInboundEmail::make()->importThreadHistory(
-                            $client,
-                            $session,
-                            Arr::get($session->metadata, 'gmail_thread_id'),
-                            $mailboxAddress,
-                            $session->webUser
+                        $result['messages'] += retry(
+                            4,
+                            fn () => ProcessInboundEmail::make()->importThreadHistory(
+                                $client,
+                                $session,
+                                Arr::get($session->metadata, 'gmail_thread_id'),
+                                $mailboxAddress,
+                                $session->webUser
+                            ),
+                            30000,
+                            fn (Throwable $exception) => $exception instanceof RequestException
+                                && in_array($exception->response->status(), [403, 429], true)
                         );
                         $result['sessions']++;
+                        Sleep::for(1)->second();
                     } catch (Throwable $exception) {
                         report($exception);
                         $result['failed']++;
