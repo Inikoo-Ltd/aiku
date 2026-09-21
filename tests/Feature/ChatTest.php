@@ -4688,13 +4688,16 @@ test('email does not sit under the website tab', function () {
 });
 
 test('GetChatReports counts only conversations the visitor wrote in and measures the first reply', function () {
-    $session = fn (string $channel) => ChatSession::create([
+    $this->freezeTime();
+    [, , $reportShop] = createOwnShop(__FILE__.':chat-reports');
+
+    $session = fn (string $channel, int $shopId) => ChatSession::create([
         'ulid'             => (string)Str::ulid(),
         'status'           => ChatSessionStatusEnum::ACTIVE,
         'guest_identifier' => 'guest_'.Str::random(5),
         'language_id'      => 68,
         'priority'         => ChatPriorityEnum::NORMAL,
-        'shop_id'          => $this->shop->id,
+        'shop_id'          => $shopId,
         'channel'          => $channel,
         'created_at'       => now()->subHours(2),
         'updated_at'       => now(),
@@ -4711,16 +4714,19 @@ test('GetChatReports counts only conversations the visitor wrote in and measures
         'updated_at'      => now(),
     ]);
 
-    $answered = $session('website');
+    $answered = $session('website', $reportShop->id);
     $message($answered, ChatSenderTypeEnum::GUEST->value, 100);
     $message($answered, ChatSenderTypeEnum::AGENT->value, 90);
 
-    $emailed = $session('email');
+    $emailed = $session('email', $reportShop->id);
     $message($emailed, ChatSenderTypeEnum::USER->value, 60);
 
-    $widgetOnlyOpened = $session('website');
+    $widgetOnlyOpened = $session('website', $reportShop->id);
 
-    $result = GetChatReports::make()->handle(collect([$this->shop->id]), '1w');
+    $otherShopConversation = $session('website', $this->shop->id);
+    $message($otherShopConversation, ChatSenderTypeEnum::GUEST->value, 30);
+
+    $result = GetChatReports::make()->handle(collect([$reportShop->id]), '1w');
 
     expect($result['conversations'])->toBe(2)
         ->and($result['answered'])->toBe(1)
