@@ -7,6 +7,7 @@ import { faShare, faFaceSmile, faReply, faLocationDot, faPhone, faCopy, faCircle
 import axios from "axios"
 import { useChatLanguages } from "@/Composables/useLanguages"
 import { cleanEmailText } from "@/Composables/cleanEmailText"
+import { showEmailBody as shouldShowEmailBody } from "@/Composables/showEmailBody"
 import Image from "primevue/image"
 import { ctrans } from "@/Composables/useTrans"
 import { notify } from "@kyvg/vue3-notification"
@@ -44,6 +45,7 @@ interface Message {
     is_offline_message: boolean
     sender_type: SenderType
     message_text: string
+    html_body?: string | null
     created_at: string
     media_url?: {
         original: string
@@ -497,13 +499,7 @@ const displayText = computed(() => {
 
 const formattedText = computed(() => formatWhatsappMarkup(displayText.value))
 
-// Only the sender's own message is shown as markup. An edited, retracted or translated message
-// falls back to text, because what is on screen then is not what arrived.
-const showEmailBody = computed(() =>
-    !!props.message.html_body
-    && !isRetracted.value
-    && !showTranslation.value
-)
+const showEmailBody = computed(() => shouldShowEmailBody(props.message))
 
 const location = computed(() => {
     if (props.message.metadata?.wa_type !== "location") return null
