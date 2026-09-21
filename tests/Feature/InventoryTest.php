@@ -3418,3 +3418,20 @@ test('an abandoned low stock audit lock expires instead of holding the SKO for e
 
     expect(HandleLowStockAuditLock::make()->handle($warehouse, $lock + ['holder' => 'another-tab'])['granted'])->toBeTrue();
 });
+
+test('a low stock audit still open keeps its lock through the heartbeat', function () {
+    $warehouse = createWarehouse();
+    $stock     = StoreStock::make()->action($this->group, array_merge(Stock::factory()->definition(), ['state' => StockStateEnum::ACTIVE]));
+    $orgStock  = StoreOrgStock::make()->action($this->organisation, $stock);
+
+    $lock = ['org_stock_id' => $orgStock->id, 'is_locked' => true, 'source' => 'detail'];
+
+    HandleLowStockAuditLock::make()->handle($warehouse, $lock + ['holder' => 'counting-tab']);
+
+    foreach ([20, 40] as $minutes) {
+        $this->travelTo(now()->addMinutes($minutes));
+
+        expect(HandleLowStockAuditLock::make()->handle($warehouse, $lock + ['holder' => 'counting-tab'])['granted'])->toBeTrue()
+            ->and(HandleLowStockAuditLock::make()->handle($warehouse, $lock + ['holder' => 'another-tab'])['granted'])->toBeFalse();
+    }
+});

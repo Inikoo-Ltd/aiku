@@ -54,8 +54,19 @@ class HandleLowStockAuditLock
     {
         $lock = Cache::lock($this->lockKey($orgStockId), self::LOCK_SECONDS, $holder);
 
-        // Asking twice for a lock already held is the same holder settling, not a refusal
-        return $lock->get() || $lock->isOwnedByCurrentProcess();
+        if ($lock->get()) {
+            return true;
+        }
+
+        // Asking twice for a lock already held is the same holder settling or its heartbeat, not a
+        // refusal: it is re-taken so a count still open does not lose the lock under the counter
+        if ($lock->isOwnedByCurrentProcess()) {
+            $lock->release();
+
+            return $lock->get();
+        }
+
+        return false;
     }
 
     private function release(int $orgStockId, string $holder): bool
