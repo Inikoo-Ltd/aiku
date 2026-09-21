@@ -18,6 +18,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $shop_id
  * @property int $number_outboxes
  * @property int $number_outboxes_type_basket_low_stock
+ * @property int $number_outboxes_type_basket_on_offer
  * @property int $number_outboxes_type_basket_push
  * @property int $number_outboxes_type_new_customer_push
  * @property int $number_outboxes_type_new_customer

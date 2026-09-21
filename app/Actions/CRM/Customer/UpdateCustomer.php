@@ -399,6 +399,7 @@ class UpdateCustomer extends OrgAction
             'email_subscriptions.is_subscribed_to_abandoned_cart'   => ['sometimes', 'boolean'],
             'email_subscriptions.is_subscribed_to_reorder_reminder' => ['sometimes', 'boolean'],
             'email_subscriptions.is_subscribed_to_basket_low_stock' => ['sometimes', 'boolean'],
+            'email_subscriptions.is_subscribed_to_basket_on_offer' => ['sometimes', 'boolean'],
             'email_subscriptions.is_subscribed_to_basket_reminder'  => ['sometimes', 'boolean'],
             'email_subscriptions.is_subscribed_to_gold_reward_reminder' => ['sometimes', 'boolean'],
             'email_subscriptions.is_subscribed_to_whatsapp_newsletter' => ['sometimes', 'boolean'],

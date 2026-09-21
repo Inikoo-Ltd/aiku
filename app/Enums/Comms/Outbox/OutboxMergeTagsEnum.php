@@ -47,6 +47,7 @@ enum OutboxMergeTagsEnum: string
     case DELIVERY_ADDRESS = 'Delivery Address';
     case INVOICE_ADDRESS = 'Invoice Address';
     case ABANDONED_CART_ITEMS = 'Abandoned Cart Items';
+    case BASKET_ON_OFFER_ITEMS = 'Basket on Offer Items';
 
 
     public static function tags(): array
