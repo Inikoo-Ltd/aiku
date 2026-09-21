@@ -32,13 +32,27 @@ import { faExternalLink, faExclamationTriangle } from '@far'
 
 library.add(faExternalLink, faEyeSlash, faExclamationTriangle, faSpinnerThird)
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
     production?: boolean
     jumpToIndex?: string  // ulid
     data: BannerWorkshop
     view?: string
-    ratio?: string    
-}>()
+    ratio?: string
+    autoplay?: boolean
+}>(), {
+    autoplay: true
+})
+
+const autoplayOptions = computed(() => {
+    if (!props.autoplay) {
+        return false
+    }
+
+    return {
+        delay: props.data?.delay ?? 5000,
+        disableOnInteraction: false
+    }
+})
 
 type ImgAttributes = { fetchpriority?: 'high' | 'low'; loading?: 'lazy' | 'eager'; decoding?: 'auto' | 'async' | 'sync' } | undefined
 
@@ -288,7 +302,7 @@ onBeforeUnmount(() => {
                 <Swiper class="w-full h-full" ref="swiperRef" :key="'banner' + intSwiperKey" :slideToClickedSlide="true"
                     :spaceBetween="get(data, ['common', 'spaceBetween']) ? data.common.spaceBetween : 0"
                     :slidesPerView="1" :centeredSlides="true"
-                    :loop="visibleComponents.length > 1" :autoplay="true" :pagination="get(data, ['navigation', 'bottomNav', 'value'], false) && get(data, ['navigation', 'bottomNav', 'type', 'value'], false) == 'bullets' ? {  // Render Navigation (bullet)
+                    :loop="visibleComponents.length > 1" :autoplay="autoplayOptions" :pagination="get(data, ['navigation', 'bottomNav', 'value'], false) && get(data, ['navigation', 'bottomNav', 'type', 'value'], false) == 'bullets' ? {  // Render Navigation (bullet)
                         clickable: true,
                         renderBullet: (index, className) => {
                             return `<span class='${className}'></span>`
@@ -296,7 +310,7 @@ onBeforeUnmount(() => {
                     } : false" :navigation="!data.navigation || data.navigation?.sideNav?.value"
                     :modules="[Autoplay, Pagination, Navigation]">
                     <SwiperSlide v-for="(component, index) in visibleComponents" :key="component.id"
-                        class="w-full h-full">
+                        :data-slide-ulid="component.ulid" class="w-full h-full">
                         <!-- Slide: Image -->
                         <div v-if="get(component, ['layout', 'backgroundType', props.view], get(component, ['layout', 'backgroundType', 'desktop'], 'image')) == 'image'"
                             class="relative w-full h-full">
@@ -417,12 +431,12 @@ onBeforeUnmount(() => {
                         </template>
                         <template
                             v-if="component?.layout?.centralStage?.title || component?.layout?.centralStage?.subtitle">
-                            <CentralStage :data="component.layout.centralStage" />
+                            <CentralStage :data="component.layout.centralStage" scope="slide" />
                         </template>
 
                         <template v-else-if="data.common?.centralStage?.title
                             || data.common?.centralStage?.subtitle">
-                            <CentralStage :data="data.common.centralStage" />
+                            <CentralStage :data="data.common.centralStage" scope="common" />
                         </template>
 
                         <div

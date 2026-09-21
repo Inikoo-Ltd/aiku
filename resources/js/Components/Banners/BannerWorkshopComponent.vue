@@ -1,142 +1,269 @@
 <script setup lang="ts">
-import { ref, computed, provide, onMounted, onBeforeUnmount, watch, nextTick } from "vue"
+import { ref, computed, provide, watch, nextTick, toRef } from "vue"
+import { cloneDeep, get, set } from "lodash-es"
 import SlidesWorkshop from "@/Components/Banners/SlidesWorkshop.vue"
 import SliderLandscape from "@/Components/Banners/Slider/SliderLandscape.vue"
 import SliderSquare from "@/Components/Banners/Slider/SliderSquare.vue"
 import SlidesWorkshopAddMode from "@/Components/Banners/SlidesWorkshopAddMode.vue"
 import ScreenView from "@/Components/ScreenView.vue"
-import { BannerWorkshop } from "@/types/BannerWorkshop"
-import { routeType } from "@/types/route"
+import Button from "@/Components/Elements/Buttons/Button.vue"
+import BannerCanvasOverlay from "@/Components/Banners/Canvas/BannerCanvasOverlay.vue"
+import { MAX_PREVIEW_HEIGHT, useBannerPreviewScale } from "@/Composables/useBannerPreviewScale"
+import { BACKGROUND_KEY, fieldPathForEditableKey } from "@/Composables/useBannerCanvas"
+import type { BannerScreenView, BannerWorkshop } from "@/types/BannerWorkshop"
+import type { routeType } from "@/types/route"
+import { ctrans } from "@/Composables/useTrans"
+import { library } from "@fortawesome/fontawesome-svg-core"
+import { faPause, faPlay } from "@fal"
+
+library.add(faPause, faPlay)
 
 const props = defineProps<{
-  modelValue: BannerWorkshop
-  imagesUploadRoute: any
-  banner: any
-  ratio: string
-  galleryRoute: {
-    stock_images: routeType
-    uploaded_images: routeType
-  }
+    modelValue: BannerWorkshop
+    imagesUploadRoute: routeType
+    ratio: string
+    galleryRoute: {
+        stock_images: routeType
+        uploaded_images: routeType
+    }
 }>()
 
 const emits = defineEmits<{
-  (e: "update:modelValue", val: BannerWorkshop): void
+    (e: "update:modelValue", value: BannerWorkshop): void
 }>()
 
+const data = computed<BannerWorkshop>({
+    get: () => props.modelValue,
+    set: (value) => emits("update:modelValue", value)
+})
+
 const jumpToIndex = ref<string>("")
-const screenView = ref<string>("desktop")
+const screenView = ref<BannerScreenView>("desktop")
 provide("screenView", screenView)
 
-const data = computed<BannerWorkshop>({
-  get() {
-    return props.modelValue
-  },
-  set(v) {
-    emits("update:modelValue", v)
-  }
-})
-const hasSlides = computed(() => {
-  return props.modelValue?.components?.some((item: any) => item.ulid != null)
-})
+const hasSlides = computed(() => props.modelValue?.components?.some((slide) => slide.ulid != null))
+const isSquare = computed(() => props.modelValue.type === "square")
 
 const containerRef = ref<HTMLElement | null>(null)
-const containerWidth = ref(0)
+const { needsScale, scaleValue, measureContainer } = useBannerPreviewScale(containerRef, toRef(props, "ratio"))
 
-let resizeObserver: ResizeObserver | null = null
-
-onMounted(() => {
-  if (!containerRef.value) return
-
-  containerWidth.value = containerRef.value.offsetWidth
-
-  resizeObserver = new ResizeObserver((entries) => {
-    for (const entry of entries) {
-      containerWidth.value = entry.contentRect.width
+const scaledPreviewStyle = computed(() => {
+    if (!needsScale.value) {
+        return {}
     }
-  })
 
-  resizeObserver.observe(containerRef.value)
+    return {
+        transform: `scale(${scaleValue.value})`,
+        transformOrigin: "top center",
+        width: "100%"
+    }
 })
 
-onBeforeUnmount(() => {
-  resizeObserver?.disconnect()
-})
+const isPlaying = ref(false)
+const stageRef = ref<HTMLElement | null>(null)
+const selectedKey = ref<string | null>(null)
+const focusField = ref<string | null>(null)
+const focusScope = ref<"slide" | "common">("slide")
+const focusToken = ref(0)
+const selectedSlideUlid = ref<string | null>(null)
 
-const calculatedHeight = computed(() => {
-  if (!props.ratio || !containerWidth.value) return 0
+const onCanvasSelect = ({
+    key,
+    scope,
+    slideUlid
+}: {
+    key: string
+    scope: "slide" | "common"
+    slideUlid: string | null
+}) => {
+    selectedKey.value = key
+    selectedSlideUlid.value = slideUlid
+    focusScope.value = scope
+    focusField.value = fieldPathForEditableKey(key, scope)
+    focusToken.value++
 
-  if (props.ratio.includes('/')) {
-    const [w, h] = props.ratio.split('/').map(Number)
-    return containerWidth.value * (h / w)
-  }
+    if (slideUlid) {
+        jumpToIndex.value = slideUlid
+    }
+}
 
-  const numeric = Number(props.ratio)
-  if (!isNaN(numeric) && numeric > 0) {
-    return containerWidth.value * (1 / numeric)
-  }
+const SWIPER_CONTROLS = ".swiper-button-next, .swiper-button-prev, .swiper-pagination"
 
-  return 0
-})
+/**
+ * The banner keeps its storefront links, which would navigate away from the
+ * workshop on any click, so the stage swallows them and treats the click as a
+ * selection of the slide background instead.
+ */
+const onStageClick = (event: MouseEvent) => {
+    const target = event.target as HTMLElement | null
 
-const scaleValue = computed(() => {
-  if (calculatedHeight.value <= 500) return 1
-  return 500 / calculatedHeight.value
-})
+    if (target?.closest("a[href]")) {
+        event.preventDefault()
+        event.stopPropagation()
+    }
 
-const needsScale = computed(() => calculatedHeight.value > 500)
+    if (isPlaying.value || target?.closest(SWIPER_CONTROLS)) {
+        return
+    }
+
+    const slideUlid = target?.closest("[data-slide-ulid]")?.getAttribute("data-slide-ulid") ?? null
+
+    if (!slideUlid) {
+        return
+    }
+
+    onCanvasSelect({ key: BACKGROUND_KEY, scope: "slide", slideUlid })
+}
+
+const onCanvasEditText = ({
+    key,
+    scope,
+    slideUlid,
+    value
+}: {
+    key: string
+    scope: "slide" | "common"
+    slideUlid: string | null
+    value: string
+}) => {
+    const path = key.split(".")
+    const updated = cloneDeep(props.modelValue)
+
+    if (scope === "common") {
+        set(updated, ["common", ...path], value)
+        data.value = updated
+        return
+    }
+
+    const index = updated.components?.findIndex((slide) => slide.ulid === slideUlid) ?? -1
+
+    if (index === -1) {
+        return
+    }
+
+    const currentStage = get(updated, ["components", index, "layout", "centralStage"])
+
+    if (!currentStage) {
+        set(updated, ["components", index, "layout", "centralStage"], cloneDeep(updated.common?.centralStage) ?? {})
+    }
+
+    set(updated, ["components", index, "layout", ...path], value)
+    data.value = updated
+}
 
 watch(
-  () => props.modelValue.components.length,
-  async () => {
-
-    await nextTick()
-
-    requestAnimationFrame(() => {
-      if (containerRef.value) {
-        containerWidth.value = containerRef.value.offsetWidth
-      }
-    })
-  }
+    () => props.modelValue.components.length,
+    async () => {
+        await nextTick()
+        requestAnimationFrame(measureContainer)
+    }
 )
+
+watch(screenView, () => {
+    selectedKey.value = null
+})
+
+watch(isPlaying, (playing) => {
+    if (playing) {
+        selectedKey.value = null
+    }
+})
 </script>
 
 <template>
-  <div v-if="hasSlides" class="w-full">
-    <div class="flex justify-end pr-2">
-      <ScreenView @screenView="val => (screenView = val)" />
-    </div>
+    <div v-if="hasSlides" class="w-full">
+        <div class="flex items-center justify-end gap-x-2 pr-2">
+            <Button
+                v-tooltip="isPlaying ? ctrans('Pause to edit on the banner') : ctrans('Play the slideshow')"
+                type="tertiary"
+                size="xs"
+                :icon="isPlaying ? 'fal fa-pause' : 'fal fa-play'"
+                :label="isPlaying ? ctrans('Pause') : ctrans('Play')"
+                @click="isPlaying = !isPlaying"
+            />
 
-    <!-- Banner preview -->
-    <div class="flex pr-0.5  editor-class" :class="[props.modelValue.type === 'square'
-      ? 'justify-start 2xl:justify-center'
-      : 'justify-center']">
-      <div v-if="props.modelValue.type === 'square'" class="w-full min-h-[250px] max-h-[400px]">
-        <SliderSquare :data="props.modelValue" :jumpToIndex="jumpToIndex" :view="screenView" :ratio />
-      </div>
-
-      <div v-else ref="containerRef" class="w-full max-w-[1200px] mx-auto overflow-hidden relative"
-        :style="needsScale ? { height: '500px' } : {}">
-        <div :style="needsScale
-          ? {
-            transform: `scale(${scaleValue})`,
-            transformOrigin: 'top center',
-            width: '100%'
-          }
-          : {}">
-          <SliderLandscape :data="props.modelValue" :jumpToIndex="jumpToIndex" :view="screenView" :ratio="ratio" />
+            <ScreenView @screenView="(value) => (screenView = value as BannerScreenView)" />
         </div>
-      </div>
+
+        <div
+            class="flex pr-0.5 editor-class"
+            :class="isSquare ? 'justify-start 2xl:justify-center' : 'justify-center'"
+        >
+            <div v-if="isSquare" class="w-full min-h-[250px] max-h-[400px]">
+                <!-- The stage wraps the banner only: the overlay sits beside it so its own
+                     nodes stay outside the MutationObserver watching the banner. -->
+                <div class="relative h-full w-full">
+                    <div ref="stageRef" class="h-full w-full" @click.capture="onStageClick" @dragstart.prevent>
+                        <SliderSquare
+                            :data="modelValue"
+                            :jumpToIndex="jumpToIndex"
+                            :view="screenView"
+                            :ratio
+                            :autoplay="isPlaying"
+                        />
+                    </div>
+                    <BannerCanvasOverlay
+                        v-if="!isPlaying"
+                        :stage="stageRef"
+                        :selectedKey="selectedKey"
+                        @select="onCanvasSelect"
+                        @editText="onCanvasEditText"
+                    />
+                </div>
+            </div>
+
+            <div
+                v-else
+                ref="containerRef"
+                class="w-full max-w-[1200px] mx-auto overflow-hidden relative"
+                :style="needsScale ? { height: `${MAX_PREVIEW_HEIGHT}px` } : {}"
+            >
+                <div :style="scaledPreviewStyle">
+                    <div class="relative">
+                        <div ref="stageRef" @click.capture="onStageClick" @dragstart.prevent>
+                            <SliderLandscape
+                                :data="modelValue"
+                                :jumpToIndex="jumpToIndex"
+                                :view="screenView"
+                                :ratio
+                                :autoplay="isPlaying"
+                            />
+                        </div>
+                        <BannerCanvasOverlay
+                            v-if="!isPlaying"
+                            :stage="stageRef"
+                            :scale="needsScale ? scaleValue : 1"
+                            :selectedKey="selectedKey"
+                            @select="onCanvasSelect"
+                            @editText="onCanvasEditText"
+                        />
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <SlidesWorkshop
+            v-model="data"
+            class="clear-both mt-2 p-2.5"
+            :bannerType="modelValue.type"
+            :imagesUploadRoute="imagesUploadRoute"
+            :screenView="screenView"
+            :galleryRoute="galleryRoute"
+            :ratio
+            :focusField="focusField"
+            :focusScope="focusScope"
+            :focusSlideUlid="selectedSlideUlid"
+            :focusToken="focusToken"
+            @jumpToIndex="(value) => (jumpToIndex = value)"
+        />
     </div>
 
-    <!-- Editor -->
-    <SlidesWorkshop :bannerType="props.modelValue.type" class="clear-both mt-2 p-2.5" v-model="data"
-      @jumpToIndex="val => (jumpToIndex = val)" :imagesUploadRoute="imagesUploadRoute" :screenView="screenView"
-      :galleryRoute="galleryRoute" :ratio />
-  </div>
-
-  <!-- Empty state -->
-  <div v-else>
-    <SlidesWorkshopAddMode :data="props.modelValue" :imagesUploadRoute="imagesUploadRoute" :galleryRoute="galleryRoute"
-      :ratio />
-  </div>
+    <div v-else>
+        <SlidesWorkshopAddMode
+            :data="modelValue"
+            :imagesUploadRoute="imagesUploadRoute"
+            :galleryRoute="galleryRoute"
+            :ratio
+        />
+    </div>
 </template>

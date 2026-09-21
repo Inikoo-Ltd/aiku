@@ -31,12 +31,27 @@ import 'swiper/css'
 import 'swiper/css/navigation'
 import 'swiper/css/pagination'
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
     production?: boolean
     jumpToIndex?: string  // ulid
     data: BannerWorkshop
     view?: string
-}>()
+    ratio?: string
+    autoplay?: boolean
+}>(), {
+    autoplay: true
+})
+
+const autoplayOptions = computed(() => {
+    if (!props.autoplay) {
+        return false
+    }
+
+    return {
+        delay: props.data?.delay ?? 5000,
+        disableOnInteraction: false
+    }
+})
 
 const swiperRef = ref(null)
 const intSwiperKey = ref(0)
@@ -212,10 +227,7 @@ onMounted(() => {
                 :slidesPerView="compSlidesPerView"
                 :centeredSlides="false"
                 :loop="visibleComponents.length > compSlidesPerView"
-                :autoplay="{
-                    delay: data.delay,
-                    disableOnInteraction: false,
-                }"
+                :autoplay="autoplayOptions"
                 :pagination="get(data, ['navigation', 'bottomNav', 'value'], false) && get(data, ['navigation', 'bottomNav', 'type', 'value'], false) == 'bullets' ? {  // Render Navigation (bullet)
                     clickable: true,
                     renderBullet: (index, className) => {
@@ -227,7 +239,7 @@ onMounted(() => {
                 class="mySwiper h-full w-full"
             >
                 <SwiperSlide v-for="(component, index) in visibleComponents" :key="component.id"
-                    class="h-full overflow-hidden aspect-square">
+                    :data-slide-ulid="component.ulid" class="h-full overflow-hidden aspect-square">
                     <!-- Section: image or background -->
                     <div v-if="get(component, ['layout', 'backgroundType',props.view || 'desktop'], 'image') === 'image'"
                         class="relative w-full h-full">
@@ -356,10 +368,10 @@ onMounted(() => {
                     </template>
                     <CentralStage
                         v-if="component?.layout?.centralStage?.title || component?.layout?.centralStage?.subtitle"
-                        :data="component?.layout?.centralStage" />
+                        :data="component?.layout?.centralStage" scope="slide" />
                     <CentralStage
-                        v-if="data.common?.centralStage?.title || data.common?.centralStage?.subtitle"
-                        :data="data.common?.centralStage" />
+                        v-else-if="data.common?.centralStage?.title || data.common?.centralStage?.subtitle"
+                        :data="data.common?.centralStage" scope="common" />
                 </SwiperSlide>
                 <div v-if="data.navigation?.bottomNav?.value && data.navigation?.bottomNav?.type?.value == 'buttons'" class="absolute bottom-1 left-1/2 -translate-x-1/2 z-10">
                     <SlideControls :dataBanner="data" :swiperRef="swiperRef" />
