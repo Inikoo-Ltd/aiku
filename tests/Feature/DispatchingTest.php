@@ -4554,3 +4554,29 @@ test('a second return only covers what was not returned yet and waits for the fi
 
     expect($processReturn)->toThrow(\Illuminate\Validation\ValidationException::class);
 });
+
+test('a pick that moves no state still tells the order transaction what was picked', function () {
+    [, $item] = handlingDeliveryNoteWithPicking($this);
+
+    $transaction = $item->transaction;
+    $transaction->update(['quantity_picked' => 0]);
+
+    \App\Actions\Dispatching\DeliveryNoteItem\CalculateDeliveryNoteItemTotalPicked::make()->action($item->refresh());
+
+    expect((float)$transaction->refresh()->quantity_picked)
+        ->toBe((float)$transaction->quantity_ordered + (float)$transaction->quantity_bonus);
+});
+
+test('a late pick on a blocked note tells the order transaction what was picked', function () {
+    [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($this);
+
+    $transaction = $item->transaction;
+    $transaction->update(['quantity_picked' => 0]);
+    $transaction->order->update(['state' => \App\Enums\Ordering\Order\OrderStateEnum::HANDLING_BLOCKED]);
+    $deliveryNote->update(['state' => DeliveryNoteStateEnum::HANDLING_BLOCKED]);
+
+    \App\Actions\Dispatching\DeliveryNoteItem\CalculateDeliveryNoteItemTotalPicked::make()->action($item->refresh());
+
+    expect((float)$transaction->refresh()->quantity_picked)
+        ->toBe((float)$transaction->quantity_ordered + (float)$transaction->quantity_bonus);
+});
