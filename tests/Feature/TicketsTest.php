@@ -2484,3 +2484,42 @@ test('ticket and comment resources carry the author identity the hover card need
     expect($commentPayload['author_key'])->toBe('User-'.$this->user->id)
         ->and($commentPayload['author_username'])->toBe($this->user->username);
 });
+
+test('the assignee cancels their own ticket, and the reporter still can too', function () {
+    setPermissionsTeamId($this->group->id);
+    $assignee  = User::factory()->create(['group_id' => $this->group->id]);
+    $bystander = User::factory()->create(['group_id' => $this->group->id]);
+    $assignee->assignRole('help-desk-clerk');
+    $bystander->assignRole('help-desk-clerk');
+
+    $ticket = StoreTicket::make()->action($this->group, [
+        'subject'     => 'Cancel me',
+        'assignee_id' => $assignee->id,
+    ]);
+
+    // an engineer who is neither the assignee nor the reporter is still kept out
+    actingAs($bystander);
+    patch(route('grp.models.ticket.update', $ticket->id), ['status' => 'cancelled', 'status_comment' => 'not mine'])->assertForbidden();
+
+    actingAs($assignee);
+    patch(route('grp.models.ticket.update', $ticket->id), ['status' => 'cancelled', 'status_comment' => 'duplicate'])
+        ->assertRedirect()->assertSessionHasNoErrors();
+
+    expect($ticket->refresh()->status)->toBe(TicketStatusEnum::CANCELLED);
+
+    // the reporter's own cancel, which this branch was written for, keeps working: a staff
+    // member with no help desk role at all, cancelling what they raised
+    $reporter = User::factory()->create(['group_id' => $this->group->id]);
+
+    actingAs($reporter);
+    $reporterTicket = StoreTicket::make()->action($this->group, [
+        'subject'       => 'Mine to cancel',
+        'reporter_type' => 'User',
+        'reporter_id'   => $reporter->id,
+    ]);
+
+    patch(route('grp.models.ticket.update', $reporterTicket->id), ['status' => 'cancelled', 'status_comment' => 'sorted itself out'])
+        ->assertRedirect()->assertSessionHasNoErrors();
+
+    expect($reporterTicket->refresh()->status)->toBe(TicketStatusEnum::CANCELLED);
+});
