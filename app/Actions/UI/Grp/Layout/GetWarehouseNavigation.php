@@ -165,6 +165,7 @@ class GetWarehouseNavigation
                 "topMenu" => [
                     'subSections' => [
                         [
+                            'label' => __('Backlog'),
                             'icon'  => ['fal', 'fa-tasks-alt'],
                             'root'  => 'grp.org.warehouses.show.incoming.backlog',
                             'route' => [
@@ -233,6 +234,7 @@ class GetWarehouseNavigation
                 "topMenu" => [
                     'subSections' => [
                         [
+                            'label' => __('Backlog'),
                             'icon'  => ['fal', 'fa-tasks-alt'],
                             'root'  => 'grp.org.warehouses.show.dispatching.backlog',
                             'route' => [
