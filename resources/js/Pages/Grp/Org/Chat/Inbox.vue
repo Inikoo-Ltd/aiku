@@ -439,7 +439,11 @@ const cellKey = (channelKey: string, kind: ChatKind) => `${channelKey}:${kind}`
 
 // A colleague's load is not a shop's list, so while one is picked no shop is the open one:
 // every row folds back to its line and nothing reads as selected.
-const shopIsOpen = (shopId: number) => !agentView.value && selectedShopId.value === shopId
+//
+// Every shop that is on shows its own squares, because somebody covering three shops works one
+// channel across all of them: the squares that are lit are the same everywhere, they are the
+// filter, and only the numbers beside them belong to the shop they are under.
+const shopIsOpen = (shopId: number) => !agentView.value && selectedShopIds.value.includes(shopId)
 
 const shopIsOn = (shopId: number) => !agentView.value && selectedShopIds.value.includes(shopId)
 
@@ -465,7 +469,8 @@ const toggleShop = (shopId: number) => {
         return selectInbox(selectedShopIds.value[0])
     }
 
-    selectedCells.value = []
+    // The squares stay as they were. Adding a second shop is asking for the same work in one
+    // more place, not for everything that shop holds.
     afterSelectionChanged()
 }
 
@@ -477,7 +482,8 @@ const isCellOn = (shopId: number, channelKey: string, kind: ChatKind) =>
 // not the same as wanting both channels from both.
 const selectCell = (shopId: number, channelKey: string, kind: ChatKind) => {
     const key = cellKey(channelKey, kind)
-    const sameShop = selectedShopId.value === shopId && !agentView.value && !spamView.value && !trashView.value && !highlightView.value
+    const alreadyShowing = selectedShopIds.value.includes(shopId) && !agentView.value && !spamView.value && !trashView.value && !highlightView.value
+    const sameShop = alreadyShowing && (selectedShopId.value === shopId || selectedShopIds.value.length > 1)
 
     if (!sameShop) {
         spamView.value = false
@@ -522,7 +528,6 @@ const buildParams = (page: number) => ({
     ...(selectedShopIds.value.length && !highlightView.value && !agentView.value
         ? { shop_ids: selectedShopIds.value }
         : {}),
-    // ponytail: the API ignores `channel` until chat sessions carry one; sent so the intent is visible.
     ...(selectedCells.value.length && !agentView.value ? { pairs: selectedCells.value } : {}),
     ...(viewMode.value === "team" && listIsMine.value ? { view_team: 1 } : {}),
     ...(searchQuery.value.trim() ? { search: searchQuery.value.trim() } : {}),
