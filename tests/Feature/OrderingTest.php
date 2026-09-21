@@ -31,6 +31,7 @@ use App\Actions\Billables\ShippingZoneSchema\UpdateShippingZoneSchema;
 use App\Actions\Catalogue\Collection\StoreCollection;
 use App\Actions\Catalogue\Product\Json\GetIrisBasketTransactionsInCollection;
 use App\Actions\Catalogue\Product\Json\GetOrderProducts;
+use App\Actions\Catalogue\Product\Json\GetOrderProductsForModification;
 use App\Actions\Catalogue\ShippingCountry\DeleteShippingCountry;
 use App\Actions\Catalogue\ShippingCountry\StoreShippingCountry;
 use App\Actions\Catalogue\ShippingCountry\UpdateShippingCountry;
@@ -145,6 +146,7 @@ use App\Models\Dispatching\Shipper;
 use App\Models\Dropshipping\CustomerClient;
 use App\Models\Dropshipping\Platform;
 use App\Models\Helpers\Address;
+use App\Models\Procurement\OrgPartner;
 use App\Models\Helpers\Country;
 use App\Actions\Ordering\Order\WriteOffOrderShortfall;
 use App\Enums\Ordering\Order\OrderPayDetailedStatusEnum;
@@ -369,6 +371,30 @@ test('get order products', function (Order $order) {
     return $order;
 })->depends('create order');
 
+
+test('order products picker offers not for sale products to partners only', function (Order $order) {
+    $this->product->update(['is_for_sale' => false]);
+
+    $offered = fn () => collect(GetOrderProducts::make()->handle($order)->items())->pluck('id')
+        ->merge(collect(GetOrderProductsForModification::make()->handle($order)->items())->pluck('id'));
+
+    expect($offered())->not->toContain($this->product->id);
+
+    $orgPartner = OrgPartner::create([
+        'group_id'        => $order->group_id,
+        'organisation_id' => $order->organisation_id,
+        'partner_id'      => $order->organisation_id,
+        'customer_id'     => $order->customer_id,
+    ]);
+
+    expect($order->isPartnerOrder())->toBeTrue()
+        ->and($offered())->toContain($this->product->id);
+
+    $orgPartner->delete();
+    $this->product->update(['is_for_sale' => true]);
+
+    return $order;
+})->depends('create order');
 
 test('delete previous transaction', function (Order $order) {
     $transaction = $order->transactions()->first();

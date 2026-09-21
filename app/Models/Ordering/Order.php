@@ -38,6 +38,7 @@ use App\Models\Helpers\Currency;
 use App\Actions\Traits\WithLineTaxCategories;
 use App\Models\Helpers\TaxCategory;
 use App\Models\Reviews\OrderReviewStat;
+use App\Models\Procurement\OrgPartner;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use App\Models\Traits\HasAddresses;
@@ -426,6 +427,11 @@ class Order extends Model implements HasMedia, Auditable
             ->generateSlugsFrom('reference')
             ->doNotGenerateSlugsOnUpdate()
             ->saveSlugsTo('slug');
+    }
+
+    public function isPartnerOrder(): bool
+    {
+        return OrgPartner::where('customer_id', $this->customer_id)->exists();
     }
 
     public function customerClient(): BelongsTo
