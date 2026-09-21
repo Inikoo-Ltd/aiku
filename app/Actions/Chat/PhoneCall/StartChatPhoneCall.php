@@ -12,6 +12,7 @@ use App\Models\Catalogue\Shop;
 use App\Models\Chat\ChatAgent;
 use App\Models\Chat\ChatPhoneCall;
 use App\Models\SysAdmin\User;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\JsonResponse;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -31,15 +32,19 @@ class StartChatPhoneCall
             return $running;
         }
 
-        return ChatPhoneCall::create([
-            'group_id'        => $user->group_id,
-            'organisation_id' => $shop?->organisation_id,
-            'shop_id'         => $shop?->id,
-            'chat_agent_id'   => $agent->id,
-            'user_id'         => $user->id,
-            'status'          => ChatPhoneCallStatusEnum::IN_PROGRESS,
-            'started_at'      => now(),
-        ]);
+        try {
+            return ChatPhoneCall::create([
+                'group_id'        => $user->group_id,
+                'organisation_id' => $shop?->organisation_id,
+                'shop_id'         => $shop?->id,
+                'chat_agent_id'   => $agent->id,
+                'user_id'         => $user->id,
+                'status'          => ChatPhoneCallStatusEnum::IN_PROGRESS,
+                'started_at'      => now(),
+            ]);
+        } catch (UniqueConstraintViolationException) {
+            return $this->activeCallFor($agent);
+        }
     }
 
     public function asController(ActionRequest $request): JsonResponse

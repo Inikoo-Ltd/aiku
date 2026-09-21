@@ -56,7 +56,7 @@ class ShowOrgChatPhoneCalls extends OrgAction
     public function htmlResponse(Organisation|Shop $parent, ActionRequest $request): Response
     {
         $index = IndexChatPhoneCalls::make();
-        $calls = $index->handle($parent, 'phone_calls');
+        $calls = $index->handle($parent, 'phone_calls', $request->user());
 
         return Inertia::render(
             'Grp/Chat/PhoneCalls',
@@ -72,7 +72,7 @@ class ShowOrgChatPhoneCalls extends OrgAction
                 ],
                 'data' => ChatPhoneCallResource::collection($calls),
             ]
-        )->table($index->tableStructure($parent, 'phone_calls'));
+        )->table($index->tableStructure($parent, 'phone_calls', $request->user()));
     }
 
     public function getBreadcrumbs(array $routeParameters): array

@@ -33,8 +33,16 @@ class EndChatPhoneCall
     public function handle(ChatPhoneCall $call, User $user, array $data): ChatPhoneCall
     {
         $contactType = ChatPhoneCallContactTypeEnum::from($data['contact_type']);
-        $customer    = isset($data['customer_id']) ? Customer::find($data['customer_id']) : null;
-        $session     = isset($data['chat_session_id']) ? ChatSession::find($data['chat_session_id']) : null;
+        $shopIds     = $this->workableShopIdsFor($user);
+        $customer    = isset($data['customer_id']) ? Customer::whereIn('shop_id', $shopIds)->find($data['customer_id']) : null;
+        $session     = isset($data['chat_session_id']) ? ChatSession::whereIn('shop_id', $shopIds)->find($data['chat_session_id']) : null;
+
+        if ((isset($data['customer_id']) && !$customer) || (isset($data['chat_session_id']) && !$session)) {
+            throw ValidationException::withMessages([
+                'contact' => __('That contact does not belong to a shop you work.'),
+            ]);
+        }
+
         $shop        = $this->assertShopIsWorkable($user, $data['shop_id'] ?? $call->shop_id);
 
         $call = $this->closeCall($call, ChatPhoneCallStatusEnum::COMPLETED, [

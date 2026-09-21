@@ -7,6 +7,7 @@
 
 namespace App\Actions\Chat\PhoneCall\UI;
 
+use App\Actions\Chat\WithChatAgentAuthorisation;
 use App\Actions\OrgAction;
 use App\Enums\CRM\Livechat\ChatPhoneCallStatusEnum;
 use App\InertiaTable\InertiaTable;
@@ -14,6 +15,7 @@ use App\Models\Catalogue\Shop;
 use App\Models\Chat\ChatPhoneCall;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
+use App\Models\SysAdmin\User;
 use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -23,9 +25,12 @@ use Spatie\QueryBuilder\AllowedFilter;
 class IndexChatPhoneCalls extends OrgAction
 {
     use AsAction;
+    use WithChatAgentAuthorisation;
 
-    public function handle(Group|Organisation|Shop $parent, ?string $prefix = null): LengthAwarePaginator
+    public function handle(Group|Organisation|Shop $parent, ?string $prefix = null, ?User $viewer = null): LengthAwarePaginator
     {
+        $visibility = $this->visibilityFor($parent, $viewer);
+
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($where) use ($value) {
                 $where->whereStartWith('users.contact_name', $value)
@@ -51,6 +56,8 @@ class IndexChatPhoneCalls extends OrgAction
             $query->where('chat_phone_calls.group_id', $parent->id);
         }
 
+        $visibility($query);
+
         $query->select([
             'chat_phone_calls.id',
             'chat_phone_calls.status',
@@ -67,7 +74,7 @@ class IndexChatPhoneCalls extends OrgAction
             'chat_sessions.ulid as chat_session_ulid',
         ]);
 
-        foreach ($this->getElementGroups($parent) as $key => $elementGroup) {
+        foreach ($this->getElementGroups($parent, $viewer) as $key => $elementGroup) {
             $query->whereElementGroup(
                 key: $key,
                 allowedElements: array_keys($elementGroup['elements']),
@@ -84,9 +91,39 @@ class IndexChatPhoneCalls extends OrgAction
             ->withQueryString();
     }
 
-    private function getElementGroups(Group|Organisation|Shop $parent): array
+    /**
+     * What somebody wrote about a call is read by the people who work that shop and by whoever
+     * oversees the organisation, never by everybody who can open the page. A shop page has
+     * already been authorised against its shop, so only the wider pages are narrowed.
+     */
+    private function visibilityFor(Group|Organisation|Shop $parent, ?User $viewer): Closure
+    {
+        return function ($query) use ($parent, $viewer) {
+            if (!$viewer || $parent instanceof Shop) {
+                return;
+            }
+
+            if ($parent instanceof Organisation && $viewer->authTo(['org-supervisor.'.$parent->id, 'org-admin.'.$parent->id])) {
+                return;
+            }
+
+            if ($parent instanceof Group && $viewer->authTo(['group-overview'])) {
+                return;
+            }
+
+            $shopIds = $this->workableShopIdsFor($viewer);
+
+            $query->where(function ($where) use ($shopIds, $viewer) {
+                $where->whereIn('chat_phone_calls.shop_id', $shopIds)
+                    ->orWhere('chat_phone_calls.user_id', $viewer->id);
+            });
+        };
+    }
+
+    private function getElementGroups(Group|Organisation|Shop $parent, ?User $viewer = null): array
     {
         $counts = ChatPhoneCall::query()
+            ->tap($this->visibilityFor($parent, $viewer))
             ->when($parent instanceof Shop, fn ($q) => $q->where('shop_id', $parent->id))
             ->when($parent instanceof Organisation, fn ($q) => $q->where('organisation_id', $parent->id))
             ->when($parent instanceof Group, fn ($q) => $q->where('group_id', $parent->id))
@@ -111,14 +148,14 @@ class IndexChatPhoneCalls extends OrgAction
         ];
     }
 
-    public function tableStructure(Group|Organisation|Shop $parent, ?string $prefix = null): Closure
+    public function tableStructure(Group|Organisation|Shop $parent, ?string $prefix = null, ?User $viewer = null): Closure
     {
-        return function (InertiaTable $table) use ($parent, $prefix) {
+        return function (InertiaTable $table) use ($parent, $prefix, $viewer) {
             if ($prefix) {
                 $table->name($prefix)->pageName($prefix.'Page');
             }
 
-            foreach ($this->getElementGroups($parent) as $key => $elementGroup) {
+            foreach ($this->getElementGroups($parent, $viewer) as $key => $elementGroup) {
                 $table->elementGroup(
                     key: $key,
                     label: $elementGroup['label'],

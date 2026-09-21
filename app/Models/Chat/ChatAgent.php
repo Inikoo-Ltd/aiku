@@ -197,7 +197,9 @@ class ChatAgent extends Model
 
     public function isOnPhoneCall(): bool
     {
-        return $this->phoneCalls()->inProgress()->exists();
+        return $this->relationLoaded('activePhoneCall')
+            ? $this->activePhoneCall !== null
+            : $this->phoneCalls()->inProgress()->exists();
     }
 
 

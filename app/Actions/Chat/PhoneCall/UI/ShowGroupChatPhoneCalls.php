@@ -22,6 +22,11 @@ class ShowGroupChatPhoneCalls extends OrgAction
     use AsAction;
     use WithInertia;
 
+    public function authorize(ActionRequest $request): bool
+    {
+        return $request->user()->hasGroupAccess();
+    }
+
     public function handle(Group $group): Group
     {
         return $group;
@@ -37,7 +42,7 @@ class ShowGroupChatPhoneCalls extends OrgAction
     public function htmlResponse(Group $group, ActionRequest $request): Response
     {
         $index = IndexChatPhoneCalls::make();
-        $calls = $index->handle($group, 'phone_calls');
+        $calls = $index->handle($group, 'phone_calls', $request->user());
 
         return Inertia::render(
             'Grp/Chat/PhoneCalls',
@@ -53,7 +58,7 @@ class ShowGroupChatPhoneCalls extends OrgAction
                 ],
                 'data' => ChatPhoneCallResource::collection($calls),
             ]
-        )->table($index->tableStructure($group, 'phone_calls'));
+        )->table($index->tableStructure($group, 'phone_calls', $request->user()));
     }
 
     public function getBreadcrumbs(array $routeParameters): array

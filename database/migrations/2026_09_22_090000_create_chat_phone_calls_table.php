@@ -20,7 +20,7 @@ return new class () extends Migration {
         Schema::create('chat_phone_calls', function (Blueprint $table) {
             $table->increments('id');
             $table->unsignedSmallInteger('group_id')->index();
-            $table->foreign('group_id')->references('id')->on('groups')->nullOnDelete();
+            $table->foreign('group_id')->references('id')->on('groups')->cascadeOnDelete();
             $table->unsignedSmallInteger('organisation_id')->nullable()->index();
             $table->foreign('organisation_id')->references('id')->on('organisations')->nullOnDelete();
             $table->unsignedSmallInteger('shop_id')->nullable()->index();

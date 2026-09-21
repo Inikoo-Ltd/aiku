@@ -184,7 +184,7 @@ class GetGroupNavigation
                             'name' => 'grp.chat.staff.index',
                         ],
                     ],
-                    [
+                    ...($user->hasGroupAccess() ? [[
                         'label'   => __('Phone calls'),
                         'tooltip' => __('Phone calls'),
                         'icon'    => ['fal', 'fa-phone'],
@@ -192,7 +192,7 @@ class GetGroupNavigation
                         'route'   => [
                             'name' => 'grp.chat.phone_calls.index',
                         ],
-                    ],
+                    ]] : []),
                     [
                         'label'   => __('Reports'),
                         'tooltip' => __('Reports'),

@@ -10,6 +10,7 @@ namespace App\Actions\Chat\PhoneCall;
 use App\Enums\CRM\Livechat\ChatPhoneCallStatusEnum;
 use App\Models\Chat\ChatPhoneCall;
 use Illuminate\Console\Command;
+use Laravel\Nightwatch\Facades\Nightwatch;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class AutoCloseStaleChatPhoneCalls
@@ -43,6 +44,8 @@ class AutoCloseStaleChatPhoneCalls
 
     public function asCommand(Command $command): int
     {
+        Nightwatch::dontSample();
+
         $command->info(sprintf('%d phone call(s) closed automatically', $this->handle()));
 
         return 0;
