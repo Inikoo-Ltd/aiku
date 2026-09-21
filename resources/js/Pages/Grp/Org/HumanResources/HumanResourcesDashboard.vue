@@ -248,7 +248,7 @@ const leaveTypesOptions = {
 }
 
 const iconColors: Record<string, { icon: string; bg: string }> = {
-	indigo: { icon: "text-indigo-500", bg: "bg-indigo-50" },
+	indigo: { icon: "text-[--app-accent]", bg: "bg-[--app-accent-soft]" },
 	teal: { icon: "text-teal-500", bg: "bg-teal-50" },
 	purple: { icon: "text-purple-500", bg: "bg-purple-50" },
 	green: { icon: "text-green-500", bg: "bg-green-50" },
@@ -287,7 +287,7 @@ const iconColors: Record<string, { icon: string; bg: string }> = {
 					:href="route(card.route.name, card.route.parameters)"
 					preserve-scroll
 					class="overflow-hidden rounded-xl bg-white px-4 py-3 shadow-sm ring-1 transition hover:bg-gray-50"
-					:class="card.key === show ? 'ring-2 ring-indigo-400' : 'ring-gray-100'">
+					:class="card.key === show ? 'ring-2 ring-[--app-accent]' : 'ring-gray-100'">
 					<dd class="text-2xl font-bold tracking-tight text-gray-800">{{ card.stat }}</dd>
 					<dt class="mt-0.5 flex items-center gap-1.5 truncate text-sm font-medium text-gray-500">
 						<FontAwesomeIcon :icon="card.icon" :class="iconColors[card.color]?.icon ?? 'text-gray-400'" fixed-width />
@@ -303,10 +303,10 @@ const iconColors: Record<string, { icon: string; bg: string }> = {
 					v-for="action in quickActions"
 					:key="action.label"
 					:href="route(action.route.name, action.route.parameters)"
-					class="flex min-w-0 items-center gap-2 whitespace-nowrap rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-2 text-sm font-medium text-indigo-700 transition hover:border-indigo-400 hover:bg-indigo-100 hover:text-indigo-900">
-					<FontAwesomeIcon :icon="action.icon" class="text-indigo-500" fixed-width />
+					class="flex min-w-0 items-center gap-2 whitespace-nowrap rounded-lg border border-[--app-accent-muted] bg-[--app-accent-soft] px-3 py-2 text-sm font-medium text-[--app-accent-strong] transition hover:border-[--app-accent] hover:bg-[--app-accent-soft] hover:text-[--app-accent-deep]">
+					<FontAwesomeIcon :icon="action.icon" class="text-[--app-accent]" fixed-width />
 					{{ action.label }}
-					<span v-if="action.hint" class="truncate text-xs font-normal text-indigo-400">{{ action.hint }}</span>
+					<span v-if="action.hint" class="truncate text-xs font-normal text-[--app-accent]">{{ action.hint }}</span>
 				</Link>
 			</div>
 		</div>
@@ -320,7 +320,7 @@ const iconColors: Record<string, { icon: string; bg: string }> = {
 					<h2 class="text-lg font-bold text-gray-800">
 						<template v-if="activeCard">{{ activeCard.name }}</template>
 						<template v-else>{{ attendanceDate.is_today ? trans("Today's attendance") : trans("Attendance") }}</template>
-						<Link v-if="show" :href="route(showRoute.name, showRoute.parameters)" preserve-scroll class="ml-2 text-xs font-medium text-indigo-600 hover:underline">
+						<Link v-if="show" :href="route(showRoute.name, showRoute.parameters)" preserve-scroll class="ml-2 text-xs font-medium text-[--app-accent] hover:underline">
 							{{ trans("Show all") }}
 						</Link>
 					</h2>
@@ -356,7 +356,7 @@ const iconColors: Record<string, { icon: string; bg: string }> = {
 					<button
 						v-if="!attendanceDate.is_today"
 						type="button"
-						class="rounded-md px-3 py-1.5 text-sm font-medium text-indigo-600 ring-1 ring-indigo-200 transition hover:bg-indigo-50"
+						class="rounded-md px-3 py-1.5 text-sm font-medium text-[--app-accent] ring-1 ring-[--app-accent-muted] transition hover:bg-[--app-accent-soft]"
 						@click="goToDate(maxDate)">
 						{{ trans("Today") }}
 					</button>
@@ -379,11 +379,11 @@ const iconColors: Record<string, { icon: string; bg: string }> = {
 							<td class="py-2 pr-3">
 								<div class="flex items-center gap-3">
 									<img v-if="showAvatar(row.avatar)" :src="row.avatar" :alt="row.name" class="h-9 w-9 rounded-full object-cover bg-gray-100" @error="brokenAvatars.add(row.avatar)" loading="lazy" decoding="async" />
-<div v-else class="flex h-9 w-9 items-center justify-center rounded-full bg-indigo-100 text-xs font-semibold text-indigo-700">{{ initials(row.name) }}</div>
+<div v-else class="flex h-9 w-9 items-center justify-center rounded-full bg-[--app-accent-soft] text-xs font-semibold text-[--app-accent-strong]">{{ initials(row.name) }}</div>
 									<div class="min-w-0">
 										<Link
 											:href="route(row.route.name, row.route.parameters)"
-											class="block font-medium text-gray-900 hover:text-indigo-600 hover:underline truncate">
+											class="block font-medium text-gray-900 hover:text-[--app-accent] hover:underline truncate">
 											{{ row.name }}
 										</Link>
 										<div class="text-xs text-gray-500 truncate">{{ row.job_title || "—" }}</div>
@@ -419,11 +419,11 @@ const iconColors: Record<string, { icon: string; bg: string }> = {
 							<td class="py-2 pr-3">
 								<div class="flex items-center gap-3">
 									<img v-if="showAvatar(row.avatar)" :src="row.avatar" :alt="row.employee_name" class="h-9 w-9 rounded-full object-cover bg-gray-100" @error="brokenAvatars.add(row.avatar)" loading="lazy" decoding="async" />
-<div v-else class="flex h-9 w-9 items-center justify-center rounded-full bg-indigo-100 text-xs font-semibold text-indigo-700">{{ initials(row.employee_name) }}</div>
+<div v-else class="flex h-9 w-9 items-center justify-center rounded-full bg-[--app-accent-soft] text-xs font-semibold text-[--app-accent-strong]">{{ initials(row.employee_name) }}</div>
 									<div class="min-w-0">
 										<Link
 											:href="route(row.route.name, row.route.parameters)"
-											class="block font-medium text-gray-900 hover:text-indigo-600 hover:underline truncate">
+											class="block font-medium text-gray-900 hover:text-[--app-accent] hover:underline truncate">
 											{{ row.employee_name }}
 										</Link>
 										<div class="text-xs text-gray-500 truncate">{{ row.job_title || "—" }}</div>
@@ -483,7 +483,7 @@ const iconColors: Record<string, { icon: string; bg: string }> = {
 			<ul v-if="employeeLeaves.length" class="divide-y divide-gray-100 max-h-64 overflow-y-auto pr-1">
 				<li v-for="leave in employeeLeaves" :key="leave.id" class="flex items-center gap-3 py-2.5">
 					<img v-if="showAvatar(leave.avatar)" :src="leave.avatar" :alt="leave.name" class="h-8 w-8 rounded-full object-cover bg-gray-100" @error="brokenAvatars.add(leave.avatar)" loading="lazy" decoding="async" />
-<div v-else class="flex h-8 w-8 items-center justify-center rounded-full bg-indigo-100 text-xs font-semibold text-indigo-700">{{ initials(leave.name) }}</div>
+<div v-else class="flex h-8 w-8 items-center justify-center rounded-full bg-[--app-accent-soft] text-xs font-semibold text-[--app-accent-strong]">{{ initials(leave.name) }}</div>
 					<div class="min-w-0 flex-1">
 						<div class="font-medium text-gray-900 truncate">{{ leave.name }}</div>
 						<div class="text-xs font-medium truncate" :style="{ color: leave.type_color }">{{ leave.type_name }}</div>
@@ -542,7 +542,7 @@ const iconColors: Record<string, { icon: string; bg: string }> = {
 					class="flex items-center gap-3 py-2.5"
 					:class="{ 'bg-pink-50 -mx-2 px-2 rounded': person.is_today }">
 					<img v-if="showAvatar(person.avatar)" :src="person.avatar" :alt="person.name" class="h-8 w-8 rounded-full object-cover bg-gray-100" @error="brokenAvatars.add(person.avatar)" loading="lazy" decoding="async" />
-<div v-else class="flex h-8 w-8 items-center justify-center rounded-full bg-indigo-100 text-xs font-semibold text-indigo-700">{{ initials(person.name) }}</div>
+<div v-else class="flex h-8 w-8 items-center justify-center rounded-full bg-[--app-accent-soft] text-xs font-semibold text-[--app-accent-strong]">{{ initials(person.name) }}</div>
 					<div class="min-w-0 flex-1">
 						<div class="font-medium text-gray-900 truncate">{{ person.name }}</div>
 						<div class="text-xs text-gray-500 truncate">{{ person.job_title || "—" }}</div>

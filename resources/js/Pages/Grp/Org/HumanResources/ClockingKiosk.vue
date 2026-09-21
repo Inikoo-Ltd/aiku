@@ -450,7 +450,7 @@ onUnmounted(() => {
 
 	<div
 		ref="kioskContainer"
-		class="relative min-h-[100dvh] w-full flex items-center justify-center bg-gradient-to-bl from-indigo-400 to-indigo-600 px-3 py-5 sm:px-6 sm:py-6 lg:px-8">
+		class="relative min-h-[100dvh] w-full flex items-center justify-center bg-gradient-to-bl from-[--app-accent] to-[--app-accent] px-3 py-5 sm:px-6 sm:py-6 lg:px-8">
 		<div class="w-full max-w-[820px]">
 			<div
 				class="w-full overflow-hidden rounded-2xl border border-white/40 bg-white shadow-2xl">
@@ -531,7 +531,7 @@ onUnmounted(() => {
 										type="button"
 										:disabled="isSubmitting"
 										@click="tapCharacter(letter)"
-										class="min-h-[2.75rem] sm:min-h-0 rounded-lg sm:rounded-xl border border-gray-200 bg-white py-2.5 sm:py-4 text-base sm:text-xl font-semibold text-gray-700 shadow-sm transition hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700 active:scale-95 disabled:opacity-50">
+										class="min-h-[2.75rem] sm:min-h-0 rounded-lg sm:rounded-xl border border-gray-200 bg-white py-2.5 sm:py-4 text-base sm:text-xl font-semibold text-gray-700 shadow-sm transition hover:border-[--app-accent-muted] hover:bg-[--app-accent-soft] hover:text-[--app-accent-strong] active:scale-95 disabled:opacity-50">
 										{{ letter }}
 									</button>
 								</div>
@@ -543,7 +543,7 @@ onUnmounted(() => {
 										type="button"
 										:disabled="isSubmitting"
 										@click="tapCharacter(number)"
-										class="min-h-[2.75rem] sm:min-h-0 rounded-lg sm:rounded-xl border border-gray-200 bg-white py-2.5 sm:py-4 text-base sm:text-xl font-semibold text-gray-700 shadow-sm transition hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700 active:scale-95 disabled:opacity-50">
+										class="min-h-[2.75rem] sm:min-h-0 rounded-lg sm:rounded-xl border border-gray-200 bg-white py-2.5 sm:py-4 text-base sm:text-xl font-semibold text-gray-700 shadow-sm transition hover:border-[--app-accent-muted] hover:bg-[--app-accent-soft] hover:text-[--app-accent-strong] active:scale-95 disabled:opacity-50">
 										{{ number }}
 									</button>
 								</div>
@@ -618,14 +618,14 @@ onUnmounted(() => {
 											type="button"
 											@click="selectCameraFacing('environment')"
 											class="rounded-md px-3 py-1.5 text-xs sm:text-sm font-medium transition"
-											:class="cameraFacing === 'environment' ? 'bg-indigo-600 text-white' : 'text-gray-600 hover:bg-gray-100'">
+											:class="cameraFacing === 'environment' ? 'bg-[--app-accent] text-white' : 'text-gray-600 hover:bg-gray-100'">
 											{{ trans("Rear camera") }}
 										</button>
 										<button
 											type="button"
 											@click="selectCameraFacing('user')"
 											class="rounded-md px-3 py-1.5 text-xs sm:text-sm font-medium transition"
-											:class="cameraFacing === 'user' ? 'bg-indigo-600 text-white' : 'text-gray-600 hover:bg-gray-100'">
+											:class="cameraFacing === 'user' ? 'bg-[--app-accent] text-white' : 'text-gray-600 hover:bg-gray-100'">
 											{{ trans("Front camera") }}
 										</button>
 									</div>
