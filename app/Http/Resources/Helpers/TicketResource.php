@@ -12,6 +12,7 @@ use App\Enums\CRM\Livechat\ChatPriorityEnum;
 use App\Enums\Helpers\Ticket\TicketKindEnum;
 use App\Enums\Helpers\Ticket\TicketSourceChannelEnum;
 use App\Models\Chat\ChatSession;
+use App\Models\SysAdmin\User;
 use App\Models\Chat\MetaChatSession;
 use App\Enums\Helpers\Ticket\TicketModuleEnum;
 use App\Enums\Helpers\Ticket\TicketQaStatusEnum;
@@ -61,6 +62,7 @@ class TicketResource extends JsonResource
             'closes_source'  => (bool) $this->closes_source,
             'reporter_key'   => $this->reporter_id ? $this->reporter_type.'-'.$this->reporter_id : null,
             'reporter_username' => $this->reporter_type === 'User' ? $this->reporter?->username : null,
+            'reporter_profile_url' => $this->reporter_type === 'User' ? $this->profileUrl($request, $this->reporter) : null,
             'reporter_short' => $this->reporter_type === 'User' ? $this->reporter?->username : ($this->reporter?->contact_name ?: $this->reporter?->username),
             'reporter_avatar' => $this->reporter_type === 'User' ? $this->reporter?->imageSources(48, 48) : null,
             'is_from_slack'  => (bool) data_get($this->data, 'slack'),
@@ -100,6 +102,21 @@ class TicketResource extends JsonResource
     }
 
     /** @return array{channel: string|null, channel_label: string|null, channel_icon: array|null, contact: string|null, reference: string|null, url: string|null}|null */
+    /**
+     * Their account in system administration, for whoever may look at it. Null for everybody
+     * else, so the ticket does not offer a link that answers with a 403.
+     */
+    private function profileUrl($request, ?User $person): ?string
+    {
+        $viewer = $request->user();
+
+        if (!$person || !$viewer instanceof User || !$viewer->authTo('sysadmin.view')) {
+            return null;
+        }
+
+        return route('grp.sysadmin.users.show', ['user' => $person->slug]);
+    }
+
     private function sourceData(): ?array
     {
         if (!$this->source_type || !$this->source_id) {

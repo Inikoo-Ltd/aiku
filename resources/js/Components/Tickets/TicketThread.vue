@@ -23,8 +23,8 @@ import { faSlack } from "@fortawesome/free-brands-svg-icons"
 library.add(faPencil, faTrashAlt, faUser)
 
 const props = withDefaults(defineProps<{
-    ticket: { subject: string; description: string | null; reporter: string | null; reporter_roles?: { key: string; label: string }[]; reporter_avatar?: Record<string, string> | null; reporter_username?: string | null; reporter_key?: string | null; is_from_slack?: boolean; reference_url?: string | null; created_at: string; images?: Record<string, string>[] }
-    comments: { id: number; body: string; is_internal: boolean; is_lead_only?: boolean; author_avatar?: Record<string, string> | null; author_username?: string | null; author_key?: string | null; author_roles?: { key: string; label: string }[]; can_toggle_visibility?: boolean; is_staff: boolean; author: string | null; created_at: string; images?: Record<string, string>[]; attachments?: { name: string; url: string }[]; can_edit?: boolean; can_delete?: boolean }[]
+    ticket: { subject: string; description: string | null; reporter: string | null; reporter_roles?: { key: string; label: string }[]; reporter_avatar?: Record<string, string> | null; reporter_username?: string | null; reporter_key?: string | null; reporter_profile_url?: string | null; is_from_slack?: boolean; reference_url?: string | null; created_at: string; images?: Record<string, string>[] }
+    comments: { id: number; body: string; is_internal: boolean; is_lead_only?: boolean; author_avatar?: Record<string, string> | null; author_username?: string | null; author_key?: string | null; author_profile_url?: string | null; author_roles?: { key: string; label: string }[]; can_toggle_visibility?: boolean; is_staff: boolean; author: string | null; created_at: string; images?: Record<string, string>[]; attachments?: { name: string; url: string }[]; can_edit?: boolean; can_delete?: boolean }[]
     commentRoute: { name: string; parameters: Record<string, unknown> }
     mentionable?: { username: string; name: string | null; suggested?: boolean; is_customer?: boolean }[]
     commentsNewestFirst?: boolean
@@ -102,6 +102,7 @@ const submit = () => {
                     :roles="ticket.reporter_roles ?? []"
                     :username="ticket.reporter_username"
                     :reporterKey="ticket.reporter_key"
+                    :profileUrl="ticket.reporter_profile_url"
                     size="sm"
                     @mention="mentionInReply" />
                 <span>· {{ useFormatTime(ticket.created_at, { formatTime: "PP, HH:mm:ss zzz" }) }}</span>
@@ -150,6 +151,7 @@ const submit = () => {
                             :roles="comment.author_roles ?? []"
                             :username="comment.author_username"
                             :reporterKey="comment.author_key"
+                            :profileUrl="comment.author_profile_url"
                             size="xs"
                             @mention="mentionInReply" />
                         ·
