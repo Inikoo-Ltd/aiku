@@ -53,6 +53,7 @@ use App\Actions\Ordering\Adjustment\UpdateAdjustment;
 use App\Actions\Billables\Charge\DeleteCharge;
 use App\Actions\Billables\Charge\UpdateCharge;
 use App\Actions\Ordering\Order\CalculateOrderHangingCharges;
+use App\Enums\Ordering\Order\OrderChargesEngineEnum;
 use App\Actions\Ordering\Order\CalculateOrderShipping;
 use App\Actions\Ordering\Order\CalculateOrderTotalAmounts;
 use App\Actions\Ordering\Order\HydrateOrders;
@@ -612,6 +613,34 @@ test('small order charge configured through the UI applies to an order', functio
         ->and((int) $chargeTransactions()->first()->gross_amount)->toBe(255);
 
     $order->goods_amount = 3000;
+    CalculateOrderHangingCharges::run($order);
+
+    expect($chargeTransactions()->count())->toBe(0);
+})->depends('create order');
+
+test('removing the small order charge keeps it off the order', function (Order $order) {
+    $charge = $order->shop->charges()
+        ->where('type', ChargeTypeEnum::HANGING)
+        ->where('state', ChargeStateEnum::ACTIVE)
+        ->firstOrFail();
+
+    $order->update(['charges_engine' => OrderChargesEngineEnum::AUTO]);
+    $order->goods_amount = 1000;
+    CalculateOrderHangingCharges::run($order);
+
+    $chargeTransactions = fn () => $order->transactions()
+        ->where('model_type', 'Charge')
+        ->where('model_id', $charge->id);
+
+    expect($chargeTransactions()->count())->toBe(1);
+
+    DeleteTransaction::make()->action($chargeTransactions()->first());
+
+    $order->refresh();
+    expect($order->charges_engine)->toBe(OrderChargesEngineEnum::MANUAL)
+        ->and($chargeTransactions()->count())->toBe(0);
+
+    $order->goods_amount = 1000;
     CalculateOrderHangingCharges::run($order);
 
     expect($chargeTransactions()->count())->toBe(0);
