@@ -6,6 +6,7 @@
 
 <script setup lang="ts">
 import { computed, reactive, ref, watch } from "vue"
+import { debounce } from "lodash-es"
 import { Head, Link, router } from "@inertiajs/vue3"
 import DatePicker from "primevue/datepicker"
 import {
@@ -142,23 +143,53 @@ const maxDate = computed(() => parseDateString(props.attendanceDate.max_date))
 watch(
 	() => props.attendanceDate.date,
 	(value) => {
+		// A day still being clicked through wins over a page that has just arrived for an
+		// older one, or the date would jump backwards under the cursor.
+		if (pendingDate.value) {
+			return
+		}
+
 		selectedDate.value = parseDateString(value)
 	}
 )
 
-const goToDate = (date: Date) => {
-	const dateString = toDateString(date)
+// The date under the arrows follows the clicks; the request waits until they stop, so
+// stepping back a week is one load rather than seven.
+const pendingDate = ref<string | null>(null)
 
+const fetchDay = debounce((dateString: string) => {
 	if (dateString === props.attendanceDate.date) {
+		pendingDate.value = null
+
 		return
 	}
 
 	router.get(
 		route(props.attendanceDate.route.name, props.attendanceDate.route.parameters),
 		{ date: dateString, ...(props.show ? { show: props.show } : {}) },
-		{ preserveScroll: true, preserveState: true }
+		{ preserveScroll: true, preserveState: true, onFinish: () => (pendingDate.value = null) }
 	)
+}, 500)
+
+const goToDate = (date: Date) => {
+	if (date > maxDate.value) {
+		return
+	}
+
+	selectedDate.value = date
+	pendingDate.value = toDateString(date)
+	fetchDay(pendingDate.value)
 }
+
+const shownDate = computed(() => toDateString(selectedDate.value))
+const isShowingToday = computed(() => shownDate.value === props.attendanceDate.max_date)
+
+// The server's own label until the clicking has caught up with it, then the day being shown.
+const shownLabel = computed(() =>
+	shownDate.value === props.attendanceDate.date
+		? props.attendanceDate.label
+		: selectedDate.value.toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short", year: "2-digit" })
+)
 
 const showPeople = computed(() => ["annual", "sick", "absent"].includes(props.show ?? ""))
 const visibleAttendance = computed(() =>
@@ -173,12 +204,8 @@ const initials = (name: string) =>
 const activeCard = computed(() => props.attendanceStats.find((card) => card.key === props.show))
 
 const shiftDay = (days: number) => {
-	const next = parseDateString(props.attendanceDate.date)
+	const next = new Date(selectedDate.value)
 	next.setDate(next.getDate() + days)
-
-	if (next > maxDate.value) {
-		return
-	}
 
 	goToDate(next)
 }
@@ -319,13 +346,13 @@ const iconColors: Record<string, { icon: string; bg: string }> = {
 				<div>
 					<h2 class="text-lg font-bold text-gray-800">
 						<template v-if="activeCard">{{ activeCard.name }}</template>
-						<template v-else>{{ attendanceDate.is_today ? trans("Today's attendance") : trans("Attendance") }}</template>
+						<template v-else>{{ isShowingToday ? trans("Today's attendance") : trans("Attendance") }}</template>
 						<Link v-if="show" :href="route(showRoute.name, showRoute.parameters)" preserve-scroll class="ml-2 text-xs font-medium text-[--app-accent] hover:underline">
 							{{ trans("Show all") }}
 						</Link>
 					</h2>
 					<p class="text-xs text-gray-500">
-						{{ attendanceDate.label }} · {{ trans("earliest arrivals first") }}
+						{{ shownLabel }} · {{ trans("earliest arrivals first") }}
 					</p>
 				</div>
 				<div class="flex items-center gap-2">
@@ -349,12 +376,12 @@ const iconColors: Record<string, { icon: string; bg: string }> = {
 						type="button"
 						class="flex h-8 w-8 items-center justify-center rounded-md text-gray-500 ring-1 ring-gray-200 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
 						:title="trans('Next day')"
-						:disabled="attendanceDate.is_today"
+						:disabled="isShowingToday"
 						@click="shiftDay(1)">
 						<FontAwesomeIcon :icon="faChevronRight" fixed-width />
 					</button>
 					<button
-						v-if="!attendanceDate.is_today"
+						v-if="!isShowingToday"
 						type="button"
 						class="rounded-md px-3 py-1.5 text-sm font-medium text-[--app-accent] ring-1 ring-[--app-accent-muted] transition hover:bg-[--app-accent-soft]"
 						@click="goToDate(maxDate)">
