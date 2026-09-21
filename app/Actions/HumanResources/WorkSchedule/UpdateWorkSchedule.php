@@ -38,18 +38,30 @@ class UpdateWorkSchedule extends OrgAction
                     $startTime = isset($dayData['s']) && $dayData['s'] ? Carbon::parse($dayData['s'])->format('H:i:s') : null;
                     $endTime = isset($dayData['e']) && $dayData['e'] ? Carbon::parse($dayData['e'])->format('H:i:s') : null;
 
+                    // A day is worked when it has hours and has not been switched off. No hours is
+                    // no working day, whatever the switch says. A day switched off is kept rather
+                    // than dropped: somebody on a four day week has a Friday, and it says nobody
+                    // is expected in - which a missing row could not, since a schedule with no
+                    // days at all falls back to the organisation's.
+                    $isWorkingDay = (bool) ($startTime && $endTime) && ($dayData['w'] ?? true);
+
+                    if (!$isWorkingDay) {
+                        $startTime = null;
+                        $endTime   = null;
+                    }
+
                     $dayModel = $workSchedule->days()->updateOrCreate(
                         ['day_of_week' => $dayOfWeek],
                         [
                             'start_time'     => $startTime,
                             'end_time'       => $endTime,
-                            'is_working_day' => ($startTime && $endTime),
+                            'is_working_day' => $isWorkingDay,
                         ]
                     );
 
                     $dayModel->breaks()->delete();
 
-                    if (isset($dayData['b']) && is_array($dayData['b'])) {
+                    if (($dayData['w'] ?? true) && isset($dayData['b']) && is_array($dayData['b'])) {
                         foreach ($dayData['b'] as $break) {
                             $breakStart = isset($break['s']) && $break['s'] ? Carbon::parse($break['s'])->format('H:i:s') : null;
                             $breakEnd = isset($break['e']) && $break['e'] ? Carbon::parse($break['e'])->format('H:i:s') : null;
