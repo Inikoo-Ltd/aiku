@@ -113,9 +113,11 @@ use App\Enums\HumanResources\Leave\LeaveStatusEnum;
 use App\Enums\HumanResources\Overtime\OvertimeRequestStatusEnum;
 use Illuminate\Support\Facades\Storage;
 use App\Actions\Helpers\Avatars\GetDiceBearAvatar;
+use App\Enums\SysAdmin\Authorisation\RolesEnum;
 
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\get;
+use function Pest\Laravel\post;
 
 class CollidingStoreClockingMachineQRCode extends StoreClockingMachineQRCode
 {
@@ -2970,4 +2972,34 @@ test('the clocking screen counts attendance against each employee own week', fun
     ]);
 
     expect($lateCount())->toBe(0);
+});
+
+test('a human resources supervisor can create a holiday from the holidays page', function () {
+    setPermissionsTeamId($this->organisation->group_id);
+
+    $user = User::factory()->create(['group_id' => $this->organisation->group_id, 'status' => true]);
+    $user->assignRole(RolesEnum::getRoleName(RolesEnum::HUMAN_RESOURCES_SUPERVISOR->value, $this->organisation));
+    $user->forgetWildcardPermissionIndex();
+
+    expect($user->authTo(["human-resources.{$this->organisation->id}.edit"]))->toBeTrue();
+
+    actingAs($user);
+
+    $response = post(route('grp.org.hr.holidays.store', $this->organisation->slug), [
+        'type'         => \App\Enums\HumanResources\Holiday\HolidayTypeEnum::PUBLIC->value,
+        'label'        => 'Día de la Hispanidad',
+        'from'         => '2026-10-12',
+        'to'           => '2026-10-12',
+        'is_recurring' => true,
+    ]);
+
+    $response->assertRedirect();
+
+    $holiday = \App\Models\HumanResources\Holiday::where('organisation_id', $this->organisation->id)
+        ->where('label', 'Día de la Hispanidad')
+        ->first();
+
+    expect($holiday)->not->toBeNull()
+        ->and($holiday->year)->toBe(2026)
+        ->and(data_get($holiday->data, 'is_recurring'))->toBeTrue();
 });
