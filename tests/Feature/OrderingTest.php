@@ -110,6 +110,7 @@ use App\Enums\Accounting\PaymentServiceProvider\PaymentServiceProviderTypeEnum;
 use App\Enums\Analytics\AikuSection\AikuSectionEnum;
 use App\Enums\Catalogue\Charge\ChargeStateEnum;
 use App\Enums\Catalogue\Product\ProductStateEnum;
+use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Catalogue\Charge\ChargeTriggerEnum;
 use App\Enums\Catalogue\Charge\ChargeTypeEnum;
@@ -168,6 +169,7 @@ use App\Models\Dropshipping\PlatformSalesChannelTimeSeriesRecord;
 use App\Models\Ordering\Order;
 use App\Models\Ordering\Purge;
 use App\Models\Ordering\PurgedOrder;
+use App\Actions\Ordering\SalesChannel\StoreSalesChannel;
 use App\Models\Ordering\SalesChannel;
 use App\Models\Ordering\ShippingCountry;
 use App\Models\Ordering\Transaction;
@@ -4297,4 +4299,53 @@ test('a packed order shipped by us offers the invoice button once the packer rec
     $deliveryNote = \App\Actions\Dispatching\DeliveryNote\UpdateState\FinaliseDeliveryNote::make()->action($deliveryNote->fresh());
     expect($deliveryNote->state)->toBe(DeliveryNoteStateEnum::FINALISED)
         ->and($order->invoices()->count())->toBe(1);
+});
+
+test('the shop orders list flags a partner order and the channel filter separates it from direct ones', function () {
+    $adminGuest = createAdminGuest($this->group);
+    actingAs($adminGuest->getUser());
+
+    /** The orders index only lists open shops, the fixture shop is still in process */
+    $this->shop->update(['state' => ShopStateEnum::OPEN]);
+
+    $intercompany = SalesChannel::where('group_id', $this->group->id)->where('code', 'intercompany')->first()
+        ?? StoreSalesChannel::make()->action($this->group, [
+            'code' => 'intercompany',
+            'name' => 'Intercompany',
+            'type' => SalesChannelTypeEnum::OTHER,
+        ]);
+
+    $partnerOrder = StoreOrder::make()->action(
+        freshCustomerLike($this->shop, $this->customer),
+        [...Order::factory()->definition(), 'sales_channel_id' => $intercompany->id]
+    );
+    $directOrder = StoreOrder::make()->action(
+        freshCustomerLike($this->shop, $this->customer),
+        Order::factory()->definition()
+    );
+
+    $url = route('grp.org.shops.show.ordering.orders.index', [
+        'organisation' => $this->organisation->slug,
+        'shop'         => $this->shop->slug,
+    ]);
+
+    $flagsIn = function (string $query) use ($url) {
+        $response = get($url.$query);
+        $response->assertOk();
+
+        return collect($response->viewData('page')['props']['data']['data'])
+            ->pluck('is_intercompany', 'reference');
+    };
+
+    $unfiltered = $flagsIn('');
+    expect($unfiltered->get($partnerOrder->reference))->toBeTrue()
+        ->and($unfiltered->get($directOrder->reference))->toBeFalse();
+
+    $partnerOnly = $flagsIn('?orders_elements[channel]=partner');
+    expect($partnerOnly->get($partnerOrder->reference))->toBeTrue()
+        ->and($partnerOnly->has($directOrder->reference))->toBeFalse();
+
+    $directOnly = $flagsIn('?orders_elements[channel]=direct');
+    expect($directOnly->get($directOrder->reference))->toBeFalse()
+        ->and($directOnly->has($partnerOrder->reference))->toBeFalse();
 });
