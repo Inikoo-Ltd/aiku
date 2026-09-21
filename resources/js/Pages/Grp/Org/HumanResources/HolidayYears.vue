@@ -210,6 +210,7 @@ const toggleActive = (item: any) => {
                     type="create"
                     size="sm"
                     :label="trans('Save')"
+                    nativeType="submit"
                     :disabled="form.processing"
                 />
             </div>
@@ -283,6 +284,7 @@ const toggleActive = (item: any) => {
                     type="create"
                     size="sm"
                     :label="trans('Save changes')"
+                    nativeType="submit"
                     :disabled="editForm.processing"
                 />
             </div>

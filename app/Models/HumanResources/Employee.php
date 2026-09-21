@@ -330,6 +330,23 @@ class Employee extends Model implements HasMedia, Auditable
         return $this->workSchedules()->where('type', 'default')->where('is_active', true)->first();
     }
 
+    /**
+     * The hours this employee is actually held to: their own when they have any, otherwise the
+     * organisation's. An employee schedule with no days at all says nothing, so it does not
+     * override - which is what lets somebody be given a four day week without every other
+     * screen deciding they work no days at all.
+     */
+    public function getEffectiveWorkSchedule(): ?WorkSchedule
+    {
+        $own = $this->getDefaultWorkSchedule();
+
+        if ($own && $own->days()->exists()) {
+            return $own;
+        }
+
+        return $this->organisation?->getDefaultWorkSchedule();
+    }
+
     public function hrAnnouncements(): MorphMany
     {
         return $this->morphMany(HRAnnouncement::class, 'employee');

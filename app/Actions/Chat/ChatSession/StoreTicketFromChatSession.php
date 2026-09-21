@@ -58,6 +58,7 @@ class StoreTicketFromChatSession
             'source_id'       => $session->id,
             'source_channel'  => $this->channel($session)->value,
             'blocks_source'   => (bool) Arr::get($modelData, 'blocks_source', false),
+            'closes_source'   => (bool) Arr::get($modelData, 'closes_source', false),
             'images'          => Arr::get($modelData, 'images', []),
         ]);
 
@@ -112,6 +113,7 @@ class StoreTicketFromChatSession
             'kind'          => ['sometimes', 'nullable', Rule::in(TicketKindEnum::chatValues())],
             'reference_url' => ['sometimes', 'nullable', 'url', 'max:2048'],
             'blocks_source' => ['sometimes', 'boolean'],
+            'closes_source' => ['sometimes', 'boolean'],
             'images'        => ['sometimes', 'array', 'max:5'],
             'images.*'      => Ticket::ticketFileRules(),
         ];

@@ -2,7 +2,7 @@
 import { ref, watch, onMounted, onUnmounted, inject, computed, nextTick, defineAsyncComponent, getCurrentInstance } from "vue"
 import axios from "axios"
 import { ctrans } from "@/Composables/useTrans"
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { FontAwesomeIcon, FontAwesomeLayers } from "@fortawesome/vue-fontawesome"
 import {
     faPaperPlane,
     faArrowLeft,
@@ -17,6 +17,8 @@ import {
     faArchive,
     faAngleDown,
     faLock,
+    faExclamationCircle,
+    faCircle,
 } from "@fortawesome/free-solid-svg-icons"
 import { faSlack } from "@fortawesome/free-brands-svg-icons"
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
@@ -30,6 +32,7 @@ import BubbleChat from "@/Components/Chat/BubbleChat.vue"
 import { useJumpToMessage } from "@/Composables/useJumpToMessage"
 import ChatTimelineEvent from "@/Components/Chat/ChatTimelineEvent.vue"
 import { useChatLanguages } from "@/Composables/useLanguages"
+import { useUploadLimits } from "@/Composables/useUploadLimits"
 import { notify } from "@kyvg/vue3-notification"
 
 const EmojiPicker = defineAsyncComponent(() => import("@/Components/Messaging/EmojiPicker.vue"))
@@ -75,9 +78,11 @@ const channelIconClass = computed(() => {
     return channel === "whatsapp" ? "text-green-600" : channel === "email" ? "text-blue-500" : "text-gray-400"
 })
 
+const messagesLocal = ref<LocalChatMessage[]>([])
+
 // When the last word was said, and how long ago: a waiting conversation is judged by its age.
 const lastMessageStamp = computed(() => {
-    const at = props.messages?.[props.messages.length - 1]?.created_at
+    const at = messagesLocal.value[messagesLocal.value.length - 1]?.created_at
 
     if (!at) {
         return null
@@ -222,7 +227,7 @@ const canReportSpam = computed(() => isGuest.value && !isClosed.value && !isTras
 // Ending a conversation nobody ever answered is rude: from the other side it reads as being
 // shown the door for writing in. Until somebody here has replied, the way to clear it is Ignore.
 const hasBeenAnswered = computed(() =>
-    (props.messages ?? []).some((message) => message.sender_type === "agent")
+    messagesLocal.value.some((message) => message.sender_type === "agent")
 )
 
 const canEndChat = computed(() => hasBeenAnswered.value && !isClosed.value && !isTrashed.value && !props.readOnly)
@@ -347,7 +352,6 @@ const reopenChat = async () => {
     }
 }
 
-const messagesLocal = ref<LocalChatMessage[]>([])
 const eventsLocal = ref<any[]>([])
 const newMessage = ref("")
 
@@ -527,6 +531,21 @@ interface SelectedAttachment {
 const selectedFiles = ref<SelectedAttachment[]>([])
 const isEmailNotif = ref(false)
 
+// Only worth offering where there is somebody to email and something to say: an email
+// conversation is already an email, and a stranger who left no address cannot be written to.
+const canEmailNotify = computed(() => {
+    if (props.readOnly || isClosed.value || isTrashed.value || !isMyChat.value) return false
+    if ((props.session as any)?.channel === "email") return false
+
+    const session = props.session as any
+
+    return !!session?.web_user?.customer_id
+        || !!session?.guest_profile?.email
+        || !!session?.metadata?.email
+})
+
+const { rejectionFor } = useUploadLimits()
+
 const addAttachment = (file: File, isImage: boolean) => {
     if (selectedFiles.value.length >= MAX_ATTACHMENTS) {
         notify({ title: "Failed", text: "Maximum 10 attachments", type: "error" })
@@ -543,8 +562,14 @@ const addAttachment = (file: File, isImage: boolean) => {
         return
     }
 
-    if (file.size > MAX_SIZE) {
-        notify({ title: "Failed", text: "Maximum file size 10MB", type: "error" })
+    // The server's own limit as well as ours, and the batch as well as the file: a batch that is
+    // refused whole takes the files that were fine down with the one that was not, which is the
+    // opposite of what dropping several at once should do.
+    const rejection = rejectionFor(file, selectedFiles.value.map((a) => a.file), MAX_SIZE)
+
+    if (rejection) {
+        notify({ title: ctrans("File not attached"), text: `${file.name} - ${rejection}`, type: "error" })
+
         return
     }
 
@@ -585,6 +610,61 @@ const onPasteAttachment = (event: ClipboardEvent) => {
     } else {
         selectDoc(file)
     }
+}
+
+// Dropping a file on the conversation is the paperclip by another route: the same formats, the
+// same ten-file limit, the same preview strip, and nothing leaves the browser until Send.
+const isDraggingFile = ref(false)
+let dragDepth = 0
+
+const canAttach = computed(
+    () => !props.readOnly && !isTrashed.value && !isClosed.value && !isWaiting.value && isMyChat.value
+)
+
+// Dragging a selection of text around the page carries no files, and lighting the whole pane up
+// for it would be wrong every time somebody moves a quote from one message to another.
+const carriesFiles = (event: DragEvent) =>
+    Array.from(event.dataTransfer?.types ?? []).includes("Files")
+
+const onDragEnterAttachment = (event: DragEvent) => {
+    if (!canAttach.value || !carriesFiles(event)) return
+
+    event.preventDefault()
+    dragDepth += 1
+    isDraggingFile.value = true
+}
+
+const onDragOverAttachment = (event: DragEvent) => {
+    if (!canAttach.value || !carriesFiles(event)) return
+
+    // Without this the browser takes the drop itself and opens the file over the inbox.
+    event.preventDefault()
+
+    if (event.dataTransfer) {
+        event.dataTransfer.dropEffect = "copy"
+    }
+}
+
+const onDragLeaveAttachment = () => {
+    if (!isDraggingFile.value) return
+
+    dragDepth = Math.max(0, dragDepth - 1)
+
+    if (dragDepth === 0) {
+        isDraggingFile.value = false
+    }
+}
+
+const onDropAttachment = (event: DragEvent) => {
+    if (!canAttach.value || !carriesFiles(event)) return
+
+    event.preventDefault()
+    dragDepth = 0
+    isDraggingFile.value = false
+
+    Array.from(event.dataTransfer?.files ?? []).forEach((file) =>
+        file.type.startsWith("image/") ? selectImage(file) : selectDoc(file)
+    )
 }
 
 const removeAttachment = (index: number) => {
@@ -650,29 +730,31 @@ const sendMessage = async () => {
     newMessage.value = ""
     autoResize()
     typingUser.value = null
-    try {
-        emit("send-message", {
-            text: text,
-            files: selectedFiles.value.map((a) => a.file),
-            message_type: messageType,
-            tempId,
-            is_email_notif: isEmailNotif.value,
-        })
-        removeFile()
-        const msg = messagesLocal.value.find((m) => m._tempId === tempId)
 
-        if (msg) msg._status = "sending"
-        // const index = messagesLocal.value.findIndex(
-        //     (m) => m._tempId === tempId
-        // )
+    // The request itself is made by whoever owns this thread, so the bubble can only be told how
+    // it went by being handed a way to say so. Wrapping the emit in a try/catch caught nothing:
+    // emit returns before the upload has begun, and a refused upload left the bubble saying
+    // "sending" for the rest of the day.
+    const markFailed = (message: string) => {
+        const failed = messagesLocal.value.find((m) => m._tempId === tempId)
 
-        // if (index !== -1) {
-        //     messagesLocal.value.splice(index, 1)
-        // }
-    } catch {
-        const msg = messagesLocal.value.find((m) => m._tempId === tempId)
-        if (msg) msg._status = "failed"
+        if (failed) {
+            failed._status = "failed"
+        }
+
+        notify({ title: ctrans("Failed to send"), text: message, type: "error" })
     }
+
+    emit("send-message", {
+        text: text,
+        files: selectedFiles.value.map((a) => a.file),
+        message_type: messageType,
+        tempId,
+        is_email_notif: isEmailNotif.value,
+        onFailed: markFailed,
+    })
+
+    removeFile()
 }
 
 const resendMessage = async (msg: LocalChatMessage) => {
@@ -1067,7 +1149,9 @@ const handleClickOutside = (e: MouseEvent) => {
 </script>
 
 <template>
-    <div class="flex flex-col h-full bg-white overflow-hidden">
+    <div class="relative flex flex-col h-full bg-white overflow-hidden"
+        @dragenter="onDragEnterAttachment" @dragover="onDragOverAttachment"
+        @dragleave="onDragLeaveAttachment" @drop="onDropAttachment">
         <!-- Header -->
         <header class="flex items-center gap-3 px-3 py-2 border-b">
             <button @click="$emit('back')" :aria-label="ctrans('Back')">
@@ -1200,6 +1284,24 @@ const handleClickOutside = (e: MouseEvent) => {
                     </button>
 
                     <template v-if="!readOnly">
+                        <button v-if="canEmailNotify" class="menu-item" @click="isEmailNotif = !isEmailNotif">
+                            <!-- The badge sits on the envelope's corner, with a white disc behind it so
+                                 the two shapes stay separate instead of bleeding into one another. -->
+                            <!-- Two tones and a white disc between them: the envelope pale, the badge
+                                 dark, or the two shapes read as one blot at this size. -->
+                            <FontAwesomeLayers class="h-4 w-4 shrink-0">
+                                <FontAwesomeIcon :icon="faEnvelope" class="text-[0.9em]"
+                                    :class="isEmailNotif ? 'text-green-400' : 'text-red-300'" />
+                                <FontAwesomeIcon :icon="faCircle" class="text-[0.7em] text-white translate-x-[0.5em] -translate-y-[0.4em]" />
+                                <FontAwesomeIcon :icon="faExclamationCircle" class="text-[0.55em] translate-x-[0.5em] -translate-y-[0.4em]"
+                                    :class="isEmailNotif ? 'text-green-700' : 'text-red-600'" />
+                            </FontAwesomeLayers>
+                            {{ ctrans("Email notification:") }}
+                            <span :class="isEmailNotif ? 'font-medium text-green-600' : 'text-gray-500'">
+                                {{ isEmailNotif ? ctrans("On") : ctrans("Off") }}
+                            </span>
+                        </button>
+
                         <button class="menu-item disabled:cursor-not-allowed disabled:opacity-50" :disabled="!canDispose"
                             v-tooltip="canDispose ? undefined : heldByAnotherAgent" @click="openTicketModal">
                             <FontAwesomeIcon :icon="faLifeRing" class="text-blue-600" /> {{ ctrans("Create Ticket") }}
@@ -1398,21 +1500,6 @@ const handleClickOutside = (e: MouseEvent) => {
                                 <EmojiPicker @pick="pickEmoji" />
                             </div>
                         </div>
-                        <Button
-                            @click="isEmailNotif = !isEmailNotif"
-                            type="transparent"
-                            class="transition-all duration-150"
-                            :class="isEmailNotif
-                                ? '!bg-green-500 !border-green-600 !text-white'
-                                : '!bg-transparent text-gray-500 hover:!bg-gray-100'"
-                            :tooltip="isEmailNotif
-                                ? 'Email notification ON'
-                                : 'Send email notification'"
-                        >
-                            <template #icon>
-                                <FontAwesomeIcon :icon="faEnvelope" />
-                            </template>
-                        </Button>
                         <button @click="openTicketModal"
                             class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-blue-50 text-gray-500 hover:text-blue-600 transition-colors" :title="ctrans('Create ticket')" :aria-label="ctrans('Create ticket')">
                             <FontAwesomeIcon :icon="faLifeRing" class="text-sm" />
@@ -1439,6 +1526,19 @@ const handleClickOutside = (e: MouseEvent) => {
             @close="isSlackModalOpen = false"
             @open-settings="onOpenSlackSettings"
         />
+
+        <!-- Nothing here takes the pointer, so the drag keeps reaching the pane underneath and
+             the drop still lands. -->
+        <div v-if="isDraggingFile"
+            class="pointer-events-none absolute inset-0 z-30 flex items-center justify-center bg-white/75 p-6">
+            <div class="flex flex-col items-center gap-2 rounded-xl border-2 border-dashed border-sky-400 bg-white px-10 py-8 shadow-sm">
+                <FontAwesomeIcon :icon="faPaperclip" class="text-2xl text-sky-500" />
+                <div class="text-sm font-medium text-gray-700">{{ ctrans("Drop the files here") }}</div>
+                <div class="text-xs text-gray-400">
+                    {{ ctrans("Images, PDF and spreadsheets, up to 10 at a time, 10MB each") }}
+                </div>
+            </div>
+        </div>
     </div>
 </template>
 <style scoped>

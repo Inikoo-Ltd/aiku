@@ -399,6 +399,7 @@ watch(
                     type="create"
                     size="sm"
                     :label="trans('Save')"
+                    nativeType="submit"
                     :disabled="form.processing"
                 />
             </div>
@@ -437,6 +438,7 @@ watch(
                     type="create"
                     size="sm"
                     :label="trans('Generate')"
+                    nativeType="submit"
                     :disabled="generateForm.processing"
                 />
             </div>
@@ -534,6 +536,7 @@ watch(
                     type="create"
                     size="sm"
                     :label="trans('Save changes')"
+                    nativeType="submit"
                     :disabled="editForm.processing"
                 />
             </div>

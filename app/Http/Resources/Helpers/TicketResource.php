@@ -11,6 +11,7 @@ namespace App\Http\Resources\Helpers;
 use App\Enums\CRM\Livechat\ChatPriorityEnum;
 use App\Enums\Helpers\Ticket\TicketKindEnum;
 use App\Enums\Helpers\Ticket\TicketSourceChannelEnum;
+use App\Models\Chat\ChatSession;
 use App\Models\Chat\MetaChatSession;
 use App\Enums\Helpers\Ticket\TicketModuleEnum;
 use App\Enums\Helpers\Ticket\TicketQaStatusEnum;
@@ -57,6 +58,7 @@ class TicketResource extends JsonResource
             'reporter'       => $this->reporter?->contact_name ?: $this->reporter?->username,
             'reporter_roles' => $request->routeIs('retina.*') ? [] : $this->reporterRoles(),
             'blocks_source'  => (bool) $this->blocks_source,
+            'closes_source'  => (bool) $this->closes_source,
             'reporter_key'   => $this->reporter_id ? $this->reporter_type.'-'.$this->reporter_id : null,
             'reporter_username' => $this->reporter_type === 'User' ? $this->reporter?->username : null,
             'reporter_short' => $this->reporter_type === 'User' ? $this->reporter?->username : ($this->reporter?->contact_name ?: $this->reporter?->username),
@@ -118,6 +120,9 @@ class TicketResource extends JsonResource
                     : ($session?->webUser?->contact_name ?: $session?->guest_identifier)),
             'reference'     => $customer?->reference,
             'url'           => $this->sourceUrl($session),
+            // Whether there is a conversation to read on the ticket, rather than just a note of
+            // where it came from
+            'has_conversation' => $session instanceof ChatSession || $session instanceof MetaChatSession,
         ];
     }
 

@@ -1,7 +1,7 @@
 ---
 title: Working the help desk queue
 summary: For engineers and lead engineers - how to pick up tickets, keep them moving, work on them together with collaborators, ask the reporter a question, close them with a note, and ask QA to check your fix.
-date: 2026-09-15
+date: 2026-09-21
 tags: help desk, tickets, engineers
 category: help-desk
 audience: engineers
@@ -167,7 +167,7 @@ The green ticket counter on the right of the screen shows how many open tickets 
 
 ## Asking QA to check
 
-When your fix is live, press <b>Ask QA to check</b>. The ticket goes to the QA team. They test it and answer <b>QA passed</b> or <b>QA failed</b> with a note. You are told either way. If it failed, fix it and press <b>Ask QA to check again</b>. Closing the ticket with <b>Done</b> is still your decision.
+When your fix is live, press <b>Ask QA to check</b>. You are asked what they should look at and who should check it - anybody in QA, or somebody by name. The note is optional but worth writing: it is posted as a comment on the ticket, and it is the difference between QA testing what you changed and QA guessing. The ticket then goes to the QA team, who test it and answer <b>QA passed</b> or <b>QA failed</b> with a note of their own. You are told either way. If it failed, fix it and press <b>Ask QA to check again</b>. Closing the ticket with <b>Done</b> is still your decision.
 
 ## Customer tickets
 

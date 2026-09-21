@@ -66,16 +66,28 @@ const kinds = [
     { label: trans("Data integrity"), value: "data_integrity" },
 ]
 
-const form = ref<{ summary: string; description: string; priority: string; kind: string | null; blocksSource: boolean; images: File[] }>({
+const form = ref<{ summary: string; description: string; priority: string; kind: string | null; blocksSource: boolean; closesSource: boolean; images: File[] }>({
     summary: "",
     description: "",
     priority: "normal",
     kind: null,
     blocksSource: false,
+    closesSource: false,
     images: [],
 })
 
 const blockedTooltip = trans("While this is ticked, this chat cannot be closed until the ticket is resolved or cancelled.")
+const closesTooltip = trans("Whoever settles the ticket writes a closing note. That note is sent to this customer here, and the chat is closed for you.")
+
+// A chat nobody is holding open is not one a developer can close on your behalf.
+watch(
+    () => form.value.blocksSource,
+    (blocked) => {
+        if (!blocked) {
+            form.value.closesSource = false
+        }
+    }
+)
 
 // A bug is the case where the customer is left waiting on us, so it starts blocked. Ticked,
 // not enforced: the agent knows when a bug report is a note for later rather than a promise.
@@ -101,6 +113,7 @@ watch(
             priority: "normal",
             kind: null,
             blocksSource: false,
+            closesSource: false,
             images: [],
         }
     }
@@ -119,6 +132,7 @@ const submit = async () => {
         payload.append("priority", form.value.priority)
         payload.append("reference_url", window.location.href)
         payload.append("blocks_source", form.value.blocksSource ? "1" : "0")
+        payload.append("closes_source", form.value.closesSource ? "1" : "0")
         if (form.value.kind) {
             payload.append("kind", form.value.kind)
         }
@@ -229,6 +243,21 @@ const submit = async () => {
                             ? trans("This chat stays open until this ticket is resolved or cancelled.")
                             : trans("The chat can be closed while this ticket is still open.") }}
                     </span>
+
+                    <label v-if="form.blocksSource" class="mt-2 flex cursor-pointer items-start gap-2 border-t border-amber-200 pt-2" @click.stop>
+                        <input v-model="form.closesSource" type="checkbox" class="mt-0.5 cursor-pointer rounded border-gray-300 text-amber-500 focus:ring-amber-400" />
+                        <span>
+                            <span class="flex items-center gap-1.5 font-medium text-amber-800">
+                                {{ trans("Let the developer close this chat when the ticket is settled") }}
+                                <FontAwesomeIcon :icon="faQuestionCircle" v-tooltip="closesTooltip" class="text-amber-400" />
+                            </span>
+                            <span class="mt-0.5 block text-amber-700">
+                                {{ form.closesSource
+                                    ? trans("Their closing note is sent to the customer here, and the chat is closed.")
+                                    : trans("You close the chat yourself once the ticket is settled.") }}
+                            </span>
+                        </span>
+                    </label>
                 </span>
             </label>
 

@@ -4,6 +4,7 @@ import { Head, router } from "@inertiajs/vue3"
 import { useDebounceFn, useLocalStorage, watchDebounced } from "@vueuse/core"
 import axios from "axios"
 import { ctrans } from "@/Composables/useTrans"
+import { chatSendErrorText } from "@/Composables/chatSendError"
 import { capitalize } from "@/Composables/capitalize"
 import { cleanEmailText } from "@/Composables/cleanEmailText"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
@@ -16,10 +17,11 @@ import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import Dialog from "primevue/dialog"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faSearch, faTimes } from "@far"
-import { faCog, faStar, faAngleLeft, faAngleRight, faAngleDown, faFilter, faStoreAlt, faGlobe, faPlus, faEnvelope, faArchive } from "@fal"
+import { faCog, faStar, faAngleLeft, faAngleRight, faAngleDown, faFilter, faStoreAlt, faGlobe, faPlus, faEnvelope, faArchive, faPhone } from "@fal"
 import { faEllipsisVertical, faBan, faRotateLeft, faTrash, faTrashArrowUp, faAnglesUp, faAngleUp, faEquals, faChevronRight, faStar as faStarSolid, faCircleCheck } from "@fortawesome/free-solid-svg-icons"
 import { faWhatsapp } from "@fortawesome/free-brands-svg-icons"
 import { formatChatTime, formatChatAge } from "@/Composables/chatTime"
+import { useChatPhoneCall } from "@/Composables/useChatPhoneCall"
 import {
     Contact,
     SessionAPI,
@@ -44,13 +46,14 @@ const props = defineProps<{
             customer: { waiting: number; active: number; closed: number; mine: number; colleagues: number; closed_mine: number; closed_colleagues: number }
             guest: { waiting: number; active: number; closed: number; mine: number; colleagues: number; closed_mine: number; closed_colleagues: number }
         }>
+        phone?: { in_progress: number; customer: number; guest: number }
     }>
     selectedSessionUlid?: string | null
     initialSession?: any | null
     preselectShopId?: number | null
     is_read_only?: boolean
     supervisor?: boolean
-    agents?: Array<{ id: number; name: string | null; presence: "online" | "away" | "offline"; open: number; max: number }>
+    agents?: Array<{ id: number; name: string | null; presence: "online" | "away" | "offline"; open: number; max: number; on_call?: boolean; on_call_since?: string | null }>
     ignoreReasons?: Array<{ value: string; label: string }>
 }>()
 
@@ -319,6 +322,33 @@ const selectedShopId = computed<number | null>(() =>
 const setShop = (shopId: number | null) => {
     selectedShopIds.value = shopId === null ? [] : [shopId]
 }
+
+// A call is filed against the shop being worked when it starts, which is nearly always right and
+// can be put straight in the modal when it is not.
+const {
+    state: phoneCallState,
+    openModal: openPhoneCallModal,
+    setPreferredShop,
+} = useChatPhoneCall()
+
+const openPhoneCall = () => {
+    setPreferredShop(selectedShopId.value ?? props.preselectShopId ?? null)
+    openPhoneCallModal()
+}
+
+// The telephone column leaves the inbox rather than filtering it: a call is not a conversation,
+// and the list beside it only knows how to show conversations.
+const openPhoneCalls = (inbox: { slug: string }) => {
+    router.visit(
+        route("grp.org.shops.show.chat.phone_calls.index", [props.organisation.slug, inbox.slug])
+    )
+}
+
+watch(
+    selectedShopId,
+    (shopId) => setPreferredShop(shopId ?? props.preselectShopId ?? null),
+    { immediate: true }
+)
 // Every shop shows all three columns; only the ones that can hold something can be picked.
 const liveChannels = (inbox?: { channels?: Array<{ key: string; available?: boolean }> }) =>
     (inbox?.channels ?? []).filter((c) => c.available !== false)
@@ -1208,12 +1238,13 @@ const updateUrl = (ulid: string) => {
     window.history.replaceState(window.history.state, "", url)
 }
 
-const handleSendMessage = async ({ text, files, message_type, is_email_notif }: {
+const handleSendMessage = async ({ text, files, message_type, is_email_notif, onFailed }: {
     text: string
     files?: File[]
     message_type: "text" | "image" | "file"
     tempId: number
     is_email_notif: boolean
+    onFailed?: (message: string) => void
 }) => {
     if (!selectedSession.value?.ulid) return
     try {
@@ -1236,6 +1267,8 @@ const handleSendMessage = async ({ text, files, message_type, is_email_notif }: 
         )
     } catch (error) {
         console.error("Error sending message:", error)
+
+        onFailed?.(chatSendErrorText(error, ctrans("The message was not sent. Try again.")))
     }
 }
 
@@ -1443,6 +1476,14 @@ onUnmounted(() => {
 
     <PageHeading :data="pageHead">
         <template #other>
+            <button v-if="!isReadOnly" type="button" @click="openPhoneCall"
+                v-tooltip="phoneCallState.call ? ctrans('You are on a phone call') : ctrans('Log a phone call')"
+                class="p-2 rounded-lg transition-colors"
+                :class="phoneCallState.call
+                    ? 'text-emerald-600 bg-emerald-50 hover:bg-emerald-100'
+                    : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700'">
+                <FontAwesomeIcon :icon="faPhone" class="text-base" />
+            </button>
             <button v-if="!isReadOnly" type="button" v-tooltip="ctrans('Chat settings')" @click="openChatSettings"
                 class="p-2 rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition-colors">
                 <FontAwesomeIcon :icon="faCog" class="text-base" />
@@ -1535,6 +1576,22 @@ onUnmounted(() => {
                                         class="text-[12px]"
                                         :class="channel.available === false ? 'text-slate-300' : channel.key === 'whatsapp' ? 'text-green-600' : channel.key === 'email' ? 'text-blue-500' : 'text-gray-500'" />
                                 </th>
+                                <!-- A call being taken right now belongs to neither row until it
+                                     is filed, so it is said once here rather than guessed into
+                                     the customer or the guest line. -->
+                                <th class="font-normal pb-0.5 border-b border-slate-100 border-l"
+                                    v-tooltip="inbox.phone?.in_progress
+                                        ? ctrans(':count on the phone right now', { count: String(inbox.phone.in_progress) })
+                                        : ctrans('Phone calls finished today')">
+                                    <span class="relative inline-flex items-center justify-center">
+                                        <FontAwesomeIcon :icon="faPhone" class="text-[12px]"
+                                            :class="inbox.phone?.in_progress ? 'text-emerald-600' : 'text-gray-500'" />
+                                        <span v-if="inbox.phone?.in_progress" class="absolute -top-0.5 -right-1 flex h-1.5 w-1.5">
+                                            <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+                                            <span class="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                                        </span>
+                                    </span>
+                                </th>
                             </tr>
                         </thead>
                         <tbody>
@@ -1566,6 +1623,16 @@ onUnmounted(() => {
                                         </span>
                                     </button>
                                 </td>
+                                <td class="border border-slate-100 border-l-slate-200">
+                                    <button type="button" @click="openPhoneCalls(inbox)"
+                                        v-tooltip="ctrans('Phone calls on this shop')"
+                                        class="w-full flex items-center justify-center px-1 py-0.5 leading-5 transition-colors hover:bg-slate-100">
+                                        <span class="font-semibold"
+                                            :class="inbox.phone?.[kind.key] ? 'text-slate-700' : 'text-slate-400'">
+                                            {{ inbox.phone?.[kind.key] ?? 0 }}
+                                        </span>
+                                    </button>
+                                </td>
                             </tr>
                         </tbody>
                     </table>
@@ -1588,6 +1655,8 @@ onUnmounted(() => {
                     @click="showAgentLoad(agent.id)">
                     <span class="w-2 h-2 rounded-full shrink-0" :class="PRESENCE_DOT[agent.presence]" />
                     <span class="flex-1 truncate" :class="agent.presence === 'offline' ? 'text-gray-400' : ''">{{ agent.name }}</span>
+                    <FontAwesomeIcon v-if="agent.on_call" :icon="faPhone" class="text-[11px] text-emerald-600 shrink-0"
+                        v-tooltip="ctrans('On a phone call, taking no new conversations')" />
                     <span class="text-[11px] tabular-nums" :class="agent.open >= agent.max ? 'text-red-500 font-semibold' : 'text-gray-400'">
                         {{ agent.open }}/{{ agent.max }}
                     </span>
