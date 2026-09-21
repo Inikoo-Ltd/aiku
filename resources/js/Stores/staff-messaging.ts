@@ -63,6 +63,8 @@ export interface StaffCoworker {
     organisation_ids?: number[]
     in_team: boolean
     last_active_at?: number | null
+    on_call?: boolean
+    on_call_since?: string | null
 }
 
 interface WindowState {

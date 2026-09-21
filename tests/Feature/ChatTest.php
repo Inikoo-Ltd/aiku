@@ -5573,3 +5573,93 @@ test('a guest who writes like a customer and cannot be identified is asked once,
     expect($email->customer_asked_at)->toBeNull()
         ->and($email->messages()->where('sender_type', ChatSenderTypeEnum::SYSTEM)->count())->toBe(0);
 });
+
+test('a phone call takes the agent out of the rota, is filed only against their own shops, and is read only by them', function () {
+    setPermissionsTeamId($this->user->group_id);
+
+    $clerk = User::factory()->create(['group_id' => $this->organisation->group_id, 'status' => true]);
+    $clerk->assignRole(RolesEnum::getRoleName(RolesEnum::CUSTOMER_SERVICE_CLERK->value, $this->shop));
+    $agent = ChatAgent::create([
+        'user_id'              => $clerk->id,
+        'max_concurrent_chats' => 5,
+        'language_id'          => 68,
+        'is_online'            => true,
+        'is_available'         => true,
+        'current_chat_count'   => 0,
+        'presence_status'      => ChatAgentPresenceStatusEnum::ONLINE,
+        'last_heartbeat_at'    => now(),
+    ]);
+
+    expect(ChatAgent::available()->whereKey($agent->id)->exists())->toBeTrue();
+
+    $this->actingAs($clerk);
+
+    $first  = $this->postJson(route('grp.chat.phone_calls.start'), ['shop_id' => $this->shop->id])->assertOk()->json('call.id');
+    $second = $this->postJson(route('grp.chat.phone_calls.start'), ['shop_id' => $this->shop->id])->assertOk()->json('call.id');
+
+    expect($second)->toBe($first)
+        ->and($agent->fresh()->isOnPhoneCall())->toBeTrue()
+        ->and(ChatAgent::available()->whereKey($agent->id)->exists())->toBeFalse();
+
+    [, , $otherShop] = createOwnShop('phone-calls-other-shop');
+    $foreignSession  = ChatSession::create([
+        'ulid'             => (string) \Illuminate\Support\Str::ulid(),
+        'shop_id'          => $otherShop->id,
+        'language_id'      => 68,
+        'status'           => ChatSessionStatusEnum::ACTIVE->value,
+        'priority'         => ChatPriorityEnum::NORMAL->value,
+        'guest_identifier' => 'guest-'.\Illuminate\Support\Str::random(8),
+    ]);
+
+    $this->postJson(route('grp.chat.phone_calls.end'), [
+        'notes'           => 'Asked about a delivery',
+        'contact_type'    => 'guest',
+        'chat_session_id' => $foreignSession->id,
+    ])->assertStatus(422);
+
+    expect($foreignSession->chatEvents()->where('event_type', ChatEventTypeEnum::PHONE_CALL)->exists())->toBeFalse();
+
+    $ownSession = ChatSession::create([
+        'ulid'             => (string) \Illuminate\Support\Str::ulid(),
+        'shop_id'          => $this->shop->id,
+        'language_id'      => 68,
+        'status'           => ChatSessionStatusEnum::ACTIVE->value,
+        'priority'         => ChatPriorityEnum::NORMAL->value,
+        'guest_identifier' => 'guest-'.\Illuminate\Support\Str::random(8),
+    ]);
+
+    $this->postJson(route('grp.chat.phone_calls.end'), [
+        'notes'           => 'Asked about a delivery',
+        'contact_type'    => 'guest',
+        'chat_session_id' => $ownSession->id,
+    ])->assertOk();
+
+    expect($ownSession->chatEvents()->where('event_type', ChatEventTypeEnum::PHONE_CALL)->count())->toBe(1)
+        ->and(ChatAgent::available()->whereKey($agent->id)->exists())->toBeTrue();
+
+    $stale = \App\Models\Chat\ChatPhoneCall::create([
+        'group_id'      => $clerk->group_id,
+        'shop_id'       => $this->shop->id,
+        'chat_agent_id' => $agent->id,
+        'user_id'       => $clerk->id,
+        'status'        => \App\Enums\CRM\Livechat\ChatPhoneCallStatusEnum::IN_PROGRESS,
+        'started_at'    => now()->subMinutes(config('chat.phone_call.max_minutes') + 1),
+    ]);
+
+    expect(\App\Actions\Chat\PhoneCall\AutoCloseStaleChatPhoneCalls::run())->toBe(1)
+        ->and($stale->fresh()->status)->toBe(\App\Enums\CRM\Livechat\ChatPhoneCallStatusEnum::AUTO_CLOSED)
+        ->and($stale->fresh()->duration_seconds)->toBeNull()
+        ->and((int) \App\Models\Chat\ChatPhoneCall::where('chat_agent_id', $agent->id)->sum('duration_seconds'))
+        ->toBe((int) \App\Models\Chat\ChatPhoneCall::where('chat_agent_id', $agent->id)->where('status', \App\Enums\CRM\Livechat\ChatPhoneCallStatusEnum::COMPLETED)->sum('duration_seconds'));
+
+    $this->get(route('grp.chat.phone_calls.index'))->assertForbidden();
+
+    $outsider = User::factory()->create(['group_id' => $this->organisation->group_id, 'status' => true]);
+    $outsider->assignRole(RolesEnum::getRoleName(RolesEnum::CUSTOMER_SERVICE_CLERK->value, $otherShop));
+
+    $seen = \App\Actions\Chat\PhoneCall\UI\IndexChatPhoneCalls::make()->handle($this->organisation->group, 'phone_calls', $outsider);
+    $own  = \App\Actions\Chat\PhoneCall\UI\IndexChatPhoneCalls::make()->handle($this->organisation->group, 'phone_calls', $clerk);
+
+    expect($seen->total())->toBe(0)
+        ->and($own->total())->toBe(2);
+});

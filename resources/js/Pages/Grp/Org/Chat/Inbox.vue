@@ -16,10 +16,11 @@ import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import Dialog from "primevue/dialog"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faSearch, faTimes } from "@far"
-import { faCog, faStar, faAngleLeft, faAngleRight, faAngleDown, faFilter, faStoreAlt, faGlobe, faPlus, faEnvelope, faArchive } from "@fal"
+import { faCog, faStar, faAngleLeft, faAngleRight, faAngleDown, faFilter, faStoreAlt, faGlobe, faPlus, faEnvelope, faArchive, faPhone } from "@fal"
 import { faEllipsisVertical, faBan, faRotateLeft, faTrash, faTrashArrowUp, faAnglesUp, faAngleUp, faEquals, faChevronRight, faStar as faStarSolid, faCircleCheck } from "@fortawesome/free-solid-svg-icons"
 import { faWhatsapp } from "@fortawesome/free-brands-svg-icons"
 import { formatChatTime, formatChatAge } from "@/Composables/chatTime"
+import { useChatPhoneCall } from "@/Composables/useChatPhoneCall"
 import {
     Contact,
     SessionAPI,
@@ -50,7 +51,7 @@ const props = defineProps<{
     preselectShopId?: number | null
     is_read_only?: boolean
     supervisor?: boolean
-    agents?: Array<{ id: number; name: string | null; presence: "online" | "away" | "offline"; open: number; max: number }>
+    agents?: Array<{ id: number; name: string | null; presence: "online" | "away" | "offline"; open: number; max: number; on_call?: boolean; on_call_since?: string | null }>
     ignoreReasons?: Array<{ value: string; label: string }>
 }>()
 
@@ -319,6 +320,25 @@ const selectedShopId = computed<number | null>(() =>
 const setShop = (shopId: number | null) => {
     selectedShopIds.value = shopId === null ? [] : [shopId]
 }
+
+// A call is filed against the shop being worked when it starts, which is nearly always right and
+// can be put straight in the modal when it is not.
+const {
+    state: phoneCallState,
+    openModal: openPhoneCallModal,
+    setPreferredShop,
+} = useChatPhoneCall()
+
+const openPhoneCall = () => {
+    setPreferredShop(selectedShopId.value ?? props.preselectShopId ?? null)
+    openPhoneCallModal()
+}
+
+watch(
+    selectedShopId,
+    (shopId) => setPreferredShop(shopId ?? props.preselectShopId ?? null),
+    { immediate: true }
+)
 // Every shop shows all three columns; only the ones that can hold something can be picked.
 const liveChannels = (inbox?: { channels?: Array<{ key: string; available?: boolean }> }) =>
     (inbox?.channels ?? []).filter((c) => c.available !== false)
@@ -1443,6 +1463,14 @@ onUnmounted(() => {
 
     <PageHeading :data="pageHead">
         <template #other>
+            <button v-if="!isReadOnly" type="button" @click="openPhoneCall"
+                v-tooltip="phoneCallState.call ? ctrans('You are on a phone call') : ctrans('Log a phone call')"
+                class="p-2 rounded-lg transition-colors"
+                :class="phoneCallState.call
+                    ? 'text-emerald-600 bg-emerald-50 hover:bg-emerald-100'
+                    : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700'">
+                <FontAwesomeIcon :icon="faPhone" class="text-base" />
+            </button>
             <button v-if="!isReadOnly" type="button" v-tooltip="ctrans('Chat settings')" @click="openChatSettings"
                 class="p-2 rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition-colors">
                 <FontAwesomeIcon :icon="faCog" class="text-base" />
@@ -1588,6 +1616,8 @@ onUnmounted(() => {
                     @click="showAgentLoad(agent.id)">
                     <span class="w-2 h-2 rounded-full shrink-0" :class="PRESENCE_DOT[agent.presence]" />
                     <span class="flex-1 truncate" :class="agent.presence === 'offline' ? 'text-gray-400' : ''">{{ agent.name }}</span>
+                    <FontAwesomeIcon v-if="agent.on_call" :icon="faPhone" class="text-[11px] text-emerald-600 shrink-0"
+                        v-tooltip="ctrans('On a phone call, taking no new conversations')" />
                     <span class="text-[11px] tabular-nums" :class="agent.open >= agent.max ? 'text-red-500 font-semibold' : 'text-gray-400'">
                         {{ agent.open }}/{{ agent.max }}
                     </span>
