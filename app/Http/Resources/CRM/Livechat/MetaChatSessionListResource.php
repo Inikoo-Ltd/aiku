@@ -160,6 +160,7 @@ class MetaChatSessionListResource extends JsonResource
             ] : null,
 
             'is_spam'        => (bool) $this->is_spam,
+            'noise'          => \App\Actions\Chat\ChatSession\ClassifyChatSessionNoise::forList($this->resource),
             'is_highlighted' => (bool) $this->is_highlighted,
 
             'unread_count' => (int) ($this->unread_count ?? 0),

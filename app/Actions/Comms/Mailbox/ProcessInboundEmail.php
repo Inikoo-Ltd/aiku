@@ -8,6 +8,7 @@
 
 namespace App\Actions\Comms\Mailbox;
 
+use App\Actions\Chat\ChatSession\ClassifyChatSessionNoise;
 use App\Actions\Chat\ChatSession\StoreChatSession;
 use App\Actions\Chat\ChatSession\SendChatMessage;
 use App\Enums\CRM\Livechat\ChatChannelEnum;
@@ -77,7 +78,7 @@ class ProcessInboundEmail
 
         $webUser = $this->matchWebUser($shop, $from['address']);
 
-        if (! $webUser && $this->isAutomatedMail($from['address'], $subject)) {
+        if (! $webUser && self::isAutomatedMail($from['address'], $subject)) {
             $client->addLabel($gmailMessageId, 'aiku/filtered');
 
             return null;
@@ -132,6 +133,11 @@ class ProcessInboundEmail
                 // Marked on the message rather than given a state of its own: it is kept so the
                 // history is honest, and shown for what it is so nobody reads it as an answer.
                 $isAutoReply ? ['auto_reply' => true] : [],
+                ['email_headers' => array_filter([
+                    'list_unsubscribe' => (bool) GmailMessageParser::header($raw, 'List-Unsubscribe'),
+                    'precedence'       => GmailMessageParser::header($raw, 'Precedence'),
+                    'auto_submitted'   => GmailMessageParser::header($raw, 'Auto-Submitted'),
+                ])],
                 $pendingAttachments ? ['gmail_pending_attachments' => $pendingAttachments] : []
             ),
         ]);
@@ -146,6 +152,10 @@ class ProcessInboundEmail
 
         foreach ($attachments as $attachment) {
             @unlink($attachment->getPathname());
+        }
+
+        if (! $existing && ! $webUser) {
+            ClassifyChatSessionNoise::dispatch($session);
         }
 
         $label = $webUser ? 'aiku/imported' : 'aiku/unmatched';
@@ -208,15 +218,15 @@ class ProcessInboundEmail
      * bounces and alerts were 59% of it), so these never become chat sessions. Only applied to
      * senders that match no customer.
      */
-    private function isAutomatedMail(?string $address, ?string $subject): bool
+    public static function isAutomatedMail(?string $address, ?string $subject): bool
     {
-        $localPart = strtolower((string) strstr((string) $address, '@', true));
+        $localPart = str_replace(['-', '_', '.'], '', strtolower((string) strstr((string) $address, '@', true)));
         $subject   = strtolower(trim((string) $subject));
 
-        return $localPart === 'mailer-daemon'
+        return $localPart === 'mailerdaemon'
             || str_contains($localPart, 'noreply')
-            || str_contains($localPart, 'no-reply')
-            || str_starts_with($subject, 'report domain:')
+            || str_contains($localPart, 'donotreply')
+            || str_contains($subject, 'report domain:')
             || str_starts_with($subject, 'delivery status notification');
     }
 

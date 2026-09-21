@@ -1062,6 +1062,15 @@ class Kernel extends ConsoleKernel
                 type: 'command',
                 scheduledAt: now()->format('H:i')
             );
+
+            $this->logSchedule(
+                $schedule->command('chat:classify-noise')->hourlyAt(37)->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
+                    monitorSlug: 'ClassifyIdleChatSessionsNoise',
+                ),
+                name: 'ClassifyIdleChatSessionsNoise',
+                type: 'command',
+                scheduledAt: now()->format('H:i')
+            );
         }
     }
 

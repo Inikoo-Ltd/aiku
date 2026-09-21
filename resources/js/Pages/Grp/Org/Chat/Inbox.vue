@@ -290,6 +290,7 @@ const mapSession = (s: SessionAPI): Contact => ({
     status: s.status,
     is_spam: (s as any).is_spam ?? false,
     is_rubbish: (s as any).is_rubbish ?? false,
+    noise: (s as any).noise ?? null,
     is_highlighted: (s as any).is_highlighted ?? false,
     webUser: s.web_user ?? (s as any).customer,
     country_code: (s as any).country_code ?? null,
@@ -1805,6 +1806,11 @@ onUnmounted(() => {
                                     </span>
                                     <span v-if="c.agent?.name" class="truncate">
                                         {{ c.agent.name.split(' ')[0] }}
+                                    </span>
+                                    <span v-if="c.noise" v-tooltip="c.noise.note"
+                                        class="shrink-0 rounded px-1 font-medium"
+                                        :class="c.noise.automatic ? 'bg-gray-100 text-gray-600' : 'bg-amber-50 text-amber-700'">
+                                        {{ c.noise.automatic ? ctrans("Put aside automatically") : ctrans("Possible noise") }}: {{ c.noise.label }}
                                     </span>
                                 </div>
                                 <div class="flex items-center gap-1.5">

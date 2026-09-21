@@ -19,4 +19,15 @@ return [
 
     'summary_model' => env('CHAT_SUMMARY_MODEL', 'gpt-4o'),
 
+    'noise' => [
+
+        'auto_put_aside' => (bool) env('CHAT_NOISE_AUTO_PUT_ASIDE', false),
+        'put_aside_confidence' => (int) env('CHAT_NOISE_PUT_ASIDE_CONFIDENCE', 90),
+        'hint_confidence' => (int) env('CHAT_NOISE_HINT_CONFIDENCE', 60),
+        'min_whatsapp_chars' => 40,
+        'greet_bare_hello' => (bool) env('CHAT_NOISE_GREET_BARE_HELLO', true),
+        'supplier_phone_prefixes' => ['91', '86', '92', '880', '20'],
+
+    ],
+
 ];

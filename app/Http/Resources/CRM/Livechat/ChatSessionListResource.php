@@ -78,6 +78,7 @@ class ChatSessionListResource extends JsonResource
             'rubbish_reason' => $this->rubbish_reason
                 ? \App\Enums\CRM\Livechat\ChatIgnoreReasonEnum::from($this->rubbish_reason)->label()
                 : null,
+            'noise' => \App\Actions\Chat\ChatSession\ClassifyChatSessionNoise::forList($this->resource),
             'is_highlighted' => (bool) $this->is_highlighted,
             'guest_identifier' => $this->guest_identifier,
             'created_at' => $this->created_at,

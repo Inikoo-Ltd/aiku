@@ -91,6 +91,7 @@ class GetChatReports
             'by_shop'       => $this->byShop($sessions, $shopNames),
             'by_topic'      => $this->byTopic($sessions),
             'unclassified'  => $sessions->whereNull('topic')->count(),
+            'noise'         => $this->noise($shopIds, $from, $to),
             'agents'        => $agents,
             'agents_total'  => [
                 'name'          => __('Total'),
@@ -141,6 +142,44 @@ class GetChatReports
             $shopIds,
             ['from' => $from, 'to' => $to]
         );
+    }
+
+    /**
+     * How the noise check did, by who gave the verdict: a rule or the model. Reversed is what a
+     * person undid or overruled, in either direction, and is the number the confidence
+     * threshold gets tuned on. Counted apart from everything else here because what was put
+     * aside is, rightly, missing from every other cut.
+     *
+     * @param  Collection<int, int>  $shopIds
+     * @return array<int, array{source: string, noise: int, genuine: int, reversed: int}>
+     */
+    private function noise(Collection $shopIds, Carbon $from, Carbon $to): array
+    {
+        return $this->fromEverySource(
+            fn (array $source) => "
+                select s.noise_source as source,
+                    count(*) filter (where s.noise_verdict <> 'genuine') as noise,
+                    count(*) filter (where s.noise_verdict = 'genuine') as genuine,
+                    count(*) filter (where s.noise_reversed_at is not null) as reversed
+                from {$source['sessions']} s
+                where s.deleted_at is null
+                    and s.noise_verdict is not null
+                    and s.shop_id in (:shops)
+                    and s.created_at between :from and :to
+                group by 1
+            ",
+            $shopIds,
+            ['from' => $from, 'to' => $to]
+        )
+            ->groupBy('source')
+            ->map(fn (Collection $rows, string $source) => [
+                'source'   => $source,
+                'noise'    => (int) $rows->sum('noise'),
+                'genuine'  => (int) $rows->sum('genuine'),
+                'reversed' => (int) $rows->sum('reversed'),
+            ])
+            ->values()
+            ->all();
     }
 
     /**

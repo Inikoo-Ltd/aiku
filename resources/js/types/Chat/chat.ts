@@ -125,6 +125,7 @@ export interface Contact {
 	status: "waiting" | "active" | "closed" | string
 	is_spam?: boolean
 	is_rubbish?: boolean
+	noise?: { label: string; note: string | null; source: string | null; automatic: boolean } | null
 	is_highlighted?: boolean
 	messages?: ChatMessage[]
 	webUser?: {
