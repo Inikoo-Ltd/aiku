@@ -531,6 +531,7 @@ class UpdateProduct extends OrgAction
             'not_follow_master_trade_units' => ['sometimes', 'boolean'],
             'not_follow_master_prices'      => ['sometimes', 'boolean'],
             'not_follow_master_media'       => ['sometimes', 'boolean'],
+            'independent_barcode'           => ['sometimes', 'boolean'],
             'is_golden_product'             => ['sometimes', 'boolean'],
         ];
 

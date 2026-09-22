@@ -1674,7 +1674,7 @@ test('product webpage replaces characters not allowed in webpage urls', function
         ->and($product->refresh()->webpage_id)->toBe($webpage->id);
 })->depends('create shop');
 
-test('product barcode is cleared when it stops being a single trade unit', function () {
+test('product barcode is left alone when it stops being a single trade unit', function () {
     $shop = Shop::first() ?? StoreShop::make()->action($this->organisation, array_merge(Shop::factory()->definition(), ['type' => ShopTypeEnum::B2B->value]));
     createProduct($shop);
     $product = $shop->products()->orderBy('id')->first();
@@ -1697,5 +1697,6 @@ test('product barcode is cleared when it stops being a single trade unit', funct
     \App\Actions\Catalogue\Product\Hydrators\ProductHydrateBarcodeFromTradeUnit::run(Product::find($product->id));
     $product->refresh();
 
-    expect($product->barcode)->toBeNull();
+    /* Clearing it here is what emptied 561 products and pushed blank GTINs to live listings. */
+    expect($product->barcode)->toBe('5060000000011');
 });

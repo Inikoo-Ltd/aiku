@@ -11,6 +11,7 @@ namespace App\Actions\Catalogue\Product\UI;
 use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
+use App\Actions\Traits\WithBarcodeChoice;
 use App\Actions\Traits\WithUnitsChangeConfirmation;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\UI\Catalogue\ProductTabsEnum;
@@ -29,6 +30,7 @@ class EditProduct extends OrgAction
     use WithCatalogueAuthorisation;
     use WithProductNavigation;
     use WithUnitsChangeConfirmation;
+    use WithBarcodeChoice;
 
     private Organisation|Shop|Fulfilment|ProductCategory $parent;
 
@@ -260,7 +262,8 @@ class EditProduct extends OrgAction
      */
     public function getBlueprint(Product $product): array
     {
-        $barcodes  = $product->tradeUnits->pluck('barcode')->filter()->unique();
+        $barcodeChoice = $this->getBarcodeChoice($product);
+        $followsMasterBarcode = $product->masterProduct && !$product->independent_barcode;
         $languages = [$product->shop->language_id => LanguageResource::make($product->shop->language)->resolve()];
 
         $canEditNotForSale = $product->state != ProductStateEnum::DISCONTINUED;
@@ -659,7 +662,7 @@ class EditProduct extends OrgAction
                         'label'  => __('Properties'),
                         'title'  => __('id'),
                         'icon'   => 'fa-light fa-fingerprint',
-                        'fields' => [
+                        'fields' => array_filter([
                             'unit'                 => [
                                 'type'  => 'input',
                                 'label' => __('Unit'),
@@ -695,18 +698,23 @@ class EditProduct extends OrgAction
                                 'label'       => __('Marketing dimension'),
                                 'value'       => $product->marketing_dimensions,
                             ],
+                            'independent_barcode'  => $product->masterProduct && $barcodeChoice['hasChoice'] ? [
+                                'type'        => 'toggle',
+                                'label'       => __('Do not follow master barcode'),
+                                'value'       => $product->independent_barcode,
+                                'information' => __('The GTIN is chosen once on the master composition. Enabling this lets this shop publish a different one.'),
+                            ] : null,
                             'barcode'              => [
-                                'type'     => 'select',
+                                'type'     => 'barcode_choice',
                                 'label'    => __('Barcode'),
                                 'value'    => $product->barcode,
-                                'readonly' => $product->tradeUnits->count() == 1,
-                                'options'  => $barcodes->mapWithKeys(function ($barcode) {
-                                    return [(string)$barcode => $barcode];
-                                })->toArray()
+                                /* One trade unit mirrors it, and a child following its master is decided there. */
+                                'readonly' => !$barcodeChoice['hasChoice'] || $followsMasterBarcode,
+                                'options'  => $barcodeChoice,
                             ],
 
 
-                        ]
+                        ])
                     ],
                 $canEditNotForSale
                     ? [

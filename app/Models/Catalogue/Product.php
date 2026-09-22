@@ -326,6 +326,7 @@ class Product extends Model implements Auditable, HasMedia
         'not_follow_master_prices'      => 'boolean',
         'not_follow_master_trade_units' => 'boolean',
         'not_follow_master_media'       => 'boolean',
+        'independent_barcode'           => 'boolean',
         'is_golden_product'             => 'boolean',
     ];
 
@@ -404,6 +405,7 @@ class Product extends Model implements Auditable, HasMedia
         'not_follow_master_trade_units',
         'is_golden_product',
         'barcode',
+        'independent_barcode',
         'is_for_sale',
         'exclusive_for_customer_id',
     ];
