@@ -2,6 +2,7 @@
 
 namespace App\Actions\HumanResources\WorkSchedule;
 
+use App\Actions\Chat\Reports\IsWithinWorkingHours;
 use Illuminate\Support\Collection;
 use Carbon\Carbon;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -41,7 +42,7 @@ class GetChatConfig
             return $config;
         }
 
-        $config['is_online'] = $schedule->isOpenNow($timezone);
+        $config['is_online'] = IsWithinWorkingHours::run($shop, now());
 
         $now = Carbon::now($timezone);
         $dayOfWeek = $now->dayOfWeekIso;
