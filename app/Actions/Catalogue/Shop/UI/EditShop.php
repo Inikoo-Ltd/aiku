@@ -933,6 +933,12 @@ class EditShop extends OrgAction
                                 'inbox_url'        => route('grp.org.shops.show.chat.inbox', [$shop->organisation->slug, $shop->slug]),
                             ],
                         ],
+                        'mailbox_sender_name' => [
+                            'type'        => 'input',
+                            'label'       => __('Sender name'),
+                            'placeholder' => $shop->name,
+                            'value'       => Arr::get($shop->settings, 'gmail.sender_name', ''),
+                        ],
                     ],
                 ],
                 [

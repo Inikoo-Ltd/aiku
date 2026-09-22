@@ -99,8 +99,13 @@ class SendChatMessageByGmail
 
         $to = $toName ? $this->encodeHeader($toName)." <{$toAddress}>" : $toAddress;
 
+        // Without a name of our own on the From line the customer's mail client shows whatever
+        // the Google account happens to be called, which is the mailbox owner, not the shop.
+        $senderName = Arr::get($session->shop->settings, 'gmail.sender_name') ?: $session->shop->name;
+        $from       = $senderName ? $this->encodeHeader($senderName)." <{$mailboxAddress}>" : $mailboxAddress;
+
         $headers = [
-            "From: {$mailboxAddress}",
+            "From: {$from}",
             "To: {$to}",
             'Subject: '.$this->encodeHeader($subject),
             "Message-ID: {$messageId}",
@@ -113,26 +118,19 @@ class SendChatMessageByGmail
 
         $headers[] = 'MIME-Version: 1.0';
 
-        $messageBody = $chatMessage->message_text ?? '';
+        $signature = '';
 
         if ($chatMessage->sender_type === ChatSenderTypeEnum::AGENT && $chatMessage->sender_id) {
-            $agent = ChatAgent::find($chatMessage->sender_id);
-            if ($agent && $agent->signature) {
-                $messageBody .= "\n\n".$agent->signature;
-            }
+            $agent     = ChatAgent::find($chatMessage->sender_id);
+            $signature = $agent?->signature ?: '';
         }
 
-        $textPart = [
-            'Content-Type: text/plain; charset=utf-8',
-            'Content-Transfer-Encoding: base64',
-            '',
-            chunk_split(base64_encode($messageBody)),
-        ];
+        $bodyPart = $this->bodyPart($chatMessage->message_text ?? '', $signature);
 
         $attachments = $chatMessage->attachedFiles();
 
         if ($attachments->isEmpty()) {
-            return implode("\r\n", [...$headers, ...$textPart]);
+            return implode("\r\n", [...$headers, ...$bodyPart]);
         }
 
         $boundary = 'aiku-'.bin2hex(random_bytes(12));
@@ -142,7 +140,7 @@ class SendChatMessageByGmail
             "Content-Type: multipart/mixed; boundary=\"{$boundary}\"",
             '',
             "--{$boundary}",
-            ...$textPart,
+            ...$bodyPart,
         ];
 
         foreach ($attachments as $attachment) {
@@ -162,6 +160,62 @@ class SendChatMessageByGmail
         $lines[] = "--{$boundary}--";
 
         return implode("\r\n", $lines);
+    }
+
+    /**
+     * A signature holding a logo is HTML, and HTML in a text/plain mail is read as its own
+     * source. Such a mail goes as both: the readable text for anything that cannot show HTML,
+     * and the marked-up version beside it. A plain signature keeps the mail plain as before.
+     *
+     * @return array<int, string>  the MIME lines for the body, header first
+     */
+    private function bodyPart(string $messageText, string $signature): array
+    {
+        $isHtmlSignature = $signature !== '' && $signature !== strip_tags($signature);
+
+        if (! $isHtmlSignature) {
+            return $this->textPart(trim($messageText."\n\n".$signature));
+        }
+
+        $textPart = $this->textPart(trim($messageText."\n\n".$this->htmlToText($signature)));
+        $htmlPart = [
+            'Content-Type: text/html; charset=utf-8',
+            'Content-Transfer-Encoding: base64',
+            '',
+            chunk_split(base64_encode(nl2br(e($messageText)).'<br><br>'.$signature)),
+        ];
+
+        $boundary = 'aiku-alt-'.bin2hex(random_bytes(12));
+
+        return [
+            "Content-Type: multipart/alternative; boundary=\"{$boundary}\"",
+            '',
+            "--{$boundary}",
+            ...$textPart,
+            "--{$boundary}",
+            ...$htmlPart,
+            "--{$boundary}--",
+        ];
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function textPart(string $body): array
+    {
+        return [
+            'Content-Type: text/plain; charset=utf-8',
+            'Content-Transfer-Encoding: base64',
+            '',
+            chunk_split(base64_encode($body)),
+        ];
+    }
+
+    private function htmlToText(string $html): string
+    {
+        $text = preg_replace('/<(br|\/p|\/div|\/tr|\/h[1-6])[^>]*>/i', "\n", $html) ?? $html;
+
+        return trim(html_entity_decode(strip_tags($text), ENT_QUOTES | ENT_HTML5, 'UTF-8'));
     }
 
     private function encodeHeader(string $value): string

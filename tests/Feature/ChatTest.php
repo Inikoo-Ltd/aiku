@@ -6579,3 +6579,87 @@ test('assigning a conversation nobody holds creates the assignment instead of le
         ->and($session->closed_at)->toBeNull()
         ->and($session->assignments()->where('status', ChatAssignmentStatusEnum::ACTIVE->value)->count())->toBe(1);
 });
+
+test('an email reply does not also send a chat notification, and carries the shop sender name and an html signature', function () {
+    \Illuminate\Support\Facades\Queue::fake();
+
+    $notificationsSent = fn () => collect(\Illuminate\Support\Facades\Queue::pushedJobs())
+        ->flatten(1)
+        ->pluck('job')
+        ->filter(fn ($job) => $job instanceof \Lorisleiva\Actions\Decorators\JobDecorator
+            && ($job->decorates(\App\Actions\Comms\Email\SendChatNotificationToCustomer::class)
+                || $job->decorates(\App\Actions\Comms\Email\SendChatNotificationToExternal::class)))
+        ->count();
+
+    $customer = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+    $webUser  = StoreWebUser::make()->action($customer, array_merge(WebUser::factory()->definition(), ['email' => 'writer@example.com']));
+
+    $agentUser = createAdminGuest($this->organisation->group)->getUser();
+    $agent     = ChatAgent::updateOrCreate(['user_id' => $agentUser->id], [
+        'max_concurrent_chats' => 5,
+        'language_id'          => 68,
+        'signature'            => '<p>Kind regards,<br>Sig Agent</p><p><img src="https://media.aiku.io/logo.png" alt="logo"></p>',
+    ]);
+
+    $newSession = fn (ChatChannelEnum $channel) => ChatSession::create([
+        'ulid'        => (string) Str::ulid(),
+        'status'      => ChatSessionStatusEnum::ACTIVE,
+        'web_user_id' => $webUser->id,
+        'language_id' => 68,
+        'priority'    => ChatPriorityEnum::NORMAL,
+        'shop_id'     => $this->shop->id,
+        'channel'     => $channel,
+    ]);
+
+    $agentReply = fn (ChatSession $session, string $text) => SendChatMessage::make()->handle($session, [
+        'message_text'   => $text,
+        'message_type'   => ChatMessageTypeEnum::TEXT->value,
+        'sender_type'    => ChatSenderTypeEnum::AGENT->value,
+        'sender_id'      => $agent->id,
+        'is_email_notif' => true,
+    ]);
+
+    // A live chat still needs telling there is an answer waiting.
+    $agentReply($newSession(ChatChannelEnum::WEBSITE), 'Answered on the website');
+    expect($notificationsSent())->toBe(1);
+
+    // The email reply is the notification: a second mail would reach the same inbox twice.
+    $emailSession = $newSession(ChatChannelEnum::EMAIL);
+    $emailSession->update(['metadata' => ['email_from' => 'writer@example.com', 'email_subject' => 'A question']]);
+
+    $reply = $agentReply($emailSession, 'Answered by email');
+
+    expect($notificationsSent())->toBe(1);
+
+    $settings          = $this->shop->settings ?? [];
+    $settings['gmail'] = [
+        'email'         => 'care@shop.test',
+        'refresh_token' => \Illuminate\Support\Facades\Crypt::encryptString('rt'),
+        'sender_name'   => 'AW Artisan France',
+    ];
+    $this->shop->update(['settings' => $settings]);
+
+    \Illuminate\Support\Facades\Http::fake([
+        'oauth2.googleapis.com/token'                          => \Illuminate\Support\Facades\Http::response(['access_token' => 'at']),
+        'gmail.googleapis.com/gmail/v1/users/me/messages/send' => \Illuminate\Support\Facades\Http::response(['id' => 'sent-html']),
+        'gmail.googleapis.com/*'                               => \Illuminate\Support\Facades\Http::response([]),
+    ]);
+
+    \App\Actions\Comms\Mailbox\SendChatMessageByGmail::run($reply->fresh());
+
+    \Illuminate\Support\Facades\Http::assertSent(function (\Illuminate\Http\Client\Request $request) {
+        if (!str_ends_with($request->url(), 'users/me/messages/send')) {
+            return false;
+        }
+
+        $raw = base64_decode(strtr($request['raw'], '-_', '+/'));
+
+        preg_match_all('/Content-Transfer-Encoding: base64\r\n\r\n(.*?)\r\n--/s', $raw.'\r\n--', $matches);
+        $parts = array_map(fn ($part) => base64_decode($part), $matches[1]);
+
+        return str_contains($raw, 'From: AW Artisan France <care@shop.test>')
+            && str_contains($raw, 'Content-Type: multipart/alternative')
+            && collect($parts)->contains(fn ($part) => str_contains($part, "Answered by email\n\nKind regards,\nSig Agent") && !str_contains($part, '<img'))
+            && collect($parts)->contains(fn ($part) => str_contains($part, '<img src="https://media.aiku.io/logo.png"'));
+    });
+});

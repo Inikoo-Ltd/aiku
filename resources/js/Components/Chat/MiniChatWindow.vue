@@ -72,6 +72,10 @@ const baseUrl = layout?.appUrl ?? ""
 // endpoints, so every call the window makes has to pick the matching one.
 const isWhatsapp = computed(() => props.chat.channel === "whatsapp")
 
+// An email conversation is already an email: notifying by email as well sends the same
+// reply to the same inbox twice.
+const canEmailNotify = computed(() => !isWhatsapp.value && props.chat.channel !== "email")
+
 const sessionApiBase = computed(() =>
     `${baseUrl}/app/api/chats${isWhatsapp.value ? "/meta" : ""}/sessions/${props.chat.ulid}`
 )
@@ -1543,7 +1547,7 @@ onUnmounted(() => {
                                     </div>
                                 </Teleport>
                             </div>
-                            <button v-if="!isWhatsapp" type="button" @click="isEmailNotif = !isEmailNotif"
+                            <button v-if="canEmailNotify" type="button" @click="isEmailNotif = !isEmailNotif"
                                 class="w-6 h-6 flex items-center justify-center rounded hover:bg-gray-100 transition-colors"
                                 :class="isEmailNotif ? 'text-green-600 bg-green-50' : 'text-gray-500'"
                                 :title="isEmailNotif ? ctrans('Email notification ON') : ctrans('Email notification OFF')">
