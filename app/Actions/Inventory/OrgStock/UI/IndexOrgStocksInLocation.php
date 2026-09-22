@@ -41,6 +41,12 @@ class IndexOrgStocksInLocation extends OrgAction
         $queryBuilder->where('location_org_stocks.location_id', $location->id)
             ->leftJoin('org_stocks', 'location_org_stocks.org_stock_id', 'org_stocks.id');
 
+        /* A shelf keeps the SKU it is assigned to even when empty, a goods out bay does not:
+           stock is staged there for one partner and once it is picked nothing is left there. */
+        if ($location->is_goods_out) {
+            $queryBuilder->where('location_org_stocks.quantity', '>', 0);
+        }
+
         return $queryBuilder
             ->defaultSort('org_stocks.code')
             ->select([

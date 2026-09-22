@@ -22,6 +22,8 @@ use App\Actions\Inventory\Location\Hydrators\LocationHydrateStockValue;
 use App\Actions\Inventory\Location\Hydrators\LocationHydrateTotalWeight;
 use App\Actions\Helpers\CreateSortCode;
 use App\Actions\Inventory\Location\StoreLocation;
+use App\Actions\Inventory\OrgStock\UI\IndexOrgStocksInLocation;
+use Illuminate\Routing\Route;
 use App\Actions\Inventory\Location\UpdateLocation;
 use App\Actions\Inventory\LocationOrgStock\AuditLocationOrgStock;
 use App\Actions\Inventory\LocationOrgStock\CalculateValueLocationOrgStock;
@@ -1335,6 +1337,24 @@ test('stock parked in a goods out location stops being available', function () {
 
     UpdateLocation::make()->action($slot->location->refresh(), ['is_goods_out' => false]);
     expect((float) $orgStock->fresh()->quantity_available)->toBe($inLocations);
+});
+
+test('an emptied slot stays listed on a shelf but not in a goods out bay', function () {
+    $warehouse = createWarehouse();
+    $location  = StoreLocation::make()->action($warehouse, Location::factory()->definition());
+    $orgStock  = createOrgStocks($this->organisation, [createStocks($this->group)[0]])[0];
+    $slot      = StoreLocationOrgStock::make()->action($orgStock, $location, ['type' => LocationStockTypeEnum::PICKING]);
+    UpdateLocationOrgStock::make()->action($slot, ['quantity' => 0]);
+
+    request()->setRouteResolver(fn () => new Route('GET', 'test', []));
+
+    expect(IndexOrgStocksInLocation::make()->handle($location->refresh())->total())->toBe(1);
+
+    UpdateLocation::make()->action($location->refresh(), ['is_goods_out' => true]);
+    expect(IndexOrgStocksInLocation::make()->handle($location->refresh())->total())->toBe(0);
+
+    UpdateLocationOrgStock::make()->action($slot->refresh(), ['quantity' => 3]);
+    expect(IndexOrgStocksInLocation::make()->handle($location->refresh())->total())->toBe(1);
 });
 
 test('OrgStockHydrate simple field hydrators recompute their target fields', function () {
