@@ -6306,3 +6306,60 @@ test('the customer picker for a new email only offers customers with an address'
     expect($withoutEmail)->toBeGreaterThan(0)
         ->and($total([]) - $total(['filter[has_email]' => 1]))->toBe($withoutEmail);
 });
+
+test('a customer replying to a closed email conversation puts it back in the waiting queue', function () {
+    Bus::fake([\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class, \App\Actions\Comms\Mailbox\SendChatMessageByGmail::class]);
+
+    $settings          = $this->shop->settings ?? [];
+    $settings['gmail'] = [
+        'email'         => 'care@shop.test',
+        'refresh_token' => \Illuminate\Support\Facades\Crypt::encryptString('rt'),
+        'history_id'    => '1',
+    ];
+    $this->shop->update(['settings' => $settings]);
+
+    $gmailMessage = fn (string $id, string $text) => [
+        'id'       => $id,
+        'threadId' => 'th-reopen',
+        'labelIds' => ['INBOX'],
+        'payload'  => [
+            'mimeType' => 'text/plain',
+            'headers'  => [
+                ['name' => 'From', 'value' => 'Returning Writer <returning.writer@example.com>'],
+                ['name' => 'Subject', 'value' => 'Missing lid'],
+                ['name' => 'Message-ID', 'value' => "<$id@example.com>"],
+            ],
+            'body'     => ['data' => rtrim(strtr(base64_encode($text), '+/', '-_'), '=')],
+        ],
+    ];
+
+    \Illuminate\Support\Facades\Http::fake([
+        'oauth2.googleapis.com/token'                         => \Illuminate\Support\Facades\Http::response(['access_token' => 'at']),
+        'gmail.googleapis.com/gmail/v1/users/me/messages/r1?*' => \Illuminate\Support\Facades\Http::response($gmailMessage('r1', 'The lid is missing')),
+        'gmail.googleapis.com/gmail/v1/users/me/messages/r2?*' => \Illuminate\Support\Facades\Http::response($gmailMessage('r2', 'It still has not arrived')),
+        'gmail.googleapis.com/gmail/v1/users/me/labels'        => \Illuminate\Support\Facades\Http::response(['labels' => [['id' => 'L9', 'name' => 'aiku/unmatched']]]),
+        'gmail.googleapis.com/*'                              => \Illuminate\Support\Facades\Http::response([]),
+    ]);
+
+    $session = \App\Actions\Comms\Mailbox\ProcessInboundEmail::run($this->shop, 'r1')->chatSession;
+
+    $agent = ChatAgent::firstOrCreate(
+        ['user_id' => $this->user->id],
+        ['is_online' => true, 'max_concurrent_chats' => 100, 'current_chat_count' => 0]
+    );
+
+    $assignment = $session->assignments()->create([
+        'chat_agent_id' => $agent->id,
+        'status'        => \App\Enums\CRM\Livechat\ChatAssignmentStatusEnum::ACTIVE->value,
+        'assigned_by'   => \App\Enums\CRM\Livechat\ChatAssignmentAssignedByEnum::AGENT->value,
+        'assigned_at'   => now(),
+    ]);
+
+    $session->update(['status' => ChatSessionStatusEnum::CLOSED, 'closed_at' => now()]);
+
+    \App\Actions\Comms\Mailbox\ProcessInboundEmail::run($this->shop, 'r2');
+
+    expect($session->refresh()->status)->toBe(ChatSessionStatusEnum::WAITING)
+        ->and($session->closed_at)->toBeNull()
+        ->and($assignment->refresh()->status)->toBe(\App\Enums\CRM\Livechat\ChatAssignmentStatusEnum::RESOLVED);
+});

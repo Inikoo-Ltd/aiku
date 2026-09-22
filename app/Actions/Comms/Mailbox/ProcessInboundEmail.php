@@ -17,6 +17,7 @@ use App\Enums\CRM\Livechat\ChatIgnoreReasonEnum;
 use App\Enums\CRM\Livechat\ChatMessageTypeEnum;
 use App\Enums\CRM\Livechat\ChatPriorityEnum;
 use App\Enums\CRM\Livechat\ChatSenderTypeEnum;
+use App\Enums\CRM\Livechat\ChatAssignmentStatusEnum;
 use App\Enums\CRM\Livechat\ChatSessionStatusEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\HumanResources\Employee;
@@ -382,11 +383,22 @@ class ProcessInboundEmail
      */
     private function reuseSession(ChatSession $session, array $from, bool $isAutoReply): ChatSession
     {
+        // A customer writing back to a finished conversation is new work nobody holds yet, so it
+        // returns to the waiting queue rather than to the agent who closed it; assigning it is
+        // what makes it active again.
         if ($session->isClosed() && ! $isAutoReply) {
             $session->update([
-                'status'    => ChatSessionStatusEnum::ACTIVE,
+                'status'    => ChatSessionStatusEnum::WAITING,
+                'closed_by' => null,
                 'closed_at' => null,
             ]);
+
+            $session->assignments()
+                ->where('status', ChatAssignmentStatusEnum::ACTIVE->value)
+                ->update([
+                    'status'      => ChatAssignmentStatusEnum::RESOLVED->value,
+                    'resolved_at' => now(),
+                ]);
         }
 
         $session->update([
