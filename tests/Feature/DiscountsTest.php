@@ -405,6 +405,24 @@ test('an offer whose end date has passed is swept off, keeping its end date', fu
     $this->travelBack();
 });
 
+test('the sweep finishes an offer whose whole window passed while it sat in process', function () {
+    $offerCampaign = $this->shop->offerCampaigns()->first();
+    $offer         = StoreOffer::make()->action($offerCampaign, Offer::factory()->definition());
+
+    $offer->update([
+        'state'    => OfferStateEnum::IN_PROCESS,
+        'status'   => false,
+        'start_at' => now()->subMonth(),
+        'end_at'   => now()->subWeek(),
+    ]);
+
+    $this->artisan('offer:update_status_from_dates')->assertExitCode(0);
+
+    $offer->refresh();
+    expect($offer->state)->toBe(OfferStateEnum::FINISHED)
+        ->and($offer->status)->toBeFalse();
+});
+
 test('the sweep never resurrects a finished offer', function () {
     $offerCampaign = $this->shop->offerCampaigns()->first();
     $offer         = StoreOffer::make()->action($offerCampaign, Offer::factory()->definition());
