@@ -15,6 +15,7 @@ use App\Actions\Chat\ChatSession\GetChatMediaContents;
 use App\Models\Chat\ChatMessage;
 use App\Services\Gmail\GmailClient;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Str;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class SendChatMessageByGmail
@@ -37,19 +38,25 @@ class SendChatMessageByGmail
             return;
         }
 
-        $raw = $this->buildRawMessage($session, $chatMessage);
+        $messageId = $this->newHeaderMessageId($session);
+        $raw       = $this->buildRawMessage($session, $chatMessage, $messageId);
 
         $result = $client->send($raw, $threadId);
 
+        $session->refresh();
+
         // A conversation we started has no thread until Gmail gives it one. Without it kept here
         // the customer's reply matches nothing and opens a second conversation beside this one.
-        if (! $threadId && Arr::get($result, 'threadId')) {
-            $session->update([
-                'metadata' => array_merge($session->metadata ?? [], [
-                    'gmail_thread_id' => Arr::get($result, 'threadId'),
-                ]),
-            ]);
-        }
+        // The Gmail thread id only groups mail inside our own mailbox. The customer's mail client
+        // threads by these headers, so every mail we send must name the one before it, agent or
+        // customer alike, or three answers in a row land as three separate emails.
+        $session->update([
+            'metadata' => array_merge($session->metadata ?? [], array_filter([
+                'gmail_thread_id'              => $threadId ?: Arr::get($result, 'threadId'),
+                'gmail_last_header_message_id' => $messageId,
+                'gmail_references'             => $this->references($session->metadata ?? [], $messageId),
+            ])),
+        ]);
 
         $chatMessage->update([
             'metadata' => array_merge($chatMessage->metadata ?? [], [
@@ -58,7 +65,23 @@ class SendChatMessageByGmail
         ]);
     }
 
-    private function buildRawMessage($session, ChatMessage $chatMessage): string
+    public static function references(array $metadata, ?string ...$append): array
+    {
+        return array_values(array_unique(array_filter([
+            ...Arr::get($metadata, 'gmail_references', []),
+            Arr::get($metadata, 'gmail_last_header_message_id'),
+            ...$append,
+        ])));
+    }
+
+    private function newHeaderMessageId($session): string
+    {
+        $domain = Str::after((string) Arr::get($session->shop->settings, 'gmail.email'), '@') ?: 'aiku.io';
+
+        return '<'.Str::ulid().'@'.$domain.'>';
+    }
+
+    private function buildRawMessage($session, ChatMessage $chatMessage, string $messageId): string
     {
         $metadata = $session->metadata ?? [];
 
@@ -80,11 +103,12 @@ class SendChatMessageByGmail
             "From: {$mailboxAddress}",
             "To: {$to}",
             'Subject: '.$this->encodeHeader($subject),
+            "Message-ID: {$messageId}",
         ];
 
         if ($replyToHeader) {
             $headers[] = "In-Reply-To: {$replyToHeader}";
-            $headers[] = "References: {$replyToHeader}";
+            $headers[] = 'References: '.implode(' ', self::references($metadata));
         }
 
         $headers[] = 'MIME-Version: 1.0';

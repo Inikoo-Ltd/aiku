@@ -5909,8 +5909,6 @@ test('starting an email from the customer record opens an email conversation and
         ->and($session->assignments()->where('status', ChatAssignmentStatusEnum::ACTIVE->value)->count())->toBe(1)
         ->and($session->messages()->count())->toBe(1);
 
-    \App\Actions\Comms\Mailbox\SendChatMessageByGmail::run($session->messages()->first());
-
     \Illuminate\Support\Facades\Http::assertSent(function (\Illuminate\Http\Client\Request $request) {
         if (!str_ends_with($request->url(), 'users/me/messages/send')) {
             return false;
@@ -5921,10 +5919,34 @@ test('starting an email from the customer record opens an email conversation and
             && str_contains($raw, 'To: ')
             && str_contains($raw, 'buyer@example.com')
             && str_contains($raw, 'Subject: Your order')
+            && str_contains($raw, 'Message-ID: <')
             && !str_contains($raw, 'In-Reply-To:');
     });
 
-    expect(Arr::get($session->fresh()->metadata, 'gmail_thread_id'))->toBe('t9');
+    $firstMessageId = Arr::get($session->fresh()->metadata, 'gmail_last_header_message_id');
+    expect(Arr::get($session->fresh()->metadata, 'gmail_thread_id'))->toBe('t9')
+        ->and($firstMessageId)->toStartWith('<');
+
+    $second = $session->messages()->create([
+        'message_text' => 'Just checking in',
+        'message_type' => ChatMessageTypeEnum::TEXT,
+        'sender_type'  => ChatSenderTypeEnum::AGENT,
+        'sender_id'    => $session->assignments()->first()->chat_agent_id,
+    ]);
+    \App\Actions\Comms\Mailbox\SendChatMessageByGmail::run($second);
+
+    \Illuminate\Support\Facades\Http::assertSent(function (\Illuminate\Http\Client\Request $request) use ($firstMessageId) {
+        if (!str_ends_with($request->url(), 'users/me/messages/send')) {
+            return false;
+        }
+        $raw = base64_decode(strtr($request['raw'], '-_', '+/'));
+
+        return ($request['threadId'] ?? null) === 't9'
+            && str_contains($raw, 'Subject: Re: Your order')
+            && str_contains($raw, "In-Reply-To: {$firstMessageId}")
+            && str_contains($raw, "References: {$firstMessageId}");
+    });
+    expect(Arr::get($session->fresh()->metadata, 'gmail_references'))->toHaveCount(2);
 });
 
 test('GetChatCustomerTimeline puts every channel, the orders and what is still owed in one line', function () {

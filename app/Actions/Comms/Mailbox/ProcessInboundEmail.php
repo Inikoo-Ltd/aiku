@@ -170,6 +170,7 @@ class ProcessInboundEmail
         $session->update([
             'metadata' => array_merge($session->metadata ?? [], [
                 'gmail_last_header_message_id' => $headerMessageId,
+                'gmail_references'             => SendChatMessageByGmail::references($session->metadata ?? [], $headerMessageId),
                 'name' => $from['name'] ?? $from['address'],
                 'email' => $from['address'],
             ]),
