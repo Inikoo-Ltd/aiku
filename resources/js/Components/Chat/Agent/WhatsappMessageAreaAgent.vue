@@ -1166,7 +1166,7 @@ onUnmounted(() => {
                     <span class="font-medium truncate">{{ selectedTemplate?.name }}</span>
                     <span class="text-green-600/70">{{ selectedTemplate?.language }}</span>
                     <button @click="clearTemplate" class="ml-auto text-green-600 hover:text-red-500"
-                        :title="ctrans('Remove template')">
+                        v-tooltip="ctrans('Remove template')" :aria-label="ctrans('Remove template')">
                         <FontAwesomeIcon :icon="faXmark" class="text-[10px]" fixed-width />
                     </button>
                 </div>
@@ -1198,11 +1198,11 @@ onUnmounted(() => {
                 <div class="flex items-center justify-between px-2 pb-2 pt-1">
                     <div class="flex items-center gap-1">
                         <button @click="imageInput?.click()" :disabled="hasTemplate || templateOnly"
-                            class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-500 transition-colors disabled:opacity-40 disabled:hover:bg-transparent" :title="ctrans('Upload image')">
+                            class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-500 transition-colors disabled:opacity-40 disabled:hover:bg-transparent" v-tooltip="ctrans('Upload image')" :aria-label="ctrans('Upload image')">
                             <FontAwesomeIcon :icon="faImage" class="text-sm" fixed-width />
                         </button>
                         <button @click="fileInput?.click()" :disabled="hasTemplate || templateOnly"
-                            class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-500 transition-colors disabled:opacity-40 disabled:hover:bg-transparent" :title="ctrans('Upload file')">
+                            class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-500 transition-colors disabled:opacity-40 disabled:hover:bg-transparent" v-tooltip="ctrans('Upload file')" :aria-label="ctrans('Upload file')">
                             <FontAwesomeIcon :icon="faPaperclip" class="text-sm" fixed-width />
                         </button>
                         <div ref="emojiPickerContainer" class="relative">
@@ -1210,7 +1210,7 @@ onUnmounted(() => {
                                 :disabled="hasTemplate || templateOnly"
                                 class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 transition-colors disabled:opacity-40 disabled:hover:bg-transparent"
                                 :class="showEmojiPicker ? 'text-green-600 bg-gray-100' : 'text-gray-500'"
-                                :title="ctrans('Emoji')" :aria-label="ctrans('Emoji')">
+                                v-tooltip="ctrans('Emoji')" :aria-label="ctrans('Emoji')">
                                 <FontAwesomeIcon :icon="faFaceSmile" class="text-sm" fixed-width />
                             </button>
 
@@ -1219,11 +1219,11 @@ onUnmounted(() => {
                             </div>
                         </div>
                         <button @click="openTemplateDialog"
-                            class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-green-50 text-gray-500 hover:text-green-600 transition-colors" :title="ctrans('Send template message')">
+                            class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-green-50 text-gray-500 hover:text-green-600 transition-colors" v-tooltip="ctrans('Send template message')" :aria-label="ctrans('Send template message')">
                             <FontAwesomeIcon :icon="faFileLines" class="text-sm" fixed-width />
                         </button>
                         <button @click="isTicketModalOpen = true"
-                            class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-blue-50 text-gray-500 hover:text-blue-600 transition-colors" :title="ctrans('Create ticket from this chat')" :aria-label="ctrans('Create ticket from this chat')">
+                            class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-blue-50 text-gray-500 hover:text-blue-600 transition-colors" v-tooltip="ctrans('Create ticket from this chat')" :aria-label="ctrans('Create ticket from this chat')">
                             <FontAwesomeIcon :icon="faLifeRing" class="text-sm" fixed-width />
                         </button>
                     </div>
