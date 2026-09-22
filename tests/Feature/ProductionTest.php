@@ -3604,3 +3604,54 @@ test('a discontinued SKO leaves the to produce board unless a job order already 
     $orgStocks[0]->update(['state' => \App\Enums\Inventory\OrgStock\OrgStockStateEnum::DISCONTINUED]);
     expect($listed())->toContain($stocks[0]->code);
 });
+
+test('a job carried to another day is one row on the board, with the amount the whole job asks for', function () {
+    $this->artefact->manufactureTasks()->sync([
+        $this->manufactureTask->id => ['position' => 1, 'units_per_artefact' => 1],
+    ]);
+    $user      = $this->guest->getUser();
+    $warehouse = \App\Actions\Inventory\Warehouse\StoreWarehouse::make()->action($this->organisation, ['code' => 'WH-CRY', 'name' => 'Carry warehouse']);
+    \App\Models\Production\ManufactureTaskSession::where('user_id', $user->id)
+        ->where('state', \App\Enums\Production\ManufactureTaskSession\ManufactureTaskSessionStateEnum::OPEN)->delete();
+
+    $jobOrder = StoreJobOrder::make()->action($this->production, []);
+    $item     = StoreJobOrderItem::make()->action($jobOrder, ['artefact_id' => $this->artefact->id, 'quantity' => 40]);
+    ConfirmJobOrder::make()->action($jobOrder);
+
+    CloseManufactureTaskSession::make()->action(
+        StartManufactureTaskSession::make()->action($user, $item->tasks()->first()),
+        ['quantity_made' => 23, 'outcome' => 'carry_over']
+    );
+
+    $rowsOf = fn () => collect(\App\Actions\Dispatching\ProductionOutput\GetFinishedProductionJobOrders::run($warehouse))
+        ->flatMap(fn (array $trip) => collect($trip['jobs'])->flatMap(fn (array $job) => $job['items']))
+        ->filter(fn (array $row) => str_starts_with((string) $row['reference'], $jobOrder->reference))
+        ->values();
+
+    /* The board counts SKOs, the artisan artefact units; packed_in is whatever this fixture left. */
+    $skos = fn (float $units) => round($units / max(1, (int) $this->artefact->orgStock?->packed_in), 3);
+
+    $rows = $rowsOf();
+    expect($rows)->toHaveCount(1)
+        ->and($rows[0]['reference'])->toBe($jobOrder->reference)
+        ->and($rows[0]['quantity'])->toEqual($skos(23))
+        ->and($rows[0]['quantity_made'])->toEqual($skos(23))
+        ->and($rows[0]['quantity_total'])->toEqual($skos(40))
+        ->and($rows[0]['in_progress'])->toBeTrue();
+
+    $carried = \App\Models\Production\JobOrder::where('production_id', $this->production->id)->orderByDesc('id')->first();
+    CloseManufactureTaskSession::make()->action(
+        StartManufactureTaskSession::make()->action($user, $carried->jobOrderItems()->first()->tasks()->first()),
+        ['quantity_made' => 17, 'outcome' => 'complete']
+    );
+
+    $rows = $rowsOf();
+    expect($rows)->toHaveCount(1)
+        ->and($rows[0]['reference'])->toBe($jobOrder->reference)
+        ->and($rows[0]['item_ids'])->toHaveCount(2)
+        ->and($rows[0]['job_order_ids'])->toHaveCount(2)
+        ->and($rows[0]['quantity'])->toEqual($skos(40))
+        ->and($rows[0]['quantity_made'])->toEqual($skos(40))
+        ->and($rows[0]['quantity_total'])->toEqual($skos(40))
+        ->and($rows[0]['in_progress'])->toBeFalse();
+});
