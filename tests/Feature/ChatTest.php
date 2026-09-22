@@ -31,6 +31,7 @@ use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Actions\Chat\ChatSession\GetChatCustomerTimeline;
 use App\Actions\Chat\ChatSession\CloseEmptyChatSessions;
 use App\Actions\Chat\ChatSession\GetChatReports;
+use App\Actions\Chat\ChatSession\IndexChatConversations;
 use App\Actions\Chat\ChatSession\GetChatDashboardVisitors;
 use App\Actions\Chat\ChatSession\GetChatMessages;
 use App\Actions\Chat\ChatSession\GetChatSessions;
@@ -4783,6 +4784,16 @@ test('GetChatReports counts only conversations the visitor wrote in and measures
     expect($result['agents'][0])->toMatchArray(['rating' => 4.5, 'ratings' => 2])
         ->and($result['agents'][0])->not->toHaveKey('rated_sessions')
         ->and($result['agents_total'])->toMatchArray(['rating' => 4.5, 'ratings' => 2]);
+
+    $listed = function (array $filter) use ($reportShop) {
+        request()->query->replace(['filter' => $filter]);
+
+        return IndexChatConversations::make()->handle($reportShop)->getCollection()->pluck('rating')->sort()->values()->all();
+    };
+
+    expect($listed(['rated' => 1, 'replied' => $this->user->username.','.$result['window']]))->toBe([4.0, 5.0])
+        ->and($listed(['rated' => 1, 'replied' => 'nobody,'.$result['window']]))->toBe([])
+        ->and($listed(['rated' => 1, 'created_between' => now()->subDay()->toIso8601ZuluString().','.now()->toIso8601ZuluString()]))->toBe([4.0, 5.0]);
 });
 
 test('empty widget sessions are not counted open and the sweep closes them quietly', function () {

@@ -77,6 +77,7 @@ class GetChatReports
             'interval'      => $interval,
             'from'          => $from->toDateString(),
             'to'            => $to->toDateString(),
+            'window'        => $from->toIso8601ZuluString().','.$to->toIso8601ZuluString(),
             'days'          => $days,
             'bucket'        => $bucket,
             'conversations' => $sessions->count(),
