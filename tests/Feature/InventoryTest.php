@@ -126,6 +126,7 @@ use App\Models\Dispatching\Picking;
 use App\Models\Helpers\Address;
 use App\Models\Ordering\Transaction;
 use Config;
+use App\Enums\SysAdmin\Authorisation\GroupPermissionsEnum;
 use App\Enums\SysAdmin\Authorisation\RolesEnum;
 use App\Enums\SysAdmin\Authorisation\WarehousePermissionsEnum;
 use Illuminate\Support\Facades\Cache;
@@ -3534,6 +3535,41 @@ describe('discontinue preview', function () {
             $warehouse->slug,
             'org_stock_ids' => [$this->orgStocks[1]->id],
         ]))->assertOk()->assertJsonCount(1)->assertJsonPath('0.id', $this->orgStocks[1]->id);
+    });
+
+    test('a warehouse stock controller cannot discontinue, only supply chain can', function () {
+        $warehouse = $this->organisation->warehouses()->first() ?? createWarehouse();
+        $user      = $this->guest->getUser();
+
+        setPermissionsTeamId($user->group_id);
+        $originalRoles = $user->roles->pluck('name')->toArray();
+        $reset = function (array $roles) use ($user) {
+            setPermissionsTeamId($user->group_id);
+            $user->syncRoles($roles);
+            Cache::tags('auth-user:'.$user->id)->flush();
+            app(PermissionRegistrar::class)->forgetCachedPermissions();
+            actingAs($user->refresh());
+        };
+
+        $reset([RolesEnum::getRoleName('stock-controller', $warehouse), RolesEnum::getRoleName('warehouse-admin', $warehouse)]);
+        $previewUrl = route('grp.org.warehouses.show.inventory.org_stocks.discontinue_preview', [$this->organisation->slug, $warehouse->slug, 'org_stock_ids' => [$this->orgStocks[1]->id]]);
+        $this->getJson($previewUrl)->assertForbidden();
+        $this->post(route('grp.org.warehouses.show.inventory.org_stocks.discontinue', [$this->organisation->slug, $warehouse->slug]), [
+            'org_stock_ids' => [$this->orgStocks[1]->id], 'state' => 'discontinued', 'reason' => 'no',
+        ])->assertForbidden();
+        $page = $this->get(route('grp.org.warehouses.show.inventory.org_stocks.current_org_stocks.show', [$this->organisation->slug, $warehouse->slug, $this->orgStocks[1]->slug]))
+            ->assertOk()->viewData('page')['props'];
+        expect($page['discontinue_route'])->toBeNull()
+            ->and(collect($page['pageHead']['actions'])->pluck('key'))->not->toContain('discontinue');
+
+        $reset([RolesEnum::getRoleName('supply-chain', $this->group), RolesEnum::getRoleName('warehouse-viewer', $warehouse)]);
+        expect($user->authTo(GroupPermissionsEnum::SUPPLY_CHAIN->value))->toBeTrue();
+        $this->getJson($previewUrl)->assertOk();
+        $page = $this->get(route('grp.org.warehouses.show.inventory.org_stocks.current_org_stocks.show', [$this->organisation->slug, $warehouse->slug, $this->orgStocks[1]->slug]))
+            ->assertOk()->viewData('page')['props'];
+        expect($page['discontinue_route'])->not->toBeNull();
+
+        $reset($originalRoles);
     });
 });
 
