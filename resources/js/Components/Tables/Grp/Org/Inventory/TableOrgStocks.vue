@@ -32,6 +32,9 @@ import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import { ctrans } from "@/Composables/useTrans"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
+import OrgStockDiscontinuePreviewModal from "@/Components/Warehouse/Inventory/OrgStockDiscontinuePreviewModal.vue"
+import { routeType } from "@/types/route"
+import { faBan } from "@fal"
 
 library.add(faCheckCircle, faTimesCircle, faPauseCircle, faExclamationCircle, faTriangle, faEquals, faMinus, faUnlink)
 
@@ -41,7 +44,11 @@ const props = defineProps<{
     canMoveAllSku?:boolean,
     location_id: number,
     transfer_reason?: {}
+    discontinue_preview_route?: routeType | null
 }>()
+
+const isDiscontinuePreviewOpen = ref(false)
+const isSelectable = computed(() => !!props.canMoveAllSku || !!props.discontinue_preview_route)
 
 const layout = inject('layout', layoutStructure)
 const locale = inject("locale", aikuLocaleStructure)
@@ -79,6 +86,7 @@ const selectedStocks = computed(() => {
 })
 
 const hasSelection = computed(() => selectedStocks.value.length > 0)
+const selectedOrgStockIds = computed(() => selectedStocks.value.map((stock) => stock.id))
 
 function onSelectRow(value: Record<string, boolean>) {
     selectedRows.value = { ...value }
@@ -348,10 +356,11 @@ const orgStockRouteProductIndex = (orgStock: OrgStock) => {
 </script>
 
 <template>
-    <Table :resource="data" :name="tab" class="mt-5" :isCheckBox="canMoveAllSku" @onSelectRow="onSelectRow" :key="key">
-          <template #add-on-button v-if="canMoveAllSku">
-                <Button :label="ctrans('Move All SKO')" type="white" :icon="faForklift" size="xs" @click="openMoveAllSku"></Button>
-                <Button v-if="hasSelection" :label="ctrans('Partialy Move SKO')" type="white" :icon="faForklift" size="xs" @click="openPartialMoveSku"></Button>
+    <Table :resource="data" :name="tab" class="mt-5" :isCheckBox="isSelectable" @onSelectRow="onSelectRow" :key="key">
+          <template #add-on-button v-if="isSelectable">
+                <Button v-if="canMoveAllSku" :label="ctrans('Move All SKO')" type="white" :icon="faForklift" size="xs" @click="openMoveAllSku"></Button>
+                <Button v-if="canMoveAllSku && hasSelection" :label="ctrans('Partialy Move SKO')" type="white" :icon="faForklift" size="xs" @click="openPartialMoveSku"></Button>
+                <Button v-if="discontinue_preview_route" :label="ctrans('Discontinue')" type="white" :icon="faBan" size="xs" :disabled="!hasSelection" @click="isDiscontinuePreviewOpen = true"></Button>
           </template>
         <template #cell(state)="{ item: stock }">
             <Icon :data="stock.state"></Icon>
@@ -562,6 +571,14 @@ const orgStockRouteProductIndex = (orgStock: OrgStock) => {
 
 
     </Table>
+
+    <OrgStockDiscontinuePreviewModal
+        v-if="discontinue_preview_route"
+        :isOpen="isDiscontinuePreviewOpen"
+        :orgStockIds="selectedOrgStockIds"
+        :previewRoute="discontinue_preview_route"
+        @onClose="isDiscontinuePreviewOpen = false"
+    />
 
     <Dialog
         :header="ctrans('Move All SKO')"

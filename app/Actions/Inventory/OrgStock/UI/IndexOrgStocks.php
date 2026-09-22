@@ -612,6 +612,13 @@ class IndexOrgStocks extends OrgAction
                     'current'    => $this->tab,
                     'navigation' => OrgStocksTabsEnum::navigation(),
                 ],
+                'discontinue_preview_route' => $this->parent instanceof Organisation ? [
+                    'name'       => 'grp.org.warehouses.show.inventory.org_stocks.discontinue_preview',
+                    'parameters' => [
+                        'organisation' => $this->organisation->slug,
+                        'warehouse'    => $this->warehouse->slug,
+                    ]
+                ] : null,
 
                 OrgStocksTabsEnum::INDEX->value => $this->tab == OrgStocksTabsEnum::INDEX->value
                     ? fn () => OrgStocksResource::collection($stocks)

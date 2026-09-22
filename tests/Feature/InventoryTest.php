@@ -132,6 +132,20 @@ use Spatie\Permission\PermissionRegistrar;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Inertia\Testing\AssertableInertia;
+use App\Actions\Dropshipping\CustomerSalesChannel\StoreCustomerSalesChannel;
+use App\Actions\Dropshipping\Portfolio\StorePortfolio;
+use App\Actions\Inventory\OrgStock\GetOrgStockDiscontinuePreview;
+use App\Actions\Procurement\OrgSupplier\StoreOrgSupplier;
+use App\Actions\Procurement\PurchaseOrder\StorePurchaseOrder;
+use App\Actions\Procurement\PurchaseOrderTransaction\StorePurchaseOrderTransaction;
+use App\Actions\SupplyChain\Supplier\StoreSupplier;
+use App\Actions\SupplyChain\SupplierProduct\StoreSupplierProduct;
+use App\Enums\Ordering\Platform\PlatformTypeEnum;
+use App\Models\Procurement\OrgSupplier;
+use App\Models\Procurement\PurchaseOrder;
+use App\Models\Procurement\PurchaseOrderTransaction;
+use App\Models\SupplyChain\Supplier;
+use App\Models\SupplyChain\SupplierProduct;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 
 use function Pest\Laravel\actingAs;
@@ -3434,4 +3448,65 @@ test('a low stock audit still open keeps its lock through the heartbeat', functi
         expect(HandleLowStockAuditLock::make()->handle($warehouse, $lock + ['holder' => 'counting-tab'])['granted'])->toBeTrue()
             ->and(HandleLowStockAuditLock::make()->handle($warehouse, $lock + ['holder' => 'another-tab'])['granted'])->toBeFalse();
     }
+});
+
+describe('discontinue preview', function () {
+    beforeEach(function () {
+        list(, , $this->shop) = createShop();
+        $this->customer = createCustomer($this->shop);
+        list($this->orgStocks, $this->product) = createProduct($this->shop);
+    });
+
+    test('preview counts the open purchase order and the portfolio carrying the stock', function () {
+        $orgStock = $this->orgStocks[0];
+        $this->product->orgStocks()->syncWithoutDetaching([$orgStock->id => ['quantity' => 1]]);
+
+        $supplier      = StoreSupplier::make()->action($this->group, Supplier::factory()->definition());
+        StoreSupplierProduct::make()->action($supplier, array_merge(SupplierProduct::factory()->definition(), ['stock_id' => $orgStock->stock_id]));
+        $orgSupplier   = OrgSupplier::where('supplier_id', $supplier->id)->where('organisation_id', $this->organisation->id)->first()
+            ?? StoreOrgSupplier::make()->action($this->organisation, $supplier);
+        $purchaseOrder = StorePurchaseOrder::make()->action($orgSupplier, PurchaseOrder::factory()->definition());
+        StorePurchaseOrderTransaction::make()->action($purchaseOrder, null, $orgStock, PurchaseOrderTransaction::factory()->definition());
+
+        $platform = $this->group->platforms()->where('type', PlatformTypeEnum::MANUAL)->firstOrFail();
+        $channel  = StoreCustomerSalesChannel::make()->action($this->customer, $platform, ['reference' => 'discontinue-preview']);
+        StorePortfolio::make()->action($channel, $this->product, []);
+
+        $preview = GetOrgStockDiscontinuePreview::make()->action($this->organisation, [$orgStock->id]);
+
+        expect($preview)->toHaveCount(1)
+            ->and($preview[0]['code'])->toBe($orgStock->code)
+            ->and($preview[0]['purchase_orders']['count'])->toBe(1)
+            ->and($preview[0]['purchase_orders']['references'])->toBe([(string) $purchaseOrder->reference])
+            ->and($preview[0]['portfolios']['count'])->toBe(1)
+            ->and($preview[0]['portfolios']['customers'])->toBe(1)
+            ->and($preview[0]['portfolios']['by_platform'])->toBe([PlatformTypeEnum::MANUAL->value => 1])
+            ->and($preview[0]['mailshots']['known'])->toBeFalse()
+            ->and($preview[0]['updated_at'])->not->toBeNull()
+            ->and($preview[0]['organisations'])->toHaveKey($this->organisation->code, $orgStock->state->value);
+    });
+
+    test('preview of a stock with nothing hanging off it is all zeros', function () {
+        $orgStock = $this->orgStocks[2];
+
+        $preview = GetOrgStockDiscontinuePreview::make()->action($this->organisation, [$orgStock->id]);
+
+        expect($preview[0]['purchase_orders']['count'])->toBe(0)
+            ->and($preview[0]['stock_deliveries']['count'])->toBe(0)
+            ->and($preview[0]['portfolios']['count'])->toBe(0)
+            ->and($preview[0]['external_shops'])->toBe([])
+            ->and($preview[0]['webpages']['count'])->toBe(0)
+            ->and($preview[0]['orders']['count'])->toBe(0)
+            ->and($preview[0]['is_exclusive'])->toBeFalse();
+    });
+
+    test('preview route answers for the warehouse', function () {
+        $warehouse = $this->organisation->warehouses()->first() ?? createWarehouse();
+
+        $this->getJson(route('grp.org.warehouses.show.inventory.org_stocks.discontinue_preview', [
+            $this->organisation->slug,
+            $warehouse->slug,
+            'org_stock_ids' => [$this->orgStocks[1]->id],
+        ]))->assertOk()->assertJsonCount(1)->assertJsonPath('0.id', $this->orgStocks[1]->id);
+    });
 });

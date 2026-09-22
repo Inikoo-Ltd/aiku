@@ -13,6 +13,7 @@ import { PageHeadingTypes } from "@/types/PageHeading";
 import { computed, ref } from "vue";
 import Tabs from "@/Components/Navigation/Tabs.vue";
 import { useTabChange } from "@/Composables/tab-change";
+import { routeType } from "@/types/route";
 
 const props = defineProps<{
     title: string;
@@ -23,6 +24,7 @@ const props = defineProps<{
     };
     index?: {};
     sales?: {};
+    discontinue_preview_route?: routeType | null;
 }>();
 
 const currentTab = ref<string>(props?.tabs?.current ?? "index");
@@ -47,5 +49,6 @@ const component = computed(() => {
         :key="currentTab"
         :tab="currentTab"
         :data="props[currentTab]"
+        :discontinue_preview_route="discontinue_preview_route"
     />
 </template>

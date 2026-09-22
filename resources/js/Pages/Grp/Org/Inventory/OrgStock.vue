@@ -41,7 +41,9 @@ import StockShowcase from "@/Components/Showcases/Grp/StockShowcase.vue"
 import { capitalize } from "@/Composables/capitalize"
 import TablePurchaseOrders from "@/Components/Tables/Grp/Org/Procurement/TablePurchaseOrders.vue"
 import TableOrgStockMovements from "@/Components/Tables/Grp/Org/Inventory/TableOrgStockMovements.vue"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
+import Button from "@/Components/Elements/Buttons/Button.vue"
+import OrgStockDiscontinuePreviewModal from "@/Components/Warehouse/Inventory/OrgStockDiscontinuePreviewModal.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { routeType } from "@/types/route"
 import { PageHeadingTypes } from "@/types/PageHeading"
@@ -103,7 +105,10 @@ const props = defineProps<{
         transfer: [],
     }
     org_stock_id: number
+    discontinue_preview_route: routeType
 }>()
+
+const isDiscontinuePreviewOpen = ref(false)
 
 let currentTab = ref(props.tabs.current)
 const handleTabUpdate = (tabSlug) => useTabChange(tabSlug, currentTab)
@@ -141,7 +146,7 @@ const component = computed(() => {
             <Link
                 v-if="master"
                 :href="masterRoute?.name ? route(masterRoute.name, masterRoute.parameters) : ''"
-                v-tooltip="trans('Go to Master')"
+                v-tooltip="ctrans('Go to Master')"
             >
                 <FontAwesomeIcon
                     icon="fas fa-cloud-rainbow"
@@ -151,10 +156,14 @@ const component = computed(() => {
             </Link>
         </template>
 
+        <template #button-discontinue="{ action }">
+            <Button :style="action.style" :icon="action.icon" :label="action.label" @click="isDiscontinuePreviewOpen = true" />
+        </template>
+
         <template #otherBefore v-if="showHeaderStats">
             <Popover class="relative" v-slot="{ open }">
                 <PopoverButton
-                    v-tooltip="trans('Click to view stock details')"
+                    v-tooltip="ctrans('Click to view stock details')"
                     class="group flex cursor-pointer items-center justify-between gap-x-3 rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm transition hover:border-indigo-400 hover:bg-gray-50 focus:outline-none"
                     :class="open ? 'ring-1 ring-indigo-400' : ''"
                 >
@@ -197,7 +206,7 @@ const component = computed(() => {
                 :icon="faExclamationCircle"
                 class="text-yellow-500 mr-1"
             />
-            {{ trans("Stock location changes for this Org SKO may be overwritten during Aurora imports.") }}
+            {{ ctrans("Stock location changes for this Org SKO may be overwritten during Aurora imports.") }}
         </Message>
     </div> -->
     <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
@@ -219,6 +228,13 @@ const component = computed(() => {
         </Breadcrumb>
     </div>
     <component :is="component" :data="props[currentTab]" :tab="currentTab" :reasons :org_stock_id></component>
+
+    <OrgStockDiscontinuePreviewModal
+        :isOpen="isDiscontinuePreviewOpen"
+        :orgStockIds="[org_stock_id]"
+        :previewRoute="discontinue_preview_route"
+        @onClose="isDiscontinuePreviewOpen = false"
+    />
 </template>
 <style scoped>
 /* Remove default breadcrumb styles */
